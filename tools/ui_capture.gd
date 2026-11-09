@@ -19,6 +19,12 @@ const SATELLITE_PATH := "res://map/map_data/satellite.jpg"
 const WAIT_FRAMES := 3
 const DEFAULT_SIZES := ["1920x1080", "1600x900", "1366x768", "2560x1440"]
 
+## Prefixos de chaves de i18n usados pelo jogo; um rótulo que comece com um
+## deles seguido de ponto é uma chave que vazou para a interface.
+const I18N_PREFIXES := ["alerts", "city", "climate", "common", "deposit", "dock",
+		"econ", "hud", "map", "mode", "month", "pol", "pop", "prod", "product",
+		"relief", "resource", "scope", "trade"]
+
 var _phase := "after"
 var _out_root := "res://docs/ui/captures"
 var _run := ""
@@ -407,6 +413,12 @@ func _check_bounds(control: Control, rect: Rect2, viewport_size: Vector2,
 
 
 func _check_label(label: Label, data: Dictionary) -> void:
+	if _looks_like_key(label.text.strip_edges()):
+		data["issues"].append({
+			"kind": "i18n_key",
+			"node": str(label.get_path()),
+			"text": label.text.strip_edges(),
+		})
 	if label.text.strip_edges().is_empty() or label.autowrap_mode != TextServer.AUTOWRAP_OFF:
 		return
 	var font: Font = label.get_theme_font("font")
@@ -422,6 +434,13 @@ func _check_label(label: Label, data: Dictionary) -> void:
 			"text_width": snappedf(width, 0.1),
 			"box_width": snappedf(label.size.x, 0.1),
 		})
+
+
+## Detecta chaves de i18n vazando como texto (prefixo conhecido + ponto).
+func _looks_like_key(text: String) -> bool:
+	if text.length() < 6 or text.contains(" "):
+		return false
+	return I18N_PREFIXES.has(text.get_slice(".", 0)) and text.contains(".")
 
 
 func _check_scroll(scroll: ScrollContainer, data: Dictionary) -> void:

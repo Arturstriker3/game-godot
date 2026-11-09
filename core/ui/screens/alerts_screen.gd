@@ -91,7 +91,7 @@ func _row(alert: Dictionary) -> Control:
 	text.add_child(UiKit.paragraph(
 			I18n.t(KIND_KEYS[String(alert["kind"])], {
 				"amount": UiKit.number(float(alert.get("amount", 0.0))) + " t",
-				"days": "%.1f" % float(alert.get("coverage", 0.0)),
+				"days": UiKit.number(float(alert.get("coverage", 0.0)), 1),
 			}), UiKit.FS_CAPTION + 1, UiKit.TEXT_DIM, 420.0))
 	box.add_child(text)
 

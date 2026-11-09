@@ -211,15 +211,20 @@ substituir as cinco cidades atuais.
   dia, quatro indicadores (população, estoque, déficit, trânsito), velocidade,
   idioma e menu. Os indicadores têm tooltip explicando a origem do número;
   ao pausar, o rótulo do dia troca para “Pausado” em `WARNING`.
-- Doca à direita, 108 px de largura, quatro botões de 52 px (Economia,
-  Comércio, Produção, Política) com tooltip “1 · Economia” etc. O botão ativo
-  usa fundo `BG_DEEP` e borda latão.
+- Doca à direita, 108 px de largura, cinco botões de 52 px (Economia,
+  Comércio, Produção, População, Política) com tooltip “1 · Economia” etc. O
+  botão ativo usa fundo `BG_DEEP` e borda latão.
 - Janela modal responsiva: 86% × 84% da tela, limitada a 960×560 e 1800×1000;
-  em 1920×1080 resulta em 1651×907. Cabeçalho com voltar (só no detalhe da
-  cidade), título, subtítulo, dica contextual e fechar; rodapé com atalhos e
-  selo `ESC`.
-- Detalhe da cidade é sub-tela dentro da mesma janela; o título do cabeçalho
-  passa a ser o nome da cidade e o voltar reaparece.
+  em 1920×1080 resulta em 1651×907. Cabeçalho com voltar (quando há contexto
+  empilhado), breadcrumb, título, subtítulo, dica contextual e fechar; rodapé
+  com atalhos e selo `ESC`.
+- O painel de cidade (`city_panel.gd`) é empilhado sobre a tela de origem e
+  organizado em cinco abas (Visão geral, População, Produção, Mercado,
+  Recursos); o breadcrumb mostra a trilha e o voltar retorna ao contexto
+  anterior sem abrir outra janela.
+- Barra de modos de mapa no canto inferior esquerdo (político, geográfico,
+  população, econômico, industrial, recursos); trocar de modo só altera
+  uniformes da camada, sem reconstruir a geometria.
 - Mapa sempre visível atrás; véu `OVERLAY` apenas com janela ou menu aberto.
 - Menu de pausa (Esc): cartão de 460 px com título Cinzel, retomar, créditos,
   sair e atalhos.
@@ -239,13 +244,19 @@ substituir as cinco cidades atuais.
 
 ## Navegação
 
-- `1`–`4` abrem os quatro painéis; `Esc` fecha o menu, depois a janela, depois
+- `1`–`5` abrem os cinco painéis; `Esc` fecha o menu, depois a janela, depois
   abre o menu.
+- Pilha de contexto (`_stack`): um painel é a raiz; abrir uma cidade ou uma
+  cidade produtora empilha um nível e o breadcrumb (`Economia › Londres`)
+  mostra onde o jogador está. O mesmo vale para os atalhos dos alertas e das
+  tabelas de mercado, que abrem a cidade já na aba correspondente.
+- O botão `!N` na barra superior abre a lista de alertas econômicos
+  priorizados; cada linha leva à cidade responsável.
 - Todo controle interativo tem `focus_mode = FOCUS_ALL`; ao abrir uma tela o
-  HUD foca o primeiro controle útil (`UiKit.focus_first`); no detalhe da
-  cidade o foco vai para “Voltar”.
-- Abas, filtros e linhas de tabela também recebem foco; o anel de foco é latão
-  de 1 px, sem glow.
+  HUD foca o primeiro controle útil (`UiKit.focus_first`) e, se a tela não tem
+  controle acionável (por exemplo, lista de alertas vazia), foca o fechar.
+- Abas, filtros, cabeçalhos ordenáveis e linhas de tabela também recebem foco;
+  o anel de foco é latão de 1 px, sem glow.
 
 ## Componentes
 
@@ -259,7 +270,8 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
   negative/warning/steel), `metric`, `paragraph`, `label`, `caption`, `title`,
   `rule`, `spacer`.
 - Dados: `table_header` / `table_row` (peso relativo por coluna, números à
-  direita, reticências quando falta largura), `row_button` (hover + seleção +
+  direita, reticências quando falta largura), `sort_header` (cabeçalho
+  ordenável com seta e coluna ativa em latão), `row_button` (hover + seleção +
   foco), `meter`.
 - Estados: `empty_state`, `error_state`, `loading_state`, `toast`.
 - Tema: `build_theme()` aplica a paleta a Button, LineEdit, OptionButton,
@@ -294,9 +306,12 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
 - Todo texto vem de `core/i18n/i18n.gd` (pt-BR, en, es), trocável em tempo de
   execução; as telas se reconstroem ao trocar o idioma.
 - Pedidos de comércio são guardados em um histórico rolante de 240 entradas no
-  HUD, para a janela de Comércio não ficar vazia nos dias sem pedido novo.
-- Onde a simulação não tem dado (produção/construção, diplomacia), a tela
-  declara a ausência em vez de inventar números.
+  HUD, para a janela de Comércio não ficar vazia nos dias sem pedido novo. A
+  aba de mercado usa apenas os pedidos do dia atual; o histórico serve às abas
+  de pedidos e rotas.
+- Onde a simulação não tem dado (produção/construção, diplomacia, preços,
+  desemprego, salários, poupança, migração), a tela declara a ausência em vez
+  de inventar números.
 
 ## Auditoria (Fase 1) — o que foi corrigido
 
@@ -327,9 +342,14 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
 ## Arquivos
 
 - `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes.
-- `core/ui/hud.gd` — barra, doca, janela, menu e histórico de pedidos.
-- `core/ui/city_detail.gd` — sub-tela de cidade.
-- `core/ui/screens/*.gd` — Economia, Comércio, Produção, Política.
+- `core/ui/hud.gd` — barra, doca, janela, pilha de contexto, menu e histórico
+  de pedidos.
+- `core/ui/city_panel.gd` — painel de cidade com cinco abas.
+- `core/ui/alerts.gd` — derivação dos alertas econômicos priorizados.
+- `core/ui/screens/*.gd` — Economia, Comércio (pedidos, rotas, mercado),
+  Produção, População, Política e Alertas.
+- `core/ui/city_detail.gd` — painel anterior da cidade, mantido como legado e
+  não usado pelo HUD.
 - `core/i18n/i18n.gd` — textos em pt-BR, en e es.
 - `tools/ui_capture.gd` / `.tscn` — captura e auditoria de layout.
 - `docs/ui/` — capturas antes/depois e métricas objetivas.

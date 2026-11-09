@@ -107,3 +107,34 @@ alterados indicam.
   leitura. As métricas de contraste p95−p5 não avaliam contraste local de texto.
 - Avaliação estética final exige abrir as capturas ou submetê-las a um modelo
   com visão.
+
+## Frente 5 — UX econômica (ciclo de QA 1)
+
+Roteiro ampliado para 21 estados: além dos nove anteriores, cobre as cinco abas
+do painel de cidade, a lista de alertas, a aba de cidades da produção, o fluxo
+cidade → cidade produtora → voltar, o mercado com e sem resultado e as duas
+abas de População.
+
+| Conjunto | Caminho | Resoluções | Estados |
+|---|---|---|---|
+| Frente 5 | `captures/frente5/flow3/` | 1920×1080, 1600×900, 1366×768, 2560×1440 | 21 |
+
+Resultado do ciclo: **84 capturas**, **0** problemas de layout (`offscreen`,
+`text_overflow`, `text_elided`, `focus_hidden`) e **0** estados com janela sem
+foco. O relatório também registra a pilha de contexto de cada estado — por
+exemplo, `screen:production > city:GBR-LDN > city:FRA-PAR` no clique numa cidade
+produtora e `screen:production > city:GBR-LDN` depois de voltar.
+
+Correções do ciclo verificadas pela captura e pela suíte headless:
+
+- a aba de mercado passou a somar importações/exportações **apenas do dia
+  atual** (antes usava o histórico rolante de 240 pedidos do HUD);
+- cobertura de estoque sem demanda passou a exibir “—” em vez de `0,0 d`,
+  alinhada ao painel de cidade e à tela de produção;
+- os hints do painel de cidade eram renderizados como chave crua em 8 dos 84
+  estados auditados (`city.income_index.note`, `city.history.note`); agora são
+  traduzidos, e a auditoria ganhou a checagem `i18n_key`, que reprova qualquer
+  rótulo começando por um prefixo de chave conhecido;
+- cobertura, índice de renda e qualidade de depósito passaram a usar o
+  separador decimal do idioma (`0,0 d` em vez de `0.0 d`).
+

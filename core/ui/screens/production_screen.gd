@@ -240,7 +240,9 @@ static func _tons(value: float) -> String:
 
 
 func _coverage_text(days: float) -> String:
-	return I18n.t("common.na") if is_inf(days) else "%.1f d" % days
+	if is_inf(days):
+		return I18n.t("common.na")
+	return UiKit.number(days, 1) + " " + I18n.t("common.days_short")
 
 
 func _coverage_color(days: float) -> Color:

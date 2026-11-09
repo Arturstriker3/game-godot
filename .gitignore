@@ -16,6 +16,9 @@ addons/godot_mcp/
 # Dados brutos baixados para gerar as definições (não versionar)
 tools/data/
 
+# Capturas geradas pelos testes de UI (regeneráveis, centenas de MB)
+docs/ui/captures/
+
 # Godot .gitignore config
 #
 # Aims to encompass the most commonly found files that we don't want committed

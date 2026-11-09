@@ -230,7 +230,7 @@ func _refresh_values(city: Dictionary) -> void:
 	_set_value("jobs.population", _compact(pop))
 	_set_value("jobs.jobs", UiKit.number(jobs))
 	_set_value("jobs.per_k", UiKit.number(jobs / maxf(pop, 1.0) * 1000.0, 1))
-	_set_value("jobs.income", "%.2f" % income, _level_color(income))
+	_set_value("jobs.income", UiKit.number(income, 2), _level_color(income))
 	_set_meter("jobs.income", income, _level_color(income))
 	_set_value("jobs.industry", "%.0f%%" % (industrialization * 100.0),
 			_level_color(industrialization))
@@ -452,7 +452,8 @@ func _build_resources(grid: GridContainer, city: Dictionary) -> void:
 # --- Cartões -----------------------------------------------------------------
 
 func _section(grid: GridContainer, title_key: String, hint_text: String) -> UiSection:
-	var section := UiSection.new(I18n.t(title_key), hint_text)
+	# O hint chega como chave de i18n; textos literais ("—", "") voltam iguais.
+	var section := UiSection.new(I18n.t(title_key), I18n.t(hint_text))
 	section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_child(section)
 	return section
@@ -688,7 +689,7 @@ func _deposits_card(city_id: String, center: Vector2) -> Control:
 			I18n.t("resource.%s" % deposit.get("resource", "")),
 			I18n.t("deposit.%s" % deposit.get("status", "")),
 			"%s kt" % UiKit.number(float(deposit.get("recoverable_kt", 0.0))),
-			"%.2f" % float(deposit.get("quality", 0.0)),
+			UiKit.number(float(deposit.get("quality", 0.0)), 2),
 			"%d m" % int(deposit.get("depth_m", 0)),
 		], RESOURCE_TABLE_WEIGHTS, [
 			UiKit.TEXT, UiKit.STEEL, UiKit.TEXT, UiKit.TEXT_DIM, UiKit.TEXT_DIM,
@@ -829,7 +830,7 @@ static func _coverage(stock: float, need: float) -> float:
 static func _coverage_text(days: float) -> String:
 	if is_inf(days):
 		return I18n.t("common.na")
-	return "%.1f d" % days
+	return UiKit.number(days, 1) + " " + I18n.t("common.days_short")
 
 
 static func _coverage_color(days: float) -> Color:

@@ -418,7 +418,7 @@ func _market_row(data: Dictionary) -> Control:
 		UiKit.number(float(metrics["need"])) + " t",
 		UiKit.number(float(metrics["stockpile"])) + " t",
 		UiKit.number(float(metrics["deficit"])) + " t",
-		UiKit.number(float(metrics["coverage"]), 1) + " " + I18n.t("common.days_short"),
+		_coverage_label(float(metrics["coverage"])),
 		UiKit.number(float(metrics["imported"])) + " t",
 		UiKit.number(float(metrics["exported"])) + " t",
 	], MARKET_WEIGHTS, [
@@ -427,7 +427,7 @@ func _market_row(data: Dictionary) -> Control:
 		UiKit.TEXT_DIM,
 		UiKit.TEXT,
 		UiKit.NEGATIVE if float(metrics["deficit"]) > 0.0 else UiKit.POSITIVE,
-		UiKit.coverage_color(float(metrics["coverage"])),
+		_coverage_tone(float(metrics["coverage"])),
 		UiKit.STEEL,
 		UiKit.TEXT_MUTED,
 	], MARKET_ALIGN))
@@ -461,7 +461,7 @@ func _national_strip() -> Control:
 	row.add_child(_pair(I18n.t("econ.col.deficit"),
 			UiKit.number(float(totals["deficit"])) + " t"))
 	row.add_child(_pair(I18n.t("city.coverage"),
-			UiKit.number(float(totals["coverage"]), 1) + " " + I18n.t("common.days_short")))
+			_coverage_label(float(totals["coverage"]))))
 
 	var note := UiKit.caption(I18n.t("trade.market.prices"), UiKit.TEXT_MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -481,8 +481,12 @@ func _city_market_metrics(city: Dictionary) -> Dictionary:
 	var stock := float(city.get("stockpile", 0.0))
 	var imported := 0.0
 	var exported := 0.0
+	var today := int(_summary.get("day", 0))
 
 	for order in _orders():
+		# `trade_log` acumula vários dias; os fluxos do mercado são do dia atual.
+		if order.has("day") and int(order["day"]) != today:
+			continue
 		var amount := float(order.get("amount", 0.0))
 		if String(order.get("to_city", "")) == String(city["id"]):
 			imported += amount
@@ -494,10 +498,23 @@ func _city_market_metrics(city: Dictionary) -> Dictionary:
 		"need": need,
 		"stockpile": stock,
 		"deficit": float(city.get("deficit", 0.0)),
-		"coverage": stock / need if need > 0.0 else 0.0,
+		"coverage": stock / need if need > 0.0 else INF,
 		"imported": imported,
 		"exported": exported,
 	}
+
+
+## Cobertura de estoque em dias; sem demanda, mostra ausência em vez de zero.
+func _coverage_label(days: float) -> String:
+	if not is_finite(days):
+		return I18n.t("common.na")
+	return UiKit.number(days, 1) + " " + I18n.t("common.days_short")
+
+
+func _coverage_tone(days: float) -> Color:
+	if not is_finite(days):
+		return UiKit.TEXT_MUTED
+	return UiKit.coverage_color(days)
 
 
 ## Aplica busca, filtro e ordenação sobre os dados reais, sem tocar na simulação.
@@ -552,7 +569,7 @@ func _national_totals() -> Dictionary:
 		"need": need,
 		"stockpile": stock,
 		"deficit": deficit,
-		"coverage": stock / need if need > 0.0 else 0.0,
+		"coverage": stock / need if need > 0.0 else INF,
 	}
 
 
