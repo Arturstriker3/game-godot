@@ -79,7 +79,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 
 - **Dois sistemas de mapa coexistem:**
   1. **Jogo principal — `map/city_world.gd`:** duas bases visuais alternáveis por modo:
-     - **Modo "political" (atlas):** base chapada via `atlas_base.gdshader` (água teal `#2E5B5C`, terra parchment `#E8DFC7`), com preenchimento opaco das 5 nações e fronteiras nítidas via `political_overlay.gdshader` (uniforms `atlas_mode=true`, `atlas_fill_opacity=0.88`, `atlas_border_opacity=0.95`). Estilo atlas histórico sem textura de satélite.
+     - **Modo "political" (atlas):** base chapada via `atlas_base.gdshader` (água teal `#2E5B5C`, terra parchment `#E8DFC7`), com preenchimento opaco das 5 nações via `political_overlay.gdshader` (`atlas_mode=true`, `atlas_fill_opacity=0.88`, `atlas_border_opacity=0.95`). Fronteiras alargadas por amostragem em cruz + `smoothstep` (anti-aliasing) e **linha de costa** derivada do `nav_mask`. Rótulos de cidade em tom claro com halo escuro e `no_depth_test` (não somem sobre o preenchimento nem atrás de prédios).
      - **Demais modos:** base de satélite `satellite.jpg` (8192×4096, Esri World Imagery) via `satellite_map.gdshader`, com overlay político sutil.
      - Modos de calor (população, economia, indústria, recursos) via `map_modes.gdshader` + `map_mode_layer.gd`.
   2. **Editor — `map/map.gd` + `map/map_mode.gd`:** mapa raster de províncias (SubViewport/Sprite2D sobre plano 3D), com SDF/JFA de fronteiras; usado por `editor/editor.tscn` e `tools/map_capture.gd`, **não** pelo jogo.

@@ -328,6 +328,10 @@ func _build_political_layer() -> void:
 	_political_material.shader = POLITICAL_SHADER
 	_political_material.set_shader_parameter("fill_texture", FILL_TEXTURE)
 	_political_material.set_shader_parameter("border_texture", BORDERS_TEXTURE)
+	_political_material.set_shader_parameter("nav_mask", NAV_MASK_TEXTURE)
+	# 1 texel de cada textura, para engrossar/suavizar fronteira e costa.
+	_political_material.set_shader_parameter("border_texel", Vector2(1.0 / 5000.0, 1.0 / 2500.0))
+	_political_material.set_shader_parameter("nav_texel", Vector2(1.0 / 2500.0, 1.0 / 1250.0))
 
 	_political_layer = MeshInstance3D.new()
 	_political_layer.name = "PoliticalLayer"
@@ -445,9 +449,13 @@ func _add_city_label(position: Vector3, city_name: String, color: Color,
 	label.font = LABEL_FONT
 	label.font_size = 30
 	label.pixel_size = 0.019
-	label.modulate = color.lightened(0.35)
-	label.outline_modulate = Color(0.03, 0.05, 0.05, 0.9)
-	label.outline_size = 10
+	# Texto claro com halo escuro: lê sobre qualquer preenchimento de nação e
+	# não se confunde com a cor do país. `color` fica só como dica de identidade.
+	label.modulate = Color("#E8E2D0")
+	label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
+	label.outline_size = 12
+	label.no_depth_test = true
+	label.render_priority = 10
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.position = position + Vector3(0.0, 1.0, 0.0)
 	_content.add_child(label)
