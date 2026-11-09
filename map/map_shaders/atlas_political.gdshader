@@ -9,7 +9,7 @@ shader_type spatial;
 // escadinha das máscaras ampliadas.
 //
 // Duas resoluções: uma região Europa (~1,9 km/texel) e o mundo inteiro
-// (~9,8 km/texel), misturadas na borda da região.
+// (~4,9 km/texel), misturadas na borda da região.
 //
 // Composição: terreno (luminância do satélite) × cor da nação, faixa de cor
 // junto à fronteira, divisas de província, mar com batimetria de costa e
@@ -39,7 +39,7 @@ uniform float dynamic_band_width = 0.3;
 uniform vec4 region_bounds = vec4(-25.0, 33.0, 45.0, 72.0);
 // Tamanho de um texel em unidades do plano (plano = 1000 × 500 unidades).
 uniform float region_texel = 0.047471;
-uniform float world_texel = 0.244141;
+uniform float world_texel = 0.122070;  // 1000 / 8192 (mundo 8192 px, ~4,9 km/texel)
 
 // Mar (a faixa rasa precisa caber no alcance da costa na região: 3,0 u)
 uniform vec3 sea_deep : source_color = vec3(0.110, 0.204, 0.239);
@@ -223,7 +223,7 @@ void fragment() {
 	land *= mix(1.0, 0.90, 1.0 - smoothstep(0.0, 0.35, coast));
 
 	// Divisas de província: finas, somem ao afastar a câmera. Só na região —
-	// fora dela a divisa admin-1 fica poluída em 9,8 km/texel e não é desenhada.
+	// fora dela a divisa admin-1 fica poluída em 4,9 km/texel e não é desenhada.
 	// Com território dinâmico, só onde os donos são iguais (senão duplica a
 	// fronteira grossa).
 	float province_fade = 1.0 - smoothstep(0.05, 0.13, px);

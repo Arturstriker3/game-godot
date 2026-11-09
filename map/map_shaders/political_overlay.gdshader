@@ -31,7 +31,7 @@ uniform bool dynamic_territory = false;
 // Janela da região em graus e tamanho de texel (iguais ao gerador e ao atlas).
 uniform vec4 region_bounds = vec4(-25.0, 33.0, 45.0, 72.0);
 uniform float region_texel = 0.047471;
-uniform float world_texel = 0.244141;
+uniform float world_texel = 0.122070;  // 1000 / 8192 (mundo 8192 px, ~4,9 km/texel)
 
 uniform vec4 border_color : source_color = vec4(0.070, 0.085, 0.090, 1.0);
 uniform vec4 coast_color : source_color = vec4(0.10, 0.16, 0.16, 1.0);

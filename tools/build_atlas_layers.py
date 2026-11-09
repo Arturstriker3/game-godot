@@ -53,14 +53,14 @@ ADMIN1 = os.path.join(NE_DIR, "ne_10m_admin_1_states_provinces",
 # Região de alta resolução (graus). Precisa bater com `region_bounds` no shader.
 REGION = (-25.0, 33.0, 45.0, 72.0)  # lon0, lat0, lon1, lat1
 REGION_W = 4096
-WORLD_W = 4096
+WORLD_W = 8192  # ~4,9 km/texel; era 4096 (~9,8 km/texel)
 SUPERSAMPLE = 2
 
 # Plano global do jogo em pixels (o mundo cilíndrico é 5000×2500).
 GLOBAL_W = 5000.0
 GLOBAL_H = 2500.0
 
-# Escala linear px -> px global: região (4096 px sobre 70°) e mundo (4096 px
+# Escala linear px -> px global: região (4096 px sobre 70°) e mundo (WORLD_W px
 # sobre 360°). A área escala com o quadrado.
 REGION_TO_GLOBAL = (REGION[2] - REGION[0]) / REGION_W * (GLOBAL_W / 360.0)
 WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
@@ -254,31 +254,37 @@ def encode(values, scale, offset):
     return np.clip(np.round(offset + values * scale), 0, 255).astype(np.uint8)
 
 
-def build_layer(name, bounds, width, countries, province_shapes,
-                province_countries=None, province_ids=None, supersample=SUPERSAMPLE):
-    hi = Grid(bounds, width * supersample)
-    lo_height = hi.height // supersample
-    grid = Grid(bounds, width)
-    print(f"[{name}] raster {hi.width}x{hi.height} -> {width}x{lo_height}")
+def rasterize_ids(grid, polygons, values):
+    """Rasteriza ids em uint16 (países e províncias cabem em 16 bits)."""
+    return grid.rasterize(polygons, values).astype(np.uint16)
 
-    owners = hi.rasterize([c["parts"] for c in countries], range(1, len(countries) + 1))
-    land = owners != 0
 
+def coast_field(land):
+    """Distância assinada à costa em texels da grade alta (>0 = terra)."""
+    if not land.any():
+        return np.full(land.shape, -1e4, dtype=np.float32)
+    if land.all():
+        return np.full(land.shape, 1e4, dtype=np.float32)
     coast = distance_transform_edt(land).astype(np.float32)
     coast -= distance_transform_edt(~land).astype(np.float32)
-    coast_lo = downsample(coast, supersample) / supersample
-    del coast
+    return coast
+
+
+def process_rows(owners, provinces, supersample):
+    """Campos SDF (resolução baixa) de uma janela de linhas da grade alta.
+
+    Devolve (costa, fronteira de país, divisa admin-1), cada um com
+    altura = linhas // supersample."""
+    land = owners != 0
+    coast_lo = downsample(coast_field(land), supersample) / supersample
 
     owner_neighbor = border_neighbors(owners, land)
     border_field = signed_border_distance(owners, owner_neighbor)
     # O salto do eixo medial continua um salto (o shader o descarta pelo gradiente).
     borders_lo = downsample_signed(border_field, supersample) / supersample
-    border_unsigned_lo = np.abs(borders_lo)
     del border_field, owner_neighbor
 
-    province_ids_lo = None
-    if province_shapes:
-        provinces = hi.rasterize(province_shapes, province_ids)
+    if provinces is not None:
         valid = land & (provinces != 0)
         # Divisas de província em TODOS os pares (inclusive entre países): o
         # canal B também marca a fronteira entre nações, para a fase dinâmica.
@@ -286,17 +292,56 @@ def build_layer(name, bounds, width, countries, province_shapes,
         province_field = signed_border_distance(provinces, province_neighbor)
         provinces_lo = downsample_signed(province_field, supersample) / supersample
         del province_neighbor, province_field
-
-        # Raster de id de província na resolução baixa (amostragem pontual).
-        province_ids_lo = provinces[::supersample, ::supersample][:coast_lo.shape[0], :coast_lo.shape[1]]
-        del provinces
     else:
         provinces_lo = np.full(coast_lo.shape, 1e6, dtype=np.float32)
+    return coast_lo, borders_lo, provinces_lo
 
-    shape = coast_lo.shape
-    borders_lo = borders_lo[:shape[0], :shape[1]]
-    border_unsigned_lo = border_unsigned_lo[:shape[0], :shape[1]]
-    provinces_lo = provinces_lo[:shape[0], :shape[1]]
+
+def build_layer(name, bounds, width, countries, province_shapes,
+                province_countries=None, province_ids=None, supersample=SUPERSAMPLE,
+                band_rows=None, color_step=1):
+    """Constrói uma camada do atlas.
+
+    `band_rows` (linhas da grade BAIXA) processa os campos de distância em
+    faixas horizontais com margem, para caber em memória em camadas enormes
+    (mundo em 8192 px). A margem cobre o alcance codificado dos SDFs (costa
+    ±64 texels baixos = 128 altos), então o resultado é igual ao da grade
+    inteira. `color_step` > 1 grava `<name>_color.png` em resolução menor
+    (a cor é chapada por país; não precisa da resolução do SDF)."""
+    hi = Grid(bounds, width * supersample)
+    lo_height = hi.height // supersample
+    lo_width = width
+    grid = Grid(bounds, width)
+    print(f"[{name}] raster {hi.width}x{hi.height} -> {width}x{lo_height}")
+
+    owners = rasterize_ids(hi, [c["parts"] for c in countries], range(1, len(countries) + 1))
+    provinces = None
+    if province_shapes:
+        provinces = rasterize_ids(hi, province_shapes, province_ids)
+
+    coast_lo = np.empty((lo_height, lo_width), dtype=np.float32)
+    borders_lo = np.empty((lo_height, lo_width), dtype=np.float32)
+    provinces_lo = np.empty((lo_height, lo_width), dtype=np.float32)
+    margin = 160 if band_rows else 0  # linhas altas; > 128 (alcance da costa)
+    step = band_rows or lo_height
+    for start in range(0, lo_height, step):
+        stop = min(start + step, lo_height)
+        hi_start = max(start * supersample - margin, 0)
+        hi_stop = min(stop * supersample + margin, hi.height)
+        if band_rows:
+            print(f"[{name}] faixa {start}-{stop} / {lo_height}")
+        c, b, p = process_rows(
+            owners[hi_start:hi_stop, :],
+            provinces[hi_start:hi_stop, :] if provinces is not None else None,
+            supersample)
+        off = (start * supersample - hi_start) // supersample
+        n = stop - start
+        coast_lo[start:stop] = c[off:off + n, :lo_width]
+        borders_lo[start:stop] = b[off:off + n, :lo_width]
+        provinces_lo[start:stop] = p[off:off + n, :lo_width]
+        del c, b, p
+
+    border_unsigned_lo = np.abs(borders_lo)
 
     sdf = np.dstack([
         encode(coast_lo, SDF_COAST_SCALE, 128.0),
@@ -304,19 +349,29 @@ def build_layer(name, bounds, width, countries, province_shapes,
         encode(provinces_lo, SDF_LINE_SCALE, 128.0),
     ])
     Image.fromarray(sdf, "RGB").save(os.path.join(OUT, f"{name}_sdf.png"), optimize=True)
+    del sdf, coast_lo, borders_lo, provinces_lo
 
-    owners_lo = owners[::supersample, ::supersample][:coast_lo.shape[0], :coast_lo.shape[1]]
-    del owners, land
+    province_ids_lo = None
+    if provinces is not None:
+        # Raster de id de província na resolução baixa (amostragem pontual).
+        province_ids_lo = provinces[::supersample, ::supersample][:lo_height, :lo_width].astype(np.int32)
+    del provinces
+
+    owners_lo = owners[::supersample, ::supersample][:lo_height, :lo_width]
+    del owners
     palette = np.zeros((len(countries) + 1, 3), dtype=np.uint8)
     for index, country in enumerate(countries, start=1):
         palette[index] = country_color(country)
     land_lo = owners_lo != 0
     # Estende a cor da terra sobre o mar: o filtro bilinear nunca mistura a
     # cor de uma nação com "nada" na costa (era a causa do halo branco).
-    _, nearest = distance_transform_edt(~land_lo, return_indices=True)
+    nearest = distance_transform_edt(~land_lo, return_distances=False, return_indices=True)
     owners_filled = owners_lo[nearest[0], nearest[1]]
+    del nearest
     color = palette[owners_filled]
-    Image.fromarray(color, "RGB").save(os.path.join(OUT, f"{name}_color.png"), optimize=True)
+    color_out = color[::color_step, ::color_step] if color_step > 1 else color
+    Image.fromarray(np.ascontiguousarray(color_out), "RGB").save(
+        os.path.join(OUT, f"{name}_color.png"), optimize=True)
 
     if province_ids_lo is not None:
         write_province_png(name, province_ids_lo)
@@ -329,7 +384,6 @@ def build_layer(name, bounds, width, countries, province_shapes,
         "color": color,
         "province_ids": province_ids_lo,
     }
-
 
 def country_color(country):
     game_tag = GAME_TAGS.get(country["tag"])
@@ -344,7 +398,7 @@ def write_province_png(name, ids_lo):
     Pixels com id 0 (mar/lacunas) recebem o id da província de terra mais
     próxima (mesmo preenchimento usado para a cor política), para o shader
     nunca amostrar id 0 e o preenchimento por filtro nunca misturar com "nada"."""
-    _, nearest = distance_transform_edt(ids_lo == 0, return_indices=True)
+    nearest = distance_transform_edt(ids_lo == 0, return_distances=False, return_indices=True)
     ids_filled = ids_lo[nearest[0], nearest[1]]
     del nearest
     rgb = np.zeros((*ids_filled.shape, 3), dtype=np.uint8)
@@ -457,7 +511,7 @@ def write_minimap(world):
     ink = np.array([24, 28, 30], dtype=np.float32)
     land = world["land"][..., None]
     image = np.where(land, color * 0.92, sea)
-    border = (world["borders"] < 1.0)[..., None] & land
+    border = (world["borders"] < 1.0 * WORLD_W / 4096)[..., None] & land
     image = np.where(border, ink, image)
     small = Image.fromarray(image.astype(np.uint8), "RGB").resize((512, 256), Image.LANCZOS)
     small.save(os.path.join(OUT, "minimap.png"), optimize=True)
@@ -493,7 +547,8 @@ def main():
     # departamento de Paris, e o id diverge do raster da região).
     world_ids = list(range(1, len(provinces) + 1))
     world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
-                        provinces, province_countries, world_ids, supersample=SUPERSAMPLE)
+                        provinces, province_countries, world_ids, supersample=SUPERSAMPLE,
+                        band_rows=512, color_step=max(WORLD_W // 4096, 1))
     write_provinces_json(region, world, province_countries, countries)
     write_minimap(world)
     print(f"escrito em {OUT}")
