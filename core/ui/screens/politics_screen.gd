@@ -13,7 +13,7 @@ var _body: VBoxContainer
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", 12)
+	add_theme_constant_override("separation", UiKit.SPACE_MD)
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 	add_child(_build_tabs())
@@ -24,10 +24,12 @@ func _ready() -> void:
 	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_body.add_theme_constant_override("separation", 4)
 
+	var card := UiKit.card(UiKit.SPACE_MD)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.add_child(_body)
+	scroll.add_child(card)
+	card.add_child(_body)
 	add_child(scroll)
 
 	_render()
@@ -124,15 +126,16 @@ func _render_diplomacy() -> void:
 			else:
 				grid.add_child(_matrix_cell(I18n.t("pol.status.peace"), false, UiKit.POSITIVE))
 
-	var note := UiKit.label(I18n.t("pol.relations.empty"), 12, UiKit.TEXT_MUTED)
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var note := UiKit.paragraph(I18n.t("pol.relations.empty"), UiKit.FS_CAPTION + 1,
+			UiKit.TEXT_MUTED)
 	_body.add_child(UiKit.rule())
 	_body.add_child(note)
 
 
 ## Célula da matriz de relações; cabeçalhos usam caixa alta pequena.
 func _matrix_cell(text: String, is_header: bool, color: Color = UiKit.TEXT) -> Label:
-	var cell := UiKit.caption(text, color) if is_header else UiKit.label(text, 12, color)
+	var cell := UiKit.caption(text, color) if is_header \
+			else UiKit.label(text, UiKit.FS_SMALL, color)
 	cell.custom_minimum_size = Vector2(96.0, 28.0)
 	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -141,19 +144,18 @@ func _matrix_cell(text: String, is_header: bool, color: Color = UiKit.TEXT) -> L
 
 
 func _render_dossier() -> void:
-	var intro := UiKit.label(I18n.t("pol.dossier.empty"), 12, UiKit.TEXT_MUTED)
-	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var intro := UiKit.paragraph(I18n.t("pol.dossier.empty"), UiKit.FS_CAPTION + 1,
+			UiKit.TEXT_MUTED)
 	_body.add_child(intro)
 	_body.add_child(UiKit.rule())
 
 	for nation in _summary.get("nations", []):
 		var deficit := float(nation["deficit"])
 		var key := "pol.dossier.line" if deficit > 0.0 else "pol.dossier.healthy"
-		var text := UiKit.label(I18n.t(key, {
+		var text := UiKit.paragraph(I18n.t(key, {
 			"nation": I18n.nation_name(nation["tag"]),
 			"cities": UiKit.number(float(nation["city_count"])),
 			"population": UiKit.number(float(nation["population"])),
 			"deficit": UiKit.number(deficit),
-		}), 14, UiKit.TEXT)
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		}), UiKit.FS_SMALL)
 		_body.add_child(text)

@@ -68,8 +68,8 @@ func desired_lots(seed_value: int, profile: Dictionary, stage: int) -> Array[Dic
 	var total_main := clampi(
 		roundi(intensity * (4.0 + float(stage) * 4.0)), 1, SECTOR_ORDER.size() * SLOTS_PER_ROLE)
 	var main_counts := _distribute(profile, total_main)
-	var total_aux := clampi(
-		roundi(float(total_main) * (0.35 + float(stage) * 0.35)),
+	var aux_raw := roundi(float(total_main) * (0.35 + float(stage) * 0.35))
+	var total_aux := clampi(maxi(aux_raw, 1 if total_main > 0 else 0),
 		0, SECTOR_ORDER.size() * SLOTS_PER_ROLE)
 	var aux_counts := _distribute(profile, total_aux)
 

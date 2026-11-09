@@ -272,9 +272,6 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if Input.is_action_pressed("Exit"):
-		get_tree().quit()
-
 	if event.is_action_pressed("province_select"):
 		shoot_ray(event)
 

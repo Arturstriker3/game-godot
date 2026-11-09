@@ -32,8 +32,8 @@ const SCENARIOS := [
 			"intensity": 0.16, "steel": 0.0, "manufacturing": 0.45,
 			"refining": 0.0, "power": 0.15, "storage": 0.40,
 		},
-		"target": Vector3(0.0, 0.0, 0.0),
-		"distance": 13.0,
+		"target": Vector3(2.5, 0.0, 0.0),
+		"distance": 10.5,
 	},
 	{
 		"name": "Industrial",
@@ -44,8 +44,8 @@ const SCENARIOS := [
 			"intensity": 0.65, "steel": 0.42, "manufacturing": 0.40,
 			"refining": 0.05, "power": 0.08, "storage": 0.05,
 		},
-		"target": Vector3(3.0, 0.0, 0.0),
-		"distance": 18.0,
+		"target": Vector3(2.5, 0.0, 0.0),
+		"distance": 10.5,
 	},
 	{
 		"name": "Polo avançado",
@@ -56,8 +56,8 @@ const SCENARIOS := [
 			"intensity": 1.0, "steel": 0.28, "manufacturing": 0.24,
 			"refining": 0.20, "power": 0.16, "storage": 0.12,
 		},
-		"target": Vector3(3.5, 0.0, 0.0),
-		"distance": 20.0,
+		"target": Vector3(2.5, 0.0, 0.0),
+		"distance": 10.5,
 	},
 ]
 

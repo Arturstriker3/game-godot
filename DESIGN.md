@@ -1,13 +1,16 @@
 # Design system — Open Grand Strategy (HUD)
 
-Interface de comando sobre o mapa, na linguagem de Hearts of Iron III
-modernizada. Implementada em nós `Control` do Godot, com tema construído em
+Interface de comando sobre o mapa, na direção **Industrial Strategy — Premium
+Dark**: grafite, carvão e verde-escuro com acentos discretos de latão e cobre.
+Implementada em nós `Control` do Godot; tokens, tema e componentes em
 `core/ui/ui_kit.gd`.
 
 ## Modo
 
 Operate: o jogador lê o estado da economia e abre a janela certa. Densidade
-alta, hierarquia tipográfica clara, nenhum número inventado.
+alta, hierarquia tipográfica clara, nenhum número inventado. A interface é
+estado puro — os componentes recebem texto e valores já formatados e nunca
+executam lógica econômica.
 
 ## Tokens
 
@@ -21,29 +24,38 @@ Cores (`UiKit`):
 | `PANEL_HOVER` | `#1E2E29` | hover de botões e linhas |
 | `EDGE` | `#2C3B35` | borda de 1 px de painéis |
 | `EDGE_SOFT` | `#22302B` | réguas e trilhos |
+| `OVERLAY` | `rgba(5,8,10,0.62)` | véu atrás de janelas e menu |
 | `TEXT` | `#E2DFD2` | texto principal |
 | `TEXT_DIM` | `#9AA69B` | texto secundário |
 | `TEXT_MUTED` | `#7F8C82` | legendas e notas |
+| `TEXT_INVERSE` | `#0E1715` | texto sobre latão |
 | `BRASS` | `#C9A24A` | estado ativo, valor-chave, frete |
-| `STEEL` | `#6F8F8C` | mercado, modo de transporte |
+| `BRASS_DEEP` | `#8E7134` | pressionado |
+| `COPPER` | `#B0764A` | acento secundário |
+| `STEEL` | `#6F8F8C` | mercado, trânsito, modo de transporte |
 | `POSITIVE` | `#7FA86B` | sem déficit |
 | `NEGATIVE` | `#D26A5F` | déficit |
-| `WARNING` | `#D08A3E` | cobertura entre 2 e 7 dias |
+| `WARNING` | `#D08A3E` | cobertura entre 2 e 7 dias, pausa |
 
 Tipografia:
 
-- Títulos: **Cinzel** (serifa lapidar, peso 600), 18–26 px.
-- Dados, corpo e botões: **Barlow Condensed** (sans condensada), 13–16 px.
-- Cabeçalho de coluna e legenda: Barlow Condensed SemiBold, 12 px, caixa alta.
+- Títulos e nome do jogo: **Cinzel** (peso 600 via `FontVariation`), 19–26 px.
+- Corpo, dados e botões: **Barlow Condensed**, 11–15 px.
+- Cabeçalho de coluna e legenda: Barlow Condensed SemiBold, 11 px, caixa alta.
+- Escala fixa: 26 / 19 / 15 / 15 / 13 / 11 px (`FS_DISPLAY`…`FS_CAPTION`).
 - Números com separador de milhar do idioma ativo (`UiKit.number`).
 - Fontes self-hosted em `assets/fonts/` (licença OFL ao lado de cada arquivo).
 
-Forma:
+Forma e ritmo:
 
 - Borda sempre 1 px; raio 2 px em painéis e 6–12 px em botões.
-- Sem sombras projetadas, sem gradientes, sem vidro.
+- Sem sombras projetadas, sem gradientes, sem vidro, sem glow.
 - Réguas de 1 px (`UiKit.rule`) separam cabeçalho, colunas e tabela.
-- Espaçamento: 4/6/10/12/14/18 px; mais espaço acima de um título que abaixo.
+- Espaçamento em escala fixa: 4 / 8 / 12 / 16 / 24 px (`SPACE_XS`…`SPACE_XL`).
+- Controle padrão de 30 px de altura; doca de 108 px de largura por 52 px de
+  altura de botão.
+- Movimento só em hover/foco: 0,12 s (`DURATION_FAST`) e 0,20 s (`DURATION`).
+
 
 ## Mapa de satélite
 
@@ -123,6 +135,67 @@ A cidade cresce em lotes de 0,5 unidade (~25 m) a partir de uma biblioteca de
   cidade média europeia com os 12 módulos e renderiza
   `docs/urban_art/reference_city.png`.
 
+## Cidades industriais dinâmicas
+
+O crescimento industrial é independente do tecido urbano: a cidade pode ser uma
+metrópole comercial com pouco parque produtivo ou uma cidade pequena dominada
+por siderurgia e manufatura.
+
+- **Leitura da economia:** `core/urban/industry_profile.gd` deriva cinco setores
+  (aço, manufatura, refino, energia e armazenagem) dos indicadores que já vêm do
+  `EconomySim` — produção, industrialização, renda e estoque. Não há economia
+  paralela: o viés por cidade só redistribui o peso relativo entre setores.
+- **Módulos:** `tools/blender/city_kit.py` gera complexos de siderurgia (alto-forno
+  e chaminés), manufatura (galpões serrilhados), refino (colunas e tanques),
+  energia (torres de arrefecimento e turbinas), armazenagem (galpão e silos) e
+  estruturas auxiliares (chaminés, tanques, galpões e pátios).
+- **Distrito:** `core/urban/industrial_planner.gd` reserva uma grade fixa a leste
+  da cidade, com uma faixa por setor (3 complexos principais + 3 auxiliares). As
+  posições dependem só do setor e do índice, então o crescimento nunca desloca o
+  que já foi construído.
+- **Expansão e modernização:** o número de complexos cresce com a intensidade
+  industrial; estruturas auxiliares aparecem nos estágios seguintes e os módulos
+  antigos dão lugar às variantes modernas (galpão → armazém, fábrica → parque de
+  manufatura).
+- **Persistência:** `CityLayout` guarda `industry_stage` e `industrial_lots` com
+  chave própria, incluídos no hash de determinismo e no save/load.
+- **Protótipo:** `game/city_prototype.tscn` mostra a mesma cidade em três
+  composições econômicas — residencial, industrial e polo avançado — com o mesmo
+  id, seed e tecido urbano. Capturas em `docs/industry_prototype/`.
+
+## População e economia (cenário de validação)
+
+O núcleo C++ ganhou um cenário mínimo de duas cidades para validar o ciclo
+econômico antes de generalizar o modo europeu. Ele vive no mesmo `EconomySim`
+(`initialize_demo`, `tick_demo`, `get_demo_status`, `demo_price_shock`), sem
+substituir as cinco cidades atuais.
+
+- **POPs agregados:** uma população por cidade, com força de trabalho, empregados,
+  desempregados, dependentes, renda salarial, renda de capital, transferências,
+  impostos, renda disponível, consumo, satisfação, poupança e patrimônio.
+- **Setor de serviços agregado:** 30% da população empregada em serviços, com
+  salário próprio; evita um desemprego artificial de 98% e mantém a renda
+  circulando.
+- **Cidades:** `AGRIA` (100 mil, cinco fazendas de trigo) e `PORTUS` (200 mil,
+  moinho e quatro padarias), ligadas por uma rota de trigo com frete pago.
+- **Cadeia:** trigo → farinha → pão, com coeficientes de 1,2 e 0,83.
+- **Dinheiro:** contas de famílias, empresas, serviços, governo, transporte e
+  exterior; toda transferência debita uma conta e credita outra. O total é
+  conservado e verificado a cada dia.
+- **Preços:** reagem a estoque, oferta, demanda e custo de produção (piso de
+  custo), com suavização e limites para não explodir nem ficar negativo.
+- **PIB:** valor adicionado das construções (receita − insumos) + serviços;
+  PIB per capita é resultado, não entrada.
+- **Investimento:** 60% do lucro positivo é distribuído às famílias como renda
+  de capital; o restante fica no caixa da empresa. A decisão de investir ainda
+  não existe neste cenário.
+- **Painel:** `game/population_prototype.tscn` mostra população, força de
+  trabalho, emprego, salário médio, renda, PIB, PIB per capita, consumo,
+  satisfação, poupança e lucro privado, além dos preços e estoques.
+- **Teste:** `tools/population_demo_test.gd` roda 30 dias, confere conservação de
+  dinheiro/população/estoque, lucro privado positivo, satisfação e resposta a um
+  choque de preço no pão (gasto alimentar sobe e poupança cai).
+
 ## Câmera e navegação
 
 - Inclinação inicial de −56° e distância 52, enquadrando o centro das cinco
@@ -134,31 +207,87 @@ A cidade cresce em lotes de 0,5 unidade (~25 m) a partir de uma biblioteca de
 
 ## Composição
 
-- Barra superior fixa de 52 px: nação, data, dia, progresso do dia,
-  velocidade, recursos e idioma.
-- Doca à direita, 96 px, com quatro diretórios: Economia, Comércio,
-  Produção, Política.
-- Janela central de 1240×700 com cabeçalho (título + Fechar), réguas e abas.
-- Detalhe da cidade é sub-tela dentro da janela, com botão Voltar.
-- Mapa sempre visível atrás; fundo escurecido apenas enquanto uma janela está
-  aberta.
+- Barra superior fixa de 56 px: nação (nome + “Sua nação”), data e progresso do
+  dia, quatro indicadores (população, estoque, déficit, trânsito), velocidade,
+  idioma e menu. Os indicadores têm tooltip explicando a origem do número;
+  ao pausar, o rótulo do dia troca para “Pausado” em `WARNING`.
+- Doca à direita, 108 px de largura, quatro botões de 52 px (Economia,
+  Comércio, Produção, Política) com tooltip “1 · Economia” etc. O botão ativo
+  usa fundo `BG_DEEP` e borda latão.
+- Janela modal responsiva: 86% × 84% da tela, limitada a 960×560 e 1800×1000;
+  em 1920×1080 resulta em 1651×907. Cabeçalho com voltar (só no detalhe da
+  cidade), título, subtítulo, dica contextual e fechar; rodapé com atalhos e
+  selo `ESC`.
+- Detalhe da cidade é sub-tela dentro da mesma janela; o título do cabeçalho
+  passa a ser o nome da cidade e o voltar reaparece.
+- Mapa sempre visível atrás; véu `OVERLAY` apenas com janela ou menu aberto.
+- Menu de pausa (Esc): cartão de 460 px com título Cinzel, retomar, créditos,
+  sair e atalhos.
+
+## Resolução e escala
+
+- Projeto em 1920×1080 com `display/window/stretch/mode="canvas_items"` e
+  `aspect="expand"`: o layout lógico é sempre 1920×1080 e escala para o
+  tamanho da janela, sem cortes.
+- Validado por captura automática em 1920×1080, 1600×900, 1366×768 e
+  2560×1440 — os quatro resultam em viewport lógica 1920×1080 e retângulos
+  idênticos.
+- Layout feito só com `Control` + `Container` + anchors; nenhum elemento é
+  posicionado por pixel fora de painéis ancorados.
+- Tabelas longas e o detalhe da cidade têm rolagem vertical; o rodapé e o
+  cabeçalho ficam fixos.
+
+## Navegação
+
+- `1`–`4` abrem os quatro painéis; `Esc` fecha o menu, depois a janela, depois
+  abre o menu.
+- Todo controle interativo tem `focus_mode = FOCUS_ALL`; ao abrir uma tela o
+  HUD foca o primeiro controle útil (`UiKit.focus_first`); no detalhe da
+  cidade o foco vai para “Voltar”.
+- Abas, filtros e linhas de tabela também recebem foco; o anel de foco é latão
+  de 1 px, sem glow.
 
 ## Componentes
 
-- `UiKit.row_button()`: linha de tabela clicável com hover e estado selecionado
-  (borda latão).
-- `UiKit.table_header` / `table_row`: peso relativo por coluna, alinhamento à
-  direita para números, reticências quando falta largura.
-- `UiKit.tab_button` + `set_tab_active`: aba ativa com fundo `BG_DEEP`, borda e
-  texto em latão.
-- `UiKit.meter`: trilho `EDGE_SOFT` com preenchimento colorido por cobertura.
-- Estado vazio: centro da janela, título serifado e uma frase que explica o que
-  falta na simulação.
+Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
+
+- Botões: `primary_button` (latão sólido, uma por tela), `secondary_button`,
+  `ghost_button`, `icon_button` (glifo + tooltip obrigatório).
+- Navegação: `tab_bar` / `tab_button` / `set_tab_active`, `filter_chip` /
+  `set_chip_active`, `toolbar`, `search_field`.
+- Conteúdo: `card`, `surface`, `status_pill` (neutral/accent/positive/
+  negative/warning/steel), `metric`, `paragraph`, `label`, `caption`, `title`,
+  `rule`, `spacer`.
+- Dados: `table_header` / `table_row` (peso relativo por coluna, números à
+  direita, reticências quando falta largura), `row_button` (hover + seleção +
+  foco), `meter`.
+- Estados: `empty_state`, `error_state`, `loading_state`, `toast`.
+- Tema: `build_theme()` aplica a paleta a Button, LineEdit, OptionButton,
+  PopupMenu, ProgressBar, HSlider, Label, CheckBox, Tooltip, separadores e
+  barras de rolagem — herdado de um único nó raiz.
+- Toda a API antiga (`flat`, `label`, `metric`, `table_*`) foi preservada para
+  o painel econômico de validação (`game/economy_panel_demo.tscn`).
 
 ## Movimento
 
-Sem animação de entrada. Apenas o progresso do dia se move continuamente na
-barra superior; transições de hover são imediatas para não atrapalhar leitura.
+- Sem animação de entrada. O progresso do dia se move continuamente na barra
+  superior e pausa junto com a simulação.
+- Hover e foco trocam de `StyleBox` imediatamente na leitura; apenas `toast`
+  usa fade (0,12 s de entrada, 0,20 s de saída).
+
+## Validação
+
+- `tools/ui_capture.tscn` instancia o HUD sobre o mapa, percorre HUD, os quatro
+  painéis, busca sem resultado, detalhe de cidade e menu nas quatro
+  resoluções, grava PNGs e `layout_report.json`.
+- O relatório é objetivo: retângulos dos `Control`, foco atual, transbordo
+  para fora da viewport, texto cortado/elidido e rolagem necessária. Não é
+  inspeção visual e não substitui revisão humana.
+- `tools/vision_review.py` mede brilho, contraste, saturação, nitidez e bordas
+  das capturas, e compara antes/depois (MAE, RMSE, SSIM).
+- Saídas em `docs/ui/` (`captures/antes`, `captures/f4/final`,
+  `comparison.md`).
+
 
 ## Conteúdo e i18n
 
@@ -169,10 +298,38 @@ barra superior; transições de hover são imediatas para não atrapalhar leitur
 - Onde a simulação não tem dado (produção/construção, diplomacia), a tela
   declara a ausência em vez de inventar números.
 
+## Auditoria (Fase 1) — o que foi corrigido
+
+- **Barra superior**: 52 px sem tooltips, sem indicação de pausa e sem menu.
+  Agora 56 px com quatro indicadores explicados por tooltip, selo de pausa e
+  botão `≡`; a altura continua abaixo de 6% da tela.
+- **Doca**: 96 px sem atalhos visíveis. Agora 108 px, botões de 52 px e tooltip
+  com o número do atalho.
+- **Janela**: tamanho fixo de 1240×700 (não acompanhava a resolução). Agora
+  proporcional, com mínimo e máximo, e retângulos idênticos em 16:9.
+- **Economia**: sem busca nem filtros; o resumo repetia o subtítulo da janela.
+  Removido o resumo duplicado; adicionados busca, três filtros, contador de
+  resultados e estado vazio com ação “Limpar filtros”.
+- **Comércio**: na aba de rotas a coluna de detalhe ficava vazia, gastando 40%
+  da largura. A coluna agora só aparece na aba de pedidos, onde tem conteúdo.
+- **Produção**: o hint do rodapé repetia o texto do estado vazio e o do
+  cabeçalho. O texto do cabeçalho foi reescrito e a repetição removida.
+- **Política**: tabelas flutuavam sobre o painel; o dossiê usava fonte 12 e a
+  matriz tamanhos fixos fora da escala. Agora tudo dentro de `card`, com
+  escala tipográfica e `paragraph` para textos longos.
+- **Detalhe da cidade**: título e botão “Voltar” duplicavam o cabeçalho da
+  janela. O título passou a ser o nome da cidade no cabeçalho; a sub-tela mostra
+  nação, população e pills de déficit/trânsito.
+- **Global**: nenhum controle recebia foco de teclado, e os tamanhos de fonte
+  e espaçamento eram ad hoc. Agora há foco inicial por tela, anel de foco e
+  escala fixa de tipografia/espaçamento.
+
 ## Arquivos
 
-- `core/ui/ui_kit.gd` — tokens, tema e widgets.
-- `core/ui/hud.gd` — barra, doca, janelas e histórico de pedidos.
+- `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes.
+- `core/ui/hud.gd` — barra, doca, janela, menu e histórico de pedidos.
 - `core/ui/city_detail.gd` — sub-tela de cidade.
 - `core/ui/screens/*.gd` — Economia, Comércio, Produção, Política.
 - `core/i18n/i18n.gd` — textos em pt-BR, en e es.
+- `tools/ui_capture.gd` / `.tscn` — captura e auditoria de layout.
+- `docs/ui/` — capturas antes/depois e métricas objetivas.

@@ -22,6 +22,12 @@ func _ready() -> void:
 	_setup_camera()
 	_build_hud()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
+	Economy.status_updated.connect(_on_status_updated)
+
+
+## Mantém os modos de mapa (população, economia, indústria, recursos) vivos.
+func _on_status_updated(summary: Dictionary) -> void:
+	city_world.refresh_modes(summary.get("cities", []))
 
 
 func _build_city_world() -> void:
@@ -65,6 +71,40 @@ func _setup_camera() -> void:
 func _build_hud() -> void:
 	hud = HudScript.new()
 	add_child(hud)
+	hud.city_focused.connect(_on_city_focused)
+	hud.map_mode_requested.connect(_on_map_mode_requested)
+
+
+## Centraliza a câmera na cidade e destaca o marcador.
+func _on_city_focused(city_id: String) -> void:
+	city_world.select_city(city_id)
+	var target: Vector3 = city_world.city_world_position(city_id)
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+	player.move_to(Vector2(target.x, target.z))
+
+
+func _on_map_mode_requested(mode: String) -> void:
+	city_world.set_mode(mode)
+
+
+## Clique no mapa seleciona a cidade mais próxima; a janela do HUD tem
+## prioridade sobre o mapa.
+func _unhandled_input(event: InputEvent) -> void:
+	if hud == null or hud.is_window_open():
+		return
+	if not event.is_action_pressed("province_select"):
+		return
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+	var city_id: String = city_world.pick_city(
+			get_viewport().get_mouse_position(), player.camera)
+	if city_id.is_empty():
+		return
+	hud.open_city(city_id)
+	get_viewport().set_input_as_handled()
 
 
 ## Mantém a câmera dentro de um período do mapa: ao passar da borda em X, ela

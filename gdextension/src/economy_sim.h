@@ -3,6 +3,7 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -37,6 +38,78 @@ public:
 
 	/** Estado atual (estoques, população, trânsito) sem avançar o tempo. */
 	Dictionary get_status() const;
+
+	/** Inicializa o cenário de validação de duas cidades com população agregada. */
+	void initialize_demo();
+
+	/** Avança um dia do cenário de validação. */
+	Dictionary tick_demo();
+
+	/** Estado do cenário de validação (cidades, POPs, mercados, PIB). */
+	Dictionary get_demo_status() const;
+
+	/** Choque de preço em um produto ("wheat", "flour" ou "bread"). */
+	void demo_price_shock(const String& product, double multiplier);
+
+	/**
+	 * Define a aptidão territorial de um produto para uma cidade.
+	 * @param city_id Identificador da cidade.
+	 * @param product "wheat", "flour" ou "bread".
+	 * @param value Aptidão entre 0 e 1 (0 impede a produção primária).
+	 */
+	void demo_set_suitability(const String& city_id, const String& product, double value);
+
+	/**
+	 * Investe capital da empresa na expansão de uma construção existente.
+	 * O valor sai do caixa da empresa e é pago ao setor de construção.
+	 * @param city_id Cidade da construção.
+	 * @param building_id Identificador da construção.
+	 * @param amount Capital a investir.
+	 * @returns Resumo com "invested", "capacity_added" e "error".
+	 */
+	Dictionary demo_invest(const String& city_id, const String& building_id, double amount);
+
+	/**
+	 * Cria uma construção nova. O custo sai do caixa da empresa (private) ou do
+	 * orçamento do governo (state) e é pago ao setor de construção.
+	 * @returns Resumo com "created", "cost" e "error".
+	 */
+	Dictionary demo_build(const String& city_id, const String& building_id,
+		const String& resource, int input_product, int output_product,
+		double capacity, double jobs, double wage, double opex,
+		double input_per_output, const String& owner, double cost);
+
+	/**
+	 * Gasta orçamento público em serviços domésticos (ex.: prospecção).
+	 * @returns true quando havia orçamento suficiente.
+	 */
+	bool demo_spend_government(const String& city_id, double amount);
+
+	/** Serializa todo o estado do cenário (save). */
+	Dictionary demo_to_dict() const;
+
+	/** Restaura o estado do cenário a partir de demo_to_dict() (load). */
+	void demo_from_dict(const Dictionary& data);
+
+	/**
+	 * Cria um mundo sintético determinístico para benchmark.
+	 * @param city_count Número de cidades.
+	 * @param buildings_per_city Construções por cidade (mínimo 3).
+	 * @param seed Semente determinística da geração.
+	 */
+	void initialize_benchmark(int city_count, int buildings_per_city, int seed);
+
+	/**
+	 * Executa o benchmark e devolve médias, p95, fases e memória.
+	 * @param days Número de dias medidos.
+	 * @param warmup_days Dias descartados antes da medição.
+	 */
+	Dictionary run_benchmark(int days, int warmup_days);
+
+	/** Resumo do mundo de benchmark (contagens, memória, checksum). */
+	Dictionary get_benchmark_status() const;
+
+	int get_benchmark_city_count() const;
 
 protected:
 	static void _bind_methods();
@@ -112,6 +185,188 @@ private:
 		std::vector<Leg> legs;
 	};
 
+	// ------------------------------------------------------------------
+	// Cenário de validação: duas cidades, população agregada (POPs), trigo,
+	// farinha e pão. Vive no mesmo núcleo para validar as regras antes de
+	// generalizar o modo europeu.
+	// ------------------------------------------------------------------
+	enum class DemoProduct { Wheat = 0, Flour = 1, Bread = 2, Iron = 3 };
+	static constexpr int kDemoProducts = 4;
+	static constexpr int kDemoFoodProducts = 3;
+
+	struct DemoMarket {
+		double stock = 0.0;
+		double price = 1.0;
+		double demand = 0.0;   // compras realizadas (consumo, insumos e exportação)
+		double supply = 0.0;   // produção ofertada no dia
+		double desired = 0.0;  // demanda desejada antes de estoque/orçamento
+		double sold = 0.0;     // vendas realizadas no dia
+		double sold_prev = 0.0; // vendas do dia anterior (base da produção)
+		double shortage = 0.0; // demanda desejada não atendida
+		double surplus = 0.0;  // estoque acima do necessário
+	};
+
+	struct DemoBuilding {
+		std::string id;
+		std::string city;
+		int kind = 0; // 0=fazenda, 1=moinho, 2=padaria (legado de exibição)
+		std::string resource;  // recurso produzido: wheat, flour, bread ou iron
+		std::string owner = "private"; // private ou state
+		int input_product = -1; // -1 = extração primária (sem insumo)
+		int output_product = 0;
+		double capacity = 0.0;
+		double input_per_output = 0.0;
+		double jobs = 0.0;
+		double wage = 0.0;
+		double opex = 0.0;
+		double workers = 0.0;
+		double utilization = 0.0;
+		double output_scale = 1.0; // reduzido por prejuízos persistentes
+		int loss_days = 0;
+		double revenue = 0.0;
+		double input_value = 0.0;
+		double costs = 0.0;
+		double profit = 0.0;
+	};
+
+	struct DemoPop {
+		double population = 0.0;
+		double labor_force = 0.0;
+		double employed = 0.0;
+		double unemployed = 0.0;
+		double dependents = 0.0;
+		double wage_income = 0.0;
+		double capital_income = 0.0;
+		double transfers = 0.0;
+		double taxes = 0.0;
+		double service_spend = 0.0;
+		double disposable = 0.0;
+		double food_spend = 0.0;
+		double consumed = 0.0;
+		double need = 0.0;
+		double satisfaction = 0.0;
+		double savings = 0.0;
+		// Consumo por categoria (trigo, farinha, pão): desejado e realizado.
+		double desired_by_category[kDemoFoodProducts] = {0.0, 0.0, 0.0};
+		double consumed_by_category[kDemoFoodProducts] = {0.0, 0.0, 0.0};
+	};
+
+	struct DemoCity {
+		std::string id;
+		std::string name;
+		std::string nation;
+		MapPoint center{0.0, 0.0};
+		double population = 0.0;
+		double firm_cash = 0.0;
+		double service_cash = 0.0;
+		double government_budget = 0.0;
+		double service_jobs = 0.0;
+		double service_wage = 0.0;
+		double service_wage_bill = 0.0;
+		double service_revenue = 0.0;
+		double service_profit = 0.0;
+		// Receitas de serviços empresariais (opex), frete e construção.
+		double opex_revenue = 0.0;
+		double freight_revenue = 0.0;
+		double construction_revenue = 0.0;
+		double capital_income_next = 0.0;
+		double gdp = 0.0;
+		double revenue_by_product[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		// Fluxos comerciais do dia, por produto.
+		double imported[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double exported[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double import_value[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double export_value[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		// Aptidão territorial por produto (0..1). A produção primária é
+		// multiplicada por ela; o GeographyService sobrescreve com dados reais.
+		double suitability[kDemoProducts] = {1.0, 1.0, 1.0, 0.0};
+		DemoPop pop;
+		DemoMarket markets[kDemoProducts];
+	};
+
+	struct DemoShipment {
+		std::string to_city;
+		int product = 0;
+		double amount = 0.0;
+		int arrival_day = 0;
+	};
+
+	// ------------------------------------------------------------------
+	// Benchmark: economia sintética com estruturas planas. Sem strings,
+	// sem nós e sem alocações por tick. Índices substituem identificadores.
+	// ------------------------------------------------------------------
+	static constexpr int kBenchProducts = 3;
+
+	struct BenchCity {
+		double population = 0.0;
+		double firm_cash = 0.0;
+		double service_cash = 0.0;
+		double government_budget = 0.0;
+		double capital_income_next = 0.0;
+		double gdp = 0.0;
+		double service_jobs = 0.0;
+		double service_wage = 0.0;
+		double service_wage_bill = 0.0;
+		double service_revenue = 0.0;
+		double service_profit = 0.0;
+		double opex_revenue = 0.0;
+		double need = 0.0;
+		double disposable = 0.0;
+		double consumed = 0.0;
+		double food_spend = 0.0;
+		double satisfaction = 0.0;
+		double savings = 0.0;
+		double labor_force = 0.0;
+		double employed = 0.0;
+		double unemployed = 0.0;
+		double wage_income = 0.0;
+		double capital_income = 0.0;
+		double taxes = 0.0;
+		double transfers = 0.0;
+		double service_spend = 0.0;
+	};
+
+	struct BenchMarket {
+		double stock = 0.0;
+		double price = 1.0;
+		double demand = 0.0;
+		double supply = 0.0;
+		double desired = 0.0;
+		double sold = 0.0;
+		double sold_prev = 0.0;
+	};
+
+	struct BenchBuilding {
+		int city = 0;
+		int output = 0;
+		int input = -1;
+		int output_market = 0;
+		int input_market = -1;
+		double capacity = 0.0;
+		double input_per_output = 0.0;
+		double output_share = 0.0;
+		double jobs = 0.0;
+		double wage = 0.0;
+		double opex = 0.0;
+		double workers = 0.0;
+		double utilization = 0.0;
+		double output_scale = 1.0;
+		int loss_days = 0;
+		double revenue = 0.0;
+		double input_value = 0.0;
+		double costs = 0.0;
+		double profit = 0.0;
+	};
+
+	struct BenchTradeLink {
+		int from = 0;
+		int to = 0;
+		int product = 0;
+		int from_market = 0;
+		int to_market = 0;
+		double capacity = 0.0;
+	};
+
 	static const ModeSpec& spec(TransportMode mode);
 	static const char* scope_name(MarketScope scope);
 
@@ -160,11 +415,76 @@ private:
 	Dictionary leg_to_dict(const Leg& leg) const;
 	Dictionary order_to_dict(const TradeOrder& order) const;
 
+	DemoCity* find_demo_city(const std::string& id);
+	const DemoCity* find_demo_city(const std::string& id) const;
+	Dictionary demo_city_to_dict(const DemoCity& city) const;
+	double demo_money_total() const;
+	static int demo_product_index(const String& product);
+	static const char* demo_product_name(int product);
+	static double demo_base_price(int product);
+	DemoBuilding* find_demo_building(const std::string& city_id, const std::string& id);
+
+	void tick_benchmark_internal();
+	void benchmark_reset();
+	void benchmark_labor();
+	void benchmark_production();
+	void benchmark_consumption();
+	void benchmark_trade();
+	void benchmark_accounting();
+	void benchmark_prices();
+	void benchmark_investment();
+	double benchmark_checksum() const;
+	std::size_t benchmark_memory_bytes() const;
+	int bench_market(int city, int product) const {
+		return city * kBenchProducts + product;
+	}
+
 	std::vector<City> cities_;
 	std::vector<Shipment> in_transit_;
 	std::vector<TradeOrder> last_orders_;
 	int day_ = 0;
 	double clock_hours_ = 0.0;
+
+	// Estado do cenário de validação de duas cidades. Compartilha o mesmo
+	// calendário (day_) do modo legado: apenas um dos modos roda por vez.
+	bool demo_active_ = false;
+	std::vector<DemoCity> demo_cities_;
+	std::vector<DemoBuilding> demo_buildings_;
+	std::vector<DemoShipment> demo_in_transit_;
+	double demo_transport_cash_ = 0.0;
+	double demo_foreign_cash_ = 0.0;
+	// Setor de construção: recebe o capital investido em expansão.
+	double demo_construction_cash_ = 0.0;
+	double demo_produced_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+	double demo_consumed_total_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+	double demo_produced_today_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+	double demo_consumed_today_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+
+	// Estado do benchmark sintético (estruturas planas, sem alocação por tick).
+	bool bench_active_ = false;
+	int bench_cities_count_ = 0;
+	int bench_buildings_per_city_ = 0;
+	int bench_seed_ = 0;
+	int bench_day_ = 0;
+	double bench_transport_cash_ = 0.0;
+	std::vector<BenchCity> bench_cities_;
+	std::vector<BenchMarket> bench_markets_;
+	std::vector<BenchBuilding> bench_buildings_;
+	std::vector<BenchTradeLink> bench_links_;
+	std::vector<double> bench_capacity_total_;
+	std::vector<double> bench_unit_labor_opex_;
+	std::vector<double> bench_revenue_;
+	std::vector<double> bench_produced_total_;
+	std::vector<double> bench_consumed_total_;
+	std::vector<double> bench_tick_us_;
+	double bench_phase_reset_us_ = 0.0;
+	double bench_phase_market_us_ = 0.0;
+	double bench_phase_pop_us_ = 0.0;
+	double bench_phase_production_us_ = 0.0;
+	double bench_phase_trade_us_ = 0.0;
+	double bench_phase_accounting_us_ = 0.0;
+	double bench_phase_prices_us_ = 0.0;
+	double bench_phase_investment_us_ = 0.0;
 
 	// Portos usados nas rotas internacionais (Calais e Dover).
 	MapPoint france_port_{2525.7, 542.4};

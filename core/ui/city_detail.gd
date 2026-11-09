@@ -1,8 +1,7 @@
 extends VBoxContainer
 
-## Detalhe da cidade, aberto dentro da janela de Economia como sub-tela.
-
-signal closed
+## Detalhe da cidade, aberto dentro da janela principal como sub-tela.
+## A navegação de volta fica no cabeçalho da janela do HUD.
 
 const ORDER_WEIGHTS := [1.4, 1.0, 0.9, 0.9]
 const ORDER_ALIGN := [false, true, true, true]
@@ -13,19 +12,30 @@ var _body: VBoxContainer
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", 14)
+	add_theme_constant_override("separation", UiKit.SPACE_LG)
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
+
 	_body = VBoxContainer.new()
-	_body.add_theme_constant_override("separation", 14)
+	_body.add_theme_constant_override("separation", UiKit.SPACE_MD)
+	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	add_child(_body)
+	scroll.add_child(_body)
 
 
 func open_city(city_id: String, summary: Dictionary) -> void:
 	_city_id = city_id
 	_summary = summary
 	_render()
+
+
+## Cidade exibida no momento (usada pelo cabeçalho da janela do HUD).
+func current_city_id() -> String:
+	return _city_id
 
 
 func refresh(summary: Dictionary) -> void:
@@ -64,34 +74,32 @@ func _render() -> void:
 
 func _header(city: Dictionary) -> Control:
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.add_theme_constant_override("separation", UiKit.SPACE_XS)
 
 	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 10)
+	top.add_theme_constant_override("separation", UiKit.SPACE_SM + 2)
 
 	var swatch := ColorRect.new()
 	swatch.color = UiKit.nation_color(city["nation"])
-	swatch.custom_minimum_size = Vector2(14.0, 14.0)
+	swatch.custom_minimum_size = Vector2(4.0, 22.0)
 	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(swatch)
 
-	top.add_child(UiKit.title(I18n.city_name(city["id"], city["name"]), 26))
 	top.add_child(UiKit.spacer())
 
-	var back := Button.new()
-	back.text = I18n.t("common.back")
-	back.custom_minimum_size.y = 30
-	back.pressed.connect(func() -> void: closed.emit())
-	top.add_child(back)
-
+	var deficit := float(city["deficit"])
+	var transit := float(city["in_transit"])
+	top.add_child(UiKit.status_pill(
+			I18n.t("city.deficit") + " " + UiKit.number(deficit) + " t",
+			"negative" if deficit > 0.0 else "positive"))
+	top.add_child(UiKit.status_pill(
+			I18n.t("city.transit") + " " + UiKit.number(transit) + " t", "steel"))
 	box.add_child(top)
 
-	var subtitle := UiKit.label(I18n.t("city.subtitle", {
-		"nation": I18n.nation_name(city["nation"]),
-		"population": UiKit.number(float(city["population"])),
-	}), 13, UiKit.TEXT_DIM)
-	box.add_child(subtitle)
+	box.add_child(UiKit.paragraph(
+			I18n.t("city.population") + " " + UiKit.number(float(city["population"])),
+			UiKit.FS_SMALL, UiKit.TEXT_DIM))
 
 	return box
 
@@ -166,6 +174,7 @@ func _orders() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_stretch_ratio = 1.4
 
 	box.add_child(UiKit.caption(I18n.t("city.orders")))
 
@@ -195,10 +204,4 @@ func _orders() -> Control:
 				UiKit.TEXT, UiKit.TEXT, UiKit.TEXT_DIM, UiKit.BRASS,
 			], ORDER_ALIGN))
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_stretch_ratio = 1.4
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.add_child(box)
-	return scroll
+	return box
