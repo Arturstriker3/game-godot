@@ -35,6 +35,11 @@ constexpr double kIncomeDeficitWeight = 0.3;
 constexpr double kEmergencyCoverDays = 2.0;
 constexpr double kEmergencyAirShare = 0.35;
 
+// Dias de cobertura (estoque + em trânsito) que uma cidade tenta manter. Sem
+// isso, uma cidade a ~9 dias de navio só pedia o déficit diário e recebia
+// ~1/9 da necessidade.
+constexpr double kCoverDays = 10.0;
+
 // Limite de pedidos por dia (proteção); os comboios exibidos têm limite próprio.
 constexpr std::size_t kMaxOrdersPerDay = 24;
 
@@ -96,9 +101,9 @@ void EconomySim::_bind_methods() {
 const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
 	// capacidade de lote = carga útil de uma composição/frota padrão.
 	// custo em unidades monetárias por tonelada-quilômetro.
-	static const ModeSpec kTruck{TransportMode::Truck, "truck", 65.0, 1200.0, 0.10};
-	static const ModeSpec kShip{TransportMode::Ship, "ship", 35.0, 12000.0, 0.02};
-	static const ModeSpec kPlane{TransportMode::Plane, "plane", 750.0, 400.0, 0.80};
+	static const ModeSpec kTruck{TransportMode::Truck, "truck", 65.0, 1200.0, 0.10, 6.0};
+	static const ModeSpec kShip{TransportMode::Ship, "ship", 35.0, 12000.0, 0.02, 24.0};
+	static const ModeSpec kPlane{TransportMode::Plane, "plane", 750.0, 400.0, 0.80, 24.0};
 
 	switch (mode) {
 		case TransportMode::Ship:
@@ -196,7 +201,10 @@ Dictionary EconomySim::tick() {
 			sellers.push_back(&city);
 		}
 		const double pending = in_transit_total(city.id);
-		const double open_deficit = city.deficit - pending;
+		// A cidade tenta manter kCoverDays de cobertura (estoque + em trânsito),
+		// em vez de cobrir apenas o déficit diário.
+		const double target = city.need * kCoverDays;
+		const double open_deficit = target - (city.stockpile + pending);
 		if (open_deficit > 1e-9) {
 			buyers.emplace_back(&city, open_deficit);
 		}
@@ -399,8 +407,10 @@ EconomySim::Leg EconomySim::make_leg(TransportMode mode, const std::string& from
 	const double distance = distance_km(from_point, to_point);
 
 	// Viagens necessárias para escoar o lote; o prazo considera a última delas.
+	// O tempo de viagem soma a sobrecarga de carga/descarga (turnaround).
 	const int trips = std::max(1, static_cast<int>(std::ceil(load_tons / mode_spec.batch_capacity_tons)));
-	const double hours = distance / mode_spec.speed_kmh * static_cast<double>(trips);
+	const double hours = distance / mode_spec.speed_kmh * static_cast<double>(trips)
+	                     + mode_spec.turnaround_hours;
 
 	Leg leg;
 	leg.mode = mode;

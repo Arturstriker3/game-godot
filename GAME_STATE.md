@@ -128,8 +128,8 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 - **Demanda/consumo:** `need = population × 0.0003` t/dia; `consumed = min(stockpile, need)`; `deficit = need − consumed`.
 - **Estoque:** `stockpile` acumula produção e descargas.
 - **Comércio:** mercado em 3 camadas — regional (<500 km, mesmo país), nacional, internacional; `dispatch_trade` escolhe o vendedor mais próximo e `build_route` monta a rota; ponte aérea quando estoque < 2 dias. **Travessia marítima** quando vendedor e comprador estão em massas de terra diferentes (`landmass`): caminhão até o porto do vendedor → navio → caminhão do porto do comprador (cidade portuária não tem trecho de caminhão). Antes a regra era fixa em "um lado é GBR"; para as rotas do Canal distância/custo/tempo são idênticos, mas os trechos agora seguem do vendedor ao comprador.
-- **Limitação conhecida (Caiena):** a ordem só é refeita quando a anterior chega e o tempo de trânsito soma todos os trechos (inclusive a ponte aérea), então uma cidade a ~9 dias de navio recebe ~1/9 da necessidade e fica em déficit crônico. É regra existente, não corrigida.
-- **Transporte/frete:** por trecho (`make_leg`), custo = carga × distância × `cost_per_ton_km`; tempos por modo (caminhão 65 km/h/1200 t/R$0,10; navio 35 km/h/12000 t/R$0,02; avião 750 km/h/400 t/R$0,80).
+- **Cobertura por cidade:** cada cidade tenta manter `kCoverDays` (10 dias) de cobertura — estoque + em trânsito — em vez de pedir só o déficit diário. **Corrigido:** antes Caiena (a ~9 dias de navio) pedia só o déficit diário e recebia ~1/9 da necessidade, ficando em déficit crônico; agora mantém o pipeline de abastecimento e cobre a necessidade (validado em headless: déficit 0 após o aquecimento).
+- **Transporte/frete:** por trecho (`make_leg`), custo = carga × distância × `cost_per_ton_km`; tempo = distância/velocidade + **turnaround** (carga/descarga) por modo. Modos: caminhão 65 km/h/1200 t/R$0,10/+6 h; navio 35 km/h/12000 t/R$0,02/+24 h; avião 750 km/h/400 t/R$0,80/+24 h. O turnaround faz a ponte aérea transatlântica levar ~2 dias (antes chegava no dia seguinte).
 - **Indicadores derivados:** `jobs`, `income`, `industrialization` são calculados, não simulados.
 
 ### 6.2 Modo demo (ciclo completo — trigo→farinha→pão + ferro)
@@ -209,7 +209,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 ## 11. Interface e UX
 
 - **Design system:** `core/ui/ui_kit.gd` (`UiKit`) — tokens (BG_DEEP `#0A1112`, PANEL, latão `#C9A24A`, etc.), tipografia (Cinzel para títulos, Barlow Condensed para corpo), escala 26/19/15/15/13/11 px, tema global, ~30 construtores (`metric`, `status_pill`, `table_row`, `empty_state`, `toast`, etc.).
-- **HUD (`core/ui/hud.gd`):** barra superior de 48 px (estilo HOI3: mais compacto); doca direita (5 botões, atalhos 1–5); barra de modos de mapa (6 chips); **minimapa** 208×104 px no canto inferior direito (`core/ui/minimap.gd`): imagem estática `map/map_data/atlas/minimap.png` (sem segunda câmera), retângulo latão vazado com a área vista (atualizado por `main_game._update_minimap`), clique/arraste leva a câmera ao ponto (`HUD.map_point_requested`); janela modal responsiva (86%×84%, 960×560 a 1800×1000); menu de pausa (Esc). Tooltips com borda latão e sombra (estilo HOI3).
+- **HUD (`core/ui/hud.gd`):** barra superior de 48 px (estilo HOI3: mais compacto); doca direita (5 botões, atalhos 1–5); barra de modos de mapa (6 chips); **minimapa** 208×104 px no canto inferior direito (`core/ui/minimap.gd`): imagem estática `map/map_data/atlas/minimap.png` (sem segunda câmera), retângulo latão vazado com a área vista (atualizado por `main_game._update_minimap`), clique/arraste leva a câmera ao ponto (`HUD.map_point_requested`); janela modal responsiva (86%×84%, 960×560 a 1800×1000); menu de pausa (Esc); **espaço** pausa/retoma; **F11** alterna tela cheia. Tooltips com borda latão e sombra (estilo HOI3).
 - **Telas (`core/ui/screens/`):** Economia, Comércio (Pedidos/Rotas/Mercado), Produção, População, Política (Nações/Diplomacia/Dossiê), Alertas.
 - **Painel de cidade:** `core/ui/city_panel.gd` (5 abas). `core/ui/city_detail.gd` é **legado**; `core/ui/city_economy_panel.gd` serve ao cenário demo.
 - **Navegação:** pilha de contexto com breadcrumb; foco por teclado (anel de latão); Esc fecha menu → janela → abre menu.
@@ -286,7 +286,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Corrigido (atlas):** a Holanda nunca era pintada (`NED` no jogo × `NLD` no Natural Earth) — mapeado em `build_atlas_layers.py`; halo branco nas nações vinha da composição não pré-multiplicada em `political_overlay.gdshader`; as cópias laterais do mundo não trocavam de modo (agora `set_mode` age em todas).
 - **Corrigido (overlay dos modos de calor):** `political_overlay.gdshader` agora lê os mesmos SDFs/cores do atlas (`region_sdf`/`world_sdf` + `region_color`/`world_color`) em vez dos rasters antigos `country_borders.png`/`nation_fill.png`/`nav_mask.png` — fronteiras e costa nítidas em qualquer zoom, sem a escadinha das máscaras ampliadas. A amostragem/decodificação/linhas comuns foram extraídas para `map/map_shaders/atlas_common.gdshaderinc` (usado por `atlas_political.gdshader` e `political_overlay.gdshader`); os PNGs antigos `country_borders.png`/`nation_fill.png` e o gerador `tools/build_political_layer.py` foram **removidos** (substituídos pelas camadas `atlas/*`); `nav_mask.png` segue em uso por `core/economy/trade_convoys.gd`.
 - **Memória das camadas do atlas (corrigida):** `region_color.png`/`world_color.png` agora em compressão VRAM (S3TC, `compress/mode=2`); `region_sdf.png`/`world_sdf.png` seguem lossless (`mode=0`) pela precisão das linhas. Medido por `map_capture --bench` (texture_mem_mb): 353,3 MB antes → 274,6 MB depois (−78,7 MB) com o overlay novo. O "antes" já usa o overlay sobre SDFs (sem `country_borders`/`nation_fill`/`nav_mask` em VRAM), então o delta é só da compressão das cores; o baseline histórico do atlas_final media 389,8 MB por ainda carregar os rasters antigos. Sem perda visível: a comparação político `heat_after` × `atlas_final` mostrou 99,6% dos pixels com Δ≤5/255 (quantização imperceptível); os ~0,03% com Δ grande são deriva de rótulos entre execuções, presente também com cores sem compressão.
-- **Território dinâmico — limites conhecidos:** marcador e rótulo da cidade mantêm a cor da nação original ao mudar de dono; minimapa (`minimap.png`) é estático; fora da Europa a fronteira dinâmica usa a camada mundial (~9,8 km/texel), menos precisa no zoom máximo; pequenos pontos podem aparecer em junções triplas no zoom máximo. O teste headless verifica a imagem CPU de donos (o renderizador dummy não reflete `ImageTexture.update()`); o efeito na GPU é verificado pelas capturas.
+- **Território dinâmico — limites conhecidos:** minimapa (`minimap.png`) é estático; fora da Europa a fronteira dinâmica usa a camada mundial (~9,8 km/texel), menos precisa no zoom máximo; pequenos pontos podem aparecer em junções triplas no zoom máximo. (O marcador da cidade agora acompanha a cor do dono ao mudar de nação.) O teste headless verifica a imagem CPU de donos (o renderizador dummy não reflete `ImageTexture.update()`); o efeito na GPU é verificado pelas capturas.
 - **Nomes de cidade (corrigido):** o mapa usa `I18n.city_name(city_id, fallback)` e atualiza os rótulos em `I18n.locale_changed` (incluindo as cópias laterais).
 
 ---
@@ -346,6 +346,15 @@ $godot = "C:\Users\artur\OneDrive\Área de Trabalho\Godot_v4.7.2-stable_win64.ex
 & $godot --path . res://tools/ui_capture.tscn -- --phase=f4 --run=final --sizes=1920x1080,1600x900,1366x768,2560x1440
 & $godot --path . res://tools/map_capture.tscn -- --set=all --mode=political --tag=before --run=baseline_before
 ```
+
+### Ponte Claude Desktop → OpenCode (MCP local)
+
+`tools/claude_bridge/` expõe o OpenCode como MCP local para o Claude Desktop:
+o Claude decide e delega, o DeepSeek executa no repositório com agentes, testes
+e MCPs de cena. Config do app fica no caminho virtualizado do MSIX
+(`%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\claude_desktop_config.json`).
+Validação: `node tools/claude_bridge/selftest.mjs [--task]`. Detalhes em
+`tools/claude_bridge/README.md`.
 
 ### Como atualizar este documento
 1. Consulte o `GAME_STATE.md` antes de mudanças importantes.

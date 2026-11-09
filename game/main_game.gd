@@ -185,6 +185,12 @@ func _on_map_mode_requested(mode: String) -> void:
 ## Clique no mapa seleciona a cidade mais prÃƒÂ³xima; a janela do HUD tem
 ## prioridade sobre o mapa. Movimento do mouse atualiza o realce de hover.
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.physical_keycode == KEY_SPACE:
+		Economy.toggle_pause()
+		get_viewport().set_input_as_handled()
+		return
+
 	if hud == null or hud.is_window_open():
 		return
 	if not event.is_action_pressed("province_select"):

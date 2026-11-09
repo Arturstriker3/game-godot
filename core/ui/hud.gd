@@ -103,6 +103,7 @@ func _ready() -> void:
 	_build_minimap()
 
 	Economy.status_updated.connect(_on_status)
+	Economy.speed_changed.connect(func(_index: int) -> void: _update_top_bar())
 	I18n.locale_changed.connect(_on_locale_changed)
 	get_viewport().size_changed.connect(_apply_window_size)
 
@@ -988,6 +989,10 @@ func _toggle_fullscreen() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		# Garante que a janela fique em primeiro plano e com foco, para a
+		# barra de tarefas do Windows não ficar por cima.
+		DisplayServer.window_move_to_foreground()
+		get_window().grab_focus()
 	_refresh_fullscreen_button()
 	UiSfx.play(UiSfx.Sound.TOGGLE)
 

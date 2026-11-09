@@ -134,6 +134,7 @@ private:
 		double speed_kmh;
 		double batch_capacity_tons;
 		double cost_per_ton_km;
+		double turnaround_hours;
 	};
 
 	// Coordenadas no grid do mapa (5000x2500), na projeção equiretangular.

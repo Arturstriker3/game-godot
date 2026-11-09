@@ -15,6 +15,9 @@ signal trade_orders_ready(orders: Array)
 ## Emitido a cada tick com o resumo completo (cidades, nações e pedidos).
 signal status_updated(summary: Dictionary)
 
+## Emitido quando a velocidade muda (botão ou atalho espaço). Índice 0 = pausa.
+signal speed_changed(index: int)
+
 ## Segundos reais por dia simulado; o índice 0 é a pausa.
 ## Ritmo normal: 30 dias em 30 minutos (1 dia = 60 s); 2x = 30 s; 3x = 15 s.
 const SPEEDS := [0.0, 60.0, 30.0, 15.0]
@@ -26,6 +29,9 @@ const START_UNIX := 1767225600
 var sim: RefCounted
 var last_summary: Dictionary = {}
 var speed: int = 1
+
+## Velocidade para a qual voltar ao sair da pausa (espaço).
+var _resume_speed: int = 1
 
 ## Fração do dia corrente (0..1). Não depende da velocidade.
 var _day_fraction := 0.0
@@ -58,6 +64,16 @@ func _run_day() -> void:
 ## mudar de 1x para 2x (ou pausar e voltar) não reinicia o dia.
 func set_speed(index: int) -> void:
 	speed = clampi(index, 0, SPEED_COUNT - 1)
+	speed_changed.emit(speed)
+
+
+## Alterna pausa/play preservando a velocidade anterior (atalho espaço).
+func toggle_pause() -> void:
+	if speed == 0:
+		set_speed(_resume_speed if _resume_speed > 0 else 1)
+	else:
+		_resume_speed = speed
+		set_speed(0)
 
 
 ## Fração do dia corrente já decorrida (0..1), para a barra do HUD. Congela ao

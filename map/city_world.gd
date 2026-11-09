@@ -547,6 +547,25 @@ func _refresh_territory(cities: Array) -> void:
 	var changed: bool = _territory.update(cities, _territory_overrides)
 	if changed:
 		_reposition_nation_labels()
+		_update_city_nation_colors(cities)
+
+
+## Quando o dono de uma cidade muda (override de território), o marcador passa
+## a usar a cor da nação efetiva, não a original. O rótulo já é neutro (#E8E2D0).
+func _update_city_nation_colors(cities: Array) -> void:
+	for city in cities:
+		var city_id := String(city.get("id", ""))
+		var tag := String(_territory_overrides.get(city_id, city.get("nation", "")))
+		for node in _city_nodes:
+			if String(node.get("id", "")) != city_id:
+				continue
+			var color: Color = NATION_COLORS.get(tag, Color.WHITE)
+			var discs: Array = node.get("discs", [])
+			if discs.size() > 1:
+				var mat: StandardMaterial3D = (discs[1] as MeshInstance3D).material_override
+				if mat != null:
+					mat.albedo_color = color
+			break
 
 
 func _apply_territory_materials() -> void:
