@@ -89,7 +89,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   - `ne2.png` 5000×2500 (terreno Blue Marble, mapa legado).
   - `height.png`/`normal.png` 5000×2500 — **placeholders planos** (sem relevo real).
   - `satellite.jpg` 8192×4096 (base do jogo).
-  - `country_borders.png` 5000×2500 e `nation_fill.png` 2500×1250 (Natural Earth 10m).
+  - `atlas/world_color.png`, `atlas/world_sdf.png`, `atlas/region_color.png`, `atlas/region_sdf.png`, `atlas/minimap.png`, `atlas/nations.json` — camadas do mapa atlas geradas por `tools/build_atlas_layers.py` (Natural Earth 10m).
   - `nav_mask.png` 2500×1250 (terra/água/costa, pathfinding A* dos comboios).
 - **Províncias/territórios/países:** `data/history/provinces/provinces.json` (14.402 províncias), `data/history/territories/territories.json` (737 territórios), `data/history/countries/` (193 JSON); `data/definitions/*.txt` restringidos a 4 países (NNN/GBR/FRA/DEU). O jogo ao vivo usa **5 nações** (GBR, FRA, DEU, NED, BEL).
 - **Fronteiras:** legado = Voronoi + SDF via Jump Flooding Algorithm (`jfa.glsl`/`jfa_encode.glsl` + `map_texture_sdf.gd`); jogo = raster Natural Earth composto por shader.
@@ -266,9 +266,9 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Duas faces econômicas** (legacy × demo) no mesmo `EconomySim`, consumidas por UIs diferentes; risco de divergência.
 - **Três implementações paralelas** de produção/consumo/preços/contabilidade no C++ (tick_demo × benchmark × legacy).
 - **Parâmetros duplicados:** `IndustryTemplates` (GDScript) repete `jobs/wage/opex/input_ratio` do C++ sem vínculo; preços-base em `balance.json` × `demo_base_price()`.
-- **Dois sistemas de mapa:** `city_world.gd` (jogo) × `map.gd` (editor) — dois domínios (cidades × províncias).
+- **Mapa legado de províncias/editor removido:** restam dois modos intencionais (político/atlas × geográfico/satélite).
 - **Três painéis de cidade:** `city_panel.gd` (ativo), `city_detail.gd` (legado), `city_economy_panel.gd` (demo).
-- **Cores de nação divergentes:** `ui_kit.gd`/`build_political_layer.py` × `city_world.gd`.
+- **Cores de nação divergentes:** `ui_kit.gd`/`build_atlas_layers.py` × `city_world.gd`.
 - **Documentação defasada:** i18n/DESIGN dizem que emprego/salários/poupança "não são simulados", mas o demo simula.
 - **Fome com alimento em estoque (02/07):** serviços são pagos antes do alimento e não há crédito, governo comprador nem mercado externo de alimentos; a cidade empobrece, não compra o estoque e a satisfação cai. É crise de demanda/liquidez, não violação contábil.
 - **Mercado de trabalho dual:** serviços ajustam o salário para ~0,03/dia, enquanto fazendas/moinho/padarias ficam fixos em 2,0/1,5; o diferencial (~60×) é uma calibração pendente.
@@ -279,10 +279,10 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Arquivos órfãos:** `game/ui/province_selected.gd/.tscn` (não referenciado), `main_game.tscn*.tmp`, `assets/fonts/IMPRISHA.TTF`/`ROMAN.FON`, `assets/audio/Open_World_-_Happiness_Full.WAV`, `map/lookup_texture.gd.uid`/`province_border_texture.gd.uid` (UIDs sem script), `tactical_map.gdshader` sem referências.
 - **Contagens divergentes:** `deposits.json` (289.575) × `mrds_deposits.jsonl` (304.632); `generate_opengs_map.py` (8192×, lat −60..84) × dados commitados (5000×2500 global).
 - **Contagem de nações:** 4 países nas definições × 5 nações no jogo.
-- **Corrigido (atlas):** a Holanda nunca era pintada (`NED` no jogo × `NLD` no Natural Earth) — mapeado em `build_atlas_layers.py` e `build_political_layer.py`; halo branco nas nações vinha da composição não pré-multiplicada em `political_overlay.gdshader`; as cópias laterais do mundo não trocavam de modo (agora `set_mode` age em todas).
-- **Corrigido (overlay dos modos de calor):** `political_overlay.gdshader` agora lê os mesmos SDFs/cores do atlas (`region_sdf`/`world_sdf` + `region_color`/`world_color`) em vez dos rasters antigos `country_borders.png`/`nation_fill.png`/`nav_mask.png` — fronteiras e costa nítidas em qualquer zoom, sem a escadinha das máscaras ampliadas. A amostragem/decodificação/linhas comuns foram extraídas para `map/map_shaders/atlas_common.gdshaderinc` (usado por `atlas_political.gdshader` e `political_overlay.gdshader`); os PNGs antigos foram mantidos no disco: `nav_mask.png` segue em uso por `core/economy/trade_convoys.gd`, e `country_borders.png`/`nation_fill.png` só pelo gerador `tools/build_political_layer.py`.
+- **Corrigido (atlas):** a Holanda nunca era pintada (`NED` no jogo × `NLD` no Natural Earth) — mapeado em `build_atlas_layers.py`; halo branco nas nações vinha da composição não pré-multiplicada em `political_overlay.gdshader`; as cópias laterais do mundo não trocavam de modo (agora `set_mode` age em todas).
+- **Corrigido (overlay dos modos de calor):** `political_overlay.gdshader` agora lê os mesmos SDFs/cores do atlas (`region_sdf`/`world_sdf` + `region_color`/`world_color`) em vez dos rasters antigos `country_borders.png`/`nation_fill.png`/`nav_mask.png` — fronteiras e costa nítidas em qualquer zoom, sem a escadinha das máscaras ampliadas. A amostragem/decodificação/linhas comuns foram extraídas para `map/map_shaders/atlas_common.gdshaderinc` (usado por `atlas_political.gdshader` e `political_overlay.gdshader`); os PNGs antigos `country_borders.png`/`nation_fill.png` e o gerador `tools/build_political_layer.py` foram **removidos** (substituídos pelas camadas `atlas/*`); `nav_mask.png` segue em uso por `core/economy/trade_convoys.gd`.
 - **Memória das camadas do atlas (corrigida):** `region_color.png`/`world_color.png` agora em compressão VRAM (S3TC, `compress/mode=2`); `region_sdf.png`/`world_sdf.png` seguem lossless (`mode=0`) pela precisão das linhas. Medido por `map_capture --bench` (texture_mem_mb): 353,3 MB antes → 274,6 MB depois (−78,7 MB) com o overlay novo. O "antes" já usa o overlay sobre SDFs (sem `country_borders`/`nation_fill`/`nav_mask` em VRAM), então o delta é só da compressão das cores; o baseline histórico do atlas_final media 389,8 MB por ainda carregar os rasters antigos. Sem perda visível: a comparação político `heat_after` × `atlas_final` mostrou 99,6% dos pixels com Δ≤5/255 (quantização imperceptível); os ~0,03% com Δ grande são deriva de rótulos entre execuções, presente também com cores sem compressão.
-- **Nomes de cidade** vêm do C++ em inglês (`LONDON`), não passam pela i18n — os nomes de nação no mapa já passam.
+- **Nomes de cidade (corrigido):** o mapa usa `I18n.city_name(city_id, fallback)` e atualiza os rótulos em `I18n.locale_changed` (incluindo as cópias laterais).
 
 ---
 
