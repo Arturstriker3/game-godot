@@ -94,6 +94,10 @@ private:
 		double consumed = 0.0;
 		double deficit = 0.0;
 		double dispatched = 0.0;
+		// Indicadores derivados, lidos pelo crescimento urbano visual.
+		double jobs = 0.0;
+		double income = 0.0;
+		double industrialization = 0.0;
 	};
 
 	struct TradeOrder {

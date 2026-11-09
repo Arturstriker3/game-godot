@@ -1,0 +1,277 @@
+{
+  "modules": [
+    {
+      "id": "res_casa_urbana",
+      "file": "res://assets/models/city_modules/res_casa_urbana.glb",
+      "category": "residential",
+      "zone": "residential",
+      "level": 1,
+      "description": "Sobrado geminado de 3 pavimentos",
+      "footprint": [
+        0.46,
+        0.4
+      ],
+      "height": 0.278
+    },
+    {
+      "id": "res_vila",
+      "file": "res://assets/models/city_modules/res_vila.glb",
+      "category": "residential",
+      "zone": "residential",
+      "level": 1,
+      "description": "Casa isolada de 2 pavimentos",
+      "footprint": [
+        0.3,
+        0.3
+      ],
+      "height": 0.237
+    },
+    {
+      "id": "res_sobrado",
+      "file": "res://assets/models/city_modules/res_sobrado.glb",
+      "category": "residential",
+      "zone": "residential",
+      "level": 2,
+      "description": "Quadra residencial de 4 pavimentos",
+      "footprint": [
+        0.48,
+        0.403
+      ],
+      "height": 0.26
+    },
+    {
+      "id": "res_predio_6",
+      "file": "res://assets/models/city_modules/res_predio_6.glb",
+      "category": "residential",
+      "zone": "residential",
+      "level": 3,
+      "description": "Pr\u00e9dio de apartamentos de 7 pavimentos",
+      "footprint": [
+        0.46,
+        0.43
+      ],
+      "height": 0.46
+    },
+    {
+      "id": "res_predio_10",
+      "file": "res://assets/models/city_modules/res_predio_10.glb",
+      "category": "residential",
+      "zone": "residential",
+      "level": 4,
+      "description": "L\u00e2mina residencial de 10 pavimentos",
+      "footprint": [
+        0.4,
+        0.43
+      ],
+      "height": 0.63
+    },
+    {
+      "id": "res_conjunto",
+      "file": "res://assets/models/city_modules/res_conjunto.glb",
+      "category": "residential",
+      "zone": "residential",
+      "level": 4,
+      "description": "Conjunto habitacional com torre de circula\u00e7\u00e3o",
+      "footprint": [
+        0.45,
+        0.295
+      ],
+      "height": 0.765
+    },
+    {
+      "id": "com_loja",
+      "file": "res://assets/models/city_modules/com_loja.glb",
+      "category": "commercial",
+      "zone": "commercial",
+      "level": 2,
+      "description": "Pr\u00e9dio misto com loja no t\u00e9rreo",
+      "footprint": [
+        0.46,
+        0.41
+      ],
+      "height": 0.277
+    },
+    {
+      "id": "com_escritorio_medio",
+      "file": "res://assets/models/city_modules/com_escritorio_medio.glb",
+      "category": "commercial",
+      "zone": "commercial",
+      "level": 3,
+      "description": "Escrit\u00f3rio de 9 pavimentos",
+      "footprint": [
+        0.42,
+        0.42
+      ],
+      "height": 0.57
+    },
+    {
+      "id": "ind_galpao",
+      "file": "res://assets/models/city_modules/ind_galpao.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 2,
+      "description": "Galp\u00e3o log\u00edstico com docas",
+      "footprint": [
+        0.92,
+        0.59
+      ],
+      "height": 0.162
+    },
+    {
+      "id": "ind_fabrica",
+      "file": "res://assets/models/city_modules/ind_fabrica.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 3,
+      "description": "F\u00e1brica de tijolo com chamin\u00e9s",
+      "footprint": [
+        0.64,
+        0.5
+      ],
+      "height": 0.596
+    },
+    {
+      "id": "com_torre",
+      "file": "res://assets/models/city_modules/com_torre.glb",
+      "category": "commercial",
+      "zone": "commercial",
+      "level": 5,
+      "description": "Torre de escrit\u00f3rios de 22 pavimentos",
+      "footprint": [
+        0.48,
+        0.48
+      ],
+      "height": 1.65
+    },
+    {
+      "id": "marco_publico",
+      "file": "res://assets/models/city_modules/marco_publico.glb",
+      "category": "public",
+      "zone": "public",
+      "level": 1,
+      "description": "Edif\u00edcio c\u00edvico com c\u00fapula",
+      "footprint": [
+        0.46,
+        0.4
+      ],
+      "height": 0.41
+    },
+    {
+      "id": "ind_siderurgia",
+      "file": "res://assets/models/city_modules/ind_siderurgia.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 3,
+      "description": "Complexo sider\u00fargico com alto-forno",
+      "footprint": [
+        1.26,
+        0.84
+      ],
+      "height": 0.675
+    },
+    {
+      "id": "ind_manufatura",
+      "file": "res://assets/models/city_modules/ind_manufatura.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 2,
+      "description": "Parque de manufatura com galp\u00f5es",
+      "footprint": [
+        1.0,
+        0.72
+      ],
+      "height": 0.19
+    },
+    {
+      "id": "ind_refinaria",
+      "file": "res://assets/models/city_modules/ind_refinaria.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 3,
+      "description": "Refinaria com colunas e tanques",
+      "footprint": [
+        1.0,
+        0.8
+      ],
+      "height": 0.61
+    },
+    {
+      "id": "ind_energia",
+      "file": "res://assets/models/city_modules/ind_energia.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 3,
+      "description": "Central t\u00e9rmica com torres de arrefecimento",
+      "footprint": [
+        1.1,
+        0.8
+      ],
+      "height": 0.6
+    },
+    {
+      "id": "ind_armazem",
+      "file": "res://assets/models/city_modules/ind_armazem.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 2,
+      "description": "Armazenagem com galp\u00e3o e silos",
+      "footprint": [
+        1.0,
+        0.608
+      ],
+      "height": 0.336
+    },
+    {
+      "id": "ind_aux_chamine",
+      "file": "res://assets/models/city_modules/ind_aux_chamine.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 1,
+      "description": "Chamin\u00e9s auxiliares",
+      "footprint": [
+        0.36,
+        0.28
+      ],
+      "height": 0.5
+    },
+    {
+      "id": "ind_aux_tanques",
+      "file": "res://assets/models/city_modules/ind_aux_tanques.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 1,
+      "description": "Bateria de tanques auxiliar",
+      "footprint": [
+        0.44,
+        0.36
+      ],
+      "height": 0.121
+    },
+    {
+      "id": "ind_aux_galpao",
+      "file": "res://assets/models/city_modules/ind_aux_galpao.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 1,
+      "description": "Galp\u00e3o auxiliar",
+      "footprint": [
+        0.44,
+        0.34
+      ],
+      "height": 0.155
+    },
+    {
+      "id": "ind_aux_patio",
+      "file": "res://assets/models/city_modules/ind_aux_patio.glb",
+      "category": "industrial",
+      "zone": "industrial",
+      "level": 1,
+      "description": "P\u00e1tio de estocagem",
+      "footprint": [
+        0.44,
+        0.36
+      ],
+      "height": 0.095
+    }
+  ]
+}

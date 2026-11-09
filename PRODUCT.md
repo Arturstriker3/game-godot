@@ -44,7 +44,7 @@ O mapa e a economia são os mesmos objetos: cada cidade é uma fonte de produç�
 ## Evidence on Hand
 
 - `assets/fonts/IMPRISHA.TTF` (fonte serifada de display já no projeto).
-- `assets/models/city.glb`, `truck.glb`, `ship.glb`, `plane.glb` e o mapa `map/map_data/ne2.png`.
+- `assets/models/city.glb`, `truck.glb`, `ship.glb`, `plane.glb` e o mapa de satélite `map/map_data/satellite.jpg`.
 - Núcleo C++ expõe `get_status()` e `tick()` com os campos listados em Operating Context.
 
 ## Product Principles

@@ -15,7 +15,7 @@ const SHIP_SCENE: PackedScene = preload("res://assets/models/ship.glb")
 const PLANE_SCENE: PackedScene = preload("res://assets/models/plane.glb")
 
 # Tamanho alvo (unidades de mundo) do maior eixo do modelo.
-const MODEL_LENGTH := 1.3
+const MODEL_LENGTH := 1.8
 # Altura acima do plano do mapa para o modelo não afundar no terreno.
 const HEIGHT_OFFSET := 0.18
 # Duração visual de cada trecho, derivada da distância real.
@@ -314,7 +314,7 @@ func _heuristic(a: Vector2i, b: Vector2i) -> float:
 	return maxf(dx, dy) + (sqrt(2.0) - 1.0) * minf(dx, dy)
 
 
-## Posiciona o veículo no início do trecho e o orienta para o destino.
+## Posiciona o veículo no início do trecho, orientado para o destino.
 func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) -> void:
 	if not is_instance_valid(convoy):
 		return
@@ -322,8 +322,7 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 	for child in convoy.get_children():
 		child.queue_free()
 
-	var model := _instantiate_model(mode)
-	convoy.add_child(model)
+	convoy.add_child(_instantiate_model(mode))
 	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0)
 	_face_target(convoy, start, end)
 

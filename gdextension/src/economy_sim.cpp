@@ -22,6 +22,14 @@ constexpr double kHoursPerDay = 24.0;
 // 0,3 kg de trigo por pessoa por dia, em toneladas.
 constexpr double kNeedPerCapita = 0.0003;
 
+// Indicadores urbanos derivados (não simulados): empregos industriais, renda
+// relativa e grau de industrialização usados pelo crescimento visual da cidade.
+constexpr double kTonsPerJob = 0.0025;
+constexpr double kTonsPerCapitaSaturation = 0.0006;
+constexpr double kIncomeFloor = 0.35;
+constexpr double kIncomeIndustrialWeight = 0.5;
+constexpr double kIncomeDeficitWeight = 0.3;
+
 // Abaixo disso a cidade está em emergência e paga o frete aéreo.
 constexpr double kEmergencyCoverDays = 2.0;
 constexpr double kEmergencyAirShare = 0.35;
@@ -122,6 +130,21 @@ Dictionary EconomySim::tick() {
 		city.stockpile -= city.consumed;
 		city.deficit = city.need - city.consumed;
 		city.dispatched = 0.0;
+
+		// Indicadores derivados: quanto a cidade industrializou, quantos
+		// empregos isso sustenta e a renda relativa (0..1) de quem vive nela.
+		const double saturation = city.population * kTonsPerCapitaSaturation;
+		city.industrialization = saturation > 0.0
+			? std::clamp(city.production / saturation, 0.0, 1.0)
+			: 0.0;
+		city.jobs = city.production / kTonsPerJob;
+		const double deficit_ratio = city.need > 0.0
+			? std::clamp(city.deficit / city.need, 0.0, 1.0)
+			: 0.0;
+		city.income = std::clamp(
+			kIncomeFloor + kIncomeIndustrialWeight * city.industrialization
+				- kIncomeDeficitWeight * deficit_ratio,
+			0.0, 1.0);
 	}
 
 	// 3. Cidades com excedente vendem para cidades com déficit. O que já está
@@ -408,6 +431,9 @@ Dictionary EconomySim::city_to_dict(const City& city) const {
 	dict["dispatched"] = city.dispatched;
 	dict["in_transit"] = in_transit_total(city.id);
 	dict["stockpile"] = city.stockpile;
+	dict["jobs"] = city.jobs;
+	dict["income"] = city.income;
+	dict["industrialization"] = city.industrialization;
 	dict["x"] = city.center.x;
 	dict["y"] = city.center.y;
 	return dict;

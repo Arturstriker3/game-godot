@@ -13,6 +13,7 @@ const POLITICS_SCREEN: Script = preload("res://core/ui/screens/politics_screen.g
 const CITY_DETAIL: Script = preload("res://core/ui/city_detail.gd")
 
 const PLAYER_NATION := "GBR"
+const IMAGERY_CREDIT := "Imagery © Esri, Maxar, Earthstar Geographics"
 
 const TOP_BAR_HEIGHT := 52.0
 const DOCK_WIDTH := 96.0
@@ -61,6 +62,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_dock()
 	_build_window()
+	_build_credit()
 
 	Economy.status_updated.connect(_on_status)
 	I18n.locale_changed.connect(_on_locale_changed)
@@ -85,6 +87,21 @@ func _build_root() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = UiKit.build_theme()
 	add_child(_root)
+
+
+## Crédito obrigatório da imagem de satélite usada no fundo do mapa.
+func _build_credit() -> void:
+	var label := UiKit.caption(IMAGERY_CREDIT, UiKit.TEXT_MUTED)
+	label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	label.offset_left = -340.0
+	label.offset_top = -18.0
+	label.offset_right = -10.0
+	label.offset_bottom = -4.0
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.04, 0.85))
+	label.add_theme_constant_override("outline_size", 6)
+	_root.add_child(label)
 
 
 # ---------------------------------------------------------------- barra superior
