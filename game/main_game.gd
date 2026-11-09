@@ -207,8 +207,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	var player := get_node_or_null("Player")
 	if player == null:
 		return
-	var city_id: String = city_world.pick_city(
-			get_viewport().get_mouse_position(), player.camera)
+	var mouse := get_viewport().get_mouse_position()
+	var port_id: String = city_world.pick_port(mouse, player.camera)
+	if not port_id.is_empty():
+		GameCursor.set_city_hover(false)
+		city_world.select_port(port_id)
+		hud.open_port(city_world.port_name(port_id))
+		get_viewport().set_input_as_handled()
+		return
+	var city_id: String = city_world.pick_city(mouse, player.camera)
 	if city_id.is_empty():
 		return
 	GameCursor.set_city_hover(false)

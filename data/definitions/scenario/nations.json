@@ -1,0 +1,27 @@
+[
+  {
+    "id": "GBR",
+    "name": "England",
+    "flag": "gb"
+  },
+  {
+    "id": "FRA",
+    "name": "France",
+    "flag": "fr"
+  },
+  {
+    "id": "DEU",
+    "name": "Germany",
+    "flag": "de"
+  },
+  {
+    "id": "NED",
+    "name": "Netherlands",
+    "flag": "nl"
+  },
+  {
+    "id": "BEL",
+    "name": "Belgium",
+    "flag": "be"
+  }
+]

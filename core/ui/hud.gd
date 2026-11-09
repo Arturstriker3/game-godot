@@ -153,6 +153,11 @@ func open_city(city_id: String) -> void:
 	_on_city_requested(city_id)
 
 
+func open_port(port_name: String) -> void:
+	if _root != null and not port_name.is_empty():
+		UiKit.toast(_root, "Porto: " + port_name, "neutral")
+
+
 func toggle_menu() -> void:
 	if _menu_layer.visible:
 		_close_menu()

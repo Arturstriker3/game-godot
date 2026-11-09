@@ -10,12 +10,14 @@ Entrada (data/definitions/scenario/):
     cities.csv    id,nation,home_nation,name,population,x,y,landmass
     ports.csv     id,name,nation,x,y,landmass
     buildings.csv city_id,building_id,name,output_tons_per_day
+    nations.csv   id,name,flag
 
 Saída (data/definitions/scenario/):
     cities.json    [ { id, nation, home_nation, name, population, production,
                       x, y, landmass }, ... ]
     ports.json     [ { id, name, nation, x, y, landmass }, ... ]
     buildings.json [ { city_id, id, name, output_tons_per_day }, ... ]
+    nations.json   [ { id, name, flag }, ... ]
 """
 
 import csv
@@ -74,6 +76,14 @@ def main() -> None:
             "landmass": row["landmass"].strip(),
         })
 
+    nations = []
+    for row in _rows("nations.csv"):
+        nations.append({
+            "id": row["id"].strip(),
+            "name": row["name"].strip(),
+            "flag": row["flag"].strip(),
+        })
+
     def _write(name: str, data) -> None:
         path = os.path.join(SCENARIO, name)
         with open(path, "w", encoding="utf-8") as fh:
@@ -83,6 +93,7 @@ def main() -> None:
     _write("cities.json", cities)
     _write("ports.json", ports)
     _write("buildings.json", buildings)
+    _write("nations.json", nations)
     print("OK")
 
 

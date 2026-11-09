@@ -39,7 +39,9 @@ const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
 const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
-const PORT_SIZE := 0.8
+const PORT_SIZE := 0.6
+const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.svg")
+const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.svg")
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -100,6 +102,7 @@ var _atlas_material: ShaderMaterial
 var _political_material: ShaderMaterial
 var _mode_layer: Node3D
 var _city_nodes: Array[Dictionary] = []
+var _port_nodes: Array[Dictionary] = []
 var _mode := "political"
 var _selection: MeshInstance3D
 var _selection_dot: MeshInstance3D
@@ -249,6 +252,57 @@ func city_world_position(city_id: String) -> Vector3:
 		if String(record["id"]) == city_id:
 			return to_global(record["position"])
 	return Vector3.ZERO
+
+
+## Porto sob o cursor (como `pick_city`), por raio fixo de pixels.
+func pick_port(screen_position: Vector2, camera: Camera3D, radius_px: float = 20.0) -> String:
+	if camera == null:
+		return ""
+	var best_id := ""
+	var best_score := 1.0
+	for record in _port_nodes:
+		var world: Vector3 = to_global(record["position"])
+		if camera.is_position_behind(world):
+			continue
+		var center := camera.unproject_position(world)
+		var score := center.distance_to(screen_position) / radius_px
+		if score <= 1.0 and (best_id.is_empty() or score < best_score):
+			best_score = score
+			best_id = String(record["id"])
+	return best_id
+
+
+## Posição global do porto (para centralizar a câmera).
+func port_world_position(port_id: String) -> Vector3:
+	for record in _port_nodes:
+		if String(record["id"]) == port_id:
+			return to_global(record["position"])
+	return Vector3.ZERO
+
+
+## Nome do porto pelo id (para feedback de clique).
+func port_name(port_id: String) -> String:
+	for record in _port_nodes:
+		if String(record["id"]) == port_id:
+			return String(record["name"])
+	return ""
+
+
+## Seleciona um porto (mesmo anel da cidade, no ponto do porto).
+func select_port(port_id: String) -> void:
+	_selected_id = port_id
+	if _selection == null:
+		_create_indicators()
+	if _selection == null:
+		return
+	var active := not port_id.is_empty()
+	_selection.visible = active
+	_selection_dot.visible = active
+	if active:
+		var base: Vector3 = port_world_position(port_id) + Vector3(0.0, 0.15, 0.0)
+		_selection.scale = Vector3(1.0, 1.0, 1.0)
+		_selection.global_position = base
+		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
 
 
 func selected_city() -> String:
@@ -666,6 +720,7 @@ func _build_cities(cities: Array) -> void:
 			# Guarda a chave/fallback para atualizar o texto ao trocar idioma.
 			label.set_meta("city_id", city_id)
 			label.set_meta("city_fallback", city_name)
+			_add_place_icon(position, CITY_ICON)
 		_city_nodes.append({
 			"id": city_id,
 			"city": city,
@@ -713,16 +768,11 @@ func _build_city_multimesh(cities: Array) -> void:
 	_content.add_child(instance)
 
 
-## Portos como entidades 3D: modelo port.glb + disco do dono.
+## Portos como entidades 3D: modelo port.glb (sem disco de fundo, como a cidade).
 func _build_ports(ports: Array) -> void:
 	for port: Dictionary in ports:
 		var pos := pixel_to_world(Vector2(float(port["x"]), float(port["y"])))
-		var color: Color = NATION_COLORS.get(String(port["nation"]), Color.WHITE)
 
-		# Disco de dono, como nos marcadores de cidade.
-		_add_disc(pos + Vector3(0.0, 0.14, 0.0), 0.62, 0.10, color)
-
-		# Modelo 3D do porto, escalado para ~PORT_SIZE no maior eixo.
 		var model := PORT_SCENE.instantiate() as Node3D
 		_content.add_child(model)
 		model.position = pos
@@ -730,6 +780,47 @@ func _build_ports(ports: Array) -> void:
 		var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
 		if longest > 0.0:
 			model.scale = Vector3.ONE * (PORT_SIZE / longest)
+
+		# Ícone + nome do porto.
+		_add_place_icon(pos, PORT_ICON)
+		_add_port_label(pos, String(port["name"]))
+
+		_port_nodes.append({
+			"id": String(port["id"]),
+			"name": String(port["name"]),
+			"nation": String(port["nation"]),
+			"position": pos,
+		})
+
+
+## Ícone de lugar (cidade/porto) como billboard sobre a posição.
+func _add_place_icon(position: Vector3, texture: Texture2D) -> Sprite3D:
+	var sprite := Sprite3D.new()
+	sprite.texture = texture
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.pixel_size = 0.0018
+	sprite.modulate = Color(0.91, 0.89, 0.82)
+	sprite.position = position + Vector3(0.0, 1.6, 0.0)
+	_content.add_child(sprite)
+	return sprite
+
+
+## Nome do porto (Label3D), no mesmo estilo dos rótulos de cidade.
+func _add_port_label(position: Vector3, port_name: String) -> Label3D:
+	var label := Label3D.new()
+	label.text = port_name.to_upper()
+	label.font = LABEL_FONT
+	label.font_size = LABEL_SIZE_TOWN
+	label.pixel_size = 0.019
+	label.modulate = Color("#E8E2D0")
+	label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
+	label.outline_size = int(LABEL_SIZE_TOWN * 0.4)
+	label.no_depth_test = true
+	label.render_priority = 10
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = position + Vector3(0.0, 1.0, 0.0)
+	_content.add_child(label)
+	return label
 
 
 ## AABB combinada das malhas do modelo, em espaço local da raiz.
