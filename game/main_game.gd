@@ -14,9 +14,11 @@ const CAMERA_DISTANCE := 52.0
 var city_world
 var convoys
 var hud
+var _last_hover := ""
 
 
 func _ready() -> void:
+	GameCursor.install()
 	_build_city_world()
 	_build_convoys()
 	_setup_camera()
@@ -92,12 +94,7 @@ func _on_map_mode_requested(mode: String) -> void:
 ## Clique no mapa seleciona a cidade mais próxima; a janela do HUD tem
 ## prioridade sobre o mapa. Movimento do mouse atualiza o realce de hover.
 func _unhandled_input(event: InputEvent) -> void:
-	if hud == null:
-		return
-	if event is InputEventMouseMotion:
-		_update_city_hover()
-		return
-	if hud.is_window_open():
+	if hud == null or hud.is_window_open():
 		return
 	if not event.is_action_pressed("province_select"):
 		return
@@ -108,21 +105,34 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().get_mouse_position(), player.camera)
 	if city_id.is_empty():
 		return
+	GameCursor.set_city_hover(false)
 	hud.open_city(city_id)
 	get_viewport().set_input_as_handled()
 
 
-## Realce sutil da cidade sob o cursor; desliga quando a janela do HUD abre.
-func _update_city_hover() -> void:
-	if hud.is_window_open():
-		city_world.set_hover("")
+## Realce/cursor da cidade sob o cursor. Roda por frame para não ficar preso
+## quando o mouse entra na UI (o Motion não chega ao _unhandled_input ali).
+func _update_city_hover_pass() -> void:
+	if city_world == null or hud == null:
+		return
+	var blocked: bool = hud.is_window_open() \
+			or get_viewport().gui_get_hovered_control() != null
+	if blocked:
+		if not _last_hover.is_empty():
+			_last_hover = ""
+			city_world.set_hover("")
+			GameCursor.set_city_hover(false)
 		return
 	var player := get_node_or_null("Player")
 	if player == null:
 		return
 	var city_id: String = city_world.pick_city(
 			get_viewport().get_mouse_position(), player.camera)
+	if city_id == _last_hover:
+		return
+	_last_hover = city_id
 	city_world.set_hover(city_id)
+	GameCursor.set_city_hover(not city_id.is_empty())
 
 
 ## Mantém a câmera dentro de um período do mapa: ao passar da borda em X, ela
@@ -141,3 +151,5 @@ func _process(_delta: float) -> void:
 		player.position.x -= city_world.PLANE_SIZE.x
 	elif offset < -half_width:
 		player.position.x += city_world.PLANE_SIZE.x
+
+	_update_city_hover_pass()

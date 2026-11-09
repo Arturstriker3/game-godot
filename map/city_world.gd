@@ -124,21 +124,26 @@ func pixel_to_world(px: Vector2) -> Vector3:
 	)
 
 
-## Cidade mais próxima do clique em tela, dentro do raio informado.
-## Sem física: projeta cada cidade para a viewport, o que funciona em qualquer
-## nível de zoom e não interfere no algoritmo territorial.
+## Cidade sob o cursor considerando a ÁREA do corpo urbano, não só o centro.
+## Sem física: projeta o centro e um ponto na borda (raio do footprint) para
+## obter o raio em pixels; `radius_px` é o mínimo para cidades distantes.
 func pick_city(screen_position: Vector2, camera: Camera3D, radius_px: float = 26.0) -> String:
 	if camera == null:
 		return ""
 	var best_id := ""
-	var best_distance := radius_px
+	var best_score := 1.0
+	var right := camera.global_transform.basis.x
 	for record in _city_nodes:
 		var world: Vector3 = to_global(record["position"])
 		if camera.is_position_behind(world):
 			continue
-		var distance := camera.unproject_position(world).distance_to(screen_position)
-		if distance <= best_distance:
-			best_distance = distance
+		var center := camera.unproject_position(world)
+		var footprint := _city_footprint(String(record["id"]))
+		var edge := camera.unproject_position(world + right * footprint)
+		var city_radius := maxf(radius_px, center.distance_to(edge))
+		var score := center.distance_to(screen_position) / city_radius
+		if score <= 1.0 and (best_id.is_empty() or score < best_score):
+			best_score = score
 			best_id = String(record["id"])
 	return best_id
 
