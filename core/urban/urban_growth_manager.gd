@@ -192,7 +192,7 @@ func _update_ground() -> void:
 		_ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_ground.position.y = 0.004
 		add_child(_ground)
-	var size := (extent + 0.9) * 2.0
+	var size := (extent + 0.4) * 2.0
 	(_ground.mesh as PlaneMesh).size = Vector2(size, size)
 
 

@@ -45,7 +45,10 @@ const URBAN_BUILD_DISTANCE := 96.0
 const CITY_VISIBLE_DISTANCE := 100.0
 const MARKER_FADE_IN_START := 100.0
 const MARKER_FADE_IN_END := 112.0
-const URBAN_SCALE := 0.9
+## Escala da cidade no mapa. As cidades ficam em posições geográficas reais:
+## Bruxelas–Amsterdã dista ~4,5 u, então o diâmetro precisa ficar bem abaixo
+## disso para não encostar nas vizinhas.
+const URBAN_SCALE := 0.45
 const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
 const LABEL_PIXEL_MAX := 0.12
