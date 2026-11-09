@@ -42,6 +42,8 @@ func _ready() -> void:
 	_build_vignette()
 	_build_hud()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
+	Economy.speed_changed.connect(_on_speed_changed)
+	_on_speed_changed(Economy.speed)
 	Economy.status_updated.connect(_on_status_updated)
 	city_world.territory_changed.connect(_on_territory_changed)
 
@@ -81,6 +83,18 @@ func _build_convoys() -> void:
 	convoys = ConvoysScript.new()
 	convoys.position = Vector3.ZERO
 	city_world.add_child(convoys)
+
+
+## Os veículos de comércio seguem o relógio da economia: 2x/3x aceleram e a
+## pausa (índice 0) congela. O ritmo normal é SPEEDS[1] (60 s por dia).
+func _on_speed_changed(index: int) -> void:
+	if convoys == null:
+		return
+	var paused := index == 0
+	var rate := 1.0
+	if not paused:
+		rate = float(Economy.SPEEDS[1]) / float(Economy.SPEEDS[index])
+	convoys.set_time_scale(rate, paused)
 
 
 ## CÃƒÂ¢mera inclinada sobre o centro do mapa; o controle comeÃƒÂ§a daqui.

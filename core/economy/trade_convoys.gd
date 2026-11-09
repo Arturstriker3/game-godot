@@ -54,6 +54,10 @@ var _active_convoys := 0
 var _scale_cache := {}
 var _nav_image: Image
 var _path_cache := {}
+## Tweens em andamento, para acompanhar a velocidade/pausa da simulação.
+var _tweens: Array[Tween] = []
+var _time_scale := 1.0
+var _paused := false
 
 
 ## Fila de prioridade mínima simples (heap binário) para o A*.
@@ -131,10 +135,38 @@ func _spawn_order(order: Dictionary) -> void:
 	_active_convoys += 1
 
 	var tween := create_tween()
+	# O tween nasce no ritmo atual da simulação (1x = 60 s por dia) e entra na
+	# lista para acompanhar mudanças de velocidade e pausa.
+	tween.set_speed_scale(_time_scale)
+	if _paused:
+		tween.pause()
+	_tweens.append(tween)
+	tween.finished.connect(_on_tween_finished.bind(tween))
 	for leg in legs:
 		_append_leg(tween, convoy, leg)
 
 	tween.tween_callback(_finish_convoy.bind(convoy))
+
+
+## Acompanha o relógio da economia: `rate` = quantas vezes o ritmo normal
+## (1x). `paused` congela os veículos existentes até o play.
+func set_time_scale(rate: float, paused: bool) -> void:
+	_time_scale = maxf(rate, 0.01)
+	_paused = paused
+	for index in range(_tweens.size() - 1, -1, -1):
+		var tween: Tween = _tweens[index]
+		if tween == null or not tween.is_valid():
+			_tweens.remove_at(index)
+			continue
+		tween.set_speed_scale(_time_scale)
+		if _paused:
+			tween.pause()
+		else:
+			tween.play()
+
+
+func _on_tween_finished(tween: Tween) -> void:
+	_tweens.erase(tween)
 
 
 ## Enfileira no tween cada segmento do caminho do trecho.
