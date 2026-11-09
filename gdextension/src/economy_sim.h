@@ -169,6 +169,12 @@ private:
 		double production;
 		double stockpile;
 		MapPoint center;
+		// Massa de terra contínua (rota por terra só dentro dela) e o porto que
+		// a cidade usa para atravessar o mar. Porto no próprio centro = cidade
+		// costeira (sem trecho de caminhão até o porto).
+		std::string landmass;
+		std::string port_name;
+		MapPoint port;
 		// Valores por dia, recalculados a cada tick.
 		double need = 0.0;
 		double consumed = 0.0;

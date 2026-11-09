@@ -34,6 +34,7 @@ $godot = "C:\Users\artur\OneDrive\Área de Trabalho\Godot_v4.7.2-stable_win64.ex
 & $godot --headless --path . --script res://tools/economy_panel_test.gd
 & $godot --headless --path . --script res://tools/population_demo_test.gd
 & $godot --headless --path . --script res://tools/camera_limit_test.gd
+& $godot --headless --path . --script res://tools/territory_test.gd
 
 # Camadas do mapa atlas (requer pyshp e scipy)
 python tools/build_atlas_layers.py

@@ -6,17 +6,23 @@ anti-aliasing em qualquer distância de câmera.
 
 Saídas em map/map_data/atlas/:
   region_sdf.png    RGB8  Europa em alta resolução
-                    R = distância assinada à costa (128 + d*2 texels; >128 = terra)
-                    G = distância assinada à fronteira de país (128 + d*8 texels)
-                    B = distância assinada à divisa admin-1 (128 + d*8 texels)
-                    Nas fronteiras o sinal vem da ordem dos ids dos dois lados:
-                    um campo sem sinal tem um "V" na linha que a interpolação
-                    bilinear achata (a linha some quando passa entre texels); com
-                    sinal o cruzamento por zero sobrevive. O sinal inverte no eixo
-                    medial, longe da linha — o shader descarta esse salto.
+                     R = distância assinada à costa (128 + d*2 texels; >128 = terra)
+                     G = distância assinada à fronteira de país (128 + d*8 texels)
+                     B = distância assinada à divisa admin-1 (128 + d*8 texels)
+                     Nas fronteiras o sinal vem da ordem dos ids dos dois lados:
+                     um campo sem sinal tem um "V" na linha que a interpolação
+                     bilinear achata (a linha some quando passa entre texels); com
+                     sinal o cruzamento por zero sobrevive. O sinal inverte no eixo
+                     medial, longe da linha — o shader descarta esse salto.
   region_color.png  RGB8  cor política (estendida sobre o mar, sem borda alfa)
+  region_province.png RGB8  id da província admin-1 por pixel (id = R + G*256,
+                      B=0; id 0 preenchido com a província de terra mais próxima)
   world_sdf.png     RGB8  mesmo formato, mundo inteiro em baixa resolução
   world_color.png   RGB8
+  world_province.png RGB8 id GLOBAL da província admin-1 por pixel (id = R+G*256,
+                      sem zeros: preenchido com a província de terra mais próxima)
+  provinces.json      id global, país (ADM0_A3), nação (tag do jogo), cor estática,
+                      centroide (5000x2500) e área global de cada província
   minimap.png       RGB8  mapa político global reduzido para o minimapa
   nations.json      âncora do nome de cada nação jogável (pixels 5000x2500)
 
@@ -49,6 +55,15 @@ REGION = (-25.0, 33.0, 45.0, 72.0)  # lon0, lat0, lon1, lat1
 REGION_W = 4096
 WORLD_W = 4096
 SUPERSAMPLE = 2
+
+# Plano global do jogo em pixels (o mundo cilíndrico é 5000×2500).
+GLOBAL_W = 5000.0
+GLOBAL_H = 2500.0
+
+# Escala linear px -> px global: região (4096 px sobre 70°) e mundo (4096 px
+# sobre 360°). A área escala com o quadrado.
+REGION_TO_GLOBAL = (REGION[2] - REGION[0]) / REGION_W * (GLOBAL_W / 360.0)
+WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
 
 # Código do Natural Earth -> tag do jogo (o jogo usa NED para a Holanda).
 GAME_TAGS = {"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NLD": "NED", "BEL": "BEL"}
@@ -98,18 +113,42 @@ def read_admin0():
     return countries
 
 
-def read_admin1(bounds):
-    lon0, lat0, lon1, lat1 = bounds
+def read_admin1_all():
+    """Lê TODAS as províncias admin-1 do shapefile (sem filtro de bbox).
+
+    O id global é o índice 1..N na lista única. Devolve as geometrias, o
+    código ADM0 de cada uma e a bbox (para a seleção da região)."""
     reader = shapefile.Reader(ADMIN1, encoding="utf-8")
+    names = [field[0] for field in reader.fields[1:]]
     shapes = []
-    for shape in reader.shapes():
-        x0, y0, x1, y1 = shape.bbox
+    countries = []
+    bboxes = []
+    for shape, record in zip(reader.shapes(), reader.records()):
+        parts = split_parts(shape)
+        if not parts:
+            continue
+        fields = dict(zip(names, record))
+        adm0 = str(fields.get("adm0_a3") or fields.get("ADM0_A3") or "").strip()
+        shapes.append(parts)
+        countries.append(adm0)
+        bboxes.append(shape.bbox)
+    return shapes, countries, bboxes
+
+
+def select_region(provinces, province_countries, province_bboxes, bounds):
+    """Filtra as províncias que intersectam a bbox da região, mantendo o id global."""
+    lon0, lat0, lon1, lat1 = bounds
+    sel_shapes = []
+    sel_countries = []
+    sel_ids = []
+    for index, (parts, bbox) in enumerate(zip(provinces, province_bboxes)):
+        x0, y0, x1, y1 = bbox
         if x1 < lon0 or x0 > lon1 or y1 < lat0 or y0 > lat1:
             continue
-        parts = split_parts(shape)
-        if parts:
-            shapes.append(parts)
-    return shapes
+        sel_shapes.append(parts)
+        sel_countries.append(province_countries[index])
+        sel_ids.append(index + 1)  # id global
+    return sel_shapes, sel_countries, sel_ids
 
 
 def split_parts(shape):
@@ -215,9 +254,11 @@ def encode(values, scale, offset):
     return np.clip(np.round(offset + values * scale), 0, 255).astype(np.uint8)
 
 
-def build_layer(name, bounds, width, countries, province_shapes):
-    hi = Grid(bounds, width * SUPERSAMPLE)
-    lo_height = hi.height // SUPERSAMPLE
+def build_layer(name, bounds, width, countries, province_shapes,
+                province_countries=None, province_ids=None, supersample=SUPERSAMPLE):
+    hi = Grid(bounds, width * supersample)
+    lo_height = hi.height // supersample
+    grid = Grid(bounds, width)
     print(f"[{name}] raster {hi.width}x{hi.height} -> {width}x{lo_height}")
 
     owners = hi.rasterize([c["parts"] for c in countries], range(1, len(countries) + 1))
@@ -225,24 +266,30 @@ def build_layer(name, bounds, width, countries, province_shapes):
 
     coast = distance_transform_edt(land).astype(np.float32)
     coast -= distance_transform_edt(~land).astype(np.float32)
-    coast_lo = downsample(coast, SUPERSAMPLE) / SUPERSAMPLE
+    coast_lo = downsample(coast, supersample) / supersample
     del coast
 
     owner_neighbor = border_neighbors(owners, land)
     border_field = signed_border_distance(owners, owner_neighbor)
     # O salto do eixo medial continua um salto (o shader o descarta pelo gradiente).
-    borders_lo = downsample_signed(border_field, SUPERSAMPLE) / SUPERSAMPLE
+    borders_lo = downsample_signed(border_field, supersample) / supersample
     border_unsigned_lo = np.abs(borders_lo)
     del border_field, owner_neighbor
 
+    province_ids_lo = None
     if province_shapes:
-        provinces = hi.rasterize(province_shapes, range(1, len(province_shapes) + 1))
+        provinces = hi.rasterize(province_shapes, province_ids)
         valid = land & (provinces != 0)
-        # Só divisas internas: a fronteira de país já tem linha própria.
-        province_neighbor = border_neighbors(provinces, valid, group=owners)
+        # Divisas de província em TODOS os pares (inclusive entre países): o
+        # canal B também marca a fronteira entre nações, para a fase dinâmica.
+        province_neighbor = border_neighbors(provinces, valid)
         province_field = signed_border_distance(provinces, province_neighbor)
-        provinces_lo = downsample_signed(province_field, SUPERSAMPLE) / SUPERSAMPLE
-        del provinces, province_neighbor, province_field
+        provinces_lo = downsample_signed(province_field, supersample) / supersample
+        del province_neighbor, province_field
+
+        # Raster de id de província na resolução baixa (amostragem pontual).
+        province_ids_lo = provinces[::supersample, ::supersample][:coast_lo.shape[0], :coast_lo.shape[1]]
+        del provinces
     else:
         provinces_lo = np.full(coast_lo.shape, 1e6, dtype=np.float32)
 
@@ -258,7 +305,7 @@ def build_layer(name, bounds, width, countries, province_shapes):
     ])
     Image.fromarray(sdf, "RGB").save(os.path.join(OUT, f"{name}_sdf.png"), optimize=True)
 
-    owners_lo = owners[::SUPERSAMPLE, ::SUPERSAMPLE][:coast_lo.shape[0], :coast_lo.shape[1]]
+    owners_lo = owners[::supersample, ::supersample][:coast_lo.shape[0], :coast_lo.shape[1]]
     del owners, land
     palette = np.zeros((len(countries) + 1, 3), dtype=np.uint8)
     for index, country in enumerate(countries, start=1):
@@ -271,12 +318,16 @@ def build_layer(name, bounds, width, countries, province_shapes):
     color = palette[owners_filled]
     Image.fromarray(color, "RGB").save(os.path.join(OUT, f"{name}_color.png"), optimize=True)
 
+    if province_ids_lo is not None:
+        write_province_png(name, province_ids_lo)
+
     return {
-        "grid": Grid(bounds, width),
+        "grid": grid,
         "owners": owners_lo,
         "land": land_lo,
         "borders": border_unsigned_lo,
         "color": color,
+        "province_ids": province_ids_lo,
     }
 
 
@@ -285,6 +336,87 @@ def country_color(country):
     if game_tag:
         return NATION_COLORS[game_tag]
     return NEUTRAL_PALETTE[(country["mapcolor"] - 1) % len(NEUTRAL_PALETTE)]
+
+
+def write_province_png(name, ids_lo):
+    """Grava o raster de id de província (id = R + G*256, B=0).
+
+    Pixels com id 0 (mar/lacunas) recebem o id da província de terra mais
+    próxima (mesmo preenchimento usado para a cor política), para o shader
+    nunca amostrar id 0 e o preenchimento por filtro nunca misturar com "nada"."""
+    _, nearest = distance_transform_edt(ids_lo == 0, return_indices=True)
+    ids_filled = ids_lo[nearest[0], nearest[1]]
+    del nearest
+    rgb = np.zeros((*ids_filled.shape, 3), dtype=np.uint8)
+    rgb[..., 0] = (ids_filled & 0xFF).astype(np.uint8)
+    rgb[..., 1] = ((ids_filled >> 8) & 0xFF).astype(np.uint8)
+    Image.fromarray(rgb, "RGB").save(os.path.join(OUT, f"{name}_province.png"), optimize=True)
+
+
+def write_provinces_json(region, world, province_countries, countries):
+    """provinces.json: uma entrada por id global com área > 0 em qualquer camada.
+
+    Centroide (x, y) e área vêm da camada MUNDIAL (px globais 5000×2500);
+    quando uma província só existe na região (pequena demais para o mundo),
+    usa a camada da região como fallback."""
+    region_ids = region["province_ids"]
+    world_ids = world["province_ids"]
+    total = len(province_countries)
+    country_by_tag = {c["tag"]: c for c in countries}
+
+    def centroid_of(ids_lo, grid):
+        counts = np.bincount(ids_lo.ravel(), minlength=total + 1)
+        ys, xs = np.indices(ids_lo.shape)
+        xsum = np.bincount(ids_lo.ravel(), weights=xs.ravel().astype(np.float64),
+                           minlength=total + 1)
+        ysum = np.bincount(ids_lo.ravel(), weights=ys.ravel().astype(np.float64),
+                           minlength=total + 1)
+        return counts, xsum, ysum
+
+    world_counts, world_xsum, world_ysum = centroid_of(world_ids, world["grid"])
+    region_counts, region_xsum, region_ysum = centroid_of(region_ids, region["grid"])
+
+    rows = []
+    for pid in range(1, total + 1):
+        area_world = int(world_counts[pid])
+        if area_world > 0:
+            area_global = area_world * (WORLD_TO_GLOBAL ** 2)
+            row = world_ysum[pid] / area_world
+            col = world_xsum[pid] / area_world
+            grid = world["grid"]
+        else:
+            area_region = int(region_counts[pid])
+            if area_region == 0:
+                continue
+            area_global = area_region * (REGION_TO_GLOBAL ** 2)
+            row = region_ysum[pid] / area_region
+            col = region_xsum[pid] / area_region
+            grid = region["grid"]
+
+        lon = grid.lon0 + (col + 0.5) / grid.width * (grid.lon1 - grid.lon0)
+        lat = grid.lat1 - (row + 0.5) / grid.height * (grid.lat1 - grid.lat0)
+        adm0 = province_countries[pid - 1]
+        game_tag = GAME_TAGS.get(adm0)
+        nation = game_tag if game_tag else adm0
+        country = country_by_tag.get(adm0)
+        color = list(country_color(country)) if country else list(NEUTRAL_PALETTE[0])
+        rows.append({
+            "id": pid,
+            "country": adm0,
+            "nation": nation,
+            "color": color,
+            "x": round((lon + 180.0) / 360.0 * GLOBAL_W, 1),
+            "y": round((90.0 - lat) / 180.0 * GLOBAL_H, 1),
+            "area_global": round(area_global, 1),
+        })
+
+    data = {
+        "nation_colors": {tag: list(rgb_value) for tag, rgb_value in NATION_COLORS.items()},
+        "provinces": rows,
+    }
+    with open(os.path.join(OUT, "provinces.json"), "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent="\t")
+        handle.write("\n")
 
 
 def nation_anchors(layer, countries):
@@ -311,9 +443,9 @@ def nation_anchors(layer, countries):
         lon = grid.lon0 + (col + 0.5) / grid.width * (grid.lon1 - grid.lon0)
         lat = grid.lat1 - (row + 0.5) / grid.height * (grid.lat1 - grid.lat0)
         anchors[game_tag] = {
-            "x": round((lon + 180.0) / 360.0 * 5000.0, 1),
-            "y": round((90.0 - lat) / 180.0 * 2500.0, 1),
-            "extent_px": round(float(np.sqrt(rows.size)) / grid.width * 5000.0
+            "x": round((lon + 180.0) / 360.0 * GLOBAL_W, 1),
+            "y": round((90.0 - lat) / 180.0 * GLOBAL_H, 1),
+            "extent_px": round(float(np.sqrt(rows.size)) / grid.width * GLOBAL_W
                                * (grid.lon1 - grid.lon0) / 360.0, 1),
         }
     return anchors
@@ -339,16 +471,30 @@ def main():
 
     countries = read_admin0()
     print(f"países={len(countries)}")
-    provinces = read_admin1(REGION)
-    print(f"províncias na região={len(provinces)}")
 
-    region = build_layer("region", REGION, REGION_W, countries, provinces)
+    # Uma lista ÚNICA de províncias admin-1; id global = índice 1..N.
+    provinces, province_countries, province_bboxes = read_admin1_all()
+    print(f"províncias admin-1 no mundo={len(provinces)}")
+
+    region_shapes, region_countries, region_ids = select_region(
+        provinces, province_countries, province_bboxes, REGION)
+    print(f"províncias na região={len(region_shapes)}")
+
+    region = build_layer("region", REGION, REGION_W, countries,
+                         region_shapes, region_countries, region_ids,
+                         supersample=SUPERSAMPLE)
     with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
         json.dump(nation_anchors(region, countries), handle, indent="\t")
         handle.write("\n")
-    del region
 
-    world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries, [])
+    # Camada mundial: TODAS as províncias, com supersample como a região.
+    # O edt+índices em 8192×4096 é pesado; se faltar memória, use supersample=1
+    # (a camada mundial em baixa resolução perde províncias sub-texel, como o
+    # departamento de Paris, e o id diverge do raster da região).
+    world_ids = list(range(1, len(provinces) + 1))
+    world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
+                        provinces, province_countries, world_ids, supersample=SUPERSAMPLE)
+    write_provinces_json(region, world, province_countries, countries)
     write_minimap(world)
     print(f"escrito em {OUT}")
 

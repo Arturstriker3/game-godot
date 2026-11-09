@@ -64,10 +64,8 @@ func _center_world(cities: Array) -> void:
 	if cities.is_empty():
 		return
 
-	var center := Vector3.ZERO
-	for city in cities:
-		center += city_world.pixel_to_world(Vector2(city["x"], city["y"]))
-	city_world.position = -center / float(cities.size())
+	var center: Vector3 = city_world.pixel_to_world(CityWorldScript.framing_center_px(cities))
+	city_world.position = -center
 
 
 func _build_convoys() -> void:

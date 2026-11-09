@@ -93,6 +93,13 @@ vetores do Natural Earth 10m por `tools/build_atlas_layers.py`
   partir de 95 u, quando os nomes de cidade saem).
 - **Borda do mundo:** a vinheta polar termina exatamente na cor de fundo do
   ambiente, então o horizonte não mostra a quina da prancha.
+- **Território dinâmico:** no mundo inteiro (Europa em alta resolução, resto na
+  camada mundial) a cor e a fronteira de país vêm do
+  dono atual de cada província (nação da cidade que a controla, lida do status
+  do Economy). Fronteira grossa onde os donos de províncias vizinhas diferem,
+  divisa fina onde são iguais; a faixa escura junto à fronteira tem 0,3 u (cabe
+  dentro de uma província). O nome da nação se reposiciona sobre o território
+  possuído e some se a nação perde tudo.
 - **Regenerar:** `python tools/build_atlas_layers.py` (pyshp + scipy).
 
 ## Camada geopolítica (modos sobre o satélite)

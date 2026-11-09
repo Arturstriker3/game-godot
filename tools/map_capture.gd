@@ -43,6 +43,10 @@ var _height := 900
 var _bench := false
 ## Opcional: id da cidade a destacar (ex.: FRA-PAR) para conferir a seleção.
 var _select := ""
+## Opcional: id da cidade a enquadrar no centro (ex.: FRA-CAY).
+var _focus := ""
+## Overrides de território: pares [city_id, tag] via --territory.
+var _territory_pairs: Array[Array] = []
 
 const BENCH_WARMUP := 45
 const BENCH_FRAMES := 180
@@ -116,6 +120,16 @@ func _parse_args() -> void:
 				_bench = value != "0" and value != "false"
 			"--select":
 				_select = value
+			"--focus":
+				_focus = value
+			"--territory":
+				_territory_pairs.clear()
+				for chunk in value.split(","):
+					if chunk.is_empty():
+						continue
+					var parts := chunk.split(":")
+					if parts.size() == 2 and not parts[0].is_empty():
+						_territory_pairs.append([parts[0], parts[1]])
 
 
 # --- Mapa 3D atual ----------------------------------------------------------
@@ -132,7 +146,11 @@ func _capture_map3d() -> void:
 	var world: Node3D = CityWorldScript.new()
 	add_child(world)
 	world.build(cities)
+	_apply_territory_overrides(world)
 	_center_world(world, cities)
+	if not _focus.is_empty():
+		world.position -= world.city_world_position(_focus)
+		_manifest["focus"] = _focus
 	_manifest["city_count"] = cities.size()
 	world.set_mode(_mode)
 
@@ -156,10 +174,14 @@ func _capture_map3d() -> void:
 
 ## Mesmo procedimento de game/main_game.gd: centraliza as cidades na origem.
 func _center_world(world: Node3D, cities: Array) -> void:
-	var center := Vector3.ZERO
-	for city in cities:
-		center += world.pixel_to_world(Vector2(city["x"], city["y"]))
-	world.position = -center / float(cities.size())
+	var center: Vector3 = world.pixel_to_world(CityWorldScript.framing_center_px(cities))
+	world.position = -center
+
+
+## Aplica overrides de território (--territory=CITY:TAG,...) após o build.
+func _apply_territory_overrides(world: Node3D) -> void:
+	for pair in _territory_pairs:
+		world.debug_set_city_nation(String(pair[0]), String(pair[1]))
 
 
 # --- Baseline plano (mesmos assets, sem perspectiva nem cidades) ------------

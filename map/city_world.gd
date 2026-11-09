@@ -28,6 +28,8 @@ const ATLAS_REGION_COLOR: Texture2D = preload("res://map/map_data/atlas/region_c
 const ATLAS_WORLD_SDF: Texture2D = preload("res://map/map_data/atlas/world_sdf.png")
 const ATLAS_WORLD_COLOR: Texture2D = preload("res://map/map_data/atlas/world_color.png")
 const ATLAS_NATIONS_PATH := "res://map/map_data/atlas/nations.json"
+const ATLAS_REGION_PROVINCE: Texture2D = preload("res://map/map_data/atlas/region_province.png")
+const ATLAS_WORLD_PROVINCE: Texture2D = preload("res://map/map_data/atlas/world_province.png")
 const NATION_LABEL_FONT: Font = preload("res://assets/fonts/Cinzel-Variable.ttf")
 const POLITICAL_SHADER: Shader = preload("res://map/map_shaders/political_overlay.gdshader")
 const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
@@ -35,6 +37,7 @@ const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.tt
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
+const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -91,6 +94,7 @@ var _content: Node3D
 var _gps_mesh: MeshInstance3D
 var _atlas_mesh: MeshInstance3D
 var _political_layer: MeshInstance3D
+var _atlas_material: ShaderMaterial
 var _political_material: ShaderMaterial
 var _mode_layer: Node3D
 var _city_nodes: Array[Dictionary] = []
@@ -100,6 +104,12 @@ var _selection_dot: MeshInstance3D
 var _hover: MeshInstance3D
 var _selected_id := ""
 var _nation_labels: Array[Label3D] = []
+var _nation_anchors: Dictionary = {}
+
+## Território dinâmico (províncias -> dono).
+var _territory: TerritoryMap
+var _territory_overrides: Dictionary = {}
+var _last_cities: Array = []
 
 
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
@@ -112,6 +122,7 @@ func build(cities: Array) -> void:
 	_build_mode_layer(cities)
 	_build_cities(cities)
 	_build_nation_labels()
+	_init_territory(cities)
 	set_mode(_mode)
 
 	# Cópias laterais: o mundo dá a volta em X (cilíndrico), então quem sai por
@@ -169,6 +180,28 @@ func current_mode() -> String:
 func refresh_modes(cities: Array) -> void:
 	if _mode_layer != null:
 		_mode_layer.refresh(cities)
+	_refresh_territory(cities)
+
+
+## Ponto (px do mapa) onde a câmera começa: MEDIANA das cidades, não a média —
+## uma cidade isolada (Caiena) puxaria a média para o meio do Atlântico.
+static func framing_center_px(cities: Array) -> Vector2:
+	var xs: Array[float] = []
+	var ys: Array[float] = []
+	for city in cities:
+		xs.append(float(city["x"]))
+		ys.append(float(city["y"]))
+	return Vector2(_median(xs), _median(ys))
+
+
+static func _median(values: Array[float]) -> float:
+	if values.is_empty():
+		return 0.0
+	values.sort()
+	var mid := values.size() / 2
+	if values.size() % 2 == 1:
+		return values[mid]
+	return (values[mid - 1] + values[mid]) * 0.5
 
 
 func pixel_to_world(px: Vector2) -> Vector3:
@@ -341,18 +374,18 @@ func _build_gps_plane() -> void:
 
 	# Base de atlas (modo político): campos de distância do Natural Earth +
 	# terreno do satélite; costa, fronteiras e províncias numa passada opaca.
-	var atlas_material := ShaderMaterial.new()
-	atlas_material.shader = ATLAS_SHADER
-	atlas_material.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
-	atlas_material.set_shader_parameter("region_color", ATLAS_REGION_COLOR)
-	atlas_material.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
-	atlas_material.set_shader_parameter("world_color", ATLAS_WORLD_COLOR)
-	atlas_material.set_shader_parameter("terrain_texture", GPS_TEXTURE)
+	_atlas_material = ShaderMaterial.new()
+	_atlas_material.shader = ATLAS_SHADER
+	_atlas_material.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
+	_atlas_material.set_shader_parameter("region_color", ATLAS_REGION_COLOR)
+	_atlas_material.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
+	_atlas_material.set_shader_parameter("world_color", ATLAS_WORLD_COLOR)
+	_atlas_material.set_shader_parameter("terrain_texture", GPS_TEXTURE)
 
 	_atlas_mesh = MeshInstance3D.new()
 	_atlas_mesh.name = "AtlasBase"
 	_atlas_mesh.mesh = plane
-	_atlas_mesh.material_override = atlas_material
+	_atlas_mesh.material_override = _atlas_material
 	_atlas_mesh.visible = false
 	_content.add_child(_atlas_mesh)
 
@@ -385,11 +418,13 @@ func _build_nation_labels() -> void:
 	# deste sinal para acompanhar o idioma.
 	if not I18n.locale_changed.is_connected(_on_locale_changed):
 		I18n.locale_changed.connect(_on_locale_changed)
+	_nation_anchors.clear()
 	if not FileAccess.file_exists(ATLAS_NATIONS_PATH):
 		return
-	var anchors = JSON.parse_string(FileAccess.get_file_as_string(ATLAS_NATIONS_PATH))
+	var anchors: Variant = JSON.parse_string(FileAccess.get_file_as_string(ATLAS_NATIONS_PATH))
 	if typeof(anchors) != TYPE_DICTIONARY:
 		return
+	_nation_anchors = anchors
 
 	var font := FontVariation.new()
 	font.base_font = NATION_LABEL_FONT
@@ -399,15 +434,11 @@ func _build_nation_labels() -> void:
 	var holder := Node3D.new()
 	holder.name = "NationLabels"
 	_content.add_child(holder)
-	for tag in anchors:
-		var anchor: Dictionary = anchors[tag]
-		var extent := float(anchor.get("extent_px", 40.0)) * PIXEL_TO_WORLD
+	for tag: Variant in anchors:
 		var label := Label3D.new()
-		label.name = "Nation_" + tag
-		label.set_meta("tag", tag)
-		label.set_meta("min_distance", NATION_LABEL_NEAR if extent >= NATION_LABEL_SMALL_EXTENT
-				else NATION_LABEL_NEAR_SMALL)
-		label.text = I18n.t("nation." + tag).to_upper()
+		label.name = "Nation_" + String(tag)
+		label.set_meta("tag", String(tag))
+		label.text = I18n.t("nation." + String(tag)).to_upper()
 		label.font = font
 		label.font_size = 64
 		label.outline_size = 0
@@ -416,11 +447,9 @@ func _build_nation_labels() -> void:
 		label.double_sided = false
 		label.alpha_cut = Label3D.ALPHA_CUT_DISABLED
 		label.render_priority = 2
-		label.set_meta("extent", extent)
-		_fit_nation_label(label)
 		label.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
-		label.position = pixel_to_world(Vector2(anchor["x"], anchor["y"])) + Vector3(0.0, 0.2, 0.0)
 		holder.add_child(label)
+		_place_nation_label(label)
 
 
 func _on_locale_changed(_locale: String) -> void:
@@ -451,6 +480,105 @@ static func _fit_nation_label(label: Label3D) -> void:
 	label.pixel_size = pixel_size
 
 
+## Posiciona/redimensiona um rótulo de nação: com território original usa a
+## âncora do nations.json; senão usa a âncora do território atual. Sem
+## território, esconde (meta "has_territory" = false).
+func _place_nation_label(label: Label3D) -> void:
+	var tag := String(label.get_meta("tag"))
+	var anchor: Dictionary = {}
+	var extent_px := 40.0
+	if _territory != null and not _territory.is_original(tag):
+		anchor = _territory.nation_anchor(tag)
+		if anchor.is_empty():
+			label.set_meta("has_territory", false)
+			label.visible = false
+			return
+		extent_px = float(anchor.get("extent_px", 40.0))
+	elif _nation_anchors.has(tag):
+		anchor = _nation_anchors[tag]
+		extent_px = float(anchor.get("extent_px", 40.0))
+	else:
+		label.set_meta("has_territory", false)
+		label.visible = false
+		return
+
+	label.set_meta("has_territory", true)
+	var extent := extent_px * PIXEL_TO_WORLD
+	label.set_meta("extent", extent)
+	label.set_meta("min_distance", NATION_LABEL_NEAR if extent >= NATION_LABEL_SMALL_EXTENT
+			else NATION_LABEL_NEAR_SMALL)
+	label.position = pixel_to_world(Vector2(float(anchor["x"]), float(anchor["y"]))) \
+			+ Vector3(0.0, 0.2, 0.0)
+	_fit_nation_label(label)
+
+
+## Reaplica âncora/extensão em todas as cópias laterais (wrap cilíndrico).
+func _reposition_nation_labels() -> void:
+	for root in _content_roots():
+		var holder := root.get_node_or_null("NationLabels") as Node3D
+		if holder == null:
+			continue
+		for child in holder.get_children():
+			_place_nation_label(child as Label3D)
+
+
+## --- Território dinâmico ---------------------------------------------------
+
+## Acesso ao TerritoryMap (para teste/debug).
+func territory() -> TerritoryMap:
+	return _territory
+
+
+func _init_territory(cities: Array) -> void:
+	_last_cities = cities.duplicate()
+	_territory = TerritoryMapScript.new()
+	_territory.load_data()
+	_territory.assign(cities)
+	var changed: bool = _territory.update(cities, _territory_overrides)
+	_apply_territory_materials()
+	if changed:
+		_reposition_nation_labels()
+
+
+func _refresh_territory(cities: Array) -> void:
+	if _territory == null:
+		return
+	_last_cities = cities.duplicate()
+	var changed: bool = _territory.update(cities, _territory_overrides)
+	if changed:
+		_reposition_nation_labels()
+
+
+func _apply_territory_materials() -> void:
+	if _territory == null:
+		return
+	var owner: Texture2D = _territory.owner_texture()
+	if _atlas_material != null:
+		_atlas_material.set_shader_parameter("region_province", ATLAS_REGION_PROVINCE)
+		_atlas_material.set_shader_parameter("world_province", ATLAS_WORLD_PROVINCE)
+		_atlas_material.set_shader_parameter("province_owner", owner)
+		_atlas_material.set_shader_parameter("dynamic_territory", true)
+	if _political_material != null:
+		_political_material.set_shader_parameter("region_province", ATLAS_REGION_PROVINCE)
+		_political_material.set_shader_parameter("world_province", ATLAS_WORLD_PROVINCE)
+		_political_material.set_shader_parameter("province_owner", owner)
+		_political_material.set_shader_parameter("dynamic_territory", true)
+
+
+## Debug: força a nação de uma cidade (override de território).
+func debug_set_city_nation(city_id: String, tag: String) -> void:
+	_territory_overrides[city_id] = tag
+	if _territory != null:
+		_refresh_territory(_last_cities)
+
+
+## Debug: limpa todos os overrides de território.
+func debug_clear_territory_overrides() -> void:
+	_territory_overrides.clear()
+	if _territory != null:
+		_refresh_territory(_last_cities)
+
+
 ## Nomes de nação entram ao afastar e somem perto, para não disputar com as
 ## cidades; nações pequenas (Benelux) só aparecem quando os nomes de cidade saem.
 func _update_nation_labels(camera_position: Vector3) -> void:
@@ -460,6 +588,10 @@ func _update_nation_labels(camera_position: Vector3) -> void:
 			continue
 		for child in holder.get_children():
 			var label := child as Label3D
+			# Nação sem território (override moveu tudo) não mostra o nome.
+			if label.has_meta("has_territory") and not bool(label.get_meta("has_territory")):
+				label.visible = false
+				continue
 			var near := float(label.get_meta("min_distance"))
 			var distance := camera_position.distance_to(label.global_position)
 			var alpha := _fade_in(distance, near, near + NATION_LABEL_FADE)

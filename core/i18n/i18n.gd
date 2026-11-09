@@ -294,6 +294,7 @@ const STRINGS := {
 		"city.name.DEU-BER": "Berlim",
 		"city.name.NED-AMS": "Amsterdã",
 		"city.name.BEL-BRU": "Bruxelas",
+		"city.name.FRA-CAY": "Caiena",
 	},
 	"en": {
 		"common.close": "Close",
@@ -576,6 +577,7 @@ const STRINGS := {
 		"city.name.DEU-BER": "Berlin",
 		"city.name.NED-AMS": "Amsterdam",
 		"city.name.BEL-BRU": "Brussels",
+		"city.name.FRA-CAY": "Cayenne",
 	},
 	"es": {
 		"common.close": "Cerrar",
@@ -858,6 +860,7 @@ const STRINGS := {
 		"city.name.DEU-BER": "Berlín",
 		"city.name.NED-AMS": "Ámsterdam",
 		"city.name.BEL-BRU": "Bruselas",
+		"city.name.FRA-CAY": "Cayena",
 	},
 }
 

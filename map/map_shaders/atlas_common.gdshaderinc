@@ -57,3 +57,18 @@ float ink_line(float dist, float px, float width_px) {
 	float d_px = dist / px;
 	return 1.0 - smoothstep(width_px * 0.5 - 0.6, width_px * 0.5 + 0.6, d_px);
 }
+
+// Decodifica o id da província no raster `region_province`: id = R + G*256.
+// Amostra com `filter_nearest` para não misturar ids de províncias vizinhas.
+float atlas_province_id(sampler2D region_province, vec2 uv) {
+	vec3 c = texture(region_province, uv).rgb;
+	return round(c.r * 255.0 + c.g * 255.0 * 256.0);
+}
+
+// Busca a cor e o índice do dono da província `id` na textura de donos.
+// rgb = cor do dono, a * 255 = índice do dono. Texel (id % cols, id / cols).
+vec4 atlas_owner(sampler2D province_owner, int owner_columns, float id) {
+	int iid = int(id);
+	ivec2 px = ivec2(iid % owner_columns, iid / owner_columns);
+	return texelFetch(province_owner, px, 0);
+}

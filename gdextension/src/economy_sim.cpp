@@ -122,15 +122,26 @@ void EconomySim::initialize() {
 void EconomySim::define_cities() {
 	cities_.clear();
 
-	// Uma cidade por nação. Coordenadas = centro real da cidade projetado no
-	// mapa (5000x2500 px) na projeção equiretangular do ne2.png.
-	// Produção é a capacidade diária de trigo em toneladas.
+	// Coordenadas = centro real da cidade projetado no mapa (5000x2500 px) na
+	// projeção equiretangular. Produção é a capacidade diária de trigo em
+	// toneladas. Cada cidade declara a massa de terra e o porto de travessia.
+	const MapPoint continent_port = france_port_;
+	const MapPoint britain_port = england_port_;
 	cities_ = {
-		{"GBR-LDN", "GBR", "London", 9.0e6, 1300.0, 0.0, {2498.2, 534.6}},
-		{"FRA-PAR", "FRA", "Paris", 12.0e6, 6000.0, 0.0, {2532.6, 571.4}},
-		{"DEU-BER", "DEU", "Berlin", 6.0e6, 2500.0, 0.0, {2686.2, 520.6}},
-		{"NED-AMS", "NED", "Amsterdam", 2.5e6, 300.0, 0.0, {2568.0, 522.7}},
-		{"BEL-BRU", "BEL", "Brussels", 2.5e6, 400.0, 0.0, {2560.4, 543.8}},
+		{"GBR-LDN", "GBR", "London", 9.0e6, 1300.0, 0.0, {2498.2, 534.6},
+			"britain", "Channel crossing", britain_port},
+		{"FRA-PAR", "FRA", "Paris", 12.0e6, 6000.0, 0.0, {2532.6, 571.4},
+			"continent", "Canal port", continent_port},
+		{"DEU-BER", "DEU", "Berlin", 6.0e6, 2500.0, 0.0, {2686.2, 520.6},
+			"continent", "Canal port", continent_port},
+		{"NED-AMS", "NED", "Amsterdam", 2.5e6, 300.0, 0.0, {2568.0, 522.7},
+			"continent", "Canal port", continent_port},
+		{"BEL-BRU", "BEL", "Brussels", 2.5e6, 400.0, 0.0, {2560.4, 543.8},
+			"continent", "Canal port", continent_port},
+		// Caiena, Guiana Francesa (lon −52,33, lat 4,94): ~150 mil hab. na
+		// aglomeração; não produz trigo, importa tudo. Cidade portuária.
+		{"FRA-CAY", "FRA", "Cayenne", 1.5e5, 0.0, 0.0, {1773.2, 1181.4},
+			"guiana", "Cayenne", {1773.2, 1181.4}},
 	};
 }
 
@@ -340,7 +351,7 @@ bool EconomySim::dispatch_trade(City& buyer, double& remaining, const std::vecto
 
 std::vector<EconomySim::Leg> EconomySim::build_route(const City& seller, const City& buyer,
                                                      double amount, double air_share) const {
-	const bool crosses_sea = (seller.nation != "GBR") != (buyer.nation != "GBR");
+	const bool crosses_sea = seller.landmass != buyer.landmass;
 
 	const double air_tons = amount * std::clamp(air_share, 0.0, 1.0);
 	const double surface_tons = amount - air_tons;
@@ -364,16 +375,21 @@ std::vector<EconomySim::Leg> EconomySim::build_route(const City& seller, const C
 
 std::vector<EconomySim::Leg> EconomySim::build_overseas_route(const City& seller, const City& buyer,
                                                              double amount) const {
-	// Garante que a rota sempre comece no continente e termine na ilha.
-	const City& origin = seller.nation == "GBR" ? buyer : seller;
-	const City& destination = seller.nation == "GBR" ? seller : buyer;
-
-	return {
-		make_leg(TransportMode::Truck, origin.name, "Canal port", origin.center, france_port_, amount),
-		make_leg(TransportMode::Ship, "Canal port", "Channel crossing", france_port_, england_port_, amount),
-		make_leg(TransportMode::Truck, "Channel crossing", destination.name, england_port_,
-		         destination.center, amount),
-	};
+	// Vendedor -> porto dele -> navio -> porto do comprador -> comprador.
+	// Cidade costeira (porto no centro) não tem trecho de caminhão.
+	std::vector<Leg> legs;
+	const double kSamePointKm = 1.0;
+	if (distance_km(seller.center, seller.port) > kSamePointKm) {
+		legs.push_back(make_leg(TransportMode::Truck, seller.name, seller.port_name,
+		                        seller.center, seller.port, amount));
+	}
+	legs.push_back(make_leg(TransportMode::Ship, seller.port_name, buyer.port_name,
+	                        seller.port, buyer.port, amount));
+	if (distance_km(buyer.port, buyer.center) > kSamePointKm) {
+		legs.push_back(make_leg(TransportMode::Truck, buyer.port_name, buyer.name,
+		                        buyer.port, buyer.center, amount));
+	}
+	return legs;
 }
 
 EconomySim::Leg EconomySim::make_leg(TransportMode mode, const std::string& from, const std::string& to,

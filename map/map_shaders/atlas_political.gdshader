@@ -19,11 +19,21 @@ render_mode unshaded, cull_disabled;
 
 #include "res://map/map_shaders/atlas_common.gdshaderinc"
 
-uniform sampler2D region_sdf : filter_linear_mipmap, repeat_disable;
+// repeat igual ao do mundo: o Godot exige samplers idênticos em dyn_block().
+uniform sampler2D region_sdf : filter_linear_mipmap, repeat_enable;
 uniform sampler2D region_color : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D world_sdf : filter_linear_mipmap, repeat_enable;
 uniform sampler2D world_color : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D terrain_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+
+// Território dinâmico: id da província por pixel e dono por id (RGB8, sem
+// mipmap/compressão; a = índice do dono). Válido na região E no mundo inteiro.
+uniform sampler2D region_province : filter_nearest, repeat_enable;
+uniform sampler2D world_province : filter_nearest, repeat_enable;
+uniform sampler2D province_owner : source_color, filter_nearest, repeat_disable;
+uniform int owner_columns = 64;
+uniform bool dynamic_territory = false;
+uniform float dynamic_band_width = 0.3;
 
 // Janela da região em graus (lon0, lat0, lon1, lat1) — igual ao gerador.
 uniform vec4 region_bounds = vec4(-25.0, 33.0, 45.0, 72.0);
@@ -74,6 +84,37 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+// Bloco de território dinâmico de UMA camada: lê o canal B do SDF e o raster
+// de id de província, e devolve o dono do lado certo da divisa e se os dois
+// lados têm donos diferentes. Igual para a região e para o mundo.
+void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
+		out float out_differ, out vec3 out_nation) {
+	vec2 e = 1.0 / vec2(textureSize(sdf_tex, 0));
+	float b_tx = (texture(sdf_tex, uv).b * 255.0 - 128.0) / 8.0;
+	float b_l = (texture(sdf_tex, uv - vec2(e.x, 0.0)).b * 255.0 - 128.0) / 8.0;
+	float b_r = (texture(sdf_tex, uv + vec2(e.x, 0.0)).b * 255.0 - 128.0) / 8.0;
+	float b_d = (texture(sdf_tex, uv - vec2(0.0, e.y)).b * 255.0 - 128.0) / 8.0;
+	float b_u = (texture(sdf_tex, uv + vec2(0.0, e.y)).b * 255.0 - 128.0) / 8.0;
+	vec2 g = vec2(b_r - b_l, b_u - b_d) * 0.5;
+	float gl = length(g);
+	vec2 dir = (gl > 1e-4) ? -sign(b_tx) * g / gl : vec2(0.0);
+	// O campo só é uma distância de verdade onde o gradiente ≈ 1 texel/texel;
+	// no eixo medial e nas junções triplas ele salta e a direção não vale.
+	float reliable = step(abs(gl - 1.0), 0.5);
+	// Cor: perto da divisa, a província 1,5 texel para longe da linha (o
+	// sinal do campo é sub-texel, então o preenchimento segue a linha suave
+	// e não o degrau do id); no resto, a do próprio pixel.
+	vec2 here_uv = (abs(b_tx) < 1.5 && reliable > 0.5) ? uv - dir * e * 1.5 : uv;
+	vec2 other_uv = uv + dir * e * (abs(b_tx) + 1.0);
+	float id_here = atlas_province_id(prov_tex, here_uv);
+	float id_other = atlas_province_id(prov_tex, other_uv);
+	vec4 owner_here = atlas_owner(province_owner, owner_columns, id_here);
+	vec4 owner_other = atlas_owner(province_owner, owner_columns, id_other);
+	float differ = (round(owner_here.a * 255.0) != round(owner_other.a * 255.0)) ? 1.0 : 0.0;
+	out_differ = differ * reliable;
+	out_nation = owner_here.rgb;
+}
+
 void fragment() {
 	vec2 plane = UV * vec2(1000.0, 500.0);
 	// Pegada média do pixel (só para decidir fades por zoom) e a menor pegada
@@ -97,25 +138,47 @@ void fragment() {
 	float coast_r = atlas_coast_distance(r_sdf.r, region_texel);
 	float border_r = atlas_border_signed(r_sdf.g, region_texel);
 	float province_r = atlas_province_signed(r_sdf.b, region_texel);
+	float province_w = atlas_province_signed(w_sdf.b, world_texel);
 
 	float coast = mix(coast_w, coast_r, region_w);
 	// Fronteiras têm sinal (ver gerador): a linha está no cruzamento por zero.
 	float border_signed = mix(border_w, border_r, region_w);
-	// Fora da região não há divisas de província (dado só existe na Europa).
-	float province_signed = mix(1e3, province_r, region_w);
+	// Divisa admin-1: agora existe nas duas camadas (região e mundo).
+	float province_signed = mix(province_w, province_r, region_w);
 	float border = abs(border_signed);
-	float province = abs(province_signed);
 	vec3 nation = mix(w_col, r_col, region_w);
-	nation = mix(vec3(dot(nation, LUMA)), nation, nation_saturation);
 
 	// Gradiente medido no campo COM sinal (liso na linha). Um gradiente muito
 	// maior que o pixel indica o salto de sinal do eixo medial: não é linha.
+	// dFdx/dFdy e pixel_along são chamados SEMPRE (fora de qualquer branch) e o
+	// resultado é selecionado depois, para não quebrar os derivativos.
 	float px_max = max(length(dx), length(dy));
 	float px_coast = pixel_along(coast, px_floor);
 	float px_border = pixel_along(border_signed, px_floor);
 	float px_province = pixel_along(province_signed, px_floor);
 	float border_real = step(px_border, px_max * 2.5);
 	float province_real = step(px_province, px_max * 2.5);
+
+	// --- Território dinâmico (região e mundo) -------------------------------
+	// O bloco é calculado DUAS vezes (uma por camada). As amostras dependem só
+	// de `dynamic_territory` (uniforme) e nunca quebram os derivativos; a
+	// seleção por region_w acontece depois.
+	float region_differ = 0.0;
+	float world_differ = 0.0;
+	vec3 region_dyn_nation = nation;
+	vec3 world_dyn_nation = nation;
+	if (dynamic_territory) {
+		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation);
+		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation);
+	}
+	float differ = (region_w > 0.5) ? region_differ : world_differ;
+	vec3 dyn_nation = (region_w > 0.5) ? region_dyn_nation : world_dyn_nation;
+
+	// Cor da nação passa a ser a cor do dono (substitui region/world color).
+	if (dynamic_territory) {
+		nation = dyn_nation;
+	}
+	nation = mix(vec3(dot(nation, LUMA)), nation, nation_saturation);
 
 	// --- Terra ---------------------------------------------------------------
 	// O satélite tem ~4,9 km/texel: perto da câmera ele só dá manchas. Usa-se
@@ -134,16 +197,42 @@ void fragment() {
 	shade *= 0.985 + (fibers - 0.5) * 0.035 + (blotch - 0.5) * 0.05;
 
 	vec3 land = nation * shade;
+
+	// Fronteira de país dinâmica: a divisa entre donos diferentes (distância
+	// |b| da camada em uso); onde os donos são iguais não há fronteira. Fora
+	// da região a fronteira passa a ser a dinâmica do mundo (não o canal G).
+	float eff_border = border;
+	float eff_border_px = px_border;
+	float eff_border_real = border_real;
+	if (dynamic_territory) {
+		float region_border = (region_differ > 0.5) ? abs(province_r) : 1e3;
+		float world_border = (world_differ > 0.5) ? abs(province_w) : 1e3;
+		float dyn_border = (region_w > 0.5) ? region_border : world_border;
+		eff_border = dyn_border;
+		eff_border_px = px_province;
+		eff_border_real = province_real;
+	}
+
 	// Faixa de cor junto à fronteira (assinatura de carta de grand strategy).
-	float band = 1.0 - smoothstep(0.0, border_band_width, border);
+	// Com território dinâmico a faixa precisa caber dentro de uma província
+	// (a distância vem da divisa de província mais próxima).
+	float band_width = (dynamic_territory && region_w > 0.5) ? dynamic_band_width : border_band_width;
+	float band = 1.0 - smoothstep(0.0, band_width, eff_border);
 	land *= mix(1.0, 1.0 - border_band_strength, band * band);
 	// Leve escurecimento na orla costeira para a terra "assentar".
 	land *= mix(1.0, 0.90, 1.0 - smoothstep(0.0, 0.35, coast));
 
-	// Divisas de província: finas, somem ao afastar a câmera.
+	// Divisas de província: finas, somem ao afastar a câmera. Só na região —
+	// fora dela a divisa admin-1 fica poluída em 9,8 km/texel e não é desenhada.
+	// Com território dinâmico, só onde os donos são iguais (senão duplica a
+	// fronteira grossa).
 	float province_fade = 1.0 - smoothstep(0.05, 0.13, px);
-	float province_line = ink_line(province, px_province, province_width_px)
+	float province_line_dist = mix(1e3, abs(province_r), region_w);
+	float province_line = ink_line(province_line_dist, px_province, province_width_px)
 		* province_opacity * province_fade * province_real;
+	if (dynamic_territory) {
+		province_line *= 1.0 - differ;
+	}
 	land = mix(land, land * 0.55, province_line);
 
 	// --- Mar -----------------------------------------------------------------
@@ -165,8 +254,8 @@ void fragment() {
 	float coast_line = ink_line(abs(coast), px_coast, coast_width_px);
 	color = mix(color, coast_ink, coast_line * 0.85);
 
-	float country_px = max(country_width_px, country_width_world / px_border);
-	float country_line = ink_line(border, px_border, country_px) * land_mask * border_real;
+	float country_px = max(country_width_px, country_width_world / eff_border_px);
+	float country_line = ink_line(eff_border, eff_border_px, country_px) * land_mask * eff_border_real;
 	color = mix(color, ink, country_line * 0.92);
 
 	// --- Vinheta polar -------------------------------------------------------
