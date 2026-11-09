@@ -1,0 +1,19 @@
+Cursores do jogo (assets/ui)
+
+Os ícones de base dos cursores de mão vêm de bibliotecas abertas e foram
+recoloridos no latão do jogo (#C9A24A) por tools/build_cursor_icons.py.
+Os arquivos originais estão em tools/cursor_sources/.
+
+- cursor_pointer.png  <- Material Design Icons "hand-back-right"
+  Autor: Pictogrammers (https://pictogrammers.com)
+  Licença: Apache License 2.0
+  https://pictogrammers.com/library/mdi/
+
+- cursor_grab.png     <- Phosphor Icons "hand-grabbing-fill"
+  Autor: Phosphor Icons / Helena Zhang (https://phosphoricons.com)
+  Licença: MIT
+  https://github.com/phosphor-icons/core
+
+- cursor_default.png, cursor_loupe.png, cursor_drag.png
+  Arte própria do projeto (geradas por tools/generate_loupe_cursor.py e
+  desenhadas no estilo gravado do jogo).
