@@ -184,6 +184,28 @@ func owners() -> Dictionary:
 	return _owners.duplicate()
 
 
+## True se a posição (UV do mapa 0..1) está em terra firme (não no mar).
+func land_at_uv(uv: Vector2) -> bool:
+	var sdf := _world_sdf_raster()
+	if sdf == null:
+		return true
+	var tx := clampi(int(uv.x * sdf.get_width()), 0, sdf.get_width() - 1)
+	var ty := clampi(int(uv.y * sdf.get_height()), 0, sdf.get_height() - 1)
+	return sdf.get_pixel(tx, ty).r > 0.5
+
+
+## Dono (tag) da província na posição UV do mapa (0..1). Vazio se desconhecido.
+func owner_at_uv(uv: Vector2) -> String:
+	var ids := _world_province_raster()
+	if ids == null:
+		return ""
+	var tx := clampi(int(uv.x * ids.get_width()), 0, ids.get_width() - 1)
+	var ty := clampi(int(uv.y * ids.get_height()), 0, ids.get_height() - 1)
+	var c := ids.get_pixel(tx, ty)
+	var pid := int(round(c.r * 255.0 + c.g * 255.0 * 256.0))
+	return String(_owners.get(pid, ""))
+
+
 ## Imagem RGB8 do minimapa: cor do dono por pixel, amostrando o raster de ids
 ## do mundo inteiro (world_province.png) e colorindo pelo dono atual. Água usa a
 ## cor de mar do atlas; terra usa a cor do dono com o mesmo fator do minimapa

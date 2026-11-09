@@ -1150,6 +1150,9 @@ func _build_urban(record: Dictionary, world_position: Vector3) -> Node3D:
 	_content.add_child(manager)
 
 	manager.setup(String(record["id"]))
+	# Crescimento orgânico só em terra firme e dentro do território da nação.
+	manager.buildable_filter = _make_urban_filter(
+			to_local(world_position), String(city.get("nation", "")))
 	manager.apply_indicators({
 		"population": float(city.get("population", 0.0)),
 		"industrialization": float(city.get("industrialization", 0.0)),
@@ -1158,3 +1161,22 @@ func _build_urban(record: Dictionary, world_position: Vector3) -> Node3D:
 	})
 	manager.apply_industry(IndustryProfileScript.derive(city))
 	return manager
+
+
+## Filtro orgânico do crescimento: só constrói em terra firme e dentro do
+## território da nação da cidade. Impede crescer para o mar ou para outro país.
+func _make_urban_filter(city_local: Vector3, nation: String) -> Callable:
+	return func(lot_local: Vector3) -> bool:
+		if _territory == null:
+			return true
+		var local := city_local + Vector3(lot_local.x * URBAN_SCALE, 0.0,
+				lot_local.z * URBAN_SCALE)
+		var px := Vector2(
+			local.x / PIXEL_TO_WORLD + MAP_SIZE_PX.x * 0.5,
+			local.z / PIXEL_TO_WORLD + MAP_SIZE_PX.y * 0.5)
+		var uv := Vector2(px.x / MAP_SIZE_PX.x, px.y / MAP_SIZE_PX.y)
+		if uv.x < 0.0 or uv.x >= 1.0 or uv.y < 0.0 or uv.y >= 1.0:
+			return false
+		if not _territory.land_at_uv(uv):
+			return false
+		return _territory.owner_at_uv(uv) == nation
