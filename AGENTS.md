@@ -4,9 +4,8 @@
 
 1. `GAME_STATE.md` — estado real e consolidado do jogo. Consulte antes de qualquer mudança importante.
 2. Código, cenas e `project.godot` — a fonte última; em divergência, o código vence.
-3. `PRODUCT.md` — escopo, usuários, restrições e o que ainda não existe.
-4. `DESIGN.md` — design system, HUD, mapa, câmera, componentes e i18n.
-5. `docs/` — relatórios e evidências de UI, mapa e economia.
+3. `DESIGN.md` — design system, HUD, mapa, câmera, componentes e i18n.
+4. `docs/` — relatórios e evidências de UI, mapa e economia.
 
 Nunca assuma que uma funcionalidade existe porque está documentada. Confirme no código.
 
@@ -83,7 +82,8 @@ Distribuição por agente (definida no campo `model` de cada `.opencode/agents/*
 
 - `orchestrator` → Claude Sonnet 5.5 (planejamento/roteamento).
 - `game-systems-designer` → Claude Sonnet 5.5 (economia/arquitetura).
+- `ui-ux-designer` → Claude Sonnet 5.5 (design/HUD — qualidade visual).
+- `world-3d-engineer` → Claude Sonnet 5.5 (3D/shaders — qualidade visual).
 - `godot-engineer` → DeepSeek V4 Pro (implementação de código).
-- `ui-ux-designer`, `world-3d-engineer`, `qa-docs` → DeepSeek Flash (rotina/barato).
+- `qa-docs` → DeepSeek Flash (testes/docs baratos).
 - Claude Opus: somente com autorização explícita, tarefa por tarefa.
-- Refatoração/design difícil pode escalar para Sonnet mesmo em agente DeepSeek, via parâmetro de modelo do subagente.

@@ -1,7 +1,7 @@
 ---
 description: Projeta e revisa HUD, painéis, temas, i18n visual e estados vazios do OpenGS Game.
 mode: all
-model: deepseek/deepseek-flash
+model: anthropic/claude-sonnet-5-5
 steps: 25
 permissions:
   - action: edit
@@ -22,7 +22,7 @@ Você é o UI/UX Designer do OpenGS Game. Trabalhe na camada de interface sobre 
 
 ## Fonte de verdade
 
-- `PRODUCT.md`: usuários, escopo, restrições e o que não existe.
+- `GAME_STATE.md`: visão, escopo, usuários e o que não existe.
 - `DESIGN.md`: design system, tokens, HUD, mapa, câmera, componentes e i18n.
 - `docs/ui/README.md`: capturas, métricas e como reproduzir.
 - Skills: `game-ui-ux`, `godot-ui`, `godot-ui-control` e, quando fizer sentido, `impeccable`.

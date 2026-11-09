@@ -17,8 +17,14 @@
 - **Experiência:** sessão longa, pausa/velocidades, painéis densos, leitura do estado do mundo; o tempo avança em dias.
 - **Diferenciais:** núcleo econômico em C++ (GDExtension) com conservação de dinheiro verificada por teste; interface "estado puro" que nunca executa lógica econômica; nenhum número inventado.
 - **Estado do protótipo:** jogável com HUD completo, economia de trigo ao vivo e mapa de satélite 3D. O ciclo econômico "rico" (dinheiro, preços, salários, POPs) está implementado e testado apenas no cenário demo, ainda não ligado ao loop principal.
+- **Plataforma/stack:** desktop; Godot 4.7 (Forward+), interface em nós `Control`; núcleo econômico em C++17 via GDExtension.
+- **Usuários:** jogadores de grand strategy que já conhecem Paradox/Supreme Ruler; sessões longas, painéis densos, sem tutorial.
+- **Princípios de produto:** (1) o dado vem antes do ornamento; (2) nada de número inventado; (3) densidade legível; (4) o mapa é a superfície principal; (5) trocar de idioma não quebra layout nem rótulos.
+- **Compromissos de marca:** referência declarada Hearts of Iron III em versão modernizada (painéis escuros e latão); idioma padrão pt-BR, com en e es.
+- **Acessibilidade:** texto principal ≥ 13 px, contraste alto sobre painéis escuros, alvos de clique ≥ 28 px de altura, foco visível.
+- **Fora do escopo atual:** exército, guerra, tecnologia, política interna, construção de fábricas e dinheiro por nação.
 
-Fontes: `PRODUCT.md`, `DESIGN.md`, `README.md`.
+Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento absorveu o antigo `PRODUCT.md`.
 
 ---
 
@@ -41,7 +47,7 @@ Fontes: `PRODUCT.md`, `DESIGN.md`, `README.md`.
 | i18n (pt-BR/en/es) | IMPLEMENTADO | runtime; lacunas nos protótipos (hardcoded pt-BR) | `core/i18n/i18n.gd` |
 | Save/load do jogo | NÃO IMPLEMENTADO | economia só em memória (demo); urbano em `user://` (protótipo) | `demo_to_dict/demo_from_dict`, `urban_persistence.gd` |
 | Política/diplomacia | PARCIAL | telas existem; todas as nações "em paz", sem simulação | `core/ui/screens/politics_screen.gd` |
-| Exército, guerra, tecnologia, fábricas, dinheiro por nação | PLANEJADO | declarados ausentes em `PRODUCT.md` | `PRODUCT.md` |
+| Exército, guerra, tecnologia, fábricas, dinheiro por nação | PLANEJADO | declarados fora do escopo em §1 | §1 |
 | Áudio (música + SFX) | IMPLEMENTADO | 7 faixas + 100 SFX (14 eventos ligados) | `core/audio/*` |
 | Editor de províncias in-game | IMPLEMENTADO | cena separada `editor/editor.tscn` | `editor/*` |
 
@@ -229,10 +235,10 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 | D-001 | Núcleo econômico em C++ (GDExtension), UI em GDScript | Performance determinística; UI não executa lógica |
 | D-002 | Modo ao vivo usa só trigo (legacy); demo valida ciclo completo antes de generalizar | Reduz risco; mantém duas faces do mesmo núcleo |
 | D-003 | Design "Industrial Strategy — Premium Dark" (HOI3 modernizado) | Referência declarada do usuário |
-| D-004 | UI é "estado puro": recebe texto/valores formatados, nunca calcula | `PRODUCT.md`/`DESIGN.md` |
+| D-004 | UI é "estado puro": recebe texto/valores formatados, nunca calcula | §11 / `DESIGN.md` |
 | D-005 | Fronteiras do jogo = Natural Earth raster; SDF/JFA fica no editor | Duas representações de mapa coexistindo |
-| D-006 | Estados vazios honestos (não inventar números) | `PRODUCT.md` princípio 2 |
-| D-007 | i18n pt-BR/en/es em runtime, default pt-BR | `PRODUCT.md` |
+| D-006 | Estados vazios honestos (não inventar números) | princípio de produto 2 (§1) |
+| D-007 | i18n pt-BR/en/es em runtime, default pt-BR | compromisso de marca (§1) |
 | D-008 | Orçamento público equilibrado (imposto 15% = transferências) | Demo; simplificação declarada |
 | D-009 | IA econômica determinística (sem LLM), a cada 7 dias | Previsibilidade/testabilidade |
 | D-010 | Crescimento urbano determinístico (seed por cidade) e lotes nunca removidos | Identidade dos bairros |
@@ -277,14 +283,14 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 6. Substituir `nature.json`/`agriculture.json` por dados reais (WorldClim/FAO/SRTM) — já referenciado em `_sources.json`.
 7. Gerar relevo real (heightmap/normal) para o mapa.
 
-**Planejado (sem código):** exército, guerra, tecnologia, política interna, construção de fábricas, dinheiro por nação (declarados ausentes em `PRODUCT.md`).
+**Planejado (sem código):** exército, guerra, tecnologia, política interna, construção de fábricas, dinheiro por nação (declarados fora do escopo em §1).
 
 ---
 
 ## 17. Guia para agentes
 
 ### Arquivos essenciais
-- `GAME_STATE.md` (este), `PRODUCT.md`, `DESIGN.md`, `README.md`.
+- `GAME_STATE.md` (este), `DESIGN.md`, `AGENTS.md` e `docs/` (evidências).
 - `gdextension/src/economy_sim.{h,cpp}` — regras econômicas (fonte de verdade).
 - `core/economy/economy.gd` — autoload/ponte C++.
 - `core/ui/ui_kit.gd` + `core/ui/hud.gd` + `core/ui/screens/*` — interface.

@@ -1,38 +1,27 @@
-<img width="350" height="350" alt="ogs-logo2" src="https://github.com/user-attachments/assets/1df5c584-8b1c-49e3-a19a-1947095c4529" />
+# Open Grand Strategy (WarEconomy)
 
-# Open Grand Strategy 
-OpenGS is a open-source 3D Grand Strategy Map built to emulate the core methodology of Paradox-style maps within the Godot Game Engine.
-The project is covered by the MIT licence, and thus is free for anyone to use for commercial and private projects.
+Simulação de grand strategy 3D focada em **economia e logística**: o comércio de
+trigo entre cidades reais da Europa Ocidental (produção, demanda, estoque, frete e
+tempo de trânsito por caminhão, navio e avião), com uma interface de comando densa
+inspirada em Hearts of Iron III.
 
-## Features
-- Selectable provinces
-- Toggleable map modes
-- Map in 3D environment
-- Dynamic Smooth borders (SDF borders calculated w JFA)
-- Dynamic country name labels
-- 3D environment from Heigthmap and Normal map
-- Editable Provinces through ingame editor
+- **Engine:** Godot 4.7 (Forward+) + núcleo econômico em C++17 via GDExtension (`EconomySim`).
+- **Estado:** protótipo jogável — HUD completo, economia de trigo ao vivo, mapa de
+  satélite 3D, crescimento urbano/industrial modular e um cenário de validação do
+  ciclo econômico completo (AGRIA/PORTUS).
 
+## Como rodar
 
-## Showcase
+```powershell
+& "C:\caminho\Godot_v4.7.2-stable_win64.exe" --path .
+```
 
-<img width="3680" height="2080" alt="image" src="https://github.com/user-attachments/assets/2412c7cd-5a91-41e9-abf5-a5da62737f70" />
+## Documentação
 
-<img width="3646" height="1786" alt="image" src="https://github.com/user-attachments/assets/5720ddaa-1799-4d41-adc7-c0fc45f63856" />
+- [`GAME_STATE.md`](GAME_STATE.md) — fonte central de conhecimento (visão, arquitetura, sistemas, decisões, bugs e roadmap).
+- [`DESIGN.md`](DESIGN.md) — design system da interface.
+- `docs/` — relatórios e evidências (UI, mapa, economia).
 
-<img width="3682" height="1814" alt="image" src="https://github.com/user-attachments/assets/61984fb4-b987-4030-b3c5-aec2354093f1" />
+## Licença
 
-<img width="1280" height="720" alt="Thumbnail" src="https://github.com/user-attachments/assets/d6a64a2a-8b16-45ad-8275-75f1f26f96a5" />
-
-
-## YouTube 
-The creation is documented on the [YouTube Tutorial Series](https://www.youtube.com/playlist?list=PLz7HHPGLr7NLGJOin49X8VKNHoMHNfaKd)
-
-## Tools and resources
-[Map resources Google Drive](https://drive.google.com/drive/folders/1Wn_HeBmMHy_Kt2FIOBzQ3cn3ouTiGyt6?usp=sharing)
-
-## Discord 
-Follow and/or support the project on [OpenGS Discord Server](https://discord.gg/6pRc9f6g6S)
-
-## Delivered and maintained by 
-<img width="350" height="350" alt="gsi-logo" src="https://github.com/user-attachments/assets/e7210566-7997-4d82-845e-48f249d439a0" />
+MIT.
