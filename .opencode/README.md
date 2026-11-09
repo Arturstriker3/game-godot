@@ -15,8 +15,9 @@ Peça uma tarefa normalmente; o Orchestrator escolhe o especialista. Para chamar
 
 ## Modelos
 
-- DeepSeek Flash: padrão para implementação, testes e docs.
-- Claude Sonnet 5.5: arquitetura e economia.
+- `orchestrator` e `game-systems-designer` → Claude Sonnet 5.5 (arquitetura).
+- `godot-engineer` → DeepSeek V4 Pro (código).
+- `ui-ux-designer`, `world-3d-engineer`, `qa-docs` → DeepSeek Flash (rotina).
 - Claude Opus: somente com autorização explícita.
 
 ## MCPs

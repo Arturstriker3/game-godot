@@ -79,6 +79,11 @@ Ao encerrar, registre quais testes rodou, ou "nenhum" e o motivo.
 
 ## Modelos
 
-- DeepSeek Flash: implementação, testes, documentação e trabalho repetitivo.
-- Claude Sonnet: arquitetura, economia, revisões complexas.
+Distribuição por agente (definida no campo `model` de cada `.opencode/agents/*.md`):
+
+- `orchestrator` → Claude Sonnet 5.5 (planejamento/roteamento).
+- `game-systems-designer` → Claude Sonnet 5.5 (economia/arquitetura).
+- `godot-engineer` → DeepSeek V4 Pro (implementação de código).
+- `ui-ux-designer`, `world-3d-engineer`, `qa-docs` → DeepSeek Flash (rotina/barato).
 - Claude Opus: somente com autorização explícita, tarefa por tarefa.
+- Refatoração/design difícil pode escalar para Sonnet mesmo em agente DeepSeek, via parâmetro de modelo do subagente.

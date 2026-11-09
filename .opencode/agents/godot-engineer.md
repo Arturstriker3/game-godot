@@ -1,7 +1,7 @@
 ---
 description: Implementa e corrige GDScript, cenas, nós, sinais e integração com Godot 4.7 no OpenGS Game.
 mode: all
-model: deepseek/deepseek-flash
+model: deepseek/deepseek-v4-pro
 steps: 25
 permissions:
   - action: edit
