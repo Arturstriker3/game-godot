@@ -1,0 +1,2 @@
+Product icons — generated procedurally by tools/generate_product_icons.py.
+Original geometry, released as CC0 (public domain). No third-party assets.

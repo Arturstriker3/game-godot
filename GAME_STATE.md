@@ -214,6 +214,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Estados vazios:** princípio "estado vazio honesto" — onde não há dado (produção, política, preços, desemprego), a tela declara a ausência.
 - **i18n:** `core/i18n/i18n.gd` — ~330 chaves × {pt-BR, en, es}; troca em runtime; lacunas nos protótipos (texto fixo em pt-BR em `city_economy_panel.gd`, `game/*_prototype.gd`).
 - **Áudio:** `Music` (7 faixas) + `UiSfx`. Tema ativo **`command_post`**: 42 WAV sintetizados (14 eventos × 3 variações) em `assets/audio/interface_command_post/`, secos/mecânicos (clique, interruptor, papel, carimbo, rádio, typewriter), gerados por `tools/generate_command_post_sfx.py`. O pacote Kenney CC0 original fica em `assets/audio/interface/` como fallback — trocar `THEME` em `core/audio/ui_sfx.gd` entre `"command_post"` e `"kenney"`. Rolagem e arraste usam `play_throttled` (90 ms / 55 ms por controle).
+- **Ícones de produto:** `core/ui/product_icons.gd` + `assets/icons/products/*.svg` — 13 SVGs monocromáticos (trigo, farinha, pão, ferro, fábrica, caixa, moeda, óleo, espada, rifle, caminhão, navio, avião) gerados por `tools/generate_product_icons.py`, CC0. Ainda não ligados às telas; `ProductIcons.make()` cria o `TextureRect` tingível.
 
 ---
 
