@@ -3,8 +3,8 @@ extends Node
 ## Autoload `Economy`: acopla o núcleo C++ (EconomySim) ao jogo.
 ## Avança um dia por tick e mostra o resumo no console e numa label na tela.
 ##
-## A simulação é regional: cada nação agrega estados, e cada estado tem
-## população, produção e demanda próprias.
+## A simulação é por cidade: cada nação possui uma ou mais cidades, e cada
+## cidade tem população, produção e demanda próprias.
 
 const TICK_SECONDS := 1.5
 
@@ -56,7 +56,7 @@ func _format(summary: Dictionary) -> String:
 	var lines: Array[String] = ["Dia %d" % summary["day"]]
 
 	lines.append_array(_format_nations(summary["nations"]))
-	lines.append_array(_format_states(summary["states"]))
+	lines.append_array(_format_cities(summary["cities"]))
 	lines.append_array(_format_orders(summary["trade_orders"]))
 
 	return "\n".join(lines)
@@ -78,19 +78,19 @@ func _format_nations(nations: Array) -> Array[String]:
 	return lines
 
 
-func _format_states(states: Array) -> Array[String]:
-	var lines: Array[String] = ["-- Estados --"]
+func _format_cities(cities: Array) -> Array[String]:
+	var lines: Array[String] = ["-- Cidades --"]
 
-	for state in states:
+	for city in cities:
 		lines.append("  %-3s %-22s pop %5.1fM  prod %5.0f  demanda %5.0f  estoque %6.0f  env %5.0f  trans %5.0f" % [
-			state["nation"],
-			state["name"],
-			state["population"] / 1_000_000.0,
-			state["production"],
-			state["need"],
-			state["stockpile"],
-			state["dispatched"],
-			state["in_transit"],
+			city["nation"],
+			city["name"],
+			city["population"] / 1_000_000.0,
+			city["production"],
+			city["need"],
+			city["stockpile"],
+			city["dispatched"],
+			city["in_transit"],
 		])
 
 	return lines
@@ -101,7 +101,7 @@ func _format_orders(orders: Array) -> Array[String]:
 
 	for order in orders:
 		lines.append("[%s] %s -> %s: %.0f t | %.1f h | frete %.0f" % [
-			order["scope"], order["from_state"], order["to_state"], order["amount"],
+			order["scope"], order["from_city"], order["to_city"], order["amount"],
 			order["transit_hours"], order["freight_cost"],
 		])
 		for leg in order["legs"]:

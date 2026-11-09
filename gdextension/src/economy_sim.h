@@ -9,16 +9,13 @@
 namespace godot {
 
 /**
- * Núcleo econômico do Projeto B, exposto ao Godot via GDExtension.
+ * Núcleo econômico do jogo, exposto ao Godot via GDExtension.
  *
- * Hierarquia: uma nação agrega vários estados. Cada estado tem população,
- * produção e demanda próprias, então a necessidade de trigo é regional e o
- * comércio acontece entre estados (inclusive dentro do mesmo país).
- *
- * O mercado é resolvido em três camadas, sempre nesta ordem: regional (estados
- * vizinhos do mesmo país), nacional (resto do país) e internacional. Mesmo
- * dentro do país a mercadoria é transportada do estado vendedor até o estado
- * que a consome.
+ * O mundo é formado por cidades: cada nação possui uma ou mais cidades, e cada
+ * cidade tem população, produção e demanda próprias. A necessidade de trigo é
+ * resolvida entre cidades por um mercado em três camadas — regional (cidades
+ * vizinhas do mesmo país), nacional (resto do país) e internacional — e a carga
+ * só chega ao destino após o transporte físico.
  *
  * Tipos de transporte, com velocidade e capacidade distintas:
  *   caminhão - velocidade mediana, carga pequena
@@ -32,7 +29,7 @@ public:
 	EconomySim();
 	~EconomySim() override;
 
-	/** Cria os estados das três nações e zera o relógio de simulação. */
+	/** Cria as cidades das nações e zera o relógio de simulação. */
 	void initialize();
 
 	/** Avança um dia de simulação e devolve o resumo do dia. */
@@ -47,8 +44,8 @@ protected:
 private:
 	enum class TransportMode { Truck, Ship, Plane };
 
-	// Camadas de mercado, resolvidas nesta ordem: o estado compra primeiro de
-	// vizinhos do próprio país, depois do resto do país e por último no exterior.
+	// Camadas de mercado, resolvidas nesta ordem: a cidade compra primeiro de
+	// vizinhas do próprio país, depois do resto do país e por último no exterior.
 	enum class MarketScope { Regional, National, International };
 
 	struct ModeSpec {
@@ -59,7 +56,7 @@ private:
 		double cost_per_ton_km;
 	};
 
-	// Coordenadas no grid do mapa (5000x2500).
+	// Coordenadas no grid do mapa (5000x2500), na projeção equiretangular.
 	struct MapPoint {
 		double x;
 		double y;
@@ -79,12 +76,12 @@ private:
 	};
 
 	struct Shipment {
-		std::string to_state;
+		std::string to_city;
 		double amount;
 		double arrival_hour;
 	};
 
-	struct State {
+	struct City {
 		std::string id;
 		std::string nation;
 		std::string name;
@@ -100,8 +97,8 @@ private:
 	};
 
 	struct TradeOrder {
-		std::string from_state;
-		std::string to_state;
+		std::string from_city;
+		std::string to_city;
 		std::string from_nation;
 		std::string to_nation;
 		MarketScope scope = MarketScope::Regional;
@@ -114,20 +111,20 @@ private:
 	static const ModeSpec& spec(TransportMode mode);
 	static const char* scope_name(MarketScope scope);
 
-	/** Popula os estados das três nações. */
-	void define_states();
+	/** Popula as cidades das nações. */
+	void define_cities();
 
-	State* find_state(const std::string& id);
-	const State* find_state(const std::string& id) const;
+	City* find_city(const std::string& id);
+	const City* find_city(const std::string& id) const;
 
 	/**
-	 * Monta o plano de transporte entre dois estados.
-	 * @param seller Estado vendedor.
-	 * @param buyer Estado comprador.
+	 * Monta o plano de transporte entre duas cidades.
+	 * @param seller Cidade vendedora.
+	 * @param buyer Cidade compradora.
 	 * @param amount Carga total em toneladas.
 	 * @param air_share Fração que segue por avião.
 	 */
-	std::vector<Leg> build_route(const State& seller, const State& buyer, double amount,
+	std::vector<Leg> build_route(const City& seller, const City& buyer, double amount,
 	                             double air_share) const;
 
 	/** Cria um trecho e calcula viagens, tempo e custo. */
@@ -135,31 +132,31 @@ private:
 	             const MapPoint& from_point, const MapPoint& to_point, double load_tons) const;
 
 	/**
-	 * Abastece um estado comprador a partir dos vendedores disponíveis.
-	 * @param buyer Estado com déficit regional.
+	 * Abastece uma cidade compradora a partir dos vendedores disponíveis.
+	 * @param buyer Cidade com déficit regional.
 	 * @param remaining Déficit ainda sem cobertura; é reduzido conforme o pedido é criado.
 	 * @param sellers Vendedores com excedente.
 	 * @param scope Camada de mercado que pode ser usada neste passo.
 	 * @returns true se um pedido foi criado.
 	 */
-	bool dispatch_trade(State& buyer, double& remaining, const std::vector<State*>& sellers,
+	bool dispatch_trade(City& buyer, double& remaining, const std::vector<City*>& sellers,
 	                    MarketScope scope);
 
 	/** Indica se o vendedor pertence à camada de mercado pedida. */
-	bool in_scope(const State& buyer, const State& seller, MarketScope scope) const;
+	bool in_scope(const City& buyer, const City& seller, MarketScope scope) const;
 
 	/** Rota marítima entre a Europa continental e a Inglaterra. */
-	std::vector<Leg> build_overseas_route(const State& seller, const State& buyer, double amount) const;
+	std::vector<Leg> build_overseas_route(const City& seller, const City& buyer, double amount) const;
 
 	double distance_km(const MapPoint& a, const MapPoint& b) const;
-	double in_transit_total(const std::string& state_id) const;
+	double in_transit_total(const std::string& city_id) const;
 
-	Dictionary state_to_dict(const State& state) const;
+	Dictionary city_to_dict(const City& city) const;
 	Dictionary nation_to_dict(const std::string& tag) const;
 	Dictionary leg_to_dict(const Leg& leg) const;
 	Dictionary order_to_dict(const TradeOrder& order) const;
 
-	std::vector<State> states_;
+	std::vector<City> cities_;
 	std::vector<Shipment> in_transit_;
 	std::vector<TradeOrder> last_orders_;
 	int day_ = 0;

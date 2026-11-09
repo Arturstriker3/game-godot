@@ -19,10 +19,10 @@ constexpr double kMapWidth = 5000.0;
 constexpr double kMapHeight = 2500.0;
 constexpr double kHoursPerDay = 24.0;
 
-// 0.3 kg de trigo por pessoa por dia, em toneladas.
+// 0,3 kg de trigo por pessoa por dia, em toneladas.
 constexpr double kNeedPerCapita = 0.0003;
 
-// Abaixo disso o comprador está em emergência e paga o frete aéreo.
+// Abaixo disso a cidade está em emergência e paga o frete aéreo.
 constexpr double kEmergencyCoverDays = 2.0;
 constexpr double kEmergencyAirShare = 0.35;
 
@@ -79,40 +79,21 @@ void EconomySim::initialize() {
 	last_orders_.clear();
 	day_ = 0;
 	clock_hours_ = 0.0;
-	define_states();
+	define_cities();
 }
 
-void EconomySim::define_states() {
-	states_.clear();
+void EconomySim::define_cities() {
+	cities_.clear();
 
-	// França: maior produtor de trigo, com destaque para a Beauce.
-	// Coordenadas = centro real da regiao projetado no mapa (5000x2500 px).
-	states_ = {
-		{"FRA-IDF", "FRA", "Ile-de-France", 16.0e6, 1500.0, 0.0, {2532.6, 571.5}},
-		{"FRA-BCE", "FRA", "Beauce", 2.0e6, 16000.0, 0.0, {2520.7, 577.1}},
-		{"FRA-NOR", "FRA", "Normandie", 3.5e6, 8000.0, 0.0, {2494.9, 566.9}},
-		{"FRA-EST", "FRA", "Grand Est", 8.5e6, 2000.0, 0.0, {2585.8, 573.7}},
-		{"FRA-BRE", "FRA", "Bretagne", 6.0e6, 1000.0, 0.0, {2476.7, 581.8}},
-		{"FRA-AQU", "FRA", "Nouvelle-Aquitaine", 8.0e6, 1500.0, 0.0, {2491.9, 627.2}},
-		{"FRA-ARA", "FRA", "Auvergne-Rhone-Alpes", 12.0e6, 0.0, 0.0, {2567.2, 615.0}},
-		{"FRA-HDF", "FRA", "Hauts-de-France", 8.0e6, 0.0, 0.0, {2542.5, 546.8}},
-		{"FRA-CVL", "FRA", "Centre-Val de Loire", 4.0e6, 0.0, 0.0, {2526.4, 585.0}},
-
-		// Alemanha: produção relevante, mas insuficiente para a demanda interna.
-		{"DEU-NRW", "DEU", "Nordrhein-Westfalen", 20.0e6, 4000.0, 0.0, {2594.0, 538.4}},
-		{"DEU-BAY", "DEU", "Bayern", 15.0e6, 7000.0, 0.0, {2660.8, 581.4}},
-		{"DEU-BW", "DEU", "Baden-Wurttemberg", 13.0e6, 3000.0, 0.0, {2627.5, 572.5}},
-		{"DEU-NDS", "DEU", "Niedersachsen", 12.0e6, 4000.0, 0.0, {2635.1, 523.0}},
-		{"DEU-SN", "DEU", "Sachsen", 10.0e6, 2000.0, 0.0, {2690.8, 540.9}},
-		{"DEU-BE", "DEU", "Berlin-Brandenburg", 13.2e6, 0.0, 0.0, {2686.2, 521.0}},
-
-		// Inglaterra: depende de importação, sobretudo no Sudeste.
-		{"GBR-LDN", "GBR", "Greater London", 18.0e6, 0.0, 0.0, {2498.2, 534.0}},
-		{"GBR-MID", "GBR", "Midlands", 11.0e6, 4000.0, 0.0, {2473.6, 520.5}},
-		{"GBR-NW", "GBR", "North West", 13.0e6, 2000.0, 0.0, {2468.9, 507.6}},
-		{"GBR-ECO", "GBR", "East of England", 6.0e6, 4000.0, 0.0, {2501.7, 525.0}},
-		{"GBR-SCO", "GBR", "Scotland", 5.5e6, 2000.0, 0.0, {2441.0, 474.1}},
-		{"GBR-WAL", "GBR", "Wales", 3.1e6, 0.0, 0.0, {2455.8, 534.4}},
+	// Uma cidade por nação. Coordenadas = centro real da cidade projetado no
+	// mapa (5000x2500 px) na projeção equiretangular do ne2.png.
+	// Produção é a capacidade diária de trigo em toneladas.
+	cities_ = {
+		{"GBR-LDN", "GBR", "London", 9.0e6, 1300.0, 0.0, {2498.2, 534.6}},
+		{"FRA-PAR", "FRA", "Paris", 12.0e6, 6000.0, 0.0, {2532.6, 571.4}},
+		{"DEU-BER", "DEU", "Berlin", 6.0e6, 2500.0, 0.0, {2686.2, 520.6}},
+		{"NED-AMS", "NED", "Amsterdam", 2.5e6, 300.0, 0.0, {2568.0, 522.7}},
+		{"BEL-BRU", "BEL", "Brussels", 2.5e6, 400.0, 0.0, {2560.4, 543.8}},
 	};
 }
 
@@ -121,11 +102,11 @@ Dictionary EconomySim::tick() {
 	clock_hours_ += kHoursPerDay;
 	last_orders_.clear();
 
-	// 1. Descarrega o que chegou ao estado de destino neste dia.
+	// 1. Descarrega o que chegou à cidade de destino neste dia.
 	for (auto shipment = in_transit_.begin(); shipment != in_transit_.end();) {
 		if (shipment->arrival_hour <= clock_hours_) {
-			if (State* state = find_state(shipment->to_state)) {
-				state->stockpile += shipment->amount;
+			if (City* city = find_city(shipment->to_city)) {
+				city->stockpile += shipment->amount;
 			}
 			shipment = in_transit_.erase(shipment);
 			continue;
@@ -133,28 +114,28 @@ Dictionary EconomySim::tick() {
 		++shipment;
 	}
 
-	// 2. Produção local e consumo regional de cada estado.
-	for (State& state : states_) {
-		state.stockpile += state.production;
-		state.need = state.population * kNeedPerCapita;
-		state.consumed = std::min(state.stockpile, state.need);
-		state.stockpile -= state.consumed;
-		state.deficit = state.need - state.consumed;
-		state.dispatched = 0.0;
+	// 2. Produção local e consumo de cada cidade.
+	for (City& city : cities_) {
+		city.stockpile += city.production;
+		city.need = city.population * kNeedPerCapita;
+		city.consumed = std::min(city.stockpile, city.need);
+		city.stockpile -= city.consumed;
+		city.deficit = city.need - city.consumed;
+		city.dispatched = 0.0;
 	}
 
-	// 3. Estados com excedente vendem para estados com déficit, inclusive
-	//    dentro do mesmo país. O que já está em trânsito conta como cobertura.
-	std::vector<State*> sellers;
-	std::vector<std::pair<State*, double>> buyers;
-	for (State& state : states_) {
-		if (state.stockpile > 1e-9) {
-			sellers.push_back(&state);
+	// 3. Cidades com excedente vendem para cidades com déficit. O que já está
+	//    em trânsito conta como cobertura.
+	std::vector<City*> sellers;
+	std::vector<std::pair<City*, double>> buyers;
+	for (City& city : cities_) {
+		if (city.stockpile > 1e-9) {
+			sellers.push_back(&city);
 		}
-		const double pending = in_transit_total(state.id);
-		const double open_deficit = state.deficit - pending;
+		const double pending = in_transit_total(city.id);
+		const double open_deficit = city.deficit - pending;
 		if (open_deficit > 1e-9) {
-			buyers.emplace_back(&state, open_deficit);
+			buyers.emplace_back(&city, open_deficit);
 		}
 	}
 
@@ -162,12 +143,11 @@ Dictionary EconomySim::tick() {
 	std::sort(buyers.begin(), buyers.end(),
 	          [](const auto& left, const auto& right) { return left.second > right.second; });
 	std::sort(sellers.begin(), sellers.end(),
-	          [](const State* left, const State* right) { return left->stockpile > right->stockpile; });
+	          [](const City* left, const City* right) { return left->stockpile > right->stockpile; });
 
-	// Fase 1: mercado regional (vizinhos do mesmo país).
+	// Fase 1: mercado regional (cidades vizinhas do mesmo país).
 	// Fase 2: mercado nacional (resto do país).
 	// Fase 3: mercado internacional.
-	// Em todas as fases a carga só chega ao comprador por transporte físico.
 	const MarketScope scope_order[] = {
 		MarketScope::Regional,
 		MarketScope::National,
@@ -188,14 +168,14 @@ Dictionary EconomySim::tick() {
 	Dictionary result;
 	result["day"] = day_;
 
-	Array states_array;
-	for (const State& state : states_) {
-		states_array.append(state_to_dict(state));
+	Array cities_array;
+	for (const City& city : cities_) {
+		cities_array.append(city_to_dict(city));
 	}
-	result["states"] = states_array;
+	result["cities"] = cities_array;
 
 	Array nations_array;
-	for (const char* tag : {"GBR", "FRA", "DEU"}) {
+	for (const char* tag : {"GBR", "FRA", "DEU", "NED", "BEL"}) {
 		nations_array.append(nation_to_dict(tag));
 	}
 	result["nations"] = nations_array;
@@ -213,14 +193,14 @@ Dictionary EconomySim::get_status() const {
 	Dictionary result;
 	result["day"] = day_;
 
-	Array states_array;
-	for (const State& state : states_) {
-		states_array.append(state_to_dict(state));
+	Array cities_array;
+	for (const City& city : cities_) {
+		cities_array.append(city_to_dict(city));
 	}
-	result["states"] = states_array;
+	result["cities"] = cities_array;
 
 	Array nations_array;
-	for (const char* tag : {"GBR", "FRA", "DEU"}) {
+	for (const char* tag : {"GBR", "FRA", "DEU", "NED", "BEL"}) {
 		nations_array.append(nation_to_dict(tag));
 	}
 	result["nations"] = nations_array;
@@ -240,7 +220,7 @@ const char* EconomySim::scope_name(MarketScope scope) {
 	}
 }
 
-bool EconomySim::in_scope(const State& buyer, const State& seller, MarketScope scope) const {
+bool EconomySim::in_scope(const City& buyer, const City& seller, MarketScope scope) const {
 	const bool same_nation = buyer.nation == seller.nation;
 
 	switch (scope) {
@@ -254,12 +234,12 @@ bool EconomySim::in_scope(const State& buyer, const State& seller, MarketScope s
 	return false;
 }
 
-bool EconomySim::dispatch_trade(State& buyer, double& remaining, const std::vector<State*>& sellers,
+bool EconomySim::dispatch_trade(City& buyer, double& remaining, const std::vector<City*>& sellers,
                                 MarketScope scope) {
 	// Dentro da camada, o frete mais barato é o do vendedor mais próximo.
-	State* seller = nullptr;
+	City* seller = nullptr;
 	double best_distance = 0.0;
-	for (State* candidate : sellers) {
+	for (City* candidate : sellers) {
 		if (candidate->stockpile <= 1e-9 || !in_scope(buyer, *candidate, scope)) {
 			continue;
 		}
@@ -282,8 +262,8 @@ bool EconomySim::dispatch_trade(State& buyer, double& remaining, const std::vect
 	const double air_share = (cover_days < kEmergencyCoverDays) ? kEmergencyAirShare : 0.0;
 
 	TradeOrder order;
-	order.from_state = seller->id;
-	order.to_state = buyer.id;
+	order.from_city = seller->id;
+	order.to_city = buyer.id;
 	order.from_nation = seller->nation;
 	order.to_nation = buyer.nation;
 	order.scope = scope;
@@ -304,7 +284,7 @@ bool EconomySim::dispatch_trade(State& buyer, double& remaining, const std::vect
 	return true;
 }
 
-std::vector<EconomySim::Leg> EconomySim::build_route(const State& seller, const State& buyer,
+std::vector<EconomySim::Leg> EconomySim::build_route(const City& seller, const City& buyer,
                                                      double amount, double air_share) const {
 	const bool crosses_sea = (seller.nation != "GBR") != (buyer.nation != "GBR");
 
@@ -328,11 +308,11 @@ std::vector<EconomySim::Leg> EconomySim::build_route(const State& seller, const 
 	return legs;
 }
 
-std::vector<EconomySim::Leg> EconomySim::build_overseas_route(const State& seller, const State& buyer,
+std::vector<EconomySim::Leg> EconomySim::build_overseas_route(const City& seller, const City& buyer,
                                                              double amount) const {
 	// Garante que a rota sempre comece no continente e termine na ilha.
-	const State& origin = seller.nation == "GBR" ? buyer : seller;
-	const State& destination = seller.nation == "GBR" ? seller : buyer;
+	const City& origin = seller.nation == "GBR" ? buyer : seller;
+	const City& destination = seller.nation == "GBR" ? seller : buyer;
 
 	return {
 		make_leg(TransportMode::Truck, origin.name, "Canal port", origin.center, france_port_, amount),
@@ -378,53 +358,56 @@ double EconomySim::distance_km(const MapPoint& a, const MapPoint& b) const {
 	return 2.0 * kEarthRadiusKm * std::asin(std::sqrt(h));
 }
 
-double EconomySim::in_transit_total(const std::string& state_id) const {
+double EconomySim::in_transit_total(const std::string& city_id) const {
 	double total = 0.0;
 	for (const Shipment& shipment : in_transit_) {
-		if (shipment.to_state == state_id) {
+		if (shipment.to_city == city_id) {
 			total += shipment.amount;
 		}
 	}
 	return total;
 }
 
-EconomySim::State* EconomySim::find_state(const std::string& id) {
-	for (State& state : states_) {
-		if (state.id == id) {
-			return &state;
+EconomySim::City* EconomySim::find_city(const std::string& id) {
+	for (City& city : cities_) {
+		if (city.id == id) {
+			return &city;
 		}
 	}
 	return nullptr;
 }
 
-const EconomySim::State* EconomySim::find_state(const std::string& id) const {
-	for (const State& state : states_) {
-		if (state.id == id) {
-			return &state;
+const EconomySim::City* EconomySim::find_city(const std::string& id) const {
+	for (const City& city : cities_) {
+		if (city.id == id) {
+			return &city;
 		}
 	}
 	return nullptr;
 }
 
-Dictionary EconomySim::state_to_dict(const State& state) const {
+Dictionary EconomySim::city_to_dict(const City& city) const {
 	Dictionary dict;
-	dict["id"] = String(state.id.c_str());
-	dict["nation"] = String(state.nation.c_str());
-	dict["name"] = String(state.name.c_str());
-	dict["population"] = state.population;
-	dict["need"] = state.need;
-	dict["production"] = state.production;
-	dict["consumed"] = state.consumed;
-	dict["deficit"] = state.deficit;
-	dict["dispatched"] = state.dispatched;
-	dict["in_transit"] = in_transit_total(state.id);
-	dict["stockpile"] = state.stockpile;
+	dict["id"] = String(city.id.c_str());
+	dict["nation"] = String(city.nation.c_str());
+	dict["name"] = String(city.name.c_str());
+	dict["population"] = city.population;
+	dict["need"] = city.need;
+	dict["production"] = city.production;
+	dict["consumed"] = city.consumed;
+	dict["deficit"] = city.deficit;
+	dict["dispatched"] = city.dispatched;
+	dict["in_transit"] = in_transit_total(city.id);
+	dict["stockpile"] = city.stockpile;
+	dict["x"] = city.center.x;
+	dict["y"] = city.center.y;
 	return dict;
 }
 
 Dictionary EconomySim::nation_to_dict(const std::string& tag) const {
 	static const std::pair<const char*, const char*> kNames[] = {
 		{"GBR", "England"}, {"FRA", "France"}, {"DEU", "Germany"},
+		{"NED", "Netherlands"}, {"BEL", "Belgium"},
 	};
 
 	Dictionary dict;
@@ -445,23 +428,23 @@ Dictionary EconomySim::nation_to_dict(const std::string& tag) const {
 	double deficit = 0.0;
 	double dispatched = 0.0;
 	double in_transit = 0.0;
-	int state_count = 0;
+	int city_count = 0;
 
-	for (const State& state : states_) {
-		if (state.nation != tag) {
+	for (const City& city : cities_) {
+		if (city.nation != tag) {
 			continue;
 		}
-		++state_count;
-		population += state.population;
-		production += state.production;
-		stockpile += state.stockpile;
-		need += state.need;
-		deficit += state.deficit;
-		dispatched += state.dispatched;
-		in_transit += in_transit_total(state.id);
+		++city_count;
+		population += city.population;
+		production += city.production;
+		stockpile += city.stockpile;
+		need += city.need;
+		deficit += city.deficit;
+		dispatched += city.dispatched;
+		in_transit += in_transit_total(city.id);
 	}
 
-	dict["state_count"] = state_count;
+	dict["city_count"] = city_count;
 	dict["population"] = population;
 	dict["production"] = production;
 	dict["stockpile"] = stockpile;
@@ -493,8 +476,8 @@ Dictionary EconomySim::leg_to_dict(const Leg& leg) const {
 
 Dictionary EconomySim::order_to_dict(const TradeOrder& order) const {
 	Dictionary dict;
-	dict["from_state"] = String(order.from_state.c_str());
-	dict["to_state"] = String(order.to_state.c_str());
+	dict["from_city"] = String(order.from_city.c_str());
+	dict["to_city"] = String(order.to_city.c_str());
 	dict["from_nation"] = String(order.from_nation.c_str());
 	dict["to_nation"] = String(order.to_nation.c_str());
 	dict["scope"] = String(scope_name(order.scope));

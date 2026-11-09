@@ -1,0 +1,193 @@
+extends Node3D
+class_name CityWorld
+
+## Mundo baseado em cidades: fundo de mapa real (ne2.png), uma cidade 3D por
+## nação e a forma/fronteira de cada nação calculada por Voronoi a partir das
+## cidades. Os dados (posição, nação, população) vêm do núcleo C++ (EconomySim).
+
+const MAP_SIZE_PX := Vector2(5000.0, 2500.0)
+const PLANE_SIZE := Vector2(1000.0, 500.0)
+const PIXEL_TO_WORLD := 0.2
+
+const CITY_MODEL: PackedScene = preload("res://assets/models/city.glb")
+const GPS_TEXTURE: Texture2D = preload("res://map/map_data/ne2.png")
+
+const VORONOI_RESOLUTION := Vector2i(1000, 500)
+const CITY_TARGET_SIZE := 6.0
+
+const NATION_COLORS := {
+	"GBR": Color(0.78, 0.12, 0.16),
+	"FRA": Color(0.10, 0.30, 0.85),
+	"DEU": Color(0.36, 0.36, 0.40),
+	"NED": Color(0.95, 0.45, 0.10),
+	"BEL": Color(0.90, 0.75, 0.12),
+}
+
+
+## Monta o mundo: chão GPS, fronteiras Voronoi e modelos de cidade.
+func build(cities: Array) -> void:
+	_build_gps_plane()
+	_build_voronoi(cities)
+	_build_cities(cities)
+
+
+func pixel_to_world(px: Vector2) -> Vector3:
+	return Vector3(
+		(px.x - MAP_SIZE_PX.x * 0.5) * PIXEL_TO_WORLD,
+		0.0,
+		(px.y - MAP_SIZE_PX.y * 0.5) * PIXEL_TO_WORLD,
+	)
+
+
+func _build_gps_plane() -> void:
+	var plane := PlaneMesh.new()
+	plane.size = PLANE_SIZE
+
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = GPS_TEXTURE
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.mesh = plane
+	mesh_instance.material_override = material
+	add_child(mesh_instance)
+
+
+func _build_voronoi(cities: Array) -> void:
+	var texture := _generate_voronoi(cities)
+
+	var plane := PlaneMesh.new()
+	plane.size = PLANE_SIZE
+
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = texture
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.mesh = plane
+	mesh_instance.position = Vector3(0.0, 0.15, 0.0)
+	mesh_instance.material_override = material
+	add_child(mesh_instance)
+
+
+## Gera um diagrama de Voronoi: cada pixel pertence à cidade mais próxima.
+## O preenchimento é translúcido e as bordas (troca de cidade) ficam opacas.
+func _generate_voronoi(cities: Array) -> ImageTexture:
+	var w: int = VORONOI_RESOLUTION.x
+	var h: int = VORONOI_RESOLUTION.y
+
+	var sites: Array = []
+	for city in cities:
+		sites.append({
+			"pos": Vector2(city["x"], city["y"]),
+			"color": NATION_COLORS.get(city["nation"], Color.WHITE),
+		})
+	if sites.is_empty():
+		return null
+
+	# Dono (índice do site) de cada pixel.
+	var owner := PackedInt32Array()
+	owner.resize(w * h)
+
+	var sx: float = MAP_SIZE_PX.x / float(w)
+	var sy: float = MAP_SIZE_PX.y / float(h)
+
+	for j in range(h):
+		for i in range(w):
+			var px: float = (float(i) + 0.5) * sx
+			var py: float = (float(j) + 0.5) * sy
+			var best := -1
+			var best_dist := INF
+			for s in range(sites.size()):
+				var dx: float = px - sites[s]["pos"].x
+				var dy: float = py - sites[s]["pos"].y
+				var dist: float = dx * dx + dy * dy
+				if dist < best_dist:
+					best_dist = dist
+					best = s
+			owner[j * w + i] = best
+
+	var bytes := PackedByteArray()
+	bytes.resize(w * h * 4)
+
+	for j in range(h):
+		for i in range(w):
+			var idx: int = j * w + i
+			var s: int = owner[idx]
+			var is_border := false
+			if i > 0 and owner[idx - 1] != s:
+				is_border = true
+			elif i < w - 1 and owner[idx + 1] != s:
+				is_border = true
+			elif j > 0 and owner[idx - w] != s:
+				is_border = true
+			elif j < h - 1 and owner[idx + w] != s:
+				is_border = true
+
+			var color: Color = sites[s]["color"]
+			color.a = 0.9 if is_border else 0.20
+			var o: int = idx * 4
+			bytes[o] = int(color.r * 255.0)
+			bytes[o + 1] = int(color.g * 255.0)
+			bytes[o + 2] = int(color.b * 255.0)
+			bytes[o + 3] = int(color.a * 255.0)
+
+	var image := Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes)
+	return ImageTexture.create_from_image(image)
+
+
+func _build_cities(cities: Array) -> void:
+	for city in cities:
+		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
+		_spawn_city_marker(position, city["name"], NATION_COLORS.get(city["nation"], Color.WHITE))
+		_spawn_city_model(position)
+
+
+func _spawn_city_marker(position: Vector3, city_name: String, color: Color) -> void:
+	var marker := CSGCylinder3D.new()
+	marker.radius = 1.6
+	marker.height = 0.4
+	marker.material = StandardMaterial3D.new()
+	marker.material.albedo_color = color
+	marker.material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	marker.position = position + Vector3(0.0, 0.2, 0.0)
+	add_child(marker)
+
+	var label := Label3D.new()
+	label.text = city_name
+	label.font_size = 22
+	label.modulate = color
+	label.outline_size = 8
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = position + Vector3(0.0, 5.0, 0.0)
+	add_child(label)
+
+
+func _spawn_city_model(position: Vector3) -> void:
+	var model := CITY_MODEL.instantiate() as Node3D
+	var scale := _scale_to_size(model, CITY_TARGET_SIZE)
+	model.scale = Vector3.ONE * scale
+	model.position = position + Vector3(0.0, 0.4, 0.0)
+	add_child(model)
+
+
+## Escala o modelo para que seu maior eixo meça o tamanho alvo.
+func _scale_to_size(root: Node3D, target: float) -> float:
+	var bounds := _combined_aabb(root)
+	var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
+	return 1.0 if longest <= 0.0 else target / longest
+
+
+func _combined_aabb(root: Node3D) -> AABB:
+	var result := AABB()
+	var found := false
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is MeshInstance3D and node.mesh != null:
+			var box: AABB = node.transform * node.get_aabb()
+			result = box if not found else result.merge(box)
+			found = true
+		stack.append_array(node.get_children())
+	return result
