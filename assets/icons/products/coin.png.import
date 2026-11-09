@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://de5fiac7tqsf0"
-path="res://.godot/imported/sword.svg-d29e3bb1cd15384babb8ad8ba6f1dd50.ctex"
+uid="uid://bk35mx72pspia"
+path="res://.godot/imported/coin.png-bbc98dfd2bffc9a931e104b512a8b281.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/sword.svg"
-dest_files=["res://.godot/imported/sword.svg-d29e3bb1cd15384babb8ad8ba6f1dd50.ctex"]
+source_file="res://assets/icons/products/coin.png"
+dest_files=["res://.godot/imported/coin.png-bbc98dfd2bffc9a931e104b512a8b281.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

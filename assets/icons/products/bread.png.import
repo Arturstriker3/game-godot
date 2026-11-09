@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cybedcuuggyjj"
-path="res://.godot/imported/truck.svg-3ad39acd94bf24ac9deec09d7cb7abfd.ctex"
+uid="uid://bl6k02g7hkseg"
+path="res://.godot/imported/bread.png-356e86258016c8b942c6dcde25a6b7a7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/truck.svg"
-dest_files=["res://.godot/imported/truck.svg-3ad39acd94bf24ac9deec09d7cb7abfd.ctex"]
+source_file="res://assets/icons/products/bread.png"
+dest_files=["res://.godot/imported/bread.png-356e86258016c8b942c6dcde25a6b7a7.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

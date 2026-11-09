@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://butnoim6u73gp"
-path="res://.godot/imported/factory.svg-1b8aa55a26ff757d8ac32181efeec6a4.ctex"
+uid="uid://d3pcmx6y0fni2"
+path="res://.godot/imported/wheat.png-9e585c05e460c1555ed7dae4cbd4f4da.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/factory.svg"
-dest_files=["res://.godot/imported/factory.svg-1b8aa55a26ff757d8ac32181efeec6a4.ctex"]
+source_file="res://assets/icons/products/wheat.png"
+dest_files=["res://.godot/imported/wheat.png-9e585c05e460c1555ed7dae4cbd4f4da.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

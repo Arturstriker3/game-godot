@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1pmhbfvpwyou"
-path="res://.godot/imported/oil.svg-6d28948efbf681b8c087c6b584a1a71a.ctex"
+uid="uid://c5da70x8j1n53"
+path="res://.godot/imported/factory.png-0b39be0f8fc1fe112e3130527599309d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/oil.svg"
-dest_files=["res://.godot/imported/oil.svg-6d28948efbf681b8c087c6b584a1a71a.ctex"]
+source_file="res://assets/icons/products/factory.png"
+dest_files=["res://.godot/imported/factory.png-0b39be0f8fc1fe112e3130527599309d.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

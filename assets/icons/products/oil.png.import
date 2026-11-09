@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqr34i56vs075"
-path="res://.godot/imported/bread.svg-6df0558c89f2b83055f6b365b2a8e551.ctex"
+uid="uid://y17f4a3hpdwy"
+path="res://.godot/imported/oil.png-39068dbb9a7f712edf0a6aa3adef3fa1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/bread.svg"
-dest_files=["res://.godot/imported/bread.svg-6df0558c89f2b83055f6b365b2a8e551.ctex"]
+source_file="res://assets/icons/products/oil.png"
+dest_files=["res://.godot/imported/oil.png-39068dbb9a7f712edf0a6aa3adef3fa1.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

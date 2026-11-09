@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dyncpw4p8ifmk"
-path="res://.godot/imported/iron.svg-df4750cbafece0a3143cdc68900184e7.ctex"
+uid="uid://bo4qstak4xp6k"
+path="res://.godot/imported/truck.png-bb84f950de16ca2c23f7a65a7359b7ac.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/iron.svg"
-dest_files=["res://.godot/imported/iron.svg-df4750cbafece0a3143cdc68900184e7.ctex"]
+source_file="res://assets/icons/products/truck.png"
+dest_files=["res://.godot/imported/truck.png-bb84f950de16ca2c23f7a65a7359b7ac.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

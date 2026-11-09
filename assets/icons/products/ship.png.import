@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cu6csnrnw5mk4"
-path="res://.godot/imported/rifle.svg-dc6280551303f4f045ca116dd2df6e1e.ctex"
+uid="uid://mlissulxbqdc"
+path="res://.godot/imported/ship.png-f3b2ba91c5e11a0681798a955757c4e4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/rifle.svg"
-dest_files=["res://.godot/imported/rifle.svg-dc6280551303f4f045ca116dd2df6e1e.ctex"]
+source_file="res://assets/icons/products/ship.png"
+dest_files=["res://.godot/imported/ship.png-f3b2ba91c5e11a0681798a955757c4e4.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

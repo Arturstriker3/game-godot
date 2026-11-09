@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwbktnx2gtafq"
-path="res://.godot/imported/flour.svg-74b64657e12262c9746c1d3dd6aa80f1.ctex"
+uid="uid://liqvx7tevca1"
+path="res://.godot/imported/plane.png-29d7e2e02e6ab1e648910f8429fd7176.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/flour.svg"
-dest_files=["res://.godot/imported/flour.svg-74b64657e12262c9746c1d3dd6aa80f1.ctex"]
+source_file="res://assets/icons/products/plane.png"
+dest_files=["res://.godot/imported/plane.png-29d7e2e02e6ab1e648910f8429fd7176.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fteykiprlx7l"
-path="res://.godot/imported/plane.svg-70141062e964ccf15a78cfa120b73b96.ctex"
+uid="uid://lbeskxr0kie5"
+path="res://.godot/imported/iron.png-f6c6dc1bcfdf2daf8ddf406adb48dfd1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/plane.svg"
-dest_files=["res://.godot/imported/plane.svg-70141062e964ccf15a78cfa120b73b96.ctex"]
+source_file="res://assets/icons/products/iron.png"
+dest_files=["res://.godot/imported/iron.png-f6c6dc1bcfdf2daf8ddf406adb48dfd1.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

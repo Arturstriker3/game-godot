@@ -1,2 +1,3 @@
-Product icons — generated procedurally by tools/generate_product_icons.py.
-Original geometry, released as CC0 (public domain). No third-party assets.
+Game icons generated from emoji glyphs (tools/generate_game_icons.py).
+For release, use Noto Color Emoji (SIL OFL 1.1) or Twemoji (CC-BY 4.0) as the
+glyph source; the system font is used only for local prototyping.

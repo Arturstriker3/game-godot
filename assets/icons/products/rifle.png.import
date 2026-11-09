@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cmgsmbxiw81mx"
-path="res://.godot/imported/coin.svg-b6666d4fbc9c275fd5d4532828c125bc.ctex"
+uid="uid://ciki4i34ax36t"
+path="res://.godot/imported/rifle.png-f2d667e6cd99f36b1781e16ab7eca096.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/products/coin.svg"
-dest_files=["res://.godot/imported/coin.svg-b6666d4fbc9c275fd5d4532828c125bc.ctex"]
+source_file="res://assets/icons/products/rifle.png"
+dest_files=["res://.godot/imported/rifle.png-f2d667e6cd99f36b1781e16ab7eca096.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false
