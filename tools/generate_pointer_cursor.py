@@ -1,18 +1,17 @@
-"""Gera o cursor de mão agarrando ("grab") para hover sobre porto/construção.
+"""Gera o cursor de punho (latão) para hover sobre porto/construção.
 
-Pose: mão vista de cima, punho entrando pela borda superior, dedos curvados
-para baixo e polegar aberto — como quem pega algo do chão.
+Pose: punho fechado vindo de cima, nós dos dedos embaixo — como quem agarra
+algo no chão. Estilo gravado dos demais cursores: latão (#C9A24A) com
+contorno escuro uniforme.
 
-Estilo: latão (#C9A24A) com contorno escuro uniforme, igual aos demais
-cursores. A silhueta é desenhada como UMA massa (punho + palma + dedos
-sobrepostos + polegar); as separações dos dedos são linhas escuras por cima.
-Em 32 px isso lê muito melhor do que dedos recortados.
+Regra de legibilidade em 32 px: UMA massa sólida, sem detalhes finos.
+Só o vinco do polegar e três separações curtas entre os nós dos dedos.
 Renderiza em 8x e reduz com LANCZOS.
 
 Uso: python tools/generate_pointer_cursor.py
 """
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 S = 32
 SS = 8  # supersampling
@@ -27,37 +26,40 @@ md = ImageDraw.Draw(mask)
 
 
 def sc(v):
-    return v * SS
+    return int(round(v * SS))
 
 
-def rrect(box, radius):
-    md.rounded_rectangle([sc(v) for v in box], radius=sc(radius), fill=255)
+def rrect(box, radius, target=md):
+    target.rounded_rectangle([sc(v) for v in box], radius=sc(radius), fill=255)
 
 
-def capsule(points, width):
-    pts = [(sc(x), sc(y)) for x, y in points]
-    w = int(width * SS)
-    md.line(pts, fill=255, width=w, joint="curve")
-    for x, y in (pts[0], pts[-1]):
-        md.ellipse([x - w / 2, y - w / 2, x + w / 2, y + w / 2], fill=255)
+# --- Silhueta: punho sólido, braço entrando por cima ---
+# Antebraço (sai pela borda superior).
+rrect((12.6, -1.0, 19.4, 7.0), 1.6)
+# Massa do punho.
+rrect((8.5, 5.5, 23.5, 23.5), 6.0)
+# Nós dos dedos embaixo (quatro protuberâncias rasas).
+for cx in (10.9, 14.4, 17.9, 21.2):
+    rrect((cx - 1.9, 19.8, cx + 1.9, 25.0), 1.85)
+# Polegar à esquerda.
+rrect((5.9, 9.0, 12.8, 17.0), 3.0)
 
+# --- Detalhes (camada separada, recortada pela silhueta) ---
+detail = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+dd = ImageDraw.Draw(detail)
 
-# Punho entrando pela borda superior.
-rrect((12.8, 0.0, 20.2, 9.6), 2.6)
-# Palma (dorso da mão).
-rrect((10.0, 6.4, 22.0, 18.2), 4.0)
+# Separações entre os nós dos dedos (curtas, só embaixo).
+for x in (12.6, 16.1, 19.6):
+    dd.line([sc(x), sc(20.2), sc(x), sc(22.9)], fill=dark, width=sc(0.75))
 
-# Dedos largos e SOBREPOSTOS: formam uma massa só (sem vãos recortados).
-# As pontas curvam para dentro (em direção ao centro), como quem agarra.
-capsule([(12.2, 16.0), (10.6, 20.4), (10.4, 24.4), (11.6, 26.6)], 4.4)
-capsule([(14.9, 17.0), (14.2, 21.2), (14.4, 25.6), (15.4, 27.8)], 4.4)
-capsule([(17.4, 17.0), (18.2, 21.2), (18.2, 25.4), (17.4, 27.6)], 4.4)
-capsule([(19.9, 16.0), (21.3, 19.4), (21.6, 22.6), (20.6, 24.8)], 4.2)
+# Vinco do polegar (borda direita do polegar).
+dd.line([sc(12.9), sc(10.0), sc(13.2), sc(13.4), sc(12.9), sc(16.8)],
+        fill=dark, width=sc(0.75), joint="curve")
 
-# Polegar grosso, colado à palma (a dobra entre os dois vira um vinco escuro).
-capsule([(12.0, 10.8), (9.0, 12.2), (6.8, 14.8), (6.6, 17.8)], 5.2)
+# Reflexo no dorso (um traço claro só).
+dd.line([sc(10.8), sc(8.2), sc(10.8), sc(11.6)], fill=brass_light, width=sc(0.9))
 
-# Contorno: máscara cheia em escuro; interior em latão = máscara erodida.
+# Contorno: interior em latão = máscara erodida.
 inner = mask.filter(ImageFilter.MinFilter(9))
 
 img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
@@ -65,27 +67,11 @@ dark_layer = Image.new("RGBA", (W, W), dark)
 dark_layer.putalpha(mask)
 brass_layer = Image.new("RGBA", (W, W), brass)
 brass_layer.putalpha(inner)
-img = Image.alpha_composite(dark_layer, brass_layer)
+img = Image.alpha_composite(img, dark_layer)
+img = Image.alpha_composite(img, brass_layer)
 
-d = ImageDraw.Draw(img)
-
-# Vinco do punho (curto, só no meio do dorso).
-d.line([sc(14.2), sc(8.2), sc(19.0), sc(8.2)], fill=dark, width=int(0.7 * SS))
-
-# Separações dos dedos: linhas curtas do dorso até a ponta.
-d.line([sc(12.9), sc(19.8), sc(13.0), sc(23.6), sc(13.4), sc(25.8)],
-       fill=dark, width=int(0.85 * SS), joint="curve")
-d.line([sc(16.3), sc(20.2), sc(16.4), sc(24.2), sc(16.6), sc(26.8)],
-       fill=dark, width=int(0.85 * SS), joint="curve")
-d.line([sc(19.7), sc(19.8), sc(19.8), sc(23.0), sc(19.6), sc(25.2)],
-       fill=dark, width=int(0.85 * SS), joint="curve")
-
-# Vinco do polegar (separa do dorso).
-d.line([sc(10.2), sc(12.2), sc(9.2), sc(15.2)], fill=dark,
-       width=int(0.85 * SS), joint="curve")
-
-# Reflexo no dorso da mão.
-d.line([sc(12.2), sc(9.0), sc(12.2), sc(12.4)], fill=brass_light, width=SS)
+detail.putalpha(ImageChops.multiply(detail.getchannel("A"), mask))
+img = Image.alpha_composite(img, detail)
 
 img = img.resize((S, S), Image.LANCZOS)
 img.save("assets/ui/cursor_pointer.png")
