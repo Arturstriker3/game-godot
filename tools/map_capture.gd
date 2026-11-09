@@ -17,13 +17,12 @@ extends Node3D
 ##             --run=<nome da pasta da execução>
 
 const CityWorldScript: Script = preload("res://map/city_world.gd")
-const SATELLITE: Texture2D = preload("res://map/map_data/satellite.jpg")
 const RELIEF: Texture2D = preload("res://map/map_data/normal.png")
 const ATLAS_REGION_SDF: Texture2D = preload("res://map/map_data/atlas/region_sdf.png")
 const ATLAS_REGION_COLOR: Texture2D = preload("res://map/map_data/atlas/region_color.png")
 const ATLAS_WORLD_SDF: Texture2D = preload("res://map/map_data/atlas/world_sdf.png")
 const ATLAS_WORLD_COLOR: Texture2D = preload("res://map/map_data/atlas/world_color.png")
-const SATELLITE_SHADER: Shader = preload("res://map/map_shaders/satellite_map.gdshader")
+const PAPER_SHADER: Shader = preload("res://map/map_shaders/paper_map.gdshader")
 const POLITICAL_SHADER: Shader = preload("res://map/map_shaders/political_overlay.gdshader")
 
 ## Mesmo enquadramento do jogo (game/main_game.gd).
@@ -151,7 +150,10 @@ func _capture_map3d() -> void:
 	_apply_territory_overrides(world)
 	_center_world(world, cities)
 	if not _focus.is_empty():
-		world.position -= world.city_world_position(_focus)
+		# `city_world_position()` devolve a posição GLOBAL (inclui o
+		# world.position atual). Zera antes de medir para não somar o centro.
+		world.position = Vector3.ZERO
+		world.position = -world.city_world_position(_focus)
 		_manifest["focus"] = _focus
 	_manifest["city_count"] = cities.size()
 	world.set_mode(_mode)
@@ -206,15 +208,16 @@ func _build_flat_map(mode: String) -> void:
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(1000.0, 500.0)
 
-	var satellite := ShaderMaterial.new()
-	satellite.shader = SATELLITE_SHADER
-	satellite.set_shader_parameter("map_texture", SATELLITE)
-	satellite.set_shader_parameter("relief_texture", RELIEF)
+	var paper := ShaderMaterial.new()
+	paper.shader = PAPER_SHADER
+	paper.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
+	paper.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
+	paper.set_shader_parameter("relief_texture", RELIEF)
 
 	var ground := MeshInstance3D.new()
 	ground.name = "FlatGround"
 	ground.mesh = plane
-	ground.material_override = satellite
+	ground.material_override = paper
 	add_child(ground)
 
 	if mode != "political":

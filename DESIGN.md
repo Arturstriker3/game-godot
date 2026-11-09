@@ -57,19 +57,24 @@ Forma e ritmo:
 - Movimento só em hover/foco: 0,12 s (`DURATION_FAST`) e 0,20 s (`DURATION`).
 
 
-## Mapa de satélite
+## Mapa base branco
 
-O fundo é um mosaico de satélite real (`map/map_data/satellite.jpg`, 8192×4096,
-equirretangular global; gerado por `tools/fetch_satellite_background.ps1` a
-partir do Esri World Imagery) passado pelo shader
-`map/map_shaders/satellite_map.gdshader`, que mantém as cores naturais:
+O fundo dos modos geográfico/densidade/recurso é uma **carta branca** desenhada
+por `map/map_shaders/paper_map.gdshader` a partir dos mesmos campos de distância
+do Natural Earth (`map/map_data/atlas/region_sdf.png` e `world_sdf.png`):
 
-- contraste e saturação levemente realçados para leitura em tela;
-- nenhum recolorimento por paleta: mar, vegetação, deserto e gelo aparecem como
-  na imagem original;
-- plataforma costeira sutil (água rasa um pouco mais clara) e mar aberto escuro,
-  para a água não competir com as camadas estratégicas;
-- crédito obrigatório da imagem no rodapé do HUD.
+- terra em marfim (`#F2EDE0`) e mar branco;
+- relevo suave (hillshade da normal); hoje o `normal.png` é plano, então o
+  efeito é discreto;
+- apenas o **contorno dos continentes** em tinta `#3C372F`, 1,25 px — sem
+  fronteiras de país ou província (estas ficam no modo político e no overlay
+  sutil dos modos de calor);
+- grão de papel fino e vinheta polar fundindo com o fundo do ambiente;
+- a base existe para receber os futuros **mapas de densidade populacional e de
+  recursos naturais** por cima.
+
+O satélite `satellite.jpg` e o `tools/fetch_satellite_background.ps1` foram
+removidos.
 
 ## Mapa político (atlas)
 
@@ -84,8 +89,7 @@ vetores do Natural Earth 10m por `tools/build_atlas_layers.py`
 - **Províncias:** divisas admin-1 reais, 0,85 px a 40%; somem ao afastar.
 - **Costa:** linha de 1,15 px; mar com faixa rasa clara e duas linhas de nível
   paralelas à costa (somem ao afastar).
-- **Terra:** cor da nação × tom regional do satélite (relevo, florestas,
-  desertos) × grão de papel procedural. Nações jogáveis em tons sóbrios
+- **Terra:** cor da nação × tom do papel (`paper_flat.png`) × grão de papel procedural. Nações jogáveis em tons sóbrios
   (GBR `#A04844`, FRA `#506C9C`, DEU `#70757C`, NED `#C07840`, BEL `#B69C4A`);
   as demais em pergaminho com leve variação por `MAPCOLOR9`.
 - **Nomes de nação:** Cinzel 600 em caixa alta, tinta a 68%, gravados no chão,

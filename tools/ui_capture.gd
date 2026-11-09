@@ -14,7 +14,7 @@ extends Control
 ## O relatório não afirma inspeção visual: mede retângulos, textos e recortes.
 
 const HudScript: Script = preload("res://core/ui/hud.gd")
-const SATELLITE_PATH := "res://map/map_data/satellite.jpg"
+const BACKDROP_PATH := "res://map/map_data/paper_flat.png"
 
 const WAIT_FRAMES := 3
 const DEFAULT_SIZES := ["1920x1080", "1600x900", "1366x768", "2560x1440"]
@@ -79,7 +79,7 @@ func _parse_args() -> void:
 
 ## Fundo neutro: textura real do mapa escurecida, ou cor chapada com --plain.
 func _build_background() -> void:
-	var texture: Texture2D = null if _plain else load(SATELLITE_PATH) as Texture2D
+	var texture: Texture2D = null if _plain else load(BACKDROP_PATH) as Texture2D
 	if texture != null:
 		var backdrop := TextureRect.new()
 		backdrop.texture = texture

@@ -2,9 +2,11 @@ extends Node3D
 class_name CityWorld
 
 ## Mundo baseado em cidades com duas bases visuais:
-##   - Modo "political" (atlas): fundo chapado (água teal, terra parchment) com
-##     preenchimento opaco das 5 nações e fronteiras nítidas, estilo atlas histórico.
-##   - Demais modos: fundo de satélite real (satellite.jpg) com overlay político sutil.
+##   - Modo "political" (atlas): fundo chapado com preenchimento opaco das
+##     nações e fronteiras nítidas, estilo atlas histórico.
+##   - Demais modos: base branca (terra marfim, mar branco, relevo suave e
+##     contorno dos continentes) via paper_map.gdshader, para os mapas de
+##     densidade/recurso desenharem por cima.
 ##
 ## A camada geopolítica (Natural Earth) fica por cima do terreno. Cidades 3D,
 ## rótulos, seleção e veículos funcionam em ambos os modos.
@@ -19,9 +21,9 @@ const MAP_SIZE_PX := Vector2(5000.0, 2500.0)
 const PLANE_SIZE := Vector2(1000.0, 500.0)
 const PIXEL_TO_WORLD := 0.2
 
-const GPS_TEXTURE: Texture2D = preload("res://map/map_data/satellite.jpg")
+const PAPER_FLAT_TEXTURE: Texture2D = preload("res://map/map_data/paper_flat.png")
 const RELIEF_TEXTURE: Texture2D = preload("res://map/map_data/normal.png")
-const MAP_SHADER: Shader = preload("res://map/map_shaders/satellite_map.gdshader")
+const MAP_SHADER: Shader = preload("res://map/map_shaders/paper_map.gdshader")
 const ATLAS_SHADER: Shader = preload("res://map/map_shaders/atlas_political.gdshader")
 const ATLAS_REGION_SDF: Texture2D = preload("res://map/map_data/atlas/region_sdf.png")
 const ATLAS_REGION_COLOR: Texture2D = preload("res://map/map_data/atlas/region_color.png")
@@ -169,7 +171,7 @@ func set_mode(mode: String) -> void:
 
 	# Aplica em todas as cópias laterais (wrap), não só na central.
 	for root in _content_roots():
-		_set_child_visible(root, "SatelliteBase", not is_atlas)
+		_set_child_visible(root, "MapBase", not is_atlas)
 		_set_child_visible(root, "AtlasBase", is_atlas)
 		# O atlas já desenha costa e fronteiras; o overlay serve aos modos de
 		# calor, que continuam sobre o satélite com fronteiras discretas.
@@ -487,14 +489,15 @@ func _build_gps_plane() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = PLANE_SIZE
 
-	# Base de satélite (modo geográfico)
+	# Base branca (modos geográfico/densidade/recurso)
 	var gps_material := ShaderMaterial.new()
 	gps_material.shader = MAP_SHADER
-	gps_material.set_shader_parameter("map_texture", GPS_TEXTURE)
+	gps_material.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
+	gps_material.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
 	gps_material.set_shader_parameter("relief_texture", RELIEF_TEXTURE)
 
 	_gps_mesh = MeshInstance3D.new()
-	_gps_mesh.name = "SatelliteBase"
+	_gps_mesh.name = "MapBase"
 	_gps_mesh.mesh = plane
 	_gps_mesh.material_override = gps_material
 	_content.add_child(_gps_mesh)
@@ -507,7 +510,7 @@ func _build_gps_plane() -> void:
 	_atlas_material.set_shader_parameter("region_color", ATLAS_REGION_COLOR)
 	_atlas_material.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
 	_atlas_material.set_shader_parameter("world_color", ATLAS_WORLD_COLOR)
-	_atlas_material.set_shader_parameter("terrain_texture", GPS_TEXTURE)
+	_atlas_material.set_shader_parameter("terrain_texture", PAPER_FLAT_TEXTURE)
 
 	_atlas_mesh = MeshInstance3D.new()
 	_atlas_mesh.name = "AtlasBase"
