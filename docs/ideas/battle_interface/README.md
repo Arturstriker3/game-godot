@@ -4,7 +4,7 @@ Referência visual da tela de batalha do HOI4 (Paradox). O que nos interessa nã
 a guerra em si (fora do escopo atual), mas a **composição da tela**: como um
 confronto entre duas forças é apresentado de forma legível e cinematográfica.
 
-**Imagem:** `reference.png` — captura da tela de batalha do HOI4 (2551×1433).
+**Imagem:** `reference.webp` — captura da tela de batalha do HOI4 (1080×606, 149 KB).
 
 ---
 
