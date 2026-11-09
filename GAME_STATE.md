@@ -213,7 +213,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Navegação:** pilha de contexto com breadcrumb; foco por teclado (anel de latão); Esc fecha menu → janela → abre menu.
 - **Estados vazios:** princípio "estado vazio honesto" — onde não há dado (produção, política, preços, desemprego), a tela declara a ausência.
 - **i18n:** `core/i18n/i18n.gd` — ~330 chaves × {pt-BR, en, es}; troca em runtime; lacunas nos protótipos (texto fixo em pt-BR em `city_economy_panel.gd`, `game/*_prototype.gd`).
-- **Áudio:** `Music` (7 faixas) + `UiSfx` (Kenney Interface Sounds 1.0.0, CC0, 100 WAV em `assets/audio/interface/`). Eventos ligados: clique, seleção, alternância, voltar, abrir, fechar, confirmar, erro, rolagem, arraste de slider, troca de aba, pergunta, maximizar e minimizar janela. Rolagem e arraste usam `play_throttled` (90 ms / 55 ms por controle).
+- **Áudio:** `Music` (7 faixas) + `UiSfx`. Tema ativo **`command_post`**: 42 WAV sintetizados (14 eventos × 3 variações) em `assets/audio/interface_command_post/`, secos/mecânicos (clique, interruptor, papel, carimbo, rádio, typewriter), gerados por `tools/generate_command_post_sfx.py`. O pacote Kenney CC0 original fica em `assets/audio/interface/` como fallback — trocar `THEME` em `core/audio/ui_sfx.gd` entre `"command_post"` e `"kenney"`. Rolagem e arraste usam `play_throttled` (90 ms / 55 ms por controle).
 
 ---
 

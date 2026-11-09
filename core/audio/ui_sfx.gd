@@ -132,6 +132,28 @@ const PATHS := {
 	],
 }
 
+## Tema ativo da interface. "command_post" = sintetizado (seco/mecânico, WWII);
+## "kenney" = pacote CC0 original (mais suave). Trocar aqui muda tudo.
+const THEME := "command_post"
+const COMMAND_POST_DIR := "res://assets/audio/interface_command_post/"
+const COMMAND_POST_VARIANTS := 3
+const COMMAND_POST_NAMES := {
+	Sound.CLICK: "click",
+	Sound.SELECT: "select",
+	Sound.TOGGLE: "toggle",
+	Sound.BACK: "back",
+	Sound.OPEN: "open",
+	Sound.CLOSE: "close",
+	Sound.CONFIRM: "confirmation",
+	Sound.ERROR: "error",
+	Sound.SCROLL: "scroll",
+	Sound.TICK: "tick",
+	Sound.SWITCH: "switch",
+	Sound.QUESTION: "question",
+	Sound.MAXIMIZE: "maximize",
+	Sound.MINIMIZE: "minimize",
+}
+
 const VOICES := 8
 const VOLUME_DB := -8.0
 const PITCH_JITTER := 0.04
@@ -199,14 +221,29 @@ func _pick(sound: Sound) -> AudioStream:
 
 func _load_streams() -> Dictionary:
 	var loaded := {}
-	for sound: Sound in PATHS:
+	var paths := _theme_paths()
+	for sound: Sound in paths:
 		var variants: Array[AudioStream] = []
-		for path: String in PATHS[sound]:
+		for path: String in paths[sound]:
 			var stream := load(path) as AudioStream
 			if stream != null:
 				variants.append(stream)
 		loaded[sound] = variants
 	return loaded
+
+
+## Caminhos do tema ativo ("command_post" sintetizado ou o pacote Kenney).
+func _theme_paths() -> Dictionary:
+	if THEME != "command_post":
+		return PATHS
+	var result := {}
+	for sound: Sound in COMMAND_POST_NAMES:
+		var base: String = COMMAND_POST_NAMES[sound]
+		var list: Array[String] = []
+		for i in COMMAND_POST_VARIANTS:
+			list.append("%s%s_%03d.wav" % [COMMAND_POST_DIR, base, i + 1])
+		result[sound] = list
+	return result
 
 
 func _create_voices() -> void:
