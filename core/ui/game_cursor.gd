@@ -12,7 +12,7 @@ const DRAG_PATH := "res://assets/ui/cursor_drag.png"
 
 const DEFAULT_HOTSPOT := Vector2(3, 2)
 const CITY_HOTSPOT := Vector2(16, 16)
-const PORT_HOTSPOT := Vector2(16, 22)
+const PORT_HOTSPOT := Vector2(12, 15)
 const DRAG_HOTSPOT := Vector2(16, 16)
 
 static var _installed := false

@@ -1,12 +1,12 @@
 """Gera o cursor de punho (latão) para hover sobre porto/construção.
 
-Pose: punho fechado vindo de cima, nós dos dedos embaixo — como quem agarra
-algo no chão. Estilo gravado dos demais cursores: latão (#C9A24A) com
-contorno escuro uniforme.
+Pose: punho fechado apontando para a esquerda, braço saindo pelo canto
+inferior direito — a mesma diagonal da lupa (lente no alto-esquerda, cabo
+embaixo-direita) e da seta.
 
-Regra de legibilidade em 32 px: UMA massa sólida, sem detalhes finos.
-Só o vinco do polegar e três separações curtas entre os nós dos dedos.
-Renderiza em 8x e reduz com LANCZOS.
+Estilo: latão (#C9A24A) com contorno escuro uniforme, igual aos demais
+cursores. Para ler em 32 px: uma massa sólida, sem detalhes finos — só as
+quatro pontas dos dedos na borda esquerda, o vinco do polegar e um reflexo.
 
 Uso: python tools/generate_pointer_cursor.py
 """
@@ -33,31 +33,38 @@ def rrect(box, radius, target=md):
     target.rounded_rectangle([sc(v) for v in box], radius=sc(radius), fill=255)
 
 
-# --- Silhueta: punho sólido, braço entrando por cima ---
-# Antebraço (sai pela borda superior).
-rrect((12.6, -1.0, 19.4, 7.0), 1.6)
+def capsule(points, width, target=md):
+    pts = [(sc(x), sc(y)) for x, y in points]
+    w = sc(width)
+    target.line(pts, fill=255, width=w, joint="curve")
+    for x, y in (pts[0], pts[-1]):
+        target.ellipse([x - w / 2, y - w / 2, x + w / 2, y + w / 2], fill=255)
+
+
+# --- Silhueta: punho apontando para a esquerda ---
+# Braço saindo para o canto inferior direito.
+capsule([(18.5, 16.0), (30.0, 26.0)], 6.0)
 # Massa do punho.
-rrect((8.5, 5.5, 23.5, 23.5), 6.0)
-# Nós dos dedos embaixo (quatro protuberâncias rasas).
-for cx in (10.9, 14.4, 17.9, 21.2):
-    rrect((cx - 1.9, 19.8, cx + 1.9, 25.0), 1.85)
-# Polegar à esquerda.
-rrect((5.9, 9.0, 12.8, 17.0), 3.0)
+rrect((7.6, 8.0, 20.5, 22.0), 5.5)
+# Quatro pontas de dedo dobradas na borda esquerda.
+for cy in (10.6, 13.6, 16.6, 19.6):
+    rrect((4.0, cy - 1.75, 9.2, cy + 1.75), 1.75)
+# Polegar no alto-esquerda.
+rrect((7.8, 5.0, 14.4, 9.8), 2.3)
 
 # --- Detalhes (camada separada, recortada pela silhueta) ---
 detail = Image.new("RGBA", (W, W), (0, 0, 0, 0))
 dd = ImageDraw.Draw(detail)
 
-# Separações entre os nós dos dedos (curtas, só embaixo).
-for x in (12.6, 16.1, 19.6):
-    dd.line([sc(x), sc(20.2), sc(x), sc(22.9)], fill=dark, width=sc(0.75))
+# Separações entre os dedos (curtas, na borda esquerda).
+for y in (12.1, 15.1, 18.1):
+    dd.line([sc(4.5), sc(y), sc(8.8), sc(y)], fill=dark, width=sc(0.75))
 
-# Vinco do polegar (borda direita do polegar).
-dd.line([sc(12.9), sc(10.0), sc(13.2), sc(13.4), sc(12.9), sc(16.8)],
-        fill=dark, width=sc(0.75), joint="curve")
+# Vinco do polegar.
+dd.line([sc(8.6), sc(9.4), sc(14.0), sc(9.7)], fill=dark, width=sc(0.75))
 
 # Reflexo no dorso (um traço claro só).
-dd.line([sc(10.8), sc(8.2), sc(10.8), sc(11.6)], fill=brass_light, width=sc(0.9))
+dd.line([sc(9.0), sc(8.9), sc(12.6), sc(8.9)], fill=brass_light, width=sc(0.9))
 
 # Contorno: interior em latão = máscara erodida.
 inner = mask.filter(ImageFilter.MinFilter(9))
