@@ -22,7 +22,9 @@ const HEIGHT_OFFSET := 0.18
 # Duração visual de cada trecho: acompanha o tempo de trânsito simulado e o
 # ritmo do relógio (1 dia = 60 s). Veículos deixam de "teleportar".
 const SECONDS_PER_DAY := 60.0
-const MIN_SEGMENT_SECONDS := 2.0
+## Piso de duração por modo. O avião é rápido demais para o olho (transit_hours
+## mínimo), então ganha um piso maior; caminhão e navio já ficam legíveis.
+const MIN_SEGMENT_BY_MODE := {"truck": 2.0, "ship": 3.0, "plane": 7.0}
 const MAX_SEGMENT_SECONDS := 45.0
 const MAX_CONVOYS := 8
 
@@ -143,15 +145,16 @@ func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary) -> void:
 	if total_px <= 0.0:
 		return
 
+	var min_seconds: float = float(MIN_SEGMENT_BY_MODE.get(mode, 2.0))
 	var transit_hours := float(leg.get("transit_hours", 0.0))
 	var duration: float
 	if transit_hours > 0.0:
 		duration = clampf(transit_hours / 24.0 * SECONDS_PER_DAY,
-				MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS)
+				min_seconds, MAX_SEGMENT_SECONDS)
 	else:
 		# Fallback: ~2 h por 200 km de caminhão.
 		duration = clampf(float(leg["distance_km"]) / 200.0 * 8.0,
-				MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS)
+				min_seconds, MAX_SEGMENT_SECONDS)
 
 	var first_start := _pixel_to_world(path[0])
 	var first_end := _pixel_to_world(path[1])
