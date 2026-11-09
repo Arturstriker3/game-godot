@@ -356,6 +356,15 @@ func _nation_block() -> Control:
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(swatch)
 
+	var flag := TextureRect.new()
+	flag.texture = Economy.flag_texture(PLAYER_NATION)
+	flag.custom_minimum_size = Vector2(30.0, 20.0)
+	flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(flag)
+
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", 0)
 	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER

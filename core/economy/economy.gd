@@ -30,10 +30,15 @@ const START_UNIX := 1767225600
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 ## Portos do cenário (gerados de data/definitions/scenario/ports.csv).
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
+## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
+const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
+## Bandeiras por código ISO-2 (moddável: adicione assets/flags/<código>.png).
+const FLAGS_DIR := "res://assets/flags/"
 
 var sim: RefCounted
 var last_summary: Dictionary = {}
 var speed: int = 1
+var _nations: Dictionary = {}  # tag -> {id, name, flag}
 
 ## Velocidade para a qual voltar ao sair da pausa (espaço).
 var _resume_speed: int = 1
@@ -45,6 +50,7 @@ var _day_fraction := 0.0
 func _ready() -> void:
 	sim = EconomySim.new()
 	sim.initialize(_load_cities(), _load_ports())
+	_load_nations()
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
 	_run_day.call_deferred()
@@ -76,6 +82,32 @@ func _load_ports() -> Array:
 		push_error("Economy: %s não é um array JSON" % PORTS_PATH)
 		return []
 	return data
+
+
+## Lê as nações do cenário (JSON) para `_nations` (tag -> {name, flag}).
+func _load_nations() -> void:
+	_nations.clear()
+	var file := FileAccess.open(NATIONS_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % NATIONS_PATH)
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_ARRAY:
+		return
+	for nation: Variant in data:
+		if typeof(nation) == TYPE_DICTIONARY:
+			_nations[String(nation["id"])] = nation
+
+
+## Textura da bandeira de uma nação (ou null). Moddável: `flag` referencia
+## `assets/flags/<flag>.png`.
+func flag_texture(tag: String) -> Texture2D:
+	var nation: Dictionary = _nations.get(tag, {})
+	var flag := String(nation.get("flag", ""))
+	if flag.is_empty():
+		return null
+	return load(FLAGS_DIR + flag + ".png") as Texture2D
 
 
 func _process(delta: float) -> void:
