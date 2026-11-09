@@ -5,9 +5,12 @@ class_name UrbanRenderer
 ## perto da câmera e uma caixa simplificada por categoria no LOD distante.
 ## A atualização é incremental por arquétipo (só o que mudou é reenviado).
 
-const NEAR_RANGE_END := 140.0
-const FAR_RANGE_BEGIN := 140.0
+## Próximo: módulos detalhados. Intermediário: caixas sombreadas com a mesma
+## silhueta e tint. A troca usa fade de visibilidade (sem estalo).
+const NEAR_RANGE_END := 34.0
+const FAR_RANGE_BEGIN := 34.0
 const FAR_RANGE_END := 900.0
+const RANGE_MARGIN := 6.0
 
 ## Ruas são tiles processuais (não vêm da biblioteca do Blender).
 const STREET_ID := "rua"
@@ -80,10 +83,12 @@ func _update_near(module_id: String, lots: Array) -> void:
 
 func _update_far(category: String, lots: Array) -> void:
 	var multimesh: MultiMesh = _ensure_far(category).multimesh
+	var base: Color = BuildingLibrary.CATEGORY_COLORS.get(category, Color.WHITE)
 	multimesh.instance_count = 0
 	multimesh.instance_count = lots.size()
 	for index in lots.size():
 		multimesh.set_instance_transform(index, _far_transform(lots[index]))
+		multimesh.set_instance_color(index, base * _tint(lots[index]) * 0.95)
 
 
 func _ensure_near(module_id: String) -> MultiMeshInstance3D:
@@ -100,6 +105,8 @@ func _ensure_near(module_id: String) -> MultiMeshInstance3D:
 	instance.name = "Near_" + module_id
 	instance.multimesh = multimesh
 	instance.visibility_range_end = NEAR_RANGE_END
+	instance.visibility_range_end_margin = RANGE_MARGIN
+	instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(instance)
 	_near[module_id] = instance
 	return instance
@@ -112,19 +119,22 @@ func _ensure_far(category: String) -> MultiMeshInstance3D:
 	var box := BoxMesh.new()
 	box.size = Vector3.ONE
 	var material := StandardMaterial3D.new()
-	material.albedo_color = BuildingLibrary.CATEGORY_COLORS.get(category, Color.WHITE)
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.95
 	box.material = material
 
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
 	multimesh.mesh = box
 
 	var instance := MultiMeshInstance3D.new()
 	instance.name = "Far_" + category
 	instance.multimesh = multimesh
 	instance.visibility_range_begin = FAR_RANGE_BEGIN
+	instance.visibility_range_begin_margin = RANGE_MARGIN
 	instance.visibility_range_end = FAR_RANGE_END
+	instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(instance)
 	_far[category] = instance
 	return instance

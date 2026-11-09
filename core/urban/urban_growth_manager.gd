@@ -26,6 +26,40 @@ var _library: BuildingLibrary
 var _planner: DistrictPlanner
 var _industrial_planner: IndustrialPlanner
 var _renderer: UrbanRenderer
+var _ground: MeshInstance3D
+
+## Solo urbano: mancha de terra com borda orgânica e suave, sem contorno duro.
+const GROUND_SHADER_CODE := """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
+
+uniform vec4 tint : source_color = vec4(0.30, 0.26, 0.20, 0.72);
+uniform float seed = 0.0;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7)) + seed) * 43758.5453);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+			mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+void fragment() {
+	vec2 p = UV * 2.0 - 1.0;
+	float r = length(p);
+	float a = atan(p.y, p.x);
+	float edge = 0.80 + 0.10 * sin(3.0 * a + seed) + 0.06 * sin(5.0 * a + seed * 1.7)
+			+ 0.12 * (noise(p * 3.0) - 0.5);
+	float mask = 1.0 - smoothstep(edge * 0.45, edge, r);
+	float grain = 0.85 + 0.3 * noise(p * 14.0);
+	ALBEDO = tint.rgb * grain;
+	ALPHA = mask * tint.a;
+}
+"""
 
 
 ## Prepara a cidade vazia. O seed padrão vem do id, então a mesma cidade sempre
@@ -133,6 +167,29 @@ func _total_lots() -> int:
 ## Redesenha urbano + industrial juntos; o renderer agrupa por arquétipo.
 func _refresh_render() -> void:
 	_renderer.apply_lots(layout.lots + layout.industrial_lots)
+	_update_ground()
+
+
+## Ajusta o solo urbano ao tamanho atual da cidade (núcleo + distrito).
+func _update_ground() -> void:
+	var extent := 0.0
+	for lot in layout.lots:
+		extent = maxf(extent, Vector2(float(lot["x"]), float(lot["z"])).length())
+	if _ground == null:
+		var shader := Shader.new()
+		shader.code = GROUND_SHADER_CODE
+		var material := ShaderMaterial.new()
+		material.shader = shader
+		material.set_shader_parameter("seed", float(layout.seed_value % 997))
+		_ground = MeshInstance3D.new()
+		_ground.name = "UrbanGround"
+		_ground.mesh = PlaneMesh.new()
+		_ground.material_override = material
+		_ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_ground.position.y = 0.004
+		add_child(_ground)
+	var size := (extent + 0.9) * 2.0
+	(_ground.mesh as PlaneMesh).size = Vector2(size, size)
 
 
 ## Estágio 0 (núcleo), 1 (bairros + indústria) e 2 (metrópole).

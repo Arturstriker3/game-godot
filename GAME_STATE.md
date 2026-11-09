@@ -99,11 +99,13 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 ## 5. Cidades e crescimento urbano
 
 - **Cadastro de cidades:** modo legacy define 5 cidades hardcoded no C++ (`define_cities()`): Londres (1300 t/d), Paris (6000), Berlim (2500), Amsterdã (300), Bruxelas (400).
-- **Render 3D (`city_world.gd`):** níveis por distância — continental (`Label3D`), regional (marcador + `city.glb`), local (cidade modular). `MAX_DETAILED_CITIES=40`, `MAX_CITY_LABELS=24`; resto vira `MultiMesh` de discos.
-- **LOD:** fade do modelo 30–92 u, marcador 26–34 u, cidade modular construída ≤30 u e liberada >44 u (histerese).
-- **Seleção:** `pick_city()` (projeção, sem física), anel de latão, `select_city()`.
-- **Crescimento procedural (`core/urban/`):** `UrbanGrowthManager` (estágio por população+industrialização) → `DistrictPlanner` (quarteirões ~75 m) → `UrbanRenderer` (um `MultiMeshInstance3D` por arquétipo + LOD de caixas). Lotes nunca removidos, só melhorados.
-- **Arquitetura:** estilo único semi-realista europeu (pedra/concreto/tijolo), módulos GLB em `assets/models/city_modules/` (`library.json`). `CITY_BIAS` em `industry_profile.gd` redistribui setores por cidade — **não** há arquitetura regional por país.
+- **Render 3D (`city_world.gd`):** uma única representação por cidade (o antigo modelo compacto `city.glb` foi removido do mapa). `MAX_DETAILED_CITIES=40`, `MAX_CITY_LABELS=24`; resto vira `MultiMesh` de discos.
+- **LOD (sem sobreposição):** próximo (<34 u) módulos 3D detalhados; intermediário (34–100 u) a mesma cidade em volumes simplificados com fade de `visibility_range` (`urban_renderer.gd`); distante (>100 u) marcador discreto com fade 100–112 u. A cidade é construída a ≤96 u e liberada a >112 u (histerese).
+- **Seleção:** `pick_city()` (projeção, sem física); anel fino rente ao chão + ponto central (`select_city()`), realce de hover mais sutil (`set_hover()`, ligado ao movimento do mouse em `main_game.gd`). Sem o antigo anel dourado grande.
+- **Crescimento procedural (`core/urban/`):** `UrbanGrowthManager` (estágio por população+industrialização) → `DistrictPlanner` (aglomerado orgânico estilo Victoria 3: espiral de ângulo áureo, densa no centro, contorno em lóbulos, alongamento por cidade, vazios na borda, **sem ruas nem grade**; 26/72/150 lotes por estágio) → `UrbanRenderer`. Solo urbano com borda orgânica (shader no `UrbanGrowthManager`). A posição de cada lote depende só de (seed, índice): crescer nunca move o que já existe.
+- **Distrito industrial:** aglomerado orgânico na borda da cidade, em direção fixa por cidade (`industrial_planner.gd`), com tons mais escuros.
+- **Arquitetura regional:** `DistrictPlanner.CITY_STYLES` dá a cada cidade matiz, tendência de verticalização e alongamento próprios (Londres tijolo, Paris calcário e prédios médios, Berlim pedra cinza, Amsterdã casas baixas, Bruxelas tijolo). Mesmos módulos GLB; a variação é de cor e mix. `CITY_BIAS` em `industry_profile.gd` redistribui setores.
+- **Evidência visual:** `docs/map_visual/city_organic_v4/` (4 zooms).
 - **Integração econômica:** população/industrialização decidem o estágio; renda puxa torres; empregos sustentam escritórios; industrialização libera a zona industrial. Indicadores vêm do `EconomySim`.
 - **Persistência:** `urban_persistence.gd` (JSON em `user://`, hash de determinismo); usado pelo protótipo `game/city_prototype.tscn`.
 

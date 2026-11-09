@@ -6,16 +6,15 @@ class_name CityWorld
 ## sobre o terreno. Os dados (posição, nação, população) vêm do núcleo C++.
 ##
 ## Três níveis de representação, escolhidos pela distância da câmera:
-##   continental — rótulos com tamanho de tela constante e marcadores;
-##   regional    — marcadores com o modelo compacto de cidade;
-##   local       — cidade modular completa (distritos urbanos e industriais),
-##                 construída sob demanda e liberada ao afastar.
+##   local         — cidade orgânica com módulos 3D detalhados;
+##   intermediário — a mesma cidade em volumes simplificados (silhueta igual);
+##   continental   — marcador discreto e rótulo.
+## A cidade é construída sob demanda e liberada ao afastar (histerese).
 
 const MAP_SIZE_PX := Vector2(5000.0, 2500.0)
 const PLANE_SIZE := Vector2(1000.0, 500.0)
 const PIXEL_TO_WORLD := 0.2
 
-const CITY_MODEL: PackedScene = preload("res://assets/models/city.glb")
 const GPS_TEXTURE: Texture2D = preload("res://map/map_data/satellite.jpg")
 const RELIEF_TEXTURE: Texture2D = preload("res://map/map_data/normal.png")
 const MAP_SHADER: Shader = preload("res://map/map_shaders/satellite_map.gdshader")
@@ -28,8 +27,6 @@ const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
 
-## Modelo compacto: cabe dentro do marcador para não parecer colado no mapa.
-const CITY_TARGET_SIZE := 1.5
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
 
@@ -38,13 +35,16 @@ const MAX_DETAILED_CITIES := 40
 const MAX_CITY_LABELS := 24
 
 ## Regras de LOD (unidades do mundo, 1 unidade ≈ 40 km no equador).
-const MODEL_VISIBLE_MIN := 30.0
-const MODEL_VISIBLE_MAX := 92.0
-const MODEL_FADE_START := 66.0
-const MARKER_VISIBLE_MIN := 26.0
-const MARKER_FADE_SPAN := 8.0
-const URBAN_BUILD_DISTANCE := 30.0
-const URBAN_FREE_DISTANCE := 44.0
+## Uma única representação da cidade, sem modelos concorrentes:
+##   próximo        (< 34)       -> módulos 3D detalhados (UrbanRenderer)
+##   intermediário  (34 .. 100)  -> a mesma cidade em caixas simplificadas
+##   distante       (> 100)      -> marcador discreto + rótulo
+## A cidade é construída a 96 u e liberada a 112 u (histerese); o marcador
+## entra com fade só depois que a cidade já sumiu.
+const URBAN_BUILD_DISTANCE := 96.0
+const URBAN_FREE_DISTANCE := 112.0
+const MARKER_FADE_IN_START := 100.0
+const MARKER_FADE_IN_END := 112.0
 const URBAN_SCALE := 0.55
 const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
@@ -65,6 +65,8 @@ var _mode_layer: Node3D
 var _city_nodes: Array[Dictionary] = []
 var _mode := "political"
 var _selection: MeshInstance3D
+var _selection_dot: MeshInstance3D
+var _hover: MeshInstance3D
 var _selected_id := ""
 
 
@@ -150,39 +152,97 @@ func selected_city() -> String:
 	return _selected_id
 
 
-## Anel de latão sob a cidade em foco; não altera a geometria do mapa.
+## Seleção discreta: um anel fino rente ao chão + um ponto central pequeno.
+## Não esconde edifícios nem atravessa o terreno (fica a ~0,15 u de altura).
 func select_city(city_id: String) -> void:
 	_selected_id = city_id
 	if _selection == null:
-		_create_selection_ring()
+		_create_indicators()
 	if _selection == null:
 		return
-	_selection.visible = not city_id.is_empty()
-	if not city_id.is_empty():
-		_selection.global_position = city_world_position(city_id) + Vector3(0.0, 0.34, 0.0)
+	var active := not city_id.is_empty()
+	_selection.visible = active
+	_selection_dot.visible = active
+	if active:
+		var base: Vector3 = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
+		_selection.global_position = base
+		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
 
 
-func _create_selection_ring() -> void:
+## Realce de hover: versão ainda mais discreta, no mesmo ponto da seleção.
+func set_hover(city_id: String) -> void:
+	if _selection == null:
+		_create_indicators()
+	if _hover == null:
+		return
+	if city_id == _selected_id:
+		_hover.visible = false
+		return
+	_hover.visible = not city_id.is_empty()
+	if _hover.visible:
+		_hover.global_position = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
+
+
+func _create_indicators() -> void:
+	_selection = _make_ring("CitySelection", 1.02, 1.09, Color("#C9A24A"), 0.42)
+	_selection.visible = false
+	add_child(_selection)
+
+	_selection_dot = _make_dot("CitySelectionDot", Color("#C9A24A"), 0.8)
+	_selection_dot.visible = false
+	add_child(_selection_dot)
+
+	_hover = _make_ring("CityHover", 1.02, 1.09, Color("#E8E2D0"), 0.22)
+	_hover.visible = false
+	add_child(_hover)
+
+
+func _make_ring(node_name: String, inner: float, outer: float,
+		color: Color, alpha: float) -> MeshInstance3D:
 	var torus := TorusMesh.new()
-	torus.inner_radius = 1.05
-	torus.outer_radius = 1.18
-	torus.rings = 32
+	torus.inner_radius = inner
+	torus.outer_radius = outer
+	torus.rings = 48
 	torus.ring_segments = 6
+
+	var ring_color := color
+	ring_color.a = alpha
 
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color("#C9A24A")
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color.a = 0.85
+	material.albedo_color = ring_color
 
-	_selection = MeshInstance3D.new()
-	_selection.name = "CitySelection"
-	_selection.mesh = torus
-	_selection.material_override = material
-	_selection.rotation_degrees.x = 90.0
-	_selection.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_selection.visible = false
-	add_child(_selection)
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	instance.mesh = torus
+	instance.material_override = material
+	instance.rotation_degrees.x = 90.0
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return instance
+
+
+func _make_dot(node_name: String, color: Color, alpha: float) -> MeshInstance3D:
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 0.12
+	cylinder.bottom_radius = 0.12
+	cylinder.height = 0.02
+	cylinder.radial_segments = 24
+
+	var dot_color := color
+	dot_color.a = alpha
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = dot_color
+
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	instance.mesh = cylinder
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return instance
 
 
 func _build_gps_plane() -> void:
@@ -237,7 +297,6 @@ func _build_cities(cities: Array) -> void:
 		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
 		var color: Color = NATION_COLORS.get(city["nation"], Color.WHITE)
 		var discs := _spawn_city_marker(position, city["name"], color)
-		var model := _spawn_city_model(position)
 		var label := _add_city_label(position, city["name"], color,
 				index < MAX_CITY_LABELS)
 		_city_nodes.append({
@@ -245,8 +304,6 @@ func _build_cities(cities: Array) -> void:
 			"city": city,
 			"position": position,
 			"discs": discs,
-			"model": model,
-			"meshes": _collect_meshes(model),
 			"label": label,
 			"urban": null,
 		})
@@ -337,49 +394,7 @@ func _add_city_label(position: Vector3, city_name: String, color: Color,
 	return label
 
 
-func _spawn_city_model(position: Vector3) -> Node3D:
-	var model := CITY_MODEL.instantiate() as Node3D
-	var scale := _scale_to_size(model, CITY_TARGET_SIZE)
-	model.scale = Vector3.ONE * scale
-	model.position = position + Vector3(0.0, 0.16, 0.0)
-	_content.add_child(model)
-	return model
-
-
-## Escala o modelo para que seu maior eixo meça o tamanho alvo.
-func _scale_to_size(root: Node3D, target: float) -> float:
-	var bounds := _combined_aabb(root)
-	var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
-	return 1.0 if longest <= 0.0 else target / longest
-
-
-func _combined_aabb(root: Node3D) -> AABB:
-	var result := AABB()
-	var found := false
-	var stack: Array[Node] = [root]
-	while not stack.is_empty():
-		var node: Node = stack.pop_back()
-		if node is MeshInstance3D and node.mesh != null:
-			var box: AABB = node.transform * node.get_aabb()
-			result = box if not found else result.merge(box)
-			found = true
-		stack.append_array(node.get_children())
-	return result
-
-
-## Coleta as malhas do modelo para aplicar transparência sem tocar materiais.
-func _collect_meshes(root: Node3D) -> Array:
-	var meshes: Array = []
-	var stack: Array[Node] = [root]
-	while not stack.is_empty():
-		var node: Node = stack.pop_back()
-		if node is MeshInstance3D:
-			meshes.append(node)
-		stack.append_array(node.get_children())
-	return meshes
-
-
-## LOD por distância: rótulo, marcador, modelo compacto e cidade modular.
+## LOD por distância: rótulo, marcador e cidade modular.
 func _process(_delta: float) -> void:
 	if _city_nodes.is_empty():
 		return
@@ -400,25 +415,19 @@ func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector
 		label.pixel_size = clampf(LABEL_PIXEL_PER_UNIT * distance,
 				LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
 
-	var model: Node3D = record["model"]
-	if model != null:
-		var model_visible := distance >= MODEL_VISIBLE_MIN \
-				and distance <= MODEL_VISIBLE_MAX
-		model.visible = model_visible
-		if model_visible:
-			var fade := clampf(
-					(distance - MODEL_FADE_START) / (MODEL_VISIBLE_MAX - MODEL_FADE_START),
-					0.0, 1.0)
-			for mesh in record["meshes"]:
-				(mesh as MeshInstance3D).transparency = fade
-
-	var marker_alpha := clampf((distance - MARKER_VISIBLE_MIN) / MARKER_FADE_SPAN, 0.0, 1.0)
+	# Marcador discreto (continental): aparece só quando a cidade já sumiu.
+	var marker_alpha := _fade_in(distance, MARKER_FADE_IN_START, MARKER_FADE_IN_END)
 	for disc in record["discs"]:
 		var mesh := disc as MeshInstance3D
 		mesh.visible = marker_alpha > 0.01
 		mesh.transparency = 1.0 - marker_alpha
 
 	_update_urban(record, distance, world_position)
+
+
+## Rampa de entrada: 0 antes de `start`, 1 após `end`.
+func _fade_in(distance: float, start: float, end: float) -> float:
+	return clampf((distance - start) / (end - start), 0.0, 1.0)
 
 
 ## Constrói a cidade modular apenas quando a câmera se aproxima e a libera ao

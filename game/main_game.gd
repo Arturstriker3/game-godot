@@ -90,9 +90,14 @@ func _on_map_mode_requested(mode: String) -> void:
 
 
 ## Clique no mapa seleciona a cidade mais próxima; a janela do HUD tem
-## prioridade sobre o mapa.
+## prioridade sobre o mapa. Movimento do mouse atualiza o realce de hover.
 func _unhandled_input(event: InputEvent) -> void:
-	if hud == null or hud.is_window_open():
+	if hud == null:
+		return
+	if event is InputEventMouseMotion:
+		_update_city_hover()
+		return
+	if hud.is_window_open():
 		return
 	if not event.is_action_pressed("province_select"):
 		return
@@ -105,6 +110,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	hud.open_city(city_id)
 	get_viewport().set_input_as_handled()
+
+
+## Realce sutil da cidade sob o cursor; desliga quando a janela do HUD abre.
+func _update_city_hover() -> void:
+	if hud.is_window_open():
+		city_world.set_hover("")
+		return
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+	var city_id: String = city_world.pick_city(
+			get_viewport().get_mouse_position(), player.camera)
+	city_world.set_hover(city_id)
 
 
 ## Mantém a câmera dentro de um período do mapa: ao passar da borda em X, ela

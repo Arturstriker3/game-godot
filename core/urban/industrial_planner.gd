@@ -8,10 +8,9 @@ class_name IndustrialPlanner
 ## seguintes. Como a posição depende só do setor e do índice, a cidade pode
 ## crescer sem deslocar o que já foi construído (determinismo e save/load).
 
-const PITCH := 1.5
-const COLUMNS := 4
-const MAX_ROWS := 8
-const ANCHOR := Vector2(5.0, 0.0)
+## Distância da âncora industrial ao centro e passo da espiral do distrito.
+const ANCHOR_DISTANCE := 4.6
+const CLUSTER_STEP := 0.5
 const MIN_SHARE := 0.05
 const MIN_INTENSITY := 0.12
 const SLOTS_PER_ROLE := 3
@@ -167,25 +166,43 @@ func _place(seed_value: int, specs: Array[Dictionary]) -> Array[Dictionary]:
 
 		var slot: int = int(SECTOR_SLOT_BASE[sector]) \
 				+ (SLOTS_PER_ROLE if role == "aux" else 0) + index
-		var column: int = slot % COLUMNS
-		var row := int(floor(float(slot) / float(COLUMNS)))
 		var key := "%s:%s:%d" % [sector, role, index]
 
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%s" % [seed_value, key])
 
-		var tint := rng.randf_range(0.95, 1.04)
+		# Aglomerado orgânico na borda da cidade: espiral em torno de uma âncora
+		# cuja direção é fixa por cidade. A posição depende só do slot.
+		var position := _anchor(seed_value) + _cluster_offset(slot) + Vector2(
+				rng.randf_range(-0.12, 0.12), rng.randf_range(-0.12, 0.12))
+
+		# Fuligem/concreto: indústria mais escura que o tecido urbano.
+		var tint := rng.randf_range(0.6, 0.72)
 		lots.append({
 			"key": key,
 			"sector": sector,
 			"module": String(spec["module"]),
-			"x": ANCHOR.x + float(column) * PITCH + rng.randf_range(-0.05, 0.05),
-			"z": (float(row) - (float(MAX_ROWS) - 1.0) * 0.5) * PITCH \
-					+ rng.randf_range(-0.05, 0.05),
-			"yaw": float(rng.randi_range(0, 3)) * PI * 0.5 + rng.randf_range(-0.02, 0.02),
-			"scale": rng.randf_range(0.97, 1.05),
+			"x": position.x,
+			"z": position.y,
+			"yaw": float(rng.randi_range(0, 3)) * PI * 0.5 + rng.randf_range(-0.25, 0.25),
+			"scale": rng.randf_range(0.95, 1.06),
 			"tint": [tint, tint, tint],
 			"level": int(MODULE_LEVELS.get(String(spec["module"]), 1)),
 		})
 
 	return lots
+
+
+## Direção do distrito industrial, fixa por cidade (fora do núcleo urbano).
+func _anchor(seed_value: int) -> Vector2:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("industry:%d" % seed_value)
+	return Vector2.RIGHT.rotated(rng.randf_range(0.0, TAU)) * ANCHOR_DISTANCE
+
+
+## Posição do slot numa espiral de ângulo áureo ao redor da âncora.
+func _cluster_offset(slot: int) -> Vector2:
+	if slot == 0:
+		return Vector2.ZERO
+	var angle := float(slot) * 2.399963
+	return Vector2(cos(angle), sin(angle)) * CLUSTER_STEP * sqrt(float(slot))
