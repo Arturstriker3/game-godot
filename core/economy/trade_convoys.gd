@@ -26,6 +26,11 @@ const SECONDS_PER_DAY := 60.0
 ## mínimo), então ganha um piso maior; caminhão e navio já ficam legíveis.
 const MIN_SEGMENT_BY_MODE := {"truck": 2.0, "ship": 3.0, "plane": 7.0}
 const MAX_SEGMENT_SECONDS := 45.0
+## Teto de velocidade visual por modo (unidades de mundo por segundo). O teto
+## de 45 s vale para trechos curtos, mas numa travessia longa (Atlântico) ele
+## faria o navio cruzar o oceano num piscar; abaixo disso o trecho ganha mais
+## tempo. O avião mantém um teto maior para continuar visivelmente mais rápido.
+const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 1.0, "plane": 3.0}
 const MAX_CONVOYS := 8
 
 # Os modelos foram feitos com a frente no eixo +X. O Godot usa -Z como frente
@@ -145,16 +150,8 @@ func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary) -> void:
 	if total_px <= 0.0:
 		return
 
-	var min_seconds: float = float(MIN_SEGMENT_BY_MODE.get(mode, 2.0))
-	var transit_hours := float(leg.get("transit_hours", 0.0))
-	var duration: float
-	if transit_hours > 0.0:
-		duration = clampf(transit_hours / 24.0 * SECONDS_PER_DAY,
-				min_seconds, MAX_SEGMENT_SECONDS)
-	else:
-		# Fallback: ~2 h por 200 km de caminhão.
-		duration = clampf(float(leg["distance_km"]) / 200.0 * 8.0,
-				min_seconds, MAX_SEGMENT_SECONDS)
+	var duration := _segment_seconds(mode, float(leg.get("transit_hours", 0.0)),
+			float(leg.get("distance_km", 0.0)), total_px)
 
 	var first_start := _pixel_to_world(path[0])
 	var first_end := _pixel_to_world(path[1])
@@ -167,6 +164,25 @@ func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary) -> void:
 		if i > 1:
 			tween.tween_callback(_face_target.bind(convoy, start, end))
 		tween.tween_method(_move_vehicle.bind(convoy, start, end), 0.0, 1.0, step_seconds)
+
+
+## Duração visual do trecho: acompanha o tempo simulado, mas nunca deixa o
+## veículo ultrapassar MAX_VISUAL_SPEED_BY_MODE — o teto fixo de 45 s comprimia
+## rotas oceânicas longas (ex.: Guiana–Europa) a uma velocidade absurda.
+static func _segment_seconds(mode: String, transit_hours: float,
+		distance_km: float, total_px: float) -> float:
+	var min_seconds: float = float(MIN_SEGMENT_BY_MODE.get(mode, 2.0))
+	var duration: float
+	if transit_hours > 0.0:
+		duration = clampf(transit_hours / 24.0 * SECONDS_PER_DAY,
+				min_seconds, MAX_SEGMENT_SECONDS)
+	else:
+		# Fallback: ~2 h por 200 km de caminhão.
+		duration = clampf(distance_km / 200.0 * 8.0,
+				min_seconds, MAX_SEGMENT_SECONDS)
+	var length_world := total_px * PIXEL_TO_WORLD
+	var max_speed: float = float(MAX_VISUAL_SPEED_BY_MODE.get(mode, 1.0))
+	return maxf(duration, length_world / max_speed)
 
 
 ## Caminho em pixels do trecho; avião vai em linha reta.
