@@ -1,0 +1,402 @@
+extends Node3D
+
+## Anima os pedidos de comércio no mapa: o veículo de cada trecho (caminhão,
+## navio ou avião) sai do ponto de origem e segue apontado para o destino.
+##
+## Caminhões andam só por terra e navios só por água, usando a máscara de
+## navegação gerada a partir das províncias (map_data/nav_mask.png).
+
+# Mesma conversão usada pelos labels 3D do mapa (pixel -> mundo).
+const PIXEL_TO_WORLD := 0.2
+const IMAGE_HALF_SIZE := Vector2(2500.0, 1250.0)
+
+const TRUCK_SCENE: PackedScene = preload("res://assets/models/truck.glb")
+const SHIP_SCENE: PackedScene = preload("res://assets/models/ship.glb")
+const PLANE_SCENE: PackedScene = preload("res://assets/models/plane.glb")
+
+# Tamanho alvo (unidades de mundo) do maior eixo do modelo.
+const MODEL_LENGTH := 1.3
+# Altura acima do plano do mapa para o modelo não afundar no terreno.
+const HEIGHT_OFFSET := 0.18
+# Duração visual de cada trecho, derivada da distância real.
+const SECONDS_PER_200KM := 1.0
+const MIN_SEGMENT_SECONDS := 0.6
+const MAX_SEGMENT_SECONDS := 5.0
+const MAX_CONVOYS := 8
+
+# Os modelos foram feitos com a frente no eixo +X. O Godot usa -Z como frente
+# (é o eixo que look_at() aponta para o alvo), então giramos +90° em Y.
+const MODEL_YAW_OFFSET := PI * 0.5
+
+# Navegação: cada célula da máscara cobre 2x2 px do mapa.
+# Valores: 255 = só terra, 0 = só água, 128 = costa (misto).
+const NAV_MASK: Texture2D = preload("res://map/map_data/nav_mask.png")
+const NAV_CELL_PX := 2.0
+const COAST_THRESHOLD := 0.01
+const SNAP_SEARCH_CELLS := 8
+const MAX_ASTAR_NODES := 60000
+
+const NEIGHBORS: Array[Vector2i] = [
+	Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+	Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1),
+]
+
+var _active_convoys := 0
+var _scale_cache := {}
+var _nav_image: Image
+var _path_cache := {}
+
+
+## Fila de prioridade mínima simples (heap binário) para o A*.
+class MinHeap:
+	var _items: Array = []
+
+	func is_empty() -> bool:
+		return _items.is_empty()
+
+	func push(priority: float, cell: Vector2i) -> void:
+		_items.append([priority, cell])
+		var index: int = _items.size() - 1
+		while index > 0:
+			var parent: int = (index - 1) / 2
+			if _items[parent][0] <= _items[index][0]:
+				break
+			var swap: Array = _items[parent]
+			_items[parent] = _items[index]
+			_items[index] = swap
+			index = parent
+
+	func pop() -> Vector2i:
+		var top: Vector2i = _items[0][1]
+		var last: Array = _items.pop_back()
+		if not _items.is_empty():
+			_items[0] = last
+			var index := 0
+			while true:
+				var left: int = index * 2 + 1
+				var right: int = left + 1
+				var smallest := index
+				if left < _items.size() and _items[left][0] < _items[smallest][0]:
+					smallest = left
+				if right < _items.size() and _items[right][0] < _items[smallest][0]:
+					smallest = right
+				if smallest == index:
+					break
+				var swap: Array = _items[smallest]
+				_items[smallest] = _items[index]
+				_items[index] = swap
+				index = smallest
+		return top
+
+
+func _ready() -> void:
+	_nav_image = NAV_MASK.get_image()
+
+
+## Cria os comboios de um tick de comércio.
+func spawn_orders(orders: Array) -> void:
+	for order in _prioritize(orders):
+		if _active_convoys >= MAX_CONVOYS:
+			return
+		_spawn_order(order)
+
+
+## Pedidos entre nações primeiro: são os que mostram navio e avião no mapa.
+func _prioritize(orders: Array) -> Array:
+	var sorted := orders.duplicate()
+	sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var a_cross: bool = a["from_nation"] != a["to_nation"]
+		var b_cross: bool = b["from_nation"] != b["to_nation"]
+		return a_cross and not b_cross
+	)
+	return sorted
+
+
+func _spawn_order(order: Dictionary) -> void:
+	var legs: Array = order.get("legs", [])
+	if legs.is_empty():
+		return
+
+	var convoy := Node3D.new()
+	add_child(convoy)
+	_active_convoys += 1
+
+	var tween := create_tween()
+	for leg in legs:
+		_append_leg(tween, convoy, leg)
+
+	tween.tween_callback(_finish_convoy.bind(convoy))
+
+
+## Enfileira no tween cada segmento do caminho do trecho.
+func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary) -> void:
+	var mode: String = leg["mode"]
+	var path := _leg_path(leg["from_px"], leg["to_px"], mode)
+	if path.size() < 2:
+		return
+
+	var total_px := 0.0
+	for i in range(1, path.size()):
+		total_px += path[i].distance_to(path[i - 1])
+	if total_px <= 0.0:
+		return
+
+	var duration: float = clampf(
+		float(leg["distance_km"]) / 200.0 * SECONDS_PER_200KM,
+		MIN_SEGMENT_SECONDS,
+		MAX_SEGMENT_SECONDS,
+	)
+
+	var first_start := _pixel_to_world(path[0])
+	var first_end := _pixel_to_world(path[1])
+	tween.tween_callback(_place_vehicle.bind(convoy, mode, first_start, first_end))
+
+	for i in range(1, path.size()):
+		var start := _pixel_to_world(path[i - 1])
+		var end := _pixel_to_world(path[i])
+		var step_seconds: float = maxf(duration * start.distance_to(end) / total_px, 0.05)
+		if i > 1:
+			tween.tween_callback(_face_target.bind(convoy, start, end))
+		tween.tween_method(_move_vehicle.bind(convoy, start, end), 0.0, 1.0, step_seconds)
+
+
+## Caminho em pixels do trecho; avião vai em linha reta.
+func _leg_path(from_px: Vector2, to_px: Vector2, mode: String) -> PackedVector2Array:
+	if mode == "plane":
+		return PackedVector2Array([from_px, to_px])
+
+	var key := "%s|%.0f,%.0f|%.0f,%.0f" % [mode, from_px.x, from_px.y, to_px.x, to_px.y]
+	if _path_cache.has(key):
+		return _path_cache[key]
+
+	var path := _find_path(from_px, to_px, mode)
+	_path_cache[key] = path
+	return path
+
+
+func _find_path(from_px: Vector2, to_px: Vector2, mode: String) -> PackedVector2Array:
+	var start := _snap_cell(_to_cell(from_px), mode)
+	var goal := _snap_cell(_to_cell(to_px), mode)
+	if start.x < 0 or goal.x < 0:
+		return PackedVector2Array([from_px, to_px])
+
+	var cells := _astar(start, goal, mode)
+	if cells.is_empty():
+		return PackedVector2Array([from_px, to_px])
+
+	var path := PackedVector2Array()
+	for cell in cells:
+		path.append(_cell_to_pixel(cell))
+	return _simplify(path, mode)
+
+
+func _astar(start: Vector2i, goal: Vector2i, mode: String) -> Array[Vector2i]:
+	var open := MinHeap.new()
+	var came_from := {}
+	var cost := {start: 0.0}
+	var visited := 0
+	open.push(_heuristic(start, goal), start)
+
+	while not open.is_empty() and visited < MAX_ASTAR_NODES:
+		var current: Vector2i = open.pop()
+		visited += 1
+		if current == goal:
+			return _reconstruct(came_from, current)
+
+		for direction in NEIGHBORS:
+			var next: Vector2i = current + direction
+			if not _is_walkable(next, mode):
+				continue
+			var diagonal: bool = direction.x != 0 and direction.y != 0
+			if diagonal and (
+				not _is_walkable(current + Vector2i(direction.x, 0), mode)
+				or not _is_walkable(current + Vector2i(0, direction.y), mode)
+			):
+				continue
+
+			var step: float = sqrt(2.0) if diagonal else 1.0
+			var tentative: float = float(cost[current]) + step
+			if cost.has(next) and tentative >= float(cost[next]):
+				continue
+
+			came_from[next] = current
+			cost[next] = tentative
+			open.push(tentative + _heuristic(next, goal), next)
+
+	return []
+
+
+func _reconstruct(came_from: Dictionary, current: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = [current]
+	while came_from.has(current):
+		current = came_from[current]
+		cells.append(current)
+	cells.reverse()
+	return cells
+
+
+## Remove pontos intermediários quando a reta entre eles é navegável.
+func _simplify(path: PackedVector2Array, mode: String) -> PackedVector2Array:
+	if path.size() <= 2:
+		return path
+
+	var result := PackedVector2Array([path[0]])
+	var anchor := 0
+	for i in range(2, path.size()):
+		if not _line_walkable(path[anchor], path[i], mode):
+			result.append(path[i - 1])
+			anchor = i - 1
+	result.append(path[path.size() - 1])
+	return result
+
+
+func _line_walkable(a: Vector2, b: Vector2, mode: String) -> bool:
+	var steps: int = int(maxf(absf(a.x - b.x), absf(a.y - b.y)) / NAV_CELL_PX)
+	for i in range(steps + 1):
+		var t: float = float(i) / float(maxi(steps, 1))
+		if not _is_walkable(_to_cell(a.lerp(b, t)), mode):
+			return false
+	return true
+
+
+## Célula utilizável pelo modo; se o ponto caiu na costa, busca a mais próxima.
+func _snap_cell(cell: Vector2i, mode: String) -> Vector2i:
+	if _is_walkable(cell, mode):
+		return cell
+
+	var best := Vector2i(-1, -1)
+	var best_distance := INF
+	for radius in range(1, SNAP_SEARCH_CELLS + 1):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var candidate := cell + Vector2i(dx, dy)
+				if not _is_walkable(candidate, mode):
+					continue
+				var distance := float(dx * dx + dy * dy)
+				if distance < best_distance:
+					best = candidate
+					best_distance = distance
+		if best.x >= 0:
+			return best
+	return best
+
+
+func _is_walkable(cell: Vector2i, mode: String) -> bool:
+	if _nav_image == null:
+		return true
+	if cell.x < 0 or cell.y < 0:
+		return false
+	if cell.x >= _nav_image.get_width() or cell.y >= _nav_image.get_height():
+		return false
+
+	var land: float = _nav_image.get_pixel(cell.x, cell.y).r
+	if mode == "ship":
+		return land <= COAST_THRESHOLD
+	return land >= 1.0 - COAST_THRESHOLD
+
+
+func _to_cell(point: Vector2) -> Vector2i:
+	return Vector2i(int(point.x / NAV_CELL_PX), int(point.y / NAV_CELL_PX))
+
+
+func _cell_to_pixel(cell: Vector2i) -> Vector2:
+	return Vector2(
+		(float(cell.x) + 0.5) * NAV_CELL_PX,
+		(float(cell.y) + 0.5) * NAV_CELL_PX,
+	)
+
+
+func _heuristic(a: Vector2i, b: Vector2i) -> float:
+	var dx := float(absi(a.x - b.x))
+	var dy := float(absi(a.y - b.y))
+	return maxf(dx, dy) + (sqrt(2.0) - 1.0) * minf(dx, dy)
+
+
+## Posiciona o veículo no início do trecho e o orienta para o destino.
+func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) -> void:
+	if not is_instance_valid(convoy):
+		return
+
+	for child in convoy.get_children():
+		child.queue_free()
+
+	var model := _instantiate_model(mode)
+	convoy.add_child(model)
+	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0)
+	_face_target(convoy, start, end)
+
+
+func _move_vehicle(weight: float, convoy: Node3D, start: Vector3, end: Vector3) -> void:
+	if not is_instance_valid(convoy):
+		return
+	convoy.position = start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0)
+
+
+func _finish_convoy(convoy: Node3D) -> void:
+	_active_convoys = maxi(0, _active_convoys - 1)
+	if is_instance_valid(convoy):
+		convoy.queue_free()
+
+
+## Aponta o comboio para o destino; sem deslocamento, mantém a orientação atual.
+func _face_target(convoy: Node3D, start: Vector3, end: Vector3) -> void:
+	var direction := end - start
+	direction.y = 0.0
+	if direction.length_squared() < 1e-8:
+		return
+	convoy.look_at(convoy.global_position + direction.normalized(), Vector3.UP)
+
+
+func _instantiate_model(mode: String) -> Node3D:
+	var scene: PackedScene = TRUCK_SCENE
+	match mode:
+		"ship":
+			scene = SHIP_SCENE
+		"plane":
+			scene = PLANE_SCENE
+
+	var model := scene.instantiate() as Node3D
+	model.rotation.y = MODEL_YAW_OFFSET
+	model.scale = Vector3.ONE * _scale_for(mode, scene)
+	return model
+
+
+## Escala o modelo para que seu maior eixo meça MODEL_LENGTH em unidades.
+func _scale_for(mode: String, scene: PackedScene) -> float:
+	if _scale_cache.has(mode):
+		return _scale_cache[mode]
+
+	var probe := scene.instantiate() as Node3D
+	add_child(probe)
+	var bounds := _combined_aabb(probe)
+	probe.queue_free()
+
+	var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
+	var scale: float = 1.0 if longest <= 0.0 else MODEL_LENGTH / longest
+	_scale_cache[mode] = scale
+	return scale
+
+
+## AABB combinada das malhas do modelo, em espaço local da raiz.
+func _combined_aabb(root: Node3D) -> AABB:
+	var result := AABB()
+	var found := false
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is MeshInstance3D and node.mesh != null:
+			var box: AABB = node.transform * node.get_aabb()
+			result = box if not found else result.merge(box)
+			found = true
+		stack.append_array(node.get_children())
+	return result
+
+
+static func _pixel_to_world(point: Vector2) -> Vector3:
+	return Vector3(
+		(point.x - IMAGE_HALF_SIZE.x) * PIXEL_TO_WORLD,
+		0.0,
+		(point.y - IMAGE_HALF_SIZE.y) * PIXEL_TO_WORLD,
+	)
