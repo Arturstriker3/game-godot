@@ -2,19 +2,17 @@ extends RefCounted
 class_name GameCursor
 
 ## Cursor temático do jogo: seta (mapa), lupa (hover sobre cidade, indica "abrir
-## dados"), mão aberta (hover sobre porto/construção, indica "pegar") e
+## dados"), mão apontando (hover sobre porto/construção, indica "pegar") e
 ## quatro setas (arrastar/pan). Imagens em assets/ui (32×32, com transparência).
 
 const DEFAULT_PATH := "res://assets/ui/cursor_default.png"
 const CITY_PATH := "res://assets/ui/cursor_loupe.png"
 const PORT_PATH := "res://assets/ui/cursor_pointer.png"
-## Reservado para o estado "segurando" (arrastar) — ainda não ligado.
-const GRAB_PATH := "res://assets/ui/cursor_grab.png"
 const DRAG_PATH := "res://assets/ui/cursor_drag.png"
 
 const DEFAULT_HOTSPOT := Vector2(3, 2)
 const CITY_HOTSPOT := Vector2(16, 16)
-const PORT_HOTSPOT := Vector2(16, 20)
+const PORT_HOTSPOT := Vector2(14, 3)
 const DRAG_HOTSPOT := Vector2(16, 16)
 
 static var _installed := false

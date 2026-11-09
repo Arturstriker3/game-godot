@@ -1,8 +1,7 @@
-"""Gera os cursores de mão a partir de ícones prontos (tools/cursor_sources).
+"""Gera o cursor de porto a partir de um ícone pronto (tools/cursor_sources).
 
-- cursor_pointer.png  <- MDI "hand-back-right" (mão aberta, hover em porto)
-- cursor_grab.png     <- Phosphor "hand-grabbing-fill" (mão fechada, futuro
-                         estado "segurando")
+- cursor_pointer.png <- Phosphor "hand-pointing-fill" (mão apontando, hover em
+                        porto/construção)
 
 Aplica o estilo dos demais cursores: latão (#C9A24A) com contorno escuro
 uniforme. O contorno é a silhueta dilatada (o desenho original fica intacto,
@@ -56,5 +55,4 @@ def build(src_name: str, out_name: str) -> None:
     print(out_name, canvas.getbbox(), "conteudo", w, "x", h)
 
 
-build("mdi_hand_back_right.png", "cursor_pointer.png")
-build("ph_hand_grabbing_fill.png", "cursor_grab.png")
+build("ph_hand_pointing_fill.png", "cursor_pointer.png")
