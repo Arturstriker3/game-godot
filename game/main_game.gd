@@ -1,32 +1,67 @@
 extends Node3D
 
-## Cena principal: monta o mundo de cidades (fundo GPS + cidades + Voronoi) e
-## conecta o sinal de comércio do núcleo C++ aos comboios 3D.
+## Cena principal: monta o mundo de cidades (fundo tático + cidades + Voronoi),
+## enquadra a câmera sobre a Europa, conecta o comércio aos comboios 3D e sobe o HUD.
 
 const CityWorldScript: Script = preload("res://map/city_world.gd")
 const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
+const HudScript: Script = preload("res://core/ui/hud.gd")
+
+## Inclinação da câmera (graus) e distância do alvo.
+const CAMERA_PITCH_DEG := -56.0
+const CAMERA_DISTANCE := 52.0
 
 var city_world
 var convoys
+var hud
 
 
 func _ready() -> void:
 	_build_city_world()
 	_build_convoys()
+	_setup_camera()
+	_build_hud()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
 
 
 func _build_city_world() -> void:
 	city_world = CityWorldScript.new()
-	# Mesma posição do antigo mapa, para a câmera (Player) já enquadrar o mundo.
-	city_world.position = Vector3(5.45, -32.76, 89.74)
 	add_child(city_world)
 
 	var cities: Array = Economy.sim.get_status()["cities"]
 	city_world.build(cities)
+	_center_world(cities)
+
+
+## Coloca o centro das cidades na origem para a câmera enquadrar a Europa.
+func _center_world(cities: Array) -> void:
+	if cities.is_empty():
+		return
+
+	var center := Vector3.ZERO
+	for city in cities:
+		center += city_world.pixel_to_world(Vector2(city["x"], city["y"]))
+	city_world.position = -center / float(cities.size())
 
 
 func _build_convoys() -> void:
 	convoys = ConvoysScript.new()
 	convoys.position = Vector3.ZERO
 	city_world.add_child(convoys)
+
+
+## Câmera inclinada sobre o centro do mapa; o controle começa daqui.
+func _setup_camera() -> void:
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+
+	player.global_position = Vector3.ZERO
+	player.rotation = Vector3.ZERO
+	player.camera_socket.rotation_degrees.x = CAMERA_PITCH_DEG
+	player.camera.position = Vector3(0.0, 0.0, CAMERA_DISTANCE)
+
+
+func _build_hud() -> void:
+	hud = HudScript.new()
+	add_child(hud)

@@ -1,113 +1,69 @@
 extends Node
 
 ## Autoload `Economy`: acopla o núcleo C++ (EconomySim) ao jogo.
-## Avança um dia por tick e mostra o resumo no console e numa label na tela.
 ##
+## Avança um dia por tick e publica o resumo para o HUD e para os comboios.
 ## A simulação é por cidade: cada nação possui uma ou mais cidades, e cada
 ## cidade tem população, produção e demanda próprias.
-
-const TICK_SECONDS := 1.5
 
 ## Emitido a cada tick com os pedidos de comércio do dia.
 signal trade_orders_ready(orders: Array)
 
+## Emitido a cada tick com o resumo completo (cidades, nações e pedidos).
+signal status_updated(summary: Dictionary)
+
+## Segundos reais por dia simulado; o índice 0 é a pausa.
+const SPEEDS := [0.0, 1.5, 0.75, 0.3]
+const SPEED_COUNT := 4
+
+## 1º de janeiro de 2026, 00:00 UTC.
+const START_UNIX := 1767225600
+
 var sim: RefCounted
-var _label: Label
+var last_summary: Dictionary = {}
+var speed: int = 1
+
+var _timer: Timer
 
 
 func _ready() -> void:
 	sim = EconomySim.new()
 	sim.initialize()
-	_build_overlay()
 
-	var timer := Timer.new()
-	timer.wait_time = TICK_SECONDS
-	timer.timeout.connect(_run_day)
-	add_child(timer)
-	timer.start()
+	_timer = Timer.new()
+	_timer.wait_time = SPEEDS[speed]
+	_timer.timeout.connect(_run_day)
+	add_child(_timer)
+	_timer.start()
 
-	# Adia o primeiro dia: a cena principal conecta o sinal de comércio no _ready.
+	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
 	_run_day.call_deferred()
 
 
-func _build_overlay() -> void:
-	var layer := CanvasLayer.new()
-	layer.layer = 100
-	add_child(layer)
-
-	_label = Label.new()
-	_label.position = Vector2(16, 16)
-	_label.add_theme_font_size_override("font_size", 14)
-	_label.add_theme_color_override("font_color", Color(1, 1, 1))
-	_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	_label.add_theme_constant_override("outline_size", 4)
-	layer.add_child(_label)
-
-
 func _run_day() -> void:
-	var summary: Dictionary = sim.tick()
-	var text := _format(summary)
-	_label.text = text
-	print(text)
-	trade_orders_ready.emit(summary["trade_orders"])
+	last_summary = sim.tick()
+	status_updated.emit(last_summary)
+	trade_orders_ready.emit(last_summary["trade_orders"])
 
 
-func _format(summary: Dictionary) -> String:
-	var lines: Array[String] = ["Dia %d" % summary["day"]]
-
-	lines.append_array(_format_nations(summary["nations"]))
-	lines.append_array(_format_cities(summary["cities"]))
-	lines.append_array(_format_orders(summary["trade_orders"]))
-
-	return "\n".join(lines)
-
-
-func _format_nations(nations: Array) -> Array[String]:
-	var lines: Array[String] = ["-- Nacoes --"]
-
-	for nation in nations:
-		lines.append("%-8s pop %.1fM  demanda %.0f  deficit %.0f  estoque %.0f  transito %.0f" % [
-			nation["name"],
-			nation["population"] / 1_000_000.0,
-			nation["need"],
-			nation["deficit"],
-			nation["stockpile"],
-			nation["in_transit"],
-		])
-
-	return lines
+## Troca a velocidade; 0 pausa o relógio.
+func set_speed(index: int) -> void:
+	speed = clampi(index, 0, SPEED_COUNT - 1)
+	if speed == 0:
+		_timer.stop()
+		return
+	_timer.wait_time = SPEEDS[speed]
+	_timer.start()
 
 
-func _format_cities(cities: Array) -> Array[String]:
-	var lines: Array[String] = ["-- Cidades --"]
-
-	for city in cities:
-		lines.append("  %-3s %-22s pop %5.1fM  prod %5.0f  demanda %5.0f  estoque %6.0f  env %5.0f  trans %5.0f" % [
-			city["nation"],
-			city["name"],
-			city["population"] / 1_000_000.0,
-			city["production"],
-			city["need"],
-			city["stockpile"],
-			city["dispatched"],
-			city["in_transit"],
-		])
-
-	return lines
+## Fração do dia corrente já decorrida (0..1), para a barra do HUD.
+func day_progress() -> float:
+	if speed == 0 or _timer.wait_time <= 0.0:
+		return 0.0
+	return clampf(1.0 - _timer.time_left / _timer.wait_time, 0.0, 1.0)
 
 
-func _format_orders(orders: Array) -> Array[String]:
-	var lines: Array[String] = ["-- Comercio --"]
-
-	for order in orders:
-		lines.append("[%s] %s -> %s: %.0f t | %.1f h | frete %.0f" % [
-			order["scope"], order["from_city"], order["to_city"], order["amount"],
-			order["transit_hours"], order["freight_cost"],
-		])
-		for leg in order["legs"]:
-			lines.append("    %-5s %6.0f km  %5.0f t  %2d viagens  %5.1f h" % [
-				leg["mode"], leg["distance_km"], leg["load_tons"],
-				leg["trips"], leg["transit_hours"],
-			])
-
-	return lines
+## Data do jogo, contando os dias simulados a partir de 1º de janeiro de 2026.
+func game_date() -> Dictionary:
+	var days := int(last_summary.get("day", 0))
+	return Time.get_datetime_dict_from_unix_time(START_UNIX + days * 86400)

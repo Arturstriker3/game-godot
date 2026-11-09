@@ -11,9 +11,13 @@ const PIXEL_TO_WORLD := 0.2
 
 const CITY_MODEL: PackedScene = preload("res://assets/models/city.glb")
 const GPS_TEXTURE: Texture2D = preload("res://map/map_data/ne2.png")
+const MAP_SHADER: Shader = preload("res://map/map_shaders/tactical_map.gdshader")
+const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 
 const VORONOI_RESOLUTION := Vector2i(1000, 500)
-const CITY_TARGET_SIZE := 6.0
+const CITY_TARGET_SIZE := 5.0
+const MARKER_COLOR := Color("#0A1212")
+const MARKER_DOT := Color("#E8E2D0")
 
 const NATION_COLORS := {
 	"GBR": Color(0.78, 0.12, 0.16),
@@ -56,9 +60,9 @@ func _build_gps_plane() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = PLANE_SIZE
 
-	var material := StandardMaterial3D.new()
-	material.albedo_texture = GPS_TEXTURE
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var material := ShaderMaterial.new()
+	material.shader = MAP_SHADER
+	material.set_shader_parameter("map_texture", GPS_TEXTURE)
 
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = plane
@@ -142,7 +146,7 @@ func _generate_voronoi(cities: Array) -> ImageTexture:
 				is_border = true
 
 			var color: Color = sites[s]["color"]
-			color.a = 0.9 if is_border else 0.20
+			color.a = 0.85 if is_border else 0.16
 			var o: int = idx * 4
 			bytes[o] = int(color.r * 255.0)
 			bytes[o + 1] = int(color.g * 255.0)
@@ -161,22 +165,43 @@ func _build_cities(cities: Array) -> void:
 
 
 func _spawn_city_marker(position: Vector3, city_name: String, color: Color) -> void:
-	var marker := CSGCylinder3D.new()
-	marker.radius = 1.6
-	marker.height = 0.4
-	marker.material = StandardMaterial3D.new()
-	marker.material.albedo_color = color
-	marker.material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	marker.position = position + Vector3(0.0, 0.2, 0.0)
-	_content.add_child(marker)
+	_add_disc(position + Vector3(0.0, 0.14, 0.0), 1.55, 0.10, MARKER_COLOR)
+	_add_disc(position + Vector3(0.0, 0.20, 0.0), 1.05, 0.12, color)
+	_add_disc(position + Vector3(0.0, 0.27, 0.0), 0.34, 0.10, MARKER_DOT)
+	_spawn_city_label(position, city_name, color)
 
+
+## Disco plano usado para desenhar o marcador da cidade em camadas.
+func _add_disc(position: Vector3, radius: float, height: float, color: Color) -> void:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+	mesh.radial_segments = 24
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.material_override = material
+	instance.position = position
+	_content.add_child(instance)
+
+
+## Nome da cidade em caixa alta, como legenda de carta militar.
+func _spawn_city_label(position: Vector3, city_name: String, color: Color) -> void:
 	var label := Label3D.new()
-	label.text = city_name
-	label.font_size = 22
-	label.modulate = color
-	label.outline_size = 8
+	label.text = city_name.to_upper()
+	label.font = LABEL_FONT
+	label.font_size = 30
+	label.pixel_size = 0.024
+	label.modulate = color.lightened(0.35)
+	label.outline_modulate = Color(0.03, 0.05, 0.05, 0.9)
+	label.outline_size = 12
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = position + Vector3(0.0, 5.0, 0.0)
+	label.position = position + Vector3(0.0, 3.2, 0.0)
 	_content.add_child(label)
 
 

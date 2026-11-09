@@ -3,18 +3,13 @@
 [ext_resource type="Script" uid="uid://h51uhrlkk2y" path="res://game/main_game.gd" id="1_3fham"]
 [ext_resource type="PackedScene" uid="uid://c8ptbx1watnwc" path="res://game/player/player.tscn" id="3_g4axw"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_g4axw"]
-sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
-ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
-
-[sub_resource type="Sky" id="Sky_t4f2l"]
-sky_material = SubResource("ProceduralSkyMaterial_g4axw")
-
 [sub_resource type="Environment" id="Environment_433cb"]
-background_mode = 2
-sky = SubResource("Sky_t4f2l")
+background_mode = 1
+background_color = Color(0.0392157, 0.054902, 0.0588235, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.619608, 0.658824, 0.580392, 1)
+ambient_light_energy = 0.45
 tonemap_mode = 2
-glow_enabled = true
 
 [node name="MainGame" type="Node3D" unique_id=1520215509]
 script = ExtResource("1_3fham")

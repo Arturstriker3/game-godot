@@ -23,12 +23,17 @@ config/icon="uid://p4g3h4kdig2e"
 [autoload]
 
 Music="*res://core/audio/background_music.gd"
+I18n="*res://core/i18n/i18n.gd"
 Economy="*res://core/economy/economy.gd"
 
 [display]
 
 window/size/viewport_width=1900
 window/size/viewport_height=1000
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
 [gui]
 

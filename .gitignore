@@ -8,6 +8,11 @@ CLAUDE.md
 gdextension/build-debug/
 gdextension/build-release/
 
+# Ferramentas locais de desenvolvimento (MCP / agentes)
+addons/godot_mcp/
+.trae/
+.impeccable/
+
 # Godot .gitignore config
 #
 # Aims to encompass the most commonly found files that we don't want committed
