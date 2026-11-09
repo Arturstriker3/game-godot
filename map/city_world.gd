@@ -75,6 +75,9 @@ const MARKER_FADE_IN_END := 112.0
 ## Bruxelas–Amsterdã dista ~4,5 u, então o diâmetro precisa ficar bem abaixo
 ## disso para não encostar nas vizinhas.
 const URBAN_SCALE := 0.165
+## Raio (u do mundo) em volta de cada porto onde a cidade não constrói, para não
+## sobrepor o modelo do porto.
+const URBAN_PORT_KEEPOUT := 0.4
 const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
 const LABEL_PIXEL_MAX := 0.12
@@ -1163,9 +1166,13 @@ func _build_urban(record: Dictionary, world_position: Vector3) -> Node3D:
 	return manager
 
 
-## Filtro orgânico do crescimento: só constrói em terra firme e dentro do
-## território da nação da cidade. Impede crescer para o mar ou para outro país.
+## Filtro orgânico do crescimento: só constrói em terra firme, dentro do
+## território da nação e sem encostar nos portos.
 func _make_urban_filter(city_local: Vector3, nation: String) -> Callable:
+	var keepout: Array = []
+	for p in _port_nodes:
+		var pp: Vector3 = p.get("position", Vector3.ZERO)
+		keepout.append(Vector2(pp.x, pp.z))
 	return func(lot_local: Vector3) -> bool:
 		if _territory == null:
 			return true
@@ -1179,4 +1186,10 @@ func _make_urban_filter(city_local: Vector3, nation: String) -> Callable:
 			return false
 		if not _territory.land_at_uv(uv):
 			return false
-		return _territory.owner_at_uv(uv) == nation
+		if _territory.owner_at_uv(uv) != nation:
+			return false
+		var flat := Vector2(local.x, local.z)
+		for pp in keepout:
+			if flat.distance_to(pp) < URBAN_PORT_KEEPOUT:
+				return false
+		return true
