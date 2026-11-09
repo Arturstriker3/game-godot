@@ -1,8 +1,9 @@
 extends RefCounted
 class_name GameCursor
 
-## Cursor temático do jogo: seta (mapa), lupa (hover sobre construção no mapa)
-## e quatro setas (arrastar/pan). Imagens em assets/ui (32×32, com transparência).
+## Cursor temático do jogo: seta (mapa), lupa (hover sobre cidade, indica "abrir
+## dados"), mão de botão web (hover sobre porto/construção, indica "pegar") e
+## quatro setas (arrastar/pan). Imagens em assets/ui (32×32, com transparência).
 
 const DEFAULT_PATH := "res://assets/ui/cursor_default.png"
 const CITY_PATH := "res://assets/ui/cursor_loupe.png"
@@ -33,19 +34,22 @@ static func install() -> void:
 	_set_shape(Input.CURSOR_ARROW)
 
 
-## Estado do cursor: arrastando > sobre cidade > padrão.
-static func set_state(dragging: bool, over_city: bool) -> void:
+## Estado do cursor: arrastando > cidade (lupa: abrir dados) > porto/construção
+## (pointer de botão web: pegar/selecionar) > padrão.
+static func set_state(dragging: bool, hover_kind: String = "") -> void:
 	if dragging:
 		_set_shape(Input.CURSOR_DRAG)
-	elif over_city:
+	elif hover_kind == "city":
 		_set_shape(Input.CURSOR_HELP)
+	elif hover_kind == "port":
+		_set_shape(Input.CURSOR_POINTING_HAND)
 	else:
 		_set_shape(Input.CURSOR_ARROW)
 
 
 ## Compatibilidade: hover de cidade sem arrasto.
 static func set_city_hover(active: bool) -> void:
-	set_state(false, active)
+	set_state(false, "city" if active else "")
 
 
 static func _set_shape(shape: int) -> void:
