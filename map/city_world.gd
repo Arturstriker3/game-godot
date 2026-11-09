@@ -20,11 +20,11 @@ const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
 
 const NATION_COLORS := {
-	"GBR": Color(0.78, 0.12, 0.16),
-	"FRA": Color(0.10, 0.30, 0.85),
-	"DEU": Color(0.36, 0.36, 0.40),
-	"NED": Color(0.95, 0.45, 0.10),
-	"BEL": Color(0.90, 0.75, 0.12),
+	"GBR": Color("#8C3A3C"),
+	"FRA": Color("#3C5A86"),
+	"DEU": Color("#5E6668"),
+	"NED": Color("#A1653A"),
+	"BEL": Color("#A39244"),
 }
 
 
@@ -146,7 +146,7 @@ func _generate_voronoi(cities: Array) -> ImageTexture:
 				is_border = true
 
 			var color: Color = sites[s]["color"]
-			color.a = 0.85 if is_border else 0.16
+			color.a = 0.72 if is_border else 0.10
 			var o: int = idx * 4
 			bytes[o] = int(color.r * 255.0)
 			bytes[o + 1] = int(color.g * 255.0)

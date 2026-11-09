@@ -65,3 +65,21 @@ func _setup_camera() -> void:
 func _build_hud() -> void:
 	hud = HudScript.new()
 	add_child(hud)
+
+
+## Mantém a câmera dentro de um período do mapa: ao passar da borda em X, ela
+## reaparece do outro lado, onde a cópia lateral do mundo continua a paisagem.
+func _process(_delta: float) -> void:
+	if city_world == null:
+		return
+
+	var player := get_node_or_null("Player") as Node3D
+	if player == null:
+		return
+
+	var half_width: float = city_world.PLANE_SIZE.x * 0.5
+	var offset: float = player.position.x - city_world.position.x
+	if offset > half_width:
+		player.position.x -= city_world.PLANE_SIZE.x
+	elif offset < -half_width:
+		player.position.x += city_world.PLANE_SIZE.x

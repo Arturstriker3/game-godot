@@ -118,13 +118,14 @@ static func label(text: String, size: int = 15, color: Color = TEXT) -> Label:
 
 static func title(text: String, size: int = 22) -> Label:
 	var node := label(text, size, TEXT)
-	node.add_theme_font_override("font", DISPLAY_FONT)
+	node.add_theme_font_override("font", display_font())
 	return node
 
 
 ## Rótulo pequeno em caixa alta, usado como cabeçalho de coluna.
 static func caption(text: String, color: Color = TEXT_MUTED) -> Label:
-	var node := label(text.to_upper(), 11, color)
+	var node := label(text.to_upper(), 12, color)
+	node.add_theme_font_override("font", CAPTION_FONT)
 	return node
 
 

@@ -4,6 +4,11 @@
 
 [node name="Player" type="Node3D" unique_id=841221442]
 script = ExtResource("1_obar5")
+camera_rotate_mouse_acceleration_speed_factor = Vector2(0.25, 0.25)
+camera_rotate_keys_acceleration_speed_factor = Vector2(1.2, 1.2)
+camera_rotate_keys_velocity_half_life = 0.12
+camera_zoom_min_bound = 14.0
+camera_zoom_max_bound = 400.0
 
 [node name="CameraSocket" type="Node3D" parent="." unique_id=2072975609]
 transform = Transform3D(1, 0, 0, 0, 0.0871558, 0.996195, 0, -0.996195, 0.0871558, 0, 0, 0)

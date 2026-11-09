@@ -100,6 +100,15 @@ func _build_top_bar() -> void:
 	_top_holder.add_theme_stylebox_override("panel", style)
 	_root.add_child(_top_holder)
 
+	# Filete de latão na base da barra: assinatura da carta militar.
+	var accent := ColorRect.new()
+	accent.color = Color(0.788, 0.635, 0.290, 0.35)
+	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	accent.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	accent.offset_top = TOP_BAR_HEIGHT - 1.0
+	accent.offset_bottom = TOP_BAR_HEIGHT
+	_root.add_child(accent)
+
 	_render_top_bar()
 
 
@@ -374,7 +383,7 @@ func _build_window() -> void:
 	header.add_child(close)
 	_window_close = close
 
-	box.add_child(UiKit.rule())
+	box.add_child(UiKit.rule(Color(0.788, 0.635, 0.290, 0.35)))
 
 	_window_body = VBoxContainer.new()
 	_window_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
