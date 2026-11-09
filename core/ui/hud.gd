@@ -77,6 +77,7 @@ var _mode := "political"
 
 var _menu_layer: Control
 var _menu_credits: Label
+var _menu_fullscreen: Button
 var _credit_label: Label
 var _minimap: Minimap
 
@@ -122,6 +123,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_screen()
 		else:
 			_open_menu()
+		get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.physical_keycode == KEY_F11:
+		_toggle_fullscreen()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -936,6 +943,11 @@ func _render_menu_card() -> void:
 	credits.pressed.connect(_toggle_credits)
 	box.add_child(credits)
 
+	_menu_fullscreen = UiKit.secondary_button("")
+	_menu_fullscreen.pressed.connect(_toggle_fullscreen)
+	box.add_child(_menu_fullscreen)
+	_refresh_fullscreen_button()
+
 	_menu_credits = UiKit.paragraph(I18n.t("hud.credits.body"), UiKit.FS_SMALL,
 			UiKit.TEXT_MUTED, 400.0)
 	_menu_credits.visible = false
@@ -965,6 +977,26 @@ func _close_menu() -> void:
 
 func _toggle_credits() -> void:
 	_menu_credits.visible = not _menu_credits.visible
+
+
+func _is_fullscreen() -> bool:
+	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+
+
+func _toggle_fullscreen() -> void:
+	if _is_fullscreen():
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	_refresh_fullscreen_button()
+	UiSfx.play(UiSfx.Sound.TOGGLE)
+
+
+func _refresh_fullscreen_button() -> void:
+	if _menu_fullscreen == null:
+		return
+	_menu_fullscreen.text = I18n.t(
+		"hud.menu.fullscreen.on" if _is_fullscreen() else "hud.menu.fullscreen.off")
 
 
 # --- Eventos ------------------------------------------------------------------
