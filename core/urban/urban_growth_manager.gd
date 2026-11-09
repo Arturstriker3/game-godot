@@ -96,6 +96,8 @@ func apply_indicators(indicators: Dictionary) -> void:
 	layout.stage = maxi(layout.stage, stage_for(population, industrialization))
 
 	var index := layout.lot_index()
+	var target: int = DistrictPlanner.STAGE_LOTS[clampi(layout.stage, 0,
+			DistrictPlanner.STAGE_LOTS.size() - 1)]
 	var added := 0
 	var upgraded := 0
 	for lot in _planner.desired_lots(layout, industrialization, income, jobs):
@@ -103,18 +105,23 @@ func apply_indicators(indicators: Dictionary) -> void:
 			continue
 
 		var key := "%d,%d" % [int(lot["i"]), int(lot["j"])]
-		if not index.has(key):
-			layout.add_lot(lot)
-			index[key] = lot
-			added += 1
+		if index.has(key):
+			# Bairro antigo: preserva o módulo, mas aceita verticalização.
+			var current: Dictionary = index[key]
+			if DistrictPlanner.can_upgrade(current["module"], lot["module"]):
+				current["module"] = lot["module"]
+				current["yaw"] = lot["yaw"]
+				upgraded += 1
 			continue
 
-		# Bairro antigo: preserva o módulo, mas aceita verticalização.
-		var current: Dictionary = index[key]
-		if DistrictPlanner.can_upgrade(current["module"], lot["module"]):
-			current["module"] = lot["module"]
-			current["yaw"] = lot["yaw"]
-			upgraded += 1
+		# Crescimento compensado: só para de adicionar quando atinge o alvo de
+		# lotes; os barrados (água/porto/construção) liberam espaço p/ crescê-lo
+		# em outra direção.
+		if layout.lots.size() >= target:
+			break
+		layout.add_lot(lot)
+		index[key] = lot
+		added += 1
 
 	if added > 0 or upgraded > 0 or layout.stage != previous_stage:
 		_refresh_render()

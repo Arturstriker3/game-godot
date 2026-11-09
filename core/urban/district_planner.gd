@@ -18,6 +18,9 @@ const POSITION_JITTER := 0.07
 
 ## Lotes por estágio: vila, cidade e metrópole.
 const STAGE_LOTS := [26, 72, 150]
+## Fator de candidatos: gera mais lotes que o alvo para compensar os barrados
+## (água, porto, outra construção). A cidade então cresce "para outra direção".
+const CANDIDATE_FACTOR := 3.0
 ## Fração do raio considerada núcleo comercial.
 const CORE_SHARE := 0.16
 
@@ -55,11 +58,14 @@ func desired_lots(layout: CityLayout, industrialization: float, income: float,
 		jobs: float) -> Array[Dictionary]:
 	var stage: int = clampi(layout.stage, 0, STAGE_LOTS.size() - 1)
 	var count: int = STAGE_LOTS[stage]
+	var candidates: int = int(ceil(float(count) * CANDIDATE_FACTOR))
 	var style: Dictionary = CITY_STYLES.get(layout.city_id, DEFAULT_STYLE)
 	var shape := _shape(layout.seed_value, style)
 	var lots: Array[Dictionary] = []
 
-	for index in count:
+	# Gera candidatos além do alvo: os barrados por água/porto/construção são
+	# pulados e o crescimento se redistribui para as direções livres.
+	for index in candidates:
 		var lot := _plan_lot(layout.seed_value, stage, index, count, shape,
 			industrialization, income, jobs, style)
 		if not lot.is_empty():
