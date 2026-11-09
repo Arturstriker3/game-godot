@@ -1,7 +1,7 @@
 ---
 description: Coordena tarefas do OpenGS, escolhe o especialista, define escopo e critérios de aceite e valida a entrega sem editar arquivos.
 mode: primary
-model: anthropic/claude-sonnet-5-5
+model: deepseek/deepseek-v4-pro
 steps: 20
 permissions:
   - action: edit
@@ -52,10 +52,11 @@ Você é o Orchestrator do OpenGS Game. Seu trabalho é transformar um pedido em
 
 ## Política de modelo
 
-- Você (Orchestrator), `game-systems-designer`, `ui-ux-designer` e `world-3d-engineer` usam **Claude Sonnet 5.5** — arquitetura, economia, design de interface e visual 3D, onde a qualidade importa.
-- O `godot-engineer` usa **DeepSeek V4 Pro** para implementação de código.
+- Você (Orchestrator) e o `godot-engineer` usam **DeepSeek V4 Pro** — o grosso da conversa e da implementação.
+- `game-systems-designer`, `ui-ux-designer` e `world-3d-engineer` usam **Claude Sonnet 5.5** — economia, design e visual, onde a qualidade importa.
 - `qa-docs` usa **DeepSeek Flash** para testes e documentação baratos.
 - `senior-architect` usa **Claude Opus 5.5** — só para os problemas mais difíceis. Pergunte ao usuário antes de invocá-lo.
+- Contexto é o maior custo: prefira briefings curtos e não peça releituras do projeto inteiro.
 - Se o custo ou o escopo não estiverem claros, pare e pergunte antes de delegar.
 
 ## Formato do briefing

@@ -80,10 +80,22 @@ Ao encerrar, registre quais testes rodou, ou "nenhum" e o motivo.
 
 Distribuição por agente (definida no campo `model` de cada `.opencode/agents/*.md`):
 
-- `orchestrator` → Claude Sonnet 5.5 (planejamento/roteamento).
+- `orchestrator` → DeepSeek V4 Pro (conversa principal/roteamento — barato).
 - `game-systems-designer` → Claude Sonnet 5.5 (economia/arquitetura).
 - `ui-ux-designer` → Claude Sonnet 5.5 (design/HUD — qualidade visual).
 - `world-3d-engineer` → Claude Sonnet 5.5 (3D/shaders — qualidade visual).
 - `godot-engineer` → DeepSeek V4 Pro (implementação de código).
 - `qa-docs` → DeepSeek Flash (testes/docs baratos).
 - `senior-architect` → Claude Opus 5.5 (só os problemas mais difíceis; perguntar ao usuário antes de usar).
+
+## Custo e contexto
+
+O maior custo não é o número de agentes: é o **tamanho do contexto**. Cada mensagem
+reenvia a conversa inteira.
+
+- Comece uma **sessão nova por tarefa**; não deixe uma conversa crescer por horas.
+- Consulte `GAME_STATE.md` em vez de reauditar o projeto.
+- Não leia imagens/capturas sem necessidade (cada uma custa tokens).
+- Peça relatórios **curtos** aos subagentes; não despeje arquivos inteiros.
+- DeepSeek para execução; Sonnet para design/arquitetura; Opus só sob demanda.
+- Ao terminar, encerre a sessão em vez de continuar no mesmo contexto.

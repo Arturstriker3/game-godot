@@ -16,8 +16,8 @@ Peça uma tarefa normalmente; o Orchestrator escolhe o especialista. Para chamar
 
 ## Modelos
 
-- `orchestrator`, `game-systems-designer`, `ui-ux-designer`, `world-3d-engineer` → Claude Sonnet 5.5 (arquitetura/design/visual).
-- `godot-engineer` → DeepSeek V4 Pro (código).
+- `orchestrator`, `godot-engineer` → DeepSeek V4 Pro (conversa principal/código).
+- `game-systems-designer`, `ui-ux-designer`, `world-3d-engineer` → Claude Sonnet 5.5 (arquitetura/design/visual).
 - `qa-docs` → DeepSeek Flash (rotina).
 - `senior-architect` → Claude Opus 5.5 (só os problemas mais difíceis; perguntar antes).
 
