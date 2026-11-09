@@ -65,9 +65,11 @@ func _scenario_flour_glut() -> Array:
 	var sim = world["sim"]
 	var ai = world["ai"]
 	_boost_cash(sim, "PORTUS", 200000.0, 150000.0)
-	# Estoque herdado de um ciclo anterior de overprodução.
+	# Estoque herdado de um ciclo anterior de overprodução. O alvo de estoque
+	# de 3 dias absorve 500 t em ~8 dias; por isso a janela do teste é curta,
+	# para observar a decisão de cautela enquanto o excesso existe.
 	_inject_stock(sim, "PORTUS", 1, 500.0)
-	_run(world, 30)
+	_run(world, 7)
 
 	var decisions: Array = ai.get_decisions()
 	var status: Dictionary = sim.get_demo_status()

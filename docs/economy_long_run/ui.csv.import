@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cch3ct4nvu5av"
+
+[deps]
+
+files=["res://docs/economy_long_run/ui.city.translation", "res://docs/economy_long_run/ui.population.translation", "res://docs/economy_long_run/ui.gdp.translation", "res://docs/economy_long_run/ui.gdp.translation", "res://docs/economy_long_run/ui.disposable.translation", "res://docs/economy_long_run/ui.wage.translation", "res://docs/economy_long_run/ui.employed.translation", "res://docs/economy_long_run/ui.unemployed.translation", "res://docs/economy_long_run/ui.unemployment.translation", "res://docs/economy_long_run/ui.satisfaction.translation", "res://docs/economy_long_run/ui.savings.translation", "res://docs/economy_long_run/ui.firm.translation", "res://docs/economy_long_run/ui.service.translation", "res://docs/economy_long_run/ui.government.translation", "res://docs/economy_long_run/ui.service.translation", "res://docs/economy_long_run/ui.service.translation", "res://docs/economy_long_run/ui.profit.translation", "res://docs/economy_long_run/ui.price.translation", "res://docs/economy_long_run/ui.price.translation", "res://docs/economy_long_run/ui.price.translation", "res://docs/economy_long_run/ui.stock.translation", "res://docs/economy_long_run/ui.stock.translation", "res://docs/economy_long_run/ui.stock.translation", "res://docs/economy_long_run/ui.food.translation", "res://docs/economy_long_run/ui.money.translation"]
+
+source_file="res://docs/economy_long_run/ui.csv"
+dest_files=["res://docs/economy_long_run/ui.city.translation", "res://docs/economy_long_run/ui.population.translation", "res://docs/economy_long_run/ui.gdp.translation", "res://docs/economy_long_run/ui.gdp.translation", "res://docs/economy_long_run/ui.disposable.translation", "res://docs/economy_long_run/ui.wage.translation", "res://docs/economy_long_run/ui.employed.translation", "res://docs/economy_long_run/ui.unemployed.translation", "res://docs/economy_long_run/ui.unemployment.translation", "res://docs/economy_long_run/ui.satisfaction.translation", "res://docs/economy_long_run/ui.savings.translation", "res://docs/economy_long_run/ui.firm.translation", "res://docs/economy_long_run/ui.service.translation", "res://docs/economy_long_run/ui.government.translation", "res://docs/economy_long_run/ui.service.translation", "res://docs/economy_long_run/ui.service.translation", "res://docs/economy_long_run/ui.profit.translation", "res://docs/economy_long_run/ui.price.translation", "res://docs/economy_long_run/ui.price.translation", "res://docs/economy_long_run/ui.price.translation", "res://docs/economy_long_run/ui.stock.translation", "res://docs/economy_long_run/ui.stock.translation", "res://docs/economy_long_run/ui.stock.translation", "res://docs/economy_long_run/ui.food.translation", "res://docs/economy_long_run/ui.money.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

@@ -252,7 +252,57 @@ static func _button_base(text: String) -> Button:
 	button.custom_minimum_size.y = CONTROL_HEIGHT
 	button.add_theme_font_size_override("font_size", FS_SMALL)
 	button.focus_mode = Control.FOCUS_ALL
+	_bind_sfx(button)
 	return button
+
+
+## Associa um efeito sonoro de interface ao clique do botão.
+static func _bind_sfx(button: BaseButton, sound: int = UiSfx.Sound.CLICK) -> void:
+	button.pressed.connect(func() -> void: UiSfx.play(sound))
+
+
+## Intervalo mínimo entre sons de rolagem e de arraste (ms).
+const SCROLL_SFX_MS := 90
+const SLIDER_SFX_MS := 55
+
+
+## Som de rolagem: segue as barras do ScrollContainer, sem soar quando o mouse
+## está fora do painel (o recálculo de layout muda o valor sem o jogador rolar).
+static func bind_scroll_sfx(scroll: ScrollContainer) -> void:
+	if scroll == null or scroll.has_meta("sfx_scroll_bound"):
+		return
+	scroll.set_meta("sfx_scroll_bound", true)
+
+	var key := "scroll:%d" % scroll.get_instance_id()
+	var on_change := func(_value: float) -> void:
+		if not is_instance_valid(scroll):
+			return
+		if scroll.get_global_rect().has_point(scroll.get_global_mouse_position()):
+			UiSfx.play_throttled(UiSfx.Sound.SCROLL, key, SCROLL_SFX_MS)
+
+	scroll.get_v_scroll_bar().value_changed.connect(on_change)
+	scroll.get_h_scroll_bar().value_changed.connect(on_change)
+
+
+## Som de arraste: tique curto a cada passo do slider, só enquanto o jogador
+## segura o controle (mudanças programáticas de valor continuam silenciosas).
+static func bind_slider_sfx(slider: Slider) -> void:
+	if slider == null or slider.has_meta("sfx_slider_bound"):
+		return
+	slider.set_meta("sfx_slider_bound", true)
+
+	var dragging := [false]
+	slider.drag_started.connect(func(_value: float) -> void: dragging[0] = true)
+	slider.drag_ended.connect(
+			func(_changed: bool) -> void: dragging[0] = false)
+	slider.value_changed.connect(_on_slider_tick.bind(slider, dragging))
+
+
+static func _on_slider_tick(_value: float, slider: Slider, dragging: Array) -> void:
+	if not dragging[0] or not is_instance_valid(slider):
+		return
+	UiSfx.play_throttled(UiSfx.Sound.TICK,
+			"slider:%d" % slider.get_instance_id(), SLIDER_SFX_MS)
 
 
 ## Ação principal — latão sólido, texto escuro. Usar no máximo uma por tela.
@@ -413,6 +463,7 @@ static func sort_header(headings: Array, weights: Array, aligns: Array, active: 
 				BRASS if index == active else TEXT_MUTED)
 		cell.add_theme_color_override("font_hover_color", BRASS)
 		cell.pressed.connect(func() -> void: on_sort.call(index))
+		_bind_sfx(cell)
 		row.add_child(cell)
 
 	return row
@@ -474,6 +525,7 @@ class RowButton extends PanelContainer:
 	func _on_gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
 				and event.pressed:
+			UiSfx.play(UiSfx.Sound.SELECT)
 			pressed.emit()
 
 
@@ -496,6 +548,7 @@ static func tab_button(text: String) -> Button:
 	button.custom_minimum_size.y = CONTROL_HEIGHT
 	button.add_theme_font_size_override("font_size", FS_SMALL)
 	set_tab_active(button, false)
+	_bind_sfx(button, UiSfx.Sound.SWITCH)
 	return button
 
 
@@ -541,6 +594,7 @@ static func filter_chip(text: String) -> Button:
 	button.add_theme_color_override("font_color", TEXT_DIM)
 	button.add_theme_color_override("font_hover_color", TEXT)
 	button.add_theme_color_override("font_pressed_color", BRASS)
+	_bind_sfx(button, UiSfx.Sound.TOGGLE)
 	return button
 
 
@@ -626,6 +680,14 @@ static func _state_block(heading: String, body: String, color: Color, tone: Stri
 ## Aviso efêmero no rodapé da tela; some sozinho.
 static func toast(parent: Control, text: String, tone: String = "neutral",
 		seconds: float = 2.4) -> void:
+	match tone:
+		"negative":
+			UiSfx.play(UiSfx.Sound.ERROR)
+		"warning":
+			UiSfx.play(UiSfx.Sound.QUESTION)
+		_:
+			pass
+
 	var holder := Control.new()
 	holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE

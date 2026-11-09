@@ -1,0 +1,356 @@
+{
+  "method": "pixel-metrics",
+  "visual_inspection": false,
+  "vision_model": null,
+  "vision_status": "sem credenciais VISION_*",
+  "generated_at": "2026-11-09T07:06:54+00:00",
+  "images": {
+    "map3d_political_d013.png": {
+      "path": "docs/map_visual/refine_after/map3d_political_d013.png",
+      "width": 1600,
+      "height": 900,
+      "megapixels": 1.44,
+      "luminance_mean": 0.4386,
+      "luminance_std": 0.1393,
+      "contrast_p95_p5": 0.4044,
+      "shadow_clip_pct": 0.0,
+      "highlight_clip_pct": 0.0,
+      "saturation_mean": 0.3689,
+      "colorfulness": 0.1688,
+      "sharpness_laplacian": 0.003536,
+      "edge_density": 0.0667,
+      "local_contrast_mean": 0.0354,
+      "regions_luminance": [
+        0.3405,
+        0.2725,
+        0.3866,
+        0.426,
+        0.4881,
+        0.5078,
+        0.5141,
+        0.5225,
+        0.4891
+      ],
+      "dominant_colors": [
+        {
+          "hex": "#26444C",
+          "share": 0.2244
+        },
+        {
+          "hex": "#79825B",
+          "share": 0.203
+        },
+        {
+          "hex": "#878F68",
+          "share": 0.1969
+        },
+        {
+          "hex": "#646D49",
+          "share": 0.1597
+        },
+        {
+          "hex": "#9BA47B",
+          "share": 0.1273
+        },
+        {
+          "hex": "#3B514A",
+          "share": 0.0888
+        }
+      ],
+      "water": {
+        "hex": "#2B4B55",
+        "mean_rgb": [
+          0.1681,
+          0.2937,
+          0.3319
+        ],
+        "saturation": 0.4973,
+        "luminance": 0.2698,
+        "share": 0.2531
+      },
+      "land": {
+        "hex": "#7A835D",
+        "mean_rgb": [
+          0.4797,
+          0.5139,
+          0.3633
+        ],
+        "saturation": 0.3254,
+        "luminance": 0.4958,
+        "share": 0.7469
+      },
+      "sharpness_land": 0.003951,
+      "sharpness_water": 0.002291
+    },
+    "map3d_political_d026.png": {
+      "path": "docs/map_visual/refine_after/map3d_political_d026.png",
+      "width": 1600,
+      "height": 900,
+      "megapixels": 1.44,
+      "luminance_mean": 0.3821,
+      "luminance_std": 0.1479,
+      "contrast_p95_p5": 0.4401,
+      "shadow_clip_pct": 0.0,
+      "highlight_clip_pct": 0.01,
+      "saturation_mean": 0.4201,
+      "colorfulness": 0.168,
+      "sharpness_laplacian": 0.005048,
+      "edge_density": 0.1543,
+      "local_contrast_mean": 0.0423,
+      "regions_luminance": [
+        0.2438,
+        0.2545,
+        0.299,
+        0.385,
+        0.451,
+        0.4916,
+        0.4441,
+        0.4951,
+        0.3744
+      ],
+      "dominant_colors": [
+        {
+          "hex": "#2A4A50",
+          "share": 0.2175
+        },
+        {
+          "hex": "#808961",
+          "share": 0.1898
+        },
+        {
+          "hex": "#6B754D",
+          "share": 0.1818
+        },
+        {
+          "hex": "#203941",
+          "share": 0.1619
+        },
+        {
+          "hex": "#979E76",
+          "share": 0.1273
+        },
+        {
+          "hex": "#3E513C",
+          "share": 0.1217
+        }
+      ],
+      "water": {
+        "hex": "#26434D",
+        "mean_rgb": [
+          0.1495,
+          0.2636,
+          0.303
+        ],
+        "saturation": 0.5116,
+        "luminance": 0.2422,
+        "share": 0.3481
+      },
+      "land": {
+        "hex": "#6F7A52",
+        "mean_rgb": [
+          0.4358,
+          0.4767,
+          0.3207
+        ],
+        "saturation": 0.3712,
+        "luminance": 0.4568,
+        "share": 0.6519
+      },
+      "sharpness_land": 0.006474,
+      "sharpness_water": 0.002358
+    },
+    "map3d_political_d052.png": {
+      "path": "docs/map_visual/refine_after/map3d_political_d052.png",
+      "width": 1600,
+      "height": 900,
+      "megapixels": 1.44,
+      "luminance_mean": 0.3272,
+      "luminance_std": 0.17,
+      "contrast_p95_p5": 0.5328,
+      "shadow_clip_pct": 0.0,
+      "highlight_clip_pct": 0.03,
+      "saturation_mean": 0.4845,
+      "colorfulness": 0.1757,
+      "sharpness_laplacian": 0.008914,
+      "edge_density": 0.2249,
+      "local_contrast_mean": 0.0451,
+      "regions_luminance": [
+        0.3342,
+        0.2214,
+        0.2726,
+        0.204,
+        0.4308,
+        0.4198,
+        0.3281,
+        0.3474,
+        0.386
+      ],
+      "dominant_colors": [
+        {
+          "hex": "#274143",
+          "share": 0.2392
+        },
+        {
+          "hex": "#78804E",
+          "share": 0.189
+        },
+        {
+          "hex": "#162832",
+          "share": 0.1888
+        },
+        {
+          "hex": "#485D40",
+          "share": 0.1575
+        },
+        {
+          "hex": "#1D343D",
+          "share": 0.1139
+        },
+        {
+          "hex": "#A4A57D",
+          "share": 0.1115
+        }
+      ],
+      "water": {
+        "hex": "#253E47",
+        "mean_rgb": [
+          0.1455,
+          0.2412,
+          0.2794
+        ],
+        "saturation": 0.5121,
+        "luminance": 0.223,
+        "share": 0.5491
+      },
+      "land": {
+        "hex": "#717949",
+        "mean_rgb": [
+          0.4436,
+          0.474,
+          0.2866
+        ],
+        "saturation": 0.4509,
+        "luminance": 0.454,
+        "share": 0.4509
+      },
+      "sharpness_land": 0.015565,
+      "sharpness_water": 0.003411
+    },
+    "map3d_political_d120.png": {
+      "path": "docs/map_visual/refine_after/map3d_political_d120.png",
+      "width": 1600,
+      "height": 900,
+      "megapixels": 1.44,
+      "luminance_mean": 0.3443,
+      "luminance_std": 0.2934,
+      "contrast_p95_p5": 0.8824,
+      "shadow_clip_pct": 0.0,
+      "highlight_clip_pct": 1.44,
+      "saturation_mean": 0.4289,
+      "colorfulness": 0.1623,
+      "sharpness_laplacian": 0.007471,
+      "edge_density": 0.1306,
+      "local_contrast_mean": 0.0371,
+      "regions_luminance": [
+        0.2603,
+        0.1463,
+        0.1632,
+        0.1727,
+        0.3356,
+        0.435,
+        0.1836,
+        0.6891,
+        0.7126
+      ],
+      "dominant_colors": [
+        {
+          "hex": "#192B35",
+          "share": 0.2099
+        },
+        {
+          "hex": "#405945",
+          "share": 0.2005
+        },
+        {
+          "hex": "#0C1214",
+          "share": 0.177
+        },
+        {
+          "hex": "#12222B",
+          "share": 0.152
+        },
+        {
+          "hex": "#FAEAC7",
+          "share": 0.1464
+        },
+        {
+          "hex": "#AFA782",
+          "share": 0.1143
+        }
+      ],
+      "water": {
+        "hex": "#1F3138",
+        "mean_rgb": [
+          0.1207,
+          0.191,
+          0.2202
+        ],
+        "saturation": 0.4655,
+        "luminance": 0.1775,
+        "share": 0.6205
+      },
+      "land": {
+        "hex": "#A49F75",
+        "mean_rgb": [
+          0.6413,
+          0.6249,
+          0.4602
+        ],
+        "saturation": 0.3689,
+        "luminance": 0.6171,
+        "share": 0.3795
+      },
+      "sharpness_land": 0.012543,
+      "sharpness_water": 0.004287
+    }
+  },
+  "comparisons": [
+    {
+      "left": "docs/map_visual/refine_before/map3d_political_d120.png",
+      "right": "docs/map_visual/refine_after/map3d_political_d120.png",
+      "mae": 0.11254,
+      "rmse": 0.17328,
+      "ssim": 0.79638,
+      "luminance_delta": 0.06069,
+      "pixels_changed_pct": 64.54
+    },
+    {
+      "left": "docs/map_visual/refine_before/map3d_political_d052.png",
+      "right": "docs/map_visual/refine_after/map3d_political_d052.png",
+      "mae": 0.14039,
+      "rmse": 0.18241,
+      "ssim": 0.78875,
+      "luminance_delta": 0.07112,
+      "pixels_changed_pct": 82.11
+    },
+    {
+      "left": "docs/map_visual/refine_before/map3d_political_d026.png",
+      "right": "docs/map_visual/refine_after/map3d_political_d026.png",
+      "mae": 0.1151,
+      "rmse": 0.15335,
+      "ssim": 0.85504,
+      "luminance_delta": 0.03994,
+      "pixels_changed_pct": 62.59
+    },
+    {
+      "left": "docs/map_visual/refine_before/map3d_political_d013.png",
+      "right": "docs/map_visual/refine_after/map3d_political_d013.png",
+      "mae": 0.09262,
+      "rmse": 0.13356,
+      "ssim": 0.90114,
+      "luminance_delta": 0.02172,
+      "pixels_changed_pct": 43.68
+    }
+  ],
+  "vision_diagnostics": {}
+}

@@ -1,0 +1,71 @@
+{
+  "engine": "4.7.2-stable (official)",
+  "mode": "political",
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "set": "legacy2d",
+  "shots": {
+    "legacy2d_political_d013.png": {
+      "distance": 13.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/baseline_before/legacy2d_political_d013.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "source": "res://editor/editor.tscn"
+    },
+    "legacy2d_political_d026.png": {
+      "distance": 26.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/baseline_before/legacy2d_political_d026.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "source": "res://editor/editor.tscn"
+    },
+    "legacy2d_political_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/baseline_before/legacy2d_political_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "source": "res://editor/editor.tscn"
+    },
+    "legacy2d_political_d120.png": {
+      "distance": 120.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/baseline_before/legacy2d_political_d120.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "source": "res://editor/editor.tscn"
+    }
+  },
+  "tag": "before",
+  "timestamp": "2026-11-09T03:50:10",
+  "warnings": []
+}

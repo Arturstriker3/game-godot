@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://b76o3xfccjb40"
+
+[deps]
+
+files=["res://docs/economy_long_run/bench.city.translation", "res://docs/economy_long_run/bench.population.translation", "res://docs/economy_long_run/bench.gdp.translation", "res://docs/economy_long_run/bench.gdp.translation", "res://docs/economy_long_run/bench.disposable.translation", "res://docs/economy_long_run/bench.wage.translation", "res://docs/economy_long_run/bench.employed.translation", "res://docs/economy_long_run/bench.unemployed.translation", "res://docs/economy_long_run/bench.unemployment.translation", "res://docs/economy_long_run/bench.satisfaction.translation", "res://docs/economy_long_run/bench.savings.translation", "res://docs/economy_long_run/bench.firm.translation", "res://docs/economy_long_run/bench.service.translation", "res://docs/economy_long_run/bench.government.translation", "res://docs/economy_long_run/bench.service.translation", "res://docs/economy_long_run/bench.service.translation", "res://docs/economy_long_run/bench.profit.translation", "res://docs/economy_long_run/bench.price.translation", "res://docs/economy_long_run/bench.price.translation", "res://docs/economy_long_run/bench.price.translation", "res://docs/economy_long_run/bench.stock.translation", "res://docs/economy_long_run/bench.stock.translation", "res://docs/economy_long_run/bench.stock.translation", "res://docs/economy_long_run/bench.food.translation", "res://docs/economy_long_run/bench.money.translation"]
+
+source_file="res://docs/economy_long_run/bench.csv"
+dest_files=["res://docs/economy_long_run/bench.city.translation", "res://docs/economy_long_run/bench.population.translation", "res://docs/economy_long_run/bench.gdp.translation", "res://docs/economy_long_run/bench.gdp.translation", "res://docs/economy_long_run/bench.disposable.translation", "res://docs/economy_long_run/bench.wage.translation", "res://docs/economy_long_run/bench.employed.translation", "res://docs/economy_long_run/bench.unemployed.translation", "res://docs/economy_long_run/bench.unemployment.translation", "res://docs/economy_long_run/bench.satisfaction.translation", "res://docs/economy_long_run/bench.savings.translation", "res://docs/economy_long_run/bench.firm.translation", "res://docs/economy_long_run/bench.service.translation", "res://docs/economy_long_run/bench.government.translation", "res://docs/economy_long_run/bench.service.translation", "res://docs/economy_long_run/bench.service.translation", "res://docs/economy_long_run/bench.profit.translation", "res://docs/economy_long_run/bench.price.translation", "res://docs/economy_long_run/bench.price.translation", "res://docs/economy_long_run/bench.price.translation", "res://docs/economy_long_run/bench.stock.translation", "res://docs/economy_long_run/bench.stock.translation", "res://docs/economy_long_run/bench.stock.translation", "res://docs/economy_long_run/bench.food.translation", "res://docs/economy_long_run/bench.money.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

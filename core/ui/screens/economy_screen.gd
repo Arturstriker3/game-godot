@@ -81,6 +81,7 @@ func _build_scroll() -> ScrollContainer:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UiKit.bind_scroll_sfx(scroll)
 
 	var card := UiKit.card(UiKit.SPACE_MD)
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL

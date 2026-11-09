@@ -92,6 +92,13 @@ public:
 	void demo_from_dict(const Dictionary& data);
 
 	/**
+	 * Ajusta parâmetros de balanceamento usados pelo laboratório.
+	 * Chaves aceitas: natural_unemployment, service_wage_adjust,
+	 * service_wage_max, inventory_cover_days, inventory_recovery.
+	 */
+	void demo_set_balance(const Dictionary& values);
+
+	/**
 	 * Cria um mundo sintético determinístico para benchmark.
 	 * @param city_count Número de cidades.
 	 * @param buildings_per_city Construções por cidade (mínimo 3).
@@ -227,6 +234,10 @@ private:
 		double input_value = 0.0;
 		double costs = 0.0;
 		double profit = 0.0;
+		// Valores efetivamente pagos no dia (podem ser menores que o contrato
+		// quando o caixa da empresa não cobre a folha e o opex).
+		double paid_wages = 0.0;
+		double paid_opex = 0.0;
 	};
 
 	struct DemoPop {
@@ -269,6 +280,9 @@ private:
 		double opex_revenue = 0.0;
 		double freight_revenue = 0.0;
 		double construction_revenue = 0.0;
+		// Investimento/construção pedido entre ticks entra no PIB do próximo
+		// dia, em vez de ser zerado pelo reset de fluxos antes de ser contado.
+		double construction_revenue_pending = 0.0;
 		double capital_income_next = 0.0;
 		double gdp = 0.0;
 		double revenue_by_product[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
@@ -448,6 +462,13 @@ private:
 	// Estado do cenário de validação de duas cidades. Compartilha o mesmo
 	// calendário (day_) do modo legado: apenas um dos modos roda por vez.
 	bool demo_active_ = false;
+	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
+	// laboratório; os padrões preservam o comportamento do jogo).
+	double demo_natural_unemployment_ = 0.04;
+	double demo_service_wage_adjust_ = 0.10;
+	double demo_service_wage_max_ = 1.0;
+	double demo_inventory_cover_days_ = 3.0;
+	double demo_inventory_recovery_ = 0.5;
 	std::vector<DemoCity> demo_cities_;
 	std::vector<DemoBuilding> demo_buildings_;
 	std::vector<DemoShipment> demo_in_transit_;

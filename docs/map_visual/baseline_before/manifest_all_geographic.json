@@ -1,0 +1,112 @@
+{
+  "city_count": 5,
+  "engine": "4.7.2-stable (official)",
+  "mode": "geographic",
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "set": "all",
+  "shots": {
+    "flat_geographic_s062.png": {
+      "kind": "orthographic",
+      "mode": "geographic",
+      "ortho_size": 62.5,
+      "path": "res://docs/map_visual/baseline_before/flat_geographic_s062.png",
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "flat_geographic_s125.png": {
+      "kind": "orthographic",
+      "mode": "geographic",
+      "ortho_size": 125.0,
+      "path": "res://docs/map_visual/baseline_before/flat_geographic_s125.png",
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "flat_geographic_s250.png": {
+      "kind": "orthographic",
+      "mode": "geographic",
+      "ortho_size": 250.0,
+      "path": "res://docs/map_visual/baseline_before/flat_geographic_s250.png",
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "flat_geographic_s500.png": {
+      "kind": "orthographic",
+      "mode": "geographic",
+      "ortho_size": 500.0,
+      "path": "res://docs/map_visual/baseline_before/flat_geographic_s500.png",
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_geographic_d013.png": {
+      "distance": 13.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "geographic",
+      "path": "res://docs/map_visual/baseline_before/map3d_geographic_d013.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_geographic_d026.png": {
+      "distance": 26.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "geographic",
+      "path": "res://docs/map_visual/baseline_before/map3d_geographic_d026.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_geographic_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "geographic",
+      "path": "res://docs/map_visual/baseline_before/map3d_geographic_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_geographic_d120.png": {
+      "distance": 120.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "geographic",
+      "path": "res://docs/map_visual/baseline_before/map3d_geographic_d120.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    }
+  },
+  "tag": "before",
+  "timestamp": "2026-11-09T03:49:58",
+  "warnings": []
+}

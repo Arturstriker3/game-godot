@@ -28,6 +28,7 @@ func _ready() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UiKit.bind_scroll_sfx(scroll)
 	scroll.add_child(card)
 	card.add_child(_body)
 	add_child(scroll)

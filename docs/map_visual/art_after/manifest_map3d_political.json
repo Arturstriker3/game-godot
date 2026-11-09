@@ -1,0 +1,110 @@
+{
+  "bench": {
+    "d013": {
+      "avg_ms": 4.237,
+      "draw_calls": 530.0,
+      "fps": 236.0,
+      "primitives": 273346.0,
+      "texture_mem_mb": 202.4,
+      "video_mem_mb": 485.2,
+      "worst_ms": 4.314
+    },
+    "d026": {
+      "avg_ms": 4.237,
+      "draw_calls": 406.0,
+      "fps": 236.0,
+      "primitives": 135164.0,
+      "texture_mem_mb": 202.4,
+      "video_mem_mb": 484.5,
+      "worst_ms": 4.44
+    },
+    "d052": {
+      "avg_ms": 4.238,
+      "draw_calls": 177.0,
+      "fps": 236.0,
+      "primitives": 14844.0,
+      "texture_mem_mb": 202.4,
+      "video_mem_mb": 483.4,
+      "worst_ms": 4.402
+    },
+    "d120": {
+      "avg_ms": 4.237,
+      "draw_calls": 31.0,
+      "fps": 236.0,
+      "primitives": 4468.0,
+      "texture_mem_mb": 202.4,
+      "video_mem_mb": 483.4,
+      "worst_ms": 4.399
+    }
+  },
+  "city_count": 5,
+  "engine": "4.7.2-stable (official)",
+  "mode": "political",
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_political_d013.png": {
+      "distance": 13.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/art_after/map3d_political_d013.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 5
+    },
+    "map3d_political_d026.png": {
+      "distance": 26.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/art_after/map3d_political_d026.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 3
+    },
+    "map3d_political_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/art_after/map3d_political_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 0
+    },
+    "map3d_political_d120.png": {
+      "distance": 120.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/art_after/map3d_political_d120.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 0
+    }
+  },
+  "tag": "art",
+  "timestamp": "2026-11-09T04:19:12",
+  "warnings": []
+}

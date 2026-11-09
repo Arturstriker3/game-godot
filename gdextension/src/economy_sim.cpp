@@ -80,6 +80,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_spend_government);
 	ClassDB::bind_method(D_METHOD("demo_to_dict"), &EconomySim::demo_to_dict);
 	ClassDB::bind_method(D_METHOD("demo_from_dict", "data"), &EconomySim::demo_from_dict);
+	ClassDB::bind_method(D_METHOD("demo_set_balance", "values"),
+	                     &EconomySim::demo_set_balance);
 	ClassDB::bind_method(D_METHOD("initialize_benchmark", "city_count",
 	                     "buildings_per_city", "seed"),
 	                     &EconomySim::initialize_benchmark);
@@ -577,6 +579,9 @@ constexpr double kDemoPriceSmoothing = 0.20;
 
 // Produção segue as vendas do dia anterior, com pequena folga de estoque.
 constexpr double kDemoProductionBuffer = 1.10;
+// Estoque-alvo em dias de venda. A produção repõe metade da diferença por dia:
+// sem estoque-alvo, produzir sempre 10% acima das vendas faria o estoque
+// crescer para sempre (minas e fazendas com demanda externa fixa).
 // Prejuízo persistente reduz a produção; lucro com demanda alta pode expandir.
 constexpr int kDemoLossDaysBeforeCut = 10;
 constexpr double kDemoLossCut = 0.95;
@@ -587,8 +592,17 @@ constexpr double kDemoFirmCashPerCapita = 0.10;
 constexpr double kDemoServiceCashPerCapita = 0.05;
 // Serviços ajustam o emprego para cobrir a folha com a própria receita.
 constexpr double kDemoServiceAdjust = 0.10;
+// Limites usados pelo benchmark sintético (o cenário demo usa o equilíbrio
+// do mercado de trabalho residual).
 constexpr double kDemoServiceMinShare = 0.05;
 constexpr double kDemoServiceMaxShare = 0.30;
+// O salário de serviços busca o equilíbrio do mercado de trabalho residual,
+// com piso no custo de subsistência (uma cesta alimentar por pessoa). Sem
+// isso o salário fixo de 0,15/dia (3x o PIB per capita) só financiava ~10%
+// da população e o desemprego aparecia em 80-90% por construção.
+// Desemprego friccional: parte da força de trabalho residual está sempre
+// procurando vaga. Sem isso o mercado de trabalho perfeitamente flexível
+// produziria 0,0% de desemprego, o que também não é plausível.
 // Volume de pão exportado a Agria, calibrado para equilibrar o trigo importado.
 constexpr double kDemoBreadExportTons = 6.0;
 // Demanda externa de ferro (fora do consumo alimentar).
@@ -779,6 +793,18 @@ Dictionary EconomySim::tick_demo() {
 	}
 	++day_;
 
+	// Preço de abertura do dia por cidade/produto. O limite de variação é
+	// aplicado UMA vez, no fim do tick: importação e reação de mercado não
+	// podem somar dois passos de 5% e produzir um salto de 10% no mesmo dia.
+	std::vector<std::vector<double>> open_prices(demo_cities_.size());
+	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
+		open_prices[city_index].resize(kDemoProducts);
+		for (int product = 0; product < kDemoProducts; ++product) {
+			open_prices[city_index][product] =
+				demo_cities_[city_index].markets[product].price;
+		}
+	}
+
 	// 1. Chegada das cargas pedidas no dia anterior.
 	for (auto shipment = demo_in_transit_.begin(); shipment != demo_in_transit_.end();) {
 		if (shipment->arrival_day <= day_) {
@@ -812,7 +838,8 @@ Dictionary EconomySim::tick_demo() {
 		city.service_profit = 0.0;
 		city.opex_revenue = 0.0;
 		city.freight_revenue = 0.0;
-		city.construction_revenue = 0.0;
+		city.construction_revenue = city.construction_revenue_pending;
+		city.construction_revenue_pending = 0.0;
 		city.gdp = 0.0;
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.markets[product].demand = 0.0;
@@ -840,6 +867,8 @@ Dictionary EconomySim::tick_demo() {
 		building.input_value = 0.0;
 		building.costs = 0.0;
 		building.profit = 0.0;
+		building.paid_wages = 0.0;
+		building.paid_opex = 0.0;
 	}
 
 	// 3. Mercado de trabalho e salários.
@@ -870,7 +899,28 @@ Dictionary EconomySim::tick_demo() {
 			opex_total += building.opex;
 		}
 
+		// Restrição de liquidez: a empresa não paga folha nem opex com dinheiro
+		// que não tem. Sem isso, cenários deficitários acumulavam caixa negativo
+		// para sempre e a contabilidade de renda deixava de ter lastro.
+		const double firm_available = std::max(0.0, city.firm_cash);
+		const double committed = modeled_wages + opex_total;
+		const double pay_scale = committed > firm_available && committed > 0.0
+			? firm_available / committed : 1.0;
+		modeled_wages *= pay_scale;
+		opex_total *= pay_scale;
+		for (DemoBuilding& building : demo_buildings_) {
+			if (building.city != city.id) {
+				continue;
+			}
+			building.paid_wages = building.workers * building.wage * pay_scale;
+			building.paid_opex = building.opex * pay_scale;
+		}
+
 		city.service_wage_bill = city.service_jobs * city.service_wage;
+		// O setor de serviços não paga folha sem caixa: a folha é limitada ao
+		// saldo disponível no início do dia, sem crédito implícito.
+		city.service_wage_bill = std::min(city.service_wage_bill,
+				std::max(0.0, city.service_cash));
 		city.pop.employed = city.service_jobs + modeled_jobs * fill;
 		city.pop.unemployed = std::max(0.0, labor_force - city.pop.employed);
 		city.pop.dependents = std::max(0.0, city.population - labor_force);
@@ -912,9 +962,23 @@ Dictionary EconomySim::tick_demo() {
 
 		// Capacidade e vendas na mesma unidade (toneladas efetivas).
 		const double effective_capacity = city_capacity * suitability;
-		const double target = sold_prev <= 0.0
-			? effective_capacity
-			: std::min(effective_capacity, sold_prev * kDemoProductionBuffer);
+		// Estoque disponível antes da produção de hoje (stock já inclui o que
+		// foi produzido nesta passagem; supply é exatamente essa produção).
+		const double stock_before = std::max(0.0,
+			city->markets[building.output_product].stock
+			- city->markets[building.output_product].supply);
+		// Repõe metade da distância até o estoque-alvo, para cima ou para baixo.
+		// Isso evita tanto a produção infinita (excedente acumulado) quanto a
+		// parada brusca quando o estoque está acima do necessário.
+		double target = sold_prev;
+		if (sold_prev <= 0.0) {
+			target = effective_capacity;
+		} else {
+			const double desired_stock = sold_prev * demo_inventory_cover_days_;
+			target = sold_prev
+				+ (desired_stock - stock_before) * demo_inventory_recovery_;
+		}
+		target = std::clamp(target, 0.0, effective_capacity);
 		const double desired_output = target * capacity_share * labor;
 		double input_used = 0.0;
 		double output = desired_output;
@@ -1073,44 +1137,64 @@ Dictionary EconomySim::tick_demo() {
 		DemoCity* agria = find_demo_city("AGRIA");
 		DemoCity* portus = find_demo_city("PORTUS");
 		if (agria != nullptr && portus != nullptr) {
-			// O moinho repõe o trigo necessário para a produção de farinha do
-			// dia seguinte, estimada pelas vendas de farinha de hoje.
+			// O moinho repõe o trigo necessário para a produção de farinha,
+			// mirando um estoque de alguns dias em vez de comprar 10% acima
+			// das vendas para sempre (o que acumulava trigo sem limite).
 			const double flour_sold = portus->markets[1].sold;
-			const double mill_demand = (flour_sold > 0.0
-				? flour_sold * kDemoProductionBuffer : 50.0) * 1.2;
-			const double missing = mill_demand - portus->markets[0].stock;
+			const double mill_daily = (flour_sold > 0.0 ? flour_sold : 50.0) * 1.2;
+			const double wheat_target = mill_daily * demo_inventory_cover_days_;
+			const double missing = wheat_target - portus->markets[0].stock;
 			if (missing > 0.0 && agria->markets[0].stock > 0.0) {
-				const double amount = std::min(missing, agria->markets[0].stock);
 				const double price = agria->markets[0].price;
-				const double cost = amount * price;
-				const double freight = distance_km(agria->center, portus->center)
-					* amount * kDemoFreightPerTonKm;
+				const double unit_freight = distance_km(agria->center, portus->center)
+					* kDemoFreightPerTonKm;
+				const double unit_cost = price + unit_freight;
+				// O comprador não pode gastar mais do que o caixa disponível:
+				// sem este limite o comércio deficitário levava o caixa a
+				// negativo e a economia seguia comprando a crédito infinito.
+				const double affordable = unit_cost > 0.0
+					? std::max(0.0, portus->firm_cash) / unit_cost : 0.0;
+				const double amount = std::min({missing,
+					agria->markets[0].stock, affordable});
+				if (amount > 0.0) {
+					const double cost = amount * price;
+					const double freight = unit_freight * amount;
 
-				portus->firm_cash -= cost + freight;
-				agria->firm_cash += cost;
-				// O frete é um serviço doméstico prestado a Portus.
-				portus->service_cash += freight;
-				portus->freight_revenue += freight;
-				agria->markets[0].stock -= amount;
-				agria->markets[0].desired += amount;
-				agria->markets[0].demand += amount;
-				agria->markets[0].sold += amount;
-				agria->revenue_by_product[0] += cost;
-				agria->exported[0] += amount;
-				agria->export_value[0] += cost;
-				portus->imported[0] += amount;
-				portus->import_value[0] += cost;
-				// Preço de Portus é a média ponderada entre estoque local e
-				// custo posto (importação), em vez de sobrescrever o local.
-				const double imported_unit = (cost + freight) / amount;
-				const double local_stock = portus->markets[0].stock;
-				const double total = local_stock + amount;
-				portus->markets[0].price = total > 0.0
-					? (local_stock * portus->markets[0].price
-						+ amount * imported_unit) / total
-					: imported_unit;
-				demo_in_transit_.push_back(
-					{portus->id, 0, amount, day_ + 1});
+					portus->firm_cash -= cost + freight;
+					agria->firm_cash += cost;
+					// O frete é um serviço doméstico prestado a Portus.
+					portus->service_cash += freight;
+					portus->freight_revenue += freight;
+					agria->markets[0].stock -= amount;
+					agria->markets[0].desired += amount;
+					agria->markets[0].demand += amount;
+					agria->markets[0].sold += amount;
+					agria->revenue_by_product[0] += cost;
+					agria->exported[0] += amount;
+					agria->export_value[0] += cost;
+					portus->imported[0] += amount;
+					portus->import_value[0] += cost;
+					// Preço de Portus é a média ponderada entre estoque local e
+					// custo posto (importação), em vez de sobrescrever o local.
+					const double imported_unit = (cost + freight) / amount;
+					const double local_stock = portus->markets[0].stock;
+					const double total = local_stock + amount;
+					const double previous_price = portus->markets[0].price;
+					const double blended = total > 0.0
+						? (local_stock * previous_price
+							+ amount * imported_unit) / total
+						: imported_unit;
+					// O limite diário de 5% também vale para o preço posto
+					// pela importação; o clamp final do tick repete a regra.
+					const double wheat_base = demo_base_price(0);
+					const double wheat_step = wheat_base * 0.05;
+					const double smoothed = std::clamp(blended,
+						previous_price - wheat_step, previous_price + wheat_step);
+					portus->markets[0].price = std::clamp(smoothed,
+						wheat_base * 0.5, wheat_base * 3.0);
+					demo_in_transit_.push_back(
+						{portus->id, 0, amount, day_ + 1});
+				}
 			}
 		}
 	}
@@ -1132,7 +1216,7 @@ Dictionary EconomySim::tick_demo() {
 			const double share = capacity_by_output[building.output_product] > 0.0
 				? effective / capacity_by_output[building.output_product] : 0.0;
 			building.revenue = city.revenue_by_product[building.output_product] * share;
-			building.costs = building.workers * building.wage + building.opex
+			building.costs = building.paid_wages + building.paid_opex
 				+ building.input_value;
 			building.profit = building.revenue - building.costs;
 		}
@@ -1201,13 +1285,39 @@ Dictionary EconomySim::tick_demo() {
 			}
 		}
 
-		// Emprego de serviços se ajusta à receita do setor (sem déficit
-		// estrutural): deficitário reduz vagas, superavitário contrata.
+		// O salário de serviços se ajusta ao mercado de trabalho residual e o
+		// emprego segue a receita do setor ao novo salário. Se a receita não
+		// sustenta nem o salário de subsistência, sobra desemprego de verdade —
+		// não um piso artificial de 5% de vagas.
+		double cheapest_food = 0.0;
+		for (int product = 0; product < kDemoFoodProducts; ++product) {
+			const double price = city.markets[product].price;
+			if (price > 0.0 && (cheapest_food <= 0.0 || price < cheapest_food)) {
+				cheapest_food = price;
+			}
+		}
+		const double subsistence_wage = kDemoNeedPerCapita * cheapest_food;
+		double modeled_jobs_total = 0.0;
+		for (const DemoBuilding& building : demo_buildings_) {
+			if (building.city == city.id) {
+				modeled_jobs_total += building.jobs;
+			}
+		}
+		const double residual_labor = std::max(0.0,
+			city.pop.labor_force - modeled_jobs_total);
+		const double service_supply = residual_labor
+			* (1.0 - demo_natural_unemployment_);
+		if (service_supply > 0.0) {
+			const double wage_target = city.service_revenue / service_supply;
+			const double bounded_wage = std::clamp(
+				std::max(wage_target, subsistence_wage),
+				0.0, demo_service_wage_max_);
+			city.service_wage += (bounded_wage - city.service_wage)
+				* demo_service_wage_adjust_;
+		}
 		if (city.service_wage > 0.0) {
-			const double target_jobs = city.service_revenue / city.service_wage;
-			const double lower = city.population * kDemoServiceMinShare;
-			const double upper = city.population * kDemoServiceMaxShare;
-			const double bounded = std::clamp(target_jobs, lower, upper);
+			const double affordable_jobs = city.service_revenue / city.service_wage;
+			const double bounded = std::min(service_supply, affordable_jobs);
 			city.service_jobs += (bounded - city.service_jobs) * kDemoServiceAdjust;
 		}
 	}
@@ -1274,6 +1384,23 @@ Dictionary EconomySim::tick_demo() {
 			market.shortage = std::max(0.0, market.desired - market.demand);
 			market.surplus = std::max(0.0, market.stock
 				- std::max(market.desired, market.sold) * 3.0);
+		}
+	}
+
+	// 9. Limite diário único por mercado, aplicado depois de todas as regras
+	// de preço (importação, custo e escassez). O piso e o teto continuam
+	// valendo mesmo que o preço de abertura esteja fora da faixa.
+	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
+		for (int product = 0; product < kDemoProducts; ++product) {
+			DemoMarket& market = demo_cities_[city_index].markets[product];
+			const double base = demo_base_price(product);
+			const double step = base * 0.05;
+			const double floor = base * 0.5;
+			const double ceiling = base * 3.0;
+			const double open = open_prices[city_index][product];
+			const double lower = std::max(floor, open - step);
+			const double upper = std::min(ceiling, open + step);
+			market.price = std::clamp(market.price, lower, upper);
 		}
 	}
 
@@ -1505,6 +1632,22 @@ EconomySim::DemoBuilding* EconomySim::find_demo_building(const std::string& city
 	return nullptr;
 }
 
+void EconomySim::demo_set_balance(const Dictionary& values) {
+	auto number = [&values](const char* key, double fallback) {
+		return values.has(key) ? double(values[key]) : fallback;
+	};
+	demo_natural_unemployment_ = std::clamp(
+		number("natural_unemployment", demo_natural_unemployment_), 0.0, 0.5);
+	demo_service_wage_adjust_ = std::clamp(
+		number("service_wage_adjust", demo_service_wage_adjust_), 0.0, 1.0);
+	demo_service_wage_max_ = std::clamp(
+		number("service_wage_max", demo_service_wage_max_), 0.01, 10.0);
+	demo_inventory_cover_days_ = std::clamp(
+		number("inventory_cover_days", demo_inventory_cover_days_), 1.0, 30.0);
+	demo_inventory_recovery_ = std::clamp(
+		number("inventory_recovery", demo_inventory_recovery_), 0.05, 1.0);
+}
+
 void EconomySim::demo_set_suitability(const String& city_id, const String& product,
 		double value) {
 	const int index = demo_product_index(product);
@@ -1553,12 +1696,10 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 	const double capacity_added = amount / kDemoCapitalPerCapacity;
 	city->firm_cash -= amount;
 	// A expansão é construída por serviços domésticos: o dinheiro vira
-	// receita de construção e não desaparece em um caixa inerte.
+	// receita de construção (contada no PIB do próximo tick) e não desaparece
+	// em um caixa inerte.
 	city->service_cash += amount;
-	city->construction_revenue += amount;
-	city->service_revenue += amount;
-	city->service_profit += amount;
-	city->gdp += amount;
+	city->construction_revenue_pending += amount;
 	building->capacity += capacity_added;
 	result["invested"] = amount;
 	result["capacity_added"] = capacity_added;
@@ -1636,12 +1777,10 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	building.opex = opex;
 	demo_buildings_.push_back(building);
 
-	// O investimento é pago ao setor de construção doméstico.
+	// O investimento é pago ao setor de construção doméstico e entra no PIB
+	// do próximo tick como receita de construção.
 	city->service_cash += cost;
-	city->construction_revenue += cost;
-	city->service_revenue += cost;
-	city->service_profit += cost;
-	city->gdp += cost;
+	city->construction_revenue_pending += cost;
 	result["created"] = true;
 	result["cost"] = cost;
 	return result;
@@ -1701,6 +1840,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["opex_revenue"] = city.opex_revenue;
 		entry["freight_revenue"] = city.freight_revenue;
 		entry["construction_revenue"] = city.construction_revenue;
+		entry["construction_revenue_pending"] = city.construction_revenue_pending;
 		entry["capital_income_next"] = city.capital_income_next;
 		entry["gdp"] = city.gdp;
 
@@ -1846,6 +1986,8 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		city.opex_revenue = double(entry.get("opex_revenue", 0.0));
 		city.freight_revenue = double(entry.get("freight_revenue", 0.0));
 		city.construction_revenue = double(entry.get("construction_revenue", 0.0));
+		city.construction_revenue_pending =
+			double(entry.get("construction_revenue_pending", 0.0));
 		city.capital_income_next = double(entry.get("capital_income_next", 0.0));
 		city.gdp = double(entry.get("gdp", 0.0));
 

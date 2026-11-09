@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://liixystwvnh1"
+
+[deps]
+
+files=["res://docs/economy_lab/final/runs.label.translation", "res://docs/economy_lab/final/runs.days.translation", "res://docs/economy_lab/final/runs.cities.translation", "res://docs/economy_lab/final/runs.population.translation", "res://docs/economy_lab/final/runs.gdp.translation", "res://docs/economy_lab/final/runs.gdp.translation", "res://docs/economy_lab/final/runs.gdp.translation", "res://docs/economy_lab/final/runs.unemployment.translation", "res://docs/economy_lab/final/runs.unemployment.translation", "res://docs/economy_lab/final/runs.satisfaction.translation", "res://docs/economy_lab/final/runs.satisfaction.translation", "res://docs/economy_lab/final/runs.price.translation", "res://docs/economy_lab/final/runs.price.translation", "res://docs/economy_lab/final/runs.stock.translation", "res://docs/economy_lab/final/runs.living.translation", "res://docs/economy_lab/final/runs.production.translation", "res://docs/economy_lab/final/runs.consumed.translation", "res://docs/economy_lab/final/runs.need.translation", "res://docs/economy_lab/final/runs.profit.translation", "res://docs/economy_lab/final/runs.savings.translation", "res://docs/economy_lab/final/runs.firm.translation", "res://docs/economy_lab/final/runs.service.translation", "res://docs/economy_lab/final/runs.government.translation", "res://docs/economy_lab/final/runs.trade.translation", "res://docs/economy_lab/final/runs.foreign.translation", "res://docs/economy_lab/final/runs.money.translation", "res://docs/economy_lab/final/runs.money.translation", "res://docs/economy_lab/final/runs.money.translation", "res://docs/economy_lab/final/runs.invest.translation", "res://docs/economy_lab/final/runs.violations.translation", "res://docs/economy_lab/final/runs.alerts.translation", "res://docs/economy_lab/final/runs.csv.translation"]
+
+source_file="res://docs/economy_lab/final/runs.csv"
+dest_files=["res://docs/economy_lab/final/runs.label.translation", "res://docs/economy_lab/final/runs.days.translation", "res://docs/economy_lab/final/runs.cities.translation", "res://docs/economy_lab/final/runs.population.translation", "res://docs/economy_lab/final/runs.gdp.translation", "res://docs/economy_lab/final/runs.gdp.translation", "res://docs/economy_lab/final/runs.gdp.translation", "res://docs/economy_lab/final/runs.unemployment.translation", "res://docs/economy_lab/final/runs.unemployment.translation", "res://docs/economy_lab/final/runs.satisfaction.translation", "res://docs/economy_lab/final/runs.satisfaction.translation", "res://docs/economy_lab/final/runs.price.translation", "res://docs/economy_lab/final/runs.price.translation", "res://docs/economy_lab/final/runs.stock.translation", "res://docs/economy_lab/final/runs.living.translation", "res://docs/economy_lab/final/runs.production.translation", "res://docs/economy_lab/final/runs.consumed.translation", "res://docs/economy_lab/final/runs.need.translation", "res://docs/economy_lab/final/runs.profit.translation", "res://docs/economy_lab/final/runs.savings.translation", "res://docs/economy_lab/final/runs.firm.translation", "res://docs/economy_lab/final/runs.service.translation", "res://docs/economy_lab/final/runs.government.translation", "res://docs/economy_lab/final/runs.trade.translation", "res://docs/economy_lab/final/runs.foreign.translation", "res://docs/economy_lab/final/runs.money.translation", "res://docs/economy_lab/final/runs.money.translation", "res://docs/economy_lab/final/runs.money.translation", "res://docs/economy_lab/final/runs.invest.translation", "res://docs/economy_lab/final/runs.violations.translation", "res://docs/economy_lab/final/runs.alerts.translation", "res://docs/economy_lab/final/runs.csv.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

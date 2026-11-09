@@ -699,6 +699,7 @@ func _show_top() -> void:
 		_close_screen()
 		return
 
+	var was_open := _window_layer.visible
 	var entry: Dictionary = _stack.back()
 	var kind := String(entry["kind"])
 	var id := String(entry["id"])
@@ -736,6 +737,7 @@ func _show_top() -> void:
 	UiKit.focus_first(_window_body)
 	if get_viewport().gui_get_focus_owner() == null:
 		UiKit.focus_first(_window)
+	UiSfx.play(UiSfx.Sound.OPEN if was_open else UiSfx.Sound.MAXIMIZE)
 
 
 func _render_crumb() -> void:
@@ -755,6 +757,7 @@ func _go_back() -> void:
 	if _stack.size() <= 1:
 		_close_screen()
 		return
+	UiSfx.play(UiSfx.Sound.BACK)
 	_stack.pop_back()
 	_show_top()
 
@@ -812,6 +815,8 @@ func _transit_total(cities: Array) -> float:
 
 
 func _close_screen() -> void:
+	if _window_layer.visible:
+		UiSfx.play(UiSfx.Sound.MINIMIZE)
 	_active = ""
 	_stack.clear()
 	_window_layer.visible = false
@@ -924,9 +929,12 @@ func _open_menu() -> void:
 	if _menu_credits != null:
 		_menu_credits.visible = false
 	UiKit.focus_first(_menu_layer)
+	UiSfx.play(UiSfx.Sound.OPEN)
 
 
 func _close_menu() -> void:
+	if _menu_layer.visible:
+		UiSfx.play(UiSfx.Sound.CLOSE)
 	_menu_layer.visible = false
 
 

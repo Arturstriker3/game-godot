@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://ef6civx0h54r"
+
+[deps]
+
+files=["res://docs/economy_lab/runs.label.translation", "res://docs/economy_lab/runs.days.translation", "res://docs/economy_lab/runs.cities.translation", "res://docs/economy_lab/runs.population.translation", "res://docs/economy_lab/runs.gdp.translation", "res://docs/economy_lab/runs.gdp.translation", "res://docs/economy_lab/runs.unemployment.translation", "res://docs/economy_lab/runs.unemployment.translation", "res://docs/economy_lab/runs.satisfaction.translation", "res://docs/economy_lab/runs.price.translation", "res://docs/economy_lab/runs.money.translation", "res://docs/economy_lab/runs.money.translation", "res://docs/economy_lab/runs.money.translation", "res://docs/economy_lab/runs.invest.translation", "res://docs/economy_lab/runs.violations.translation", "res://docs/economy_lab/runs.csv.translation"]
+
+source_file="res://docs/economy_lab/runs.csv"
+dest_files=["res://docs/economy_lab/runs.label.translation", "res://docs/economy_lab/runs.days.translation", "res://docs/economy_lab/runs.cities.translation", "res://docs/economy_lab/runs.population.translation", "res://docs/economy_lab/runs.gdp.translation", "res://docs/economy_lab/runs.gdp.translation", "res://docs/economy_lab/runs.unemployment.translation", "res://docs/economy_lab/runs.unemployment.translation", "res://docs/economy_lab/runs.satisfaction.translation", "res://docs/economy_lab/runs.price.translation", "res://docs/economy_lab/runs.money.translation", "res://docs/economy_lab/runs.money.translation", "res://docs/economy_lab/runs.money.translation", "res://docs/economy_lab/runs.invest.translation", "res://docs/economy_lab/runs.violations.translation", "res://docs/economy_lab/runs.csv.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

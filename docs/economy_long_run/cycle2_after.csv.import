@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dxgf7dw6axs42"
+
+[deps]
+
+files=["res://docs/economy_long_run/cycle2_after.city.translation", "res://docs/economy_long_run/cycle2_after.population.translation", "res://docs/economy_long_run/cycle2_after.gdp.translation", "res://docs/economy_long_run/cycle2_after.gdp.translation", "res://docs/economy_long_run/cycle2_after.disposable.translation", "res://docs/economy_long_run/cycle2_after.wage.translation", "res://docs/economy_long_run/cycle2_after.employed.translation", "res://docs/economy_long_run/cycle2_after.unemployed.translation", "res://docs/economy_long_run/cycle2_after.unemployment.translation", "res://docs/economy_long_run/cycle2_after.satisfaction.translation", "res://docs/economy_long_run/cycle2_after.savings.translation", "res://docs/economy_long_run/cycle2_after.firm.translation", "res://docs/economy_long_run/cycle2_after.service.translation", "res://docs/economy_long_run/cycle2_after.government.translation", "res://docs/economy_long_run/cycle2_after.service.translation", "res://docs/economy_long_run/cycle2_after.service.translation", "res://docs/economy_long_run/cycle2_after.profit.translation", "res://docs/economy_long_run/cycle2_after.price.translation", "res://docs/economy_long_run/cycle2_after.price.translation", "res://docs/economy_long_run/cycle2_after.price.translation", "res://docs/economy_long_run/cycle2_after.stock.translation", "res://docs/economy_long_run/cycle2_after.stock.translation", "res://docs/economy_long_run/cycle2_after.stock.translation", "res://docs/economy_long_run/cycle2_after.food.translation", "res://docs/economy_long_run/cycle2_after.money.translation"]
+
+source_file="res://docs/economy_long_run/cycle2_after.csv"
+dest_files=["res://docs/economy_long_run/cycle2_after.city.translation", "res://docs/economy_long_run/cycle2_after.population.translation", "res://docs/economy_long_run/cycle2_after.gdp.translation", "res://docs/economy_long_run/cycle2_after.gdp.translation", "res://docs/economy_long_run/cycle2_after.disposable.translation", "res://docs/economy_long_run/cycle2_after.wage.translation", "res://docs/economy_long_run/cycle2_after.employed.translation", "res://docs/economy_long_run/cycle2_after.unemployed.translation", "res://docs/economy_long_run/cycle2_after.unemployment.translation", "res://docs/economy_long_run/cycle2_after.satisfaction.translation", "res://docs/economy_long_run/cycle2_after.savings.translation", "res://docs/economy_long_run/cycle2_after.firm.translation", "res://docs/economy_long_run/cycle2_after.service.translation", "res://docs/economy_long_run/cycle2_after.government.translation", "res://docs/economy_long_run/cycle2_after.service.translation", "res://docs/economy_long_run/cycle2_after.service.translation", "res://docs/economy_long_run/cycle2_after.profit.translation", "res://docs/economy_long_run/cycle2_after.price.translation", "res://docs/economy_long_run/cycle2_after.price.translation", "res://docs/economy_long_run/cycle2_after.price.translation", "res://docs/economy_long_run/cycle2_after.stock.translation", "res://docs/economy_long_run/cycle2_after.stock.translation", "res://docs/economy_long_run/cycle2_after.stock.translation", "res://docs/economy_long_run/cycle2_after.food.translation", "res://docs/economy_long_run/cycle2_after.money.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

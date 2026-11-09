@@ -1,0 +1,82 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Agente padrão para novas sessões. O Orchestrator não edita arquivos:
+  // ele decompõe, delega e valida.
+  "default_agent": "orchestrator",
+
+  // MCPs locais. Os comandos reutilizam as instalações já existentes no TRAE.
+  // Segredos nunca ficam neste arquivo.
+  "mcp": {
+    "servers": {
+      "godot-editor-mcp": {
+        "type": "local",
+        "command": [
+          "C:\\Users\\artur\\AppData\\Local\\Python\\PythonCore-3.14-64\\Scripts\\uvx.exe",
+          "--python",
+          "3.13",
+          "godot-editor-mcp"
+        ],
+        "environment": {
+          "UV_PYTHON_PREFERENCE": "only-managed"
+        }
+      },
+
+      "sequential-thinking": {
+        "type": "local",
+        "command": [
+          "cmd.exe",
+          "/d",
+          "/c",
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-sequential-thinking"
+        ]
+      },
+
+      "blender": {
+        "type": "local",
+        "command": [
+          "C:\\Users\\artur\\AppData\\Local\\Python\\PythonCore-3.14-64\\Scripts\\uvx.exe",
+          "--python",
+          "3.11",
+          "mcp-for-blender"
+        ],
+        "environment": {
+          "UV_PYTHON_PREFERENCE": "only-managed"
+        }
+      },
+
+      // Desabilitado até o plugin addons/godot_mcp_toolkit ser instalado no
+      // projeto e habilitado no editor. O caminho já aponta para este projeto.
+      "godot-mcp-toolkit": {
+        "type": "local",
+        "command": [
+          "cmd.exe",
+          "/d",
+          "/c",
+          "npx",
+          "-y",
+          "@npgamedev/godot-mcp-server@1.1.2"
+        ],
+        "environment": {
+          "GODOT_MCP_PROJECT_PATH": "G:/projetos/opengs-game",
+          "GODOT_MCP_CONFIG_VERSION": "1",
+          "npm_config_prefer_offline": "true"
+        },
+        "disabled": true
+      }
+    }
+  },
+
+  // Travas globais de segurança. O restante continua com o comportamento
+  // padrão do OpenCode; regras específicas ficam nos agentes.
+  "permissions": [
+    { "action": "shell", "resource": "git reset *", "effect": "deny" },
+    { "action": "shell", "resource": "git clean *", "effect": "deny" },
+    { "action": "shell", "resource": "git push *", "effect": "ask" },
+    { "action": "shell", "resource": "git checkout -- *", "effect": "ask" },
+    { "action": "shell", "resource": "git restore *", "effect": "ask" },
+    { "action": "edit", "resource": ".env*", "effect": "deny" }
+  ]
+}

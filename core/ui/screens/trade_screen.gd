@@ -92,6 +92,7 @@ func _make_scroll_column(stretch: int) -> VBoxContainer:
 	scroll.size_flags_stretch_ratio = stretch
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UiKit.bind_scroll_sfx(scroll)
 	scroll.add_child(card)
 	card.add_child(column)
 	_columns.add_child(scroll)
@@ -285,6 +286,7 @@ func _build_market() -> void:
 	_market_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_market_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_market_scroll.visible = false
+	UiKit.bind_scroll_sfx(_market_scroll)
 	add_child(_market_scroll)
 
 	var card := UiKit.card(UiKit.SPACE_MD)

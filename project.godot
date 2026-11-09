@@ -23,6 +23,7 @@ config/icon="uid://p4g3h4kdig2e"
 [autoload]
 
 Music="*res://core/audio/background_music.gd"
+UiSfx="*res://core/audio/ui_sfx.gd"
 I18n="*res://core/i18n/i18n.gd"
 Economy="*res://core/economy/economy.gd"
 

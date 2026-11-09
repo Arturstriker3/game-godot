@@ -1,0 +1,69 @@
+{
+  "bench": {},
+  "city_count": 5,
+  "engine": "4.7.2-stable (official)",
+  "mode": "population",
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_population_d013.png": {
+      "distance": 13.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/art_after/map3d_population_d013.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_population_d026.png": {
+      "distance": 26.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/art_after/map3d_population_d026.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_population_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/art_after/map3d_population_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    },
+    "map3d_population_d120.png": {
+      "distance": 120.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/art_after/map3d_population_d120.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true
+    }
+  },
+  "tag": "art",
+  "timestamp": "2026-11-09T04:15:54",
+  "warnings": []
+}
