@@ -86,4 +86,4 @@ Distribuição por agente (definida no campo `model` de cada `.opencode/agents/*
 - `world-3d-engineer` → Claude Sonnet 5.5 (3D/shaders — qualidade visual).
 - `godot-engineer` → DeepSeek V4 Pro (implementação de código).
 - `qa-docs` → DeepSeek Flash (testes/docs baratos).
-- Claude Opus: somente com autorização explícita, tarefa por tarefa.
+- `senior-architect` → Claude Opus 5.5 (só os problemas mais difíceis; perguntar ao usuário antes de usar).

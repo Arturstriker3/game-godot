@@ -10,6 +10,7 @@ Guia rápido. A evidência completa está em `docs/opencode/MIGRATION.md`.
 - `world-3d-engineer` — mapa, modelos, shaders e Blender.
 - `game-systems-designer` — economia, logística, C++ e dados.
 - `qa-docs` — testes, capturas, auditoria e documentação.
+- `senior-architect` — Claude Opus 5.5; só os problemas mais difíceis (chame explicitamente).
 
 Peça uma tarefa normalmente; o Orchestrator escolhe o especialista. Para chamar um agente diretamente, use o seletor de agente ou `/agent <id>`.
 
@@ -18,7 +19,7 @@ Peça uma tarefa normalmente; o Orchestrator escolhe o especialista. Para chamar
 - `orchestrator`, `game-systems-designer`, `ui-ux-designer`, `world-3d-engineer` → Claude Sonnet 5.5 (arquitetura/design/visual).
 - `godot-engineer` → DeepSeek V4 Pro (código).
 - `qa-docs` → DeepSeek Flash (rotina).
-- Claude Opus: somente com autorização explícita.
+- `senior-architect` → Claude Opus 5.5 (só os problemas mais difíceis; perguntar antes).
 
 ## MCPs
 
