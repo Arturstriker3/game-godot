@@ -7,15 +7,15 @@ Uso:
     <python> tools/build_scenario_data.py
 
 Entrada (data/definitions/scenario/):
-    cities.csv    id,nation,name,population,x,y,landmass,port_name,port_x,port_y
+    cities.csv    id,nation,home_nation,name,population,x,y,landmass
+    ports.csv     id,name,nation,x,y,landmass
     buildings.csv city_id,building_id,name,output_tons_per_day
-    territory.csv city_id,owner_tag   (override de dono; vazio = dono original)
 
 Saída (data/definitions/scenario/):
-    cities.json    [ { id, nation, name, population, production, x, y,
-                      landmass, port_name, port_x, port_y }, ... ]
+    cities.json    [ { id, nation, home_nation, name, population, production,
+                      x, y, landmass }, ... ]
+    ports.json     [ { id, name, nation, x, y, landmass }, ... ]
     buildings.json [ { city_id, id, name, output_tons_per_day }, ... ]
-    territory.json { city_id: owner_tag, ... }
 """
 
 import csv
@@ -38,15 +38,13 @@ def main() -> None:
         cities.append({
             "id": row["id"].strip(),
             "nation": row["nation"].strip(),
+            "home_nation": row["home_nation"].strip(),
             "name": row["name"].strip(),
             "population": float(row["population"]),
             "production": 0.0,  # preenchido pelas construções
             "x": float(row["x"]),
             "y": float(row["y"]),
             "landmass": row["landmass"].strip(),
-            "port_name": row["port_name"].strip(),
-            "port_x": float(row["port_x"]),
-            "port_y": float(row["port_y"]),
         })
 
     buildings = []
@@ -65,22 +63,26 @@ def main() -> None:
         if city is not None:
             city["production"] += b["output_tons_per_day"]
 
-    overrides = {}
-    for row in _rows("territory.csv"):
-        city_id = row["city_id"].strip()
-        tag = row["owner_tag"].strip()
-        if city_id and tag:
-            overrides[city_id] = tag
+    ports = []
+    for row in _rows("ports.csv"):
+        ports.append({
+            "id": row["id"].strip(),
+            "name": row["name"].strip(),
+            "nation": row["nation"].strip(),
+            "x": float(row["x"]),
+            "y": float(row["y"]),
+            "landmass": row["landmass"].strip(),
+        })
 
     def _write(name: str, data) -> None:
         path = os.path.join(SCENARIO, name)
         with open(path, "w", encoding="utf-8") as fh:
             json.dump(data, fh, ensure_ascii=False, indent=2)
-        print(f"{name}: {len(data) if isinstance(data, (list, dict)) else '?'}")
+        print(f"{name}: {len(data)}")
 
     _write("cities.json", cities)
+    _write("ports.json", ports)
     _write("buildings.json", buildings)
-    _write("territory.json", overrides)
     print("OK")
 
 

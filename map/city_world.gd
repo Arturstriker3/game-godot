@@ -38,6 +38,8 @@ const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
+const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
+const PORT_SIZE := 0.8
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -117,7 +119,7 @@ signal territory_changed
 
 
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
-func build(cities: Array) -> void:
+func build(cities: Array, ports: Array) -> void:
 	_content = Node3D.new()
 	add_child(_content)
 
@@ -125,6 +127,7 @@ func build(cities: Array) -> void:
 	_build_political_layer()
 	_build_mode_layer(cities)
 	_build_cities(cities)
+	_build_ports(ports)
 	_build_nation_labels()
 	_init_territory(cities)
 	set_mode(_mode)
@@ -537,8 +540,6 @@ func _init_territory(cities: Array) -> void:
 	_last_cities = cities.duplicate()
 	_territory = TerritoryMapScript.new()
 	_territory.load_data()
-	# Overrides iniciais do cenário (territory.json) viram a base do runtime.
-	_territory_overrides = _territory.data_overrides()
 	_territory.assign(cities)
 	var changed: bool = _territory.update(cities, _territory_overrides)
 	_apply_territory_materials()
@@ -710,6 +711,40 @@ func _build_city_multimesh(cities: Array) -> void:
 	instance.multimesh = multimesh
 	instance.material_override = material
 	_content.add_child(instance)
+
+
+## Portos como entidades 3D: modelo port.glb + disco do dono.
+func _build_ports(ports: Array) -> void:
+	for port: Dictionary in ports:
+		var pos := pixel_to_world(Vector2(float(port["x"]), float(port["y"])))
+		var color: Color = NATION_COLORS.get(String(port["nation"]), Color.WHITE)
+
+		# Disco de dono, como nos marcadores de cidade.
+		_add_disc(pos + Vector3(0.0, 0.14, 0.0), 0.62, 0.10, color)
+
+		# Modelo 3D do porto, escalado para ~PORT_SIZE no maior eixo.
+		var model := PORT_SCENE.instantiate() as Node3D
+		_content.add_child(model)
+		model.position = pos
+		var bounds := _combined_aabb(model)
+		var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
+		if longest > 0.0:
+			model.scale = Vector3.ONE * (PORT_SIZE / longest)
+
+
+## AABB combinada das malhas do modelo, em espaço local da raiz.
+static func _combined_aabb(root: Node3D) -> AABB:
+	var result := AABB()
+	var found := false
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is MeshInstance3D and node.mesh != null:
+			var box: AABB = node.transform * node.get_aabb()
+			result = box if not found else result.merge(box)
+			found = true
+		stack.append_array(node.get_children())
+	return result
 
 
 ## Marcador estratégico em camadas; devolve os discos para o controle de LOD.

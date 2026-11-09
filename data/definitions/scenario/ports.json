@@ -1,0 +1,50 @@
+[
+  {
+    "id": "GBR-DOV",
+    "name": "Dover",
+    "nation": "GBR",
+    "x": 2518.2,
+    "y": 539.8,
+    "landmass": "britain"
+  },
+  {
+    "id": "FRA-CAL",
+    "name": "Calais",
+    "nation": "FRA",
+    "x": 2525.7,
+    "y": 542.4,
+    "landmass": "continent"
+  },
+  {
+    "id": "DEU-HAM",
+    "name": "Hamburg",
+    "nation": "DEU",
+    "x": 2638.8,
+    "y": 506.3,
+    "landmass": "continent"
+  },
+  {
+    "id": "NED-AMS",
+    "name": "Amsterdam",
+    "nation": "NED",
+    "x": 2568.0,
+    "y": 522.7,
+    "landmass": "continent"
+  },
+  {
+    "id": "BEL-ANT",
+    "name": "Antwerp",
+    "nation": "BEL",
+    "x": 2561.1,
+    "y": 538.6,
+    "landmass": "continent"
+  },
+  {
+    "id": "FRA-CAY",
+    "name": "Cayenne",
+    "nation": "FRA",
+    "x": 1773.2,
+    "y": 1181.4,
+    "landmass": "guiana"
+  }
+]

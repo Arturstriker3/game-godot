@@ -25,7 +25,7 @@ func _init() -> void:
 		})
 
 	var start := Time.get_ticks_usec()
-	world.build(cities)
+	world.build(cities, [])
 	var elapsed_ms := (Time.get_ticks_usec() - start) / 1000.0
 	var nodes := _count_nodes(world)
 	print("[render] cidades=%d nós=%d tempo=%.1f ms orçamento=%d" % [

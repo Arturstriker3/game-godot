@@ -12,8 +12,6 @@ class_name TerritoryMap
 
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const OWNER_COLUMNS := 64
-## Overrides de dono do cenário (gerados de data/definitions/scenario/territory.csv).
-const TERRITORY_PATH := "res://data/definitions/scenario/territory.json"
 
 ## Rasters do mundo inteiro para gerar o minimapa dinâmico (dono por província).
 const WORLD_PROVINCE_PATH := "res://map/map_data/atlas/world_province.png"
@@ -30,7 +28,6 @@ var _playable_tags: Array[String] = []    # ordem de nation_colors
 var _tag_index: Dictionary = {}           # tag -> índice do dono (1-based)
 var _assignment: Dictionary = {}          # province_id -> city_id
 var _owners: Dictionary = {}              # province_id -> tag do dono
-var _data_overrides: Dictionary = {}      # city_id -> tag (cenário, territory.json)
 var _image: Image
 var _texture: ImageTexture
 var _world_province: Image
@@ -49,7 +46,6 @@ func load_data() -> void:
 	_tag_index.clear()
 	_assignment.clear()
 	_owners.clear()
-	_data_overrides.clear()
 	_max_id = 0
 	_loaded = false
 
@@ -99,7 +95,6 @@ func load_data() -> void:
 		})
 		_max_id = maxi(_max_id, pid)
 
-	_load_territory_overrides()
 	_loaded = not _provinces.is_empty()
 
 
@@ -107,42 +102,26 @@ func is_loaded() -> bool:
 	return _loaded
 
 
-## Lê territory.json (overrides de dono do cenário) para `_data_overrides`.
-func _load_territory_overrides() -> void:
-	var file := FileAccess.open(TERRITORY_PATH, FileAccess.READ)
-	if file == null:
-		return  # cenário sem overrides é válido
-	var data: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if typeof(data) != TYPE_DICTIONARY:
-		return
-	for city_id: Variant in data:
-		_data_overrides[String(city_id)] = String(data[city_id])
-
-
-## Overrides de dono definidos no cenário: city_id -> tag (cópia).
-func data_overrides() -> Dictionary:
-	return _data_overrides.duplicate()
-
-
-## Atribui cada província jogável à cidade mais próxima da mesma nação original.
+## Atribui cada província jogável à cidade mais próxima da mesma REGIÃO NATURAL
+## (`home_nation`), para o vínculo cidade↔território não mudar quando a nação
+## (dono) muda.
 func assign(cities: Array) -> void:
 	_assignment.clear()
-	var cities_by_nation: Dictionary = {}
+	var cities_by_home: Dictionary = {}
 	for city: Variant in cities:
 		if typeof(city) != TYPE_DICTIONARY:
 			continue
-		var nation := String(city.get("nation", ""))
-		if not cities_by_nation.has(nation):
-			cities_by_nation[nation] = []
-		(cities_by_nation[nation] as Array).append(city)
+		var home := String(city.get("home_nation", city.get("nation", "")))
+		if not cities_by_home.has(home):
+			cities_by_home[home] = []
+		(cities_by_home[home] as Array).append(city)
 
 	for province in _provinces:
 		var nation := String(province["nation"])
-		if not cities_by_nation.has(nation):
+		if not cities_by_home.has(nation):
 			continue
 		var nearest: Dictionary = _nearest_city(
-				cities_by_nation[nation], float(province["x"]), float(province["y"]))
+				cities_by_home[nation], float(province["x"]), float(province["y"]))
 		if not nearest.is_empty():
 			_assignment[int(province["id"])] = String(nearest.get("id", ""))
 
@@ -164,6 +143,11 @@ static func _nearest_city(cities: Array, x: float, y: float) -> Dictionary:
 ## se o conjunto de donos mudou em relação à chamada anterior.
 func update(cities: Array, overrides: Dictionary) -> bool:
 	assign(cities)
+	# id da cidade -> nação (dono) atual, para colorir o território.
+	var city_nation: Dictionary = {}
+	for city: Variant in cities:
+		if typeof(city) == TYPE_DICTIONARY:
+			city_nation[String(city.get("id", ""))] = String(city.get("nation", ""))
 	var changed := false
 	var new_owners: Dictionary = {}
 	for province in _provinces:
@@ -171,7 +155,7 @@ func update(cities: Array, overrides: Dictionary) -> bool:
 		var tag: String
 		if _assignment.has(pid):
 			var city_id := String(_assignment[pid])
-			tag = String(overrides.get(city_id, String(province["nation"])))
+			tag = String(overrides.get(city_id, city_nation.get(city_id, String(province["nation"]))))
 		else:
 			tag = String(province["country"])
 		new_owners[pid] = tag

@@ -135,7 +135,9 @@ func _parse_args() -> void:
 # --- Mapa 3D atual ----------------------------------------------------------
 
 func _capture_map3d() -> void:
-	var cities: Array = Economy.sim.get_status().get("cities", [])
+	var status: Dictionary = Economy.sim.get_status()
+	var cities: Array = status.get("cities", [])
+	var ports: Array = status.get("ports", [])
 	if cities.is_empty():
 		_manifest["warnings"].append("nenhuma cidade no status da economia")
 		return
@@ -145,7 +147,7 @@ func _capture_map3d() -> void:
 
 	var world: Node3D = CityWorldScript.new()
 	add_child(world)
-	world.build(cities)
+	world.build(cities, ports)
 	_apply_territory_overrides(world)
 	_center_world(world, cities)
 	if not _focus.is_empty():

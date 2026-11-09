@@ -28,6 +28,8 @@ const START_UNIX := 1767225600
 
 ## Cidades do cenário (geradas de data/definitions/scenario/cities.csv).
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
+## Portos do cenário (gerados de data/definitions/scenario/ports.csv).
+const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 
 var sim: RefCounted
 var last_summary: Dictionary = {}
@@ -42,7 +44,7 @@ var _day_fraction := 0.0
 
 func _ready() -> void:
 	sim = EconomySim.new()
-	sim.initialize(_load_cities())
+	sim.initialize(_load_cities(), _load_ports())
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
 	_run_day.call_deferred()
@@ -58,6 +60,20 @@ func _load_cities() -> Array:
 	file.close()
 	if typeof(data) != TYPE_ARRAY:
 		push_error("Economy: %s não é um array JSON" % CITIES_PATH)
+		return []
+	return data
+
+
+## Lê os portos do cenário (JSON) e devolve o array para o núcleo C++.
+func _load_ports() -> Array:
+	var file := FileAccess.open(PORTS_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % PORTS_PATH)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_ARRAY:
+		push_error("Economy: %s não é um array JSON" % PORTS_PATH)
 		return []
 	return data
 

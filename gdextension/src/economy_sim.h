@@ -31,8 +31,8 @@ public:
 	EconomySim();
 	~EconomySim() override;
 
-	/** Cria as cidades a partir de dados de cenário (JSON) e zera o relógio. */
-	void initialize(const Array& cities);
+	/** Cria cidades e portos a partir de dados de cenário (JSON) e zera o relógio. */
+	void initialize(const Array& cities, const Array& ports);
 
 	/** Avança um dia de simulação e devolve o resumo do dia. */
 	Dictionary tick();
@@ -165,18 +165,16 @@ private:
 
 	struct City {
 		std::string id;
-		std::string nation;
+		std::string nation;       // dono atual (economia + cor do território)
+		std::string home_nation;  // região natural (território que controla)
 		std::string name;
 		double population;
 		double production;
 		double stockpile;
 		MapPoint center;
-		// Massa de terra contínua (rota por terra só dentro dela) e o porto que
-		// a cidade usa para atravessar o mar. Porto no próprio centro = cidade
-		// costeira (sem trecho de caminhão até o porto).
+		// Massa de terra contínua (rota por terra só dentro dela). O porto de
+		// travessia é uma entidade separada (ver `Port`/`ports_`).
 		std::string landmass;
-		std::string port_name;
-		MapPoint port;
 		// Valores por dia, recalculados a cada tick.
 		double need = 0.0;
 		double consumed = 0.0;
@@ -186,6 +184,14 @@ private:
 		double jobs = 0.0;
 		double income = 0.0;
 		double industrialization = 0.0;
+	};
+
+	struct Port {
+		std::string id;
+		std::string name;
+		std::string nation;  // dono (estratégico: sem porto, sem mar)
+		MapPoint center;
+		std::string landmass;
 	};
 
 	struct TradeOrder {
@@ -428,8 +434,11 @@ private:
 
 	double distance_km(const MapPoint& a, const MapPoint& b) const;
 	double in_transit_total(const std::string& city_id) const;
+	const Port* nearest_port(const std::string& nation, const std::string& landmass,
+	                         const MapPoint& from) const;
 
 	Dictionary city_to_dict(const City& city) const;
+	Dictionary port_to_dict(const Port& port) const;
 	Dictionary nation_to_dict(const std::string& tag) const;
 	Dictionary leg_to_dict(const Leg& leg) const;
 	Dictionary order_to_dict(const TradeOrder& order) const;
@@ -459,6 +468,7 @@ private:
 	}
 
 	std::vector<City> cities_;
+	std::vector<Port> ports_;
 	std::vector<Shipment> in_transit_;
 	std::vector<TradeOrder> last_orders_;
 	int day_ = 0;

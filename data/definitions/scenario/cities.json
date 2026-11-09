@@ -2,79 +2,67 @@
   {
     "id": "GBR-LDN",
     "nation": "GBR",
+    "home_nation": "GBR",
     "name": "London",
     "population": 9000000.0,
     "production": 1300.0,
     "x": 2498.2,
     "y": 534.6,
-    "landmass": "britain",
-    "port_name": "Channel crossing",
-    "port_x": 2518.2,
-    "port_y": 539.8
+    "landmass": "britain"
   },
   {
     "id": "FRA-PAR",
     "nation": "FRA",
+    "home_nation": "FRA",
     "name": "Paris",
     "population": 12000000.0,
     "production": 6000.0,
     "x": 2532.6,
     "y": 571.4,
-    "landmass": "continent",
-    "port_name": "Canal port",
-    "port_x": 2525.7,
-    "port_y": 542.4
+    "landmass": "continent"
   },
   {
     "id": "DEU-BER",
     "nation": "DEU",
+    "home_nation": "DEU",
     "name": "Berlin",
     "population": 6000000.0,
     "production": 2500.0,
     "x": 2686.2,
     "y": 520.6,
-    "landmass": "continent",
-    "port_name": "Canal port",
-    "port_x": 2525.7,
-    "port_y": 542.4
+    "landmass": "continent"
   },
   {
     "id": "NED-AMS",
     "nation": "NED",
+    "home_nation": "NED",
     "name": "Amsterdam",
     "population": 2500000.0,
     "production": 300.0,
     "x": 2568.0,
     "y": 522.7,
-    "landmass": "continent",
-    "port_name": "Canal port",
-    "port_x": 2525.7,
-    "port_y": 542.4
+    "landmass": "continent"
   },
   {
     "id": "BEL-BRU",
     "nation": "BEL",
+    "home_nation": "BEL",
     "name": "Brussels",
     "population": 2500000.0,
     "production": 400.0,
     "x": 2560.4,
     "y": 543.8,
-    "landmass": "continent",
-    "port_name": "Canal port",
-    "port_x": 2525.7,
-    "port_y": 542.4
+    "landmass": "continent"
   },
   {
     "id": "FRA-CAY",
     "nation": "FRA",
+    "home_nation": "FRA",
     "name": "Cayenne",
     "population": 150000.0,
     "production": 0.0,
     "x": 1773.2,
     "y": 1181.4,
-    "landmass": "guiana",
-    "port_name": "Cayenne",
-    "port_x": 1773.2,
-    "port_y": 1181.4
+    "landmass": "guiana"
   }
 ]

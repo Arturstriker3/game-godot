@@ -65,7 +65,7 @@ EconomySim::EconomySim() = default;
 EconomySim::~EconomySim() = default;
 
 void EconomySim::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("initialize", "cities"), &EconomySim::initialize);
+	ClassDB::bind_method(D_METHOD("initialize", "cities", "ports"), &EconomySim::initialize);
 	ClassDB::bind_method(D_METHOD("tick"), &EconomySim::tick);
 	ClassDB::bind_method(D_METHOD("get_status"), &EconomySim::get_status);
 	ClassDB::bind_method(D_METHOD("initialize_demo"), &EconomySim::initialize_demo);
@@ -116,27 +116,38 @@ const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
 	}
 }
 
-void EconomySim::initialize(const Array& cities) {
+void EconomySim::initialize(const Array& cities, const Array& ports) {
 	in_transit_.clear();
 	last_orders_.clear();
 	day_ = 0;
 	clock_hours_ = 0.0;
 	cities_.clear();
+	ports_.clear();
 
 	for (int i = 0; i < cities.size(); ++i) {
 		const Dictionary d = cities[i];
 		City city;
 		city.id = String(d["id"]).utf8().get_data();
 		city.nation = String(d["nation"]).utf8().get_data();
+		city.home_nation = String(d["home_nation"]).utf8().get_data();
 		city.name = String(d["name"]).utf8().get_data();
 		city.population = static_cast<double>(d["population"]);
 		city.production = static_cast<double>(d["production"]);
 		city.stockpile = 0.0;
 		city.center = MapPoint{static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 		city.landmass = String(d["landmass"]).utf8().get_data();
-		city.port_name = String(d["port_name"]).utf8().get_data();
-		city.port = MapPoint{static_cast<double>(d["port_x"]), static_cast<double>(d["port_y"])};
 		cities_.push_back(std::move(city));
+	}
+
+	for (int i = 0; i < ports.size(); ++i) {
+		const Dictionary d = ports[i];
+		Port port;
+		port.id = String(d["id"]).utf8().get_data();
+		port.name = String(d["name"]).utf8().get_data();
+		port.nation = String(d["nation"]).utf8().get_data();
+		port.center = MapPoint{static_cast<double>(d["x"]), static_cast<double>(d["y"])};
+		port.landmass = String(d["landmass"]).utf8().get_data();
+		ports_.push_back(std::move(port));
 	}
 }
 
@@ -235,6 +246,12 @@ Dictionary EconomySim::tick() {
 	}
 	result["cities"] = cities_array;
 
+	Array ports_array;
+	for (const Port& port : ports_) {
+		ports_array.append(port_to_dict(port));
+	}
+	result["ports"] = ports_array;
+
 	Array nations_array;
 	for (const char* tag : {"GBR", "FRA", "DEU", "NED", "BEL"}) {
 		nations_array.append(nation_to_dict(tag));
@@ -261,6 +278,12 @@ Dictionary EconomySim::get_status() const {
 		cities_array.append(city_to_dict(city));
 	}
 	result["cities"] = cities_array;
+
+	Array ports_array;
+	for (const Port& port : ports_) {
+		ports_array.append(port_to_dict(port));
+	}
+	result["ports"] = ports_array;
 
 	Array nations_array;
 	for (const char* tag : {"GBR", "FRA", "DEU", "NED", "BEL"}) {
@@ -373,19 +396,25 @@ std::vector<EconomySim::Leg> EconomySim::build_route(const City& seller, const C
 
 std::vector<EconomySim::Leg> EconomySim::build_overseas_route(const City& seller, const City& buyer,
                                                              double amount) const {
-	// Vendedor -> porto dele -> navio -> porto do comprador -> comprador.
-	// Cidade costeira (porto no centro) não tem trecho de caminhão.
+	// Vendedor -> porto dele (mesma nação/massa) -> navio -> porto do comprador
+	// -> comprador. Sem porto da nação, não há travessia marítima (estratégico).
+	const Port* seller_port = nearest_port(seller.nation, seller.landmass, seller.center);
+	const Port* buyer_port = nearest_port(buyer.nation, buyer.landmass, buyer.center);
+	if (seller_port == nullptr || buyer_port == nullptr) {
+		return {};
+	}
+
 	std::vector<Leg> legs;
 	const double kSamePointKm = 1.0;
-	if (distance_km(seller.center, seller.port) > kSamePointKm) {
-		legs.push_back(make_leg(TransportMode::Truck, seller.name, seller.port_name,
-		                        seller.center, seller.port, amount));
+	if (distance_km(seller.center, seller_port->center) > kSamePointKm) {
+		legs.push_back(make_leg(TransportMode::Truck, seller.name, seller_port->name,
+		                        seller.center, seller_port->center, amount));
 	}
-	legs.push_back(make_leg(TransportMode::Ship, seller.port_name, buyer.port_name,
-	                        seller.port, buyer.port, amount));
-	if (distance_km(buyer.port, buyer.center) > kSamePointKm) {
-		legs.push_back(make_leg(TransportMode::Truck, buyer.port_name, buyer.name,
-		                        buyer.port, buyer.center, amount));
+	legs.push_back(make_leg(TransportMode::Ship, seller_port->name, buyer_port->name,
+	                        seller_port->center, buyer_port->center, amount));
+	if (distance_km(buyer_port->center, buyer.center) > kSamePointKm) {
+		legs.push_back(make_leg(TransportMode::Truck, buyer_port->name, buyer.name,
+		                        buyer_port->center, buyer.center, amount));
 	}
 	return legs;
 }
@@ -447,6 +476,24 @@ double EconomySim::in_transit_total(const std::string& city_id) const {
 	return total;
 }
 
+const EconomySim::Port* EconomySim::nearest_port(const std::string& nation,
+                                                 const std::string& landmass,
+                                                 const MapPoint& from) const {
+	const Port* best = nullptr;
+	double best_d = 0.0;
+	for (const Port& port : ports_) {
+		if (port.nation != nation || port.landmass != landmass) {
+			continue;
+		}
+		const double d = distance_km(from, port.center);
+		if (best == nullptr || d < best_d) {
+			best = &port;
+			best_d = d;
+		}
+	}
+	return best;
+}
+
 EconomySim::City* EconomySim::find_city(const std::string& id) {
 	for (City& city : cities_) {
 		if (city.id == id) {
@@ -469,6 +516,7 @@ Dictionary EconomySim::city_to_dict(const City& city) const {
 	Dictionary dict;
 	dict["id"] = String(city.id.c_str());
 	dict["nation"] = String(city.nation.c_str());
+	dict["home_nation"] = String(city.home_nation.c_str());
 	dict["name"] = String(city.name.c_str());
 	dict["population"] = city.population;
 	dict["need"] = city.need;
@@ -483,6 +531,17 @@ Dictionary EconomySim::city_to_dict(const City& city) const {
 	dict["industrialization"] = city.industrialization;
 	dict["x"] = city.center.x;
 	dict["y"] = city.center.y;
+	return dict;
+}
+
+Dictionary EconomySim::port_to_dict(const Port& port) const {
+	Dictionary dict;
+	dict["id"] = String(port.id.c_str());
+	dict["name"] = String(port.name.c_str());
+	dict["nation"] = String(port.nation.c_str());
+	dict["x"] = port.center.x;
+	dict["y"] = port.center.y;
+	dict["landmass"] = String(port.landmass.c_str());
 	return dict;
 }
 
