@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bi42o3052le2l"
-path="res://.godot/imported/city.svg-5a525556390ed93281b87ed88107f64a.ctex"
+uid="uid://bif8jm6hywows"
+path="res://.godot/imported/badge.png-efd5a6c7139a856386ec7d8cca2ad1ea.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/places/city.svg"
-dest_files=["res://.godot/imported/city.svg-5a525556390ed93281b87ed88107f64a.ctex"]
+source_file="res://assets/icons/places/badge.png"
+dest_files=["res://.godot/imported/badge.png-efd5a6c7139a856386ec7d8cca2ad1ea.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

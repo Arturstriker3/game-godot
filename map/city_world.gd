@@ -40,15 +40,15 @@ const IndustryProfileScript: Script = preload("res://core/urban/industry_profile
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
 const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
 const PORT_SIZE := 0.6
-const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.svg")
-const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.svg")
+const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.png")
+const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.png")
 ## Ícone de lugar: pendurado logo acima do nome, com a mesma tinta e altura
 ## proporcional ao texto — ícone + nome leem como um selo único.
 const PLACE_ICON_SOURCE := 512.0
-const PLACE_ICON_HEIGHT := 0.9  # altura do ícone em ems do rótulo
+const PLACE_ICON_HEIGHT := 1.0  # altura do ícone em ems do rótulo
 const PLACE_ICON_GAP := 0.3     # respiro acima do contorno do texto, em ems
-const RING_TEXTURE: Texture2D = preload("res://assets/icons/places/ring.png")
-const RING_SCALE := 1.45        # círculo ~45% maior que o ícone
+const BADGE_TEXTURE: Texture2D = preload("res://assets/icons/places/badge.png")
+const RING_SCALE := 1.45        # selo ~45% maior que o ícone
 const FLAG_SCALE := 0.6         # bandeira ~60% da altura do ícone
 ## Abaixo desta distância (u) o porto coincide com a cidade: sem ícone próprio.
 const PORT_ICON_MERGE_DISTANCE := 0.5
@@ -88,7 +88,7 @@ const LABEL_SIZE_CITY := 28     # Cidades médias
 const LABEL_SIZE_TOWN := 20     # Cidades pequenas
 const LABEL_COLOR := Color("#E8E2D0")
 const LABEL_HOVER_COLOR := Color("#C9A24A")  # latão: hover/indica clicável
-const ICON_COLOR := Color("#6F8F8C")          # aço/ferro (base do ícone)
+const ICON_COLOR := Color("#E8E2D0")          # marfim: alto contraste no selo escuro
 const LABEL_POPULATION_CAPITAL := 2000.0  # Threshold para capital (t/dia de produção)
 const LABEL_POPULATION_CITY := 500.0      # Threshold para cidade
 ## Fade de rótulo por distância (estilo HOI3).
@@ -907,20 +907,22 @@ func _build_ports(ports: Array) -> void:
 		})
 
 
-## Marcador de lugar (cidade/porto): ícone dentro de um círculo + bandeira,
-## dispostos horizontalmente à esquerda do nome.
+## Marcador de lugar (cidade/porto): símbolo dentro de um selo escuro com aro de
+## latão + bandeira, dispostos horizontalmente à esquerda do nome.
 func _add_place_icon(label: Label3D, texture: Texture2D, nation: String) -> Dictionary:
 	var icon := Sprite3D.new()
 	icon.texture = texture
 	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	icon.transparent = true
 	icon.modulate = ICON_COLOR
 	icon.no_depth_test = true
 	icon.render_priority = label.render_priority - 1
 	_content.add_child(icon)
 
 	var ring := Sprite3D.new()
-	ring.texture = RING_TEXTURE
+	ring.texture = BADGE_TEXTURE
 	ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	ring.transparent = true
 	ring.no_depth_test = true
 	ring.render_priority = label.render_priority - 2
 	_content.add_child(ring)

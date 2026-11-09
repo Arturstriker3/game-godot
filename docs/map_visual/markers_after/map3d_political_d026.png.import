@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbfqndgdia6i6"
-path="res://.godot/imported/ring.png-b623244b168faf1a4db84ce34d7ee49b.ctex"
+uid="uid://bnss0ha6gh2ml"
+path="res://.godot/imported/map3d_political_d026.png-6f054c9d84d0ff8689266764de667ed2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/places/ring.png"
-dest_files=["res://.godot/imported/ring.png-b623244b168faf1a4db84ce34d7ee49b.ctex"]
+source_file="res://docs/map_visual/markers_after/map3d_political_d026.png"
+dest_files=["res://.godot/imported/map3d_political_d026.png-6f054c9d84d0ff8689266764de667ed2.ctex"]
 
 [params]
 

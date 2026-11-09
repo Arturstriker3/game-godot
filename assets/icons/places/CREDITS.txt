@@ -1,0 +1,15 @@
+Ícones de lugar (assets/icons/places)
+
+- city.png <- Material Design Icons "city-variant"
+  Autor: Pictogrammers (https://pictogrammers.com)
+  Licença: Apache License 2.0
+
+- port.png <- Material Design Icons "anchor"
+  Autor: Pictogrammers (https://pictogrammers.com)
+  Licença: Apache License 2.0
+
+Ambos foram rasterizados em 512 px pelo importador SVG do Godot e recolorados
+em branco (o Godot aplica o marfim #E8E2D0 via modulate).
+
+- badge.png: arte própria do projeto (disco escuro + aro de latão), gerada
+  junto com os ícones para o marcador de cidade/porto.
