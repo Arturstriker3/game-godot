@@ -1,5 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-<path d="M3 20V13L7 10V13L11 10V13L15 10V13L19 10V20Z" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M17 10V4H20V10" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M6 20V16.5H9V20" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<path d="M4 28V18L8 15V18L12 15V18L16 15V18L20 15V18L24 15V28Z" stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M21 15V7H25V15" stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M23 5C24.5 4 24.5 2.5 23 1.5" stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M21 4C22 3 22 2 21 1" stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.5 20H9.5V23H6.5Z" fill="#FFFFFF" stroke="none"/>
+  <path d="M11.5 20H14.5V23H11.5Z" fill="#FFFFFF" stroke="none"/>
+  <path d="M16.5 20H19.5V23H16.5Z" fill="#FFFFFF" stroke="none"/>
+  <path d="M12 28V23H16V28" stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M4 18H24" stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

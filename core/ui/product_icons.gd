@@ -38,8 +38,8 @@ static func texture(id: String) -> Texture2D:
 	return tex
 
 
-## Cria um TextureRect pronto para a UI (24×24, tingível).
-static func make(id: String, color: Color, size: float = 24.0) -> TextureRect:
+## Cria um TextureRect pronto para a UI (32×32, tingível).
+static func make(id: String, color: Color, size: float = 32.0) -> TextureRect:
 	var icon := TextureRect.new()
 	icon.texture = texture(id)
 	icon.modulate = color
