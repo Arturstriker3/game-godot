@@ -1,0 +1,274 @@
+key,pt_BR,en,es
+alerts.count,{count} ativos,{count} active,{count} activos
+alerts.deficit,Déficit de {amount} de trigo.,Deficit of {amount} of wheat.,Déficit de {amount} de trigo.
+alerts.empty.body,"Déficits, estoques críticos e cidades sem produção aparecem aqui assim que ocorrerem.","Deficits, critical stocks and cities without production appear here as soon as they happen.","Déficits, reservas críticas y ciudades sin producción aparecen aquí en cuanto ocurren."
+alerts.empty.title,Nenhum alerta econômico,No economic alerts,Ningún alerta económico
+alerts.explain,"Prioridade: déficit, estoque abaixo de 2 dias e cidades sem produção.","Priority: deficit, stock below 2 days and cities without production.","Prioridad: déficit, reserva por debajo de 2 días y ciudades sin producción."
+alerts.hint,Problemas econômicos priorizados; clique para abrir a cidade.,Prioritized economic problems; click to open the city.,Problemas económicos priorizados; haz clic para abrir la ciudad.
+alerts.low_stock,Estoque cobre apenas {days} dias de demanda.,Stock covers only {days} days of demand.,La reserva cubre solo {days} días de demanda.
+alerts.no_production,Cidade sem produção de trigo registrada.,City with no recorded wheat production.,Ciudad sin producción de trigo registrada.
+alerts.open,Abrir ›,Open ›,Abrir ›
+alerts.subtitle,{count} alertas ativos,{count} active alerts,{count} alertas activos
+alerts.tag.deficit,Déficit,Deficit,Déficit
+alerts.tag.low_stock,Estoque baixo,Low stock,Reserva baja
+alerts.tag.no_production,Sem produção,No production,Sin producción
+city.attendance,Atendimento da demanda,Demand met,Demanda atendida
+city.balance.title,Balanço do trigo,Wheat balance,Balance del trigo
+city.chain.modeled,Modelado,Modeled,Modelado
+city.chain.note,A simulação atual produz apenas trigo; farinha e pão existem apenas como etapas planejadas da cadeia.,The current simulation only produces wheat; flour and bread exist only as planned chain stages.,La simulación actual solo produce trigo; la harina y el pan existen únicamente como etapas planificadas de la cadena.
+city.chain.title,Cadeia produtiva,Production chain,Cadena productiva
+city.chain.unmodeled,Não modelado,Not modeled,No modelado
+city.consumed,Consumo diário,Daily consumption,Consumo diario
+city.coverage,Cobertura,Coverage,Cobertura
+city.coverage_days,{days} dias de estoque,{days} days of stock,{days} días de reserva
+city.deficit,Déficit diário,Daily deficit,Déficit diario
+city.demand_short,Demanda,Demand,Demanda
+city.dispatched,Despachado hoje,Dispatched today,Despachado hoy
+city.flow.incoming,Recebido por pedidos,Received by orders,Recibido por pedidos
+city.flow.orders,Pedidos do dia,Orders today,Pedidos del día
+city.flow.outgoing,Enviado por pedidos,Shipped by orders,Enviado por pedidos
+city.flow.title,Fluxo comercial,Trade flow,Flujo comercial
+city.glance.coverage,Cobertura,Coverage,Cobertura
+city.glance.demand,Demanda,Demand,Demanda
+city.glance.population,População,Population,Población
+city.glance.production,Produção,Production,Producción
+city.hint,Detalhe da cidade.,City detail.,Detalle de la ciudad.
+city.history.note,Série real dos dias simulados.,Real series from the simulated days.,Serie real de los días simulados.
+city.history.title,Histórico,History,Histórico
+city.income_index,Índice de renda,Income index,Índice de ingreso
+city.income_index.note,0 = mínima · 1 = máxima,0 = lowest · 1 = highest,0 = mínimo · 1 = máximo
+city.industrialization,Industrialização,Industrialization,Industrialización
+city.industry.manufacturing,Manufatura,Manufacturing,Manufactura
+city.industry.note,"Composição derivada dos indicadores da cidade (produção, renda, estoque); não é uma segunda economia.","Composition derived from the city indicators (production, income, stock); it is not a second economy.","Composición derivada de los indicadores de la ciudad (producción, ingreso, reserva); no es una segunda economía."
+city.industry.power,Energia,Power,Energía
+city.industry.refining,Refino,Refining,Refino
+city.industry.steel,Siderurgia,Steel,Siderurgia
+city.industry.storage,Armazenagem,Storage,Almacenaje
+city.industry.title,Distrito industrial,Industrial district,Distrito industrial
+city.jobs,Empregos,Jobs,Empleos
+city.jobs.title,Trabalho e renda,Work and income,Trabajo e ingreso
+city.jobs_per_k,Empregos / mil hab.,Jobs / 1k people,Empleos / mil hab.
+city.market.unmodeled.body,"O modelo atual negocia apenas trigo por quantidade e frete; não há formação de preço, oferta ou demanda em moeda.","The current model trades only wheat by quantity and freight; there is no price, supply or demand formation in currency.","El modelo actual negocia solo trigo por cantidad y flete; no hay formación de precio, oferta o demanda en moneda."
+city.market.unmodeled.title,Preços não modelados,Prices not modeled,Precios no modelados
+city.name.BEL-BRU,Bruxelas,Brussels,Bruselas
+city.name.DEU-BER,Berlim,Berlin,Berlín
+city.name.FRA-CAY,Caiena,Cayenne,Cayena
+city.name.FRA-PAR,Paris,Paris,París
+city.name.GBR-LDN,Londres,London,Londres
+city.name.NED-AMS,Amsterdã,Amsterdam,Ámsterdam
+city.need,Demanda diária,Daily demand,Demanda diaria
+city.need_per_person_kg,Demanda por pessoa,Demand per person,Demanda por persona
+city.no_orders,Nenhum pedido em aberto para esta cidade.,No open order for this city.,Ningún pedido abierto para esta ciudad.
+city.orders,Pedidos desta cidade,This city's orders,Pedidos de esta ciudad
+city.orders.empty,Nenhum pedido registrado para esta cidade.,No order recorded for this city.,Ningún pedido registrado para esta ciudad.
+city.orders.title,Pedidos desta cidade,Orders for this city,Pedidos de esta ciudad
+city.per_person_kg,Consumo por pessoa,Consumption per person,Consumo por persona
+city.population,População,Population,Población
+city.producers.empty,Nenhuma cidade produz trigo neste dia.,No city produces wheat today.,Ninguna ciudad produce trigo hoy.
+city.producers.title,Cidades produtoras de trigo,Wheat producing cities,Ciudades productoras de trigo
+city.production,Produção diária,Daily production,Producción diaria
+city.resources.climate,Clima,Climate,Clima
+city.resources.deposits,Ocorrências conhecidas,Known occurrences,Ocurrencias conocidas
+city.resources.empty,Sem dados naturais para o território desta cidade.,No natural data for this city's territory.,Sin datos naturales para el territorio de esta ciudad.
+city.resources.fertility,Fertilidade do solo,Soil fertility,Fertilidad del suelo
+city.resources.more,+{count} ocorrências,+{count} occurrences,+{count} ocurrencias
+city.resources.prospect.action,Iniciar prospecção,Start prospecting,Iniciar prospección
+city.resources.prospect.body,"A prospecção ainda não faz parte da simulação. As ocorrências abaixo são dados geológicos conhecidos, não recursos descobertos pelo jogador.","Prospecting is not part of the simulation yet. The occurrences below are known geological data, not resources discovered by the player.","La prospección aún no forma parte de la simulación. Las ocurrencias siguientes son datos geológicos conocidos, no recursos descubiertos por el jugador."
+city.resources.prospect.disabled,Indisponível nesta versão,Unavailable in this version,No disponible en esta versión
+city.resources.prospect.title,Prospecção,Prospecting,Prospección
+city.resources.relief,Relevo,Relief,Relieve
+city.resources.table.depth,Profundidade,Depth,Profundidad
+city.resources.table.quality,Qualidade,Quality,Calidad
+city.resources.table.quantity,Reserva,Reserve,Reserva
+city.resources.table.resource,Recurso,Resource,Recurso
+city.resources.table.status,Status,Status,Estado
+city.resources.title,Recursos do território,Territory resources,Recursos del territorio
+city.resources.wheat,Aptidão para trigo,Wheat suitability,Aptitud para trigo
+city.stock,Estoque,Stockpile,Reserva
+city.supply,Oferta,Supply,Oferta
+city.tab.market,Mercado,Market,Mercado
+city.tab.overview,Visão geral,Overview,Visión general
+city.tab.population,População,Population,Población
+city.tab.production,Produção,Production,Producción
+city.tab.resources,Recursos,Resources,Recursos
+city.title,Cidade,City,Ciudad
+city.transit,Em trânsito,In transit,En tránsito
+city.unavailable.body,"Desemprego, salários, poupança, migração e preços não fazem parte da simulação econômica atual. Os números acima vêm do modelo de trigo por cidade.","Unemployment, wages, savings, migration and prices are not part of the current economic simulation. The numbers above come from the per-city wheat model.","Desempleo, salarios, ahorro, migración y precios no forman parte de la simulación económica actual. Los números anteriores vienen del modelo de trigo por ciudad."
+city.unavailable.title,Indicadores não modelados,Unmodeled indicators,Indicadores no modelados
+climate.cool_temperate_humid,Temperado frio úmido,Cool temperate humid,Templado frío húmedo
+climate.cool_temperate_steppe,Estepe temperada fria,Cool temperate steppe,Estepa templada fría
+climate.polar_humid,Polar úmido,Polar humid,Polar húmedo
+climate.subpolar_humid,Subpolar úmido,Subpolar humid,Subpolar húmedo
+climate.subtropical_desert,Deserto subtropical,Subtropical desert,Desierto subtropical
+climate.subtropical_humid,Subtropical úmido,Subtropical humid,Subtropical húmedo
+climate.subtropical_steppe,Estepe subtropical,Subtropical steppe,Estepa subtropical
+climate.temperate_desert,Deserto temperado,Temperate desert,Desierto templado
+climate.temperate_humid,Temperado úmido,Temperate humid,Templado húmedo
+climate.temperate_steppe,Estepe temperada,Temperate steppe,Estepa templada
+climate.tropical_humid,Tropical úmido,Tropical humid,Tropical húmedo
+climate.tropical_seasonal_desert,Deserto tropical sazonal,Tropical seasonal desert,Desierto tropical estacional
+climate.tropical_seasonal_humid,Tropical sazonal úmido,Tropical seasonal humid,Tropical estacional húmedo
+climate.tropical_seasonal_steppe,Estepe tropical sazonal,Tropical seasonal steppe,Estepa tropical estacional
+common.back,Voltar,Back,Volver
+common.close,Fechar,Close,Cerrar
+common.days_short,d,d,d
+common.na,—,—,—
+common.per_day,/dia,/day,/día
+deposit.Occurrence,Ocorrência,Occurrence,Ocurrencia
+deposit.Past Producer,Ex-produtor,Past producer,Exproductor
+deposit.Plant,Planta,Plant,Planta
+deposit.Producer,Em produção,Producing,En producción
+deposit.Prospect,Prospecção,Prospect,Prospección
+dock.economy,Economia,Economy,Economía
+dock.politics,Política,Politics,Política
+dock.population,População,Population,Población
+dock.production,Produção,Production,Producción
+dock.trade,Comércio,Trade,Comercio
+econ.all_fed,Nenhuma cidade com déficit hoje.,No city is in deficit today.,Ninguna ciudad tiene déficit hoy.
+econ.col.cities,Cidades,Cities,Ciudades
+econ.col.city,Cidade,City,Ciudad
+econ.col.deficit,Déficit,Deficit,Déficit
+econ.col.nation,Nação,Nation,Nación
+econ.col.need,Demanda/dia,Demand/day,Demanda/día
+econ.col.population,População,Population,Población
+econ.col.production,Produção/dia,Production/day,Producción/día
+econ.col.stock,Estoque,Stockpile,Reserva
+econ.col.transit,Em trânsito,In transit,En tránsito
+econ.empty.filtered,Nenhuma cidade corresponde ao filtro.,No city matches the filter.,Ninguna ciudad coincide con el filtro.
+econ.empty.filtered.body,Ajuste a busca ou remova os filtros para ver a lista completa.,Adjust the search or clear the filters to see the full list.,Ajusta la búsqueda o quita los filtros para ver la lista completa.
+econ.filter.all,Todas,All,Todas
+econ.filter.clear,Limpar filtros,Clear filters,Limpiar filtros
+econ.filter.deficit,Com déficit,In deficit,Con déficit
+econ.filter.transit,Com trânsito,In transit,Con tránsito
+econ.hint,Clique numa linha para abrir o detalhe da cidade.,Click a row to open the city detail.,Haz clic en una fila para abrir el detalle de la ciudad.
+econ.pill.count,{shown} de {total},{shown} of {total},{shown} de {total}
+econ.search,Buscar cidade ou nação,Search city or nation,Buscar ciudad o nación
+econ.summary,{cities} cidades · {deficit} em déficit · {transit} em trânsito,{cities} cities · {deficit} in deficit · {transit} in transit,{cities} ciudades · {deficit} con déficit · {transit} en tránsito
+econ.tab.cities,Cidades,Cities,Ciudades
+econ.tab.nations,Nações,Nations,Naciones
+econ.title,Economia do trigo,Wheat economy,Economía del trigo
+hud.alerts,Alertas,Alerts,Alertas
+hud.credits.body,"WarEconomy — simulação econômica. Imagens de satélite © Esri, Maxar, Earthstar Geographics.","WarEconomy — economic simulation. Satellite imagery © Esri, Maxar, Earthstar Geographics.","WarEconomy — simulación económica. Imágenes de satélite © Esri, Maxar, Earthstar Geographics."
+hud.day,Dia {day},Day {day},Día {day}
+hud.day_short,Dia,Day,Día
+hud.deficit,Déficit,Deficit,Déficit
+hud.language,Idioma,Language,Idioma
+hud.menu,Menu,Menu,Menú
+hud.menu.credits,Créditos,Credits,Créditos
+hud.menu.fullscreen.off,Tela cheia: Desligada,Fullscreen: Off,Pantalla completa: Desactivada
+hud.menu.fullscreen.on,Tela cheia: Ligada,Fullscreen: On,Pantalla completa: Activada
+hud.menu.quit,Sair do jogo,Quit game,Salir del juego
+hud.menu.resume,Retomar,Resume,Reanudar
+hud.next_day,Próximo dia,Next day,Próximo día
+hud.paused,Pausado,Paused,Pausado
+hud.player_nation,Sua nação,Your nation,Tu nación
+hud.population,População,Population,Población
+hud.shortcuts,Esc fecha · 1–4 abre painéis · F11 tela cheia,Esc closes · 1–4 opens panels · F11 fullscreen,Esc cierra · 1–4 abre paneles · F11 pantalla completa
+hud.speed,Velocidade,Speed,Velocidad
+hud.stock,Estoque,Stockpile,Reserva
+hud.subtitle,Simulação econômica,Economic simulation,Simulación económica
+hud.tip.deficit,Demanda diária que não foi atendida.,Daily demand that went unmet.,Demanda diaria no atendida.
+hud.tip.population,Soma da população das suas cidades.,Sum of your cities' population.,Suma de la población de tus ciudades.
+hud.tip.stock,Estoque de trigo disponível nas cidades.,Wheat stockpile available in the cities.,Reserva de trigo disponible en las ciudades.
+hud.tip.transit,Carga em trânsito entre cidades.,Cargo currently moving between cities.,Carga en tránsito entre ciudades.
+hud.transit,Em trânsito,In transit,En tránsito
+map.economic,Economia,Economy,Economía
+map.geographic,Geográfico,Geographic,Geográfico
+map.hint,Camada de dados exibida sobre o mesmo mapa.,Data layer drawn over the same map.,Capa de datos sobre el mismo mapa.
+map.industrial,Indústria,Industry,Industria
+map.political,Político,Political,Político
+map.population,População,Population,Población
+map.resources,Recursos,Resources,Recursos
+mode.plane,Avião,Plane,Avión
+mode.ship,Navio,Ship,Barco
+mode.truck,Caminhão,Truck,Camión
+month.1,janeiro,January,enero
+month.10,outubro,October,octubre
+month.11,novembro,November,noviembre
+month.12,dezembro,December,diciembre
+month.2,fevereiro,February,febrero
+month.3,março,March,marzo
+month.4,abril,April,abril
+month.5,maio,May,mayo
+month.6,junho,June,junio
+month.7,julho,July,julio
+month.8,agosto,August,agosto
+month.9,setembro,September,septiembre
+nation.BEL,Bélgica,Belgium,Bélgica
+nation.DEU,Alemanha,Germany,Alemania
+nation.FRA,França,France,Francia
+nation.GBR,Inglaterra,England,Inglaterra
+nation.NED,Holanda,Netherlands,Países Bajos
+pol.col.cities,Cidades,Cities,Ciudades
+pol.col.nation,Nação,Nation,Nación
+pol.col.population,População,Population,Población
+pol.col.status,Situação,Status,Situación
+pol.dossier.empty,"O dossiê resume cada nação pelo que a simulação já conhece: população, cidades e situação alimentar.","The dossier sums up each nation using what the simulation knows: population, cities and food situation.","El dosier resume cada nación con lo que la simulación ya conoce: población, ciudades y situación alimentaria."
+pol.dossier.healthy,"{nation}: {cities} cidade(s), {population} habitantes, sem déficit.","{nation}: {cities} city(ies), {population} people, no deficit.","{nation}: {cities} ciudad(es), {population} habitantes, sin déficit."
+pol.dossier.line,"{nation}: {cities} cidade(s), {population} habitantes, déficit de {deficit} t/dia.","{nation}: {cities} city(ies), {population} people, deficit of {deficit} t/day.","{nation}: {cities} ciudad(es), {population} habitantes, déficit de {deficit} t/día."
+pol.hint,Situação e relações das nações.,Nations' status and relations.,Situación y relaciones de las naciones.
+pol.relations.empty,Relações diplomáticas ainda não são simuladas. Todas as nações estão em paz.,Diplomatic relations are not simulated yet. All nations are at peace.,Las relaciones diplomáticas aún no se simulan. Todas las naciones están en paz.
+pol.status.peace,Em paz,At peace,En paz
+pol.tab.diplomacy,Diplomacia,Diplomacy,Diplomacia
+pol.tab.dossier,Dossiê,Dossier,Dosier
+pol.tab.nations,Nações,Nations,Naciones
+pol.title,Política e diplomacia,Politics and diplomacy,Política y diplomacia
+pol.your_nation,sua nação,your nation,tu nación
+pop.attendance,Atendimento,Demand met,Demanda cubierta
+pop.col.income,Renda,Income,Renta
+pop.consumption,Consumo/dia,Consumption/day,Consumo/día
+pop.empty,Nenhuma cidade com população simulada.,No city with simulated population.,Ninguna ciudad con población simulada.
+pop.empty.body,A simulação ainda não publicou dados de população para esta partida.,The simulation has not published population data for this match yet.,La simulación aún no ha publicado datos de población para esta partida.
+pop.hint,"População, emprego e consumo das cidades.","Population, jobs and consumption across cities.","Población, empleo y consumo de las ciudades."
+pop.income,Renda média,Average income,Renta media
+pop.jobs,Empregos,Jobs,Empleos
+pop.note,"A simulação atual modela o consumo de trigo por cidade. Desemprego, salários nominais, poupança e migração ainda não são simulados; a renda é um índice relativo (0–100%) derivado da produção e do déficit.","The current simulation models wheat consumption per city. Unemployment, nominal wages, savings and migration are not simulated yet; income is a relative index (0–100%) derived from production and deficit.","La simulación actual modela el consumo de trigo por ciudad. El desempleo, los salarios nominales, el ahorro y la migración aún no se simulan; la renta es un índice relativo (0–100%) derivado de la producción y del déficit."
+pop.title,População e padrão de vida,Population and living standards,Población y nivel de vida
+pop.total,População total,Total population,Población total
+prod.hint,Clique numa cidade para ver a produção local.,Click a city to inspect its local production.,Haz clic en una ciudad para ver su producción local.
+prod.tab.chain,Cadeia,Chain,Cadena
+prod.tab.cities,Cidades,Cities,Ciudades
+prod.title,Produção e cadeia produtiva,Production and supply chain,Producción y cadena productiva
+product.bread,Pão,Bread,Pan
+product.flour,Farinha,Flour,Harina
+product.wheat,Trigo,Wheat,Trigo
+relief.hills,Colinas,Hills,Colinas
+relief.mountain,Montanha,Mountain,Montaña
+relief.plain,Planície,Plain,Llanura
+resource.coal,Carvão,Coal,Carbón
+resource.copper,Cobre,Copper,Cobre
+resource.gas,Gás,Gas,Gas
+resource.iron,Ferro,Iron,Hierro
+resource.oil,Petróleo,Oil,Petróleo
+scope.internacional,Internacional,International,Internacional
+scope.nacional,Nacional,National,Nacional
+scope.regional,Regional,Regional,Regional
+trade.col.amount,Carga,Load,Carga
+trade.col.distance,Distância,Distance,Distancia
+trade.col.exports,Exportações,Exports,Exportaciones
+trade.col.freight,Frete,Freight,Flete
+trade.col.from,Origem,From,Origen
+trade.col.hours,Trânsito,Transit,Tránsito
+trade.col.imports,Importações,Imports,Importaciones
+trade.col.mode,Modo,Mode,Modo
+trade.col.offer,Oferta/dia,Supply/day,Oferta/día
+trade.col.scope,Mercado,Market,Mercado
+trade.col.to,Destino,To,Destino
+trade.col.trips,Viagens,Trips,Viajes
+trade.empty,Nenhum pedido de comércio neste dia.,No trade order today.,Ningún pedido de comercio hoy.
+trade.hint,"Pedidos, rotas e mercado por cidade.","Orders, routes and the market by city.","Pedidos, rutas y mercado por ciudad."
+trade.history,Histórico recente,Recent orders,Historial reciente
+trade.legs,Trechos do pedido,Order legs,Tramos del pedido
+trade.market.by_city,Por cidade,By city,Por ciudad
+trade.market.national,Nacional,National,Nacional
+trade.market.prices,"Preços, histórico de preços e custos industriais não fazem parte da simulação atual. As colunas mostram quantidades reais de trigo por cidade e os fluxos do dia.","Prices, price history and industrial costs are not part of the current simulation. The columns show real wheat quantities per city and the day's flows.","Los precios, su historial y los costes industriales no forman parte de la simulación actual. Las columnas muestran cantidades reales de trigo por ciudad y los flujos del día."
+trade.market.products,Produto,Product,Producto
+trade.market.scarcity,Com escassez,Low stock,Con escasez
+trade.market.unmodeled,Não modelado nesta versão,Not modelled in this version,No modelado en esta versión
+trade.select,Selecione um pedido para ver os trechos.,Select an order to see its legs.,Selecciona un pedido para ver sus tramos.
+trade.subtitle,Fluxos do dia e mercado do trigo,Daily flows and the wheat market,Flujos del día y mercado del trigo
+trade.tab.market,Mercado,Market,Mercado
+trade.tab.orders,Pedidos,Orders,Pedidos
+trade.tab.routes,Rotas,Routes,Rutas
+trade.title,Comércio e logística,Trade and logistics,Comercio y logística
+trade.today,Pedidos do dia,Today's orders,Pedidos del día

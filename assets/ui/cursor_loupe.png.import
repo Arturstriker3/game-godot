@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://q53g434e8dgb"
-path="res://.godot/imported/cursor_city.png-0f924062c613b230e399740e23fd91a4.ctex"
+uid="uid://bqd2itxmfdmhm"
+path="res://.godot/imported/cursor_loupe.png-179c6edf39346b4a099abf56dcf1bdd6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/cursor_city.png"
-dest_files=["res://.godot/imported/cursor_city.png-0f924062c613b230e399740e23fd91a4.ctex"]
+source_file="res://assets/ui/cursor_loupe.png"
+dest_files=["res://.godot/imported/cursor_loupe.png-179c6edf39346b4a099abf56dcf1bdd6.ctex"]
 
 [params]
 

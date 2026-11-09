@@ -1,11 +1,11 @@
 extends RefCounted
 class_name GameCursor
 
-## Cursor temático do jogo: seta (mapa), silhueta de cidade (hover) e quatro
-## setas (arrastar/pan). Imagens em assets/ui (32×32, com transparência).
+## Cursor temático do jogo: seta (mapa), lupa (hover sobre construção no mapa)
+## e quatro setas (arrastar/pan). Imagens em assets/ui (32×32, com transparência).
 
 const DEFAULT_PATH := "res://assets/ui/cursor_default.png"
-const CITY_PATH := "res://assets/ui/cursor_city.png"
+const CITY_PATH := "res://assets/ui/cursor_loupe.png"
 const DRAG_PATH := "res://assets/ui/cursor_drag.png"
 
 const DEFAULT_HOTSPOT := Vector2(3, 2)

@@ -42,6 +42,11 @@ const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
 const PORT_SIZE := 0.6
 const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.svg")
 const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.svg")
+## Ícone de lugar: pendurado logo acima do nome, com a mesma tinta e altura
+## proporcional ao texto — ícone + nome leem como um selo único.
+const PLACE_ICON_SOURCE := 512.0
+const PLACE_ICON_HEIGHT := 0.8
+const PLACE_ICON_GAP := 0.2
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -716,17 +721,19 @@ func _build_cities(cities: Array) -> void:
 		var label := _add_city_label_hierarchical(position,
 				I18n.city_name(city_id, city_name), color,
 				production, index < MAX_CITY_LABELS)
+		var icon: Sprite3D = null
 		if label != null:
 			# Guarda a chave/fallback para atualizar o texto ao trocar idioma.
 			label.set_meta("city_id", city_id)
 			label.set_meta("city_fallback", city_name)
-			_add_place_icon(position, CITY_ICON)
+			icon = _add_place_icon(label, CITY_ICON)
 		_city_nodes.append({
 			"id": city_id,
 			"city": city,
 			"position": position,
 			"discs": discs,
 			"label": label,
+			"icon": icon,
 			"urban": null,
 		})
 
@@ -781,28 +788,46 @@ func _build_ports(ports: Array) -> void:
 		if longest > 0.0:
 			model.scale = Vector3.ONE * (PORT_SIZE / longest)
 
-		# Ícone + nome do porto.
-		_add_place_icon(pos, PORT_ICON)
-		_add_port_label(pos, String(port["name"]))
+		# Nome + ícone do porto, na mesma composição vertical das cidades.
+		var label := _add_port_label(pos, String(port["name"]))
+		var icon := _add_place_icon(label, PORT_ICON)
 
 		_port_nodes.append({
 			"id": String(port["id"]),
 			"name": String(port["name"]),
 			"nation": String(port["nation"]),
 			"position": pos,
+			"label": label,
+			"icon": icon,
 		})
 
 
-## Ícone de lugar (cidade/porto) como billboard sobre a posição.
-func _add_place_icon(position: Vector3, texture: Texture2D) -> Sprite3D:
+## Ícone de lugar (cidade/porto) como billboard, ancorado acima do nome. A
+## altura acompanha o texto do rótulo (que muda com o zoom) e a tinta é a mesma
+## do nome: o conjunto lê como um selo, sem o ícone invadir a legenda.
+func _add_place_icon(label: Label3D, texture: Texture2D) -> Sprite3D:
 	var sprite := Sprite3D.new()
 	sprite.texture = texture
 	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sprite.pixel_size = 0.0018
-	sprite.modulate = Color(0.91, 0.89, 0.82)
-	sprite.position = position + Vector3(0.0, 1.6, 0.0)
+	sprite.modulate = label.modulate
+	sprite.no_depth_test = true
+	sprite.render_priority = label.render_priority - 1
 	_content.add_child(sprite)
+	_layout_place_icon(label, sprite)
 	return sprite
+
+
+## Redimensiona/reposiciona o ícone a partir da altura real do texto renderizado
+## (fonte + contorno). Chamado a cada frame para acompanhar o LOD do rótulo.
+func _layout_place_icon(label: Label3D, icon: Sprite3D) -> void:
+	if label == null or icon == null:
+		return
+	var text_height := (label.font.get_height(label.font_size)
+			+ float(label.outline_size) * 2.0) * label.pixel_size
+	var icon_height := text_height * PLACE_ICON_HEIGHT
+	icon.pixel_size = icon_height / PLACE_ICON_SOURCE
+	icon.position = label.position + Vector3(0.0,
+			text_height * 0.5 + text_height * PLACE_ICON_GAP + icon_height * 0.5, 0.0)
 
 
 ## Nome do porto (Label3D), no mesmo estilo dos rótulos de cidade.
@@ -917,6 +942,7 @@ func _process(_delta: float) -> void:
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:
 	var label: Label3D = record["label"]
+	var icon: Sprite3D = record["icon"]
 	if label != null:
 		label.pixel_size = clampf(LABEL_PIXEL_PER_UNIT * distance,
 				LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
@@ -924,6 +950,10 @@ func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector
 		var label_alpha := 1.0 - _fade_in(distance, LABEL_FADE_START, LABEL_FADE_END)
 		label.modulate.a = label_alpha
 		label.visible = label_alpha > 0.01
+		if icon != null:
+			_layout_place_icon(label, icon)
+			icon.transparency = 1.0 - label_alpha
+			icon.visible = label_alpha > 0.01
 
 	# Marcador discreto (continental): aparece só quando a cidade já sumiu.
 	var marker_alpha := _fade_in(distance, MARKER_FADE_IN_START, MARKER_FADE_IN_END)

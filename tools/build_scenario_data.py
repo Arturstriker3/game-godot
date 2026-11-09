@@ -26,6 +26,7 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCENARIO = os.path.join(HERE, "..", "data", "definitions", "scenario")
+I18N_DIR = os.path.join(HERE, "..", "data", "definitions", "i18n")
 
 
 def _rows(name: str) -> list[dict]:
@@ -94,6 +95,20 @@ def main() -> None:
     _write("ports.json", ports)
     _write("buildings.json", buildings)
     _write("nations.json", nations)
+
+    # i18n: key,pt_BR,en,es -> { locale: { key: value } }
+    i18n = {loc: {} for loc in ["pt_BR", "en", "es"]}
+    with open(os.path.join(I18N_DIR, "i18n.csv"), encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            key = row["key"].strip()
+            for loc in ["pt_BR", "en", "es"]:
+                val = row.get(loc, "").strip()
+                if val:
+                    i18n[loc][key] = val
+    with open(os.path.join(I18N_DIR, "i18n.json"), "w", encoding="utf-8") as fh:
+        json.dump(i18n, fh, ensure_ascii=False, indent=1)
+    print(f"i18n.json: {len(i18n['pt_BR'])} chaves")
+
     print("OK")
 
 
