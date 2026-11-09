@@ -37,11 +37,29 @@ static func texture(id: String) -> Texture2D:
 	return tex
 
 
+## Textura colorida do ícone (ou null se o id não existir).
+static func texture_color(id: String) -> Texture2D:
+	var file: String = FILES.get(id, "")
+	if file.is_empty():
+		return null
+	return load(DIR + file.replace(".png", "_color.png"))
+
+
 ## Cria um TextureRect pronto para a UI (32×32, tingível).
 static func make(id: String, color: Color, size: float = 32.0) -> TextureRect:
-	var icon := TextureRect.new()
-	icon.texture = texture(id)
+	var icon := _make_rect(texture(id), size)
 	icon.modulate = color
+	return icon
+
+
+## Cria um TextureRect com a versão colorida (sem tingir).
+static func make_color(id: String, size: float = 32.0) -> TextureRect:
+	return _make_rect(texture_color(id), size)
+
+
+static func _make_rect(tex: Texture2D, size: float) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.texture = tex
 	icon.custom_minimum_size = Vector2(size, size)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

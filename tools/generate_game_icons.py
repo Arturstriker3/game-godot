@@ -60,12 +60,18 @@ def main() -> None:
             draw.text((0, 0), emoji, font=font)
 
         alpha = img.getchannel("A")
-        coverage = sum(1 for v in alpha.getdata() if v > 0)
-        # Silhueta branca: cor fixa + alpha do glifo (anti-aliased).
+        hist = alpha.histogram()
+        coverage = sum(hist[1:])  # pixels com alpha > 0
+
+        # Colorida: mantém as cores nativas do emoji.
+        img.save(os.path.join(OUT, f"{name}_color.png"))
+
+        # Silhueta branca: cor fixa + alpha do glifo (tingível via modulate).
         white = Image.new("RGBA", (SIZE, SIZE), (255, 255, 255, 255))
         white.putalpha(alpha)
         white.save(os.path.join(OUT, f"{name}.png"))
-        print(f"{name}.png  coverage={coverage}")
+
+        print(f"{name}  coverage={coverage}")
 
     with open(os.path.join(OUT, "LICENSE.txt"), "w", encoding="utf-8") as fh:
         fh.write(LICENSE)
