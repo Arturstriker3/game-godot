@@ -177,10 +177,11 @@ func _refresh_render() -> void:
 ## Solo urbano (cidade) e solo industrial (pátio escuro), cada um centrado no
 ## seu conjunto de lotes. Sem isso o polo industrial flutua sobre o satélite.
 func _update_ground() -> void:
+	var ground_tint := Color(0.30, 0.26, 0.20, 0.72)
 	_ground = _refresh_ground(_ground, "UrbanGround", layout.lots,
-			Color(0.30, 0.26, 0.20, 0.72), 0.45)
+			ground_tint, 0.45)
 	_industry_ground = _refresh_ground(_industry_ground, "IndustryGround",
-			layout.industrial_lots, Color(0.15, 0.14, 0.12, 0.85), 0.7)
+			layout.industrial_lots, ground_tint, 0.7)
 
 
 ## Cria/atualiza uma mancha de solo sob um conjunto de lotes, centrada neles.
