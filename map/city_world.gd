@@ -45,8 +45,8 @@ const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.svg")
 ## Ícone de lugar: pendurado logo acima do nome, com a mesma tinta e altura
 ## proporcional ao texto — ícone + nome leem como um selo único.
 const PLACE_ICON_SOURCE := 512.0
-const PLACE_ICON_HEIGHT := 0.8
-const PLACE_ICON_GAP := 0.2
+const PLACE_ICON_HEIGHT := 0.9  # altura do ícone em ems do rótulo
+const PLACE_ICON_GAP := 0.3     # respiro acima do contorno do texto, em ems
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -78,6 +78,8 @@ const LABEL_PIXEL_MAX := 0.12
 const LABEL_SIZE_CAPITAL := 36  # Capitais / cidades grandes
 const LABEL_SIZE_CITY := 28     # Cidades médias
 const LABEL_SIZE_TOWN := 20     # Cidades pequenas
+const LABEL_COLOR := Color("#E8E2D0")
+const LABEL_HOVER_COLOR := Color("#C9A24A")  # latão: hover/indica clicável
 const LABEL_POPULATION_CAPITAL := 2000.0  # Threshold para capital (t/dia de produção)
 const LABEL_POPULATION_CITY := 500.0      # Threshold para cidade
 ## Fade de rótulo por distância (estilo HOI3).
@@ -108,6 +110,7 @@ var _political_material: ShaderMaterial
 var _mode_layer: Node3D
 var _city_nodes: Array[Dictionary] = []
 var _port_nodes: Array[Dictionary] = []
+var _hovered_id := ""
 var _mode := "political"
 var _selection: MeshInstance3D
 var _selection_dot: MeshInstance3D
@@ -334,19 +337,60 @@ func select_city(city_id: String) -> void:
 
 
 ## Realce de hover: versão ainda mais discreta, no mesmo ponto da seleção.
-func set_hover(city_id: String) -> void:
+func set_hover(place_id: String) -> void:
+	# Cor do nome: destaca a construção sob o cursor (indica que é clicável).
+	if _hovered_id != place_id:
+		_set_label_color(_hovered_id, LABEL_COLOR)
+		_hovered_id = place_id
+		_set_label_color(place_id, LABEL_HOVER_COLOR)
+
 	if _selection == null:
 		_create_indicators()
 	if _hover == null:
 		return
-	if city_id == _selected_id:
+	if place_id == _selected_id:
 		_hover.visible = false
 		return
-	_hover.visible = not city_id.is_empty()
+	_hover.visible = not place_id.is_empty()
 	if _hover.visible:
-		var footprint := _city_footprint(city_id)
+		var footprint := _city_footprint(place_id) if _is_city(place_id) else 1.0
 		_hover.scale = Vector3(footprint, 1.0, footprint)
-		_hover.global_position = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
+		_hover.global_position = _place_position(place_id) + Vector3(0.0, 0.15, 0.0)
+
+
+## Muda a cor do nome da construção (cidade ou porto), preservando o alpha.
+func _set_label_color(place_id: String, color: Color) -> void:
+	if place_id.is_empty():
+		return
+	for record in _city_nodes:
+		if String(record["id"]) == place_id:
+			var label: Label3D = record["label"]
+			if label != null:
+				label.modulate = Color(color.r, color.g, color.b, label.modulate.a)
+			return
+	for record in _port_nodes:
+		if String(record["id"]) == place_id:
+			var label: Label3D = record["label"]
+			if label != null:
+				label.modulate = Color(color.r, color.g, color.b, label.modulate.a)
+			return
+
+
+func _is_city(place_id: String) -> bool:
+	for record in _city_nodes:
+		if String(record["id"]) == place_id:
+			return true
+	return false
+
+
+func _place_position(place_id: String) -> Vector3:
+	for record in _city_nodes:
+		if String(record["id"]) == place_id:
+			return to_global(record["position"])
+	for record in _port_nodes:
+		if String(record["id"]) == place_id:
+			return to_global(record["position"])
+	return Vector3.ZERO
 
 
 ## Raio da cidade em unidades de mundo, para o anel de seleção abraçar o tecido.
@@ -817,17 +861,21 @@ func _add_place_icon(label: Label3D, texture: Texture2D) -> Sprite3D:
 	return sprite
 
 
-## Redimensiona/reposiciona o ícone a partir da altura real do texto renderizado
-## (fonte + contorno). Chamado a cada frame para acompanhar o LOD do rótulo.
+## Redimensiona/reposiciona o ícone a partir do texto renderizado: a altura do
+## ícone segue o em do rótulo e o respiro respeita fonte + contorno. Chamado a
+## cada frame para acompanhar o LOD do rótulo.
 func _layout_place_icon(label: Label3D, icon: Sprite3D) -> void:
 	if label == null or icon == null:
 		return
-	var text_height := (label.font.get_height(label.font_size)
+	var em := float(label.font_size) * label.pixel_size
+	var block_height := (label.font.get_height(label.font_size)
 			+ float(label.outline_size) * 2.0) * label.pixel_size
-	var icon_height := text_height * PLACE_ICON_HEIGHT
+	var icon_height := em * PLACE_ICON_HEIGHT
+	# Só a cor (sem alfa): o fade continua sendo feito por `transparency`.
+	icon.modulate = Color(label.modulate, 1.0)
 	icon.pixel_size = icon_height / PLACE_ICON_SOURCE
 	icon.position = label.position + Vector3(0.0,
-			text_height * 0.5 + text_height * PLACE_ICON_GAP + icon_height * 0.5, 0.0)
+			block_height * 0.5 + em * PLACE_ICON_GAP + icon_height * 0.5, 0.0)
 
 
 ## Nome do porto (Label3D), no mesmo estilo dos rótulos de cidade.
@@ -941,8 +989,8 @@ func _process(_delta: float) -> void:
 
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:
-	var label: Label3D = record["label"]
-	var icon: Sprite3D = record["icon"]
+	var label: Label3D = record.get("label")
+	var icon: Sprite3D = record.get("icon")
 	if label != null:
 		label.pixel_size = clampf(LABEL_PIXEL_PER_UNIT * distance,
 				LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)

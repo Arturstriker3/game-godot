@@ -241,12 +241,13 @@ func _update_city_hover_pass() -> void:
 		return
 	if player == null:
 		return
-	var city_id: String = city_world.pick_city(
-			get_viewport().get_mouse_position(), player.camera)
-	if city_id != _last_hover:
-		_last_hover = city_id
-		city_world.set_hover(city_id)
-	GameCursor.set_state(false, not city_id.is_empty())
+	var mouse := get_viewport().get_mouse_position()
+	var port_id: String = city_world.pick_port(mouse, player.camera)
+	var hover_id: String = port_id if not port_id.is_empty() else city_world.pick_city(mouse, player.camera)
+	if hover_id != _last_hover:
+		_last_hover = hover_id
+		city_world.set_hover(hover_id)
+	GameCursor.set_state(false, not hover_id.is_empty())
 
 
 ## MantÃƒÂ©m a cÃƒÂ¢mera dentro de um perÃƒÂ­odo do mapa: ao passar da borda em X, ela
