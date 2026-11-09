@@ -24,11 +24,24 @@ const NATION_COLORS := {
 }
 
 
+var _content: Node3D
+
+
 ## Monta o mundo: chão GPS, fronteiras Voronoi e modelos de cidade.
 func build(cities: Array) -> void:
+	_content = Node3D.new()
+	add_child(_content)
+
 	_build_gps_plane()
 	_build_voronoi(cities)
 	_build_cities(cities)
+
+	# Cópias laterais: o mundo dá a volta em X (cilíndrico), então quem sai por
+	# um lado reaparece no outro.
+	for offset in [-PLANE_SIZE.x, PLANE_SIZE.x]:
+		var copy := _content.duplicate() as Node3D
+		copy.position = Vector3(offset, 0.0, 0.0)
+		add_child(copy)
 
 
 func pixel_to_world(px: Vector2) -> Vector3:
@@ -50,7 +63,7 @@ func _build_gps_plane() -> void:
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = plane
 	mesh_instance.material_override = material
-	add_child(mesh_instance)
+	_content.add_child(mesh_instance)
 
 
 func _build_voronoi(cities: Array) -> void:
@@ -68,7 +81,7 @@ func _build_voronoi(cities: Array) -> void:
 	mesh_instance.mesh = plane
 	mesh_instance.position = Vector3(0.0, 0.15, 0.0)
 	mesh_instance.material_override = material
-	add_child(mesh_instance)
+	_content.add_child(mesh_instance)
 
 
 ## Gera um diagrama de Voronoi: cada pixel pertence à cidade mais próxima.
@@ -100,7 +113,10 @@ func _generate_voronoi(cities: Array) -> ImageTexture:
 			var best := -1
 			var best_dist := INF
 			for s in range(sites.size()):
-				var dx: float = px - sites[s]["pos"].x
+				# Distância com wrap em X: o mapa é cilíndrico, então a borda
+				# esquerda é vizinha da direita.
+				var dx: float = absf(px - sites[s]["pos"].x)
+				dx = minf(dx, MAP_SIZE_PX.x - dx)
 				var dy: float = py - sites[s]["pos"].y
 				var dist: float = dx * dx + dy * dy
 				if dist < best_dist:
@@ -152,7 +168,7 @@ func _spawn_city_marker(position: Vector3, city_name: String, color: Color) -> v
 	marker.material.albedo_color = color
 	marker.material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	marker.position = position + Vector3(0.0, 0.2, 0.0)
-	add_child(marker)
+	_content.add_child(marker)
 
 	var label := Label3D.new()
 	label.text = city_name
@@ -161,7 +177,7 @@ func _spawn_city_marker(position: Vector3, city_name: String, color: Color) -> v
 	label.outline_size = 8
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.position = position + Vector3(0.0, 5.0, 0.0)
-	add_child(label)
+	_content.add_child(label)
 
 
 func _spawn_city_model(position: Vector3) -> void:
@@ -169,7 +185,7 @@ func _spawn_city_model(position: Vector3) -> void:
 	var scale := _scale_to_size(model, CITY_TARGET_SIZE)
 	model.scale = Vector3.ONE * scale
 	model.position = position + Vector3(0.0, 0.4, 0.0)
-	add_child(model)
+	_content.add_child(model)
 
 
 ## Escala o modelo para que seu maior eixo meça o tamanho alvo.

@@ -350,7 +350,16 @@ double EconomySim::distance_km(const MapPoint& a, const MapPoint& b) const {
 	const double lat1 = radians(to_lat(a.y));
 	const double lat2 = radians(to_lat(b.y));
 	const double dlat = radians(to_lat(b.y) - to_lat(a.y));
-	const double dlon = radians(to_lon(b.x) - to_lon(a.x));
+
+	// Mundo cilíndrico: a longitude dá a volta em ±180°, então a rota sempre usa
+	// o caminho mais curto (ex.: Havaí -> Japão cruza o Pacífico, não o Atlântico).
+	double dlon_degrees = to_lon(b.x) - to_lon(a.x);
+	if (dlon_degrees > 180.0) {
+		dlon_degrees -= 360.0;
+	} else if (dlon_degrees < -180.0) {
+		dlon_degrees += 360.0;
+	}
+	const double dlon = radians(dlon_degrees);
 
 	const double s1 = std::sin(dlat / 2.0);
 	const double s2 = std::sin(dlon / 2.0);
