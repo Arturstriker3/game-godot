@@ -73,3 +73,10 @@ func city_name(city_id: String, fallback: String) -> String:
 	var key := "city.name.%s" % city_id
 	var value := t(key)
 	return fallback if value == key else value
+
+
+## Nome localizado de um porto a partir do id (GBR-DOV...).
+func port_name(port_id: String, fallback: String) -> String:
+	var key := "port.name.%s" % port_id
+	var value := t(key)
+	return fallback if value == key else value

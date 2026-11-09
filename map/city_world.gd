@@ -295,7 +295,7 @@ func port_world_position(port_id: String) -> Vector3:
 func port_name(port_id: String) -> String:
 	for record in _port_nodes:
 		if String(record["id"]) == port_id:
-			return String(record["name"])
+			return I18n.port_name(port_id, String(record["name"]))
 	return ""
 
 
@@ -587,6 +587,10 @@ func _on_locale_changed(_locale: String) -> void:
 				label.text = I18n.city_name(
 						String(label.get_meta("city_id")),
 						String(label.get_meta("city_fallback"))).to_upper()
+			elif label.has_meta("port_id"):
+				label.text = I18n.port_name(
+						String(label.get_meta("port_id")),
+						String(label.get_meta("port_fallback"))).to_upper()
 
 
 ## Capitulares proporcionais ao país, mas o nome nunca passa de 85% da largura
@@ -866,10 +870,12 @@ func _build_ports(ports: Array) -> void:
 		if city_position != null:
 			on_city = pos.distance_to(city_position) <= PORT_ICON_MERGE_DISTANCE
 		if not on_city:
-			label = _add_port_label(pos, port_name)
+			label = _add_port_label(pos, I18n.port_name(port_id, port_name))
 			# Só omite o nome se ele for exatamente o da cidade; um porto com nome
-			# próprio (Kourou) mantém a legenda mesmo usando o id da cidade.
+			# próprio (Mana) mantém a legenda mesmo usando o id da cidade.
 			label.set_meta("hide_text", city_names.has(port_name.to_lower()))
+			label.set_meta("port_id", port_id)
+			label.set_meta("port_fallback", port_name)
 			icon = _add_place_icon(label, PORT_ICON)
 			_add_flag_badge(pos, String(port["nation"]))
 
