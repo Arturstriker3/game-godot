@@ -28,6 +28,9 @@ var _industrial_planner: IndustrialPlanner
 var _renderer: UrbanRenderer
 var _ground: MeshInstance3D
 
+## Shader do solo é o mesmo para todas as cidades; compila uma vez só.
+static var _ground_shader: Shader
+
 ## Solo urbano: mancha de terra com borda orgânica e suave, sem contorno duro.
 const GROUND_SHADER_CODE := """
 shader_type spatial;
@@ -176,10 +179,11 @@ func _update_ground() -> void:
 	for lot in layout.lots:
 		extent = maxf(extent, Vector2(float(lot["x"]), float(lot["z"])).length())
 	if _ground == null:
-		var shader := Shader.new()
-		shader.code = GROUND_SHADER_CODE
+		if _ground_shader == null:
+			_ground_shader = Shader.new()
+			_ground_shader.code = GROUND_SHADER_CODE
 		var material := ShaderMaterial.new()
-		material.shader = shader
+		material.shader = _ground_shader
 		material.set_shader_parameter("seed", float(layout.seed_value % 997))
 		_ground = MeshInstance3D.new()
 		_ground.name = "UrbanGround"
@@ -217,6 +221,15 @@ func restore(data: Dictionary) -> void:
 
 func drawn_instances() -> int:
 	return _renderer.drawn_instances()
+
+
+## Maior distância de um lote ao centro, em unidades locais (sem a escala do
+## nó). Usada para dimensionar o anel de seleção.
+func extent() -> float:
+	var result := 0.0
+	for lot in layout.lots:
+		result = maxf(result, Vector2(float(lot["x"]), float(lot["z"])).length())
+	return result
 
 
 func _is_buildable(lot: Dictionary) -> bool:

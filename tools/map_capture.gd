@@ -39,6 +39,8 @@ var _run := ""
 var _width := 1600
 var _height := 900
 var _bench := false
+## Opcional: id da cidade a destacar (ex.: FRA-PAR) para conferir a seleção.
+var _select := ""
 
 const BENCH_WARMUP := 45
 const BENCH_FRAMES := 180
@@ -110,6 +112,8 @@ func _parse_args() -> void:
 				_height = int(value)
 			"--bench":
 				_bench = value != "0" and value != "false"
+			"--select":
+				_select = value
 
 
 # --- Mapa 3D atual ----------------------------------------------------------
@@ -133,6 +137,8 @@ func _capture_map3d() -> void:
 	for distance in DISTANCES:
 		_camera.position = Vector3(0.0, 0.0, distance)
 		await get_tree().process_frame
+		if not _select.is_empty():
+			world.select_city(_select)
 		var urban := world.find_children("Urban_*", "", true, false)
 		await _shot("map3d_%s_d%03d.png" % [_mode, int(distance)], {
 			"kind": "perspective",

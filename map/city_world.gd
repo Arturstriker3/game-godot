@@ -42,10 +42,10 @@ const MAX_CITY_LABELS := 24
 ## A cidade é construída a 96 u e liberada a 112 u (histerese); o marcador
 ## entra com fade só depois que a cidade já sumiu.
 const URBAN_BUILD_DISTANCE := 96.0
-const URBAN_FREE_DISTANCE := 112.0
+const CITY_VISIBLE_DISTANCE := 100.0
 const MARKER_FADE_IN_START := 100.0
 const MARKER_FADE_IN_END := 112.0
-const URBAN_SCALE := 0.55
+const URBAN_SCALE := 0.9
 const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
 const LABEL_PIXEL_MAX := 0.12
@@ -164,7 +164,9 @@ func select_city(city_id: String) -> void:
 	_selection.visible = active
 	_selection_dot.visible = active
 	if active:
+		var footprint := _city_footprint(city_id)
 		var base: Vector3 = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
+		_selection.scale = Vector3(footprint, 1.0, footprint)
 		_selection.global_position = base
 		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
 
@@ -180,19 +182,32 @@ func set_hover(city_id: String) -> void:
 		return
 	_hover.visible = not city_id.is_empty()
 	if _hover.visible:
+		var footprint := _city_footprint(city_id)
+		_hover.scale = Vector3(footprint, 1.0, footprint)
 		_hover.global_position = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
 
 
+## Raio da cidade em unidades de mundo, para o anel de seleção abraçar o tecido.
+func _city_footprint(city_id: String) -> float:
+	for record in _city_nodes:
+		if String(record["id"]) == city_id:
+			var urban = record.get("urban")
+			if urban != null and urban.has_method("extent"):
+				return maxf(1.3, float(urban.extent()) * URBAN_SCALE + 0.35)
+			break
+	return 1.8
+
+
 func _create_indicators() -> void:
-	_selection = _make_ring("CitySelection", 1.02, 1.09, Color("#C9A24A"), 0.42)
+	_selection = _make_ring("CitySelection", 1.0, 1.025, Color("#C9A24A"), 0.30)
 	_selection.visible = false
 	add_child(_selection)
 
-	_selection_dot = _make_dot("CitySelectionDot", Color("#C9A24A"), 0.8)
+	_selection_dot = _make_dot("CitySelectionDot", Color("#C9A24A"), 0.65)
 	_selection_dot.visible = false
 	add_child(_selection_dot)
 
-	_hover = _make_ring("CityHover", 1.02, 1.09, Color("#E8E2D0"), 0.22)
+	_hover = _make_ring("CityHover", 1.0, 1.025, Color("#E8E2D0"), 0.16)
 	_hover.visible = false
 	add_child(_hover)
 
@@ -217,7 +232,7 @@ func _make_ring(node_name: String, inner: float, outer: float,
 	instance.name = node_name
 	instance.mesh = torus
 	instance.material_override = material
-	instance.rotation_degrees.x = 90.0
+	# TorusMesh já nasce deitado no plano XZ; nada de girar (senão vira arco).
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return instance
 
@@ -438,9 +453,8 @@ func _update_urban(record: Dictionary, distance: float, world_position: Vector3)
 		if distance <= URBAN_BUILD_DISTANCE:
 			record["urban"] = _build_urban(record, world_position)
 		return
-	if distance > URBAN_FREE_DISTANCE:
-		urban.queue_free()
-		record["urban"] = null
+	# Constrói uma vez e só alterna a visibilidade: sem hitch a cada zoom.
+	urban.visible = distance <= CITY_VISIBLE_DISTANCE
 
 
 func _build_urban(record: Dictionary, world_position: Vector3) -> Node3D:

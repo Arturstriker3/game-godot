@@ -13,7 +13,8 @@ signal trade_orders_ready(orders: Array)
 signal status_updated(summary: Dictionary)
 
 ## Segundos reais por dia simulado; o índice 0 é a pausa.
-const SPEEDS := [0.0, 1.5, 0.75, 0.3]
+## Ritmo normal: 30 dias em 30 minutos (1 dia = 60 s); 2x = 30 s; 3x = 15 s.
+const SPEEDS := [0.0, 60.0, 30.0, 15.0]
 const SPEED_COUNT := 4
 
 ## 1º de janeiro de 2026, 00:00 UTC.

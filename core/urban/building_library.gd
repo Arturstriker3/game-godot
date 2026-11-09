@@ -20,8 +20,18 @@ var archetypes: Array[Dictionary] = []
 
 var _by_id: Dictionary = {}
 
+## Cache compartilhado: as malhas dos módulos são idênticas para toda cidade.
+## Sem isso, cada cidade recarrega os ~22 GLBs (causa hitch no zoom/startup).
+static var _shared: Array[Dictionary] = []
+static var _shared_by_id: Dictionary = {}
+
 
 func load_library() -> void:
+	if not _shared.is_empty():
+		archetypes = _shared
+		_by_id = _shared_by_id
+		return
+
 	archetypes.clear()
 	_by_id.clear()
 
@@ -38,6 +48,9 @@ func load_library() -> void:
 		archetypes.append(archetype)
 		_by_id[archetype["id"]] = archetype
 	file.close()
+
+	_shared = archetypes
+	_shared_by_id = _by_id
 
 
 func get_archetype(module_id: String) -> Dictionary:

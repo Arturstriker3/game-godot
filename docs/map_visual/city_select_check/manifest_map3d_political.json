@@ -15,7 +15,7 @@
       "fov": 75.0,
       "kind": "perspective",
       "mode": "political",
-      "path": "res://docs/map_visual/city_organic_v4/map3d_political_d013.png",
+      "path": "res://docs/map_visual/city_select_check/map3d_political_d013.png",
       "pitch_deg": -56.0,
       "resolution": [
         1280,
@@ -29,7 +29,7 @@
       "fov": 75.0,
       "kind": "perspective",
       "mode": "political",
-      "path": "res://docs/map_visual/city_organic_v4/map3d_political_d026.png",
+      "path": "res://docs/map_visual/city_select_check/map3d_political_d026.png",
       "pitch_deg": -56.0,
       "resolution": [
         1280,
@@ -43,7 +43,7 @@
       "fov": 75.0,
       "kind": "perspective",
       "mode": "political",
-      "path": "res://docs/map_visual/city_organic_v4/map3d_political_d052.png",
+      "path": "res://docs/map_visual/city_select_check/map3d_political_d052.png",
       "pitch_deg": -56.0,
       "resolution": [
         1280,
@@ -57,7 +57,7 @@
       "fov": 75.0,
       "kind": "perspective",
       "mode": "political",
-      "path": "res://docs/map_visual/city_organic_v4/map3d_political_d120.png",
+      "path": "res://docs/map_visual/city_select_check/map3d_political_d120.png",
       "pitch_deg": -56.0,
       "resolution": [
         1280,
@@ -68,6 +68,6 @@
     }
   },
   "tag": "after",
-  "timestamp": "2026-11-09T14:42:54",
+  "timestamp": "2026-11-09T14:50:28",
   "warnings": []
 }
