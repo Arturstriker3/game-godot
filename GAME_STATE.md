@@ -68,7 +68,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   - `initialize()` / `tick()` / `get_status()` — **legacy**, 5 cidades, só trigo. É o que o jogo ao vivo usa.
   - `initialize_demo()` / `tick_demo()` / `get_demo_status()` + `demo_invest/build/spend_government/price_shock/to_dict/from_dict` — **demo**, 2 cidades, ciclo completo.
   - `initialize_benchmark()` / `run_benchmark()` — sintético, determinístico.
-- **Sistema de ticks:** o autoload `Economy` usa um `Timer`; `SPEEDS=[0.0, 1.5, 0.75, 0.3]` segundos reais por dia simulado (0 = pausa). Cada `_run_day()` chama `sim.tick()` e emite `status_updated(summary)` e `trade_orders_ready(orders)`.
+- **Sistema de ticks:** o autoload `Economy` acumula a **fração do dia** em `_process` (não usa `Timer`, para trocar de velocidade sem reiniciar o dia). `SPEEDS=[0.0, 60.0, 30.0, 15.0]` segundos reais por dia (0 = pausa; normal = 30 dias em 30 min). Cada `_run_day()` chama `sim.tick()` e emite `status_updated(summary)` e `trade_orders_ready(orders)`.
 - **Eventos/sinais (fluxo unidirecional):** `Economy.status_updated` → HUD (`hud.gd::_on_status`) e `main_game.gd::_on_status_updated` (refresh dos modos). `Economy.trade_orders_ready` → `trade_convoys.gd::spawn_orders`. `HUD.city_focused`/`map_mode_requested` → `main_game.gd`. `I18n.locale_changed` → `hud.gd`. A UI nunca executa lógica econômica.
 - **Persistência:** a economia demo serializa em memória (`demo_to_dict`/`demo_from_dict`, versão 1); não há gravação em disco da partida. O layout urbano salva em `user://` (`urban_persistence.gd`, versão 1).
 - **Separação simulação × apresentação:** C++ calcula; GDScript orquestra (autoload, geografia, decisão de investimento, visualização). A UI recebe texto/valores já formatados.
