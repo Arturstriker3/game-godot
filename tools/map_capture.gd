@@ -19,8 +19,10 @@ extends Node3D
 const CityWorldScript: Script = preload("res://map/city_world.gd")
 const SATELLITE: Texture2D = preload("res://map/map_data/satellite.jpg")
 const RELIEF: Texture2D = preload("res://map/map_data/normal.png")
-const BORDERS: Texture2D = preload("res://map/map_data/country_borders.png")
-const FILL: Texture2D = preload("res://map/map_data/nation_fill.png")
+const ATLAS_REGION_SDF: Texture2D = preload("res://map/map_data/atlas/region_sdf.png")
+const ATLAS_REGION_COLOR: Texture2D = preload("res://map/map_data/atlas/region_color.png")
+const ATLAS_WORLD_SDF: Texture2D = preload("res://map/map_data/atlas/world_sdf.png")
+const ATLAS_WORLD_COLOR: Texture2D = preload("res://map/map_data/atlas/world_color.png")
 const SATELLITE_SHADER: Shader = preload("res://map/map_shaders/satellite_map.gdshader")
 const POLITICAL_SHADER: Shader = preload("res://map/map_shaders/political_overlay.gdshader")
 
@@ -196,8 +198,10 @@ func _build_flat_map(mode: String) -> void:
 
 	var political := ShaderMaterial.new()
 	political.shader = POLITICAL_SHADER
-	political.set_shader_parameter("fill_texture", FILL)
-	political.set_shader_parameter("border_texture", BORDERS)
+	political.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
+	political.set_shader_parameter("region_color", ATLAS_REGION_COLOR)
+	political.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
+	political.set_shader_parameter("world_color", ATLAS_WORLD_COLOR)
 
 	var overlay := MeshInstance3D.new()
 	overlay.name = "FlatPolitical"

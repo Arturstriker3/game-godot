@@ -1,15 +1,29 @@
 extends Node3D
 
-## Cena principal: monta o mundo de cidades (fundo tático + cidades + Voronoi),
-## enquadra a câmera sobre a Europa, conecta o comércio aos comboios 3D e sobe o HUD.
+## Cena principal: monta o mundo de cidades (fundo tÃƒÂ¡tico + cidades + Voronoi),
+## enquadra a cÃƒÂ¢mera sobre a Europa, conecta o comÃƒÂ©rcio aos comboios 3D e sobe o HUD.
 
 const CityWorldScript: Script = preload("res://map/city_world.gd")
 const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
 const HudScript: Script = preload("res://core/ui/hud.gd")
 
-## Inclinação da câmera (graus) e distância do alvo.
+## InclinaÃƒÂ§ÃƒÂ£o da cÃƒÂ¢mera (graus) e distÃƒÂ¢ncia do alvo.
 const CAMERA_PITCH_DEG := -56.0
 const CAMERA_DISTANCE := 52.0
+
+## Limite do centro da cÃƒÂ¢mera na folha (latitudes). Em X o mundo dÃƒÂ¡ a volta e
+## as cÃƒÂ³pias laterais garantem que nÃƒÂ£o hÃƒÂ¡ vazio; em Z o centro fica entre estas
+## latitudes. AlÃƒÂ©m delas hÃƒÂ¡ uma folga elÃƒÂ¡stica: dÃƒÂ¡ para empurrar atÃƒÂ©
+## CAMERA_OVERSHOOT unidades e a mola devolve ao soltar.
+const CAMERA_LAT_NORTH := 78.0
+const CAMERA_LAT_SOUTH := -60.0
+const CAMERA_OVERSHOOT := 24.0
+const CAMERA_SPRING_TIME := 0.18
+
+## Vinheta 2D sutil sobre o mapa (abaixo do HUD).
+const VIGNETTE_ENABLED := true
+const VIGNETTE_SHADER: Shader = preload("res://core/ui/screen_vignette.gdshader")
+const VIGNETTE_LAYER := 40
 
 var city_world
 var convoys
@@ -19,15 +33,19 @@ var _last_hover := ""
 
 func _ready() -> void:
 	GameCursor.install()
+	# Roda depois da cÃƒÂ¢mera e do jogador: o limite vale para qualquer movimento
+	# (teclado, borda da tela, arrasto, move_to).
+	process_priority = 100
 	_build_city_world()
 	_build_convoys()
 	_setup_camera()
+	_build_vignette()
 	_build_hud()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
 	Economy.status_updated.connect(_on_status_updated)
 
 
-## Mantém os modos de mapa (população, economia, indústria, recursos) vivos.
+## MantÃƒÂ©m os modos de mapa (populaÃƒÂ§ÃƒÂ£o, economia, indÃƒÂºstria, recursos) vivos.
 func _on_status_updated(summary: Dictionary) -> void:
 	city_world.refresh_modes(summary.get("cities", []))
 
@@ -41,7 +59,7 @@ func _build_city_world() -> void:
 	_center_world(cities)
 
 
-## Coloca o centro das cidades na origem para a câmera enquadrar a Europa.
+## Coloca o centro das cidades na origem para a cÃƒÂ¢mera enquadrar a Europa.
 func _center_world(cities: Array) -> void:
 	if cities.is_empty():
 		return
@@ -58,7 +76,7 @@ func _build_convoys() -> void:
 	city_world.add_child(convoys)
 
 
-## Câmera inclinada sobre o centro do mapa; o controle começa daqui.
+## CÃƒÂ¢mera inclinada sobre o centro do mapa; o controle comeÃƒÂ§a daqui.
 func _setup_camera() -> void:
 	var player := get_node_or_null("Player")
 	if player == null:
@@ -75,12 +93,87 @@ func _build_hud() -> void:
 	add_child(hud)
 	hud.city_focused.connect(_on_city_focused)
 	hud.map_mode_requested.connect(_on_map_mode_requested)
+	hud.map_point_requested.connect(_on_map_point_requested)
 
 
-## Centraliza a câmera na cidade e destaca o marcador.
+## Faixa permitida para o centro da cÃƒÂ¢mera em Z (coordenadas globais).
+func _camera_z_bounds() -> Vector2:
+	var height: float = city_world.PLANE_SIZE.y
+	var north: float = (90.0 - CAMERA_LAT_NORTH) / 180.0 * height - height * 0.5
+	var south: float = (90.0 - CAMERA_LAT_SOUTH) / 180.0 * height - height * 0.5
+	return Vector2(north, south) + Vector2.ONE * city_world.position.z
+
+
+## Destino de move_to sempre dentro da folha (sem usar a folga elÃƒÂ¡stica).
+func _clamp_camera_target(target: Vector3) -> Vector3:
+	var bounds := _camera_z_bounds()
+	target.z = clampf(target.z, bounds.x, bounds.y)
+	return target
+
+
+## Limite elÃƒÂ¡stico: no mÃƒÂ¡ximo CAMERA_OVERSHOOT alÃƒÂ©m da folha, e a mola puxa de
+## volta. Enquanto o jogador empurra (tecla, borda ou arrasto) ele sente
+## resistÃƒÂªncia; ao soltar, a cÃƒÂ¢mera volta suavemente.
+func _apply_camera_limit(player: Node3D, delta: float) -> void:
+	var bounds := _camera_z_bounds()
+	var z := clampf(player.global_position.z,
+			bounds.x - CAMERA_OVERSHOOT, bounds.y + CAMERA_OVERSHOOT)
+	var inside := clampf(z, bounds.x, bounds.y)
+	if not is_equal_approx(z, inside):
+		z = lerpf(z, inside, 1.0 - exp(-delta / CAMERA_SPRING_TIME))
+		if absf(z - inside) < 0.05:
+			z = inside
+	if not is_equal_approx(z, player.global_position.z):
+		player.global_position.z = z
+
+
+func _build_vignette() -> void:
+	if not VIGNETTE_ENABLED:
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "ScreenVignette"
+	layer.layer = VIGNETTE_LAYER
+	var rect := ColorRect.new()
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = VIGNETTE_SHADER
+	rect.material = material
+	layer.add_child(rect)
+	add_child(layer)
+
+
+## Clique no minimapa: leva a cÃƒÂ¢mera ao ponto (UV do mapa -> mundo).
+func _on_map_point_requested(map_uv: Vector2) -> void:
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+	var size: Vector2 = city_world.PLANE_SIZE
+	var target: Vector3 = Vector3((map_uv.x - 0.5) * size.x, 0.0, (map_uv.y - 0.5) * size.y) \
+			+ city_world.position
+	target = _clamp_camera_target(target)
+	player.move_to(Vector2(target.x, target.z), 4.0)
+
+
+## ÃƒÂrea do chÃƒÂ£o vista pela cÃƒÂ¢mera, em UV do mapa, para o minimapa.
+func _update_minimap(player) -> void:
+	var camera: Camera3D = player.camera
+	var size: Vector2 = city_world.PLANE_SIZE
+	var local: Vector3 = player.global_position - city_world.position
+	var center := Vector2(local.x / size.x + 0.5, local.z / size.y + 0.5)
+	var distance: float = camera.position.z
+	var half_v := tan(deg_to_rad(camera.fov * 0.5))
+	var aspect := get_viewport().get_visible_rect().size.aspect()
+	var pitch := absf(deg_to_rad(player.camera_socket.rotation_degrees.x))
+	var ground := Vector2(2.0 * distance * half_v * aspect,
+			2.0 * distance * half_v / maxf(sin(pitch), 0.2))
+	hud.set_minimap_view(center, ground / size)
+
+
+## Centraliza a cÃƒÂ¢mera na cidade e destaca o marcador.
 func _on_city_focused(city_id: String) -> void:
 	city_world.select_city(city_id)
-	var target: Vector3 = city_world.city_world_position(city_id)
+	var target: Vector3 = _clamp_camera_target(city_world.city_world_position(city_id))
 	var player := get_node_or_null("Player")
 	if player == null:
 		return
@@ -91,7 +184,7 @@ func _on_map_mode_requested(mode: String) -> void:
 	city_world.set_mode(mode)
 
 
-## Clique no mapa seleciona a cidade mais próxima; a janela do HUD tem
+## Clique no mapa seleciona a cidade mais prÃƒÂ³xima; a janela do HUD tem
 ## prioridade sobre o mapa. Movimento do mouse atualiza o realce de hover.
 func _unhandled_input(event: InputEvent) -> void:
 	if hud == null or hud.is_window_open():
@@ -110,34 +203,36 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-## Realce/cursor da cidade sob o cursor. Roda por frame para não ficar preso
-## quando o mouse entra na UI (o Motion não chega ao _unhandled_input ali).
+## Realce/cursor da cidade sob o cursor. Roda por frame para nÃƒÂ£o ficar preso
+## quando o mouse entra na UI (o Motion nÃƒÂ£o chega ao _unhandled_input ali).
 func _update_city_hover_pass() -> void:
 	if city_world == null or hud == null:
 		return
+	var player := get_node_or_null("Player")
+	var dragging: bool = player != null and player.has_method("is_dragging") \
+			and player.is_dragging()
 	var blocked: bool = hud.is_window_open() \
 			or get_viewport().gui_get_hovered_control() != null
-	if blocked:
+	if dragging or blocked:
 		if not _last_hover.is_empty():
 			_last_hover = ""
 			city_world.set_hover("")
-			GameCursor.set_city_hover(false)
+		GameCursor.set_state(dragging, false)
 		return
-	var player := get_node_or_null("Player")
 	if player == null:
 		return
 	var city_id: String = city_world.pick_city(
 			get_viewport().get_mouse_position(), player.camera)
-	if city_id == _last_hover:
-		return
-	_last_hover = city_id
-	city_world.set_hover(city_id)
-	GameCursor.set_city_hover(not city_id.is_empty())
+	if city_id != _last_hover:
+		_last_hover = city_id
+		city_world.set_hover(city_id)
+	GameCursor.set_state(false, not city_id.is_empty())
 
 
-## Mantém a câmera dentro de um período do mapa: ao passar da borda em X, ela
-## reaparece do outro lado, onde a cópia lateral do mundo continua a paisagem.
-func _process(_delta: float) -> void:
+## MantÃƒÂ©m a cÃƒÂ¢mera dentro de um perÃƒÂ­odo do mapa: ao passar da borda em X, ela
+## reaparece do outro lado, onde a cÃƒÂ³pia lateral do mundo continua a paisagem.
+## Em Z aplica o limite elÃƒÂ¡stico da folha.
+func _process(delta: float) -> void:
 	if city_world == null:
 		return
 
@@ -152,4 +247,8 @@ func _process(_delta: float) -> void:
 	elif offset < -half_width:
 		player.position.x += city_world.PLANE_SIZE.x
 
+	_apply_camera_limit(player, delta)
+
 	_update_city_hover_pass()
+	if hud != null:
+		_update_minimap(player)

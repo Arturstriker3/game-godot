@@ -36,6 +36,11 @@ uniform vec3 relief_light_dir = vec3(-0.55, 0.55, 0.62);
 uniform vec2 shelf_offset = vec2(0.006, 0.009);
 uniform float shelf_strength : hint_range(0.0, 1.0) = 1.0;
 
+// Vinheta de latitude: escurece os polos para esconder a borda do mundo.
+uniform float vignette_start : hint_range(0.0, 0.5) = 0.15;
+uniform float vignette_strength : hint_range(0.0, 1.0) = 0.5;
+uniform vec3 vignette_color : source_color = vec3(0.04, 0.06, 0.06);
+
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
 float landness(vec3 color) {
@@ -87,6 +92,11 @@ void fragment() {
 	// Dither só na água: quebra o banding dos gradientes de 8 bits do JPEG.
 	float noise = fract(sin(dot(UV * 2048.0, vec2(12.9898, 78.233))) * 43758.5453);
 	color += (noise - 0.5) / 255.0 * (1.0 - land);
+
+	// Vinheta de latitude: escurece perto de UV.y = 0 e UV.y = 1
+	float dist_from_edge = min(UV.y, 1.0 - UV.y);
+	float vignette = smoothstep(0.0, vignette_start, dist_from_edge);
+	color = mix(vignette_color, color, mix(1.0 - vignette_strength, 1.0, vignette));
 
 	ALBEDO = clamp(color, 0.0, 1.0);
 }

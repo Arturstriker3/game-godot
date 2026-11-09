@@ -2,7 +2,7 @@
 
 > Fonte central de conhecimento do jogo. Consulte antes de qualquer mudança importante e atualize as seções afetadas ao concluir uma implementação.
 >
-> - **Última auditoria:** 2026-11-09 (modo atlas implementado; modo político usa base chapada estilo atlas histórico).
+> - **Última auditoria:** 2026-11-09 (mapa político refeito sobre campos de distância vetoriais; minimapa estático funcional; correções de Holanda, halo branco e cópias laterais).
 > - **Fonte última da verdade:** o código. Em divergência entre este documento e o código, o código vence.
 > - **Nome:** o projeto vive em `G:\projetos\opengs-game`; o app se chama **Open Grand Strategy** (`project.godot`), mas o menu de pausa e documentos internos usam o nome **WarEconomy**. `README.md` descreve o mapa upstream "OpenGS" (províncias), que coexiste com o jogo de cidades como ferramenta de edição.
 
@@ -38,7 +38,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 | IA econômica | IMPLEMENTADO (demo) | investidor privado, governo, prospecção | `core/economy/ai/*`, `economy_ai_test.gd` |
 | Recursos minerais (extração/esgotamento) | PARCIAL | depósitos + prospecção; extração/esgotamento não estão no núcleo | `core/economy/geography_service.gd`, `data/definitions/natural/deposits.json` |
 | População/POPs | PARCIAL | demo simula POPs, emprego, salários, poupança; migração/demografia ausentes | `economy_sim.cpp` (`DemoPop`) |
-| Mapa principal (cidades) | IMPLEMENTADO | modo atlas (chapado) + satélite + overlay político + modos de calor + LOD | `map/city_world.gd`, `map/map_shaders/*` |
+| Mapa principal (cidades) | IMPLEMENTADO | modo atlas (SDF vetorial, províncias admin-1, nomes de nação) + satélite + overlay político + modos de calor + LOD | `map/city_world.gd`, `map/map_shaders/*`, `tools/build_atlas_layers.py`, `docs/map_visual/atlas_final/` |
 | Mapa de províncias (editor) | IMPLEMENTADO | Voronoi + SDF/JFA, 5 modos; usado só pelo editor | `map/map.gd`, `map/map_texture_sdf.gd` |
 | Relevo/altura real | NÃO IMPLEMENTADO | `height.png`/`normal.png` são placeholders planos | `generate_opengs_map.py`, `docs/map_visual/REPORT.md` |
 | Cidades 3D + crescimento urbano | IMPLEMENTADO | módulos GLB + `core/urban/*` + LOD | `city_world.gd`, `core/urban/*` |
@@ -79,8 +79,8 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 
 - **Dois sistemas de mapa coexistem:**
   1. **Jogo principal — `map/city_world.gd`:** duas bases visuais alternáveis por modo:
-     - **Modo "political" (atlas):** base chapada via `atlas_base.gdshader` (água teal `#2E5B5C`, terra parchment `#E8DFC7`), com preenchimento opaco das 5 nações via `political_overlay.gdshader` (`atlas_mode=true`, `atlas_fill_opacity=0.88`, `atlas_border_opacity=0.95`). Fronteiras alargadas por amostragem em cruz + `smoothstep` (anti-aliasing) e **linha de costa** derivada do `nav_mask`. Rótulos de cidade em tom claro com halo escuro e `no_depth_test` (não somem sobre o preenchimento nem atrás de prédios).
-     - **Demais modos:** base de satélite `satellite.jpg` (8192×4096, Esri World Imagery) via `satellite_map.gdshader`, com overlay político sutil.
+     - **Modo "political" (atlas):** uma passada opaca em `atlas_political.gdshader` sobre **campos de distância com sinal** gerados de vetores Natural Earth 10m por `tools/build_atlas_layers.py` (`map/map_data/atlas/`): `region_sdf/region_color` (Europa lon −25..45, lat 33..72, 4096 px, ~1,9 km/texel) + `world_sdf/world_color` (mundo, 4096 px, ~9,8 km/texel). Canais SDF: R costa, G fronteira de país, B divisa admin-1 (1.862 províncias reais na região). Linhas em pixels de tela medidas ao longo do gradiente (espessura igual em qualquer orientação), anti-aliasing, salto do eixo medial descartado pelo gradiente. Terra = cor da nação × luminância regional do satélite × grão de papel; faixa escura junto às fronteiras; mar com faixa rasa e linhas de nível; vinheta polar fundindo com o fundo do ambiente. Nações não jogáveis em tons de pergaminho por `MAPCOLOR9`. Nomes das 5 nações gravados no chão (Cinzel, i18n, âncora no polo de inacessibilidade, `nations.json`). O overlay político fica oculto neste modo. Rótulos de cidade em tom claro com halo escuro e `no_depth_test`.
+     - **Demais modos:** base de satélite `satellite.jpg` (8192×4096, Esri World Imagery) via `satellite_map.gdshader`, com overlay político sutil (`political_overlay.gdshader`, composição em alfa pré-multiplicado).
      - Modos de calor (população, economia, indústria, recursos) via `map_modes.gdshader` + `map_mode_layer.gd`.
   2. **Editor — `map/map.gd` + `map/map_mode.gd`:** mapa raster de províncias (SubViewport/Sprite2D sobre plano 3D), com SDF/JFA de fronteiras; usado por `editor/editor.tscn` e `tools/map_capture.gd`, **não** pelo jogo.
 - **Projeção/coordenadas:** equirretangular; conversão pixel↔lonlat em `build_natural_geography.py` (`lon=px/5000*360−180`, `lat=90−py/2500*180`). Mundo = plano de 1000×500 unidades (`PIXELS_PER_WORLD_UNIT=5`).
@@ -93,7 +93,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   - `nav_mask.png` 2500×1250 (terra/água/costa, pathfinding A* dos comboios).
 - **Províncias/territórios/países:** `data/history/provinces/provinces.json` (14.402 províncias), `data/history/territories/territories.json` (737 territórios), `data/history/countries/` (193 JSON); `data/definitions/*.txt` restringidos a 4 países (NNN/GBR/FRA/DEU). O jogo ao vivo usa **5 nações** (GBR, FRA, DEU, NED, BEL).
 - **Fronteiras:** legado = Voronoi + SDF via Jump Flooding Algorithm (`jfa.glsl`/`jfa_encode.glsl` + `map_texture_sdf.gd`); jogo = raster Natural Earth composto por shader.
-- **Câmera/navegação:** `core/utils/camera_controller.gd` (WASD, zoom, rotação Q/E ou botão do meio); pitch −90° a −15°; inclinação inicial −56°, distância 52; wrap cilíndrico no eixo X.
+- **Câmera/navegação (estilo HOI3):** `core/utils/camera_controller.gd` (WASD, zoom, edge scroll 16 px — inativo com o mouse sobre a interface ou fora da janela, arrastar com botão do meio = pan); rotação horizontal desabilitada (mapa fixo norte para cima); pitch limitado −65° a −45°; zoom máximo 500 u; inclinação inicial −56°, distância 52; wrap cilíndrico no eixo X. **Limite elástico em Z** (`main_game.gd::_apply_camera_limit`): centro entre 78°N e 60°S, folga de 24 u e mola de 0,18 s; destinos de `move_to` presos à folha; teste `tools/camera_limit_test.gd`. **Vinheta 2D** sutil (`core/ui/screen_vignette.gdshader`, CanvasLayer 40, abaixo do HUD).
 - **Fontes de dados:** Natural Earth 10m, NASA GIBS Blue Marble, Esri World Imagery, USGS MRDS (depósitos).
 - **Limitações:** sem relevo real (heightmap/normal planos); `generate_opengs_map.py` com parâmetros divergentes dos dados commitados (8192×, lat −60..84 vs 5000×2500 global); terreno de todas as províncias = PLAINS.
 
@@ -106,7 +106,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 - **LOD (sem sobreposição):** próximo (<34 u) módulos 3D detalhados; intermediário (34–100 u) a mesma cidade em volumes simplificados com fade de `visibility_range` (`urban_renderer.gd`); distante (>100 u) marcador discreto com fade 100–112 u. A cidade é construída **uma vez** (≤96 u) e só alterna a visibilidade a 100 u — sem reconstruir no zoom. A biblioteca de módulos é cacheada entre cidades (`BuildingLibrary._shared`), o que evita recarregar os GLBs a cada cidade.
 - **Seleção:** `pick_city()` considera a **área do corpo** (projeta o raio do footprint na tela, com mínimo de 26 px), não só o centro. Anel fino **deitado no chão**, dimensionado por `UrbanGrowthManager.extent()`, + ponto central (`select_city()`); hover (`set_hover()`). O `TorusMesh` já nasce plano — sem o antigo giro de 90°.
 - **Cursor:** `core/ui/game_cursor.gd` instala `assets/ui/cursor_default.png` (seta de mapa) e `cursor_city.png` (anel de cidade) nos shapes ARROW/HELP; o hover roda por frame em `main_game._update_city_hover_pass()` e ignora a UI (`gui_get_hovered_control`).
-- **Escala:** cidade em `URBAN_SCALE=0.33` (as cidades ficam em posições geográficas reais; Bruxelas–Amsterdã dista ~4,5 u, então o diâmetro precisa ficar bem abaixo disso); veículos de comércio com 0,22 u de comprimento (`trade_convoys.gd`).
+- **Escala:** cidade em `URBAN_SCALE=0.165` (as cidades ficam em posições geográficas reais; Bruxelas–Amsterdã dista ~4,5 u, então o diâmetro precisa ficar bem abaixo disso); veículos de comércio com 0,22 u de comprimento (`trade_convoys.gd`).
 - **Tempo:** 1 dia = 60 s no ritmo normal (30 dias em 30 min); 2x = 30 s; 3x = 15 s (`core/economy/economy.gd`). A duração visual dos trechos acompanha o tempo de trânsito simulado (`transit_hours`), então os veículos não "teleportam".
 - **Crescimento procedural (`core/urban/`):** `UrbanGrowthManager` (estágio por população+industrialização) → `DistrictPlanner` (aglomerado orgânico estilo Victoria 3: espiral de ângulo áureo, densa no centro, contorno em lóbulos, alongamento por cidade, vazios na borda, **sem ruas nem grade**; 26/72/150 lotes por estágio) → `UrbanRenderer`. Solo urbano com borda orgânica (shader no `UrbanGrowthManager`). A posição de cada lote depende só de (seed, índice): crescer nunca move o que já existe.
 - **Distrito industrial:** aglomerado orgânico na borda da cidade, em direção fixa por cidade (`industrial_planner.gd`), com tons mais escuros.
@@ -207,7 +207,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 ## 11. Interface e UX
 
 - **Design system:** `core/ui/ui_kit.gd` (`UiKit`) — tokens (BG_DEEP `#0A1112`, PANEL, latão `#C9A24A`, etc.), tipografia (Cinzel para títulos, Barlow Condensed para corpo), escala 26/19/15/15/13/11 px, tema global, ~30 construtores (`metric`, `status_pill`, `table_row`, `empty_state`, `toast`, etc.).
-- **HUD (`core/ui/hud.gd`):** barra superior de 56 px (nação, data, progresso do dia, 4 indicadores com tooltip, velocidade, idioma, alertas, menu); doca direita (5 botões, atalhos 1–5); barra de modos de mapa (6 chips); janela modal responsiva (86%×84%, 960×560 a 1800×1000); menu de pausa (Esc).
+- **HUD (`core/ui/hud.gd`):** barra superior de 48 px (estilo HOI3: mais compacto); doca direita (5 botões, atalhos 1–5); barra de modos de mapa (6 chips); **minimapa** 208×104 px no canto inferior direito (`core/ui/minimap.gd`): imagem estática `map/map_data/atlas/minimap.png` (sem segunda câmera), retângulo latão vazado com a área vista (atualizado por `main_game._update_minimap`), clique/arraste leva a câmera ao ponto (`HUD.map_point_requested`); janela modal responsiva (86%×84%, 960×560 a 1800×1000); menu de pausa (Esc). Tooltips com borda latão e sombra (estilo HOI3).
 - **Telas (`core/ui/screens/`):** Economia, Comércio (Pedidos/Rotas/Mercado), Produção, População, Política (Nações/Diplomacia/Dossiê), Alertas.
 - **Painel de cidade:** `core/ui/city_panel.gd` (5 abas). `core/ui/city_detail.gd` é **legado**; `core/ui/city_economy_panel.gd` serve ao cenário demo.
 - **Navegação:** pilha de contexto com breadcrumb; foco por teclado (anel de latão); Esc fecha menu → janela → abre menu.
@@ -252,6 +252,11 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 | D-010 | Crescimento urbano determinístico (seed por cidade) e lotes nunca removidos | Identidade dos bairros |
 | D-011 | Clique em cidade sem física (projeção de viewport) | Simplicidade |
 | D-012 | Modo político usa base atlas (chapado); demais modos usam satélite | Leitura clara de fronteiras no modo principal; satélite preservado para contexto físico |
+| D-013 | Câmera estilo HOI3: rotação desabilitada, edge scroll, drag pan, pitch limitado | Mapa fixo norte para cima; navegação intuitiva para jogadores de grand strategy |
+| D-014 | Minimapa no canto inferior direito; mundo flat com vinheta de latitude | Orientação global sem custo de globo esférico; vinheta esconde bordas do mundo |
+| D-015 | Rótulos hierárquicos por produção; fade por distância | Capitais mais visíveis; reduz poluição visual no zoom distante |
+| D-017 | Sem diorama/mesa 3D, props, luminária, sombras reais nem globo; o mapa atlas atual é a apresentação | Escopo de projeto pequeno (decisão do usuário). Mantidos só o limite elástico da câmera em Z e uma vinheta 2D de tela; o wrap em X continua |
+| D-016 | Mapa político a partir de campos de distância com sinal (vetores Natural Earth), não de máscaras raster | Máscaras de 8–16 km/px ampliadas viravam escadinha; o SDF dá linhas nítidas em qualquer zoom numa passada opaca. Regenerar com `python tools/build_atlas_layers.py` (requer pyshp, scipy) |
 
 ---
 
@@ -274,6 +279,10 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Arquivos órfãos:** `game/ui/province_selected.gd/.tscn` (não referenciado), `main_game.tscn*.tmp`, `assets/fonts/IMPRISHA.TTF`/`ROMAN.FON`, `assets/audio/Open_World_-_Happiness_Full.WAV`, `map/lookup_texture.gd.uid`/`province_border_texture.gd.uid` (UIDs sem script), `tactical_map.gdshader` sem referências.
 - **Contagens divergentes:** `deposits.json` (289.575) × `mrds_deposits.jsonl` (304.632); `generate_opengs_map.py` (8192×, lat −60..84) × dados commitados (5000×2500 global).
 - **Contagem de nações:** 4 países nas definições × 5 nações no jogo.
+- **Corrigido (atlas):** a Holanda nunca era pintada (`NED` no jogo × `NLD` no Natural Earth) — mapeado em `build_atlas_layers.py` e `build_political_layer.py`; halo branco nas nações vinha da composição não pré-multiplicada em `political_overlay.gdshader`; as cópias laterais do mundo não trocavam de modo (agora `set_mode` age em todas).
+- **Corrigido (overlay dos modos de calor):** `political_overlay.gdshader` agora lê os mesmos SDFs/cores do atlas (`region_sdf`/`world_sdf` + `region_color`/`world_color`) em vez dos rasters antigos `country_borders.png`/`nation_fill.png`/`nav_mask.png` — fronteiras e costa nítidas em qualquer zoom, sem a escadinha das máscaras ampliadas. A amostragem/decodificação/linhas comuns foram extraídas para `map/map_shaders/atlas_common.gdshaderinc` (usado por `atlas_political.gdshader` e `political_overlay.gdshader`); os PNGs antigos foram mantidos no disco: `nav_mask.png` segue em uso por `core/economy/trade_convoys.gd`, e `country_borders.png`/`nation_fill.png` só pelo gerador `tools/build_political_layer.py`.
+- **Memória das camadas do atlas (corrigida):** `region_color.png`/`world_color.png` agora em compressão VRAM (S3TC, `compress/mode=2`); `region_sdf.png`/`world_sdf.png` seguem lossless (`mode=0`) pela precisão das linhas. Medido por `map_capture --bench` (texture_mem_mb): 353,3 MB antes → 274,6 MB depois (−78,7 MB) com o overlay novo. O "antes" já usa o overlay sobre SDFs (sem `country_borders`/`nation_fill`/`nav_mask` em VRAM), então o delta é só da compressão das cores; o baseline histórico do atlas_final media 389,8 MB por ainda carregar os rasters antigos. Sem perda visível: a comparação político `heat_after` × `atlas_final` mostrou 99,6% dos pixels com Δ≤5/255 (quantização imperceptível); os ~0,03% com Δ grande são deriva de rótulos entre execuções, presente também com cores sem compressão.
+- **Nomes de cidade** vêm do C++ em inglês (`LONDON`), não passam pela i18n — os nomes de nação no mapa já passam.
 
 ---
 

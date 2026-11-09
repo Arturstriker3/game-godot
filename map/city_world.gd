@@ -22,10 +22,13 @@ const PIXEL_TO_WORLD := 0.2
 const GPS_TEXTURE: Texture2D = preload("res://map/map_data/satellite.jpg")
 const RELIEF_TEXTURE: Texture2D = preload("res://map/map_data/normal.png")
 const MAP_SHADER: Shader = preload("res://map/map_shaders/satellite_map.gdshader")
-const NAV_MASK_TEXTURE: Texture2D = preload("res://map/map_data/nav_mask.png")
-const ATLAS_SHADER: Shader = preload("res://map/map_shaders/atlas_base.gdshader")
-const BORDERS_TEXTURE: Texture2D = preload("res://map/map_data/country_borders.png")
-const FILL_TEXTURE: Texture2D = preload("res://map/map_data/nation_fill.png")
+const ATLAS_SHADER: Shader = preload("res://map/map_shaders/atlas_political.gdshader")
+const ATLAS_REGION_SDF: Texture2D = preload("res://map/map_data/atlas/region_sdf.png")
+const ATLAS_REGION_COLOR: Texture2D = preload("res://map/map_data/atlas/region_color.png")
+const ATLAS_WORLD_SDF: Texture2D = preload("res://map/map_data/atlas/world_sdf.png")
+const ATLAS_WORLD_COLOR: Texture2D = preload("res://map/map_data/atlas/world_color.png")
+const ATLAS_NATIONS_PATH := "res://map/map_data/atlas/nations.json"
+const NATION_LABEL_FONT: Font = preload("res://assets/fonts/Cinzel-Variable.ttf")
 const POLITICAL_SHADER: Shader = preload("res://map/map_shaders/political_overlay.gdshader")
 const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 
@@ -54,10 +57,27 @@ const MARKER_FADE_IN_END := 112.0
 ## Escala da cidade no mapa. As cidades ficam em posições geográficas reais:
 ## Bruxelas–Amsterdã dista ~4,5 u, então o diâmetro precisa ficar bem abaixo
 ## disso para não encostar nas vizinhas.
-const URBAN_SCALE := 0.33
+const URBAN_SCALE := 0.165
 const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
 const LABEL_PIXEL_MAX := 0.12
+
+## Hierarquia de rótulos por população (estilo HOI3).
+const LABEL_SIZE_CAPITAL := 36  # Capitais / cidades grandes
+const LABEL_SIZE_CITY := 28     # Cidades médias
+const LABEL_SIZE_TOWN := 20     # Cidades pequenas
+const LABEL_POPULATION_CAPITAL := 2000.0  # Threshold para capital (t/dia de produção)
+const LABEL_POPULATION_CITY := 500.0      # Threshold para cidade
+## Fade de rótulo por distância (estilo HOI3).
+const LABEL_FADE_START := 80.0
+const LABEL_FADE_END := 120.0
+
+## Nomes de nação gravados no mapa.
+const NATION_LABEL_COLOR := Color(0.07, 0.08, 0.09, 0.68)
+const NATION_LABEL_NEAR := 34.0
+const NATION_LABEL_NEAR_SMALL := 95.0
+const NATION_LABEL_FADE := 18.0
+const NATION_LABEL_SMALL_EXTENT := 12.0
 
 const NATION_COLORS := {
 	"GBR": Color("#8C3A3C"),
@@ -79,6 +99,7 @@ var _selection: MeshInstance3D
 var _selection_dot: MeshInstance3D
 var _hover: MeshInstance3D
 var _selected_id := ""
+var _nation_labels: Array[Label3D] = []
 
 
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
@@ -90,6 +111,7 @@ func build(cities: Array) -> void:
 	_build_political_layer()
 	_build_mode_layer(cities)
 	_build_cities(cities)
+	_build_nation_labels()
 	set_mode(_mode)
 
 	# Cópias laterais: o mundo dá a volta em X (cilíndrico), então quem sai por
@@ -105,28 +127,38 @@ func build(cities: Array) -> void:
 func set_mode(mode: String) -> void:
 	_mode = mode
 	var is_atlas := mode == "political"
+	var show_overlay := mode not in ["geographic", "political"]
 
-	# Alterna entre base de satélite e base de atlas
-	if _gps_mesh != null:
-		_gps_mesh.visible = not is_atlas
-	if _atlas_mesh != null:
-		_atlas_mesh.visible = is_atlas
-
-	# Camada política: sempre visível exceto no geográfico puro
-	if _political_layer != null:
-		_political_layer.visible = mode != "geographic"
+	# Aplica em todas as cópias laterais (wrap), não só na central.
+	for root in _content_roots():
+		_set_child_visible(root, "SatelliteBase", not is_atlas)
+		_set_child_visible(root, "AtlasBase", is_atlas)
+		# O atlas já desenha costa e fronteiras; o overlay serve aos modos de
+		# calor, que continuam sobre o satélite com fronteiras discretas.
+		_set_child_visible(root, "PoliticalLayer", show_overlay)
+		var labels := root.get_node_or_null("NationLabels")
+		if labels != null:
+			labels.visible = is_atlas
 	if _political_material != null:
-		# No modo atlas, usar opacidades altas para preenchimento sólido
-		_political_material.set_shader_parameter("atlas_mode", is_atlas)
-		# Modos de calor (população, economia, etc.) usam overlay sutil sobre satélite
-		if not is_atlas:
-			var is_heat_mode := mode not in ["geographic", "political"]
-			_political_material.set_shader_parameter(
-					"fill_opacity", 0.028 if is_heat_mode else 0.11)
-			_political_material.set_shader_parameter(
-					"border_opacity", 0.42 if is_heat_mode else 0.55)
+		_political_material.set_shader_parameter("atlas_mode", false)
+		_political_material.set_shader_parameter("fill_opacity", 0.028)
+		_political_material.set_shader_parameter("border_opacity", 0.42)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
+
+
+func _content_roots() -> Array[Node3D]:
+	var roots: Array[Node3D] = []
+	for child in get_children():
+		if child is Node3D and child.has_node("AtlasBase"):
+			roots.append(child)
+	return roots
+
+
+static func _set_child_visible(root: Node, child_name: String, value: bool) -> void:
+	var node := root.get_node_or_null(child_name) as Node3D
+	if node != null:
+		node.visible = value
 
 
 func current_mode() -> String:
@@ -224,7 +256,7 @@ func _city_footprint(city_id: String) -> float:
 		if String(record["id"]) == city_id:
 			var urban = record.get("urban")
 			if urban != null and urban.has_method("extent"):
-				return maxf(1.3, float(urban.extent()) * URBAN_SCALE + 0.35)
+				return maxf(0.6, float(urban.extent()) * URBAN_SCALE + 0.18)
 			break
 	return 1.8
 
@@ -307,10 +339,15 @@ func _build_gps_plane() -> void:
 	_gps_mesh.material_override = gps_material
 	_content.add_child(_gps_mesh)
 
-	# Base de atlas (modo político): água teal, terra parchment
+	# Base de atlas (modo político): campos de distância do Natural Earth +
+	# terreno do satélite; costa, fronteiras e províncias numa passada opaca.
 	var atlas_material := ShaderMaterial.new()
 	atlas_material.shader = ATLAS_SHADER
-	atlas_material.set_shader_parameter("nav_mask", NAV_MASK_TEXTURE)
+	atlas_material.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
+	atlas_material.set_shader_parameter("region_color", ATLAS_REGION_COLOR)
+	atlas_material.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
+	atlas_material.set_shader_parameter("world_color", ATLAS_WORLD_COLOR)
+	atlas_material.set_shader_parameter("terrain_texture", GPS_TEXTURE)
 
 	_atlas_mesh = MeshInstance3D.new()
 	_atlas_mesh.name = "AtlasBase"
@@ -326,12 +363,11 @@ func _build_political_layer() -> void:
 
 	_political_material = ShaderMaterial.new()
 	_political_material.shader = POLITICAL_SHADER
-	_political_material.set_shader_parameter("fill_texture", FILL_TEXTURE)
-	_political_material.set_shader_parameter("border_texture", BORDERS_TEXTURE)
-	_political_material.set_shader_parameter("nav_mask", NAV_MASK_TEXTURE)
-	# 1 texel de cada textura, para engrossar/suavizar fronteira e costa.
-	_political_material.set_shader_parameter("border_texel", Vector2(1.0 / 5000.0, 1.0 / 2500.0))
-	_political_material.set_shader_parameter("nav_texel", Vector2(1.0 / 2500.0, 1.0 / 1250.0))
+	# Overlay dos modos de calor lê os mesmos SDFs/cores do atlas político.
+	_political_material.set_shader_parameter("region_sdf", ATLAS_REGION_SDF)
+	_political_material.set_shader_parameter("region_color", ATLAS_REGION_COLOR)
+	_political_material.set_shader_parameter("world_sdf", ATLAS_WORLD_SDF)
+	_political_material.set_shader_parameter("world_color", ATLAS_WORLD_COLOR)
 
 	_political_layer = MeshInstance3D.new()
 	_political_layer.name = "PoliticalLayer"
@@ -340,6 +376,95 @@ func _build_political_layer() -> void:
 	_political_layer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_political_layer.material_override = _political_material
 	_content.add_child(_political_layer)
+
+
+## Nomes das nações jogáveis gravados no chão, como numa carta. A âncora é o
+## centroide da maior massa de terra de cada nação (tools/build_atlas_layers.py).
+func _build_nation_labels() -> void:
+	# Conecta antes de qualquer retorno: os rótulos de cidade também dependem
+	# deste sinal para acompanhar o idioma.
+	if not I18n.locale_changed.is_connected(_on_locale_changed):
+		I18n.locale_changed.connect(_on_locale_changed)
+	if not FileAccess.file_exists(ATLAS_NATIONS_PATH):
+		return
+	var anchors = JSON.parse_string(FileAccess.get_file_as_string(ATLAS_NATIONS_PATH))
+	if typeof(anchors) != TYPE_DICTIONARY:
+		return
+
+	var font := FontVariation.new()
+	font.base_font = NATION_LABEL_FONT
+	font.variation_opentype = {"wght": 600}
+	font.spacing_glyph = 10
+
+	var holder := Node3D.new()
+	holder.name = "NationLabels"
+	_content.add_child(holder)
+	for tag in anchors:
+		var anchor: Dictionary = anchors[tag]
+		var extent := float(anchor.get("extent_px", 40.0)) * PIXEL_TO_WORLD
+		var label := Label3D.new()
+		label.name = "Nation_" + tag
+		label.set_meta("tag", tag)
+		label.set_meta("min_distance", NATION_LABEL_NEAR if extent >= NATION_LABEL_SMALL_EXTENT
+				else NATION_LABEL_NEAR_SMALL)
+		label.text = I18n.t("nation." + tag).to_upper()
+		label.font = font
+		label.font_size = 64
+		label.outline_size = 0
+		label.modulate = NATION_LABEL_COLOR
+		label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+		label.double_sided = false
+		label.alpha_cut = Label3D.ALPHA_CUT_DISABLED
+		label.render_priority = 2
+		label.set_meta("extent", extent)
+		_fit_nation_label(label)
+		label.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+		label.position = pixel_to_world(Vector2(anchor["x"], anchor["y"])) + Vector3(0.0, 0.2, 0.0)
+		holder.add_child(label)
+
+
+func _on_locale_changed(_locale: String) -> void:
+	for root in _content_roots():
+		var holder := root.get_node_or_null("NationLabels")
+		if holder != null:
+			for label in holder.get_children():
+				(label as Label3D).text = I18n.t("nation." + String(label.get_meta("tag"))).to_upper()
+				_fit_nation_label(label)
+		# Nomes das cidades, incluindo as cópias laterais do mundo cilíndrico.
+		for node in root.find_children("*", "Label3D", true, false):
+			var label := node as Label3D
+			if label.has_meta("city_id"):
+				label.text = I18n.city_name(
+						String(label.get_meta("city_id")),
+						String(label.get_meta("city_fallback"))).to_upper()
+
+
+## Capitulares proporcionais ao país, mas o nome nunca passa de 85% da largura
+## dele (nomes longos como "PAÍSES BAJOS" encolhem em vez de vazar).
+static func _fit_nation_label(label: Label3D) -> void:
+	var extent := float(label.get_meta("extent"))
+	var pixel_size := clampf(extent * 0.11, 0.9, 2.4) / 45.0
+	var width := label.font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT,
+			-1, label.font_size).x
+	if width > 0.0:
+		pixel_size = minf(pixel_size, extent * 0.85 / width)
+	label.pixel_size = pixel_size
+
+
+## Nomes de nação entram ao afastar e somem perto, para não disputar com as
+## cidades; nações pequenas (Benelux) só aparecem quando os nomes de cidade saem.
+func _update_nation_labels(camera_position: Vector3) -> void:
+	for root in _content_roots():
+		var holder := root.get_node_or_null("NationLabels") as Node3D
+		if holder == null or not holder.visible:
+			continue
+		for child in holder.get_children():
+			var label := child as Label3D
+			var near := float(label.get_meta("min_distance"))
+			var distance := camera_position.distance_to(label.global_position)
+			var alpha := _fade_in(distance, near, near + NATION_LABEL_FADE)
+			label.visible = alpha > 0.01
+			label.modulate.a = NATION_LABEL_COLOR.a * alpha
 
 
 func _build_mode_layer(cities: Array) -> void:
@@ -360,11 +485,19 @@ func _build_cities(cities: Array) -> void:
 		var city: Dictionary = ordered[index]
 		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
 		var color: Color = NATION_COLORS.get(city["nation"], Color.WHITE)
-		var discs := _spawn_city_marker(position, city["name"], color)
-		var label := _add_city_label(position, city["name"], color,
-				index < MAX_CITY_LABELS)
+		var city_id := String(city.get("id", ""))
+		var city_name := String(city.get("name", ""))
+		var discs := _spawn_city_marker(position, city_name, color)
+		var production := float(city.get("production", 0.0))
+		var label := _add_city_label_hierarchical(position,
+				I18n.city_name(city_id, city_name), color,
+				production, index < MAX_CITY_LABELS)
+		if label != null:
+			# Guarda a chave/fallback para atualizar o texto ao trocar idioma.
+			label.set_meta("city_id", city_id)
+			label.set_meta("city_fallback", city_name)
 		_city_nodes.append({
-			"id": String(city.get("id", "")),
+			"id": city_id,
 			"city": city,
 			"position": position,
 			"discs": discs,
@@ -440,20 +573,29 @@ func _add_disc(position: Vector3, radius: float, height: float, color: Color) ->
 
 
 ## Nome da cidade em caixa alta, como legenda de carta militar.
-func _add_city_label(position: Vector3, city_name: String, color: Color,
-		with_label: bool) -> Label3D:
+## Hierarquia por produção: capitais maiores, cidades menores (estilo HOI3).
+func _add_city_label_hierarchical(position: Vector3, city_name: String, color: Color,
+		production: float, with_label: bool) -> Label3D:
 	if not with_label:
 		return null
+	
+	# Hierarquia de tamanho por produção (proxy de importância)
+	var font_size := LABEL_SIZE_TOWN
+	if production >= LABEL_POPULATION_CAPITAL:
+		font_size = LABEL_SIZE_CAPITAL
+	elif production >= LABEL_POPULATION_CITY:
+		font_size = LABEL_SIZE_CITY
+	
 	var label := Label3D.new()
 	label.text = city_name.to_upper()
 	label.font = LABEL_FONT
-	label.font_size = 30
+	label.font_size = font_size
 	label.pixel_size = 0.019
 	# Texto claro com halo escuro: lê sobre qualquer preenchimento de nação e
 	# não se confunde com a cor do país. `color` fica só como dica de identidade.
 	label.modulate = Color("#E8E2D0")
 	label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
-	label.outline_size = 12
+	label.outline_size = int(font_size * 0.4)  # Outline proporcional
 	label.no_depth_test = true
 	label.render_priority = 10
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -471,6 +613,7 @@ func _process(_delta: float) -> void:
 		return
 
 	var camera_position := camera.global_position
+	_update_nation_labels(camera_position)
 	for record in _city_nodes:
 		var world_position: Vector3 = to_global(record["position"])
 		var distance := camera_position.distance_to(world_position)
@@ -482,6 +625,10 @@ func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector
 	if label != null:
 		label.pixel_size = clampf(LABEL_PIXEL_PER_UNIT * distance,
 				LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
+		# Fade de rótulo por distância (estilo HOI3): desaparece gradualmente longe
+		var label_alpha := 1.0 - _fade_in(distance, LABEL_FADE_START, LABEL_FADE_END)
+		label.modulate.a = label_alpha
+		label.visible = label_alpha > 0.01
 
 	# Marcador discreto (continental): aparece só quando a cidade já sumiu.
 	var marker_alpha := _fade_in(distance, MARKER_FADE_IN_START, MARKER_FADE_IN_END)

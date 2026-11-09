@@ -11,9 +11,14 @@ signal far_map(is_far: bool)
 @export var camera_can_process: bool = true
 @export var camera_can_move: bool = true
 @export var camera_can_zoom: bool = true
-@export var camera_can_rotate_by_mouse_offset: bool = true
-@export var camera_can_rotate_by_keys: bool = true
-@export var camera_can_automatic_pan: bool = false
+## Rotação por mouse desabilitada por padrão (estilo HOI3: mapa fixo norte para cima).
+@export var camera_can_rotate_by_mouse_offset: bool = false
+## Rotação por teclas desabilitada por padrão (estilo HOI3).
+@export var camera_can_rotate_by_keys: bool = false
+## Edge scroll habilitado por padrão (estilo HOI3).
+@export var camera_can_automatic_pan: bool = true
+## Arrastar com botão do meio faz pan em vez de rotação.
+@export var camera_can_drag_pan: bool = true
 
 @export_category("Camera Move Settings")
 @export var camera_move_acceleration_speed_factor: Vector3 = Vector3(0.5, 0.5, 0.5)
@@ -34,14 +39,21 @@ signal far_map(is_far: bool)
 @export var camera_rotate_keys_acceleration_speed_factor: Vector2 = Vector2(0.6, 0.6)
 @export var camera_rotate_keys_velocity_half_life: float = 0.15
 
-@export var camera_rotation_min_bound: Vector2 = Vector2(deg_to_rad(-90), -INF)
-@export var camera_rotation_max_bound: Vector2 = Vector2(deg_to_rad(-15), INF)
+## Pitch limitado para manter leitura de mapa (estilo HOI3: ~−56° fixo, range de 20°).
+@export var camera_rotation_min_bound: Vector2 = Vector2(deg_to_rad(-65), -INF)
+@export var camera_rotation_max_bound: Vector2 = Vector2(deg_to_rad(-45), INF)
+
+@export_category("Camera Drag Pan Settings")
+@export var camera_drag_pan_speed: float = 0.5
+## Threshold em pixels antes de ativar o pan (evita conflito com clique).
+@export var camera_drag_pan_threshold: float = 4.0
 
 @export_category("Camera Zoom Settings")
 @export var camera_zoom_acceleration_speed_factor: float = 3.0
 @export var camera_zoom_velocity_half_life: float = 0.15
 @export var camera_zoom_min_bound: float = 10.0
-@export var camera_zoom_max_bound: float = 1000.0
+## Zoom máximo reduzido para 500 u (já cobre o mundo inteiro).
+@export var camera_zoom_max_bound: float = 500.0
 @export var camera_zoom_threshold: float = 50.0
 
 @export_category("Camera Move-To Settings")
@@ -103,6 +115,12 @@ class AutomaticPanCalculator extends CameraTranslationCalculator:
 		var margin:float = global.camera_automatic_pan_margin
 
 		if margin <= 0:
+			return Vector3.ZERO
+		# Sem rolagem com o mouse sobre a interface (barra, doca, janela, minimapa)
+		# ou fora da janela do jogo.
+		if viewport_current.gui_get_hovered_control() != null:
+			return Vector3.ZERO
+		if not viewport_visible_rectangle.has_point(Vector2i(current_mouse_position)):
 			return Vector3.ZERO
 
 		var pan_direction:Vector2 = Vector2.ZERO
@@ -212,6 +230,12 @@ class ZoomCalculator extends PVACalculator:
 
 var camera_zoom: ZoomCalculator
 
+# Drag pan state (arrastar com botão do meio faz pan)
+var _drag_pan_active: bool = false
+var _drag_pan_start: Vector2 = Vector2.ZERO
+var _drag_pan_origin: Vector3 = Vector3.ZERO
+var _drag_pan_moved: bool = false
+
 
 func _ready() -> void:
 	camera_move = MovementCalculator.new(
@@ -267,11 +291,29 @@ func _process(delta: float) -> void:
 		camera_rotate_mouse.process(delta)
 	if camera_can_rotate_by_keys:
 		camera_rotate_keys.process(delta)
-	if camera_can_automatic_pan:
+	# Edge scroll só quando não está arrastando e não há UI aberta
+	if camera_can_automatic_pan and not _drag_pan_active:
 		camera_automatic_pan.process(delta)
+	# Drag pan contínuo
+	if camera_can_drag_pan and _drag_pan_active:
+		_process_drag_pan()
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Drag pan com botão do meio (estilo HOI3)
+	if camera_can_drag_pan:
+		if event.is_action_pressed("camera_rotate_mouse"):
+			_drag_pan_active = true
+			_drag_pan_start = get_viewport().get_mouse_position()
+			_drag_pan_origin = global_position
+			_drag_pan_moved = false
+			get_viewport().set_input_as_handled()
+			return
+		elif event.is_action_released("camera_rotate_mouse"):
+			_drag_pan_active = false
+			get_viewport().set_input_as_handled()
+			return
+
 	if event.is_action_pressed("province_select"):
 		shoot_ray(event)
 
@@ -284,7 +326,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			far_map.emit(true)
 			
-	if camera_can_rotate_by_mouse_offset:
+	if camera_can_rotate_by_mouse_offset and not camera_can_drag_pan:
 		camera_rotate_mouse.on_input_event(event)
 	if camera_can_rotate_by_keys:
 		camera_rotate_keys.on_input_event(event)
@@ -312,6 +354,35 @@ func _on_province_click(world_pos: Vector2, event: InputEvent) -> void:
 
 
 var _move_to_tween: Tween = null
+
+
+## Verdadeiro enquanto o jogador arrasta o mapa (botão do meio).
+func is_dragging() -> bool:
+	return _drag_pan_active
+
+
+## Processa o drag pan (arrastar com botão do meio move a câmera).
+func _process_drag_pan() -> void:
+	var current := get_viewport().get_mouse_position()
+	var delta := current - _drag_pan_start
+	
+	# Threshold antes de ativar (evita conflito com clique)
+	if not _drag_pan_moved and delta.length() < camera_drag_pan_threshold:
+		return
+	_drag_pan_moved = true
+	
+	# Converte delta de tela para mundo (escala pelo zoom)
+	var zoom_factor := float(camera_zoom._clamp_value(camera_zoom.get_value()))
+	var world_delta := Vector3(
+		-delta.x * camera_drag_pan_speed * zoom_factor * 0.01,
+		0.0,
+		-delta.y * camera_drag_pan_speed * zoom_factor * 0.01
+	)
+	
+	# Aplica rotação da câmera ao movimento
+	world_delta = transform.basis * world_delta
+	global_position = _drag_pan_origin + world_delta
+
 
 func move_to(target: Vector2, multiplier: float = 1.0) -> void:
 	if _move_to_tween != null and _move_to_tween.is_running():

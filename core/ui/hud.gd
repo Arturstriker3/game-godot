@@ -18,11 +18,14 @@ const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
 ## Contexto pedido pelo HUD para o mapa (câmera e camada de dados).
 signal city_focused(city_id: String)
 signal map_mode_requested(mode: String)
+## Clique no minimapa: ponto do mapa em UV (0..1).
+signal map_point_requested(map_uv: Vector2)
 
 const PLAYER_NATION := "GBR"
 const IMAGERY_CREDIT := "Imagery © Esri, Maxar, Earthstar Geographics"
 
-const TOP_BAR_HEIGHT := 56.0
+## Altura da barra superior reduzida para 48 px (estilo HOI3: mais compacto).
+const TOP_BAR_HEIGHT := 48.0
 const WINDOW_MIN := Vector2(960.0, 560.0)
 const WINDOW_MAX := Vector2(1800.0, 1000.0)
 const WINDOW_RATIO := Vector2(0.86, 0.84)
@@ -75,6 +78,7 @@ var _mode := "political"
 var _menu_layer: Control
 var _menu_credits: Label
 var _credit_label: Label
+var _minimap: Minimap
 
 var _metric_values := {}
 var _date_label: Label
@@ -95,6 +99,7 @@ func _ready() -> void:
 	_build_menu()
 	_build_credit()
 	_build_mode_bar()
+	_build_minimap()
 
 	Economy.status_updated.connect(_on_status)
 	I18n.locale_changed.connect(_on_locale_changed)
@@ -230,6 +235,26 @@ func set_map_mode(mode: String) -> void:
 
 func map_mode() -> String:
 	return _mode
+
+
+# --- Minimapa ----------------------------------------------------------------
+
+func _build_minimap() -> void:
+	_minimap = Minimap.new()
+	_minimap.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	var full := Minimap.MINIMAP_SIZE + Vector2.ONE * Minimap.BORDER_WIDTH * 2.0
+	_minimap.offset_right = -UiKit.SPACE_LG
+	_minimap.offset_bottom = -UiKit.SPACE_XL
+	_minimap.offset_left = _minimap.offset_right - full.x
+	_minimap.offset_top = _minimap.offset_bottom - full.y
+	_minimap.point_requested.connect(func(uv: Vector2) -> void: map_point_requested.emit(uv))
+	_root.add_child(_minimap)
+
+
+## Área vista pela câmera, em UV do mapa (chamado por main_game.gd).
+func set_minimap_view(center_uv: Vector2, size_uv: Vector2) -> void:
+	if _minimap != null:
+		_minimap.set_view(center_uv, size_uv)
 
 
 # --- Barra superior ----------------------------------------------------------

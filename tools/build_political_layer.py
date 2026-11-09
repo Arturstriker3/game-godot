@@ -142,8 +142,10 @@ def write_fill(owner_ids: np.ndarray, tag_index: dict[str, int]) -> None:
     height, width = sampled.shape
     pixels = np.zeros((height, width, 4), dtype=np.uint8)
 
+    # O jogo chama a Holanda de NED; o Natural Earth usa NLD.
+    natural_earth_tag = {"NED": "NLD"}
     for tag, color in NATION_COLORS.items():
-        index = tag_index.get(tag, 0)
+        index = tag_index.get(natural_earth_tag.get(tag, tag), 0)
         if index == 0:
             continue
         mask = sampled == index

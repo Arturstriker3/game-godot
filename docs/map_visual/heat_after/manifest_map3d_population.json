@@ -1,0 +1,110 @@
+{
+  "bench": {
+    "d013": {
+      "avg_ms": 4.237,
+      "draw_calls": 701.0,
+      "fps": 236.0,
+      "primitives": 582288.0,
+      "texture_mem_mb": 274.6,
+      "video_mem_mb": 561.1,
+      "worst_ms": 4.609
+    },
+    "d026": {
+      "avg_ms": 4.262,
+      "draw_calls": 719.0,
+      "fps": 234.7,
+      "primitives": 518922.0,
+      "texture_mem_mb": 274.6,
+      "video_mem_mb": 561.1,
+      "worst_ms": 8.283
+    },
+    "d052": {
+      "avg_ms": 4.237,
+      "draw_calls": 71.0,
+      "fps": 236.0,
+      "primitives": 10958.0,
+      "texture_mem_mb": 274.6,
+      "video_mem_mb": 561.1,
+      "worst_ms": 4.317
+    },
+    "d120": {
+      "avg_ms": 4.444,
+      "draw_calls": 26.0,
+      "fps": 225.0,
+      "primitives": 4386.0,
+      "texture_mem_mb": 274.6,
+      "video_mem_mb": 560.6,
+      "worst_ms": 17.465
+    }
+  },
+  "city_count": 5,
+  "engine": "4.7.2-stable (official)",
+  "mode": "population",
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_population_d013.png": {
+      "distance": 13.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/heat_after/map3d_population_d013.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 5
+    },
+    "map3d_population_d026.png": {
+      "distance": 26.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/heat_after/map3d_population_d026.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 5
+    },
+    "map3d_population_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/heat_after/map3d_population_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 5
+    },
+    "map3d_population_d120.png": {
+      "distance": 120.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "population",
+      "path": "res://docs/map_visual/heat_after/map3d_population_d120.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 0
+    }
+  },
+  "tag": "before",
+  "timestamp": "2026-11-09T16:09:51",
+  "warnings": []
+}

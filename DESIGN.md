@@ -71,10 +71,34 @@ partir do Esri World Imagery) passado pelo shader
   para a água não competir com as camadas estratégicas;
 - crédito obrigatório da imagem no rodapé do HUD.
 
-## Camada geopolítica
+## Mapa político (atlas)
 
-As fronteiras vêm das fronteiras reais do Natural Earth 10m, rasterizadas na
-mesma projeção do terreno por `tools/build_political_layer.py`:
+O modo político é uma carta desenhada por `map/map_shaders/atlas_political.gdshader`
+em uma passada opaca, a partir de campos de distância com sinal gerados dos
+vetores do Natural Earth 10m por `tools/build_atlas_layers.py`
+(`map/map_data/atlas/`):
+
+- **Fronteiras de país:** tinta `#17191B`, mínimo 1,8 px e ~2 km de largura no
+  mundo (engrossam ao aproximar); faixa 30% mais escura junto à fronteira, por
+  dentro de cada país.
+- **Províncias:** divisas admin-1 reais, 0,85 px a 40%; somem ao afastar.
+- **Costa:** linha de 1,15 px; mar com faixa rasa clara e duas linhas de nível
+  paralelas à costa (somem ao afastar).
+- **Terra:** cor da nação × tom regional do satélite (relevo, florestas,
+  desertos) × grão de papel procedural. Nações jogáveis em tons sóbrios
+  (GBR `#A04844`, FRA `#506C9C`, DEU `#70757C`, NED `#C07840`, BEL `#B69C4A`);
+  as demais em pergaminho com leve variação por `MAPCOLOR9`.
+- **Nomes de nação:** Cinzel 600 em caixa alta, tinta a 68%, gravados no chão,
+  no máximo 85% da largura do país; aparecem a partir de 34 u (Benelux só a
+  partir de 95 u, quando os nomes de cidade saem).
+- **Borda do mundo:** a vinheta polar termina exatamente na cor de fundo do
+  ambiente, então o horizonte não mostra a quina da prancha.
+- **Regenerar:** `python tools/build_atlas_layers.py` (pyshp + scipy).
+
+## Camada geopolítica (modos sobre o satélite)
+
+Nos modos de calor, as fronteiras vêm das fronteiras reais do Natural Earth 10m,
+rasterizadas na mesma projeção do terreno por `tools/build_political_layer.py`:
 
 - `map/map_data/country_borders.png` (L8, 5000×2500): linha de 1 px onde o país
   do vizinho muda, com mipmaps para não tremer no zoom distante;
@@ -196,21 +220,45 @@ substituir as cinco cidades atuais.
   dinheiro/população/estoque, lucro privado positivo, satisfação e resposta a um
   choque de preço no pão (gasto alimentar sobe e poupança cai).
 
-## Câmera e navegação
+## Câmera e navegação (estilo HOI3)
 
-- Inclinação inicial de −56° e distância 52, enquadrando o centro das cinco
-  cidades na origem.
-- Rotação horizontal livre (360°), por Q/E ou arrastando com o botão do meio;
-  a rotação vertical fica entre −90° e −15°.
-- A posição da câmera dá a volta no eixo X a cada 1000 unidades, reaparecendo
-  no lado oposto do mapa — o mundo continua porque há cópias laterais da carta.
+- **Inclinação:** inicial de −56° e distância 52, enquadrando o centro das cinco
+  cidades na origem. Pitch limitado a −65° a −45° (range de 20°).
+- **Rotação:** desabilitada por padrão. O mapa fica fixo com norte para cima,
+  como em Hearts of Iron III. Jogadores de grand strategy esperam orientação
+  estável; rotação livre desorienta.
+- **Edge scroll:** habilitado com margem de 16 px. Move a câmera quando o mouse
+  encosta nas bordas da tela; inativo com o mouse sobre qualquer controle da
+  interface (barra, doca, janela, minimapa) ou fora da janela.
+- **Drag pan:** arrastar com o botão do meio move a câmera (em vez de rotacionar).
+  Threshold de 4 px antes de ativar para não conflitar com clique.
+- **Zoom:** mínimo 10 u, máximo 500 u (cobre o mundo inteiro).
+- **Wrap:** a posição da câmera dá a volta no eixo X a cada 1000 unidades,
+  reaparecendo no lado oposto do mapa — o mundo continua porque há cópias
+  laterais da carta.
+- **Limite da folha (Z):** o centro da câmera fica entre 78°N e 60°S. Além
+  disso há uma folga elástica de 24 u: empurrar (tecla, borda, arrasto) encontra
+  resistência e, ao soltar, uma mola de 0,18 s devolve a câmera. Destinos de
+  `move_to` (cidade, minimapa) já saem presos à folha. Implementado em
+  `game/main_game.gd` (`_apply_camera_limit`, roda depois de todos os
+  movimentos); teste em `tools/camera_limit_test.gd`.
+- **Vinheta de tela:** `core/ui/screen_vignette.gdshader` num `CanvasLayer` 40
+  (abaixo do HUD, que é 50): escurece só cantos e bordas em ~30% na cor de
+  fundo do ambiente. Desligável por `VIGNETTE_ENABLED` em `main_game.gd`.
+- **Vinheta de latitude:** `atlas_political` e `satellite_map` escurecem as
+  latitudes extremas para esconder a borda do mundo.
 
 ## Composição
 
-- Barra superior fixa de 56 px: nação (nome + “Sua nação”), data e progresso do
-  dia, quatro indicadores (população, estoque, déficit, trânsito), velocidade,
-  idioma e menu. Os indicadores têm tooltip explicando a origem do número;
-  ao pausar, o rótulo do dia troca para “Pausado” em `WARNING`.
+- Barra superior fixa de **48 px** (estilo HOI3, mais compacto): nação (nome +
+  "Sua nação"), data e progresso do dia, quatro indicadores (população, estoque,
+  déficit, trânsito), velocidade, idioma e menu. Os indicadores têm tooltip
+  explicando a origem do número; ao pausar, o rótulo do dia troca para "Pausado"
+  em `WARNING`. Tooltips têm borda latão e sombra de 4 px (estilo HOI3).
+- **Minimapa** no canto inferior direito, 208×104 px (`core/ui/minimap.gd`):
+  mapa político global estático (`map/map_data/atlas/minimap.png`, mesmo
+  pipeline do atlas), borda `EDGE` de 1 px, retângulo latão vazado com a área
+  vista pela câmera; clicar ou arrastar leva a câmera ao ponto.
 - Doca à direita, 108 px de largura, cinco botões de 52 px (Economia,
   Comércio, Produção, População, Política) com tooltip “1 · Economia” etc. O
   botão ativo usa fundo `BG_DEEP` e borda latão.

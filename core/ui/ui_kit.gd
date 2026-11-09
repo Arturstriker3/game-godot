@@ -148,7 +148,8 @@ static func build_theme() -> Theme:
 	theme.set_stylebox("grabber", "VScrollBar", flat(EDGE, EDGE))
 	theme.set_stylebox("grabber_highlight", "VScrollBar", flat(STEEL, STEEL))
 	theme.set_stylebox("grabber_pressed", "VScrollBar", flat(BRASS, BRASS))
-	theme.set_stylebox("panel", "TooltipPanel", flat(PANEL_RAISED, EDGE, 8.0))
+	# Tooltip com borda latão (estilo HOI3): destaca do fundo do mapa.
+	theme.set_stylebox("panel", "TooltipPanel", tooltip_style())
 	theme.set_color("font_color", "TooltipLabel", TEXT)
 	theme.set_font_size("font_size", "TooltipLabel", FS_SMALL)
 	theme.set_constant("separation", "HSeparator", 1)
@@ -184,6 +185,24 @@ static func outline(color: Color) -> StyleBoxFlat:
 	style.border_color = color
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(RADIUS)
+	return style
+
+
+## Estilo de tooltip HOI3: fundo escuro com borda latão e sombra sutil.
+static func tooltip_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = PANEL
+	style.border_color = BRASS
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(RADIUS)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	# Sombra sutil (estilo HOI3)
+	style.shadow_color = Color(0, 0, 0, 0.4)
+	style.shadow_size = 4
+	style.shadow_offset = Vector2(2, 2)
 	return style
 
 

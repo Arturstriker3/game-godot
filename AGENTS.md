@@ -33,6 +33,10 @@ $godot = "C:\Users\artur\OneDrive\Área de Trabalho\Godot_v4.7.2-stable_win64.ex
 & $godot --headless --path . --script res://tools/economy_long_run_test.gd
 & $godot --headless --path . --script res://tools/economy_panel_test.gd
 & $godot --headless --path . --script res://tools/population_demo_test.gd
+& $godot --headless --path . --script res://tools/camera_limit_test.gd
+
+# Camadas do mapa atlas (requer pyshp e scipy)
+python tools/build_atlas_layers.py
 
 # Captura e auditoria de UI
 & $godot --path . res://tools/ui_capture.tscn -- --phase=f4 --run=final --sizes=1920x1080,1600x900,1366x768,2560x1440
