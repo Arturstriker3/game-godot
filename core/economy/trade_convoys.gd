@@ -16,7 +16,7 @@ const PLANE_SCENE: PackedScene = preload("res://assets/models/plane.glb")
 
 # Tamanho alvo (unidades de mundo) do maior eixo do modelo. Veículos devem ser
 # pequenos diante da cidade (a cidade tem ~6–8 unidades de diâmetro).
-const MODEL_LENGTH := 0.3
+const MODEL_LENGTH := 0.25
 # Altura acima do plano do mapa para o modelo não afundar no terreno.
 const HEIGHT_OFFSET := 0.18
 # Duração visual de cada trecho: acompanha o tempo de trânsito simulado e o
