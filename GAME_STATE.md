@@ -2,7 +2,7 @@
 
 > Fonte central de conhecimento do jogo. Consulte antes de qualquer mudança importante e atualize as seções afetadas ao concluir uma implementação.
 >
-> - **Última auditoria:** 2026-11-09 (auditoria econômica; núcleo demo alterado e laboratório de 40 execuções executado).
+> - **Última auditoria:** 2026-11-09 (modo atlas implementado; modo político usa base chapada estilo atlas histórico).
 > - **Fonte última da verdade:** o código. Em divergência entre este documento e o código, o código vence.
 > - **Nome:** o projeto vive em `G:\projetos\opengs-game`; o app se chama **Open Grand Strategy** (`project.godot`), mas o menu de pausa e documentos internos usam o nome **WarEconomy**. `README.md` descreve o mapa upstream "OpenGS" (províncias), que coexiste com o jogo de cidades como ferramenta de edição.
 
@@ -38,7 +38,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 | IA econômica | IMPLEMENTADO (demo) | investidor privado, governo, prospecção | `core/economy/ai/*`, `economy_ai_test.gd` |
 | Recursos minerais (extração/esgotamento) | PARCIAL | depósitos + prospecção; extração/esgotamento não estão no núcleo | `core/economy/geography_service.gd`, `data/definitions/natural/deposits.json` |
 | População/POPs | PARCIAL | demo simula POPs, emprego, salários, poupança; migração/demografia ausentes | `economy_sim.cpp` (`DemoPop`) |
-| Mapa principal (cidades) | IMPLEMENTADO | satélite + overlay político + modos de calor + LOD | `map/city_world.gd`, `map/map_shaders/*` |
+| Mapa principal (cidades) | IMPLEMENTADO | modo atlas (chapado) + satélite + overlay político + modos de calor + LOD | `map/city_world.gd`, `map/map_shaders/*` |
 | Mapa de províncias (editor) | IMPLEMENTADO | Voronoi + SDF/JFA, 5 modos; usado só pelo editor | `map/map.gd`, `map/map_texture_sdf.gd` |
 | Relevo/altura real | NÃO IMPLEMENTADO | `height.png`/`normal.png` são placeholders planos | `generate_opengs_map.py`, `docs/map_visual/REPORT.md` |
 | Cidades 3D + crescimento urbano | IMPLEMENTADO | módulos GLB + `core/urban/*` + LOD | `city_world.gd`, `core/urban/*` |
@@ -78,7 +78,10 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 ## 4. Mapa e geografia
 
 - **Dois sistemas de mapa coexistem:**
-  1. **Jogo principal — `map/city_world.gd`:** base geográfica = `satellite.jpg` (8192×4096, equirretangular global, Esri World Imagery) via `satellite_map.gdshader`; overlay político via `political_overlay.gdshader` (`country_borders.png` + `nation_fill.png`); modos de calor via `map_modes.gdshader` + `map_mode_layer.gd`.
+  1. **Jogo principal — `map/city_world.gd`:** duas bases visuais alternáveis por modo:
+     - **Modo "political" (atlas):** base chapada via `atlas_base.gdshader` (água teal `#2E5B5C`, terra parchment `#E8DFC7`), com preenchimento opaco das 5 nações e fronteiras nítidas via `political_overlay.gdshader` (uniforms `atlas_mode=true`, `atlas_fill_opacity=0.88`, `atlas_border_opacity=0.95`). Estilo atlas histórico sem textura de satélite.
+     - **Demais modos:** base de satélite `satellite.jpg` (8192×4096, Esri World Imagery) via `satellite_map.gdshader`, com overlay político sutil.
+     - Modos de calor (população, economia, indústria, recursos) via `map_modes.gdshader` + `map_mode_layer.gd`.
   2. **Editor — `map/map.gd` + `map/map_mode.gd`:** mapa raster de províncias (SubViewport/Sprite2D sobre plano 3D), com SDF/JFA de fronteiras; usado por `editor/editor.tscn` e `tools/map_capture.gd`, **não** pelo jogo.
 - **Projeção/coordenadas:** equirretangular; conversão pixel↔lonlat em `build_natural_geography.py` (`lon=px/5000*360−180`, `lat=90−py/2500*180`). Mundo = plano de 1000×500 unidades (`PIXELS_PER_WORLD_UNIT=5`).
 - **Camadas raster (`map/map_data/`):**
@@ -248,6 +251,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 | D-009 | IA econômica determinística (sem LLM), a cada 7 dias | Previsibilidade/testabilidade |
 | D-010 | Crescimento urbano determinístico (seed por cidade) e lotes nunca removidos | Identidade dos bairros |
 | D-011 | Clique em cidade sem física (projeção de viewport) | Simplicidade |
+| D-012 | Modo político usa base atlas (chapado); demais modos usam satélite | Leitura clara de fronteiras no modo principal; satélite preservado para contexto físico |
 
 ---
 

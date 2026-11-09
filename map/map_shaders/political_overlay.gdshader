@@ -13,13 +13,22 @@ uniform float border_opacity : hint_range(0.0, 1.0) = 0.45;
 uniform float fill_opacity : hint_range(0.0, 1.0) = 0.11;
 uniform vec3 player_tint : source_color = vec3(1.0, 1.0, 1.0);
 
+// Modo atlas: opacidade alta para o preenchimento cobrir a base parchment.
+uniform bool atlas_mode = false;
+uniform float atlas_fill_opacity : hint_range(0.0, 1.0) = 0.88;
+uniform float atlas_border_opacity : hint_range(0.0, 1.0) = 0.95;
+
 void fragment() {
 	vec4 fill = texture(fill_texture, UV);
 	float border = texture(border_texture, UV).r;
 
+	// Opacidades: no modo atlas, preenchimento e borda são quase opacos.
+	float eff_fill_opacity = atlas_mode ? atlas_fill_opacity : fill_opacity;
+	float eff_border_opacity = atlas_mode ? atlas_border_opacity : border_opacity;
+
 	// Preenchimento da nação por baixo, fronteira por cima (composição "over").
-	float fill_alpha = fill.a * fill_opacity;
-	float border_alpha = border * border_opacity;
+	float fill_alpha = fill.a * eff_fill_opacity;
+	float border_alpha = border * eff_border_opacity;
 	float alpha = border_alpha + fill_alpha * (1.0 - border_alpha);
 	if (alpha <= 0.0001) {
 		discard;

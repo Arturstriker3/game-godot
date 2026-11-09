@@ -27,6 +27,7 @@ var _planner: DistrictPlanner
 var _industrial_planner: IndustrialPlanner
 var _renderer: UrbanRenderer
 var _ground: MeshInstance3D
+var _industry_ground: MeshInstance3D
 
 ## Shader do solo é o mesmo para todas as cidades; compila uma vez só.
 static var _ground_shader: Shader
@@ -173,27 +174,52 @@ func _refresh_render() -> void:
 	_update_ground()
 
 
-## Ajusta o solo urbano ao tamanho atual da cidade (núcleo + distrito).
+## Solo urbano (cidade) e solo industrial (pátio escuro), cada um centrado no
+## seu conjunto de lotes. Sem isso o polo industrial flutua sobre o satélite.
 func _update_ground() -> void:
+	_ground = _refresh_ground(_ground, "UrbanGround", layout.lots,
+			Color(0.30, 0.26, 0.20, 0.72), 0.45)
+	_industry_ground = _refresh_ground(_industry_ground, "IndustryGround",
+			layout.industrial_lots, Color(0.15, 0.14, 0.12, 0.85), 0.7)
+
+
+## Cria/atualiza uma mancha de solo sob um conjunto de lotes, centrada neles.
+func _refresh_ground(existing: MeshInstance3D, node_name: String, lots: Array,
+		tint: Color, margin: float) -> MeshInstance3D:
+	if lots.is_empty():
+		if existing != null:
+			existing.visible = false
+		return existing
+
+	var center := Vector2.ZERO
+	for lot in lots:
+		center += Vector2(float(lot["x"]), float(lot["z"]))
+	center /= float(lots.size())
+
 	var extent := 0.0
-	for lot in layout.lots:
-		extent = maxf(extent, Vector2(float(lot["x"]), float(lot["z"])).length())
-	if _ground == null:
+	for lot in lots:
+		extent = maxf(extent, Vector2(float(lot["x"]), float(lot["z"])).distance_to(center))
+
+	if existing == null:
 		if _ground_shader == null:
 			_ground_shader = Shader.new()
 			_ground_shader.code = GROUND_SHADER_CODE
 		var material := ShaderMaterial.new()
 		material.shader = _ground_shader
 		material.set_shader_parameter("seed", float(layout.seed_value % 997))
-		_ground = MeshInstance3D.new()
-		_ground.name = "UrbanGround"
-		_ground.mesh = PlaneMesh.new()
-		_ground.material_override = material
-		_ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_ground.position.y = 0.004
-		add_child(_ground)
-	var size := (extent + 0.4) * 2.0
-	(_ground.mesh as PlaneMesh).size = Vector2(size, size)
+		material.set_shader_parameter("tint", tint)
+		existing = MeshInstance3D.new()
+		existing.name = node_name
+		existing.mesh = PlaneMesh.new()
+		existing.material_override = material
+		existing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(existing)
+
+	existing.visible = true
+	existing.position = Vector3(center.x, 0.004, center.y)
+	var size := (extent + margin) * 2.0
+	(existing.mesh as PlaneMesh).size = Vector2(size, size)
+	return existing
 
 
 ## Estágio 0 (núcleo), 1 (bairros + indústria) e 2 (metrópole).

@@ -9,7 +9,7 @@ class_name IndustrialPlanner
 ## crescer sem deslocar o que já foi construído (determinismo e save/load).
 
 ## Distância da âncora industrial ao centro e passo da espiral do distrito.
-const ANCHOR_DISTANCE := 4.6
+const ANCHOR_DISTANCE := 2.8
 const CLUSTER_STEP := 0.5
 const MIN_SHARE := 0.05
 const MIN_INTENSITY := 0.12

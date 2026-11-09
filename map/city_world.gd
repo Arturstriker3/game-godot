@@ -1,9 +1,13 @@
 extends Node3D
 class_name CityWorld
 
-## Mundo baseado em cidades: fundo de satélite real (satellite.jpg), uma cidade
-## 3D por nação e a camada geopolítica com as fronteiras reais (Natural Earth)
-## sobre o terreno. Os dados (posição, nação, população) vêm do núcleo C++.
+## Mundo baseado em cidades com duas bases visuais:
+##   - Modo "political" (atlas): fundo chapado (água teal, terra parchment) com
+##     preenchimento opaco das 5 nações e fronteiras nítidas, estilo atlas histórico.
+##   - Demais modos: fundo de satélite real (satellite.jpg) com overlay político sutil.
+##
+## A camada geopolítica (Natural Earth) fica por cima do terreno. Cidades 3D,
+## rótulos, seleção e veículos funcionam em ambos os modos.
 ##
 ## Três níveis de representação, escolhidos pela distância da câmera:
 ##   local         — cidade orgânica com módulos 3D detalhados;
@@ -18,6 +22,8 @@ const PIXEL_TO_WORLD := 0.2
 const GPS_TEXTURE: Texture2D = preload("res://map/map_data/satellite.jpg")
 const RELIEF_TEXTURE: Texture2D = preload("res://map/map_data/normal.png")
 const MAP_SHADER: Shader = preload("res://map/map_shaders/satellite_map.gdshader")
+const NAV_MASK_TEXTURE: Texture2D = preload("res://map/map_data/nav_mask.png")
+const ATLAS_SHADER: Shader = preload("res://map/map_shaders/atlas_base.gdshader")
 const BORDERS_TEXTURE: Texture2D = preload("res://map/map_data/country_borders.png")
 const FILL_TEXTURE: Texture2D = preload("res://map/map_data/nation_fill.png")
 const POLITICAL_SHADER: Shader = preload("res://map/map_shaders/political_overlay.gdshader")
@@ -62,6 +68,8 @@ const NATION_COLORS := {
 }
 
 var _content: Node3D
+var _gps_mesh: MeshInstance3D
+var _atlas_mesh: MeshInstance3D
 var _political_layer: MeshInstance3D
 var _political_material: ShaderMaterial
 var _mode_layer: Node3D
@@ -93,15 +101,30 @@ func build(cities: Array) -> void:
 
 
 ## Troca o modo de mapa sem reconstruir a geometria: só visibilidade e uniformes.
+## O modo "political" usa base de atlas (chapado); os demais usam satélite.
 func set_mode(mode: String) -> void:
 	_mode = mode
+	var is_atlas := mode == "political"
+
+	# Alterna entre base de satélite e base de atlas
+	if _gps_mesh != null:
+		_gps_mesh.visible = not is_atlas
+	if _atlas_mesh != null:
+		_atlas_mesh.visible = is_atlas
+
+	# Camada política: sempre visível exceto no geográfico puro
 	if _political_layer != null:
 		_political_layer.visible = mode != "geographic"
 	if _political_material != null:
-		_political_material.set_shader_parameter(
-				"fill_opacity", 0.11 if mode == "political" else 0.028)
-		_political_material.set_shader_parameter(
-				"border_opacity", 0.55 if mode == "political" else 0.42)
+		# No modo atlas, usar opacidades altas para preenchimento sólido
+		_political_material.set_shader_parameter("atlas_mode", is_atlas)
+		# Modos de calor (população, economia, etc.) usam overlay sutil sobre satélite
+		if not is_atlas:
+			var is_heat_mode := mode not in ["geographic", "political"]
+			_political_material.set_shader_parameter(
+					"fill_opacity", 0.028 if is_heat_mode else 0.11)
+			_political_material.set_shader_parameter(
+					"border_opacity", 0.42 if is_heat_mode else 0.55)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
 
@@ -272,15 +295,29 @@ func _build_gps_plane() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = PLANE_SIZE
 
-	var material := ShaderMaterial.new()
-	material.shader = MAP_SHADER
-	material.set_shader_parameter("map_texture", GPS_TEXTURE)
-	material.set_shader_parameter("relief_texture", RELIEF_TEXTURE)
+	# Base de satélite (modo geográfico)
+	var gps_material := ShaderMaterial.new()
+	gps_material.shader = MAP_SHADER
+	gps_material.set_shader_parameter("map_texture", GPS_TEXTURE)
+	gps_material.set_shader_parameter("relief_texture", RELIEF_TEXTURE)
 
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.mesh = plane
-	mesh_instance.material_override = material
-	_content.add_child(mesh_instance)
+	_gps_mesh = MeshInstance3D.new()
+	_gps_mesh.name = "SatelliteBase"
+	_gps_mesh.mesh = plane
+	_gps_mesh.material_override = gps_material
+	_content.add_child(_gps_mesh)
+
+	# Base de atlas (modo político): água teal, terra parchment
+	var atlas_material := ShaderMaterial.new()
+	atlas_material.shader = ATLAS_SHADER
+	atlas_material.set_shader_parameter("nav_mask", NAV_MASK_TEXTURE)
+
+	_atlas_mesh = MeshInstance3D.new()
+	_atlas_mesh.name = "AtlasBase"
+	_atlas_mesh.mesh = plane
+	_atlas_mesh.material_override = atlas_material
+	_atlas_mesh.visible = false
+	_content.add_child(_atlas_mesh)
 
 
 func _build_political_layer() -> void:
