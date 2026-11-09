@@ -1,0 +1,6 @@
+city_id,building_id,name,output_tons_per_day
+GBR-LDN,ldn_wheat,Londres — trigo,1300
+FRA-PAR,par_wheat,Paris — trigo,6000
+DEU-BER,ber_wheat,Berlim — trigo,2500
+NED-AMS,ams_wheat,Amsterdã — trigo,300
+BEL-BRU,bru_wheat,Bruxelas — trigo,400

@@ -537,6 +537,8 @@ func _init_territory(cities: Array) -> void:
 	_last_cities = cities.duplicate()
 	_territory = TerritoryMapScript.new()
 	_territory.load_data()
+	# Overrides iniciais do cenário (territory.json) viram a base do runtime.
+	_territory_overrides = _territory.data_overrides()
 	_territory.assign(cities)
 	var changed: bool = _territory.update(cities, _territory_overrides)
 	_apply_territory_materials()

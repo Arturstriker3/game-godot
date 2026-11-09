@@ -12,6 +12,8 @@ class_name TerritoryMap
 
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const OWNER_COLUMNS := 64
+## Overrides de dono do cenário (gerados de data/definitions/scenario/territory.csv).
+const TERRITORY_PATH := "res://data/definitions/scenario/territory.json"
 
 ## Rasters do mundo inteiro para gerar o minimapa dinâmico (dono por província).
 const WORLD_PROVINCE_PATH := "res://map/map_data/atlas/world_province.png"
@@ -28,6 +30,7 @@ var _playable_tags: Array[String] = []    # ordem de nation_colors
 var _tag_index: Dictionary = {}           # tag -> índice do dono (1-based)
 var _assignment: Dictionary = {}          # province_id -> city_id
 var _owners: Dictionary = {}              # province_id -> tag do dono
+var _data_overrides: Dictionary = {}      # city_id -> tag (cenário, territory.json)
 var _image: Image
 var _texture: ImageTexture
 var _world_province: Image
@@ -46,6 +49,7 @@ func load_data() -> void:
 	_tag_index.clear()
 	_assignment.clear()
 	_owners.clear()
+	_data_overrides.clear()
 	_max_id = 0
 	_loaded = false
 
@@ -95,11 +99,30 @@ func load_data() -> void:
 		})
 		_max_id = maxi(_max_id, pid)
 
+	_load_territory_overrides()
 	_loaded = not _provinces.is_empty()
 
 
 func is_loaded() -> bool:
 	return _loaded
+
+
+## Lê territory.json (overrides de dono do cenário) para `_data_overrides`.
+func _load_territory_overrides() -> void:
+	var file := FileAccess.open(TERRITORY_PATH, FileAccess.READ)
+	if file == null:
+		return  # cenário sem overrides é válido
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	for city_id: Variant in data:
+		_data_overrides[String(city_id)] = String(data[city_id])
+
+
+## Overrides de dono definidos no cenário: city_id -> tag (cópia).
+func data_overrides() -> Dictionary:
+	return _data_overrides.duplicate()
 
 
 ## Atribui cada província jogável à cidade mais próxima da mesma nação original.

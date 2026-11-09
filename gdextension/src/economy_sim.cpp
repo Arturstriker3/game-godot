@@ -65,7 +65,7 @@ EconomySim::EconomySim() = default;
 EconomySim::~EconomySim() = default;
 
 void EconomySim::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("initialize"), &EconomySim::initialize);
+	ClassDB::bind_method(D_METHOD("initialize", "cities"), &EconomySim::initialize);
 	ClassDB::bind_method(D_METHOD("tick"), &EconomySim::tick);
 	ClassDB::bind_method(D_METHOD("get_status"), &EconomySim::get_status);
 	ClassDB::bind_method(D_METHOD("initialize_demo"), &EconomySim::initialize_demo);
@@ -116,38 +116,28 @@ const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
 	}
 }
 
-void EconomySim::initialize() {
+void EconomySim::initialize(const Array& cities) {
 	in_transit_.clear();
 	last_orders_.clear();
 	day_ = 0;
 	clock_hours_ = 0.0;
-	define_cities();
-}
-
-void EconomySim::define_cities() {
 	cities_.clear();
 
-	// Coordenadas = centro real da cidade projetado no mapa (5000x2500 px) na
-	// projeção equiretangular. Produção é a capacidade diária de trigo em
-	// toneladas. Cada cidade declara a massa de terra e o porto de travessia.
-	const MapPoint continent_port = france_port_;
-	const MapPoint britain_port = england_port_;
-	cities_ = {
-		{"GBR-LDN", "GBR", "London", 9.0e6, 1300.0, 0.0, {2498.2, 534.6},
-			"britain", "Channel crossing", britain_port},
-		{"FRA-PAR", "FRA", "Paris", 12.0e6, 6000.0, 0.0, {2532.6, 571.4},
-			"continent", "Canal port", continent_port},
-		{"DEU-BER", "DEU", "Berlin", 6.0e6, 2500.0, 0.0, {2686.2, 520.6},
-			"continent", "Canal port", continent_port},
-		{"NED-AMS", "NED", "Amsterdam", 2.5e6, 300.0, 0.0, {2568.0, 522.7},
-			"continent", "Canal port", continent_port},
-		{"BEL-BRU", "BEL", "Brussels", 2.5e6, 400.0, 0.0, {2560.4, 543.8},
-			"continent", "Canal port", continent_port},
-		// Caiena, Guiana Francesa (lon −52,33, lat 4,94): ~150 mil hab. na
-		// aglomeração; não produz trigo, importa tudo. Cidade portuária.
-		{"FRA-CAY", "FRA", "Cayenne", 1.5e5, 0.0, 0.0, {1773.2, 1181.4},
-			"guiana", "Cayenne", {1773.2, 1181.4}},
-	};
+	for (int i = 0; i < cities.size(); ++i) {
+		const Dictionary d = cities[i];
+		City city;
+		city.id = String(d["id"]).utf8().get_data();
+		city.nation = String(d["nation"]).utf8().get_data();
+		city.name = String(d["name"]).utf8().get_data();
+		city.population = static_cast<double>(d["population"]);
+		city.production = static_cast<double>(d["production"]);
+		city.stockpile = 0.0;
+		city.center = MapPoint{static_cast<double>(d["x"]), static_cast<double>(d["y"])};
+		city.landmass = String(d["landmass"]).utf8().get_data();
+		city.port_name = String(d["port_name"]).utf8().get_data();
+		city.port = MapPoint{static_cast<double>(d["port_x"]), static_cast<double>(d["port_y"])};
+		cities_.push_back(std::move(city));
+	}
 }
 
 Dictionary EconomySim::tick() {

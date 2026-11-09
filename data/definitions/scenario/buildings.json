@@ -1,0 +1,32 @@
+[
+  {
+    "city_id": "GBR-LDN",
+    "id": "ldn_wheat",
+    "name": "Londres — trigo",
+    "output_tons_per_day": 1300.0
+  },
+  {
+    "city_id": "FRA-PAR",
+    "id": "par_wheat",
+    "name": "Paris — trigo",
+    "output_tons_per_day": 6000.0
+  },
+  {
+    "city_id": "DEU-BER",
+    "id": "ber_wheat",
+    "name": "Berlim — trigo",
+    "output_tons_per_day": 2500.0
+  },
+  {
+    "city_id": "NED-AMS",
+    "id": "ams_wheat",
+    "name": "Amsterdã — trigo",
+    "output_tons_per_day": 300.0
+  },
+  {
+    "city_id": "BEL-BRU",
+    "id": "bru_wheat",
+    "name": "Bruxelas — trigo",
+    "output_tons_per_day": 400.0
+  }
+]

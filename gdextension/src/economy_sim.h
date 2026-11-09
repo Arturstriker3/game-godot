@@ -1,6 +1,7 @@
 #pragma once
 
 #include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 
 #include <cstddef>
@@ -30,8 +31,8 @@ public:
 	EconomySim();
 	~EconomySim() override;
 
-	/** Cria as cidades das nações e zera o relógio de simulação. */
-	void initialize();
+	/** Cria as cidades a partir de dados de cenário (JSON) e zera o relógio. */
+	void initialize(const Array& cities);
 
 	/** Avança um dia de simulação e devolve o resumo do dia. */
 	Dictionary tick();
@@ -390,9 +391,6 @@ private:
 
 	static const ModeSpec& spec(TransportMode mode);
 	static const char* scope_name(MarketScope scope);
-
-	/** Popula as cidades das nações. */
-	void define_cities();
 
 	City* find_city(const std::string& id);
 	const City* find_city(const std::string& id) const;

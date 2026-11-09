@@ -26,6 +26,9 @@ const SPEED_COUNT := 4
 ## 1º de janeiro de 2026, 00:00 UTC.
 const START_UNIX := 1767225600
 
+## Cidades do cenário (geradas de data/definitions/scenario/cities.csv).
+const CITIES_PATH := "res://data/definitions/scenario/cities.json"
+
 var sim: RefCounted
 var last_summary: Dictionary = {}
 var speed: int = 1
@@ -39,10 +42,24 @@ var _day_fraction := 0.0
 
 func _ready() -> void:
 	sim = EconomySim.new()
-	sim.initialize()
+	sim.initialize(_load_cities())
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
 	_run_day.call_deferred()
+
+
+## Lê as cidades do cenário (JSON) e devolve o array para o núcleo C++.
+func _load_cities() -> Array:
+	var file := FileAccess.open(CITIES_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % CITIES_PATH)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_ARRAY:
+		push_error("Economy: %s não é um array JSON" % CITIES_PATH)
+		return []
+	return data
 
 
 func _process(delta: float) -> void:
