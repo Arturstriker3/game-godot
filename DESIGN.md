@@ -118,7 +118,9 @@ rasterizadas na mesma projeção do terreno por `tools/build_political_layer.py`
 Sobre o mapa ficam o marcador de cidade em três discos (halo escuro, disco na
 cor da nação, ponto central claro), o nome em Barlow Condensed caixa alta e o
 ícone de lugar (cidade/porto) logo acima do nome, com altura proporcional ao
-texto e a mesma tinta do rótulo; ícone e nome somem juntos no zoom distante. O
+texto e a mesma tinta do rótulo; ícone e nome somem juntos no zoom distante.
+Portos ficam no ponto de costa, não no centro da cidade, e um porto que divide
+o nome com a cidade dispensa rótulo próprio (o ícone/modelo marca o cais). O
 modelo 3D da cidade mede 2,8 unidades e os veículos de comércio 1,8 unidades no
 maior eixo; cada trecho de comércio mostra um único veículo (caminhão, navio ou
 avião) seguindo do ponto de origem ao destino.

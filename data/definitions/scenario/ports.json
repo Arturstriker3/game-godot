@@ -19,32 +19,32 @@
     "id": "DEU-HAM",
     "name": "Hamburg",
     "nation": "DEU",
-    "x": 2638.8,
-    "y": 506.3,
+    "x": 2620.8,
+    "y": 501.8,
     "landmass": "continent"
   },
   {
     "id": "NED-AMS",
     "name": "Amsterdam",
     "nation": "NED",
-    "x": 2568.0,
-    "y": 522.7,
+    "x": 2563.8,
+    "y": 521.4,
     "landmass": "continent"
   },
   {
     "id": "BEL-ANT",
     "name": "Antwerp",
     "nation": "BEL",
-    "x": 2561.1,
-    "y": 538.6,
+    "x": 2544.4,
+    "y": 537.1,
     "landmass": "continent"
   },
   {
     "id": "FRA-CAY",
-    "name": "Cayenne",
+    "name": "Mana",
     "nation": "FRA",
-    "x": 1773.2,
-    "y": 1181.4,
+    "x": 1753.1,
+    "y": 1171.1,
     "landmass": "guiana"
   }
 ]

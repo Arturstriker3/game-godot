@@ -1,7 +1,7 @@
 id,name,nation,x,y,landmass
 GBR-DOV,Dover,GBR,2518.2,539.8,britain
 FRA-CAL,Calais,FRA,2525.7,542.4,continent
-DEU-HAM,Hamburg,DEU,2638.8,506.3,continent
-NED-AMS,Amsterdam,NED,2568.0,522.7,continent
-BEL-ANT,Antwerp,BEL,2561.1,538.6,continent
-FRA-CAY,Cayenne,FRA,1773.2,1181.4,guiana
+DEU-HAM,Hamburg,DEU,2620.8,501.8,continent
+NED-AMS,Amsterdam,NED,2563.8,521.4,continent
+BEL-ANT,Antwerp,BEL,2544.4,537.1,continent
+FRA-CAY,Mana,FRA,1753.1,1171.1,guiana
