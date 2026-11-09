@@ -110,6 +110,10 @@ var _nation_anchors: Dictionary = {}
 var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
 var _last_cities: Array = []
+var _minimap_texture: ImageTexture
+
+## Emitido quando o conjunto de donos muda (o minimapa precisa se atualizar).
+signal territory_changed
 
 
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
@@ -546,8 +550,20 @@ func _refresh_territory(cities: Array) -> void:
 	_last_cities = cities.duplicate()
 	var changed: bool = _territory.update(cities, _territory_overrides)
 	if changed:
+		_minimap_texture = null  # invalida: o minimapa regenera sob demanda
 		_reposition_nation_labels()
 		_update_city_nation_colors(cities)
+		territory_changed.emit()
+
+
+## Textura do minimapa (cor do dono por província), gerada e cacheada sob
+## demanda. Recalculada quando os donos mudam (territory_changed invalida).
+func minimap_texture() -> ImageTexture:
+	if _territory == null:
+		return null
+	if _minimap_texture == null:
+		_minimap_texture = _territory.minimap_texture()
+	return _minimap_texture
 
 
 ## Quando o dono de uma cidade muda (override de território), o marcador passa

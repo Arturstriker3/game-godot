@@ -13,6 +13,15 @@ class_name TerritoryMap
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const OWNER_COLUMNS := 64
 
+## Rasters do mundo inteiro para gerar o minimapa dinâmico (dono por província).
+const WORLD_PROVINCE_PATH := "res://map/map_data/atlas/world_province.png"
+const WORLD_SDF_PATH := "res://map/map_data/atlas/world_sdf.png"
+## Resolução do minimapa: mesma do minimap.png estático (512×256).
+const MINIMAP_IMAGE_SIZE := Vector2i(512, 256)
+## Cores do minimapa estático (tools/build_atlas_layers.py), para consistência.
+const MINIMAP_SEA := Color(34.0 / 255.0, 64.0 / 255.0, 74.0 / 255.0)
+const MINIMAP_LAND_FACTOR := 0.92
+
 var _provinces: Array[Dictionary] = []
 var _nation_colors: Dictionary = {}       # tag jogável -> Color (sRGB)
 var _playable_tags: Array[String] = []    # ordem de nation_colors
@@ -21,6 +30,10 @@ var _assignment: Dictionary = {}          # province_id -> city_id
 var _owners: Dictionary = {}              # province_id -> tag do dono
 var _image: Image
 var _texture: ImageTexture
+var _world_province: Image
+var _world_sdf: Image
+var _minimap_image: Image
+var _minimap_texture: ImageTexture
 var _max_id := 0
 var _loaded := false
 
@@ -162,6 +175,74 @@ func owner_image() -> Image:
 ## Dono atual por id de província (id -> tag).
 func owners() -> Dictionary:
 	return _owners.duplicate()
+
+
+## Imagem RGB8 do minimapa: cor do dono por pixel, amostrando o raster de ids
+## do mundo inteiro (world_province.png) e colorindo pelo dono atual. Água usa a
+## cor de mar do atlas; terra usa a cor do dono com o mesmo fator do minimapa
+## estático (0.92). O raster de id não tem zeros (o mar é preenchido com a
+## província de terra mais próxima), então a máscara terra/água vem do canal R
+## do world_sdf.png (costa: >128 = terra), a mesma convenção do shader.
+func minimap_image(
+		width: int = MINIMAP_IMAGE_SIZE.x,
+		height: int = MINIMAP_IMAGE_SIZE.y) -> Image:
+	if width <= 0:
+		width = MINIMAP_IMAGE_SIZE.x
+	if height <= 0:
+		height = MINIMAP_IMAGE_SIZE.y
+
+	var out := Image.create(width, height, false, Image.FORMAT_RGB8)
+	out.fill(MINIMAP_SEA)
+
+	var ids := _world_province_raster()
+	var sdf := _world_sdf_raster()
+	if ids == null or sdf == null or _provinces.is_empty():
+		return out
+
+	# id -> cor do dono (fonte de verdade: _owners + _color_for).
+	var id_color: Dictionary = {}
+	for province in _provinces:
+		var pid: int = province["id"]
+		var tag := String(_owners.get(pid, String(province["country"])))
+		id_color[pid] = _color_for(tag, province)
+
+	# Amostra nearest do raster cheio (não usa resize, que não existe em Image).
+	var src_w := ids.get_width()
+	var src_h := ids.get_height()
+	for y in height:
+		for x in width:
+			var sx := int(float(x) * src_w / float(width))
+			var sy := int(float(y) * src_h / float(height))
+			var sdf_px: Color = sdf.get_pixel(sx, sy)
+			if sdf_px.r * 255.0 <= 128.0:
+				continue  # água: já preenchida com MINIMAP_SEA
+			var id_px: Color = ids.get_pixel(sx, sy)
+			var id := int(round(id_px.r * 255.0 + id_px.g * 255.0 * 256.0))
+			if id_color.has(id):
+				out.set_pixel(x, y, (id_color[id] as Color) * MINIMAP_LAND_FACTOR)
+	return out
+
+
+## Textura do minimapa pronta para o TextureRect (regenera a imagem sob demanda).
+func minimap_texture() -> ImageTexture:
+	_minimap_image = minimap_image()
+	if _minimap_texture == null:
+		_minimap_texture = ImageTexture.create_from_image(_minimap_image)
+	else:
+		_minimap_texture.update(_minimap_image)
+	return _minimap_texture
+
+
+func _world_province_raster() -> Image:
+	if _world_province == null:
+		_world_province = Image.load_from_file(WORLD_PROVINCE_PATH)
+	return _world_province
+
+
+func _world_sdf_raster() -> Image:
+	if _world_sdf == null:
+		_world_sdf = Image.load_from_file(WORLD_SDF_PATH)
+	return _world_sdf
 
 
 ## Lista de províncias (id, nation, country, color, x, y, area).

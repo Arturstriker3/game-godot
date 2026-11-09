@@ -265,6 +265,12 @@ func set_minimap_view(center_uv: Vector2, size_uv: Vector2) -> void:
 		_minimap.set_view(center_uv, size_uv)
 
 
+## Textura do território do minimapa (dono por província; main_game.gd).
+func set_minimap_territory(texture: Texture2D) -> void:
+	if _minimap != null:
+		_minimap.set_territory_texture(texture)
+
+
 # --- Barra superior ----------------------------------------------------------
 
 func _build_top_bar() -> void:

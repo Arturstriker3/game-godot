@@ -51,6 +51,13 @@ func _ready() -> void:
 	_layout_view()
 
 
+## Troca a textura do minimapa (território dinâmico). Preserva o retângulo de
+## view e o clique/arraste; apenas substitui a imagem de fundo.
+func set_territory_texture(texture: Texture2D) -> void:
+	if _image != null and texture != null:
+		_image.texture = texture
+
+
 ## Atualiza a área vista: centro e tamanho em UV do mapa.
 func set_view(center_uv: Vector2, size_uv: Vector2) -> void:
 	center_uv.x = fposmod(center_uv.x, 1.0)

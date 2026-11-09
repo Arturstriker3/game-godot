@@ -43,11 +43,18 @@ func _ready() -> void:
 	_build_hud()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
 	Economy.status_updated.connect(_on_status_updated)
+	city_world.territory_changed.connect(_on_territory_changed)
 
 
 ## MantÃƒÂ©m os modos de mapa (populaÃƒÂ§ÃƒÂ£o, economia, indÃƒÂºstria, recursos) vivos.
 func _on_status_updated(summary: Dictionary) -> void:
 	city_world.refresh_modes(summary.get("cities", []))
+
+
+## Donos de território mudaram: atualiza a textura do minimapa.
+func _on_territory_changed() -> void:
+	if hud != null:
+		hud.set_minimap_territory(city_world.minimap_texture())
 
 
 func _build_city_world() -> void:
