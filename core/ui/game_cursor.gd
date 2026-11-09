@@ -7,10 +7,12 @@ class_name GameCursor
 
 const DEFAULT_PATH := "res://assets/ui/cursor_default.png"
 const CITY_PATH := "res://assets/ui/cursor_loupe.png"
+const PORT_PATH := "res://assets/ui/cursor_pointer.png"
 const DRAG_PATH := "res://assets/ui/cursor_drag.png"
 
 const DEFAULT_HOTSPOT := Vector2(3, 2)
 const CITY_HOTSPOT := Vector2(16, 16)
+const PORT_HOTSPOT := Vector2(9, 2)
 const DRAG_HOTSPOT := Vector2(16, 16)
 
 static var _installed := false
@@ -24,11 +26,14 @@ static func install() -> void:
 	_installed = true
 	var default_tex: Texture2D = load(DEFAULT_PATH)
 	var city_tex: Texture2D = load(CITY_PATH)
+	var port_tex: Texture2D = load(PORT_PATH)
 	var drag_tex: Texture2D = load(DRAG_PATH)
 	if default_tex != null:
 		Input.set_custom_mouse_cursor(default_tex, Input.CURSOR_ARROW, DEFAULT_HOTSPOT)
 	if city_tex != null:
 		Input.set_custom_mouse_cursor(city_tex, Input.CURSOR_HELP, CITY_HOTSPOT)
+	if port_tex != null:
+		Input.set_custom_mouse_cursor(port_tex, Input.CURSOR_POINTING_HAND, PORT_HOTSPOT)
 	if drag_tex != null:
 		Input.set_custom_mouse_cursor(drag_tex, Input.CURSOR_DRAG, DRAG_HOTSPOT)
 	_set_shape(Input.CURSOR_ARROW)
