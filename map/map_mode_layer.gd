@@ -213,6 +213,10 @@ func _fill_markers(layer: MultiMeshInstance3D, points: Array, is_wheat: bool) ->
 		else:
 			var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
 			color = MINERAL_COLORS[color_index]
+			# Tamanho pela reserva (raiz): Ghawar/Safaniya dominam, prospecção
+			# pequena fica discreta. 250.000 kt = tamanho de referência.
+			var quantity := float(point[3]) if point.size() > 3 else 250000.0
+			size = 0.45 * clampf(sqrt(quantity / 250000.0), 0.55, 1.9)
 		_set_marker(layer, index, float(point[0]), float(point[1]), size, color)
 
 

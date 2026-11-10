@@ -78,7 +78,33 @@ def main():
     if added:
         with open(DEPOSITS, "w", encoding="utf-8") as handle:
             json.dump(data, handle, ensure_ascii=False, indent=1)
-    print("depósitos adicionados:", added, "de", len(read_json(SUPPLEMENT)["fields"]))
+
+    # Ajustes de campos maduros: reserva restante em vez da original.
+    by_name = {}
+    for deposit in deposits:
+        for name in deposit.get("names", []):
+            by_name[str(name).lower()] = deposit
+    adjusted = 0
+    for adjustment in read_json(SUPPLEMENT).get("adjustments", []):
+        deposit = by_name.get(str(adjustment["name"]).lower())
+        if deposit is None:
+            continue
+        old = float(deposit.get("quantity_kt", 0.0))
+        new = float(adjustment["quantity_kt"])
+        ratio = new / old if old > 0.0 else 0.0
+        deposit["quantity_kt"] = new
+        deposit["recoverable_kt"] = round(float(deposit.get("recoverable_kt", 0.0)) * ratio, 1)
+        deposit["max_rate_kt_day"] = round(
+                float(deposit.get("max_rate_kt_day", 0.0)) * ratio, 1)
+        if "status" in adjustment:
+            deposit["status"] = adjustment["status"]
+        adjusted += 1
+
+    if added or adjusted:
+        with open(DEPOSITS, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, ensure_ascii=False, indent=1)
+    print("depósitos adicionados:", added, "de", len(read_json(SUPPLEMENT)["fields"]),
+          "| ajustados:", adjusted)
 
 
 main()

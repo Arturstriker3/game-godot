@@ -128,6 +128,7 @@ def build_points() -> None:
             round(float(dep.get("px", 0.0)), 1),
             round(float(dep.get("py", 0.0)), 1),
             MINERALS.index(resource),
+            round(float(dep.get("quantity_kt", 0.0)), 1),
         ])
 
     agriculture = read_json("agriculture.json")["territories"]
