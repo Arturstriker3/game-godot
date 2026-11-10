@@ -37,6 +37,42 @@ def to_pixels(lon, lat):
     return ((lon + 180.0) / 360.0 * 5000.0, (90.0 - lat) / 180.0 * 2500.0)
 
 
+def write_json(path, data):
+    """Escreve preservando o formato atual (indent=1, CRLF, sem LF final)."""
+    text = json.dumps(data, indent=1, ensure_ascii=False).replace("\n", "\r\n")
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        handle.write(text)
+
+
+def _max_id_suffix(deposits):
+    best = 899999
+    for deposit in deposits:
+        raw = str(deposit.get("id", ""))
+        tail = raw.rsplit("-", 1)[-1]
+        if tail.isdigit():
+            best = max(best, int(tail))
+    return best
+
+
+def _normalize_ids(deposits):
+    """Garante IDs únicos: renumera registros com id vazio ou duplicado,
+    continuando a partir do maior sufixo existente. Determinístico (ordem)."""
+    seen = set()
+    next_id = _max_id_suffix(deposits) + 1
+    changed = 0
+    for deposit in deposits:
+        rid = str(deposit.get("id", ""))
+        if rid and rid not in seen:
+            seen.add(rid)
+            continue
+        resource = str(deposit.get("resource", "coal")).upper()
+        deposit["id"] = "DEP-%s-%06d" % (resource, next_id)
+        seen.add(deposit["id"])
+        next_id += 1
+        changed += 1
+    return changed
+
+
 def main():
     data = read_json(DEPOSITS)
     deposits = data["deposits"]
@@ -44,7 +80,7 @@ def main():
     templates = {key: find_template(deposits, name) for key, name in TEMPLATES.items()}
 
     added = 0
-    next_id = 900000
+    next_id = _max_id_suffix(deposits) + 1
     for field in read_json(SUPPLEMENT)["fields"]:
         name = field["name"]
         if name.lower() in existing:
@@ -76,8 +112,7 @@ def main():
         added += 1
 
     if added:
-        with open(DEPOSITS, "w", encoding="utf-8") as handle:
-            json.dump(data, handle, ensure_ascii=False, indent=1)
+        write_json(DEPOSITS, data)
 
     # Ajustes de campos maduros: reserva restante em vez da original.
     by_name = {}
@@ -100,11 +135,13 @@ def main():
             deposit["status"] = adjustment["status"]
         adjusted += 1
 
-    if added or adjusted:
-        with open(DEPOSITS, "w", encoding="utf-8") as handle:
-            json.dump(data, handle, ensure_ascii=False, indent=1)
+    # Garante unicidade (corrige IDs duplicados de execuções antigas).
+    renumbered = _normalize_ids(deposits)
+
+    if added or adjusted or renumbered:
+        write_json(DEPOSITS, data)
     print("depósitos adicionados:", added, "de", len(read_json(SUPPLEMENT)["fields"]),
-          "| ajustados:", adjusted)
+          "| ajustados:", adjusted, "| IDs renumerados:", renumbered)
 
 
 main()
