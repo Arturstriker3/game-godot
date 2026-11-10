@@ -350,7 +350,7 @@ func city_resource_entries(city_id: String) -> Array:
 	for record in _city_nodes:
 		if String(record["id"]) == city_id:
 			var city: Dictionary = record["city"]
-			return _resource_entries(city_id, Vector2(
+			return _resource_entries(city_id, String(city.get("nation", "")), Vector2(
 					float(city.get("x", 0.0)), float(city.get("y", 0.0))))
 	return []
 
@@ -1103,15 +1103,18 @@ func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sp
 				label.position.y, label.position.z)
 
 
-## Recursos que a cidade acessa: depósitos do território da cidade (via
-## GeographyService, que já filtra facilities e offshore) + trigo do território.
-func _resource_entries(city_id: String, center: Vector2) -> Array:
+## Recursos que a cidade acessa: depósitos de TODOS os territórios da nação
+## (via GeographyService, que já filtra facilities e offshore) + trigo da nação.
+func _resource_entries(city_id: String, nation: String, center: Vector2) -> Array:
 	if _geo == null:
 		_geo = GeographyScript.new()
 		_geo.load_data()
+	var code := String(_geo.NATION_CODE.get(nation, ""))
 	var counts := {}
 	var reserves := {}
-	for deposit in _geo.deposits_for(city_id, center):
+	var deposits: Array = _geo.deposits_for_nation(code) if code != "" \
+			else _geo.deposits_for(city_id, center)
+	for deposit in deposits:
 		var key := String(deposit.get("resource", ""))
 		counts[key] = int(counts.get(key, 0)) + 1
 		reserves[key] = float(reserves.get(key, 0.0)) + float(deposit.get("quantity_kt", 0.0))
@@ -1124,7 +1127,8 @@ func _resource_entries(city_id: String, center: Vector2) -> Array:
 				"count": int(counts[key]),
 				"reserve_kt": float(reserves.get(key, 0.0)),
 			})
-	var wheat := float(_geo.crop_suitability(city_id, center, "wheat"))
+	var wheat := float(_geo.crop_suitability_nation(code, "wheat") if code != "" \
+			else _geo.crop_suitability(city_id, center, "wheat"))
 	if wheat >= WHEAT_STRIP_MIN:
 		entries.append({"kind": "wheat", "count": 1, "value": wheat})
 	return entries

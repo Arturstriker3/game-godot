@@ -19,6 +19,13 @@ const COASTAL_RADIUS_CELLS := 20
 const MAP_W := 5000.0
 const MAP_H := 2500.0
 
+## Tag de nação do jogo -> código ISO-3 do Natural Earth (adm0_a3).
+## Só a Holanda diverge (NED no jogo, NLD no Natural Earth).
+const NATION_CODE := {
+	"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NED": "NLD",
+	"BEL": "BEL", "VEN": "VEN", "SUR": "SUR", "GUY": "GUY",
+}
+
 var _nature: Dictionary = {}
 var _agriculture: Dictionary = {}
 var _deposits_by_territory: Dictionary = {}
@@ -123,6 +130,43 @@ func forest_cover(city_id: String, center_px: Vector2) -> float:
 	return clampf(float(_nature.get(territory, {}).get("forest_cover", 0.0)), 0.0, 1.0)
 
 
+## Territórios (ids) cujo adm0_a3 corresponde ao código ISO-3 informado.
+func _nation_territories(code: String) -> Array:
+	var result: Array = []
+	for territory_id in _nature:
+		if String(_nature[territory_id].get("adm0_a3", "")) == code:
+			result.append(String(territory_id))
+	return result
+
+
+## Depósitos de TODOS os territórios da nação (acesso nacional, não só o
+## território mais próximo da capital).
+func deposits_for_nation(code: String) -> Array:
+	var result: Array = []
+	for territory_id in _nation_territories(code):
+		result.append_array(_deposits_by_territory.get(territory_id, []))
+	return result
+
+
+## Melhor aptidão da cultura entre os territórios da nação (a nação planta na
+## sua melhor região).
+func crop_suitability_nation(code: String, crop: String) -> float:
+	var best := 0.0
+	for territory_id in _nation_territories(code):
+		var crops: Dictionary = _agriculture.get(territory_id, {})
+		best = maxf(best, clampf(float(crops.get(crop, 0.0)), 0.0, 1.0))
+	return best
+
+
+## Maior cobertura florestal entre os territórios da nação.
+func forest_cover_nation(code: String) -> float:
+	var best := 0.0
+	for territory_id in _nation_territories(code):
+		best = maxf(best, clampf(
+			float(_nature.get(territory_id, {}).get("forest_cover", 0.0)), 0.0, 1.0))
+	return best
+
+
 ## Depósitos minerais/energéticos do território da cidade.
 func deposits_for(city_id: String, center_px: Vector2) -> Array:
 	var territory := territory_for(city_id, center_px)
@@ -204,15 +248,20 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var center: Vector2 = city.get("center", Vector2.ZERO)
+		var code := String(NATION_CODE.get(String(city.get("nation", "")), ""))
 		var city_applied := {}
 		for crop in crops:
-			var suitability := crop_suitability(city_id, center, crop)
+			var suitability := crop_suitability_nation(code, crop) if code != "" \
+					else crop_suitability(city_id, center, crop)
 			sim.demo_set_suitability(city_id, crop, suitability)
 			city_applied[crop] = suitability
-		var wood := forest_cover(city_id, center)
+		var wood := forest_cover_nation(code) if code != "" \
+				else forest_cover(city_id, center)
 		sim.demo_set_suitability(city_id, "wood", wood)
 		city_applied["wood"] = wood
-		var minerals := _aggregate_deposits(deposits_for(city_id, center))
+		var deposits := deposits_for_nation(code) if code != "" \
+				else deposits_for(city_id, center)
+		var minerals := _aggregate_deposits(deposits)
 		for resource in minerals:
 			var deposit: Dictionary = minerals[resource]
 			sim.demo_set_suitability(city_id, resource, 1.0)

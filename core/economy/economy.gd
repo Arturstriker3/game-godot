@@ -78,6 +78,7 @@ func _cities_with_center() -> Array:
 	for city in _load_cities():
 		result.append({
 			"id": String(city.get("id", "")),
+			"nation": String(city.get("nation", "")),
 			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
 		})
 	return result
