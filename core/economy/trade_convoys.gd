@@ -34,6 +34,9 @@ const MAX_SEGMENT_SECONDS := 45.0
 ## tempo. O avião mantém um teto maior para continuar visivelmente mais rápido.
 const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 1.0, "plane": 3.0}
 const MAX_CONVOYS := 8
+# Pistas laterais (deslocamento perpendicular ao caminho, em unidades de mundo)
+# para comboios na mesma rota não entrarem um dentro do outro. Cicla por offset.
+const LANE_OFFSETS: Array[float] = [-1.0, -0.5, 0.0, 0.5, 1.0]
 
 # Os modelos foram feitos com a frente no eixo +X. O Godot usa -Z como frente
 # (é o eixo que look_at() aponta para o alvo), então giramos +90° em Y.
@@ -60,6 +63,7 @@ const NEIGHBORS: Array[Vector2i] = [
 ]
 
 var _active_convoys := 0
+var _lane := 0
 var _scale_cache := {}
 var _nav_image: Image
 var _path_cache := {}
@@ -142,6 +146,9 @@ func _spawn_order(order: Dictionary) -> void:
 	var convoy := Node3D.new()
 	add_child(convoy)
 	_active_convoys += 1
+	# Pista lateral deste comboio: evita que comboios na mesma rota se sobreponham.
+	convoy.set_meta("lane", LANE_OFFSETS[_lane % LANE_OFFSETS.size()])
+	_lane += 1
 
 	var tween := create_tween()
 	# O tween nasce no ritmo atual da simulação (1x = 60 s por dia) e entra na
@@ -389,14 +396,29 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 		child.queue_free()
 
 	convoy.add_child(_instantiate_model(mode))
-	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0)
+	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0) + _lane_offset(convoy, start, end)
 	_face_target(convoy, start, end)
 
 
 func _move_vehicle(weight: float, convoy: Node3D, start: Vector3, end: Vector3) -> void:
 	if not is_instance_valid(convoy):
 		return
-	convoy.position = start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0)
+	convoy.position = start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0) \
+		+ _lane_offset(convoy, start, end)
+
+
+## Deslocamento lateral (perpendicular à direção do trecho) da pista do comboio,
+## para comboios na mesma rota andarem lado a lado em vez de se sobreporem.
+func _lane_offset(convoy: Node3D, start: Vector3, end: Vector3) -> Vector3:
+	var lane := float(convoy.get_meta("lane", 0.0))
+	if absf(lane) < 1e-4:
+		return Vector3.ZERO
+	var dir := end - start
+	dir.y = 0.0
+	if dir.length_squared() < 1e-8:
+		return Vector3.ZERO
+	dir = dir.normalized()
+	return Vector3(-dir.z, 0.0, dir.x) * lane
 
 
 func _finish_convoy(convoy: Node3D) -> void:
