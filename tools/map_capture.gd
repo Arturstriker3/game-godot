@@ -46,6 +46,8 @@ var _select := ""
 var _focus := ""
 ## Overrides de território: pares [city_id, tag] via --territory.
 var _territory_pairs: Array[Array] = []
+## Recursos escondidos no mapa de recursos via --hide=coal,oil.
+var _hide_resources: Array[String] = []
 
 const BENCH_WARMUP := 45
 const BENCH_FRAMES := 180
@@ -129,6 +131,11 @@ func _parse_args() -> void:
 					var parts := chunk.split(":")
 					if parts.size() == 2 and not parts[0].is_empty():
 						_territory_pairs.append([parts[0], parts[1]])
+			"--hide":
+				_hide_resources.clear()
+				for chunk in value.split(","):
+					if not chunk.is_empty():
+						_hide_resources.append(chunk)
 
 
 # --- Mapa 3D atual ----------------------------------------------------------
@@ -157,6 +164,12 @@ func _capture_map3d() -> void:
 		_manifest["focus"] = _focus
 	_manifest["city_count"] = cities.size()
 	world.set_mode(_mode)
+	if not _hide_resources.is_empty():
+		var filter := {}
+		for key in ["coal", "copper", "gas", "iron", "oil", "wheat"]:
+			filter[key] = not _hide_resources.has(key)
+		world.set_resource_filter(filter)
+		_manifest["hide_resources"] = _hide_resources
 
 	for distance in DISTANCES:
 		_camera.position = Vector3(0.0, 0.0, distance)

@@ -251,7 +251,9 @@ func _set_marker(layer: MultiMeshInstance3D, index: int, px: float, py: float,
 			(py - MAP_PX.y * 0.5) * 0.2)
 	var basis := Basis().scaled(Vector3(size, size, size))
 	layer.multimesh.set_instance_transform(index, Transform3D(basis, position))
-	layer.multimesh.set_instance_color(index, color)
+	# A cor da instância entra no shader como linear; sem converter, o
+	# tonemapper clareia os marcadores (cobre virava salmão).
+	layer.multimesh.set_instance_color(index, color.srgb_to_linear())
 
 
 ## Escala logarítmica: cidades muito populosas não apagam as menores.

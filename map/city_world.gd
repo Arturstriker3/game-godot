@@ -220,9 +220,11 @@ func set_mode(mode: String) -> void:
 			radius_ring.visible = mode == "resources"
 
 
-## Filtro da legenda de recursos: esconde marcadores e faixas desligados.
+## Filtro da legenda de recursos: esconde marcadores do mapa e faixas.
 func set_resource_filter(enabled: Dictionary) -> void:
 	_resource_filter = enabled.duplicate()
+	if _mode_layer != null:
+		_mode_layer.set_resource_filter(_resource_filter)
 	for record in _city_nodes:
 		var any_visible := false
 		for dot in record.get("resource_dots", []):
