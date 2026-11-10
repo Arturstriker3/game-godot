@@ -348,6 +348,14 @@ $godot = "C:\Users\artur\OneDrive\Área de Trabalho\Godot_v4.7.2-stable_win64.ex
 & $godot --path . res://tools/map_capture.tscn -- --set=all --mode=political --tag=before --run=baseline_before
 ```
 
+### Indexação do C++ (clangd)
+```powershell
+# Só reconfigura (não compila); gera gdextension\build-{debug,release}\compile_commands.json (~1091 entradas):
+& "G:\tools\cpp-tools\Scripts\cmake.exe" -S gdextension -B gdextension\build-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
+`-S gdextension` é obrigatório (o `CMakeLists.txt` fica em `gdextension/`). O clangd não procura o DB
+em subpastas de build, por isso `gdextension/.clangd` aponta `CompilationDatabase: build-debug`.
+
 ### Ponte Claude Desktop → OpenCode (MCP local)
 
 `tools/claude_bridge/` expõe o OpenCode como MCP local para o Claude Desktop:

@@ -112,7 +112,7 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 | 4.1 | Testes headless de economia (integração, IA, long-run) | FEITO |
 | 4.2 | `tools/economy_lab.gd` (laboratório de cenários) | FEITO |
 | 4.3 | `tools/check_balance.py` + docs | FEITO |
-| 4.4 | `compile_commands.json` para clangd | PENDENTE (barato) |
+| 4.4 | `compile_commands.json` para clangd | FEITO (`gdextension/build-*/compile_commands.json`, 1091 entradas) |
 | 4.5 | Serena + clangd para o C++ | BACKLOG (só se o núcleo crescer) |
 | 4.6 | `docs/IMPROVEMENTS.md` (este arquivo) | FEITO |
 | 4.7 | `docs/ideas/` (referências criativas) | FEITO |

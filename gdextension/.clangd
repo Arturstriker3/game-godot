@@ -1,0 +1,4 @@
+CompileFlags:
+  # compile_commands.json é gerado pelo CMake (ver GAME_STATE.md §17 / docs/IMPROVEMENTS.md 4.4).
+  # clangd não procura em subpastas de build, então apontamos para o DB de debug.
+  CompilationDatabase: build-debug
