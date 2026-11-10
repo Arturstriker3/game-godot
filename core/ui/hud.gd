@@ -711,7 +711,8 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	var resource := String(info.get("resource", "wheat"))
 	var suitability := float(info.get("suitability", 0.0))
 	body_box.add_child(_legend_row(_resource_color(resource),
-			I18n.t("resource." + resource), "%d%%" % int(round(suitability * 100.0))))
+			I18n.t("resource." + resource), "%d%%" % int(round(suitability * 100.0)),
+			true, "", true))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.fertility"),
 			"%d%%" % int(round(float(info.get("fertility", 0.0)) * 100.0)),
@@ -800,7 +801,7 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 					_format_mass(float(entry.get("reserve_kt", 0.0))),
 				]
 			body_box.add_child(_legend_row(_resource_color(key),
-					I18n.t("resource." + key), detail, true, "", key == "wheat"))
+					I18n.t("resource." + key), detail, true, "", RENEWABLE_KEYS.has(key)))
 
 	_legend_hint = _legend_footer(I18n.t("map.legend.city_hint"))
 	body_box.add_child(_legend_hint)
@@ -952,7 +953,7 @@ func _make_resource_row(key: String, color: Color) -> Button:
 	row.add_child(stamp)
 	_resource_checks[key] = stamp
 
-	row.add_child(LegendSwatch.new(color, key == "wheat"))
+	row.add_child(LegendSwatch.new(color, RENEWABLE_KEYS.has(key)))
 
 	var label := UiKit.label(I18n.t("resource." + key), UiKit.FS_SMALL, UiKit.TINTA)
 	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
@@ -2218,7 +2219,8 @@ class DottedLeader extends Control:
 				Color(UiKit.TINTA, 0.45), 1.4, 1.2)
 
 
-## Amostra de cor (quadrado, ou losango para o trigo) com borda de tinta.
+## Amostra de cor (círculo para mineral, losango para renovável) — espelha o
+## mapa (resource_dot.png = círculo, resource_wheat.png = losango).
 class LegendSwatch extends Control:
 	var _color: Color
 	var _diamond: bool
@@ -2242,8 +2244,10 @@ class LegendSwatch extends Control:
 			closed.append(pts[0])
 			draw_polyline(closed, UiKit.TINTA, 1.0, true)
 		else:
-			draw_rect(Rect2(Vector2.ZERO, size), _color, true)
-			draw_rect(Rect2(Vector2.ZERO, size), UiKit.TINTA, false, 1.0)
+			var center := size * 0.5
+			var radius := minf(size.x, size.y) * 0.5 - 1.0
+			draw_circle(center, radius, _color)
+			draw_arc(center, radius, 0.0, TAU, 32, UiKit.TINTA, 1.0, true)
 
 
 ## Carimbo redondo do filtro: contorno vermelho com ✓ quando ligado; vazio
