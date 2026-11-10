@@ -167,11 +167,4 @@ marker(64, "dot").save(os.path.join(PLACES, "resource_dot.png"))
 marker(64, "diamond").save(os.path.join(PLACES, "resource_wheat.png"))
 star().save(os.path.join(PLACES, "star.png"))
 
-# Pílula escura atrás da faixa de recursos sob o nome da cidade.
-pill = Image.new("RGBA", (128, 32), (0, 0, 0, 0))
-pd = ImageDraw.Draw(pill)
-pd.rounded_rectangle([1, 1, 127, 31], radius=14, fill=(10, 18, 18, 200),
-                     outline=(201, 162, 74, 110), width=2)
-pill.save(os.path.join(PLACES, "resource_pill.png"))
-
 build_points()

@@ -285,7 +285,7 @@ resource.gas,Gás,Gas,Gas
 resource.iron,Ferro,Iron,Hierro
 resource.oil,Petróleo,Oil,Petróleo
 resource.wheat,Trigo,Wheat,Trigo
-map.legend.hint,Ícones sob a cidade = recursos ao alcance. Clique na cidade para detalhes.,Icons under a city = resources in reach. Click the city for details.,Iconos bajo la ciudad = recursos al alcance. Haz clic en la ciudad para detalles.
+map.legend.hint,Anel em volta da cidade = raio de captação. Clique na cidade para ver os recursos.,Ring around the city = catchment radius. Click the city to see its resources.,Anillo alrededor de la ciudad = radio de captación. Haz clic en la ciudad para ver los recursos.
 map.legend.all,Todos,All,Todos
 map.legend.deposit,Depósito,Deposit,Yacimiento
 map.legend.city_resources,Recursos da cidade,City resources,Recursos de la ciudad

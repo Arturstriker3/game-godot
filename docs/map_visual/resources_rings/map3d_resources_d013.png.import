@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://uhofsfbvbqic"
-path="res://.godot/imported/resource_pill.png-45f20514a0e48924e0aa1e3dd5f0e79a.ctex"
+uid="uid://dsfau183g00af"
+path="res://.godot/imported/map3d_resources_d013.png-96f901159802a8b14e48f36ca04ec5fd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/places/resource_pill.png"
-dest_files=["res://.godot/imported/resource_pill.png-45f20514a0e48924e0aa1e3dd5f0e79a.ctex"]
+source_file="res://docs/map_visual/resources_rings/map3d_resources_d013.png"
+dest_files=["res://.godot/imported/map3d_resources_d013.png-96f901159802a8b14e48f36ca04ec5fd.ctex"]
 
 [params]
 

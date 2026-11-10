@@ -59,17 +59,9 @@ const FLAG_SCALE := 0.6         # bandeira ~60% da altura do ícone
 ## Abaixo desta distância (u) o porto coincide com a cidade: sem ícone próprio.
 const PORT_ICON_MERGE_DISTANCE := 0.5
 
-## Faixa de recursos sob o nome da cidade (só no modo recursos): mostra o que
-## o território dela pode produzir — minérios com depósito e trigo com aptidão.
-const RESOURCE_DOT_ICON: Texture2D = preload("res://assets/icons/places/resource_dot.png")
-const RESOURCE_WHEAT_ICON: Texture2D = preload("res://assets/icons/places/resource_wheat.png")
-const RESOURCE_PILL_ICON: Texture2D = preload("res://assets/icons/places/resource_pill.png")
+## Raio de captação de recursos (só no modo recursos): o anel no chão mostra
+## até onde a cidade alcança; o detalhe fica na legenda ao clicar na cidade.
 const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
-const MINERAL_COLORS := [
-	Color("#3E3B38"), Color("#C06A3C"), Color("#4E9FB0"),
-	Color("#7C8894"), Color("#5B4A2E"),
-]
-const WHEAT_COLOR := Color("#D9B45A")
 const WHEAT_STRIP_MIN := 0.40
 ## Raio (unidades do mundo, ~40 km cada) de captação de recursos da cidade.
 ## Conta o que está perto, não o centroide do território.
@@ -208,38 +200,18 @@ func set_mode(mode: String) -> void:
 		_political_material.set_shader_parameter("border_opacity", 0.42)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
-	# Faixa de recursos sob o nome: só no modo recursos.
+	# Anel do raio de captação: só no modo recursos.
 	for record in _city_nodes:
-		var any_visible := false
-		for dot in record.get("resource_dots", []):
-			var sprite := dot as Sprite3D
-			sprite.visible = mode == "resources"
-			any_visible = any_visible or sprite.visible
-		var pill := record.get("resource_pill") as Sprite3D
-		if pill != null:
-			pill.visible = mode == "resources" and any_visible
 		var radius_ring := record.get("resource_ring") as MeshInstance3D
 		if radius_ring != null:
 			radius_ring.visible = mode == "resources"
 
 
-## Filtro da legenda de recursos: esconde marcadores do mapa e faixas.
+## Filtro da legenda de recursos: esconde marcadores do mapa.
 func set_resource_filter(enabled: Dictionary) -> void:
 	_resource_filter = enabled.duplicate()
 	if _mode_layer != null:
 		_mode_layer.set_resource_filter(_resource_filter)
-	for record in _city_nodes:
-		var any_visible := false
-		for dot in record.get("resource_dots", []):
-			var sprite := dot as Sprite3D
-			var kind := String(sprite.get_meta("resource_kind", ""))
-			var allowed := _resource_filter.is_empty() \
-					or bool(_resource_filter.get(kind, true))
-			sprite.visible = _mode == "resources" and allowed
-			any_visible = any_visible or sprite.visible
-		var pill := record.get("resource_pill") as Sprite3D
-		if pill != null:
-			pill.visible = _mode == "resources" and any_visible
 
 
 func _content_roots() -> Array[Node3D]:
@@ -925,10 +897,6 @@ func _build_cities(cities: Array) -> void:
 			icon = marker["icon"]
 			ring = marker["ring"]
 			flag = marker["flag"]
-		var resource_strip: Dictionary = {}
-		if label != null:
-			resource_strip = _add_resource_strip(label, _resource_entries(
-					city_id, Vector2(float(city["x"]), float(city["y"]))))
 		_city_nodes.append({
 			"id": city_id,
 			"city": city,
@@ -938,8 +906,6 @@ func _build_cities(cities: Array) -> void:
 			"icon": icon,
 			"ring": ring,
 			"flag": flag,
-			"resource_dots": resource_strip.get("dots", []),
-			"resource_pill": resource_strip.get("pill"),
 			"resource_ring": _make_resource_ring(position),
 			"urban": null,
 		})
@@ -1133,77 +1099,14 @@ func _resource_entries(city_id: String, center: Vector2) -> Array:
 
 ## Círculo do raio de captação de recursos (só no modo recursos).
 func _make_resource_ring(position: Vector3) -> MeshInstance3D:
-	var ring := _make_ring("ResourceRadius", CITY_RESOURCE_RADIUS - 0.02,
-			CITY_RESOURCE_RADIUS + 0.02, Color("#C9A24A"), 0.30)
+	var ring := _make_ring("ResourceRadius", CITY_RESOURCE_RADIUS - 0.03,
+			CITY_RESOURCE_RADIUS + 0.03, Color("#C9A24A"), 0.22)
 	ring.position = position + Vector3(0.0, 0.14, 0.0)
 	ring.visible = false
 	_content.add_child(ring)
 	return ring
 
 
-## Cria a faixa (pílula escura + ícones) sob o nome; escondida fora do modo.
-func _add_resource_strip(label: Label3D, entries: Array) -> Dictionary:
-	var result := {"dots": [], "pill": null}
-	if label == null or entries.is_empty():
-		return result
-
-	var pill := Sprite3D.new()
-	pill.texture = RESOURCE_PILL_ICON
-	pill.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	pill.transparent = true
-	pill.no_depth_test = true
-	pill.render_priority = label.render_priority - 1
-	pill.visible = false
-	_content.add_child(pill)
-	result["pill"] = pill
-
-	var dots: Array = []
-	for entry in entries:
-		var wheat := String(entry["kind"]) == "wheat"
-		var sprite := Sprite3D.new()
-		sprite.texture = RESOURCE_WHEAT_ICON if wheat else RESOURCE_DOT_ICON
-		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		sprite.transparent = true
-		sprite.no_depth_test = true
-		sprite.render_priority = label.render_priority
-		if wheat:
-			sprite.modulate = WHEAT_COLOR
-		else:
-			var index := MINERAL_KEYS.find(String(entry["kind"]))
-			sprite.modulate = MINERAL_COLORS[index] if index >= 0 else Color.WHITE
-		sprite.visible = false
-		sprite.set_meta("resource_kind", String(entry["kind"]))
-		sprite.set_meta("resource_count", int(entry.get("count", 1)))
-		_content.add_child(sprite)
-		dots.append(sprite)
-	result["dots"] = dots
-	_layout_resource_strip(label, dots, pill)
-	return result
-
-
-## Reposiciona a faixa sob o nome conforme o `pixel_size` do rótulo (zoom).
-func _layout_resource_strip(label: Label3D, dots: Array, pill: Sprite3D) -> void:
-	if label == null or dots.is_empty():
-		return
-	var em := float(label.font_size) * label.pixel_size
-	var size := em * 0.62
-	var spacing := em * 0.80
-	var total := spacing * float(dots.size() - 1)
-	var y := -em * 1.28
-	for index in dots.size():
-		var sprite := dots[index] as Sprite3D
-		sprite.pixel_size = size / 64.0
-		sprite.position = label.position + Vector3(
-				-total * 0.5 + spacing * float(index), y, 0.0)
-	if pill != null:
-		var height := size * 2.0
-		pill.pixel_size = height / 32.0
-		var width := total + size * 2.2
-		pill.position = label.position + Vector3(0.0, y, 0.0)
-		pill.scale = Vector3(width / (128.0 * pill.pixel_size), 1.0, 1.0)
-
-
-## Nome do porto (Label3D), no mesmo estilo dos rótulos de cidade.
 func _add_port_label(position: Vector3, port_name: String) -> Label3D:
 	var label := Label3D.new()
 	label.text = port_name.to_upper()
@@ -1341,26 +1244,15 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 		flag.transparency = 1.0 - label_alpha
 		flag.visible = label_alpha > 0.01
 
-	var dots: Array = record.get("resource_dots", [])
-	var pill: Sprite3D = record.get("resource_pill")
-	if not dots.is_empty():
-		_layout_resource_strip(label, dots, pill)
-		var show_resources := _mode == "resources" and label_alpha > 0.01
-		var any_visible := false
-		for dot in dots:
-			var sprite := dot as Sprite3D
-			var kind := String(sprite.get_meta("resource_kind", ""))
-			var enabled := _resource_filter.is_empty() \
-					or bool(_resource_filter.get(kind, true))
-			sprite.transparency = 1.0 - label_alpha
-			sprite.visible = show_resources and enabled
-			any_visible = any_visible or sprite.visible
-		if pill != null:
-			pill.transparency = 1.0 - label_alpha
-			pill.visible = show_resources and any_visible
 	var radius_ring := record.get("resource_ring") as MeshInstance3D
 	if radius_ring != null:
 		radius_ring.visible = _mode == "resources" and label_alpha > 0.01
+		var hovered := String(record["id"]) == _hovered_id
+		var ring_material := radius_ring.material_override as StandardMaterial3D
+		if ring_material != null:
+			var ring_color := ring_material.albedo_color
+			ring_color.a = 0.55 if hovered else 0.22
+			ring_material.albedo_color = ring_color
 
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:
