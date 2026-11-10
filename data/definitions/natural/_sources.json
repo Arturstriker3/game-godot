@@ -2,13 +2,13 @@
 	"generated_by": "tools/build_natural_geography.py",
 	"projection": "equirretangular 5000x2500 (lon -180..180, lat -90..90)",
 	"nature": {
-		"quality": "test",
-		"method": "latitude bands + curated aridity/mountain/shield boxes",
-		"note": "parâmetros de teste identificados; substituir por WorldClim/FAO/SRTM"
+		"quality": "real_climate (altitude/temp/precip) + formulas (clima/solo/derivados)",
+		"method": "WorldClim 2.1 10-min (elev/bio1/bio12) sampled at territory centroid; climate/soil/relief/fertility/water/forest/cultivable re-derived by build_natural_geography formulas",
+		"note": "aplicado por tools/apply_real_climate.py; territórios com centróide em água mantêm valores sintéticos (test)"
 	},
 	"agriculture": {
-		"quality": "test",
-		"method": "trapezoidal climate/water/soil suitability per crop"
+		"quality": "real_climate (recalculated with real climate)",
+		"method": "trapezoidal climate/water/soil suitability per crop, fed by real altitude/temp/precip"
 	},
 	"deposits": {
 		"source": "USGS MRDS WFS compact (dep_id, site, status, commodity, point) + curated supplements",
