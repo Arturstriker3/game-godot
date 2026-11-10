@@ -2,7 +2,9 @@
 """Valida os dados de cenário do OpenGS Game.
 
 Verifica os pares CSV/JSON em ``data/definitions/scenario/`` (cidades, portos,
-construções e nações) e, se existir, ``data/definitions/i18n/i18n.csv``.
+construções e nações), o arquivo de bens da economia
+``data/definitions/economy/goods.json`` e, se existir,
+``data/definitions/i18n/i18n.csv``.
 
 Uso::
 
@@ -33,6 +35,8 @@ from typing import Any, Optional
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
 SCENARIO_DIR = Path("data/definitions/scenario")
+ECONOMY_DIR = Path("data/definitions/economy")
+GOODS_FILE = ECONOMY_DIR / "goods.json"
 I18N_FILE = Path("data/definitions/i18n/i18n.csv")
 
 X_RANGE = (0.0, 5000.0)
@@ -53,6 +57,9 @@ PORT_FIELDS = ["id", "name", "nation", "x", "y", "landmass"]
 BUILDING_FIELDS_CSV = ["city_id", "building_id", "name", "output_tons_per_day"]
 BUILDING_FIELDS_JSON = ["city_id", "id", "name", "output_tons_per_day"]
 NATION_FIELDS = ["id", "name", "flag"]
+GOODS_FIELDS = ["id", "name", "base_price", "food"]
+# Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp).
+GOODS_ALLOWED_IDS = ("bread", "flour", "iron", "wheat")
 I18N_HEADER = ["key", "pt_BR", "en", "es"]
 
 
@@ -322,6 +329,25 @@ def load_pair(
     return loaded
 
 
+def load_json_file(report: Report, root: Path, path: Path) -> Optional[tuple]:
+    """Carrega um JSON de objetos isolado (sem par CSV); devolve (sec, rows) ou None."""
+    sec = report.section(rel_path(path, root))
+    if not path.exists():
+        sec.errors.append("arquivo obrigatório não encontrado")
+        report.io_failure = True
+        return None
+    try:
+        rows = read_json_rows(path)
+    except (OSError, UnicodeDecodeError, TableError) as exc:
+        sec.errors.append(f"não foi possível ler o arquivo: {exc}")
+        report.io_failure = True
+        return None
+    sec.records = len(rows)
+    if not rows:
+        sec.warnings.append("arquivo sem registros")
+    return sec, rows
+
+
 # --------------------------------------------------------------------------
 # Validações por entidade
 # --------------------------------------------------------------------------
@@ -431,6 +457,47 @@ def validate_buildings(
                     f"{row.label}: output_tons_per_day deve ser >= 0 "
                     f"(valor: {fmt_number(output)})"
                 )
+    return ids
+
+
+def validate_goods(sec: Section, rows: list) -> set:
+    """Valida os bens da economia (id, nome, preço-base e flag de comida)."""
+    ids: set = set()
+    seen: dict = {}
+    allowed = ", ".join(GOODS_ALLOWED_IDS)
+    for row in rows:
+        data = row.data
+        check_required(sec, row, GOODS_FIELDS)
+
+        good_id = as_text(data.get("id"))
+        check_id(sec, row, good_id, seen, "bem")
+        if good_id:
+            ids.add(good_id)
+            if good_id not in GOODS_ALLOWED_IDS:
+                sec.errors.append(
+                    f"{row.label}: id '{good_id}' não é conhecido pelo núcleo C++ "
+                    f"(permitidos: {allowed})"
+                )
+
+        price = parse_number(data.get("base_price"))
+        if not is_blank(data.get("base_price")):
+            if price is None:
+                sec.errors.append(
+                    f"{row.label}: base_price não é numérico "
+                    f"({data.get('base_price')!r})"
+                )
+            elif price <= 0:
+                sec.errors.append(
+                    f"{row.label}: base_price deve ser > 0 "
+                    f"(valor: {fmt_number(price)})"
+                )
+
+        raw_food = data.get("food")
+        if not isinstance(raw_food, bool) and not is_blank(raw_food):
+            sec.errors.append(
+                f"{row.label}: food deve ser booleano true/false "
+                f"(valor: {raw_food!r})"
+            )
     return ids
 
 
@@ -597,6 +664,12 @@ def build_report(root: Path) -> Report:
     )
     nations = load_pair(report, root, scenario_dir, "nations", NATION_FIELDS, NATION_FIELDS)
 
+    goods_path = root / GOODS_FILE
+    goods = load_json_file(report, root, goods_path)
+    if goods is not None:
+        sec, rows = goods
+        validate_goods(sec, rows)
+
     city_ids = {}
     for fmt in ("csv", "json"):
         if fmt in cities:
@@ -677,7 +750,10 @@ def build_report(root: Path) -> Report:
 
 def main(argv: Optional[list] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Valida os dados de cenário do OpenGS Game (CSV/JSON e i18n).",
+        description=(
+            "Valida os dados do OpenGS Game "
+            "(cenário CSV/JSON, bens da economia e i18n)."
+        ),
     )
     parser.add_argument(
         "--root",

@@ -70,5 +70,41 @@
     "y": 1181.4,
     "landmass": "guiana",
     "capital": false
+  },
+  {
+    "id": "VEN-CCS",
+    "nation": "VEN",
+    "home_nation": "VEN",
+    "name": "Caracas",
+    "population": 2900000.0,
+    "production": 870.0,
+    "x": 1570.6,
+    "y": 1104.2,
+    "landmass": "guiana",
+    "capital": true
+  },
+  {
+    "id": "SUR-PBM",
+    "nation": "SUR",
+    "home_nation": "SUR",
+    "name": "Paramaribo",
+    "population": 241000.0,
+    "production": 72.0,
+    "x": 1733.8,
+    "y": 1169.0,
+    "landmass": "guiana",
+    "capital": true
+  },
+  {
+    "id": "GUY-GEO",
+    "nation": "GUY",
+    "home_nation": "GUY",
+    "name": "Georgetown",
+    "population": 118000.0,
+    "production": 35.0,
+    "x": 1692.3,
+    "y": 1155.5,
+    "landmass": "guiana",
+    "capital": true
   }
 ]

@@ -28,5 +28,23 @@
     "id": "bru_wheat",
     "name": "Bruxelas — trigo",
     "output_tons_per_day": 400.0
+  },
+  {
+    "city_id": "VEN-CCS",
+    "id": "ccs_wheat",
+    "name": "Caracas — trigo",
+    "output_tons_per_day": 870.0
+  },
+  {
+    "city_id": "SUR-PBM",
+    "id": "pbm_wheat",
+    "name": "Paramaribo — trigo",
+    "output_tons_per_day": 72.0
+  },
+  {
+    "city_id": "GUY-GEO",
+    "id": "geo_wheat",
+    "name": "Georgetown — trigo",
+    "output_tons_per_day": 35.0
   }
 ]

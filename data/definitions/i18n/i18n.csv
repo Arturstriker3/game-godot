@@ -56,6 +56,9 @@ city.name.FRA-CAY,Caiena,Cayenne,Cayena
 city.name.FRA-PAR,Paris,Paris,París
 city.name.GBR-LDN,Londres,London,Londres
 city.name.NED-AMS,Amsterdã,Amsterdam,Ámsterdam
+city.name.VEN-CCS,Caracas,Caracas,Caracas
+city.name.SUR-PBM,Paramaribo,Paramaribo,Paramaribo
+city.name.GUY-GEO,Georgetown,Georgetown,Georgetown
 city.need,Demanda diária,Daily demand,Demanda diaria
 city.need_per_person_kg,Demanda por pessoa,Demand per person,Demanda por persona
 city.no_orders,Nenhum pedido em aberto para esta cidade.,No open order for this city.,Ningún pedido abierto para esta ciudad.
@@ -199,6 +202,9 @@ nation.DEU,Alemanha,Germany,Alemania
 nation.FRA,França,France,Francia
 nation.GBR,Inglaterra,England,Inglaterra
 nation.NED,Holanda,Netherlands,Países Bajos
+nation.VEN,Venezuela,Venezuela,Venezuela
+nation.SUR,Suriname,Suriname,Surinam
+nation.GUY,Guiana,Guyana,Guyana
 pol.col.cities,Cidades,Cities,Ciudades
 pol.col.nation,Nação,Nation,Nación
 pol.col.population,População,Population,Población

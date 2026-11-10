@@ -23,5 +23,20 @@
     "id": "BEL",
     "name": "Belgium",
     "flag": "be"
+  },
+  {
+    "id": "VEN",
+    "name": "Venezuela",
+    "flag": "ve"
+  },
+  {
+    "id": "SUR",
+    "name": "Suriname",
+    "flag": "sr"
+  },
+  {
+    "id": "GUY",
+    "name": "Guyana",
+    "flag": "gy"
   }
 ]
