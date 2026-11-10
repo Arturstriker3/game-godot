@@ -34,23 +34,24 @@ func _run() -> void:
 		await process_frame
 
 	var mineral_count: int = layer._mineral_points.size()
-	var crop_total: int = 0
-	for crop in layer.CROP_KEYS:
-		crop_total += (layer._crop_points[crop] as Array).size()
-	_check(crop_total > 0, "há pontos de cultura (%d)" % crop_total)
-	_check(layer._total_pickable() == mineral_count + crop_total,
-			"total pickable = minerais + culturas (%d)" % layer._total_pickable())
+	var renewable_count: int = layer._renewable_points.size()
+	_check(renewable_count > 0, "há pontos de renovável (%d)" % renewable_count)
+	_check(layer._total_pickable() == mineral_count + renewable_count,
+			"total pickable = minerais + renováveis (%d)" % layer._total_pickable())
 
-	if (layer._crop_points["wheat"] as Array).size() > 0:
-		var wheat_index: int = mineral_count
-		var info: Dictionary = layer.deposit_info(wheat_index)
+	if renewable_count > 0:
+		var renewable_index: int = mineral_count
+		var info: Dictionary = layer.deposit_info(renewable_index)
 		_check(String(info.get("kind", "")) == "wheat", "kind = wheat")
-		_check(String(info.get("resource", "")) == "wheat", "resource = wheat")
-		var suitability := float(info.get("suitability", -1.0))
+		_check(not String(info.get("dominant", "")).is_empty(), "dominante presente")
+		var resources: Array = info.get("resources", [])
+		_check(resources.size() > 0, "mix de recursos não vazio")
+		for entry in resources:
+			var suitability := float(entry.get("suitability", -1.0))
+			_check(suitability >= 0.0 and suitability <= 1.0,
+					"aptidão %s em 0..1 (%.3f)" % [String(entry.get("resource", "")), suitability])
 		var fertility := float(info.get("fertility", -1.0))
 		var cultivable := float(info.get("cultivable", -1.0))
-		_check(suitability >= 0.0 and suitability <= 1.0,
-				"aptidão em 0..1 (%.3f)" % suitability)
 		_check(fertility >= 0.0 and fertility <= 1.0,
 				"fertilidade em 0..1 (%.3f)" % fertility)
 		_check(cultivable >= 0.0 and cultivable <= 1.0,
@@ -58,15 +59,15 @@ func _run() -> void:
 		_check(not String(info.get("territory", "")).is_empty(),
 				"território identificado (%s)" % String(info.get("territory", "")))
 
-		# O pick deve resolver o centro projetado de um ponto de trigo para o
-		# índice codificado (minerais 0..M-1, trigo M..M+W-1).
+		# O pick deve resolver o centro projetado do primeiro renovável para o
+		# índice codificado (minerais 0..M-1, renováveis M..M+R-1).
 		var camera: Camera3D = game.get_node("Player").camera
-		var point: Array = layer._crop_points["wheat"][0]
+		var point: Array = layer._renewable_points[0]
 		var world: Vector3 = layer.to_global(layer._marker_world(point))
 		if not camera.is_position_behind(world):
 			var center: Vector2 = camera.unproject_position(world)
 			_check(layer.pick_deposit(center, camera) == mineral_count,
-					"pick no centro do trigo devolve o índice codificado")
+					"pick no centro do renovável devolve o índice codificado")
 
 	# Um mineral continua sendo mineral (não regrediu).
 	if mineral_count > 0:

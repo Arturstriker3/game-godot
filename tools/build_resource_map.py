@@ -259,16 +259,11 @@ def build_points() -> None:
         ])
 
     agriculture = read_json("agriculture.json")["territories"]
-    # Culturas renováveis (losangos), uma por território por cultura, com
-    # deslocamento para não sobrepor o círculo do mineral nem as demais.
-    # Madeira vem do forest_cover (nature.json), não da aptidão agrícola.
-    crop_keys = ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
-    crop_offset = {
-        "wheat": (12.0, 12.0), "rice": (-12.0, 12.0), "maize": (12.0, -12.0),
-        "potato": (-12.0, -12.0), "soy": (24.0, 0.0), "cotton": (-24.0, 0.0),
-        "wood": (0.0, 24.0),
-    }
-    crop_points = {crop: [] for crop in crop_keys}
+    # Renováveis (culturas + madeira), agregadas por território: 1 marcador por
+    # território (recurso dominante), com o mix completo em `renewable_mixes`.
+    renewable_keys = ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+    renewables = []
+    renewable_mixes = {}
     for territory, crops in agriculture.items():
         centroid = nature.get(territory, {}).get("centroid_px", [])
         if len(centroid) < 2:
@@ -280,7 +275,8 @@ def build_points() -> None:
             if landed is None:
                 continue
             px, py = landed
-        for crop in crop_keys:
+        mix = {}
+        for crop in renewable_keys:
             if crop == "wood":
                 value = float(nature.get(territory, {}).get("forest_cover", 0.0))
             else:
@@ -288,20 +284,26 @@ def build_points() -> None:
             threshold = FOREST_MIN if crop == "wood" else WHEAT_MIN
             if value < threshold:
                 continue
-            ox, oy = crop_offset[crop]
-            crop_points[crop].append([
-                round(px + ox, 1),
-                round(py + oy, 1),
-                round(value, 2),
-            ])
+            mix[crop] = round(value, 2)
+        if not mix:
+            continue
+        dominant = max(mix, key=mix.get)
+        renewable_mixes[territory] = {"resources": mix, "dominant": dominant}
+        renewables.append([
+            round(px, 1),
+            round(py, 1),
+            renewable_keys.index(dominant),
+            mix[dominant],
+            territory,
+        ])
 
     out = os.path.join(ROOT, "map", "map_data", "atlas", "resource_points.json")
     with open(out, "w", encoding="utf-8") as handle:
         json.dump({"minerals": minerals, "territory_mixes": territory_mixes,
-                   **crop_points}, handle, separators=(",", ":"))
-    counts = " ".join("%s=%d" % (crop, len(crop_points[crop])) for crop in crop_keys)
+                   "renewables": renewables, "renewable_mixes": renewable_mixes},
+                  handle, separators=(",", ":"))
     print("resource_points.json", len(minerals), "territórios minerais",
-          "| culturas:", counts,
+          "| renováveis", len(renewables),
           "| facilities:", skipped_facility, "| sem território:", skipped_noterritory)
 
 

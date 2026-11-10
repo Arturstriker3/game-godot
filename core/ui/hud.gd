@@ -82,6 +82,8 @@ const CHECK_ALL_TEXTURE: Texture2D = preload("res://assets/icons/check_all.svg")
 const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil",
 		"bauxite", "lead", "gold", "phosphate", "tungsten",
 		"rare_earths", "sulfur", "diamond"]
+## Renováveis na MESMA ordem do CROP_KEYS do map_mode_layer.gd (índice no ponto).
+const RENEWABLE_KEYS := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
 const RESOURCE_LEGEND := [
 	{"key": "coal", "color": Color("#3E3B38")},
 	{"key": "copper", "color": Color("#C06A3C")},
@@ -706,13 +708,13 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	body.add_child(body_box)
 	_legend_box.add_child(body)
 
-	var resource := String(info.get("resource", "wheat"))
-	body_box.add_child(_legend_row(_resource_color(resource),
-			I18n.t("resource." + resource), "", true, "", true))
-	body_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.suitability"),
-			"%d%%" % int(round(float(info.get("suitability", 0.0)) * 100.0)),
-			false, I18n.t("map.legend.suitability_tip")))
+	var resources: Array = info.get("resources", [])
+	for entry in resources:
+		var resource := String(entry.get("resource", ""))
+		var suitability := float(entry.get("suitability", 0.0))
+		body_box.add_child(_legend_row(_resource_color(resource),
+				I18n.t("resource." + resource),
+				"%d%%" % int(round(suitability * 100.0))))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.fertility"),
 			"%d%%" % int(round(float(info.get("fertility", 0.0)) * 100.0)),
@@ -965,7 +967,7 @@ func _resource_counts_from_file() -> Dictionary:
 	var counts := {}
 	for key in RESOURCE_KEYS:
 		counts[key] = 0
-	for key in ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]:
+	for key in RENEWABLE_KEYS:
 		counts[key] = 0
 	var data: Variant = JSON.parse_string(
 			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
@@ -975,8 +977,10 @@ func _resource_counts_from_file() -> Dictionary:
 		var index := clampi(int(point[2]), 0, RESOURCE_KEYS.size() - 1)
 		var key := String(RESOURCE_KEYS[index])
 		counts[key] = int(counts.get(key, 0)) + 1
-	for key in ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]:
-		counts[key] = (data.get(key, []) as Array).size()
+	for point in data.get("renewables", []):
+		var index := clampi(int(point[2]), 0, RENEWABLE_KEYS.size() - 1)
+		var key := String(RENEWABLE_KEYS[index])
+		counts[key] = int(counts.get(key, 0)) + 1
 	return counts
 
 

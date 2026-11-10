@@ -65,7 +65,7 @@ var _values: Dictionary = {}
 var _current := "geographic"
 var _heat_mesh: MeshInstance3D
 var _mineral_mesh: MultiMeshInstance3D
-var _crop_meshes: Dictionary = {}
+var _renewable_mesh: MultiMeshInstance3D
 var _hover_ring: Sprite3D
 var _selection_ring: Sprite3D
 var _hover_time := 0.0
@@ -75,7 +75,8 @@ var _selected_deposit := -1
 var _hover_diameter := 0.0
 var _selection_diameter := 0.0
 var _mineral_points: Array = []
-var _crop_points: Dictionary = {}
+var _renewable_points: Array = []
+var _renewable_mixes: Dictionary = {}
 var _territory_mixes: Dictionary = {}
 var _geo: RefCounted
 ## Filtros da legenda: {} = todos; senão chave -> bool.
@@ -129,8 +130,8 @@ func set_mode(mode: String) -> void:
 	var heat := MODE_COLORS.has(mode) and not resources
 	if _mineral_mesh != null:
 		_mineral_mesh.visible = resources
-	for crop in _crop_meshes:
-		_crop_meshes[crop].visible = resources
+	if _renewable_mesh != null:
+		_renewable_mesh.visible = resources
 	if _heat_mesh != null:
 		_heat_mesh.visible = heat
 	if _hover_ring != null and not resources:
@@ -198,7 +199,7 @@ func _build_values(cities: Array) -> void:
 	_material.set_shader_parameter("opacity", 0.45)
 
 
-## Constrói os marcadores do mapa de recursos: minerais (círculo) e trigo
+## Constrói os marcadores do mapa de recursos: minerais (círculo) e renováveis
 ## (losango), um MultiMesh por tipo. Billboard mantém o desenho nítido.
 func _build_resource_markers() -> void:
 	var data: Variant = JSON.parse_string(
@@ -207,13 +208,11 @@ func _build_resource_markers() -> void:
 		return
 	_mineral_points = data.get("minerals", [])
 	_territory_mixes = data.get("territory_mixes", {})
-	for crop in CROP_KEYS:
-		_crop_points[crop] = data.get(crop, [])
+	_renewable_points = data.get("renewables", [])
+	_renewable_mixes = data.get("renewable_mixes", {})
 
 	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT)
-	for crop in CROP_KEYS:
-		_crop_meshes[crop] = _make_marker_layer(
-				"Resource" + crop.capitalize(), RESOURCE_WHEAT)
+	_renewable_mesh = _make_marker_layer("ResourceRenewables", RESOURCE_WHEAT)
 	_rebuild_markers()
 
 	# Anel de hover em volta do depósito sob o mouse.
@@ -240,8 +239,7 @@ func _build_resource_markers() -> void:
 	add_child(_selection_ring)
 
 	_mineral_mesh.visible = false
-	for crop in CROP_KEYS:
-		_crop_meshes[crop].visible = false
+	_renewable_mesh.visible = false
 
 
 ## Aplica o filtro da legenda (chaves: coal/copper/gas/iron/oil/wheat).
@@ -255,9 +253,9 @@ func _is_enabled(key: String) -> bool:
 	return _resource_filter.is_empty() or bool(_resource_filter.get(key, true))
 
 
-## Recria as instâncias apenas com os recursos ligados. Barato: ~600 pontos.
+## Recria as instâncias apenas com os recursos ligados. Barato: ~1k pontos.
 func _rebuild_markers() -> void:
-	if _mineral_mesh == null or _crop_meshes.is_empty():
+	if _mineral_mesh == null or _renewable_mesh == null:
 		return
 	var minerals: Array = []
 	for point in _mineral_points:
@@ -265,12 +263,12 @@ func _rebuild_markers() -> void:
 			minerals.append(point)
 	_fill_minerals(minerals)
 
-	for index in CROP_KEYS.size():
-		var crop := CROP_KEYS[index]
-		var points: Array = []
+	var renewables: Array = []
+	for point in _renewable_points:
+		var crop := String(CROP_KEYS[clampi(int(point[2]), 0, CROP_KEYS.size() - 1)])
 		if _is_enabled(crop):
-			points = _crop_points[crop] as Array
-		_fill_crop(_crop_meshes[crop], points, CROP_COLORS[index])
+			renewables.append(point)
+	_fill_renewables(renewables)
 
 
 func _fill_minerals(points: Array) -> void:
@@ -283,13 +281,14 @@ func _fill_minerals(points: Array) -> void:
 				MARKER_SIZE, MINERAL_COLORS[color_index])
 
 
-func _fill_crop(layer: MultiMeshInstance3D, points: Array, color: Color) -> void:
-	var multimesh := layer.multimesh
+func _fill_renewables(points: Array) -> void:
+	var multimesh := _renewable_mesh.multimesh
 	multimesh.instance_count = points.size()
 	for index in points.size():
 		var point: Array = points[index]
-		_set_marker(layer, index, float(point[0]), float(point[1]),
-				MARKER_SIZE, color)
+		var color_index := clampi(int(point[2]), 0, CROP_COLORS.size() - 1)
+		_set_marker(_renewable_mesh, index, float(point[0]), float(point[1]),
+				MARKER_SIZE, CROP_COLORS[color_index])
 
 
 ## Tamanho do marcador: CONSTANTE para minerais e trigo. A reserva e a aptidão
@@ -325,19 +324,16 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 		if distance >= 0.0 and distance < best_distance:
 			best = index
 			best_distance = distance
-	# Culturas (índices M..M+crop_total-1), na ordem de CROP_KEYS.
-	var crop_base := mineral_count
-	for crop in CROP_KEYS:
+	# Renováveis (índices M..M+R-1), um por território (dominante).
+	for index in _renewable_points.size():
+		var point: Array = _renewable_points[index]
+		var crop := String(CROP_KEYS[clampi(int(point[2]), 0, CROP_KEYS.size() - 1)])
 		if not _is_enabled(crop):
-			crop_base += _crop_points[crop].size()
 			continue
-		for index in _crop_points[crop].size():
-			var point: Array = _crop_points[crop][index]
-			var distance := _pick_screen_distance(point, true, screen_position, camera, right)
-			if distance >= 0.0 and distance < best_distance:
-				best = crop_base + index
-				best_distance = distance
-		crop_base += _crop_points[crop].size()
+		var distance := _pick_screen_distance(point, true, screen_position, camera, right)
+		if distance >= 0.0 and distance < best_distance:
+			best = mineral_count + index
+			best_distance = distance
 	return best
 
 
@@ -355,32 +351,22 @@ func _pick_screen_distance(point: Array, is_wheat: bool, screen_position: Vector
 	return distance if distance <= radius else -1.0
 
 
-## Tipo de um índice de pick codificado (minerais 0..M-1, culturas M..fim).
+## Tipo de um índice de pick codificado (minerais 0..M-1, renováveis M..M+R-1).
 func _pick_point(index: int) -> Array:
 	var m := _mineral_points.size()
 	if index < m:
 		return _mineral_points[index]
-	var crop_base := m
-	for crop in CROP_KEYS:
-		var n: int = (_crop_points[crop] as Array).size()
-		if index < crop_base + n:
-			return _crop_points[crop][index - crop_base]
-		crop_base += n
-	return []
+	return _renewable_points[index - m]
 
 
 func _pick_is_wheat(index: int) -> bool:
 	return index >= _mineral_points.size()
 
 
+## Recurso dominante do renovável clicado (índice codificado em point[2]).
 func _pick_crop(index: int) -> String:
-	var crop_base := _mineral_points.size()
-	for crop in CROP_KEYS:
-		var n: int = (_crop_points[crop] as Array).size()
-		if index < crop_base + n:
-			return crop
-		crop_base += n
-	return "wheat"
+	var point: Array = _renewable_points[index - _mineral_points.size()]
+	return String(CROP_KEYS[clampi(int(point[2]), 0, CROP_KEYS.size() - 1)])
 
 
 func _pick_size(index: int) -> float:
@@ -388,10 +374,7 @@ func _pick_size(index: int) -> float:
 
 
 func _total_pickable() -> int:
-	var total := _mineral_points.size()
-	for crop in CROP_KEYS:
-		total += _crop_points[crop].size()
-	return total
+	return _mineral_points.size() + _renewable_points.size()
 
 
 ## Mostra o badge "i" sobre o depósito sob o mouse (índice) ou esconde (-1).
@@ -501,25 +484,35 @@ func deposit_info(index: int) -> Dictionary:
 	if index < 0 or index >= _total_pickable():
 		return {}
 	if _pick_is_wheat(index):
-		# Agricultura (recurso renovável): aptidão + fertilidade + cultivável do
-		# território. Sem reserva — a "produção" é um fluxo, não um estoque.
-		var crop := _pick_crop(index)
+		# Renovável agregado por território: mix de culturas + madeira (aptidões),
+		# com fertilidade/cultivável do território. Sem reserva — fluxo anual.
 		var point: Array = _pick_point(index)
 		var pos := Vector2(float(point[0]), float(point[1]))
+		var territory := String(point[4]) if point.size() > 4 else ""
 		var attrs: Dictionary = _geo.territory_attributes(pos) if _geo != null else {}
+		var mix: Dictionary = _renewable_mixes.get(territory, {})
+		var mix_resources: Dictionary = mix.get("resources", {})
+		var resources: Array = []
+		for crop in mix_resources:
+			resources.append({
+				"resource": String(crop),
+				"suitability": float(mix_resources[crop]),
+			})
+		resources.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return float(a.get("suitability", 0.0)) > float(b.get("suitability", 0.0)))
 		return {
 			"kind": "wheat",
-			"resource": crop,
-			"suitability": float(point[2]) if point.size() > 2 else 0.0,
-			"fertility": float(attrs.get("fertility", 0.0)),
-			"cultivable": float(attrs.get("cultivable", 0.0)),
-			"territory": String(attrs.get("territory", "")),
+			"territory": territory,
+			"dominant": String(mix.get("dominant", "")),
 			"name_pt": String(attrs.get("name_pt", "")),
 			"name_en": String(attrs.get("name_en", "")),
 			"name_es": String(attrs.get("name_es", "")),
+			"fertility": float(attrs.get("fertility", 0.0)),
+			"cultivable": float(attrs.get("cultivable", 0.0)),
 			"climate": String(attrs.get("climate", "")),
 			"soil_type": String(attrs.get("soil_type", "")),
 			"relief": String(attrs.get("relief", "")),
+			"resources": resources,
 		}
 	var point: Array = _mineral_points[index]
 	var territory := String(point[7]) if point.size() > 7 else ""
