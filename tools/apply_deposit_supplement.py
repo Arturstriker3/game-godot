@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEPOSITS = os.path.join(ROOT, "data", "definitions", "natural", "deposits.json")
 SUPPLEMENT = os.path.join(ROOT, "data", "definitions", "natural",
                           "deposits_supplement.json")
-TEMPLATES = {"oil": "Brent", "gas": "Troll"}
+TEMPLATES = {"oil": "Brent", "gas": "Troll", "coal": "Ruhr", "diamond": "Rio Verde"}
 
 
 def read_json(path):

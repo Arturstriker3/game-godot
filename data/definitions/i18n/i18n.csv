@@ -358,3 +358,9 @@ resource.rare_earths,Terras raras,Rare earths,Tierras raras
 resource.sulfur,Enxofre,Sulfur,Azufre
 resource.diamond,Diamante,Diamond,Diamante
 resource.uranium,Urânio,Uranium,Uranio
+map.legend.situation,Situação,Situation,Situación
+map.legend.situation.intact,Intacta,Intact,Intacta
+map.legend.situation.abundant,Abundante,Abundant,Abundante
+map.legend.situation.moderate,Moderada,Moderate,Moderada
+map.legend.situation.scarce,Escassa,Scarce,Escasa
+map.legend.situation.residual,Residual,Residual,Residual

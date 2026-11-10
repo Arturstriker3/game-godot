@@ -135,6 +135,22 @@ def nearest_land_px(nav: Image.Image, px: float, py: float,
     return None
 
 
+def nearest_territory(nature: dict, px: float, py: float):
+    """Id do território cujo centróide está mais próximo de (px, py)."""
+    best = None
+    best_dist = float("inf")
+    for territory, entry in nature.items():
+        centroid = entry.get("centroid_px", [])
+        if len(centroid) < 2:
+            continue
+        cx, cy = float(centroid[0]), float(centroid[1])
+        dist = (cx - px) ** 2 + (cy - py) ** 2
+        if dist < best_dist:
+            best_dist = dist
+            best = territory
+    return best
+
+
 def deposit_allowed(nav: Image.Image, dep: dict) -> bool:
     """Terra pode tudo; água só petróleo/gás encostado na costa."""
     px = float(dep.get("px", 0.0))
@@ -176,8 +192,18 @@ def build_points() -> None:
             continue
         terr = str(dep.get("territory", ""))
         if not terr or terr not in nature:
-            skipped_noterritory += 1
-            continue  # offshore/suplemento sem território
+            # Suplemento/offshore sem território: se está em terra, resolve pelo
+            # centróide de território mais próximo; se em água (offshore),
+            # descarta (decorativo até a extração).
+            px = float(dep.get("px", 0.0))
+            py = float(dep.get("py", 0.0))
+            if nav.getpixel(nav_cell(nav, px, py)) < 128:
+                skipped_noterritory += 1
+                continue
+            terr = nearest_territory(nature, px, py)
+            if not terr:
+                skipped_noterritory += 1
+                continue
         quantity = float(dep.get("quantity_kt", 0.0))
         res_map = territories.setdefault(terr, {})
         entry = res_map.setdefault(resource, {

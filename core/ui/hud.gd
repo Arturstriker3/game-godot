@@ -666,6 +666,11 @@ func show_deposit_info(info: Dictionary) -> void:
 	_legend_box.add_child(body)
 
 	var resources: Array = info.get("resources", [])
+	if not resources.is_empty():
+		var situation := String(resources[0].get("situation", "moderate"))
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.situation"),
+				I18n.t("map.legend.situation." + situation)))
 	for entry in resources:
 		var resource := String(entry.get("resource", ""))
 		var count := int(entry.get("count", 0))

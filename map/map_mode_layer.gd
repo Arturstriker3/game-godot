@@ -440,6 +440,21 @@ func mineral_points() -> Array:
 	return _mineral_points
 
 
+## Nível de esgotamento inicial, semeado pelo status MRDS. Sem prospecção:
+## todo depósito é mina conhecida; "escassa" é alcançada dinamicamente na
+## extração (entre moderada e residual).
+func _situation_from_status(status: String) -> String:
+	match status:
+		"Occurrence", "Prospect":
+			return "intact"
+		"Producer":
+			return "abundant"
+		"Past Producer":
+			return "residual"
+		_:
+			return "moderate"
+
+
 func deposit_info(index: int) -> Dictionary:
 	if index < 0 or index >= _total_pickable():
 		return {}
@@ -477,6 +492,7 @@ func deposit_info(index: int) -> Dictionary:
 			"quality": float(entry.get("quality", 0.0)),
 			"depth_m": int(entry.get("depth_m", 0)),
 			"status": String(entry.get("status", "")),
+			"situation": _situation_from_status(String(entry.get("status", ""))),
 		})
 	resources.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a.get("reserve_kt", 0.0)) > float(b.get("reserve_kt", 0.0)))
