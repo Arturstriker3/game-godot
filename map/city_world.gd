@@ -314,28 +314,33 @@ func pick_city(screen_position: Vector2, camera: Camera3D, radius_px: float = 26
 		var edge := camera.unproject_position(world + right * footprint)
 		var city_radius := maxf(radius_px, center.distance_to(edge))
 		var score := center.distance_to(screen_position) / city_radius
-
-		# O nome (e a bandeira/selo) ficam acima do centro; clicar no rótulo
-		# também seleciona a cidade. Usa a largura real do texto em tela.
-		var label: Label3D = record.get("label")
-		if label != null and label.visible:
-			var label_world := to_global(label.position)
-			if not camera.is_position_behind(label_world):
-				var em := float(label.font_size) * label.pixel_size
-				var text_w := label.font.get_string_size(label.text,
-						HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
-				var half := right * (text_w * 0.5 + em * 1.6)
-				var a := camera.unproject_position(label_world - half)
-				var b := camera.unproject_position(label_world + half)
-				var top := camera.unproject_position(label_world + Vector3.UP * em * 0.7)
-				var label_radius := maxf(20.0, a.distance_to(top))
-				var label_score := _segment_distance(screen_position, a, b) / label_radius
-				score = minf(score, label_score)
+		score = minf(score, _label_pick_score(record, screen_position, camera, right))
 
 		if score <= 1.0 and (best_id.is_empty() or score < best_score):
 			best_score = score
 			best_id = String(record["id"])
 	return best_id
+
+
+## Score normalizado do retângulo do rótulo (nome + bandeira/selo). INF se não
+## houver rótulo visível. Clicar no nome seleciona a cidade/porto.
+func _label_pick_score(record: Dictionary, screen_position: Vector2,
+		camera: Camera3D, right: Vector3) -> float:
+	var label: Label3D = record.get("label")
+	if label == null or not label.visible:
+		return INF
+	var label_world := to_global(label.position)
+	if camera.is_position_behind(label_world):
+		return INF
+	var em := float(label.font_size) * label.pixel_size
+	var text_w := label.font.get_string_size(label.text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
+	var half := right * (text_w * 0.5 + em * 1.6)
+	var a := camera.unproject_position(label_world - half)
+	var b := camera.unproject_position(label_world + half)
+	var top := camera.unproject_position(label_world + Vector3.UP * em * 0.7)
+	var radius := maxf(20.0, a.distance_to(top))
+	return _segment_distance(screen_position, a, b) / radius
 
 
 ## Distância de um ponto ao segmento AB (em 2D de tela).
@@ -362,12 +367,14 @@ func pick_port(screen_position: Vector2, camera: Camera3D, radius_px: float = 20
 		return ""
 	var best_id := ""
 	var best_score := 1.0
+	var right := camera.global_transform.basis.x
 	for record in _port_nodes:
 		var world: Vector3 = to_global(record["position"])
 		if camera.is_position_behind(world):
 			continue
 		var center := camera.unproject_position(world)
 		var score := center.distance_to(screen_position) / radius_px
+		score = minf(score, _label_pick_score(record, screen_position, camera, right))
 		if score <= 1.0 and (best_id.is_empty() or score < best_score):
 			best_score = score
 			best_id = String(record["id"])
