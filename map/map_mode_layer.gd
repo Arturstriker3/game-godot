@@ -15,6 +15,7 @@ const MAX_CITIES := 16
 
 const RESOURCE_DOT: Texture2D = preload("res://assets/icons/places/resource_dot.png")
 const RESOURCE_WHEAT: Texture2D = preload("res://assets/icons/places/resource_wheat.png")
+const DEPOSIT_INFO: Texture2D = preload("res://assets/icons/places/deposit_info.png")
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 ## Ordem dos recursos em resource_points.json (índice do mineral).
 const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
@@ -38,6 +39,7 @@ var _current := "geographic"
 var _heat_mesh: MeshInstance3D
 var _mineral_mesh: MultiMeshInstance3D
 var _wheat_mesh: MultiMeshInstance3D
+var _info_badge: Sprite3D
 var _mineral_points: Array = []
 var _wheat_points: Array = []
 ## Filtros da legenda: {} = todos; senão chave -> bool.
@@ -95,6 +97,8 @@ func set_mode(mode: String) -> void:
 		_wheat_mesh.visible = resources
 	if _heat_mesh != null:
 		_heat_mesh.visible = heat
+	if _info_badge != null and not resources:
+		_info_badge.visible = false
 	visible = resources or heat
 
 	if not heat:
@@ -169,6 +173,18 @@ func _build_resource_markers() -> void:
 	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT)
 	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT)
 	_rebuild_markers()
+
+	# Badge "i" que acompanha o depósito sob o mouse.
+	_info_badge = Sprite3D.new()
+	_info_badge.name = "DepositInfoBadge"
+	_info_badge.texture = DEPOSIT_INFO
+	_info_badge.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_info_badge.transparent = true
+	_info_badge.no_depth_test = true
+	_info_badge.render_priority = 6
+	_info_badge.pixel_size = 0.55 / 64.0
+	_info_badge.visible = false
+	add_child(_info_badge)
 
 	_mineral_mesh.visible = false
 	_wheat_mesh.visible = false
@@ -253,7 +269,27 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 		if distance <= radius and distance < best_distance:
 			best = index
 			best_distance = distance
+		# O badge "i" fica acima do ponto; clicar nele também seleciona.
+		var badge_world := world + Vector3(0.0, 0.55, 0.0)
+		if not camera.is_position_behind(badge_world):
+			var badge_center := camera.unproject_position(badge_world)
+			var badge_distance := badge_center.distance_to(screen_position)
+			if badge_distance <= 14.0 and badge_distance < best_distance:
+				best = index
+				best_distance = badge_distance
 	return best
+
+
+## Mostra o badge "i" sobre o depósito sob o mouse (índice) ou esconde (-1).
+func set_deposit_hover(index: int) -> void:
+	if _info_badge == null:
+		return
+	if index < 0 or index >= _mineral_points.size() or _current != "resources":
+		_info_badge.visible = false
+		return
+	_info_badge.position = _marker_world(_mineral_points[index]) \
+			+ Vector3(0.0, 0.55, 0.0)
+	_info_badge.visible = true
 
 
 ## Dados de um depósito para a legenda.

@@ -339,6 +339,12 @@ func deposit_info(index: int) -> Dictionary:
 	return _mode_layer.deposit_info(index)
 
 
+## Badge "i" sobre o depósito sob o mouse (-1 esconde).
+func set_deposit_hover(index: int) -> void:
+	if _mode_layer != null:
+		_mode_layer.set_deposit_hover(index)
+
+
 ## Recursos que a cidade alcança (para a legenda): minérios no raio + trigo.
 func city_resource_entries(city_id: String) -> Array:
 	for record in _city_nodes:

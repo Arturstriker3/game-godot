@@ -78,6 +78,21 @@ def star(size: int = 512) -> Image.Image:
     return img
 
 
+def info_badge(size: int = 64) -> Image.Image:
+    """Badge "i" que aparece sobre o depósito sob o mouse."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = size / 2.0
+    r = size * 0.44
+    d.ellipse([c - r, c - r, c + r, c + r], fill=(10, 18, 18, 235),
+              outline=(201, 162, 74, 255), width=max(2, size // 16))
+    d.ellipse([c - size * 0.05, c - size * 0.26, c + size * 0.05, c - size * 0.16],
+              fill=(232, 226, 208, 255))
+    d.rectangle([c - size * 0.045, c - size * 0.10, c + size * 0.045, c + size * 0.24],
+                fill=(232, 226, 208, 255))
+    return img
+
+
 def read_json(name: str) -> dict:
     with open(os.path.join(NATURAL, name), encoding="utf-8") as handle:
         return json.load(handle)
@@ -166,5 +181,6 @@ white_icon("resources.png", "map_mode_resources.png")
 marker(64, "dot").save(os.path.join(PLACES, "resource_dot.png"))
 marker(64, "diamond").save(os.path.join(PLACES, "resource_wheat.png"))
 star().save(os.path.join(PLACES, "star.png"))
+info_badge().save(os.path.join(PLACES, "deposit_info.png"))
 
 build_points()

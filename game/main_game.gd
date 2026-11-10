@@ -264,21 +264,24 @@ func _update_city_hover_pass() -> void:
 		if not _last_hover.is_empty():
 			_last_hover = ""
 			city_world.set_hover("")
+		city_world.set_deposit_hover(-1)
 		GameCursor.set_state(dragging, "")
 		return
 	if player == null:
 		return
 	var mouse := get_viewport().get_mouse_position()
-	# Mapa de recursos: depósito tem prioridade (cursor "i" e clique mostram a
-	# ficha do depósito na legenda).
+	# Mapa de recursos: depósito tem prioridade (cursor "i", badge sobre o ponto
+	# e clique mostram a ficha do depósito na legenda).
 	if hud.map_mode() == "resources":
 		var deposit: int = city_world.pick_deposit(mouse, player.camera)
 		if deposit >= 0:
 			if not _last_hover.is_empty():
 				_last_hover = ""
 				city_world.set_hover("")
+			city_world.set_deposit_hover(deposit)
 			GameCursor.set_state(false, "info")
 			return
+	city_world.set_deposit_hover(-1)
 	var port_id: String = city_world.pick_port(mouse, player.camera)
 	var city_id: String = "" if not port_id.is_empty() else city_world.pick_city(mouse, player.camera)
 	var hover_id: String = port_id if not port_id.is_empty() else city_id
