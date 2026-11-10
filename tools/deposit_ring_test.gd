@@ -15,7 +15,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/deposit_ring_test.gd
 
 const MAIN_SCENE := "res://game/main_game.tscn"
-const FOCUS := [1618, 1232]  # Chaillac, Ferdinand Mine
+const FOCUS := [0, 100]  # dois territórios arbitrários (agregados)
 const MAX_DELTA_PX := 1.0
 
 var _failures: Array[String] = []

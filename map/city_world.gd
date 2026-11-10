@@ -1103,27 +1103,18 @@ func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sp
 				label.position.y, label.position.z)
 
 
-## Recursos que a cidade acessa: depósitos **onshore** cuja província pertence
-## à cidade + trigo do território. Offshore fica decorativo por enquanto.
+## Recursos que a cidade acessa: depósitos do território da cidade (via
+## GeographyService, que já filtra facilities e offshore) + trigo do território.
 func _resource_entries(city_id: String, center: Vector2) -> Array:
 	if _geo == null:
 		_geo = GeographyScript.new()
 		_geo.load_data()
 	var counts := {}
 	var reserves := {}
-	if _mode_layer != null and _territory != null:
-		for point in _mode_layer.mineral_points():
-			if point.size() < 10:
-				continue
-			if int(point[9]) == 1:
-				continue  # offshore: sem acesso até a mecânica de extração
-			var province_id := int(point[8])
-			if province_id < 0 or _territory.city_for_province(province_id) != city_id:
-				continue
-			var key := String(MINERAL_KEYS[clampi(int(point[2]), 0,
-					MINERAL_KEYS.size() - 1)])
-			counts[key] = int(counts.get(key, 0)) + 1
-			reserves[key] = float(reserves.get(key, 0.0)) + float(point[3])
+	for deposit in _geo.deposits_for(city_id, center):
+		var key := String(deposit.get("resource", ""))
+		counts[key] = int(counts.get(key, 0)) + 1
+		reserves[key] = float(reserves.get(key, 0.0)) + float(deposit.get("quantity_kt", 0.0))
 
 	var entries: Array = []
 	for key in MINERAL_KEYS:

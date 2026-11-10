@@ -23,7 +23,7 @@ const WINDOW_SIZES: Array[Vector2i] = [
 	Vector2i(1366, 768),
 ]
 
-const FOCUS_IDX := [1232, 1618]  # Ferdinand Mine, Chaillac
+const FOCUS_IDX := [0, 100]  # dois territórios arbitrários (agregados)
 
 var _report: PackedStringArray = []
 var _game: Node3D
@@ -65,7 +65,7 @@ func _run() -> void:
 	_hud.set_map_mode("resources")
 	await _wait_frames(2)
 
-	var chaillac: Array = _mode_layer._mineral_points[1618]
+	var chaillac: Array = _mode_layer._mineral_points[100]
 	var chaillac_world: Vector3 = _mode_layer.to_global(_mode_layer._marker_world(chaillac))
 	var default_pos: Vector3 = _player.global_position
 

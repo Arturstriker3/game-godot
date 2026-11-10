@@ -656,14 +656,10 @@ func show_deposit_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	var resource := String(info.get("resource", ""))
-	var split := _split_deposit_name(String(info.get("name", "")))
-	var name: String = split["name"]
-	if name.is_empty():
-		name = I18n.t("resource." + resource)
-	var type_key: String = split["type"]
-	var subtitle := I18n.t(type_key) if not type_key.is_empty() else ""
-	_legend_header(I18n.t("map.legend.deposit"), name, subtitle, null, "back")
+	# Agregado por território: lista o mix de recursos (cor + ×N + reserva).
+	# O nome regional entra na etapa de nomes (Fase 0); por ora usa o id.
+	var territory := String(info.get("territory", ""))
+	_legend_header(I18n.t("map.legend.deposit"), territory, "", null, "back")
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -671,19 +667,14 @@ func show_deposit_info(info: Dictionary) -> void:
 	body.add_child(body_box)
 	_legend_box.add_child(body)
 
-	body_box.add_child(_legend_row(_resource_color(resource),
-			I18n.t("resource." + resource), ""))
-	body_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.reserve"), _format_mt(float(info.get("quantity_kt", 0.0))),
-			false, I18n.t("map.legend.reserve_tip")))
-	body_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.quality"),
-			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0)),
-			false, I18n.t("map.legend.quality_tip")))
-	body_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)),
-			false, I18n.t("map.legend.depth_tip")))
-	body_box.add_child(_legend_stage_block(int(info.get("status", 4))))
+	var resources: Array = info.get("resources", [])
+	for entry in resources:
+		var resource := String(entry.get("resource", ""))
+		var count := int(entry.get("count", 0))
+		var reserve := float(entry.get("reserve_kt", 0.0))
+		body_box.add_child(_legend_row(_resource_color(resource),
+				I18n.t("resource." + resource),
+				"×%d  %s" % [count, _format_mt(reserve)]))
 
 	_legend_hint = _legend_footer(I18n.t("map.legend.deposit_hint"))
 	body_box.add_child(_legend_hint)

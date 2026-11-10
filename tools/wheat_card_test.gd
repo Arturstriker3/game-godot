@@ -41,7 +41,8 @@ func _run() -> void:
 			terrain = text
 			break
 	print("linha de terreno:", terrain)
-	var ok := terrain.contains("CLIMA") and terrain.contains("SOLO") and terrain.contains("RELEVO")
+	var upper := terrain.to_upper()
+	var ok := upper.contains("CLIMA") and upper.contains("SOLO") and upper.contains("RELEVO")
 	if not ok:
 		print("FAIL: linha de terreno ausente ou incompleta")
 	print("labels:", labels)

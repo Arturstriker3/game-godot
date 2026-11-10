@@ -70,6 +70,7 @@ var _hover_diameter := 0.0
 var _selection_diameter := 0.0
 var _mineral_points: Array = []
 var _wheat_points: Array = []
+var _territory_mixes: Dictionary = {}
 var _geo: RefCounted
 ## Filtros da legenda: {} = todos; senão chave -> bool.
 var _resource_filter: Dictionary = {}
@@ -200,6 +201,7 @@ func _build_resource_markers() -> void:
 		return
 	_mineral_points = data.get("minerals", [])
 	_wheat_points = data.get("wheat", [])
+	_territory_mixes = data.get("territory_mixes", {})
 
 	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT)
 	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT)
@@ -459,15 +461,27 @@ func deposit_info(index: int) -> Dictionary:
 			"relief": String(attrs.get("relief", "")),
 		}
 	var point: Array = _mineral_points[index]
+	var territory := String(point[7]) if point.size() > 7 else ""
+	var mix: Dictionary = _territory_mixes.get(territory, {})
+	var mix_resources: Dictionary = mix.get("resources", {})
+	var resources: Array = []
+	for key in mix_resources:
+		var entry: Dictionary = mix_resources[key]
+		resources.append({
+			"resource": String(key),
+			"count": int(entry.get("count", 0)),
+			"reserve_kt": float(entry.get("reserve_kt", 0.0)),
+			"quality": float(entry.get("quality", 0.0)),
+			"depth_m": int(entry.get("depth_m", 0)),
+			"status": String(entry.get("status", "")),
+		})
+	resources.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("reserve_kt", 0.0)) > float(b.get("reserve_kt", 0.0)))
 	return {
 		"kind": "mineral",
-		"resource": String(MINERAL_KEYS[clampi(int(point[2]), 0,
-				MINERAL_KEYS.size() - 1)]),
-		"quantity_kt": float(point[3]) if point.size() > 3 else 0.0,
-		"quality": float(point[4]) if point.size() > 4 else 0.0,
-		"depth_m": int(point[5]) if point.size() > 5 else 0,
-		"status": int(point[6]) if point.size() > 6 else 4,
-		"name": String(point[7]) if point.size() > 7 else "",
+		"territory": territory,
+		"dominant": String(mix.get("dominant", "")),
+		"resources": resources,
 	}
 
 

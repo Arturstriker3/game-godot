@@ -159,46 +159,77 @@ def deposit_allowed(nav: Image.Image, dep: dict) -> bool:
 
 def build_points() -> None:
     nav = load_nav()
-    provinces = Image.open(PROVINCE_PATH).convert("RGB")
     deposits = read_json("deposits.json")["deposits"]
-    minerals = []
-    skipped = 0
+    nature = read_json("nature.json")["territories"]
+
+    # Agrega por território: 1 bolinha por território, cor do recurso dominante.
+    # O mix completo (por recurso) vai em `territory_mixes` para a ficha.
+    territories = {}
     skipped_facility = 0
+    skipped_noterritory = 0
     for dep in deposits:
         resource = str(dep.get("resource", ""))
         if resource not in MINERALS:
             continue
         if dep.get("facility"):
             skipped_facility += 1
-            continue  # fundição/refinaria: não é depósito mineral
-        if not deposit_allowed(nav, dep):
-            skipped += 1
             continue
-        px = float(dep.get("px", 0.0))
-        py = float(dep.get("py", 0.0))
-        # Província dona (id = R + G*256); offshore = pixel de água no nav_mask
-        # (a mesma máscara que o jogo usa para terra/água, sem artefatos de SDF).
-        cx = int(px / MAP_W * provinces.width)
-        cy = int(py / MAP_H * provinces.height)
-        pr, pg, _pb = provinces.getpixel((cx, cy))
-        province_id = int(round(pr + pg * 256))
-        nx, ny = nav_cell(nav, px, py)
-        offshore = 0 if nav.getpixel((nx, ny)) >= 128 else 1
+        terr = str(dep.get("territory", ""))
+        if not terr or terr not in nature:
+            skipped_noterritory += 1
+            continue  # offshore/suplemento sem território
+        quantity = float(dep.get("quantity_kt", 0.0))
+        res_map = territories.setdefault(terr, {})
+        entry = res_map.setdefault(resource, {
+            "count": 0, "reserve": 0.0, "quality_w": 0.0,
+            "depth_w": 0.0, "statuses": []})
+        entry["count"] += 1
+        entry["reserve"] += quantity
+        entry["quality_w"] += float(dep.get("quality", 0.0)) * quantity
+        entry["depth_w"] += float(dep.get("depth_m", 0.0)) * quantity
+        entry["statuses"].append(str(dep.get("status", "Unknown")))
+
+    minerals = []
+    territory_mixes = {}
+    for terr, res_map in territories.items():
+        centroid = nature[terr].get("centroid_px", [])
+        if len(centroid) < 2:
+            continue
+        px, py = float(centroid[0]), float(centroid[1])
+        if nav.getpixel(nav_cell(nav, px, py)) < 128:
+            landed = nearest_land_px(nav, px, py, WHEAT_SNAP_MAX_NAV_PX)
+            if landed is None:
+                continue
+            px, py = landed
+
+        mix = {}
+        for resource, entry in res_map.items():
+            if entry["reserve"] <= 0.0:
+                continue
+            mix[resource] = {
+                "count": entry["count"],
+                "reserve_kt": round(entry["reserve"], 1),
+                "quality": round(entry["quality_w"] / entry["reserve"], 3),
+                "depth_m": round(entry["depth_w"] / entry["reserve"]),
+                "status": max(set(entry["statuses"]), key=entry["statuses"].count),
+            }
+        dominant = max(mix, key=lambda resource: mix[resource]["reserve_kt"])
+        dom = mix[dominant]
+        territory_mixes[terr] = {"resources": mix, "dominant": dominant}
         minerals.append([
             round(px, 1),
             round(py, 1),
-            MINERALS.index(resource),
-            round(float(dep.get("quantity_kt", 0.0)), 1),
-            round(float(dep.get("quality", 0.0)), 3),
-            int(dep.get("depth_m", 0)),
-            STATUS_CODES.get(str(dep.get("status", "")), 4),
-            (str(dep.get("names", [""])[0]) if dep.get("names") else "")[:40],
-            province_id,
-            offshore,
+            MINERALS.index(dominant),
+            dom["reserve_kt"],
+            dom["quality"],
+            dom["depth_m"],
+            STATUS_CODES.get(dom["status"], 4),
+            terr,
+            0,
+            0,
         ])
 
     agriculture = read_json("agriculture.json")["territories"]
-    nature = read_json("nature.json")["territories"]
     wheat = []
     for territory, crops in agriculture.items():
         value = float(crops.get("wheat", 0.0))
@@ -215,6 +246,11 @@ def build_points() -> None:
             if landed is None:
                 continue
             px, py = landed
+        # Território com minerais também: desloca o losango de trigo para não
+        # sobrepor o círculo do recurso dominante (mesmo centróide).
+        if territory in territories:
+            px += 12.0
+            py += 12.0
         wheat.append([
             round(px, 1),
             round(py, 1),
@@ -223,10 +259,11 @@ def build_points() -> None:
 
     out = os.path.join(ROOT, "map", "map_data", "atlas", "resource_points.json")
     with open(out, "w", encoding="utf-8") as handle:
-        json.dump({"minerals": minerals, "wheat": wheat}, handle,
-                  separators=(",", ":"))
-    print("resource_points.json", len(minerals), "minerais", len(wheat), "trigo",
-          "| descartados no mar:", skipped, "| facilities:", skipped_facility)
+        json.dump({"minerals": minerals, "territory_mixes": territory_mixes,
+                   "wheat": wheat}, handle, separators=(",", ":"))
+    print("resource_points.json", len(minerals), "territórios minerais",
+          len(wheat), "trigo | facilities:", skipped_facility,
+          "| sem território:", skipped_noterritory)
 
 
 white_icon("political.png", "map_mode_political.png")
