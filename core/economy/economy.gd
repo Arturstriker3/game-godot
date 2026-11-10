@@ -32,6 +32,8 @@ const START_UNIX := 1767225600
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 ## Portos do cenário (gerados de data/definitions/scenario/ports.csv).
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
+## Construções do cenário (geradas de data/definitions/scenario/buildings.csv).
+const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 ## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Bandeiras por código ISO-2 (moddável: adicione assets/flags/<código>.png).
@@ -42,6 +44,10 @@ var last_summary: Dictionary = {}
 var speed: int = 1
 var _nations: Dictionary = {}  # tag -> {id, name, flag}
 
+## Camada de decisão econômica (investidor privado + governo), rodando sobre o
+## estado do demo em intervalo fixo. Criada no _ready depois do sim.
+var _ai: Object = null
+
 ## Velocidade para a qual voltar ao sair da pausa (espaço).
 var _resume_speed: int = 1
 
@@ -51,11 +57,20 @@ var _day_fraction := 0.0
 
 func _ready() -> void:
 	sim = EconomySim.new()
-	sim.initialize(_load_cities(), _load_ports())
+	sim.initialize_demo_world(_load_cities(), _load_ports(), _load_buildings())
 	_load_nations()
+	_setup_ai()
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
 	_run_day.call_deferred()
+
+
+## Cria a camada de decisão (EconomicAI) sobre o estado do demo, com o serviço
+## de geografia para revelar depósitos e aptidão territorial.
+func _setup_ai() -> void:
+	var geo := GeographyService.new()
+	_ai = EconomicAI.new()
+	_ai.setup(sim, geo)
 
 
 ## Lê as cidades do cenário (JSON) e devolve o array para o núcleo C++.
@@ -82,6 +97,20 @@ func _load_ports() -> Array:
 	file.close()
 	if typeof(data) != TYPE_ARRAY:
 		push_error("Economy: %s não é um array JSON" % PORTS_PATH)
+		return []
+	return data
+
+
+## Lê as construções do cenário (JSON) e devolve o array para o núcleo C++.
+func _load_buildings() -> Array:
+	var file := FileAccess.open(BUILDINGS_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % BUILDINGS_PATH)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_ARRAY:
+		push_error("Economy: %s não é um array JSON" % BUILDINGS_PATH)
 		return []
 	return data
 
@@ -128,9 +157,13 @@ func _process(delta: float) -> void:
 
 
 func _run_day() -> void:
-	last_summary = sim.tick()
+	last_summary = sim.tick_demo()
 	status_updated.emit(last_summary)
-	trade_orders_ready.emit(last_summary["trade_orders"])
+	trade_orders_ready.emit(last_summary.get("trade_orders", []))
+	# A camada de decisão roda depois do tick: as escolhas (investir, construir,
+	# revelar depósito) valem a partir do próximo dia.
+	if _ai != null:
+		_ai.run(int(last_summary.get("day", 0)))
 
 
 ## Troca a velocidade; 0 pausa o relógio. A fração do dia é preservada, então

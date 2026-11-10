@@ -520,6 +520,10 @@ private:
 	std::vector<DemoBuilding> demo_buildings_;
 	std::vector<DemoShipment> demo_in_transit_;
 	std::vector<std::string> demo_invariant_violations_;
+	// Portos do cenário real (modo mundo) e pedidos de comércio do último tick,
+	// para a camada visual (minimapa e comboios 3D).
+	std::vector<Port> demo_ports_;
+	std::vector<TradeOrder> demo_last_orders_;
 	double demo_transport_cash_ = 0.0;
 	double demo_foreign_cash_ = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.

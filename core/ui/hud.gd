@@ -215,7 +215,7 @@ func _build_root() -> void:
 func _initial_summary() -> Dictionary:
 	if not Economy.last_summary.is_empty():
 		return Economy.last_summary
-	return Economy.sim.get_status()
+	return Economy.sim.get_demo_status()
 
 
 ## Seletor de camada de dados do mapa, no canto inferior esquerdo.

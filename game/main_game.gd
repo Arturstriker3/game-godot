@@ -64,7 +64,7 @@ func _build_city_world() -> void:
 	city_world = CityWorldScript.new()
 	add_child(city_world)
 
-	var status: Dictionary = Economy.sim.get_status()
+	var status: Dictionary = Economy.sim.get_demo_status()
 	var cities: Array = status["cities"]
 	var ports: Array = status.get("ports", [])
 	city_world.build(cities, ports)

@@ -891,6 +891,8 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_buildings_.clear();
 	demo_in_transit_.clear();
 	demo_invariant_violations_.clear();
+	demo_ports_.clear();
+	demo_last_orders_.clear();
 	demo_transport_cash_ = 0.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
@@ -954,6 +956,18 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		building.wage = kDemoFarmWage;
 		building.opex = capacity * kDemoOpexPerTon;
 		demo_buildings_.push_back(std::move(building));
+	}
+
+	// Portos do cenário (identidade geográfica, para o minimapa e os comboios).
+	for (int index = 0; index < ports.size(); ++index) {
+		const Dictionary d = ports[index];
+		Port port;
+		port.id = std::string(String(d["id"]).utf8().get_data());
+		port.name = std::string(String(d["name"]).utf8().get_data());
+		port.nation = std::string(String(d["nation"]).utf8().get_data());
+		port.center = {static_cast<double>(d["x"]), static_cast<double>(d["y"])};
+		port.landmass = std::string(String(d.get("landmass", "")).utf8().get_data());
+		demo_ports_.push_back(std::move(port));
 	}
 }
 
@@ -1187,6 +1201,25 @@ void EconomySim::demo_trade_wheat() {
 			buyer.city->import_value[wheat] += cost;
 
 			demo_in_transit_.push_back({buyer.city->id, wheat, amount, day_ + 1});
+
+			// Pedido de comércio com uma rota em linha reta (caminhão na mesma
+			// massa de terra, navio entre massas), para os comboios 3D e o HUD.
+			TradeOrder order;
+			order.from_city = seller->id;
+			order.to_city = buyer.city->id;
+			order.from_nation = seller->nation;
+			order.to_nation = buyer.city->nation;
+			order.scope = MarketScope::International;
+			order.amount = amount;
+			const TransportMode mode = same_landmass
+				? TransportMode::Truck : TransportMode::Ship;
+			Leg leg = make_leg(mode, seller->id, buyer.city->id,
+				seller->center, buyer.city->center, amount);
+			order.transit_hours = leg.transit_hours;
+			order.freight_cost = leg.cost;
+			order.legs.push_back(std::move(leg));
+			demo_last_orders_.push_back(std::move(order));
+
 			remaining -= amount;
 			++shipments;
 		}
@@ -1204,6 +1237,7 @@ Dictionary EconomySim::tick_demo() {
 	const double money_before = demo_money_total();
 
 	++day_;
+	demo_last_orders_.clear();
 
 	// Preço de abertura do dia por cidade/produto. O limite de variação é
 	// aplicado UMA vez, no fim do tick: importação e reação de mercado não
@@ -1933,6 +1967,15 @@ Dictionary EconomySim::demo_city_to_dict(const DemoCity& city) const {
 		? std::clamp(secondary_capacity / total_capacity, 0.0, 1.0) : 0.0;
 	dict["stockpile"] = city.markets[0].stock;
 	dict["need"] = city.pop.need;
+	dict["deficit"] = std::max(0.0, city.pop.need - city.pop.consumed);
+	dict["consumed"] = city.pop.consumed;
+	double in_transit = 0.0;
+	for (const DemoShipment& shipment : demo_in_transit_) {
+		if (shipment.to_city == city.id) {
+			in_transit += shipment.amount;
+		}
+	}
+	dict["in_transit"] = in_transit;
 
 	Array suitability;
 	for (int product = 0; product < kDemoProducts; ++product) {
@@ -2058,6 +2101,82 @@ Dictionary EconomySim::get_demo_status() const {
 		cities.append(demo_city_to_dict(city));
 	}
 	result["cities"] = cities;
+
+	// Portos (modo mundo) para o minimapa e o mundo 3D.
+	Array ports;
+	for (const Port& port : demo_ports_) {
+		ports.append(port_to_dict(port));
+	}
+	result["ports"] = ports;
+
+	// Pedidos de comércio do último tick (comboios 3D e HUD).
+	Array orders;
+	for (const TradeOrder& order : demo_last_orders_) {
+		orders.append(order_to_dict(order));
+	}
+	result["trade_orders"] = orders;
+
+	// Nações agregadas (telas de política/economia), na ordem de aparição.
+	Array nations;
+	std::vector<std::string> nation_order;
+	for (const DemoCity& city : demo_cities_) {
+		if (std::find(nation_order.begin(), nation_order.end(), city.nation)
+				== nation_order.end()) {
+			nation_order.push_back(city.nation);
+		}
+	}
+	static const std::pair<const char*, const char*> kNames[] = {
+		{"GBR", "England"}, {"FRA", "France"}, {"DEU", "Germany"},
+		{"NED", "Netherlands"}, {"BEL", "Belgium"},
+	};
+	for (const std::string& tag : nation_order) {
+		Dictionary nation;
+		nation["tag"] = String(tag.c_str());
+		const char* display = tag.c_str();
+		for (const auto& [code, name] : kNames) {
+			if (tag == code) {
+				display = name;
+			}
+		}
+		nation["name"] = String(display);
+		double population = 0.0;
+		double production = 0.0;
+		double stockpile = 0.0;
+		double need = 0.0;
+		double deficit = 0.0;
+		double in_transit = 0.0;
+		int city_count = 0;
+		for (const DemoCity& city : demo_cities_) {
+			if (city.nation != tag) {
+				continue;
+			}
+			++city_count;
+			population += city.population;
+			stockpile += city.markets[0].stock;
+			need += city.pop.need;
+			deficit += std::max(0.0, city.pop.need - city.pop.consumed);
+			for (const DemoBuilding& building : demo_buildings_) {
+				if (building.city == city.id && building.input_product < 0) {
+					production += building.capacity * building.output_scale;
+				}
+			}
+		}
+		for (const DemoShipment& shipment : demo_in_transit_) {
+			const DemoCity* city = find_demo_city(shipment.to_city);
+			if (city != nullptr && city->nation == tag) {
+				in_transit += shipment.amount;
+			}
+		}
+		nation["city_count"] = city_count;
+		nation["population"] = population;
+		nation["production"] = production;
+		nation["stockpile"] = stockpile;
+		nation["need"] = need;
+		nation["deficit"] = deficit;
+		nation["in_transit"] = in_transit;
+		nations.append(nation);
+	}
+	result["nations"] = nations;
 
 	Array produced;
 	Array consumed;

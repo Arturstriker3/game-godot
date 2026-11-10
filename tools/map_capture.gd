@@ -141,7 +141,7 @@ func _parse_args() -> void:
 # --- Mapa 3D atual ----------------------------------------------------------
 
 func _capture_map3d() -> void:
-	var status: Dictionary = Economy.sim.get_status()
+	var status: Dictionary = Economy.sim.get_demo_status()
 	var cities: Array = status.get("cities", [])
 	var ports: Array = status.get("ports", [])
 	if cities.is_empty():
