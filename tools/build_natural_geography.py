@@ -405,6 +405,46 @@ def climate_for(lon, lat, altitude):
     return climate, zone, aridity, temperature, clamp(base_precip, 60.0, 4000.0)
 
 
+def zone_for_latitude(lat):
+    """Zona térmica por latitude (a mesma usada em climate_for)."""
+    abs_lat = abs(lat)
+    if abs_lat < 10.0:
+        return "tropical"
+    if abs_lat < 23.5:
+        return "tropical_seasonal"
+    if abs_lat < 35.0:
+        return "subtropical"
+    if abs_lat < 50.0:
+        return "temperate"
+    if abs_lat < 60.0:
+        return "cool_temperate"
+    if abs_lat < 66.5:
+        return "subpolar"
+    return "polar"
+
+
+def aridity_from_climate(temperature, precip):
+    """Aridez pelo índice de De Martonne (publicado): I = P / (T + 10).
+
+    P = precipitação anual (mm), T = temperatura média anual (°C). Classes:
+    I < 10 árido, 10 <= I < 20 semi-árido, I >= 20 úmido. Aproximação anual
+    (não substitui PET/evapotranspiração real), usada para o rótulo de clima
+    e para a fertilidade do solo — substitui as caixas ARIDITY desenhadas à mão.
+    """
+    index = precip / (temperature + 10.0) if temperature > -10.0 else 0.0
+    if index < 10.0:
+        return "arid"
+    if index < 20.0:
+        return "semi_arid"
+    return "humid"
+
+
+def climate_label(zone, aridity):
+    """Rótulo combinado (ex.: 'temperate_humid', 'tropical_seasonal_desert')."""
+    suffix = "desert" if aridity == "arid" else "steppe" if aridity == "semi_arid" else "humid"
+    return zone + "_" + suffix
+
+
 def soil_for(zone, aridity):
     if aridity == "arid":
         return "arenosol", 0.08

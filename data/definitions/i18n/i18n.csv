@@ -320,3 +320,28 @@ map.legend.cultivable,Cultivável,Cultivable,Cultivable
 map.legend.cultivable_tip,Fração de terra arável (0-100%).,Share of arable land (0-100%).,Fracción de tierra cultivable (0-100%).
 map.legend.renewable,Renovável,Renewable,Renovable
 map.legend.agriculture_hint,"Recurso renovável: produz todo ano; melhora com maquinário e construções na cidade.","Renewable resource: produces every year; improves with machinery and city buildings.","Recurso renovable: produce cada año; mejora con maquinaria y construcciones de la ciudad."
+map.legend.climate,Clima,Climate,Clima
+map.legend.soil,Solo,Soil,Suelo
+map.legend.relief,Relevo,Relief,Relieve
+climate.zone.tropical,tropical,tropical,tropical
+climate.zone.tropical_seasonal,tropical sazonal,tropical seasonal,tropical estacional
+climate.zone.subtropical,subtropical,subtropical,subtropical
+climate.zone.temperate,temperado,temperate,templado
+climate.zone.cool_temperate,temperado frio,cool temperate,templado frío
+climate.zone.subpolar,subpolar,subpolar,subpolar
+climate.zone.polar,polar,polar,polar
+climate.aridity.humid,úmido,humid,húmedo
+climate.aridity.desert,deserto,desert,desierto
+climate.aridity.steppe,estepe,steppe,estepa
+climate.relief.plain,planície,plain,llanura
+climate.relief.hills,colinas,hills,colinas
+climate.relief.mountain,montanhoso,mountainous,montañoso
+climate.soil.acrisol,ácido,acidic,ácido
+climate.soil.arenosol,arenoso,sandy,arenoso
+climate.soil.cambisol,médio,medium,medio
+climate.soil.ferralsol,tropical,tropical,tropical
+climate.soil.fluvisol,aluvial,alluvial,aluvial
+climate.soil.kastanozem,de estepe,steppe soil,de estepa
+climate.soil.luvisol,fértil,fertile,fértil
+climate.soil.podzol,de floresta,forest soil,de bosque
+climate.soil.tundra,de tundra,tundra,de tundra

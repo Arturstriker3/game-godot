@@ -447,11 +447,42 @@ func _show_agriculture_info(info: Dictionary) -> void:
 			I18n.t("map.legend.cultivable"),
 			"%d%%" % int(round(float(info.get("cultivable", 0.0)) * 100.0)),
 			false, I18n.t("map.legend.cultivable_tip")))
+	var terrain := UiKit.caption(_friendly_terrain(info))
+	terrain.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	terrain.custom_minimum_size = Vector2(190.0, 0.0)
+	_legend_box.add_child(terrain)
 	var hint := UiKit.caption(I18n.t("map.legend.agriculture_hint"))
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(190.0, 0.0)
 	_legend_box.add_child(hint)
 	_legend.visible = true
+
+
+## Compõe "Clima: X · Solo: Y · Relevo: Z" em termos amigáveis a partir dos
+## campos crus (climate = "zona_aridez", soil_type, relief).
+func _friendly_terrain(info: Dictionary) -> String:
+	var climate := String(info.get("climate", ""))
+	var aridity := "humid"
+	var zone := climate
+	if climate.ends_with("_desert"):
+		aridity = "desert"
+		zone = climate.trim_suffix("_desert")
+	elif climate.ends_with("_steppe"):
+		aridity = "steppe"
+		zone = climate.trim_suffix("_steppe")
+	elif climate.ends_with("_humid"):
+		aridity = "humid"
+		zone = climate.trim_suffix("_humid")
+	var parts := PackedStringArray()
+	parts.append(I18n.t("map.legend.climate") + ": " + I18n.t("climate.zone." + zone)
+			+ " " + I18n.t("climate.aridity." + aridity))
+	var soil := String(info.get("soil_type", ""))
+	if not soil.is_empty():
+		parts.append(I18n.t("map.legend.soil") + ": " + I18n.t("climate.soil." + soil))
+	var relief := String(info.get("relief", ""))
+	if not relief.is_empty():
+		parts.append(I18n.t("map.legend.relief") + ": " + I18n.t("climate.relief." + relief))
+	return " · ".join(parts)
 
 
 ## Substitui a legenda pelos recursos que a cidade acessa.

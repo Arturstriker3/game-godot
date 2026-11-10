@@ -3,7 +3,7 @@
 	"projection": "equirretangular 5000x2500 (lon -180..180, lat -90..90)",
 	"nature": {
 		"quality": "real_climate (altitude/temp/precip) + formulas (clima/solo/derivados)",
-		"method": "WorldClim 2.1 10-min (elev/bio1/bio12) sampled at territory centroid; climate/soil/relief/fertility/water/forest/cultivable re-derived by build_natural_geography formulas",
+		"method": "WorldClim 2.1 10-min (elev/bio1/bio12) sampled at territory centroid; aridity from De Martonne index on real temp/precip; climate/soil/relief/fertility/water/forest/cultivable re-derived by build_natural_geography formulas",
 		"note": "aplicado por tools/apply_real_climate.py; territórios com centróide em água mantêm valores sintéticos (test)"
 	},
 	"agriculture": {

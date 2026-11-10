@@ -92,8 +92,11 @@ def main() -> int:
         temperature = float(temp_raw)
         precip = float(precip_raw)
 
-        # Reusa as regras de build_natural_geography.nature_for.
-        _climate, zone, aridity, _t, _p = bng.climate_for(lon, lat, altitude)
+        # Clima re-derivado com dados reais: zona por latitude + aridez real
+        # (De Martonne sobre temp/precip medidos), substituindo as caixas.
+        zone = bng.zone_for_latitude(lat)
+        aridity = bng.aridity_from_climate(temperature, precip)
+        climate = bng.climate_label(zone, aridity)
         soil_type, fertility = bng.soil_for(zone, aridity)
         coastal = bool(data.get("coastal", False))
         water = bng.clamp(0.12 + precip / 1500.0 + (0.08 if coastal else 0.0), 0.0, 1.0)
@@ -105,6 +108,7 @@ def main() -> int:
         cultivable = bng.clamp(
             fertility * water * (1.0 - 0.6 * forest) * (1.0 - relief_penalty), 0.0, 1.0)
 
+        data["climate"] = climate
         data["altitude_m"] = round(altitude)
         data["temp_c"] = round(temperature, 1)
         data["precip_mm"] = round(precip)
