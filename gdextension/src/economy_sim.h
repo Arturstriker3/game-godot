@@ -43,6 +43,13 @@ public:
 	/** Inicializa o cenário de validação de duas cidades com população agregada. */
 	void initialize_demo();
 
+	/**
+	 * Inicializa o modelo demo a partir dos dados reais do cenário (cidades,
+	 * portos e construções), em vez do cenário de validação AGRIA/PORTUS. Este é
+	 * o passo do contrato único: o ciclo completo roda sobre o mundo real.
+	 */
+	void initialize_demo_world(const Array& cities, const Array& ports, const Array& buildings);
+
 	/** Avança um dia do cenário de validação. */
 	Dictionary tick_demo();
 
@@ -280,6 +287,8 @@ private:
 		std::string id;
 		std::string name;
 		std::string nation;
+		std::string home_nation;  // região natural (território que controla)
+		std::string landmass;     // massa de terra contínua (rota terrestre)
 		MapPoint center{0.0, 0.0};
 		double population = 0.0;
 		double firm_cash = 0.0;
@@ -465,6 +474,7 @@ private:
 	std::vector<std::string> demo_check_invariants(double money_before) const;
 	void demo_snapshot(DemoSnapshot& out) const;
 	void demo_restore(const DemoSnapshot& in);
+	void demo_trade_wheat();
 	static int demo_product_index(const String& product);
 	static const char* demo_product_name(int product);
 	static double demo_base_price(int product);
@@ -495,6 +505,10 @@ private:
 	// Estado do cenário de validação de duas cidades. Compartilha o mesmo
 	// calendário (day_) do modo legado: apenas um dos modos roda por vez.
 	bool demo_active_ = false;
+	// true quando o demo foi inicializado a partir do mundo real
+	// (initialize_demo_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
+	// genérico entre cidades no lugar dos blocos específicos de validação.
+	bool demo_world_mode_ = false;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
 	// laboratório; os padrões preservam o comportamento do jogo).
 	double demo_natural_unemployment_ = 0.04;
