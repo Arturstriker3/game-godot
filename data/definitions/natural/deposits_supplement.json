@@ -59,7 +59,19 @@
     {"resource": "gas", "name": "Kish", "lat": 26.5, "lon": 53.5, "quantity_kt": 400000.0, "quality": 0.81, "depth_m": 3000, "status": "Producer"},
     {"resource": "gas", "name": "Tabnak", "lat": 27.5, "lon": 54.5, "quantity_kt": 300000.0, "quality": 0.80, "depth_m": 3000, "status": "Producer"},
     {"resource": "oil", "name": "Vaca Muerta", "lat": -38.0, "lon": -69.0, "quantity_kt": 400000.0, "quality": 0.78, "depth_m": 2500, "status": "Producer"},
-    {"resource": "gas", "name": "Camisea", "lat": -11.5, "lon": -72.5, "quantity_kt": 300000.0, "quality": 0.79, "depth_m": 2800, "status": "Producer"}
+    {"resource": "gas", "name": "Camisea", "lat": -11.5, "lon": -72.5, "quantity_kt": 300000.0, "quality": 0.79, "depth_m": 2800, "status": "Producer"},
+    {"resource": "oil", "name": "Liza", "lat": 5.5, "lon": -57.0, "quantity_kt": 900000.0, "quality": 0.85, "depth_m": 1900, "status": "Producer"},
+    {"resource": "oil", "name": "Payara", "lat": 5.6, "lon": -57.3, "quantity_kt": 700000.0, "quality": 0.84, "depth_m": 2000, "status": "Producer"},
+    {"resource": "oil", "name": "Yellowtail", "lat": 5.2, "lon": -56.6, "quantity_kt": 600000.0, "quality": 0.83, "depth_m": 2100, "status": "Producer"},
+    {"resource": "oil", "name": "Uaru", "lat": 5.4, "lon": -56.9, "quantity_kt": 500000.0, "quality": 0.82, "depth_m": 2200, "status": "Producer"},
+    {"resource": "oil", "name": "Whiptail", "lat": 5.1, "lon": -56.1, "quantity_kt": 400000.0, "quality": 0.81, "depth_m": 2300, "status": "Producer"},
+    {"resource": "oil", "name": "GranMorgu", "lat": 5.6, "lon": -55.4, "quantity_kt": 700000.0, "quality": 0.83, "depth_m": 2000, "status": "Producer"},
+    {"resource": "oil", "name": "Sapakara", "lat": 5.3, "lon": -55.7, "quantity_kt": 400000.0, "quality": 0.80, "depth_m": 2100, "status": "Prospect"},
+    {"resource": "oil", "name": "Zaedyus", "lat": 5.6, "lon": -52.2, "quantity_kt": 300000.0, "quality": 0.72, "depth_m": 2500, "status": "Prospect"},
+    {"resource": "oil", "name": "Foz do Amazonas", "lat": 2.5, "lon": -49.0, "quantity_kt": 400000.0, "quality": 0.70, "depth_m": 2500, "status": "Prospect"},
+    {"resource": "oil", "name": "Pará-Maranhão", "lat": -1.0, "lon": -44.5, "quantity_kt": 300000.0, "quality": 0.68, "depth_m": 2800, "status": "Prospect"},
+    {"resource": "oil", "name": "Barreirinhas", "lat": -2.6, "lon": -42.8, "quantity_kt": 250000.0, "quality": 0.67, "depth_m": 2700, "status": "Prospect"},
+    {"resource": "oil", "name": "Potiguar", "lat": -4.6, "lon": -36.5, "quantity_kt": 300000.0, "quality": 0.74, "depth_m": 2000, "status": "Producer"}
   ],
   "adjustments": [
     {"name": "Brent", "quantity_kt": 150000.0, "status": "Past Producer"},
