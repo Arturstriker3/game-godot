@@ -2,21 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2gtd0c6itvb5"
-path.s3tc="res://.godot/imported/resources.png-fb925a8be8f2171d80b0923ce5dafcd5.s3tc.ctex"
+uid="uid://cuhi0q01kbjkn"
+path="res://.godot/imported/resource_dot.png-14f3066f6bcc6f76b98e85f88e2cf944.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://map/map_data/atlas/resources.png"
-dest_files=["res://.godot/imported/resources.png-fb925a8be8f2171d80b0923ce5dafcd5.s3tc.ctex"]
+source_file="res://assets/icons/places/resource_dot.png"
+dest_files=["res://.godot/imported/resource_dot.png-14f3066f6bcc6f76b98e85f88e2cf944.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -24,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

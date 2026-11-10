@@ -40,6 +40,7 @@ const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
+const GeographyScript: Script = preload("res://core/economy/geography_service.gd")
 const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
 const PORT_SIZE := 0.6
 const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.png")
@@ -54,6 +55,18 @@ const RING_SCALE := 1.45        # selo ~45% maior que o ícone
 const FLAG_SCALE := 0.6         # bandeira ~60% da altura do ícone
 ## Abaixo desta distância (u) o porto coincide com a cidade: sem ícone próprio.
 const PORT_ICON_MERGE_DISTANCE := 0.5
+
+## Faixa de recursos sob o nome da cidade (só no modo recursos): mostra o que
+## o território dela pode produzir — minérios com depósito e trigo com aptidão.
+const RESOURCE_DOT_ICON: Texture2D = preload("res://assets/icons/places/resource_dot.png")
+const RESOURCE_WHEAT_ICON: Texture2D = preload("res://assets/icons/places/resource_wheat.png")
+const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
+const MINERAL_COLORS := [
+	Color("#3E3B38"), Color("#C06A3C"), Color("#4E9FB0"),
+	Color("#7C8894"), Color("#5B4A2E"),
+]
+const WHEAT_COLOR := Color("#D9B45A")
+const WHEAT_STRIP_MIN := 0.40
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -133,6 +146,7 @@ var _nation_anchors: Dictionary = {}
 ## Território dinâmico (províncias -> dono).
 var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
+var _geo: RefCounted
 var _last_cities: Array = []
 var _minimap_texture: ImageTexture
 
@@ -185,6 +199,10 @@ func set_mode(mode: String) -> void:
 		_political_material.set_shader_parameter("border_opacity", 0.42)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
+	# Faixa de recursos sob o nome: só no modo recursos.
+	for record in _city_nodes:
+		for dot in record.get("resource_dots", []):
+			(dot as Sprite3D).visible = mode == "resources"
 
 
 func _content_roots() -> Array[Node3D]:
@@ -800,6 +818,10 @@ func _build_cities(cities: Array) -> void:
 			icon = marker["icon"]
 			ring = marker["ring"]
 			flag = marker["flag"]
+		var resource_dots: Array = []
+		if label != null:
+			resource_dots = _add_resource_strip(label, _resource_entries(
+					city_id, Vector2(float(city["x"]), float(city["y"]))))
 		_city_nodes.append({
 			"id": city_id,
 			"city": city,
@@ -809,6 +831,7 @@ func _build_cities(cities: Array) -> void:
 			"icon": icon,
 			"ring": ring,
 			"flag": flag,
+			"resource_dots": resource_dots,
 			"urban": null,
 		})
 
@@ -976,6 +999,73 @@ func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sp
 				label.position.y, label.position.z)
 
 
+## Recursos que o território da cidade oferece: minérios com depósito e trigo
+## acima do limiar. Usado pela faixa sob o nome no modo recursos.
+func _resource_entries(city_id: String, center: Vector2) -> Array:
+	if _geo == null:
+		_geo = GeographyScript.new()
+		_geo.load_data()
+	var entries: Array = []
+	var seen := {}
+	for deposit in _geo.deposits_for(city_id, center):
+		var key := String(deposit.get("resource", ""))
+		if key.is_empty() or seen.has(key):
+			continue
+		seen[key] = true
+		entries.append({"kind": key, "value": float(deposit.get("quality", 0.6))})
+	var wheat := float(_geo.crop_suitability(city_id, center, "wheat"))
+	if wheat >= WHEAT_STRIP_MIN:
+		entries.append({"kind": "wheat", "value": wheat})
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _resource_order(String(a["kind"])) < _resource_order(String(b["kind"])))
+	return entries
+
+
+func _resource_order(kind: String) -> int:
+	var index := MINERAL_KEYS.find(kind)
+	return index if index >= 0 else MINERAL_KEYS.size()
+
+
+## Cria a faixa de ícones de recurso sob o nome (escondida fora do modo).
+func _add_resource_strip(label: Label3D, entries: Array) -> Array:
+	var dots: Array = []
+	if label == null or entries.is_empty():
+		return dots
+	for entry in entries:
+		var wheat := String(entry["kind"]) == "wheat"
+		var sprite := Sprite3D.new()
+		sprite.texture = RESOURCE_WHEAT_ICON if wheat else RESOURCE_DOT_ICON
+		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		sprite.transparent = true
+		sprite.no_depth_test = true
+		sprite.render_priority = label.render_priority
+		if wheat:
+			sprite.modulate = WHEAT_COLOR
+		else:
+			var index := MINERAL_KEYS.find(String(entry["kind"]))
+			sprite.modulate = MINERAL_COLORS[index] if index >= 0 else Color.WHITE
+		sprite.visible = false
+		_content.add_child(sprite)
+		dots.append(sprite)
+	_layout_resource_strip(label, dots)
+	return dots
+
+
+## Reposiciona a faixa sob o nome conforme o `pixel_size` do rótulo (zoom).
+func _layout_resource_strip(label: Label3D, dots: Array) -> void:
+	if label == null or dots.is_empty():
+		return
+	var em := float(label.font_size) * label.pixel_size
+	var size := em * 0.55
+	var spacing := em * 0.70
+	var total := spacing * float(dots.size() - 1)
+	for index in dots.size():
+		var sprite := dots[index] as Sprite3D
+		sprite.pixel_size = size / 64.0
+		sprite.position = label.position + Vector3(
+				-total * 0.5 + spacing * float(index), -em * 1.15, 0.0)
+
+
 ## Nome do porto (Label3D), no mesmo estilo dos rótulos de cidade.
 func _add_port_label(position: Vector3, port_name: String) -> Label3D:
 	var label := Label3D.new()
@@ -1117,6 +1207,15 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	if flag != null:
 		flag.transparency = 1.0 - label_alpha
 		flag.visible = label_alpha > 0.01
+
+	var dots: Array = record.get("resource_dots", [])
+	if not dots.is_empty():
+		_layout_resource_strip(label, dots)
+		var show_resources := _mode == "resources" and label_alpha > 0.01
+		for dot in dots:
+			var sprite := dot as Sprite3D
+			sprite.transparency = 1.0 - label_alpha
+			sprite.visible = show_resources
 
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:

@@ -8,11 +8,20 @@ extends Node3D
 ## uniformes; nenhuma geometria é reconstruída.
 
 const MODE_SHADER: Shader = preload("res://map/map_shaders/map_modes.gdshader")
-const RESOURCE_TEXTURE: Texture2D = preload("res://map/map_data/atlas/resources.png")
 const GeographyScript: Script = preload("res://core/economy/geography_service.gd")
 
 const MAP_PX := Vector2(5000.0, 2500.0)
 const MAX_CITIES := 16
+
+const RESOURCE_DOT: Texture2D = preload("res://assets/icons/places/resource_dot.png")
+const RESOURCE_WHEAT: Texture2D = preload("res://assets/icons/places/resource_wheat.png")
+const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
+## Ordem dos recursos em resource_points.json (índice do mineral).
+const MINERAL_COLORS := [
+	Color("#3E3B38"), Color("#C06A3C"), Color("#4E9FB0"),
+	Color("#7C8894"), Color("#5B4A2E"),
+]
+const WHEAT_COLOR := Color("#D9B45A")
 
 const MODE_COLORS := {
 	"population": [Color("#3A5563"), Color("#C9A24A")],
@@ -26,7 +35,8 @@ var _uv := PackedVector2Array()
 var _values: Dictionary = {}
 var _current := "geographic"
 var _heat_mesh: MeshInstance3D
-var _resource_mesh: MeshInstance3D
+var _mineral_mesh: MultiMeshInstance3D
+var _wheat_mesh: MultiMeshInstance3D
 
 
 ## Constrói a camada e normaliza os indicadores de cada modo.
@@ -45,25 +55,9 @@ func setup(cities: Array) -> void:
 	add_child(mesh)
 	_heat_mesh = mesh
 
-	# Camada do mapa de recursos: textura estática gerada por
-	# tools/build_resource_map.py (depósitos minerais + trigo).
-	var resource_material := StandardMaterial3D.new()
-	resource_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	resource_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	resource_material.albedo_texture = RESOURCE_TEXTURE
-	resource_material.texture_filter = \
-			BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	resource_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-
-	var resource_mesh := MeshInstance3D.new()
-	resource_mesh.name = "ResourceLayer"
-	resource_mesh.mesh = plane
-	resource_mesh.material_override = resource_material
-	resource_mesh.position = Vector3(0.0, 0.145, 0.0)
-	resource_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	resource_mesh.visible = false
-	add_child(resource_mesh)
-	_resource_mesh = resource_mesh
+	# Camada do mapa de recursos: marcadores em billboard (nítidos em qualquer
+	# zoom), gerados de map/map_data/atlas/resource_points.json.
+	_build_resource_markers()
 
 	_build_values(cities)
 	visible = false
@@ -84,14 +78,16 @@ func refresh(cities: Array) -> void:
 		set_mode(_current)
 
 
-## Liga/desliga as camadas sem recriar os planos. O mapa de recursos usa uma
-## textura própria; os demais mostram o campo de calor.
+## Liga/desliga as camadas sem recriar os planos. O mapa de recursos usa
+## marcadores; os demais mostram o campo de calor.
 func set_mode(mode: String) -> void:
 	_current = mode
 	var resources := mode == "resources"
 	var heat := MODE_COLORS.has(mode) and not resources
-	if _resource_mesh != null:
-		_resource_mesh.visible = resources
+	if _mineral_mesh != null:
+		_mineral_mesh.visible = resources
+	if _wheat_mesh != null:
+		_wheat_mesh.visible = resources
 	if _heat_mesh != null:
 		_heat_mesh.visible = heat
 	visible = resources or heat
@@ -153,6 +149,73 @@ func _build_values(cities: Array) -> void:
 	_material.set_shader_parameter("city_count", cities.size())
 	_material.set_shader_parameter("heat_radius", 0.055)
 	_material.set_shader_parameter("opacity", 0.45)
+
+
+## Constrói os marcadores do mapa de recursos: minerais (círculo) e trigo
+## (losango), um MultiMesh por tipo. Billboard mantém o desenho nítido.
+func _build_resource_markers() -> void:
+	var data: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	var minerals: Array = data.get("minerals", [])
+	var wheat: Array = data.get("wheat", [])
+
+	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT, minerals.size())
+	for index in minerals.size():
+		var point: Array = minerals[index]
+		var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
+		_set_marker(_mineral_mesh, index, float(point[0]), float(point[1]),
+				0.55, MINERAL_COLORS[color_index])
+
+	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT, wheat.size())
+	for index in wheat.size():
+		var point: Array = wheat[index]
+		var value := clampf(float(point[2]), 0.0, 1.0)
+		_set_marker(_wheat_mesh, index, float(point[0]), float(point[1]),
+				0.42 + 0.38 * value, WHEAT_COLOR)
+
+	_mineral_mesh.visible = false
+	_wheat_mesh.visible = false
+
+
+func _make_marker_layer(node_name: String, texture: Texture2D,
+		count: int) -> MultiMeshInstance3D:
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_texture = texture
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.vertex_color_use_as_albedo = true
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.no_depth_test = true
+	material.render_priority = 2
+
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.instance_count = count
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE
+	multimesh.mesh = quad
+
+	var instance := MultiMeshInstance3D.new()
+	instance.name = node_name
+	instance.multimesh = multimesh
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(instance)
+	return instance
+
+
+func _set_marker(layer: MultiMeshInstance3D, index: int, px: float, py: float,
+		size: float, color: Color) -> void:
+	var position := Vector3((px - MAP_PX.x * 0.5) * 0.2, 0.2,
+			(py - MAP_PX.y * 0.5) * 0.2)
+	var basis := Basis().scaled(Vector3(size, size, size))
+	layer.multimesh.set_instance_transform(index, Transform3D(basis, position))
+	layer.multimesh.set_instance_color(index, color)
 
 
 ## Escala logarítmica: cidades muito populosas não apagam as menores.

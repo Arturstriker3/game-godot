@@ -91,6 +91,7 @@ var _mode_buttons := {}
 var _mode_icons := {}
 var _legend: PanelContainer
 var _legend_title: Label
+var _legend_hint: Label
 var _legend_labels := {}
 var _mode := "political"
 
@@ -273,13 +274,16 @@ func _refresh_mode_bar() -> void:
 		_legend.visible = _mode == "resources"
 
 
-## Legenda do mapa de recursos (canto esquerdo), visível só no modo recursos.
+## Legenda do mapa de recursos (canto inferior esquerdo), visível só nesse modo.
 func _build_legend() -> void:
 	_legend = PanelContainer.new()
-	_legend.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_legend.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	var padding := 10.0
 	_legend.offset_left = UiKit.SPACE_LG
-	_legend.offset_top = TOP_BAR_HEIGHT + UiKit.SPACE_LG
-	var style := UiKit.surface(Color(0.055, 0.09, 0.085, 0.94), UiKit.SPACE_SM)
+	_legend.offset_right = UiKit.SPACE_LG + 164.0
+	_legend.offset_bottom = -UiKit.SPACE_LG
+	_legend.offset_top = _legend.offset_bottom - 196.0
+	var style := UiKit.surface(Color(0.055, 0.09, 0.085, 0.94), padding)
 	style.border_color = UiKit.EDGE
 	style.set_border_width_all(1)
 	_legend.add_theme_stylebox_override("panel", style)
@@ -293,17 +297,22 @@ func _build_legend() -> void:
 	_legend_labels.clear()
 	for entry in RESOURCE_LEGEND:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6.0)
+		row.add_theme_constant_override("separation", 7.0)
 		var swatch := ColorRect.new()
-		swatch.custom_minimum_size = Vector2(12.0, 12.0)
+		swatch.custom_minimum_size = Vector2(14.0, 14.0)
 		swatch.color = entry["color"]
 		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(swatch)
 		var label := UiKit.label(I18n.t("resource." + String(entry["key"])),
-				13, UiKit.TEXT_DIM)
+				14, UiKit.TEXT_DIM)
 		row.add_child(label)
 		_legend_labels[String(entry["key"])] = label
 		box.add_child(row)
+
+	_legend_hint = UiKit.caption(I18n.t("map.legend.hint"))
+	_legend_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_legend_hint.custom_minimum_size = Vector2(140.0, 0.0)
+	box.add_child(_legend_hint)
 
 	_legend.visible = _mode == "resources"
 	_root.add_child(_legend)
@@ -313,6 +322,8 @@ func _build_legend() -> void:
 func _refresh_legend() -> void:
 	if _legend_title != null:
 		_legend_title.text = I18n.t("map.legend.title")
+	if _legend_hint != null:
+		_legend_hint.text = I18n.t("map.legend.hint")
 	for key in _legend_labels:
 		(_legend_labels[key] as Label).text = I18n.t("resource." + String(key))
 

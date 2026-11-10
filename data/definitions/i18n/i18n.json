@@ -280,7 +280,8 @@
   "port.name.BEL-ANT": "Antuérpia",
   "port.name.FRA-CAY": "Mana",
   "map.legend.title": "Recursos",
-  "resource.wheat": "Trigo"
+  "resource.wheat": "Trigo",
+  "map.legend.hint": "Ícones sob a cidade = recursos do território."
  },
  "en": {
   "alerts.count": "{count} active",
@@ -563,7 +564,8 @@
   "port.name.BEL-ANT": "Antwerp",
   "port.name.FRA-CAY": "Mana",
   "map.legend.title": "Resources",
-  "resource.wheat": "Wheat"
+  "resource.wheat": "Wheat",
+  "map.legend.hint": "Icons under a city = resources in its territory."
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -846,6 +848,7 @@
   "port.name.BEL-ANT": "Amberes",
   "port.name.FRA-CAY": "Mana",
   "map.legend.title": "Recursos",
-  "resource.wheat": "Trigo"
+  "resource.wheat": "Trigo",
+  "map.legend.hint": "Iconos bajo la ciudad = recursos del territorio."
  }
 }

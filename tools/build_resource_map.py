@@ -2,8 +2,10 @@
 
 1. assets/ui/map_mode_political.png e map_mode_resources.png — glifos brancos
    (o HUD aplica a cor por modulate).
-2. map/map_data/atlas/resources.png — mapa de recursos: pontos coloridos para
-   os depósitos minerais e losangos para o trigo (aptidão por território).
+2. assets/icons/places/resource_dot.png e resource_wheat.png — marcadores.
+3. map/map_data/atlas/resource_points.json — pontos dos depósitos minerais e
+   dos territórios com trigo. O mapa desenha em billboards (nítidos em qualquer
+   zoom), em vez de uma textura ampliada.
 
 Fontes: tools/mode_icons/ (ícones, créditos no CREDITS.txt) e
 data/definitions/natural/ (depósitos e agricultura do Natural Earth).
@@ -19,20 +21,11 @@ from PIL import Image, ImageDraw
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ICONS = os.path.join(ROOT, "tools", "mode_icons")
 NATURAL = os.path.join(ROOT, "data", "definitions", "natural")
+PLACES = os.path.join(ROOT, "assets", "icons", "places")
 
-RESOURCE_COLORS = {
-    "coal": (62, 59, 56),
-    "copper": (192, 106, 60),
-    "gas": (78, 159, 176),
-    "iron": (124, 136, 148),
-    "oil": (91, 74, 46),
-    "wheat": (217, 180, 90),
-}
-EDGE = (23, 20, 16, 210)
-
-# 4096 × 2048 = mesma proporção do plano (1000 × 500).
-W, H = 4096, 2048
+MINERALS = ["coal", "copper", "gas", "iron", "oil"]
 WHEAT_MIN = 0.40
+EDGE = (23, 20, 16, 235)
 
 
 def white_icon(src_name: str, dst_name: str) -> None:
@@ -44,35 +37,42 @@ def white_icon(src_name: str, dst_name: str) -> None:
     print("icon", dst_name, out.size)
 
 
+def marker(size: int, shape: str) -> Image.Image:
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = size / 2.0
+    r = size * 0.40
+    if shape == "dot":
+        d.ellipse([c - r, c - r, c + r, c + r], fill=(255, 255, 255, 255),
+                  outline=EDGE, width=5)
+    else:
+        pts = [(c, c - r * 1.2), (c + r * 1.2, c), (c, c + r * 1.2), (c - r * 1.2, c)]
+        d.polygon(pts, fill=(255, 255, 255, 255), outline=EDGE)
+        d.line(pts + [pts[0]], fill=EDGE, width=5, joint="curve")
+    return img
+
+
 def read_json(name: str) -> dict:
     with open(os.path.join(NATURAL, name), encoding="utf-8") as handle:
         return json.load(handle)
 
 
-def to_px(px: float, py: float) -> tuple:
-    return (px / 5000.0 * W, py / 2500.0 * H)
-
-
-def build_resources() -> None:
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
+def build_points() -> None:
     deposits = read_json("deposits.json")["deposits"]
-    counts = {}
+    minerals = []
     for dep in deposits:
         resource = str(dep.get("resource", ""))
-        color = RESOURCE_COLORS.get(resource)
-        if color is None:
+        if resource not in MINERALS:
             continue
-        x, y = to_px(float(dep.get("px", 0.0)), float(dep.get("py", 0.0)))
-        r = 2.0
-        draw.ellipse([x - r - 0.8, y - r - 0.8, x + r + 0.8, y + r + 0.8], fill=EDGE)
-        draw.ellipse([x - r, y - r, x + r, y + r], fill=color + (255,))
-        counts[resource] = counts.get(resource, 0) + 1
+        minerals.append([
+            round(float(dep.get("px", 0.0)), 1),
+            round(float(dep.get("py", 0.0)), 1),
+            MINERALS.index(resource),
+        ])
 
     agriculture = read_json("agriculture.json")["territories"]
     nature = read_json("nature.json")["territories"]
-    wheat_count = 0
+    wheat = []
     for territory, crops in agriculture.items():
         value = float(crops.get("wheat", 0.0))
         if value < WHEAT_MIN:
@@ -80,18 +80,21 @@ def build_resources() -> None:
         centroid = nature.get(territory, {}).get("centroid_px", [])
         if len(centroid) < 2:
             continue
-        x, y = to_px(float(centroid[0]), float(centroid[1]))
-        size = 3.2
-        alpha = int(120 + 135 * min(1.0, (value - WHEAT_MIN) / 0.35))
-        draw.polygon([(x, y - size), (x + size, y), (x, y + size), (x - size, y)],
-                     fill=RESOURCE_COLORS["wheat"] + (alpha,))
-        wheat_count += 1
+        wheat.append([
+            round(float(centroid[0]), 1),
+            round(float(centroid[1]), 1),
+            round(value, 2),
+        ])
 
-    out = os.path.join(ROOT, "map", "map_data", "atlas", "resources.png")
-    img.save(out)
-    print("resources.png", img.size, counts, "wheat", wheat_count)
+    out = os.path.join(ROOT, "map", "map_data", "atlas", "resource_points.json")
+    with open(out, "w", encoding="utf-8") as handle:
+        json.dump({"minerals": minerals, "wheat": wheat}, handle,
+                  separators=(",", ":"))
+    print("resource_points.json", len(minerals), "minerais", len(wheat), "trigo")
 
 
 white_icon("political.png", "map_mode_political.png")
 white_icon("resources.png", "map_mode_resources.png")
-build_resources()
+marker(64, "dot").save(os.path.join(PLACES, "resource_dot.png"))
+marker(64, "diamond").save(os.path.join(PLACES, "resource_wheat.png"))
+build_points()
