@@ -97,6 +97,8 @@ const RESOURCE_LEGEND := [
 	{"key": "sulfur", "color": Color("#F0E14A")},
 	{"key": "diamond", "color": Color("#A8D5E2")},
 	{"key": "wheat", "color": Color("#D9B45A")},
+	{"key": "rice", "color": Color("#6FA8DC")},
+	{"key": "maize", "color": Color("#E8B028")},
 ]
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 
@@ -700,8 +702,9 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	body.add_child(body_box)
 	_legend_box.add_child(body)
 
-	body_box.add_child(_legend_row(_resource_color("wheat"),
-			I18n.t("resource.wheat"), "", true, "", true))
+	var resource := String(info.get("resource", "wheat"))
+	body_box.add_child(_legend_row(_resource_color(resource),
+			I18n.t("resource." + resource), "", true, "", true))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.suitability"),
 			"%d%%" % int(round(float(info.get("suitability", 0.0)) * 100.0)),
@@ -958,7 +961,8 @@ func _resource_counts_from_file() -> Dictionary:
 	var counts := {}
 	for key in RESOURCE_KEYS:
 		counts[key] = 0
-	counts["wheat"] = 0
+	for key in ["wheat", "rice", "maize"]:
+		counts[key] = 0
 	var data: Variant = JSON.parse_string(
 			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
 	if typeof(data) != TYPE_DICTIONARY:
@@ -967,7 +971,8 @@ func _resource_counts_from_file() -> Dictionary:
 		var index := clampi(int(point[2]), 0, RESOURCE_KEYS.size() - 1)
 		var key := String(RESOURCE_KEYS[index])
 		counts[key] = int(counts.get(key, 0)) + 1
-	counts["wheat"] = (data.get("wheat", []) as Array).size()
+	for key in ["wheat", "rice", "maize"]:
+		counts[key] = (data.get(key, []) as Array).size()
 	return counts
 
 

@@ -364,7 +364,9 @@
   "map.legend.situation.abundant": "Abundante",
   "map.legend.situation.moderate": "Moderada",
   "map.legend.situation.scarce": "Escassa",
-  "map.legend.situation.residual": "Residual"
+  "map.legend.situation.residual": "Residual",
+  "resource.rice": "Arroz",
+  "resource.maize": "Milho"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -731,7 +733,9 @@
   "map.legend.situation.abundant": "Abundant",
   "map.legend.situation.moderate": "Moderate",
   "map.legend.situation.scarce": "Scarce",
-  "map.legend.situation.residual": "Residual"
+  "map.legend.situation.residual": "Residual",
+  "resource.rice": "Rice",
+  "resource.maize": "Maize"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -1098,6 +1102,8 @@
   "map.legend.situation.abundant": "Abundante",
   "map.legend.situation.moderate": "Moderada",
   "map.legend.situation.scarce": "Escasa",
-  "map.legend.situation.residual": "Residual"
+  "map.legend.situation.residual": "Residual",
+  "resource.rice": "Arroz",
+  "resource.maize": "Maíz"
  }
 }

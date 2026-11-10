@@ -256,40 +256,42 @@ def build_points() -> None:
         ])
 
     agriculture = read_json("agriculture.json")["territories"]
-    wheat = []
+    # Culturas renováveis (losangos), uma por território por cultura, com
+    # deslocamento para não sobrepor o círculo do mineral nem as demais.
+    crop_keys = ["wheat", "rice", "maize"]
+    crop_offset = {"wheat": (12.0, 12.0), "rice": (-12.0, 12.0), "maize": (12.0, -12.0)}
+    crop_points = {crop: [] for crop in crop_keys}
     for territory, crops in agriculture.items():
-        value = float(crops.get("wheat", 0.0))
-        if value < WHEAT_MIN:
-            continue
         centroid = nature.get(territory, {}).get("centroid_px", [])
         if len(centroid) < 2:
             continue
         px, py = float(centroid[0]), float(centroid[1])
-        # Centróide em água (ilhas/arquipélagos): encosta na terra mais próxima
-        # se estiver perto; senão descarta (ilha remota, o marcador não cabe).
+        # Centróide em água (ilhas/arquipélagos): encosta na terra mais próxima.
         if nav.getpixel(nav_cell(nav, px, py)) < 128:
             landed = nearest_land_px(nav, px, py, WHEAT_SNAP_MAX_NAV_PX)
             if landed is None:
                 continue
             px, py = landed
-        # Território com minerais também: desloca o losango de trigo para não
-        # sobrepor o círculo do recurso dominante (mesmo centróide).
-        if territory in territories:
-            px += 12.0
-            py += 12.0
-        wheat.append([
-            round(px, 1),
-            round(py, 1),
-            round(value, 2),
-        ])
+        for crop in crop_keys:
+            value = float(crops.get(crop, 0.0))
+            if value < WHEAT_MIN:
+                continue
+            ox, oy = crop_offset[crop]
+            crop_points[crop].append([
+                round(px + ox, 1),
+                round(py + oy, 1),
+                round(value, 2),
+            ])
 
     out = os.path.join(ROOT, "map", "map_data", "atlas", "resource_points.json")
     with open(out, "w", encoding="utf-8") as handle:
         json.dump({"minerals": minerals, "territory_mixes": territory_mixes,
-                   "wheat": wheat}, handle, separators=(",", ":"))
+                   "wheat": crop_points["wheat"], "rice": crop_points["rice"],
+                   "maize": crop_points["maize"]}, handle, separators=(",", ":"))
     print("resource_points.json", len(minerals), "territórios minerais",
-          len(wheat), "trigo | facilities:", skipped_facility,
-          "| sem território:", skipped_noterritory)
+          "| trigo", len(crop_points["wheat"]), "arroz", len(crop_points["rice"]),
+          "milho", len(crop_points["maize"]),
+          "| facilities:", skipped_facility, "| sem território:", skipped_noterritory)
 
 
 white_icon("political.png", "map_mode_political.png")

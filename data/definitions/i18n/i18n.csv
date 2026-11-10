@@ -364,3 +364,5 @@ map.legend.situation.abundant,Abundante,Abundant,Abundante
 map.legend.situation.moderate,Moderada,Moderate,Moderada
 map.legend.situation.scarce,Escassa,Scarce,Escasa
 map.legend.situation.residual,Residual,Residual,Residual
+resource.rice,Arroz,Rice,Arroz
+resource.maize,Milho,Maize,Maíz

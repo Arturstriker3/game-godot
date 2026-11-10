@@ -33,11 +33,13 @@ func _run() -> void:
 	for _i in 2:
 		await process_frame
 
-	var wheat_count: int = layer._wheat_points.size()
+	var wheat_count: int = (layer._crop_points["wheat"] as Array).size()
+	var rice_count: int = (layer._crop_points["rice"] as Array).size()
+	var maize_count: int = (layer._crop_points["maize"] as Array).size()
 	var mineral_count: int = layer._mineral_points.size()
 	_check(wheat_count > 0, "há pontos de trigo (%d)" % wheat_count)
-	_check(layer._total_pickable() == mineral_count + wheat_count,
-			"total pickable = minerais + trigo (%d)" % layer._total_pickable())
+	_check(layer._total_pickable() == mineral_count + wheat_count + rice_count + maize_count,
+			"total pickable = minerais + culturas (%d)" % layer._total_pickable())
 
 	if wheat_count > 0:
 		var wheat_index: int = mineral_count
@@ -59,7 +61,7 @@ func _run() -> void:
 		# O pick deve resolver o centro projetado de um ponto de trigo para o
 		# índice codificado (minerais 0..M-1, trigo M..M+W-1).
 		var camera: Camera3D = game.get_node("Player").camera
-		var point: Array = layer._wheat_points[0]
+		var point: Array = layer._crop_points["wheat"][0]
 		var world: Vector3 = layer.to_global(layer._marker_world(point))
 		if not camera.is_position_behind(world):
 			var center: Vector2 = camera.unproject_position(world)

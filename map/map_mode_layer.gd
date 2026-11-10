@@ -29,6 +29,8 @@ const MINERAL_COLORS := [
 	Color("#F0E14A"), Color("#A8D5E2"),
 ]
 const WHEAT_COLOR := Color("#D9B45A")
+const CROP_KEYS: Array[String] = ["wheat", "rice", "maize"]
+const CROP_COLORS := [Color("#D9B45A"), Color("#6FA8DC"), Color("#E8B028")]
 
 const MODE_COLORS := {
 	"population": [Color("#3A5563"), Color("#C9A24A")],
@@ -59,7 +61,7 @@ var _values: Dictionary = {}
 var _current := "geographic"
 var _heat_mesh: MeshInstance3D
 var _mineral_mesh: MultiMeshInstance3D
-var _wheat_mesh: MultiMeshInstance3D
+var _crop_meshes: Dictionary = {}
 var _hover_ring: Sprite3D
 var _selection_ring: Sprite3D
 var _hover_time := 0.0
@@ -69,7 +71,7 @@ var _selected_deposit := -1
 var _hover_diameter := 0.0
 var _selection_diameter := 0.0
 var _mineral_points: Array = []
-var _wheat_points: Array = []
+var _crop_points: Dictionary = {}
 var _territory_mixes: Dictionary = {}
 var _geo: RefCounted
 ## Filtros da legenda: {} = todos; senão chave -> bool.
@@ -123,8 +125,8 @@ func set_mode(mode: String) -> void:
 	var heat := MODE_COLORS.has(mode) and not resources
 	if _mineral_mesh != null:
 		_mineral_mesh.visible = resources
-	if _wheat_mesh != null:
-		_wheat_mesh.visible = resources
+	for crop in _crop_meshes:
+		_crop_meshes[crop].visible = resources
 	if _heat_mesh != null:
 		_heat_mesh.visible = heat
 	if _hover_ring != null and not resources:
@@ -200,11 +202,14 @@ func _build_resource_markers() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	_mineral_points = data.get("minerals", [])
-	_wheat_points = data.get("wheat", [])
 	_territory_mixes = data.get("territory_mixes", {})
+	for crop in CROP_KEYS:
+		_crop_points[crop] = data.get(crop, [])
 
 	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT)
-	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT)
+	for crop in CROP_KEYS:
+		_crop_meshes[crop] = _make_marker_layer(
+				"Resource" + crop.capitalize(), RESOURCE_WHEAT)
 	_rebuild_markers()
 
 	# Anel de hover em volta do depósito sob o mouse.
@@ -231,7 +236,8 @@ func _build_resource_markers() -> void:
 	add_child(_selection_ring)
 
 	_mineral_mesh.visible = false
-	_wheat_mesh.visible = false
+	for crop in CROP_KEYS:
+		_crop_meshes[crop].visible = false
 
 
 ## Aplica o filtro da legenda (chaves: coal/copper/gas/iron/oil/wheat).
@@ -245,35 +251,41 @@ func _is_enabled(key: String) -> bool:
 	return _resource_filter.is_empty() or bool(_resource_filter.get(key, true))
 
 
-## Recria as instâncias apenas com os recursos ligados. 2.181 pontos: barato.
+## Recria as instâncias apenas com os recursos ligados. Barato: ~600 pontos.
 func _rebuild_markers() -> void:
-	if _mineral_mesh == null or _wheat_mesh == null:
+	if _mineral_mesh == null or _crop_meshes.is_empty():
 		return
 	var minerals: Array = []
 	for point in _mineral_points:
 		if _is_enabled(String(MINERAL_KEYS[int(point[2])])):
 			minerals.append(point)
-	_fill_markers(_mineral_mesh, minerals, false)
+	_fill_minerals(minerals)
 
-	var wheat: Array = []
-	if _is_enabled("wheat"):
-		wheat = _wheat_points
-	_fill_markers(_wheat_mesh, wheat, true)
+	for index in CROP_KEYS.size():
+		var crop := CROP_KEYS[index]
+		var points: Array = []
+		if _is_enabled(crop):
+			points = _crop_points[crop] as Array
+		_fill_crop(_crop_meshes[crop], points, CROP_COLORS[index])
 
 
-func _fill_markers(layer: MultiMeshInstance3D, points: Array, is_wheat: bool) -> void:
+func _fill_minerals(points: Array) -> void:
+	var multimesh := _mineral_mesh.multimesh
+	multimesh.instance_count = points.size()
+	for index in points.size():
+		var point: Array = points[index]
+		var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
+		_set_marker(_mineral_mesh, index, float(point[0]), float(point[1]),
+				MARKER_SIZE, MINERAL_COLORS[color_index])
+
+
+func _fill_crop(layer: MultiMeshInstance3D, points: Array, color: Color) -> void:
 	var multimesh := layer.multimesh
 	multimesh.instance_count = points.size()
 	for index in points.size():
 		var point: Array = points[index]
-		var color := WHEAT_COLOR
-		if is_wheat:
-			color = WHEAT_COLOR
-		else:
-			var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
-			color = MINERAL_COLORS[color_index]
 		_set_marker(layer, index, float(point[0]), float(point[1]),
-				_marker_size(point, is_wheat), color)
+				MARKER_SIZE, color)
 
 
 ## Tamanho do marcador: CONSTANTE para minerais e trigo. A reserva e a aptidão
@@ -309,14 +321,19 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 		if distance >= 0.0 and distance < best_distance:
 			best = index
 			best_distance = distance
-	# Trigo (índices M..M+W-1).
-	if _is_enabled("wheat"):
-		for index in _wheat_points.size():
-			var point: Array = _wheat_points[index]
+	# Culturas (índices M..M+crop_total-1), na ordem de CROP_KEYS.
+	var crop_base := mineral_count
+	for crop in CROP_KEYS:
+		if not _is_enabled(crop):
+			crop_base += _crop_points[crop].size()
+			continue
+		for index in _crop_points[crop].size():
+			var point: Array = _crop_points[crop][index]
 			var distance := _pick_screen_distance(point, true, screen_position, camera, right)
 			if distance >= 0.0 and distance < best_distance:
-				best = mineral_count + index
+				best = crop_base + index
 				best_distance = distance
+		crop_base += _crop_points[crop].size()
 	return best
 
 
@@ -334,14 +351,32 @@ func _pick_screen_distance(point: Array, is_wheat: bool, screen_position: Vector
 	return distance if distance <= radius else -1.0
 
 
-## Tipo de um índice de pick codificado (minerais 0..M-1, trigo M..M+W-1).
+## Tipo de um índice de pick codificado (minerais 0..M-1, culturas M..fim).
 func _pick_point(index: int) -> Array:
 	var m := _mineral_points.size()
-	return _mineral_points[index] if index < m else _wheat_points[index - m]
+	if index < m:
+		return _mineral_points[index]
+	var crop_base := m
+	for crop in CROP_KEYS:
+		var n: int = (_crop_points[crop] as Array).size()
+		if index < crop_base + n:
+			return _crop_points[crop][index - crop_base]
+		crop_base += n
+	return []
 
 
 func _pick_is_wheat(index: int) -> bool:
 	return index >= _mineral_points.size()
+
+
+func _pick_crop(index: int) -> String:
+	var crop_base := _mineral_points.size()
+	for crop in CROP_KEYS:
+		var n: int = (_crop_points[crop] as Array).size()
+		if index < crop_base + n:
+			return crop
+		crop_base += n
+	return "wheat"
 
 
 func _pick_size(index: int) -> float:
@@ -349,7 +384,10 @@ func _pick_size(index: int) -> float:
 
 
 func _total_pickable() -> int:
-	return _mineral_points.size() + _wheat_points.size()
+	var total := _mineral_points.size()
+	for crop in CROP_KEYS:
+		total += _crop_points[crop].size()
+	return total
 
 
 ## Mostra o badge "i" sobre o depósito sob o mouse (índice) ou esconde (-1).
@@ -461,12 +499,13 @@ func deposit_info(index: int) -> Dictionary:
 	if _pick_is_wheat(index):
 		# Agricultura (recurso renovável): aptidão + fertilidade + cultivável do
 		# território. Sem reserva — a "produção" é um fluxo, não um estoque.
-		var point: Array = _wheat_points[index - _mineral_points.size()]
+		var crop := _pick_crop(index)
+		var point: Array = _pick_point(index)
 		var pos := Vector2(float(point[0]), float(point[1]))
 		var attrs: Dictionary = _geo.territory_attributes(pos) if _geo != null else {}
 		return {
 			"kind": "wheat",
-			"resource": "wheat",
+			"resource": crop,
 			"suitability": float(point[2]) if point.size() > 2 else 0.0,
 			"fertility": float(attrs.get("fertility", 0.0)),
 			"cultivable": float(attrs.get("cultivable", 0.0)),
