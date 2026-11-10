@@ -236,9 +236,11 @@ Dictionary EconomySim::tick() {
 	}
 
 	// Compradores mais urgentes primeiro; vendedores com mais trigo primeiro.
-	std::sort(buyers.begin(), buyers.end(),
+	// stable_sort garante ordem determinística entre empates (mesmo binário e
+	// entre plataformas), essencial para replay/save idênticos.
+	std::stable_sort(buyers.begin(), buyers.end(),
 	          [](const auto& left, const auto& right) { return left.second > right.second; });
-	std::sort(sellers.begin(), sellers.end(),
+	std::stable_sort(sellers.begin(), sellers.end(),
 	          [](const City* left, const City* right) { return left->stockpile > right->stockpile; });
 
 	// Fase 1: mercado regional (cidades vizinhas do mesmo país).
