@@ -23,7 +23,11 @@ const MODEL_LENGTH_BY_MODE := {"truck": 0.275, "ship": 0.55, "plane": 0.275}
 const HEIGHT_OFFSET := 0.18
 # Bandeirinha da nação de destino, acima do veículo (identifica o comboio).
 const FLAG_HEIGHT := 0.34
-const FLAG_SIZE := 0.14
+# Medalhões origem+destino: textura do par gerada em runtime (selo escuro + aro
+# de latão + bandeira), lado a lado com um chevron de latão entre eles.
+const PAIR_TEX_W := 180
+const PAIR_TEX_H := 72
+const PAIR_HEIGHT := 0.17  # altura do conjunto em unidades de mundo
 # Duração visual de cada trecho: acompanha o tempo de trânsito simulado e o
 # ritmo do relógio (1 dia = 60 s). Veículos deixam de "teleportar".
 const SECONDS_PER_DAY := 60.0
@@ -80,6 +84,7 @@ var _active_convoys := 0
 var _depart_slot := 0
 var _convoys: Array[Node3D] = []
 var _scale_cache := {}
+var _pair_cache := {}
 var _nav_image: Image
 var _path_cache := {}
 ## Tweens em andamento, para acompanhar a velocidade/pausa da simulação.
@@ -163,7 +168,8 @@ func _spawn_order(order: Dictionary) -> void:
 	_active_convoys += 1
 	_convoys.append(convoy)
 	# Bandeira da nação que vai RECEBER o produto, acima do veículo.
-	_add_flag(convoy, String(order.get("to_nation", "")))
+	_add_flags(convoy, String(order.get("from_nation", "")),
+			String(order.get("to_nation", "")))
 
 	var tween := create_tween()
 	# O tween nasce no ritmo atual da simulação (1x = 60 s por dia) e entra na
@@ -416,21 +422,78 @@ func _heuristic(a: Vector2i, b: Vector2i) -> float:
 
 ## Bandeirinha da nação de destino presa ao comboio (billboard: sempre virada
 ## para a câmera). Criada uma vez e mantida entre os trechos.
-func _add_flag(convoy: Node3D, nation: String) -> void:
-	if nation.is_empty():
+## Medalhões origem+destino acima do comboio: selo escuro + aro de latão +
+## bandeira, lado a lado com um chevron de latão no meio ("de onde → para onde").
+func _add_flags(convoy: Node3D, from_nation: String, to_nation: String) -> void:
+	if from_nation.is_empty() and to_nation.is_empty():
 		return
-	var texture := Economy.flag_texture(nation)
+	var texture := _pair_texture(from_nation, to_nation)
 	if texture == null:
 		return
-	var flag := Sprite3D.new()
-	flag.name = "Flag"
-	flag.texture = texture
-	flag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	flag.no_depth_test = true
-	flag.render_priority = 10
-	flag.pixel_size = FLAG_SIZE / 20.0  # bandeira 40×20 (2:1)
-	flag.position = Vector3(0.0, FLAG_HEIGHT, 0.0)
-	convoy.add_child(flag)
+	var flags := Sprite3D.new()
+	flags.name = "Flags"
+	flags.texture = texture
+	flags.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	flags.no_depth_test = true
+	flags.render_priority = 10
+	flags.pixel_size = PAIR_HEIGHT / float(PAIR_TEX_H)
+	flags.position = Vector3(0.0, FLAG_HEIGHT, 0.0)
+	convoy.add_child(flags)
+
+
+## Textura do par de medalhões (cacheada por origem|destino).
+func _pair_texture(from_nation: String, to_nation: String) -> Texture2D:
+	var key := from_nation + "|" + to_nation
+	if _pair_cache.has(key):
+		return _pair_cache[key]
+	var img := Image.create(PAIR_TEX_W, PAIR_TEX_H, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	_draw_medallion(img, Vector2(48.0, PAIR_TEX_H * 0.5), from_nation)
+	_draw_medallion(img, Vector2(PAIR_TEX_W - 48.0, PAIR_TEX_H * 0.5), to_nation)
+	_draw_chevron(img, Vector2(PAIR_TEX_W * 0.5, PAIR_TEX_H * 0.5))
+	var tex := ImageTexture.create_from_image(img)
+	_pair_cache[key] = tex
+	return tex
+
+
+## Desenha um medalhão: disco escuro + aro de latão + bandeira da nação no centro.
+func _draw_medallion(img: Image, center: Vector2, nation: String) -> void:
+	var radius := 30.0
+	var dark := Color("#363431")
+	var brass := Color("#C9A24A")
+	for y in range(maxi(0, int(center.y - radius)), mini(img.get_height(), int(center.y + radius) + 1)):
+		for x in range(maxi(0, int(center.x - radius)), mini(img.get_width(), int(center.x + radius) + 1)):
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(center)
+			if d <= radius:
+				img.set_pixel(x, y, brass if d > radius - 5.0 else dark)
+	if nation.is_empty():
+		return
+	var flag := Economy.flag_texture(nation)
+	if flag == null:
+		return
+	var fi := flag.get_image()
+	if fi == null or fi.get_width() == 0:
+		return
+	var fw := int(radius * 1.15)
+	var fh := int(fw * fi.get_height() / float(fi.get_width()))
+	fi = fi.duplicate()
+	# blend_rect exige o mesmo formato do destino (RGBA8).
+	if fi.get_format() != Image.FORMAT_RGBA8:
+		fi.convert(Image.FORMAT_RGBA8)
+	fi.resize(fw, fh, Image.INTERPOLATE_LANCZOS)
+	img.blend_rect(fi, Rect2i(0, 0, fw, fh),
+			Vector2i(int(center.x - fw / 2.0), int(center.y - fh / 2.0)))
+
+
+## Chevron de latão "›" entre os dois medalhões (indica origem → destino).
+func _draw_chevron(img: Image, center: Vector2) -> void:
+	var brass := Color("#C9A24A")
+	for t in range(0, 9):
+		for w in 2:
+			var x := int(center.x) - 7 + t + w
+			for y in [int(center.y) - t, int(center.y) + t]:
+				if x >= 0 and x < img.get_width() and y >= 0 and y < img.get_height():
+					img.set_pixel(x, y, brass)
 
 
 ## Posiciona o veículo no início do trecho, orientado para o destino.
@@ -443,7 +506,7 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 	# dois nós com o mesmo nome coexistiriam no frame e o `get_node` do trecho
 	# seguinte erraria o alvo, deixando o modelo antigo (navio) pendurado.
 	for child in convoy.get_children():
-		if String(child.name) != "Flag":
+		if String(child.name) != "Flags":
 			convoy.remove_child(child)
 			child.queue_free()
 
