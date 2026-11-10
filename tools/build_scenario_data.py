@@ -48,6 +48,7 @@ def main() -> None:
             "x": float(row["x"]),
             "y": float(row["y"]),
             "landmass": row["landmass"].strip(),
+            "capital": row.get("capital", "0").strip().lower() in ("1", "true", "yes"),
         })
 
     buildings = []

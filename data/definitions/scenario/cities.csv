@@ -1,7 +1,7 @@
-id,nation,home_nation,name,population,x,y,landmass
-GBR-LDN,GBR,GBR,London,9000000,2498.2,534.6,britain
-FRA-PAR,FRA,FRA,Paris,12000000,2532.6,571.4,continent
-DEU-BER,DEU,DEU,Berlin,6000000,2686.2,520.6,continent
-NED-AMS,NED,NED,Amsterdam,2500000,2568.0,522.7,continent
-BEL-BRU,BEL,BEL,Brussels,2500000,2560.4,543.8,continent
-FRA-CAY,FRA,FRA,Cayenne,150000,1773.2,1181.4,guiana
+id,nation,home_nation,name,population,x,y,landmass,capital
+GBR-LDN,GBR,GBR,London,9000000,2498.2,534.6,britain,1
+FRA-PAR,FRA,FRA,Paris,12000000,2532.6,571.4,continent,1
+DEU-BER,DEU,DEU,Berlin,6000000,2686.2,520.6,continent,1
+NED-AMS,NED,NED,Amsterdam,2500000,2568.0,522.7,continent,1
+BEL-BRU,BEL,BEL,Brussels,2500000,2560.4,543.8,continent,1
+FRA-CAY,FRA,FRA,Cayenne,150000,1773.2,1181.4,guiana,0

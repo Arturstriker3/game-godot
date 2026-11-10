@@ -14,6 +14,7 @@ Uso: python tools/build_resource_map.py
 """
 
 import json
+import math
 import os
 
 from PIL import Image, ImageDraw
@@ -49,6 +50,21 @@ def marker(size: int, shape: str) -> Image.Image:
         pts = [(c, c - r * 1.2), (c + r * 1.2, c), (c, c + r * 1.2), (c - r * 1.2, c)]
         d.polygon(pts, fill=(255, 255, 255, 255), outline=EDGE)
         d.line(pts + [pts[0]], fill=EDGE, width=5, joint="curve")
+    return img
+
+
+def star(size: int = 512) -> Image.Image:
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    cx = cy = size / 2.0
+    outer = size * 0.38
+    inner = size * 0.155
+    points = []
+    for index in range(10):
+        radius = outer if index % 2 == 0 else inner
+        angle = -math.pi / 2.0 + index * math.pi / 5.0
+        points.append((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
+    d.polygon(points, fill=(255, 255, 255, 255))
     return img
 
 
@@ -97,6 +113,7 @@ white_icon("political.png", "map_mode_political.png")
 white_icon("resources.png", "map_mode_resources.png")
 marker(64, "dot").save(os.path.join(PLACES, "resource_dot.png"))
 marker(64, "diamond").save(os.path.join(PLACES, "resource_wheat.png"))
+star().save(os.path.join(PLACES, "star.png"))
 
 # Pílula escura atrás da faixa de recursos sob o nome da cidade.
 pill = Image.new("RGBA", (128, 32), (0, 0, 0, 0))

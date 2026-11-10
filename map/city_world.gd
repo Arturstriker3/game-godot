@@ -44,6 +44,7 @@ const GeographyScript: Script = preload("res://core/economy/geography_service.gd
 const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
 const PORT_SIZE := 0.6
 const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.png")
+const STAR_ICON: Texture2D = preload("res://assets/icons/places/star.png")
 const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.png")
 ## Ícone de lugar: pendurado logo acima do nome, com a mesma tinta e altura
 ## proporcional ao texto — ícone + nome leem como um selo único.
@@ -101,15 +102,13 @@ const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
 const LABEL_PIXEL_MAX := 0.12
 
-## Hierarquia de rótulos por população (estilo HOI3).
-const LABEL_SIZE_CAPITAL := 36  # Capitais / cidades grandes
-const LABEL_SIZE_CITY := 28     # Cidades médias
-const LABEL_SIZE_TOWN := 20     # Cidades pequenas
+## Hierarquia de rótulos: padronizada. Capital vem do CSV (coluna `capital`) e
+## fica um pouco maior; todo o resto usa o mesmo tamanho.
+const LABEL_SIZE_CAPITAL := 34
+const LABEL_SIZE_STANDARD := 28
 const LABEL_COLOR := Color("#E8E2D0")
 const LABEL_HOVER_COLOR := Color("#C9A24A")  # latão: hover/indica clicável
 const ICON_COLOR := Color("#E8E2D0")          # marfim: alto contraste no selo escuro
-const LABEL_POPULATION_CAPITAL := 2000.0  # Threshold para capital (t/dia de produção)
-const LABEL_POPULATION_CITY := 500.0      # Threshold para cidade
 ## Fade de rótulo por distância (estilo HOI3).
 const LABEL_FADE_START := 80.0
 const LABEL_FADE_END := 120.0
@@ -837,10 +836,10 @@ func _build_cities(cities: Array) -> void:
 		var city_id := String(city.get("id", ""))
 		var city_name := String(city.get("name", ""))
 		var discs := _spawn_city_marker(position, city_name, color)
-		var production := float(city.get("production", 0.0))
+		var capital := bool(city.get("capital", false))
 		var label := _add_city_label_hierarchical(position,
 				I18n.city_name(city_id, city_name), color,
-				production, index < MAX_CITY_LABELS)
+				capital, index < MAX_CITY_LABELS)
 		var icon: Sprite3D = null
 		var ring: Sprite3D = null
 		var flag: Sprite3D = null
@@ -848,7 +847,8 @@ func _build_cities(cities: Array) -> void:
 			# Guarda a chave/fallback para atualizar o texto ao trocar idioma.
 			label.set_meta("city_id", city_id)
 			label.set_meta("city_fallback", city_name)
-			var marker := _add_place_icon(label, CITY_ICON, String(city["nation"]))
+			var icon_texture := STAR_ICON if capital else CITY_ICON
+			var marker := _add_place_icon(label, icon_texture, String(city["nation"]))
 			icon = marker["icon"]
 			ring = marker["ring"]
 			flag = marker["flag"]
@@ -1135,11 +1135,11 @@ func _add_port_label(position: Vector3, port_name: String) -> Label3D:
 	var label := Label3D.new()
 	label.text = port_name.to_upper()
 	label.font = LABEL_FONT
-	label.font_size = LABEL_SIZE_TOWN
+	label.font_size = LABEL_SIZE_STANDARD
 	label.pixel_size = 0.019
 	label.modulate = Color("#E8E2D0")
 	label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
-	label.outline_size = int(LABEL_SIZE_TOWN * 0.4)
+	label.outline_size = int(LABEL_SIZE_STANDARD * 0.4)
 	label.no_depth_test = true
 	label.render_priority = 10
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -1195,16 +1195,12 @@ func _add_disc(position: Vector3, radius: float, height: float, color: Color) ->
 ## Nome da cidade em caixa alta, como legenda de carta militar.
 ## Hierarquia por produção: capitais maiores, cidades menores (estilo HOI3).
 func _add_city_label_hierarchical(position: Vector3, city_name: String, color: Color,
-		production: float, with_label: bool) -> Label3D:
+		capital: bool, with_label: bool) -> Label3D:
 	if not with_label:
 		return null
-	
-	# Hierarquia de tamanho por produção (proxy de importância)
-	var font_size := LABEL_SIZE_TOWN
-	if production >= LABEL_POPULATION_CAPITAL:
-		font_size = LABEL_SIZE_CAPITAL
-	elif production >= LABEL_POPULATION_CITY:
-		font_size = LABEL_SIZE_CITY
+
+	# Tamanho padronizado; só capital (CSV) ganha um pouco mais.
+	var font_size := LABEL_SIZE_CAPITAL if capital else LABEL_SIZE_STANDARD
 	
 	var label := Label3D.new()
 	label.text = city_name.to_upper()

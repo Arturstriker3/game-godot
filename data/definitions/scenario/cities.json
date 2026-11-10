@@ -8,7 +8,8 @@
     "production": 1300.0,
     "x": 2498.2,
     "y": 534.6,
-    "landmass": "britain"
+    "landmass": "britain",
+    "capital": true
   },
   {
     "id": "FRA-PAR",
@@ -19,7 +20,8 @@
     "production": 6000.0,
     "x": 2532.6,
     "y": 571.4,
-    "landmass": "continent"
+    "landmass": "continent",
+    "capital": true
   },
   {
     "id": "DEU-BER",
@@ -30,7 +32,8 @@
     "production": 2500.0,
     "x": 2686.2,
     "y": 520.6,
-    "landmass": "continent"
+    "landmass": "continent",
+    "capital": true
   },
   {
     "id": "NED-AMS",
@@ -41,7 +44,8 @@
     "production": 300.0,
     "x": 2568.0,
     "y": 522.7,
-    "landmass": "continent"
+    "landmass": "continent",
+    "capital": true
   },
   {
     "id": "BEL-BRU",
@@ -52,7 +56,8 @@
     "production": 400.0,
     "x": 2560.4,
     "y": 543.8,
-    "landmass": "continent"
+    "landmass": "continent",
+    "capital": true
   },
   {
     "id": "FRA-CAY",
@@ -63,6 +68,7 @@
     "production": 0.0,
     "x": 1773.2,
     "y": 1181.4,
-    "landmass": "guiana"
+    "landmass": "guiana",
+    "capital": false
   }
 ]
