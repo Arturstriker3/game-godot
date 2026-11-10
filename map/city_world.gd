@@ -337,6 +337,12 @@ func set_deposit_hover(index: int) -> void:
 		_mode_layer.set_deposit_hover(index)
 
 
+## Anel persistente no depósito selecionado (-1 limpa).
+func set_deposit_selected(index: int) -> void:
+	if _mode_layer != null:
+		_mode_layer.set_deposit_selected(index)
+
+
 ## Recursos que a cidade alcança (para a legenda): minérios no raio + trigo.
 func city_resource_entries(city_id: String) -> Array:
 	for record in _city_nodes:

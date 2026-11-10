@@ -227,9 +227,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if hud.map_mode() == "resources":
 		var deposit: int = city_world.pick_deposit(mouse, player.camera)
 		if deposit >= 0:
+			city_world.set_deposit_selected(deposit)
 			hud.show_deposit_info(city_world.deposit_info(deposit))
 			get_viewport().set_input_as_handled()
 			return
+		# Clique no vazio limpa o anel do depósito selecionado.
+		city_world.set_deposit_selected(-1)
 	var port_id: String = city_world.pick_port(mouse, player.camera)
 	if not port_id.is_empty():
 		GameCursor.set_city_hover(false)

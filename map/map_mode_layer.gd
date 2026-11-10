@@ -40,7 +40,9 @@ var _heat_mesh: MeshInstance3D
 var _mineral_mesh: MultiMeshInstance3D
 var _wheat_mesh: MultiMeshInstance3D
 var _hover_ring: Sprite3D
+var _selection_ring: Sprite3D
 var _hover_time := 0.0
+var _selected_deposit := -1
 var _mineral_points: Array = []
 var _wheat_points: Array = []
 ## Filtros da legenda: {} = todos; senão chave -> bool.
@@ -100,6 +102,7 @@ func set_mode(mode: String) -> void:
 		_heat_mesh.visible = heat
 	if _hover_ring != null and not resources:
 		_hover_ring.visible = false
+	_update_selection_ring()
 	visible = resources or heat
 
 	if not heat:
@@ -186,6 +189,18 @@ func _build_resource_markers() -> void:
 	_hover_ring.visible = false
 	add_child(_hover_ring)
 
+	# Anel de SELEÇÃO (persistente) do depósito clicado.
+	_selection_ring = Sprite3D.new()
+	_selection_ring.name = "DepositSelectionRing"
+	_selection_ring.texture = DEPOSIT_HOVER
+	_selection_ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_selection_ring.transparent = true
+	_selection_ring.no_depth_test = true
+	_selection_ring.render_priority = 1
+	_selection_ring.modulate = Color(1.0, 0.92, 0.72, 1.0)
+	_selection_ring.visible = false
+	add_child(_selection_ring)
+
 	_mineral_mesh.visible = false
 	_wheat_mesh.visible = false
 
@@ -264,7 +279,9 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 		var center := camera.unproject_position(world)
 		var edge := camera.unproject_position(
 				world + right * (_marker_size(point, false) * 0.5))
-		var radius := maxf(9.0, center.distance_to(edge))
+		# Raio de pega generoso: um pouco maior que o marcador desenhado, com piso
+		# em pixels, para o hover funcionar em qualquer tamanho de depósito.
+		var radius := maxf(14.0, center.distance_to(edge) * 1.35)
 		var distance := center.distance_to(screen_position)
 		if distance <= radius and distance < best_distance:
 			best = index
@@ -286,6 +303,26 @@ func set_deposit_hover(index: int) -> void:
 	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.95)
 	_hover_ring.visible = true
 	_hover_time = 0.0
+
+
+## Marca o depósito selecionado (anel persistente) ou limpa (-1).
+func set_deposit_selected(index: int) -> void:
+	_selected_deposit = index
+	_update_selection_ring()
+
+
+func _update_selection_ring() -> void:
+	if _selection_ring == null:
+		return
+	if _selected_deposit < 0 or _selected_deposit >= _mineral_points.size() \
+			or _current != "resources":
+		_selection_ring.visible = false
+		return
+	var point: Array = _mineral_points[_selected_deposit]
+	var size := _marker_size(point, false)
+	_selection_ring.position = _marker_world(point) + Vector3(0.0, 0.02, 0.0)
+	_selection_ring.pixel_size = (size * 2.9) / 128.0
+	_selection_ring.visible = true
 
 
 func _process(delta: float) -> void:
