@@ -314,10 +314,38 @@ func pick_city(screen_position: Vector2, camera: Camera3D, radius_px: float = 26
 		var edge := camera.unproject_position(world + right * footprint)
 		var city_radius := maxf(radius_px, center.distance_to(edge))
 		var score := center.distance_to(screen_position) / city_radius
+
+		# O nome (e a bandeira/selo) ficam acima do centro; clicar no rótulo
+		# também seleciona a cidade. Usa a largura real do texto em tela.
+		var label: Label3D = record.get("label")
+		if label != null and label.visible:
+			var label_world := to_global(label.position)
+			if not camera.is_position_behind(label_world):
+				var em := float(label.font_size) * label.pixel_size
+				var text_w := label.font.get_string_size(label.text,
+						HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
+				var half := right * (text_w * 0.5 + em * 1.6)
+				var a := camera.unproject_position(label_world - half)
+				var b := camera.unproject_position(label_world + half)
+				var top := camera.unproject_position(label_world + Vector3.UP * em * 0.7)
+				var label_radius := maxf(20.0, a.distance_to(top))
+				var label_score := _segment_distance(screen_position, a, b) / label_radius
+				score = minf(score, label_score)
+
 		if score <= 1.0 and (best_id.is_empty() or score < best_score):
 			best_score = score
 			best_id = String(record["id"])
 	return best_id
+
+
+## Distância de um ponto ao segmento AB (em 2D de tela).
+static func _segment_distance(point: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab := b - a
+	var length_squared := ab.length_squared()
+	if length_squared <= 0.0001:
+		return point.distance_to(a)
+	var t := clampf((point - a).dot(ab) / length_squared, 0.0, 1.0)
+	return point.distance_to(a + ab * t)
 
 
 ## Posição global da cidade (para centralizar a câmera).

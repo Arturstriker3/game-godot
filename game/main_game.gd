@@ -264,7 +264,10 @@ func _update_city_hover_pass() -> void:
 	if hover_id != _last_hover:
 		_last_hover = hover_id
 		city_world.set_hover(hover_id)
-	var kind: String = "port" if not port_id.is_empty() else ("city" if not city_id.is_empty() else "")
+	var kind: String = "port" if not port_id.is_empty() else ""
+	if kind.is_empty() and not city_id.is_empty():
+		# Mapas de dados: "i" (abrir painel) em vez da lupa do mapa político.
+		kind = "info" if hud.map_mode() != "political" else "city"
 	GameCursor.set_state(false, kind)
 
 
