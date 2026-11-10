@@ -153,6 +153,16 @@ def nearest_land_px(nav: Image.Image, px: float, py: float,
     return None
 
 
+def snap_to_land(nav: Image.Image, px: float, py: float, max_cells: int):
+    """Se (px, py) estiver em água, encosta na terra mais próxima (até max_cells);
+    senão devolve o ponto inalterado. O deslocamento (offset) de um centróide
+    costeiro não pode jogar o marcador para dentro do mar."""
+    if nav.getpixel(nav_cell(nav, px, py)) >= 128:
+        return px, py
+    landed = nearest_land_px(nav, px, py, max_cells)
+    return landed if landed is not None else (px, py)
+
+
 def nearest_territory(nature: dict, px: float, py: float):
     """Id do território cujo centróide está mais próximo de (px, py)."""
     best = None
@@ -246,10 +256,11 @@ def build_points() -> None:
                 continue
             px, py = landed
         ox, oy = MINERAL_OFFSET.get(resource, (0.0, 0.0))
+        px, py = snap_to_land(nav, px + ox, py + oy, WHEAT_SNAP_MAX_NAV_PX)
         status = max(set(entry["statuses"]), key=entry["statuses"].count)
         minerals.append([
-            round(px + ox, 1),
-            round(py + oy, 1),
+            round(px, 1),
+            round(py, 1),
             MINERALS.index(resource),
             round(entry["reserve"], 1),
             round(entry["quality_w"] / entry["reserve"], 3),
@@ -285,9 +296,10 @@ def build_points() -> None:
             if value < threshold:
                 continue
             ox, oy = RENEWABLE_OFFSET.get(crop, (0.0, 0.0))
+            var_rx, var_ry = snap_to_land(nav, px + ox, py + oy, WHEAT_SNAP_MAX_NAV_PX)
             renewables.append([
-                round(px + ox, 1),
-                round(py + oy, 1),
+                round(var_rx, 1),
+                round(var_ry, 1),
                 renewable_keys.index(crop),
                 round(value, 2),
                 territory,
