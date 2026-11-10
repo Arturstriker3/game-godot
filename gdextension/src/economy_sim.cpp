@@ -1233,8 +1233,10 @@ void EconomySim::demo_trade_wheat() {
 
 			demo_in_transit_.push_back({buyer.city->id, wheat, amount, day_ + 1});
 
-			// Pedido de comércio com uma rota em linha reta (caminhão na mesma
-			// massa de terra, navio entre massas), para os comboios 3D e o HUD.
+			// Pedido de comércio para os comboios 3D e o HUD. Na mesma massa de
+			// terra vai de caminhão em linha reta; entre massas, o navio entra
+			// pelo porto do vendedor e sai pelo porto do comprador (infraestrutura
+			// nacional: sem porto, sem travessia marítima — cai no direto).
 			TradeOrder order;
 			order.from_city = seller->id;
 			order.to_city = buyer.city->id;
@@ -1242,13 +1244,56 @@ void EconomySim::demo_trade_wheat() {
 			order.to_nation = buyer.city->nation;
 			order.scope = MarketScope::International;
 			order.amount = amount;
-			const TransportMode mode = same_landmass
-				? TransportMode::Truck : TransportMode::Ship;
-			Leg leg = make_leg(mode, seller->id, buyer.city->id,
-				seller->center, buyer.city->center, amount);
-			order.transit_hours = leg.transit_hours;
-			order.freight_cost = leg.cost;
-			order.legs.push_back(std::move(leg));
+
+			double total_transit = 0.0;
+			double total_freight_cost = 0.0;
+			if (same_landmass) {
+				Leg leg = make_leg(TransportMode::Truck, seller->id, buyer.city->id,
+					seller->center, buyer.city->center, amount);
+				total_transit = leg.transit_hours;
+				total_freight_cost = leg.cost;
+				order.legs.push_back(std::move(leg));
+			} else {
+				const Port* seller_port = demo_nearest_port(
+					seller->nation, seller->landmass, seller->center);
+				const Port* buyer_port = demo_nearest_port(
+					buyer.city->nation, buyer.city->landmass, buyer.city->center);
+				if (seller_port != nullptr && buyer_port != nullptr) {
+					// Cidade -> porto do vendedor (caminhão).
+					if (distance_km(seller->center, seller_port->center) > 1.0) {
+						Leg leg = make_leg(TransportMode::Truck, seller->id,
+							seller_port->name, seller->center, seller_port->center, amount);
+						total_transit += leg.transit_hours;
+						total_freight_cost += leg.cost;
+						order.legs.push_back(std::move(leg));
+					}
+					// Porto -> porto (navio).
+					{
+						Leg leg = make_leg(TransportMode::Ship, seller_port->name,
+							buyer_port->name, seller_port->center, buyer_port->center, amount);
+						total_transit += leg.transit_hours;
+						total_freight_cost += leg.cost;
+						order.legs.push_back(std::move(leg));
+					}
+					// Porto do comprador -> cidade (caminhão).
+					if (distance_km(buyer_port->center, buyer.city->center) > 1.0) {
+						Leg leg = make_leg(TransportMode::Truck, buyer_port->name,
+							buyer.city->id, buyer_port->center, buyer.city->center, amount);
+						total_transit += leg.transit_hours;
+						total_freight_cost += leg.cost;
+						order.legs.push_back(std::move(leg));
+					}
+				} else {
+					// Sem porto na rota: navio direto entre cidades.
+					Leg leg = make_leg(TransportMode::Ship, seller->id, buyer.city->id,
+						seller->center, buyer.city->center, amount);
+					total_transit = leg.transit_hours;
+					total_freight_cost = leg.cost;
+					order.legs.push_back(std::move(leg));
+				}
+			}
+			order.transit_hours = total_transit;
+			order.freight_cost = total_freight_cost;
 			demo_last_orders_.push_back(std::move(order));
 
 			remaining -= amount;
@@ -1287,6 +1332,25 @@ void EconomySim::demo_national_fiscal_transfer() {
 			city->government_budget = total_budget * (city->population / total_population);
 		}
 	}
+}
+
+const EconomySim::Port* EconomySim::demo_nearest_port(const std::string& nation,
+		const std::string& landmass, const MapPoint& from) const {
+	// Porto mais próximo da mesma nação e da mesma massa de terra. Dinâmico:
+	// adicionar um porto em ports.json já o torna disponível para o roteamento.
+	const Port* best = nullptr;
+	double best_distance = 0.0;
+	for (const Port& port : demo_ports_) {
+		if (port.nation != nation || port.landmass != landmass) {
+			continue;
+		}
+		const double distance = distance_km(from, port.center);
+		if (best == nullptr || distance < best_distance) {
+			best = &port;
+			best_distance = distance;
+		}
+	}
+	return best;
 }
 
 Dictionary EconomySim::tick_demo() {

@@ -477,6 +477,8 @@ private:
 	void demo_restore(const DemoSnapshot& in);
 	void demo_trade_wheat();
 	void demo_national_fiscal_transfer();
+	const Port* demo_nearest_port(const std::string& nation, const std::string& landmass,
+	                              const MapPoint& from) const;
 	static int demo_product_index(const String& product);
 	static const char* demo_product_name(int product);
 	double demo_base_price(int product) const;

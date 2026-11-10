@@ -46,5 +46,29 @@
     "x": 1753.1,
     "y": 1171.1,
     "landmass": "guiana"
+  },
+  {
+    "id": "VEN-LAG",
+    "name": "La Guaira",
+    "nation": "VEN",
+    "x": 1570.6,
+    "y": 1102.6,
+    "landmass": "guiana"
+  },
+  {
+    "id": "SUR-PBM",
+    "name": "Paramaribo",
+    "nation": "SUR",
+    "x": 1733.8,
+    "y": 1168.0,
+    "landmass": "guiana"
+  },
+  {
+    "id": "GUY-GEO",
+    "name": "Georgetown",
+    "nation": "GUY",
+    "x": 1692.3,
+    "y": 1154.4,
+    "landmass": "guiana"
   }
 ]
