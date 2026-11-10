@@ -88,15 +88,15 @@ func _check_status_contract(status: Dictionary) -> void:
 		_fail("status: modo deveria ser demo")
 	if int(status.get("calendar_day", -1)) != 0:
 		_fail("status: calendário inicial deveria ser 0")
-	if Array(status.get("products", [])).size() != 22:
+	if Array(status.get("products", [])).size() != 23:
 		_fail("status: lista de produtos incompleta")
 	if Array(status.get("cities", [])).size() != 2:
 		_fail("status: cenário deveria ter duas cidades")
 	for city in status.get("cities", []):
-		if Array(city.get("suitability", [])).size() != 22:
+		if Array(city.get("suitability", [])).size() != 23:
 			_fail("%s: aptidões ausentes no status" % city.get("id", "?"))
 		for field in ["imported", "exported", "import_value", "export_value"]:
-			if Array(city.get(field, [])).size() != 22:
+			if Array(city.get(field, [])).size() != 23:
 				_fail("%s: %s ausente no status" % [city.get("id", "?"), field])
 
 

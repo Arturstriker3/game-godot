@@ -20,13 +20,13 @@ const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 ## Ordem dos recursos em resource_points.json (índice do mineral).
 const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil",
 		"bauxite", "lead", "gold", "phosphate", "tungsten",
-		"rare_earths", "sulfur", "diamond"]
+		"rare_earths", "sulfur", "diamond", "uranium"]
 const MINERAL_COLORS := [
 	Color("#3E3B38"), Color("#C06A3C"), Color("#4E9FB0"),
 	Color("#7C8894"), Color("#5B4A2E"),
 	Color("#B5553A"), Color("#6E7B8B"), Color("#D4A017"),
 	Color("#C7B8E6"), Color("#33526B"), Color("#3FA57C"),
-	Color("#F0E14A"), Color("#A8D5E2"),
+	Color("#F0E14A"), Color("#A8D5E2"), Color("#A6C23C"),
 ]
 const WHEAT_COLOR := Color("#D9B45A")
 const CROP_KEYS: Array[String] = ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]

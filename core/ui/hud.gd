@@ -81,7 +81,7 @@ const CHECK_ALL_TEXTURE: Texture2D = preload("res://assets/icons/check_all.svg")
 ## tools/build_resource_map.py (map/map_data/atlas/resource_points.json).
 const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil",
 		"bauxite", "lead", "gold", "phosphate", "tungsten",
-		"rare_earths", "sulfur", "diamond"]
+		"rare_earths", "sulfur", "diamond", "uranium"]
 ## Renováveis na MESMA ordem do CROP_KEYS do map_mode_layer.gd (índice no ponto).
 const RENEWABLE_KEYS := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
 const RESOURCE_LEGEND := [
@@ -98,6 +98,7 @@ const RESOURCE_LEGEND := [
 	{"key": "rare_earths", "color": Color("#3FA57C")},
 	{"key": "sulfur", "color": Color("#F0E14A")},
 	{"key": "diamond", "color": Color("#A8D5E2")},
+	{"key": "uranium", "color": Color("#A6C23C")},
 	{"key": "wheat", "color": Color("#D9B45A")},
 	{"key": "rice", "color": Color("#6FA8DC")},
 	{"key": "maize", "color": Color("#E8B028")},

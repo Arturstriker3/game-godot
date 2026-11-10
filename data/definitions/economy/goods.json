@@ -130,5 +130,11 @@
     "name": "Madeira",
     "base_price": 25.0,
     "food": false
+  },
+  {
+    "id": "uranium",
+    "name": "Urânio",
+    "base_price": 500.0,
+    "food": false
   }
 ]

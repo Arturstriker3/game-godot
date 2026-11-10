@@ -165,6 +165,8 @@ RESOURCES = {
                "depth": 150.0, "value": 15.0},
     "diamond": {"codes": {"GEM_D"}, "base_kt": 5.0, "recovery": 0.95,
                 "depth": 400.0, "value": 5000.0},
+    "uranium": {"codes": {"U"}, "base_kt": 20000.0, "recovery": 0.80,
+                "depth": 250.0, "value": 500.0},
 }
 
 STATUS_FACTOR = {
