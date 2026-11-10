@@ -67,6 +67,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 - **`EconomySim` (C++):** classe única `RefCounted` com **três modos** mutuamente exclusivos:
   - `initialize()` / `tick()` / `get_status()` — **legacy**, 5 cidades, só trigo. É o que o jogo ao vivo usa.
   - `initialize_demo()` / `tick_demo()` / `get_demo_status()` + `demo_invest/build/spend_government/price_shock/to_dict/from_dict` — **demo**, 2 cidades, ciclo completo.
+  - `initialize_demo_world(cities, ports, buildings)` / `demo_trade_wheat()` — **demo no mundo real** (contrato único 1.1), comércio genérico de trigo; testado por `tools/economy_world_test.gd`.
   - `initialize_benchmark()` / `run_benchmark()` — sintético, determinístico.
 - **Sistema de ticks:** o autoload `Economy` acumula a **fração do dia** em `_process` (não usa `Timer`, para trocar de velocidade sem reiniciar o dia). `SPEEDS=[0.0, 60.0, 30.0, 15.0]` segundos reais por dia (0 = pausa; normal = 30 dias em 30 min). Cada `_run_day()` chama `sim.tick()` e emite `status_updated(summary)` e `trade_orders_ready(orders)`.
 - **Eventos/sinais (fluxo unidirecional):** `Economy.status_updated` → HUD (`hud.gd::_on_status`) e `main_game.gd::_on_status_updated` (refresh dos modos). `Economy.trade_orders_ready` → `trade_convoys.gd::spawn_orders`. `HUD.city_focused`/`map_mode_requested` → `main_game.gd`. `I18n.locale_changed` → `hud.gd`. A UI nunca executa lógica econômica.
@@ -121,7 +122,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 
 ## 6. Economia
 
-> Há **dois contratos econômicos** no mesmo `EconomySim`: o **legacy** (trigo por cidade, usado no jogo) e o **demo** (cadeia completa com dinheiro, usado nos testes/protótipos/IA). Não é bug, mas é uma bifurcação a ter consciência.
+> Há **dois contratos econômicos** no mesmo `EconomySim`: o **legacy** (trigo por cidade, usado no jogo) e o **demo** (cadeia completa com dinheiro, usado nos testes/protótipos/IA). Em unificação (melhoria 1.1): o `initialize_demo_world()` carrega o cenário real no modelo demo e o `demo_trade_wheat()` faz o comércio genérico de trigo entre cidades — o demo já roda o mundo real, mas o jogo ao vivo ainda usa o legacy até a troca do `Economy` autoload.
 
 ### 6.1 Modo ao vivo (legacy — trigo)
 
@@ -339,6 +340,7 @@ $godot = "C:\Users\artur\OneDrive\Área de Trabalho\Godot_v4.7.2-stable_win64.ex
 & $godot --headless --path . --script res://tools/economy_integration_test.gd   # rápido
 & $godot --headless --path . --script res://tools/economy_ai_test.gd            # rápido
 & $godot --headless --path . --script res://tools/population_demo_test.gd       # rápido
+& $godot --headless --path . --script res://tools/economy_world_test.gd         # rápido (demo no mundo real)
 & $godot --headless --path . --script res://tools/economy_long_run_test.gd      # lento
 # Laboratório de balanceamento (8 cenários × 5 horizontes):
 & $godot --headless --path . --script res://tools/economy_lab.gd -- --tag=final

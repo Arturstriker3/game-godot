@@ -14,7 +14,7 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 
 | # | Item | Status | Nota |
 |---|---|---|---|
-| 1.1 | **Contrato único** (legacy trigo × demo completo) | PENDENTE | O jogo usa legacy; o ciclo rico só existe no demo. Unificar antes de crescer. |
+| 1.1 | **Contrato único** (legacy trigo × demo completo) | EM ANDAMENTO | `initialize_demo_world` + `demo_trade_wheat` (C++) rodam o mundo real no demo; falta trocar o jogo ao vivo (`Economy` autoload) e ligar a IA. |
 | 1.2 | **Bens e receitas data-driven** (IDs string) | PENDENTE | Hoje bens são índices (trigo=0…) e receitas estão hardcoded/duplicadas. |
 | 1.3 | **Preço/mercado para N bens** | PENDENTE | Demo cobre poucos bens; generalizar com piso de custo e banda. |
 | 1.4 | **Capacidade de transporte** | PENDENTE | Hoje frete/tempo existem, mas não há limite de carga — comércio pode mover “infinito”. |
@@ -25,11 +25,11 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 | 1.9 | **Terreno/clima na produção** | BACKLOG | Relevo placeholder; clima já existe em `nature.json`. |
 | 1.10 | **Falência/insolvência** | PENDENTE | Regra explícita para caixa negativo (dívida? fecha? transferência?). |
 | 1.11 | **Dinheiro inteiro/fixed-point** | PENDENTE | Evitar drift de `double` em partidas longas. |
-| 1.12 | **NaN/Inf/divisão por zero + clamps** | PENDENTE | Todos os caminhos (preço, demanda, capacidade, população 0). |
-| 1.13 | **Invariantes em runtime** (não só teste) | PENDENTE | Conservação de caixa/estoque por tick; log e rollback do tick se violar. |
-| 1.14 | **Determinismo total** (FPS, ordem, dicionários) | PENDENTE | Mesma seed + entradas = mesmo estado. |
-| 1.15 | **Tick fixo + catch-up** | PENDENTE | Hoje `_process` roda no máximo 1 dia e pode “perder” dias num travamento. |
-| 1.16 | **Save/load versionado + migrações** | PENDENTE | `schema_version`, migração v1→v2, round-trip e save corrompido sem crash. |
+| 1.12 | **NaN/Inf/divisão por zero + clamps** | FEITO | `safe_*` no initialize/tick/outputs; fix da fase 9 (preço pós-choque `lower>upper`). |
+| 1.13 | **Invariantes em runtime** (não só teste) | FEITO | `demo_check_invariants` + snapshot/revert no `tick_demo`; conservação de dinheiro/estoque/preço. |
+| 1.14 | **Determinismo total** (FPS, ordem, dicionários) | FEITO | `stable_sort` nas ordenações de comércio. |
+| 1.15 | **Tick fixo + catch-up** | FEITO | `_process` acumula dias em fila com teto `MAX_DAYS_PER_FRAME`. |
+| 1.16 | **Save/load versionado + migrações** | FEITO | `kDemoSaveVersion`; `demo_from_dict` recusa versão futura. |
 | 1.17 | **Performance/escala** (50–200 cidades) | PENDENTE | Benchmark sintético; hotspots: matching de comércio e transporte. |
 | 1.18 | **Validação de schema dos dados** | PENDENTE | IDs duplicados, referência inexistente, unidades (kt/Mt), faixas — falhar no build. |
 | 1.19 | **Golden runs de balanceamento no CI** | PENDENTE | Limites de inflação/desemprego/preço; falha o build se sair da faixa. |
