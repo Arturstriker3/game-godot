@@ -94,11 +94,15 @@ func _test_world() -> void:
 		if _failures.size() > 0:
 			break
 
-	# A cidade sem produção (Cayenne) precisa ter comido em algum momento via
-	# subsídio — prova que o comércio + segurança alimentar alcançam quem não gera
-	# receita. (A sustentabilidade fiscal de longo prazo fica para o 1.8.)
+	# A cidade sem produção (Cayenne) precisa continuar alimentada no fim — a
+	# equalização fiscal nacional (Paris sustenta Cayenne) a mantém sustentável.
 	if not cayenne_fed:
 		_fail("Cayenne não foi alimentada em nenhum dia (subsídio não alcançou)")
+	for city in status["cities"]:
+		if String(city["id"]) == "FRA-CAY":
+			var satisfaction := float(city["pop"]["satisfaction"])
+			if satisfaction < 0.9:
+				_fail("Cayenne não sustentada no fim (satisfação %.2f)" % satisfaction)
 
 	var money_final := float(status["money_total"])
 	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [

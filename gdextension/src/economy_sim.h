@@ -476,6 +476,7 @@ private:
 	void demo_snapshot(DemoSnapshot& out) const;
 	void demo_restore(const DemoSnapshot& in);
 	void demo_trade_wheat();
+	void demo_national_fiscal_transfer();
 	static int demo_product_index(const String& product);
 	static const char* demo_product_name(int product);
 	static double demo_base_price(int product);

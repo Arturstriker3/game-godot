@@ -1236,6 +1236,38 @@ void EconomySim::demo_trade_wheat() {
 	}
 }
 
+void EconomySim::demo_national_fiscal_transfer() {
+	// Equalização fiscal per capita dentro de cada nação: o orçamento público é
+	// repartido entre as cidades proporcionalmente à população. Uma cidade rica
+	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:
+	// Paris sustenta Cayenne). Conserva dinheiro — só move government_budget
+	// entre cidades da MESMA nação.
+	std::vector<std::string> nations;
+	for (const DemoCity& city : demo_cities_) {
+		if (std::find(nations.begin(), nations.end(), city.nation) == nations.end()) {
+			nations.push_back(city.nation);
+		}
+	}
+	for (const std::string& nation : nations) {
+		std::vector<DemoCity*> cities;
+		double total_budget = 0.0;
+		double total_population = 0.0;
+		for (DemoCity& city : demo_cities_) {
+			if (city.nation == nation) {
+				cities.push_back(&city);
+				total_budget += city.government_budget;
+				total_population += city.population;
+			}
+		}
+		if (cities.size() < 2 || total_population <= 0.0) {
+			continue;
+		}
+		for (DemoCity* city : cities) {
+			city->government_budget = total_budget * (city->population / total_population);
+		}
+	}
+}
+
 Dictionary EconomySim::tick_demo() {
 	if (!demo_active_) {
 		initialize_demo();
@@ -1910,6 +1942,9 @@ Dictionary EconomySim::tick_demo() {
 			market.price = std::clamp(market.price, lower, upper);
 		}
 	}
+
+	// 9b. Redistribuição fiscal nacional (federalismo fiscal).
+	demo_national_fiscal_transfer();
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
