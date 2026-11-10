@@ -9,11 +9,20 @@ class_name GeographyService
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
 const AGRICULTURE_PATH := "res://data/definitions/natural/agriculture.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
+const NAV_MASK_PATH := "res://map/map_data/nav_mask.png"
+
+## Regra de água (igual a tools/build_resource_map.py): nada no mar; só
+## petróleo/gás a até 2 células da costa (extração futura só no litoral).
+const COASTAL_RESOURCES := ["oil", "gas"]
+const COASTAL_RADIUS_CELLS := 2
+const MAP_W := 5000.0
+const MAP_H := 2500.0
 
 var _nature: Dictionary = {}
 var _agriculture: Dictionary = {}
 var _deposits_by_territory: Dictionary = {}
 var _deposits: Array = []
+var _nav_image: Image
 var _territory_cache: Dictionary = {}
 var _loaded := false
 
@@ -81,9 +90,38 @@ func deposits_near(center_px: Vector2, radius_px: float) -> Array:
 	var radius_sq := radius_px * radius_px
 	for deposit in _deposits:
 		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
-		if point.distance_squared_to(center_px) <= radius_sq:
-			result.append(deposit)
+		if point.distance_squared_to(center_px) > radius_sq:
+			continue
+		if not _deposit_allowed(deposit):
+			continue
+		result.append(deposit)
 	return result
+
+
+## Terra pode tudo; água só petróleo/gás encostado na costa.
+func _deposit_allowed(deposit: Dictionary) -> bool:
+	if _nav_image == null:
+		_nav_image = Image.load_from_file(NAV_MASK_PATH)
+	if _nav_image == null:
+		return true
+	var x := int(float(deposit.get("px", 0.0)) / MAP_W * _nav_image.get_width())
+	var y := int(float(deposit.get("py", 0.0)) / MAP_H * _nav_image.get_height())
+	if x < 0 or y < 0 or x >= _nav_image.get_width() or y >= _nav_image.get_height():
+		return false
+	if _nav_image.get_pixel(x, y).r >= 0.5:
+		return true
+	if not COASTAL_RESOURCES.has(String(deposit.get("resource", ""))):
+		return false
+	for dy in range(-COASTAL_RADIUS_CELLS, COASTAL_RADIUS_CELLS + 1):
+		for dx in range(-COASTAL_RADIUS_CELLS, COASTAL_RADIUS_CELLS + 1):
+			var nx := x + dx
+			var ny := y + dy
+			if nx < 0 or ny < 0 or nx >= _nav_image.get_width() \
+					or ny >= _nav_image.get_height():
+				continue
+			if _nav_image.get_pixel(nx, ny).r >= 0.4:
+				return true
+	return false
 
 
 ## Resumo legível do território (auditoria e painéis).

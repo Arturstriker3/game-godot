@@ -28,6 +28,13 @@ MINERALS = ["coal", "copper", "gas", "iron", "oil"]
 WHEAT_MIN = 0.40
 EDGE = (23, 20, 16, 235)
 
+## Regra de água: nenhum recurso no mar. Exceção: petróleo/gás na faixa
+## costeira (extração futura só na costa). nav_mask: terra >= 128; "encostado
+## na costa" = célula >= 102 num raio de 2 células (2500×1250).
+COASTAL_RESOURCES = ("oil", "gas")
+COASTAL_RADIUS_CELLS = 2
+MAP_W, MAP_H = 5000.0, 2500.0
+
 
 def white_icon(src_name: str, dst_name: str) -> None:
     im = Image.open(os.path.join(ICONS, src_name)).convert("RGBA")
@@ -73,12 +80,48 @@ def read_json(name: str) -> dict:
         return json.load(handle)
 
 
+def load_nav():
+    path = os.path.join(ROOT, "map", "map_data", "nav_mask.png")
+    return Image.open(path).convert("L")
+
+
+def nav_cell(nav: Image.Image, px: float, py: float) -> tuple:
+    return (int(px / MAP_W * nav.width), int(py / MAP_H * nav.height))
+
+
+def deposit_allowed(nav: Image.Image, dep: dict) -> bool:
+    """Terra pode tudo; água só petróleo/gás encostado na costa."""
+    px = float(dep.get("px", 0.0))
+    py = float(dep.get("py", 0.0))
+    x, y = nav_cell(nav, px, py)
+    if not (0 <= x < nav.width and 0 <= y < nav.height):
+        return False
+    if nav.getpixel((x, y)) >= 128:
+        return True
+    if str(dep.get("resource", "")) not in COASTAL_RESOURCES:
+        return False
+    for dy in range(-COASTAL_RADIUS_CELLS, COASTAL_RADIUS_CELLS + 1):
+        for dx in range(-COASTAL_RADIUS_CELLS, COASTAL_RADIUS_CELLS + 1):
+            nx = x + dx
+            ny = y + dy
+            if not (0 <= nx < nav.width and 0 <= ny < nav.height):
+                continue
+            if nav.getpixel((nx, ny)) >= 102:
+                return True
+    return False
+
+
 def build_points() -> None:
+    nav = load_nav()
     deposits = read_json("deposits.json")["deposits"]
     minerals = []
+    skipped = 0
     for dep in deposits:
         resource = str(dep.get("resource", ""))
         if resource not in MINERALS:
+            continue
+        if not deposit_allowed(nav, dep):
+            skipped += 1
             continue
         minerals.append([
             round(float(dep.get("px", 0.0)), 1),
@@ -106,7 +149,8 @@ def build_points() -> None:
     with open(out, "w", encoding="utf-8") as handle:
         json.dump({"minerals": minerals, "wheat": wheat}, handle,
                   separators=(",", ":"))
-    print("resource_points.json", len(minerals), "minerais", len(wheat), "trigo")
+    print("resource_points.json", len(minerals), "minerais", len(wheat), "trigo",
+          "| descartados no mar:", skipped)
 
 
 white_icon("political.png", "map_mode_political.png")
