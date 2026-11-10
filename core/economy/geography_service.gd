@@ -13,6 +13,7 @@ const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 var _nature: Dictionary = {}
 var _agriculture: Dictionary = {}
 var _deposits_by_territory: Dictionary = {}
+var _deposits: Array = []
 var _territory_cache: Dictionary = {}
 var _loaded := false
 
@@ -24,7 +25,9 @@ func load_data() -> bool:
 
 	_nature = _read_json(NATURE_PATH).get("territories", {})
 	_agriculture = _read_json(AGRICULTURE_PATH).get("territories", {})
-	_index_deposits(_read_json(DEPOSITS_PATH))
+	var deposits_data := _read_json(DEPOSITS_PATH)
+	_deposits = deposits_data.get("deposits", [])
+	_index_deposits(deposits_data)
 	_loaded = not _nature.is_empty()
 	return _loaded
 
@@ -66,6 +69,21 @@ func deposits_for(city_id: String, center_px: Vector2) -> Array:
 	var territory := territory_for(city_id, center_px)
 	var entries: Array = _deposits_by_territory.get(territory, [])
 	return entries.duplicate(true)
+
+
+## Depósitos dentro de um raio em pixels do centro da cidade. É o critério
+## usado pelo mapa de recursos: o que está perto da cidade conta para ela,
+## independentemente do centroide do território.
+func deposits_near(center_px: Vector2, radius_px: float) -> Array:
+	if not load_data():
+		return []
+	var result: Array = []
+	var radius_sq := radius_px * radius_px
+	for deposit in _deposits:
+		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		if point.distance_squared_to(center_px) <= radius_sq:
+			result.append(deposit)
+	return result
 
 
 ## Resumo legível do território (auditoria e painéis).

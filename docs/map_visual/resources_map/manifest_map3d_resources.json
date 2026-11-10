@@ -2,7 +2,7 @@
   "bench": {},
   "city_count": 6,
   "engine": "4.7.2-stable (official)",
-  "focus": "FRA-PAR",
+  "focus": "BEL-BRU",
   "mode": "resources",
   "renderer": "forward_plus",
   "resolution": [
@@ -69,6 +69,6 @@
     }
   },
   "tag": "resources",
-  "timestamp": "2026-11-09T21:14:15",
+  "timestamp": "2026-11-09T21:25:36",
   "warnings": []
 }

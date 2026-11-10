@@ -234,7 +234,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if city_id.is_empty():
 		return
 	GameCursor.set_city_hover(false)
-	hud.open_city(city_id)
+	# No mapa de recursos, abrir direto a aba de recursos da cidade.
+	hud.open_city(city_id, "resources" if hud.map_mode() == "resources" else "overview")
 	get_viewport().set_input_as_handled()
 
 

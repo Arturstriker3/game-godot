@@ -281,7 +281,7 @@
   "port.name.FRA-CAY": "Mana",
   "map.legend.title": "Recursos",
   "resource.wheat": "Trigo",
-  "map.legend.hint": "Ícones sob a cidade = recursos do território.",
+  "map.legend.hint": "Ícones sob a cidade = recursos ao alcance. Clique na cidade para detalhes.",
   "map.legend.all": "Todos"
  },
  "en": {
@@ -566,7 +566,7 @@
   "port.name.FRA-CAY": "Mana",
   "map.legend.title": "Resources",
   "resource.wheat": "Wheat",
-  "map.legend.hint": "Icons under a city = resources in its territory.",
+  "map.legend.hint": "Icons under a city = resources in reach. Click the city for details.",
   "map.legend.all": "All"
  },
  "es": {
@@ -851,7 +851,7 @@
   "port.name.FRA-CAY": "Mana",
   "map.legend.title": "Recursos",
   "resource.wheat": "Trigo",
-  "map.legend.hint": "Iconos bajo la ciudad = recursos del territorio.",
+  "map.legend.hint": "Iconos bajo la ciudad = recursos al alcance. Haz clic en la ciudad para detalles.",
   "map.legend.all": "Todos"
  }
 }

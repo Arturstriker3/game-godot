@@ -177,8 +177,8 @@ func open_screen(screen_id: String) -> void:
 	_open_screen(screen_id)
 
 
-func open_city(city_id: String) -> void:
-	_on_city_requested(city_id)
+func open_city(city_id: String, tab: String = "overview") -> void:
+	_on_city_navigate(city_id, tab)
 
 
 func open_port(port_name: String) -> void:
