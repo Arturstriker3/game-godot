@@ -28,6 +28,11 @@ def pixel_to_lonlat(px, py):
     return px / 5000.0 * 360.0 - 180.0, 90.0 - py / 2500.0 * 180.0
 
 
+def _clean(name):
+    """Remove hífens do nome (ex.: 'Île-de-France' -> 'Île de France')."""
+    return str(name).replace("-", " ")
+
+
 def main():
     if not os.path.exists(SHP + ".shp"):
         raise SystemExit("shapefile admin-1 ausente em " + NE_DIR)
@@ -74,10 +79,10 @@ def main():
                 best = region
         if best is None:
             continue
-        entry["name"] = best["name"]
-        entry["name_pt"] = best["name_pt"] or best["name"]
-        entry["name_en"] = best["name_en"] or best["name"]
-        entry["name_es"] = best["name_es"] or best["name"]
+        entry["name"] = _clean(best["name"])
+        entry["name_pt"] = _clean(best["name_pt"] or best["name"])
+        entry["name_en"] = _clean(best["name_en"] or best["name"])
+        entry["name_es"] = _clean(best["name_es"] or best["name"])
         entry["adm0_a3"] = best["adm0_a3"]
         named += 1
 
