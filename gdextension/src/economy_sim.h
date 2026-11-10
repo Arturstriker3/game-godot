@@ -479,7 +479,13 @@ private:
 	void demo_national_fiscal_transfer();
 	static int demo_product_index(const String& product);
 	static const char* demo_product_name(int product);
-	static double demo_base_price(int product);
+	double demo_base_price(int product) const;
+	/**
+	 * Define os preços-base dos bens a partir de dados externos (goods.json).
+	 * Cada item deve ter "id" (wheat/flour/bread/iron) e "base_price". Bens
+	 * desconhecidos mantêm o preço padrão.
+	 */
+	void demo_set_goods(const Array& goods);
 	DemoBuilding* find_demo_building(const std::string& city_id, const std::string& id);
 
 	void tick_benchmark_internal();
@@ -535,6 +541,8 @@ private:
 	double demo_consumed_total_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
 	double demo_produced_today_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
 	double demo_consumed_today_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
+	double demo_base_prices_[kDemoProducts] = {40.0, 70.0, 80.0, 60.0};
 
 	// Estado do benchmark sintético (estruturas planas, sem alocação por tick).
 	bool bench_active_ = false;

@@ -93,6 +93,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_price_shock);
 	ClassDB::bind_method(D_METHOD("demo_set_suitability", "city_id", "product", "value"),
 	                     &EconomySim::demo_set_suitability);
+	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
+	                     &EconomySim::demo_set_goods);
 	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
 	                     &EconomySim::demo_invest);
 	ClassDB::bind_method(D_METHOD("demo_build", "city_id", "building_id", "resource",
@@ -752,16 +754,26 @@ constexpr double kDemoTradeCapacityPerCapita = 0.001;
 
 } // namespace
 
-double EconomySim::demo_base_price(int product) {
-	switch (product) {
-		case 1:
-			return 70.0;
-		case 2:
-			return 80.0;
-		case 3:
-			return 60.0;
-		default:
-			return 40.0;
+double EconomySim::demo_base_price(int product) const {
+	if (product >= 0 && product < kDemoProducts) {
+		return demo_base_prices_[product];
+	}
+	return 40.0;
+}
+
+void EconomySim::demo_set_goods(const Array& goods) {
+	// Atualiza os preços-base a partir de dados externos (goods.json). Mantém o
+	// preço padrão para bens ausentes ou inválidos.
+	for (int index = 0; index < goods.size(); ++index) {
+		const Dictionary entry = goods[index];
+		const int product = demo_product_index(String(entry.get("id", "")));
+		if (product < 0) {
+			continue;
+		}
+		const double price = safe_nonneg(static_cast<double>(entry.get("base_price", 0.0)));
+		if (price > 0.0) {
+			demo_base_prices_[product] = price;
+		}
 	}
 }
 

@@ -34,6 +34,8 @@ const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 ## Construções do cenário (geradas de data/definitions/scenario/buildings.csv).
 const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
+## Bens (id, nome, preço-base) — data-driven, editáveis sem recompilar o C++.
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
 ## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Bandeiras por código ISO-2 (moddável: adicione assets/flags/<código>.png).
@@ -58,6 +60,7 @@ var _day_fraction := 0.0
 func _ready() -> void:
 	sim = EconomySim.new()
 	sim.initialize_demo_world(_load_cities(), _load_ports(), _load_buildings())
+	sim.demo_set_goods(_load_goods())
 	_load_nations()
 	_setup_ai()
 
@@ -111,6 +114,20 @@ func _load_buildings() -> Array:
 	file.close()
 	if typeof(data) != TYPE_ARRAY:
 		push_error("Economy: %s não é um array JSON" % BUILDINGS_PATH)
+		return []
+	return data
+
+
+## Lê os bens (id, nome, preço-base) para o núcleo C++.
+func _load_goods() -> Array:
+	var file := FileAccess.open(GOODS_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % GOODS_PATH)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_ARRAY:
+		push_error("Economy: %s não é um array JSON" % GOODS_PATH)
 		return []
 	return data
 

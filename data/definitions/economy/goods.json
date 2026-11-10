@@ -1,0 +1,26 @@
+[
+  {
+    "id": "wheat",
+    "name": "Trigo",
+    "base_price": 40.0,
+    "food": true
+  },
+  {
+    "id": "flour",
+    "name": "Farinha",
+    "base_price": 70.0,
+    "food": true
+  },
+  {
+    "id": "bread",
+    "name": "Pão",
+    "base_price": 80.0,
+    "food": true
+  },
+  {
+    "id": "iron",
+    "name": "Ferro",
+    "base_price": 60.0,
+    "food": false
+  }
+]
