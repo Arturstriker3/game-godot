@@ -37,6 +37,9 @@ const MAX_CONVOYS := 8
 # Pistas laterais (deslocamento perpendicular ao caminho, em unidades de mundo)
 # para comboios na mesma rota não entrarem um dentro do outro. Cicla por offset.
 const LANE_OFFSETS: Array[float] = [-1.0, -0.5, 0.0, 0.5, 1.0]
+# Raio de colisão por modo (unidades de mundo): dois veículos mais próximos que
+# a soma dos raios são empurrados um para longe do outro.
+const COLLISION_RADIUS_BY_MODE := {"truck": 0.16, "ship": 0.30, "plane": 0.16}
 
 # Os modelos foram feitos com a frente no eixo +X. O Godot usa -Z como frente
 # (é o eixo que look_at() aponta para o alvo), então giramos +90° em Y.
@@ -64,6 +67,7 @@ const NEIGHBORS: Array[Vector2i] = [
 
 var _active_convoys := 0
 var _lane := 0
+var _convoys: Array[Node3D] = []
 var _scale_cache := {}
 var _nav_image: Image
 var _path_cache := {}
@@ -146,6 +150,7 @@ func _spawn_order(order: Dictionary) -> void:
 	var convoy := Node3D.new()
 	add_child(convoy)
 	_active_convoys += 1
+	_convoys.append(convoy)
 	# Pista lateral deste comboio: evita que comboios na mesma rota se sobreponham.
 	convoy.set_meta("lane", LANE_OFFSETS[_lane % LANE_OFFSETS.size()])
 	_lane += 1
@@ -396,6 +401,7 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 		child.queue_free()
 
 	convoy.add_child(_instantiate_model(mode))
+	convoy.set_meta("collision_radius", COLLISION_RADIUS_BY_MODE.get(mode, 0.16))
 	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0) + _lane_offset(convoy, start, end)
 	_face_target(convoy, start, end)
 
@@ -403,8 +409,9 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 func _move_vehicle(weight: float, convoy: Node3D, start: Vector3, end: Vector3) -> void:
 	if not is_instance_valid(convoy):
 		return
-	convoy.position = start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0) \
+	var position := start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0) \
 		+ _lane_offset(convoy, start, end)
+	convoy.position = position + _separation(convoy, position)
 
 
 ## Deslocamento lateral (perpendicular à direção do trecho) da pista do comboio,
@@ -421,8 +428,31 @@ func _lane_offset(convoy: Node3D, start: Vector3, end: Vector3) -> Vector3:
 	return Vector3(-dir.z, 0.0, dir.x) * lane
 
 
+## Repulsão de colisão: empurra o comboio para longe dos vizinhos próximos,
+## impedindo que dois veículos entrem um dentro do outro.
+func _separation(convoy: Node3D, position: Vector3) -> Vector3:
+	var radius := float(convoy.get_meta("collision_radius", 0.16))
+	var push := Vector3.ZERO
+	for other in _convoys:
+		if other == convoy or not is_instance_valid(other):
+			continue
+		var other_radius := float(other.get_meta("collision_radius", 0.16))
+		var delta := position - other.position
+		delta.y = 0.0
+		var distance := delta.length()
+		var min_distance := radius + other_radius
+		if distance < min_distance:
+			if distance > 0.001:
+				push += delta.normalized() * (min_distance - distance)
+			else:
+				# Mesmo ponto: empurra para um lado arbitrário, estável.
+				push += Vector3(0.3, 0.0, 0.0)
+	return push
+
+
 func _finish_convoy(convoy: Node3D) -> void:
 	_active_convoys = maxi(0, _active_convoys - 1)
+	_convoys.erase(convoy)
 	if is_instance_valid(convoy):
 		convoy.queue_free()
 
