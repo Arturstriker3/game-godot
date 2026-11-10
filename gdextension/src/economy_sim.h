@@ -251,6 +251,7 @@ private:
 		double utilization = 0.0;
 		double output_scale = 1.0; // reduzido por prejuízos persistentes
 		int loss_days = 0;
+		bool bankrupt = false; // fechada por insolvência (prejuízo persistente)
 		double revenue = 0.0;
 		double input_value = 0.0;
 		double costs = 0.0;
@@ -524,6 +525,7 @@ private:
 	// para a camada visual (minimapa e comboios 3D).
 	std::vector<Port> demo_ports_;
 	std::vector<TradeOrder> demo_last_orders_;
+	int demo_bankruptcies_ = 0;
 	double demo_transport_cash_ = 0.0;
 	double demo_foreign_cash_ = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.

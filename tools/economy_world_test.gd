@@ -103,6 +103,8 @@ func _test_world() -> void:
 	var money_final := float(status["money_total"])
 	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [
 		money_initial, money_final, money_final - money_initial])
+	if int(status.get("bankruptcies", 0)) > 0:
+		_fail("fazendas do mundo real faliram (%d) — balanço quebrado" % int(status.get("bankruptcies", 0)))
 	print("[world] resumo final:")
 	for city in status["cities"]:
 		var pop: Dictionary = city["pop"]

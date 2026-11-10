@@ -693,6 +693,11 @@ constexpr double kDemoProductionBuffer = 1.10;
 constexpr int kDemoLossDaysBeforeCut = 10;
 constexpr double kDemoLossCut = 0.95;
 constexpr double kDemoMinOutputScale = 0.20;
+// Dias seguidos de prejuízo até a firma fechar a construção (falência). Depois
+// de kDemoLossDaysBeforeCut a produção já foi cortada ao piso; se o prejuízo
+// persistir até aqui, a firma encerra a atividade em vez de ficar no vermelho
+// para sempre.
+constexpr int kDemoLossDaysBeforeClose = 60;
 // Capital de giro: as empresas retêm caixa suficiente para importar e pagar
 // salários antes de distribuir lucros.
 constexpr double kDemoFirmCashPerCapita = 0.10;
@@ -757,10 +762,14 @@ double EconomySim::demo_base_price(int product) {
 
 void EconomySim::initialize_demo() {
 	demo_active_ = true;
+	demo_world_mode_ = false;
 	day_ = 0;
 	demo_cities_.clear();
 	demo_buildings_.clear();
 	demo_in_transit_.clear();
+	demo_ports_.clear();
+	demo_last_orders_.clear();
+	demo_bankruptcies_ = 0;
 	demo_transport_cash_ = 10000.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
@@ -893,6 +902,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_invariant_violations_.clear();
 	demo_ports_.clear();
 	demo_last_orders_.clear();
+	demo_bankruptcies_ = 0;
 	demo_transport_cash_ = 0.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
@@ -1238,6 +1248,18 @@ Dictionary EconomySim::tick_demo() {
 
 	++day_;
 	demo_last_orders_.clear();
+
+	// Encerra as construções falidas no início do tick: assim o PIB do dia já
+	// não as inclui e o status fica consistente (a falência foi marcada no tick
+	// anterior, no fim da fase 7).
+	for (auto it = demo_buildings_.begin(); it != demo_buildings_.end();) {
+		if (it->bankrupt) {
+			++demo_bankruptcies_;
+			it = demo_buildings_.erase(it);
+			continue;
+		}
+		++it;
+	}
 
 	// Preço de abertura do dia por cidade/produto. O limite de variação é
 	// aplicado UMA vez, no fim do tick: importação e reação de mercado não
@@ -1751,6 +1773,12 @@ Dictionary EconomySim::tick_demo() {
 			} else {
 				building.loss_days = 0;
 			}
+			// Falência: prejuízo persistente além do corte fecha a firma. A
+			// regra é explícita — a construção some (capacidade e empregos), em
+			// vez de ficar produzindo no piso no vermelho para sempre.
+			if (building.loss_days >= kDemoLossDaysBeforeClose) {
+				building.bankrupt = true;
+			}
 			if (building.loss_days >= kDemoLossDaysBeforeCut) {
 				building.output_scale = std::max(kDemoMinOutputScale,
 					building.output_scale * kDemoLossCut);
@@ -2081,6 +2109,7 @@ Dictionary EconomySim::get_demo_status() const {
 	result["transport_cash"] = demo_transport_cash_;
 	result["foreign_cash"] = demo_foreign_cash_;
 	result["construction_cash"] = demo_construction_cash_;
+	result["bankruptcies"] = demo_bankruptcies_;
 
 	Array products;
 	products.append("wheat");
