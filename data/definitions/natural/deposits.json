@@ -58937,6 +58937,150 @@
     "Krasnokamensk"
    ],
    "data_quality": "curated"
+  },
+  {
+   "id": "DEP-REE-000001",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "rare_earths",
+   "px": 4026.4,
+   "py": 669.4,
+   "lon": 109.9,
+   "lat": 41.8,
+   "quantity_kt": 48000.0,
+   "recoverable_kt": 31200.0,
+   "quality": 0.7,
+   "depth_m": 300,
+   "extraction_cost": 35.0,
+   "required_tech": 1,
+   "max_rate_kt_day": 3.4,
+   "discovery_difficulty": 0.15,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Bayan Obo"
+   ],
+   "data_quality": "curated"
+  },
+  {
+   "id": "DEP-REE-000002",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "rare_earths",
+   "px": 3916.7,
+   "py": 854.2,
+   "lon": 102.0,
+   "lat": 28.5,
+   "quantity_kt": 10000.0,
+   "recoverable_kt": 6500.0,
+   "quality": 0.68,
+   "depth_m": 250,
+   "extraction_cost": 34.6,
+   "required_tech": 1,
+   "max_rate_kt_day": 1.0,
+   "discovery_difficulty": 0.15,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Sichuan"
+   ],
+   "data_quality": "curated"
+  },
+  {
+   "id": "DEP-REE-000003",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "rare_earths",
+   "px": 4097.2,
+   "py": 895.8,
+   "lon": 115.0,
+   "lat": 25.5,
+   "quantity_kt": 5000.0,
+   "recoverable_kt": 3250.0,
+   "quality": 0.66,
+   "depth_m": 100,
+   "extraction_cost": 32.2,
+   "required_tech": 1,
+   "max_rate_kt_day": 1.0,
+   "discovery_difficulty": 0.15,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Jiangxi"
+   ],
+   "data_quality": "curated"
+  },
+  {
+   "id": "DEP-REE-000004",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "rare_earths",
+   "px": 895.8,
+   "py": 756.9,
+   "lon": -115.5,
+   "lat": 35.5,
+   "quantity_kt": 10000.0,
+   "recoverable_kt": 6500.0,
+   "quality": 0.72,
+   "depth_m": 250,
+   "extraction_cost": 33.4,
+   "required_tech": 1,
+   "max_rate_kt_day": 1.0,
+   "discovery_difficulty": 0.15,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Mountain Pass"
+   ],
+   "data_quality": "curated"
+  },
+  {
+   "id": "DEP-REE-000005",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "rare_earths",
+   "px": 4201.4,
+   "py": 1650.0,
+   "lon": 122.5,
+   "lat": -28.8,
+   "quantity_kt": 15000.0,
+   "recoverable_kt": 9750.0,
+   "quality": 0.69,
+   "depth_m": 200,
+   "extraction_cost": 33.3,
+   "required_tech": 1,
+   "max_rate_kt_day": 1.1,
+   "discovery_difficulty": 0.15,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Mount Weld"
+   ],
+   "data_quality": "curated"
+  },
+  {
+   "id": "DEP-REE-000006",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "rare_earths",
+   "px": 4347.2,
+   "py": 1559.7,
+   "lon": 133.0,
+   "lat": -22.3,
+   "quantity_kt": 2000.0,
+   "recoverable_kt": 1300.0,
+   "quality": 0.65,
+   "depth_m": 150,
+   "extraction_cost": 33.5,
+   "required_tech": 1,
+   "max_rate_kt_day": 1.0,
+   "discovery_difficulty": 0.15,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Nolans Bore"
+   ],
+   "data_quality": "curated"
   }
  ]
 }

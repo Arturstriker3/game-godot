@@ -43,15 +43,12 @@ func _run() -> void:
 		var renewable_index: int = mineral_count
 		var info: Dictionary = layer.deposit_info(renewable_index)
 		_check(String(info.get("kind", "")) == "wheat", "kind = wheat")
-		_check(not String(info.get("dominant", "")).is_empty(), "dominante presente")
-		var resources: Array = info.get("resources", [])
-		_check(resources.size() > 0, "mix de recursos não vazio")
-		for entry in resources:
-			var suitability := float(entry.get("suitability", -1.0))
-			_check(suitability >= 0.0 and suitability <= 1.0,
-					"aptidão %s em 0..1 (%.3f)" % [String(entry.get("resource", "")), suitability])
+		_check(not String(info.get("resource", "")).is_empty(), "recurso presente")
+		var suitability := float(info.get("suitability", -1.0))
 		var fertility := float(info.get("fertility", -1.0))
 		var cultivable := float(info.get("cultivable", -1.0))
+		_check(suitability >= 0.0 and suitability <= 1.0,
+				"aptidão em 0..1 (%.3f)" % suitability)
 		_check(fertility >= 0.0 and fertility <= 1.0,
 				"fertilidade em 0..1 (%.3f)" % fertility)
 		_check(cultivable >= 0.0 and cultivable <= 1.0,

@@ -665,7 +665,7 @@ func show_deposit_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	# Agregado por território: título = nome da região; lista o mix de recursos.
+	# Um recurso por marcador (os iguais já fundidos na geração).
 	_legend_header("", _territory_display_name(info), "", null, "back")
 
 	var body := _legend_paper_sheet()
@@ -674,19 +674,18 @@ func show_deposit_info(info: Dictionary) -> void:
 	body.add_child(body_box)
 	_legend_box.add_child(body)
 
-	var resources: Array = info.get("resources", [])
-	if not resources.is_empty():
-		var situation := String(resources[0].get("situation", "moderate"))
-		body_box.add_child(_legend_row(Color.TRANSPARENT,
-				I18n.t("map.legend.situation"),
-				I18n.t("map.legend.situation." + situation)))
-	for entry in resources:
-		var resource := String(entry.get("resource", ""))
-		var count := int(entry.get("count", 0))
-		var reserve := float(entry.get("reserve_kt", 0.0))
-		body_box.add_child(_legend_row(_resource_color(resource),
-				I18n.t("resource." + resource),
-				"×%d  %s" % [count, _format_mt(reserve)]))
+	var resource := String(info.get("resource", ""))
+	var reserve := float(info.get("reserve_kt", 0.0))
+	body_box.add_child(_legend_row(_resource_color(resource),
+			I18n.t("resource." + resource), _format_mt(reserve)))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.situation"),
+			I18n.t("map.legend.situation." + String(info.get("situation", "moderate")))))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.quality"),
+			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0))))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0))))
 
 	_legend_hint = _legend_footer(I18n.t("map.legend.deposit_hint"))
 	body_box.add_child(_legend_hint)
@@ -709,13 +708,10 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	body.add_child(body_box)
 	_legend_box.add_child(body)
 
-	var resources: Array = info.get("resources", [])
-	for entry in resources:
-		var resource := String(entry.get("resource", ""))
-		var suitability := float(entry.get("suitability", 0.0))
-		body_box.add_child(_legend_row(_resource_color(resource),
-				I18n.t("resource." + resource),
-				"%d%%" % int(round(suitability * 100.0))))
+	var resource := String(info.get("resource", "wheat"))
+	var suitability := float(info.get("suitability", 0.0))
+	body_box.add_child(_legend_row(_resource_color(resource),
+			I18n.t("resource." + resource), "%d%%" % int(round(suitability * 100.0))))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.fertility"),
 			"%d%%" % int(round(float(info.get("fertility", 0.0)) * 100.0)),

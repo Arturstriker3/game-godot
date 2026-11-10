@@ -27,6 +27,21 @@ PLACES = os.path.join(ROOT, "assets", "icons", "places")
 MINERALS = ["coal", "copper", "gas", "iron", "oil",
             "bauxite", "lead", "gold", "phosphate", "tungsten",
             "rare_earths", "sulfur", "diamond", "uranium"]
+
+## Deslocamento (px de mapa) por recurso, para não colar marcadores de recursos
+## diferentes que compartilham o mesmo centróide de território.
+MINERAL_OFFSET = {
+    "coal": (0.0, 0.0), "copper": (12.0, 0.0), "gas": (-12.0, 0.0), "iron": (0.0, 12.0),
+    "oil": (0.0, -12.0), "bauxite": (12.0, 12.0), "lead": (-12.0, 12.0),
+    "gold": (12.0, -12.0), "phosphate": (-12.0, -12.0), "tungsten": (24.0, 0.0),
+    "rare_earths": (-24.0, 0.0), "sulfur": (0.0, 24.0), "diamond": (0.0, -24.0),
+    "uranium": (24.0, 24.0),
+}
+RENEWABLE_OFFSET = {
+    "wheat": (12.0, 12.0), "rice": (-12.0, 12.0), "maize": (12.0, -12.0),
+    "potato": (-12.0, -12.0), "soy": (24.0, 0.0), "cotton": (-24.0, 0.0),
+    "wood": (0.0, 24.0),
+}
 ## Códigos de status no resource_points.json (legenda do depósito).
 STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 3, "Plant": 3}
 WHEAT_MIN = 0.40
@@ -181,9 +196,10 @@ def build_points() -> None:
     deposits = read_json("deposits.json")["deposits"]
     nature = read_json("nature.json")["territories"]
 
-    # Agrega por território: 1 bolinha por território, cor do recurso dominante.
-    # O mix completo (por recurso) vai em `territory_mixes` para a ficha.
-    territories = {}
+    # Agrupa depósitos por (território, recurso): 1 marcador por recurso —
+    # os MESMOS recursos se fundem (a mina rende por todas), recursos diferentes
+    # ficam separados com um pequeno deslocamento.
+    groups = {}
     skipped_facility = 0
     skipped_noterritory = 0
     for dep in deposits:
@@ -208,8 +224,8 @@ def build_points() -> None:
                 skipped_noterritory += 1
                 continue
         quantity = float(dep.get("quantity_kt", 0.0))
-        res_map = territories.setdefault(terr, {})
-        entry = res_map.setdefault(resource, {
+        key = (terr, resource)
+        entry = groups.setdefault(key, {
             "count": 0, "reserve": 0.0, "quality_w": 0.0,
             "depth_w": 0.0, "statuses": []})
         entry["count"] += 1
@@ -219,8 +235,7 @@ def build_points() -> None:
         entry["statuses"].append(str(dep.get("status", "Unknown")))
 
     minerals = []
-    territory_mixes = {}
-    for terr, res_map in territories.items():
+    for (terr, resource), entry in sorted(groups.items()):
         centroid = nature[terr].get("centroid_px", [])
         if len(centroid) < 2:
             continue
@@ -230,40 +245,26 @@ def build_points() -> None:
             if landed is None:
                 continue
             px, py = landed
-
-        mix = {}
-        for resource, entry in res_map.items():
-            if entry["reserve"] <= 0.0:
-                continue
-            mix[resource] = {
-                "count": entry["count"],
-                "reserve_kt": round(entry["reserve"], 1),
-                "quality": round(entry["quality_w"] / entry["reserve"], 3),
-                "depth_m": round(entry["depth_w"] / entry["reserve"]),
-                "status": max(set(entry["statuses"]), key=entry["statuses"].count),
-            }
-        dominant = max(mix, key=lambda resource: mix[resource]["reserve_kt"])
-        dom = mix[dominant]
-        territory_mixes[terr] = {"resources": mix, "dominant": dominant}
+        ox, oy = MINERAL_OFFSET.get(resource, (0.0, 0.0))
+        status = max(set(entry["statuses"]), key=entry["statuses"].count)
         minerals.append([
-            round(px, 1),
-            round(py, 1),
-            MINERALS.index(dominant),
-            dom["reserve_kt"],
-            dom["quality"],
-            dom["depth_m"],
-            STATUS_CODES.get(dom["status"], 4),
+            round(px + ox, 1),
+            round(py + oy, 1),
+            MINERALS.index(resource),
+            round(entry["reserve"], 1),
+            round(entry["quality_w"] / entry["reserve"], 3),
+            round(entry["depth_w"] / entry["reserve"]),
+            STATUS_CODES.get(status, 4),
             terr,
-            0,
+            entry["count"],
             0,
         ])
 
     agriculture = read_json("agriculture.json")["territories"]
-    # Renováveis (culturas + madeira), agregadas por território: 1 marcador por
-    # território (recurso dominante), com o mix completo em `renewable_mixes`.
+    # Renováveis (culturas + madeira): 1 marcador por recurso por território,
+    # com deslocamento para não colar.
     renewable_keys = ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
     renewables = []
-    renewable_mixes = {}
     for territory, crops in agriculture.items():
         centroid = nature.get(territory, {}).get("centroid_px", [])
         if len(centroid) < 2:
@@ -275,7 +276,6 @@ def build_points() -> None:
             if landed is None:
                 continue
             px, py = landed
-        mix = {}
         for crop in renewable_keys:
             if crop == "wood":
                 value = float(nature.get(territory, {}).get("forest_cover", 0.0))
@@ -284,25 +284,20 @@ def build_points() -> None:
             threshold = FOREST_MIN if crop == "wood" else WHEAT_MIN
             if value < threshold:
                 continue
-            mix[crop] = round(value, 2)
-        if not mix:
-            continue
-        dominant = max(mix, key=mix.get)
-        renewable_mixes[territory] = {"resources": mix, "dominant": dominant}
-        renewables.append([
-            round(px, 1),
-            round(py, 1),
-            renewable_keys.index(dominant),
-            mix[dominant],
-            territory,
-        ])
+            ox, oy = RENEWABLE_OFFSET.get(crop, (0.0, 0.0))
+            renewables.append([
+                round(px + ox, 1),
+                round(py + oy, 1),
+                renewable_keys.index(crop),
+                round(value, 2),
+                territory,
+            ])
 
     out = os.path.join(ROOT, "map", "map_data", "atlas", "resource_points.json")
     with open(out, "w", encoding="utf-8") as handle:
-        json.dump({"minerals": minerals, "territory_mixes": territory_mixes,
-                   "renewables": renewables, "renewable_mixes": renewable_mixes},
+        json.dump({"minerals": minerals, "renewables": renewables},
                   handle, separators=(",", ":"))
-    print("resource_points.json", len(minerals), "territórios minerais",
+    print("resource_points.json", len(minerals), "marcadores minerais",
           "| renováveis", len(renewables),
           "| facilities:", skipped_facility, "| sem território:", skipped_noterritory)
 

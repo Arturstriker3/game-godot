@@ -76,8 +76,6 @@ var _hover_diameter := 0.0
 var _selection_diameter := 0.0
 var _mineral_points: Array = []
 var _renewable_points: Array = []
-var _renewable_mixes: Dictionary = {}
-var _territory_mixes: Dictionary = {}
 var _geo: RefCounted
 ## Filtros da legenda: {} = todos; senão chave -> bool.
 var _resource_filter: Dictionary = {}
@@ -207,9 +205,7 @@ func _build_resource_markers() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	_mineral_points = data.get("minerals", [])
-	_territory_mixes = data.get("territory_mixes", {})
 	_renewable_points = data.get("renewables", [])
-	_renewable_mixes = data.get("renewable_mixes", {})
 
 	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT)
 	_renewable_mesh = _make_marker_layer("ResourceRenewables", RESOURCE_WHEAT)
@@ -467,15 +463,15 @@ func mineral_points() -> Array:
 
 ## Nível de esgotamento inicial, semeado pelo status MRDS. Sem prospecção:
 ## todo depósito é mina conhecida; "escassa" é alcançada dinamicamente na
-## extração (entre moderada e residual).
-func _situation_from_status(status: String) -> String:
-	match status:
-		"Occurrence", "Prospect":
-			return "intact"
-		"Producer":
+## extração (entre moderada e residual). `code` é o STATUS_CODES do ponto.
+func _situation_from_code(code: int) -> String:
+	match code:
+		0:  # Producer
 			return "abundant"
-		"Past Producer":
+		1:  # Past Producer
 			return "residual"
+		2, 3:  # Prospect / Occurrence
+			return "intact"
 		_:
 			return "moderate"
 
@@ -484,63 +480,43 @@ func deposit_info(index: int) -> Dictionary:
 	if index < 0 or index >= _total_pickable():
 		return {}
 	if _pick_is_wheat(index):
-		# Renovável agregado por território: mix de culturas + madeira (aptidões),
-		# com fertilidade/cultivável do território. Sem reserva — fluxo anual.
+		# Renovável (cultura ou madeira): aptidão + fertilidade/cultivável do
+		# território. Sem reserva — fluxo anual.
 		var point: Array = _pick_point(index)
 		var pos := Vector2(float(point[0]), float(point[1]))
 		var territory := String(point[4]) if point.size() > 4 else ""
 		var attrs: Dictionary = _geo.territory_attributes(pos) if _geo != null else {}
-		var mix: Dictionary = _renewable_mixes.get(territory, {})
-		var mix_resources: Dictionary = mix.get("resources", {})
-		var resources: Array = []
-		for crop in mix_resources:
-			resources.append({
-				"resource": String(crop),
-				"suitability": float(mix_resources[crop]),
-			})
-		resources.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			return float(a.get("suitability", 0.0)) > float(b.get("suitability", 0.0)))
 		return {
 			"kind": "wheat",
+			"resource": String(CROP_KEYS[clampi(int(point[2]), 0, CROP_KEYS.size() - 1)]),
+			"suitability": float(point[3]) if point.size() > 3 else 0.0,
+			"fertility": float(attrs.get("fertility", 0.0)),
+			"cultivable": float(attrs.get("cultivable", 0.0)),
 			"territory": territory,
-			"dominant": String(mix.get("dominant", "")),
 			"name_pt": String(attrs.get("name_pt", "")),
 			"name_en": String(attrs.get("name_en", "")),
 			"name_es": String(attrs.get("name_es", "")),
-			"fertility": float(attrs.get("fertility", 0.0)),
-			"cultivable": float(attrs.get("cultivable", 0.0)),
 			"climate": String(attrs.get("climate", "")),
 			"soil_type": String(attrs.get("soil_type", "")),
 			"relief": String(attrs.get("relief", "")),
-			"resources": resources,
 		}
 	var point: Array = _mineral_points[index]
 	var territory := String(point[7]) if point.size() > 7 else ""
-	var mix: Dictionary = _territory_mixes.get(territory, {})
-	var mix_resources: Dictionary = mix.get("resources", {})
-	var resources: Array = []
-	for key in mix_resources:
-		var entry: Dictionary = mix_resources[key]
-		resources.append({
-			"resource": String(key),
-			"count": int(entry.get("count", 0)),
-			"reserve_kt": float(entry.get("reserve_kt", 0.0)),
-			"quality": float(entry.get("quality", 0.0)),
-			"depth_m": int(entry.get("depth_m", 0)),
-			"status": String(entry.get("status", "")),
-			"situation": _situation_from_status(String(entry.get("status", ""))),
-		})
-	resources.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return float(a.get("reserve_kt", 0.0)) > float(b.get("reserve_kt", 0.0)))
+	var resource := String(MINERAL_KEYS[clampi(int(point[2]), 0, MINERAL_KEYS.size() - 1)])
 	var names: Dictionary = _geo.territory_name(territory) if _geo != null else {}
 	return {
 		"kind": "mineral",
+		"resource": resource,
+		"count": int(point[8]) if point.size() > 8 else 1,
+		"reserve_kt": float(point[3]) if point.size() > 3 else 0.0,
+		"quality": float(point[4]) if point.size() > 4 else 0.0,
+		"depth_m": int(point[5]) if point.size() > 5 else 0,
+		"status": int(point[6]) if point.size() > 6 else 4,
+		"situation": _situation_from_code(int(point[6]) if point.size() > 6 else 4),
 		"territory": territory,
-		"dominant": String(mix.get("dominant", "")),
 		"name_pt": String(names.get("name_pt", "")),
 		"name_en": String(names.get("name_en", "")),
 		"name_es": String(names.get("name_es", "")),
-		"resources": resources,
 	}
 
 
