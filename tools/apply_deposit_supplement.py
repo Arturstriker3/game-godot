@@ -102,7 +102,9 @@ def main():
         record["recoverable_kt"] = round(float(template["recoverable_kt"]) * ratio, 1)
         record["quality"] = float(field["quality"])
         record["depth_m"] = int(field["depth_m"])
-        record["max_rate_kt_day"] = round(float(template["max_rate_kt_day"]) * ratio, 1)
+        # Taxa pela fórmula (reserva recuperável / 25 anos), não pela razão do
+        # template — senão diamante (template com taxa no piso 1,0) fica inflado.
+        record["max_rate_kt_day"] = max(1.0, round(record["recoverable_kt"] / (25.0 * 365.0), 1))
         record["status"] = field.get("status", "Producer")
         record["names"] = [name]
         record["sites"] = 1
