@@ -38,11 +38,16 @@ const MAX_SEGMENT_SECONDS := 45.0
 const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 1.0, "plane": 3.0}
 const MAX_CONVOYS := 8
 # Escalonamento da partida (segundos de tween): comboios que nascem no mesmo
-# tick saem em instantes diferentes, para não andarem colados um no outro. É
-# melhor que empurrar o veículo para o lado — o veículo fica sempre no caminho
-# (não é jogado para a água/terra) e não há "salto" ao encostar.
-const DEPART_STAGGER := 0.7
-const DEPART_STAGGER_STEPS := 6
+# tick saem em instantes diferentes e próximos, formando uma linha (cara de
+# comboio). Quando as rotas divergem, cada um segue para o seu destino.
+const DEPART_STAGGER := 0.4
+const DEPART_STAGGER_STEPS := 8
+# Colisão bem pequena (largura de encosto) e suavizada: só separa quando dois
+# veículos praticamente se tocam, sem "salto". O empurrão é descartado se for
+# tirar o veículo do terreno correto (nunca joga caminhão na água nem navio na
+# terra).
+const COLLISION_RADIUS_BY_MODE := {"truck": 0.05, "ship": 0.09, "plane": 0.05}
+const SEPARATION_SMOOTHING := 0.15
 
 # Os modelos foram feitos com a frente no eixo +X. O Godot usa -Z como frente
 # (é o eixo que look_at() aponta para o alvo), então giramos +90° em Y.
@@ -70,6 +75,7 @@ const NEIGHBORS: Array[Vector2i] = [
 
 var _active_convoys := 0
 var _depart_slot := 0
+var _convoys: Array[Node3D] = []
 var _scale_cache := {}
 var _nav_image: Image
 var _path_cache := {}
@@ -152,6 +158,7 @@ func _spawn_order(order: Dictionary) -> void:
 	var convoy := Node3D.new()
 	add_child(convoy)
 	_active_convoys += 1
+	_convoys.append(convoy)
 	# Bandeira da nação que vai RECEBER o produto, acima do veículo.
 	_add_flag(convoy, String(order.get("to_nation", "")))
 
@@ -434,6 +441,8 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 	var model := _instantiate_model(mode)
 	model.name = "Model"
 	convoy.add_child(model)
+	convoy.set_meta("mode", mode)
+	convoy.set_meta("collision_radius", COLLISION_RADIUS_BY_MODE.get(mode, 0.05))
 	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0)
 	_face_target(convoy, start, end)
 
@@ -441,13 +450,46 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 func _move_vehicle(weight: float, convoy: Node3D, start: Vector3, end: Vector3) -> void:
 	if not is_instance_valid(convoy):
 		return
-	# O veículo fica sempre no caminho (não é empurrado para o lado), então
-	# nunca é jogado para a água/terra nem "salta" ao encostar em outro.
-	convoy.position = start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0)
+	var base := start.lerp(end, weight) + Vector3(0.0, HEIGHT_OFFSET, 0.0)
+	# Separação suavizada e minúscula: mantém a linha sem "salto"; e só é
+	# aplicada se o veículo continuar no terreno correto.
+	var mode := String(convoy.get_meta("mode", "truck"))
+	var target := _separation(convoy, base, mode)
+	var current: Vector3 = convoy.get_meta("separation", Vector3.ZERO)
+	convoy.set_meta("separation", current.lerp(target, SEPARATION_SMOOTHING))
+	convoy.position = base + (convoy.get_meta("separation") as Vector3)
+
+
+## Empurrão minúsculo para separar veículos que praticamente se tocam. Se o
+## empurrão levaria o veículo para o terreno errado (caminhão -> água, navio ->
+## terra), ele é descartado.
+func _separation(convoy: Node3D, base: Vector3, mode: String) -> Vector3:
+	var radius := float(convoy.get_meta("collision_radius", 0.05))
+	var push := Vector3.ZERO
+	for other in _convoys:
+		if other == convoy or not is_instance_valid(other):
+			continue
+		var other_radius := float(other.get_meta("collision_radius", radius))
+		var delta := base - other.position
+		delta.y = 0.0
+		var distance := delta.length()
+		var min_distance := radius + other_radius
+		if distance < min_distance:
+			if distance > 0.001:
+				push += delta.normalized() * (min_distance - distance)
+			else:
+				push += Vector3(0.2, 0.0, 0.0)
+	if push.length_squared() < 1e-8:
+		return Vector3.ZERO
+	var pushed_cell := _to_cell(_world_to_pixel(base + push))
+	if not _is_walkable(pushed_cell, mode):
+		return Vector3.ZERO
+	return push
 
 
 func _finish_convoy(convoy: Node3D) -> void:
 	_active_convoys = maxi(0, _active_convoys - 1)
+	_convoys.erase(convoy)
 	if is_instance_valid(convoy):
 		convoy.queue_free()
 
@@ -512,4 +554,12 @@ static func _pixel_to_world(point: Vector2) -> Vector3:
 		(point.x - IMAGE_HALF_SIZE.x) * PIXEL_TO_WORLD,
 		0.0,
 		(point.y - IMAGE_HALF_SIZE.y) * PIXEL_TO_WORLD,
+	)
+
+
+## Inverso de _pixel_to_world (mundo -> pixel do mapa), para checar o terreno.
+static func _world_to_pixel(position: Vector3) -> Vector2:
+	return Vector2(
+		position.x / PIXEL_TO_WORLD + IMAGE_HALF_SIZE.x,
+		position.z / PIXEL_TO_WORLD + IMAGE_HALF_SIZE.y,
 	)
