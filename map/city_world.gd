@@ -61,7 +61,9 @@ const PORT_ICON_MERGE_DISTANCE := 0.5
 
 ## Raio de captação de recursos (só no modo recursos): o anel no chão mostra
 ## até onde a cidade alcança; o detalhe fica na legenda ao clicar na cidade.
-const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
+const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil",
+		"bauxite", "lead", "gold", "phosphate", "tungsten",
+		"rare_earths", "sulfur", "diamond"]
 const WHEAT_STRIP_MIN := 0.40
 
 const MARKER_COLOR := Color("#0A1212")

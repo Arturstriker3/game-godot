@@ -24,7 +24,9 @@ ICONS = os.path.join(ROOT, "tools", "mode_icons")
 NATURAL = os.path.join(ROOT, "data", "definitions", "natural")
 PLACES = os.path.join(ROOT, "assets", "icons", "places")
 
-MINERALS = ["coal", "copper", "gas", "iron", "oil"]
+MINERALS = ["coal", "copper", "gas", "iron", "oil",
+            "bauxite", "lead", "gold", "phosphate", "tungsten",
+            "rare_earths", "sulfur", "diamond"]
 ## Códigos de status no resource_points.json (legenda do depósito).
 STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 3, "Plant": 3}
 WHEAT_MIN = 0.40

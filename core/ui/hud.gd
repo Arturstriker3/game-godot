@@ -22,6 +22,10 @@ signal map_mode_requested(mode: String)
 signal resource_filter_changed(enabled: Dictionary)
 ## Clique no minimapa: ponto do mapa em UV (0..1).
 signal map_point_requested(map_uv: Vector2)
+## Pedido de limpeza de TODA a seleção ativa no mapa (anel de depósito/trigo,
+## cidade/porto e realce de território) ao voltar para a lista. Tratado em
+## main_game.gd — o HUD não conhece o mapa.
+signal legend_reset_requested
 
 const PLAYER_NATION := "GBR"
 
@@ -71,18 +75,53 @@ const METRIC_ICONS := {
 }
 ## Sino de notificações (branco, tingível) — o badge numérico é desenhado por cima.
 const BELL_TEXTURE: Texture2D = preload("res://assets/icons/bell.svg")
+## Caixa com check (✓) do botão "Todos" — branca, tingível (tinta).
+const CHECK_ALL_TEXTURE: Texture2D = preload("res://assets/icons/check_all.svg")
 ## Legenda do mapa de recursos; as cores são as mesmas de
 ## tools/build_resource_map.py (map/map_data/atlas/resource_points.json).
-const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil"]
+const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil",
+		"bauxite", "lead", "gold", "phosphate", "tungsten",
+		"rare_earths", "sulfur", "diamond"]
 const RESOURCE_LEGEND := [
 	{"key": "coal", "color": Color("#3E3B38")},
 	{"key": "copper", "color": Color("#C06A3C")},
 	{"key": "gas", "color": Color("#4E9FB0")},
 	{"key": "iron", "color": Color("#7C8894")},
 	{"key": "oil", "color": Color("#5B4A2E")},
+	{"key": "bauxite", "color": Color("#B5553A")},
+	{"key": "lead", "color": Color("#6E7B8B")},
+	{"key": "gold", "color": Color("#D4A017")},
+	{"key": "phosphate", "color": Color("#C7B8E6")},
+	{"key": "tungsten", "color": Color("#33526B")},
+	{"key": "rare_earths", "color": Color("#3FA57C")},
+	{"key": "sulfur", "color": Color("#F0E14A")},
+	{"key": "diamond", "color": Color("#A8D5E2")},
 	{"key": "wheat", "color": Color("#D9B45A")},
 ]
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
+
+## Dimensões da "Etiqueta de inventário" (legenda do mapa de recursos).
+const LEGEND_WIDTH := 236.0
+## Largura máxima da etiqueta quando o título precisa crescer para caber em uma
+## linha (título + botão "Todos"/"Voltar"); acima disso, reduz-se a fonte.
+const LEGEND_MAX_WIDTH := 270.0
+const LEGEND_MIN_HEIGHT := 120.0
+const LEGEND_LEFT_PAD := 22.0
+const LEGEND_TOP_PAD := 10.0
+const LEGEND_RIGHT_PAD := 12.0
+const LEGEND_BOTTOM_PAD := 12.0
+## Estágios do depósito no ciclo de vida (do mais inicial ao produtor), com base
+## nos códigos reais de `resource_points.json` (ver tools/build_resource_map.py
+## STATUS_CODES: Occurrence=3, Prospect=2, Producer=0, Past Producer=1,
+## Unknown=4). A barra segmentada tem M=3 segmentos; "Exaurido" e "Desconhecido"
+## são estados terminais fora do ciclo e são tratados à parte.
+const DEPOSIT_STAGE_COUNT := 3
+## Sufixos de tipo no nome do depósito (dados USGS MRDS), traduzidos via i18n.
+const DEPOSIT_TYPE_SUFFIXES := [
+	["underground", "map.legend.type.underground"],
+	["surface", "map.legend.type.surface"],
+	["offshore", "map.legend.type.offshore"],
+]
 
 var _summary: Dictionary = {}
 var _order_log: Array = []
@@ -105,12 +144,18 @@ var _window_hint: Label
 var _back_button: Button
 var _city_screen: VBoxContainer
 var _alerts_button: Button
-var _legend: PanelContainer
+var _legend: Control
 var _legend_box: VBoxContainer
 var _legend_title: Label
-var _legend_hint: Label
+var _legend_subtitle: Label
+var _legend_hint: Control
 var _legend_all: Button
+var _legend_back: Button
+var _legend_flag: TextureRect
 var _legend_labels := {}
+var _legend_state := "filters"
+var _legend_data: Dictionary = {}
+var _legend_city_entries: Array = []
 var _resource_enabled := {}
 var _resource_counts := {}
 var _resource_checks := {}
@@ -260,51 +305,105 @@ func _refresh_mode_bar() -> void:
 		_legend.visible = _mode == "resources"
 
 
-## Legenda/filtro do mapa de recursos (canto inferior esquerdo). Cada linha é
-## uma caixa de seleção; o mapa e a faixa das cidades reagem na hora.
+## Legenda/filtro do mapa de recursos (canto inferior esquerdo) — "Etiqueta de
+## inventário": papel manila com canto chanfrado e furo à esquerda, cabeçalho
+## datilografado e corpo de papel claro colado. Os quatro estados (filtros,
+## cidade, área agrícola e depósito) reutilizam o mesmo nó.
 func _build_legend() -> void:
-	_legend = PanelContainer.new()
-	_legend.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	var padding := 10.0
+	_legend = LegendLabel.new()
+	_legend.anchor_left = 0.0
+	_legend.anchor_top = 1.0
+	_legend.anchor_right = 0.0
+	_legend.anchor_bottom = 1.0
 	_legend.offset_left = UiKit.SPACE_LG
-	_legend.offset_right = UiKit.SPACE_LG + 214.0
+	_legend.offset_right = UiKit.SPACE_LG + LEGEND_WIDTH
 	_legend.offset_bottom = -UiKit.SPACE_LG
-	_legend.offset_top = _legend.offset_bottom - 248.0
-	var style := UiKit.surface(Color(0.055, 0.09, 0.085, 0.94), padding)
-	style.border_color = UiKit.EDGE
-	style.set_border_width_all(1)
-	_legend.add_theme_stylebox_override("panel", style)
+	_legend.offset_top = _legend.offset_bottom
 	_legend.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.add_child(_legend)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", int(LEGEND_LEFT_PAD))
+	margin.add_theme_constant_override("margin_top", int(LEGEND_TOP_PAD))
+	margin.add_theme_constant_override("margin_right", int(LEGEND_RIGHT_PAD))
+	margin.add_theme_constant_override("margin_bottom", int(LEGEND_BOTTOM_PAD))
+	_legend.add_child(margin)
 
 	_legend_box = VBoxContainer.new()
-	_legend_box.add_theme_constant_override("separation", 3)
-	_legend.add_child(_legend_box)
+	_legend_box.add_theme_constant_override("separation", 7)
+	margin.add_child(_legend_box)
+
 	_render_legend_filters()
 	_legend.visible = _mode == "resources"
-	_root.add_child(_legend)
+
+
+## Ajusta a largura e a altura da etiqueta ao conteúdo (cresce para a direita e
+## para cima; ancorada embaixo à esquerda).
+func _fit_legend() -> void:
+	if _legend == null:
+		return
+	_fit_legend_width()
+	var min_size := _legend.get_combined_minimum_size()
+	_legend.offset_top = _legend.offset_bottom - maxf(min_size.y, LEGEND_MIN_HEIGHT)
+
+
+## Ajusta a largura da etiqueta para que o título caiba inteiro em uma linha,
+## junto do botão (Todos/Voltar), crescendo até LEGEND_MAX_WIDTH. Se ainda não
+## couber, reduz a fonte do título em até 2 px. O título nunca quebra em linha.
+func _fit_legend_width() -> void:
+	if _legend == null or _legend_title == null:
+		return
+
+	var reduced := 0
+	while true:
+		var content := _legend_title_width()
+		content += LEGEND_LEFT_PAD + LEGEND_RIGHT_PAD
+		content += _legend_action_width()
+		if _legend_flag != null:
+			content += _legend_flag.custom_minimum_size.x + UiKit.SPACE_SM
+		if content <= LEGEND_MAX_WIDTH or reduced >= 2:
+			_legend.offset_right = UiKit.SPACE_LG \
+					+ clampf(content, LEGEND_WIDTH, LEGEND_MAX_WIDTH)
+			return
+		_shrink_legend_title()
+		reduced += 1
+
+
+## Largura do botão de ação do cabeçalho (Todos/Voltar) + separação da linha.
+## O botão agora divide a linha do título, então entra no cálculo de largura.
+func _legend_action_width() -> float:
+	var button: Control = _legend_back if _legend_back != null else _legend_all
+	if button == null:
+		return 0.0
+	return button.get_combined_minimum_size().x + UiKit.SPACE_SM
+
+
+## Largura natural do texto do título na fonte de exibição atual.
+func _legend_title_width() -> float:
+	var fs := int(_legend_title.get_theme_font_size("font_size"))
+	return UiKit.PAPER_DISPLAY_FONT.get_string_size(
+			_legend_title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+
+
+## Reduz a fonte do título em 1 px (piso de 11 px para nunca sumir).
+func _shrink_legend_title() -> void:
+	var fs := int(_legend_title.get_theme_font_size("font_size"))
+	_legend_title.add_theme_font_size_override("font_size", maxi(fs - 1, 11))
 
 
 ## Conteúdo padrão da legenda: filtros por recurso + contagem + "Todos".
 func _render_legend_filters() -> void:
 	if _legend_box == null:
 		return
+	_legend_state = "filters"
 	_clear_legend_content()
 
-	var header := HBoxContainer.new()
-	_legend_box.add_child(header)
-	_legend_title = UiKit.caption(I18n.t("map.legend.title"))
-	_legend_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(_legend_title)
-	_legend_all = Button.new()
-	_legend_all.text = I18n.t("map.legend.all")
-	_legend_all.flat = true
-	_legend_all.focus_mode = Control.FOCUS_NONE
-	_legend_all.tooltip_text = I18n.t("map.legend.all")
-	_legend_all.add_theme_font_size_override("font_size", 12)
-	_legend_all.add_theme_color_override("font_color", UiKit.BRASS)
-	_legend_all.add_theme_color_override("font_hover_color", UiKit.TEXT)
-	_legend_all.pressed.connect(_select_all_resources)
-	header.add_child(_legend_all)
+	_legend_header("", I18n.t("map.legend.kind.resources"), "", null, "all")
+	var body := _legend_paper_sheet()
+	var body_box := VBoxContainer.new()
+	body_box.add_theme_constant_override("separation", 2)
+	body.add_child(body_box)
+	_legend_box.add_child(body)
 
 	if _resource_counts.is_empty():
 		_resource_counts = _resource_counts_from_file()
@@ -314,26 +413,28 @@ func _render_legend_filters() -> void:
 	for entry in RESOURCE_LEGEND:
 		var key := String(entry["key"])
 		var row := _make_resource_row(key, entry["color"])
-		_legend_box.add_child(row)
+		body_box.add_child(row)
 		_resource_rows[key] = row
 
-	_legend_hint = UiKit.caption(I18n.t("map.legend.hint"))
-	_legend_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_legend_hint.custom_minimum_size = Vector2(190.0, 0.0)
-	_legend_box.add_child(_legend_hint)
+	_legend_hint = _legend_footer(I18n.t("map.legend.hint"))
+	body_box.add_child(_legend_hint)
 
 	_refresh_resource_rows()
+	_fit_legend()
 
 
-## Limpa o conteúdo da legenda e zera as referências dos widgets.
+## Limpa o conteúdo da etiqueta e zera as referências dos widgets.
 func _clear_legend_content() -> void:
 	UiKit.clear(_legend_box)
 	_legend_labels.clear()
 	_resource_checks.clear()
 	_resource_rows.clear()
 	_legend_title = null
+	_legend_subtitle = null
 	_legend_hint = null
 	_legend_all = null
+	_legend_back = null
+	_legend_flag = null
 
 
 ## Restaura a legenda geral (filtros) no mapa de recursos — usado quando a
@@ -344,45 +445,202 @@ func show_general_legend() -> void:
 		_legend.visible = _mode == "resources"
 
 
-## Cabeçalho da legenda de informação (com "Voltar").
-func _legend_header(title: String) -> void:
-	var header := HBoxContainer.new()
+## Folha de papel claro (corpo) "colada" na etiqueta, com padding reduzido.
+func _legend_paper_sheet() -> PanelContainer:
+	var body := PanelContainer.new()
+	var style := UiKit.paper_stylebox()
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	body.add_theme_stylebox_override("panel", style)
+	body.mouse_filter = Control.MOUSE_FILTER_STOP
+	return body
+
+
+## Cabeçalho na etiqueta. Linha 1: bandeira (opcional) + título em Black Ops One
+## à esquerda e botão de ação (`right`: "all" = Todos, "back" = Voltar) à direita,
+## os dois centralizados verticalmente na mesma linha. Linha 2 (opcional): rótulo
+## + subtítulo unidos por " · " em Special Elite TINTA_SUAVE, abaixo do título.
+## Nada acima do título — ele começa sempre na mesma altura nos quatro estados.
+func _legend_header(kind: String, title: String, subtitle: String,
+		flag: Texture2D, right: String) -> void:
+	var header := VBoxContainer.new()
+	header.add_theme_constant_override("separation", 1)
 	_legend_box.add_child(header)
-	var label := UiKit.caption(title)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	header.add_child(label)
-	var back := Button.new()
-	back.text = I18n.t("map.legend.back")
-	back.flat = true
-	back.focus_mode = Control.FOCUS_NONE
-	back.add_theme_font_size_override("font_size", 12)
-	back.add_theme_color_override("font_color", UiKit.BRASS)
-	back.add_theme_color_override("font_hover_color", UiKit.TEXT)
-	back.pressed.connect(_render_legend_filters)
-	header.add_child(back)
+
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", UiKit.SPACE_SM)
+	header.add_child(title_row)
+
+	if flag != null:
+		_legend_flag = TextureRect.new()
+		_legend_flag.texture = flag
+		_legend_flag.custom_minimum_size = Vector2(24.0, 16.0)
+		_legend_flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_legend_flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		_legend_flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_legend_flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		title_row.add_child(_legend_flag)
+
+	_legend_title = UiKit.label(title, UiKit.FS_SUBTITLE, UiKit.TINTA)
+	_legend_title.add_theme_font_override("font", UiKit.PAPER_DISPLAY_FONT)
+	_legend_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_legend_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title_row.add_child(_legend_title)
+
+	match right:
+		"all":
+			_legend_all = _legend_check_all_button()
+			_legend_all.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			_legend_all.pressed.connect(_select_all_resources)
+			title_row.add_child(_legend_all)
+		"back":
+			_legend_back = _legend_back_button()
+			_legend_back.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			title_row.add_child(_legend_back)
+
+	var line2 := _legend_line2(kind, subtitle)
+	if not line2.is_empty():
+		_legend_subtitle = UiKit.label(line2, UiKit.FS_CAPTION + 1, UiKit.TINTA_SUAVE)
+		_legend_subtitle.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+		header.add_child(_legend_subtitle)
 
 
+## Linha 2 do cabeçalho: rótulo + subtítulo unidos por " · " (vazio quando
+## nenhum dos dois existe — "Mapa de recursos" e "Trigo" não têm rótulo, e o
+## trigo entra só com o código do território como subtítulo).
+func _legend_line2(kind: String, subtitle: String) -> String:
+	var parts := PackedStringArray()
+	if not kind.is_empty():
+		parts.append(kind)
+	if not subtitle.is_empty():
+		parts.append(subtitle)
+	return " · ".join(parts)
+
+
+## Rodapé informativo: filete fino de 1 px + texto alinhado à esquerda com
+## quebra por palavra — nada de justificado, que abre buracos na folha estreita.
+func _legend_footer(text: String) -> Control:
+	var width := LEGEND_WIDTH - LEGEND_LEFT_PAD - LEGEND_RIGHT_PAD - 20.0
+
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 4)
+
+	var rule := UiKit.rule(Color(UiKit.TINTA, 0.4))
+	rule.custom_minimum_size.x = width
+	block.add_child(rule)
+
+	var node := UiKit.label(text, UiKit.FS_SMALL - 1, UiKit.TINTA_SUAVE)
+	node.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	node.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	node.add_theme_constant_override("line_spacing", 0)
+	node.custom_minimum_size.x = width
+	block.add_child(node)
+	return block
+
+
+## StyleBox de botão de papel: borda de tinta 1 px, cantos suaves.
+func _paper_button_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = UiKit.TINTA
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
+	return style
+
+
+## Botão "Todos": quadrado (mesma altura do "Voltar") com caixa+check (✓) em
+## tinta sobre papel claro e borda de tinta 1 px. Tooltip "Mostrar todos".
+func _legend_check_all_button() -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(22.0, 22.0)
+	button.tooltip_text = I18n.t("map.legend.all_tip")
+	button.add_theme_stylebox_override("normal", _legend_action_style(UiKit.MANILA_LIGHT))
+	button.add_theme_stylebox_override("hover", _legend_action_style(UiKit.PAPEL_CLARO))
+	button.add_theme_stylebox_override("pressed", _legend_action_style(UiKit.ABA_INATIVA))
+
+	var glyph := TextureRect.new()
+	glyph.texture = CHECK_ALL_TEXTURE
+	glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glyph.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glyph.offset_left = 3.0
+	glyph.offset_top = 3.0
+	glyph.offset_right = -3.0
+	glyph.offset_bottom = -3.0
+	glyph.modulate = UiKit.TINTA
+	button.add_child(glyph)
+	return button
+
+
+## StyleBox do botão de ação do cabeçalho sem margem de conteúdo: o glifo
+## (ancorado) preenche o quadrado; o fundo papel e a borda de tinta vêm daqui.
+func _legend_action_style(fill: Color) -> StyleBoxFlat:
+	var style := _paper_button_style(fill)
+	style.content_margin_left = 0
+	style.content_margin_right = 0
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	return style
+
+
+## Botão "Voltar": aba de papel claro com borda de tinta e cantos inferiores
+## arredondados, na mesma linha do título.
+func _legend_back_button() -> Button:
+	var button := Button.new()
+	button.text = I18n.t("map.legend.back")
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size.y = 22.0
+	button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	button.add_theme_font_size_override("font_size", UiKit.FS_CAPTION + 1)
+	button.tooltip_text = I18n.t("map.legend.back")
+	var normal := _paper_button_style(UiKit.PAPEL_CLARO)
+	normal.corner_radius_bottom_left = 5
+	normal.corner_radius_bottom_right = 5
+	button.add_theme_stylebox_override("normal", normal)
+	var hover := _paper_button_style(UiKit.PAPEL)
+	hover.corner_radius_bottom_left = 5
+	hover.corner_radius_bottom_right = 5
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", _paper_button_style(UiKit.ABA_INATIVA))
+	button.add_theme_color_override("font_color", UiKit.TINTA)
+	button.add_theme_color_override("font_hover_color", UiKit.TINTA)
+	button.add_theme_color_override("font_pressed_color", UiKit.TINTA)
+	button.pressed.connect(_on_legend_back)
+	return button
+
+
+## Linha de dados: [swatch] nome ······ valor (líder pontilhado, valor à direita).
 func _legend_row(color: Color, text: String, detail: String,
-		swatch: bool = true, tip: String = "") -> HBoxContainer:
+		swatch: bool = true, tip: String = "", diamond: bool = false) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6.0)
 	if swatch:
-		var block := ColorRect.new()
-		block.custom_minimum_size = Vector2(14.0, 14.0)
-		block.color = color
-		block.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		block.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(block)
-	var label := UiKit.label(text, 14, UiKit.TEXT_DIM)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(LegendSwatch.new(color, diamond))
+	var label := UiKit.label(text, UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	if not tip.is_empty():
 		label.tooltip_text = tip
 		label.mouse_filter = Control.MOUSE_FILTER_STOP
 	row.add_child(label)
 	if not detail.is_empty():
-		var value := UiKit.caption(detail)
+		row.add_child(DottedLeader.new())
+		var value := UiKit.label(detail, UiKit.FS_SMALL, UiKit.TINTA)
+		value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 		value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(value)
 	return row
 
@@ -394,72 +652,83 @@ func show_deposit_info(info: Dictionary) -> void:
 	if String(info.get("kind", "mineral")) == "wheat":
 		_show_agriculture_info(info)
 		return
+	_legend_state = "deposit"
+	_legend_data = info
 	_clear_legend_content()
+
 	var resource := String(info.get("resource", ""))
-	var title := I18n.t("map.legend.deposit")
-	var field := String(info.get("name", ""))
-	if not field.is_empty():
-		title += " — " + field
-	_legend_header(title)
-	_legend_box.add_child(_legend_row(_resource_color(resource),
+	var split := _split_deposit_name(String(info.get("name", "")))
+	var name: String = split["name"]
+	if name.is_empty():
+		name = I18n.t("resource." + resource)
+	var type_key: String = split["type"]
+	var subtitle := I18n.t(type_key) if not type_key.is_empty() else ""
+	_legend_header(I18n.t("map.legend.deposit"), name, subtitle, null, "back")
+
+	var body := _legend_paper_sheet()
+	var body_box := VBoxContainer.new()
+	body_box.add_theme_constant_override("separation", 3)
+	body.add_child(body_box)
+	_legend_box.add_child(body)
+
+	body_box.add_child(_legend_row(_resource_color(resource),
 			I18n.t("resource." + resource), ""))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.reserve"), _format_mt(float(info.get("quantity_kt", 0.0))),
 			false, I18n.t("map.legend.reserve_tip")))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.quality"),
 			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0)),
 			false, I18n.t("map.legend.quality_tip")))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)),
 			false, I18n.t("map.legend.depth_tip")))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.status"),
-			I18n.t("resource.status." + _status_key(int(info.get("status", 4)))),
-			false, I18n.t("map.legend.status_tip")))
-	var hint := UiKit.caption(I18n.t("map.legend.deposit_hint"))
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.custom_minimum_size = Vector2(190.0, 0.0)
-	_legend_box.add_child(hint)
+	body_box.add_child(_legend_stage_block(int(info.get("status", 4))))
+
+	_legend_hint = _legend_footer(I18n.t("map.legend.deposit_hint"))
+	body_box.add_child(_legend_hint)
 	_legend.visible = true
+	_fit_legend()
 
 
 ## Ficha de recurso agrícola (renovável): aptidão, fertilidade e cultivável.
 ## Mesmo layout da ficha de mina, mas sem reserva — a produção é um fluxo.
 func _show_agriculture_info(info: Dictionary) -> void:
+	_legend_state = "agriculture"
+	_legend_data = info
 	_clear_legend_content()
-	var title := I18n.t("resource.wheat")
+
 	var territory := String(info.get("territory", ""))
-	if not territory.is_empty():
-		title += " — " + territory
-	_legend_header(title)
-	_legend_box.add_child(_legend_row(_resource_color("wheat"),
-			I18n.t("resource.wheat"), I18n.t("map.legend.renewable")))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+	_legend_header("", I18n.t("resource.wheat"), territory, null, "back")
+
+	var body := _legend_paper_sheet()
+	var body_box := VBoxContainer.new()
+	body_box.add_theme_constant_override("separation", 3)
+	body.add_child(body_box)
+	_legend_box.add_child(body)
+
+	body_box.add_child(_legend_row(_resource_color("wheat"),
+			I18n.t("resource.wheat"), "", true, "", true))
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.suitability"),
 			"%d%%" % int(round(float(info.get("suitability", 0.0)) * 100.0)),
 			false, I18n.t("map.legend.suitability_tip")))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.fertility"),
 			"%d%%" % int(round(float(info.get("fertility", 0.0)) * 100.0)),
 			false, I18n.t("map.legend.fertility_tip")))
-	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.cultivable"),
 			"%d%%" % int(round(float(info.get("cultivable", 0.0)) * 100.0)),
 			false, I18n.t("map.legend.cultivable_tip")))
-	var terrain := UiKit.caption(_friendly_terrain(info))
-	terrain.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	terrain.custom_minimum_size = Vector2(190.0, 0.0)
-	_legend_box.add_child(terrain)
-	var hint := UiKit.caption(I18n.t("map.legend.agriculture_hint"))
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.custom_minimum_size = Vector2(190.0, 0.0)
-	_legend_box.add_child(hint)
+
+	body_box.add_child(_legend_footer(_friendly_terrain(info)))
 	_legend.visible = true
+	_fit_legend()
 
 
-## Compõe "Clima: X · Solo: Y · Relevo: Z" em termos amigáveis a partir dos
-## campos crus (climate = "zona_aridez", soil_type, relief).
+## Compõe "Clima: X", "Solo: Y" e "Relevo: Z" (um por linha) em termos
+## amigáveis a partir dos campos crus (climate = "zona_aridez", soil_type, relief).
 func _friendly_terrain(info: Dictionary) -> String:
 	var climate := String(info.get("climate", ""))
 	var aridity := "humid"
@@ -482,24 +751,34 @@ func _friendly_terrain(info: Dictionary) -> String:
 	var relief := String(info.get("relief", ""))
 	if not relief.is_empty():
 		parts.append(I18n.t("map.legend.relief") + ": " + I18n.t("climate.relief." + relief))
-	return " · ".join(parts)
+	return "\n".join(parts)
 
 
 ## Substitui a legenda pelos recursos que a cidade acessa.
 func show_city_resources(city_id: String, entries: Array) -> void:
 	if _legend_box == null:
 		return
+	_legend_state = "city"
+	_legend_city_entries = entries
+	_legend_data = {"city_id": city_id}
 	_clear_legend_content()
+
 	var city := _find_city(city_id)
-	var title := I18n.t("map.legend.city_resources")
+	var title := I18n.t("map.legend.city")
+	var flag: Texture2D = null
 	if not city.is_empty():
 		title = I18n.city_name(String(city["id"]), String(city["name"]))
-	_legend_header(title)
+		flag = Economy.flag_texture(String(city["nation"]))
+	_legend_header(I18n.t("map.legend.city"), title, "", flag, "back")
+
+	var body := _legend_paper_sheet()
+	var body_box := VBoxContainer.new()
+	body_box.add_theme_constant_override("separation", 3)
+	body.add_child(body_box)
+	_legend_box.add_child(body)
+
 	if entries.is_empty():
-		var empty := UiKit.caption(I18n.t("map.legend.city_empty"))
-		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.custom_minimum_size = Vector2(190.0, 0.0)
-		_legend_box.add_child(empty)
+		body_box.add_child(_legend_footer(I18n.t("map.legend.city_empty")))
 	else:
 		for entry in entries:
 			var key := String(entry["kind"])
@@ -511,13 +790,13 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 					int(entry.get("count", 1)),
 					_format_mt(float(entry.get("reserve_kt", 0.0))),
 				]
-			_legend_box.add_child(_legend_row(_resource_color(key),
-					I18n.t("resource." + key), detail))
-	var hint := UiKit.caption(I18n.t("map.legend.city_hint"))
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.custom_minimum_size = Vector2(190.0, 0.0)
-	_legend_box.add_child(hint)
+			body_box.add_child(_legend_row(_resource_color(key),
+					I18n.t("resource." + key), detail, true, "", key == "wheat"))
+
+	_legend_hint = _legend_footer(I18n.t("map.legend.city_hint"))
+	body_box.add_child(_legend_hint)
 	_legend.visible = true
+	_fit_legend()
 
 
 func _resource_color(key: String) -> Color:
@@ -546,51 +825,137 @@ func _format_mt(kt: float) -> String:
 	return UiKit.number(mt, 1 if mt < 100.0 else 0) + " Mt"
 
 
+## Separa o tipo de lavra do nome do depósito ("Khouribga Underground" →
+## {"name": "Khouribga", "type": "map.legend.type.underground"}). Sem sufixo
+## conhecido, devolve o nome íntegro e tipo vazio.
+func _split_deposit_name(name: String) -> Dictionary:
+	var lower := name.to_lower()
+	for entry in DEPOSIT_TYPE_SUFFIXES:
+		var suffix: String = entry[0]
+		if lower.ends_with(suffix):
+			var clean := name.substr(0, name.length() - suffix.length()).strip_edges()
+			if not clean.is_empty():
+				return {"name": clean, "type": entry[1]}
+	return {"name": name, "type": ""}
+
+
+## Posição do estágio no ciclo ocorrência→prospecção→produtor (1..3); 0 para
+## "Exaurido"/"Desconhecido", estados terminais fora do ciclo.
+func _deposit_stage_n(status: int) -> int:
+	match _status_key(status):
+		"occurrence":
+			return 1
+		"prospect":
+			return 2
+		"producer":
+			return 3
+		_:
+			return 0
+
+
+## Cor do estágio: interpola vermelho (início) → verde (produtor) por N/M.
+func _stage_color(n: int) -> Color:
+	var ratio := clampf(float(n) / float(DEPOSIT_STAGE_COUNT), 0.0, 1.0)
+	return UiKit.STAGE_START.lerp(UiKit.STAGE_PRODUCING, ratio)
+
+
+## Bloco do estágio do depósito: "N/M" colorido acima de uma barra segmentada.
+## Substitui a antiga linha "Estágio: <nome>"; o nome do estágio vira tooltip.
+## "Exaurido" enche a barra em tons apagados; "Desconhecido" fica vazio.
+func _legend_stage_block(status: int) -> Control:
+	var key := _status_key(status)
+	var tooltip := I18n.t("resource.status." + key)
+	var n := _deposit_stage_n(status)
+	var depleted := key == "past"
+	var fill_n := DEPOSIT_STAGE_COUNT if depleted else n
+
+	var label_text := ""
+	var label_color := Color(UiKit.TINTA_SUAVE)
+	if n > 0:
+		label_text = "%d/%d" % [n, DEPOSIT_STAGE_COUNT]
+		label_color = _stage_color(n)
+	else:
+		label_text = tooltip
+
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 3)
+	block.tooltip_text = tooltip
+
+	var text := UiKit.label(label_text, UiKit.FS_CAPTION + 1, label_color)
+	text.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	block.add_child(text)
+
+	var track := HBoxContainer.new()
+	track.add_theme_constant_override("separation", 2)
+	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	block.add_child(track)
+
+	for i in DEPOSIT_STAGE_COUNT:
+		var filled := i < fill_n
+		var fill := Color(UiKit.TINTA, 0.10)
+		if filled:
+			fill = Color(UiKit.TINTA_SUAVE, 0.55) if depleted else _stage_color(fill_n)
+		var seg := Panel.new()
+		var style := UiKit.flat(fill, Color(UiKit.TINTA, 0.35), 0.0)
+		style.set_corner_radius_all(2)
+		seg.add_theme_stylebox_override("panel", style)
+		seg.custom_minimum_size = Vector2(0.0, 9.0)
+		seg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		seg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		track.add_child(seg)
+
+	return block
+
+
 func _make_resource_row(key: String, color: Color) -> Button:
 	var button := Button.new()
 	button.focus_mode = Control.FOCUS_NONE
-	button.custom_minimum_size = Vector2(186.0, 22.0)
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(180.0, 24.0)
 	button.add_theme_stylebox_override("normal",
 			UiKit.flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0.0))
-	button.add_theme_stylebox_override("hover", UiKit.surface(UiKit.PANEL_HOVER, 3.0))
-	button.add_theme_stylebox_override("pressed", UiKit.surface(UiKit.PANEL_RAISED, 3.0))
+	button.add_theme_stylebox_override("hover",
+			UiKit.surface(Color(UiKit.MANILA, 0.22), 2.0))
+	button.add_theme_stylebox_override("pressed",
+			UiKit.surface(Color(UiKit.MANILA, 0.38), 2.0))
 	button.pressed.connect(func() -> void: _toggle_resource(key))
 
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 4.0
-	row.offset_right = -4.0
+	row.offset_left = 2.0
+	row.offset_right = -2.0
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 6)
 	button.add_child(row)
 
-	var check := Panel.new()
-	check.custom_minimum_size = Vector2(12.0, 12.0)
-	check.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	check.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(check)
-	_resource_checks[key] = check
+	var stamp := LegendStamp.new()
+	row.add_child(stamp)
+	_resource_checks[key] = stamp
 
-	var swatch := ColorRect.new()
-	swatch.custom_minimum_size = Vector2(14.0, 14.0)
-	swatch.color = color
-	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(swatch)
+	row.add_child(LegendSwatch.new(color, key == "wheat"))
 
-	var label := UiKit.label(I18n.t("resource." + key), 14, UiKit.TEXT_DIM)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var label := UiKit.label(I18n.t("resource." + key), UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
 	_legend_labels[key] = label
 
-	var count := UiKit.caption(str(int(_resource_counts.get(key, 0))))
+	row.add_child(DottedLeader.new())
+
+	var count := UiKit.label(str(int(_resource_counts.get(key, 0))),
+			UiKit.FS_SMALL, UiKit.TINTA_SUAVE)
+	count.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 	count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(count)
 	return button
 
 
 func _resource_counts_from_file() -> Dictionary:
-	var counts := {"coal": 0, "copper": 0, "gas": 0, "iron": 0, "oil": 0, "wheat": 0}
+	var counts := {}
+	for key in RESOURCE_KEYS:
+		counts[key] = 0
+	counts["wheat"] = 0
 	var data: Variant = JSON.parse_string(
 			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
 	if typeof(data) != TYPE_DICTIONARY:
@@ -598,7 +963,7 @@ func _resource_counts_from_file() -> Dictionary:
 	for point in data.get("minerals", []):
 		var index := clampi(int(point[2]), 0, RESOURCE_KEYS.size() - 1)
 		var key := String(RESOURCE_KEYS[index])
-		counts[key] = int(counts[key]) + 1
+		counts[key] = int(counts.get(key, 0)) + 1
 	counts["wheat"] = (data.get("wheat", []) as Array).size()
 	return counts
 
@@ -614,33 +979,40 @@ func _select_all_resources() -> void:
 		_resource_enabled[key] = true
 	_refresh_resource_rows()
 	resource_filter_changed.emit(_resource_enabled.duplicate())
+	legend_reset_requested.emit()
+
+
+## "Voltar" para a lista: limpa a seleção no mapa e restaura os filtros.
+func _on_legend_back() -> void:
+	legend_reset_requested.emit()
+	_render_legend_filters()
 
 
 func _refresh_resource_rows() -> void:
 	for key in _resource_rows:
 		var enabled := bool(_resource_enabled.get(key, true))
-		var check: Panel = _resource_checks[key]
-		var style := UiKit.flat(
-				UiKit.BRASS if enabled else Color(0, 0, 0, 0),
-				UiKit.BRASS if enabled else UiKit.EDGE, 0.0)
-		style.set_corner_radius_all(2)
-		check.add_theme_stylebox_override("panel", style)
+		var stamp: LegendStamp = _resource_checks[key]
+		stamp.set_on(enabled)
 		var label: Label = _legend_labels[key]
 		label.add_theme_color_override("font_color",
-				UiKit.TEXT if enabled else UiKit.TEXT_MUTED)
-		(_resource_rows[key] as Button).modulate = Color(1, 1, 1, 1.0 if enabled else 0.72)
+				UiKit.TINTA if enabled else Color(UiKit.TINTA, 0.45))
+		(_resource_rows[key] as Button).modulate = Color(1, 1, 1, 1.0 if enabled else 0.42)
 
 
-## Atualiza os textos da legenda ao trocar de idioma.
+## Reconstrói a legenda ao trocar de idioma, preservando o estado atual.
 func _refresh_legend() -> void:
-	if _legend_title != null:
-		_legend_title.text = I18n.t("map.legend.title")
-	if _legend_hint != null:
-		_legend_hint.text = I18n.t("map.legend.hint")
-	if _legend_all != null:
-		_legend_all.text = I18n.t("map.legend.all")
-	for key in _legend_labels:
-		(_legend_labels[key] as Label).text = I18n.t("resource." + String(key))
+	if _legend == null or not _legend.visible:
+		return
+	match _legend_state:
+		"deposit":
+			show_deposit_info(_legend_data)
+		"agriculture":
+			show_deposit_info(_legend_data)
+		"city":
+			show_city_resources(String(_legend_data.get("city_id", "")),
+					_legend_city_entries)
+		_:
+			_render_legend_filters()
 
 
 func _set_map_mode(mode: String) -> void:
@@ -1757,3 +2129,120 @@ func _render_menu_texts() -> void:
 func _on_speed_pressed(index: int) -> void:
 	Economy.set_speed(index)
 	_update_top_bar()
+
+
+# --- Etiqueta de inventário: componentes de desenho ---------------------------
+
+## Etiqueta de papel manila com cantos chanfrados à esquerda e furo redondo na
+## borda esquerda. VBoxContainer que desenha o fundo atrás dos filhos.
+class LegendLabel extends VBoxContainer:
+	const CHAMFER := 14.0
+	const HOLE_X := 6.0
+	const HOLE_R := 5.0
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			queue_redraw()
+
+	func _draw() -> void:
+		var s := size
+		if s.x <= 8.0 or s.y <= 8.0:
+			return
+		var pts := _polygon(s)
+
+		# Sombra suave projetada para baixo.
+		var shadow := PackedVector2Array()
+		for p in pts:
+			shadow.append(p + Vector2(0.0, 5.0))
+		draw_colored_polygon(shadow, Color(0.0, 0.0, 0.0, 0.30))
+
+		# Papel manila base + grão quente (textura de papel com vinheta).
+		draw_colored_polygon(pts, UiKit.MANILA)
+		var uvs := PackedVector2Array()
+		for p in pts:
+			uvs.append(Vector2(p.x / s.x, p.y / s.y))
+		draw_polygon(pts, PackedColorArray([Color(0.45, 0.35, 0.18, 0.30)]),
+				uvs, UiKit.PAPER_TEXTURE)
+
+		# Furo redondo na borda esquerda, com anel de manila escuro.
+		var center := Vector2(HOLE_X, s.y * 0.5)
+		draw_circle(center, HOLE_R, UiKit.HOLE)
+		draw_arc(center, HOLE_R, 0.0, TAU, 48, UiKit.MANILA_DARK, 2.0, true)
+
+	func _polygon(s: Vector2) -> PackedVector2Array:
+		return PackedVector2Array([
+			Vector2(CHAMFER, 0.0),
+			Vector2(s.x, 0.0),
+			Vector2(s.x, s.y),
+			Vector2(CHAMFER, s.y),
+			Vector2(0.0, s.y - CHAMFER),
+			Vector2(0.0, CHAMFER),
+		])
+
+
+## Líder pontilhado que liga o nome ao valor na linha de dados.
+class DottedLeader extends Control:
+	func _init() -> void:
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		custom_minimum_size.y = 12.0
+
+	func _draw() -> void:
+		var y := size.y * 0.5
+		draw_dashed_line(Vector2(0.0, y), Vector2(size.x, y),
+				Color(UiKit.TINTA, 0.45), 1.4, 1.2)
+
+
+## Amostra de cor (quadrado, ou losango para o trigo) com borda de tinta.
+class LegendSwatch extends Control:
+	var _color: Color
+	var _diamond: bool
+
+	func _init(color: Color, diamond: bool) -> void:
+		_color = color
+		_diamond = diamond
+		custom_minimum_size = Vector2(13.0, 13.0)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		if _diamond:
+			var c := size * 0.5
+			var pts := PackedVector2Array([
+				Vector2(c.x, 0.0), Vector2(size.x, c.y),
+				Vector2(c.x, size.y), Vector2(0.0, c.y),
+			])
+			draw_colored_polygon(pts, _color)
+			var closed := pts.duplicate()
+			closed.append(pts[0])
+			draw_polyline(closed, UiKit.TINTA, 1.0, true)
+		else:
+			draw_rect(Rect2(Vector2.ZERO, size), _color, true)
+			draw_rect(Rect2(Vector2.ZERO, size), UiKit.TINTA, false, 1.0)
+
+
+## Carimbo redondo do filtro: contorno vermelho com ✓ quando ligado; vazio
+## quando desligado (a linha esmaece pelo modulate da própria linha).
+class LegendStamp extends Control:
+	var _on := false
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(16.0, 16.0)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_on(value: bool) -> void:
+		_on = value
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := size.x * 0.5 - 1.0
+		draw_arc(c, r, 0.0, TAU, 40, UiKit.CARIMBO, 1.5, true)
+		if _on:
+			var s := size.x * 0.34
+			var p1 := c + Vector2(-s, 0.06 * s)
+			var p2 := c + Vector2(-0.26 * s, 0.5 * s)
+			var p3 := c + Vector2(s, -0.42 * s)
+			draw_polyline(PackedVector2Array([p1, p2, p3]), UiKit.CARIMBO, 1.5, true)

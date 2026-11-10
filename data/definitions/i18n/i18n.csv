@@ -288,11 +288,11 @@ port.name.DEU-HAM,Hamburgo,Hamburg,Hamburgo
 port.name.NED-AMS,Amsterdã,Amsterdam,Ámsterdam
 port.name.BEL-ANT,Antuérpia,Antwerp,Amberes
 port.name.FRA-CAY,Mana,Mana,Mana
-map.legend.title,Recursos,Resources,Recursos
 map.minimap.title,Mundo,World,Mundo
 resource.wheat,Trigo,Wheat,Trigo
 map.legend.hint,Clique numa cidade para ver os recursos do território.,Click a city to see the resources of its territory.,Haz clic en una ciudad para ver los recursos del territorio.
 map.legend.all,Todos,All,Todos
+map.legend.all_tip,Mostrar todos,Show all,Mostrar todos
 map.legend.deposit,Depósito,Deposit,Yacimiento
 map.legend.city_resources,Recursos da cidade,City resources,Recursos de la ciudad
 map.legend.city_empty,Sem recursos ao alcance.,No resources in reach.,Sin recursos al alcance.
@@ -319,10 +319,14 @@ map.legend.fertility_tip,Fertilidade do solo (0-100%).,Soil fertility (0-100%).,
 map.legend.cultivable,Cultivável,Cultivable,Cultivable
 map.legend.cultivable_tip,Fração de terra arável (0-100%).,Share of arable land (0-100%).,Fracción de tierra cultivable (0-100%).
 map.legend.renewable,Renovável,Renewable,Renovable
-map.legend.agriculture_hint,"Recurso renovável: produz todo ano; melhora com maquinário e construções na cidade.","Renewable resource: produces every year; improves with machinery and city buildings.","Recurso renovable: produce cada año; mejora con maquinaria y construcciones de la ciudad."
 map.legend.climate,Clima,Climate,Clima
 map.legend.soil,Solo,Soil,Suelo
 map.legend.relief,Relevo,Relief,Relieve
+map.legend.kind.resources,Mapa de recursos,Resource map,Mapa de recursos
+map.legend.city,Cidade,City,Ciudad
+map.legend.type.underground,Subterrâneo,Underground,Subterráneo
+map.legend.type.surface,Superfície,Surface,Superficie
+map.legend.type.offshore,Marítimo,Offshore,Marítimo
 climate.zone.tropical,tropical,tropical,tropical
 climate.zone.tropical_seasonal,tropical sazonal,tropical seasonal,tropical estacional
 climate.zone.subtropical,subtropical,subtropical,subtropical
@@ -345,3 +349,12 @@ climate.soil.kastanozem,de estepe,steppe soil,de estepa
 climate.soil.luvisol,fértil,fertile,fértil
 climate.soil.podzol,de floresta,forest soil,de bosque
 climate.soil.tundra,de tundra,tundra,de tundra
+resource.bauxite,Bauxita,Bauxite,Bauxita
+resource.lead,Chumbo,Lead,Plomo
+resource.gold,Ouro,Gold,Oro
+resource.phosphate,Fosfato,Phosphate,Fosfato
+resource.tungsten,Tungstênio,Tungsten,Tungsteno
+resource.rare_earths,Terras raras,Rare earths,Tierras raras
+resource.sulfur,Enxofre,Sulfur,Azufre
+resource.diamond,Diamante,Diamond,Diamante
+resource.uranium,Urânio,Uranium,Uranio
