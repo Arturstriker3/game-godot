@@ -68,6 +68,21 @@ public:
 	void demo_set_suitability(const String& city_id, const String& product, double value);
 
 	/**
+	 * Declara a reserva mineral do território de uma cidade para um produto
+	 * (extração com esgotamento). As minas da cidade que produzem o produto
+	 * consomem esta reserva compartilhada; reserva zerada para a produção.
+	 * Idempotente: se o produto já tem reserva, mantém o saldo restante (um
+	 * save carregado não é "reabastecido") e só atualiza qualidade/profundidade.
+	 * @param product id de goods.json (ex.: "iron", "gold").
+	 * @param reserve_kt Reserva inicial em quilotoneladas (1 kt = 1000 t).
+	 * @param quality Qualidade 0..1 (eficiência = 0,5 + 0,5 × qualidade).
+	 * @param depth_m Profundidade média em metros (encarece o opex).
+	 * @returns true se a reserva foi criada agora.
+	 */
+	bool demo_set_deposit(const String& city_id, const String& product,
+		double reserve_kt, double quality, double depth_m);
+
+	/**
 	 * Investe capital da empresa na expansão de uma construção existente.
 	 * O valor sai do caixa da empresa e é pago ao setor de construção.
 	 * @param city_id Cidade da construção.
@@ -218,8 +233,13 @@ private:
 	// farinha e pão. Vive no mesmo núcleo para validar as regras antes de
 	// generalizar o modo europeu.
 	// ------------------------------------------------------------------
-	enum class DemoProduct { Wheat = 0, Flour = 1, Bread = 2, Iron = 3 };
-	static constexpr int kDemoProducts = 4;
+	enum class DemoProduct {
+		Wheat = 0, Flour = 1, Bread = 2, Iron = 3, Rice = 4, Maize = 5,
+		Bauxite = 6, Lead = 7, Gold = 8, Phosphate = 9, Tungsten = 10,
+		RareEarths = 11, Sulfur = 12, Diamond = 13
+	};
+	// Mesma ordem de data/definitions/economy/goods.json.
+	static constexpr int kDemoProducts = 14;
 	static constexpr int kDemoFoodProducts = 3;
 
 	struct DemoMarket {
@@ -238,7 +258,7 @@ private:
 		std::string id;
 		std::string city;
 		int kind = 0; // 0=fazenda, 1=moinho, 2=padaria (legado de exibição)
-		std::string resource;  // recurso produzido: wheat, flour, bread ou iron
+		std::string resource;  // recurso produzido (id de goods.json)
 		std::string owner = "private"; // private ou state
 		int input_product = -1; // -1 = extração primária (sem insumo)
 		int output_product = 0;
@@ -284,6 +304,19 @@ private:
 		double consumed_by_category[kDemoFoodProducts] = {0.0, 0.0, 0.0};
 	};
 
+	// Reserva mineral do território da cidade para um produto. Compartilhada
+	// pelas minas da cidade: cada tonelada extraída reduz remaining_kt. Sem
+	// tracked, o produto não tem reserva declarada e a extração é ilimitada
+	// (comportamento legado, p.ex. ferro sem dados de depósito).
+	struct DemoDeposit {
+		bool tracked = false;
+		double initial_kt = 0.0;
+		double remaining_kt = 0.0;
+		double quality = 1.0;    // 0..1: eficiência da extração
+		double depth_m = 0.0;    // profundidade média: encarece o opex
+		double extracted_kt = 0.0;
+	};
+
 	struct DemoCity {
 		std::string id;
 		std::string name;
@@ -309,15 +342,17 @@ private:
 		double construction_revenue_pending = 0.0;
 		double capital_income_next = 0.0;
 		double gdp = 0.0;
-		double revenue_by_product[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double revenue_by_product[kDemoProducts] = {};
 		// Fluxos comerciais do dia, por produto.
-		double imported[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-		double exported[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-		double import_value[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-		double export_value[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double imported[kDemoProducts] = {};
+		double exported[kDemoProducts] = {};
+		double import_value[kDemoProducts] = {};
+		double export_value[kDemoProducts] = {};
 		// Aptidão territorial por produto (0..1). A produção primária é
 		// multiplicada por ela; o GeographyService sobrescreve com dados reais.
-		double suitability[kDemoProducts] = {1.0, 1.0, 1.0, 0.0};
+		double suitability[kDemoProducts] = {1.0, 1.0, 1.0};
+		// Reservas minerais por produto (extração com esgotamento).
+		DemoDeposit deposits[kDemoProducts];
 		DemoPop pop;
 		DemoMarket markets[kDemoProducts];
 	};
@@ -337,10 +372,10 @@ private:
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;
-		double produced[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-		double consumed_total[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-		double produced_today[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-		double consumed_today[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double produced[kDemoProducts] = {};
+		double consumed_total[kDemoProducts] = {};
+		double produced_today[kDemoProducts] = {};
+		double consumed_today[kDemoProducts] = {};
 		int day = 0;
 	};
 
@@ -481,6 +516,8 @@ private:
 	                              const MapPoint& from) const;
 	static int demo_product_index(const String& product);
 	static const char* demo_product_name(int product);
+	static double demo_extraction_efficiency(const DemoDeposit& deposit);
+	static double demo_depth_opex_factor(const DemoDeposit& deposit);
 	double demo_base_price(int product) const;
 	/**
 	 * Define os preços-base dos bens a partir de dados externos (goods.json).
@@ -539,12 +576,14 @@ private:
 	double demo_foreign_cash_ = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.
 	double demo_construction_cash_ = 0.0;
-	double demo_produced_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-	double demo_consumed_total_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-	double demo_produced_today_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
-	double demo_consumed_today_[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+	double demo_produced_[kDemoProducts] = {};
+	double demo_consumed_total_[kDemoProducts] = {};
+	double demo_produced_today_[kDemoProducts] = {};
+	double demo_consumed_today_[kDemoProducts] = {};
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
-	double demo_base_prices_[kDemoProducts] = {40.0, 70.0, 80.0, 60.0};
+	double demo_base_prices_[kDemoProducts] = {
+		40.0, 70.0, 80.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
+		15.0, 5000.0};
 
 	// Estado do benchmark sintético (estruturas planas, sem alocação por tick).
 	bool bench_active_ = false;

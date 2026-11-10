@@ -57,7 +57,9 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 
 // Versão do schema do save do modo demo. Aumente ao mudar a estrutura do
 // dicionário; demo_from_dict recusa versões futuras (maiores).
-constexpr int kDemoSaveVersion = 1;
+// v2: reservas minerais por cidade (deposits) e 14 produtos. Saves v1 (4
+// produtos, sem reservas) continuam carregando.
+constexpr int kDemoSaveVersion = 2;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -93,6 +95,9 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_price_shock);
 	ClassDB::bind_method(D_METHOD("demo_set_suitability", "city_id", "product", "value"),
 	                     &EconomySim::demo_set_suitability);
+	ClassDB::bind_method(D_METHOD("demo_set_deposit", "city_id", "product", "reserve_kt",
+	                     "quality", "depth_m"),
+	                     &EconomySim::demo_set_deposit);
 	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
 	                     &EconomySim::demo_set_goods);
 	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
@@ -721,6 +726,20 @@ constexpr double kDemoServiceMaxShare = 0.30;
 constexpr double kDemoBreadExportTons = 6.0;
 // Demanda externa de ferro (fora do consumo alimentar).
 constexpr double kDemoIronExportDemand = 20.0;
+constexpr int kDemoIronProduct = 3;
+// Primeiro produto "bruto" sem consumo local (arroz, milho e minerais). Para
+// eles o resto do mundo compra toda a produção local (ver fase 4d).
+constexpr int kDemoFirstRawProduct = 4;
+
+// Extração mineral. 1 kt = 1000 t.
+constexpr double kDemoTonsPerKiloton = 1000.0;
+// Qualidade -> eficiência da extração: a produção efetiva é multiplicada por
+// piso + (1 - piso) × qualidade (minério pobre rende menos por dia de operação).
+constexpr double kDemoQualityEfficiencyFloor = 0.5;
+// Profundidade -> custo: opex × (1 + profundidade / escala), com teto.
+constexpr double kDemoDepthOpexScaleM = 2000.0;
+constexpr double kDemoDepthOpexMaxFactor = 3.0;
+
 
 // Aptidão de referência do território de AGRIA (trigo, dado real de
 // agriculture.json). Mantém a produção validada de 20 t/dia e serve de valor
@@ -752,7 +771,32 @@ constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
 // normal de comida.
 constexpr double kDemoTradeCapacityPerCapita = 0.001;
 
+// Ordem idêntica à de data/definitions/economy/goods.json.
+constexpr const char* kDemoProductNames[14] = {
+	"wheat", "flour", "bread", "iron", "rice", "maize", "bauxite", "lead", "gold",
+	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
+};
+
 } // namespace
+
+// Eficiência da extração (0.5..1). Sem reserva declarada não há qualidade
+// conhecida: eficiência 1 (comportamento legado).
+double EconomySim::demo_extraction_efficiency(const DemoDeposit& deposit) {
+	if (!deposit.tracked) {
+		return 1.0;
+	}
+	return kDemoQualityEfficiencyFloor
+		+ (1.0 - kDemoQualityEfficiencyFloor) * std::clamp(deposit.quality, 0.0, 1.0);
+}
+
+// Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
+double EconomySim::demo_depth_opex_factor(const DemoDeposit& deposit) {
+	if (!deposit.tracked) {
+		return 1.0;
+	}
+	return std::min(kDemoDepthOpexMaxFactor,
+		1.0 + std::max(0.0, deposit.depth_m) / kDemoDepthOpexScaleM);
+}
 
 double EconomySim::demo_base_price(int product) const {
 	if (product >= 0 && product < kDemoProducts) {
@@ -815,6 +859,9 @@ void EconomySim::initialize_demo() {
 	agria.markets[1] = {0.0, demo_base_price(1), 0.0, 0.0};
 	agria.markets[2] = {0.0, demo_base_price(2), 0.0, 0.0};
 	agria.markets[3] = {0.0, demo_base_price(3), 0.0, 0.0};
+	for (int product = 4; product < kDemoProducts; ++product) {
+		agria.markets[product].price = demo_base_price(product);
+	}
 	demo_cities_.push_back(agria);
 
 	DemoCity portus;
@@ -835,6 +882,9 @@ void EconomySim::initialize_demo() {
 	portus.markets[1] = {0.0, demo_base_price(1), 0.0, 0.0};
 	portus.markets[2] = {50.0, demo_base_price(2), 0.0, 0.0};
 	portus.markets[3] = {0.0, demo_base_price(3), 0.0, 0.0};
+	for (int product = 4; product < kDemoProducts; ++product) {
+		portus.markets[product].price = demo_base_price(product);
+	}
 	demo_cities_.push_back(portus);
 
 	// Capacidade é o potencial da terra; a produção efetiva é multiplicada
@@ -956,7 +1006,8 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		city.suitability[0] = 1.0;
 		city.suitability[1] = 1.0;
 		city.suitability[2] = 1.0;
-		city.suitability[3] = 0.0;
+		// Ferro e os demais recursos brutos (índices >= 3) ficam em 0.0 até
+		// haver depósito conhecido (suitability é zero-inicializado).
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.markets[product] = {0.0, demo_base_price(product), 0.0, 0.0};
 		}
@@ -1457,6 +1508,15 @@ Dictionary EconomySim::tick_demo() {
 	}
 
 	// 3. Mercado de trabalho e salários.
+	// Minas mais fundas custam mais para operar: opex × fator de profundidade
+	// (1.0 para tudo que não é extração com jazida declarada).
+	auto opex_factor = [](const DemoCity& owner_city, const DemoBuilding& building) {
+		if (building.input_product >= 0 || building.output_product < 0
+				|| building.output_product >= kDemoProducts) {
+			return 1.0;
+		}
+		return demo_depth_opex_factor(owner_city.deposits[building.output_product]);
+	};
 	for (DemoCity& city : demo_cities_) {
 		double modeled_jobs = 0.0;
 		for (const DemoBuilding& building : demo_buildings_) {
@@ -1481,7 +1541,7 @@ Dictionary EconomySim::tick_demo() {
 			}
 			building.workers = building.jobs * fill;
 			modeled_wages += building.workers * building.wage;
-			opex_total += building.opex;
+			opex_total += building.opex * opex_factor(city, building);
 		}
 
 		// Restrição de liquidez: a empresa não paga folha nem opex com dinheiro
@@ -1498,7 +1558,7 @@ Dictionary EconomySim::tick_demo() {
 				continue;
 			}
 			building.paid_wages = building.workers * building.wage * pay_scale;
-			building.paid_opex = building.opex * pay_scale;
+			building.paid_opex = building.opex * opex_factor(city, building) * pay_scale;
 		}
 
 		city.service_wage_bill = city.service_jobs * city.service_wage;
@@ -1541,8 +1601,12 @@ Dictionary EconomySim::tick_demo() {
 		const double sold_prev = city->markets[building.output_product].sold_prev;
 		const double labor = building.jobs > 0.0
 			? building.workers / building.jobs : 1.0;
+		// Extração: aptidão territorial × eficiência pela qualidade do minério
+		// (1.0 quando não há jazida declarada).
+		DemoDeposit& deposit = city->deposits[building.output_product];
 		const double suitability = building.input_product < 0
 			? std::clamp(city->suitability[building.output_product], 0.0, 1.0)
+				* demo_extraction_efficiency(deposit)
 			: 1.0;
 
 		// Capacidade e vendas na mesma unidade (toneladas efetivas).
@@ -1584,6 +1648,14 @@ Dictionary EconomySim::tick_demo() {
 			city->revenue_by_product[building.input_product] += input_used
 				* input_market.price;
 			building.input_value = input_used * input_market.price;
+		} else if (deposit.tracked) {
+			// Esgotamento: a mina só extrai o que resta da reserva da jazida
+			// (compartilhada pelas minas da cidade) e a debita na mesma medida.
+			const double available_tons = deposit.remaining_kt * kDemoTonsPerKiloton;
+			output = std::clamp(output, 0.0, available_tons);
+			const double extracted_kt = output / kDemoTonsPerKiloton;
+			deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
+			deposit.extracted_kt += extracted_kt;
 		}
 
 		city->markets[building.output_product].stock += output;
@@ -1655,6 +1727,48 @@ Dictionary EconomySim::tick_demo() {
 		demo_foreign_cash_ -= revenue;
 		demo_consumed_total_[3] += sold;
 		demo_consumed_today_[3] += sold;
+	}
+
+	// 4d. Recursos brutos (arroz, milho e minerais): sem consumo local nem
+	// cadeia de refino nesta etapa. O resto do mundo compra, ao preço do
+	// mercado, tudo o que as minas/lavouras da cidade conseguem produzir no dia
+	// (capacidade efetiva = capacidade × escala × aptidão × eficiência), e o
+	// estoque residual de uma mina fechada. A extração fica limitada pela
+	// reserva (fase 4), então o esgotamento da jazida encerra a receita.
+	for (DemoCity& city : demo_cities_) {
+		for (int product = kDemoFirstRawProduct; product < kDemoProducts; ++product) {
+			double local_capacity = 0.0;
+			for (const DemoBuilding& building : demo_buildings_) {
+				if (building.city == city.id && building.input_product < 0
+						&& building.output_product == product) {
+					local_capacity += building.capacity * building.output_scale;
+				}
+			}
+			DemoMarket& market = city.markets[product];
+			const double effective = local_capacity
+				* std::clamp(city.suitability[product], 0.0, 1.0)
+				* demo_extraction_efficiency(city.deposits[product]);
+			const double demand = effective > 0.0 ? effective : market.stock;
+			if (demand <= 0.0) {
+				continue;
+			}
+			market.desired += demand;
+			const double sold = std::min(market.stock, demand);
+			if (sold <= 0.0) {
+				continue;
+			}
+			const double revenue = sold * market.price;
+			market.stock -= sold;
+			market.demand += sold;
+			market.sold += sold;
+			city.firm_cash += revenue;
+			city.revenue_by_product[product] += revenue;
+			city.exported[product] += sold;
+			city.export_value[product] += revenue;
+			demo_foreign_cash_ -= revenue;
+			demo_consumed_total_[product] += sold;
+			demo_consumed_today_[product] += sold;
+		}
 	}
 
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
@@ -1815,7 +1929,7 @@ Dictionary EconomySim::tick_demo() {
 
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	for (DemoCity& city : demo_cities_) {
-		double capacity_by_output[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double capacity_by_output[kDemoProducts] = {};
 		for (const DemoBuilding& building : demo_buildings_) {
 			if (building.city == city.id) {
 				capacity_by_output[building.output_product] +=
@@ -1944,7 +2058,7 @@ Dictionary EconomySim::tick_demo() {
 
 	// 8. Preços reagem a estoque, oferta, demanda e custo de produção.
 	for (DemoCity& city : demo_cities_) {
-		bool has_producer[kDemoProducts] = {false, false, false, false};
+		bool has_producer[kDemoProducts] = {};
 		for (const DemoBuilding& building : demo_buildings_) {
 			if (building.city == city.id && building.output_product >= 0
 					&& building.output_product < kDemoProducts) {
@@ -2131,6 +2245,27 @@ Dictionary EconomySim::demo_city_to_dict(const DemoCity& city) const {
 	}
 	dict["suitability"] = suitability;
 
+	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
+	// da chave = sem dado, não "zero").
+	Dictionary deposits;
+	for (int product = 0; product < kDemoProducts; ++product) {
+		const DemoDeposit& deposit = city.deposits[product];
+		if (!deposit.tracked) {
+			continue;
+		}
+		Dictionary entry;
+		entry["initial_kt"] = deposit.initial_kt;
+		entry["remaining_kt"] = deposit.remaining_kt;
+		entry["extracted_kt"] = deposit.extracted_kt;
+		entry["quality"] = deposit.quality;
+		entry["depth_m"] = deposit.depth_m;
+		entry["efficiency"] = demo_extraction_efficiency(deposit);
+		entry["opex_factor"] = demo_depth_opex_factor(deposit);
+		entry["depleted"] = deposit.remaining_kt <= 0.0;
+		deposits[String(kDemoProductNames[product])] = entry;
+	}
+	dict["deposits"] = deposits;
+
 	Dictionary pop;
 	pop["population"] = city.pop.population;
 	pop["labor_force"] = city.pop.labor_force;
@@ -2232,10 +2367,9 @@ Dictionary EconomySim::get_demo_status() const {
 	result["bankruptcies"] = demo_bankruptcies_;
 
 	Array products;
-	products.append("wheat");
-	products.append("flour");
-	products.append("bread");
-	products.append("iron");
+	for (int index = 0; index < kDemoProducts; ++index) {
+		products.append(String(kDemoProductNames[index]));
+	}
 	result["products"] = products;
 	result["capital_cost_per_capacity"] = kDemoCapitalPerCapacity;
 
@@ -2357,32 +2491,19 @@ void EconomySim::demo_price_shock(const String& product, double multiplier) {
 }
 
 int EconomySim::demo_product_index(const String& product) {
-	if (product == "flour") {
-		return 1;
-	}
-	if (product == "bread") {
-		return 2;
-	}
-	if (product == "iron") {
-		return 3;
-	}
-	if (product == "wheat") {
-		return 0;
+	for (int index = 0; index < kDemoProducts; ++index) {
+		if (product == kDemoProductNames[index]) {
+			return index;
+		}
 	}
 	return -1;
 }
 
 const char* EconomySim::demo_product_name(int product) {
-	switch (product) {
-		case 1:
-			return "flour";
-		case 2:
-			return "bread";
-		case 3:
-			return "iron";
-		default:
-			return "wheat";
+	if (product >= 0 && product < kDemoProducts) {
+		return kDemoProductNames[product];
 	}
+	return kDemoProductNames[0];
 }
 
 EconomySim::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
@@ -2424,6 +2545,30 @@ void EconomySim::demo_set_suitability(const String& city_id, const String& produ
 	city->suitability[index] = std::clamp(value, 0.0, 1.0);
 }
 
+bool EconomySim::demo_set_deposit(const String& city_id, const String& product,
+		double reserve_kt, double quality, double depth_m) {
+	const int index = demo_product_index(product);
+	if (index < 0) {
+		return false;
+	}
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return false;
+	}
+	DemoDeposit& deposit = city->deposits[index];
+	deposit.quality = std::clamp(safe_nonneg(quality), 0.0, 1.0);
+	deposit.depth_m = safe_nonneg(depth_m);
+	if (deposit.tracked) {
+		// Idempotente: não reabastece uma jazida já em exploração (load/save).
+		return false;
+	}
+	deposit.tracked = true;
+	deposit.initial_kt = safe_nonneg(reserve_kt);
+	deposit.remaining_kt = deposit.initial_kt;
+	deposit.extracted_kt = 0.0;
+	return true;
+}
+
 Dictionary EconomySim::demo_invest(const String& city_id, const String& building_id,
 		double amount) {
 	Dictionary result;
@@ -2454,6 +2599,13 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 			&& city->suitability[building->output_product] <= 0.0) {
 		result["error"] = "sem aptidão territorial";
 		return result;
+	}
+	if (building->input_product < 0) {
+		const DemoDeposit& deposit = city->deposits[building->output_product];
+		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
+			result["error"] = "reserva esgotada";
+			return result;
+		}
 	}
 
 	const double capacity_added = amount / kDemoCapitalPerCapacity;
@@ -2509,6 +2661,13 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 			&& city->suitability[output_product] <= 0.0) {
 		result["error"] = "sem aptidão territorial";
 		return result;
+	}
+	if (input_product < 0) {
+		const DemoDeposit& deposit = city->deposits[output_product];
+		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
+			result["error"] = "reserva esgotada";
+			return result;
+		}
 	}
 	const bool state_owned = owner_name == "state";
 	if (state_owned) {
@@ -2630,6 +2789,23 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["exported"] = exported;
 		entry["import_value"] = import_value;
 		entry["export_value"] = export_value;
+
+		// Reservas minerais (só jazidas declaradas): o saldo restante persiste.
+		Dictionary deposits;
+		for (int product = 0; product < kDemoProducts; ++product) {
+			const DemoDeposit& deposit = city.deposits[product];
+			if (!deposit.tracked) {
+				continue;
+			}
+			Dictionary deposit_entry;
+			deposit_entry["initial_kt"] = deposit.initial_kt;
+			deposit_entry["remaining_kt"] = deposit.remaining_kt;
+			deposit_entry["extracted_kt"] = deposit.extracted_kt;
+			deposit_entry["quality"] = deposit.quality;
+			deposit_entry["depth_m"] = deposit.depth_m;
+			deposits[String(kDemoProductNames[product])] = deposit_entry;
+		}
+		entry["deposits"] = deposits;
 
 		Dictionary pop;
 		pop["population"] = city.pop.population;
@@ -2776,7 +2952,7 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		Array export_value = entry.get("export_value", Array());
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.suitability[product] = product < suitability.size()
-				? double(suitability[product]) : (product == 3 ? 0.0 : 1.0);
+				? double(suitability[product]) : (product >= 3 ? 0.0 : 1.0);
 			city.revenue_by_product[product] = product < revenue.size()
 				? double(revenue[product]) : 0.0;
 			city.imported[product] = product < imported.size()
@@ -2787,6 +2963,22 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 				? double(import_value[product]) : 0.0;
 			city.export_value[product] = product < export_value.size()
 				? double(export_value[product]) : 0.0;
+		}
+
+		Dictionary saved_deposits = entry.get("deposits", Dictionary());
+		for (int product = 0; product < kDemoProducts; ++product) {
+			const String key = String(kDemoProductNames[product]);
+			if (!saved_deposits.has(key)) {
+				continue;
+			}
+			Dictionary deposit_entry = saved_deposits[key];
+			DemoDeposit& deposit = city.deposits[product];
+			deposit.tracked = true;
+			deposit.initial_kt = double(deposit_entry.get("initial_kt", 0.0));
+			deposit.remaining_kt = double(deposit_entry.get("remaining_kt", 0.0));
+			deposit.extracted_kt = double(deposit_entry.get("extracted_kt", 0.0));
+			deposit.quality = double(deposit_entry.get("quality", 1.0));
+			deposit.depth_m = double(deposit_entry.get("depth_m", 0.0));
 		}
 
 		Dictionary pop = entry.get("pop", Dictionary());
@@ -2818,6 +3010,12 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 
 		Array markets = entry.get("markets", Array());
+		// Saves antigos (4 produtos) não trazem mercados dos novos bens: preço-base.
+		for (int product = markets.size(); product < kDemoProducts; ++product) {
+			if (product >= 0) {
+				city.markets[product].price = demo_base_price(product);
+			}
+		}
 		for (int product = 0; product < kDemoProducts && product < markets.size(); ++product) {
 			Dictionary market = markets[product];
 			city.markets[product].stock = double(market.get("stock", 0.0));
