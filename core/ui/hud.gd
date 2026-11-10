@@ -380,7 +380,7 @@ func _legend_header(title: String) -> void:
 
 
 func _legend_row(color: Color, text: String, detail: String,
-		swatch: bool = true) -> HBoxContainer:
+		swatch: bool = true, tip: String = "") -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6.0)
 	if swatch:
@@ -392,6 +392,9 @@ func _legend_row(color: Color, text: String, detail: String,
 		row.add_child(block)
 	var label := UiKit.label(text, 14, UiKit.TEXT_DIM)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if not tip.is_empty():
+		label.tooltip_text = tip
+		label.mouse_filter = Control.MOUSE_FILTER_STOP
 	row.add_child(label)
 	if not detail.is_empty():
 		var value := UiKit.caption(detail)
@@ -414,15 +417,19 @@ func show_deposit_info(info: Dictionary) -> void:
 	_legend_box.add_child(_legend_row(_resource_color(resource),
 			I18n.t("resource." + resource), ""))
 	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.reserve"), _format_mt(float(info.get("quantity_kt", 0.0))), false))
+			I18n.t("map.legend.reserve"), _format_mt(float(info.get("quantity_kt", 0.0))),
+			false, I18n.t("map.legend.reserve_tip")))
 	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.quality"),
-			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0)), false))
+			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0)),
+			false, I18n.t("map.legend.quality_tip")))
 	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)), false))
+			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)),
+			false, I18n.t("map.legend.depth_tip")))
 	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.status"),
-			I18n.t("resource.status." + _status_key(int(info.get("status", 4)))), false))
+			I18n.t("resource.status." + _status_key(int(info.get("status", 4)))),
+			false, I18n.t("map.legend.status_tip")))
 	var hint := UiKit.caption(I18n.t("map.legend.deposit_hint"))
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(190.0, 0.0)
@@ -484,7 +491,8 @@ func _status_key(code: int) -> String:
 
 
 func _format_mt(kt: float) -> String:
-	return UiKit.number(kt / 1000.0, 0) + " Mt"
+	var mt := kt / 1000.0
+	return UiKit.number(mt, 1 if mt < 100.0 else 0) + " Mt"
 
 
 func _make_resource_row(key: String, color: Color) -> Button:

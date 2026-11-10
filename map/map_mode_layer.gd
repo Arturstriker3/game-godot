@@ -15,7 +15,7 @@ const MAX_CITIES := 16
 
 const RESOURCE_DOT: Texture2D = preload("res://assets/icons/places/resource_dot.png")
 const RESOURCE_WHEAT: Texture2D = preload("res://assets/icons/places/resource_wheat.png")
-const DEPOSIT_INFO: Texture2D = preload("res://assets/icons/places/deposit_info.png")
+const DEPOSIT_HOVER: Texture2D = preload("res://assets/icons/places/deposit_hover.png")
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 ## Ordem dos recursos em resource_points.json (índice do mineral).
 const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
@@ -39,7 +39,8 @@ var _current := "geographic"
 var _heat_mesh: MeshInstance3D
 var _mineral_mesh: MultiMeshInstance3D
 var _wheat_mesh: MultiMeshInstance3D
-var _info_badge: Sprite3D
+var _hover_ring: Sprite3D
+var _hover_time := 0.0
 var _mineral_points: Array = []
 var _wheat_points: Array = []
 ## Filtros da legenda: {} = todos; senão chave -> bool.
@@ -97,8 +98,8 @@ func set_mode(mode: String) -> void:
 		_wheat_mesh.visible = resources
 	if _heat_mesh != null:
 		_heat_mesh.visible = heat
-	if _info_badge != null and not resources:
-		_info_badge.visible = false
+	if _hover_ring != null and not resources:
+		_hover_ring.visible = false
 	visible = resources or heat
 
 	if not heat:
@@ -174,17 +175,16 @@ func _build_resource_markers() -> void:
 	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT)
 	_rebuild_markers()
 
-	# Badge "i" que acompanha o depósito sob o mouse.
-	_info_badge = Sprite3D.new()
-	_info_badge.name = "DepositInfoBadge"
-	_info_badge.texture = DEPOSIT_INFO
-	_info_badge.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_info_badge.transparent = true
-	_info_badge.no_depth_test = true
-	_info_badge.render_priority = 6
-	_info_badge.pixel_size = 0.55 / 64.0
-	_info_badge.visible = false
-	add_child(_info_badge)
+	# Anel de hover em volta do depósito sob o mouse.
+	_hover_ring = Sprite3D.new()
+	_hover_ring.name = "DepositHoverRing"
+	_hover_ring.texture = DEPOSIT_HOVER
+	_hover_ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_hover_ring.transparent = true
+	_hover_ring.no_depth_test = true
+	_hover_ring.render_priority = 1
+	_hover_ring.visible = false
+	add_child(_hover_ring)
 
 	_mineral_mesh.visible = false
 	_wheat_mesh.visible = false
@@ -269,27 +269,32 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 		if distance <= radius and distance < best_distance:
 			best = index
 			best_distance = distance
-		# O badge "i" fica acima do ponto; clicar nele também seleciona.
-		var badge_world := world + Vector3(0.0, 0.55, 0.0)
-		if not camera.is_position_behind(badge_world):
-			var badge_center := camera.unproject_position(badge_world)
-			var badge_distance := badge_center.distance_to(screen_position)
-			if badge_distance <= 14.0 and badge_distance < best_distance:
-				best = index
-				best_distance = badge_distance
 	return best
 
 
 ## Mostra o badge "i" sobre o depósito sob o mouse (índice) ou esconde (-1).
 func set_deposit_hover(index: int) -> void:
-	if _info_badge == null:
+	if _hover_ring == null:
 		return
 	if index < 0 or index >= _mineral_points.size() or _current != "resources":
-		_info_badge.visible = false
+		_hover_ring.visible = false
 		return
-	_info_badge.position = _marker_world(_mineral_points[index]) \
-			+ Vector3(0.0, 0.55, 0.0)
-	_info_badge.visible = true
+	var point: Array = _mineral_points[index]
+	var size := _marker_size(point, false)
+	_hover_ring.position = _marker_world(point) + Vector3(0.0, 0.01, 0.0)
+	_hover_ring.pixel_size = (size * 2.4) / 128.0
+	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.95)
+	_hover_ring.visible = true
+	_hover_time = 0.0
+
+
+func _process(delta: float) -> void:
+	if _hover_ring == null or not _hover_ring.visible:
+		return
+	# Pulso sutil no anel de hover.
+	_hover_time += delta
+	var pulse := 1.0 + 0.06 * sin(_hover_time * 5.0)
+	_hover_ring.scale = Vector3(pulse, pulse, 1.0)
 
 
 ## Dados de um depósito para a legenda.

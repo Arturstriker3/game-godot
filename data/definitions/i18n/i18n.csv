@@ -296,9 +296,13 @@ map.legend.back,Voltar,Back,Volver
 map.legend.reserve,Reserva,Reserve,Reserva
 map.legend.quality,Qualidade,Quality,Calidad
 map.legend.depth,Profundidade,Depth,Profundidad
-map.legend.status,Status,Status,Estado
+map.legend.status,Estágio,Stage,Etapa
 resource.status.producer,Produtor,Producer,Productor
 resource.status.past,Exaurido,Depleted,Agotado
 resource.status.prospect,Prospecção,Prospect,Prospección
 resource.status.occurrence,Ocorrência,Occurrence,Ocurrencia
-resource.status.unknown,—,—,—
+resource.status.unknown,Desconhecido,Unknown,Desconocido
+map.legend.reserve_tip,Quantidade estimada de recurso no depósito.,Estimated amount of resource in the deposit.,Cantidad estimada de recurso en el yacimiento.
+map.legend.quality_tip,Teor/pureza do recurso (0–100%).,Ore grade/purity (0–100%).,Ley/pureza del recurso (0–100%).
+map.legend.depth_tip,Profundidade média do depósito em metros.,Average deposit depth in meters.,Profundidad media del yacimiento en metros.
+map.legend.status_tip,Estágio: produtor, exaurido, prospecto ou ocorrência.,Stage: producer, depleted, prospect or occurrence.,Etapa: productor, agotado, prospecto u ocurrencia.

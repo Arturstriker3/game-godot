@@ -26,7 +26,7 @@ PLACES = os.path.join(ROOT, "assets", "icons", "places")
 
 MINERALS = ["coal", "copper", "gas", "iron", "oil"]
 ## Códigos de status no resource_points.json (legenda do depósito).
-STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 3}
+STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 3, "Plant": 3}
 WHEAT_MIN = 0.40
 EDGE = (23, 20, 16, 235)
 
@@ -83,18 +83,17 @@ def star(size: int = 512) -> Image.Image:
     return img
 
 
-def info_badge(size: int = 64) -> Image.Image:
-    """Badge "i" que aparece sobre o depósito sob o mouse."""
+def hover_ring(size: int = 128) -> Image.Image:
+    """Anel de hover em volta do depósito sob o mouse."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     c = size / 2.0
-    r = size * 0.44
-    d.ellipse([c - r, c - r, c + r, c + r], fill=(10, 18, 18, 235),
-              outline=(201, 162, 74, 255), width=max(2, size // 16))
-    d.ellipse([c - size * 0.05, c - size * 0.26, c + size * 0.05, c - size * 0.16],
-              fill=(232, 226, 208, 255))
-    d.rectangle([c - size * 0.045, c - size * 0.10, c + size * 0.045, c + size * 0.24],
-                fill=(232, 226, 208, 255))
+    r = size * 0.455
+    d.ellipse([c - r, c - r, c + r, c + r], outline=(12, 12, 12, 235),
+              width=max(3, size // 20))
+    d.ellipse([c - r + size * 0.02, c - r + size * 0.02,
+               c + r - size * 0.02, c + r - size * 0.02],
+              outline=(201, 162, 74, 255), width=max(2, size // 28))
     return img
 
 
@@ -201,6 +200,6 @@ white_icon("resources.png", "map_mode_resources.png")
 marker(64, "dot").save(os.path.join(PLACES, "resource_dot.png"))
 marker(64, "diamond").save(os.path.join(PLACES, "resource_wheat.png"))
 star().save(os.path.join(PLACES, "star.png"))
-info_badge().save(os.path.join(PLACES, "deposit_info.png"))
+hover_ring().save(os.path.join(PLACES, "deposit_hover.png"))
 
 build_points()

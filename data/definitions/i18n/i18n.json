@@ -292,12 +292,16 @@
   "map.legend.reserve": "Reserva",
   "map.legend.quality": "Qualidade",
   "map.legend.depth": "Profundidade",
-  "map.legend.status": "Status",
+  "map.legend.status": "Estágio",
   "resource.status.producer": "Produtor",
   "resource.status.past": "Exaurido",
   "resource.status.prospect": "Prospecção",
   "resource.status.occurrence": "Ocorrência",
-  "resource.status.unknown": "—"
+  "resource.status.unknown": "Desconhecido",
+  "map.legend.reserve_tip": "Quantidade estimada de recurso no depósito.",
+  "map.legend.quality_tip": "Teor/pureza do recurso (0–100%).",
+  "map.legend.depth_tip": "Profundidade média do depósito em metros.",
+  "map.legend.status_tip": "Estágio: produtor"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -592,12 +596,16 @@
   "map.legend.reserve": "Reserve",
   "map.legend.quality": "Quality",
   "map.legend.depth": "Depth",
-  "map.legend.status": "Status",
+  "map.legend.status": "Stage",
   "resource.status.producer": "Producer",
   "resource.status.past": "Depleted",
   "resource.status.prospect": "Prospect",
   "resource.status.occurrence": "Occurrence",
-  "resource.status.unknown": "—"
+  "resource.status.unknown": "Unknown",
+  "map.legend.reserve_tip": "Estimated amount of resource in the deposit.",
+  "map.legend.quality_tip": "Ore grade/purity (0–100%).",
+  "map.legend.depth_tip": "Average deposit depth in meters.",
+  "map.legend.status_tip": "exaurido"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -892,11 +900,15 @@
   "map.legend.reserve": "Reserva",
   "map.legend.quality": "Calidad",
   "map.legend.depth": "Profundidad",
-  "map.legend.status": "Estado",
+  "map.legend.status": "Etapa",
   "resource.status.producer": "Productor",
   "resource.status.past": "Agotado",
   "resource.status.prospect": "Prospección",
   "resource.status.occurrence": "Ocurrencia",
-  "resource.status.unknown": "—"
+  "resource.status.unknown": "Desconocido",
+  "map.legend.reserve_tip": "Cantidad estimada de recurso en el yacimiento.",
+  "map.legend.quality_tip": "Ley/pureza del recurso (0–100%).",
+  "map.legend.depth_tip": "Profundidad media del yacimiento en metros.",
+  "map.legend.status_tip": "prospecto ou ocorrência."
  }
 }
