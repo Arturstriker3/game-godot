@@ -82,5 +82,29 @@
     "name": "Diamante",
     "base_price": 5000.0,
     "food": false
+  },
+  {
+    "id": "coal",
+    "name": "Carvão",
+    "base_price": 6.0,
+    "food": false
+  },
+  {
+    "id": "copper",
+    "name": "Cobre",
+    "base_price": 60.0,
+    "food": false
+  },
+  {
+    "id": "gas",
+    "name": "Gás",
+    "base_price": 30.0,
+    "food": false
+  },
+  {
+    "id": "oil",
+    "name": "Petróleo",
+    "base_price": 45.0,
+    "food": false
   }
 ]

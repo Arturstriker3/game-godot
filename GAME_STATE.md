@@ -172,11 +172,10 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 
 ## 7. Recursos naturais
 
-- **Aptidão agrícola:** `data/definitions/natural/agriculture.json` (8 culturas: trigo, arroz, milho, batata, soja, cana, café, fruta), `data_quality:"real_climate"`; só **trigo** é aplicado ao sim (`GeographyService.apply_to_sim`). Aptidão recalculada com clima real (WorldClim 2.1 10-min) por `tools/apply_real_climate.py`.
-- **Depósitos minerais:** `deposits.json` (≈289 mil registros, fonte `tools/data/mrds_deposits.jsonl` com 304.632 registros — contagens divergentes); campos: `resource`, `px/py/lon/lat`, `quantity_kt`, `recoverable_kt`, `quality`, `depth_m`, `extraction_cost`, `max_rate_kt_day`, etc. Registros marcados `"facility"` (fundições/refinarias) são ignorados pelo mapa e pelas cidades.
-- **Prospecção:** só na IA (`ResourceKnowledge.prospect`), custo 2000/sítio.
-- **Extração/esgotamento:** **não implementados** no núcleo — a mina de ferro produz como fazenda, sem consumir reserva.
-- **Conhecimento do jogador vs interno:** fog-of-war de depósitos na IA (`ResourceKnowledge`); o C++ não distingue.
+- **Aptidão agrícola:** `data/definitions/natural/agriculture.json` (8 culturas: trigo, arroz, milho, batata, soja, cana, café, fruta), `data_quality:"real_climate"`; **trigo, arroz e milho** aplicados ao sim (`GeographyService.apply_to_sim`). Aptidão recalculada com clima real (WorldClim 2.1 10-min) por `tools/apply_real_climate.py`.
+- **Depósitos minerais:** `deposits.json` (≈2.266 registros após reclassificação; fonte `tools/data/mrds_deposits.jsonl` com 304.632 registros); campos: `resource`, `px/py/lon/lat`, `quantity_kt`, `recoverable_kt`, `quality`, `depth_m`, `extraction_cost`, `max_rate_kt_day`, etc. Registros marcados `"facility"` (fundições/refinarias) são ignorados pelo mapa e pelas cidades.
+- **Sem prospecção:** todo depósito é conhecido desde a inicialização (`apply_to_sim` declara aptidão + reserva de cada cidade via `demo_set_deposit`); `ResourceKnowledge` foi removido.
+- **Extração/esgotamento:** implementados no núcleo — a mina consome a reserva (`demo_set_deposit`, reserva compartilhada pelas minas da cidade) e a eficiência cai com a qualidade (`0,5 + 0,5·q`); profundidade encarece o opex.
 - `nature.json`: geofísica por território (clima, solo, relevo, fertilidade, água), `data_quality:"real_climate"` (altitude/temp/precip reais de WorldClim 2.1 10-min; clima/solo/derivados seguem as fórmulas re-alimentadas); fertilidade/cultivável entram na ficha agrícola.
 
 ---
@@ -210,8 +209,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **IA econômica (GDScript, `core/economy/ai/`):** determinística, intervalo de 7 dias, **não conectada ao jogo ao vivo**.
   - `EconomicAI` — orquestrador.
   - `PrivateInvestor` — investe/expande se margem > 0,5/t e payback < 150 dias.
-  - `GovernmentAI` — prospecção mineral, estatal de segurança alimentar, mina de ferro (limite 25% do orçamento).
-  - `ResourceKnowledge` — fog-of-war de depósitos.
+  - `GovernmentAI` — estatal de segurança alimentar, mina de ferro se o território tem ferro (limite 25% do orçamento; sem prospecção).
   - `IndustryTemplates` — parâmetros de construção (duplicam o C++).
 - **Políticas econômicas:** limitadas a regras fixas (impostos/transferências); não há interface de política ativa.
 

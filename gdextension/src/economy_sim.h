@@ -236,10 +236,11 @@ private:
 	enum class DemoProduct {
 		Wheat = 0, Flour = 1, Bread = 2, Iron = 3, Rice = 4, Maize = 5,
 		Bauxite = 6, Lead = 7, Gold = 8, Phosphate = 9, Tungsten = 10,
-		RareEarths = 11, Sulfur = 12, Diamond = 13
+		RareEarths = 11, Sulfur = 12, Diamond = 13, Coal = 14, Copper = 15,
+		Gas = 16, Oil = 17
 	};
 	// Mesma ordem de data/definitions/economy/goods.json.
-	static constexpr int kDemoProducts = 14;
+	static constexpr int kDemoProducts = 18;
 	static constexpr int kDemoFoodProducts = 3;
 
 	struct DemoMarket {
@@ -583,7 +584,7 @@ private:
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
 	double demo_base_prices_[kDemoProducts] = {
 		40.0, 70.0, 80.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
-		15.0, 5000.0};
+		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0};
 
 	// Estado do benchmark sintético (estruturas planas, sem alocação por tick).
 	bool bench_active_ = false;

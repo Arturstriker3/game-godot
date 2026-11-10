@@ -18,15 +18,13 @@ const BASE_RISK := 0.15
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var _sim: Object
-var _knowledge: Object
 var _decisions: Array[Dictionary] = []
 var _history: Dictionary = {}
 var _id_counter := 1
 
 
-func setup(sim: Object, knowledge: Object) -> void:
+func setup(sim: Object) -> void:
 	_sim = sim
-	_knowledge = knowledge
 
 
 func run(day: int, status: Dictionary) -> void:

@@ -1,12 +1,12 @@
 extends RefCounted
 class_name GovernmentAI
 
-## Governo determinístico: financia prospecção, cobre falhas de mercado em
-## alimentos estratégicos e cria estatais quando o capital privado não chega.
-## Nunca gasta acima da parcela orçamentária definida.
+## Governo determinístico: cobre falhas de mercado em alimentos estratégicos e
+## cria estatais quando o capital privado não chega. Nunca gasta acima da
+## parcela orçamentária definida. Sem prospecção: todo depósito é conhecido
+## desde a inicialização (via GeographyService.apply_to_sim).
 
 const BUDGET_SHARE := 0.25
-const PROSPECT_BUDGET := 6000.0
 const MIN_SHORTAGE_TONS := 1.0
 const MIN_STATE_CAPACITY := 2.0
 const MAX_STATE_CAPACITY := 20.0
@@ -16,14 +16,12 @@ const HIGH_UNEMPLOYMENT := 0.65
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var _sim: Object
-var _knowledge: Object
 var _decisions: Array[Dictionary] = []
 var _id_counter := 1
 
 
-func setup(sim: Object, knowledge: Object) -> void:
+func setup(sim: Object) -> void:
 	_sim = sim
-	_knowledge = knowledge
 
 
 func run(day: int, status: Dictionary) -> void:
@@ -46,27 +44,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	if available <= 0.0:
 		return
 
-	# 1. Prospecção: só gasta se houver depósito desconhecido no território.
-	if available >= PROSPECT_BUDGET:
-		for resource in Templates.MINERAL_RESOURCES:
-			var unknown: Array = _knowledge.unrevealed_deposits(city_id, center, resource)
-			if unknown.is_empty():
-				continue
-			var spent := minf(PROSPECT_BUDGET, available)
-			if not _sim.demo_spend_government(city_id, spent):
-				_log(day, city_id, "rejected", resource,
-					"orçamento insuficiente para prospecção", spent)
-				return
-			var found: Array = _knowledge.prospect(city_id, center, resource, spent)
-			available -= spent
-			_log(day, city_id, "prospect", resource,
-				"prospecção revelou %d depósito(s)" % found.size(), spent)
-			if resource == "iron" and not found.is_empty():
-				_sim.demo_set_suitability(city_id, "iron",
-					maxf(0.30, _knowledge.known_quality(city_id, center, "iron")))
-			break
-
-	# 2. Segurança alimentar: estatal quando há escassez e o setor privado
+	# 1. Segurança alimentar: estatal quando há escassez e o setor privado
 	# não cobre (ou quando o governo é o comprador estratégico).
 	var food_candidates: Array = []
 	for resource in Templates.FOOD_RESOURCES:
@@ -122,9 +100,10 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			cost)
 		return
 
-	# 3. Mineração estratégica: mina estatal se houver depósito conhecido,
-	# margem positiva e nenhuma produção local.
-	if _knowledge.has_known(city_id, center, "iron"):
+	# 3. Mineração estratégica: mina estatal se o território tem ferro
+	# (aptidão > 0, aplicada na inicialização), margem positiva e sem produção.
+	var suitability: Array = city.get("suitability", [0.0])
+	if suitability.size() > 3 and float(suitability[3]) > 0.0:
 		var iron_market: Dictionary = city["markets"][3]
 		var has_mine := false
 		for building in city.get("buildings", []):

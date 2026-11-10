@@ -57,7 +57,7 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 
 // Versão do schema do save do modo demo. Aumente ao mudar a estrutura do
 // dicionário; demo_from_dict recusa versões futuras (maiores).
-// v2: reservas minerais por cidade (deposits) e 14 produtos. Saves v1 (4
+// v2: reservas minerais por cidade (deposits) e 18 produtos. Saves v1 (4
 // produtos, sem reservas) continuam carregando.
 constexpr int kDemoSaveVersion = 2;
 
@@ -772,9 +772,10 @@ constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
 constexpr double kDemoTradeCapacityPerCapita = 0.001;
 
 // Ordem idêntica à de data/definitions/economy/goods.json.
-constexpr const char* kDemoProductNames[14] = {
+constexpr const char* kDemoProductNames[18] = {
 	"wheat", "flour", "bread", "iron", "rice", "maize", "bauxite", "lead", "gold",
 	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
+	"coal", "copper", "gas", "oil",
 };
 
 } // namespace

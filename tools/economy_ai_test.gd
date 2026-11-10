@@ -94,16 +94,10 @@ func _scenario_iron_discovery() -> Array:
 	var sim = world["sim"]
 	var ai = world["ai"]
 	_boost_cash(sim, "AGRIA", 20000.0, 200000.0)
-	# Descoberta: depósito de ferro no território de Agria.
-	ai.discover("AGRIA", "iron", {
-		"id": "SYN-IRON-1",
-		"resource": "iron",
-		"quality": 0.80,
-		"recoverable_kt": 5000.0,
-		"max_rate_kt_day": 30.0,
-		"extraction_cost": 10.0,
-		"discovery_difficulty": 0.20,
-	})
+	# Depósito de ferro no território de Agria (conhecido desde o início, sem
+	# prospecção: aptidão + reserva declaradas direto no núcleo).
+	sim.demo_set_suitability("AGRIA", "iron", 1.0)
+	sim.demo_set_deposit("AGRIA", "iron", 5000.0, 0.80, 200.0)
 	var budget_before := _government_budget(sim, "AGRIA")
 	_run(world, 42)
 
