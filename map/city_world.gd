@@ -63,9 +63,6 @@ const PORT_ICON_MERGE_DISTANCE := 0.5
 ## até onde a cidade alcança; o detalhe fica na legenda ao clicar na cidade.
 const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
 const WHEAT_STRIP_MIN := 0.40
-## Raio (unidades do mundo, ~40 km cada) de captação de recursos da cidade.
-## Conta o que está perto, não o centroide do território.
-const CITY_RESOURCE_RADIUS := 1.5
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -200,11 +197,6 @@ func set_mode(mode: String) -> void:
 		_political_material.set_shader_parameter("border_opacity", 0.42)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
-	# Anel do raio de captação: só no modo recursos.
-	for record in _city_nodes:
-		var radius_ring := record.get("resource_ring") as MeshInstance3D
-		if radius_ring != null:
-			radius_ring.visible = mode == "resources"
 
 
 ## Filtro da legenda de recursos: esconde marcadores do mapa.
@@ -912,7 +904,6 @@ func _build_cities(cities: Array) -> void:
 			"icon": icon,
 			"ring": ring,
 			"flag": flag,
-			"resource_ring": _make_resource_ring(position),
 			"urban": null,
 		})
 
@@ -1080,18 +1071,25 @@ func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sp
 				label.position.y, label.position.z)
 
 
-## Recursos que a cidade alcança: depósitos dentro do raio de captação e trigo
-## do território. Conta quantas ocorrências de cada recurso existem.
+## Recursos que a cidade acessa: depósitos **onshore** cuja província pertence
+## à cidade + trigo do território. Offshore fica decorativo por enquanto.
 func _resource_entries(city_id: String, center: Vector2) -> Array:
 	if _geo == null:
 		_geo = GeographyScript.new()
 		_geo.load_data()
 	var counts := {}
-	for deposit in _geo.deposits_near(center, CITY_RESOURCE_RADIUS / PIXEL_TO_WORLD):
-		var key := String(deposit.get("resource", ""))
-		if key.is_empty() or MINERAL_KEYS.find(key) < 0:
-			continue
-		counts[key] = int(counts.get(key, 0)) + 1
+	if _mode_layer != null and _territory != null:
+		for point in _mode_layer.mineral_points():
+			if point.size() < 10:
+				continue
+			if int(point[9]) == 1:
+				continue  # offshore: sem acesso até a mecânica de extração
+			var province_id := int(point[8])
+			if province_id < 0 or _territory.city_for_province(province_id) != city_id:
+				continue
+			var key := String(MINERAL_KEYS[clampi(int(point[2]), 0,
+					MINERAL_KEYS.size() - 1)])
+			counts[key] = int(counts.get(key, 0)) + 1
 
 	var entries: Array = []
 	for key in MINERAL_KEYS:
@@ -1102,15 +1100,6 @@ func _resource_entries(city_id: String, center: Vector2) -> Array:
 		entries.append({"kind": "wheat", "count": 1, "value": wheat})
 	return entries
 
-
-## Círculo do raio de captação de recursos (só no modo recursos).
-func _make_resource_ring(position: Vector3) -> MeshInstance3D:
-	var ring := _make_ring("ResourceRadius", CITY_RESOURCE_RADIUS - 0.03,
-			CITY_RESOURCE_RADIUS + 0.03, Color("#C9A24A"), 0.22)
-	ring.position = position + Vector3(0.0, 0.14, 0.0)
-	ring.visible = false
-	_content.add_child(ring)
-	return ring
 
 
 func _add_port_label(position: Vector3, port_name: String) -> Label3D:
@@ -1249,16 +1238,6 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	if flag != null:
 		flag.transparency = 1.0 - label_alpha
 		flag.visible = label_alpha > 0.01
-
-	var radius_ring := record.get("resource_ring") as MeshInstance3D
-	if radius_ring != null:
-		radius_ring.visible = _mode == "resources" and label_alpha > 0.01
-		var hovered := String(record["id"]) == _hovered_id
-		var ring_material := radius_ring.material_override as StandardMaterial3D
-		if ring_material != null:
-			var ring_color := ring_material.albedo_color
-			ring_color.a = 0.55 if hovered else 0.22
-			ring_material.albedo_color = ring_color
 
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:

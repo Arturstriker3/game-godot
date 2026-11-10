@@ -184,6 +184,11 @@ func owners() -> Dictionary:
 	return _owners.duplicate()
 
 
+## Cidade dona da província ("" se a província não foi atribuída).
+func city_for_province(province_id: int) -> String:
+	return String(_assignment.get(province_id, ""))
+
+
 ## True se a posição (UV do mapa 0..1) está em terra firme (não no mar).
 func land_at_uv(uv: Vector2) -> bool:
 	var sdf := _world_sdf_raster()

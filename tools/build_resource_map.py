@@ -30,6 +30,11 @@ STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 
 WHEAT_MIN = 0.40
 EDGE = (23, 20, 16, 235)
 
+## Mapa de províncias (id = R + G*256) e SDF da costa (R: >128 terra) para
+## marcar offshore.
+PROVINCE_PATH = os.path.join(ROOT, "map", "map_data", "atlas", "world_province.png")
+SDF_PATH = os.path.join(ROOT, "map", "map_data", "atlas", "world_sdf.png")
+
 ## Regra de água: nenhum recurso terrestre no mar. Petróleo/gás podem estar
 ## offshore (pré-sal, Mar do Norte), mas só até 20 células do nav_mask
 ## (~320 km da costa) — o suficiente para os campos reais, sem pontos no meio
@@ -131,6 +136,8 @@ def deposit_allowed(nav: Image.Image, dep: dict) -> bool:
 
 def build_points() -> None:
     nav = load_nav()
+    provinces = Image.open(PROVINCE_PATH).convert("RGB")
+    sdf = Image.open(SDF_PATH).convert("RGB")
     deposits = read_json("deposits.json")["deposits"]
     minerals = []
     skipped = 0
@@ -141,15 +148,28 @@ def build_points() -> None:
         if not deposit_allowed(nav, dep):
             skipped += 1
             continue
+        px = float(dep.get("px", 0.0))
+        py = float(dep.get("py", 0.0))
+        # Província dona (id = R + G*256); offshore = pixel de água no nav_mask.
+        cx = int(px / MAP_W * provinces.width)
+        cy = int(py / MAP_H * provinces.height)
+        pr, pg, _pb = provinces.getpixel((cx, cy))
+        province_id = int(round(pr + pg * 256))
+        # Costa (SDF) define offshore: R <= 128 é água.
+        sx = int(px / MAP_W * sdf.width)
+        sy = int(py / MAP_H * sdf.height)
+        offshore = 0 if sdf.getpixel((sx, sy))[0] > 128 else 1
         minerals.append([
-            round(float(dep.get("px", 0.0)), 1),
-            round(float(dep.get("py", 0.0)), 1),
+            round(px, 1),
+            round(py, 1),
             MINERALS.index(resource),
             round(float(dep.get("quantity_kt", 0.0)), 1),
             round(float(dep.get("quality", 0.0)), 3),
             int(dep.get("depth_m", 0)),
             STATUS_CODES.get(str(dep.get("status", "")), 4),
             (str(dep.get("names", [""])[0]) if dep.get("names") else "")[:40],
+            province_id,
+            offshore,
         ])
 
     agriculture = read_json("agriculture.json")["territories"]

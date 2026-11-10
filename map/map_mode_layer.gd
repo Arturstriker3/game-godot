@@ -293,6 +293,12 @@ func set_deposit_hover(index: int) -> void:
 
 
 ## Dados de um depósito para a legenda.
+## Pontos minerais carregados (x, y, recurso, reserva, qualidade, profundidade,
+## status, nome, província, offshore). Usado pela cidade (acesso por território).
+func mineral_points() -> Array:
+	return _mineral_points
+
+
 func deposit_info(index: int) -> Dictionary:
 	if index < 0 or index >= _mineral_points.size():
 		return {}

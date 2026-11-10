@@ -285,12 +285,12 @@ resource.gas,Gás,Gas,Gas
 resource.iron,Ferro,Iron,Hierro
 resource.oil,Petróleo,Oil,Petróleo
 resource.wheat,Trigo,Wheat,Trigo
-map.legend.hint,Anel em volta da cidade = raio de captação. Clique na cidade para ver os recursos.,Ring around the city = catchment radius. Click the city to see its resources.,Anillo alrededor de la ciudad = radio de captación. Haz clic en la ciudad para ver los recursos.
+map.legend.hint,Clique numa cidade para ver os recursos do território.,Click a city to see the resources of its territory.,Haz clic en una ciudad para ver los recursos del territorio.
 map.legend.all,Todos,All,Todos
 map.legend.deposit,Depósito,Deposit,Yacimiento
 map.legend.city_resources,Recursos da cidade,City resources,Recursos de la ciudad
 map.legend.city_empty,Sem recursos ao alcance.,No resources in reach.,Sin recursos al alcance.
-map.legend.city_hint,Minérios no raio de captação + trigo do território.,Minerals within the catchment radius + wheat from the territory.,Minerales en el radio de captación + trigo del territorio.
+map.legend.city_hint,Recursos das províncias da cidade. Campos offshore ficam inacessíveis por enquanto.,Resources from the city's provinces. Offshore fields are unavailable for now.,Recursos de las provincias de la ciudad. Los campos offshore quedan inaccesibles por ahora.
 map.legend.deposit_hint,Quantidade é reserva estimada; a extração será definida depois.,Amount is estimated reserve; extraction will be defined later.,La cantidad es reserva estimada; la extracción se definirá después.
 map.legend.back,Voltar,Back,Volver
 map.legend.reserve,Reserva,Reserve,Reserva
