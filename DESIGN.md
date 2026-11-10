@@ -269,7 +269,8 @@ substituir as cinco cidades atuais.
   "Sua nação"), data e progresso do dia, quatro indicadores (população, estoque,
   déficit, trânsito), velocidade, idioma e menu. Os indicadores têm tooltip
   explicando a origem do número; ao pausar, o rótulo do dia troca para "Pausado"
-  em `WARNING`. Tooltips têm borda latão e sombra de 4 px (estilo HOI3).
+  em `WARNING`. Tooltips em papel (fundo `PAPEL_CLARO`, borda `TINTA` 1 px e
+  tipografia Special Elite em `TINTA`).
 - **Minimapa** no canto inferior direito (`core/ui/minimap.gd`), folha de papel
   "Papelaria de guerra" (ver seção abaixo): mapa político global
   (`map/map_data/atlas/minimap.png`, mesmo pipeline do atlas, dinâmico por dono
@@ -426,6 +427,13 @@ Tokens (em `core/ui/ui_kit.gd`):
 | `BARRA_FILETE` | `#b9a77a` | filete/borda da barra superior |
 | `BARRA_TEXTO` | `#efe4c6` | valor na barra superior |
 | `BARRA_ROTULO` | `#b3a47e` | rótulo na barra superior |
+| `MANILA` | `#c9a96a` | papel pardo da etiqueta de inventário |
+| `MANILA_LIGHT` | `#d8bd84` | manila claro (botão "Todos") |
+| `MANILA_DARK` | `#8a6a34` | manila escuro (anel do furo) |
+| `MANILA_VIGNETTE` | `#7a5a2a` | vinheta interna da etiqueta |
+| `HOLE` | `#5f625e` | furo da etiqueta (vaza para o mapa) |
+| `STAGE_START` | `#c43c30` | estágio inicial do depósito (vermelho) |
+| `STAGE_PRODUCING` | `#5f9a3f` | estágio produtor (verde) |
 
 Fontes:
 
@@ -491,6 +499,36 @@ Minimapa (canto inferior direito, `core/ui/minimap.gd`):
   continua levando a câmera ao ponto (UV 0..1), restrito à área do mapa.
 - Sem zoom; os botões Economia/Comércio/Produção/População/Política da doca
   não são alterados.
+
+Legenda — "Etiqueta de inventário" (canto inferior esquerdo, modo recursos):
+
+- Papel manila (`MANILA`) com canto chanfrado e furo à esquerda (anel em
+  `MANILA_DARK`, furo `HOLE` vazando para o mapa), sombra projetada e grão de
+  papel com vinheta (`MANILA_VIGNETTE`); desenhado em `LegendLabel` no
+  `core/ui/hud.gd`.
+- Cabeçalho datilografado: linha 1 com bandeira (opcional) + título em Black Ops
+  One (`TINTA`) à esquerda e **botão de ação (Voltar/Todos) à direita**, os dois
+  centralizados verticalmente na mesma linha — "Todos" vira botão quadrado
+  (mesma altura do "Voltar") com caixa+check (✓) em `TINTA` sobre papel claro
+  (`assets/icons/check_all.svg`), tooltip "Mostrar todos". Linha 2 (opcional, só
+  se houver texto): rótulo + subtítulo unidos por " · " em Special Elite
+  (`TINTA_SUAVE`), abaixo do título — Depósito → "Depósito · Subterrâneo",
+  Cidade → "Cidade", Trigo → código do território (ex. "TRT000477"); "Mapa de
+  recursos" fica sem linha 2. Nada acima do título: topo do título, centro-y do
+  botão e margem direita do botão iguais nos quatro estados.
+- Corpo em folha de papel claro (`PAPEL_CLARO`) "colada" à etiqueta, com
+  padding reduzido. Linhas de dados com amostra de cor (quadrado, ou losango
+  para o trigo), líder pontilhado (`DottedLeader`) e valor à direita.
+- Quatro estados reutilizam o mesmo nó: **filtros** (checklist por recurso com
+  carimbo redondo `LegendStamp` + contagem + botão "Todos"), **cidade**,
+  **área agrícola** (trigo: aptidão/fertilidade/cultivável) e **depósito**
+  (reserva/qualidade/profundidade).
+- Estágio do depósito em barra segmentada de 3 (M=3): **Occurrence→Prospect→
+  Producer = N/3**, com "N/M" colorido interpolando vermelho (`STAGE_START`) →
+  verde (`STAGE_PRODUCING`); "Exaurido" enche a barra em tons apagados e
+  "Desconhecido" fica vazio (estados terminais fora do ciclo).
+- Rodapé informativo **justificado** (`_legend_footer`, `HORIZONTAL_ALIGNMENT_FILL`)
+  ocupando toda a largura da folha, com quebra de linha.
 
 
 ## Arquivos

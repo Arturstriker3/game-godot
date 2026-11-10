@@ -1,0 +1,97 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Legendas – 10 modelos</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Black+Ops+One&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#5f625e;font-family:'Special Elite',monospace;color:#2b2418;padding:24px 14px 60px;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.8'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E")}
+h1{font:26px 'Black Ops One';color:#efe4c6;text-align:center;letter-spacing:.06em}
+.lead{text-align:center;color:#e6dbbd;margin:6px auto 10px;font-size:14px;max-width:820px}
+nav{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 30px;position:sticky;top:0;z-index:9;padding:8px;background:#5f625ef0}
+nav a{font:13px 'Special Elite';color:#2d2a24;background:#e6dbbd;padding:4px 9px;text-decoration:none;border:1px solid #2b2418}
+section{margin:0 auto 54px;max-width:1080px}
+section h2{font:20px 'Black Ops One';color:#efe4c6;letter-spacing:.05em;text-align:center}
+section p.d{color:#e6dbbd;font-size:13px;text-align:center;max-width:720px;margin:6px auto 18px;line-height:1.45}
+.grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start}
+:root{--P:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .18 0 0 0 .32 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ---------- base comum ---------- */
+.card{width:236px;position:relative;font-size:13.5px}
+.hd{display:flex;align-items:flex-start;gap:8px}
+.hd .k{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+.hd .t{display:block;font:15px 'Black Ops One';letter-spacing:.07em;text-transform:uppercase}
+.hd .sub{display:block;font-size:10.5px;opacity:.7;margin-top:1px}
+.act{margin-left:auto;font-size:12px;white-space:nowrap;cursor:pointer}
+.r{display:flex;align-items:center;gap:7px;padding:3px 0;flex-wrap:wrap}
+.r .l{white-space:nowrap}.r .v{margin-left:auto;font-size:12.5px;white-space:nowrap}
+.r .ld{display:none}.r .ck{display:none}
+.r .bar{display:none;flex-basis:100%;height:5px;background:#2b24181c}.r .bar b{display:block;height:100%}
+.r.off{opacity:.42}
+.sw{width:13px;height:13px;flex:none;border:1px solid #2b2418}
+.sw.dia{transform:rotate(45deg) scale(.8)}
+.badge{font-size:11px;padding:0 5px;border:1px solid currentColor}
+.meta{font-size:11.5px;line-height:1.5;margin-top:6px}
+.meta span{white-space:nowrap}
+.cap{font-size:11px;line-height:1.4;margin-top:7px;opacity:.85}
+.stamp{display:none}
+.res{display:flex;align-items:center;gap:7px;margin:4px 0 2px;font-size:14px}
+
+/* 1 Ficha de catálogo */
+.s1{background:#ece2c6 var(--P);padding:11px 13px;border:1px solid #2b2418;box-shadow:0 8px 20px #000a,inset 0 0 28px #9c8250aa;
+ background-image:repeating-linear-gradient(transparent 0 23px,#7a95a63a 23px 24px),var(--P)}
+.s1 .hd{border-bottom:2px solid #a3241a;padding-bottom:5px;margin-bottom:5px}
+.s1 .act{color:#a3241a;text-decoration:underline}
+.s1 .ck{display:inline-block;width:13px;height:13px;border:1.5px solid #2b2418;font:12px/10px 'Special Elite';text-align:center}
+.s1 .ck::after{content:"x"}.s1 .off .ck::after{content:""}
+.s1 .cap{font-style:italic}
+.s1 .badge{color:#a3241a}
+
+/* 2 Etiqueta de inventário */
+.s2{background:#c9a96a var(--P);padding:10px 12px 12px 22px;clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 14px),0 14px);box-shadow:inset 0 0 26px #7a5a2a88}
+.s2::before{content:"";position:absolute;left:6px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:#5f625e;box-shadow:inset 0 0 0 2px #8a6a34}
+.s2 .act{border:1px solid #3b2a10;padding:0 6px;background:#d8bd84}
+.s2 .body{background:#e6dbbd var(--P);padding:7px 9px;margin-top:7px;box-shadow:0 2px 4px #0005}
+.s2 .ld{display:block;flex:1;border-bottom:2px dotted #2b241866;align-self:flex-end;margin-bottom:4px}
+.s2 .r .v{margin-left:0}
+.s2 .ck{display:grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1.5px solid #a3241a;color:#a3241a;font-size:10px;transform:rotate(-12deg)}
+.s2 .ck::after{content:"✓"}.s2 .off .ck::after{content:""}
+.s2 .stamp{display:block;position:absolute;right:10px;bottom:8px;font:12px 'Black Ops One';color:#a3241a;border:2px solid #a3241a;padding:0 4px;transform:rotate(-8deg);opacity:.85}
+.s2 .cap{padding-right:0}
+.wrap2{filter:drop-shadow(0 8px 10px #000a)}
+
+
+.flag{display:inline-block;width:24px;height:16px;flex:none;box-shadow:0 0 0 1px #2b2418;vertical-align:middle;margin-right:6px;background:linear-gradient(90deg,#0055a4 33%,#fff 33% 66%,#ef4135 66%)}
+.hd .t{display:flex;align-items:center}
+.stg{flex-basis:100%;display:flex;align-items:center;gap:8px;margin-top:2px}
+.stg .pct{font-size:12px;width:34px;text-align:right}
+.stg .track{flex:1;height:9px;background:#2b24181f;border:1px solid #2b241855;display:flex;gap:2px;padding:1px}
+.stg .track i{flex:1;background:#2b241818}
+.stg .track i.on{background:var(--c)}
+.s2 .act{display:none}
+/* variantes do Voltar */
+.vA{margin-left:auto;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#e6dbbd;border:1.5px solid #3b2a10;color:#3b2a10;font:15px/1 'Black Ops One';box-shadow:0 2px 0 #3b2a10;cursor:pointer}
+.vB{margin-left:auto;align-self:flex-start;margin-top:-10px;padding:6px 8px 4px;background:#e6dbbd var(--P);border:1px solid #3b2a10;border-top:none;border-radius:0 0 5px 5px;font-size:11px;color:#3b2a10;box-shadow:0 2px 3px #0005;cursor:pointer;white-space:nowrap}
+.vC{margin-left:auto;font:11px 'Black Ops One';letter-spacing:.06em;color:#a3241a;border:2px solid #a3241a;border-radius:3px;padding:1px 6px;transform:rotate(-4deg);cursor:pointer;white-space:nowrap}
+.vlabel{font:13px 'Special Elite';color:#efe4c6;text-align:center;margin-top:8px}
+</style></head><body>
+<h1>Modelo 2 · Etiqueta de inventário</h1>
+<p class="lead">Bandeira no lugar do nome do país, estágio da mina como barra, sem carimbos repetidos. Abaixo, 3 opções para o botão Voltar: escolha uma.</p>
+<section><h2>As 4 telas (Voltar na opção A)</h2><div class="grid" id="g1"></div></section>
+<section><h2>Estágio da mina · exemplos</h2><p class="d">A barra avança por etapa; cor vai de vermelho (início) a verde (produzindo), como na tabela de atendimento.</p><div class="grid" id="g2"></div></section>
+<section><h2>Botão Voltar · 3 opções</h2><div class="grid" id="g3"></div></section>
+<script>
+const sw=(c,d)=>`<span class="sw ${d?'dia':''}" style="background:${c}"></span>`;
+const STG=[['Prospecção',1,'#c43c30'],['Exploração',2,'#c8642c'],['Viabilidade',3,'#d29a2a'],['Desenvolvimento',4,'#9aa83a'],['Produtor',5,'#5f9a3f']];
+const stage=i=>{const s=STG[i];const pct=Math.round(s[1]/5*100);return `<div class="r"><span class="l">Estágio</span><span class="ld"></span><span class="v" style="color:${s[2]}">${s[0]}</span><div class="stg" style="--c:${s[2]}"><span class="pct" style="color:${s[2]}">${s[1]}/5</span><span class="track">${[1,2,3,4,5].map(k=>`<i class="${k<=s[1]?'on':''}"></i>`).join('')}</span></div></div>`};
+const row=o=>`<div class="r ${o.off?'off':''}">${o.toggle?'<span class="ck"></span>':''}${o.c?sw(o.c,o.dia):''}<span class="l">${o.l}</span><span class="ld"></span><span class="v">${o.v}</span></div>`;
+const back={A:'<span class="vA" title="Voltar">‹</span>',B:'<span class="vB">‹ voltar</span>',C:'<span class="vC">‹ VOLTAR</span>'};
+const hd=(k,t,v,sub,flag)=>`<div class="hd"><div><span class="k">${k}</span><span class="t">${flag?'<span class="flag"></span>':''}${t}</span>${sub?`<span class="sub">${sub}</span>`:''}</div>${v?back[v]:'<span style="margin-left:auto;border:1px solid #3b2a10;padding:0 6px;background:#d8bd84;font-size:12px">Todos</span>'}</div>`;
+const wrap=(h,b)=>`<div class="wrap2"><div class="card s2">${h}<div class="body">${b}</div></div></div>`;
+const city=v=>wrap(hd('Cidade','Paris',v,'',1),[['#C06A3C','Cobre','×5 · 21,1 Mt'],['#7C8894','Ferro','×8 · 3.833 Mt'],['#D9B45A','Trigo','95%',1]].map(r=>row({c:r[0],l:r[1],v:r[2],dia:r[3]})).join('')+'<p class="cap">Recursos das províncias da cidade. Campos offshore ficam inacessíveis por enquanto.</p>');
+const res=wrap(hd('Mapa de recursos','Recursos'),[['Carvão','#3E3B38',59],['Cobre','#C06A3C',1003],['Gás','#4E9FB0',37],['Ferro','#7C8894',943],['Petróleo','#5B4A2E',96,1],['Trigo','#D9B45A',116,0,1]].map(r=>row({toggle:1,l:r[0],c:r[1],v:r[2],off:r[3],dia:r[4]})).join('')+'<p class="cap">Clique numa cidade para ver os recursos do território.</p>');
+const wheat=v=>wrap(hd('Área agrícola','Trigo',v,'TRT000144'),`<div class="res">${sw('#D9B45A',1)} Trigo <span class="badge" style="margin-left:auto">Renovável</span></div>`+[['Aptidão','98%'],['Fertilidade','88%'],['Cultivável','46%']].map(r=>row({l:r[0],v:r[1]})).join('')+'<div class="meta">Clima: temperado úmido · Solo: aluvial · Relevo: planície</div><p class="cap">Recurso renovável: produz todo ano; melhora com maquinário e construções na cidade.</p>');
+const dep=(v,i,name,res,c)=>wrap(hd('Depósito',name||'Khouribga',v,'Subterrâneo'),`<div class="res">${sw(c||'#7C8894')} ${res||'Ferro'}</div>`+[['Reserva','80,7 Mt'],['Qualidade','45%'],['Profundidade','203 m']].map(r=>row({l:r[0],v:r[1]})).join('')+stage(i)+'<p class="cap">Quantidade é reserva estimada; a extração será definida depois.</p>');
+document.getElementById('g1').innerHTML=city('A')+res+wheat('A')+dep('A',4);
+document.getElementById('g2').innerHTML=dep('A',0,'Rousses Mountains','Cobre','#C06A3C')+dep('A',2,'Chessy','Cobre','#C06A3C')+dep('A',3,'Le Palais','Cobre','#C06A3C');
+document.getElementById('g3').innerHTML=['A','B','C'].map(v=>`<div>${city(v)}<p class="vlabel">${v==='A'?'A · botão redondo de lacre (só ‹)':v==='B'?'B · aba de papel saindo do topo':'C · carimbo vermelho'}</p></div>`).join('');
+</script></body></html>

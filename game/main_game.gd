@@ -116,6 +116,7 @@ func _build_hud() -> void:
 	hud.city_focused.connect(_on_city_focused)
 	hud.map_mode_requested.connect(_on_map_mode_requested)
 	hud.map_point_requested.connect(_on_map_point_requested)
+	hud.legend_reset_requested.connect(_on_legend_reset_requested)
 
 
 ## Faixa permitida para o centro da cÃƒÂ¢mera em Z (coordenadas globais).
@@ -204,6 +205,15 @@ func _on_city_focused(city_id: String) -> void:
 
 func _on_map_mode_requested(mode: String) -> void:
 	city_world.set_mode(mode)
+
+
+## "Todos"/"Voltar" na legenda: limpa TODA a seleção ativa no mapa (anel de
+## depósito/trigo, cidade/porto e realce de território) antes de voltar à lista.
+func _on_legend_reset_requested() -> void:
+	if city_world == null:
+		return
+	city_world.set_deposit_selected(-1)
+	city_world.select_city("")
 
 
 ## Clique no mapa seleciona a cidade mais prÃƒÂ³xima; a janela do HUD tem

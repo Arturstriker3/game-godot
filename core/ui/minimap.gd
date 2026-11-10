@@ -18,22 +18,24 @@ signal mode_requested(mode: String)
 const MAP_TEXTURE: Texture2D = preload("res://map/map_data/atlas/minimap.png")
 
 ## Tamanho com que a textura do mapa é desenhada, na proporção 2:1 da textura
-## (512×256). A moldura externa é determinística (226×118): 1 px de TINTA + 4 px
-## de papel em volta da textura, centralizada. Sem os rótulos de coordenada, a
-## textura cresceu para ocupar a faixa de papel que antes ficava reservada a eles.
-const MAP_SIZE := Vector2(216.0, 108.0)
+## (512×256). A moldura externa é determinística (244×127): 1 px de TINTA + 4 px
+## de papel em volta da textura, centralizada. Com o cabeçalho colado ao topo
+## (5 px), a textura absorve toda a altura liberada e cresce para 234×117.
+const MAP_SIZE := Vector2(234.0, 117.0)
 
 # --- Tokens de layout (px) ----------------------------------------------------
 const TAB_W := 34.0
 const TAB_H := 30.0
 const TAB_GAP := 4.0        # separação fixa entre abas (VBox)
-const PAPER_MARGIN := 14.0  # margem interna da folha
+const SIDE_MARGIN := 5.0    # margem lateral interna (reduzida p/ caber o mapa maior)
+const BOTTOM_MARGIN := 14.0 # margem inferior interna da folha
+const HEADER_TOP := 5.0     # distância do topo da folha ao texto do título (4-6 px)
 const FRAME_BORDER := 1.0   # moldura fina TINTA do mapa
 const FRAME_PAD := 4.0      # papel entre a moldura e a textura (3-4 px)
 const TITLE_HEIGHT := 14.0  # cabeçalho compacto (era 22)
 const HEADER_GAP := 2.0     # respiro vertical reduzido
 const RULE_HEIGHT := 1.0    # filete TINTA de 1 px (era 2)
-const HEADER_HEIGHT := TITLE_HEIGHT + HEADER_GAP + RULE_HEIGHT + HEADER_GAP
+const HEADER_HEIGHT := HEADER_TOP + TITLE_HEIGHT + HEADER_GAP + RULE_HEIGHT + HEADER_GAP
 const TITLE_SIZE := 10      # ~70% de 14
 
 ## Tom sépia quente aplicado à textura (modulate), para casar com o papel.
@@ -41,6 +43,7 @@ const SEPIA := Color(1.0, 0.92, 0.78)
 
 var _image: TextureRect
 var _view: Panel
+var _view_wrap: Panel
 var _view_uv := Rect2(0.45, 0.2, 0.05, 0.05)
 var _map_origin := Vector2.ZERO
 var _title: Label
@@ -56,8 +59,8 @@ var _active_mode := ""
 ## `_ready`, para o HUD posicionar o nó antes de adicioná-lo à árvore.
 static func total_size() -> Vector2:
 	var frame := MAP_SIZE + Vector2(FRAME_BORDER + FRAME_PAD, FRAME_BORDER + FRAME_PAD) * 2.0
-	return Vector2(TAB_W + PAPER_MARGIN * 2.0 + frame.x,
-			PAPER_MARGIN * 2.0 + HEADER_HEIGHT + frame.y)
+	return Vector2(TAB_W + SIDE_MARGIN * 2.0 + frame.x,
+			HEADER_HEIGHT + frame.y + BOTTOM_MARGIN)
 
 
 func _ready() -> void:
@@ -66,11 +69,11 @@ func _ready() -> void:
 	clip_contents = false
 
 	var frame_size := MAP_SIZE + Vector2(FRAME_BORDER + FRAME_PAD, FRAME_BORDER + FRAME_PAD) * 2.0
-	var sheet_w := PAPER_MARGIN * 2.0 + frame_size.x
-	var sheet_h := PAPER_MARGIN * 2.0 + HEADER_HEIGHT + frame_size.y
+	var sheet_w := SIDE_MARGIN * 2.0 + frame_size.x
+	var sheet_h := HEADER_HEIGHT + frame_size.y + BOTTOM_MARGIN
 	var sheet_x := TAB_W
-	var frame_x := sheet_x + PAPER_MARGIN
-	var frame_y := PAPER_MARGIN + HEADER_HEIGHT
+	var frame_x := sheet_x + SIDE_MARGIN
+	var frame_y := HEADER_HEIGHT
 	_frame_y = frame_y
 	_sheet_h = sheet_h
 	_map_origin = Vector2(frame_x + FRAME_BORDER + FRAME_PAD, frame_y + FRAME_BORDER + FRAME_PAD)
@@ -93,7 +96,7 @@ func _ready() -> void:
 
 	# Cabeçalho compacto: título + filete de 1 px. Nada à direita do título.
 	_title = Label.new()
-	_title.position = Vector2(frame_x, PAPER_MARGIN)
+	_title.position = Vector2(frame_x, HEADER_TOP)
 	_title.size = Vector2(frame_size.x, TITLE_HEIGHT)
 	_title.add_theme_font_override("font", UiKit.PAPER_DISPLAY_FONT)
 	_title.add_theme_font_size_override("font_size", TITLE_SIZE)
@@ -102,7 +105,7 @@ func _ready() -> void:
 	add_child(_title)
 
 	var rule := ColorRect.new()
-	rule.position = Vector2(frame_x, PAPER_MARGIN + TITLE_HEIGHT + HEADER_GAP)
+	rule.position = Vector2(frame_x, HEADER_TOP + TITLE_HEIGHT + HEADER_GAP)
 	rule.size = Vector2(frame_size.x, RULE_HEIGHT)
 	rule.color = UiKit.TINTA
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -132,16 +135,13 @@ func _ready() -> void:
 	_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_image)
 
-	# Retângulo vazado da área vista: CARIMBO, 2 px.
-	_view = Panel.new()
-	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var view_style := StyleBoxFlat.new()
-	view_style.bg_color = Color(0, 0, 0, 0)
-	view_style.border_color = UiKit.CARIMBO
-	view_style.set_border_width_all(2)
-	view_style.set_corner_radius_all(0)
-	_view.add_theme_stylebox_override("panel", view_style)
+	# Retângulo vazado da área vista: CARIMBO, 2 px. Dois painéis: o principal e
+	# um extra para a segunda parte quando o mundo dá a volta (wrap horizontal).
+	_view = _make_view_panel()
 	add_child(_view)
+	_view_wrap = _make_view_panel()
+	_view_wrap.visible = false
+	add_child(_view_wrap)
 	_layout_view()
 
 	# Pilha de abas de tipo de mapa à esquerda da folha. VBox alinhada ao topo da
@@ -294,17 +294,74 @@ func set_view(center_uv: Vector2, size_uv: Vector2) -> void:
 	_layout_view()
 
 
+## Painel do retângulo CARIMBO (vazado, borda 2 px), criado duas vezes para o
+## caso de wrap horizontal do mundo (uma parte em cada borda).
+func _make_view_panel() -> Panel:
+	var p := Panel.new()
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = UiKit.CARIMBO
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(0)
+	p.add_theme_stylebox_override("panel", style)
+	return p
+
+
 func _layout_view() -> void:
 	if _view == null:
 		return
+	var map_rect := Rect2(_map_origin, MAP_SIZE)
 	var min_size := Vector2(6.0, 4.0)
-	var rect_size := (_view_uv.size * MAP_SIZE).max(min_size)
-	var center := _map_origin + (_view_uv.position + _view_uv.size * 0.5) * MAP_SIZE
-	var pos := center - rect_size * 0.5
-	pos.x = clampf(pos.x, _map_origin.x, _map_origin.x + MAP_SIZE.x - rect_size.x)
-	pos.y = clampf(pos.y, _map_origin.y, _map_origin.y + MAP_SIZE.y - rect_size.y)
-	_view.position = pos
-	_view.size = rect_size
+	# Rect da câmera em pixels do mapa, sem clamp: pode vazar e cruzar a borda
+	# esquerda/direita (o mundo dá a volta).
+	var view_rect := Rect2(_map_origin + _view_uv.position * MAP_SIZE, _view_uv.size * MAP_SIZE)
+	# Recorta à área do mapa; 1 parte normal ou 2 no wrap horizontal. Se a
+	# câmera cobre mais que o mapa, o recorte vira a borda do próprio mapa.
+	var parts: Array[Rect2] = _clip_to_map(view_rect, map_rect)
+	# Zoom muito próximo: garante um selo visível (nunca maior que o mapa).
+	var sealed: Array[Rect2] = []
+	for r in parts:
+		var size := r.size.max(min_size)
+		var pos := r.position - (size - r.size) * 0.5
+		pos.x = clampf(pos.x, map_rect.position.x, map_rect.end.x - size.x)
+		pos.y = clampf(pos.y, map_rect.position.y, map_rect.end.y - size.y)
+		sealed.append(Rect2(pos, size))
+	_view.visible = sealed.size() >= 1
+	if sealed.size() >= 1:
+		_view.position = sealed[0].position
+		_view.size = sealed[0].size
+	_view_wrap.visible = sealed.size() >= 2
+	if sealed.size() >= 2:
+		_view_wrap.position = sealed[1].position
+		_view_wrap.size = sealed[1].size
+
+
+## Recorta o rect da câmera à área do mapa em pixels, dividindo nas duas partes
+## quando o mundo dá a volta (wrap horizontal). Vertical nunca dá a volta.
+func _clip_to_map(view_rect: Rect2, map_rect: Rect2) -> Array[Rect2]:
+	var uv := Rect2((view_rect.position - map_rect.position) / MAP_SIZE, view_rect.size / MAP_SIZE)
+	var out: Array[Rect2] = []
+	var y0 := clampf(uv.position.y, 0.0, 1.0)
+	var y1 := clampf(uv.end.y, 0.0, 1.0)
+	if y1 <= y0:
+		return out
+	var h := y1 - y0
+	if uv.size.x >= 1.0:
+		out.append(_uv_rect_to_px(Rect2(0.0, y0, 1.0, h), map_rect))
+		return out
+	var x0 := fposmod(uv.position.x, 1.0)
+	var x1 := x0 + uv.size.x
+	if x1 > 1.0:
+		out.append(_uv_rect_to_px(Rect2(x0, y0, 1.0 - x0, h), map_rect))
+		out.append(_uv_rect_to_px(Rect2(0.0, y0, x1 - 1.0, h), map_rect))
+	else:
+		out.append(_uv_rect_to_px(Rect2(x0, y0, x1 - x0, h), map_rect))
+	return out
+
+
+func _uv_rect_to_px(uv: Rect2, map_rect: Rect2) -> Rect2:
+	return Rect2(map_rect.position + uv.position * MAP_SIZE, uv.size * MAP_SIZE)
 
 
 func _gui_input(event: InputEvent) -> void:

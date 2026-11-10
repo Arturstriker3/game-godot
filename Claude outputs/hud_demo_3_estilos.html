@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUD OpenGS – 3 estilos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Oswald:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&family=Special+Elite&family=Black+Ops+One&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b1418;font-family:Oswald,sans-serif;color:#ddd;overflow-x:hidden}
+.switch{position:fixed;z-index:50;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:6px;background:#000c;padding:6px;border-radius:8px;border:1px solid #444}
+.switch button{font:600 14px Oswald,sans-serif;letter-spacing:.04em;padding:8px 16px;border:1px solid #555;background:#1a1a1a;color:#bbb;border-radius:5px;cursor:pointer}
+.switch button.on{background:#c9a24a;color:#111;border-color:#c9a24a}
+.cap{position:fixed;z-index:50;right:18px;bottom:22px;font:13px Oswald;color:#ccc;background:#000a;padding:6px 10px;border-radius:5px;max-width:340px}
+
+/* ---------- map backdrop ---------- */
+.map{position:fixed;inset:0;background:
+ radial-gradient(ellipse 22% 30% at 24% 38%,#b5524c 0 98%,transparent 100%),
+ radial-gradient(ellipse 34% 30% at 40% 82%,#5677b4 0 98%,transparent 100%),
+ radial-gradient(ellipse 9% 9% at 57% 40%,#d9894a 0 97%,transparent 100%),
+ radial-gradient(ellipse 9% 7% at 56% 54%,#d2bb63 0 97%,transparent 100%),
+ radial-gradient(ellipse 20% 34% at 80% 52%,#8f9396 0 98%,transparent 100%),
+ linear-gradient(180deg,#183a44,#10303a)}
+.map::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E")}
+
+.frame{position:relative;min-height:100vh}
+.top{position:relative;z-index:5;display:flex;align-items:stretch;height:58px}
+.nation{display:flex;align-items:center;gap:10px;padding:0 16px}
+.flag{width:34px;height:21px;flex:none;display:inline-block;box-shadow:0 0 0 1px #0008}
+.flag.sm{width:22px;height:14px}
+.res{display:flex;margin-left:auto}
+.r{display:flex;align-items:center;gap:8px;padding:0 14px}
+.r svg{width:20px;height:20px;flex:none}
+.r b{display:block;font-size:17px;line-height:1}
+.r small{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.speed{display:flex;align-items:center;gap:3px;padding:0 12px}
+.speed i{font-style:normal;font-size:12px;width:26px;height:24px;display:grid;place-items:center}
+
+.panel{position:absolute;z-index:4;left:12px;top:70px;width:min(620px,calc(100vw - 24px))}
+.ph{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.ph h2{font-size:22px}
+.ph .sub{font-size:11px;opacity:.75;letter-spacing:.05em}
+.ph .x{margin-left:auto;width:26px;height:26px;display:grid;place-items:center;cursor:pointer}
+.tabs{display:flex;gap:4px;padding:0 14px}
+.tabs span{padding:6px 14px;font-size:13px;cursor:pointer}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 14px}
+.kpi small{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.kpi b{font-size:19px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-weight:500;font-size:10px;letter-spacing:.08em;text-transform:uppercase;text-align:right;padding:6px 8px}
+th:first-child,td:first-child{text-align:left}
+td{padding:5px 8px;text-align:right;white-space:nowrap}
+td.n{display:flex;align-items:center;gap:8px}
+.bar{display:inline-block;width:64px;height:8px;vertical-align:middle;margin-left:6px;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0}
+.foot{padding:8px 14px;font-size:11px;opacity:.7}
+.neg{color:#e0605a}.ok{color:#8fc070}.mid{color:#e3b04b}
+@media(max-width:700px){.res .r:nth-child(n+3),.speed{display:none}.summary{grid-template-columns:repeat(2,1fr)}th:nth-child(3),td:nth-child(3),th:nth-child(5),td:nth-child(5){display:none}}
+
+/* =========== A: HoI3 fiel =========== */
+.A .top{background:linear-gradient(#5b5a49,#3b3a2e 55%,#2c2b22);border-bottom:2px solid #15140f;box-shadow:inset 0 1px #8a876c,0 3px 8px #000a}
+.A .nation{background:linear-gradient(#45443a,#2a291f);border-right:2px groove #77735a}
+.A .nation h1{font:700 19px Cinzel,serif;color:#efe2b0;text-shadow:0 1px 0 #000,0 0 6px #0008}
+.A .nation .date{font:600 12px Cinzel,serif;color:#cdbf8f}
+.A .r{border-left:1px solid #22211a;box-shadow:inset 1px 0 #6c6a53}
+.A .r b{color:#f3e7bd;text-shadow:0 1px #000}
+.A .r small{color:#bdb38a}
+.A .speed i{background:linear-gradient(#6c6a55,#3a392d);border:1px solid #1d1c16;box-shadow:inset 0 1px #9a967a;color:#e8dcae}
+.A .speed i.on{background:linear-gradient(#c9a24a,#7d5e1f);color:#1b1408}
+.A .panel{background:#3a3a30 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .1 0 0 0 0 .08 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");border:3px solid #1a1913;outline:2px solid #807a5a;outline-offset:-6px;box-shadow:0 8px 30px #000c,inset 0 0 40px #0009;padding:6px}
+.A .ph{background:linear-gradient(#a8873e,#6f5420 60%,#4f3b15);border:1px solid #2a1f0a;box-shadow:inset 0 1px #e2c27a,inset 0 -2px 4px #0006}
+.A .ph h2{font:700 21px Cinzel,serif;color:#fff0c4;text-shadow:0 2px 0 #2a1d07}
+.A .ph .sub{color:#f3dfa4}
+.A .ph .x{background:linear-gradient(#7d3a2a,#4a1c12);border:1px solid #1c0b06;color:#f6d6b0;font-weight:700}
+.A .tabs{margin-top:8px}
+.A .tabs span{background:linear-gradient(#55533f,#35342a);border:1px solid #1b1a14;border-bottom:none;color:#cfc59d;box-shadow:inset 0 1px #868265}
+.A .tabs span.on{background:linear-gradient(#cdbf8f,#a39465);color:#22200f;font-weight:600}
+.A .summary{background:#25241c;border:1px solid #14130e;box-shadow:inset 0 1px 6px #000;margin:0 0 6px}
+.A .kpi b{color:#f3e7bd}.A .kpi small{color:#bdb38a}
+.A .tw{background:#d6cba2;border:2px solid #14130e;box-shadow:inset 0 0 18px #8f7f50;color:#2a2516}
+.A th{background:linear-gradient(#6b6750,#4a4836);color:#efe6c3;border-bottom:1px solid #1a1913}
+.A td{border-bottom:1px solid #b3a67b;font-weight:500}
+.A tr:nth-child(even) td{background:#cbbf93}
+.A tr.me td{background:#e7d9a6;box-shadow:inset 0 0 0 1px #8f2f22}
+.A .neg{color:#9b1f14}.A .ok{color:#2f6a1c}.A .mid{color:#8a5a0a}
+.A .bar{background:#4a4636;border:1px solid #1d1b12}
+.A .foot{color:#cfc59d}
+
+/* =========== B: Militar moderno =========== */
+.B{font-family:'Barlow Condensed',sans-serif}
+.B .top{background:#0e1214e8;border-bottom:1px solid #c9a24a55;backdrop-filter:blur(6px)}
+.B .nation{border-right:1px solid #ffffff14}
+.B .nation h1{font:600 20px 'Barlow Condensed';letter-spacing:.14em;text-transform:uppercase;color:#f0e6cc}
+.B .nation .date{font:500 12px 'IBM Plex Mono',monospace;color:#c9a24a}
+.B .r{border-left:1px solid #ffffff0f}
+.B .r b{font:600 18px 'Barlow Condensed';color:#f1ede3}
+.B .r small{color:#8b9296}
+.B .r svg{color:#c9a24a}
+.B .speed i{border:1px solid #ffffff22;color:#9aa}
+.B .speed i.on{border-color:#c9a24a;color:#c9a24a;background:#c9a24a18}
+.B .panel{background:#0f1416f2;border:1px solid #2a3236;box-shadow:0 10px 40px #000b}
+.B .panel::before,.B .panel::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #c9a24a}
+.B .panel::before{left:-1px;top:-1px;border-right:none;border-bottom:none}
+.B .panel::after{right:-1px;bottom:-1px;border-left:none;border-top:none}
+.B .ph{border-bottom:1px solid #c9a24a44}
+.B .ph h2{font:600 22px 'Barlow Condensed';letter-spacing:.16em;text-transform:uppercase;color:#f0e6cc}
+.B .ph .sub{font-family:'IBM Plex Mono',monospace;color:#c9a24a;font-size:11px}
+.B .ph .x{border:1px solid #ffffff22;color:#aaa}
+.B .tabs{padding-top:10px}
+.B .tabs span{color:#8b9296;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:.1em}
+.B .tabs span.on{color:#f0e6cc;border-color:#c9a24a}
+.B .summary{border-bottom:1px solid #ffffff10}
+.B .kpi{border-left:2px solid #c9a24a;padding-left:8px}
+.B .kpi b{font-family:'Barlow Condensed';color:#f1ede3}.B .kpi small{color:#8b9296}
+.B th{color:#8b9296;border-bottom:1px solid #ffffff18}
+.B td{border-bottom:1px solid #ffffff08;font:500 14px 'Barlow Condensed';color:#d8dcde}
+.B td.num{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.B tr:hover td{background:#c9a24a10}
+.B tr.me td{background:#c9a24a14}
+.B tr.me td:first-child{box-shadow:inset 3px 0 #c9a24a}
+.B .bar{background:#ffffff12}
+.B .foot{font-family:'IBM Plex Mono',monospace;color:#6b7478;border-top:1px solid #ffffff10}
+
+/* =========== C: Papelaria de guerra =========== */
+.C{font-family:'Special Elite',monospace}
+.C .top{background:#2d2a24;border-bottom:3px double #b9a77a;box-shadow:0 3px 10px #000a}
+.C .nation h1{font:20px 'Black Ops One';color:#e8dcbc;letter-spacing:.06em}
+.C .nation .date{font:12px 'Special Elite';color:#c9b98f}
+.C .r b{font:17px 'Special Elite';color:#efe4c6}
+.C .r small{font-family:'Special Elite';color:#b3a47e;text-transform:none;letter-spacing:0}
+.C .r svg{color:#d4c49a}
+.C .speed i{border:1px dashed #b9a77a;color:#d4c49a}
+.C .speed i.on{background:#b9a77a;color:#2d2a24}
+.C .panel{background:#e6dbbd url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .18 0 0 0 .32 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");color:#2b2418;box-shadow:0 12px 30px #000c,inset 0 0 60px #9c8250aa;transform:rotate(-.4deg);padding:4px 6px 8px}
+.C .ph{border-bottom:2px solid #2b2418}
+.C .ph h2{font:24px 'Black Ops One';letter-spacing:.08em;color:#1f1a10}
+.C .ph .sub{color:#5a4a2c}
+.C .ph .x{border:1px solid #2b2418;color:#2b2418}
+.stamp{display:none}
+.C .stamp{display:block;position:absolute;right:58px;top:14px;font:18px 'Black Ops One';color:#a3241a;border:3px solid #a3241a;padding:2px 8px;transform:rotate(-9deg);opacity:.82;letter-spacing:.08em}
+.C .clip{position:absolute;left:24px;top:-14px;width:16px;height:40px;border:3px solid #8a8a8a;border-radius:9px;border-bottom:none}
+.C .tabs{padding-top:10px}
+.C .tabs span{border:1px solid #2b2418;border-bottom:none;background:#d5c7a1;color:#4a3d24}
+.C .tabs span.on{background:#efe6cc;color:#1f1a10}
+.C .summary{border-top:1px solid #2b2418;border-bottom:1px dashed #2b241888}
+.C .kpi small{text-transform:none;letter-spacing:0;color:#5a4a2c}
+.C .kpi b{font:18px 'Special Elite';color:#1f1a10}
+.C th{color:#2b2418;border-bottom:2px solid #2b2418;font-family:'Special Elite';text-transform:none;letter-spacing:0;font-size:11px}
+.C td{border-bottom:1px solid #2b24182e;font-size:13px}
+.C tr.me td{background:#a3241a14}
+.C .neg{color:#a3241a}.C .ok{color:#3c5a22}.C .mid{color:#7a5410}
+.C .bar{background:none;border:1px solid #2b2418;height:9px}
+.C .bar i{background-image:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 6px)!important}
+.C .foot{color:#5a4a2c;font-size:11px}
+</style>
+</head>
+<body>
+<div class="map"></div>
+<div id="root" class="frame A">
+  <div class="top">
+    <div class="nation">
+      <span class="flag" data-f="uk"></span>
+      <div><h1>Inglaterra</h1><div class="date">5 Janeiro 2026 · Dia 4</div></div>
+    </div>
+    <div class="res">
+      <div class="r"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.2"/><circle cx="16.5" cy="9" r="2.5"/><path d="M3 20c0-4 3-6.5 6-6.5s6 2.5 6 6.5zM14 20c.2-2.6-.6-4.6-1.8-5.7 3.7-.8 7.8 1 7.8 5.7z"/></svg><div><small>População</small><b>35,4 M</b></div></div>
+      <div class="r"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22V6"/><path d="M12 9c-2-1-3-3-3-5 2 0 3.5 1.5 3 5zM12 9c2-1 3-3 3-5-2 0-3.5 1.5-3 5zM12 14c-2.4-1-3.6-3-3.6-5.4 2.4 0 4 2 3.6 5.4zM12 14c2.4-1 3.6-3 3.6-5.4-2.4 0-4 2-3.6 5.4zM12 19c-2.6-1-4-3.2-4-5.8 2.6 0 4.4 2.2 4 5.8zM12 19c2.6-1 4-3.2 4-5.8-2.6 0-4.4 2.2-4 5.8z"/></svg><div><small>Estoque</small><b>0 t</b></div></div>
+      <div class="r"><svg viewBox="0 0 24 24" fill="none" stroke="#e0605a" stroke-width="2"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg><div><small>Déficit</small><b class="neg">2.245 t</b></div></div>
+      <div class="r"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7h11v9H2zM13 10h4.5l3.5 3.5V16h-8z"/><circle cx="6" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/></svg><div><small>Em trânsito</small><b>3.100 t</b></div></div>
+    </div>
+    <div class="speed"><i>❚❚</i><i class="on">1×</i><i>2×</i><i>3×</i></div>
+  </div>
+
+  <div class="panel">
+    <div class="clip"></div>
+    <div class="ph">
+      <div><h2>Economia</h2><div class="sub">9 cidades · 6 em déficit · 3.100 t em trânsito</div></div>
+      <div class="x">✕</div>
+    </div>
+    <div class="stamp">RACIONAMENTO</div>
+    <div class="tabs"><span class="on">Nações</span><span>Cidades</span><span>Rotas</span></div>
+    <div class="summary">
+      <div class="kpi"><small>Produção/dia</small><b>11.477 t</b></div>
+      <div class="kpi"><small>Demanda/dia</small><b>10.622 t</b></div>
+      <div class="kpi"><small>Déficit</small><b class="neg">2.245 t</b></div>
+      <div class="kpi"><small>Atendimento</small><b class="mid">79%</b></div>
+    </div>
+    <div class="tw">
+    <table>
+      <thead><tr><th>Nação</th><th>Pop.</th><th>Prod./dia</th><th>Dem./dia</th><th>Trânsito</th><th>Déficit</th><th>Atendimento</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    </div>
+    <div class="foot">Esc fecha · 1–4 abre painéis · F11 tela cheia · clique numa linha para abrir a nação</div>
+  </div>
+</div>
+
+<div class="switch">
+  <button data-s="A" class="on">A · HoI3 fiel</button>
+  <button data-s="B">B · Militar moderno</button>
+  <button data-s="C">C · Papelaria de guerra</button>
+</div>
+<div class="cap" id="cap"></div>
+
+<script>
+const F={
+ uk:'<svg viewBox="0 0 60 30" preserveAspectRatio="none"><rect width="60" height="30" fill="#012169"/><path d="M0 0l60 30M60 0L0 30" stroke="#fff" stroke-width="6"/><path d="M0 0l60 30M60 0L0 30" stroke="#C8102E" stroke-width="2.4"/><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/><path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6"/></svg>',
+ fr:'linear-gradient(90deg,#0055a4 33%,#fff 33% 66%,#ef4135 66%)',
+ de:'linear-gradient(#000 33%,#dd0000 33% 66%,#ffce00 66%)',
+ nl:'linear-gradient(#ae1c28 33%,#fff 33% 66%,#21468b 66%)',
+ be:'linear-gradient(90deg,#000 33%,#fdda24 33% 66%,#ef3340 66%)',
+ ve:'linear-gradient(#ffcc00 33%,#00247d 33% 66%,#cf142b 66%)',
+ sr:'linear-gradient(#377e3f 20%,#fff 20% 30%,#b40a2d 30% 70%,#fff 70% 80%,#377e3f 80%)',
+ gy:'linear-gradient(#009e49,#009e49)'
+};
+const D=[
+ ['Inglaterra','uk',9.0,1300,2700,0,1400,48,1],
+ ['França','fr',12.2,6000,3645,135,45,99],
+ ['Alemanha','de',6.0,2500,1800,0,0,100],
+ ['Holanda','nl',2.5,300,750,2250,450,40],
+ ['Bélgica','be',2.5,400,750,392,350,53],
+ ['Venezuela','ve',2.9,870,870,0,0,100],
+ ['Suriname','sr',0.2,72,72,217,0,100],
+ ['Guiana','gy',0.1,35,35,106,0,99]];
+const fmt=n=>n.toLocaleString('pt-BR');
+function flag(el,k){if(F[k].startsWith('<'))el.innerHTML=F[k];else el.style.background=F[k];}
+document.getElementById('rows').innerHTML=D.map(r=>{
+ const a=r[7],c=a>=90?'ok':a>=60?'mid':'neg',col=a>=90?'#5f9a3f':a>=60?'#d29a2a':'#c43c30';
+ return `<tr class="${r[8]?'me':''}"><td class="n"><span class="flag sm" data-f="${r[1]}"></span>${r[0]}</td>
+ <td class="num">${r[2].toFixed(1).replace('.',',')} M</td><td class="num">${fmt(r[3])} t</td><td class="num">${fmt(r[4])} t</td>
+ <td class="num">${r[5]?fmt(r[5])+' t':'—'}</td><td class="num ${r[6]?'neg':''}">${r[6]?fmt(r[6])+' t':'—'}</td>
+ <td class="num ${c}">${a}%<span class="bar" style="color:${col}"><i style="width:${a}%;background:${col}"></i></span></td></tr>`}).join('');
+document.querySelectorAll('[data-f]').forEach(e=>flag(e,e.dataset.f));
+const caps={A:'A · HoI3 fiel — metal oliva texturizado, placa de título em bronze, tabela em papel creme, molduras chanfradas. Mais "mesa de guerra".',
+B:'B · Militar moderno — chapas escuras translúcidas, filetes e cantoneiras douradas, números monoespaçados. Limpo e fácil de manter.',
+C:'C · Papelaria de guerra — fichas datilografadas, carimbo, clipe, barras hachuradas. Mais autoral, menos HoI3 literal.'};
+const root=document.getElementById('root'),cap=document.getElementById('cap');
+function set(s){root.className='frame '+s;cap.textContent=caps[s];document.querySelectorAll('.switch button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));}
+document.querySelectorAll('.switch button').forEach(b=>b.onclick=()=>set(b.dataset.s));
+set('A');
+</script>
+</body>
+</html>

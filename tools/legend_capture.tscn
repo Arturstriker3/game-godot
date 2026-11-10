@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c1legendcap01"]
+
+[ext_resource type="Script" path="res://tools/legend_capture.gd" id="1_legend"]
+
+[node name="LegendCapture" type="Node"]
+script = ExtResource("1_legend")

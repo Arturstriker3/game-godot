@@ -49,6 +49,15 @@ const BARRA_FILETE := Color("#b9a77a")     # filete/borda da barra superior
 const BARRA_TEXTO := Color("#efe4c6")      # valor na barra superior
 const BARRA_ROTULO := Color("#b3a47e")     # rótulo na barra superior
 
+# --- Tokens: "Etiqueta de inventário" (legenda do mapa de recursos) -----------
+const MANILA := Color("#c9a96a")            # papel pardo da etiqueta
+const MANILA_LIGHT := Color("#d8bd84")      # manila claro (botão "Todos")
+const MANILA_DARK := Color("#8a6a34")       # manila escuro (anel do furo)
+const MANILA_VIGNETTE := Color("#7a5a2a")   # vinheta interna da etiqueta
+const HOLE := Color("#5f625e")              # furo da etiqueta (vaza para o mapa)
+const STAGE_START := Color("#c43c30")       # estágio inicial do depósito (vermelho)
+const STAGE_PRODUCING := Color("#5f9a3f")   # estágio produtor (verde)
+
 # --- Tokens: tipografia -----------------------------------------------------
 const BODY_FONT: Font = preload("res://assets/fonts/BarlowCondensed-Regular.ttf")
 const CAPTION_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
@@ -169,10 +178,11 @@ static func build_theme() -> Theme:
 	theme.set_stylebox("grabber", "VScrollBar", flat(EDGE, EDGE))
 	theme.set_stylebox("grabber_highlight", "VScrollBar", flat(STEEL, STEEL))
 	theme.set_stylebox("grabber_pressed", "VScrollBar", flat(BRASS, BRASS))
-	# Tooltip com borda latão (estilo HOI3): destaca do fundo do mapa.
-	theme.set_stylebox("panel", "TooltipPanel", tooltip_style())
-	theme.set_color("font_color", "TooltipLabel", TEXT)
-	theme.set_font_size("font_size", "TooltipLabel", FS_SMALL)
+	# Tooltip em papel (papel claro + borda de tinta), tipografia datilografada.
+	theme.set_stylebox("panel", "TooltipPanel", paper_tooltip_style())
+	theme.set_font("font", "TooltipLabel", PAPER_BODY_FONT)
+	theme.set_color("font_color", "TooltipLabel", TINTA)
+	theme.set_font_size("font_size", "TooltipLabel", FS_CAPTION + 1)
 	theme.set_constant("separation", "HSeparator", 1)
 	theme.set_constant("separation", "VSeparator", 1)
 
@@ -209,21 +219,20 @@ static func outline(color: Color) -> StyleBoxFlat:
 	return style
 
 
-## Estilo de tooltip HOI3: fundo escuro com borda latão e sombra sutil.
-static func tooltip_style() -> StyleBoxFlat:
+## Estilo de tooltip em papel: papel claro com borda de tinta 1 px e sombra sutil.
+static func paper_tooltip_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL
-	style.border_color = BRASS
+	style.bg_color = PAPEL_CLARO
+	style.border_color = TINTA
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(RADIUS)
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	# Sombra sutil (estilo HOI3)
-	style.shadow_color = Color(0, 0, 0, 0.4)
-	style.shadow_size = 4
-	style.shadow_offset = Vector2(2, 2)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	style.shadow_color = Color(0, 0, 0, 0.30)
+	style.shadow_size = 3
+	style.shadow_offset = Vector2(1, 2)
 	return style
 
 
