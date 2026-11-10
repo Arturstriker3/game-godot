@@ -402,11 +402,81 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
   e espaçamento eram ad hoc. Agora há foco inicial por tela, anel de foco e
   escala fixa de tipografia/espaçamento.
 
+## Papelaria de guerra (variante C)
+
+Fase 1 do estilo alternativo da barra superior — "ficha datilografada" sobre
+fundo escuro, em contraste com o tema Industrial principal. Implementada apenas
+na barra superior do HUD; os tokens vivem em `UiKit` com o prefixo da paleta C.
+
+Tokens (em `core/ui/ui_kit.gd`):
+
+| Token | Valor | Uso |
+|---|---|---|
+| `PAPEL` | `#e6dbbd` | papel (fundo de ficha) |
+| `PAPEL_CLARO` | `#efe6cc` | papel claro (aba ativa) |
+| `ABA_INATIVA` | `#d5c7a1` | aba inativa |
+| `TINTA` | `#2b2418` | tinta (texto principal) |
+| `TINTA_SUAVE` | `#5a4a2c` | tinta suave (rótulos) |
+| `CARIMBO` | `#a3241a` | carimbo (déficit, alerta) |
+| `CARIMBO_BARRA` | `#e0605a` | carimbo sobre a barra escura (déficit/badge) |
+| `POSITIVO` | `#3c5a22` | positivo (verde-papel) |
+| `ALERTA` | `#7a5410` | alerta (âmbar-papel) |
+| `BARRA_FUNDO` | `#2d2a24` | fundo da barra superior |
+| `BARRA_FILETE` | `#b9a77a` | filete/borda da barra superior |
+| `BARRA_TEXTO` | `#efe4c6` | valor na barra superior |
+| `BARRA_ROTULO` | `#b3a47e` | rótulo na barra superior |
+
+Fontes:
+
+- **Black Ops One** (`assets/fonts/BlackOpsOne-Regular.ttf`) — nome da nação e
+  títulos, licença OFL (`OFL-BlackOpsOne.txt`).
+- **Special Elite** (`assets/fonts/SpecialElite-Regular.ttf`) — data, rótulos e
+  valores datilografados, licença Apache 2.0 (`Apache-SpecialElite.txt`).
+
+Textura:
+
+- `assets/ui/paper.png` (512×512) gerada proceduralmente por
+  `tools/generate_paper_texture.gd` (FastNoiseLite → Image): tom `PAPEL`, grão
+  fino, manchas sutis e vinheta escura nas bordas. Usada em `UiKit.paper_stylebox()`
+  (StyleBoxTexture com 9-patch) para fundos de ficha.
+
+Barra superior (64 px de altura):
+
+- Fundo `BARRA_FUNDO` com borda inferior dupla `BARRA_FILETE` (duas linhas de
+  1 px com vão de 2 px).
+- Nação: bandeira + nome em Black Ops One (`BARRA_TEXTO`), sem o rótulo
+  "Sua nação".
+- Relógio e data em Special Elite: data + hora derivada da fração do dia
+  (`HH:00`, em `BARRA_FILETE`), dia em `BARRA_ROTULO` e barra de progresso do
+  dia em `BARRA_FILETE`.
+- Quatro indicadores com ícone tingido (`BARRA_ROTULO`) + rótulo pequeno
+  (`BARRA_ROTULO`) + valor (`BARRA_TEXTO`); déficit > 0 em `CARIMBO_BARRA`.
+- Botões de velocidade com borda fina `BARRA_FILETE`; o ativo preenchido em
+  `BARRA_FILETE` com texto `BARRA_FUNDO`.
+- Sino de notificações (`bell.svg`, tingível `BARRA_ROTULO`) com badge numérico
+  em `CARIMBO_BARRA` quando há alertas; abre o painel de Alertas.
+- Botão de menu (≡) abre o menu Esc.
+- Ícones: `population.svg`, `deficit.svg` e `bell.svg` são próprios (24×24);
+  `wheat.svg` e `truck.svg` são reaproveitados de `assets/icons/products/` e
+  rasterizados com `svg/scale=0.09375` (≈48 px) para ficarem nítidos a 24 px
+  (ver `assets/icons/CREDITS.md`).
+
+Painel Configurações (sobre o menu Esc):
+
+- Ficha de papel `UiKit.paper_stylebox()` com título "Configurações" em tinta
+  (`TINTA`) e filete `CARIMBO`.
+- Três botões de idioma (Português / English / Español), rótulo localizado via
+  `lang.*`; o ativo em tinta sólida (`TINTA`) com texto `PAPEL_CLARO`, os demais
+  em papel claro (`PAPEL_CLARO`) com texto `TINTA`.
+- Trocar o idioma persiste em `user://settings.cfg` (`[general] locale`) e
+  re-renderiza todo o HUD; Esc fecha o painel e volta ao menu.
+
+
 ## Arquivos
 
 - `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes.
-- `core/ui/hud.gd` — barra, doca, janela, pilha de contexto, menu e histórico
-  de pedidos.
+- `core/ui/hud.gd` — barra, doca, janela, pilha de contexto, menu, painel de
+  configurações (idioma) e histórico de pedidos.
 - `core/ui/city_panel.gd` — painel de cidade com cinco abas.
 - `core/ui/alerts.gd` — derivação dos alertas econômicos priorizados.
 - `core/ui/screens/*.gd` — Economia, Comércio (pedidos, rotas, mercado),

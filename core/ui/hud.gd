@@ -25,8 +25,13 @@ signal map_point_requested(map_uv: Vector2)
 
 const PLAYER_NATION := "GBR"
 
-## Altura da barra superior reduzida para 48 px (estilo HOI3: mais compacto).
-const TOP_BAR_HEIGHT := 48.0
+## Altura da barra superior (fase 1b: 48 → 64 px, +1/3, para legibilidade).
+const TOP_BAR_HEIGHT := 64.0
+## Tipografia da barra escalada proporcionalmente à altura (×4/3).
+const BAR_NAME_SIZE := 24
+const BAR_DATE_SIZE := 17
+const BAR_CAPTION_SIZE := 16
+const BAR_VALUE_SIZE := 23
 const WINDOW_MIN := Vector2(960.0, 560.0)
 const WINDOW_MAX := Vector2(1800.0, 1000.0)
 const WINDOW_RATIO := Vector2(0.86, 0.84)
@@ -56,6 +61,16 @@ const MODE_ICONS := {
 	"political": preload("res://assets/ui/map_mode_political.png"),
 	"resources": preload("res://assets/ui/map_mode_resources.png"),
 }
+## Ícones dos quatro indicadores da barra superior (paleta C). wheat/truck são
+## reaproveitados de assets/icons/products/; population/deficit são próprios.
+const METRIC_ICONS := {
+	"population": preload("res://assets/icons/population.svg"),
+	"stock": preload("res://assets/icons/products/wheat.svg"),
+	"deficit": preload("res://assets/icons/deficit.svg"),
+	"transit": preload("res://assets/icons/products/truck.svg"),
+}
+## Sino de notificações (branco, tingível) — o badge numérico é desenhado por cima.
+const BELL_TEXTURE: Texture2D = preload("res://assets/icons/bell.svg")
 ## Legenda do mapa de recursos; as cores são as mesmas de
 ## tools/build_resource_map.py (map/map_data/atlas/resource_points.json).
 const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil"]
@@ -117,6 +132,13 @@ var _day_fill: ColorRect
 var _speed_buttons: Array[Button] = []
 var _dock_buttons := {}
 
+var _date_base := ""
+var _last_clock_hour := -1
+var _alerts_badge: PanelContainer
+var _alerts_badge_label: Label
+var _settings_layer: Control
+var _settings_buttons := {}
+
 
 func _ready() -> void:
 	layer = 50
@@ -127,6 +149,7 @@ func _ready() -> void:
 	_build_dock()
 	_build_window()
 	_build_menu()
+	_build_settings()
 	_build_minimap()
 	_build_mode_bar()
 	_build_legend()
@@ -143,11 +166,14 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _day_fill != null and is_instance_valid(_day_fill):
 		_day_fill.anchor_right = Economy.day_progress()
+	_update_clock()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		if _menu_layer.visible:
+		if _settings_layer != null and _settings_layer.visible:
+			_close_settings()
+		elif _menu_layer.visible:
 			_close_menu()
 		elif _window_layer.visible:
 			_close_screen()
@@ -644,10 +670,15 @@ func set_minimap_territory(texture: Texture2D) -> void:
 func _build_top_bar() -> void:
 	_top_holder = PanelContainer.new()
 	_top_holder.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_top_holder.offset_top = 0.0
 	_top_holder.offset_bottom = TOP_BAR_HEIGHT
 	_top_holder.mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var style := UiKit.flat(UiKit.PANEL, UiKit.EDGE, 14.0)
+	# Sem borda nem arredondamento: a barra encosta em y=0 sem fresta do mapa.
+	var style := StyleBoxFlat.new()
+	style.bg_color = UiKit.BARRA_FUNDO
+	style.set_border_width_all(0)
+	style.set_corner_radius_all(0)
 	style.content_margin_left = UiKit.SPACE_MD
 	style.content_margin_right = UiKit.SPACE_MD
 	style.content_margin_top = 0.0
@@ -655,13 +686,22 @@ func _build_top_bar() -> void:
 	_top_holder.add_theme_stylebox_override("panel", style)
 	_root.add_child(_top_holder)
 
-	var accent := ColorRect.new()
-	accent.color = Color(UiKit.BRASS, 0.35)
-	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	accent.offset_top = TOP_BAR_HEIGHT - 1.0
-	accent.offset_bottom = TOP_BAR_HEIGHT
-	_root.add_child(accent)
+	# Borda inferior dupla (filete): duas linhas de 1 px com vão de 2 px.
+	var filete_top := ColorRect.new()
+	filete_top.color = UiKit.BARRA_FILETE
+	filete_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	filete_top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	filete_top.offset_top = TOP_BAR_HEIGHT - 4.0
+	filete_top.offset_bottom = TOP_BAR_HEIGHT - 3.0
+	_root.add_child(filete_top)
+
+	var filete_bottom := ColorRect.new()
+	filete_bottom.color = UiKit.BARRA_FILETE
+	filete_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	filete_bottom.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	filete_bottom.offset_top = TOP_BAR_HEIGHT - 1.0
+	filete_bottom.offset_bottom = TOP_BAR_HEIGHT
+	_root.add_child(filete_bottom)
 
 	_render_top_bar()
 
@@ -680,27 +720,22 @@ func _render_top_bar() -> void:
 	row.add_child(_clock_block())
 	row.add_child(UiKit.spacer())
 
-	_metric_values["population"] = _metric_block(row, "hud.population", "hud.tip.population")
+	_metric_values["population"] = _metric_block(row, "hud.population", "hud.tip.population", METRIC_ICONS["population"])
 	row.add_child(_vertical_rule())
-	_metric_values["stock"] = _metric_block(row, "hud.stock", "hud.tip.stock")
+	_metric_values["stock"] = _metric_block(row, "hud.stock", "hud.tip.stock", METRIC_ICONS["stock"])
 	row.add_child(_vertical_rule())
-	_metric_values["deficit"] = _metric_block(row, "hud.deficit", "hud.tip.deficit")
+	_metric_values["deficit"] = _metric_block(row, "hud.deficit", "hud.tip.deficit", METRIC_ICONS["deficit"])
 	row.add_child(_vertical_rule())
-	_metric_values["transit"] = _metric_block(row, "hud.transit", "hud.tip.transit")
+	_metric_values["transit"] = _metric_block(row, "hud.transit", "hud.tip.transit", METRIC_ICONS["transit"])
 	row.add_child(_vertical_rule())
 
 	row.add_child(_speed_block())
-	row.add_child(_language_button())
 
-	_alerts_button = UiKit.icon_button("!", I18n.t("hud.alerts"))
-	_alerts_button.custom_minimum_size = Vector2(32.0, 30.0)
-	_alerts_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_alerts_button = _bell_button()
 	_alerts_button.pressed.connect(func() -> void: _open_screen("alerts"))
 	row.add_child(_alerts_button)
 
-	var menu := UiKit.icon_button("≡", I18n.t("hud.menu"))
-	menu.custom_minimum_size = Vector2(32.0, 30.0)
-	menu.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var menu := _bar_button("≡", I18n.t("hud.menu"))
 	menu.pressed.connect(_open_menu)
 	row.add_child(menu)
 
@@ -714,14 +749,14 @@ func _nation_block() -> Control:
 
 	var swatch := ColorRect.new()
 	swatch.color = UiKit.nation_color(PLAYER_NATION)
-	swatch.custom_minimum_size = Vector2(4.0, 30.0)
+	swatch.custom_minimum_size = Vector2(4.0, 40.0)
 	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(swatch)
 
 	var flag := TextureRect.new()
 	flag.texture = Economy.flag_texture(PLAYER_NATION)
-	flag.custom_minimum_size = Vector2(30.0, 20.0)
+	flag.custom_minimum_size = Vector2(40.0, 27.0)
 	flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -732,10 +767,10 @@ func _nation_block() -> Control:
 	text.add_theme_constant_override("separation", 0)
 	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	var name_label := UiKit.title(I18n.nation_name(PLAYER_NATION), 18)
+	var name_label := UiKit.label(I18n.nation_name(PLAYER_NATION), BAR_NAME_SIZE, UiKit.BARRA_TEXTO)
+	name_label.add_theme_font_override("font", UiKit.PAPER_DISPLAY_FONT)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	text.add_child(name_label)
-	text.add_child(UiKit.caption(I18n.t("hud.player_nation"), UiKit.TEXT_MUTED))
 
 	box.add_child(text)
 	return box
@@ -746,14 +781,15 @@ func _clock_block() -> Control:
 	box.add_theme_constant_override("separation", 1)
 	box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	_date_label = UiKit.title("", 18)
+	_date_label = UiKit.label("", BAR_DATE_SIZE, UiKit.BARRA_FILETE)
+	_date_label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 	_date_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	box.add_child(_date_label)
 
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", UiKit.SPACE_SM + 2)
 
-	_day_label = UiKit.caption("", UiKit.STEEL)
+	_day_label = _metric_caption("")
 	bottom.add_child(_day_label)
 	bottom.add_child(_day_progress_bar())
 	box.add_child(bottom)
@@ -763,18 +799,18 @@ func _clock_block() -> Control:
 
 func _day_progress_bar() -> Control:
 	var track := Control.new()
-	track.custom_minimum_size = Vector2(96.0, 3.0)
+	track.custom_minimum_size = Vector2(128.0, 4.0)
 	track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var background := ColorRect.new()
-	background.color = UiKit.EDGE_SOFT
+	background.color = Color(UiKit.BARRA_FILETE, 0.25)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	track.add_child(background)
 
 	_day_fill = ColorRect.new()
-	_day_fill.color = UiKit.BRASS
+	_day_fill.color = UiKit.BARRA_FILETE
 	_day_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_day_fill.anchor_right = 0.0
 	_day_fill.anchor_bottom = 1.0
@@ -785,26 +821,50 @@ func _day_progress_bar() -> Control:
 	return track
 
 
-## Indicador da barra: rótulo pequeno acima, valor em destaque, tooltip.
-func _metric_block(row: HBoxContainer, key: String, tip_key: String) -> Label:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 0)
+## Indicador da barra: ícone tingido, rótulo pequeno e valor em destaque.
+func _metric_block(row: HBoxContainer, key: String, tip_key: String,
+		icon: Texture2D) -> Label:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
 	box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	box.tooltip_text = I18n.t(tip_key)
 
-	box.add_child(UiKit.caption(I18n.t(key)))
-	var value := UiKit.label("0", UiKit.FS_TITLE, UiKit.TEXT)
+	var glyph := TextureRect.new()
+	glyph.texture = icon
+	glyph.custom_minimum_size = Vector2(24.0, 24.0)
+	glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glyph.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glyph.modulate = UiKit.BARRA_ROTULO
+	box.add_child(glyph)
+
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 0)
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	text.add_child(_metric_caption(I18n.t(key)))
+	var value := UiKit.label("0", BAR_VALUE_SIZE, UiKit.BARRA_TEXTO)
+	value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	box.add_child(value)
+	text.add_child(value)
+	box.add_child(text)
 
 	row.add_child(box)
 	return value
 
 
+## Rótulo pequeno da barra superior: Special Elite, sem caixa alta.
+func _metric_caption(text: String) -> Label:
+	var node := UiKit.label(text, BAR_CAPTION_SIZE, UiKit.BARRA_ROTULO)
+	node.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	return node
+
+
 func _vertical_rule() -> ColorRect:
 	var node := ColorRect.new()
-	node.color = UiKit.EDGE_SOFT
-	node.custom_minimum_size = Vector2(1.0, 26.0)
+	node.color = Color(UiKit.BARRA_FILETE, 0.35)
+	node.custom_minimum_size = Vector2(1.0, 35.0)
 	node.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return node
@@ -820,9 +880,10 @@ func _speed_block() -> Control:
 		var button := Button.new()
 		# Sem foco: senão o espaço (ui_accept) reativa o botão em vez de pausar.
 		button.focus_mode = Control.FOCUS_NONE
-		button.custom_minimum_size = Vector2(34.0, 28.0)
+		button.custom_minimum_size = Vector2(45.0, 37.0)
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		button.add_theme_font_size_override("font_size", UiKit.FS_CAPTION + 1)
+		button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+		button.add_theme_font_size_override("font_size", BAR_CAPTION_SIZE)
 		button.tooltip_text = I18n.t("hud.paused") if index == 0 else "%dx" % index
 		button.pressed.connect(_on_speed_pressed.bind(index))
 		box.add_child(button)
@@ -831,13 +892,82 @@ func _speed_block() -> Control:
 	return box
 
 
-func _language_button() -> Button:
-	var button := UiKit.ghost_button(I18n.short_label())
-	button.custom_minimum_size = Vector2(42.0, 28.0)
+## Estilo dos botões de velocidade: borda fina barra_filete; ativo preenchido
+## barra_filete com texto barra_fundo.
+func _speed_button_style(button: Button, active: bool) -> void:
+	if active:
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(UiKit.BARRA_FILETE, UiKit.BARRA_FILETE, 4.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(UiKit.BARRA_FILETE, UiKit.BARRA_FILETE, 4.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(UiKit.BARRA_FILETE, UiKit.BARRA_FILETE, 4.0))
+		button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.BARRA_FUNDO))
+		button.add_theme_color_override("font_color", UiKit.BARRA_FUNDO)
+		button.add_theme_color_override("font_hover_color", UiKit.BARRA_FUNDO)
+		button.add_theme_color_override("font_pressed_color", UiKit.BARRA_FUNDO)
+	else:
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(Color(0, 0, 0, 0), UiKit.BARRA_FILETE, 4.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(Color(UiKit.BARRA_FILETE, 0.16), UiKit.BARRA_FILETE, 4.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(Color(UiKit.BARRA_FILETE, 0.30), UiKit.BARRA_FILETE, 4.0))
+		button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.BARRA_FILETE))
+		button.add_theme_color_override("font_color", UiKit.BARRA_ROTULO)
+		button.add_theme_color_override("font_hover_color", UiKit.BARRA_TEXTO)
+
+
+## Botão da barra no mesmo estilo dos botões de velocidade (borda BARRA_FILETE).
+func _bar_button(glyph: String, tooltip_text: String) -> Button:
+	var button := Button.new()
+	button.text = glyph
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(43.0, 40.0)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	button.add_theme_font_size_override("font_size", UiKit.FS_CAPTION + 1)
-	button.tooltip_text = I18n.t("hud.language")
-	button.pressed.connect(_on_language_pressed)
+	button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	button.add_theme_font_size_override("font_size", BAR_CAPTION_SIZE)
+	button.tooltip_text = tooltip_text
+	_speed_button_style(button, false)
+	return button
+
+
+## Sino de notificações: ícone SVG branco tingido + badge numérico vermelho.
+func _bell_button() -> Button:
+	var button := _bar_button("", I18n.t("hud.alerts"))
+
+	var glyph := TextureRect.new()
+	glyph.texture = BELL_TEXTURE
+	glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glyph.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glyph.offset_left = 10.0
+	glyph.offset_top = 9.0
+	glyph.offset_right = -10.0
+	glyph.offset_bottom = -9.0
+	glyph.modulate = UiKit.BARRA_ROTULO
+	button.add_child(glyph)
+
+	_alerts_badge = PanelContainer.new()
+	var badge_style := UiKit.flat(UiKit.CARIMBO_BARRA, UiKit.CARIMBO_BARRA, 0.0)
+	badge_style.set_corner_radius_all(9)
+	_alerts_badge.add_theme_stylebox_override("panel", badge_style)
+	_alerts_badge.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_alerts_badge.offset_left = -18.0
+	_alerts_badge.offset_top = -6.0
+	_alerts_badge.offset_right = 0.0
+	_alerts_badge.offset_bottom = 12.0
+	_alerts_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_alerts_badge.visible = false
+	button.add_child(_alerts_badge)
+
+	_alerts_badge_label = UiKit.label("0", 12, Color.WHITE)
+	_alerts_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_alerts_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_alerts_badge_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_alerts_badge.add_child(_alerts_badge_label)
+
 	return button
 
 
@@ -846,15 +976,17 @@ func _update_top_bar() -> void:
 		return
 
 	var date := Economy.game_date()
-	_date_label.text = "%d %s %d" % [
+	_date_base = "%d %s %d" % [
 		int(date["day"]), I18n.t("month.%d" % int(date["month"])), int(date["year"]),
 	]
+	_last_clock_hour = -1
+	_update_clock()
 	_day_label.text = I18n.t("hud.day", {"day": UiKit.number(float(_summary.get("day", 0)))})
 	var paused := Economy.speed == 0
 	if paused:
 		_day_label.text = I18n.t("hud.paused")
 	_day_label.add_theme_color_override("font_color",
-			UiKit.WARNING if paused else UiKit.STEEL)
+			UiKit.WARNING if paused else UiKit.BARRA_ROTULO)
 	var cities: Array = _summary.get("cities", [])
 	var population := 0.0
 	var stock := 0.0
@@ -869,24 +1001,37 @@ func _update_top_bar() -> void:
 	_set_metric("population", UiKit.number(population / 1_000_000.0, 1) + " M")
 	_set_metric("stock", UiKit.number(stock) + " t")
 	_set_metric("deficit", UiKit.number(deficit) + " t",
-			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE)
-	_set_metric("transit", UiKit.number(transit) + " t", UiKit.STEEL)
+			UiKit.CARIMBO_BARRA if deficit > 0.0 else UiKit.POSITIVO)
+	_set_metric("transit", UiKit.number(transit) + " t", UiKit.BARRA_TEXTO)
 
 	for index in _speed_buttons.size():
 		_speed_buttons[index].text = _speed_label(index)
-		UiKit.set_tab_active(_speed_buttons[index], index == Economy.speed)
+		_speed_button_style(_speed_buttons[index], index == Economy.speed)
 
 	if _alerts_button != null:
 		var alerts := _alerts()
-		_alerts_button.text = "!" if alerts.is_empty() else "!%d" % alerts.size()
-		_alerts_button.add_theme_color_override("font_color",
-				UiKit.TEXT_DIM if alerts.is_empty() else UiKit.WARNING)
-		_alerts_button.tooltip_text = I18n.t("hud.alerts") if alerts.is_empty() \
-				else I18n.t("alerts.count", {"count": alerts.size()})
+		var count := alerts.size()
+		if _alerts_badge != null:
+			_alerts_badge.visible = count > 0
+		if _alerts_badge_label != null:
+			_alerts_badge_label.text = str(count)
+		_alerts_button.tooltip_text = I18n.t("hud.alerts") if count == 0 \
+				else I18n.t("alerts.count", {"count": count})
 
 
 func _speed_label(index: int) -> String:
 	return "II" if index == 0 else "%dx" % index
+
+
+## Hora derivada da fração do dia da barra de progresso (0..1): HH:00.
+func _update_clock() -> void:
+	if _date_label == null or _date_base.is_empty():
+		return
+	var hour := int(floor(Economy.day_progress() * 24.0)) % 24
+	if hour == _last_clock_hour:
+		return
+	_last_clock_hour = hour
+	_date_label.text = "%s · %02d:00" % [_date_base, hour]
 
 
 func _set_metric(key: String, text: String, color: Color = UiKit.TEXT) -> void:
@@ -1289,6 +1434,11 @@ func _build_menu() -> void:
 	_menu_layer.visible = false
 	_root.add_child(_menu_layer)
 
+	_render_menu_card()
+
+
+## Conteúdo do menu: mantido separado para a troca de idioma recriar só ele.
+func _render_menu_card() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.color = UiKit.OVERLAY
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1299,11 +1449,6 @@ func _build_menu() -> void:
 			_close_menu())
 	_menu_layer.add_child(backdrop)
 
-	_render_menu_card()
-
-
-## Conteúdo do menu: mantido separado para a troca de idioma recriar só ele.
-func _render_menu_card() -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1329,6 +1474,10 @@ func _render_menu_card() -> void:
 	var credits := UiKit.secondary_button(I18n.t("hud.menu.credits"))
 	credits.pressed.connect(_toggle_credits)
 	box.add_child(credits)
+
+	var settings := UiKit.secondary_button(I18n.t("hud.menu.settings"))
+	settings.pressed.connect(_open_settings)
+	box.add_child(settings)
 
 	_menu_fullscreen = UiKit.secondary_button("")
 	_menu_fullscreen.pressed.connect(_toggle_fullscreen)
@@ -1390,6 +1539,143 @@ func _refresh_fullscreen_button() -> void:
 		"hud.menu.fullscreen.on" if _is_fullscreen() else "hud.menu.fullscreen.off")
 
 
+# --- Configurações (painel de papel sobre o menu) ------------------------------
+
+func _build_settings() -> void:
+	_settings_layer = Control.new()
+	_settings_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_settings_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_settings_layer.visible = false
+	_root.add_child(_settings_layer)
+	_render_settings_card()
+
+
+## Conteúdo do painel: ficha de papel com título e três botões de idioma.
+## Recriado ao trocar idioma para atualizar os rótulos e o destaque.
+func _render_settings_card() -> void:
+	UiKit.clear(_settings_layer)
+	_settings_buttons.clear()
+
+	var backdrop := ColorRect.new()
+	backdrop.color = UiKit.OVERLAY
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.gui_input.connect(_on_settings_backdrop_input)
+	_settings_layer.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_settings_layer.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size.x = 420.0
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.add_theme_stylebox_override("panel", UiKit.paper_stylebox())
+	center.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", UiKit.SPACE_MD)
+	panel.add_child(box)
+
+	var title := UiKit.title(I18n.t("hud.menu.settings"), UiKit.FS_TITLE)
+	title.add_theme_color_override("font_color", UiKit.TINTA)
+	box.add_child(title)
+
+	box.add_child(UiKit.rule(Color(UiKit.CARIMBO, 0.45)))
+
+	for code in I18n.SUPPORTED_LOCALES:
+		var button := _make_language_button(code)
+		box.add_child(button)
+		_settings_buttons[code] = button
+
+	box.add_child(UiKit.rule(Color(UiKit.TINTA_SUAVE, 0.4)))
+	var hint := UiKit.label(I18n.t("hud.shortcuts"), UiKit.FS_CAPTION, UiKit.TINTA_SUAVE)
+	box.add_child(hint)
+
+
+## Reconstrói o painel de configurações preservando se está aberto.
+func _render_settings_texts() -> void:
+	var was_visible := _settings_layer.visible
+	_render_settings_card()
+	_settings_layer.visible = was_visible
+	if was_visible:
+		UiKit.focus_first(_settings_layer)
+
+
+## Nome localizado de um idioma na língua ativa.
+func _language_name(code: String) -> String:
+	return I18n.t("lang." + code)
+
+
+func _make_language_button(code: String) -> Button:
+	var button := Button.new()
+	button.text = _language_name(code)
+	button.custom_minimum_size.y = UiKit.CONTROL_HEIGHT
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_ALL
+	button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	button.add_theme_font_size_override("font_size", UiKit.FS_SMALL)
+	button.tooltip_text = _language_name(code)
+	button.pressed.connect(_on_settings_language.bind(code))
+	_style_language_choice(button, code == I18n.locale)
+	return button
+
+
+## Estilo de ficha datilografada: idioma ativo em tinta sólida, demais em papel.
+func _style_language_choice(button: Button, active: bool) -> void:
+	if active:
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(UiKit.TINTA, UiKit.TINTA, 8.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(UiKit.TINTA, UiKit.TINTA, 8.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(UiKit.TINTA, UiKit.TINTA, 8.0))
+		button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
+		button.add_theme_color_override("font_color", UiKit.PAPEL_CLARO)
+		button.add_theme_color_override("font_hover_color", UiKit.PAPEL_CLARO)
+		button.add_theme_color_override("font_pressed_color", UiKit.PAPEL_CLARO)
+		button.add_theme_color_override("font_focus_color", UiKit.PAPEL_CLARO)
+	else:
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(UiKit.PAPEL_CLARO, UiKit.TINTA_SUAVE, 8.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(UiKit.PAPEL, UiKit.CARIMBO, 8.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(UiKit.ABA_INATIVA, UiKit.TINTA_SUAVE, 8.0))
+		button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
+		button.add_theme_color_override("font_color", UiKit.TINTA)
+		button.add_theme_color_override("font_hover_color", UiKit.TINTA)
+		button.add_theme_color_override("font_pressed_color", UiKit.TINTA_SUAVE)
+		button.add_theme_color_override("font_focus_color", UiKit.TINTA)
+
+
+func _on_settings_language(code: String) -> void:
+	I18n.save_locale(code)
+	I18n.set_locale(code)
+
+
+func _open_settings() -> void:
+	_render_settings_card()
+	_settings_layer.visible = true
+	_menu_layer.visible = false
+	UiKit.focus_first(_settings_layer)
+	UiSfx.play(UiSfx.Sound.OPEN)
+
+
+func _close_settings() -> void:
+	if _settings_layer != null and _settings_layer.visible:
+		UiSfx.play(UiSfx.Sound.CLOSE)
+	_settings_layer.visible = false
+	_menu_layer.visible = true
+
+
+func _on_settings_backdrop_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		_close_settings()
+
+
 # --- Eventos ------------------------------------------------------------------
 
 ## Guarda os pedidos de cada dia para a janela de Comércio não ficar vazia.
@@ -1428,6 +1714,7 @@ func _on_locale_changed(_locale: String) -> void:
 	_render_mode_bar()
 	_refresh_legend()
 	_render_menu_texts()
+	_render_settings_texts()
 
 	if _window_layer.visible and not _stack.is_empty():
 		_show_top()
@@ -1435,15 +1722,13 @@ func _on_locale_changed(_locale: String) -> void:
 
 ## Reconstrói apenas os textos do menu, reaproveitando a mesma camada.
 func _render_menu_texts() -> void:
+	var was_visible := _menu_layer.visible
 	_menu_layer.visible = false
 	UiKit.clear(_menu_layer)
 	_render_menu_card()
+	_menu_layer.visible = was_visible
 
 
 func _on_speed_pressed(index: int) -> void:
 	Economy.set_speed(index)
 	_update_top_bar()
-
-
-func _on_language_pressed() -> void:
-	I18n.set_locale(I18n.next_locale())

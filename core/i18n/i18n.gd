@@ -12,6 +12,7 @@ const SUPPORTED_LOCALES: Array[String] = ["pt_BR", "en", "es"]
 
 const SHORT_LABELS := {"pt_BR": "PT", "en": "EN", "es": "ES"}
 const I18N_PATH := "res://data/definitions/i18n/i18n.json"
+const SETTINGS_PATH := "user://settings.cfg"
 
 var STRINGS: Dictionary = {}
 
@@ -20,6 +21,9 @@ var locale: String = DEFAULT_LOCALE
 
 func _ready() -> void:
 	_load_strings()
+	var saved := _load_saved_locale()
+	if not saved.is_empty():
+		set_locale(saved)
 
 
 ## Lê as traduções do JSON (gerado de data/definitions/i18n/i18n.csv).
@@ -57,6 +61,26 @@ func set_locale(code: String) -> void:
 func next_locale() -> String:
 	var index: int = SUPPORTED_LOCALES.find(locale)
 	return SUPPORTED_LOCALES[(index + 1) % SUPPORTED_LOCALES.size()]
+
+
+## Grava o idioma escolhido em user://settings.cfg ([general] locale), para
+## persistir entre sessões.
+func save_locale(code: String) -> void:
+	if not SUPPORTED_LOCALES.has(code):
+		return
+	var config := ConfigFile.new()
+	config.set_value("general", "locale", code)
+	var err := config.save(SETTINGS_PATH)
+	if err != OK:
+		push_warning("I18n: falhou ao gravar %s (erro %d)" % [SETTINGS_PATH, err])
+
+
+## Lê o idioma salvo em disco; vazio se ainda não existir.
+func _load_saved_locale() -> String:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) != OK:
+		return ""
+	return str(config.get_value("general", "locale", ""))
 
 
 func short_label() -> String:

@@ -32,10 +32,31 @@ const POSITIVE := Color("#7FA86B")
 const NEGATIVE := Color("#D26A5F")
 const WARNING := Color("#D08A3E")
 
+# --- Tokens: paleta C — "Papelaria de guerra" --------------------------------
+## Paleta da variante C do HUD (fichas datilografadas, papel, carimbo). Usada
+## apenas na barra superior; os demais componentes seguem o tema Industrial.
+const PAPEL := Color("#e6dbbd")            # papel (fundo de ficha)
+const PAPEL_CLARO := Color("#efe6cc")      # papel claro (aba ativa)
+const ABA_INATIVA := Color("#d5c7a1")      # aba inativa
+const TINTA := Color("#2b2418")            # tinta (texto principal)
+const TINTA_SUAVE := Color("#5a4a2c")      # tinta suave (rótulos)
+const CARIMBO := Color("#a3241a")          # carimbo (déficit, alerta)
+const CARIMBO_BARRA := Color("#e0605a")     # carimbo sobre a barra escura (déficit/badge)
+const POSITIVO := Color("#3c5a22")         # positivo (verde-papel)
+const ALERTA := Color("#7a5410")           # alerta (âmbar-papel)
+const BARRA_FUNDO := Color("#2d2a24")      # fundo da barra superior
+const BARRA_FILETE := Color("#b9a77a")     # filete/borda da barra superior
+const BARRA_TEXTO := Color("#efe4c6")      # valor na barra superior
+const BARRA_ROTULO := Color("#b3a47e")     # rótulo na barra superior
+
 # --- Tokens: tipografia -----------------------------------------------------
 const BODY_FONT: Font = preload("res://assets/fonts/BarlowCondensed-Regular.ttf")
 const CAPTION_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 const DISPLAY_BASE: Font = preload("res://assets/fonts/Cinzel-Variable.ttf")
+## Fontes da "Papelaria de guerra": títulos em Black Ops One (OFL) e corpo/dados
+## em Special Elite (Apache 2.0), simulando ficha datilografada.
+const PAPER_DISPLAY_FONT: Font = preload("res://assets/fonts/BlackOpsOne-Regular.ttf")
+const PAPER_BODY_FONT: Font = preload("res://assets/fonts/SpecialElite-Regular.ttf")
 
 const FS_DISPLAY := 26
 const FS_TITLE := 19
@@ -203,6 +224,28 @@ static func tooltip_style() -> StyleBoxFlat:
 	style.shadow_color = Color(0, 0, 0, 0.4)
 	style.shadow_size = 4
 	style.shadow_offset = Vector2(2, 2)
+	return style
+
+
+## Textura de papel procedural (512×512) gerada por tools/generate_paper_texture.gd.
+const PAPER_TEXTURE: Texture2D = preload("res://assets/ui/paper.png")
+
+
+## Fundo de ficha em papel, com 9-patch para a vinheta das bordas acompanhar
+## qualquer tamanho de painel.
+static func paper_stylebox() -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = PAPER_TEXTURE
+	var edge := 48
+	style.texture_margin_left = edge
+	style.texture_margin_right = edge
+	style.texture_margin_top = edge
+	style.texture_margin_bottom = edge
+	var padding := 18
+	style.content_margin_left = padding
+	style.content_margin_right = padding
+	style.content_margin_top = padding
+	style.content_margin_bottom = padding
 	return style
 
 

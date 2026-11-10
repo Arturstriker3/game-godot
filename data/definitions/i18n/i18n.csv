@@ -162,6 +162,7 @@ hud.menu.fullscreen.off,Tela cheia: Desligada,Fullscreen: Off,Pantalla completa:
 hud.menu.fullscreen.on,Tela cheia: Ligada,Fullscreen: On,Pantalla completa: Activada
 hud.menu.quit,Sair do jogo,Quit game,Salir del juego
 hud.menu.resume,Retomar,Resume,Reanudar
+hud.menu.settings,Configurações,Settings,Ajustes
 hud.next_day,Próximo dia,Next day,Próximo día
 hud.paused,Pausado,Paused,Pausado
 hud.player_nation,Sua nação,Your nation,Tu nación
@@ -175,6 +176,9 @@ hud.tip.population,Soma da população das suas cidades.,Sum of your cities' pop
 hud.tip.stock,Estoque de trigo disponível nas cidades.,Wheat stockpile available in the cities.,Reserva de trigo disponible en las ciudades.
 hud.tip.transit,Carga em trânsito entre cidades.,Cargo currently moving between cities.,Carga en tránsito entre ciudades.
 hud.transit,Em trânsito,In transit,En tránsito
+lang.en,Inglês,English,Inglés
+lang.es,Espanhol,Spanish,Español
+lang.pt_BR,Português (Brasil),Portuguese (Brazil),Portugués (Brasil)
 map.economic,Economia,Economy,Economía
 map.geographic,Geográfico,Geographic,Geográfico
 map.hint,Camada de dados exibida sobre o mesmo mapa.,Data layer drawn over the same map.,Capa de datos sobre el mismo mapa.

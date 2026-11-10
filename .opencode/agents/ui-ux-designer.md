@@ -2,7 +2,7 @@
 description: Projeta e revisa HUD, painéis, temas, i18n visual e estados vazios do OpenGS Game.
 mode: all
 model: anthropic/claude-sonnet-5-5
-steps: 25
+steps: 60
 permissions:
   - action: edit
     resource: "core/economy/**"
