@@ -8,6 +8,7 @@ extends Node3D
 ## uniformes; nenhuma geometria é reconstruída.
 
 const MODE_SHADER: Shader = preload("res://map/map_shaders/map_modes.gdshader")
+const RESOURCE_TEXTURE: Texture2D = preload("res://map/map_data/atlas/resources.png")
 const GeographyScript: Script = preload("res://core/economy/geography_service.gd")
 
 const MAP_PX := Vector2(5000.0, 2500.0)
@@ -24,6 +25,8 @@ var _material: ShaderMaterial
 var _uv := PackedVector2Array()
 var _values: Dictionary = {}
 var _current := "geographic"
+var _heat_mesh: MeshInstance3D
+var _resource_mesh: MeshInstance3D
 
 
 ## Constrói a camada e normaliza os indicadores de cada modo.
@@ -40,6 +43,27 @@ func setup(cities: Array) -> void:
 	mesh.position = Vector3(0.0, 0.12, 0.0)
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mesh)
+	_heat_mesh = mesh
+
+	# Camada do mapa de recursos: textura estática gerada por
+	# tools/build_resource_map.py (depósitos minerais + trigo).
+	var resource_material := StandardMaterial3D.new()
+	resource_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	resource_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	resource_material.albedo_texture = RESOURCE_TEXTURE
+	resource_material.texture_filter = \
+			BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	resource_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	var resource_mesh := MeshInstance3D.new()
+	resource_mesh.name = "ResourceLayer"
+	resource_mesh.mesh = plane
+	resource_mesh.material_override = resource_material
+	resource_mesh.position = Vector3(0.0, 0.145, 0.0)
+	resource_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	resource_mesh.visible = false
+	add_child(resource_mesh)
+	_resource_mesh = resource_mesh
 
 	_build_values(cities)
 	visible = false
@@ -60,11 +84,19 @@ func refresh(cities: Array) -> void:
 		set_mode(_current)
 
 
-## Liga/desliga a camada sem recriar o plano. Modos sem dado ficam ocultos.
+## Liga/desliga as camadas sem recriar os planos. O mapa de recursos usa uma
+## textura própria; os demais mostram o campo de calor.
 func set_mode(mode: String) -> void:
 	_current = mode
-	if not MODE_COLORS.has(mode):
-		visible = false
+	var resources := mode == "resources"
+	var heat := MODE_COLORS.has(mode) and not resources
+	if _resource_mesh != null:
+		_resource_mesh.visible = resources
+	if _heat_mesh != null:
+		_heat_mesh.visible = heat
+	visible = resources or heat
+
+	if not heat:
 		return
 
 	var colors: Array = MODE_COLORS[mode]

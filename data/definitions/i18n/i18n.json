@@ -278,7 +278,9 @@
   "port.name.DEU-HAM": "Hamburgo",
   "port.name.NED-AMS": "Amsterdã",
   "port.name.BEL-ANT": "Antuérpia",
-  "port.name.FRA-CAY": "Mana"
+  "port.name.FRA-CAY": "Mana",
+  "map.legend.title": "Recursos",
+  "resource.wheat": "Trigo"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -559,7 +561,9 @@
   "port.name.DEU-HAM": "Hamburg",
   "port.name.NED-AMS": "Amsterdam",
   "port.name.BEL-ANT": "Antwerp",
-  "port.name.FRA-CAY": "Mana"
+  "port.name.FRA-CAY": "Mana",
+  "map.legend.title": "Resources",
+  "resource.wheat": "Wheat"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -840,6 +844,8 @@
   "port.name.DEU-HAM": "Hamburgo",
   "port.name.NED-AMS": "Ámsterdam",
   "port.name.BEL-ANT": "Amberes",
-  "port.name.FRA-CAY": "Mana"
+  "port.name.FRA-CAY": "Mana",
+  "map.legend.title": "Recursos",
+  "resource.wheat": "Trigo"
  }
 }

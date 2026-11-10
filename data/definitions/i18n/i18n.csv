@@ -278,3 +278,10 @@ port.name.DEU-HAM,Hamburgo,Hamburg,Hamburgo
 port.name.NED-AMS,Amsterdã,Amsterdam,Ámsterdam
 port.name.BEL-ANT,Antuérpia,Antwerp,Amberes
 port.name.FRA-CAY,Mana,Mana,Mana
+map.legend.title,Recursos,Resources,Recursos
+resource.coal,Carvão,Coal,Carbón
+resource.copper,Cobre,Copper,Cobre
+resource.gas,Gás,Gas,Gas
+resource.iron,Ferro,Iron,Hierro
+resource.oil,Petróleo,Oil,Petróleo
+resource.wheat,Trigo,Wheat,Trigo

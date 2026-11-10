@@ -22,7 +22,6 @@ signal map_mode_requested(mode: String)
 signal map_point_requested(map_uv: Vector2)
 
 const PLAYER_NATION := "GBR"
-const IMAGERY_CREDIT := "Imagery © Esri, Maxar, Earthstar Geographics"
 
 ## Altura da barra superior reduzida para 48 px (estilo HOI3: mais compacto).
 const TOP_BAR_HEIGHT := 48.0
@@ -48,7 +47,23 @@ const SCREEN_HINTS := {
 	"politics": "pol.hint",
 	"alerts": "alerts.hint",
 }
-const MAP_MODES := ["political", "geographic", "population", "economic", "industrial", "resources"]
+## Botões de camada do mapa (quadrados, acima do minimapa). Os demais modos
+## (população/economia/indústria) continuam no mapa, mas sem botão por enquanto.
+const MAP_MODES := ["political", "resources"]
+const MODE_ICONS := {
+	"political": preload("res://assets/ui/map_mode_political.png"),
+	"resources": preload("res://assets/ui/map_mode_resources.png"),
+}
+## Legenda do mapa de recursos; as cores são as mesmas de
+## tools/build_resource_map.py (map/map_data/atlas/resources.png).
+const RESOURCE_LEGEND := [
+	{"key": "coal", "color": Color("#3E3B38")},
+	{"key": "copper", "color": Color("#C06A3C")},
+	{"key": "gas", "color": Color("#4E9FB0")},
+	{"key": "iron", "color": Color("#7C8894")},
+	{"key": "oil", "color": Color("#5B4A2E")},
+	{"key": "wheat", "color": Color("#D9B45A")},
+]
 
 var _summary: Dictionary = {}
 var _order_log: Array = []
@@ -73,12 +88,15 @@ var _city_screen: VBoxContainer
 var _alerts_button: Button
 var _mode_bar: HBoxContainer
 var _mode_buttons := {}
+var _mode_icons := {}
+var _legend: PanelContainer
+var _legend_title: Label
+var _legend_labels := {}
 var _mode := "political"
 
 var _menu_layer: Control
 var _menu_credits: Label
 var _menu_fullscreen: Button
-var _credit_label: Label
 var _minimap: Minimap
 
 var _metric_values := {}
@@ -98,9 +116,9 @@ func _ready() -> void:
 	_build_dock()
 	_build_window()
 	_build_menu()
-	_build_credit()
-	_build_mode_bar()
 	_build_minimap()
+	_build_mode_bar()
+	_build_legend()
 
 	Economy.status_updated.connect(_on_status)
 	Economy.speed_changed.connect(func(_index: int) -> void: _update_top_bar())
@@ -189,28 +207,20 @@ func _initial_summary() -> Dictionary:
 	return Economy.sim.get_status()
 
 
-## Crédito obrigatório da imagem de satélite usada no fundo do mapa.
-func _build_credit() -> void:
-	_credit_label = UiKit.caption(IMAGERY_CREDIT, UiKit.TEXT_MUTED)
-	_credit_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	_credit_label.offset_left = -360.0
-	_credit_label.offset_top = -18.0
-	_credit_label.offset_right = -12.0
-	_credit_label.offset_bottom = -5.0
-	_credit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_credit_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_credit_label.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.04, 0.85))
-	_credit_label.add_theme_constant_override("outline_size", 6)
-	_root.add_child(_credit_label)
-
-
 ## Seletor de camada de dados do mapa, no canto inferior esquerdo.
+## Botões quadrados de camada do mapa, logo acima do minimapa (canto direito).
 func _build_mode_bar() -> void:
 	_mode_bar = HBoxContainer.new()
-	_mode_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_mode_bar.offset_left = UiKit.SPACE_LG
-	_mode_bar.offset_top = -34.0
-	_mode_bar.offset_bottom = -UiKit.SPACE_MD
+	_mode_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	var button_size := 38.0
+	var width := button_size * float(MAP_MODES.size()) \
+			+ float(UiKit.SPACE_XS) * float(MAP_MODES.size() - 1)
+	# `_minimap` já foi construído: a fileira fica imediatamente acima dele.
+	_mode_bar.offset_right = -UiKit.SPACE_LG
+	_mode_bar.offset_bottom = _minimap.offset_top - UiKit.SPACE_SM
+	_mode_bar.offset_top = _mode_bar.offset_bottom - button_size
+	_mode_bar.offset_left = _mode_bar.offset_right - width
+	_mode_bar.alignment = BoxContainer.ALIGNMENT_END
 	_mode_bar.add_theme_constant_override("separation", UiKit.SPACE_XS)
 	_root.add_child(_mode_bar)
 
@@ -220,18 +230,91 @@ func _build_mode_bar() -> void:
 func _render_mode_bar() -> void:
 	UiKit.clear(_mode_bar)
 	_mode_buttons.clear()
+	_mode_icons.clear()
 	for mode in MAP_MODES:
-		var chip := UiKit.filter_chip(I18n.t("map." + mode))
-		chip.tooltip_text = I18n.t("map.hint")
-		chip.pressed.connect(func() -> void: _set_map_mode(mode))
-		_mode_bar.add_child(chip)
-		_mode_buttons[mode] = chip
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(38.0, 38.0)
+		button.focus_mode = Control.FOCUS_NONE
+		button.tooltip_text = I18n.t("map." + mode)
+		button.pressed.connect(func() -> void: _set_map_mode(mode))
+
+		var icon := TextureRect.new()
+		icon.texture = MODE_ICONS[mode]
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.offset_left = 9.0
+		icon.offset_top = 9.0
+		icon.offset_right = -9.0
+		icon.offset_bottom = -9.0
+		button.add_child(icon)
+
+		_mode_bar.add_child(button)
+		_mode_buttons[mode] = button
+		_mode_icons[mode] = icon
 	_refresh_mode_bar()
 
 
 func _refresh_mode_bar() -> void:
 	for mode in _mode_buttons:
-		UiKit.set_chip_active(_mode_buttons[mode], mode == _mode)
+		var active: bool = mode == _mode
+		var button: Button = _mode_buttons[mode]
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(UiKit.PANEL_RAISED if active else UiKit.PANEL,
+						UiKit.BRASS if active else UiKit.EDGE, 5.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(UiKit.PANEL_HOVER, UiKit.BRASS_DEEP, 5.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(UiKit.PANEL_RAISED, UiKit.BRASS, 5.0))
+		var icon: TextureRect = _mode_icons[mode]
+		icon.modulate = UiKit.BRASS if active else UiKit.TEXT_DIM
+	if _legend != null:
+		_legend.visible = _mode == "resources"
+
+
+## Legenda do mapa de recursos (canto esquerdo), visível só no modo recursos.
+func _build_legend() -> void:
+	_legend = PanelContainer.new()
+	_legend.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_legend.offset_left = UiKit.SPACE_LG
+	_legend.offset_top = TOP_BAR_HEIGHT + UiKit.SPACE_LG
+	var style := UiKit.surface(Color(0.055, 0.09, 0.085, 0.94), UiKit.SPACE_SM)
+	style.border_color = UiKit.EDGE
+	style.set_border_width_all(1)
+	_legend.add_theme_stylebox_override("panel", style)
+	_legend.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", UiKit.SPACE_XS)
+	_legend.add_child(box)
+	_legend_title = UiKit.caption(I18n.t("map.legend.title"))
+	box.add_child(_legend_title)
+	_legend_labels.clear()
+	for entry in RESOURCE_LEGEND:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6.0)
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(12.0, 12.0)
+		swatch.color = entry["color"]
+		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(swatch)
+		var label := UiKit.label(I18n.t("resource." + String(entry["key"])),
+				13, UiKit.TEXT_DIM)
+		row.add_child(label)
+		_legend_labels[String(entry["key"])] = label
+		box.add_child(row)
+
+	_legend.visible = _mode == "resources"
+	_root.add_child(_legend)
+
+
+## Atualiza os textos da legenda ao trocar de idioma.
+func _refresh_legend() -> void:
+	if _legend_title != null:
+		_legend_title.text = I18n.t("map.legend.title")
+	for key in _legend_labels:
+		(_legend_labels[key] as Label).text = I18n.t("resource." + String(key))
 
 
 func _set_map_mode(mode: String) -> void:
@@ -1060,8 +1143,8 @@ func _on_locale_changed(_locale: String) -> void:
 	_render_top_bar()
 	_render_dock()
 	_render_mode_bar()
+	_refresh_legend()
 	_render_menu_texts()
-	_credit_label.text = IMAGERY_CREDIT
 
 	if _window_layer.visible and not _stack.is_empty():
 		_show_top()

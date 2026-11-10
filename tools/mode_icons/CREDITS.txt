@@ -1,0 +1,12 @@
+Ícones dos botões de camada do mapa
+
+- political.png <- Material Design Icons "flag-variant"
+- resources.png <- Material Design Icons "pickaxe"
+
+Autor: Pictogrammers (https://pictogrammers.com)
+Licença: Apache License 2.0
+Rasterizados em 256 px pelo importador SVG do Godot; o build
+(tools/build_resource_map.py) converte para glifos brancos de 128 px.
+
+Os SVG originais ficam nesta pasta para rastreabilidade. Esta pasta tem
+.gdignore para o Godot não importar os arquivos de trabalho.

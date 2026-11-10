@@ -30,6 +30,7 @@ var _out_root := "res://docs/ui/captures"
 var _run := ""
 var _sizes: Array[String] = []
 var _plain := false
+var _map_mode := ""
 var _hud
 var _report := {"shots": [], "audits": [], "skipped": [], "phase": ""}
 
@@ -51,6 +52,8 @@ func _ready() -> void:
 
 	_build_background()
 	_build_hud()
+	if not _map_mode.is_empty() and _hud.has_method("set_map_mode"):
+		_hud.set_map_mode(_map_mode)
 	await _wait_for_data()
 
 	for size in _sizes:
@@ -75,6 +78,8 @@ func _parse_args() -> void:
 				_sizes.assign(value.split(",", false))
 			"--plain":
 				_plain = value != "0" and value != "false"
+			"--mapmode":
+				_map_mode = value
 
 
 ## Fundo neutro: textura real do mapa escurecida, ou cor chapada com --plain.
