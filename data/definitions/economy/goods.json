@@ -106,5 +106,29 @@
     "name": "Petróleo",
     "base_price": 45.0,
     "food": false
+  },
+  {
+    "id": "potato",
+    "name": "Batata",
+    "base_price": 35.0,
+    "food": true
+  },
+  {
+    "id": "soy",
+    "name": "Soja",
+    "base_price": 45.0,
+    "food": true
+  },
+  {
+    "id": "cotton",
+    "name": "Algodão",
+    "base_price": 70.0,
+    "food": false
+  },
+  {
+    "id": "wood",
+    "name": "Madeira",
+    "base_price": 25.0,
+    "food": false
   }
 ]

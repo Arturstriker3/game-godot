@@ -366,7 +366,11 @@
   "map.legend.situation.scarce": "Escassa",
   "map.legend.situation.residual": "Residual",
   "resource.rice": "Arroz",
-  "resource.maize": "Milho"
+  "resource.maize": "Milho",
+  "resource.potato": "Batata",
+  "resource.soy": "Soja",
+  "resource.cotton": "Algodão",
+  "resource.wood": "Madeira"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -735,7 +739,11 @@
   "map.legend.situation.scarce": "Scarce",
   "map.legend.situation.residual": "Residual",
   "resource.rice": "Rice",
-  "resource.maize": "Maize"
+  "resource.maize": "Maize",
+  "resource.potato": "Potato",
+  "resource.soy": "Soy",
+  "resource.cotton": "Cotton",
+  "resource.wood": "Wood"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -1104,6 +1112,10 @@
   "map.legend.situation.scarce": "Escasa",
   "map.legend.situation.residual": "Residual",
   "resource.rice": "Arroz",
-  "resource.maize": "Maíz"
+  "resource.maize": "Maíz",
+  "resource.potato": "Patata",
+  "resource.soy": "Soja",
+  "resource.cotton": "Algodón",
+  "resource.wood": "Madera"
  }
 }

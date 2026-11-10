@@ -30,6 +30,9 @@ MINERALS = ["coal", "copper", "gas", "iron", "oil",
 ## Códigos de status no resource_points.json (legenda do depósito).
 STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 3, "Plant": 3}
 WHEAT_MIN = 0.40
+## Limiar de cobertura florestal para o marcador de madeira (mais baixo que o
+## de culturas — floresta é mais difundida que uma cultura específica).
+FOREST_MIN = 0.30
 ## Distância máxima (em células do nav_mask) para encostar um ponto de trigo
 ## cujo centróide caiu em água. 40 células ~ 80 px de mapa (~15 km); além
 ## disso é ilha remota e o ponto é descartado.
@@ -258,8 +261,13 @@ def build_points() -> None:
     agriculture = read_json("agriculture.json")["territories"]
     # Culturas renováveis (losangos), uma por território por cultura, com
     # deslocamento para não sobrepor o círculo do mineral nem as demais.
-    crop_keys = ["wheat", "rice", "maize"]
-    crop_offset = {"wheat": (12.0, 12.0), "rice": (-12.0, 12.0), "maize": (12.0, -12.0)}
+    # Madeira vem do forest_cover (nature.json), não da aptidão agrícola.
+    crop_keys = ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+    crop_offset = {
+        "wheat": (12.0, 12.0), "rice": (-12.0, 12.0), "maize": (12.0, -12.0),
+        "potato": (-12.0, -12.0), "soy": (24.0, 0.0), "cotton": (-24.0, 0.0),
+        "wood": (0.0, 24.0),
+    }
     crop_points = {crop: [] for crop in crop_keys}
     for territory, crops in agriculture.items():
         centroid = nature.get(territory, {}).get("centroid_px", [])
@@ -273,8 +281,12 @@ def build_points() -> None:
                 continue
             px, py = landed
         for crop in crop_keys:
-            value = float(crops.get(crop, 0.0))
-            if value < WHEAT_MIN:
+            if crop == "wood":
+                value = float(nature.get(territory, {}).get("forest_cover", 0.0))
+            else:
+                value = float(crops.get(crop, 0.0))
+            threshold = FOREST_MIN if crop == "wood" else WHEAT_MIN
+            if value < threshold:
                 continue
             ox, oy = crop_offset[crop]
             crop_points[crop].append([
@@ -286,11 +298,10 @@ def build_points() -> None:
     out = os.path.join(ROOT, "map", "map_data", "atlas", "resource_points.json")
     with open(out, "w", encoding="utf-8") as handle:
         json.dump({"minerals": minerals, "territory_mixes": territory_mixes,
-                   "wheat": crop_points["wheat"], "rice": crop_points["rice"],
-                   "maize": crop_points["maize"]}, handle, separators=(",", ":"))
+                   **crop_points}, handle, separators=(",", ":"))
+    counts = " ".join("%s=%d" % (crop, len(crop_points[crop])) for crop in crop_keys)
     print("resource_points.json", len(minerals), "territórios minerais",
-          "| trigo", len(crop_points["wheat"]), "arroz", len(crop_points["rice"]),
-          "milho", len(crop_points["maize"]),
+          "| culturas:", counts,
           "| facilities:", skipped_facility, "| sem território:", skipped_noterritory)
 
 

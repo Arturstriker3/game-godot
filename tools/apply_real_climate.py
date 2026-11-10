@@ -72,7 +72,7 @@ def main() -> int:
     nature = read_json(os.path.join(NATURAL, "nature.json"))
     agriculture = read_json(os.path.join(NATURAL, "agriculture.json"))
     territories = nature["territories"]
-    crops = agriculture["_meta"]["crops"]
+    crops = list(bng.CROPS.keys())
 
     updated = 0
     skipped_water = 0
@@ -134,6 +134,7 @@ def main() -> int:
         "clima/solo/relevo derivados das fórmulas re-alimentadas")
     agriculture["_meta"]["data_quality"] = (
         "real_climate (WorldClim 2.1 10-min); aptidão recalculada com clima real")
+    agriculture["_meta"]["crops"] = list(bng.CROPS.keys())
 
     write_json_tab(os.path.join(NATURAL, "nature.json"), nature)
     write_json_tab(os.path.join(NATURAL, "agriculture.json"), agriculture)

@@ -366,3 +366,7 @@ map.legend.situation.scarce,Escassa,Scarce,Escasa
 map.legend.situation.residual,Residual,Residual,Residual
 resource.rice,Arroz,Rice,Arroz
 resource.maize,Milho,Maize,Maíz
+resource.potato,Batata,Potato,Patata
+resource.soy,Soja,Soy,Soja
+resource.cotton,Algodão,Cotton,Algodón
+resource.wood,Madeira,Wood,Madera

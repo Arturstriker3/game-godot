@@ -99,6 +99,10 @@ const RESOURCE_LEGEND := [
 	{"key": "wheat", "color": Color("#D9B45A")},
 	{"key": "rice", "color": Color("#6FA8DC")},
 	{"key": "maize", "color": Color("#E8B028")},
+	{"key": "potato", "color": Color("#A98B5F")},
+	{"key": "soy", "color": Color("#7FA86B")},
+	{"key": "cotton", "color": Color("#E8E0D0")},
+	{"key": "wood", "color": Color("#5B8C5A")},
 ]
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 
@@ -961,7 +965,7 @@ func _resource_counts_from_file() -> Dictionary:
 	var counts := {}
 	for key in RESOURCE_KEYS:
 		counts[key] = 0
-	for key in ["wheat", "rice", "maize"]:
+	for key in ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]:
 		counts[key] = 0
 	var data: Variant = JSON.parse_string(
 			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
@@ -971,7 +975,7 @@ func _resource_counts_from_file() -> Dictionary:
 		var index := clampi(int(point[2]), 0, RESOURCE_KEYS.size() - 1)
 		var key := String(RESOURCE_KEYS[index])
 		counts[key] = int(counts.get(key, 0)) + 1
-	for key in ["wheat", "rice", "maize"]:
+	for key in ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]:
 		counts[key] = (data.get(key, []) as Array).size()
 	return counts
 

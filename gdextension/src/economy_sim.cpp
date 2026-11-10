@@ -772,10 +772,10 @@ constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
 constexpr double kDemoTradeCapacityPerCapita = 0.001;
 
 // Ordem idêntica à de data/definitions/economy/goods.json.
-constexpr const char* kDemoProductNames[18] = {
+constexpr const char* kDemoProductNames[22] = {
 	"wheat", "flour", "bread", "iron", "rice", "maize", "bauxite", "lead", "gold",
 	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
-	"coal", "copper", "gas", "oil",
+	"coal", "copper", "gas", "oil", "potato", "soy", "cotton", "wood",
 };
 
 } // namespace

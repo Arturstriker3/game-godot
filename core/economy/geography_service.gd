@@ -115,6 +115,14 @@ func crop_suitability(city_id: String, center_px: Vector2, crop: String) -> floa
 	return clampf(float(crops.get(crop, 0.0)), 0.0, 1.0)
 
 
+## Cobertura florestal (0..1) do território da cidade — a "aptidão" da madeira.
+func forest_cover(city_id: String, center_px: Vector2) -> float:
+	var territory := territory_for(city_id, center_px)
+	if territory == "":
+		return 0.0
+	return clampf(float(_nature.get(territory, {}).get("forest_cover", 0.0)), 0.0, 1.0)
+
+
 ## Depósitos minerais/energéticos do território da cidade.
 func deposits_for(city_id: String, center_px: Vector2) -> Array:
 	var territory := territory_for(city_id, center_px)
@@ -192,7 +200,7 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 ## @returns Mapa cidade -> {crop: aptidão, mineral: reserva_kt}.
 func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 	var applied := {}
-	var crops := ["wheat", "rice", "maize"]
+	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton"]
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var center: Vector2 = city.get("center", Vector2.ZERO)
@@ -201,6 +209,9 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 			var suitability := crop_suitability(city_id, center, crop)
 			sim.demo_set_suitability(city_id, crop, suitability)
 			city_applied[crop] = suitability
+		var wood := forest_cover(city_id, center)
+		sim.demo_set_suitability(city_id, "wood", wood)
+		city_applied["wood"] = wood
 		var minerals := _aggregate_deposits(deposits_for(city_id, center))
 		for resource in minerals:
 			var deposit: Dictionary = minerals[resource]

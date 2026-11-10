@@ -29,8 +29,12 @@ const MINERAL_COLORS := [
 	Color("#F0E14A"), Color("#A8D5E2"),
 ]
 const WHEAT_COLOR := Color("#D9B45A")
-const CROP_KEYS: Array[String] = ["wheat", "rice", "maize"]
-const CROP_COLORS := [Color("#D9B45A"), Color("#6FA8DC"), Color("#E8B028")]
+const CROP_KEYS: Array[String] = ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+const CROP_COLORS := [
+	Color("#D9B45A"), Color("#6FA8DC"), Color("#E8B028"),
+	Color("#A98B5F"), Color("#7FA86B"), Color("#E8E0D0"),
+	Color("#5B8C5A"),
+]
 
 const MODE_COLORS := {
 	"population": [Color("#3A5563"), Color("#C9A24A")],

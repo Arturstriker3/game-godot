@@ -33,15 +33,15 @@ func _run() -> void:
 	for _i in 2:
 		await process_frame
 
-	var wheat_count: int = (layer._crop_points["wheat"] as Array).size()
-	var rice_count: int = (layer._crop_points["rice"] as Array).size()
-	var maize_count: int = (layer._crop_points["maize"] as Array).size()
 	var mineral_count: int = layer._mineral_points.size()
-	_check(wheat_count > 0, "há pontos de trigo (%d)" % wheat_count)
-	_check(layer._total_pickable() == mineral_count + wheat_count + rice_count + maize_count,
+	var crop_total: int = 0
+	for crop in layer.CROP_KEYS:
+		crop_total += (layer._crop_points[crop] as Array).size()
+	_check(crop_total > 0, "há pontos de cultura (%d)" % crop_total)
+	_check(layer._total_pickable() == mineral_count + crop_total,
 			"total pickable = minerais + culturas (%d)" % layer._total_pickable())
 
-	if wheat_count > 0:
+	if (layer._crop_points["wheat"] as Array).size() > 0:
 		var wheat_index: int = mineral_count
 		var info: Dictionary = layer.deposit_info(wheat_index)
 		_check(String(info.get("kind", "")) == "wheat", "kind = wheat")
