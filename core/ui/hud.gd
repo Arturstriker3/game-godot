@@ -105,9 +105,6 @@ var _window_hint: Label
 var _back_button: Button
 var _city_screen: VBoxContainer
 var _alerts_button: Button
-var _mode_bar: HBoxContainer
-var _mode_buttons := {}
-var _mode_icons := {}
 var _legend: PanelContainer
 var _legend_box: VBoxContainer
 var _legend_title: Label
@@ -151,7 +148,6 @@ func _ready() -> void:
 	_build_menu()
 	_build_settings()
 	_build_minimap()
-	_build_mode_bar()
 	_build_legend()
 
 	Economy.status_updated.connect(_on_status)
@@ -244,68 +240,22 @@ func _initial_summary() -> Dictionary:
 	return Economy.sim.get_demo_status()
 
 
-## Seletor de camada de dados do mapa, no canto inferior esquerdo.
-## Botões quadrados de camada do mapa, logo acima do minimapa (canto direito).
-func _build_mode_bar() -> void:
-	_mode_bar = HBoxContainer.new()
-	_mode_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	var button_size := 38.0
-	var width := button_size * float(MAP_MODES.size()) \
-			+ float(UiKit.SPACE_XS) * float(MAP_MODES.size() - 1)
-	# `_minimap` já foi construído: a fileira fica imediatamente acima dele.
-	_mode_bar.offset_right = -UiKit.SPACE_LG
-	_mode_bar.offset_bottom = _minimap.offset_top - UiKit.SPACE_SM
-	_mode_bar.offset_top = _mode_bar.offset_bottom - button_size
-	_mode_bar.offset_left = _mode_bar.offset_right - width
-	_mode_bar.alignment = BoxContainer.ALIGNMENT_END
-	_mode_bar.add_theme_constant_override("separation", UiKit.SPACE_XS)
-	_root.add_child(_mode_bar)
-
-	_render_mode_bar()
-
-
-func _render_mode_bar() -> void:
-	UiKit.clear(_mode_bar)
-	_mode_buttons.clear()
-	_mode_icons.clear()
+## Configura o minimapa (título localizado + abas de tipo de mapa) e aplica o
+## modo ativo. Rechamado ao trocar idioma para atualizar rótulos e tooltips.
+func _configure_minimap() -> void:
+	if _minimap == null:
+		return
+	_minimap.set_title(I18n.t("map.minimap.title"))
+	var tooltips := {}
 	for mode in MAP_MODES:
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(38.0, 38.0)
-		button.focus_mode = Control.FOCUS_NONE
-		button.tooltip_text = I18n.t("map." + mode)
-		button.pressed.connect(func() -> void: _set_map_mode(mode))
-
-		var icon := TextureRect.new()
-		icon.texture = MODE_ICONS[mode]
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		icon.offset_left = 9.0
-		icon.offset_top = 9.0
-		icon.offset_right = -9.0
-		icon.offset_bottom = -9.0
-		button.add_child(icon)
-
-		_mode_bar.add_child(button)
-		_mode_buttons[mode] = button
-		_mode_icons[mode] = icon
-	_refresh_mode_bar()
+		tooltips[mode] = I18n.t("map." + mode)
+	_minimap.set_map_modes(MAP_MODES, MODE_ICONS, tooltips, _mode)
 
 
+## Sincroniza o estado visual do minimapa e da legenda com o modo ativo.
 func _refresh_mode_bar() -> void:
-	for mode in _mode_buttons:
-		var active: bool = mode == _mode
-		var button: Button = _mode_buttons[mode]
-		button.add_theme_stylebox_override("normal",
-				UiKit.flat(UiKit.PANEL_RAISED if active else UiKit.PANEL,
-						UiKit.BRASS if active else UiKit.EDGE, 5.0))
-		button.add_theme_stylebox_override("hover",
-				UiKit.flat(UiKit.PANEL_HOVER, UiKit.BRASS_DEEP, 5.0))
-		button.add_theme_stylebox_override("pressed",
-				UiKit.flat(UiKit.PANEL_RAISED, UiKit.BRASS, 5.0))
-		var icon: TextureRect = _mode_icons[mode]
-		icon.modulate = UiKit.BRASS if active else UiKit.TEXT_DIM
+	if _minimap != null:
+		_minimap.set_active_mode(_mode)
 	if _legend != null:
 		_legend.visible = _mode == "resources"
 
@@ -384,6 +334,14 @@ func _clear_legend_content() -> void:
 	_legend_title = null
 	_legend_hint = null
 	_legend_all = null
+
+
+## Restaura a legenda geral (filtros) no mapa de recursos — usado quando a
+## seleção de depósito é limpa (clique no vazio).
+func show_general_legend() -> void:
+	if _legend_box != null:
+		_render_legend_filters()
+		_legend.visible = _mode == "resources"
 
 
 ## Cabeçalho da legenda de informação (com "Voltar").
@@ -644,13 +602,15 @@ func map_mode() -> String:
 func _build_minimap() -> void:
 	_minimap = Minimap.new()
 	_minimap.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	var full := Minimap.MINIMAP_SIZE + Vector2.ONE * Minimap.BORDER_WIDTH * 2.0
+	_root.add_child(_minimap)
+	var full := Minimap.total_size()
 	_minimap.offset_right = -UiKit.SPACE_LG
 	_minimap.offset_bottom = -UiKit.SPACE_XL
 	_minimap.offset_left = _minimap.offset_right - full.x
 	_minimap.offset_top = _minimap.offset_bottom - full.y
 	_minimap.point_requested.connect(func(uv: Vector2) -> void: map_point_requested.emit(uv))
-	_root.add_child(_minimap)
+	_minimap.mode_requested.connect(_set_map_mode)
+	_configure_minimap()
 
 
 ## Área vista pela câmera, em UV do mapa (chamado por main_game.gd).
@@ -1711,7 +1671,8 @@ func _on_locale_changed(_locale: String) -> void:
 	UiKit.set_locale(I18n.locale)
 	_render_top_bar()
 	_render_dock()
-	_render_mode_bar()
+	_configure_minimap()
+	_refresh_mode_bar()
 	_refresh_legend()
 	_render_menu_texts()
 	_render_settings_texts()

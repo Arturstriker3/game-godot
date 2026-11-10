@@ -231,8 +231,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			hud.show_deposit_info(city_world.deposit_info(deposit))
 			get_viewport().set_input_as_handled()
 			return
-		# Clique no vazio limpa o anel do depósito selecionado.
+		# Clique fora de depósito limpa o anel E volta a legenda geral (filtros).
 		city_world.set_deposit_selected(-1)
+		hud.show_general_legend()
 	var port_id: String = city_world.pick_port(mouse, player.camera)
 	if not port_id.is_empty():
 		GameCursor.set_city_hover(false)

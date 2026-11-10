@@ -270,9 +270,10 @@ substituir as cinco cidades atuais.
   déficit, trânsito), velocidade, idioma e menu. Os indicadores têm tooltip
   explicando a origem do número; ao pausar, o rótulo do dia troca para "Pausado"
   em `WARNING`. Tooltips têm borda latão e sombra de 4 px (estilo HOI3).
-- **Minimapa** no canto inferior direito, 208×104 px (`core/ui/minimap.gd`):
-  mapa político global estático (`map/map_data/atlas/minimap.png`, mesmo
-  pipeline do atlas), borda `EDGE` de 1 px, retângulo latão vazado com a área
+- **Minimapa** no canto inferior direito (`core/ui/minimap.gd`), folha de papel
+  "Papelaria de guerra" (ver seção abaixo): mapa político global
+  (`map/map_data/atlas/minimap.png`, mesmo pipeline do atlas, dinâmico por dono
+  de província) em tom sépia, moldura `TINTA` e retângulo `CARIMBO` com a área
   vista pela câmera; clicar ou arrastar leva a câmera ao ponto.
 - Doca à direita, 108 px de largura, cinco botões de 52 px (Economia,
   Comércio, Produção, População, Política) com tooltip “1 · Economia” etc. O
@@ -470,6 +471,26 @@ Painel Configurações (sobre o menu Esc):
   em papel claro (`PAPEL_CLARO`) com texto `TINTA`.
 - Trocar o idioma persiste em `user://settings.cfg` (`[general] locale`) e
   re-renderiza todo o HUD; Esc fecha o painel e volta ao menu.
+
+Minimapa (canto inferior direito, `core/ui/minimap.gd`):
+
+- Ficha de papel `UiKit.paper_stylebox()` com cabeçalho "MUNDO"
+  (`I18n.t("map.minimap.title")`, Black Ops One, `TINTA`) e filete de 2 px
+  `TINTA` embaixo; nada à direita do título.
+- Área do mapa com moldura fina `TINTA` (1 px) e margem interna de papel; a
+  textura (minimap.png, 512×256) ganha tom sépia via `modulate` quente.
+- Rótulos de coordenada em Special Elite `TINTA_SUAVE` nos cantos: `90°N`
+  (sup. esq.), `90°S` (inf. esq.), `180°` (sup. dir.) — limites reais da
+  projeção equiretangular do minimapa (−90°..90° lat, −180°..180° lon).
+- Retângulo da área vista pela câmera em `CARIMBO` (#a3241a), 2 px.
+- Abas verticais de tipo de mapa (político = bandeira, recursos = picareta)
+  coladas ao lado esquerdo da folha, empilhadas a partir do terço superior;
+  sem borda à direita e cantos arredondados só à esquerda. Inativa: fundo
+  `ABA_INATIVA`, ícone `TINTA_SUAVE`, borda `TINTA`; ativa: fundo `TINTA`,
+  ícone `BARRA_TEXTO`. Tooltips e troca de modo preservados; clique/arraste
+  continua levando a câmera ao ponto (UV 0..1), restrito à área do mapa.
+- Sem zoom; os botões Economia/Comércio/Produção/População/Política da doca
+  não são alterados.
 
 
 ## Arquivos

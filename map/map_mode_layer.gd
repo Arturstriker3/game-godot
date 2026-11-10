@@ -32,6 +32,22 @@ const MODE_COLORS := {
 	"resources": [Color("#3A5563"), Color("#8FA36B")],
 }
 
+## Tamanho do marcador (unidades de mundo), CONSTANTE para minerais E trigo:
+## decisão de design — no mapa de recursos todos os depósitos têm o MESMO
+## tamanho; reserva e aptidão aparecem apenas na ficha da legenda.
+const MARKER_SIZE := 1.0
+## Largura em pixels da textura do anel (deposit_hover.png) — usada para
+## converter diâmetro em unidades de mundo ↔ pixel_size do Sprite3D.
+const RING_TEXTURE_PX := 128.0
+## Fator do anel sobre o tamanho do ponto: hover = 1.8×MARKER_SIZE, seleção =
+## 2.8×MARKER_SIZE. Como o ponto agora é constante, os anéis também são — e
+## sempre maiores que o ponto, para o anel nunca sumir dentro/sob ele.
+const HOVER_RING_FACTOR := 1.8
+const SELECTION_RING_FACTOR := 2.8
+## Piso em TELA (px) para os anéis não desaparecerem em zoom afastado.
+const HOVER_MIN_SCREEN_PX := 22.0
+const SELECTION_MIN_SCREEN_PX := 30.0
+
 var _material: ShaderMaterial
 var _uv := PackedVector2Array()
 var _values: Dictionary = {}
@@ -43,6 +59,10 @@ var _hover_ring: Sprite3D
 var _selection_ring: Sprite3D
 var _hover_time := 0.0
 var _selected_deposit := -1
+## Diâmetro LÓGICO (unidades de mundo) do anel de hover/seleção, antes do piso
+## de tela — guardado para o _process reaplicar o piso a cada frame.
+var _hover_diameter := 0.0
+var _selection_diameter := 0.0
 var _mineral_points: Array = []
 var _wheat_points: Array = []
 ## Filtros da legenda: {} = todos; senão chave -> bool.
@@ -247,12 +267,10 @@ func _fill_markers(layer: MultiMeshInstance3D, points: Array, is_wheat: bool) ->
 				_marker_size(point, is_wheat), color)
 
 
-## Tamanho do marcador: trigo pela aptidão; mineral pela reserva (√).
-func _marker_size(point: Array, is_wheat: bool) -> float:
-	if is_wheat:
-		return 0.42 + 0.38 * clampf(float(point[2]), 0.0, 1.0)
-	var quantity := float(point[3]) if point.size() > 3 else 250000.0
-	return 0.45 * clampf(sqrt(quantity / 250000.0), 0.55, 1.9)
+## Tamanho do marcador: CONSTANTE para minerais e trigo. A reserva e a aptidão
+## não influenciam mais o tamanho — elas seguem só na ficha da legenda.
+func _marker_size(_point: Array, _is_wheat: bool) -> float:
+	return MARKER_SIZE
 
 
 func _marker_world(point: Array) -> Vector3:
@@ -261,9 +279,9 @@ func _marker_world(point: Array) -> Vector3:
 
 
 ## Depósito sob o cursor (índice em _mineral_points), ou -1. Respeita o filtro.
-## Mesmo critério do `pick_city`: distância em TELA com um raio mínimo de 26 px,
-## para depósitos pequenos e grandes terem a mesma área de pega (o teste antigo
-## em unidades de mundo virava poucos pixels e falhava nos depósitos menores).
+## Mesmo critério do `pick_city`: distância em TELA com um raio mínimo de 26 px.
+## O raio deriva de MARKER_SIZE (constante), logo é igual para todos os
+## depósitos — a área de pega não varia com a reserva.
 func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 	if camera == null or _mineral_points.is_empty():
 		return -1
@@ -305,8 +323,11 @@ func set_deposit_hover(index: int) -> void:
 	var point: Array = _mineral_points[index]
 	var size := _marker_size(point, false)
 	_hover_ring.position = _marker_world(point) + Vector3(0.0, 0.01, 0.0)
-	# Hover: anel menor e mais discreto (só indica "sob o cursor").
-	_hover_ring.pixel_size = (size * 2.0) / 128.0
+	# Hover: anel menor e mais discreto (só indica "sob o cursor"). O fator 1.8
+	# mantém o anel sempre maior que o ponto; o piso de tela é aplicado por
+	# frame em _process.
+	_hover_diameter = size * HOVER_RING_FACTOR
+	_hover_ring.pixel_size = _hover_diameter / RING_TEXTURE_PX
 	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.8)
 	_hover_ring.visible = true
 	_hover_time = 0.0
@@ -329,7 +350,8 @@ func _update_selection_ring() -> void:
 	var size := _marker_size(point, false)
 	_selection_ring.position = _marker_world(point) + Vector3(0.0, 0.02, 0.0)
 	# Seleção: anel bem maior, dourado e pulsante — distinto do hover.
-	_selection_ring.pixel_size = (size * 3.4) / 128.0
+	_selection_diameter = size * SELECTION_RING_FACTOR
+	_selection_ring.pixel_size = _selection_diameter / RING_TEXTURE_PX
 	_selection_ring.modulate = Color(1.0, 0.86, 0.42, 1.0)
 	_selection_ring.visible = true
 
@@ -337,12 +359,34 @@ func _update_selection_ring() -> void:
 func _process(_delta: float) -> void:
 	# Pulso contínuo (sem depender de estado): seleção mais forte que o hover.
 	var t := Time.get_ticks_msec() / 1000.0
+	var camera := get_viewport().get_camera_3d()
 	if _hover_ring != null and _hover_ring.visible:
 		var pulse := 1.0 + 0.05 * sin(t * 5.0)
 		_hover_ring.scale = Vector3(pulse, pulse, 1.0)
+		_apply_ring_screen_floor(_hover_ring, _hover_diameter,
+				HOVER_MIN_SCREEN_PX, camera)
 	if _selection_ring != null and _selection_ring.visible:
 		var spulse := 1.0 + 0.08 * sin(t * 3.0)
 		_selection_ring.scale = Vector3(spulse, spulse, 1.0)
+		_apply_ring_screen_floor(_selection_ring, _selection_diameter,
+				SELECTION_MIN_SCREEN_PX, camera)
+
+
+## Garante um piso em TELA para o anel: em zoom afastado o diâmetro lógico
+## (constante MARKER_SIZE) projeta poucos pixels e o anel some. Aqui o
+## pixel_size cresce até o anel medir ao menos `min_px` na tela, usando a
+## câmera ativa (perspectiva). O piso só aumenta o anel — nunca o encolhe
+## abaixo do tamanho lógico.
+func _apply_ring_screen_floor(ring: Sprite3D, diameter: float, min_px: float,
+		camera: Camera3D) -> void:
+	var viewport_height := float(get_viewport().get_visible_rect().size.y)
+	if camera == null or viewport_height <= 0.0:
+		ring.pixel_size = diameter / RING_TEXTURE_PX
+		return
+	var distance := camera.global_position.distance_to(ring.global_position)
+	var focal := viewport_height / (2.0 * tan(deg_to_rad(camera.fov) * 0.5))
+	var min_world := min_px * distance / focal
+	ring.pixel_size = maxf(diameter, min_world) / RING_TEXTURE_PX
 
 
 ## Dados de um depósito para a legenda.
@@ -373,6 +417,10 @@ func _make_marker_layer(node_name: String, texture: Texture2D) -> MultiMeshInsta
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_texture = texture
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	# Sem keep_scale o billboard descarta a escala da instância do MultiMesh e
+	# desenha todo marcador com o quad de 1.0 u. Com keep_scale o ponto respeita
+	# MARKER_SIZE (constante) — mesmo tamanho para todos os depósitos.
+	material.billboard_keep_scale = true
 	material.vertex_color_use_as_albedo = true
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
