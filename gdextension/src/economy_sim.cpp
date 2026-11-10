@@ -54,6 +54,10 @@ constexpr double kCoverDays = 10.0;
 // Limite de pedidos por dia (proteção); os comboios exibidos têm limite próprio.
 constexpr std::size_t kMaxOrdersPerDay = 24;
 
+// Versão do schema do save do modo demo. Aumente ao mudar a estrutura do
+// dicionário; demo_from_dict recusa versões futuras (maiores).
+constexpr int kDemoSaveVersion = 1;
+
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
 
@@ -1897,7 +1901,7 @@ bool EconomySim::demo_spend_government(const String& city_id, double amount) {
 
 Dictionary EconomySim::demo_to_dict() const {
 	Dictionary data;
-	data["version"] = 1;
+	data["version"] = kDemoSaveVersion;
 	data["active"] = demo_active_;
 	data["day"] = day_;
 	data["transport_cash"] = demo_transport_cash_;
@@ -2041,6 +2045,12 @@ Dictionary EconomySim::demo_to_dict() const {
 }
 
 void EconomySim::demo_from_dict(const Dictionary& data) {
+	// Recusa save de versão futura (maior que a que este binário conhece).
+	const int version = int(data.get("version", 0));
+	if (version > kDemoSaveVersion) {
+		demo_active_ = false;
+		return;
+	}
 	demo_active_ = bool(data.get("active", true));
 	day_ = int(data.get("day", 0));
 	demo_transport_cash_ = double(data.get("transport_cash", 0.0));
