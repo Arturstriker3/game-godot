@@ -18,7 +18,7 @@ const PLANE_SCENE: PackedScene = preload("res://assets/models/plane.glb")
 # pequenos diante da cidade (a cidade tem ~6–8 unidades de diâmetro). O navio é
 # 2x maior: no mar ele não compete com a malha urbana e fica legível.
 const MODEL_LENGTH := 0.275
-const MODEL_LENGTH_BY_MODE := {"truck": 0.275, "ship": 0.55, "plane": 0.275}
+const MODEL_LENGTH_BY_MODE := {"truck": 0.275, "ship": 0.6875, "plane": 0.275}
 # Altura acima do plano do mapa para o modelo não afundar no terreno.
 const HEIGHT_OFFSET := 0.18
 # Bandeirinha da nação de destino, acima do veículo (identifica o comboio).
@@ -33,13 +33,13 @@ const PAIR_HEIGHT := 0.17  # altura do conjunto em unidades de mundo
 const SECONDS_PER_DAY := 60.0
 ## Piso de duração por modo. O avião é rápido demais para o olho (transit_hours
 ## mínimo), então ganha um piso maior; caminhão e navio já ficam legíveis.
-const MIN_SEGMENT_BY_MODE := {"truck": 2.0, "ship": 3.0, "plane": 7.0}
+const MIN_SEGMENT_BY_MODE := {"truck": 2.0, "ship": 4.5, "plane": 10.0}
 const MAX_SEGMENT_SECONDS := 45.0
 ## Teto de velocidade visual por modo (unidades de mundo por segundo). O teto
 ## de 45 s vale para trechos curtos, mas numa travessia longa (Atlântico) ele
 ## faria o navio cruzar o oceano num piscar; abaixo disso o trecho ganha mais
 ## tempo. O avião mantém um teto maior para continuar visivelmente mais rápido.
-const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 1.0, "plane": 3.0}
+const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 0.7, "plane": 1.8}
 const MAX_CONVOYS := 8
 # Escalonamento da partida (segundos de tween): comboios que nascem no mesmo
 # tick saem em instantes diferentes e próximos, formando uma linha (cara de
