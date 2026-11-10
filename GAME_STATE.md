@@ -123,6 +123,14 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 ## 6. Economia
 
 > **Contrato único (1.1, feito):** o jogo ao vivo usa o modelo **demo** (`initialize_demo_world` + `tick_demo` + `get_demo_status`), com comércio genérico de trigo e a camada de IA ligada. O **legacy** (`initialize`/`tick`/`get_status`, trigo por cidade) continua no núcleo apenas como referência de benchmark — não é mais o que o jogo roda. O demo emite `ports`, `nations` e `trade_orders` (com leg em linha reta) para a camada visual, além dos campos de compatibilidade no dict de cidade (`deficit`, `consumed`, `in_transit`, `production`, `jobs`, `income`, `industrialization`, `stockpile`, `need`).
+>
+> **Mecânicas adicionadas sobre o demo (nesta onda):**
+> - **Segurança alimentar**: subsídio de subsistência (governo garante a cesta mínima) + financiamento público de importação, para cidade sem produção não passar fome.
+> - **Fiscal nacional (1.8)**: equalização per capita do orçamento público dentro de cada nação (Paris sustenta Cayenne).
+> - **Falência (1.10)**: construção fecha após 60 dias de prejuízo (`kDemoLossDaysBeforeClose`).
+> - **Capacidade de transporte (1.4)**: teto de carga diário por cidade; frete marítimo (0,02/t-km) entre massas de terra.
+> - **Bens data-driven (1.2)**: preços-base via `data/definitions/economy/goods.json` + `demo_set_goods`.
+> - **Invariantes em runtime (1.13)**: conservação de dinheiro/estoque/preço com snapshot/revert; também cobre o drift de `double` (1.11 fica deferido).
 
 ### 6.1 Modo ao vivo (legacy — trigo)
 

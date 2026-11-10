@@ -15,23 +15,23 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 | # | Item | Status | Nota |
 |---|---|---|---|
 | 1.1 | **Contrato único** (legacy trigo × demo completo) | FEITO | Jogo ao vivo usa `initialize_demo_world` + `tick_demo` (demo no mundo real, comércio genérico de trigo, IA ligada). Legacy permanece para compatibilidade/benchmark. |
-| 1.2 | **Bens e receitas data-driven** (IDs string) | PENDENTE | Hoje bens são índices (trigo=0…) e receitas estão hardcoded/duplicadas. |
-| 1.3 | **Preço/mercado para N bens** | PENDENTE | Demo cobre poucos bens; generalizar com piso de custo e banda. |
-| 1.4 | **Capacidade de transporte** | PENDENTE | Hoje frete/tempo existem, mas não há limite de carga — comércio pode mover “infinito”. |
+| 1.2 | **Bens e receitas data-driven** (IDs string) | FEITO (parcial) | Preços-base e nomes via `goods.json` + `demo_set_goods` (editável sem recompilar). O conjunto de bens (4) e as receitas ainda são índices fixos no C++. |
+| 1.3 | **Preço/mercado para N bens** | FEITO | A fase 8 do demo já precifica qualquer bem genericamente (piso de custo + banda + suavização); roda para trigo/farinha/pão/ferro. |
+| 1.4 | **Capacidade de transporte** | FEITO | Teto de carga diário por cidade (`kDemoTradeCapacityPerCapita`) no `demo_trade_wheat`; frete marítimo (0,02) entre massas de terra. |
 | 1.5 | **Mecânica de extração** (reserva → taxa) | BACKLOG | Reserva não esgota; influencia quanto se extrai. Capacidade da cidade + porto. |
 | 1.6 | **Offshore acessível por porto** | BACKLOG | Campos offshore decorativos até existir a extração; porto será o gateway. |
 | 1.7 | **Demografia** | BACKLOG | Sem nascimento/migração, cidades estagnam no long-run. |
-| 1.8 | **Setor externo** (importação/exportação) | BACKLOG | Choques externos para o mundo não ficar fechado. |
+| 1.8 | **Setor externo** (importação/exportação) | BACKLOG | Choques externos para o mundo não ficar fechado. (Obs.: já há **fiscal nacional** — equalização per capita do orçamento público dentro da nação, p/ cidades sem produção não morrerem de fome.) |
 | 1.9 | **Terreno/clima na produção** | BACKLOG | Relevo placeholder; clima já existe em `nature.json`. |
-| 1.10 | **Falência/insolvência** | PENDENTE | Regra explícita para caixa negativo (dívida? fecha? transferência?). |
-| 1.11 | **Dinheiro inteiro/fixed-point** | PENDENTE | Evitar drift de `double` em partidas longas. |
+| 1.10 | **Falência/insolvência** | FEITO | Construção fecha após 60 dias seguidos de prejuízo (`kDemoLossDaysBeforeClose`), removida no tick seguinte. |
+| 1.11 | **Dinheiro inteiro/fixed-point** | DEFERIDO | Coberto por 1.13 (invariante de conservação com snapshot/revert impede drift acumulado); migração p/ int64 fica para quando houver partidas muito longas. |
 | 1.12 | **NaN/Inf/divisão por zero + clamps** | FEITO | `safe_*` no initialize/tick/outputs; fix da fase 9 (preço pós-choque `lower>upper`). |
 | 1.13 | **Invariantes em runtime** (não só teste) | FEITO | `demo_check_invariants` + snapshot/revert no `tick_demo`; conservação de dinheiro/estoque/preço. |
 | 1.14 | **Determinismo total** (FPS, ordem, dicionários) | FEITO | `stable_sort` nas ordenações de comércio. |
 | 1.15 | **Tick fixo + catch-up** | FEITO | `_process` acumula dias em fila com teto `MAX_DAYS_PER_FRAME`. |
 | 1.16 | **Save/load versionado + migrações** | FEITO | `kDemoSaveVersion`; `demo_from_dict` recusa versão futura. |
 | 1.17 | **Performance/escala** (50–200 cidades) | PENDENTE | Benchmark sintético; hotspots: matching de comércio e transporte. |
-| 1.18 | **Validação de schema dos dados** | PENDENTE | IDs duplicados, referência inexistente, unidades (kt/Mt), faixas — falhar no build. |
+| 1.18 | **Validação de schema dos dados** | FEITO (script) | `tools/validate_scenario_data.py` valida cidades/portos/construções/nações/i18n/bens (IDs, referências, faixas, unidades) e sai != 0 em erro; ainda não está no build CI. |
 | 1.19 | **Golden runs de balanceamento no CI** | PENDENTE | Limites de inflação/desemprego/preço; falha o build se sair da faixa. |
 | 1.20 | **Observabilidade** (série temporal + log de decisões) | PENDENTE | PIB, inflação, comércio, desemprego por dia; diff de estado. |
 | 1.21 | **Isolamento de falha** | PENDENTE | Erro no tick congela a economia com aviso; estado anterior preservado. |
@@ -74,11 +74,11 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 
 | # | Item | Nota |
 |---|---|---|
-| 2.1 | **Unidades na legenda da cidade** | Trocar “×N” por “×N · reserva somada em Mt” para minério; trigo fica “aptidão %”. Explicar a diferença (contagem de campos × aptidão de área). |
-| 2.2 | **Destaque do território ao selecionar a cidade** | Hoje só o anel de seleção da cidade; o ideal é realçar as províncias donas (requer máscara por cidade no overlay). |
+| 2.1 | **Unidades na legenda da cidade** | FEITO — “×N · reserva somada em Mt” para minério; trigo “aptidão %”. |
+| 2.2 | **Destaque do território ao selecionar a cidade** | FEITO — `highlight_owner` no `atlas_political.gdshader` clareia as províncias da nação da cidade selecionada. |
 | 2.3 | **Relevo real (DEM)** | `height.png`/`normal.png` planos; gerar hillshade do Natural Earth para o mapa branco. |
 | 2.4 | **Porto como gateway offshore** | Quando a extração entrar, offshore acessível pelo porto mais próximo dentro do raio. |
-| 2.5 | **Nomes de cidades faltantes** | Venezuela/Suriname/Guiana não têm cidade no cenário (ex.: Caracas?) — sem cidade, território sem dono. |
+| 2.5 | **Nomes de cidades faltantes** | FEITO — Caracas/VEN, Paramaribo/SUR e Georgetown/GUY adicionadas (coords e população reais; produção estimada de auto-suficiência). |
 
 ### Backlog / ideias
 
@@ -100,8 +100,8 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 | 3.4 | Supplement de campos reais (`deposits_supplement.json`) | FEITO |
 | 3.5 | Offshore: petróleo/gás até ~320 km; terra para os demais | FEITO |
 | 3.6 | Província + offshore por depósito em `resource_points.json` | FEITO |
-| 3.7 | Validar CSV/JSON no build (schema/faixas/unidades) | PENDENTE |
-| 3.8 | Adicionar cidades que faltam (ex.: Caracas/VEN) e bandeiras | PENDENTE |
+| 3.7 | Validar CSV/JSON no build (schema/faixas/unidades) | FEITO |
+| 3.8 | Adicionar cidades que faltam (ex.: Caracas/VEN) e bandeiras | FEITO |
 
 ---
 
