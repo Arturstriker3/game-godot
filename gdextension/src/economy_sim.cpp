@@ -744,6 +744,11 @@ constexpr double kDemoOpexPerTon = 2.5;   // 50 opex / 20 t
 constexpr double kDemoTradeBufferDays = 0.0;
 // Teto de cargas de comércio por dia (proteção contra loop).
 constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
+// Capacidade de transporte diária de uma cidade, por habitante (t/dia). 1 kg
+// por habitante/dia (~3x a necessidade alimentar de 0,3 kg) — um teto físico
+// para o comércio não mover carga "infinita" num único dia, sem apertar o fluxo
+// normal de comida.
+constexpr double kDemoTradeCapacityPerCapita = 0.001;
 
 } // namespace
 
@@ -1172,7 +1177,11 @@ void EconomySim::demo_trade_wheat() {
 			const double unit_freight =
 				distance_km(seller->center, buyer.city->center) * freight_rate;
 			const double unit_cost = price + unit_freight;
-			const double amount_wanted = std::min(remaining, surplus);
+			// Teto de carga diária da cidade (capacidade de transporte): o
+			// comprador não importa mais do que sua infraestrutura permite num dia.
+			const double capacity = buyer.city->population * kDemoTradeCapacityPerCapita;
+			const double room = std::max(0.0, capacity - buyer.city->imported[wheat]);
+			const double amount_wanted = std::min(remaining, std::min(surplus, room));
 			if (amount_wanted <= 1e-9) {
 				continue;
 			}
