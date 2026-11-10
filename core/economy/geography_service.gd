@@ -185,6 +185,8 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 func _index_deposits(deposits: Dictionary) -> void:
 	_deposits_by_territory.clear()
 	for deposit in deposits.get("deposits", []):
+		if bool(deposit.get("facility", false)):
+			continue  # fundição/refinaria: não é depósito mineral
 		var territory := String(deposit.get("territory", ""))
 		if territory == "":
 			continue

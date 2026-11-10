@@ -1265,7 +1265,8 @@
     "Goodwin Brick and Tile Works",
     "Iowa State Univ. Coal Prep. Plant"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COAL-000051",
@@ -1292,7 +1293,8 @@
     "Star Coal Co. Coal Prep. Plant",
     "Iowa Fuel &amp; Minls. Coal Prep. Plant"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COAL-000052",
@@ -1744,7 +1746,8 @@
     "Mitterberg",
     "(Facility) Brixlegg Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000070",
@@ -1866,7 +1869,8 @@
    "names": [
     "(Facility) Sarkuysan Copper Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000075",
@@ -2948,7 +2952,8 @@
    "names": [
     "(Facility) Mizur Concentrator"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000116",
@@ -3053,7 +3058,8 @@
    "names": [
     "(Facility) Berango Vizcaya Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000120",
@@ -3385,7 +3391,8 @@
     "Thalanga",
     "Highway/Reward"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000133",
@@ -4583,7 +4590,8 @@
     "Ronnskar Works",
     "(Facility) Ronnskar Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000178",
@@ -6142,7 +6150,8 @@
     "Dzhezkazgan Group of Mines",
     "Saryoba Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000237",
@@ -6715,7 +6724,8 @@
     "Urup Concentrator",
     "Urup Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000259",
@@ -6824,7 +6834,8 @@
     "(Facility) Takehara Copper Refinery",
     "(Facility) Shisaka-Jima Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000263",
@@ -7037,7 +7048,8 @@
     "Florimunda",
     "(Facility) Bor Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000271",
@@ -7136,7 +7148,8 @@
     "Dzhuza",
     "Sibai Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000275",
@@ -7190,7 +7203,8 @@
     "Krasnouralsk Concentrator",
     "Krasnoturinsk"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000277",
@@ -8141,7 +8155,8 @@
     "(Facility) Hamburg Copper Smelter",
     "(Facility) Hamburg Copper Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000314",
@@ -9447,7 +9462,8 @@
     "(Facility) Cerro Copper Sauget Smelter",
     "Hypothetical Lead Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000363",
@@ -10335,7 +10351,8 @@
     "Kokkola",
     "(Facility) Harjavalta Nickel Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000396",
@@ -10706,7 +10723,8 @@
     "Bawdwin",
     "Bawdwin Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000410",
@@ -11048,7 +11066,8 @@
     "(Facility) Darley Dale Refinery",
     "(Facility) North Ferriby Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000423",
@@ -11948,7 +11967,8 @@
     "(Facility) Walsall Copper Refinery",
     "(Facility) Goscote Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000458",
@@ -12121,7 +12141,8 @@
     "Budel",
     "Balen"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000465",
@@ -13329,7 +13350,8 @@
    "names": [
     "Crotone"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000512",
@@ -14255,7 +14277,8 @@
     "(Facility) Olen Copper Refinery",
     "(Facility) Beerse Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000547",
@@ -14333,7 +14356,8 @@
    "names": [
     "(Facility) Sukinda Ni Smelter and Deposits, India"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000550",
@@ -14844,7 +14868,8 @@
    "names": [
     "(Facility) Kwinana Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000570",
@@ -15176,7 +15201,8 @@
     "Sanjiachang Copper Deposit",
     "Kaiyuan Cu/Co/Sb Deposit"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000583",
@@ -15875,7 +15901,8 @@
    "names": [
     "(Facility) Le Palais Copper Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000610",
@@ -16773,7 +16800,8 @@
     "Sayak",
     "Sayak"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000644",
@@ -16874,7 +16902,8 @@
     "Kamishinski Mine",
     "Nicolayevskaya Concentrator"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000648",
@@ -16951,7 +16980,8 @@
    "names": [
     "(Facility) Leninogorsk Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000651",
@@ -17484,7 +17514,8 @@
     "Alaverdi",
     "Madneuli Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000672",
@@ -17962,7 +17993,8 @@
     "(Facility) Hitachi Smelter",
     "(Facility) Hitachi Copper Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000690",
@@ -18473,7 +18505,8 @@
    "names": [
     "(Facility) Lucca Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000710",
@@ -19392,7 +19425,8 @@
     "(Facility) Bindura Smelter",
     "Madziwa Mine"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000745",
@@ -19514,7 +19548,8 @@
     "Sultepec",
     "Tiapehuala District"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000750",
@@ -20717,7 +20752,8 @@
    "names": [
     "(Facility) Port Colborne Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000796",
@@ -21530,7 +21566,8 @@
     "(Facility) Glogow Ii Smelter",
     "(Facility) Glogow I Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000827",
@@ -25353,7 +25390,8 @@
    "names": [
     "(Facility) Baia Mare Smelter/Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000973",
@@ -25457,7 +25495,8 @@
     "Dongxiang Copper Mine",
     "Fenglin Copper Deposit"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-000977",
@@ -26800,7 +26839,8 @@
    "names": [
     "(Facility) Metcoa Smelter &amp; Ref.--New Castle"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-001029",
@@ -27370,7 +27410,8 @@
     "(Facility) Saganoseki Copper Refinery",
     "(Facility) Saganoseki Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-001051",
@@ -27422,7 +27463,8 @@
     "Duisberger Kupferhuttesmelter",
     "(Facility) Duisburg Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-001053",
@@ -27448,7 +27490,8 @@
     "(Facility) Lunen Copper Refinery",
     "Sauerland Region"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-001054",
@@ -27685,7 +27728,8 @@
     "(Facility) Camacari Copper Refinery",
     "(Facility) Camacari Copper Smelter"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-001063",
@@ -27737,7 +27781,8 @@
    "names": [
     "(Facility) Csepel Copper Refinery"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-COPPER-001065",
@@ -35182,7 +35227,8 @@
     "(Facility) Laziska Ferroalloy Plant",
     "(Facility) Pokoj Ferroalloy Plant"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-IRON-001353",
@@ -36908,7 +36954,8 @@
     "J &amp; L Steel/ Indiana Harbor Works",
     "Us Steel Chicago Plant--South Works"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-IRON-001419",
@@ -44076,7 +44123,8 @@
    "names": [
     "Karaganda Steelworks"
    ],
-   "data_quality": "real_location_estimated_attributes"
+   "data_quality": "real_location_estimated_attributes",
+   "facility": true
   },
   {
    "id": "DEP-IRON-001695",
