@@ -14,6 +14,17 @@ namespace godot {
 
 namespace {
 
+// Segurança numérica: nada de NaN/Inf no estado nem nos outputs.
+inline double safe_value(double v) {
+	return std::isfinite(v) ? v : 0.0;
+}
+inline double safe_nonneg(double v) {
+	return std::isfinite(v) ? std::max(0.0, v) : 0.0;
+}
+inline double safe_unit(double v) {
+	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
+}
+
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kEarthRadiusKm = 6371.0;
 constexpr double kMapWidth = 5000.0;
@@ -131,8 +142,8 @@ void EconomySim::initialize(const Array& cities, const Array& ports) {
 		city.nation = String(d["nation"]).utf8().get_data();
 		city.home_nation = String(d["home_nation"]).utf8().get_data();
 		city.name = String(d["name"]).utf8().get_data();
-		city.population = static_cast<double>(d["population"]);
-		city.production = static_cast<double>(d["production"]);
+		city.population = safe_nonneg(static_cast<double>(d["population"]));
+		city.production = safe_nonneg(static_cast<double>(d["production"]));
 		city.stockpile = 0.0;
 		city.center = MapPoint{static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 		city.landmass = String(d["landmass"]).utf8().get_data();
@@ -187,10 +198,19 @@ Dictionary EconomySim::tick() {
 		const double deficit_ratio = city.need > 0.0
 			? std::clamp(city.deficit / city.need, 0.0, 1.0)
 			: 0.0;
-		city.income = std::clamp(
+		city.income = safe_unit(
 			kIncomeFloor + kIncomeIndustrialWeight * city.industrialization
-				- kIncomeDeficitWeight * deficit_ratio,
-			0.0, 1.0);
+				- kIncomeDeficitWeight * deficit_ratio);
+
+		// Segurança numérica: o estado nunca carrega valor não finito.
+		city.stockpile = safe_nonneg(city.stockpile);
+		city.need = safe_nonneg(city.need);
+		city.consumed = safe_nonneg(city.consumed);
+		city.deficit = safe_nonneg(city.deficit);
+		city.jobs = safe_nonneg(city.jobs);
+		city.income = safe_unit(city.income);
+		city.industrialization = safe_unit(city.industrialization);
+		city.dispatched = safe_nonneg(city.dispatched);
 	}
 
 	// 3. Cidades com excedente vendem para cidades com déficit. O que já está
@@ -518,19 +538,19 @@ Dictionary EconomySim::city_to_dict(const City& city) const {
 	dict["nation"] = String(city.nation.c_str());
 	dict["home_nation"] = String(city.home_nation.c_str());
 	dict["name"] = String(city.name.c_str());
-	dict["population"] = city.population;
-	dict["need"] = city.need;
-	dict["production"] = city.production;
-	dict["consumed"] = city.consumed;
-	dict["deficit"] = city.deficit;
-	dict["dispatched"] = city.dispatched;
-	dict["in_transit"] = in_transit_total(city.id);
-	dict["stockpile"] = city.stockpile;
-	dict["jobs"] = city.jobs;
-	dict["income"] = city.income;
-	dict["industrialization"] = city.industrialization;
-	dict["x"] = city.center.x;
-	dict["y"] = city.center.y;
+	dict["population"] = safe_value(city.population);
+	dict["need"] = safe_value(city.need);
+	dict["production"] = safe_value(city.production);
+	dict["consumed"] = safe_value(city.consumed);
+	dict["deficit"] = safe_value(city.deficit);
+	dict["dispatched"] = safe_value(city.dispatched);
+	dict["in_transit"] = safe_value(in_transit_total(city.id));
+	dict["stockpile"] = safe_value(city.stockpile);
+	dict["jobs"] = safe_value(city.jobs);
+	dict["income"] = safe_value(city.income);
+	dict["industrialization"] = safe_value(city.industrialization);
+	dict["x"] = safe_value(city.center.x);
+	dict["y"] = safe_value(city.center.y);
 	return dict;
 }
 
