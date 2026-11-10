@@ -21,6 +21,9 @@ const MODEL_LENGTH := 0.275
 const MODEL_LENGTH_BY_MODE := {"truck": 0.275, "ship": 0.55, "plane": 0.275}
 # Altura acima do plano do mapa para o modelo não afundar no terreno.
 const HEIGHT_OFFSET := 0.18
+# Bandeirinha da nação de destino, acima do veículo (identifica o comboio).
+const FLAG_HEIGHT := 0.34
+const FLAG_SIZE := 0.14
 # Duração visual de cada trecho: acompanha o tempo de trânsito simulado e o
 # ritmo do relógio (1 dia = 60 s). Veículos deixam de "teleportar".
 const SECONDS_PER_DAY := 60.0
@@ -149,6 +152,8 @@ func _spawn_order(order: Dictionary) -> void:
 	var convoy := Node3D.new()
 	add_child(convoy)
 	_active_convoys += 1
+	# Bandeira da nação que vai RECEBER o produto, acima do veículo.
+	_add_flag(convoy, String(order.get("to_nation", "")))
 
 	var tween := create_tween()
 	# O tween nasce no ritmo atual da simulação (1x = 60 s por dia) e entra na
@@ -396,15 +401,39 @@ func _heuristic(a: Vector2i, b: Vector2i) -> float:
 	return maxf(dx, dy) + (sqrt(2.0) - 1.0) * minf(dx, dy)
 
 
+## Bandeirinha da nação de destino presa ao comboio (billboard: sempre virada
+## para a câmera). Criada uma vez e mantida entre os trechos.
+func _add_flag(convoy: Node3D, nation: String) -> void:
+	if nation.is_empty():
+		return
+	var texture := Economy.flag_texture(nation)
+	if texture == null:
+		return
+	var flag := Sprite3D.new()
+	flag.name = "Flag"
+	flag.texture = texture
+	flag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	flag.no_depth_test = true
+	flag.render_priority = 10
+	flag.pixel_size = FLAG_SIZE / 20.0  # bandeira 40×20 (2:1)
+	flag.position = Vector3(0.0, FLAG_HEIGHT, 0.0)
+	convoy.add_child(flag)
+
+
 ## Posiciona o veículo no início do trecho, orientado para o destino.
 func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) -> void:
 	if not is_instance_valid(convoy):
 		return
 
-	for child in convoy.get_children():
-		child.queue_free()
+	# Troca só o modelo (o comboio muda caminhão->navio->caminhão entre trechos);
+	# a bandeira ("Flag") é mantida.
+	var old := convoy.get_node_or_null("Model")
+	if old != null:
+		old.queue_free()
 
-	convoy.add_child(_instantiate_model(mode))
+	var model := _instantiate_model(mode)
+	model.name = "Model"
+	convoy.add_child(model)
 	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0)
 	_face_target(convoy, start, end)
 
