@@ -11800,7 +11800,7 @@
   },
   {
    "id": "DEP-COPPER-000268",
-   "territory": "TRT000254",
+   "territory": "TRT000711",
    "owner": "NNN",
    "resource": "copper",
    "px": 4975.0,
@@ -11825,7 +11825,7 @@
   },
   {
    "id": "DEP-COPPER-000269",
-   "territory": "TRT000254",
+   "territory": "TRT000711",
    "owner": "NNN",
    "resource": "copper",
    "px": 4979.8,
@@ -30306,7 +30306,7 @@
   },
   {
    "id": "DEP-COPPER-000778",
-   "territory": "TRT000718",
+   "territory": "TRT000229",
    "owner": "",
    "resource": "copper",
    "px": 3787.9,
@@ -30358,7 +30358,7 @@
   },
   {
    "id": "DEP-GOLD-000182",
-   "territory": "TRT000718",
+   "territory": "TRT000353",
    "owner": "",
    "resource": "gold",
    "px": 4369.4,
@@ -30383,7 +30383,7 @@
   },
   {
    "id": "DEP-COPPER-000780",
-   "territory": "TRT000721",
+   "territory": "TRT000671",
    "owner": "",
    "resource": "copper",
    "px": 2612.2,
@@ -30409,7 +30409,7 @@
   },
   {
    "id": "DEP-COPPER-000781",
-   "territory": "TRT000726",
+   "territory": "TRT000363",
    "owner": "",
    "resource": "copper",
    "px": 1624.5,
@@ -30438,7 +30438,7 @@
   },
   {
    "id": "DEP-GOLD-000183",
-   "territory": "TRT000726",
+   "territory": "TRT000487",
    "owner": "",
    "resource": "gold",
    "px": 1638.1,
@@ -30467,7 +30467,7 @@
   },
   {
    "id": "DEP-GOLD-000184",
-   "territory": "TRT000726",
+   "territory": "TRT000487",
    "owner": "",
    "resource": "gold",
    "px": 1652.3,
@@ -30493,7 +30493,7 @@
   },
   {
    "id": "DEP-COPPER-000782",
-   "territory": "TRT000726",
+   "territory": "TRT000487",
    "owner": "",
    "resource": "copper",
    "px": 1653.4,
@@ -30520,7 +30520,7 @@
   },
   {
    "id": "DEP-COPPER-000783",
-   "territory": "TRT000728",
+   "territory": "TRT000216",
    "owner": "",
    "resource": "copper",
    "px": 1416.9,
@@ -30545,7 +30545,7 @@
   },
   {
    "id": "DEP-GOLD-000185",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "gold",
    "px": 46.8,
@@ -30571,7 +30571,7 @@
   },
   {
    "id": "DEP-COPPER-000784",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "copper",
    "px": 74.4,
@@ -30597,7 +30597,7 @@
   },
   {
    "id": "DEP-IRON-000024",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "iron",
    "px": 240.7,
@@ -30626,7 +30626,7 @@
   },
   {
    "id": "DEP-GOLD-000186",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "gold",
    "px": 276.4,
@@ -30655,7 +30655,7 @@
   },
   {
    "id": "DEP-COPPER-000785",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "copper",
    "px": 303.7,
@@ -30684,7 +30684,7 @@
   },
   {
    "id": "DEP-COPPER-000786",
-   "territory": "TRT000737",
+   "territory": "TRT000353",
    "owner": "",
    "resource": "copper",
    "px": 4404.6,
@@ -30709,7 +30709,7 @@
   },
   {
    "id": "DEP-COPPER-000787",
-   "territory": "TRT000737",
+   "territory": "TRT000243",
    "owner": "",
    "resource": "copper",
    "px": 4540.0,
@@ -40775,7 +40775,7 @@
   },
   {
    "id": "DEP-IRON-000293",
-   "territory": "TRT000254",
+   "territory": "TRT000711",
    "owner": "NNN",
    "resource": "iron",
    "px": 4963.9,
@@ -57456,7 +57456,7 @@
   },
   {
    "id": "DEP-IRON-000747",
-   "territory": "TRT000718",
+   "territory": "TRT000195",
    "owner": "",
    "resource": "iron",
    "px": 4373.1,
@@ -57482,7 +57482,7 @@
   },
   {
    "id": "DEP-IRON-000748",
-   "territory": "TRT000721",
+   "territory": "TRT000627",
    "owner": "",
    "resource": "iron",
    "px": 2603.9,
@@ -57509,7 +57509,7 @@
   },
   {
    "id": "DEP-IRON-000749",
-   "territory": "TRT000726",
+   "territory": "TRT000363",
    "owner": "",
    "resource": "iron",
    "px": 1624.0,
@@ -57535,7 +57535,7 @@
   },
   {
    "id": "DEP-IRON-000750",
-   "territory": "TRT000726",
+   "territory": "TRT000487",
    "owner": "",
    "resource": "iron",
    "px": 1651.9,
@@ -57560,7 +57560,7 @@
   },
   {
    "id": "DEP-GOLD-000308",
-   "territory": "TRT000727",
+   "territory": "TRT000330",
    "owner": "",
    "resource": "gold",
    "px": 4478.0,
@@ -57586,7 +57586,7 @@
   },
   {
    "id": "DEP-IRON-000751",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "iron",
    "px": 22.6,
@@ -57611,7 +57611,7 @@
   },
   {
    "id": "DEP-IRON-000752",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "iron",
    "px": 91.4,
@@ -57636,7 +57636,7 @@
   },
   {
    "id": "DEP-IRON-000753",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "iron",
    "px": 243.3,
@@ -57662,7 +57662,7 @@
   },
   {
    "id": "DEP-IRON-000754",
-   "territory": "TRT000736",
+   "territory": "TRT000544",
    "owner": "",
    "resource": "iron",
    "px": 274.3,
