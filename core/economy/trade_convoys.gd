@@ -255,12 +255,15 @@ func _leg_path(from_px: Vector2, to_px: Vector2, mode: String) -> PackedVector2A
 func _find_path(from_px: Vector2, to_px: Vector2, mode: String) -> PackedVector2Array:
 	var start := _snap_cell(_to_cell(from_px), mode)
 	var goal := _snap_cell(_to_cell(to_px), mode)
+	# Sem célula navegável (snap ou A* falhou): NÃO desenha linha reta. Uma reta
+	# cruzaria o terreno errado (caminhão sobre o mar, navio sobre a terra).
+	# Devolve vazio: o trecho é pulado (o comércio acontece, mas sem veículo).
 	if start.x < 0 or goal.x < 0:
-		return PackedVector2Array([from_px, to_px])
+		return PackedVector2Array()
 
 	var cells := _astar(start, goal, mode)
 	if cells.is_empty():
-		return PackedVector2Array([from_px, to_px])
+		return PackedVector2Array()
 
 	var path := PackedVector2Array()
 	for cell in cells:
