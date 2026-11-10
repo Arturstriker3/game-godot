@@ -146,6 +146,23 @@ RESOURCES = {
             "depth": 2200.0, "value": 45.0},
     "gas": {"codes": {"GAS"}, "base_kt": 30000.0, "recovery": 0.60,
             "depth": 2800.0, "value": 30.0},
+    # Novos recursos (códigos MRDS primários; parâmetros estimados como nos demais).
+    "bauxite": {"codes": {"AL"}, "base_kt": 20000.0, "recovery": 0.80,
+                "depth": 50.0, "value": 8.0},
+    "lead": {"codes": {"PB"}, "base_kt": 2000.0, "recovery": 0.70,
+             "depth": 300.0, "value": 25.0},
+    "gold": {"codes": {"AU"}, "base_kt": 100.0, "recovery": 0.90,
+             "depth": 300.0, "value": 3000.0},
+    "phosphate": {"codes": {"P"}, "base_kt": 30000.0, "recovery": 0.85,
+                  "depth": 80.0, "value": 10.0},
+    "tungsten": {"codes": {"W"}, "base_kt": 200.0, "recovery": 0.60,
+                 "depth": 350.0, "value": 200.0},
+    "rare_earths": {"codes": {"REE"}, "base_kt": 150.0, "recovery": 0.65,
+                    "depth": 200.0, "value": 400.0},
+    "sulfur": {"codes": {"S"}, "base_kt": 5000.0, "recovery": 0.75,
+               "depth": 150.0, "value": 15.0},
+    "diamond": {"codes": {"GEM_D"}, "base_kt": 5.0, "recovery": 0.95,
+                "depth": 400.0, "value": 5000.0},
 }
 
 STATUS_FACTOR = {
@@ -657,13 +674,18 @@ def nearest_province(grid, cell, provinces, px, py, max_radius_px):
 
 
 def resource_for_codes(codes):
-    tokens = set(codes.replace(",", " ").split())
-    for resource, spec in RESOURCES.items():
-        if tokens & spec["codes"]:
-            return resource
-        prefix = spec.get("prefix")
-        if prefix and any(token.startswith(prefix) for token in tokens):
-            return resource
+    """Classifica pelo código PRIMÁRIO (primeiro da lista), não por qualquer
+    código. Ex.: 'CU FE' → cobre (CU primeiro); 'P AL CA F FE MG U' → fosfato
+    (P primeiro); 'AU CU' → ouro. Preserva a ordem dos códigos (o set antigo
+    a perdia e rotulava depósito de fosfato/ouro como ferro/cobre)."""
+    tokens = codes.replace(",", " ").split()
+    for token in tokens:
+        for resource, spec in RESOURCES.items():
+            if token in spec["codes"]:
+                return resource
+            prefix = spec.get("prefix")
+            if prefix and token.startswith(prefix):
+                return resource
     return None
 
 
