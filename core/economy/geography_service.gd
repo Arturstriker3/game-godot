@@ -182,19 +182,61 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 	}
 
 
-## Aplica a aptidão de trigo de cada cidade ao núcleo econômico.
+## Aplica a aptidão de cada cultura e os depósitos minerais de cada cidade ao
+## núcleo econômico. As culturas renováveis entram como aptidão (0..1); os
+## minerais entram como reserva agregada (demo_set_deposit) + aptidão 1. O C++
+## ignora produtos que não conhece (ex.: carvão/cobre/gás/petróleo ficam só no
+## mapa por enquanto).
 ## @param sim Instância de EconomySim inicializada no modo demo.
 ## @param cities Lista de dicionários com "id" e "center" (Vector2 em pixels).
-## @returns Mapa cidade -> aptidão aplicada.
+## @returns Mapa cidade -> {crop: aptidão, mineral: reserva_kt}.
 func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 	var applied := {}
+	var crops := ["wheat", "rice", "maize"]
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var center: Vector2 = city.get("center", Vector2.ZERO)
-		var wheat := crop_suitability(city_id, center, "wheat")
-		sim.demo_set_suitability(city_id, "wheat", wheat)
-		applied[city_id] = wheat
+		var city_applied := {}
+		for crop in crops:
+			var suitability := crop_suitability(city_id, center, crop)
+			sim.demo_set_suitability(city_id, crop, suitability)
+			city_applied[crop] = suitability
+		var minerals := _aggregate_deposits(deposits_for(city_id, center))
+		for resource in minerals:
+			var deposit: Dictionary = minerals[resource]
+			sim.demo_set_suitability(city_id, resource, 1.0)
+			sim.demo_set_deposit(city_id, resource,
+					deposit["reserve_kt"], deposit["quality"], deposit["depth_m"])
+			city_applied[resource] = deposit["reserve_kt"]
+		applied[city_id] = city_applied
 	return applied
+
+
+## Agrega depósitos por recurso: soma a reserva e faz média ponderada de
+## qualidade/profundidade (peso = reserva). Usado para declarar a jazida única
+## por cidade no núcleo econômico.
+func _aggregate_deposits(deposits: Array) -> Dictionary:
+	var totals := {}
+	for deposit in deposits:
+		var resource := String(deposit.get("resource", ""))
+		var qty := float(deposit.get("quantity_kt", 0.0))
+		if resource == "" or qty <= 0.0:
+			continue
+		if not totals.has(resource):
+			totals[resource] = {"reserve_kt": 0.0, "quality_w": 0.0, "depth_w": 0.0}
+		totals[resource]["reserve_kt"] += qty
+		totals[resource]["quality_w"] += float(deposit.get("quality", 0.5)) * qty
+		totals[resource]["depth_w"] += float(deposit.get("depth_m", 0.0)) * qty
+	var out := {}
+	for resource in totals:
+		var agg: Dictionary = totals[resource]
+		var total: float = agg["reserve_kt"]
+		out[resource] = {
+			"reserve_kt": round(total),
+			"quality": snappedf(agg["quality_w"] / total, 0.001),
+			"depth_m": int(round(agg["depth_w"] / total)),
+		}
+	return out
 
 
 func _index_deposits(deposits: Dictionary) -> void:

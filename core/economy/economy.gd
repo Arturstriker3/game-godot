@@ -62,16 +62,30 @@ func _ready() -> void:
 	sim.initialize_demo_world(_load_cities(), _load_ports(), _load_buildings())
 	sim.demo_set_goods(_load_goods())
 	_load_nations()
-	_setup_ai()
+	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
+	# início — sem prospecção: todo depósito é conhecido.
+	var geo := GeographyService.new()
+	geo.apply_to_sim(sim, _cities_with_center())
+	_setup_ai(geo)
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
 	_run_day.call_deferred()
 
 
+## Lista de cidades no formato que o GeographyService.apply_to_sim espera.
+func _cities_with_center() -> Array:
+	var result: Array = []
+	for city in _load_cities():
+		result.append({
+			"id": String(city.get("id", "")),
+			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
+		})
+	return result
+
+
 ## Cria a camada de decisão (EconomicAI) sobre o estado do demo, com o serviço
 ## de geografia para revelar depósitos e aptidão territorial.
-func _setup_ai() -> void:
-	var geo := GeographyService.new()
+func _setup_ai(geo: GeographyService) -> void:
 	_ai = EconomicAI.new()
 	_ai.setup(sim, geo)
 
