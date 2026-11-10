@@ -459,7 +459,10 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 			if key == "wheat":
 				detail = "%d%%" % int(round(float(entry.get("value", 0.0)) * 100.0))
 			else:
-				detail = "×%d" % int(entry.get("count", 1))
+				detail = "×%d · %s" % [
+					int(entry.get("count", 1)),
+					_format_mt(float(entry.get("reserve_kt", 0.0))),
+				]
 			_legend_box.add_child(_legend_row(_resource_color(key),
 					I18n.t("resource." + key), detail))
 	var hint := UiKit.caption(I18n.t("map.legend.city_hint"))

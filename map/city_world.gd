@@ -1078,6 +1078,7 @@ func _resource_entries(city_id: String, center: Vector2) -> Array:
 		_geo = GeographyScript.new()
 		_geo.load_data()
 	var counts := {}
+	var reserves := {}
 	if _mode_layer != null and _territory != null:
 		for point in _mode_layer.mineral_points():
 			if point.size() < 10:
@@ -1090,11 +1091,16 @@ func _resource_entries(city_id: String, center: Vector2) -> Array:
 			var key := String(MINERAL_KEYS[clampi(int(point[2]), 0,
 					MINERAL_KEYS.size() - 1)])
 			counts[key] = int(counts.get(key, 0)) + 1
+			reserves[key] = float(reserves.get(key, 0.0)) + float(point[3])
 
 	var entries: Array = []
 	for key in MINERAL_KEYS:
 		if counts.has(key):
-			entries.append({"kind": key, "count": int(counts[key])})
+			entries.append({
+				"kind": key,
+				"count": int(counts[key]),
+				"reserve_kt": float(reserves.get(key, 0.0)),
+			})
 	var wheat := float(_geo.crop_suitability(city_id, center, "wheat"))
 	if wheat >= WHEAT_STRIP_MIN:
 		entries.append({"kind": "wheat", "count": 1, "value": wheat})
