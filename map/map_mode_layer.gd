@@ -207,17 +207,69 @@ func _fill_markers(layer: MultiMeshInstance3D, points: Array, is_wheat: bool) ->
 	for index in points.size():
 		var point: Array = points[index]
 		var color := WHEAT_COLOR
-		var size := 0.55
 		if is_wheat:
-			size = 0.42 + 0.38 * clampf(float(point[2]), 0.0, 1.0)
+			color = WHEAT_COLOR
 		else:
 			var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
 			color = MINERAL_COLORS[color_index]
-			# Tamanho pela reserva (raiz): Ghawar/Safaniya dominam, prospecção
-			# pequena fica discreta. 250.000 kt = tamanho de referência.
-			var quantity := float(point[3]) if point.size() > 3 else 250000.0
-			size = 0.45 * clampf(sqrt(quantity / 250000.0), 0.55, 1.9)
-		_set_marker(layer, index, float(point[0]), float(point[1]), size, color)
+		_set_marker(layer, index, float(point[0]), float(point[1]),
+				_marker_size(point, is_wheat), color)
+
+
+## Tamanho do marcador: trigo pela aptidão; mineral pela reserva (√).
+func _marker_size(point: Array, is_wheat: bool) -> float:
+	if is_wheat:
+		return 0.42 + 0.38 * clampf(float(point[2]), 0.0, 1.0)
+	var quantity := float(point[3]) if point.size() > 3 else 250000.0
+	return 0.45 * clampf(sqrt(quantity / 250000.0), 0.55, 1.9)
+
+
+func _marker_world(point: Array) -> Vector3:
+	return Vector3((float(point[0]) - MAP_PX.x * 0.5) * 0.2, 0.2,
+			(float(point[1]) - MAP_PX.y * 0.5) * 0.2)
+
+
+## Depósito sob o cursor (índice em _mineral_points), ou -1. Respeita o filtro.
+func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
+	if camera == null or _mineral_points.is_empty():
+		return -1
+	var best := -1
+	var best_distance := INF
+	var right := camera.global_transform.basis.x
+	for index in _mineral_points.size():
+		var point: Array = _mineral_points[index]
+		var key := String(MINERAL_KEYS[clampi(int(point[2]), 0,
+				MINERAL_KEYS.size() - 1)])
+		if not _is_enabled(key):
+			continue
+		var world := _marker_world(point)
+		if camera.is_position_behind(world):
+			continue
+		var center := camera.unproject_position(world)
+		var edge := camera.unproject_position(
+				world + right * (_marker_size(point, false) * 0.5))
+		var radius := maxf(9.0, center.distance_to(edge))
+		var distance := center.distance_to(screen_position)
+		if distance <= radius and distance < best_distance:
+			best = index
+			best_distance = distance
+	return best
+
+
+## Dados de um depósito para a legenda.
+func deposit_info(index: int) -> Dictionary:
+	if index < 0 or index >= _mineral_points.size():
+		return {}
+	var point: Array = _mineral_points[index]
+	return {
+		"resource": String(MINERAL_KEYS[clampi(int(point[2]), 0,
+				MINERAL_KEYS.size() - 1)]),
+		"quantity_kt": float(point[3]) if point.size() > 3 else 0.0,
+		"quality": float(point[4]) if point.size() > 4 else 0.0,
+		"depth_m": int(point[5]) if point.size() > 5 else 0,
+		"status": int(point[6]) if point.size() > 6 else 4,
+		"name": String(point[7]) if point.size() > 7 else "",
+	}
 
 
 func _make_marker_layer(node_name: String, texture: Texture2D) -> MultiMeshInstance3D:

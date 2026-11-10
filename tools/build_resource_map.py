@@ -25,6 +25,8 @@ NATURAL = os.path.join(ROOT, "data", "definitions", "natural")
 PLACES = os.path.join(ROOT, "assets", "icons", "places")
 
 MINERALS = ["coal", "copper", "gas", "iron", "oil"]
+## Códigos de status no resource_points.json (legenda do depósito).
+STATUS_CODES = {"Producer": 0, "Past Producer": 1, "Prospect": 2, "Occurrence": 3}
 WHEAT_MIN = 0.40
 EDGE = (23, 20, 16, 235)
 
@@ -129,6 +131,10 @@ def build_points() -> None:
             round(float(dep.get("py", 0.0)), 1),
             MINERALS.index(resource),
             round(float(dep.get("quantity_kt", 0.0)), 1),
+            round(float(dep.get("quality", 0.0)), 3),
+            int(dep.get("depth_m", 0)),
+            STATUS_CODES.get(str(dep.get("status", "")), 4),
+            (str(dep.get("names", [""])[0]) if dep.get("names") else "")[:40],
         ])
 
     agriculture = read_json("agriculture.json")["territories"]

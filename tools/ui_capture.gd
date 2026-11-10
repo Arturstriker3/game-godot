@@ -31,6 +31,7 @@ var _run := ""
 var _sizes: Array[String] = []
 var _plain := false
 var _map_mode := ""
+var _legend_demo := ""
 var _hud
 var _report := {"shots": [], "audits": [], "skipped": [], "phase": ""}
 
@@ -54,6 +55,16 @@ func _ready() -> void:
 	_build_hud()
 	if not _map_mode.is_empty() and _hud.has_method("set_map_mode"):
 		_hud.set_map_mode(_map_mode)
+	if _legend_demo == "deposit":
+		_hud.show_deposit_info({
+			"resource": "oil", "name": "Ghawar", "quantity_kt": 1400000.0,
+			"quality": 0.9, "depth_m": 2200, "status": 0,
+		})
+	elif _legend_demo == "city":
+		_hud.show_city_resources("FRA-PAR", [
+			{"kind": "iron", "count": 3}, {"kind": "oil", "count": 1},
+			{"kind": "wheat", "value": 0.62},
+		])
 	await _wait_for_data()
 
 	for size in _sizes:
@@ -80,6 +91,8 @@ func _parse_args() -> void:
 				_plain = value != "0" and value != "false"
 			"--mapmode":
 				_map_mode = value
+			"--legend":
+				_legend_demo = value
 
 
 ## Fundo neutro: textura real do mapa escurecida, ou cor chapada com --plain.

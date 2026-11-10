@@ -94,6 +94,7 @@ var _mode_bar: HBoxContainer
 var _mode_buttons := {}
 var _mode_icons := {}
 var _legend: PanelContainer
+var _legend_box: VBoxContainer
 var _legend_title: Label
 var _legend_hint: Label
 var _legend_all: Button
@@ -299,12 +300,22 @@ func _build_legend() -> void:
 	_legend.add_theme_stylebox_override("panel", style)
 	_legend.mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
-	_legend.add_child(box)
+	_legend_box = VBoxContainer.new()
+	_legend_box.add_theme_constant_override("separation", 3)
+	_legend.add_child(_legend_box)
+	_render_legend_filters()
+	_legend.visible = _mode == "resources"
+	_root.add_child(_legend)
+
+
+## Conteúdo padrão da legenda: filtros por recurso + contagem + "Todos".
+func _render_legend_filters() -> void:
+	if _legend_box == null:
+		return
+	_clear_legend_content()
 
 	var header := HBoxContainer.new()
-	box.add_child(header)
+	_legend_box.add_child(header)
 	_legend_title = UiKit.caption(I18n.t("map.legend.title"))
 	_legend_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_legend_title)
@@ -319,26 +330,161 @@ func _build_legend() -> void:
 	_legend_all.pressed.connect(_select_all_resources)
 	header.add_child(_legend_all)
 
-	_resource_counts = _resource_counts_from_file()
-	_resource_enabled.clear()
-	_legend_labels.clear()
-	_resource_checks.clear()
-	_resource_rows.clear()
+	if _resource_counts.is_empty():
+		_resource_counts = _resource_counts_from_file()
+	if _resource_enabled.is_empty():
+		for entry in RESOURCE_LEGEND:
+			_resource_enabled[String(entry["key"])] = true
 	for entry in RESOURCE_LEGEND:
 		var key := String(entry["key"])
-		_resource_enabled[key] = true
 		var row := _make_resource_row(key, entry["color"])
-		box.add_child(row)
+		_legend_box.add_child(row)
 		_resource_rows[key] = row
 
 	_legend_hint = UiKit.caption(I18n.t("map.legend.hint"))
 	_legend_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_legend_hint.custom_minimum_size = Vector2(190.0, 0.0)
-	box.add_child(_legend_hint)
+	_legend_box.add_child(_legend_hint)
 
 	_refresh_resource_rows()
-	_legend.visible = _mode == "resources"
-	_root.add_child(_legend)
+
+
+## Limpa o conteúdo da legenda e zera as referências dos widgets.
+func _clear_legend_content() -> void:
+	UiKit.clear(_legend_box)
+	_legend_labels.clear()
+	_resource_checks.clear()
+	_resource_rows.clear()
+	_legend_title = null
+	_legend_hint = null
+	_legend_all = null
+
+
+## Cabeçalho da legenda de informação (com "Voltar").
+func _legend_header(title: String) -> void:
+	var header := HBoxContainer.new()
+	_legend_box.add_child(header)
+	var label := UiKit.caption(title)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header.add_child(label)
+	var back := Button.new()
+	back.text = I18n.t("map.legend.back")
+	back.flat = true
+	back.focus_mode = Control.FOCUS_NONE
+	back.add_theme_font_size_override("font_size", 12)
+	back.add_theme_color_override("font_color", UiKit.BRASS)
+	back.add_theme_color_override("font_hover_color", UiKit.TEXT)
+	back.pressed.connect(_render_legend_filters)
+	header.add_child(back)
+
+
+func _legend_row(color: Color, text: String, detail: String,
+		swatch: bool = true) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6.0)
+	if swatch:
+		var block := ColorRect.new()
+		block.custom_minimum_size = Vector2(14.0, 14.0)
+		block.color = color
+		block.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		block.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(block)
+	var label := UiKit.label(text, 14, UiKit.TEXT_DIM)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	if not detail.is_empty():
+		var value := UiKit.caption(detail)
+		value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(value)
+	return row
+
+
+## Substitui a legenda pelos dados do depósito clicado.
+func show_deposit_info(info: Dictionary) -> void:
+	if _legend_box == null or info.is_empty():
+		return
+	_clear_legend_content()
+	var resource := String(info.get("resource", ""))
+	var title := I18n.t("map.legend.deposit")
+	var field := String(info.get("name", ""))
+	if not field.is_empty():
+		title += " — " + field
+	_legend_header(title)
+	_legend_box.add_child(_legend_row(_resource_color(resource),
+			I18n.t("resource." + resource), ""))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.reserve"), _format_mt(float(info.get("quantity_kt", 0.0))), false))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.quality"),
+			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0)), false))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)), false))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.status"),
+			I18n.t("resource.status." + _status_key(int(info.get("status", 4)))), false))
+	var hint := UiKit.caption(I18n.t("map.legend.deposit_hint"))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(190.0, 0.0)
+	_legend_box.add_child(hint)
+	_legend.visible = true
+
+
+## Substitui a legenda pelos recursos que a cidade acessa.
+func show_city_resources(city_id: String, entries: Array) -> void:
+	if _legend_box == null:
+		return
+	_clear_legend_content()
+	var city := _find_city(city_id)
+	var title := I18n.t("map.legend.city_resources")
+	if not city.is_empty():
+		title = I18n.city_name(String(city["id"]), String(city["name"]))
+	_legend_header(title)
+	if entries.is_empty():
+		var empty := UiKit.caption(I18n.t("map.legend.city_empty"))
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.custom_minimum_size = Vector2(190.0, 0.0)
+		_legend_box.add_child(empty)
+	else:
+		for entry in entries:
+			var key := String(entry["kind"])
+			var detail := ""
+			if key == "wheat":
+				detail = "%d%%" % int(round(float(entry.get("value", 0.0)) * 100.0))
+			else:
+				detail = "×%d" % int(entry.get("count", 1))
+			_legend_box.add_child(_legend_row(_resource_color(key),
+					I18n.t("resource." + key), detail))
+	var hint := UiKit.caption(I18n.t("map.legend.city_hint"))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(190.0, 0.0)
+	_legend_box.add_child(hint)
+	_legend.visible = true
+
+
+func _resource_color(key: String) -> Color:
+	for entry in RESOURCE_LEGEND:
+		if String(entry["key"]) == key:
+			return entry["color"]
+	return UiKit.TEXT_DIM
+
+
+func _status_key(code: int) -> String:
+	match code:
+		0:
+			return "producer"
+		1:
+			return "past"
+		2:
+			return "prospect"
+		3:
+			return "occurrence"
+		_:
+			return "unknown"
+
+
+func _format_mt(kt: float) -> String:
+	return UiKit.number(kt / 1000.0, 0) + " Mt"
 
 
 func _make_resource_row(key: String, color: Color) -> Button:
@@ -443,6 +589,8 @@ func _set_map_mode(mode: String) -> void:
 		return
 	_mode = mode
 	_refresh_mode_bar()
+	if mode == "resources" and _legend_box != null:
+		_render_legend_filters()
 	map_mode_requested.emit(mode)
 
 

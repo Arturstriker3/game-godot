@@ -353,6 +353,30 @@ static func _segment_distance(point: Vector2, a: Vector2, b: Vector2) -> float:
 	return point.distance_to(a + ab * t)
 
 
+## Depósito sob o cursor no mapa de recursos; -1 se nenhum.
+func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
+	if _mode != "resources" or _mode_layer == null:
+		return -1
+	return _mode_layer.pick_deposit(screen_position, camera)
+
+
+## Dados de um depósito (para a legenda).
+func deposit_info(index: int) -> Dictionary:
+	if _mode_layer == null:
+		return {}
+	return _mode_layer.deposit_info(index)
+
+
+## Recursos que a cidade alcança (para a legenda): minérios no raio + trigo.
+func city_resource_entries(city_id: String) -> Array:
+	for record in _city_nodes:
+		if String(record["id"]) == city_id:
+			var city: Dictionary = record["city"]
+			return _resource_entries(city_id, Vector2(
+					float(city.get("x", 0.0)), float(city.get("y", 0.0))))
+	return []
+
+
 ## Posição global da cidade (para centralizar a câmera).
 func city_world_position(city_id: String) -> Vector3:
 	for record in _city_nodes:

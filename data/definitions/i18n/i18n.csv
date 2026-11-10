@@ -287,3 +287,18 @@ resource.oil,Petróleo,Oil,Petróleo
 resource.wheat,Trigo,Wheat,Trigo
 map.legend.hint,Ícones sob a cidade = recursos ao alcance. Clique na cidade para detalhes.,Icons under a city = resources in reach. Click the city for details.,Iconos bajo la ciudad = recursos al alcance. Haz clic en la ciudad para detalles.
 map.legend.all,Todos,All,Todos
+map.legend.deposit,Depósito,Deposit,Yacimiento
+map.legend.city_resources,Recursos da cidade,City resources,Recursos de la ciudad
+map.legend.city_empty,Sem recursos ao alcance.,No resources in reach.,Sin recursos al alcance.
+map.legend.city_hint,Minérios no raio de captação + trigo do território.,Minerals within the catchment radius + wheat from the territory.,Minerales en el radio de captación + trigo del territorio.
+map.legend.deposit_hint,Quantidade é reserva estimada; a extração será definida depois.,Amount is estimated reserve; extraction will be defined later.,La cantidad es reserva estimada; la extracción se definirá después.
+map.legend.back,Voltar,Back,Volver
+map.legend.reserve,Reserva,Reserve,Reserva
+map.legend.quality,Qualidade,Quality,Calidad
+map.legend.depth,Profundidade,Depth,Profundidad
+map.legend.status,Status,Status,Estado
+resource.status.producer,Produtor,Producer,Productor
+resource.status.past,Exaurido,Depleted,Agotado
+resource.status.prospect,Prospecção,Prospect,Prospección
+resource.status.occurrence,Ocorrência,Occurrence,Ocurrencia
+resource.status.unknown,—,—,—

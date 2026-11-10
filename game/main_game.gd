@@ -223,6 +223,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if player == null:
 		return
 	var mouse := get_viewport().get_mouse_position()
+	# Mapa de recursos: clique no depósito mostra a ficha na legenda.
+	if hud.map_mode() == "resources":
+		var deposit: int = city_world.pick_deposit(mouse, player.camera)
+		if deposit >= 0:
+			hud.show_deposit_info(city_world.deposit_info(deposit))
+			get_viewport().set_input_as_handled()
+			return
 	var port_id: String = city_world.pick_port(mouse, player.camera)
 	if not port_id.is_empty():
 		GameCursor.set_city_hover(false)
@@ -234,8 +241,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if city_id.is_empty():
 		return
 	GameCursor.set_city_hover(false)
-	# No mapa de recursos, abrir direto a aba de recursos da cidade.
-	hud.open_city(city_id, "resources" if hud.map_mode() == "resources" else "overview")
+	if hud.map_mode() == "resources":
+		# No mapa de recursos a legenda mostra o que a cidade acessa.
+		city_world.select_city(city_id)
+		hud.show_city_resources(city_id, city_world.city_resource_entries(city_id))
+	else:
+		hud.open_city(city_id)
 	get_viewport().set_input_as_handled()
 
 
@@ -258,6 +269,16 @@ func _update_city_hover_pass() -> void:
 	if player == null:
 		return
 	var mouse := get_viewport().get_mouse_position()
+	# Mapa de recursos: depósito tem prioridade (cursor "i" e clique mostram a
+	# ficha do depósito na legenda).
+	if hud.map_mode() == "resources":
+		var deposit: int = city_world.pick_deposit(mouse, player.camera)
+		if deposit >= 0:
+			if not _last_hover.is_empty():
+				_last_hover = ""
+				city_world.set_hover("")
+			GameCursor.set_state(false, "info")
+			return
 	var port_id: String = city_world.pick_port(mouse, player.camera)
 	var city_id: String = "" if not port_id.is_empty() else city_world.pick_city(mouse, player.camera)
 	var hover_id: String = port_id if not port_id.is_empty() else city_id
@@ -266,8 +287,7 @@ func _update_city_hover_pass() -> void:
 		city_world.set_hover(hover_id)
 	var kind: String = ""
 	if not port_id.is_empty():
-		# Mapas de dados: "i" também na construção (abrir informação).
-		kind = "info" if hud.map_mode() != "political" else "port"
+		kind = "port"
 	elif not city_id.is_empty():
 		kind = "info" if hud.map_mode() != "political" else "city"
 	GameCursor.set_state(false, kind)
