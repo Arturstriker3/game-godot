@@ -305,8 +305,9 @@ func set_deposit_hover(index: int) -> void:
 	var point: Array = _mineral_points[index]
 	var size := _marker_size(point, false)
 	_hover_ring.position = _marker_world(point) + Vector3(0.0, 0.01, 0.0)
-	_hover_ring.pixel_size = (size * 2.4) / 128.0
-	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.95)
+	# Hover: anel menor e mais discreto (só indica "sob o cursor").
+	_hover_ring.pixel_size = (size * 2.0) / 128.0
+	_hover_ring.modulate = Color(1.0, 1.0, 1.0, 0.8)
 	_hover_ring.visible = true
 	_hover_time = 0.0
 
@@ -327,17 +328,21 @@ func _update_selection_ring() -> void:
 	var point: Array = _mineral_points[_selected_deposit]
 	var size := _marker_size(point, false)
 	_selection_ring.position = _marker_world(point) + Vector3(0.0, 0.02, 0.0)
-	_selection_ring.pixel_size = (size * 2.9) / 128.0
+	# Seleção: anel bem maior, dourado e pulsante — distinto do hover.
+	_selection_ring.pixel_size = (size * 3.4) / 128.0
+	_selection_ring.modulate = Color(1.0, 0.86, 0.42, 1.0)
 	_selection_ring.visible = true
 
 
-func _process(delta: float) -> void:
-	if _hover_ring == null or not _hover_ring.visible:
-		return
-	# Pulso sutil no anel de hover.
-	_hover_time += delta
-	var pulse := 1.0 + 0.06 * sin(_hover_time * 5.0)
-	_hover_ring.scale = Vector3(pulse, pulse, 1.0)
+func _process(_delta: float) -> void:
+	# Pulso contínuo (sem depender de estado): seleção mais forte que o hover.
+	var t := Time.get_ticks_msec() / 1000.0
+	if _hover_ring != null and _hover_ring.visible:
+		var pulse := 1.0 + 0.05 * sin(t * 5.0)
+		_hover_ring.scale = Vector3(pulse, pulse, 1.0)
+	if _selection_ring != null and _selection_ring.visible:
+		var spulse := 1.0 + 0.08 * sin(t * 3.0)
+		_selection_ring.scale = Vector3(spulse, spulse, 1.0)
 
 
 ## Dados de um depósito para a legenda.
