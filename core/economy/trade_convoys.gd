@@ -67,6 +67,9 @@ const SNAP_SEARCH_CELLS := 128
 # América do Sul) exploram um corredor de milhares de células; um limite baixo
 # fazia o navio cair no fallback em linha reta (por cima do terreno).
 const MAX_ASTAR_NODES := 200000
+# Salto de olhar máximo ao simplificar o caminho (pontos por waypoint). Limita o
+# custo a O(n) em vez de O(n²), para rotas oceânicas longas não travarem o jogo.
+const SIMPLIFY_LOOKAHEAD := 48
 
 const NEIGHBORS: Array[Vector2i] = [
 	Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
@@ -329,7 +332,9 @@ func _reconstruct(came_from: Dictionary, current: Vector2i) -> Array[Vector2i]:
 	return cells
 
 
-## Remove pontos intermediários quando a reta entre eles é navegável.
+## Remove pontos intermediários quando a reta entre eles é navegável. O salto de
+## olhar é limitado (SIMPLIFY_LOOKAHEAD) para não virar O(n²) em rotas longas —
+## antes, uma travessia oceânica travava o jogo por minutos ao simplificar.
 func _simplify(path: PackedVector2Array, mode: String) -> PackedVector2Array:
 	if path.size() <= 2:
 		return path
@@ -337,7 +342,8 @@ func _simplify(path: PackedVector2Array, mode: String) -> PackedVector2Array:
 	var result := PackedVector2Array([path[0]])
 	var anchor := 0
 	for i in range(2, path.size()):
-		if not _line_walkable(path[anchor], path[i], mode):
+		if i - anchor > SIMPLIFY_LOOKAHEAD \
+				or not _line_walkable(path[anchor], path[i], mode):
 			result.append(path[i - 1])
 			anchor = i - 1
 	result.append(path[path.size() - 1])
