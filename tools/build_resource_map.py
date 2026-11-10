@@ -28,11 +28,12 @@ MINERALS = ["coal", "copper", "gas", "iron", "oil"]
 WHEAT_MIN = 0.40
 EDGE = (23, 20, 16, 235)
 
-## Regra de água: nenhum recurso no mar. Exceção: petróleo/gás na faixa
-## costeira (extração futura só na costa). nav_mask: terra >= 128; "encostado
-## na costa" = célula >= 102 num raio de 2 células (2500×1250).
+## Regra de água: nenhum recurso terrestre no mar. Petróleo/gás podem estar
+## offshore (pré-sal, Mar do Norte), mas só até 20 células do nav_mask
+## (~320 km da costa) — o suficiente para os campos reais, sem pontos no meio
+## do oceano. A extração futura continua sendo uma regra de jogo (só na costa).
 COASTAL_RESOURCES = ("oil", "gas")
-COASTAL_RADIUS_CELLS = 2
+COASTAL_RADIUS_CELLS = 20
 MAP_W, MAP_H = 5000.0, 2500.0
 
 

@@ -210,6 +210,21 @@ CURATED_DEPOSITS = [
     ("gas", "Permian Gás", 31.8, -102.4, 600000.0, 0.78, 2800.0, "Producer"),
     ("gas", "NW Shelf", -20.0, 115.5, 550000.0, 0.80, 3000.0, "Producer"),
     ("gas", "Trinidad", 10.4, -61.3, 250000.0, 0.76, 2600.0, "Producer"),
+    # Petróleo offshore (pré-sal brasileiro e Mar do Norte norueguês)
+    ("oil", "Tupi (Lula)", -25.0, -43.0, 1000000.0, 0.86, 2200.0, "Producer"),
+    ("oil", "Búzios", -25.2, -42.0, 900000.0, 0.85, 2300.0, "Producer"),
+    ("oil", "Mero", -24.5, -41.0, 800000.0, 0.84, 2200.0, "Producer"),
+    ("oil", "Roncador", -22.0, -40.0, 600000.0, 0.78, 1800.0, "Producer"),
+    ("oil", "Johan Sverdrup", 58.9, 2.4, 700000.0, 0.83, 1900.0, "Producer"),
+    ("oil", "Ekofisk", 56.5, 3.2, 400000.0, 0.79, 3000.0, "Producer"),
+    ("oil", "Gullfaks", 61.2, 2.3, 350000.0, 0.80, 2500.0, "Producer"),
+    ("oil", "Oseberg", 60.5, 2.8, 300000.0, 0.79, 2600.0, "Producer"),
+    # Gás (Oriente Médio, Norte da África e Barents)
+    ("gas", "South Pars", 27.0, 52.5, 1400000.0, 0.88, 3100.0, "Producer"),
+    ("gas", "Hassi R'Mel", 32.9, 3.3, 400000.0, 0.82, 2500.0, "Producer"),
+    ("gas", "Bab", 23.9, 53.7, 300000.0, 0.78, 2800.0, "Producer"),
+    ("gas", "Rhourde Nouss", 30.5, 5.5, 250000.0, 0.76, 2700.0, "Producer"),
+    ("gas", "Snøhvit", 71.5, 21.0, 300000.0, 0.80, 3200.0, "Producer"),
 ]
 
 

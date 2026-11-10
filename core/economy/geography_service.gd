@@ -11,10 +11,11 @@ const AGRICULTURE_PATH := "res://data/definitions/natural/agriculture.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 const NAV_MASK_PATH := "res://map/map_data/nav_mask.png"
 
-## Regra de água (igual a tools/build_resource_map.py): nada no mar; só
-## petróleo/gás a até 2 células da costa (extração futura só no litoral).
+## Regra de água (igual a tools/build_resource_map.py): nada de recurso
+## terrestre no mar; petróleo/gás offshore só até 20 células (~320 km) da
+## costa — cobre pré-sal e Mar do Norte sem pontos no meio do oceano.
 const COASTAL_RESOURCES := ["oil", "gas"]
-const COASTAL_RADIUS_CELLS := 2
+const COASTAL_RADIUS_CELLS := 20
 const MAP_W := 5000.0
 const MAP_H := 2500.0
 

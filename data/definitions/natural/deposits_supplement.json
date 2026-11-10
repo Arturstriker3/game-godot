@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "note": "Campos reais que faltavam no extrato MRDS: pré-sal brasileiro, Mar do Norte norueguês e gás do Oriente Médio/Norte da África. Localização real; quantidade/qualidade/profundidade estimadas de forma determinística, como nos demais depósitos.",
+    "applied_by": "tools/apply_deposit_supplement.py"
+  },
+  "fields": [
+    {"resource": "oil", "name": "Tupi (Lula)", "lat": -25.0, "lon": -43.0, "quantity_kt": 1000000.0, "quality": 0.86, "depth_m": 2200, "status": "Producer"},
+    {"resource": "oil", "name": "Búzios", "lat": -25.2, "lon": -42.0, "quantity_kt": 900000.0, "quality": 0.85, "depth_m": 2300, "status": "Producer"},
+    {"resource": "oil", "name": "Mero", "lat": -24.5, "lon": -41.0, "quantity_kt": 800000.0, "quality": 0.84, "depth_m": 2200, "status": "Producer"},
+    {"resource": "oil", "name": "Roncador", "lat": -22.0, "lon": -40.0, "quantity_kt": 600000.0, "quality": 0.78, "depth_m": 1800, "status": "Producer"},
+    {"resource": "oil", "name": "Johan Sverdrup", "lat": 58.9, "lon": 2.4, "quantity_kt": 700000.0, "quality": 0.83, "depth_m": 1900, "status": "Producer"},
+    {"resource": "oil", "name": "Ekofisk", "lat": 56.5, "lon": 3.2, "quantity_kt": 400000.0, "quality": 0.79, "depth_m": 3000, "status": "Producer"},
+    {"resource": "oil", "name": "Gullfaks", "lat": 61.2, "lon": 2.3, "quantity_kt": 350000.0, "quality": 0.80, "depth_m": 2500, "status": "Producer"},
+    {"resource": "oil", "name": "Oseberg", "lat": 60.5, "lon": 2.8, "quantity_kt": 300000.0, "quality": 0.79, "depth_m": 2600, "status": "Producer"},
+    {"resource": "gas", "name": "South Pars", "lat": 27.0, "lon": 52.5, "quantity_kt": 1400000.0, "quality": 0.88, "depth_m": 3100, "status": "Producer"},
+    {"resource": "gas", "name": "Hassi R'Mel", "lat": 32.9, "lon": 3.3, "quantity_kt": 400000.0, "quality": 0.82, "depth_m": 2500, "status": "Producer"},
+    {"resource": "gas", "name": "Bab", "lat": 23.9, "lon": 53.7, "quantity_kt": 300000.0, "quality": 0.78, "depth_m": 2800, "status": "Producer"},
+    {"resource": "gas", "name": "Rhourde Nouss", "lat": 30.5, "lon": 5.5, "quantity_kt": 250000.0, "quality": 0.76, "depth_m": 2700, "status": "Producer"},
+    {"resource": "gas", "name": "Snøhvit", "lat": 71.5, "lon": 21.0, "quantity_kt": 300000.0, "quality": 0.80, "depth_m": 3200, "status": "Producer"}
+  ]
+}
