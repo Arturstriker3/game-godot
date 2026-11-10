@@ -818,6 +818,8 @@ func _speed_block() -> Control:
 
 	for index in Economy.SPEED_COUNT:
 		var button := Button.new()
+		# Sem foco: senão o espaço (ui_accept) reativa o botão em vez de pausar.
+		button.focus_mode = Control.FOCUS_NONE
 		button.custom_minimum_size = Vector2(34.0, 28.0)
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		button.add_theme_font_size_override("font_size", UiKit.FS_CAPTION + 1)
@@ -918,6 +920,7 @@ func _render_dock() -> void:
 	for index in SCREEN_ORDER.size():
 		var id: String = SCREEN_ORDER[index]
 		var button := Button.new()
+		button.focus_mode = Control.FOCUS_NONE
 		button.text = I18n.t(SCREEN_LABELS[id])
 		button.custom_minimum_size.y = UiKit.DOCK_BUTTON_HEIGHT
 		button.add_theme_font_size_override("font_size", UiKit.FS_SMALL)
