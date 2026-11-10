@@ -15,8 +15,10 @@ const SHIP_SCENE: PackedScene = preload("res://assets/models/ship.glb")
 const PLANE_SCENE: PackedScene = preload("res://assets/models/plane.glb")
 
 # Tamanho alvo (unidades de mundo) do maior eixo do modelo. Veículos devem ser
-# pequenos diante da cidade (a cidade tem ~6–8 unidades de diâmetro).
+# pequenos diante da cidade (a cidade tem ~6–8 unidades de diâmetro). O navio é
+# 2x maior: no mar ele não compete com a malha urbana e fica legível.
 const MODEL_LENGTH := 0.275
+const MODEL_LENGTH_BY_MODE := {"truck": 0.275, "ship": 0.55, "plane": 0.275}
 # Altura acima do plano do mapa para o modelo não afundar no terreno.
 const HEIGHT_OFFSET := 0.18
 # Duração visual de cada trecho: acompanha o tempo de trânsito simulado e o
@@ -42,8 +44,15 @@ const MODEL_YAW_OFFSET := PI * 0.5
 const NAV_MASK: Texture2D = preload("res://map/map_data/nav_mask.png")
 const NAV_CELL_PX := 2.0
 const COAST_THRESHOLD := 0.01
-const SNAP_SEARCH_CELLS := 8
-const MAX_ASTAR_NODES := 60000
+# Raio de busca da célula navegável mais próxima (snap). Navios saem de cidades
+# do interior (ex.: Paris fica ~15 células da costa), então o raio precisa ser
+# grande o bastante para alcançar o mar — senão o snap falha e o navio cruza o
+# terreno em linha reta.
+const SNAP_SEARCH_CELLS := 128
+# Nós visitados pelo A* antes de desistir. Rotas oceânicas longas (Europa ->
+# América do Sul) exploram um corredor de milhares de células; um limite baixo
+# fazia o navio cair no fallback em linha reta (por cima do terreno).
+const MAX_ASTAR_NODES := 200000
 
 const NEIGHBORS: Array[Vector2i] = [
 	Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
@@ -430,7 +439,8 @@ func _scale_for(mode: String, scene: PackedScene) -> float:
 	probe.queue_free()
 
 	var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
-	var scale: float = 1.0 if longest <= 0.0 else MODEL_LENGTH / longest
+	var length: float = float(MODEL_LENGTH_BY_MODE.get(mode, MODEL_LENGTH))
+	var scale: float = 1.0 if longest <= 0.0 else length / longest
 	_scale_cache[mode] = scale
 	return scale
 
