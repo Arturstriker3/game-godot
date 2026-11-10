@@ -1,8 +1,8 @@
 {
 	"version": 1,
 	"note": "Configuração do laboratório de balanceamento. Executado por tools/economy_lab.gd; não altera a simulação em si, apenas o estado inicial controlado de cada cenário.",
-	"products": ["wheat", "flour", "bread", "iron"],
-	"base_prices": [40.0, 70.0, 80.0, 60.0],
+	"products": ["wheat", "flour", "bread", "iron", "rice", "maize"],
+	"base_prices": [40.0, 70.0, 80.0, 60.0, 55.0, 42.0],
 	"horizons_days": [30, 90, 365, 1825, 3650],
 	"sample_every_days": {
 		"30": 1,
@@ -56,8 +56,8 @@
 			"description": "Sem fazendas e sem padarias, com todos os estoques alimentares zerados. Testa consumo zero, preços sob escassez e a resposta do mercado sem produtor local.",
 			"remove_buildings": ["FARM-A", "FARM-P", "BAKERY-B"],
 			"cities": {
-				"AGRIA": {"market_stock": [0.0, 0.0, 0.0, 0.0]},
-				"PORTUS": {"market_stock": [0.0, 0.0, 0.0, 0.0]}
+				"AGRIA": {"market_stock": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+				"PORTUS": {"market_stock": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}
 			}
 		},
 		{
@@ -85,8 +85,8 @@
 			"label": "Cidade com baixa renda e preços elevados",
 			"description": "Famílias sem poupança e preços 2,5x acima da base. Testa se o consumo respeita o orçamento e se os preços convergem.",
 			"cities": {
-				"AGRIA": {"savings": 0.0, "market_price": [100.0, 175.0, 200.0, 60.0]},
-				"PORTUS": {"savings": 0.0, "market_price": [100.0, 175.0, 200.0, 60.0]}
+				"AGRIA": {"savings": 0.0, "market_price": [100.0, 175.0, 200.0, 60.0, 137.5, 105.0]},
+				"PORTUS": {"savings": 0.0, "market_price": [100.0, 175.0, 200.0, 60.0, 137.5, 105.0]}
 			}
 		},
 		{

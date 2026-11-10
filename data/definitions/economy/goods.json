@@ -22,5 +22,17 @@
     "name": "Ferro",
     "base_price": 60.0,
     "food": false
+  },
+  {
+    "id": "rice",
+    "name": "Arroz",
+    "base_price": 55.0,
+    "food": true
+  },
+  {
+    "id": "maize",
+    "name": "Milho",
+    "base_price": 42.0,
+    "food": true
   }
 ]
