@@ -48,7 +48,13 @@ func territory_for(city_id: String, center_px: Vector2) -> String:
 		return ""
 	if _territory_cache.has(city_id):
 		return String(_territory_cache[city_id])
+	var best_id := _nearest_territory(center_px)
+	_territory_cache[city_id] = best_id
+	return best_id
 
+
+## Território mais próximo de um ponto (sem cache por cidade).
+func _nearest_territory(center_px: Vector2) -> String:
 	var best_id := ""
 	var best_distance := INF
 	for territory_id in _nature:
@@ -60,9 +66,29 @@ func territory_for(city_id: String, center_px: Vector2) -> String:
 		if distance < best_distance:
 			best_distance = distance
 			best_id = String(territory_id)
-
-	_territory_cache[city_id] = best_id
 	return best_id
+
+
+## Atributos naturais do território de um ponto (aptidão agrícola, fertilidade,
+## cultivável, clima, solo, relevo, água). Usado pela ficha de recursos.
+func territory_attributes(center_px: Vector2) -> Dictionary:
+	if not load_data():
+		return {}
+	var territory := _nearest_territory(center_px)
+	if territory == "":
+		return {}
+	var data: Dictionary = _nature.get(territory, {})
+	var crops: Dictionary = _agriculture.get(territory, {})
+	return {
+		"territory": territory,
+		"wheat": clampf(float(crops.get("wheat", 0.0)), 0.0, 1.0),
+		"fertility": clampf(float(data.get("fertility", 0.0)), 0.0, 1.0),
+		"cultivable": clampf(float(data.get("cultivable", 0.0)), 0.0, 1.0),
+		"water": clampf(float(data.get("water", 0.0)), 0.0, 1.0),
+		"climate": String(data.get("climate", "")),
+		"soil_type": String(data.get("soil_type", "")),
+		"relief": String(data.get("relief", "")),
+	}
 
 
 ## Aptidão (0..1) de uma cultura no território da cidade.

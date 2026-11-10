@@ -65,6 +65,7 @@ var _hover_diameter := 0.0
 var _selection_diameter := 0.0
 var _mineral_points: Array = []
 var _wheat_points: Array = []
+var _geo: RefCounted
 ## Filtros da legenda: {} = todos; senão chave -> bool.
 var _resource_filter: Dictionary = {}
 
@@ -146,6 +147,7 @@ func _build_values(cities: Array) -> void:
 
 	var geography: RefCounted = GeographyScript.new()
 	geography.load_data()
+	_geo = geography
 
 	var population := PackedFloat32Array()
 	var economic := PackedFloat32Array()
@@ -283,36 +285,71 @@ func _marker_world(point: Array) -> Vector3:
 ## O raio deriva de MARKER_SIZE (constante), logo é igual para todos os
 ## depósitos — a área de pega não varia com a reserva.
 func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
-	if camera == null or _mineral_points.is_empty():
+	if camera == null:
 		return -1
 	var best := -1
 	var best_distance := INF
 	var right := camera.global_transform.basis.x
-	for index in _mineral_points.size():
+	var mineral_count := _mineral_points.size()
+	# Minerais (índices 0..M-1).
+	for index in mineral_count:
 		var point: Array = _mineral_points[index]
 		var key := String(MINERAL_KEYS[clampi(int(point[2]), 0,
 				MINERAL_KEYS.size() - 1)])
 		if not _is_enabled(key):
 			continue
-		var world := to_global(_marker_world(point))
-		if camera.is_position_behind(world):
-			continue
-		var center := camera.unproject_position(world)
-		var edge := camera.unproject_position(
-				world + right * (_marker_size(point, false) * 0.5))
-		var radius := maxf(26.0, center.distance_to(edge) * 1.35)
-		var distance := center.distance_to(screen_position)
-		if distance <= radius and distance < best_distance:
+		var distance := _pick_screen_distance(point, false, screen_position, camera, right)
+		if distance >= 0.0 and distance < best_distance:
 			best = index
 			best_distance = distance
+	# Trigo (índices M..M+W-1).
+	if _is_enabled("wheat"):
+		for index in _wheat_points.size():
+			var point: Array = _wheat_points[index]
+			var distance := _pick_screen_distance(point, true, screen_position, camera, right)
+			if distance >= 0.0 and distance < best_distance:
+				best = mineral_count + index
+				best_distance = distance
 	return best
+
+
+## Distância em tela do ponto ao cursor se estiver dentro do raio de pega, ou -1.
+func _pick_screen_distance(point: Array, is_wheat: bool, screen_position: Vector2,
+		camera: Camera3D, right: Vector3) -> float:
+	var world := to_global(_marker_world(point))
+	if camera.is_position_behind(world):
+		return -1.0
+	var center := camera.unproject_position(world)
+	var edge := camera.unproject_position(
+			world + right * (_marker_size(point, is_wheat) * 0.5))
+	var radius := maxf(26.0, center.distance_to(edge) * 1.35)
+	var distance := center.distance_to(screen_position)
+	return distance if distance <= radius else -1.0
+
+
+## Tipo de um índice de pick codificado (minerais 0..M-1, trigo M..M+W-1).
+func _pick_point(index: int) -> Array:
+	var m := _mineral_points.size()
+	return _mineral_points[index] if index < m else _wheat_points[index - m]
+
+
+func _pick_is_wheat(index: int) -> bool:
+	return index >= _mineral_points.size()
+
+
+func _pick_size(index: int) -> float:
+	return _marker_size(_pick_point(index), _pick_is_wheat(index))
+
+
+func _total_pickable() -> int:
+	return _mineral_points.size() + _wheat_points.size()
 
 
 ## Mostra o badge "i" sobre o depósito sob o mouse (índice) ou esconde (-1).
 func set_deposit_hover(index: int) -> void:
 	if _hover_ring == null:
 		return
-	if index < 0 or index >= _mineral_points.size() or _current != "resources":
+	if index < 0 or index >= _total_pickable() or _current != "resources":
 		_hover_ring.visible = false
 		return
 	# Se o depósito já está selecionado, o anel de seleção basta (evita o hover
@@ -320,8 +357,8 @@ func set_deposit_hover(index: int) -> void:
 	if index == _selected_deposit:
 		_hover_ring.visible = false
 		return
-	var point: Array = _mineral_points[index]
-	var size := _marker_size(point, false)
+	var point: Array = _pick_point(index)
+	var size := _pick_size(index)
 	_hover_ring.position = _marker_world(point) + Vector3(0.0, 0.01, 0.0)
 	# Hover: anel menor e mais discreto (só indica "sob o cursor"). O fator 1.8
 	# mantém o anel sempre maior que o ponto; o piso de tela é aplicado por
@@ -342,12 +379,12 @@ func set_deposit_selected(index: int) -> void:
 func _update_selection_ring() -> void:
 	if _selection_ring == null:
 		return
-	if _selected_deposit < 0 or _selected_deposit >= _mineral_points.size() \
+	if _selected_deposit < 0 or _selected_deposit >= _total_pickable() \
 			or _current != "resources":
 		_selection_ring.visible = false
 		return
-	var point: Array = _mineral_points[_selected_deposit]
-	var size := _marker_size(point, false)
+	var point: Array = _pick_point(_selected_deposit)
+	var size := _pick_size(_selected_deposit)
 	_selection_ring.position = _marker_world(point) + Vector3(0.0, 0.02, 0.0)
 	# Seleção: anel bem maior, dourado e pulsante — distinto do hover.
 	_selection_diameter = size * SELECTION_RING_FACTOR
@@ -397,10 +434,28 @@ func mineral_points() -> Array:
 
 
 func deposit_info(index: int) -> Dictionary:
-	if index < 0 or index >= _mineral_points.size():
+	if index < 0 or index >= _total_pickable():
 		return {}
+	if _pick_is_wheat(index):
+		# Agricultura (recurso renovável): aptidão + fertilidade + cultivável do
+		# território. Sem reserva — a "produção" é um fluxo, não um estoque.
+		var point: Array = _wheat_points[index - _mineral_points.size()]
+		var pos := Vector2(float(point[0]), float(point[1]))
+		var attrs: Dictionary = _geo.territory_attributes(pos) if _geo != null else {}
+		return {
+			"kind": "wheat",
+			"resource": "wheat",
+			"suitability": float(point[2]) if point.size() > 2 else 0.0,
+			"fertility": float(attrs.get("fertility", 0.0)),
+			"cultivable": float(attrs.get("cultivable", 0.0)),
+			"territory": String(attrs.get("territory", "")),
+			"climate": String(attrs.get("climate", "")),
+			"soil_type": String(attrs.get("soil_type", "")),
+			"relief": String(attrs.get("relief", "")),
+		}
 	var point: Array = _mineral_points[index]
 	return {
+		"kind": "mineral",
 		"resource": String(MINERAL_KEYS[clampi(int(point[2]), 0,
 				MINERAL_KEYS.size() - 1)]),
 		"quantity_kt": float(point[3]) if point.size() > 3 else 0.0,

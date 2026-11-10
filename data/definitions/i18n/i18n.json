@@ -312,7 +312,15 @@
   "map.legend.reserve_tip": "Quantidade estimada de recurso no depósito.",
   "map.legend.quality_tip": "Teor/pureza do recurso (0–100%).",
   "map.legend.depth_tip": "Profundidade média do depósito em metros.",
-  "map.legend.status_tip": "Estágio: produtor, exaurido, prospecto ou ocorrência."
+  "map.legend.status_tip": "Estágio: produtor, exaurido, prospecto ou ocorrência.",
+  "map.legend.suitability": "Aptidão",
+  "map.legend.suitability_tip": "Aptidão do território para a cultura (0-100%).",
+  "map.legend.fertility": "Fertilidade",
+  "map.legend.fertility_tip": "Fertilidade do solo (0-100%).",
+  "map.legend.cultivable": "Cultivável",
+  "map.legend.cultivable_tip": "Fração de terra arável (0-100%).",
+  "map.legend.renewable": "Renovável",
+  "map.legend.agriculture_hint": "Recurso renovável: produz todo ano; melhora com maquinário e construções na cidade."
  },
  "en": {
   "alerts.count": "{count} active",
@@ -627,7 +635,15 @@
   "map.legend.reserve_tip": "Estimated amount of resource in the deposit.",
   "map.legend.quality_tip": "Ore grade/purity (0–100%).",
   "map.legend.depth_tip": "Average deposit depth in meters.",
-  "map.legend.status_tip": "Stage: producer, depleted, prospect or occurrence."
+  "map.legend.status_tip": "Stage: producer, depleted, prospect or occurrence.",
+  "map.legend.suitability": "Aptitude",
+  "map.legend.suitability_tip": "Territory suitability for the crop (0-100%).",
+  "map.legend.fertility": "Fertility",
+  "map.legend.fertility_tip": "Soil fertility (0-100%).",
+  "map.legend.cultivable": "Cultivable",
+  "map.legend.cultivable_tip": "Share of arable land (0-100%).",
+  "map.legend.renewable": "Renewable",
+  "map.legend.agriculture_hint": "Renewable resource: produces every year; improves with machinery and city buildings."
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -942,6 +958,14 @@
   "map.legend.reserve_tip": "Cantidad estimada de recurso en el yacimiento.",
   "map.legend.quality_tip": "Ley/pureza del recurso (0–100%).",
   "map.legend.depth_tip": "Profundidad media del yacimiento en metros.",
-  "map.legend.status_tip": "Etapa: productor, agotado, prospecto u ocurrencia."
+  "map.legend.status_tip": "Etapa: productor, agotado, prospecto u ocurrencia.",
+  "map.legend.suitability": "Aptitud",
+  "map.legend.suitability_tip": "Aptitud del territorio para el cultivo (0-100%).",
+  "map.legend.fertility": "Fertilidad",
+  "map.legend.fertility_tip": "Fertilidad del suelo (0-100%).",
+  "map.legend.cultivable": "Cultivable",
+  "map.legend.cultivable_tip": "Fracción de tierra cultivable (0-100%).",
+  "map.legend.renewable": "Renovable",
+  "map.legend.agriculture_hint": "Recurso renovable: produce cada año; mejora con maquinaria y construcciones de la ciudad."
  }
 }

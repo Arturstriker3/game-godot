@@ -312,3 +312,11 @@ map.legend.reserve_tip,Quantidade estimada de recurso no depósito.,Estimated am
 map.legend.quality_tip,Teor/pureza do recurso (0–100%).,Ore grade/purity (0–100%).,Ley/pureza del recurso (0–100%).
 map.legend.depth_tip,Profundidade média do depósito em metros.,Average deposit depth in meters.,Profundidad media del yacimiento en metros.
 map.legend.status_tip,"Estágio: produtor, exaurido, prospecto ou ocorrência.","Stage: producer, depleted, prospect or occurrence.","Etapa: productor, agotado, prospecto u ocurrencia."
+map.legend.suitability,Aptidão,Aptitude,Aptitud
+map.legend.suitability_tip,Aptidão do território para a cultura (0-100%).,Territory suitability for the crop (0-100%).,Aptitud del territorio para el cultivo (0-100%).
+map.legend.fertility,Fertilidade,Fertility,Fertilidad
+map.legend.fertility_tip,Fertilidade do solo (0-100%).,Soil fertility (0-100%).,Fertilidad del suelo (0-100%).
+map.legend.cultivable,Cultivável,Cultivable,Cultivable
+map.legend.cultivable_tip,Fração de terra arável (0-100%).,Share of arable land (0-100%).,Fracción de tierra cultivable (0-100%).
+map.legend.renewable,Renovável,Renewable,Renovable
+map.legend.agriculture_hint,"Recurso renovável: produz todo ano; melhora com maquinário e construções na cidade.","Renewable resource: produces every year; improves with machinery and city buildings.","Recurso renovable: produce cada año; mejora con maquinaria y construcciones de la ciudad."

@@ -391,6 +391,9 @@ func _legend_row(color: Color, text: String, detail: String,
 func show_deposit_info(info: Dictionary) -> void:
 	if _legend_box == null or info.is_empty():
 		return
+	if String(info.get("kind", "mineral")) == "wheat":
+		_show_agriculture_info(info)
+		return
 	_clear_legend_content()
 	var resource := String(info.get("resource", ""))
 	var title := I18n.t("map.legend.deposit")
@@ -415,6 +418,36 @@ func show_deposit_info(info: Dictionary) -> void:
 			I18n.t("resource.status." + _status_key(int(info.get("status", 4)))),
 			false, I18n.t("map.legend.status_tip")))
 	var hint := UiKit.caption(I18n.t("map.legend.deposit_hint"))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(190.0, 0.0)
+	_legend_box.add_child(hint)
+	_legend.visible = true
+
+
+## Ficha de recurso agrícola (renovável): aptidão, fertilidade e cultivável.
+## Mesmo layout da ficha de mina, mas sem reserva — a produção é um fluxo.
+func _show_agriculture_info(info: Dictionary) -> void:
+	_clear_legend_content()
+	var title := I18n.t("resource.wheat")
+	var territory := String(info.get("territory", ""))
+	if not territory.is_empty():
+		title += " — " + territory
+	_legend_header(title)
+	_legend_box.add_child(_legend_row(_resource_color("wheat"),
+			I18n.t("resource.wheat"), I18n.t("map.legend.renewable")))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.suitability"),
+			"%d%%" % int(round(float(info.get("suitability", 0.0)) * 100.0)),
+			false, I18n.t("map.legend.suitability_tip")))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.fertility"),
+			"%d%%" % int(round(float(info.get("fertility", 0.0)) * 100.0)),
+			false, I18n.t("map.legend.fertility_tip")))
+	_legend_box.add_child(_legend_row(Color.TRANSPARENT,
+			I18n.t("map.legend.cultivable"),
+			"%d%%" % int(round(float(info.get("cultivable", 0.0)) * 100.0)),
+			false, I18n.t("map.legend.cultivable_tip")))
+	var hint := UiKit.caption(I18n.t("map.legend.agriculture_hint"))
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(190.0, 0.0)
 	_legend_box.add_child(hint)
