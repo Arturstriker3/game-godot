@@ -17,6 +17,7 @@ const RESOURCE_DOT: Texture2D = preload("res://assets/icons/places/resource_dot.
 const RESOURCE_WHEAT: Texture2D = preload("res://assets/icons/places/resource_wheat.png")
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 ## Ordem dos recursos em resource_points.json (índice do mineral).
+const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil"]
 const MINERAL_COLORS := [
 	Color("#3E3B38"), Color("#C06A3C"), Color("#4E9FB0"),
 	Color("#7C8894"), Color("#5B4A2E"),
@@ -37,6 +38,10 @@ var _current := "geographic"
 var _heat_mesh: MeshInstance3D
 var _mineral_mesh: MultiMeshInstance3D
 var _wheat_mesh: MultiMeshInstance3D
+var _mineral_points: Array = []
+var _wheat_points: Array = []
+## Filtros da legenda: {} = todos; senão chave -> bool.
+var _resource_filter: Dictionary = {}
 
 
 ## Constrói a camada e normaliza os indicadores de cada modo.
@@ -158,29 +163,60 @@ func _build_resource_markers() -> void:
 			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
 	if typeof(data) != TYPE_DICTIONARY:
 		return
-	var minerals: Array = data.get("minerals", [])
-	var wheat: Array = data.get("wheat", [])
+	_mineral_points = data.get("minerals", [])
+	_wheat_points = data.get("wheat", [])
 
-	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT, minerals.size())
-	for index in minerals.size():
-		var point: Array = minerals[index]
-		var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
-		_set_marker(_mineral_mesh, index, float(point[0]), float(point[1]),
-				0.55, MINERAL_COLORS[color_index])
-
-	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT, wheat.size())
-	for index in wheat.size():
-		var point: Array = wheat[index]
-		var value := clampf(float(point[2]), 0.0, 1.0)
-		_set_marker(_wheat_mesh, index, float(point[0]), float(point[1]),
-				0.42 + 0.38 * value, WHEAT_COLOR)
+	_mineral_mesh = _make_marker_layer("ResourceMinerals", RESOURCE_DOT)
+	_wheat_mesh = _make_marker_layer("ResourceWheat", RESOURCE_WHEAT)
+	_rebuild_markers()
 
 	_mineral_mesh.visible = false
 	_wheat_mesh.visible = false
 
 
-func _make_marker_layer(node_name: String, texture: Texture2D,
-		count: int) -> MultiMeshInstance3D:
+## Aplica o filtro da legenda (chaves: coal/copper/gas/iron/oil/wheat).
+## Dicionário vazio = tudo ligado.
+func set_resource_filter(enabled: Dictionary) -> void:
+	_resource_filter = enabled.duplicate()
+	_rebuild_markers()
+
+
+func _is_enabled(key: String) -> bool:
+	return _resource_filter.is_empty() or bool(_resource_filter.get(key, true))
+
+
+## Recria as instâncias apenas com os recursos ligados. 2.181 pontos: barato.
+func _rebuild_markers() -> void:
+	if _mineral_mesh == null or _wheat_mesh == null:
+		return
+	var minerals: Array = []
+	for point in _mineral_points:
+		if _is_enabled(String(MINERAL_KEYS[int(point[2])])):
+			minerals.append(point)
+	_fill_markers(_mineral_mesh, minerals, false)
+
+	var wheat: Array = []
+	if _is_enabled("wheat"):
+		wheat = _wheat_points
+	_fill_markers(_wheat_mesh, wheat, true)
+
+
+func _fill_markers(layer: MultiMeshInstance3D, points: Array, is_wheat: bool) -> void:
+	var multimesh := layer.multimesh
+	multimesh.instance_count = points.size()
+	for index in points.size():
+		var point: Array = points[index]
+		var color := WHEAT_COLOR
+		var size := 0.55
+		if is_wheat:
+			size = 0.42 + 0.38 * clampf(float(point[2]), 0.0, 1.0)
+		else:
+			var color_index := clampi(int(point[2]), 0, MINERAL_COLORS.size() - 1)
+			color = MINERAL_COLORS[color_index]
+		_set_marker(layer, index, float(point[0]), float(point[1]), size, color)
+
+
+func _make_marker_layer(node_name: String, texture: Texture2D) -> MultiMeshInstance3D:
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -195,7 +231,7 @@ func _make_marker_layer(node_name: String, texture: Texture2D,
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.use_colors = true
-	multimesh.instance_count = count
+	multimesh.instance_count = 0
 	var quad := QuadMesh.new()
 	quad.size = Vector2.ONE
 	multimesh.mesh = quad

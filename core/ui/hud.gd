@@ -18,6 +18,8 @@ const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
 ## Contexto pedido pelo HUD para o mapa (câmera e camada de dados).
 signal city_focused(city_id: String)
 signal map_mode_requested(mode: String)
+## Filtro da legenda de recursos: chave -> visível. Vazio = todos.
+signal resource_filter_changed(enabled: Dictionary)
 ## Clique no minimapa: ponto do mapa em UV (0..1).
 signal map_point_requested(map_uv: Vector2)
 
@@ -55,7 +57,8 @@ const MODE_ICONS := {
 	"resources": preload("res://assets/ui/map_mode_resources.png"),
 }
 ## Legenda do mapa de recursos; as cores são as mesmas de
-## tools/build_resource_map.py (map/map_data/atlas/resources.png).
+## tools/build_resource_map.py (map/map_data/atlas/resource_points.json).
+const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil"]
 const RESOURCE_LEGEND := [
 	{"key": "coal", "color": Color("#3E3B38")},
 	{"key": "copper", "color": Color("#C06A3C")},
@@ -64,6 +67,7 @@ const RESOURCE_LEGEND := [
 	{"key": "oil", "color": Color("#5B4A2E")},
 	{"key": "wheat", "color": Color("#D9B45A")},
 ]
+const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 
 var _summary: Dictionary = {}
 var _order_log: Array = []
@@ -92,7 +96,12 @@ var _mode_icons := {}
 var _legend: PanelContainer
 var _legend_title: Label
 var _legend_hint: Label
+var _legend_all: Button
 var _legend_labels := {}
+var _resource_enabled := {}
+var _resource_counts := {}
+var _resource_checks := {}
+var _resource_rows := {}
 var _mode := "political"
 
 var _menu_layer: Control
@@ -274,15 +283,16 @@ func _refresh_mode_bar() -> void:
 		_legend.visible = _mode == "resources"
 
 
-## Legenda do mapa de recursos (canto inferior esquerdo), visível só nesse modo.
+## Legenda/filtro do mapa de recursos (canto inferior esquerdo). Cada linha é
+## uma caixa de seleção; o mapa e a faixa das cidades reagem na hora.
 func _build_legend() -> void:
 	_legend = PanelContainer.new()
 	_legend.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	var padding := 10.0
 	_legend.offset_left = UiKit.SPACE_LG
-	_legend.offset_right = UiKit.SPACE_LG + 164.0
+	_legend.offset_right = UiKit.SPACE_LG + 214.0
 	_legend.offset_bottom = -UiKit.SPACE_LG
-	_legend.offset_top = _legend.offset_bottom - 196.0
+	_legend.offset_top = _legend.offset_bottom - 248.0
 	var style := UiKit.surface(Color(0.055, 0.09, 0.085, 0.94), padding)
 	style.border_color = UiKit.EDGE
 	style.set_border_width_all(1)
@@ -290,32 +300,130 @@ func _build_legend() -> void:
 	_legend.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_XS)
+	box.add_theme_constant_override("separation", 3)
 	_legend.add_child(box)
+
+	var header := HBoxContainer.new()
+	box.add_child(header)
 	_legend_title = UiKit.caption(I18n.t("map.legend.title"))
-	box.add_child(_legend_title)
+	_legend_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(_legend_title)
+	_legend_all = Button.new()
+	_legend_all.text = I18n.t("map.legend.all")
+	_legend_all.flat = true
+	_legend_all.focus_mode = Control.FOCUS_NONE
+	_legend_all.tooltip_text = I18n.t("map.legend.all")
+	_legend_all.add_theme_font_size_override("font_size", 12)
+	_legend_all.add_theme_color_override("font_color", UiKit.BRASS)
+	_legend_all.add_theme_color_override("font_hover_color", UiKit.TEXT)
+	_legend_all.pressed.connect(_select_all_resources)
+	header.add_child(_legend_all)
+
+	_resource_counts = _resource_counts_from_file()
+	_resource_enabled.clear()
 	_legend_labels.clear()
+	_resource_checks.clear()
+	_resource_rows.clear()
 	for entry in RESOURCE_LEGEND:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 7.0)
-		var swatch := ColorRect.new()
-		swatch.custom_minimum_size = Vector2(14.0, 14.0)
-		swatch.color = entry["color"]
-		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(swatch)
-		var label := UiKit.label(I18n.t("resource." + String(entry["key"])),
-				14, UiKit.TEXT_DIM)
-		row.add_child(label)
-		_legend_labels[String(entry["key"])] = label
+		var key := String(entry["key"])
+		_resource_enabled[key] = true
+		var row := _make_resource_row(key, entry["color"])
 		box.add_child(row)
+		_resource_rows[key] = row
 
 	_legend_hint = UiKit.caption(I18n.t("map.legend.hint"))
 	_legend_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_legend_hint.custom_minimum_size = Vector2(140.0, 0.0)
+	_legend_hint.custom_minimum_size = Vector2(190.0, 0.0)
 	box.add_child(_legend_hint)
 
+	_refresh_resource_rows()
 	_legend.visible = _mode == "resources"
 	_root.add_child(_legend)
+
+
+func _make_resource_row(key: String, color: Color) -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(186.0, 22.0)
+	button.add_theme_stylebox_override("normal",
+			UiKit.flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0.0))
+	button.add_theme_stylebox_override("hover", UiKit.surface(UiKit.PANEL_HOVER, 3.0))
+	button.add_theme_stylebox_override("pressed", UiKit.surface(UiKit.PANEL_RAISED, 3.0))
+	button.pressed.connect(func() -> void: _toggle_resource(key))
+
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 4.0
+	row.offset_right = -4.0
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	button.add_child(row)
+
+	var check := Panel.new()
+	check.custom_minimum_size = Vector2(12.0, 12.0)
+	check.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	check.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(check)
+	_resource_checks[key] = check
+
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(14.0, 14.0)
+	swatch.color = color
+	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(swatch)
+
+	var label := UiKit.label(I18n.t("resource." + key), 14, UiKit.TEXT_DIM)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	_legend_labels[key] = label
+
+	var count := UiKit.caption(str(int(_resource_counts.get(key, 0))))
+	count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(count)
+	return button
+
+
+func _resource_counts_from_file() -> Dictionary:
+	var counts := {"coal": 0, "copper": 0, "gas": 0, "iron": 0, "oil": 0, "wheat": 0}
+	var data: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(RESOURCE_POINTS_PATH))
+	if typeof(data) != TYPE_DICTIONARY:
+		return counts
+	for point in data.get("minerals", []):
+		var index := clampi(int(point[2]), 0, RESOURCE_KEYS.size() - 1)
+		var key := String(RESOURCE_KEYS[index])
+		counts[key] = int(counts[key]) + 1
+	counts["wheat"] = (data.get("wheat", []) as Array).size()
+	return counts
+
+
+func _toggle_resource(key: String) -> void:
+	_resource_enabled[key] = not bool(_resource_enabled.get(key, true))
+	_refresh_resource_rows()
+	resource_filter_changed.emit(_resource_enabled.duplicate())
+
+
+func _select_all_resources() -> void:
+	for key in _resource_enabled:
+		_resource_enabled[key] = true
+	_refresh_resource_rows()
+	resource_filter_changed.emit(_resource_enabled.duplicate())
+
+
+func _refresh_resource_rows() -> void:
+	for key in _resource_rows:
+		var enabled := bool(_resource_enabled.get(key, true))
+		var check: Panel = _resource_checks[key]
+		var style := UiKit.flat(
+				UiKit.BRASS if enabled else Color(0, 0, 0, 0),
+				UiKit.BRASS if enabled else UiKit.EDGE, 0.0)
+		style.set_corner_radius_all(2)
+		check.add_theme_stylebox_override("panel", style)
+		var label: Label = _legend_labels[key]
+		label.add_theme_color_override("font_color",
+				UiKit.TEXT if enabled else UiKit.TEXT_MUTED)
+		(_resource_rows[key] as Button).modulate = Color(1, 1, 1, 1.0 if enabled else 0.72)
 
 
 ## Atualiza os textos da legenda ao trocar de idioma.
@@ -324,6 +432,8 @@ func _refresh_legend() -> void:
 		_legend_title.text = I18n.t("map.legend.title")
 	if _legend_hint != null:
 		_legend_hint.text = I18n.t("map.legend.hint")
+	if _legend_all != null:
+		_legend_all.text = I18n.t("map.legend.all")
 	for key in _legend_labels:
 		(_legend_labels[key] as Label).text = I18n.t("resource." + String(key))
 

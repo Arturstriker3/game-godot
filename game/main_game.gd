@@ -44,6 +44,7 @@ func _ready() -> void:
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
 	Economy.speed_changed.connect(_on_speed_changed)
 	_on_speed_changed(Economy.speed)
+	hud.resource_filter_changed.connect(city_world.set_resource_filter)
 	Economy.status_updated.connect(_on_status_updated)
 	city_world.territory_changed.connect(_on_territory_changed)
 

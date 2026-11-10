@@ -147,6 +147,8 @@ var _nation_anchors: Dictionary = {}
 var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
 var _geo: RefCounted
+## Filtro de recursos da legenda: {} = todos; senão kind -> bool.
+var _resource_filter: Dictionary = {}
 var _last_cities: Array = []
 var _minimap_texture: ImageTexture
 
@@ -203,6 +205,18 @@ func set_mode(mode: String) -> void:
 	for record in _city_nodes:
 		for dot in record.get("resource_dots", []):
 			(dot as Sprite3D).visible = mode == "resources"
+
+
+## Filtro da legenda de recursos: esconde marcadores e faixas desligados.
+func set_resource_filter(enabled: Dictionary) -> void:
+	_resource_filter = enabled.duplicate()
+	for record in _city_nodes:
+		for dot in record.get("resource_dots", []):
+			var sprite := dot as Sprite3D
+			var kind := String(sprite.get_meta("resource_kind", ""))
+			var allowed := _resource_filter.is_empty() \
+					or bool(_resource_filter.get(kind, true))
+			sprite.visible = _mode == "resources" and allowed
 
 
 func _content_roots() -> Array[Node3D]:
@@ -1045,6 +1059,7 @@ func _add_resource_strip(label: Label3D, entries: Array) -> Array:
 			var index := MINERAL_KEYS.find(String(entry["kind"]))
 			sprite.modulate = MINERAL_COLORS[index] if index >= 0 else Color.WHITE
 		sprite.visible = false
+		sprite.set_meta("resource_kind", String(entry["kind"]))
 		_content.add_child(sprite)
 		dots.append(sprite)
 	_layout_resource_strip(label, dots)
@@ -1214,8 +1229,11 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 		var show_resources := _mode == "resources" and label_alpha > 0.01
 		for dot in dots:
 			var sprite := dot as Sprite3D
+			var kind := String(sprite.get_meta("resource_kind", ""))
+			var enabled := _resource_filter.is_empty() \
+					or bool(_resource_filter.get(kind, true))
 			sprite.transparency = 1.0 - label_alpha
-			sprite.visible = show_resources
+			sprite.visible = show_resources and enabled
 
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:
