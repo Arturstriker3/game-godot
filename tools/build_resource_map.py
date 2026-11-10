@@ -220,16 +220,21 @@ def build_points() -> None:
             skipped_facility += 1
             continue
         terr = str(dep.get("territory", ""))
+        offshore = False
         if not terr or terr not in nature:
-            # Suplemento/offshore sem território: se está em terra, resolve pelo
-            # centróide de território mais próximo; se em água (offshore),
-            # descarta (decorativo até a extração).
+            # Suplemento/offshore sem território: em terra resolve pelo território
+            # mais próximo; em água só petróleo/gás encostado na costa (até
+            # COASTAL_RADIUS_CELLS) — o resto do oceano fica de fora.
             px = float(dep.get("px", 0.0))
             py = float(dep.get("py", 0.0))
-            if nav.getpixel(nav_cell(nav, px, py)) < 128:
-                skipped_noterritory += 1
-                continue
-            terr = nearest_territory(nature, px, py)
+            if nav.getpixel(nav_cell(nav, px, py)) >= 128:
+                terr = nearest_territory(nature, px, py)
+            elif deposit_allowed(nav, dep):
+                landed = nearest_land_px(nav, px, py, COASTAL_RADIUS_CELLS)
+                terr = nearest_territory(nature, landed[0], landed[1]) if landed else ""
+                offshore = bool(terr)
+            else:
+                terr = ""
             if not terr:
                 skipped_noterritory += 1
                 continue
@@ -237,26 +242,38 @@ def build_points() -> None:
         key = (terr, resource)
         entry = groups.setdefault(key, {
             "count": 0, "reserve": 0.0, "quality_w": 0.0,
-            "depth_w": 0.0, "statuses": []})
+            "depth_w": 0.0, "statuses": [],
+            "offshore_count": 0, "offshore_px": 0.0, "offshore_py": 0.0})
         entry["count"] += 1
         entry["reserve"] += quantity
         entry["quality_w"] += float(dep.get("quality", 0.0)) * quantity
         entry["depth_w"] += float(dep.get("depth_m", 0.0)) * quantity
         entry["statuses"].append(str(dep.get("status", "Unknown")))
+        if offshore:
+            entry["offshore_count"] += 1
+            entry["offshore_px"] += float(dep.get("px", 0.0))
+            entry["offshore_py"] += float(dep.get("py", 0.0))
 
     minerals = []
     for (terr, resource), entry in sorted(groups.items()):
-        centroid = nature[terr].get("centroid_px", [])
-        if len(centroid) < 2:
-            continue
-        px, py = float(centroid[0]), float(centroid[1])
-        if nav.getpixel(nav_cell(nav, px, py)) < 128:
-            landed = nearest_land_px(nav, px, py, WHEAT_SNAP_MAX_NAV_PX)
-            if landed is None:
+        if entry["offshore_count"] == entry["count"]:
+            # Puramente offshore (petróleo/gás): usa a posição REAL do campo, já
+            # perto da costa — não o centróide do território (que ficaria no
+            # interior).
+            px = entry["offshore_px"] / entry["offshore_count"]
+            py = entry["offshore_py"] / entry["offshore_count"]
+        else:
+            centroid = nature[terr].get("centroid_px", [])
+            if len(centroid) < 2:
                 continue
-            px, py = landed
-        ox, oy = MINERAL_OFFSET.get(resource, (0.0, 0.0))
-        px, py = snap_to_land(nav, px + ox, py + oy, WHEAT_SNAP_MAX_NAV_PX)
+            px, py = float(centroid[0]), float(centroid[1])
+            if nav.getpixel(nav_cell(nav, px, py)) < 128:
+                landed = nearest_land_px(nav, px, py, WHEAT_SNAP_MAX_NAV_PX)
+                if landed is None:
+                    continue
+                px, py = landed
+            ox, oy = MINERAL_OFFSET.get(resource, (0.0, 0.0))
+            px, py = snap_to_land(nav, px + ox, py + oy, WHEAT_SNAP_MAX_NAV_PX)
         status = max(set(entry["statuses"]), key=entry["statuses"].count)
         minerals.append([
             round(px, 1),
