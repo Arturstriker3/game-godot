@@ -22,6 +22,8 @@ signal speed_changed(index: int)
 ## Ritmo normal: 30 dias em 30 minutos (1 dia = 60 s); 2x = 30 s; 3x = 15 s.
 const SPEEDS := [0.0, 60.0, 30.0, 15.0]
 const SPEED_COUNT := 4
+## Teto de dias processados num único frame (evita espiral num travamento longo).
+const MAX_DAYS_PER_FRAME := 8
 
 ## 1º de janeiro de 2026, 00:00 UTC.
 const START_UNIX := 1767225600
@@ -114,9 +116,15 @@ func _process(delta: float) -> void:
 	if speed == 0:
 		return
 	_day_fraction += delta / SPEEDS[speed]
-	if _day_fraction >= 1.0:
-		_day_fraction = fmod(_day_fraction, 1.0)
+	# Dias pendentes em fila: um travamento não pode "engolir" o relógio.
+	# O teto evita espiral quando o jogo fica muito tempo sem rodar.
+	var days := 0
+	while _day_fraction >= 1.0 and days < MAX_DAYS_PER_FRAME:
+		_day_fraction -= 1.0
 		_run_day()
+		days += 1
+	if _day_fraction >= 1.0:
+		_day_fraction = 0.0
 
 
 func _run_day() -> void:
