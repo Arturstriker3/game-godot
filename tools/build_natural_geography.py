@@ -38,6 +38,8 @@ DEFS = os.path.join(ROOT, "data", "definitions")
 HIST = os.path.join(ROOT, "data", "history")
 MAP_DATA = os.path.join(ROOT, "map", "map_data")
 NATURAL_DIR = os.path.join(DEFS, "natural")
+## O extrato MRDS não traz vários campos reais (pré-sal, Mar do Norte, gás).
+## Depois de regenerar deposits.json, rode tools/apply_deposit_supplement.py.
 MRDS_PATH = os.path.join(ROOT, "tools", "data", "mrds_deposits.jsonl")
 
 MAP_W, MAP_H = 5000.0, 2500.0
