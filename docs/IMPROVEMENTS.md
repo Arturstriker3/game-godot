@@ -14,7 +14,7 @@ Legenda: **FEITO** · **PENDENTE** (próximo) · **BACKLOG** (depois) ·
 
 | # | Item | Status | Nota |
 |---|---|---|---|
-| 1.1 | **Contrato único** (legacy trigo × demo completo) | EM ANDAMENTO | `initialize_demo_world` + `demo_trade_wheat` (C++) rodam o mundo real no demo; falta trocar o jogo ao vivo (`Economy` autoload) e ligar a IA. |
+| 1.1 | **Contrato único** (legacy trigo × demo completo) | FEITO | Jogo ao vivo usa `initialize_demo_world` + `tick_demo` (demo no mundo real, comércio genérico de trigo, IA ligada). Legacy permanece para compatibilidade/benchmark. |
 | 1.2 | **Bens e receitas data-driven** (IDs string) | PENDENTE | Hoje bens são índices (trigo=0…) e receitas estão hardcoded/duplicadas. |
 | 1.3 | **Preço/mercado para N bens** | PENDENTE | Demo cobre poucos bens; generalizar com piso de custo e banda. |
 | 1.4 | **Capacidade de transporte** | PENDENTE | Hoje frete/tempo existem, mas não há limite de carga — comércio pode mover “infinito”. |

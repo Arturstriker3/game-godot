@@ -65,9 +65,9 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 - **GDScript:** 81 arquivos de jogo (~12.363 linhas) + add-ons. Tipado, `class_name`, sinais/grupos.
 - **C++ / GDExtension:** `gdextension/src/economy_sim.{h,cpp}` + `register_types.*`; compilado por `CMakeLists.txt`; binário `bin/economy_gdextension.windows.*.x86_64.dll`; `gdextension/economy.gdextension` registra o addon.
 - **`EconomySim` (C++):** classe única `RefCounted` com **três modos** mutuamente exclusivos:
-  - `initialize()` / `tick()` / `get_status()` — **legacy**, 5 cidades, só trigo. É o que o jogo ao vivo usa.
+  - `initialize()` / `tick()` / `get_status()` — **legacy**, 5 cidades, só trigo (referência/benchmark; não é o que o jogo roda).
   - `initialize_demo()` / `tick_demo()` / `get_demo_status()` + `demo_invest/build/spend_government/price_shock/to_dict/from_dict` — **demo**, 2 cidades, ciclo completo.
-  - `initialize_demo_world(cities, ports, buildings)` / `demo_trade_wheat()` — **demo no mundo real** (contrato único 1.1), comércio genérico de trigo; testado por `tools/economy_world_test.gd`.
+  - `initialize_demo_world(cities, ports, buildings)` / `demo_trade_wheat()` — **demo no mundo real, o contrato único do jogo ao vivo** (1.1); comércio genérico de trigo com subsídio de subsistência e alocação justa; testado por `tools/economy_world_test.gd`.
   - `initialize_benchmark()` / `run_benchmark()` — sintético, determinístico.
 - **Sistema de ticks:** o autoload `Economy` acumula a **fração do dia** em `_process` (não usa `Timer`, para trocar de velocidade sem reiniciar o dia). `SPEEDS=[0.0, 60.0, 30.0, 15.0]` segundos reais por dia (0 = pausa; normal = 30 dias em 30 min). Cada `_run_day()` chama `sim.tick()` e emite `status_updated(summary)` e `trade_orders_ready(orders)`.
 - **Eventos/sinais (fluxo unidirecional):** `Economy.status_updated` → HUD (`hud.gd::_on_status`) e `main_game.gd::_on_status_updated` (refresh dos modos). `Economy.trade_orders_ready` → `trade_convoys.gd::spawn_orders`. `HUD.city_focused`/`map_mode_requested` → `main_game.gd`. `I18n.locale_changed` → `hud.gd`. A UI nunca executa lógica econômica.
@@ -122,7 +122,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 
 ## 6. Economia
 
-> Há **dois contratos econômicos** no mesmo `EconomySim`: o **legacy** (trigo por cidade, usado no jogo) e o **demo** (cadeia completa com dinheiro, usado nos testes/protótipos/IA). Em unificação (melhoria 1.1): o `initialize_demo_world()` carrega o cenário real no modelo demo e o `demo_trade_wheat()` faz o comércio genérico de trigo entre cidades — o demo já roda o mundo real, mas o jogo ao vivo ainda usa o legacy até a troca do `Economy` autoload.
+> **Contrato único (1.1, feito):** o jogo ao vivo usa o modelo **demo** (`initialize_demo_world` + `tick_demo` + `get_demo_status`), com comércio genérico de trigo e a camada de IA ligada. O **legacy** (`initialize`/`tick`/`get_status`, trigo por cidade) continua no núcleo apenas como referência de benchmark — não é mais o que o jogo roda. O demo emite `ports`, `nations` e `trade_orders` (com leg em linha reta) para a camada visual, além dos campos de compatibilidade no dict de cidade (`deficit`, `consumed`, `in_transit`, `production`, `jobs`, `income`, `industrialization`, `stockpile`, `need`).
 
 ### 6.1 Modo ao vivo (legacy — trigo)
 
