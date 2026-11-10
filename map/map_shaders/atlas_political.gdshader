@@ -33,6 +33,7 @@ uniform sampler2D world_province : filter_nearest, repeat_enable;
 uniform sampler2D province_owner : source_color, filter_nearest, repeat_disable;
 uniform int owner_columns = 64;
 uniform bool dynamic_territory = false;
+uniform int highlight_owner = -1;
 uniform float dynamic_band_width = 0.3;
 
 // Janela da região em graus (lon0, lat0, lon1, lat1) — igual ao gerador.
@@ -88,7 +89,7 @@ float value_noise(vec2 p) {
 // de id de província, e devolve o dono do lado certo da divisa e se os dois
 // lados têm donos diferentes. Igual para a região e para o mundo.
 void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
-		out float out_differ, out vec3 out_nation) {
+		out float out_differ, out vec3 out_nation, out float out_highlight) {
 	vec2 e = 1.0 / vec2(textureSize(sdf_tex, 0));
 	float b_tx = (texture(sdf_tex, uv).b * 255.0 - 128.0) / 8.0;
 	float b_l = (texture(sdf_tex, uv - vec2(e.x, 0.0)).b * 255.0 - 128.0) / 8.0;
@@ -113,6 +114,7 @@ void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
 	float differ = (round(owner_here.a * 255.0) != round(owner_other.a * 255.0)) ? 1.0 : 0.0;
 	out_differ = differ * reliable;
 	out_nation = owner_here.rgb;
+	out_highlight = (round(owner_here.a * 255.0) == float(highlight_owner)) ? 1.0 : 0.0;
 }
 
 void fragment() {
@@ -165,14 +167,17 @@ void fragment() {
 	// seleção por region_w acontece depois.
 	float region_differ = 0.0;
 	float world_differ = 0.0;
+	float region_highlight = 0.0;
+	float world_highlight = 0.0;
 	vec3 region_dyn_nation = nation;
 	vec3 world_dyn_nation = nation;
 	if (dynamic_territory) {
-		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation);
-		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation);
+		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation, region_highlight);
+		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation, world_highlight);
 	}
 	float differ = (region_w > 0.5) ? region_differ : world_differ;
 	vec3 dyn_nation = (region_w > 0.5) ? region_dyn_nation : world_dyn_nation;
+	float highlight = (region_w > 0.5) ? region_highlight : world_highlight;
 
 	// Cor da nação passa a ser a cor do dono (substitui region/world color).
 	if (dynamic_territory) {
@@ -234,6 +239,12 @@ void fragment() {
 		province_line *= 1.0 - differ;
 	}
 	land = mix(land, land * 0.55, province_line);
+
+	// Destaque do território da nação selecionada (seleção de cidade): clareia
+	// o preenchimento e aquece um pouco o tom, sem tocar no mar nem nas divisas.
+	if (dynamic_territory && highlight > 0.5) {
+		land = mix(land, land * 1.12 + vec3(0.035, 0.030, 0.018), 0.55);
+	}
 
 	// --- Mar -----------------------------------------------------------------
 	float depth = max(-coast, 0.0);

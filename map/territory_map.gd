@@ -179,6 +179,12 @@ func owner_image() -> Image:
 	return _image
 
 
+## Índice do dono (1-based) usado na textura `province_owner` para destacar a
+## nação no shader. -1 se a tag não é conhecida.
+func owner_index(tag: String) -> int:
+	return int(_tag_index.get(tag, -1))
+
+
 ## Dono atual por id de província (id -> tag).
 func owners() -> Dictionary:
 	return _owners.duplicate()

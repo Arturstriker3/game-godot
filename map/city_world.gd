@@ -416,6 +416,7 @@ func selected_city() -> String:
 ## Não esconde edifícios nem atravessa o terreno (fica a ~0,15 u de altura).
 func select_city(city_id: String) -> void:
 	_selected_id = city_id
+	_set_territory_highlight(city_id)
 	if _selection == null:
 		_create_indicators()
 	if _selection == null:
@@ -429,6 +430,29 @@ func select_city(city_id: String) -> void:
 		_selection.scale = Vector3(footprint, 1.0, footprint)
 		_selection.global_position = base
 		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
+
+
+## Realça no mapa o território da nação da cidade selecionada (clareia as
+## províncias donas no shader). Sem seleção, limpa o destaque.
+func _set_territory_highlight(city_id: String) -> void:
+	if _territory == null:
+		return
+	var index := -1
+	if not city_id.is_empty():
+		var nation := _nation_of_city(city_id)
+		if not nation.is_empty():
+			index = _territory.owner_index(nation)
+	if _atlas_material != null:
+		_atlas_material.set_shader_parameter("highlight_owner", index)
+	if _political_material != null:
+		_political_material.set_shader_parameter("highlight_owner", index)
+
+
+func _nation_of_city(city_id: String) -> String:
+	for city in _last_cities:
+		if String(city.get("id", "")) == city_id:
+			return String(city.get("nation", ""))
+	return ""
 
 
 ## Realce de hover: versão ainda mais discreta, no mesmo ponto da seleção.
