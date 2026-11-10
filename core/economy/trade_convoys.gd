@@ -438,14 +438,16 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 	if not is_instance_valid(convoy):
 		return
 
-	# Troca só o modelo (o comboio muda caminhão->navio->caminhão entre trechos);
-	# a bandeira ("Flag") é mantida.
-	var old := convoy.get_node_or_null("Model")
-	if old != null:
-		old.queue_free()
+	# Troca só o veículo; a bandeira ("Flag") é mantida. Remove o modelo antigo
+	# do comboio IMEDIATAMENTE (remove_child) antes de adicionar o novo: senão
+	# dois nós com o mesmo nome coexistiriam no frame e o `get_node` do trecho
+	# seguinte erraria o alvo, deixando o modelo antigo (navio) pendurado.
+	for child in convoy.get_children():
+		if String(child.name) != "Flag":
+			convoy.remove_child(child)
+			child.queue_free()
 
 	var model := _instantiate_model(mode)
-	model.name = "Model"
 	convoy.add_child(model)
 	convoy.set_meta("mode", mode)
 	convoy.set_meta("collision_radius", COLLISION_RADIUS_BY_MODE.get(mode, 0.05))
