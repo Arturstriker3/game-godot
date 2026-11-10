@@ -258,7 +258,7 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 				MINERAL_KEYS.size() - 1)])
 		if not _is_enabled(key):
 			continue
-		var world := _marker_world(point)
+		var world := to_global(_marker_world(point))
 		if camera.is_position_behind(world):
 			continue
 		var center := camera.unproject_position(world)
