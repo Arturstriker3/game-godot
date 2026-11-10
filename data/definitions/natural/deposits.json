@@ -56439,10 +56439,10 @@
    "territory": "TRT000588",
    "owner": "NNN",
    "resource": "oil",
-   "px": 1506.9,
-   "py": 1104.2,
-   "lon": -71.5,
-   "lat": 10.5,
+   "px": 1513.9,
+   "py": 1111.1,
+   "lon": -71.0,
+   "lat": 10.0,
    "quantity_kt": 550000.0,
    "recoverable_kt": 137500.0,
    "quality": 0.76,
@@ -58263,6 +58263,30 @@
    "status": "Prospect",
    "names": [
     "Zaedyus"
+   ],
+   "data_quality": "real_location_estimated_attributes"
+  },
+  {
+   "id": "DEP-OIL-900000",
+   "territory": "",
+   "owner": "NNN",
+   "resource": "oil",
+   "px": 1625.0,
+   "py": 1131.9,
+   "lon": -63.0,
+   "lat": 8.5,
+   "quantity_kt": 1000000.0,
+   "recoverable_kt": 250000.0,
+   "quality": 0.78,
+   "depth_m": 1500,
+   "extraction_cost": 82.0,
+   "required_tech": 3,
+   "max_rate_kt_day": 27.3,
+   "discovery_difficulty": 0.1,
+   "sites": 1,
+   "status": "Producer",
+   "names": [
+    "Orinoco Belt"
    ],
    "data_quality": "real_location_estimated_attributes"
   }

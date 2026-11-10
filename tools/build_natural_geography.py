@@ -199,7 +199,7 @@ CURATED_DEPOSITS = [
     ("oil", "Prudhoe Bay", 70.3, -148.3, 600000.0, 0.84, 2600.0, "Producer"),
     ("oil", "Permian", 31.8, -102.4, 900000.0, 0.78, 2500.0, "Producer"),
     ("oil", "Alberta", 57.0, -111.5, 800000.0, 0.70, 700.0, "Producer"),
-    ("oil", "Maracaibo", 10.5, -71.5, 550000.0, 0.76, 1800.0, "Producer"),
+    ("oil", "Maracaibo", 10.0, -71.0, 550000.0, 0.76, 1800.0, "Producer"),
     ("oil", "Níger", 4.8, 6.5, 400000.0, 0.74, 2000.0, "Producer"),
     ("oil", "Daqing", 46.6, 125.1, 500000.0, 0.72, 1500.0, "Producer"),
     ("oil", "Sibéria Ocidental", 61.0, 75.0, 1100000.0, 0.80, 2400.0, "Producer"),
