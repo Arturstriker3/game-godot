@@ -34,6 +34,8 @@ WC = os.path.join(ROOT, "tools", "data", "worldclim")
 
 ELEV_PATH = os.path.join(WC, "wc2.1_10m_elev.tif")
 BIO1_PATH = os.path.join(WC, "wc2.1_10m_bio_1.tif")
+BIO10_PATH = os.path.join(WC, "wc2.1_10m_bio_10.tif")
+BIO11_PATH = os.path.join(WC, "wc2.1_10m_bio_11.tif")
 BIO12_PATH = os.path.join(WC, "wc2.1_10m_bio_12.tif")
 
 CELL = 0.16666666666666666  # 10 arc-min = 1/6 grau
@@ -61,12 +63,14 @@ def sample(rasters, lon, lat):
 
 
 def main() -> int:
-    for path in (ELEV_PATH, BIO1_PATH, BIO12_PATH):
+    for path in (ELEV_PATH, BIO1_PATH, BIO10_PATH, BIO11_PATH, BIO12_PATH):
         if not os.path.exists(path):
             raise SystemExit("raster ausente: %s (rode tools/fetch_worldclim.py)" % path)
 
     elev = tifffile.imread(ELEV_PATH)
     bio1 = tifffile.imread(BIO1_PATH)
+    bio10 = tifffile.imread(BIO10_PATH)
+    bio11 = tifffile.imread(BIO11_PATH)
     bio12 = tifffile.imread(BIO12_PATH)
 
     nature = read_json(os.path.join(NATURAL, "nature.json"))
@@ -80,7 +84,8 @@ def main() -> int:
     for territory_id, data in territories.items():
         px, py = data["centroid_px"]
         lon, lat = bng.pixel_to_lonlat(px, py)
-        altitude_raw, temp_raw, precip_raw = sample((elev, bio1, bio12), lon, lat)
+        altitude_raw, temp_raw, warm_raw, cold_raw, precip_raw = sample(
+            (elev, bio1, bio10, bio11, bio12), lon, lat)
 
         # Nodata: elev oceano = -32768; bio oceano = -3.4e38. Centróide em água
         # (ilha/arquipélago): mantém os valores sintéticos.
@@ -90,6 +95,8 @@ def main() -> int:
 
         altitude = float(altitude_raw)
         temperature = float(temp_raw)
+        warm_temp = float(warm_raw)
+        cold_temp = float(cold_raw)
         precip = float(precip_raw)
 
         # Clima re-derivado com dados reais: zona por latitude + aridez real
@@ -122,12 +129,13 @@ def main() -> int:
 
         updated += 1
 
-        # Recalcula a aptidão de cada cultura com clima real.
+        # Recalcula a aptidão de cada cultura com clima real. Temperatura de
+        # cultivo por estação (trimestre quente/frio), não média anual.
         if territory_id in agriculture["territories"]:
             ag = agriculture["territories"][territory_id]
             for crop in crops:
-                ag[crop] = bng.crop_suitability(
-                    crop, temperature, precip, fertility, altitude)
+                ag[crop] = bng.crop_suitability_seasonal(
+                    crop, temperature, warm_temp, cold_temp, precip, fertility, altitude)
 
     nature["_meta"]["data_quality"] = (
         "real_climate (WorldClim 2.1 10-min) para altitude/temp/precip; "

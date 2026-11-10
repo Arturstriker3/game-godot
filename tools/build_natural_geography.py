@@ -124,18 +124,30 @@ UPWELLING = [
 
 # Culturas: (temp_min, temp_opt_min, temp_opt_max, temp_max,
 #            precip_min, precip_opt_min, precip_opt_max, precip_max, altitude_max)
+#
+# TEMPERATURA é de ESTAÇÃO DE CULTIVO (ver growing_season_temp), não média anual:
+# culturas de estação quente usam o trimestre mais quente; trigo/batata usam o
+# trimestre mais frio quando o clima anual é quente demais. PRECIPITAÇÃO é anual
+# (BIO12) com faixa alargada nas culturas tropicais, porque o total anual soma
+# estação chuvosa + seca e a planta cresce em uma delas (e há irrigação).
 CROPS = {
-    "wheat": (4.0, 10.0, 18.0, 24.0, 300.0, 450.0, 800.0, 1100.0, 2600.0),
-    "rice": (16.0, 22.0, 28.0, 34.0, 800.0, 1200.0, 2000.0, 2600.0, 2000.0),
-    "maize": (10.0, 18.0, 26.0, 32.0, 400.0, 600.0, 1000.0, 1400.0, 2600.0),
+    "wheat": (4.0, 10.0, 18.0, 24.0, 300.0, 450.0, 950.0, 1300.0, 2600.0),
+    "rice": (16.0, 22.0, 32.0, 38.0, 800.0, 1200.0, 2400.0, 3600.0, 2000.0),
+    "maize": (10.0, 18.0, 26.0, 32.0, 400.0, 600.0, 1400.0, 1800.0, 2600.0),
     "potato": (2.0, 8.0, 16.0, 22.0, 350.0, 500.0, 800.0, 1100.0, 3600.0),
-    "soy": (12.0, 20.0, 28.0, 33.0, 500.0, 700.0, 1200.0, 1600.0, 2200.0),
+    "soy": (12.0, 20.0, 28.0, 33.0, 500.0, 700.0, 1500.0, 1900.0, 2200.0),
     "sugarcane": (18.0, 24.0, 30.0, 36.0, 900.0, 1300.0, 2200.0, 2800.0, 1400.0),
     "coffee": (12.0, 17.0, 24.0, 28.0, 700.0, 1000.0, 1800.0, 2200.0, 2100.0),
     "fruit": (4.0, 10.0, 22.0, 28.0, 350.0, 500.0, 1000.0, 1300.0, 2400.0),
     # FAO EcoCrop (Gossypium hirsutum), via pesquisa em docs/debug/cotton_research.md.
-    "cotton": (15.0, 22.0, 36.0, 42.0, 450.0, 750.0, 1200.0, 1500.0, 1250.0),
+    "cotton": (15.0, 22.0, 36.0, 42.0, 450.0, 750.0, 1400.0, 1800.0, 1250.0),
 }
+
+# Culturas de estação quente: usam a temperatura média do trimestre mais quente.
+# Trigo e batata são de estação fria — usam o trimestre mais frio quando o clima
+# anual já é quente demais (cultivo de inverno em trópicos/subtrópicos).
+WARM_SEASON_CROPS = {"soy", "maize", "cotton", "rice", "sugarcane", "coffee", "fruit"}
+COOL_SEASON_WINTER_THRESHOLD = 22.0  # °C anual: acima disso trigo/batata viram inverno
 
 RESOURCES = {
     "iron": {"codes": {"FE", "FE_P"}, "base_kt": 30000.0, "recovery": 0.45,
@@ -540,9 +552,36 @@ def crop_suitability(crop, temperature, precip, fertility, altitude):
 
     temp_factor = trapezoid(temperature, temp_min, temp_opt_min, temp_opt_max, temp_max)
     water_factor = trapezoid(precip, precip_min, precip_opt_min, precip_opt_max, precip_max)
+    # Penalidade de solo suavizada (0.6 + 0.4·s): a agricultura gerida corrige a
+    # fertilidade natural com calagem/adubação. Estimativa de modelo, não dado real.
     soil_factor = clamp((fertility - 0.15) / 0.65, 0.0, 1.0)
     alt_factor = clamp(1.0 - altitude / (alt_max * 1.4), 0.0, 1.0)
-    return round(temp_factor * water_factor * (0.35 + 0.65 * soil_factor) * alt_factor, 3)
+    return round(temp_factor * water_factor * (0.6 + 0.4 * soil_factor) * alt_factor, 3)
+
+
+def growing_season_temp(crop, annual_temp, warm_temp, cold_temp):
+    """Temperatura de cultivo por estação. Culturas quentes (soja, milho, algodão,
+    arroz, cana, café, fruta) usam o trimestre mais quente; trigo e batata usam o
+    trimestre mais frio quando o clima anual já é quente demais (cultivo de
+    inverno), senão mantêm a média anual (verão em clima temperado)."""
+    if crop in WARM_SEASON_CROPS:
+        return warm_temp
+    if annual_temp >= COOL_SEASON_WINTER_THRESHOLD:
+        return cold_temp
+    return annual_temp
+
+
+def crop_suitability_seasonal(crop, annual_temp, warm_temp, cold_temp,
+                              precip, fertility, altitude):
+    return crop_suitability(crop, growing_season_temp(
+        crop, annual_temp, warm_temp, cold_temp), precip, fertility, altitude)
+
+
+def seasonal_temps(lat, annual_temp):
+    """Aproximação sintética do trimestre quente/frio (usada só no caminho
+    'test', sem WorldClim): amplitude sazonal cresce com a latitude."""
+    amplitude = clamp(2.0 + 0.4 * abs(lat), 2.0, 28.0)
+    return annual_temp + amplitude / 2.0, annual_temp - amplitude / 2.0
 
 
 def nature_for(province, nav):
@@ -854,9 +893,12 @@ def main():
         province = provinces[province_id]
         nature = nature_for(province, nav)
         province_nature[province_id] = nature
+        _, lat = pixel_to_lonlat(province["px"], province["py"])
+        warm, cold = seasonal_temps(lat, nature["temp_c"])
         province_agriculture[province_id] = {
-            crop: crop_suitability(crop, nature["temp_c"], nature["precip_mm"],
-                                   nature["fertility"], nature["altitude_m"])
+            crop: crop_suitability_seasonal(
+                crop, nature["temp_c"], warm, cold, nature["precip_mm"],
+                nature["fertility"], nature["altitude_m"])
             for crop in CROPS
         }
 
