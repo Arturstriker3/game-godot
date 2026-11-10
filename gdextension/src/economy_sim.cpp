@@ -3,6 +3,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
 #include <algorithm>
@@ -888,10 +889,102 @@ double EconomySim::demo_money_total() const {
 	return total;
 }
 
+void EconomySim::demo_snapshot(DemoSnapshot& out) const {
+	out.cities = demo_cities_;
+	out.buildings = demo_buildings_;
+	out.transit = demo_in_transit_;
+	out.transport_cash = demo_transport_cash_;
+	out.foreign_cash = demo_foreign_cash_;
+	out.construction_cash = demo_construction_cash_;
+	for (int index = 0; index < kDemoProducts; ++index) {
+		out.produced[index] = demo_produced_[index];
+		out.consumed_total[index] = demo_consumed_total_[index];
+		out.produced_today[index] = demo_produced_today_[index];
+		out.consumed_today[index] = demo_consumed_today_[index];
+	}
+	out.day = day_;
+}
+
+void EconomySim::demo_restore(const DemoSnapshot& in) {
+	demo_cities_ = in.cities;
+	demo_buildings_ = in.buildings;
+	demo_in_transit_ = in.transit;
+	demo_transport_cash_ = in.transport_cash;
+	demo_foreign_cash_ = in.foreign_cash;
+	demo_construction_cash_ = in.construction_cash;
+	for (int index = 0; index < kDemoProducts; ++index) {
+		demo_produced_[index] = in.produced[index];
+		demo_consumed_total_[index] = in.consumed_total[index];
+		demo_produced_today_[index] = in.produced_today[index];
+		demo_consumed_today_[index] = in.consumed_today[index];
+	}
+	day_ = in.day;
+}
+
+std::vector<std::string> EconomySim::demo_check_invariants(double money_before) const {
+	std::vector<std::string> violations;
+
+	// 1. Conservação de dinheiro: toda transação move dinheiro entre caixas
+	// (firma, serviço, governo, poupança, transporte, exterior, construção).
+	// O resto do mundo (foreign_cash) pode ficar negativo por design.
+	const double money_after = demo_money_total();
+	const double drift = std::abs(money_after - money_before);
+	const double tolerance = std::max(1e-3, std::abs(money_before) * 1e-12);
+	if (!std::isfinite(money_after) || drift > tolerance) {
+		violations.push_back("dinheiro não conservado: antes="
+			+ std::to_string(money_before) + " depois="
+			+ std::to_string(money_after) + " drift=" + std::to_string(drift));
+	}
+
+	for (const DemoCity& city : demo_cities_) {
+		auto check_nonneg = [&violations, &city](const char* label, double value) {
+			if (!std::isfinite(value) || value < -1e-6) {
+				violations.push_back(std::string("caixa negativo (") + label + ") em "
+					+ city.id + ": " + std::to_string(value));
+			}
+		};
+		check_nonneg("firm", city.firm_cash);
+		check_nonneg("service", city.service_cash);
+		check_nonneg("government", city.government_budget);
+		check_nonneg("savings", city.pop.savings);
+
+		for (int product = 0; product < kDemoProducts; ++product) {
+			const DemoMarket& market = city.markets[product];
+			const double base = demo_base_price(product);
+			if (!std::isfinite(market.price) || market.price < base * 0.5 - 1e-6
+					|| market.price > base * 3.0 + 1e-6) {
+				violations.push_back("preço fora da banda em " + city.id + " "
+					+ demo_product_name(product) + ": " + std::to_string(market.price));
+			}
+			if (!std::isfinite(market.stock) || market.stock < -1e-6) {
+				violations.push_back("estoque negativo em " + city.id + " "
+					+ demo_product_name(product) + ": " + std::to_string(market.stock));
+			}
+		}
+	}
+
+	auto check_global = [&violations](const char* label, double value) {
+		if (!std::isfinite(value) || value < -1e-6) {
+			violations.push_back(std::string("caixa global negativo (") + label
+				+ "): " + std::to_string(value));
+		}
+	};
+	check_global("transport", demo_transport_cash_);
+	check_global("construction", demo_construction_cash_);
+
+	return violations;
+}
+
 Dictionary EconomySim::tick_demo() {
 	if (!demo_active_) {
 		initialize_demo();
 	}
+
+	// Retrato para reverter o tick se um invariante rígido for violado.
+	DemoSnapshot before;
+	demo_snapshot(before);
+	const double money_before = demo_money_total();
+
 	++day_;
 
 	// Preço de abertura do dia por cidade/produto. O limite de variação é
@@ -1505,6 +1598,17 @@ Dictionary EconomySim::tick_demo() {
 		}
 	}
 
+	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
+	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
+	demo_invariant_violations_ = demo_check_invariants(money_before);
+	if (!demo_invariant_violations_.empty()) {
+		for (const std::string& violation : demo_invariant_violations_) {
+			UtilityFunctions::push_error(
+				String(("economia.invariante: " + violation).c_str()));
+		}
+		demo_restore(before);
+	}
+
 	return get_demo_status();
 }
 
@@ -1658,6 +1762,12 @@ Dictionary EconomySim::get_demo_status() const {
 	products.append("iron");
 	result["products"] = products;
 	result["capital_cost_per_capacity"] = kDemoCapitalPerCapacity;
+
+	Array violations;
+	for (const std::string& violation : demo_invariant_violations_) {
+		violations.append(String(violation.c_str()));
+	}
+	result["invariant_violations"] = violations;
 
 	Array cities;
 	for (const DemoCity& city : demo_cities_) {

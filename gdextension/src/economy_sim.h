@@ -319,6 +319,21 @@ private:
 		int arrival_day = 0;
 	};
 
+	// Retrato do estado demo para reverter um tick que viole um invariante.
+	struct DemoSnapshot {
+		std::vector<DemoCity> cities;
+		std::vector<DemoBuilding> buildings;
+		std::vector<DemoShipment> transit;
+		double transport_cash = 0.0;
+		double foreign_cash = 0.0;
+		double construction_cash = 0.0;
+		double produced[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double consumed_total[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double produced_today[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		double consumed_today[kDemoProducts] = {0.0, 0.0, 0.0, 0.0};
+		int day = 0;
+	};
+
 	// ------------------------------------------------------------------
 	// Benchmark: economia sintética com estruturas planas. Sem strings,
 	// sem nós e sem alocações por tick. Índices substituem identificadores.
@@ -447,6 +462,9 @@ private:
 	const DemoCity* find_demo_city(const std::string& id) const;
 	Dictionary demo_city_to_dict(const DemoCity& city) const;
 	double demo_money_total() const;
+	std::vector<std::string> demo_check_invariants(double money_before) const;
+	void demo_snapshot(DemoSnapshot& out) const;
+	void demo_restore(const DemoSnapshot& in);
 	static int demo_product_index(const String& product);
 	static const char* demo_product_name(int product);
 	static double demo_base_price(int product);
@@ -487,6 +505,7 @@ private:
 	std::vector<DemoCity> demo_cities_;
 	std::vector<DemoBuilding> demo_buildings_;
 	std::vector<DemoShipment> demo_in_transit_;
+	std::vector<std::string> demo_invariant_violations_;
 	double demo_transport_cash_ = 0.0;
 	double demo_foreign_cash_ = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.
