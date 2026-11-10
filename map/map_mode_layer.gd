@@ -456,6 +456,9 @@ func deposit_info(index: int) -> Dictionary:
 			"fertility": float(attrs.get("fertility", 0.0)),
 			"cultivable": float(attrs.get("cultivable", 0.0)),
 			"territory": String(attrs.get("territory", "")),
+			"name_pt": String(attrs.get("name_pt", "")),
+			"name_en": String(attrs.get("name_en", "")),
+			"name_es": String(attrs.get("name_es", "")),
 			"climate": String(attrs.get("climate", "")),
 			"soil_type": String(attrs.get("soil_type", "")),
 			"relief": String(attrs.get("relief", "")),
@@ -477,10 +480,14 @@ func deposit_info(index: int) -> Dictionary:
 		})
 	resources.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a.get("reserve_kt", 0.0)) > float(b.get("reserve_kt", 0.0)))
+	var names: Dictionary = _geo.territory_name(territory) if _geo != null else {}
 	return {
 		"kind": "mineral",
 		"territory": territory,
 		"dominant": String(mix.get("dominant", "")),
+		"name_pt": String(names.get("name_pt", "")),
+		"name_en": String(names.get("name_en", "")),
+		"name_es": String(names.get("name_es", "")),
 		"resources": resources,
 	}
 

@@ -656,10 +656,8 @@ func show_deposit_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	# Agregado por território: lista o mix de recursos (cor + ×N + reserva).
-	# O nome regional entra na etapa de nomes (Fase 0); por ora usa o id.
-	var territory := String(info.get("territory", ""))
-	_legend_header(I18n.t("map.legend.deposit"), territory, "", null, "back")
+	# Agregado por território: título = nome da região; lista o mix de recursos.
+	_legend_header("", _territory_display_name(info), "", null, "back")
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -689,8 +687,7 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	var territory := String(info.get("territory", ""))
-	_legend_header("", I18n.t("resource.wheat"), territory, null, "back")
+	_legend_header("", _territory_display_name(info), "", null, "back")
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -743,6 +740,16 @@ func _friendly_terrain(info: Dictionary) -> String:
 	if not relief.is_empty():
 		parts.append(I18n.t("map.legend.relief") + ": " + I18n.t("climate.relief." + relief))
 	return "\n".join(parts)
+
+
+## Nome localizado da região (pt/en/es) para o título da ficha.
+func _territory_display_name(info: Dictionary) -> String:
+	var locale := I18n.locale
+	if locale.begins_with("pt"):
+		return String(info.get("name_pt", ""))
+	if locale.begins_with("es"):
+		return String(info.get("name_es", ""))
+	return String(info.get("name_en", ""))
 
 
 ## Substitui a legenda pelos recursos que a cidade acessa.

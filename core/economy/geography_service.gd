@@ -81,6 +81,9 @@ func territory_attributes(center_px: Vector2) -> Dictionary:
 	var crops: Dictionary = _agriculture.get(territory, {})
 	return {
 		"territory": territory,
+		"name_pt": String(data.get("name_pt", "")),
+		"name_en": String(data.get("name_en", "")),
+		"name_es": String(data.get("name_es", "")),
 		"wheat": clampf(float(crops.get("wheat", 0.0)), 0.0, 1.0),
 		"fertility": clampf(float(data.get("fertility", 0.0)), 0.0, 1.0),
 		"cultivable": clampf(float(data.get("cultivable", 0.0)), 0.0, 1.0),
@@ -88,6 +91,18 @@ func territory_attributes(center_px: Vector2) -> Dictionary:
 		"climate": String(data.get("climate", "")),
 		"soil_type": String(data.get("soil_type", "")),
 		"relief": String(data.get("relief", "")),
+	}
+
+
+## Nome localizado (pt/en/es) de um território pelo id.
+func territory_name(territory_id: String) -> Dictionary:
+	if not load_data():
+		return {}
+	var data: Dictionary = _nature.get(territory_id, {})
+	return {
+		"name_pt": String(data.get("name_pt", "")),
+		"name_en": String(data.get("name_en", "")),
+		"name_es": String(data.get("name_es", "")),
 	}
 
 
