@@ -30,6 +30,8 @@ const ATLAS_REGION_COLOR: Texture2D = preload("res://map/map_data/atlas/region_c
 const ATLAS_WORLD_SDF: Texture2D = preload("res://map/map_data/atlas/world_sdf.png")
 const ATLAS_WORLD_COLOR: Texture2D = preload("res://map/map_data/atlas/world_color.png")
 const ATLAS_NATIONS_PATH := "res://map/map_data/atlas/nations.json"
+## Cenário: usado para flags que o núcleo não devolve no status (capital).
+const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const ATLAS_REGION_PROVINCE: Texture2D = preload("res://map/map_data/atlas/region_province.png")
 const ATLAS_WORLD_PROVINCE: Texture2D = preload("res://map/map_data/atlas/world_province.png")
 const NATION_LABEL_FONT: Font = preload("res://assets/fonts/Cinzel-Variable.ttf")
@@ -150,6 +152,7 @@ var _nation_anchors: Dictionary = {}
 var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
 var _geo: RefCounted
+var _capital_by_id := {}
 ## Filtro de recursos da legenda: {} = todos; senão kind -> bool.
 var _resource_filter: Dictionary = {}
 var _last_cities: Array = []
@@ -161,6 +164,7 @@ signal territory_changed
 
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
 func build(cities: Array, ports: Array) -> void:
+	_load_city_flags()
 	_content = Node3D.new()
 	add_child(_content)
 
@@ -536,6 +540,16 @@ func _make_dot(node_name: String, color: Color, alpha: float) -> MeshInstance3D:
 	return instance
 
 
+## Flags do cenário que o núcleo não carrega no status: hoje, `capital`.
+func _load_city_flags() -> void:
+	_capital_by_id.clear()
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(CITIES_PATH))
+	if typeof(data) != TYPE_ARRAY:
+		return
+	for row in data:
+		_capital_by_id[String(row.get("id", ""))] = bool(row.get("capital", false))
+
+
 func _build_gps_plane() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = PLANE_SIZE
@@ -836,7 +850,7 @@ func _build_cities(cities: Array) -> void:
 		var city_id := String(city.get("id", ""))
 		var city_name := String(city.get("name", ""))
 		var discs := _spawn_city_marker(position, city_name, color)
-		var capital := bool(city.get("capital", false))
+		var capital := bool(_capital_by_id.get(city_id, false))
 		var label := _add_city_label_hierarchical(position,
 				I18n.city_name(city_id, city_name), color,
 				capital, index < MAX_CITY_LABELS)
