@@ -185,7 +185,7 @@ func _build_resource_markers() -> void:
 	_hover_ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_hover_ring.transparent = true
 	_hover_ring.no_depth_test = true
-	_hover_ring.render_priority = 1
+	_hover_ring.render_priority = 3
 	_hover_ring.visible = false
 	add_child(_hover_ring)
 
@@ -196,7 +196,7 @@ func _build_resource_markers() -> void:
 	_selection_ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_selection_ring.transparent = true
 	_selection_ring.no_depth_test = true
-	_selection_ring.render_priority = 1
+	_selection_ring.render_priority = 3
 	_selection_ring.modulate = Color(1.0, 0.92, 0.72, 1.0)
 	_selection_ring.visible = false
 	add_child(_selection_ring)
@@ -261,15 +261,15 @@ func _marker_world(point: Array) -> Vector3:
 
 
 ## Depósito sob o cursor (índice em _mineral_points), ou -1. Respeita o filtro.
-## Usa raio 3D (raycast pela câmera), robusto em qualquer ângulo/zoom — antes o
-## teste em espaço de tela errava em alguns depósitos.
+## Mesmo critério do `pick_city`: distância em TELA com um raio mínimo de 26 px,
+## para depósitos pequenos e grandes terem a mesma área de pega (o teste antigo
+## em unidades de mundo virava poucos pixels e falhava nos depósitos menores).
 func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 	if camera == null or _mineral_points.is_empty():
 		return -1
-	var origin := camera.project_ray_origin(screen_position)
-	var direction := camera.project_ray_normal(screen_position)
 	var best := -1
 	var best_distance := INF
+	var right := camera.global_transform.basis.x
 	for index in _mineral_points.size():
 		var point: Array = _mineral_points[index]
 		var key := String(MINERAL_KEYS[clampi(int(point[2]), 0,
@@ -277,14 +277,13 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 		if not _is_enabled(key):
 			continue
 		var world := to_global(_marker_world(point))
-		var to_marker := world - origin
-		var along := to_marker.dot(direction)
-		if along < 0.0:
-			continue  # atrás da câmera
-		var closest := origin + direction * along
-		var distance := closest.distance_to(world)
-		# Raio generoso: ~0,7x o tamanho do marcador + folga.
-		var radius := _marker_size(point, false) * 0.7 + 0.14
+		if camera.is_position_behind(world):
+			continue
+		var center := camera.unproject_position(world)
+		var edge := camera.unproject_position(
+				world + right * (_marker_size(point, false) * 0.5))
+		var radius := maxf(26.0, center.distance_to(edge) * 1.35)
+		var distance := center.distance_to(screen_position)
 		if distance <= radius and distance < best_distance:
 			best = index
 			best_distance = distance
