@@ -13,15 +13,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEPOSITS = os.path.join(ROOT, "data", "definitions", "natural", "deposits.json")
 
 # (nome, lon, lat, quantity_kt, quality, depth_m)
+# quantity_kt = metal de urânio recuperável em kt (estimativas reais aproximadas,
+# não reserva medida): Olympic Dam ~2,3 Mt, demais 100–300 kt.
 URANIUM = [
-    ("Arlit", 7.5, 18.7, 100000.0, 0.75, 200.0),
-    ("Rössing", 15.0, -22.5, 80000.0, 0.72, 350.0),
-    ("Cigar Lake", -104.5, 58.0, 100000.0, 0.90, 450.0),
-    ("McArthur River", -105.8, 57.5, 120000.0, 0.88, 550.0),
-    ("Olympic Dam", 136.9, -30.4, 500000.0, 0.70, 350.0),
-    ("Ranger", 133.0, -12.7, 50000.0, 0.74, 150.0),
-    ("Inkai", 68.0, 44.5, 200000.0, 0.76, 300.0),
-    ("Krasnokamensk", 118.0, 50.0, 100000.0, 0.73, 400.0),
+    ("Arlit", 7.5, 18.7, 300.0, 0.75, 200.0),
+    ("Rössing", 15.0, -22.5, 300.0, 0.72, 350.0),
+    ("Cigar Lake", -104.5, 58.0, 150.0, 0.90, 450.0),
+    ("McArthur River", -105.8, 57.5, 200.0, 0.88, 550.0),
+    ("Olympic Dam", 136.9, -30.4, 2300.0, 0.70, 350.0),
+    ("Ranger", 133.0, -12.7, 100.0, 0.74, 150.0),
+    ("Inkai", 68.0, 44.5, 200.0, 0.76, 300.0),
+    ("Krasnokamensk", 118.0, 50.0, 150.0, 0.73, 400.0),
 ]
 
 RECOVERY = 0.80

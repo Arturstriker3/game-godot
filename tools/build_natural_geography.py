@@ -165,7 +165,7 @@ RESOURCES = {
                 "depth": 50.0, "value": 8.0},
     "lead": {"codes": {"PB"}, "base_kt": 2000.0, "recovery": 0.70,
              "depth": 300.0, "value": 25.0},
-    "gold": {"codes": {"AU"}, "base_kt": 100.0, "recovery": 0.90,
+    "gold": {"codes": {"AU"}, "base_kt": 0.1, "recovery": 0.90,
              "depth": 300.0, "value": 3000.0},
     "phosphate": {"codes": {"P"}, "base_kt": 30000.0, "recovery": 0.85,
                   "depth": 80.0, "value": 10.0},
@@ -175,9 +175,9 @@ RESOURCES = {
                     "depth": 200.0, "value": 400.0},
     "sulfur": {"codes": {"S"}, "base_kt": 5000.0, "recovery": 0.75,
                "depth": 150.0, "value": 15.0},
-    "diamond": {"codes": {"GEM_D"}, "base_kt": 5.0, "recovery": 0.95,
+    "diamond": {"codes": {"GEM_D"}, "base_kt": 0.02, "recovery": 0.95,
                 "depth": 400.0, "value": 5000.0},
-    "uranium": {"codes": {"U"}, "base_kt": 20000.0, "recovery": 0.80,
+    "uranium": {"codes": {"U"}, "base_kt": 200.0, "recovery": 0.80,
                 "depth": 250.0, "value": 500.0},
 }
 

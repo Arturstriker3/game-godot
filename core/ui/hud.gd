@@ -677,7 +677,7 @@ func show_deposit_info(info: Dictionary) -> void:
 	var resource := String(info.get("resource", ""))
 	var reserve := float(info.get("reserve_kt", 0.0))
 	body_box.add_child(_legend_row(_resource_color(resource),
-			I18n.t("resource." + resource), _format_mt(reserve)))
+			I18n.t("resource." + resource), _format_mass(reserve)))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.situation"),
 			I18n.t("map.legend.situation." + String(info.get("situation", "moderate")))))
@@ -797,7 +797,7 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 			else:
 				detail = "×%d · %s" % [
 					int(entry.get("count", 1)),
-					_format_mt(float(entry.get("reserve_kt", 0.0))),
+					_format_mass(float(entry.get("reserve_kt", 0.0))),
 				]
 			body_box.add_child(_legend_row(_resource_color(key),
 					I18n.t("resource." + key), detail, true, "", key == "wheat"))
@@ -829,9 +829,20 @@ func _status_key(code: int) -> String:
 			return "unknown"
 
 
-func _format_mt(kt: float) -> String:
-	var mt := kt / 1000.0
-	return UiKit.number(mt, 1 if mt < 100.0 else 0) + " Mt"
+## Formata uma reserva em kt (kilotoneladas) na unidade mais legível:
+## t (toneladas) < 1 kt < 1 Mt < 1 Gt. Minerais têm ordens de grandeza muito
+## diferentes (ouro em t, ferro em Gt), então a unidade acompanha a magnitude.
+func _format_mass(kt: float) -> String:
+	if kt >= 1000000.0:
+		var gt := kt / 1000000.0
+		return UiKit.number(gt, 1 if gt < 100.0 else 0) + " Gt"
+	if kt >= 1000.0:
+		var mt := kt / 1000.0
+		return UiKit.number(mt, 1 if mt < 100.0 else 0) + " Mt"
+	if kt >= 1.0:
+		return UiKit.number(kt, 1 if kt < 100.0 else 0) + " kt"
+	var t := kt * 1000.0
+	return UiKit.number(t, 1 if t < 100.0 else 0) + " t"
 
 
 ## Separa o tipo de lavra do nome do depósito ("Khouribga Underground" →
