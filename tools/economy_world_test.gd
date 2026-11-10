@@ -73,6 +73,7 @@ func _test_world() -> void:
 			_fail("%s: populacao nao finita" % cid)
 
 	var money_initial := float(status["money_total"])
+	var cayenne_fed := false
 
 	for day in DAYS:
 		status = sim.tick_demo()
@@ -82,6 +83,8 @@ func _test_world() -> void:
 			break
 		for city in status["cities"]:
 			var cid := String(city["id"])
+			if cid == "FRA-CAY" and float(city["pop"]["consumed"]) > 0.0:
+				cayenne_fed = true
 			for key in ["firm_cash", "service_cash", "government_budget"]:
 				if not is_finite(float(city[key])):
 					_fail("%s: %s NaN no dia %d" % [cid, key, day + 1])
@@ -90,6 +93,12 @@ func _test_world() -> void:
 					_fail("%s: preco NaN no dia %d" % [cid, day + 1])
 		if _failures.size() > 0:
 			break
+
+	# A cidade sem produção (Cayenne) precisa ter comido em algum momento via
+	# subsídio — prova que o comércio + segurança alimentar alcançam quem não gera
+	# receita. (A sustentabilidade fiscal de longo prazo fica para o 1.8.)
+	if not cayenne_fed:
+		_fail("Cayenne não foi alimentada em nenhum dia (subsídio não alcançou)")
 
 	var money_final := float(status["money_total"])
 	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [

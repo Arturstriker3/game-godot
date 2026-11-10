@@ -679,6 +679,9 @@ constexpr double kDemoTaxRate = 0.15;
 constexpr double kDemoTransferShare = 1.0;
 constexpr double kDemoCapitalDistribution = 1.0;
 constexpr double kDemoFreightPerTonKm = 0.10;
+// Frete marítimo (entre massas de terra), espelhando a taxa de navio do
+// mercado legado: 5x mais barato que o caminhão por tonelada-km.
+constexpr double kDemoFreightShipPerTonKm = 0.02;
 constexpr double kDemoPriceSmoothing = 0.20;
 
 // Produção segue as vendas do dia anterior, com pequena folga de estoque.
@@ -728,8 +731,12 @@ constexpr double kDemoGovernmentPerCapita = 1.0;
 constexpr double kDemoJobsPerTon = 7.5;   // 150 empregos / 20 t
 constexpr double kDemoFarmWage = 2.0;     // igual à fazenda demo
 constexpr double kDemoOpexPerTon = 2.5;   // 50 opex / 20 t
-// Fração da necessidade diária mantida como estoque antes de exportar.
-constexpr double kDemoTradeBufferDays = 1.0;
+// Fração da necessidade diária mantida como estoque antes de exportar. O
+// vendedor já consumiu a própria necessidade na fase 5; a produção da fase 4
+// repõe no dia seguinte. Buffer alto aqui espreme as cidades pequenas (a oferta
+// vendável fica menor que a demanda e a última compradora — ex.: Cayenne — não
+// recebe nada).
+constexpr double kDemoTradeBufferDays = 0.0;
 // Teto de cargas de comércio por dia (proteção contra loop).
 constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
 
@@ -1104,9 +1111,12 @@ void EconomySim::demo_trade_wheat() {
 		return;
 	}
 
-	// Compradores mais famintos primeiro (ordem determinística).
+	// Compradores com menor déficit primeiro: o buffer de uma cidade pequena é
+	// minúsculo (ex.: Cayenne = 135 t) e barato de completar; na ordem descrescente
+	// a maior cidade monta o buffer de 3 dias e espreme as pequenas, que ficam
+	// sem nada. Ascendente garante que todos comam antes de alguém estocar.
 	std::stable_sort(buyers.begin(), buyers.end(),
-		[](const Buyer& left, const Buyer& right) { return left.gap > right.gap; });
+		[](const Buyer& left, const Buyer& right) { return left.gap < right.gap; });
 
 	std::size_t shipments = 0;
 	for (Buyer& buyer : buyers) {
@@ -1130,19 +1140,37 @@ void EconomySim::demo_trade_wheat() {
 				continue;
 			}
 			const double price = seller->markets[wheat].price;
+			// Travessia entre massas de terra usa navio (5x mais barato por
+			// tonelada-km); dentro da mesma massa de terra, caminhão.
+			const bool same_landmass = seller->landmass == buyer.city->landmass;
+			const double freight_rate = same_landmass
+				? kDemoFreightPerTonKm : kDemoFreightShipPerTonKm;
 			const double unit_freight =
-				distance_km(seller->center, buyer.city->center) * kDemoFreightPerTonKm;
+				distance_km(seller->center, buyer.city->center) * freight_rate;
 			const double unit_cost = price + unit_freight;
-			const double affordable = unit_cost > 0.0
-				? std::max(0.0, buyer.city->firm_cash) / unit_cost : 0.0;
-			const double amount = std::min({remaining, surplus, affordable});
+			const double amount_wanted = std::min(remaining, surplus);
+			if (amount_wanted <= 1e-9) {
+				continue;
+			}
+			// Segurança alimentar: o governo subsidia a parte da importação que a
+			// firma não consegue pagar (cidade sem produção/caixa). Conserva
+			// dinheiro — firma + governo pagam exatamente o custo (carga + frete).
+			const double firm_cash = std::max(0.0, buyer.city->firm_cash);
+			const double gov_budget = std::max(0.0, buyer.city->government_budget);
+			const double payable = firm_cash + gov_budget;
+			const double amount = unit_cost > 0.0
+				? std::min(amount_wanted, payable / unit_cost) : 0.0;
 			if (amount <= 1e-9) {
 				continue;
 			}
+			const double total_cost = amount * unit_cost;
+			const double firm_share = std::min(total_cost, firm_cash);
+			const double gov_share = total_cost - firm_share;
 			const double cost = amount * price;
 			const double freight = unit_freight * amount;
 
-			buyer.city->firm_cash -= cost + freight;
+			buyer.city->firm_cash -= firm_share;
+			buyer.city->government_budget -= gov_share;
 			seller->firm_cash += cost;
 			buyer.city->service_cash += freight;
 			buyer.city->freight_revenue += freight;
@@ -1473,6 +1501,28 @@ Dictionary EconomySim::tick_demo() {
 
 		double budget = pop.savings + pop.disposable - pop.service_spend;
 		pop.need = pop.population * kDemoNeedPerCapita;
+		// Subsídio de subsistência: o governo garante a cesta alimentar mínima
+		// quando o orçamento de comida não cobre (ex.: cidade sem produção nem
+		// renda própria). Sai do orçamento público — conserva o dinheiro. Se as
+		// reservas públicas esgotarem, o subsídio cessa (a redistribuição fiscal
+		// nacional, que o tornaria sustentável, fica para o 1.8).
+		double cheapest_food = 0.0;
+		for (int product = 0; product < kDemoFoodProducts; ++product) {
+			const double price = city.markets[product].price;
+			if (price > 0.0 && (cheapest_food <= 0.0 || price < cheapest_food)) {
+				cheapest_food = price;
+			}
+		}
+		const double food_cost = pop.need * cheapest_food;
+		if (cheapest_food > 0.0 && budget < food_cost) {
+			const double topup = std::min(food_cost - budget,
+				std::max(0.0, city.government_budget));
+			if (topup > 0.0) {
+				budget += topup;
+				city.government_budget -= topup;
+				pop.transfers += topup;
+			}
+		}
 		double consumed = 0.0;
 		double food_spend = 0.0;
 		// Preferência: pão, farinha, trigo. A demanda desejada é registrada
