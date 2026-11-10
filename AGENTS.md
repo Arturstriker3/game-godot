@@ -18,7 +18,7 @@ Nunca assuma que uma funcionalidade existe porque está documentada. Confirme no
 - Mudanças pequenas, com escopo explícito e verificação antes de encerrar.
 - MCPs de cena começam em modo somente leitura. Mutações exigem aprovação.
 - Não edite o núcleo C++ da economia sem rodar build e testes.
-- Modelos caros (Claude Opus) só com autorização explícita do usuário.
+- Modelos Claude (Sonnet/Opus) só com autorização explícita do usuário — sem orçamento por padrão; use DeepSeek.
 - Ao concluir uma implementação que altere sistema, mecânica, dados ou arquitetura, atualize as seções afetadas do `GAME_STATE.md`.
 - Não duplique sistemas existentes; leia o código antes de criar algo novo.
 
@@ -86,12 +86,12 @@ Ao encerrar, registre quais testes rodou, ou "nenhum" e o motivo.
 Distribuição por agente (definida no campo `model` de cada `.opencode/agents/*.md`):
 
 - `orchestrator` → DeepSeek V4 Pro (conversa principal/roteamento — barato).
-- `game-systems-designer` → Claude Sonnet 5.5 (economia/arquitetura).
-- `ui-ux-designer` → Claude Sonnet 5.5 (design/HUD — qualidade visual).
-- `world-3d-engineer` → Claude Sonnet 5.5 (3D/shaders — qualidade visual).
+- `game-systems-designer` → DeepSeek V4 Pro (economia/arquitetura/núcleo C++).
+- `ui-ux-designer` → DeepSeek V4 Pro (design/HUD).
+- `world-3d-engineer` → DeepSeek V4 Pro (3D/shaders).
 - `godot-engineer` → DeepSeek V4 Pro (implementação de código).
 - `qa-docs` → DeepSeek Flash (testes/docs baratos).
-- `senior-architect` → Claude Opus 5.5 (só os problemas mais difíceis; perguntar ao usuário antes de usar).
+- `senior-architect` → DeepSeek V4 Pro (problemas difíceis; perguntar ao usuário antes de usar).
 
 ## Custo e contexto
 
@@ -102,5 +102,5 @@ reenvia a conversa inteira.
 - Consulte `GAME_STATE.md` em vez de reauditar o projeto.
 - Não leia imagens/capturas sem necessidade (cada uma custa tokens).
 - Peça relatórios **curtos** aos subagentes; não despeje arquivos inteiros.
-- DeepSeek para execução; Sonnet para design/arquitetura; Opus só sob demanda.
+- DeepSeek (Pro/Flash) para tudo; modelos Claude (Sonnet/Opus) só sob demanda explícita.
 - Ao terminar, encerre a sessão em vez de continuar no mesmo contexto.

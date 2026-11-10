@@ -1,7 +1,7 @@
 ---
 description: Cuida do mapa 3D, modelos, materiais, shaders e pipeline Blender do OpenGS Game.
 mode: all
-model: anthropic/claude-sonnet-5-5
+model: deepseek/deepseek-v4-pro
 steps: 25
 permissions:
   - action: edit

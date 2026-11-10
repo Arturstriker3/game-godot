@@ -1,7 +1,7 @@
 ---
 description: Projeta e revisa HUD, painéis, temas, i18n visual e estados vazios do OpenGS Game.
 mode: all
-model: anthropic/claude-sonnet-5-5
+model: deepseek/deepseek-v4-pro
 steps: 60
 permissions:
   - action: edit
