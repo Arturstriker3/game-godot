@@ -21,15 +21,16 @@ const TRUCK_SCENE: PackedScene = preload("res://assets/models/truck.glb")
 const SHIP_SCENE: PackedScene = preload("res://assets/models/ship.glb")
 const PLANE_SCENE: PackedScene = preload("res://assets/models/plane.glb")
 
-# Tamanho alvo (unidades de mundo) do maior eixo do modelo. Veículos devem ser
-# pequenos diante da cidade (a cidade tem ~6–8 unidades de diâmetro). O navio é
-# 2x maior: no mar ele não compete com a malha urbana e fica legível.
+# Tamanho alvo (unidades de mundo) do maior eixo do modelo. Caminhão e navio
+# têm o mesmo comprimento: o caminhão precisa ser lido no zoom próximo (antes,
+# 0,275 u, ficava menor que o medalhão e sumia atrás dele).
 const MODEL_LENGTH := 0.275
-const MODEL_LENGTH_BY_MODE := {"truck": 0.275, "ship": 0.6875, "plane": 0.275}
+const MODEL_LENGTH_BY_MODE := {"truck": 0.6875, "ship": 0.6875, "plane": 0.55}
 # Altura acima do plano do mapa para o modelo não afundar no terreno.
 const HEIGHT_OFFSET := 0.18
-# Bandeirinha da nação de destino, acima do veículo (identifica o comboio).
-const FLAG_HEIGHT := 0.34
+# Bandeirinha da nação de destino, acima do veículo (identifica o comboio sem
+# encobri-lo: o caminhão agora tem ~0,24 u de altura).
+const FLAG_HEIGHT := 0.56
 # Medalhões origem+destino: textura do par gerada em runtime (selo escuro + aro
 # de latão + bandeira), lado a lado com um chevron de latão entre eles.
 const PAIR_TEX_W := 180
@@ -86,6 +87,22 @@ const SNAP_COARSE_RINGS := 8
 # de nós, e rotas impossíveis (continentes diferentes) são descartadas antes de
 # começar pela checagem de componente grosseiro.
 const MAX_ASTAR_NODES := 24000
+## Teto da busca grosseira de fallback. Quando o A* fino esgota o teto por
+## explorar um oceano aberto (heurística fraca diante de um desvio longo), a
+## mesma área na grade de 16 px custa 1/256 dos nós: 12 mil cobrem o oceano
+## inteiro e o caminho é refinado depois em células finas.
+const MAX_COARSE_NODES := 12000
+## Células grosseiras refinadas por fatia (cada uma vira ~16 amostras finas
+## validadas no terreno), para o refinamento não estourar o frame.
+const REFINE_CHUNK := 32
+## Nós grosseiros por fatia. Cada nó grosseiro testa a linha fina entre dois
+## centros (16 amostras por vizinho), então custa ~16x um nó fino: 2 nós por
+## leitura do relógio mantêm a fatia e o pico de frame iguais aos do A* fino.
+const COARSE_CHUNK_NODES := 2
+## Teto do A* fino do último trecho (depois do caminho grosseiro): o resto do
+## percurso cabe em 2 células grosseiras, mas o canal pode ser estreito e
+## sinuoso (enseada de Bristol), então o teto é folgado.
+const MAX_TAIL_NODES := 4000
 # Salto de olhar máximo ao simplificar o caminho (pontos por waypoint). Limita o
 # custo a O(n) em vez de O(n²), para rotas oceânicas longas não travarem o jogo.
 const SIMPLIFY_LOOKAHEAD := 48
@@ -136,8 +153,30 @@ var _disc_image: Image
 
 ## Tweens em andamento, para acompanhar a velocidade/pausa da simulação.
 var _tweens: Array[Tween] = []
+## Tween vivo de cada comboio (por instance id). Ao reciclar o nó, o tween
+## antigo é morto: sem isso um callback atrasado move/encerra a viagem nova.
+var _tween_by_convoy := {}
+var _generation := 0
 var _time_scale := 1.0
 var _paused := false
+
+## Contadores do ciclo de vida, lidos pelo harness `convoy_lifecycle_test`:
+## `spawned` = pedidos que chegaram a `_spawn_convoy` (tentativas), `finished` =
+## comboios que completaram o percurso, `cancelled` = tentativas recusadas por
+## `no_legs` (pedido sem trechos), `no_route` (nenhum trecho com caminho
+## desenhável) ou `no_slot` (teto de comboios ativos), `placed` = comboios que
+## nasceram já com o veículo no ponto de partida. No fim de uma rodada limpa
+## valem `spawned == finished + cancelled` e `placed == spawned - cancelled`.
+var stats := {
+	"spawned": 0,
+	"finished": 0,
+	"cancelled": 0,
+	"no_legs": 0,
+	"no_route": 0,
+	"no_slot": 0,
+	"placed": 0,
+	"last_cancel": "",
+}
 
 
 ## Grade de navegação: máscara em memória, teste de terreno O(1), componentes
@@ -169,7 +208,38 @@ class NavGrid:
 	var _g := PackedFloat32Array()
 	var _gen := PackedInt32Array()
 	var _parent := PackedInt32Array()
+	## Células já expandidas nesta busca. Sem isso a heurística inflada (peso
+	## > 1) reabre a mesma célula dezenas de vezes em ziguezague diagonal: o
+	## teto de nós contava pops duplicados, não nós trabalhados (medido:
+	## 24.001 pops para 1.104 células em Calais->Belfast).
+	var _closed := PackedInt32Array()
 	var _gen_id := 0
+
+	## Fallback grosseiro (16 px por célula): estado próprio da busca e do
+	## refinamento do caminho em células finas.
+	var coarse := false
+	var used_coarse := false
+	var _cg := PackedFloat32Array()
+	var _cgen := PackedInt32Array()
+	var _cclosed := PackedInt32Array()
+	var _cparent := PackedInt32Array()
+	var _cgen_id := 0
+	var _cstart := -1
+	var _cgoal := -1
+	var _cpath: Array[Vector2i] = []
+	var _refine_index := 0
+	var _refine_cell := Vector2i(-1, -1)
+	## Último trecho em A* fino depois do caminho grosseiro.
+	var tail := false
+	var node_limit := MAX_ASTAR_NODES
+	var _tail_merged := false
+	var _tail_from := Vector2i(-1, -1)
+	var _tail_to := Vector2i(-1, -1)
+	var _prefix := PackedVector2Array()
+	## Cortar canto diagonal é proibido no A* normal. No trecho final o porto
+	## pode estar ligado ao mar só por diagonais (cais de 1 célula): ali o
+	## canto é liberado, senão o último pixel nunca fecha.
+	var strict_corners := true
 
 	func build(image: Image) -> void:
 		w = image.get_width()
@@ -183,9 +253,14 @@ class NavGrid:
 		land_component.fill(-1)
 		water_component.resize(nx * ny)
 		water_component.fill(-1)
+		_cg.resize(nx * ny)
+		_cgen.resize(nx * ny)
+		_cclosed.resize(nx * ny)
+		_cparent.resize(nx * ny)
 		_g.resize(w * h)
 		_gen.resize(w * h)
 		_parent.resize(w * h)
+		_closed.resize(w * h)
 		var land_sizes := _label(land_component, true)
 		var water_sizes := _label(water_component, false)
 		main_land = _largest(land_sizes)
@@ -396,6 +471,18 @@ class NavGrid:
 		out = PackedVector2Array()
 		_i = 2
 		_anchor = 0
+		coarse = false
+		used_coarse = false
+		tail = false
+		strict_corners = true
+		node_limit = MAX_ASTAR_NODES
+		_tail_merged = false
+		_tail_from = Vector2i(-1, -1)
+		_tail_to = Vector2i(-1, -1)
+		_prefix = PackedVector2Array()
+		_cpath.clear()
+		_refine_index = 0
+		_refine_cell = Vector2i(-1, -1)
 		if from.x < 0 or to.x < 0:
 			phase = 3
 			active = false
@@ -405,6 +492,7 @@ class NavGrid:
 			_g.resize(n)
 			_gen.resize(n)
 			_parent.resize(n)
+			_closed.resize(n)
 		# Marcação por geração: nenhum vetor de 3,1 M células é limpo entre as
 		# buscas (limpar custaria ~3 ms por trecho).
 		_gen_id += 1
@@ -430,12 +518,23 @@ class NavGrid:
 		if not active:
 			return 1 if phase == 2 else 2
 		if phase == 0:
+			if coarse:
+				return _coarse_step(deadline_usec)
 			var start_index: int = start.y * w + start.x
 			var goal_index: int = goal.y * w + goal.x
 			var water_mode: bool = mode == "ship"
 			var budget := 0
+			var pops := 0
 			while not _hp.is_empty():
 				var current := _heap_pop()
+				pops += 1
+				if _closed[current] == _gen_id:
+					# Duplicado de uma célula já expandida (a heurística inflada
+					# não é consistente): descarta e segue, sem gastar orçamento.
+					if pops % 64 == 0 and Time.get_ticks_usec() >= deadline_usec:
+						return 0
+					continue
+				_closed[current] = _gen_id
 				visited += 1
 				budget += 1
 				if current == goal_index:
@@ -446,9 +545,14 @@ class NavGrid:
 					budget = 0
 					if Time.get_ticks_usec() >= deadline_usec:
 						return 0
-				if visited > MAX_ASTAR_NODES:
-					_fail()
-					return 2
+				if visited > node_limit:
+					# A rota é visual e longa: em vez de desistir, repete a
+					# busca na grade grossa de 16 px e refina o caminho. Se já
+					# estamos no trecho final, desiste de verdade.
+					if tail or not _begin_coarse():
+						_fail()
+						return 2
+					return 0
 				var cx: int = current % w
 				var cy: int = current / w
 				var g_current: float = _g[current]
@@ -467,7 +571,7 @@ class NavGrid:
 					if not passable:
 						continue
 					var diagonal: bool = k >= 4
-					if diagonal:
+					if diagonal and strict_corners:
 						# Sem cortar o canto: os dois lados precisam ser do mesmo terreno.
 						var side_x: int = data[(cy * w + nx) * 4]
 						var side_y: int = data[(ny * w + cx) * 4]
@@ -491,6 +595,34 @@ class NavGrid:
 			if _hp.is_empty() and phase == 0:
 				_fail()
 				return 2
+		if tail and phase == 1 and not _tail_merged:
+			# Junta o prefixo grosseiro (já refinado) com o trecho fino final,
+			# que foi buscado do destino para o prefixo: entra invertido.
+			var tail_raw := raw
+			raw = _prefix
+			for i in range(tail_raw.size() - 1, -1, -1):
+				var point := tail_raw[i]
+				if raw.is_empty() or raw[raw.size() - 1].distance_to(point) > 0.01:
+					raw.append(point)
+			_tail_merged = true
+			_i = 2
+			_anchor = 0
+			out = PackedVector2Array()
+		if phase == 4:
+			# Caminho grosseiro pronto: refina em células finas por fatias e só
+			# então entra na simplificação normal (fase 1).
+			if not _refine_step(deadline_usec):
+				return 0
+			_prefix = raw
+			# Último trecho em A* fino: vai do destino para o fim do prefixo
+			# (a enseada é pequena; buscar a partir dela é bem mais barato) e o
+			# resultado é invertido na junção.
+			if _refine_cell != goal and _begin_tail(goal, _refine_cell):
+				return 0
+			phase = 1
+			_i = 2
+			_anchor = 0
+			out = PackedVector2Array()
 		if phase == 1:
 			if raw.size() <= 2:
 				out = raw
@@ -519,6 +651,241 @@ class NavGrid:
 		phase = 3
 		active = false
 		out = PackedVector2Array()
+
+	## Célula grosseira navegável que representa um ponto fino. Prefere uma cujo
+	## centro é alcançável pela linha fina (o caminho grosseiro começa/termina
+	## com uma amostra válida); se nenhuma, aceita a mais próxima só navegável.
+	func _coarse_cell_for(fine: Vector2i, land: bool) -> Vector2i:
+		var origin := Vector2i(fine.x / COARSE_CELL, fine.y / COARSE_CELL)
+		var from_point := _cell_center(fine)
+		var linked := Vector2i(-1, -1)
+		var linked_distance := INF
+		var nearest := Vector2i(-1, -1)
+		var nearest_distance := INF
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var candidate := origin + Vector2i(dx, dy)
+				if not _coarse_walkable(candidate, land):
+					continue
+				var distance := float(dx * dx + dy * dy)
+				if distance < nearest_distance:
+					nearest = candidate
+					nearest_distance = distance
+				if distance < linked_distance \
+						and _line_walkable(from_point, _coarse_center(candidate), mode):
+					linked = candidate
+					linked_distance = distance
+		if linked.x >= 0:
+			return linked
+		return nearest
+
+	## Prepara a busca grosseira de fallback. Devolve false quando nem ela pode
+	## começar (extremos sem célula grossa navegável ou em componentes
+	## diferentes) — aí a rota não existe mesmo.
+	func _begin_coarse() -> bool:
+		var land: bool = mode != "ship"
+		var a := _coarse_cell_for(start, land)
+		var b := _coarse_cell_for(goal, land)
+		if a.x < 0 or b.x < 0:
+			return false
+		_cstart = a.y * cw + a.x
+		_cgoal = b.y * cw + b.x
+		var table: PackedInt32Array = water_component if not land else land_component
+		if table[_cstart] != table[_cgoal]:
+			return false
+		coarse = true
+		used_coarse = true
+		phase = 0
+		active = true
+		visited = 0
+		_cgen_id += 1
+		if _cgen_id >= 2147483000:
+			_cgen.fill(0)
+			_cclosed.fill(0)
+			_cgen_id = 1
+		# O heap é o mesmo da busca fina (a busca fina acabou de desistir).
+		_hp.clear()
+		_hc.clear()
+		_cgen[_cstart] = _cgen_id
+		_cg[_cstart] = 0.0
+		_heap_push(_heuristic_xy(a.x, a.y, b.x, b.y) * ASTAR_HEURISTIC_WEIGHT, _cstart)
+		_cpath.clear()
+		return true
+
+	## A* de 8 vizinhos sobre a grade grosseira, na mesma fatia de orçamento.
+	## O movimento só vale quando a linha fina entre os dois centros é
+	## navegável: sem isso uma célula grossa "de água pelo centro" deixaria o
+	## navio cortar uma faixa de terra de 16 px (Brittany, ilhas do Canal).
+	func _coarse_step(deadline_usec: int) -> int:
+		var land: bool = mode != "ship"
+		var budget := 0
+		var pops := 0
+		while not _hp.is_empty():
+			var current := _heap_pop()
+			pops += 1
+			if _cclosed[current] == _cgen_id:
+				if pops % 64 == 0 and Time.get_ticks_usec() >= deadline_usec:
+					return 0
+				continue
+			_cclosed[current] = _cgen_id
+			visited += 1
+			budget += 1
+			# Aceita a até duas células grosseiras do destino. O canal final pode
+			# ser mais estreito que a célula de 16 px (enseada de Bristol): aqui
+			# ele não é atravessado, e sim resolvido pelo A* fino do último
+			# trecho (fase 4 -> cauda).
+			var cell := Vector2i(current % cw, current / cw)
+			if maxi(absi(cell.x - _cgoal % cw), absi(cell.y - _cgoal / cw)) <= 2:
+				_build_coarse_path(current)
+				phase = 4
+				raw = PackedVector2Array()
+				_refine_index = 0
+				_refine_cell = start
+				return 0
+			if budget >= COARSE_CHUNK_NODES:
+				budget = 0
+				if Time.get_ticks_usec() >= deadline_usec:
+					return 0
+			if visited > MAX_COARSE_NODES:
+				_fail()
+				return 2
+			var cx: int = current % cw
+			var cy: int = current / cw
+			var g_current: float = _cg[current]
+			var from_point := _coarse_center(Vector2i(cx, cy))
+			for k in 8:
+				var nx: int = cx + NEIGHBOR_DX[k]
+				var ny: int = cy + NEIGHBOR_DY[k]
+				if nx < 0 or ny < 0 or nx >= cw or ny >= ch:
+					continue
+				if not _coarse_walkable(Vector2i(nx, ny), land):
+					continue
+				if not _line_walkable(from_point, _coarse_center(Vector2i(nx, ny)),
+						mode):
+					continue
+				var next: int = ny * cw + nx
+				var tentative: float = g_current + (1.41421356 if k >= 4 else 1.0)
+				if _cgen[next] == _cgen_id and tentative >= _cg[next]:
+					continue
+				_cgen[next] = _cgen_id
+				_cg[next] = tentative
+				_cparent[next] = current
+				_heap_push(tentative
+						+ _heuristic_xy(nx, ny, _cgoal % cw, _cgoal / cw)
+						* ASTAR_HEURISTIC_WEIGHT,
+						next)
+		if _hp.is_empty() and phase == 0:
+			_fail()
+			return 2
+		return 0
+
+	static func _coarse_center(coarse: Vector2i) -> Vector2:
+		return Vector2((float(coarse.x * COARSE_CELL) + COARSE_CELL * 0.5) * NAV_CELL_PX,
+				(float(coarse.y * COARSE_CELL) + COARSE_CELL * 0.5) * NAV_CELL_PX)
+
+	## Centros das células grosseiras do caminho, como células finas.
+	func _build_coarse_path(target_index: int) -> void:
+		_cpath.clear()
+		var walk := target_index
+		var guard := 0
+		while walk != _cstart and guard < cw * ch:
+			guard += 1
+			var cx: int = walk % cw
+			var cy: int = walk / cw
+			_cpath.append(Vector2i(cx * COARSE_CELL + COARSE_CELL / 2,
+					cy * COARSE_CELL + COARSE_CELL / 2))
+			if _cgen[walk] != _cgen_id:
+				break
+			walk = _cparent[walk]
+		_cpath.reverse()
+
+	## Refina o caminho grosseiro em células finas, em fatias. Cada amostra é
+	## validada no terreno fino: a célula grosseira é "água" pelo pixel central
+	## e uma barreira fina dentro dela ainda precisa ser respeitada.
+	func _refine_step(deadline_usec: int) -> bool:
+		var want := component(start, mode)
+		if raw.is_empty():
+			_refine_cell = start
+			raw.append(_cell_center(start))
+		var budget := 0
+		while _refine_index < _cpath.size():
+			var cell: Vector2i = _cpath[_refine_index]
+			var placed := _snap_near(cell, _refine_cell, mode, want, 4)
+			if placed.x >= 0:
+				_fill_between(raw[raw.size() - 1], _cell_center(placed), mode, want)
+				_refine_cell = placed
+			_refine_index += 1
+			budget += 1
+			if budget >= REFINE_CHUNK and Time.get_ticks_usec() >= deadline_usec:
+				return false
+		return true
+
+	## Amostras finas a cada NAV_CELL_PX entre dois pontos, cada uma encaixada
+	## no terreno navegável do mesmo componente (o traço grosseiro pode cortar
+	## a ponta de uma costa).
+	func _fill_between(a: Vector2, b: Vector2, cell_mode: String, want: int) -> void:
+		var steps: int = int(ceil(a.distance_to(b) / NAV_CELL_PX))
+		if steps < 1:
+			return
+		var last := Vector2i(int(a.x / NAV_CELL_PX), int(a.y / NAV_CELL_PX))
+		for i in range(1, steps + 1):
+			var point := a.lerp(b, float(i) / float(steps))
+			var cell := Vector2i(int(point.x / NAV_CELL_PX), int(point.y / NAV_CELL_PX))
+			if cell == last:
+				continue
+			var placed := _snap_near(cell, last, cell_mode, want, 2)
+			if placed.x < 0:
+				continue
+			last = placed
+			var sample := _cell_center(placed)
+			if raw[raw.size() - 1].distance_to(sample) > 0.01:
+				raw.append(sample)
+
+	## A* fino do último trecho, com teto próprio: cobre canais mais estreitos
+	## que a célula grosseira (enseada de Bristol).
+	func _begin_tail(from: Vector2i, to: Vector2i) -> bool:
+		var prefix := _prefix
+		if not begin(from, to, mode):
+			_prefix = prefix
+			return false
+		_prefix = prefix
+		_tail_from = from
+		_tail_to = to
+		tail = true
+		strict_corners = false
+		node_limit = MAX_TAIL_NODES
+		return true
+
+	## Célula navegável mais próxima do alvo, dentro do anel de raio `radius`.
+	func _snap_near(cell: Vector2i, target: Vector2i, cell_mode: String, want: int,
+			radius: int) -> Vector2i:
+		if walkable(cell, cell_mode) \
+				and (want < 0 or component(cell, cell_mode) == want):
+			return cell
+		var best := Vector2i(-1, -1)
+		var best_distance := INF
+		for ring in range(1, radius + 1):
+			for dy in range(-ring, ring + 1):
+				for dx in range(-ring, ring + 1):
+					if maxi(absi(dx), absi(dy)) != ring:
+						continue
+					var candidate := cell + Vector2i(dx, dy)
+					if not walkable(candidate, cell_mode):
+						continue
+					if want >= 0 and component(candidate, cell_mode) != want:
+						continue
+					var distance := float((candidate.x - target.x) * (candidate.x - target.x)
+							+ (candidate.y - target.y) * (candidate.y - target.y))
+					if distance < best_distance:
+						best = candidate
+						best_distance = distance
+			if best.x >= 0:
+				return best
+		return Vector2i(-1, -1)
+
+	static func _cell_center(cell: Vector2i) -> Vector2:
+		return Vector2((float(cell.x) + 0.5) * NAV_CELL_PX,
+				(float(cell.y) + 0.5) * NAV_CELL_PX)
 
 	func _build_raw(start_index: int, goal_index: int) -> void:
 		var cells: Array[Vector2i] = []
@@ -696,6 +1063,8 @@ func _start_next_order() -> bool:
 		"key": "",
 	}
 	if (_prep["legs"] as Array).is_empty():
+		stats["spawned"] = int(stats["spawned"]) + 1
+		_cancel_spawn("no_legs")
 		_prep = {}
 		return true
 	return true
@@ -754,19 +1123,49 @@ func _to_cell(point: Vector2) -> Vector2i:
 
 
 func _spawn_convoy(order: Dictionary, paths: Array) -> void:
+	stats["spawned"] = int(stats["spawned"]) + 1
 	var legs: Array = order.get("legs", [])
 	if legs.is_empty():
+		_cancel_spawn("no_legs")
 		return
 	if _active_convoys >= MAX_CONVOYS:
+		_cancel_spawn("no_slot")
+		return
+	# Só entra nos planos um trecho desenhável: avião voa em linha reta; caminhão
+	# e navio precisam de um caminho com pelo menos dois pontos. Sem nenhum, o
+	# comboio nasceria como medalhão solto e sumiria no fim do tween.
+	var usable: Array[int] = []
+	for i in range(mini(paths.size(), legs.size())):
+		var leg: Dictionary = legs[i]
+		var path: PackedVector2Array = paths[i]
+		if String(leg.get("mode", "truck")) == "plane" or path.size() >= 2:
+			usable.append(i)
+	if usable.is_empty():
+		_cancel_spawn("no_route", "%s->%s" % [
+			String(order.get("from_city", "")), String(order.get("to_city", ""))])
 		return
 
 	var convoy: Node3D = _acquire_convoy()
 	_active_convoys += 1
 	_convoys.append(convoy)
 	convoy.visible = true
-	# Bandeira da nação que vai RECEBER o produto, acima do veículo.
+	_generation += 1
+	var generation := _generation
+	convoy.set_meta("generation", generation)
+	# Nó reciclado: mata o tween da viagem anterior antes de enfileirar o novo.
+	_kill_tween(convoy)
+	# Bandeira da nação que vai RECEBER o produto, acima do veículo. Fica oculta
+	# até haver veículo (ver `_refresh_flags`).
 	_add_flags(convoy, String(order.get("from_nation", "")),
 			String(order.get("to_nation", "")))
+	# O veículo já nasce no ponto de partida: o comboio nunca aparece só com o
+	# medalhão, nem durante o escalonamento de partida.
+	var first: Dictionary = legs[usable[0]]
+	var first_path: PackedVector2Array = paths[usable[0]]
+	if first_path.size() >= 2:
+		_place_vehicle(convoy, String(first.get("mode", "truck")),
+				_pixel_to_world(first_path[0]), _pixel_to_world(first_path[1]))
+		stats["placed"] = int(stats["placed"]) + 1
 
 	var tween := create_tween()
 	# O tween nasce no ritmo atual da simulação (1x = 60 s por dia) e entra na
@@ -775,17 +1174,27 @@ func _spawn_convoy(order: Dictionary, paths: Array) -> void:
 	if _paused:
 		tween.pause()
 	_tweens.append(tween)
-	tween.finished.connect(_on_tween_finished.bind(tween))
+	_tween_by_convoy[int(convoy.get_instance_id())] = tween
+	tween.finished.connect(_on_tween_finished.bind(tween, convoy, generation))
 	# Escalonamento de partida: comboios do mesmo tick saem em instantes
 	# diferentes, evitando que andem colados sem tirar ninguém do caminho.
 	var delay := DEPART_STAGGER * float(_depart_slot % DEPART_STAGGER_STEPS)
 	_depart_slot += 1
 	if delay > 0.0:
 		tween.tween_interval(delay)
-	for i in range(mini(paths.size(), legs.size())):
-		_append_leg(tween, convoy, legs[i], paths[i])
+	for index in usable:
+		_append_leg(tween, convoy, legs[index], paths[index], index == usable[0])
 
-	tween.tween_callback(_finish_convoy.bind(convoy))
+	tween.tween_callback(_finish_convoy.bind(convoy, generation))
+
+
+## Recusa uma tentativa de comboio com motivo explícito (nada de medalhão que
+## aparece e some sem chegar).
+func _cancel_spawn(reason: String, detail := "") -> void:
+	stats["cancelled"] = int(stats["cancelled"]) + 1
+	if stats.has(reason):
+		stats[reason] = int(stats[reason]) + 1
+	stats["last_cancel"] = reason if detail.is_empty() else "%s %s" % [reason, detail]
 
 
 ## Acompanha o relógio da economia: `rate` = quantas vezes o ritmo normal
@@ -805,13 +1214,36 @@ func set_time_scale(rate: float, paused: bool) -> void:
 			tween.play()
 
 
-func _on_tween_finished(tween: Tween) -> void:
+func _on_tween_finished(tween: Tween, convoy: Node3D, generation: int) -> void:
 	_tweens.erase(tween)
+	if not is_instance_valid(convoy):
+		return
+	var id := int(convoy.get_instance_id())
+	if _tween_by_convoy.get(id, null) == tween:
+		_tween_by_convoy.erase(id)
+	# Tween de uma geração antiga: o comboio já foi reciclado e este `finished`
+	# não pode mexer na viagem nova.
+	if int(convoy.get_meta("generation", -1)) != generation:
+		return
+
+
+## Mata o tween de uma viagem anterior do comboio reciclado. O `finished` de um
+## tween morto não é emitido, mas callbacks já enfileirados na mesma fatia
+## seriam; a geração em `_finish_convoy` cobre esse resto.
+func _kill_tween(convoy: Node3D) -> void:
+	var id := int(convoy.get_instance_id())
+	var old: Tween = _tween_by_convoy.get(id, null)
+	if old == null:
+		return
+	_tween_by_convoy.erase(id)
+	_tweens.erase(old)
+	if old.is_valid():
+		old.kill()
 
 
 ## Enfileira no tween cada segmento do caminho do trecho.
 func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary,
-		path: PackedVector2Array) -> void:
+		path: PackedVector2Array, already_placed := false) -> void:
 	var mode: String = leg["mode"]
 	if path.size() < 2:
 		return
@@ -827,7 +1259,8 @@ func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary,
 
 	var first_start := _pixel_to_world(path[0])
 	var first_end := _pixel_to_world(path[1])
-	tween.tween_callback(_place_vehicle.bind(convoy, mode, first_start, first_end))
+	if not already_placed:
+		tween.tween_callback(_place_vehicle.bind(convoy, mode, first_start, first_end))
 
 	for i in range(1, path.size()):
 		var start := _pixel_to_world(path[i - 1])
@@ -867,7 +1300,26 @@ func _add_flags(convoy: Node3D, from_nation: String, to_nation: String) -> void:
 		return
 	var texture := _pair_texture(from_nation, to_nation)
 	flags.texture = texture
-	flags.visible = texture != null
+	_refresh_flags(convoy)
+
+
+## O medalhão origem→destino só aparece quando há veículo. Sem ele, o comboio
+## viraria um medalhão solto no mapa que some no fim do tween.
+func _refresh_flags(convoy: Node3D) -> void:
+	if not is_instance_valid(convoy):
+		return
+	var flags := convoy.get_node_or_null("Flags") as Sprite3D
+	if flags == null:
+		return
+	flags.visible = flags.texture != null and _vehicle_of(convoy) != null
+
+
+## Veículo preso ao comboio (o único filho Node3D que não é o medalhão).
+func _vehicle_of(convoy: Node3D) -> Node3D:
+	for child in convoy.get_children():
+		if child is Node3D and String(child.name) != "Flags":
+			return child as Node3D
+	return null
 
 
 ## Textura do par de medalhões (cacheada por origem|destino).
@@ -950,6 +1402,7 @@ func _place_vehicle(convoy: Node3D, mode: String, start: Vector3, end: Vector3) 
 	convoy.set_meta("collision_radius", COLLISION_RADIUS_BY_MODE.get(mode, 0.05))
 	convoy.position = start + Vector3(0.0, HEIGHT_OFFSET, 0.0)
 	_face_target(convoy, start, end)
+	_refresh_flags(convoy)
 
 
 func _move_vehicle(weight: float, convoy: Node3D, start: Vector3, end: Vector3) -> void:
@@ -992,11 +1445,19 @@ func _separation(convoy: Node3D, base: Vector3, mode: String) -> Vector3:
 	return push
 
 
-func _finish_convoy(convoy: Node3D) -> void:
-	_active_convoys = maxi(0, _active_convoys - 1)
-	_convoys.erase(convoy)
+func _finish_convoy(convoy: Node3D, generation := -1) -> void:
 	if not is_instance_valid(convoy):
 		return
+	# O comboio pode ter sido reciclado por um spawn novo antes deste callback
+	# (tween antigo). A geração guarda a viagem: só a dona pode encerrá-la.
+	if generation >= 0 and int(convoy.get_meta("generation", -1)) != generation:
+		return
+	_active_convoys = maxi(0, _active_convoys - 1)
+	_convoys.erase(convoy)
+	stats["finished"] = int(stats["finished"]) + 1
+	var id := int(convoy.get_instance_id())
+	if _tween_by_convoy.get(id, null) != null:
+		_tween_by_convoy.erase(id)
 	# Recicla: devolve o veículo ao pool e esconde o nó do comboio (nada de
 	# queue_free — o próximo comboio reusa o mesmo nó).
 	for child in convoy.get_children():
@@ -1005,6 +1466,7 @@ func _finish_convoy(convoy: Node3D) -> void:
 			_park_vehicle(child, String(convoy.get_meta("mode", "")))
 	convoy.visible = false
 	convoy.set_meta("separation", Vector3.ZERO)
+	_refresh_flags(convoy)
 	_convoy_pool.append(convoy)
 
 
@@ -1037,8 +1499,16 @@ func _acquire_convoy() -> Node3D:
 
 func _acquire_vehicle(mode: String) -> Node3D:
 	var pool: Array = _vehicle_pool.get(mode, [])
-	if not pool.is_empty():
+	while not pool.is_empty():
 		var model: Node3D = pool.pop_back()
+		if not is_instance_valid(model):
+			continue
+		# O nó dorme dentro de `_pool_root`: o motor recusa `add_child` num nó
+		# que ainda tem pai (`already has a parent 'VehiclePool'`), e o comboio
+		# ficava só com o medalhão. Tira do pool antes de devolver.
+		var parent := model.get_parent()
+		if parent != null:
+			parent.remove_child(model)
 		model.visible = true
 		return model
 	return _instantiate_model(mode)
@@ -1051,13 +1521,29 @@ func _park_vehicle(model: Node, mode: String) -> void:
 		model.queue_free()
 		return
 	var node := model as Node3D
+	# O modo vem do próprio modelo (o comboio pode estar sem `mode` no primeiro
+	# quadro): um caminhão nunca pode cair no pool de navio.
+	var actual := String(node.get_meta("vehicle_mode", mode))
+	if actual.is_empty():
+		actual = "truck"
+	var pool: Array = _vehicle_pool.get(actual, [])
+	if pool.has(node):
+		return
+	# Normaliza escala/transformação/visibilidade: o modelo volta ao pool como
+	# saiu da cena, pronto para o próximo trecho.
+	var scale_value := float(node.get_meta("vehicle_scale", 1.0))
 	node.visible = false
-	node.position = Vector3.ZERO
-	node.rotation = Vector3(0.0, MODEL_YAW_OFFSET, 0.0)
-	_pool_root.add_child(node)
-	var pool: Array = _vehicle_pool.get(mode, [])
+	node.transform = Transform3D(
+			Basis(Vector3.UP, MODEL_YAW_OFFSET).scaled(Vector3.ONE * scale_value),
+			Vector3.ZERO)
+	node.set_meta("vehicle_mode", actual)
+	if node.get_parent() != _pool_root:
+		var parent := node.get_parent()
+		if parent != null:
+			parent.remove_child(node)
+		_pool_root.add_child(node)
 	pool.append(node)
-	_vehicle_pool[mode] = pool
+	_vehicle_pool[actual] = pool
 
 
 func _instantiate_model(mode: String) -> Node3D:
@@ -1069,8 +1555,13 @@ func _instantiate_model(mode: String) -> Node3D:
 			scene = PLANE_SCENE
 
 	var model := scene.instantiate() as Node3D
+	var scale_value := _scale_for(mode, scene)
 	model.rotation.y = MODEL_YAW_OFFSET
-	model.scale = Vector3.ONE * _scale_for(mode, scene)
+	model.scale = Vector3.ONE * scale_value
+	# Marcas usadas por `_park_vehicle` (reciclagem para o pool certo e com a
+	# escala certa, mesmo que o comboio troque de modo entre trechos).
+	model.set_meta("vehicle_mode", mode)
+	model.set_meta("vehicle_scale", scale_value)
 	return model
 
 

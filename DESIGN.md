@@ -125,9 +125,11 @@ cor da nação, ponto central claro), o nome em Barlow Condensed caixa alta e o
 texto e a mesma tinta do rótulo; ícone e nome somem juntos no zoom distante.
 Portos ficam no ponto de costa, não no centro da cidade, e um porto que divide
 o nome com a cidade dispensa rótulo próprio (o ícone/modelo marca o cais). O
-modelo 3D da cidade mede 2,8 unidades e os veículos de comércio 1,8 unidades no
-maior eixo; cada trecho de comércio mostra um único veículo (caminhão, navio ou
-avião) seguindo do ponto de origem ao destino.
+modelo 3D da cidade mede 2,8 unidades e os veículos de comércio 0,6875 unidade no
+maior eixo (caminhão e navio; o avião, 0,55). O medalhão origem→destino fica
+0,56 unidade acima do veículo — alto o bastante para não encobri-lo — e só
+aparece quando há veículo no comboio. Cada trecho de comércio mostra um único
+veículo (caminhão, navio ou avião) seguindo do ponto de origem ao destino.
 
 ## Crescimento urbano modular
 

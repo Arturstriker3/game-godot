@@ -272,6 +272,17 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 
 Nos dias sem IA o pico fica em ~6–11 ms; os ~24 ms só aparecem nos dias de IA (a cada 7), custo pré-existente de `get_demo_status` + planejamento. Cobertura visual equivalente: 7,5 comboios ativos/dia e 7,2 entregues/dia (legado: 6,8 ativos/dia). O harness não mede 3x: ele congela o relógio e o orçamento do pump é fixo por frame (3x só acelera o tween).
 
+#### Ciclo de vida dos comboios (corrigido)
+
+Medido com `tools/convoy_lifecycle_test.tscn` (20 dias da economia real, headless): antes eram **106 viagens, 56 sem veículo (53%) e 137 erros** `Can't add child ... already has a parent 'VehiclePool'` em `trade_convoys.gd`; agora são **156 tentativas = 156 comboios com veículo = 156 chegadas, 0 sem veículo, 0 erro de motor e 0 tween órfão**.
+
+- **Pool:** `_acquire_vehicle` remove o nó do `VehiclePool` antes de devolver (`add_child` recusa nó com pai); `_park_vehicle` normaliza modo, escala, transformação e visibilidade, e o modelo guarda `vehicle_mode`/`vehicle_scale` para nunca cair no pool errado.
+- **Spawn:** o veículo já nasce no ponto de partida (nunca há medalhão sozinho, nem durante o escalonamento); pedido sem nenhum trecho desenhável é cancelado com motivo explícito em `stats` (`no_legs`, `no_route`, `no_slot`). No fim vale `spawned == finished + cancelled` e `placed == spawned - cancelled`.
+- **Tweens:** um tween por comboio com id de geração; o tween antigo é morto ao reciclar o nó e `_on_tween_finished`/`_finish_convoy` ignoram geração velha.
+- **A\*:** a causa dos trechos "sem rota" era reexpansão, não só o teto: a heurística inflada (peso 1,05) é inconsistente com passos diagonais e a mesma célula era reaberta dezenas de vezes (Calais→Belfast: 24.001 pops para 1.104 células). Com conjunto fechado, o trecho fecha em 1.541 nós. Rotas oceânicas de desvio longo (Saint-Nazaire→Bristol) ainda estouram 24 mil nós finos porque a heurística aponta em linha reta para um percurso que contorna a costa: entram em fallback de A\* em grade grossa (16 px, aresta validada na linha fina) e o último trecho (≤2 células grosseiras, ex.: enseada de Bristol) é fechado por um A\* fino com teto próprio, revalidado amostra a amostra. Custo continua dentro do orçamento de 1,5 ms/frame (`perf_day_peak --days=10`: pico de frame 8,63 ms; pump por frame 1,54 / 1,62 / 3,67 ms média/p95/máx).
+- **Limite do mapa:** no `nav_mask.png` o Mediterrâneo não se conecta ao Atlântico (Gibraltar fica abaixo da resolução da máscara), então trechos como Marseille→Bristol não têm rota marítima; o comboio não nasce vazio — os trechos terrestres da mesma ordem continuam sendo animados e o trecho marítimo é omitido.
+- **Escala:** caminhão e navio medem 0,6875 u no maior eixo (antes o caminhão media 0,275 u, menor que o medalhão) e o medalhão fica a 0,56 u acima do veículo.
+
 ### 13.2 Virada do dia: mapa de recursos e IA (feito)
 
 `tools/perf_day_peak.gd` ganhou `--map-mode=political|resources` e mede o caminho real de `city_world.refresh_modes` (camada do modo + textura de território) no mesmo frame da virada. Medição serial, headless, 30 dias, mesmo cenário/IA do jogo:
