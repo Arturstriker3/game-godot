@@ -11,7 +11,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,10 +43,55 @@ const DEFAULT_MODEL = process.env.OPENGS_CLI_MODEL || "deepseek/deepseek-flash";
 const DEFAULT_AGENT = process.env.OPENGS_CLI_AGENT || "orchestrator";
 // A ponte do Claude Desktop derruba chamadas acima de ~60s; fique abaixo disso.
 const MAX_WAIT_SECONDS = 50;
-const DEFAULT_TIMEOUT_SECONDS = 900;
+const DEFAULT_TIMEOUT_SECONDS = 3600;
 const MAX_TEXT_CHARS = 8000;
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.1";
+
+/** Log legível para o usuário acompanhar fora do Claude. */
+const LOG_DIR = path.join(HERE, "log");
+const LOG_FILE = path.join(LOG_DIR, "tasks.md");
+
+/** Protocolo pedido ao agente: plano no início, etapas, resumo final. */
+const PROTOCOL = [
+  "PROTOCOLO DE COMUNICAÇÃO (obrigatório, em português):",
+  "1) Sua PRIMEIRA mensagem, ANTES de qualquer ferramenta, é um bloco que começa com a linha 'PLANO:' seguida de 3 a 6 itens curtos (- ...) dizendo o que você vai fazer.",
+  "2) Ao começar cada item do plano, escreva uma linha 'ETAPA n: <o que está fazendo>'.",
+  "3) Sua resposta FINAL começa com a linha 'RESUMO PARA O USUÁRIO:' seguida de até 8 linhas em linguagem simples (o que mudou, testes, pendências), pronta para ser repassada ao usuário sem edição.",
+  "",
+  "TAREFA:",
+].join("\n");
+
+function logTask(text) {
+  try {
+    mkdirSync(LOG_DIR, { recursive: true });
+    appendFileSync(LOG_FILE, text + "\n", "utf8");
+  } catch (err) {
+    log("falha ao gravar log:", err?.message ?? err);
+  }
+}
+
+function extractBlock(text, marker) {
+  const i = text.lastIndexOf(marker);
+  if (i < 0) return "";
+  return text.slice(i + marker.length).replace(/\n· [\s\S]*$/, "").trim();
+}
+
+function parseProtocol(record) {
+  if (!record.plan) {
+    const plan = extractBlock(record.text, "PLANO:");
+    // só aceita o plano quando já veio pelo menos uma ferramenta depois (bloco fechado) ou a tarefa acabou
+    if (plan && (record.tools.length > 0 || record.status !== "running")) {
+      record.plan = plan.split("\n").filter((l) => l.trim() && !l.startsWith("ETAPA")).slice(0, 8).join("\n");
+      logTask(`\n### ${record.id} · ${new Date().toISOString()} · ${record.agent} · ${record.model}\n**Pedido:** ${record.task.slice(0, 400).replace(/\n/g, " ")}${record.task.length > 400 ? "…" : ""}\n\n**Plano:**\n${record.plan}\n`);
+    }
+  }
+  const steps = [...record.text.matchAll(/^ETAPA\s*(\d+)\s*:\s*(.+)$/gm)];
+  if (steps.length) record.step = `ETAPA ${steps[steps.length - 1][1]}: ${steps[steps.length - 1][2].trim()}`;
+  if (record.status !== "running" && !record.summary) {
+    record.summary = extractBlock(record.text, "RESUMO PARA O USUÁRIO:") || "";
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Tarefas em segundo plano                                            */
@@ -74,11 +119,25 @@ function trimText(text) {
   return `${head}\n\n[... ${text.length - MAX_TEXT_CHARS} caracteres omitidos ...]\n\n${tail}`;
 }
 
+/** Mata o processo e toda a árvore (no Windows child.kill() deixa órfãos). */
+function killTree(child) {
+  if (!child || child.exitCode !== null) return;
+  try {
+    if (process.platform === "win32" && child.pid) {
+      spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+    } else {
+      child.kill();
+    }
+  } catch {
+    /* ignora */
+  }
+}
+
 function startTask({ task, agent, model, timeoutSeconds }) {
   const id = `t${++taskSeq}`;
   const args = ["run", "--archived", "--auto", "--format", "json", "-m", model];
   if (agent) args.push("--agent", agent);
-  args.push(task);
+  args.push(`${PROTOCOL}\n${task}`);
 
   const record = {
     id,
@@ -93,6 +152,10 @@ function startTask({ task, agent, model, timeoutSeconds }) {
     tools: [],
     text: "",
     cursor: 0, // até onde o texto já foi entregue (modo delta)
+    plan: "",
+    step: "",
+    summary: "",
+    logged: false,
     lastAction: "",
     stderr: "",
     sessionID: null,
@@ -151,6 +214,12 @@ function startTask({ task, agent, model, timeoutSeconds }) {
       record.status = record.text.trim() ? "done" : code === 0 ? "empty" : "error";
     }
     if (record.timer) clearTimeout(record.timer);
+    parseProtocol(record);
+    if (!record.logged) {
+      record.logged = true;
+      const elapsed = ((record.endedAt - record.startedAt) / 1000).toFixed(0);
+      logTask(`**Resultado (${record.id}):** ${record.status} · ${elapsed}s · US$ ${record.cost.toFixed(3)}\n\n${record.summary || "(sem resumo — veja a saída completa)"}\n`);
+    }
     log(`finalizado ${id}: ${record.status} (${((record.endedAt - record.startedAt) / 1000).toFixed(1)}s)`);
   });
 
@@ -159,11 +228,7 @@ function startTask({ task, agent, model, timeoutSeconds }) {
     if (record.status !== "running") return;
     record.status = "timeout";
     record.endedAt = Date.now();
-    try {
-      child.kill();
-    } catch {
-      /* ignora */
-    }
+    killTree(child);
     log(`timeout ${id}`);
   }, timeoutMs);
   record.timer.unref?.();
@@ -238,27 +303,36 @@ function compactLines(text) {
   return out.map(({ line, n }) => (n > 1 ? `${line} ×${n}` : line)).join("\n");
 }
 
-function formatTask(record, { delta = false } = {}) {
+function formatTask(record, { delta = false, verbose = false } = {}) {
+  parseProtocol(record);
   const elapsed = ((record.endedAt ?? Date.now()) - record.startedAt) / 1000;
   const lines = [
-    `tarefa: ${record.id} · status: ${record.status}`,
-    `modelo: ${record.model}${record.agent ? ` · agente: ${record.agent}` : ""}`,
-    `tempo: ${elapsed.toFixed(1)}s · custo: US$ ${record.cost.toFixed(4)} · tokens: ${record.tokens.input} in / ${record.tokens.output} out`,
-    `ferramentas: ${summarizeTools(record.tools)}`,
+    `tarefa: ${record.id} · ${record.status} · ${elapsed.toFixed(0)}s · US$ ${record.cost.toFixed(3)} · ${record.agent ?? ""} (${record.model})`,
   ];
+  if (record.plan && (!delta || !record.planShown)) {
+    lines.push("", "PLANO:", record.plan);
+    record.planShown = true;
+  }
   if (record.status === "running") {
-    if (record.lastAction) lines.push(`agora: ${record.lastAction}`);
-    lines.push(`ainda rodando — consulte com deepseek_result(task_id="${record.id}").`);
+    lines.push("", `agora: ${record.step || record.lastAction || "começando"}`);
   }
   const body = delta ? record.text.slice(record.cursor) : record.text;
   record.cursor = record.text.length;
-  if (body.trim()) {
-    lines.push("", delta ? "--- novo desde a última consulta ---" : "--- saída ---", trimText(compactLines(body.trim())));
-  } else if (delta) {
-    lines.push("", "(nada novo desde a última consulta)");
+  if (verbose && body.trim()) {
+    lines.push("", "--- saída ---", trimText(compactLines(body.trim())));
+  } else if (record.status === "running") {
+    const newSteps = [...body.matchAll(/^ETAPA\s*\d+\s*:.+$/gm)].map((m) => m[0]);
+    if (newSteps.length) lines.push(...newSteps);
   }
-  if (record.status !== "done" && record.stderr.trim()) {
-    lines.push("", "--- stderr (fim) ---", record.stderr.trim().split("\n").slice(-12).join("\n"));
+  if (record.status !== "running") {
+    if (record.summary) {
+      lines.push("", "RESUMO PARA O USUÁRIO:", record.summary);
+    } else {
+      lines.push("", "--- resposta final ---", trimText(record.text.trim().split("\n· ").pop() ?? ""));
+    }
+    if (record.status !== "done" && record.stderr.trim()) {
+      lines.push("", "--- stderr (fim) ---", record.stderr.trim().split("\n").slice(-8).join("\n"));
+    }
   }
   return lines.join("\n");
 }
@@ -293,7 +367,7 @@ const TOOLS = [
     description:
       "Delega uma tarefa de código neste repositório (OpenGS Game) a um agente do OpenCode rodando localmente com DeepSeek. " +
       "O agente tem acesso real ao disco, ao Git, aos testes headless e aos MCPs (Godot/Blender). " +
-      "Retorna um resumo curto: status, custo, ferramentas usadas e a resposta final do agente. " +
+      "Devolve o PLANO do agente assim que ele o escreve; depois deepseek_result mostra a etapa atual e, ao final, o 'RESUMO PARA O USUÁRIO' pronto para repassar. Tudo também vai para tools/claude_bridge/log/tasks.md. " +
       "Se demorar mais que wait_seconds, retorna status 'running' — continue com deepseek_result.",
     inputSchema: {
       type: "object",
@@ -339,6 +413,10 @@ const TOOLS = [
           type: "number",
           description: `Quanto esperar antes de responder (0-${MAX_WAIT_SECONDS}, padrão 45). Retorna antes se a tarefa terminar.`,
         },
+        verbose: {
+          type: "boolean",
+          description: "true inclui as linhas de ferramenta (debug). Padrão: só plano, etapa atual e resumo.",
+        },
         full: {
           type: "boolean",
           description: "true devolve a saída inteira; padrão false devolve só o que é novo desde a última consulta.",
@@ -383,7 +461,13 @@ async function callTool(name, args) {
       model: args?.model ? String(args.model) : DEFAULT_MODEL,
       timeoutSeconds: Number(args?.timeout_seconds) || DEFAULT_TIMEOUT_SECONDS,
     });
-    await waitForTask(record, Number(args?.wait_seconds ?? 30));
+    // Espera o PLANO aparecer (ou o tempo pedido) para devolvê-lo já na criação.
+    const deadline = Date.now() + Math.min(Math.max(Number(args?.wait_seconds ?? 30), 0), MAX_WAIT_SECONDS) * 1000;
+    while (record.status === "running" && Date.now() < deadline) {
+      parseProtocol(record);
+      if (record.plan) break;
+      await sleep(500);
+    }
     // deepseek_result seguinte devolve só o que vier depois deste retorno.
     return { content: [{ type: "text", text: formatTask(record) }] };
   }
@@ -392,7 +476,7 @@ async function callTool(name, args) {
     const record = tasks.get(String(args?.task_id ?? ""));
     if (!record) throw new Error(`tarefa não encontrada: ${args?.task_id}`);
     await waitForTask(record, Number(args?.wait_seconds ?? 45));
-    return { content: [{ type: "text", text: formatTask(record, { delta: !args?.full }) }] };
+    return { content: [{ type: "text", text: formatTask(record, { delta: !args?.full, verbose: !!args?.verbose }) }] };
   }
 
   throw new Error(`ferramenta desconhecida: ${name}`);
@@ -493,11 +577,7 @@ process.stdin.on("data", (chunk) => {
 process.stdin.on("end", () => {
   for (const record of tasks.values()) {
     if (record.status === "running") {
-      try {
-        record.child?.kill();
-      } catch {
-        /* ignora */
-      }
+      killTree(record.child);
     }
   }
   process.exit(0);
