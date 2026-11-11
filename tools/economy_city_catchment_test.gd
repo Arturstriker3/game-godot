@@ -7,7 +7,8 @@ extends SceneTree
 ## Bélgica 1) e deixava 9 das 33 cidades sem terra.
 ##
 ## Verifica:
-##  (a) cada província de uma nação jogável pertence a exatamente 1 cidade;
+##  (a) cada província de uma nação jogável é atribuída a ≥ 1 cidade e as
+##      frações da província somam 1 (partição por área, sem perda/duplicação);
 ##  (b) a soma das áreas cultiváveis das cidades de uma nação = área cultivável
 ##      da nação (partição sem perda/duplicação);
 ##  (c) toda cidade jogável tem ≥ 1 província (nenhuma cidade sem terra);
@@ -30,6 +31,7 @@ const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const DAYS := 365
 
 var _failures: Array[String] = []
+var _geo: Object = null
 
 
 func _init() -> void:
@@ -98,6 +100,7 @@ func _run() -> void:
 	if cities.is_empty():
 		return
 	var geo = GeographyServiceScript.new()
+	_geo = geo
 	var catchment: Dictionary = geo.assign_provinces(_cities_with_center(cities))
 	if catchment.is_empty():
 		_fail("assign_provinces retornou vazio")
@@ -111,7 +114,11 @@ func _run() -> void:
 	_check_france_wheat_cap(cities, geo)
 
 
-## (a) Partição: cada província de nação jogável aparece em exatamente 1 cidade.
+## (a) Partição POR ÁREA: cada província de nação jogável aparece em ≥ 1 cidade
+## (nunca perdida) e a soma das frações da província entre as cidades é 1
+## (nunca duplicada). Uma província pode ser dividida apenas quando uma cidade
+## ficaria sem terra (cidade cercada, ex. Kassel/Hesse) — ver
+## `GeographyService._share_starved_provinces`.
 func _check_partition(catchment: Dictionary) -> void:
 	var playable := _playable_provinces()
 	var nation_provinces := {}
@@ -119,18 +126,28 @@ func _check_partition(catchment: Dictionary) -> void:
 		var tag := String(playable[pid].get("nation", ""))
 		nation_provinces[tag] = int(nation_provinces.get(tag, 0)) + 1
 
-	var seen := {}
+	var owners := {}
+	var assigned_by_nation := {}
 	for city_id in catchment:
+		var seen_in_city := {}
 		for pid_v in catchment[city_id]:
 			var pid := int(pid_v)
-			if seen.has(pid):
-				_fail("província %d atribuída a mais de uma cidade" % pid)
-			seen[pid] = true
+			if seen_in_city.has(pid):
+				_fail("província %d repetida na cidade %s" % [pid, String(city_id)])
+			seen_in_city[pid] = true
+			if not owners.has(pid):
+				owners[pid] = []
+				var tag := String(playable.get(pid, {}).get("nation", ""))
+				assigned_by_nation[tag] = int(assigned_by_nation.get(tag, 0)) + 1
+			(owners[pid] as Array).append(String(city_id))
 
-	var assigned_by_nation := {}
-	for pid in seen:
-		var tag := String(playable[pid].get("nation", ""))
-		assigned_by_nation[tag] = int(assigned_by_nation.get(tag, 0)) + 1
+	for pid in owners:
+		var share_sum := 0.0
+		for city_id in owners[pid]:
+			share_sum += float(_geo.province_share(String(city_id), int(pid)))
+		if absf(share_sum - 1.0) > 0.001:
+			_fail("província %d: soma das frações %.3f != 1 (área duplicada/perdida)" % [
+				int(pid), share_sum])
 
 	for tag in nation_provinces:
 		var expected := int(nation_provinces[tag])
@@ -138,8 +155,12 @@ func _check_partition(catchment: Dictionary) -> void:
 		if assigned != expected:
 			_fail("%s: %d províncias na nação, %d atribuídas (partição quebrada)" % [
 				tag, expected, assigned])
-	print("[catchment] (a) partição ok: %d províncias jogáveis em %d cidades" % [
-		seen.size(), catchment.size()])
+	var shared := 0
+	for pid in owners:
+		if (owners[pid] as Array).size() > 1:
+			shared += 1
+	print("[catchment] (a) partição por área ok: %d províncias jogáveis em %d cidades (%d dividida(s))" % [
+		owners.size(), catchment.size(), shared])
 
 
 ## (b) Soma das áreas cultiváveis das cidades = área cultivável da nação.

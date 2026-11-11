@@ -394,5 +394,89 @@
     "y": 1134.0,
     "landmass": "guiana",
     "capital": false
+  },
+  {
+    "id": "GBR-BFS",
+    "nation": "GBR",
+    "home_nation": "GBR",
+    "name": "Belfast",
+    "population": 640000.0,
+    "production": 192.0,
+    "x": 2417.6,
+    "y": 491.7,
+    "landmass": "britain",
+    "capital": false
+  },
+  {
+    "id": "GBR-NOT",
+    "nation": "GBR",
+    "home_nation": "GBR",
+    "name": "Nottingham",
+    "population": 790000.0,
+    "production": 237.0,
+    "x": 2484.0,
+    "y": 514.5,
+    "landmass": "britain",
+    "capital": false
+  },
+  {
+    "id": "FRA-CLF",
+    "nation": "FRA",
+    "home_nation": "FRA",
+    "name": "Clermont-Ferrand",
+    "population": 273000.0,
+    "production": 81.9,
+    "x": 2542.9,
+    "y": 614.2,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "DEU-KAS",
+    "nation": "DEU",
+    "home_nation": "DEU",
+    "name": "Kassel",
+    "population": 200000.0,
+    "production": 60.0,
+    "x": 2631.7,
+    "y": 537.3,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "BEL-LGG",
+    "nation": "BEL",
+    "home_nation": "BEL",
+    "name": "Liège",
+    "population": 500000.0,
+    "production": 150.0,
+    "x": 2577.4,
+    "y": 546.8,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "NED-ENS",
+    "nation": "NED",
+    "home_nation": "NED",
+    "name": "Enschede",
+    "population": 320000.0,
+    "production": 96.0,
+    "x": 2595.8,
+    "y": 524.7,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "VEN-PAY",
+    "nation": "VEN",
+    "home_nation": "VEN",
+    "name": "Puerto Ayacucho",
+    "population": 120000.0,
+    "production": 36.0,
+    "x": 1560.8,
+    "y": 1171.3,
+    "landmass": "guiana",
+    "capital": false
   }
 ]

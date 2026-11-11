@@ -81,6 +81,10 @@ var _provinces: Array = []              # [{id, nation, country, x, y}] (admin-1
 var _area_by_province: Dictionary = {}  # province_id -> km²
 var _province_territory: Dictionary = {}  # province_id -> territory_id (herança)
 var _catchment: Dictionary = {}  # city_id -> [province_id] (atribuição A1)
+## city_id -> {province_id: fração}. Ausente = 1.0 (província inteira). Só é
+## fracionária na divisão de uma província entre uma cidade cercada e a vizinha
+## da mesma nação (ver `_share_starved_provinces`).
+var _province_share: Dictionary = {}
 var _loaded := false
 
 
@@ -294,8 +298,18 @@ func forest_cover_nation(code: String) -> float:
 ## NATION_CODE) são ignoradas. A soma das províncias por nação é uma partição:
 ## nenhuma província entra em duas cidades e nenhuma fica de fora. A unidade é a
 ## PROVÍNCIA admin-1 (fina): o TERRITÓRIO era grosso demais (França 11, Reino
-## Unido 4, Bélgica 1) e deixava 9 das 33 cidades sem terra. Retorna
-## {city_id: [province_id]} e cacheia em `_catchment`.
+## Unido 4, Bélgica 1) e deixava 9 das 33 cidades sem terra.
+##
+## Exceção (cidade cercada): com poucas províncias para muitas cidades (Alemanha
+## tem 16 províncias para 8 cidades e três delas ficam sobre Berlim/Hamburgo),
+## uma cidade pode não ser a mais próxima de NENHUMA província da nação —
+## Kassel, na Hesse, cujo centróide fica mais perto de Frankfurt. Nesse caso a
+## província mais próxima é DIVIDIDA entre as duas cidades na proporção inversa
+## das distâncias (`_share_starved_provinces`), mantendo a partição POR ÁREA
+## (Σ frações da província = 1, soma das cidades = nação): a cidade recebe terra
+## em vez de ficar sem, e não há área duplicada. `province_share` informa a
+## fração; todo cálculo de área/aptidão da bacia usa essa fração.
+## Retorna {city_id: [province_id]} e cacheia em `_catchment`.
 func assign_provinces(cities: Array) -> Dictionary:
 	if not load_data():
 		return {}
@@ -312,8 +326,106 @@ func assign_provinces(cities: Array) -> Dictionary:
 		if not catchment.has(city_id):
 			catchment[city_id] = []
 		catchment[city_id].append(int(province.get("id", 0)))
+	_share_starved_provinces(norm, catchment)
 	_catchment = catchment
 	return catchment
+
+
+## Fração da província pertencente à cidade (1.0 = província inteira). Só é
+## fracionária quando a província foi dividida para uma cidade cercada herdar
+## terra em vez de ficar sem (ver `_share_starved_provinces`).
+func province_share(city_id: String, province_id: int) -> float:
+	return float(_province_share.get(city_id, {}).get(province_id, 1.0))
+
+
+## Garante terra para toda cidade jogável: cada cidade que ficou sem nenhuma
+## província recebe a fração da província da nação mais próxima do seu centro,
+## tomada do dono atual na proporção inversa das distâncias
+## (fração = d_dono / (d_cidade + d_dono), logo < 0,5 — o dono continua com a
+## maioria e nunca perde a província). Determinístico: percorre as nações e as
+## cidades na ordem recebida. Só age em cidades sem terra; nas demais o
+## resultado é idêntico ao passe principal de `assign_provinces`.
+func _share_starved_provinces(cities: Array, catchment: Dictionary) -> void:
+	_province_share.clear()
+	var by_nation := {}
+	for city in cities:
+		var tag := String(city.get("tag", ""))
+		if not NATION_CODE.has(tag):
+			continue
+		if not by_nation.has(tag):
+			by_nation[tag] = []
+		by_nation[tag].append(city)
+	for tag: String in by_nation:
+		var peers: Array = by_nation[tag]
+		for city in peers:
+			var city_id := String(city["id"])
+			if not (catchment.get(city_id, []) as Array).is_empty():
+				continue
+			_share_nearest_province(city, peers, cities, catchment)
+
+
+## Corpo de `_share_starved_provinces` para UMA cidade sem terra. A província
+## candidata respeita a MESMA massa de terra da cidade (regra A1); só sem
+## candidata na landmass cai para a mais próxima da nação (nunca deixa a cidade
+## sem terra).
+func _share_nearest_province(city: Dictionary, peers: Array, all_cities: Array,
+		catchment: Dictionary) -> void:
+	var tag := String(city.get("tag", ""))
+	var center: Vector2 = city["center"]
+	var landmass := String(city.get("landmass", ""))
+	var nearest := _nearest_nation_province(tag, center, all_cities, landmass)
+	if nearest.is_empty():
+		nearest = _nearest_nation_province(tag, center, all_cities, "")
+	if nearest.is_empty():
+		return
+	var pid := int(nearest.get("id", 0))
+	var point := Vector2(float(nearest.get("x", 0.0)), float(nearest.get("y", 0.0)))
+	var owner_id := _nearest_city(peers, tag, point, "")
+	if owner_id == "" or owner_id == String(city["id"]):
+		return
+	var owner_center := Vector2.ZERO
+	for peer in peers:
+		if String(peer["id"]) == owner_id:
+			owner_center = peer["center"]
+			break
+	var owner_distance := owner_center.distance_to(point)
+	var city_distance := center.distance_to(point)
+	var city_share := owner_distance / (city_distance + owner_distance) \
+			if city_distance + owner_distance > 0.0 else 0.5
+	var owner_shares: Dictionary = _province_share.get(owner_id, {})
+	var owner_share := float(owner_shares.get(pid, 1.0))
+	# Piso de segurança em divisões em cadeia: o dono nunca fica com zero.
+	city_share = minf(city_share, owner_share * 0.5)
+	if city_share <= 0.0:
+		return
+	owner_shares[pid] = owner_share - city_share
+	_province_share[owner_id] = owner_shares
+	var city_shares: Dictionary = _province_share.get(String(city["id"]), {})
+	city_shares[pid] = city_share
+	_province_share[String(city["id"])] = city_shares
+	if not catchment.has(String(city["id"])):
+		catchment[String(city["id"])] = []
+	(catchment[String(city["id"])] as Array).append(pid)
+
+
+## Província da nação mais próxima de `center`, restrita à massa de terra
+## `landmass` quando informada ("" = qualquer massa). Determinístico: empate fica
+## com a primeira na ordem do atlas.
+func _nearest_nation_province(tag: String, center: Vector2, cities: Array,
+		landmass: String) -> Dictionary:
+	var nearest: Dictionary = {}
+	var best_distance := INF
+	for province in _provinces:
+		if String(province.get("nation", "")) != tag:
+			continue
+		var point := Vector2(float(province.get("x", 0.0)), float(province.get("y", 0.0)))
+		if landmass != "" and _landmass_of(point, cities) != landmass:
+			continue
+		var distance := center.distance_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			nearest = province
+	return nearest
 
 
 ## Lista de cidades normalizada (id/tag/center/landmass) a partir de dicionários
@@ -353,7 +465,7 @@ func city_crop_suitability(city_id: String, crop: String) -> float:
 		var tid := String(_province_territory.get(pid, ""))
 		if tid == "":
 			continue
-		var area := float(_area_by_province.get(pid, 0.0))
+		var area := float(_area_by_province.get(pid, 0.0)) * province_share(city_id, pid)
 		var cultivable := clampf(
 			float(_nature.get(tid, {}).get("cultivable", 0.0)), 0.0, 1.0)
 		var w := area * cultivable
@@ -375,7 +487,7 @@ func city_forest_cover(city_id: String) -> float:
 		var tid := String(_province_territory.get(pid, ""))
 		if tid == "":
 			continue
-		var area := float(_area_by_province.get(pid, 0.0))
+		var area := float(_area_by_province.get(pid, 0.0)) * province_share(city_id, pid)
 		var value := clampf(
 			float(_nature.get(tid, {}).get("forest_cover", 0.0)), 0.0, 1.0)
 		weighted += area * value
@@ -384,11 +496,13 @@ func city_forest_cover(city_id: String) -> float:
 
 
 ## Área cultivável (km²) da bacia da cidade: Σ área da província × fração
-## cultivável (herdada do território que a contém).
+## cultivável (herdada do território que a contém) × fração da província que
+## pertence à cidade (divisão de cidade cercada — ver `_share_starved_provinces`).
 func city_cultivable_area_km2(city_id: String) -> float:
 	var total := 0.0
 	for province_id in _catchment.get(city_id, []):
-		total += province_cultivable_area_km2(int(province_id))
+		total += province_cultivable_area_km2(int(province_id)) \
+				* province_share(city_id, int(province_id))
 	return total
 
 

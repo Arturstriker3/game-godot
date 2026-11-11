@@ -134,5 +134,13 @@
     "x": 1505.1,
     "y": 1102.1,
     "landmass": "guiana"
+  },
+  {
+    "id": "GBR-BFS",
+    "name": "Belfast",
+    "nation": "GBR",
+    "x": 2420.0,
+    "y": 491.3,
+    "landmass": "britain"
   }
 ]

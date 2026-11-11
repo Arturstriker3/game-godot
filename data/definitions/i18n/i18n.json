@@ -405,7 +405,15 @@
   "resource.potato": "Batata",
   "resource.soy": "Soja",
   "resource.cotton": "Algodão",
-  "resource.wood": "Madeira"
+  "resource.wood": "Madeira",
+  "city.name.GBR-BFS": "Belfast",
+  "city.name.GBR-NOT": "Nottingham",
+  "city.name.FRA-CLF": "Clermont-Ferrand",
+  "city.name.DEU-KAS": "Kassel",
+  "city.name.BEL-LGG": "Liège",
+  "city.name.NED-ENS": "Enschede",
+  "city.name.VEN-PAY": "Puerto Ayacucho",
+  "port.name.GBR-BFS": "Belfast"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -813,7 +821,15 @@
   "resource.potato": "Potato",
   "resource.soy": "Soy",
   "resource.cotton": "Cotton",
-  "resource.wood": "Wood"
+  "resource.wood": "Wood",
+  "city.name.GBR-BFS": "Belfast",
+  "city.name.GBR-NOT": "Nottingham",
+  "city.name.FRA-CLF": "Clermont-Ferrand",
+  "city.name.DEU-KAS": "Kassel",
+  "city.name.BEL-LGG": "Liège",
+  "city.name.NED-ENS": "Enschede",
+  "city.name.VEN-PAY": "Puerto Ayacucho",
+  "port.name.GBR-BFS": "Belfast"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -1221,6 +1237,14 @@
   "resource.potato": "Patata",
   "resource.soy": "Soja",
   "resource.cotton": "Algodón",
-  "resource.wood": "Madera"
+  "resource.wood": "Madera",
+  "city.name.GBR-BFS": "Belfast",
+  "city.name.GBR-NOT": "Nottingham",
+  "city.name.FRA-CLF": "Clermont-Ferrand",
+  "city.name.DEU-KAS": "Kassel",
+  "city.name.BEL-LGG": "Lieja",
+  "city.name.NED-ENS": "Enschede",
+  "city.name.VEN-PAY": "Puerto Ayacucho",
+  "port.name.GBR-BFS": "Belfast"
  }
 }
