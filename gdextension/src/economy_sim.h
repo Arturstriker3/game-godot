@@ -5,7 +5,9 @@
 #include <godot_cpp/variant/dictionary.hpp>
 
 #include <cstddef>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace godot {
@@ -53,8 +55,37 @@ public:
 	/** Avança um dia do cenário de validação. */
 	Dictionary tick_demo();
 
-	/** Estado do cenário de validação (cidades, POPs, mercados, PIB). */
-	Dictionary get_demo_status() const;
+	/**
+	 * Executa o dia do cenário de validação sem montar o resumo (nenhum Variant
+	 * é criado). É a metade "cara" do tick: o jogo roda em WorkerThreadPool e
+	 * chama get_demo_status() na main thread quando o trabalho termina.
+	 */
+	void demo_tick_core();
+
+	/** Liga/desliga a medição por fase do tick (custo desprezível). */
+	void demo_set_profiling(bool enabled);
+
+	/**
+	 * Marca o status publicado como desatualizado. Qualquer método que muda o
+	 * estado fora do tick (investir, construir, choque de preço, aptidão) tem de
+	 * chamar isto: senão get_demo_status() devolve o snapshot do início do dia e
+	 * a UI mostra caixa/capacidade antigos até o próximo tick.
+	 */
+	void demo_status_invalidate();
+
+	/** Microssegundos por fase do último tick (vazio quando desligado). */
+	Dictionary demo_get_profile() const;
+
+	/**
+	 * Estado do cenário de validação (cidades, POPs, mercados, PIB).
+	 *
+	 * O dicionário é REAPROVEITADO entre ticks (ver DemoStatusCache): cada
+	 * chamada reescreve os valores nos mesmos contêineres, sem alocar 650 × 21
+	 * dicionários por dia. Contrato: o resultado é uma fotografia viva, válida
+	 * até a próxima chamada; quem precisa reter o valor entre dias deve copiar
+	 * (`duplicate(true)` no GDScript).
+	 */
+	Dictionary get_demo_status();
 
 	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
 	void demo_price_shock(const String& product, double multiplier);
@@ -390,6 +421,15 @@ private:
 		DemoMarket markets[kDemoProducts];
 	};
 
+	// Fases medidas por demo_set_profiling (ordem = ordem do tick).
+	enum DemoPhase {
+		kDemoPhaseArrival = 0, kDemoPhaseReset, kDemoPhaseLabor,
+		kDemoPhaseProduction, kDemoPhaseRaw, kDemoPhaseIncome, kDemoPhaseTrade,
+		kDemoPhaseAccounting, kDemoPhasePrices, kDemoPhaseClamp,
+		kDemoPhaseFiscal, kDemoPhaseInvariants, kDemoPhaseStatus,
+		kDemoPhaseCount
+	};
+
 	struct DemoShipment {
 		std::string to_city;
 		int product = 0;
@@ -410,6 +450,72 @@ private:
 		double produced_today[kDemoProducts] = {};
 		double consumed_today[kDemoProducts] = {};
 		int day = 0;
+	};
+
+	// ------------------------------------------------------------------
+	// Cache do status: os mesmos Dictionary/Array são reescritos a cada dia.
+	//
+	// Motivo: montar o status do zero custa ~62 ms em 650 cidades (650 × 21
+	// dicionários de mercado, 650 POPs, 650 camadas de construção). Reescrever
+	// valores em contêineres existentes não aloca e não re-hasheia a estrutura.
+	// Campos imutáveis (id, nome, centro, aptidão) só são reescritos quando a
+	// origem muda, comparando contra a cópia em std::string (memcmp barato).
+	// ------------------------------------------------------------------
+	struct DemoStatusCitySlot {
+		Dictionary dict;
+		// Strings estáveis: evitam realocar String a cada dia.
+		std::string id_src, name_src, nation_src, home_src, landmass_src;
+		String id, name, nation, home_nation, landmass;
+		Array center;
+		Array suitability;
+		Array external_demand;
+		Dictionary deposits;
+		std::vector<Dictionary> deposit_entry;  // 1 por produto (lazy)
+		Dictionary pop;
+		Array desired_by_category;
+		Array consumed_by_category;
+		Array markets;
+		std::vector<Dictionary> market_entry;  // 1 por produto
+		Array buildings;
+		std::vector<Dictionary> building_entry;  // cresce com a cidade
+		Array imported, exported, import_value, export_value;
+		// Cópias dos últimos valores gravados em `markets` e nos quatro fluxos
+		// de comércio. A cidade típica movimenta 2–5 dos 21 produtos: escrever
+		// os outros 16 custava ~100 mil hashes de String por dia (650 cidades).
+		// Comparar double é ~20× mais barato que escrever em Dictionary.
+		std::vector<DemoMarket> market_written;
+		std::vector<char> market_written_filled;  // 1 por produto
+		std::vector<double> io_written;           // 4 × kDemoProducts
+		std::vector<char> io_filled;              // 4 flags (um por array)
+		bool static_filled = false;
+		int static_version = -1;
+	};
+
+	// Chaves do status pré-construídas. `dict["price"]` converte UTF-8 ->
+	// UTF-32 e aloca uma String a cada escrita; com as chaves prontas a escrita
+	// fica só com o hash e a atribuição.
+	struct DemoStatusKeys {
+		String amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
+		DemoStatusKeys();
+	};
+
+	struct DemoStatusCache {
+		Dictionary root;
+		Array cities;
+		Array ports;
+		Array orders;
+		Array products;
+		Array violations;
+		Array nations;
+		Array tot_produced, tot_consumed, tot_produced_today, tot_consumed_today;
+		std::vector<DemoStatusCitySlot> city_slots;
+		std::vector<Dictionary> port_slots;
+		std::vector<Dictionary> order_slots;
+		std::vector<Array> order_leg_slots;		std::vector<Dictionary> nation_slots;
+		// Caminho total em trânsito por cidade (evita varredura O(cidades ×
+		// cargas) dentro do laço de cidades).
+		std::vector<double> in_transit_by_city;
+		bool header_filled = false;
 	};
 
 	// ------------------------------------------------------------------
@@ -539,7 +645,21 @@ private:
 
 	DemoCity* find_demo_city(const std::string& id);
 	const DemoCity* find_demo_city(const std::string& id) const;
-	Dictionary demo_city_to_dict(const DemoCity& city) const;
+	/**
+	 * Refaz os índices derivados do mundo (id da cidade -> posição e
+	 * construções por cidade). Chamado ao inicializar, ao carregar um save e no
+	 * início de cada tick: sem eles, as fases varrem TODAS as construções para
+	 * cada cidade (O(cidades × construções), que não escala para 650 cidades).
+	 */
+	void demo_rebuild_indexes();
+	/**
+	 * Preenche o slot de status de uma cidade (reaproveitando dicionários).
+	 * @param city_index Posição em demo_cities_.
+	 * @param slot Cache da cidade (mesma posição em demo_status_cache_).
+	 * @param in_transit Carga em trânsito até a cidade (já somada em passada única).
+	 */
+	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
+		double in_transit) const;
 	double demo_money_total() const;
 	std::vector<std::string> demo_check_invariants(double money_before) const;
 	void demo_snapshot(DemoSnapshot& out) const;
@@ -601,8 +721,23 @@ private:
 	double demo_service_wage_max_ = 1.0;
 	double demo_inventory_cover_days_ = 3.0;
 	double demo_inventory_recovery_ = 0.5;
+	// Índice espacial do comércio de alimento: por comprador, só os K
+	// vendedores mais próximos entram na disputa, além de M ofertas
+	// representativas do mercado externo (as mais baratas por caloria no globo).
+	// Mundos pequenos (<= kDemoTradeExhaustiveLimit) mantêm a varredura completa
+	// para preservar exatamente o comportamento validado no cenário real.
+	int demo_trade_neighbors_ = 12;
+	int demo_trade_external_ = 8;
+	// Medição por fase do tick (benchmark oficial; desligada no jogo).
+	bool demo_profile_ = false;
+	double demo_profile_us_[kDemoPhaseCount] = {};
+	// Subdivisão da fase `status` (benchmark): cidades, pedidos, nações, resto.
+	double demo_status_sub_us_[4] = {};
 	std::vector<DemoCity> demo_cities_;
 	std::vector<DemoBuilding> demo_buildings_;
+	// Índices derivados do mundo demo (ver demo_rebuild_indexes).
+	std::unordered_map<std::string, int> demo_city_lookup_;
+	std::vector<std::vector<int>> demo_buildings_by_city_;
 	std::vector<DemoShipment> demo_in_transit_;
 	std::vector<std::string> demo_invariant_violations_;
 	// Portos do cenário real (modo mundo) e pedidos de comércio do último tick,
@@ -622,6 +757,25 @@ private:
 	double demo_base_prices_[kDemoProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
 		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0, 35.0, 45.0, 70.0, 25.0, 500.0};
+	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots
+	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA
+	// continuam lendo o último status COMPLETO (double buffer).
+	DemoStatusCache demo_status_slots_[2];
+	int demo_status_live_ = -1;
+	int demo_status_built_day_ = -1;
+	// Chaves prontas do status (evitam converter const char* -> String a cada
+	// escrita; ver DemoStatusKeys).
+	DemoStatusKeys demo_status_keys_;
+	// Sobe quando um campo estático das cidades muda (aptidão, demanda externa,
+	// depósitos revelados): força a reescrita desses contêineres no status.
+	int demo_status_static_version_ = 0;
+	// Serializa o acesso ao estado demo entre a thread do tick e a main thread
+	// (UI, IA, ferramentas). O `sim` tem UM escritor por convenção
+	// (tick_scheduler); o mutex é a rede de segurança para quem chamar
+	// tick_demo/get_demo_status/investir enquanto um dia roda na thread — sem
+	// ele a disputa vira corrupção de estado e crash (signal 11).
+	// Recursivo: tick_demo() chama demo_tick_core() e get_demo_status().
+	mutable std::recursive_mutex demo_mutex_;
 
 	// Estado do benchmark sintético (estruturas planas, sem alocação por tick).
 	bool bench_active_ = false;

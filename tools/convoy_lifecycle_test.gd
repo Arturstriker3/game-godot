@@ -56,6 +56,11 @@ func _ready() -> void:
 	_convoys.set_time_scale(TWEEN_RATE, false)
 	await get_tree().process_frame
 
+	# O autoload agenda o 1º dia numa thread (tick_scheduler). Enquanto ela roda,
+	# ninguém pode escrever no `sim`: esperar aqui evita dois ticks simultâneos.
+	if Economy._ticker.is_running():
+		Economy._ticker.wait()
+
 	for day in range(1, DAYS + 1):
 		var summary: Dictionary = sim.tick_demo()
 		ai.run(day)

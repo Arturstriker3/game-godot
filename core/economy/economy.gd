@@ -8,6 +8,12 @@ extends Node
 ##
 ## O relógio é um acumulador da FRAÇÃO do dia (0..1), e não um `Timer`: trocar
 ## de velocidade (ou pausar) preserva o progresso do dia em vez de reiniciá-lo.
+##
+## O dia roda numa thread do WorkerThreadPool (core/economy/tick_scheduler.gd):
+## a main thread só *consulta* até o tick terminar, e o status completo é
+## publicado de uma vez. Com 650 cidades o dia custa ~60 ms de trabalho, mas o
+## frame não paga nada disso. Regra de segurança: existe UM escritor sobre o
+## `sim` por vez — enquanto a thread roda, ninguém (nem a IA) mexe no núcleo.
 
 ## Emitido a cada tick com os pedidos de comércio do dia.
 signal trade_orders_ready(orders: Array)
@@ -22,11 +28,12 @@ signal speed_changed(index: int)
 ## Ritmo normal: 30 dias em 30 minutos (1 dia = 60 s); 2x = 30 s; 3x = 15 s.
 const SPEEDS := [0.0, 60.0, 30.0, 15.0]
 const SPEED_COUNT := 4
-## Teto de dias processados num único frame (evita espiral num travamento longo).
-const MAX_DAYS_PER_FRAME := 8
 ## Orçamento por frame do planejamento da IA (~1,5 ms). O dia só agenda; o
 ## trabalho das cidades é fatiado nos frames seguintes, fora da virada.
 const AI_FRAME_BUDGET_US := 1500
+
+## Agenda o tick do dia na thread do pool (ver tick_scheduler.gd).
+const TickScheduler := preload("res://core/economy/tick_scheduler.gd")
 
 ## 1º de janeiro de 2026, 00:00 UTC.
 const START_UNIX := 1767225600
@@ -59,6 +66,9 @@ var _resume_speed: int = 1
 ## Fração do dia corrente (0..1). Não depende da velocidade.
 var _day_fraction := 0.0
 
+## Agenda o dia na thread do pool; `is_running()` = dia em cálculo.
+var _ticker: RefCounted = TickScheduler.new()
+
 
 func _ready() -> void:
 	sim = EconomySim.new()
@@ -75,8 +85,9 @@ func _ready() -> void:
 	geo.apply_to_sim(sim, _cities_with_center())
 	_setup_ai(geo)
 
-	# Adia o primeiro dia: a cena principal conecta os sinais no _ready.
-	_run_day.call_deferred()
+	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia
+	# roda direto na thread do pool; o primeiro status sai no _process.
+	_start_day.call_deferred()
 
 
 ## Lista de cidades no formato que o GeographyService.apply_to_sim espera.
@@ -181,26 +192,37 @@ func flag_texture(tag: String) -> Texture2D:
 
 
 func _process(delta: float) -> void:
-	# Planejamento escalonado da IA: continua no frame seguinte, com orçamento.
-	# Independe da velocidade — a pausa não pode deixar decisões pela metade.
-	if _ai != null and _ai.is_busy():
+	# 1. O dia que terminou na thread é publicado agora (sinais + IA).
+	_poll_tick()
+	# 2. Planejamento escalonado da IA: continua no frame seguinte, com
+	# orçamento. Nunca durante um tick — só existe um escritor sobre o `sim`.
+	if _ai != null and not _ticker.is_running() and _ai.is_busy():
 		_ai.pump(AI_FRAME_BUDGET_US)
 	if speed == 0:
 		return
 	_day_fraction += delta / SPEEDS[speed]
-	# Dias pendentes em fila: um travamento não pode "engolir" o relógio.
-	# O teto evita espiral quando o jogo fica muito tempo sem rodar.
-	var days := 0
-	while _day_fraction >= 1.0 and days < MAX_DAYS_PER_FRAME:
-		_day_fraction -= 1.0
-		_run_day()
-		days += 1
+	# Teto de backlog: se o dia anterior ainda está na thread, o relógio espera.
+	# Nunca há dois ticks simultâneos (nem dois escritores no núcleo).
 	if _day_fraction >= 1.0:
-		_day_fraction = 0.0
+		_day_fraction = 1.0
+		if not _ticker.is_running():
+			_day_fraction = 0.0
+			_start_day()
 
 
-func _run_day() -> void:
-	last_summary = sim.tick_demo()
+## Agenda o dia do cenário na thread do pool.
+func _start_day() -> void:
+	if not _ticker.start(sim):
+		push_warning("Economy: dia já em andamento na thread; relógio aguarda.")
+
+
+## Publica o dia concluído (se houver). O status é o snapshot completo do
+## núcleo — a UI e a IA leem o último dia inteiro, nunca um dia pela metade.
+func _poll_tick() -> void:
+	var summary: Dictionary = _ticker.poll()
+	if summary.is_empty():
+		return
+	last_summary = summary
 	status_updated.emit(last_summary)
 	trade_orders_ready.emit(last_summary.get("trade_orders", []))
 	# A camada de decisão roda depois do tick: as escolhas (investir, construir,
@@ -209,6 +231,13 @@ func _run_day() -> void:
 	# `get_demo_status()` (~6–9 ms).
 	if _ai != null:
 		_ai.plan(int(last_summary.get("day", 0)), last_summary)
+
+
+## Avança um dia de forma síncrona (testes e ferramentas headless).
+func _run_day() -> void:
+	_start_day()
+	_ticker.wait()
+	_poll_tick()
 
 
 ## Troca a velocidade; 0 pausa o relógio. A fração do dia é preservada, então

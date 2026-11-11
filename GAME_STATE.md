@@ -141,6 +141,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 > - **Mineração estratégica (B4)**: mina estatal/investidor privado para cada mineral com jazida, com **margem honesta** (`preço − jobs·wage − opex·opex_factor` da profundidade), **capacidade dimensionada pela demanda externa** (`minf(10, maxf(2, demanda × 1.2))` — sem a capacidade fixa que churnava) e **ordenação por margem** (diamante/urânio não ficam atrás do cooldown); payback estendido (730 d) para o enxofre. Resultado: **0 falências em 730 d** e enxofre/diamante extraídos.
 > - **Bacia agrícola por província + terra limitada:** a aptidão de cultura de cada cidade vem da bacia de **províncias admin-1** (ver §4), não do máximo nacional nem do território grosso. A capacidade NOMINAL de uma fazenda é tetada pela **área cultivável da bacia × produtividade média FAO** (`CROP_YIELD_T_PER_KM2_PER_DAY` em `geography_service.gd`: trigo 3,5, arroz 4,6, milho 5,8, batata 21, soja 2,8 t/ha/ano — documentado em `docs/economy/balance_review.md` §16); a produção efetiva segue = capacidade × aptidão, então o teto real = Σ(área × cultivável × aptidão) × produtividade. Cidade sem bacia (cenário demo sem nação) não aplica o teto (a aptidão do fallback decide). Ver §15·"Bacia agrícola por província".
 > - **Invariantes em runtime (1.13)**: conservação de dinheiro/estoque/preço com snapshot/revert; também cobre o drift de `double` (1.11 fica deferido).
+> - **Tick em worker + contrato do status (1.14)**: o dia roda no `WorkerThreadPool` (`core/economy/tick_scheduler.gd`) e `get_demo_status()` é um **snapshot válido até o próximo dia**, com dicionários reaproveitados em double buffer (~41 MB em 650 cidades). Mutações fora do tick (`demo_invest`, `demo_build`, choque, aptidão) invalidam o snapshot. Números e regras em §13.4.
 
 ### 6.1 Modo ao vivo (legacy — trigo)
 
@@ -304,7 +305,7 @@ A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as 
 ### 13.3 Escala mundial (≈190 nações / ≈650 cidades): totais diários e LOD de comboios
 
 - **IA sem O(n²):** o investidor privado varria todas as cidades por produto em cada decisão (`_system_surplus`/`_system_sold`): O(cidades² × produtos). Agora `EconomicAI.plan` mede os totais do sistema **uma vez por dia** (`PrivateInvestor.prepare_totals`: surplus, sold e demand por produto, numa passada O(cidades × produtos)) e as decisões leem o total já somado (`system_total`). Os agregados **por nação** (população, need, déficit, produção) já vêm prontos do núcleo em `status["nations"]` e são expostos por `nation_summary` — não são recalculados em GDScript.
-- **Medição** (mundo sintético, 14 dias, headless; "pico" = maior `pump()` de um frame). A fonte de cada coluna é explícita: **antes** = `tools/_world_scale_bench.gd` (bench pré-mudança), **depois** = `tools/ai_scale_bench.gd` (bench pós-mudança). Os números abaixo foram copiados dessas duas medições já registradas — não foram remedidos.
+- **Medição** (mundo sintético, 14 dias, headless; "pico" = maior `pump()` de um frame). A fonte de cada coluna é explícita: **antes** = bench pré-mudança (`tools/_world_scale_bench.gd`, removido após a medição), **depois** = `tools/ai_scale_bench.gd` (bench pós-mudança). Os números abaixo foram copiados dessas duas medições já registradas — não foram remedidos.
 
 | cidades | trabalho IA/dia — antes¹ → **depois²** | pico de frame da IA — antes¹ → **depois²** | `plan()` — depois² |
 |---|---|---|---|
@@ -318,6 +319,33 @@ A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as 
 - **Perfil de IA mais barato (14 dias) para nações pequenas: NÃO adotado.** Com os totais diários, o pico do pump (1,7 ms a 650 cidades) já cabe no orçamento de 1,5 ms (teto suave, uma cidade pode terminar acima). Dobrar a cadência mudaria o instante das decisões (e o balanceamento dos 730 dias) sem necessidade medida.
 - **Comboios são só visuais:** o comércio é liquidado no núcleo C++ (`demo_in_transit_`/shipments) e os `trade_orders` são a consequência; nada na economia lê `TradeConvoys`. O teto de **24 veículos visíveis** (`MAX_CONVOYS`) é LOD: `spawn_orders` ordena por **nação do jogador** (`set_player_nation`; vazio até o jogo declarar uma), comércio entre nações e **proximidade da câmera**, e o excedente vira `stats.aggregated` (sem veículo, sem efeito econômico). Pedidos que sobram na fila de um dia também são agregados ao serem descartados. `stats.spawned == finished + cancelled` continua valendo (`aggregated` fica fora dessa conta).
 - **Regressão (40 cidades reais):** `balance_review --days=730` → 8/8 nações ≥98% de satisfação, 3 falências, 0 violações; `economy_ai_test`, `economy_integration_test`, `economy_live_path_test`, `economy_long_run_test`, `economy_bistability_test`, `convoy_lifecycle_test` e `perf_day_peak --days=10` passam.
+
+### 13.4 Escala mundial: tick em worker, status reaproveitado e comércio espacial (feito)
+
+- **O dia não roda no frame:** `core/economy/tick_scheduler.gd` agenda `sim.tick_demo()` no `WorkerThreadPool` (uma tarefa por dia) e `Economy._process` só consulta (`poll`) até o dia terminar. Regras: **um escritor** sobre o `sim` (com o dia em andamento, o relógio espera — teto de backlog de 1 dia — e a IA não roda). `wait()` (testes/ferramentas) devolve o resumo e zera o `TaskID`; o pool libera o ID no `wait_for_task_completion`, então consultá-lo depois imprime "Invalid Task ID" (bug corrigido).
+- **Contrato do status:** `get_demo_status()` devolve um **snapshot válido até o próximo dia**. O dicionário é **reaproveitado** (double buffer de 2 slots: o worker escreve no slot inativo enquanto a UI/IA leem o último status completo). Quem precisa reter o valor entre dias deve copiar (`duplicate(true)` no GDScript). Métodos que mudam estado **fora** do tick — `demo_invest`, `demo_build`, `demo_spend_government`, `demo_price_shock`, `demo_set_suitability/deposit/external_demand` — chamam `demo_status_invalidate()`, senão a UI mostraria o snapshot do início do dia (foi o que quebrou `economy_integration_test` na primeira versão).
+- **Memória:** o double buffer custa **~41 MB** com 650 cidades (dois status completos retidos; o delta total do bench inclui o mundo sintético e o save).
+- **Status barato:** cada slot guarda o último valor gravado por produto (`markets`, `imported/exported/import_value/export_value`) e só escreve em `Dictionary` o que mudou — a cidade típica movimenta 2–5 dos 21 produtos, então 16–19 mercados inertes custam comparação de `double`, não hash de `String`. Fase `status` (650): **45,2 → 10,8 ms**.
+- **Comércio espacial:** o comprador avalia K=12 vizinhos da grade (célula 32 u) + M=8 ofertas mais baratas por caloria do globo (vendedores reais). `sellers_left` cai quando um vendedor esgota no meio do dia e o anel para; o laço do anel tem raio máximo **útil** (Chebyshev até o canto mais distante), percorre só o **perímetro** (O(raio) por anel, não O(raio²)) e um teto de células por comprador. Sem isso o anel varria 5,2 M células por comprador quando havia menos de K vendedores.
+- **Fiscal nacional O(n):** `demo_national_fiscal_transfer` agrupa as cidades por nação num `unordered_map` uma vez (era uma varredura de todas as cidades por nação). 5,1 → 0,2 ms em 650.
+- **Thread safety:** mutex recursivo no núcleo serializa a thread do tick e a main thread. É rede de segurança: sem ele, qualquer ferramenta que chame `tick_demo()` enquanto o autoload tem um dia agendado corrompia o estado e derrubava o processo (signal 11 — `convoy_lifecycle_test`).
+- **Medição** (`tools/world_scale_bench.tscn`, 10 dias medidos após 2 de aquecimento, DLL debug, tick síncrono no C++; `pior` = maior dia):
+
+| cidades | tick antes (commit)¹ | tick no início desta sessão² | **tick final** | `status` antes¹ → início² → **final** | pior dia | async idêntico |
+|---|---|---|---|---|---|---|
+| 40 | — | — | **3,9 ms** | — → — → **1,2 ms** | 4,6 ms | true |
+| 200 | — | — | **12,0 ms** | — → — → **4,0 ms** | 23,4 ms | true |
+| 400 | — | — | **18,0 ms** | — → — → **6,9 ms** | 27,2 ms | true |
+| 650 | 87,3 ms | 67,4 ms | **27,0 ms** | 62,3 → 45,6 → **10,8 ms** | 34,4 ms | true |
+
+  ¹ valores registrados antes desta onda (status ainda montado do zero, comércio O(cidades²)) · ² trabalhando sobre o código não commitado desta continuação (status em cache, comércio espacial), antes das correções acima.
+
+  Meta de 650 ≤ ~60 ms batida com folga; em 200 cidades **nenhum dia passou de 150 ms** (máx 23,4). Save/load a 650: 64 ms / JSON 120 ms (3,0 MB) / load 48 ms. O primeiro dia após criar o mundo é mais caro (~68 ms em 650) porque os dicionários do status são criados do zero; é custo único, pago na thread do tick.
+
+  O `world_scale_bench --cities=40` que travava 30 min **não** era o comércio: `_gen_world` tentava distribuir 40 cidades entre 190 nações com piso de 1 cidade/nação — o `while delta != 0` nunca fechava. O bench agora limita nações a cidades e tem guarda de iterações.
+
+- **Regressões desta onda:** `economy_tick_async_test` (60 dias síncrono = assíncrono), `economy_integration_test`, `economy_ai_test`, `economy_live_path_test`, `economy_long_run_test` (365 d), `economy_bistability_test`, `population_demo_test`, `balance_review --days=730` (8/8 nações ≥98%, 2 falências, 0 violações), `convoy_lifecycle_test` (428 viagens, 0 erro) e `perf_day_peak --days=10` (tick 4,4 ms, pico de frame 5,4 ms).
+
 
 
 ---
