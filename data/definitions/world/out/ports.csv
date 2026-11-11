@@ -1,0 +1,115 @@
+id,name,nation,x,y,landmass
+GBR-DOV,Dover,GBR,2518.2,539.8,britain
+FRA-CAL,Calais,FRA,2525.7,542.4,continent
+DEU-HAM,Hamburg,DEU,2620.8,501.8,continent
+NED-AMS,Amsterdam,NED,2563.8,521.4,continent
+BEL-ANT,Antwerp,BEL,2544.4,537.1,continent
+FRA-CAY,Mana,FRA,1753.1,1171.1,guiana
+VEN-LAG,La Guaira,VEN,1570.6,1102.6,guiana
+SUR-PBM,Paramaribo,SUR,1733.8,1168.0,guiana
+GUY-GEO,Georgetown,GUY,1692.3,1154.4,guiana
+FRA-LEH,Le Havre,FRA,2501.4,562.6,continent
+FRA-MRS,Marseille,FRA,2574.4,648.8,continent
+FRA-NTE,Saint-Nazaire,FRA,2469.4,593.5,continent
+NED-RTM,Rotterdam,NED,2557.2,528.5,continent
+GBR-GLA,Glasgow,GBR,2433.9,472.9,britain
+GBR-BRS,Bristol,GBR,2462.5,534.7,britain
+GBR-NCL,Newcastle,GBR,2479.9,485.8,britain
+VEN-MAR,Maracaibo,VEN,1505.1,1102.1,guiana
+GBR-BFS,Belfast,GBR,2420.0,491.3,britain
+ALB-TIR,Tirana,ALB,2773.1,676.6,continent
+ALB-DUR,Durrës,ALB,2770.7,676.6,continent
+HRV-SPL,Split,HRV,2728.6,646.1,continent
+CYP-NIC,Nicosia,CYP,2963.6,761.4,cyprus
+CYP-LIM,Limassol,CYP,2959.3,768.7,cyprus
+DNK-COP,Copenhagen,DNK,2674.9,477.0,continent
+DNK-AAR,Aarhus,DNK,2641.9,470.3,continent
+EST-TAL,Tallinn,EST,2843.9,424.5,continent
+FIN-HEL,Helsinki,FIN,2846.4,414.7,continent
+GRC-ATH,Athens,GRC,2829.9,723.0,continent
+GRC-THE,Thessaloniki,GRC,2818.9,685.7,continent
+ISL-REY,Reykjavík,ISL,2196.3,359.8,iceland
+ISL-REYK,Reykjanesbær,ISL,2187.2,361.6,iceland
+IRL-DUB,Dublin,IRL,2413.6,509.3,ireland
+IRL-COR,Cork,IRL,2382.5,529.5,ireland
+ITA-ROM,Rome,ITA,2673.0,669.2,continent
+ITA-NAP,Naples,ITA,2698.7,682.7,continent
+ITA-PAD,Padua,ITA,2666.9,619.8,continent
+ITA-PAL,Palermo,ITA,2685.9,721.1,continent
+LVA-RIG,Riga,LVA,2835.4,459.3,continent
+MLT-VAL,Valletta,MLT,2701.7,751.6,malta
+MCO-MON,Monaco,MCO,2603.5,643.0,continent
+MNE-POD,Podgorica,MNE,2765.8,663.1,continent
+MNE-NIK,Nikšić,MNE,2760.9,658.9,continent
+NOR-OSL,Oslo,NOR,2649.8,418.4,continent
+NOR-BER,Bergen,NOR,2574.2,411.7,continent
+PRT-LIS,Lisbon,PRT,2373.4,712.6,continent
+PRT-POR,Porto,PRT,2380.7,679.0,continent
+RUS-SAI,Saint Petersburg,RUS,2921.4,417.8,continent
+SMR-SAN,San Marino,SMR,2673.6,640.0,continent
+ESP-BAR,Barcelona,ESP,2530.2,675.4,continent
+ESP-VAL,Valencia,ESP,2494.8,702.2,continent
+SWE-STO,Stockholm,SWE,2751.2,426.3,continent
+SWE-GOT,Gothenburg,SWE,2666.3,448.9,continent
+TUR-IST,Istanbul,TUR,2902.5,680.8,continent
+TUR-IZM,Izmir,TUR,2877.5,716.9,continent
+TUR-BUR,Bursa,TUR,2903.7,691.2,continent
+TUR-ADA,Adana,TUR,2989.2,738.8,continent
+AZE-BAK,Baku,AZE,3193.1,689.4,continent
+AZE-SUM,Sumqayıt,AZE,3190.0,686.3,continent
+GEO-BAT,Batumi,GEO,3078.3,671.7,continent
+USA-WAS,Washington,USA,1428.5,711.4,north_america
+USA-NEW,New York,USA,1472.5,685.1,north_america
+USA-LOS,Los Angeles,USA,857.2,777.9,north_america
+USA-BOS,Boston,USA,1513.4,661.9,north_america
+USA-SAN,San Francisco,USA,799.9,725.4,north_america
+USA-PHI,Philadelphia,USA,1456.6,695.5,north_america
+USA-HOU,Houston,USA,1177.7,837.1,north_america
+USA-MIA,Miami,USA,1386.4,892.0,north_america
+CAN-MON,Montreal,CAN,1478.0,618.0,north_america
+CAN-VAN,Vancouver,CAN,790.1,566.1,north_america
+MEX-TIJ,Tijuana,MEX,875.5,798.6,north_america
+BRA-RIO,Rio de Janeiro,BRA,1900.3,1568.3,south_america
+BRA-REC,Recife,BRA,2015.7,1362.0,south_america
+BRA-POR,Porto Alegre,BRA,1788.6,1667.2,south_america
+BRA-FOR,Fortaleza,BRA,1965.0,1302.2,south_america
+BRA-SAL,Salvador,BRA,1965.6,1430.4,south_america
+ARG-BUE,Buenos Aires,ARG,1689.8,1731.3,south_america
+CHN-GUA,Guangzhou,CHN,4073.2,929.3,asia
+CHN-SHA,Shanghai,CHN,4187.3,816.3,asia
+CHN-XIA,Xiamen,CHN,4140.3,910.3,asia
+JPN-TOK,Tokyo,JPN,4440.6,754.7,japan
+JPN-OSA,Osaka,JPN,4382.0,768.7,japan
+JPN-NAG,Nagoya,JPN,4401.6,761.4,japan
+JPN-FUK,Fukuoka,JPN,4311.8,783.4,japan
+JPN-SAP,Sapporo,JPN,4463.2,652.2,japan
+JPN-OKA,Okayama,JPN,4360.7,769.3,japan
+JPN-KIT,Kitakyushu,JPN,4317.9,780.3,japan
+JPN-HIR,Hiroshima,JPN,4339.9,772.4,japan
+JPN-SEN,Sendai,JPN,4457.1,718.7,japan
+JPN-HAM,Hamamatsu,JPN,4413.1,768.1,japan
+KOR-SEO,Seoul,KOR,4261.8,728.5,asia
+KOR-BUS,Busan,KOR,4292.3,762.6,asia
+IND-MUM,Mumbai,IND,3512.3,985.4,asia
+IND-KOL,Kolkata,IND,3725.9,940.2,asia
+IND-CHE,Chennai,IND,3615.4,1068.4,asia
+IND-SUR,Surat,IND,3511.7,956.1,asia
+IDN-JAK,Jakarta,IDN,3984.1,1336.4,java
+IDN-SUR,Surabaya,IDN,4066.5,1351.0,java
+IDN-MED,Medan,IDN,3871.2,1200.3,java
+IDN-SEM,Semarang,IDN,4034.1,1347.4,java
+IDN-MAK,Makassar,IDN,4159.2,1321.7,java
+IDN-PAL,Palembang,IDN,3953.6,1289.4,java
+IDN-YOG,Yogyakarta,IDN,4032.3,1358.9,java
+IDN-MAL,Malang,IDN,4064.0,1364.4,java
+IDN-BAND,Bandar Lampung,IDN,3962.1,1326.0,java
+IDN-BAT,Batam,IDN,3945.0,1234.4,java
+SAU-JED,Jeddah,SAU,3044.7,951.8,asia
+SAU-DAM,Dammam,SAU,3196.1,882.9,asia
+ZAF-CAP,Cape Town,ZAF,2756.0,1721.5,africa
+ZAF-DUR,Durban,ZAF,2931.2,1664.7,africa
+AUS-MEL,Melbourne,AUS,4513.9,1775.2,oceania
+AUS-SYD,Sydney,AUS,4600.5,1720.9,oceania
+AUS-BRI,Brisbane,AUS,4625.6,1631.8,oceania
+VEN-CCS,Caracas,VEN,1570.7,1104.4,guiana
+VEN-VLN,Valencia,VEN,1556.1,1106.9,guiana

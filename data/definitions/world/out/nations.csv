@@ -1,0 +1,67 @@
+id,name,flag,color,capital,currency,government,ai_profile,region,population,gdp_ppp_bn
+ALB,Albania,al,#a74444,Tirana,ALL,republic,agrarian,europe,2349580,66.3
+AND,Andorra,ad,#44a761,Andorra la Vella,EUR,monarchy,balanced,europe,82904,6.6
+ARG,Argentina,ar,#7e44a7,Buenos Aires,ARS,federation,agrarian,south_america,45851378,1494.1
+ARM,Armenia,am,#a79a44,Yerevan,AMD,republic,balanced,europe,3086700,76.4
+AUS,Australia,au,#4496a7,Canberra,AUD,federation,resource,oceania,27614411,1986.4
+AUT,Austria,at,#a74479,Vienna,EUR,federation,industrial,europe,9208163,707.0
+AZE,Azerbaijan,az,#5da744,Baku,AZN,republic,resource,europe,10246996,267.6
+BEL,Belgium,be,#b69c4a,Brussels,EUR,monarchy,industrial,europe,11941781,891.8
+BGR,Bulgaria,bg,#a76544,Sofia,BGN,republic,balanced,europe,6433302,286.0
+BIH,Bosnia and Herzegovina,ba,#44a782,Sarajevo,BAM,federation,balanced,europe,3140095,81.1
+BLR,Belarus,by,#9e44a7,Minsk,BYN,republic,industrial,europe,9085991,315.4
+BRA,Brazil,br,#92a744,Brasilia,BRL,federation,industrial,south_america,212812405,4986.9
+CAN,Canada,ca,#4475a7,Ottawa,CAD,federation,resource,north_america,41651653,2780.1
+CHE,Switzerland,ch,#a74458,Bern,CHF,federation,industrial,europe,9092436,932.1
+CHN,China,cn,#44a74c,Beijing,CNY,republic,industrial,asia,1406585000,41259.8
+CYP,Cyprus,cy,#6944a7,Nicosia,EUR,republic,maritime,europe,1370754,63.7
+CZE,Czechia,cz,#a78644,Prague,CZK,republic,industrial,europe,10886878,658.5
+DEU,Germany,de,#70757c,Berlin,EUR,federation,industrial,europe,83491249,6295.8
+DNK,Denmark,dk,#a7448e,Copenhagen,DKK,monarchy,maritime,europe,6009169,500.1
+ESP,Spain,es,#71a744,Madrid,EUR,monarchy,maritime,europe,49355143,2954.8
+EST,Estonia,ee,#4454a7,Tallinn,EUR,republic,balanced,europe,1366475,71.2
+FIN,Finland,fi,#a75144,Helsinki,EUR,republic,industrial,europe,5646436,372.0
+FRA,France,fr,#506c9c,Paris,EUR,republic,industrial,europe,68720337,4396.4
+GBR,United Kingdom,gb,#a04844,London,GBP,monarchy,maritime,europe,69487000,4489.3
+GEO,Georgia,ge,#a6a744,Tbilisi,GEL,republic,balanced,europe,3935766,115.8
+GRC,Greece,gr,#4489a7,Athens,EUR,republic,maritime,europe,10413962,471.4
+GUY,Guyana,gy,#9660a0,Georgetown,GYD,republic,resource,south_america,835986,81.8
+HRV,Croatia,hr,#50a744,Zagreb,EUR,republic,maritime,europe,3876200,197.5
+HUN,Hungary,hu,#5544a7,Budapest,HUF,republic,industrial,europe,9514251,474.2
+IDN,Indonesia,id,#a77244,Jakarta,IDR,republic,agrarian,asia,285721236,5045.8
+IND,India,in,#44a78e,New Delhi,INR,federation,agrarian,asia,1463865525,17197.4
+IRL,Ireland,ie,#a744a2,Dublin,EUR,republic,industrial,europe,5484367,850.6
+ISL,Iceland,is,#85a744,Reykjavik,ISK,republic,maritime,europe,392404,32.7
+ITA,Italy,it,#4469a7,Rome,EUR,republic,industrial,europe,58915656,3700.1
+JPN,Japan,jp,#a7444c,Tokyo,JPY,monarchy,industrial,asia,123366734,6837.2
+KOR,South Korea,kr,#44a759,Seoul,KRW,republic,industrial,asia,51684564,3262.6
+LIE,Liechtenstein,li,#7644a7,Vaduz,CHF,monarchy,industrial,europe,41024,
+LTU,Lithuania,lt,#a79344,Vilnius,EUR,republic,balanced,europe,2888774,164.2
+LUX,Luxembourg,lu,#449ea7,Luxembourg,EUR,monarchy,balanced,europe,686970,107.5
+LVA,Latvia,lv,#a74481,Riga,EUR,republic,balanced,europe,1847785,85.3
+MCO,Monaco,mc,#64a744,Monaco,EUR,monarchy,maritime,europe,38341,
+MDA,Moldova,md,#4448a7,Chisinau,MDL,republic,agrarian,europe,2360527,47.2
+MEX,Mexico,mx,#a75d44,Mexico City,MXN,federation,industrial,north_america,131946900,3413.3
+MKD,North Macedonia,mk,#44a77a,Skopje,MKD,republic,balanced,europe,1820909,51.0
+MLT,Malta,mt,#9744a7,Valletta,EUR,republic,maritime,europe,579704,41.9
+MNE,Montenegro,me,#9aa744,Podgorica,EUR,republic,maritime,europe,623129,22.1
+NED,Netherlands,nl,#c07840,Amsterdam,EUR,monarchy,maritime,europe,18087633,1579.4
+NOR,Norway,no,#a74460,Oslo,NOK,monarchy,maritime,europe,5610870,583.8
+POL,Poland,pl,#44a745,Warsaw,PLN,republic,industrial,europe,36435861,1977.1
+PRT,Portugal,pt,#6144a7,Lisbon,EUR,republic,maritime,europe,10804871,574.2
+ROU,Romania,ro,#a77e44,Bucharest,RON,republic,balanced,europe,19020271,968.0
+RUS,Russia,ru,#44a79b,Moscow,RUB,federation,resource,europe,143513328,7235.6
+SAU,Saudi Arabia,sa,#a74495,Riyadh,SAR,monarchy,resource,middle_east,36973555,2728.0
+SMR,San Marino,sm,#79a744,San Marino,EUR,republic,balanced,europe,34109,
+SRB,Serbia,rs,#445ca7,Belgrade,RSD,republic,balanced,europe,6549143,222.1
+SUR,Suriname,sr,#4890a0,Paramaribo,SRD,republic,resource,south_america,639850,14.5
+SVK,Slovakia,sk,#44a766,Bratislava,EUR,republic,industrial,europe,5413813,266.9
+SVN,Slovenia,si,#8244a7,Ljubljana,EUR,republic,industrial,europe,2130986,126.2
+SWE,Sweden,se,#a79f44,Stockholm,SEK,monarchy,industrial,europe,10596620,768.6
+TUR,Turkey,tr,#4491a7,Ankara,TRY,republic,industrial,europe,85878556,3889.3
+UKR,Ukraine,ua,#a74475,Kyiv,UAH,republic,agrarian,europe,38980376,690.4
+USA,United States,us,#58a744,Washington,USD,federation,industrial,north_america,341784857,30769.7
+VAT,Vatican,va,#4d44a7,Vatican City,EUR,city_state,balanced,europe,,
+VEN,Venezuela,ve,#e0c33c,Caracas,VES,federation,resource,south_america,28516896,
+XKX,Kosovo,xk,#44a787,Pristina,EUR,republic,balanced,europe,1576876,30.4
+ZAF,South Africa,za,#a344a7,Pretoria,ZAR,republic,resource,africa,64747319,1029.9

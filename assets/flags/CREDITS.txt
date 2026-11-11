@@ -1,0 +1,26 @@
+# Bandeiras — origem e licença
+
+Os PNGs desta pasta são a bandeira de cada país em `w40` (largura 40 px,
+proporção original preservada — 40×20, 40×24, 40×27…), no mesmo formato usado
+pelo mapa e pelos rótulos de nação.
+
+## Origem
+
+- **167 arquivos originais** (auditoria de 2026): mesma família de imagens
+  (bandeiras ISO 3166-1 em w40). A origem exata não estava registrada neste
+  repositório; o formato foi preservado.
+- **9 arquivos adicionados na fase F1** (`data: fase 1 (Europa + G20)`):
+  `ad`, `li`, `mc`, `me`, `mt`, `rs`, `sm`, `va`, `xk`.
+
+  Fonte: **flagcdn.com** (`https://flagcdn.com/w40/<iso2>.png`), que distribui
+  as bandeiras em domínio público a partir dos SVGs do Wikimedia Commons
+  (licença livre; atribuição não obrigatória, registrada aqui por transparência).
+
+## Regras
+
+- O nome do arquivo é o **ISO2 minúsculo** da nação (`assets/flags/<iso2>.png`).
+- Ausência de PNG = nação sem bandeira; **nunca** se desenha um placeholder.
+- Não se baixa bandeira de fonte sem licença livre; qualquer troca futura deve
+  manter a largura de 40 px e atualizar este arquivo.
+- `xk` (Kosovo) não é ISO 3166-1 oficial; usa-se o código de uso livre `XK` e o
+  arquivo `xk.png`, coerente com `iso2` de `data/definitions/world/nations_source.csv`.

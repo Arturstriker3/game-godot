@@ -1,0 +1,24 @@
+{
+  "phase": "F1",
+  "generated_by": "tools/build_world_cities.py",
+  "projection": "x=(lon+180)/360*5000, y=(90-lat)/180*2500",
+  "sources": {
+    "population_nation": "World Bank WDI SP.POP.TOTL (2025)",
+    "gdp_ppp": "World Bank WDI NY.GDP.MKTP.PP.CD (2025, US$ PPP correntes)",
+    "cities": "citypopulation.de Major Agglomerations (2026-01-01); GeoNames cities15000 (2026) para aglomerações < 1 M",
+    "ports": "scenario/ports.csv (18 legados) + snap na costa do world_sdf.png"
+  },
+  "rules": {
+    "quota": "min(12, 1 + clamp(1 + floor(pop/25M) + floor(gdp/1.5e12), 1, 12))",
+    "min_spacing_km": 25.0,
+    "pop_per_ton": 0.0003,
+    "legacy": "40 cidades e 18 portos do cenário atual preservados"
+  },
+  "counts": {
+    "nations": 66,
+    "cities": 252,
+    "ports": 114,
+    "buildings": 252,
+    "i18n_keys": 432
+  }
+}

@@ -1,0 +1,115 @@
+nation,id,name,lat,lon,landmass,source
+GBR,GBR-DOV,Dover,51.1344,1.3104,britain,"scenario/ports.csv (legado, ponto de costa)"
+FRA,FRA-CAL,Calais,50.9472,1.8504,continent,"scenario/ports.csv (legado, ponto de costa)"
+DEU,DEU-HAM,Hamburg,53.8704,8.6976,continent,"scenario/ports.csv (legado, ponto de costa)"
+NED,NED-AMS,Amsterdam,52.4592,4.5936,continent,"scenario/ports.csv (legado, ponto de costa)"
+BEL,BEL-ANT,Antwerp,51.3288,3.1968,continent,"scenario/ports.csv (legado, ponto de costa)"
+FRA,FRA-CAY,Mana,5.6808,-53.7768,guiana,"scenario/ports.csv (legado, ponto de costa)"
+VEN,VEN-LAG,La Guaira,10.6128,-66.9168,guiana,"scenario/ports.csv (legado, ponto de costa)"
+SUR,SUR-PBM,Paramaribo,5.904,-55.1664,guiana,"scenario/ports.csv (legado, ponto de costa)"
+GUY,GUY-GEO,Georgetown,6.8832,-58.1544,guiana,"scenario/ports.csv (legado, ponto de costa)"
+FRA,FRA-LEH,Le Havre,49.4928,0.1008,continent,"scenario/ports.csv (legado, ponto de costa)"
+FRA,FRA-MRS,Marseille,43.2864,5.3568,continent,"scenario/ports.csv (legado, ponto de costa)"
+FRA,FRA-NTE,Saint-Nazaire,47.268,-2.2032,continent,"scenario/ports.csv (legado, ponto de costa)"
+NED,NED-RTM,Rotterdam,51.948,4.1184,continent,"scenario/ports.csv (legado, ponto de costa)"
+GBR,GBR-GLA,Glasgow,55.9512,-4.7592,britain,"scenario/ports.csv (legado, ponto de costa)"
+GBR,GBR-BRS,Bristol,51.5016,-2.7,britain,"scenario/ports.csv (legado, ponto de costa)"
+GBR,GBR-NCL,Newcastle,55.0224,-1.4472,britain,"scenario/ports.csv (legado, ponto de costa)"
+VEN,VEN-MAR,Maracaibo,10.6488,-71.6328,guiana,"scenario/ports.csv (legado, ponto de costa)"
+GBR,GBR-BFS,Belfast,54.6264,-5.76,britain,"scenario/ports.csv (legado, ponto de costa)"
+ALB,ALB-TIR,Tirana,41.2866,19.6655,continent,snap na costa (world_sdf.png) a 20 km
+ALB,ALB-DUR,Durrës,41.2866,19.4897,continent,snap na costa (world_sdf.png) a 2 km
+HRV,HRV-SPL,Split,43.4839,16.4575,continent,snap na costa (world_sdf.png) a 1 km
+CYP,CYP-NIC,Nicosia,35.1782,33.3765,cyprus,snap na costa (world_sdf.png) a 3 km
+CYP,CYP-LIM,Limassol,34.6509,33.0688,cyprus,snap na costa (world_sdf.png) a 2 km
+DNK,DNK-COP,Copenhagen,55.6567,12.5903,continent,snap na costa (world_sdf.png) a 0 km
+DNK,DNK-AAR,Aarhus,56.1401,10.2173,continent,snap na costa (world_sdf.png) a 2 km
+EST,EST-TAL,Tallinn,59.436,24.7632,continent,snap na costa (world_sdf.png) a 3 km
+FIN,FIN-HEL,Helsinki,60.1392,24.939,continent,snap na costa (world_sdf.png) a 2 km
+GRC,GRC-ATH,Athens,37.9468,23.7524,continent,snap na costa (world_sdf.png) a 2 km
+GRC,GRC-THE,Thessaloniki,40.6274,22.9614,continent,snap na costa (world_sdf.png) a 1 km
+ISL,ISL-REY,Reykjavík,64.0942,-21.8628,iceland,snap na costa (world_sdf.png) a 2 km
+ISL,ISL-REYK,Reykjanesbær,63.9624,-22.522,iceland,snap na costa (world_sdf.png) a 2 km
+IRL,IRL-DUB,Dublin,53.3276,-6.2183,ireland,snap na costa (world_sdf.png) a 2 km
+IRL,IRL-COR,Cork,51.8774,-8.4595,ireland,snap na costa (world_sdf.png) a 1 km
+ITA,ITA-ROM,Rome,41.814,12.4585,continent,snap na costa (world_sdf.png) a 10 km
+ITA,ITA-NAP,Naples,40.8472,14.3042,continent,snap na costa (world_sdf.png) a 2 km
+ITA,ITA-PAD,Padua,45.3735,12.019,continent,snap na costa (world_sdf.png) a 12 km
+ITA,ITA-PAL,Palermo,38.0786,13.3813,continent,snap na costa (world_sdf.png) a 2 km
+LVA,LVA-RIG,Riga,56.9312,24.1479,continent,snap na costa (world_sdf.png) a 2 km
+MLT,MLT-VAL,Valletta,35.8813,14.5239,malta,snap na costa (world_sdf.png) a 1 km
+MCO,MCO-MON,Monaco,43.7036,7.4487,continent,snap na costa (world_sdf.png) a 1 km
+MNE,MNE-POD,Podgorica,42.2534,19.1382,continent,snap na costa (world_sdf.png) a 25 km
+MNE,MNE-NIK,Nikšić,42.561,18.7866,continent,snap na costa (world_sdf.png) a 29 km
+NOR,NOR-OSL,Oslo,59.8755,10.7886,continent,snap na costa (world_sdf.png) a 3 km
+NOR,NOR-BER,Bergen,60.3589,5.3394,continent,snap na costa (world_sdf.png) a 2 km
+PRT,PRT-LIS,Lisbon,38.6938,-9.1187,continent,snap na costa (world_sdf.png) a 1 km
+PRT,PRT-POR,Porto,41.1108,-8.5913,continent,snap na costa (world_sdf.png) a 2 km
+RUS,RUS-SAI,Saint Petersburg,59.9194,30.3442,continent,snap na costa (world_sdf.png) a 1 km
+SMR,SMR-SAN,San Marino,43.9233,12.5024,continent,snap na costa (world_sdf.png) a 4 km
+ESP,ESP-BAR,Barcelona,41.3745,2.1753,continent,snap na costa (world_sdf.png) a 1 km
+ESP,ESP-VAL,Valencia,39.4409,-0.3735,continent,snap na costa (world_sdf.png) a 2 km
+SWE,SWE-STO,Stockholm,59.3042,18.0835,continent,snap na costa (world_sdf.png) a 1 km
+SWE,SWE-GOT,Gothenburg,57.6782,11.9751,continent,snap na costa (world_sdf.png) a 2 km
+TUR,TUR-IST,Istanbul,40.979,28.9819,continent,snap na costa (world_sdf.png) a 2 km
+TUR,TUR-IZM,Izmir,38.3862,27.1802,continent,snap na costa (world_sdf.png) a 2 km
+TUR,TUR-BUR,Bursa,40.2319,29.0698,continent,snap na costa (world_sdf.png) a 7 km
+TUR,TUR-ADA,Adana,36.8042,35.2222,continent,snap na costa (world_sdf.png) a 23 km
+AZE,AZE-BAK,Baku,40.3638,49.8999,continent,snap na costa (world_sdf.png) a 2 km
+AZE,AZE-SUM,Sumqayıt,40.5835,49.6802,continent,snap na costa (world_sdf.png) a 2 km
+GEO,GEO-BAT,Batumi,41.6382,41.6382,continent,snap na costa (world_sdf.png) a 3 km
+USA,USA-WAS,Washington,38.7817,-77.146,north_america,snap na costa (world_sdf.png) a 18 km
+USA,USA-NEW,New York,40.6714,-73.9819,north_america,snap na costa (world_sdf.png) a 2 km
+USA,USA-LOS,Los Angeles,33.9917,-118.2788,north_america,snap na costa (world_sdf.png) a 8 km
+USA,USA-BOS,Boston,42.3413,-71.0376,north_america,snap na costa (world_sdf.png) a 1 km
+USA,USA-SAN,San Francisco,37.771,-122.4097,north_america,snap na costa (world_sdf.png) a 2 km
+USA,USA-PHI,Philadelphia,39.9243,-75.1245,north_america,snap na costa (world_sdf.png) a 2 km
+USA,USA-HOU,Houston,29.729,-95.2075,north_america,snap na costa (world_sdf.png) a 15 km
+USA,USA-MIA,Miami,25.7739,-80.1782,north_america,snap na costa (world_sdf.png) a 3 km
+CAN,CAN-MON,Montreal,45.5054,-73.5864,north_america,snap na costa (world_sdf.png) a 3 km
+CAN,CAN-VAN,Vancouver,49.2407,-123.1128,north_america,snap na costa (world_sdf.png) a 2 km
+MEX,MEX-TIJ,Tijuana,32.4976,-116.9604,north_america,snap na costa (world_sdf.png) a 3 km
+BRA,BRA-RIO,Rio de Janeiro,-22.9175,-43.1763,south_america,snap na costa (world_sdf.png) a 2 km
+BRA,BRA-REC,Recife,-8.064,-34.8706,south_america,snap na costa (world_sdf.png) a 2 km
+BRA,BRA-POR,Porto Alegre,-30.0366,-51.2183,south_america,snap na costa (world_sdf.png) a 2 km
+BRA,BRA-FOR,Fortaleza,-3.7573,-38.5181,south_america,snap na costa (world_sdf.png) a 2 km
+BRA,BRA-SAL,Salvador,-12.9858,-38.4741,south_america,snap na costa (world_sdf.png) a 1 km
+ARG,ARG-BUE,Buenos Aires,-34.6509,-58.3374,south_america,snap na costa (world_sdf.png) a 3 km
+CHN,CHN-GUA,Guangzhou,23.0933,113.269,asia,snap na costa (world_sdf.png) a 0 km
+CHN,CHN-SHA,Shanghai,31.2231,121.4868,asia,snap na costa (world_sdf.png) a 3 km
+CHN,CHN-XIA,Xiamen,24.4556,118.103,asia,snap na costa (world_sdf.png) a 0 km
+JPN,JPN-TOK,Tokyo,35.6616,139.7241,japan,snap na costa (world_sdf.png) a 1 km
+JPN,JPN-OSA,Osaka,34.6509,135.5054,japan,snap na costa (world_sdf.png) a 3 km
+JPN,JPN-NAG,Nagoya,35.1782,136.9116,japan,snap na costa (world_sdf.png) a 3 km
+JPN,JPN-FUK,Fukuoka,33.5962,130.4517,japan,snap na costa (world_sdf.png) a 2 km
+JPN,JPN-SAP,Sapporo,43.0444,141.3501,japan,snap na costa (world_sdf.png) a 2 km
+JPN,JPN-OKA,Okayama,34.6069,133.9673,japan,snap na costa (world_sdf.png) a 3 km
+JPN,JPN-KIT,Kitakyushu,33.8159,130.8911,japan,snap na costa (world_sdf.png) a 3 km
+JPN,JPN-HIR,Hiroshima,34.3872,132.4731,japan,snap na costa (world_sdf.png) a 1 km
+JPN,JPN-SEN,Sendai,38.2544,140.9106,japan,snap na costa (world_sdf.png) a 3 km
+JPN,JPN-HAM,Hamamatsu,34.6948,137.7466,japan,snap na costa (world_sdf.png) a 2 km
+KOR,KOR-SEO,Seoul,37.5513,126.8481,asia,snap na costa (world_sdf.png) a 17 km
+KOR,KOR-BUS,Busan,35.0903,129.0454,asia,snap na costa (world_sdf.png) a 1 km
+IND,IND-MUM,Mumbai,19.0503,72.8833,asia,snap na costa (world_sdf.png) a 2 km
+IND,IND-KOL,Kolkata,22.3022,88.2642,asia,snap na costa (world_sdf.png) a 30 km
+IND,IND-CHE,Chennai,13.0737,80.3101,asia,snap na costa (world_sdf.png) a 1 km
+IND,IND-SUR,Surat,21.1597,72.8394,asia,snap na costa (world_sdf.png) a 2 km
+IDN,IDN-JAK,Jakarta,-6.2183,106.853,java,snap na costa (world_sdf.png) a 3 km
+IDN,IDN-SUR,Surabaya,-7.2729,112.7856,java,snap na costa (world_sdf.png) a 1 km
+IDN,IDN-MED,Medan,3.5815,98.7231,java,snap na costa (world_sdf.png) a 4 km
+IDN,IDN-SEM,Semarang,-7.0093,110.4565,java,snap na costa (world_sdf.png) a 2 km
+IDN,IDN-MAK,Makassar,-5.1636,119.4653,java,snap na costa (world_sdf.png) a 1 km
+IDN,IDN-PAL,Palembang,-2.8345,104.6558,java,snap na costa (world_sdf.png) a 17 km
+IDN,IDN-YOG,Yogyakarta,-7.8442,110.3247,java,snap na costa (world_sdf.png) a 7 km
+IDN,IDN-MAL,Malang,-8.2397,112.6099,java,snap na costa (world_sdf.png) a 27 km
+IDN,IDN-BAND,Bandar Lampung,-5.4712,105.271,java,snap na costa (world_sdf.png) a 3 km
+IDN,IDN-BAT,Batam,1.1206,104.0405,java,snap na costa (world_sdf.png) a 1 km
+SAU,SAU-JED,Jeddah,21.4673,39.2212,asia,snap na costa (world_sdf.png) a 1 km
+SAU,SAU-DAM,Dammam,26.4331,50.1196,asia,snap na costa (world_sdf.png) a 2 km
+ZAF,ZAF-CAP,Cape Town,-33.9478,18.4351,africa,snap na costa (world_sdf.png) a 1 km
+ZAF,ZAF-DUR,Durban,-29.8608,31.0474,africa,snap na costa (world_sdf.png) a 2 km
+AUS,AUS-MEL,Melbourne,-37.8149,144.9976,oceania,snap na costa (world_sdf.png) a 3 km
+AUS,AUS-SYD,Sydney,-33.9038,151.2378,oceania,snap na costa (world_sdf.png) a 2 km
+AUS,AUS-BRI,Brisbane,-27.4878,153.0396,oceania,snap na costa (world_sdf.png) a 1 km
+VEN,VEN-CCS,Caracas,10.481,-66.9067,guiana,snap na costa (world_sdf.png) a 1 km
+VEN,VEN-VLN,Valencia,10.3052,-67.9614,guiana,snap na costa (world_sdf.png) a 19 km
