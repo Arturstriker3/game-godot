@@ -69,6 +69,9 @@ var _day_fraction := 0.0
 ## Agenda o dia na thread do pool; `is_running()` = dia em cálculo.
 var _ticker: RefCounted = TickScheduler.new()
 
+## Já juntamos a thread do dia? Ver `_shutdown()`.
+var _shutting_down := false
+
 
 func _ready() -> void:
 	sim = EconomySim.new()
@@ -192,6 +195,8 @@ func flag_texture(tag: String) -> Texture2D:
 
 
 func _process(delta: float) -> void:
+	if _shutting_down:
+		return
 	# 1. O dia que terminou na thread é publicado agora (sinais + IA).
 	_poll_tick()
 	# 2. Planejamento escalonado da IA: continua no frame seguinte, com
@@ -219,7 +224,11 @@ func _start_day() -> void:
 ## Publica o dia concluído (se houver). O status é o snapshot completo do
 ## núcleo — a UI e a IA leem o último dia inteiro, nunca um dia pela metade.
 func _poll_tick() -> void:
-	var summary: Dictionary = _ticker.poll()
+	_publish(_ticker.poll())
+
+
+## Publica um dia concluído: sinais para HUD/comboios e planejamento da IA.
+func _publish(summary: Dictionary) -> void:
 	if summary.is_empty():
 		return
 	last_summary = summary
@@ -236,8 +245,35 @@ func _poll_tick() -> void:
 ## Avança um dia de forma síncrona (testes e ferramentas headless).
 func _run_day() -> void:
 	_start_day()
-	_ticker.wait()
-	_poll_tick()
+	_publish(_ticker.wait())
+
+
+## Encerramento (sair do jogo, fechar a janela, fim de um teste headless).
+##
+## O dia roda numa thread do pool. Soltar o `sim` (ou deixar a cena ser
+## liberada) com a thread ainda viva dava access violation 0xC0000005
+## intermitente NO FIM do processo — inclusive em testes que chamam `quit()`
+## sem nunca pedir um tick: o autoload `Economy` agenda o 1º dia no `_ready`,
+## que roda mesmo com `--script`. Por isso o join é obrigatório aqui.
+func _shutdown() -> void:
+	if _shutting_down:
+		return
+	_shutting_down = true
+	speed = 0
+	if _ticker != null:
+		_ticker.cancel()
+	_ai = null
+	sim = null
+	last_summary = {}
+
+
+func _exit_tree() -> void:
+	_shutdown()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		_shutdown()
 
 
 ## Troca a velocidade; 0 pausa o relógio. A fração do dia é preservada, então

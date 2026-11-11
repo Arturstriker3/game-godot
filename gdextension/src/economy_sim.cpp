@@ -82,7 +82,14 @@ double radians(double degrees) {
 
 EconomySim::EconomySim() = default;
 
-EconomySim::~EconomySim() = default;
+EconomySim::~EconomySim() {
+	// Se o sim for liberado com um dia AINDA rodando na thread do pool (o jogo
+	// encerrando, por exemplo), espera o tick sair antes de destruir os
+	// contêineres do status: destruí-los debaixo de quem os escreve era um
+	// access violation (0xC0000005) intermitente no fim do processo. O mutex é
+	// recursivo, então a mesma thread do tick não bloqueia aqui.
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+}
 
 void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("initialize", "cities", "ports"), &EconomySim::initialize);
@@ -93,6 +100,7 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::initialize_demo_world);
 	ClassDB::bind_method(D_METHOD("tick_demo"), &EconomySim::tick_demo);
 	ClassDB::bind_method(D_METHOD("demo_tick_core"), &EconomySim::demo_tick_core);
+	ClassDB::bind_method(D_METHOD("demo_tick_and_publish"), &EconomySim::demo_tick_and_publish);
 	ClassDB::bind_method(D_METHOD("demo_set_profiling", "enabled"),
 	                     &EconomySim::demo_set_profiling);
 	ClassDB::bind_method(D_METHOD("demo_get_profile"), &EconomySim::demo_get_profile);
@@ -1708,18 +1716,22 @@ const EconomySim::Port* EconomySim::demo_nearest_port(const std::string& nation,
 }
 
 Dictionary EconomySim::tick_demo() {
+	demo_tick_and_publish();
+	// Cache hit: demo_tick_and_publish() já montou e publicou o dia em curso.
+	return get_demo_status();
+}
+
+void EconomySim::demo_tick_and_publish() {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	demo_tick_core();
+	using Clock = std::chrono::steady_clock;
+	const Clock::time_point start = demo_profile_ ? Clock::now() : Clock::time_point{};
+	get_demo_status();
 	if (demo_profile_) {
-		using Clock = std::chrono::steady_clock;
-		const Clock::time_point start = Clock::now();
-		Dictionary status = get_demo_status();
 		const Clock::time_point end = Clock::now();
 		demo_profile_us_[kDemoPhaseStatus] =
 			std::chrono::duration<double, std::micro>(end - start).count();
-		return status;
 	}
-	return get_demo_status();
 }
 
 void EconomySim::demo_status_invalidate() {

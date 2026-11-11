@@ -62,6 +62,17 @@ public:
 	 */
 	void demo_tick_core();
 
+	/**
+	 * Roda o dia E monta/publica o status, sem devolver nada.
+	 *
+	 * É o que a thread do WorkerThreadPool chama (ver tick_scheduler.gd): o
+	 * trabalho pesado e a montagem do status ficam fora da main thread e
+	 * NENHUM Variant cruza a fronteira da thread (nem o retorno). Depois do
+	 * join, a main thread chama get_demo_status(), que devolve o slot já
+	 * publicado em O(1).
+	 */
+	void demo_tick_and_publish();
+
 	/** Liga/desliga a medição por fase do tick (custo desprezível). */
 	void demo_set_profiling(bool enabled);
 

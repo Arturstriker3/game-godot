@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Agenda `sim.tick_demo()` na WorkerThreadPool, um dia por vez.
+## Agenda `sim.demo_tick_and_publish()` na WorkerThreadPool, um dia por vez.
 ##
 ## Por que assim: o tick C++ de um mundo grande custa dezenas de milissegundos
 ## e não cabe no frame da virada. O trabalho roda numa thread do pool e a main
@@ -12,12 +12,22 @@ extends RefCounted
 ## - só existe UM escritor sobre o `sim`: enquanto a thread roda, a main thread
 ##   não chama nada do núcleo (nem a IA, nem o relógio). Quem orquestra é
 ##   `core/economy/economy.gd`.
+## - NENHUM Variant/Dictionary do Godot é criado, escrito ou destruído pela
+##   thread: ela só chama `demo_tick_and_publish()`, que roda inteiro em C++ e
+##   deixa o status publicado no double buffer do núcleo. O `poll()` da main
+##   thread recebe o slot já pronto em O(1) (`get_demo_status()`).
+## - `wait()`/`cancel()` só retornam com a tarefa CONCLUÍDA: nenhum chamador
+##   solta o `sim` com o dia em andamento (era a causa do 0xC0000005 no
+##   encerramento: a thread seguia viva quando o sim/cena eram liberados).
 ## - determinismo: o tick não depende do relógio de parede, então o resultado é
 ##   idêntico ao do caminho síncrono (comprovado em tools/world_scale_bench.gd e
 ##   tools/economy_tick_async_test.gd).
 
 var _task_id := -1
-var _result: Dictionary = {}
+
+## Sim do dia em andamento. Segura a referência enquanto a tarefa existe, para
+## que o núcleo não seja liberado debaixo da thread.
+var _sim: Object = null
 
 
 ## true enquanto o dia está sendo calculado na thread do pool.
@@ -29,7 +39,7 @@ func is_running() -> bool:
 func start(sim: Object) -> bool:
 	if _task_id != -1:
 		return false
-	_result = {}
+	_sim = sim
 	_task_id = WorkerThreadPool.add_task(
 		_tick_worker.bind(sim), false, "economy day tick")
 	return true
@@ -41,25 +51,46 @@ func poll() -> Dictionary:
 		return {}
 	if not WorkerThreadPool.is_task_completed(_task_id):
 		return {}
-	WorkerThreadPool.wait_for_task_completion(_task_id)
-	_task_id = -1
-	var summary := _result
-	_result = {}
-	return summary
+	return _collect()
 
 
-## Espera o dia terminar (usado por testes e ferramentas headless).
+## Espera o dia terminar e devolve o resumo (usado por testes e ferramentas).
 func wait() -> Dictionary:
 	if _task_id == -1:
 		return {}
-	# `wait_for_task_completion` libera o ID no pool: consultar `is_task_completed`
-	# depois disso imprime "Invalid Task ID" e o `_task_id` nunca zeraria.
+	return _collect()
+
+
+## Espera o dia terminar e descarta o resumo (encerramento do jogo).
+##
+## Não pode ser substituído por "largar a referência e sair": a thread do pool
+## continuaria escrevendo no `sim` (e no status) depois que a cena fosse liberada.
+func cancel() -> void:
+	if _task_id == -1:
+		_sim = null
+		return
+	_join()
+
+
+## Junta a tarefa e devolve o status publicado. SÓ roda na main thread, e só
+## depois do join — o núcleo já montou o slot do dia na thread.
+func _collect() -> Dictionary:
+	var sim := _join()
+	if sim == null:
+		return {}
+	return sim.get_demo_status()
+
+
+## `wait_for_task_completion` libera o ID no pool: consultar `is_task_completed`
+## depois disso imprime "Invalid Task ID" e o `_task_id` nunca zeraria.
+func _join() -> Object:
+	var sim := _sim
 	WorkerThreadPool.wait_for_task_completion(_task_id)
 	_task_id = -1
-	var summary := _result
-	_result = {}
-	return summary
+	_sim = null
+	return sim
 
 
 func _tick_worker(sim: Object) -> void:
-	_result = sim.tick_demo()
+	# Nada de Variant/Dictionary aqui: o status nasce e é publicado no C++.
+	sim.demo_tick_and_publish()
