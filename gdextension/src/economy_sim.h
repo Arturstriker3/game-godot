@@ -258,15 +258,17 @@ private:
 	static constexpr int kDemoProducts = 21;
 	// Farinha/pão foram removidos da cadeia (subprodutos ficam para depois):
 	// a comida é consumida diretamente das culturas. A cesta alimentar (B3) é
-	// substituível entre trigo, arroz, milho e batata — soja fica fora por ora.
+	// substituível entre trigo, arroz, milho, batata e soja.
 	// A necessidade é medida em toneladas-equivalentes de grão: o fator calórico
 	// converte tonelada real em tonelada-equivalente (batata ~1/4 das calorias).
-	static constexpr int kDemoFoodProducts = 4;
+	static constexpr int kDemoFoodProducts = 5;
 	// Ids de produto (índice em kDemoProductNames) e fator calórico por slot da
 	// cesta. Fonte (FAO/INFOODS, composição média): cereais ~3600 kcal/kg;
-	// batata fresca ~770 kcal/kg — ~1/4 das calorias por tonelada (fator 0,25).
-	static constexpr int kDemoFoodProductIds[kDemoFoodProducts] = {0, 2, 3, 16};
-	static constexpr double kDemoCaloricFactor[kDemoFoodProducts] = {1.0, 1.0, 1.0, 0.25};
+	// batata fresca ~770 kcal/kg — ~1/4 das calorias por tonelada (fator 0,25);
+	// soja seca (grãos maduros) ~4460 kcal/kg (USDA FoodData Central) vs trigo
+	// ~3400 kcal/kg (FAO/INFOODS) — 446/340 ≈ 1,31, arredondado para 1,3.
+	static constexpr int kDemoFoodProductIds[kDemoFoodProducts] = {0, 2, 3, 16, 17};
+	static constexpr double kDemoCaloricFactor[kDemoFoodProducts] = {1.0, 1.0, 1.0, 0.25, 1.3};
 
 	struct DemoMarket {
 		double stock = 0.0;

@@ -486,6 +486,9 @@ func deposit_info(index: int) -> Dictionary:
 		var pos := Vector2(float(point[0]), float(point[1]))
 		var territory := String(point[4]) if point.size() > 4 else ""
 		var attrs: Dictionary = _geo.territory_attributes(pos) if _geo != null else {}
+		var region: Dictionary = point[5] if point.size() > 5 else {}
+		var territories: Array = region.get("territories", [])
+		var region_count := territories.size() if not territories.is_empty() else 1
 		return {
 			"kind": "wheat",
 			"resource": String(CROP_KEYS[clampi(int(point[2]), 0, CROP_KEYS.size() - 1)]),
@@ -499,11 +502,16 @@ func deposit_info(index: int) -> Dictionary:
 			"climate": String(attrs.get("climate", "")),
 			"soil_type": String(attrs.get("soil_type", "")),
 			"relief": String(attrs.get("relief", "")),
+			"aggregate": region_count > 1,
+			"area_km2": float(region.get("area_km2", 0.0)),
+			"region_count": region_count,
+			"country": String(region.get("country", "")),
 		}
 	var point: Array = _mineral_points[index]
 	var territory := String(point[7]) if point.size() > 7 else ""
 	var resource := String(MINERAL_KEYS[clampi(int(point[2]), 0, MINERAL_KEYS.size() - 1)])
 	var names: Dictionary = _geo.territory_name(territory) if _geo != null else {}
+	var region: Dictionary = point[10] if point.size() > 10 else {}
 	return {
 		"kind": "mineral",
 		"resource": resource,
@@ -517,6 +525,10 @@ func deposit_info(index: int) -> Dictionary:
 		"name_pt": String(names.get("name_pt", "")),
 		"name_en": String(names.get("name_en", "")),
 		"name_es": String(names.get("name_es", "")),
+		"aggregate": bool(region.get("aggregate", false)),
+		"area_km2": float(region.get("area_km2", 0.0)),
+		"region_count": int(region.get("region_count", 1)),
+		"country": String(region.get("country", "")),
 	}
 
 

@@ -239,7 +239,10 @@ CURATED_DEPOSITS = [
     ("oil", "Sibéria Ocidental", 61.0, 75.0, 1100000.0, 0.80, 2400.0, "Producer"),
     # Gás
     ("gas", "Urengoy", 66.0, 76.5, 1200000.0, 0.86, 3000.0, "Producer"),
-    ("gas", "North Field", 26.0, 51.5, 1500000.0, 0.90, 3200.0, "Producer"),
+    # North Field (Catar, ~24 tcm) e Khuff/Awali (Bahrein) entram pelo
+    # deposits_supplement.json com source público e data_quality
+    # "estimated_public_source" — aqui o campo ficava atribuído ao território
+    # vizinho errado (KWT) na base Voronoi legada.
     ("gas", "South Pars", 27.0, 52.5, 1400000.0, 0.88, 3100.0, "Producer"),
     ("gas", "Groningen", 53.3, 6.6, 300000.0, 0.82, 2900.0, "Past Producer"),
     ("gas", "Troll", 60.6, 3.7, 500000.0, 0.84, 3300.0, "Producer"),
@@ -709,7 +712,12 @@ def nearest_province(grid, cell, provinces, px, py, max_radius_px):
                     dist = (province["px"] - px) ** 2 + (province["py"] - py) ** 2
                     if dist < best_dist:
                         best_dist, best_id = dist, province_id
-        if best_id is not None:
+        # Não parar no 1º anel com acerto: uma província logo do outro lado do
+        # limite da célula (ex.: Ruhr em DEU) é mais próxima que a do anel atual
+        # (ex.: província NED da fronteira). Só paramos quando o anel seguinte já
+        # não pode conter ponto mais próximo: distância mínima de um anel k >= 1
+        # é cell*(k-1).
+        if best_id is not None and math.sqrt(best_dist) <= ring * cell:
             break
     if best_id is None or math.sqrt(best_dist) > max_radius_px:
         return None
@@ -773,8 +781,8 @@ def deposit_payload(territory_id, resource, px, py, sites, names, status,
         "py": round(py, 1),
         "lon": round(lon, 2),
         "lat": round(lat, 2),
-        "quantity_kt": round(quantity_kt, 1),
-        "recoverable_kt": round(recoverable, 1),
+        "quantity_kt": round(quantity_kt, 3),
+        "recoverable_kt": round(recoverable, 3),
         "quality": round(quality, 3),
         "depth_m": round(depth_m),
         "extraction_cost": extraction_cost,

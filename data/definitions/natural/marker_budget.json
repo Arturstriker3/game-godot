@@ -1,0 +1,32 @@
+{
+	"_meta": {
+		"description": "Orçamento mundial de marcadores por recurso no mapa de recursos. resource_points.json deixa de ser 1 marcador por (território × recurso) e passa a ser uma AMOSTRA REPRESENTATIVA: cada marcador carrega o agregado da região que representa (somatório de reserva / aptidão média e área).",
+		"data_quality": "design_decision",
+		"generated_by": "tools/build_resource_map.py (lê este arquivo)",
+		"unit": "marcadores (total mundial por recurso)",
+		"note": "Ordens de grandeza definidas por legibilidade: culturas alimentares básicas (trigo/arroz/milho/soja) recebem mais marcadores por serem amplamente distribuídas; renováveis de menor relevância visual (batata/algodão/madeira) e fósseis/minerais de base (petróleo/gás/carvão/ferro/cobre) ficam num patamar médio; bauxita/fosfato/ouro num patamar menor; os demais minerais no piso. A divisão entre países usa a participação real (produção FAOSTAT para culturas, reserve_calibration.json para minerais), com escala amortecida √participação e teto de 12% por país."
+	},
+	"budgets": {
+		"wheat": 120,
+		"rice": 120,
+		"maize": 120,
+		"soy": 120,
+		"potato": 80,
+		"cotton": 80,
+		"wood": 80,
+		"oil": 70,
+		"gas": 70,
+		"coal": 70,
+		"iron": 70,
+		"copper": 70,
+		"bauxite": 50,
+		"phosphate": 50,
+		"gold": 50,
+		"lead": 40,
+		"tungsten": 35,
+		"rare_earths": 35,
+		"sulfur": 30,
+		"diamond": 30,
+		"uranium": 40
+	}
+}

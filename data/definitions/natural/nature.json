@@ -21378,6 +21378,64 @@
 			"name_en": "Pohnpei State",
 			"name_es": "Pohnpei",
 			"adm0_a3": "FSM"
+		},
+		"TRT000738": {
+			"owner": "NNN",
+			"provinces": 5,
+			"centroid_px": [
+				3202.5,
+				888.6
+			],
+			"climate": "subtropical_desert",
+			"soil_type": "arenosol",
+			"relief": "plain",
+			"geology": "sedimentary_basin",
+			"coastal": true,
+			"data_quality": "real_climate",
+			"temp_c": 26.3,
+			"precip_mm": 79,
+			"fertility": 0.08,
+			"water": 0.253,
+			"altitude_m": 17,
+			"forest_cover": 0.013,
+			"fishing": 0.52,
+			"cultivable": 0.02,
+			"lon": 50.58,
+			"lat": 26.02,
+			"name": "Bahrain",
+			"name_pt": "Bahrein",
+			"name_en": "Bahrain",
+			"name_es": "Baréin",
+			"adm0_a3": "BHR"
+		},
+		"TRT000739": {
+			"owner": "NNN",
+			"provinces": 7,
+			"centroid_px": [
+				3211.1,
+				898.5
+			],
+			"climate": "subtropical_desert",
+			"soil_type": "arenosol",
+			"relief": "plain",
+			"geology": "sedimentary_basin",
+			"coastal": true,
+			"data_quality": "real_climate",
+			"temp_c": 26.7,
+			"precip_mm": 81,
+			"fertility": 0.08,
+			"water": 0.254,
+			"altitude_m": 45,
+			"forest_cover": 0.013,
+			"fishing": 0.52,
+			"cultivable": 0.02,
+			"lon": 51.2,
+			"lat": 25.31,
+			"name": "Qatar",
+			"name_pt": "Catar",
+			"name_en": "Qatar",
+			"name_es": "Catar",
+			"adm0_a3": "QAT"
 		}
 	}
 }

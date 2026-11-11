@@ -40,8 +40,16 @@ func _test_geography() -> void:
 	var portus := geo.territory_for("PORTUS", PORTUS_CENTER)
 	if agria == "" or portus == "":
 		_fail("geografia: território não resolvido")
+	# Base de 737 territórios: cidades vizinhas da Europa caem em territórios
+	# distintos (AGRIA=FRA, PORTUS=BEL). A referência à Austrália garante que o
+	# `territory_for` também distingue regiões distantes.
 	if agria == portus:
 		_fail("geografia: cidades distintas no mesmo território")
+	var australia := geo.territory_for("PROBE_AUSTRALIA", Vector2(4375.0, 1597.0))
+	if australia == "":
+		_fail("geografia: território de referência distante não resolvido")
+	if agria == australia:
+		_fail("geografia: Europa e Austrália no mesmo território")
 
 	var wheat := geo.crop_suitability("AGRIA", AGRIA_CENTER, "wheat")
 	if wheat < 0.0 or wheat > 1.0:

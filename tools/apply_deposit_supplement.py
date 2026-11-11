@@ -130,7 +130,11 @@ def assign_territory(record, nature, nav, province_raster, province_country,
         return False
 
     record["territory"] = territory
-    if not on_land and str(record.get("resource", "")) in COASTAL_RESOURCES:
+    # Offshore só vira "estimated_offshore_assignment" quando o campo não trouxe
+    # um data_quality específico (ex.: North Field/Khuff trazem
+    # "estimated_public_source" no suplemento e devem preservá-lo).
+    if not on_land and str(record.get("resource", "")) in COASTAL_RESOURCES \
+            and record.get("data_quality") in (None, "", "real_location_estimated_attributes"):
         record["data_quality"] = "estimated_offshore_assignment"
     return True
 

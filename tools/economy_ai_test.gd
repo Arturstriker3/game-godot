@@ -13,9 +13,9 @@ const AIScript := preload("res://core/economy/ai/economic_ai.gd")
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
 
-## Cesta alimentar (B3): trigo, arroz, milho e batata — ids de produto do C++.
-const FOOD_RESOURCES := ["wheat", "rice", "maize", "potato"]
-const FOOD_PRODUCTS := [0, 2, 3, 16]
+## Cesta alimentar (B3): trigo, arroz, milho, batata e soja — ids de produto do C++.
+const FOOD_RESOURCES := ["wheat", "rice", "maize", "potato", "soy"]
+const FOOD_PRODUCTS := [0, 2, 3, 16, 17]
 
 ## Número máximo de prédios ociosos (utilização < 10%) aceito por cidade após
 ## 730 dias. Sem o anti-loop (B5), o governo empilha uma estatal a cada ciclo e

@@ -56,19 +56,21 @@ const TEMPLATES := {
 
 	# --- Renováveis não alimentares (B4) -------------------------------------
 	# Soja/algodão são lavouras (mesma base do trigo: 7,5 empregos/t, salário 2,0,
-	# opex 2,5/t); madeira é serraria/floresta (mais mecânica, menos gente).
+	# opex 2,5/t); madeira é serraria/floresta (mais mecânica, menos gente). A
+	# soja também é alimento da cesta (B3, fator calórico 1,3 — fonte USDA/FAO
+	# em economy_sim.h): entra na cesta substituível, não mais como exportável.
 	"soy": {"output": 17, "input": -1, "jobs_per_ton": 7.5,
-		"wage": 2.0, "opex_per_ton": 2.5, "input_ratio": 0.0},
+		"wage": 2.0, "opex_per_ton": 2.5, "input_ratio": 0.0, "caloric_factor": 1.3},
 	"cotton": {"output": 18, "input": -1, "jobs_per_ton": 7.5,
 		"wage": 2.0, "opex_per_ton": 2.5, "input_ratio": 0.0},
 	"wood": {"output": 19, "input": -1, "jobs_per_ton": 5.0,
 		"wage": 1.5, "opex_per_ton": 3.0, "input_ratio": 0.0},
 }
 
-## Cesta alimentar substituível (B3): trigo, arroz, milho e batata — soja fica
-## fora por ora. `caloric_factor` converte tonelada real em tonelada-equivalente
-## de grão (batata ~1/4 das calorias; fonte FAO em economy_sim.h).
-const FOOD_RESOURCES: Array[String] = ["wheat", "rice", "maize", "potato"]
+## Cesta alimentar substituível (B3): trigo, arroz, milho, batata e soja.
+## `caloric_factor` converte tonelada real em tonelada-equivalente de grão
+## (batata ~1/4; soja ~1,3 — fonte FAO/USDA em economy_sim.h).
+const FOOD_RESOURCES: Array[String] = ["wheat", "rice", "maize", "potato", "soy"]
 
 ## Minerais/energéticos (extração primária com jazida). A IA só constrói quando
 ## a cidade tem depósito com reserva restante (GeographyService declara via
@@ -79,7 +81,8 @@ const MINERAL_RESOURCES: Array[String] = [
 ]
 
 ## Renováveis não alimentares exportáveis (aptidão agrícola/cobertura florestal).
-const RENEWABLE_RESOURCES: Array[String] = ["soy", "cotton", "wood"]
+## Soja saiu daqui: agora é alimento da cesta (B3).
+const RENEWABLE_RESOURCES: Array[String] = ["cotton", "wood"]
 
 ## Bens bulk de baixo valor (B4): extratores de alto volume e margem fina por
 ## tonelada, com reserva de décadas. O investidor privado usa um horizonte de

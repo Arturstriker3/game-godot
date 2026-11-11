@@ -1,0 +1,110 @@
+{
+	"_meta": {
+		"description": "Participação dos principais produtores por cultura (produção, não área), usada para dividir o orçamento de marcadores entre países no mapa de recursos. Valores arredondados de agregados publicados; NÃO alimentam a simulação econômica (a economia usa a aptidão de agriculture.json).",
+		"data_quality": "published_aggregate",
+		"source": "FAOSTAT (produção, ordem de grandeza)",
+		"year": 2022,
+		"generated_by": "tools/build_resource_map.py (lê este arquivo)",
+		"note": "shares = frações (0..1) dos principais produtores + 'resto' (demais países); a soma é 1. Madeira não entra aqui: usa a cobertura florestal (forest_cover de nature.json), não produção agrícola."
+	},
+	"crops": {
+		"wheat": {
+			"source": "FAOSTAT (produção de trigo)",
+			"year": 2022,
+			"shares": {
+				"CHN": 0.177,
+				"IND": 0.138,
+				"RUS": 0.133,
+				"USA": 0.058,
+				"AUS": 0.046,
+				"FRA": 0.045,
+				"CAN": 0.044,
+				"PAK": 0.033,
+				"UKR": 0.027,
+				"DEU": 0.029,
+				"resto": 0.270
+			}
+		},
+		"rice": {
+			"source": "FAOSTAT (produção de arroz em casca)",
+			"year": 2022,
+			"shares": {
+				"CHN": 0.27,
+				"IND": 0.25,
+				"BGD": 0.075,
+				"IDN": 0.07,
+				"VNM": 0.055,
+				"THA": 0.042,
+				"MMR": 0.032,
+				"PHL": 0.025,
+				"PAK": 0.014,
+				"BRA": 0.014,
+				"resto": 0.153
+			}
+		},
+		"maize": {
+			"source": "FAOSTAT (produção de milho)",
+			"year": 2022,
+			"shares": {
+				"USA": 0.32,
+				"CHN": 0.24,
+				"BRA": 0.11,
+				"ARG": 0.05,
+				"IND": 0.03,
+				"MEX": 0.025,
+				"UKR": 0.025,
+				"IDN": 0.02,
+				"FRA": 0.015,
+				"ZAF": 0.014,
+				"resto": 0.151
+			}
+		},
+		"soy": {
+			"source": "FAOSTAT (produção de soja)",
+			"year": 2022,
+			"shares": {
+				"BRA": 0.34,
+				"USA": 0.33,
+				"ARG": 0.13,
+				"CHN": 0.055,
+				"IND": 0.035,
+				"PRY": 0.03,
+				"CAN": 0.025,
+				"RUS": 0.015,
+				"resto": 0.040
+			}
+		},
+		"potato": {
+			"source": "FAOSTAT (produção de batata)",
+			"year": 2022,
+			"shares": {
+				"CHN": 0.25,
+				"IND": 0.14,
+				"UKR": 0.06,
+				"RUS": 0.05,
+				"USA": 0.05,
+				"DEU": 0.028,
+				"BGD": 0.027,
+				"FRA": 0.021,
+				"NLD": 0.018,
+				"POL": 0.02,
+				"resto": 0.336
+			}
+		},
+		"cotton": {
+			"source": "FAOSTAT (produção de algodão em pluma)",
+			"year": 2022,
+			"shares": {
+				"CHN": 0.24,
+				"IND": 0.24,
+				"USA": 0.13,
+				"BRA": 0.10,
+				"PAK": 0.06,
+				"UZB": 0.05,
+				"TUR": 0.04,
+				"AUS": 0.04,
+				"resto": 0.100
+			}
+		}
+	}
+}

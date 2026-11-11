@@ -889,6 +889,30 @@
    "status": "Producer",
    "source": "Mining Technology (15,2 Mt cobre fino; 1.538 Mt @ 0,99% Cu, início de 2013); Codelco",
    "data_quality": "estimated_public_source"
+  },
+  {
+   "name": "North Field",
+   "resource": "gas",
+   "lon": 51.9,
+   "lat": 26.0,
+   "quantity_kt": 18000000.0,
+   "quality": 0.9,
+   "depth_m": 3200,
+   "status": "Producer",
+   "source": "Energy Institute Statistical Review of World Energy 2024; QatarEnergy (North Field, ~24 tcm reservas provadas)",
+   "data_quality": "estimated_public_source"
+  },
+  {
+   "name": "Khuff/Awali",
+   "resource": "gas",
+   "lon": 50.55,
+   "lat": 26.0,
+   "quantity_kt": 112500.0,
+   "quality": 0.82,
+   "depth_m": 3000,
+   "status": "Producer",
+   "source": "US EIA / Bahrain NOGA (formação Khuff, campo Awali, ~0,1–0,2 tcm)",
+   "data_quality": "estimated_public_source"
   }
  ],
  "adjustments": [

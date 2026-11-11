@@ -839,3 +839,38 @@ soma ~1,25 M/dia).
 `economy_ai_test`, `population_demo_test`, `economy_long_run_test`,
 `economy_bistability_test`, `deposit_ring_test`, `balance_review.gd` e
 `python tools/validate_scenario_data.py` — **todos exit 0** (10 verificações).
+
+---
+
+## 15. Soja na cesta alimentar (B3-soja)
+
+> Esta seção foi reconstruída nesta rodada de fechamento: `GAME_STATE.md` §15 já
+> citava "`balance_review.md` §15", mas o arquivo commitado terminava em §14.3.
+
+- **Mudança:** a soja entrou na cesta de calorias substituível. Núcleo:
+  `kDemoFoodProducts = 5`, `kDemoFoodProductIds = {0,2,3,16,17}` (trigo, arroz,
+  milho, batata, soja) e `kDemoCaloricFactor = {1.0, 1.0, 1.0, 0.25, 1.3}`
+  (`gdextension/src/economy_sim.h`); `data/definitions/economy/goods.json`
+  mantém `soy.food = true`; `IndustryTemplates.FOOD_RESOURCES` ganhou soja
+  (`caloric_factor 1.3`) e soja saiu de `RENEWABLE_RESOURCES`;
+  `GeographyService.STAPLE_CROPS`/`STAPLE_CALORIC` idem.
+- **Fator calórico 1,3 (FAO/USDA):** soja seca (grãos maduros) ≈ 4.460 kcal/kg
+  (USDA FoodData Central) contra trigo ≈ 3.400 kcal/kg (FAO/INFOODS) →
+  446/340 ≈ 1,31, arredondado para 1,3. Não é preferência arbitrária: é
+  densidade calórica por tonelada, na mesma unidade das outras culturas.
+- **Sem exportação:** a fase 4d já pula bens com `demo_food_calories > 0`, então
+  a soja é consumida e negociada entre cidades — não vira commodity de
+  exportação para o "resto do mundo".
+- **Onde a soja vence:** **VEN** (a fazenda inicial resolve para soja) e
+  **Caiena** (a IA constrói soja) — são os trópicos em que o trigo é inviável
+  (aptidão < 0,30) e a soja tem a maior densidade calórica; SUR/GUY seguem em
+  arroz e a Europa inteira segue em trigo.
+- **Resultado 730 d (`balance_review.gd`):** soja **produzida e consumida**
+  (produção 699,8 t/d, consumo 779,5 t/d, 9 construções), **8/8 nações em 100%**
+  de satisfação alimentar, **0 falências**, 0 violações de invariante e
+  `money_total` conservado. Sem regressão: GBR 99,8% em
+  `economy_bistability_test`.
+- **Verificação:** `economy_live_path_test`, `economy_world_test`,
+  `economy_integration_test`, `economy_ai_test`, `population_demo_test`,
+  `economy_long_run_test`, `economy_bistability_test`, `balance_review.gd` e
+  `python tools/validate_scenario_data.py` — todos exit 0.

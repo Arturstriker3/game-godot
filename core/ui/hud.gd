@@ -106,6 +106,7 @@ const RESOURCE_LEGEND := [
 	{"key": "wood", "color": Color("#5B8C5A")},
 ]
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
+const NATURE_PATH := "res://data/definitions/natural/nature.json"
 
 ## Dimensões da "Etiqueta de inventário" (legenda do mapa de recursos).
 const LEGEND_WIDTH := 236.0
@@ -674,8 +675,8 @@ func show_deposit_info(info: Dictionary) -> void:
 	# demais fichas.
 	var display := _territory_display_name(info)
 	var split := _split_deposit_name(display)
-	var subtitle := ""
-	if not String(split["type"]).is_empty():
+	var subtitle := _region_subtitle(info)
+	if subtitle.is_empty() and not String(split["type"]).is_empty():
 		subtitle = I18n.t(String(split["type"]))
 	_legend_header("", String(split["name"]), subtitle, null, "back")
 
@@ -715,7 +716,7 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	_legend_header("", _territory_display_name(info), "", null, "back")
+	_legend_header("", _territory_display_name(info), _region_subtitle(info), null, "back")
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -872,6 +873,60 @@ func _mass_sig(value: float) -> String:
 	if absf(value) < 100.0:
 		return UiKit.number(value, 1)
 	return UiKit.number(value, 0)
+
+
+## Nome de exibição do país da região (código ISO-3 do Natural Earth). Nação
+## jogável usa o nome localizado curado (`I18n.nation_name`); nação não jogável
+## usa o nome localizado do Natural Earth admin-0 (gerado por
+## `name_territories.py`), com fallback para o código ISO-3 quando não há nome.
+## Só a Holanda diverge entre o jogo (NED) e o Natural Earth (NLD).
+func _region_country_name(code: String) -> String:
+	if code.is_empty():
+		return ""
+	var tag := "NED" if code == "NLD" else code
+	var name := I18n.nation_name(tag)
+	if not name.begins_with("nation."):
+		return name
+	var localized := _country_localized_name(tag)
+	return tag if localized.is_empty() else localized
+
+
+## Nome localizado de um país não jogável (adm0_a3 -> nome), lido do
+## `nature.json` (`country_names`, gerado por `name_territories.py` a partir do
+## Natural Earth admin-0). Vazio quando não há nome — o chamador cai no código.
+func _country_localized_name(code: String) -> String:
+	if _country_names.is_empty():
+		_country_names = _load_country_names()
+	return String(_country_names.get(code, {}).get(I18n.locale, ""))
+
+
+static var _country_names: Dictionary = {}
+
+
+func _load_country_names() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(NATURE_PATH))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	return parsed.get("country_names", {})
+
+
+## Área (km²) compacta: milhões como "8,9 M km²" (mesma convenção "M" da
+## população), o resto com separador de milhar + " km²".
+func _format_area(km2: float) -> String:
+	if km2 >= 1000000.0:
+		return _mass_sig(km2 / 1000000.0) + " M km²"
+	return _mass_sig(km2) + " km²"
+
+
+## Subtítulo da ficha quando o marcador agrega uma região (vários depósitos
+## ou territórios): "Região de {país} · {área}". Vazio quando não é agregado.
+func _region_subtitle(info: Dictionary) -> String:
+	if not bool(info.get("aggregate", false)):
+		return ""
+	var name := _region_country_name(String(info.get("country", "")))
+	return I18n.t("map.legend.region_of", {"nome": name}) \
+			+ " · " + _format_area(float(info.get("area_km2", 0.0)))
 
 
 ## Separa o tipo de lavra do nome do depósito ("Khouribga Underground" →

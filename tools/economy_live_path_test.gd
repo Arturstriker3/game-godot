@@ -177,17 +177,50 @@ func _check_main_minerals(applied: Dictionary) -> void:
 				_failures.append("%s: mineral principal %s ausente após a atribuição" % [tag, mineral])
 
 
-## (c) Caiena (FRA-CAY) só com depósitos da Guiana Francesa: não herda o
-## minério da França continental, e Paris (FRA-PAR) não herda o petróleo da
-## Guiana.
+## (c) Isolamento ultramarino por massa de terra: Caiena (FRA-CAY) só recebe
+## depósitos da Guiana Francesa (lon < -30) e Paris (FRA-PAR) só os da França
+## continental (lon >= -30). A Guiana real TEM ferro/bauxita/cobre/chumbo (MRDS),
+## então banir esses minerais em Caiena era falso positivo; a verificação correta
+## é pela localização do depósito, não por uma lista de minerais.
 func _check_overseas_isolation(applied: Dictionary) -> void:
-	var cay: Dictionary = applied.get("FRA-CAY", {})
-	for forbidden in ["iron", "bauxite", "lead", "tungsten", "uranium", "copper", "phosphate"]:
-		if float(cay.get(forbidden, 0.0)) > 0.0:
-			_failures.append("FRA-CAY herdou %s da França continental" % forbidden)
-	var par: Dictionary = applied.get("FRA-PAR", {})
-	if float(par.get("oil", 0.0)) > 0.0:
-		_failures.append("FRA-PAR herdou petróleo da Guiana Francesa")
+	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
+	var territory_code := {}
+	for territory_id: String in nature:
+		territory_code[territory_id] = String(nature[territory_id].get("adm0_a3", ""))
+	var guiana_totals := {}
+	var continental_totals := {}
+	for deposit: Dictionary in _load_dict(DEPOSITS_PATH).get("deposits", []):
+		if bool(deposit.get("facility", false)):
+			continue
+		if String(territory_code.get(String(deposit.get("territory", "")), "")) != "FRA":
+			continue
+		var resource := String(deposit.get("resource", ""))
+		var qty := float(deposit.get("quantity_kt", 0.0))
+		var bucket: Dictionary = guiana_totals if float(deposit.get("lon", 0.0)) < -30.0 \
+				else continental_totals
+		bucket[resource] = float(bucket.get(resource, 0.0)) + qty
+	_check_landmass_side("FRA-CAY", applied.get("FRA-CAY", {}), guiana_totals, crops)
+	_check_landmass_side("FRA-PAR", applied.get("FRA-PAR", {}), continental_totals, crops)
+
+
+## Verifica que a cidade declarou exatamente os depósitos da sua massa de terra:
+## (1) cada mineral da massa de terra bate com a reserva declarada; (2) nenhum
+## mineral de fora dela aparece. Tolera o arredondamento de reserva (1 kt).
+func _check_landmass_side(label: String, city_applied: Dictionary, expected_totals: Dictionary, crops: Array) -> void:
+	var minerals := {}
+	for key: String in city_applied:
+		if not crops.has(key):
+			minerals[key] = float(city_applied[key])
+	for mineral: String in expected_totals:
+		var declared := float(minerals.get(mineral, 0.0))
+		var expected := float(expected_totals[mineral])
+		if absf(declared - expected) > 1.0:
+			_failures.append("%s %s: %.0f kt != %.0f kt (isolamento por landmass quebrado)" % [
+				label, mineral, declared, expected])
+	for mineral: String in minerals:
+		if not expected_totals.has(mineral):
+			_failures.append("%s tem %s que não existe na sua massa de terra" % [label, mineral])
 
 
 ## Cidades de uma nação (id + center no formato esperado por apply_to_sim).

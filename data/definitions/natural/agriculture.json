@@ -8086,6 +8086,28 @@
 			"sugarcane": 0.471,
 			"coffee": 0.354,
 			"fruit": 0.15
+		},
+		"TRT000738": {
+			"wheat": 0.0,
+			"rice": 0.0,
+			"maize": 0.0,
+			"potato": 0.0,
+			"soy": 0.0,
+			"sugarcane": 0.0,
+			"coffee": 0.0,
+			"fruit": 0.0,
+			"cotton": 0.0
+		},
+		"TRT000739": {
+			"wheat": 0.0,
+			"rice": 0.0,
+			"maize": 0.0,
+			"potato": 0.0,
+			"soy": 0.0,
+			"sugarcane": 0.0,
+			"coffee": 0.0,
+			"fruit": 0.0,
+			"cotton": 0.0
 		}
 	}
 }

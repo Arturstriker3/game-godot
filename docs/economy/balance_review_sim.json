@@ -15,7 +15,7 @@
     "DEU-BER": {
       "bauxite": 107124.0,
       "coal": 35899912.0,
-      "copper": 4514.0,
+      "copper": 4515.0,
       "cotton": 0.234,
       "gold": 0.0,
       "iron": 662428.0,
@@ -33,7 +33,7 @@
     "FRA-CAY": {
       "cotton": 0.695,
       "maize": 0.985,
-      "oil": 458040.0,
+      "oil": 463727.0,
       "potato": 0.987,
       "rice": 0.175,
       "soy": 0.934,
@@ -42,7 +42,7 @@
     },
     "FRA-PAR": {
       "bauxite": 192980.0,
-      "copper": 2061.0,
+      "copper": 2062.0,
       "cotton": 0.695,
       "gold": 0.0,
       "iron": 1638420.0,
@@ -66,7 +66,7 @@
       "iron": 268316.0,
       "lead": 93.0,
       "maize": 0.586,
-      "oil": 381700.0,
+      "oil": 253104.0,
       "phosphate": 72767.0,
       "potato": 0.827,
       "rice": 0.0,
@@ -84,7 +84,7 @@
       "iron": 110830.0,
       "lead": 8.0,
       "maize": 0.0,
-      "oil": 2442879.0,
+      "oil": 2473208.0,
       "potato": 0.0,
       "rare_earths": 180.0,
       "rice": 0.758,
@@ -94,7 +94,7 @@
     },
     "NED-AMS": {
       "cotton": 0.187,
-      "gas": 200791.0,
+      "gas": 64697.0,
       "iron": 60877.0,
       "lead": 12.0,
       "maize": 0.681,
@@ -114,7 +114,7 @@
       "iron": 29064.0,
       "lead": 3.0,
       "maize": 0.083,
-      "oil": 3969679.0,
+      "oil": 4018963.0,
       "potato": 0.023,
       "rare_earths": 143.0,
       "rice": 0.716,
@@ -154,7 +154,7 @@
       "input": -1,
       "output": 0,
       "owner": "private",
-      "profit": 110874.367267384,
+      "profit": 92456.3580104817,
       "utilization": 0.772
     },
     {
@@ -165,7 +165,7 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 436.371619309193,
+      "profit": 327.982707466335,
       "utilization": 0.772
     },
     {
@@ -176,7 +176,7 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 436.371619309193,
+      "profit": 327.982707466335,
       "utilization": 0.772
     },
     {
@@ -187,36 +187,36 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 436.371619309193,
+      "profit": 327.982707466335,
       "utilization": 0.772
     },
     {
       "bankrupt": false,
       "capacity": 20.0,
       "city": "GBR-LDN",
-      "id": "STATE-WHEAT-23",
+      "id": "STATE-WHEAT-22",
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 436.371619309193,
+      "profit": 327.982707466335,
       "utilization": 0.772
     },
     {
       "bankrupt": false,
       "capacity": 20.0,
       "city": "GBR-LDN",
-      "id": "STATE-WHEAT-30",
+      "id": "STATE-WHEAT-28",
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 436.371619309193,
+      "profit": 327.982707466335,
       "utilization": 0.772
     },
     {
       "bankrupt": false,
       "capacity": 2.0,
       "city": "GBR-LDN",
-      "id": "STATE-TUNGSTEN-36",
+      "id": "STATE-TUNGSTEN-33",
       "input": -1,
       "output": 8,
       "owner": "state",
@@ -227,7 +227,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-IRON-42",
+      "id": "STATE-IRON-38",
       "input": -1,
       "output": 1,
       "owner": "state",
@@ -238,7 +238,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-COPPER-47",
+      "id": "STATE-COPPER-43",
       "input": -1,
       "output": 13,
       "owner": "state",
@@ -249,7 +249,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-OIL-50",
+      "id": "STATE-OIL-47",
       "input": -1,
       "output": 15,
       "owner": "state",
@@ -260,7 +260,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-LEAD-52",
+      "id": "STATE-LEAD-51",
       "input": -1,
       "output": 5,
       "owner": "state",
@@ -271,7 +271,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-BAUXITE-53",
+      "id": "STATE-BAUXITE-54",
       "input": -1,
       "output": 4,
       "owner": "state",
@@ -282,7 +282,7 @@
       "bankrupt": false,
       "capacity": 1960.0,
       "city": "GBR-LDN",
-      "id": "AI-IRON-7",
+      "id": "AI-IRON-8",
       "input": -1,
       "output": 1,
       "owner": "private",
@@ -293,7 +293,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-PHOSPHATE-54",
+      "id": "STATE-PHOSPHATE-57",
       "input": -1,
       "output": 7,
       "owner": "state",
@@ -304,7 +304,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GBR-LDN",
-      "id": "STATE-COAL-55",
+      "id": "STATE-COAL-59",
       "input": -1,
       "output": 12,
       "owner": "state",
@@ -319,18 +319,18 @@
       "input": -1,
       "output": 0,
       "owner": "private",
-      "profit": 45647.6253736299,
-      "utilization": 0.597808037196944
+      "profit": 46073.6124666774,
+      "utilization": 0.599498462169355
     },
     {
       "bankrupt": false,
-      "capacity": 4007.7558064009,
+      "capacity": 4018.26267345299,
       "city": "FRA-PAR",
       "id": "AI-IRON-1",
       "input": -1,
       "output": 1,
       "owner": "private",
-      "profit": 582469.650482947,
+      "profit": 583997.769227002,
       "utilization": 0.808
     },
     {
@@ -370,7 +370,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "FRA-PAR",
-      "id": "STATE-LEAD-24",
+      "id": "STATE-LEAD-23",
       "input": -1,
       "output": 5,
       "owner": "state",
@@ -381,7 +381,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "FRA-PAR",
-      "id": "STATE-BAUXITE-31",
+      "id": "STATE-BAUXITE-29",
       "input": -1,
       "output": 4,
       "owner": "state",
@@ -392,7 +392,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "FRA-PAR",
-      "id": "STATE-PHOSPHATE-37",
+      "id": "STATE-PHOSPHATE-34",
       "input": -1,
       "output": 7,
       "owner": "state",
@@ -401,25 +401,14 @@
     },
     {
       "bankrupt": false,
-      "capacity": 20.0,
+      "capacity": 5.01957415033303,
       "city": "FRA-PAR",
-      "id": "STATE-WHEAT-56",
+      "id": "STATE-WHEAT-48",
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 152.158751245433,
-      "utilization": 0.597808037196944
-    },
-    {
-      "bankrupt": false,
-      "capacity": 2.0,
-      "city": "FRA-PAR",
-      "id": "STATE-WHEAT-59",
-      "input": -1,
-      "output": 0,
-      "owner": "state",
-      "profit": 15.2158751245433,
-      "utilization": 0.597808037196944
+      "profit": 38.5449856916992,
+      "utilization": 0.599498462169355
     },
     {
       "bankrupt": false,
@@ -434,13 +423,13 @@
     },
     {
       "bankrupt": false,
-      "capacity": 3744.48712743155,
+      "capacity": 3847.44753897917,
       "city": "DEU-BER",
       "id": "AI-IRON-2",
       "input": -1,
       "output": 1,
       "owner": "private",
-      "profit": 540804.894398957,
+      "profit": 555686.792284049,
       "utilization": 0.803
     },
     {
@@ -467,31 +456,31 @@
     },
     {
       "bankrupt": false,
-      "capacity": 2.00401155324173,
+      "capacity": 2.17962398321671,
       "city": "DEU-BER",
-      "id": "STATE-LEAD-29",
+      "id": "STATE-LEAD-24",
       "input": -1,
       "output": 5,
       "owner": "state",
-      "profit": 89.5662903548092,
+      "profit": 97.4150244938959,
       "utilization": 0.7565
     },
     {
       "bankrupt": false,
-      "capacity": 7.02571105122369,
+      "capacity": 7.15236633079266,
       "city": "DEU-BER",
-      "id": "STATE-BAUXITE-35",
+      "id": "STATE-BAUXITE-30",
       "input": -1,
       "output": 4,
       "owner": "state",
-      "profit": 214.519548382538,
+      "profit": 218.386777361258,
       "utilization": 0.7915
     },
     {
       "bankrupt": false,
       "capacity": 10.0,
       "city": "DEU-BER",
-      "id": "STATE-PHOSPHATE-41",
+      "id": "STATE-PHOSPHATE-35",
       "input": -1,
       "output": 7,
       "owner": "state",
@@ -502,7 +491,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "DEU-BER",
-      "id": "STATE-COAL-46",
+      "id": "STATE-COAL-39",
       "input": -1,
       "output": 12,
       "owner": "state",
@@ -511,14 +500,14 @@
     },
     {
       "bankrupt": false,
-      "capacity": 820.304224575028,
+      "capacity": 819.718573517784,
       "city": "NED-AMS",
       "id": "ams_wheat",
       "input": -1,
       "output": 0,
       "owner": "private",
-      "profit": 22827.2187979963,
-      "utilization": 0.814947905238977
+      "profit": 22825.0392666838,
+      "utilization": 0.815466841265762
     },
     {
       "bankrupt": false,
@@ -528,8 +517,8 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 334.556240400741,
-      "utilization": 0.814947905238977
+      "profit": 334.99214666324,
+      "utilization": 0.815466841265762
     },
     {
       "bankrupt": false,
@@ -539,8 +528,8 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 334.556240400741,
-      "utilization": 0.814947905238977
+      "profit": 334.99214666324,
+      "utilization": 0.815466841265762
     },
     {
       "bankrupt": false,
@@ -550,8 +539,8 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 334.556240400741,
-      "utilization": 0.814947905238977
+      "profit": 334.99214666324,
+      "utilization": 0.815466841265762
     },
     {
       "bankrupt": false,
@@ -561,36 +550,36 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 334.556240400741,
-      "utilization": 0.814947905238977
+      "profit": 334.99214666324,
+      "utilization": 0.815466841265762
+    },
+    {
+      "bankrupt": false,
+      "capacity": 3076.47603853216,
+      "city": "NED-AMS",
+      "id": "AI-IRON-5",
+      "input": -1,
+      "output": 1,
+      "owner": "private",
+      "profit": 397212.387488589,
+      "utilization": 0.718
     },
     {
       "bankrupt": false,
       "capacity": 20.0,
       "city": "NED-AMS",
-      "id": "STATE-WHEAT-32",
+      "id": "STATE-WHEAT-31",
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 334.556240400741,
-      "utilization": 0.814947905238977
+      "profit": 334.99214666324,
+      "utilization": 0.815466841265761
     },
     {
       "bankrupt": false,
       "capacity": 10.0,
       "city": "NED-AMS",
-      "id": "STATE-IRON-38",
-      "input": -1,
-      "output": 1,
-      "owner": "state",
-      "profit": 1187.9445,
-      "utilization": 0.718
-    },
-    {
-      "bankrupt": false,
-      "capacity": 10.0,
-      "city": "NED-AMS",
-      "id": "STATE-GAS-43",
+      "id": "STATE-GAS-36",
       "input": -1,
       "output": 14,
       "owner": "state",
@@ -599,20 +588,9 @@
     },
     {
       "bankrupt": false,
-      "capacity": 2920.0,
-      "city": "NED-AMS",
-      "id": "AI-IRON-6",
-      "input": -1,
-      "output": 1,
-      "owner": "private",
-      "profit": 376962.978,
-      "utilization": 0.718
-    },
-    {
-      "bankrupt": false,
       "capacity": 2.0,
       "city": "NED-AMS",
-      "id": "STATE-LEAD-48",
+      "id": "STATE-LEAD-40",
       "input": -1,
       "output": 5,
       "owner": "state",
@@ -623,7 +601,7 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "NED-AMS",
-      "id": "STATE-PHOSPHATE-51",
+      "id": "STATE-PHOSPHATE-44",
       "input": -1,
       "output": 7,
       "owner": "state",
@@ -632,13 +610,13 @@
     },
     {
       "bankrupt": false,
-      "capacity": 890.931801374555,
+      "capacity": 890.255577122055,
       "city": "BEL-BRU",
       "id": "bru_wheat",
       "input": -1,
       "output": 0,
       "owner": "private",
-      "profit": 47060.8168297255,
+      "profit": 51360.6505775886,
       "utilization": 0.757
     },
     {
@@ -649,7 +627,7 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 863.579237969033,
+      "profit": 961.098791793074,
       "utilization": 0.757
     },
     {
@@ -660,7 +638,7 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 863.579237969033,
+      "profit": 961.098791793074,
       "utilization": 0.757
     },
     {
@@ -671,7 +649,7 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 863.579237969033,
+      "profit": 961.098791793074,
       "utilization": 0.757
     },
     {
@@ -682,47 +660,36 @@
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 863.579237969033,
+      "profit": 961.098791793074,
       "utilization": 0.757
+    },
+    {
+      "bankrupt": false,
+      "capacity": 3193.35108864957,
+      "city": "BEL-BRU",
+      "id": "AI-IRON-4",
+      "input": -1,
+      "output": 1,
+      "owner": "private",
+      "profit": 419781.606668188,
+      "utilization": 0.731
     },
     {
       "bankrupt": false,
       "capacity": 20.0,
       "city": "BEL-BRU",
-      "id": "STATE-WHEAT-33",
+      "id": "STATE-WHEAT-32",
       "input": -1,
       "output": 0,
       "owner": "state",
-      "profit": 863.579237969033,
+      "profit": 961.098791793074,
       "utilization": 0.757
     },
     {
       "bankrupt": false,
       "capacity": 10.0,
       "city": "BEL-BRU",
-      "id": "STATE-IRON-39",
-      "input": -1,
-      "output": 1,
-      "owner": "state",
-      "profit": 1208.58475,
-      "utilization": 0.731
-    },
-    {
-      "bankrupt": false,
-      "capacity": 3080.0,
-      "city": "BEL-BRU",
-      "id": "AI-IRON-5",
-      "input": -1,
-      "output": 1,
-      "owner": "private",
-      "profit": 404837.539,
-      "utilization": 0.731
-    },
-    {
-      "bankrupt": false,
-      "capacity": 10.0,
-      "city": "BEL-BRU",
-      "id": "STATE-PHOSPHATE-44",
+      "id": "STATE-PHOSPHATE-37",
       "input": -1,
       "output": 7,
       "owner": "state",
@@ -731,36 +698,36 @@
     },
     {
       "bankrupt": false,
-      "capacity": 18.6900166785541,
+      "capacity": 18.6925394903113,
       "city": "FRA-CAY",
-      "id": "STATE-MAIZE-6",
+      "id": "STATE-SOY-6",
       "input": -1,
-      "output": 3,
+      "output": 17,
       "owner": "state",
-      "profit": 273.089175303493,
-      "utilization": 0.728151922624239
+      "profit": 840.433172157393,
+      "utilization": 0.934
     },
     {
       "bankrupt": false,
-      "capacity": 17.5795884848928,
+      "capacity": 17.1565527314338,
       "city": "FRA-CAY",
-      "id": "STATE-MAIZE-15",
+      "id": "STATE-SOY-15",
       "input": -1,
-      "output": 3,
+      "output": 17,
       "owner": "state",
-      "profit": 256.86415395353,
-      "utilization": 0.728151922624239
+      "profit": 771.373843711181,
+      "utilization": 0.934
     },
     {
       "bankrupt": false,
-      "capacity": 9.27443891400483,
+      "capacity": 2.0,
       "city": "FRA-CAY",
-      "id": "STATE-MAIZE-21",
+      "id": "STATE-SOY-21",
       "input": -1,
-      "output": 3,
+      "output": 17,
       "owner": "state",
-      "profit": 135.513462507201,
-      "utilization": 0.728151922624239
+      "profit": 89.9217757536908,
+      "utilization": 0.934
     },
     {
       "bankrupt": false,
@@ -775,75 +742,53 @@
     },
     {
       "bankrupt": false,
-      "capacity": 211.663835817433,
+      "capacity": 216.732733493415,
       "city": "FRA-CAY",
-      "id": "AI-OIL-4",
+      "id": "AI-OIL-6",
       "input": -1,
       "output": 15,
       "owner": "private",
-      "profit": 24544.2759745164,
+      "profit": 25130.8732541179,
       "utilization": 0.86
     },
     {
       "bankrupt": false,
-      "capacity": 2.625,
-      "city": "FRA-CAY",
-      "id": "AI-MAIZE-9",
-      "input": -1,
-      "output": 3,
-      "owner": "private",
-      "profit": 38.3551870231465,
-      "utilization": 0.728151922624239
-    },
-    {
-      "bankrupt": false,
-      "capacity": 13.6312460854414,
-      "city": "FRA-CAY",
-      "id": "STATE-MAIZE-58",
-      "input": -1,
-      "output": 3,
-      "owner": "state",
-      "profit": 199.172949701196,
-      "utilization": 0.728151922624239
-    },
-    {
-      "bankrupt": false,
-      "capacity": 1149.00059810967,
+      "capacity": 1105.20675979043,
       "city": "VEN-CCS",
       "id": "ccs_wheat",
       "input": -1,
-      "output": 2,
+      "output": 17,
       "owner": "private",
-      "profit": 34157.9196014741,
-      "utilization": 0.74422545326908
+      "profit": 15872.1435902752,
+      "utilization": 0.586210427048304
     },
     {
       "bankrupt": false,
-      "capacity": 20.0,
+      "capacity": 8.90076923076908,
       "city": "VEN-CCS",
-      "id": "STATE-RICE-7",
+      "id": "STATE-SOY-7",
       "input": -1,
-      "output": 2,
+      "output": 17,
       "owner": "state",
-      "profit": 509.580398525788,
-      "utilization": 0.74422545326908
+      "profit": 94.6770070717888,
+      "utilization": 0.586210427048304
     },
     {
       "bankrupt": false,
-      "capacity": 1560.0,
+      "capacity": 1845.61870872812,
       "city": "VEN-CCS",
-      "id": "AI-IRON-8",
+      "id": "AI-IRON-3",
       "input": -1,
       "output": 1,
       "owner": "private",
-      "profit": 212420.997,
+      "profit": 251754.89755902,
       "utilization": 0.758
     },
     {
       "bankrupt": false,
       "capacity": 2.0,
       "city": "VEN-CCS",
-      "id": "STATE-DIAMOND-57",
+      "id": "STATE-DIAMOND-41",
       "input": -1,
       "output": 11,
       "owner": "state",
@@ -852,9 +797,20 @@
     },
     {
       "bankrupt": false,
+      "capacity": 4.82214713669892,
+      "city": "VEN-CCS",
+      "id": "STATE-SOY-45",
+      "input": -1,
+      "output": 17,
+      "owner": "state",
+      "profit": 51.2929216257191,
+      "utilization": 0.586210427048305
+    },
+    {
+      "bankrupt": false,
       "capacity": 2.0,
       "city": "VEN-CCS",
-      "id": "STATE-GOLD-61",
+      "id": "STATE-GOLD-49",
       "input": -1,
       "output": 6,
       "owner": "state",
@@ -863,9 +819,20 @@
     },
     {
       "bankrupt": false,
+      "capacity": 4.82214713666421,
+      "city": "VEN-CCS",
+      "id": "STATE-SOY-52",
+      "input": -1,
+      "output": 17,
+      "owner": "state",
+      "profit": 51.2929216253498,
+      "utilization": 0.586210427048304
+    },
+    {
+      "bankrupt": false,
       "capacity": 2.0,
       "city": "VEN-CCS",
-      "id": "STATE-URANIUM-62",
+      "id": "STATE-URANIUM-55",
       "input": -1,
       "output": 20,
       "owner": "state",
@@ -874,9 +841,20 @@
     },
     {
       "bankrupt": false,
+      "capacity": 4.82214713662879,
+      "city": "VEN-CCS",
+      "id": "STATE-SOY-58",
+      "input": -1,
+      "output": 17,
+      "owner": "state",
+      "profit": 51.2929216249731,
+      "utilization": 0.586210427048304
+    },
+    {
+      "bankrupt": false,
       "capacity": 10.0,
       "city": "VEN-CCS",
-      "id": "STATE-RARE_EARTHS-63",
+      "id": "STATE-RARE_EARTHS-60",
       "input": -1,
       "output": 9,
       "owner": "state",
@@ -885,58 +863,91 @@
     },
     {
       "bankrupt": false,
+      "capacity": 4.82214713659241,
+      "city": "VEN-CCS",
+      "id": "STATE-SOY-61",
+      "input": -1,
+      "output": 17,
+      "owner": "state",
+      "profit": 51.2929216245861,
+      "utilization": 0.586210427048304
+    },
+    {
+      "bankrupt": false,
       "capacity": 2.0,
       "city": "VEN-CCS",
-      "id": "STATE-TUNGSTEN-65",
+      "id": "STATE-TUNGSTEN-62",
       "input": -1,
       "output": 8,
       "owner": "state",
-      "profit": 131.039999999995,
+      "profit": 131.04,
       "utilization": 0.5
     },
     {
       "bankrupt": false,
       "capacity": 10.0,
       "city": "VEN-CCS",
-      "id": "STATE-COPPER-67",
+      "id": "STATE-COPPER-63",
       "input": -1,
       "output": 13,
       "owner": "state",
-      "profit": 1236.97965945375,
+      "profit": 1236.97999999999,
       "utilization": 0.7585
     },
     {
       "bankrupt": false,
       "capacity": 10.0,
       "city": "VEN-CCS",
-      "id": "STATE-OIL-69",
+      "id": "STATE-OIL-64",
       "input": -1,
       "output": 15,
       "owner": "state",
-      "profit": 1071.81160357249,
+      "profit": 1072.54499997469,
       "utilization": 0.8835
     },
     {
       "bankrupt": false,
       "capacity": 4.86575342465753,
       "city": "VEN-CCS",
-      "id": "STATE-LEAD-71",
+      "id": "STATE-LEAD-65",
       "input": -1,
       "output": 5,
       "owner": "state",
-      "profit": 41.6293782221939,
+      "profit": 41.6767999983635,
       "utilization": 0.7805
     },
     {
       "bankrupt": false,
-      "capacity": 85.423479817702,
+      "capacity": 10.0,
+      "city": "VEN-CCS",
+      "id": "STATE-SULFUR-66",
+      "input": -1,
+      "output": 10,
+      "owner": "state",
+      "profit": 360.223209617888,
+      "utilization": 0.8925
+    },
+    {
+      "bankrupt": false,
+      "capacity": 10.0,
+      "city": "VEN-CCS",
+      "id": "STATE-BAUXITE-67",
+      "input": -1,
+      "output": 4,
+      "owner": "state",
+      "profit": 238.765,
+      "utilization": 0.788
+    },
+    {
+      "bankrupt": false,
+      "capacity": 72.0,
       "city": "SUR-PBM",
       "id": "pbm_wheat",
       "input": -1,
       "output": 2,
       "owner": "private",
-      "profit": 2123.21966298029,
-      "utilization": 0.685805476932407
+      "profit": 3049.2532947789,
+      "utilization": 0.716
     },
     {
       "bankrupt": false,
@@ -946,85 +957,19 @@
       "input": -1,
       "output": 2,
       "owner": "state",
-      "profit": 442.105325186998,
-      "utilization": 0.685805476932407
+      "profit": 847.01480410525,
+      "utilization": 0.716
     },
     {
       "bankrupt": false,
-      "capacity": 118.09,
-      "city": "SUR-PBM",
-      "id": "AI-IRON-10",
-      "input": -1,
-      "output": 1,
-      "owner": "private",
-      "profit": 14568.994419,
-      "utilization": 0.6875
-    },
-    {
-      "bankrupt": false,
-      "capacity": 2.12932147324774,
-      "city": "SUR-PBM",
-      "id": "STATE-RARE_EARTHS-64",
-      "input": -1,
-      "output": 9,
-      "owner": "state",
-      "profit": 1956.28748702786,
-      "utilization": 0.8035
-    },
-    {
-      "bankrupt": false,
-      "capacity": 7.52676262109873,
-      "city": "SUR-PBM",
-      "id": "STATE-COPPER-66",
-      "input": -1,
-      "output": 13,
-      "owner": "state",
-      "profit": 704.524509046215,
-      "utilization": 0.779
-    },
-    {
-      "bankrupt": false,
-      "capacity": 10.0,
-      "city": "SUR-PBM",
-      "id": "STATE-OIL-68",
-      "input": -1,
-      "output": 15,
-      "owner": "state",
-      "profit": 1092.80969357572,
-      "utilization": 0.91
-    },
-    {
-      "bankrupt": false,
-      "capacity": 2.0,
-      "city": "SUR-PBM",
-      "id": "STATE-LEAD-70",
-      "input": -1,
-      "output": 5,
-      "owner": "state",
-      "profit": 1.96199625855581,
-      "utilization": 0.5
-    },
-    {
-      "bankrupt": false,
-      "capacity": 10.0,
-      "city": "SUR-PBM",
-      "id": "STATE-BAUXITE-72",
-      "input": -1,
-      "output": 4,
-      "owner": "state",
-      "profit": 191.395,
-      "utilization": 0.769
-    },
-    {
-      "bankrupt": false,
-      "capacity": 41.065,
+      "capacity": 37.0,
       "city": "GUY-GEO",
       "id": "geo_wheat",
       "input": -1,
       "output": 2,
       "owner": "private",
-      "profit": 900.408838159017,
-      "utilization": 0.637953382177455
+      "profit": 2346.15272169362,
+      "utilization": 0.758
     },
     {
       "bankrupt": false,
@@ -1034,8 +979,8 @@
       "input": -1,
       "output": 2,
       "owner": "state",
-      "profit": 171.561835370035,
-      "utilization": 0.637953382177455
+      "profit": 554.052017335741,
+      "utilization": 0.758
     },
     {
       "bankrupt": false,
@@ -1045,58 +990,47 @@
       "input": -1,
       "output": 2,
       "owner": "state",
-      "profit": 41.5179641595485,
-      "utilization": 0.637953382177455
+      "profit": 134.080588195249,
+      "utilization": 0.758
     },
     {
       "bankrupt": false,
-      "capacity": 3.94911687054808,
+      "capacity": 171.360755863593,
       "city": "GUY-GEO",
-      "id": "STATE-RARE_EARTHS-22",
+      "id": "AI-IRON-7",
+      "input": -1,
+      "output": 1,
+      "owner": "private",
+      "profit": 27168.1091565331,
+      "utilization": 0.8815
+    },
+    {
+      "bankrupt": false,
+      "capacity": 2.05036253654665,
+      "city": "GUY-GEO",
+      "id": "STATE-RARE_EARTHS-42",
       "input": -1,
       "output": 9,
       "owner": "state",
-      "profit": 4053.46241106014,
+      "profit": 2104.53824066856,
       "utilization": 0.8935
     },
     {
       "bankrupt": false,
-      "capacity": 4.06116512081323,
+      "capacity": 7.02218731952432,
       "city": "GUY-GEO",
-      "id": "STATE-IRON-28",
-      "input": -1,
-      "output": 1,
-      "owner": "state",
-      "profit": 601.059240331935,
-      "utilization": 0.8815
-    },
-    {
-      "bankrupt": false,
-      "capacity": 183.098127615485,
-      "city": "GUY-GEO",
-      "id": "AI-IRON-3",
-      "input": -1,
-      "output": 1,
-      "owner": "private",
-      "profit": 29030.0371570614,
-      "utilization": 0.8815
-    },
-    {
-      "bankrupt": false,
-      "capacity": 10.0,
-      "city": "GUY-GEO",
-      "id": "STATE-COPPER-34",
+      "id": "STATE-COPPER-46",
       "input": -1,
       "output": 13,
       "owner": "state",
-      "profit": 943.405479452055,
+      "profit": 890.90490522805,
       "utilization": 0.7725
     },
     {
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GUY-GEO",
-      "id": "STATE-OIL-40",
+      "id": "STATE-OIL-50",
       "input": -1,
       "output": 15,
       "owner": "state",
@@ -1107,7 +1041,7 @@
       "bankrupt": false,
       "capacity": 2.0,
       "city": "GUY-GEO",
-      "id": "STATE-LEAD-45",
+      "id": "STATE-LEAD-53",
       "input": -1,
       "output": 5,
       "owner": "state",
@@ -1118,23 +1052,12 @@
       "bankrupt": false,
       "capacity": 10.0,
       "city": "GUY-GEO",
-      "id": "STATE-BAUXITE-49",
+      "id": "STATE-BAUXITE-56",
       "input": -1,
       "output": 4,
       "owner": "state",
       "profit": 347.995,
       "utilization": 0.8855
-    },
-    {
-      "bankrupt": false,
-      "capacity": 3.40840799459037,
-      "city": "GUY-GEO",
-      "id": "STATE-RICE-60",
-      "input": -1,
-      "output": 2,
-      "owner": "state",
-      "profit": 65.9247724060682,
-      "utilization": 0.637953382177455
     }
   ],
   "deposits": {
@@ -1147,29 +1070,29 @@
       "iron": {
         "depth_m": 217.0,
         "quality": 0.462,
-        "remaining_kt": 116361.615754999
+        "remaining_kt": 116315.959469132
       },
       "phosphate": {
         "depth_m": 57.0,
         "quality": 0.422,
-        "remaining_kt": 17027.3525700007
+        "remaining_kt": 17027.1037200007
       }
     },
     "DEU": {
       "bauxite": {
         "depth_m": 56.0,
         "quality": 0.583,
-        "remaining_kt": 107120.87480213
+        "remaining_kt": 107120.699579894
       },
       "coal": {
         "depth_m": 800.0,
         "quality": 0.78,
-        "remaining_kt": 35899907.6211992
+        "remaining_kt": 35899907.4342992
       },
       "copper": {
         "depth_m": 380.0,
         "quality": 0.546,
-        "remaining_kt": 4508.68175999982
+        "remaining_kt": 4509.68175999982
       },
       "gold": {
         "depth_m": 365.0,
@@ -1179,17 +1102,17 @@
       "iron": {
         "depth_m": 175.0,
         "quality": 0.606,
-        "remaining_kt": 661439.277013294
+        "remaining_kt": 661387.733307546
       },
       "lead": {
         "depth_m": 261.0,
         "quality": 0.513,
-        "remaining_kt": 180.094927260199
+        "remaining_kt": 179.980988734247
       },
       "phosphate": {
         "depth_m": 86.0,
         "quality": 0.482,
-        "remaining_kt": 54496.0949300009
+        "remaining_kt": 54495.9393200009
       },
       "tungsten": {
         "depth_m": 436.0,
@@ -1211,7 +1134,7 @@
       "copper": {
         "depth_m": 453.0,
         "quality": 0.628,
-        "remaining_kt": 2055.68458000006
+        "remaining_kt": 2056.68458000006
       },
       "gold": {
         "depth_m": 287.0,
@@ -1221,7 +1144,7 @@
       "iron": {
         "depth_m": 138.0,
         "quality": 0.616,
-        "remaining_kt": 1637286.29059713
+        "remaining_kt": 1637280.94852467
       },
       "lead": {
         "depth_m": 405.0,
@@ -1231,7 +1154,7 @@
       "oil": {
         "depth_m": 2500.0,
         "quality": 0.72,
-        "remaining_kt": 457982.862346172
+        "remaining_kt": 463668.073036871
       },
       "phosphate": {
         "depth_m": 76.0,
@@ -1283,7 +1206,7 @@
       "oil": {
         "depth_m": 2560.0,
         "quality": 0.796,
-        "remaining_kt": 381696.021860007
+        "remaining_kt": 253100.021859994
       },
       "phosphate": {
         "depth_m": 95.0,
@@ -1300,12 +1223,12 @@
       "bauxite": {
         "depth_m": 32.0,
         "quality": 0.771,
-        "remaining_kt": 126321.767310003
+        "remaining_kt": 126322.945025003
       },
       "copper": {
         "depth_m": 295.0,
         "quality": 0.545,
-        "remaining_kt": 157.496325000004
+        "remaining_kt": 159.558912133051
       },
       "diamond": {
         "depth_m": 421.0,
@@ -1320,56 +1243,56 @@
       "iron": {
         "depth_m": 201.0,
         "quality": 0.763,
-        "remaining_kt": 110777.76733263
+        "remaining_kt": 110786.341337296
       },
       "lead": {
         "depth_m": 362.0,
         "quality": 0.527,
-        "remaining_kt": 7.48399999999984
+        "remaining_kt": 7.61699999999989
       },
       "oil": {
         "depth_m": 1944.0,
         "quality": 0.846,
-        "remaining_kt": 2442873.94196002
+        "remaining_kt": 2473204.16955001
       },
       "rare_earths": {
         "depth_m": 273.0,
         "quality": 0.787,
-        "remaining_kt": 177.695866041736
+        "remaining_kt": 179.111480520693
       }
     },
     "NED": {
       "gas": {
         "depth_m": 2900.0,
         "quality": 0.82,
-        "remaining_kt": 200786.331700002
+        "remaining_kt": 64692.0131999984
       },
       "iron": {
         "depth_m": 134.0,
         "quality": 0.436,
-        "remaining_kt": 60340.5570699997
+        "remaining_kt": 60280.4115454923
       },
       "lead": {
         "depth_m": 412.0,
         "quality": 0.353,
-        "remaining_kt": 11.3674520547945
+        "remaining_kt": 11.3214246575343
       },
       "phosphate": {
         "depth_m": 81.0,
         "quality": 0.46,
-        "remaining_kt": 26557.7660999995
+        "remaining_kt": 26557.5105999995
       }
     },
     "SUR": {
       "bauxite": {
         "depth_m": 56.0,
         "quality": 0.538,
-        "remaining_kt": 27109.82313
+        "remaining_kt": 27110.0
       },
       "copper": {
         "depth_m": 494.0,
         "quality": 0.558,
-        "remaining_kt": 121.249491445526
+        "remaining_kt": 122.0
       },
       "diamond": {
         "depth_m": 471.0,
@@ -1384,22 +1307,22 @@
       "iron": {
         "depth_m": 176.0,
         "quality": 0.375,
-        "remaining_kt": 29056.1654665625
+        "remaining_kt": 29064.0
       },
       "lead": {
         "depth_m": 286.0,
         "quality": 0.467,
-        "remaining_kt": 2.939
+        "remaining_kt": 3.0
       },
       "oil": {
         "depth_m": 2123.0,
         "quality": 0.82,
-        "remaining_kt": 3969678.15370001
+        "remaining_kt": 4018963.0
       },
       "rare_earths": {
         "depth_m": 255.0,
         "quality": 0.607,
-        "remaining_kt": 142.721121701987
+        "remaining_kt": 143.0
       },
       "uranium": {
         "depth_m": 315.0,
@@ -1411,37 +1334,37 @@
       "bauxite": {
         "depth_m": 55.0,
         "quality": 0.576,
-        "remaining_kt": 97916.0
+        "remaining_kt": 97915.7635999999
       },
       "copper": {
         "depth_m": 458.0,
         "quality": 0.517,
-        "remaining_kt": 987.294595000005
+        "remaining_kt": 986.710550000009
       },
       "diamond": {
         "depth_m": 417.0,
         "quality": 0.58,
-        "remaining_kt": 0.729
+        "remaining_kt": 0.512
       },
       "gold": {
         "depth_m": 347.0,
         "quality": 0.585,
-        "remaining_kt": 0.764
+        "remaining_kt": 0.582
       },
       "iron": {
         "depth_m": 191.0,
         "quality": 0.516,
-        "remaining_kt": 680351.728479999
+        "remaining_kt": 680057.370976039
       },
       "lead": {
         "depth_m": 317.0,
         "quality": 0.561,
-        "remaining_kt": 36.9126524273973
+        "remaining_kt": 36.6202279452056
       },
       "oil": {
         "depth_m": 1606.0,
         "quality": 0.767,
-        "remaining_kt": 41395343.4875698
+        "remaining_kt": 41395342.8072746
       },
       "phosphate": {
         "depth_m": 86.0,
@@ -1451,22 +1374,22 @@
       "rare_earths": {
         "depth_m": 247.0,
         "quality": 0.798,
-        "remaining_kt": 88.5346300000005
+        "remaining_kt": 87.5277500000008
       },
       "sulfur": {
         "depth_m": 135.0,
         "quality": 0.785,
-        "remaining_kt": 722.0
+        "remaining_kt": 721.419875000002
       },
       "tungsten": {
         "depth_m": 232.0,
         "quality": 0.416,
-        "remaining_kt": 0.869
+        "remaining_kt": 0.792
       },
       "uranium": {
         "depth_m": 281.0,
         "quality": 0.597,
-        "remaining_kt": 0.799
+        "remaining_kt": 0.652
       }
     }
   },
@@ -1474,92 +1397,92 @@
     "buildings_by_output": {
       "bauxite": 5,
       "coal": 2,
-      "copper": 6,
+      "copper": 5,
       "cotton": 0,
       "diamond": 1,
       "gas": 1,
       "gold": 1,
-      "iron": 12,
-      "lead": 7,
-      "maize": 5,
-      "oil": 6,
+      "iron": 8,
+      "lead": 6,
+      "maize": 0,
+      "oil": 5,
       "phosphate": 5,
       "potato": 0,
-      "rare_earths": 3,
-      "rice": 8,
-      "soy": 0,
-      "sulfur": 0,
+      "rare_earths": 2,
+      "rice": 5,
+      "soy": 9,
+      "sulfur": 1,
       "tungsten": 4,
       "uranium": 2,
-      "wheat": 22,
+      "wheat": 21,
       "wood": 0
     },
     "consumed_t_day": {
-      "bauxite": 38.7858502970436,
+      "bauxite": 39.0760979508224,
       "coal": 17.4,
-      "copper": 44.5933480818359,
+      "copper": 36.4296397043325,
       "cotton": 0.0,
       "diamond": 1.0,
       "gas": 9.1,
       "gold": 1.0,
-      "iron": 13639.8476464465,
-      "lead": 24.3838237811233,
-      "maize": 45.0000003486413,
-      "oil": 226.775898802992,
+      "iron": 14033.1195429289,
+      "lead": 23.5166745843993,
+      "maize": 0.0,
+      "oil": 222.035150804337,
       "phosphate": 38.375,
       "potato": 0.0,
-      "rare_earths": 14.2294457275893,
-      "rice": 977.699999795103,
-      "soy": 0.0,
-      "sulfur": 0.0,
+      "rare_earths": 10.8219989264044,
+      "rice": 165.729800588355,
+      "soy": 779.517555578648,
+      "sulfur": 8.925,
       "tungsten": 5.05019178082192,
       "uranium": 2.0,
-      "wheat": 10856.7842472262,
+      "wheat": 10519.343240104,
       "wood": 0.0
     },
     "produced_t_day": {
-      "bauxite": 38.7858502970436,
+      "bauxite": 39.0760979508224,
       "coal": 17.4,
-      "copper": 44.5933480818359,
+      "copper": 36.4296397043325,
       "cotton": 0.0,
       "diamond": 1.0,
       "gas": 9.1,
       "gold": 1.0,
-      "iron": 13639.8476464465,
-      "lead": 24.3838237811233,
-      "maize": 45.0000001008465,
-      "oil": 226.775898802992,
+      "iron": 14033.1195429289,
+      "lead": 23.5166745843993,
+      "maize": 0.0,
+      "oil": 222.035150804337,
       "phosphate": 38.375,
       "potato": 0.0,
-      "rare_earths": 14.2294457275893,
-      "rice": 977.699999856251,
-      "soy": 0.0,
-      "sulfur": 0.0,
+      "rare_earths": 10.8219989264044,
+      "rice": 102.26853732,
+      "soy": 699.759674229411,
+      "sulfur": 8.925,
       "tungsten": 5.05019178082192,
       "uranium": 2.0,
-      "wheat": 9600.98070868053,
+      "wheat": 9600.46880692139,
       "wood": 0.0
     },
     "reserves_kt": {
-      "bauxite": 581555.451252133,
-      "coal": 35925684.0456992,
-      "copper": 8878.79785144539,
+      "bauxite": 581556.394214896,
+      "coal": 35925683.8587992,
+      "copper": 8883.02690213292,
       "cotton": null,
-      "diamond": 0.729,
-      "gas": 200786.331700002,
-      "gold": 0.764,
-      "iron": 3563654.02144462,
-      "lead": 513.598641742393,
+      "diamond": 0.512,
+      "gas": 64692.0131999984,
+      "gold": 0.582,
+      "iron": 3563213.38489018,
+      "lead": 513.340251336989,
       "maize": null,
-      "oil": 48647574.467436,
-      "phosphate": 415340.828809997,
+      "oil": 48604278.0717215,
+      "phosphate": 415340.168849997,
       "potato": null,
-      "rare_earths": 408.951617743723,
+      "rare_earths": 409.639230520694,
       "rice": null,
       "soy": null,
-      "sulfur": 722.0,
-      "tungsten": 29.1814680547949,
-      "uranium": 6.07299999999977,
+      "sulfur": 721.419875000002,
+      "tungsten": 29.1044680547949,
+      "uranium": 5.92599999999977,
       "wheat": null,
       "wood": null
     },
@@ -1572,27 +1495,27 @@
       "gas": 0.0,
       "gold": 3.0,
       "iron": 0.0,
-      "lead": 9.94520547945205,
-      "maize": 135.000001146779,
+      "lead": 6.94520547945205,
+      "maize": 0.0,
       "oil": 0.0,
       "phosphate": 0.0,
       "potato": 0.0,
       "rare_earths": 0.0,
-      "rice": 2933.09999924157,
-      "soy": 0.0,
+      "rice": 135.110405339763,
+      "soy": 2026.29066222616,
       "sulfur": 0.0,
       "tungsten": 9.0,
       "uranium": 6.0,
-      "wheat": 26286.4315055476,
+      "wheat": 26961.313519792,
       "wood": 0.0
     }
   },
   "meta": {
     "bankruptcies": 0,
     "days": 730,
-    "foreign_cash": -698092947.835953,
+    "foreign_cash": -777571296.652447,
     "invariant_violations": [],
-    "money_total": 58424849.9999933
+    "money_total": 58424850.0000039
   },
   "nations": {
     "BEL": {
@@ -1656,10 +1579,10 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 2258.79,
-          "export_t_day": 2258.79,
-          "export_value": 406582.2,
-          "prod_t_day": 2258.79,
+          "cons_t_day": 2334.33964580284,
+          "export_t_day": 2334.33964580284,
+          "export_value": 420181.13624451,
+          "prod_t_day": 2334.33964580284,
           "stock_t": 0.0
         },
         "lead": {
@@ -1740,11 +1663,11 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 1431.63602427549,
-          "export_t_day": 681.636024275491,
-          "export_value": 28628.7130195706,
-          "prod_t_day": 750.135373640538,
-          "stock_t": 993.215752773786
+          "cons_t_day": 1545.62248896557,
+          "export_t_day": 795.622488965571,
+          "export_value": 33416.144536554,
+          "prod_t_day": 749.623471881396,
+          "stock_t": 1330.65675989601
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -1757,8 +1680,8 @@
       "population": 2500000.0,
       "reserves_kt": {
         "gold": 0.0,
-        "iron": 116361.615754999,
-        "phosphate": 17027.3525700007
+        "iron": 116315.959469132,
+        "phosphate": 17027.1037200007
       }
     },
     "DEU": {
@@ -1767,16 +1690,16 @@
       ],
       "food": {
         "consumed": 1800.0,
-        "deficit": 0.000000000000454747350886464,
+        "deficit": 0.0,
         "need": 1800.0,
         "satisfaction": 1.0
       },
       "goods": {
         "bauxite": {
-          "cons_t_day": 5.56085029704355,
-          "export_t_day": 5.56085029704355,
-          "export_value": 250.23826336696,
-          "prod_t_day": 5.56085029704355,
+          "cons_t_day": 5.66109795082239,
+          "export_t_day": 5.66109795082239,
+          "export_value": 254.749407787008,
+          "prod_t_day": 5.66109795082239,
           "stock_t": 0.0
         },
         "coal": {
@@ -1822,17 +1745,17 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 3006.82316332754,
-          "export_t_day": 3006.82316332754,
-          "export_value": 541228.169398957,
-          "prod_t_day": 3006.82316332754,
+          "cons_t_day": 3089.50037380027,
+          "export_t_day": 3089.50037380027,
+          "export_value": 556110.067284049,
+          "prod_t_day": 3089.50037380027,
           "stock_t": 0.0
         },
         "lead": {
-          "cons_t_day": 1.51603474002737,
-          "export_t_day": 1.51603474002737,
-          "export_value": 113.702605502053,
-          "prod_t_day": 1.51603474002737,
+          "cons_t_day": 1.64888554330344,
+          "export_t_day": 1.64888554330344,
+          "export_value": 123.666415747758,
+          "prod_t_day": 1.64888554330344,
           "stock_t": 0.0
         },
         "maize": {
@@ -1875,7 +1798,7 @@
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.00000000000148469453855999
+          "stock_t": 0.0
         },
         "soy": {
           "cons_t_day": 0.0,
@@ -1922,13 +1845,13 @@
       },
       "population": 6000000.0,
       "reserves_kt": {
-        "bauxite": 107120.87480213,
-        "coal": 35899907.6211992,
-        "copper": 4508.68175999982,
+        "bauxite": 107120.699579894,
+        "coal": 35899907.4342992,
+        "copper": 4509.68175999982,
         "gold": 0.0,
-        "iron": 661439.277013294,
-        "lead": 180.094927260199,
-        "phosphate": 54496.0949300009,
+        "iron": 661387.733307546,
+        "lead": 179.980988734247,
+        "phosphate": 54495.9393200009,
         "tungsten": 6.27399999999977,
         "uranium": 0.0
       }
@@ -1940,9 +1863,9 @@
       ],
       "food": {
         "consumed": 3645.0,
-        "deficit": 0.00000000000272848410531878,
+        "deficit": 0.00000000000136424205265939,
         "need": 3645.0,
-        "satisfaction": 0.999999999999999
+        "satisfaction": 1.0
       },
       "goods": {
         "bauxite": {
@@ -1995,10 +1918,10 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 3238.26669157193,
-          "export_t_day": 3238.26669157193,
-          "export_value": 582888.004482947,
-          "prod_t_day": 3238.26669157193,
+          "cons_t_day": 3246.75624015001,
+          "export_t_day": 3246.75624015001,
+          "export_value": 584416.123227002,
+          "prod_t_day": 3246.75624015001,
           "stock_t": 0.0
         },
         "lead": {
@@ -2009,17 +1932,17 @@
           "stock_t": 0.0
         },
         "maize": {
-          "cons_t_day": 45.0000001437459,
-          "export_t_day": 0.000000143746831327007,
-          "export_value": 0.00000633923526152103,
-          "prod_t_day": 45.0000001008465,
-          "stock_t": 135.000000532089
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
+          "stock_t": 0.0
         },
         "oil": {
-          "cons_t_day": 190.630898802992,
-          "export_t_day": 190.630898802992,
-          "export_value": 25735.171338404,
-          "prod_t_day": 190.630898802992,
+          "cons_t_day": 194.990150804337,
+          "export_t_day": 194.990150804337,
+          "export_value": 26323.6703585854,
+          "prod_t_day": 194.990150804337,
           "stock_t": 0.0
         },
         "phosphate": {
@@ -2044,18 +1967,18 @@
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 0.0,
+          "cons_t_day": 17.5895946602435,
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.00000000000731216086827477
+          "stock_t": 27.4104053397589
         },
         "soy": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
-          "stock_t": 0.0
+          "cons_t_day": 40.411759068424,
+          "export_t_day": 19.3268318839965,
+          "export_value": 1130.61966521379,
+          "prod_t_day": 35.35105213511,
+          "stock_t": 13.5304574309566
         },
         "sulfur": {
           "cons_t_day": 0.0,
@@ -2096,11 +2019,11 @@
       "population": 12150000.0,
       "reserves_kt": {
         "bauxite": 192975.024095,
-        "copper": 2055.68458000006,
+        "copper": 2056.68458000006,
         "gold": 0.0,
-        "iron": 1637286.29059713,
+        "iron": 1637280.94852467,
         "lead": 184.787170000005,
-        "oil": 457982.862346172,
+        "oil": 463668.073036871,
         "phosphate": 140208.331039998,
         "tungsten": 18.5894680547951,
         "uranium": 5.27399999999977
@@ -2251,11 +2174,11 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 3275.14822295072,
-          "export_t_day": 575.148222950723,
-          "export_value": 24156.2253639304,
+          "cons_t_day": 2823.72075113841,
+          "export_t_day": 123.720751138414,
+          "export_value": 5196.27154781337,
           "prod_t_day": 2700.84533504,
-          "stock_t": 6843.21575277378
+          "stock_t": 7180.65675989601
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -2273,7 +2196,7 @@
         "gold": 0.0,
         "iron": 268040.619730004,
         "lead": 90.0134399999971,
-        "oil": 381696.021860007,
+        "oil": 253100.021859994,
         "phosphate": 72764.2841699979,
         "tungsten": 3.44900000000006
       }
@@ -2304,10 +2227,10 @@
           "stock_t": 0.0
         },
         "copper": {
-          "cons_t_day": 7.725,
-          "export_t_day": 7.725,
-          "export_value": 1065.20547945205,
-          "prod_t_day": 7.725,
+          "cons_t_day": 5.42463970433254,
+          "export_t_day": 5.42463970433254,
+          "export_value": 976.435146779857,
+          "prod_t_day": 5.42463970433254,
           "stock_t": 0.0
         },
         "cotton": {
@@ -2339,10 +2262,10 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 164.980916547047,
-          "export_t_day": 164.980916547047,
-          "export_value": 29696.5649784685,
-          "prod_t_day": 164.980916547047,
+          "cons_t_day": 151.054506293757,
+          "export_t_day": 151.054506293757,
+          "export_value": 27189.8111328763,
+          "prod_t_day": 151.054506293757,
           "stock_t": 0.0
         },
         "lead": {
@@ -2381,23 +2304,23 @@
           "stock_t": 0.0
         },
         "rare_earths": {
-          "cons_t_day": 3.52853592383471,
-          "export_t_day": 3.52853592383471,
-          "export_value": 4234.24310860165,
-          "prod_t_day": 3.52853592383471,
+          "cons_t_day": 1.83199892640444,
+          "export_t_day": 1.83199892640444,
+          "export_value": 2198.39871168532,
+          "prod_t_day": 1.83199892640444,
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 35.4,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 35.4,
-          "stock_t": 106.2
+          "cons_t_day": 66.4861433285647,
+          "export_t_day": 31.2561627020352,
+          "export_value": 1805.04339604253,
+          "prod_t_day": 36.39653732,
+          "stock_t": 35.4
         },
         "soy": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
+          "cons_t_day": 0.378231572305161,
+          "export_t_day": 0.247447438866313,
+          "export_value": 11.1351347489841,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -2439,14 +2362,14 @@
       },
       "population": 118000.0,
       "reserves_kt": {
-        "bauxite": 126321.767310003,
-        "copper": 157.496325000004,
+        "bauxite": 126322.945025003,
+        "copper": 159.558912133051,
         "diamond": 0.0,
         "gold": 0.0,
-        "iron": 110777.76733263,
-        "lead": 7.48399999999984,
-        "oil": 2442873.94196002,
-        "rare_earths": 177.695866041736
+        "iron": 110786.341337296,
+        "lead": 7.61699999999989,
+        "oil": 2473204.16955001,
+        "rare_earths": 179.111480520693
       }
     },
     "NED": {
@@ -2510,10 +2433,10 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 2103.74,
-          "export_t_day": 2103.74,
-          "export_value": 378673.2,
-          "prod_t_day": 2103.74,
+          "cons_t_day": 2208.90979566609,
+          "export_t_day": 2208.90979566609,
+          "export_value": 397603.763219896,
+          "prod_t_day": 2208.90979566609,
           "stock_t": 0.0
         },
         "lead": {
@@ -2610,10 +2533,10 @@
       },
       "population": 2500000.0,
       "reserves_kt": {
-        "gas": 200786.331700002,
-        "iron": 60340.5570699997,
-        "lead": 11.3674520547945,
-        "phosphate": 26557.7660999995
+        "gas": 64692.0131999984,
+        "iron": 60280.4115454923,
+        "lead": 11.3214246575343,
+        "phosphate": 26557.5105999995
       }
     },
     "SUR": {
@@ -2628,10 +2551,10 @@
       },
       "goods": {
         "bauxite": {
-          "cons_t_day": 7.69,
-          "export_t_day": 7.69,
-          "export_value": 242.235,
-          "prod_t_day": 7.69,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
           "stock_t": 0.0
         },
         "coal": {
@@ -2642,10 +2565,10 @@
           "stock_t": 0.0
         },
         "copper": {
-          "cons_t_day": 5.86334808183591,
-          "export_t_day": 5.86334808183591,
-          "export_value": 802.191780817593,
-          "prod_t_day": 5.86334808183591,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
           "stock_t": 0.0
         },
         "cotton": {
@@ -2677,31 +2600,31 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 81.186875,
-          "export_t_day": 81.186875,
-          "export_value": 14613.6375,
-          "prod_t_day": 81.186875,
-          "stock_t": 0.0
-        },
-        "lead": {
-          "cons_t_day": 1.0,
-          "export_t_day": 1.0,
-          "export_value": 26.2499962585558,
-          "prod_t_day": 1.0,
-          "stock_t": 3.0
-        },
-        "maize": {
-          "cons_t_day": 0.000000204895421634284,
+          "cons_t_day": 0.0,
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.000000614686264495478
+          "stock_t": 0.0
+        },
+        "lead": {
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
+          "stock_t": 0.0
+        },
+        "maize": {
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
+          "stock_t": 0.0
         },
         "oil": {
-          "cons_t_day": 9.1,
-          "export_t_day": 9.1,
-          "export_value": 1228.49969357572,
-          "prod_t_day": 9.1,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
           "stock_t": 0.0
         },
         "phosphate": {
@@ -2719,23 +2642,23 @@
           "stock_t": 0.0
         },
         "rare_earths": {
-          "cons_t_day": 1.71090980375456,
-          "export_t_day": 1.71090980375456,
-          "export_value": 2053.09176450539,
-          "prod_t_day": 1.71090980375456,
-          "stock_t": 0.0
-        },
-        "rice": {
-          "cons_t_day": 72.2999997951046,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 72.2999998562532,
-          "stock_t": 216.899999241567
-        },
-        "soy": {
           "cons_t_day": 0.0,
           "export_t_day": 0.0,
           "export_value": 0.0,
+          "prod_t_day": 0.0,
+          "stock_t": 0.0
+        },
+        "rice": {
+          "cons_t_day": 81.6540625995471,
+          "export_t_day": 34.6674435978266,
+          "export_value": 2002.04486777448,
+          "prod_t_day": 65.872,
+          "stock_t": 72.3
+        },
+        "soy": {
+          "cons_t_day": 63.8004528754583,
+          "export_t_day": 44.3286213383203,
+          "export_value": 1994.78796022441,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -2777,14 +2700,14 @@
       },
       "population": 241000.0,
       "reserves_kt": {
-        "bauxite": 27109.82313,
-        "copper": 121.249491445526,
+        "bauxite": 27110.0,
+        "copper": 122.0,
         "diamond": 0.0,
         "gold": 0.0,
-        "iron": 29056.1654665625,
-        "lead": 2.939,
-        "oil": 3969678.15370001,
-        "rare_earths": 142.721121701987,
+        "iron": 29064.0,
+        "lead": 3.0,
+        "oil": 4018963.0,
+        "rare_earths": 143.0,
         "uranium": 0.0
       }
     },
@@ -2800,10 +2723,10 @@
       },
       "goods": {
         "bauxite": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
+          "cons_t_day": 7.88,
+          "export_t_day": 7.88,
+          "export_value": 289.59,
+          "prod_t_day": 7.88,
           "stock_t": 0.0
         },
         "coal": {
@@ -2816,7 +2739,7 @@
         "copper": {
           "cons_t_day": 7.585,
           "export_t_day": 7.585,
-          "export_value": 1365.29965945375,
+          "export_value": 1365.29999999999,
           "prod_t_day": 7.585,
           "stock_t": 0.0
         },
@@ -2849,16 +2772,16 @@
           "stock_t": 3.0
         },
         "iron": {
-          "cons_t_day": 1182.48,
-          "export_t_day": 1182.48,
-          "export_value": 212846.4,
-          "prod_t_day": 1182.48,
+          "cons_t_day": 1398.97898121591,
+          "export_t_day": 1398.97898121591,
+          "export_value": 251816.216618864,
+          "prod_t_day": 1398.97898121591,
           "stock_t": 0.0
         },
         "lead": {
           "cons_t_day": 3.79772054794521,
           "export_t_day": 3.79772054794521,
-          "export_value": 101.322441235892,
+          "export_value": 101.369863012062,
           "prod_t_day": 3.79772054794521,
           "stock_t": 0.0
         },
@@ -2867,12 +2790,12 @@
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.00000000000330804947252096
+          "stock_t": 0.0
         },
         "oil": {
           "cons_t_day": 8.835,
           "export_t_day": 8.835,
-          "export_value": 1191.99160357249,
+          "export_value": 1192.72499997469,
           "prod_t_day": 8.835,
           "stock_t": 0.0
         },
@@ -2898,30 +2821,30 @@
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 869.999999999998,
+          "cons_t_day": 0.0,
           "export_t_day": 0.0,
           "export_value": 0.0,
-          "prod_t_day": 869.999999999998,
-          "stock_t": 2610.0
+          "prod_t_day": 0.0,
+          "stock_t": 0.00000000000368125152253086
         },
         "soy": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
-          "stock_t": 0.0
+          "cons_t_day": 674.927112062461,
+          "export_t_day": 5.69634283169279,
+          "export_value": 269.152198797484,
+          "prod_t_day": 664.408622094301,
+          "stock_t": 2012.7602047952
         },
         "sulfur": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
+          "cons_t_day": 8.925,
+          "export_t_day": 8.925,
+          "export_value": 401.573209617888,
+          "prod_t_day": 8.925,
           "stock_t": 0.0
         },
         "tungsten": {
           "cons_t_day": 1.0,
           "export_t_day": 1.0,
-          "export_value": 209.999999999995,
+          "export_value": 210.0,
           "prod_t_day": 1.0,
           "stock_t": 3.0
         },
@@ -2937,7 +2860,7 @@
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.00000000000365056829360835
+          "stock_t": 0.00000000000334304925601886
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -2949,18 +2872,18 @@
       },
       "population": 2900000.0,
       "reserves_kt": {
-        "bauxite": 97916.0,
-        "copper": 987.294595000005,
-        "diamond": 0.729,
-        "gold": 0.764,
-        "iron": 680351.728479999,
-        "lead": 36.9126524273973,
-        "oil": 41395343.4875698,
+        "bauxite": 97915.7635999999,
+        "copper": 986.710550000009,
+        "diamond": 0.512,
+        "gold": 0.582,
+        "iron": 680057.370976039,
+        "lead": 36.6202279452056,
+        "oil": 41395342.8072746,
         "phosphate": 104287.0,
-        "rare_earths": 88.5346300000005,
-        "sulfur": 722.0,
-        "tungsten": 0.869,
-        "uranium": 0.799
+        "rare_earths": 87.5277500000008,
+        "sulfur": 721.419875000002,
+        "tungsten": 0.792,
+        "uranium": 0.652
       }
     }
   },
@@ -3026,10 +2949,10 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 738.31,
-          "export_t_day": 738.31,
-          "export_value": 132895.8,
-          "prod_t_day": 738.31,
+          "cons_t_day": 813.859645802836,
+          "export_t_day": 813.859645802836,
+          "export_value": 146494.73624451,
+          "prod_t_day": 813.859645802836,
           "stock_t": 0.0
         },
         "lead": {
@@ -3056,7 +2979,7 @@
         "phosphate": {
           "cons_t_day": 7.11,
           "export_t_day": 7.11,
-          "export_value": 213.299999999751,
+          "export_value": 213.3,
           "prod_t_day": 7.11,
           "stock_t": 0.0
         },
@@ -3110,11 +3033,11 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 1431.7971386285,
-          "export_t_day": 681.797138628504,
-          "export_value": 28635.4798223972,
-          "prod_t_day": 750.135373640538,
-          "stock_t": 750.0
+          "cons_t_day": 897.906112474407,
+          "export_t_day": 147.906112474408,
+          "export_value": 6212.05711761889,
+          "prod_t_day": 749.623471881396,
+          "stock_t": 1283.42982910542
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -3127,8 +3050,8 @@
       "population": 2500000.0,
       "reserves_kt": {
         "gold": 0.0,
-        "iron": 116905.545545,
-        "phosphate": 17029.9477200002
+        "iron": 116887.46487985,
+        "phosphate": 17029.6988700002
       }
     },
     "DEU": {
@@ -3137,22 +3060,22 @@
       ],
       "food": {
         "consumed": 1800.0,
-        "deficit": 0.000000000000454747350886464,
+        "deficit": 0.0,
         "need": 1800.0,
         "satisfaction": 1.0
       },
       "goods": {
         "bauxite": {
-          "cons_t_day": 5.56085029704355,
-          "export_t_day": 5.56085029704355,
-          "export_value": 250.23826336696,
-          "prod_t_day": 5.56085029704355,
+          "cons_t_day": 5.66109795082239,
+          "export_t_day": 5.66109795082239,
+          "export_value": 254.749407787008,
+          "prod_t_day": 5.66109795082239,
           "stock_t": 0.0
         },
         "coal": {
           "cons_t_day": 8.9,
           "export_t_day": 8.9,
-          "export_value": 160.199999979739,
+          "export_value": 160.199999999813,
           "prod_t_day": 8.9,
           "stock_t": 0.0
         },
@@ -3192,17 +3115,17 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 1336.58316332754,
-          "export_t_day": 1336.58316332754,
-          "export_value": 240584.969398957,
-          "prod_t_day": 1336.58316332754,
+          "cons_t_day": 1419.26037380027,
+          "export_t_day": 1419.26037380027,
+          "export_value": 255466.867284049,
+          "prod_t_day": 1419.26037380027,
           "stock_t": 0.0
         },
         "lead": {
-          "cons_t_day": 1.51603474002737,
-          "export_t_day": 1.51603474002737,
-          "export_value": 113.702605502053,
-          "prod_t_day": 1.51603474002737,
+          "cons_t_day": 1.64888554330344,
+          "export_t_day": 1.64888554330344,
+          "export_value": 123.666415747758,
+          "prod_t_day": 1.64888554330344,
           "stock_t": 0.0
         },
         "maize": {
@@ -3222,7 +3145,7 @@
         "phosphate": {
           "cons_t_day": 7.41,
           "export_t_day": 7.41,
-          "export_value": 222.299999999989,
+          "export_value": 222.3,
           "prod_t_day": 7.41,
           "stock_t": 0.0
         },
@@ -3245,7 +3168,7 @@
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.00000000000148469453855999
+          "stock_t": 0.0
         },
         "soy": {
           "cons_t_day": 0.0,
@@ -3292,13 +3215,13 @@
       },
       "population": 6000000.0,
       "reserves_kt": {
-        "bauxite": 107122.90451249,
-        "coal": 35899910.8696998,
-        "copper": 4511.50320999991,
+        "bauxite": 107122.765880647,
+        "coal": 35899910.6827998,
+        "copper": 4512.50320999991,
         "gold": 0.0,
-        "iron": 662228.608187909,
-        "lead": 180.648279940312,
-        "phosphate": 54498.7995800003,
+        "iron": 662207.241663983,
+        "lead": 180.582831957548,
+        "phosphate": 54498.6439700003,
         "tungsten": 6.6389999999999,
         "uranium": 0.0
       }
@@ -3310,7 +3233,7 @@
       ],
       "food": {
         "consumed": 3645.0,
-        "deficit": 0.00000000000181898940354586,
+        "deficit": 0.00000000000136424205265939,
         "need": 3645.0,
         "satisfaction": 1.0
       },
@@ -3365,10 +3288,10 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 1557.62669157193,
-          "export_t_day": 1557.62669157193,
-          "export_value": 280372.804482947,
-          "prod_t_day": 1557.62669157193,
+          "cons_t_day": 1566.11624015001,
+          "export_t_day": 1566.11624015001,
+          "export_value": 281900.923227002,
+          "prod_t_day": 1566.11624015001,
           "stock_t": 0.0
         },
         "lead": {
@@ -3379,17 +3302,17 @@
           "stock_t": 0.0
         },
         "maize": {
-          "cons_t_day": 72.7224127860436,
-          "export_t_day": 35.2402816230367,
-          "export_value": 1554.09641957592,
-          "prod_t_day": 44.8608834162899,
-          "stock_t": 33.7077371873399
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
+          "stock_t": 0.0
         },
         "oil": {
-          "cons_t_day": 75.4912382136811,
-          "export_t_day": 75.4912382136811,
-          "export_value": 10191.3171588469,
-          "prod_t_day": 75.4912382136811,
+          "cons_t_day": 77.6001508043367,
+          "export_t_day": 77.6001508043367,
+          "export_value": 10476.0203585855,
+          "prod_t_day": 77.6001508043367,
           "stock_t": 0.0
         },
         "phosphate": {
@@ -3414,17 +3337,17 @@
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 6.13879968089435,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
+          "cons_t_day": 21.4752260969121,
+          "export_t_day": 2.27894397910094,
+          "export_value": 125.341918850552,
           "prod_t_day": 0.0,
-          "stock_t": 11.2922628126675
+          "stock_t": 45.0000000000024
         },
         "soy": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
+          "cons_t_day": 68.7355847919761,
+          "export_t_day": 48.8865710364467,
+          "export_value": 2749.86962080009,
+          "prod_t_day": 35.35105213511,
           "stock_t": 0.0
         },
         "sulfur": {
@@ -3449,11 +3372,11 @@
           "stock_t": 3.0
         },
         "wheat": {
-          "cons_t_day": 3764.70062163512,
-          "export_t_day": 163.321552479019,
-          "export_value": 6854.43163529198,
-          "prod_t_day": 3816.50650759423,
-          "stock_t": 11436.7383573053
+          "cons_t_day": 3600.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 3600.0,
+          "stock_t": 10800.0
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -3466,11 +3389,11 @@
       "population": 12150000.0,
       "reserves_kt": {
         "bauxite": 192978.13937,
-        "copper": 2058.65568000003,
+        "copper": 2059.65568000003,
         "gold": 0.0,
-        "iron": 1638158.17985957,
+        "iron": 1638155.93647231,
         "lead": 187.865945000002,
-        "oil": 458031.049548805,
+        "oil": 463717.585986915,
         "phosphate": 140211.440839999,
         "tungsten": 19.3377880547948,
         "uranium": 5.6389999999999
@@ -3621,11 +3544,11 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 3672.77451899529,
-          "export_t_day": 972.774518995288,
-          "export_value": 40856.5297978021,
+          "cons_t_day": 3518.66405842017,
+          "export_t_day": 818.664058420171,
+          "export_value": 34383.8904536472,
           "prod_t_day": 2686.56,
-          "stock_t": 6284.64357431059
+          "stock_t": 7133.42982910542
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -3643,7 +3566,7 @@
         "gold": 0.0,
         "iron": 268314.795280001,
         "lead": 92.6852399999997,
-        "oil": 381699.299560001,
+        "oil": 253103.299559999,
         "phosphate": 72767.0,
         "tungsten": 3.81400000000002
       }
@@ -3660,10 +3583,10 @@
       },
       "goods": {
         "bauxite": {
-          "cons_t_day": 8.855,
-          "export_t_day": 8.855,
-          "export_value": 398.474998854094,
-          "prod_t_day": 8.855,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
+          "prod_t_day": 0.0,
           "stock_t": 0.0
         },
         "coal": {
@@ -3674,10 +3597,10 @@
           "stock_t": 0.0
         },
         "copper": {
-          "cons_t_day": 7.725,
-          "export_t_day": 7.725,
-          "export_value": 1065.20547945205,
-          "prod_t_day": 7.725,
+          "cons_t_day": 5.42463970433254,
+          "export_t_day": 5.42463970433254,
+          "export_value": 976.433695097763,
+          "prod_t_day": 5.42463970433254,
           "stock_t": 0.0
         },
         "cotton": {
@@ -3709,30 +3632,30 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 71.8224195337274,
-          "export_t_day": 71.8224195337274,
-          "export_value": 12928.0355160709,
-          "prod_t_day": 71.8224195337274,
+          "cons_t_day": 56.3990362937573,
+          "export_t_day": 56.3990362937573,
+          "export_value": 10151.8265328763,
+          "prod_t_day": 56.3990362937573,
           "stock_t": 0.0
         },
         "lead": {
           "cons_t_day": 1.0,
           "export_t_day": 1.0,
-          "export_value": 26.25,
-          "prod_t_day": 1.0,
-          "stock_t": 3.0
+          "export_value": 26.1950244186112,
+          "prod_t_day": 1.000435546875,
+          "stock_t": 2.999564453125
         },
         "maize": {
-          "cons_t_day": 19.3686230652347,
-          "export_t_day": 14.5086383392472,
-          "export_value": 609.362810248383,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
         "oil": {
           "cons_t_day": 9.23,
           "export_t_day": 9.23,
-          "export_value": 1246.05,
+          "export_value": 1241.48317845403,
           "prod_t_day": 9.23,
           "stock_t": 0.0
         },
@@ -3751,23 +3674,23 @@
           "stock_t": 0.0
         },
         "rare_earths": {
-          "cons_t_day": 3.52853592383471,
-          "export_t_day": 3.52853592383471,
-          "export_value": 4234.24310860165,
-          "prod_t_day": 3.52853592383471,
+          "cons_t_day": 1.83199892640444,
+          "export_t_day": 1.83199892640444,
+          "export_value": 2198.3987103595,
+          "prod_t_day": 1.83199892640444,
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 62.5624629894049,
-          "export_t_day": 37.9816720759207,
-          "export_value": 2193.44156238442,
+          "cons_t_day": 36.39653732,
+          "export_t_day": 13.5031186204004,
+          "export_value": 779.805100328121,
           "prod_t_day": 36.39653732,
           "stock_t": 35.4
         },
         "soy": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
+          "cons_t_day": 30.1708889441835,
+          "export_t_day": 20.5504417900294,
+          "export_value": 924.769880551323,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -3793,9 +3716,9 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 23.7494512653611,
-          "export_t_day": 17.7902269048327,
-          "export_value": 711.609076193309,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -3809,14 +3732,14 @@
       },
       "population": 118000.0,
       "reserves_kt": {
-        "bauxite": 126324.999385001,
-        "copper": 160.315950000001,
+        "bauxite": 126326.0,
+        "copper": 161.538905625132,
         "diamond": 0.0,
         "gold": 0.0,
-        "iron": 110820.891265925,
-        "lead": 7.84899999999997,
-        "oil": 2442877.31091001,
-        "rare_earths": 178.983781653936
+        "iron": 110824.012297878,
+        "lead": 7.98200043554687,
+        "oil": 2473207.5385,
+        "rare_earths": 179.780160128831
       }
     },
     "NED": {
@@ -3868,7 +3791,7 @@
         "gas": {
           "cons_t_day": 9.1,
           "export_t_day": 9.1,
-          "export_value": 818.999999999045,
+          "export_value": 819.0,
           "prod_t_day": 9.1,
           "stock_t": 0.0
         },
@@ -3880,18 +3803,18 @@
           "stock_t": 0.0
         },
         "iron": {
-          "cons_t_day": 610.3,
-          "export_t_day": 610.3,
-          "export_value": 109854.0,
-          "prod_t_day": 610.3,
+          "cons_t_day": 715.469795666087,
+          "export_t_day": 715.469795666087,
+          "export_value": 128784.563219896,
+          "prod_t_day": 715.469795666087,
           "stock_t": 0.0
         },
         "lead": {
           "cons_t_day": 1.31506849315068,
           "export_t_day": 1.31506849315068,
-          "export_value": 34.5205479451825,
-          "prod_t_day": 1.31510585669949,
-          "stock_t": 3.94516811590325
+          "export_value": 34.5205479452055,
+          "prod_t_day": 1.31506849315069,
+          "stock_t": 3.94520547945205
         },
         "maize": {
           "cons_t_day": 0.0,
@@ -3910,7 +3833,7 @@
         "phosphate": {
           "cons_t_day": 7.3,
           "export_t_day": 7.3,
-          "export_value": 218.998447461701,
+          "export_value": 218.999999370216,
           "prod_t_day": 7.3,
           "stock_t": 0.0
         },
@@ -3980,10 +3903,10 @@
       },
       "population": 2500000.0,
       "reserves_kt": {
-        "gas": 200789.653200001,
-        "iron": 60832.8824899999,
-        "lead": 11.8474520921581,
-        "phosphate": 26560.4305999999
+        "gas": 64695.3346999995,
+        "iron": 60811.1239409105,
+        "lead": 11.8014246575343,
+        "phosphate": 26560.1750999999
       }
     },
     "SUR": {
@@ -3992,7 +3915,7 @@
       ],
       "food": {
         "consumed": 72.3,
-        "deficit": 0.000000000000014210854715202,
+        "deficit": 0.0,
         "need": 72.3,
         "satisfaction": 1.0
       },
@@ -4061,9 +3984,9 @@
           "stock_t": 0.0
         },
         "maize": {
-          "cons_t_day": 8.96574304925294,
-          "export_t_day": 5.4236779094116,
-          "export_value": 227.794472195287,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -4096,16 +4019,16 @@
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 67.1228237693608,
-          "export_t_day": 12.0415303329128,
-          "export_value": 695.398376725714,
+          "cons_t_day": 92.7307855426918,
+          "export_t_day": 30.0896060085994,
+          "export_value": 1737.67474699662,
           "prod_t_day": 65.872,
           "stock_t": 72.3
         },
         "soy": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
+          "cons_t_day": 19.5742793228194,
+          "export_t_day": 12.1444174259674,
+          "export_value": 546.498784168532,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -4131,9 +4054,9 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 34.6185764351163,
-          "export_t_day": 20.9419350114057,
-          "export_value": 837.677400456228,
+          "cons_t_day": 0.0,
+          "export_t_day": 0.0,
+          "export_value": 0.0,
           "prod_t_day": 0.0,
           "stock_t": 0.0
         },
@@ -4153,7 +4076,7 @@
         "gold": 0.0,
         "iron": 29064.0,
         "lead": 3.0,
-        "oil": 3969679.0,
+        "oil": 4018963.0,
         "rare_earths": 143.0,
         "uranium": 0.0
       }
@@ -4163,10 +4086,10 @@
         "VEN-CCS"
       ],
       "food": {
-        "consumed": 869.999999999999,
-        "deficit": 0.00000000000102318153949454,
+        "consumed": 869.999999999998,
+        "deficit": 0.00000000000170530256582424,
         "need": 870.0,
-        "satisfaction": 0.999999999999999
+        "satisfaction": 0.999999999999998
       },
       "goods": {
         "bauxite": {
@@ -4198,11 +4121,11 @@
           "stock_t": 0.0
         },
         "diamond": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
-          "stock_t": 0.0
+          "cons_t_day": 1.0,
+          "export_t_day": 1.0,
+          "export_value": 5249.99999999927,
+          "prod_t_day": 1.0,
+          "stock_t": 3.0
         },
         "gas": {
           "cons_t_day": 0.0,
@@ -4212,17 +4135,17 @@
           "stock_t": 0.0
         },
         "gold": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
-          "stock_t": 0.0
+          "cons_t_day": 1.0,
+          "export_t_day": 1.0,
+          "export_value": 3149.99732391058,
+          "prod_t_day": 1.00000000000001,
+          "stock_t": 2.99999999999999
         },
         "iron": {
-          "cons_t_day": 0.0,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 0.0,
+          "cons_t_day": 610.658981215912,
+          "export_t_day": 610.658981215912,
+          "export_value": 109918.616618864,
+          "prod_t_day": 610.658981215912,
           "stock_t": 0.0
         },
         "lead": {
@@ -4237,7 +4160,7 @@
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.00000000000363521979555431
+          "stock_t": 0.0
         },
         "oil": {
           "cons_t_day": 0.0,
@@ -4268,18 +4191,18 @@
           "stock_t": 0.0
         },
         "rice": {
-          "cons_t_day": 736.541215324599,
-          "export_t_day": 0.0,
-          "export_value": 0.0,
-          "prod_t_day": 726.569500903627,
-          "stock_t": 2059.11195717357
-        },
-        "soy": {
           "cons_t_day": 0.0,
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 0.0
+          "stock_t": 0.00000000000368125152253086
+        },
+        "soy": {
+          "cons_t_day": 670.419187790341,
+          "export_t_day": 1.1884185595735,
+          "export_value": 56.1527769398479,
+          "prod_t_day": 680.937677758739,
+          "stock_t": 2023.27869476348
         },
         "sulfur": {
           "cons_t_day": 0.0,
@@ -4303,11 +4226,11 @@
           "stock_t": 0.0
         },
         "wheat": {
-          "cons_t_day": 133.4587846754,
+          "cons_t_day": 0.0,
           "export_t_day": 0.0,
           "export_value": 0.0,
           "prod_t_day": 0.0,
-          "stock_t": 373.104143525573
+          "stock_t": 0.00000000000334304925601886
         },
         "wood": {
           "cons_t_day": 0.0,
@@ -4321,9 +4244,9 @@
       "reserves_kt": {
         "bauxite": 97916.0,
         "copper": 988.0,
-        "diamond": 1.0,
-        "gold": 1.0,
-        "iron": 680512.0,
+        "diamond": 0.877,
+        "gold": 0.947,
+        "iron": 680425.312384181,
         "lead": 37.0,
         "oil": 41395344.0,
         "phosphate": 104287.0,
@@ -4421,7 +4344,7 @@
         "VEN": {
           "firm_cash": 290000.0,
           "gov_budget": 2900000.0,
-          "sat": 0.753,
+          "sat": 0.9867,
           "service_cash": 81272.5,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
@@ -4430,211 +4353,211 @@
     },
     {
       "day": 30,
-      "iron_mines": 2,
+      "iron_mines": 3,
       "nations": {
         "BEL": {
           "firm_cash": 0.0,
-          "gov_budget": 2305660.27723884,
+          "gov_budget": 2366556.92856423,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 49.8900488372224,
-          "wheat_stock": 750.0
+          "wheat_stock": 646.249778924296
         },
         "DEU": {
-          "firm_cash": 97155.8585231652,
-          "gov_budget": 3766649.94047059,
+          "firm_cash": 68059.978198309,
+          "gov_budget": 3320507.51029402,
           "sat": 1.0,
-          "service_cash": 299963.714324069,
-          "wheat_price": 43.4407090283771,
-          "wheat_stock": 1799.99907156527
+          "service_cash": 300000.0,
+          "wheat_price": 41.9975241199214,
+          "wheat_stock": 1800.0
         },
         "FRA": {
-          "firm_cash": 0.0,
-          "gov_budget": 141750.546314299,
+          "firm_cash": 960.622031549294,
+          "gov_budget": 140771.949688783,
           "sat": 1.0,
-          "service_cash": 7500.0,
+          "service_cash": 3819.37272706929,
           "wheat_price": 40.0,
-          "wheat_stock": 3.65067598546165
+          "wheat_stock": 0.000765646488491665
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 8979714.17110264,
-          "sat": 1.0,
+          "gov_budget": 8974523.03892372,
+          "sat": 0.908068513853697,
           "service_cash": 450000.0,
-          "wheat_price": 88.8035731020028,
-          "wheat_stock": 262.498334471135
+          "wheat_price": 86.4048598138412,
+          "wheat_stock": 0.0
         },
         "GUY": {
-          "firm_cash": 520.623859857018,
-          "gov_budget": 35886.0149643847,
+          "firm_cash": 0.0,
+          "gov_budget": 37090.320910238,
           "sat": 1.0,
-          "service_cash": 3867.25723178576,
+          "service_cash": 5900.0,
           "wheat_price": 40.0,
-          "wheat_stock": 1.07327
+          "wheat_stock": 0.0
         },
         "NED": {
-          "firm_cash": 50333.6523605846,
-          "gov_budget": 2061137.22428268,
+          "firm_cash": 51910.8301155532,
+          "gov_budget": 2059986.571971,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 51.7800976744448,
           "wheat_stock": 750.0
         },
         "SUR": {
-          "firm_cash": 89.0461290339533,
+          "firm_cash": 0.000000000000909494701772928,
           "gov_budget": 0.0,
           "sat": 1.0,
-          "service_cash": 7763.99312243484,
+          "service_cash": 7874.59948481123,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 772.29079684309,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 33450.3815776725,
+          "gov_budget": 133272.691066438,
           "sat": 1.0,
-          "service_cash": 121838.806725221,
+          "service_cash": 145000.0,
           "wheat_price": 40.0,
-          "wheat_stock": 56.7534254311765
+          "wheat_stock": 850.363061739676
         }
       }
     },
     {
       "day": 60,
-      "iron_mines": 2,
+      "iron_mines": 3,
       "nations": {
         "BEL": {
           "firm_cash": 0.0,
-          "gov_budget": 2153277.83575794,
+          "gov_budget": 2230694.27813411,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 49.9961314373772,
+          "wheat_price": 49.9722886407529,
           "wheat_stock": 750.0
         },
         "DEU": {
-          "firm_cash": 97192.4823239132,
-          "gov_budget": 870383.940516021,
+          "firm_cash": 68064.9874882895,
+          "gov_budget": 0.0,
           "sat": 1.0,
-          "service_cash": 271290.82169869,
-          "wheat_price": 43.4537192956845,
-          "wheat_stock": 1799.99999999552
+          "service_cash": 283474.158460265,
+          "wheat_price": 41.9999969350089,
+          "wheat_stock": 1800.0
         },
         "FRA": {
-          "firm_cash": 334.761873040925,
-          "gov_budget": 138953.118349365,
+          "firm_cash": 7092.29348605312,
+          "gov_budget": 137566.852765899,
           "sat": 1.0,
-          "service_cash": 7500.0,
+          "service_cash": 3631.84400179276,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000149757415490355
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 9014935.31686735,
-          "sat": 0.99395177662381,
-          "service_cash": 430642.209529193,
-          "wheat_price": 85.3728505312422,
-          "wheat_stock": 0.0
+          "gov_budget": 8974678.2594494,
+          "sat": 1.0,
+          "service_cash": 390806.638033026,
+          "wheat_price": 48.9095574455389,
+          "wheat_stock": 1308.20467816624
         },
         "GUY": {
-          "firm_cash": 446.83050926095,
-          "gov_budget": 31592.9349643847,
+          "firm_cash": 0.0,
+          "gov_budget": 0.000000000000454747350886464,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.259731339999995
+          "wheat_stock": 0.0
         },
         "NED": {
-          "firm_cash": 50548.1768379219,
-          "gov_budget": 1598154.30941146,
+          "firm_cash": 49299.373864346,
+          "gov_budget": 1626645.83305448,
           "sat": 1.0,
-          "service_cash": 120320.935261065,
-          "wheat_price": 51.9922628747545,
+          "service_cash": 119770.205368829,
+          "wheat_price": 51.988722541226,
           "wheat_stock": 750.0
         },
         "SUR": {
           "firm_cash": 0.0,
-          "gov_budget": 0.0,
+          "gov_budget": -0.00000000000295585778076202,
           "sat": 1.0,
           "service_cash": 12050.0,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 1340.1723088872,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 3882.41403348931,
+          "gov_budget": -0.00000000000363797880709171,
           "sat": 1.0,
-          "service_cash": 145000.0,
+          "service_cash": 119417.053389112,
           "wheat_price": 40.0,
-          "wheat_stock": 114.110098266957
+          "wheat_stock": 180.955062628339
         }
       }
     },
     {
       "day": 90,
-      "iron_mines": 2,
+      "iron_mines": 3,
       "nations": {
         "BEL": {
-          "firm_cash": 3968.58030532593,
-          "gov_budget": 2055130.74694124,
+          "firm_cash": 137247.302069375,
+          "gov_budget": 2179356.17733296,
           "sat": 1.0,
-          "service_cash": 113857.54513183,
-          "wheat_price": 49.9998638870532,
-          "wheat_stock": 750.0
+          "service_cash": 107050.61514924,
+          "wheat_price": 47.032111438203,
+          "wheat_stock": 1942.36732198777
         },
         "DEU": {
-          "firm_cash": 35142.2298130144,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
-          "service_cash": 196729.500983345,
-          "wheat_price": 42.0167604082936,
-          "wheat_stock": 1800.0
+          "firm_cash": 232382.381854909,
+          "gov_budget": 0.0,
+          "sat": 1.0,
+          "service_cash": 118348.208772752,
+          "wheat_price": 41.9999999962057,
+          "wheat_stock": 5400.0
         },
         "FRA": {
-          "firm_cash": 1098.90958564103,
-          "gov_budget": 137547.178444175,
-          "sat": 1.0,
-          "service_cash": 4105.87389309175,
+          "firm_cash": 289.038870372992,
+          "gov_budget": 136939.770687476,
+          "sat": 0.999999999999986,
+          "service_cash": 4213.47152275005,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 9039677.02432456,
-          "sat": 1.0,
-          "service_cash": 297331.66372297,
-          "wheat_price": 46.0995119934571,
-          "wheat_stock": 2700.0
+          "firm_cash": 860661.356106717,
+          "gov_budget": 8878194.49450488,
+          "sat": 0.778379031243517,
+          "service_cash": 436652.616332494,
+          "wheat_price": 43.9768932367913,
+          "wheat_stock": 3741.7144146304
         },
         "GUY": {
-          "firm_cash": 995.052203616745,
-          "gov_budget": 21388.4055368343,
+          "firm_cash": 7557.97755705259,
+          "gov_budget": 0.000000000000454747350886464,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.259731340000002
+          "wheat_stock": 0.0
         },
         "NED": {
-          "firm_cash": 59524.4001653804,
-          "gov_budget": 1186119.60416154,
+          "firm_cash": 91736.0093049146,
+          "gov_budget": 1556493.56647241,
           "sat": 1.0,
-          "service_cash": 99784.415395628,
-          "wheat_price": 51.9997277741065,
-          "wheat_stock": 750.0
+          "service_cash": 107579.854588071,
+          "wheat_price": 46.0938534571839,
+          "wheat_stock": 1864.35289621383
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.00000000000204636307898909,
+          "firm_cash": 7351.10712937931,
+          "gov_budget": -0.00000000000613908923696727,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 10836.4055858382,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
           "firm_cash": 0.0,
-          "gov_budget": -0.00000000000727595761418343,
+          "gov_budget": -0.00000000000545696821063757,
           "sat": 1.0,
-          "service_cash": 145000.0,
+          "service_cash": 137575.798522304,
           "wheat_price": 40.0,
-          "wheat_stock": 117.086029713817
+          "wheat_stock": 379.903626069033
         }
       }
     },
@@ -4643,390 +4566,390 @@
       "iron_mines": 4,
       "nations": {
         "BEL": {
-          "firm_cash": 132524.956443607,
-          "gov_budget": 1996810.21541903,
-          "sat": 1.0,
+          "firm_cash": 189052.31859636,
+          "gov_budget": 2098235.59096788,
+          "sat": 0.816323449263312,
           "service_cash": 125000.0,
-          "wheat_price": 43.3421753184057,
-          "wheat_stock": 2006.16876706261
+          "wheat_price": 42.7656055119046,
+          "wheat_stock": 1048.62609808828
         },
         "DEU": {
-          "firm_cash": 569158.391432537,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 600000.0,
+          "gov_budget": 21658.7360633693,
           "sat": 1.0,
-          "service_cash": 116765.688045603,
-          "wheat_price": 42.0000207483805,
-          "wheat_stock": 5400.08003672916
+          "service_cash": 300000.0,
+          "wheat_price": 41.9999999999953,
+          "wheat_stock": 5400.0
         },
         "FRA": {
-          "firm_cash": 2596.4299611838,
-          "gov_budget": 137238.493096329,
-          "sat": 1.0,
-          "service_cash": 4325.40619569856,
+          "firm_cash": 868.392891277739,
+          "gov_budget": 136509.999187251,
+          "sat": 0.999999999999985,
+          "service_cash": 5007.03547207092,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
-          "firm_cash": 825260.271575746,
-          "gov_budget": 7760263.60480267,
-          "sat": 0.975163953606612,
+          "firm_cash": 861226.319699477,
+          "gov_budget": 7897546.1715181,
+          "sat": 0.824115799228427,
           "service_cash": 450000.0,
-          "wheat_price": 42.8557444681292,
-          "wheat_stock": 4690.14102111838
+          "wheat_price": 42.0024472752912,
+          "wheat_stock": 6625.64073020626
         },
         "GUY": {
-          "firm_cash": 6236.69869681627,
-          "gov_budget": 42688.3050190632,
+          "firm_cash": 11235.0665125213,
+          "gov_budget": 0.000000000000454747350886464,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
-          "firm_cash": 62783.299301184,
-          "gov_budget": 1134820.22143653,
+          "firm_cash": 121197.09469152,
+          "gov_budget": 1516493.56647241,
           "sat": 1.0,
-          "service_cash": 105005.418525084,
-          "wheat_price": 43.6777176768114,
-          "wheat_stock": 1905.86053528178
+          "service_cash": 125000.0,
+          "wheat_price": 42.0050679451096,
+          "wheat_stock": 1977.01463211798
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.00000000000443378667114303,
+          "firm_cash": 3302.96163018255,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11291.1804350354,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 238399.806906309,
+          "gov_budget": 803.745945855888,
           "sat": 1.0,
-          "service_cash": 139948.714357839,
+          "service_cash": 145000.0,
           "wheat_price": 40.0,
-          "wheat_stock": 321.826552934943
+          "wheat_stock": 0.212639768756129
         }
       }
     },
     {
       "day": 150,
-      "iron_mines": 4,
+      "iron_mines": 6,
       "nations": {
         "BEL": {
-          "firm_cash": 210743.141724467,
-          "gov_budget": 1927905.75604068,
+          "firm_cash": 236140.386938483,
+          "gov_budget": 1944842.44536093,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.6302515062748,
-          "wheat_stock": 2139.34207024819
+          "wheat_price": 42.6942028435233,
+          "wheat_stock": 2127.14374030713
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 32305.9718493316,
+          "gov_budget": 46394.4394304278,
           "sat": 1.0,
-          "service_cash": 300000.0,
-          "wheat_price": 42.0000000256853,
-          "wheat_stock": 5400.00000000007
+          "service_cash": 298277.585852819,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
         },
         "FRA": {
-          "firm_cash": 7629.51263655767,
-          "gov_budget": 137821.46539906,
-          "sat": 1.0,
+          "firm_cash": 7397.40405658664,
+          "gov_budget": 137097.49488384,
+          "sat": 0.999999999999986,
           "service_cash": 7500.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 6390667.12545567,
-          "sat": 0.999968472412458,
-          "service_cash": 439189.943947422,
-          "wheat_price": 42.0010593603405,
-          "wheat_stock": 6034.45555141255
+          "firm_cash": 892096.049660964,
+          "gov_budget": 7156281.21896787,
+          "sat": 0.824175749863133,
+          "service_cash": 441730.754862192,
+          "wheat_price": 42.0000030295801,
+          "wheat_stock": 6799.06159389655
         },
         "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 96507.9987703314,
+          "firm_cash": 8944.37994935057,
+          "gov_budget": 140.247306724627,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
-          "firm_cash": 152774.413123477,
-          "gov_budget": 1094820.22143653,
+          "firm_cash": 225924.511043872,
+          "gov_budget": 1336500.06048102,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.0020769138867,
-          "wheat_stock": 2005.60459303865
+          "wheat_price": 42.0000062738122,
+          "wheat_stock": 2020.43941843432
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.00000000000534328137291595,
+          "firm_cash": 3315.68246843506,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11673.7631668401,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 12562.0619852755,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 290000.003898973,
+          "gov_budget": 4178.37566905461,
           "sat": 1.0,
-          "service_cash": 135545.543424769,
+          "service_cash": 134818.077009946,
           "wheat_price": 40.0,
-          "wheat_stock": 466.329783878245
+          "wheat_stock": 0.0000401153752014976
         }
       }
     },
     {
       "day": 180,
-      "iron_mines": 4,
+      "iron_mines": 6,
       "nations": {
         "BEL": {
-          "firm_cash": 201919.862480779,
-          "gov_budget": 1891854.9967513,
+          "firm_cash": 250000.0,
+          "gov_budget": 1990972.29099871,
           "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 43.9102489169584,
-          "wheat_stock": 750.000000000001
+          "service_cash": 110292.951464567,
+          "wheat_price": 42.0264666384154,
+          "wheat_stock": 750.0
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 58578.1503222447,
+          "gov_budget": 90537.1294722437,
           "sat": 1.0,
-          "service_cash": 289925.185346182,
-          "wheat_price": 42.0000000000318,
+          "service_cash": 295431.282429671,
+          "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
-          "firm_cash": 15000.0,
-          "gov_budget": 138773.113390226,
-          "sat": 1.0,
-          "service_cash": 6018.15844771475,
+          "firm_cash": 13730.6382022061,
+          "gov_budget": 138198.353383335,
+          "sat": 0.999999999999985,
+          "service_cash": 7095.73268226346,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 5237467.15237205,
-          "sat": 0.999999960969508,
-          "service_cash": 435625.411856444,
-          "wheat_price": 42.0000013114246,
-          "wheat_stock": 5134.00349688126
+          "gov_budget": 6585934.53359859,
+          "sat": 0.82417582408383,
+          "service_cash": 434776.526994671,
+          "wheat_price": 42.0000000037504,
+          "wheat_stock": 6021.74416073693
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 208259.591413203,
+          "gov_budget": 1173.47674024989,
           "sat": 1.0,
-          "service_cash": 5900.0,
+          "service_cash": 5151.8355352732,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 836324.27652943,
-          "sat": 0.999999923479326,
-          "service_cash": 106608.592240793,
-          "wheat_price": 42.0000025710949,
-          "wheat_stock": 2132.47488410432
+          "gov_budget": 1373396.90595171,
+          "sat": 1.0,
+          "service_cash": 107716.583653033,
+          "wheat_price": 42.0000000077666,
+          "wheat_stock": 2150.99941843432
         },
         "SUR": {
-          "firm_cash": 0.000000000000909494701772928,
-          "gov_budget": -0.00000000000625277607468888,
+          "firm_cash": 3315.31175348348,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11658.8368882355,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 13304.2055618197,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 290000.000003004,
+          "gov_budget": 8226.65723411179,
           "sat": 1.0,
-          "service_cash": 142886.029305136,
+          "service_cash": 136146.858767215,
           "wheat_price": 40.0,
-          "wheat_stock": 451.945595689349
+          "wheat_stock": 0.0000000075396013264185
         }
       }
     },
     {
       "day": 210,
-      "iron_mines": 7,
+      "iron_mines": 6,
       "nations": {
         "BEL": {
           "firm_cash": 170000.0,
-          "gov_budget": 1897067.39750816,
+          "gov_budget": 2029799.72165652,
           "sat": 1.0,
-          "service_cash": 186443.108169452,
-          "wheat_price": 42.32439798313,
-          "wheat_stock": 1331.6604565842
+          "service_cash": 192015.538766078,
+          "wheat_price": 42.0000327641114,
+          "wheat_stock": 750.0
         },
         "DEU": {
-          "firm_cash": 520000.0,
-          "gov_budget": 83984.1633676343,
+          "firm_cash": 520000.000000001,
+          "gov_budget": 119783.465014065,
           "sat": 1.0,
-          "service_cash": 372342.537758918,
+          "service_cash": 374671.699617486,
           "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
-          "firm_cash": 9750.0,
-          "gov_budget": 139844.851524793,
-          "sat": 1.0,
-          "service_cash": 11135.9660784736,
+          "firm_cash": 9691.59843419376,
+          "gov_budget": 139415.795548276,
+          "sat": 0.999999999999986,
+          "service_cash": 12521.3900043245,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 820000.0,
-          "gov_budget": 4241401.42492455,
-          "sat": 0.999999999951683,
-          "service_cash": 512918.942196535,
-          "wheat_price": 42.0000000016235,
-          "wheat_stock": 6998.1420715476
+          "gov_budget": 6201808.76127388,
+          "sat": 0.82417582417571,
+          "service_cash": 514982.603500787,
+          "wheat_price": 42.0000000000046,
+          "wheat_stock": 6348.38545858801
         },
         "GUY": {
           "firm_cash": 7670.0,
-          "gov_budget": 328726.027206517,
+          "gov_budget": 7027.32670256764,
           "sat": 1.0,
-          "service_cash": 10030.0,
+          "service_cash": 9612.38352646739,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
-          "firm_cash": 242785.296230685,
-          "gov_budget": 775155.204542654,
-          "sat": 0.999999999905272,
-          "service_cash": 127870.190148131,
-          "wheat_price": 42.0000000031829,
-          "wheat_stock": 2246.39264818639
+          "firm_cash": 246000.0,
+          "gov_budget": 1402734.09183978,
+          "sat": 1.0,
+          "service_cash": 129000.0,
+          "wheat_price": 42.0000000000096,
+          "wheat_stock": 2248.85835599051
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.00000000000898126018000767,
+          "firm_cash": 3315.29827960807,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9785609544,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 9132.35620624465,
-          "gov_budget": -0.00000000000727595761418343,
+          "firm_cash": 280355.705726542,
+          "gov_budget": 12273.0188807215,
           "sat": 0.999999999999999,
-          "service_cash": 147853.162248075,
+          "service_cash": 147433.588325032,
           "wheat_price": 40.0,
-          "wheat_stock": 442.714175305395
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 240,
-      "iron_mines": 9,
+      "iron_mines": 7,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 1941799.65658901,
+          "gov_budget": 2096922.00845555,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.0219754956232,
+          "wheat_price": 42.00000004056,
           "wheat_stock": 750.0
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 113354.561608306,
+          "gov_budget": 152178.704087069,
           "sat": 1.0,
-          "service_cash": 300000.0,
+          "service_cash": 295294.969427509,
           "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 141346.051614721,
-          "sat": 1.0,
+          "gov_budget": 141065.416471776,
+          "sat": 0.999999999999986,
           "service_cash": 7500.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 3478555.07774403,
-          "sat": 0.99999999999994,
-          "service_cash": 450000.0,
-          "wheat_price": 42.000000000002,
-          "wheat_stock": 5671.31025644972
+          "gov_budget": 5993151.30389968,
+          "sat": 0.825538263518518,
+          "service_cash": 449286.427488741,
+          "wheat_price": 42.0,
+          "wheat_stock": 6501.3901603814
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 483958.107527216,
+          "gov_budget": 14841.983136619,
           "sat": 1.0,
-          "service_cash": 5900.00000000001,
+          "service_cash": 5900.0,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 803865.673661551,
+          "gov_budget": 1454558.71471387,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.0000000000039,
+          "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.0000000000108002495835535,
+          "firm_cash": 3315.2978055265,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9216105091,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 15222.63318784,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
-          "service_cash": 143765.682457978,
+          "firm_cash": 290000.0,
+          "gov_budget": 16268.6345832082,
+          "sat": 0.999999999999998,
+          "service_cash": 142054.066626352,
           "wheat_price": 40.0,
-          "wheat_stock": 431.695807519482
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 270,
-      "iron_mines": 9,
+      "iron_mines": 7,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 2038722.53534863,
+          "gov_budget": 2182471.40156596,
           "sat": 1.0,
-          "service_cash": 118792.260604598,
-          "wheat_price": 42.0000272043459,
+          "service_cash": 117051.303760576,
+          "wheat_price": 42.2305362759885,
           "wheat_stock": 750.0
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 167377.696609535,
+          "gov_budget": 208212.05909904,
           "sat": 1.0,
-          "service_cash": 295818.610024086,
+          "service_cash": 295048.156069069,
           "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 143014.747459383,
-          "sat": 1.0,
-          "service_cash": 6643.63922142208,
+          "gov_budget": 142890.475276459,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 2889775.46110965,
-          "sat": 1.0,
-          "service_cash": 436789.813372123,
+          "gov_budget": 5954030.62971501,
+          "sat": 0.871776759488111,
+          "service_cash": 436785.339992312,
           "wheat_price": 42.0,
-          "wheat_stock": 5802.97763731508
+          "wheat_stock": 6570.59815916357
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 634493.273948748,
+          "gov_budget": 39426.1635819108,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
@@ -5034,69 +4957,69 @@
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 884061.271753572,
+          "gov_budget": 1496751.20887268,
           "sat": 1.0,
-          "service_cash": 117510.812687617,
+          "service_cash": 117748.120434712,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.0000000000117097442853265,
+          "firm_cash": 3315.29778884643,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9180002168,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 16086.9737148293,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
-          "service_cash": 143157.403784058,
+          "firm_cash": 290000.0,
+          "gov_budget": 132608.892935446,
+          "sat": 0.999999999999998,
+          "service_cash": 141208.666256223,
           "wheat_price": 40.0,
-          "wheat_stock": 419.461646527463
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 300,
-      "iron_mines": 9,
+      "iron_mines": 7,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 2150657.27832901,
+          "gov_budget": 2258506.77512408,
           "sat": 1.0,
-          "service_cash": 117156.744566381,
-          "wheat_price": 42.0000000336774,
-          "wheat_stock": 750.0
+          "service_cash": 112783.013198707,
+          "wheat_price": 42.0122490743015,
+          "wheat_stock": 1507.54869706394
         },
         "DEU": {
-          "firm_cash": 600000.000000001,
-          "gov_budget": 223503.178999493,
+          "firm_cash": 600000.0,
+          "gov_budget": 264991.74152562,
           "sat": 1.0,
-          "service_cash": 294048.095828044,
+          "service_cash": 293968.764171294,
           "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 144762.968796437,
-          "sat": 1.0,
-          "service_cash": 7153.84248901305,
+          "gov_budget": 144678.223904442,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 2502175.07395509,
-          "sat": 1.0,
-          "service_cash": 433652.282796506,
+          "gov_budget": 5844745.20797201,
+          "sat": 0.949801280364171,
+          "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 5935.10130994439
+          "wheat_stock": 7357.54869706394
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 814854.709122336,
+          "gov_budget": 87573.1148735146,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
@@ -5104,45 +5027,45 @@
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 956663.669516468,
+          "gov_budget": 1564101.78696283,
           "sat": 1.0,
-          "service_cash": 114280.259513005,
+          "service_cash": 120104.306980495,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.0000000000135287336888723,
+          "firm_cash": 3315.29778825977,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9177759825,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 16994.6665032491,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
-          "service_cash": 143117.470880811,
+          "firm_cash": 290000.0,
+          "gov_budget": 272223.420029035,
+          "sat": 0.999999999999998,
+          "service_cash": 140104.121288568,
           "wheat_price": 40.0,
-          "wheat_stock": 407.295206106873
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 330,
-      "iron_mines": 9,
+      "iron_mines": 7,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 2269778.6371872,
+          "gov_budget": 2330790.94011717,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.0000000000417,
-          "wheat_stock": 750.0
+          "wheat_price": 42.0052494386609,
+          "wheat_stock": 1903.6487652654
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 279405.86733468,
+          "gov_budget": 321430.854603797,
           "sat": 1.0,
           "service_cash": 300000.0,
           "wheat_price": 42.0,
@@ -5150,23 +5073,23 @@
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 146545.133083203,
-          "sat": 1.0,
+          "gov_budget": 146639.2178391,
+          "sat": 0.999999999999986,
           "service_cash": 7500.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
-          "firm_cash": 891869.426264636,
-          "gov_budget": 2299340.22893544,
-          "sat": 1.0,
+          "firm_cash": 891443.260481243,
+          "gov_budget": 5849888.16735892,
+          "sat": 0.959514310463297,
           "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6103.70015290469
+          "wheat_stock": 7753.6487652654
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 998565.734907447,
+          "gov_budget": 153325.570305173,
           "sat": 1.0,
           "service_cash": 5900.0,
           "wheat_price": 40.0,
@@ -5174,349 +5097,69 @@
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 1052638.1678857,
+          "gov_budget": 1632261.32480095,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.000000000017166712495964,
+          "firm_cash": 3315.29778823929,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9177622108,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 18645.898760279,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
+          "firm_cash": 290000.0,
+          "gov_budget": 456201.477662867,
+          "sat": 0.999999999999998,
           "service_cash": 145000.0,
           "wheat_price": 40.0,
-          "wheat_stock": 390.686771847697
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 360,
-      "iron_mines": 9,
+      "iron_mines": 7,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 2399864.90377698,
+          "gov_budget": 2408823.63312007,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.0000000000001,
-          "wheat_stock": 750.0
+          "wheat_price": 42.0000064984903,
+          "wheat_stock": 1476.03246969843
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 336259.950708179,
+          "gov_budget": 378755.234437193,
           "sat": 1.0,
-          "service_cash": 295134.680587668,
+          "service_cash": 295107.034356565,
           "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 148403.230955711,
-          "sat": 1.0,
+          "gov_budget": 148676.788172649,
+          "sat": 0.999999999999986,
           "service_cash": 7500.00000000001,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 2266992.72833778,
-          "sat": 1.0,
-          "service_cash": 448067.838255189,
-          "wheat_price": 42.0,
-          "wheat_stock": 6249.71393170081
-        },
-        "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 1187304.63234363,
-          "sat": 1.0,
-          "service_cash": 5900.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 250000.0,
-          "gov_budget": 1155241.56233372,
-          "sat": 1.0,
-          "service_cash": 120435.86914269,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.0000000000180762071977369,
-          "sat": 1.0,
-          "service_cash": 12050.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 24078.4274152083,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
-          "service_cash": 143028.382129935,
-          "wheat_price": 40.0,
-          "wheat_stock": 362.453260191308
-        }
-      }
-    },
-    {
-      "day": 390,
-      "iron_mines": 9,
-      "nations": {
-        "BEL": {
-          "firm_cash": 250000.0,
-          "gov_budget": 2535627.55364124,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 750.0
-        },
-        "DEU": {
-          "firm_cash": 600000.000000001,
-          "gov_budget": 393313.754097136,
-          "sat": 1.0,
-          "service_cash": 294012.763744813,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 15000.0,
-          "gov_budget": 150298.365627502,
-          "sat": 1.0,
-          "service_cash": 7500.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 2393913.47189674,
+          "gov_budget": 5957672.5575715,
           "sat": 1.0,
           "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6341.28455863009
+          "wheat_stock": 7326.03246969843
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 1378647.19951678,
-          "sat": 1.0,
-          "service_cash": 5900.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 250000.0,
-          "gov_budget": 1259297.77686688,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.0000000000180762071977369,
-          "sat": 1.0,
-          "service_cash": 12050.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 76153.6326128208,
-          "gov_budget": -0.00000000000727595761418343,
-          "sat": 0.999999999999999,
-          "service_cash": 134851.077671548,
-          "wheat_price": 40.0,
-          "wheat_stock": 302.7802822312
-        }
-      }
-    },
-    {
-      "day": 420,
-      "iron_mines": 10,
-      "nations": {
-        "BEL": {
-          "firm_cash": 170000.0,
-          "gov_budget": 2675894.50895463,
-          "sat": 1.0,
-          "service_cash": 205000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 750.0
-        },
-        "DEU": {
-          "firm_cash": 520000.000000001,
-          "gov_budget": 450537.023971494,
-          "sat": 1.0,
-          "service_cash": 379199.943056065,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 9750.0,
-          "gov_budget": 152207.455350203,
-          "sat": 1.0,
-          "service_cash": 12750.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 820000.0,
-          "gov_budget": 2503412.80502006,
-          "sat": 1.0,
-          "service_cash": 523762.966586849,
-          "wheat_price": 42.0,
-          "wheat_stock": 6496.55103850723
-        },
-        "GUY": {
-          "firm_cash": 7670.0,
-          "gov_budget": 1571550.29280451,
-          "sat": 1.0,
-          "service_cash": 10030.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 170000.0,
-          "gov_budget": 1364426.06954868,
-          "sat": 1.0,
-          "service_cash": 205000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.0000000000235331754083745,
-          "sat": 1.0,
-          "service_cash": 12050.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 210000.0,
-          "gov_budget": 139.566001015617,
-          "sat": 1.0,
-          "service_cash": 182978.552124663,
-          "wheat_price": 40.0,
-          "wheat_stock": 51.8218972762713
-        }
-      }
-    },
-    {
-      "day": 450,
-      "iron_mines": 11,
-      "nations": {
-        "BEL": {
-          "firm_cash": 250000.0,
-          "gov_budget": 2817998.92276195,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 750.980708680539
-        },
-        "DEU": {
-          "firm_cash": 600000.0,
-          "gov_budget": 507445.42107925,
-          "sat": 1.0,
-          "service_cash": 300000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 15000.0,
-          "gov_budget": 153679.192544727,
-          "sat": 1.0,
-          "service_cash": 7500.00000000001,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 2625636.02515302,
-          "sat": 1.0,
-          "service_cash": 448379.32112593,
-          "wheat_price": 42.0,
-          "wheat_stock": 6583.39812738159
-        },
-        "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 1761700.66238768,
-          "sat": 1.0,
-          "service_cash": 5900.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 250000.0,
-          "gov_budget": 1468859.79953175,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.000000000024449775537505,
-          "sat": 1.0,
-          "service_cash": 12050.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 280528.996758054,
-          "gov_budget": 11156.5256014547,
-          "sat": 1.0,
-          "service_cash": 145000.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        }
-      }
-    },
-    {
-      "day": 480,
-      "iron_mines": 11,
-      "nations": {
-        "BEL": {
-          "firm_cash": 250000.0,
-          "gov_budget": 2965048.76202445,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 750.980708680539
-        },
-        "DEU": {
-          "firm_cash": 600000.000000001,
-          "gov_budget": 564969.80821205,
-          "sat": 1.0,
-          "service_cash": 300000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 15000.0,
-          "gov_budget": 155888.606724135,
-          "sat": 1.0,
-          "service_cash": 7500.00000000001,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 2781050.93239779,
-          "sat": 1.0,
-          "service_cash": 447291.304383342,
-          "wheat_price": 42.0,
-          "wheat_stock": 6600.98070868054
-        },
-        "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 1963281.68146682,
+          "gov_budget": 258987.222134708,
           "sat": 1.0,
           "service_cash": 5900.00000000001,
           "wheat_price": 40.0,
@@ -5524,325 +5167,115 @@
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 1575624.89916477,
+          "gov_budget": 1703345.79540407,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 0.0,
-          "gov_budget": -0.000000000025359270239278,
+          "firm_cash": 3315.29778823878,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 11411.8508680309,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 290005.350638022,
-          "gov_budget": 93867.9384016338,
-          "sat": 1.0,
-          "service_cash": 137707.31269943,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.401338988935533
-        }
-      }
-    },
-    {
-      "day": 510,
-      "iron_mines": 11,
-      "nations": {
-        "BEL": {
-          "firm_cash": 250000.0,
-          "gov_budget": 3114108.41937242,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 777.459843055104
-        },
-        "DEU": {
-          "firm_cash": 600000.000000001,
-          "gov_budget": 622601.595477142,
-          "sat": 1.0,
-          "service_cash": 300000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 15006.1064559076,
-          "gov_budget": 157596.600163514,
-          "sat": 1.0,
-          "service_cash": 7500.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 2942864.41957947,
-          "sat": 1.0,
-          "service_cash": 445994.970454458,
-          "wheat_price": 42.0,
-          "wheat_stock": 6627.4598430551
-        },
-        "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 2169145.90331886,
-          "sat": 1.0,
-          "service_cash": 5900.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 250000.0,
-          "gov_budget": 1682904.76645482,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 24100.0,
-          "gov_budget": 277.753101111494,
-          "sat": 1.0,
-          "service_cash": 6691.2598547779,
+          "service_cash": 11657.9177613701,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
           "firm_cash": 290000.0,
-          "gov_budget": 264850.025977813,
-          "sat": 1.0,
-          "service_cash": 138410.257390727,
+          "gov_budget": 685775.960588224,
+          "sat": 0.999999999999998,
+          "service_cash": 141451.566288592,
           "wheat_price": 40.0,
-          "wheat_stock": 0.00856578717725727
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
-      "day": 540,
-      "iron_mines": 12,
+      "day": 390,
+      "iron_mines": 7,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 3262565.47097264,
+          "gov_budget": 2505419.78776164,
           "sat": 1.0,
           "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 806.881103471288
+          "wheat_price": 42.0000000080447,
+          "wheat_stock": 1171.26240662038
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 679950.69505051,
+          "gov_budget": 436260.072956689,
           "sat": 1.0,
-          "service_cash": 300000.0,
+          "service_cash": 293988.514009952,
           "wheat_price": 42.0,
           "wheat_stock": 5400.0
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 159421.539081012,
-          "sat": 1.0,
-          "service_cash": 7500.0,
+          "gov_budget": 150751.166282239,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.00000000001,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 3107336.45457436,
+          "gov_budget": 6095150.82820416,
           "sat": 1.0,
           "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6656.88110347129
+          "wheat_stock": 7021.26240662038
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 2383913.52102901,
+          "gov_budget": 357011.162238148,
           "sat": 1.0,
-          "service_cash": 5900.0,
+          "service_cash": 5900.00000000001,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 1789477.99608848,
+          "gov_budget": 1775179.22608768,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 18325.9598943342,
-          "gov_budget": 9373.62492471045,
+          "firm_cash": 3315.29778823894,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9177613189,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
           "firm_cash": 290000.0,
-          "gov_budget": 486789.420108734,
-          "sat": 1.0,
-          "service_cash": 145000.0,
+          "gov_budget": 924820.298884388,
+          "sat": 0.999999999999998,
+          "service_cash": 141559.864361137,
           "wheat_price": 40.0,
-          "wheat_stock": 0.00000152969093620533
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
-      "day": 570,
-      "iron_mines": 12,
-      "nations": {
-        "BEL": {
-          "firm_cash": 250000.0,
-          "gov_budget": 3413195.32516629,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 836.302363887472
-        },
-        "DEU": {
-          "firm_cash": 600000.0,
-          "gov_budget": 737782.153545821,
-          "sat": 1.0,
-          "service_cash": 300000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 15000.0000000877,
-          "gov_budget": 161244.241606697,
-          "sat": 1.0,
-          "service_cash": 7500.00000000001,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 3277986.61880937,
-          "sat": 1.0,
-          "service_cash": 446509.776094388,
-          "wheat_price": 42.0,
-          "wheat_stock": 6686.30236388747
-        },
-        "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 2600025.48305405,
-          "sat": 1.0,
-          "service_cash": 5900.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 250000.0,
-          "gov_budget": 1897634.53644144,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 24100.0,
-          "gov_budget": 14282.2298691482,
-          "sat": 1.0,
-          "service_cash": 12029.3752376762,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 290000.0,
-          "gov_budget": 722357.33124591,
-          "sat": 1.0,
-          "service_cash": 145000.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.00000000027317536314202
-        }
-      }
-    },
-    {
-      "day": 600,
-      "iron_mines": 12,
-      "nations": {
-        "BEL": {
-          "firm_cash": 250000.0,
-          "gov_budget": 3564038.0212074,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 865.723624303655
-        },
-        "DEU": {
-          "firm_cash": 600000.0,
-          "gov_budget": 795687.721593423,
-          "sat": 1.0,
-          "service_cash": 300000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 5400.0
-        },
-        "FRA": {
-          "firm_cash": 15000.0,
-          "gov_budget": 163067.804665133,
-          "sat": 0.99999999999998,
-          "service_cash": 7500.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "GBR": {
-          "firm_cash": 900000.0,
-          "gov_budget": 3451664.27944425,
-          "sat": 1.0,
-          "service_cash": 445216.647752772,
-          "wheat_price": 42.0,
-          "wheat_stock": 6715.72362430365
-        },
-        "GUY": {
-          "firm_cash": 11800.0,
-          "gov_budget": 2816315.74010113,
-          "sat": 1.0,
-          "service_cash": 5900.0,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "NED": {
-          "firm_cash": 250000.0,
-          "gov_budget": 2006092.59867308,
-          "sat": 1.0,
-          "service_cash": 125000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 2250.0
-        },
-        "SUR": {
-          "firm_cash": 24100.0,
-          "gov_budget": 55862.272842379,
-          "sat": 1.0,
-          "service_cash": 11598.2569405469,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.0
-        },
-        "VEN": {
-          "firm_cash": 290000.0,
-          "gov_budget": 1070500.94043179,
-          "sat": 0.999999999999999,
-          "service_cash": 140857.756281494,
-          "wheat_price": 40.0,
-          "wheat_stock": 0.00000000000365056829360835
-        }
-      }
-    },
-    {
-      "day": 630,
-      "iron_mines": 12,
+      "day": 420,
+      "iron_mines": 8,
       "nations": {
         "BEL": {
           "firm_cash": 170000.0,
-          "gov_budget": 3714843.65051777,
+          "gov_budget": 2605037.64646819,
           "sat": 1.0,
           "service_cash": 205000.0,
-          "wheat_price": 42.0,
-          "wheat_stock": 895.144884719839
+          "wheat_price": 42.00000000001,
+          "wheat_stock": 1185.32661426234
         },
         "DEU": {
-          "firm_cash": 520000.000000001,
-          "gov_budget": 853660.242485297,
+          "firm_cash": 520000.0,
+          "gov_budget": 493919.307646792,
           "sat": 1.0,
           "service_cash": 380000.0,
           "wheat_price": 42.0,
@@ -5850,23 +5283,23 @@
         },
         "FRA": {
           "firm_cash": 9750.0,
-          "gov_budget": 164893.625500153,
-          "sat": 0.99999999999998,
+          "gov_budget": 152855.703945115,
+          "sat": 0.999999999999986,
           "service_cash": 12750.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 820000.0,
-          "gov_budget": 3627816.70508737,
+          "gov_budget": 6211692.78122852,
           "sat": 1.0,
-          "service_cash": 524922.504661812,
+          "service_cash": 530000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6745.14488471984
+          "wheat_stock": 7035.32661426234
         },
         "GUY": {
           "firm_cash": 7670.0,
-          "gov_budget": 3032769.32705324,
+          "gov_budget": 481930.774102416,
           "sat": 1.0,
           "service_cash": 10030.0,
           "wheat_price": 40.0,
@@ -5874,45 +5307,535 @@
         },
         "NED": {
           "firm_cash": 170000.0,
-          "gov_budget": 2114812.95713279,
+          "gov_budget": 1847591.0361644,
           "sat": 1.0,
           "service_cash": 205000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 15665.0,
-          "gov_budget": 116459.341042925,
+          "firm_cash": 3315.29778823914,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 20485.0,
+          "service_cash": 11657.9177613156,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
-          "firm_cash": 210000.00000002,
-          "gov_budget": 1422419.42919085,
-          "sat": 0.999999999999999,
-          "service_cash": 225000.0,
+          "firm_cash": 280355.705726743,
+          "gov_budget": 1168854.08549354,
+          "sat": 0.999999999999998,
+          "service_cash": 159274.767716956,
           "wheat_price": 40.0,
-          "wheat_stock": 0.00000000000365056829360835
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 450,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2704760.12692856,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1199.39082190431
+        },
+        "DEU": {
+          "firm_cash": 600000.0,
+          "gov_budget": 551268.191972607,
+          "sat": 1.0,
+          "service_cash": 300000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 15000.0,
+          "gov_budget": 154962.210317273,
+          "sat": 0.999999999999985,
+          "service_cash": 7500.00000000001,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 900000.0,
+          "gov_budget": 6338166.11988627,
+          "sat": 1.0,
+          "service_cash": 450000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7049.39082190431
+        },
+        "GUY": {
+          "firm_cash": 11800.0,
+          "gov_budget": 610772.517197316,
+          "sat": 1.0,
+          "service_cash": 5900.00000000001,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 250000.0,
+          "gov_budget": 1919512.58642316,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.29778823937,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613152,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 290000.0,
+          "gov_budget": 1424368.81829508,
+          "sat": 0.999999999999998,
+          "service_cash": 145000.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 480,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2805936.02250482,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1213.45502954628
+        },
+        "DEU": {
+          "firm_cash": 600000.0,
+          "gov_budget": 609204.691916879,
+          "sat": 1.0,
+          "service_cash": 300000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 15000.0,
+          "gov_budget": 157114.905218613,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.00000000001,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 900000.0,
+          "gov_budget": 6496797.68023408,
+          "sat": 1.0,
+          "service_cash": 450000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7063.45502954628
+        },
+        "GUY": {
+          "firm_cash": 11800.0,
+          "gov_budget": 742003.921651586,
+          "sat": 1.0,
+          "service_cash": 5900.00000000001,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 250000.0,
+          "gov_budget": 1992842.51123202,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.29778823957,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613151,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 290000.0,
+          "gov_budget": 1743218.4965261,
+          "sat": 0.999999999999998,
+          "service_cash": 145000.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 510,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2907454.5533043,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1227.51923718825
+        },
+        "DEU": {
+          "firm_cash": 600000.0,
+          "gov_budget": 667241.002040227,
+          "sat": 1.0,
+          "service_cash": 300000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 15000.0,
+          "gov_budget": 159285.698808274,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.00000000001,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 900000.0,
+          "gov_budget": 6660855.7577379,
+          "sat": 1.0,
+          "service_cash": 450000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7077.51923718825
+        },
+        "GUY": {
+          "firm_cash": 11800.0,
+          "gov_budget": 874275.794873999,
+          "sat": 1.0,
+          "service_cash": 5900.00000000001,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2066470.33538382,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.29778823974,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613149,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 290000.0,
+          "gov_budget": 2093090.23548378,
+          "sat": 0.999999999999998,
+          "service_cash": 145000.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 540,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 250000.0,
+          "gov_budget": 3007911.0373286,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1241.58344483022
+        },
+        "DEU": {
+          "firm_cash": 600000.0,
+          "gov_budget": 724999.130376749,
+          "sat": 1.0,
+          "service_cash": 300000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 15000.0,
+          "gov_budget": 161457.061163628,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 900000.0,
+          "gov_budget": 6826685.40298685,
+          "sat": 1.0,
+          "service_cash": 450000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7091.58344483022
+        },
+        "GUY": {
+          "firm_cash": 11800.0,
+          "gov_budget": 1006652.12353393,
+          "sat": 1.0,
+          "service_cash": 5900.00000000002,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2139625.63657309,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.29778823996,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613147,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 290000.0,
+          "gov_budget": 2446648.18906526,
+          "sat": 0.999999999999998,
+          "service_cash": 145000.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 570,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 250000.0,
+          "gov_budget": 3109699.04727214,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1255.64765247218
+        },
+        "DEU": {
+          "firm_cash": 600000.0,
+          "gov_budget": 783222.300252514,
+          "sat": 1.0,
+          "service_cash": 300000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 15000.0,
+          "gov_budget": 163658.313591223,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 900000.0,
+          "gov_budget": 6997964.82061779,
+          "sat": 1.0,
+          "service_cash": 450000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7105.64765247218
+        },
+        "GUY": {
+          "firm_cash": 11800.0,
+          "gov_budget": 1140717.14359642,
+          "sat": 1.0,
+          "service_cash": 5900.00000000002,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2213771.32323938,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.29778824014,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613146,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 290000.0,
+          "gov_budget": 2795636.74711243,
+          "sat": 0.999999999999998,
+          "service_cash": 145000.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 600,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 250000.0,
+          "gov_budget": 3211382.33271084,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1269.71186011415
+        },
+        "DEU": {
+          "firm_cash": 600000.0,
+          "gov_budget": 841515.258190936,
+          "sat": 1.0,
+          "service_cash": 300000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 15000.0,
+          "gov_budget": 165871.651369638,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.00000000002,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 900000.0,
+          "gov_budget": 7171682.92013733,
+          "sat": 1.0,
+          "service_cash": 450000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7119.71186011415
+        },
+        "GUY": {
+          "firm_cash": 11800.0,
+          "gov_budget": 1275515.65556245,
+          "sat": 1.0,
+          "service_cash": 5900.00000000003,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 250000.0,
+          "gov_budget": 2288098.26402321,
+          "sat": 1.0,
+          "service_cash": 125000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.29778824038,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613144,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 290000.0,
+          "gov_budget": 3168061.90088191,
+          "sat": 0.999999999999998,
+          "service_cash": 145000.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
+        }
+      }
+    },
+    {
+      "day": 630,
+      "iron_mines": 8,
+      "nations": {
+        "BEL": {
+          "firm_cash": 170000.0,
+          "gov_budget": 3312867.12850758,
+          "sat": 1.0,
+          "service_cash": 205000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 1283.77606775612
+        },
+        "DEU": {
+          "firm_cash": 520000.0,
+          "gov_budget": 899871.468168998,
+          "sat": 1.0,
+          "service_cash": 380000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 5400.0
+        },
+        "FRA": {
+          "firm_cash": 9750.0,
+          "gov_budget": 168095.760320341,
+          "sat": 0.999999999999986,
+          "service_cash": 12750.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000166225561911507
+        },
+        "GBR": {
+          "firm_cash": 820000.0,
+          "gov_budget": 7347397.52175136,
+          "sat": 1.0,
+          "service_cash": 530000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 7133.77606775612
+        },
+        "GUY": {
+          "firm_cash": 7670.0,
+          "gov_budget": 1410976.69495362,
+          "sat": 1.0,
+          "service_cash": 10030.0,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "NED": {
+          "firm_cash": 170000.0,
+          "gov_budget": 2362584.21438468,
+          "sat": 1.0,
+          "service_cash": 205000.0,
+          "wheat_price": 42.0,
+          "wheat_stock": 2250.0
+        },
+        "SUR": {
+          "firm_cash": 3315.2977882406,
+          "gov_budget": -0.00000000000795807864051312,
+          "sat": 1.0,
+          "service_cash": 11657.9177613142,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.0
+        },
+        "VEN": {
+          "firm_cash": 280355.705726962,
+          "gov_budget": 3579218.41667056,
+          "sat": 0.999999999999998,
+          "service_cash": 164375.801122353,
+          "wheat_price": 40.0,
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 660,
-      "iron_mines": 12,
+      "iron_mines": 8,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 3864343.69051154,
+          "gov_budget": 3413637.39544418,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 924.566145136023
+          "wheat_stock": 1297.84027539809
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 911387.610943719,
+          "gov_budget": 957986.140573529,
           "sat": 1.0,
           "service_cash": 300000.0,
           "wheat_price": 42.0,
@@ -5920,69 +5843,69 @@
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 166710.956334372,
-          "sat": 0.99999999999998,
-          "service_cash": 7500.0,
+          "gov_budget": 170313.998606039,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.00000000001,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 3804468.28539792,
+          "gov_budget": 7523211.51346468,
           "sat": 1.0,
-          "service_cash": 448241.747208191,
+          "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6774.56614513602
+          "wheat_stock": 7147.84027539809
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 3248481.38710735,
+          "gov_budget": 1546384.22243397,
           "sat": 1.0,
-          "service_cash": 5900.0,
+          "service_cash": 5900.00000000001,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 2222910.98462945,
+          "gov_budget": 2436657.77029778,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 24100.0,
-          "gov_budget": 190364.758114281,
+          "firm_cash": 3315.29778824082,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.917761314,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
           "firm_cash": 290000.0,
-          "gov_budget": 1768860.81297996,
+          "gov_budget": 4012629.39228514,
           "sat": 0.999999999999998,
           "service_cash": 145000.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.00000000000365056829360835
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 690,
-      "iron_mines": 12,
+      "iron_mines": 8,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 4014553.5422999,
+          "gov_budget": 3514533.06635308,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 953.987405552207
+          "wheat_stock": 1311.90448304006
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 969489.453206911,
+          "gov_budget": 1016465.07356085,
           "sat": 1.0,
           "service_cash": 300000.0,
           "wheat_price": 42.0,
@@ -5990,69 +5913,69 @@
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 168541.427028916,
-          "sat": 0.99999999999998,
+          "gov_budget": 172557.226331567,
+          "sat": 0.999999999999986,
           "service_cash": 7500.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 3984470.1996952,
+          "gov_budget": 7702075.86444268,
           "sat": 1.0,
-          "service_cash": 446374.512858402,
+          "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6803.98740555221
+          "wheat_stock": 7161.90448304006
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 3465257.48426545,
+          "gov_budget": 1683028.64701187,
           "sat": 1.0,
-          "service_cash": 5900.0,
+          "service_cash": 5900.00000000002,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 2332112.6852779,
+          "gov_budget": 2511438.80226912,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 24100.0,
-          "gov_budget": 300730.544502119,
+          "firm_cash": 3315.297788241,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9177613139,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
           "firm_cash": 290000.0,
-          "gov_budget": 2149968.62895888,
+          "gov_budget": 4431588.90218132,
           "sat": 0.999999999999998,
           "service_cash": 145000.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.00000000000365056829360835
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     },
     {
       "day": 720,
-      "iron_mines": 12,
+      "iron_mines": 8,
       "nations": {
         "BEL": {
           "firm_cash": 250000.0,
-          "gov_budget": 4164183.63233962,
+          "gov_budget": 3615026.50946888,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 983.408665968391
+          "wheat_stock": 1325.96869068203
         },
         "DEU": {
           "firm_cash": 600000.0,
-          "gov_budget": 1027640.97605764,
+          "gov_budget": 1074991.34599149,
           "sat": 1.0,
           "service_cash": 300000.0,
           "wheat_price": 42.0,
@@ -6060,51 +5983,51 @@
         },
         "FRA": {
           "firm_cash": 15000.0,
-          "gov_budget": 170373.678695707,
-          "sat": 0.99999999999998,
-          "service_cash": 7500.0,
+          "gov_budget": 174808.286649934,
+          "sat": 0.999999999999986,
+          "service_cash": 7500.00000000002,
           "wheat_price": 40.0,
-          "wheat_stock": 0.0
+          "wheat_stock": 0.00000000000166225561911507
         },
         "GBR": {
           "firm_cash": 900000.0,
-          "gov_budget": 4165869.16714915,
+          "gov_budget": 7882095.36713823,
           "sat": 1.0,
-          "service_cash": 445576.753959335,
+          "service_cash": 450000.0,
           "wheat_price": 42.0,
-          "wheat_stock": 6833.40866596839
+          "wheat_stock": 7175.96869068202
         },
         "GUY": {
           "firm_cash": 11800.0,
-          "gov_budget": 3682160.01313998,
+          "gov_budget": 1820171.87212425,
           "sat": 1.0,
-          "service_cash": 5900.0,
+          "service_cash": 5900.00000000002,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "NED": {
           "firm_cash": 250000.0,
-          "gov_budget": 2441490.98845405,
+          "gov_budget": 2586329.17835827,
           "sat": 1.0,
           "service_cash": 125000.0,
           "wheat_price": 42.0,
           "wheat_stock": 2250.0
         },
         "SUR": {
-          "firm_cash": 24100.0,
-          "gov_budget": 400447.41865196,
+          "firm_cash": 3315.29778824122,
+          "gov_budget": -0.00000000000795807864051312,
           "sat": 1.0,
-          "service_cash": 12050.0,
+          "service_cash": 11657.9177613137,
           "wheat_price": 40.0,
           "wheat_stock": 0.0
         },
         "VEN": {
           "firm_cash": 290000.0,
-          "gov_budget": 2565471.82407018,
+          "gov_budget": 4858682.04304985,
           "sat": 0.999999999999998,
           "service_cash": 145000.0,
           "wheat_price": 40.0,
-          "wheat_stock": 0.00000000000365056829360835
+          "wheat_stock": 0.00000000000334304925601886
         }
       }
     }

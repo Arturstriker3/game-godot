@@ -732,7 +732,7 @@ constexpr double kDemoServiceMaxShare = 0.30;
 // Primeiro produto "bruto" (sem consumo local) na ordem de goods.json: 1=ferro.
 // A fase 4d pula os alimentos da cesta (B3) via demo_food_calories, então o
 // valor aqui só delimita onde começa a venda externa de matérias-primas
-// (minerais, soja, algodão, madeira).
+// (minerais, algodão, madeira).
 constexpr int kDemoFirstRawProduct = 1;
 
 // Extração mineral. 1 kt = 1000 t.
@@ -1763,10 +1763,10 @@ Dictionary EconomySim::tick_demo() {
 	// estoque e a fase 8 derruba o preço (escassez < 1) — é a "curva" de demanda
 	// limitada, que evita sobra absurda e não inventa consumo infinito. A
 	// extração continua limitada pela reserva (fase 4), então o esgotamento da
-	// jazida encerra a receita. Os alimentos da cesta (B3: trigo, arroz, milho e
-	// batata) ficam FORA desta venda externa — são consumidos pelas famílias
-	// (fase 5) e negociados entre cidades (fase 6); vendê-los aqui deixava as
-	// cidades produtoras de arroz/milho sem nada para comer.
+	// jazida encerra a receita. Os alimentos da cesta (B3: trigo, arroz, milho,
+	// batata e soja) ficam FORA desta venda externa — são consumidos pelas
+	// famílias (fase 5) e negociados entre cidades (fase 6); vendê-los aqui
+	// deixava as cidades produtoras de arroz/milho sem nada para comer.
 	for (DemoCity& city : demo_cities_) {
 		for (int product = kDemoFirstRawProduct; product < kDemoProducts; ++product) {
 			if (demo_food_calories(product) > 0.0) {

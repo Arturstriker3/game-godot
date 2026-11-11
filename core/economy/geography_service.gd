@@ -28,11 +28,11 @@ const NATION_CODE := {
 }
 
 ## Culturas básicas da cesta alimentar (B3) e fator calórico (tonelada-
-## equivalente de grão; fonte FAO em economy_sim.h). A fazenda inicial planta a
-## cultura de maior aptidão × caloria — mais alimento por tonelada-equivalente
-## na mesma área/trabalhadores.
-const STAPLE_CROPS: Array[String] = ["wheat", "rice", "maize", "potato"]
-const STAPLE_CALORIC := {"wheat": 1.0, "rice": 1.0, "maize": 1.0, "potato": 0.25}
+## equivalente de grão; fonte FAO/USDA em economy_sim.h). A fazenda inicial
+## planta a cultura de maior aptidão × caloria — mais alimento por
+## tonelada-equivalente na mesma área/trabalhadores.
+const STAPLE_CROPS: Array[String] = ["wheat", "rice", "maize", "potato", "soy"]
+const STAPLE_CALORIC := {"wheat": 1.0, "rice": 1.0, "maize": 1.0, "potato": 0.25, "soy": 1.3}
 
 ## Demanda externa LIMITADA (B4): o teto de exportação de um bem bruto por
 ## cidade é a participação da nação no mercado mundial. Minerais: reserva

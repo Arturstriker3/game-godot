@@ -322,6 +322,7 @@ map.legend.climate,Clima,Climate,Clima
 map.legend.soil,Solo,Soil,Suelo
 map.legend.relief,Relevo,Relief,Relieve
 map.legend.kind.resources,Mapa de recursos,Resource map,Mapa de recursos
+map.legend.region_of,Região de {nome},Region of {nome},Región de {nome}
 map.legend.type.underground,Subterrâneo,Underground,Subterráneo
 map.legend.type.surface,Superfície,Surface,Superficie
 map.legend.type.offshore,Marítimo,Offshore,Marítimo

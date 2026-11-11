@@ -129,8 +129,8 @@ func _trace_london(day: int, sim: Object) -> void:
 		var resource := String(building.get("resource", ""))
 		if output < 0:
 			continue
-		# Só fazendas de alimento (trigo/arroz/milho/batata), não minas de ferro.
-		var is_food := resource in ["wheat", "rice", "maize", "potato"]
+		# Só fazendas de alimento (trigo/arroz/milho/batata/soja), não minas de ferro.
+		var is_food := resource in ["wheat", "rice", "maize", "potato", "soy"]
 		if not is_food:
 			continue
 		workers += float(building.get("workers", 0.0))
