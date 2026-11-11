@@ -82,6 +82,40 @@ const MARKER_DOT := Color("#E8E2D0")
 
 ## Orçamento de renderização das cidades.
 const MAX_DETAILED_CITIES := 40
+## Rótulos não dependem mais do LOD 3D: qualquer cidade pode receber nome quando
+## a câmera chega perto. O pool de Label3D é reutilizado por prioridade (capital >
+## população), então o custo é o do pool, não o do número de cidades.
+const MAX_LABELED_CITIES := 160
+## Grade espacial do layout de rótulos/ícones, em pixels de tela. Substitui a
+## comparação O(n²): portos e cidades só testam as células vizinhas.
+const LABEL_GRID_PX := 64.0
+## Orçamento por frame para construir cidades detalhadas/portos sob demanda.
+## Sem isso, 40 cidades próximas construídas no mesmo frame davam picos >500 ms.
+const LOD_BUILD_BUDGET_USEC := 1500
+
+## Layout de rótulos (projeção + colisão de tela): refeito quando a câmera se
+## move — no máximo a cada `LAYOUT_FRAMES_MOVING` frames — e, com a câmera
+## parada, só a cada `LAYOUT_FRAMES_IDLE` frames. As posições no wrap, o fade e
+## os tamanhos continuam por frame em `_apply_wrap_positions()`.
+const LAYOUT_FRAMES_MOVING := 2
+const LAYOUT_FRAMES_IDLE := 24
+const CAMERA_MOVE_EPSILON := 0.01
+
+## Grade do LOD: célula (u de mundo) da grade XZ que guarda os registros. A cada
+## frame só as células em volta da câmera são visitadas — não os 650+650
+## lugares. O eixo X é modular (o mundo dá a volta).
+const LOD_CELL := 62.5
+## Acima deste deslocamento da câmera no espaço do mapa (zoom/teleporte) a
+## varredura é completa: nenhum registro pode ficar com faixa de fade antiga.
+const LOD_SCAN_JUMP := LOD_CELL * 0.5
+## Raio (u) dentro do qual um registro pode ter rótulo/ícone/modelo aceso. É o
+## maior `lod_end` elegível à grade; acima disso o registro vai para `_wide_cities`.
+const LOD_NEAR_RADIUS := 128.0
+## Porto: o modelo `port.glb` só nasce quando a câmera chega perto (o ícone é
+## MultiMesh). `MAX_PORT_MODELS` limita os modelos vivos ao viajar pelo mundo.
+const PORT_MODEL_DISTANCE := 110.0
+const PORT_MODEL_VISIBLE_DISTANCE := 120.0
+const MAX_PORT_MODELS := 96
 ## Layout de rótulos: sem linhas-guia. O nome fica ao lado do ícone, ancorado na
 ## cidade; quando dois nomes ainda colidem na tela, a cidade de menor população
 ## mostra só o ícone (o nome reaparece ao aproximar ou no hover). Portos são um
@@ -151,6 +185,10 @@ const NATION_COLORS := {
 }
 
 var _content: Node3D
+## Cidades, portos e rótulos ficam numa cópia ÚNICA. O wrap do mundo (cópias
+## laterais) só duplica as superfícies baratas do `_content`; cada lugar é
+## desenhado na cópia mais próxima da câmera pelo próprio `wrap_x`.
+var _places: Node3D
 var _gps_mesh: MeshInstance3D
 var _atlas_mesh: MeshInstance3D
 var _political_layer: MeshInstance3D
@@ -173,6 +211,13 @@ var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
 var _geo: RefCounted
 var _geo_catchment_ready := false
+## `true` quando `_geo` é a instância do Economy (compartilhada, já carregada e
+## com a atribuição A1 feita para o mesmo roster do cenário).
+var _geo_shared := false
+## Carregamento adiado da geografia (sem Economy): a thread parseia os JSON
+## naturais enquanto o mapa já está jogável; o resultado chega em `_poll_geo_load`.
+var _geo_thread: Thread
+var _geo_result: RefCounted
 var _capital_by_id := {}
 ## Filtro de recursos da legenda: {} = todos; senão kind -> bool.
 var _resource_filter: Dictionary = {}
@@ -181,9 +226,66 @@ var _minimap_texture: ImageTexture
 ## Layout de rótulos: métricas de tela do último frame (relatório do teste).
 var _label_rects: Array[Dictionary] = []
 var _nav_image: Image
+## Pool de rótulos e índice de prioridade (capital > população), independentes
+## do LOD 3D. `_label_free` guarda os Label3D disponíveis; `_active_labels` os
+## que estão com texto neste frame.
+var _label_pool: Array[Label3D] = []
+var _label_free: Array[Label3D] = []
+var _active_labels: Array[Dictionary] = []
+var _label_grid: Dictionary = {}
+## Ícones distantes por instancing (cidade/porto) e modelos sob demanda.
+var _city_icon_mm: MultiMeshInstance3D
+var _city_star_mm: MultiMeshInstance3D
+var _city_ring_mm: MultiMeshInstance3D
+var _city_icon_plain_records: Array = []
+var _city_icon_star_records: Array = []
+var _port_icon_mm: MultiMeshInstance3D
+var _port_ring_mm: MultiMeshInstance3D
+var _urban_queue: Array[Dictionary] = []
+var _port_model_queue: Array[Dictionary] = []
+## Modelos de porto vivos (record["model"] != null). O trim só precisa varrer
+## os 650 registros quando o total passa de `MAX_PORT_MODELS`.
+var _live_port_models := 0
+var _records_by_id: Dictionary = {}
+## Listas de VISÍVEIS montadas no LOD de cada frame: o trabalho de layout/ícones
+## percorre só elas, não os 650 lugares.
+var _visible_city_records: Array = []
+## Portos com selo aceso neste frame (alpha > 0,01). O layout percorre esta
+## lista em vez dos 650 portos: a consulta da grade já filtrou por distância.
+var _visible_port_records: Array = []
+var _detailed_records: Array = []
+var _drawn_ports: Array = []
+## Grade espacial do LOD (XZ) e as cidades de raio longo (capitais/grandes), que
+## são poucas e ficam fora da grade. `_grid_cells` conta as células em X.
+var _city_grid: Dictionary = {}
+var _port_grid: Dictionary = {}
+var _wide_cities: Array = []
+var _grid_cells := 16
+## Raio de consulta de cada grade: o maior `lod_end` dos registros nela. Fora
+## dele o registro está "assentado" (alfa 0); teleportes forçam varredura
+## completa via `LOD_SCAN_JUMP`.
+var _city_grid_radius := LOD_NEAR_RADIUS
+var _port_grid_radius := LOD_NEAR_RADIUS
+## Câmera (espaço local) no frame anterior, para detectar pulos grandes.
+var _last_camera_local := Vector3(INF, INF, INF)
+## Offset de wrap da câmera no eixo X (múltiplo de PLANE_SIZE.x).
+var _camera_x := 0.0
+## Estado da câmera no último layout (throttle do trabalho de tela) e espaço
+## até o próximo layout obrigatório. `_layout_dirty` força um layout já no
+## próximo frame (hover, seleção, idioma, filtro).
+var _layout_camera_position := Vector3(INF, INF, INF)
+var _layout_camera_basis := Basis()
+var _layout_camera_fov := -1.0
+var _layout_viewport := Vector2.ZERO
+var _layout_cooldown := 0
+var _layout_dirty := true
+## Um movimento que caiu no cooldown (teleporte/recentralização de um frame)
+## precisa de um layout posterior mesmo que a câmera já esteja parada.
+var _layout_pending := false
 ## Cópias laterais do mundo (wrap em X): o rótulo clicável é o da cópia que
-## está de fato na tela, não necessariamente a central.
-var _wrap_offsets: Array[float] = [0.0, -PLANE_SIZE.x, PLANE_SIZE.x]
+## está de fato na tela, não necessariamente a central. Com o pool de rótulos,
+## o texto já é posicionado na cópia mais próxima — o pick testa só a atual.
+var _wrap_offsets: Array[float] = [0.0]
 
 ## Emitido quando o conjunto de donos muda (o minimapa precisa se atualizar).
 signal territory_changed
@@ -192,24 +294,103 @@ signal territory_changed
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
 func build(cities: Array, ports: Array) -> void:
 	_load_city_flags()
+	# Geografia: se o Economy (autoload) já carregou os JSON naturais, o mapa
+	# reutiliza a MESMA instância. Sem ele, o parse de deposits.json (3,3 MB,
+	# ~2 s) sai do caminho crítico e vem por thread (`_poll_geo_load`).
+	_geo = _shared_geography()
+	_geo_shared = _geo != null
+	if _geo == null:
+		_start_geo_load()
 	_content = Node3D.new()
+	_content.name = "Content"
 	add_child(_content)
+	_places = Node3D.new()
+	_places.name = "Places"
+	add_child(_places)
 
 	_build_gps_plane()
 	_build_political_layer()
 	_build_mode_layer(cities)
 	_build_cities(cities)
 	_build_ports(ports)
+	_build_city_labels()
 	_build_nation_labels()
 	_init_territory(cities)
+	_build_lod_grid()
 	set_mode(_mode)
 
 	# Cópias laterais: o mundo dá a volta em X (cilíndrico), então quem sai por
-	# um lado reaparece no outro.
+	# um lado reaparece no outro. Só as superfícies (baratas) são duplicadas;
+	# cidades, portos e rótulos são posicionados na cópia mais próxima por frame.
 	for offset in [-PLANE_SIZE.x, PLANE_SIZE.x]:
 		var copy := _content.duplicate() as Node3D
+		copy.name = "ContentWrap%s" % ("Neg" if offset < 0.0 else "Pos")
 		copy.position = Vector3(offset, 0.0, 0.0)
 		add_child(copy)
+	_layout_dirty = true
+
+
+## GeographyService já carregado pelo Economy (autoload). O EconomicAI guarda a
+## instância em `geo` e ele roda antes da cena principal, então o mapa não paga
+## o parse dos JSON naturais de novo. `null` em testes sem o autoload — nesse
+## caso o mapa carrega a própria cópia, na primeira vez que alguém pedir a ficha
+## de recursos (nunca no build).
+static func _shared_geography() -> RefCounted:
+	# Busca o autoload pelo nome no root (não pela variável global): funciona
+	# também em funções estáticas e em execuções onde o autoload não existe.
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return null
+	var economy := tree.root.get_node_or_null("Economy")
+	if economy == null:
+		return null
+	var ai: Object = economy.get("_ai")
+	if ai == null:
+		return null
+	var geo: RefCounted = ai.get("geo")
+	return geo
+
+
+## Sem o Economy não há serviço carregado: o parse roda numa thread para o
+## build não esperar. O mapa é jogável enquanto isso (os modos de calor não
+## dependem de geografia); a ficha de recursos espera o join em `_ensure_geo`.
+func _start_geo_load() -> void:
+	if _geo_thread != null or _geo != null:
+		return
+	_geo_thread = Thread.new()
+	if _geo_thread.start(_load_geo_worker) != OK:
+		_geo_thread = null
+		_geo = GeographyScript.new()
+		_geo.load_data()
+
+
+## Trabalho da thread: cria e carrega o serviço; nada toca a árvore de cena.
+func _load_geo_worker() -> void:
+	var geo: RefCounted = GeographyScript.new()
+	geo.load_data()
+	_geo_result = geo
+
+
+## Entrega o resultado da thread quando ela termina (chamado por frame). Não
+## bloqueia: se ainda está viva, tenta de novo no próximo frame.
+func _poll_geo_load() -> void:
+	if _geo_thread == null or _geo_thread.is_alive():
+		return
+	_geo_thread.wait_to_finish()
+	_geo_thread = null
+	if _geo_result == null:
+		return
+	_geo = _geo_result
+	_geo_result = null
+	if _mode_layer != null:
+		_mode_layer.set_geography(_geo)
+
+
+func _exit_tree() -> void:
+	if _geo_thread != null:
+		_geo_thread.wait_to_finish()
+		_geo_thread = null
+
 
 
 ## Troca o modo de mapa sem reconstruir a geometria: só visibilidade e uniformes.
@@ -321,7 +502,8 @@ func _pick_place(nodes: Array, screen_position: Vector2, camera: Camera3D) -> St
 	var best_score := 1.0
 	var right := camera.global_transform.basis.x
 	for record in nodes:
-		var world: Vector3 = to_global(record["position"])
+		var world: Vector3 = to_global(record["position"] \
+				+ Vector3(_wrap_offset(float(record["position"].x)), 0.0, 0.0))
 		if camera.is_position_behind(world):
 			continue
 		var center := camera.unproject_position(world)
@@ -347,17 +529,25 @@ func _pick_place(nodes: Array, screen_position: Vector2, camera: Camera3D) -> St
 ## elimina esse falso positivo. Testamos também as cópias de wrap do mundo.
 func _label_pick_score(record: Dictionary, screen_position: Vector2,
 		camera: Camera3D, right: Vector3) -> float:
+	if camera == null:
+		return INF
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		return INF
 	var label: Label3D = record.get("label")
-	if label == null or not label.is_visible_in_tree():
+	if label == null or not is_instance_valid(label) \
+			or not label.is_visible_in_tree():
+		return INF
+	var font := label.font
+	if font == null:
 		return INF
 	if float(record.get("label_alpha", 1.0)) <= 0.01 or label.modulate.a <= 0.01:
 		return INF
 	var em := float(label.font_size) * label.pixel_size
-	var text_w := label.font.get_string_size(label.text,
+	var text_w := font.get_string_size(label.text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
 	var half := right * (text_w * 0.5 + em * 1.6)
-	var viewport_rect := Rect2(Vector2.ZERO,
-			camera.get_viewport().get_visible_rect().size)
+	var viewport_rect := Rect2(Vector2.ZERO, viewport.get_visible_rect().size)
 	var base := label.global_position
 	var best := INF
 	for offset in _wrap_offsets:
@@ -421,11 +611,13 @@ func city_resource_entries(city_id: String) -> Array:
 	return []
 
 
-## Posição global da cidade (para centralizar a câmera).
+## Posição global da cidade (para centralizar a câmera), já na cópia do wrap
+## mais próxima da câmera — no outro lado da emenda ela está a ±1000 u.
 func city_world_position(city_id: String) -> Vector3:
 	for record in _city_nodes:
-		if String(record["id"]) == city_id:
-			return to_global(record["position"])
+		if String(record.get("id", "")) == city_id:
+			var position: Vector3 = record.get("position", Vector3.ZERO)
+			return to_global(position + Vector3(_wrap_offset(position.x), 0.0, 0.0))
 	return Vector3.ZERO
 
 
@@ -435,11 +627,13 @@ func pick_port(screen_position: Vector2, camera: Camera3D) -> String:
 	return _pick_place(_port_nodes, screen_position, camera)
 
 
-## Posição global do porto (para centralizar a câmera).
+## Posição global do porto (para centralizar a câmera), na mesma cópia de wrap
+## usada para desenhar — com registro ausente devolve a origem em vez de erro.
 func port_world_position(port_id: String) -> Vector3:
 	for record in _port_nodes:
-		if String(record["id"]) == port_id:
-			return to_global(record["position"])
+		if String(record.get("id", "")) == port_id:
+			var position: Vector3 = record.get("position", Vector3.ZERO)
+			return to_global(position + Vector3(_wrap_offset(position.x), 0.0, 0.0))
 	return Vector3.ZERO
 
 
@@ -454,6 +648,7 @@ func port_name(port_id: String) -> String:
 ## Seleciona um porto (mesmo anel da cidade, no ponto do porto).
 func select_port(port_id: String) -> void:
 	_selected_id = port_id
+	_invalidate_layout()
 	if _selection == null:
 		_create_indicators()
 	if _selection == null:
@@ -515,6 +710,7 @@ func clear_selection() -> void:
 ## Não esconde edifícios nem atravessa o terreno (fica a ~0,15 u de altura).
 func select_city(city_id: String) -> void:
 	_selected_id = city_id
+	_invalidate_layout()
 	_set_territory_highlight(city_id)
 	if _selection == null:
 		_create_indicators()
@@ -561,6 +757,7 @@ func set_hover(place_id: String) -> void:
 		_set_label_color(_hovered_id, false)
 		_hovered_id = place_id
 		_set_label_color(place_id, true)
+		_invalidate_layout()
 
 	if _selection == null:
 		_create_indicators()
@@ -594,33 +791,32 @@ func _set_label_color(place_id: String, hovered: bool) -> void:
 func _tint_place(record: Dictionary, hovered: bool) -> void:
 	var label_color := LABEL_HOVER_COLOR if hovered else LABEL_COLOR
 	var icon_color := LABEL_HOVER_COLOR if hovered else ICON_COLOR
+	record["hovered"] = hovered
 	var label: Label3D = record.get("label")
 	if label != null:
-		label.modulate = Color(label_color.r, label_color.g, label_color.b, label.modulate.a)
+		label.modulate = Color(label_color.r, label_color.g, label_color.b,
+				label.modulate.a)
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
 		icon.modulate = Color(icon_color.r, icon_color.g, icon_color.b, 1.0)
 
 
-## Posição global de um lugar (cidade ou porto) pelo id.
+## Posição global de um lugar (cidade ou porto) pelo id, na cópia do wrap que
+## está sendo desenhada.
 func _place_position(place_id: String) -> Vector3:
-	for record in _city_nodes:
-		if String(record["id"]) == place_id:
-			return to_global(record["position"])
-	for record in _port_nodes:
-		if String(record["id"]) == place_id:
-			return to_global(record["position"])
-	return Vector3.ZERO
+	var record: Dictionary = _records_by_id.get(place_id, {})
+	if record.is_empty():
+		return Vector3.ZERO
+	var position: Vector3 = record["position"]
+	return to_global(position + Vector3(_wrap_offset(position.x), 0.0, 0.0))
 
 
 ## Raio da cidade em unidades de mundo, para o anel de seleção abraçar o tecido.
 func _city_footprint(city_id: String) -> float:
-	for record in _city_nodes:
-		if String(record["id"]) == city_id:
-			var urban = record.get("urban")
-			if urban != null and urban.has_method("extent"):
-				return maxf(0.6, float(urban.extent()) * URBAN_SCALE + 0.18)
-			break
+	var record: Dictionary = _records_by_id.get(city_id, {})
+	var urban = record.get("urban")
+	if urban != null and urban.has_method("extent"):
+		return maxf(0.6, float(urban.extent()) * URBAN_SCALE + 0.18)
 	return 1.8
 
 
@@ -637,13 +833,12 @@ func _port_footprint(record: Dictionary) -> float:
 ## Footprint ÚNICO de um lugar (cidade ou porto/construção), usado tanto pelo
 ## anel de hover/seleção quanto pelo raio de detecção em tela.
 func _place_footprint(place_id: String) -> float:
-	for record in _city_nodes:
-		if String(record["id"]) == place_id:
-			return _city_footprint(place_id)
-	for record in _port_nodes:
-		if String(record["id"]) == place_id:
-			return _port_footprint(record)
-	return 1.8
+	var record: Dictionary = _records_by_id.get(place_id, {})
+	if record.is_empty():
+		return 1.8
+	if String(record.get("kind", "")) == "city":
+		return _city_footprint(place_id)
+	return _port_footprint(record)
 
 
 ## Raio em unidades de mundo do anel de hover/seleção. É o raio de pick em
@@ -838,17 +1033,12 @@ func _on_locale_changed(_locale: String) -> void:
 			for label in holder.get_children():
 				(label as Label3D).text = I18n.t("nation." + String(label.get_meta("tag"))).to_upper()
 				_fit_nation_label(label)
-		# Nomes das cidades, incluindo as cópias laterais do mundo cilíndrico.
-		for node in root.find_children("*", "Label3D", true, false):
-			var label := node as Label3D
-			if label.has_meta("city_id"):
-				label.text = I18n.city_name(
-						String(label.get_meta("city_id")),
-						String(label.get_meta("city_fallback"))).to_upper()
-			elif label.has_meta("port_id"):
-				label.text = I18n.port_name(
-						String(label.get_meta("port_id")),
-						String(label.get_meta("port_fallback"))).to_upper()
+	# Nomes das cidades: o pool é reconfigurado no próximo layout; aqui só
+	# invalidamos o texto/largura em cache.
+	for record in _city_nodes:
+		record["text"] = ""
+		record["text_width"] = 0.0
+	_invalidate_layout()
 
 
 ## Capitulares proporcionais ao país, mas o nome nunca passa de 85% da largura
@@ -1017,34 +1207,33 @@ func _build_mode_layer(cities: Array) -> void:
 	_mode_layer = ModeLayerScript.new()
 	_mode_layer.name = "ModeLayer"
 	add_child(_mode_layer)
-	_mode_layer.setup(cities)
+	# Passa a geografia já carregada; o ModeLayer só cria a própria instância
+	# quando chamado fora do CityWorld (sem Economy).
+	_mode_layer.setup(cities, _geo)
 
 
 func _build_cities(cities: Array) -> void:
-	# Prioriza as maiores cidades para o detalhe 3D; o resto usa MultiMesh.
+	# Só as maiores ganham o modelo 3D detalhado; todas as demais entram no
+	# MultiMesh de discos e podem receber rótulo pelo pool.
 	var ordered := cities.duplicate()
 	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a.get("population", 0.0)) > float(b.get("population", 0.0))
 	)
 	var detailed := mini(MAX_DETAILED_CITIES, ordered.size())
+	var detailed_ids := {}
 	for index in detailed:
-		var city: Dictionary = ordered[index]
+		detailed_ids[String(ordered[index].get("id", ""))] = true
+	for city: Dictionary in cities:
+		var city_id := String(city.get("id", ""))
 		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
 		var color: Color = NATION_COLORS.get(city["nation"], Color.WHITE)
-		var city_id := String(city.get("id", ""))
-		var city_name := String(city.get("name", ""))
-		var discs := _spawn_city_marker(position, city_name, color)
 		var capital := bool(_capital_by_id.get(city_id, false))
-		var label := _add_city_label_hierarchical(position,
-				I18n.city_name(city_id, city_name), color,
-				capital, true)
+		var discs: Array = []
 		var icon: Sprite3D = null
 		var ring: Sprite3D = null
 		var flag: Sprite3D = null
-		if label != null:
-			# Guarda a chave/fallback para atualizar o texto ao trocar idioma.
-			label.set_meta("city_id", city_id)
-			label.set_meta("city_fallback", city_name)
+		if detailed_ids.has(city_id):
+			discs = _spawn_city_marker(position, String(city.get("name", "")), color)
 			var icon_texture := STAR_ICON if capital else CITY_ICON
 			# Bandeira só na capital: nas cidades comuns ela alargava o rótulo
 			# e forçava o nome a sair de cima das vizinhas.
@@ -1052,7 +1241,7 @@ func _build_cities(cities: Array) -> void:
 			icon = marker["icon"]
 			ring = marker["ring"]
 			flag = marker["flag"]
-		_city_nodes.append({
+		var record := {
 			"id": city_id,
 			"kind": "city",
 			"city": city,
@@ -1061,17 +1250,113 @@ func _build_cities(cities: Array) -> void:
 			"ground": position,
 			"priority": float(city.get("population", 0.0)),
 			"capital": capital,
+			"detailed": detailed_ids.has(city_id),
 			"discs": discs,
-			"label": label,
+			"disc_local": _disc_local_positions(discs),
+			"label": null,
 			"label_alpha": 1.0,
+			"pixel_size": LABEL_PIXEL_PER_UNIT * 52.0,
+			"font_size": LABEL_SIZE_CAPITAL if capital else LABEL_SIZE_STANDARD,
+			"text_width": 0.0,
+			"wrap_x": 0.0,
 			"icon": icon,
 			"ring": ring,
 			"flag": flag,
 			"urban": null,
-		})
+			"urban_queued": false,
+		}
+		_city_nodes.append(record)
+		_records_by_id[city_id] = record
+		# Faixa de fade e raio de "assentamento" do LOD, calculados uma vez: a
+		# categoria (capital/população) não muda, então o frame só compara
+		# distâncias — sem alocar Vector2 nem reavaliar a categoria.
+		var fade := _label_fade_range(record)
+		record["fade_start"] = fade.x
+		record["fade_end"] = fade.y
+		record["lod_end"] = maxf(fade.y, MARKER_FADE_IN_END) \
+				if bool(record["detailed"]) else fade.y
+		if bool(record["detailed"]):
+			_detailed_records.append(record)
 
-	if ordered.size() > detailed:
-		_build_city_multimesh(ordered.slice(detailed))
+	var rest: Array = []
+	for city: Dictionary in cities:
+		if not detailed_ids.has(String(city.get("id", ""))):
+			rest.append(city)
+	if not rest.is_empty():
+		_build_city_multimesh(rest)
+
+
+## Pool de rótulos e ícones distantes (MultiMesh). Criado uma vez no build; o
+## conteúdo é reutilizado a cada frame pelo layout.
+func _build_city_labels() -> void:
+	for _index in MAX_LABELED_CITIES:
+		var label := Label3D.new()
+		label.text = ""
+		label.font = LABEL_FONT
+		label.font_size = LABEL_SIZE_STANDARD
+		label.pixel_size = 0.019
+		label.modulate = LABEL_COLOR
+		label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
+		label.outline_size = int(LABEL_SIZE_STANDARD * 0.4)
+		label.no_depth_test = true
+		label.render_priority = 10
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.visible = false
+		_places.add_child(label)
+		_label_pool.append(label)
+		_label_free.append(label)
+
+	# Ícones de cidade fora do LOD detalhado: prédios (comum) e estrela
+	# (capital), cada um com o selo escuro, desenhados por instancing.
+	var plain: Array = []
+	var stars: Array = []
+	for record in _city_nodes:
+		if bool(record["detailed"]):
+			continue
+		if bool(record["capital"]):
+			stars.append(record)
+		else:
+			plain.append(record)
+	_city_icon_mm = _make_billboard_multimesh(CITY_ICON, 9, plain.size())
+	_city_star_mm = _make_billboard_multimesh(STAR_ICON, 9, stars.size())
+	_city_ring_mm = _make_billboard_multimesh(BADGE_TEXTURE, 8,
+			plain.size() + stars.size())
+	_city_icon_plain_records = plain
+	_city_icon_star_records = stars
+
+
+## Ícones de porto: âncora e aro no ponto de costa, por instancing.
+func _build_port_icons(ports: Array) -> void:
+	_port_icon_mm = _make_billboard_multimesh(PORT_ICON, 11, ports.size())
+	_port_ring_mm = _make_billboard_multimesh(BADGE_TEXTURE, 10, ports.size())
+
+
+func _make_billboard_multimesh(texture: Texture2D, priority: int,
+		count: int) -> MultiMeshInstance3D:
+	if count <= 0:
+		return null
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = texture
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.billboard_keep_scale = true
+	material.no_depth_test = true
+	material.render_priority = priority
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = quad
+	multimesh.instance_count = count
+	multimesh.visible_instance_count = 0
+	var instance := MultiMeshInstance3D.new()
+	instance.multimesh = multimesh
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_places.add_child(instance)
+	return instance
+
 
 
 func _build_city_multimesh(cities: Array) -> void:
@@ -1105,7 +1390,8 @@ func _build_city_multimesh(cities: Array) -> void:
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = multimesh
 	instance.material_override = material
-	_content.add_child(instance)
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_places.add_child(instance)
 
 
 ## Portos como entidades 3D: modelo port.glb (sem disco de fundo, como a cidade).
@@ -1117,22 +1403,12 @@ func _build_ports(ports: Array) -> void:
 	var city_by_id := {}
 	var city_by_name := {}
 	for record in _city_nodes:
-		if record.get("label") == null:
-			continue
 		city_by_id[String(record.get("id", ""))] = record
 		var city: Dictionary = record.get("city", {})
 		city_by_name[String(city.get("name", "")).to_lower()] = record
 	for port: Dictionary in ports:
 		var port_px := Vector2(float(port["x"]), float(port["y"]))
 		var pos := pixel_to_world(port_px)
-
-		var model := PORT_SCENE.instantiate() as Node3D
-		_content.add_child(model)
-		model.position = pos
-		var bounds := _combined_aabb(model)
-		var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
-		if longest > 0.0:
-			model.scale = Vector3.ONE * (PORT_SIZE / longest)
 
 		var port_id := String(port["id"])
 		var port_name := String(port["name"])
@@ -1151,7 +1427,6 @@ func _build_ports(ports: Array) -> void:
 		# Quando coincide com a própria cidade, vira um badge sobre o ícone dela.
 		var fused := same_city and not city_record.is_empty() \
 				and pos.distance_to(city_record["position"]) <= PORT_ICON_MERGE_DISTANCE
-		var marker := _add_port_marker(PORT_ICON)
 
 		# Lado do mar: da cidade para o ponto de costa; se coincidirem, procura
 		# a água mais próxima na máscara terra/água.
@@ -1166,7 +1441,7 @@ func _build_ports(ports: Array) -> void:
 		else:
 			sea_dir = _coast_direction_map(port_px)
 
-		_port_nodes.append({
+		var record := {
 			"id": port_id,
 			"kind": "port",
 			"name": port_name,
@@ -1174,6 +1449,7 @@ func _build_ports(ports: Array) -> void:
 			"position": pos,
 			"anchor": pos + Vector3(0.0, 0.8, 0.0),
 			"marker_base": pos + Vector3(0.0, 0.8, 0.0),
+			"marker_world": pos + Vector3(0.0, 0.8, 0.0),
 			"ground": pos,
 			"priority": 0.0,
 			"same_city": same_city,
@@ -1183,10 +1459,21 @@ func _build_ports(ports: Array) -> void:
 			"label": null,
 			"label_alpha": 1.0,
 			"pixel_size": LABEL_PIXEL_PER_UNIT * 52.0,
-			"icon": marker["icon"],
-			"ring": marker["ring"],
+			"wrap_x": 0.0,
+			"icon": null,
+			"ring": null,
 			"flag": null,
-		})
+			"model": null,
+			"model_queued": false,
+		}
+		_port_nodes.append(record)
+		_records_by_id[port_id] = record
+		# Faixa de fade do selo e raio de assentamento do LOD (modelo 3D).
+		record["fade_start"] = LABEL_FADE_SMALL_START
+		record["fade_end"] = LABEL_FADE_SMALL_END
+		record["lod_end"] = maxf(LABEL_FADE_SMALL_END, PORT_MODEL_VISIBLE_DISTANCE)
+	_build_port_icons(ports)
+
 
 
 ## Direção (em px do mapa, x/lon e y/lat) da água mais próxima de um ponto.
@@ -1230,7 +1517,7 @@ func _add_place_icon(render_priority: int, texture: Texture2D, nation: String,
 	icon.modulate = ICON_COLOR
 	icon.no_depth_test = true
 	icon.render_priority = render_priority - 1
-	_content.add_child(icon)
+	_places.add_child(icon)
 
 	var ring := Sprite3D.new()
 	ring.texture = BADGE_TEXTURE
@@ -1238,34 +1525,11 @@ func _add_place_icon(render_priority: int, texture: Texture2D, nation: String,
 	ring.transparent = true
 	ring.no_depth_test = true
 	ring.render_priority = render_priority - 2
-	_content.add_child(ring)
+	_places.add_child(ring)
 
 	var flag: Sprite3D = _new_flag(nation) if with_flag else null
 
 	return {"icon": icon, "ring": ring, "flag": flag}
-
-
-## Âncora de porto: só o ícone (sem nome, sem bandeira). O aro fino pode ser
-## escondido quando a âncora vira badge do ícone da cidade.
-func _add_port_marker(texture: Texture2D) -> Dictionary:
-	var icon := Sprite3D.new()
-	icon.texture = texture
-	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	icon.transparent = true
-	icon.modulate = ICON_COLOR
-	icon.no_depth_test = true
-	icon.render_priority = 11
-	_content.add_child(icon)
-
-	var ring := Sprite3D.new()
-	ring.texture = BADGE_TEXTURE
-	ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	ring.transparent = true
-	ring.no_depth_test = true
-	ring.render_priority = 10
-	_content.add_child(ring)
-
-	return {"icon": icon, "ring": ring}
 
 
 func _new_flag(nation: String) -> Sprite3D:
@@ -1277,18 +1541,52 @@ func _new_flag(nation: String) -> Sprite3D:
 	flag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	flag.no_depth_test = true
 	flag.render_priority = 10
-	_content.add_child(flag)
+	_places.add_child(flag)
 	return flag
 
 
+## Nome atual da cidade (i18n), calculado uma vez e invalidado na troca de idioma.
+func _city_text(record: Dictionary) -> String:
+	var text := String(record.get("text", ""))
+	if text.is_empty():
+		var city: Dictionary = record.get("city", {})
+		text = I18n.city_name(String(record["id"]),
+				String(city.get("name", ""))).to_upper()
+		record["text"] = text
+	return text
+
+
+## Largura do nome em unidades de mundo na escala atual do frame.
+func _city_text_width(record: Dictionary) -> float:
+	var width := float(record.get("text_width", 0.0))
+	if width <= 0.0:
+		width = LABEL_FONT.get_string_size(_city_text(record),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, int(record["font_size"])).x
+		record["text_width"] = width
+	return width * float(record["pixel_size"])
+
+
 ## Dispõe o marcador de cidade: [bandeira só capital] [aro+ícone] [nome].
-## O ícone fica exatamente na âncora da cidade; o nome cresce para a direita.
-func _layout_city_marker(record: Dictionary) -> void:
-	var label: Label3D = record.get("label")
-	if label == null:
+## O ícone fica exatamente na âncora; o nome cresce para a direita. A posição
+## inclui o wrap (cópia lateral mais próxima da câmera). Roda TODO frame para
+## os lugares visíveis — é só aritmética e escrita de transform, sem nó novo —
+## enquanto a colisão de rótulos (`_layout_place_labels`) é fatiada.
+func _place_city_marker(record: Dictionary) -> void:
+	var wrap := float(record.get("wrap_x", 0.0))
+	# Passo quantizado (= distância arredondada; pixel_size é proporcional a
+	# ela). Se nem o wrap nem o passo mudaram, não há o que reescrever: só o
+	# alfa do nome, que é contínuo.
+	var step := roundi(float(record["pixel_size"]) / LABEL_PIXEL_PER_UNIT)
+	if int(record.get("placed_step", -1)) == step \
+			and is_equal_approx(float(record.get("placed_wrap", 0.0)), wrap):
+		var current: Label3D = record.get("label")
+		if current != null:
+			current.modulate.a = float(record.get("label_alpha", 1.0))
 		return
-	var anchor: Vector3 = record["anchor"]
-	var em := float(label.font_size) * label.pixel_size
+	record["placed_step"] = step
+	record["placed_wrap"] = wrap
+	var anchor: Vector3 = record["anchor"] + Vector3(wrap, 0.0, 0.0)
+	var em := float(record["font_size"]) * float(record["pixel_size"])
 	var icon_h := em * PLACE_ICON_HEIGHT
 	var ring_h := icon_h * RING_SCALE
 	var gap := em * PLACE_ICON_GAP
@@ -1309,31 +1607,25 @@ func _layout_city_marker(record: Dictionary) -> void:
 		flag.pixel_size = flag_h / 20.0  # bandeira 40×20 (2:1)
 		flag.position = anchor + Vector3(-ring_h * 0.5 - gap - flag_h, 0.0, 0.0)
 
-	var text_w := label.font.get_string_size(
-			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
-	label.position = anchor + Vector3(ring_h * 0.5 + gap + text_w * 0.5, 0.0, 0.0)
+	var text_w := _city_text_width(record)
+	var text_center := anchor + Vector3(ring_h * 0.5 + gap + text_w * 0.5,
+			0.0, 0.0)
+	record["text_center"] = text_center
 
+	# Marcador em camadas (só cidades detalhadas): mesma cópia de wrap.
+	var discs: Array = record.get("discs", [])
+	var bases: Array = record.get("disc_local", [])
+	for index in discs.size():
+		(discs[index] as MeshInstance3D).position = bases[index] \
+				+ Vector3(wrap, 0.0, 0.0)
 
-## Dispõe o ícone de porto no ponto de costa. O badge (porto que coincide com a
-## própria cidade) é menor e não desenha aro, para não competir com o selo dela.
-func _layout_port_marker(record: Dictionary) -> void:
-	var icon: Sprite3D = record.get("icon")
-	if icon == null:
-		return
-	var pixel_size := float(record.get("pixel_size", LABEL_PIXEL_PER_UNIT * 52.0))
-	var fused := bool(record.get("fused", false))
-	var em := LABEL_SIZE_STANDARD * pixel_size
-	var icon_h := em * (PORT_BADGE_SCALE if fused else PORT_ICON_HEIGHT)
-	icon.pixel_size = icon_h / PLACE_ICON_SOURCE
-	icon.position = record["marker_base"]
+	# Nome do pool já atribuído: acompanha o wrap e o fade sem refazer a
+	# colisão de tela (a cor base vem do layout e é preservada).
+	var label: Label3D = record.get("label")
+	if label != null:
+		label.position = text_center
+		label.modulate.a = float(record.get("label_alpha", 1.0))
 
-	var ring: Sprite3D = record.get("ring")
-	if ring != null:
-		if fused:
-			ring.visible = false
-		else:
-			ring.pixel_size = icon_h * RING_SCALE / PLACE_ICON_SOURCE
-			ring.position = icon.position
 
 
 ## Recursos PRÓPRIOS da cidade para a legenda: jazidas minerais que pertencem
@@ -1343,9 +1635,9 @@ func _layout_port_marker(record: Dictionary) -> void:
 ## listava os mesmos minerais ("acesso aos mesmos depósitos"). Sem duplicar:
 ## minerais e culturas vêm de catálogos distintos.
 func _resource_entries(city_id: String, nation: String, center: Vector2) -> Array:
+	_ensure_geo()
 	if _geo == null:
-		_geo = GeographyScript.new()
-		_geo.load_data()
+		return []
 	_ensure_catchment()
 	var code := String(_geo.NATION_CODE.get(nation, ""))
 	var minerals: Dictionary = _geo.city_mineral_reserves(city_id) if code != "" \
@@ -1374,6 +1666,25 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 	return entries
 
 
+## Garante um GeographyService carregado para a ficha/legenda. Idempotente:
+## com o Economy presente é a mesma instância já carregada (custo zero); só em
+## contexto sem Economy o mapa carrega a própria cópia.
+func _ensure_geo() -> void:
+	if _geo == null:
+		_geo = _shared_geography()
+		_geo_shared = _geo != null
+	if _geo == null and _geo_thread != null:
+		_geo_thread.wait_to_finish()
+		_geo_thread = null
+		_geo = _geo_result
+		_geo_result = null
+		if _mode_layer != null:
+			_mode_layer.set_geography(_geo)
+	if _geo == null:
+		_geo = GeographyScript.new()
+	_geo.load_data()
+
+
 ## Bacia de captação por cidade para a ficha (uma vez só). A ficha mostra as
 ## culturas DA CIDADE (média ponderada dos seus territórios) e os minerais que
 ## ela POSSUI (regra A1) — nada de máximo/acesso nacional.
@@ -1389,8 +1700,15 @@ func _ensure_catchment() -> void:
 			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
 			"landmass": String(city.get("landmass", "")),
 		})
-	_geo.assign_provinces(city_list)
-	_geo.assign_deposits(city_list)
+	# Instância do Economy: `apply_to_sim` já atribuiu províncias e depósitos com
+	# o MESMO roster do cenário. Reatribuir aqui só repetiria o trabalho e, com
+	# ids sintéticos (benchmark), poderia divergir da economia — então só
+	# garantimos a posse A1, que é idempotente.
+	if _geo_shared:
+		_geo.ensure_deposit_ownership()
+	else:
+		_geo.assign_provinces(city_list)
+		_geo.assign_deposits(city_list)
 	_geo_catchment_ready = true
 
 
@@ -1451,6 +1769,13 @@ func _spawn_city_marker(position: Vector3, _city_name: String, color: Color) -> 
 	return discs
 
 
+static func _disc_local_positions(discs: Array) -> Array[Vector3]:
+	var result: Array[Vector3] = []
+	for disc in discs:
+		result.append((disc as MeshInstance3D).position)
+	return result
+
+
 ## Disco plano usado para desenhar o marcador da cidade em camadas.
 func _add_disc(position: Vector3, radius: float, height: float, color: Color) -> MeshInstance3D:
 	var mesh := CylinderMesh.new()
@@ -1467,39 +1792,16 @@ func _add_disc(position: Vector3, radius: float, height: float, color: Color) ->
 	instance.mesh = mesh
 	instance.material_override = material
 	instance.position = position
-	_content.add_child(instance)
+	_places.add_child(instance)
 	return instance
 
 
-## Nome da cidade em caixa alta, como legenda de carta militar.
-## Hierarquia por produção: capitais maiores, cidades menores (estilo HOI3).
-func _add_city_label_hierarchical(position: Vector3, city_name: String, color: Color,
-		capital: bool, with_label: bool) -> Label3D:
-	if not with_label:
-		return null
-
-	# Tamanho padronizado; só capital (CSV) ganha um pouco mais.
-	var font_size := LABEL_SIZE_CAPITAL if capital else LABEL_SIZE_STANDARD
-	
-	var label := Label3D.new()
-	label.text = city_name.to_upper()
-	label.font = LABEL_FONT
-	label.font_size = font_size
-	label.pixel_size = 0.019
-	# Texto claro com halo escuro: lê sobre qualquer preenchimento de nação e
-	# não se confunde com a cor do país. `color` fica só como dica de identidade.
-	label.modulate = Color("#E8E2D0")
-	label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
-	label.outline_size = int(font_size * 0.4)  # Outline proporcional
-	label.no_depth_test = true
-	label.render_priority = 10
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = position + Vector3(0.0, 1.0, 0.0)
-	_content.add_child(label)
-	return label
-
 
 ## LOD por distância: rótulos de cidade/porto, marcador e cidade modular.
+## O loop percorre todas as cidades/portos (barato: distância + wrap), mas só
+## projeta/monta o que está dentro da faixa de fade do frame. O layout de tela
+## (projeção + colisão de rótulos) é fatiado: câmera em movimento, um a cada
+## `LAYOUT_FRAMES_MOVING` frames; parada, um a cada `LAYOUT_FRAMES_IDLE`.
 func _process(_delta: float) -> void:
 	if _city_nodes.is_empty() and _port_nodes.is_empty():
 		return
@@ -1508,35 +1810,211 @@ func _process(_delta: float) -> void:
 		return
 
 	var camera_position := camera.global_position
+	var camera_local := to_local(camera_position)
+	_camera_x = camera_local.x
+	_poll_geo_load()
+	# Mudar o transform do PRÓPRIO mapa (recentralizar o mundo, trocar o nó de
+	# lugar) move a câmera no espaço local sem mexer na câmera global; o layout
+	# precisa acompanhar os dois.
+	var local_delta := _last_camera_local.distance_to(camera_local)
+	var moved := _camera_changed(camera) or local_delta > CAMERA_MOVE_EPSILON
+	# Câmera parada, nada marcado como sujo e nenhum modelo na fila: nada na
+	# tela muda. O frame custa só a comparação da câmera. Com modelo na fila,
+	# só a fila roda (construir um modelo por frame já é o pico do frame).
+	if not moved and not _layout_dirty and not _layout_pending:
+		if _urban_queue.is_empty() and _port_model_queue.is_empty():
+			return
+		_process_lod_queues(camera)
+		return
 	_update_nation_labels(camera_position)
-	# Portos: âncora pequena, sem nome, que some cedo no zoom out.
-	for record in _port_nodes:
-		var port_position: Vector3 = to_global(record["position"])
-		_apply_port_lod(record, camera_position.distance_to(port_position))
+	_visible_city_records.clear()
+	_visible_port_records.clear()
+	# Pulo grande da câmera (clique no HUD, limite, teleporte): uma varredura
+	# completa assenta/apaga o que ficou fora das células — senão um rótulo ou
+	# ícone processado perto ficaria aceso no lugar errado.
+	var jump := local_delta > LOD_SCAN_JUMP
+	_last_camera_local = camera_local
+	if jump:
+		for record in _port_nodes:
+			_apply_lod_port(record, camera_local, camera)
+		for record in _city_nodes:
+			_apply_lod_city(record, camera_local, camera)
+	else:
+		# Portos e cidades só nas células da grade em volta da câmera; as
+		# cidades de raio longo (capitais/grandes) ficam fora da grade.
+		for record in _lod_records(_port_grid, camera_local, _port_grid_radius):
+			_apply_lod_port(record, camera_local, camera)
+		for record in _wide_cities:
+			_apply_lod_city(record, camera_local, camera)
+		for record in _lod_records(_city_grid, camera_local, _city_grid_radius):
+			_apply_lod_city(record, camera_local, camera)
+	# Posição no wrap + escala de tela dos marcadores visíveis: não depende do
+	# layout (que é fatiado) e mantém discos/ícones/nomes colados na cópia mais
+	# próxima da câmera.
+	_apply_wrap_positions()
+	# Layout simples (projeção + colisão): âncora fixa, sem linhas-guia. Nomes
+	# que ainda colidem dão lugar ao ícone da cidade menor (prioridade).
+	if _should_relayout(moved):
+		_layout_place_labels(camera)
+	# Ícones distantes (MultiMesh): compacta o buffer visível a cada frame para
+	# o zoom/pan não deixar o instancing um frame atrás do layout fatiado.
+	_apply_icon_transforms(camera)
+	# Modelos detalhados entram fatiados, com orçamento por frame.
+	_process_lod_queues(camera)
+
+
+## Offset da cópia do mundo (wrap cilíndrico) mais próxima da câmera.
+func _wrap_offset(x: float) -> float:
+	return roundf((_camera_x - x) / PLANE_SIZE.x) * PLANE_SIZE.x
+
+
+## Força um layout no próximo frame (hover, seleção, idioma, filtro, modo).
+func _invalidate_layout() -> void:
+	_layout_dirty = true
+
+
+## Decide se o layout de tela roda neste frame. Quando a câmera está parada e
+## nada mudou, o trabalho é pulado — o que sobra por frame é só o LOD barato.
+func _should_relayout(moved: bool) -> bool:
+	# Câmera em movimento usa o ritmo de pan; se ela vinha parada (cooldown
+	# longo) e se mexeu, encurta o cooldown para o próximo frame.
+	if moved and _layout_cooldown > LAYOUT_FRAMES_MOVING:
+		_layout_cooldown = LAYOUT_FRAMES_MOVING
+	if _layout_cooldown > 0:
+		_layout_cooldown -= 1
+		if not _layout_dirty and _layout_cooldown > 0:
+			if moved:
+				_layout_pending = true
+			return false
+	_layout_dirty = false
+	_layout_pending = false
+	_layout_cooldown = LAYOUT_FRAMES_MOVING if moved else LAYOUT_FRAMES_IDLE
+	return true
+
+
+## Compara a câmera (posição, rotação, fov e viewport) com o último layout e
+## guarda o estado novo. Verdadeiro se algo mudou além da tolerância.
+func _camera_changed(camera: Camera3D) -> bool:
+	var transform := camera.global_transform
+	var viewport := camera.get_viewport()
+	var viewport_size := viewport.get_visible_rect().size if viewport != null \
+			else Vector2.ZERO
+	var moved := _layout_camera_position.distance_to(transform.origin) \
+			> CAMERA_MOVE_EPSILON \
+			or not _layout_camera_basis.is_equal_approx(transform.basis) \
+			or not is_equal_approx(_layout_camera_fov, camera.fov) \
+			or _layout_viewport != viewport_size
+	_layout_camera_position = transform.origin
+	_layout_camera_basis = transform.basis
+	_layout_camera_fov = camera.fov
+	_layout_viewport = viewport_size
+	return moved
+
+
+## Reaplica posição, escala de tela e alfa de cada marcador na cópia de wrap
+## mais próxima. Percorre só as cidades com rótulo aceso — a lista é montada no
+## LOD do frame —, então não custa nada além do que está na tela.
+func _apply_wrap_positions() -> void:
+	for record in _visible_city_records:
+		_place_city_marker(record)
+	for record in _detailed_records:
+		# Discos do LOD continental continuam visíveis bem depois do nome.
+		if float(record.get("label_alpha", 0.0)) <= 0.01:
+			_place_city_marker(record)
+
+
+## A posição do registro (já com o wrap) está dentro do frustum da câmera?
+## Usado só para não construir modelo 3D de cidade/porto fora da tela.
+func _in_frustum(record: Dictionary, camera: Camera3D) -> bool:
+	var local: Vector3 = record["position"] \
+			+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
+	return camera.is_position_in_frustum(to_global(local))
+
+
+## Monta a grade do LOD uma vez (as posições dos lugares são estáticas).
+func _build_lod_grid() -> void:
+	_grid_cells = maxi(1, roundi(PLANE_SIZE.x / LOD_CELL))
+	_city_grid.clear()
+	_port_grid.clear()
+	_wide_cities.clear()
+	_city_grid_radius = 0.0
+	_port_grid_radius = 0.0
 	for record in _city_nodes:
-		var world_position: Vector3 = to_global(record["position"])
-		var distance := camera_position.distance_to(world_position)
-		_apply_city_lod(record, distance, world_position)
-	# Layout simples: âncora fixa, sem linhas-guia. Nomes que ainda colidem dão
-	# lugar ao ícone da cidade menor (prioridade por população).
-	_layout_place_labels(camera)
+		if float(record["lod_end"]) > LOD_NEAR_RADIUS:
+			_wide_cities.append(record)
+		else:
+			_add_to_grid(_city_grid, record)
+			_city_grid_radius = maxf(_city_grid_radius, float(record["lod_end"]))
+	for record in _port_nodes:
+		_add_to_grid(_port_grid, record)
+		_port_grid_radius = maxf(_port_grid_radius, float(record["lod_end"]))
+
+
+## Célula da grade (X modular; Z preso ao plano) de um registro.
+func _lod_grid_key(record: Dictionary) -> Vector2i:
+	var position: Vector3 = record["position"]
+	var cell := PLANE_SIZE.x / float(maxi(_grid_cells, 1))
+	var cells_z := maxi(1, roundi(PLANE_SIZE.y / cell))
+	return Vector2i(
+		wrapi(floori((position.x + PLANE_SIZE.x * 0.5) / cell), 0, _grid_cells),
+		clampi(floori((position.z + PLANE_SIZE.y * 0.5) / cell), 0,
+				cells_z - 1))
+
+
+func _add_to_grid(grid: Dictionary, record: Dictionary) -> void:
+	var key := _lod_grid_key(record)
+	if not grid.has(key):
+		grid[key] = []
+	(grid[key] as Array).append(record)
+
+
+## Registros das células que cobrem `radius` em volta da câmera (em espaço
+## local). Devolve os arrays das células, sem copiar registro nenhum.
+func _lod_records(grid: Dictionary, camera_local: Vector3,
+		radius: float) -> Array:
+	if grid.is_empty():
+		return []
+	var cell := PLANE_SIZE.x / float(maxi(_grid_cells, 1))
+	var cells_z := maxi(1, roundi(PLANE_SIZE.y / cell))
+	var span := maxi(1, ceili(radius / cell))
+	var cx := floori((camera_local.x + PLANE_SIZE.x * 0.5) / cell)
+	var cz := floori((camera_local.z + PLANE_SIZE.y * 0.5) / cell)
+	var out: Array = []
+	for iz in range(cz - span, cz + span + 1):
+		if iz < 0 or iz >= cells_z:
+			continue
+		for ix in range(cx - span, cx + span + 1):
+			var bucket: Variant = grid.get(Vector2i(wrapi(ix, 0, _grid_cells), iz))
+			if bucket != null:
+				out.append_array(bucket)
+	return out
+
+
 
 
 ## Layout dos rótulos na tela, SEM deslocamento de grupos e SEM linhas-guia:
-##  - cidades em ordem de prioridade (capitais, depois população); se o nome
-##    ainda colidir com um rótulo/ícone já aceito, a cidade menor fica só com o
-##    ícone (o nome reaparece ao aproximar ou no hover);
+##  - cidades em ordem de prioridade (hover, capitais, população); o pool de
+##    Label3D é reutilizado, então qualquer cidade pode ter nome;
+##  - se o texto colidir com um bloco já aceito (grade espacial), a cidade menor
+##    fica só com o ícone (o nome reaparece ao aproximar ou no hover);
 ##  - portos são ícones de âncora no ponto de costa, com ajuste local de no
 ##    máximo `PORT_MAX_OFFSET_PX` para não entrar no rótulo da própria cidade.
 func _layout_place_labels(camera: Camera3D) -> void:
 	_label_rects.clear()
+	for record in _active_labels:
+		record["label"] = null
+	_active_labels.clear()
+	_label_free.clear()
+	for label in _label_pool:
+		_label_free.append(label)
+	_label_grid.clear()
+	var viewport := Rect2(Vector2.ZERO,
+			camera.get_viewport().get_visible_rect().size)
+
 	var entries: Array = []
-	for record in _city_nodes:
-		if record.get("label") == null:
-			continue
-		if float(record.get("label_alpha", 0.0)) <= 0.01:
-			continue
-		_layout_city_marker(record)
+	# Só as cidades com rótulo aceso neste frame (lista montada no LOD): o
+	# layout não varre os 650 registros nem projeta quem está apagado.
+	for record in _visible_city_records:
 		var metrics := _city_metrics(record, camera)
 		if metrics.is_empty():
 			continue
@@ -1544,31 +2022,38 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"record": record,
 			"metrics": metrics,
 			"capital": bool(record.get("capital", false)),
+			"hovered": String(record["id"]) == _hovered_id,
 			"priority": float(record.get("priority", 0.0)),
 		})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if bool(a["hovered"]) != bool(b["hovered"]):
+			return bool(a["hovered"])
 		if bool(a["capital"]) != bool(b["capital"]):
 			return bool(a["capital"])
 		return float(a["priority"]) > float(b["priority"])
 	)
 
-	var kept: Array[Rect2] = []
 	for entry in entries:
 		var record: Dictionary = entry["record"]
 		var metrics: Dictionary = entry["metrics"]
-		var label: Label3D = record["label"]
 		var text_allowed := true
-		if not bool(entry["capital"]) and String(record["id"]) != _hovered_id:
-			var text_rect: Rect2 = metrics["text_rect"]
-			for other in kept:
-				if text_rect.grow(LABEL_COLLIDE_PAD_PX).intersects(other):
-					text_allowed = false
-					break
-		label.visible = text_allowed
+		if not bool(entry["capital"]) and not bool(entry["hovered"]):
+			text_allowed = not _grid_hits(_label_grid, metrics["text_rect"],
+					LABEL_COLLIDE_PAD_PX)
+		var label: Label3D = null
+		if text_allowed:
+			label = _take_label()
+			if label == null:
+				# Pool esgotado: as cidades de menor prioridade ficam só com o
+				# ícone, como na colisão.
+				text_allowed = false
+		if label != null:
+			_configure_city_label(label, record)
+			_active_labels.append(record)
 		var block: Rect2 = metrics["icon_rect"]
 		if text_allowed:
 			block = block.merge(metrics["text_rect"])
-		kept.append(block)
+		_grid_insert(_label_grid, block)
 		var icon: Sprite3D = record.get("icon")
 		var flag: Sprite3D = record.get("flag")
 		_label_rects.append({
@@ -1578,7 +2063,7 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"text_rect": metrics["text_rect"],
 			"icon_rect": metrics["icon_rect"],
 			"text_visible": text_allowed,
-			"marker_visible": icon != null and icon.visible,
+			"marker_visible": icon == null or icon.visible,
 			"flag_visible": flag != null and flag.visible,
 			"capital": bool(record.get("capital", false)),
 			"population": float(record.get("priority", 0.0)),
@@ -1588,16 +2073,13 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"offset": Vector2.ZERO,
 		})
 
-	# Portos por último: nunca deslocam rótulos, só o próprio ícone.
-	var placed_ports: Array[Rect2] = []
-	for record in _port_nodes:
-		_layout_port_marker(record)
-		var icon: Sprite3D = record.get("icon")
-		if icon == null:
-			continue
+	# Portos por último: nunca deslocam rótulos, só o próprio ícone. A lista já
+	# vem filtrada pelo LOD do frame (selo aceso), não os 650 registros.
+	_drawn_ports.clear()
+	for record in _visible_port_records:
+		record["draw"] = false
 		if float(record.get("label_alpha", 0.0)) <= 0.01:
-			icon.visible = false
-			_append_port_report(record, Rect2(), false, Vector2.ZERO)
+			# Fora da faixa de fade: não entra no relatório nem gasta projeção.
 			continue
 		var metrics := _port_metrics(record, camera)
 		if metrics.is_empty():
@@ -1605,39 +2087,95 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			continue
 		var chosen := Vector2.ZERO
 		if not bool(record.get("fused", false)):
-			var found := false
-			for candidate in _port_offset_candidates(record, camera):
-				var rect: Rect2 = metrics["rect"]
-				var shifted := Rect2(rect.position + candidate, rect.size)
-				var ok := true
-				for block in kept:
-					if shifted.grow(1.0).intersects(block):
-						ok = false
+			# A posição de costa é o candidato preferido; só projeta o lado do
+			# mar (e os deslocamentos) quando ela de fato colide.
+			if _grid_hits(_label_grid, metrics["rect"], 1.0):
+				var found := false
+				for candidate in _port_offset_candidates(record, camera):
+					var rect: Rect2 = metrics["rect"]
+					var shifted := Rect2(rect.position + candidate, rect.size)
+					if not _grid_hits(_label_grid, shifted, 1.0):
+						chosen = candidate
+						found = true
 						break
-				if ok:
-					for other in placed_ports:
-						if shifted.intersects(other):
-							ok = false
-							break
-				if ok:
-					chosen = candidate
-					found = true
-					break
-			if not found:
-				# Sem espaço local: fica só o modelo 3D do porto na costa e o
-				# ícone da cidade; nada de linha.
-				icon.visible = false
-				var ring: Sprite3D = record.get("ring")
-				if ring != null:
-					ring.visible = false
-				_append_port_report(record, Rect2(), false, Vector2.ZERO)
-				continue
-			if not chosen.is_zero_approx():
-				_apply_port_offset(record, chosen, camera)
-				metrics = _port_metrics(record, camera)
+				if not found:
+					# Sem espaço local: fica só o modelo 3D do porto na costa e o
+					# ícone da cidade; nada de linha.
+					_append_port_report(record, Rect2(), false, Vector2.ZERO)
+					continue
+				if not chosen.is_zero_approx():
+					_apply_port_offset(record, chosen, camera)
+					metrics = _port_metrics(record, camera)
 		var final_rect: Rect2 = metrics["rect"]
-		placed_ports.append(final_rect)
+		record["draw"] = true
+		_drawn_ports.append(record)
+		_grid_insert(_label_grid, final_rect)
 		_append_port_report(record, final_rect, true, chosen)
+
+	# Rótulos que voltaram ao pool não podem ficar na tela com o texto da cidade
+	# anterior (fantasmas ao reduzir o conjunto visível). Esconde só os livres.
+	for label in _label_free:
+		if label.visible:
+			label.visible = false
+
+
+## Pega um Label3D livre do pool.
+func _take_label() -> Label3D:
+	if _label_free.is_empty():
+		return null
+	return _label_free.pop_back()
+
+
+## Escreve o nome/estilo da cidade no rótulo do pool.
+func _configure_city_label(label: Label3D, record: Dictionary) -> void:
+	label.text = _city_text(record)
+	label.font_size = int(record["font_size"])
+	label.pixel_size = float(record["pixel_size"])
+	label.outline_size = int(record["font_size"] * 0.4)
+	var base := LABEL_HOVER_COLOR if String(record["id"]) == _hovered_id \
+			else LABEL_COLOR
+	label.modulate = Color(base.r, base.g, base.b,
+			float(record.get("label_alpha", 1.0)))
+	label.position = record["text_center"]
+	label.visible = true
+	record["label"] = label
+
+
+## Célula da grade de ocupação de tela.
+static func _grid_key(point: Vector2) -> Vector2i:
+	return Vector2i(floori(point.x / LABEL_GRID_PX),
+			floori(point.y / LABEL_GRID_PX))
+
+
+## Verdadeiro se `rect` (com folga) encosta em algum bloco já aceito.
+func _grid_hits(grid: Dictionary, rect: Rect2, pad: float) -> bool:
+	var r := rect.grow(pad)
+	var first := _grid_key(r.position)
+	var last := _grid_key(r.end)
+	for x in range(first.x, last.x + 1):
+		for y in range(first.y, last.y + 1):
+			var bucket: Array = grid.get(Vector2i(x, y), [])
+			for other in bucket:
+				if r.intersects(other):
+					return true
+	return false
+
+
+## Insere um bloco ocupado nas células que ele cobre.
+func _grid_insert(grid: Dictionary, rect: Rect2) -> void:
+	var first := _grid_key(rect.position)
+	var last := _grid_key(rect.end)
+	for x in range(first.x, last.x + 1):
+		for y in range(first.y, last.y + 1):
+			var key := Vector2i(x, y)
+			if not grid.has(key):
+				grid[key] = []
+			(grid[key] as Array).append(rect)
+
+
+## Posição de mundo de um ponto da cidade, já na cópia do wrap mais próxima.
+func _display_world(record: Dictionary) -> Vector3:
+	return to_global(record["position"] + Vector3(record.get("wrap_x", 0.0), 0.0, 0.0))
 
 
 func _append_port_report(record: Dictionary, rect: Rect2, visible: bool,
@@ -1678,39 +2216,46 @@ func _world_rect_to_screen(camera: Camera3D, center: Vector3, half_x: float,
 		Vector2(absf(b.x - a.x), absf(b.y - a.y)))
 
 
-## Métricas do rótulo de cidade no frame: retângulo do ícone e do texto.
+## Métricas do rótulo de cidade no frame: retângulo do ícone e do texto. Não
+## depende do Label3D estar atribuído (o layout decide a colisão antes de pegar
+## um rótulo do pool).
 func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
-	var label: Label3D = record.get("label")
-	if label == null:
+	var wrap := float(record.get("wrap_x", 0.0))
+	var anchor_world: Vector3 = to_global(record["anchor"] + Vector3(wrap, 0.0, 0.0))
+	if camera.is_position_behind(anchor_world) \
+			or not camera.is_position_in_frustum(anchor_world):
 		return {}
-	var anchor_world: Vector3 = to_global(record["anchor"])
-	if camera.is_position_behind(anchor_world):
-		return {}
-	var em := float(label.font_size) * label.pixel_size
+	var em := float(record["font_size"]) * float(record["pixel_size"])
 	var icon_h := em * PLACE_ICON_HEIGHT
 	var icon_rect := _world_rect_to_screen(camera, anchor_world,
 			icon_h * 0.5, icon_h * 0.5)
-	var label_world: Vector3 = to_global(label.position)
-	if camera.is_position_behind(label_world):
+	var text_world: Vector3 = to_global(record["text_center"])
+	if camera.is_position_behind(text_world):
 		return {}
-	var text_w := label.font.get_string_size(label.text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
-	var text_rect := _world_rect_to_screen(camera, label_world,
+	var text_w := _city_text_width(record)
+	var text_rect := _world_rect_to_screen(camera, text_world,
 			text_w * 0.5, em * 0.62)
 	return {"icon_rect": icon_rect, "text_rect": text_rect}
 
 
-## Métricas do ícone de porto no frame.
+## Métricas do ícone de porto no frame (posição já com wrap e deslocamento).
 func _port_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
-	var icon: Sprite3D = record.get("icon")
-	if icon == null:
+	var marker_world: Vector3 = to_global(record["marker_world"])
+	if camera.is_position_behind(marker_world) \
+			or not camera.is_position_in_frustum(marker_world):
 		return {}
-	var marker_world: Vector3 = to_global(icon.position)
-	if camera.is_position_behind(marker_world):
-		return {}
-	var size := PLACE_ICON_SOURCE * icon.pixel_size
+	var icon_h := _port_icon_height(record)
 	return {"rect": _world_rect_to_screen(camera, marker_world,
-			size * 0.5, size * 0.5)}
+			icon_h * 0.5, icon_h * 0.5)}
+
+
+## Altura do ícone de porto em unidades de mundo no frame.
+func _port_icon_height(record: Dictionary) -> float:
+	var em := LABEL_SIZE_STANDARD * float(record.get("pixel_size",
+			LABEL_PIXEL_PER_UNIT * 52.0))
+	return em * (PORT_BADGE_SCALE if bool(record.get("fused", false)) \
+			else PORT_ICON_HEIGHT)
+
 
 
 ## Candidatos de ajuste local do porto, em pixels de tela: o ponto de costa e
@@ -1718,7 +2263,7 @@ func _port_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 func _port_offset_candidates(record: Dictionary, camera: Camera3D) -> Array[Vector2]:
 	var candidates: Array[Vector2] = [Vector2.ZERO]
 	var sea := Vector2(0.0, -1.0)
-	var base_world: Vector3 = to_global(record["marker_base"])
+	var base_world: Vector3 = to_global(record["marker_world"])
 	if not camera.is_position_behind(base_world):
 		var sea_world: Vector3 = record.get("sea_dir_world", Vector3(1.0, 0.0, 0.0))
 		var a := camera.unproject_position(base_world)
@@ -1735,22 +2280,14 @@ func _port_offset_candidates(record: Dictionary, camera: Camera3D) -> Array[Vect
 
 ## Aplica o deslocamento em pixels de tela como translação no plano da câmera.
 func _apply_port_offset(record: Dictionary, offset: Vector2, camera: Camera3D) -> void:
-	var icon: Sprite3D = record.get("icon")
-	if icon == null:
-		return
-	var base_world: Vector3 = to_global(record["marker_base"])
+	var base_world: Vector3 = to_global(record["marker_world"])
 	var basis := camera.global_transform.basis
 	var px_x := _screen_px_per_world(camera, base_world, basis.x)
 	var px_y := _screen_px_per_world(camera, base_world, basis.y)
 	if px_x <= 0.0 or px_y <= 0.0:
 		return
-	var target := base_world + basis.x * (offset.x / px_x) \
-			- basis.y * (offset.y / px_y)
-	var parent := icon.get_parent() as Node3D
-	icon.position = parent.to_local(target) if parent != null else target
-	var ring: Sprite3D = record.get("ring")
-	if ring != null:
-		ring.position = icon.position
+	var delta: Vector3 = basis.x * (offset.x / px_x) - basis.y * (offset.y / px_y)
+	record["marker_world"] = record["marker_world"] + delta
 
 
 ## Pixels de tela por unidade de mundo numa direção, na profundidade do ponto.
@@ -1762,19 +2299,14 @@ func _screen_px_per_world(camera: Camera3D, point: Vector3, axis: Vector3) -> fl
 
 ## Escala e fade do rótulo da cidade. O tamanho em tela é constante (pixel_size
 ## proporcional à distância); o que muda no zoom out é a faixa de fade por
-## categoria: capitais duram mais, cidades pequenas somem antes.
+## categoria: capitais duram mais, cidades pequenas somem antes. A faixa já vem
+## calculada no build (`fade_start`/`fade_end`).
 func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
-	var label: Label3D = record.get("label")
-	if label == null:
-		return
-	label.pixel_size = clampf(LABEL_PIXEL_PER_UNIT * distance,
+	record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * distance,
 			LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
-	var range := _label_fade_range(record)
-	var label_alpha := 1.0 - _fade_in(distance, range.x, range.y)
+	var label_alpha := 1.0 - _fade_in(distance, float(record["fade_start"]),
+			float(record["fade_end"]))
 	record["label_alpha"] = label_alpha
-	label.modulate.a = label_alpha
-	label.visible = label_alpha > 0.01
-	_layout_city_marker(record)
 
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
@@ -1788,6 +2320,7 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	if flag != null:
 		flag.transparency = 1.0 - label_alpha
 		flag.visible = label_alpha > 0.01
+
 
 
 ## Faixa (início, fim) do fade por distância, conforme a categoria do lugar.
@@ -1805,36 +2338,54 @@ func _label_fade_range(record: Dictionary) -> Vector2:
 
 
 ## LOD da âncora de porto: mesma escala de tela do texto de cidade, mas menor e
-## com fade de cidade pequena (some no zoom out).
-func _apply_port_lod(record: Dictionary, distance: float) -> void:
-	var pixel_size := clampf(LABEL_PIXEL_PER_UNIT * distance,
+## com fade de cidade pequena (some no zoom out). O ícone é MultiMesh; o modelo
+## 3D nasce sob demanda quando a câmera chega perto E o porto está na tela.
+## Longe de tudo (`lod_end`), o registro "assenta": nenhum campo é reescrito até
+## a câmera voltar para o raio.
+func _apply_port_lod(record: Dictionary, distance: float,
+		on_screen: bool) -> void:
+	if distance > float(record["lod_end"]):
+		if bool(record.get("lod_settled", false)):
+			return
+		record["lod_settled"] = true
+	else:
+		record["lod_settled"] = false
+	record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * distance,
 			LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
-	record["pixel_size"] = pixel_size
-	var range := _label_fade_range(record)
-	var alpha := 1.0 - _fade_in(distance, range.x, range.y)
+	var alpha := 1.0 - _fade_in(distance, float(record["fade_start"]),
+			float(record["fade_end"]))
 	record["label_alpha"] = alpha
-	var icon: Sprite3D = record.get("icon")
-	if icon != null:
-		icon.transparency = 1.0 - alpha
-		icon.visible = alpha > 0.01
-	var ring: Sprite3D = record.get("ring")
-	if ring != null:
-		ring.transparency = 1.0 - alpha
-		ring.visible = alpha > 0.01 and not bool(record.get("fused", false))
-	_layout_port_marker(record)
+	record["marker_world"] = record["marker_base"] \
+			+ Vector3(record["wrap_x"], 0.0, 0.0)
+	if alpha > 0.01:
+		_visible_port_records.append(record)
+	_update_port_model(record, distance, on_screen)
 
 
-func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:
+func _apply_city_lod(record: Dictionary, distance: float,
+		on_screen: bool) -> void:
+	if distance > float(record["lod_end"]):
+		if bool(record.get("lod_settled", false)):
+			return
+		record["lod_settled"] = true
+	else:
+		record["lod_settled"] = false
 	_apply_place_label_lod(record, distance)
+	if float(record["label_alpha"]) > 0.01:
+		_visible_city_records.append(record)
 
 	# Marcador discreto (continental): aparece só quando a cidade já sumiu.
-	var marker_alpha := _fade_in(distance, MARKER_FADE_IN_START, MARKER_FADE_IN_END)
-	for disc in record["discs"]:
-		var mesh := disc as MeshInstance3D
-		mesh.visible = marker_alpha > 0.01
-		mesh.transparency = 1.0 - marker_alpha
+	var discs: Array = record["discs"]
+	if not discs.is_empty():
+		var marker_alpha := _fade_in(distance, MARKER_FADE_IN_START,
+				MARKER_FADE_IN_END)
+		for disc in discs:
+			var mesh := disc as MeshInstance3D
+			mesh.visible = marker_alpha > 0.01
+			mesh.transparency = 1.0 - marker_alpha
 
-	_update_urban(record, distance, world_position)
+	_update_urban(record, distance, on_screen)
+
 
 
 ## Rampa de entrada: 0 antes de `start`, 1 após `end`.
@@ -1842,30 +2393,126 @@ func _fade_in(distance: float, start: float, end: float) -> float:
 	return clampf((distance - start) / (end - start), 0.0, 1.0)
 
 
-## Constrói a cidade modular apenas quando a câmera se aproxima e a libera ao
-## afastar. Histerese evita reconstrução em vaivém.
-func _update_urban(record: Dictionary, distance: float, world_position: Vector3) -> void:
+## Pede a construção da cidade modular quando a câmera se aproxima E a cidade
+## está na tela (construir fora do frustum só gerava picos de 5 ms por frame à
+## toa). Depois de construída, só alterna a visibilidade (histerese evita
+## reconstrução em vaivém).
+func _update_urban(record: Dictionary, distance: float,
+		on_screen: bool) -> void:
 	var urban: Node3D = record.get("urban")
 	if urban == null:
-		if distance <= URBAN_BUILD_DISTANCE:
-			record["urban"] = _build_urban(record, world_position)
+		if on_screen and distance <= URBAN_BUILD_DISTANCE \
+				and not bool(record.get("urban_queued", false)):
+			record["urban_queued"] = true
+			_urban_queue.append(record)
 		return
-	# Constrói uma vez e só alterna a visibilidade: sem hitch a cada zoom.
-	urban.visible = distance <= CITY_VISIBLE_DISTANCE
+	var want_visible := distance <= CITY_VISIBLE_DISTANCE
+	if urban.visible != want_visible:
+		urban.visible = want_visible
+	var target: Vector3 = record["position"] \
+			+ Vector3(record["wrap_x"], 0.0, 0.0) + Vector3(0.0, 0.16, 0.0)
+	if not urban.position.is_equal_approx(target):
+		urban.position = target
 
 
-func _build_urban(record: Dictionary, world_position: Vector3) -> Node3D:
+## Consome as filas de construção detalhada (cidade e porto) com orçamento de
+## 1,5 ms por frame. Cada modelo entra no máximo um por frame.
+func _process_lod_queues(camera: Camera3D) -> void:
+	if _urban_queue.is_empty() and _port_model_queue.is_empty():
+		return
+	var camera_local := to_local(camera.global_position)
+	var start := Time.get_ticks_usec()
+	while not _urban_queue.is_empty():
+		var record: Dictionary = _urban_queue.pop_front()
+		record["urban_queued"] = false
+		if record.get("urban") != null:
+			continue
+		if _camera_distance(record, camera_local) > URBAN_BUILD_DISTANCE:
+			continue
+		if not _in_frustum(record, camera):
+			continue
+		record["urban"] = _build_urban(record)
+		if Time.get_ticks_usec() - start >= LOD_BUILD_BUDGET_USEC:
+			break
+	while not _port_model_queue.is_empty():
+		var record: Dictionary = _port_model_queue.pop_front()
+		record["model_queued"] = false
+		if record.get("model") != null:
+			continue
+		if _camera_distance(record, camera_local) > PORT_MODEL_DISTANCE:
+			continue
+		if not _in_frustum(record, camera):
+			continue
+		_build_port_model(record)
+		if Time.get_ticks_usec() - start >= LOD_BUILD_BUDGET_USEC:
+			break
+	_trim_port_models(camera_local)
+
+
+## Distância da câmera ao registro, já resolvendo o wrap em X e incluindo a
+## altura da câmera — a mesma referência do LOD e das faixas de fade.
+static func _camera_distance(record: Dictionary, camera_local: Vector3) -> float:
+	var position: Vector3 = record["position"]
+	var dx := position.x - camera_local.x
+	dx -= roundf(dx / PLANE_SIZE.x) * PLANE_SIZE.x
+	var dy := position.y - camera_local.y
+	var dz := position.z - camera_local.z
+	return sqrt(dx * dx + dy * dy + dz * dz)
+
+
+## LOD de um porto: wrap, distância e (só perto) checagem de frustum.
+func _apply_lod_port(record: Dictionary, camera_local: Vector3,
+		camera: Camera3D) -> void:
+	var position: Vector3 = record["position"]
+	var dx := position.x - camera_local.x
+	var wrap := -roundf(dx / PLANE_SIZE.x) * PLANE_SIZE.x
+	record["wrap_x"] = wrap
+	dx += wrap
+	var dz := position.z - camera_local.z
+	# Distância 3D (inclui a altura da câmera): é a mesma referência das faixas
+	# de fade aprovadas no mapa — a planar mantinha nomes pequenos acesos no
+	# zoom out.
+	var dy := position.y - camera_local.y
+	var distance := sqrt(dx * dx + dy * dy + dz * dz)
+	# O teste de frustum só decide se um modelo AINDA INEXISTENTE entra na fila;
+	# com o modelo já construído, `_update_port_model` só usa a distância.
+	var on_screen := distance <= PORT_MODEL_DISTANCE \
+			and record.get("model") == null and _in_frustum(record, camera)
+	_apply_port_lod(record, distance, on_screen)
+
+
+## LOD de uma cidade: wrap, distância e (só perto) checagem de frustum.
+func _apply_lod_city(record: Dictionary, camera_local: Vector3,
+		camera: Camera3D) -> void:
+	var position: Vector3 = record["position"]
+	var dx := position.x - camera_local.x
+	var wrap := -roundf(dx / PLANE_SIZE.x) * PLANE_SIZE.x
+	record["wrap_x"] = wrap
+	dx += wrap
+	var dz := position.z - camera_local.z
+	# Mesma distância 3D do porto/cidade (ver `_apply_lod_port`).
+	var dy := position.y - camera_local.y
+	var distance := sqrt(dx * dx + dy * dy + dz * dz)
+	# Só testa o frustum para decidir a entrada de uma cidade ainda não
+	# construída; com `urban` pronto, `_update_urban` ignora `on_screen`.
+	var on_screen := distance <= URBAN_BUILD_DISTANCE \
+			and record.get("urban") == null and _in_frustum(record, camera)
+	_apply_city_lod(record, distance, on_screen)
+
+
+func _build_urban(record: Dictionary) -> Node3D:
 	var city: Dictionary = record["city"]
 	var manager := UrbanGrowthScript.new() as Node3D
 	manager.name = "Urban_" + String(record["id"])
-	manager.position = to_local(world_position) + Vector3(0.0, 0.16, 0.0)
+	manager.position = record["position"] \
+			+ Vector3(record["wrap_x"], 0.0, 0.0) + Vector3(0.0, 0.16, 0.0)
 	manager.scale = Vector3.ONE * URBAN_SCALE
-	_content.add_child(manager)
+	_places.add_child(manager)
 
 	manager.setup(String(record["id"]))
 	# Crescimento orgânico só em terra firme e dentro do território da nação.
 	manager.buildable_filter = _make_urban_filter(
-			to_local(world_position), String(city.get("nation", "")))
+			manager.position, String(city.get("nation", "")))
 	manager.apply_indicators({
 		"population": float(city.get("population", 0.0)),
 		"industrialization": float(city.get("industrialization", 0.0)),
@@ -1876,23 +2523,167 @@ func _build_urban(record: Dictionary, world_position: Vector3) -> Node3D:
 	return manager
 
 
+## Modelo 3D do porto: criado uma vez, sob demanda, e reutilizado perto da costa.
+func _update_port_model(record: Dictionary, distance: float,
+		on_screen: bool) -> void:
+	var model: Node3D = record.get("model")
+	if model == null:
+		if on_screen and distance <= PORT_MODEL_DISTANCE \
+				and not bool(record.get("model_queued", false)):
+			record["model_queued"] = true
+			_port_model_queue.append(record)
+		return
+	model.visible = distance <= PORT_MODEL_VISIBLE_DISTANCE
+	model.position = record["position"] + Vector3(record["wrap_x"], 0.0, 0.0)
+
+
+func _build_port_model(record: Dictionary) -> void:
+	var model := PORT_SCENE.instantiate() as Node3D
+	_places.add_child(model)
+	model.position = record["position"] + Vector3(record["wrap_x"], 0.0, 0.0)
+	var bounds := _combined_aabb(model)
+	var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
+	if longest > 0.0:
+		model.scale = Vector3.ONE * (PORT_SIZE / longest)
+	record["model"] = model
+	_live_port_models += 1
+
+
+## Mantém no máximo `MAX_PORT_MODELS` modelos vivos: libera os mais distantes
+## quando a câmera viaja pelo mundo. `camera_local` é a câmera no espaço do mapa
+## (mesma referência de `record["position"]`).
+func _trim_port_models(camera_local: Vector3) -> void:
+	# Contador evita varrer os 650 registros em todo frame de fila ativa (era o
+	# maior custo fixo do pan, mesmo com poucos modelos vivos).
+	if _live_port_models <= MAX_PORT_MODELS:
+		return
+	var live: Array[Dictionary] = []
+	for record in _port_nodes:
+		if record.get("model") != null:
+			live.append(record)
+	if live.size() <= MAX_PORT_MODELS:
+		_live_port_models = live.size()
+		return
+	live.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _camera_distance(a, camera_local) > _camera_distance(b, camera_local)
+	)
+	# Histerese: ao passar do teto, libera até 16 abaixo dele. Sem isso, o trim
+	# varria e ordenava os 650 portos em praticamente todo frame de pan.
+	var target := maxi(1, MAX_PORT_MODELS - 16)
+	var excess := live.size() - target
+	if excess <= 0:
+		_live_port_models = live.size()
+		return
+	for index in excess:
+		var model: Node3D = live[index]["model"]
+		model.queue_free()
+		live[index]["model"] = null
+	_live_port_models = live.size() - excess
+
+
+## Atualiza os MultiMesh de ícones distantes: só os visíveis entram no buffer,
+## que é compactado (`visible_instance_count`). Nada de nó por porto/cidade — e
+## a varredura é só sobre as listas de visíveis do frame, não sobre os 650.
+func _apply_icon_transforms(camera: Camera3D) -> void:
+	if camera == null:
+		return
+	# Sem registros (ou sem MultiMesh) não há nada a compactar; evita escrever
+	# em buffer nulo quando o build não criou algum dos grupos.
+	if _city_icon_mm == null and _city_star_mm == null \
+			and _city_ring_mm == null and _port_icon_mm == null \
+			and _port_ring_mm == null:
+		return
+	var plain_index := 0
+	var star_index := 0
+	var ring_index := 0
+	for record in _visible_city_records:
+		if bool(record.get("detailed", false)):
+			continue
+		var world := _city_icon_world(record)
+		if camera.is_position_behind(world) \
+				or not camera.is_position_in_frustum(world):
+			continue
+		var size := _city_icon_size(record)
+		if bool(record.get("capital", false)):
+			_set_mm_transform(_city_star_mm, star_index, world, size)
+			star_index += 1
+		else:
+			_set_mm_transform(_city_icon_mm, plain_index, world, size)
+			plain_index += 1
+		_set_mm_transform(_city_ring_mm, ring_index, world, size * RING_SCALE)
+		ring_index += 1
+	_set_mm_count(_city_icon_mm, plain_index)
+	_set_mm_count(_city_star_mm, star_index)
+	_set_mm_count(_city_ring_mm, ring_index)
+
+	var port_index := 0
+	var port_ring := 0
+	for record in _drawn_ports:
+		var world: Vector3 = to_global(record["marker_world"])
+		var size := _port_icon_height(record)
+		_set_mm_transform(_port_icon_mm, port_index, world, size)
+		port_index += 1
+		if not bool(record.get("fused", false)):
+			_set_mm_transform(_port_ring_mm, port_ring, world, size * RING_SCALE)
+			port_ring += 1
+	_set_mm_count(_port_icon_mm, port_index)
+	_set_mm_count(_port_ring_mm, port_ring)
+
+
+func _city_icon_size(record: Dictionary) -> float:
+	if float(record.get("label_alpha", 0.0)) <= 0.01:
+		return 0.0
+	var em := float(record["font_size"]) * float(record["pixel_size"])
+	return em * PLACE_ICON_HEIGHT
+
+
+func _city_icon_world(record: Dictionary) -> Vector3:
+	return to_global(record["anchor"] + Vector3(record["wrap_x"], 0.0, 0.0))
+
+
+func _set_mm_transform(instance: MultiMeshInstance3D, index: int,
+		world: Vector3, size: float) -> void:
+	if instance == null or instance.multimesh == null or index < 0:
+		return
+	# Buffer curto (ou vazio): instância fora do intervalo é ignorada em vez de
+	# derrubar o frame com erro da engine.
+	if index >= instance.multimesh.instance_count:
+		return
+	var local := instance.to_local(world)
+	instance.multimesh.set_instance_transform(index,
+			Transform3D(Basis().scaled(Vector3(size, size, size)), local))
+
+
+func _set_mm_count(instance: MultiMeshInstance3D, count: int) -> void:
+	if instance == null or instance.multimesh == null:
+		return
+	instance.multimesh.visible_instance_count = clampi(count, 0,
+			instance.multimesh.instance_count)
+
+
+
 ## Filtro orgânico do crescimento: só constrói em terra firme, dentro do
-## território da nação e sem encostar nos portos.
+## território da nação e sem encostar nos portos. Com o mundo cilíndrico, o
+## lote e a posição do porto entram pela cópia MAIS PRÓXIMA (fposmod em X):
+## antes, uma cidade na emenda via o porto do outro lado do mapa como vizinho e
+## o lote saía do plano (uv fora de [0,1)) e era descartado.
 func _make_urban_filter(city_local: Vector3, nation: String) -> Callable:
 	var keepout: Array = []
 	for p in _port_nodes:
 		var pp: Vector3 = p.get("position", Vector3.ZERO)
-		keepout.append(Vector2(pp.x, pp.z))
+		var wrap := roundf((city_local.x - pp.x) / PLANE_SIZE.x) * PLANE_SIZE.x
+		keepout.append(Vector2(pp.x + wrap, pp.z))
 	return func(lot_local: Vector3) -> bool:
 		if _territory == null:
 			return true
 		var local := city_local + Vector3(lot_local.x * URBAN_SCALE, 0.0,
 				lot_local.z * URBAN_SCALE)
 		var px := Vector2(
-			local.x / PIXEL_TO_WORLD + MAP_SIZE_PX.x * 0.5,
+			fposmod(local.x / PIXEL_TO_WORLD + MAP_SIZE_PX.x * 0.5,
+					MAP_SIZE_PX.x),
 			local.z / PIXEL_TO_WORLD + MAP_SIZE_PX.y * 0.5)
 		var uv := Vector2(px.x / MAP_SIZE_PX.x, px.y / MAP_SIZE_PX.y)
-		if uv.x < 0.0 or uv.x >= 1.0 or uv.y < 0.0 or uv.y >= 1.0:
+		if uv.y < 0.0 or uv.y >= 1.0:
 			return false
 		if not _territory.land_at_uv(uv):
 			return false

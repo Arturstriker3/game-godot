@@ -93,8 +93,10 @@ var _uv_count := -1
 var _resource_filter: Dictionary = {}
 
 
-## Constrói a camada e normaliza os indicadores de cada modo.
-func setup(cities: Array) -> void:
+## Constrói a camada e normaliza os indicadores de cada modo. `shared_geo` é o
+## GeographyService já carregado pelo chamador (mapa/Economy) — reutilizado para
+## não reparsear deposits.json (3,3 MB) numa segunda instância.
+func setup(cities: Array, shared_geo: RefCounted = null) -> void:
 	_material = ShaderMaterial.new()
 	_material.shader = MODE_SHADER
 
@@ -111,9 +113,12 @@ func setup(cities: Array) -> void:
 
 	# Geografia carregada UMA vez. Antes cada `refresh` (virada do dia) criava
 	# um GeographyService e reparseava deposits.json (3,3 MB) — ~2,9 s de
-	# travamento por dia com o mapa de recursos ativo.
-	_geo = GeographyScript.new()
-	_geo.load_data()
+	# travamento por dia com o mapa de recursos ativo. Com o serviço compartilhado
+	# do Economy, `load_data()` retorna na hora; sem ele, `set_geography()` chega
+	# depois do build (carregamento em thread, ver CityWorld).
+	_geo = shared_geo
+	if _geo != null:
+		_geo.load_data()
 
 	# Camada do mapa de recursos: marcadores em billboard (nítidos em qualquer
 	# zoom), gerados de map/map_data/atlas/resource_points.json.
@@ -129,6 +134,18 @@ func setup(cities: Array) -> void:
 
 func current_mode() -> String:
 	return _current
+
+
+## Recebe a geografia que chegou DEPOIS do setup (carregamento em thread no
+## mapa, quando o Economy ainda não tinha o serviço). Os buffers de tela não
+## mudam: os modos de calor não usam geografia e os marcadores de recurso vêm de
+## resource_points.json. O que passa a ter dado é a ficha do depósito (nomes,
+## fertilidade, donos).
+func set_geography(geo: RefCounted) -> void:
+	if geo == null or geo == _geo:
+		return
+	_geo = geo
+	_geo.load_data()
 
 
 ## Atualiza os valores do modo ATIVO a partir do status atual sem recriar a
