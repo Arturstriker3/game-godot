@@ -50,16 +50,20 @@ const PORT_SIZE := 0.6
 const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.png")
 const STAR_ICON: Texture2D = preload("res://assets/icons/places/star.png")
 const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.png")
-## Ícone de lugar: pendurado logo acima do nome, com a mesma tinta e altura
-## proporcional ao texto — ícone + nome leem como um selo único.
+## Ícone de lugar: ao lado do nome, com a mesma tinta e altura proporcional ao
+## texto — ícone + nome leem como um selo único ancorado na cidade.
 const PLACE_ICON_SOURCE := 512.0
 const PLACE_ICON_HEIGHT := 1.0  # altura do ícone em ems do rótulo
-const PLACE_ICON_GAP := 0.3     # respiro acima do contorno do texto, em ems
+const PLACE_ICON_GAP := 0.3     # respiro entre ícone e início do texto, em ems
 const BADGE_TEXTURE: Texture2D = preload("res://assets/icons/places/badge.png")
 const RING_SCALE := 1.45        # selo ~45% maior que o ícone
 const FLAG_SCALE := 0.6         # bandeira ~60% da altura do ícone
-## Abaixo desta distância (u) o porto coincide com a cidade: sem ícone próprio.
+## Abaixo desta distância (u) o porto coincide com a cidade: a âncora vira um
+## badge pequeno sobre o ícone da cidade, sem aro próprio.
 const PORT_ICON_MERGE_DISTANCE := 0.5
+## Âncora de porto: menor que o ícone de cidade, sem nome e sem bandeira.
+const PORT_ICON_HEIGHT := 0.8
+const PORT_BADGE_SCALE := 0.55
 
 ## Raio de captação de recursos (só no modo recursos): o anel no chão mostra
 ## até onde a cidade alcança; o detalhe fica na legenda ao clicar na cidade.
@@ -77,17 +81,14 @@ const MARKER_DOT := Color("#E8E2D0")
 
 ## Orçamento de renderização das cidades.
 const MAX_DETAILED_CITIES := 40
-## Layout de rótulos: NENHUM nome é escondido. Quando dois grupos de marcador
-## (bandeira + selo + nome) se sobrepõem na tela, o de menor prioridade é
-## deslocado em passos de tela e ligado à sua âncora por uma linha-guia.
-const LABEL_COLLIDE_PAD_PX := 4.0
-const LABEL_LAYOUT_STEPS := 14
-## Distância mínima, em pixels, entre o selo de um porto e o rótulo da própria
-## cidade (o porto nunca "come" o nome/ícone da cidade).
-const PORT_MARKER_MIN_CITY_PX := 14.0
-## Abaixo disso não vale desenhar a linha-guia (o rótulo está praticamente na
-## âncora).
-const LABEL_LEADER_MIN_PX := 6.0
+## Layout de rótulos: sem linhas-guia. O nome fica ao lado do ícone, ancorado na
+## cidade; quando dois nomes ainda colidem na tela, a cidade de menor população
+## mostra só o ícone (o nome reaparece ao aproximar ou no hover). Portos são um
+## ícone de âncora sem nome, no ponto de costa do ports.csv.
+const LABEL_COLLIDE_PAD_PX := 3.0
+## Deslocamento máximo, em pixels de tela, do ícone de porto para escapar do
+## rótulo da própria cidade. O porto nunca "voa" para longe da costa.
+const PORT_MAX_OFFSET_PX := 12.0
 
 ## Regras de LOD (unidades do mundo, 1 unidade ≈ 40 km no equador).
 ## Uma única representação da cidade, sem modelos concorrentes:
@@ -111,16 +112,27 @@ const LABEL_PIXEL_PER_UNIT := 0.0008
 const LABEL_PIXEL_MIN := 0.006
 const LABEL_PIXEL_MAX := 0.12
 
-## Hierarquia de rótulos: padronizada. Capital vem do CSV (coluna `capital`) e
-## fica um pouco maior; todo o resto usa o mesmo tamanho.
-const LABEL_SIZE_CAPITAL := 34
-const LABEL_SIZE_STANDARD := 28
+## Hierarquia de rótulos: texto pequeno e padronizado. Capital vem do CSV
+## (coluna `capital`) e fica apenas ~2–3 px maior na tela; todo o resto usa o
+## mesmo tamanho. Com a fonte Barlow Condensed, 20 px × pixel_size do LOD dá
+## ~11–12 px de altura na tela no zoom padrão.
+const LABEL_SIZE_CAPITAL := 24
+const LABEL_SIZE_STANDARD := 20
 const LABEL_COLOR := Color("#E8E2D0")
 const LABEL_HOVER_COLOR := Color("#C9A24A")  # latão: hover/indica clicável
 const ICON_COLOR := Color("#E8E2D0")          # marfim: alto contraste no selo escuro
-## Fade de rótulo por distância (estilo HOI3).
-const LABEL_FADE_START := 80.0
-const LABEL_FADE_END := 120.0
+## Fade de rótulo por distância (LOD): no zoom out ficam só capitais e cidades
+## grandes; a transição é suave, sem linhas nem saltos.
+const LABEL_FADE_CAPITAL_START := 170.0
+const LABEL_FADE_CAPITAL_END := 260.0
+const LABEL_FADE_LARGE_START := 100.0
+const LABEL_FADE_LARGE_END := 160.0
+const LABEL_FADE_MEDIUM_START := 75.0
+const LABEL_FADE_MEDIUM_END := 110.0
+const LABEL_FADE_SMALL_START := 58.0
+const LABEL_FADE_SMALL_END := 90.0
+const LABEL_LARGE_POPULATION := 1000000.0
+const LABEL_MEDIUM_POPULATION := 500000.0
 
 ## Nomes de nação gravados no mapa.
 const NATION_LABEL_COLOR := Color(0.07, 0.08, 0.09, 0.68)
@@ -165,11 +177,8 @@ var _capital_by_id := {}
 var _resource_filter: Dictionary = {}
 var _last_cities: Array = []
 var _minimap_texture: ImageTexture
-## Layout de rótulos: retângulos de tela do último frame (teste de sobreposição)
-## e linhas-guia do deslocamento (CanvasLayer em pixels de tela).
+## Layout de rótulos: métricas de tela do último frame (relatório do teste).
 var _label_rects: Array[Dictionary] = []
-var _leader_layer: CanvasLayer
-var _leaders: Dictionary = {}
 var _nav_image: Image
 
 ## Emitido quando o conjunto de donos muda (o minimapa precisa se atualizar).
@@ -946,7 +955,9 @@ func _build_cities(cities: Array) -> void:
 			label.set_meta("city_id", city_id)
 			label.set_meta("city_fallback", city_name)
 			var icon_texture := STAR_ICON if capital else CITY_ICON
-			var marker := _add_place_icon(label, icon_texture, String(city["nation"]))
+			# Bandeira só na capital: nas cidades comuns ela alargava o rótulo
+			# e forçava o nome a sair de cima das vizinhas.
+			var marker := _add_place_icon(10, icon_texture, String(city["nation"]), capital)
 			icon = marker["icon"]
 			ring = marker["ring"]
 			flag = marker["flag"]
@@ -958,8 +969,10 @@ func _build_cities(cities: Array) -> void:
 			"anchor": position + Vector3(0.0, 1.0, 0.0),
 			"ground": position,
 			"priority": float(city.get("population", 0.0)),
+			"capital": capital,
 			"discs": discs,
 			"label": label,
+			"label_alpha": 1.0,
 			"icon": icon,
 			"ring": ring,
 			"flag": flag,
@@ -1043,13 +1056,11 @@ func _build_ports(ports: Array) -> void:
 			same_city = city_name == port_name.to_lower() \
 					or distance <= PORT_ICON_MERGE_DISTANCE
 
-		# Nome + ícone do porto, na mesma composição horizontal das cidades.
-		var label := _add_port_label(pos, I18n.port_name(port_id, port_name))
-		label.set_meta("hide_text", same_city)
-		label.set_meta("port_id", port_id)
-		label.set_meta("port_fallback", port_name)
-		var marker := _add_place_icon(label, PORT_ICON, String(port["nation"]),
-				not same_city)
+		# Porto: âncora pequena no ponto de costa, SEM nome e SEM bandeira.
+		# Quando coincide com a própria cidade, vira um badge sobre o ícone dela.
+		var fused := same_city and not city_record.is_empty() \
+				and pos.distance_to(city_record["position"]) <= PORT_ICON_MERGE_DISTANCE
+		var marker := _add_port_marker(PORT_ICON)
 
 		# Lado do mar: da cidade para o ponto de costa; se coincidirem, procura
 		# a água mais próxima na máscara terra/água.
@@ -1070,16 +1081,20 @@ func _build_ports(ports: Array) -> void:
 			"name": port_name,
 			"nation": String(port["nation"]),
 			"position": pos,
-			"anchor": pos + Vector3(0.0, 1.0, 0.0),
+			"anchor": pos + Vector3(0.0, 0.8, 0.0),
+			"marker_base": pos + Vector3(0.0, 0.8, 0.0),
 			"ground": pos,
 			"priority": 0.0,
 			"same_city": same_city,
+			"fused": fused,
 			"city_id": String(city_record.get("id", "")),
 			"sea_dir_world": Vector3(sea_dir.x, 0.0, sea_dir.y),
-			"label": label,
+			"label": null,
+			"label_alpha": 1.0,
+			"pixel_size": LABEL_PIXEL_PER_UNIT * 52.0,
 			"icon": marker["icon"],
 			"ring": marker["ring"],
-			"flag": marker["flag"],
+			"flag": null,
 		})
 
 
@@ -1113,17 +1128,17 @@ func _coast_direction_map(point_px: Vector2) -> Vector2:
 	return Vector2(1.0, 0.0)
 
 
-## Marcador de lugar (cidade/porto): símbolo dentro de um selo escuro com aro de
-## latão + bandeira, dispostos horizontalmente à esquerda do nome.
-func _add_place_icon(label: Label3D, texture: Texture2D, nation: String,
-		with_flag := true) -> Dictionary:
+## Marcador de lugar (cidade): símbolo dentro de um selo escuro com aro de
+## latão (+ bandeira só na capital), ancorado no ponto da cidade.
+func _add_place_icon(render_priority: int, texture: Texture2D, nation: String,
+		with_flag: bool) -> Dictionary:
 	var icon := Sprite3D.new()
 	icon.texture = texture
 	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	icon.transparent = true
 	icon.modulate = ICON_COLOR
 	icon.no_depth_test = true
-	icon.render_priority = label.render_priority - 1
+	icon.render_priority = render_priority - 1
 	_content.add_child(icon)
 
 	var ring := Sprite3D.new()
@@ -1131,13 +1146,35 @@ func _add_place_icon(label: Label3D, texture: Texture2D, nation: String,
 	ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	ring.transparent = true
 	ring.no_depth_test = true
-	ring.render_priority = label.render_priority - 2
+	ring.render_priority = render_priority - 2
 	_content.add_child(ring)
 
 	var flag: Sprite3D = _new_flag(nation) if with_flag else null
 
-	_layout_place_icon(label, icon, ring, flag)
 	return {"icon": icon, "ring": ring, "flag": flag}
+
+
+## Âncora de porto: só o ícone (sem nome, sem bandeira). O aro fino pode ser
+## escondido quando a âncora vira badge do ícone da cidade.
+func _add_port_marker(texture: Texture2D) -> Dictionary:
+	var icon := Sprite3D.new()
+	icon.texture = texture
+	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	icon.transparent = true
+	icon.modulate = ICON_COLOR
+	icon.no_depth_test = true
+	icon.render_priority = 11
+	_content.add_child(icon)
+
+	var ring := Sprite3D.new()
+	ring.texture = BADGE_TEXTURE
+	ring.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	ring.transparent = true
+	ring.no_depth_test = true
+	ring.render_priority = 10
+	_content.add_child(ring)
+
+	return {"icon": icon, "ring": ring}
 
 
 func _new_flag(nation: String) -> Sprite3D:
@@ -1153,40 +1190,59 @@ func _new_flag(nation: String) -> Sprite3D:
 	return flag
 
 
-## Layout horizontal: [bandeira] [círculo+ícone] [nome]. O nome fica em
-## `label.position`; o círculo e a bandeira ficam à esquerda (X do mundo).
-## Porto da própria cidade não repete o nome: o selo fica centrado no rótulo
-## (o layout o desloca para o lado do mar) e não há bandeira duplicada.
-func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sprite3D) -> void:
-	if label == null or icon == null:
+## Dispõe o marcador de cidade: [bandeira só capital] [aro+ícone] [nome].
+## O ícone fica exatamente na âncora da cidade; o nome cresce para a direita.
+func _layout_city_marker(record: Dictionary) -> void:
+	var label: Label3D = record.get("label")
+	if label == null:
 		return
+	var anchor: Vector3 = record["anchor"]
 	var em := float(label.font_size) * label.pixel_size
 	var icon_h := em * PLACE_ICON_HEIGHT
-	var badge_only := label.has_meta("hide_text") and bool(label.get_meta("hide_text"))
-	icon.pixel_size = icon_h / PLACE_ICON_SOURCE
-	if badge_only:
-		icon.position = label.position
-		if ring != null:
-			ring.pixel_size = icon_h * RING_SCALE / PLACE_ICON_SOURCE
-			ring.position = label.position
-		return
-	var text_w := label.font.get_string_size(
-			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
+	var ring_h := icon_h * RING_SCALE
 	var gap := em * PLACE_ICON_GAP
 
-	var icon_x := label.position.x - text_w * 0.5 - gap - icon_h * 0.5
-	icon.position = Vector3(icon_x, label.position.y, label.position.z)
+	var icon: Sprite3D = record.get("icon")
+	if icon != null:
+		icon.pixel_size = icon_h / PLACE_ICON_SOURCE
+		icon.position = anchor
 
+	var ring: Sprite3D = record.get("ring")
 	if ring != null:
-		ring.pixel_size = icon_h * RING_SCALE / PLACE_ICON_SOURCE
-		ring.position = icon.position
+		ring.pixel_size = ring_h / PLACE_ICON_SOURCE
+		ring.position = anchor
 
+	var flag: Sprite3D = record.get("flag")
 	if flag != null:
 		var flag_h := icon_h * FLAG_SCALE
 		flag.pixel_size = flag_h / 20.0  # bandeira 40×20 (2:1)
-		flag.position = Vector3(
-				icon_x - icon_h * RING_SCALE * 0.5 - gap - flag_h,
-				label.position.y, label.position.z)
+		flag.position = anchor + Vector3(-ring_h * 0.5 - gap - flag_h, 0.0, 0.0)
+
+	var text_w := label.font.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
+	label.position = anchor + Vector3(ring_h * 0.5 + gap + text_w * 0.5, 0.0, 0.0)
+
+
+## Dispõe o ícone de porto no ponto de costa. O badge (porto que coincide com a
+## própria cidade) é menor e não desenha aro, para não competir com o selo dela.
+func _layout_port_marker(record: Dictionary) -> void:
+	var icon: Sprite3D = record.get("icon")
+	if icon == null:
+		return
+	var pixel_size := float(record.get("pixel_size", LABEL_PIXEL_PER_UNIT * 52.0))
+	var fused := bool(record.get("fused", false))
+	var em := LABEL_SIZE_STANDARD * pixel_size
+	var icon_h := em * (PORT_BADGE_SCALE if fused else PORT_ICON_HEIGHT)
+	icon.pixel_size = icon_h / PLACE_ICON_SOURCE
+	icon.position = record["marker_base"]
+
+	var ring: Sprite3D = record.get("ring")
+	if ring != null:
+		if fused:
+			ring.visible = false
+		else:
+			ring.pixel_size = icon_h * RING_SCALE / PLACE_ICON_SOURCE
+			ring.position = icon.position
 
 
 ## Recursos PRÓPRIOS da cidade para a legenda: jazidas minerais que pertencem
@@ -1280,23 +1336,6 @@ func _renewable_value(crop: String, code: String, city_id: String, center: Vecto
 
 
 
-func _add_port_label(position: Vector3, port_name: String) -> Label3D:
-	var label := Label3D.new()
-	label.text = port_name.to_upper()
-	label.font = LABEL_FONT
-	label.font_size = LABEL_SIZE_STANDARD
-	label.pixel_size = 0.019
-	label.modulate = Color("#E8E2D0")
-	label.outline_modulate = Color(0.04, 0.055, 0.055, 0.95)
-	label.outline_size = int(LABEL_SIZE_STANDARD * 0.4)
-	label.no_depth_test = true
-	label.render_priority = 10
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = position + Vector3(0.0, 1.0, 0.0)
-	_content.add_child(label)
-	return label
-
-
 ## AABB combinada das malhas do modelo, em espaço local da raiz.
 static func _combined_aabb(root: Node3D) -> AABB:
 	var result := AABB()
@@ -1379,148 +1418,248 @@ func _process(_delta: float) -> void:
 
 	var camera_position := camera.global_position
 	_update_nation_labels(camera_position)
-	# Portos seguem o mesmo LOD dos nomes de cidade: sem tamanho fixo, o rótulo
-	# do porto não fica gigante no zoom próximo nem minúsculo no distante.
+	# Portos: âncora pequena, sem nome, que some cedo no zoom out.
 	for record in _port_nodes:
 		var port_position: Vector3 = to_global(record["position"])
-		_apply_place_label_lod(record, camera_position.distance_to(port_position))
+		_apply_port_lod(record, camera_position.distance_to(port_position))
 	for record in _city_nodes:
 		var world_position: Vector3 = to_global(record["position"])
 		var distance := camera_position.distance_to(world_position)
 		_apply_city_lod(record, distance, world_position)
-	# Layout sem ocultação: o grupo (bandeira+selo+nome) que colidir é
-	# deslocado e ligado à âncora por uma linha-guia. Nenhum nome é escondido.
+	# Layout simples: âncora fixa, sem linhas-guia. Nomes que ainda colidem dão
+	# lugar ao ícone da cidade menor (prioridade por população).
 	_layout_place_labels(camera)
 
 
-## Layout dos marcadores na tela: nada é escondido. Os grupos são colocados em
-## ordem de prioridade (cidades maiores primeiro, portos por último); quando um
-## retângulo colide com outro já colocado, ele é deslocado em passos de tela até
-## achar espaço. O selo do porto da própria cidade tem preferência pelo lado do
-## mar e distância mínima codificada (`PORT_MARKER_MIN_CITY_PX`) do rótulo da
-## cidade. A linha-guia liga o marcador deslocado à âncora real no mapa.
+## Layout dos rótulos na tela, SEM deslocamento de grupos e SEM linhas-guia:
+##  - cidades em ordem de prioridade (capitais, depois população); se o nome
+##    ainda colidir com um rótulo/ícone já aceito, a cidade menor fica só com o
+##    ícone (o nome reaparece ao aproximar ou no hover);
+##  - portos são ícones de âncora no ponto de costa, com ajuste local de no
+##    máximo `PORT_MAX_OFFSET_PX` para não entrar no rótulo da própria cidade.
 func _layout_place_labels(camera: Camera3D) -> void:
 	_label_rects.clear()
 	var entries: Array = []
 	for record in _city_nodes:
-		var entry := _make_label_entry(record, camera, 0)
-		if not entry.is_empty():
-			entries.append(entry)
-	for record in _port_nodes:
-		var entry := _make_label_entry(record, camera, 1)
-		if not entry.is_empty():
-			entries.append(entry)
+		if record.get("label") == null:
+			continue
+		if float(record.get("label_alpha", 0.0)) <= 0.01:
+			continue
+		_layout_city_marker(record)
+		var metrics := _city_metrics(record, camera)
+		if metrics.is_empty():
+			continue
+		entries.append({
+			"record": record,
+			"metrics": metrics,
+			"capital": bool(record.get("capital", false)),
+			"priority": float(record.get("priority", 0.0)),
+		})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		if int(a["rank"]) != int(b["rank"]):
-			return int(a["rank"]) < int(b["rank"])
+		if bool(a["capital"]) != bool(b["capital"]):
+			return bool(a["capital"])
 		return float(a["priority"]) > float(b["priority"])
 	)
-	var placed: Array = []
+
+	var kept: Array[Rect2] = []
 	for entry in entries:
-		var offset := _choose_label_offset(entry, placed)
-		_apply_label_offset(entry, offset, camera)
-		var base: Rect2 = entry["base_rect"]
-		var rect := Rect2(base.position + offset, base.size)
 		var record: Dictionary = entry["record"]
-		placed.append({
-			"id": String(record.get("id", "")),
-			"kind": String(record.get("kind", "")),
-			"rect": rect,
-		})
-		record["offset_px"] = offset
-		_update_leader(entry, rect, camera)
-		var label: Label3D = record.get("label")
-		var hide_text := label != null and label.has_meta("hide_text") \
-				and bool(label.get_meta("hide_text"))
+		var metrics: Dictionary = entry["metrics"]
+		var label: Label3D = record["label"]
+		var text_allowed := true
+		if not bool(entry["capital"]) and String(record["id"]) != _hovered_id:
+			var text_rect: Rect2 = metrics["text_rect"]
+			for other in kept:
+				if text_rect.grow(LABEL_COLLIDE_PAD_PX).intersects(other):
+					text_allowed = false
+					break
+		label.visible = text_allowed
+		var block: Rect2 = metrics["icon_rect"]
+		if text_allowed:
+			block = block.merge(metrics["text_rect"])
+		kept.append(block)
 		var icon: Sprite3D = record.get("icon")
 		var flag: Sprite3D = record.get("flag")
 		_label_rects.append({
 			"id": String(record.get("id", "")),
-			"kind": String(record.get("kind", "")),
-			"rect": rect,
-			"text_visible": label != null and label.visible and not hide_text,
+			"kind": "city",
+			"rect": block,
+			"text_rect": metrics["text_rect"],
+			"icon_rect": metrics["icon_rect"],
+			"text_visible": text_allowed,
 			"marker_visible": icon != null and icon.visible,
 			"flag_visible": flag != null and flag.visible,
-			"same_city": bool(record.get("same_city", false)),
-			"city_id": String(record.get("city_id", "")),
-			"offset": offset,
+			"capital": bool(record.get("capital", false)),
+			"population": float(record.get("priority", 0.0)),
+			"same_city": false,
+			"fused": false,
+			"city_id": "",
+			"offset": Vector2.ZERO,
 		})
+
+	# Portos por último: nunca deslocam rótulos, só o próprio ícone.
+	var placed_ports: Array[Rect2] = []
+	for record in _port_nodes:
+		_layout_port_marker(record)
+		var icon: Sprite3D = record.get("icon")
+		if icon == null:
+			continue
+		if float(record.get("label_alpha", 0.0)) <= 0.01:
+			icon.visible = false
+			_append_port_report(record, Rect2(), false, Vector2.ZERO)
+			continue
+		var metrics := _port_metrics(record, camera)
+		if metrics.is_empty():
+			_append_port_report(record, Rect2(), false, Vector2.ZERO)
+			continue
+		var chosen := Vector2.ZERO
+		if not bool(record.get("fused", false)):
+			var found := false
+			for candidate in _port_offset_candidates(record, camera):
+				var rect: Rect2 = metrics["rect"]
+				var shifted := Rect2(rect.position + candidate, rect.size)
+				var ok := true
+				for block in kept:
+					if shifted.grow(1.0).intersects(block):
+						ok = false
+						break
+				if ok:
+					for other in placed_ports:
+						if shifted.intersects(other):
+							ok = false
+							break
+				if ok:
+					chosen = candidate
+					found = true
+					break
+			if not found:
+				# Sem espaço local: fica só o modelo 3D do porto na costa e o
+				# ícone da cidade; nada de linha.
+				icon.visible = false
+				var ring: Sprite3D = record.get("ring")
+				if ring != null:
+					ring.visible = false
+				_append_port_report(record, Rect2(), false, Vector2.ZERO)
+				continue
+			if not chosen.is_zero_approx():
+				_apply_port_offset(record, chosen, camera)
+				metrics = _port_metrics(record, camera)
+		var final_rect: Rect2 = metrics["rect"]
+		placed_ports.append(final_rect)
+		_append_port_report(record, final_rect, true, chosen)
+
+
+func _append_port_report(record: Dictionary, rect: Rect2, visible: bool,
+		offset: Vector2) -> void:
+	_label_rects.append({
+		"id": String(record.get("id", "")),
+		"kind": "port",
+		"rect": rect,
+		"text_rect": Rect2(),
+		"icon_rect": rect,
+		"text_visible": false,
+		"marker_visible": visible,
+		"flag_visible": false,
+		"capital": false,
+		"population": 0.0,
+		"same_city": bool(record.get("same_city", false)),
+		"fused": bool(record.get("fused", false)),
+		"city_id": String(record.get("city_id", "")),
+		"offset": offset,
+	})
 
 
 ## Retângulos de tela do último layout (cidade/porto), para o teste de
-## sobreposição rodar sem renderizar a cena.
+## sobreposição rodar sem renderizar a cena. Não há linhas-guia para reportar.
 func label_layout_report() -> Array:
 	return _label_rects.duplicate(true)
 
 
-## Métricas de um marcador no frame: retângulo do grupo (bandeira+selo+nome) na
-## âncora, direção do mar e prioridade. Retorna {} se o marcador está oculto.
-func _make_label_entry(record: Dictionary, camera: Camera3D, rank: int) -> Dictionary:
+## Retângulo de tela de um bloco centrado no mundo (meia-largura/meia-altura em
+## unidades de mundo), no plano da câmera.
+func _world_rect_to_screen(camera: Camera3D, center: Vector3, half_x: float,
+		half_y: float) -> Rect2:
+	var basis := camera.global_transform.basis
+	var a := camera.unproject_position(center - basis.x * half_x + basis.y * half_y)
+	var b := camera.unproject_position(center + basis.x * half_x - basis.y * half_y)
+	return Rect2(
+		Vector2(minf(a.x, b.x), minf(a.y, b.y)),
+		Vector2(absf(b.x - a.x), absf(b.y - a.y)))
+
+
+## Métricas do rótulo de cidade no frame: retângulo do ícone e do texto.
+func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 	var label: Label3D = record.get("label")
-	var icon: Sprite3D = record.get("icon")
 	if label == null:
-		return {}
-	var text_visible := label.visible
-	var marker_visible := icon != null and icon.visible
-	if not text_visible and not marker_visible:
 		return {}
 	var anchor_world: Vector3 = to_global(record["anchor"])
 	if camera.is_position_behind(anchor_world):
 		return {}
-	var basis := camera.global_transform.basis
-	var px_per_x := _screen_px_per_world(camera, anchor_world, basis.x)
-	var px_per_y := _screen_px_per_world(camera, anchor_world, basis.y)
-	if px_per_x <= 0.0 or px_per_y <= 0.0:
-		return {}
-
 	var em := float(label.font_size) * label.pixel_size
 	var icon_h := em * PLACE_ICON_HEIGHT
-	var ring_h := icon_h * RING_SCALE
-	var gap := em * PLACE_ICON_GAP
-	var flag_h := icon_h * FLAG_SCALE
-	var hide_text := label.has_meta("hide_text") and bool(label.get_meta("hide_text"))
-	var has_flag := record.get("flag") != null
-	var width_w := ring_h
-	var center_dx_w := 0.0
-	var height_w := maxf(ring_h, em * 1.25)
-	if not hide_text:
-		var text_w := label.font.get_string_size(label.text,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
-		var left_extent := gap + icon_h * 0.5 + ring_h * 0.5 + gap \
-				+ (1.5 * flag_h if has_flag else 0.0)
-		var right_extent := text_w * 0.5
-		width_w = left_extent + right_extent
-		center_dx_w = (right_extent - left_extent) * 0.5
+	var icon_rect := _world_rect_to_screen(camera, anchor_world,
+			icon_h * 0.5, icon_h * 0.5)
+	var label_world: Vector3 = to_global(label.position)
+	if camera.is_position_behind(label_world):
+		return {}
+	var text_w := label.font.get_string_size(label.text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
+	var text_rect := _world_rect_to_screen(camera, label_world,
+			text_w * 0.5, em * 0.62)
+	return {"icon_rect": icon_rect, "text_rect": text_rect}
 
-	var center := camera.unproject_position(anchor_world + basis.x * center_dx_w)
-	var size := Vector2(width_w * px_per_x, height_w * px_per_y)
-	var base_rect := Rect2(center - size * 0.5, size)
 
-	# Direção do mar em pixels de tela (só para o porto da própria cidade).
-	var sea := Vector2(1.0, 0.0)
-	if bool(record.get("same_city", false)):
+## Métricas do ícone de porto no frame.
+func _port_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
+	var icon: Sprite3D = record.get("icon")
+	if icon == null:
+		return {}
+	var marker_world: Vector3 = to_global(icon.position)
+	if camera.is_position_behind(marker_world):
+		return {}
+	var size := PLACE_ICON_SOURCE * icon.pixel_size
+	return {"rect": _world_rect_to_screen(camera, marker_world,
+			size * 0.5, size * 0.5)}
+
+
+## Candidatos de ajuste local do porto, em pixels de tela: o ponto de costa e
+## deslocamentos curtos para o lado do mar (e perpendiculares), até 12 px.
+func _port_offset_candidates(record: Dictionary, camera: Camera3D) -> Array[Vector2]:
+	var candidates: Array[Vector2] = [Vector2.ZERO]
+	var sea := Vector2(0.0, -1.0)
+	var base_world: Vector3 = to_global(record["marker_base"])
+	if not camera.is_position_behind(base_world):
 		var sea_world: Vector3 = record.get("sea_dir_world", Vector3(1.0, 0.0, 0.0))
-		var a := camera.unproject_position(anchor_world)
-		var b := camera.unproject_position(anchor_world + sea_world * 4.0)
+		var a := camera.unproject_position(base_world)
+		var b := camera.unproject_position(base_world + sea_world)
 		if a.distance_to(b) > 0.01:
 			sea = (b - a).normalized()
+	var normal := Vector2(-sea.y, sea.x)
+	for distance in [4.0, 8.0, 12.0]:
+		candidates.append(sea * distance)
+		candidates.append(normal * distance)
+		candidates.append(-normal * distance)
+	return candidates
 
-	var preferred := Vector2.ZERO
-	if bool(record.get("same_city", false)):
-		# Já nasce do lado do mar, longe o bastante do rótulo da cidade.
-		preferred = sea * (PORT_MARKER_MIN_CITY_PX + 44.0 + size.x * 0.5)
 
-	return {
-		"record": record,
-		"rank": rank,
-		"priority": float(record.get("priority", 0.0)),
-		"base_rect": base_rect,
-		"size": size,
-		"preferred": preferred,
-		"sea": sea,
-		"same_city": bool(record.get("same_city", false)),
-		"city_id": String(record.get("city_id", "")),
-	}
+## Aplica o deslocamento em pixels de tela como translação no plano da câmera.
+func _apply_port_offset(record: Dictionary, offset: Vector2, camera: Camera3D) -> void:
+	var icon: Sprite3D = record.get("icon")
+	if icon == null:
+		return
+	var base_world: Vector3 = to_global(record["marker_base"])
+	var basis := camera.global_transform.basis
+	var px_x := _screen_px_per_world(camera, base_world, basis.x)
+	var px_y := _screen_px_per_world(camera, base_world, basis.y)
+	if px_x <= 0.0 or px_y <= 0.0:
+		return
+	var target := base_world + basis.x * (offset.x / px_x) \
+			- basis.y * (offset.y / px_y)
+	var parent := icon.get_parent() as Node3D
+	icon.position = parent.to_local(target) if parent != null else target
+	var ring: Sprite3D = record.get("ring")
+	if ring != null:
+		ring.position = icon.position
 
 
 ## Pixels de tela por unidade de mundo numa direção, na profundidade do ponto.
@@ -1530,161 +1669,24 @@ func _screen_px_per_world(camera: Camera3D, point: Vector3, axis: Vector3) -> fl
 	return a.distance_to(b)
 
 
-## Escolhe o deslocamento (px de tela) que tira o grupo de cima dos já
-## colocados. O último deslocamento é testado primeiro (estabilidade entre
-## frames); se nada serve, usa o candidato com menor área sobreposta — nunca
-## oculta o nome.
-func _choose_label_offset(entry: Dictionary, placed: Array) -> Vector2:
-	var record: Dictionary = entry["record"]
-	var base: Rect2 = entry["base_rect"]
-	var preferred: Vector2 = entry["preferred"]
-	var candidates: Array[Vector2] = []
-	candidates.append(preferred)
-	var last: Vector2 = record.get("offset_px", Vector2.ZERO)
-	if not last.is_equal_approx(preferred):
-		candidates.push_front(last)
-	var step := maxf(base.size.y + LABEL_COLLIDE_PAD_PX, 10.0)
-	var hstep := maxf(base.size.x * 0.45 + LABEL_COLLIDE_PAD_PX, 14.0)
-	var sea: Vector2 = entry["sea"]
-	if bool(entry["same_city"]):
-		# Porto da própria cidade: procura em ANÉIS ao redor do ponto preferido
-		# (lado do mar, a `PORT_MARKER_MIN_CITY_PX` do rótulo da cidade). O anel
-		# mais próximo é testado primeiro e, dentro do anel, a direção mais
-		# alinhada com o mar. Antes a varredura era só ao longo do mar, e o porto
-		# de Belfast (empurrado pelo rótulo de Newcastle) ia parar 219 px a leste,
-		# com a linha-guia cruzando a Grã-Bretanha inteira.
-		for i in range(1, LABEL_LAYOUT_STEPS + 1):
-			var radius := step * float(i)
-			for degrees in [0.0, 45.0, -45.0, 90.0, -90.0, 135.0, -135.0, 180.0]:
-				candidates.append(preferred + sea.rotated(deg_to_rad(degrees)) * radius)
-	for i in range(1, LABEL_LAYOUT_STEPS + 1):
-		var d := step * float(i)
-		candidates.append(preferred + Vector2(0.0, -d))
-		candidates.append(preferred + Vector2(0.0, d))
-		candidates.append(preferred + Vector2(-hstep * float(i), 0.0))
-		candidates.append(preferred + Vector2(hstep * float(i), 0.0))
-		if i >= 2:
-			candidates.append(preferred + Vector2(-hstep, -d))
-			candidates.append(preferred + Vector2(hstep, -d))
-			candidates.append(preferred + Vector2(-hstep, d))
-			candidates.append(preferred + Vector2(hstep, d))
-
-	var city_rect := Rect2()
-	var has_city := false
-	if bool(entry["same_city"]):
-		var city_id := String(entry["city_id"])
-		for other in placed:
-			if String(other["kind"]) == "city" and String(other["id"]) == city_id:
-				city_rect = other["rect"]
-				has_city = true
-				break
-
-	for offset in candidates:
-		var rect := Rect2(base.position + offset, base.size)
-		var ok := true
-		for other in placed:
-			if rect.grow(LABEL_COLLIDE_PAD_PX).intersects(other["rect"]):
-				ok = false
-				break
-		if ok and has_city and rect.grow(PORT_MARKER_MIN_CITY_PX).intersects(city_rect):
-			ok = false
-		if ok:
-			return offset
-
-	var best := preferred
-	var best_area := INF
-	for offset in candidates:
-		var rect := Rect2(base.position + offset, base.size)
-		var area := 0.0
-		for other in placed:
-			var inter: Rect2 = rect.intersection(other["rect"])
-			if inter.size.x > 0.0 and inter.size.y > 0.0:
-				area += inter.size.x * inter.size.y
-		if area < best_area:
-			best_area = area
-			best = offset
-	return best
-
-
-## Aplica o deslocamento em pixels de tela como translação no plano da câmera
-## (direita/cima), sem mudar a profundidade do rótulo.
-func _apply_label_offset(entry: Dictionary, offset: Vector2, camera: Camera3D) -> void:
-	var record: Dictionary = entry["record"]
-	var label: Label3D = record.get("label")
-	if label == null:
-		return
-	var anchor_world: Vector3 = to_global(record["anchor"])
-	var basis := camera.global_transform.basis
-	var px_per := _screen_px_per_world(camera, anchor_world, basis.x)
-	if px_per <= 0.0:
-		return
-	var target := anchor_world + basis.x * (offset.x / px_per) \
-			- basis.y * (offset.y / px_per)
-	var parent := label.get_parent() as Node3D
-	label.position = parent.to_local(target) if parent != null else target
-	_layout_place_icon(label, record.get("icon"), record.get("ring"), record.get("flag"))
-
-
-## Linha-guia do marcador deslocado até sua âncora real (centro da cidade ou
-## ponto de costa do porto).
-func _update_leader(entry: Dictionary, rect: Rect2, camera: Camera3D) -> void:
-	var record: Dictionary = entry["record"]
-	var offset: Vector2 = record.get("offset_px", Vector2.ZERO)
-	var key := String(record.get("kind", "")) + ":" + String(record.get("id", ""))
-	var line := _leader_for(key)
-	if offset.length() < LABEL_LEADER_MIN_PX:
-		line.visible = false
-		return
-	var ground_world: Vector3 = to_global(record["ground"])
-	if camera.is_position_behind(ground_world):
-		line.visible = false
-		return
-	var ground := camera.unproject_position(ground_world)
-	var target := Vector2(
-			clampf(ground.x, rect.position.x, rect.position.x + rect.size.x),
-			clampf(ground.y, rect.position.y, rect.position.y + rect.size.y))
-	if rect.has_point(ground) or ground.distance_to(target) < 2.0:
-		line.visible = false
-		return
-	line.points = PackedVector2Array([ground, target])
-	line.visible = true
-
-
-func _leader_for(key: String) -> Line2D:
-	if _leaders.has(key):
-		return _leaders[key] as Line2D
-	if _leader_layer == null:
-		_leader_layer = CanvasLayer.new()
-		_leader_layer.name = "LabelLeaders"
-		_leader_layer.layer = 1
-		add_child(_leader_layer)
-	var line := Line2D.new()
-	line.width = 1.2
-	line.default_color = Color(0.91, 0.886, 0.816, 0.55)
-	line.antialiased = true
-	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	_leader_layer.add_child(line)
-	_leaders[key] = line
-	return line
-
-
-## Escala e fade compartilhados pelos rótulos de lugar (cidade e porto).
+## Escala e fade do rótulo da cidade. O tamanho em tela é constante (pixel_size
+## proporcional à distância); o que muda no zoom out é a faixa de fade por
+## categoria: capitais duram mais, cidades pequenas somem antes.
 func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	var label: Label3D = record.get("label")
 	if label == null:
 		return
 	label.pixel_size = clampf(LABEL_PIXEL_PER_UNIT * distance,
 			LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
-	# Fade de rótulo por distância (estilo HOI3): desaparece gradualmente longe.
-	var label_alpha := 1.0 - _fade_in(distance, LABEL_FADE_START, LABEL_FADE_END)
+	var range := _label_fade_range(record)
+	var label_alpha := 1.0 - _fade_in(distance, range.x, range.y)
+	record["label_alpha"] = label_alpha
 	label.modulate.a = label_alpha
-	var hide_text := label.has_meta("hide_text") and bool(label.get_meta("hide_text"))
-	label.visible = not hide_text and label_alpha > 0.01
+	label.visible = label_alpha > 0.01
+	_layout_city_marker(record)
 
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
-		_layout_place_icon(label, icon, record.get("ring"), record.get("flag"))
 		icon.transparency = 1.0 - label_alpha
 		icon.visible = label_alpha > 0.01
 	var ring: Sprite3D = record.get("ring")
@@ -1695,6 +1697,40 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	if flag != null:
 		flag.transparency = 1.0 - label_alpha
 		flag.visible = label_alpha > 0.01
+
+
+## Faixa (início, fim) do fade por distância, conforme a categoria do lugar.
+func _label_fade_range(record: Dictionary) -> Vector2:
+	if String(record.get("kind", "")) == "port":
+		return Vector2(LABEL_FADE_SMALL_START, LABEL_FADE_SMALL_END)
+	if bool(record.get("capital", false)):
+		return Vector2(LABEL_FADE_CAPITAL_START, LABEL_FADE_CAPITAL_END)
+	var population := float(record.get("priority", 0.0))
+	if population >= LABEL_LARGE_POPULATION:
+		return Vector2(LABEL_FADE_LARGE_START, LABEL_FADE_LARGE_END)
+	if population >= LABEL_MEDIUM_POPULATION:
+		return Vector2(LABEL_FADE_MEDIUM_START, LABEL_FADE_MEDIUM_END)
+	return Vector2(LABEL_FADE_SMALL_START, LABEL_FADE_SMALL_END)
+
+
+## LOD da âncora de porto: mesma escala de tela do texto de cidade, mas menor e
+## com fade de cidade pequena (some no zoom out).
+func _apply_port_lod(record: Dictionary, distance: float) -> void:
+	var pixel_size := clampf(LABEL_PIXEL_PER_UNIT * distance,
+			LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
+	record["pixel_size"] = pixel_size
+	var range := _label_fade_range(record)
+	var alpha := 1.0 - _fade_in(distance, range.x, range.y)
+	record["label_alpha"] = alpha
+	var icon: Sprite3D = record.get("icon")
+	if icon != null:
+		icon.transparency = 1.0 - alpha
+		icon.visible = alpha > 0.01
+	var ring: Sprite3D = record.get("ring")
+	if ring != null:
+		ring.transparency = 1.0 - alpha
+		ring.visible = alpha > 0.01 and not bool(record.get("fused", false))
+	_layout_port_marker(record)
 
 
 func _apply_city_lod(record: Dictionary, distance: float, world_position: Vector3) -> void:

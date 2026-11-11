@@ -1,17 +1,17 @@
 extends Node3D
 
-## Teste headless do layout dos rótulos do mapa (cidade + porto).
+## Teste headless dos rótulos do mapa (cidade + porto), no padrão simples:
+##  (a) ZERO linhas-guia (sem Line2D / CanvasLayer de líderes);
+##  (b) nenhum nome visível se sobrepõe a outro nome visível;
+##  (c) toda capital com âncora na tela mostra o nome, no zoom padrão e no
+##      zoom out;
+##  (d) cada ícone de porto fica a no máximo ~12 px do ponto de costa do
+##      ports.csv (nunca deslocado para longe, nunca com linha);
+##  (e) no zoom out só capitais e cidades grandes mantêm o nome (LOD), e nenhum
+##      rótulo atravessa outro.
 ##
-## Regras verificadas em zoom padrão (câmera a 52 u, pitch −56°, FOV 75):
-##  (a) nenhum retângulo de rótulo/ícone visível se sobrepõe a outro;
-##  (b) nenhuma cidade com âncora dentro da tela tem o nome escondido;
-##  (c) cada cidade tem exatamente UMA bandeira visível (o porto da própria
-##      cidade não duplica a bandeira);
-##  (d) o selo do porto da própria cidade fica a ≥ PORT_MARKER_MIN_CITY_PX do
-##      rótulo da cidade (nunca "come" o nome/ícone da cidade).
-##
-## Focos: Benelux/Ruhr, Ilhas Britânicas, Glasgow e Amsterdã, em 1920×1080 e
-## 1366×768 (o layout é em pixels de tela, então a resolução importa).
+## Focos: Benelux/Ruhr (BEL-BRU), Ilhas Britânicas (GBR-LDN), Glasgow, Amsterdã
+## e Paris, em 1920×1080 e 1366×768.
 ##
 ## Uso:
 ##   godot --headless --path . res://tools/label_layout_test.tscn
@@ -22,10 +22,12 @@ const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const PITCH_DEG := -56.0
 const CAMERA_FOV := 75.0
 const DEFAULT_DISTANCE := 52.0
-const MIN_PORT_CITY_PX := 14.0
+const ZOOM_OUT_DISTANCE := 120.0
+const MAX_PORT_OFFSET_PX := 12.5
 
 const SIZES := [Vector2i(1920, 1080), Vector2i(1366, 768)]
-const FOCUSES := ["BEL-BRU", "GBR-MAN", "GBR-GLA", "NED-AMS"]
+const FOCUSES := ["BEL-BRU", "GBR-LDN", "GBR-GLA", "NED-AMS", "FRA-PAR"]
+const ZOOM_OUT_FOCUSES := ["BEL-BRU", "FRA-PAR"]
 
 var _failures: Array[String] = []
 var _world: Node3D
@@ -80,7 +82,13 @@ func _run() -> void:
 			_camera.position = Vector3(0.0, 0.0, DEFAULT_DISTANCE)
 			await get_tree().process_frame
 			await get_tree().process_frame
-			_check_layout(size, focus, cities)
+			_check_default(size, focus, cities)
+		for focus in ZOOM_OUT_FOCUSES:
+			_focus(focus)
+			_camera.position = Vector3(0.0, 0.0, ZOOM_OUT_DISTANCE)
+			await get_tree().process_frame
+			await get_tree().process_frame
+			_check_zoom_out(size, focus, cities)
 
 	_finish()
 
@@ -90,34 +98,48 @@ func _focus(city_id: String) -> void:
 	_world.position = -_world.city_world_position(city_id)
 
 
-func _check_layout(size: Vector2i, focus: String, cities: Array) -> void:
-	var screen := Rect2(Vector2.ZERO, Vector2(size))
-	var report: Array = _world.label_layout_report()
-	var visible: Array = []
+func _tag(size: Vector2i, focus: String, distance: float) -> String:
+	return "%s d%d @%dx%d" % [focus, int(distance), size.x, size.y]
+
+
+## (a) Nenhuma linha-guia pode existir na cena do mapa.
+func _check_no_lines(tag: String) -> void:
+	var lines := _world.find_children("*", "Line2D", true, false)
+	if not lines.is_empty():
+		_failures.append("%s: %d Line2D de linha-guia" % [tag, lines.size()])
+	if _world.get_node_or_null("LabelLeaders") != null:
+		_failures.append("%s: CanvasLayer LabelLeaders existe" % tag)
+
+
+## (b)/(e) Nenhum nome visível pode cruzar outro nome visível.
+func _check_text_overlaps(tag: String, report: Array, screen: Rect2) -> void:
+	var texts: Array = []
 	for entry: Dictionary in report:
-		var rect: Rect2 = entry["rect"]
+		if String(entry["kind"]) != "city" or not bool(entry["text_visible"]):
+			continue
+		var rect: Rect2 = entry["text_rect"]
 		if rect.intersects(screen):
-			visible.append(entry)
-
-	var tag := "%s @%dx%d" % [focus, size.x, size.y]
-
-	# (a) 0 sobreposições de retângulos visíveis.
-	for i in visible.size():
-		for j in range(i + 1, visible.size()):
-			var a: Dictionary = visible[i]
-			var b: Dictionary = visible[j]
-			var ra: Rect2 = a["rect"]
-			var rb: Rect2 = b["rect"]
+			texts.append(entry)
+	for i in texts.size():
+		for j in range(i + 1, texts.size()):
+			var a: Dictionary = texts[i]
+			var b: Dictionary = texts[j]
+			var ra: Rect2 = a["text_rect"]
+			var rb: Rect2 = b["text_rect"]
 			if ra.intersects(rb):
-				_failures.append("%s: rótulos sobrepostos %s:%s × %s:%s" % [
-					tag, a["kind"], a["id"], b["kind"], b["id"]])
+				_failures.append("%s: nomes sobrepostos %s × %s" % [
+					tag, a["id"], b["id"]])
 
-	# (b) nome de cidade visível dentro da tela não pode estar escondido.
+
+## (c) Toda capital com âncora na tela tem nome visível.
+func _check_capitals(tag: String, report: Array, cities: Array, screen: Rect2) -> void:
 	var shown := {}
-	for entry: Dictionary in visible:
+	for entry: Dictionary in report:
 		if String(entry["kind"]) == "city" and bool(entry["text_visible"]):
 			shown[String(entry["id"])] = true
 	for city: Dictionary in cities:
+		if not bool(city.get("capital", false)):
+			continue
 		var city_id := String(city.get("id", ""))
 		var world: Vector3 = _world.city_world_position(city_id)
 		if _camera.is_position_behind(world):
@@ -126,62 +148,115 @@ func _check_layout(size: Vector2i, focus: String, cities: Array) -> void:
 		if not screen.grow(24.0).has_point(projected):
 			continue
 		if not shown.has(city_id):
-			_failures.append("%s: nome da cidade %s escondido" % [tag, city_id])
+			_failures.append("%s: capital %s sem nome" % [tag, city_id])
 
-	# (c) uma bandeira por cidade; porto da própria cidade sem bandeira.
-	var flags := {}
-	for entry: Dictionary in visible:
-		if String(entry["kind"]) != "city" or not bool(entry["flag_visible"]):
-			continue
-		var city_id := String(entry["id"])
-		flags[city_id] = int(flags.get(city_id, 0)) + 1
-	for city_id in flags:
-		if int(flags[city_id]) != 1:
-			_failures.append("%s: cidade %s com %d bandeiras" % [
-				tag, city_id, int(flags[city_id])])
-	for entry: Dictionary in report:
-		if String(entry["kind"]) == "port" and bool(entry["same_city"]) \
-				and bool(entry["flag_visible"]):
-			_failures.append("%s: porto %s da própria cidade duplica bandeira" % [
-				tag, entry["id"]])
 
-	# (d) distância mínima do selo do porto ao rótulo da própria cidade.
-	var city_rects := {}
-	for entry: Dictionary in report:
-		if String(entry["kind"]) == "city":
-			city_rects[String(entry["id"])] = entry["rect"]
-	for entry: Dictionary in report:
-		if String(entry["kind"]) != "port" or not bool(entry["same_city"]):
-			continue
-		var city_id := String(entry["city_id"])
-		if not city_rects.has(city_id):
-			continue
-		var port_rect: Rect2 = entry["rect"]
-		var city_rect: Rect2 = city_rects[city_id]
-		if port_rect.grow(MIN_PORT_CITY_PX).intersects(city_rect):
-			_failures.append("%s: porto %s colado no rótulo de %s" % [
-				tag, entry["id"], city_id])
-
-	# Evidência de deslocamento: o marcador deslocado nunca deve "voar" para
-	# longe demais da âncora (linha-guia atravessando o mapa). Não é falha —
-	# é medida impressa para comparar execuções (o porto de Belfast chegou a
-	# 219 px antes do layout em anéis e ficou em ~93 px).
-	var max_port := 0.0
-	var max_port_id := ""
+## (d) Todo porto a no máximo ~12 px do ponto de costa. Porto fundido na cidade
+## (badge) tem deslocamento zero; os demais só se afastam da costa o mínimo.
+func _check_ports(tag: String, report: Array) -> void:
 	for entry: Dictionary in report:
 		if String(entry["kind"]) != "port":
 			continue
 		var offset: Vector2 = entry["offset"]
-		if offset.length() > max_port:
-			max_port = offset.length()
-			max_port_id = String(entry["id"])
-	print("[labels] %s: maior deslocamento de porto = %.1f px (%s)" % [
-		tag, max_port, max_port_id])
+		if offset.length() > MAX_PORT_OFFSET_PX:
+			_failures.append("%s: porto %s a %.1f px da costa" % [
+				tag, entry["id"], offset.length()])
+		if bool(entry["flag_visible"]):
+			_failures.append("%s: porto %s com bandeira" % [tag, entry["id"]])
+		if bool(entry["text_visible"]):
+			_failures.append("%s: porto %s com nome" % [tag, entry["id"]])
+
+
+## Porto não pode entrar no rótulo de cidade nem em outro porto (badge fundido
+## na própria cidade é a única exceção, por definição).
+func _check_port_clearance(tag: String, report: Array, screen: Rect2) -> void:
+	var cities: Array = []
+	var ports: Array = []
+	for entry: Dictionary in report:
+		if String(entry["kind"]) == "city":
+			cities.append(entry)
+		elif bool(entry["marker_visible"]) and not bool(entry["fused"]):
+			ports.append(entry)
+	for port: Dictionary in ports:
+		var rect: Rect2 = port["rect"]
+		if not rect.intersects(screen):
+			continue
+		for city: Dictionary in cities:
+			if rect.intersects(city["rect"]):
+				_failures.append("%s: porto %s sobre o rótulo de %s" % [
+					tag, port["id"], city["id"]])
+				break
+	for i in ports.size():
+		for j in range(i + 1, ports.size()):
+			var a: Dictionary = ports[i]
+			var b: Dictionary = ports[j]
+			if (a["rect"] as Rect2).intersects(b["rect"]):
+				_failures.append("%s: portos sobrepostos %s × %s" % [
+					tag, a["id"], b["id"]])
+
+
+func _check_default(size: Vector2i, focus: String, cities: Array) -> void:
+	var tag := _tag(size, focus, DEFAULT_DISTANCE)
+	var screen := Rect2(Vector2.ZERO, Vector2(size))
+	var report: Array = _world.label_layout_report()
+
+	_check_no_lines(tag)
+	_check_text_overlaps(tag, report, screen)
+	_check_capitals(tag, report, cities, screen)
+	_check_ports(tag, report)
+	_check_port_clearance(tag, report, screen)
+
+	# Evidência (não falha): cobertura de nomes no zoom padrão.
+	var on_screen := 0
+	var named := 0
+	for city: Dictionary in cities:
+		var city_id := String(city.get("id", ""))
+		var world: Vector3 = _world.city_world_position(city_id)
+		if _camera.is_position_behind(world):
+			continue
+		if not screen.grow(24.0).has_point(_camera.unproject_position(world)):
+			continue
+		on_screen += 1
+		for entry: Dictionary in report:
+			if String(entry["kind"]) == "city" and String(entry["id"]) == city_id \
+					and bool(entry["text_visible"]):
+				named += 1
+				break
+	if on_screen > 0:
+		print("[labels] %s: %d/%d nomes visíveis (%.0f%%)" % [
+			tag, named, on_screen, 100.0 * float(named) / float(on_screen)])
+
+
+func _check_zoom_out(size: Vector2i, focus: String, cities: Array) -> void:
+	var tag := _tag(size, focus, ZOOM_OUT_DISTANCE)
+	var screen := Rect2(Vector2.ZERO, Vector2(size))
+	var report: Array = _world.label_layout_report()
+
+	_check_no_lines(tag)
+	_check_text_overlaps(tag, report, screen)
+	_check_capitals(tag, report, cities, screen)
+	_check_ports(tag, report)
+
+	# No zoom out, só capitais e cidades grandes mantêm nome.
+	var visible := 0
+	for entry: Dictionary in report:
+		if String(entry["kind"]) != "city" or not bool(entry["text_visible"]):
+			continue
+		var rect: Rect2 = entry["text_rect"]
+		if not rect.intersects(screen):
+			continue
+		visible += 1
+		if not bool(entry["capital"]) \
+				and float(entry["population"]) < 1000000.0:
+			_failures.append("%s: cidade pequena %s com nome no zoom out" % [
+				tag, entry["id"]])
+	if visible == 0:
+		_failures.append("%s: nenhum rótulo no zoom out (nem capitais)" % tag)
 
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("[labels] OK: 0 sobreposições, nomes visíveis, 1 bandeira/cidade e porto separado.")
+		print("[labels] OK: 0 linhas, 0 sobreposições, capitais e portos na costa.")
 		get_tree().quit(0)
 	else:
 		print("[labels] FALHAS (%d):" % _failures.size())
