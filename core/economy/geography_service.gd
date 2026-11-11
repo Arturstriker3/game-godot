@@ -10,6 +10,7 @@ const NATURE_PATH := "res://data/definitions/natural/nature.json"
 const AGRICULTURE_PATH := "res://data/definitions/natural/agriculture.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 const NAV_MASK_PATH := "res://map/map_data/nav_mask.png"
+const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 
 ## Regra de água (igual a tools/build_resource_map.py): nada de recurso
 ## terrestre no mar; petróleo/gás offshore só até 20 células (~320 km) da
@@ -49,6 +50,7 @@ var _deposits_by_territory: Dictionary = {}
 var _deposits: Array = []
 var _nav_image: Image
 var _territory_cache: Dictionary = {}
+var _city_landmass: Dictionary = {}
 var _loaded := false
 
 
@@ -62,6 +64,7 @@ func load_data() -> bool:
 	var deposits_data := _read_json(DEPOSITS_PATH)
 	_deposits = deposits_data.get("deposits", [])
 	_index_deposits(deposits_data)
+	_city_landmass = _load_city_landmasses()
 	_loaded = not _nature.is_empty()
 	return _loaded
 
@@ -311,8 +314,18 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 ## minerais entram como reserva agregada (demo_set_deposit) + aptidão 1. O C++
 ## ignora produtos que não conhece (ex.: carvão/cobre/gás/petróleo ficam só no
 ## mapa por enquanto).
+##
+## Regra de reserva mineral (A1): cada depósito nacional é atribuído a UMA
+## cidade — a cidade da MESMA nação mais próxima do depósito, restrita à mesma
+## massa de terra (landmass das cidades, proxy de continente). Territórios
+## ultramarinos (ex.: Guiana Francesa) só alimentam cidades na mesma massa de
+## terra: Caiena não herda minério da França continental e Paris não herda o da
+## Guiana. Sem duplicação: a soma das reservas por nação no sim é a soma dos
+## depósitos da nação. Cidade sem nação conhecida mantém o fallback legado do
+## próprio território (`deposits_for`). O acesso nacional (`deposits_for_nation`)
+## continua disponível para a ficha de cidade (map/city_world.gd).
 ## @param sim Instância de EconomySim inicializada no modo demo.
-## @param cities Lista de dicionários com "id" e "center" (Vector2 em pixels).
+## @param cities Lista de dicionários com "id", "nation" e "center" (Vector2 px).
 ## @returns Mapa cidade -> {crop: aptidão, mineral: reserva_kt}.
 func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 	# Garante os dados carregados mesmo quando o chamador não chama load_data()
@@ -322,6 +335,7 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		return {}
 	var applied := {}
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton"]
+	var deposits_by_city := _assign_deposits(cities)
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var center: Vector2 = city.get("center", Vector2.ZERO)
@@ -343,7 +357,10 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 					* float(city_applied.get(renewable, 0.0))
 			if renewable_ceiling > 0.0:
 				sim.demo_set_external_demand(city_id, renewable, renewable_ceiling)
-		var deposits := deposits_for_nation(code) if code != "" \
+		# Depósitos atribuídos pela regra A1 (uma cidade por depósito, mesma nação
+		# e mesma massa de terra). Cidade sem nação conhecida usa o território
+		# próprio (fallback legado, sem agregação nacional).
+		var deposits: Array = deposits_by_city.get(city_id, []) if code != "" \
 				else deposits_for(city_id, center)
 		var minerals := _aggregate_deposits(deposits)
 		for resource in minerals:
@@ -388,6 +405,82 @@ func _aggregate_deposits(deposits: Array) -> Dictionary:
 	return out
 
 
+## Atribui cada depósito nacional a UMA cidade (regra A1). Retorna
+## {city_id: [depósito, ...]} sem duplicação: cada depósito entra em exatamente
+## uma cidade, então a soma das reservas por nação no sim é a soma dos depósitos
+## da nação. Depósitos de nações não jogáveis (sem tag em NATION_CODE) são
+## ignorados.
+func _assign_deposits(cities: Array) -> Dictionary:
+	var tag_of_code := {}
+	for tag: String in NATION_CODE:
+		tag_of_code[String(NATION_CODE[tag])] = String(tag)
+
+	var all_cities: Array = []
+	for city in cities:
+		all_cities.append({
+			"id": String(city.get("id", "")),
+			"tag": String(city.get("nation", "")),
+			"center": city.get("center", Vector2.ZERO),
+			"landmass": String(_city_landmass.get(String(city.get("id", "")), "")),
+		})
+
+	var assigned := {}
+	for deposit in _deposits:
+		if bool(deposit.get("facility", false)):
+			continue
+		var code := String(
+			_nature.get(String(deposit.get("territory", "")), {}).get("adm0_a3", ""))
+		var tag := String(tag_of_code.get(code, ""))
+		if tag == "":
+			continue
+		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		var city_id := _nearest_city_of_nation(all_cities, tag, point)
+		if city_id == "":
+			continue
+		if not assigned.has(city_id):
+			assigned[city_id] = []
+		assigned[city_id].append(deposit)
+	return assigned
+
+
+## Cidade de `tag` mais próxima de `point`, restrita à mesma massa de terra
+## (landmass da cidade mais próxima de qualquer nação — proxy de continente).
+## Sem cidade na massa de terra, cai para a cidade mais próxima da nação
+## (qualquer landmass), para nunca perder um depósito da nação.
+func _nearest_city_of_nation(cities: Array, tag: String, point: Vector2) -> String:
+	var landmass := _landmass_of(point, cities)
+	var candidate := _nearest_city(cities, tag, point, landmass)
+	if candidate != "":
+		return candidate
+	return _nearest_city(cities, tag, point, "")
+
+
+func _nearest_city(cities: Array, tag: String, point: Vector2, landmass: String) -> String:
+	var best_id := ""
+	var best_distance := INF
+	for city in cities:
+		if String(city["tag"]) != tag:
+			continue
+		if landmass != "" and String(city["landmass"]) != landmass:
+			continue
+		var distance: float = (city["center"] as Vector2).distance_squared_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			best_id = String(city["id"])
+	return best_id
+
+
+func _landmass_of(point: Vector2, cities: Array) -> String:
+	var best := ""
+	var best_distance := INF
+	for city in cities:
+		var distance: float = (city["center"] as Vector2).distance_squared_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			best = String(city["landmass"])
+	return best
+
+
 func _index_deposits(deposits: Dictionary) -> void:
 	_deposits_by_territory.clear()
 	for deposit in deposits.get("deposits", []):
@@ -399,6 +492,21 @@ func _index_deposits(deposits: Dictionary) -> void:
 		if not _deposits_by_territory.has(territory):
 			_deposits_by_territory[territory] = []
 		_deposits_by_territory[territory].append(deposit)
+
+
+## Massa de terra (landmass do cenário) por cidade, lida de cities.json. É o
+## proxy de "continente" usado na regra A1 para isolar territórios ultramarinos
+## (Guiana x França continental). Retorna {} se o arquivo não abrir.
+func _load_city_landmasses() -> Dictionary:
+	var out := {}
+	if not FileAccess.file_exists(CITIES_PATH):
+		return out
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(CITIES_PATH))
+	if typeof(parsed) != TYPE_ARRAY:
+		return out
+	for city in parsed:
+		out[String(city.get("id", ""))] = String(city.get("landmass", ""))
+	return out
 
 
 func _read_json(path: String) -> Dictionary:

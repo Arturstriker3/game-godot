@@ -785,6 +785,7 @@ def deposit_payload(territory_id, resource, px, py, sites, names, status,
         "status": status,
         "names": names,
         "data_quality": "curated" if curated else "real_location_estimated_attributes",
+        "source": "curated supplement" if curated else "USGS MRDS WFS compact",
     }
 
 

@@ -80,6 +80,7 @@ func _test_economy() -> void:
 	_check_gdp(status)
 	_check_investment(sim)
 	_check_save_load(sim)
+	_check_save_migration()
 	_check_suitability_gate()
 
 
@@ -219,6 +220,8 @@ func _check_investment(sim) -> void:
 
 func _check_save_load(sim) -> void:
 	var snapshot: Dictionary = sim.demo_to_dict()
+	if int(snapshot.get("version", 0)) != 3:
+		_fail("save: versão do schema deveria ser 3 (é %s)" % str(snapshot.get("version")))
 	var restored = EconomySim.new()
 	restored.demo_from_dict(snapshot)
 
@@ -229,6 +232,78 @@ func _check_save_load(sim) -> void:
 	var restored_next: Dictionary = restored.tick_demo()
 	if JSON.stringify(original_next) != JSON.stringify(restored_next):
 		_fail("save/load: próximo tick diverge após carregar")
+
+
+## A2: migração de índice de produto v1/v2 -> v3. Um save antigo traz
+## farinha(1)/pão(2)/ferro(3); o layout atual é ferro(1)/arroz(2)... A migração
+## deve remapear o ferro para 1 e descartar farinha/pão (construções e mercados).
+func _check_save_migration() -> void:
+	var v1 := {
+		"version": 1,
+		"active": true,
+		"world_mode": false,
+		"day": 5,
+		"transport_cash": 0.0,
+		"foreign_cash": 0.0,
+		"construction_cash": 0.0,
+		"produced_total": [1.0, 2.0, 3.0, 4.0],
+		"consumed_total": [1.0, 2.0, 3.0, 4.0],
+		"cities": [{
+			"id": "AGRIA", "name": "Agria", "nation": "AGR",
+			"center": [0.0, 0.0], "population": 1000.0,
+			"markets": [
+				_v1_market(10.0, 40.0),   # trigo (índice 0)
+				_v1_market(999.0, 1.0),   # farinha (descartado)
+				_v1_market(888.0, 2.0),   # pão (descartado)
+				_v1_market(111.0, 55.5),  # ferro -> novo índice 1
+			],
+		}],
+		"buildings": [
+			{"id": "FARM-A-1", "city": "AGRIA", "output_product": 0},   # trigo
+			{"id": "MILL-1", "city": "AGRIA", "output_product": 1},     # farinha (descartado)
+			{"id": "BAKERY-1", "city": "AGRIA", "output_product": 2},   # pão (descartado)
+			{"id": "MINE-1", "city": "AGRIA", "output_product": 3},     # ferro -> 1
+		],
+		"in_transit": [],
+	}
+	var migrated := EconomySim.new()
+	migrated.demo_from_dict(v1)
+	var after: Dictionary = migrated.demo_to_dict()
+
+	var cities: Array = after.get("cities", [])
+	if cities.is_empty():
+		_fail("migração: nenhuma cidade carregada")
+		return
+	var markets: Array = cities[0].get("markets", [])
+	if markets.size() != 21:
+		_fail("migração: mercados deveriam ter 21 posições (%d)" % markets.size())
+		return
+	# Ferro (novo índice 1) herda estoque/preço do antigo índice 3.
+	if absf(float(markets[1]["stock"]) - 111.0) > EPSILON \
+			or absf(float(markets[1]["price"]) - 55.5) > EPSILON:
+		_fail("migração: ferro não remapeado (%.2f/%.2f)" % [
+			float(markets[1]["stock"]), float(markets[1]["price"])])
+	# Trigo (índice 0) permanece.
+	if absf(float(markets[0]["stock"]) - 10.0) > EPSILON:
+		_fail("migração: trigo não preservado (%.2f)" % float(markets[0]["stock"]))
+
+	var buildings: Array = after.get("buildings", [])
+	var outputs: Array = []
+	for building in buildings:
+		outputs.append(int(building.get("output_product", -1)))
+	if buildings.size() != 2:
+		_fail("migração: moinho/padaria deveriam ser descartados (%d construções)" % buildings.size())
+	elif not (outputs.has(1) and outputs.has(0)):
+		_fail("migração: mina de ferro deveria virar output 1 (outputs=%s)" % str(outputs))
+	print("[integration] migração v1->v3: mercados e construções remapeados corretamente.")
+
+
+func _v1_market(stock: float, price: float) -> Dictionary:
+	return {
+		"stock": stock, "price": price, "demand": 0.0, "supply": 0.0,
+		"desired": 0.0, "sold": 0.0, "sold_prev": 0.0,
+		"shortage": 0.0, "surplus": 0.0,
+	}
 
 
 func _check_suitability_gate() -> void:

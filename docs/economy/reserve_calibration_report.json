@@ -5,9 +5,9 @@
       "resource": "iron",
       "status": "calibrated",
       "world_target_kt": 190000000.0,
-      "before_total_kt": 63795814.959,
+      "before_total_kt": 189999999.998,
       "after_total_kt": 189999999.998,
-      "factor": 2.978252,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "AUS",
@@ -36,9 +36,9 @@
       "resource": "copper",
       "status": "calibrated",
       "world_target_kt": 980000.0,
-      "before_total_kt": 6721122.402,
+      "before_total_kt": 980000.001,
       "after_total_kt": 980000.001,
-      "factor": 0.145809,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "CHL",
@@ -67,9 +67,9 @@
       "resource": "coal",
       "status": "calibrated",
       "world_target_kt": 1074108000.0,
-      "before_total_kt": 163097678.664,
+      "before_total_kt": 1074108000.0,
       "after_total_kt": 1074108000.0,
-      "factor": 6.585673,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "USA",
@@ -98,9 +98,9 @@
       "resource": "oil",
       "status": "calibrated",
       "world_target_kt": 236000000.0,
-      "before_total_kt": 34599939.083,
+      "before_total_kt": 232566200.0,
       "after_total_kt": 232566200.0,
-      "factor": 6.721578,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "VEN",
@@ -134,9 +134,9 @@
       "resource": "gas",
       "status": "calibrated",
       "world_target_kt": 141000000.0,
-      "before_total_kt": 14706977.97,
+      "before_total_kt": 92650677.002,
       "after_total_kt": 92650677.002,
-      "factor": 6.299777,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "RUS",
@@ -190,9 +190,9 @@
       "resource": "bauxite",
       "status": "calibrated",
       "world_target_kt": 30000000.0,
-      "before_total_kt": 15525969.43,
-      "after_total_kt": 27999989.991,
-      "factor": 1.803429,
+      "before_total_kt": 27999989.993,
+      "after_total_kt": 27999989.993,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "GIN",
@@ -226,9 +226,9 @@
       "resource": "lead",
       "status": "calibrated",
       "world_target_kt": 95000.0,
-      "before_total_kt": 5185559.838,
+      "before_total_kt": 95000.004,
       "after_total_kt": 95000.004,
-      "factor": 0.01832,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "AUS",
@@ -257,9 +257,9 @@
       "resource": "gold",
       "status": "calibrated",
       "world_target_kt": 64.0,
-      "before_total_kt": 636.864,
-      "after_total_kt": 64.052,
-      "factor": 0.100574,
+      "before_total_kt": 64.033,
+      "after_total_kt": 64.027,
+      "factor": 0.999906,
       "top5_after": [
         {
           "code": "RUS",
@@ -279,7 +279,7 @@
         },
         {
           "code": "USA",
-          "kt": 3.05
+          "kt": 3.025
         }
       ],
       "missing_countries": []
@@ -288,9 +288,9 @@
       "resource": "phosphate",
       "status": "calibrated",
       "world_target_kt": 73000000.0,
-      "before_total_kt": 24374847.877,
-      "after_total_kt": 73000000.001,
-      "factor": 2.99489,
+      "before_total_kt": 73000000.0,
+      "after_total_kt": 73000000.0,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "MAR",
@@ -306,7 +306,7 @@
         },
         {
           "code": "TUN",
-          "kt": 2500030.999
+          "kt": 2500031.0
         },
         {
           "code": "RUS",
@@ -319,9 +319,9 @@
       "resource": "tungsten",
       "status": "calibrated",
       "world_target_kt": 4700.0,
-      "before_total_kt": 181690.896,
+      "before_total_kt": 4700.008,
       "after_total_kt": 4700.008,
-      "factor": 0.025868,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "CHN",
@@ -350,9 +350,9 @@
       "resource": "rare_earths",
       "status": "calibrated",
       "world_target_kt": 120000.0,
-      "before_total_kt": 123752.946,
-      "after_total_kt": 96500.039,
-      "factor": 0.77978,
+      "before_total_kt": 96500.039,
+      "after_total_kt": 96500.04,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "CHN",
@@ -368,7 +368,7 @@
         },
         {
           "code": "IND",
-          "kt": 6900.001
+          "kt": 6900.0
         },
         {
           "code": "AUS",
@@ -390,13 +390,13 @@
       "resource": "uranium",
       "status": "calibrated",
       "world_target_kt": 5900.0,
-      "before_total_kt": 141344.866,
-      "after_total_kt": 5629.992,
-      "factor": 0.039832,
+      "before_total_kt": 5629.993,
+      "after_total_kt": 5629.994,
+      "factor": 1.0,
       "top5_after": [
         {
           "code": "AUS",
-          "kt": 1700.0
+          "kt": 1700.002
         },
         {
           "code": "KAZ",

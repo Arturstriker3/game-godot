@@ -110,6 +110,85 @@ func _run() -> void:
 		print("[live_path] %-4s culturas_max=%.3f reserva=%.0f kt depósitos=%s" % [
 			tag, best_crop, reserve_kt, ", ".join(deposit_names)])
 
+	_check_no_duplication(applied, cities)
+	_check_main_minerals(applied)
+	_check_overseas_isolation(applied)
+
+
+## (a) Nenhuma reserva contada 2×: a soma das reservas declaradas por nação
+## deve bater com a soma dos depósitos da nação (dentro da tolerância de
+## arredondamento por cidade — 1 kt por cidade-recurso).
+func _check_no_duplication(applied: Dictionary, cities: Array) -> void:
+	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+	var deposit_totals := _nation_deposit_totals()
+	for tag: String in NATIONS:
+		if not deposit_totals.has(tag):
+			continue
+		var declared := 0.0
+		for city in _cities_of_nation(cities, tag):
+			var city_applied: Dictionary = applied.get(String(city.get("id", "")), {})
+			for key in city_applied:
+				if not crops.has(String(key)):
+					declared += float(city_applied.get(key, 0.0))
+		var expected: float = deposit_totals[tag]
+		# Tolerância = arredondamento por cidade-recurso (0,5 kt cada) + margem
+		# relativa de 0,1%. Duplicação (2×) excede em ordens de grandeza.
+		var tolerance: float = maxf(2.0, 0.001 * expected)
+		if absf(declared - expected) > tolerance:
+			_failures.append("%s: reserva declarada %.0f != depósitos %.0f (duplicação/perda)" % [
+				tag, declared, expected])
+		else:
+			print("[live_path] %-4s soma_reservas=%.0f kt == depósitos=%.0f kt (ok)" % [
+				tag, declared, expected])
+
+
+## Soma da quantidade (kt) dos depósitos de cada nação jogável nos dados.
+func _nation_deposit_totals() -> Dictionary:
+	var code_to_tag := {}
+	for tag: String in GeographyServiceScript.NATION_CODE:
+		code_to_tag[String(GeographyServiceScript.NATION_CODE[tag])] = String(tag)
+	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
+	var territory_code := {}
+	for territory_id: String in nature:
+		territory_code[territory_id] = String(nature[territory_id].get("adm0_a3", ""))
+	var deposits: Array = _load_dict(DEPOSITS_PATH).get("deposits", [])
+	var totals := {}
+	for deposit: Dictionary in deposits:
+		if bool(deposit.get("facility", false)):
+			continue
+		var code: String = String(territory_code.get(String(deposit.get("territory", "")), ""))
+		var tag: String = String(code_to_tag.get(code, ""))
+		if tag == "":
+			continue
+		totals[tag] = float(totals.get(tag, 0.0)) + float(deposit.get("quantity_kt", 0.0))
+	return totals
+
+
+## (b) DEU/GBR/FRA mantêm seus minerais principais (carvão do Ruhr para a DEU,
+## carvão da GBR e ferro/bauxita da FRA), mesmo sem o agregado nacional direto.
+func _check_main_minerals(applied: Dictionary) -> void:
+	var expected := {"DEU": ["coal"], "GBR": ["coal"], "FRA": ["iron", "bauxite"]}
+	for tag: String in expected:
+		for mineral: String in expected[tag]:
+			var found := 0.0
+			for city in _cities_of_nation(_load_array(CITIES_PATH), tag):
+				found += float(applied.get(String(city.get("id", "")), {}).get(mineral, 0.0))
+			if found <= 0.0:
+				_failures.append("%s: mineral principal %s ausente após a atribuição" % [tag, mineral])
+
+
+## (c) Caiena (FRA-CAY) só com depósitos da Guiana Francesa: não herda o
+## minério da França continental, e Paris (FRA-PAR) não herda o petróleo da
+## Guiana.
+func _check_overseas_isolation(applied: Dictionary) -> void:
+	var cay: Dictionary = applied.get("FRA-CAY", {})
+	for forbidden in ["iron", "bauxite", "lead", "tungsten", "uranium", "copper", "phosphate"]:
+		if float(cay.get(forbidden, 0.0)) > 0.0:
+			_failures.append("FRA-CAY herdou %s da França continental" % forbidden)
+	var par: Dictionary = applied.get("FRA-PAR", {})
+	if float(par.get("oil", 0.0)) > 0.0:
+		_failures.append("FRA-PAR herdou petróleo da Guiana Francesa")
+
 
 ## Cidades de uma nação (id + center no formato esperado por apply_to_sim).
 func _cities_of_nation(cities: Array, tag: String) -> Array:

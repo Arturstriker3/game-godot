@@ -808,7 +808,7 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 		for entry in entries:
 			var key := String(entry["kind"])
 			var detail := ""
-			if key == "wheat":
+			if RENEWABLE_KEYS.has(key):
 				detail = "%d%%" % int(round(float(entry.get("value", 0.0)) * 100.0))
 			else:
 				detail = "×%d · %s" % [
@@ -847,19 +847,31 @@ func _status_key(code: int) -> String:
 
 
 ## Formata uma reserva em kt (kilotoneladas) na unidade mais legível:
-## t (toneladas) < 1 kt < 1 Mt < 1 Gt. Minerais têm ordens de grandeza muito
-## diferentes (ouro em t, ferro em Gt), então a unidade acompanha a magnitude.
+## kg < t < kt < Mt < Gt, com 2–3 algarismos significativos — nunca "0,0".
+## Minerais têm ordens de grandeza muito diferentes (ouro em kg/t, ferro em Gt),
+## então a unidade acompanha a magnitude.
 func _format_mass(kt: float) -> String:
 	if kt >= 1000000.0:
-		var gt := kt / 1000000.0
-		return UiKit.number(gt, 1 if gt < 100.0 else 0) + " Gt"
+		return _mass_sig(kt / 1000000.0) + " Gt"
 	if kt >= 1000.0:
-		var mt := kt / 1000.0
-		return UiKit.number(mt, 1 if mt < 100.0 else 0) + " Mt"
+		return _mass_sig(kt / 1000.0) + " Mt"
 	if kt >= 1.0:
-		return UiKit.number(kt, 1 if kt < 100.0 else 0) + " kt"
-	var t := kt * 1000.0
-	return UiKit.number(t, 1 if t < 100.0 else 0) + " t"
+		return _mass_sig(kt) + " kt"
+	if kt >= 0.001:
+		return _mass_sig(kt * 1000.0) + " t"
+	var kg := kt * 1000000.0
+	if kg < 0.5:
+		return "< 0,5 kg"
+	return _mass_sig(kg) + " kg"
+
+
+## Número com 2–3 algarismos significativos (1 casa decimal abaixo de 100,
+## inteiro acima). O chamador garante valor >= 0,5 na unidade, então nunca
+## produz "0,0".
+func _mass_sig(value: float) -> String:
+	if absf(value) < 100.0:
+		return UiKit.number(value, 1)
+	return UiKit.number(value, 0)
 
 
 ## Separa o tipo de lavra do nome do depósito ("Khouribga Underground" →

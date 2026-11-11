@@ -54,6 +54,7 @@
 			"source": "Energy Institute Statistical Review of World Energy 2024 (reservas provadas)",
 			"year": 2024,
 			"data_quality": "published_aggregate",
+			"note": "GBR (Reino Unido) entra com 26 Mt de reserva provada de carvão duro (BGR Energy Study 2021, tabela de reservas de carvão/linhito); sem isso, a distribuição proporcional do 'resto' por ocorrência MRDS inflava o Reino Unido a dezenas de Gt (o MRDS registra centenas de minas históricas já exauridas).",
 			"shares": {
 				"USA": 0.231769,
 				"RUS": 0.150979,
@@ -65,7 +66,8 @@
 				"UKR": 0.032003,
 				"POL": 0.024592,
 				"KAZ": 0.023838,
-				"resto": 0.094361
+				"GBR": 0.000024,
+				"resto": 0.094337
 			}
 		},
 		{

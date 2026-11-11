@@ -53,6 +53,33 @@ RECOVERY = {
 # (ex.: ouro) durante o reescalonamento. Deriva de conservação desprezível.
 QUANTITY_FLOOR_KT = 0.001
 
+# Piso de relevância por recurso (kt): um depósito abaixo disto é ruído — a
+# "fatia do resto" dividida entre muitos registros de países fora do top da
+# fonte (ouro/diamante/tungstênio ficam < 0,05 t e apareciam como "0,0 t").
+# Documentado por recurso: abaixo do piso o depósito não é exibido nem simulado.
+# A remoção ainda exige a condição relativa (< 0,1% da reserva nacional), para
+# não apagar o único depósito de um país pobre no recurso.
+RELEVANCE_MIN_KT = {
+    "coal": 1000.0,        # 1 Mt — carvão é bulk (mín. observado 25 Mt)
+    "iron": 1000.0,        # 1 Mt (mín. observado 341 kt)
+    "copper": 50.0,        # 50 kt (mín. observado 7,6 kt)
+    "oil": 1000.0,         # 1 Mt (mín. observado 9,3 Mt)
+    "gas": 1000.0,         # 1 Mt (mín. observado 89 Mt)
+    "bauxite": 500.0,      # 500 kt (mín. observado 1,2 Mt)
+    "lead": 10.0,          # 10 kt (mín. observado 0,45 kt)
+    "gold": 0.01,          # 10 t (mín. observado 1 t)
+    "phosphate": 500.0,    # 500 kt (mín. observado 710 kt)
+    "tungsten": 0.5,       # 500 t (mín. observado 143 t)
+    "rare_earths": 10.0,   # 10 kt (mín. observado 1,5 kt)
+    "sulfur": 500.0,       # 500 kt (mín. observado 603 kt)
+    "diamond": 0.005,      # 5 t (mín. observado 3 t)
+    "uranium": 0.5,        # 500 t (mín. observado 129 t)
+}
+
+# Fração da reserva nacional abaixo da qual um depósito é considerado
+# irrelevante RELATIVO (0,1%).
+RELEVANCE_FRACTION = 0.001
+
 
 def read_json(path):
     with open(path, encoding="utf-8") as handle:
@@ -69,6 +96,62 @@ def country_of(territory_code, deposit):
     return territory_code.get(deposit.get("territory", ""), "")
 
 
+def backfill_source(deposit):
+    """Garante um campo `source` por depósito (proveniência do registro).
+
+    A origem primária é o MRDS (localização/identidade); os suplementos
+    curados já trazem `source` próprio (apply_deposit_supplement.py). Depósitos
+    sem `source` são rotulados como MRDS (ou suplemento curado, pelo
+    `data_quality`). Idempotente.
+    """
+    if deposit.get("source"):
+        return
+    if deposit.get("data_quality") == "curated":
+        deposit["source"] = "curated supplement"
+    else:
+        deposit["source"] = "USGS MRDS WFS compact"
+
+
+def prune_irrelevant(deposits, territory_code):
+    """Remove depósitos abaixo do piso de relevância (regra B7).
+
+    Um depósito é removido quando, ao mesmo tempo:
+      - quantity_kt < RELEVANCE_FRACTION (0,1%) da reserva nacional do recurso
+        (irrelevante RELATIVO); e
+      - quantity_kt < RELEVANCE_MIN_KT[recurso] (irrelevante ABSOLUTO).
+
+    A condição relativa protege o único depósito de um país pobre no recurso;
+    a absoluta elimina a "fatia do resto" dividida entre dezenas de registros
+    (que aparecia como "0,0 t" e poluía o mapa). Depósitos `facility` são
+    mantidos (não são jazidas). Retorna {recurso: removidos}.
+    """
+    national = {}
+    for dep in deposits:
+        if dep.get("facility"):
+            continue
+        resource = dep.get("resource", "")
+        code = country_of(territory_code, dep)
+        if not code:
+            continue
+        key = (resource, code)
+        national[key] = national.get(key, 0.0) + float(dep.get("quantity_kt", 0.0))
+
+    kept = []
+    removed = {}
+    for dep in deposits:
+        if not dep.get("facility"):
+            resource = dep.get("resource", "")
+            code = country_of(territory_code, dep)
+            qty = float(dep.get("quantity_kt", 0.0))
+            min_abs = RELEVANCE_MIN_KT.get(resource, 0.0)
+            min_rel = RELEVANCE_FRACTION * national.get((resource, code), 0.0)
+            if code and qty < min_abs and qty < min_rel:
+                removed[resource] = removed.get(resource, 0) + 1
+                continue
+        kept.append(dep)
+    return kept, removed
+
+
 def main():
     data = read_json(DEPOSITS)
     deposits = data["deposits"]
@@ -76,6 +159,12 @@ def main():
     calibration = read_json(CALIBRATION)["resources"]
 
     territory_code = {tid: entry.get("adm0_a3", "") for tid, entry in nature.items()}
+
+    # Proveniência por registro: todos os depósitos passam a carregar `source`
+    # (antes ficava só no _meta). Cobre também sulfur/diamond, que não são
+    # recalibrados.
+    for dep in deposits:
+        backfill_source(dep)
 
     report = []
     print("=== calibrate_reserves.py ===")
@@ -186,7 +275,29 @@ def main():
         "note": ("quantity_kt rescalado por país para bater com reservas "
                  "publicadas (USGS/EI/Red Book); proporção relativa do MRDS "
                  "preservada dentro de cada país; país da fonte sem depósito "
-                 "fica fora da soma (ver relatório).")
+                 "fica fora da soma (ver relatório). Todo depósito recebe um "
+                 "campo 'source' (MRDS/suplemento curado).")
+    }
+
+    # Piso de relevância (B7): remove depósitos-ruído (< 0,1% da reserva
+    # nacional do recurso E < mínimo absoluto por recurso).
+    kept, removed = prune_irrelevant(deposits, territory_code)
+    data["deposits"] = kept
+    total_removed = sum(removed.values())
+    print("=== piso de relevância (B7) ===")
+    if removed:
+        for resource in sorted(removed, key=lambda r: -removed[r]):
+            print("  %-12s removidos %d" % (resource, removed[resource]))
+        print("  total removidos: %d | mantidos: %d" % (total_removed, len(kept)))
+    else:
+        print("  nenhum depósito removido")
+    data["_meta"]["relevance_floor"] = {
+        "applied_by": "tools/calibrate_reserves.py",
+        "relative_fraction": RELEVANCE_FRACTION,
+        "absolute_min_kt": RELEVANCE_MIN_KT,
+        "removed_by_resource": removed,
+        "removed_total": total_removed,
+        "kept_total": len(kept),
     }
 
     write_json(DEPOSITS, data)

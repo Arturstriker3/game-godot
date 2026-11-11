@@ -290,7 +290,7 @@ def build_points() -> None:
         territory_markers.setdefault(terr, []).append({
             "kind": "mineral",
             "resource": resource,
-            "reserve": round(entry["reserve"], 1),
+            "reserve": round(entry["reserve"], 3),
             "quality": (round(entry["quality_w"] / entry["reserve"], 3)
                         if entry["reserve"] else 0.0),
             "depth": (round(entry["depth_w"] / entry["reserve"])

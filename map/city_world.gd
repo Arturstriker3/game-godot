@@ -64,7 +64,11 @@ const PORT_ICON_MERGE_DISTANCE := 0.5
 const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil",
 		"bauxite", "lead", "gold", "phosphate", "tungsten",
 		"rare_earths", "sulfur", "diamond", "uranium"]
-const WHEAT_STRIP_MIN := 0.40
+## Culturas renováveis no mesmo catálogo da economia (GeographyService
+## .apply_to_sim): 6 culturas + madeira (cobertura florestal). A ficha da cidade
+## lista as que a NAÇÃO alcança acima do limiar do investidor (MIN_SUITABILITY).
+const RENEWABLE_CROPS := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+const CROP_ACCESS_MIN := 0.30
 
 const MARKER_COLOR := Color("#0A1212")
 const MARKER_DOT := Color("#E8E2D0")
@@ -1104,7 +1108,10 @@ func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sp
 
 
 ## Recursos que a cidade acessa: depósitos de TODOS os territórios da nação
-## (via GeographyService, que já filtra facilities e offshore) + trigo da nação.
+## (via GeographyService, que já filtra facilities e offshore) + as culturas a
+## que a NAÇÃO tem acesso (mesma regra nacional de `apply_to_sim`), acima do
+## limiar do investidor (0,30), ordenadas por aptidão decrescente. Sem duplicar:
+## minerais e culturas vêm de catálogos distintos.
 func _resource_entries(city_id: String, nation: String, center: Vector2) -> Array:
 	if _geo == null:
 		_geo = GeographyScript.new()
@@ -1127,11 +1134,34 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 				"count": int(counts[key]),
 				"reserve_kt": float(reserves.get(key, 0.0)),
 			})
-	var wheat := float(_geo.crop_suitability_nation(code, "wheat") if code != "" \
-			else _geo.crop_suitability(city_id, center, "wheat"))
-	if wheat >= WHEAT_STRIP_MIN:
-		entries.append({"kind": "wheat", "count": 1, "value": wheat})
+	var crops: Array = []
+	for crop in RENEWABLE_CROPS:
+		var value := float(_renewable_value(crop, code, city_id, center))
+		if value >= CROP_ACCESS_MIN:
+			crops.append({"kind": crop, "count": 1, "value": value})
+	crops.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var av := float(a["value"])
+		var bv := float(b["value"])
+		if not is_equal_approx(av, bv):
+			return av > bv
+		return RENEWABLE_CROPS.find(String(a["kind"])) < RENEWABLE_CROPS.find(String(b["kind"])))
+	entries.append_array(crops)
 	return entries
+
+
+## Aptidão de uma cultura renovável para a nação (fallback: território da cidade
+## quando a nação não é conhecida). A madeira usa a cobertura florestal, não a
+## aptidão agrícola.
+func _renewable_value(crop: String, code: String, city_id: String, center: Vector2) -> float:
+	if _geo == null:
+		return 0.0
+	if crop == "wood":
+		if code != "":
+			return _geo.forest_cover_nation(code)
+		return _geo.forest_cover(city_id, center)
+	if code != "":
+		return _geo.crop_suitability_nation(code, crop)
+	return _geo.crop_suitability(city_id, center, crop)
 
 
 

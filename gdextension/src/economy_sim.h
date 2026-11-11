@@ -376,6 +376,7 @@ private:
 		double export_value[kDemoProducts] = {};
 		// Aptidão territorial por produto (0..1). A produção primária é
 		// multiplicada por ela; o GeographyService sobrescreve com dados reais.
+		// Inicializador: trigo/ferro/arroz = 1.0, os demais = 0.0 (default).
 		double suitability[kDemoProducts] = {1.0, 1.0, 1.0};
 		// Teto de demanda externa (t/dia) por produto, declarado pelo
 		// GeographyService (participação da nação no mercado mundial). 0 = sem

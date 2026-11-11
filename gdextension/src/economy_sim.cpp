@@ -56,10 +56,11 @@ constexpr double kCoverDays = 10.0;
 constexpr std::size_t kMaxOrdersPerDay = 24;
 
 // Versão do schema do save do modo demo. Aumente ao mudar a estrutura do
-// dicionário; demo_from_dict recusa versões futuras (maiores).
-// v2: reservas minerais por cidade (deposits) e 18 produtos. Saves v1 (4
-// produtos, sem reservas) continuam carregando.
-constexpr int kDemoSaveVersion = 2;
+// dicionário; demo_from_dict recusa versões futuras (maiores) e migra as
+// anteriores.
+// v3: farinha/pão removidos da cadeia (enum DemoProduct deslocou -2 a partir do
+// ferro) e 21 produtos. demo_from_dict remapeia saves v1/v2 (com farinha/pão).
+constexpr int kDemoSaveVersion = 3;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -725,14 +726,14 @@ constexpr double kDemoServiceMaxShare = 0.30;
 // Desemprego friccional: parte da força de trabalho residual está sempre
 // procurando vaga. Sem isso o mercado de trabalho perfeitamente flexível
 // produziria 0,0% de desemprego, o que também não é plausível.
-// Demanda externa de ferro (fora do consumo alimentar).
-constexpr double kDemoIronExportDemand = 20.0;
-constexpr int kDemoIronProduct = 1;
-// Primeiro produto "bruto" (sem consumo local) na ordem de goods.json: 2=arroz.
+// Demanda externa de ferro (fora do consumo alimentar): o ferro flui pelo
+// mesmo mecanismo de teto data-driven dos demais bens brutos (fase 4d,
+// external_demand declarado pelo GeographyService), não por um caso especial.
+// Primeiro produto "bruto" (sem consumo local) na ordem de goods.json: 1=ferro.
 // A fase 4d pula os alimentos da cesta (B3) via demo_food_calories, então o
 // valor aqui só delimita onde começa a venda externa de matérias-primas
 // (minerais, soja, algodão, madeira).
-constexpr int kDemoFirstRawProduct = 2;
+constexpr int kDemoFirstRawProduct = 1;
 
 // Extração mineral. 1 kt = 1000 t.
 constexpr double kDemoTonsPerKiloton = 1000.0;
@@ -780,6 +781,46 @@ constexpr const char* kDemoProductNames[21] = {
 	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
 	"coal", "copper", "gas", "oil", "potato", "soy", "cotton", "wood", "uranium",
 };
+
+// ---------------------------------------------------------------------------
+// Migração de índice de produto (save v1/v2 -> v3).
+//
+// Saves antigos tinham farinha=1 e pão=2 (entre trigo e ferro). Ao removê-los,
+// o enum deslocou -2 a partir do ferro (iron 3->1, rice 4->2, ...). A migração
+// reverte esse deslocamento: trigo (0) fica, farinha/pão (1/2) são descartados
+// e os demais (>=3) deslocam -2.
+// ---------------------------------------------------------------------------
+
+// Índice antigo -> novo. Retorna -1 para farinha/pão (produto removido).
+static int demo_migrate_product_index(int old_index) {
+	if (old_index < 0) {
+		return -1;  // sem produto/insumo
+	}
+	if (old_index == 0) {
+		return 0;  // trigo inalterado
+	}
+	if (old_index == 1 || old_index == 2) {
+		return -1;  // farinha/pão removidos
+	}
+	return old_index - 2;
+}
+
+// Remapeia um array por-produto do layout antigo (com farinha/pão) para o
+// atual (products posições). new_index 0 <- old_index 0; new_index >= 1 <-
+// old_index (new_index + 2). Posições sem correspondência ficam 0.0.
+static Array demo_migrate_product_array(const Array& old, int products) {
+	Array out;
+	out.resize(products);
+	for (int new_index = 0; new_index < products; ++new_index) {
+		const int old_index = (new_index == 0) ? 0 : (new_index + 2);
+		if (old_index >= 0 && old_index < old.size()) {
+			out[new_index] = old[old_index];
+		} else {
+			out[new_index] = 0.0;
+		}
+	}
+	return out;
+}
 
 } // namespace
 
@@ -968,9 +1009,9 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		city.service_wage = kDemoServiceWage;
 		city.pop.population = city.population;
 		city.pop.savings = city.population * kDemoSavingsPerCapita;
-		// Aptidão padrão: trigo 1.0 (o GeographyService sobrescreve com o dado
-		// real em tempo de execução); os demais recursos ficam em 0.0 até haver
-		// depósito/aptidão conhecida (suitability é zero-inicializado).
+		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
+		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
+		// o dado real em tempo de execução.
 		city.suitability[0] = 1.0;
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.markets[product] = {0.0, demo_base_price(product), 0.0, 0.0};
@@ -994,7 +1035,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		const int output_product = demo_product_index(
 			String(building.resource.c_str()));
 		building.output_product = output_product >= 0 ? output_product : 0;
-		building.kind = building.output_product;
+		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
 		building.owner = "private";
 		building.input_product = -1;
 		const double capacity =
@@ -1711,29 +1752,10 @@ Dictionary EconomySim::tick_demo() {
 		demo_produced_today_[building.output_product] += output;
 	}
 
-	// 4c. Demanda externa de ferro: o comprador externo absorve o estoque.
-	for (DemoCity& city : demo_cities_) {
-		DemoMarket& iron = city.markets[kDemoIronProduct];
-		iron.desired += kDemoIronExportDemand;
-		const double sold = std::min(iron.stock, kDemoIronExportDemand);
-		if (sold <= 0.0) {
-			continue;
-		}
-		const double revenue = sold * iron.price;
-		iron.stock -= sold;
-		iron.demand += sold;
-		iron.sold += sold;
-		city.firm_cash += revenue;
-		city.revenue_by_product[kDemoIronProduct] += revenue;
-		city.exported[kDemoIronProduct] += sold;
-		city.export_value[kDemoIronProduct] += revenue;
-		demo_foreign_cash_ -= revenue;
-		demo_consumed_total_[kDemoIronProduct] += sold;
-		demo_consumed_today_[kDemoIronProduct] += sold;
-	}
-
-	// 4d. Recursos brutos (minerais, soja, algodão e madeira): sem consumo local
-	// nem cadeia de refino nesta etapa. O resto do mundo compra ao preço do
+	// 4c. Recursos brutos (minerais, soja, algodão e madeira): sem consumo local
+	// nem cadeia de refino nesta etapa. O ferro entra aqui (não há mais um caso
+	// especial 4c com 20 t/dia fixo): usa o mesmo teto data-driven dos demais.
+	// O resto do mundo compra ao preço do
 	// mercado até um TETO de demanda externa por cidade (external_demand),
 	// declarado pelo GeographyService como a participação da nação no mercado
 	// mundial (reserva esgotada em ~25 anos — o mesmo horizonte de
@@ -2697,7 +2719,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	DemoBuilding building;
 	building.id = id;
 	building.city = city->id;
-	building.kind = output_product;
+	building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
 	building.resource = std::string(resource.utf8().get_data());
 	building.owner = state_owned ? "state" : "private";
 	building.input_product = input_product;
@@ -2907,6 +2929,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		demo_active_ = false;
 		return;
 	}
+	// Saves v1/v2 (antes da remoção de farinha/pão) trazem índices de produto
+	// no layout antigo (farinha=1, pão=2, ferro=3...): remapeia para o layout
+	// atual (ferro=1, arroz=2...), descartando farinha/pão.
+	const bool needs_migration = version < 3;
 	demo_active_ = bool(data.get("active", true));
 	demo_world_mode_ = bool(data.get("world_mode", false));
 	day_ = int(data.get("day", 0));
@@ -2916,6 +2942,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 
 	Array produced = data.get("produced_total", Array());
 	Array consumed = data.get("consumed_total", Array());
+	if (needs_migration) {
+		produced = demo_migrate_product_array(produced, kDemoProducts);
+		consumed = demo_migrate_product_array(consumed, kDemoProducts);
+	}
 	for (int index = 0; index < kDemoProducts; ++index) {
 		demo_produced_[index] = index < produced.size() ? double(produced[index]) : 0.0;
 		demo_consumed_total_[index] =
@@ -2964,6 +2994,15 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		Array import_value = entry.get("import_value", Array());
 		Array export_value = entry.get("export_value", Array());
 		Array external_demand = entry.get("external_demand", Array());
+		if (needs_migration) {
+			suitability = demo_migrate_product_array(suitability, kDemoProducts);
+			revenue = demo_migrate_product_array(revenue, kDemoProducts);
+			imported = demo_migrate_product_array(imported, kDemoProducts);
+			exported = demo_migrate_product_array(exported, kDemoProducts);
+			import_value = demo_migrate_product_array(import_value, kDemoProducts);
+			export_value = demo_migrate_product_array(export_value, kDemoProducts);
+			external_demand = demo_migrate_product_array(external_demand, kDemoProducts);
+		}
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.suitability[product] = product < suitability.size()
 				? double(suitability[product]) : (product >= 1 ? 0.0 : 1.0);
@@ -3026,6 +3065,32 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 
 		Array markets = entry.get("markets", Array());
+		if (needs_migration) {
+			// Remapeia os mercados antigos (farinha/pão descartados; ferro etc.
+			// deslocados -2). Mercados sem correspondência no layout antigo
+			// recebem o preço-base.
+			Array remapped;
+			remapped.resize(kDemoProducts);
+			for (int new_index = 0; new_index < kDemoProducts; ++new_index) {
+				const int old_index = (new_index == 0) ? 0 : (new_index + 2);
+				if (old_index >= 0 && old_index < markets.size()) {
+					remapped[new_index] = markets[old_index];
+				} else {
+					Dictionary m;
+					m["stock"] = 0.0;
+					m["price"] = demo_base_price(new_index);
+					m["demand"] = 0.0;
+					m["supply"] = 0.0;
+					m["desired"] = 0.0;
+					m["sold"] = 0.0;
+					m["sold_prev"] = 0.0;
+					m["shortage"] = 0.0;
+					m["surplus"] = 0.0;
+					remapped[new_index] = m;
+				}
+			}
+			markets = remapped;
+		}
 		// Saves antigos (4 produtos) não trazem mercados dos novos bens: preço-base.
 		for (int product = markets.size(); product < kDemoProducts; ++product) {
 			if (product >= 0) {
@@ -3061,6 +3126,13 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			std::string(String(entry.get("owner", "private")).utf8().get_data());
 		building.input_product = int(entry.get("input_product", -1));
 		building.output_product = int(entry.get("output_product", 0));
+		if (needs_migration) {
+			building.input_product = demo_migrate_product_index(building.input_product);
+			building.output_product = demo_migrate_product_index(building.output_product);
+			if (building.output_product < 0) {
+				continue;  // moinho/padaria (farinha/pão): construção removida da cadeia
+			}
+		}
 		building.capacity = double(entry.get("capacity", 0.0));
 		building.input_per_output = double(entry.get("input_per_output", 0.0));
 		building.jobs = double(entry.get("jobs", 0.0));
@@ -3079,6 +3151,13 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		shipment.to_city =
 			std::string(String(entry.get("to_city", "")).utf8().get_data());
 		shipment.product = int(entry.get("product", 0));
+		if (needs_migration) {
+			const int migrated = demo_migrate_product_index(shipment.product);
+			if (migrated < 0) {
+				continue;  // farinha/pão em trânsito: descartado
+			}
+			shipment.product = migrated;
+		}
 		shipment.amount = double(entry.get("amount", 0.0));
 		shipment.arrival_day = int(entry.get("arrival_day", 0));
 		demo_in_transit_.push_back(shipment);
