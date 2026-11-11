@@ -98,6 +98,9 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
 	                     &EconomySim::demo_set_deposit);
+	ClassDB::bind_method(D_METHOD("demo_set_external_demand", "city_id", "product",
+	                     "ceiling_t_per_day"),
+	                     &EconomySim::demo_set_external_demand);
 	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
 	                     &EconomySim::demo_set_goods);
 	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
@@ -672,7 +675,7 @@ Dictionary EconomySim::order_to_dict(const TradeOrder& order) const {
 }
 
 // ---------------------------------------------------------------------------
-// Cenário de validação: duas cidades, POPs agregados, trigo -> farinha -> pão.
+// Cenário de validação: duas cidades, POPs agregados, trigo consumido direto.
 // ---------------------------------------------------------------------------
 
 namespace {
@@ -722,14 +725,14 @@ constexpr double kDemoServiceMaxShare = 0.30;
 // Desemprego friccional: parte da força de trabalho residual está sempre
 // procurando vaga. Sem isso o mercado de trabalho perfeitamente flexível
 // produziria 0,0% de desemprego, o que também não é plausível.
-// Volume de pão exportado a Agria, calibrado para equilibrar o trigo importado.
-constexpr double kDemoBreadExportTons = 6.0;
 // Demanda externa de ferro (fora do consumo alimentar).
 constexpr double kDemoIronExportDemand = 20.0;
-constexpr int kDemoIronProduct = 3;
-// Primeiro produto "bruto" sem consumo local (arroz, milho e minerais). Para
-// eles o resto do mundo compra toda a produção local (ver fase 4d).
-constexpr int kDemoFirstRawProduct = 4;
+constexpr int kDemoIronProduct = 1;
+// Primeiro produto "bruto" (sem consumo local) na ordem de goods.json: 2=arroz.
+// A fase 4d pula os alimentos da cesta (B3) via demo_food_calories, então o
+// valor aqui só delimita onde começa a venda externa de matérias-primas
+// (minerais, soja, algodão, madeira).
+constexpr int kDemoFirstRawProduct = 2;
 
 // Extração mineral. 1 kt = 1000 t.
 constexpr double kDemoTonsPerKiloton = 1000.0;
@@ -772,8 +775,8 @@ constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
 constexpr double kDemoTradeCapacityPerCapita = 0.001;
 
 // Ordem idêntica à de data/definitions/economy/goods.json.
-constexpr const char* kDemoProductNames[23] = {
-	"wheat", "flour", "bread", "iron", "rice", "maize", "bauxite", "lead", "gold",
+constexpr const char* kDemoProductNames[21] = {
+	"wheat", "iron", "rice", "maize", "bauxite", "lead", "gold",
 	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
 	"coal", "copper", "gas", "oil", "potato", "soy", "cotton", "wood", "uranium",
 };
@@ -857,10 +860,7 @@ void EconomySim::initialize_demo() {
 	agria.pop.savings = 50000.0;
 	agria.suitability[0] = kDemoReferenceWheatSuitability;
 	agria.markets[0] = {100.0, demo_base_price(0), 0.0, 0.0};
-	agria.markets[1] = {0.0, demo_base_price(1), 0.0, 0.0};
-	agria.markets[2] = {0.0, demo_base_price(2), 0.0, 0.0};
-	agria.markets[3] = {0.0, demo_base_price(3), 0.0, 0.0};
-	for (int product = 4; product < kDemoProducts; ++product) {
+	for (int product = 1; product < kDemoProducts; ++product) {
 		agria.markets[product].price = demo_base_price(product);
 	}
 	demo_cities_.push_back(agria);
@@ -880,17 +880,14 @@ void EconomySim::initialize_demo() {
 	portus.pop.savings = 100000.0;
 	portus.suitability[0] = 0.625;
 	portus.markets[0] = {0.0, demo_base_price(0), 0.0, 0.0};
-	portus.markets[1] = {0.0, demo_base_price(1), 0.0, 0.0};
-	portus.markets[2] = {50.0, demo_base_price(2), 0.0, 0.0};
-	portus.markets[3] = {0.0, demo_base_price(3), 0.0, 0.0};
-	for (int product = 4; product < kDemoProducts; ++product) {
+	for (int product = 1; product < kDemoProducts; ++product) {
 		portus.markets[product].price = demo_base_price(product);
 	}
 	demo_cities_.push_back(portus);
 
 	// Capacidade é o potencial da terra; a produção efetiva é multiplicada
-	// pela aptidão territorial (wheat). Assim o encadeamento trigo -> farinha
-	// -> pão fica ligado ao recurso e à geografia.
+	// pela aptidão territorial (wheat). A comida é consumida direto do trigo —
+	// farinha/pão foram removidos da cadeia (subprodutos ficam para depois).
 	const double agria_farm_capacity =
 		kDemoFarmCapacityTons / kDemoReferenceWheatSuitability;
 	for (int index = 0; index < 3; ++index) {
@@ -909,8 +906,7 @@ void EconomySim::initialize_demo() {
 		demo_buildings_.push_back(farm);
 	}
 
-	// Portus também produz parte do trigo que processa: reduz a dependência
-	// de importação e mantém a balança comercial próxima do equilíbrio.
+	// Portus também produz trigo: reduz a dependência de importação.
 	const double portus_farm_capacity = kDemoFarmCapacityTons / 0.625;
 	for (int index = 0; index < 2; ++index) {
 		DemoBuilding farm;
@@ -926,36 +922,6 @@ void EconomySim::initialize_demo() {
 		farm.wage = 2.0;
 		farm.opex = 50.0;
 		demo_buildings_.push_back(farm);
-	}
-
-	DemoBuilding mill;
-	mill.id = "MILL-B";
-	mill.city = "PORTUS";
-	mill.kind = 1;
-	mill.resource = "flour";
-	mill.input_product = 0;
-	mill.output_product = 1;
-	mill.capacity = 50.0;
-	mill.input_per_output = 1.2;
-	mill.jobs = 200.0;
-	mill.wage = 2.0;
-	mill.opex = 200.0;
-	demo_buildings_.push_back(mill);
-
-	for (int index = 0; index < 5; ++index) {
-		DemoBuilding bakery;
-		bakery.id = "BAKERY-B-" + std::to_string(index + 1);
-		bakery.city = "PORTUS";
-		bakery.kind = 2;
-		bakery.resource = "bread";
-		bakery.input_product = 1;
-		bakery.output_product = 2;
-		bakery.capacity = 15.0;
-		bakery.input_per_output = 0.83;
-		bakery.jobs = 100.0;
-		bakery.wage = 1.5;
-		bakery.opex = 100.0;
-		demo_buildings_.push_back(bakery);
 	}
 }
 
@@ -1003,30 +969,34 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		city.pop.population = city.population;
 		city.pop.savings = city.population * kDemoSavingsPerCapita;
 		// Aptidão padrão: trigo 1.0 (o GeographyService sobrescreve com o dado
-		// real em tempo de execução); ferro 0.0 até haver mina conhecida.
+		// real em tempo de execução); os demais recursos ficam em 0.0 até haver
+		// depósito/aptidão conhecida (suitability é zero-inicializado).
 		city.suitability[0] = 1.0;
-		city.suitability[1] = 1.0;
-		city.suitability[2] = 1.0;
-		// Ferro e os demais recursos brutos (índices >= 3) ficam em 0.0 até
-		// haver depósito conhecido (suitability é zero-inicializado).
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.markets[product] = {0.0, demo_base_price(product), 0.0, 0.0};
 		}
 		demo_cities_.push_back(std::move(city));
 	}
 
-	// Construções reais (trigo): cada linha vira uma fazenda primária.
+	// Construções reais (fazendas primárias): o produto vem do campo "resource"
+	// (resolvido pelo GeographyService para o alimento básico de maior aptidão ×
+	// caloria da nação da cidade); ausente, mantém trigo (comportamento legado).
+	// A produção efetiva segue multiplicando a capacidade pela aptidão do produto
+	// escolhido (fase 4b usa city.suitability[output_product]).
 	for (int index = 0; index < buildings.size(); ++index) {
 		const Dictionary d = buildings[index];
 		DemoBuilding building;
 		building.id = std::string(
 			String(d.get("id", d.get("building_id", ""))).utf8().get_data());
 		building.city = std::string(String(d["city_id"]).utf8().get_data());
-		building.kind = 0;
-		building.resource = "wheat";
+		building.resource = std::string(
+			String(d.get("resource", "wheat")).utf8().get_data());
+		const int output_product = demo_product_index(
+			String(building.resource.c_str()));
+		building.output_product = output_product >= 0 ? output_product : 0;
+		building.kind = building.output_product;
 		building.owner = "private";
 		building.input_product = -1;
-		building.output_product = 0;
 		const double capacity =
 			safe_nonneg(static_cast<double>(d["output_tons_per_day"]));
 		building.capacity = capacity;
@@ -1165,106 +1135,177 @@ std::vector<std::string> EconomySim::demo_check_invariants(double money_before) 
 	return violations;
 }
 
-void EconomySim::demo_trade_wheat() {
-	// Comércio genérico de trigo entre cidades (mundo real): cidades com déficit
-	// de alimento compram das que têm excedente, mais próximas primeiro, limitadas
-	// por caixa e estoque. O frete é serviço doméstico do comprador (conserva o
-	// dinheiro). Espelha a regra do mercado legado, no modelo de dinheiro do demo.
-	const int wheat = 0;
+void EconomySim::demo_trade_food() {
+	// Comércio genérico de alimento (cesta de calorias, B3) entre cidades do
+	// mundo real: cidades com déficit compram das que têm excedente, escolhendo
+	// o alimento que entregar a caloria mais barata (preço + frete por
+	// tonelada-equivalente de grão), mais perto primeiro quando há empate. O
+	// frete é serviço doméstico do comprador (conserva o dinheiro).
 
 	struct Buyer {
 		DemoCity* city;
-		double gap;
+		double gap;  // toneladas-equivalentes de grão
 	};
 	std::vector<Buyer> buyers;
-	std::vector<DemoCity*> sellers;
-	for (DemoCity& city : demo_cities_) {
-		// Cobertura-alvo em dias (como o mercado legado usa kCoverDays): a cidade
-		// importa para manter um estoque de alguns dias, não só o déficit do dia —
-		// senão a compra oscila entre sobra e falta. O que já está em trânsito
-		// conta como cobertura.
-		double in_transit_to = 0.0;
-		for (const DemoShipment& shipment : demo_in_transit_) {
-			if (shipment.to_city == city.id && shipment.product == wheat) {
-				in_transit_to += shipment.amount;
+
+	// Posição alimentar de cada cidade em toneladas-equivalentes de grão:
+	// (estoque local + em trânsito) × fator calórico.
+	std::vector<double> food_ge(demo_cities_.size(), 0.0);
+	for (std::size_t i = 0; i < demo_cities_.size(); ++i) {
+		const DemoCity& city = demo_cities_[i];
+		double ge = 0.0;
+		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			const int product = demo_food_product(slot);
+			ge += city.markets[product].stock * demo_food_calories(product);
+		}
+		food_ge[i] = ge;
+	}
+	for (const DemoShipment& shipment : demo_in_transit_) {
+		for (std::size_t i = 0; i < demo_cities_.size(); ++i) {
+			if (shipment.to_city == demo_cities_[i].id) {
+				food_ge[i] += shipment.amount * demo_food_calories(shipment.product);
 			}
 		}
-		const double target = city.pop.need * demo_inventory_cover_days_;
-		const double gap = target - (city.markets[wheat].stock + in_transit_to);
+	}
+
+	// Excedente vendável por cidade: o vendedor exporta o que sobra ACIMA da
+	// própria necessidade de UM dia (não do buffer de cobertura). A fase 4 já
+	// consome a refeição do dia; exigir a cobertura de 3 dias inteiros trava a
+	// exportação — a produção visa exatamente `sold_prev × cover_days`, então o
+	// estoque estaciona na cobertura e nada fica vendável (nenhuma cidade
+	// exporta, e as deficitárias morrem de fome). Manter 1 dia preserva o buffer
+	// mínimo e deixa o excedente fluir para quem tem déficit.
+	std::vector<double> sellable_ge(demo_cities_.size(), 0.0);
+	for (std::size_t i = 0; i < demo_cities_.size(); ++i) {
+		sellable_ge[i] = std::max(0.0, food_ge[i] - demo_cities_[i].pop.need);
+	}
+
+	for (std::size_t i = 0; i < demo_cities_.size(); ++i) {
+		// Cobertura-alvo em dias (como o mercado legado usa kCoverDays): a cidade
+		// importa para manter um estoque de alguns dias, não só o déficit do dia.
+		const double target = demo_cities_[i].pop.need * demo_inventory_cover_days_;
+		const double gap = target - food_ge[i];
 		if (gap > 1e-9) {
-			buyers.push_back({&city, gap});
-		}
-		const double surplus =
-			city.markets[wheat].stock - city.pop.need * kDemoTradeBufferDays;
-		if (surplus > 1e-9) {
-			sellers.push_back(&city);
+			buyers.push_back({&demo_cities_[i], gap});
 		}
 	}
-	if (buyers.empty() || sellers.empty()) {
+	if (buyers.empty()) {
 		return;
 	}
 
 	// Compradores com menor déficit primeiro: o buffer de uma cidade pequena é
-	// minúsculo (ex.: Cayenne = 135 t) e barato de completar; na ordem descrescente
-	// a maior cidade monta o buffer de 3 dias e espreme as pequenas, que ficam
-	// sem nada. Ascendente garante que todos comam antes de alguém estocar.
+	// minúsculo e barato de completar; na ordem descendente a maior cidade monta
+	// o buffer e espreme as pequenas, que ficam sem nada. Ascendente garante que
+	// todos comam antes de alguém estocar.
 	std::stable_sort(buyers.begin(), buyers.end(),
 		[](const Buyer& left, const Buyer& right) { return left.gap < right.gap; });
 
 	std::size_t shipments = 0;
 	for (Buyer& buyer : buyers) {
-		double remaining = buyer.gap;
-		// Vendedores mais próximos primeiro.
-		std::stable_sort(sellers.begin(), sellers.end(),
-			[this, buyer](const DemoCity* left, const DemoCity* right) {
-				return distance_km(buyer.city->center, left->center)
-					< distance_km(buyer.city->center, right->center);
-			});
-		for (DemoCity* seller : sellers) {
-			if (remaining <= 1e-9 || shipments >= kDemoMaxShipmentsPerDay) {
-				break;
-			}
-			if (seller == buyer.city) {
+		double remaining = buyer.gap;  // toneladas-equivalentes de grão
+
+		// Ofertas: cada (vendedor, alimento) com excedente vendável, ordenadas
+		// pelo custo calórico entregue (preço + frete) / fator calórico.
+		struct Offer {
+			int seller_index;
+			int product;
+			double factor;
+			double price;
+			double unit_freight;
+			double unit_cost_per_ge;
+		};
+		std::vector<Offer> offers;
+		for (std::size_t si = 0; si < demo_cities_.size(); ++si) {
+			DemoCity& seller = demo_cities_[si];
+			if (&seller == buyer.city || sellable_ge[si] <= 1e-9) {
 				continue;
 			}
-			const double surplus = seller->markets[wheat].stock
-				- seller->pop.need * kDemoTradeBufferDays;
-			if (surplus <= 1e-9) {
-				continue;
-			}
-			const double price = seller->markets[wheat].price;
-			// Travessia entre massas de terra usa navio (5x mais barato por
-			// tonelada-km); dentro da mesma massa de terra, caminhão.
-			const bool same_landmass = seller->landmass == buyer.city->landmass;
+			const bool same_landmass = seller.landmass == buyer.city->landmass;
 			const double freight_rate = same_landmass
 				? kDemoFreightPerTonKm : kDemoFreightShipPerTonKm;
 			const double unit_freight =
-				distance_km(seller->center, buyer.city->center) * freight_rate;
+				distance_km(seller.center, buyer.city->center) * freight_rate;
+			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+				const int product = demo_food_product(slot);
+				const double factor = demo_food_calories(product);
+				if (factor <= 0.0) {
+					continue;
+				}
+				// Vendável deste produto, limitado pelo excedente total da cidade
+				// (acima da cobertura) e pelo estoque físico.
+				const double sellable_tons = std::min(
+					seller.markets[product].stock, sellable_ge[si] / factor);
+				if (sellable_tons <= 1e-9) {
+					continue;
+				}
+				const double price = seller.markets[product].price;
+				if (price <= 0.0) {
+					continue;
+				}
+				const double unit_cost_per_ge = (price + unit_freight) / factor;
+				offers.push_back({static_cast<int>(si), product, factor, price,
+					unit_freight, unit_cost_per_ge});
+			}
+		}
+		std::stable_sort(offers.begin(), offers.end(),
+			[](const Offer& left, const Offer& right) {
+				return left.unit_cost_per_ge < right.unit_cost_per_ge;
+			});
+
+		for (const Offer& offer : offers) {
+			if (remaining <= 1e-9 || shipments >= kDemoMaxShipmentsPerDay) {
+				break;
+			}
+			const int si = offer.seller_index;
+			DemoCity* seller = &demo_cities_[si];
+			const int product = offer.product;
+			const double factor = offer.factor;
+			const double price = offer.price;
+			const double unit_freight = offer.unit_freight;
 			const double unit_cost = price + unit_freight;
-			// Teto de carga diária da cidade (capacidade de transporte): o
-			// comprador não importa mais do que sua infraestrutura permite num dia.
-			const double capacity = buyer.city->population * kDemoTradeCapacityPerCapita;
-			const double room = std::max(0.0, capacity - buyer.city->imported[wheat]);
-			const double amount_wanted = std::min(remaining, std::min(surplus, room));
-			if (amount_wanted <= 1e-9) {
+			// Vendável recalculado (o excedente total cai a cada embarque).
+			const double sellable_tons = std::min(
+				seller->markets[product].stock, sellable_ge[si] / factor);
+			if (sellable_tons <= 1e-9) {
 				continue;
 			}
+
+			// Teto de carga diária (capacidade de transporte), em ton-equiv.
+			const double capacity_ge =
+				buyer.city->population * kDemoTradeCapacityPerCapita;
+			double imported_ge = 0.0;
+			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+				const int p = demo_food_product(slot);
+				imported_ge += buyer.city->imported[p] * demo_food_calories(p);
+			}
+			const double room_ge = std::max(0.0, capacity_ge - imported_ge);
+			const double amount_wanted_ge = std::min(
+				remaining, std::min(sellable_tons * factor, room_ge));
+			if (amount_wanted_ge <= 1e-9) {
+				continue;
+			}
+
 			// Segurança alimentar: o governo subsidia a parte da importação que a
 			// firma não consegue pagar (cidade sem produção/caixa). Conserva
 			// dinheiro — firma + governo pagam exatamente o custo (carga + frete).
 			const double firm_cash = std::max(0.0, buyer.city->firm_cash);
 			const double gov_budget = std::max(0.0, buyer.city->government_budget);
 			const double payable = firm_cash + gov_budget;
-			const double amount = unit_cost > 0.0
-				? std::min(amount_wanted, payable / unit_cost) : 0.0;
-			if (amount <= 1e-9) {
+			double amount_tons = amount_wanted_ge / factor;
+			if (amount_tons * unit_cost > payable) {
+				amount_tons = unit_cost > 0.0 ? payable / unit_cost : 0.0;
+			}
+			if (amount_tons <= 1e-9) {
 				continue;
 			}
-			const double total_cost = amount * unit_cost;
+			const double ge = std::min(amount_tons * factor, remaining);
+			amount_tons = ge / factor;
+
+			const double total_cost = amount_tons * unit_cost;
 			const double firm_share = std::min(total_cost, firm_cash);
 			const double gov_share = total_cost - firm_share;
-			const double cost = amount * price;
-			const double freight = unit_freight * amount;
+			const double cost = amount_tons * price;
+			const double freight = unit_freight * amount_tons;
 
 			buyer.city->firm_cash -= firm_share;
 			buyer.city->government_budget -= gov_share;
@@ -1272,18 +1313,20 @@ void EconomySim::demo_trade_wheat() {
 			buyer.city->service_cash += freight;
 			buyer.city->freight_revenue += freight;
 
-			seller->markets[wheat].stock -= amount;
-			seller->markets[wheat].desired += amount;
-			seller->markets[wheat].demand += amount;
-			seller->markets[wheat].sold += amount;
-			seller->revenue_by_product[wheat] += cost;
-			seller->exported[wheat] += amount;
-			seller->export_value[wheat] += cost;
+			seller->markets[product].stock -= amount_tons;
+			seller->markets[product].desired += amount_tons;
+			seller->markets[product].demand += amount_tons;
+			seller->markets[product].sold += amount_tons;
+			seller->revenue_by_product[product] += cost;
+			seller->exported[product] += amount_tons;
+			seller->export_value[product] += cost;
 
-			buyer.city->imported[wheat] += amount;
-			buyer.city->import_value[wheat] += cost;
+			buyer.city->imported[product] += amount_tons;
+			buyer.city->import_value[product] += cost;
 
-			demo_in_transit_.push_back({buyer.city->id, wheat, amount, day_ + 1});
+			demo_in_transit_.push_back({buyer.city->id, product, amount_tons, day_ + 1});
+
+			const bool same_landmass = seller->landmass == buyer.city->landmass;
 
 			// Pedido de comércio para os comboios 3D e o HUD. Na mesma massa de
 			// terra vai de caminhão em linha reta; entre massas, o navio entra
@@ -1295,13 +1338,13 @@ void EconomySim::demo_trade_wheat() {
 			order.from_nation = seller->nation;
 			order.to_nation = buyer.city->nation;
 			order.scope = MarketScope::International;
-			order.amount = amount;
+			order.amount = amount_tons;
 
 			double total_transit = 0.0;
 			double total_freight_cost = 0.0;
 			if (same_landmass) {
 				Leg leg = make_leg(TransportMode::Truck, seller->id, buyer.city->id,
-					seller->center, buyer.city->center, amount);
+					seller->center, buyer.city->center, amount_tons);
 				total_transit = leg.transit_hours;
 				total_freight_cost = leg.cost;
 				order.legs.push_back(std::move(leg));
@@ -1314,7 +1357,7 @@ void EconomySim::demo_trade_wheat() {
 					// Cidade -> porto do vendedor (caminhão).
 					if (distance_km(seller->center, seller_port->center) > 1.0) {
 						Leg leg = make_leg(TransportMode::Truck, seller->id,
-							seller_port->name, seller->center, seller_port->center, amount);
+							seller_port->name, seller->center, seller_port->center, amount_tons);
 						total_transit += leg.transit_hours;
 						total_freight_cost += leg.cost;
 						order.legs.push_back(std::move(leg));
@@ -1322,7 +1365,7 @@ void EconomySim::demo_trade_wheat() {
 					// Porto -> porto (navio).
 					{
 						Leg leg = make_leg(TransportMode::Ship, seller_port->name,
-							buyer_port->name, seller_port->center, buyer_port->center, amount);
+							buyer_port->name, seller_port->center, buyer_port->center, amount_tons);
 						total_transit += leg.transit_hours;
 						total_freight_cost += leg.cost;
 						order.legs.push_back(std::move(leg));
@@ -1330,7 +1373,7 @@ void EconomySim::demo_trade_wheat() {
 					// Porto do comprador -> cidade (caminhão).
 					if (distance_km(buyer_port->center, buyer.city->center) > 1.0) {
 						Leg leg = make_leg(TransportMode::Truck, buyer_port->name,
-							buyer.city->id, buyer_port->center, buyer.city->center, amount);
+							buyer.city->id, buyer_port->center, buyer.city->center, amount_tons);
 						total_transit += leg.transit_hours;
 						total_freight_cost += leg.cost;
 						order.legs.push_back(std::move(leg));
@@ -1338,7 +1381,7 @@ void EconomySim::demo_trade_wheat() {
 				} else {
 					// Sem porto na rota: navio direto entre cidades.
 					Leg leg = make_leg(TransportMode::Ship, seller->id, buyer.city->id,
-						seller->center, buyer.city->center, amount);
+						seller->center, buyer.city->center, amount_tons);
 					total_transit = leg.transit_hours;
 					total_freight_cost = leg.cost;
 					order.legs.push_back(std::move(leg));
@@ -1348,7 +1391,8 @@ void EconomySim::demo_trade_wheat() {
 			order.freight_cost = total_freight_cost;
 			demo_last_orders_.push_back(std::move(order));
 
-			remaining -= amount;
+			sellable_ge[si] -= ge;
+			remaining -= ge;
 			++shipments;
 		}
 	}
@@ -1643,9 +1687,9 @@ Dictionary EconomySim::tick_demo() {
 			input_market.stock -= input_used;
 			input_market.demand += input_used;
 			input_market.sold += input_used;
-			// A receita do setor fornecedor inclui a transferência interna (ex.:
-			// farinha do moinho consumida pela padaria), senão o valor adicionado
-			// do moinho ficaria negativo.
+			// A receita do setor fornecedor inclui a transferência interna entre
+			// construções (quando houver cadeia de refino), senão o valor
+			// adicionado do fornecedor ficaria negativo.
 			city->revenue_by_product[building.input_product] += input_used
 				* input_market.price;
 			building.input_value = input_used * input_market.price;
@@ -1667,51 +1711,9 @@ Dictionary EconomySim::tick_demo() {
 		demo_produced_today_[building.output_product] += output;
 	}
 
-	// 4b. Agria importa pão de Portus antes do consumo local: fecha a balança
-	// comercial e dá demanda à capacidade extra de panificação.
-	{
-		DemoCity* agria = find_demo_city("AGRIA");
-		DemoCity* portus = find_demo_city("PORTUS");
-		if (agria != nullptr && portus != nullptr) {
-			const double agria_need = agria->population * kDemoNeedPerCapita;
-			const double bread_gap = std::max(0.0,
-				agria_need - agria->markets[2].stock);
-			const double unit_freight = distance_km(agria->center, portus->center)
-				* kDemoFreightPerTonKm;
-			const double unit_cost = portus->markets[2].price + unit_freight;
-			const double affordable = unit_cost > 0.0
-				? std::max(0.0, agria->firm_cash) / unit_cost : 0.0;
-			const double amount = std::min({bread_gap,
-				portus->markets[2].stock * 0.8, affordable,
-				kDemoBreadExportTons});
-			if (amount > 0.0) {
-				const double price = portus->markets[2].price;
-				const double cost = amount * price;
-				const double freight = unit_freight * amount;
-
-				agria->firm_cash -= cost + freight;
-				portus->firm_cash += cost;
-				// O frete é um serviço doméstico prestado a Agria.
-				agria->service_cash += freight;
-				agria->freight_revenue += freight;
-				portus->markets[2].stock -= amount;
-				portus->markets[2].desired += amount;
-				portus->markets[2].demand += amount;
-				portus->markets[2].sold += amount;
-				portus->revenue_by_product[2] += cost;
-				// Portus exporta pão; Agria importa.
-				portus->exported[2] += amount;
-				portus->export_value[2] += cost;
-				agria->imported[2] += amount;
-				agria->import_value[2] += cost;
-				demo_in_transit_.push_back({agria->id, 2, amount, day_ + 1});
-			}
-		}
-	}
-
 	// 4c. Demanda externa de ferro: o comprador externo absorve o estoque.
 	for (DemoCity& city : demo_cities_) {
-		DemoMarket& iron = city.markets[3];
+		DemoMarket& iron = city.markets[kDemoIronProduct];
 		iron.desired += kDemoIronExportDemand;
 		const double sold = std::min(iron.stock, kDemoIronExportDemand);
 		if (sold <= 0.0) {
@@ -1722,39 +1724,39 @@ Dictionary EconomySim::tick_demo() {
 		iron.demand += sold;
 		iron.sold += sold;
 		city.firm_cash += revenue;
-		city.revenue_by_product[3] += revenue;
-		city.exported[3] += sold;
-		city.export_value[3] += revenue;
+		city.revenue_by_product[kDemoIronProduct] += revenue;
+		city.exported[kDemoIronProduct] += sold;
+		city.export_value[kDemoIronProduct] += revenue;
 		demo_foreign_cash_ -= revenue;
-		demo_consumed_total_[3] += sold;
-		demo_consumed_today_[3] += sold;
+		demo_consumed_total_[kDemoIronProduct] += sold;
+		demo_consumed_today_[kDemoIronProduct] += sold;
 	}
 
-	// 4d. Recursos brutos (arroz, milho e minerais): sem consumo local nem
-	// cadeia de refino nesta etapa. O resto do mundo compra, ao preço do
-	// mercado, tudo o que as minas/lavouras da cidade conseguem produzir no dia
-	// (capacidade efetiva = capacidade × escala × aptidão × eficiência), e o
-	// estoque residual de uma mina fechada. A extração fica limitada pela
-	// reserva (fase 4), então o esgotamento da jazida encerra a receita.
+	// 4d. Recursos brutos (minerais, soja, algodão e madeira): sem consumo local
+	// nem cadeia de refino nesta etapa. O resto do mundo compra ao preço do
+	// mercado até um TETO de demanda externa por cidade (external_demand),
+	// declarado pelo GeographyService como a participação da nação no mercado
+	// mundial (reserva esgotada em ~25 anos — o mesmo horizonte de
+	// max_rate_kt_day do deposits.json). Com o teto, a produção acima dele vira
+	// estoque e a fase 8 derruba o preço (escassez < 1) — é a "curva" de demanda
+	// limitada, que evita sobra absurda e não inventa consumo infinito. A
+	// extração continua limitada pela reserva (fase 4), então o esgotamento da
+	// jazida encerra a receita. Os alimentos da cesta (B3: trigo, arroz, milho e
+	// batata) ficam FORA desta venda externa — são consumidos pelas famílias
+	// (fase 5) e negociados entre cidades (fase 6); vendê-los aqui deixava as
+	// cidades produtoras de arroz/milho sem nada para comer.
 	for (DemoCity& city : demo_cities_) {
 		for (int product = kDemoFirstRawProduct; product < kDemoProducts; ++product) {
-			double local_capacity = 0.0;
-			for (const DemoBuilding& building : demo_buildings_) {
-				if (building.city == city.id && building.input_product < 0
-						&& building.output_product == product) {
-					local_capacity += building.capacity * building.output_scale;
-				}
-			}
-			DemoMarket& market = city.markets[product];
-			const double effective = local_capacity
-				* std::clamp(city.suitability[product], 0.0, 1.0)
-				* demo_extraction_efficiency(city.deposits[product]);
-			const double demand = effective > 0.0 ? effective : market.stock;
-			if (demand <= 0.0) {
+			if (demo_food_calories(product) > 0.0) {
 				continue;
 			}
-			market.desired += demand;
-			const double sold = std::min(market.stock, demand);
+			const double ceiling = city.external_demand[product];
+			if (ceiling <= 0.0) {
+				continue;  // sem demanda externa declarada (sem depósito/aptidão)
+			}
+			DemoMarket& market = city.markets[product];
+			market.desired += ceiling;
+			const double sold = std::min(market.stock, ceiling);
 			if (sold <= 0.0) {
 				continue;
 			}
@@ -1788,17 +1790,24 @@ Dictionary EconomySim::tick_demo() {
 		city.government_budget += pop.taxes - pop.transfers;
 
 		double budget = pop.savings + pop.disposable - pop.service_spend;
+		// Necessidade alimentar em toneladas-equivalentes de grão (B3).
 		pop.need = pop.population * kDemoNeedPerCapita;
 		// Subsídio de subsistência: o governo garante a cesta alimentar mínima
 		// quando o orçamento de comida não cobre (ex.: cidade sem produção nem
-		// renda própria). Sai do orçamento público — conserva o dinheiro. Se as
-		// reservas públicas esgotarem, o subsídio cessa (a redistribuição fiscal
-		// nacional, que o tornaria sustentável, fica para o 1.8).
+		// renda própria). A cesta usa o alimento mais barato por caloria
+		// (preço / fator calórico); com os preços-base, o trigo segue o mais
+		// barato. Sai do orçamento público — conserva o dinheiro.
 		double cheapest_food = 0.0;
-		for (int product = 0; product < kDemoFoodProducts; ++product) {
-			const double price = city.markets[product].price;
-			if (price > 0.0 && (cheapest_food <= 0.0 || price < cheapest_food)) {
-				cheapest_food = price;
+		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			const int product = demo_food_product(slot);
+			const double factor = demo_food_calories(product);
+			if (factor <= 0.0) {
+				continue;
+			}
+			const double per_calorie = city.markets[product].price / factor;
+			if (per_calorie > 0.0
+					&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
+				cheapest_food = per_calorie;
 			}
 		}
 		const double food_cost = pop.need * cheapest_food;
@@ -1811,41 +1820,66 @@ Dictionary EconomySim::tick_demo() {
 				pop.transfers += topup;
 			}
 		}
-		double consumed = 0.0;
+
+		// Consumo (B3): primeiro o estoque local, proporcional à disponibilidade
+		// (toneladas-equivalentes de grão); o que faltar é comprado na fase 6
+		// (comércio), sempre pelo alimento mais barato por caloria. A demanda
+		// desejada é registrada mesmo sem estoque (sinal de escassez para a IA e
+		// para os preços); a compra realizada é limitada por estoque e orçamento.
+		double consumed = 0.0;      // toneladas-equivalentes de grão
 		double food_spend = 0.0;
-		// Preferência: pão, farinha, trigo. A demanda desejada é registrada
-		// mesmo quando não há estoque; a compra realizada é o que cabe no
-		// estoque e no orçamento.
-		const int preference[3] = {2, 1, 0};
-		for (int slot = 0; slot < 3 && consumed < pop.need; ++slot) {
-			const int product = preference[slot];
+		double total_avail = 0.0;
+		double avail_ge[kDemoFoodProducts] = {};
+		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			const int product = demo_food_product(slot);
+			avail_ge[slot] = city.markets[product].stock * demo_food_calories(product);
+			total_avail += avail_ge[slot];
+		}
+		double remaining_need = pop.need;
+		for (int slot = 0; slot < kDemoFoodProducts && remaining_need > 1e-12; ++slot) {
+			const int product = demo_food_product(slot);
+			const double factor = demo_food_calories(product);
+			if (factor <= 0.0) {
+				continue;
+			}
 			DemoMarket& market = city.markets[product];
 			const double price = market.price;
 			if (price <= 0.0) {
 				continue;
 			}
-			const double desired_quantity = std::min(
-				pop.need - consumed, std::max(0.0, budget) / price);
-			if (desired_quantity <= 0.0) {
+			// Desejo proporcional à disponibilidade; sem estoque nenhum, todo o
+			// desejo recai sobre o primeiro alimento da cesta (trigo — o mais
+			// barato por caloria na base), para manter o sinal de escassez.
+			double want_ge = total_avail > 0.0
+				? pop.need * (avail_ge[slot] / total_avail)
+				: (slot == 0 ? pop.need : 0.0);
+			want_ge = std::min(want_ge, remaining_need);
+			double desired_tons = want_ge / factor;
+			if (desired_tons * price > budget) {
+				desired_tons = std::max(0.0, budget) / price;
+			}
+			if (desired_tons <= 1e-12) {
 				continue;
 			}
-			market.desired += desired_quantity;
-			pop.desired_by_category[product] += desired_quantity;
-			const double quantity = std::min(desired_quantity, market.stock);
+			market.desired += desired_tons;
+			pop.desired_by_category[slot] += desired_tons;
+			const double quantity = std::min(desired_tons, market.stock);
 			if (quantity <= 0.0) {
 				continue;
 			}
+			const double paid = quantity * price;
 			market.stock -= quantity;
 			market.demand += quantity;
 			market.sold += quantity;
-			budget -= quantity * price;
-			food_spend += quantity * price;
-			consumed += quantity;
-			pop.consumed_by_category[product] += quantity;
-			city.revenue_by_product[product] += quantity * price;
-			city.firm_cash += quantity * price;
+			budget -= paid;
+			food_spend += paid;
+			consumed += quantity * factor;
+			pop.consumed_by_category[slot] += quantity;
+			city.revenue_by_product[product] += paid;
+			city.firm_cash += paid;
 			demo_consumed_total_[product] += quantity;
 			demo_consumed_today_[product] += quantity;
+			remaining_need -= quantity * factor;
 		}
 		pop.consumed = consumed;
 		pop.food_spend = food_spend;
@@ -1854,79 +1888,10 @@ Dictionary EconomySim::tick_demo() {
 		pop.savings = budget;
 	}
 
-	// 6. Comércio: o moinho de Portus compra trigo de Agria para o dia seguinte.
-	{
-		DemoCity* agria = find_demo_city("AGRIA");
-		DemoCity* portus = find_demo_city("PORTUS");
-		if (agria != nullptr && portus != nullptr) {
-			// O moinho repõe o trigo necessário para a produção de farinha,
-			// mirando um estoque de alguns dias em vez de comprar 10% acima
-			// das vendas para sempre (o que acumulava trigo sem limite).
-			const double flour_sold = portus->markets[1].sold;
-			const double mill_daily = (flour_sold > 0.0 ? flour_sold : 50.0) * 1.2;
-			const double wheat_target = mill_daily * demo_inventory_cover_days_;
-			const double missing = wheat_target - portus->markets[0].stock;
-			if (missing > 0.0 && agria->markets[0].stock > 0.0) {
-				const double price = agria->markets[0].price;
-				const double unit_freight = distance_km(agria->center, portus->center)
-					* kDemoFreightPerTonKm;
-				const double unit_cost = price + unit_freight;
-				// O comprador não pode gastar mais do que o caixa disponível:
-				// sem este limite o comércio deficitário levava o caixa a
-				// negativo e a economia seguia comprando a crédito infinito.
-				const double affordable = unit_cost > 0.0
-					? std::max(0.0, portus->firm_cash) / unit_cost : 0.0;
-				const double amount = std::min({missing,
-					agria->markets[0].stock, affordable});
-				if (amount > 0.0) {
-					const double cost = amount * price;
-					const double freight = unit_freight * amount;
-
-					portus->firm_cash -= cost + freight;
-					agria->firm_cash += cost;
-					// O frete é um serviço doméstico prestado a Portus.
-					portus->service_cash += freight;
-					portus->freight_revenue += freight;
-					agria->markets[0].stock -= amount;
-					agria->markets[0].desired += amount;
-					agria->markets[0].demand += amount;
-					agria->markets[0].sold += amount;
-					agria->revenue_by_product[0] += cost;
-					agria->exported[0] += amount;
-					agria->export_value[0] += cost;
-					portus->imported[0] += amount;
-					portus->import_value[0] += cost;
-					// Preço de Portus é a média ponderada entre estoque local e
-					// custo posto (importação), em vez de sobrescrever o local.
-					const double imported_unit = (cost + freight) / amount;
-					const double local_stock = portus->markets[0].stock;
-					const double total = local_stock + amount;
-					const double previous_price = portus->markets[0].price;
-					const double blended = total > 0.0
-						? (local_stock * previous_price
-							+ amount * imported_unit) / total
-						: imported_unit;
-					// O limite diário de 5% também vale para o preço posto
-					// pela importação; o clamp final do tick repete a regra.
-					const double wheat_base = demo_base_price(0);
-					const double wheat_step = wheat_base * 0.05;
-					const double smoothed = std::clamp(blended,
-						previous_price - wheat_step, previous_price + wheat_step);
-					portus->markets[0].price = std::clamp(smoothed,
-						wheat_base * 0.5, wheat_base * 3.0);
-					demo_in_transit_.push_back(
-						{portus->id, 0, amount, day_ + 1});
-				}
-			}
-		}
-	}
-
-	// 6b. Comércio genérico de trigo entre as cidades do mundo real. No cenário
-	// de validação (AGRIA/PORTUS) o bloco 6 acima já resolve o trigo; aqui a
-	// regra genérica cobre qualquer número de cidades.
-	if (demo_world_mode_) {
-		demo_trade_wheat();
-	}
+	// 6. Comércio de alimento (cesta de calorias) entre cidades: cidades com
+	// déficit compram das que têm excedente, mais barato por caloria. Cobre tanto
+	// o cenário de validação (AGRIA/PORTUS) quanto o mundo real.
+	demo_trade_food();
 
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	for (DemoCity& city : demo_cities_) {
@@ -2025,10 +1990,16 @@ Dictionary EconomySim::tick_demo() {
 		// sustenta nem o salário de subsistência, sobra desemprego de verdade —
 		// não um piso artificial de 5% de vagas.
 		double cheapest_food = 0.0;
-		for (int product = 0; product < kDemoFoodProducts; ++product) {
-			const double price = city.markets[product].price;
-			if (price > 0.0 && (cheapest_food <= 0.0 || price < cheapest_food)) {
-				cheapest_food = price;
+		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			const int product = demo_food_product(slot);
+			const double factor = demo_food_calories(product);
+			if (factor <= 0.0) {
+				continue;
+			}
+			const double per_calorie = city.markets[product].price / factor;
+			if (per_calorie > 0.0
+					&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
+				cheapest_food = per_calorie;
 			}
 		}
 		const double subsistence_wage = kDemoNeedPerCapita * cheapest_food;
@@ -2195,10 +2166,16 @@ Dictionary EconomySim::demo_city_to_dict(const DemoCity& city) const {
 	// Padrão de vida: quantas cestas alimentares diárias a renda disponível
 	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
 	double cheapest_price = 0.0;
-	for (int product = 0; product < kDemoFoodProducts; ++product) {
-		const double price = city.markets[product].price;
-		if (price > 0.0 && (cheapest_price <= 0.0 || price < cheapest_price)) {
-			cheapest_price = price;
+	for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		const int product = demo_food_product(slot);
+		const double factor = demo_food_calories(product);
+		if (factor <= 0.0) {
+			continue;
+		}
+		const double per_calorie = city.markets[product].price / factor;
+		if (per_calorie > 0.0
+				&& (cheapest_price <= 0.0 || per_calorie < cheapest_price)) {
+			cheapest_price = per_calorie;
 		}
 	}
 	const double basket_cost = kDemoNeedPerCapita * cheapest_price;
@@ -2245,6 +2222,12 @@ Dictionary EconomySim::demo_city_to_dict(const DemoCity& city) const {
 		suitability.append(city.suitability[product]);
 	}
 	dict["suitability"] = suitability;
+
+	Array external_demand;
+	for (int product = 0; product < kDemoProducts; ++product) {
+		external_demand.append(city.external_demand[product]);
+	}
+	dict["external_demand"] = external_demand;
 
 	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
 	// da chave = sem dado, não "zero").
@@ -2500,6 +2483,19 @@ int EconomySim::demo_product_index(const String& product) {
 	return -1;
 }
 
+int EconomySim::demo_food_product(int slot) {
+	return (slot >= 0 && slot < kDemoFoodProducts) ? kDemoFoodProductIds[slot] : -1;
+}
+
+double EconomySim::demo_food_calories(int product) {
+	for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		if (kDemoFoodProductIds[slot] == product) {
+			return kDemoCaloricFactor[slot];
+		}
+	}
+	return 0.0;
+}
+
 const char* EconomySim::demo_product_name(int product) {
 	if (product >= 0 && product < kDemoProducts) {
 		return kDemoProductNames[product];
@@ -2568,6 +2564,19 @@ bool EconomySim::demo_set_deposit(const String& city_id, const String& product,
 	deposit.remaining_kt = deposit.initial_kt;
 	deposit.extracted_kt = 0.0;
 	return true;
+}
+
+void EconomySim::demo_set_external_demand(const String& city_id, const String& product,
+		double ceiling_t_per_day) {
+	const int index = demo_product_index(product);
+	if (index < 0) {
+		return;
+	}
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	city->external_demand[index] = safe_nonneg(ceiling_t_per_day);
 }
 
 Dictionary EconomySim::demo_invest(const String& city_id, const String& building_id,
@@ -2776,6 +2785,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		Array exported;
 		Array import_value;
 		Array export_value;
+		Array external_demand;
 		for (int product = 0; product < kDemoProducts; ++product) {
 			suitability.append(city.suitability[product]);
 			revenue.append(city.revenue_by_product[product]);
@@ -2783,6 +2793,7 @@ Dictionary EconomySim::demo_to_dict() const {
 			exported.append(city.exported[product]);
 			import_value.append(city.import_value[product]);
 			export_value.append(city.export_value[product]);
+			external_demand.append(city.external_demand[product]);
 		}
 		entry["suitability"] = suitability;
 		entry["revenue_by_product"] = revenue;
@@ -2790,6 +2801,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["exported"] = exported;
 		entry["import_value"] = import_value;
 		entry["export_value"] = export_value;
+		entry["external_demand"] = external_demand;
 
 		// Reservas minerais (só jazidas declaradas): o saldo restante persiste.
 		Dictionary deposits;
@@ -2951,9 +2963,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		Array exported = entry.get("exported", Array());
 		Array import_value = entry.get("import_value", Array());
 		Array export_value = entry.get("export_value", Array());
+		Array external_demand = entry.get("external_demand", Array());
 		for (int product = 0; product < kDemoProducts; ++product) {
 			city.suitability[product] = product < suitability.size()
-				? double(suitability[product]) : (product >= 3 ? 0.0 : 1.0);
+				? double(suitability[product]) : (product >= 1 ? 0.0 : 1.0);
 			city.revenue_by_product[product] = product < revenue.size()
 				? double(revenue[product]) : 0.0;
 			city.imported[product] = product < imported.size()
@@ -2964,6 +2977,8 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 				? double(import_value[product]) : 0.0;
 			city.export_value[product] = product < export_value.size()
 				? double(export_value[product]) : 0.0;
+			city.external_demand[product] = product < external_demand.size()
+				? double(external_demand[product]) : 0.0;
 		}
 
 		Dictionary saved_deposits = entry.get("deposits", Dictionary());
@@ -3143,39 +3158,17 @@ void EconomySim::initialize_benchmark(int city_count, int buildings_per_city,
 		BenchMarket& wheat = bench_markets_[bench_market(city, 0)];
 		wheat.stock = 100.0;
 		wheat.price = demo_base_price(0);
-		BenchMarket& flour = bench_markets_[bench_market(city, 1)];
-		flour.stock = 0.0;
-		flour.price = demo_base_price(1);
-		BenchMarket& bread = bench_markets_[bench_market(city, 2)];
-		bread.stock = 50.0;
-		bread.price = demo_base_price(2);
 
 		for (int slot = 0; slot < bench_buildings_per_city_; ++slot) {
 			BenchBuilding building;
 			building.city = city;
-			building.output = slot < 3 ? slot : (slot - 3) % kBenchProducts;
-			if (building.output == 0) {
-				building.input = -1;
-				building.capacity = 20.0;
-				building.input_per_output = 0.0;
-				building.jobs = 150.0;
-				building.wage = 2.0;
-				building.opex = 50.0;
-			} else if (building.output == 1) {
-				building.input = 0;
-				building.capacity = 50.0;
-				building.input_per_output = 1.2;
-				building.jobs = 200.0;
-				building.wage = 2.0;
-				building.opex = 200.0;
-			} else {
-				building.input = 1;
-				building.capacity = 15.0;
-				building.input_per_output = 0.83;
-				building.jobs = 100.0;
-				building.wage = 1.5;
-				building.opex = 100.0;
-			}
+			building.output = 0;
+			building.input = -1;
+			building.capacity = 20.0;
+			building.input_per_output = 0.0;
+			building.jobs = 150.0;
+			building.wage = 2.0;
+			building.opex = 50.0;
 			building.output_market = bench_market(city, building.output);
 			building.input_market = building.input >= 0
 				? bench_market(city, building.input) : -1;
@@ -3326,7 +3319,7 @@ void EconomySim::benchmark_production() {
 }
 
 void EconomySim::benchmark_consumption() {
-	const int preference[3] = {2, 1, 0};
+	const int preference[1] = {0};
 	for (int city = 0; city < bench_cities_count_; ++city) {
 		BenchCity& entry = bench_cities_[city];
 		entry.capital_income = entry.capital_income_next;
@@ -3344,7 +3337,7 @@ void EconomySim::benchmark_consumption() {
 		entry.need = entry.population * kDemoNeedPerCapita;
 		double consumed = 0.0;
 		double food_spend = 0.0;
-		for (int slot = 0; slot < 3 && consumed < entry.need; ++slot) {
+		for (int slot = 0; slot < kBenchProducts && consumed < entry.need; ++slot) {
 			const int product = preference[slot];
 			BenchMarket& market = bench_markets_[bench_market(city, product)];
 			const double price = market.price;
@@ -3484,13 +3477,7 @@ void EconomySim::benchmark_prices() {
 			const double unit_labor_opex = kind_capacity > 0.0
 				? bench_unit_labor_opex_[market_index] / kind_capacity : 0.0;
 			double cost_floor = base;
-			if (product == 1) {
-				cost_floor = bench_markets_[bench_market(city, 0)].price * 1.2
-					+ unit_labor_opex;
-			} else if (product == 2) {
-				cost_floor = bench_markets_[bench_market(city, 1)].price * 0.83
-					+ unit_labor_opex;
-			}
+			// (sem cadeia de refino: trigo é extração primária)
 			const double target = std::max(
 				base * (1.0 + std::clamp(scarcity - 1.0, -0.5, 2.0)),
 				cost_floor * 1.05);
@@ -3661,8 +3648,6 @@ Dictionary EconomySim::get_benchmark_status() const {
 
 	Array products;
 	products.append("wheat");
-	products.append("flour");
-	products.append("bread");
 	status["products"] = products;
 
 	if (bench_cities_count_ > 0) {

@@ -1,0 +1,554 @@
+{
+  "global_reserves_kt": {
+    "coal": 163097678.7,
+    "copper": 6721122.4,
+    "gas": 14706978.0,
+    "iron": 63795815.0,
+    "oil": 34599939.1,
+    "bauxite": 15525969.4,
+    "lead": 5185559.8,
+    "gold": 636.9,
+    "phosphate": 24374847.9,
+    "tungsten": 181690.9,
+    "rare_earths": 123752.9,
+    "sulfur": 1752316.1,
+    "diamond": 36.4,
+    "uranium": 141344.9
+  },
+  "top_producers": {
+    "coal": [
+      {
+        "code": "CHN",
+        "kt": 65680636.7
+      },
+      {
+        "code": "IDN",
+        "kt": 25840000.0
+      },
+      {
+        "code": "IND",
+        "kt": 21930000.0
+      },
+      {
+        "code": "RUS",
+        "kt": 8000000.0
+      },
+      {
+        "code": "KAZ",
+        "kt": 8000000.0
+      }
+    ],
+    "copper": [
+      {
+        "code": "USA",
+        "kt": 2531259.3
+      },
+      {
+        "code": "ARG",
+        "kt": 471097.3
+      },
+      {
+        "code": "CAN",
+        "kt": 425778.4
+      },
+      {
+        "code": "BOL",
+        "kt": 238401.2
+      },
+      {
+        "code": "MEX",
+        "kt": 236620.4
+      }
+    ],
+    "gas": [
+      {
+        "code": "RUS",
+        "kt": 4574811.6
+      },
+      {
+        "code": "IRN",
+        "kt": 2700000.0
+      },
+      {
+        "code": "AUS",
+        "kt": 1750000.0
+      },
+      {
+        "code": "KWT",
+        "kt": 1500000.0
+      },
+      {
+        "code": "NOR",
+        "kt": 800000.0
+      }
+    ],
+    "iron": [
+      {
+        "code": "USA",
+        "kt": 31940184.4
+      },
+      {
+        "code": "CHN",
+        "kt": 3757200.7
+      },
+      {
+        "code": "RUS",
+        "kt": 2740805.0
+      },
+      {
+        "code": "BRA",
+        "kt": 2152564.5
+      },
+      {
+        "code": "IND",
+        "kt": 1821334.1
+      }
+    ],
+    "oil": [
+      {
+        "code": "BRA",
+        "kt": 4550000.0
+      },
+      {
+        "code": "SAU",
+        "kt": 4100000.0
+      },
+      {
+        "code": "USA",
+        "kt": 3245228.3
+      },
+      {
+        "code": "RUS",
+        "kt": 2700000.0
+      },
+      {
+        "code": "SUR",
+        "kt": 2600000.0
+      }
+    ],
+    "bauxite": [
+      {
+        "code": "USA",
+        "kt": 5307544.2
+      },
+      {
+        "code": "IND",
+        "kt": 902180.6
+      },
+      {
+        "code": "CHN",
+        "kt": 745317.7
+      },
+      {
+        "code": "RUS",
+        "kt": 715460.2
+      },
+      {
+        "code": "BRA",
+        "kt": 620684.2
+      }
+    ],
+    "lead": [
+      {
+        "code": "USA",
+        "kt": 2902719.9
+      },
+      {
+        "code": "MEX",
+        "kt": 276374.6
+      },
+      {
+        "code": "BOL",
+        "kt": 178376.4
+      },
+      {
+        "code": "PER",
+        "kt": 150084.2
+      },
+      {
+        "code": "ARG",
+        "kt": 119754.1
+      }
+    ],
+    "gold": [
+      {
+        "code": "USA",
+        "kt": 416.2
+      },
+      {
+        "code": "ARG",
+        "kt": 19.8
+      },
+      {
+        "code": "CAN",
+        "kt": 19.0
+      },
+      {
+        "code": "RUS",
+        "kt": 18.6
+      },
+      {
+        "code": "MEX",
+        "kt": 18.0
+      }
+    ],
+    "phosphate": [
+      {
+        "code": "USA",
+        "kt": 6019576.5
+      },
+      {
+        "code": "CHN",
+        "kt": 2342628.9
+      },
+      {
+        "code": "BRA",
+        "kt": 1181710.1
+      },
+      {
+        "code": "RUS",
+        "kt": 1177248.1
+      },
+      {
+        "code": "MEX",
+        "kt": 916634.2
+      }
+    ],
+    "tungsten": [
+      {
+        "code": "USA",
+        "kt": 94027.5
+      },
+      {
+        "code": "MEX",
+        "kt": 9776.6
+      },
+      {
+        "code": "BOL",
+        "kt": 7814.4
+      },
+      {
+        "code": "ARG",
+        "kt": 6506.5
+      },
+      {
+        "code": "BRA",
+        "kt": 6231.7
+      }
+    ],
+    "rare_earths": [
+      {
+        "code": "CHN",
+        "kt": 64502.6
+      },
+      {
+        "code": "USA",
+        "kt": 26832.6
+      },
+      {
+        "code": "AUS",
+        "kt": 22140.3
+      },
+      {
+        "code": "IND",
+        "kt": 1800.1
+      },
+      {
+        "code": "BRA",
+        "kt": 1238.9
+      }
+    ],
+    "sulfur": [
+      {
+        "code": "USA",
+        "kt": 1128943.7
+      },
+      {
+        "code": "MEX",
+        "kt": 112943.0
+      },
+      {
+        "code": "ARG",
+        "kt": 74074.6
+      },
+      {
+        "code": "IRQ",
+        "kt": 36842.8
+      },
+      {
+        "code": "ESP",
+        "kt": 34390.0
+      }
+    ],
+    "diamond": [
+      {
+        "code": "BWA",
+        "kt": 7.0
+      },
+      {
+        "code": "CAN",
+        "kt": 6.0
+      },
+      {
+        "code": "ZAF",
+        "kt": 5.5
+      },
+      {
+        "code": "AGO",
+        "kt": 4.8
+      },
+      {
+        "code": "NAM",
+        "kt": 3.2
+      }
+    ],
+    "uranium": [
+      {
+        "code": "USA",
+        "kt": 118754.1
+      },
+      {
+        "code": "AUS",
+        "kt": 5108.2
+      },
+      {
+        "code": "MEX",
+        "kt": 2740.1
+      },
+      {
+        "code": "CAN",
+        "kt": 2289.4
+      },
+      {
+        "code": "BRA",
+        "kt": 2076.7
+      }
+    ]
+  },
+  "baseline_regression": [
+    {
+      "nation": "BRA",
+      "crop": "soy",
+      "expected_min": 0.762,
+      "actual": 0.762,
+      "status": "ok"
+    },
+    {
+      "nation": "BRA",
+      "crop": "cotton",
+      "expected_min": 0.731,
+      "actual": 0.731,
+      "status": "ok"
+    },
+    {
+      "nation": "BRA",
+      "crop": "maize",
+      "expected_min": 0.746,
+      "actual": 0.746,
+      "status": "ok"
+    },
+    {
+      "nation": "USA",
+      "crop": "maize",
+      "expected_min": 0.96,
+      "actual": 0.989,
+      "status": "ok"
+    },
+    {
+      "nation": "USA",
+      "crop": "soy",
+      "expected_min": 0.96,
+      "actual": 0.987,
+      "status": "ok"
+    },
+    {
+      "nation": "ARG",
+      "crop": "soy",
+      "expected_min": 0.986,
+      "actual": 0.986,
+      "status": "ok"
+    },
+    {
+      "nation": "ARG",
+      "crop": "maize",
+      "expected_min": 0.988,
+      "actual": 0.988,
+      "status": "ok"
+    },
+    {
+      "nation": "IND",
+      "crop": "wheat",
+      "expected_min": 0.78,
+      "actual": 0.808,
+      "status": "ok"
+    },
+    {
+      "nation": "CHN",
+      "crop": "wheat",
+      "expected_min": 0.97,
+      "actual": 0.973,
+      "status": "ok"
+    },
+    {
+      "nation": "CHN",
+      "crop": "soy",
+      "expected_min": 0.906,
+      "actual": 0.906,
+      "status": "ok"
+    },
+    {
+      "nation": "RUS",
+      "crop": "wheat",
+      "expected_min": 0.998,
+      "actual": 0.998,
+      "status": "ok"
+    },
+    {
+      "nation": "RUS",
+      "crop": "maize",
+      "expected_min": 0.998,
+      "actual": 0.998,
+      "status": "ok"
+    },
+    {
+      "nation": "UKR",
+      "crop": "wheat",
+      "expected_min": 0.901,
+      "actual": 0.901,
+      "status": "ok"
+    },
+    {
+      "nation": "UKR",
+      "crop": "maize",
+      "expected_min": 0.834,
+      "actual": 0.834,
+      "status": "ok"
+    }
+  ],
+  "data_quality_deposits": {
+    "real_location_estimated_attributes": 5656,
+    "curated": 37,
+    "estimated_offshore_assignment": 34,
+    "estimated_public_source": 3
+  },
+  "data_quality_nature": {
+    "real_climate": 702,
+    "test": 35
+  },
+  "key_regions": {
+    "OPEP petróleo/gás": {
+      "SAU": {
+        "oil": 4100000.0,
+        "gas": 0.0
+      },
+      "IRQ": {
+        "oil": 2000000.0,
+        "gas": 0.0
+      },
+      "IRN": {
+        "oil": 1700000.0,
+        "gas": 2700000.0
+      },
+      "ARE": {
+        "oil": 600000.0,
+        "gas": 300000.0
+      },
+      "KWT": {
+        "oil": 2100000.0,
+        "gas": 1500000.0
+      },
+      "QAT": {
+        "oil": 0.0,
+        "gas": 0.0
+      },
+      "DZA": {
+        "oil": 400000.0,
+        "gas": 650000.0
+      },
+      "LBY": {
+        "oil": 300000.0,
+        "gas": 0.0
+      },
+      "NGA": {
+        "oil": 700000.0,
+        "gas": 0.0
+      },
+      "VEN": {
+        "oil": 1586215.3,
+        "gas": 0.0
+      }
+    },
+    "China terras raras/tungstênio": {
+      "CHN": {
+        "rare_earths": 64502.6,
+        "tungsten": 5048.1
+      }
+    },
+    "Brasil/Argentina/EUA agro": {
+      "BRA": {
+        "soy": 0.762,
+        "maize": 0.746,
+        "wheat": 0.425
+      },
+      "ARG": {
+        "soy": 0.986,
+        "maize": 0.988,
+        "wheat": 0.875
+      },
+      "USA": {
+        "soy": 0.987,
+        "maize": 0.989,
+        "wheat": 0.909
+      }
+    },
+    "Austrália/Chile/Peru cobre/ouro/ferro": {
+      "AUS": {
+        "copper": 201904.5,
+        "gold": 11.4,
+        "iron": 1117288.2
+      },
+      "CHL": {
+        "copper": 51000.0,
+        "gold": 0.0,
+        "iron": 0.0
+      },
+      "PER": {
+        "copper": 201735.7,
+        "gold": 4.5,
+        "iron": 399990.1
+      }
+    },
+    "África do Sul/Botsuana diamante": {
+      "ZAF": {
+        "diamond": 5.5
+      },
+      "BWA": {
+        "diamond": 7.0
+      }
+    },
+    "Cazaquistão/Canadá/Austrália urânio": {
+      "KAZ": {
+        "uranium": 200.0
+      },
+      "CAN": {
+        "uranium": 2289.4
+      },
+      "AUS": {
+        "uranium": 5108.2
+      }
+    },
+    "Marrocos fosfato": {
+      "MAR": {
+        "phosphate": 637697.7
+      }
+    },
+    "Guiné/Austrália bauxita": {
+      "GIN": {
+        "bauxite": 169266.7
+      },
+      "AUS": {
+        "bauxite": 450038.4
+      }
+    }
+  }
+}

@@ -58,8 +58,31 @@ BUILDING_FIELDS_CSV = ["city_id", "building_id", "name", "output_tons_per_day"]
 BUILDING_FIELDS_JSON = ["city_id", "id", "name", "output_tons_per_day"]
 NATION_FIELDS = ["id", "name", "flag"]
 GOODS_FIELDS = ["id", "name", "base_price", "food"]
-# Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp).
-GOODS_ALLOWED_IDS = ("bread", "flour", "iron", "wheat")
+# Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp), na
+# mesma ordem de data/definitions/economy/goods.json.
+GOODS_ALLOWED_IDS = (
+    "wheat",
+    "iron",
+    "rice",
+    "maize",
+    "bauxite",
+    "lead",
+    "gold",
+    "phosphate",
+    "tungsten",
+    "rare_earths",
+    "sulfur",
+    "diamond",
+    "coal",
+    "copper",
+    "gas",
+    "oil",
+    "potato",
+    "soy",
+    "cotton",
+    "wood",
+    "uranium",
+)
 I18N_HEADER = ["key", "pt_BR", "en", "es"]
 
 

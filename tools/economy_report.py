@@ -159,7 +159,7 @@ def plot_production_consumption(tag: str, out: Path) -> None:
             stock = sum(
                 float(row[f"stock_{product}"])
                 for row in day_rows
-                for product in ("wheat", "flour", "bread")
+                for product in ("wheat",)
             )
             production.append(prod / max(need_value, 1.0))
             need.append(1.0)
@@ -195,11 +195,11 @@ def plot_prices(tag: str, out: Path) -> None:
                 continue
             grouped = by_city(rows)
             city_styles = {"AGRIA": "-", "PORTUS": "--"}
-            product_colors = {"wheat": "#c9a24a", "flour": "#b0764a", "bread": "#6f8f8c"}
+            product_colors = {"wheat": "#c9a24a"}
             for city, city_rows in grouped.items():
                 days = np.array([float(r["day"]) for r in city_rows])
                 for product, color in product_colors.items():
-                    base = {"wheat": 40.0, "flour": 70.0, "bread": 80.0}[product]
+                    base = {"wheat": 40.0}[product]
                     ratio = np.array([float(r[f"price_{product}"]) / base for r in city_rows])
                     ax.plot(days, ratio, color=color, linewidth=0.9,
                             linestyle=city_styles.get(city, "-"),
@@ -329,9 +329,9 @@ def plot_trade(tag: str, out: Path) -> None:
             ax.set_visible(False)
             continue
         days = sorted({float(row["day"]) for row in rows})
-        exported = [sum(float(r["exported_wheat"]) + float(r["exported_bread"]) + float(r["exported_iron"])
+        exported = [sum(float(r["exported_wheat"]) + float(r["exported_iron"])
                         for r in rows if float(r["day"]) == d) for d in days]
-        imported = [sum(float(r["imported_wheat"]) + float(r["imported_bread"])
+        imported = [sum(float(r["imported_wheat"])
                         for r in rows if float(r["day"]) == d) for d in days]
         ax.plot(days, exported, color="#7fa86b", linewidth=1.0, label="exportado (t/dia)")
         ax.plot(days, imported, color="#d26a5f", linewidth=1.0, label="importado (t/dia)")

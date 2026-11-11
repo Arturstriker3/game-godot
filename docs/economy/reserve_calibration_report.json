@@ -1,0 +1,436 @@
+{
+  "generated_by": "tools/calibrate_reserves.py",
+  "resources": [
+    {
+      "resource": "iron",
+      "status": "calibrated",
+      "world_target_kt": 190000000.0,
+      "before_total_kt": 63795814.959,
+      "after_total_kt": 189999999.998,
+      "factor": 2.978252,
+      "top5_after": [
+        {
+          "code": "AUS",
+          "kt": 57999969.999
+        },
+        {
+          "code": "BRA",
+          "kt": 33999930.001
+        },
+        {
+          "code": "RUS",
+          "kt": 29000080.002
+        },
+        {
+          "code": "CHN",
+          "kt": 19999970.003
+        },
+        {
+          "code": "UKR",
+          "kt": 6500090.0
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "copper",
+      "status": "calibrated",
+      "world_target_kt": 980000.0,
+      "before_total_kt": 6721122.402,
+      "after_total_kt": 980000.001,
+      "factor": 0.145809,
+      "top5_after": [
+        {
+          "code": "CHL",
+          "kt": 190000.44
+        },
+        {
+          "code": "PER",
+          "kt": 100000.179
+        },
+        {
+          "code": "AUS",
+          "kt": 100000.178
+        },
+        {
+          "code": "RUS",
+          "kt": 80000.342
+        },
+        {
+          "code": "COD",
+          "kt": 80000.341
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "coal",
+      "status": "calibrated",
+      "world_target_kt": 1074108000.0,
+      "before_total_kt": 163097678.664,
+      "after_total_kt": 1074108000.0,
+      "factor": 6.585673,
+      "top5_after": [
+        {
+          "code": "USA",
+          "kt": 248944937.051
+        },
+        {
+          "code": "RUS",
+          "kt": 162167751.732
+        },
+        {
+          "code": "AUS",
+          "kt": 150227967.204
+        },
+        {
+          "code": "CHN",
+          "kt": 143199004.452
+        },
+        {
+          "code": "IND",
+          "kt": 111052026.12
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "oil",
+      "status": "calibrated",
+      "world_target_kt": 236000000.0,
+      "before_total_kt": 34599939.083,
+      "after_total_kt": 232566200.0,
+      "factor": 6.721578,
+      "top5_after": [
+        {
+          "code": "VEN",
+          "kt": 41395344.0
+        },
+        {
+          "code": "SAU",
+          "kt": 40537012.0
+        },
+        {
+          "code": "CAN",
+          "kt": 22905216.0
+        },
+        {
+          "code": "IRN",
+          "kt": 21501488.0
+        },
+        {
+          "code": "IRQ",
+          "kt": 19757448.0
+        }
+      ],
+      "missing_countries": [
+        {
+          "code": "QAT",
+          "share": 0.0146
+        }
+      ]
+    },
+    {
+      "resource": "gas",
+      "status": "calibrated",
+      "world_target_kt": 141000000.0,
+      "before_total_kt": 14706977.97,
+      "after_total_kt": 92650677.002,
+      "factor": 6.299777,
+      "top5_after": [
+        {
+          "code": "RUS",
+          "kt": 28035030.001
+        },
+        {
+          "code": "IRN",
+          "kt": 24062214.0
+        },
+        {
+          "code": "USA",
+          "kt": 9445026.001
+        },
+        {
+          "code": "AUS",
+          "kt": 7027688.434
+        },
+        {
+          "code": "KWT",
+          "kt": 6023732.943
+        }
+      ],
+      "missing_countries": [
+        {
+          "code": "QAT",
+          "share": 0.1313
+        },
+        {
+          "code": "TKM",
+          "share": 0.0723
+        },
+        {
+          "code": "CHN",
+          "share": 0.0447
+        },
+        {
+          "code": "VEN",
+          "share": 0.0335
+        },
+        {
+          "code": "SAU",
+          "share": 0.0319
+        },
+        {
+          "code": "NGA",
+          "share": 0.0292
+        }
+      ]
+    },
+    {
+      "resource": "bauxite",
+      "status": "calibrated",
+      "world_target_kt": 30000000.0,
+      "before_total_kt": 15525969.43,
+      "after_total_kt": 27999989.991,
+      "factor": 1.803429,
+      "top5_after": [
+        {
+          "code": "GIN",
+          "kt": 7400010.0
+        },
+        {
+          "code": "AUS",
+          "kt": 5300010.001
+        },
+        {
+          "code": "VNM",
+          "kt": 3699990.0
+        },
+        {
+          "code": "USA",
+          "kt": 2745215.424
+        },
+        {
+          "code": "BRA",
+          "kt": 2699999.999
+        }
+      ],
+      "missing_countries": [
+        {
+          "code": "JAM",
+          "share": 0.0667
+        }
+      ]
+    },
+    {
+      "resource": "lead",
+      "status": "calibrated",
+      "world_target_kt": 95000.0,
+      "before_total_kt": 5185559.838,
+      "after_total_kt": 95000.004,
+      "factor": 0.01832,
+      "top5_after": [
+        {
+          "code": "AUS",
+          "kt": 34999.993
+        },
+        {
+          "code": "CHN",
+          "kt": 22000.002
+        },
+        {
+          "code": "RUS",
+          "kt": 8899.98
+        },
+        {
+          "code": "PER",
+          "kt": 6000.009
+        },
+        {
+          "code": "MEX",
+          "kt": 5599.966
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "gold",
+      "status": "calibrated",
+      "world_target_kt": 64.0,
+      "before_total_kt": 636.864,
+      "after_total_kt": 64.052,
+      "factor": 0.100574,
+      "top5_after": [
+        {
+          "code": "RUS",
+          "kt": 12.004
+        },
+        {
+          "code": "AUS",
+          "kt": 11.998
+        },
+        {
+          "code": "ZAF",
+          "kt": 5.0
+        },
+        {
+          "code": "CHN",
+          "kt": 3.099
+        },
+        {
+          "code": "USA",
+          "kt": 3.05
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "phosphate",
+      "status": "calibrated",
+      "world_target_kt": 73000000.0,
+      "before_total_kt": 24374847.877,
+      "after_total_kt": 73000000.001,
+      "factor": 2.99489,
+      "top5_after": [
+        {
+          "code": "MAR",
+          "kt": 50000035.998
+        },
+        {
+          "code": "CHN",
+          "kt": 3399974.999
+        },
+        {
+          "code": "EGY",
+          "kt": 2799988.001
+        },
+        {
+          "code": "TUN",
+          "kt": 2500030.999
+        },
+        {
+          "code": "RUS",
+          "kt": 2400021.001
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "tungsten",
+      "status": "calibrated",
+      "world_target_kt": 4700.0,
+      "before_total_kt": 181690.896,
+      "after_total_kt": 4700.008,
+      "factor": 0.025868,
+      "top5_after": [
+        {
+          "code": "CHN",
+          "kt": 2500.0
+        },
+        {
+          "code": "AUS",
+          "kt": 570.002
+        },
+        {
+          "code": "USA",
+          "kt": 558.722
+        },
+        {
+          "code": "RUS",
+          "kt": 399.998
+        },
+        {
+          "code": "VNM",
+          "kt": 169.999
+        }
+      ],
+      "missing_countries": []
+    },
+    {
+      "resource": "rare_earths",
+      "status": "calibrated",
+      "world_target_kt": 120000.0,
+      "before_total_kt": 123752.946,
+      "after_total_kt": 96500.039,
+      "factor": 0.77978,
+      "top5_after": [
+        {
+          "code": "CHN",
+          "kt": 44000.04
+        },
+        {
+          "code": "BRA",
+          "kt": 21000.0
+        },
+        {
+          "code": "RUS",
+          "kt": 9999.96
+        },
+        {
+          "code": "IND",
+          "kt": 6900.001
+        },
+        {
+          "code": "AUS",
+          "kt": 4200.0
+        }
+      ],
+      "missing_countries": [
+        {
+          "code": "VNM",
+          "share": 0.1833
+        },
+        {
+          "code": "GRL",
+          "share": 0.0125
+        }
+      ]
+    },
+    {
+      "resource": "uranium",
+      "status": "calibrated",
+      "world_target_kt": 5900.0,
+      "before_total_kt": 141344.866,
+      "after_total_kt": 5629.992,
+      "factor": 0.039832,
+      "top5_after": [
+        {
+          "code": "AUS",
+          "kt": 1700.0
+        },
+        {
+          "code": "KAZ",
+          "kt": 815.002
+        },
+        {
+          "code": "CAN",
+          "kt": 582.0
+        },
+        {
+          "code": "USA",
+          "kt": 545.584
+        },
+        {
+          "code": "NAM",
+          "kt": 498.002
+        }
+      ],
+      "missing_countries": [
+        {
+          "code": "CHN",
+          "share": 0.0458
+        }
+      ]
+    },
+    {
+      "resource": "sulfur",
+      "status": "skipped_unknown",
+      "reason": "Sem 'reserva' padrão: o enxofre é majoritariamente co-recuperado de hidrocarbonetos e depósitos de sulfeto; o USGS não publica total de reservas comparável aos demais. Sem calibração (mantém o dado MRDS)."
+    },
+    {
+      "resource": "diamond",
+      "status": "skipped_unknown",
+      "reason": "Sem 'reserva' padrão publicada (o USGS não divulga reservas de diamante; indústria usa recursos). Sem calibração (mantém o dado MRDS; total já é ~36 kt, distribuição BWA/CAN/ZAF coerente)."
+    }
+  ]
+}

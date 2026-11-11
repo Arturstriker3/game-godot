@@ -14,11 +14,26 @@ Uso: python tools/apply_deposit_supplement.py
 import json
 import os
 
+from PIL import Image
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEPOSITS = os.path.join(ROOT, "data", "definitions", "natural", "deposits.json")
 SUPPLEMENT = os.path.join(ROOT, "data", "definitions", "natural",
                           "deposits_supplement.json")
-TEMPLATES = {"oil": "Brent", "gas": "Troll", "coal": "Ruhr", "diamond": "Rio Verde"}
+NATURE = os.path.join(ROOT, "data", "definitions", "natural", "nature.json")
+NAV_MASK = os.path.join(ROOT, "map", "map_data", "nav_mask.png")
+PROVINCES = os.path.join(ROOT, "map", "map_data", "atlas", "provinces.json")
+WORLD_PROVINCE = os.path.join(ROOT, "map", "map_data", "atlas", "world_province.png")
+TEMPLATES = {"oil": "Brent", "gas": "Troll", "coal": "Ruhr", "diamond": "Rio Verde",
+             "copper": "El Soldado"}
+
+## Dimensões do mapa e regra de água (iguais a build_resource_map.py /
+## geography_service.gd): terra pode tudo; água só petróleo/gás encostado na
+## costa. O raster world_province.png tem o mar preenchido com a província de
+## terra mais próxima, então ele já resolve o "território costeiro mais próximo"
+## para campos offshore (Safaniya->SAU, Shtokman->RUS).
+MAP_W, MAP_H = 5000.0, 2500.0
+COASTAL_RESOURCES = ("oil", "gas")
 
 
 def read_json(path):
@@ -35,6 +50,89 @@ def find_template(deposits, name):
 
 def to_pixels(lon, lat):
     return ((lon + 180.0) / 360.0 * 5000.0, (90.0 - lat) / 180.0 * 2500.0)
+
+
+def load_nav():
+    return Image.open(NAV_MASK).convert("L")
+
+
+def nav_cell(nav, px, py):
+    return int(px / MAP_W * nav.width), int(py / MAP_H * nav.height)
+
+
+def load_province_raster():
+    return Image.open(WORLD_PROVINCE).convert("RGB")
+
+
+def load_provinces():
+    """province_id -> country (adm0_a3)."""
+    with open(PROVINCES, encoding="utf-8") as handle:
+        data = json.load(handle)
+    province_country = {}
+    for province in data.get("provinces", []):
+        province_country[int(province["id"])] = str(province.get("country", ""))
+    return province_country
+
+
+def nearest_territory(nature, px, py):
+    """Id do território cujo centróide está mais próximo de (px, py)."""
+    return nearest_territory_among(nature, list(nature.keys()), px, py)
+
+
+def nearest_territory_among(nature, territory_ids, px, py):
+    """Território (entre territory_ids) com centróide mais próximo de (px, py)."""
+    best = None
+    best_dist = float("inf")
+    for territory in territory_ids:
+        entry = nature.get(territory, {})
+        centroid = entry.get("centroid_px", [])
+        if len(centroid) < 2:
+            continue
+        cx, cy = float(centroid[0]), float(centroid[1])
+        dist = (cx - px) ** 2 + (cy - py) ** 2
+        if dist < best_dist:
+            best_dist = dist
+            best = territory
+    return best
+
+
+def assign_territory(record, nature, nav, province_raster, province_country,
+                     country_territories):
+    """Atribui territory a um depósito pelo território que CONTÉM o ponto.
+
+    A província raster (world_province.png) resolve o país dono: em terra, a
+    província real do ponto; no mar, o raster preenche o mar com a província de
+    terra mais próxima — i.e., o território costeiro mais próximo. O país
+    (adm0_a3) é então mapeado para um territory (TRTxxxxxx) da natureza, o mais
+    próximo do ponto. Offshorização (água) de petróleo/gás é marcada com
+    data_quality "estimated_offshore_assignment". Retorna True se atribuiu."""
+    px = float(record.get("px", 0.0))
+    py = float(record.get("py", 0.0))
+    x, y = nav_cell(nav, px, py)
+    on_land = (0 <= x < nav.width and 0 <= y < nav.height) \
+        and nav.getpixel((x, y)) >= 128
+
+    territory = None
+    rx = int(px / MAP_W * province_raster.width)
+    ry = int(py / MAP_H * province_raster.height)
+    if 0 <= rx < province_raster.width and 0 <= ry < province_raster.height:
+        r, g, _b = province_raster.getpixel((rx, ry))
+        province_id = int(round(r + g * 256))
+        country = province_country.get(province_id, "")
+        if country:
+            territory = nearest_territory_among(
+                nature, country_territories.get(country, []), px, py)
+    if territory is None:
+        # País sem territory na natureza (ex.: estados sem territory): usa o
+        # território mais próximo por centróide.
+        territory = nearest_territory(nature, px, py)
+    if not territory:
+        return False
+
+    record["territory"] = territory
+    if not on_land and str(record.get("resource", "")) in COASTAL_RESOURCES:
+        record["data_quality"] = "estimated_offshore_assignment"
+    return True
 
 
 def write_json(path, data):
@@ -78,6 +176,14 @@ def main():
     deposits = data["deposits"]
     existing = {str(d.get("names", [""])[0]).lower() for d in deposits}
     templates = {key: find_template(deposits, name) for key, name in TEMPLATES.items()}
+    nature = read_json(NATURE).get("territories", {})
+    nav = load_nav()
+    province_raster = load_province_raster()
+    province_country = load_provinces()
+    country_territories = {}
+    for territory, entry in nature.items():
+        country_territories.setdefault(
+            str(entry.get("adm0_a3", "")), []).append(territory)
 
     added = 0
     next_id = _max_id_suffix(deposits) + 1
@@ -108,12 +214,34 @@ def main():
         record["status"] = field.get("status", "Producer")
         record["names"] = [name]
         record["sites"] = 1
-        record["data_quality"] = "real_location_estimated_attributes"
+        record["data_quality"] = field.get("data_quality",
+                                           "real_location_estimated_attributes")
+        if field.get("source"):
+            record["source"] = field["source"]
         deposits.append(record)
         existing.add(name.lower())
         added += 1
 
-    if added:
+    # Repara depósitos órfãos (territory vazio): atribui o território pelo
+    # ponto (terra) ou pelo território costeiro mais próximo (offshore até
+    # ~320 km). Idempotente — só toca registros sem territory. Cobre tanto os
+    # suplementos acima quanto os de add_rare_earths.py / add_uranium.py que
+    # também entravam com territory vazio.
+    repaired = 0
+    offshore = 0
+    unassigned = 0
+    for deposit in deposits:
+        if str(deposit.get("territory", "")) != "":
+            continue
+        if assign_territory(deposit, nature, nav, province_raster,
+                            province_country, country_territories):
+            repaired += 1
+            if deposit.get("data_quality") == "estimated_offshore_assignment":
+                offshore += 1
+        else:
+            unassigned += 1
+
+    if added or repaired:
         write_json(DEPOSITS, data)
 
     # Ajustes de campos maduros: reserva restante em vez da original.
@@ -140,10 +268,12 @@ def main():
     # Garante unicidade (corrige IDs duplicados de execuções antigas).
     renumbered = _normalize_ids(deposits)
 
-    if added or adjusted or renumbered:
+    if added or adjusted or renumbered or repaired:
         write_json(DEPOSITS, data)
     print("depósitos adicionados:", added, "de", len(read_json(SUPPLEMENT)["fields"]),
-          "| ajustados:", adjusted, "| IDs renumerados:", renumbered)
+          "| ajustados:", adjusted, "| IDs renumerados:", renumbered,
+          "| território atribuído:", repaired, "(offshore:", offshore,
+          "| sem terra:", unassigned, ")")
 
 
 main()

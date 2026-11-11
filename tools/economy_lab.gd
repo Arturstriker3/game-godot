@@ -478,14 +478,14 @@ func _rows_for(status: Dictionary) -> Array[Dictionary]:
 			production += building_output
 			if int(building["output_product"]) == 0:
 				food_production += building_output
-			if int(building["output_product"]) == 3:
+			if int(building["output_product"]) == 1:
 				iron_production += building_output
 		rows.append({
 			"city": String(city["id"]),
 			"population": float(city["population"]),
 			"money_total": float(status.get("money_total", 0.0)),
 			"suitability_wheat": float(city.get("suitability", [0.0])[0]),
-			"suitability_iron": float(city.get("suitability", [0.0, 0.0, 0.0, 0.0])[3]),
+			"suitability_iron": float(city.get("suitability", [0.0, 0.0])[1]),
 			"labor_force": float(pop["labor_force"]),
 			"employed": float(pop["employed"]),
 			"unemployed": float(pop["unemployed"]),
@@ -517,17 +517,11 @@ func _rows_for(status: Dictionary) -> Array[Dictionary]:
 			"iron_production": iron_production,
 			"stock_wheat": float(markets[0]["stock"]),
 			"price_wheat": float(markets[0]["price"]),
-			"stock_flour": float(markets[1]["stock"]),
-			"price_flour": float(markets[1]["price"]),
-			"stock_bread": float(markets[2]["stock"]),
-			"price_bread": float(markets[2]["price"]),
-			"stock_iron": float(markets[3]["stock"]),
-			"price_iron": float(markets[3]["price"]),
+			"stock_iron": float(markets[1]["stock"]),
+			"price_iron": float(markets[1]["price"]),
 			"imported_wheat": float(city["imported"][0]),
 			"exported_wheat": float(city["exported"][0]),
-			"imported_bread": float(city["imported"][2]),
-			"exported_bread": float(city["exported"][2]),
-			"exported_iron": float(city["exported"][3]),
+			"exported_iron": float(city["exported"][1]),
 		})
 	return rows
 
@@ -693,9 +687,8 @@ func _write_city_csv(scenario_id: String, horizon: int, rows: Array[Dictionary])
 		"consumed", "food_spend", "satisfaction", "firm_cash", "service_cash",
 		"government_budget", "service_revenue", "service_profit", "profit_total",
 		"capacity_total", "production_total", "food_production", "iron_production", "stock_wheat", "price_wheat",
-		"stock_flour",
-		"price_flour", "stock_bread", "price_bread", "stock_iron", "price_iron",
-		"imported_wheat", "exported_wheat", "imported_bread", "exported_bread",
+		"stock_iron", "price_iron",
+		"imported_wheat", "exported_wheat",
 		"exported_iron", "opex_revenue", "freight_revenue", "construction_revenue",
 	]
 	file.store_line(",".join(columns))

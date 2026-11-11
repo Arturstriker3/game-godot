@@ -90,7 +90,7 @@ func _record(status: Dictionary, day: int) -> void:
 		var pop: Dictionary = city["pop"]
 		var markets: Array = city["markets"]
 		var profit := 0.0
-		var produced := {"wheat": 0.0, "flour": 0.0, "bread": 0.0}
+		var produced := {"wheat": 0.0}
 		for building in city.get("buildings", []):
 			profit += float(building["profit"])
 			produced[String(building["resource"])] += float(building["revenue"])
@@ -118,11 +118,7 @@ func _record(status: Dictionary, day: int) -> void:
 			"service_profit": float(city.get("service_profit", 0.0)),
 			"profit": profit,
 			"price_wheat": float(markets[0]["price"]),
-			"price_flour": float(markets[1]["price"]),
-			"price_bread": float(markets[2]["price"]),
 			"stock_wheat": float(markets[0]["stock"]),
-			"stock_flour": float(markets[1]["stock"]),
-			"stock_bread": float(markets[2]["stock"]),
 			"produced": produced,
 			"consumed_wheat": float(pop["consumed"]),
 			"food_spend": float(pop["food_spend"]),
@@ -137,12 +133,11 @@ func _print_month(status: Dictionary) -> void:
 		var profit := 0.0
 		for building in city.get("buildings", []):
 			profit += float(building["profit"])
-		print(("dia %3d %-6s preços=%.1f/%.1f/%.1f estoques=%.0f/%.0f/%.0f "
+		print(("dia %3d %-6s preço_trigo=%.1f estoque_trigo=%.0f "
 				+ "PIBpc=%.5f renda_pc=%.5f salário=%.2f desemp=%.1f%% sat=%.2f "
 				+ "lucro=%.0f caixa=%.0f serv=%.0f gov=%.0f poup=%.0f") % [
 			status["calendar_day"], city["id"],
-			markets[0]["price"], markets[1]["price"], markets[2]["price"],
-			markets[0]["stock"], markets[1]["stock"], markets[2]["stock"],
+			markets[0]["price"], markets[0]["stock"],
 			city["gdp_per_capita"],
 			float(pop["disposable"]) / maxf(float(city["population"]), 1.0),
 			float(pop["wage_income"]) / maxf(float(pop["employed"]), 1.0),
@@ -154,7 +149,7 @@ func _print_month(status: Dictionary) -> void:
 func _print_summary() -> void:
 	var columns := ["gdp_pc", "disposable_pc", "wage_avg", "unemployment_rate",
 		"satisfaction", "profit", "firm_cash", "service_cash", "savings",
-		"price_wheat", "price_flour", "price_bread"]
+		"price_wheat"]
 	for city_id in ["AGRIA", "PORTUS"]:
 		var first := _first_row(city_id)
 		var last := _last_row(city_id)
@@ -188,9 +183,9 @@ func _write_csv() -> void:
 	file.store_line("day,city,population,gdp,gdp_pc,disposable_pc,wage_avg,employed,"
 		+ "unemployed,unemployment_rate,satisfaction,savings,firm_cash,service_cash,"
 		+ "government_budget,service_revenue,service_profit,profit,price_wheat,"
-		+ "price_flour,price_bread,stock_wheat,stock_flour,stock_bread,food_spend,money_total")
+		+ "stock_wheat,food_spend,money_total")
 	var line_format := ("%d,%s,%.4f,%.6f,%.8f,%.8f,%.6f,%.4f,%.4f,%.6f,%.6f,%.4f,"
-		+ "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f")
+		+ "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f")
 	for row in _rows:
 		var values: Array = [
 			int(row["day"]), String(row["city"]), row["population"], row["gdp"],
@@ -198,9 +193,8 @@ func _write_csv() -> void:
 			row["unemployed"], row["unemployment_rate"], row["satisfaction"],
 			row["savings"], row["firm_cash"], row["service_cash"],
 			row["government_budget"], row["service_revenue"], row["service_profit"],
-			row["profit"], row["price_wheat"], row["price_flour"],
-			row["price_bread"], row["stock_wheat"], row["stock_flour"],
-			row["stock_bread"], row["food_spend"], row["money_total"],
+			row["profit"], row["price_wheat"], row["stock_wheat"],
+			row["food_spend"], row["money_total"],
 		]
 		file.store_line(line_format % values)
 	file.close()

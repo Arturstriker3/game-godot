@@ -215,9 +215,10 @@ substituir as cinco cidades atuais.
 - **Setor de serviços agregado:** 30% da população empregada em serviços, com
   salário próprio; evita um desemprego artificial de 98% e mantém a renda
   circulando.
-- **Cidades:** `AGRIA` (100 mil, cinco fazendas de trigo) e `PORTUS` (200 mil,
-  moinho e quatro padarias), ligadas por uma rota de trigo com frete pago.
-- **Cadeia:** trigo → farinha → pão, com coeficientes de 1,2 e 0,83.
+- **Cidades:** `AGRIA` (100 mil, fazendas de trigo) e `PORTUS` (200 mil),
+  ligadas por uma rota de trigo com frete pago.
+- **Cadeia:** trigo consumido **direto** (farinha/pão foram removidos — subprodutos
+  ficam para depois); ferro é extração primária.
 - **Dinheiro:** contas de famílias, empresas, serviços, governo, transporte e
   exterior; toda transferência debita uma conta e credita outra. O total é
   conservado e verificado a cada dia.
@@ -233,7 +234,7 @@ substituir as cinco cidades atuais.
   satisfação, poupança e lucro privado, além dos preços e estoques.
 - **Teste:** `tools/population_demo_test.gd` roda 30 dias, confere conservação de
   dinheiro/população/estoque, lucro privado positivo, satisfação e resposta a um
-  choque de preço no pão (gasto alimentar sobe e poupança cai).
+  choque de preço no trigo (gasto alimentar sobe e poupança cai).
 
 ## Câmera e navegação (estilo HOI3)
 

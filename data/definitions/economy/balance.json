@@ -3,8 +3,6 @@
 	"note": "Configuração do laboratório de balanceamento. Executado por tools/economy_lab.gd; não altera a simulação em si, apenas o estado inicial controlado de cada cenário.",
 	"products": [
 		"wheat",
-		"flour",
-		"bread",
 		"iron",
 		"rice",
 		"maize",
@@ -28,8 +26,6 @@
 	],
 	"base_prices": [
 		40.0,
-		70.0,
-		80.0,
 		60.0,
 		55.0,
 		42.0,
@@ -95,7 +91,7 @@
 		{
 			"id": "02_industrial_importador",
 			"label": "Cidade industrial dependente de importações",
-			"description": "Portus mantém moinho e padarias, mas perde as fazendas: toda a farinha depende de trigo importado de Agria.",
+			"description": "Portus perde as fazendas: o trigo consumido depende de importação de Agria.",
 			"remove_buildings": [
 				"FARM-P"
 			]
@@ -113,17 +109,14 @@
 		{
 			"id": "04_escassez_alimentos",
 			"label": "Cidade com escassez de alimentos",
-			"description": "Sem fazendas e sem padarias, com todos os estoques alimentares zerados. Testa consumo zero, preços sob escassez e a resposta do mercado sem produtor local.",
+			"description": "Sem fazendas, com todos os estoques alimentares zerados. Testa consumo zero, preços sob escassez e a resposta do mercado sem produtor local.",
 			"remove_buildings": [
 				"FARM-A",
-				"FARM-P",
-				"BAKERY-B"
+				"FARM-P"
 			],
 			"cities": {
 				"AGRIA": {
 					"market_stock": [
-						0.0,
-						0.0,
 						0.0,
 						0.0,
 						0.0,
@@ -149,8 +142,6 @@
 				},
 				"PORTUS": {
 					"market_stock": [
-						0.0,
-						0.0,
 						0.0,
 						0.0,
 						0.0,
@@ -207,8 +198,6 @@
 					"savings": 0.0,
 					"market_price": [
 						100.0,
-						175.0,
-						200.0,
 						60.0,
 						137.5,
 						105.0,
@@ -235,8 +224,6 @@
 					"savings": 0.0,
 					"market_price": [
 						100.0,
-						175.0,
-						200.0,
 						60.0,
 						137.5,
 						105.0,
@@ -284,7 +271,7 @@
 					"id": "MINE-A",
 					"resource": "iron",
 					"input_product": -1,
-					"output_product": 3,
+					"output_product": 1,
 					"capacity": 50.0,
 					"jobs": 200.0,
 					"wage": 2.0,

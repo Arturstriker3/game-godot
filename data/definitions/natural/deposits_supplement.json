@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "note": "Campos reais que faltavam no extrato MRDS: pré-sal brasileiro, Mar do Norte norueguês e gás do Oriente Médio/Norte da África. Localização real; quantidade/qualidade/profundidade estimadas de forma determinística, como nos demais depósitos.",
+  "note": "Campos reais que faltavam no extrato MRDS: pré-sal brasileiro, Mar do Norte norueguês, gás do Oriente Médio/Norte da África e o cobre chileno (Escondida/Chuquicamata/El Teniente, fonte pública no campo 'source', data_quality 'estimated_public_source'). Localização real; os demais têm quantidade/qualidade/profundidade estimadas de forma determinística, como nos demais depósitos.",
   "applied_by": "tools/apply_deposit_supplement.py"
  },
  "fields": [
@@ -853,6 +853,42 @@
    "quality": 0.78,
    "depth_m": 150.0,
    "status": "Producer"
+  },
+  {
+   "name": "Escondida",
+   "resource": "copper",
+   "lon": -69.07,
+   "lat": -24.27,
+   "quantity_kt": 30000.0,
+   "quality": 0.53,
+   "depth_m": 600,
+   "status": "Producer",
+   "source": "BHP 2024 Chilean copper site tour (recurso remanescente); Wikipedia (reservas provadas+prováveis 34,7 Mt)",
+   "data_quality": "estimated_public_source"
+  },
+  {
+   "name": "Chuquicamata",
+   "resource": "copper",
+   "lon": -68.9,
+   "lat": -22.28,
+   "quantity_kt": 6000.0,
+   "quality": 0.79,
+   "depth_m": 850,
+   "status": "Producer",
+   "source": "Mining Technology 2022 (751 Mt @ 0,79% Cu = 6,0 Mt cobre fino)",
+   "data_quality": "estimated_public_source"
+  },
+  {
+   "name": "El Teniente",
+   "resource": "copper",
+   "lon": -70.35,
+   "lat": -34.08,
+   "quantity_kt": 15000.0,
+   "quality": 0.99,
+   "depth_m": 2300,
+   "status": "Producer",
+   "source": "Mining Technology (15,2 Mt cobre fino; 1.538 Mt @ 0,99% Cu, início de 2013); Codelco",
+   "data_quality": "estimated_public_source"
   }
  ],
  "adjustments": [

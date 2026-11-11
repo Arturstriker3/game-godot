@@ -59,12 +59,16 @@ var _day_fraction := 0.0
 
 func _ready() -> void:
 	sim = EconomySim.new()
-	sim.initialize_demo_world(_load_cities(), _load_ports(), _load_buildings())
+	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
+	# aptidão × caloria da nação (antes de criar os prédios no núcleo). Sem dados,
+	# mantém trigo.
+	var geo := GeographyService.new()
+	var cities := _load_cities()
+	sim.initialize_demo_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
 	sim.demo_set_goods(_load_goods())
 	_load_nations()
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
-	var geo := GeographyService.new()
 	geo.apply_to_sim(sim, _cities_with_center())
 	_setup_ai(geo)
 

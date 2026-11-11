@@ -10,14 +10,29 @@ const BUDGET_SHARE := 0.25
 const MIN_SHORTAGE_TONS := 1.0
 const MIN_STATE_CAPACITY := 2.0
 const MAX_STATE_CAPACITY := 20.0
-const IRON_MINE_CAPACITY := 10.0
+## Teto da capacidade de uma mina estatal (B4): o estado cobre uma base da
+## demanda externa e o capital privado o resto. Substitui a antiga
+## IRON_MINE_CAPACITY fixa — a capacidade agora é dimensionada pela demanda
+## externa (× EXPORT_CAPACITY_FACTOR), para minas de demanda pequena (ouro/
+## diamante/urânio/tungstênio, ~1 t/d) não nascerem com 10 t/d e falirem.
+const MAX_STATE_MINE_CAPACITY := 10.0
+const EXPORT_CAPACITY_FACTOR := 1.2
 const HIGH_UNEMPLOYMENT := 0.65
+
+## Anti-loop de construção (B5): não constrói se a utilização média efetiva dos
+## prédios do mesmo tipo na cidade estiver abaixo do piso, se já houver o teto
+## de construções do tipo, nem antes de um cooldown após a última construção.
+const MIN_AVG_UTILIZATION := 0.60
+const MAX_BUILDINGS_PER_TYPE := 6
+const BUILD_COOLDOWN_DAYS := 30
 
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var _sim: Object
 var _decisions: Array[Dictionary] = []
 var _id_counter := 1
+# Dia da última construção por cidade (base do cooldown).
+var _last_build_day: Dictionary = {}
 
 
 func setup(sim: Object) -> void:
@@ -44,89 +59,109 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	if available <= 0.0:
 		return
 
-	# 1. Segurança alimentar: estatal quando há escassez e o setor privado
-	# não cobre (ou quando o governo é o comprador estratégico).
-	var food_candidates: Array = []
-	for resource in Templates.FOOD_RESOURCES:
-		var product := Templates.output_of(resource)
-		var market: Dictionary = city["markets"][product]
-		var shortage := float(market.get("shortage", 0.0))
-		var surplus := float(market.get("surplus", 0.0))
-		if shortage < MIN_SHORTAGE_TONS or surplus > 0.0:
-			continue
-		# Necessidade nacional: não constrói se outra cidade já tem excesso.
-		var system_shortage := 0.0
-		var system_surplus := 0.0
-		for other in status.get("cities", []):
-			var other_market: Dictionary = other["markets"][product]
-			system_shortage += maxf(0.0, float(other_market.get("shortage", 0.0)))
-			system_surplus += maxf(0.0, float(other_market.get("surplus", 0.0)))
-		if system_shortage <= system_surplus:
-			continue
+	# 1. Segurança alimentar (B3): quando há déficit alimentar (toneladas-
+	# equivalentes de grão), constrói a cultura com melhor aptidão × preço na
+	# cidade. O anti-loop B5 (cooldown/teto/utilização) segue no _build_gate.
+	var food_pop: Dictionary = city["pop"]
+	# Déficit estrutural (B3): necessidade − produção local, em toneladas-
+	# equivalentes de grão. Usa a produção (não o consumo) para detectar a
+	# dependência de importação — uma cidade alimentada por subsídio de importação
+	# tem consumo satisfeito mas continua estruturalmente dependente e deve
+	# produzir a melhor cultura local.
+	var food_deficit := maxf(0.0, float(food_pop.get("need", 0.0)) - Templates.local_food_supply(city))
+	if food_deficit >= MIN_SHORTAGE_TONS:
+		var best := _best_food_crop(city)
+		if not best.is_empty():
+			var resource := String(best["resource"])
+			var template: Dictionary = Templates.TEMPLATES[resource]
+			var product := int(template["output"])
+			var caloric := Templates.caloric_factor(resource)
+			var capacity := clampf(food_deficit / caloric, MIN_STATE_CAPACITY, MAX_STATE_CAPACITY)
+			if capacity * capital_cost > available:
+				capacity = available / capital_cost
+			if capacity >= MIN_STATE_CAPACITY:
+				var gate := _build_gate(city_id, city, day, product)
+				if gate != "":
+					_log(day, city_id, "avoid", resource, gate, capacity * capital_cost)
+				else:
+					var new_id := "STATE-%s-%d" % [resource.to_upper(), _id_counter]
+					var result: Dictionary = _sim.demo_build(city_id, new_id, resource,
+						int(template["input"]), product, capacity,
+						capacity * float(template["jobs_per_ton"]), float(template["wage"]),
+						capacity * float(template["opex_per_ton"]),
+						float(template["input_ratio"]), "state", capacity * capital_cost)
+					var error := String(result.get("error", ""))
+					if error != "":
+						_log(day, city_id, "rejected", resource, error, capacity * capital_cost)
+					else:
+						_id_counter += 1
+						_last_build_day[city_id] = day
+						_log(day, city_id, "build_state", resource,
+							"segurança alimentar: déficit %.1f t-eq, aptidão×preço %.1f" % [
+								food_deficit, float(best["score"])],
+							capacity * capital_cost)
+						return
+
+	# 3. Mineração estratégica (B4): mina estatal para cada mineral com jazida
+	# (aptidão > 0) e margem positiva ao preço de exportação, quando ainda não há
+	# produtor na cidade. A margem inclui o fator de profundidade da jazida
+	# (opex_factor via variable_cost_mined) e a capacidade é dimensionada pela
+	# demanda externa (× 1.2, teto MAX_STATE_MINE_CAPACITY), não mais por uma
+	# capacidade fixa — minas superdimensionadas operavam com utilização baixa
+	# (0,10) e faliam em ciclo (churn). Os candidatos são ordenados por margem
+	# decrescente para minerais de alto valor (diamante/urânio) não ficarem
+	# sempre atrás do cooldown de construção.
+	var suitability: Array = city.get("suitability", [0.0])
+	var candidates: Array = []
+	for resource in Templates.MINERAL_RESOURCES:
 		var template: Dictionary = Templates.TEMPLATES[resource]
-		if not _input_available(city, int(template["input"])):
+		var product := int(template["output"])
+		if product >= suitability.size() or float(suitability[product]) <= 0.0:
 			continue
-		var capacity := clampf(shortage, MIN_STATE_CAPACITY, MAX_STATE_CAPACITY)
+		if not _has_deposit(city, resource):
+			continue
+		if _buildings_of_type(city, product) > 0:
+			continue
+		var mineral_market: Dictionary = city["markets"][product]
+		var margin: float = (float(mineral_market["price"])
+			- Templates.variable_cost_mined(resource, city))
+		if margin <= 0.0 or float(mineral_market.get("surplus", 0.0)) > 0.0:
+			continue
+		candidates.append({"resource": resource, "product": product,
+			"template": template, "margin": margin})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["margin"]) > float(b["margin"]))
+	for candidate in candidates:
+		var resource: String = candidate["resource"]
+		var product: int = candidate["product"]
+		var template: Dictionary = candidate["template"]
+		var margin: float = float(candidate["margin"])
+		var gate := _build_gate(city_id, city, day, product)
+		if gate != "":
+			_log(day, city_id, "avoid", resource, gate, 0.0)
+			continue
+		var external_demand := Templates.external_demand_of(city, product)
+		var capacity := minf(MAX_STATE_MINE_CAPACITY,
+			maxf(MIN_STATE_CAPACITY, external_demand * EXPORT_CAPACITY_FACTOR))
 		if capacity * capital_cost > available:
 			capacity = available / capital_cost
 		if capacity < MIN_STATE_CAPACITY:
 			continue
-		food_candidates.append({
-			"resource": resource,
-			"capacity": capacity,
-			"cost": capacity * capital_cost,
-			"shortage": shortage,
-		})
-	# Trigo é estratégico: prioriza o primeiro da lista.
-	for candidate in food_candidates:
-		var resource := String(candidate["resource"])
-		var template: Dictionary = Templates.TEMPLATES[resource]
-		var product := int(template["output"])
-		var capacity := float(candidate["capacity"])
-		var cost := float(candidate["cost"])
+		var cost := capacity * capital_cost
 		var new_id := "STATE-%s-%d" % [resource.to_upper(), _id_counter]
 		var result: Dictionary = _sim.demo_build(city_id, new_id, resource,
-			int(template["input"]), product, capacity,
-			capacity * float(template["jobs_per_ton"]), float(template["wage"]),
-			capacity * float(template["opex_per_ton"]),
-			float(template["input_ratio"]), "state", cost)
+			-1, product, capacity, capacity * float(template["jobs_per_ton"]),
+			float(template["wage"]), capacity * float(template["opex_per_ton"]),
+			0.0, "state", cost)
 		var error := String(result.get("error", ""))
-		if error != "":
-			_log(day, city_id, "rejected", resource, error, cost)
-			continue
-		_id_counter += 1
-		_log(day, city_id, "build_state", resource,
-			"segurança alimentar: escassez %.1f t, emprego e demanda nacional" % float(candidate["shortage"]),
-			cost)
-		return
-
-	# 3. Mineração estratégica: mina estatal se o território tem ferro
-	# (aptidão > 0, aplicada na inicialização), margem positiva e sem produção.
-	var suitability: Array = city.get("suitability", [0.0])
-	if suitability.size() > 3 and float(suitability[3]) > 0.0:
-		var iron_market: Dictionary = city["markets"][3]
-		var has_mine := false
-		for building in city.get("buildings", []):
-			if int(building.get("output_product", -1)) == 3:
-				has_mine = true
-				break
-		var margin: float = (float(iron_market["price"])
-			- Templates.variable_cost("iron", city))
-		if not has_mine and margin > 0.0 and float(iron_market.get("surplus", 0.0)) <= 0.0:
-			var capacity := minf(IRON_MINE_CAPACITY, available / capital_cost)
-			if capacity >= MIN_STATE_CAPACITY:
-				var cost := capacity * capital_cost
-				var new_id := "STATE-IRON-%d" % _id_counter
-				var result: Dictionary = _sim.demo_build(city_id, new_id, "iron",
-					-1, 3, capacity, capacity * 3.35, 1.0, capacity * 6.65,
-					0.0, "state", cost)
-				var error := String(result.get("error", ""))
-				if error == "":
-					_id_counter += 1
-					_log(day, city_id, "build_state", "iron",
-						"recurso estratégico descoberto, margem %.2f/t" % margin, cost)
-					return
-				_log(day, city_id, "rejected", "iron", error, cost)
+		if error == "":
+			_id_counter += 1
+			_last_build_day[city_id] = day
+			_log(day, city_id, "build_state", resource,
+				"recurso estratégico, margem %.2f/t, demanda externa %.1f t/d" % [
+					margin, external_demand], cost)
+			return
+		_log(day, city_id, "rejected", resource, error, cost)
 
 	# 4. Sem ação: registra por que não investiu.
 	var pop: Dictionary = city["pop"]
@@ -148,6 +183,91 @@ func _input_available(city: Dictionary, input_product: int) -> bool:
 		if int(building.get("output_product", -1)) == input_product:
 			return true
 	return false
+
+
+## Cultura alimentar com melhor aptidão × preço na cidade (B3). Retorna {} se
+## nenhuma cultura for viável (aptidão <= 0). Culturas são renováveis: não
+## dependem de jazida.
+func _best_food_crop(city: Dictionary) -> Dictionary:
+	var suitability: Array = city.get("suitability", [])
+	var best: Dictionary = {}
+	var best_score := -1.0
+	for resource in Templates.FOOD_RESOURCES:
+		var template: Dictionary = Templates.TEMPLATES[resource]
+		var product := int(template["output"])
+		if product >= suitability.size() or float(suitability[product]) <= 0.0:
+			continue
+		var price := float(city["markets"][product].get("price", 0.0))
+		# Prefere expandir a cultura já estabelecida (fix do churn de milho, B4).
+		var established := Templates.has_producer(city, resource)
+		var score := float(suitability[product]) * price * (2.0 if established else 1.0)
+		if score > best_score:
+			best_score = score
+			best = {"resource": resource, "product": product, "score": score}
+	return best
+
+
+## Recurso primário disponível: aptidão > 0 (renovável) ou jazida com reserva
+## restante (mineral). Transformações (input >= 0) não dependem de aptidão.
+func _resource_available(city: Dictionary, resource: String, product: int) -> bool:
+	var template: Dictionary = Templates.TEMPLATES[resource]
+	if int(template["input"]) >= 0:
+		return true
+	var suitability: Array = city.get("suitability", [])
+	if product >= suitability.size() or float(suitability[product]) <= 0.0:
+		return false
+	if Templates.MINERAL_RESOURCES.has(resource):
+		return _has_deposit(city, resource)
+	return true
+
+
+func _has_deposit(city: Dictionary, resource: String) -> bool:
+	var deposits: Dictionary = city.get("deposits", {})
+	if not deposits.has(resource):
+		return false
+	return float(deposits[resource].get("remaining_kt", 0.0)) > 0.0
+
+
+## Bloqueio anti-loop: cooldown por cidade, teto por tipo e utilização efetiva.
+## Retorna "" quando pode construir, senão o motivo da recusa.
+func _build_gate(city_id: String, city: Dictionary, day: int, product: int) -> String:
+	var last_build := int(_last_build_day.get(city_id, -BUILD_COOLDOWN_DAYS))
+	if day - last_build < BUILD_COOLDOWN_DAYS:
+		return "cooldown de construção (%d d desde a última)" % (day - last_build)
+	if _buildings_of_type(city, product) >= MAX_BUILDINGS_PER_TYPE:
+		return "teto de %d construções deste tipo" % MAX_BUILDINGS_PER_TYPE
+	var utilization := _avg_utilization(city, product)
+	if utilization < MIN_AVG_UTILIZATION:
+		return "utilização média %.0f%% < %.0f%%" % [
+			utilization * 100.0, MIN_AVG_UTILIZATION * 100.0]
+	return ""
+
+
+func _buildings_of_type(city: Dictionary, product: int) -> int:
+	var count := 0
+	for building in city.get("buildings", []):
+		if int(building.get("output_product", -1)) == product:
+			count += 1
+	return count
+
+
+## Utilização média efetiva: normaliza pela aptidão do terreno (uma lavoura em
+## região de aptidão 0,3 produz no máximo 30% da capacidade nominal — isso não é
+## ociosidade). Transformações (site_suitability=1) ficam inalteradas.
+func _avg_utilization(city: Dictionary, product: int) -> float:
+	var total := 0.0
+	var count := 0
+	for building in city.get("buildings", []):
+		if int(building.get("output_product", -1)) != product:
+			continue
+		var utilization := float(building.get("utilization", 0.0))
+		var suitability := float(building.get("site_suitability", 1.0))
+		var effective := clampf(utilization / maxf(suitability, 0.01), 0.0, 1.0)
+		total += effective
+		count += 1
+	if count == 0:
+		return 1.0
+	return total / float(count)
 
 
 func _center(city: Dictionary) -> Vector2:

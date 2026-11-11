@@ -18,8 +18,6 @@ OUT = os.path.join("assets", "icons", "products")
 # produto -> id do game-icons.net
 ICONS = {
     "wheat": "wheat",
-    "flour": "flour",
-    "bread": "bread",
     "iron": "metal-bar",
     "factory": "factory",
     "crate": "cargo-crate",

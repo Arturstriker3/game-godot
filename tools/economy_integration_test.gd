@@ -1,8 +1,8 @@
 extends SceneTree
 
 ## Teste de integração dos quatro sistemas econômicos: geografia natural,
-## cidades/POPs, produção (trigo -> farinha -> pão), comércio, investimento e
-## save/load. Roda headless e falha com código diferente de zero.
+## cidades/POPs, produção (trigo consumido diretamente), comércio, investimento
+## e save/load. Roda headless e falha com código diferente de zero.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 
@@ -88,21 +88,21 @@ func _check_status_contract(status: Dictionary) -> void:
 		_fail("status: modo deveria ser demo")
 	if int(status.get("calendar_day", -1)) != 0:
 		_fail("status: calendário inicial deveria ser 0")
-	if Array(status.get("products", [])).size() != 23:
+	if Array(status.get("products", [])).size() != 21:
 		_fail("status: lista de produtos incompleta")
 	if Array(status.get("cities", [])).size() != 2:
 		_fail("status: cenário deveria ter duas cidades")
 	for city in status.get("cities", []):
-		if Array(city.get("suitability", [])).size() != 23:
+		if Array(city.get("suitability", [])).size() != 21:
 			_fail("%s: aptidões ausentes no status" % city.get("id", "?"))
 		for field in ["imported", "exported", "import_value", "export_value"]:
-			if Array(city.get(field, [])).size() != 23:
+			if Array(city.get(field, [])).size() != 21:
 				_fail("%s: %s ausente no status" % [city.get("id", "?"), field])
 
 
 func _check_building_resources(status: Dictionary) -> void:
-	var links := {"wheat": 0, "flour": 1, "bread": 2}
-	var found := {"wheat": false, "flour": false, "bread": false}
+	var links := {"wheat": 0}
+	var found := {"wheat": false}
 	for city in status.get("cities", []):
 		var expected_suitability := float(Array(city.get("suitability", [1.0]))[0])
 		for building in city.get("buildings", []):
@@ -113,11 +113,9 @@ func _check_building_resources(status: Dictionary) -> void:
 			found[resource] = true
 			if int(building.get("output_product", -1)) != links[resource]:
 				_fail("%s: produto de saída não corresponde ao recurso" % building.get("id", "?"))
-			if resource == "wheat" and int(building.get("input_product", 0)) != -1:
+			if int(building.get("input_product", 0)) != -1:
 				_fail("%s: extração primária não deveria ter insumo" % building.get("id", "?"))
-			if resource != "wheat" and int(building.get("input_product", -1)) < 0:
-				_fail("%s: transformação sem insumo declarado" % building.get("id", "?"))
-			if resource == "wheat" and absf(float(building.get("site_suitability", -1.0)) - expected_suitability) > 0.01:
+			if absf(float(building.get("site_suitability", -1.0)) - expected_suitability) > 0.01:
 				_fail("%s: aptidão territorial não aplicada" % building.get("id", "?"))
 	for resource in found:
 		if not found[resource]:
@@ -149,13 +147,12 @@ func _check_conservation(status: Dictionary, money_initial: float,
 func _check_chain(status: Dictionary) -> void:
 	var produced: Array = status["produced_total"]
 	var consumed: Array = status["consumed_total"]
-	for index in 3:
-		if float(produced[index]) <= 0.0:
-			_fail("cadeia: produto %d sem produção" % index)
-	if float(consumed[2]) <= 0.0:
-		_fail("cadeia: pão não consumido")
-	print("[integration] produzido(t/far/pão)=%.1f/%.1f/%.1f" % [
-		produced[0], produced[1], produced[2]])
+	if float(produced[0]) <= 0.0:
+		_fail("cadeia: trigo sem produção")
+	if float(consumed[0]) <= 0.0:
+		_fail("cadeia: trigo não consumido")
+	print("[integration] produzido(trigo)=%.1f consumido(trigo)=%.1f" % [
+		produced[0], consumed[0]])
 
 
 func _check_wages_and_demand(status: Dictionary) -> void:

@@ -1,8 +1,8 @@
 extends SceneTree
 
-## Teste headless do cenário mínimo de duas cidades (POPs, trigo, farinha, pão).
-## Executa 30 dias, confere conservação de dinheiro/população/estoque e aplica
-## um choque de preço no pão para observar substituição e queda de consumo.
+## Teste headless do cenário mínimo de duas cidades (POPs, trigo consumido
+## diretamente). Executa 30 dias, confere conservação de dinheiro/população/
+## estoque e aplica um choque de preço no trigo para observar queda de consumo.
 
 const DAYS := 30
 const SHOCK_DAYS := 10
@@ -19,34 +19,34 @@ func _init() -> void:
 	var initial: Dictionary = sim.get_demo_status()
 	var money_initial := float(initial["money_total"])
 	var population_initial := _population(initial)
-	var bread_baseline := 0.0
+	var wheat_baseline := 0.0
 	var food_spend_baseline := 0.0
-	var bread_samples := 0
+	var wheat_samples := 0
 
 	for day in DAYS:
 		var status: Dictionary = sim.tick_demo()
 		_check_conservation(status, money_initial, population_initial, day + 1)
 		if day >= DAYS - 10:
-			bread_baseline += float(status["consumed_today"][2])
+			wheat_baseline += float(status["consumed_today"][0])
 			food_spend_baseline += _food_spend(status)
-			bread_samples += 1
+			wheat_samples += 1
 
 	var before_shock: Dictionary = sim.get_demo_status()
 	var savings_before := _savings(before_shock)
-	sim.demo_price_shock("bread", 100.0)
-	var bread_after := 0.0
+	sim.demo_price_shock("wheat", 100.0)
+	var wheat_after := 0.0
 	var food_spend_after := 0.0
 	var after_samples := 0
 	for day in SHOCK_DAYS:
 		var status: Dictionary = sim.tick_demo()
 		_check_conservation(status, money_initial, population_initial, DAYS + day + 1)
-		bread_after += float(status["consumed_today"][2])
+		wheat_after += float(status["consumed_today"][0])
 		food_spend_after += _food_spend(status)
 		after_samples += 1
 
-	var average_before := bread_baseline / maxf(1.0, float(bread_samples))
-	var average_after := bread_after / maxf(1.0, float(after_samples))
-	var spend_before := food_spend_baseline / maxf(1.0, float(bread_samples))
+	var average_before := wheat_baseline / maxf(1.0, float(wheat_samples))
+	var average_after := wheat_after / maxf(1.0, float(after_samples))
+	var spend_before := food_spend_baseline / maxf(1.0, float(wheat_samples))
 	var spend_after := food_spend_after / maxf(1.0, float(after_samples))
 	var savings_after := _savings(sim.get_demo_status())
 
@@ -85,12 +85,8 @@ func _check_economy(status: Dictionary, spend_before: float, spend_after: float,
 	var consumed: Array = status["consumed_total"]
 	if float(produced[0]) <= 0.0:
 		_failures.append("sem produção de trigo")
-	if float(produced[1]) <= 0.0:
-		_failures.append("sem produção de farinha")
-	if float(produced[2]) <= 0.0:
-		_failures.append("sem produção de pão")
-	if float(consumed[2]) <= 0.0:
-		_failures.append("sem consumo de pão")
+	if float(consumed[0]) <= 0.0:
+		_failures.append("sem consumo de trigo")
 
 	for city in status["cities"]:
 		if float(city["gdp"]) <= 0.0:
@@ -142,17 +138,16 @@ func _food_spend(status: Dictionary) -> float:
 	return total
 
 
-func _report(status: Dictionary, bread_before: float, bread_after: float,
+func _report(status: Dictionary, wheat_before: float, wheat_after: float,
 		spend_before: float, spend_after: float,
 		savings_before: float, savings_after: float) -> void:
 	var produced: Array = status["produced_total"]
 	var consumed: Array = status["consumed_total"]
-	print("[population] dia=%d dinheiro=%.2f pão_antes=%.2f pão_depois=%.2f" % [
-		status["day"], status["money_total"], bread_before, bread_after])
+	print("[population] dia=%d dinheiro=%.2f trigo_antes=%.2f trigo_depois=%.2f" % [
+		status["day"], status["money_total"], wheat_before, wheat_after])
 	print("  gasto_alimentar=%.2f->%.2f  poupança=%.2f->%.2f" % [
 		spend_before, spend_after, savings_before, savings_after])
-	print("  produzido(t/far/pão)=%.1f/%.1f/%.1f consumido=%.1f/%.1f/%.1f" % [
-		produced[0], produced[1], produced[2], consumed[0], consumed[1], consumed[2]])
+	print("  produzido(trigo)=%.1f consumido(trigo)=%.1f" % [produced[0], consumed[0]])
 	for city in status["cities"]:
 		var pop: Dictionary = city["pop"]
 		var income := float(pop["disposable"]) + float(pop["service_spend"])
@@ -165,7 +160,5 @@ func _report(status: Dictionary, bread_before: float, bread_after: float,
 		var prices := PackedStringArray()
 		for market in city["markets"]:
 			prices.append("%.1f" % market["price"])
-		print("         preços(t/far/pão)=%s estoque(t/far/pão)=%.1f/%.1f/%.1f" % [
-			" / ".join(prices),
-			city["markets"][0]["stock"], city["markets"][1]["stock"],
-			city["markets"][2]["stock"]])
+		print("         preços(trigo)=%s estoque(trigo)=%.1f" % [
+			" / ".join(prices), city["markets"][0]["stock"]])

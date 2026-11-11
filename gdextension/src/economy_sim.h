@@ -56,13 +56,13 @@ public:
 	/** Estado do cenário de validação (cidades, POPs, mercados, PIB). */
 	Dictionary get_demo_status() const;
 
-	/** Choque de preço em um produto ("wheat", "flour" ou "bread"). */
+	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
 	void demo_price_shock(const String& product, double multiplier);
 
 	/**
 	 * Define a aptidão territorial de um produto para uma cidade.
 	 * @param city_id Identificador da cidade.
-	 * @param product "wheat", "flour" ou "bread".
+	 * @param product id de goods.json (ex.: "wheat", "iron").
 	 * @param value Aptidão entre 0 e 1 (0 impede a produção primária).
 	 */
 	void demo_set_suitability(const String& city_id, const String& product, double value);
@@ -81,6 +81,20 @@ public:
 	 */
 	bool demo_set_deposit(const String& city_id, const String& product,
 		double reserve_kt, double quality, double depth_m);
+
+	/**
+	 * Define o teto de demanda externa (t/dia) de um produto para uma cidade.
+	 * É a demanda LIMITADA do resto do mundo para bens brutos (minerais, soja,
+	 * algodão e madeira): a fase 4d compra no máximo este teto por dia, e a
+	 * produção acima dele vira estoque, o que derruba o preço (fase 8). O teto
+	 * vem da participação da nação no mercado mundial — reserva esgotada em ~25
+	 * anos (GeographyService.apply_to_sim). Sem teto declarado (0), o bem não é
+	 * exportado (comportamento legado dos bens sem depósito/aptidão).
+	 * @param product id de goods.json (ex.: "coal", "soy").
+	 * @param ceiling_t_per_day Teto diário em toneladas (>= 0).
+	 */
+	void demo_set_external_demand(const String& city_id, const String& product,
+		double ceiling_t_per_day);
 
 	/**
 	 * Investe capital da empresa na expansão de uma construção existente.
@@ -229,20 +243,30 @@ private:
 	};
 
 	// ------------------------------------------------------------------
-	// Cenário de validação: duas cidades, população agregada (POPs), trigo,
-	// farinha e pão. Vive no mesmo núcleo para validar as regras antes de
-	// generalizar o modo europeu.
+	// Cenário de validação: duas cidades, população agregada (POPs) e trigo
+	// consumido diretamente. Vive no mesmo núcleo para validar as regras antes
+	// de generalizar o modo europeu.
 	// ------------------------------------------------------------------
 	enum class DemoProduct {
-		Wheat = 0, Flour = 1, Bread = 2, Iron = 3, Rice = 4, Maize = 5,
-		Bauxite = 6, Lead = 7, Gold = 8, Phosphate = 9, Tungsten = 10,
-		RareEarths = 11, Sulfur = 12, Diamond = 13, Coal = 14, Copper = 15,
-		Gas = 16, Oil = 17, Potato = 18, Soy = 19, Cotton = 20, Wood = 21,
-		Uranium = 22
+		Wheat = 0, Iron = 1, Rice = 2, Maize = 3,
+		Bauxite = 4, Lead = 5, Gold = 6, Phosphate = 7, Tungsten = 8,
+		RareEarths = 9, Sulfur = 10, Diamond = 11, Coal = 12, Copper = 13,
+		Gas = 14, Oil = 15, Potato = 16, Soy = 17, Cotton = 18, Wood = 19,
+		Uranium = 20
 	};
 	// Mesma ordem de data/definitions/economy/goods.json.
-	static constexpr int kDemoProducts = 23;
-	static constexpr int kDemoFoodProducts = 3;
+	static constexpr int kDemoProducts = 21;
+	// Farinha/pão foram removidos da cadeia (subprodutos ficam para depois):
+	// a comida é consumida diretamente das culturas. A cesta alimentar (B3) é
+	// substituível entre trigo, arroz, milho e batata — soja fica fora por ora.
+	// A necessidade é medida em toneladas-equivalentes de grão: o fator calórico
+	// converte tonelada real em tonelada-equivalente (batata ~1/4 das calorias).
+	static constexpr int kDemoFoodProducts = 4;
+	// Ids de produto (índice em kDemoProductNames) e fator calórico por slot da
+	// cesta. Fonte (FAO/INFOODS, composição média): cereais ~3600 kcal/kg;
+	// batata fresca ~770 kcal/kg — ~1/4 das calorias por tonelada (fator 0,25).
+	static constexpr int kDemoFoodProductIds[kDemoFoodProducts] = {0, 2, 3, 16};
+	static constexpr double kDemoCaloricFactor[kDemoFoodProducts] = {1.0, 1.0, 1.0, 0.25};
 
 	struct DemoMarket {
 		double stock = 0.0;
@@ -259,7 +283,7 @@ private:
 	struct DemoBuilding {
 		std::string id;
 		std::string city;
-		int kind = 0; // 0=fazenda, 1=moinho, 2=padaria (legado de exibição)
+		int kind = 0; // 0=fazenda (único tipo hoje; campo mantido por exibição)
 		std::string resource;  // recurso produzido (id de goods.json)
 		std::string owner = "private"; // private ou state
 		int input_product = -1; // -1 = extração primária (sem insumo)
@@ -301,9 +325,9 @@ private:
 		double need = 0.0;
 		double satisfaction = 0.0;
 		double savings = 0.0;
-		// Consumo por categoria (trigo, farinha, pão): desejado e realizado.
-		double desired_by_category[kDemoFoodProducts] = {0.0, 0.0, 0.0};
-		double consumed_by_category[kDemoFoodProducts] = {0.0, 0.0, 0.0};
+		// Consumo por categoria (hoje só trigo): desejado e realizado.
+		double desired_by_category[kDemoFoodProducts] = {0.0};
+		double consumed_by_category[kDemoFoodProducts] = {0.0};
 	};
 
 	// Reserva mineral do território da cidade para um produto. Compartilhada
@@ -353,6 +377,10 @@ private:
 		// Aptidão territorial por produto (0..1). A produção primária é
 		// multiplicada por ela; o GeographyService sobrescreve com dados reais.
 		double suitability[kDemoProducts] = {1.0, 1.0, 1.0};
+		// Teto de demanda externa (t/dia) por produto, declarado pelo
+		// GeographyService (participação da nação no mercado mundial). 0 = sem
+		// exportação deste bem nesta cidade.
+		double external_demand[kDemoProducts] = {};
 		// Reservas minerais por produto (extração com esgotamento).
 		DemoDeposit deposits[kDemoProducts];
 		DemoPop pop;
@@ -384,8 +412,9 @@ private:
 	// ------------------------------------------------------------------
 	// Benchmark: economia sintética com estruturas planas. Sem strings,
 	// sem nós e sem alocações por tick. Índices substituem identificadores.
+	// Modela só trigo (produção/consumo diretos) — farinha/pão removidos.
 	// ------------------------------------------------------------------
-	static constexpr int kBenchProducts = 3;
+	static constexpr int kBenchProducts = 1;
 
 	struct BenchCity {
 		double population = 0.0;
@@ -512,18 +541,22 @@ private:
 	std::vector<std::string> demo_check_invariants(double money_before) const;
 	void demo_snapshot(DemoSnapshot& out) const;
 	void demo_restore(const DemoSnapshot& in);
-	void demo_trade_wheat();
+	void demo_trade_food();
 	void demo_national_fiscal_transfer();
 	const Port* demo_nearest_port(const std::string& nation, const std::string& landmass,
 	                              const MapPoint& from) const;
 	static int demo_product_index(const String& product);
+	// Slot da cesta alimentar (0..kDemoFoodProducts-1) -> id de produto.
+	static int demo_food_product(int slot);
+	// Id de produto -> fator calórico (0.0 se não for alimento da cesta).
+	static double demo_food_calories(int product);
 	static const char* demo_product_name(int product);
 	static double demo_extraction_efficiency(const DemoDeposit& deposit);
 	static double demo_depth_opex_factor(const DemoDeposit& deposit);
 	double demo_base_price(int product) const;
 	/**
 	 * Define os preços-base dos bens a partir de dados externos (goods.json).
-	 * Cada item deve ter "id" (wheat/flour/bread/iron) e "base_price". Bens
+	 * Cada item deve ter "id" (wheat/iron/...) e "base_price". Bens
 	 * desconhecidos mantêm o preço padrão.
 	 */
 	void demo_set_goods(const Array& goods);
@@ -584,7 +617,7 @@ private:
 	double demo_consumed_today_[kDemoProducts] = {};
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
 	double demo_base_prices_[kDemoProducts] = {
-		40.0, 70.0, 80.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
+		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
 		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0, 35.0, 45.0, 70.0, 25.0, 500.0};
 
 	// Estado do benchmark sintético (estruturas planas, sem alocação por tick).

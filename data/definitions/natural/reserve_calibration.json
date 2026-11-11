@@ -1,0 +1,283 @@
+{
+	"_meta": {
+		"description": "Calibração das reservas minerais/energéticas (ordem de grandeza e distribuição por país). Ancorada em agregados publicados (USGS Mineral Commodity Summaries; Energy Institute Statistical Review; OECD-NEA/IAEA Red Book). Não é dado de campo: são totais mundiais e participações dos principais detentores conforme a fonte.",
+		"data_quality": "published_aggregate",
+		"generated_by": "tools/calibrate_reserves.py (lê este arquivo)",
+		"note": "Cada recurso traz world_total_kt (kt = mil toneladas), a unidade, source/year, e 'shares': frações (0..1) dos principais detentores + 'resto' (demais países). Recurso sem total publicado confiável usa world_total_kt:'unknown' e shares vazio. Para petróleo/gás o total em kt deriva de conversão documentada no campo note."
+	},
+	"resources": [
+		{
+			"resource": "iron",
+			"world_total_kt": 190000000.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025 (minério de ferro bruto - crude ore)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"shares": {
+				"AUS": 0.305263,
+				"BRA": 0.178947,
+				"RUS": 0.152632,
+				"CHN": 0.105263,
+				"UKR": 0.034211,
+				"CAN": 0.031579,
+				"IND": 0.028947,
+				"USA": 0.015789,
+				"IRN": 0.014211,
+				"KAZ": 0.013158,
+				"resto": 0.120000
+			}
+		},
+		{
+			"resource": "copper",
+			"world_total_kt": 980000.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025 (conteúdo de cobre)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"shares": {
+				"CHL": 0.193878,
+				"PER": 0.102041,
+				"AUS": 0.102041,
+				"COD": 0.081633,
+				"RUS": 0.081633,
+				"MEX": 0.054082,
+				"USA": 0.047959,
+				"CHN": 0.041837,
+				"POL": 0.034694,
+				"resto": 0.260202
+			}
+		},
+		{
+			"resource": "coal",
+			"world_total_kt": 1074108000.0,
+			"unit": "kt",
+			"source": "Energy Institute Statistical Review of World Energy 2024 (reservas provadas)",
+			"year": 2024,
+			"data_quality": "published_aggregate",
+			"shares": {
+				"USA": 0.231769,
+				"RUS": 0.150979,
+				"AUS": 0.139863,
+				"CHN": 0.133319,
+				"IND": 0.103390,
+				"DEU": 0.033423,
+				"IDN": 0.032463,
+				"UKR": 0.032003,
+				"POL": 0.024592,
+				"KAZ": 0.023838,
+				"resto": 0.094361
+			}
+		},
+		{
+			"resource": "oil",
+			"world_total_kt": 236000000.0,
+			"unit": "kt",
+			"source": "Energy Institute Statistical Review of World Energy 2024 (reservas provadas ≈1.732 Gbbl)",
+			"year": 2024,
+			"data_quality": "published_aggregate",
+			"note": "Total em kt convertido de barris a ~7,33 bbl/t (densidade média do petróleo). As participações (shares) são independentes da conversão.",
+			"shares": {
+				"VEN": 0.175404,
+				"SAU": 0.171767,
+				"CAN": 0.097056,
+				"IRN": 0.091108,
+				"IRQ": 0.083718,
+				"RUS": 0.062240,
+				"KWT": 0.058603,
+				"ARE": 0.056467,
+				"USA": 0.039723,
+				"LBY": 0.027944,
+				"NGA": 0.021305,
+				"QAT": 0.014550,
+				"resto": 0.100115
+			}
+		},
+		{
+			"resource": "gas",
+			"world_total_kt": 141000000.0,
+			"unit": "kt",
+			"source": "Energy Institute Statistical Review of World Energy 2024 (reservas provadas ≈188,1 tcm)",
+			"year": 2024,
+			"data_quality": "published_aggregate",
+			"note": "Total em kt convertido de m³ a ~0,75 t/1.000 m³ (metano em condições padrão). As participações (shares) são independentes da conversão.",
+			"shares": {
+				"RUS": 0.198830,
+				"IRN": 0.170654,
+				"QAT": 0.131313,
+				"TKM": 0.072302,
+				"USA": 0.066986,
+				"CHN": 0.044657,
+				"VEN": 0.033493,
+				"SAU": 0.031898,
+				"ARE": 0.031366,
+				"NGA": 0.029240,
+				"resto": 0.189261
+			}
+		},
+		{
+			"resource": "bauxite",
+			"world_total_kt": 30000000.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025 (bauxita)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"shares": {
+				"GIN": 0.246667,
+				"AUS": 0.176667,
+				"VNM": 0.123333,
+				"BRA": 0.090000,
+				"JAM": 0.066667,
+				"IDN": 0.033333,
+				"CHN": 0.023667,
+				"IND": 0.022000,
+				"RUS": 0.016667,
+				"resto": 0.200999
+			}
+		},
+		{
+			"resource": "lead",
+			"world_total_kt": 95000.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025 (conteúdo de chumbo)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"note": "China e Rússia revisadas para cima na edição 2025 (22.000 e 8.900 kt, resp.). Demais países (Peru/México/EUA) mantêm a ordem histórica.",
+			"shares": {
+				"AUS": 0.368421,
+				"CHN": 0.231579,
+				"RUS": 0.093684,
+				"PER": 0.063158,
+				"MEX": 0.058947,
+				"USA": 0.052632,
+				"IND": 0.026316,
+				"KAZ": 0.021053,
+				"BOL": 0.016842,
+				"SWE": 0.011579,
+				"resto": 0.055789
+			}
+		},
+		{
+			"resource": "gold",
+			"world_total_kt": 64.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025 (conteúdo de ouro, em toneladas → kt)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"shares": {
+				"AUS": 0.187500,
+				"RUS": 0.187500,
+				"ZAF": 0.078125,
+				"CHN": 0.048438,
+				"USA": 0.046875,
+				"PER": 0.042188,
+				"IDN": 0.040625,
+				"BRA": 0.037500,
+				"CAN": 0.034375,
+				"resto": 0.296875
+			}
+		},
+		{
+			"resource": "phosphate",
+			"world_total_kt": 73000000.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2026 (rocha fosfática marketable)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"shares": {
+				"MAR": 0.684932,
+				"CHN": 0.046575,
+				"EGY": 0.038356,
+				"TUN": 0.034247,
+				"RUS": 0.032877,
+				"DZA": 0.030137,
+				"BRA": 0.021918,
+				"ZAF": 0.020548,
+				"USA": 0.013699,
+				"FIN": 0.013699,
+				"resto": 0.063012
+			}
+		},
+		{
+			"resource": "tungsten",
+			"world_total_kt": 4700.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025/2026 (conteúdo de tungstênio; USGS reporta '>4,7 Mt')",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"note": "USGS lista o total mundial como '>4.700.000 t' (limite inferior); usa-se 4,7 Mt como total calibrado.",
+			"shares": {
+				"CHN": 0.531915,
+				"AUS": 0.121277,
+				"RUS": 0.085106,
+				"VNM": 0.036170,
+				"ESP": 0.014043,
+				"PRK": 0.006170,
+				"AUT": 0.002128,
+				"PRT": 0.000723,
+				"resto": 0.202468
+			}
+		},
+		{
+			"resource": "rare_earths",
+			"world_total_kt": 120000.0,
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2024 (óxidos de terras raras - REO)",
+			"year": 2024,
+			"data_quality": "published_aggregate",
+			"note": "Edições posteriores (MCS 2025/2026) revisaram o total para ~75-90 Mt e o Brasil para ~11 Mt; mantém-se o total de 120 Mt (MCS 2024) por consistência com balance_review.md §4.2. A ordem China #1 é estável em todas as edições.",
+			"shares": {
+				"CHN": 0.366667,
+				"VNM": 0.183333,
+				"BRA": 0.175000,
+				"RUS": 0.083333,
+				"IND": 0.057500,
+				"AUS": 0.035000,
+				"USA": 0.015000,
+				"GRL": 0.012500,
+				"resto": 0.071667
+			}
+		},
+		{
+			"resource": "uranium",
+			"world_total_kt": 5900.0,
+			"unit": "kt",
+			"source": "OECD-NEA/IAEA Uranium Red Book (recursos identificados recuperáveis <$130/kgU, RAR+inferidos; World Nuclear Association)",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"note": "Total mundial ≈5,86 Mt U (arredondado a 5,9 Mt). Usa-se a métrica de 'recursos identificados', não 'reservas provadas' (o urânio não tem reserva padrão USGS).",
+			"shares": {
+				"AUS": 0.288136,
+				"KAZ": 0.138136,
+				"CAN": 0.098644,
+				"NAM": 0.084407,
+				"RUS": 0.080847,
+				"NER": 0.056949,
+				"ZAF": 0.054407,
+				"CHN": 0.045763,
+				"BRA": 0.028475,
+				"MNG": 0.024576,
+				"resto": 0.099660
+			}
+		},
+		{
+			"resource": "sulfur",
+			"world_total_kt": "unknown",
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"note": "Sem 'reserva' padrão: o enxofre é majoritariamente co-recuperado de hidrocarbonetos e depósitos de sulfeto; o USGS não publica total de reservas comparável aos demais. Sem calibração (mantém o dado MRDS).",
+			"shares": {}
+		},
+		{
+			"resource": "diamond",
+			"world_total_kt": "unknown",
+			"unit": "kt",
+			"source": "USGS Mineral Commodity Summaries 2025",
+			"year": 2025,
+			"data_quality": "published_aggregate",
+			"note": "Sem 'reserva' padrão publicada (o USGS não divulga reservas de diamante; indústria usa recursos). Sem calibração (mantém o dado MRDS; total já é ~36 kt, distribuição BWA/CAN/ZAF coerente).",
+			"shares": {}
+		}
+	]
+}
