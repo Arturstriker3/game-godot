@@ -70,5 +70,69 @@
     "x": 1692.3,
     "y": 1154.4,
     "landmass": "guiana"
+  },
+  {
+    "id": "FRA-LEH",
+    "name": "Le Havre",
+    "nation": "FRA",
+    "x": 2501.4,
+    "y": 562.6,
+    "landmass": "continent"
+  },
+  {
+    "id": "FRA-MRS",
+    "name": "Marseille",
+    "nation": "FRA",
+    "x": 2574.4,
+    "y": 648.8,
+    "landmass": "continent"
+  },
+  {
+    "id": "FRA-NTE",
+    "name": "Saint-Nazaire",
+    "nation": "FRA",
+    "x": 2469.4,
+    "y": 593.5,
+    "landmass": "continent"
+  },
+  {
+    "id": "NED-RTM",
+    "name": "Rotterdam",
+    "nation": "NED",
+    "x": 2557.2,
+    "y": 528.5,
+    "landmass": "continent"
+  },
+  {
+    "id": "GBR-GLA",
+    "name": "Glasgow",
+    "nation": "GBR",
+    "x": 2433.9,
+    "y": 472.9,
+    "landmass": "britain"
+  },
+  {
+    "id": "GBR-BRS",
+    "name": "Bristol",
+    "nation": "GBR",
+    "x": 2462.5,
+    "y": 534.7,
+    "landmass": "britain"
+  },
+  {
+    "id": "GBR-NCL",
+    "name": "Newcastle",
+    "nation": "GBR",
+    "x": 2479.9,
+    "y": 485.8,
+    "landmass": "britain"
+  },
+  {
+    "id": "VEN-MAR",
+    "name": "Maracaibo",
+    "nation": "VEN",
+    "x": 1505.1,
+    "y": 1102.1,
+    "landmass": "guiana"
   }
 ]

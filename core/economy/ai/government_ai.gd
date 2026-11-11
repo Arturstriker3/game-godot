@@ -29,14 +29,16 @@ const BUILD_COOLDOWN_DAYS := 30
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var _sim: Object
+var _geo: Object
 var _decisions: Array[Dictionary] = []
 var _id_counter := 1
 # Dia da última construção por cidade (base do cooldown).
 var _last_build_day: Dictionary = {}
 
 
-func setup(sim: Object) -> void:
+func setup(sim: Object, geo: Object) -> void:
 	_sim = sim
+	_geo = geo
 
 
 func run(day: int, status: Dictionary) -> void:
@@ -59,17 +61,25 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	if available <= 0.0:
 		return
 
-	# 1. Segurança alimentar (B3): quando há déficit alimentar (toneladas-
-	# equivalentes de grão), constrói a cultura com melhor aptidão × preço na
-	# cidade. O anti-loop B5 (cooldown/teto/utilização) segue no _build_gate.
+	# 1. Segurança alimentar (B3): quando há FOME REAL (déficit de consumo em
+	# toneladas-equivalentes de grão), constrói a cultura com melhor aptidão ×
+	# preço na cidade. O anti-loop B5 (cooldown/teto/utilização) segue no
+	# _build_gate.
 	var food_pop: Dictionary = city["pop"]
-	# Déficit estrutural (B3): necessidade − produção local, em toneladas-
-	# equivalentes de grão. Usa a produção (não o consumo) para detectar a
-	# dependência de importação — uma cidade alimentada por subsídio de importação
-	# tem consumo satisfeito mas continua estruturalmente dependente e deve
-	# produzir a melhor cultura local.
-	var food_deficit := maxf(0.0, float(food_pop.get("need", 0.0)) - Templates.local_food_supply(city))
-	if food_deficit >= MIN_SHORTAGE_TONS:
+	# Déficit REAL (B3/bacia por província): necessidade − consumo, em toneladas-
+	# equivalentes de grão. Usa o CONSUMO (não a produção local) — uma cidade
+	# alimentada por comércio regional tem consumo satisfeito e NÃO deve
+	# construir uma fazenda redundante que não consegue vender localmente (era a
+	# causa do churn de milho em Manchester/Newcastle/Marselha, cuja bacia tem
+	# aptidão de trigo baixa mas é atendida pela rede nacional). A produção local
+	# (local_food_supply) segue informando o diagnóstico, não o gatilho.
+	var food_deficit := maxf(0.0, float(food_pop.get("need", 0.0)) - float(food_pop.get("consumed", 0.0)))
+	# O governo só cobre onde o capital privado NÃO chega: se a cidade já tem
+	# qualquer produtor de alimento da cesta (fazenda inicial ou privada),
+	# construir outra estatal é redundante e churna — o milho estatal de 20 t/d
+	# em Manchester/Newcastle/Marselha era construído ao lado do AI-MAIZE privado
+	# (2.185 t/d) e falia quando a escassez passava (balance_review §16).
+	if food_deficit >= MIN_SHORTAGE_TONS and not _has_food_producer(city):
 		var best := _best_food_crop(city)
 		if not best.is_empty():
 			var resource := String(best["resource"])
@@ -77,6 +87,15 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			var product := int(template["output"])
 			var caloric := Templates.caloric_factor(resource)
 			var capacity := clampf(food_deficit / caloric, MIN_STATE_CAPACITY, MAX_STATE_CAPACITY)
+			# Terra limitada: teto pela área cultivável da cidade menos o já
+			# instalado (mesma regra do investidor privado). Só quando há dado
+			# de área (land_cap > 0): cidade sem bacia (ex.: cenário demo sem
+			# nação) não tem teto de terra — a aptidão do fallback já decide.
+			if _geo != null:
+				var land_cap := float(_geo.city_land_capacity_t_day(city_id, resource))
+				if land_cap > 0.0:
+					var used := Templates.existing_capacity(city, product)
+					capacity = minf(capacity, maxf(0.0, land_cap - used))
 			if capacity * capital_cost > available:
 				capacity = available / capital_cost
 			if capacity >= MIN_STATE_CAPACITY:
@@ -185,9 +204,18 @@ func _input_available(city: Dictionary, input_product: int) -> bool:
 	return false
 
 
+## true se a cidade já tem qualquer construção que produz um alimento da cesta.
+## O governo só cobre onde o capital privado não chega (docstring da classe).
+func _has_food_producer(city: Dictionary) -> bool:
+	for resource in Templates.FOOD_RESOURCES:
+		if Templates.has_producer(city, resource):
+			return true
+	return false
+
+
 ## Cultura alimentar com melhor aptidão × preço na cidade (B3). Retorna {} se
-## nenhuma cultura for viável (aptidão <= 0). Culturas são renováveis: não
-## dependem de jazida.
+## nenhuma cultura for viável (aptidão <= 0 ou margem <= 0). Culturas são
+## renováveis: não dependem de jazida.
 func _best_food_crop(city: Dictionary) -> Dictionary:
 	var suitability: Array = city.get("suitability", [])
 	var best: Dictionary = {}
@@ -198,6 +226,13 @@ func _best_food_crop(city: Dictionary) -> Dictionary:
 		if product >= suitability.size() or float(suitability[product]) <= 0.0:
 			continue
 		var price := float(city["markets"][product].get("price", 0.0))
+		# Viabilidade (bacia por província): uma fazenda cujo preço × aptidão não
+		# paga o próprio custo variável (jobs·wage + opex) faliria em 60 dias e
+		# não alimenta ninguém — o governo não deve construí-la. É o churn de
+		# milho em Manchester/Newcastle (aptidão de milho ~0,38, abaixo do ponto
+		# de equilíbrio ~0,42). O investidor privado aplica o mesmo gate (margem).
+		if float(suitability[product]) * price - Templates.variable_cost(resource, city) <= 0.0:
+			continue
 		# Prefere expandir a cultura já estabelecida (fix do churn de milho, B4).
 		var established := Templates.has_producer(city, resource)
 		var score := float(suitability[product]) * price * (2.0 if established else 1.0)

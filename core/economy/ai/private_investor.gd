@@ -24,13 +24,15 @@ const BASE_RISK := 0.15
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var _sim: Object
+var _geo: Object
 var _decisions: Array[Dictionary] = []
 var _history: Dictionary = {}
 var _id_counter := 1
 
 
-func setup(sim: Object) -> void:
+func setup(sim: Object, geo: Object) -> void:
 	_sim = sim
+	_geo = geo
 
 
 func run(day: int, status: Dictionary) -> void:
@@ -179,6 +181,17 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		var external_demand := Templates.external_demand_of(city, product)
 		capacity = clampf(minf(shortage, external_demand * EXPORT_CAPACITY_FACTOR),
 			MIN_CAPACITY, MAX_CAPACITY)
+	# Terra limitada: a capacidade de uma fazenda (alimento da cesta) não pode
+	# ultrapassar a capacidade física da área cultivável da cidade (regra nova).
+	# O teto é a área cultivável × produtividade FAO, menos o que já está
+	# instalado (a produção efetiva segue = capacidade × aptidão). Só quando há
+	# dado de área (land_cap > 0): cidade sem bacia (ex.: cenário demo sem
+	# nação) não tem teto de terra — a aptidão do fallback já decide.
+	if Templates.FOOD_RESOURCES.has(resource_name) and _geo != null:
+		var land_cap := float(_geo.city_land_capacity_t_day(city_id, resource_name))
+		if land_cap > 0.0:
+			var used := Templates.existing_capacity(city, product)
+			capacity = minf(capacity, maxf(0.0, land_cap - used))
 	if capacity * capital_cost > available:
 		capacity = available / capital_cost
 	if capacity < MIN_CAPACITY:

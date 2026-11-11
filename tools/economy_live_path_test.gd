@@ -200,22 +200,50 @@ func _check_overseas_isolation(applied: Dictionary) -> void:
 		var bucket: Dictionary = guiana_totals if float(deposit.get("lon", 0.0)) < -30.0 \
 				else continental_totals
 		bucket[resource] = float(bucket.get(resource, 0.0)) + qty
-	_check_landmass_side("FRA-CAY", applied.get("FRA-CAY", {}), guiana_totals, crops)
-	_check_landmass_side("FRA-PAR", applied.get("FRA-PAR", {}), continental_totals, crops)
+	# A França continental agora tem várias cidades: os depósitos nacionais são
+	# divididos entre elas pela regra A1, então a soma por massa de terra agrega
+	# todas as cidades daquela massa (não só Paris/Caiena).
+	var cities := _load_array(CITIES_PATH)
+	var guiana_applied := _sum_applied_by_landmass(applied, cities, "FRA", "guiana")
+	var continental_applied := _sum_applied_by_landmass(applied, cities, "FRA", "continent")
+	_check_landmass_side("FRA guiana", guiana_applied, guiana_totals, crops)
+	_check_landmass_side("FRA continent", continental_applied, continental_totals, crops)
 
 
-## Verifica que a cidade declarou exatamente os depósitos da sua massa de terra:
-## (1) cada mineral da massa de terra bate com a reserva declarada; (2) nenhum
-## mineral de fora dela aparece. Tolera o arredondamento de reserva (1 kt).
-func _check_landmass_side(label: String, city_applied: Dictionary, expected_totals: Dictionary, crops: Array) -> void:
+## Soma as reservas minerais (chaves que não são culturas) de todas as cidades
+## da nação em uma massa de terra. Espelha a regra A1 (um depósito -> uma
+## cidade), agregado quando a nação tem mais de uma cidade por massa de terra.
+func _sum_applied_by_landmass(applied: Dictionary, cities: Array, tag: String,
+		landmass: String) -> Dictionary:
+	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+	var result := {}
+	for city in cities:
+		if String(city.get("nation", "")) != tag:
+			continue
+		if String(city.get("landmass", "")) != landmass:
+			continue
+		var city_applied: Dictionary = applied.get(String(city.get("id", "")), {})
+		for key: String in city_applied:
+			if crops.has(key):
+				continue
+			result[key] = float(result.get(key, 0.0)) + float(city_applied.get(key, 0.0))
+	return result
+
+
+## Verifica que a soma das cidades da massa de terra declarou exatamente os
+## depósitos dela: (1) cada mineral bate com a reserva; (2) nenhum mineral de
+## fora aparece. Tolera o arredondamento por cidade-recurso (0,5 kt cada).
+func _check_landmass_side(label: String, declared_by_side: Dictionary,
+		expected_totals: Dictionary, crops: Array) -> void:
 	var minerals := {}
-	for key: String in city_applied:
+	for key: String in declared_by_side:
 		if not crops.has(key):
-			minerals[key] = float(city_applied[key])
+			minerals[key] = float(declared_by_side[key])
 	for mineral: String in expected_totals:
 		var declared := float(minerals.get(mineral, 0.0))
 		var expected := float(expected_totals[mineral])
-		if absf(declared - expected) > 1.0:
+		var tolerance := maxf(2.0, 0.001 * expected)
+		if absf(declared - expected) > tolerance:
 			_failures.append("%s %s: %.0f kt != %.0f kt (isolamento por landmass quebrado)" % [
 				label, mineral, declared, expected])
 	for mineral: String in minerals:

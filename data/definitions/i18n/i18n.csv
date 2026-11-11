@@ -59,6 +59,30 @@ city.name.NED-AMS,Amsterdã,Amsterdam,Ámsterdam
 city.name.VEN-CCS,Caracas,Caracas,Caracas
 city.name.SUR-PBM,Paramaribo,Paramaribo,Paramaribo
 city.name.GUY-GEO,Georgetown,Georgetown,Georgetown
+city.name.FRA-LIL,Lille,Lille,Lille
+city.name.FRA-LEH,Le Havre,Le Havre,El Havre
+city.name.FRA-SXB,Estrasburgo,Strasbourg,Estrasburgo
+city.name.FRA-LYS,Lyon,Lyon,Lyon
+city.name.FRA-MRS,Marselha,Marseille,Marsella
+city.name.FRA-TLS,Toulouse,Toulouse,Toulouse
+city.name.FRA-NTE,Nantes,Nantes,Nantes
+city.name.DEU-HAM,Hamburgo,Hamburg,Hamburgo
+city.name.DEU-MUC,Munique,Munich,Múnich
+city.name.DEU-CGN,Colônia,Cologne,Colonia
+city.name.DEU-FFM,Frankfurt,Frankfurt am Main,Frankfurt
+city.name.DEU-STR,Stuttgart,Stuttgart,Stuttgart
+city.name.DEU-LEJ,Leipzig,Leipzig,Leipzig
+city.name.GBR-BHX,Birmingham,Birmingham,Birmingham
+city.name.GBR-MAN,Manchester,Manchester,Mánchester
+city.name.GBR-GLA,Glasgow,Glasgow,Glasgow
+city.name.GBR-BRS,Bristol,Bristol,Bristol
+city.name.GBR-NCL,Newcastle,Newcastle,Newcastle
+city.name.NED-RTM,Roterdã,Rotterdam,Róterdam
+city.name.NED-EIN,Eindhoven,Eindhoven,Eindhoven
+city.name.BEL-ANR,Antuérpia,Antwerp,Amberes
+city.name.VEN-MAR,Maracaibo,Maracaibo,Maracaibo
+city.name.VEN-VLN,Valência,Valencia,Valencia
+city.name.VEN-CGU,Ciudad Guayana,Ciudad Guayana,Ciudad Guayana
 city.need,Demanda diária,Daily demand,Demanda diaria
 city.need_per_person_kg,Demanda por pessoa,Demand per person,Demanda por persona
 city.no_orders,Nenhum pedido em aberto para esta cidade.,No open order for this city.,Ningún pedido abierto para esta ciudad.
@@ -286,6 +310,14 @@ port.name.DEU-HAM,Hamburgo,Hamburg,Hamburgo
 port.name.NED-AMS,Amsterdã,Amsterdam,Ámsterdam
 port.name.BEL-ANT,Antuérpia,Antwerp,Amberes
 port.name.FRA-CAY,Mana,Mana,Mana
+port.name.FRA-LEH,Le Havre,Le Havre,El Havre
+port.name.FRA-MRS,Marselha,Marseille,Marsella
+port.name.FRA-NTE,Saint-Nazaire,Saint-Nazaire,Saint-Nazaire
+port.name.NED-RTM,Roterdã,Rotterdam,Róterdam
+port.name.GBR-GLA,Glasgow,Glasgow,Glasgow
+port.name.GBR-BRS,Bristol,Bristol,Bristol
+port.name.GBR-NCL,Newcastle,Newcastle,Newcastle
+port.name.VEN-MAR,Maracaibo,Maracaibo,Maracaibo
 map.minimap.title,Mundo,World,Mundo
 resource.wheat,Trigo,Wheat,Trigo
 map.legend.hint,Clique numa cidade para ver os recursos do território.,Click a city to see the resources of its territory.,Haz clic en una ciudad para ver los recursos del territorio.
@@ -323,6 +355,10 @@ map.legend.soil,Solo,Soil,Suelo
 map.legend.relief,Relevo,Relief,Relieve
 map.legend.kind.resources,Mapa de recursos,Resource map,Mapa de recursos
 map.legend.region_of,Região de {nome},Region of {nome},Región de {nome}
+map.legend.deposits_in,{pais} · reúne {n} jazidas,{pais} · {n} deposits,{pais} · reúne {n} yacimientos
+map.legend.deposits_tip,Este marcador representa {n} jazidas próximas; a reserva mostrada é a soma delas.,This marker represents {n} nearby deposits; the reserve shown is their sum.,Este marcador representa {n} yacimientos cercanos; la reserva mostrada es su suma.
+map.legend.crop_regions,{pais} · {n} regiões produtoras,{pais} · {n} producing regions,{pais} · {n} regiones productoras
+map.legend.crop_regions_tip,Este marcador representa {n} regiões produtoras próximas.,This marker represents {n} nearby producing regions.,Este marcador representa {n} regiones productoras cercanas.
 map.legend.type.underground,Subterrâneo,Underground,Subterráneo
 map.legend.type.surface,Superfície,Surface,Superficie
 map.legend.type.offshore,Marítimo,Offshore,Marítimo

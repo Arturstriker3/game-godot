@@ -44,18 +44,31 @@ func _run() -> void:
 	# Índice do dono FRA, lido da textura (antes do override).
 	var fra_idx := _owner_index_of(tm, "FRA")
 
-	# (c) override BEL-BRU -> FRA.
+	# (c) override BEL-BRU -> FRA. A Bélgica tem duas cidades (Bruxelas e
+	# Antuérpia): só as províncias atribuídas a Bruxelas mudam de dono; as de
+	# Antuérpia continuam BEL.
+	var brussels_ids: Array[int] = []
+	var antwerp_ids: Array[int] = []
+	for pid in bel_ids:
+		if tm.city_for_province(pid) == "BEL-BRU":
+			brussels_ids.append(pid)
+		else:
+			antwerp_ids.append(pid)
 	city_world.debug_set_city_nation("BEL-BRU", "FRA")
 	owners = tm.owners()
-	for pid in bel_ids:
+	for pid in brussels_ids:
 		if String(owners.get(pid, "")) != "FRA":
-			failures.append("após override, província %d deveria ser FRA (era %s)"
+			failures.append("após override, província %d (Bruxelas) deveria ser FRA (era %s)"
 					% [pid, owners.get(pid, "")])
-	if not tm.nation_anchor("BEL").is_empty():
-		failures.append("nation_anchor(BEL) deveria ser vazio após override")
+	for pid in antwerp_ids:
+		if String(owners.get(pid, "")) != "BEL":
+			failures.append("após override, província %d (Antuérpia) deveria seguir BEL (era %s)"
+					% [pid, owners.get(pid, "")])
+	if tm.nation_anchor("BEL").is_empty():
+		failures.append("nation_anchor(BEL) deveria existir após override (Antuérpia segue BEL)")
 
-	if not bel_ids.is_empty():
-		var pid: int = bel_ids[0]
+	if not brussels_ids.is_empty():
+		var pid: int = brussels_ids[0]
 		var pixel: Color = tm.owner_image().get_pixel(
 				pid % OWNER_COLUMNS, int(pid / OWNER_COLUMNS))
 		var alpha_idx := int(round(pixel.a * 255.0))

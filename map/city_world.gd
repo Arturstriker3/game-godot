@@ -75,7 +75,10 @@ const MARKER_DOT := Color("#E8E2D0")
 
 ## Orçamento de renderização das cidades.
 const MAX_DETAILED_CITIES := 40
-const MAX_CITY_LABELS := 24
+## Decluttering de rótulos: duas cidades cujos rótulos se sobrepõem na tela
+## (dentro desta folga, em pixels) mantêm só a mais populosa. Substitui o antigo
+## teto fixo de 24 rótulos, que escondia 9 das 33 cidades jogáveis.
+const LABEL_COLLIDE_PAD_PX := 6.0
 
 ## Regras de LOD (unidades do mundo, 1 unidade ≈ 40 km no equador).
 ## Uma única representação da cidade, sem modelos concorrentes:
@@ -147,6 +150,7 @@ var _nation_anchors: Dictionary = {}
 var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
 var _geo: RefCounted
+var _geo_catchment_ready := false
 var _capital_by_id := {}
 ## Filtro de recursos da legenda: {} = todos; senão kind -> bool.
 var _resource_filter: Dictionary = {}
@@ -918,7 +922,7 @@ func _build_cities(cities: Array) -> void:
 		var capital := bool(_capital_by_id.get(city_id, false))
 		var label := _add_city_label_hierarchical(position,
 				I18n.city_name(city_id, city_name), color,
-				capital, index < MAX_CITY_LABELS)
+				capital, true)
 		var icon: Sprite3D = null
 		var ring: Sprite3D = null
 		var flag: Sprite3D = null
@@ -1116,6 +1120,7 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 	if _geo == null:
 		_geo = GeographyScript.new()
 		_geo.load_data()
+	_ensure_catchment()
 	var code := String(_geo.NATION_CODE.get(nation, ""))
 	var counts := {}
 	var reserves := {}
@@ -1149,18 +1154,37 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 	return entries
 
 
-## Aptidão de uma cultura renovável para a nação (fallback: território da cidade
-## quando a nação não é conhecida). A madeira usa a cobertura florestal, não a
-## aptidão agrícola.
+## Bacia de captação por cidade para a ficha (uma vez só). A ficha agora mostra
+## as culturas DA CIDADE (média ponderada dos seus territórios), não mais o
+## máximo nacional — os minerais continuam com o acesso nacional (`deposits_for_nation`).
+func _ensure_catchment() -> void:
+	if _geo == null or _geo_catchment_ready:
+		return
+	var city_list: Array = []
+	for record in _city_nodes:
+		var city: Dictionary = record["city"]
+		city_list.append({
+			"id": String(city.get("id", "")),
+			"nation": String(city.get("nation", "")),
+			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
+			"landmass": String(city.get("landmass", "")),
+		})
+	_geo.assign_provinces(city_list)
+	_geo_catchment_ready = true
+
+
+## Aptidão de uma cultura renovável PARA A CIDADE (bacia de captação). A madeira
+## usa a cobertura florestal da bacia, não a aptidão agrícola. Cidade sem nação
+## conhecida mantém o fallback do território mais próximo (legado).
 func _renewable_value(crop: String, code: String, city_id: String, center: Vector2) -> float:
 	if _geo == null:
 		return 0.0
 	if crop == "wood":
 		if code != "":
-			return _geo.forest_cover_nation(code)
+			return _geo.city_forest_cover(city_id)
 		return _geo.forest_cover(city_id, center)
 	if code != "":
-		return _geo.crop_suitability_nation(code, crop)
+		return _geo.city_crop_suitability(city_id, crop)
 	return _geo.crop_suitability(city_id, center, crop)
 
 
@@ -1273,6 +1297,89 @@ func _process(_delta: float) -> void:
 		var world_position: Vector3 = to_global(record["position"])
 		var distance := camera_position.distance_to(world_position)
 		_apply_city_lod(record, distance, world_position)
+	# Decluttering de rótulos: depois do LOD por distância, esconde o menor
+	# quando dois nomes de cidade se sobrepõem na tela (ex.: Benelux/Ruhr).
+	_declutter_city_labels(camera)
+
+
+## Oculta o rótulo menor (por população) quando ele colide na tela com um maior.
+## Roda a cada frame e só AGE sobre `visible`: o LOD por distância re-exibe no
+## frame seguinte, então nada fica escondido de forma permanente. Não mexe no
+## estilo (fonte/cor/outline), apenas na visibilidade.
+func _declutter_city_labels(camera: Camera3D) -> void:
+	var entries: Array = []
+	for record in _city_nodes:
+		var label: Label3D = record.get("label")
+		if label == null or not label.visible:
+			continue
+		var extent := _label_screen_extent(record, camera)
+		if extent.is_empty():
+			continue
+		var city: Dictionary = record.get("city", {})
+		entries.append({
+			"record": record,
+			"population": float(city.get("population", 0.0)),
+			"extent": extent,
+		})
+	# Maiores primeiro: quando dois colidem, o menor é oculto.
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["population"]) > float(b["population"]))
+	var kept: Array = []
+	for entry in entries:
+		var extent: Dictionary = entry["extent"]
+		var center: Vector2 = extent["center"]
+		var half_w: float = extent["half_width"]
+		var half_h: float = extent["half_height"]
+		var collide := false
+		for other in kept:
+			var oc: Vector2 = other["center"]
+			if absf(center.x - oc.x) < half_w + float(other["half_width"]) + LABEL_COLLIDE_PAD_PX \
+					and absf(center.y - oc.y) < half_h + float(other["half_height"]) + LABEL_COLLIDE_PAD_PX:
+				collide = true
+				break
+		if collide:
+			_set_label_group_visible(entry["record"], false)
+		else:
+			_set_label_group_visible(entry["record"], true)
+			kept.append(extent)
+
+
+## Extensão aproximada do rótulo em pixels de tela: centro + meia-largura +
+## meia-altura (texto é billboard centrado). Usa o mesmo cálculo de
+## `_label_pick_score` para o retângulo do nome.
+func _label_screen_extent(record: Dictionary, camera: Camera3D) -> Dictionary:
+	var label: Label3D = record.get("label")
+	if label == null:
+		return {}
+	var label_world: Vector3 = to_global(label.position)
+	if camera.is_position_behind(label_world):
+		return {}
+	var right := camera.global_transform.basis.x
+	var em := float(label.font_size) * label.pixel_size
+	var text_w := label.font.get_string_size(label.text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
+	var center := camera.unproject_position(label_world)
+	var half := right * (text_w * 0.5 + em * 0.8)
+	var left := camera.unproject_position(label_world - half)
+	var right_edge := camera.unproject_position(label_world + half)
+	var top := camera.unproject_position(label_world + Vector3.UP * em * 0.7)
+	return {
+		"center": center,
+		"half_width": maxf(1.0, left.distance_to(right_edge) * 0.5),
+		"half_height": maxf(1.0, center.distance_to(top)),
+	}
+
+
+## Mostra/oculta o grupo do marcador (nome + selo + bandeira) sem mexer no
+## estilo — o LOD por distância continua dono da exibição base no frame seguinte.
+func _set_label_group_visible(record: Dictionary, visible: bool) -> void:
+	var label: Label3D = record.get("label")
+	if label != null:
+		label.visible = visible
+	for key in ["icon", "ring", "flag"]:
+		var node: Variant = record.get(key)
+		if node != null and node is Node3D:
+			(node as Node3D).visible = visible
 
 
 ## Escala e fade compartilhados pelos rótulos de lugar (cidade e porto).

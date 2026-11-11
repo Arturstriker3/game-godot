@@ -121,6 +121,18 @@ static func has_producer(city: Dictionary, resource: String) -> bool:
 	return false
 
 
+## Capacidade NOMINAL (t/dia) já instalada na cidade para um produto (soma de
+## `capacity` das construções que produzem o bem). É o quanto da terra/limite da
+## cidade já está ocupado — usado pela IA para não exceder o teto de capacidade
+## por área cultivável (terra limitada, geography_service).
+static func existing_capacity(city: Dictionary, product: int) -> float:
+	var total := 0.0
+	for building in city.get("buildings", []):
+		if int(building.get("output_product", -1)) == product:
+			total += float(building.get("capacity", 0.0))
+	return total
+
+
 ## Produção local de alimento hoje, em toneladas-equivalentes de grão (soma do
 ## supply dos alimentos da cesta × fator calórico). É o contraponto do "need" do
 ## POP: a diferença indica o quanto a cidade depende de importação.

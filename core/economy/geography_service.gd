@@ -11,6 +11,10 @@ const AGRICULTURE_PATH := "res://data/definitions/natural/agriculture.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 const NAV_MASK_PATH := "res://map/map_data/nav_mask.png"
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
+## Províncias admin-1 do atlas (Natural Earth), a unidade da bacia de captação
+## agrícola. Cada província tem id global, nation (tag do jogo), country (ISO-3)
+## e centróide em pixels 5000×2500.
+const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 
 ## Regra de água (igual a tools/build_resource_map.py): nada de recurso
 ## terrestre no mar; petróleo/gás offshore só até 20 células (~320 km) da
@@ -34,6 +38,27 @@ const NATION_CODE := {
 const STAPLE_CROPS: Array[String] = ["wheat", "rice", "maize", "potato", "soy"]
 const STAPLE_CALORIC := {"wheat": 1.0, "rice": 1.0, "maize": 1.0, "potato": 0.25, "soy": 1.3}
 
+## Área (km²) por território, pré-computada por tools/compute_territory_areas.py
+## com o MESMO Voronoi equirretangular de tools/build_resource_map.py. É uma
+## estimativa de ordem de grandeza (data_quality:"estimate_display").
+const TERRITORY_AREAS_PATH := "res://data/definitions/natural/territory_areas.json"
+## Área (km²) por província, pré-computada por tools/compute_province_areas.py
+## com o MESMO método (Voronoi dos centróides sobre o nav_mask, equirretangular).
+const PROVINCE_AREAS_PATH := "res://data/definitions/natural/province_areas.json"
+
+## Produtividade média mundial (t/ha/ano) por cultura da cesta — médias FAO
+## aproximadas (ordem de grandeza, não precisão): trigo 3,5; arroz (casca) 4,6;
+## milho 5,8; batata (fresca) 21; soja 2,8. Convertidas para t/km²/dia
+## (× 100 ha/km² ÷ 365 dias). É o TETO físico de produção de uma fazenda por
+## km² de área cultivável. Documentado em docs/economy/balance_review.md §16.
+const CROP_YIELD_T_PER_KM2_PER_DAY := {
+	"wheat": 3.5 * 100.0 / 365.0,   # ~0,959 t/km²/dia
+	"rice": 4.6 * 100.0 / 365.0,    # ~1,260 t/km²/dia
+	"maize": 5.8 * 100.0 / 365.0,   # ~1,589 t/km²/dia
+	"potato": 21.0 * 100.0 / 365.0, # ~5,753 t/km²/dia
+	"soy": 2.8 * 100.0 / 365.0,     # ~0,767 t/km²/dia
+}
+
 ## Demanda externa LIMITADA (B4): o teto de exportação de um bem bruto por
 ## cidade é a participação da nação no mercado mundial. Minerais: reserva
 ## esgotada em ~25 anos (o mesmo horizonte de `max_rate_kt_day` do deposits.json);
@@ -51,6 +76,11 @@ var _deposits: Array = []
 var _nav_image: Image
 var _territory_cache: Dictionary = {}
 var _city_landmass: Dictionary = {}
+var _area_by_territory: Dictionary = {}
+var _provinces: Array = []              # [{id, nation, country, x, y}] (admin-1)
+var _area_by_province: Dictionary = {}  # province_id -> km²
+var _province_territory: Dictionary = {}  # province_id -> territory_id (herança)
+var _catchment: Dictionary = {}  # city_id -> [province_id] (atribuição A1)
 var _loaded := false
 
 
@@ -65,6 +95,8 @@ func load_data() -> bool:
 	_deposits = deposits_data.get("deposits", [])
 	_index_deposits(deposits_data)
 	_city_landmass = _load_city_landmasses()
+	_area_by_territory = _read_json(TERRITORY_AREAS_PATH).get("areas", {})
+	_load_provinces()
 	_loaded = not _nature.is_empty()
 	return _loaded
 
@@ -204,19 +236,28 @@ func best_staple_nation(code: String) -> String:
 ## trigo viável mantêm trigo — a troca indiscriminada (maior aptidão × caloria)
 ## tirava a DEU do mercado de trigo e derrubava a GBR para 4% (§11.3). Retorna
 ## cópia dos edifícios com o campo "resource" preenchido (o C++ mapeia o nome ao
-## produto). Cidade sem nação conhecida mantém "wheat". A capacidade nominal
-## (área/trabalhadores) não muda: a produção efetiva segue = capacidade ×
-## aptidão da cultura escolhida.
+## produto). Cidade sem nação conhecida mantém "wheat". Terra limitada: a
+## capacidade nominal (output_tons_per_day) é tetada pela capacidade física da
+## área cultivável da cidade para a cultura escolhida (city_land_capacity_t_day);
+## a produção efetiva segue = capacidade × aptidão.
 func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
+	assign_provinces(cities)
 	var nation_of := {}
 	for city in cities:
 		nation_of[String(city.get("id", ""))] = String(city.get("nation", ""))
 	var resolved: Array = []
 	for building in buildings:
 		var entry: Dictionary = building.duplicate(true)
-		var tag := String(nation_of.get(String(entry.get("city_id", "")), ""))
+		var city_id := String(entry.get("city_id", ""))
+		var tag := String(nation_of.get(city_id, ""))
 		var code := String(NATION_CODE.get(tag, ""))
-		entry["resource"] = _initial_staple(code)
+		var resource := _initial_staple(code)
+		entry["resource"] = resource
+		if code != "":
+			var capacity := float(entry.get("output_tons_per_day", 0.0))
+			var land_cap := city_land_capacity_t_day(city_id, resource)
+			if capacity > land_cap:
+				entry["output_tons_per_day"] = land_cap
 		resolved.append(entry)
 	return resolved
 
@@ -240,6 +281,139 @@ func forest_cover_nation(code: String) -> float:
 		best = maxf(best, clampf(
 			float(_nature.get(territory_id, {}).get("forest_cover", 0.0)), 0.0, 1.0))
 	return best
+
+
+# --- Bacia de captação por cidade (regra A1: nação + landmass + distância) ---
+
+## Atribui cada PROVÍNCIA de uma nação jogável a UMA cidade — a cidade da
+## MESMA nação mais próxima do centróide da província, restrita à MESMA massa
+## de terra (landmass da cidade mais próxima de qualquer nação, proxy de
+## continente — o mesmo critério de `_assign_deposits`). Sem cidade da nação na
+## landmass, cai para a cidade mais próxima da nação (qualquer landmass), para
+## nunca perder uma província. Províncias de nações não jogáveis (sem tag em
+## NATION_CODE) são ignoradas. A soma das províncias por nação é uma partição:
+## nenhuma província entra em duas cidades e nenhuma fica de fora. A unidade é a
+## PROVÍNCIA admin-1 (fina): o TERRITÓRIO era grosso demais (França 11, Reino
+## Unido 4, Bélgica 1) e deixava 9 das 33 cidades sem terra. Retorna
+## {city_id: [province_id]} e cacheia em `_catchment`.
+func assign_provinces(cities: Array) -> Dictionary:
+	if not load_data():
+		return {}
+	var norm := _normalized_cities(cities)
+	var catchment := {}
+	for province in _provinces:
+		var tag := String(province.get("nation", ""))
+		if not NATION_CODE.has(tag):
+			continue
+		var point := Vector2(float(province.get("x", 0.0)), float(province.get("y", 0.0)))
+		var city_id := _nearest_city_of_nation(norm, tag, point)
+		if city_id == "":
+			continue
+		if not catchment.has(city_id):
+			catchment[city_id] = []
+		catchment[city_id].append(int(province.get("id", 0)))
+	_catchment = catchment
+	return catchment
+
+
+## Lista de cidades normalizada (id/tag/center/landmass) a partir de dicionários
+## que usam "center" (Vector2 ou Array) OU "x"/"y" (floats) — resolve ambos.
+func _normalized_cities(cities: Array) -> Array:
+	var out: Array = []
+	for city in cities:
+		var center_v: Variant = city.get("center", null)
+		var point: Vector2
+		if center_v is Vector2:
+			point = center_v
+		elif center_v is Array and center_v.size() >= 2:
+			point = Vector2(float(center_v[0]), float(center_v[1]))
+		else:
+			point = Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0)))
+		var city_id := String(city.get("id", ""))
+		out.append({
+			"id": city_id,
+			"tag": String(city.get("nation", "")),
+			"center": point,
+			"landmass": String(city.get("landmass", _city_landmass.get(city_id, ""))),
+		})
+	return out
+
+
+## Aptidão (0..1) de uma cultura na BACIA da cidade: média ponderada pela área
+## cultivável (área_km² × fração cultivável) de cada PROVÍNCIA atribuída. A
+## aptidão e a fração cultivável de cada província herdam do território natural
+## que a contém. Sem província, 0 (cidade sem terra não produz — importa). É o
+## valor que `apply_to_sim` declara ao núcleo (substitui o máximo nacional).
+func city_crop_suitability(city_id: String, crop: String) -> float:
+	var provinces: Array = _catchment.get(city_id, [])
+	var weighted := 0.0
+	var weight := 0.0
+	for province_id in provinces:
+		var pid := int(province_id)
+		var tid := String(_province_territory.get(pid, ""))
+		if tid == "":
+			continue
+		var area := float(_area_by_province.get(pid, 0.0))
+		var cultivable := clampf(
+			float(_nature.get(tid, {}).get("cultivable", 0.0)), 0.0, 1.0)
+		var w := area * cultivable
+		var value := clampf(float(_agriculture.get(tid, {}).get(crop, 0.0)), 0.0, 1.0)
+		weighted += w * value
+		weight += w
+	return weighted / weight if weight > 0.0 else 0.0
+
+
+## Cobertura florestal (0..1) na bacia da cidade: média ponderada pela ÁREA
+## total das províncias (a floresta cobre terra, independentemente da fração
+## cultivável).
+func city_forest_cover(city_id: String) -> float:
+	var provinces: Array = _catchment.get(city_id, [])
+	var weighted := 0.0
+	var weight := 0.0
+	for province_id in provinces:
+		var pid := int(province_id)
+		var tid := String(_province_territory.get(pid, ""))
+		if tid == "":
+			continue
+		var area := float(_area_by_province.get(pid, 0.0))
+		var value := clampf(
+			float(_nature.get(tid, {}).get("forest_cover", 0.0)), 0.0, 1.0)
+		weighted += area * value
+		weight += area
+	return weighted / weight if weight > 0.0 else 0.0
+
+
+## Área cultivável (km²) da bacia da cidade: Σ área da província × fração
+## cultivável (herdada do território que a contém).
+func city_cultivable_area_km2(city_id: String) -> float:
+	var total := 0.0
+	for province_id in _catchment.get(city_id, []):
+		total += province_cultivable_area_km2(int(province_id))
+	return total
+
+
+## Área cultivável (km²) de uma província: área da própria província × fração
+## cultivável herdada do território natural que a contém. Útil para auditoria e
+## para a partição da bacia (soma das cidades = soma das províncias da nação).
+func province_cultivable_area_km2(province_id: int) -> float:
+	var tid := String(_province_territory.get(province_id, ""))
+	if tid == "":
+		return 0.0
+	return float(_area_by_province.get(province_id, 0.0)) \
+		* clampf(float(_nature.get(tid, {}).get("cultivable", 0.0)), 0.0, 1.0)
+
+
+## Teto físico de capacidade NOMINAL (t/dia) de fazendas da cultura na cidade:
+## área cultivável × produtividade média FAO (t/km²/dia). A produção efetiva é
+## capacidade × aptidão, então o teto nominal × aptidão = área cultivável efetiva
+## (Σ área × cultivável × aptidão) × produtividade — o teto físico real.
+## Culturas sem produtividade cadastrada (algodão/madeira) retornam 0 (sem teto
+## aplicado pela IA — a demanda externa delas já é pequena).
+func city_land_capacity_t_day(city_id: String, crop: String) -> float:
+	var per_km2 := float(CROP_YIELD_T_PER_KM2_PER_DAY.get(crop, 0.0))
+	if per_km2 <= 0.0:
+		return 0.0
+	return city_cultivable_area_km2(city_id) * per_km2
 
 
 ## Depósitos minerais/energéticos do território da cidade.
@@ -315,6 +489,12 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 ## ignora produtos que não conhece (ex.: carvão/cobre/gás/petróleo ficam só no
 ## mapa por enquanto).
 ##
+## Aptidão de cultura POR CIDADE: cada PROVÍNCIA da nação é atribuída a uma
+## única cidade (regra A1, ver assign_provinces) e a aptidão da cidade é a
+## média ponderada pela área cultivável da sua bacia (madeira: pela área com
+## forest_cover). Substitui o antigo máximo nacional — antes todas as cidades de
+## uma nação plantavam como a melhor região (Marselha como a Beauce).
+##
 ## Regra de reserva mineral (A1): cada depósito nacional é atribuído a UMA
 ## cidade — a cidade da MESMA nação mais próxima do depósito, restrita à mesma
 ## massa de terra (landmass das cidades, proxy de continente). Territórios
@@ -335,6 +515,7 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		return {}
 	var applied := {}
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton"]
+	assign_provinces(cities)
 	var deposits_by_city := _assign_deposits(cities)
 	for city in cities:
 		var city_id := String(city.get("id", ""))
@@ -342,11 +523,14 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		var code := String(NATION_CODE.get(String(city.get("nation", "")), ""))
 		var city_applied := {}
 		for crop in crops:
-			var suitability := crop_suitability_nation(code, crop) if code != "" \
+			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
+			# Marselha planta como o seu entorno, não como a Beauce. Cidade sem
+			# nação conhecida mantém o fallback legado do próprio território.
+			var suitability := city_crop_suitability(city_id, crop) if code != "" \
 					else crop_suitability(city_id, center, crop)
 			sim.demo_set_suitability(city_id, crop, suitability)
 			city_applied[crop] = suitability
-		var wood := forest_cover_nation(code) if code != "" \
+		var wood := city_forest_cover(city_id) if code != "" \
 				else forest_cover(city_id, center)
 		sim.demo_set_suitability(city_id, "wood", wood)
 		city_applied["wood"] = wood
@@ -507,6 +691,41 @@ func _load_city_landmasses() -> Dictionary:
 	for city in parsed:
 		out[String(city.get("id", ""))] = String(city.get("landmass", ""))
 	return out
+
+
+## Carrega as províncias admin-1 (atlas) e a área de cada uma; monta o índice de
+## herança província -> território natural (o território de centróide mais
+## próximo, que "contém" a província). É a fonte da aptidão agrícola e da
+## cobertura florestal em granularidade fina (a unidade TERRITÓRIO é grossa
+## demais — França tem só 11 territórios, o que deixava 9 das 33 cidades sem
+## terra).
+func _load_provinces() -> void:
+	_provinces.clear()
+	_area_by_province.clear()
+	_province_territory.clear()
+	var raw := _read_json(PROVINCES_PATH)
+	var province_areas: Dictionary = _read_json(PROVINCE_AREAS_PATH).get("areas", {})
+	for record in raw.get("provinces", []):
+		if typeof(record) != TYPE_DICTIONARY:
+			continue
+		var pid := int(record.get("id", 0))
+		if pid <= 0:
+			continue
+		_provinces.append({
+			"id": pid,
+			"nation": String(record.get("nation", "")),
+			"country": String(record.get("country", "")),
+			"x": float(record.get("x", 0.0)),
+			"y": float(record.get("y", 0.0)),
+		})
+		_area_by_province[pid] = float(province_areas.get(str(pid), 0.0))
+	# Herança da aptidão/cobertura florestal pelo centróide da província: o
+	# território natural mais próximo (não restrito ao país — províncias
+	# ultramarinas como a Guiana Francesa herdam do território tropical vizinho,
+	# não da França continental, que fica a ~8.000 km).
+	for province in _provinces:
+		var point := Vector2(float(province["x"]), float(province["y"]))
+		_province_territory[int(province["id"])] = _nearest_territory(point)
 
 
 func _read_json(path: String) -> Dictionary:

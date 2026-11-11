@@ -107,6 +107,9 @@ const RESOURCE_LEGEND := [
 ]
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
+## Nomes de país/nação (adm0_a3 -> pt/en/es) gerados do Natural Earth admin-0,
+## à parte de nature.json (que já não carrega `country_names`).
+const COUNTRY_NAMES_PATH := "res://data/definitions/natural/country_names.json"
 
 ## Dimensões da "Etiqueta de inventário" (legenda do mapa de recursos).
 const LEGEND_WIDTH := 236.0
@@ -474,7 +477,7 @@ func _legend_paper_sheet() -> PanelContainer:
 ## + subtítulo unidos por " · " em Special Elite TINTA_SUAVE, abaixo do título.
 ## Nada acima do título — ele começa sempre na mesma altura nos quatro estados.
 func _legend_header(kind: String, title: String, subtitle: String,
-		flag: Texture2D, right: String) -> void:
+		flag: Texture2D, right: String, subtitle_tip: String = "") -> void:
 	var header := VBoxContainer.new()
 	header.add_theme_constant_override("separation", 1)
 	_legend_box.add_child(header)
@@ -514,6 +517,9 @@ func _legend_header(kind: String, title: String, subtitle: String,
 	if not line2.is_empty():
 		_legend_subtitle = UiKit.label(line2, UiKit.FS_CAPTION + 1, UiKit.TINTA_SUAVE)
 		_legend_subtitle.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+		if not subtitle_tip.is_empty():
+			_legend_subtitle.tooltip_text = subtitle_tip
+			_legend_subtitle.mouse_filter = Control.MOUSE_FILTER_STOP
 		header.add_child(_legend_subtitle)
 
 
@@ -676,9 +682,10 @@ func show_deposit_info(info: Dictionary) -> void:
 	var display := _territory_display_name(info)
 	var split := _split_deposit_name(display)
 	var subtitle := _region_subtitle(info)
+	var subtitle_tip := _region_subtitle_tip(info)
 	if subtitle.is_empty() and not String(split["type"]).is_empty():
 		subtitle = I18n.t(String(split["type"]))
-	_legend_header("", String(split["name"]), subtitle, null, "back")
+	_legend_header("", String(split["name"]), subtitle, null, "back", subtitle_tip)
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -716,7 +723,8 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	_legend_header("", _territory_display_name(info), _region_subtitle(info), null, "back")
+	_legend_header("", _territory_display_name(info), _region_subtitle(info),
+			null, "back", _region_subtitle_tip(info))
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -891,9 +899,9 @@ func _region_country_name(code: String) -> String:
 	return tag if localized.is_empty() else localized
 
 
-## Nome localizado de um país não jogável (adm0_a3 -> nome), lido do
-## `nature.json` (`country_names`, gerado por `name_territories.py` a partir do
-## Natural Earth admin-0). Vazio quando não há nome — o chamador cai no código.
+## Nome localizado de um país não jogável (adm0_a3 -> nome), lido de
+## `country_names.json` (gerado do Natural Earth admin-0, campos NAME_PT/EN/ES).
+## Vazio quando não há nome — o chamador cai no código ISO-3.
 func _country_localized_name(code: String) -> String:
 	if _country_names.is_empty():
 		_country_names = _load_country_names()
@@ -905,28 +913,40 @@ static var _country_names: Dictionary = {}
 
 func _load_country_names() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(
-			FileAccess.get_file_as_string(NATURE_PATH))
+			FileAccess.get_file_as_string(COUNTRY_NAMES_PATH))
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
-	return parsed.get("country_names", {})
+	return parsed
 
 
-## Área (km²) compacta: milhões como "8,9 M km²" (mesma convenção "M" da
-## população), o resto com separador de milhar + " km²".
-func _format_area(km2: float) -> String:
-	if km2 >= 1000000.0:
-		return _mass_sig(km2 / 1000000.0) + " M km²"
-	return _mass_sig(km2) + " km²"
-
-
-## Subtítulo da ficha quando o marcador agrega uma região (vários depósitos
-## ou territórios): "Região de {país} · {área}". Vazio quando não é agregado.
+## Subtítulo da ficha quando o marcador agrega uma região: "{País} · reúne {N}
+## jazidas" (minerais) ou "{País} · {N} regiões produtoras" (culturas), com
+## N = region_count. Sem área — a antiga "1,8 M km²" confundia. Quando N = 1,
+## só o nome do país. Vazio quando o marcador não é agregado.
 func _region_subtitle(info: Dictionary) -> String:
 	if not bool(info.get("aggregate", false)):
 		return ""
 	var name := _region_country_name(String(info.get("country", "")))
-	return I18n.t("map.legend.region_of", {"nome": name}) \
-			+ " · " + _format_area(float(info.get("area_km2", 0.0)))
+	var count := int(info.get("region_count", 1))
+	if count <= 1:
+		return name
+	if String(info.get("kind", "mineral")) == "wheat":
+		return I18n.t("map.legend.crop_regions", {"pais": name, "n": count})
+	return I18n.t("map.legend.deposits_in", {"pais": name, "n": count})
+
+
+## Tooltip do subtítulo agregado: explica que o marcador representa N jazidas
+## (minerais, com a reserva somada) ou N regiões produtoras (culturas) próximas.
+## Vazio quando não há contagem a explicar (não agregado ou N = 1).
+func _region_subtitle_tip(info: Dictionary) -> String:
+	if not bool(info.get("aggregate", false)):
+		return ""
+	var count := int(info.get("region_count", 1))
+	if count <= 1:
+		return ""
+	if String(info.get("kind", "mineral")) == "wheat":
+		return I18n.t("map.legend.crop_regions_tip", {"n": count})
+	return I18n.t("map.legend.deposits_tip", {"n": count})
 
 
 ## Separa o tipo de lavra do nome do depósito ("Khouribga Underground" →

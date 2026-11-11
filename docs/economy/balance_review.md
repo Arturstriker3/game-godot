@@ -874,3 +874,132 @@ soma ~1,25 M/dia).
   `economy_integration_test`, `economy_ai_test`, `population_demo_test`,
   `economy_long_run_test`, `economy_bistability_test`, `balance_review.gd` e
   `python tools/validate_scenario_data.py` — todos exit 0.
+
+---
+
+## 16. Bacia agrícola por província + terra limitada + churn de fazendas
+
+> Data: 2026-11-11. Fecha a rodada "cidades novas + bacia agrícola por província":
+> **33 cidades reais** em 8 nações (FRA 9, DEU 7, GBR 6, NED 3, BEL 2, VEN 4,
+> SUR 1, GUY 1), com aptidão de cultura e madeira por **bacia de províncias
+> admin-1** (não mais o máximo nacional nem o território grosso) e **terra
+> limitada** (capacidade da fazenda tetada pela área cultivável × produtividade
+> FAO). Medido pelo mesmo pipeline headless de 730 dias (`balance_review.gd`).
+
+### 16.1 Bacia agrícola por província (aptidão por cidade)
+
+A unidade de atribuição deixou de ser o **território natural** (739, grosso —
+França 11, Reino Unido 4, Bélgica 1) e passou para a **província admin-1** do
+atlas (**4.529** no total; **418** pertencem às 8 nações jogáveis, em **33
+cidades**). `GeographyService.assign_provinces` (regra A1) particiona as
+províncias de cada nação entre as cidades — a cidade da **mesma nação** mais
+próxima do centróide, restrita à **mesma massa de terra** (landmass, proxy de
+continente). Cada província herda a aptidão e a cobertura florestal do
+território natural que a contém (centróide mais próximo) e tem área própria em
+`data/definitions/natural/province_areas.json` (`tools/compute_province_areas.py`,
+mesmo Voronoi equirretangular de `compute_territory_areas.py`). A aptidão da
+cidade é a **média ponderada pela área cultivável** das suas províncias
+(`city_crop_suitability`). Resolve as 9 cidades que ficavam sem terra (Marselha,
+Estrasburgo, Le Havre, Antuérpia, Eindhoven, Caracas, Bristol, Newcastle,
+Stuttgart). Validado por `tools/economy_city_catchment_test.gd`.
+
+Efeito na aptidão (exemplos reais, média ponderada da bacia):
+
+| Cidade | trigo | arroz | milho | batata | soja |
+|---|---|---|---|---|---|
+| London (GBR-LDN) | 0,75 | 0,00 | 0,56 | 0,81 | 0,20 |
+| Manchester (GBR-MAN) | **0,18** | 0,00 | 0,38 | 0,20 | 0,15 |
+| Newcastle (GBR-NCL) | **0,26** | 0,00 | 0,39 | 0,29 | 0,14 |
+| Glasgow (GBR-GLA) | **0,10** | 0,00 | 0,37 | 0,06 | 0,17 |
+| Paris (FRA-PAR) | 0,92 | 0,00 | 0,83 | 0,95 | 0,59 |
+| Marseille (FRA-MRS) | **0,27** | 0,03 | 0,56 | 0,19 | 0,42 |
+| Caracas (VEN-CCS) | 0,02 | 0,69 | 0,46 | 0,00 | 0,63 |
+| Maracaibo (VEN-MAR) | 0,17 | 0,09 | 0,38 | 0,00 | **0,24** |
+| Valencia (VEN-VLN) | 0,04 | 0,59 | 0,21 | 0,00 | **0,18** |
+
+O antigo máximo nacional dava à GBR toda 0,77 de trigo (Manchester plantava
+como East Anglia); agora cada cidade planta como a sua bacia — a consequência é
+que as cidades fora da região agrícola principal viram **importadoras** (ver
+16.3).
+
+### 16.2 Produtividade FAO e terra limitada
+
+A capacidade NOMINAL de uma fazenda é tetada pela área cultivável da bacia ×
+produtividade média FAO (`CROP_YIELD_T_PER_KM2_PER_DAY` em
+`geography_service.gd`, t/ha/ano convertida para t/km²/dia × 100 ÷ 365):
+
+| cultura | t/ha/ano | t/km²/dia |
+|---|---|---|
+| trigo | 3,5 | ~0,959 |
+| arroz (casca) | 4,6 | ~1,260 |
+| milho | 5,8 | ~1,589 |
+| batata (fresca) | 21,0 | ~5,753 |
+| soja | 2,8 | ~0,767 |
+
+A produção efetiva segue `capacidade × aptidão`, então o teto físico real =
+Σ(área × cultivável × aptidão) × produtividade. Área cultivável por bacia
+(exemplos): London 10.493 km², Paris 27.802, Manchester 11.815, Amsterdam
+7.789, Ciudad Guayana 135.863. Cidade sem bacia (cenário demo sem nação) não
+aplica o teto. Validado por `economy_city_catchment_test.gd` (a produção de
+trigo da França após 365 d não excede a capacidade da área cultivável total).
+
+### 16.3 Cidades importadoras (abaixo do ponto de equilíbrio)
+
+O custo variável de uma fazenda de alimento é fixo (`jobs_per_ton 7,5 × wage
+2,0 + opex_per_ton 2,5 = 17,5` por t/dia de capacidade); a receita é
+`aptidão × preço`. O **ponto de equilíbrio** é `aptidão = 17,5/preço`: trigo
+(40) → 0,44; milho (42) → 0,42; soja (45) → 0,39; arroz (55) → 0,32. Abaixo
+disso a fazenda dá prejuízo estrutural e **fale** após 60 dias de prejuízo.
+
+Cidades com **todas** as culturas abaixo do equilíbrio viraram importadoras
+estruturais — não por falta de terra, mas por aptidão: **Manchester** (máx.
+milho 0,38), **Newcastle** (0,39), **Glasgow** (0,37) e **Maracaibo** (0,38).
+A rede nacional (Londres/Paris + portos) as alimenta; a fazenda inicial de
+trigo/soja dessas cidades (cultura escolhida pela aptidão **nacional**) falha e
+é substituída pelo investidor privado pela cultura certa da bacia (milho em
+Manchester/Newcastle/Glasgow, arroz em Valencia — 0,59 > equilíbrio).
+
+### 16.4 Falências: 37 → 5 (churn de fazendas)
+
+Com as 33 cidades, o pipeline de 730 d reportava **37 falências** (era 0 com as
+9 cidades originais), todas churn de fazendas: **32 milho** (estatais de 20 t/d
+em Manchester/Newcastle/Marselha), **4 trigo** (fazendas iniciais de Manchester/
+Newcastle) e **1 soja** (inicial de Maracaibo).
+
+- **Causa raiz (milho):** o `GovernmentAI` construía fazendas de milho estatais
+  de **20 t/d** (teto `MAX_STATE_CAPACITY`, dimensionado para minas) ao lado do
+  investidor privado, que já construía fazendas de milho de **2.185 t/d**
+  (`demo_invest` expande). O gatilho era o déficit **estrutural** (`need −
+  produção local`) e o preço **de escassez** (o milho espigava a ~126 durante a
+  crise); quando a escassez passava, a estatal de 20 t/d não tinha demanda
+  (utilização ~0,08) e falia — e o cooldown de 30 d recriava outra.
+- **Causa raiz (trigo/soja):** a fazenda inicial de cidades com bacia abaixo do
+  equilíbrio (16.3) nasce dimensionada à necessidade (825 t/d em Manchester)
+  mas produz `capacidade × aptidão` (148 t/d a 0,18), paga folha/opex pela
+  capacidade cheia e fale.
+
+Correções em `core/economy/ai/government_ai.gd` (escopo pequeno, só na IA):
+
+1. **Respeitar demanda regional:** o gatilho de segurança alimentar passou de
+   `need − produção local` (dependência de importação) para **`need − consumo`**
+   (fome real). Cidade alimentada por comércio regional não constrói fazenda
+   redundante.
+2. **Viabilidade (aptidão da cidade):** `_best_food_crop` passou a exigir
+   `aptidão × preço > custo variável` — não abre fazenda abaixo do ponto de
+   equilíbrio.
+3. **Não duplicar produtor:** o governo só constrói alimento quando a cidade
+   **não tem nenhum produtor** da cesta (`_has_food_producer`) — "cria estatais
+   quando o capital privado não chega", como no docstring.
+
+Resultado 730 d: **5 falências** (≤ meta de 10) e **8/8 nações ≥ 70%** de
+satisfação no fim: GBR 98%, FRA 99%, DEU/NED/BEL/SUR/GUY 100%, VEN 88%.
+`money_total` conserva (110.639.100) e **0 violações de invariante**. As 5
+falências restantes são as **fazendas iniciais** de Manchester (trigo, d61),
+Maracaibo (soja, d61), Valencia (soja, d61), Newcastle (trigo, d460) e **1
+milho privado** em Marselha (d697, sem demanda local) — a consequência honesta
+da bacia (16.3), não um bug de IA: a satisfação se mantém porque o investidor
+privado reconstrói a cultura certa. `balance_review.gd` → **5 falências**,
+`economy_city_catchment_test`/`economy_live_path`/`economy_world`/
+`economy_integration`/`economy_ai`/`population_demo`/`economy_long_run`/
+`economy_bistability`/`territory`/`deposit_ring` + `validate_scenario_data.py`
+— todos exit 0.

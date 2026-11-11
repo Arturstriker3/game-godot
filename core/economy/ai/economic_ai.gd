@@ -21,9 +21,9 @@ func setup(sim_node: Object, geography: Object) -> bool:
 	sim = sim_node
 	geo = geography
 	private_investor = PrivateInvestorScript.new()
-	private_investor.setup(sim)
+	private_investor.setup(sim, geo)
 	government = GovernmentAIScript.new()
-	government.setup(sim)
+	government.setup(sim, geo)
 	return geo.load_data()
 
 
