@@ -1,0 +1,184 @@
+extends Node
+
+## Verifica os estreitos da máscara de navegação (`map/map_data/nav_mask.png`)
+## com o `NavGrid` REAL usado pelos comboios.
+##
+## Dois níveis:
+##   1. conectividade: Atlântico, Mediterrâneo, Negro, Báltico, Vermelho e Golfo
+##      Pérsico no MESMO componente de água (Gibraltar, Dardanelos/Bósforo,
+##      Øresund e Suez abertos no gerador `tools/generate_nav_mask.py`);
+##   2. rota: o A* de navio acha caminho pelos estreitos e respeita o orçamento
+##      de fatia (`FRAME_BUDGET_US`), sem estourar o tempo total da rota.
+##
+##   godot --headless --path . res://tools/nav_strait_test.tscn
+
+const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
+const MASK_SIZE := Vector2i(2500, 1250)
+const NAV_CELL_PX := 2.0
+## `FRAME_BUDGET_US` do trade_convoys.gd.
+const FRAME_BUDGET_US := 1500
+## Teto rígido da fatia (orçamento + granularidade do fatiamento).
+const MAX_SLICE_US := 3000
+## Teto do custo total de uma rota (soma das fatias).
+const MAX_ROUTE_MS := 2000.0
+## Distância (células) do caminho até o ponto do estreito.
+const STRAIT_RADIUS := 6.0
+## Qualidade do traço grosseiro: número de trechos sobre terra e o maior salto
+## (células) tolerados. O refino segue as passagens de divisa, então o normal é
+## zero; sobra um ou outro canto de 2-3 células numa costa recortada.
+const MAX_GAPS := 4
+const MAX_GAP_CELLS := 4.0
+
+## nome, origem (lon, lat), destino (lon, lat), ponto do estreito (lon, lat)
+const ROUTES := [
+	["Marseille→Bristol", Vector2(5.37, 43.30), Vector2(-2.59, 51.45),
+			Vector2(-5.6, 35.95)],
+	["Marseille→Saint-Nazaire", Vector2(5.37, 43.30), Vector2(-2.21, 47.27),
+			Vector2(-5.6, 35.95)],
+	["Pireu→Odessa", Vector2(23.63, 37.94), Vector2(30.73, 46.48),
+			Vector2(29.0, 41.1)],
+	["Hamburgo→Gdansk", Vector2(9.99, 53.55), Vector2(18.65, 54.35),
+			Vector2(12.6, 55.7)],
+]
+
+var _failures: Array[String] = []
+
+
+func _ready() -> void:
+	print("=== nav_strait_test ===")
+	var texture: Texture2D = load("res://map/map_data/nav_mask.png")
+	var image := texture.get_image()
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	var nav = ConvoysScript.NavGrid.new()
+	var started := Time.get_ticks_usec()
+	nav.build(image)
+	print("mascara %dx%d; grafo grosso %dx%d em %.1f ms" % [
+		nav.w, nav.h, nav.cw, nav.ch, _ms(started)])
+
+	_check_seas(nav)
+	for route in ROUTES:
+		_check_route(nav, route)
+
+	if _failures.is_empty():
+		print("PASS: mares conectados e rotas por Gibraltar, Dardanelos/Bósforo e Øresund")
+		get_tree().quit(0)
+		return
+	for failure in _failures:
+		push_error("[nav_strait] " + failure)
+	get_tree().quit(1)
+
+
+func _check_seas(nav) -> void:
+	print("--- componentes de agua (main=%d)" % nav.main_water)
+	var seas := [
+		["Atlantico", -20.0, 45.0],
+		["Mediterraneo", 20.0, 34.0],
+		["Negro", 34.0, 43.0],
+		["Baltico", 19.0, 58.0],
+		["Vermelho", 38.0, 20.0],
+		["Golfo Persico", 51.0, 27.5],
+	]
+	for sea in seas:
+		var cell := _cell_of(Vector2(float(sea[1]), float(sea[2])))
+		var comp: int = nav.component(cell, "ship")
+		var ok: bool = comp >= 0 and comp == int(nav.main_water)
+		print("  %-14s comp=%-4d %s" % [sea[0], comp, "ok" if ok else "SEPARADO"])
+		if not ok:
+			_failures.append("%s separado do oceano (comp %d, main %d)" % [
+				sea[0], comp, nav.main_water])
+
+
+func _check_route(nav, route: Array) -> void:
+	var label: String = String(route[0])
+	var from: Vector2i = nav.snap(_cell_of(route[1]), "ship")
+	var to: Vector2i = nav.snap(_cell_of(route[2]), "ship")
+	if from.x < 0 or to.x < 0:
+		_failures.append("%s: snap falhou (from=%s to=%s)" % [label, from, to])
+		return
+	var started := Time.get_ticks_usec()
+	var ok: bool = nav.begin(from, to, "ship")
+	if not ok:
+		_failures.append("%s: begin recusou a rota (componentes %d/%d)" % [
+			label, nav.component(from, "ship"), nav.component(to, "ship")])
+		return
+	var slices := 0
+	var max_slice := 0
+	var frames := 0
+	while nav.active:
+		var deadline := Time.get_ticks_usec() + FRAME_BUDGET_US
+		var slice_start := Time.get_ticks_usec()
+		var status: int = nav.step(deadline)
+		max_slice = maxi(max_slice, Time.get_ticks_usec() - slice_start)
+		slices += 1
+		if status == 0:
+			frames += 1
+			continue
+		break
+	var total_ms := _ms(started)
+	var found: bool = nav.phase == 2 and nav.out.size() >= 2
+	var through: bool = found and _passes_near(nav.out, route[3], STRAIT_RADIUS)
+	# Qualidade do traço: o caminho bruto (antes da simplificação) não pode ter
+	# saltos sobre terra — é o que o navio desenha no mapa.
+	var gaps := 0
+	var worst_gap := 0.0
+	var gap_details: Array[String] = []
+	var previous_raw := Vector2(-1.0, -1.0)
+	for sample in nav.raw:
+		if previous_raw.x >= 0.0 and not nav._line_walkable(previous_raw, sample, "ship"):
+			gaps += 1
+			worst_gap = maxf(worst_gap, previous_raw.distance_to(sample) / NAV_CELL_PX)
+			gap_details.append("%s->%s" % [Vector2i(previous_raw / NAV_CELL_PX),
+					Vector2i(sample / NAV_CELL_PX)])
+		previous_raw = sample
+	var route_state := "ok" if found else "SEM ROTA"
+	var strait_state := "passa pelo estreito" if through else "NAO passa pelo estreito"
+	print("  %-24s %-8s %d pontos, %d fatias, %d frames, %d ms, fatia max %.2f ms, %s, "
+			% [label, route_state, nav.out.size(), slices, frames, int(total_ms),
+			float(max_slice) / 1000.0, strait_state]
+			+ "%d lacunas (maior %.0f celulas), tail=%s prefixo=%d" % [
+			gaps, worst_gap, nav.tail, nav._prefix.size()])
+	if gaps > MAX_GAPS or worst_gap > MAX_GAP_CELLS:
+		_failures.append("%s: traco com %d lacunas (maior %.0f celulas) - teto %d/%.0f: %s"
+				% [label, gaps, worst_gap, MAX_GAPS, MAX_GAP_CELLS,
+				", ".join(gap_details)])
+	if not found:
+		_failures.append("%s: sem rota (visited=%d, phase=%d)" % [
+			label, nav.visited, nav.phase])
+	elif not through:
+		_failures.append("%s: rota nao passa pelo estreito %s" % [label, route[3]])
+	if max_slice > MAX_SLICE_US:
+		_failures.append("%s: fatia de %.2f ms acima do teto (%.2f ms)" % [
+			label, float(max_slice) / 1000.0, float(MAX_SLICE_US) / 1000.0])
+	if total_ms > MAX_ROUTE_MS:
+		_failures.append("%s: rota custou %.0f ms (teto %.0f ms)" % [
+			label, total_ms, MAX_ROUTE_MS])
+
+
+## Célula fina (espaço do nav_mask) de uma coordenada geográfica.
+func _cell_of(point: Vector2) -> Vector2i:
+	var size := Vector2(MASK_SIZE)
+	var x: int = int(round((point.x + 180.0) / 360.0 * size.x - 0.5))
+	var y: int = int(round((90.0 - point.y) / 180.0 * size.y - 0.5))
+	return Vector2i(x, y)
+
+
+## O caminho (em px de província) chega a `radius` células do ponto?
+func _passes_near(path: PackedVector2Array, point: Vector2, radius: float) -> bool:
+	var target := Vector2(_cell_of(point)) * NAV_CELL_PX
+	for sample in path:
+		if sample.distance_to(target) <= radius * NAV_CELL_PX:
+			return true
+	return false
+
+
+func _lon_of(cell_x: int) -> float:
+	return (float(cell_x) + 0.5) / float(MASK_SIZE.x) * 360.0 - 180.0
+
+
+func _lat_of(cell_y: int) -> float:
+	return 90.0 - (float(cell_y) + 0.5) / float(MASK_SIZE.y) * 180.0
+
+
+func _ms(started_usec: int) -> float:
+	return (Time.get_ticks_usec() - started_usec) / 1000.0

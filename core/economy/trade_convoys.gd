@@ -93,8 +93,10 @@ const MAX_ASTAR_NODES := 24000
 ## inteiro e o caminho é refinado depois em células finas.
 const MAX_COARSE_NODES := 12000
 ## Células grosseiras refinadas por fatia (cada uma vira ~16 amostras finas
-## validadas no terreno), para o refinamento não estourar o frame.
-const REFINE_CHUNK := 32
+## validadas no terreno), para o refinamento não estourar o frame. Com o refino
+## guiado pelas passagens de divisa cada amostra custa mais (snap de raio 3), daí
+## o lote menor que o antigo 32.
+const REFINE_CHUNK := 16
 ## Nós grosseiros por fatia. Cada nó grosseiro testa a linha fina entre dois
 ## centros (16 amostras por vizinho), então custa ~16x um nó fino: 2 nós por
 ## leitura do relógio mantêm a fatia e o pico de frame iguais aos do A* fino.
@@ -121,11 +123,11 @@ const ASTAR_CHUNK_NODES := 8
 # Células finas por célula da grade grosseira usada no teste de componente
 # (uma rota entre continentes diferentes é descartada na hora).
 const COARSE_CELL := 16
-
-const NEIGHBORS: Array[Vector2i] = [
-	Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
-	Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1),
-]
+## Custo extra de um salto grosseiro que só existe pela passagem estreita da
+## divisa (os centros das duas células caem em terra): desestimula colar na
+## costa e subir rio, deixando esse salto caro só para os estreitos, onde é
+## inevitável (Gibraltar, Dardanelos, Bósforo, Øresund).
+const NARROW_HOP_PENALTY := 4.0
 # Mesma vizinhança em inteiros, para o laço quente do A* (k >= 4 = diagonal).
 const NEIGHBOR_DX: Array[int] = [1, -1, 0, 0, 1, 1, -1, -1]
 const NEIGHBOR_DY: Array[int] = [0, 0, 1, -1, 1, -1, 1, -1]
@@ -192,6 +194,26 @@ class NavGrid:
 	var main_land := -1
 	var main_water := -1
 
+	# Grafo grosseiro: uma célula só entra se tiver terreno navegável, e duas
+	# células vizinhas só se ligam quando a DIVISA delas tem passagem fina
+	# navegável. Antes a célula era classificada pelo pixel central: um estreito
+	# de 2-3 células (Gibraltar, Dardanelos, Bósforo, Øresund) caía fora da
+	# amostra e os mares saíam como continentes separados — `begin()` recusava a
+	# rota antes de tentar (Marseille→Bristol não tinha trecho marítimo).
+	var water_cell := PackedByteArray()  # 1 = célula com água
+	var land_cell := PackedByteArray()  # 1 = célula com terra
+	var water_east := PackedByteArray()  # 1 = passagem fina na divisa leste
+	var water_south := PackedByteArray()  # 1 = passagem fina na divisa sul
+	var land_east := PackedByteArray()
+	var land_south := PackedByteArray()
+	# Pixel fino (índice y*w+x) onde a passagem atravessa a divisa: o refino do
+	# caminho grosseiro segue esses pontos em vez dos centros das células, então
+	# o traço nunca salta terra dentro de uma célula de 16 px.
+	var water_cross_east := PackedInt32Array()  # pixel do lado oeste da divisa
+	var water_cross_south := PackedInt32Array()  # pixel do lado norte da divisa
+	var land_cross_east := PackedInt32Array()
+	var land_cross_south := PackedInt32Array()
+
 	# Estado da busca corrente (uma por vez: o pump é sequencial).
 	var start := Vector2i(-1, -1)
 	var goal := Vector2i(-1, -1)
@@ -249,61 +271,177 @@ class NavGrid:
 		ch = int(ceil(float(h) / float(COARSE_CELL)))
 		var nx := cw
 		var ny := ch
-		land_component.resize(nx * ny)
+		var n := nx * ny
+		land_component.resize(n)
 		land_component.fill(-1)
-		water_component.resize(nx * ny)
+		water_component.resize(n)
 		water_component.fill(-1)
-		_cg.resize(nx * ny)
-		_cgen.resize(nx * ny)
-		_cclosed.resize(nx * ny)
-		_cparent.resize(nx * ny)
+		water_cell.resize(n)
+		water_cell.fill(0)
+		land_cell.resize(n)
+		land_cell.fill(0)
+		water_east.resize(n)
+		water_east.fill(0)
+		water_south.resize(n)
+		water_south.fill(0)
+		land_east.resize(n)
+		land_east.fill(0)
+		land_south.resize(n)
+		land_south.fill(0)
+		water_cross_east.resize(n)
+		water_cross_east.fill(-1)
+		water_cross_south.resize(n)
+		water_cross_south.fill(-1)
+		land_cross_east.resize(n)
+		land_cross_east.fill(-1)
+		land_cross_south.resize(n)
+		land_cross_south.fill(-1)
+		_cg.resize(n)
+		_cgen.resize(n)
+		_cclosed.resize(n)
+		_cparent.resize(n)
 		_g.resize(w * h)
 		_gen.resize(w * h)
 		_parent.resize(w * h)
 		_closed.resize(w * h)
-		var land_sizes := _label(land_component, true)
-		var water_sizes := _label(water_component, false)
-		main_land = _largest(land_sizes)
-		main_water = _largest(water_sizes)
+		main_water = _build_graph(false)
+		main_land = _build_graph(true)
 
-	## Rotula os componentes navegáveis da grade grosseira (8-vizinhos) e devolve
-	## o tamanho de cada componente.
-	func _label(components: PackedInt32Array, land: bool) -> Array:
-		var sizes: Array = []
-		var queue := PackedInt32Array()
+	## Constrói o grafo grosseiro de um modo (água para navio, terra para
+	## caminhão) e devolve o id do maior componente.
+	##
+	## Nó: a célula tem o terreno do modo no centro, OU é atravessada por um
+	## corredor fino navegável (divisas navageáveis em lados OPOSTOS). A segunda
+	## regra existe para os estreitos de 2-3 células (Gibraltar, Dardanelos,
+	## Bósforo, Øresund), cuja água não chega ao centro da célula. Sem ela o
+	## Mediterrâneo, o Negro e o Báltico saem como continentes separados e
+	## `begin()` recusa a rota antes de tentar (Marseille→Bristol sem trecho
+	## marítimo). Franja de água numa única divisa NÃO vira nó: uma célula
+	## costeira assim deixaria o caminho grosseiro colar na costa e o refino não
+	## teria água para encaixar (lacunas no traço do navio).
+	##
+	## Divisas: marca passagem onde dois pixels finos do modo se encostam dos
+	## dois lados da divisa; as células são unidas por union-find, o que dá
+	## componentes EXATAS da conectividade fina — sem amostragem de centro.
+	func _build_graph(land: bool) -> int:
+		var n := cw * ch
+		var cells: PackedByteArray = land_cell if land else water_cell
+		var east: PackedByteArray = land_east if land else water_east
+		var south: PackedByteArray = land_south if land else water_south
+		var cross_east: PackedInt32Array = land_cross_east if land else water_cross_east
+		var cross_south: PackedInt32Array = land_cross_south if land else water_cross_south
+		var table: PackedInt32Array = land_component if land else water_component
+		var flat := data
+		var min_value := MASK_LAND_MIN if land else MASK_WATER_MAX
+		for cy in range(ch):
+			var y0: int = cy * COARSE_CELL
+			var y1: int = mini(y0 + COARSE_CELL, h)
+			var ym: int = mini(y0 + COARSE_CELL / 2, h - 1)
+			for cx in range(cw):
+				var index: int = cy * cw + cx
+				var x0: int = cx * COARSE_CELL
+				var x1: int = mini(x0 + COARSE_CELL, w)
+				var xm: int = mini(x0 + COARSE_CELL / 2, w - 1)
+				if cx + 1 < cw:
+					# Divisas verticais: colunas x1-1 e x1. Guarda a passagem mais
+					# próxima do centro da célula (não a primeira): num estreito a
+					# primeira pode cair num braço de mar a 8 px do corredor e o
+					# refino saltaria a faixa de terra entre os dois.
+					var best_y := -1
+					var best_span := 1 << 30
+					for y in range(y0, y1):
+						var row: int = y * w
+						var left: int = flat[(row + x1 - 1) * 4]
+						var right: int = flat[(row + x1) * 4]
+						var linked := false
+						if land:
+							linked = left >= min_value and right >= min_value
+						else:
+							linked = left <= min_value and right <= min_value
+						if linked and absi(y - ym) < best_span:
+							best_y = y
+							best_span = absi(y - ym)
+					if best_y >= 0:
+						east[index] = 1
+						cross_east[index] = best_y * w + x1 - 1
+				if cy + 1 < ch:
+					# Divisas horizontais: linhas y1-1 e y1.
+					var best_x := -1
+					var best_reach := 1 << 30
+					for x in range(x0, x1):
+						var above: int = flat[((y1 - 1) * w + x) * 4]
+						var below: int = flat[(y1 * w + x) * 4]
+						var linked2 := false
+						if land:
+							linked2 = above >= min_value and below >= min_value
+						else:
+							linked2 = above <= min_value and below <= min_value
+						if linked2 and absi(x - xm) < best_reach:
+							best_x = x
+							best_reach = absi(x - xm)
+					if best_x >= 0:
+						south[index] = 1
+						cross_south[index] = (y1 - 1) * w + best_x
+		# Nós do grafo: centro navegável ou corredor atravessando a célula.
+		for cy in range(ch):
+			var ym: int = mini(cy * COARSE_CELL + COARSE_CELL / 2, h - 1)
+			for cx in range(cw):
+				var index: int = cy * cw + cx
+				var xm: int = mini(cx * COARSE_CELL + COARSE_CELL / 2, w - 1)
+				var center_value: int = flat[(ym * w + xm) * 4]
+				var has_center := false
+				if land:
+					has_center = center_value >= min_value
+				else:
+					has_center = center_value <= min_value
+				if has_center:
+					cells[index] = 1
+					continue
+				var west: bool = cx > 0 and east[index - 1] == 1
+				var north: bool = cy > 0 and south[index - cw] == 1
+				if (east[index] == 1 and west) or (south[index] == 1 and north):
+					cells[index] = 1
+		var parent := PackedInt32Array()
+		parent.resize(n)
+		for index in range(n):
+			parent[index] = index
 		for cy in range(ch):
 			for cx in range(cw):
-				var index := cy * cw + cx
-				if components[index] != -1:
-					continue
-				var sample := Vector2i(cx, cy)
-				if not _coarse_walkable(sample, land):
-					continue
-				var id := sizes.size()
+				var index: int = cy * cw + cx
+				if east[index] == 1:
+					_union(parent, index, index + 1)
+				if south[index] == 1:
+					_union(parent, index, index + cw)
+		var ids := {}
+		var sizes: Array = []
+		for index in range(n):
+			if cells[index] == 0:
+				continue
+			var root := _find(parent, index)
+			var id: int = int(ids.get(root, -1))
+			if id < 0:
+				id = sizes.size()
+				ids[root] = id
 				sizes.append(0)
-				components[index] = id
-				queue.clear()
-				queue.append(index)
-				var head := 0
-				while head < queue.size():
-					var current: int = queue[head]
-					head += 1
-					sizes[id] = int(sizes[id]) + 1
-					var x: int = current % cw
-					var y: int = current / cw
-					for direction in NEIGHBORS:
-						var nxx: int = x + direction.x
-						var nyy: int = y + direction.y
-						if nxx < 0 or nyy < 0 or nxx >= cw or nyy >= ch:
-							continue
-						var next: int = nyy * cw + nxx
-						if components[next] != -1:
-							continue
-						if not _coarse_walkable(Vector2i(nxx, nyy), land):
-							continue
-						components[next] = id
-						queue.append(next)
-		return sizes
+			table[index] = id
+			sizes[id] = int(sizes[id]) + 1
+		return _largest(sizes)
+
+	static func _find(parent: PackedInt32Array, node: int) -> int:
+		var root := node
+		while parent[root] != root:
+			root = parent[root]
+		while parent[node] != root:
+			var next: int = parent[node]
+			parent[node] = root
+			node = next
+		return root
+
+	static func _union(parent: PackedInt32Array, a: int, b: int) -> void:
+		var ra := _find(parent, a)
+		var rb := _find(parent, b)
+		if ra != rb:
+			parent[rb] = ra
 
 	func _largest(sizes: Array) -> int:
 		var best := -1
@@ -314,10 +452,32 @@ class NavGrid:
 				best = id
 		return best
 
-	func _coarse_walkable(coarse: Vector2i, land: bool) -> bool:
-		var x: int = mini(coarse.x * COARSE_CELL + COARSE_CELL / 2, w - 1)
-		var y: int = mini(coarse.y * COARSE_CELL + COARSE_CELL / 2, h - 1)
-		return walkable(Vector2i(x, y), "truck" if land else "ship")
+	## A célula grosseira tem terreno navegável (ver `_build_graph`).
+	func _coarse_navigable(coarse: Vector2i, land: bool) -> bool:
+		if coarse.x < 0 or coarse.y < 0 or coarse.x >= cw or coarse.y >= ch:
+			return false
+		var cells: PackedByteArray = land_cell if land else water_cell
+		return cells[coarse.y * cw + coarse.x] == 1
+
+	## Passagem fina entre duas células grosseiras vizinhas. No movimento
+	## diagonal as duas divisas ortogonais têm de existir (caminho em L pelo
+	## canto): sem isso o navio cortaria o canto de uma ilha ou de uma península.
+	func _coarse_link(from: Vector2i, to: Vector2i, land: bool) -> bool:
+		var east: PackedByteArray = land_east if land else water_east
+		var south: PackedByteArray = land_south if land else water_south
+		var dx: int = to.x - from.x
+		var dy: int = to.y - from.y
+		if dx != 0 and dy != 0:
+			var across: bool = east[from.y * cw + mini(from.x, to.x)] == 1
+			var down: bool = south[mini(from.y, to.y) * cw + to.x] == 1
+			return across and down
+		if dx != 0:
+			var column: int = from.x if dx > 0 else to.x
+			return east[from.y * cw + column] == 1
+		if dy != 0:
+			var row: int = from.y if dy > 0 else to.y
+			return south[row * cw + from.x] == 1
+		return false
 
 	func walkable(cell: Vector2i, cell_mode: String) -> bool:
 		if cell.x < 0 or cell.y < 0 or cell.x >= w or cell.y >= h:
@@ -665,7 +825,7 @@ class NavGrid:
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
 				var candidate := origin + Vector2i(dx, dy)
-				if not _coarse_walkable(candidate, land):
+				if not _coarse_navigable(candidate, land):
 					continue
 				var distance := float(dx * dx + dy * dy)
 				if distance < nearest_distance:
@@ -713,9 +873,9 @@ class NavGrid:
 		return true
 
 	## A* de 8 vizinhos sobre a grade grosseira, na mesma fatia de orçamento.
-	## O movimento só vale quando a linha fina entre os dois centros é
-	## navegável: sem isso uma célula grossa "de água pelo centro" deixaria o
-	## navio cortar uma faixa de terra de 16 px (Brittany, ilhas do Canal).
+	## O movimento só vale quando a divisa das duas células tem passagem fina
+	## navegável (ver `_coarse_link`): sem isso uma célula grossa "de água"
+	## deixaria o navio cortar uma faixa de terra (Brittany, ilhas do Canal).
 	func _coarse_step(deadline_usec: int) -> int:
 		var land: bool = mode != "ship"
 		var budget := 0
@@ -752,19 +912,26 @@ class NavGrid:
 			var cx: int = current % cw
 			var cy: int = current / cw
 			var g_current: float = _cg[current]
-			var from_point := _coarse_center(Vector2i(cx, cy))
+			var from_cell := Vector2i(cx, cy)
 			for k in 8:
 				var nx: int = cx + NEIGHBOR_DX[k]
 				var ny: int = cy + NEIGHBOR_DY[k]
 				if nx < 0 or ny < 0 or nx >= cw or ny >= ch:
 					continue
-				if not _coarse_walkable(Vector2i(nx, ny), land):
+				var next_cell := Vector2i(nx, ny)
+				if not _coarse_navigable(next_cell, land):
 					continue
-				if not _line_walkable(from_point, _coarse_center(Vector2i(nx, ny)),
-						mode):
+				if not _coarse_link(from_cell, next_cell, land):
 					continue
 				var next: int = ny * cw + nx
-				var tentative: float = g_current + (1.41421356 if k >= 4 else 1.0)
+				var hop: float = 1.41421356 if k >= 4 else 1.0
+				if not _line_walkable(_coarse_center(from_cell),
+						_coarse_center(next_cell), mode):
+					# Salto que só existe por uma passagem estreita (os centros
+					# caem em terra): custa mais para o caminho não colar na costa
+					# nem subir rio. Nos estreitos é inevitável e barato.
+					hop += NARROW_HOP_PENALTY
+				var tentative: float = g_current + hop
 				if _cgen[next] == _cgen_id and tentative >= _cg[next]:
 					continue
 				_cgen[next] = _cgen_id
@@ -783,25 +950,64 @@ class NavGrid:
 		return Vector2((float(coarse.x * COARSE_CELL) + COARSE_CELL * 0.5) * NAV_CELL_PX,
 				(float(coarse.y * COARSE_CELL) + COARSE_CELL * 0.5) * NAV_CELL_PX)
 
-	## Centros das células grosseiras do caminho, como células finas.
+	## Células finas de água que atravessam a divisa entre duas células
+	## grosseiras vizinhas (os dois lados da passagem). É o que o refino segue:
+	## dentro de uma célula de 16 px a linha entre centros pode sair da água,
+	## enquanto as passagens estão garantidamente na água.
+	func _hop_cells(from: Vector2i, to: Vector2i, land: bool) -> Array:
+		var cells: Array = []
+		var dx: int = to.x - from.x
+		var dy: int = to.y - from.y
+		if dx != 0 and dy != 0:
+			cells.append_array(_hop_cells(from, Vector2i(to.x, from.y), land))
+			cells.append_array(_hop_cells(Vector2i(to.x, from.y), to, land))
+			return cells
+		if dx != 0:
+			var east: PackedInt32Array = land_cross_east if land else water_cross_east
+			var column: int = from.x if dx > 0 else to.x
+			var packed_e: int = east[from.y * cw + column]
+			if packed_e < 0:
+				return cells
+			var west := Vector2i(packed_e % w, packed_e / w)
+			var east_cell := Vector2i(west.x + 1, west.y)
+			cells.append(west if dx > 0 else east_cell)
+			cells.append(east_cell if dx > 0 else west)
+			return cells
+		if dy != 0:
+			var south: PackedInt32Array = land_cross_south if land else water_cross_south
+			var row: int = from.y if dy > 0 else to.y
+			var packed_s: int = south[row * cw + from.x]
+			if packed_s < 0:
+				return cells
+			var north := Vector2i(packed_s % w, packed_s / w)
+			var south_cell := Vector2i(north.x, north.y + 1)
+			cells.append(north if dy > 0 else south_cell)
+			cells.append(south_cell if dy > 0 else north)
+		return cells
+
+	## Células finas do caminho grosseiro: para cada salto, os dois lados da
+	## passagem na divisa (ver `_hop_cells`).
 	func _build_coarse_path(target_index: int) -> void:
 		_cpath.clear()
+		var hops: Array = []
 		var walk := target_index
 		var guard := 0
 		while walk != _cstart and guard < cw * ch:
 			guard += 1
-			var cx: int = walk % cw
-			var cy: int = walk / cw
-			_cpath.append(Vector2i(cx * COARSE_CELL + COARSE_CELL / 2,
-					cy * COARSE_CELL + COARSE_CELL / 2))
+			hops.append(Vector2i(walk % cw, walk / cw))
 			if _cgen[walk] != _cgen_id:
 				break
 			walk = _cparent[walk]
-		_cpath.reverse()
+		hops.append(Vector2i(_cstart % cw, _cstart / cw))
+		hops.reverse()
+		var land: bool = mode != "ship"
+		for i in range(1, hops.size()):
+			_cpath.append_array(_hop_cells(hops[i - 1], hops[i], land))
 
 	## Refina o caminho grosseiro em células finas, em fatias. Cada amostra é
-	## validada no terreno fino: a célula grosseira é "água" pelo pixel central
-	## e uma barreira fina dentro dela ainda precisa ser respeitada.
+	## validada no terreno fino: as passagens de divisa já são células de água, e
+	## o trecho entre duas delas ainda precisa ser navegável dentro do mesmo
+	## componente.
 	func _refine_step(deadline_usec: int) -> bool:
 		var want := component(start, mode)
 		if raw.is_empty():
@@ -810,7 +1016,7 @@ class NavGrid:
 		var budget := 0
 		while _refine_index < _cpath.size():
 			var cell: Vector2i = _cpath[_refine_index]
-			var placed := _snap_near(cell, _refine_cell, mode, want, 4)
+			var placed := _snap_near(cell, _refine_cell, mode, want, 2)
 			if placed.x >= 0:
 				_fill_between(raw[raw.size() - 1], _cell_center(placed), mode, want)
 				_refine_cell = placed
@@ -833,7 +1039,7 @@ class NavGrid:
 			var cell := Vector2i(int(point.x / NAV_CELL_PX), int(point.y / NAV_CELL_PX))
 			if cell == last:
 				continue
-			var placed := _snap_near(cell, last, cell_mode, want, 2)
+			var placed := _snap_near(cell, last, cell_mode, want, 3)
 			if placed.x < 0:
 				continue
 			last = placed
