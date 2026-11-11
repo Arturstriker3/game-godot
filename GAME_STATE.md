@@ -219,7 +219,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 
 - **Orçamento público:** demo — impostos 15%, transferências 100%, gasto via `demo_spend_government`.
 - **Empresas privadas/públicas:** `owner` = private/state; lucro de estatal vai ao orçamento, privado às famílias.
-- **IA econômica (GDScript, `core/economy/ai/`):** determinística, intervalo de 7 dias, **não conectada ao jogo ao vivo**.
+- **IA econômica (GDScript, `core/economy/ai/`):** determinística, **conectada ao jogo ao vivo** (`Economy._run_day` → `plan`; `Economy._process` → `pump`), **escalonada**: a cidade de índice `i` planeja quando `dia % 7 == i % 7`, então a cadência por cidade continua 7 dias, mas cada dia tem ~1/7 das cidades. O trabalho dentro do dia é **fatiado entre frames** com orçamento de **1,5 ms/frame** e o status do `tick_demo()` é **reusado** (não há `get_demo_status()` extra de ~6–9 ms por ciclo).
   - `EconomicAI` — orquestrador.
   - `PrivateInvestor` — investe/expande se margem > 0,5/t e payback < 150 dias (730 d para o enxofre, bulk de baixo valor); para alimento (B3) escolhe a cultura de **melhor aptidão × preço** entre trigo/arroz/milho/batata/soja. Para minerais usa a **margem por profundidade** (`variable_cost_mined`) e teto de capacidade na demanda externa × 1,2.
   - `GovernmentAI` — estatal de segurança alimentar (a cultura de melhor aptidão × preço quando há déficit de t-eq de grão); mineração estratégica (B4) para cada mineral com jazida: **margem por profundidade**, **capacidade `minf(10, maxf(2, demanda_externa × 1,2))`** (em vez de capacidade fixa) e **candidatos ordenados por margem** (diamante/urânio não ficam atrás do cooldown); **anti-loop de construção (B5)**: cooldown de 30 d por cidade, teto de 6 construções/tipo e piso de utilização efetiva de 60% (limite 25% do orçamento; sem prospecção).
@@ -272,6 +272,23 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 
 Nos dias sem IA o pico fica em ~6–11 ms; os ~24 ms só aparecem nos dias de IA (a cada 7), custo pré-existente de `get_demo_status` + planejamento. Cobertura visual equivalente: 7,5 comboios ativos/dia e 7,2 entregues/dia (legado: 6,8 ativos/dia). O harness não mede 3x: ele congela o relógio e o orçamento do pump é fixo por frame (3x só acelera o tween).
 
+### 13.2 Virada do dia: mapa de recursos e IA (feito)
+
+`tools/perf_day_peak.gd` ganhou `--map-mode=political|resources` e mede o caminho real de `city_world.refresh_modes` (camada do modo + textura de território) no mesmo frame da virada. Medição serial, headless, 30 dias, mesmo cenário/IA do jogo:
+
+| etapa (média / p95 / máx) | antes | depois |
+|---|---|---|
+| mapa de recursos (`refresh` + território) | **2.025,9 / 2.136,1 / 2.261,9 ms** | **0,22 / 0,25 / 0,40 ms** |
+| mapa político (mesma causa) | **2.901,9 / 3.159,8 / 3.171,2 ms** | **0,23–0,31 / 0,28–0,51 / 0,36–0,51 ms** |
+| `get_demo_status()` extra nos dias de IA | 6,3–8,8 ms (máx) | **0** (reusa o resumo do tick) |
+| IA no dia | 9,8–15,7 ms (tudo no dia múltiplo de 7) | plano 0,01 ms; **0,7–1,0 ms/dia** fatiado (máx 1,8) |
+| **frame de pico na virada** | **≈2.038 ms** (mapa) / ~24–40 ms sem o mapa | **8,25 / 9,48 / 11,79 ms** (recursos) e **9,08 / 11,33 / 12,29 ms** (político) |
+| pump por frame (comboios + IA) | 1,54 / 5,58 ms (só comboios) | 1,51–1,55 / 1,58–1,59 / ~3,0 ms |
+
+Causa raiz do travamento: `MapModeLayer.refresh()` (chamado todo dia) criava um `GeographyService` e reparseava `deposits.json` (3,3 MB) mesmo no mapa político/recursos, onde o campo de calor está oculto. Agora a geografia é carregada uma vez em `setup`, só a série do modo de calor **ativo** é recalculada, a UV é calculada uma vez e as cidades são guardadas em colunas tipadas (sem reter o status do dia anterior). `TerritoryMap.update()` ganhou assinaturas de atribuição e de donos: sem mudança, não varre as 4.529 províncias nem reenvia a textura (~3,5 ms/dia antes).
+
+A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as cidades da sua fase (`plan`), o trabalho é consumido por `pump` a 1,5 ms/frame nos frames seguintes, e o `tick_demo()` já devolve o status usado pela IA. O balanceamento de 730 dias é equivalente (ver `docs/economy/balance_review.md` §18). Evidência completa em §18.
+
 ---
 
 ## 14. Registro de decisões
@@ -296,6 +313,7 @@ Nos dias sem IA o pico fica em ~6–11 ms; os ~24 ms só aparecem nos dias de IA
 | D-018 | Território = províncias admin-1 controladas por cidades; dono = nação da cidade no status do Economy | Fronteiras mudam sozinhas quando uma cidade muda de nação, sem estado paralelo. Fronteira só corre por divisas de província reais. Evidência: `tools/territory_test.gd`, `docs/map_visual/territory_static/` e `territory_bel_fra/` |
 | D-017 | Sem diorama/mesa 3D, props, luminária, sombras reais nem globo; o mapa atlas atual é a apresentação | Escopo de projeto pequeno (decisão do usuário). Mantidos só o limite elástico da câmera em Z e uma vinheta 2D de tela; o wrap em X continua |
 | D-016 | Mapa político a partir de campos de distância com sinal (vetores Natural Earth), não de máscaras raster | Máscaras de 8–16 km/px ampliadas viravam escadinha; o SDF dá linhas nítidas em qualquer zoom numa passada opaca. Regenerar com `python tools/build_atlas_layers.py` (requer pyshp, scipy) |
+| D-019 | Virada do dia sem pico: geografia do mapa carregada uma vez + heat por modo sob demanda; território só reescreve a textura quando o dono muda; IA escalonada por cidade e fatiada a 1,5 ms/frame, reusando o resumo do `tick_demo()` | Removeu o travamento de ~2,0–2,9 s/dia (reparse de `deposits.json` a cada `refresh`) e o pico de ~24 ms da IA, mantendo a cadência de 7 dias por cidade. Evidência: `tools/perf_day_peak.gd --map-mode=…` e `docs/economy/balance_review.md` §18 |
 
 ---
 

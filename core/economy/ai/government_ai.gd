@@ -43,7 +43,13 @@ func setup(sim: Object, geo: Object) -> void:
 
 func run(day: int, status: Dictionary) -> void:
 	for city in status.get("cities", []):
-		_run_city(day, city, status)
+		run_city(day, city, status)
+
+
+## Planeja UMA cidade (ver `PrivateInvestor.run_city`): o orquestrador escalona
+## as cidades no ciclo de 7 dias e fatia o trabalho entre frames.
+func run_city(day: int, city: Dictionary, status: Dictionary) -> void:
+	_run_city(day, city, status)
 
 
 func drain() -> Array:

@@ -1074,3 +1074,102 @@ chaves `city.name.*`/`port.name.*`**; o cruzamento apontou 3 faltas
 | `godot --headless --path . --script res://tools/economy_deposit_ownership_test.gd` (novo) | **exit 0** — 261 jazidas com 1 dono, soma por nação == nacional, 132 extratores após 180 d todos na cidade dona |
 | `docs/economy/balance_review_sim.json` (pipeline 730 d) | `days=730`, **4 falências**, **0 violações**, `money_total` **115.330.050**; comida GBR **98%**, FRA **99%**, demais **100%** |
 | `tools/validate_scenario_data.py` (Python real, pós-fechamento) | **exit 0** — `Resumo: tudo ok — 0 erros, 0 aviso(s) em 10 arquivo(s) verificado(s)`; cidades 40, portos 18, buildings 39, nations 8, goods 21, i18n 420 registros — 0 chaves `city.name.*`/`port.name.*` faltando |
+
+---
+
+## 18. Fluidez na virada do dia: mapa de recursos incremental + IA escalonada
+
+> Data: 2026-11-11. Fecha a tarefa "duas melhorias de fluidez". Medição com
+> `tools/perf_day_peak.gd --map-mode=political|resources` (headless, mesmo
+> cenário/IA do jogo, execuções seriais de 30 dias) e balanceamento com
+> `tools/balance_review.gd --days=730`. Nenhuma regra econômica mudou.
+
+### 18.1 Causa real do travamento (mapa de recursos)
+
+`MapModeLayer.refresh()` roda a cada `status_updated` (todo dia) via
+`city_world.refresh_modes`. Ele criava um `GeographyService` novo e chamava
+`load_data()`, reparseando `deposits.json` (3,3 MB) + áreas/províncias **todos
+os dias** — inclusive no mapa político e no mapa de recursos, onde o campo de
+calor nem está visível. Medido: **2.025,9 / 2.136,1 / 2.261,9 ms** (média/p95/máx)
+no mapa de recursos e **2.901,9 / 3.159,8 / 3.171,2 ms** no político.
+
+Correções em `map/map_mode_layer.gd`:
+
+1. **Geografia uma vez:** `setup()` cria o `GeographyService` e carrega os JSONs
+   uma única vez; `refresh()` reusa a instância.
+2. **Heat sob demanda:** `refresh()` recalcula apenas a série do modo de calor
+   **ativo** — político e recursos custam ~0 por dia. A UV dos centros é
+   calculada uma vez (`_ensure_uv`) e `set_mode()` recomputa apenas a série
+   pedida.
+3. **Sem reter o status:** as cidades são copiadas para colunas tipadas (id,
+   centro, população, produção, industrialização). Guardar o array de
+   dicionários do status mantinha os mercados/prédios do dia anterior vivos e
+   transferia a liberação dos dicts para a virada (~0,5 ms).
+
+Correções em `map/territory_map.gd` (`update()` chamado todo dia):
+
+4. **Assinatura da atribuição** (cidades → província): sem mudança de id/nação
+   de origem/centro, não roda `assign` (O(4.529 províncias × cidades)).
+5. **Assinatura dos donos** (nação da cidade + overrides): sem mudança, não
+   varre as 4.529 províncias nem reenvia a textura RGBA8. Isso valia
+   **~3,5 ms/dia**; a textura só é reescrita quando um dono muda de fato.
+
+### 18.2 IA econômica escalonada (sem pico de ~24 ms)
+
+Antes, a cada 7 dias, `EconomicAI.run()` chamava `sim.get_demo_status()` de novo
+(o `tick_demo()` já devolve o mesmo dicionário) e planejava as 40 cidades de uma
+vez: **6,3–8,8 ms** de status + **9,8–15,7 ms** de IA no mesmo frame do tick.
+
+Agora (`core/economy/ai/economic_ai.gd` + `economy.gd`):
+
+- **Escalonamento por cidade:** a cidade de índice `i` planeja quando
+  `dia % 7 == i % 7`. A cadência por cidade continua **7 dias** (mesmo número
+  de planejamentos), mas cada dia concentra ~1/7 das cidades (~6 de 40).
+- **Fatiamento por frame:** `plan(day, summary)` só enfileira; `pump(1.500 µs)`
+  roda uma cidade por vez e devolve o controle. O autoload `Economy` continua
+  nos frames seguintes (`_process`), inclusive em pausa — nada de IA no frame
+  da virada.
+- **Sem status duplicado:** `run`/`plan` aceitam o dicionário do `tick_demo()`;
+  `get_demo_status()` só é chamado por ferramentas/testes que não passam o
+  resumo, e apenas em dias com cidade agendada.
+
+### 18.3 Antes × depois (perf_day_peak, 30 dias, serial)
+
+| medição (média / p95 / máx) | antes | depois |
+|---|---|---|
+| mapa de recursos (`refresh` + território) | 2.025,9 / 2.136,1 / 2.261,9 ms | **0,22 / 0,25 / 0,40 ms** |
+| mapa político (`refresh` + território) | 2.901,9 / 3.159,8 / 3.171,2 ms | **0,23 / 0,28 / 0,36 ms** |
+| `get_demo_status()` extra (dias de IA) | 0,81 / 6,12 / 6,31 ms | **0** |
+| IA no dia | 1,30 / 9,83 / 9,83 ms (tudo no dia 7) | plano **0,01 ms**; trabalho **0,70–0,72 / 1,25–1,30 / 1,76–1,39 ms/dia** fatiado |
+| frame de pico na virada (recursos) | **≈2.038 ms** (mapa) | **8,25 / 9,48 / 11,79 ms** |
+| frame de pico na virada (político) | ≈2.915 ms (mapa) | **9,08 / 11,33 / 12,29 ms** |
+| pump por frame (comboios + IA) | — | 1,51–1,52 / 1,58–1,59 / ~3,0 ms |
+
+Observação: `tick_demo()` (C++, que já monta o dicionário consumido pelo HUD)
+domina o frame restante (~8–11 ms no headless). O mapa e a IA somam **< 1 ms**
+no frame da virada. Duas execuções políticas deram 12,29 ms e 13,53 ms de máximo
+(variação do tick, não do código); os dias sem IA ficam na mesma faixa.
+
+### 18.4 Balanceamento (730 dias) e verificação
+
+`balance_review.gd --days=730` com a IA escalonada:
+
+| métrica | resultado |
+|---|---|
+| `money_total` | **115.330.050** (conservado; `invariant_violations=[]`) |
+| falências | **5** (≤ 10; §16 já registrava 5 — §17 citou 4 numa execução anterior) |
+| satisfação alimentar | **8/8 ≥ 70%**: GBR 98%, FRA 99%, DEU/NED/BEL/VEN/SUR/GUY 100% |
+| violações de invariante | **0** |
+
+Equivalência: cada cidade continua planejando a cada 7 dias; o número de
+planejamentos por cidade em 730 dias é o mesmo. A diferença de fase (cidade 0
+planeja no dia 7, cidade 6 no dia 6) não alterou a satisfação, a conservação
+de dinheiro nem as metas de falência.
+
+Testes headless executados (todos **exit 0**): `economy_city_catchment_test`,
+`economy_live_path_test`, `economy_world_test`, `economy_integration_test`,
+`economy_ai_test`, `population_demo_test`, `economy_long_run_test`,
+`economy_bistability_test`, `territory_test`, `deposit_ring_test`,
+`economy_deposit_ownership_test`, `map_pick_test` e a cena
+`label_layout_test.tscn`. `economy_panel_test.gd` não foi rodado (BOM
+pré-existente, conforme `AGENTS.md`).

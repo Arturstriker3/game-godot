@@ -36,6 +36,13 @@ var _minimap_image: Image
 var _minimap_texture: ImageTexture
 var _max_id := 0
 var _loaded := false
+## Assinatura do conjunto de cidades que gerou `_assignment`. Os centros e a
+## nação de origem não mudam no dia a dia: `assign` é O(províncias × cidades)
+## e não precisa rodar a cada virada.
+var _assign_signature := ""
+## Assinatura dos donos (nação das cidades + overrides). Sem mudança, a textura
+## de território não é recalculada nem reenviada.
+var _owner_signature_cached := ""
 
 
 ## Lê provinces.json e monta os índices de dono e a lista de províncias.
@@ -48,6 +55,8 @@ func load_data() -> void:
 	_owners.clear()
 	_max_id = 0
 	_loaded = false
+	_assign_signature = ""
+	_owner_signature_cached = ""
 
 	var file := FileAccess.open(PROVINCES_PATH, FileAccess.READ)
 	if file == null:
@@ -140,9 +149,18 @@ static func _nearest_city(cities: Array, x: float, y: float) -> Dictionary:
 
 
 ## Calcula o dono de cada província e reescreve a textura RGBA8. Retorna true
-## se o conjunto de donos mudou em relação à chamada anterior.
+## se o conjunto de donos mudou em relação à chamada anterior. Só reescreve a
+## textura quando algo mudou (a virada do dia chama isto a cada dia).
 func update(cities: Array, overrides: Dictionary) -> bool:
-	assign(cities)
+	_assign_if_needed(cities)
+	# Sem mudança de donos (nação da cidade ou override), nada a recalcular:
+	# a virada do dia chama isto com o mesmo conjunto. O custo era ~3,5 ms/dia
+	# varrendo 4.529 províncias e reenviando a textura.
+	var signature := _assign_signature + "\n#\n" + _owner_signature(cities, overrides)
+	if signature == _owner_signature_cached and _texture != null:
+		return false
+	_owner_signature_cached = signature
+
 	# id da cidade -> nação (dono) atual, para colorir o território.
 	var city_nation: Dictionary = {}
 	for city: Variant in cities:
@@ -162,9 +180,45 @@ func update(cities: Array, overrides: Dictionary) -> bool:
 		if String(_owners.get(pid, "")) != tag:
 			changed = true
 
-	_write_owner_image(new_owners)
+	if changed or _texture == null:
+		_write_owner_image(new_owners)
 	_owners = new_owners
 	return changed
+
+
+## Assinatura dos insumos do dono: nação de cada cidade + overrides. Estável
+## durante a partida; só muda quando um território realmente muda de dono.
+func _owner_signature(cities: Array, overrides: Dictionary) -> String:
+	var parts := PackedStringArray()
+	for city: Variant in cities:
+		if typeof(city) != TYPE_DICTIONARY:
+			continue
+		parts.append("%s|%s" % [String(city.get("id", "")),
+			String(city.get("nation", ""))])
+	var keys: Array = overrides.keys()
+	keys.sort()
+	for key: Variant in keys:
+		parts.append("o:%s|%s" % [String(key), String(overrides[key])])
+	return "\n".join(parts)
+
+
+## Reatribui províncias→cidade só quando o conjunto de cidades muda (id, nação
+## de origem ou centro). `refresh_modes` roda a cada dia; a atribuição é estática
+## durante a partida.
+func _assign_if_needed(cities: Array) -> void:
+	var parts := PackedStringArray()
+	for city: Variant in cities:
+		if typeof(city) != TYPE_DICTIONARY:
+			continue
+		parts.append("%s|%s|%.3f|%.3f" % [
+			String(city.get("id", "")),
+			String(city.get("home_nation", city.get("nation", ""))),
+			float(city.get("x", 0.0)), float(city.get("y", 0.0))])
+	var signature := "\n".join(parts)
+	if signature == _assign_signature:
+		return
+	_assign_signature = signature
+	assign(cities)
 
 
 ## Textura do dono por província: rgb = cor do dono, a = índice do dono / 255.

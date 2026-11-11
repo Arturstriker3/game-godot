@@ -78,6 +78,17 @@ var _selection_diameter := 0.0
 var _mineral_points: Array = []
 var _renewable_points: Array = []
 var _geo: RefCounted
+## Último conjunto de cidades recebido em `setup`/`refresh`, guardado em
+## colunas tipadas. NÃO guardamos o array de dicionários do status: ele é
+## grande (mercados/prédios) e mantê-lo vivo transferia a liberação dos dicts
+## do dia anterior para a virada (~0,5 ms). Só o que os modos precisam.
+var _city_ids := PackedStringArray()
+var _city_centers := PackedVector2Array()
+var _city_population := PackedFloat64Array()
+var _city_production := PackedFloat64Array()
+var _city_industrialization := PackedFloat64Array()
+## Quantas cidades geraram `_uv` (centros são estáticos; a UV é calculada uma vez).
+var _uv_count := -1
 ## Filtros da legenda: {} = todos; senão chave -> bool.
 var _resource_filter: Dictionary = {}
 
@@ -98,11 +109,21 @@ func setup(cities: Array) -> void:
 	add_child(mesh)
 	_heat_mesh = mesh
 
+	# Geografia carregada UMA vez. Antes cada `refresh` (virada do dia) criava
+	# um GeographyService e reparseava deposits.json (3,3 MB) — ~2,9 s de
+	# travamento por dia com o mapa de recursos ativo.
+	_geo = GeographyScript.new()
+	_geo.load_data()
+
 	# Camada do mapa de recursos: marcadores em billboard (nítidos em qualquer
 	# zoom), gerados de map/map_data/atlas/resource_points.json.
 	_build_resource_markers()
 
-	_build_values(cities)
+	# Parâmetros fixos do campo de calor (não dependem do dia).
+	_material.set_shader_parameter("heat_radius", 0.055)
+	_material.set_shader_parameter("opacity", 0.45)
+
+	_capture(cities)
 	visible = false
 
 
@@ -110,15 +131,18 @@ func current_mode() -> String:
 	return _current
 
 
-## Recalcula os valores a partir do status atual sem recriar a camada.
+## Atualiza os valores do modo ATIVO a partir do status atual sem recriar a
+## camada. Modos de calor recalculam só a própria série; o mapa de recursos
+## (marcadores) e o mapa político não têm custo por dia — as jazidas são
+## estáticas e os centros das cidades não mudam.
 func refresh(cities: Array) -> void:
 	if cities.is_empty():
 		return
-	_uv.clear()
-	_values.clear()
-	_build_values(cities)
-	if MODE_COLORS.has(_current):
-		set_mode(_current)
+	_capture(cities)
+	if _current == "resources" or not MODE_COLORS.has(_current):
+		return
+	_build_values(_current)
+	_publish(_current)
 
 
 ## Liga/desliga as camadas sem recriar os planos. O mapa de recursos usa
@@ -144,60 +168,84 @@ func set_mode(mode: String) -> void:
 	var colors: Array = MODE_COLORS[mode]
 	_material.set_shader_parameter("low_color", colors[0])
 	_material.set_shader_parameter("high_color", colors[1])
-	_material.set_shader_parameter("city_uv", _uv)
-	_material.set_shader_parameter("city_value", _values[mode])
+	# Série sob demanda: garante valores do dia atual mesmo se o modo ficou
+	# inativo por vários dias (custo: 40 cidades × geografia já carregada).
+	_build_values(mode)
+	_publish(mode)
 	visible = true
 
 
-## Empacota UV e valores normalizados por modo. Cidades ausentes viram zeros.
-func _build_values(cities: Array) -> void:
+## Copia só os campos que os modos usam para colunas tipadas.
+func _capture(cities: Array) -> void:
+	var count := cities.size()
+	_city_ids.resize(count)
+	_city_centers.resize(count)
+	_city_population.resize(count)
+	_city_production.resize(count)
+	_city_industrialization.resize(count)
+	for index in count:
+		var city: Dictionary = cities[index]
+		_city_ids[index] = String(city.get("id", ""))
+		_city_centers[index] = Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0)))
+		_city_population[index] = float(city.get("population", 0.0))
+		_city_production[index] = float(city.get("production", 0.0))
+		_city_industrialization[index] = float(city.get("industrialization", 0.0))
+
+
+## Empacota UV (uma vez) e a série do modo pedido, normalizada 0..1.
+func _build_values(mode: String) -> void:
+	_ensure_uv()
+
 	var max_population := 0.0
 	var max_production := 0.0
-	for city in cities:
-		max_population = maxf(max_population, float(city.get("population", 0.0)))
-		max_production = maxf(max_production, float(city.get("production", 0.0)))
+	if mode == "population" or mode == "economic":
+		for value in _city_population:
+			max_population = maxf(max_population, value)
+		for value in _city_production:
+			max_production = maxf(max_production, value)
 
-	var geography: RefCounted = GeographyScript.new()
-	geography.load_data()
-	_geo = geography
+	# Recursos = jazidas PRÓPRIAS da cidade (regra A1). Antes contava as do
+	# território: cidades vizinhas no mesmo território acendiam igual.
+	var values := PackedFloat32Array()
+	for index in _city_ids.size():
+		var value := 0.0
+		match mode:
+			"population":
+				value = _log_ratio(_city_population[index], max_population)
+			"economic":
+				value = clampf(_city_production[index] / maxf(max_production, 1.0), 0.0, 1.0)
+			"industrial":
+				value = clampf(_city_industrialization[index], 0.0, 1.0)
+			"resources":
+				var wheat := 0.0
+				var deposits: Array = []
+				if _geo != null:
+					wheat = _geo.crop_suitability(
+							_city_ids[index], _city_centers[index], "wheat")
+					deposits = _geo.deposits_for_city(_city_ids[index])
+				value = clampf(wheat * 0.75 + minf(float(deposits.size()), 4.0) * 0.08,
+						0.0, 1.0)
+		values.append(value)
 
-	var population := PackedFloat32Array()
-	var economic := PackedFloat32Array()
-	var industrial := PackedFloat32Array()
-	var resources := PackedFloat32Array()
+	_values[mode] = _pad(values)
 
-	for city in cities:
-		var center := Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0)))
+
+## UV normalizada dos centros. Os centros vêm do cenário e não mudam no dia a
+## dia: calcula uma vez por conjunto de cidades.
+func _ensure_uv() -> void:
+	if _uv_count == _city_centers.size():
+		return
+	_uv.clear()
+	for center in _city_centers:
 		_uv.append(Vector2(center.x / MAP_PX.x, center.y / MAP_PX.y))
-
-		var population_value := float(city.get("population", 0.0))
-		population.append(_log_ratio(population_value, max_population))
-
-		var production := float(city.get("production", 0.0))
-		economic.append(clampf(production / maxf(max_production, 1.0), 0.0, 1.0))
-
-		industrial.append(clampf(float(city.get("industrialization", 0.0)), 0.0, 1.0))
-
-		var wheat: float = geography.crop_suitability(String(city.get("id", "")), center, "wheat")
-		# Recursos = jazidas PRÓPRIAS da cidade (regra A1). Antes contava as do
-		# território: cidades vizinhas no mesmo território acendiam igual.
-		var deposits: Array = geography.deposits_for_city(String(city.get("id", "")))
-		resources.append(clampf(wheat * 0.75 + minf(float(deposits.size()), 4.0) * 0.08, 0.0, 1.0))
-
-	population = _pad(population)
-	economic = _pad(economic)
-	industrial = _pad(industrial)
-	resources = _pad(resources)
 	_uv.resize(MAX_CITIES)
+	_uv_count = _city_centers.size()
+	_material.set_shader_parameter("city_uv", _uv)
 
-	_values["population"] = population
-	_values["economic"] = economic
-	_values["industrial"] = industrial
-	_values["resources"] = resources
 
-	_material.set_shader_parameter("city_count", cities.size())
-	_material.set_shader_parameter("heat_radius", 0.055)
-	_material.set_shader_parameter("opacity", 0.45)
+func _publish(mode: String) -> void:
+	_material.set_shader_parameter("city_count", _city_ids.size())
+	_material.set_shader_parameter("city_value", _values[mode])
 
 
 ## Constrói os marcadores do mapa de recursos: minerais (círculo) e renováveis

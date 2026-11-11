@@ -24,6 +24,9 @@ const SPEEDS := [0.0, 60.0, 30.0, 15.0]
 const SPEED_COUNT := 4
 ## Teto de dias processados num único frame (evita espiral num travamento longo).
 const MAX_DAYS_PER_FRAME := 8
+## Orçamento por frame do planejamento da IA (~1,5 ms). O dia só agenda; o
+## trabalho das cidades é fatiado nos frames seguintes, fora da virada.
+const AI_FRAME_BUDGET_US := 1500
 
 ## 1º de janeiro de 2026, 00:00 UTC.
 const START_UNIX := 1767225600
@@ -178,6 +181,10 @@ func flag_texture(tag: String) -> Texture2D:
 
 
 func _process(delta: float) -> void:
+	# Planejamento escalonado da IA: continua no frame seguinte, com orçamento.
+	# Independe da velocidade — a pausa não pode deixar decisões pela metade.
+	if _ai != null and _ai.is_busy():
+		_ai.pump(AI_FRAME_BUDGET_US)
 	if speed == 0:
 		return
 	_day_fraction += delta / SPEEDS[speed]
@@ -197,9 +204,11 @@ func _run_day() -> void:
 	status_updated.emit(last_summary)
 	trade_orders_ready.emit(last_summary.get("trade_orders", []))
 	# A camada de decisão roda depois do tick: as escolhas (investir, construir,
-	# revelar depósito) valem a partir do próximo dia.
+	# revelar depósito) valem a partir do próximo dia. Escalonada por cidade e
+	# fatiada nos frames seguintes — o status do tick é reusado, sem um segundo
+	# `get_demo_status()` (~6–9 ms).
 	if _ai != null:
-		_ai.run(int(last_summary.get("day", 0)))
+		_ai.plan(int(last_summary.get("day", 0)), last_summary)
 
 
 ## Troca a velocidade; 0 pausa o relógio. A fração do dia é preservada, então

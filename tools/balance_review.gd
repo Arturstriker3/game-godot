@@ -65,7 +65,8 @@ func _run() -> void:
 	var trace: Array = []
 	for day in _days:
 		var status: Dictionary = sim.tick_demo()
-		ai.run(int(status.get("day", 0)))
+		# Reusa o resumo do tick: a IA não chama get_demo_status de novo.
+		ai.run(int(status.get("day", 0)), status)
 		if day == _days / 2 - 1:
 			mid = _snapshot(sim)
 		if day == 0 or (day + 1) % 30 == 0:
