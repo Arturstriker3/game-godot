@@ -709,6 +709,12 @@ func show_deposit_info(info: Dictionary) -> void:
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)),
 			false))
+	var owners: Array = info.get("owners", [])
+	if not owners.is_empty():
+		body_box.add_child(_legend_row(Color.TRANSPARENT,
+				I18n.t("map.legend.deposit_owner" if owners.size() == 1
+						else "map.legend.deposit_owners"),
+				_deposit_owner_text(owners), false))
 
 	_legend_hint = _legend_footer(I18n.t("map.legend.deposit_hint"))
 	body_box.add_child(_legend_hint)
@@ -776,6 +782,17 @@ func _friendly_terrain(info: Dictionary) -> String:
 	if not relief.is_empty():
 		parts.append(I18n.t("map.legend.relief") + ": " + I18n.t("climate.relief." + relief))
 	return "\n".join(parts)
+
+
+## Nomes localizados das cidades donas de uma jazida (até 3 + contagem). O
+## marcador pode agregar várias jazidas; cada uma tem seu dono (regra A1).
+func _deposit_owner_text(owners: Array) -> String:
+	var labels: Array = []
+	for owner in owners.slice(0, 3):
+		labels.append(I18n.city_name(String(owner), String(owner)))
+	if owners.size() > 3:
+		labels.append("+%d" % (owners.size() - 3))
+	return ", ".join(labels)
 
 
 ## Nome localizado da região (pt/en/es) para o título da ficha.

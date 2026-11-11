@@ -1189,10 +1189,11 @@ func _layout_place_icon(label: Label3D, icon: Sprite3D, ring: Sprite3D, flag: Sp
 				label.position.y, label.position.z)
 
 
-## Recursos que a cidade acessa: depósitos de TODOS os territórios da nação
-## (via GeographyService, que já filtra facilities e offshore) + as culturas a
-## que a NAÇÃO tem acesso (mesma regra nacional de `apply_to_sim`), acima do
-## limiar do investidor (0,30), ordenadas por aptidão decrescente. Sem duplicar:
+## Recursos PRÓPRIOS da cidade para a legenda: jazidas minerais que pertencem
+## a ela (regra A1 — cada jazida tem um único dono) + as culturas da sua bacia
+## acima do limiar do investidor (0,30), ordenadas por aptidão decrescente.
+## Antes mostrava as jazidas da NAÇÃO inteira: toda cidade da mesma nação
+## listava os mesmos minerais ("acesso aos mesmos depósitos"). Sem duplicar:
 ## minerais e culturas vêm de catálogos distintos.
 func _resource_entries(city_id: String, nation: String, center: Vector2) -> Array:
 	if _geo == null:
@@ -1200,22 +1201,16 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 		_geo.load_data()
 	_ensure_catchment()
 	var code := String(_geo.NATION_CODE.get(nation, ""))
-	var counts := {}
-	var reserves := {}
-	var deposits: Array = _geo.deposits_for_nation(code) if code != "" \
-			else _geo.deposits_for(city_id, center)
-	for deposit in deposits:
-		var key := String(deposit.get("resource", ""))
-		counts[key] = int(counts.get(key, 0)) + 1
-		reserves[key] = float(reserves.get(key, 0.0)) + float(deposit.get("quantity_kt", 0.0))
+	var minerals: Dictionary = _geo.city_mineral_reserves(city_id) if code != "" \
+			else _legacy_territory_reserves(city_id, center)
 
 	var entries: Array = []
 	for key in MINERAL_KEYS:
-		if counts.has(key):
+		if minerals.has(key):
 			entries.append({
 				"kind": key,
-				"count": int(counts[key]),
-				"reserve_kt": float(reserves.get(key, 0.0)),
+				"count": int(minerals[key]["count"]),
+				"reserve_kt": float(minerals[key]["reserve_kt"]),
 			})
 	var crops: Array = []
 	for crop in RENEWABLE_CROPS:
@@ -1232,9 +1227,9 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 	return entries
 
 
-## Bacia de captação por cidade para a ficha (uma vez só). A ficha agora mostra
-## as culturas DA CIDADE (média ponderada dos seus territórios), não mais o
-## máximo nacional — os minerais continuam com o acesso nacional (`deposits_for_nation`).
+## Bacia de captação por cidade para a ficha (uma vez só). A ficha mostra as
+## culturas DA CIDADE (média ponderada dos seus territórios) e os minerais que
+## ela POSSUI (regra A1) — nada de máximo/acesso nacional.
 func _ensure_catchment() -> void:
 	if _geo == null or _geo_catchment_ready:
 		return
@@ -1248,7 +1243,25 @@ func _ensure_catchment() -> void:
 			"landmass": String(city.get("landmass", "")),
 		})
 	_geo.assign_provinces(city_list)
+	_geo.assign_deposits(city_list)
 	_geo_catchment_ready = true
+
+
+## Fallback legado (cidade sem nação conhecida): reservas do território. Não é
+## usado pelas cidades do cenário — todas têm nação —, mas mantém a ficha
+## funcional para ids de demonstração.
+func _legacy_territory_reserves(city_id: String, center: Vector2) -> Dictionary:
+	var out := {}
+	for deposit in _geo.deposits_for(city_id, center):
+		var resource := String(deposit.get("resource", ""))
+		var qty := float(deposit.get("quantity_kt", 0.0))
+		if resource == "" or qty <= 0.0:
+			continue
+		if not out.has(resource):
+			out[resource] = {"count": 0, "reserve_kt": 0.0}
+		out[resource]["count"] = int(out[resource]["count"]) + 1
+		out[resource]["reserve_kt"] = float(out[resource]["reserve_kt"]) + qty
+	return out
 
 
 ## Aptidão de uma cultura renovável PARA A CIDADE (bacia de captação). A madeira

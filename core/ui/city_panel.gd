@@ -653,7 +653,10 @@ func _orders_card() -> Control:
 	return card
 
 
-func _deposits_card(city_id: String, center: Vector2) -> Control:
+## Jazidas PRÓPRIAS da cidade (regra A1). O território pode ser compartilhado
+## por várias cidades; a jazida, não. Cidade sem jazida própria mostra o estado
+## vazio em vez de listar o minério dos vizinhos.
+func _deposits_card(city_id: String, _center: Vector2) -> Control:
 	var card := UiKit.card(UiKit.SPACE_MD)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -664,12 +667,12 @@ func _deposits_card(city_id: String, center: Vector2) -> Control:
 	box.add_child(UiKit.rule())
 
 	var known: Array = []
-	for deposit in _geo.deposits_for(city_id, center):
+	for deposit in _geo.deposits_for_city(city_id):
 		if String(deposit.get("status", "")) != "Unknown":
 			known.append(deposit)
 
 	if known.is_empty():
-		box.add_child(UiKit.paragraph(I18n.t("city.resources.empty"), UiKit.FS_SMALL,
+		box.add_child(UiKit.paragraph(I18n.t("city.resources.deposits.empty"), UiKit.FS_SMALL,
 				UiKit.TEXT_MUTED, 420.0))
 		return card
 

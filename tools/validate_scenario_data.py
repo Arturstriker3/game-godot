@@ -541,7 +541,7 @@ def check_nation_refs(
                 )
 
 
-def validate_i18n(sec: Section, path: Path) -> None:
+def validate_i18n(sec: Section, path: Path) -> set:
     total = 0
     seen: dict = {}
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -550,7 +550,7 @@ def validate_i18n(sec: Section, path: Path) -> None:
             header = next(reader)
         except StopIteration:
             sec.errors.append("arquivo vazio (sem cabeçalho)")
-            return
+            return set()
         header = [cell.strip() for cell in header]
         if header != I18N_HEADER:
             sec.errors.append(
@@ -577,6 +577,34 @@ def validate_i18n(sec: Section, path: Path) -> None:
             else:
                 seen[key] = line
     sec.records = total
+    return set(seen)
+
+
+def check_i18n_ids(
+    sec: Section,
+    i18n_keys: set,
+    city_ids: dict,
+    port_ids: dict,
+) -> None:
+    """Cruza os ids de cidades/portos com as chaves city.name.*/port.name.*.
+
+    Um id sem chave cai no fallback cru do CSV na legenda (I18n.city_name /
+    port_name devolvem o id ou o nome do CSV em vez do nome localizado). Era o
+    caso de VEN-LAG, SUR-PBM e GUY-GEO.
+    """
+    for entity, prefix, id_map in (
+        ("cidade", "city.name.", city_ids),
+        ("porto", "port.name.", port_ids),
+    ):
+        ids: set = set()
+        for values in id_map.values():
+            ids |= values
+        for item in sorted(ids):
+            key = prefix + item
+            if key not in i18n_keys:
+                sec.errors.append(
+                    f"{entity} '{item}' sem chave i18n '{key}'"
+                )
 
 
 # --------------------------------------------------------------------------
@@ -759,14 +787,18 @@ def build_report(root: Path) -> Report:
         report.io_failure = True
 
     i18n_sec = report.section(rel_path(i18n_path, root))
+    i18n_keys: Optional[set] = None
     if i18n_path.exists():
         try:
-            validate_i18n(i18n_sec, i18n_path)
+            i18n_keys = validate_i18n(i18n_sec, i18n_path)
         except (OSError, UnicodeDecodeError) as exc:
             i18n_sec.errors.append(f"não foi possível ler o arquivo: {exc}")
             report.io_failure = True
     else:
         i18n_sec.warnings.append("arquivo opcional não encontrado; verificação ignorada")
+
+    if i18n_keys is not None:
+        check_i18n_ids(i18n_sec, i18n_keys, city_ids, port_ids)
 
     return report
 

@@ -1003,3 +1003,74 @@ privado reconstrói a cultura certa. `balance_review.gd` → **5 falências**,
 `economy_integration`/`economy_ai`/`population_demo`/`economy_long_run`/
 `economy_bistability`/`territory`/`deposit_ring` + `validate_scenario_data.py`
 — todos exit 0.
+
+---
+
+## 17. Posse mineral por cidade (A1 na exibição)
+
+> Data: 2026-11-11. Fecha a tarefa "cada jazida pertence a uma única cidade".
+> A regra A1 já valia na **simulação** (`_assign_deposits` → `apply_to_sim`,
+> IA e núcleo C++) — o que faltava era a **exibição**: ficha/legenda da
+> cidade ainda usavam o total nacional. Nenhuma regra econômica mudou.
+
+### 17.1 Antes — a ficha e a legenda mostravam a nação
+
+`map/city_world.gd::_resource_entries` chamava
+`GeographyService.deposits_for_nation`, então **todas as cidades de uma nação
+listavam o mesmo conjunto** — com a reserva nacional repetida em cada uma:
+
+| Nação | recursos listados | cidades que repetiam |
+|---|---|---|
+| GBR | 9 | 8 |
+| FRA | 9 | 10 |
+| DEU | 9 | 8 |
+| NED | 4 | 4 |
+| BEL | 3 | 3 |
+| VEN | 12 | 5 |
+| SUR | 9 | 1 |
+| GUY | 8 | 1 |
+
+O que **já** era por cidade: a partição real (`_assign_deposits`) alimentava
+`apply_to_sim` — IA e núcleo C++. Ela distribui **261 jazidas** nas 8 nações
+(GBR 25, FRA 46, DEU 41, NED 4, BEL 3, VEN 93, SUR 24, GUY 25) com **0
+duplicação**: a soma das cidades de uma nação é a reserva nacional.
+
+### 17.2 Depois — um dono por jazida em todas as telas
+
+Novos acessos em `core/economy/geography_service.gd` — `assign_deposits`
+(idempotente, substitui o antigo `_assign_deposits`), `deposits_for_city`,
+`city_mineral_reserves`, `deposit_owner_city`, `owners_for_territories`,
+`ensure_deposit_ownership` e `scenario_cities` — e os quatro pontos de exibição
+passam a ler a **mesma** atribuição:
+
+| Tela | Arquivo | O que mostra agora |
+|---|---|---|
+| Legenda da cidade | `map/city_world.gd` | jazidas próprias + culturas da bacia |
+| Cartão da cidade | `core/ui/city_panel.gd` | jazidas próprias, com vazio explícito |
+| Heat do mapa | `map/map_mode_layer.gd` | conta jazidas da cidade, não do território |
+| Ficha do depósito | `map/map_mode_layer.gd` + `core/ui/hud.gd` | linha "Cidade dona"/"Cidades donas" |
+
+A ficha do depósito resolve o dono pelos **territórios reais do marcador**
+(`owners_for_territories`) e mostra até 3 nomes + contagem — o marcador agregado
+nunca atribui tudo à capital. Cidade sem jazida própria mostra o estado vazio
+("Esta cidade não possui jazidas próprias.") em vez do minério do vizinho.
+
+Resultado: **38/40 cidades** têm mineral próprio; **DEU-STR (Stuttgart)** e
+**BEL-ANR (Antuérpia)** não têm jazida. A IA abre **132 prédios minerais em
+180 d**, todos na cidade dona do recurso.
+
+i18n (pt-BR/en/es, `i18n.csv` + `i18n.json`, 420 chaves por idioma): novas
+chaves `city.resources.deposits.empty`, `map.legend.deposit_owner` e
+`map.legend.deposit_owners`; `city.resources.deposits` passou de "Ocorrências
+conhecidas" para "Jazidas da cidade" e `map.legend.city_hint` declara a regra.
+`tools/validate_scenario_data.py` passou a **cruzar ids de cidade/porto com as
+chaves `city.name.*`/`port.name.*`**; o cruzamento apontou 3 faltas
+(**VEN-LAG, SUR-PBM, GUY-GEO**), adicionadas nesta rodada.
+
+### 17.3 Verificação
+
+| Verificação | Resultado |
+|---|---|
+| `godot --headless --path . --script res://tools/economy_deposit_ownership_test.gd` (novo) | **exit 0** — 261 jazidas com 1 dono, soma por nação == nacional, 132 extratores após 180 d todos na cidade dona |
+| `docs/economy/balance_review_sim.json` (pipeline 730 d) | `days=730`, **4 falências**, **0 violações**, `money_total` **115.330.050**; comida GBR **98%**, FRA **99%**, demais **100%** |
+| `tools/validate_scenario_data.py` (Python real, pós-fechamento) | **exit 0** — `Resumo: tudo ok — 0 erros, 0 aviso(s) em 10 arquivo(s) verificado(s)`; cidades 40, portos 18, buildings 39, nations 8, goods 21, i18n 420 registros — 0 chaves `city.name.*`/`port.name.*` faltando |

@@ -178,7 +178,9 @@ func _build_values(cities: Array) -> void:
 		industrial.append(clampf(float(city.get("industrialization", 0.0)), 0.0, 1.0))
 
 		var wheat: float = geography.crop_suitability(String(city.get("id", "")), center, "wheat")
-		var deposits: Array = geography.deposits_for(String(city.get("id", "")), center)
+		# Recursos = jazidas PRÓPRIAS da cidade (regra A1). Antes contava as do
+		# território: cidades vizinhas no mesmo território acendiam igual.
+		var deposits: Array = geography.deposits_for_city(String(city.get("id", "")))
 		resources.append(clampf(wheat * 0.75 + minf(float(deposits.size()), 4.0) * 0.08, 0.0, 1.0))
 
 	population = _pad(population)
@@ -512,6 +514,17 @@ func deposit_info(index: int) -> Dictionary:
 	var resource := String(MINERAL_KEYS[clampi(int(point[2]), 0, MINERAL_KEYS.size() - 1)])
 	var names: Dictionary = _geo.territory_name(territory) if _geo != null else {}
 	var region: Dictionary = point[10] if point.size() > 10 else {}
+	# Cidade(s) dona(s): o marcador pode agregar várias jazidas (regra A1 é por
+	# jazida). Resolvemos os donos pelos territórios reais do marcador — nunca
+	# "tudo à capital".
+	var owners: Array = []
+	if _geo != null:
+		var territories: Array = []
+		if region.has("territories"):
+			territories = region.get("territories", [])
+		elif territory != "":
+			territories = [territory]
+		owners = _geo.owners_for_territories(territories, resource)
 	return {
 		"kind": "mineral",
 		"resource": resource,
@@ -529,6 +542,7 @@ func deposit_info(index: int) -> Dictionary:
 		"area_km2": float(region.get("area_km2", 0.0)),
 		"region_count": int(region.get("region_count", 1)),
 		"country": String(region.get("country", "")),
+		"owners": owners,
 	}
 
 

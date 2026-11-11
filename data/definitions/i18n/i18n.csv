@@ -95,7 +95,8 @@ city.producers.empty,Nenhuma cidade produz trigo neste dia.,No city produces whe
 city.producers.title,Cidades produtoras de trigo,Wheat producing cities,Ciudades productoras de trigo
 city.production,Produção diária,Daily production,Producción diaria
 city.resources.climate,Clima,Climate,Clima
-city.resources.deposits,Ocorrências conhecidas,Known occurrences,Ocurrencias conocidas
+city.resources.deposits,Jazidas da cidade,City deposits,Yacimientos de la ciudad
+city.resources.deposits.empty,Esta cidade não possui jazidas próprias.,This city owns no deposits.,Esta ciudad no posee yacimientos propios.
 city.resources.empty,Sem dados naturais para o território desta cidade.,No natural data for this city's territory.,Sin datos naturales para el territorio de esta ciudad.
 city.resources.fertility,Fertilidade do solo,Soil fertility,Fertilidad del suelo
 city.resources.more,+{count} ocorrências,+{count} occurrences,+{count} ocurrencias
@@ -207,6 +208,8 @@ map.economic,Economia,Economy,Economía
 map.geographic,Geográfico,Geographic,Geográfico
 map.hint,Camada de dados exibida sobre o mesmo mapa.,Data layer drawn over the same map.,Capa de datos sobre el mismo mapa.
 map.industrial,Indústria,Industry,Industria
+map.legend.deposit_owner,Cidade dona,Owner city,Ciudad propietaria
+map.legend.deposit_owners,Cidades donas,Owner cities,Ciudades propietarias
 map.political,Político,Political,Político
 map.population,População,Population,Población
 map.resources,Recursos,Resources,Recursos
@@ -259,6 +262,9 @@ pop.jobs,Empregos,Jobs,Empleos
 pop.note,"A simulação atual modela o consumo de trigo por cidade. Desemprego, salários nominais, poupança e migração ainda não são simulados; a renda é um índice relativo (0–100%) derivado da produção e do déficit.","The current simulation models wheat consumption per city. Unemployment, nominal wages, savings and migration are not simulated yet; income is a relative index (0–100%) derived from production and deficit.","La simulación actual modela el consumo de trigo por ciudad. El desempleo, los salarios nominales, el ahorro y la migración aún no se simulan; la renta es un índice relativo (0–100%) derivado de la producción y del déficit."
 pop.title,População e padrão de vida,Population and living standards,Población y nivel de vida
 pop.total,População total,Total population,Población total
+port.name.GUY-GEO,Georgetown,Georgetown,Georgetown
+port.name.SUR-PBM,Paramaribo,Paramaribo,Paramaribo
+port.name.VEN-LAG,La Guaira,La Guaira,La Guaira
 prod.hint,Clique numa cidade para ver a produção local.,Click a city to inspect its local production.,Haz clic en una ciudad para ver su producción local.
 prod.tab.chain,Cadeia,Chain,Cadena
 prod.tab.cities,Cidades,Cities,Ciudades
@@ -327,7 +333,7 @@ map.legend.uncheck_all_tip,Desmarcar todos,Uncheck all,Desmarcar todos
 map.legend.deposit,Depósito,Deposit,Yacimiento
 map.legend.city_resources,Recursos da cidade,City resources,Recursos de la ciudad
 map.legend.city_empty,Sem recursos ao alcance.,No resources in reach.,Sin recursos al alcance.
-map.legend.city_hint,Recursos das províncias da cidade. Campos offshore ficam inacessíveis por enquanto.,Resources from the city's provinces. Offshore fields are unavailable for now.,Recursos de las provincias de la ciudad. Los campos offshore quedan inaccesibles por ahora.
+map.legend.city_hint,Jazidas próprias e culturas das províncias da cidade; cada jazida pertence a uma única cidade. Campos offshore ficam inacessíveis por enquanto.,The city's own deposits plus its provinces' crops; each deposit belongs to a single city. Offshore fields are unavailable for now.,Yacimientos propios y cultivos de las provincias de la ciudad; cada yacimiento pertenece a una sola ciudad. Los campos offshore quedan inaccesibles por ahora.
 map.legend.deposit_hint,Quantidade é reserva estimada; a extração será definida depois.,Amount is estimated reserve; extraction will be defined later.,La cantidad es reserva estimada; la extracción se definirá después.
 map.legend.back,Voltar,Back,Volver
 map.legend.reserve,Reserva,Reserve,Reserva

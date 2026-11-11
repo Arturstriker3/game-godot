@@ -85,6 +85,16 @@ var _catchment: Dictionary = {}  # city_id -> [province_id] (atribuição A1)
 ## fracionária na divisão de uma província entre uma cidade cercada e a vizinha
 ## da mesma nação (ver `_share_starved_provinces`).
 var _province_share: Dictionary = {}
+## Regra A1 dos minerais: cada jazida pertence a UMA cidade (mesma nação e
+## mesma massa de terra). Preenchido por `assign_deposits` e reutilizado pela
+## legenda da cidade, pelo painel e pelo mapa — todos leem o MESMO dono.
+var _deposits_by_city: Dictionary = {}   # city_id -> [depósito]
+var _deposit_owner_key: Dictionary = {}  # "px|py|recurso" -> city_id
+var _assign_signature := ""
+## Cidades do cenário (cities.json) normalizadas — usadas quando o chamador não
+## passa a lista de cidades (legenda/painel/mapa).
+var _roster: Array = []
+var _roster_ready := false
 var _loaded := false
 
 
@@ -530,11 +540,161 @@ func city_land_capacity_t_day(city_id: String, crop: String) -> float:
 	return city_cultivable_area_km2(city_id) * per_km2
 
 
-## Depósitos minerais/energéticos do território da cidade.
+## Depósitos minerais/energéticos do TERRITÓRIO da cidade. NÃO é a regra de
+## posse: várias cidades podem estar no mesmo território e veriam a mesma
+## lista. Use `deposits_for_city` para o que a cidade realmente possui.
 func deposits_for(city_id: String, center_px: Vector2) -> Array:
 	var territory := territory_for(city_id, center_px)
 	var entries: Array = _deposits_by_territory.get(territory, [])
 	return entries.duplicate(true)
+
+
+# --- Posse mineral por cidade (regra A1) -----------------------------------
+
+## Cidades do cenário (cities.json) no formato id/nation/center/landmass.
+## Fonte única para resolver o dono de uma jazida fora do caminho que chama
+## `apply_to_sim` (legenda da cidade, painel e mapa de recursos).
+func scenario_cities() -> Array:
+	if _roster_ready:
+		return _roster
+	_roster_ready = true
+	_roster = []
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(CITIES_PATH))
+	if typeof(parsed) != TYPE_ARRAY:
+		push_warning("GeographyService: cities.json inválido " + CITIES_PATH)
+		return _roster
+	for city in parsed:
+		_roster.append({
+			"id": String(city.get("id", "")),
+			"nation": String(city.get("nation", "")),
+			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
+			"landmass": String(city.get("landmass", "")),
+		})
+	return _roster
+
+
+## Garante a atribuição A1 com as cidades do cenário quando ninguém chamou
+## `assign_deposits` ainda (caminho da legenda/painel/mapa).
+func ensure_deposit_ownership() -> void:
+	if not load_data():
+		return
+	if _deposits_by_city.is_empty():
+		assign_deposits(scenario_cities())
+
+
+## Jazidas que pertencem à cidade (regra A1). Vazio = a cidade não tem jazida
+## própria — ela importa o mineral, não o produz. Cópia: o chamador não altera
+## o cache.
+func deposits_for_city(city_id: String) -> Array:
+	ensure_deposit_ownership()
+	var entries: Array = _deposits_by_city.get(city_id, [])
+	return entries.duplicate(true)
+
+
+## Minerais PRÓPRIOS da cidade com contagem e reserva agregada:
+## {recurso: {"count": int, "reserve_kt": float}}. É o que a legenda e o painel
+## mostram — nunca o total nacional.
+func city_mineral_reserves(city_id: String) -> Dictionary:
+	var out := {}
+	for deposit in deposits_for_city(city_id):
+		var resource := String(deposit.get("resource", ""))
+		var qty := float(deposit.get("quantity_kt", 0.0))
+		if resource == "" or qty <= 0.0:
+			continue
+		if not out.has(resource):
+			out[resource] = {"count": 0, "reserve_kt": 0.0}
+		out[resource]["count"] = int(out[resource]["count"]) + 1
+		out[resource]["reserve_kt"] = float(out[resource]["reserve_kt"]) + qty
+	return out
+
+
+## Cidade dona de um depósito ("" se ele não pertence a nenhuma cidade
+## jogável). A chave é posição + recurso, a mesma usada na atribuição.
+func deposit_owner_city(deposit: Dictionary) -> String:
+	ensure_deposit_ownership()
+	return String(_deposit_owner_key.get(_deposit_key(deposit), ""))
+
+
+## Cidades donas das jazidas do recurso nos territórios informados. É como o
+## marcador agregado do mapa ("reúne N jazidas") declara o dono sem atribuir
+## tudo à capital: cada território contribui com as cidades que realmente
+## possuem aquelas jazidas.
+func owners_for_territories(territories: Array, resource: String) -> Array:
+	ensure_deposit_ownership()
+	var seen := {}
+	var out: Array = []
+	for territory_id in territories:
+		for deposit in _deposits_by_territory.get(String(territory_id), []):
+			if String(deposit.get("resource", "")) != resource:
+				continue
+			var owner := deposit_owner_city(deposit)
+			if owner == "" or seen.has(owner):
+				continue
+			seen[owner] = true
+			out.append(owner)
+	return out
+
+
+## Atribui cada depósito nacional a UMA cidade (regra A1). Retorna
+## {city_id: [depósito, ...]} sem duplicação: cada depósito entra em exatamente
+## uma cidade, então a soma das reservas por nação no sim é a soma dos depósitos
+## da nação. Depósitos de nações não jogáveis (sem tag em NATION_CODE) são
+## ignorados. Idempotente: a mesma lista de cidades reaproveita o cache.
+func assign_deposits(cities: Array) -> Dictionary:
+	var norm := _normalized_cities(cities)
+	var signature := _assignment_signature(norm)
+	if signature == _assign_signature:
+		return _deposits_by_city
+	_assign_signature = signature
+
+	var tag_of_code := {}
+	for tag: String in NATION_CODE:
+		tag_of_code[String(NATION_CODE[tag])] = String(tag)
+
+	var assigned := {}
+	var owner_key := {}
+	for deposit in _deposits:
+		if bool(deposit.get("facility", false)):
+			continue
+		var code := String(
+			_nature.get(String(deposit.get("territory", "")), {}).get("adm0_a3", ""))
+		var tag := String(tag_of_code.get(code, ""))
+		if tag == "":
+			continue
+		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		var city_id := _nearest_city_of_nation(norm, tag, point)
+		if city_id == "":
+			continue
+		if not assigned.has(city_id):
+			assigned[city_id] = []
+		assigned[city_id].append(deposit)
+		owner_key[_deposit_key(deposit)] = city_id
+
+	_deposits_by_city = assigned
+	_deposit_owner_key = owner_key
+	return _deposits_by_city
+
+
+## Chave estável de um depósito (posição + recurso). Não inclui quantidade: a
+## mesma jazida aparece com campos levemente diferentes nos dois JSONs (mapa e
+## natural) e continua sendo a mesma.
+func _deposit_key(deposit: Dictionary) -> String:
+	return "%s|%s|%s" % [str(snappedf(float(deposit.get("px", 0.0)), 0.1)),
+			str(snappedf(float(deposit.get("py", 0.0)), 0.1)),
+			String(deposit.get("resource", ""))]
+
+
+func _assignment_signature(cities: Array) -> String:
+	var parts := PackedStringArray()
+	for city in cities:
+		parts.append("%s/%s/%s/%s" % [String(city["id"]), String(city["tag"]),
+				String(city["landmass"]), str(city["center"])])
+	return "|".join(parts)
+
+
+## Alias legado da atribuição (mesma regra A1). Mantido para chamadores antigos.
+func _assign_deposits(cities: Array) -> Dictionary:
+	return assign_deposits(cities)
 
 
 ## Depósitos dentro de um raio em pixels do centro da cidade. É o critério
@@ -581,7 +741,9 @@ func _deposit_allowed(deposit: Dictionary) -> bool:
 	return false
 
 
-## Resumo legível do território (auditoria e painéis).
+## Resumo legível do território (auditoria e painéis). `deposits` conta apenas
+## as jazidas que PERTENCEM à cidade (regra A1), não as do território — senão
+## cidades vizinhas no mesmo território mostrariam o mesmo número.
 func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 	var territory := territory_for(city_id, center_px)
 	if territory == "":
@@ -593,7 +755,7 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 		"climate": data.get("climate", ""),
 		"relief": data.get("relief", ""),
 		"wheat": crop_suitability(city_id, center_px, "wheat"),
-		"deposits": deposits_for(city_id, center_px).size(),
+		"deposits": deposits_for_city(city_id).size(),
 	}
 
 
@@ -616,8 +778,9 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 ## terra: Caiena não herda minério da França continental e Paris não herda o da
 ## Guiana. Sem duplicação: a soma das reservas por nação no sim é a soma dos
 ## depósitos da nação. Cidade sem nação conhecida mantém o fallback legado do
-## próprio território (`deposits_for`). O acesso nacional (`deposits_for_nation`)
-## continua disponível para a ficha de cidade (map/city_world.gd).
+## próprio território (`deposits_for`). A legenda da cidade, o painel e o mapa
+## leem a MESMA atribuição por `deposits_for_city` — o acesso nacional
+## (`deposits_for_nation`) deixou de ser usado na ficha.
 ## @param sim Instância de EconomySim inicializada no modo demo.
 ## @param cities Lista de dicionários com "id", "nation" e "center" (Vector2 px).
 ## @returns Mapa cidade -> {crop: aptidão, mineral: reserva_kt}.
@@ -630,7 +793,7 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 	var applied := {}
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton"]
 	assign_provinces(cities)
-	var deposits_by_city := _assign_deposits(cities)
+	var deposits_by_city := assign_deposits(cities)
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var center: Vector2 = city.get("center", Vector2.ZERO)
@@ -701,44 +864,6 @@ func _aggregate_deposits(deposits: Array) -> Dictionary:
 			"depth_m": int(round(agg["depth_w"] / total)),
 		}
 	return out
-
-
-## Atribui cada depósito nacional a UMA cidade (regra A1). Retorna
-## {city_id: [depósito, ...]} sem duplicação: cada depósito entra em exatamente
-## uma cidade, então a soma das reservas por nação no sim é a soma dos depósitos
-## da nação. Depósitos de nações não jogáveis (sem tag em NATION_CODE) são
-## ignorados.
-func _assign_deposits(cities: Array) -> Dictionary:
-	var tag_of_code := {}
-	for tag: String in NATION_CODE:
-		tag_of_code[String(NATION_CODE[tag])] = String(tag)
-
-	var all_cities: Array = []
-	for city in cities:
-		all_cities.append({
-			"id": String(city.get("id", "")),
-			"tag": String(city.get("nation", "")),
-			"center": city.get("center", Vector2.ZERO),
-			"landmass": String(_city_landmass.get(String(city.get("id", "")), "")),
-		})
-
-	var assigned := {}
-	for deposit in _deposits:
-		if bool(deposit.get("facility", false)):
-			continue
-		var code := String(
-			_nature.get(String(deposit.get("territory", "")), {}).get("adm0_a3", ""))
-		var tag := String(tag_of_code.get(code, ""))
-		if tag == "":
-			continue
-		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
-		var city_id := _nearest_city_of_nation(all_cities, tag, point)
-		if city_id == "":
-			continue
-		if not assigned.has(city_id):
-			assigned[city_id] = []
-		assigned[city_id].append(deposit)
-	return assigned
 
 
 ## Cidade de `tag` mais próxima de `point`, restrita à mesma massa de terra
