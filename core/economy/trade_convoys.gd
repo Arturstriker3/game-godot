@@ -48,7 +48,15 @@ const MAX_SEGMENT_SECONDS := 45.0
 ## faria o navio cruzar o oceano num piscar; abaixo disso o trecho ganha mais
 ## tempo. O avião mantém um teto maior para continuar visivelmente mais rápido.
 const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 0.7, "plane": 1.8}
-const MAX_CONVOYS := 8
+## Teto de comboios VISÍVEIS ao mesmo tempo (LOD): os pedidos além disso não
+## viram veículo, mas a economia não muda — o comércio é simulado no núcleo
+## C++ (`demo_in_transit_`/shipments) antes de existir pedido; o comboio é só
+## a representação no mapa. 24 é o piso da faixa recomendada (24–32): cada
+## comboio visível custa uma rota de A* (~5 ms/dia no total a 650 cidades).
+## Comandado pelo `spawn_orders`, que ordena os pedidos por prioridade (nação do
+## jogador, proximidade da câmera, comércio entre nações) e agrega o excedente
+## em `stats.aggregated`.
+const MAX_CONVOYS := 24
 # Escalonamento da partida (segundos de tween): comboios que nascem no mesmo
 # tick saem em instantes diferentes e próximos, formando uma linha (cara de
 # comboio). Quando as rotas divergem, cada um segue para o seu destino.
@@ -139,6 +147,10 @@ const MASK_LAND_MIN := 253
 var _active_convoys := 0
 var _depart_slot := 0
 var _convoys: Array[Node3D] = []
+## Nação do jogador (tag, ex.: "GBR"): pedidos de/para ela têm prioridade de
+## LOD. Vazio = jogo ainda não declarou nação do jogador; a prioridade cai na
+## proximidade da câmera e no comércio entre nações.
+var player_nation := ""
 var _scale_cache := {}
 var _pair_cache := {}
 var _path_cache := {}
@@ -169,6 +181,8 @@ var _paused := false
 ## desenhável) ou `no_slot` (teto de comboios ativos), `placed` = comboios que
 ## nasceram já com o veículo no ponto de partida. No fim de uma rodada limpa
 ## valem `spawned == finished + cancelled` e `placed == spawned - cancelled`.
+## `aggregated` fica FORA dessa conta: são pedidos que o LOD descartou antes de
+## qualquer tentativa (nenhum veículo nasceu; a economia não depende deles).
 var stats := {
 	"spawned": 0,
 	"finished": 0,
@@ -177,6 +191,10 @@ var stats := {
 	"no_route": 0,
 	"no_slot": 0,
 	"placed": 0,
+	## Pedidos que o LOD descartou antes de tentar spawn (teto de visíveis).
+	## Fora de `spawned`/`cancelled` de propósito: não é viagem, é pedido sem
+	## veículo — a economia já contabilizou o comércio no núcleo C++.
+	"aggregated": 0,
 	"last_cancel": "",
 }
 
@@ -1193,20 +1211,105 @@ func _ready() -> void:
 
 ## Enfileira os comboios de um tick de comércio. Barato de propósito: o custo
 ## (busca de rota + criação do nó) fica no pump de `_process()`.
+##
+## LOD: só os `MAX_CONVOYS` pedidos mais prioritários entram na fila; o resto é
+## agregado em `stats.aggregated` (sem veículo, sem mudança na economia). Pedidos
+## que sobraram da fila anterior também são agregados ao serem descartados.
 func spawn_orders(orders: Array) -> void:
-	_queue = _prioritize(orders).slice(0, MAX_CONVOYS)
+	stats["aggregated"] = int(stats["aggregated"]) + _queue.size()
+	var sorted := _prioritize(orders)
+	if sorted.size() > MAX_CONVOYS:
+		stats["aggregated"] = int(stats["aggregated"]) + sorted.size() - MAX_CONVOYS
+		sorted = sorted.slice(0, MAX_CONVOYS)
+	_queue = sorted
 	_depart_slot = 0
 
 
-## Pedidos entre nações primeiro: são os que mostram navio e avião no mapa.
+## Ordena os pedidos por prioridade de LOD: (1) nação do jogador, (2) comércio
+## entre nações (mostra navio/avião), (3) proximidade da câmera, com desempate
+## determinístico por cidade de origem/destino. Sem câmera (headless), a
+## distância é infinita para todos e o desempate vale.
 func _prioritize(orders: Array) -> Array:
-	var sorted := orders.duplicate()
-	sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var a_cross: bool = a["from_nation"] != a["to_nation"]
-		var b_cross: bool = b["from_nation"] != b["to_nation"]
-		return a_cross and not b_cross
-	)
+	var focus := _camera_focus()
+	var entries: Array = []
+	for index in orders.size():
+		var order: Dictionary = orders[index]
+		entries.append({
+			"order": order,
+			"tier": _order_tier(order),
+			"distance": _order_distance(order, focus),
+			"from": String(order.get("from_city", "")),
+			"to": String(order.get("to_city", "")),
+			"index": index,
+		})
+	entries.sort_custom(_order_before)
+	var sorted: Array = []
+	for entry in entries:
+		sorted.append(entry["order"])
 	return sorted
+
+
+func _order_before(a: Dictionary, b: Dictionary) -> bool:
+	var a_tier := int(a["tier"])
+	var b_tier := int(b["tier"])
+	if a_tier != b_tier:
+		return a_tier < b_tier
+	var a_distance := float(a["distance"])
+	var b_distance := float(b["distance"])
+	if not is_equal_approx(a_distance, b_distance):
+		return a_distance < b_distance
+	var a_from := String(a["from"])
+	var b_from := String(b["from"])
+	if a_from != b_from:
+		return a_from < b_from
+	var a_to := String(a["to"])
+	var b_to := String(b["to"])
+	if a_to != b_to:
+		return a_to < b_to
+	return int(a["index"]) < int(b["index"])
+
+
+## 0 = pedido da nação do jogador; 1 = comércio entre nações; 2 = doméstico.
+func _order_tier(order: Dictionary) -> int:
+	var from_nation := String(order.get("from_nation", ""))
+	var to_nation := String(order.get("to_nation", ""))
+	if not player_nation.is_empty() \
+			and (from_nation == player_nation or to_nation == player_nation):
+		return 0
+	return 1 if from_nation != to_nation else 2
+
+
+## Distância da origem do pedido ao foco da câmera, em unidades de mundo.
+## Pedido sem trecho vai para o fim da fila (INF).
+func _order_distance(order: Dictionary, focus: Vector3) -> float:
+	var legs: Array = order.get("legs", [])
+	if legs.is_empty():
+		return INF
+	var first: Variant = legs[0]
+	if not (first is Dictionary):
+		return INF
+	var leg: Dictionary = first
+	if not leg.has("from_px"):
+		return INF
+	var point: Vector2 = leg["from_px"]
+	var world := _pixel_to_world(point)
+	var dx := world.x - focus.x
+	var dz := world.z - focus.z
+	return sqrt(dx * dx + dz * dz)
+
+
+## Posição da câmera no espaço deste nó (o mapa pode estar deslocado no mundo).
+## Sem câmera (headless), devolve INF: a ordenação cai nos desempates.
+func _camera_focus() -> Vector3:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return Vector3(INF, INF, INF)
+	return to_local(camera.global_position)
+
+
+## Define a nação do jogador para a prioridade de LOD (ver `player_nation`).
+func set_player_nation(tag: String) -> void:
+	player_nation = tag
 
 
 func _process(_delta: float) -> void:

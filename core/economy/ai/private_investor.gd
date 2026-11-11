@@ -29,6 +29,24 @@ var _decisions: Array[Dictionary] = []
 var _history: Dictionary = {}
 var _id_counter := 1
 
+## Totais do sistema, medidos UMA vez por dia no `plan()` do escalonador (ver
+## `prepare_totals`). Antes, cada cidade varria todas as cidades por produto
+## (`_system_surplus`/`_system_sold`): O(cidades² × produtos), 442 ms/dia com
+## 650 cidades. Aqui: uma passada O(cidades × produtos) por dia.
+##
+## Somatórios: {"surplus": PackedFloat64Array, "sold": ..., "demand": ...}
+## indexada pelo id de produto do C++. Os agregados POR NAÇÃO (população, need,
+## deficit, produção) já vêm prontos do núcleo em `status["nations"]` (ver
+## `nation_summary`) — não são recalculados aqui.
+var _sum_surplus := PackedFloat64Array()
+var _sum_sold := PackedFloat64Array()
+var _sum_demand := PackedFloat64Array()
+var _totals_status: Dictionary = {}
+## Quantas vezes os totais foram medidos (telemetria: deve ser 1 por dia) e
+## quanto custou a última medição (ms).
+var totals_builds := 0
+var last_prepare_ms := 0.0
+
 
 func setup(sim: Object, geo: Object) -> void:
 	_sim = sim
@@ -36,13 +54,96 @@ func setup(sim: Object, geo: Object) -> void:
 
 
 func run(day: int, status: Dictionary) -> void:
+	prepare_totals(status)
 	for city in status.get("cities", []):
 		run_city(day, city, status)
+
+
+## Mede os totais do sistema uma única vez por status (uma passada pelas
+## cidades). O escalonador chama isto no `plan()`; `run_city` só recalcula se
+## receber um status diferente (chamada síncrona de ferramentas/testes).
+func prepare_totals(status: Dictionary) -> void:
+	var started := Time.get_ticks_usec()
+	totals_builds += 1
+	_totals_status = status
+	var cities: Array = status.get("cities", [])
+	if cities.is_empty():
+		_sum_surplus = PackedFloat64Array()
+		_sum_sold = PackedFloat64Array()
+		_sum_demand = PackedFloat64Array()
+		last_prepare_ms = _elapsed_ms(started)
+		return
+	var product_count: int = (cities[0].get("markets", []) as Array).size()
+	if product_count <= 0:
+		_sum_surplus = PackedFloat64Array()
+		_sum_sold = PackedFloat64Array()
+		_sum_demand = PackedFloat64Array()
+		last_prepare_ms = _elapsed_ms(started)
+		return
+	# Packed arrays LOCAIS durante a soma: guardá-las no dicionário antes do
+	# laço faria cada escrita copiar o buffer (copy-on-write) — o Array de
+	# Variants tinha o mesmo custo por conversão. O dicionário recebe o
+	# resultado só no fim.
+	var system_surplus := PackedFloat64Array()
+	var system_sold := PackedFloat64Array()
+	var system_demand := PackedFloat64Array()
+	system_surplus.resize(product_count)
+	system_sold.resize(product_count)
+	system_demand.resize(product_count)
+	for city in cities:
+		var markets: Array = city.get("markets", [])
+		var limit: int = mini(product_count, markets.size())
+		for product in limit:
+			var market: Dictionary = markets[product]
+			var surplus := float(market["surplus"])
+			if surplus > 0.0:
+				system_surplus[product] += surplus
+			var sold := float(market["sold"])
+			if sold > 0.0:
+				system_sold[product] += sold
+			var demand := float(market["demand"])
+			if demand > 0.0:
+				system_demand[product] += demand
+	_sum_surplus = system_surplus
+	_sum_sold = system_sold
+	_sum_demand = system_demand
+	last_prepare_ms = _elapsed_ms(started)
+
+
+func _elapsed_ms(started_usec: int) -> float:
+	return float(Time.get_ticks_usec() - started_usec) / 1000.0
+
+
+## Total do sistema para um produto e campo ("surplus", "sold", "demand").
+## 0,0 quando o produto não existe no status (ausência declarada, não estimada).
+func system_total(product: int, field: String) -> float:
+	var values: PackedFloat64Array
+	if field == "surplus":
+		values = _sum_surplus
+	elif field == "sold":
+		values = _sum_sold
+	else:
+		values = _sum_demand
+	if product < 0 or product >= values.size():
+		return 0.0
+	return values[product]
+
+
+## Agregado de uma nação como o núcleo o publica em `status["nations"]`
+## (população, need, deficit, produção, city_count). Devolve {} quando a nação
+## não aparece no status — ausência de dado, não zero.
+func nation_summary(nation: String) -> Dictionary:
+	for entry in _totals_status.get("nations", []):
+		if String(entry.get("tag", "")) == nation:
+			return entry
+	return {}
 
 
 ## Planeja UMA cidade. O orquestrador escalona as cidades ao longo do ciclo de
 ## 7 dias e fatia o trabalho entre frames; a cadência por cidade segue 7 dias.
 func run_city(day: int, city: Dictionary, status: Dictionary) -> void:
+	if not is_same(_totals_status, status):
+		prepare_totals(status)
 	_run_city(day, city, status)
 
 
@@ -285,17 +386,15 @@ func _find_producer(city: Dictionary, product: int) -> Dictionary:
 
 
 func _system_surplus(status: Dictionary, product: int) -> float:
-	var total := 0.0
-	for city in status.get("cities", []):
-		total += maxf(0.0, float(city["markets"][product].get("surplus", 0.0)))
-	return total
+	if not is_same(_totals_status, status):
+		prepare_totals(status)
+	return system_total(product, "surplus")
 
 
 func _system_sold(status: Dictionary, product: int) -> float:
-	var total := 0.0
-	for city in status.get("cities", []):
-		total += maxf(0.0, float(city["markets"][product].get("sold", 0.0)))
-	return total
+	if not is_same(_totals_status, status):
+		prepare_totals(status)
+	return system_total(product, "sold")
 
 
 func _price_risk(city_id: String, product: int, price: float) -> float:

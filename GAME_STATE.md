@@ -300,6 +300,25 @@ Causa raiz do travamento: `MapModeLayer.refresh()` (chamado todo dia) criava um 
 
 A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as cidades da sua fase (`plan`), o trabalho é consumido por `pump` a 1,5 ms/frame nos frames seguintes, e o `tick_demo()` já devolve o status usado pela IA. O balanceamento de 730 dias é equivalente (ver `docs/economy/balance_review.md` §18). Evidência completa em §18.
 
+### 13.3 Escala mundial (≈190 nações / ≈650 cidades): totais diários e LOD de comboios
+
+- **IA sem O(n²):** o investidor privado varria todas as cidades por produto em cada decisão (`_system_surplus`/`_system_sold`): O(cidades² × produtos). Agora `EconomicAI.plan` mede os totais do sistema **uma vez por dia** (`PrivateInvestor.prepare_totals`: surplus, sold e demand por produto, numa passada O(cidades × produtos)) e as decisões leem o total já somado (`system_total`). Os agregados **por nação** (população, need, déficit, produção) já vêm prontos do núcleo em `status["nations"]` e são expostos por `nation_summary` — não são recalculados em GDScript.
+- **Medição** (mundo sintético, 14 dias, headless; "pico" = maior `pump()` de um frame). A fonte de cada coluna é explícita: **antes** = `tools/_world_scale_bench.gd` (bench pré-mudança), **depois** = `tools/ai_scale_bench.gd` (bench pós-mudança). Os números abaixo foram copiados dessas duas medições já registradas — não foram remedidos.
+
+| cidades | trabalho IA/dia — antes¹ → **depois²** | pico de frame da IA — antes¹ → **depois²** | `plan()` — depois² |
+|---|---|---|---|
+| 40 | 1,18 → **0,3 ms** | 2,00 → **0,46 ms** | 0,8 ms |
+| 200 | 36,2 → **2,2 ms** | 9,94 → **1,6 ms** | 6,6 ms |
+| 650 | **441,9 → 8,7 ms** | **29,2 → 1,7 ms** | ≈41 ms |
+
+  ¹ coluna **antes**: `tools/_world_scale_bench.gd` (medido antes do patch) · ² coluna **depois**: `tools/ai_scale_bench.gd`
+
+  O custo restante do `plan()` a 650 cidades é a **primeira leitura** dos dicionários de mercado recém-criados pelo C++ (validação de chave por dicionário), paga uma vez por dia na virada — não no frame da IA. Se o núcleo C++ passar a publicar `demo_market_totals()` (fora deste escopo), esse custo cai a ~0.
+- **Perfil de IA mais barato (14 dias) para nações pequenas: NÃO adotado.** Com os totais diários, o pico do pump (1,7 ms a 650 cidades) já cabe no orçamento de 1,5 ms (teto suave, uma cidade pode terminar acima). Dobrar a cadência mudaria o instante das decisões (e o balanceamento dos 730 dias) sem necessidade medida.
+- **Comboios são só visuais:** o comércio é liquidado no núcleo C++ (`demo_in_transit_`/shipments) e os `trade_orders` são a consequência; nada na economia lê `TradeConvoys`. O teto de **24 veículos visíveis** (`MAX_CONVOYS`) é LOD: `spawn_orders` ordena por **nação do jogador** (`set_player_nation`; vazio até o jogo declarar uma), comércio entre nações e **proximidade da câmera**, e o excedente vira `stats.aggregated` (sem veículo, sem efeito econômico). Pedidos que sobram na fila de um dia também são agregados ao serem descartados. `stats.spawned == finished + cancelled` continua valendo (`aggregated` fica fora dessa conta).
+- **Regressão (40 cidades reais):** `balance_review --days=730` → 8/8 nações ≥98% de satisfação, 3 falências, 0 violações; `economy_ai_test`, `economy_integration_test`, `economy_live_path_test`, `economy_long_run_test`, `economy_bistability_test`, `convoy_lifecycle_test` e `perf_day_peak --days=10` passam.
+
+
 ---
 
 ## 14. Registro de decisões

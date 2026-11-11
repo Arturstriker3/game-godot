@@ -75,6 +75,11 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 	var status := summary
 	if status.is_empty():
 		status = sim.get_demo_status()
+	# Totais do sistema (oferta/vendido/demanda por produto e por nação) são
+	# medidos UMA vez por dia, aqui no plano — nunca no laço por cidade. Antes,
+	# o investidor privado varria todas as cidades por produto em cada decisão
+	# (O(cidades² × produtos); 442 ms/dia com 650 cidades).
+	private_investor.prepare_totals(status)
 	var cities: Array = status.get("cities", [])
 	_city_count = cities.size()
 	_pending_day = day
