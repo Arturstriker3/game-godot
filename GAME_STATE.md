@@ -260,6 +260,18 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **Benchmarks documentados:** `docs/map_visual/REPORT.md` (mapa 3D 42% mais escuro que o 2D; nitidez cai no zoom; rótulos ilegíveis a d≥52; sem MSAA/TAA).
 - **Limites conhecidos:** SDF de país rebaixado 4× e atualizado de forma incremental/bounded; relevo nulo; escala urbana estilizada (2,8 u ≈ 112 km) não documentada.
 
+### 13.1 Logística sob demanda / desempenho
+
+`core/economy/trade_convoys.gd` não faz mais a busca de rota na virada do dia: `spawn_orders()` só enfileira (até 8 comboios) e a rota/criação acontece no `_process()`, com orçamento de 1,5 ms/frame, A* interrompível e pool de nós. Medido com `tools/perf_day_peak.gd` (headless, mesma IA/cenário do jogo; 10 dias no legado, 25 dias sob demanda):
+
+| medição | legado (tudo na virada) | sob demanda |
+|---|---|---|
+| `spawn_orders`/dia (média / p95 / máx) | 1.818,9 / 4.290,6 / 4.290,6 ms | 0,18 / 0,28 / 0,34 ms |
+| frame de pico na virada (média / p95 / máx) | 1.828,6 / 4.298,8 / 4.298,8 ms | 10,1 / 23,7 / 24,4 ms |
+| pump por frame (média / máx) | — | 1,54 / 5,58 ms |
+
+Nos dias sem IA o pico fica em ~6–11 ms; os ~24 ms só aparecem nos dias de IA (a cada 7), custo pré-existente de `get_demo_status` + planejamento. Cobertura visual equivalente: 7,5 comboios ativos/dia e 7,2 entregues/dia (legado: 6,8 ativos/dia). O harness não mede 3x: ele congela o relógio e o orçamento do pump é fixo por frame (3x só acelera o tween).
+
 ---
 
 ## 14. Registro de decisões
