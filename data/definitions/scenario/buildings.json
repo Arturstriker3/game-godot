@@ -3,234 +3,234 @@
     "city_id": "GBR-LDN",
     "id": "ldn_wheat",
     "name": "Londres — trigo",
-    "output_tons_per_day": 1300.0
+    "output_tons_per_day": 1640.9
   },
   {
     "city_id": "FRA-PAR",
     "id": "par_wheat",
     "name": "Paris — trigo",
-    "output_tons_per_day": 6000.0
+    "output_tons_per_day": 5641.0
   },
   {
     "city_id": "DEU-BER",
     "id": "ber_wheat",
     "name": "Berlim — trigo",
-    "output_tons_per_day": 2500.0
+    "output_tons_per_day": 1821.3
   },
   {
     "city_id": "NED-AMS",
     "id": "ams_wheat",
     "name": "Amsterdã — trigo",
-    "output_tons_per_day": 300.0
+    "output_tons_per_day": 217.1
   },
   {
     "city_id": "BEL-BRU",
     "id": "bru_wheat",
     "name": "Bruxelas — trigo",
-    "output_tons_per_day": 400.0
+    "output_tons_per_day": 316.8
   },
   {
     "city_id": "VEN-CCS",
     "id": "ccs_wheat",
     "name": "Caracas — trigo",
-    "output_tons_per_day": 870.0
+    "output_tons_per_day": 772.2
   },
   {
     "city_id": "SUR-PBM",
     "id": "pbm_wheat",
     "name": "Paramaribo — trigo",
-    "output_tons_per_day": 72.0
+    "output_tons_per_day": 72.3
   },
   {
     "city_id": "GUY-GEO",
     "id": "geo_wheat",
     "name": "Georgetown — trigo",
-    "output_tons_per_day": 35.0
+    "output_tons_per_day": 37.7
   },
   {
     "city_id": "FRA-LIL",
     "id": "lil_wheat",
     "name": "Lille — trigo",
-    "output_tons_per_day": 318.0
+    "output_tons_per_day": 319.1
   },
   {
     "city_id": "FRA-LEH",
     "id": "leh_wheat",
     "name": "Le Havre — trigo",
-    "output_tons_per_day": 81.0
+    "output_tons_per_day": 69.7
   },
   {
     "city_id": "FRA-SXB",
     "id": "sxb_wheat",
     "name": "Estrasburgo — trigo",
-    "output_tons_per_day": 151.5
+    "output_tons_per_day": 148.4
   },
   {
     "city_id": "FRA-LYS",
     "id": "lys_wheat",
     "name": "Lyon — trigo",
-    "output_tons_per_day": 525.0
+    "output_tons_per_day": 516.5
   },
   {
     "city_id": "FRA-MRS",
     "id": "mrs_wheat",
     "name": "Marselha — trigo",
-    "output_tons_per_day": 483.0
+    "output_tons_per_day": 494.7
   },
   {
     "city_id": "FRA-TLS",
     "id": "tls_wheat",
     "name": "Toulouse — trigo",
-    "output_tons_per_day": 300.0
+    "output_tons_per_day": 328.1
   },
   {
     "city_id": "FRA-NTE",
     "id": "nte_wheat",
     "name": "Nantes — trigo",
-    "output_tons_per_day": 210.0
+    "output_tons_per_day": 206.7
   },
   {
     "city_id": "DEU-HAM",
     "id": "ham_wheat",
     "name": "Hamburgo — trigo",
-    "output_tons_per_day": 555.0
+    "output_tons_per_day": 790.6
   },
   {
     "city_id": "DEU-MUC",
     "id": "muc_wheat",
     "name": "Munique — trigo",
-    "output_tons_per_day": 450.0
+    "output_tons_per_day": 646.2
   },
   {
     "city_id": "DEU-CGN",
     "id": "cgn_wheat",
     "name": "Colônia — trigo",
-    "output_tons_per_day": 330.0
+    "output_tons_per_day": 681.0
   },
   {
     "city_id": "DEU-FFM",
     "id": "ffm_wheat",
     "name": "Frankfurt — trigo",
-    "output_tons_per_day": 225.0
+    "output_tons_per_day": 544.3
   },
   {
     "city_id": "DEU-STR",
     "id": "str_wheat",
     "name": "Stuttgart — trigo",
-    "output_tons_per_day": 825.0
+    "output_tons_per_day": 440.3
   },
   {
     "city_id": "DEU-LEJ",
     "id": "lej_wheat",
     "name": "Leipzig — trigo",
-    "output_tons_per_day": 180.0
+    "output_tons_per_day": 218.5
   },
   {
     "city_id": "GBR-BHX",
     "id": "bhx_wheat",
     "name": "Birmingham — trigo",
-    "output_tons_per_day": 750.0
+    "output_tons_per_day": 794.4
   },
   {
     "city_id": "GBR-MAN",
     "id": "man_wheat",
     "name": "Manchester — trigo",
-    "output_tons_per_day": 825.0
+    "output_tons_per_day": 817.8
   },
   {
     "city_id": "GBR-GLA",
     "id": "gla_wheat",
     "name": "Glasgow — trigo",
-    "output_tons_per_day": 510.0
+    "output_tons_per_day": 339.9
   },
   {
     "city_id": "GBR-BRS",
     "id": "brs_wheat",
     "name": "Bristol — trigo",
-    "output_tons_per_day": 210.0
+    "output_tons_per_day": 206.4
   },
   {
     "city_id": "GBR-NCL",
     "id": "ncl_wheat",
     "name": "Newcastle — trigo",
-    "output_tons_per_day": 240.0
+    "output_tons_per_day": 232.2
   },
   {
     "city_id": "NED-RTM",
     "id": "rtm_wheat",
     "name": "Roterdã — trigo",
-    "output_tons_per_day": 345.0
+    "output_tons_per_day": 360.0
   },
   {
     "city_id": "NED-EIN",
     "id": "ein_wheat",
     "name": "Eindhoven — trigo",
-    "output_tons_per_day": 225.0
+    "output_tons_per_day": 96.1
   },
   {
     "city_id": "BEL-ANR",
     "id": "anr_wheat",
     "name": "Antuérpia — trigo",
-    "output_tons_per_day": 315.0
+    "output_tons_per_day": 297.0
   },
   {
     "city_id": "VEN-MAR",
     "id": "mar_wheat",
     "name": "Maracaibo — trigo",
-    "output_tons_per_day": 660.0
+    "output_tons_per_day": 683.1
   },
   {
     "city_id": "VEN-VLN",
     "id": "vln_wheat",
     "name": "Valência — trigo",
-    "output_tons_per_day": 540.0
+    "output_tons_per_day": 472.5
   },
   {
     "city_id": "VEN-CGU",
     "id": "cgu_wheat",
     "name": "Ciudad Guayana — trigo",
-    "output_tons_per_day": 240.0
+    "output_tons_per_day": 225.3
   },
   {
     "city_id": "GBR-BFS",
     "id": "bfs_wheat",
     "name": "Belfast — trigo",
-    "output_tons_per_day": 192.0
+    "output_tons_per_day": 211.3
   },
   {
     "city_id": "GBR-NOT",
     "id": "not_wheat",
     "name": "Nottingham — trigo",
-    "output_tons_per_day": 237.0
+    "output_tons_per_day": 227.4
   },
   {
     "city_id": "FRA-CLF",
     "id": "clf_wheat",
     "name": "Clermont-Ferrand — trigo",
-    "output_tons_per_day": 81.9
+    "output_tons_per_day": 81.8
   },
   {
     "city_id": "DEU-KAS",
     "id": "kas_wheat",
     "name": "Kassel — trigo",
-    "output_tons_per_day": 60.0
+    "output_tons_per_day": 95.1
   },
   {
     "city_id": "BEL-LGG",
     "id": "lgg_wheat",
     "name": "Liège — trigo",
-    "output_tons_per_day": 150.0
+    "output_tons_per_day": 164.2
   },
   {
     "city_id": "NED-ENS",
     "id": "ens_wheat",
     "name": "Enschede — trigo",
-    "output_tons_per_day": 96.0
+    "output_tons_per_day": 44.8
   },
   {
     "city_id": "VEN-PAY",
     "id": "pay_wheat",
     "name": "Puerto Ayacucho — trigo",
-    "output_tons_per_day": 36.0
+    "output_tons_per_day": 34.9
   }
 ]

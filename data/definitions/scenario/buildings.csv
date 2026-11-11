@@ -1,40 +1,40 @@
 city_id,building_id,name,output_tons_per_day
-GBR-LDN,ldn_wheat,Londres — trigo,1300
-FRA-PAR,par_wheat,Paris — trigo,6000
-DEU-BER,ber_wheat,Berlim — trigo,2500
-NED-AMS,ams_wheat,Amsterdã — trigo,300
-BEL-BRU,bru_wheat,Bruxelas — trigo,400
-VEN-CCS,ccs_wheat,Caracas — trigo,870
-SUR-PBM,pbm_wheat,Paramaribo — trigo,72
-GUY-GEO,geo_wheat,Georgetown — trigo,35
-FRA-LIL,lil_wheat,Lille — trigo,318
-FRA-LEH,leh_wheat,Le Havre — trigo,81
-FRA-SXB,sxb_wheat,Estrasburgo — trigo,151.5
-FRA-LYS,lys_wheat,Lyon — trigo,525
-FRA-MRS,mrs_wheat,Marselha — trigo,483
-FRA-TLS,tls_wheat,Toulouse — trigo,300
-FRA-NTE,nte_wheat,Nantes — trigo,210
-DEU-HAM,ham_wheat,Hamburgo — trigo,555
-DEU-MUC,muc_wheat,Munique — trigo,450
-DEU-CGN,cgn_wheat,Colônia — trigo,330
-DEU-FFM,ffm_wheat,Frankfurt — trigo,225
-DEU-STR,str_wheat,Stuttgart — trigo,825
-DEU-LEJ,lej_wheat,Leipzig — trigo,180
-GBR-BHX,bhx_wheat,Birmingham — trigo,750
-GBR-MAN,man_wheat,Manchester — trigo,825
-GBR-GLA,gla_wheat,Glasgow — trigo,510
-GBR-BRS,brs_wheat,Bristol — trigo,210
-GBR-NCL,ncl_wheat,Newcastle — trigo,240
-NED-RTM,rtm_wheat,Roterdã — trigo,345
-NED-EIN,ein_wheat,Eindhoven — trigo,225
-BEL-ANR,anr_wheat,Antuérpia — trigo,315
-VEN-MAR,mar_wheat,Maracaibo — trigo,660
-VEN-VLN,vln_wheat,Valência — trigo,540
-VEN-CGU,cgu_wheat,Ciudad Guayana — trigo,240
-GBR-BFS,bfs_wheat,Belfast — trigo,192
-GBR-NOT,not_wheat,Nottingham — trigo,237
-FRA-CLF,clf_wheat,Clermont-Ferrand — trigo,81.9
-DEU-KAS,kas_wheat,Kassel — trigo,60
-BEL-LGG,lgg_wheat,Liège — trigo,150
-NED-ENS,ens_wheat,Enschede — trigo,96
-VEN-PAY,pay_wheat,Puerto Ayacucho — trigo,36
+GBR-LDN,ldn_wheat,Londres — trigo,1640.9
+FRA-PAR,par_wheat,Paris — trigo,5641
+DEU-BER,ber_wheat,Berlim — trigo,1821.3
+NED-AMS,ams_wheat,Amsterdã — trigo,217.1
+BEL-BRU,bru_wheat,Bruxelas — trigo,316.8
+VEN-CCS,ccs_wheat,Caracas — trigo,772.2
+SUR-PBM,pbm_wheat,Paramaribo — trigo,72.3
+GUY-GEO,geo_wheat,Georgetown — trigo,37.7
+FRA-LIL,lil_wheat,Lille — trigo,319.1
+FRA-LEH,leh_wheat,Le Havre — trigo,69.7
+FRA-SXB,sxb_wheat,Estrasburgo — trigo,148.4
+FRA-LYS,lys_wheat,Lyon — trigo,516.5
+FRA-MRS,mrs_wheat,Marselha — trigo,494.7
+FRA-TLS,tls_wheat,Toulouse — trigo,328.1
+FRA-NTE,nte_wheat,Nantes — trigo,206.7
+DEU-HAM,ham_wheat,Hamburgo — trigo,790.6
+DEU-MUC,muc_wheat,Munique — trigo,646.2
+DEU-CGN,cgn_wheat,Colônia — trigo,681
+DEU-FFM,ffm_wheat,Frankfurt — trigo,544.3
+DEU-STR,str_wheat,Stuttgart — trigo,440.3
+DEU-LEJ,lej_wheat,Leipzig — trigo,218.5
+GBR-BHX,bhx_wheat,Birmingham — trigo,794.4
+GBR-MAN,man_wheat,Manchester — trigo,817.8
+GBR-GLA,gla_wheat,Glasgow — trigo,339.9
+GBR-BRS,brs_wheat,Bristol — trigo,206.4
+GBR-NCL,ncl_wheat,Newcastle — trigo,232.2
+NED-RTM,rtm_wheat,Roterdã — trigo,360
+NED-EIN,ein_wheat,Eindhoven — trigo,96.1
+BEL-ANR,anr_wheat,Antuérpia — trigo,297
+VEN-MAR,mar_wheat,Maracaibo — trigo,683.1
+VEN-VLN,vln_wheat,Valência — trigo,472.5
+VEN-CGU,cgu_wheat,Ciudad Guayana — trigo,225.3
+GBR-BFS,bfs_wheat,Belfast — trigo,211.3
+GBR-NOT,not_wheat,Nottingham — trigo,227.4
+FRA-CLF,clf_wheat,Clermont-Ferrand — trigo,81.8
+DEU-KAS,kas_wheat,Kassel — trigo,95.1
+BEL-LGG,lgg_wheat,Liège — trigo,164.2
+NED-ENS,ens_wheat,Enschede — trigo,44.8
+VEN-PAY,pay_wheat,Puerto Ayacucho — trigo,34.9
