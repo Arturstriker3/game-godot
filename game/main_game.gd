@@ -117,6 +117,7 @@ func _build_hud() -> void:
 	hud.map_mode_requested.connect(_on_map_mode_requested)
 	hud.map_point_requested.connect(_on_map_point_requested)
 	hud.legend_reset_requested.connect(_on_legend_reset_requested)
+	hud.window_closed.connect(_on_hud_window_closed)
 
 
 ## Faixa permitida para o centro da cÃƒÂ¢mera em Z (coordenadas globais).
@@ -207,17 +208,53 @@ func _on_map_mode_requested(mode: String) -> void:
 	city_world.set_mode(mode)
 
 
+## Esc com seleção no mapa desseleciona e consome o evento; o menu de pausa só
+## abre no Esc seguinte, pelo HUD (_unhandled_input).
+func _input(event: InputEvent) -> void:
+	if not event.is_action_pressed("ui_cancel") or event.is_echo():
+		return
+	if _handle_escape():
+		get_viewport().set_input_as_handled()
+
+
+## Esc com seleção no mapa: desseleciona e consome o evento (o HUD só abre o
+## menu de pausa no Esc seguinte). Painéis abertos continuam fechando pelo HUD.
+func _handle_escape() -> bool:
+	if hud == null or city_world == null:
+		return false
+	if hud.is_overlay_open() or not city_world.has_selection():
+		return false
+	_clear_map_selection()
+	return true
+
+
+## Remove a seleção do mapa e devolve o painel lateral/legenda ao estado vazio.
+func _clear_map_selection() -> void:
+	if city_world == null:
+		return
+	city_world.clear_selection()
+	if hud != null:
+		hud.close_window()
+		hud.show_general_legend()
+
+
 ## "Todos"/"Voltar" na legenda: limpa TODA a seleção ativa no mapa (anel de
 ## depósito/trigo, cidade/porto e realce de território) antes de voltar à lista.
 func _on_legend_reset_requested() -> void:
 	if city_world == null:
 		return
-	city_world.set_deposit_selected(-1)
-	city_world.select_city("")
+	city_world.clear_selection()
 
 
-## Clique no mapa seleciona a cidade mais prÃƒÂ³xima; a janela do HUD tem
-## prioridade sobre o mapa. Movimento do mouse atualiza o realce de hover.
+## Fechar o painel/cartão do HUD também remove o anel do mapa.
+func _on_hud_window_closed() -> void:
+	if city_world != null:
+		city_world.clear_selection()
+
+
+## Clique no mapa seleciona o lugar/jazida sob o cursor; clicar de novo no
+## MESMO item desseleciona. A janela do HUD tem prioridade sobre o mapa.
+## Movimento do mouse atualiza o realce de hover.
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.physical_keycode == KEY_SPACE:
@@ -229,39 +266,60 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not event.is_action_pressed("province_select"):
 		return
+	if _handle_map_click(get_viewport().get_mouse_position()):
+		get_viewport().set_input_as_handled()
+
+
+## Resolve o clique em pixels de tela. Fonte única do toggle: item diferente
+## seleciona, item igual ou área vazia desseleciona. Devolve true se consumiu.
+func _handle_map_click(mouse: Vector2) -> bool:
 	var player := get_node_or_null("Player")
-	if player == null:
-		return
-	var mouse := get_viewport().get_mouse_position()
+	if player == null or city_world == null or hud == null:
+		return false
+	var camera: Camera3D = player.camera
 	# Mapa de recursos: clique no depósito mostra a ficha na legenda.
 	if hud.map_mode() == "resources":
-		var deposit: int = city_world.pick_deposit(mouse, player.camera)
+		var deposit: int = city_world.pick_deposit(mouse, camera)
 		if deposit >= 0:
-			city_world.set_deposit_selected(deposit)
-			hud.show_deposit_info(city_world.deposit_info(deposit))
-			get_viewport().set_input_as_handled()
-			return
+			GameCursor.set_city_hover(false)
+			if city_world.selected_deposit() == deposit:
+				city_world.set_deposit_selected(-1)
+				hud.show_general_legend()
+			else:
+				city_world.select_city("")
+				city_world.set_deposit_selected(deposit)
+				hud.show_deposit_info(city_world.deposit_info(deposit))
+			return true
 		# Clique fora de depósito limpa o anel E volta a legenda geral (filtros).
-		city_world.set_deposit_selected(-1)
+		city_world.clear_selection()
 		hud.show_general_legend()
-	var port_id: String = city_world.pick_port(mouse, player.camera)
+	var port_id: String = city_world.pick_port(mouse, camera)
 	if not port_id.is_empty():
 		GameCursor.set_city_hover(false)
-		city_world.select_port(port_id)
-		hud.open_port(city_world.port_name(port_id))
-		get_viewport().set_input_as_handled()
-		return
-	var city_id: String = city_world.pick_city(mouse, player.camera)
+		if city_world.selected_place_id() == port_id:
+			city_world.clear_selection()
+		else:
+			city_world.set_deposit_selected(-1)
+			city_world.select_port(port_id)
+			hud.open_port(city_world.port_name(port_id))
+		return true
+	var city_id: String = city_world.pick_city(mouse, camera)
 	if city_id.is_empty():
-		return
+		city_world.clear_selection()
+		return false
 	GameCursor.set_city_hover(false)
+	if city_world.selected_place_id() == city_id:
+		city_world.clear_selection()
+		hud.close_window()
+		return true
+	city_world.set_deposit_selected(-1)
 	if hud.map_mode() == "resources":
 		# No mapa de recursos a legenda mostra o que a cidade acessa.
 		city_world.select_city(city_id)
 		hud.show_city_resources(city_id, city_world.city_resource_entries(city_id))
 	else:
 		hud.open_city(city_id)
-	get_viewport().set_input_as_handled()
+	return true
 
 
 ## Realce/cursor da cidade sob o cursor. Roda por frame para nÃƒÂ£o ficar preso

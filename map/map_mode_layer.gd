@@ -9,6 +9,7 @@ extends Node3D
 
 const MODE_SHADER: Shader = preload("res://map/map_shaders/map_modes.gdshader")
 const GeographyScript: Script = preload("res://core/economy/geography_service.gd")
+const MapPickScript: Script = preload("res://map/map_pick.gd")
 
 const MAP_PX := Vector2(5000.0, 2500.0)
 const MAX_CITIES := 16
@@ -336,15 +337,16 @@ func pick_deposit(screen_position: Vector2, camera: Camera3D) -> int:
 
 
 ## Distância em tela do ponto ao cursor se estiver dentro do raio de pega, ou -1.
+## Raio de tela pelo MESMO critério de cidade/porto (`MapPick`): footprint do
+## marcador com o piso comum, mais a folga própria do ponto.
 func _pick_screen_distance(point: Array, is_wheat: bool, screen_position: Vector2,
-		camera: Camera3D, right: Vector3) -> float:
+		camera: Camera3D, _right: Vector3) -> float:
 	var world := to_global(_marker_world(point))
 	if camera.is_position_behind(world):
 		return -1.0
 	var center := camera.unproject_position(world)
-	var edge := camera.unproject_position(
-			world + right * (_marker_size(point, is_wheat) * 0.5))
-	var radius := maxf(26.0, center.distance_to(edge) * 1.35)
+	var radius: float = MapPickScript.pick_radius_px(camera, world,
+			_marker_size(point, is_wheat) * 0.5, MapPickScript.DEPOSIT_RADIUS_FACTOR)
 	var distance := center.distance_to(screen_position)
 	return distance if distance <= radius else -1.0
 
@@ -404,6 +406,11 @@ func set_deposit_hover(index: int) -> void:
 func set_deposit_selected(index: int) -> void:
 	_selected_deposit = index
 	_update_selection_ring()
+
+
+## Depósito selecionado (-1 = nenhum), para o fluxo de desseleção.
+func selected_deposit() -> int:
+	return _selected_deposit
 
 
 func _update_selection_ring() -> void:

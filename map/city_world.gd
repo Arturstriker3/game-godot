@@ -44,6 +44,7 @@ const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
+const MapPickScript: Script = preload("res://map/map_pick.gd")
 const GeographyScript: Script = preload("res://core/economy/geography_service.gd")
 const PORT_SCENE: PackedScene = preload("res://assets/models/port.glb")
 const PORT_SIZE := 0.6
@@ -180,6 +181,9 @@ var _minimap_texture: ImageTexture
 ## Layout de rótulos: métricas de tela do último frame (relatório do teste).
 var _label_rects: Array[Dictionary] = []
 var _nav_image: Image
+## Cópias laterais do mundo (wrap em X): o rótulo clicável é o da cópia que
+## está de fato na tela, não necessariamente a central.
+var _wrap_offsets: Array[float] = [0.0, -PLANE_SIZE.x, PLANE_SIZE.x]
 
 ## Emitido quando o conjunto de donos muda (o minimapa precisa se atualizar).
 signal territory_changed
@@ -295,25 +299,38 @@ func pixel_to_world(px: Vector2) -> Vector3:
 
 
 ## Cidade sob o cursor considerando a ÁREA do corpo urbano, não só o centro.
-## Sem física: projeta o centro e um ponto na borda (raio do footprint) para
-## obter o raio em pixels; `radius_px` é o mínimo para cidades distantes.
-func pick_city(screen_position: Vector2, camera: Camera3D, radius_px: float = 26.0) -> String:
+## Sem física: projeta o centro e um ponto na borda (footprint) para obter o
+## raio em pixels. O hover e o clique compartilham `place_pick_radius_px()`.
+func pick_city(screen_position: Vector2, camera: Camera3D) -> String:
+	return _pick_place(_city_nodes, screen_position, camera)
+
+
+## Raio de detecção em pixels de TELA de qualquer lugar clicável (cidade ou
+## porto/construção): o footprint desenhado com o piso comum de MapPick.
+## É a fonte única do hover e do clique — não há valor por tipo.
+func place_pick_radius_px(place_id: String, camera: Camera3D) -> float:
+	return MapPickScript.pick_radius_px(camera, _place_position(place_id),
+			_place_footprint(place_id))
+
+
+## Melhor lugar da lista sob o cursor (score < 1 dentro do raio de tela).
+func _pick_place(nodes: Array, screen_position: Vector2, camera: Camera3D) -> String:
 	if camera == null:
 		return ""
 	var best_id := ""
 	var best_score := 1.0
 	var right := camera.global_transform.basis.x
-	for record in _city_nodes:
+	for record in nodes:
 		var world: Vector3 = to_global(record["position"])
 		if camera.is_position_behind(world):
 			continue
 		var center := camera.unproject_position(world)
-		var footprint := _city_footprint(String(record["id"]))
-		var edge := camera.unproject_position(world + right * footprint)
-		var city_radius := maxf(radius_px, center.distance_to(edge))
-		var score := center.distance_to(screen_position) / city_radius
+		var radius: float = MapPickScript.pick_radius_px(camera, world,
+				_place_footprint(String(record["id"])))
+		if radius <= 0.0:
+			continue
+		var score: float = center.distance_to(screen_position) / radius
 		score = minf(score, _label_pick_score(record, screen_position, camera, right))
-
 		if score <= 1.0 and (best_id.is_empty() or score < best_score):
 			best_score = score
 			best_id = String(record["id"])
@@ -321,24 +338,41 @@ func pick_city(screen_position: Vector2, camera: Camera3D, radius_px: float = 26
 
 
 ## Score normalizado do retângulo do rótulo (nome + bandeira/selo). INF se não
-## houver rótulo visível. Clicar no nome seleciona a cidade/porto.
+## houver rótulo VISÍVEL na tela. Clicar no nome seleciona a cidade/porto.
+##
+## Regras de culling (o bug que fazia Caracas roubar o clique em Paris): um
+## rótulo atrás da câmera, fora da viewport, oculto por LOD/colisão ou com alfa
+## ~0 nunca é escolhido. A projeção de um ponto no plano da câmera gera
+## coordenadas gigantes e um "raio" absurdo; exigir o centro dentro da tela
+## elimina esse falso positivo. Testamos também as cópias de wrap do mundo.
 func _label_pick_score(record: Dictionary, screen_position: Vector2,
 		camera: Camera3D, right: Vector3) -> float:
 	var label: Label3D = record.get("label")
-	if label == null or not label.visible:
+	if label == null or not label.is_visible_in_tree():
 		return INF
-	var label_world := to_global(label.position)
-	if camera.is_position_behind(label_world):
+	if float(record.get("label_alpha", 1.0)) <= 0.01 or label.modulate.a <= 0.01:
 		return INF
 	var em := float(label.font_size) * label.pixel_size
 	var text_w := label.font.get_string_size(label.text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x * label.pixel_size
 	var half := right * (text_w * 0.5 + em * 1.6)
-	var a := camera.unproject_position(label_world - half)
-	var b := camera.unproject_position(label_world + half)
-	var top := camera.unproject_position(label_world + Vector3.UP * em * 0.7)
-	var radius := maxf(20.0, a.distance_to(top))
-	return _segment_distance(screen_position, a, b) / radius
+	var viewport_rect := Rect2(Vector2.ZERO,
+			camera.get_viewport().get_visible_rect().size)
+	var base := label.global_position
+	var best := INF
+	for offset in _wrap_offsets:
+		var label_world := base + Vector3(offset, 0.0, 0.0)
+		if camera.is_position_behind(label_world):
+			continue
+		var center := camera.unproject_position(label_world)
+		if not viewport_rect.has_point(center):
+			continue
+		var a := camera.unproject_position(label_world - half)
+		var b := camera.unproject_position(label_world + half)
+		var top := camera.unproject_position(label_world + Vector3.UP * em * 0.7)
+		var radius := maxf(20.0, a.distance_to(top))
+		best = minf(best, _segment_distance(screen_position, a, b) / radius)
+	return best
 
 
 ## Distância de um ponto ao segmento AB (em 2D de tela).
@@ -395,24 +429,10 @@ func city_world_position(city_id: String) -> Vector3:
 	return Vector3.ZERO
 
 
-## Porto sob o cursor (como `pick_city`), por raio fixo de pixels.
-func pick_port(screen_position: Vector2, camera: Camera3D, radius_px: float = 20.0) -> String:
-	if camera == null:
-		return ""
-	var best_id := ""
-	var best_score := 1.0
-	var right := camera.global_transform.basis.x
-	for record in _port_nodes:
-		var world: Vector3 = to_global(record["position"])
-		if camera.is_position_behind(world):
-			continue
-		var center := camera.unproject_position(world)
-		var score := center.distance_to(screen_position) / radius_px
-		score = minf(score, _label_pick_score(record, screen_position, camera, right))
-		if score <= 1.0 and (best_id.is_empty() or score < best_score):
-			best_score = score
-			best_id = String(record["id"])
-	return best_id
+## Porto (construção) sob o cursor. Mesmo raio de tela da cidade, derivado do
+## aro desenhado do porto (`_port_footprint`) com o piso comum de MapPick.
+func pick_port(screen_position: Vector2, camera: Camera3D) -> String:
+	return _pick_place(_port_nodes, screen_position, camera)
 
 
 ## Posição global do porto (para centralizar a câmera).
@@ -442,14 +462,53 @@ func select_port(port_id: String) -> void:
 	_selection.visible = active
 	_selection_dot.visible = active
 	if active:
+		var ring_radius := _ring_world_radius(port_id)
 		var base: Vector3 = port_world_position(port_id) + Vector3(0.0, 0.15, 0.0)
-		_selection.scale = Vector3(1.0, 1.0, 1.0)
+		_selection.scale = Vector3(ring_radius, 1.0, ring_radius)
 		_selection.global_position = base
 		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
 
 
 func selected_city() -> String:
 	return _selected_id
+
+
+## Id do lugar selecionado (cidade ou porto); "" quando nada está selecionado.
+func selected_place_id() -> String:
+	return _selected_id
+
+
+## Tipo de um lugar pelo id: "city", "port" ou "".
+func place_kind(place_id: String) -> String:
+	if place_id.is_empty():
+		return ""
+	for record in _city_nodes:
+		if String(record["id"]) == place_id:
+			return "city"
+	for record in _port_nodes:
+		if String(record["id"]) == place_id:
+			return "port"
+	return ""
+
+
+## Depósito selecionado no mapa de recursos (-1 = nenhum).
+func selected_deposit() -> int:
+	if _mode_layer == null:
+		return -1
+	return _mode_layer.selected_deposit()
+
+
+## Há qualquer seleção no mapa (cidade, porto/construção ou jazida)?
+func has_selection() -> bool:
+	return not _selected_id.is_empty() or selected_deposit() >= 0
+
+
+## Remove TODA a seleção do mapa: anel de cidade/porto, jazida e hover.
+func clear_selection() -> void:
+	if not _selected_id.is_empty():
+		select_city("")
+	set_deposit_selected(-1)
+	set_hover("")
 
 
 ## Seleção discreta: um anel fino rente ao chão + um ponto central pequeno.
@@ -465,9 +524,9 @@ func select_city(city_id: String) -> void:
 	_selection.visible = active
 	_selection_dot.visible = active
 	if active:
-		var footprint := _city_footprint(city_id)
+		var ring_radius := _ring_world_radius(city_id)
 		var base: Vector3 = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
-		_selection.scale = Vector3(footprint, 1.0, footprint)
+		_selection.scale = Vector3(ring_radius, 1.0, ring_radius)
 		_selection.global_position = base
 		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
 
@@ -512,8 +571,8 @@ func set_hover(place_id: String) -> void:
 		return
 	_hover.visible = not place_id.is_empty()
 	if _hover.visible:
-		var footprint := _city_footprint(place_id) if _is_city(place_id) else 1.0
-		_hover.scale = Vector3(footprint, 1.0, footprint)
+		var ring_radius := _ring_world_radius(place_id)
+		_hover.scale = Vector3(ring_radius, 1.0, ring_radius)
 		_hover.global_position = _place_position(place_id) + Vector3(0.0, 0.15, 0.0)
 
 
@@ -543,13 +602,7 @@ func _tint_place(record: Dictionary, hovered: bool) -> void:
 		icon.modulate = Color(icon_color.r, icon_color.g, icon_color.b, 1.0)
 
 
-func _is_city(place_id: String) -> bool:
-	for record in _city_nodes:
-		if String(record["id"]) == place_id:
-			return true
-	return false
-
-
+## Posição global de um lugar (cidade ou porto) pelo id.
 func _place_position(place_id: String) -> Vector3:
 	for record in _city_nodes:
 		if String(record["id"]) == place_id:
@@ -569,6 +622,44 @@ func _city_footprint(city_id: String) -> float:
 				return maxf(0.6, float(urban.extent()) * URBAN_SCALE + 0.18)
 			break
 	return 1.8
+
+
+## Raio em unidades de mundo do aro desenhado do porto (o mesmo badge de
+## `_layout_port_marker`). É a referência visual do hover/seleção e do pick.
+func _port_footprint(record: Dictionary) -> float:
+	var pixel_size := float(record.get("pixel_size", LABEL_PIXEL_PER_UNIT * 52.0))
+	var em := LABEL_SIZE_STANDARD * pixel_size
+	var badge := bool(record.get("fused", false))
+	var icon_h := em * (PORT_BADGE_SCALE if badge else PORT_ICON_HEIGHT)
+	return icon_h * RING_SCALE * 0.5
+
+
+## Footprint ÚNICO de um lugar (cidade ou porto/construção), usado tanto pelo
+## anel de hover/seleção quanto pelo raio de detecção em tela.
+func _place_footprint(place_id: String) -> float:
+	for record in _city_nodes:
+		if String(record["id"]) == place_id:
+			return _city_footprint(place_id)
+	for record in _port_nodes:
+		if String(record["id"]) == place_id:
+			return _port_footprint(record)
+	return 1.8
+
+
+## Raio em unidades de mundo do anel de hover/seleção. É o raio de pick em
+## PIXELS convertido para o mundo na profundidade do lugar, então o anel mostra
+## a área clicável real: cidade e porto ficam com o mesmo raio em tela (piso de
+## 26 px) e, no zoom aproximado, o anel volta a abraçar o ícone desenhado.
+func _ring_world_radius(place_id: String) -> float:
+	var footprint := _place_footprint(place_id)
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return footprint
+	var position := _place_position(place_id)
+	var raw: float = MapPickScript.icon_radius_px(camera, position, footprint)
+	if raw <= 0.0:
+		return footprint
+	return footprint * place_pick_radius_px(place_id, camera) / raw
 
 
 func _create_indicators() -> void:

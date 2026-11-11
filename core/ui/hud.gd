@@ -26,6 +26,8 @@ signal map_point_requested(map_uv: Vector2)
 ## cidade/porto e realce de território) ao voltar para a lista. Tratado em
 ## main_game.gd — o HUD não conhece o mapa.
 signal legend_reset_requested
+## A janela/cartão do HUD fechou: o mapa deve remover o anel de seleção.
+signal window_closed
 
 const PLAYER_NATION := "GBR"
 
@@ -275,6 +277,13 @@ func toggle_menu() -> void:
 
 func is_window_open() -> bool:
 	return _window_layer.visible
+
+
+## Qualquer sobreposição do HUD (painel, menu ou ajustes) está aberta? O mapa
+## usa isso para não roubar o Esc de quem está fechando uma sobreposição.
+func is_overlay_open() -> bool:
+	return _window_layer.visible or _menu_layer.visible \
+			or (_settings_layer != null and _settings_layer.visible)
 
 
 func close_window() -> void:
@@ -1975,7 +1984,8 @@ func _transit_total(cities: Array) -> float:
 
 
 func _close_screen() -> void:
-	if _window_layer.visible:
+	var was_visible := _window_layer.visible
+	if was_visible:
 		UiSfx.play(UiSfx.Sound.MINIMIZE)
 	_active = ""
 	_stack.clear()
@@ -1983,6 +1993,8 @@ func _close_screen() -> void:
 	_city_screen.visible = false
 	_back_button.visible = false
 	_refresh_dock_state()
+	if was_visible:
+		window_closed.emit()
 
 
 func _on_backdrop_input(event: InputEvent) -> void:
