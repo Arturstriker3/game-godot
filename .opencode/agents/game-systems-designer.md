@@ -2,7 +2,7 @@
 description: Projeta e implementa economia, logística, regras, dados e núcleo C++ do OpenGS Game.
 mode: all
 model: deepseek/deepseek-v4-pro
-steps: 30
+steps: 80
 permissions:
   - action: edit
     resource: "ui/**"
