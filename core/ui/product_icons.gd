@@ -1,20 +1,23 @@
 extends RefCounted
 class_name ProductIcons
 
-## Ícones de produto/recurso em SVG (silhueta de gravura, branca), vindos do
-## game-icons.net (CC BY 3.0) — ver `assets/icons/products/CREDITS.txt`.
-## O preenchimento é branco; tingir com `modulate`.
+## Ícones de produto/recurso em SVG (silhueta branca), tingíveis via `modulate`.
+## Matérias-primas (21) vêm do Icon Forge (arte própria): `assets/icons/resources/`.
+## Manufaturados/herdados vêm do game-icons.net (CC BY 3.0): `assets/icons/products/`.
 
 const DIR := "res://assets/icons/products/"
+const RESOURCE_DIR := "res://assets/icons/resources/"
+## As 21 matérias-primas geradas por tools/icon_forge (mesmo traço da casa).
+const RESOURCES := [
+	"coal", "copper", "gas", "iron", "oil",
+	"bauxite", "lead", "gold", "phosphate", "tungsten",
+	"rare_earths", "sulfur", "diamond", "uranium",
+	"wheat", "rice", "maize", "potato", "soy", "cotton", "wood",
+]
 const FILES := {
-	"wheat": "wheat.svg",
-	"flour": "flour.svg",
-	"bread": "bread.svg",
-	"iron": "iron.svg",
 	"factory": "factory.svg",
 	"crate": "crate.svg",
 	"coin": "coin.svg",
-	"oil": "oil.svg",
 	"sword": "sword.svg",
 	"rifle": "rifle.svg",
 	"truck": "truck.svg",
@@ -29,10 +32,15 @@ static var _cache: Dictionary = {}
 static func texture(id: String) -> Texture2D:
 	if _cache.has(id):
 		return _cache[id]
-	var file: String = FILES.get(id, "")
-	if file.is_empty():
-		return null
-	var tex: Texture2D = load(DIR + file)
+	var path := ""
+	if RESOURCES.has(id):
+		path = RESOURCE_DIR + id + ".svg"
+	else:
+		var file: String = FILES.get(id, "")
+		if file.is_empty():
+			return null
+		path = DIR + file
+	var tex: Texture2D = load(path)
 	if tex != null:
 		_cache[id] = tex
 	return tex

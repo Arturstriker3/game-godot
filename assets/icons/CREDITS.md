@@ -8,6 +8,14 @@
 Ambos desenhados em branco (`#FFFFFF`) para tingir via `modulate` no Godot.
 Licença: domínio próprio do OpenGS Game, sem restrição de reuso.
 
+## Ícones de matéria-prima (resources/)
+
+- `resources/*.svg` — 21 ícones de matéria-prima (coal, copper, gas, iron, oil,
+  bauxite, lead, gold, phosphate, tungsten, rare_earths, sulfur, diamond, uranium,
+  wheat, rice, maize, potato, soy, cotton, wood). **Arte própria do projeto,**
+  gerada deterministicamente por `tools/icon_forge` (descrita em
+  `tools/icon_forge/resource_icons.json`). Sem licença de terceiros.
+
 ## Ícones herdados
 
 - `products/` — ícones de produto (wheat, truck, etc.): game-icons.net, CC BY 3.0.

@@ -21,6 +21,9 @@ Nunca assuma que uma funcionalidade existe porque está documentada. Confirme no
 - Modelos Claude (Sonnet/Opus) só com autorização explícita do usuário — sem orçamento por padrão; use DeepSeek.
 - Ao concluir uma implementação que altere sistema, mecânica, dados ou arquitetura, atualize as seções afetadas do `GAME_STATE.md`.
 - Não duplique sistemas existentes; leia o código antes de criar algo novo.
+- Ícones de recurso NÃO se desenham à mão nem se baixam: edite `tools/icon_forge/resource_icons.json`
+  seguindo `tools/icon_forge/README.md` e rode `check`/`build` (o Godot importa os SVGs em
+  `assets/icons/resources/` automaticamente). Eles são arte própria do projeto.
 
 ## Comandos
 
