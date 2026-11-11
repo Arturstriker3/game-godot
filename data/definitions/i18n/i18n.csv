@@ -15,7 +15,7 @@ alerts.tag.no_production,Sem produção,No production,Sin producción
 city.attendance,Atendimento da demanda,Demand met,Demanda atendida
 city.balance.title,Balanço do trigo,Wheat balance,Balance del trigo
 city.chain.modeled,Modelado,Modeled,Modelado
-city.chain.note,A simulação atual produz apenas trigo; farinha e pão existem apenas como etapas planejadas da cadeia.,The current simulation only produces wheat; flour and bread exist only as planned chain stages.,La simulación actual solo produce trigo; la harina y el pan existen únicamente como etapas planificadas de la cadena.
+city.chain.note,"A simulação produz apenas trigo, consumido diretamente pelas famílias.","The simulation only produces wheat, consumed directly by households.","La simulación solo produce trigo, consumido directamente por los hogares."
 city.chain.title,Cadeia produtiva,Production chain,Cadena productiva
 city.chain.unmodeled,Não modelado,Not modeled,No modelado
 city.consumed,Consumo diário,Daily consumption,Consumo diario
@@ -239,8 +239,6 @@ prod.hint,Clique numa cidade para ver a produção local.,Click a city to inspec
 prod.tab.chain,Cadeia,Chain,Cadena
 prod.tab.cities,Cidades,Cities,Ciudades
 prod.title,Produção e cadeia produtiva,Production and supply chain,Producción y cadena productiva
-product.bread,Pão,Bread,Pan
-product.flour,Farinha,Flour,Harina
 product.wheat,Trigo,Wheat,Trigo
 relief.hills,Colinas,Hills,Colinas
 relief.mountain,Montanha,Mountain,Montaña
@@ -292,7 +290,8 @@ map.minimap.title,Mundo,World,Mundo
 resource.wheat,Trigo,Wheat,Trigo
 map.legend.hint,Clique numa cidade para ver os recursos do território.,Click a city to see the resources of its territory.,Haz clic en una ciudad para ver los recursos del territorio.
 map.legend.all,Todos,All,Todos
-map.legend.all_tip,Mostrar todos,Show all,Mostrar todos
+map.legend.all_tip,Marcar todos,Check all,Marcar todos
+map.legend.uncheck_all_tip,Desmarcar todos,Uncheck all,Desmarcar todos
 map.legend.deposit,Depósito,Deposit,Yacimiento
 map.legend.city_resources,Recursos da cidade,City resources,Recursos de la ciudad
 map.legend.city_empty,Sem recursos ao alcance.,No resources in reach.,Sin recursos al alcance.
@@ -323,7 +322,6 @@ map.legend.climate,Clima,Climate,Clima
 map.legend.soil,Solo,Soil,Suelo
 map.legend.relief,Relevo,Relief,Relieve
 map.legend.kind.resources,Mapa de recursos,Resource map,Mapa de recursos
-map.legend.city,Cidade,City,Ciudad
 map.legend.type.underground,Subterrâneo,Underground,Subterráneo
 map.legend.type.surface,Superfície,Surface,Superficie
 map.legend.type.offshore,Marítimo,Offshore,Marítimo

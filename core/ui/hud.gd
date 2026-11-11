@@ -75,8 +75,6 @@ const METRIC_ICONS := {
 }
 ## Sino de notificações (branco, tingível) — o badge numérico é desenhado por cima.
 const BELL_TEXTURE: Texture2D = preload("res://assets/icons/bell.svg")
-## Caixa com check (✓) do botão "Todos" — branca, tingível (tinta).
-const CHECK_ALL_TEXTURE: Texture2D = preload("res://assets/icons/check_all.svg")
 ## Legenda do mapa de recursos; as cores são as mesmas de
 ## tools/build_resource_map.py (map/map_data/atlas/resource_points.json).
 const RESOURCE_KEYS := ["coal", "copper", "gas", "iron", "oil",
@@ -159,6 +157,7 @@ var _legend_title: Label
 var _legend_subtitle: Label
 var _legend_hint: Control
 var _legend_all: Button
+var _legend_all_glyph: Control
 var _legend_back: Button
 var _legend_flag: TextureRect
 var _legend_labels := {}
@@ -442,6 +441,7 @@ func _clear_legend_content() -> void:
 	_legend_subtitle = null
 	_legend_hint = null
 	_legend_all = null
+	_legend_all_glyph = null
 	_legend_back = null
 	_legend_flag = null
 
@@ -564,8 +564,9 @@ func _paper_button_style(fill: Color) -> StyleBoxFlat:
 	return style
 
 
-## Botão "Todos": quadrado (mesma altura do "Voltar") com caixa+check (✓) em
-## tinta sobre papel claro e borda de tinta 1 px. Tooltip "Mostrar todos".
+## Botão "Todos": quadrado (mesma altura do "Voltar") com caixa que reflete o
+## estado dos filtros (✓ todos ligados, vazio nenhum, – parcial). Tooltip troca
+## entre "Desmarcar todos" / "Marcar todos".
 func _legend_check_all_button() -> Button:
 	var button := Button.new()
 	button.focus_mode = Control.FOCUS_NONE
@@ -576,18 +577,13 @@ func _legend_check_all_button() -> Button:
 	button.add_theme_stylebox_override("hover", _legend_action_style(UiKit.PAPEL_CLARO))
 	button.add_theme_stylebox_override("pressed", _legend_action_style(UiKit.ABA_INATIVA))
 
-	var glyph := TextureRect.new()
-	glyph.texture = CHECK_ALL_TEXTURE
-	glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	glyph.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	glyph.offset_left = 3.0
-	glyph.offset_top = 3.0
-	glyph.offset_right = -3.0
-	glyph.offset_bottom = -3.0
-	glyph.modulate = UiKit.TINTA
-	button.add_child(glyph)
+	_legend_all_glyph = LegendToggleGlyph.new()
+	_legend_all_glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_legend_all_glyph.offset_left = 3.0
+	_legend_all_glyph.offset_top = 3.0
+	_legend_all_glyph.offset_right = -3.0
+	_legend_all_glyph.offset_bottom = -3.0
+	button.add_child(_legend_all_glyph)
 	return button
 
 
@@ -629,13 +625,21 @@ func _legend_back_button() -> Button:
 	return button
 
 
-## Linha de dados: [swatch] nome ······ valor (líder pontilhado, valor à direita).
+## Linha de dados: [swatch/ícone] nome ······ valor (líder pontilhado, valor à
+## direita). Quando `key` é um recurso conhecido, o swatch de cor vira o SÍMBOLO
+## do recurso (ícone tingido dentro de um quadrado arredondado na cor dele);
+## senão, mantém o swatch de cor (círculo/losango) — usado nas fichas de cidade,
+## trigo/agricultura e depósito.
 func _legend_row(color: Color, text: String, detail: String,
-		swatch: bool = true, tip: String = "", diamond: bool = false) -> HBoxContainer:
+		swatch: bool = true, tip: String = "", diamond: bool = false,
+		key: String = "") -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6.0)
 	if swatch:
-		row.add_child(LegendSwatch.new(color, diamond))
+		if not key.is_empty():
+			row.add_child(LegendResourceIcon.new(color, ProductIcons.texture(key)))
+		else:
+			row.add_child(LegendSwatch.new(color, diamond))
 	var label := UiKit.label(text, UiKit.FS_SMALL, UiKit.TINTA)
 	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -665,8 +669,15 @@ func show_deposit_info(info: Dictionary) -> void:
 	_legend_data = info
 	_clear_legend_content()
 
-	# Um recurso por marcador (os iguais já fundidos na geração).
-	_legend_header("", _territory_display_name(info), "", null, "back")
+	# Um recurso por marcador (os iguais já fundidos na geração). O subtítulo
+	# mostra o tipo de lavra (se o nome do território traz o sufixo), como nas
+	# demais fichas.
+	var display := _territory_display_name(info)
+	var split := _split_deposit_name(display)
+	var subtitle := ""
+	if not String(split["type"]).is_empty():
+		subtitle = I18n.t(String(split["type"]))
+	_legend_header("", String(split["name"]), subtitle, null, "back")
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -677,15 +688,19 @@ func show_deposit_info(info: Dictionary) -> void:
 	var resource := String(info.get("resource", ""))
 	var reserve := float(info.get("reserve_kt", 0.0))
 	body_box.add_child(_legend_row(_resource_color(resource),
-			I18n.t("resource." + resource), _format_mass(reserve)))
-	body_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.situation"),
-			I18n.t("map.legend.situation." + String(info.get("situation", "moderate")))))
+			I18n.t("resource." + resource), _format_mass(reserve), true, "", false,
+			resource))
+	var situation := String(info.get("situation", ""))
+	var sit_level := _situation_level(situation)
+	if sit_level > 0:
+		body_box.add_child(_legend_situation_block(sit_level, situation))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.quality"),
-			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0))))
+			"%d%%" % int(round(float(info.get("quality", 0.0)) * 100.0)),
+			false))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
-			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0))))
+			I18n.t("map.legend.depth"), "%d m" % int(info.get("depth_m", 0)),
+			false))
 
 	_legend_hint = _legend_footer(I18n.t("map.legend.deposit_hint"))
 	body_box.add_child(_legend_hint)
@@ -712,7 +727,7 @@ func _show_agriculture_info(info: Dictionary) -> void:
 	var suitability := float(info.get("suitability", 0.0))
 	body_box.add_child(_legend_row(_resource_color(resource),
 			I18n.t("resource." + resource), "%d%%" % int(round(suitability * 100.0)),
-			true, "", true))
+			true, "", true, resource))
 	body_box.add_child(_legend_row(Color.TRANSPARENT,
 			I18n.t("map.legend.fertility"),
 			"%d%%" % int(round(float(info.get("fertility", 0.0)) * 100.0)),
@@ -774,12 +789,12 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 	_clear_legend_content()
 
 	var city := _find_city(city_id)
-	var title := I18n.t("map.legend.city")
+	var title := ""
 	var flag: Texture2D = null
 	if not city.is_empty():
 		title = I18n.city_name(String(city["id"]), String(city["name"]))
 		flag = Economy.flag_texture(String(city["nation"]))
-	_legend_header(I18n.t("map.legend.city"), title, "", flag, "back")
+	_legend_header("", title, "", flag, "back")
 
 	var body := _legend_paper_sheet()
 	var body_box := VBoxContainer.new()
@@ -801,7 +816,8 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 					_format_mass(float(entry.get("reserve_kt", 0.0))),
 				]
 			body_box.add_child(_legend_row(_resource_color(key),
-					I18n.t("resource." + key), detail, true, "", RENEWABLE_KEYS.has(key)))
+					I18n.t("resource." + key), detail, true, "", RENEWABLE_KEYS.has(key),
+					key))
 
 	_legend_hint = _legend_footer(I18n.t("map.legend.city_hint"))
 	body_box.add_child(_legend_hint)
@@ -880,7 +896,7 @@ func _stage_color(n: int) -> Color:
 	return UiKit.STAGE_START.lerp(UiKit.STAGE_PRODUCING, ratio)
 
 
-## Bloco do estágio do depósito: "N/M" colorido acima de uma barra segmentada.
+## Bloco do estágio do depósito: barra segmentada sem rótulo numérico.
 ## Substitui a antiga linha "Estágio: <nome>"; o nome do estágio vira tooltip.
 ## "Exaurido" enche a barra em tons apagados; "Desconhecido" fica vazio.
 func _legend_stage_block(status: int) -> Control:
@@ -890,21 +906,10 @@ func _legend_stage_block(status: int) -> Control:
 	var depleted := key == "past"
 	var fill_n := DEPOSIT_STAGE_COUNT if depleted else n
 
-	var label_text := ""
-	var label_color := Color(UiKit.TINTA_SUAVE)
-	if n > 0:
-		label_text = "%d/%d" % [n, DEPOSIT_STAGE_COUNT]
-		label_color = _stage_color(n)
-	else:
-		label_text = tooltip
-
-	var block := VBoxContainer.new()
-	block.add_theme_constant_override("separation", 3)
+	var block := MarginContainer.new()
+	block.add_theme_constant_override("margin_top", 4)
+	block.add_theme_constant_override("margin_bottom", 4)
 	block.tooltip_text = tooltip
-
-	var text := UiKit.label(label_text, UiKit.FS_CAPTION + 1, label_color)
-	text.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
-	block.add_child(text)
 
 	var track := HBoxContainer.new()
 	track.add_theme_constant_override("separation", 2)
@@ -925,6 +930,39 @@ func _legend_stage_block(status: int) -> Control:
 		seg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		track.add_child(seg)
 
+	return block
+
+
+## Nível da situação do depósito na escala 1..5 (intacta=5 … residual=1); 0 para
+## desconhecida — nesse caso a barra não é desenhada.
+func _situation_level(situation: String) -> int:
+	match situation:
+		"intact":
+			return 5
+		"abundant":
+			return 4
+		"moderate":
+			return 3
+		"scarce":
+			return 2
+		"residual":
+			return 1
+		_:
+			return 0
+
+
+## Bloco da situação do depósito: barra de 5 segmentos sem rótulo numérico,
+## no mesmo formato da barra de estágio e sem rótulo "Situação" — o nome
+## traduzido da situação vira tooltip.
+func _legend_situation_block(level: int, situation: String) -> Control:
+	var tooltip := I18n.t("map.legend.situation." + situation)
+
+	var block := MarginContainer.new()
+	block.add_theme_constant_override("margin_top", 4)
+	block.add_theme_constant_override("margin_bottom", 4)
+	block.tooltip_text = tooltip
+
+	block.add_child(SituationBar.new(level))
 	return block
 
 
@@ -954,6 +992,10 @@ func _make_resource_row(key: String, color: Color) -> Button:
 	_resource_checks[key] = stamp
 
 	row.add_child(LegendSwatch.new(color, RENEWABLE_KEYS.has(key)))
+
+	# Ícone do recurso (15 px, tingido de tinta) ao lado do swatch de cor.
+	var icon := ProductIcons.make(key, UiKit.TINTA, 15.0)
+	row.add_child(icon)
 
 	var label := UiKit.label(I18n.t("resource." + key), UiKit.FS_SMALL, UiKit.TINTA)
 	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
@@ -1000,8 +1042,14 @@ func _toggle_resource(key: String) -> void:
 
 
 func _select_all_resources() -> void:
+	# Toggle: se TODOS estão ligados, desliga todos; caso contrário, liga todos.
+	var all_on := true
 	for key in _resource_enabled:
-		_resource_enabled[key] = true
+		if not bool(_resource_enabled[key]):
+			all_on = false
+			break
+	for key in _resource_enabled:
+		_resource_enabled[key] = not all_on
 	_refresh_resource_rows()
 	resource_filter_changed.emit(_resource_enabled.duplicate())
 	legend_reset_requested.emit()
@@ -1022,6 +1070,29 @@ func _refresh_resource_rows() -> void:
 		label.add_theme_color_override("font_color",
 				UiKit.TINTA if enabled else Color(UiKit.TINTA, 0.45))
 		(_resource_rows[key] as Button).modulate = Color(1, 1, 1, 1.0 if enabled else 0.42)
+	_refresh_all_button()
+
+
+## Atualiza o glifo (✓ / – / vazio) e a tooltip do botão "Todos" conforme o
+## estado dos filtros: todos ligados = "Desmarcar todos"; senão = "Marcar todos".
+func _refresh_all_button() -> void:
+	if _legend_all == null or _legend_all_glyph == null:
+		return
+	var all_on := true
+	var any_on := false
+	for key in _resource_enabled:
+		if bool(_resource_enabled[key]):
+			any_on = true
+		else:
+			all_on = false
+	var state := "partial"
+	if all_on:
+		state = "all"
+	elif not any_on:
+		state = "none"
+	_legend_all_glyph.set_state(state)
+	_legend_all.tooltip_text = I18n.t(
+			"map.legend.uncheck_all_tip" if all_on else "map.legend.all_tip")
 
 
 ## Reconstrói a legenda ao trocar de idioma, preservando o estado atual.
@@ -2219,6 +2290,81 @@ class DottedLeader extends Control:
 				Color(UiKit.TINTA, 0.45), 1.4, 1.2)
 
 
+## Símbolo do recurso nas fichas (cidade/trigo/depósito): ícone de produto de
+## 16 px tingido de TINTA dentro de um quadrado arredondado de 20 px preenchido
+## com a cor do recurso a ~35% de opacidade e borda de 1 px TINTA a 50%. Sem
+## ícone para a chave (fallback), desenha só o quadrado na cor cheia do recurso.
+class LegendResourceIcon extends Control:
+	const SIZE := 20.0
+	const ICON_SIZE := 16.0
+	var _color: Color
+	var _tex: Texture2D
+	var _style: StyleBoxFlat
+
+	func _init(color: Color, tex: Texture2D) -> void:
+		_color = color
+		_tex = tex
+		_style = StyleBoxFlat.new()
+		_style.bg_color = Color(color, 0.35)
+		_style.border_color = Color(UiKit.TINTA, 0.5)
+		_style.set_border_width_all(1)
+		_style.set_corner_radius_all(3)
+		custom_minimum_size = Vector2(SIZE, SIZE)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		draw_style_box(_style, Rect2(Vector2.ZERO, size))
+		if _tex != null:
+			var inset := (size.x - ICON_SIZE) * 0.5
+			draw_texture_rect(_tex, Rect2(Vector2(inset, inset),
+					Vector2(ICON_SIZE, ICON_SIZE)), false, UiKit.TINTA)
+		else:
+			var inset := 4.0
+			draw_rect(Rect2(Vector2(inset, inset), size - Vector2(inset, inset) * 2.0),
+					_color, true)
+
+
+## Barra da situação do depósito: 5 segmentos lado a lado (gap 2 px, altura
+## ~9 px) com borda de 1 px TINTA a 35% e vazios TINTA a 10%. Pinta os `level`
+## primeiros segmentos na cor da escala (residual→intacta), igual à barra de
+## estágio (sem rótulo próprio).
+class SituationBar extends Control:
+	const COLORS := [
+		UiKit.SITUATION_1, UiKit.SITUATION_2, UiKit.SITUATION_3,
+		UiKit.SITUATION_4, UiKit.SITUATION_5,
+	]
+
+	var _level := 0
+
+	static func color_for(level: int) -> Color:
+		if level < 1 or level > COLORS.size():
+			return UiKit.TINTA_SUAVE
+		return COLORS[level - 1]
+
+	func _init(level: int) -> void:
+		_level = clampi(level, 0, COLORS.size())
+		custom_minimum_size = Vector2(0.0, 9.0)
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var count := COLORS.size()
+		var gap := 2.0
+		var seg_w := (size.x - gap * float(count - 1)) / float(count)
+		for i in count:
+			var rect := Rect2(Vector2(float(i) * (seg_w + gap), 0.0),
+					Vector2(seg_w, size.y))
+			var style := StyleBoxFlat.new()
+			style.set_corner_radius_all(2)
+			style.set_border_width_all(1)
+			style.border_color = Color(UiKit.TINTA, 0.35)
+			style.bg_color = Color(UiKit.TINTA, 0.10)
+			if i < _level:
+				style.bg_color = COLORS[_level - 1]
+			draw_style_box(style, rect)
+
+
 ## Amostra de cor (círculo para mineral, losango para renovável) — espelha o
 ## mapa (resource_dot.png = círculo, resource_wheat.png = losango).
 class LegendSwatch extends Control:
@@ -2274,3 +2420,33 @@ class LegendStamp extends Control:
 			var p2 := c + Vector2(-0.26 * s, 0.5 * s)
 			var p3 := c + Vector2(s, -0.42 * s)
 			draw_polyline(PackedVector2Array([p1, p2, p3]), UiKit.CARIMBO, 1.5, true)
+
+
+## Caixa do botão "Todos": contorno de tinta com ✓ (todos ligados), – (parcial)
+## ou vazio (nenhum). Desenhada em tinta para tingir como os demais glifos.
+class LegendToggleGlyph extends Control:
+	var _state := "all"  # "all" | "none" | "partial"
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_state(state: String) -> void:
+		if _state == state:
+			return
+		_state = state
+		queue_redraw()
+
+	func _draw() -> void:
+		var box := Rect2(Vector2(1.0, 1.0), size - Vector2(2.0, 2.0))
+		draw_rect(box, UiKit.TINTA, false, 1.5)
+		match _state:
+			"all":
+				var p1 := box.position + Vector2(box.size.x * 0.22, box.size.y * 0.52)
+				var p2 := box.position + Vector2(box.size.x * 0.42, box.size.y * 0.70)
+				var p3 := box.position + Vector2(box.size.x * 0.80, box.size.y * 0.28)
+				draw_polyline(PackedVector2Array([p1, p2, p3]), UiKit.TINTA, 1.8, true)
+			"partial":
+				var y := box.position.y + box.size.y * 0.5
+				draw_line(Vector2(box.position.x + box.size.x * 0.26, y),
+						Vector2(box.position.x + box.size.x * 0.74, y),
+						UiKit.TINTA, 1.8, true)

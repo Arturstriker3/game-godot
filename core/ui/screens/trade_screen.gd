@@ -317,7 +317,7 @@ func _build_market_toolbar() -> VBoxContainer:
 
 	var products := UiKit.toolbar()
 	products.add_child(UiKit.caption(I18n.t("trade.market.products")))
-	for id in ["wheat", "flour", "bread"]:
+	for id in ["wheat"]:
 		var chip := UiKit.filter_chip(I18n.t("product." + id))
 		chip.set_pressed_no_signal(id == "wheat")
 		chip.disabled = id != "wheat"

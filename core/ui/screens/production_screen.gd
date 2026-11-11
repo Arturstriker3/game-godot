@@ -128,10 +128,6 @@ func _chain_heading() -> Control:
 	var flow := HBoxContainer.new()
 	flow.add_theme_constant_override("separation", UiKit.SPACE_SM)
 	flow.add_child(_chain_node(I18n.t("product.wheat"), "positive", true))
-	flow.add_child(_arrow())
-	flow.add_child(_chain_node(I18n.t("product.flour"), "warning", false))
-	flow.add_child(_arrow())
-	flow.add_child(_chain_node(I18n.t("product.bread"), "warning", false))
 	box.add_child(flow)
 	box.add_child(UiKit.paragraph(I18n.t("city.chain.note"), UiKit.FS_SMALL,
 			UiKit.TEXT_DIM, 520.0))

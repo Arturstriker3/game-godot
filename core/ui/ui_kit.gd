@@ -57,6 +57,13 @@ const MANILA_VIGNETTE := Color("#7a5a2a")   # vinheta interna da etiqueta
 const HOLE := Color("#5f625e")              # furo da etiqueta (vaza para o mapa)
 const STAGE_START := Color("#c43c30")       # estágio inicial do depósito (vermelho)
 const STAGE_PRODUCING := Color("#5f9a3f")   # estágio produtor (verde)
+## Escala de situação do depósito (1..5): residual → intacta. Reaproveita os
+## extremos da escala de estágio (mesmos matizes), com os meios-tons próprios.
+const SITUATION_1 := STAGE_START            # residual (vermelho)
+const SITUATION_2 := Color("#c8642c")       # escassa
+const SITUATION_3 := Color("#d29a2a")       # moderada
+const SITUATION_4 := Color("#9aa83a")       # abundante
+const SITUATION_5 := STAGE_PRODUCING        # intacta (verde)
 
 # --- Tokens: tipografia -----------------------------------------------------
 const BODY_FONT: Font = preload("res://assets/fonts/BarlowCondensed-Regular.ttf")

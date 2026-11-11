@@ -2,7 +2,7 @@ extends Node
 
 ## Captura os 4 estados da "Etiqueta de inventário" (legenda do mapa de
 ## recursos) com dados REAIS do jogo — filtros, cidade (Paris), área de trigo e
-## depósito (Khouribga; fallback Chaillac) — numa única resolução, sem recorte.
+## depósito (primeiro marcador mineral válido) — numa única resolução, sem recorte.
 ##
 ## Uso:
 ##   godot --path . res://tools/legend_capture.tscn -- --size=1920x1080
@@ -36,6 +36,11 @@ func _ready() -> void:
 	# (a) Filtros de recurso (estado padrão do modo "resources").
 	await _capture_state("resources", Callable())
 
+	# (a2) Todos desmarcados: aciona o toggle "Todos" para desligar todos.
+	await _capture_state("resources_none", func() -> void:
+		_hud._select_all_resources())
+	_hud._select_all_resources()  # restaura todos ligados p/ as fichas seguintes.
+
 	# (b) Cidade: Paris (FRA-PAR), com as entradas reais de recurso alcançadas.
 	await _capture_state("city", func() -> void:
 		_hud.show_city_resources("FRA-PAR",
@@ -47,10 +52,9 @@ func _ready() -> void:
 	await _capture_state("wheat", func() -> void:
 		_hud.show_deposit_info(_layer.deposit_info(wheat_index)))
 
-	# (d) Depósito: Khouribga se existir, senão Chaillac.
-	var index := _find_deposit("Khouribga")
-	if index < 0:
-		index = _find_deposit("Chaillac")
+	# (d) Depósito: primeiro marcador mineral válido (índice 0 é sempre mineral,
+	# pois os renováveis/trigo vêm depois em _mineral_points.size()).
+	var index := 0
 	await _capture_state("deposit", func() -> void:
 		_hud.show_deposit_info(_layer.deposit_info(index)))
 
@@ -146,12 +150,3 @@ func _audit_title(state: String) -> void:
 	print("[%s] título='%s' clip=%s overrun=%d size=%s min=%s elidido=%s" % [
 		state, title.text, title.clip_text, title.text_overrun_behavior,
 		title.size, title.get_combined_minimum_size(), elided])
-
-
-## Índice do primeiro depósito cujo nome contém `needle`; -1 se não houver.
-func _find_deposit(needle: String) -> int:
-	for i in _layer._mineral_points.size():
-		var point: Array = _layer._mineral_points[i]
-		if point.size() > 7 and String(point[7]).contains(needle):
-			return i
-	return -1
