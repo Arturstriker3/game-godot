@@ -2,7 +2,7 @@
 description: Executa testes, capturas e auditorias, e documenta evidências sem alterar o código de jogo.
 mode: all
 model: deepseek/deepseek-flash
-steps: 25
+steps: 60
 permissions:
   - action: edit
     resource: "game/**"
