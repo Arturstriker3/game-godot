@@ -1,0 +1,36 @@
+{
+  "phase": "F2",
+  "generated_by": "tools/import_world_sources.py",
+  "sources": {
+    "population": "World Bank WDI SP.POP.TOTL (último ano disponível)",
+    "gdp_ppp": "World Bank WDI NY.GDP.MKTP.PP.CD (último ano disponível)",
+    "cities": "GeoNames cities15000 + cities500 (2026, city proper)",
+    "city_names": "Wikidata: rótulo pt-br (fallback pt, inglês); es (fallback inglês)",
+    "area": "GeoNames countryInfo (2026)",
+    "borders": "map/map_data/atlas/world_province.png",
+    "coast": "map/map_data/atlas/world_sdf.png"
+  },
+  "rules": {
+    "quota": "1 + clamp(1 + floor(pop/25M) + floor(gdp_bn/1500) + floor(area_km2/600k), 1, 24)",
+    "coverage_km": 700.0,
+    "border_km": 40.0,
+    "border_small_km": 25.0,
+    "small_area_km2": 50000.0,
+    "min_spacing_km": 25.0,
+    "port_city_coast_km": 25.0,
+    "port_point_km": 15.0,
+    "color_min_delta_e": 30.0,
+    "color_overrides": {
+      "BEL": "#7ba744",
+      "FRA": "#4462a7",
+      "SUR": "#448e5a"
+    }
+  },
+  "counts": {
+    "nations": 231,
+    "cities": 858,
+    "ports": 137,
+    "legacy_cities": 40,
+    "legacy_ports": 114
+  }
+}

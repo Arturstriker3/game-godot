@@ -1,24 +1,1702 @@
 {
-  "phase": "F1",
+  "phase": "F2",
   "generated_by": "tools/build_world_cities.py",
   "projection": "x=(lon+180)/360*5000, y=(90-lat)/180*2500",
   "sources": {
-    "population_nation": "World Bank WDI SP.POP.TOTL (2025)",
-    "gdp_ppp": "World Bank WDI NY.GDP.MKTP.PP.CD (2025, US$ PPP correntes)",
-    "cities": "citypopulation.de Major Agglomerations (2026-01-01); GeoNames cities15000 (2026) para aglomerações < 1 M",
-    "ports": "scenario/ports.csv (18 legados) + snap na costa do world_sdf.png"
+    "population_nation": "World Bank WDI SP.POP.TOTL (último ano; ver nations_source.csv)",
+    "gdp_ppp": "World Bank WDI NY.GDP.MKTP.PP.CD (último ano; ver nations_source.csv)",
+    "cities": "GeoNames cities15000 + cities500 (2026, city proper)",
+    "city_names": "Wikidata: rótulo pt-br (fallback pt, inglês); es (fallback inglês)",
+    "area": "GeoNames countryInfo (2026)",
+    "borders": "map/map_data/atlas/world_province.png",
+    "coast": "map/map_data/atlas/world_sdf.png",
+    "flags": "flagcdn.com w40 (domínio público)"
   },
   "rules": {
-    "quota": "min(12, 1 + clamp(1 + floor(pop/25M) + floor(gdp/1.5e12), 1, 12))",
-    "min_spacing_km": 25.0,
-    "pop_per_ton": 0.0003,
-    "legacy": "40 cidades e 18 portos do cenário atual preservados"
+    "quota": "1 + clamp(1 + floor(pop/25M) + floor(gdp_bn/1500) + floor(area_km2/600k), 1, 24)",
+    "coverage_km": 700.0,
+    "border_km": 40,
+    "border_small_km": 25,
+    "small_area_km2": 50000,
+    "min_spacing_km": 25,
+    "port_city_coast_km": 25,
+    "port_point_km": 15,
+    "legacy": "40 cidades do cenário preservadas, exceto VEN-PAY (trocada por VEN-CBL)",
+    "color_min_delta_e": 30,
+    "color_note": "ΔE(Lab) entre vizinhos de fronteira; auditoria e menor par em docs/plans/world_all_data.md"
   },
   "counts": {
-    "nations": 66,
-    "cities": 252,
-    "ports": 114,
-    "buildings": 252,
-    "i18n_keys": 498
-  }
+    "nations": 231,
+    "cities": 858,
+    "ports": 137,
+    "buildings": 858,
+    "i18n_keys": 1457,
+    "legacy_cities": 40,
+    "legacy_ports": 18,
+    "scenario_ports": 114,
+    "cities_with_pt_exonym": 265,
+    "cities_with_es_exonym": 265,
+    "cities_pt_same_as_en": 570
+  },
+  "top10": [
+    {
+      "nation": "RUS",
+      "cities": 40
+    },
+    {
+      "nation": "USA",
+      "cities": 28
+    },
+    {
+      "nation": "BRA",
+      "cities": 25
+    },
+    {
+      "nation": "CAN",
+      "cities": 25
+    },
+    {
+      "nation": "CHN",
+      "cities": 25
+    },
+    {
+      "nation": "IND",
+      "cities": 25
+    },
+    {
+      "nation": "IDN",
+      "cities": 19
+    },
+    {
+      "nation": "AUS",
+      "cities": 18
+    },
+    {
+      "nation": "PAK",
+      "cities": 14
+    },
+    {
+      "nation": "FRA",
+      "cities": 13
+    }
+  ],
+  "coverage": [
+    {
+      "tag": "ABW",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "16.2"
+    },
+    {
+      "tag": "AFG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "391.6"
+    },
+    {
+      "tag": "AGO",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "465.8"
+    },
+    {
+      "tag": "AIA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.0"
+    },
+    {
+      "tag": "ALB",
+      "before_cities": "2",
+      "before_km": "187.1",
+      "after_cities": "2",
+      "after_km": "125.2"
+    },
+    {
+      "tag": "ALD",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "26.1"
+    },
+    {
+      "tag": "AND",
+      "before_cities": "1",
+      "before_km": "18.0",
+      "after_cities": "1",
+      "after_km": "17.9"
+    },
+    {
+      "tag": "ARE",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "173.2"
+    },
+    {
+      "tag": "ARG",
+      "before_cities": "3",
+      "before_km": "2367.9",
+      "after_cities": "9",
+      "after_km": "570.1"
+    },
+    {
+      "tag": "ARM",
+      "before_cities": "2",
+      "before_km": "204.9",
+      "after_cities": "2",
+      "after_km": "204.9"
+    },
+    {
+      "tag": "ASM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "11.9"
+    },
+    {
+      "tag": "ATG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "57.4"
+    },
+    {
+      "tag": "AUS",
+      "before_cities": "4",
+      "before_km": "3456.7",
+      "after_cities": "18",
+      "after_km": "677.3"
+    },
+    {
+      "tag": "AUT",
+      "before_cities": "2",
+      "before_km": "444.5",
+      "after_cities": "2",
+      "after_km": "444.4"
+    },
+    {
+      "tag": "AZE",
+      "before_cities": "2",
+      "before_km": "420.8",
+      "after_cities": "2",
+      "after_km": "229.8"
+    },
+    {
+      "tag": "BDI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "120.3"
+    },
+    {
+      "tag": "BEL",
+      "before_cities": "3",
+      "before_km": "126.1",
+      "after_cities": "3",
+      "after_km": "126.1"
+    },
+    {
+      "tag": "BEN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "600.1"
+    },
+    {
+      "tag": "BFA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "367.1"
+    },
+    {
+      "tag": "BGD",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "10",
+      "after_km": "182.4"
+    },
+    {
+      "tag": "BGR",
+      "before_cities": "2",
+      "before_km": "344.4",
+      "after_cities": "2",
+      "after_km": "344.8"
+    },
+    {
+      "tag": "BHR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "22.3"
+    },
+    {
+      "tag": "BHS",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "323.1"
+    },
+    {
+      "tag": "BIH",
+      "before_cities": "2",
+      "before_km": "137.0",
+      "after_cities": "2",
+      "after_km": "136.8"
+    },
+    {
+      "tag": "BLM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.0"
+    },
+    {
+      "tag": "BLR",
+      "before_cities": "2",
+      "before_km": "357.6",
+      "after_cities": "2",
+      "after_km": "357.6"
+    },
+    {
+      "tag": "BLZ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "127.8"
+    },
+    {
+      "tag": "BMU",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "13.8"
+    },
+    {
+      "tag": "BOL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "696.3"
+    },
+    {
+      "tag": "BRA",
+      "before_cities": "12",
+      "before_km": "1553.6",
+      "after_cities": "25",
+      "after_km": "693.3"
+    },
+    {
+      "tag": "BRB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "17.5"
+    },
+    {
+      "tag": "BRN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "40.6"
+    },
+    {
+      "tag": "BTN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "198.7"
+    },
+    {
+      "tag": "BWA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "475.2"
+    },
+    {
+      "tag": "CAF",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "625.9"
+    },
+    {
+      "tag": "CAN",
+      "before_cities": "4",
+      "before_km": "3016.5",
+      "after_cities": "25",
+      "after_km": "673.3"
+    },
+    {
+      "tag": "CHE",
+      "before_cities": "2",
+      "before_km": "173.6",
+      "after_cities": "2",
+      "after_km": "173.3"
+    },
+    {
+      "tag": "CHL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "640.5"
+    },
+    {
+      "tag": "CHN",
+      "before_cities": "12",
+      "before_km": "2769.1",
+      "after_cities": "25",
+      "after_km": "673.1"
+    },
+    {
+      "tag": "CIV",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "414.6"
+    },
+    {
+      "tag": "CMR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "425.5"
+    },
+    {
+      "tag": "COD",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "9",
+      "after_km": "680.2"
+    },
+    {
+      "tag": "COG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "491.5"
+    },
+    {
+      "tag": "COK",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "4.8"
+    },
+    {
+      "tag": "COL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "6",
+      "after_km": "625.2"
+    },
+    {
+      "tag": "COM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "77.5"
+    },
+    {
+      "tag": "CPV",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "211.7"
+    },
+    {
+      "tag": "CRI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "211.2"
+    },
+    {
+      "tag": "CUB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "372.0"
+    },
+    {
+      "tag": "CUW",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "30.0"
+    },
+    {
+      "tag": "CYM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "30.3"
+    },
+    {
+      "tag": "CYP",
+      "before_cities": "2",
+      "before_km": "104.5",
+      "after_cities": "2",
+      "after_km": "104.2"
+    },
+    {
+      "tag": "CZE",
+      "before_cities": "2",
+      "before_km": "165.3",
+      "after_cities": "2",
+      "after_km": "165.6"
+    },
+    {
+      "tag": "DEU",
+      "before_cities": "9",
+      "before_km": "234.4",
+      "after_cities": "11",
+      "after_km": "234.4"
+    },
+    {
+      "tag": "DJI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "113.9"
+    },
+    {
+      "tag": "DMA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "32.5"
+    },
+    {
+      "tag": "DNK",
+      "before_cities": "2",
+      "before_km": "176.1",
+      "after_cities": "2",
+      "after_km": "176.0"
+    },
+    {
+      "tag": "DOM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "192.0"
+    },
+    {
+      "tag": "DZA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "7",
+      "after_km": "613.5"
+    },
+    {
+      "tag": "ECU",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "241.8"
+    },
+    {
+      "tag": "EGY",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "8",
+      "after_km": "477.2"
+    },
+    {
+      "tag": "ERI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "485.0"
+    },
+    {
+      "tag": "ESP",
+      "before_cities": "4",
+      "before_km": "1551.3",
+      "after_cities": "4",
+      "after_km": "545.9"
+    },
+    {
+      "tag": "EST",
+      "before_cities": "2",
+      "before_km": "184.5",
+      "after_cities": "2",
+      "after_km": "184.6"
+    },
+    {
+      "tag": "ETH",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "8",
+      "after_km": "449.1"
+    },
+    {
+      "tag": "FIN",
+      "before_cities": "2",
+      "before_km": "941.2",
+      "after_cities": "3",
+      "after_km": "394.3"
+    },
+    {
+      "tag": "FJI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "213.2"
+    },
+    {
+      "tag": "FLK",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.0"
+    },
+    {
+      "tag": "FRA",
+      "before_cities": "10",
+      "before_km": "9024.5",
+      "after_cities": "13",
+      "after_km": "376.1"
+    },
+    {
+      "tag": "FRO",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "59.4"
+    },
+    {
+      "tag": "FSM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "568.2"
+    },
+    {
+      "tag": "GAB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "577.8"
+    },
+    {
+      "tag": "GBR",
+      "before_cities": "8",
+      "before_km": "508.4",
+      "after_cities": "10",
+      "after_km": "508.4"
+    },
+    {
+      "tag": "GEO",
+      "before_cities": "2",
+      "before_km": "232.9",
+      "after_cities": "2",
+      "after_km": "232.6"
+    },
+    {
+      "tag": "GGY",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "7.5"
+    },
+    {
+      "tag": "GHA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "239.7"
+    },
+    {
+      "tag": "GIB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "3.4"
+    },
+    {
+      "tag": "GIN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "470.0"
+    },
+    {
+      "tag": "GMB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "295.5"
+    },
+    {
+      "tag": "GNB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "104.1"
+    },
+    {
+      "tag": "GNQ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "236.1"
+    },
+    {
+      "tag": "GRC",
+      "before_cities": "2",
+      "before_km": "440.1",
+      "after_cities": "2",
+      "after_km": "440.2"
+    },
+    {
+      "tag": "GRD",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "57.4"
+    },
+    {
+      "tag": "GRL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "683.7"
+    },
+    {
+      "tag": "GTM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "219.5"
+    },
+    {
+      "tag": "GUM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "24.8"
+    },
+    {
+      "tag": "GUY",
+      "before_cities": "2",
+      "before_km": "334.9",
+      "after_cities": "2",
+      "after_km": "335.2"
+    },
+    {
+      "tag": "HKG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "32.2"
+    },
+    {
+      "tag": "HND",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "440.0"
+    },
+    {
+      "tag": "HRV",
+      "before_cities": "2",
+      "before_km": "273.2",
+      "after_cities": "2",
+      "after_km": "273.1"
+    },
+    {
+      "tag": "HTI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "223.7"
+    },
+    {
+      "tag": "HUN",
+      "before_cities": "2",
+      "before_km": "217.4",
+      "after_cities": "2",
+      "after_km": "217.7"
+    },
+    {
+      "tag": "IDN",
+      "before_cities": "12",
+      "before_km": "2381.7",
+      "after_cities": "19",
+      "after_km": "650.3"
+    },
+    {
+      "tag": "IMN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "20.1"
+    },
+    {
+      "tag": "IND",
+      "before_cities": "12",
+      "before_km": "1636.8",
+      "after_cities": "25",
+      "after_km": "698.9"
+    },
+    {
+      "tag": "IRL",
+      "before_cities": "2",
+      "before_km": "265.2",
+      "after_cities": "2",
+      "after_km": "265.2"
+    },
+    {
+      "tag": "IRN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "8",
+      "after_km": "483.9"
+    },
+    {
+      "tag": "IRQ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "536.1"
+    },
+    {
+      "tag": "ISL",
+      "before_cities": "2",
+      "before_km": "407.1",
+      "after_cities": "2",
+      "after_km": "222.2"
+    },
+    {
+      "tag": "ISR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "245.8"
+    },
+    {
+      "tag": "ITA",
+      "before_cities": "6",
+      "before_km": "454.3",
+      "after_cities": "6",
+      "after_km": "454.4"
+    },
+    {
+      "tag": "JAM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "76.2"
+    },
+    {
+      "tag": "JEY",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "6.8"
+    },
+    {
+      "tag": "JOR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "296.4"
+    },
+    {
+      "tag": "JPN",
+      "before_cities": "10",
+      "before_km": "1241.4",
+      "after_cities": "10",
+      "after_km": "606.7"
+    },
+    {
+      "tag": "KAZ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "6",
+      "after_km": "624.6"
+    },
+    {
+      "tag": "KEN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "436.1"
+    },
+    {
+      "tag": "KGZ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "350.7"
+    },
+    {
+      "tag": "KHM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "354.3"
+    },
+    {
+      "tag": "KIR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "225.2"
+    },
+    {
+      "tag": "KNA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "24.3"
+    },
+    {
+      "tag": "KOR",
+      "before_cities": "6",
+      "before_km": "273.2",
+      "after_cities": "6",
+      "after_km": "273.0"
+    },
+    {
+      "tag": "KWT",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "78.5"
+    },
+    {
+      "tag": "LAO",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "414.0"
+    },
+    {
+      "tag": "LBN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "92.1"
+    },
+    {
+      "tag": "LBR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "349.0"
+    },
+    {
+      "tag": "LBY",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "499.2"
+    },
+    {
+      "tag": "LCA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "31.4"
+    },
+    {
+      "tag": "LIE",
+      "before_cities": "1",
+      "before_km": "11.0",
+      "after_cities": "1",
+      "after_km": "10.7"
+    },
+    {
+      "tag": "LKA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "225.5"
+    },
+    {
+      "tag": "LSO",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "156.4"
+    },
+    {
+      "tag": "LTU",
+      "before_cities": "2",
+      "before_km": "217.6",
+      "after_cities": "2",
+      "after_km": "217.4"
+    },
+    {
+      "tag": "LUX",
+      "before_cities": "1",
+      "before_km": "57.5",
+      "after_cities": "1",
+      "after_km": "57.3"
+    },
+    {
+      "tag": "LVA",
+      "before_cities": "2",
+      "before_km": "197.6",
+      "after_cities": "2",
+      "after_km": "197.6"
+    },
+    {
+      "tag": "MAC",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "9.1"
+    },
+    {
+      "tag": "MAF",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "7.1"
+    },
+    {
+      "tag": "MAR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "688.1"
+    },
+    {
+      "tag": "MCO",
+      "before_cities": "1",
+      "before_km": "1.3",
+      "after_cities": "1",
+      "after_km": "1.4"
+    },
+    {
+      "tag": "MDA",
+      "before_cities": "2",
+      "before_km": "200.5",
+      "after_cities": "2",
+      "after_km": "200.6"
+    },
+    {
+      "tag": "MDG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "644.9"
+    },
+    {
+      "tag": "MDV",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "303.1"
+    },
+    {
+      "tag": "MEX",
+      "before_cities": "9",
+      "before_km": "1223.5",
+      "after_cities": "12",
+      "after_km": "693.4"
+    },
+    {
+      "tag": "MHL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "231.5"
+    },
+    {
+      "tag": "MKD",
+      "before_cities": "2",
+      "before_km": "133.9",
+      "after_cities": "2",
+      "after_km": "120.5"
+    },
+    {
+      "tag": "MLI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "426.9"
+    },
+    {
+      "tag": "MLT",
+      "before_cities": "1",
+      "before_km": "32.8",
+      "after_cities": "2",
+      "after_km": "14.6"
+    },
+    {
+      "tag": "MMR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "609.4"
+    },
+    {
+      "tag": "MNE",
+      "before_cities": "2",
+      "before_km": "85.8",
+      "after_cities": "2",
+      "after_km": "85.7"
+    },
+    {
+      "tag": "MNG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "682.8"
+    },
+    {
+      "tag": "MNP",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "30.6"
+    },
+    {
+      "tag": "MOZ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "550.4"
+    },
+    {
+      "tag": "MRT",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "541.1"
+    },
+    {
+      "tag": "MSR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "9.5"
+    },
+    {
+      "tag": "MUS",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "39.3"
+    },
+    {
+      "tag": "MWI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "474.9"
+    },
+    {
+      "tag": "MYS",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "420.6"
+    },
+    {
+      "tag": "NAM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "683.1"
+    },
+    {
+      "tag": "NCL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "338.5"
+    },
+    {
+      "tag": "NED",
+      "before_cities": "4",
+      "before_km": "137.6",
+      "after_cities": "5",
+      "after_km": "101.8"
+    },
+    {
+      "tag": "NER",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "555.2"
+    },
+    {
+      "tag": "NFK",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.0"
+    },
+    {
+      "tag": "NGA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "13",
+      "after_km": "439.6"
+    },
+    {
+      "tag": "NIC",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "379.6"
+    },
+    {
+      "tag": "NIU",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.0"
+    },
+    {
+      "tag": "NOR",
+      "before_cities": "2",
+      "before_km": "2012.8",
+      "after_cities": "4",
+      "after_km": "549.4"
+    },
+    {
+      "tag": "NPL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "378.4"
+    },
+    {
+      "tag": "NRU",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "3.1"
+    },
+    {
+      "tag": "NZL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "478.9"
+    },
+    {
+      "tag": "OMN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "362.0"
+    },
+    {
+      "tag": "PAK",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "14",
+      "after_km": "541.8"
+    },
+    {
+      "tag": "PAN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "240.5"
+    },
+    {
+      "tag": "PER",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "594.6"
+    },
+    {
+      "tag": "PHL",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "6",
+      "after_km": "689.7"
+    },
+    {
+      "tag": "PLW",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "24.7"
+    },
+    {
+      "tag": "PNG",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "623.1"
+    },
+    {
+      "tag": "POL",
+      "before_cities": "4",
+      "before_km": "378.7",
+      "after_cities": "4",
+      "after_km": "363.2"
+    },
+    {
+      "tag": "PRI",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "86.9"
+    },
+    {
+      "tag": "PRK",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "393.6"
+    },
+    {
+      "tag": "PRT",
+      "before_cities": "2",
+      "before_km": "1905.7",
+      "after_cities": "4",
+      "after_km": "351.7"
+    },
+    {
+      "tag": "PRY",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "699.9"
+    },
+    {
+      "tag": "PSX",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "84.1"
+    },
+    {
+      "tag": "PYF",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "574.4"
+    },
+    {
+      "tag": "QAT",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "76.9"
+    },
+    {
+      "tag": "ROU",
+      "before_cities": "2",
+      "before_km": "491.0",
+      "after_cities": "2",
+      "after_km": "490.9"
+    },
+    {
+      "tag": "RUS",
+      "before_cities": "11",
+      "before_km": "5321.6",
+      "after_cities": "40",
+      "after_km": "698.4"
+    },
+    {
+      "tag": "RWA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "112.9"
+    },
+    {
+      "tag": "SAH",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "318.8"
+    },
+    {
+      "tag": "SAU",
+      "before_cities": "4",
+      "before_km": "1105.1",
+      "after_cities": "7",
+      "after_km": "586.5"
+    },
+    {
+      "tag": "SDN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "7",
+      "after_km": "654.6"
+    },
+    {
+      "tag": "SEN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "498.9"
+    },
+    {
+      "tag": "SGP",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "19.3"
+    },
+    {
+      "tag": "SHN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "1.4"
+    },
+    {
+      "tag": "SLB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "243.8"
+    },
+    {
+      "tag": "SLE",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "227.0"
+    },
+    {
+      "tag": "SLV",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "91.2"
+    },
+    {
+      "tag": "SMR",
+      "before_cities": "1",
+      "before_km": "6.8",
+      "after_cities": "1",
+      "after_km": "6.7"
+    },
+    {
+      "tag": "SOM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "572.3"
+    },
+    {
+      "tag": "SPM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "38.5"
+    },
+    {
+      "tag": "SRB",
+      "before_cities": "2",
+      "before_km": "172.0",
+      "after_cities": "2",
+      "after_km": "172.2"
+    },
+    {
+      "tag": "STP",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "25.5"
+    },
+    {
+      "tag": "SUR",
+      "before_cities": "1",
+      "before_km": "200.3",
+      "after_cities": "2",
+      "after_km": "200.3"
+    },
+    {
+      "tag": "SVK",
+      "before_cities": "2",
+      "before_km": "194.8",
+      "after_cities": "2",
+      "after_km": "194.7"
+    },
+    {
+      "tag": "SVN",
+      "before_cities": "2",
+      "before_km": "93.0",
+      "after_cities": "2",
+      "after_km": "92.8"
+    },
+    {
+      "tag": "SWE",
+      "before_cities": "2",
+      "before_km": "948.9",
+      "after_cities": "3",
+      "after_km": "445.3"
+    },
+    {
+      "tag": "SWZ",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "103.1"
+    },
+    {
+      "tag": "SXM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "4.3"
+    },
+    {
+      "tag": "SYC",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "51.3"
+    },
+    {
+      "tag": "SYR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "457.4"
+    },
+    {
+      "tag": "TCA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "30.5"
+    },
+    {
+      "tag": "TCD",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "466.8"
+    },
+    {
+      "tag": "TGO",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "264.9"
+    },
+    {
+      "tag": "THA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "503.9"
+    },
+    {
+      "tag": "TJK",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "360.6"
+    },
+    {
+      "tag": "TKM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "636.3"
+    },
+    {
+      "tag": "TLS",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "186.1"
+    },
+    {
+      "tag": "TON",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "134.4"
+    },
+    {
+      "tag": "TTO",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "102.9"
+    },
+    {
+      "tag": "TUN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "366.9"
+    },
+    {
+      "tag": "TUR",
+      "before_cities": "7",
+      "before_km": "452.0",
+      "after_cities": "8",
+      "after_km": "452.2"
+    },
+    {
+      "tag": "TUV",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.9"
+    },
+    {
+      "tag": "TWN",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "252.1"
+    },
+    {
+      "tag": "TZA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "5",
+      "after_km": "584.5"
+    },
+    {
+      "tag": "UGA",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "4",
+      "after_km": "264.6"
+    },
+    {
+      "tag": "UKR",
+      "before_cities": "3",
+      "before_km": "645.2",
+      "after_cities": "4",
+      "after_km": "645.4"
+    },
+    {
+      "tag": "URY",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "369.0"
+    },
+    {
+      "tag": "USA",
+      "before_cities": "12",
+      "before_km": "4319.4",
+      "after_cities": "28",
+      "after_km": "699.8"
+    },
+    {
+      "tag": "UZB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "502.8"
+    },
+    {
+      "tag": "VAT",
+      "before_cities": "1",
+      "before_km": "0.2",
+      "after_cities": "1",
+      "after_km": "0.2"
+    },
+    {
+      "tag": "VCT",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "18.2"
+    },
+    {
+      "tag": "VEN",
+      "before_cities": "5",
+      "before_km": "447.8",
+      "after_cities": "5",
+      "after_km": "643.9"
+    },
+    {
+      "tag": "VGB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "19.8"
+    },
+    {
+      "tag": "VIR",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "14.5"
+    },
+    {
+      "tag": "VNM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "7",
+      "after_km": "373.2"
+    },
+    {
+      "tag": "VUT",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "224.2"
+    },
+    {
+      "tag": "WLF",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "1",
+      "after_km": "0.0"
+    },
+    {
+      "tag": "WSM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "45.2"
+    },
+    {
+      "tag": "XKX",
+      "before_cities": "2",
+      "before_km": "63.1",
+      "after_cities": "2",
+      "after_km": "62.9"
+    },
+    {
+      "tag": "YEM",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "444.8"
+    },
+    {
+      "tag": "ZAF",
+      "before_cities": "4",
+      "before_km": "794.8",
+      "after_cities": "6",
+      "after_km": "466.9"
+    },
+    {
+      "tag": "ZMB",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "3",
+      "after_km": "604.2"
+    },
+    {
+      "tag": "ZWE",
+      "before_cities": "0",
+      "before_km": "",
+      "after_cities": "2",
+      "after_km": "379.5"
+    }
+  ]
 }

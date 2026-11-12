@@ -12,6 +12,11 @@ pelo mapa e pelos rótulos de nação.
 - **9 arquivos adicionados na fase F1** (`data: fase 1 (Europa + G20)`):
   `ad`, `li`, `mc`, `me`, `mt`, `rs`, `sm`, `va`, `xk`.
 
+- **55 arquivos adicionados na fase F2** (`data: todas as nações (2026)`):
+  `aw`, `ai`, `ax`, `as`, `ag`, `bh`, `bl`, `bm`, `bb`, `ck`, `km`, `cv`, `cw`, `ky`, `dm`, `fo`, `fm`, `gg`, `gi`, `gd`, `gu`, `hk`, `im`, `je`, `ki`, `kn`, `lc`, `mo`, `mf`, `mv`, `mh`, `mp`, `ms`, `mu`, `nf`, `nu`, `nr`, `pw`, `pf`, `sg`, `sh`, `pm`, `st`, `sx`, `sc`, `tc`, `tl`, `to`, `tv`, `tw`, `vc`, `vg`, `vi`, `wf`, `ws`.
+  Completam a cobertura das 231 nações de `data/definitions/world/nations_source.csv`
+  (ISO2 minúsculo, sem arquivo faltante). Mesma fonte e mesma licença dos 9 da F1.
+
   Fonte: **flagcdn.com** (`https://flagcdn.com/w40/<iso2>.png`), que distribui
   as bandeiras em domínio público a partir dos SVGs do Wikimedia Commons
   (licença livre; atribuição não obrigatória, registrada aqui por transparência).
