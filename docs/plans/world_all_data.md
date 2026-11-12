@@ -662,3 +662,82 @@ rodada nem formam componente próprio na camada mundial. Creta e Eubeia continua
 **saem** (menos de 2.000 km², sem entidade). Os números da §13 descrevem a
 rodada anterior; a lista canônica atual é `docs/plans/islet_removed.csv`.
 
+## 16. Curadoria r2 — Caribe, Malvinas, Ucrânia/Crimeia, ilhas remotas (2026-11, t63)
+
+Rodada de curadoria sobre o roster mundial (`tools/world_nation_curation.py` +
+`tools/world_city_curation.py`). O que está **no disco** (e ainda **não
+commitado**): **177 nações, 799 cidades e 142 portos**
+(`data/definitions/scenario/{nations,cities,ports}.json`). A validação de dados
+e a economia seguem verdes; esta seção registra o que foi conferido no jogo.
+
+### 16.1 Microestados fundidos (t57)
+
+`MICROSTATES` em `tools/world_nation_curation.py` absorve o território e as
+províncias no vizinho e **remove a nação do roster**: `VAT → ITA`, `SMR → ITA`,
+`MCO → FRA`, `LIE → CHE`. As cidades continuam existindo, agora com
+`nation`/`home_nation` do receptor (`VAT-VATI` e `SMR-SANM` → ITA, `MCO-MONA`
+→ FRA, `LIE-VADU` → CHE). Consequência direta: **não existe mais nação jogável
+sem província**, então `tools/territory_test.gd` deixou de ter exceção
+(`NO_PROVINCE_NATIONS` vazia) e passa a exigir província para as 177.
+
+### 16.2 Conferência de cidades e donos (in-game, 2026-11-12)
+
+Fonte: `cities.json` + `TerritoryMap` construído pela cena principal em
+headless (`owners()`, `provinces()`, `city_for_province()`). "Prov. dono" é a
+nação dona das províncias atribuídas à cidade; "nº" é quantas províncias a
+cidade administra.
+
+| cidade | id | dono | prov. dono | nº | observação |
+|---|---|---|---|---|---|
+| Brest (Belarus) | `BLR-BRE` | BLR | BLR | 2 | — |
+| Białystok | `POL-BIA` | POL | POL | 2 | — |
+| Gdańsk | `POL-GDA` | POL | POL | 2 | porto `POL-GDA` (port_of `POL-GDA`) |
+| Kaliningrado | `RUS-KGD` | RUS | RUS | 1 | porto `RUS-KGD`; enclave |
+| Lviv | `UKR-LVI` | UKR | UKR | 8 | — |
+| Sevastopol (Crimeia) | `RUS-SEV` | RUS | RUS | 2 | porto `RUS-SEV` |
+| Kherson | `UKR-KHE` | UKR | UKR | 3 | frente |
+| Zaporizhzhia | `UKR-ZAP` | UKR | UKR | 1 | frente |
+| Donetsk | `RUS-DON` | RUS | **UKR** | **0** | **pendência**: cidade RUS na província 926 (UKR), atribuída a `UKR-KHA` |
+| Mariupol | `RUS-MAR` | RUS | **UKR** | **0** | **pendência**: mesma província 926 |
+| Cluj-Napoca | `ROU-CLJ` | ROU | ROU | 17 | — |
+| Oradea | — | — | — | — | **ausente** do roster (ROU tem Bucareste, Cluj-Napoca, Iaşi) |
+| Kaohsiung | `TWN-KAO` | TWN | TWN | 4 | — |
+| Palma | `ESP-PMI` | ESP | ESP | 1 | — |
+| Ajaccio | `FRA-AJA` | FRA | FRA | 2 | — |
+| Cagliari | `ITA-CAG` | ITA | ITA | 8 | — |
+| Bari (sul da Itália) | `ITA-BAR` | ITA | ITA | 12 | — |
+| Stanley (Malvinas) | `FLK-STA` | GBR | GBR | 1 | — |
+| Nuuk | `GRL-NUU` | DNK | DNK | 1 | — |
+| Ilulissat | `GRL-ILU` | DNK | DNK | 5 | — |
+| Valletta | `MLT-VAL` | MLT | MLT | 55 | única cidade de MLT; **sem Victoria** (Gozo) |
+| Ciudad de la Paz | `GNQ-CIU` | GNQ | GNQ | 3 | capital GNQ no continente (Bata também no continente) |
+
+Notas de leitura:
+
+- **Toda cidade do roster tem `nation == home_nation`** — não há ocupação
+  modelada por `home_nation` hoje; o único descompasso é geográfico (Donetsk e
+  Mariupol estão dentro de província UKR).
+- As 55 províncias de Malta são micro-polígonos admin-1 do Natural Earth sobre
+  o arquipélago, não território no exterior.
+- Portos legados ligados a ex-microestados: `ITA-ROM`/`ITA-ROME`
+  (`port_of VAT-VATI`) e `ITA-PAD` (`port_of SMR-SANM`). A referência é válida
+  (as cidades agora são ITA), mas o porto fica preso à cidade do antigo
+  microestado — registrado como dívida cosmética, não como dado quebrado.
+
+### 16.3 Capturas (1920×1080, político)
+
+`docs/map_visual/curation_r2/{caribbean,ukraine_poland,indian_ocean_west,mediterranean_west}/`
+(`map3d_political_d013/d026/d052/d120.png` + manifesto), focos `CUB-HAV`,
+`UKR-LVI`, `MDG-ANT` e `ITA-CAG`. Sem manchas pretas: a varredura dos 16 PNGs
+encontra no máximo **135 px quase-pretos em bloco** (0,007% de 1920×1080),
+contra as manchas de milhares de pixels das rodadas anteriores — o shader trata
+id/dono ausente como mar (GAME_STATE §4).
+
+### 16.4 Como reproduzir
+
+```powershell
+& $godot --headless --path . --script res://tools/territory_test.gd
+& $godot --path . res://tools/map_capture.tscn -- --set=map3d --mode=political --tag=r2 --focus=CUB-HAV --run=curation_r2/caribbean --width=1920 --height=1080
+# idem com --focus=UKR-LVI / MDG-ANT / ITA-CAG e --run=curation_r2/{ukraine_poland,indian_ocean_west,mediterranean_west}
+```
+

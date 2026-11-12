@@ -4,6 +4,7 @@ AGO,#b06a7a,Vermelho-rosado da bandeira
 ALB,#b0625f,Vermelho da bandeira
 ARG,#8fb2d4,Azul-celeste da bandeira; tom papelaria claro para separar do azul da França
 ARM,#8f7fae,Violeta do planalto armênio
+ATG,#a9504e,Vermelho da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 AUS,#6fa596,Verde-água das ilhas; ilha sem vizinhos de terra
 AUT,#dcc2c6,Branco/rosado da bandeira; alto valor para não competir com o cinza alemão
 AZE,#7f9fb5,Azul do Cáspio
@@ -14,6 +15,7 @@ BIH,#6f7fa8,Azul-aço das montanhas; separado do rosado sérvio
 BLR,#b0a060,Verde-oliva das florestas; separado do verde-escuro russo
 BOL,#b0a05f,Ouro andino do Altiplano
 BRA,#4f8a4f,Verde da bandeira; tom mais quente e escuro que o verde italiano
+BRB,#4f7fb5,Azul-ultramar da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 CAN,#b86f66,Vermelho-claro da folha de bordo
 CHE,#b06a72,Vermelho-rosado da bandeira; separado do branco austríaco
 CHL,#a3283a,Vermelho do sangue dos heróis; mais escuro que o vermelho peruano
@@ -24,6 +26,7 @@ CUB,#b0645f,Vermelho da bandeira; ilha sem vizinhos de terra
 CZE,#7f9ab8,Azul-claro da bandeira; separado do creme polonês
 DEU,#71757b,Cinza de uniforme; mantido
 DNK,#b8605e,Vermelho-claro da bandeira
+DMA,#6f9b57,Verde da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 DZA,#8aa85f,Verde-claro da bandeira; mais claro que o oliva turco
 ECU,#8fa0a8,Azul-acinzentado da faixa equatorial
 EGY,#c4a86a,Areia do deserto e do Nilo
@@ -36,6 +39,7 @@ GBR,#9a4e4a,Vermelho dos uniformes e da cruz de São Jorge; mantido
 GEO,#b0846a,Areia do Cáucaso; separado do oliva turco
 GHA,#b0994f,Ouro do Ashanti; separado do laranja togolês
 GRC,#7fa3c4,Azul-claro do Egeu
+GRD,#b06a4f,Laranja-vermelho da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 HRV,#b8a055,Areia do tabuleiro e da Dalmácia; separado do verde húngaro
 HUN,#8fae6a,Verde-claro da bandeira; separado do verde búlgaro
 IDN,#b9706a,Vermelho-claro do arquipélago
@@ -50,9 +54,11 @@ JOR,#b8a07a,Areia-rosada de Petra; separado do ocre iraquiano
 JPN,#d8d2bc,Creme do papel de arroz e do sol
 KAZ,#6fa0b0,Azul-turquesa da estepe
 KEN,#6f9a63,Verde-sálvia do Vale do Rift
+KNA,#8a9a4f,Verde-oliva da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 KOR,#5f7fa8,Azul do taeguk
 LBN,#7f9a5f,Verde do cedro
 LBY,#6f8f9f,Azul-acinzentado do Mediterrâneo; separa do areia egípcio
+LCA,#6f9ec4,Cerúleo da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 LKA,#b0786a,Terracota do Ceilão
 LTU,#b8a860,Amarelo-palha da bandeira
 LUX,#b07a72,Rosado da bandeira; separado do ouro belga
@@ -97,6 +103,7 @@ UKR,#c2ad45,Amarelo do trigo e da bandeira
 URY,#4f74a0,Azul da bandeira; mais escuro que o celeste argentino
 USA,#6f8fbb,Azul-claro das barras do pavilhão
 UZB,#b8a45f,Ouro de Samarcanda; separado do turquesa cazaque
+VCT,#4f8f74,Verde-água da bandeira (exceção Caribe r2); ilha sem vizinhos de terra
 VEN,#b08a3c,Amarelo-ouro da bandeira; mais escuro que o amarelo colombiano
 VNM,#b06a7a,Vermelho-rosado da bandeira
 YEM,#9a6a70,Vinho-escuro das montanhas; separado do ocre omanense

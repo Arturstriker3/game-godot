@@ -1,5 +1,11 @@
 [
   {
+    "city_id": "ABW-ORA",
+    "id": "abw_ora_wheat",
+    "name": "Oranjestad — trigo",
+    "output_tons_per_day": 9.0
+  },
+  {
     "city_id": "AFG-HER",
     "id": "afg_her_wheat",
     "name": "Herat — trigo",
@@ -148,6 +154,12 @@
     "id": "arm_yer_wheat",
     "name": "Erevan — trigo",
     "output_tons_per_day": 343.4
+  },
+  {
+    "city_id": "ATG-SAI",
+    "id": "atg_sai_wheat",
+    "name": "Saint John’s — trigo",
+    "output_tons_per_day": 15.5
   },
   {
     "city_id": "AUS-ADE",
@@ -438,6 +450,12 @@
     "output_tons_per_day": 209.0
   },
   {
+    "city_id": "BLR-BRE",
+    "id": "blr_bre_wheat",
+    "name": "Brest — trigo",
+    "output_tons_per_day": 103.3
+  },
+  {
     "city_id": "BLR-GOM",
     "id": "blr_gom_wheat",
     "name": "Gomel — trigo",
@@ -628,6 +646,12 @@
     "id": "bra_ter_wheat",
     "name": "Teresina — trigo",
     "output_tons_per_day": 261.3
+  },
+  {
+    "city_id": "BRB-BRI",
+    "id": "brb_bri_wheat",
+    "name": "Bridgetown — trigo",
+    "output_tons_per_day": 29.6
   },
   {
     "city_id": "BRN-BAN",
@@ -856,12 +880,6 @@
     "id": "chl_ant_wheat",
     "name": "Antofagasta — trigo",
     "output_tons_per_day": 120.3
-  },
-  {
-    "city_id": "CHL-HAN",
-    "id": "chl_han_wheat",
-    "name": "Hanga Roa — trigo",
-    "output_tons_per_day": 2.2
   },
   {
     "city_id": "CHL-PUE",
@@ -1170,12 +1188,6 @@
     "output_tons_per_day": 9.0
   },
   {
-    "city_id": "COL-SAN",
-    "id": "col_san_wheat",
-    "name": "San Andrés — trigo",
-    "output_tons_per_day": 17.5
-  },
-  {
     "city_id": "CRI-LIM",
     "id": "cri_lim_wheat",
     "name": "Limón — trigo",
@@ -1198,6 +1210,12 @@
     "id": "cub_san_wheat",
     "name": "Santiago de Cuba — trigo",
     "output_tons_per_day": 166.8
+  },
+  {
+    "city_id": "CUW-WIL",
+    "id": "cuw_wil_wheat",
+    "name": "Willemstad — trigo",
+    "output_tons_per_day": 37.5
   },
   {
     "city_id": "CYP-LIM",
@@ -1300,6 +1318,12 @@
     "id": "dji_dji_wheat",
     "name": "Djibuti — trigo",
     "output_tons_per_day": 188.0
+  },
+  {
+    "city_id": "DMA-ROS",
+    "id": "dma_ros_wheat",
+    "name": "Roseau — trigo",
+    "output_tons_per_day": 5.0
   },
   {
     "city_id": "DNK-AAR",
@@ -1458,6 +1482,12 @@
     "output_tons_per_day": 976.8
   },
   {
+    "city_id": "ESP-PMI",
+    "id": "esp_pmi_wheat",
+    "name": "Palma — trigo",
+    "output_tons_per_day": 127.0
+  },
+  {
     "city_id": "ESP-VAL",
     "id": "esp_val_wheat",
     "name": "Valência — trigo",
@@ -1554,6 +1584,18 @@
     "output_tons_per_day": 23.2
   },
   {
+    "city_id": "FLK-STA",
+    "id": "flk_sta_wheat",
+    "name": "Stanley — trigo",
+    "output_tons_per_day": 0.7
+  },
+  {
+    "city_id": "FRA-AJA",
+    "id": "fra_aja_wheat",
+    "name": "Ajaccio — trigo",
+    "output_tons_per_day": 22.1
+  },
+  {
     "city_id": "FRA-CAY",
     "id": "cay_wheat",
     "name": "Caiena — trigo",
@@ -1564,12 +1606,6 @@
     "id": "clf_wheat",
     "name": "Clermont-Ferrand — trigo",
     "output_tons_per_day": 81.8
-  },
-  {
-    "city_id": "FRA-FOR",
-    "id": "fra_for_wheat",
-    "name": "Forte da França — trigo",
-    "output_tons_per_day": 27.0
   },
   {
     "city_id": "FRA-LEH",
@@ -1590,12 +1626,6 @@
     "output_tons_per_day": 516.5
   },
   {
-    "city_id": "FRA-MAM",
-    "id": "fra_mam_wheat",
-    "name": "Mamoudzou — trigo",
-    "output_tons_per_day": 16.4
-  },
-  {
     "city_id": "FRA-MRS",
     "id": "mrs_wheat",
     "name": "Marselha — trigo",
@@ -1612,12 +1642,6 @@
     "id": "par_wheat",
     "name": "Paris — trigo",
     "output_tons_per_day": 5641.0
-  },
-  {
-    "city_id": "FRA-SAI",
-    "id": "fra_sai_wheat",
-    "name": "Saint-Denis — trigo",
-    "output_tons_per_day": 46.4
   },
   {
     "city_id": "FRA-SXB",
@@ -1794,10 +1818,10 @@
     "output_tons_per_day": 95.3
   },
   {
-    "city_id": "GRL-AAS",
-    "id": "grl_aas_wheat",
-    "name": "Aasiaat — trigo",
-    "output_tons_per_day": 0.9
+    "city_id": "GRD-SAI",
+    "id": "grd_sai_wheat",
+    "name": "São Jorge — trigo",
+    "output_tons_per_day": 2.2
   },
   {
     "city_id": "GRL-ILU",
@@ -1812,18 +1836,6 @@
     "output_tons_per_day": 4.4
   },
   {
-    "city_id": "GRL-QAQ",
-    "id": "grl_qaq_wheat",
-    "name": "Qaqortoq — trigo",
-    "output_tons_per_day": 1.0
-  },
-  {
-    "city_id": "GRL-SIS",
-    "id": "grl_sis_wheat",
-    "name": "Sisimiut — trigo",
-    "output_tons_per_day": 1.6
-  },
-  {
     "city_id": "GTM-COB",
     "id": "gtm_cob_wheat",
     "name": "Cobán — trigo",
@@ -1834,12 +1846,6 @@
     "id": "gtm_gua_wheat",
     "name": "Cidade da Guatemala — trigo",
     "output_tons_per_day": 298.5
-  },
-  {
-    "city_id": "GUM-HAG",
-    "id": "gum_hag_wheat",
-    "name": "Aganha — trigo",
-    "output_tons_per_day": 0.3
   },
   {
     "city_id": "GUY-GEO",
@@ -2274,6 +2280,18 @@
     "output_tons_per_day": 1247.1
   },
   {
+    "city_id": "ITA-BAR",
+    "id": "ita_bar_wheat",
+    "name": "Bari — trigo",
+    "output_tons_per_day": 94.8
+  },
+  {
+    "city_id": "ITA-CAG",
+    "id": "ita_cag_wheat",
+    "name": "Cagliari — trigo",
+    "output_tons_per_day": 44.5
+  },
+  {
     "city_id": "ITA-GEN",
     "id": "ita_gen_wheat",
     "name": "Gênova — trigo",
@@ -2368,12 +2386,6 @@
     "id": "jpn_nag_wheat",
     "name": "Nagoia — trigo",
     "output_tons_per_day": 699.7
-  },
-  {
-    "city_id": "JPN-OGA",
-    "id": "jpn_oga_wheat",
-    "name": "Ogasawara — trigo",
-    "output_tons_per_day": 0.9
   },
   {
     "city_id": "JPN-OSA",
@@ -2476,6 +2488,12 @@
     "id": "khm_tak_wheat",
     "name": "Takeo — trigo",
     "output_tons_per_day": 253.2
+  },
+  {
+    "city_id": "KNA-BAS",
+    "id": "kna_bas_wheat",
+    "name": "Basseterre — trigo",
+    "output_tons_per_day": 3.9
   },
   {
     "city_id": "KOR-BUS",
@@ -2590,6 +2608,12 @@
     "id": "lby_tri_wheat",
     "name": "Trípoli — trigo",
     "output_tons_per_day": 390.9
+  },
+  {
+    "city_id": "LCA-CAS",
+    "id": "lca_cas_wheat",
+    "name": "Castries — trigo",
+    "output_tons_per_day": 6.0
   },
   {
     "city_id": "LIE-VADU",
@@ -2832,12 +2856,6 @@
     "output_tons_per_day": 2.0
   },
   {
-    "city_id": "MLT-VIC",
-    "id": "mlt_vic_wheat",
-    "name": "Vitória — trigo",
-    "output_tons_per_day": 2.0
-  },
-  {
     "city_id": "MMR-MAN",
     "id": "mmr_man_wheat",
     "name": "Mandalay — trigo",
@@ -2950,18 +2968,6 @@
     "id": "mrt_zou_wheat",
     "name": "Zouérat — trigo",
     "output_tons_per_day": 16.6
-  },
-  {
-    "city_id": "MUS-POR",
-    "id": "mus_por_wheat",
-    "name": "Porto Luís — trigo",
-    "output_tons_per_day": 46.6
-  },
-  {
-    "city_id": "MUS-PORT",
-    "id": "mus_port_wheat",
-    "name": "Port Mathurin — trigo",
-    "output_tons_per_day": 2.5
   },
   {
     "city_id": "MWI-BLA",
@@ -3184,12 +3190,6 @@
     "id": "nor_ber_wheat",
     "name": "Bergen — trigo",
     "output_tons_per_day": 88.2
-  },
-  {
-    "city_id": "NOR-LON",
-    "id": "nor_lon_wheat",
-    "name": "Longyearbyen — trigo",
-    "output_tons_per_day": 0.7
   },
   {
     "city_id": "NOR-OSL",
@@ -3444,6 +3444,18 @@
     "output_tons_per_day": 85.1
   },
   {
+    "city_id": "POL-BIA",
+    "id": "pol_bia_wheat",
+    "name": "Białystok — trigo",
+    "output_tons_per_day": 87.8
+  },
+  {
+    "city_id": "POL-GDA",
+    "id": "pol_gda_wheat",
+    "name": "Gdańsk — trigo",
+    "output_tons_per_day": 145.8
+  },
+  {
     "city_id": "POL-KRA",
     "id": "pol_kra_wheat",
     "name": "Cracóvia — trigo",
@@ -3498,18 +3510,6 @@
     "output_tons_per_day": 98.8
   },
   {
-    "city_id": "PRT-ANG",
-    "id": "prt_ang_wheat",
-    "name": "Angra do Heroísmo — trigo",
-    "output_tons_per_day": 3.6
-  },
-  {
-    "city_id": "PRT-FUN",
-    "id": "prt_fun_wheat",
-    "name": "Funchal — trigo",
-    "output_tons_per_day": 31.7
-  },
-  {
     "city_id": "PRT-LIS",
     "id": "prt_lis_wheat",
     "name": "Lisboa — trigo",
@@ -3546,36 +3546,6 @@
     "output_tons_per_day": 29.3
   },
   {
-    "city_id": "PYF-ATU",
-    "id": "pyf_atu_wheat",
-    "name": "Atuona — trigo",
-    "output_tons_per_day": 0.5
-  },
-  {
-    "city_id": "PYF-OTE",
-    "id": "pyf_ote_wheat",
-    "name": "Otepa — trigo",
-    "output_tons_per_day": 0.3
-  },
-  {
-    "city_id": "PYF-PAP",
-    "id": "pyf_pap_wheat",
-    "name": "Papeete — trigo",
-    "output_tons_per_day": 7.9
-  },
-  {
-    "city_id": "PYF-RIK",
-    "id": "pyf_rik_wheat",
-    "name": "Rikitea — trigo",
-    "output_tons_per_day": 0.3
-  },
-  {
-    "city_id": "PYF-VAI",
-    "id": "pyf_vai_wheat",
-    "name": "Vaitoare — trigo",
-    "output_tons_per_day": 1.8
-  },
-  {
     "city_id": "QAT-DOH",
     "id": "qat_doh_wheat",
     "name": "Doha — trigo",
@@ -3592,6 +3562,12 @@
     "id": "rou_buc_wheat",
     "name": "Bucareste — trigo",
     "output_tons_per_day": 563.1
+  },
+  {
+    "city_id": "ROU-CLJ",
+    "id": "rou_clj_wheat",
+    "name": "Cluj-Napoca — trigo",
+    "output_tons_per_day": 86.0
   },
   {
     "city_id": "ROU-IAS",
@@ -3630,6 +3606,12 @@
     "output_tons_per_day": 104.7
   },
   {
+    "city_id": "RUS-DON",
+    "id": "rus_don_wheat",
+    "name": "Donetsk — trigo",
+    "output_tons_per_day": 270.5
+  },
+  {
     "city_id": "RUS-DUD",
     "id": "rus_dud_wheat",
     "name": "Dudinka — trigo",
@@ -3648,6 +3630,12 @@
     "output_tons_per_day": 373.0
   },
   {
+    "city_id": "RUS-KGD",
+    "id": "rus_kgd_wheat",
+    "name": "Kaliningrado — trigo",
+    "output_tons_per_day": 147.1
+  },
+  {
     "city_id": "RUS-KRAS",
     "id": "rus_kras_wheat",
     "name": "Krasnoyarsk — trigo",
@@ -3664,6 +3652,12 @@
     "id": "rus_mak_wheat",
     "name": "Mahackala — trigo",
     "output_tons_per_day": 178.9
+  },
+  {
+    "city_id": "RUS-MAR",
+    "id": "rus_mar_wheat",
+    "name": "Mariupol — trigo",
+    "output_tons_per_day": 127.7
   },
   {
     "city_id": "RUS-MIR",
@@ -3772,6 +3766,12 @@
     "id": "rus_sam_wheat",
     "name": "Samara — trigo",
     "output_tons_per_day": 349.0
+  },
+  {
+    "city_id": "RUS-SEV",
+    "id": "rus_sev_wheat",
+    "name": "Sebastopol — trigo",
+    "output_tons_per_day": 164.3
   },
   {
     "city_id": "RUS-SUR",
@@ -4302,6 +4302,12 @@
     "output_tons_per_day": 435.7
   },
   {
+    "city_id": "TWN-KAO",
+    "id": "twn_kao_wheat",
+    "name": "Kaohsiung — trigo",
+    "output_tons_per_day": 820.2
+  },
+  {
     "city_id": "TWN-TAI",
     "id": "twn_tai_wheat",
     "name": "Taipé — trigo",
@@ -4380,16 +4386,34 @@
     "output_tons_per_day": 426.3
   },
   {
+    "city_id": "UKR-KHE",
+    "id": "ukr_khe_wheat",
+    "name": "Kherson — trigo",
+    "output_tons_per_day": 83.7
+  },
+  {
     "city_id": "UKR-KYI",
     "id": "ukr_kyi_wheat",
     "name": "Kiev — trigo",
     "output_tons_per_day": 885.7
   },
   {
+    "city_id": "UKR-LVI",
+    "id": "ukr_lvi_wheat",
+    "name": "Lviv — trigo",
+    "output_tons_per_day": 215.2
+  },
+  {
     "city_id": "UKR-ODE",
     "id": "ukr_ode_wheat",
     "name": "Odessa — trigo",
     "output_tons_per_day": 303.2
+  },
+  {
+    "city_id": "UKR-ZAP",
+    "id": "ukr_zap_wheat",
+    "name": "Zaporizhzhia — trigo",
+    "output_tons_per_day": 213.0
   },
   {
     "city_id": "URY-MON",
@@ -4594,6 +4618,12 @@
     "id": "vati_wheat",
     "name": "Cidade do Vaticano — trigo",
     "output_tons_per_day": 0.2
+  },
+  {
+    "city_id": "VCT-KIN",
+    "id": "vct_kin_wheat",
+    "name": "Kingstown — trigo",
+    "output_tons_per_day": 7.4
   },
   {
     "city_id": "VEN-CBL",

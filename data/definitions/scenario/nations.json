@@ -78,6 +78,19 @@
     "gdp_ppp_bn": 76.4
   },
   {
+    "id": "ATG",
+    "name": "Antigua and Barbuda",
+    "flag": "ag",
+    "color": "#a9504e",
+    "capital": "Saint John’s",
+    "currency": "XCD",
+    "government": "monarchy",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 94209,
+    "gdp_ppp_bn": 3.4
+  },
+  {
     "id": "AUS",
     "name": "Australia",
     "flag": "au",
@@ -284,6 +297,19 @@
     "region": "south_america",
     "population": 212812405,
     "gdp_ppp_bn": 4986.9
+  },
+  {
+    "id": "BRB",
+    "name": "Barbados",
+    "flag": "bb",
+    "color": "#4f7fb5",
+    "capital": "Bridgetown",
+    "currency": "BBD",
+    "government": "republic",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 282623,
+    "gdp_ppp_bn": 7.3
   },
   {
     "id": "BRN",
@@ -530,6 +556,19 @@
     "region": "africa",
     "population": 1184076,
     "gdp_ppp_bn": 10.0
+  },
+  {
+    "id": "DMA",
+    "name": "Dominica",
+    "flag": "dm",
+    "color": "#6f9b57",
+    "capital": "Roseau",
+    "currency": "XCD",
+    "government": "republic",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 65871,
+    "gdp_ppp_bn": 1.5
   },
   {
     "id": "DNK",
@@ -802,6 +841,19 @@
     "region": "europe",
     "population": 10413962,
     "gdp_ppp_bn": 471.4
+  },
+  {
+    "id": "GRD",
+    "name": "Grenada",
+    "flag": "gd",
+    "color": "#b06a4f",
+    "capital": "Saint George's",
+    "currency": "XCD",
+    "government": "monarchy",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 117303,
+    "gdp_ppp_bn": 2.5
   },
   {
     "id": "GTM",
@@ -1077,6 +1129,19 @@
     "gdp_ppp_bn": 152.5
   },
   {
+    "id": "KNA",
+    "name": "Saint Kitts and Nevis",
+    "flag": "kn",
+    "color": "#8a9a4f",
+    "capital": "Basseterre",
+    "currency": "XCD",
+    "government": "monarchy",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 46922,
+    "gdp_ppp_bn": 1.7
+  },
+  {
     "id": "KOR",
     "name": "South Korea",
     "flag": "kr",
@@ -1153,6 +1218,19 @@
     "region": "africa",
     "population": 7458555,
     "gdp_ppp_bn": 123.2
+  },
+  {
+    "id": "LCA",
+    "name": "Saint Lucia",
+    "flag": "lc",
+    "color": "#6f9ec4",
+    "capital": "Castries",
+    "currency": "XCD",
+    "government": "monarchy",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 180149,
+    "gdp_ppp_bn": 5.2
   },
   {
     "id": "LKA",
@@ -1374,19 +1452,6 @@
     "region": "africa",
     "population": 5315065,
     "gdp_ppp_bn": 40.8
-  },
-  {
-    "id": "MUS",
-    "name": "Mauritius",
-    "flag": "mu",
-    "color": "#8c955a",
-    "capital": "Port Louis",
-    "currency": "MUR",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "africa",
-    "population": 1243741,
-    "gdp_ppp_bn": 41.9
   },
   {
     "id": "MWI",
@@ -2125,6 +2190,19 @@
     "region": "asia",
     "population": 37053428,
     "gdp_ppp_bn": 504.0
+  },
+  {
+    "id": "VCT",
+    "name": "Saint Vincent and the Grenadines",
+    "flag": "vc",
+    "color": "#4f8f74",
+    "capital": "Kingstown",
+    "currency": "XCD",
+    "government": "monarchy",
+    "ai_profile": "balanced",
+    "region": "north_america",
+    "population": 99924,
+    "gdp_ppp_bn": 2.3
   },
   {
     "id": "VEN",

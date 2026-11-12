@@ -10123,22 +10123,6 @@
 		"province_owner": "ATA",
 		"province_controller": "ATA"
 	},
-	"PRV002552": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
-	"PRV002553": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
-	"PRV002554": {
-		"province_owner": "ATF",
-		"province_controller": "ATF"
-	},
-	"PRV002555": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
 	"PRV002563": {
 		"province_owner": "TTO",
 		"province_controller": "TTO"
@@ -10194,14 +10178,6 @@
 	"PRV002585": {
 		"province_owner": "IND",
 		"province_controller": "IND"
-	},
-	"PRV002588": {
-		"province_owner": "COL",
-		"province_controller": "COL"
-	},
-	"PRV002615": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
 	},
 	"PRV002656": {
 		"province_owner": "USA",
@@ -10439,42 +10415,6 @@
 		"province_owner": "IRN",
 		"province_controller": "IRN"
 	},
-	"PRV002759": {
-		"province_owner": "ATF",
-		"province_controller": "ATF"
-	},
-	"PRV002762": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
-	"PRV002763": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV002764": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV002766": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV002767": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV002768": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV002769": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV002771": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
 	"PRV002777": {
 		"province_owner": "TZA",
 		"province_controller": "TZA"
@@ -10487,14 +10427,6 @@
 		"province_owner": "TZA",
 		"province_controller": "TZA"
 	},
-	"PRV002806": {
-		"province_owner": "GNQ",
-		"province_controller": "GNQ"
-	},
-	"PRV002807": {
-		"province_owner": "GNQ",
-		"province_controller": "GNQ"
-	},
 	"PRV002828": {
 		"province_owner": "ESP",
 		"province_controller": "ESP"
@@ -10502,10 +10434,6 @@
 	"PRV002829": {
 		"province_owner": "ESP",
 		"province_controller": "ESP"
-	},
-	"PRV002830": {
-		"province_owner": "PRT",
-		"province_controller": "PRT"
 	},
 	"PRV002831": {
 		"province_owner": "GRC",
@@ -10626,10 +10554,6 @@
 	"PRV002864": {
 		"province_owner": "ITA",
 		"province_controller": "ITA"
-	},
-	"PRV002865": {
-		"province_owner": "PRT",
-		"province_controller": "PRT"
 	},
 	"PRV002867": {
 		"province_owner": "GRC",
@@ -10786,10 +10710,6 @@
 	"PRV002925": {
 		"province_owner": "NOR",
 		"province_controller": "NOR"
-	},
-	"PRV002947": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
 	},
 	"PRV002948": {
 		"province_owner": "SLB",
@@ -10955,10 +10875,6 @@
 		"province_owner": "PHL",
 		"province_controller": "PHL"
 	},
-	"PRV003028": {
-		"province_owner": "SGS",
-		"province_controller": "SGS"
-	},
 	"PRV003032": {
 		"province_owner": "FRA",
 		"province_controller": "FRA"
@@ -10966,10 +10882,6 @@
 	"PRV003033": {
 		"province_owner": "FRA",
 		"province_controller": "FRA"
-	},
-	"PRV003039": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
 	},
 	"PRV003041": {
 		"province_owner": "FJI",
@@ -10986,10 +10898,6 @@
 	"PRV003060": {
 		"province_owner": "SLB",
 		"province_controller": "SLB"
-	},
-	"PRV003074": {
-		"province_owner": "USA",
-		"province_controller": "USA"
 	},
 	"PRV003080": {
 		"province_owner": "CUB",
@@ -16018,30 +15926,6 @@
 	"PRV004398": {
 		"province_owner": "CHN",
 		"province_controller": "CHN"
-	},
-	"PRV004399": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV004400": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV004401": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV004402": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV004403": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
-	"PRV004405": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
 	},
 	"PRV004409": {
 		"province_owner": "ITA",

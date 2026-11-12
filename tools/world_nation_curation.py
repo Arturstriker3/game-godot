@@ -14,6 +14,14 @@ Uma nação SOBERANA fica no cenário se `population >= 500.000` OU
 `STRATEGIC_KEEP` (Singapura, Bahrein, Catar, Brunei, Luxemburgo, Malta,
 Chipre, Djibuti), mesmo abaixo do limiar.
 
+Rodada r2 (2026-11-12): o usuário devolveu as pequenas nações do Caribe
+(Barbados, Granada, São Vicente e Granadinas, Santa Lúcia, Antígua e Barbuda,
+Dominica, São Cristóvão e Névis) como nações jogáveis — exceção estratégica
+regional, apesar de todas ficarem abaixo do limiar. Aruba e Curaçao continuam
+territórios e são fundidos na Holanda (NED). As Malvinas voltam como território
+britânico (GBR) com a cidade de Stanley. Maurício, Guam e a Polinésia Francesa
+saem por inteiro; os dois últimos eram territórios fundidos e passam a apagados.
+
 Microestados europeus não viram mar nem nação própria: o território é
 ANEXADO ao vizinho e as províncias passam a ser do vizinho.
 
@@ -52,6 +60,16 @@ STRATEGIC_KEEP = {
     "MLT": "ilha estratégica no Mediterrâneo central",
     "CYP": "ilha do Mediterrâneo oriental; porta do Levante",
     "DJI": "chifre da África; corredor do mar Vermelho",
+    # Exceção estratégica regional do Caribe (decisão r2): ilhas pequenas,
+    # mas jogáveis por escolha do usuário. As Malvinas não entram aqui: são
+    # território britânico fundido em GBR, não nação própria.
+    "BRB": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
+    "GRD": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
+    "VCT": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
+    "LCA": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
+    "ATG": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
+    "DMA": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
+    "KNA": "exceção estratégica Caribe; ilha jogável por decisão do usuário",
 }
 
 # Microestados europeus: (tag da fonte) -> (tag do vizinho que recebe).
@@ -69,13 +87,7 @@ MICROSTATES = {
 # critério por área/população e saem por decisão explícita (ilha sem
 # hinterlândia; o custo de mapa não se paga).
 REMOVED_SOVEREIGNS = {
-    "KNA": "São Cristóvão e Névis",
-    "ATG": "Antígua e Barbuda",
-    "DMA": "Dominica",
-    "LCA": "Santa Lúcia",
-    "VCT": "São Vicente e Granadinas",
-    "GRD": "Granada",
-    "BRB": "Barbados",
+    "MUS": "Maurício",
     "TUV": "Tuvalu",
     "NRU": "Nauru",
     "KIR": "Kiribati",
@@ -94,7 +106,7 @@ REMOVED_SOVEREIGNS = {
 
 # Removidas por decisão explícita apesar de passarem no critério (o relatório
 # marca a exceção; não é um número inventado, é uma decisão do usuário).
-EXPLICIT_REMOVE_OVERRIDE = {"VUT", "MDV", "COM", "CPV"}
+EXPLICIT_REMOVE_OVERRIDE = {"MUS", "VUT", "MDV", "COM", "CPV"}
 
 # Territórios dependentes: nação-mãe de cada um (todos os 34 da fonte).
 # A tabela serve de fallback de dono para depósitos e de documentação.
@@ -116,25 +128,25 @@ TERRITORY_MOTHER = {
 MERGED_TERRITORIES = {
     "GRL": "DNK",  # Groenlândia (2,16 M km²)
     "PRI": "USA",  # Porto Rico (3,2 M hab.)
-    "GUM": "USA",  # Guam (named; base militar no Pacífico)
     "NCL": "FRA",  # Nova Caledônia (18.575 km²)
-    "PYF": "FRA",  # Polinésia Francesa (4.167 km², named)
     "HKG": "CHN",  # Hong Kong (7,5 M hab.)
     "MAC": "CHN",  # Macau (0,7 M hab.)
+    "FLK": "GBR",  # Malvinas (r2: território britânico, Stanley no cenário)
+    "CUW": "NED",  # Curaçao (r2: território holandês)
+    "ABW": "NED",  # Aruba (r2: território holandês)
 }
 
 # Territórios minúsculos removidos: a terra vira mar.
 REMOVED_TERRITORIES = {
     "GIB": "Gibraltar",
     "BMU": "Bermudas",
-    "FLK": "Malvinas",
+    "GUM": "Guam",
     "VIR": "Ilhas Virgens Americanas",
     "VGB": "Ilhas Virgens Britânicas",
     "FRO": "Ilhas Faroé",
     "ASM": "Samoa Americana",
     "MNP": "Marianas do Norte",
-    "CUW": "Curaçao",
-    "ABW": "Aruba",
+    "PYF": "Polinésia Francesa",
     "SXM": "Sint Maarten",
     "CYM": "Cayman",
     "TCA": "Turcas e Caicos",
@@ -154,9 +166,20 @@ REMOVED_TERRITORIES = {
     "ALD": "Åland",
 }
 
+# Áreas admin-0 do Natural Earth que não são nações da fonte e não têm cidade
+# neste cenário: terra sem dono no mapa (bege). Saem do atlas e da natureza
+# como uma ilha remota — nunca têm cidade, porto ou jazida no cenário.
+# (ATF = Terras Austrais e Antárticas Francesas: Kerguelen, Crozet, Amsterdã,
+# Santo Paulo e a Terra Adélia; SGS = Geórgia do Sul e Sandwich do Sul.)
+REMOVED_UNOWNED_AREAS = {
+    "ATF": "Terras Austrais e Antárticas Francesas (Kerguelen e ilhas)",
+    "SGS": "Geórgia do Sul e Sandwich do Sul",
+}
+
 # Decisões explícitas acima do limiar: o relatório tem de declará-las.
 EXPLICIT_OVERRIDES = {
-    "FLK": "Pedido do usuário (Malvinas): apagar, apesar de 12.173 km²",
+    "GUM": "Pedido do usuário (Guam): apagar, apesar de território nomeado",
+    "PYF": "Pedido do usuário (Polinésia Francesa): apagar por inteiro",
     **{tag: "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
        for tag in sorted(EXPLICIT_REMOVE_OVERRIDE)},
 }
@@ -174,13 +197,25 @@ def transfer_target(tag: str) -> str:
 
 
 def atlas_owner_map() -> dict:
-    """ADM0_A3 do Natural Earth -> ADM0_A3 do dono no raster do atlas."""
-    return dict(TRANSFERS)
+    """ADM0_A3 do Natural Earth -> ADM0_A3 do dono no raster do atlas.
+
+    O roster usa NED para a Holanda, mas o admin-0 do Natural Earth é NLD; a
+    fusão de Aruba/Curaçao precisa gravar NLD no raster (o jogo remapeia NLD
+    para NED em `write_provinces_json`).
+    """
+    overrides = {"NED": "NLD"}
+    return {tag: overrides.get(target, target) for tag, target in TRANSFERS.items()}
 
 
 def atlas_removed() -> set:
-    """ADM0_A3 removidos do raster (terra vira mar)."""
-    return set(REMOVED_SOVEREIGNS) | set(REMOVED_TERRITORIES)
+    """ADM0_A3 removidos do raster (terra vira mar).
+
+    Inclui as áreas sem dono (ATF/SGS) que não existem na fonte de nações:
+    são terra sem cidade, sem porto e sem jazida no cenário. A remoção é a
+    mesma das demais ilhas — não há transferência para nação-mãe.
+    """
+    return set(REMOVED_SOVEREIGNS) | set(REMOVED_TERRITORIES) \
+        | set(REMOVED_UNOWNED_AREAS)
 
 
 def classify(tag: str) -> tuple:

@@ -28,20 +28,62 @@
         "EGY-POR": "Port Said: eixo do canal de Suez terá mecânica própria",
         "EGY-SUE": "Suez: eixo do canal de Suez terá mecânica própria",
         "ISR-JER": "Jerusalém: núcleo disputado, aparecia com bandeira de Israel na área da Palestina",
-        "PSX-EAS": "Jerusalém Oriental: mesmo núcleo de Jerusalém, substituída por Ramallah como capital"
+        "PSX-EAS": "Jerusalém Oriental: mesmo núcleo de Jerusalém, substituída por Ramallah como capital",
+        "FRA-SAI": "Saint-Denis (Reunião): ilha removida do mapa",
+        "FRA-FOR": "Fort-de-France (Martinica): ilha removida do mapa",
+        "FRA-MAM": "Mamoudzou (Mayotte): ilha removida do mapa",
+        "MUS-POR": "Port Louis (Maurício): nação MUS removida",
+        "MUS-PORT": "Port Mathurin (Rodrigues): nação MUS removida",
+        "MLT-VIC": "Victoria (Gozo): Malta fica só com Valletta",
+        "NOR-LON": "Longyearbyen (Svalbard): arquipélago removido do mapa",
+        "PRT-ANG": "Angra do Heroísmo (Açores): arquipélago removido do mapa",
+        "PRT-FUN": "Funchal (Madeira): ilha removida do mapa",
+        "JPN-OGA": "Ogasawara: ilhas removidas do mapa",
+        "GUM-HAG": "Hagåtña (Guam): território removido",
+        "COL-SAN": "San Andrés: ilha removida do mapa",
+        "CHL-HAN": "Hanga Roa (Ilha de Páscoa): ilha removida do mapa",
+        "PYF-PAP": "Papeete (Polinésia Francesa): território removido por inteiro",
+        "PYF-VAI": "Vaitoare (Polinésia Francesa): território removido por inteiro",
+        "PYF-OTE": "Otepa (Polinésia Francesa): território removido por inteiro",
+        "PYF-ATU": "Atuona (Polinésia Francesa): território removido por inteiro",
+        "PYF-RIK": "Rikitea (Polinésia Francesa): território removido por inteiro",
+        "GRL-AAS": "Aasiaat: Groenlândia fica com Nuuk + Ilulissat",
+        "GRL-QAQ": "Qaqortoq: Groenlândia fica com Nuuk + Ilulissat",
+        "GRL-SIS": "Sisimiut: Groenlândia fica com Nuuk + Ilulissat"
       },
       "forced": [
         "EGY-MAT",
         "ISR-TLV",
         "PSX-RAM",
-        "GRC-HER"
+        "GRC-HER",
+        "BLR-BRE",
+        "POL-BIA",
+        "POL-GDA",
+        "RUS-KGD",
+        "UKR-LVI",
+        "RUS-SEV",
+        "UKR-KHE",
+        "RUS-DON",
+        "RUS-MAR",
+        "UKR-ZAP",
+        "ROU-CLJ",
+        "TWN-KAO",
+        "ESP-PMI",
+        "FRA-AJA",
+        "ITA-CAG",
+        "ITA-BAR"
       ],
       "capital_overrides": {
         "ISR": "ISR-TLV",
         "PSX": "PSX-RAM"
       },
       "forced_ports": [
-        "GRC-HER"
+        "GRC-HER",
+        "POL-GDA",
+        "RUS-KGD",
+        "TWN-KAO",
+        "RUS-MAR",
+        "RUS-SEV"
       ]
     },
     "nation_curation": {
@@ -51,14 +93,21 @@
         "area_km2_min": 10000.0
       },
       "strategic_keep": [
+        "ATG",
         "BHR",
+        "BRB",
         "BRN",
         "CYP",
         "DJI",
+        "DMA",
+        "GRD",
+        "KNA",
+        "LCA",
         "LUX",
         "MLT",
         "QAT",
-        "SGP"
+        "SGP",
+        "VCT"
       ],
       "annexed": [
         {
@@ -119,6 +168,39 @@
       ],
       "merged": [
         {
+          "tag": "ABW",
+          "name": "Aruba",
+          "status": "territory",
+          "population": 108785,
+          "area_km2": 180.0,
+          "action": "merged",
+          "target": "NED",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "CUW",
+          "name": "Curaçao",
+          "status": "territory",
+          "population": 156263,
+          "area_km2": 444.0,
+          "action": "merged",
+          "target": "NED",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "FLK",
+          "name": "Falkland Islands",
+          "status": "territory",
+          "population": 2638,
+          "area_km2": 12173.0,
+          "action": "merged",
+          "target": "GBR",
+          "below_threshold": false,
+          "override": ""
+        },
+        {
           "tag": "GRL",
           "name": "Greenland",
           "status": "territory",
@@ -127,17 +209,6 @@
           "action": "merged",
           "target": "DNK",
           "below_threshold": false,
-          "override": ""
-        },
-        {
-          "tag": "GUM",
-          "name": "Guam",
-          "status": "territory",
-          "population": 168999,
-          "area_km2": 549.0,
-          "action": "merged",
-          "target": "USA",
-          "below_threshold": true,
           "override": ""
         },
         {
@@ -183,31 +254,9 @@
           "target": "USA",
           "below_threshold": false,
           "override": ""
-        },
-        {
-          "tag": "PYF",
-          "name": "French Polynesia",
-          "status": "territory",
-          "population": 282465,
-          "area_km2": 4167.0,
-          "action": "merged",
-          "target": "FRA",
-          "below_threshold": true,
-          "override": ""
         }
       ],
       "removed": [
-        {
-          "tag": "ABW",
-          "name": "Aruba",
-          "status": "territory",
-          "population": 108785,
-          "area_km2": 180.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
         {
           "tag": "AIA",
           "name": "Anguilla",
@@ -242,17 +291,6 @@
           "override": ""
         },
         {
-          "tag": "ATG",
-          "name": "Antigua and Barbuda",
-          "status": "sovereign",
-          "population": 94209,
-          "area_km2": 443.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
           "tag": "BLM",
           "name": "Saint Barthélemy",
           "status": "territory",
@@ -269,17 +307,6 @@
           "status": "territory",
           "population": 64555,
           "area_km2": 53.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
-          "tag": "BRB",
-          "name": "Barbados",
-          "status": "sovereign",
-          "population": 282623,
-          "area_km2": 431.0,
           "action": "removed",
           "target": "",
           "below_threshold": true,
@@ -319,17 +346,6 @@
           "override": "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
         },
         {
-          "tag": "CUW",
-          "name": "Curaçao",
-          "status": "territory",
-          "population": 156263,
-          "area_km2": 444.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
           "tag": "CYM",
           "name": "Cayman Islands",
           "status": "territory",
@@ -339,28 +355,6 @@
           "target": "",
           "below_threshold": true,
           "override": ""
-        },
-        {
-          "tag": "DMA",
-          "name": "Dominica",
-          "status": "sovereign",
-          "population": 65871,
-          "area_km2": 754.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
-          "tag": "FLK",
-          "name": "Falkland Islands",
-          "status": "territory",
-          "population": 2638,
-          "area_km2": 12173.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": false,
-          "override": "Pedido do usuário (Malvinas): apagar, apesar de 12.173 km²"
         },
         {
           "tag": "FRO",
@@ -407,15 +401,15 @@
           "override": ""
         },
         {
-          "tag": "GRD",
-          "name": "Grenada",
-          "status": "sovereign",
-          "population": 117303,
-          "area_km2": 344.0,
+          "tag": "GUM",
+          "name": "Guam",
+          "status": "territory",
+          "population": 168999,
+          "area_km2": 549.0,
           "action": "removed",
           "target": "",
           "below_threshold": true,
-          "override": ""
+          "override": "Pedido do usuário (Guam): apagar, apesar de território nomeado"
         },
         {
           "tag": "IMN",
@@ -445,28 +439,6 @@
           "status": "sovereign",
           "population": 136488,
           "area_km2": 811.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
-          "tag": "KNA",
-          "name": "Saint Kitts and Nevis",
-          "status": "sovereign",
-          "population": 46922,
-          "area_km2": 261.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
-          "tag": "LCA",
-          "name": "Saint Lucia",
-          "status": "sovereign",
-          "population": 180149,
-          "area_km2": 616.0,
           "action": "removed",
           "target": "",
           "below_threshold": true,
@@ -528,6 +500,17 @@
           "override": ""
         },
         {
+          "tag": "MUS",
+          "name": "Mauritius",
+          "status": "sovereign",
+          "population": 1243741,
+          "area_km2": 2040.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": false,
+          "override": "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
+        },
+        {
           "tag": "NFK",
           "name": "Norfolk Island",
           "status": "territory",
@@ -570,6 +553,17 @@
           "target": "",
           "below_threshold": true,
           "override": ""
+        },
+        {
+          "tag": "PYF",
+          "name": "French Polynesia",
+          "status": "territory",
+          "population": 282465,
+          "area_km2": 4167.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": "Pedido do usuário (Polinésia Francesa): apagar por inteiro"
         },
         {
           "tag": "SHN",
@@ -660,17 +654,6 @@
           "override": ""
         },
         {
-          "tag": "VCT",
-          "name": "Saint Vincent and the Grenadines",
-          "status": "sovereign",
-          "population": 99924,
-          "area_km2": 389.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": ""
-        },
-        {
           "tag": "VGB",
           "name": "British Virgin Islands",
           "status": "territory",
@@ -734,7 +717,7 @@
     "color_note": "tradicionais têm prioridade (tom papelaria); ajuste só de TOM na família (±12° de matiz); automáticas herdam a paleta do importador e só cedem se conflitarem com uma tradicional. Menor par e auditoria em docs/plans/world_all_data.md"
   },
   "colors": {
-    "traditional_count": 102,
+    "traditional_count": 109,
     "min_delta_e": 30.1,
     "min_pair": [
       30.1,
@@ -1041,26 +1024,26 @@
     ]
   },
   "counts": {
-    "nations": 171,
-    "cities": 794,
-    "ports": 137,
-    "buildings": 794,
-    "i18n_keys": 1273,
+    "nations": 177,
+    "cities": 799,
+    "ports": 142,
+    "buildings": 799,
+    "i18n_keys": 1295,
     "legacy_cities": 40,
     "legacy_ports": 18,
-    "scenario_ports": 138,
-    "cities_with_pt_exonym": 252,
-    "cities_with_es_exonym": 250,
-    "cities_pt_same_as_en": 519
+    "scenario_ports": 142,
+    "cities_with_pt_exonym": 251,
+    "cities_with_es_exonym": 257,
+    "cities_pt_same_as_en": 525
   },
   "top10": [
     {
       "nation": "RUS",
-      "cities": 40
+      "cities": 44
     },
     {
       "nation": "USA",
-      "cities": 31
+      "cities": 30
     },
     {
       "nation": "CHN",
@@ -1079,16 +1062,16 @@
       "cities": 25
     },
     {
-      "nation": "FRA",
-      "cities": 21
-    },
-    {
       "nation": "IDN",
       "cities": 19
     },
     {
       "nation": "AUS",
       "cities": 18
+    },
+    {
+      "nation": "FRA",
+      "cities": 14
     },
     {
       "nation": "PAK",

@@ -100,9 +100,13 @@ NED-GRO,Groningen,NED,2588.5,508.4,continent,NED-GRO
 NED-RTM,Rotterdam,NED,2557.2,528.5,continent,
 NOR-BER,Bergen,NOR,2574.2,411.7,continent,
 NOR-OSL,Oslo,NOR,2649.8,418.4,continent,
+POL-GDA,Gdańsk,POL,2759.2,494.4,continent,POL-GDA
 PRT-LIS,Lisbon,PRT,2373.4,712.6,continent,
 PRT-POR,Porto,PRT,2380.7,679.0,continent,
+RUS-KGD,Kaliningrad,RUS,2776.5,491.1,continent,RUS-KGD
+RUS-MAR,Mariupol,RUS,3021.5,596.0,continent,RUS-MAR
 RUS-SAI,Saint Petersburg,RUS,2921.4,417.8,continent,
+RUS-SEV,Sevastopol,RUS,2965.6,630.4,continent,RUS-SEV
 RUS-YUZ,Yuzhno-Sakhalinsk,RUS,4481.8,600.6,continent,RUS-YUZ
 SAU-DAM,Dammam,SAU,3196.1,882.9,asia,
 SAU-JED,Jeddah,SAU,3044.7,951.8,asia,
@@ -117,6 +121,7 @@ TUR-BUR,Bursa,TUR,2903.7,691.2,continent,
 TUR-BURS,Bursa,TUR,2902.2,689.7,asia,TUR-BURS
 TUR-IST,Istanbul,TUR,2902.5,680.8,continent,
 TUR-IZM,Izmir,TUR,2877.5,716.9,continent,
+TWN-KAO,Kaohsiung,TWN,4170.5,936.0,taiwan,TWN-KAO
 TWN-TAI,Taipei,TWN,4189.5,900.3,taiwan,TWN-TAI
 TWN-TAIC,Taichung,TWN,4173.6,913.1,taiwan,TWN-TAIC
 USA-BET,Bethel,USA,249.6,406.5,north_america,USA-BET

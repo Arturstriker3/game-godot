@@ -1,4 +1,5 @@
 key,pt_BR,en,es
+city.name.ABW-ORA,Oranjestad,Oranjestad,Oranjestad
 city.name.AFG-HER,Herat,Herāt,Herat
 city.name.AFG-KAB,Cabul,Kabul,Kabul
 city.name.AFG-KAN,Kandahar,Kandahār,Kandahar
@@ -24,6 +25,7 @@ city.name.ARG-ROSA,Rosário,Rosario,Rosario
 city.name.ARG-SAN,San Miguel de Tucumán,San Miguel de Tucumán,San Miguel de Tucumán
 city.name.ARM-VAN,Vanadzor,Vanadzor,Vanadzor
 city.name.ARM-YERE,Erevan,Yerevan,Ereván
+city.name.ATG-SAI,Saint John’s,Saint John’s,Saint John’s
 city.name.AUS-ADE,Adelaide,Adelaide,Adelaida
 city.name.AUS-ALI,Alice Springs,Alice Springs,Alice Springs
 city.name.AUS-BRIS,Brisbane,Brisbane,Brisbane
@@ -72,6 +74,7 @@ city.name.BHS-LUC,Lucaya,Lucaya,Lucaya
 city.name.BHS-NAS,Nassau,Nassau,Nasáu
 city.name.BIH-BANJ,Banja Luka,Banja Luka,Banja Luka
 city.name.BIH-SARA,Sarajevo,Sarajevo,Sarajevo
+city.name.BLR-BRE,Brest,Brest,Brest
 city.name.BLR-HOM,Gomel,Homyel',Gómel
 city.name.BLR-MINS,Minsk,Minsk,Minsk
 city.name.BLZ-BEL,Belmopan,Belmopan,Belmopán
@@ -104,6 +107,7 @@ city.name.BRA-SAOP,São Paulo,São Paulo,São Paulo
 city.name.BRA-SIN,Sinop,Sinop,Sinop
 city.name.BRA-TEF,Tefé,Tefé,Tefé
 city.name.BRA-TER,Teresina,Teresina,Teresina
+city.name.BRB-BRI,Bridgetown,Bridgetown,Bridgetown
 city.name.BRN-BAN,Bandar Seri Begawan,Bandar Seri Begawan,Bandar Seri Begawan
 city.name.BRN-KUA,Kuala Belait,Kuala Belait,Kuala Belait
 city.name.BTN-PHU,Phuntsholing,Phuntsholing,Phuntsholing
@@ -142,7 +146,6 @@ city.name.CAN-YEL,Yellowknife,Yellowknife,Cuchillo amarillo
 city.name.CHE-BERN,Berna,Bern,Berna
 city.name.CHE-ZURI,Zurique,Zürich,Zúrich
 city.name.CHL-ANT,Antofagasta,Antofagasta,Antofagasta
-city.name.CHL-HAN,Hanga Roa,Hanga Roa,Hanga Roa
 city.name.CHL-PUE,Puerto Montt,Puerto Montt,Puerto Montt
 city.name.CHL-PUN,Punta Arenas,Punta Arenas,Punta Arenas
 city.name.CHL-SAN,Santiago,Santiago,Santiago de Chile
@@ -194,11 +197,11 @@ city.name.COL-BOG,Bogotá,Bogotá,Bogotá
 city.name.COL-CAL,Cáli,Cali,Cali
 city.name.COL-MED,Medellín,Medellín,Medellín
 city.name.COL-MIT,Mitú,Mitú,Mitú
-city.name.COL-SAN,San Andrés,San Andrés,San Andrés
 city.name.CRI-LIM,Limón,Limón,Limón
 city.name.CRI-SAN,San José,San José,San José
 city.name.CUB-HAV,Havana,Havana,La Habana
 city.name.CUB-SAN,Santiago de Cuba,Santiago de Cuba,Santiago de Cuba
+city.name.CUW-WIL,Willemstad,Willemstad,Willemstad
 city.name.CYP-LIMA,Limassol,Limassol,Limasol
 city.name.CYP-NICO,Nicósia,Nicosia,Nicosia
 city.name.CZE-BRNO,Brno,Brno,Brno
@@ -216,6 +219,7 @@ city.name.DEU-MUC,Munique,Munich,Múnich
 city.name.DEU-STR,Estugarda,Stuttgart,Stuttgart
 city.name.DJI-ALI,Ali Sabih,Ali Sabih,Ali Sabih
 city.name.DJI-DJI,Djibuti,Djibouti,Yibuti
+city.name.DMA-ROS,Roseau,Roseau,Roseau
 city.name.DNK-ARH,Aarhus,Århus,Aarhus
 city.name.DNK-COPE,Copenhague,Copenhagen,Copenhague
 city.name.DOM-SAN,São Domingos,Santo Domingo,Santo Domingo
@@ -242,6 +246,7 @@ city.name.ERI-KER,Keren,Keren,Keren
 city.name.ESP-BARC,Barcelona,Barcelona,Barcelona
 city.name.ESP-LAS,Las Palmas de Gran Canaria,Las Palmas de Gran Canaria,Las Palmas de Gran Canaria
 city.name.ESP-MADR,Madri,Madrid,Madrid
+city.name.ESP-PMI,Palma,Palma,Palma
 city.name.ESP-VALE,Valência,Valencia,Valencia
 city.name.EST-TALL,Tallinn,Tallinn,Tallin
 city.name.EST-TART,Tartu,Tartu,Tartu
@@ -258,17 +263,16 @@ city.name.FIN-ROV,Rovaniemi,Rovaniemi,Rovaniemi
 city.name.FIN-TAMP,Tampere,Tampere,Tampere
 city.name.FJI-LAU,Lautoka,Lautoka,Lautoka
 city.name.FJI-SUV,Suva,Suva,Suva
+city.name.FLK-STA,Stanley,Stanley,Puerto Argentino
+city.name.FRA-AJA,Ajaccio,Ajaccio,Ajaccio
 city.name.FRA-CAY,Caiena,Cayenne,Caena
 city.name.FRA-CLF,Clermont-Ferrand,Clermont-Ferrand,Clermont-Ferrand
-city.name.FRA-FOR,Forte da França,Fort-de-France,Fort-de-France
 city.name.FRA-LEH,Le Havre,Le Havre,El Havre
 city.name.FRA-LIL,Lille,Lille,Lille
 city.name.FRA-LYS,Lião,Lyon,Lyon
-city.name.FRA-MAM,Mamoudzou,Mamoudzou,Mamoudzou
 city.name.FRA-MRS,Marselha,Marseille,Marsella
 city.name.FRA-NTE,Nantes,Nantes,Nantes
 city.name.FRA-PAR,Paris,Paris,París
-city.name.FRA-SAI,Saint-Denis,Saint-Denis,Saint-Denis
 city.name.FRA-SXB,Estrasburgo,Strasbourg,Estrasburgo
 city.name.FRA-TLS,Toulouse,Toulouse,Tolosa
 city.name.GAB-LIB,Libreville,Libreville,Libreville
@@ -298,14 +302,11 @@ city.name.GNQ-CIU,Ciudad de la Paz,Ciudad de la Paz,Ciudad de la Paz
 city.name.GRC-ATHE,Atenas,Athens,Atenas
 city.name.GRC-HER,Heraklion,Heraklion,Heraklion
 city.name.GRC-THES,Salônica,Thessaloníki,Salónica
-city.name.GRL-AAS,Aasiaat,Aasiaat,Aasiaat
+city.name.GRD-SAI,São Jorge,Saint George's,Saint George
 city.name.GRL-ILU,Ilulissat,Ilulissat,Ilulissat
 city.name.GRL-NUU,Nuuk,Nuuk,Nuuk
-city.name.GRL-QAQ,Qaqortoq,Qaqortoq,Qaqortoq
-city.name.GRL-SIS,Sisimiut,Sisimiut,Sisimiut
 city.name.GTM-COB,Cobán,Cobán,Cobán
 city.name.GTM-GUA,Cidade da Guatemala,Guatemala City,Ciudad de Guatemala
-city.name.GUM-HAG,Aganha,Hagåtña,Agaña
 city.name.GUY-GEO,Georgetown,Georgetown,Georgetown
 city.name.GUY-LIND,Linden,Linden,Linden
 city.name.HKG-HON,Hong Kong,Hong Kong,Hong Kong
@@ -378,6 +379,8 @@ city.name.ISL-AKU,Akureyri,Akureyri,Akureyri
 city.name.ISL-REYKJ,Reykjavík,Reykjavík,Reikiavik
 city.name.ISR-HAI,Haifa,Haifa,Haifa
 city.name.ISR-TLV,Tel Aviv,Tel Aviv,Tel Aviv
+city.name.ITA-BAR,Bari,Bari,Bari
+city.name.ITA-CAG,Cagliari,Cagliari,Cagliari
 city.name.ITA-GEN,Gênova,Genoa,Génova
 city.name.ITA-MILA,Milão,Milan,Milán
 city.name.ITA-NAPL,Nápoles,Naples,Nápoles
@@ -394,7 +397,6 @@ city.name.JPN-KOB,Kōbe,Kobe,Kōbe
 city.name.JPN-KYO,Quioto,Kyoto,Kioto
 city.name.JPN-MIY,Miyako-jima,Miyakojima,Isla Miyako
 city.name.JPN-NAGO,Nagoia,Nagoya,Nagoya
-city.name.JPN-OGA,Ogasawara,Ogasawara,Ogasawara
 city.name.JPN-OSAK,Osaka,Osaka,Osaka
 city.name.JPN-SAPP,Sapporo,Sapporo,Sapporo
 city.name.JPN-TOKY,Tóquio,Tokyo,Tokio
@@ -412,6 +414,7 @@ city.name.KGZ-BIS,Bisqueque,Bishkek,Biskek
 city.name.KGZ-OSH,Osh,Osh,Osh
 city.name.KHM-PHN,Phnom Penh,Phnom Penh,Nom Pen
 city.name.KHM-TAK,Takeo,Takeo,Takeo
+city.name.KNA-BAS,Basseterre,Basseterre,Basseterre
 city.name.KOR-BUSA,Busan,Busan,Busan
 city.name.KOR-CHEO,Cheongju,Cheongju-si,Cheongju
 city.name.KOR-DAEG,Daegu,Daegu,Daegu
@@ -431,6 +434,7 @@ city.name.LBY-BEN,Bengasi,Benghazi,Bengasi
 city.name.LBY-MIS,Misrata,Misratah,Misurata
 city.name.LBY-SAB,Sabha,Sabha,Sabha
 city.name.LBY-TRI,Trípoli,Tripoli,Trípoli
+city.name.LCA-CAS,Castries,Castries,Castries
 city.name.LIE-VADU,Vaduz,Vaduz,Vaduz
 city.name.LKA-COL,Colombo,Colombo,Colombo
 city.name.LKA-JAF,Jaffna,Jaffna,Jaffna
@@ -471,7 +475,6 @@ city.name.MLI-GAO,Gao,Gao,Gao
 city.name.MLI-KOU,Koutiala,Koutiala,Koutiala
 city.name.MLI-SIK,Sikasso,Sikasso,Sikasso
 city.name.MLT-VALL,Valeta,Valletta,La Valeta
-city.name.MLT-VIC,Vitória,Victoria,Victoria
 city.name.MMR-MAN,Mandalay,Mandalay,Mandalay
 city.name.MMR-MAW,Moulmein,Mawlamyine,Mawlamyaing
 city.name.MMR-MYE,Myeik,Myeik,Myeik
@@ -491,8 +494,6 @@ city.name.MRT-NEM,Néma,Néma,Néma
 city.name.MRT-NOU,Nouakchott,Nouakchott,Nuakchot
 city.name.MRT-NOUA,Nouadhibou,Nouadhibou,Nuadibú
 city.name.MRT-ZOU,Zouérat,Zouérat,Zuérate
-city.name.MUS-POR,Porto Luís,Port Louis,Port Louis
-city.name.MUS-PORT,Port Mathurin,Port Mathurin,Port Mathurin
 city.name.MWI-BLA,Blantyre,Blantyre,Blantire
 city.name.MWI-LIL,Lilongué,Lilongwe,Lilongüe
 city.name.MYS-JOH,Jor Baru,Johor Bahru,Johor Bahru
@@ -530,7 +531,6 @@ city.name.NGA-SOK,Sokoto,Sokoto,Sokoto
 city.name.NIC-LEO,León,León,León
 city.name.NIC-MAN,Managua,Managua,Managua
 city.name.NOR-BERG,Bergen,Bergen,Bergen
-city.name.NOR-LON,Longyearbyen,Longyearbyen,Longyearbyen
 city.name.NOR-OSLO,Oslo,Oslo,Oslo
 city.name.NOR-TRO,Tromsø,Tromsø,Tromsø
 city.name.NPL-BHA,Bharatpur,Bharatpur,Bharatpur
@@ -573,6 +573,8 @@ city.name.PNG-ARA,Arawa,Arawa,Arawa
 city.name.PNG-LAE,Lae,Lae,Lae
 city.name.PNG-MOU,Mount Hagen,Mount Hagen,Mount Hagen
 city.name.PNG-POR,Port Moresby,Port Moresby,Puerto Moresby
+city.name.POL-BIA,Białystok,Białystok,Białystok
+city.name.POL-GDA,Gdańsk,Gdańsk,Gdańsk
 city.name.POL-KRAK,Cracóvia,Kraków,Cracovia
 city.name.POL-ODZ,Łódź,Łódź,Lodz
 city.name.POL-WARS,Varsóvia,Warsaw,Varsovia
@@ -582,34 +584,31 @@ city.name.PRI-SAN,San Juan,San Juan,San Juan
 city.name.PRK-HAM,Hamhung,Hamhŭng,Hamhung
 city.name.PRK-PYO,Pyongyang,Pyongyang,Pionyang
 city.name.PRK-WON,Wonsan,Wŏnsan,Wŏnsan
-city.name.PRT-ANG,Angra do Heroísmo,Angra do Heroísmo,Angra do Heroísmo
-city.name.PRT-FUN,Funchal,Funchal,Funchal
 city.name.PRT-LISB,Lisboa,Lisbon,Lisboa
 city.name.PRT-PORT,Porto,Porto,Oporto
 city.name.PRY-ASU,Assunção,Asunción,Asunción
 city.name.PRY-CIU,Ciudad del Este,Ciudad del Este,Ciudad del Este
 city.name.PSX-GAZ,Faixa de Gaza,Gaza,Franja de Gaza
 city.name.PSX-RAM,Ramallah,Ramallah,Ramallah
-city.name.PYF-ATU,Atuona,Atuona,Atuona
-city.name.PYF-OTE,Otepa,Otepa,Otepa
-city.name.PYF-PAP,Papeete,Papeete,Papeete
-city.name.PYF-RIK,Rikitea,Rikitea,Rikitea
-city.name.PYF-VAI,Vaitoare,Vaitoare,Vaitoare
 city.name.QAT-DOH,Doha,Doha,Doha
 city.name.QAT-MAD,Al Shamal,Madīnat ash Shamāl,Madinat ash Shamal
 city.name.ROU-BUCH,Bucareste,Bucharest,Bucarest
+city.name.ROU-CLJ,Cluj-Napoca,Cluj-Napoca,Cluj-Napoca
 city.name.ROU-IASI,Iași,Iaşi,Iași
 city.name.RUS-ARK,Arcangel,Arkhangel’sk,Arcángel
 city.name.RUS-BIL,Bilibino,Bilibino,Bilibino
 city.name.RUS-BIR,Birobidjan,Birobidzhan,Birobidzhán
 city.name.RUS-CHEL,Cheliabinsk,Chelyabinsk,Cheliábinsk
 city.name.RUS-CHI,Chita,Chita,Chitá
+city.name.RUS-DON,Donetsk,Donetsk,Donetsk
 city.name.RUS-DUD,Dudinka,Dudinka,Dudinka
 city.name.RUS-IRK,Irkutsk,Irkutsk,Irkutsk
 city.name.RUS-KAZA,Cazã,Kazan,Kazán
+city.name.RUS-KGD,Kaliningrado,Kaliningrad,Kaliningrado
 city.name.RUS-KRASN,Krasnoyarsk,Krasnoyarsk,Krasnoyarsk
 city.name.RUS-MAG,Magadan,Magadan,Magadán
 city.name.RUS-MAK,Mahackala,Makhachkala,Majachkalá
+city.name.RUS-MAR,Mariupol,Mariupol,Mariúpol
 city.name.RUS-MIR,Mirny,Mirny,Mirny
 city.name.RUS-MOSC,Moscou,Moscow,Moscú
 city.name.RUS-MUR,Murmansk,Murmansk,Múrmansk
@@ -628,6 +627,7 @@ city.name.RUS-PUS,Pushkinskiye Gory,Pushkinskiye Gory,Pushkinskiye Gory
 city.name.RUS-ROST,Rostov do Don,Rostov-on-Don,Rostov del Don
 city.name.RUS-SAIN,São Petersburgo,Saint Petersburg,San Petersburgo
 city.name.RUS-SAMA,Samara,Samara,Samara
+city.name.RUS-SEV,Sebastopol,Sevastopol,Sebastopol
 city.name.RUS-SUR,Surgut,Surgut,Surgut
 city.name.RUS-TIK,Tiksi,Tiksi,Tiksi
 city.name.RUS-TUR,Tura,Tura,Tura
@@ -716,6 +716,7 @@ city.name.TUR-GAZI,Gaziantepe,Gaziantep,Gaziantep
 city.name.TUR-ISTA,Istambul,Istanbul,Estambul
 city.name.TUR-IZMI,Esmirna,İzmir,Esmirna
 city.name.TUR-KAY,Caiseri,Kayseri,Kayseri
+city.name.TWN-KAO,Kaohsiung,Kaohsiung,Kaohsiung
 city.name.TWN-TAI,Taipé,Taipei,Taipéi
 city.name.TWN-TAIC,Taichung,Taichung,Taichung
 city.name.TZA-ARU,Arusha,Arusha,Arusha
@@ -729,8 +730,11 @@ city.name.UGA-MBA,Mbarara,Mbarara,Mbarara
 city.name.UGA-NJE,Njeru,Njeru,Njeru
 city.name.UKR-DNI,Dnipro,Dnipro,Dnipró
 city.name.UKR-KHAR,Carcóvia,Kharkiv,Járkov
+city.name.UKR-KHE,Kherson,Kherson,Jersón
 city.name.UKR-KYIV,Kiev,Kyiv,Kiev
+city.name.UKR-LVI,Lviv,Lviv,Leópolis
 city.name.UKR-ODE,Odessa,Odesa,Odesa
+city.name.UKR-ZAP,Zaporizhzhia,Zaporizhzhia,Zaporiyia
 city.name.URY-MON,Montevidéu,Montevideo,Montevideo
 city.name.URY-SAL,Salto,Salto,Salto
 city.name.USA-ANC,Anchorage,Anchorage,Anchorage
@@ -765,6 +769,7 @@ city.name.UZB-AND,Andijon,Andijon,Andijon
 city.name.UZB-MUY,Mŭynoq,Mŭynoq,Mŭynoq
 city.name.UZB-TAS,Tashkent,Tashkent,Taskent
 city.name.VAT-VATI,Cidade do Vaticano,Vatican City,Ciudad del Vaticano
+city.name.VCT-KIN,Kingstown,Kingstown,Kingstown
 city.name.VEN-CBL,Ciudad Bolívar,Ciudad Bolívar,Ciudad Bolívar
 city.name.VEN-CCS,Caracas,Caracas,Caracas
 city.name.VEN-CGU,Ciudad Guayana,Ciudad Guayana,Ciudad Guayana
@@ -799,6 +804,7 @@ nation.ALB,Albânia,Albania,Albania
 nation.ARE,Emirados Árabes Unidos,United Arab Emirates,Emiratos Árabes Unidos
 nation.ARG,Argentina,Argentina,Argentina
 nation.ARM,Arménia,Armenia,Armenia
+nation.ATG,Antígua e Barbuda,Antigua and Barbuda,Antigua y Barbuda
 nation.AUS,Austrália,Australia,Australia
 nation.AUT,Áustria,Austria,Austria
 nation.AZE,Azerbaijão,Azerbaijan,Azerbaiyán
@@ -815,6 +821,7 @@ nation.BLR,Bielorrússia,Belarus,Bielorrusia
 nation.BLZ,Belize,Belize,Belice
 nation.BOL,Bolívia,Bolivia,Bolivia
 nation.BRA,Brasil,Brazil,Brasil
+nation.BRB,Barbados,Barbados,Barbados
 nation.BRN,Brunei,Brunei,Brunéi
 nation.BTN,Butão,Bhutan,Bután
 nation.BWA,Botsuana,Botswana,Botsuana
@@ -834,6 +841,7 @@ nation.CYP,Chipre,Cyprus,Chipre
 nation.CZE,Chéquia,Czech Republic,República Checa
 nation.DEU,Alemanha,Germany,Alemania
 nation.DJI,Djibouti,Djibouti,Yibuti
+nation.DMA,Dominica,Dominica,Dominica
 nation.DNK,Dinamarca,Denmark,Dinamarca
 nation.DOM,República Dominicana,Dominican Republic,República Dominicana
 nation.DZA,Argélia,Algeria,Argelia
@@ -855,6 +863,7 @@ nation.GMB,Gâmbia,The Gambia,Gambia
 nation.GNB,Guiné Bissau,Guinea Bissau,Guinea Bisáu
 nation.GNQ,Guiné Equatorial,Equatorial Guinea,Guinea Ecuatorial
 nation.GRC,Grécia,Greece,Grecia
+nation.GRD,Granada,Grenada,Granada
 nation.GTM,Guatemala,Guatemala,Guatemala
 nation.GUY,Guiana,Guyana,Guyana
 nation.HND,Honduras,Honduras,Honduras
@@ -876,12 +885,14 @@ nation.KAZ,Cazaquistão,Kazakhstan,Kazajistán
 nation.KEN,Quénia,Kenya,Kenia
 nation.KGZ,Quirguistão,Kyrgyzstan,Kirguistán
 nation.KHM,Camboja,Cambodia,Camboya
+nation.KNA,São Cristóvão e Nevis,Saint Kitts and Nevis,San Cristóbal y Nieves
 nation.KOR,Coreia do Sul,South Korea,Corea del Sur
 nation.KWT,Kuwait,Kuwait,Kuwait
 nation.LAO,Laos,Laos,Laos
 nation.LBN,Líbano,Lebanon,Líbano
 nation.LBR,Libéria,Liberia,Liberia
 nation.LBY,Líbia,Libya,Libia
+nation.LCA,Santa Lúcia,Saint Lucia,Santa Lucía
 nation.LKA,Sri Lanka,Sri Lanka,Sri Lanka
 nation.LSO,Lesoto,Lesotho,Lesoto
 nation.LTU,Lituânia,Lithuania,Lituania
@@ -899,7 +910,6 @@ nation.MNE,Montenegro,Montenegro,Montenegro
 nation.MNG,Mongólia,Mongolia,Mongolia
 nation.MOZ,Moçambique,Mozambique,Mozambique
 nation.MRT,Mauritânia,Mauritania,Mauritania
-nation.MUS,Maurícia,Mauritius,Mauricio
 nation.MWI,Malawi,Malawi,Malaui
 nation.MYS,Malásia,Malaysia,Malasia
 nation.NAM,Namíbia,Namibia,Namibia
@@ -957,6 +967,7 @@ nation.UKR,Ucrânia,Ukraine,Ucrania
 nation.URY,Uruguai,Uruguay,Uruguay
 nation.USA,Estados Unidos,United States of America,Estados Unidos
 nation.UZB,Uzbequistão,Uzbekistan,Uzbekistán
+nation.VCT,São Vicente e Granadinas,Saint Vincent and the Grenadines,San Vicente y las Granadinas
 nation.VEN,Venezuela,Venezuela,Venezuela
 nation.VNM,Vietname,Vietnam,Vietnam
 nation.XKX,Kosovo,Kosovo,Kosovo
@@ -970,6 +981,7 @@ nation.name.ALB,Albânia,Albania,Albania
 nation.name.ARE,Emirados Árabes Unidos,United Arab Emirates,Emiratos Árabes Unidos
 nation.name.ARG,Argentina,Argentina,Argentina
 nation.name.ARM,Arménia,Armenia,Armenia
+nation.name.ATG,Antígua e Barbuda,Antigua and Barbuda,Antigua y Barbuda
 nation.name.AUS,Austrália,Australia,Australia
 nation.name.AUT,Áustria,Austria,Austria
 nation.name.AZE,Azerbaijão,Azerbaijan,Azerbaiyán
@@ -986,6 +998,7 @@ nation.name.BLR,Bielorrússia,Belarus,Bielorrusia
 nation.name.BLZ,Belize,Belize,Belice
 nation.name.BOL,Bolívia,Bolivia,Bolivia
 nation.name.BRA,Brasil,Brazil,Brasil
+nation.name.BRB,Barbados,Barbados,Barbados
 nation.name.BRN,Brunei,Brunei,Brunéi
 nation.name.BTN,Butão,Bhutan,Bután
 nation.name.BWA,Botsuana,Botswana,Botsuana
@@ -1005,6 +1018,7 @@ nation.name.CYP,Chipre,Cyprus,Chipre
 nation.name.CZE,Chéquia,Czech Republic,República Checa
 nation.name.DEU,Alemanha,Germany,Alemania
 nation.name.DJI,Djibouti,Djibouti,Yibuti
+nation.name.DMA,Dominica,Dominica,Dominica
 nation.name.DNK,Dinamarca,Denmark,Dinamarca
 nation.name.DOM,República Dominicana,Dominican Republic,República Dominicana
 nation.name.DZA,Argélia,Algeria,Argelia
@@ -1026,6 +1040,7 @@ nation.name.GMB,Gâmbia,The Gambia,Gambia
 nation.name.GNB,Guiné Bissau,Guinea Bissau,Guinea Bisáu
 nation.name.GNQ,Guiné Equatorial,Equatorial Guinea,Guinea Ecuatorial
 nation.name.GRC,Grécia,Greece,Grecia
+nation.name.GRD,Granada,Grenada,Granada
 nation.name.GTM,Guatemala,Guatemala,Guatemala
 nation.name.GUY,Guiana,Guyana,Guyana
 nation.name.HND,Honduras,Honduras,Honduras
@@ -1047,12 +1062,14 @@ nation.name.KAZ,Cazaquistão,Kazakhstan,Kazajistán
 nation.name.KEN,Quénia,Kenya,Kenia
 nation.name.KGZ,Quirguistão,Kyrgyzstan,Kirguistán
 nation.name.KHM,Camboja,Cambodia,Camboya
+nation.name.KNA,São Cristóvão e Nevis,Saint Kitts and Nevis,San Cristóbal y Nieves
 nation.name.KOR,Coreia do Sul,South Korea,Corea del Sur
 nation.name.KWT,Kuwait,Kuwait,Kuwait
 nation.name.LAO,Laos,Laos,Laos
 nation.name.LBN,Líbano,Lebanon,Líbano
 nation.name.LBR,Libéria,Liberia,Liberia
 nation.name.LBY,Líbia,Libya,Libia
+nation.name.LCA,Santa Lúcia,Saint Lucia,Santa Lucía
 nation.name.LKA,Sri Lanka,Sri Lanka,Sri Lanka
 nation.name.LSO,Lesoto,Lesotho,Lesoto
 nation.name.LTU,Lituânia,Lithuania,Lituania
@@ -1070,7 +1087,6 @@ nation.name.MNE,Montenegro,Montenegro,Montenegro
 nation.name.MNG,Mongólia,Mongolia,Mongolia
 nation.name.MOZ,Moçambique,Mozambique,Mozambique
 nation.name.MRT,Mauritânia,Mauritania,Mauritania
-nation.name.MUS,Maurícia,Mauritius,Mauricio
 nation.name.MWI,Malawi,Malawi,Malaui
 nation.name.MYS,Malásia,Malaysia,Malasia
 nation.name.NAM,Namíbia,Namibia,Namibia
@@ -1128,6 +1144,7 @@ nation.name.UKR,Ucrânia,Ukraine,Ucrania
 nation.name.URY,Uruguai,Uruguay,Uruguay
 nation.name.USA,Estados Unidos,United States of America,Estados Unidos
 nation.name.UZB,Uzbequistão,Uzbekistan,Uzbekistán
+nation.name.VCT,São Vicente e Granadinas,Saint Vincent and the Grenadines,San Vicente y las Granadinas
 nation.name.VEN,Venezuela,Venezuela,Venezuela
 nation.name.VNM,Vietname,Vietnam,Vietnam
 nation.name.XKX,Kosovo,Kosovo,Kosovo
@@ -1236,9 +1253,13 @@ port.name.NED-GRO,Groningen,Groningen,Groningen
 port.name.NED-RTM,Rotterdam,Rotterdam,Rotterdam
 port.name.NOR-BER,Bergen,Bergen,Bergen
 port.name.NOR-OSL,Oslo,Oslo,Oslo
+port.name.POL-GDA,Gdańsk,Gdańsk,Gdańsk
 port.name.PRT-LIS,Lisbon,Lisbon,Lisbon
 port.name.PRT-POR,Porto,Porto,Porto
+port.name.RUS-KGD,Kaliningrad,Kaliningrad,Kaliningrad
+port.name.RUS-MAR,Mariupol,Mariupol,Mariupol
 port.name.RUS-SAI,Saint Petersburg,Saint Petersburg,Saint Petersburg
+port.name.RUS-SEV,Sevastopol,Sevastopol,Sevastopol
 port.name.RUS-YUZ,Yuzhno-Sakhalinsk,Yuzhno-Sakhalinsk,Yuzhno-Sakhalinsk
 port.name.SAU-DAM,Dammam,Dammam,Dammam
 port.name.SAU-JED,Jeddah,Jeddah,Jeddah
@@ -1253,6 +1274,7 @@ port.name.TUR-BUR,Bursa,Bursa,Bursa
 port.name.TUR-BURS,Bursa,Bursa,Bursa
 port.name.TUR-IST,Istanbul,Istanbul,Istanbul
 port.name.TUR-IZM,Izmir,Izmir,Izmir
+port.name.TWN-KAO,Kaohsiung,Kaohsiung,Kaohsiung
 port.name.TWN-TAI,Taipei,Taipei,Taipei
 port.name.TWN-TAIC,Taichung,Taichung,Taichung
 port.name.USA-BET,Bethel,Bethel,Bethel

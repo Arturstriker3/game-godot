@@ -909,6 +909,15 @@
     "port_of": "NOR-OSL"
   },
   {
+    "id": "POL-GDA",
+    "name": "Gdańsk",
+    "nation": "POL",
+    "x": 2759.2,
+    "y": 494.4,
+    "landmass": "continent",
+    "port_of": "POL-GDA"
+  },
+  {
     "id": "PRT-LIS",
     "name": "Lisbon",
     "nation": "PRT",
@@ -927,6 +936,24 @@
     "port_of": "PRT-POR"
   },
   {
+    "id": "RUS-KGD",
+    "name": "Kaliningrad",
+    "nation": "RUS",
+    "x": 2776.5,
+    "y": 491.1,
+    "landmass": "continent",
+    "port_of": "RUS-KGD"
+  },
+  {
+    "id": "RUS-MAR",
+    "name": "Mariupol",
+    "nation": "RUS",
+    "x": 3021.5,
+    "y": 596.0,
+    "landmass": "continent",
+    "port_of": "RUS-MAR"
+  },
+  {
     "id": "RUS-SAI",
     "name": "Saint Petersburg",
     "nation": "RUS",
@@ -934,6 +961,15 @@
     "y": 417.8,
     "landmass": "continent",
     "port_of": "RUS-SAI"
+  },
+  {
+    "id": "RUS-SEV",
+    "name": "Sevastopol",
+    "nation": "RUS",
+    "x": 2965.6,
+    "y": 630.4,
+    "landmass": "continent",
+    "port_of": "RUS-SEV"
   },
   {
     "id": "RUS-YUZ",
@@ -1060,6 +1096,15 @@
     "y": 716.9,
     "landmass": "continent",
     "port_of": "TUR-IZM"
+  },
+  {
+    "id": "TWN-KAO",
+    "name": "Kaohsiung",
+    "nation": "TWN",
+    "x": 4170.5,
+    "y": 936.0,
+    "landmass": "taiwan",
+    "port_of": "TWN-KAO"
   },
   {
     "id": "TWN-TAI",

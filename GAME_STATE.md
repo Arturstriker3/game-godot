@@ -123,6 +123,21 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   d013/d026/d052/d120) e `docs/map_visual/aegean_clean/` (rodada anterior).
   O shader (`atlas_owner` + `dyn_block`) trata id de província/dono ausente como
   **mar/sem território** (nunca lê o texel 0, preto).
+- **Curadoria do roster mundial r2 (2026-11, t63):** `data/definitions/scenario/`
+  tem **177 nações, 799 cidades e 142 portos** (ainda não commitado no repo —
+  ver `docs/plans/world_all_data.md` §16). Os microestados foram fundidos nos
+  vizinhos (`VAT`/`SMR` → ITA, `MCO` → FRA, `LIE` → CHE) e **nenhuma nação
+  jogável fica sem província**: `tools/territory_test.gd` não tem mais lista de
+  exceção (`NO_PROVINCE_NATIONS` vazia) e valida as 177 em headless.
+  Conferência de cidades/donos (Caribe, Malvinas, Ucrânia/Crimeia, ilhas
+  remotas) na §16.2 do plano; capturas políticas 1920×1080 em
+  `docs/map_visual/curation_r2/` (caribbean, ukraine_poland, indian_ocean_west,
+  mediterranean_west), sem manchas pretas.
+  **Pendências de dados:** Donetsk/Mariupol (`RUS-DON`/`RUS-MAR`) estão na
+  província 926, dona **UKR** e atribuída a `UKR-KHA` (0 províncias próprias);
+  **Oradea não existe** no roster (ROU tem Bucareste, Cluj-Napoca, Iaşi); os
+  portos `ITA-ROM`/`ITA-ROME` e `ITA-PAD` continuam apontando (`port_of`) para
+  as cidades dos ex-microestados VAT/SMR, hoje ITA.
 - **Províncias/territórios/países:** `data/history/provinces/provinces.json` (14.402 províncias), `data/history/territories/territories.json` (737 territórios), `data/history/countries/` (193 JSON); `data/definitions/*.txt` restringidos a 4 países (NNN/GBR/FRA/DEU). O jogo ao vivo usa **8 nações** (GBR, FRA, DEU, NED, BEL, VEN, SUR, GUY).
 - **Base natural = 739 territórios:** 737 legados + **BHR `TRT000738`** e **QAT `TRT000739`**, criados por `tools/add_gulf_territories.py` (média de centróide das províncias desses países no atlas + clima real WorldClim pelo mesmo método do `apply_real_climate`). O script também reatribui os depósitos do Golfo ao país real: **North Field → QAT**, **Khuff/Awali → BHR**, **Ghawar → SAU** (antes Ghawar ficava em KWT e o North Field em KWT/SAU por centróide mais próximo). Roda **antes** de `apply_deposit_supplement.py` e é idempotente.
 - **Fronteiras:** legado = Voronoi + SDF via Jump Flooding Algorithm (`jfa.glsl`/`jfa_encode.glsl` + `map_texture_sdf.gd`); jogo = raster Natural Earth composto por shader.
@@ -571,6 +586,7 @@ visual de veículos:
 ## 15. Bugs e dívida técnica
 
 - **BOM `U+FEFF`** em `core/ui/city_economy_panel.gd` (linha 1) — quebra `tools/economy_panel_test.gd` (único arquivo com BOM).
+- **Curadoria r2 — pendências de dados (t63):** `RUS-DON` (Donetsk) e `RUS-MAR` (Mariupol) estão dentro da província 926, dona **UKR** e atribuída a `UKR-KHA` — nenhuma das duas administra província própria; **Oradea** não está no roster (ROU tem só Bucareste, Cluj-Napoca e Iaşi); os portos `ITA-ROM`/`ITA-ROME` (`port_of VAT-VATI`) e `ITA-PAD` (`port_of SMR-SANM`) seguem presos às cidades dos microestados fundidos em ITA. Detalhe e tabela: `docs/plans/world_all_data.md` §16.2.
 - **Pick de depósito (mapa recursos) — investigado:** medição `tools/deposit_pick_test.gd` (3 janelas × 2 câmeras) confirma `get_mouse_position()` e `unproject_position()` no mesmo espaço (base) e `pick_deposit` auto-coerente — Ferdinand (1232) e Chaillac (1618) respondem; o raio de 26px está correto. A causa do "sem resposta" era o billboard sem `billboard_keep_scale` (desenhava todo marcador a 1.0 u, escondendo o anel sob o ponto em depósitos pequenos).
 - **Duas faces econômicas** (legacy × demo) no mesmo `EconomySim`, consumidas por UIs diferentes; risco de divergência.
 - **Três implementações paralelas** de produção/consumo/preços/contabilidade no C++ (tick_demo × benchmark × legacy).

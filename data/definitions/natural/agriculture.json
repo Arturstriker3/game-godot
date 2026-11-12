@@ -753,14 +753,14 @@
 			"cotton": 0.379
 		},
 		"TRT000068": {
-			"wheat": 0.0,
-			"rice": 0.717,
+			"wheat": 0.247,
+			"rice": 0.0,
 			"maize": 0.0,
-			"potato": 0.0,
+			"potato": 0.519,
 			"soy": 0.0,
-			"sugarcane": 0.681,
-			"coffee": 0.372,
-			"fruit": 0.0,
+			"sugarcane": 0.0,
+			"coffee": 0.0,
+			"fruit": 0.79,
 			"cotton": 0.0
 		},
 		"TRT000069": {
@@ -950,17 +950,6 @@
 			"fruit": 0.781,
 			"cotton": 0.09
 		},
-		"TRT000086": {
-			"wheat": 0.026,
-			"rice": 0.0,
-			"maize": 0.0,
-			"potato": 0.349,
-			"soy": 0.0,
-			"sugarcane": 0.0,
-			"coffee": 0.0,
-			"fruit": 0.475,
-			"cotton": 0.0
-		},
 		"TRT000087": {
 			"wheat": 0.0,
 			"rice": 0.0,
@@ -1063,12 +1052,12 @@
 		"TRT000096": {
 			"wheat": 0.0,
 			"rice": 0.0,
-			"maize": 0.076,
+			"maize": 0.083,
 			"potato": 0.0,
 			"soy": 0.0,
 			"sugarcane": 0.0,
 			"coffee": 0.0,
-			"fruit": 0.513,
+			"fruit": 0.518,
 			"cotton": 0.0
 		},
 		"TRT000097": {
@@ -1535,7 +1524,7 @@
 		},
 		"TRT000139": {
 			"wheat": 0.017,
-			"rice": 0.29,
+			"rice": 0.289,
 			"maize": 0.238,
 			"potato": 0.049,
 			"soy": 0.256,
@@ -1853,15 +1842,15 @@
 			"cotton": 0.0
 		},
 		"TRT000168": {
-			"wheat": 0.319,
-			"rice": 0.025,
-			"maize": 0.19,
-			"potato": 0.085,
-			"soy": 0.057,
-			"sugarcane": 0.012,
-			"coffee": 0.041,
-			"fruit": 0.407,
-			"cotton": 0.035
+			"wheat": 0.313,
+			"rice": 0.023,
+			"maize": 0.187,
+			"potato": 0.08,
+			"soy": 0.053,
+			"sugarcane": 0.011,
+			"coffee": 0.038,
+			"fruit": 0.412,
+			"cotton": 0.033
 		},
 		"TRT000169": {
 			"wheat": 0.009,
@@ -1953,14 +1942,14 @@
 		},
 		"TRT000177": {
 			"wheat": 0.004,
-			"rice": 0.612,
-			"maize": 0.28,
+			"rice": 0.614,
+			"maize": 0.279,
 			"potato": 0.0,
-			"soy": 0.402,
-			"sugarcane": 0.499,
-			"coffee": 0.255,
+			"soy": 0.401,
+			"sugarcane": 0.5,
+			"coffee": 0.25,
 			"fruit": 0.006,
-			"cotton": 0.226
+			"cotton": 0.227
 		},
 		"TRT000178": {
 			"wheat": 0.261,
@@ -1997,14 +1986,14 @@
 		},
 		"TRT000181": {
 			"wheat": 0.0,
-			"rice": 0.858,
-			"maize": 0.511,
+			"rice": 0.856,
+			"maize": 0.517,
 			"potato": 0.0,
-			"soy": 0.588,
-			"sugarcane": 0.796,
-			"coffee": 0.644,
+			"soy": 0.598,
+			"sugarcane": 0.793,
+			"coffee": 0.639,
 			"fruit": 0.0,
-			"cotton": 0.445
+			"cotton": 0.45
 		},
 		"TRT000182": {
 			"wheat": 0.523,
@@ -2271,14 +2260,14 @@
 			"cotton": 0.083
 		},
 		"TRT000206": {
-			"wheat": 0.239,
+			"wheat": 0.241,
 			"rice": 0.0,
 			"maize": 0.0,
-			"potato": 0.504,
+			"potato": 0.509,
 			"soy": 0.0,
 			"sugarcane": 0.0,
 			"coffee": 0.0,
-			"fruit": 0.77,
+			"fruit": 0.776,
 			"cotton": 0.0
 		},
 		"TRT000207": {
@@ -2811,14 +2800,14 @@
 		},
 		"TRT000255": {
 			"wheat": 0.0,
-			"rice": 0.504,
-			"maize": 0.221,
+			"rice": 0.506,
+			"maize": 0.22,
 			"potato": 0.0,
 			"soy": 0.389,
-			"sugarcane": 0.372,
+			"sugarcane": 0.373,
 			"coffee": 0.086,
 			"fruit": 0.0,
-			"cotton": 0.371
+			"cotton": 0.37
 		},
 		"TRT000256": {
 			"wheat": 0.0,
@@ -4024,11 +4013,11 @@
 			"rice": 0.532,
 			"maize": 0.212,
 			"potato": 0.0,
-			"soy": 0.338,
-			"sugarcane": 0.4,
+			"soy": 0.339,
+			"sugarcane": 0.401,
 			"coffee": 0.102,
 			"fruit": 0.0,
-			"cotton": 0.355
+			"cotton": 0.356
 		},
 		"TRT000366": {
 			"wheat": 0.112,
@@ -4483,13 +4472,13 @@
 		},
 		"TRT000407": {
 			"wheat": 0.052,
-			"rice": 0.856,
-			"maize": 0.611,
+			"rice": 0.858,
+			"maize": 0.61,
 			"potato": 0.0,
-			"soy": 0.629,
-			"sugarcane": 0.595,
-			"coffee": 0.777,
-			"fruit": 0.061,
+			"soy": 0.632,
+			"sugarcane": 0.601,
+			"coffee": 0.779,
+			"fruit": 0.06,
 			"cotton": 0.557
 		},
 		"TRT000408": {
@@ -4683,12 +4672,12 @@
 			"wheat": 0.74,
 			"rice": 0.15,
 			"maize": 0.824,
-			"potato": 0.629,
+			"potato": 0.63,
 			"soy": 0.727,
 			"sugarcane": 0.053,
-			"coffee": 0.358,
-			"fruit": 0.738,
-			"cotton": 0.583
+			"coffee": 0.357,
+			"fruit": 0.739,
+			"cotton": 0.584
 		},
 		"TRT000426": {
 			"wheat": 0.0,
@@ -5363,14 +5352,14 @@
 		},
 		"TRT000487": {
 			"wheat": 0.0,
-			"rice": 0.731,
-			"maize": 0.48,
+			"rice": 0.729,
+			"maize": 0.497,
 			"potato": 0.0,
-			"soy": 0.61,
-			"sugarcane": 0.619,
-			"coffee": 0.175,
+			"soy": 0.631,
+			"sugarcane": 0.614,
+			"coffee": 0.178,
 			"fruit": 0.019,
-			"cotton": 0.566
+			"cotton": 0.586
 		},
 		"TRT000488": {
 			"wheat": 0.0,
@@ -6087,17 +6076,6 @@
 			"fruit": 0.02,
 			"cotton": 0.588
 		},
-		"TRT000553": {
-			"wheat": 0.026,
-			"rice": 0.0,
-			"maize": 0.0,
-			"potato": 0.349,
-			"soy": 0.0,
-			"sugarcane": 0.0,
-			"coffee": 0.0,
-			"fruit": 0.475,
-			"cotton": 0.0
-		},
 		"TRT000554": {
 			"wheat": 0.169,
 			"rice": 0.0,
@@ -6275,15 +6253,15 @@
 			"cotton": 0.0
 		},
 		"TRT000570": {
-			"wheat": 0.018,
+			"wheat": 0.008,
 			"rice": 0.0,
-			"maize": 0.013,
-			"potato": 0.009,
-			"soy": 0.009,
+			"maize": 0.0,
+			"potato": 0.0,
+			"soy": 0.0,
 			"sugarcane": 0.0,
 			"coffee": 0.0,
-			"fruit": 0.013,
-			"cotton": 0.006
+			"fruit": 0.0,
+			"cotton": 0.0
 		},
 		"TRT000571": {
 			"wheat": 0.834,
@@ -6473,15 +6451,15 @@
 			"cotton": 0.421
 		},
 		"TRT000588": {
-			"wheat": 0.04,
-			"rice": 0.371,
-			"maize": 0.391,
+			"wheat": 0.041,
+			"rice": 0.381,
+			"maize": 0.382,
 			"potato": 0.008,
-			"soy": 0.479,
-			"sugarcane": 0.284,
-			"coffee": 0.144,
-			"fruit": 0.134,
-			"cotton": 0.389
+			"soy": 0.472,
+			"sugarcane": 0.292,
+			"coffee": 0.147,
+			"fruit": 0.131,
+			"cotton": 0.382
 		},
 		"TRT000589": {
 			"wheat": 0.505,
@@ -6704,15 +6682,15 @@
 			"cotton": 0.35
 		},
 		"TRT000609": {
-			"wheat": 0.299,
-			"rice": 0.27,
-			"maize": 0.487,
-			"potato": 0.101,
-			"soy": 0.505,
-			"sugarcane": 0.163,
-			"coffee": 0.149,
-			"fruit": 0.146,
-			"cotton": 0.406
+			"wheat": 0.378,
+			"rice": 0.147,
+			"maize": 0.434,
+			"potato": 0.172,
+			"soy": 0.323,
+			"sugarcane": 0.089,
+			"coffee": 0.081,
+			"fruit": 0.133,
+			"cotton": 0.297
 		},
 		"TRT000610": {
 			"wheat": 0.0,
@@ -6724,17 +6702,6 @@
 			"coffee": 0.116,
 			"fruit": 0.0,
 			"cotton": 0.314
-		},
-		"TRT000611": {
-			"wheat": 0.026,
-			"rice": 0.0,
-			"maize": 0.0,
-			"potato": 0.349,
-			"soy": 0.0,
-			"sugarcane": 0.0,
-			"coffee": 0.0,
-			"fruit": 0.475,
-			"cotton": 0.0
 		},
 		"TRT000612": {
 			"wheat": 0.0,
@@ -6869,15 +6836,15 @@
 			"cotton": 0.532
 		},
 		"TRT000624": {
-			"wheat": 0.455,
+			"wheat": 0.444,
 			"rice": 0.032,
-			"maize": 0.305,
-			"potato": 0.332,
-			"soy": 0.182,
+			"maize": 0.288,
+			"potato": 0.318,
+			"soy": 0.174,
 			"sugarcane": 0.007,
-			"coffee": 0.119,
-			"fruit": 0.353,
-			"cotton": 0.124
+			"coffee": 0.118,
+			"fruit": 0.34,
+			"cotton": 0.12
 		},
 		"TRT000625": {
 			"wheat": 0.374,
@@ -6891,15 +6858,15 @@
 			"cotton": 0.0
 		},
 		"TRT000626": {
-			"wheat": 0.038,
-			"rice": 0.61,
-			"maize": 0.62,
+			"wheat": 0.035,
+			"rice": 0.572,
+			"maize": 0.591,
 			"potato": 0.003,
-			"soy": 0.671,
-			"sugarcane": 0.488,
-			"coffee": 0.376,
-			"fruit": 0.125,
-			"cotton": 0.586
+			"soy": 0.634,
+			"sugarcane": 0.459,
+			"coffee": 0.352,
+			"fruit": 0.117,
+			"cotton": 0.556
 		},
 		"TRT000627": {
 			"wheat": 0.314,
@@ -7042,7 +7009,7 @@
 			"sugarcane": 0.172,
 			"coffee": 0.168,
 			"fruit": 0.081,
-			"cotton": 0.084
+			"cotton": 0.085
 		},
 		"TRT000640": {
 			"wheat": 0.705,
@@ -7198,17 +7165,6 @@
 			"fruit": 0.712,
 			"cotton": 0.011
 		},
-		"TRT000654": {
-			"wheat": 0.0,
-			"rice": 0.0,
-			"maize": 0.0,
-			"potato": 0.0,
-			"soy": 0.0,
-			"sugarcane": 0.0,
-			"coffee": 0.0,
-			"fruit": 0.0,
-			"cotton": 0.0
-		},
 		"TRT000655": {
 			"wheat": 0.0,
 			"rice": 0.0,
@@ -7354,11 +7310,11 @@
 		},
 		"TRT000668": {
 			"wheat": 0.003,
-			"rice": 0.633,
+			"rice": 0.632,
 			"maize": 0.229,
 			"potato": 0.0,
 			"soy": 0.397,
-			"sugarcane": 0.483,
+			"sugarcane": 0.482,
 			"coffee": 0.001,
 			"fruit": 0.0,
 			"cotton": 0.488
@@ -7849,12 +7805,12 @@
 		},
 		"TRT000713": {
 			"wheat": 0.0,
-			"rice": 0.718,
+			"rice": 0.0,
 			"maize": 0.0,
 			"potato": 0.0,
 			"soy": 0.0,
-			"sugarcane": 0.682,
-			"coffee": 0.37,
+			"sugarcane": 0.0,
+			"coffee": 0.0,
 			"fruit": 0.0,
 			"cotton": 0.0
 		},
@@ -7913,8 +7869,8 @@
 			"fruit": 0.0,
 			"cotton": 0.062
 		},
-		"TRT000719": {
-			"wheat": 0.0,
+		"TRT000721": {
+			"wheat": 0.151,
 			"rice": 0.0,
 			"maize": 0.0,
 			"potato": 0.0,
@@ -7923,28 +7879,6 @@
 			"coffee": 0.0,
 			"fruit": 0.0,
 			"cotton": 0.0
-		},
-		"TRT000720": {
-			"wheat": 0.026,
-			"rice": 0.0,
-			"maize": 0.0,
-			"potato": 0.349,
-			"soy": 0.0,
-			"sugarcane": 0.0,
-			"coffee": 0.0,
-			"fruit": 0.475,
-			"cotton": 0.0
-		},
-		"TRT000721": {
-			"wheat": 0.459,
-			"rice": 0.731,
-			"maize": 0.966,
-			"potato": 0.0,
-			"soy": 0.96,
-			"sugarcane": 0.404,
-			"coffee": 0.958,
-			"fruit": 0.516,
-			"cotton": 0.93
 		},
 		"TRT000722": {
 			"wheat": 0.0,
@@ -8045,7 +7979,7 @@
 			"fruit": 0.0,
 			"cotton": 0.0
 		},
-		"TRT000731": {
+		"TRT000732": {
 			"wheat": 0.0,
 			"rice": 0.0,
 			"maize": 0.0,
@@ -8056,25 +7990,14 @@
 			"fruit": 0.0,
 			"cotton": 0.0
 		},
-		"TRT000732": {
-			"wheat": 0.0,
-			"rice": 0.749,
-			"maize": 0.0,
-			"potato": 0.0,
-			"soy": 0.0,
-			"sugarcane": 0.726,
-			"coffee": 0.238,
-			"fruit": 0.0,
-			"cotton": 0.0
-		},
 		"TRT000733": {
 			"wheat": 0.0,
-			"rice": 0.717,
+			"rice": 0.0,
 			"maize": 0.0,
 			"potato": 0.0,
 			"soy": 0.0,
-			"sugarcane": 0.681,
-			"coffee": 0.372,
+			"sugarcane": 0.0,
+			"coffee": 0.0,
 			"fruit": 0.0,
 			"cotton": 0.0
 		},
@@ -8089,17 +8012,6 @@
 			"fruit": 0.634,
 			"cotton": 0.0
 		},
-		"TRT000735": {
-			"wheat": 0.156,
-			"rice": 0.626,
-			"maize": 0.753,
-			"potato": 0.0,
-			"soy": 0.773,
-			"sugarcane": 0.425,
-			"coffee": 0.349,
-			"fruit": 0.136,
-			"cotton": 0.751
-		},
 		"TRT000736": {
 			"wheat": 0.0,
 			"rice": 0.0,
@@ -8113,12 +8025,12 @@
 		},
 		"TRT000737": {
 			"wheat": 0.0,
-			"rice": 0.774,
+			"rice": 0.529,
 			"maize": 0.0,
 			"potato": 0.0,
 			"soy": 0.0,
-			"sugarcane": 0.762,
-			"coffee": 0.01,
+			"sugarcane": 0.078,
+			"coffee": 0.0,
 			"fruit": 0.0,
 			"cotton": 0.0
 		},

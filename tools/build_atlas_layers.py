@@ -75,16 +75,36 @@ GLOBAL_H = 2500.0
 REGION_TO_GLOBAL = (REGION[2] - REGION[0]) / REGION_W * (GLOBAL_W / 360.0)
 WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
 
-# Ilhotes de terra removidos da máscara (curadoria 2026-11). O Golfo de Suez
-# tinha um resto de terra isolado no meio da água logo antes da entrada do
-# canal: Shadwan (33,95N 27,53E) e o retalho de 2 texels a 34,01N 27,49E,
-# rasterizados como um "ilhote" solto no mar. A remoção é por componente
-# FECHADO dentro da caixa (nunca toca a costa continental: o componente que
-# encosta na borda da caixa é preservado), então a costa real fica intacta.
-# `max_px` é o teto em pixels da grade alta (supersample 2) para o componente.
+# Ilhotes e ilhas de terra removidos da máscara (curadoria 2026-11). Cada
+# spec é um componente FECHADO dentro da caixa (nunca toca a costa continental:
+# o componente que encosta na borda da caixa é preservado). `max_px` é o teto
+# em pixels da grade alta (supersample 2) para o componente.
+#
+# - Shadwan e as ilhas de Tiran/Sanafir na entrada do Golfo de Suez atrapalham
+#   o pathfinding do canal (33,5–34,7E 27–28N).
+# - r2 (2026-11-12): ilhas grandes que a regra de área (<2.000 km²) não pega e
+#   que o usuário mandou remover. Todas ficam sem cidade/porto no cenário. As
+#   ilhas <2.000 km² (Maurício, Mayotte, Martinica, Açores, Madeira, Guam,
+#   Ogasawara, Páscoa, San Andrés, Polinésia) continuam saindo pela regra de
+#   área; as que viraram país/território removido (MUS, PYF, GUM) já saem em
+#   `read_admin0` via `atlas_removed()`.
 REMOVED_ISLETS = [
     {"name": "suez_gulf_shadwan", "lon": 33.98, "lat": 27.51,
      "radius_deg": 0.18, "max_px": 4096},
+    {"name": "suez_gulf_tiran", "lon": 34.62, "lat": 27.955,
+     "radius_deg": 0.22, "max_px": 4096},
+    {"name": "reunion", "lon": 55.52, "lat": -21.11,
+     "radius_deg": 0.45, "max_px": 8000},
+    {"name": "martinique", "lon": -61.0, "lat": 14.65,
+     "radius_deg": 0.35, "max_px": 8000},
+    {"name": "svalbard", "lon": 17.5, "lat": 78.5,
+     "radius_deg": 9.5, "max_px": 200000},
+    {"name": "bioko", "lon": 8.75, "lat": 2.45,
+     "radius_deg": 1.6, "max_px": 8000},
+    {"name": "azores", "lon": -27.9, "lat": 38.5,
+     "radius_deg": 3.6, "max_px": 8000},
+    {"name": "madeira", "lon": -16.9, "lat": 32.75,
+     "radius_deg": 0.9, "max_px": 5000},
 ]
 
 # Curadoria global de ilhas pequenas (fase B, 2026-11). A regra é por LIMIAR
@@ -102,7 +122,12 @@ REMOVED_ISLETS = [
 # para o mapa regional e o global nunca divergirem.
 ISLAND_MAX_KM2 = 2000.0
 COASTAL_KEEP_KM = 3.0
-ISLAND_KEEP_SEEDS = []
+# Exceções que não têm entidade no cenário: as Malvinas voltaram como território
+# britânico (GBR) com Stanley; o seed garante a ilha mesmo se o recorte de costa
+# ficar ambíguo. As demais ilhas com cidade/porto se mantêm por `load_keep_points`.
+ISLAND_KEEP_SEEDS = [
+    ("falklands_stanley", -58.90, -51.70),
+]
 
 # Faixas usadas só no relatório/log (a remoção é global). A primeira que
 # contém o centroide vence; fora de todas = "Outros".
@@ -351,13 +376,15 @@ def rasterize_ids(grid, polygons, values):
     return grid.rasterize(polygons, values).astype(np.uint16)
 
 
-def remove_islets(owners, provinces, grid, specs):
+def remove_islets(owners, provinces, grid, specs, mark_mask=None):
     """Zera componentes de terra isolados dentro das caixas de curadoria.
 
     Cada spec é (lon, lat, raio em graus, teto de pixels). O componente só é
     removido se estiver INTEIRO dentro da caixa (nenhum pixel na borda) e tiver
     área <= max_px; assim a costa continental, que atravessa a borda, nunca é
     tocada. O id de província dos pixels removidos também volta a 0.
+    `mark_mask`, quando dado, recebe True nos pixels removidos para entrar no
+    `removed_islands.png` (o nav_mask limpa a mesma terra).
     """
     for spec in specs:
         lon, lat = spec["lon"], spec["lat"]
@@ -386,6 +413,8 @@ def remove_islets(owners, provinces, grid, specs):
             owners[abs_y, abs_x] = 0
             if provinces is not None:
                 provinces[abs_y, abs_x] = 0
+            if mark_mask is not None:
+                mark_mask[abs_y, abs_x] = True
             print(f"[islet] {spec['name']}: removido componente de {area} px "
                   f"em lon={lon:.3f} lat={lat:.3f}")
 
@@ -769,11 +798,16 @@ def build_layer(name, bounds, width, countries, province_shapes,
     if province_shapes:
         provinces = rasterize_ids(hi, province_shapes, province_ids)
     if REMOVED_ISLETS:
-        remove_islets(owners, provinces, hi, REMOVED_ISLETS)
+        islet_mask = np.zeros(owners.shape, dtype=bool)
+        remove_islets(owners, provinces, hi, REMOVED_ISLETS, mark_mask=islet_mask)
+    else:
+        islet_mask = None
     removed_mask = None
     if islands:
         removed_mask, _removed = remove_small_islands(
             owners, provinces, hi, name, countries, keep_mask=return_removed)
+        if islet_mask is not None:
+            removed_mask = islet_mask if removed_mask is None else (removed_mask | islet_mask)
     if removed_reference is not None:
         cleared = apply_removed_mask(owners, provinces, hi, *removed_reference)
         print(f"[{name}] {cleared} px da remoção de ilhas da camada mundial "

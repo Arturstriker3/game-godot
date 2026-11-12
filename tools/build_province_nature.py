@@ -41,7 +41,8 @@ import sys
 import tifffile
 
 import build_natural_geography as bng
-from world_nation_curation import TERRITORY_MOTHER
+from world_nation_curation import (MERGED_TERRITORIES, TERRITORY_MOTHER,
+                                   atlas_removed)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NATURAL = os.path.join(ROOT, "data", "definitions", "natural")
@@ -101,6 +102,20 @@ def main() -> int:
     territories = nature_doc["territories"]
     agriculture = agriculture_doc["territories"]
     crops = list(bng.CROPS.keys())
+
+    # r2: territórios que saíram do cenário por inteiro (MUS, PYF, GUM, ATF,
+    # SGS...). Os territórios FUNDIDOS (FLK->GBR, ABW/CUW->NED) continuam e
+    # herdam a nação-mãe; os apagados não têm província no atlas e não podem
+    # gerar marcador de recurso no mar. A lista vem da curadoria, não é
+    # inventada.
+    removed_natural = atlas_removed() - set(MERGED_TERRITORIES)
+    removed_tids = {
+        tid for tid, entry in territories.items()
+        if str(entry.get("owner") or entry.get("adm0_a3") or "") in removed_natural
+    }
+    for tid in removed_tids:
+        territories.pop(tid, None)
+        agriculture.pop(tid, None)
 
     nav = bng.load_nav_mask()
 
@@ -248,11 +263,18 @@ def main() -> int:
 
     # Depósitos: o campo `owner` (legado, não lido pelo runtime) passa a refletir
     # o dono do território. O runtime usa nature.json.adm0_a3 em assign_deposits.
+    # Depósito de território apagado na r2 (terra virou mar) sai do arquivo:
+    # não há chão no cenário para ele.
     deposits_doc = read_json(os.path.join(NATURAL, "deposits.json"))
+    kept_deposits = []
     for deposit in deposits_doc.get("deposits", []):
         tid = str(deposit.get("territory", ""))
+        if tid in removed_tids:
+            continue
         if tid in territories:
             deposit["owner"] = territories[tid].get("owner", deposit.get("owner", ""))
+        kept_deposits.append(deposit)
+    deposits_doc["deposits"] = kept_deposits
 
     # Documento por província (o que o runtime usa + proveniência).
     province_doc = {

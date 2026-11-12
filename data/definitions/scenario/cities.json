@@ -1,5 +1,17 @@
 [
   {
+    "id": "ABW-ORA",
+    "nation": "NED",
+    "home_nation": "NED",
+    "name": "Oranjestad",
+    "population": 29998.0,
+    "production": 9.0,
+    "x": 1527.4,
+    "y": 1076.1,
+    "landmass": "aruba",
+    "capital": false
+  },
+  {
     "id": "AFG-HER",
     "nation": "AFG",
     "home_nation": "AFG",
@@ -297,6 +309,18 @@
     "x": 3118.2,
     "y": 692.0,
     "landmass": "asia",
+    "capital": true
+  },
+  {
+    "id": "ATG-SAI",
+    "nation": "ATG",
+    "home_nation": "ATG",
+    "name": "Saint John’s",
+    "population": 51737.0,
+    "production": 15.5,
+    "x": 1641.1,
+    "y": 1012.2,
+    "landmass": "north_america",
     "capital": true
   },
   {
@@ -876,6 +900,18 @@
     "capital": true
   },
   {
+    "id": "BLR-BRE",
+    "nation": "BLR",
+    "home_nation": "BLR",
+    "name": "Brest",
+    "population": 344470.0,
+    "production": 103.3,
+    "x": 2829.6,
+    "y": 526.4,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "BLR-GOM",
     "nation": "BLR",
     "home_nation": "BLR",
@@ -1258,6 +1294,18 @@
     "y": 1320.7,
     "landmass": "south_america",
     "capital": false
+  },
+  {
+    "id": "BRB-BRI",
+    "nation": "BRB",
+    "home_nation": "BRB",
+    "name": "Bridgetown",
+    "population": 98511.0,
+    "production": 29.6,
+    "x": 1671.9,
+    "y": 1068.0,
+    "landmass": "barbados",
+    "capital": true
   },
   {
     "id": "BRN-BAN",
@@ -1712,18 +1760,6 @@
     "production": 120.3,
     "x": 1522.3,
     "y": 1578.5,
-    "landmass": "south_america",
-    "capital": false
-  },
-  {
-    "id": "CHL-HAN",
-    "nation": "CHL",
-    "home_nation": "CHL",
-    "name": "Hanga Roa",
-    "population": 7322.0,
-    "production": 2.2,
-    "x": 980.2,
-    "y": 1627.1,
     "landmass": "south_america",
     "capital": false
   },
@@ -2340,18 +2376,6 @@
     "capital": false
   },
   {
-    "id": "COL-SAN",
-    "nation": "COL",
-    "home_nation": "COL",
-    "name": "San Andrés",
-    "population": 58257.0,
-    "production": 17.5,
-    "x": 1365.3,
-    "y": 1075.3,
-    "landmass": "south_america",
-    "capital": false
-  },
-  {
     "id": "CRI-LIM",
     "nation": "CRI",
     "home_nation": "CRI",
@@ -2397,6 +2421,18 @@
     "x": 1446.9,
     "y": 971.9,
     "landmass": "cuba",
+    "capital": false
+  },
+  {
+    "id": "CUW-WIL",
+    "nation": "NED",
+    "home_nation": "NED",
+    "name": "Willemstad",
+    "population": 125000.0,
+    "production": 37.5,
+    "x": 1543.2,
+    "y": 1081.6,
+    "landmass": "curacao",
     "capital": false
   },
   {
@@ -2601,6 +2637,18 @@
     "x": 3099.2,
     "y": 1089.0,
     "landmass": "africa",
+    "capital": true
+  },
+  {
+    "id": "DMA-ROS",
+    "nation": "DMA",
+    "home_nation": "DMA",
+    "name": "Roseau",
+    "population": 16571.0,
+    "production": 5.0,
+    "x": 1647.4,
+    "y": 1037.5,
+    "landmass": "north_america",
     "capital": true
   },
   {
@@ -2916,6 +2964,18 @@
     "capital": true
   },
   {
+    "id": "ESP-PMI",
+    "nation": "ESP",
+    "home_nation": "ESP",
+    "name": "Palma",
+    "population": 423350.0,
+    "production": 127.0,
+    "x": 2536.8,
+    "y": 700.4,
+    "landmass": "mallorca",
+    "capital": false
+  },
+  {
     "id": "ESP-VAL",
     "nation": "ESP",
     "home_nation": "ESP",
@@ -3108,6 +3168,30 @@
     "capital": true
   },
   {
+    "id": "FLK-STA",
+    "nation": "GBR",
+    "home_nation": "GBR",
+    "name": "Stanley",
+    "population": 2213.0,
+    "production": 0.7,
+    "x": 1696.4,
+    "y": 1968.0,
+    "landmass": "falkland",
+    "capital": false
+  },
+  {
+    "id": "FRA-AJA",
+    "nation": "FRA",
+    "home_nation": "FRA",
+    "name": "Ajaccio",
+    "population": 73822.0,
+    "production": 22.1,
+    "x": 2621.4,
+    "y": 667.8,
+    "landmass": "corsica",
+    "capital": false
+  },
+  {
     "id": "FRA-CAY",
     "nation": "FRA",
     "home_nation": "FRA",
@@ -3129,18 +3213,6 @@
     "x": 2542.9,
     "y": 614.2,
     "landmass": "continent",
-    "capital": false
-  },
-  {
-    "id": "FRA-FOR",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Fort-de-France",
-    "population": 89995.0,
-    "production": 27.0,
-    "x": 1651.7,
-    "y": 1047.2,
-    "landmass": "martinique",
     "capital": false
   },
   {
@@ -3180,18 +3252,6 @@
     "capital": false
   },
   {
-    "id": "FRA-MAM",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Mamoudzou",
-    "population": 54831.0,
-    "production": 16.4,
-    "x": 3128.2,
-    "y": 1427.5,
-    "landmass": "mayotte",
-    "capital": false
-  },
-  {
     "id": "FRA-MRS",
     "nation": "FRA",
     "home_nation": "FRA",
@@ -3226,18 +3286,6 @@
     "y": 571.4,
     "landmass": "continent",
     "capital": true
-  },
-  {
-    "id": "FRA-SAI",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Saint-Denis",
-    "population": 154765.0,
-    "production": 46.4,
-    "x": 3270.1,
-    "y": 1540.0,
-    "landmass": "reunion",
-    "capital": false
   },
   {
     "id": "FRA-SXB",
@@ -3588,16 +3636,16 @@
     "capital": false
   },
   {
-    "id": "GRL-AAS",
-    "nation": "DNK",
-    "home_nation": "DNK",
-    "name": "Aasiaat",
-    "population": 3005.0,
-    "production": 0.9,
-    "x": 1765.8,
-    "y": 295.7,
-    "landmass": "greenland",
-    "capital": false
+    "id": "GRD-SAI",
+    "nation": "GRD",
+    "home_nation": "GRD",
+    "name": "Saint George's",
+    "population": 7500.0,
+    "production": 2.2,
+    "x": 1642.3,
+    "y": 1082.6,
+    "landmass": "north_america",
+    "capital": true
   },
   {
     "id": "GRL-ILU",
@@ -3624,30 +3672,6 @@
     "capital": false
   },
   {
-    "id": "GRL-QAQ",
-    "nation": "DNK",
-    "home_nation": "DNK",
-    "name": "Qaqortoq",
-    "population": 3224.0,
-    "production": 1.0,
-    "x": 1860.6,
-    "y": 406.7,
-    "landmass": "greenland",
-    "capital": false
-  },
-  {
-    "id": "GRL-SIS",
-    "nation": "DNK",
-    "home_nation": "DNK",
-    "name": "Sisimiut",
-    "population": 5227.0,
-    "production": 1.6,
-    "x": 1754.5,
-    "y": 320.3,
-    "landmass": "greenland",
-    "capital": false
-  },
-  {
     "id": "GTM-COB",
     "nation": "GTM",
     "home_nation": "GTM",
@@ -3670,18 +3694,6 @@
     "y": 1046.7,
     "landmass": "north_america",
     "capital": true
-  },
-  {
-    "id": "GUM-HAG",
-    "nation": "USA",
-    "home_nation": "USA",
-    "name": "Hagåtña",
-    "population": 1051.0,
-    "production": 0.3,
-    "x": 4510.4,
-    "y": 1062.8,
-    "landmass": "guam",
-    "capital": false
   },
   {
     "id": "GUY-GEO",
@@ -4548,6 +4560,30 @@
     "capital": true
   },
   {
+    "id": "ITA-BAR",
+    "nation": "ITA",
+    "home_nation": "ITA",
+    "name": "Bari",
+    "population": 316015.0,
+    "production": 94.8,
+    "x": 2734.3,
+    "y": 678.9,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "ITA-CAG",
+    "nation": "ITA",
+    "home_nation": "ITA",
+    "name": "Cagliari",
+    "population": 148269.0,
+    "production": 44.5,
+    "x": 2626.7,
+    "y": 705.2,
+    "landmass": "sardinia",
+    "capital": false
+  },
+  {
     "id": "ITA-GEN",
     "nation": "ITA",
     "home_nation": "ITA",
@@ -4736,18 +4772,6 @@
     "production": 699.7,
     "x": 4401.5,
     "y": 761.4,
-    "landmass": "japan",
-    "capital": false
-  },
-  {
-    "id": "JPN-OGA",
-    "nation": "JPN",
-    "home_nation": "JPN",
-    "name": "Ogasawara",
-    "population": 2929.0,
-    "production": 0.9,
-    "x": 4475.1,
-    "y": 873.7,
     "landmass": "japan",
     "capital": false
   },
@@ -4954,6 +4978,18 @@
     "y": 1097.3,
     "landmass": "asia",
     "capital": false
+  },
+  {
+    "id": "KNA-BAS",
+    "nation": "KNA",
+    "home_nation": "KNA",
+    "name": "Basseterre",
+    "population": 12920.0,
+    "production": 3.9,
+    "x": 1628.8,
+    "y": 1009.8,
+    "landmass": "north_america",
+    "capital": true
   },
   {
     "id": "KOR-BUS",
@@ -5181,6 +5217,18 @@
     "x": 2683.2,
     "y": 793.2,
     "landmass": "africa",
+    "capital": true
+  },
+  {
+    "id": "LCA-CAS",
+    "nation": "LCA",
+    "home_nation": "LCA",
+    "name": "Castries",
+    "population": 20000.0,
+    "production": 6.0,
+    "x": 1652.7,
+    "y": 1055.6,
+    "landmass": "north_america",
     "capital": true
   },
   {
@@ -5664,18 +5712,6 @@
     "capital": true
   },
   {
-    "id": "MLT-VIC",
-    "nation": "MLT",
-    "home_nation": "MLT",
-    "name": "Victoria",
-    "population": 6596.0,
-    "production": 2.0,
-    "x": 2697.8,
-    "y": 749.4,
-    "landmass": "malta",
-    "capital": false
-  },
-  {
     "id": "MMR-MAN",
     "nation": "MMR",
     "home_nation": "MMR",
@@ -5901,30 +5937,6 @@
     "x": 2326.8,
     "y": 934.2,
     "landmass": "africa",
-    "capital": false
-  },
-  {
-    "id": "MUS-POR",
-    "nation": "MUS",
-    "home_nation": "MUS",
-    "name": "Port Louis",
-    "population": 155226.0,
-    "production": 46.6,
-    "x": 3298.6,
-    "y": 1530.0,
-    "landmass": "mauritius",
-    "capital": true
-  },
-  {
-    "id": "MUS-PORT",
-    "nation": "MUS",
-    "home_nation": "MUS",
-    "name": "Port Mathurin",
-    "population": 8350.0,
-    "production": 2.5,
-    "x": 3380.8,
-    "y": 1523.4,
-    "landmass": "mauritius",
     "capital": false
   },
   {
@@ -6369,18 +6381,6 @@
     "x": 2573.9,
     "y": 411.2,
     "landmass": "continent",
-    "capital": false
-  },
-  {
-    "id": "NOR-LON",
-    "nation": "NOR",
-    "home_nation": "NOR",
-    "name": "Longyearbyen",
-    "population": 2368.0,
-    "production": 0.7,
-    "x": 2717.3,
-    "y": 163.6,
-    "landmass": "svalbard",
     "capital": false
   },
   {
@@ -6888,6 +6888,30 @@
     "capital": true
   },
   {
+    "id": "POL-BIA",
+    "nation": "POL",
+    "home_nation": "POL",
+    "name": "Białystok",
+    "population": 292600.0,
+    "production": 87.8,
+    "x": 2821.8,
+    "y": 512.0,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "POL-GDA",
+    "nation": "POL",
+    "home_nation": "POL",
+    "name": "Gdańsk",
+    "population": 486022.0,
+    "production": 145.8,
+    "x": 2759.0,
+    "y": 495.1,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "POL-KRA",
     "nation": "POL",
     "home_nation": "POL",
@@ -6996,30 +7020,6 @@
     "capital": false
   },
   {
-    "id": "PRT-ANG",
-    "nation": "PRT",
-    "home_nation": "PRT",
-    "name": "Angra do Heroísmo",
-    "population": 12045.0,
-    "production": 3.6,
-    "x": 2122.0,
-    "y": 713.1,
-    "landmass": "azores",
-    "capital": false
-  },
-  {
-    "id": "PRT-FUN",
-    "nation": "PRT",
-    "home_nation": "PRT",
-    "name": "Funchal",
-    "population": 105795.0,
-    "production": 31.7,
-    "x": 2264.9,
-    "y": 796.3,
-    "landmass": "madeira",
-    "capital": false
-  },
-  {
     "id": "PRT-LIS",
     "nation": "PRT",
     "home_nation": "PRT",
@@ -7092,66 +7092,6 @@
     "capital": true
   },
   {
-    "id": "PYF-ATU",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Atuona",
-    "population": 1762.0,
-    "production": 0.5,
-    "x": 568.9,
-    "y": 1386.2,
-    "landmass": "french_polynesia",
-    "capital": false
-  },
-  {
-    "id": "PYF-OTE",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Otepa",
-    "population": 1009.0,
-    "production": 0.3,
-    "x": 543.0,
-    "y": 1501.5,
-    "landmass": "french_polynesia",
-    "capital": false
-  },
-  {
-    "id": "PYF-PAP",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Papeete",
-    "population": 26357.0,
-    "production": 7.9,
-    "x": 422.7,
-    "y": 1493.5,
-    "landmass": "french_polynesia",
-    "capital": false
-  },
-  {
-    "id": "PYF-RIK",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Rikitea",
-    "population": 1103.0,
-    "production": 0.3,
-    "x": 625.4,
-    "y": 1571.2,
-    "landmass": "french_polynesia",
-    "capital": false
-  },
-  {
-    "id": "PYF-VAI",
-    "nation": "FRA",
-    "home_nation": "FRA",
-    "name": "Vaitoare",
-    "population": 5946.0,
-    "production": 1.8,
-    "x": 396.4,
-    "y": 1481.6,
-    "landmass": "french_polynesia",
-    "capital": false
-  },
-  {
     "id": "QAT-DOH",
     "nation": "QAT",
     "home_nation": "QAT",
@@ -7186,6 +7126,18 @@
     "y": 632.9,
     "landmass": "continent",
     "capital": true
+  },
+  {
+    "id": "ROU-CLJ",
+    "nation": "ROU",
+    "home_nation": "ROU",
+    "name": "Cluj-Napoca",
+    "population": 286598.0,
+    "production": 86.0,
+    "x": 2828.1,
+    "y": 600.4,
+    "landmass": "continent",
+    "capital": false
   },
   {
     "id": "ROU-IAS",
@@ -7260,6 +7212,18 @@
     "capital": false
   },
   {
+    "id": "RUS-DON",
+    "nation": "RUS",
+    "home_nation": "RUS",
+    "name": "Donetsk",
+    "population": 901645.0,
+    "production": 270.5,
+    "x": 3025.0,
+    "y": 583.1,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "RUS-DUD",
     "nation": "RUS",
     "home_nation": "RUS",
@@ -7296,6 +7260,18 @@
     "capital": false
   },
   {
+    "id": "RUS-KGD",
+    "nation": "RUS",
+    "home_nation": "RUS",
+    "name": "Kaliningrad",
+    "population": 490449.0,
+    "production": 147.1,
+    "x": 2784.1,
+    "y": 490.1,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "RUS-KRAS",
     "nation": "RUS",
     "home_nation": "RUS",
@@ -7328,6 +7304,18 @@
     "production": 178.9,
     "x": 3159.7,
     "y": 653.1,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "RUS-MAR",
+    "nation": "RUS",
+    "home_nation": "RUS",
+    "name": "Mariupol",
+    "population": 425681.0,
+    "production": 127.7,
+    "x": 3021.4,
+    "y": 595.9,
     "landmass": "continent",
     "capital": false
   },
@@ -7544,6 +7532,18 @@
     "production": 349.0,
     "x": 3196.3,
     "y": 511.0,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "RUS-SEV",
+    "nation": "RUS",
+    "home_nation": "RUS",
+    "name": "Sevastopol",
+    "population": 547820.0,
+    "production": 164.3,
+    "x": 2965.6,
+    "y": 630.3,
     "landmass": "continent",
     "capital": false
   },
@@ -8604,6 +8604,18 @@
     "capital": false
   },
   {
+    "id": "TWN-KAO",
+    "nation": "TWN",
+    "home_nation": "TWN",
+    "name": "Kaohsiung",
+    "population": 2734000.0,
+    "production": 820.2,
+    "x": 4170.9,
+    "y": 935.7,
+    "landmass": "taiwan",
+    "capital": false
+  },
+  {
     "id": "TWN-TAI",
     "nation": "TWN",
     "home_nation": "TWN",
@@ -8760,6 +8772,18 @@
     "capital": false
   },
   {
+    "id": "UKR-KHE",
+    "nation": "UKR",
+    "home_nation": "UKR",
+    "name": "Kherson",
+    "population": 279131.0,
+    "production": 83.7,
+    "x": 2953.0,
+    "y": 602.3,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "UKR-KYI",
     "nation": "UKR",
     "home_nation": "UKR",
@@ -8772,6 +8796,18 @@
     "capital": true
   },
   {
+    "id": "UKR-LVI",
+    "nation": "UKR",
+    "home_nation": "UKR",
+    "name": "Lviv",
+    "population": 717273.0,
+    "production": 215.2,
+    "x": 2833.7,
+    "y": 557.8,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "UKR-ODE",
     "nation": "UKR",
     "home_nation": "UKR",
@@ -8780,6 +8816,18 @@
     "production": 303.2,
     "x": 2927.0,
     "y": 604.4,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
+    "id": "UKR-ZAP",
+    "nation": "UKR",
+    "home_nation": "UKR",
+    "name": "Zaporizhzhia",
+    "population": 710052.0,
+    "production": 213.0,
+    "x": 2988.0,
+    "y": 585.6,
     "landmass": "continent",
     "capital": false
   },
@@ -9190,6 +9238,18 @@
     "y": 668.0,
     "landmass": "continent",
     "capital": false
+  },
+  {
+    "id": "VCT-KIN",
+    "nation": "VCT",
+    "home_nation": "VCT",
+    "name": "Kingstown",
+    "population": 24518.0,
+    "production": 7.4,
+    "x": 1649.6,
+    "y": 1067.3,
+    "landmass": "north_america",
+    "capital": true
   },
   {
     "id": "VEN-CBL",

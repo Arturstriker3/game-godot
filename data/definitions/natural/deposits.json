@@ -49428,32 +49428,6 @@
 			"source": "USGS MRDS WFS compact"
 		},
 		{
-			"id": "DEP-IRON-000587",
-			"territory": "TRT000553",
-			"owner": "ATF",
-			"resource": "iron",
-			"px": 3333.4,
-			"py": 2263.8,
-			"lon": 60.0,
-			"lat": -73.0,
-			"quantity_kt": 6488.534,
-			"recoverable_kt": 2919.84,
-			"quality": 0.421,
-			"depth_m": 104,
-			"extraction_cost": 39.5,
-			"required_tech": 2,
-			"max_rate_kt_day": 1.0,
-			"discovery_difficulty": 0.75,
-			"sites": 1,
-			"status": "Occurrence",
-			"names": [
-				"Mount Ruker Banded Iron-Formation"
-			],
-			"data_quality": "real_location_estimated_attributes",
-			"_scale_fixed": true,
-			"source": "USGS MRDS WFS compact"
-		},
-		{
 			"id": "DEP-GOLD-000292",
 			"territory": "TRT000555",
 			"owner": "USA",
@@ -146396,7 +146370,7 @@
 		{
 			"id": "DEP-PHOSPHATE-903443",
 			"territory": "TRT000713",
-			"owner": "FRA",
+			"owner": "ECU",
 			"resource": "phosphate",
 			"px": 435.2,
 			"py": 1456.7,
@@ -146828,7 +146802,7 @@
 		{
 			"id": "DEP-PHOSPHATE-903463",
 			"territory": "TRT000737",
-			"owner": "USA",
+			"owner": "PNG",
 			"resource": "phosphate",
 			"px": 4818.4,
 			"py": 1257.2,

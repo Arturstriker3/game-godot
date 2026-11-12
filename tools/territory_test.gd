@@ -7,9 +7,11 @@ extends SceneTree
 const MAIN_SCENE := "res://game/main_game.tscn"
 const OWNER_COLUMNS := 64
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-## Nação sem nenhuma província admin-1 no atlas (dado real): Vaticano. Não é
-## uma falha do mapa — a cidade existe e a economia lhe dá terra pela fração.
-const NO_PROVINCE_NATIONS := ["VAT"]
+## Nação jogável sem nenhuma província admin-1 no atlas. Hoje a lista é vazia:
+## os microestados (VAT/SMR/MCO/LIE) foram fundidos nos vizinhos pela curadoria
+## (tools/world_nation_curation.py, MICROSTATES) e saíram do roster, então não
+## existe exceção legítima — qualquer nação jogável sem província é falha.
+const NO_PROVINCE_NATIONS: Array[String] = []
 
 
 func _init() -> void:
@@ -32,8 +34,9 @@ func _run() -> void:
 		quit(1)
 		return
 
-	# (a) cada nação jogável tem províncias — exceto as declaradas sem nenhuma
-	# no atlas (Vaticano). A lista vem do nations.json (66), não de tags fixas.
+	# (a) cada nação jogável tem províncias. A lista de exceções é vazia desde a
+	# curadoria r2 (VAT anexado à ITA); a checagem vem do nations.json (177),
+	# não de tags fixas.
 	var empty_nations: Array[String] = []
 	for tag: String in GeographyServiceScript.playable_tags():
 		var atlas_tag := GeographyServiceScript.province_tag(tag)
