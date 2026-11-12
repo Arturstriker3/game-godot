@@ -212,8 +212,9 @@ const ICON_COLOR := Color("#E8E2D0")          # marfim: alto contraste no selo e
 ## LOD de zoom em 3 níveis, com histerese (não pisca na fronteira) e fade curto
 ## de 150 ms. A distância é a da câmera ao ponto do chão que ela mira — a mesma
 ## referência do enquadramento (d=52 perto, 120 médio, 260 longe).
-##   LONGE  (estratégico) > 178 u: só bolas/ícones (capitais um pouco maiores);
-##           sem nomes, bandeiras, portos, tecido urbano ou veículos.
+##   LONGE  (estratégico) > 178 u: só CAPITAIS (estrela + selo), sem nomes,
+##           bandeiras, portos, tecido urbano ou veículos; as demais cidades
+##           não têm marcador nenhum (nem bola).
 ##   MÉDIO  (66..168)      : capitais com bandeira + nome; demais só bola pequena;
 ##           cidades da nação do jogador também têm nome.
 ##   PERTO  (<= 74)        : todos os nomes, portos, construções, tecido e veículos.
@@ -622,8 +623,21 @@ func pick_city(screen_position: Vector2, camera: Camera3D) -> String:
 ## porto/construção): o footprint desenhado com o piso comum de MapPick.
 ## É a fonte única do hover e do clique — não há valor por tipo.
 func place_pick_radius_px(place_id: String, camera: Camera3D) -> float:
+	var record: Dictionary = _records_by_id.get(place_id, {})
+	if not record.is_empty() and not _place_pickable(record):
+		return 0.0
 	return MapPickScript.pick_radius_px(camera, _place_position(place_id),
 			_place_footprint(place_id))
+
+
+## O lugar responde a hover/clique no nível atual? No LONGE só a capital tem
+## marcador desenhado — as demais cidades e os portos não são alvo (nem hover,
+## nem clique). Nos níveis MÉDIO e PERTO nada muda.
+func _place_pickable(record: Dictionary) -> bool:
+	if _zoom_level != ZoomLevel.FAR:
+		return true
+	return String(record.get("kind", "")) == "city" \
+			and bool(record.get("capital", false))
 
 
 ## Melhor lugar da lista sob o cursor (score < 1 dentro do raio de tela).
@@ -634,6 +648,8 @@ func _pick_place(nodes: Array, screen_position: Vector2, camera: Camera3D) -> St
 	var best_score := 1.0
 	var right := camera.global_transform.basis.x
 	for record in nodes:
+		if not _place_pickable(record):
+			continue
 		var world: Vector3 = to_global(record["position"] \
 				+ Vector3(_wrap_offset(float(record["position"].x)), 0.0, 0.0))
 		if camera.is_position_behind(world):
@@ -875,7 +891,13 @@ func _nation_of_city(city_id: String) -> String:
 
 
 ## Realce de hover: versão ainda mais discreta, no mesmo ponto da seleção.
+## No LONGE, só a capital tem marcador: hover de outra cidade/porto é ignorado
+## (o pick já devolve vazio; o guarda evita anel sobre o que não está desenhado).
 func set_hover(place_id: String) -> void:
+	if not place_id.is_empty():
+		var record: Dictionary = _records_by_id.get(place_id, {})
+		if not record.is_empty() and not _place_pickable(record):
+			place_id = ""
 	# Cor do nome + ícone: destaca a construção sob o cursor (indica clicável).
 	if _hovered_id != place_id:
 		_set_label_color(_hovered_id, false)
@@ -2284,7 +2306,7 @@ func _refresh_level_targets(snap: bool) -> void:
 
 
 ## O nível atual mostra o nome desta cidade? PERTO: todas. MÉDIO: capitais e a
-## nação do jogador. LONGE: nenhuma (só bolas/ícones).
+## nação do jogador. LONGE: nenhuma (só as capitais têm marcador, sem nome).
 func _city_label_wanted(record: Dictionary) -> bool:
 	if _zoom_level == ZoomLevel.NEAR:
 		return true
@@ -2296,9 +2318,18 @@ func _city_label_wanted(record: Dictionary) -> bool:
 			and String(record.get("nation", "")) == _player_nation
 
 
+## O nível atual desenha o marcador desta cidade? No LONGE só a capital tem
+## estrela/selo; as demais cidades somem por completo (sem bola, sem disco).
+func _city_marker_wanted(record: Dictionary) -> bool:
+	return _zoom_level != ZoomLevel.FAR or bool(record.get("capital", false))
+
+
 ## O glifo (prédios/estrela) acompanha o nome; a capital mantém a estrela no
-## nível LONGE. A bola do selo aparece em todos os níveis.
+## nível LONGE. A bola do selo aparece em todos os níveis (só para capitais no
+## LONGE, ver `_city_marker_wanted`).
 func _want_city_glyph(record: Dictionary) -> bool:
+	if _zoom_level == ZoomLevel.FAR:
+		return bool(record.get("capital", false))
 	return bool(record.get("capital", false)) \
 			or _zoom_level == ZoomLevel.NEAR \
 			or float(record.get("label_alpha", 0.0)) > 0.5
@@ -3129,8 +3160,8 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
 	var ring: Sprite3D = record.get("ring")
 	if ring != null:
-		# A bola do selo existe em TODOS os níveis (visão estratégica).
-		ring.visible = true
+		# A bola do selo existe em todos os níveis; no LONGE só a capital tem.
+		ring.visible = _city_marker_wanted(record)
 		ring.transparency = 0.0
 
 
@@ -3162,15 +3193,17 @@ func _apply_port_lod(record: Dictionary, distance: float,
 
 func _apply_city_lod(record: Dictionary, distance: float,
 		on_screen: bool) -> void:
-	if on_screen:
+	if on_screen and _city_marker_wanted(record):
 		_visible_city_records.append(record)
 	_apply_place_label_lod(record, distance)
 
 	# Marcador discreto (continental) das cidades detalhadas: só no nível LONGE,
-	# quando a bola do MultiMesh/Sprite já tomou o lugar do nome.
+	# quando a bola do MultiMesh/Sprite já tomou o lugar do nome — e só para a
+	# capital, que é a única cidade com marcador nesse nível.
 	var discs: Array = record["discs"]
 	if not discs.is_empty():
-		var marker_alpha := 1.0 if _zoom_level == ZoomLevel.FAR else 0.0
+		var marker_alpha := 1.0 if _zoom_level == ZoomLevel.FAR \
+				and _city_marker_wanted(record) else 0.0
 		for disc in discs:
 			var mesh := disc as MeshInstance3D
 			mesh.visible = marker_alpha > 0.01
@@ -3329,10 +3362,11 @@ func _apply_lod_city(record: Dictionary, camera_local: Vector3,
 	var detailed := bool(record.get("detailed", false))
 	if _zoom_level == ZoomLevel.FAR and not detailed:
 		# Nível estratégico: sem nome/tecido; a bola usa um pixel_size único do
-		# zoom (sem sqrt por cidade). Só o culling de tela decide quem entra.
+		# zoom (sem sqrt por cidade). Só a capital entra — as demais cidades não
+		# têm marcador nenhum no LONGE.
 		record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * _zoom_distance,
 				LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
-		if _in_view(record, camera):
+		if _city_marker_wanted(record) and _in_view(record, camera):
 			_visible_city_records.append(record)
 		return
 	dx += wrap
@@ -3451,6 +3485,10 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 	var ring_index := 0
 	for record in _visible_city_records:
 		if bool(record.get("detailed", false)):
+			continue
+		# Troca de nível: a lista visível pode ser do nível anterior; no LONGE
+		# só a capital desenha (nada de bolinha de cidade comum).
+		if not _city_marker_wanted(record):
 			continue
 		# A lista já passou pelo culling de tela no scan; a instância usa a
 		# posição LOCAL do mapa (sem to_global/to_local por ícone).

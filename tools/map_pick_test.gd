@@ -11,11 +11,19 @@ extends SceneTree
 ## Desseleção: clique repetido no mesmo item, clique em área vazia, Esc e
 ## fechamento do painel removem o anel — em cidade, porto/construção e jazida.
 ##
+## LONGE: só a capital tem marcador, então só ela responde a clique/hover; as
+## demais cidades e os portos não são alvo nesse nível.
+##
 ##   godot --headless --path . --script res://tools/map_pick_test.gd
 
 const MAIN_SCENE := "res://game/main_game.tscn"
 const MAX_DELTA_PX := 1.0
 const CAMERA_OFFSET := Vector3(0.0, 50.0, 30.0)
+## Mesmo enquadramento a > 178 u do alvo (nível LONGE do LOD).
+const CAMERA_OFFSET_FAR := Vector3(0.0, 200.0, 120.0)
+## Espelha `CityWorld.ZoomLevel.FAR` (usar a classe aqui forçaria o compile de
+## city_world.gd antes dos autoloads no modo --script).
+const FAR_LEVEL := 2
 ## Canto superior esquerdo: era aqui que o rótulo de Caracas (projetado no plano
 ## da câmera) roubava o clique "vazio" e abria o painel.
 const EMPTY_SCREEN := Vector2(4.0, 4.0)
@@ -51,6 +59,7 @@ func _run() -> void:
 	await _test_city_toggle()
 	await _test_deposit_toggle()
 	await _test_empty_and_escape()
+	await _test_far_capitals_only()
 
 	_game.queue_free()
 	await process_frame
@@ -439,6 +448,108 @@ func _test_empty_and_escape() -> void:
 	if not _hud._menu_layer.visible:
 		_failures.append("Esc sem seleção/janela não abriu o menu de pausa")
 	_close_overlay()
+
+
+# --- LONGE: só capitais -------------------------------------------------------
+
+## No nível LONGE o mapa desenha apenas capitais (estrela + selo): cidade comum
+## e porto não podem responder a clique nem a hover. A capital continua
+## clicável e com o anel de hover no ícone.
+func _test_far_capitals_only() -> void:
+	_close_overlay()
+	_world.clear_selection()
+	_world.set_hover("")
+	var capital := await _find_far_city(true)
+	var common := await _find_far_city(false)
+	if capital.is_empty() or common.is_empty():
+		_failures.append("LONGE: sem capital/cidade comum na tela para testar")
+		return
+	await _focus_far(_world.city_world_position(capital))
+	var capital_center := _camera.unproject_position(
+			_world.city_world_position(capital))
+	var capital_hit: String = _world.pick_city(capital_center, _camera)
+	var capital_radius: float = _world.place_pick_radius_px(capital, _camera)
+	if capital_hit != capital or capital_radius <= 0.0:
+		_failures.append("LONGE: capital %s não respondeu (hit='%s' raio=%.1f)"
+				% [capital, capital_hit, capital_radius])
+	_world.set_hover(capital)
+	if _world._hover == null or not _world._hover.visible:
+		_failures.append("LONGE: capital %s sem anel de hover" % capital)
+	_world.set_hover("")
+
+	await _focus_far(_world.city_world_position(common))
+	var common_center := _camera.unproject_position(
+			_world.city_world_position(common))
+	var common_hit: String = _world.pick_city(common_center, _camera)
+	var common_radius: float = _world.place_pick_radius_px(common, _camera)
+	if common_hit == common:
+		_failures.append("LONGE: cidade comum %s ainda é clicável" % common)
+	if common_radius > 0.0:
+		_failures.append("LONGE: cidade comum %s com raio de pick %.1f"
+				% [common, common_radius])
+	_world.set_hover(common)
+	if _world._hover != null and _world._hover.visible:
+		_failures.append("LONGE: cidade comum %s com anel de hover" % common)
+	_world.set_hover("")
+
+	var port := await _find_far_port()
+	if not port.is_empty():
+		await _focus_far(_world.port_world_position(port))
+		var port_center := _camera.unproject_position(
+				_world.port_world_position(port))
+		if _world.pick_port(port_center, _camera) == port:
+			_failures.append("LONGE: porto %s ainda é clicável" % port)
+	print("LONGE: capital=%s clicável/hover | comum=%s e porto=%s sem alvo"
+			% [capital, common, port])
+	_world.set_hover("")
+	_close_overlay()
+
+
+## Cidade (capital ou comum) cujo centro foi para a tela no LONGE e cujo pick
+## responde como esperado (capital acerta; comum não acerta ela mesma).
+func _find_far_city(capital: bool) -> String:
+	for record in _world._city_nodes:
+		if bool(record.get("capital", false)) != capital:
+			continue
+		var id := String(record["id"])
+		await _focus_far(_world.city_world_position(id))
+		var center := _camera.unproject_position(_world.city_world_position(id))
+		if not Rect2(Vector2.ZERO, Vector2(root.size)).grow(-4.0).has_point(center):
+			continue
+		var hit: String = _world.pick_city(center, _camera)
+		if capital:
+			if hit == id:
+				return id
+		elif hit != id:
+			return id
+	return ""
+
+
+## Porto não fundido no tecido urbano que fica na tela no LONGE.
+func _find_far_port() -> String:
+	for record in _world._port_nodes:
+		if bool(record.get("fused", false)):
+			continue
+		var id := String(record["id"])
+		await _focus_far(_world.port_world_position(id))
+		var center := _camera.unproject_position(_world.port_world_position(id))
+		if Rect2(Vector2.ZERO, Vector2(root.size)).grow(-4.0).has_point(center):
+			return id
+	return ""
+
+
+## Coloca a câmera no nível LONGE (> 178 u) do alvo e espera o LOD trocar de
+## nível e o fade de 150 ms terminar (nome/bandeira ainda visíveis por um
+## instante continuariam clicáveis e falseariam as asserções).
+func _focus_far(world_pos: Vector3) -> void:
+	_camera.global_position = world_pos + CAMERA_OFFSET_FAR
+	_camera.look_at(world_pos, Vector3.UP)
+	for _frame in 40:
+		await process_frame
+		var fading: Variant = _world.get("_level_fade_queue")
+		if _world.zoom_level() == FAR_LEVEL and fading is Array \
+				and fading.is_empty():
+			break
 
 
 # --- Apoio --------------------------------------------------------------------

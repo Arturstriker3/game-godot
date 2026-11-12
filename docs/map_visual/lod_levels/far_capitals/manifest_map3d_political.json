@@ -1,0 +1,34 @@
+{
+  "bench": {},
+  "city_count": 802,
+  "distances": [
+    260.0
+  ],
+  "engine": "4.7.2-stable (official)",
+  "mode": "political",
+  "renderer": "forward_plus",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_political_d260.png": {
+      "distance": 260.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/lod_levels/far_capitals/map3d_political_d260.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "saved": true,
+      "urban_cities": 0
+    }
+  },
+  "tag": "far_capitals",
+  "timestamp": "2026-11-12T17:53:01",
+  "warnings": []
+}
