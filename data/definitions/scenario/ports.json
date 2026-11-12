@@ -653,7 +653,7 @@
     "nation": "ITA",
     "x": 2672.1,
     "y": 670.8,
-    "landmass": "europe",
+    "landmass": "continent",
     "port_of": "ITA-ROM"
   },
   {
@@ -878,7 +878,7 @@
     "nation": "NED",
     "x": 2588.5,
     "y": 508.4,
-    "landmass": "europe",
+    "landmass": "continent",
     "port_of": "NED-GRO"
   },
   {
@@ -941,7 +941,7 @@
     "nation": "RUS",
     "x": 4481.8,
     "y": 600.6,
-    "landmass": "europe",
+    "landmass": "continent",
     "port_of": "RUS-YUZ"
   },
   {

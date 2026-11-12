@@ -9,12 +9,21 @@ class_name GeographyService
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
 const AGRICULTURE_PATH := "res://data/definitions/natural/agriculture.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
+## Natureza/aptidão POR PROVÍNCIA (admin-1), gerada por
+## tools/build_province_nature.py com WorldClim 2.1 no centróide de cada
+## província. É a fonte fina: o território (739 regiões) é grosso e o seu
+## centróide caía no deserto — Egito/Israel/Líbano ficavam com aptidão 0.
+## Sem o arquivo, o serviço mantém o fallback por território.
+const PROVINCE_NATURE_PATH := "res://data/definitions/natural/province_nature.json"
 const NAV_MASK_PATH := "res://map/map_data/nav_mask.png"
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 ## Províncias admin-1 do atlas (Natural Earth), a unidade da bacia de captação
 ## agrícola. Cada província tem id global, nation (tag do jogo), country (ISO-3)
 ## e centróide em pixels 5000×2500.
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
+## Grade espacial (px) para achar a província mais próxima de um ponto sem
+## varrer as 4.529 a cada depósito. Célula ~900 km no equador.
+const PROVINCE_GRID_CELL := 50.0
 
 ## Regra de água (igual a tools/build_resource_map.py): nada de recurso
 ## terrestre no mar; petróleo/gás offshore só até 20 células (~320 km) da
@@ -47,6 +56,20 @@ static var _province_tag_by_nation: Dictionary = {}
 static var _nation_by_province_tag: Dictionary = {}
 static var _playable_cache: Dictionary = {}
 static var _registry_ready := false
+## tag do jogo -> {region, population, gdp_ppp_bn} de nations.json. Fonte da
+## renda externa (PIB PPP per capita) aplicada ao núcleo.
+static var _nation_rows_cache: Dictionary = {}
+## tag -> {index, per_capita_ppp, estimated, region}. Calculado uma vez.
+static var _nation_income_cache: Dictionary = {}
+static var _nation_income_meta: Dictionary = {}
+static var _nation_income_ready := false
+
+## Renda externa: piso do índice (fração da média mundial). Sem piso, países
+## pobres ficariam com ~0,04 da média e a cidade sem terra não importaria nada —
+## fome total por falta de um dado, não por economia. 10% mantém a fragilidade
+## (0,0012/pessoa/dia) sem zerar. O índice é renormalizado DEPOIS do piso para a
+## média mundial ponderada por população continuar 1,0 (ver balance_review §20).
+const NATION_INCOME_FLOOR := 0.10
 
 ## Culturas básicas da cesta alimentar (B3) e fator calórico (tonelada-
 ## equivalente de grão; fonte FAO/USDA em economy_sim.h). A fazenda inicial
@@ -108,6 +131,16 @@ var _area_by_territory: Dictionary = {}
 var _provinces: Array = []              # [{id, nation, country, x, y}] (admin-1)
 var _area_by_province: Dictionary = {}  # province_id -> km²
 var _province_territory: Dictionary = {}  # province_id -> territory_id (herança)
+## province_id (int) -> {crops, cultivable, forest_cover, ...} do
+## province_nature.json. Ausente = província sem raster (centróide em água):
+## cai no fallback do território, declarado em vez de inventado.
+var _province_nature: Dictionary = {}
+## ISO-3 da nação -> [province_id] (aptidão nacional = melhor província).
+var _province_by_code: Dictionary = {}
+## Grade espacial das províncias para `_nearest_province()` (depósitos).
+var _province_grid: Dictionary = {}     # Vector2i -> [province_id]
+var _province_center: Dictionary = {}   # province_id -> Vector2 px
+var _province_tag: Dictionary = {}      # province_id -> tag do jogo
 var _catchment: Dictionary = {}  # city_id -> [province_id] (atribuição A1)
 ## city_id -> {province_id: fração}. Ausente = 1.0 (província inteira). Só é
 ## fracionária na divisão de uma província entre uma cidade cercada e a vizinha
@@ -139,12 +172,21 @@ static func _load_registry() -> void:
 	_province_tag_by_nation.clear()
 	_nation_by_province_tag.clear()
 	_playable_cache.clear()
+	_nation_rows_cache.clear()
+	_nation_income_cache.clear()
+	_nation_income_meta.clear()
+	_nation_income_ready = false
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(NATIONS_PATH))
 	var tags: Array = []
 	if typeof(parsed) == TYPE_ARRAY:
 		for nation in parsed:
 			if typeof(nation) == TYPE_DICTIONARY and String(nation.get("id", "")) != "":
 				tags.append(String(nation["id"]))
+				_nation_rows_cache[String(nation["id"])] = {
+					"region": String(nation.get("region", "")),
+					"population": float(nation.get("population", 0.0)),
+					"gdp_ppp_bn": float(nation.get("gdp_ppp_bn", 0.0)),
+				}
 	if tags.is_empty():
 		tags = ["GBR", "FRA", "DEU", "NED", "BEL", "VEN", "SUR", "GUY"]
 	for tag: String in tags:
@@ -193,6 +235,143 @@ static func is_playable(tag: String) -> bool:
 	return _playable_cache.has(tag)
 
 
+# --- Renda externa por PIB PPP per capita (balance_review §20) --------------
+
+## Mediana de uma lista de floats (cópia ordenada; lista vazia -> 0.0).
+static func _median(values: Array) -> float:
+	if values.is_empty():
+		return 0.0
+	var sorted := values.duplicate()
+	sorted.sort()
+	var count := sorted.size()
+	if count % 2 == 1:
+		return float(sorted[count / 2])
+	return (float(sorted[count / 2 - 1]) + float(sorted[count / 2])) * 0.5
+
+
+## Calcula, uma vez, o índice de renda externa de cada nação:
+##  1. PIB PPP per capita real = gdp_ppp_bn × 1e9 / population (nations.json);
+##  2. nação sem PIB/população -> MEDIANA DA SUA REGIÃO, marcada `estimated`
+##     (sem mediana regional -> mediana mundial);
+##  3. índice = per capita / média mundial ponderada por população, com PISO
+##     NATION_INCOME_FLOOR, renormalizado até a média ponderada voltar a 1,0.
+## A média ponderada 1,0 preserva a escala do núcleo (0,012/pessoa/dia).
+## Não inventa renda: quem não tem dado é declarado estimado pela região.
+static func _build_nation_income() -> void:
+	_load_registry()
+	if _nation_income_ready:
+		return
+	_nation_income_ready = true
+	var per_capita := {}
+	var region_values := {}
+	for tag: String in _nation_rows_cache:
+		var row: Dictionary = _nation_rows_cache[tag]
+		var gdp := float(row.get("gdp_ppp_bn", 0.0)) * 1_000_000_000.0
+		var population := float(row.get("population", 0.0))
+		if gdp <= 0.0 or population <= 0.0:
+			continue
+		var value := gdp / population
+		per_capita[tag] = value
+		var region := String(row.get("region", ""))
+		if not region_values.has(region):
+			region_values[region] = []
+		region_values[region].append(value)
+	var region_median := {}
+	for region: String in region_values:
+		region_median[region] = _median(region_values[region])
+	var world_median := _median(per_capita.values())
+	if world_median <= 0.0:
+		# Sem nations.json válido: não declara renda nenhuma (índice neutro).
+		_nation_income_meta = {"available": false, "reason": "nations.json sem PIB"}
+		return
+	# Média mundial ponderada pela população das nações com dado.
+	var weight_total := 0.0
+	var weighted_sum := 0.0
+	for tag: String in per_capita:
+		var population := float(_nation_rows_cache[tag].get("population", 0.0))
+		weight_total += population
+		weighted_sum += per_capita[tag] * population
+	if weight_total <= 0.0:
+		_nation_income_meta = {"available": false, "reason": "população ausente"}
+		return
+	var world_mean := weighted_sum / weight_total
+	var raw := {}
+	var estimated: Array = []
+	for tag: String in _nation_rows_cache:
+		if per_capita.has(tag):
+			raw[tag] = per_capita[tag]
+		else:
+			estimated.append(tag)
+			var region := String(_nation_rows_cache[tag].get("region", ""))
+			raw[tag] = float(region_median.get(region, world_median))
+	# Índice com piso + renormalização iterativa (o piso muda a média).
+	var index := {}
+	for tag: String in raw:
+		index[tag] = maxf(float(raw[tag]) / world_mean, NATION_INCOME_FLOOR)
+	var total_weight := 0.0
+	for tag: String in _nation_rows_cache:
+		total_weight += float(_nation_rows_cache[tag].get("population", 0.0))
+	if total_weight <= 0.0:
+		total_weight = 1.0
+	for _pass in 8:
+		var mean := 0.0
+		for tag: String in index:
+			mean += float(index[tag]) \
+					* float(_nation_rows_cache[tag].get("population", 0.0))
+		mean /= total_weight
+		if mean <= 0.0 or absf(mean - 1.0) < 1e-9:
+			break
+		for tag: String in index:
+			index[tag] = float(index[tag]) / mean
+	var floored: Array = []
+	_nation_income_cache.clear()
+	for tag: String in index:
+		var value := float(index[tag])
+		var is_floored := value <= NATION_INCOME_FLOOR * 1.02
+		if is_floored:
+			floored.append(tag)
+		_nation_income_cache[tag] = {
+			"index": value,
+			"per_capita_ppp": float(raw[tag]),
+			"estimated": estimated.has(tag),
+			"region": String(_nation_rows_cache[tag].get("region", "")),
+			"floored": is_floored,
+		}
+	estimated.sort()
+	floored.sort()
+	_nation_income_meta = {
+		"available": true,
+		"world_mean_ppp_per_capita": world_mean,
+		"world_median_ppp_per_capita": world_median,
+		"nations": index.size(),
+		"nations_with_data": per_capita.size(),
+		"estimated_nations": estimated,
+		"floored_nations": floored,
+		"floor_index": NATION_INCOME_FLOOR,
+		"region_median_ppp_per_capita": region_median,
+	}
+
+
+## Perfil completo da renda externa (auditoria e testes). `by_nation` tem, por
+## tag, o índice, o PIB PPP per capita de origem, a região e as marcas
+## `estimated` (PIB ausente -> mediana regional) e `floored` (piso aplicado).
+func nation_income_profile() -> Dictionary:
+	_build_nation_income()
+	return {
+		"meta": _nation_income_meta.duplicate(true),
+		"by_nation": _nation_income_cache.duplicate(true),
+	}
+
+
+## Índice de renda externa de uma nação (1,0 = média mundial; 0,0 = sem dado e
+## sem registro). Cidade sem nação conhecida recebe 1,0 (comportamento legado do
+## cenário sintético, nunca 0 por acidente).
+func external_income_index(tag: String) -> float:
+	_build_nation_income()
+	var entry: Dictionary = _nation_income_cache.get(tag, {})
+	return float(entry.get("index", 1.0))
+
+
 ## Carrega os JSON naturais. Idempotente.
 func load_data() -> bool:
 	if _loaded:
@@ -219,6 +398,48 @@ func territory_for(city_id: String, center_px: Vector2) -> String:
 	var best_id := _nearest_territory(center_px)
 	_territory_cache[city_id] = best_id
 	return best_id
+
+
+## Província cujo centróide está mais próximo de um ponto (grade espacial).
+## Usada para dizer a NAÇÃO de um depósito: o dado do MRDS é o ponto real, e a
+## província admin-1 é a menor unidade com nacionalidade no projeto. Empate fica
+## com o menor id (determinístico). 0 = nenhuma (dados não carregados).
+func _nearest_province(center_px: Vector2) -> int:
+	if _province_grid.is_empty():
+		return 0
+	var gx := int(floor(center_px.x / PROVINCE_GRID_CELL))
+	var gy := int(floor(center_px.y / PROVINCE_GRID_CELL))
+	var best_pid := 0
+	var best_distance := INF
+	var max_ring := int(ceil(MAP_W / PROVINCE_GRID_CELL))
+	for ring in range(0, max_ring + 1):
+		for dy in range(-ring, ring + 1):
+			for dx in range(-ring, ring + 1):
+				if maxi(absi(dx), absi(dy)) != ring:
+					continue
+				var cell: Variant = _province_grid.get(Vector2i(gx + dx, gy + dy))
+				if cell == null:
+					continue
+				for province_id: int in cell:
+					var point: Vector2 = _province_center.get(province_id, Vector2.ZERO)
+					var distance := point.distance_squared_to(center_px)
+					if distance < best_distance \
+							or (is_equal_approx(distance, best_distance) and province_id < best_pid):
+						best_distance = distance
+						best_pid = province_id
+		# Um anel k só pode conter ponto mais próximo se k*CELL < distância atual.
+		if best_pid != 0 and sqrt(best_distance) <= ring * PROVINCE_GRID_CELL:
+			break
+	return best_pid
+
+
+## Tag do jogo da nação dona de um ponto no mapa, pela província mais próxima.
+## É a regra de posse mineral: cada depósito pertence à nação da província onde
+## o ponto real do MRDS cai, não ao território natural (739 regiões grossas).
+func nation_tag_at(center_px: Vector2) -> String:
+	if not load_data():
+		return ""
+	return String(_province_tag.get(_nearest_province(center_px), ""))
 
 
 ## Território mais próximo de um ponto (sem cache por cidade).
@@ -301,22 +522,39 @@ func _nation_territories(code: String) -> Array:
 
 
 ## Depósitos de TODOS os territórios da nação (acesso nacional, não só o
-## território mais próximo da capital).
+## território mais próximo da capital). A nação de cada depósito vem da
+## província mais próxima do ponto real (regra de `nation_tag_at`).
 func deposits_for_nation(code: String) -> Array:
 	if not load_data():
 		return []
 	var result: Array = []
-	for territory_id in _nation_territories(code):
-		result.append_array(_deposits_by_territory.get(territory_id, []))
+	for deposit in _deposits:
+		if bool(deposit.get("facility", false)):
+			continue
+		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		var tag := nation_tag_at(point)
+		if tag != "" and nation_code(tag) == code:
+			result.append(deposit)
 	return result
 
 
-## Melhor aptidão da cultura entre os territórios da nação (a nação planta na
-## sua melhor região).
+## Melhor aptidão da cultura entre as províncias da nação (a nação planta na
+## sua melhor região). A fonte fina é province_nature.json: cada província tem
+## a própria aptidão medida. Sem ela, cai no melhor território (legado).
 func crop_suitability_nation(code: String, crop: String) -> float:
 	if not load_data():
 		return 0.0
 	var best := 0.0
+	var found := false
+	for province_id in _province_by_code.get(code, []):
+		var province_data: Dictionary = _province_nature.get(str(province_id), {})
+		if province_data.is_empty():
+			continue
+		found = true
+		var crops: Dictionary = province_data.get("crops", {})
+		best = maxf(best, clampf(float(crops.get(crop, 0.0)), 0.0, 1.0))
+	if found:
+		return best
 	for territory_id in _nation_territories(code):
 		var crops: Dictionary = _agriculture.get(territory_id, {})
 		best = maxf(best, clampf(float(crops.get(crop, 0.0)), 0.0, 1.0))
@@ -466,11 +704,22 @@ func _initial_staple(code: String, city_id: String = "") -> String:
 	return best
 
 
-## Maior cobertura florestal entre os territórios da nação.
+## Maior cobertura florestal entre as províncias da nação (fonte fina). Sem
+## province_nature.json, cai no melhor território (legado).
 func forest_cover_nation(code: String) -> float:
 	if not load_data():
 		return 0.0
 	var best := 0.0
+	var found := false
+	for province_id in _province_by_code.get(code, []):
+		var province_data: Dictionary = _province_nature.get(str(province_id), {})
+		if province_data.is_empty():
+			continue
+		found = true
+		best = maxf(best, clampf(
+			float(province_data.get("forest_cover", 0.0)), 0.0, 1.0))
+	if found:
+		return best
 	for territory_id in _nation_territories(code):
 		best = maxf(best, clampf(
 			float(_nature.get(territory_id, {}).get("forest_cover", 0.0)), 0.0, 1.0))
@@ -693,14 +942,24 @@ func city_crop_suitability(city_id: String, crop: String) -> float:
 	var weight := 0.0
 	for province_id in provinces:
 		var pid := int(province_id)
-		var tid := String(_province_territory.get(pid, ""))
-		if tid == "":
-			continue
 		var area := float(_area_by_province.get(pid, 0.0)) * province_share(city_id, pid)
-		var cultivable := clampf(
-			float(_nature.get(tid, {}).get("cultivable", 0.0)), 0.0, 1.0)
+		var cultivable: float
+		var value: float
+		var province_data: Dictionary = _province_nature.get(str(pid), {})
+		if not province_data.is_empty():
+			# Fonte fina: clima real amostrado no centróide DESTA província.
+			cultivable = clampf(float(province_data.get("cultivable", 0.0)), 0.0, 1.0)
+			var crops: Dictionary = province_data.get("crops", {})
+			value = clampf(float(crops.get(crop, 0.0)), 0.0, 1.0)
+		else:
+			# Fallback declarado: província sem raster herda o território.
+			var tid := String(_province_territory.get(pid, ""))
+			if tid == "":
+				continue
+			cultivable = clampf(
+				float(_nature.get(tid, {}).get("cultivable", 0.0)), 0.0, 1.0)
+			value = clampf(float(_agriculture.get(tid, {}).get(crop, 0.0)), 0.0, 1.0)
 		var w := area * cultivable
-		var value := clampf(float(_agriculture.get(tid, {}).get(crop, 0.0)), 0.0, 1.0)
 		weighted += w * value
 		weight += w
 	return weighted / weight if weight > 0.0 else 0.0
@@ -715,12 +974,17 @@ func city_forest_cover(city_id: String) -> float:
 	var weight := 0.0
 	for province_id in provinces:
 		var pid := int(province_id)
-		var tid := String(_province_territory.get(pid, ""))
-		if tid == "":
-			continue
 		var area := float(_area_by_province.get(pid, 0.0)) * province_share(city_id, pid)
-		var value := clampf(
-			float(_nature.get(tid, {}).get("forest_cover", 0.0)), 0.0, 1.0)
+		var value: float
+		var province_data: Dictionary = _province_nature.get(str(pid), {})
+		if not province_data.is_empty():
+			value = clampf(float(province_data.get("forest_cover", 0.0)), 0.0, 1.0)
+		else:
+			var tid := String(_province_territory.get(pid, ""))
+			if tid == "":
+				continue
+			value = clampf(
+				float(_nature.get(tid, {}).get("forest_cover", 0.0)), 0.0, 1.0)
 		weighted += area * value
 		weight += area
 	return weighted / weight if weight > 0.0 else 0.0
@@ -741,6 +1005,10 @@ func city_cultivable_area_km2(city_id: String) -> float:
 ## cultivável herdada do território natural que a contém. Útil para auditoria e
 ## para a partição da bacia (soma das cidades = soma das províncias da nação).
 func province_cultivable_area_km2(province_id: int) -> float:
+	var province_data: Dictionary = _province_nature.get(str(province_id), {})
+	if not province_data.is_empty():
+		return float(_area_by_province.get(province_id, 0.0)) \
+			* clampf(float(province_data.get("cultivable", 0.0)), 0.0, 1.0)
 	var tid := String(_province_territory.get(province_id, ""))
 	if tid == "":
 		return 0.0
@@ -868,21 +1136,19 @@ func assign_deposits(cities: Array) -> Dictionary:
 		return _deposits_by_city
 	_assign_signature = signature
 
-	var tag_of_code := {}
-	for tag: String in nation_codes():
-		tag_of_code[nation_code(tag)] = String(tag)
-
 	var assigned := {}
 	var owner_key := {}
 	for deposit in _deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var code := String(
-			_nature.get(String(deposit.get("territory", "")), {}).get("adm0_a3", ""))
-		var tag := String(tag_of_code.get(code, ""))
-		if tag == "":
-			continue
 		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		# Dono pela província mais próxima do PONTO REAL do depósito. O
+		# território natural agrupa 739 regiões grossas do mundo antigo; usar o
+		# adm0_a3 dele jogava 14,8% dos depósitos na nação errada (e deixava 98
+		# nações sem nenhum). A província admin-1 é o dado fino do atlas.
+		var tag := nation_tag_at(point)
+		if tag == "" or not is_playable(tag):
+			continue
 		var city_id := _nearest_city_of_nation(norm, tag, point)
 		if city_id == "":
 			continue
@@ -990,6 +1256,11 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 ## ignora produtos que não conhece (ex.: carvão/cobre/gás/petróleo ficam só no
 ## mapa por enquanto).
 ##
+## Também declara a RENDA EXTERNA de cada cidade: índice = PIB PPP per capita da
+## nação / média mundial ponderada por população (nations.json), com piso e
+## normalização (ver `_build_nation_income`). É renda de serviços/exportações
+## não modelados, paga pelo setor externo — não é subsídio uniforme.
+##
 ## Aptidão de cultura POR CIDADE: cada PROVÍNCIA da nação é atribuída a uma
 ## única cidade (regra A1, ver assign_provinces) e a aptidão da cidade é a
 ## média ponderada pela área cultivável da sua bacia (madeira: pela área com
@@ -1024,6 +1295,13 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		var center: Vector2 = city.get("center", Vector2.ZERO)
 		var code := nation_code(String(city.get("nation", "")))
 		var city_applied := {}
+		# Renda externa proporcional ao PIB PPP per capita da nação (§20).
+		# Declarada aqui porque é a mesma ponte dados->núcleo da geografia. O
+		# índice NÃO entra no mapa retornado: ele é {cultura: aptidão,
+		# mineral: reserva_kt} e os consumidores somam tudo que não é cultura
+		# como reserva. O valor sai por `external_income_index`/perfil.
+		var income_index := external_income_index(String(city.get("nation", "")))
+		sim.demo_set_external_income_index(city_id, income_index)
 		for crop in crops:
 			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
 			# Marselha planta como o seu entorno, não como a Beauce. Cidade sem
@@ -1169,6 +1447,11 @@ func _load_provinces() -> void:
 	_provinces.clear()
 	_area_by_province.clear()
 	_province_territory.clear()
+	_province_by_code.clear()
+	_province_grid.clear()
+	_province_center.clear()
+	_province_tag.clear()
+	_province_nature = _read_json(PROVINCE_NATURE_PATH).get("provinces", {})
 	var raw := _read_json(PROVINCES_PATH)
 	var province_areas: Dictionary = _read_json(PROVINCE_AREAS_PATH).get("areas", {})
 	for record in raw.get("provinces", []):
@@ -1177,14 +1460,28 @@ func _load_provinces() -> void:
 		var pid := int(record.get("id", 0))
 		if pid <= 0:
 			continue
+		var point := Vector2(float(record.get("x", 0.0)), float(record.get("y", 0.0)))
 		_provinces.append({
 			"id": pid,
 			"nation": String(record.get("nation", "")),
 			"country": String(record.get("country", "")),
-			"x": float(record.get("x", 0.0)),
-			"y": float(record.get("y", 0.0)),
+			"x": point.x,
+			"y": point.y,
 		})
 		_area_by_province[pid] = float(province_areas.get(str(pid), 0.0))
+		_province_center[pid] = point
+		var tag := nation_for_province_tag(String(record.get("nation", "")))
+		_province_tag[pid] = tag
+		if tag != "":
+			var code := nation_code(tag)
+			if not _province_by_code.has(code):
+				_province_by_code[code] = []
+			(_province_by_code[code] as Array).append(pid)
+		var cell := Vector2i(int(floor(point.x / PROVINCE_GRID_CELL)),
+				int(floor(point.y / PROVINCE_GRID_CELL)))
+		if not _province_grid.has(cell):
+			_province_grid[cell] = []
+		(_province_grid[cell] as Array).append(pid)
 	# Herança da aptidão/cobertura florestal pelo centróide da província: o
 	# território natural mais próximo (não restrito ao país — províncias
 	# ultramarinas como a Guiana Francesa herdam do território tropical vizinho,

@@ -71,7 +71,7 @@ ITA-NAP,Naples,ITA,2698.7,682.7,continent,ITA-NAP
 ITA-PAD,Padua,ITA,2666.9,619.8,continent,ITA-MIL
 ITA-PAL,Palermo,ITA,2685.9,721.1,continent,ITA-PAL
 ITA-ROM,Rome,ITA,2673.0,669.2,continent,ITA-ROM
-ITA-ROME,Rome,ITA,2672.1,670.8,europe,ITA-ROM
+ITA-ROME,Rome,ITA,2672.1,670.8,continent,ITA-ROM
 JPN-FUK,Fukuoka,JPN,4311.8,783.4,japan,JPN-FUK
 JPN-HAM,Hamamatsu,JPN,4413.1,768.1,japan,JPN-NAG
 JPN-HIR,Hiroshima,JPN,4339.9,772.4,japan,JPN-HIR
@@ -96,14 +96,14 @@ MNE-NIK,Nikšić,MNE,2760.9,658.9,continent,MNE-POD
 MNE-POD,Podgorica,MNE,2765.8,663.1,continent,MNE-POD
 MYS-KUC,Kuching,MYS,4032.6,1226.2,asia,MYS-KUC
 NED-AMS,Amsterdam,NED,2563.8,521.4,continent,NED-AMS
-NED-GRO,Groningen,NED,2588.5,508.4,europe,NED-GRO
+NED-GRO,Groningen,NED,2588.5,508.4,continent,NED-GRO
 NED-RTM,Rotterdam,NED,2557.2,528.5,continent,NED-RTM
 NOR-BER,Bergen,NOR,2574.2,411.7,continent,NOR-BER
 NOR-OSL,Oslo,NOR,2649.8,418.4,continent,NOR-OSL
 PRT-LIS,Lisbon,PRT,2373.4,712.6,continent,PRT-LIS
 PRT-POR,Porto,PRT,2380.7,679.0,continent,PRT-POR
 RUS-SAI,Saint Petersburg,RUS,2921.4,417.8,continent,RUS-SAI
-RUS-YUZ,Yuzhno-Sakhalinsk,RUS,4481.8,600.6,europe,RUS-YUZ
+RUS-YUZ,Yuzhno-Sakhalinsk,RUS,4481.8,600.6,continent,RUS-YUZ
 SAU-DAM,Dammam,SAU,3196.1,882.9,asia,SAU-DAM
 SAU-JED,Jeddah,SAU,3044.7,951.8,asia,SAU-JED
 SLV-SAN,San Salvador,SLV,1260.4,1062.0,north_america,SLV-SAN

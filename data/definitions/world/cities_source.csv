@@ -10,10 +10,10 @@ AGO,AGO-HUA,Huambo,Huambo,Huambo,-12.77611,15.73917,595304,2026,0,no,industrial,
 AGO,AGO-SAU,Saurimo,Saurimo,Saurimo,-9.66078,20.39155,393000,2026,0,no,regional,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,117.9,151.4
 AGO,AGO-LUM,Lumbala,Lumbala,Lumbala,-14.10165,21.43531,19000,2026,0,no,regional,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,5.7,61.7
 AIA,AIA-THE,The Valley,The Valley,El Valle,18.21704,-63.05783,2035,2026,1,city,capital,anguilla,city_proper,maior cidade disponível; fronteira a 14.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,0.6,14.7
-ALB,ALB-TIRA,Tirana,Tirana,Tirana,41.32744,19.81866,418495,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,125.5,53.5
-ALB,ALB-VLO,Vlorë,Vlorë,Vlorë,40.4696,19.48379,115261,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,34.6,79.6
+ALB,ALB-TIRA,Tirana,Tirana,Tirana,41.32744,19.81866,418495,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,125.5,53.5
+ALB,ALB-VLO,Vlorë,Vlorë,Vlorë,40.4696,19.48379,115261,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,34.6,79.6
 ALD,ALD-MAR,Mariehamn,Mariehamn,Mariehamn,60.09726,19.93481,10682,2026,1,city,capital,aland,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,3.2,227.4
-AND,AND-AND,Andorra la Vella,Andorra-a-Velha,Andorra la Vieja,42.50779,1.52109,20430,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 7.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,6.1,7.2
+AND,AND-AND,Andorra la Vella,Andorra-a-Velha,Andorra la Vieja,42.50779,1.52109,20430,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 7.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,6.1,7.2
 ARE,ARE-ABU,Abu Dhabi,Abu Dhabi,Abu Dhabi,24.45118,54.39696,1807000,2026,1,city,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,542.1,123.4
 ARE,ARE-DUB,Dubai,Dubai,Dubái,25.07725,55.30927,3790000,2026,0,yes,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1137.0,51.8
 ARG,ARG-BUEN,Buenos Aires,Buenos Aires,Buenos Aires,-34.61315,-58.37723,2891082,2026,1,city,capital,south_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,867.3,60.4
@@ -47,8 +47,8 @@ AUS,AUS-KAR,Karratha,Karratha,Karratha,-20.73765,116.84629,17013,2026,0,city,por
 AUS,AUS-BRO,Broome,Broome,Broome,-17.95538,122.23922,14660,2026,0,city,port,oceania,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,4.4,918.4
 AUS,AUS-MOR,Moree,Moree,Moree,-29.46278,149.84157,9779,2026,0,no,regional,oceania,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,2.9,2067.2
 AUS,AUS-WEI,Weipa,Weipa,Weipa,-12.62346,141.87883,2830,2026,0,city,port,oceania,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.8,362.3
-AUT,AUT-VIEN,Vienna,Viena,Viena,48.20849,16.37208,1691468,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 34.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,507.4,34.0
-AUT,AUT-GRAZ,Graz,Graz,Graz,47.06733,15.44197,303270,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 30.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,91.0,30.7
+AUT,AUT-VIEN,Vienna,Viena,Viena,48.20849,16.37208,1691468,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 34.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,507.4,34.0
+AUT,AUT-GRAZ,Graz,Graz,Graz,47.06733,15.44197,303270,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 30.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,91.0,30.7
 AZE,AZE-BAKU,Baku,Baku,Bakú,40.37767,49.89201,2351300,2026,1,city,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,705.4,156.7
 AZE,AZE-GAN,Ganja,Ganja,Ganja,40.68157,46.36134,330663,2026,0,no,regional,asia,city_proper,maior cidade disponível; fronteira a 34.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,99.2,34.2
 BDI,BDI-GIT,Gitega,Guitega,Guitega,-3.42708,29.92463,64904,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,19.5,60.9
@@ -70,16 +70,16 @@ BGD,BGD-NAGA,Nāgarpur,Nāgarpur,Nāgarpur,24.05783,89.87696,238422,2026,0,no,re
 BGD,BGD-BAR,Barishal,Barisal,Barisal,22.70497,90.37013,202242,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,60.7,101.4
 BGD,BGD-PAB,Pābna,Pābna,Pābna,24.00644,89.2372,186781,2026,0,no,regional,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,56.0,53.6
 BGD,BGD-RAM,Rāmganj,Rāmganj,Rāmganj,23.1006,90.84989,55241,2026,0,yes,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,16.6,42.7
-BGR,BGR-SOFI,Sofia,Sófia,Sofía,42.69751,23.32415,1152556,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,345.8,45.7
-BGR,BGR-PLOV,Plovdiv,Plovdiv,Plovdiv,42.15387,24.75001,329489,2026,0,no,regional,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,98.8,55.2
+BGR,BGR-SOFI,Sofia,Sófia,Sofía,42.69751,23.32415,1152556,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,345.8,45.7
+BGR,BGR-PLOV,Plovdiv,Plovdiv,Plovdiv,42.15387,24.75001,329489,2026,0,no,regional,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,98.8,55.2
 BHR,BHR-MAN,Manama,Manama,Manama,26.22787,50.58565,147074,2026,1,city,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,44.1,61.1
 BHS,BHS-NAS,Nassau,Nassau,Nasáu,25.05823,-77.34306,227940,2026,1,city,capital,bahamas,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,68.4,557.8
 BHS,BHS-LUC,Lucaya,Lucaya,Lucaya,26.53333,-78.66667,46525,2026,0,city,port,bahamas,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,14.0,739.9
-BIH,BIH-SARA,Sarajevo,Sarajevo,Sarajevo,43.84864,18.35644,696731,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,209.0,52.9
-BIH,BIH-BANJ,Banja Luka,Banja Luka,Banja Luka,44.77879,17.20629,221106,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 31.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,66.3,31.2
+BIH,BIH-SARA,Sarajevo,Sarajevo,Sarajevo,43.84864,18.35644,696731,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,209.0,52.9
+BIH,BIH-BANJ,Banja Luka,Banja Luka,Banja Luka,44.77879,17.20629,221106,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 31.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,66.3,31.2
 BLM,BLM-GUS,Gustavia,Gustavia,Gustavia,17.89618,-62.84978,5988,2026,1,city,capital,saint_barthelemy,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1.8,27.1
-BLR,BLR-MINS,Minsk,Minsk,Minsk,53.90019,27.56653,1742124,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,522.6,102.6
-BLR,BLR-HOM,Homyel',Gomel,Gómel,52.4345,30.9754,501193,2026,0,no,industrial,europe,city_proper,maior cidade disponível; fronteira a 24.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,150.4,24.0
+BLR,BLR-MINS,Minsk,Minsk,Minsk,53.90019,27.56653,1742124,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,522.6,102.6
+BLR,BLR-HOM,Homyel',Gomel,Gómel,52.4345,30.9754,501193,2026,0,no,industrial,continent,city_proper,maior cidade disponível; fronteira a 24.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,150.4,24.0
 BLZ,BLZ-BEL,Belmopan,Belmopan,Belmopán,17.25376,-88.76401,13381,2026,1,no,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,4.0,42.0
 BLZ,BLZ-BELI,Belize City,Cidade de Belize,Ciudad de Belice,17.49952,-88.19756,65222,2026,0,city,port,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,19.6,80.2
 BMU,BMU-HAM,Hamilton,Hamilton,Hamilton,32.2949,-64.78303,902,2026,1,city,capital,bermuda,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.3,1199.4
@@ -147,8 +147,8 @@ CAN,CAN-RAN,Rankin Inlet,Rankin Inlet,Rankin Inlet,62.80906,-92.08534,2975,2026,
 CAN,CAN-KUU,Kuujjuaq,Kuujjuaq,Kuujjuaq,58.10732,-68.39968,2668,2026,0,city,port,north_america,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.8,627.1
 CAN,CAN-IGL,Igloolik,Igloolik,Igloolik,69.37771,-81.79991,2049,2026,0,city,port,north_america,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.6,863.5
 CAN,CAN-CAM,Cambridge Bay,Cambridge Bay,Cambridge Bay,69.11489,-105.05484,1760,2026,0,city,port,north_america,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.5,797.7
-CHE,CHE-BERN,Bern,Berna,Berna,46.94809,7.44744,121631,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,36.5,36.9
-CHE,CHE-ZURI,Zürich,Zurique,Zúrich,47.36667,8.55,415367,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 19.9 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,124.6,19.9
+CHE,CHE-BERN,Bern,Berna,Berna,46.94809,7.44744,121631,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,36.5,36.9
+CHE,CHE-ZURI,Zürich,Zurique,Zúrich,47.36667,8.55,415367,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 19.9 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,124.6,19.9
 CHL,CHL-SAN,Santiago,Santiago,Santiago de Chile,-33.45694,-70.64827,4837295,2026,1,no,capital,south_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1451.2,54.7
 CHL,CHL-ANT,Antofagasta,Antofagasta,Antofagasta,-23.65094,-70.39752,401096,2026,0,city,port,south_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,120.3,212.4
 CHL,CHL-PUE,Puerto Montt,Puerto Montt,Puerto Montt,-41.4693,-72.94237,245902,2026,0,city,port,south_america,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,73.8,81.9
@@ -217,8 +217,8 @@ CYM,CYM-GEO,George Town,George Town,George Town,19.2866,-81.37436,29370,2026,1,c
 CYM,CYM-TIB,Tibbetts Turn,Tibbetts Turn,Tibbetts Turn,19.73345,-79.78374,1306,2026,0,no,regional,cayman,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.4,479.0
 CYP,CYP-NICO,Nicosia,Nicósia,Nicosia,35.17284,33.35397,200452,2026,1,no,capital,cyprus,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,60.1,0.0
 CYP,CYP-LIMA,Limassol,Limassol,Limasol,34.68406,33.03794,154000,2026,0,city,port,cyprus,city_proper,maior cidade disponível; fronteira a 4.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,46.2,4.0
-CZE,CZE-PRAG,Prague,Praga,Praga,50.08804,14.42076,1165581,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,349.7,55.6
-CZE,CZE-BRNO,Brno,Brno,Brno,49.19522,16.60796,404296,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 28.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,121.3,28.8
+CZE,CZE-PRAG,Prague,Praga,Praga,50.08804,14.42076,1165581,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,349.7,55.6
+CZE,CZE-BRNO,Brno,Brno,Brno,49.19522,16.60796,404296,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 28.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,121.3,28.8
 DEU,DEU-BER,Berlin,Berlim,Berlín,52.516799999999996,13.40639999999999,4371000,2026,1,no,capital,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,1821.3,49.3
 DEU,DEU-HAM,Hamburg,Hamburgo,Hamburgo,53.5536,9.993600000000015,2635500,2026,0,yes,port,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,790.6,86.0
 DEU,DEU-CGN,Cologne,Colónia,Colonia,50.94,6.962399999999974,2270000,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,681,57.3
@@ -226,15 +226,15 @@ DEU,DEU-MUC,Munich,Munique,Múnich,48.1392,11.577600000000018,2154100,2026,0,no,
 DEU,DEU-FFM,Frankfurt am Main,Frankfurt,Fráncfort,50.112,8.6832,1814400,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,544.3,88.4
 DEU,DEU-STR,Stuttgart,Estugarda,Stuttgart,48.7728,9.179999999999978,1467600,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,440.3,72.1
 DEU,DEU-LEJ,Leipzig,Leipzig,Leipzig,51.3432,12.36960000000002,728200,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,218.5,65.3
-DEU,DEU-DUS,Düsseldorf,Düsseldorf,Düsseldorf,51.22319,6.77927,618685,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,185.6,40.9
-DEU,DEU-DOR,Dortmund,Dortmund,Dortmund,51.51494,7.466,588462,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,176.5,52.4
-DEU,DEU-BRE,Bremen,Bremen,Bremen,53.07582,8.80717,546501,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,164.0,108.7
+DEU,DEU-DUS,Düsseldorf,Düsseldorf,Düsseldorf,51.22319,6.77927,618685,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,185.6,40.9
+DEU,DEU-DOR,Dortmund,Dortmund,Dortmund,51.51494,7.466,588462,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,176.5,52.4
+DEU,DEU-BRE,Bremen,Bremen,Bremen,53.07582,8.80717,546501,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,164.0,108.7
 DEU,DEU-KAS,Kassel,Kassel,Kassel,51.314400000000006,9.482399999999984,317100,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,95.1,182.2
 DJI,DJI-DJI,Djibouti,Djibuti,Yibuti,11.58901,43.14503,626512,2026,1,city,capital,africa,city_proper,maior cidade disponível; fronteira a 17.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,188.0,17.3
 DJI,DJI-ALI,Ali Sabih,Ali Sabih,Ali Sabih,11.15583,42.7125,50006,2026,0,no,regional,africa,city_proper,maior cidade disponível; fronteira a 6.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,15.0,6.8
 DMA,DMA-ROS,Roseau,Roseau,Roseau,15.30174,-61.38808,16571,2026,1,city,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,5.0,345.5
-DNK,DNK-COPE,Copenhagen,Copenhague,Copenhague,55.67594,12.56553,1153615,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,346.1,28.1
-DNK,DNK-ARH,Århus,Aarhus,Aarhus,56.15674,10.21076,285273,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,85.6,86.5
+DNK,DNK-COPE,Copenhagen,Copenhague,Copenhague,55.67594,12.56553,1153615,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,346.1,28.1
+DNK,DNK-ARH,Århus,Aarhus,Aarhus,56.15674,10.21076,285273,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,85.6,86.5
 DOM,DOM-SAN,Santo Domingo,São Domingos,Santo Domingo,18.47186,-69.89232,2201941,2026,1,city,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,660.6,190.7
 DOM,DOM-SANT,Santiago de los Caballeros,Santiago de los Caballeros,Santiago de los Caballeros,19.45036,-70.69085,1200000,2026,0,no,industrial,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,360.0,104.0
 DZA,DZA-ALG,Algiers,Argel,Argel,36.73225,3.08746,2364230,2026,1,city,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,709.3,451.1
@@ -257,12 +257,12 @@ EGY,EGY-ASS,Assiut,Assiut,Asiut,27.18096,31.18368,528669,2026,0,no,industrial,af
 EGY,EGY-KOM,Kom Ombo,Kom Ombo,Kom Ombo,24.47669,32.94626,409311,2026,0,no,regional,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,122.8,244.8
 ERI,ERI-ASM,Asmara,Asmara,Asmara,15.33805,38.93184,563930,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,169.2,76.8
 ERI,ERI-KER,Keren,Keren,Keren,15.77792,38.45107,74800,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,22.4,113.8
-ESP,ESP-MADR,Madrid,Madri,Madrid,40.4165,-3.70256,3255944,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,976.8,233.2
-ESP,ESP-BARC,Barcelona,Barcelona,Barcelona,41.38879,2.15899,1686208,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,505.9,83.7
-ESP,ESP-VALE,Valencia,Valência,Valencia,39.47391,-0.37966,824340,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,247.3,276.5
+ESP,ESP-MADR,Madrid,Madri,Madrid,40.4165,-3.70256,3255944,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,976.8,233.2
+ESP,ESP-BARC,Barcelona,Barcelona,Barcelona,41.38879,2.15899,1686208,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,505.9,83.7
+ESP,ESP-VALE,Valencia,Valência,Valencia,39.47391,-0.37966,824340,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,247.3,276.5
 ESP,ESP-LAS,Las Palmas de Gran Canaria,Las Palmas de Gran Canaria,Las Palmas de Gran Canaria,28.10178,-15.41573,383516,2026,0,city,port,canarias,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,115.1,387.7
-EST,EST-TALL,Tallinn,Tallinn,Tallin,59.43696,24.75353,394024,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,118.2,79.0
-EST,EST-TART,Tartu,Tartu,Tartu,58.38062,26.72509,91407,2026,0,no,regional,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,27.4,43.6
+EST,EST-TALL,Tallinn,Tallinn,Tallin,59.43696,24.75353,394024,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,118.2,79.0
+EST,EST-TART,Tartu,Tartu,Tartu,58.38062,26.72509,91407,2026,0,no,regional,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,27.4,43.6
 ETH,ETH-ADD,Addis Ababa,Adis Abeba,Adís Abeba,9.02497,38.74689,3860000,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1158.0,395.2
 ETH,ETH-JIJ,Jijiga,Djidjiga,Jijiga,9.35,42.8,483000,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,144.9,58.9
 ETH,ETH-GON,Gonder,Gondar,Gondar,12.6,37.46667,466000,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,139.8,143.9
@@ -271,9 +271,9 @@ ETH,ETH-NAZ,Nazrēt,Nazret,Adama,8.55,39.26667,456900,2026,0,no,regional,africa,
 ETH,ETH-WAR,Warder,Warder,Warder,6.97444,45.34083,450400,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,135.1,120.2
 ETH,ETH-AWA,Awasa,Awassa,Awasa,7.06205,38.47635,422200,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,126.7,334.3
 ETH,ETH-BAH,Bahir Dar,Bahir Dar,Bahir Dar,11.59364,37.39077,350000,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,105.0,183.0
-FIN,FIN-HELS,Helsinki,Helsinque,Helsinki,60.16952,24.93545,658864,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,197.7,117.0
-FIN,FIN-TAMP,Tampere,Tampere,Tampere,61.49911,23.78712,260646,2026,0,no,regional,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,78.2,190.8
-FIN,FIN-ROV,Rovaniemi,Rovaniemi,Rovaniemi,66.49897,25.68867,65670,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,19.7,74.3
+FIN,FIN-HELS,Helsinki,Helsinque,Helsinki,60.16952,24.93545,658864,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,197.7,117.0
+FIN,FIN-TAMP,Tampere,Tampere,Tampere,61.49911,23.78712,260646,2026,0,no,regional,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,78.2,190.8
+FIN,FIN-ROV,Rovaniemi,Rovaniemi,Rovaniemi,66.49897,25.68867,65670,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,19.7,74.3
 FJI,FJI-SUV,Suva,Suva,Suva,-18.13683,178.42531,77366,2026,1,city,capital,fiji,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,23.2,3898.6
 FJI,FJI-LAU,Lautoka,Lautoka,Lautoka,-17.61686,177.45049,52500,2026,0,city,port,fiji,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,15.7,3792.7
 FLK,FLK-STA,Stanley,Stanley,Puerto Argentino,-51.69382,-57.85701,2213,2026,1,city,capital,falkland,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.7,688.2
@@ -286,10 +286,10 @@ FRA,FRA-NTE,Nantes,Nantes,Nantes,47.2176,-1.555199999999985,689036,2026,0,yes,po
 FRA,FRA-SXB,Strasbourg,Estrasburgo,Estrasburgo,48.5712,7.754400000000004,494536,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população); fronteira a 3.2 km (legado)","scenario/cities.csv (legado, base 2026)",yes,148.4,3.2
 FRA,FRA-CLF,Clermont-Ferrand,Clermont-Ferrand,Clermont-Ferrand,45.7776,3.0888000000000204,272529,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,81.8,223.4
 FRA,FRA-LEH,Le Havre,Le Havre,El Havre,49.492799999999995,0.10799999999997567,232175,2026,0,yes,port,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,69.7,201.8
-FRA,FRA-SAI,Saint-Denis,Saint-Denis,Saint-Denis,-20.88231,55.4504,154765,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,46.4,1893.5
+FRA,FRA-SAI,Saint-Denis,Saint-Denis,Saint-Denis,-20.88231,55.4504,154765,2026,0,city,port,reunion,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,46.4,1893.5
 FRA,FRA-CAY,Cayenne,Caiena,Caena,4.9392,-52.3296,151607,2026,0,yes,port,guiana,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,45.5,120.0
-FRA,FRA-FOR,Fort-de-France,Forte da França,Fort-de-France,14.60365,-61.07418,89995,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,27.0,428.5
-FRA,FRA-MAM,Mamoudzou,Mamoudzou,Mamoudzou,-12.78234,45.22878,54831,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,16.4,571.6
+FRA,FRA-FOR,Fort-de-France,Forte da França,Fort-de-France,14.60365,-61.07418,89995,2026,0,city,port,martinique,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,27.0,428.5
+FRA,FRA-MAM,Mamoudzou,Mamoudzou,Mamoudzou,-12.78234,45.22878,54831,2026,0,city,port,mayotte,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,16.4,571.6
 FRO,FRO-TOR,Tórshavn,Tórshavn,Tórshavn,62.00973,-6.77164,13200,2026,1,city,capital,faroe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,4.0,355.8
 FSM,FSM-PAL,Palikir,Paliquir,Palikir,6.92477,158.16109,6942,2026,1,city,capital,micronesia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,2.1,2175.0
 FSM,FSM-WEN,Weno,Weno,Weno,7.44648,151.84135,13856,2026,0,city,port,micronesia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,4.2,1636.7
@@ -320,8 +320,8 @@ GNB,GNB-BIS,Bissau,Bissau,Bisáu,11.86357,-15.59767,439704,2026,1,city,capital,a
 GNB,GNB-GAB,Gabú,Gabu,Gabú,12.28,-14.22222,49371,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,14.8,30.2
 GNQ,GNQ-CIU,Ciudad de la Paz,Ciudad de la Paz,Ciudad de la Paz,1.5925,10.82361,2000,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.6,53.5
 GNQ,GNQ-BAT,Bata,Bata,Bata,1.86391,9.76582,173046,2026,0,city,port,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,51.9,37.0
-GRC,GRC-ATHE,Athens,Atenas,Atenas,37.98376,23.72784,664046,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,199.2,290.1
-GRC,GRC-THES,Thessaloníki,Salônica,Salónica,40.64072,22.93493,317778,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,95.3,46.9
+GRC,GRC-ATHE,Athens,Atenas,Atenas,37.98376,23.72784,664046,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,199.2,290.1
+GRC,GRC-THES,Thessaloníki,Salônica,Salónica,40.64072,22.93493,317778,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,95.3,46.9
 GRD,GRD-SAI,Saint George's,São Jorge,Saint George,12.05288,-61.75226,7500,2026,1,city,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,2.2,432.0
 GRL,GRL-NUU,Nuuk,Nuuk,Nuuk,64.18347,-51.72157,14798,2026,1,city,capital,greenland,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,4.4,1138.6
 GRL,GRL-SIS,Sisimiut,Sisimiut,Sisimiut,66.93946,-53.6735,5227,2026,0,city,port,greenland,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1.6,1061.3
@@ -336,12 +336,12 @@ GUY,GUY-LIND,Linden,Linden,Linden,6.00815,-58.30724,44690,2026,0,no,regional,sou
 HKG,HKG-HON,Hong Kong,Hong Kong,Hong Kong,22.27832,114.17469,7396076,2026,1,city,capital,hong_kong,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,2218.8,27.5
 HND,HND-TEG,Tegucigalpa,Tegucigalpa,Tegucigalpa,14.0818,-87.20681,850848,2026,1,no,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,255.3,60.7
 HND,HND-SAN,San Pedro Sula,San Pedro Sula,San Pedro Sula,15.50585,-88.02588,801259,2026,0,yes,port,north_america,city_proper,maior cidade disponível; fronteira a 33.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,240.4,33.3
-HRV,HRV-ZAGR,Zagreb,Zagreb,Zagreb,45.81444,15.97798,663592,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 24.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,199.1,24.8
-HRV,HRV-SPLI,Split,Split,Split,43.50891,16.43915,149830,2026,0,city,port,europe,city_proper,maior cidade disponível; fronteira a 27.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,44.9,27.7
+HRV,HRV-ZAGR,Zagreb,Zagreb,Zagreb,45.81444,15.97798,663592,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 24.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,199.1,24.8
+HRV,HRV-SPLI,Split,Split,Split,43.50891,16.43915,149830,2026,0,city,port,continent,city_proper,maior cidade disponível; fronteira a 27.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,44.9,27.7
 HTI,HTI-POR,Port-au-Prince,Porto Príncipe,Puerto Príncipe,18.54349,-72.33881,1234742,2026,1,city,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,370.4,37.4
 HTI,HTI-PORT,Port-de-Paix,Porto-da-Paz,Puerto Paz,19.93984,-72.83037,306217,2026,0,city,port,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,91.9,112.7
-HUN,HUN-BUDA,Budapest,Budapeste,Budapest,47.49835,19.04045,1741041,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 35.1 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,522.3,35.1
-HUN,HUN-DEBR,Debrecen,Debrecen,Debrecen,47.53167,21.62444,202402,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 23.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,60.7,23.3
+HUN,HUN-BUDA,Budapest,Budapeste,Budapest,47.49835,19.04045,1741041,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 35.1 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,522.3,35.1
+HUN,HUN-DEBR,Debrecen,Debrecen,Debrecen,47.53167,21.62444,202402,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 23.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,60.7,23.3
 IDN,IDN-JAKA,Jakarta,Jacarta,Yakarta,-6.21462,106.84513,8540121,2026,1,city,capital,indonesia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,2562.0,880.3
 IDN,IDN-SURAB,Surabaya,Surabaia,Surabaya,-7.24917,112.75083,3018022,2026,0,city,port,indonesia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,905.4,917.1
 IDN,IDN-BANDU,Bandung,Bandung,Bandung,-6.92222,107.60694,2528163,2026,0,no,industrial,indonesia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,758.4,917.0
@@ -404,12 +404,12 @@ ISL,ISL-REYKJ,Reykjavík,Reykjavík,Reikiavik,64.13548,-21.89541,118918,2026,1,c
 ISL,ISL-AKU,Akureyri,Akureyri,Akureyri,65.68353,-18.0878,19219,2026,0,city,port,iceland,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,5.8,685.3
 ISR,ISR-JER,Jerusalem,Jerusalém,Jerusalén,31.76904,35.21633,971800,2026,1,no,capital,asia,city_proper,maior cidade disponível; fronteira a 4.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,291.5,4.2
 ISR,ISR-HAI,Haifa,Haifa,Haifa,32.81303,34.99928,285316,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,85.6,27.6
-ITA,ITA-ROME,Rome,Roma,Roma,41.89193,12.51133,2318895,2026,1,yes,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,695.7,163.8
-ITA,ITA-MILA,Milan,Milão,Milán,45.46427,9.18951,1371498,2026,0,no,industrial,europe,city_proper,maior cidade disponível; fronteira a 33.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,411.4,33.8
-ITA,ITA-NAPL,Naples,Nápoles,Nápoles,40.85216,14.26811,909048,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,272.7,296.9
-ITA,ITA-TURI,Turin,Turim,Turín,45.07049,7.68682,847287,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,254.2,47.0
-ITA,ITA-PALE,Palermo,Palermo,Palermo,38.1166,13.3636,648260,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,194.5,429.2
-ITA,ITA-GEN,Genoa,Gênova,Génova,44.40478,8.94439,580097,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,174.0,103.5
+ITA,ITA-ROME,Rome,Roma,Roma,41.89193,12.51133,2318895,2026,1,yes,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,695.7,163.8
+ITA,ITA-MILA,Milan,Milão,Milán,45.46427,9.18951,1371498,2026,0,no,industrial,continent,city_proper,maior cidade disponível; fronteira a 33.8 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,411.4,33.8
+ITA,ITA-NAPL,Naples,Nápoles,Nápoles,40.85216,14.26811,909048,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,272.7,296.9
+ITA,ITA-TURI,Turin,Turim,Turín,45.07049,7.68682,847287,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,254.2,47.0
+ITA,ITA-PALE,Palermo,Palermo,Palermo,38.1166,13.3636,648260,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,194.5,429.2
+ITA,ITA-GEN,Genoa,Gênova,Génova,44.40478,8.94439,580097,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,174.0,103.5
 JAM,JAM-KIN,Kingston,Kingston,Kingston,17.99702,-76.79358,937700,2026,1,city,capital,jamaica,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,281.3,264.4
 JAM,JAM-MON,Montego Bay,Montego Bay,Bahía Montego,18.47116,-77.91883,82867,2026,0,city,port,jamaica,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,24.9,325.8
 JEY,JEY-SAI,Saint Helier,Santo Helério,Saint Helier,49.18804,-2.10491,28000,2026,1,city,capital,jersey,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,8.4,358.8
@@ -462,24 +462,24 @@ LBY,LBY-MIS,Misratah,Misrata,Misurata,32.37535,15.09254,355657,2026,0,city,port,
 LBY,LBY-SAB,Sabha,Sabha,Sabha,27.03766,14.42832,149329,2026,0,no,regional,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,44.8,386.6
 LBY,LBY-ATT,At Tāj,At Tāj,At Tāj,24.20487,23.2857,46050,2026,0,no,regional,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,13.8,169.5
 LCA,LCA-CAS,Castries,Castries,Castries,13.9957,-61.00614,20000,2026,1,city,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,6.0,490.2
-LIE,LIE-VADU,Vaduz,Vaduz,Vaduz,47.14151,9.52154,5197,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,1.6,0.0
+LIE,LIE-VADU,Vaduz,Vaduz,Vaduz,47.14151,9.52154,5197,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,1.6,0.0
 LKA,LKA-COL,Colombo,Colombo,Colombo,6.93548,79.84868,648034,2026,1,city,capital,sri_lanka,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,194.4,1926.5
 LKA,LKA-JAF,Jaffna,Jaffna,Jaffna,9.66845,80.00742,169102,2026,0,city,port,sri_lanka,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,50.7,1653.5
 LSO,LSO-MAS,Maseru,Maseru,Maseru,-29.31667,27.48333,359753,2026,1,no,capital,africa,city_proper,maior cidade disponível; fronteira a 4.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,107.9,4.3
 LSO,LSO-MAP,Maputsoe,Maputsoe,Maputsoe,-28.8866,27.89915,61916,2026,0,no,regional,africa,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,18.6,0.0
-LTU,LTU-VILN,Vilnius,Vilnius,Vilna,54.68916,25.2798,542366,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 24.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,162.7,24.3
-LTU,LTU-KAUN,Kaunas,Kaunas,Kaunas,54.90156,23.90909,289380,2026,0,no,regional,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,86.8,54.6
-LUX,LUX-LUX,Luxembourg,Luxemburgo,Luxemburgo,49.60982,6.13268,76684,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 6.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,23.0,6.3
-LVA,LVA-RIGA,Riga,Riga,Riga,56.946,24.10589,742572,2026,1,city,capital,europe,city_proper,maior cidade disponível; fronteira a 37.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,222.8,37.7
-LVA,LVA-DAUG,Daugavpils,Daugavpils,Daugavpils,55.88333,26.53333,78126,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 11.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,23.4,11.3
+LTU,LTU-VILN,Vilnius,Vilnius,Vilna,54.68916,25.2798,542366,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 24.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,162.7,24.3
+LTU,LTU-KAUN,Kaunas,Kaunas,Kaunas,54.90156,23.90909,289380,2026,0,no,regional,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,86.8,54.6
+LUX,LUX-LUX,Luxembourg,Luxemburgo,Luxemburgo,49.60982,6.13268,76684,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 6.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,23.0,6.3
+LVA,LVA-RIGA,Riga,Riga,Riga,56.946,24.10589,742572,2026,1,city,capital,continent,city_proper,maior cidade disponível; fronteira a 37.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,222.8,37.7
+LVA,LVA-DAUG,Daugavpils,Daugavpils,Daugavpils,55.88333,26.53333,78126,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 11.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,23.4,11.3
 MAC,MAC-MAC,Macau,Macau,Macao,22.20056,113.54611,649335,2026,1,city,capital,macau,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,194.8,0.0
 MAF,MAF-MAR,Marigot,Marigot,Marigot,18.06819,-63.08302,5700,2026,1,city,capital,saint_martin,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,1.7,0.0
 MAR,MAR-RAB,Rabat,Rabat,Rabat,34.01325,-6.83255,1655753,2026,1,city,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,496.7,219.7
 MAR,MAR-CAS,Casablanca,Casablanca,Casablanca,33.58831,-7.61138,3665954,2026,0,city,port,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1099.8,296.7
 MAR,MAR-IML,Imlili,Imlili,Imilili,23.23441,-16.08041,2269,2026,0,city,port,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.7,175.2
-MCO,MCO-MONA,Monaco,Mônaco,Mónaco,43.73718,7.42145,32965,2026,1,city,capital,europe,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,9.9,0.0
-MDA,MDA-CHIS,Chisinau,Chişinău,Chisináu,47.00902,28.85938,635994,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,190.8,40.3
-MDA,MDA-TIRA,Tiraspol,Tiraspol,Tiráspol,46.84275,29.6284,157000,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 6.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,47.1,6.7
+MCO,MCO-MONA,Monaco,Mônaco,Mónaco,43.73718,7.42145,32965,2026,1,city,capital,continent,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,9.9,0.0
+MDA,MDA-CHIS,Chisinau,Chişinău,Chisináu,47.00902,28.85938,635994,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,190.8,40.3
+MDA,MDA-TIRA,Tiraspol,Tiraspol,Tiráspol,46.84275,29.6284,157000,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 6.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,47.1,6.7
 MDG,MDG-ANT,Antananarivo,Antananarivo,Antananarivo,-18.91368,47.53613,1349501,2026,1,no,capital,madagascar,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,404.9,1156.2
 MDG,MDG-TOA,Toamasina,Toamasina,Toamasina,-18.1492,49.40234,345107,2026,0,city,port,madagascar,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,103.5,1242.4
 MDG,MDG-FIA,Fianarantsoa,Fianarantsoa,Fianarantsoa,-21.45267,47.08569,203105,2026,0,no,regional,madagascar,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,60.9,1296.7
@@ -499,8 +499,8 @@ MEX,MEX-HER,Hermosillo,Hermosillo,Hermosillo,29.08874,-110.96677,812229,2026,0,n
 MEX,MEX-TUX,Tuxtla,Tuxtla,Tuxtla,16.75357,-93.11578,604147,2026,0,no,industrial,north_america,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,181.2,159.8
 MHL,MHL-MAJ,Majuro,Majuro,Majuro,7.08971,171.38027,25400,2026,1,no,capital,marshall,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,7.6,3525.1
 MHL,MHL-EBA,Ebaye,Ebaye,Ebaye,8.77479,167.73919,15000,2026,0,no,regional,marshall,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,4.5,3198.3
-MKD,MKD-SKOP,Skopje,Skopje,Skopie,41.99646,21.43141,474889,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 15.4 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,142.5,15.4
-MKD,MKD-PRI,Prilep,Prilep,Prilep,41.34558,21.5537,73814,2026,0,no,regional,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,22.1,34.8
+MKD,MKD-SKOP,Skopje,Skopje,Skopie,41.99646,21.43141,474889,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 15.4 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,142.5,15.4
+MKD,MKD-PRI,Prilep,Prilep,Prilep,41.34558,21.5537,73814,2026,0,no,regional,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,22.1,34.8
 MLI,MLI-BAM,Bamako,Bamaco,Bamako,12.60915,-7.97522,4227569,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1268.3,112.3
 MLI,MLI-SIK,Sikasso,Sikasso,Sikasso,11.31755,-5.66654,349324,2026,0,no,regional,africa,city_proper,maior cidade disponível; fronteira a 30.7 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,104.8,30.7
 MLI,MLI-KOU,Koutiala,Koutiala,Koutiala,12.38723,-5.46507,218031,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,65.4,54.5
@@ -513,8 +513,8 @@ MMR,MMR-YAN,Yangon,Rangum,Rangún,16.80528,96.15611,4477638,2026,0,yes,port,asia
 MMR,MMR-MAN,Mandalay,Mandalay,Mandalay,21.97473,96.08359,1208099,2026,0,no,industrial,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,362.4,248.6
 MMR,MMR-MAW,Mawlamyine,Moulmein,Mawlamyaing,16.49051,97.62825,438861,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,131.7,87.6
 MMR,MMR-MYE,Myeik,Myeik,Myeik,12.43954,98.60028,173298,2026,0,city,port,asia,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,52.0,72.7
-MNE,MNE-PODG,Podgorica,Podgorica,Podgorica,42.44124,19.26309,236852,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 13.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,71.1,13.0
-MNE,MNE-PLJ,Pljevlja,Pljevlja,Pljevlja,43.3567,19.35843,19489,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,5.8,0.0
+MNE,MNE-PODG,Podgorica,Podgorica,Podgorica,42.44124,19.26309,236852,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 13.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,71.1,13.0
+MNE,MNE-PLJ,Pljevlja,Pljevlja,Pljevlja,43.3567,19.35843,19489,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,5.8,0.0
 MNG,MNG-ULA,Ulan Bator,Ulan Bator,Ulán Bator,47.90771,106.88324,844818,2026,1,no,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,253.4,149.1
 MNG,MNG-ERD,Erdenet,Erdenet,Erdenet,49.03333,104.08333,97814,2026,0,no,regional,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,29.3,83.4
 MNG,MNG-DAR,Darhan,Darhan,Darhan,49.48667,105.92278,83883,2026,0,no,regional,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,25.2,60.3
@@ -545,7 +545,7 @@ NCL,NCL-WE,Wé,Wé,Wé,-20.91687,167.26461,10375,2026,0,city,port,new_caledonia,
 NED,NED-AMS,Amsterdam,Amesterdão,Ámsterdam,52.3656,4.895999999999987,1809000,2026,1,yes,capital,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,217.1,57.0
 NED,NED-RTM,Rotterdam,Roterdão,Róterdam,51.9264,4.4783999999999935,1200000,2026,0,yes,port,continent,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,360,30.2
 NED,NED-EIN,Eindhoven,Eindhoven,Eindhoven,51.444,5.472000000000008,320365,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população); fronteira a 9.1 km (legado)","scenario/cities.csv (legado, base 2026)",yes,96.1,9.1
-NED,NED-GRO,Groningen,Groninga,Groninga,53.21917,6.56667,244807,2026,0,yes,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,73.4,35.6
+NED,NED-GRO,Groningen,Groninga,Groninga,53.21917,6.56667,244807,2026,0,yes,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,73.4,35.6
 NED,NED-ENS,Enschede,Enschede,Enschede,52.221599999999995,6.897600000000011,149315,2026,0,no,industrial,continent,agglomeration,"legado preservado (id, coordenadas e população); fronteira a 3.0 km (legado)","scenario/cities.csv (legado, base 2026)",yes,44.8,3.0
 NER,NER-NIA,Niamey,Niamey,Niamey,13.51366,2.1098,1323691,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,397.1,85.6
 NER,NER-MAR,Maradi,Maradi,Maradi,13.5,7.10174,361702,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,108.5,40.6
@@ -569,10 +569,10 @@ NGA,NGA-JOS,Jos,Jos,Jos,9.92849,8.89212,1040000,2026,0,no,industrial,africa,city
 NIC,NIC-MAN,Managua,Managua,Managua,12.13282,-86.2504,973087,2026,1,no,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,291.9,121.9
 NIC,NIC-LEO,León,León,León,12.43527,-86.87862,144538,2026,0,city,port,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,43.4,63.7
 NIU,NIU-ALO,Alofi,Alofi,Alofi,-19.05294,-169.91957,624,2026,1,city,capital,niue,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.2,7766.1
-NOR,NOR-OSLO,Oslo,Oslo,Oslo,59.91273,10.74609,1082575,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,324.8,51.7
-NOR,NOR-BERG,Bergen,Bergen,Bergen,60.39299,5.32415,294029,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,88.2,331.2
-NOR,NOR-TRO,Tromsø,Tromsø,Tromsø,69.6489,18.95508,41915,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,12.6,42.5
-NOR,NOR-LON,Longyearbyen,Longyearbyen,Longyearbyen,78.22334,15.64689,2368,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.7,227.1
+NOR,NOR-OSLO,Oslo,Oslo,Oslo,59.91273,10.74609,1082575,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,324.8,51.7
+NOR,NOR-BERG,Bergen,Bergen,Bergen,60.39299,5.32415,294029,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,88.2,331.2
+NOR,NOR-TRO,Tromsø,Tromsø,Tromsø,69.6489,18.95508,41915,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,12.6,42.5
+NOR,NOR-LON,Longyearbyen,Longyearbyen,Longyearbyen,78.22334,15.64689,2368,2026,0,city,port,svalbard,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.7,227.1
 NPL,NPL-KAT,Kathmandu,Catmandu,Katmandú,27.70169,85.3206,1442271,2026,1,no,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,432.7,56.3
 NPL,NPL-POK,Pokhara,Pokhara,Pokhara,28.26689,83.96851,600051,2026,0,no,industrial,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,180.0,65.6
 NPL,NPL-BHA,Bharatpur,Bharatpur,Bharatpur,27.68027,84.43647,369377,2026,0,no,regional,asia,city_proper,maior cidade disponível; fronteira a 30.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,110.8,30.3
@@ -615,19 +615,19 @@ PNG,PNG-POR,Port Moresby,Port Moresby,Puerto Moresby,-9.47723,147.15089,283733,2
 PNG,PNG-LAE,Lae,Lae,Lae,-6.72333,146.99611,76255,2026,0,city,port,oceania,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,22.9,564.7
 PNG,PNG-ARA,Arawa,Arawa,Arawa,-6.22977,155.56598,40266,2026,0,city,port,oceania,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,12.1,1471.1
 PNG,PNG-MOU,Mount Hagen,Mount Hagen,Mount Hagen,-5.85746,144.23058,33623,2026,0,no,regional,oceania,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,10.1,364.5
-POL,POL-WARS,Warsaw,Varsóvia,Varsovia,52.22977,21.01178,1702139,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,510.6,146.8
-POL,POL-KRAK,Kraków,Cracóvia,Cracovia,50.06143,19.93658,816614,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,245.0,46.7
-POL,POL-WROC,Wrocław,Breslávia,Breslavia,51.10286,17.03006,672545,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,201.8,44.0
-POL,POL-ODZ,Łódź,Łódź,Lodz,51.77058,19.47395,639890,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,192.0,142.1
+POL,POL-WARS,Warsaw,Varsóvia,Varsovia,52.22977,21.01178,1702139,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,510.6,146.8
+POL,POL-KRAK,Kraków,Cracóvia,Cracovia,50.06143,19.93658,816614,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,245.0,46.7
+POL,POL-WROC,Wrocław,Breslávia,Breslavia,51.10286,17.03006,672545,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,201.8,44.0
+POL,POL-ODZ,Łódź,Łódź,Lodz,51.77058,19.47395,639890,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,192.0,142.1
 PRI,PRI-SAN,San Juan,San Juan,San Juan,18.46633,-66.10572,418140,2026,1,city,capital,puerto_rico,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,125.4,148.7
 PRI,PRI-PON,Ponce,Ponce,Ponce,18.01031,-66.62398,137491,2026,0,city,port,puerto_rico,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,41.2,208.9
 PRK,PRK-PYO,Pyongyang,Pyongyang,Pionyang,39.03385,125.75432,3222000,2026,1,no,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,966.6,119.2
 PRK,PRK-HAM,Hamhŭng,Hamhung,Hamhung,39.91833,127.53639,559056,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,167.7,129.3
 PRK,PRK-WON,Wŏnsan,Wonsan,Wŏnsan,39.15278,127.44361,329207,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,98.8,69.2
-PRT,PRT-LISB,Lisbon,Lisboa,Lisboa,38.72509,-9.1498,517802,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,155.3,158.7
-PRT,PRT-PORT,Porto,Porto,Oporto,41.1485,-8.61097,252687,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,75.8,64.4
+PRT,PRT-LISB,Lisbon,Lisboa,Lisboa,38.72509,-9.1498,517802,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,155.3,158.7
+PRT,PRT-PORT,Porto,Porto,Oporto,41.1485,-8.61097,252687,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,75.8,64.4
 PRT,PRT-FUN,Funchal,Funchal,Funchal,32.66568,-16.92547,105795,2026,0,city,port,madeira,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,31.7,751.1
-PRT,PRT-ANG,Angra do Heroísmo,Angra do Heroísmo,Angra do Heroísmo,38.6539,-27.21839,12045,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,3.6,1621.1
+PRT,PRT-ANG,Angra do Heroísmo,Angra do Heroísmo,Angra do Heroísmo,38.6539,-27.21839,12045,2026,0,city,port,azores,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,3.6,1621.1
 PRY,PRY-ASU,Asunción,Assunção,Asunción,-25.28646,-57.647,1482200,2026,1,no,capital,south_america,city_proper,maior cidade disponível; fronteira a 4.4 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,444.7,4.4
 PRY,PRY-CIU,Ciudad del Este,Ciudad del Este,Ciudad del Este,-25.5036,-54.65067,301815,2026,0,no,regional,south_america,city_proper,maior cidade disponível; fronteira a 4.4 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,90.5,4.4
 PSX,PSX-EAS,East Jerusalem,Jerusalém Oriental,Jerusalén Este,31.78336,35.23388,428304,2026,1,no,capital,asia,city_proper,maior cidade disponível; fronteira a 4.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,128.5,4.2
@@ -639,48 +639,48 @@ PYF,PYF-RIK,Rikitea,Rikitea,Rikitea,-23.12322,-134.96858,1103,2026,0,no,regional
 PYF,PYF-OTE,Otepa,Otepa,Otepa,-18.10616,-140.9059,1009,2026,0,no,regional,french_polynesia,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.3,5921.5
 QAT,QAT-DOH,Doha,Doha,Doha,25.28545,51.53096,344939,2026,1,city,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,103.5,67.6
 QAT,QAT-MAD,Madīnat ash Shamāl,Al Shamal,Madinat ash Shamal,26.12933,51.2009,5267,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1.6,62.4
-ROU,ROU-BUCH,Bucharest,Bucareste,Bucarest,44.43225,26.10626,1877155,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 33.1 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,563.1,33.1
-ROU,ROU-IASI,Iaşi,Iași,Iași,47.16667,27.6,378954,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 9.4 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,113.7,9.4
-RUS,RUS-MOSC,Moscow,Moscou,Moscú,55.75204,37.61781,10381222,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,3114.4,315.2
-RUS,RUS-SAIN,Saint Petersburg,São Petersburgo,San Petersburgo,59.93863,30.31413,5351935,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1605.6,95.1
-RUS,RUS-NOVO,Novosibirsk,Novosibirsk,Novosibirsk,55.02259,82.93175,1612833,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,483.8,258.1
-RUS,RUS-YEKA,Yekaterinburg,Ecaterimburgo,Ekaterimburgo,56.85733,60.61529,1495066,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,448.5,173.8
-RUS,RUS-NIZH,Nizhniy Novgorod,Níjni Novgorod,Nizhni Nóvgorod,56.32867,44.00205,1259013,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,377.7,421.7
-RUS,RUS-KAZA,Kazan,Cazã,Kazán,55.78874,49.12214,1243500,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,373.0,272.2
-RUS,RUS-CHEL,Chelyabinsk,Cheliabinsk,Cheliábinsk,55.1611,61.42877,1202371,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,360.7,69.8
-RUS,RUS-OMS,Omsk,Omsk,Omsk,54.99244,73.36859,1172070,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,351.6,61.3
-RUS,RUS-SAMA,Samara,Samara,Samara,53.20767,50.13553,1163399,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,349.0,104.8
-RUS,RUS-ROST,Rostov-on-Don,Rostov do Don,Rostov del Don,47.21997,39.70769,1130305,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,339.1,46.5
-RUS,RUS-UFA,Ufa,Ufa,Ufá,54.74306,55.96779,1120547,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,336.2,236.7
-RUS,RUS-KRASN,Krasnoyarsk,Krasnoyarsk,Krasnoyarsk,56.03742,92.93136,1090811,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,327.2,324.0
-RUS,RUS-VOR,Voronezh,Voronej,Vorónezh,51.66833,39.19204,1047549,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,314.3,120.9
-RUS,RUS-VOL,Volgograd,Volgogrado,Volgogrado,48.71378,44.4976,1013533,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,304.1,146.9
-RUS,RUS-PER,Perm,Perm,Perm,58.01046,56.25017,982419,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,294.7,369.0
-RUS,RUS-IRK,Irkutsk,Irkutsk,Irkutsk,52.29566,104.29076,623869,2026,0,no,industrial,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,187.2,134.3
-RUS,RUS-MAK,Makhachkala,Mahackala,Majachkalá,42.97782,47.50027,596356,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,178.9,108.2
-RUS,RUS-NOVOK,Novokuznetsk,Novokuznetsk,Novokuznetsk,53.75752,87.13599,539616,2026,0,no,industrial,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,161.9,261.8
-RUS,RUS-ARK,Arkhangel’sk,Arcangel,Arcángel,64.5461,40.55183,349742,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,104.9,437.4
-RUS,RUS-CHI,Chita,Chita,Chitá,52.04311,113.49171,349005,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,104.7,130.7
-RUS,RUS-SUR,Surgut,Surgut,Surgut,61.25757,73.41775,300367,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,90.1,347.4
-RUS,RUS-MUR,Murmansk,Murmansk,Múrmansk,68.96778,33.09922,295374,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,88.6,91.1
-RUS,RUS-YAK,Yakutsk,Yakutsk,Yakutsk,62.03114,129.72288,235600,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,70.7,514.2
-RUS,RUS-YUZ,Yuzhno-Sakhalinsk,Iujno-Sakhalinsk,Yuzhno-Sajalinsk,46.9543,142.73559,198973,2026,0,yes,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,59.7,610.1
-RUS,RUS-PET,Petropavlovsk-Kamchatsky,Petropavlovsk-Kamchatski,Petropávlovsk-Kamchatski,53.06393,158.62751,181216,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,54.4,1633.2
-RUS,RUS-UST,Ust’-Ilimsk,Ust’-Ilimsk,Ust’-Ilimsk,58.00056,102.66194,100271,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,30.1,387.3
-RUS,RUS-MAG,Magadan,Magadan,Magadán,59.56274,150.80211,92782,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,27.8,1109.9
-RUS,RUS-BIR,Birobidzhan,Birobidjan,Birobidzhán,48.793,132.92033,73623,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,22.1,50.9
-RUS,RUS-NER,Neryungri,Neryungri,Nériungri,56.65836,124.72499,66320,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,19.9,200.1
-RUS,RUS-MIR,Mirny,Mirny,Mirny,62.53528,113.96111,40308,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,12.1,590.7
-RUS,RUS-NIK,Nikolayevsk-on-Amure,Nikolayevsk-on-Amure,Nikolayevsk-on-Amure,53.14657,140.72287,27152,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,8.1,519.4
-RUS,RUS-DUD,Dudinka,Dudinka,Dudinka,69.40583,86.17778,23619,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,7.1,689.2
-RUS,RUS-NAR,Narian-Mar,Narian-Mar,Narian-Mar,67.66782,53.09792,22912,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,6.9,669.3
-RUS,RUS-USTN,Ust-Nera,Ust-Nera,Ust-Nera,64.56968,143.237,9148,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,2.7,879.3
-RUS,RUS-PUS,Pushkinskiye Gory,Pushkinskiye Gory,Pushkinskiye Gory,57.01712,28.92488,5920,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.8,54.8
-RUS,RUS-BIL,Bilibino,Bilibino,Bilibino,68.05464,166.43721,5757,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.7,1556.3
-RUS,RUS-TIK,Tiksi,Tiksi,Tiksi,71.69075,128.86524,5700,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.7,659.2
-RUS,RUS-TUR,Tura,Tura,Tura,64.27769,100.21849,5444,2026,0,no,regional,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.6,589.0
-RUS,RUS-PAL,Palana,Palana,Palana,59.08418,159.95623,3671,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.1,1571.3
-RUS,RUS-PRO,Provideniya,Provideniya,Providéniya,64.42289,-173.22641,2536,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.8,1545.4
+ROU,ROU-BUCH,Bucharest,Bucareste,Bucarest,44.43225,26.10626,1877155,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 33.1 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,563.1,33.1
+ROU,ROU-IASI,Iaşi,Iași,Iași,47.16667,27.6,378954,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 9.4 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,113.7,9.4
+RUS,RUS-MOSC,Moscow,Moscou,Moscú,55.75204,37.61781,10381222,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,3114.4,315.2
+RUS,RUS-SAIN,Saint Petersburg,São Petersburgo,San Petersburgo,59.93863,30.31413,5351935,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1605.6,95.1
+RUS,RUS-NOVO,Novosibirsk,Novosibirsk,Novosibirsk,55.02259,82.93175,1612833,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,483.8,258.1
+RUS,RUS-YEKA,Yekaterinburg,Ecaterimburgo,Ekaterimburgo,56.85733,60.61529,1495066,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,448.5,173.8
+RUS,RUS-NIZH,Nizhniy Novgorod,Níjni Novgorod,Nizhni Nóvgorod,56.32867,44.00205,1259013,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,377.7,421.7
+RUS,RUS-KAZA,Kazan,Cazã,Kazán,55.78874,49.12214,1243500,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,373.0,272.2
+RUS,RUS-CHEL,Chelyabinsk,Cheliabinsk,Cheliábinsk,55.1611,61.42877,1202371,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,360.7,69.8
+RUS,RUS-OMS,Omsk,Omsk,Omsk,54.99244,73.36859,1172070,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,351.6,61.3
+RUS,RUS-SAMA,Samara,Samara,Samara,53.20767,50.13553,1163399,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,349.0,104.8
+RUS,RUS-ROST,Rostov-on-Don,Rostov do Don,Rostov del Don,47.21997,39.70769,1130305,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,339.1,46.5
+RUS,RUS-UFA,Ufa,Ufa,Ufá,54.74306,55.96779,1120547,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,336.2,236.7
+RUS,RUS-KRASN,Krasnoyarsk,Krasnoyarsk,Krasnoyarsk,56.03742,92.93136,1090811,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,327.2,324.0
+RUS,RUS-VOR,Voronezh,Voronej,Vorónezh,51.66833,39.19204,1047549,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,314.3,120.9
+RUS,RUS-VOL,Volgograd,Volgogrado,Volgogrado,48.71378,44.4976,1013533,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,304.1,146.9
+RUS,RUS-PER,Perm,Perm,Perm,58.01046,56.25017,982419,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,294.7,369.0
+RUS,RUS-IRK,Irkutsk,Irkutsk,Irkutsk,52.29566,104.29076,623869,2026,0,no,industrial,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,187.2,134.3
+RUS,RUS-MAK,Makhachkala,Mahackala,Majachkalá,42.97782,47.50027,596356,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,178.9,108.2
+RUS,RUS-NOVOK,Novokuznetsk,Novokuznetsk,Novokuznetsk,53.75752,87.13599,539616,2026,0,no,industrial,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,161.9,261.8
+RUS,RUS-ARK,Arkhangel’sk,Arcangel,Arcángel,64.5461,40.55183,349742,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,104.9,437.4
+RUS,RUS-CHI,Chita,Chita,Chitá,52.04311,113.49171,349005,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,104.7,130.7
+RUS,RUS-SUR,Surgut,Surgut,Surgut,61.25757,73.41775,300367,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,90.1,347.4
+RUS,RUS-MUR,Murmansk,Murmansk,Múrmansk,68.96778,33.09922,295374,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,88.6,91.1
+RUS,RUS-YAK,Yakutsk,Yakutsk,Yakutsk,62.03114,129.72288,235600,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,70.7,514.2
+RUS,RUS-YUZ,Yuzhno-Sakhalinsk,Iujno-Sakhalinsk,Yuzhno-Sajalinsk,46.9543,142.73559,198973,2026,0,yes,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,59.7,610.1
+RUS,RUS-PET,Petropavlovsk-Kamchatsky,Petropavlovsk-Kamchatski,Petropávlovsk-Kamchatski,53.06393,158.62751,181216,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,54.4,1633.2
+RUS,RUS-UST,Ust’-Ilimsk,Ust’-Ilimsk,Ust’-Ilimsk,58.00056,102.66194,100271,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,30.1,387.3
+RUS,RUS-MAG,Magadan,Magadan,Magadán,59.56274,150.80211,92782,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,27.8,1109.9
+RUS,RUS-BIR,Birobidzhan,Birobidjan,Birobidzhán,48.793,132.92033,73623,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,22.1,50.9
+RUS,RUS-NER,Neryungri,Neryungri,Nériungri,56.65836,124.72499,66320,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,19.9,200.1
+RUS,RUS-MIR,Mirny,Mirny,Mirny,62.53528,113.96111,40308,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,12.1,590.7
+RUS,RUS-NIK,Nikolayevsk-on-Amure,Nikolayevsk-on-Amure,Nikolayevsk-on-Amure,53.14657,140.72287,27152,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,8.1,519.4
+RUS,RUS-DUD,Dudinka,Dudinka,Dudinka,69.40583,86.17778,23619,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,7.1,689.2
+RUS,RUS-NAR,Narian-Mar,Narian-Mar,Narian-Mar,67.66782,53.09792,22912,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,6.9,669.3
+RUS,RUS-USTN,Ust-Nera,Ust-Nera,Ust-Nera,64.56968,143.237,9148,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,2.7,879.3
+RUS,RUS-PUS,Pushkinskiye Gory,Pushkinskiye Gory,Pushkinskiye Gory,57.01712,28.92488,5920,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.8,54.8
+RUS,RUS-BIL,Bilibino,Bilibino,Bilibino,68.05464,166.43721,5757,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.7,1556.3
+RUS,RUS-TIK,Tiksi,Tiksi,Tiksi,71.69075,128.86524,5700,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.7,659.2
+RUS,RUS-TUR,Tura,Tura,Tura,64.27769,100.21849,5444,2026,0,no,regional,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.6,589.0
+RUS,RUS-PAL,Palana,Palana,Palana,59.08418,159.95623,3671,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,1.1,1571.3
+RUS,RUS-PRO,Provideniya,Provideniya,Providéniya,64.42289,-173.22641,2536,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,0.8,1545.4
 RWA,RWA-KIG,Kigali,Kigali,Kigali,-1.94995,30.05885,1132686,2026,1,no,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,339.8,40.1
 RWA,RWA-GIS,Gisenyi,Gisenyi,Gisenyi,-1.70278,29.25639,172357,2026,0,no,regional,africa,city_proper,maior cidade disponível; fronteira a 4.9 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,51.7,4.9
 SAH,SAH-TIF,Tifariti,Tifariti,Tifariti,26.1579,-10.55889,3000,2026,1,no,capital,africa,city_proper,maior cidade disponível; fronteira a 13.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,0.9,13.2
@@ -712,24 +712,24 @@ SLE,SLE-FRE,Freetown,Freetown,Freetown,8.48714,-13.2356,802639,2026,1,city,capit
 SLE,SLE-KEN,Kenema,Kenema,Kenema,7.87687,-11.19025,255110,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,76.5,48.4
 SLV,SLV-SAN,San Salvador,San Salvador,San Salvador,13.68935,-89.18718,525990,2026,1,yes,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,157.8,54.2
 SLV,SLV-SANM,San Miguel,San Miguel de la Frontera,San Miguel,13.48261,-88.18211,247126,2026,0,no,regional,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,74.1,38.3
-SMR,SMR-SANM,San Marino,San Marino,San Marino,43.93667,12.44639,4500,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,1.3,0.0
+SMR,SMR-SANM,San Marino,San Marino,San Marino,43.93667,12.44639,4500,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 0.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,1.3,0.0
 SOM,SOM-MOG,Mogadishu,Mogadíscio,Mogadiscio,2.03711,45.34375,2587183,2026,1,city,capital,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,776.2,318.9
 SOM,SOM-KIS,Kismayo,Kismayo,Kismaayo,-0.35817,42.54536,234852,2026,0,city,port,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,70.5,170.1
 SOM,SOM-ELD,El Dibir,El Dibir,El Dibir,11.76667,51.21667,200000,2026,0,city,port,africa,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,60.0,255.5
 SPM,SPM-SAI,Saint-Pierre,Saint-Pierre,San Pedro,46.77914,-56.1773,6200,2026,1,city,capital,saint_pierre,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,1.9,833.6
-SRB,SRB-BELG,Belgrade,Belgrado,Belgrado,44.80401,20.46513,1273651,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,382.1,57.7
-SRB,SRB-NIS2,Niš,Niš,Niš,43.32472,21.90333,250000,2026,0,no,regional,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,75.0,49.5
+SRB,SRB-BELG,Belgrade,Belgrado,Belgrado,44.80401,20.46513,1273651,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,382.1,57.7
+SRB,SRB-NIS2,Niš,Niš,Niš,43.32472,21.90333,250000,2026,0,no,regional,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,75.0,49.5
 STP,STP-SAO,São Tomé,São Tomé,Santo Tomé,0.33756,6.7299,53300,2026,1,city,capital,sao_tome,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,16.0,325.3
 STP,STP-SAN,Santo António,Santo António,Santo António,1.63943,7.41951,1156,2026,0,city,port,sao_tome,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.3,252.3
 SUR,SUR-PBM,Paramaribo,Paramaribo,Paramaribo,5.831999999999994,-55.166399999999996,240924,2026,1,yes,capital,guiana,agglomeration,"legado preservado (id, coordenadas e população)","scenario/cities.csv (legado, base 2026)",yes,72.3,117.0
 SUR,SUR-BRO,Brokopondo,Brokopondo,Brokopondo,5.05594,-54.98043,14662,2026,0,no,regional,south_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,4.4,59.1
-SVK,SVK-BRAT,Bratislava,Bratislava,Bratislava,48.14816,17.10674,423737,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 6.5 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,127.1,6.5
-SVK,SVK-KOSI,Košice,Košice,Košice,48.71441,21.25802,225044,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 11.6 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,67.5,11.6
-SVN,SVN-LJUB,Ljubljana,Liubliana,Liubliana,46.05108,14.50513,272220,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,81.7,30.5
-SVN,SVN-MARI,Maribor,Maribor,Maribor,46.55583,15.64593,96209,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 10.6 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,28.9,10.6
-SWE,SWE-STOC,Stockholm,Estocolmo,Estocolmo,59.32938,18.06871,1515017,2026,1,city,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,454.5,252.4
-SWE,SWE-GOTH,Gothenburg,Gotemburgo,Gotemburgo,57.70716,11.96679,608462,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,182.5,73.6
-SWE,SWE-UME,Umeå,Umeå,Umeå,63.82842,20.25972,130224,2026,0,city,port,europe,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,39.1,204.1
+SVK,SVK-BRAT,Bratislava,Bratislava,Bratislava,48.14816,17.10674,423737,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 6.5 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,127.1,6.5
+SVK,SVK-KOSI,Košice,Košice,Košice,48.71441,21.25802,225044,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 11.6 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,67.5,11.6
+SVN,SVN-LJUB,Ljubljana,Liubliana,Liubliana,46.05108,14.50513,272220,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,81.7,30.5
+SVN,SVN-MARI,Maribor,Maribor,Maribor,46.55583,15.64593,96209,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 10.6 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,28.9,10.6
+SWE,SWE-STOC,Stockholm,Estocolmo,Estocolmo,59.32938,18.06871,1515017,2026,1,city,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,454.5,252.4
+SWE,SWE-GOTH,Gothenburg,Gotemburgo,Gotemburgo,57.70716,11.96679,608462,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,182.5,73.6
+SWE,SWE-UME,Umeå,Umeå,Umeå,63.82842,20.25972,130224,2026,0,city,port,continent,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,39.1,204.1
 SWZ,SWZ-MBA,Mbabane,Mebabane,Mbabane,-26.31667,31.13333,76218,2026,1,no,capital,africa,city_proper,maior cidade disponível; fronteira a 19.6 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,22.9,19.6
 SWZ,SWZ-MAN,Manzini,Manzini,Manzini,-26.49884,31.38004,110537,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,33.2,51.0
 SXM,SXM-PHI,Philipsburg,Philipsburg,Philipsburg,18.026,-63.04582,1400,2026,1,city,capital,sint_maarten,city_proper,maior cidade disponível; fronteira a 4.6 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,0.4,4.6
@@ -782,10 +782,10 @@ UGA,UGA-KAM,Kampala,Kampala,Kampala,0.31628,32.58219,1680600,2026,1,no,capital,a
 UGA,UGA-MBA,Mbarara,Mbarara,Mbarara,-0.60467,30.64851,221300,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,66.4,41.5
 UGA,UGA-NJE,Njeru,Njeru,Njeru,0.44166,33.17917,201484,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,60.4,84.9
 UGA,UGA-GUL,Gulu,Gulu,Gulu,2.77457,32.29899,177400,2026,0,no,regional,africa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,53.2,83.9
-UKR,UKR-KYIV,Kyiv,Kiev,Kiev,50.45466,30.5238,2952301,2026,1,no,capital,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,885.7,56.0
-UKR,UKR-KHAR,Kharkiv,Carcóvia,Járkov,49.98177,36.25475,1421125,2026,0,no,industrial,europe,city_proper,maior cidade disponível; fronteira a 22.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,426.3,22.0
-UKR,UKR-ODE,Odesa,Odessa,Odesa,46.48572,30.74383,1010537,2026,0,city,port,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,303.2,47.1
-UKR,UKR-DNI,Dnipro,Dnipro,Dnipró,48.46664,35.04066,968502,2026,0,no,industrial,europe,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,290.6,144.7
+UKR,UKR-KYIV,Kyiv,Kiev,Kiev,50.45466,30.5238,2952301,2026,1,no,capital,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,885.7,56.0
+UKR,UKR-KHAR,Kharkiv,Carcóvia,Járkov,49.98177,36.25475,1421125,2026,0,no,industrial,continent,city_proper,maior cidade disponível; fronteira a 22.0 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,426.3,22.0
+UKR,UKR-ODE,Odesa,Odessa,Odesa,46.48572,30.74383,1010537,2026,0,city,port,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,303.2,47.1
+UKR,UKR-DNI,Dnipro,Dnipro,Dnipró,48.46664,35.04066,968502,2026,0,no,industrial,continent,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,290.6,144.7
 URY,URY-MON,Montevideo,Montevidéu,Montevideo,-34.90328,-56.18816,1270737,2026,1,city,capital,south_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,381.2,219.1
 URY,URY-SAL,Salto,Salto,Salto,-31.38811,-57.95983,114084,2026,0,no,regional,south_america,city_proper,maior cidade disponível; fronteira a 4.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,34.2,4.2
 USA,USA-WASH,Washington,Washington,Washington,38.89511,-77.03637,689545,2026,1,no,capital,north_america,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,206.9,376.2
@@ -841,8 +841,8 @@ VUT,VUT-LUG,Luganville,Luganville,Luganville,-15.51989,167.16235,13397,2026,0,ci
 WLF,WLF-MAT,Mata-Utu,Mata-Utu,Mata-Utu,-13.28163,-176.17453,1200,2026,1,city,capital,wallis_futuna,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,0.4,8096.5
 WSM,WSM-API,Apia,Apia,Apia,-13.83333,-171.76666,40407,2026,1,city,capital,samoa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,12.1,7744.8
 WSM,WSM-ASA,Asau,Asau,Asau,-13.51963,-172.63784,6643,2026,0,city,port,samoa,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,2.0,7806.6
-XKX,XKX-PRIS,Pristina,Pristina,Pristina,42.67272,21.16688,550000,2026,1,no,capital,europe,city_proper,maior cidade disponível; fronteira a 18.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,165.0,18.3
-XKX,XKX-PRIZR,Prizren,Prizren,Prizren,42.21389,20.73972,171464,2026,0,no,regional,europe,city_proper,maior cidade disponível; fronteira a 10.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,51.4,10.2
+XKX,XKX-PRIS,Pristina,Pristina,Pristina,42.67272,21.16688,550000,2026,1,no,capital,continent,city_proper,maior cidade disponível; fronteira a 18.3 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,165.0,18.3
+XKX,XKX-PRIZR,Prizren,Prizren,Prizren,42.21389,20.73972,171464,2026,0,no,regional,continent,city_proper,maior cidade disponível; fronteira a 10.2 km (capital/maior cidade),GeoNames cities15000/cities500 2026 (city proper),no,51.4,10.2
 YEM,YEM-SAN,Sanaa,Sana,Saná,15.35452,44.20646,1937451,2026,1,no,capital,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,581.2,176.8
 YEM,YEM-ADE,Aden,Áden,Adén,12.77957,45.03852,1079670,2026,0,city,port,asia,city_proper,maior cidade disponível,GeoNames cities15000/cities500 2026 (city proper),no,323.9,209.9
 YEM,YEM-ALG,Al Ghayz̧ah,Al Ghayz̧ah,Al Ghayz̧ah,16.20787,52.17605,10948,2026,0,city,port,asia,city_proper,centro regional (cobertura),GeoNames cities15000/cities500 2026 (city proper),no,3.3,107.2

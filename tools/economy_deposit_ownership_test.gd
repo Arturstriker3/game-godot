@@ -23,6 +23,7 @@ const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
+const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 
 ## Dias de simulação com a IA ativa antes de auditar os extratores construídos.
 const DAYS := 180
@@ -62,21 +63,46 @@ func _init() -> void:
 # --- 1. Partição -------------------------------------------------------------
 
 func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Array,
-		nature: Dictionary) -> void:
+		_nature: Dictionary) -> void:
 	var tag_of_code := {}
 	for tag: String in geo.nation_codes():
 		tag_of_code[String(geo.nation_code(tag))] = String(tag)
 
-	# Esperado, lido do JSON cru (fonte independente do índice do serviço).
+	# Regra declarada: a nação da jazida é a da PROVÍNCIA mais próxima do ponto
+	# real (MRDS), não a do território natural. Confere uma amostra contra a
+	# implementação bruta (independente da grade espacial do serviço).
+	var provinces: Array = _read_json_dict(PROVINCES_PATH).get("provinces", [])
+	var checked := 0
+	for deposit in deposits:
+		if bool(deposit.get("facility", false)):
+			continue
+		if checked >= 200:
+			break
+		checked += 1
+		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		var best_tag := ""
+		var best_distance := INF
+		for province in provinces:
+			var distance := Vector2(float(province.get("x", 0.0)),
+					float(province.get("y", 0.0))).distance_squared_to(point)
+			if distance < best_distance:
+				best_distance = distance
+				best_tag = GeoScript.nation_for_province_tag(
+						String(province.get("nation", "")))
+		var service_tag: String = geo.nation_tag_at(point)
+		if best_tag != service_tag:
+			_fail("nação do depósito %s: serviço=%s, bruto=%s" % [
+				String(deposit.get("id", "")), service_tag, best_tag])
+
+	# Esperado, lido do JSON cru com a regra do ponto real.
 	var expected_total := 0
 	var expected_by_nation := {}
 	for deposit in deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var code := String(nature.get(String(deposit.get("territory", "")), {})
-				.get("adm0_a3", ""))
-		var tag := String(tag_of_code.get(code, ""))
-		if tag == "":
+		var tag: String = geo.nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
+				float(deposit.get("py", 0.0))))
+		if tag == "" or not tag_of_code.has(String(geo.nation_code(tag))):
 			continue
 		expected_total += 1
 		expected_by_nation[tag] = int(expected_by_nation.get(tag, 0)) + 1
@@ -96,8 +122,9 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 			seen[key] = city_id
 			got_total += 1
 			var city_nation := _nation_of(city_list, String(city_id))
-			var code := String(nature.get(String(deposit.get("territory", "")), {})
-					.get("adm0_a3", ""))
+			var code := String(geo.nation_code(geo.nation_tag_at(
+					Vector2(float(deposit.get("px", 0.0)),
+							float(deposit.get("py", 0.0))))))
 			if String(tag_of_code.get(code, "")) != city_nation:
 				_fail("jazida %s atribuída a %s (%s) mas pertence a %s" % [
 					key, city_id, city_nation, code])

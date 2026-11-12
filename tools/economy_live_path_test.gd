@@ -22,7 +22,7 @@ const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
-const NATURE_PATH := "res://data/definitions/natural/nature.json"
+const PROVINCE_NATURE_PATH := "res://data/definitions/natural/province_nature.json"
 
 var _failures: Array[String] = []
 
@@ -68,13 +68,13 @@ func _run() -> void:
 		return
 
 	# 1. Referência independente: quais nações têm depósito nos dados naturais.
-	var nations_with_deposits := _nations_with_deposits()
+	var geo = GeographyServiceScript.new()
+	var nations_with_deposits := _nations_with_deposits(geo)
 
 	# 2. Mesmo pipeline do jogo ao vivo, SEM load_data() prévio.
 	var sim = EconomySim.new()
 	sim.initialize_demo_world(cities, ports, buildings)
 	sim.demo_set_goods(goods)
-	var geo = GeographyServiceScript.new()
 	var applied: Dictionary = geo.apply_to_sim(sim, _cities_with_center(cities))
 
 	if applied.is_empty():
@@ -83,6 +83,10 @@ func _run() -> void:
 
 	# 3. Verifica cada nação jogável (todas as 66 do nations.json).
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
+	# Aptidão 0 só é falha se a nação TEM províncias no dado natural. Ilhas
+	# minúsculas (São Bartolomeu, Kiribati, Sint Maarten) não têm admin-1 no
+	# atlas: a ausência é declarada, não é um bug de carregamento.
+	var nature_nations := _nations_with_provinces()
 	for tag: String in _playable_tags(cities):
 		var nation_cities := _cities_of_nation(cities, tag)
 		if nation_cities.is_empty():
@@ -101,23 +105,26 @@ func _run() -> void:
 					if float(city_applied.get(key, 0.0)) > 0.0:
 						deposit_names.append(String(key))
 		if best_crop <= 0.0:
-			_failures.append("%s: aptidão 0 em todas as culturas (%.3f)" % [tag, best_crop])
+			if nature_nations.has(tag):
+				_failures.append("%s: aptidão 0 em todas as culturas (%.3f)" % [tag, best_crop])
+			else:
+				print("[live_path] %-4s sem províncias no dado natural (ausência declarada)" % tag)
 		if nations_with_deposits.has(tag) and reserve_kt <= 0.0:
 			_failures.append("%s: dados têm depósitos, mas nenhuma reserva foi declarada" % tag)
 		print("[live_path] %-4s culturas_max=%.3f reserva=%.0f kt depósitos=%s" % [
 			tag, best_crop, reserve_kt, ", ".join(deposit_names)])
 
-	_check_no_duplication(applied, cities)
+	_check_no_duplication(applied, cities, geo)
 	_check_main_minerals(applied)
-	_check_overseas_isolation(applied)
+	_check_overseas_isolation(applied, geo)
 
 
 ## (a) Nenhuma reserva contada 2×: a soma das reservas declaradas por nação
 ## deve bater com a soma dos depósitos da nação (dentro da tolerância de
 ## arredondamento por cidade — 1 kt por cidade-recurso).
-func _check_no_duplication(applied: Dictionary, cities: Array) -> void:
+func _check_no_duplication(applied: Dictionary, cities: Array, geo) -> void:
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
-	var deposit_totals := _nation_deposit_totals()
+	var deposit_totals := _nation_deposit_totals(geo)
 	for tag: String in _playable_tags(cities):
 		if not deposit_totals.has(tag):
 			continue
@@ -139,22 +146,17 @@ func _check_no_duplication(applied: Dictionary, cities: Array) -> void:
 				tag, declared, expected])
 
 
-## Soma da quantidade (kt) dos depósitos de cada nação jogável nos dados.
-func _nation_deposit_totals() -> Dictionary:
-	var code_to_tag := {}
-	for tag: String in GeographyServiceScript.playable_tags():
-		code_to_tag[GeographyServiceScript.nation_code(tag)] = String(tag)
-	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
-	var territory_code := {}
-	for territory_id: String in nature:
-		territory_code[territory_id] = String(nature[territory_id].get("adm0_a3", ""))
+## Soma da quantidade (kt) dos depósitos de cada nação jogável nos dados. A
+## nação de cada depósito é a da província mais próxima do ponto real (mesma
+## regra do serviço, exposta em `nation_tag_at`).
+func _nation_deposit_totals(geo) -> Dictionary:
 	var deposits: Array = _load_dict(DEPOSITS_PATH).get("deposits", [])
 	var totals := {}
 	for deposit: Dictionary in deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var code: String = String(territory_code.get(String(deposit.get("territory", "")), ""))
-		var tag: String = String(code_to_tag.get(code, ""))
+		var tag: String = geo.nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
+				float(deposit.get("py", 0.0))))
 		if tag == "":
 			continue
 		totals[tag] = float(totals.get(tag, 0.0)) + float(deposit.get("quantity_kt", 0.0))
@@ -179,18 +181,15 @@ func _check_main_minerals(applied: Dictionary) -> void:
 ## continental (lon >= -30). A Guiana real TEM ferro/bauxita/cobre/chumbo (MRDS),
 ## então banir esses minerais em Caiena era falso positivo; a verificação correta
 ## é pela localização do depósito, não por uma lista de minerais.
-func _check_overseas_isolation(applied: Dictionary) -> void:
+func _check_overseas_isolation(applied: Dictionary, geo) -> void:
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
-	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
-	var territory_code := {}
-	for territory_id: String in nature:
-		territory_code[territory_id] = String(nature[territory_id].get("adm0_a3", ""))
 	var guiana_totals := {}
 	var continental_totals := {}
 	for deposit: Dictionary in _load_dict(DEPOSITS_PATH).get("deposits", []):
 		if bool(deposit.get("facility", false)):
 			continue
-		if String(territory_code.get(String(deposit.get("territory", "")), "")) != "FRA":
+		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
+		if geo.nation_tag_at(point) != "FRA":
 			continue
 		var resource := String(deposit.get("resource", ""))
 		var qty := float(deposit.get("quantity_kt", 0.0))
@@ -261,6 +260,17 @@ func _playable_tags(cities: Array) -> Array:
 
 
 ## Cidades de uma nação (id + center no formato esperado por apply_to_sim).
+## Nações que têm ao menos uma província (admin-1) no dado natural fino.
+func _nations_with_provinces() -> Dictionary:
+	var provinces: Dictionary = _load_dict(PROVINCE_NATURE_PATH).get("provinces", {})
+	var out := {}
+	for province_id: String in provinces:
+		var nation := String(provinces[province_id].get("nation", ""))
+		if nation != "":
+			out[nation] = true
+	return out
+
+
 func _cities_of_nation(cities: Array, tag: String) -> Array:
 	var result: Array = []
 	for city in cities:
@@ -280,29 +290,18 @@ func _cities_with_center(cities: Array) -> Array:
 	return result
 
 
-## Conjunto de tags de nação cujos territórios têm depósitos nos dados naturais.
-func _nations_with_deposits() -> Dictionary:
-	var code_to_tag := {}
-	for tag: String in GeographyServiceScript.playable_tags():
-		code_to_tag[GeographyServiceScript.nation_code(tag)] = String(tag)
-
-	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
-	var territory_code := {}
-	for territory_id: String in nature:
-		territory_code[territory_id] = String(
-			nature[territory_id].get("adm0_a3", ""))
-
+## Conjunto de tags de nação cujos depósitos existem nos dados naturais, pela
+## província mais próxima do ponto real (a regra de posse declarada).
+func _nations_with_deposits(geo) -> Dictionary:
 	var deposits: Array = _load_dict(DEPOSITS_PATH).get("deposits", [])
 	var tags := {}
 	for deposit: Dictionary in deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var territory := String(deposit.get("territory", ""))
-		if territory == "":
-			continue
-		var code: String = String(territory_code.get(territory, ""))
-		if code_to_tag.has(code):
-			tags[String(code_to_tag[code])] = true
+		var tag: String = geo.nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
+				float(deposit.get("py", 0.0))))
+		if tag != "":
+			tags[tag] = true
 	return tags
 
 
