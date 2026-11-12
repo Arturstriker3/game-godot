@@ -131,8 +131,12 @@ consome `color` de `nations_source.csv`.
 ### 6.1 Cores tradicionais das nações (F3)
 
 `data/definitions/world/traditional_colors.csv` (`iso3,color_hex,nota`) guarda a
-cor historicamente associada de **41 nações**, já no tom "papelaria" (levemente
-dessaturado, como FRA/DEU/GBR). Regras do resolvedor (`tools/nation_colors.py`):
+cor historicamente associada de **102 nações**, já no tom "papelaria" (levemente
+dessaturado, como FRA/DEU/GBR): os 19 países do G20 (a UE não é país; a África
+do Sul entra em verde-oliva) e ~100 Estados com convenção estável em atlas
+políticos e jogos de grande estratégia (HoI/EU/Victoria), cobrindo América
+Latina, África, Oriente Médio, Ásia Central, Sudeste Asiático, Oceania e todos os
+Bálcãs. Regras do resolvedor (`tools/nation_colors.py`):
 
 1. **Prioridade:** a cor tradicional vence a paleta automática; as demais nações
    mantêm a cor automática do importador (dessaturação ×0,86).
@@ -147,9 +151,15 @@ dessaturado, como FRA/DEU/GBR). Regras do resolvedor (`tools/nation_colors.py`):
    A automática só cede (inclusive mudando de família) quando a tradicional
    vizinha não tem candidato dentro da própria família.
 
-Estado atual: **41 tradicionais, 300 pares de vizinhos, menor ΔE 30,1**
-(CHN–IND), **nenhum par abaixo de 30**. 29 tons foram ajustados (8 tradicionais,
-21 automáticos) e o relatório completo sai em `colors` no `_meta.json` do build.
+Estado atual: **102 tradicionais, 300 pares de vizinhos, menor ΔE 30,1**
+(CHN–IND), **nenhum par abaixo de 30**. Das 61 novas, 48 mantiveram o tom pedido e
+13 foram refinadas pelo resolvedor dentro da família (KEN, OMN, BLR, TUN, BGD,
+NPL, JOR, CZE, GEO, LTU, HRV, ARM, LUX); as 41 anteriores mantêm exatamente a cor
+já publicada. 12 nações automáticas vizinhas cederam o tom (TCD, MOZ, ZMB, ZWE,
+CIV, LAO, KHM, TJK, BEN, TGO, BDI, LIE) — 73 linhas de `nations.csv` mudaram no
+total. O relatório completo sai em `colors` no `_meta.json` do build e no stdout
+do aplicador. Evidência visual: `docs/map_visual/colors_trad2_africa/`,
+`colors_trad2_middle_east/` e `colors_trad2_se_asia/` (político, 1920×1080).
 
 Regeneração: `tools/apply_traditional_colors.py` regrava **apenas** a coluna
 `color` de `scenario/nations.csv` (+ `nations.json` e `provinces.json ->
