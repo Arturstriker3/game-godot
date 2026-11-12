@@ -118,9 +118,22 @@ const PORT_MODEL_VISIBLE_DISTANCE := 120.0
 const MAX_PORT_MODELS := 96
 ## Layout de rótulos: sem linhas-guia. O nome fica ao lado do ícone, ancorado na
 ## cidade; quando dois nomes ainda colidem na tela, a cidade de menor população
-## mostra só o ícone (o nome reaparece ao aproximar ou no hover). Portos são um
-## ícone de âncora sem nome, no ponto de costa do ports.csv.
+## mostra só o ícone (o nome reaparece ao aproximar ou no hover). Capital só cede
+## a outro rótulo de capital (ou ao hover): com 66 nações, Roma e Vaticano ficam a
+## menos de 1 px e os Bálcãs têm 5 capitais no mesmo punhado de pixels — sem
+## linhas-guia, alguém tem de ceder, e cede quem tem menos população. Portos são
+## um ícone de âncora sem nome, no ponto de costa do ports.csv.
 const LABEL_COLLIDE_PAD_PX := 3.0
+## Alfa mínimo para o TEXTO entrar no layout. Abaixo disso o nome é um fantasma
+## (7% de opacidade) que ainda ocupa uma vaga do pool e um bloco da grade; o
+## ícone e o marcador continuam com o alfa do fade. Sem isso, cidades médias
+## apareciam com nome no zoom out (PAL, 7%) contra a regra "só capitais e
+## cidades grandes no longe".
+const LABEL_TEXT_MIN_ALPHA := 0.15
+## Margem (px) além da viewport em que a âncora de um rótulo ainda conta como "na
+## tela": o texto de uma capital encostada na borda continua legível, então ela
+## não pode ser descartada só porque a âncora saiu 10–20 px do retângulo.
+const LABEL_SCREEN_MARGIN_PX := 24.0
 ## Deslocamento máximo, em pixels de tela, do ícone de porto para escapar do
 ## rótulo da própria cidade. O porto nunca "voa" para longe da costa.
 const PORT_MAX_OFFSET_PX := 12.0
@@ -1639,7 +1652,7 @@ func _resource_entries(city_id: String, nation: String, center: Vector2) -> Arra
 	if _geo == null:
 		return []
 	_ensure_catchment()
-	var code := String(_geo.NATION_CODE.get(nation, ""))
+	var code := String(_geo.nation_code(nation))
 	var minerals: Dictionary = _geo.city_mineral_reserves(city_id) if code != "" \
 			else _legacy_territory_reserves(city_id, center)
 
@@ -2037,7 +2050,14 @@ func _layout_place_labels(camera: Camera3D) -> void:
 		var record: Dictionary = entry["record"]
 		var metrics: Dictionary = entry["metrics"]
 		var text_allowed := true
-		if not bool(entry["capital"]) and not bool(entry["hovered"]):
+		# Texto quase invisível (fim do fade) não entra: o ícone fica, o nome não.
+		if float(record.get("label_alpha", 1.0)) < LABEL_TEXT_MIN_ALPHA:
+			text_allowed = false
+		# Capitais são aceitas primeiro (ordem acima); a partir daí TODA etiqueta
+		# testa colisão — só o hover fura a fila. Antes a capital ignorava a
+		# colisão e Roma/Vaticano e as capitais dos Bálcãs desenhavam nomes um
+		# sobre o outro com o cenário de 66 nações.
+		if text_allowed and not bool(entry["hovered"]):
 			text_allowed = not _grid_hits(_label_grid, metrics["text_rect"],
 					LABEL_COLLIDE_PAD_PX)
 		var label: Label3D = null
@@ -2222,8 +2242,7 @@ func _world_rect_to_screen(camera: Camera3D, center: Vector3, half_x: float,
 func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 	var wrap := float(record.get("wrap_x", 0.0))
 	var anchor_world: Vector3 = to_global(record["anchor"] + Vector3(wrap, 0.0, 0.0))
-	if camera.is_position_behind(anchor_world) \
-			or not camera.is_position_in_frustum(anchor_world):
+	if camera.is_position_behind(anchor_world):
 		return {}
 	var em := float(record["font_size"]) * float(record["pixel_size"])
 	var icon_h := em * PLACE_ICON_HEIGHT
@@ -2235,6 +2254,14 @@ func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 	var text_w := _city_text_width(record)
 	var text_rect := _world_rect_to_screen(camera, text_world,
 			text_w * 0.5, em * 0.62)
+	# Só descarta o rótulo quando NEM o ícone NEM o texto aparecem na tela. A
+	# checagem anterior era a âncora dentro do frustum: uma capital com o nome
+	# encostado na borda (ou o ícone 1 u acima do ponto do mapa) sumia mesmo
+	# tendo pixels visíveis, e o layout ficava sem a capital "na tela".
+	var screen := Rect2(Vector2.ZERO,
+			camera.get_viewport().get_visible_rect().size).grow(LABEL_SCREEN_MARGIN_PX)
+	if not screen.intersects(icon_rect) and not screen.intersects(text_rect):
+		return {}
 	return {"icon_rect": icon_rect, "text_rect": text_rect}
 
 

@@ -60,7 +60,7 @@ func _full_swap_farms(geo: Object, buildings: Array, cities: Array) -> Array:
 	for building in buildings:
 		var entry: Dictionary = building.duplicate(true)
 		var tag := String(nation_of.get(String(entry.get("city_id", "")), ""))
-		var code := String(geo.NATION_CODE.get(tag, ""))
+		var code := String(geo.nation_code(tag))
 		entry["resource"] = geo.best_staple_nation(code) if code != "" else "wheat"
 		resolved.append(entry)
 	return resolved

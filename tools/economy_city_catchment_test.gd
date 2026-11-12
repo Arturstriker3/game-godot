@@ -89,7 +89,7 @@ func _playable_provinces() -> Dictionary:
 		if typeof(record) != TYPE_DICTIONARY:
 			continue
 		var tag := String(record.get("nation", ""))
-		if not GeographyServiceScript.NATION_CODE.has(tag):
+		if GeographyServiceScript.nation_for_province_tag(tag) == "":
 			continue
 		by_id[int(record.get("id", 0))] = record
 	return by_id
@@ -145,9 +145,12 @@ func _check_partition(catchment: Dictionary) -> void:
 		var share_sum := 0.0
 		for city_id in owners[pid]:
 			share_sum += float(_geo.province_share(String(city_id), int(pid)))
-		if absf(share_sum - 1.0) > 0.001:
-			_fail("província %d: soma das frações %.3f != 1 (área duplicada/perdida)" % [
-				int(pid), share_sum])
+		if playable.has(pid):
+			if absf(share_sum - 1.0) > 0.001:
+				_fail("província %d: soma das frações %.3f != 1 (área duplicada/perdida)" % [
+					int(pid), share_sum])
+		elif share_sum > 1.001:
+			_fail("província doadora %d: frações somam %.3f (> 1)" % [int(pid), share_sum])
 
 	for tag in nation_provinces:
 		var expected := int(nation_provinces[tag])
@@ -163,25 +166,30 @@ func _check_partition(catchment: Dictionary) -> void:
 		owners.size(), catchment.size(), shared])
 
 
-## (b) Soma das áreas cultiváveis das cidades = área cultivável da nação.
+## (b) Conservação GLOBAL de área cultivável: a soma das áreas das cidades é a
+## soma das províncias que alguma cidade recebeu (cada província entra uma vez,
+## multiplicada pelas frações das cidades). Vale para as 66 nações de uma vez e
+## cobre províncias doadoras (Vaticano) sem depender de lista fixa.
 func _check_area_sum(catchment: Dictionary, geo: Object, cities: Array) -> void:
-	var playable := _playable_provinces()
-	var nation_cult := {}
-	for pid in playable:
-		var tag := String(playable[pid].get("nation", ""))
-		nation_cult[tag] = float(nation_cult.get(tag, 0.0)) \
-			+ float(geo.province_cultivable_area_km2(pid))
+	var seen := {}
+	var expected := 0.0
+	for city_id in catchment:
+		for pid_v in catchment[city_id]:
+			var pid := int(pid_v)
+			if seen.has(pid):
+				continue
+			seen[pid] = true
+			expected += float(geo.province_cultivable_area_km2(pid))
 
-	for tag in nation_cult:
-		var city_sum := 0.0
-		for city in cities:
-			if String(city.get("nation", "")) == tag:
-				city_sum += float(geo.city_cultivable_area_km2(String(city.get("id", ""))))
-		var expected := float(nation_cult[tag])
-		if absf(city_sum - expected) > maxf(1.0, 0.001 * expected):
-			_fail("%s: soma áreas cultiváveis das cidades %.1f != nação %.1f km²" % [
-				tag, city_sum, expected])
-	print("[catchment] (b) soma de área cultivável por nação confere")
+	var city_sum := 0.0
+	for city in cities:
+		city_sum += float(geo.city_cultivable_area_km2(String(city.get("id", ""))))
+	if absf(city_sum - expected) > maxf(1.0, 0.001 * expected):
+		_fail("soma das áreas cultiváveis das cidades %.1f != províncias atribuídas %.1f km²" % [
+			city_sum, expected])
+	else:
+		print("[catchment] (b) conservação global de área cultivável: %.1f km² em %d províncias" % [
+			city_sum, seen.size()])
 
 
 ## (c) Toda cidade jogável tem ≥ 1 província (nenhuma cidade sem terra).
@@ -190,7 +198,7 @@ func _check_every_city_has_land(catchment: Dictionary, cities: Array) -> void:
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var tag := String(city.get("nation", ""))
-		if not GeographyServiceScript.NATION_CODE.has(tag):
+		if not GeographyServiceScript.is_playable(tag):
 			continue
 		if (catchment.get(city_id, []) as Array).is_empty():
 			no_land.append(city_id)

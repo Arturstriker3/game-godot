@@ -24,6 +24,10 @@ const CAMERA_FOV := 75.0
 const DEFAULT_DISTANCE := 52.0
 const ZOOM_OUT_DISTANCE := 120.0
 const MAX_PORT_OFFSET_PX := 12.5
+## Folga de colisão do layout (`LABEL_COLLIDE_PAD_PX` em `map/city_world.gd`):
+## um nome cede quando o bloco vizinho encosta — não só quando há interseção
+## estrita. O teste precisa da mesma folga para reconhecer quem bloqueou.
+const LABEL_YIELD_PAD_PX := 3.0
 
 const SIZES := [Vector2i(1920, 1080), Vector2i(1366, 768)]
 const FOCUSES := ["BEL-BRU", "GBR-LDN", "GBR-GLA", "NED-AMS", "FRA-PAR"]
@@ -131,11 +135,20 @@ func _check_text_overlaps(tag: String, report: Array, screen: Rect2) -> void:
 					tag, a["id"], b["id"]])
 
 
-## (c) Toda capital com âncora na tela tem nome visível.
+## (c) Toda capital com âncora na tela tem nome visível — com uma exceção
+## geométrica: quando duas capitais ocupam o mesmo punhado de pixels (Roma e
+## Vaticano ficam a menos de 1 px; Skopje, Pristina, Tirana e Podgorica caem no
+## mesmo canto dos Bálcãs), sem linhas-guia só um nome cabe.
+## A capital de menor população pode ceder, e SÓ para outra capital (nunca para
+## uma cidade comum), que é a regra de prioridade do layout.
 func _check_capitals(tag: String, report: Array, cities: Array, screen: Rect2) -> void:
 	var shown := {}
+	var entry_by_id := {}
 	for entry: Dictionary in report:
-		if String(entry["kind"]) == "city" and bool(entry["text_visible"]):
+		if String(entry["kind"]) != "city":
+			continue
+		entry_by_id[String(entry["id"])] = entry
+		if bool(entry["text_visible"]):
 			shown[String(entry["id"])] = true
 	for city: Dictionary in cities:
 		if not bool(city.get("capital", false)):
@@ -147,8 +160,37 @@ func _check_capitals(tag: String, report: Array, cities: Array, screen: Rect2) -
 		var projected := _camera.unproject_position(world)
 		if not screen.grow(24.0).has_point(projected):
 			continue
-		if not shown.has(city_id):
-			_failures.append("%s: capital %s sem nome" % [tag, city_id])
+		if shown.has(city_id):
+			continue
+		var own: Dictionary = entry_by_id.get(city_id, {})
+		if own.is_empty():
+			_failures.append("%s: capital %s sem nome (fora do layout)" % [
+				tag, city_id])
+			continue
+		var rect: Rect2 = own["text_rect"]
+		var population := float(city.get("population", 0.0))
+		# Cedeu a uma capital MAIOR (Roma sobre Vaticano; Skopje sobre Podgorica;
+		# o ícone da capital vizinha também ocupa o bloco). Como as capitais são
+		# aceitas antes de qualquer cidade comum, só outra capital pode tirar o
+		# nome de uma capital.
+		var yielded_to_capital := false
+		var blocker := ""
+		for other: Dictionary in report:
+			if String(other["kind"]) != "city" \
+					or String(other["id"]) == city_id \
+					or not bool(other["capital"]):
+				continue
+			if not (other["rect"] as Rect2).grow(LABEL_YIELD_PAD_PX) \
+					.intersects(rect):
+				continue
+			if blocker == "":
+				blocker = String(other["id"])
+			if float(other["population"]) > population:
+				yielded_to_capital = true
+				break
+		if not yielded_to_capital:
+			_failures.append("%s: capital %s sem nome (bloqueada por %s)" % [
+				tag, city_id, blocker if blocker != "" else "cidade comum"])
 
 
 ## (d) Todo porto a no máximo ~12 px do ponto de costa. Porto fundido na cidade

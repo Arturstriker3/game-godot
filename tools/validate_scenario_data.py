@@ -27,6 +27,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -56,7 +57,21 @@ CITY_FIELDS = [
 PORT_FIELDS = ["id", "name", "nation", "x", "y", "landmass"]
 BUILDING_FIELDS_CSV = ["city_id", "building_id", "name", "output_tons_per_day"]
 BUILDING_FIELDS_JSON = ["city_id", "id", "name", "output_tons_per_day"]
-NATION_FIELDS = ["id", "name", "flag"]
+# Schema do plano §5. `population`/`gdp_ppp_bn` são opcionais: nação sem dado
+# publicado fica sem o campo (a UI declara a ausência) — não se inventa número.
+NATION_FIELDS = [
+    "id",
+    "name",
+    "flag",
+    "color",
+    "capital",
+    "currency",
+    "government",
+    "ai_profile",
+    "region",
+]
+COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
+FLAGS_DIR = Path("assets/flags")
 GOODS_FIELDS = ["id", "name", "base_price", "food"]
 # Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp), na
 # mesma ordem de data/definitions/economy/goods.json.
@@ -429,7 +444,7 @@ def validate_ports(sec: Section, rows: list, structure: list) -> set:
     return ids
 
 
-def validate_nations(sec: Section, rows: list, structure: list) -> set:
+def validate_nations(sec: Section, rows: list, structure: list, root: Path) -> set:
     emit_structure(sec, structure)
     ids: set = set()
     seen: dict = {}
@@ -439,6 +454,18 @@ def validate_nations(sec: Section, rows: list, structure: list) -> set:
         check_id(sec, row, nation_id, seen, "nação")
         if nation_id:
             ids.add(nation_id)
+
+        color = as_text(row.data.get("color"))
+        if color and not COLOR_PATTERN.match(color):
+            sec.errors.append(
+                f"{row.label}: color deve ser #RRGGBB (valor: {color!r})"
+            )
+
+        flag = as_text(row.data.get("flag"))
+        if flag and not (root / FLAGS_DIR / f"{flag}.png").exists():
+            sec.errors.append(
+                f"{row.label}: bandeira ausente em assets/flags/{flag}.png"
+            )
     return ids
 
 
@@ -536,12 +563,58 @@ def check_nation_refs(
         for field_name in ("nation", "home_nation"):
             value = as_text(row.data.get(field_name))
             if value and value not in nation_ids:
-                sec.warnings.append(
+                message = (
                     f"{row.label}: {field_name} '{value}' não existe em {nations_label}"
                 )
+                if field_name == "nation":
+                    sec.errors.append(message)
+                else:
+                    sec.warnings.append(message)
 
 
-def validate_i18n(sec: Section, path: Path) -> set:
+def check_nation_i18n(sec: Section, i18n: dict, nation_ids: set) -> None:
+    """Toda nação tem nome nos 3 idiomas no contrato novo e no alias legado."""
+    for tag in sorted(nation_ids):
+        for prefix in ("nation.name.", "nation."):
+            key = prefix + tag
+            entry = i18n.get(key)
+            if entry is None:
+                sec.errors.append(f"nação '{tag}' sem chave i18n '{key}'")
+                continue
+            for locale in ("pt_BR", "en", "es"):
+                if is_blank(entry.get(locale)):
+                    sec.errors.append(
+                        f"nação '{tag}': chave '{key}' sem texto em {locale}"
+                    )
+
+
+def check_capitals(
+    sec: Section,
+    cities: list,
+    nation_ids: set,
+    cities_label: str,
+) -> None:
+    """Cada nação tem ≥1 cidade e exatamente uma capital declarada."""
+    count: dict = {tag: 0 for tag in nation_ids}
+    total: dict = {tag: 0 for tag in nation_ids}
+    for row in cities:
+        tag = as_text(row.data.get("nation"))
+        if tag not in nation_ids:
+            continue
+        total[tag] = total.get(tag, 0) + 1
+        if as_text(row.data.get("capital")).lower() in ("1", "true", "yes"):
+            count[tag] = count.get(tag, 0) + 1
+    for tag in sorted(nation_ids):
+        if total.get(tag, 0) <= 0:
+            sec.errors.append(f"nação '{tag}' sem cidade em {cities_label}")
+        elif count.get(tag, 0) != 1:
+            sec.errors.append(
+                f"nação '{tag}' tem {count.get(tag, 0)} capital(is) em "
+                f"{cities_label}; esperado exatamente 1"
+            )
+
+
+def validate_i18n(sec: Section, path: Path) -> dict:
     total = 0
     seen: dict = {}
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -572,12 +645,21 @@ def validate_i18n(sec: Section, path: Path) -> set:
                 sec.errors.append(f"linha {line}: chave vazia")
             elif key in seen:
                 sec.warnings.append(
-                    f"linha {line}: chave duplicada '{key}' (já usada na linha {seen[key]})"
+                    f"linha {line}: chave duplicada '{key}' "
+                    f"(já usada na linha {seen[key]['line']})"
                 )
             else:
-                seen[key] = line
+                values = [cell.strip() for cell in record[1:4]]
+                while len(values) < 3:
+                    values.append("")
+                seen[key] = {
+                    "line": line,
+                    "pt_BR": values[0],
+                    "en": values[1],
+                    "es": values[2],
+                }
     sec.records = total
-    return set(seen)
+    return seen
 
 
 def check_i18n_ids(
@@ -737,7 +819,7 @@ def build_report(root: Path) -> Report:
     for fmt in ("csv", "json"):
         if fmt in nations:
             sec, rows, structure = nations[fmt]
-            nation_ids[fmt] = validate_nations(sec, rows, structure)
+            nation_ids[fmt] = validate_nations(sec, rows, structure, root)
 
     building_ids = {}
     for fmt in ("csv", "json"):
@@ -760,6 +842,7 @@ def build_report(root: Path) -> Report:
         if fmt in cities and fmt in nation_ids:
             sec, rows, _structure = cities[fmt]
             check_nation_refs(sec, rows, nation_ids[fmt], rel_path(scenario_dir / f"nations.{fmt}", root))
+            check_capitals(sec, rows, nation_ids[fmt], cities_label)
         if fmt in ports and fmt in nation_ids:
             sec, rows, _structure = ports[fmt]
             check_nation_refs(sec, rows, nation_ids[fmt], rel_path(scenario_dir / f"nations.{fmt}", root))
@@ -787,7 +870,7 @@ def build_report(root: Path) -> Report:
         report.io_failure = True
 
     i18n_sec = report.section(rel_path(i18n_path, root))
-    i18n_keys: Optional[set] = None
+    i18n_keys: Optional[dict] = None
     if i18n_path.exists():
         try:
             i18n_keys = validate_i18n(i18n_sec, i18n_path)
@@ -799,6 +882,10 @@ def build_report(root: Path) -> Report:
 
     if i18n_keys is not None:
         check_i18n_ids(i18n_sec, i18n_keys, city_ids, port_ids)
+        nation_union: set = set()
+        for values in nation_ids.values():
+            nation_union |= values
+        check_nation_i18n(i18n_sec, i18n_keys, nation_union)
 
     return report
 

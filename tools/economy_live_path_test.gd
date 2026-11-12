@@ -10,8 +10,8 @@ extends SceneTree
 ## 8 nações jogáveis desde o dia 1.
 ##
 ## Este teste reproduz esse caminho exato (SEM `load_data()` prévio) e falha se
-## alguma das 8 nações jogáveis ficar com aptidão 0 em todas as culturas ou sem
-## depósitos quando os dados naturais têm depósitos para ela.
+## alguma nação jogável (todas as de nations.json) ficar com aptidão 0 em todas
+## as culturas ou sem depósitos quando os dados naturais têm depósitos para ela.
 ##
 ## Uso: godot --headless --path . --script res://tools/economy_live_path_test.gd
 
@@ -24,16 +24,13 @@ const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
 
-## As 8 nações jogáveis (mesma ordem de GeographyService.NATION_CODE).
-const NATIONS := ["GBR", "FRA", "DEU", "NED", "BEL", "VEN", "SUR", "GUY"]
-
 var _failures: Array[String] = []
 
 
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[live_path] OK: as 8 nações receberam aptidão e depósitos sem load_data() prévio.")
+		print("[live_path] OK: as %d nações receberam aptidão e depósitos sem load_data() prévio." % GeographyServiceScript.playable_tags().size())
 		quit(0)
 	else:
 		print("[live_path] FALHAS (%d):" % _failures.size())
@@ -84,9 +81,9 @@ func _run() -> void:
 		_failures.append("apply_to_sim retornou vazio (dados não carregaram)")
 		return
 
-	# 3. Verifica cada nação jogável.
+	# 3. Verifica cada nação jogável (todas as 66 do nations.json).
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
-	for tag in NATIONS:
+	for tag: String in _playable_tags(cities):
 		var nation_cities := _cities_of_nation(cities, tag)
 		if nation_cities.is_empty():
 			_failures.append("%s: nenhuma cidade no cenário" % tag)
@@ -121,7 +118,7 @@ func _run() -> void:
 func _check_no_duplication(applied: Dictionary, cities: Array) -> void:
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
 	var deposit_totals := _nation_deposit_totals()
-	for tag: String in NATIONS:
+	for tag: String in _playable_tags(cities):
 		if not deposit_totals.has(tag):
 			continue
 		var declared := 0.0
@@ -145,8 +142,8 @@ func _check_no_duplication(applied: Dictionary, cities: Array) -> void:
 ## Soma da quantidade (kt) dos depósitos de cada nação jogável nos dados.
 func _nation_deposit_totals() -> Dictionary:
 	var code_to_tag := {}
-	for tag: String in GeographyServiceScript.NATION_CODE:
-		code_to_tag[String(GeographyServiceScript.NATION_CODE[tag])] = String(tag)
+	for tag: String in GeographyServiceScript.playable_tags():
+		code_to_tag[GeographyServiceScript.nation_code(tag)] = String(tag)
 	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
 	var territory_code := {}
 	for territory_id: String in nature:
@@ -251,6 +248,18 @@ func _check_landmass_side(label: String, declared_by_side: Dictionary,
 			_failures.append("%s tem %s que não existe na sua massa de terra" % [label, mineral])
 
 
+## Nações presentes no cenário e registradas como jogáveis (ordem alfabética).
+func _playable_tags(cities: Array) -> Array:
+	var tags := {}
+	for city in cities:
+		var tag := String(city.get("nation", ""))
+		if GeographyServiceScript.is_playable(tag):
+			tags[tag] = true
+	var out: Array = tags.keys()
+	out.sort()
+	return out
+
+
 ## Cidades de uma nação (id + center no formato esperado por apply_to_sim).
 func _cities_of_nation(cities: Array, tag: String) -> Array:
 	var result: Array = []
@@ -274,8 +283,8 @@ func _cities_with_center(cities: Array) -> Array:
 ## Conjunto de tags de nação cujos territórios têm depósitos nos dados naturais.
 func _nations_with_deposits() -> Dictionary:
 	var code_to_tag := {}
-	for tag: String in GeographyServiceScript.NATION_CODE:
-		code_to_tag[String(GeographyServiceScript.NATION_CODE[tag])] = String(tag)
+	for tag: String in GeographyServiceScript.playable_tags():
+		code_to_tag[GeographyServiceScript.nation_code(tag)] = String(tag)
 
 	var nature: Dictionary = _load_dict(NATURE_PATH).get("territories", {})
 	var territory_code := {}
@@ -286,6 +295,8 @@ func _nations_with_deposits() -> Dictionary:
 	var deposits: Array = _load_dict(DEPOSITS_PATH).get("deposits", [])
 	var tags := {}
 	for deposit: Dictionary in deposits:
+		if bool(deposit.get("facility", false)):
+			continue
 		var territory := String(deposit.get("territory", ""))
 		if territory == "":
 			continue

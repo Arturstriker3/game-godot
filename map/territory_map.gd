@@ -11,6 +11,7 @@ class_name TerritoryMap
 ## chega em `city_world.refresh_modes`. Esta classe só faz a atribuição visual.
 
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
+const GeographyScript := preload("res://core/economy/geography_service.gd")
 const OWNER_COLUMNS := 64
 
 ## Rasters do mundo inteiro para gerar o minimapa dinâmico (dono por província).
@@ -127,10 +128,13 @@ func assign(cities: Array) -> void:
 
 	for province in _provinces:
 		var nation := String(province["nation"])
-		if not cities_by_home.has(nation):
+		# Tag do atlas -> tag do jogo (KOS -> XKX). Nações sem cidade na
+		# província mantêm o próprio país (não jogável).
+		var home := GeographyScript.nation_for_province_tag(nation)
+		if home == "" or not cities_by_home.has(home):
 			continue
 		var nearest: Dictionary = _nearest_city(
-				cities_by_home[nation], float(province["x"]), float(province["y"]))
+				cities_by_home[home], float(province["x"]), float(province["y"]))
 		if not nearest.is_empty():
 			_assignment[int(province["id"])] = String(nearest.get("id", ""))
 
@@ -164,8 +168,15 @@ func update(cities: Array, overrides: Dictionary) -> bool:
 	# id da cidade -> nação (dono) atual, para colorir o território.
 	var city_nation: Dictionary = {}
 	for city: Variant in cities:
-		if typeof(city) == TYPE_DICTIONARY:
-			city_nation[String(city.get("id", ""))] = String(city.get("nation", ""))
+		if typeof(city) != TYPE_DICTIONARY:
+			continue
+		var city_tag := String(city.get("nation", ""))
+		city_nation[String(city.get("id", ""))] = city_tag
+		# Tag de cidade que não é um `country` do atlas (XKX) ainda precisa de
+		# índice no canal alfa do dono. O teto de 255 já era o limite do atlas
+		# (250 países) e nenhuma tag nova o ultrapassa.
+		if city_tag != "" and not _tag_index.has(city_tag) and _tag_index.size() < 255:
+			_tag_index[city_tag] = _tag_index.size() + 1
 	var changed := false
 	var new_owners: Dictionary = {}
 	for province in _provinces:

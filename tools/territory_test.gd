@@ -6,6 +6,10 @@ extends SceneTree
 
 const MAIN_SCENE := "res://game/main_game.tscn"
 const OWNER_COLUMNS := 64
+const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+## Nação sem nenhuma província admin-1 no atlas (dado real): Vaticano. Não é
+## uma falha do mapa — a cidade existe e a economia lhe dá terra pela fração.
+const NO_PROVINCE_NATIONS := ["VAT"]
 
 
 func _init() -> void:
@@ -28,44 +32,61 @@ func _run() -> void:
 		quit(1)
 		return
 
-	# (a) cada nação jogável possui > 0 províncias.
-	for tag in ["GBR", "FRA", "DEU", "NED", "BEL"]:
-		if _nation_province_count(tm, tag) <= 0:
-			failures.append("nação %s sem províncias" % tag)
+	# (a) cada nação jogável tem províncias — exceto as declaradas sem nenhuma
+	# no atlas (Vaticano). A lista vem do nations.json (66), não de tags fixas.
+	var empty_nations: Array[String] = []
+	for tag: String in GeographyServiceScript.playable_tags():
+		var atlas_tag := GeographyServiceScript.province_tag(tag)
+		if _nation_province_count(tm, atlas_tag) <= 0:
+			empty_nations.append(tag)
+	empty_nations.sort()
+	var expected_empty := NO_PROVINCE_NATIONS.duplicate()
+	expected_empty.sort()
+	if empty_nations != expected_empty:
+		failures.append("nações sem província: %s (esperado %s)" % [
+			", ".join(empty_nations), ", ".join(expected_empty)])
+	else:
+		print("[territory] (a) %d nações jogáveis com província; sem província: %s" % [
+			GeographyServiceScript.playable_tags().size() - empty_nations.size(),
+			", ".join(empty_nations)])
 
 	var owners: Dictionary = tm.owners()
 
-	# (b) toda província de nation BEL tem dono BEL.
+	# (b) toda província de nação jogável tem dono da MESMA nação (sem captura).
+	for tag: String in GeographyServiceScript.playable_tags():
+		var atlas_tag := GeographyServiceScript.province_tag(tag)
+		for pid in _nation_province_ids(tm, atlas_tag):
+			if String(owners.get(pid, "")) != tag:
+				failures.append("província %s %d com dono %s (esperado %s)" % [
+					atlas_tag, pid, owners.get(pid, ""), tag])
+	print("[territory] (b) dono inicial == nação em todas as províncias jogáveis")
+
+	# (c) override BEL-BRU -> FRA. A Bélgica tem três cidades (Bruxelas,
+	# Antuérpia, Liège): só as províncias atribuídas a Bruxelas mudam de dono.
 	var bel_ids := _nation_province_ids(tm, "BEL")
-	for pid in bel_ids:
-		if String(owners.get(pid, "")) != "BEL":
-			failures.append("província BEL %d com dono %s" % [pid, owners.get(pid, "")])
 
 	# Índice do dono FRA, lido da textura (antes do override).
 	var fra_idx := _owner_index_of(tm, "FRA")
 
-	# (c) override BEL-BRU -> FRA. A Bélgica tem duas cidades (Bruxelas e
-	# Antuérpia): só as províncias atribuídas a Bruxelas mudam de dono; as de
-	# Antuérpia continuam BEL.
 	var brussels_ids: Array[int] = []
-	var antwerp_ids: Array[int] = []
+	var rest_ids: Array[int] = []
 	for pid in bel_ids:
 		if tm.city_for_province(pid) == "BEL-BRU":
 			brussels_ids.append(pid)
 		else:
-			antwerp_ids.append(pid)
+			rest_ids.append(pid)
 	city_world.debug_set_city_nation("BEL-BRU", "FRA")
 	owners = tm.owners()
 	for pid in brussels_ids:
 		if String(owners.get(pid, "")) != "FRA":
 			failures.append("após override, província %d (Bruxelas) deveria ser FRA (era %s)"
 					% [pid, owners.get(pid, "")])
-	for pid in antwerp_ids:
+	for pid in rest_ids:
 		if String(owners.get(pid, "")) != "BEL":
-			failures.append("após override, província %d (Antuérpia) deveria seguir BEL (era %s)"
+			failures.append("após override, província %d (Bruxelas é só BEL-BRU) deveria seguir BEL (era %s)"
 					% [pid, owners.get(pid, "")])
 	if tm.nation_anchor("BEL").is_empty():
-		failures.append("nation_anchor(BEL) deveria existir após override (Antuérpia segue BEL)")
+		failures.append("nation_anchor(BEL) deveria existir após override (outras cidades seguem BEL)")
 
 	if not brussels_ids.is_empty():
 		var pid: int = brussels_ids[0]

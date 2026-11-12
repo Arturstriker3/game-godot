@@ -87,9 +87,13 @@ func short_label() -> String:
 	return SHORT_LABELS.get(locale, "PT")
 
 
-## Nome localizado de uma nação a partir da tag (GBR, FRA...).
+## Nome localizado de uma nação a partir da tag (GBR, FRA...). O contrato novo
+## do plano é `nation.name.*`; `nation.*` fica como alias legado dos saves/telas
+## antigas.
 func nation_name(tag: String) -> String:
-	return t("nation.%s" % tag)
+	var key := "nation.name.%s" % tag
+	var value := t(key)
+	return value if value != key else t("nation.%s" % tag)
 
 
 ## Nome localizado de uma cidade a partir do id (GBR-LDN...).

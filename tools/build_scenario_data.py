@@ -10,14 +10,15 @@ Entrada (data/definitions/scenario/):
     cities.csv    id,nation,home_nation,name,population,x,y,landmass
     ports.csv     id,name,nation,x,y,landmass
     buildings.csv city_id,building_id,name,output_tons_per_day
-    nations.csv   id,name,flag
+    nations.csv   id,name,flag,color,capital,currency,government,ai_profile,region,
+                  population,gdp_ppp_bn
 
 Saída (data/definitions/scenario/):
     cities.json    [ { id, nation, home_nation, name, population, production,
                       x, y, landmass }, ... ]
     ports.json     [ { id, name, nation, x, y, landmass }, ... ]
     buildings.json [ { city_id, id, name, output_tons_per_day }, ... ]
-    nations.json   [ { id, name, flag }, ... ]
+    nations.json   [ { id, name, flag, + campos opcionais do schema }, ... ]
 """
 
 import csv
@@ -80,11 +81,26 @@ def main() -> None:
 
     nations = []
     for row in _rows("nations.csv"):
-        nations.append({
+        nation = {
             "id": row["id"].strip(),
             "name": row["name"].strip(),
             "flag": row["flag"].strip(),
-        })
+        }
+        # Campos opcionais do schema do plano (docs/plans/world_nations_plan.md
+        # §5). Ausentes/vazios permanecem ausentes: o leitor do jogo trata todos
+        # como opcionais e a UI declara a falta em vez de inventar valor.
+        for key in ("color", "capital", "currency", "government", "ai_profile",
+                    "region"):
+            value = row.get(key, "").strip()
+            if value:
+                nation[key] = value
+        for key in ("population", "gdp_ppp_bn"):
+            value = row.get(key, "").strip()
+            if not value:
+                continue
+            number = float(value)
+            nation[key] = int(number) if key == "population" else number
+        nations.append(nation)
 
     def _write(name: str, data) -> None:
         path = os.path.join(SCENARIO, name)

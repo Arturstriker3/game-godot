@@ -24,12 +24,29 @@ const COASTAL_RADIUS_CELLS := 20
 const MAP_W := 5000.0
 const MAP_H := 2500.0
 
-## Tag de nação do jogo -> código ISO-3 do Natural Earth (adm0_a3).
-## Só a Holanda diverge (NED no jogo, NLD no Natural Earth).
-const NATION_CODE := {
-	"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NED": "NLD",
-	"BEL": "BEL", "VEN": "VEN", "SUR": "SUR", "GUY": "GUY",
-}
+## Cenário: a lista de nações jogáveis é a fonte de verdade dos códigos. Não há
+## mais uma tabela fixa de 8 tags — qualquer nação de `nations.json` participa
+## da geografia (províncias, bacia e minérios).
+const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
+
+## Tag do jogo -> código ISO-3 do Natural Earth (adm0_a3). A identidade cobre
+## quase todas; só NED (NLD) e XKX (KOS) divergem. KOS não tem território na base
+## natural atual (lacuna declarada), então XKX fica sem jazida própria.
+const NATION_CODE_OVERRIDES := {"NED": "NLD", "XKX": "KOS"}
+## Tag do jogo -> tag `nation` do atlas admin-1 (provinces.json). Só Kosovo
+## diverge (XKX no jogo, KOS no atlas).
+const PROVINCE_TAG_OVERRIDES := {"XKX": "KOS"}
+## Fração mínima de uma província doada quando a nação NÃO tem nenhuma província
+## própria (Vaticano é o único caso). A regra de fração normal divide pela
+## distância; aqui o piso evita cidade sem terra e mantém a doação simbólica
+## (0,1% de uma província italiana ≈ 17 km², compatível com um microestado).
+const CITY_STATE_MIN_SHARE := 0.001
+
+static var _nation_codes_cache: Dictionary = {}
+static var _province_tag_by_nation: Dictionary = {}
+static var _nation_by_province_tag: Dictionary = {}
+static var _playable_cache: Dictionary = {}
+static var _registry_ready := false
 
 ## Culturas básicas da cesta alimentar (B3) e fator calórico (tonelada-
 ## equivalente de grão; fonte FAO/USDA em economy_sim.h). A fazenda inicial
@@ -37,6 +54,17 @@ const NATION_CODE := {
 ## tonelada-equivalente na mesma área/trabalhadores.
 const STAPLE_CROPS: Array[String] = ["wheat", "rice", "maize", "potato", "soy"]
 const STAPLE_CALORIC := {"wheat": 1.0, "rice": 1.0, "maize": 1.0, "potato": 0.25, "soy": 1.3}
+
+## Necessidade alimentar do modelo demo (t/dia por habitante). Espelha
+## `kDemoNeedPerCapita` em `gdextension/src/economy_sim.cpp`; mantido explícito
+## aqui porque a fazenda inicial é dimensionada em GDScript antes do sim rodar.
+const FOOD_NEED_PER_CAPITA := 0.0003
+## Margem comercial da fazenda inicial: a capacidade efetiva é 10% acima da
+## necessidade local (produção vendável para regiões com déficit). Sem folga,
+## nenhuma cidade teria excedente para exportar e uma nação sem terra não teria
+## de quem comprar. O excedente só é produzido se houver demanda (fase 4b segue
+## as vendas do dia anterior), então a folga não vira estoque parado.
+const INITIAL_FARM_EXPORT_MARGIN := 1.10
 
 ## Área (km²) por território, pré-computada por tools/compute_territory_areas.py
 ## com o MESMO Voronoi equirretangular de tools/build_resource_map.py. É uma
@@ -96,6 +124,73 @@ var _assign_signature := ""
 var _roster: Array = []
 var _roster_ready := false
 var _loaded := false
+
+
+# --- Registro de nações (cenário, não hardcoded) ---------------------------
+
+## Carrega `nations.json` uma vez e monta os dois mapas de código:
+## tag do jogo -> ISO-3 natural e tag do jogo -> tag de província do atlas.
+## Sem o arquivo, cai na lista histórica de 8 tags (nunca quebra o boot).
+static func _load_registry() -> void:
+	if _registry_ready:
+		return
+	_registry_ready = true
+	_nation_codes_cache.clear()
+	_province_tag_by_nation.clear()
+	_nation_by_province_tag.clear()
+	_playable_cache.clear()
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(NATIONS_PATH))
+	var tags: Array = []
+	if typeof(parsed) == TYPE_ARRAY:
+		for nation in parsed:
+			if typeof(nation) == TYPE_DICTIONARY and String(nation.get("id", "")) != "":
+				tags.append(String(nation["id"]))
+	if tags.is_empty():
+		tags = ["GBR", "FRA", "DEU", "NED", "BEL", "VEN", "SUR", "GUY"]
+	for tag: String in tags:
+		var code := String(NATION_CODE_OVERRIDES.get(tag, tag))
+		var province_tag := String(PROVINCE_TAG_OVERRIDES.get(tag, tag))
+		_nation_codes_cache[tag] = code
+		_province_tag_by_nation[tag] = province_tag
+		_nation_by_province_tag[province_tag] = tag
+		_playable_cache[tag] = true
+
+
+## tag do jogo -> código ISO-3 do Natural Earth ("" se não jogável).
+static func nation_code(tag: String) -> String:
+	_load_registry()
+	return String(_nation_codes_cache.get(tag, ""))
+
+
+## tag do jogo -> tag `nation` usada pelas províncias do atlas.
+static func province_tag(tag: String) -> String:
+	_load_registry()
+	return String(_province_tag_by_nation.get(tag, ""))
+
+
+## tag de província do atlas -> tag do jogo ("" se não jogável).
+static func nation_for_province_tag(province_tag: String) -> String:
+	_load_registry()
+	return String(_nation_by_province_tag.get(province_tag, ""))
+
+
+## Mapa tag do jogo -> ISO-3 natural (cópia; não mutar).
+func nation_codes() -> Dictionary:
+	_load_registry()
+	return _nation_codes_cache.duplicate()
+
+
+## Todas as nações do cenário, em ordem alfabética de tag.
+static func playable_tags() -> Array:
+	_load_registry()
+	var tags: Array = _playable_cache.keys()
+	tags.sort()
+	return tags
+
+
+static func is_playable(tag: String) -> bool:
+	_load_registry()
+	return _playable_cache.has(tag)
 
 
 ## Carrega os JSON naturais. Idempotente.
@@ -249,41 +344,126 @@ func best_staple_nation(code: String) -> String:
 ## (§11/§15): troca o trigo SÓ onde ele é inviável (aptidão < 0,30). Cidades com
 ## trigo viável mantêm trigo — a troca indiscriminada (maior aptidão × caloria)
 ## tirava a DEU do mercado de trigo e derrubava a GBR para 4% (§11.3). Retorna
-## cópia dos edifícios com o campo "resource" preenchido (o C++ mapeia o nome ao
-## produto). Cidade sem nação conhecida mantém "wheat". Terra limitada: a
-## capacidade nominal (output_tons_per_day) é tetada pela capacidade física da
-## área cultivável da cidade para a cultura escolhida (city_land_capacity_t_day);
-## a produção efetiva segue = capacidade × aptidão.
+## Cópia dos edifícios com o campo "resource" preenchido (o C++ mapeia o nome ao
+## produto). Cidade sem nação conhecida mantém "wheat". Terra limitada e rateio
+## NACIONAL: cada cidade dimensiona a fazenda inicial para a PRÓPRIA necessidade
+## na aptidão real da sua bacia; o excedente nacional (necessidade × margem) é
+## rateado pela terra ociosa de quem tem folga. Cidade urbana sem terra não
+## recebe meta própria — ela compra da região, como São Paulo compra do
+## interior. Quando a soma das bacias não basta, o que falta é déficit real e
+## vira importação (§19). `aptitude` vai no dicionário para o núcleo dimensionar
+## folha/opex pela fração apta da terra (não pela capacidade nominal inteira).
 func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 	assign_provinces(cities)
 	var nation_of := {}
+	var population_of := {}
 	for city in cities:
-		nation_of[String(city.get("id", ""))] = String(city.get("nation", ""))
-	var resolved: Array = []
+		var city_id := String(city.get("id", ""))
+		nation_of[city_id] = String(city.get("nation", ""))
+		population_of[city_id] = float(city.get("population", 0.0))
+	# 1ª passada: cultura, aptidão e capacidade física de cada fazenda.
+	var entries: Array = []
+	var land_eff_by_city := {}
+	var need_by_nation := {}
+	var land_eff_by_nation := {}
+	var self_by_nation := {}
 	for building in buildings:
 		var entry: Dictionary = building.duplicate(true)
 		var city_id := String(entry.get("city_id", ""))
 		var tag := String(nation_of.get(city_id, ""))
-		var code := String(NATION_CODE.get(tag, ""))
-		var resource := _initial_staple(code)
+		var code := nation_code(tag)
+		var resource := _initial_staple(code, city_id)
 		entry["resource"] = resource
+		var aptitude := city_crop_suitability(city_id, resource) if code != "" else 1.0
+		aptitude = clampf(aptitude, 0.0, 1.0)
+		entry["aptitude"] = aptitude
+		var land_cap := 0.0
+		if code != "":
+			land_cap = city_land_capacity_t_day(city_id, resource)
+		var land_eff := land_cap * aptitude
+		land_eff_by_city[city_id] = land_eff
+		if code != "":
+			var need := float(population_of.get(city_id, 0.0)) * FOOD_NEED_PER_CAPITA
+			need_by_nation[tag] = float(need_by_nation.get(tag, 0.0)) + need
+			land_eff_by_nation[tag] = float(land_eff_by_nation.get(tag, 0.0)) + land_eff
+			# Terra que a própria cidade usa para se alimentar (a menor entre a
+			# necessidade e a sua capacidade física).
+			self_by_nation[tag] = float(self_by_nation.get(tag, 0.0)) + minf(need, land_eff)
+		entries.append({"entry": entry, "city_id": city_id, "tag": tag, "code": code,
+			"resource": resource, "aptitude": aptitude, "land_cap": land_cap,
+			"land_eff": land_eff,
+			"need": float(population_of.get(city_id, 0.0)) * FOOD_NEED_PER_CAPITA})
+	# 2ª passada: a cidade primeiro se alimenta da própria bacia; o excedente
+	# nacional (necessidade × margem) é rateado pela TERRA OCIOSA de quem ainda
+	# tem folga. O rateio anterior dividia a meta nacional pela terra apta de
+	# cada cidade — Viena, com 15% da terra da Áustria e 89% da população,
+	# recebia 138 t/dia para uma necessidade de 720 e virava importadora
+	# permanente sem renda para pagar (§19). Alocar a necessidade primeiro só
+	# muda QUEM produz, não o total nacional (que continua limitado por
+	# `national_eff`).
+	var resolved: Array = []
+	for item in entries:
+		var entry: Dictionary = item["entry"]
+		var code: String = item["code"]
 		if code != "":
 			var capacity := float(entry.get("output_tons_per_day", 0.0))
-			var land_cap := city_land_capacity_t_day(city_id, resource)
-			if capacity > land_cap:
-				entry["output_tons_per_day"] = land_cap
+			var aptitude: float = item["aptitude"]
+			var land_cap: float = item["land_cap"]
+			var land_eff: float = item["land_eff"]
+			var city_need: float = item["need"]
+			var tag: String = item["tag"]
+			var nation_land: float = float(land_eff_by_nation.get(tag, 0.0))
+			var nation_need: float = float(need_by_nation.get(tag, 0.0))
+			var nation_self: float = float(self_by_nation.get(tag, 0.0))
+			if aptitude > 0.0 and nation_land > 0.0:
+				var target_eff := minf(city_need, land_eff)
+				var national_eff := minf(nation_need * INITIAL_FARM_EXPORT_MARGIN, nation_land)
+				var spare := land_eff - target_eff
+				if spare > 0.0 and national_eff > nation_self:
+					var nation_spare := maxf(nation_land - nation_self, 0.0)
+					if nation_spare > 0.0:
+						target_eff += minf(
+							(national_eff - nation_self) * spare / nation_spare, spare)
+				# Só aumenta a capacidade do CSV: as 8 nações originais já eram
+				# calibradas e não podem perder produção (comida ≥ 98%).
+				capacity = maxf(capacity, target_eff / aptitude)
+			if land_cap > 0.0 and capacity > land_cap:
+				capacity = land_cap
+			entry["output_tons_per_day"] = capacity
 		resolved.append(entry)
 	return resolved
 
 
-## Cultura da fazenda inicial: trigo quando viável (aptidão ≥ 0,30); senão o
-## básico de maior aptidão × caloria (arroz nos trópicos). Sem dados, trigo.
-func _initial_staple(code: String) -> String:
+## Cultura da fazenda inicial: trigo quando viável NA BACIA DA CIDADE (aptidão
+## ≥ 0,30); senão o básico de maior aptidão × caloria também na cidade; sem
+## aptidão local, cai para a melhor cultura nacional; sem dado nenhum, trigo.
+## Antes a viabilidade era nacional (melhor território do país): uma cidade de
+## Azerbaijão com trigo 0,0 mas milho 0,05 recebia trigo, e a fazenda nascia
+## inerte (aptidão 0) e bloqueava o governo de construir a cultura viável —
+## causa de AZE/ISL/SAU ficarem em 0% (§19).
+## O critério é ESTRITAMENTE local: uma cidade com trigo 0,0 e soja 0,45 recebe
+## soja. O atalho "sem trigo local, mas nação de trigo → trigo" deixava 19
+## cidades (São Paulo, Xangai, Moscou, Houston...) com fazenda de aptidão 0 —
+## prédio sem empregos, sem folha e sem produção, que não alimentava ninguém e
+## tirava a renda familiar da cidade (§19). Só as 8 cidades SEM aptidão alguma
+## (ISL, SAU, CAN-OTT, IDN-SUR, MEX-TIJ, ZAF-CAP) caem na melhor cultura
+## nacional — e, na prática, importam: não há terra na base para elas.
+func _initial_staple(code: String, city_id: String = "") -> String:
 	if code == "":
 		return "wheat"
-	if crop_suitability_nation(code, "wheat") >= 0.30:
+	if city_id != "" and city_crop_suitability(city_id, "wheat") >= 0.30:
 		return "wheat"
-	return best_staple_nation(code)
+	var best := "wheat"
+	var best_score := -1.0
+	for crop in STAPLE_CROPS:
+		var aptitude := city_crop_suitability(city_id, crop) if city_id != "" else 0.0
+		var score := aptitude * float(STAPLE_CALORIC.get(crop, 0.0))
+		if score > best_score:
+			best_score = score
+			best = crop
+	if best_score <= 0.0:
+		return best_staple_nation(code)
+	return best
 
 
 ## Maior cobertura florestal entre os territórios da nação.
@@ -304,8 +484,8 @@ func forest_cover_nation(code: String) -> float:
 ## de terra (landmass da cidade mais próxima de qualquer nação, proxy de
 ## continente — o mesmo critério de `_assign_deposits`). Sem cidade da nação na
 ## landmass, cai para a cidade mais próxima da nação (qualquer landmass), para
-## nunca perder uma província. Províncias de nações não jogáveis (sem tag em
-## NATION_CODE) são ignoradas. A soma das províncias por nação é uma partição:
+## nunca perder uma província. Províncias de nações não jogáveis (sem tag no
+## registro de nations.json) são ignoradas. A soma das províncias por nação é uma partição:
 ## nenhuma província entra em duas cidades e nenhuma fica de fora. A unidade é a
 ## PROVÍNCIA admin-1 (fina): o TERRITÓRIO era grosso demais (França 11, Reino
 ## Unido 4, Bélgica 1) e deixava 9 das 33 cidades sem terra.
@@ -326,8 +506,8 @@ func assign_provinces(cities: Array) -> Dictionary:
 	var norm := _normalized_cities(cities)
 	var catchment := {}
 	for province in _provinces:
-		var tag := String(province.get("nation", ""))
-		if not NATION_CODE.has(tag):
+		var tag := nation_for_province_tag(String(province.get("nation", "")))
+		if tag == "":
 			continue
 		var point := Vector2(float(province.get("x", 0.0)), float(province.get("y", 0.0)))
 		var city_id := _nearest_city_of_nation(norm, tag, point)
@@ -360,7 +540,7 @@ func _share_starved_provinces(cities: Array, catchment: Dictionary) -> void:
 	var by_nation := {}
 	for city in cities:
 		var tag := String(city.get("tag", ""))
-		if not NATION_CODE.has(tag):
+		if not is_playable(tag):
 			continue
 		if not by_nation.has(tag):
 			by_nation[tag] = []
@@ -378,7 +558,7 @@ func _share_starved_provinces(cities: Array, catchment: Dictionary) -> void:
 ## candidata respeita a MESMA massa de terra da cidade (regra A1); só sem
 ## candidata na landmass cai para a mais próxima da nação (nunca deixa a cidade
 ## sem terra).
-func _share_nearest_province(city: Dictionary, peers: Array, all_cities: Array,
+func _share_nearest_province(city: Dictionary, _peers: Array, all_cities: Array,
 		catchment: Dictionary) -> void:
 	var tag := String(city.get("tag", ""))
 	var center: Vector2 = city["center"]
@@ -386,15 +566,35 @@ func _share_nearest_province(city: Dictionary, peers: Array, all_cities: Array,
 	var nearest := _nearest_nation_province(tag, center, all_cities, landmass)
 	if nearest.is_empty():
 		nearest = _nearest_nation_province(tag, center, all_cities, "")
+	# Nação sem NENHUMA província no atlas (Vaticano): doa uma fração simbólica
+	# da província mais próxima, mesmo de outro país, para a cidade não ficar
+	# sem terra. A regra de fração abaixo continua valendo quando há dono.
+	var city_state := nearest.is_empty()
+	if nearest.is_empty():
+		nearest = _nearest_any_province(center, all_cities, landmass)
+	if nearest.is_empty():
+		nearest = _nearest_any_province(center, all_cities, "")
 	if nearest.is_empty():
 		return
 	var pid := int(nearest.get("id", 0))
 	var point := Vector2(float(nearest.get("x", 0.0)), float(nearest.get("y", 0.0)))
-	var owner_id := _nearest_city(peers, tag, point, "")
-	if owner_id == "" or owner_id == String(city["id"]):
+	var owner_tag := nation_for_province_tag(String(nearest.get("nation", "")))
+	var owner_id := String(city["id"]) if owner_tag == "" \
+			else _nearest_city(all_cities, owner_tag, point, "")
+	if owner_id == String(city["id"]):
+		return
+	if owner_id == "":
+		# Província de nação não jogável: não há cidade dona do restante; a
+		# cidade recebe só o piso simbólico (o resto segue sem dono no sim).
+		var city_state_shares: Dictionary = _province_share.get(String(city["id"]), {})
+		city_state_shares[pid] = CITY_STATE_MIN_SHARE
+		_province_share[String(city["id"])] = city_state_shares
+		if not catchment.has(String(city["id"])):
+			catchment[String(city["id"])] = []
+		(catchment[String(city["id"])] as Array).append(pid)
 		return
 	var owner_center := Vector2.ZERO
-	for peer in peers:
+	for peer in all_cities:
 		if String(peer["id"]) == owner_id:
 			owner_center = peer["center"]
 			break
@@ -402,6 +602,8 @@ func _share_nearest_province(city: Dictionary, peers: Array, all_cities: Array,
 	var city_distance := center.distance_to(point)
 	var city_share := owner_distance / (city_distance + owner_distance) \
 			if city_distance + owner_distance > 0.0 else 0.5
+	if city_state:
+		city_share = maxf(city_share, CITY_STATE_MIN_SHARE)
 	var owner_shares: Dictionary = _province_share.get(owner_id, {})
 	var owner_share := float(owner_shares.get(pid, 1.0))
 	# Piso de segurança em divisões em cadeia: o dono nunca fica com zero.
@@ -425,9 +627,28 @@ func _nearest_nation_province(tag: String, center: Vector2, cities: Array,
 		landmass: String) -> Dictionary:
 	var nearest: Dictionary = {}
 	var best_distance := INF
+	var atlas_tag := province_tag(tag)
+	if atlas_tag == "":
+		return nearest
 	for province in _provinces:
-		if String(province.get("nation", "")) != tag:
+		if String(province.get("nation", "")) != atlas_tag:
 			continue
+		var point := Vector2(float(province.get("x", 0.0)), float(province.get("y", 0.0)))
+		if landmass != "" and _landmass_of(point, cities) != landmass:
+			continue
+		var distance := center.distance_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			nearest = province
+	return nearest
+
+
+## Província mais próxima de QUALQUER nação (fallback de nação sem província).
+## Prefere a mesma massa de terra; sem candidata nela, aceita qualquer uma.
+func _nearest_any_province(center: Vector2, cities: Array, landmass: String) -> Dictionary:
+	var nearest: Dictionary = {}
+	var best_distance := INF
+	for province in _provinces:
 		var point := Vector2(float(province.get("x", 0.0)), float(province.get("y", 0.0)))
 		if landmass != "" and _landmass_of(point, cities) != landmass:
 			continue
@@ -638,7 +859,7 @@ func owners_for_territories(territories: Array, resource: String) -> Array:
 ## Atribui cada depósito nacional a UMA cidade (regra A1). Retorna
 ## {city_id: [depósito, ...]} sem duplicação: cada depósito entra em exatamente
 ## uma cidade, então a soma das reservas por nação no sim é a soma dos depósitos
-## da nação. Depósitos de nações não jogáveis (sem tag em NATION_CODE) são
+## da nação. Depósitos de nações não jogáveis (sem tag no registro) são
 ## ignorados. Idempotente: a mesma lista de cidades reaproveita o cache.
 func assign_deposits(cities: Array) -> Dictionary:
 	var norm := _normalized_cities(cities)
@@ -648,8 +869,8 @@ func assign_deposits(cities: Array) -> Dictionary:
 	_assign_signature = signature
 
 	var tag_of_code := {}
-	for tag: String in NATION_CODE:
-		tag_of_code[String(NATION_CODE[tag])] = String(tag)
+	for tag: String in nation_codes():
+		tag_of_code[nation_code(tag)] = String(tag)
 
 	var assigned := {}
 	var owner_key := {}
@@ -675,10 +896,14 @@ func assign_deposits(cities: Array) -> Dictionary:
 	return _deposits_by_city
 
 
-## Chave estável de um depósito (posição + recurso). Não inclui quantidade: a
-## mesma jazida aparece com campos levemente diferentes nos dois JSONs (mapa e
-## natural) e continua sendo a mesma.
+## Chave estável de um depósito. Usa o `id` quando existe (deposits.json tem
+## ids únicos, inclusive para jazidas de mesma posição/recurso); sem id (extrato
+## do mapa), cai para posição + recurso. Não inclui quantidade: a mesma jazida
+## aparece com campos levemente diferentes nos dois JSONs e continua a mesma.
 func _deposit_key(deposit: Dictionary) -> String:
+	var deposit_id := String(deposit.get("id", ""))
+	if deposit_id != "":
+		return deposit_id
 	return "%s|%s|%s" % [str(snappedf(float(deposit.get("px", 0.0)), 0.1)),
 			str(snappedf(float(deposit.get("py", 0.0)), 0.1)),
 			String(deposit.get("resource", ""))]
@@ -797,7 +1022,7 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		var center: Vector2 = city.get("center", Vector2.ZERO)
-		var code := String(NATION_CODE.get(String(city.get("nation", "")), ""))
+		var code := nation_code(String(city.get("nation", "")))
 		var city_applied := {}
 		for crop in crops:
 			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
@@ -859,7 +1084,9 @@ func _aggregate_deposits(deposits: Array) -> Dictionary:
 		var agg: Dictionary = totals[resource]
 		var total: float = agg["reserve_kt"]
 		out[resource] = {
-			"reserve_kt": round(total),
+			# Sem arredondar para inteiro: jazidas de 12 t (0,012 kt) sumiriam
+			# (reserva 0) e a cidade ficaria sem o mineral que os dados declaram.
+			"reserve_kt": maxf(snappedf(total, 0.001), 0.001),
 			"quality": snappedf(agg["quality_w"] / total, 0.001),
 			"depth_m": int(round(agg["depth_w"] / total)),
 		}

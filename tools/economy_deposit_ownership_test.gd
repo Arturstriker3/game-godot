@@ -64,8 +64,8 @@ func _init() -> void:
 func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Array,
 		nature: Dictionary) -> void:
 	var tag_of_code := {}
-	for tag: String in geo.NATION_CODE:
-		tag_of_code[String(geo.NATION_CODE[tag])] = String(tag)
+	for tag: String in geo.nation_codes():
+		tag_of_code[String(geo.nation_code(tag))] = String(tag)
 
 	# Esperado, lido do JSON cru (fonte independente do índice do serviço).
 	var expected_total := 0
@@ -86,8 +86,10 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 	var got_total := 0
 	for city_id in assigned:
 		for deposit in assigned[city_id]:
-			var key := "%s|%s|%s" % [str(deposit.get("px", 0.0)),
-					str(deposit.get("py", 0.0)), String(deposit.get("resource", ""))]
+			var key := String(deposit.get("id", ""))
+			if key == "":
+				key = "%s|%s|%s" % [str(deposit.get("px", 0.0)),
+						str(deposit.get("py", 0.0)), String(deposit.get("resource", ""))]
 			if seen.has(key):
 				_fail("jazida duplicada: %s em %s e %s" % [key, seen[key], city_id])
 				continue
@@ -124,7 +126,7 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 func _check_conservation(geo, city_list: Array) -> void:
 	var by_nation := _cities_by_nation(city_list)
 	for tag in by_nation:
-		var code := String(geo.NATION_CODE.get(tag, ""))
+		var code := String(geo.nation_code(tag))
 		var national: Array = geo.deposits_for_nation(code)
 		var national_reserve := {}
 		for deposit in national:

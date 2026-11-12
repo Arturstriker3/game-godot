@@ -142,5 +142,773 @@
     "x": 2420.0,
     "y": 491.3,
     "landmass": "britain"
+  },
+  {
+    "id": "ALB-TIR",
+    "name": "Tirana",
+    "nation": "ALB",
+    "x": 2773.1,
+    "y": 676.6,
+    "landmass": "continent"
+  },
+  {
+    "id": "ALB-DUR",
+    "name": "Durrës",
+    "nation": "ALB",
+    "x": 2770.7,
+    "y": 676.6,
+    "landmass": "continent"
+  },
+  {
+    "id": "HRV-SPL",
+    "name": "Split",
+    "nation": "HRV",
+    "x": 2728.6,
+    "y": 646.1,
+    "landmass": "continent"
+  },
+  {
+    "id": "CYP-NIC",
+    "name": "Nicosia",
+    "nation": "CYP",
+    "x": 2963.6,
+    "y": 761.4,
+    "landmass": "cyprus"
+  },
+  {
+    "id": "CYP-LIM",
+    "name": "Limassol",
+    "nation": "CYP",
+    "x": 2959.3,
+    "y": 768.7,
+    "landmass": "cyprus"
+  },
+  {
+    "id": "DNK-COP",
+    "name": "Copenhagen",
+    "nation": "DNK",
+    "x": 2674.9,
+    "y": 477.0,
+    "landmass": "continent"
+  },
+  {
+    "id": "DNK-AAR",
+    "name": "Aarhus",
+    "nation": "DNK",
+    "x": 2641.9,
+    "y": 470.3,
+    "landmass": "continent"
+  },
+  {
+    "id": "EST-TAL",
+    "name": "Tallinn",
+    "nation": "EST",
+    "x": 2843.9,
+    "y": 424.5,
+    "landmass": "continent"
+  },
+  {
+    "id": "FIN-HEL",
+    "name": "Helsinki",
+    "nation": "FIN",
+    "x": 2846.4,
+    "y": 414.7,
+    "landmass": "continent"
+  },
+  {
+    "id": "GRC-ATH",
+    "name": "Athens",
+    "nation": "GRC",
+    "x": 2829.9,
+    "y": 723.0,
+    "landmass": "continent"
+  },
+  {
+    "id": "GRC-THE",
+    "name": "Thessaloniki",
+    "nation": "GRC",
+    "x": 2818.9,
+    "y": 685.7,
+    "landmass": "continent"
+  },
+  {
+    "id": "ISL-REY",
+    "name": "Reykjavík",
+    "nation": "ISL",
+    "x": 2196.3,
+    "y": 359.8,
+    "landmass": "iceland"
+  },
+  {
+    "id": "ISL-REYK",
+    "name": "Reykjanesbær",
+    "nation": "ISL",
+    "x": 2187.2,
+    "y": 361.6,
+    "landmass": "iceland"
+  },
+  {
+    "id": "IRL-DUB",
+    "name": "Dublin",
+    "nation": "IRL",
+    "x": 2413.6,
+    "y": 509.3,
+    "landmass": "ireland"
+  },
+  {
+    "id": "IRL-COR",
+    "name": "Cork",
+    "nation": "IRL",
+    "x": 2382.5,
+    "y": 529.5,
+    "landmass": "ireland"
+  },
+  {
+    "id": "ITA-ROM",
+    "name": "Rome",
+    "nation": "ITA",
+    "x": 2673.0,
+    "y": 669.2,
+    "landmass": "continent"
+  },
+  {
+    "id": "ITA-NAP",
+    "name": "Naples",
+    "nation": "ITA",
+    "x": 2698.7,
+    "y": 682.7,
+    "landmass": "continent"
+  },
+  {
+    "id": "ITA-PAD",
+    "name": "Padua",
+    "nation": "ITA",
+    "x": 2666.9,
+    "y": 619.8,
+    "landmass": "continent"
+  },
+  {
+    "id": "ITA-PAL",
+    "name": "Palermo",
+    "nation": "ITA",
+    "x": 2685.9,
+    "y": 721.1,
+    "landmass": "continent"
+  },
+  {
+    "id": "LVA-RIG",
+    "name": "Riga",
+    "nation": "LVA",
+    "x": 2835.4,
+    "y": 459.3,
+    "landmass": "continent"
+  },
+  {
+    "id": "MLT-VAL",
+    "name": "Valletta",
+    "nation": "MLT",
+    "x": 2701.7,
+    "y": 751.6,
+    "landmass": "malta"
+  },
+  {
+    "id": "MCO-MON",
+    "name": "Monaco",
+    "nation": "MCO",
+    "x": 2603.5,
+    "y": 643.0,
+    "landmass": "continent"
+  },
+  {
+    "id": "MNE-POD",
+    "name": "Podgorica",
+    "nation": "MNE",
+    "x": 2765.8,
+    "y": 663.1,
+    "landmass": "continent"
+  },
+  {
+    "id": "MNE-NIK",
+    "name": "Nikšić",
+    "nation": "MNE",
+    "x": 2760.9,
+    "y": 658.9,
+    "landmass": "continent"
+  },
+  {
+    "id": "NOR-OSL",
+    "name": "Oslo",
+    "nation": "NOR",
+    "x": 2649.8,
+    "y": 418.4,
+    "landmass": "continent"
+  },
+  {
+    "id": "NOR-BER",
+    "name": "Bergen",
+    "nation": "NOR",
+    "x": 2574.2,
+    "y": 411.7,
+    "landmass": "continent"
+  },
+  {
+    "id": "PRT-LIS",
+    "name": "Lisbon",
+    "nation": "PRT",
+    "x": 2373.4,
+    "y": 712.6,
+    "landmass": "continent"
+  },
+  {
+    "id": "PRT-POR",
+    "name": "Porto",
+    "nation": "PRT",
+    "x": 2380.7,
+    "y": 679.0,
+    "landmass": "continent"
+  },
+  {
+    "id": "RUS-SAI",
+    "name": "Saint Petersburg",
+    "nation": "RUS",
+    "x": 2921.4,
+    "y": 417.8,
+    "landmass": "continent"
+  },
+  {
+    "id": "SMR-SAN",
+    "name": "San Marino",
+    "nation": "SMR",
+    "x": 2673.6,
+    "y": 640.0,
+    "landmass": "continent"
+  },
+  {
+    "id": "ESP-BAR",
+    "name": "Barcelona",
+    "nation": "ESP",
+    "x": 2530.2,
+    "y": 675.4,
+    "landmass": "continent"
+  },
+  {
+    "id": "ESP-VAL",
+    "name": "Valencia",
+    "nation": "ESP",
+    "x": 2494.8,
+    "y": 702.2,
+    "landmass": "continent"
+  },
+  {
+    "id": "SWE-STO",
+    "name": "Stockholm",
+    "nation": "SWE",
+    "x": 2751.2,
+    "y": 426.3,
+    "landmass": "continent"
+  },
+  {
+    "id": "SWE-GOT",
+    "name": "Gothenburg",
+    "nation": "SWE",
+    "x": 2666.3,
+    "y": 448.9,
+    "landmass": "continent"
+  },
+  {
+    "id": "TUR-IST",
+    "name": "Istanbul",
+    "nation": "TUR",
+    "x": 2902.5,
+    "y": 680.8,
+    "landmass": "continent"
+  },
+  {
+    "id": "TUR-IZM",
+    "name": "Izmir",
+    "nation": "TUR",
+    "x": 2877.5,
+    "y": 716.9,
+    "landmass": "continent"
+  },
+  {
+    "id": "TUR-BUR",
+    "name": "Bursa",
+    "nation": "TUR",
+    "x": 2903.7,
+    "y": 691.2,
+    "landmass": "continent"
+  },
+  {
+    "id": "TUR-ADA",
+    "name": "Adana",
+    "nation": "TUR",
+    "x": 2989.2,
+    "y": 738.8,
+    "landmass": "continent"
+  },
+  {
+    "id": "AZE-BAK",
+    "name": "Baku",
+    "nation": "AZE",
+    "x": 3193.1,
+    "y": 689.4,
+    "landmass": "continent"
+  },
+  {
+    "id": "AZE-SUM",
+    "name": "Sumqayıt",
+    "nation": "AZE",
+    "x": 3190.0,
+    "y": 686.3,
+    "landmass": "continent"
+  },
+  {
+    "id": "GEO-BAT",
+    "name": "Batumi",
+    "nation": "GEO",
+    "x": 3078.3,
+    "y": 671.7,
+    "landmass": "continent"
+  },
+  {
+    "id": "USA-WAS",
+    "name": "Washington",
+    "nation": "USA",
+    "x": 1428.5,
+    "y": 711.4,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-NEW",
+    "name": "New York",
+    "nation": "USA",
+    "x": 1472.5,
+    "y": 685.1,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-LOS",
+    "name": "Los Angeles",
+    "nation": "USA",
+    "x": 857.2,
+    "y": 777.9,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-BOS",
+    "name": "Boston",
+    "nation": "USA",
+    "x": 1513.4,
+    "y": 661.9,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-SAN",
+    "name": "San Francisco",
+    "nation": "USA",
+    "x": 799.9,
+    "y": 725.4,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-PHI",
+    "name": "Philadelphia",
+    "nation": "USA",
+    "x": 1456.6,
+    "y": 695.5,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-HOU",
+    "name": "Houston",
+    "nation": "USA",
+    "x": 1177.7,
+    "y": 837.1,
+    "landmass": "north_america"
+  },
+  {
+    "id": "USA-MIA",
+    "name": "Miami",
+    "nation": "USA",
+    "x": 1386.4,
+    "y": 892.0,
+    "landmass": "north_america"
+  },
+  {
+    "id": "CAN-MON",
+    "name": "Montreal",
+    "nation": "CAN",
+    "x": 1478.0,
+    "y": 618.0,
+    "landmass": "north_america"
+  },
+  {
+    "id": "CAN-VAN",
+    "name": "Vancouver",
+    "nation": "CAN",
+    "x": 790.1,
+    "y": 566.1,
+    "landmass": "north_america"
+  },
+  {
+    "id": "MEX-TIJ",
+    "name": "Tijuana",
+    "nation": "MEX",
+    "x": 875.5,
+    "y": 798.6,
+    "landmass": "north_america"
+  },
+  {
+    "id": "BRA-RIO",
+    "name": "Rio de Janeiro",
+    "nation": "BRA",
+    "x": 1900.3,
+    "y": 1568.3,
+    "landmass": "south_america"
+  },
+  {
+    "id": "BRA-REC",
+    "name": "Recife",
+    "nation": "BRA",
+    "x": 2015.7,
+    "y": 1362.0,
+    "landmass": "south_america"
+  },
+  {
+    "id": "BRA-POR",
+    "name": "Porto Alegre",
+    "nation": "BRA",
+    "x": 1788.6,
+    "y": 1667.2,
+    "landmass": "south_america"
+  },
+  {
+    "id": "BRA-FOR",
+    "name": "Fortaleza",
+    "nation": "BRA",
+    "x": 1965.0,
+    "y": 1302.2,
+    "landmass": "south_america"
+  },
+  {
+    "id": "BRA-SAL",
+    "name": "Salvador",
+    "nation": "BRA",
+    "x": 1965.6,
+    "y": 1430.4,
+    "landmass": "south_america"
+  },
+  {
+    "id": "ARG-BUE",
+    "name": "Buenos Aires",
+    "nation": "ARG",
+    "x": 1689.8,
+    "y": 1731.3,
+    "landmass": "south_america"
+  },
+  {
+    "id": "CHN-GUA",
+    "name": "Guangzhou",
+    "nation": "CHN",
+    "x": 4073.2,
+    "y": 929.3,
+    "landmass": "asia"
+  },
+  {
+    "id": "CHN-SHA",
+    "name": "Shanghai",
+    "nation": "CHN",
+    "x": 4187.3,
+    "y": 816.3,
+    "landmass": "asia"
+  },
+  {
+    "id": "CHN-XIA",
+    "name": "Xiamen",
+    "nation": "CHN",
+    "x": 4140.3,
+    "y": 910.3,
+    "landmass": "asia"
+  },
+  {
+    "id": "JPN-TOK",
+    "name": "Tokyo",
+    "nation": "JPN",
+    "x": 4440.6,
+    "y": 754.7,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-OSA",
+    "name": "Osaka",
+    "nation": "JPN",
+    "x": 4382.0,
+    "y": 768.7,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-NAG",
+    "name": "Nagoya",
+    "nation": "JPN",
+    "x": 4401.6,
+    "y": 761.4,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-FUK",
+    "name": "Fukuoka",
+    "nation": "JPN",
+    "x": 4311.8,
+    "y": 783.4,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-SAP",
+    "name": "Sapporo",
+    "nation": "JPN",
+    "x": 4463.2,
+    "y": 652.2,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-OKA",
+    "name": "Okayama",
+    "nation": "JPN",
+    "x": 4360.7,
+    "y": 769.3,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-KIT",
+    "name": "Kitakyushu",
+    "nation": "JPN",
+    "x": 4317.9,
+    "y": 780.3,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-HIR",
+    "name": "Hiroshima",
+    "nation": "JPN",
+    "x": 4339.9,
+    "y": 772.4,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-SEN",
+    "name": "Sendai",
+    "nation": "JPN",
+    "x": 4457.1,
+    "y": 718.7,
+    "landmass": "japan"
+  },
+  {
+    "id": "JPN-HAM",
+    "name": "Hamamatsu",
+    "nation": "JPN",
+    "x": 4413.1,
+    "y": 768.1,
+    "landmass": "japan"
+  },
+  {
+    "id": "KOR-SEO",
+    "name": "Seoul",
+    "nation": "KOR",
+    "x": 4261.8,
+    "y": 728.5,
+    "landmass": "asia"
+  },
+  {
+    "id": "KOR-BUS",
+    "name": "Busan",
+    "nation": "KOR",
+    "x": 4292.3,
+    "y": 762.6,
+    "landmass": "asia"
+  },
+  {
+    "id": "IND-MUM",
+    "name": "Mumbai",
+    "nation": "IND",
+    "x": 3512.3,
+    "y": 985.4,
+    "landmass": "asia"
+  },
+  {
+    "id": "IND-KOL",
+    "name": "Kolkata",
+    "nation": "IND",
+    "x": 3725.9,
+    "y": 940.2,
+    "landmass": "asia"
+  },
+  {
+    "id": "IND-CHE",
+    "name": "Chennai",
+    "nation": "IND",
+    "x": 3615.4,
+    "y": 1068.4,
+    "landmass": "asia"
+  },
+  {
+    "id": "IND-SUR",
+    "name": "Surat",
+    "nation": "IND",
+    "x": 3511.7,
+    "y": 956.1,
+    "landmass": "asia"
+  },
+  {
+    "id": "IDN-JAK",
+    "name": "Jakarta",
+    "nation": "IDN",
+    "x": 3984.1,
+    "y": 1336.4,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-SUR",
+    "name": "Surabaya",
+    "nation": "IDN",
+    "x": 4066.5,
+    "y": 1351.0,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-MED",
+    "name": "Medan",
+    "nation": "IDN",
+    "x": 3871.2,
+    "y": 1200.3,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-SEM",
+    "name": "Semarang",
+    "nation": "IDN",
+    "x": 4034.1,
+    "y": 1347.4,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-MAK",
+    "name": "Makassar",
+    "nation": "IDN",
+    "x": 4159.2,
+    "y": 1321.7,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-PAL",
+    "name": "Palembang",
+    "nation": "IDN",
+    "x": 3953.6,
+    "y": 1289.4,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-YOG",
+    "name": "Yogyakarta",
+    "nation": "IDN",
+    "x": 4032.3,
+    "y": 1358.9,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-MAL",
+    "name": "Malang",
+    "nation": "IDN",
+    "x": 4064.0,
+    "y": 1364.4,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-BAND",
+    "name": "Bandar Lampung",
+    "nation": "IDN",
+    "x": 3962.1,
+    "y": 1326.0,
+    "landmass": "java"
+  },
+  {
+    "id": "IDN-BAT",
+    "name": "Batam",
+    "nation": "IDN",
+    "x": 3945.0,
+    "y": 1234.4,
+    "landmass": "java"
+  },
+  {
+    "id": "SAU-JED",
+    "name": "Jeddah",
+    "nation": "SAU",
+    "x": 3044.7,
+    "y": 951.8,
+    "landmass": "asia"
+  },
+  {
+    "id": "SAU-DAM",
+    "name": "Dammam",
+    "nation": "SAU",
+    "x": 3196.1,
+    "y": 882.9,
+    "landmass": "asia"
+  },
+  {
+    "id": "ZAF-CAP",
+    "name": "Cape Town",
+    "nation": "ZAF",
+    "x": 2756.0,
+    "y": 1721.5,
+    "landmass": "africa"
+  },
+  {
+    "id": "ZAF-DUR",
+    "name": "Durban",
+    "nation": "ZAF",
+    "x": 2931.2,
+    "y": 1664.7,
+    "landmass": "africa"
+  },
+  {
+    "id": "AUS-MEL",
+    "name": "Melbourne",
+    "nation": "AUS",
+    "x": 4513.9,
+    "y": 1775.2,
+    "landmass": "oceania"
+  },
+  {
+    "id": "AUS-SYD",
+    "name": "Sydney",
+    "nation": "AUS",
+    "x": 4600.5,
+    "y": 1720.9,
+    "landmass": "oceania"
+  },
+  {
+    "id": "AUS-BRI",
+    "name": "Brisbane",
+    "nation": "AUS",
+    "x": 4625.6,
+    "y": 1631.8,
+    "landmass": "oceania"
+  },
+  {
+    "id": "VEN-CCS",
+    "name": "Caracas",
+    "nation": "VEN",
+    "x": 1570.7,
+    "y": 1104.4,
+    "landmass": "guiana"
+  },
+  {
+    "id": "VEN-VLN",
+    "name": "Valencia",
+    "nation": "VEN",
+    "x": 1556.1,
+    "y": 1106.9,
+    "landmass": "guiana"
   }
 ]

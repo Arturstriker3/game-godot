@@ -28,8 +28,17 @@ As 40 cidades e os 18 portos do cenário atual são preservados por contrato
 (coluna `legacy` = yes): mesmo id, mesmas coordenadas e mesma população.
 
 Uso:
-    python tools/build_world_cities.py            # gera out/
-    python tools/build_world_cities.py --check    # só valida (não escreve)
+    python tools/build_world_cities.py                    # gera out/
+    python tools/build_world_cities.py --check            # só valida (não escreve)
+    python tools/build_world_cities.py --write-scenario   # gera out/ e promove para
+                                                          # data/definitions/scenario/
+                                                          # (CSVs + merge do i18n)
+
+`--write-scenario` é a única forma reprodutível de levar o cenário F1 ao jogo:
+copia nations/cities/ports/buildings de out/ para o cenário e faz o merge das
+chaves `city.name.*`/`port.name.*`/`nation.name.*` (e do alias legado
+`nation.*`) em `data/definitions/i18n/i18n.csv`, preservando as demais chaves.
+Depois rode `tools/build_scenario_data.py` e `tools/validate_scenario_data.py`.
 """
 
 from __future__ import annotations
@@ -46,6 +55,7 @@ ROOT = os.path.abspath(os.path.join(HERE, ".."))
 WORLD = os.path.join(ROOT, "data", "definitions", "world")
 OUT = os.path.join(WORLD, "out")
 SCENARIO = os.path.join(ROOT, "data", "definitions", "scenario")
+I18N_CSV = os.path.join(ROOT, "data", "definitions", "i18n", "i18n.csv")
 
 MAP_W, MAP_H = 5000.0, 2500.0
 MIN_SPACING_KM = 25.0
@@ -101,13 +111,63 @@ def select_cities(rows: list[dict], target: int) -> list[dict]:
     return chosen
 
 
-def building_code(city_id: str) -> str:
-    return city_id.split("-", 1)[1].lower()
+def building_code(city_id: str, legacy: bool) -> str:
+    """Id da fazenda inicial. As 40 legadas mantêm o id curto histórico
+    (`ldn_wheat`); as novas usam o id completo da cidade (`jpn_tok_wheat`),
+    porque o sufixo de 3 letras colide entre nações (BAN, MON, BER...)."""
+    if legacy:
+        return city_id.split("-", 1)[1].lower()
+    return city_id.lower().replace("-", "_")
+
+
+def write_csv(directory: str, name: str, rows: list[dict], fields: list[str]) -> None:
+    os.makedirs(directory, exist_ok=True)
+    with open(os.path.join(directory, name), "w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({k: row.get(k, "") for k in fields})
+
+
+def merge_i18n(rows: list[dict]) -> int:
+    """Mescla as chaves geradas em data/definitions/i18n/i18n.csv.
+
+    Preserva a ordem e todas as chaves que não pertencem ao cenário; as chaves
+    geradas substituem a linha existente (GBR passa de "England" para "Reino
+    Unido") e as novas entram no fim, em ordem. Determinístico: rodar duas vezes
+    produz o mesmo arquivo.
+    """
+    generated = {str(row["key"]): row for row in rows}
+    existing: list[dict] = []
+    seen: set[str] = set()
+    if os.path.exists(I18N_CSV):
+        with open(I18N_CSV, encoding="utf-8-sig", newline="") as fh:
+            for row in csv.DictReader(fh):
+                key = str(row.get("key", "")).strip()
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                if key in generated:
+                    existing.append(generated.pop(key))
+                else:
+                    existing.append({
+                        "key": key,
+                        "pt_BR": row.get("pt_BR", ""),
+                        "en": row.get("en", ""),
+                        "es": row.get("es", ""),
+                    })
+    for key in sorted(generated):
+        existing.append(generated[key])
+    write_csv(os.path.dirname(I18N_CSV), os.path.basename(I18N_CSV),
+              existing, ["key", "pt_BR", "en", "es"])
+    return len(existing)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="valida sem escrever")
+    parser.add_argument("--write-scenario", action="store_true",
+                        help="promove out/ para data/definitions/scenario/ e mescla o i18n")
     args = parser.parse_args()
 
     nations_src = read_csv("nations_source.csv")
@@ -171,7 +231,7 @@ def main() -> int:
                 farm = f"{float(c['population']) * POP_PER_TON:.1f}"
             buildings_out.append({
                 "city_id": c["id"],
-                "building_id": f"{building_code(c['id'])}_wheat",
+                "building_id": f"{building_code(c['id'], c['legacy'] == 'yes')}_wheat",
                 "name": f"{c['name_pt']} — trigo",
                 "output_tons_per_day": farm,
             })
@@ -191,6 +251,11 @@ def main() -> int:
             "gdp_ppp_bn": n["gdp_ppp_bn"],
         })
         i18n_out.append({"key": f"nation.name.{iso3}", "pt_BR": n["name_pt"],
+                         "en": n["name_en"], "es": n["name_es"]})
+        # Alias legado: `I18n.nation_name` lê `nation.<tag>`. O gerador escreve
+        # os dois prefixos para o contrato do plano (`nation.name.*`) e o código
+        # atual conviverem sem uma segunda fonte de verdade.
+        i18n_out.append({"key": f"nation.{iso3}", "pt_BR": n["name_pt"],
                          "en": n["name_en"], "es": n["name_es"]})
         extra = len(chosen) - (len(rows))
         if extra:
@@ -242,24 +307,28 @@ def main() -> int:
     if args.check:
         return 1 if problems else 0
 
-    os.makedirs(OUT, exist_ok=True)
+    nation_fields = ["id", "name", "flag", "color", "capital", "currency", "government",
+                     "ai_profile", "region", "population", "gdp_ppp_bn"]
+    city_fields = ["id", "nation", "home_nation", "name", "population", "x", "y",
+                   "landmass", "capital"]
+    port_fields = ["id", "name", "nation", "x", "y", "landmass"]
+    building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
+    i18n_fields = ["key", "pt_BR", "en", "es"]
 
-    def write(name: str, rows: list[dict], fields: list[str]) -> None:
-        with open(os.path.join(OUT, name), "w", encoding="utf-8", newline="") as fh:
-            writer = csv.DictWriter(fh, fieldnames=fields)
-            writer.writeheader()
-            for row in rows:
-                writer.writerow({k: row.get(k, "") for k in fields})
+    write_csv(OUT, "nations.csv", nations_out, nation_fields)
+    write_csv(OUT, "cities.csv", cities_out, city_fields)
+    write_csv(OUT, "ports.csv", ports_out, port_fields)
+    write_csv(OUT, "buildings.csv", buildings_out, building_fields)
+    write_csv(OUT, "i18n.csv", i18n_out, i18n_fields)
 
-    write("nations.csv", nations_out,
-          ["id", "name", "flag", "color", "capital", "currency", "government",
-           "ai_profile", "region", "population", "gdp_ppp_bn"])
-    write("cities.csv", cities_out,
-          ["id", "nation", "home_nation", "name", "population", "x", "y", "landmass", "capital"])
-    write("ports.csv", ports_out, ["id", "name", "nation", "x", "y", "landmass"])
-    write("buildings.csv", buildings_out,
-          ["city_id", "building_id", "name", "output_tons_per_day"])
-    write("i18n.csv", i18n_out, ["key", "pt_BR", "en", "es"])
+    if args.write_scenario:
+        write_csv(SCENARIO, "nations.csv", nations_out, nation_fields)
+        write_csv(SCENARIO, "cities.csv", cities_out, city_fields)
+        write_csv(SCENARIO, "ports.csv", ports_out, port_fields)
+        write_csv(SCENARIO, "buildings.csv", buildings_out, building_fields)
+        keys = merge_i18n(i18n_out)
+        print(f"cenário promovido -> {os.path.relpath(SCENARIO, ROOT)}")
+        print(f"i18n mesclado -> {os.path.relpath(I18N_CSV, ROOT)} ({keys} chaves)")
 
     meta = {
         "phase": "F1",

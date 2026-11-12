@@ -251,6 +251,72 @@ city.name.ZAF-CAP,Cidade do Cabo,Cape Town,Ciudad del Cabo
 city.name.ZAF-DUR,Durban,Durban,Durban
 city.name.ZAF-JOH,Joanesburgo,Johannesburg,Johannesburgo
 city.name.ZAF-PRE,Pretória,Pretoria,Pretoria
+nation.ALB,Albânia,Albania,Albania
+nation.AND,Andorra,Andorra,Andorra
+nation.ARG,Argentina,Argentina,Argentina
+nation.ARM,Arménia,Armenia,Armenia
+nation.AUS,Austrália,Australia,Australia
+nation.AUT,Áustria,Austria,Austria
+nation.AZE,Azerbaijão,Azerbaijan,Azerbaiyán
+nation.BEL,Bélgica,Belgium,Bélgica
+nation.BGR,Bulgária,Bulgaria,Bulgaria
+nation.BIH,Bósnia e Herzegovina,Bosnia and Herzegovina,Bosnia y Herzegovina
+nation.BLR,Bielorrússia,Belarus,Bielorrusia
+nation.BRA,Brasil,Brazil,Brasil
+nation.CAN,Canadá,Canada,Canadá
+nation.CHE,Suíça,Switzerland,Suiza
+nation.CHN,China,China,China
+nation.CYP,Chipre,Cyprus,Chipre
+nation.CZE,Chéquia,Czechia,Chequia
+nation.DEU,Alemanha,Germany,Alemania
+nation.DNK,Dinamarca,Denmark,Dinamarca
+nation.ESP,Espanha,Spain,España
+nation.EST,Estónia,Estonia,Estonia
+nation.FIN,Finlândia,Finland,Finlandia
+nation.FRA,França,France,Francia
+nation.GBR,Reino Unido,United Kingdom,Reino Unido
+nation.GEO,Geórgia,Georgia,Georgia
+nation.GRC,Grécia,Greece,Grecia
+nation.GUY,Guiana,Guyana,Guyana
+nation.HRV,Croácia,Croatia,Croacia
+nation.HUN,Hungria,Hungary,Hungría
+nation.IDN,Indonésia,Indonesia,Indonesia
+nation.IND,Índia,India,India
+nation.IRL,Irlanda,Ireland,Irlanda
+nation.ISL,Islândia,Iceland,Islandia
+nation.ITA,Itália,Italy,Italia
+nation.JPN,Japão,Japan,Japón
+nation.KOR,Coreia do Sul,South Korea,Corea del Sur
+nation.LIE,Liechtenstein,Liechtenstein,Liechtenstein
+nation.LTU,Lituânia,Lithuania,Lituania
+nation.LUX,Luxemburgo,Luxembourg,Luxemburgo
+nation.LVA,Letónia,Latvia,Letonia
+nation.MCO,Mónaco,Monaco,Mónaco
+nation.MDA,Moldávia,Moldova,Moldavia
+nation.MEX,México,Mexico,México
+nation.MKD,Macedónia do Norte,North Macedonia,Macedonia del Norte
+nation.MLT,Malta,Malta,Malta
+nation.MNE,Montenegro,Montenegro,Montenegro
+nation.NED,Países Baixos,Netherlands,Países Bajos
+nation.NOR,Noruega,Norway,Noruega
+nation.POL,Polónia,Poland,Polonia
+nation.PRT,Portugal,Portugal,Portugal
+nation.ROU,Roménia,Romania,Rumania
+nation.RUS,Rússia,Russia,Rusia
+nation.SAU,Arábia Saudita,Saudi Arabia,Arabia Saudita
+nation.SMR,San Marino,San Marino,San Marino
+nation.SRB,Sérvia,Serbia,Serbia
+nation.SUR,Suriname,Suriname,Surinam
+nation.SVK,Eslováquia,Slovakia,Eslovaquia
+nation.SVN,Eslovénia,Slovenia,Eslovenia
+nation.SWE,Suécia,Sweden,Suecia
+nation.TUR,Turquia,Turkey,Turquía
+nation.UKR,Ucrânia,Ukraine,Ucrania
+nation.USA,Estados Unidos,United States,Estados Unidos
+nation.VAT,Vaticano,Vatican,Vaticano
+nation.VEN,Venezuela,Venezuela,Venezuela
+nation.XKX,Kosovo,Kosovo,Kosovo
+nation.ZAF,África do Sul,South Africa,Sudáfrica
 nation.name.ALB,Albânia,Albania,Albania
 nation.name.AND,Andorra,Andorra,Andorra
 nation.name.ARG,Argentina,Argentina,Argentina
