@@ -269,6 +269,8 @@ private:
 		std::string home_nation;  // região natural (território que controla)
 		std::string name;
 		double population;
+		// Unidade de simulação (ver DemoCity). População exibida em `population`.
+		double simulation_population = 0.0;
 		double production;
 		double stockpile;
 		MapPoint center;
@@ -421,7 +423,13 @@ private:
 		std::string home_nation;  // região natural (território que controla)
 		std::string landmass;     // massa de terra contínua (rota terrestre)
 		MapPoint center{0.0, 0.0};
+		// `population` é a população REAL exibida (2026, nação inteira rateada
+		// entre as cidades). `simulation_population` é a aglomeração da fonte,
+		// a unidade de simulação: TODO o cálculo econômico usa esta, para o
+		// balanço (comida, caixa, empregos, preços) continuar calibrado. Campo
+		// de save; cenário antigo/sintético sem ele usa `population`.
 		double population = 0.0;
+		double simulation_population = 0.0;
 		double firm_cash = 0.0;
 		double service_cash = 0.0;
 		double government_budget = 0.0;
@@ -552,7 +560,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
 		DemoStatusKeys();
 	};
 
@@ -589,6 +597,8 @@ private:
 
 	struct BenchCity {
 		double population = 0.0;
+		// Benchmark sintetico: a aglomeracao e a propria populacao.
+		double simulation_population = 0.0;
 		double firm_cash = 0.0;
 		double service_cash = 0.0;
 		double government_budget = 0.0;

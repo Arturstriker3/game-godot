@@ -27,6 +27,19 @@ inline double safe_unit(double v) {
 	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
 }
 
+// População de SIMULAÇÃO da cidade. Desde a calibração de 2026, `population`
+// no cenário é a população real exibida (nação inteira rateada) e a aglomeração
+// da fonte viaja em `sim_population`. Sem o campo (save antigo, cenário
+// sintético), a população histórica É a unidade de simulação — comportamento
+// anterior preservado.
+inline double read_sim_population(const Dictionary& data, double population) {
+	if (!data.has("sim_population")) {
+		return population;
+	}
+	const double value = safe_nonneg(static_cast<double>(data["sim_population"]));
+	return value > 0.0 ? value : population;
+}
+
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kEarthRadiusKm = 6371.0;
 constexpr double kMapWidth = 5000.0;
@@ -177,6 +190,7 @@ void EconomySim::initialize(const Array& cities, const Array& ports) {
 		city.home_nation = String(d["home_nation"]).utf8().get_data();
 		city.name = String(d["name"]).utf8().get_data();
 		city.population = safe_nonneg(static_cast<double>(d["population"]));
+		city.simulation_population = read_sim_population(d, city.population);
 		city.production = safe_nonneg(static_cast<double>(d["production"]));
 		city.stockpile = 0.0;
 		city.center = MapPoint{static_cast<double>(d["x"]), static_cast<double>(d["y"])};
@@ -216,7 +230,7 @@ Dictionary EconomySim::tick() {
 	// 2. Produção local e consumo de cada cidade.
 	for (City& city : cities_) {
 		city.stockpile += city.production;
-		city.need = city.population * kNeedPerCapita;
+		city.need = city.simulation_population * kNeedPerCapita;
 		city.consumed = std::min(city.stockpile, city.need);
 		city.stockpile -= city.consumed;
 		city.deficit = city.need - city.consumed;
@@ -224,7 +238,7 @@ Dictionary EconomySim::tick() {
 
 		// Indicadores derivados: quanto a cidade industrializou, quantos
 		// empregos isso sustenta e a renda relativa (0..1) de quem vive nela.
-		const double saturation = city.population * kTonsPerCapitaSaturation;
+		const double saturation = city.simulation_population * kTonsPerCapitaSaturation;
 		city.industrialization = saturation > 0.0
 			? std::clamp(city.production / saturation, 0.0, 1.0)
 			: 0.0;
@@ -575,6 +589,7 @@ Dictionary EconomySim::city_to_dict(const City& city) const {
 	dict["home_nation"] = String(city.home_nation.c_str());
 	dict["name"] = String(city.name.c_str());
 	dict["population"] = safe_value(city.population);
+	dict["sim_population"] = safe_value(city.simulation_population);
 	dict["need"] = safe_value(city.need);
 	dict["production"] = safe_value(city.production);
 	dict["consumed"] = safe_value(city.consumed);
@@ -942,10 +957,11 @@ void EconomySim::initialize_demo() {
 	agria.nation = "DEMO";
 	agria.center = {2532.6, 571.4};
 	agria.population = 100000.0;
+	agria.simulation_population = agria.population;
 	agria.firm_cash = 50000.0;
 	agria.service_cash = 30000.0;
 	agria.government_budget = 100000.0;
-	agria.service_jobs = agria.population * kDemoServiceShare;
+	agria.service_jobs = agria.simulation_population * kDemoServiceShare;
 	agria.service_wage = kDemoServiceWage;
 	agria.pop.population = agria.population;
 	agria.pop.savings = 50000.0;
@@ -962,10 +978,11 @@ void EconomySim::initialize_demo() {
 	portus.nation = "DEMO";
 	portus.center = {2560.4, 543.8};
 	portus.population = 200000.0;
+	portus.simulation_population = portus.population;
 	portus.firm_cash = 80000.0;
 	portus.service_cash = 60000.0;
 	portus.government_budget = 150000.0;
-	portus.service_jobs = portus.population * kDemoServiceShare;
+	portus.service_jobs = portus.simulation_population * kDemoServiceShare;
 	portus.service_wage = kDemoServiceWage;
 	portus.pop.population = portus.population;
 	portus.pop.savings = 100000.0;
@@ -1058,16 +1075,19 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 			std::string(String(d.get("home_nation", d["nation"])).utf8().get_data());
 		city.landmass = std::string(String(d.get("landmass", "")).utf8().get_data());
 		city.population = safe_nonneg(static_cast<double>(d["population"]));
+		city.simulation_population = read_sim_population(d, city.population);
 		city.center = {static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 
-		// Caixas iniciais por habitante (constantes do modelo demo).
-		city.firm_cash = city.population * kDemoFirmCashPerCapita;
-		city.service_cash = city.population * kDemoServiceCashPerCapita;
-		city.government_budget = city.population * kDemoGovernmentPerCapita;
-		city.service_jobs = city.population * kDemoServiceShare;
+		// Caixas iniciais por habitante (constantes do modelo demo). A escala é
+		// a população de SIMULAÇÃO: a população real exibida não muda o balanço.
+		city.firm_cash = city.simulation_population * kDemoFirmCashPerCapita;
+		city.service_cash = city.simulation_population * kDemoServiceCashPerCapita;
+		city.government_budget =
+			city.simulation_population * kDemoGovernmentPerCapita;
+		city.service_jobs = city.simulation_population * kDemoServiceShare;
 		city.service_wage = kDemoServiceWage;
-		city.pop.population = city.population;
-		city.pop.savings = city.population * kDemoSavingsPerCapita;
+		city.pop.population = city.simulation_population;
+		city.pop.savings = city.simulation_population * kDemoSavingsPerCapita;
 		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
 		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
 		// o dado real em tempo de execução.
@@ -1581,7 +1601,7 @@ void EconomySim::demo_trade_food() {
 
 			// Teto de carga diária (capacidade de transporte), em ton-equiv.
 			const double capacity_ge =
-				buyer.city->population * kDemoTradeCapacityPerCapita;
+				buyer.city->simulation_population * kDemoTradeCapacityPerCapita;
 			double imported_ge = 0.0;
 			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
 				const int p = demo_food_product(slot);
@@ -1742,13 +1762,14 @@ void EconomySim::demo_national_fiscal_transfer() {
 		double total_population = 0.0;
 		for (DemoCity* city : cities) {
 			total_budget += city->government_budget;
-			total_population += city->population;
+			total_population += city->simulation_population;
 		}
 		if (cities.size() < 2 || total_population <= 0.0) {
 			continue;
 		}
 		for (DemoCity* city : cities) {
-			city->government_budget = total_budget * (city->population / total_population);
+			city->government_budget =
+				total_budget * (city->simulation_population / total_population);
 		}
 	}
 }
@@ -1999,7 +2020,7 @@ void EconomySim::demo_tick_core() {
 		}
 		// O emprego de serviços é persistente: cresce ou recua conforme a
 		// receita do setor, em vez de ser recalculado a cada dia.
-		const double labor_force = city.population * kDemoLaborShare;
+		const double labor_force = city.simulation_population * kDemoLaborShare;
 		city.pop.labor_force = labor_force;
 
 		const double available = std::max(0.0, labor_force - city.service_jobs);
@@ -2037,7 +2058,8 @@ void EconomySim::demo_tick_core() {
 				std::max(0.0, city.service_cash));
 		city.pop.employed = city.service_jobs + modeled_jobs * fill;
 		city.pop.unemployed = std::max(0.0, labor_force - city.pop.employed);
-		city.pop.dependents = std::max(0.0, city.population - labor_force);
+		city.pop.dependents =
+			std::max(0.0, city.simulation_population - labor_force);
 		city.pop.wage_income = modeled_wages + city.service_wage_bill;
 
 		city.firm_cash -= modeled_wages + opex_total;
@@ -2224,8 +2246,8 @@ void EconomySim::demo_tick_core() {
 		// O índice por cidade vem do PIB PPP per capita da nação (GeographyService,
 		// nations.csv), normalizado para média mundial = 1,0; cidade sem índice
 		// declarado (cenário sintético, save antigo) mantém a média (1,0).
-		pop.external_income = city.population * kDemoExternalIncomePerCapita
-			* city.external_income_index;
+		pop.external_income = city.simulation_population
+			* kDemoExternalIncomePerCapita * city.external_income_index;
 		pop.disposable += pop.external_income;
 		demo_foreign_cash_ -= pop.external_income;
 		// A renda externa é renda de subsistência: o gasto discricionário em
@@ -2239,7 +2261,7 @@ void EconomySim::demo_tick_core() {
 
 		double budget = pop.savings + pop.disposable - pop.service_spend;
 		// Necessidade alimentar em toneladas-equivalentes de grão (B3).
-		pop.need = pop.population * kDemoNeedPerCapita;
+		pop.need = city.simulation_population * kDemoNeedPerCapita;
 		// Subsídio de subsistência: o governo garante a cesta alimentar mínima
 		// quando o orçamento de comida não cobre (ex.: cidade sem produção nem
 		// renda própria). A cesta usa o alimento mais barato por caloria
@@ -2391,7 +2413,8 @@ void EconomySim::demo_tick_core() {
 
 		// Dividendos só depois de reconstituir o capital de giro. Lucros de
 		// estatais vão para o orçamento público; privados, para as famílias.
-		const double firm_target = city.population * kDemoFirmCashPerCapita;
+		const double firm_target =
+			city.simulation_population * kDemoFirmCashPerCapita;
 		const double firm_surplus = std::max(0.0, city.firm_cash - firm_target);
 		const double positive_total = std::max(0.0, private_profit)
 			+ std::max(0.0, state_profit);
@@ -2401,7 +2424,8 @@ void EconomySim::demo_tick_core() {
 			? std::max(0.0, private_profit) / positive_total : 0.0;
 		const double modeled_distribution = distributable * private_share;
 		const double state_distribution = distributable - modeled_distribution;
-		const double service_target = city.population * kDemoServiceCashPerCapita;
+		const double service_target =
+			city.simulation_population * kDemoServiceCashPerCapita;
 		const double service_surplus = std::max(0.0,
 			city.service_cash - service_target);
 		const double service_distribution = std::min(
@@ -2702,6 +2726,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		service_spend("service_spend"),
 		service_wage("service_wage"),
 		shortage("shortage"),
+		simulation_population("simulation_population"),
 		site_suitability("site_suitability"),
 		sold("sold"),
 		stock("stock"),
@@ -2771,10 +2796,14 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.static_version = demo_status_static_version_;
 	}
 
+	// `population` = populacao real exibida; `sim_population` = unidade de
+	// simulacao. As divisoes per-capita usam a segunda, para nao mudar com o
+	// rateio nacional (o PIB nasce da populacao de simulacao).
 	dict[k.population] = city.population;
+	dict[k.simulation_population] = city.simulation_population;
 	dict[k.gdp] = city.gdp;
-	dict[k.gdp_per_capita] = city.population > 0.0
-		? city.gdp / city.population : 0.0;
+	dict[k.gdp_per_capita] = city.simulation_population > 0.0
+		? city.gdp / city.simulation_population : 0.0;
 	dict[k.external_income_index] = city.external_income_index;
 	dict[k.firm_cash] = city.firm_cash;
 	dict[k.service_cash] = city.service_cash;
@@ -2786,8 +2815,8 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	dict[k.construction_revenue] = city.construction_revenue;
 	dict[k.service_wage] = city.service_jobs > 0.0
 		? city.service_wage_bill / city.service_jobs : 0.0;
-	dict[k.disposable_per_capita] = city.population > 0.0
-		? city.pop.disposable / city.population : 0.0;
+	dict[k.disposable_per_capita] = city.simulation_population > 0.0
+		? city.pop.disposable / city.simulation_population : 0.0;
 
 	// Padrão de vida: quantas cestas alimentares diárias a renda disponível
 	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
@@ -2806,7 +2835,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	}
 	const double basket_cost = kDemoNeedPerCapita * cheapest_price;
 	const double living_standard = basket_cost > 0.0
-		? (city.pop.disposable / city.population) / basket_cost : 0.0;
+		? (city.pop.disposable / city.simulation_population) / basket_cost : 0.0;
 	dict[k.living_standard] = living_standard;
 
 	// Indicadores derivados, no espírito do formato legado, para a camada
@@ -3649,6 +3678,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		center.append(city.center.y);
 		entry["center"] = center;
 		entry["population"] = city.population;
+		entry["sim_population"] = city.simulation_population;
 		entry["firm_cash"] = city.firm_cash;
 		entry["service_cash"] = city.service_cash;
 		entry["government_budget"] = city.government_budget;
@@ -3844,6 +3874,9 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			city.center = {double(center[0]), double(center[1])};
 		}
 		city.population = double(entry.get("population", 0.0));
+		// Save antigo (ou cenário sintético) sem o campo: a população real
+		// exibida é a própria unidade de simulação (comportamento anterior).
+		city.simulation_population = read_sim_population(entry, city.population);
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
 		city.government_budget = double(entry.get("government_budget", 0.0));
@@ -3913,7 +3946,7 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 
 		Dictionary pop = entry.get("pop", Dictionary());
-		city.pop.population = double(pop.get("population", city.population));
+		city.pop.population = double(pop.get("population", city.simulation_population));
 		city.pop.labor_force = double(pop.get("labor_force", 0.0));
 		city.pop.employed = double(pop.get("employed", 0.0));
 		city.pop.unemployed = double(pop.get("unemployed", 0.0));
@@ -4105,10 +4138,11 @@ void EconomySim::initialize_benchmark(int city_count, int buildings_per_city,
 			+ static_cast<long long>(bench_seed_) * 104729LL;
 		entry.population = 50000.0
 			+ static_cast<double>(bench_positive_mod(mixed, 150000));
+		entry.simulation_population = entry.population;
 		entry.firm_cash = 50000.0;
 		entry.service_cash = 30000.0;
 		entry.government_budget = 100000.0;
-		entry.service_jobs = entry.population * kDemoServiceShare;
+		entry.service_jobs = entry.simulation_population * kDemoServiceShare;
 		entry.service_wage = kDemoServiceWage;
 		entry.savings = 50000.0;
 
@@ -4212,7 +4246,7 @@ void EconomySim::benchmark_labor() {
 		for (int slot = 0; slot < per_city; ++slot) {
 			modeled_jobs += bench_buildings_[base + slot].jobs;
 		}
-		const double labor_force = entry.population * kDemoLaborShare;
+		const double labor_force = entry.simulation_population * kDemoLaborShare;
 		const double available = std::max(0.0, labor_force - entry.service_jobs);
 		const double fill = modeled_jobs > 0.0
 			? std::clamp(available / modeled_jobs, 0.0, 1.0) : 0.0;
@@ -4291,7 +4325,7 @@ void EconomySim::benchmark_consumption() {
 		entry.government_budget += entry.taxes - entry.transfers;
 
 		double budget = entry.savings + entry.disposable - entry.service_spend;
-		entry.need = entry.population * kDemoNeedPerCapita;
+		entry.need = entry.simulation_population * kDemoNeedPerCapita;
 		double consumed = 0.0;
 		double food_spend = 0.0;
 		for (int slot = 0; slot < kBenchProducts && consumed < entry.need; ++slot) {
@@ -4395,11 +4429,13 @@ void EconomySim::benchmark_accounting() {
 		entry.service_revenue = entry.service_spend + entry.opex_revenue;
 		entry.service_profit = entry.service_revenue - entry.service_wage_bill;
 
-		const double firm_target = entry.population * kDemoFirmCashPerCapita;
+		const double firm_target =
+			entry.simulation_population * kDemoFirmCashPerCapita;
 		const double firm_surplus = std::max(0.0, entry.firm_cash - firm_target);
 		const double modeled_distribution =
 			std::min(std::max(0.0, private_profit), firm_surplus);
-		const double service_target = entry.population * kDemoServiceCashPerCapita;
+		const double service_target =
+			entry.simulation_population * kDemoServiceCashPerCapita;
 		const double service_surplus = std::max(0.0,
 			entry.service_cash - service_target);
 		const double service_distribution =
@@ -4411,8 +4447,8 @@ void EconomySim::benchmark_accounting() {
 
 		if (entry.service_wage > 0.0) {
 			const double target_jobs = entry.service_revenue / entry.service_wage;
-			const double lower = entry.population * kDemoServiceMinShare;
-			const double upper = entry.population * kDemoServiceMaxShare;
+			const double lower = entry.simulation_population * kDemoServiceMinShare;
+			const double upper = entry.simulation_population * kDemoServiceMaxShare;
 			const double bounded = std::clamp(target_jobs, lower, upper);
 			entry.service_jobs += (bounded - entry.service_jobs)
 				* kDemoServiceAdjust;
@@ -4455,7 +4491,8 @@ void EconomySim::benchmark_investment() {
 	const int per_city = bench_buildings_per_city_;
 	for (int city = 0; city < bench_cities_count_; ++city) {
 		BenchCity& entry = bench_cities_[city];
-		const double target_cash = entry.population * kDemoFirmCashPerCapita;
+		const double target_cash =
+			entry.simulation_population * kDemoFirmCashPerCapita;
 		if (entry.firm_cash <= target_cash) {
 			continue;
 		}

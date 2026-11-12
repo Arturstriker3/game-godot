@@ -1512,3 +1512,74 @@ em nenhum dos dois.
   teste isola a renda externa (índice 0) para medir o choque. Se um dia o choque
   tiver de valer **com** renda externa, a regra (não gastar renda externa em
   serviços) precisa entrar na conta — decisão de desenho, não de teste.
+
+## 21. População nacional 2026 (~8,2 bi) exibida sem mudar o balanço (2026-11-12)
+
+O cenário passa a exibir a **população nacional real de 2026** (`nations.csv`)
+rateada entre as cidades: **8.203.501.062** no total. A simulação continua na
+**aglomeração da fonte** (GeoNames, city proper), agora no campo
+`sim_population`: **1.271.720.509** no total — a mesma escala com que o modelo
+foi calibrado.
+
+### 21.1 Por que dois campos
+
+Se toda conta econômica passasse a usar a população exibida, necessidade de
+comida, caixa inicial de firmas/serviços, folha, metas de capital e preços
+cresceriam pelo fator médio **6,45×** (8,20 bi / 1,27 bi) e o balanço dos
+§§19–20 deixaria de valer. O contrato separa as duas responsabilidades:
+
+| uso | campo |
+|---|---|
+| HUD, painéis de cidade/nação/população, rótulos | `population` |
+| necessidade, renda externa, caixa, empregos, PIB per capita, padrão de vida | `simulation_population` |
+
+No C++ (`gdextension/src/economy_sim.cpp`), `read_sim_population` lê o campo
+com fallback para `population`; saves antigos e cenários sintéticos (benchmark)
+seguem com `simulation_population = population`. O campo é serializado em
+`demo_to_dict`/`demo_from_dict` e exposto no status (`sim_population`). No
+GDScript, `GeographyService.resolve_initial_farms` e o crescimento urbano de
+`map/city_world.gd` usam `sim_population`; a exibição não muda.
+
+### 21.2 Distribuição por nação
+
+`tools/build_world_cities.distribute_national_population` divide a população
+nacional proporcionalmente à aglomeração, com resto por maior fração
+(desempate por id). A soma de cada nação é exata:
+
+| nação | cidades | população exibida | `sim_population` |
+|---|---:|---:|---:|
+| SSD | 3 | 12.188.788 | 475.009 |
+| SOL | 2 | 5.700.000 | 1.450.000 |
+| XKX | 2 | 1.576.876 | 721.464 |
+
+### 21.3 Medições
+
+| teste | resultado |
+|---|---|
+| `economy_world_test` (60 d) | 0 violações; `money_total` conservado em 2.098.338.839,85 |
+| fome (60 d) | 179/179 nações com satisfação média ≥ 70%; 177/179 com todas as cidades ≥ 70% |
+| `economy_long_run_test` (365 d) | 0 violações de conservação |
+| `perf_day_peak` (807 cidades) | tick 75,2 ms (p95 94,6; máx 149,0); frame de pico 80,2 ms |
+| HUD | soma `population` das cidades = 8.203.501.062 → **8.203,5 M** |
+
+BEL e NED são as duas nações com uma cidade abaixo de 70% (60% e 40%): são
+territórios insulares do rateio nacional, não fome estrutural — a média
+nacional fica em 86,7% e 91,4%.
+
+**Continuidade do balanço:** a soma de `sim_population` das **802 cidades que já
+existiam** é idêntica à população delas antes da mudança (**1.269.795.500**); os
+**1.925.009** restantes são exatamente as 5 cidades novas (SSD/SOL). Nenhuma
+cidade existente teve a unidade de simulação alterada — o resultado dos testes
+acima é o mesmo balanço, com a população exibida nova.
+
+### 21.4 Riscos e pendências
+
+- Quem escrever UI nova precisa saber qual campo é de exibição: usar
+  `sim_population` no HUD subnotifica a população em ~6,4×.
+- A distribuição depende de `nations.csv`; nação sem população declarada não
+  recebe rateio (o build declara o problema). SSD/SOL/XKX não têm PIB PPP na
+  base e ficam fora do índice de renda externa (comportamento declarado).
+- `map/map_data/atlas/resource_points.json` e
+  `assets/icons/places/resource_wheat.png` são regenerados pelo
+  `build_resource_map.py` com ruído não determinístico e **não** entram no
+  commit desta rodada.
