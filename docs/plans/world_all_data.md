@@ -128,6 +128,26 @@ Resultado: **menor par 35,1** (ZAF–ZWE), nenhum par < 35. As correções estã
 `COLOR_OVERRIDE` no importador e são reaplicadas a cada geração; o build só
 consome `color` de `nations_source.csv`.
 
+### 6.1 Divergência com o mapa (pendência de outra tarefa)
+
+`map/territory_map.gd` (`_build_nation_palette`) pinta as **8 nações jogáveis**
+(GBR, FRA, DEU, NED, BEL, VEN, SUR, GUY) com a cor canônica de
+`map/map_data/atlas/provinces.json` (`nation_colors`) e ignora a coluna `color`
+de `nations.csv` para elas. Os três pares corrigidos envolvem justamente essas
+nações, então **no mapa** eles continuam com o tom antigo até `nation_colors`
+receber os mesmos valores:
+
+| Tag | `provinces.json` hoje | `nations.csv` (este commit) |
+| --- | --- | --- |
+| FRA | `[80, 108, 156]` (#506c9c) | `#4462a7` |
+| BEL | `[182, 156, 74]` (#b69c4a) | `#7ba744` |
+| SUR | `[72, 140, 160]` (#488ca0) | `#448e5a` |
+
+Enquanto isso não for feito, UI (cor de nação nos dados) e mapa divergem nessas
+três nações. A alternativa, se o mapa preferir manter a paleta canônica, é
+reverter `COLOR_OVERRIDE` e aceitar os pares FRA–SUR 24,5 / BEL–NED 25,1 /
+DEU–FRA 25,3.
+
 ## 7. Bandeiras
 
 231 nações → 231 PNGs `w40` em `assets/flags/`: 167 originais + 9 da fase 1 +
