@@ -6871,10 +6871,6 @@
 		"province_owner": "ATA",
 		"province_controller": "ATA"
 	},
-	"PRV001725": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
 	"PRV001726": {
 		"province_owner": "ARG",
 		"province_controller": "ARG"
@@ -7258,10 +7254,6 @@
 	"PRV001821": {
 		"province_owner": "PAN",
 		"province_controller": "PAN"
-	},
-	"PRV001822": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
 	},
 	"PRV001823": {
 		"province_owner": "IDN",
@@ -8038,18 +8030,6 @@
 	"PRV002018": {
 		"province_owner": "MEX",
 		"province_controller": "MEX"
-	},
-	"PRV002019": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002024": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002025": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
 	},
 	"PRV002026": {
 		"province_owner": "CHN",
@@ -10143,10 +10123,6 @@
 		"province_owner": "ATA",
 		"province_controller": "ATA"
 	},
-	"PRV002551": {
-		"province_owner": "PCN",
-		"province_controller": "PCN"
-	},
 	"PRV002552": {
 		"province_owner": "FRA",
 		"province_controller": "FRA"
@@ -10162,14 +10138,6 @@
 	"PRV002555": {
 		"province_owner": "FRA",
 		"province_controller": "FRA"
-	},
-	"PRV002561": {
-		"province_owner": "IND",
-		"province_controller": "IND"
-	},
-	"PRV002562": {
-		"province_owner": "VEN",
-		"province_controller": "VEN"
 	},
 	"PRV002563": {
 		"province_owner": "TTO",
@@ -10223,25 +10191,9 @@
 		"province_owner": "TTO",
 		"province_controller": "TTO"
 	},
-	"PRV002576": {
-		"province_owner": "VEN",
-		"province_controller": "VEN"
-	},
-	"PRV002577": {
-		"province_owner": "TTO",
-		"province_controller": "TTO"
-	},
-	"PRV002578": {
-		"province_owner": "TTO",
-		"province_controller": "TTO"
-	},
 	"PRV002585": {
 		"province_owner": "IND",
 		"province_controller": "IND"
-	},
-	"PRV002586": {
-		"province_owner": "NED",
-		"province_controller": "NED"
 	},
 	"PRV002588": {
 		"province_owner": "COL",
@@ -10250,22 +10202,6 @@
 	"PRV002615": {
 		"province_owner": "FRA",
 		"province_controller": "FRA"
-	},
-	"PRV002626": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
-	"PRV002627": {
-		"province_owner": "HND",
-		"province_controller": "HND"
-	},
-	"PRV002628": {
-		"province_owner": "UMI",
-		"province_controller": "UMI"
-	},
-	"PRV002652": {
-		"province_owner": "NED",
-		"province_controller": "NED"
 	},
 	"PRV002656": {
 		"province_owner": "USA",
@@ -10415,10 +10351,6 @@
 		"province_owner": "CUB",
 		"province_controller": "CUB"
 	},
-	"PRV002710": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
 	"PRV002711": {
 		"province_owner": "CUB",
 		"province_controller": "CUB"
@@ -10430,26 +10362,6 @@
 	"PRV002713": {
 		"province_owner": "CUB",
 		"province_controller": "CUB"
-	},
-	"PRV002714": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002715": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002716": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002717": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002718": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
 	},
 	"PRV002719": {
 		"province_owner": "BHS",
@@ -10463,10 +10375,6 @@
 		"province_owner": "BHS",
 		"province_controller": "BHS"
 	},
-	"PRV002722": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
 	"PRV002723": {
 		"province_owner": "BHS",
 		"province_controller": "BHS"
@@ -10475,43 +10383,11 @@
 		"province_owner": "BHS",
 		"province_controller": "BHS"
 	},
-	"PRV002725": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002726": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002727": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002728": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002729": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
 	"PRV002731": {
 		"province_owner": "BHS",
 		"province_controller": "BHS"
 	},
 	"PRV002732": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002733": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002734": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV002735": {
 		"province_owner": "BHS",
 		"province_controller": "BHS"
 	},
@@ -10563,15 +10439,7 @@
 		"province_owner": "IRN",
 		"province_controller": "IRN"
 	},
-	"PRV002758": {
-		"province_owner": "HMD",
-		"province_controller": "HMD"
-	},
 	"PRV002759": {
-		"province_owner": "ATF",
-		"province_controller": "ATF"
-	},
-	"PRV002760": {
 		"province_owner": "ATF",
 		"province_controller": "ATF"
 	},
@@ -10607,10 +10475,6 @@
 		"province_owner": "FRA",
 		"province_controller": "FRA"
 	},
-	"PRV002775": {
-		"province_owner": "MUS",
-		"province_controller": "MUS"
-	},
 	"PRV002777": {
 		"province_owner": "TZA",
 		"province_controller": "TZA"
@@ -10622,18 +10486,6 @@
 	"PRV002779": {
 		"province_owner": "TZA",
 		"province_controller": "TZA"
-	},
-	"PRV002780": {
-		"province_owner": "TZA",
-		"province_controller": "TZA"
-	},
-	"PRV002781": {
-		"province_owner": "TZA",
-		"province_controller": "TZA"
-	},
-	"PRV002803": {
-		"province_owner": "GNQ",
-		"province_controller": "GNQ"
 	},
 	"PRV002806": {
 		"province_owner": "GNQ",
@@ -10879,29 +10731,13 @@
 		"province_owner": "SWE",
 		"province_controller": "SWE"
 	},
-	"PRV002895": {
-		"province_owner": "GBR",
-		"province_controller": "GBR"
-	},
-	"PRV002896": {
-		"province_owner": "GBR",
-		"province_controller": "GBR"
-	},
 	"PRV002904": {
 		"province_owner": "AUS",
 		"province_controller": "AUS"
 	},
-	"PRV002905": {
-		"province_owner": "IOA",
-		"province_controller": "IOA"
-	},
 	"PRV002906": {
 		"province_owner": "IDN",
 		"province_controller": "IDN"
-	},
-	"PRV002907": {
-		"province_owner": "IOT",
-		"province_controller": "IOT"
 	},
 	"PRV002908": {
 		"province_owner": "SGP",
@@ -10923,10 +10759,6 @@
 		"province_owner": "SGP",
 		"province_controller": "SGP"
 	},
-	"PRV002913": {
-		"province_owner": "MYS",
-		"province_controller": "MYS"
-	},
 	"PRV002914": {
 		"province_owner": "THA",
 		"province_controller": "THA"
@@ -10938,10 +10770,6 @@
 	"PRV002916": {
 		"province_owner": "JPN",
 		"province_controller": "JPN"
-	},
-	"PRV002917": {
-		"province_owner": "TWN",
-		"province_controller": "TWN"
 	},
 	"PRV002918": {
 		"province_owner": "KOR",
@@ -10955,49 +10783,9 @@
 		"province_owner": "EST",
 		"province_controller": "EST"
 	},
-	"PRV002921": {
-		"province_owner": "EST",
-		"province_controller": "EST"
-	},
 	"PRV002925": {
 		"province_owner": "NOR",
 		"province_controller": "NOR"
-	},
-	"PRV002926": {
-		"province_owner": "AUS",
-		"province_controller": "AUS"
-	},
-	"PRV002927": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
-	"PRV002928": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
-	"PRV002929": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
-	"PRV002930": {
-		"province_owner": "AUS",
-		"province_controller": "AUS"
-	},
-	"PRV002931": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
-	"PRV002933": {
-		"province_owner": "FRA",
-		"province_controller": "FRA"
-	},
-	"PRV002936": {
-		"province_owner": "FJI",
-		"province_controller": "FJI"
-	},
-	"PRV002946": {
-		"province_owner": "SLB",
-		"province_controller": "SLB"
 	},
 	"PRV002947": {
 		"province_owner": "FRA",
@@ -11007,19 +10795,11 @@
 		"province_owner": "SLB",
 		"province_controller": "SLB"
 	},
-	"PRV002949": {
-		"province_owner": "SLB",
-		"province_controller": "SLB"
-	},
 	"PRV002950": {
 		"province_owner": "SLB",
 		"province_controller": "SLB"
 	},
 	"PRV002952": {
-		"province_owner": "SLB",
-		"province_controller": "SLB"
-	},
-	"PRV002953": {
 		"province_owner": "SLB",
 		"province_controller": "SLB"
 	},
@@ -11088,18 +10868,6 @@
 		"province_controller": "PNG"
 	},
 	"PRV002995": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
-	},
-	"PRV002999": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
-	},
-	"PRV003002": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
-	},
-	"PRV003003": {
 		"province_owner": "PHL",
 		"province_controller": "PHL"
 	},
@@ -11187,29 +10955,9 @@
 		"province_owner": "PHL",
 		"province_controller": "PHL"
 	},
-	"PRV003025": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
-	},
-	"PRV003026": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
-	},
-	"PRV003027": {
-		"province_owner": "PHL",
-		"province_controller": "PHL"
-	},
 	"PRV003028": {
 		"province_owner": "SGS",
 		"province_controller": "SGS"
-	},
-	"PRV003029": {
-		"province_owner": "NOR",
-		"province_controller": "NOR"
-	},
-	"PRV003031": {
-		"province_owner": "ATF",
-		"province_controller": "ATF"
 	},
 	"PRV003032": {
 		"province_owner": "FRA",
@@ -11235,10 +10983,6 @@
 		"province_owner": "FJI",
 		"province_controller": "FJI"
 	},
-	"PRV003059": {
-		"province_owner": "FJI",
-		"province_controller": "FJI"
-	},
 	"PRV003060": {
 		"province_owner": "SLB",
 		"province_controller": "SLB"
@@ -11246,10 +10990,6 @@
 	"PRV003074": {
 		"province_owner": "USA",
 		"province_controller": "USA"
-	},
-	"PRV003078": {
-		"province_owner": "CHN",
-		"province_controller": "CHN"
 	},
 	"PRV003080": {
 		"province_owner": "CUB",
@@ -11283,10 +11023,6 @@
 		"province_owner": "CUB",
 		"province_controller": "CUB"
 	},
-	"PRV003088": {
-		"province_owner": "TWN",
-		"province_controller": "TWN"
-	},
 	"PRV003089": {
 		"province_owner": "BHR",
 		"province_controller": "BHR"
@@ -11315,57 +11051,13 @@
 		"province_owner": "IOA",
 		"province_controller": "IOA"
 	},
-	"PRV003104": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
-	"PRV003106": {
-		"province_owner": "UMI",
-		"province_controller": "UMI"
-	},
-	"PRV003115": {
-		"province_owner": "COL",
-		"province_controller": "COL"
-	},
-	"PRV003122": {
-		"province_owner": "PGA",
-		"province_controller": "PGA"
-	},
-	"PRV003125": {
-		"province_owner": "UMI",
-		"province_controller": "UMI"
-	},
-	"PRV003126": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
-	},
-	"PRV003127": {
-		"province_owner": "UMI",
-		"province_controller": "UMI"
-	},
-	"PRV003128": {
-		"province_owner": "GBR",
-		"province_controller": "GBR"
-	},
 	"PRV003130": {
 		"province_owner": "CLP",
 		"province_controller": "CLP"
 	},
-	"PRV003131": {
-		"province_owner": "NED",
-		"province_controller": "NED"
-	},
-	"PRV003132": {
-		"province_owner": "UMI",
-		"province_controller": "UMI"
-	},
 	"PRV003134": {
 		"province_owner": "CHN",
 		"province_controller": "CHN"
-	},
-	"PRV003135": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
 	},
 	"PRV003136": {
 		"province_owner": "CHN",
@@ -11386,10 +11078,6 @@
 	"PRV003141": {
 		"province_owner": "CHN",
 		"province_controller": "CHN"
-	},
-	"PRV003142": {
-		"province_owner": "MEX",
-		"province_controller": "MEX"
 	},
 	"PRV003143": {
 		"province_owner": "CHN",
@@ -11427,10 +11115,6 @@
 		"province_owner": "RUS",
 		"province_controller": "RUS"
 	},
-	"PRV003156": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
 	"PRV003157": {
 		"province_owner": "NZL",
 		"province_controller": "NZL"
@@ -11467,10 +11151,6 @@
 		"province_owner": "NZL",
 		"province_controller": "NZL"
 	},
-	"PRV003166": {
-		"province_owner": "NZL",
-		"province_controller": "NZL"
-	},
 	"PRV003167": {
 		"province_owner": "NZL",
 		"province_controller": "NZL"
@@ -11499,21 +11179,9 @@
 		"province_owner": "NZL",
 		"province_controller": "NZL"
 	},
-	"PRV003174": {
-		"province_owner": "ATC",
-		"province_controller": "ATC"
-	},
-	"PRV003175": {
-		"province_owner": "UMI",
-		"province_controller": "UMI"
-	},
 	"PRV003177": {
 		"province_owner": "PHL",
 		"province_controller": "PHL"
-	},
-	"PRV003180": {
-		"province_owner": "BHS",
-		"province_controller": "BHS"
 	},
 	"PRV003181": {
 		"province_owner": "BHR",
