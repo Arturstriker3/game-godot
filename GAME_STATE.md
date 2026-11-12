@@ -2,7 +2,7 @@
 
 > Fonte central de conhecimento do jogo. Consulte antes de qualquer mudança importante e atualize as seções afetadas ao concluir uma implementação.
 >
-> - **Última auditoria:** 2026-11-12 (fechamento da base natural + renda externa: **231 nações / 858 cidades**, aptidão agrícola e posse mineral por **província admin-1**, `landmass` da Europa unificado em `continent` — 126 cidades reajustadas, 80→84 rótulos — e renda externa **proporcional ao PIB PPP per capita real** da nação, não mais um subsídio uniforme; 730 dias: **31 insolvências, 0 violações, `money_total` conservado, 189/197 soberanas ≥ 70%, média 97,4%** — 8 soberanas abaixo (KIR/PSX/SAH/DJI/PAK/SDN/CPV/TKM), causa em `docs/economy/balance_review.md` §20; geometria e economia validadas pela bateria headless, com `population_demo_test` vermelho por interação da renda externa com o choque de preço, registrado em §20.5).
+> - **Última auditoria:** 2026-11-12 (fechamento da base natural + renda externa: **231 nações / 858 cidades**, aptidão agrícola e posse mineral por **província admin-1**, `landmass` da Europa unificado em `continent` — 126 cidades reajustadas, 80→84 rótulos — e renda externa **proporcional ao PIB PPP per capita real** da nação, não mais um subsídio uniforme; 730 dias: **31 insolvências, 0 violações, `money_total` conservado, 189/197 soberanas ≥ 70%, média 97,4%** — 8 soberanas abaixo (KIR/PSX/SAH/DJI/PAK/SDN/CPV/TKM), causa em `docs/economy/balance_review.md` §20. Onda de desempenho de 12/11: a virada do dia medida no **caminho real** (tick no `WorkerThreadPool`) caiu de ~25 ms para **7,1 ms de frame** (máx 8,3 ms; nenhum frame > 16 ms) e o tick fica em **31–35 ms na DLL release** com as 858 cidades — ver §13.5. `population_demo_test` voltou a verde isolando a renda externa (§20.5).)
 > - **Fonte última da verdade:** o código. Em divergência entre este documento e o código, o código vence.
 > - **Nome:** o projeto vive em `G:\projetos\opengs-game`; o app se chama **Open Grand Strategy** (`project.godot`), mas o menu de pausa e documentos internos usam o nome **WarEconomy**. `README.md` descreve o mapa upstream "OpenGS" (províncias), que coexiste com o jogo de cidades como ferramenta de edição.
 
@@ -350,7 +350,135 @@ A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as 
 
 - **Regressões desta onda:** `economy_tick_async_test` (60 dias síncrono = assíncrono), `economy_integration_test`, `economy_ai_test`, `economy_live_path_test`, `economy_long_run_test` (365 d), `economy_bistability_test`, `population_demo_test`, `balance_review --days=730` (8/8 nações ≥98%, 2 falências, 0 violações), `convoy_lifecycle_test` (428 viagens, 0 erro) e `perf_day_peak --days=10` (tick 4,4 ms, pico de frame 5,4 ms).
 
+### 13.5 Virada do dia com 858 cidades: caminho real, worker e o custo do status (feito)
 
+**O `perf_day_peak` media o caminho errado.** Até esta onda o harness chamava
+`sim.tick_demo()` **na main thread** e somava esse tempo na "virada" (110,4 ms =
+tick 92,2 + publicação). No jogo o dia roda em `demo_tick_and_publish()` numa
+tarefa do `WorkerThreadPool` (§13.4) e a main só paga `poll()` + publicação.
+O harness ganhou:
+
+- `--tick-mode=worker` — agenda o dia pelo **mesmo** `core/economy/tick_scheduler.gd`
+  e mede, por frame, só o trabalho da main: `poll()` + fila de pedidos + `ai.plan()`
+  + log/alertas do HUD + `city_world.refresh_modes` (camada + território).
+- `--profile=1` — fases do C++ por dia (`demo_set_profiling`/`demo_get_profile`).
+- `--tick-mode=sync` (padrão antigo) fica como referência histórica.
+
+O `poll()` do dia pronto sai em **0,01 ms** (o status já foi montado na thread;
+`get_demo_status()` é cache hit), confirmando o contrato do §13.4. O harness
+também junta/desliga o `_process` do autoload antes de medir (o `_ready` dele
+agenda o 1º dia por `call_deferred`, que roda depois do `_ready` da ferramenta).
+
+**Frame da virada (858 cidades, 10 dias, `--map-mode=political --map-territory=1`):**
+
+| etapa (main thread) | antes | depois (release) | depois (debug) |
+|---|---:|---:|---:|
+| `poll()` do dia | 0,01 ms | 0,01 ms | 0,01 ms |
+| IA `plan()` (totais do sistema) | **13,5 ms** | **0,05 ms** | 0,06 ms |
+| `spawn_orders()` (prioridade LOD) | **5,2 ms** | **1,8 ms** | 1,9 ms |
+| HUD (log de pedidos + topo + alertas) | 1,1 ms (só o log¹) | 2,8 ms | 3,0 ms |
+| mapa (`refresh_modes`) | **5,6 ms** | **2,1 ms** | 2,1 ms |
+| **frame da virada** | **24,8 ms** (+HUD não medido) | **6,8 ms** (p95 7,2) | **7,0 ms** (p95 7,7) |
+| pico de frame (virada ou pump) | 24,8 ms | **8,6 ms** (p95 8,6) | 7,7 ms (p95 7,7) |
+
+¹ o harness antigo só espelhava `hud._log_orders`; agora mede o `_on_status`
+inteiro com a janela fechada (log + métricas do topo sobre 858 cidades + alertas).
+Ou seja, o "antes" real era ~31 ms e o "depois" **inclui** o HUD completo.
+Os frames de **pump** (IA fatiada + comboios) continuam ≤ 1,6 ms de média
+(pico 4,8 ms). **Nenhum frame > 16 ms** na virada em debug ou release.
+
+**Causas raiz corrigidas (todas no frame, nada mudou de resultado econômico):**
+
+1. `PrivateInvestor.prepare_totals` varria **858 cidades × 21 mercados** em
+   GDScript todo dia (13,5 ms). O núcleo agora publica `status["market_totals"]`
+   (`surplus`, `sold`, `demand` como `PackedFloat64Array`) — a soma é feita em
+   C++ na thread do tick, **na mesma ordem das cidades** (bit a bit idêntica) — e
+   a IA lê 3 arrays (0,05 ms). O laço antigo fica como retaguarda para status
+   montados à mão (testes/ferramentas).
+2. `TerritoryMap.update` montava **duas assinaturas de texto** (`%.3f` por
+   cidade) para descobrir que nada mudou: 4,0 ms/dia. Agora compara colunas
+   tipadas (`id`, `home_nation`, `nation`, `x`, `y`, overrides) e só reatribui/
+   reescreve a textura quando algo muda — 1,2 ms, sem alocar string.
+3. `TradeConvoys._prioritize` criava **um Dictionary de 6 chaves por pedido** e
+   ordenava os 512 para manter 24: 5,2 ms. Agora as chaves vão em arrays
+   empacotados e a seleção é uma inserção limitada a `MAX_CONVOYS`, com a mesma
+   regra (nação do jogador > internacional > doméstico, distância, origem/destino,
+   índice) — 1,9 ms.
+4. `EconomyAlerts.derive` criava um alerta por cidade (centenas) e ordenava
+   todos para devolver 6: ~6 ms. Agora a comparação é escalar e só os que entram
+   no top-6 alocam; empate desempatado por `city_id` (ordem estável entre dias).
+5. Status da cidade: o bloco de **jazidas** era reconstruído todo dia
+   (`slot.deposits.clear()` + 7 chaves + `String` do nome do produto, por cidade
+   mineira). O estático (reserva inicial, qualidade, profundidade, eficiência,
+   opex) é escrito **uma vez**; por dia só mudam `remaining_kt`, `extracted_kt`
+   e `depleted`. Uma jazida descoberta depois (`demo_set_deposit`, ex.: mina
+   revelada pela IA) sobe a versão estática e força a reescrita do bloco — sem
+   essa guarda o status mostraria a jazida antiga para sempre. `status_cities`:
+   **19,7 → 15,2 ms** (release) e 29,1 → 27,0 ms (debug, em regime).
+6. `Economy._ready` pré-aquece os **dois slots** do double buffer
+   (`demo_warm_status()`): o 1º dia publicado num slot frio pagava a criação de
+   ~20 mil dicionários (60 ms contra 17 ms num dia quente). Vira custo de carga
+   (medido: **104 ms** com as 858 cidades, no `_ready` do autoload).
+7. As chaves do status viraram **`StringName`**: a cidade reescreve ~45 chaves
+   por dia e, com `String`, o hash de cada uma era recalculado em cada escrita.
+   `StringName` guarda o hash e compara por ponteiro; o Dictionary casa
+   `String`/`StringName` pela sequência de caracteres, então o GDScript continua
+   lendo `city["population"]` (validado por `economy_integration_test` e
+   `economy_ai_test`). `status_cities`: **17,2 → 8,1 ms** (release, 8 dias).
+8. Comércio, chegada em trânsito: cada carga varria **todas** as cidades
+   comparando `std::string` para achar o destino (O(cargas × cidades) ≈ 440 mil
+   comparações/dia com 512 cargas). Agora usa o índice `demo_city_lookup_` numa
+   passada. `arrival`/`trade`: 1,0/5,5 ms (release).
+
+**Tick C++ por fase (858 cidades):**
+
+| fase (média, 10 dias) | debug antes | debug depois (regime) | release antes | release depois (regime) |
+|---|---:|---:|---:|---:|
+| `status` | 49,3 (frio: 134) | 33,5 | 24,4 | 19,5 (cidades 15,2 / pedidos 4,0) |
+| `trade` | 28,7 | 25–31 (pico 62) | 5,2 | 5,1 |
+| `arrival` (snapshot + índices + chegadas) | 10,4 | 13,9 | 1,2 | 1,2 |
+| produção/renda/preços/contábil/fiscal | ≤ 0,6 | ≤ 0,6 | ≤ 0,1 | ≤ 0,1 |
+| **tick total (parede do worker)** | **~90** | **~83–86** | **~31** | **30,8 (regime 33,2; p95 35,0)** |
+
+Memória estática com as 858 cidades (sem o mapa 3D): **234,9 → 222,0 MB**.
+
+A coluna "parede do worker" conta a espera da thread **enquanto a main está
+ocupada** no laço fechado do pump do harness (1,5 ms de trabalho por frame, sem
+`await`): é uma medida conservadora. O **trabalho** do mesmo tick, medido
+síncrono e sem comboios/mapa (`tools/real_tick_profile.gd`, release, 8 dias,
+cenário + geografia + IA do autoload), é **17,1 ms de média** (p95 19,9; máx
+19,9) — `status` 11,1 (`status_cities` 8,1), `trade` 4,7, `status_orders` 2,6,
+`arrival` 0,8 e as demais fases ≤ 0,07. Comboio, IA e mapa **não** entram nesse
+número: só o núcleo.
+
+**Por que 92 ms com 858 parecia desproporcional a 27 ms com 650 sintéticas?**
+Não é regressão de complexidade — o tick é O(cidades × produtos) nos dois. Nas
+858 reais, o status movimenta **todos os 21 mercados** por cidade (o mundo
+sintético do bench só tem trigo ativo, então quase nada muda e o cache de
+gravação não paga nada), há **jazidas** em centenas de cidades (bloco por cidade,
+agora incremental) e o comércio roda na **geografia real**, onde vendedores são
+esparsos e o anel de busca dos compradores expande muito mais (bench regional
+denso × mundo inteiro). A DLL **debug** (-O0) amplifica cada `Variant`/
+`Dictionary` construído à mão: o mesmo tick é 2,4× mais caro que em release.
+Na DLL **release**, que é a que o jogador usa, o tick fica em **31–35 ms** (meta
+≤ 40 ms) e — o que importa para fluidez — **fora do frame**.
+
+**Evidência:** `docs/economy/perf/perf_858_{debug,release}_after.txt` (harness
+completo), `tools/real_tick_profile.gd` (fases do tick no cenário real, sem mapa:
+17,1 ms de média em 8 dias, release), `docs/economy/scale_before650.json` e
+`scale_after650.json` (`world_scale_bench --cities=650`: **29,8 → 23,3 ms** de
+tick, `status_cities` 14,9 → 9,8; determinismo síncrono == assíncrono; o "antes"
+do bench rodou com outro processo Godot em paralelo — a diferença tem essa
+ressalva).
+
+**Testes desta onda:** `economy_tick_async_test` (60 d, síncrono = assíncrono,
+main ≤ 0,09 ms/poll), `economy_integration_test`, `economy_ai_test`,
+`economy_external_income_test`, `population_demo_test` (verde após isolar a renda
+externa — §20.5), `economy_long_run_test` (365 d), cenas `convoy_lifecycle_test`
+(391 viagens, 0 fantasma), `map_frame_test` (300 frames, 231/231 cores),
+`label_layout_test` (0 linhas, 0 sobreposições) e `perf_day_peak --days=10`
+(caminho worker: **36 s** de parede, virada 5,4 ms de média / 6,9 de pico; antes
+do conserto do harness passava de 8 min e era morto por timeout).
 
 ---
 
@@ -379,6 +507,9 @@ A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as 
 | D-019 | Virada do dia sem pico: geografia do mapa carregada uma vez + heat por modo sob demanda; território só reescreve a textura quando o dono muda; IA escalonada por cidade e fatiada a 1,5 ms/frame, reusando o resumo do `tick_demo()` | Removeu o travamento de ~2,0–2,9 s/dia (reparse de `deposits.json` a cada `refresh`) e o pico de ~24 ms da IA, mantendo a cadência de 7 dias por cidade. Evidência: `tools/perf_day_peak.gd --map-mode=…` e `docs/economy/balance_review.md` §18 |
 | D-020 | População = aglomeração urbana atual (base 2026), não população histórica nem limite administrativo | Consistência entre as 40 cidades e com a expansão mundial de ~195 nações; a produção inicial secundária acompanha a população (0,0003 t/d/hab) e as capitais preservam a razão anterior. Evidência: `cities.csv`/`buildings.csv` + `validate_scenario_data.py` + `balance_review.gd` (730 d, 8/8 ≥ 98%, 3 falências) |
 | D-021 | Shutdown do tick: `cancel()` (join) em `_exit_tree`/`WM_CLOSE_REQUEST`/`PREDELETE`, worker chama só `demo_tick_and_publish()` e o destrutor de `EconomySim` adquire o mutex | Autoload `Economy` roda também com `--script` e agenda o 1º dia; sair com a thread viva descarregava a DLL/cena por baixo dela → `0xC0000005` após o "OK". Alternativa descartada: montar o status na main (poupava o risco mas pagava ~11 ms no frame); com `demo_tick_and_publish()` o status continua na thread e o `get_demo_status()` da main é O(1). Evidência: `tools/stress_shutdown.ps1` (30 execuções por teste) |
+| D-022 | O núcleo publica `status["market_totals"]` (surplus/sold/demand por produto) e a IA lê dali em vez de somar 858×21 mercados em GDScript | A soma já existe na memória do C++; publicá-la custa ~0,05 ms na thread do tick e remove 13,5 ms do frame da virada. Mesma ordem de soma (ordem das cidades) ⇒ resultado bit a bit igual; `PrivateInvestor.prepare_totals` mantém o laço antigo só para status montados à mão. Evidência: §13.5, `economy_ai_test`, `economy_tick_async_test` |
+| D-023 | Nada pesado no frame da virada: totais da IA no C++, assinatura do território por colunas tipadas, fila de comboios com seleção limitada (24) sem dicionário por pedido, alertas do HUD em top-6 escalar, e o status das jazidas incremental (só reserva restante/extraído/esgotado por dia) | O tick já roda no worker (§13.4); o que sobrava na main eram varreduras de GDScript. Frame da virada: 24,8 → **7,1 ms** (nenhum > 16 ms). O status de cidade cai 19,7 → 15,2 ms (release) e a memória estática 234,9 → 222,0 MB, sem mudar nenhum resultado econômico. Evidência: `tools/perf_day_peak.gd --tick-mode=worker --profile=1`, `docs/economy/perf/` |
+| D-024 | `population_demo_test` isola a renda externa (índice = 0 nas duas cidades) em vez de afrouxar a asserção do choque de preço | A renda externa por PIB PPP (§20) não é gasta em serviços por desenho; em AGRIA/PORTUS ela soma mais por dia que o encarecimento da cesta sob choque de 100×, então a poupança sobe por construção. O teste anuncia medir o efeito do choque: zerar o índice e **verificar que ficou zero** mantém o invariante e deixa a renda externa para o teste próprio (`economy_external_income_test`). 235.362,85 → 229.217,26 (cai). Evidência: `docs/economy/balance_review.md` §20.5 |
 
 ---
 

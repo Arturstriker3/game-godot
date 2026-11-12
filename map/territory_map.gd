@@ -66,13 +66,16 @@ var _minimap_image: Image
 var _minimap_texture: ImageTexture
 var _max_id := 0
 var _loaded := false
-## Assinatura do conjunto de cidades que gerou `_assignment`. Os centros e a
-## nação de origem não mudam no dia a dia: `assign` é O(províncias × cidades)
-## e não precisa rodar a cada virada.
-var _assign_signature := ""
-## Assinatura dos donos (nação das cidades + overrides). Sem mudança, a textura
-## de território não é recalculada nem reenviada.
-var _owner_signature_cached := ""
+## Últimos insumos vistos, em colunas tipadas. A virada do dia chama `update()`
+## todo dia com o mesmo conjunto de cidades; comparar coluna a coluna custa
+## ~0,3 ms em 858 cidades, enquanto montar duas assinaturas de texto (com
+## `%.3f` por cidade) custava ~4 ms/dia no frame da virada.
+var _input_ids := PackedStringArray()
+var _input_homes := PackedStringArray()
+var _input_nations := PackedStringArray()
+var _input_xy := PackedFloat64Array()
+var _override_keys := PackedStringArray()
+var _override_vals := PackedStringArray()
 
 
 ## Lê provinces.json e monta os índices de dono e a lista de províncias.
@@ -87,8 +90,12 @@ func load_data() -> void:
 	_owners.clear()
 	_max_id = 0
 	_loaded = false
-	_assign_signature = ""
-	_owner_signature_cached = ""
+	_input_ids = PackedStringArray()
+	_input_homes = PackedStringArray()
+	_input_nations = PackedStringArray()
+	_input_xy = PackedFloat64Array()
+	_override_keys = PackedStringArray()
+	_override_vals = PackedStringArray()
 
 	var file := FileAccess.open(PROVINCES_PATH, FileAccess.READ)
 	if file == null:
@@ -366,14 +373,13 @@ static func _nearest_city(cities: Array, x: float, y: float) -> Dictionary:
 ## se o conjunto de donos mudou em relação à chamada anterior. Só reescreve a
 ## textura quando algo mudou (a virada do dia chama isto a cada dia).
 func update(cities: Array, overrides: Dictionary) -> bool:
-	_assign_if_needed(cities)
-	# Sem mudança de donos (nação da cidade ou override), nada a recalcular:
-	# a virada do dia chama isto com o mesmo conjunto. O custo era ~3,5 ms/dia
-	# varrendo 4.529 províncias e reenviando a textura.
-	var signature := _assign_signature + "\n#\n" + _owner_signature(cities, overrides)
-	if signature == _owner_signature_cached and _texture != null:
+	var changed := _sync_inputs(cities, overrides)
+	if changed & 1 != 0:
+		assign(cities)
+	# Sem mudança de insumos (cidades, nação de origem/atual ou override), nada
+	# a recalcular: a virada do dia chama isto com o mesmo conjunto.
+	if changed == 0 and _texture != null:
 		return false
-	_owner_signature_cached = signature
 
 	# id da cidade -> nação (dono) atual, para colorir o território.
 	var city_nation: Dictionary = {}
@@ -387,7 +393,7 @@ func update(cities: Array, overrides: Dictionary) -> bool:
 		# (250 países) e nenhuma tag nova o ultrapassa.
 		if city_tag != "" and not _tag_index.has(city_tag) and _tag_index.size() < 255:
 			_tag_index[city_tag] = _tag_index.size() + 1
-	var changed := false
+	var owners_changed := false
 	var new_owners: Dictionary = {}
 	for province in _provinces:
 		var pid: int = province["id"]
@@ -399,47 +405,76 @@ func update(cities: Array, overrides: Dictionary) -> bool:
 			tag = String(province["country"])
 		new_owners[pid] = tag
 		if String(_owners.get(pid, "")) != tag:
-			changed = true
+			owners_changed = true
 
-	if changed or _texture == null:
+	if owners_changed or _texture == null:
 		_write_owner_image(new_owners)
 	_owners = new_owners
+	return owners_changed
+
+
+## Compara os insumos do território (id, região de origem, nação e centro de
+## cada cidade + overrides) com a última chamada. Devolve um bitmask:
+## 1 = atribuição província→cidade precisa ser refeita, 2 = donos mudaram,
+## 4 = overrides mudaram. Sem mudança, não aloca nada.
+func _sync_inputs(cities: Array, overrides: Dictionary) -> int:
+	var changed := 0
+	var city_flags := 0
+	if cities.size() != _input_ids.size():
+		city_flags = 1 | 2
+	else:
+		for index in cities.size():
+			var city: Variant = cities[index]
+			if typeof(city) != TYPE_DICTIONARY:
+				continue
+			var nation := String(city.get("nation", ""))
+			if String(city.get("id", "")) != _input_ids[index] \
+					or String(city.get("home_nation", nation)) != _input_homes[index] \
+					or float(city.get("x", 0.0)) != _input_xy[index * 2] \
+					or float(city.get("y", 0.0)) != _input_xy[index * 2 + 1]:
+				city_flags |= 1
+			if nation != _input_nations[index]:
+				city_flags |= 2
+			if (city_flags & 3) == 3:
+				break
+	var keys: Array = overrides.keys()
+	keys.sort()
+	if keys.size() != _override_keys.size():
+		changed |= 4
+	else:
+		for index in keys.size():
+			if String(keys[index]) != _override_keys[index] \
+					or String(overrides[keys[index]]) != _override_vals[index]:
+				changed |= 4
+				break
+	changed |= city_flags
+	if changed == 0:
+		return 0
+	_fill_inputs(cities, overrides, keys)
 	return changed
 
 
-## Assinatura dos insumos do dono: nação de cada cidade + overrides. Estável
-## durante a partida; só muda quando um território realmente muda de dono.
-func _owner_signature(cities: Array, overrides: Dictionary) -> String:
-	var parts := PackedStringArray()
-	for city: Variant in cities:
+## Guarda os insumos do dia para a comparação do dia seguinte.
+func _fill_inputs(cities: Array, overrides: Dictionary, keys: Array) -> void:
+	_input_ids.resize(cities.size())
+	_input_homes.resize(cities.size())
+	_input_nations.resize(cities.size())
+	_input_xy.resize(cities.size() * 2)
+	for index in cities.size():
+		var city: Variant = cities[index]
 		if typeof(city) != TYPE_DICTIONARY:
 			continue
-		parts.append("%s|%s" % [String(city.get("id", "")),
-			String(city.get("nation", ""))])
-	var keys: Array = overrides.keys()
-	keys.sort()
-	for key: Variant in keys:
-		parts.append("o:%s|%s" % [String(key), String(overrides[key])])
-	return "\n".join(parts)
-
-
-## Reatribui províncias→cidade só quando o conjunto de cidades muda (id, nação
-## de origem ou centro). `refresh_modes` roda a cada dia; a atribuição é estática
-## durante a partida.
-func _assign_if_needed(cities: Array) -> void:
-	var parts := PackedStringArray()
-	for city: Variant in cities:
-		if typeof(city) != TYPE_DICTIONARY:
-			continue
-		parts.append("%s|%s|%.3f|%.3f" % [
-			String(city.get("id", "")),
-			String(city.get("home_nation", city.get("nation", ""))),
-			float(city.get("x", 0.0)), float(city.get("y", 0.0))])
-	var signature := "\n".join(parts)
-	if signature == _assign_signature:
-		return
-	_assign_signature = signature
-	assign(cities)
+		var nation := String(city.get("nation", ""))
+		_input_ids[index] = String(city.get("id", ""))
+		_input_homes[index] = String(city.get("home_nation", nation))
+		_input_nations[index] = nation
+		_input_xy[index * 2] = float(city.get("x", 0.0))
+		_input_xy[index * 2 + 1] = float(city.get("y", 0.0))
+	_override_keys.resize(keys.size())
+	_override_vals.resize(keys.size())
+	for index in keys.size():
+		_override_keys[index] = String(keys[index])
+		_override_vals[index] = String(overrides[keys[index]])
 
 
 ## Textura do dono por província: rgb = cor do dono, a = índice do dono / 255.

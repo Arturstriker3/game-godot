@@ -86,6 +86,10 @@ func _ready() -> void:
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
 	geo.apply_to_sim(sim, _cities_with_center())
+	# Pré-aquece o cache do status (os dois slots): o primeiro dia publicado em
+	# um slot frio pagaria a criação de ~20 mil dicionários (medido: 60 ms contra
+	# 17 ms num dia quente, com 858 cidades). Aqui é custo de carga, não de tick.
+	sim.demo_warm_status()
 	_setup_ai(geo)
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia

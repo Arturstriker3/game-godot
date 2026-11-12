@@ -62,10 +62,23 @@ func run(day: int, status: Dictionary) -> void:
 ## Mede os totais do sistema uma única vez por status (uma passada pelas
 ## cidades). O escalonador chama isto no `plan()`; `run_city` só recalcula se
 ## receber um status diferente (chamada síncrona de ferramentas/testes).
+##
+## Quando o status vem do `tick_demo()`/`get_demo_status()` do núcleo, ele já
+## traz `market_totals` (soma por produto calculada em C++ na thread do tick):
+## ler 3 PackedFloat64Array custa ~0,02 ms. O laço em GDScript abaixo fica só
+## como retaguarda para status construídos à mão (testes/ferramentas) — com
+## 858 cidades ele custava ~13 ms no frame da virada.
 func prepare_totals(status: Dictionary) -> void:
 	var started := Time.get_ticks_usec()
 	totals_builds += 1
 	_totals_status = status
+	var totals: Dictionary = status.get("market_totals", {})
+	if not totals.is_empty():
+		_sum_surplus = totals.get("surplus", PackedFloat64Array())
+		_sum_sold = totals.get("sold", PackedFloat64Array())
+		_sum_demand = totals.get("demand", PackedFloat64Array())
+		last_prepare_ms = _elapsed_ms(started)
+		return
 	var cities: Array = status.get("cities", [])
 	if cities.is_empty():
 		_sum_surplus = PackedFloat64Array()

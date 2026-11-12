@@ -3,6 +3,7 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
+#include <godot_cpp/variant/packed_float64_array.hpp>
 
 #include <cstddef>
 #include <mutex>
@@ -86,6 +87,9 @@ public:
 
 	/** Microssegundos por fase do último tick (vazio quando desligado). */
 	Dictionary demo_get_profile() const;
+	// Pré-aquece os dois slots do status: sem isso o primeiro dia que publica
+	// num slot frio paga a criação de todos os dicionários das cidades.
+	void demo_warm_status();
 
 	/**
 	 * Estado do cenário de validação (cidades, POPs, mercados, PIB).
@@ -509,6 +513,17 @@ private:
 		Array external_demand;
 		Dictionary deposits;
 		std::vector<Dictionary> deposit_entry;  // 1 por produto (lazy)
+		// Bloco estático de cada jazida (reserva inicial, qualidade,
+		// profundidade, eficiência, opex) escrito UMA vez; por dia só mudam
+		// reserva restante, extraído e esgotado. Antes o dicionário inteiro era
+		// reconstruído a cada dia (String + Dictionary aninhado por cidade).
+		std::vector<char> deposit_present;      // 1 por produto
+		std::vector<char> deposit_depleted;     // último `depleted` publicado
+		std::vector<DemoDeposit> deposit_written;  // último valor publicado
+		std::vector<String> deposit_key;        // nome do produto (chave)
+		// Versão estática com que o bloco de jazida foi escrito: uma jazida
+		// descoberta depois (`demo_set_deposit`) força reescrevê-lo.
+		int deposit_static_version = -1;
 		Dictionary pop;
 		Array desired_by_category;
 		Array consumed_by_category;
@@ -531,9 +546,13 @@ private:
 
 	// Chaves do status pré-construídas. `dict["price"]` converte UTF-8 ->
 	// UTF-32 e aloca uma String a cada escrita; com as chaves prontas a escrita
-	// fica só com o hash e a atribuição.
+	// fica só com o hash e a atribuição. São `StringName` (hash calculado uma
+	// vez, comparação por ponteiro): cada cidade reescreve ~45 chaves por dia e
+	// o `String` recalculava o hash de todas elas (medido no cenário real de
+	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
+	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		String amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
 		DemoStatusKeys();
 	};
 
@@ -546,6 +565,11 @@ private:
 		Array violations;
 		Array nations;
 		Array tot_produced, tot_consumed, tot_produced_today, tot_consumed_today;
+		// Totais do sistema por produto (soma dos mercados das cidades). A IA
+		// lia 858 cidades × 21 mercados em GDScript no frame da virada (~13 ms);
+		// o núcleo publica aqui a mesma soma, calculada na thread do tick.
+		Dictionary market_totals;
+		PackedFloat64Array tot_surplus, tot_sold, tot_demand;
 		std::vector<DemoStatusCitySlot> city_slots;
 		std::vector<Dictionary> port_slots;
 		std::vector<Dictionary> order_slots;

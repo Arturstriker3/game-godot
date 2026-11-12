@@ -1440,7 +1440,7 @@ oito viola invariante, estoque negativo ou conservação de dinheiro.
 | `economy_external_income_test` (novo) | 0 | perfil (231 nações, 32 estimadas, 11 no piso, média ponderada 1,0), pagamento, conservação, save/load, clamp |
 | `economy_long_run_test` | 0 | 365 dias sem violação de conservação |
 | `economy_bistability_test` | 0 | GBR 100% sob perturbação de culturas |
-| `population_demo_test` | **1** | falha pré-existente da renda externa — ver abaixo |
+| `population_demo_test` | 0 | verde após isolar a renda externa (índice 0 e conferido no fim) — ver abaixo |
 | `economy_ai_test` | 0 | cenários de alimento/ferro/anti-loop |
 | `economy_tick_async_test` | 0 | 60 dias síncronos == assíncronos, 1 tick por vez |
 | `deposit_ring_test` | 0 | raio de pick uniforme (±1 px) |
@@ -1455,35 +1455,47 @@ oito viola invariante, estoque negativo ou conservação de dinheiro.
 | cena `label_layout_test` | 0 | 0 linhas e 0 sobreposições |
 | cena `map_frame_test` | 0 | 300 frames, 231/231 cores, portos badge |
 
-**`population_demo_test` (vermelho):** a asserção "choque de preço não reduziu a
-poupança" falha com 343.362,85 → 373.217,26. A causa foi isolada com o cenário
-sintético: com o índice de renda externa em **0** as mesmas 40 jornadas dão
-235.362,85 → 229.217,26 (**passa**); com a renda externa ativa a família não
-consegue comprar trigo a 100× e o dinheiro não gasto **acumula em poupança**.
-Ou seja, a falha nasce da renda externa (herdada da rodada anterior a esta
-mudança), não da proporcionalidade por PIB — a cidade sintética não tem nação e
-usa índice 1,0, exatamente o comportamento uniforme antigo. Fica registrada como
-pendência de QA: a expectativa do teste (choque drena poupança) deixou de ser um
-invariante do modelo; decidir entre ajustar a asserção (gasto alimentar como
-fração da renda) ou o desenho do choque — não foi alterado aqui.
+**`population_demo_test` (resolvido em 12/11):** a asserção "choque de preço não
+reduziu a poupança" falhava com 343.362,85 → 373.217,26. A causa é a renda
+externa por PIB PPP (§20), que **não é gasta em serviços** por desenho: em
+AGRIA/PORTUS ela soma 3.600/dia, mais que o encarecimento da cesta sob choque de
+100× (~889/dia), então a poupança subiria mesmo com o choque. A decisão (D-024)
+foi **isolar** a renda externa no teste — índice zerado nas duas cidades e
+conferido no fim (`external_income == 0`) — em vez de afrouxar a asserção: as
+mesmas 40 jornadas dão 235.362,85 → 229.217,26 (**cai**, teste verde). A renda
+externa continua coberta por `economy_external_income_test` (perfil, pagamento,
+conservação, save/load, clamp).
 
 ### 20.6 Desempenho (858 cidades reais)
 
-`tools/perf_day_peak.tscn --days=10` no caminho do jogo ao vivo (autoload
-`Economy` + IA + comboios), headless:
+`tools/perf_day_peak.tscn` no caminho do jogo ao vivo (autoload `Economy` + IA +
+comboios), headless, 10 dias, `--map-mode=political --map-territory=1`. Em
+12/11 o harness passou a medir o **caminho real**: o tick roda no
+`WorkerThreadPool` (`--tick-mode=worker`, ver GAME_STATE §13.5) e a coluna
+"frame da virada" é só o que a main paga — `poll()` + fila + IA + HUD + mapa.
 
-| etapa | média | p95 | máx |
-|---|---:|---:|---:|
-| tick_demo (C++) | 92,2 ms | 119,9 ms | 119,9 ms |
-| enfileirar pedidos | 4,5 ms | 5,9 ms | 5,9 ms |
-| IA planejar (agenda do dia) | 13,6 ms | 14,8 ms | 14,8 ms |
-| VIRADA (tick + plano + mapa) | 110,4 ms | 146,1 ms | 146,1 ms |
-| PUMP por frame | 1,56 ms | 1,65 ms | 13,1 ms |
+| etapa (release) | antes | depois |
+|---|---:|---:|
+| tick C++ (síncrono → parede do worker) | 92,2 ms (debug) / ~31 ms (release) | 30,1 ms (regime 32,4; p95 35,0) — núcleo puro: **17,1 ms** |
+| `poll()` do dia pronto na main | — | 0,01 ms |
+| enfileirar pedidos | 4,5 ms | 1,8 ms |
+| IA planejar (agenda do dia) | 13,6 ms | 0,05 ms |
+| HUD (log + topo + alertas) | 1,1 ms (só o log) | 2,8 ms |
+| mapa (camada + território) | 5,6 ms | 2,1 ms |
+| **frame da virada (main)** | **24,8 ms** (+HUD não medido) | **6,8 ms** (p95 7,2; pico 8,6) |
+| PUMP por frame | 1,56 ms (pico 13,1) | 1,55 ms (pico 4,8) |
 
-Memória estática do processo com as **858 cidades** carregadas: **234,9 MB**
-(sim + IA + comboios, sem o mapa 3D). O tick cresceu em relação às 252 cidades
-(11 ms → ~92 ms), como esperado por 3,4× mais cidades; a IA escalonada mantém o
-pico de frame em ~1,6 ms por frame durante o pump.
+Memória estática do processo com as **858 cidades** carregadas: **234,9 →
+222,0 MB** (sim + IA + comboios, sem o mapa 3D). A "virada" de 110,4 ms que
+aparecia antes era o tick **síncrono** somado ao frame — no jogo esse tempo está
+na thread do dia, não no frame. O tick cresceu com as 858 cidades por três
+motivos medidos: o status movimenta **21 mercados por cidade** (o bench sintético
+só tem trigo), há **jazidas** em centenas de cidades (bloco agora incremental) e o
+comércio roda na geografia real (vendedores esparsos → anel de busca maior). Em
+release fica em 31–35 ms de parede do worker (núcleo puro: **17,1 ms**, p95 19,9,
+medido em `tools/real_tick_profile.gd`); em debug, ~84 ms de regime (a DLL debug
+amplifica cada `Variant`/`Dictionary`). O frame da virada não passa de **8,6 ms**
+em nenhum dos dois.
 
 ### 20.7 Riscos e pendências
 
@@ -1496,4 +1508,7 @@ pico de frame em ~1,6 ms por frame durante o pump.
 - 32 nações usam **mediana regional** porque `nations.csv` não tem PIB PPP
   (CUB, PRK, TWN, VEN, YEM…). São marcadas `estimated` no perfil; substituir por
   dado publicado é a correção definitiva.
-- O choque de preço deixou de drenar poupança com renda externa ativa (§20.5).
+- O choque de preço deixa de drenar poupança com renda externa ativa (§20.5): o
+  teste isola a renda externa (índice 0) para medir o choque. Se um dia o choque
+  tiver de valer **com** renda externa, a regra (não gastar renda externa em
+  serviços) precisa entrar na conta — decisão de desenho, não de teste.

@@ -104,6 +104,7 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_set_profiling", "enabled"),
 	                     &EconomySim::demo_set_profiling);
 	ClassDB::bind_method(D_METHOD("demo_get_profile"), &EconomySim::demo_get_profile);
+	ClassDB::bind_method(D_METHOD("demo_warm_status"), &EconomySim::demo_warm_status);
 	ClassDB::bind_method(D_METHOD("get_demo_status"), &EconomySim::get_demo_status);
 	ClassDB::bind_method(D_METHOD("demo_price_shock", "product", "multiplier"),
 	                     &EconomySim::demo_price_shock);
@@ -1289,12 +1290,17 @@ void EconomySim::demo_trade_food() {
 		}
 		food_ge[i] = ge;
 	}
+	// Chegada em trânsito por cidade: uma passada única com o índice de
+	// cidades. Antes, cada carga varria TODAS as cidades comparando strings
+	// (O(cargas × cidades) por dia, ~440 mil comparações com 512 cargas e 858
+	// cidades no cenário real).
 	for (const DemoShipment& shipment : demo_in_transit_) {
-		for (std::size_t i = 0; i < demo_cities_.size(); ++i) {
-			if (shipment.to_city == demo_cities_[i].id) {
-				food_ge[i] += shipment.amount * demo_food_calories(shipment.product);
-			}
+		const auto found = demo_city_lookup_.find(shipment.to_city);
+		if (found == demo_city_lookup_.end()) {
+			continue;
 		}
+		const std::size_t i = static_cast<std::size_t>(found->second);
+		food_ge[i] += shipment.amount * demo_food_calories(shipment.product);
 	}
 
 	// Excedente vendável por cidade: o vendedor exporta o que sobra ACIMA da
@@ -1818,6 +1824,26 @@ Dictionary EconomySim::demo_get_profile() const {
 		profile[kStatusNames[part]] = demo_status_sub_us_[part];
 	}
 	return profile;
+}
+
+// Pré-aquece os dois slots do status. O primeiro dia publicado em um slot
+// frio paga a criação de TODOS os dicionários por cidade (medido no cenário
+// real: 60 ms contra 17 ms num dia quente). Aqui isso vira custo de carga, e
+// nenhum tick paga a alocação. Só roda com o mundo já preenchido (aptidão,
+// demanda externa e índice de renda aplicados), senão o bloco estático do
+// status sairia com os valores default.
+void EconomySim::demo_warm_status() {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	if (!demo_active_) {
+		return;
+	}
+	get_demo_status();  // preenche o slot corrente
+	if (demo_status_live_ < 0) {
+		return;
+	}
+	// `built_day_ = -1` faz a próxima chamada construir no OUTRO slot.
+	demo_status_built_day_ = -1;
+	get_demo_status();
 }
 
 void EconomySim::demo_tick_core() {
@@ -2639,6 +2665,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		legs("legs"),
 		living_standard("living_standard"),
 		loss_days("loss_days"),
+		market_totals("market_totals"),
 		markets("markets"),
 		mode("mode"),
 		money_total("money_total"),
@@ -2810,10 +2837,29 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	dict[k.in_transit] = in_transit;
 
 	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
-	// da chave = sem dado, não "zero"). Refeito a cada dia: remaining_kt muda.
-	slot.deposits.clear();
+	// da chave = sem dado, não "zero"). O bloco ESTÁTICO (reserva inicial,
+	// qualidade, profundidade, eficiência, opex) é escrito uma vez; por dia só
+	// mudam reserva restante, extraído e esgotado. Antes o dicionário inteiro
+	// era reconstruído a cada dia — custo que crescia com as cidades mineiras
+	// do cenário real (o mundo sintético do bench não tem depósito nenhum).
 	if (slot.deposit_entry.size() < kDemoProducts) {
 		slot.deposit_entry.resize(static_cast<std::size_t>(kDemoProducts));
+		slot.deposit_present.assign(static_cast<std::size_t>(kDemoProducts), 0);
+		slot.deposit_depleted.assign(static_cast<std::size_t>(kDemoProducts), 0);
+		slot.deposit_written.assign(static_cast<std::size_t>(kDemoProducts),
+			DemoDeposit{});
+		slot.deposit_key.clear();
+		slot.deposit_key.reserve(static_cast<std::size_t>(kDemoProducts));
+		for (int product = 0; product < kDemoProducts; ++product) {
+			slot.deposit_key.emplace_back(kDemoProductNames[product]);
+		}
+	}
+	// Jazida descoberta depois do primeiro dia (a IA chama `demo_set_deposit`
+	// ao revelar/conquistar) sobe a versão estática: o bloco de reserva precisa
+	// ser reescrito, senão o status mostraria a jazida antiga para sempre.
+	if (slot.deposit_static_version != demo_status_static_version_) {
+		slot.deposit_present.assign(static_cast<std::size_t>(kDemoProducts), 0);
+		slot.deposit_static_version = demo_status_static_version_;
 	}
 	for (int product = 0; product < kDemoProducts; ++product) {
 		const DemoDeposit& deposit = city.deposits[product];
@@ -2821,15 +2867,30 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			continue;
 		}
 		Dictionary& entry = slot.deposit_entry[static_cast<std::size_t>(product)];
-		entry[k.initial_kt] = deposit.initial_kt;
-		entry[k.remaining_kt] = deposit.remaining_kt;
-		entry[k.extracted_kt] = deposit.extracted_kt;
-		entry[k.quality] = deposit.quality;
-		entry[k.depth_m] = deposit.depth_m;
-		entry[k.efficiency] = demo_extraction_efficiency(deposit);
-		entry[k.opex_factor] = demo_depth_opex_factor(deposit);
-		entry[k.depleted] = deposit.remaining_kt <= 0.0;
-		slot.deposits[String(kDemoProductNames[product])] = entry;
+		DemoDeposit& previous = slot.deposit_written[static_cast<std::size_t>(product)];
+		const bool first = slot.deposit_present[static_cast<std::size_t>(product)] == 0;
+		if (first) {
+			entry[k.initial_kt] = deposit.initial_kt;
+			entry[k.quality] = deposit.quality;
+			entry[k.depth_m] = deposit.depth_m;
+			entry[k.efficiency] = demo_extraction_efficiency(deposit);
+			entry[k.opex_factor] = demo_depth_opex_factor(deposit);
+			slot.deposits[slot.deposit_key[static_cast<std::size_t>(product)]] = entry;
+			slot.deposit_present[static_cast<std::size_t>(product)] = 1;
+		}
+		if (first || previous.remaining_kt != deposit.remaining_kt) {
+			entry[k.remaining_kt] = deposit.remaining_kt;
+			previous.remaining_kt = deposit.remaining_kt;
+		}
+		if (first || previous.extracted_kt != deposit.extracted_kt) {
+			entry[k.extracted_kt] = deposit.extracted_kt;
+			previous.extracted_kt = deposit.extracted_kt;
+		}
+		const bool depleted = deposit.remaining_kt <= 0.0;
+		if (first || slot.deposit_depleted[static_cast<std::size_t>(product)] != (depleted ? 1 : 0)) {
+			entry[k.depleted] = depleted;
+			slot.deposit_depleted[static_cast<std::size_t>(product)] = depleted ? 1 : 0;
+		}
 	}
 	dict[k.deposits] = slot.deposits;
 
@@ -2937,7 +2998,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			city.imported, city.exported, city.import_value, city.export_value};
 		Array* targets[4] = {
 			&slot.imported, &slot.exported, &slot.import_value, &slot.export_value};
-		const String* keys[4] = {&k.imported, &k.exported, &k.import_value, &k.export_value};
+		const StringName* keys[4] = {&k.imported, &k.exported, &k.import_value, &k.export_value};
 		for (int array_index = 0; array_index < 4; ++array_index) {
 			Array& target = *targets[array_index];
 			double* previous = &slot.io_written[static_cast<std::size_t>(
@@ -3047,6 +3108,7 @@ Dictionary EconomySim::get_demo_status() {
 		root[k.trade_orders] = cache.orders;
 		root[k.nations] = cache.nations;
 		root[k.invariant_violations] = cache.violations;
+		root[k.market_totals] = cache.market_totals;
 		root[k.produced_total] = cache.tot_produced;
 		root[k.consumed_total] = cache.tot_consumed;
 		root[k.produced_today] = cache.tot_produced_today;
@@ -3070,6 +3132,39 @@ Dictionary EconomySim::get_demo_status() {
 		}
 	}
 	status_lap(3);
+
+	// Totais do sistema por produto — a mesma soma que a IA fazia em GDScript
+	// sobre `cities[]` (858 cidades × 21 mercados, ~13 ms no frame da virada).
+	// Aqui é uma passada de doubles na memória do núcleo, na thread do tick.
+	cache.tot_surplus.resize(kDemoProducts);
+	cache.tot_sold.resize(kDemoProducts);
+	cache.tot_demand.resize(kDemoProducts);
+	for (int product = 0; product < kDemoProducts; ++product) {
+		cache.tot_surplus[product] = 0.0;
+		cache.tot_sold[product] = 0.0;
+		cache.tot_demand[product] = 0.0;
+	}
+	// Soma só os valores positivos, na ordem das cidades: idêntico (bit a bit)
+	// ao laço que o `PrivateInvestor.prepare_totals` fazia.
+	for (const DemoCity& city : demo_cities_) {
+		for (int product = 0; product < kDemoProducts; ++product) {
+			const DemoMarket& market = city.markets[product];
+			if (market.surplus > 0.0) {
+				cache.tot_surplus[product] += market.surplus;
+			}
+			if (market.sold > 0.0) {
+				cache.tot_sold[product] += market.sold;
+			}
+			if (market.demand > 0.0) {
+				cache.tot_demand[product] += market.demand;
+			}
+		}
+	}
+	// Packed arrays são COW: depois de mutar o buffer da cache, o dicionário
+	// precisa receber a referência de novo (senão o consumidor lê o dia anterior).
+	cache.market_totals[k.surplus] = cache.tot_surplus;
+	cache.market_totals[k.sold] = cache.tot_sold;
+	cache.market_totals[k.demand] = cache.tot_demand;
 
 	cache.cities.resize(demo_cities_.size());
 	cache.city_slots.resize(demo_cities_.size());

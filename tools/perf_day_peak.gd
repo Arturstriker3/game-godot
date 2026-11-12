@@ -3,29 +3,63 @@ extends Node
 ## Mede o custo da virada do dia no caminho REAL do jogo ao vivo.
 ##
 ## Usa o autoload `Economy` (mesmo cenário, geografia e IA do jogo) e um
-## `TradeConvoys` real. Para cada dia cronometra:
-##   1. `sim.tick_demo()`   — núcleo C++ (economia do dia)
+## `TradeConvoys` real. Dois modos de tick:
+##
+## - `--tick-mode=sync` (padrão histórico): chama `sim.tick_demo()` na main
+##   thread. O tick C++ aparece inteiro dentro do "frame da virada" — é o que
+##   este harness sempre mediu, mas NÃO é o caminho do jogo.
+## - `--tick-mode=worker`: agenda `demo_tick_and_publish()` no
+##   `WorkerThreadPool` exatamente como `Economy._process` faz (via
+##   `core/economy/tick_scheduler.gd`) e mede, por frame, só o que a main
+##   thread paga: `poll()` + publicação (fila de pedidos, IA, mapa, log do HUD).
+##   É o caminho real do jogo; o tempo do tick vira "parede do worker".
+##
+## Para cada dia cronometra:
+##   1. tick C++            — `tick_demo()` (sync) ou parede do worker
+##   1b. `poll()` da main   — consulta do dia concluído (worker)
 ##   2. `spawn_orders()`    — custo de enfileirar os pedidos do dia
 ##   3. `ai.plan(day)`      — agenda as cidades do dia (IA escalonada)
+##   3b. log de pedidos     — espelho de `hud._log_orders` (duplica os pedidos)
 ##   5. pump por frame      — IA fatiada (1,5 ms) + busca de rota/comboios
 ##   6. mapa (--map-mode)   — `city_world.refresh_modes`: camada do modo +
 ##                            textura de território, no mesmo frame da virada.
 ##
+## `--profile=1` liga `demo_set_profiling` e reporta as fases do tick C++.
+##
 ## Uso:
 ##   godot --headless --path . res://tools/perf_day_peak.tscn -- [--days=30] \
+##       [--tick-mode=sync|worker] [--profile=0|1] \
 ##       [--map-mode=none|political|resources] [--map-territory=0|1]
 
 const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
+const TickSchedulerScript: Script = preload("res://core/economy/tick_scheduler.gd")
+const AlertsScript: Script = preload("res://core/ui/alerts.gd")
 
 ## Espelha `Economy.AI_FRAME_BUDGET_US` (orçamento do planejamento por frame).
 const AI_BUDGET_US := 1500
+## Espelha `hud.MAX_ORDER_LOG` (pedidos retidos na janela de Comércio).
+const MAX_ORDER_LOG := 240
+## Fases do tick C++, na ordem em que o núcleo as reporta.
+const PHASES := [
+	"arrival", "reset", "labor", "production", "raw", "income", "trade",
+	"accounting", "prices", "clamp", "fiscal", "invariants", "status",
+	"status_cities", "status_orders", "status_nations", "status_misc",
+]
 
 var _days := 30
 var _map_mode := "none"
 var _map_territory := true
+var _tick_mode := "sync"
+var _profile := false
 var _pump_samples: Array[float] = []
+var _phase_us: Dictionary = {}
+## Estado do log de pedidos do HUD (espelho de `_log_orders`).
+var _order_log: Array = []
+var _last_logged_day := -1
+## Consumidor fictício das métricas do HUD (evita que o medidor seja dobrado).
+var _hud_sink := 0.0
 
 
 func _ready() -> void:
@@ -36,9 +70,20 @@ func _ready() -> void:
 			_map_mode = String(arg.split("=")[1])
 		elif arg.begins_with("--map-territory="):
 			_map_territory = bool(int(arg.split("=")[1]))
+		elif arg.begins_with("--tick-mode="):
+			_tick_mode = String(arg.split("=")[1])
+		elif arg.begins_with("--profile="):
+			_profile = bool(int(arg.split("=")[1]))
 
 	# Congela o relógio: quem dirige os dias é este laço.
 	Economy.set_speed(0)
+	# O autoload agenda o 1º dia no `_ready` via `call_deferred` — que roda
+	# DEPOIS deste `_ready`. Deixa esse dia nascer, junta-o e desliga o
+	# `_process` do autoload: senão ele publica o próprio dia no meio da
+	# medição (e chama `ai.plan`, que drena a fila que estamos medindo).
+	await get_tree().process_frame
+	Economy._ticker.cancel()
+	Economy.set_process(false)
 	var sim: Object = Economy.sim
 	var ai: Object = Economy._ai
 	if sim == null or ai == null:
@@ -71,8 +116,10 @@ func _ready() -> void:
 		map_build_ms = _ms(map_start)
 
 	var tick_ms: Array[float] = []
+	var poll_ms: Array[float] = []
 	var enqueue_ms: Array[float] = []
 	var ai_ms: Array[float] = []
+	var hud_log_ms: Array[float] = []
 	var ai_pump_ms: Array[float] = []
 	var map_ms: Array[float] = []
 	var layer_ms: Array[float] = []
@@ -86,6 +133,11 @@ func _ready() -> void:
 	var active_total := 0
 	var delivered_total := 0
 
+	var worker := _tick_mode == "worker"
+	var scheduler = TickSchedulerScript.new() if worker else null
+	if _profile:
+		sim.demo_set_profiling(true)
+
 	for day in range(1, _days + 1):
 		# O dia anterior terminou: com os pools, os comboios do teste não rodam
 		# tween nenhum; devolve todos ao pool para liberar as vagas do dia.
@@ -93,10 +145,40 @@ func _ready() -> void:
 		var delivered := _release_convoys(convoys)
 		delivered_total += delivered
 
-		var d0 := Time.get_ticks_usec()
-		var summary: Dictionary = sim.tick_demo()
-		var d1 := Time.get_ticks_usec()
-		# Sem `get_demo_status()` extra: a IA reusa o próprio resumo do tick.
+		# 1. O dia: direto na main (sync) ou na thread do pool (worker), que é
+		# o caminho de `Economy._process`/`tick_scheduler.gd`. No worker, o
+		# `tick_ms` vira o tempo de PAREDE do dia; a main só paga o `poll()`.
+		var tick_cost := 0.0
+		var poll_cost := 0.0
+		var summary: Dictionary = {}
+		if worker:
+			var w0 := Time.get_ticks_usec()
+			scheduler.start(sim)
+			while true:
+				var p0 := Time.get_ticks_usec()
+				summary = scheduler.poll()
+				poll_cost = _ms(p0)
+				if not summary.is_empty():
+					break
+				# Um frame de jogo enquanto o dia roda na thread: a main não
+				# faz nada do núcleo (é o contrato do tick_scheduler).
+				await get_tree().process_frame
+			tick_cost = _ms(w0)
+		else:
+			var d0 := Time.get_ticks_usec()
+			summary = sim.tick_demo()
+			tick_cost = _ms(d0)
+
+		if _profile:
+			var profile: Dictionary = sim.demo_get_profile()
+			for phase in PHASES:
+				if not _phase_us.has(phase):
+					_phase_us[phase] = [] as Array[float]
+				(_phase_us[phase] as Array[float]).append(
+					float(profile.get(phase, 0.0)) / 1000.0)
+
+		# Frame da virada: TUDO o que a main thread faz depois de ter o dia.
+		var frame_start := Time.get_ticks_usec()
 		var d2 := Time.get_ticks_usec()
 		var orders: Array = summary.get("trade_orders", [])
 		orders_total += orders.size()
@@ -105,20 +187,24 @@ func _ready() -> void:
 		var d3 := Time.get_ticks_usec()
 		ai.plan(day, summary)
 		var d4 := Time.get_ticks_usec()
+		var l0 := Time.get_ticks_usec()
+		_hud_snapshot(summary)
+		var hud_log_cost := _ms(l0)
 		var map_cost := 0.0
 		var layer_cost := 0.0
 		var territory_cost := 0.0
 		if mode_layer != null or territory != null:
 			var cities: Array = summary.get("cities", [])
 			if mode_layer != null:
-				var l0 := Time.get_ticks_usec()
+				var ml0 := Time.get_ticks_usec()
 				mode_layer.refresh(cities)
-				layer_cost = _ms(l0)
+				layer_cost = _ms(ml0)
 			if territory != null:
 				var t0 := Time.get_ticks_usec()
 				territory.update(cities, {})
 				territory_cost = _ms(t0)
 			map_cost = layer_cost + territory_cost
+		var publish_cost := _ms(frame_start)
 
 		# Pump: frames de trabalho até a fila de comboios E a IA esvaziarem.
 		# Mesmo comportamento do jogo: a IA (orçada) e os comboios (orçados)
@@ -147,24 +233,42 @@ func _ready() -> void:
 		var active: int = convoys._active_convoys
 		active_total += active
 
-		tick_ms.append(float(d1 - d0) / 1000.0)
+		# A "virada" é o frame da main: no sync inclui o tick (histórico); no
+		# worker inclui só o poll + publicação — o tick só soma no parede.
+		var frame_cost := publish_cost + (tick_cost if not worker else poll_cost)
+		tick_ms.append(tick_cost)
+		poll_ms.append(poll_cost)
 		enqueue_ms.append(float(d3 - d2) / 1000.0)
 		ai_ms.append(float(d4 - d3) / 1000.0)
+		hud_log_ms.append(hud_log_cost)
 		ai_pump_ms.append(ai_pump_total)
 		map_ms.append(map_cost)
 		layer_ms.append(layer_cost)
 		territory_ms.append(territory_cost)
-		turn_ms.append(float(d4 - d0) / 1000.0 + map_cost)
+		turn_ms.append(frame_cost)
 		pump_ms.append(pump_total)
 		pump_frames.append(float(frames))
-		peak_ms.append(maxf(float(d4 - d0) / 1000.0 + map_cost, pump_peak))
+		peak_ms.append(maxf(frame_cost, pump_peak))
 
 		print("[perf] dia %3d: tick %6.1f  fila %5.2f  plano IA %5.2f  mapa %5.2f  virada %6.1f | pump %6.2f ms em %3d frames (pico %5.2f, IA %5.2f)  [%d pedidos, %d comboios, %d entregues]" % [
-			day, tick_ms[-1], enqueue_ms[-1], ai_ms[-1], map_cost, turn_ms[-1],
+			day, tick_cost, enqueue_ms[-1], ai_ms[-1], map_cost, frame_cost,
 			pump_total, frames, pump_peak, ai_pump_total,
 			orders.size(), active, delivered])
+		if _profile:
+			var profile: Dictionary = sim.demo_get_profile()
+			print("[perf]          fases: status %5.1f (cidades %5.1f, pedidos %4.1f, nações %4.1f)  trade %5.1f  arrival %5.1f  produção %4.1f  renda %4.1f  preços %4.1f" % [
+				float(profile.get("status", 0.0)) / 1000.0,
+				float(profile.get("status_cities", 0.0)) / 1000.0,
+				float(profile.get("status_orders", 0.0)) / 1000.0,
+				float(profile.get("status_nations", 0.0)) / 1000.0,
+				float(profile.get("trade", 0.0)) / 1000.0,
+				float(profile.get("arrival", 0.0)) / 1000.0,
+				float(profile.get("production", 0.0)) / 1000.0,
+				float(profile.get("income", 0.0)) / 1000.0,
+				float(profile.get("prices", 0.0)) / 1000.0])
 
-	print("\n[perf] virada do dia — %d dias, sob demanda (pump por frame)" % _days)
+	print("\n[perf] virada do dia — %d dias, tick=%s, sob demanda (pump por frame)" % [
+		_days, _tick_mode])
 	print("[perf] grade de navegação/prontidão dos comboios: %.1f ms (uma vez)" % build_ms)
 	if _map_mode != "none":
 		print("[perf] mapa (%s, território=%s) montado em %.1f ms (uma vez)" % [
@@ -172,19 +276,31 @@ func _ready() -> void:
 	print("[perf] pedidos/dia: média %.1f, máximo %d; comboios ativos/dia (pós-pump): %.1f; entregues/dia: %.1f" % [
 		float(orders_total) / float(_days), max_orders,
 		float(active_total) / float(_days), float(delivered_total) / float(_days)])
-	print("[perf] %-26s %8s %8s %8s" % ["etapa", "média", "p95", "máx"])
-	_report("1. tick_demo (C++)", tick_ms)
+	print("[perf] %-32s %8s %8s %8s" % ["etapa", "média", "p95", "máx"])
+	_report("1. tick C++ (%s)" % ("parede do worker" if worker else "síncrono"), tick_ms)
+	if _days > 2:
+		# Os dois primeiros dias pagam a criação dos dois slots do status
+		# (double buffer) do zero; em regime o custo é o do dia típico.
+		var regime: Array[float] = []
+		for index in range(2, tick_ms.size()):
+			regime.append(tick_ms[index])
+		_report("   tick em regime (dia > 2)", regime)
+	if worker:
+		_report("1b. poll da main (dia pronto)", poll_ms)
 	_report("2. enfileirar pedidos", enqueue_ms)
 	_report("3. IA planejar (agenda do dia)", ai_ms)
+	_report("3b. log de pedidos (HUD)", hud_log_ms)
 	_report("   IA trabalho fatiado/dia", ai_pump_ms)
 	if _map_mode != "none":
 		_report("4. mapa (camada+territ.)", map_ms)
 		_report("   - camada do modo", layer_ms)
 		_report("   - território", territory_ms)
-	_report("   VIRADA (tick+plano+mapa)", turn_ms)
+	_report("   VIRADA (frame da main)", turn_ms)
 	_report("   PUMP comboios/dia", pump_ms)
 	_report("   PUMP por frame", _pump_samples)
 	_report("   FRAME DE PICO (virada|frames)", peak_ms)
+	if _profile:
+		_report_phases()
 	var frames_total := 0.0
 	for value in pump_frames:
 		frames_total += value
@@ -205,6 +321,59 @@ func _pump_ai(ai) -> float:
 	var start := Time.get_ticks_usec()
 	ai.pump(AI_BUDGET_US)
 	return float(Time.get_ticks_usec() - start) / 1000.0
+
+
+## Espelho do custo que o HUD paga por dia (`hud._on_status` com a janela
+## fechada): duplica os pedidos para a janela de Comércio, soma as métricas da
+## barra do topo sobre as 858 cidades e deriva os alertas.
+func _hud_snapshot(summary: Dictionary) -> void:
+	_log_orders(summary)
+	var population := 0.0
+	var stock := 0.0
+	var deficit := 0.0
+	var transit := 0.0
+	for city in summary.get("cities", []):
+		population += float(city["population"])
+		stock += float(city["stockpile"])
+		deficit += float(city["deficit"])
+		transit += float(city["in_transit"])
+	_hud_sink = population + stock + deficit + transit
+	_hud_sink += float(AlertsScript.derive(summary).size())
+
+
+## Espelho do custo que o HUD paga por dia (`hud._log_orders`): duplica cada
+## pedido do dia para a janela de Comércio e poda o log em `MAX_ORDER_LOG`.
+func _log_orders(summary: Dictionary) -> void:
+	var day := int(summary.get("day", 0))
+	if day > _last_logged_day:
+		for order in summary.get("trade_orders", []):
+			var entry: Dictionary = order.duplicate()
+			entry["day"] = day
+			_order_log.push_front(entry)
+		_last_logged_day = day
+		while _order_log.size() > MAX_ORDER_LOG:
+			_order_log.pop_back()
+
+
+## Perfil por fase do núcleo (média/p95/máx em ms), ordenado por custo.
+func _report_phases() -> void:
+	print("[perf] %-24s %8s %8s %8s" % ["fase do tick C++", "média", "p95", "máx"])
+	var ranked: Array = []
+	for phase in PHASES:
+		var values: Array[float] = _phase_us.get(phase, [] as Array[float])
+		if values.is_empty():
+			continue
+		var sorted := values.duplicate()
+		sorted.sort()
+		var total := 0.0
+		for value in values:
+			total += value
+		ranked.append([phase, total / float(values.size()),
+			sorted[clampi(int(ceil(float(sorted.size()) * 0.95)) - 1, 0, sorted.size() - 1)],
+			sorted[sorted.size() - 1]])
+	ranked.sort_custom(func(a, b): return a[1] > b[1])
+	for row in ranked:
+		print("[perf] %-24s %8.2f %8.2f %8.2f" % [row[0], row[1], row[2], row[3]])
 
 
 ## Um frame de pump (mede o custo e devolve o tempo gasto, ou -1 se a fila

@@ -1,0 +1,174 @@
+{
+  "ai": {},
+  "async": {
+    "async_digest": "3ccedad27391272bdadba2fdd3ec45b2ae392937d38762fca8949527303d234e",
+    "async_main_frame_ms": {
+      "max": 0.009,
+      "mean": 0.00318461538461539,
+      "n": 65,
+      "p95": 0.008
+    },
+    "async_start_ms": {
+      "max": 0.014,
+      "mean": 0.011,
+      "n": 10,
+      "p95": 0.014
+    },
+    "async_wall_ms": 361.006,
+    "days": 10,
+    "identical": true,
+    "sync_digest": "3ccedad27391272bdadba2fdd3ec45b2ae392937d38762fca8949527303d234e",
+    "sync_total_ms": 317.426
+  },
+  "convoys": {},
+  "flows": {
+    "in_transit_units": {
+      "max": 108653.0,
+      "mean": 82826.8,
+      "n": 10,
+      "p95": 108653.0
+    },
+    "orders_per_day": {
+      "max": 396.0,
+      "mean": 280.6,
+      "n": 10,
+      "p95": 396.0
+    }
+  },
+  "labels": {},
+  "memory": {
+    "after_save_bytes": 369970445,
+    "before_save_bytes": 320320081,
+    "delta_mb": 203.161636352539,
+    "end_bytes": 369970829,
+    "loaded_bytes": 158515393,
+    "start_bytes": 156940413
+  },
+  "tag": "after650",
+  "timing": {
+    "from_dict_ms": 59.14,
+    "generate_ms": 2.934,
+    "initialize_demo_world_ms": 7.328,
+    "json_bytes": 3256796,
+    "json_ms": 132.766,
+    "save_ms": 68.395,
+    "tick_ms": {
+      "max": 27.123,
+      "mean": 23.3322,
+      "n": 10,
+      "p95": 27.123
+    },
+    "tick_phases_ms": {
+      "accounting": {
+        "max": 0.1814,
+        "mean": 0.17631,
+        "n": 10,
+        "p95": 0.1814
+      },
+      "arrival": {
+        "max": 7.4115,
+        "mean": 3.98797,
+        "n": 10,
+        "p95": 7.4115
+      },
+      "clamp": {
+        "max": 0.5207,
+        "mean": 0.4574,
+        "n": 10,
+        "p95": 0.5207
+      },
+      "fiscal": {
+        "max": 0.2289,
+        "mean": 0.22391,
+        "n": 10,
+        "p95": 0.2289
+      },
+      "income": {
+        "max": 0.2054,
+        "mean": 0.14515,
+        "n": 10,
+        "p95": 0.2054
+      },
+      "invariants": {
+        "max": 0.127,
+        "mean": 0.11004,
+        "n": 10,
+        "p95": 0.127
+      },
+      "labor": {
+        "max": 0.1174,
+        "mean": 0.08033,
+        "n": 10,
+        "p95": 0.1174
+      },
+      "prices": {
+        "max": 0.2843,
+        "mean": 0.27667,
+        "n": 10,
+        "p95": 0.2843
+      },
+      "production": {
+        "max": 0.2659,
+        "mean": 0.19911,
+        "n": 10,
+        "p95": 0.2659
+      },
+      "raw": {
+        "max": 0.12,
+        "mean": 0.11469,
+        "n": 10,
+        "p95": 0.12
+      },
+      "reset": {
+        "max": 0.1926,
+        "mean": 0.13699,
+        "n": 10,
+        "p95": 0.1926
+      },
+      "status": {
+        "max": 14.6301,
+        "mean": 13.14535,
+        "n": 10,
+        "p95": 14.6301
+      },
+      "status_cities": {
+        "max": 12.03,
+        "mean": 9.79419,
+        "n": 10,
+        "p95": 12.03
+      },
+      "status_misc": {
+        "max": 0.0922,
+        "mean": 0.05203,
+        "n": 10,
+        "p95": 0.0922
+      },
+      "status_nations": {
+        "max": 0.5436,
+        "mean": 0.50127,
+        "n": 10,
+        "p95": 0.5436
+      },
+      "status_orders": {
+        "max": 3.5336,
+        "mean": 2.78874,
+        "n": 10,
+        "p95": 3.5336
+      },
+      "sum": 36.23397,
+      "trade": {
+        "max": 5.6927,
+        "mean": 4.04382,
+        "n": 10,
+        "p95": 5.6927
+      }
+    }
+  },
+  "world": {
+    "buildings": 650,
+    "cities": 650,
+    "nations": 190,
+    "population": 1683098246.56417,
+    "ports": 120
+  }
+}

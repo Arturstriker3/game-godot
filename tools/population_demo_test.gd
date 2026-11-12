@@ -17,6 +17,16 @@ func _init() -> void:
 	sim.initialize_demo()
 
 	var initial: Dictionary = sim.get_demo_status()
+	# Isola o choque de preço da renda externa. `kDemoExternalIncomePerCapita`
+	# (0,012/pessoa/dia) é um fluxo do resto do mundo que, desde a renda por PIB
+	# PPP (§20), não é gasto em serviços: em AGRIA/PORTUS ele soma mais por dia
+	# do que o encarecimento da cesta sob choque de 100×, então a poupança
+	# subiria por desenho — e o teste deixaria de medir o que anuncia medir.
+	# A renda externa tem teste próprio (`economy_external_income_test.gd`).
+	# Aqui o índice é zerado e conferido no fim: zero é explicitamente testado,
+	# não presumido.
+	for city in initial.get("cities", []):
+		sim.demo_set_external_income_index(String(city["id"]), 0.0)
 	var money_initial := float(initial["money_total"])
 	var population_initial := _population(initial)
 	var wheat_baseline := 0.0
@@ -115,6 +125,8 @@ func _check_economy(status: Dictionary, spend_before: float, spend_after: float,
 	if savings_after >= savings_before:
 		_failures.append("choque de preço não reduziu a poupança (%.2f -> %.2f)" % [
 			savings_before, savings_after])
+	if _external_income(status) > 0.001:
+		_failures.append("renda externa não isolada no teste (%.3f)" % _external_income(status))
 
 
 func _population(status: Dictionary) -> float:
@@ -135,6 +147,13 @@ func _food_spend(status: Dictionary) -> float:
 	var total := 0.0
 	for city in status["cities"]:
 		total += float(city["pop"]["food_spend"])
+	return total
+
+
+func _external_income(status: Dictionary) -> float:
+	var total := 0.0
+	for city in status["cities"]:
+		total += float(city["pop"]["external_income"])
 	return total
 
 

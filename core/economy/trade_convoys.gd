@@ -1229,44 +1229,59 @@ func spawn_orders(orders: Array) -> void:
 ## entre nações (mostra navio/avião), (3) proximidade da câmera, com desempate
 ## determinístico por cidade de origem/destino. Sem câmera (headless), a
 ## distância é infinita para todos e o desempate vale.
+##
+## Só os `MAX_CONVOYS` primeiros sobrevivem ao LOD, então não vale ordenar os
+## 512 pedidos do dia inteiros (o sort antigo criava um Dictionary de 6 chaves
+## por pedido e custava ~4 ms no frame da virada): as chaves vão para arrays
+## empacotados e a seleção é uma inserção limitada a 24 posições.
 func _prioritize(orders: Array) -> Array:
 	var focus := _camera_focus()
-	var entries: Array = []
-	for index in orders.size():
+	var count := orders.size()
+	var tiers := PackedInt32Array()
+	var distances := PackedFloat64Array()
+	tiers.resize(count)
+	distances.resize(count)
+	for index in count:
 		var order: Dictionary = orders[index]
-		entries.append({
-			"order": order,
-			"tier": _order_tier(order),
-			"distance": _order_distance(order, focus),
-			"from": String(order.get("from_city", "")),
-			"to": String(order.get("to_city", "")),
-			"index": index,
-		})
-	entries.sort_custom(_order_before)
+		tiers[index] = _order_tier(order)
+		distances[index] = _order_distance(order, focus)
+	var picks := PackedInt32Array()
+	for index in count:
+		var slot := picks.size()
+		while slot > 0 and _order_precedes(orders, tiers, distances, index, picks[slot - 1]):
+			slot -= 1
+		if slot >= MAX_CONVOYS:
+			continue
+		picks.insert(slot, index)
+		if picks.size() > MAX_CONVOYS:
+			picks.remove_at(picks.size() - 1)
 	var sorted: Array = []
-	for entry in entries:
-		sorted.append(entry["order"])
+	sorted.resize(picks.size())
+	for position in picks.size():
+		sorted[position] = orders[picks[position]]
 	return sorted
 
 
-func _order_before(a: Dictionary, b: Dictionary) -> bool:
-	var a_tier := int(a["tier"])
-	var b_tier := int(b["tier"])
-	if a_tier != b_tier:
-		return a_tier < b_tier
-	var a_distance := float(a["distance"])
-	var b_distance := float(b["distance"])
-	if not is_equal_approx(a_distance, b_distance):
-		return a_distance < b_distance
-	var a_from := String(a["from"])
-	var b_from := String(b["from"])
-	if a_from != b_from:
-		return a_from < b_from
-	var a_to := String(a["to"])
-	var b_to := String(b["to"])
-	if a_to != b_to:
-		return a_to < b_to
-	return int(a["index"]) < int(b["index"])
+## `left` vem antes de `right` na fila (mesma regra de `_order_before`).
+func _order_precedes(orders: Array, tiers: PackedInt32Array,
+		distances: PackedFloat64Array, left: int, right: int) -> bool:
+	if tiers[left] != tiers[right]:
+		return tiers[left] < tiers[right]
+	var left_distance := distances[left]
+	var right_distance := distances[right]
+	if not is_equal_approx(left_distance, right_distance):
+		return left_distance < right_distance
+	var left_order: Dictionary = orders[left]
+	var right_order: Dictionary = orders[right]
+	var left_from := String(left_order.get("from_city", ""))
+	var right_from := String(right_order.get("from_city", ""))
+	if left_from != right_from:
+		return left_from < right_from
+	var left_to := String(left_order.get("to_city", ""))
+	var right_to := String(right_order.get("to_city", ""))
+	if left_to != right_to:
+		return left_to < right_to
+	return left < right
 
 
 ## 0 = pedido da nação do jogador; 1 = comércio entre nações; 2 = doméstico.

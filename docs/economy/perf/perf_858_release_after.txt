@@ -1,0 +1,87 @@
+﻿Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+Godot_v4.7.2-stable_win64.exe : WARNING: Loaded resource as image file, this will not work on export: 
+'res://map/map_data/atlas/world_province.png'. Instead, import the image file as an Image resource and load it 
+normally as a resource.
+No linha:1 caractere:437
++ ... win64.exe"; & $godot --headless --path . res://tools/perf_day_peak.ts ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: Loaded... as a resource.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] _world_province_raster (res://map/territory_map.gd:606)
+       [1] _country_adjacency (res://map/territory_map.gd:252)
+       [2] _build_nation_palette (res://map/territory_map.gd:163)
+       [3] load_data (res://map/territory_map.gd:146)
+       [4] _ready (res://tools/perf_day_peak.gd:113)
+WARNING: Loaded resource as image file, this will not work on export: 'res://map/map_data/atlas/world_sdf.png'. 
+Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] _world_sdf_raster (res://map/territory_map.gd:612)
+       [1] _country_adjacency (res://map/territory_map.gd:275)
+       [2] _build_nation_palette (res://map/territory_map.gd:163)
+       [3] load_data (res://map/territory_map.gd:146)
+       [4] _ready (res://tools/perf_day_peak.gd:113)
+[perf] dia   1: tick   20.8  fila  1.05  plano IA  0.05  mapa  1.91  virada    5.0 | pump 4626.08 ms em 2983 frames (pico  4.39, IA 20.28)  [240 pedidos, 18 comboios, 0 entregues]
+[perf]          fases: status  15.6 (cidades  13.7, pedidos  1.5, na├º├Áes  0.4)  trade   1.0  arrival   0.9  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   2: tick   21.7  fila  2.00  plano IA  0.05  mapa  2.08  virada    7.0 | pump 5793.20 ms em 3717 frames (pico  3.79, IA 21.22)  [430 pedidos, 20 comboios, 18 entregues]
+[perf]          fases: status  15.2 (cidades  12.1, pedidos  2.6, na├º├Áes  0.4)  trade   1.4  arrival   0.9  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   3: tick   21.8  fila  1.75  plano IA  0.05  mapa  2.12  virada    7.0 | pump 2839.93 ms em 1828 frames (pico  3.90, IA 22.51)  [506 pedidos, 21 comboios, 20 entregues]
+[perf]          fases: status  16.8 (cidades  12.5, pedidos  3.8, na├º├Áes  0.4)  trade   1.4  arrival   1.2  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   4: tick   35.0  fila  2.05  plano IA  0.05  mapa  1.97  virada    6.9 | pump 4757.24 ms em 3062 frames (pico  8.62, IA 22.51)  [512 pedidos, 20 comboios, 21 entregues]
+[perf]          fases: status  18.0 (cidades  13.5, pedidos  4.1, na├º├Áes  0.3)  trade   8.8  arrival   1.2  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   5: tick   34.9  fila  1.87  plano IA  0.05  mapa  2.21  virada    7.1 | pump 1661.70 ms em 1079 frames (pico  3.29, IA 23.20)  [512 pedidos, 18 comboios, 20 entregues]
+[perf]          fases: status  19.3 (cidades  14.5, pedidos  4.4, na├º├Áes  0.4)  trade   7.5  arrival   1.1  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   6: tick   27.9  fila  2.17  plano IA  0.05  mapa  2.03  virada    7.2 | pump 2205.67 ms em 1424 frames (pico  4.18, IA 24.43)  [512 pedidos, 23 comboios, 18 entregues]
+[perf]          fases: status  19.7 (cidades  14.9, pedidos  4.4, na├º├Áes  0.4)  trade   5.7  arrival   1.2  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   7: tick   34.8  fila  1.82  plano IA  0.06  mapa  2.17  virada    7.0 | pump 1279.65 ms em 818 frames (pico  3.41, IA 23.52)  [512 pedidos, 23 comboios, 23 entregues]
+[perf]          fases: status  20.1 (cidades  15.4, pedidos  4.2, na├º├Áes  0.4)  trade   6.0  arrival   1.3  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   8: tick   35.0  fila  1.88  plano IA  0.05  mapa  2.02  virada    6.8 | pump 1136.71 ms em 731 frames (pico  3.16, IA 10.48)  [512 pedidos, 22 comboios, 23 entregues]
+[perf]          fases: status  21.7 (cidades  16.2, pedidos  5.1, na├º├Áes  0.4)  trade   5.5  arrival   1.2  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia   9: tick   34.8  fila  1.85  plano IA  0.05  mapa  2.21  virada    7.2 | pump 810.00 ms em 520 frames (pico  4.43, IA  9.55)  [512 pedidos, 21 comboios, 22 entregues]
+[perf]          fases: status  21.2 (cidades  16.4, pedidos  4.4, na├º├Áes  0.4)  trade   5.9  arrival   1.1  produ├º├úo  0.1  renda  0.0  pre├ºos  0.1
+[perf] dia  10: tick   34.8  fila  1.94  plano IA  0.05  mapa  2.01  virada    6.8 | pump 2401.00 ms em 1540 frames (pico  3.70, IA 10.66)  [512 pedidos, 21 comboios, 21 entregues]
+[perf]          fases: status  21.0 (cidades  16.5, pedidos  4.1, na├º├Áes  0.4)  trade   6.0  arrival   1.2  produ├º├úo  0.2  renda  0.0  pre├ºos  0.1
+
+[perf] virada do dia ÔÇö 10 dias, tick=worker, sob demanda (pump por frame)
+[perf] grade de navega├º├úo/prontid├úo dos comboios: 173.0 ms (uma vez)
+[perf] mapa (political, territ├│rio=true) montado em 691.3 ms (uma vez)
+[perf] pedidos/dia: m├®dia 476.0, m├íximo 512; comboios ativos/dia (p├│s-pump): 20.7; entregues/dia: 18.6
+[perf] etapa                               m├®dia      p95      m├íx
+[perf] 1. tick C++ (parede do worker)    30.14    34.97    34.97  ms
+[perf]    tick em regime (dia > 2)    32.37    34.97    34.97  ms
+[perf] 1b. poll da main (dia pronto)     0.01     0.01     0.01  ms
+[perf] 2. enfileirar pedidos          1.84     2.17     2.17  ms
+[perf] 3. IA planejar (agenda do dia)     0.05     0.06     0.06  ms
+[perf] 3b. log de pedidos (HUD)       2.83     3.08     3.08  ms
+[perf]    IA trabalho fatiado/dia    18.84    24.43    24.43  ms
+[perf] 4. mapa (camada+territ.)       2.07     2.21     2.21  ms
+[perf]    - camada do modo            0.95     1.01     1.01  ms
+[perf]    - territ├│rio                1.13     1.26     1.26  ms
+[perf]    VIRADA (frame da main)      6.80     7.21     7.21  ms
+[perf]    PUMP comboios/dia        2751.12  5793.20  5793.20  ms
+[perf]    PUMP por frame              1.55     1.64     8.62  ms
+[perf]    FRAME DE PICO (virada|frames)     6.97     8.62     8.62  ms
+[perf] fase do tick C++            m├®dia      p95      m├íx
+[perf] status                      18.84    21.65    21.65
+[perf] status_cities               14.58    16.51    16.51
+[perf] trade                        4.93     8.81     8.81
+[perf] status_orders                3.87     5.08     5.08
+[perf] arrival                      1.13     1.27     1.27
+[perf] status_nations               0.36     0.38     0.38
+[perf] production                   0.11     0.19     0.19
+[perf] fiscal                       0.08     0.20     0.20
+[perf] prices                       0.07     0.09     0.09
+[perf] reset                        0.06     0.08     0.08
+[perf] raw                          0.05     0.06     0.06
+[perf] invariants                   0.05     0.07     0.07
+[perf] clamp                        0.05     0.06     0.06
+[perf] accounting                   0.03     0.04     0.04
+[perf] income                       0.03     0.03     0.03
+[perf] status_misc                  0.03     0.05     0.05
+[perf] labor                        0.02     0.03     0.03
+[perf] pump: 1770.2 frames/dia em m├®dia; or├ºamento 1500 ┬Ás/frame
+[perf] mem├│ria est├ítica com 858 cidades: 432.3 MB
