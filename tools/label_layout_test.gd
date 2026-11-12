@@ -84,17 +84,29 @@ func _run() -> void:
 		for focus in FOCUSES:
 			_focus(focus)
 			_camera.position = Vector3(0.0, 0.0, DEFAULT_DISTANCE)
-			await get_tree().process_frame
-			await get_tree().process_frame
+			await _settle()
 			_check_default(size, focus, cities)
 		for focus in ZOOM_OUT_FOCUSES:
 			_focus(focus)
 			_camera.position = Vector3(0.0, 0.0, ZOOM_OUT_DISTANCE)
-			await get_tree().process_frame
-			await get_tree().process_frame
+			await _settle()
 			_check_zoom_out(size, focus, cities)
 
 	_finish()
+
+
+## Espera o layout fatiado e o fade de nível assentarem (máx. 90 frames). O
+## fade de 150 ms pode atravessar os dois frames antigos do teste; sem isso a
+## checagem lia o layout anterior.
+func _settle() -> void:
+	for _frame in 90:
+		await get_tree().process_frame
+		if not bool(_world.get("_layout_job_active")) \
+				and not bool(_world.get("_layout_dirty")) \
+				and not bool(_world.get("_layout_pending")) \
+				and not bool(_world.get("_layout_after_scan")) \
+				and (_world.get("_level_fade_queue") as Array).is_empty():
+			return
 
 
 func _focus(city_id: String) -> void:

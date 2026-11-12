@@ -38,6 +38,7 @@ const ATLAS_REGION_PROVINCE: Texture2D = preload("res://map/map_data/atlas/regio
 const ATLAS_WORLD_PROVINCE: Texture2D = preload("res://map/map_data/atlas/world_province.png")
 const NATION_LABEL_FONT: Font = preload("res://assets/fonts/Cinzel-Variable.ttf")
 const POLITICAL_SHADER: Shader = preload("res://map/map_shaders/political_overlay.gdshader")
+const FLAG_SHADER: Shader = preload("res://map/map_shaders/flag_atlas.gdshader")
 const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
@@ -101,12 +102,22 @@ const LABEL_GRID_PX := 64.0
 const LOD_BUILD_BUDGET_USEC := 1500
 
 ## Layout de rótulos (projeção + colisão de tela): refeito quando a câmera se
-## move — no máximo a cada `LAYOUT_FRAMES_MOVING` frames — e, com a câmera
-## parada, só a cada `LAYOUT_FRAMES_IDLE` frames. As posições no wrap, o fade e
-## os tamanhos continuam por frame em `_apply_wrap_positions()`.
-const LAYOUT_FRAMES_MOVING := 2
-const LAYOUT_FRAMES_IDLE := 24
-const CAMERA_MOVE_EPSILON := 0.01
+## move além de `CAMERA_MOVE_EPSILON`, com throttle de ~12 Hz — durante pan/zoom
+## rápido o layout é congelado e refeito quando a câmera para. O trabalho é
+## fatiado por `LAYOUT_BUDGET_USEC` para não estourar o frame.
+const LAYOUT_MIN_INTERVAL := 1.0 / 12.0
+const LAYOUT_BUDGET_USEC := 1200
+## Varredura do LOD que passou deste custo já gastou o frame: o layout do ciclo
+## entra no frame seguinte (continua fatiado), em vez de somar dois picos.
+const SCAN_DEFER_USEC := 1400
+const CAMERA_MOVE_EPSILON := 0.06
+## Deslocamento (u) num único frame que conta como teleporte/recentralização:
+## roda varredura e layout completos já neste frame (o teste e o clique no HUD
+## esperam a tela pronta). Pan normal anda bem menos que isso por frame.
+const LAYOUT_JUMP := 4.0
+## No nível LONGE as bolas mudam pouco: o buffer do MultiMesh é reescrito a
+## ~4 Hz durante o pan e imediatamente quando a câmera para.
+const FAR_ICON_INTERVAL := 0.25
 
 ## Grade do LOD: célula (u de mundo) da grade XZ que guarda os registros. A cada
 ## frame só as células em volta da câmera são visitadas — não os 650+650
@@ -198,22 +209,37 @@ const LABEL_SIZE_STANDARD := 20
 const LABEL_COLOR := Color("#E8E2D0")
 const LABEL_HOVER_COLOR := Color("#C9A24A")  # latão: hover/indica clicável
 const ICON_COLOR := Color("#E8E2D0")          # marfim: alto contraste no selo escuro
-## Fade de rótulo por distância (LOD): no zoom out ficam só capitais e cidades
-## grandes; a transição é suave, sem linhas nem saltos.
-const LABEL_FADE_CAPITAL_START := 170.0
-const LABEL_FADE_CAPITAL_END := 260.0
-const LABEL_FADE_LARGE_START := 100.0
-const LABEL_FADE_LARGE_END := 160.0
-const LABEL_FADE_MEDIUM_START := 75.0
-## Fim do fade da cidade média em 100 (era 110): com a câmera inclinada, uma
-## cidade do lado próximo da tela fica a ~103 u no zoom out de 120 e ainda
-## aparecia com nome (alpha 0,18 > o corte de 0,15). O zoom out deve manter só
-## capitais e cidades grandes.
-const LABEL_FADE_MEDIUM_END := 100.0
-const LABEL_FADE_SMALL_START := 58.0
-const LABEL_FADE_SMALL_END := 90.0
-const LABEL_LARGE_POPULATION := 1000000.0
-const LABEL_MEDIUM_POPULATION := 500000.0
+## LOD de zoom em 3 níveis, com histerese (não pisca na fronteira) e fade curto
+## de 150 ms. A distância é a da câmera ao ponto do chão que ela mira — a mesma
+## referência do enquadramento (d=52 perto, 120 médio, 260 longe).
+##   LONGE  (estratégico) > 178 u: só bolas/ícones (capitais um pouco maiores);
+##           sem nomes, bandeiras, portos, tecido urbano ou veículos.
+##   MÉDIO  (66..168)      : capitais com bandeira + nome; demais só bola pequena;
+##           cidades da nação do jogador também têm nome.
+##   PERTO  (<= 74)        : todos os nomes, portos, construções, tecido e veículos.
+## A histerese separa entrada e saída: 66/74 no perto e 168/178 no médio.
+const ZOOM_NEAR_ENTER := 66.0
+const ZOOM_NEAR_EXIT := 74.0
+const ZOOM_MID_ENTER := 168.0
+const ZOOM_MID_EXIT := 178.0
+const LEVEL_FADE_SECONDS := 0.15
+
+## Declutter por célula de tela: no máximo N nomes por célula de 64 px (além da
+## colisão retângulo a retângulo). Capital > nação do jogador > população.
+const LABEL_MAX_PER_CELL := 4
+
+## Bolas dos ícones por nível: no longe, o glifo de prédio some e fica só o
+## selo; a capital tem a estrela e uma bola maior.
+const FAR_BALL_SCALE := 0.62
+const MID_BALL_SCALE := 0.78
+const CAPITAL_BALL_SCALE := 0.95
+const FAR_CAPITAL_ICON_SCALE := 1.2
+
+## Bandeiras: atlas único + MultiMesh (uma draw call). Cada célula copia a
+## textura da nação (40×27, proporção real das PNGs) e o shader escolhe a célula
+## por `INSTANCE_CUSTOM`.
+const FLAG_CELL := Vector2i(40, 27)
+const FLAG_ATLAS_COLS := 16
 
 ## Nomes de nação gravados no mapa.
 const NATION_LABEL_COLOR := Color(0.07, 0.08, 0.09, 0.68)
@@ -302,6 +328,9 @@ var _records_by_id: Dictionary = {}
 ## Listas de VISÍVEIS montadas no LOD de cada frame: o trabalho de layout/ícones
 ## percorre só elas, não os 650 lugares.
 var _visible_city_records: Array = []
+## A primeira varredura já rodou? Antes dela as listas estão vazias e os buffers
+## de ícone não podem ser "aplicados" (perderiam o alvo e ficariam limpos).
+var _scanned_once := false
 ## Portos com selo aceso neste frame (alpha > 0,01). O layout percorre esta
 ## lista em vez dos 650 portos: a consulta da grade já filtrou por distância.
 var _visible_port_records: Array = []
@@ -311,7 +340,6 @@ var _drawn_ports: Array = []
 ## são poucas e ficam fora da grade. `_grid_cells` conta as células em X.
 var _city_grid: Dictionary = {}
 var _port_grid: Dictionary = {}
-var _wide_cities: Array = []
 var _grid_cells := 16
 ## Raio de consulta de cada grade: o maior `lod_end` dos registros nela. Fora
 ## dele o registro está "assentado" (alfa 0); teleportes forçam varredura
@@ -329,11 +357,58 @@ var _layout_camera_position := Vector3(INF, INF, INF)
 var _layout_camera_basis := Basis()
 var _layout_camera_fov := -1.0
 var _layout_viewport := Vector2.ZERO
-var _layout_cooldown := 0
 var _layout_dirty := true
-## Um movimento que caiu no cooldown (teleporte/recentralização de um frame)
-## precisa de um layout posterior mesmo que a câmera já esteja parada.
+## Um movimento que caiu no throttle precisa de um layout posterior mesmo que a
+## câmera já esteja parada (refazer ao parar).
 var _layout_pending := false
+## A varredura deste ciclo já rodou e o layout ficou para o próximo frame: a
+## varredura sozinha já estourou o orçamento, empilhar o layout no mesmo frame
+## criava o pico de p95/p99 do pan.
+var _layout_after_scan := false
+## Acumulador do throttle do layout (segundos) e orçamento do frame em curso.
+var _layout_accum := 0.0
+
+## Nível de zoom vigente (enum `ZoomLevel`) e distância da câmera ao chão.
+## `_zoom_level = -1` no build: o primeiro frame assenta o nível sem fade.
+var _zoom_level := -1
+var _zoom_distance := 0.0
+## Registros cujo alpha está animando entre níveis (fade de 150 ms).
+var _level_fade_queue: Array = []
+## Nação do jogador: no nível MÉDIO, só as cidades dela mostram nome além das
+## capitais. Vazio = nenhuma nação jogável declarada ainda.
+var _player_nation := ""
+
+## Bandeiras: atlas único + MultiMesh. `_flag_records` são as capitais com
+## bandeira carregada; o buffer só é reescrito quando algo muda.
+var _flag_atlas: ImageTexture
+var _flag_uv: Dictionary = {}
+var _flag_mm: MultiMeshInstance3D
+var _flag_records: Array[Dictionary] = []
+var _icons_dirty := true
+var _flags_dirty := true
+var _icon_accum := 0.0
+
+## Buffers reutilizados pela varredura do LOD (evitam alocar Array por frame).
+var _scan_city_records: Array = []
+var _scan_port_records: Array = []
+
+## Layout fatiado: entradas de cidade já projetadas, índice de aceitação e
+## contagem de nomes por célula de tela.
+var _label_cell_counts: Dictionary = {}
+var _layout_job_active := false
+var _layout_job_phase := 0
+var _layout_job_entries: Array = []
+var _layout_job_index := 0
+var _layout_job_city_blocks: Dictionary = {}
+var _layout_job_ports: Array = []
+var _layout_job_cities: Array = []
+var _layout_job_camera: Camera3D
+
+## Render dos comboios (child criado por `main_game`): visibilidade por nível e
+## frustum, checada a ~6 Hz — a posição lógica do tween continua.
+var _convoy_renderer: Node = null
+var _convoy_timer := 0.0
+
 ## Cópias laterais do mundo (wrap em X): o rótulo clicável é o da cópia que
 ## está de fato na tela, não necessariamente a central. Com o pool de rótulos,
 ## o texto já é posicionado na cópia mais próxima — o pick testa só a atual.
@@ -341,6 +416,9 @@ var _wrap_offsets: Array[float] = [0.0]
 
 ## Emitido quando o conjunto de donos muda (o minimapa precisa se atualizar).
 signal territory_changed
+
+## Níveis do LOD de zoom (ver constantes ZOOM_*).
+enum ZoomLevel { FAR, MID, NEAR }
 
 
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
@@ -367,6 +445,7 @@ func build(cities: Array, ports: Array) -> void:
 	_build_cities(cities)
 	_build_ports(ports)
 	_build_city_labels()
+	_build_flag_renderer()
 	_build_nation_labels()
 	_init_territory(cities)
 	_build_lod_grid()
@@ -1292,6 +1371,11 @@ func _update_nation_labels(camera_position: Vector3) -> void:
 			label.modulate.a = NATION_LABEL_COLOR.a * alpha
 
 
+## Rampa 0..1 usada pelas faixas próprias dos nomes de nação.
+static func _fade_in(distance: float, start: float, end: float) -> float:
+	return clampf((distance - start) / (end - start), 0.0, 1.0)
+
+
 func _build_mode_layer(cities: Array) -> void:
 	_mode_layer = ModeLayerScript.new()
 	_mode_layer.name = "ModeLayer"
@@ -1322,21 +1406,15 @@ func _build_cities(cities: Array) -> void:
 		var discs: Array = []
 		var icon: Sprite3D = null
 		var ring: Sprite3D = null
-		var flag: Sprite3D = null
 		if detailed_ids.has(city_id):
 			discs = _spawn_city_marker(position, String(city.get("name", "")), color)
 			var icon_texture := STAR_ICON if capital else CITY_ICON
-			# Bandeira só na capital: nas cidades comuns ela alargava o rótulo
-			# e forçava o nome a sair de cima das vizinhas.
-			var marker := _add_place_icon(10, icon_texture, String(city["nation"]), capital)
+			# Bandeira agora é MultiMesh (atlas único): o marcador detalhado só
+			# tem ícone + aro. O glifo aparece no nível PERTO/nome; no longe fica
+			# só a bola do selo.
+			var marker := _add_place_icon(10, icon_texture)
 			icon = marker["icon"]
 			ring = marker["ring"]
-			flag = marker["flag"]
-		elif capital:
-			# Capital fora das 40 detalhadas também tem bandeira: o ícone é o
-			# star do MultiMesh, mas a bandeira é um Sprite3D no mesmo conjunto
-			# [bandeira][selo][nome], como nas capitais detalhadas.
-			flag = _new_flag(String(city["nation"]))
 		var record := {
 			"id": city_id,
 			"kind": "city",
@@ -1350,31 +1428,29 @@ func _build_cities(cities: Array) -> void:
 			"ground": position,
 			"priority": float(city.get("population", 0.0)),
 			"capital": capital,
+			"nation": String(city.get("nation", "")),
 			"detailed": detailed_ids.has(city_id),
 			"discs": discs,
 			"disc_local": _disc_local_positions(discs),
 			"label": null,
 			"label_alpha": 1.0,
+			"label_target": 1.0,
 			"pixel_size": LABEL_PIXEL_PER_UNIT * 52.0,
 			"font_size": LABEL_SIZE_CAPITAL if capital else LABEL_SIZE_STANDARD,
 			"text_width": 0.0,
 			"wrap_x": 0.0,
 			"icon": icon,
 			"ring": ring,
-			"flag": flag,
+			"flag": null,
 			"urban": null,
 			"urban_queued": false,
 		}
 		_city_nodes.append(record)
 		_records_by_id[city_id] = record
-		# Faixa de fade e raio de "assentamento" do LOD, calculados uma vez: a
-		# categoria (capital/população) não muda, então o frame só compara
-		# distâncias — sem alocar Vector2 nem reavaliar a categoria.
-		var fade := _label_fade_range(record)
-		record["fade_start"] = fade.x
-		record["fade_end"] = fade.y
-		record["lod_end"] = maxf(fade.y, MARKER_FADE_IN_END) \
-				if bool(record["detailed"]) else fade.y
+		# Raio em que o LOD ainda atualiza este registro. Não é mais a faixa de
+		# fade do nome (o nível de zoom decide o texto); serve ao tecido urbano
+		# e ao assentamento do registro longe da câmera.
+		record["lod_end"] = CITY_VISIBLE_DISTANCE
 		if bool(record["detailed"]):
 			_detailed_records.append(record)
 
@@ -1539,10 +1615,11 @@ func _build_ports(ports: Array) -> void:
 		var existing: Dictionary = _records_by_id.get(port_id, {})
 		if existing.is_empty() or String(existing.get("kind", "")) != "city":
 			_records_by_id[port_id] = record
-		# Faixa de fade do selo e raio de assentamento do LOD (modelo 3D).
-		record["fade_start"] = LABEL_FADE_SMALL_START
-		record["fade_end"] = LABEL_FADE_SMALL_END
-		record["lod_end"] = maxf(LABEL_FADE_SMALL_END, PORT_MODEL_VISIBLE_DISTANCE)
+		# Raio de atualização do LOD (modelo 3D do porto). O selo só aparece no
+		# nível PERTO; o nível de zoom decide a visibilidade, não o fade.
+		record["label_alpha"] = 1.0
+		record["label_target"] = 1.0
+		record["lod_end"] = PORT_MODEL_VISIBLE_DISTANCE
 	_build_port_icons(ports)
 
 
@@ -1578,9 +1655,8 @@ func _coast_direction_map(point_px: Vector2) -> Vector2:
 
 
 ## Marcador de lugar (cidade): símbolo dentro de um selo escuro com aro de
-## latão (+ bandeira só na capital), ancorado no ponto da cidade.
-func _add_place_icon(render_priority: int, texture: Texture2D, nation: String,
-		with_flag: bool) -> Dictionary:
+## latão. A bandeira da capital é desenhada pelo MultiMesh do atlas de bandeiras.
+func _add_place_icon(render_priority: int, texture: Texture2D) -> Dictionary:
 	var icon := Sprite3D.new()
 	icon.texture = texture
 	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -1598,24 +1674,147 @@ func _add_place_icon(render_priority: int, texture: Texture2D, nation: String,
 	ring.render_priority = render_priority - 2
 	_places.add_child(ring)
 
-	var flag: Sprite3D = _new_flag(nation) if with_flag else null
-
-	return {"icon": icon, "ring": ring, "flag": flag}
+	return {"icon": icon, "ring": ring}
 
 
-func _new_flag(nation: String) -> Sprite3D:
-	var texture := Economy.flag_texture(nation)
-	if texture == null:
-		return null
-	var flag := Sprite3D.new()
-	flag.texture = texture
-	flag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	flag.no_depth_test = true
-	# Acima dos rótulos (10): a bandeira da capital é o último item a sumir.
-	flag.render_priority = 12
-	flag.visible = false
-	_places.add_child(flag)
-	return flag
+## Atlas único das bandeiras das capitais + MultiMesh (uma draw call). Cada
+## instância leva a célula da nação em `INSTANCE_CUSTOM` e o alfa em `COLOR`.
+## Sem Economy/flags (bench sintético), não cria nada e o mapa segue sem bandeira.
+func _build_flag_renderer() -> void:
+	_flag_records.clear()
+	_flag_uv.clear()
+	if _flag_mm != null:
+		_flag_mm.queue_free()
+		_flag_mm = null
+	var nations: Array[String] = []
+	var seen := {}
+	for record in _city_nodes:
+		if not bool(record.get("capital", false)):
+			continue
+		var nation := String(record.get("nation", ""))
+		if nation.is_empty() or seen.has(nation):
+			continue
+		seen[nation] = true
+		nations.append(nation)
+	if nations.is_empty():
+		return
+
+	var cell := FLAG_CELL
+	var images: Array[Image] = []
+	var usable: Array[String] = []
+	for nation in nations:
+		var texture: Texture2D = Economy.flag_texture(nation)
+		if texture == null:
+			continue
+		var image := texture.get_image()
+		if image == null:
+			continue
+		if image.get_format() != Image.FORMAT_RGBA8:
+			image.convert(Image.FORMAT_RGBA8)
+		if image.get_width() != cell.x or image.get_height() != cell.y:
+			image.resize(cell.x, cell.y, Image.INTERPOLATE_BILINEAR)
+		images.append(image)
+		usable.append(nation)
+	if usable.is_empty():
+		return
+
+	var cols := mini(FLAG_ATLAS_COLS, usable.size())
+	var rows := ceili(float(usable.size()) / float(cols))
+	var atlas := Image.create(cols * cell.x, rows * cell.y, false, Image.FORMAT_RGBA8)
+	atlas.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for index in usable.size():
+		var column := index % cols
+		var row := floori(float(index) / float(cols))
+		atlas.blit_rect(images[index], Rect2i(0, 0, cell.x, cell.y),
+				Vector2i(column * cell.x, row * cell.y))
+		# Meio texel de folga: a interpolação linear não puxa o vizinho.
+		var u0 := (float(column * cell.x) + 0.5) / float(cols * cell.x)
+		var v0 := (float(row * cell.y) + 0.5) / float(rows * cell.y)
+		var us := float(cell.x - 1) / float(cols * cell.x)
+		var vs := float(cell.y - 1) / float(rows * cell.y)
+		_flag_uv[usable[index]] = Rect2(u0, v0, us, vs)
+	_flag_atlas = ImageTexture.create_from_image(atlas)
+
+	for record in _city_nodes:
+		if not bool(record.get("capital", false)):
+			continue
+		var nation := String(record.get("nation", ""))
+		if not _flag_uv.has(nation):
+			continue
+		record["flag"] = {
+			"nation": nation,
+			"texture": _flag_atlas,
+			"uv": _flag_uv[nation],
+		}
+		_flag_records.append(record)
+	_flag_mm = _make_flag_multimesh(_flag_records.size())
+
+
+func _make_flag_multimesh(count: int) -> MultiMeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE
+	var material := ShaderMaterial.new()
+	material.shader = FLAG_SHADER
+	material.set_shader_parameter("flags_atlas", _flag_atlas)
+	material.render_priority = 12
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_custom_data = true
+	multimesh.use_colors = true
+	multimesh.mesh = quad
+	multimesh.instance_count = count
+	multimesh.visible_instance_count = 0
+	var instance := MultiMeshInstance3D.new()
+	instance.name = "CityFlags"
+	instance.multimesh = multimesh
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_places.add_child(instance)
+	return instance
+
+
+## Centro do mundo da bandeira da capital, na cópia de wrap mais próxima.
+func _flag_world_center(record: Dictionary) -> Vector3:
+	var anchor: Vector3 = record["anchor"] \
+			+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
+	var em := float(record["font_size"]) * float(record["pixel_size"])
+	var icon_h := em * PLACE_ICON_HEIGHT
+	var ring_h := icon_h * RING_SCALE
+	var gap := em * PLACE_ICON_GAP
+	var flag_h := icon_h * FLAG_SCALE
+	return to_global(anchor + Vector3(-ring_h * 0.5 - gap - flag_h, 0.0, 0.0))
+
+
+## Reescreve o buffer das bandeiras só quando algo mudou. Só capitais com alfa
+## aceso e dentro do frustum entram; as demais ficam fora de `visible_instance_count`.
+func _apply_flag_transforms(camera: Camera3D) -> void:
+	_flags_dirty = false
+	if _flag_mm == null or _flag_mm.multimesh == null:
+		return
+	var buffer := _flag_mm.multimesh
+	var index := 0
+	for record in _flag_records:
+		var alpha := float(record.get("label_alpha", 0.0))
+		if alpha <= 0.01:
+			continue
+		var center := _flag_world_center(record)
+		if camera.is_position_behind(center) \
+				or not camera.is_position_in_frustum(center):
+			continue
+		if index >= buffer.instance_count:
+			break
+		var em := float(record["font_size"]) * float(record["pixel_size"])
+		var icon_h := em * PLACE_ICON_HEIGHT
+		var flag_h := icon_h * FLAG_SCALE
+		var size := Vector3(flag_h * 2.0, flag_h * 1.35, 1.0)
+		var uv: Rect2 = record["flag"]["uv"]
+		buffer.set_instance_transform(index, Transform3D(
+				Basis().scaled(size), _flag_mm.to_local(center)))
+		buffer.set_instance_custom_data(index,
+				Color(uv.size.x, uv.size.y, uv.position.x, uv.position.y))
+		buffer.set_instance_color(index, Color(1.0, 1.0, 1.0, alpha))
+		index += 1
+	buffer.visible_instance_count = index
 
 
 ## Nome atual da cidade (i18n), calculado uma vez e invalidado na troca de idioma.
@@ -1666,19 +1865,16 @@ func _place_city_marker(record: Dictionary) -> void:
 
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
-		icon.pixel_size = icon_h / PLACE_ICON_SOURCE
+		var icon_scale := FAR_CAPITAL_ICON_SCALE \
+				if _zoom_level == ZoomLevel.FAR \
+						and bool(record.get("capital", false)) else 1.0
+		icon.pixel_size = icon_h * icon_scale / PLACE_ICON_SOURCE
 		icon.position = anchor
 
 	var ring: Sprite3D = record.get("ring")
 	if ring != null:
-		ring.pixel_size = ring_h / PLACE_ICON_SOURCE
+		ring.pixel_size = ring_h * _city_ball_scale(record) / PLACE_ICON_SOURCE
 		ring.position = anchor
-
-	var flag: Sprite3D = record.get("flag")
-	if flag != null:
-		var flag_h := icon_h * FLAG_SCALE
-		flag.pixel_size = flag_h / 20.0  # bandeira 40×20 (2:1)
-		flag.position = anchor + Vector3(-ring_h * 0.5 - gap - flag_h, 0.0, 0.0)
 
 	var text_w := _city_text_width(record)
 	var text_center := anchor + Vector3(ring_h * 0.5 + gap + text_w * 0.5,
@@ -1870,12 +2066,10 @@ func _add_disc(position: Vector3, radius: float, height: float, color: Color) ->
 
 
 
-## LOD por distância: rótulos de cidade/porto, marcador e cidade modular.
-## O loop percorre todas as cidades/portos (barato: distância + wrap), mas só
-## projeta/monta o que está dentro da faixa de fade do frame. O layout de tela
-## (projeção + colisão de rótulos) é fatiado: câmera em movimento, um a cada
-## `LAYOUT_FRAMES_MOVING` frames; parada, um a cada `LAYOUT_FRAMES_IDLE`.
-func _process(_delta: float) -> void:
+## Frame do mapa: nível de zoom (3 níveis com histerese/fade), varredura do LOD
+## só nas células visíveis, layout de tela com throttle (~12 Hz) e fatiado, e
+## buffers de ícones/bandeiras reescritos apenas quando algo mudou.
+func _process(delta: float) -> void:
 	if _city_nodes.is_empty() and _port_nodes.is_empty():
 		return
 	var camera := get_viewport().get_camera_3d()
@@ -1890,51 +2084,107 @@ func _process(_delta: float) -> void:
 	# lugar) move a câmera no espaço local sem mexer na câmera global; o layout
 	# precisa acompanhar os dois.
 	var local_delta := _last_camera_local.distance_to(camera_local)
+	var viewport_size := Vector2.ZERO
+	var viewport := camera.get_viewport()
+	if viewport != null:
+		viewport_size = viewport.get_visible_rect().size
+	var viewport_changed := _layout_viewport != Vector2.ZERO \
+			and viewport_size != _layout_viewport
 	var moved := _camera_changed(camera) or local_delta > CAMERA_MOVE_EPSILON
-	# Câmera parada, nada marcado como sujo e nenhum modelo na fila: nada na
-	# tela muda. O frame custa só a comparação da câmera. Com modelo na fila,
-	# só a fila roda (construir um modelo por frame já é o pico do frame).
-	if not moved and not _layout_dirty and not _layout_pending:
+	var first_level := _zoom_level < 0
+	if _update_zoom_level(camera):
+		_refresh_level_targets(first_level)
+		_layout_dirty = true
+		_convoy_timer = 0.0
+	var fading := _advance_level_fade(delta)
+	_last_camera_local = camera_local
+
+	# Buffers de ícone/bandeira ANTES da varredura: usam a lista visível do
+	# ciclo anterior (1 frame de atraso, imperceptível) e deixam de somar o
+	# rebuild do MultiMesh ao pico da varredura no mesmo frame. No nível LONGE
+	# só reescrevem quando o relógio de 4 Hz vence (`_icon_accum`), porque não há
+	# nome/bandeira mudando.
+	_icon_accum += delta
+	var icons_ready := _zoom_level != ZoomLevel.FAR \
+			or _icon_accum >= FAR_ICON_INTERVAL
+	if _icons_dirty and icons_ready and _scanned_once:
+		_icon_accum = 0.0
+		_apply_icon_transforms(camera)
+	if _flags_dirty:
+		_apply_flag_transforms(camera)
+
+	# Câmera parada, nada sujo, nenhum fade/job e nenhuma fila: o frame custa só
+	# a comparação da câmera. Modelo na fila continua drenando (é o pico real).
+	if not moved and not _layout_dirty and not _layout_pending and not fading \
+			and not _layout_job_active and _level_fade_queue.is_empty() \
+			and not _icons_dirty and not _flags_dirty \
+			and not _layout_after_scan:
 		if _urban_queue.is_empty() and _port_model_queue.is_empty():
+			_update_convoy_lod(camera, camera_local, delta)
 			return
 		_process_lod_queues(camera)
+		_update_convoy_lod(camera, camera_local, delta)
 		return
-	_update_nation_labels(camera_position)
-	_visible_city_records.clear()
-	_visible_port_records.clear()
-	# Pulo grande da câmera (clique no HUD, limite, teleporte): uma varredura
-	# completa assenta/apaga o que ficou fora das células — senão um rótulo ou
-	# ícone processado perto ficaria aceso no lugar errado.
-	var jump := local_delta > LOD_SCAN_JUMP
-	_last_camera_local = camera_local
-	if jump:
-		for record in _port_nodes:
-			_apply_lod_port(record, camera_local, camera)
-		for record in _city_nodes:
-			_apply_lod_city(record, camera_local, camera)
-	else:
-		# Portos e cidades só nas células da grade em volta da câmera; as
-		# cidades de raio longo (capitais/grandes) ficam fora da grade.
-		for record in _lod_records(_port_grid, camera_local, _port_grid_radius):
-			_apply_lod_port(record, camera_local, camera)
-		for record in _wide_cities:
-			_apply_lod_city(record, camera_local, camera)
-		for record in _lod_records(_city_grid, camera_local, _city_grid_radius):
-			_apply_lod_city(record, camera_local, camera)
-	# Posição no wrap + escala de tela dos marcadores visíveis: não depende do
-	# layout (que é fatiado) e mantém discos/ícones/nomes colados na cópia mais
-	# próxima da câmera.
-	_apply_wrap_positions()
+
+	# Pulo grande (clique no HUD, limite, teleporte) ou resize da viewport:
+	# varredura e layout completos já neste frame.
+	var jump := local_delta > LAYOUT_JUMP or viewport_changed
+	if moved:
+		_layout_accum += delta
+		_layout_pending = true
+	var layout_due := _layout_dirty or (moved and (jump \
+			or _layout_accum >= LAYOUT_MIN_INTERVAL))
+	if not moved and _layout_pending:
+		layout_due = true
+	if _layout_job_active:
+		# Fatiado: continua de onde parou. Se a câmera mudou no meio, agenda
+		# um layout novo para depois do commit (não reinicia no meio).
+		if layout_due:
+			_layout_pending = true
+			_layout_dirty = false
+		_layout_place_labels(camera, LAYOUT_BUDGET_USEC)
+	elif _layout_after_scan:
+		# A varredura do ciclo anterior já gastou o frame: agora só o layout.
+		_layout_after_scan = false
+		_layout_accum = 0.0
+		_layout_pending = false
+		_layout_dirty = false
+		_layout_place_labels(camera, LAYOUT_BUDGET_USEC)
+	elif layout_due:
+		_layout_accum = 0.0
+		_layout_pending = false
+		_layout_dirty = false
+		_update_nation_labels(camera_position)
+		var scan_start := Time.get_ticks_usec()
+		_scan_lod(camera, camera_local, jump)
+		_apply_wrap_positions()
+		var scan_usec := Time.get_ticks_usec() - scan_start
+		if _zoom_level == ZoomLevel.FAR and not fading \
+				and _level_fade_queue.is_empty():
+			# Estratégico assentado: não há nome/bandeira/porto para colidir.
+			# Limpar é O(labels ativos), não O(cidades).
+			_clear_labels_only()
+			# A varredura é quem muda o conjunto visível: o rebuild das bolas
+			# acompanha a cadência de 4 Hz em vez de rodar a cada varredura.
+			if _icon_accum >= FAR_ICON_INTERVAL:
+				_icons_dirty = true
+		elif jump:
+			# Teleporte/pulo grande: layout completo neste frame (a tela inteira
+			# mudou). Pan/zoom normal continua fatiado pelo orçamento.
+			_layout_place_labels(camera)
+		elif moved and scan_usec >= SCAN_DEFER_USEC:
+			# Varredura cara (pan no nível MÉDIO/LONGE): o layout entra no
+			# próximo frame, em vez de somar os dois picos no mesmo frame.
+			_layout_after_scan = true
+		else:
+			_layout_place_labels(camera, LAYOUT_BUDGET_USEC)
+
+	# Anéis de hover/seleção seguem a câmera mesmo entre layouts (1–2 registros).
 	_update_place_indicators()
-	# Layout simples (projeção + colisão): âncora fixa, sem linhas-guia. Nomes
-	# que ainda colidem dão lugar ao ícone da cidade menor (prioridade).
-	if _should_relayout(moved):
-		_layout_place_labels(camera)
-	# Ícones distantes (MultiMesh): compacta o buffer visível a cada frame para
-	# o zoom/pan não deixar o instancing um frame atrás do layout fatiado.
-	_apply_icon_transforms(camera)
-	# Modelos detalhados entram fatiados, com orçamento por frame.
-	_process_lod_queues(camera)
+	# Modelos detalhados entram fatiados, com orçamento por frame. Tecido urbano
+	# espera a câmera parar (construir durante pan contínuo era o pico do frame).
+	_process_lod_queues(camera, not moved)
+	_update_convoy_lod(camera, camera_local, delta)
 
 
 ## Offset da cópia do mundo (wrap cilíndrico) mais próxima da câmera.
@@ -1947,23 +2197,215 @@ func _invalidate_layout() -> void:
 	_layout_dirty = true
 
 
-## Decide se o layout de tela roda neste frame. Quando a câmera está parada e
-## nada mudou, o trabalho é pulado — o que sobra por frame é só o LOD barato.
-func _should_relayout(moved: bool) -> bool:
-	# Câmera em movimento usa o ritmo de pan; se ela vinha parada (cooldown
-	# longo) e se mexeu, encurta o cooldown para o próximo frame.
-	if moved and _layout_cooldown > LAYOUT_FRAMES_MOVING:
-		_layout_cooldown = LAYOUT_FRAMES_MOVING
-	if _layout_cooldown > 0:
-		_layout_cooldown -= 1
-		if not _layout_dirty and _layout_cooldown > 0:
-			if moved:
-				_layout_pending = true
-			return false
-	_layout_dirty = false
-	_layout_pending = false
-	_layout_cooldown = LAYOUT_FRAMES_MOVING if moved else LAYOUT_FRAMES_IDLE
+## Nível de zoom atual (enum `ZoomLevel`). Exposto para testes/captura.
+func zoom_level() -> int:
+	return _zoom_level
+
+
+## Distância (u) da câmera ao ponto do chão que ela mira.
+func zoom_distance() -> float:
+	return _zoom_distance
+
+
+## Define a nação do jogador: no nível MÉDIO, as cidades dela mantêm o nome.
+func set_player_nation(tag: String) -> void:
+	if tag == _player_nation:
+		return
+	_player_nation = tag
+	if _zoom_level >= 0:
+		_refresh_level_targets(false)
+	_layout_dirty = true
+
+
+## Distância da câmera ao plano do mapa ao longo da sua direção de visão.
+func _camera_ground_distance(camera: Camera3D) -> float:
+	var origin := camera.global_position
+	var forward := -camera.global_transform.basis.z
+	var plane_y := to_global(Vector3.ZERO).y
+	if forward.y < -0.0001:
+		var t := (plane_y - origin.y) / forward.y
+		if t > 0.0:
+			return origin.distance_to(origin + forward * t)
+	return maxf(origin.y - plane_y, 1.0)
+
+
+## Atualiza o nível com histerese. Devolve `true` se o nível mudou.
+func _update_zoom_level(camera: Camera3D) -> bool:
+	var distance := _camera_ground_distance(camera)
+	_zoom_distance = distance
+	var level := _zoom_level
+	if _zoom_level < 0:
+		if distance <= ZOOM_NEAR_EXIT:
+			level = ZoomLevel.NEAR
+		elif distance <= ZOOM_MID_EXIT:
+			level = ZoomLevel.MID
+		else:
+			level = ZoomLevel.FAR
+	elif _zoom_level == ZoomLevel.NEAR:
+		if distance > ZOOM_NEAR_EXIT:
+			level = ZoomLevel.MID
+	elif _zoom_level == ZoomLevel.MID:
+		if distance > ZOOM_MID_EXIT:
+			level = ZoomLevel.FAR
+		elif distance < ZOOM_NEAR_ENTER:
+			level = ZoomLevel.NEAR
+	elif distance < ZOOM_MID_ENTER:
+		level = ZoomLevel.MID
+	if level == _zoom_level:
+		return false
+	_zoom_level = level
 	return true
+
+
+## Recalcula o alvo de alfa de cada cidade/porto no nível atual. `snap` assenta
+## sem fade (primeiro frame); caso contrário a transição de 150 ms começa aqui.
+func _refresh_level_targets(snap: bool) -> void:
+	_level_fade_queue.clear()
+	for record in _city_nodes:
+		var target := 1.0 if _city_label_wanted(record) else 0.0
+		record["label_target"] = target
+		# Cache do passo/distância do ícone e do marcador: o nível novo muda
+		# escala/glifo, então reaplica mesmo com a câmera parada.
+		record["lod_step"] = -1
+		record["placed_step"] = -1
+		if snap:
+			record["label_alpha"] = target
+		elif absf(float(record.get("label_alpha", 0.0)) - target) > 0.0001:
+			_level_fade_queue.append(record)
+	for record in _port_nodes:
+		var target := 1.0 if _zoom_level == ZoomLevel.NEAR else 0.0
+		record["label_target"] = target
+		if snap:
+			record["label_alpha"] = target
+		elif absf(float(record.get("label_alpha", 0.0)) - target) > 0.0001:
+			_level_fade_queue.append(record)
+	_icons_dirty = true
+	_flags_dirty = true
+
+
+## O nível atual mostra o nome desta cidade? PERTO: todas. MÉDIO: capitais e a
+## nação do jogador. LONGE: nenhuma (só bolas/ícones).
+func _city_label_wanted(record: Dictionary) -> bool:
+	if _zoom_level == ZoomLevel.NEAR:
+		return true
+	if _zoom_level == ZoomLevel.FAR:
+		return false
+	if bool(record.get("capital", false)):
+		return true
+	return not _player_nation.is_empty() \
+			and String(record.get("nation", "")) == _player_nation
+
+
+## O glifo (prédios/estrela) acompanha o nome; a capital mantém a estrela no
+## nível LONGE. A bola do selo aparece em todos os níveis.
+func _want_city_glyph(record: Dictionary) -> bool:
+	return bool(record.get("capital", false)) \
+			or _zoom_level == ZoomLevel.NEAR \
+			or float(record.get("label_alpha", 0.0)) > 0.5
+
+
+## Escala da bola (selo) por nível: longe pequena, capital um pouco maior.
+func _city_ball_scale(record: Dictionary) -> float:
+	if _zoom_level == ZoomLevel.NEAR:
+		return 1.0
+	if bool(record.get("capital", false)):
+		return CAPITAL_BALL_SCALE
+	return MID_BALL_SCALE if _zoom_level == ZoomLevel.MID else FAR_BALL_SCALE
+
+
+## Avança o fade de 150 ms de todos os registros na fila. Devolve `true` se
+## ainda há alpha animando neste frame.
+func _advance_level_fade(delta: float) -> bool:
+	if _level_fade_queue.is_empty():
+		return false
+	var step := delta / LEVEL_FADE_SECONDS
+	var index := 0
+	while index < _level_fade_queue.size():
+		var record: Dictionary = _level_fade_queue[index]
+		var target := float(record.get("label_target", 0.0))
+		var alpha := move_toward(float(record.get("label_alpha", 0.0)),
+				target, step)
+		record["label_alpha"] = alpha
+		_apply_fade_visual(record)
+		if absf(alpha - target) <= 0.0001:
+			_level_fade_queue.remove_at(index)
+		else:
+			index += 1
+	_icons_dirty = true
+	_flags_dirty = true
+	if _level_fade_queue.is_empty():
+		# Nomes que entraram/saíram do nível precisam de um layout novo.
+		_layout_dirty = true
+		return false
+	return true
+
+
+## Aplica o alfa do fade ao rótulo/glyph já existentes. A bola do selo não
+## escurece: o nível LONGE continua mostrando todas as cidades.
+func _apply_fade_visual(record: Dictionary) -> void:
+	if String(record.get("kind", "")) != "city":
+		return
+	var alpha := float(record.get("label_alpha", 0.0))
+	var label: Label3D = record.get("label")
+	if label != null:
+		label.modulate.a = alpha
+	var icon: Sprite3D = record.get("icon")
+	if icon != null:
+		icon.visible = _want_city_glyph(record)
+		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
+
+
+## Varredura do LOD: portos e cidades só nas células que cobrem a viewport
+## (+ margem para tecido/portos), com buffers reaproveitados.
+func _scan_lod(camera: Camera3D, camera_local: Vector3, jump: bool) -> void:
+	_visible_city_records.clear()
+	_visible_port_records.clear()
+	_scanned_once = true
+	var radius := maxf(_viewport_world_radius(camera, camera_local),
+			URBAN_BUILD_DISTANCE)
+	var port_radius := maxf(radius, PORT_MODEL_VISIBLE_DISTANCE)
+	if jump:
+		for record in _port_nodes:
+			_apply_lod_port(record, camera_local, camera)
+		for record in _city_nodes:
+			_apply_lod_city(record, camera_local, camera)
+		return
+	_collect_lod_records(_port_grid, camera_local, port_radius, _scan_port_records)
+	for record in _scan_port_records:
+		_apply_lod_port(record, camera_local, camera)
+	_collect_lod_records(_city_grid, camera_local, radius, _scan_city_records)
+	for record in _scan_city_records:
+		_apply_lod_city(record, camera_local, camera)
+
+
+## Render dos comboios: só no nível PERTO e dentro do frustum. O tween (posição
+## lógica) continua; o que para é a submissão visual de veículos invisíveis.
+func _update_convoy_lod(camera: Camera3D, _camera_local: Vector3,
+		delta: float) -> void:
+	_convoy_timer -= delta
+	if _convoy_timer > 0.0:
+		return
+	_convoy_timer = 0.18
+	if _convoy_renderer == null or not is_instance_valid(_convoy_renderer):
+		_convoy_renderer = null
+		for child in get_children():
+			if child is Node3D and child.get("_convoys") is Array:
+				_convoy_renderer = child
+				break
+		if _convoy_renderer == null:
+			return
+	var convoys: Variant = _convoy_renderer.get("_convoys")
+	if not (convoys is Array):
+		return
+	var near := _zoom_level == ZoomLevel.NEAR
+	for convoy: Variant in convoys:
+		if not (convoy is Node3D) or not is_instance_valid(convoy):
+			continue
+		var node := convoy as Node3D
+		var visible := near and not camera.is_position_behind(node.global_position) \
+				and camera.is_position_in_frustum(node.global_position)
+		if node.visible != visible:
+			node.visible = visible
 
 
 ## Compara a câmera (posição, rotação, fov e viewport) com o último layout e
@@ -1986,14 +2428,11 @@ func _camera_changed(camera: Camera3D) -> bool:
 
 
 ## Reaplica posição, escala de tela e alfa de cada marcador na cópia de wrap
-## mais próxima. Percorre só as cidades com rótulo aceso — a lista é montada no
-## LOD do frame —, então não custa nada além do que está na tela.
+## mais próxima. Só cidades detalhadas (nós próprios) e rótulos ativos precisam
+## disso; os ícones MultiMesh usam a âncora direto do LOD.
 func _apply_wrap_positions() -> void:
 	for record in _visible_city_records:
-		_place_city_marker(record)
-	for record in _detailed_records:
-		# Discos do LOD continental continuam visíveis bem depois do nome.
-		if float(record.get("label_alpha", 0.0)) <= 0.01:
+		if record.get("label") != null or bool(record.get("detailed", false)):
 			_place_city_marker(record)
 
 
@@ -2016,20 +2455,34 @@ func _in_frustum(record: Dictionary, camera: Camera3D) -> bool:
 	return camera.is_position_in_frustum(to_global(local))
 
 
+## Visibilidade para ícones/rótulos: frustum OU projeção dentro da tela com a
+## mesma margem do layout (o nome encostado na borda ainda conta).
+func _in_view(record: Dictionary, camera: Camera3D) -> bool:
+	var local: Vector3 = record["position"] \
+			+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
+	var world := to_global(local)
+	if camera.is_position_behind(world):
+		return false
+	if camera.is_position_in_frustum(world):
+		return true
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		return false
+	var screen := Rect2(Vector2.ZERO,
+			viewport.get_visible_rect().size).grow(LABEL_SCREEN_MARGIN_PX * 2.0)
+	return screen.has_point(camera.unproject_position(world))
+
+
 ## Monta a grade do LOD uma vez (as posições dos lugares são estáticas).
 func _build_lod_grid() -> void:
 	_grid_cells = maxi(1, roundi(PLANE_SIZE.x / LOD_CELL))
 	_city_grid.clear()
 	_port_grid.clear()
-	_wide_cities.clear()
 	_city_grid_radius = 0.0
 	_port_grid_radius = 0.0
 	for record in _city_nodes:
-		if float(record["lod_end"]) > LOD_NEAR_RADIUS:
-			_wide_cities.append(record)
-		else:
-			_add_to_grid(_city_grid, record)
-			_city_grid_radius = maxf(_city_grid_radius, float(record["lod_end"]))
+		_add_to_grid(_city_grid, record)
+		_city_grid_radius = maxf(_city_grid_radius, float(record["lod_end"]))
 	for record in _port_nodes:
 		_add_to_grid(_port_grid, record)
 		_port_grid_radius = maxf(_port_grid_radius, float(record["lod_end"]))
@@ -2054,17 +2507,17 @@ func _add_to_grid(grid: Dictionary, record: Dictionary) -> void:
 
 
 ## Registros das células que cobrem `radius` em volta da câmera (em espaço
-## local). Devolve os arrays das células, sem copiar registro nenhum.
-func _lod_records(grid: Dictionary, camera_local: Vector3,
-		radius: float) -> Array:
+## local), preenchendo `out` (buffer reaproveitado; sem alocar Array por frame).
+func _collect_lod_records(grid: Dictionary, camera_local: Vector3,
+		radius: float, out: Array) -> void:
+	out.clear()
 	if grid.is_empty():
-		return []
+		return
 	var cell := PLANE_SIZE.x / float(maxi(_grid_cells, 1))
 	var cells_z := maxi(1, roundi(PLANE_SIZE.y / cell))
 	var span := maxi(1, ceili(radius / cell))
 	var cx := floori((camera_local.x + PLANE_SIZE.x * 0.5) / cell)
 	var cz := floori((camera_local.z + PLANE_SIZE.y * 0.5) / cell)
-	var out: Array = []
 	for iz in range(cz - span, cz + span + 1):
 		if iz < 0 or iz >= cells_z:
 			continue
@@ -2072,21 +2525,77 @@ func _lod_records(grid: Dictionary, camera_local: Vector3,
 			var bucket: Variant = grid.get(Vector2i(wrapi(ix, 0, _grid_cells), iz))
 			if bucket != null:
 				out.append_array(bucket)
-	return out
+
+
+## Raio (u) do chão coberto pela viewport atual. Interseção de 4 raios de canto
+## com o plano do mapa; sem acerto (câmera no horizonte), cai num múltiplo da
+## altura. É o que evita varrer meia Europa no nível MÉDIO e o mundo no LONGE.
+func _viewport_world_radius(camera: Camera3D, camera_local: Vector3) -> float:
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		return LOD_NEAR_RADIUS
+	var size := viewport.get_visible_rect().size
+	var plane_y := to_global(Vector3.ZERO).y
+	var far := 0.0
+	far = maxf(far, _ground_hit_radius(camera, Vector2.ZERO, camera_local, plane_y))
+	far = maxf(far, _ground_hit_radius(camera, Vector2(size.x, 0.0), camera_local, plane_y))
+	far = maxf(far, _ground_hit_radius(camera, size, camera_local, plane_y))
+	far = maxf(far, _ground_hit_radius(camera, Vector2(0.0, size.y), camera_local, plane_y))
+	if far <= 0.0:
+		return maxf(absf(camera_local.y) * 2.4, LOD_NEAR_RADIUS)
+	return minf(far, PLANE_SIZE.x * 0.5)
+
+
+func _ground_hit_radius(camera: Camera3D, screen_point: Vector2,
+		camera_local: Vector3, plane_y: float) -> float:
+	var origin := camera.project_ray_origin(screen_point)
+	var direction := camera.project_ray_normal(screen_point)
+	if absf(direction.y) < 0.0001:
+		return 0.0
+	var t := (plane_y - origin.y) / direction.y
+	if t <= 0.0:
+		return 0.0
+	var local := to_local(origin + direction * t)
+	return Vector2(local.x - camera_local.x, local.z - camera_local.z).length()
 
 
 
 
 ## Layout dos rótulos na tela, SEM deslocamento de grupos e SEM linhas-guia:
-##  - cidades em ordem de prioridade (hover, capitais, população); o pool de
-##    Label3D é reutilizado, então qualquer cidade pode ter nome;
-##  - se o texto colidir com um bloco já aceito (grade espacial), a cidade menor
-##    fica só com o ícone (o nome reaparece ao aproximar ou no hover);
+##  - cidades em ordem de prioridade (hover, capital, nação do jogador, população);
+##  - colisão por retângulo + teto de nomes por célula de tela (declutter);
 ##  - portos são ícones de âncora no ponto de costa, com ajuste local de no
-##    máximo `PORT_MAX_OFFSET_PX` para não entrar no rótulo da própria cidade;
-##    o porto da própria cidade que encosta no selo dela vira badge pequeno
-##    encostado no ícone (fora do nome e da área urbana).
-func _layout_place_labels(camera: Camera3D) -> void:
+##    máximo `PORT_MAX_OFFSET_PX` para não entrar no rótulo da própria cidade.
+##
+## `budget_usec < 0` roda tudo de uma vez (testes). O `_process` passa um
+## orçamento e o restante continua nos frames seguintes (time-slicing).
+func _layout_place_labels(camera: Camera3D, budget_usec: int = -1) -> void:
+	if budget_usec < 0:
+		_layout_job_reset(camera)
+		while _layout_job_active:
+			_layout_job_step(camera, -1)
+		return
+	if not _layout_job_active:
+		_layout_job_reset(camera)
+	_layout_job_step(camera, budget_usec)
+
+
+## Nível LONGE assentado: nenhum rótulo, bandeira ou porto na tela. Desanexa os
+## labels ativos e limpa o relatório sem varrer as cidades. Não suja os buffers
+## de ícone/bandeira: quem decide a cadência deles é o `_process` (4 Hz no LONGE).
+func _clear_labels_only() -> void:
+	for record in _active_labels:
+		record["label"] = null
+	_active_labels.clear()
+	for label in _label_pool:
+		if label.visible:
+			label.visible = false
+	_label_rects.clear()
+	_drawn_ports.clear()
+	_layout_job_active = false
+
+
+func _layout_job_reset(camera: Camera3D) -> void:
 	_label_rects.clear()
 	for record in _active_labels:
 		record["label"] = null
@@ -2095,179 +2604,227 @@ func _layout_place_labels(camera: Camera3D) -> void:
 	for label in _label_pool:
 		_label_free.append(label)
 	_label_grid.clear()
-	var viewport := Rect2(Vector2.ZERO,
-			camera.get_viewport().get_visible_rect().size)
-
-	var entries: Array = []
-	# Bloco de tela de cada cidade desenhada, para o porto da própria cidade
-	# saber se está por cima do selo/nome e virar badge.
-	var city_blocks: Dictionary = {}
-	# Só as cidades com rótulo aceso neste frame (lista montada no LOD): o
-	# layout não varre os 650 registros nem projeta quem está apagado.
-	for record in _visible_city_records:
-		var metrics := _city_metrics(record, camera)
-		if metrics.is_empty():
-			continue
-		# Guarda os retângulos já no dicionário da entrada: o segundo laço não
-		# toca mais no dicionário de métricas (que pode vir vazio/incompleto se a
-		# projeção mudar no meio do frame).
-		var icon_rect := _metrics_rect(metrics, "icon_rect")
-		var text_rect := _metrics_rect(metrics, "text_rect")
-		if icon_rect.size.x <= 0.0 or text_rect.size.x <= 0.0:
-			continue
-		entries.append({
-			"record": record,
-			"icon_rect": icon_rect,
-			"text_rect": text_rect,
-			"flag_rect": _flag_rect(record, camera),
-			"capital": bool(record.get("capital", false)),
-			"hovered": String(record["id"]) == _hovered_id,
-			"priority": float(record.get("priority", 0.0)),
-		})
-	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		if bool(a["hovered"]) != bool(b["hovered"]):
-			return bool(a["hovered"])
-		if bool(a["capital"]) != bool(b["capital"]):
-			return bool(a["capital"])
-		return float(a["priority"]) > float(b["priority"])
-	)
-
-	for entry in entries:
-		var record: Dictionary = entry["record"]
-		var icon_rect: Rect2 = entry["icon_rect"]
-		var text_rect: Rect2 = entry["text_rect"]
-		var flag_rect: Rect2 = entry["flag_rect"]
-		var text_allowed := true
-		# Texto quase invisível (fim do fade) não entra: o ícone fica, o nome não.
-		if float(record.get("label_alpha", 1.0)) < LABEL_TEXT_MIN_ALPHA:
-			text_allowed = false
-		# Capitais são aceitas primeiro (ordem acima); a partir daí TODA etiqueta
-		# testa colisão — só o hover fura a fila. Antes a capital ignorava a
-		# colisão e Roma/Vaticano e as capitais dos Bálcãs desenhavam nomes um
-		# sobre o outro com o cenário de 66 nações.
-		if text_allowed and not bool(entry["hovered"]):
-			text_allowed = not _grid_hits(_label_grid, text_rect,
-					LABEL_COLLIDE_PAD_PX)
-		var label: Label3D = null
-		if text_allowed:
-			label = _take_label()
-			if label == null:
-				# Pool esgotado: as cidades de menor prioridade ficam só com o
-				# ícone, como na colisão.
-				text_allowed = false
-		if label != null:
-			_configure_city_label(label, record)
-			_active_labels.append(record)
-		var block: Rect2 = icon_rect
-		# A bandeira da capital também ocupa tela: entra no bloco (e portanto na
-		# grade de colisão) para que nenhum porto/rótulo vizinho desenhe em cima.
-		if flag_rect.size.x > 0.0:
-			block = block.merge(flag_rect)
-		if text_allowed:
-			block = block.merge(text_rect)
-		_grid_insert(_label_grid, block)
-		var icon: Sprite3D = record.get("icon")
-		var flag: Sprite3D = record.get("flag")
-		_label_rects.append({
-			"id": String(record.get("id", "")),
-			"kind": "city",
-			"rect": block,
-			"text_rect": text_rect,
-			"icon_rect": icon_rect,
-			"flag_rect": flag_rect,
-			"text_visible": text_allowed,
-			"marker_visible": icon == null or icon.visible,
-			"flag_visible": flag != null and flag.visible,
-			"flag_loaded": flag != null and flag.texture != null,
-			"label_alpha": float(record.get("label_alpha", 1.0)),
-			"capital": bool(record.get("capital", false)),
-			"population": float(record.get("priority", 0.0)),
-			"same_city": false,
-			"fused": false,
-			"badge": false,
-			"city_id": "",
-			"offset": Vector2.ZERO,
-		})
-		city_blocks[String(record.get("id", ""))] = {
-			"block": block,
-			"icon": icon_rect,
-		}
-
-	# Portos por último: nunca deslocam rótulos, só o próprio ícone. A lista já
-	# vem filtrada pelo LOD do frame (selo aceso), não os 650 registros.
+	_label_cell_counts.clear()
+	_layout_job_entries.clear()
+	_layout_job_city_blocks.clear()
 	_drawn_ports.clear()
-	for record in _visible_port_records:
-		record["draw"] = false
-		record["badge"] = false
-		if float(record.get("label_alpha", 0.0)) <= 0.01:
-			# Fora da faixa de fade: não entra no relatório nem gasta projeção.
-			continue
-		var metrics := _port_metrics(record, camera)
-		if _metrics_rect(metrics).size.x <= 0.0:
-			# Porto atrás da câmera/fora do frustum: não desenha neste frame.
-			_append_port_report(record, Rect2(), false, Vector2.ZERO)
-			continue
-		var city_info: Dictionary = city_blocks.get(
-				String(record.get("city_id", "")), {})
-		# Porto da própria cidade encostado no selo dela: badge pequeno ao lado do
-		# ícone (o nome fica à direita). Nunca sobre o ícone, o nome ou a área
-		# urbana; o modelo 3D continua na coordenada real de costa.
-		if bool(record.get("fused", false)) \
-				or _port_badge_needed(record, metrics, city_info):
-			record["badge"] = true
-			if not city_info.is_empty() \
-					and _place_port_badge(record, city_info, camera):
-				var badge_rect := _metrics_rect(_port_metrics(record, camera))
-				if badge_rect.size.x > 0.0:
-					record["draw"] = true
-					_drawn_ports.append(record)
-					_grid_insert(_label_grid, badge_rect)
-					_append_port_report(record, badge_rect, true, Vector2.ZERO)
-					continue
-			# Sem selo da cidade na tela ou sem vaga ao lado dele: o modelo 3D
-			# fica na costa e o ícone não é desenhado neste frame.
-			_append_port_report(record, Rect2(), false, Vector2.ZERO)
-			continue
-		var chosen := Vector2.ZERO
-		# A posição de costa é o candidato preferido; só projeta o lado do
-		# mar (e os deslocamentos) quando ela de fato colide.
-		var coast_rect := _metrics_rect(metrics)
-		if _grid_hits(_label_grid, coast_rect, 1.0):
-			var found := false
-			for candidate in _port_offset_candidates(record, camera):
-				var shifted := Rect2(coast_rect.position + candidate,
-						coast_rect.size)
-				if not _grid_hits(_label_grid, shifted, 1.0):
-					chosen = candidate
-					found = true
-					break
-			if not found:
-				# Sem espaço local: fica só o modelo 3D do porto na costa e o
-				# ícone da cidade; nada de linha.
-				_append_port_report(record, Rect2(), false, Vector2.ZERO)
-				continue
-			if not chosen.is_zero_approx():
-				_apply_port_offset(record, chosen, camera)
-				metrics = _port_metrics(record, camera)
-				# O deslocamento pode tirar o porto do frustum (borda da tela,
-				# encosta atrás da câmera): sem retângulo, nada de desenhar.
-				if _metrics_rect(metrics).size.x <= 0.0:
-					_append_port_report(record, Rect2(), false, Vector2.ZERO)
-					continue
-		var final_rect := _metrics_rect(metrics)
-		if final_rect.size.x <= 0.0:
-			_append_port_report(record, Rect2(), false, Vector2.ZERO)
-			continue
-		record["draw"] = true
-		_drawn_ports.append(record)
-		_grid_insert(_label_grid, final_rect)
-		_append_port_report(record, final_rect, true, chosen)
+	_layout_job_index = 0
+	_layout_job_phase = 0
+	_layout_job_camera = camera
+	# Snapshot: o LOD do próximo frame pode limpar as listas visíveis.
+	_layout_job_cities = _visible_city_records.duplicate()
+	_layout_job_ports = _visible_port_records.duplicate()
+	_layout_job_active = true
 
-	# Rótulos que voltaram ao pool não podem ficar na tela com o texto da cidade
-	# anterior (fantasmas ao reduzir o conjunto visível). Esconde só os livres.
-	for label in _label_free:
-		if label.visible:
-			label.visible = false
+
+## Executa uma fatia do layout. `budget_usec < 0` não interrompe.
+func _layout_job_step(camera: Camera3D, budget_usec: int) -> void:
+	var start := Time.get_ticks_usec()
+	while true:
+		match _layout_job_phase:
+			0:
+				while _layout_job_index < _layout_job_cities.size():
+					var record: Dictionary = _layout_job_cities[_layout_job_index]
+					_layout_job_index += 1
+					# Só projeta quem pode mostrar nome (ou está em hover).
+					if float(record.get("label_alpha", 0.0)) < LABEL_TEXT_MIN_ALPHA \
+							and String(record.get("id", "")) != _hovered_id:
+						continue
+					# Recalcula centro/escala só quando passo/wrap mudaram (early-out).
+					_place_city_marker(record)
+					var metrics := _city_metrics(record, camera)
+					if metrics.is_empty():
+						continue
+					var icon_rect := _metrics_rect(metrics, "icon_rect")
+					var text_rect := _metrics_rect(metrics, "text_rect")
+					if icon_rect.size.x <= 0.0 or text_rect.size.x <= 0.0:
+						continue
+					_layout_job_entries.append({
+						"record": record,
+						"icon_rect": icon_rect,
+						"text_rect": text_rect,
+						"flag_rect": _flag_rect(record, camera),
+						"capital": bool(record.get("capital", false)),
+						"hovered": String(record["id"]) == _hovered_id,
+						"player": not _player_nation.is_empty() \
+								and String(record.get("nation", "")) == _player_nation,
+						"priority": float(record.get("priority", 0.0)),
+					})
+					if budget_usec >= 0 \
+							and Time.get_ticks_usec() - start >= budget_usec:
+						return
+				_layout_job_entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+					if bool(a["hovered"]) != bool(b["hovered"]):
+						return bool(a["hovered"])
+					if bool(a["capital"]) != bool(b["capital"]):
+						return bool(a["capital"])
+					if bool(a["player"]) != bool(b["player"]):
+						return bool(a["player"])
+					return float(a["priority"]) > float(b["priority"])
+				)
+				_layout_job_index = 0
+				_layout_job_phase = 1
+			1:
+				while _layout_job_index < _layout_job_entries.size():
+					_layout_accept_city(_layout_job_entries[_layout_job_index])
+					_layout_job_index += 1
+					if budget_usec >= 0 \
+							and Time.get_ticks_usec() - start >= budget_usec:
+						return
+				_layout_job_index = 0
+				_layout_job_phase = 2
+			2:
+				while _layout_job_index < _layout_job_ports.size():
+					var record: Dictionary = _layout_job_ports[_layout_job_index]
+					_layout_job_index += 1
+					_layout_accept_port(record, camera)
+					if budget_usec >= 0 \
+							and Time.get_ticks_usec() - start >= budget_usec:
+						return
+				_layout_job_phase = 3
+			_:
+				# Rótulos que voltaram ao pool não podem ficar na tela com o texto
+				# da cidade anterior (fantasmas ao reduzir o conjunto visível).
+				for label in _label_free:
+					if label.visible:
+						label.visible = false
+				_layout_job_active = false
+				_icons_dirty = true
+				_flags_dirty = true
+				return
+
+
+## Aceita (ou não) o nome de uma cidade, na ordem de prioridade já ordenada.
+func _layout_accept_city(entry: Dictionary) -> void:
+	var record: Dictionary = entry["record"]
+	var icon_rect: Rect2 = entry["icon_rect"]
+	var text_rect: Rect2 = entry["text_rect"]
+	var flag_rect: Rect2 = entry["flag_rect"]
+	var text_allowed := float(record.get("label_alpha", 1.0)) \
+			>= LABEL_TEXT_MIN_ALPHA
+	if text_allowed and not bool(entry["hovered"]):
+		# Declutter: teto de nomes por célula de tela (além da colisão).
+		var cell := _grid_key(text_rect.get_center())
+		if int(_label_cell_counts.get(cell, 0)) >= LABEL_MAX_PER_CELL:
+			text_allowed = false
+		elif _grid_hits(_label_grid, text_rect, LABEL_COLLIDE_PAD_PX):
+			text_allowed = false
+	var label: Label3D = null
+	if text_allowed:
+		label = _take_label()
+		if label == null:
+			# Pool esgotado: as cidades de menor prioridade ficam só com o ícone.
+			text_allowed = false
+	if label != null:
+		_configure_city_label(label, record)
+		_active_labels.append(record)
+		var cell := _grid_key(text_rect.get_center())
+		_label_cell_counts[cell] = int(_label_cell_counts.get(cell, 0)) + 1
+	var block: Rect2 = icon_rect
+	# A bandeira da capital também ocupa tela: entra no bloco de colisão.
+	if flag_rect.size.x > 0.0:
+		block = block.merge(flag_rect)
+	if text_allowed:
+		block = block.merge(text_rect)
+	_grid_insert(_label_grid, block)
+	var icon: Sprite3D = record.get("icon")
+	var flag: Variant = record.get("flag")
+	var flag_dict: Dictionary = flag if flag is Dictionary else {}
+	var flag_loaded := not flag_dict.is_empty() \
+			and flag_dict.get("texture") != null
+	_label_rects.append({
+		"id": String(record.get("id", "")),
+		"kind": "city",
+		"rect": block,
+		"text_rect": text_rect,
+		"icon_rect": icon_rect,
+		"flag_rect": flag_rect,
+		"text_visible": text_allowed,
+		"marker_visible": icon == null or icon.visible,
+		"flag_visible": flag_loaded \
+				and float(record.get("label_alpha", 0.0)) > 0.01,
+		"flag_loaded": flag_loaded,
+		"label_alpha": float(record.get("label_alpha", 1.0)),
+		"capital": bool(record.get("capital", false)),
+		"population": float(record.get("priority", 0.0)),
+		"same_city": false,
+		"fused": false,
+		"badge": false,
+		"city_id": "",
+		"offset": Vector2.ZERO,
+	})
+	_layout_job_city_blocks[String(record.get("id", ""))] = {
+		"block": block,
+		"icon": icon_rect,
+	}
+
+
+## Portos por último: nunca deslocam rótulos, só o próprio ícone.
+func _layout_accept_port(record: Dictionary, camera: Camera3D) -> void:
+	record["draw"] = false
+	record["badge"] = false
+	if float(record.get("label_alpha", 0.0)) <= 0.01:
+		return
+	var metrics := _port_metrics(record, camera)
+	if _metrics_rect(metrics).size.x <= 0.0:
+		# Porto atrás da câmera/fora do frustum: não desenha neste frame.
+		_append_port_report(record, Rect2(), false, Vector2.ZERO)
+		return
+	var city_info: Dictionary = _layout_job_city_blocks.get(
+			String(record.get("city_id", "")), {})
+	# Porto da própria cidade encostado no selo dela: badge pequeno ao lado do
+	# ícone (o nome fica à direita). Nunca sobre o ícone, o nome ou a área
+	# urbana; o modelo 3D continua na coordenada real de costa.
+	if bool(record.get("fused", false)) \
+			or _port_badge_needed(record, metrics, city_info):
+		record["badge"] = true
+		if not city_info.is_empty() \
+				and _place_port_badge(record, city_info, camera):
+			var badge_rect := _metrics_rect(_port_metrics(record, camera))
+			if badge_rect.size.x > 0.0:
+				record["draw"] = true
+				_drawn_ports.append(record)
+				_grid_insert(_label_grid, badge_rect)
+				_append_port_report(record, badge_rect, true, Vector2.ZERO)
+				return
+		# Sem selo da cidade na tela ou sem vaga ao lado dele: o modelo 3D
+		# fica na costa e o ícone não é desenhado neste frame.
+		_append_port_report(record, Rect2(), false, Vector2.ZERO)
+		return
+	var chosen := Vector2.ZERO
+	# A posição de costa é o candidato preferido; só projeta o lado do mar (e
+	# os deslocamentos) quando ela de fato colide.
+	var coast_rect := _metrics_rect(metrics)
+	if _grid_hits(_label_grid, coast_rect, 1.0):
+		var found := false
+		for candidate in _port_offset_candidates(record, camera):
+			var shifted := Rect2(coast_rect.position + candidate,
+					coast_rect.size)
+			if not _grid_hits(_label_grid, shifted, 1.0):
+				chosen = candidate
+				found = true
+				break
+		if not found:
+			# Sem espaço local: fica só o modelo 3D do porto na costa e o
+			# ícone da cidade; nada de linha.
+			_append_port_report(record, Rect2(), false, Vector2.ZERO)
+			return
+		if not chosen.is_zero_approx():
+			_apply_port_offset(record, chosen, camera)
+			metrics = _port_metrics(record, camera)
+			# O deslocamento pode tirar o porto do frustum (borda da tela,
+			# encosta atrás da câmera): sem retângulo, nada de desenhar.
+			if _metrics_rect(metrics).size.x <= 0.0:
+				_append_port_report(record, Rect2(), false, Vector2.ZERO)
+				return
+	var final_rect := _metrics_rect(metrics)
+	if final_rect.size.x <= 0.0:
+		_append_port_report(record, Rect2(), false, Vector2.ZERO)
+		return
+	record["draw"] = true
+	_drawn_ports.append(record)
+	_grid_insert(_label_grid, final_rect)
+	_append_port_report(record, final_rect, true, chosen)
 
 
 ## Pega um Label3D livre do pool.
@@ -2407,28 +2964,22 @@ static func _metrics_rect(metrics: Dictionary, key: String = "rect") -> Rect2:
 	return value if typeof(value) == TYPE_RECT2 else Rect2()
 
 
-## Retângulo de tela da bandeira da capital no frame, com o MESMO espaçamento
-## de `_place_city_marker`: centro à esquerda do aro (um `flag_h` além da borda,
-## mais o `gap`), sprite 2:1 de altura `icon_h * FLAG_SCALE`. Sem bandeira no
-## record (cidade comum ou textura ausente) devolve `Rect2` vazio — o layout
-## trata isso como "não ocupa tela". A posição usa a cópia de wrap mais próxima,
-## como `_city_metrics`.
+## Retângulo de tela da bandeira da capital no frame, na mesma posição do
+## MultiMesh (`_flag_world_center`). Sem bandeira carregada ou com alfa apagado
+## devolve `Rect2` vazio — o layout trata isso como "não ocupa tela".
 func _flag_rect(record: Dictionary, camera: Camera3D) -> Rect2:
-	var flag: Sprite3D = record.get("flag")
-	if flag == null or flag.texture == null:
+	var flag: Variant = record.get("flag")
+	var flag_dict: Dictionary = flag if flag is Dictionary else {}
+	if flag_dict.is_empty() or flag_dict.get("texture") == null:
 		return Rect2()
-	var anchor: Vector3 = record["anchor"] \
-			+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
-	var em := float(record["font_size"]) * float(record["pixel_size"])
-	var icon_h := em * PLACE_ICON_HEIGHT
-	var ring_h := icon_h * RING_SCALE
-	var gap := em * PLACE_ICON_GAP
-	var flag_h := icon_h * FLAG_SCALE
-	var center: Vector3 = to_global(anchor + Vector3(
-			-ring_h * 0.5 - gap - flag_h, 0.0, 0.0))
+	if float(record.get("label_alpha", 0.0)) <= 0.01:
+		return Rect2()
+	var center := _flag_world_center(record)
 	if camera.is_position_behind(center):
 		return Rect2()
-	return _world_rect_to_screen(camera, center, flag_h, flag_h * 0.5)
+	var em := float(record["font_size"]) * float(record["pixel_size"])
+	var flag_h := em * PLACE_ICON_HEIGHT * FLAG_SCALE
+	return _world_rect_to_screen(camera, center, flag_h, flag_h * 0.675)
 
 
 ## O selo do porto é um badge da própria cidade (estático ou deste frame)?
@@ -2555,64 +3106,48 @@ func _screen_px_per_world(camera: Camera3D, point: Vector3, axis: Vector3) -> fl
 	return a.distance_to(b)
 
 
-## Escala e fade do rótulo da cidade. O tamanho em tela é constante (pixel_size
-## proporcional à distância); o que muda no zoom out é a faixa de fade por
-## categoria: capitais duram mais, cidades pequenas somem antes. A faixa já vem
-## calculada no build (`fade_start`/`fade_end`).
+## Tamanho do rótulo/marcador no frame. O alfa NÃO é mais uma função contínua da
+## distância: o nível de zoom (PERTO/MÉDIO/LONGE) define o alvo e o fade de
+## 150 ms é animado em `_advance_level_fade`.
+##
+## O passo é quantizado (distância arredondada; `pixel_size` é proporcional a
+## ela): enquanto o passo não muda, escrever visibilidade/alfa de cada sprite de
+## novo não muda pixel nenhum — e a varredura roda a cada 1/12 s, sobre centenas
+## de registros. `_refresh_level_targets` apaga o cache na troca de nível.
 func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * distance,
 			LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
-	var label_alpha := 1.0 - _fade_in(distance, float(record["fade_start"]),
-			float(record["fade_end"]))
-	record["label_alpha"] = label_alpha
-
+	var step := roundi(distance)
+	if int(record.get("lod_step", -1)) == step:
+		return
+	record["lod_step"] = step
+	var alpha := float(record.get("label_alpha", 1.0))
+	var glyph := _want_city_glyph(record)
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
-		icon.transparency = 1.0 - label_alpha
-		icon.visible = label_alpha > 0.01
+		icon.visible = glyph
+		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
 	var ring: Sprite3D = record.get("ring")
 	if ring != null:
-		ring.transparency = 1.0 - label_alpha
-		ring.visible = label_alpha > 0.01
-	var flag: Sprite3D = record.get("flag")
-	if flag != null:
-		flag.transparency = 1.0 - label_alpha
-		flag.visible = label_alpha > 0.01
+		# A bola do selo existe em TODOS os níveis (visão estratégica).
+		ring.visible = true
+		ring.transparency = 0.0
 
 
-
-## Faixa (início, fim) do fade por distância, conforme a categoria do lugar.
-func _label_fade_range(record: Dictionary) -> Vector2:
-	if String(record.get("kind", "")) == "port":
-		return Vector2(LABEL_FADE_SMALL_START, LABEL_FADE_SMALL_END)
-	if bool(record.get("capital", false)):
-		return Vector2(LABEL_FADE_CAPITAL_START, LABEL_FADE_CAPITAL_END)
-	var population := float(record.get("priority", 0.0))
-	if population >= LABEL_LARGE_POPULATION:
-		return Vector2(LABEL_FADE_LARGE_START, LABEL_FADE_LARGE_END)
-	if population >= LABEL_MEDIUM_POPULATION:
-		return Vector2(LABEL_FADE_MEDIUM_START, LABEL_FADE_MEDIUM_END)
-	return Vector2(LABEL_FADE_SMALL_START, LABEL_FADE_SMALL_END)
-
-
-## LOD da âncora de porto: mesma escala de tela do texto de cidade, mas menor e
-## com fade de cidade pequena (some no zoom out). O ícone é MultiMesh; o modelo
-## 3D nasce sob demanda quando a câmera chega perto E o porto está na tela.
-## Longe de tudo (`lod_end`), o registro "assenta": nenhum campo é reescrito até
-## a câmera voltar para o raio.
+## LOD da âncora de porto. O selo (e o modelo 3D) só existe no nível PERTO;
+## nos demais o registro assenta e o que já foi construído é escondido.
 func _apply_port_lod(record: Dictionary, distance: float,
-		on_screen: bool) -> void:
-	if distance > float(record["lod_end"]):
-		if bool(record.get("lod_settled", false)):
-			return
-		record["lod_settled"] = true
-	else:
-		record["lod_settled"] = false
+		icon_on_screen: bool) -> void:
+	if _zoom_level != ZoomLevel.NEAR:
+		if not bool(record.get("lod_settled", false)):
+			record["lod_settled"] = true
+			var model: Node3D = record.get("model")
+			if model != null:
+				model.visible = false
+		return
+	record["lod_settled"] = false
 	record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * distance,
 			LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
-	var alpha := 1.0 - _fade_in(distance, float(record["fade_start"]),
-			float(record["fade_end"]))
-	record["label_alpha"] = alpha
 	record["marker_world"] = record["marker_base"] \
 			+ Vector3(record["wrap_x"], 0.0, 0.0)
 	# Badge da própria cidade: usa a posição ao lado do ícone calculada no
@@ -2620,40 +3155,28 @@ func _apply_port_lod(record: Dictionary, distance: float,
 	if _port_is_badge(record) and record.has("badge_local"):
 		record["marker_world"] = record["badge_local"] \
 				+ Vector3(record["wrap_x"], 0.0, 0.0)
-	if alpha > 0.01:
+	if icon_on_screen and float(record.get("label_alpha", 0.0)) > 0.01:
 		_visible_port_records.append(record)
-	_update_port_model(record, distance, on_screen)
+	_update_port_model(record, distance, icon_on_screen)
 
 
 func _apply_city_lod(record: Dictionary, distance: float,
 		on_screen: bool) -> void:
-	if distance > float(record["lod_end"]):
-		if bool(record.get("lod_settled", false)):
-			return
-		record["lod_settled"] = true
-	else:
-		record["lod_settled"] = false
-	_apply_place_label_lod(record, distance)
-	if float(record["label_alpha"]) > 0.01:
+	if on_screen:
 		_visible_city_records.append(record)
+	_apply_place_label_lod(record, distance)
 
-	# Marcador discreto (continental): aparece só quando a cidade já sumiu.
+	# Marcador discreto (continental) das cidades detalhadas: só no nível LONGE,
+	# quando a bola do MultiMesh/Sprite já tomou o lugar do nome.
 	var discs: Array = record["discs"]
 	if not discs.is_empty():
-		var marker_alpha := _fade_in(distance, MARKER_FADE_IN_START,
-				MARKER_FADE_IN_END)
+		var marker_alpha := 1.0 if _zoom_level == ZoomLevel.FAR else 0.0
 		for disc in discs:
 			var mesh := disc as MeshInstance3D
 			mesh.visible = marker_alpha > 0.01
 			mesh.transparency = 1.0 - marker_alpha
 
 	_update_urban(record, distance, on_screen)
-
-
-
-## Rampa de entrada: 0 antes de `start`, 1 após `end`.
-func _fade_in(distance: float, start: float, end: float) -> float:
-	return clampf((distance - start) / (end - start), 0.0, 1.0)
 
 
 ## Pede a construção do tecido urbano quando a câmera se aproxima E a cidade
@@ -2668,6 +3191,7 @@ func _fade_in(distance: float, start: float, end: float) -> float:
 func _update_urban(record: Dictionary, distance: float,
 		on_screen: bool) -> void:
 	var urban: Node3D = record.get("urban")
+	var near := _zoom_level == ZoomLevel.NEAR
 	if urban == null:
 		# Liberado pelo teto de modelos: só reconstrói quando a câmera mudou
 		# de faixa (aproximou o bastante) em relação ao ponto em que liberou.
@@ -2677,12 +3201,12 @@ func _update_urban(record: Dictionary, distance: float,
 							- URBAN_HOLD_RELEASE:
 				return
 			record["urban_hold"] = false
-		if on_screen and distance <= URBAN_BUILD_DISTANCE \
+		if near and on_screen and distance <= URBAN_BUILD_DISTANCE \
 				and not bool(record.get("urban_queued", false)):
 			record["urban_queued"] = true
 			_urban_queue.append(record)
 		return
-	var want_visible := distance <= CITY_VISIBLE_DISTANCE
+	var want_visible := near and on_screen and distance <= CITY_VISIBLE_DISTANCE
 	if urban.visible != want_visible:
 		urban.visible = want_visible
 	var target: Vector3 = record["position"] \
@@ -2694,27 +3218,32 @@ func _update_urban(record: Dictionary, distance: float,
 
 ## Consome as filas de construção detalhada (cidade e porto) com orçamento de
 ## 1,5 ms por frame. Cada modelo entra no máximo um por frame.
-func _process_lod_queues(camera: Camera3D) -> void:
+func _process_lod_queues(camera: Camera3D, allow_urban := true) -> void:
 	if _urban_queue.is_empty() and _port_model_queue.is_empty():
 		return
 	var camera_local := to_local(camera.global_position)
 	var start := Time.get_ticks_usec()
-	while not _urban_queue.is_empty():
-		var record: Dictionary = _urban_queue.pop_front()
-		record["urban_queued"] = false
-		if record.get("urban") != null:
-			continue
-		if _camera_distance(record, camera_local) > URBAN_BUILD_DISTANCE:
-			continue
-		if not _in_frustum(record, camera):
-			continue
-		record["urban"] = _build_urban(record)
-		if Time.get_ticks_usec() - start >= LOD_BUILD_BUDGET_USEC:
-			break
+	if allow_urban:
+		while not _urban_queue.is_empty():
+			var record: Dictionary = _urban_queue.pop_front()
+			record["urban_queued"] = false
+			if _zoom_level != ZoomLevel.NEAR:
+				continue
+			if record.get("urban") != null:
+				continue
+			if _camera_distance(record, camera_local) > URBAN_BUILD_DISTANCE:
+				continue
+			if not _in_frustum(record, camera):
+				continue
+			record["urban"] = _build_urban(record)
+			if Time.get_ticks_usec() - start >= LOD_BUILD_BUDGET_USEC:
+				break
 	_trim_urban_models(camera_local)
 	while not _port_model_queue.is_empty():
 		var record: Dictionary = _port_model_queue.pop_front()
 		record["model_queued"] = false
+		if _zoom_level != ZoomLevel.NEAR:
+			continue
 		if record.get("model") != null:
 			continue
 		if _camera_distance(record, camera_local) > PORT_MODEL_DISTANCE:
@@ -2776,17 +3305,17 @@ func _apply_lod_port(record: Dictionary, camera_local: Vector3,
 	var dx := position.x - camera_local.x
 	var wrap := -roundf(dx / PLANE_SIZE.x) * PLANE_SIZE.x
 	record["wrap_x"] = wrap
+	if _zoom_level != ZoomLevel.NEAR:
+		# Fora do nível PERTO o porto nem é desenhado: só assenta e esconde o
+		# modelo já construído (sem distância/frustum por registro).
+		_apply_port_lod(record, 0.0, false)
+		return
 	dx += wrap
 	var dz := position.z - camera_local.z
-	# Distância 3D (inclui a altura da câmera): é a mesma referência das faixas
-	# de fade aprovadas no mapa — a planar mantinha nomes pequenos acesos no
-	# zoom out.
+	# Distância 3D (inclui a altura da câmera): referência do LOD de modelo.
 	var dy := position.y - camera_local.y
 	var distance := sqrt(dx * dx + dy * dy + dz * dz)
-	# O teste de frustum só decide se um modelo AINDA INEXISTENTE entra na fila;
-	# com o modelo já construído, `_update_port_model` só usa a distância.
-	var on_screen := distance <= PORT_MODEL_DISTANCE \
-			and record.get("model") == null and _in_frustum(record, camera)
+	var on_screen := _in_view(record, camera)
 	_apply_port_lod(record, distance, on_screen)
 
 
@@ -2797,15 +3326,24 @@ func _apply_lod_city(record: Dictionary, camera_local: Vector3,
 	var dx := position.x - camera_local.x
 	var wrap := -roundf(dx / PLANE_SIZE.x) * PLANE_SIZE.x
 	record["wrap_x"] = wrap
+	var detailed := bool(record.get("detailed", false))
+	if _zoom_level == ZoomLevel.FAR and not detailed:
+		# Nível estratégico: sem nome/tecido; a bola usa um pixel_size único do
+		# zoom (sem sqrt por cidade). Só o culling de tela decide quem entra.
+		record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * _zoom_distance,
+				LABEL_PIXEL_MIN, LABEL_PIXEL_MAX)
+		if _in_view(record, camera):
+			_visible_city_records.append(record)
+		return
 	dx += wrap
 	var dz := position.z - camera_local.z
 	# Mesma distância 3D do porto/cidade (ver `_apply_lod_port`).
 	var dy := position.y - camera_local.y
 	var distance := sqrt(dx * dx + dy * dy + dz * dz)
-	# Só testa o frustum para decidir a entrada de uma cidade ainda não
-	# construída; com `urban` pronto, `_update_urban` ignora `on_screen`.
-	var on_screen := distance <= URBAN_BUILD_DISTANCE \
-			and record.get("urban") == null and _in_frustum(record, camera)
+	# Culling de viewport: só entra na lista visível (ícones, nomes e tecido) o
+	# que está dentro do frustum. O layout ganha margem de tela própria para o
+	# nome encostado na borda.
+	var on_screen := _in_view(record, camera)
 	_apply_city_lod(record, distance, on_screen)
 
 
@@ -2895,9 +3433,13 @@ func _trim_port_models(camera_local: Vector3) -> void:
 ## Atualiza os MultiMesh de ícones distantes: só os visíveis entram no buffer,
 ## que é compactado (`visible_instance_count`). Nada de nó por porto/cidade — e
 ## a varredura é só sobre as listas de visíveis do frame, não sobre os 650.
+## Atualiza os MultiMesh de ícones (cidade/porto). Só roda quando `_icons_dirty`
+## está ligado (layout/zoom/fade/wrap): pan puro não reescreve o buffer, porque
+## as instâncias vivem no mundo e a câmera não muda a posição delas.
 func _apply_icon_transforms(camera: Camera3D) -> void:
 	if camera == null:
 		return
+	_icons_dirty = false
 	# Sem registros (ou sem MultiMesh) não há nada a compactar; evita escrever
 	# em buffer nulo quando o build não criou algum dos grupos.
 	if _city_icon_mm == null and _city_star_mm == null \
@@ -2910,18 +3452,21 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 	for record in _visible_city_records:
 		if bool(record.get("detailed", false)):
 			continue
-		var world := _city_icon_world(record)
-		if camera.is_position_behind(world) \
-				or not camera.is_position_in_frustum(world):
-			continue
+		# A lista já passou pelo culling de tela no scan; a instância usa a
+		# posição LOCAL do mapa (sem to_global/to_local por ícone).
+		var local: Vector3 = record["anchor"] \
+				+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
 		var size := _city_icon_size(record)
-		if bool(record.get("capital", false)):
-			_set_mm_transform(_city_star_mm, star_index, world, size)
-			star_index += 1
-		else:
-			_set_mm_transform(_city_icon_mm, plain_index, world, size)
-			plain_index += 1
-		_set_mm_transform(_city_ring_mm, ring_index, world, size * RING_SCALE)
+		if _want_city_glyph(record):
+			if bool(record.get("capital", false)):
+				_set_mm_local(_city_star_mm, star_index, local, size)
+				star_index += 1
+			else:
+				_set_mm_local(_city_icon_mm, plain_index, local, size)
+				plain_index += 1
+		# A bola do selo é o ícone do nível LONGE e acompanha todos os níveis.
+		_set_mm_local(_city_ring_mm, ring_index, local,
+				size * RING_SCALE * _city_ball_scale(record))
 		ring_index += 1
 	_set_mm_count(_city_icon_mm, plain_index)
 	_set_mm_count(_city_star_mm, star_index)
@@ -2929,27 +3474,43 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 
 	var port_index := 0
 	var port_ring := 0
-	for record in _drawn_ports:
-		var world: Vector3 = to_global(record["marker_world"])
-		var size := _port_icon_height(record)
-		_set_mm_transform(_port_icon_mm, port_index, world, size)
-		port_index += 1
-		if not _port_is_badge(record):
-			_set_mm_transform(_port_ring_mm, port_ring, world, size * RING_SCALE)
-			port_ring += 1
+	if _zoom_level == ZoomLevel.NEAR:
+		for record in _drawn_ports:
+			var alpha := float(record.get("label_alpha", 1.0))
+			if alpha <= 0.01:
+				continue
+			var local: Vector3 = record["marker_world"]
+			var size := _port_icon_height(record) * alpha
+			_set_mm_local(_port_icon_mm, port_index, local, size)
+			port_index += 1
+			if not _port_is_badge(record):
+				_set_mm_local(_port_ring_mm, port_ring, local,
+						size * RING_SCALE)
+				port_ring += 1
 	_set_mm_count(_port_icon_mm, port_index)
 	_set_mm_count(_port_ring_mm, port_ring)
 
 
 func _city_icon_size(record: Dictionary) -> float:
-	if float(record.get("label_alpha", 0.0)) <= 0.01:
-		return 0.0
 	var em := float(record["font_size"]) * float(record["pixel_size"])
-	return em * PLACE_ICON_HEIGHT
+	var factor := FAR_CAPITAL_ICON_SCALE \
+			if _zoom_level == ZoomLevel.FAR \
+					and bool(record.get("capital", false)) else 1.0
+	return em * PLACE_ICON_HEIGHT * factor
 
 
 func _city_icon_world(record: Dictionary) -> Vector3:
 	return to_global(record["anchor"] + Vector3(record["wrap_x"], 0.0, 0.0))
+
+
+func _set_mm_local(instance: MultiMeshInstance3D, index: int,
+		local: Vector3, size: float) -> void:
+	if instance == null or instance.multimesh == null or index < 0:
+		return
+	if index >= instance.multimesh.instance_count:
+		return
+	instance.multimesh.set_instance_transform(index,
+			Transform3D(Basis().scaled(Vector3(size, size, size)), local))
 
 
 func _set_mm_transform(instance: MultiMeshInstance3D, index: int,

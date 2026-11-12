@@ -51,6 +51,9 @@ const ALIGN_ZOOMS: Array[float] = [13.0, 26.0, 52.0]
 const ALIGN_FIXED: Array[String] = ["EGY-ALM", "EGY-TAN", "EGY-CAI"]
 const ALIGN_TOLERANCE_PX := 2.0
 const RING_RADIUS_PX := 26.0
+## Níveis do LOD de zoom: perto, médio e longe. A seleção tem de funcionar nos
+## três (o raio de pick é independente do nome/bandeira).
+const PICK_LEVELS: Array[float] = [52.0, 120.0, 260.0]
 ## Espelham `map/city_world.gd` (contrato do rótulo composto).
 const PLACE_ICON_HEIGHT := 1.0
 const PLACE_RING_SCALE := 1.45
@@ -160,6 +163,7 @@ func _run() -> void:
 
 	await _check_city_alignment(cities)
 	await _check_capital_flags()
+	await _check_pick_levels()
 	_check_nation_colors()
 
 	get_tree().root.size = VIEWPORT
@@ -208,8 +212,9 @@ func _check_city_alignment(cities: Array) -> void:
 			_focus(city_id)
 			_pivot.rotation_degrees = Vector3(PITCH_DEG, 0.0, 0.0)
 			_camera.position = Vector3(0.0, 0.0, zoom)
-			await get_tree().process_frame
-			await get_tree().process_frame
+			# Layout é fatiado por orçamento (1,2 ms/frame) e o teleporte pode
+			# pegar o job no meio: espera assentar em vez de ler 2 frames fixos.
+			await _settle_layout()
 			var record: Dictionary = _world._records_by_id[city_id]
 			var icon_world: Vector3 = _world._city_icon_world(record)
 			var city_world: Vector3 = _world.city_world_position(city_id)
@@ -226,8 +231,7 @@ func _check_city_alignment(cities: Array) -> void:
 						% [city_id, int(zoom), icon_delta])
 
 			_world.set_hover(city_id)
-			await get_tree().process_frame
-			await get_tree().process_frame
+			await _settle_layout()
 			var hover: MeshInstance3D = _world._hover
 			if hover == null or not hover.visible:
 				_failures.append("alinhamento %s d%03d: anel de hover ausente"
@@ -279,6 +283,15 @@ func _alignment_sample(cities: Array) -> Array[String]:
 func _check_label_anchor(city_id: String, record: Dictionary, zoom: float) -> void:
 	var label: Label3D = record.get("label")
 	if label == null:
+		# O declutter por prioridade pode dar o nome a uma capital/vizinha maior
+		# (o ícone continua). Isso não é falha de ancoragem; só falha se o
+		# relatório disser que o texto deveria estar visível.
+		for entry: Dictionary in _world.label_layout_report():
+			if String(entry.get("id", "")) == city_id \
+					and String(entry.get("kind", "")) == "city":
+				if not bool(entry.get("text_visible", false)):
+					return
+				break
 		_failures.append("alinhamento %s d%03d: rótulo não atribuído"
 				% [city_id, int(zoom)])
 		return
@@ -306,16 +319,17 @@ func _check_capital_flags() -> void:
 	_focus("EGY-CAI")
 	_pivot.rotation_degrees = Vector3(PITCH_DEG, 0.0, 0.0)
 	_camera.position = Vector3(0.0, 0.0, PORT_CHECK_DISTANCE)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	# Contrato global: TODAS as capitais do cenário têm bandeira carregada.
+	await _settle_layout()
+	# Contrato global: TODAS as capitais do cenário têm bandeira carregada no
+	# atlas único (MultiMesh), não um Sprite3D por bandeira.
 	var all_capitals := 0
 	for record in _world._city_nodes:
 		if not bool(record.get("capital", false)):
 			continue
 		all_capitals += 1
-		var flag: Sprite3D = record.get("flag")
-		if flag == null or flag.texture == null:
+		var flag: Variant = record.get("flag")
+		var flag_dict: Dictionary = flag if flag is Dictionary else {}
+		if flag_dict.is_empty() or flag_dict.get("texture") == null:
 			_failures.append("bandeira: capital %s sem textura no build"
 					% String(record["id"]))
 	if all_capitals != _expected_capitals():
@@ -329,19 +343,54 @@ func _check_capital_flags() -> void:
 			continue
 		capitals += 1
 		var id := String(record["id"])
-		var flag: Sprite3D = record.get("flag")
-		if flag == null:
-			_failures.append("bandeira: capital %s sem Sprite3D" % id)
+		var flag: Variant = record.get("flag")
+		var flag_dict: Dictionary = flag if flag is Dictionary else {}
+		if flag_dict.is_empty():
+			_failures.append("bandeira: capital %s sem bandeira no atlas" % id)
 			continue
-		if flag.texture == null:
+		if flag_dict.get("texture") == null:
 			_failures.append("bandeira: capital %s sem textura" % id)
-		if not flag.visible:
+		if float(record.get("label_alpha", 0.0)) <= 0.01:
 			_failures.append("bandeira: capital %s com bandeira apagada" % id)
 	if capitals == 0:
 		_failures.append("bandeira: nenhuma capital visível para auditar")
 	else:
 		print("[map_frames] bandeiras: %d capitais visíveis, 100%% com textura"
 				% capitals)
+
+
+## Seleção continua funcionando nos TRÊS níveis de zoom: o clique no centro da
+## cidade (ícone/bola) devolve a própria cidade e o anel de seleção acende.
+func _check_pick_levels() -> void:
+	var sample: Array[String] = ["GBR-LDN", "FRA-PAR", "DEU-BER", "EGY-CAI"]
+	var checked := 0
+	for city_id in sample:
+		if not _world._records_by_id.has(city_id):
+			continue
+		for distance: float in PICK_LEVELS:
+			_focus(city_id)
+			_pivot.rotation_degrees = Vector3(PITCH_DEG, 0.0, 0.0)
+			_camera.position = Vector3(0.0, 0.0, distance)
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var world: Vector3 = _world.city_world_position(city_id)
+			if _camera.is_position_behind(world):
+				_failures.append("pick %s d%03d: cidade atrás da câmera"
+						% [city_id, int(distance)])
+				continue
+			var screen := _camera.unproject_position(world)
+			var picked: String = _world.pick_city(screen, _camera)
+			if picked != city_id:
+				_failures.append("pick %s d%03d: selecionou '%s'"
+						% [city_id, int(distance), picked])
+			_world.select_city(city_id)
+			await get_tree().process_frame
+			if _world._selection == null or not _world._selection.visible:
+				_failures.append("pick %s d%03d: anel de seleção apagado"
+						% [city_id, int(distance)])
+			_world.clear_selection()
+			checked += 1
+	print("[map_frames] seleção: %d testes nos 3 níveis de zoom" % checked)
 
 
 ## Regressão direta do crash: `_port_metrics` pode voltar SEM "rect" depois de
@@ -485,14 +534,25 @@ func _collect_errors(tag: String) -> void:
 		_failures.append("%s: erro de script: %s" % [tag, error])
 
 
+## Espera o layout fatiado e o fade de nível assentarem (máx. 90 frames).
+func _settle_layout() -> void:
+	for _frame in 90:
+		await get_tree().process_frame
+		if not bool(_world.get("_layout_job_active")) \
+				and not bool(_world.get("_layout_dirty")) \
+				and not bool(_world.get("_layout_pending")) \
+				and not bool(_world.get("_layout_after_scan")) \
+				and (_world.get("_level_fade_queue") as Array).is_empty():
+			return
+
+
 ## O porto da própria cidade tem de estar como badge (ou não desenhado), nunca
 ## sobre o retângulo do selo/nome da cidade.
 func _check_port_badge(city_id: String) -> void:
 	_focus(city_id)
 	_camera.position = Vector3(0.0, 0.0, PORT_CHECK_DISTANCE)
 	_pivot.rotation_degrees = Vector3(PITCH_DEG, 0.0, 0.0)
-	for _i in 3:
-		await get_tree().process_frame
+	await _settle_layout()
 	_collect_errors("porta %s" % city_id)
 
 	var report: Array = _world.label_layout_report()

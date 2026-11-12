@@ -1,0 +1,65 @@
+{
+  "build_ms": 1463.35,
+  "cities": 802,
+  "engine": "4.7.2-stable (official)",
+  "far_idle": {
+    "avg_ms": 0.004,
+    "frames": 600,
+    "max_ms": 0.009,
+    "p95_ms": 0.005,
+    "p99_ms": 0.006
+  },
+  "far_pan": {
+    "avg_ms": 0.515,
+    "frames": 600,
+    "max_ms": 2.981,
+    "p95_ms": 2.325,
+    "p99_ms": 2.522
+  },
+  "focus": "BEL-BRU",
+  "mid_idle": {
+    "avg_ms": 0.004,
+    "frames": 600,
+    "max_ms": 0.017,
+    "p95_ms": 0.005,
+    "p99_ms": 0.007
+  },
+  "mid_pan": {
+    "avg_ms": 0.917,
+    "frames": 600,
+    "max_ms": 5.874,
+    "p95_ms": 4.067,
+    "p99_ms": 4.422
+  },
+  "near_idle": {
+    "avg_ms": 0.004,
+    "frames": 600,
+    "max_ms": 0.02,
+    "p95_ms": 0.005,
+    "p99_ms": 0.006
+  },
+  "near_pan": {
+    "avg_ms": 0.687,
+    "frames": 600,
+    "max_ms": 4.747,
+    "p95_ms": 3.187,
+    "p99_ms": 4.285
+  },
+  "nodes": 4617,
+  "parts": {
+    "city_flag_nodes": 0,
+    "labels": 160,
+    "multimesh_nodes": 814,
+    "visible_proxy_draws": 458
+  },
+  "ports": 144,
+  "sample_frames": 600,
+  "tag": "after",
+  "zoom_pan": {
+    "avg_ms": 0.831,
+    "frames": 600,
+    "max_ms": 6.806,
+    "p95_ms": 3.761,
+    "p99_ms": 5.128
+  }
+}

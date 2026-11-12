@@ -15,6 +15,7 @@ extends Node3D
 ## Argumentos: --set=map3d|flat|legacy2d|all  --mode=political|geographic
 ##             --tag=<rótulo>  --out=<dir>  --width=1600  --height=900
 ##             --run=<nome da pasta da execução>
+##             --distances=260,120,52  (níveis de zoom LOD; padrão 120,52,26,13)
 
 const CityWorldScript: Script = preload("res://map/city_world.gd")
 const RELIEF: Texture2D = preload("res://map/map_data/normal.png")
@@ -55,6 +56,8 @@ const BENCH_FRAMES := 180
 var _pivot: Node3D
 var _camera: Camera3D
 var _manifest := {"shots": {}, "warnings": []}
+## Distâncias de câmera capturadas (perspectiva). Sobrescreve `DISTANCES`.
+var _distances: Array[float] = []
 
 
 func _ready() -> void:
@@ -113,6 +116,11 @@ func _parse_args() -> void:
 				_out_root = value
 			"--run":
 				_run = value
+			"--distances":
+				_distances.clear()
+				for chunk in value.split(","):
+					if not chunk.is_empty():
+						_distances.append(float(chunk))
 			"--width":
 				_width = int(value)
 			"--height":
@@ -163,6 +171,7 @@ func _capture_map3d() -> void:
 		world.position = -world.city_world_position(_focus)
 		_manifest["focus"] = _focus
 	_manifest["city_count"] = cities.size()
+	_manifest["distances"] = _distances if not _distances.is_empty() else DISTANCES
 	world.set_mode(_mode)
 	if not _hide_resources.is_empty():
 		var filter := {}
@@ -171,7 +180,8 @@ func _capture_map3d() -> void:
 		world.set_resource_filter(filter)
 		_manifest["hide_resources"] = _hide_resources
 
-	for distance in DISTANCES:
+	var shots: Array = _distances if not _distances.is_empty() else DISTANCES
+	for distance: float in shots:
 		_camera.position = Vector3(0.0, 0.0, distance)
 		await get_tree().process_frame
 		# Tecido urbano e modelos de porto entram pela fila com orçamento: deixa
