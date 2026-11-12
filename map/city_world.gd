@@ -137,6 +137,17 @@ const LABEL_SCREEN_MARGIN_PX := 24.0
 ## Deslocamento máximo, em pixels de tela, do ícone de porto para escapar do
 ## rótulo da própria cidade. O porto nunca "voa" para longe da costa.
 const PORT_MAX_OFFSET_PX := 12.0
+## Distância (px de tela) em que o porto da própria cidade deixa de ser um selo
+## na costa e vira badge pequeno encostado no ícone da cidade. Sem isso, o
+## porto de Amsterdã/Hamburgo/Copenhagen ficava por cima do ícone, do nome e da
+## área urbana — ou empurrava o selo para dentro do mar.
+const PORT_BADGE_MERGE_PX := 28.0
+## Distância (u de mundo) do porto à própria cidade até a qual o selo é sempre
+## badge: os portos do ports.csv com o mesmo id/nome ficam a até 4,5 u do centro
+## (Hamburgo 3,7; Antuérpia 3,4), dentro do tecido urbano visto de perto.
+const PORT_OWN_BADGE_DISTANCE := 5.0
+## Respiro (px) entre o badge do porto e o ícone/nome da cidade.
+const PORT_BADGE_GAP_PX := 2.0
 
 ## Regras de LOD (unidades do mundo, 1 unidade ≈ 40 km no equador).
 ## Uma única representação da cidade, sem modelos concorrentes:
@@ -838,7 +849,7 @@ func _city_footprint(city_id: String) -> float:
 func _port_footprint(record: Dictionary) -> float:
 	var pixel_size := float(record.get("pixel_size", LABEL_PIXEL_PER_UNIT * 52.0))
 	var em := LABEL_SIZE_STANDARD * pixel_size
-	var badge := bool(record.get("fused", false))
+	var badge := _port_is_badge(record)
 	var icon_h := em * (PORT_BADGE_SCALE if badge else PORT_ICON_HEIGHT)
 	return icon_h * RING_SCALE * 0.5
 
@@ -1408,10 +1419,11 @@ func _build_city_multimesh(cities: Array) -> void:
 
 
 ## Portos como entidades 3D: modelo port.glb (sem disco de fundo, como a cidade).
-## O selo do porto fica SEMPRE na coordenada real de costa do ports.csv. Quando o
-## porto é o da própria cidade (mesmo id OU mesmo nome), ele não repete o nome
-## nem a bandeira (uma bandeira por cidade) e o layout o desloca para o lado do
-## mar, com distância mínima do rótulo da cidade.
+## O modelo 3D fica SEMPRE na coordenada real de costa do ports.csv. Quando o
+## porto é o da própria cidade (mesmo id OU mesmo nome), o selo de tela não
+## repete nome/bandeira e, se encostar no selo da cidade, é desenhado como badge
+## pequeno ao lado do ícone (PORT_BADGE_SCALE), nunca por cima do nome nem da
+## área urbana.
 func _build_ports(ports: Array) -> void:
 	var city_by_id := {}
 	var city_by_name := {}
@@ -1467,6 +1479,7 @@ func _build_ports(ports: Array) -> void:
 			"priority": 0.0,
 			"same_city": same_city,
 			"fused": fused,
+			"badge": false,
 			"city_id": String(city_record.get("id", "")),
 			"sea_dir_world": Vector3(sea_dir.x, 0.0, sea_dir.y),
 			"label": null,
@@ -2011,7 +2024,9 @@ func _lod_records(grid: Dictionary, camera_local: Vector3,
 ##  - se o texto colidir com um bloco já aceito (grade espacial), a cidade menor
 ##    fica só com o ícone (o nome reaparece ao aproximar ou no hover);
 ##  - portos são ícones de âncora no ponto de costa, com ajuste local de no
-##    máximo `PORT_MAX_OFFSET_PX` para não entrar no rótulo da própria cidade.
+##    máximo `PORT_MAX_OFFSET_PX` para não entrar no rótulo da própria cidade;
+##    o porto da própria cidade que encosta no selo dela vira badge pequeno
+##    encostado no ícone (fora do nome e da área urbana).
 func _layout_place_labels(camera: Camera3D) -> void:
 	_label_rects.clear()
 	for record in _active_labels:
@@ -2025,15 +2040,26 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			camera.get_viewport().get_visible_rect().size)
 
 	var entries: Array = []
+	# Bloco de tela de cada cidade desenhada, para o porto da própria cidade
+	# saber se está por cima do selo/nome e virar badge.
+	var city_blocks: Dictionary = {}
 	# Só as cidades com rótulo aceso neste frame (lista montada no LOD): o
 	# layout não varre os 650 registros nem projeta quem está apagado.
 	for record in _visible_city_records:
 		var metrics := _city_metrics(record, camera)
 		if metrics.is_empty():
 			continue
+		# Guarda os retângulos já no dicionário da entrada: o segundo laço não
+		# toca mais no dicionário de métricas (que pode vir vazio/incompleto se a
+		# projeção mudar no meio do frame).
+		var icon_rect := _metrics_rect(metrics, "icon_rect")
+		var text_rect := _metrics_rect(metrics, "text_rect")
+		if icon_rect.size.x <= 0.0 or text_rect.size.x <= 0.0:
+			continue
 		entries.append({
 			"record": record,
-			"metrics": metrics,
+			"icon_rect": icon_rect,
+			"text_rect": text_rect,
 			"capital": bool(record.get("capital", false)),
 			"hovered": String(record["id"]) == _hovered_id,
 			"priority": float(record.get("priority", 0.0)),
@@ -2048,7 +2074,8 @@ func _layout_place_labels(camera: Camera3D) -> void:
 
 	for entry in entries:
 		var record: Dictionary = entry["record"]
-		var metrics: Dictionary = entry["metrics"]
+		var icon_rect: Rect2 = entry["icon_rect"]
+		var text_rect: Rect2 = entry["text_rect"]
 		var text_allowed := true
 		# Texto quase invisível (fim do fade) não entra: o ícone fica, o nome não.
 		if float(record.get("label_alpha", 1.0)) < LABEL_TEXT_MIN_ALPHA:
@@ -2058,7 +2085,7 @@ func _layout_place_labels(camera: Camera3D) -> void:
 		# colisão e Roma/Vaticano e as capitais dos Bálcãs desenhavam nomes um
 		# sobre o outro com o cenário de 66 nações.
 		if text_allowed and not bool(entry["hovered"]):
-			text_allowed = not _grid_hits(_label_grid, metrics["text_rect"],
+			text_allowed = not _grid_hits(_label_grid, text_rect,
 					LABEL_COLLIDE_PAD_PX)
 		var label: Label3D = null
 		if text_allowed:
@@ -2070,9 +2097,9 @@ func _layout_place_labels(camera: Camera3D) -> void:
 		if label != null:
 			_configure_city_label(label, record)
 			_active_labels.append(record)
-		var block: Rect2 = metrics["icon_rect"]
+		var block: Rect2 = icon_rect
 		if text_allowed:
-			block = block.merge(metrics["text_rect"])
+			block = block.merge(text_rect)
 		_grid_insert(_label_grid, block)
 		var icon: Sprite3D = record.get("icon")
 		var flag: Sprite3D = record.get("flag")
@@ -2080,8 +2107,8 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"id": String(record.get("id", "")),
 			"kind": "city",
 			"rect": block,
-			"text_rect": metrics["text_rect"],
-			"icon_rect": metrics["icon_rect"],
+			"text_rect": text_rect,
+			"icon_rect": icon_rect,
 			"text_visible": text_allowed,
 			"marker_visible": icon == null or icon.visible,
 			"flag_visible": flag != null and flag.visible,
@@ -2089,44 +2116,80 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"population": float(record.get("priority", 0.0)),
 			"same_city": false,
 			"fused": false,
+			"badge": false,
 			"city_id": "",
 			"offset": Vector2.ZERO,
 		})
+		city_blocks[String(record.get("id", ""))] = {
+			"block": block,
+			"icon": icon_rect,
+		}
 
 	# Portos por último: nunca deslocam rótulos, só o próprio ícone. A lista já
 	# vem filtrada pelo LOD do frame (selo aceso), não os 650 registros.
 	_drawn_ports.clear()
 	for record in _visible_port_records:
 		record["draw"] = false
+		record["badge"] = false
 		if float(record.get("label_alpha", 0.0)) <= 0.01:
 			# Fora da faixa de fade: não entra no relatório nem gasta projeção.
 			continue
 		var metrics := _port_metrics(record, camera)
-		if metrics.is_empty():
+		if _metrics_rect(metrics).size.x <= 0.0:
+			# Porto atrás da câmera/fora do frustum: não desenha neste frame.
+			_append_port_report(record, Rect2(), false, Vector2.ZERO)
+			continue
+		var city_info: Dictionary = city_blocks.get(
+				String(record.get("city_id", "")), {})
+		# Porto da própria cidade encostado no selo dela: badge pequeno ao lado do
+		# ícone (o nome fica à direita). Nunca sobre o ícone, o nome ou a área
+		# urbana; o modelo 3D continua na coordenada real de costa.
+		if bool(record.get("fused", false)) \
+				or _port_badge_needed(record, metrics, city_info):
+			record["badge"] = true
+			if not city_info.is_empty() \
+					and _place_port_badge(record, city_info, camera):
+				var badge_rect := _metrics_rect(_port_metrics(record, camera))
+				if badge_rect.size.x > 0.0:
+					record["draw"] = true
+					_drawn_ports.append(record)
+					_grid_insert(_label_grid, badge_rect)
+					_append_port_report(record, badge_rect, true, Vector2.ZERO)
+					continue
+			# Sem selo da cidade na tela ou sem vaga ao lado dele: o modelo 3D
+			# fica na costa e o ícone não é desenhado neste frame.
 			_append_port_report(record, Rect2(), false, Vector2.ZERO)
 			continue
 		var chosen := Vector2.ZERO
-		if not bool(record.get("fused", false)):
-			# A posição de costa é o candidato preferido; só projeta o lado do
-			# mar (e os deslocamentos) quando ela de fato colide.
-			if _grid_hits(_label_grid, metrics["rect"], 1.0):
-				var found := false
-				for candidate in _port_offset_candidates(record, camera):
-					var rect: Rect2 = metrics["rect"]
-					var shifted := Rect2(rect.position + candidate, rect.size)
-					if not _grid_hits(_label_grid, shifted, 1.0):
-						chosen = candidate
-						found = true
-						break
-				if not found:
-					# Sem espaço local: fica só o modelo 3D do porto na costa e o
-					# ícone da cidade; nada de linha.
+		# A posição de costa é o candidato preferido; só projeta o lado do
+		# mar (e os deslocamentos) quando ela de fato colide.
+		var coast_rect := _metrics_rect(metrics)
+		if _grid_hits(_label_grid, coast_rect, 1.0):
+			var found := false
+			for candidate in _port_offset_candidates(record, camera):
+				var shifted := Rect2(coast_rect.position + candidate,
+						coast_rect.size)
+				if not _grid_hits(_label_grid, shifted, 1.0):
+					chosen = candidate
+					found = true
+					break
+			if not found:
+				# Sem espaço local: fica só o modelo 3D do porto na costa e o
+				# ícone da cidade; nada de linha.
+				_append_port_report(record, Rect2(), false, Vector2.ZERO)
+				continue
+			if not chosen.is_zero_approx():
+				_apply_port_offset(record, chosen, camera)
+				metrics = _port_metrics(record, camera)
+				# O deslocamento pode tirar o porto do frustum (borda da tela,
+				# encosta atrás da câmera): sem retângulo, nada de desenhar.
+				if _metrics_rect(metrics).size.x <= 0.0:
 					_append_port_report(record, Rect2(), false, Vector2.ZERO)
 					continue
-				if not chosen.is_zero_approx():
-					_apply_port_offset(record, chosen, camera)
-					metrics = _port_metrics(record, camera)
-		var final_rect: Rect2 = metrics["rect"]
+		var final_rect := _metrics_rect(metrics)
+		if final_rect.size.x <= 0.0:
+			_append_port_report(record, Rect2(), false, Vector2.ZERO)
+			continue
 		record["draw"] = true
 		_drawn_ports.append(record)
 		_grid_insert(_label_grid, final_rect)
@@ -2212,7 +2275,8 @@ func _append_port_report(record: Dictionary, rect: Rect2, visible: bool,
 		"capital": false,
 		"population": 0.0,
 		"same_city": bool(record.get("same_city", false)),
-		"fused": bool(record.get("fused", false)),
+		"fused": _port_is_badge(record),
+		"badge": bool(record.get("badge", false)),
 		"city_id": String(record.get("city_id", "")),
 		"offset": offset,
 	})
@@ -2265,6 +2329,80 @@ func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 	return {"icon_rect": icon_rect, "text_rect": text_rect}
 
 
+## Retângulo de tela de um dicionário de métricas. Dicionário vazio ou sem a
+## chave (porto atrás da câmera, fora do frustum ou depois de um deslocamento)
+## devolve um `Rect2` vazio — o layout trata isso como "não desenha neste frame"
+## em vez de estourar acesso a chave inexistente.
+static func _metrics_rect(metrics: Dictionary, key: String = "rect") -> Rect2:
+	var value: Variant = metrics.get(key)
+	return value if typeof(value) == TYPE_RECT2 else Rect2()
+
+
+## O selo do porto é um badge da própria cidade (estático ou deste frame)?
+static func _port_is_badge(record: Dictionary) -> bool:
+	return bool(record.get("fused", false)) or bool(record.get("badge", false))
+
+
+## O porto da própria cidade encosta no selo/nome dela na tela? Os portos do
+## ports.csv com o mesmo id/nome ficam dentro do tecido urbano (até ~4,5 u):
+## esses viram badge independente do zoom.
+func _port_badge_needed(record: Dictionary, metrics: Dictionary,
+		city_info: Dictionary) -> bool:
+	if String(record.get("city_id", "")) == "" or city_info.is_empty():
+		return false
+	if bool(record.get("same_city", false)):
+		var city: Dictionary = _records_by_id.get(
+				String(record.get("city_id", "")), {})
+		if not city.is_empty():
+			var port_local: Vector3 = record.get("position", Vector3.ZERO)
+			var city_local: Vector3 = city.get("position", Vector3.ZERO)
+			if port_local.distance_to(city_local) <= PORT_OWN_BADGE_DISTANCE:
+				return true
+	var icon: Rect2 = city_info.get("icon", Rect2())
+	var block: Rect2 = city_info.get("block", Rect2())
+	if icon.size.x <= 0.0 or block.size.x <= 0.0:
+		return false
+	var rect := _metrics_rect(metrics)
+	if rect.size.x <= 0.0:
+		return false
+	if rect.grow(PORT_BADGE_GAP_PX).intersects(block):
+		return true
+	return rect.get_center().distance_to(icon.get_center()) <= PORT_BADGE_MERGE_PX
+
+
+## Posiciona o badge do porto no canto inferior esquerdo do ícone da cidade
+## (o nome fica à direita), tentando os quatro lados e aceitando só uma vaga
+## livre na grade. Devolve false se nenhum lado cabe — aí o ícone não é
+## desenhado neste frame, mas o modelo 3D do porto continua na costa.
+func _place_port_badge(record: Dictionary, city_info: Dictionary,
+		camera: Camera3D) -> bool:
+	var icon: Rect2 = city_info.get("icon", Rect2())
+	if icon.size.x <= 0.0:
+		return false
+	var city: Dictionary = _records_by_id.get(
+			String(record.get("city_id", "")), {})
+	if city.is_empty():
+		return false
+	var badge_h := icon.size.y * PORT_BADGE_SCALE
+	var step := icon.size.y * 0.5 + badge_h * 0.5 + PORT_BADGE_GAP_PX
+	var anchor: Vector3 = city["anchor"] \
+			+ Vector3(float(city.get("wrap_x", 0.0)), 0.0, 0.0)
+	for direction: Vector2 in [Vector2(-1.0, 1.0), Vector2(-1.0, -1.0),
+			Vector2(0.0, 1.0), Vector2(0.0, -1.0)]:
+		record["marker_world"] = anchor
+		_apply_port_offset(record, direction * step, camera)
+		var rect := _metrics_rect(_port_metrics(record, camera))
+		if rect.size.x <= 0.0:
+			continue
+		if not _grid_hits(_label_grid, rect, 1.0):
+			# Guarda a posição sem o wrap: o LOD reaplica a cópia mais próxima
+			# em todo frame, inclusive nos frames sem layout.
+			record["badge_local"] = record["marker_world"] \
+					- Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
+			return true
+	return false
+
+
 ## Métricas do ícone de porto no frame (posição já com wrap e deslocamento).
 func _port_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 	var marker_world: Vector3 = to_global(record["marker_world"])
@@ -2280,7 +2418,7 @@ func _port_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 func _port_icon_height(record: Dictionary) -> float:
 	var em := LABEL_SIZE_STANDARD * float(record.get("pixel_size",
 			LABEL_PIXEL_PER_UNIT * 52.0))
-	return em * (PORT_BADGE_SCALE if bool(record.get("fused", false)) \
+	return em * (PORT_BADGE_SCALE if _port_is_badge(record) \
 			else PORT_ICON_HEIGHT)
 
 
@@ -2384,6 +2522,11 @@ func _apply_port_lod(record: Dictionary, distance: float,
 	record["label_alpha"] = alpha
 	record["marker_world"] = record["marker_base"] \
 			+ Vector3(record["wrap_x"], 0.0, 0.0)
+	# Badge da própria cidade: usa a posição ao lado do ícone calculada no
+	# layout, para o selo não voltar para cima da cidade nos frames sem layout.
+	if _port_is_badge(record) and record.has("badge_local"):
+		record["marker_world"] = record["badge_local"] \
+				+ Vector3(record["wrap_x"], 0.0, 0.0)
 	if alpha > 0.01:
 		_visible_port_records.append(record)
 	_update_port_model(record, distance, on_screen)
@@ -2650,7 +2793,7 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 		var size := _port_icon_height(record)
 		_set_mm_transform(_port_icon_mm, port_index, world, size)
 		port_index += 1
-		if not bool(record.get("fused", false)):
+		if not _port_is_badge(record):
 			_set_mm_transform(_port_ring_mm, port_ring, world, size * RING_SCALE)
 			port_ring += 1
 	_set_mm_count(_port_icon_mm, port_index)

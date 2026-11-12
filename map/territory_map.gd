@@ -14,6 +14,33 @@ const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const GeographyScript := preload("res://core/economy/geography_service.gd")
 const OWNER_COLUMNS := 64
 
+## Cores do mapa político por nação. Fonte de verdade: `color` de
+## `data/definitions/scenario/nations.csv` (as 66 nações do cenário). As 8 nações
+## jogáveis mantêm a cor canônica de `provinces.json` (design do atlas); as
+## demais deixam de cair no bege neutro gerado pelo MAPCOLOR9 do Natural Earth.
+## Quando a cor do cenário fica indistinguível da de um VIZINHO, entra a paleta
+## de papelaria abaixo (regra MAPCOLOR: vizinhos nunca com o mesmo tom).
+const NATIONS_CSV := "res://data/definitions/scenario/nations.csv"
+## Tons "papelaria" (baixa saturação, mesmo peso visual do atlas) usados só para
+## desempatar vizinhos. Ordem estável: o resultado é determinístico.
+const PAPER_PALETTE: Array[Color] = [
+	Color("#86a877"),  # sálvia
+	Color("#86a5c0"),  # aço
+	Color("#c08f55"),  # ocre
+	Color("#b4788a"),  # rosa queimado
+	Color("#8a78a8"),  # lavanda
+	Color("#5f9e94"),  # verde-água
+	Color("#c6bc6e"),  # mostarda
+	Color("#8a7566"),  # umbro
+]
+## Distância RGB mínima entre as cores de dois vizinhos para ainda lerem como
+## nações diferentes no zoom padrão.
+const COLOR_MIN_DISTANCE := 0.16
+## Passo (px) da amostragem do raster de províncias ao montar a adjacência.
+## 16 px do raster de 8192 = ~0,7° de arco: suficiente para fronteiras
+## nacionais, sem varrer 33 milhões de texels na abertura do mapa.
+const ADJACENCY_STEP := 16
+
 ## Rasters do mundo inteiro para gerar o minimapa dinâmico (dono por província).
 const WORLD_PROVINCE_PATH := "res://map/map_data/atlas/world_province.png"
 const WORLD_SDF_PATH := "res://map/map_data/atlas/world_sdf.png"
@@ -25,6 +52,8 @@ const MINIMAP_LAND_FACTOR := 0.92
 
 var _provinces: Array[Dictionary] = []
 var _nation_colors: Dictionary = {}       # tag jogável -> Color (sRGB)
+var _palette: Dictionary = {}             # tag (jogável ou do cenário) -> Color
+var _adjacency: Dictionary = {}           # tag -> {tag vizinha: true}
 var _playable_tags: Array[String] = []    # ordem de nation_colors
 var _tag_index: Dictionary = {}           # tag -> índice do dono (1-based)
 var _assignment: Dictionary = {}          # province_id -> city_id
@@ -50,6 +79,8 @@ var _owner_signature_cached := ""
 func load_data() -> void:
 	_provinces.clear()
 	_nation_colors.clear()
+	_palette.clear()
+	_adjacency.clear()
 	_playable_tags.clear()
 	_tag_index.clear()
 	_assignment.clear()
@@ -105,7 +136,165 @@ func load_data() -> void:
 		})
 		_max_id = maxi(_max_id, pid)
 
+	_build_nation_palette()
 	_loaded = not _provinces.is_empty()
+
+
+## Monta a cor de cada nação do cenário: jogáveis canônicas, demais vindas de
+## nations.csv, trocadas pela paleta de papelaria se repetirem o tom de um
+## vizinho (ver PAPER_PALETTE). Chave = tag de dono usada em `_owner_image`.
+func _build_nation_palette() -> void:
+	_palette.clear()
+	for tag: Variant in _nation_colors:
+		_palette[String(tag)] = _nation_colors[tag]
+	var scenario := _scenario_colors()
+	if scenario.is_empty():
+		return
+	_adjacency = _country_adjacency()
+	var tags: Array = scenario.keys()
+	tags.sort()
+	for tag: Variant in tags:
+		var name := String(tag)
+		if _palette.has(name):
+			continue
+		var wanted: Color = scenario[tag]
+		_palette[name] = wanted if _palette_fits(name, wanted) \
+				else _paper_color_for(name, wanted)
+
+
+## Cor de cada nação em `nations.csv` (coluna `color`, hex `#rrggbb`).
+func _scenario_colors() -> Dictionary:
+	var out: Dictionary = {}
+	var file := FileAccess.open(NATIONS_CSV, FileAccess.READ)
+	if file == null:
+		push_warning("TerritoryMap: não abriu " + NATIONS_CSV)
+		return out
+	var header := file.get_csv_line()
+	var id_index := header.find("id")
+	var color_index := header.find("color")
+	if id_index < 0 or color_index < 0:
+		file.close()
+		return out
+	var last := maxi(id_index, color_index)
+	while not file.eof_reached():
+		var row := file.get_csv_line()
+		if row.size() <= last:
+			continue
+		var tag := String(row[id_index]).strip_edges()
+		var hex := String(row[color_index]).strip_edges()
+		if tag.is_empty() or hex.is_empty():
+			continue
+		var color := Color.from_string(hex, Color(0.0, 0.0, 0.0, 0.0))
+		if color.a > 0.0:
+			out[tag] = color
+	file.close()
+	return out
+
+
+## A cor `color` pode representar `tag` sem se confundir com os vizinhos já
+## atribuídos? (distância RGB mínima de COLOR_MIN_DISTANCE)
+func _palette_fits(tag: String, color: Color) -> bool:
+	var neighbors: Dictionary = _adjacency.get(tag, {})
+	for neighbor: Variant in neighbors:
+		var other: Color = _palette.get(String(neighbor), Color(-1.0, 0.0, 0.0))
+		if other.r < 0.0:
+			continue
+		if _color_distance(color, other) < COLOR_MIN_DISTANCE:
+			return false
+	return true
+
+
+## Primeiro tom de papelaria que não se confunde com um vizinho; se todos já
+## estiverem ocupados, o de maior distância mínima (determinístico pela ordem).
+func _paper_color_for(tag: String, fallback: Color) -> Color:
+	for color: Color in PAPER_PALETTE:
+		if _palette_fits(tag, color):
+			return color
+	var best := fallback
+	var best_score := -1.0
+	var neighbors: Dictionary = _adjacency.get(tag, {})
+	for color: Color in PAPER_PALETTE:
+		var min_distance := 1.0
+		for neighbor: Variant in neighbors:
+			var other: Color = _palette.get(String(neighbor), Color(-1.0, 0.0, 0.0))
+			if other.r < 0.0:
+				continue
+			min_distance = minf(min_distance, _color_distance(color, other))
+		if min_distance > best_score:
+			best_score = min_distance
+			best = color
+	return best
+
+
+static func _color_distance(a: Color, b: Color) -> float:
+	var dr := a.r - b.r
+	var dg := a.g - b.g
+	var db := a.b - b.b
+	return sqrt(dr * dr + dg * dg + db * db)
+
+
+## Adjacência entre nações lida do raster de províncias do atlas: dois texels
+## vizinhos de províncias diferentes geram uma aresta entre os países. A
+## amostragem usa ADJACENCY_STEP (o raster tem 8192×4096): uma grade de ~512×256
+## pontos basta para as fronteiras nacionais.
+func _country_adjacency() -> Dictionary:
+	var edges: Dictionary = {}
+	var ids := _world_province_raster()
+	if ids == null or _provinces.is_empty():
+		return edges
+	if ids.get_format() != Image.FORMAT_RGB8:
+		ids.convert(Image.FORMAT_RGB8)
+	var tag_by_id := PackedStringArray()
+	tag_by_id.resize(_max_id + 1)
+	for province in _provinces:
+		var country := String(province["country"])
+		var tag: String = GeographyScript.nation_for_province_tag(country)
+		tag_by_id[int(province["id"])] = tag if tag != "" else country
+	var width := ids.get_width()
+	var height := ids.get_height()
+	var step := ADJACENCY_STEP
+	var columns := int(ceil(float(width) / float(step)))
+	var rows := int(ceil(float(height) / float(step)))
+	var sampled: Array[PackedInt32Array] = []
+	for ry in rows:
+		var row := PackedInt32Array()
+		row.resize(columns)
+		var py := mini(ry * step, height - 1)
+		for rx in columns:
+			var px := mini(rx * step, width - 1)
+			var color := ids.get_pixel(px, py)
+			row[rx] = int(round(color.r * 255.0 + color.g * 255.0 * 256.0))
+		sampled.append(row)
+	for ry in rows:
+		for rx in columns:
+			var id_a: int = sampled[ry][rx]
+			if id_a <= 0 or id_a >= tag_by_id.size():
+				continue
+			if rx + 1 < columns:
+				_connect_nations(edges, id_a, int(sampled[ry][rx + 1]), tag_by_id)
+			if ry + 1 < rows:
+				_connect_nations(edges, id_a, int(sampled[ry + 1][rx]), tag_by_id)
+	return edges
+
+
+static func _connect_nations(edges: Dictionary, id_a: int, id_b: int,
+		tag_by_id: PackedStringArray) -> void:
+	if id_b <= 0 or id_a == id_b:
+		return
+	if id_b >= tag_by_id.size():
+		return
+	var tag_a := tag_by_id[id_a]
+	var tag_b := tag_by_id[id_b]
+	if tag_a == "" or tag_b == "" or tag_a == tag_b:
+		return
+	if not edges.has(tag_a):
+		edges[tag_a] = {}
+	if not edges.has(tag_b):
+		edges[tag_b] = {}
+	var set_a: Dictionary = edges[tag_a]
+	set_a[tag_b] = true
+	var set_b: Dictionary = edges[tag_b]
+	set_b[tag_a] = true
 
 
 func is_loaded() -> bool:
@@ -248,6 +437,24 @@ func owner_image() -> Image:
 ## nação no shader. -1 se a tag não é conhecida.
 func owner_index(tag: String) -> int:
 	return int(_tag_index.get(tag, -1))
+
+
+## Cor do dono no mapa político (a mesma escrita na textura de províncias).
+func nation_color(tag: String) -> Color:
+	if _palette.has(tag):
+		return _palette[tag]
+	return _nation_colors.get(tag, Color(0.0, 0.0, 0.0, 0.0))
+
+
+## Tags vizinhas (fronteira no raster de províncias), ordenadas. Exposto para o
+## teste de cores garantir que vizinhos nunca compartilham o mesmo tom.
+func adjacent_nations(tag: String) -> Array[String]:
+	var out: Array[String] = []
+	var neighbors: Dictionary = _adjacency.get(tag, {})
+	for neighbor: Variant in neighbors:
+		out.append(String(neighbor))
+	out.sort()
+	return out
 
 
 ## Dono atual por id de província (id -> tag).
@@ -428,7 +635,12 @@ func _write_owner_image(owners: Dictionary) -> void:
 		_texture.update(_image)
 
 
+## Cor final do dono no mapa político. A paleta vem de nations.csv (66 nações),
+## com a paleta de papelaria desempatando vizinhos; tags fora do cenário caem na
+## cor da província do atlas.
 func _color_for(tag: String, province: Dictionary) -> Color:
+	if _palette.has(tag):
+		return _palette[tag]
 	if _nation_colors.has(tag):
 		return _nation_colors[tag]
 	return province["color"]
