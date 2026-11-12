@@ -30,8 +30,9 @@ Regras (docs/plans/world_all_data.md):
     cor: tradicional (traditional_colors.csv) tem prioridade; vizinhos de terra
     com ΔE(Lab) ≥ 30 (piso 25) e RGB ≥ 0,16; conflito entre tradicionais muda só
     o TOM (matiz ±12°). Ver tools/nation_colors.py.
-    curadoria: tools/world_city_curation.py — EGY-POR/EGY-SUE saem e EGY-MAT
-    (Marsa Matruh) entra, valendo no out/ e na promoção para o cenário.
+    curadoria: tools/world_city_curation.py — EGY-POR/EGY-SUE, ISR-JER e
+    PSX-EAS saem; EGY-MAT, ISR-TLV, PSX-RAM e GRC-HER entram, com o porto
+    GRC-HER; vale no out/ e na promoção para o cenário.
 
 Uso:
     python tools/build_world_cities.py            # gera out/
@@ -52,7 +53,10 @@ import unicodedata
 from collections import Counter, defaultdict
 
 import nation_colors
-from world_city_curation import EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES
+from world_city_curation import (
+    CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
+    FORCED_PORTS,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
@@ -144,6 +148,13 @@ def lonlat_to_xy(lon, lat):
     return (lon + 180.0) / 360.0 * MAP_W, (90.0 - lat) / 180.0 * MAP_H
 
 
+def km_between_ll(lat1, lon1, lat2, lon2):
+    """Distância aproximada em km entre dois pontos lon/lat."""
+    dlon = (lon2 - lon1 + 180.0) % 360.0 - 180.0
+    return math.hypot(dlon * 111.32 * math.cos(math.radians((lat1 + lat2) / 2.0)),
+                      (lat2 - lat1) * 110.57)
+
+
 def curate_cities(rows):
     """Aplica a curadoria de `tools/world_city_curation.py` à fonte de cidades.
 
@@ -168,8 +179,27 @@ def curate_cities(rows):
     for spec in FORCED_CITIES:
         if spec["id"] in kept_ids:
             kept = [row for row in kept if row["id"] != spec["id"]]
+        # a fonte pode trazer a mesma cidade com outro id (ex.: Tel Aviv):
+        # remove o candidato a < 20 km para a forçada não duplicar o núcleo.
+        kept = [row for row in kept if not (
+            row["nation"] == spec["nation"]
+            and km_between_ll(float(row["lat"]), float(row["lon"]),
+                              float(spec["lat"]), float(spec["lon"])) < 20.0)]
         kept.append(dict(spec))
     return kept, excluded_here
+
+
+def curate_ports(rows):
+    """Aplica a curadoria de portos (FORCED_PORTS) à fonte de portos.
+
+    Porto forçado ocupa o id da cidade da mesma nação (`port_of`) e não é
+    recriado se a fonte já o trouxer. Uma regeneração do importador não perde
+    o porto de Creta.
+    """
+    kept = {row["id"]: dict(row) for row in rows}
+    for spec in FORCED_PORTS:
+        kept[spec["id"]] = dict(spec)
+    return list(kept.values())
 
 
 def read_csv(path):
@@ -208,8 +238,9 @@ def plan_city_ids(cities_out, scenario_cities, legacy_ids):
     """
     by_nation = defaultdict(list)
     for row in scenario_cities.values():
-        if row["id"] not in legacy_ids:
-            by_nation[row["nation"]].append(row)
+        if row["id"] in legacy_ids or row["id"] in EXCLUDED_CITIES:
+            continue
+        by_nation[row["nation"]].append(row)
     pairs = []
     for row in cities_out:
         if row["id"] in legacy_ids:
@@ -263,8 +294,12 @@ def assign_port_of(cities, ports):
     for port in ports:
         existing = port.get("port_of", "").strip()
         if existing:
-            result[port["id"]] = existing
-            continue
+            # `port_of` da fonte só vale se a cidade existe e é da MESMA nação;
+            # um id antigo (pré-migração) não pode deixar o porto órfão.
+            if any(city["id"] == existing
+                   for city in by_nation.get(port["nation"], [])):
+                result[port["id"]] = existing
+                continue
         best_id, best_d = "", float("inf")
         for city in by_nation.get(port["nation"], []):
             distance = km_between_px((port["x"], port["y"]), (city["x"], city["y"]))
@@ -388,6 +423,7 @@ def main():
     colors, color_report = resolve_scenario_colors(nations_src)
     cities_src = read_csv(os.path.join(WORLD, "cities_source.csv"))
     ports_src = read_csv(os.path.join(WORLD, "ports_source.csv"))
+    ports_src = curate_ports(ports_src)
     scenario_cities = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "cities.csv"))}
     scenario_ports = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "ports.csv"))}
     scenario_nations = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "nations.csv"))}
@@ -425,6 +461,10 @@ def main():
     for spec in FORCED_CITIES:
         if spec["id"] not in out_ids:
             problems.append(f"curadoria: {spec['id']} ausente do out/")
+    out_port_ids = {r["id"] for r in ports_src}
+    for spec in FORCED_PORTS:
+        if spec["id"] not in out_port_ids:
+            problems.append(f"curadoria: porto {spec['id']} ausente do out/")
 
     by_nation = defaultdict(list)
     for row in cities_src:
@@ -503,6 +543,9 @@ def main():
                         + ", ".join(missing_ports))
 
     # saída
+    forced_capital_names = {
+        spec["nation"]: spec["name_en"] for spec in FORCED_CITIES
+        if CAPITAL_OVERRIDES.get(spec["nation"]) == spec["id"]}
     nations_out, cities_out, ports_out, buildings_out, i18n_out = [], [], [], [], []
     for nation in sorted(nations_src, key=lambda r: r["iso3"]):
         iso3 = nation["iso3"]
@@ -511,7 +554,7 @@ def main():
             "name": nation["name_en"],
             "flag": nation["iso2"].lower(),
             "color": colors[iso3],
-            "capital": nation["capital_en"],
+            "capital": forced_capital_names.get(iso3, nation["capital_en"]),
             "currency": nation["currency"],
             "government": nation["government"],
             "ai_profile": nation["ai_profile"],
@@ -549,6 +592,7 @@ def main():
         ports_out.append({
             "id": port["id"], "name": port["name"], "nation": port["nation"],
             "x": round(x, 1), "y": round(y, 1), "landmass": port["landmass"],
+            "port_of": port.get("port_of", "").strip(),
         })
         i18n_out.append({"key": f"port.name.{port['id']}", "pt_BR": port["name"],
                          "en": port["name"], "es": port["name"]})
@@ -592,7 +636,7 @@ def main():
                      "ai_profile", "region", "population", "gdp_ppp_bn"]
     city_fields = ["id", "nation", "home_nation", "name", "population", "x", "y",
                    "landmass", "capital"]
-    port_fields = ["id", "name", "nation", "x", "y", "landmass"]
+    port_fields = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
     building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
     i18n_fields = ["key", "pt_BR", "en", "es"]
 
@@ -632,6 +676,8 @@ def main():
                 "source": "tools/world_city_curation.py",
                 "excluded": {cid: reason for cid, reason in EXCLUDED_CITIES.items()},
                 "forced": [spec["id"] for spec in FORCED_CITIES],
+                "capital_overrides": CAPITAL_OVERRIDES,
+                "forced_ports": [spec["id"] for spec in FORCED_PORTS],
             },
             "color_min_delta_e": 30,
             "color_min_delta_e_floor": 25,

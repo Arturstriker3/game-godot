@@ -26,10 +26,22 @@
       "source": "tools/world_city_curation.py",
       "excluded": {
         "EGY-POR": "Port Said: eixo do canal de Suez terá mecânica própria",
-        "EGY-SUE": "Suez: eixo do canal de Suez terá mecânica própria"
+        "EGY-SUE": "Suez: eixo do canal de Suez terá mecânica própria",
+        "ISR-JER": "Jerusalém: núcleo disputado, aparecia com bandeira de Israel na área da Palestina",
+        "PSX-EAS": "Jerusalém Oriental: mesmo núcleo de Jerusalém, substituída por Ramallah como capital"
       },
       "forced": [
-        "EGY-MAT"
+        "EGY-MAT",
+        "ISR-TLV",
+        "PSX-RAM",
+        "GRC-HER"
+      ],
+      "capital_overrides": {
+        "ISR": "ISR-TLV",
+        "PSX": "PSX-RAM"
+      },
+      "forced_ports": [
+        "GRC-HER"
       ]
     },
     "color_min_delta_e": 30,
@@ -363,16 +375,16 @@
   },
   "counts": {
     "nations": 231,
-    "cities": 857,
-    "ports": 137,
-    "buildings": 857,
-    "i18n_keys": 1456,
+    "cities": 858,
+    "ports": 138,
+    "buildings": 858,
+    "i18n_keys": 1458,
     "legacy_cities": 40,
     "legacy_ports": 18,
-    "scenario_ports": 137,
-    "cities_with_pt_exonym": 264,
-    "cities_with_es_exonym": 264,
-    "cities_pt_same_as_en": 570
+    "scenario_ports": 138,
+    "cities_with_pt_exonym": 262,
+    "cities_with_es_exonym": 262,
+    "cities_pt_same_as_en": 573
   },
   "top10": [
     {

@@ -1926,6 +1926,12 @@
     "output_tons_per_day": 199.2
   },
   {
+    "city_id": "GRC-HER",
+    "id": "grc_her_wheat",
+    "name": "Heraklion — trigo",
+    "output_tons_per_day": 53.8
+  },
+  {
     "city_id": "GRC-THE",
     "id": "grc_the_wheat",
     "name": "Salônica — trigo",
@@ -2418,10 +2424,10 @@
     "output_tons_per_day": 85.6
   },
   {
-    "city_id": "ISR-JER",
-    "id": "isr_jer_wheat",
-    "name": "Jerusalém — trigo",
-    "output_tons_per_day": 291.5
+    "city_id": "ISR-TLV",
+    "id": "isr_tlv_wheat",
+    "name": "Tel Aviv — trigo",
+    "output_tons_per_day": 1247.1
   },
   {
     "city_id": "ITA-GEN",
@@ -3780,16 +3786,16 @@
     "output_tons_per_day": 90.5
   },
   {
-    "city_id": "PSX-EAS",
-    "id": "psx_eas_wheat",
-    "name": "Jerusalém Oriental — trigo",
-    "output_tons_per_day": 128.5
-  },
-  {
     "city_id": "PSX-GAZ",
     "id": "psx_gaz_wheat",
     "name": "Faixa de Gaza — trigo",
     "output_tons_per_day": 123.0
+  },
+  {
+    "city_id": "PSX-RAM",
+    "id": "psx_ram_wheat",
+    "name": "Ramallah — trigo",
+    "output_tons_per_day": 29.3
   },
   {
     "city_id": "PYF-ATU",

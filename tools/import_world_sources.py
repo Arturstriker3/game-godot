@@ -21,8 +21,10 @@ Regras (docs/plans/world_all_data.md):
            porto separado; abaixo disso a cidade é marcada como porto dela mesma.
     cor: vizinhos de fronteira com ΔE ≥ 30 (Lab); correções em COLOR_OVERRIDE.
     curadoria: tools/world_city_curation.py — cidades excluídas (EGY-POR,
-               EGY-SUE: canal de Suez) e forçadas (EGY-MAT: Marsa Matruh) são
-               aplicadas na seleção, então sobrevivem a uma regeneração.
+               EGY-SUE: canal de Suez; ISR-JER/PSX-EAS: Jerusalém) e forçadas
+               (EGY-MAT, ISR-TLV, PSX-RAM, GRC-HER) são aplicadas na seleção,
+               assim como as capitais (CAPITAL_OVERRIDES) e o porto GRC-HER;
+               sobrevivem a uma regeneração.
 
 Uso:
     python tools/import_world_sources.py --cache <dir> [--write] [--fetch-names]
@@ -49,7 +51,10 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-from world_city_curation import EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES
+from world_city_curation import (
+    CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
+    FORCED_PORTS,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
@@ -459,6 +464,26 @@ class World:
                 by_key[key] = row
         return list(by_key.values())
 
+    def forced_capital(self, tag):
+        """Capital declarada na curadoria (id de FORCED_CITIES), se houver."""
+        spec_id = CAPITAL_OVERRIDES.get(tag)
+        if not spec_id:
+            return None
+        spec = next((s for s in FORCED_CITIES if s["id"] == spec_id), None)
+        if spec is None:
+            return None
+        return {
+            "id": spec["id"], "name": spec["name_en"],
+            "ascii": spec["name_en"], "alternates": "",
+            "lat": spec["lat"], "lon": spec["lon"], "fcode": "PPLC",
+            "cc": "", "admin1": "", "pop": int(spec["population"]),
+            "forced_id": spec["id"], "forced_source": spec["source"],
+            "forced_note": spec["note"],
+            "forced_year": spec.get("population_year", 2026),
+            "forced_port": spec["port"],
+            "forced_name_pt": spec["name_pt"], "forced_name_es": spec["name_es"],
+        }
+
     def find_capital(self, tag, rows):
         ent = self.entities[tag]
         pplc = [c for c in rows if c["fcode"] == "PPLC"]
@@ -841,7 +866,7 @@ class World:
             if not rows:
                 problems.append(f"{tag}: sem cidade no GeoNames")
                 continue
-            cap = self.find_capital(tag, rows)
+            cap = self.forced_capital(tag) or self.find_capital(tag, rows)
             if cap is None:
                 problems.append(f"{tag}: capital não encontrada no GeoNames")
                 continue
@@ -933,6 +958,10 @@ class World:
             if any(c.get("forced_id") == spec["id"] or c["id"] == spec["id"]
                    for c in chosen):
                 continue
+            # a fonte pode trazer a mesma cidade com outro id: remove o
+            # candidato a < 20 km para a forçada não duplicar o núcleo.
+            chosen = [c for c in chosen if km_between(
+                (c["lon"], c["lat"]), (spec["lon"], spec["lat"])) >= 20.0]
             chosen.append({
                 "id": spec["id"], "name": spec["name_en"],
                 "ascii": spec["name_en"], "alternates": "",
@@ -942,6 +971,7 @@ class World:
                 "forced_note": spec["note"],
                 "forced_year": spec.get("population_year", 2026),
                 "forced_port": spec["port"],
+                "forced_name_pt": spec["name_pt"], "forced_name_es": spec["name_es"],
             })
             extra_by_tag[tag] += 1
             selected[tag] = (chosen, covered, target, cap)
@@ -1056,6 +1086,9 @@ class World:
                     name_pt = clean_name(tr_pt.get(name_en, ""), name_en)
                     name_pt = PT_BR_OVERRIDE.get(name_pt, name_pt)
                     name_es = clean_name(tr_es.get(name_en, ""), name_en)
+                    if c.get("forced_id"):
+                        name_pt = c.get("forced_name_pt") or name_pt
+                        name_es = c.get("forced_name_es") or name_es
                     if name_en in NAME_OVERRIDE:
                         name_en, name_pt, name_es = NAME_OVERRIDE[name_en]
                 used_ids.add(cid)
@@ -1086,7 +1119,8 @@ class World:
                 })
                 i18n_out.append({"key": f"city.name.{cid}", "pt_BR": name_pt,
                                  "en": name_en, "es": name_es})
-                if port == "yes" and not legacy and cid not in legacy_port_ids:
+                if (port == "yes" and not legacy and cid not in legacy_port_ids
+                        and cid not in {p["id"] for p in FORCED_PORTS}):
                     point = self.port_for(tag, c)[1]
                     if point:
                         ports_out.append({
@@ -1125,6 +1159,20 @@ class World:
             i18n_out.append({"key": f"port.name.{row['id']}", "pt_BR": row["name"],
                              "en": row["name"], "es": row["name"]})
 
+        # 6b. portos forçados (curadoria), no ponto de costa declarado
+        port_ids = {p["id"] for p in ports_out}
+        for spec in FORCED_PORTS:
+            if spec["id"] in port_ids:
+                continue
+            ports_out.append({
+                "nation": spec["nation"], "id": spec["id"], "name": spec["name"],
+                "lat": spec["lat"], "lon": spec["lon"],
+                "landmass": spec["landmass"], "source": spec["source"],
+                "port_of": spec.get("port_of", ""), "coast_km": "",
+            })
+            i18n_out.append({"key": f"port.name.{spec['id']}", "pt_BR": spec["name"],
+                             "en": spec["name"], "es": spec["name"]})
+
         # 7. capital pt/es a partir da cidade capital
         city_names = {c["id"]: c for c in cities_out}
         for n in nations_out:
@@ -1156,6 +1204,9 @@ class World:
         for spec in FORCED_CITIES:
             if not any(c["id"] == spec["id"] for c in cities_out):
                 problems.append(f"{spec['id']}: cidade forçada ausente")
+        for spec in FORCED_PORTS:
+            if not any(p["id"] == spec["id"] for p in ports_out):
+                problems.append(f"{spec['id']}: porto forçado ausente")
         ids = [c["id"] for c in cities_out]
         if len(ids) != len(set(ids)):
             problems.append("cidades: ids duplicados")
@@ -1248,6 +1299,13 @@ class World:
                 "port_point_km": PORT_MIN_POINT_KM,
                 "color_min_delta_e": LIMIAR_COR,
                 "color_overrides": COLOR_OVERRIDE,
+                "curation": {
+                    "source": "tools/world_city_curation.py",
+                    "excluded": EXCLUDED_CITIES,
+                    "forced": [s["id"] for s in FORCED_CITIES],
+                    "capital_overrides": CAPITAL_OVERRIDES,
+                    "forced_ports": [s["id"] for s in FORCED_PORTS],
+                },
             },
             "counts": {
                 "nations": len(nations_out),

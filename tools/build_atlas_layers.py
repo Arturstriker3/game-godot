@@ -65,6 +65,18 @@ GLOBAL_H = 2500.0
 REGION_TO_GLOBAL = (REGION[2] - REGION[0]) / REGION_W * (GLOBAL_W / 360.0)
 WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
 
+# Ilhotes de terra removidos da máscara (curadoria 2026-11). O Golfo de Suez
+# tinha um resto de terra isolado no meio da água logo antes da entrada do
+# canal: Shadwan (33,95N 27,53E) e o retalho de 2 texels a 34,01N 27,49E,
+# rasterizados como um "ilhote" solto no mar. A remoção é por componente
+# FECHADO dentro da caixa (nunca toca a costa continental: o componente que
+# encosta na borda da caixa é preservado), então a costa real fica intacta.
+# `max_px` é o teto em pixels da grade alta (supersample 2) para o componente.
+REMOVED_ISLETS = [
+    {"name": "suez_gulf_shadwan", "lon": 33.98, "lat": 27.51,
+     "radius_deg": 0.18, "max_px": 4096},
+]
+
 # Código do Natural Earth -> tag do jogo (o jogo usa NED para a Holanda).
 GAME_TAGS = {"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NLD": "NED",
              "BEL": "BEL", "VEN": "VEN", "SUR": "SUR", "GUY": "GUY"}
@@ -266,6 +278,45 @@ def rasterize_ids(grid, polygons, values):
     return grid.rasterize(polygons, values).astype(np.uint16)
 
 
+def remove_islets(owners, provinces, grid, specs):
+    """Zera componentes de terra isolados dentro das caixas de curadoria.
+
+    Cada spec é (lon, lat, raio em graus, teto de pixels). O componente só é
+    removido se estiver INTEIRO dentro da caixa (nenhum pixel na borda) e tiver
+    área <= max_px; assim a costa continental, que atravessa a borda, nunca é
+    tocada. O id de província dos pixels removidos também volta a 0.
+    """
+    for spec in specs:
+        lon, lat = spec["lon"], spec["lat"]
+        radius = spec["radius_deg"]
+        x0 = int((lon - radius - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)
+        x1 = int((lon + radius - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width) + 1
+        y0 = int((grid.lat1 - lat - radius) / (grid.lat1 - grid.lat0) * grid.height)
+        y1 = int((grid.lat1 - lat + radius) / (grid.lat1 - grid.lat0) * grid.height) + 1
+        x0, x1 = max(0, x0), min(grid.width, x1)
+        y0, y1 = max(0, y0), min(grid.height, y1)
+        if x1 <= x0 or y1 <= y0:
+            continue
+        sub = owners[y0:y1, x0:x1] != 0
+        labels, count = nd_label(sub)
+        for index in range(1, count + 1):
+            ys, xs = np.where(labels == index)
+            area = int(xs.size)
+            if area > spec["max_px"]:
+                continue
+            if (xs.min() == 0 or ys.min() == 0
+                    or xs.max() == sub.shape[1] - 1
+                    or ys.max() == sub.shape[0] - 1):
+                continue  # encosta na borda da caixa: pode ser costa real
+            abs_x = xs + x0
+            abs_y = ys + y0
+            owners[abs_y, abs_x] = 0
+            if provinces is not None:
+                provinces[abs_y, abs_x] = 0
+            print(f"[islet] {spec['name']}: removido componente de {area} px "
+                  f"em lon={lon:.3f} lat={lat:.3f}")
+
+
 def coast_field(land):
     """Distância assinada à costa em texels da grade alta (>0 = terra)."""
     if not land.any():
@@ -325,6 +376,8 @@ def build_layer(name, bounds, width, countries, province_shapes,
     provinces = None
     if province_shapes:
         provinces = rasterize_ids(hi, province_shapes, province_ids)
+    if REMOVED_ISLETS:
+        remove_islets(owners, provinces, hi, REMOVED_ISLETS)
 
     coast_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     borders_lo = np.empty((lo_height, lo_width), dtype=np.float32)

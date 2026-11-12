@@ -3852,6 +3852,18 @@
     "capital": true
   },
   {
+    "id": "GRC-HER",
+    "nation": "GRC",
+    "home_nation": "GRC",
+    "name": "Heraklion",
+    "population": 179302.0,
+    "production": 53.8,
+    "x": 2849.2,
+    "y": 759.2,
+    "landmass": "europe",
+    "capital": false
+  },
+  {
     "id": "GRC-THE",
     "nation": "GRC",
     "home_nation": "GRC",
@@ -4836,14 +4848,14 @@
     "capital": false
   },
   {
-    "id": "ISR-JER",
+    "id": "ISR-TLV",
     "nation": "ISR",
     "home_nation": "ISR",
-    "name": "Jerusalem",
-    "population": 971800.0,
-    "production": 291.5,
-    "x": 2989.1,
-    "y": 808.8,
+    "name": "Tel Aviv",
+    "population": 4156900.0,
+    "production": 1247.1,
+    "x": 2983.1,
+    "y": 804.4,
     "landmass": "asia",
     "capital": true
   },
@@ -7560,18 +7572,6 @@
     "capital": false
   },
   {
-    "id": "PSX-EAS",
-    "nation": "PSX",
-    "home_nation": "PSX",
-    "name": "East Jerusalem",
-    "population": 428304.0,
-    "production": 128.5,
-    "x": 2989.4,
-    "y": 808.6,
-    "landmass": "asia",
-    "capital": true
-  },
-  {
     "id": "PSX-GAZ",
     "nation": "PSX",
     "home_nation": "PSX",
@@ -7582,6 +7582,18 @@
     "y": 812.5,
     "landmass": "asia",
     "capital": false
+  },
+  {
+    "id": "PSX-RAM",
+    "nation": "PSX",
+    "home_nation": "PSX",
+    "name": "Ramallah",
+    "population": 97532.0,
+    "production": 29.3,
+    "x": 2988.9,
+    "y": 806.9,
+    "landmass": "asia",
+    "capital": true
   },
   {
     "id": "PYF-ATU",

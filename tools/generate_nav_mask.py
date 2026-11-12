@@ -40,6 +40,15 @@ STRAIT_HALF_WIDTH = 1
 ## e sinal de que a caixa pegou o estreito errado - falhe em vez de inundar.
 MAX_CARVED_CELLS = 80
 
+## Ilhotes de terra removidos da mascara por curadoria (2026-11): o mesmo
+## resto isolado do Golfo de Suez removido do atlas. So remove componente
+## INTEIRO dentro da caixa e com <= max_cells; a costa continental atravessa a
+## borda e nunca e tocada.
+REMOVED_ISLETS = [
+    {"name": "suez_gulf_shadwan", "lon": 33.98, "lat": 27.51,
+     "radius_deg": 0.18, "max_cells": 8},
+]
+
 ## nome, caixa (lon0, lon1, lat0, lat1), mar A (lon, lat), mar B (lon, lat)
 STRAITS = [
     ("gibraltar", (-6.6, -4.6, 35.4, 36.4), (-7.0, 35.7), (-3.0, 36.6)),
@@ -173,6 +182,34 @@ def carve_straits(mask: np.ndarray) -> int:
     return total
 
 
+def remove_islets(mask: np.ndarray) -> int:
+    """Zera componentes de terra/coisa isolados dentro das caixas de curadoria."""
+    removed = 0
+    height, width = mask.shape
+    for spec in REMOVED_ISLETS:
+        lon, lat, radius = spec["lon"], spec["lat"], spec["radius_deg"]
+        x0, y0 = pixel_of(lon - radius, lat + radius, width, height)
+        x1, y1 = pixel_of(lon + radius, lat - radius, width, height)
+        x0, x1 = max(0, x0), min(width - 1, x1)
+        y0, y1 = max(0, y0), min(height - 1, y1)
+        if x1 <= x0 or y1 <= y0:
+            continue
+        sub = mask[y0:y1 + 1, x0:x1 + 1] > WATER_MAX
+        labels, count = ndimage.label(sub)
+        for index in range(1, count + 1):
+            ys, xs = np.where(labels == index)
+            if xs.size > spec["max_cells"]:
+                continue
+            if (xs.min() == 0 or ys.min() == 0
+                    or xs.max() == sub.shape[1] - 1
+                    or ys.max() == sub.shape[0] - 1):
+                continue
+            mask[ys + y0, xs + x0] = 0
+            removed += xs.size
+            print("  %-16s removido: %d celula(s)" % (spec["name"], xs.size))
+    return removed
+
+
 def build_mask() -> np.ndarray:
     water = load_water_colors()
     pixels = np.asarray(Image.open(PROVINCES_PNG).convert("RGB"))
@@ -202,6 +239,10 @@ def main() -> None:
     opened = carve_straits(mask)
     if opened:
         print("estreitos: %d celulas de terra viraram agua" % opened)
+
+    removed = remove_islets(mask)
+    if removed:
+        print("ilhotes: %d celula(s) de terra viraram agua" % removed)
 
     Image.fromarray(mask, mode="L").save(OUTPUT)
     print("gerado %s (%dx%d)" % (OUTPUT, mask.shape[1], mask.shape[0]))

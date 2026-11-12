@@ -3,11 +3,14 @@ extends Node
 ## Verifica os estreitos da máscara de navegação (`map/map_data/nav_mask.png`)
 ## com o `NavGrid` REAL usado pelos comboios.
 ##
-## Dois níveis:
+## Três níveis:
 ##   1. conectividade: Atlântico, Mediterrâneo, Negro, Báltico, Vermelho e Golfo
 ##      Pérsico no MESMO componente de água (Gibraltar, Dardanelos/Bósforo,
 ##      Øresund e Suez abertos no gerador `tools/generate_nav_mask.py`);
-##   2. rota: o A* de navio acha caminho pelos estreitos e respeita o orçamento
+##   2. portos: a água alcançada pelo cais é o MESMO componente do mar aberto em
+##      frente à costa (não uma lagoa/enseada isolada) — comparado com uma
+##      semente de mar aberto;
+##   3. rota: o A* de navio acha caminho pelos estreitos e respeita o orçamento
 ##      de fatia (`FRAME_BUDGET_US`), sem estourar o tempo total da rota.
 ##
 ##   godot --headless --path . res://tools/nav_strait_test.tscn
@@ -28,6 +31,17 @@ const STRAIT_RADIUS := 6.0
 ## zero; sobra um ou outro canto de 2-3 células numa costa recortada.
 const MAX_GAPS := 4
 const MAX_GAP_CELLS := 4.0
+
+## Portos de cidade cuja água precisa ser o mar aberto: o navio só atraca se a
+## célula do cais for do componente principal. nome, cais (lon, lat), semente
+## de mar aberto em frente à costa (lon, lat).
+const PORTS := [
+	["GRC-HER", Vector2(25.133, 35.344), Vector2(24.6, 35.1)],
+]
+## Distância máxima (células finas) do cais até a água do componente principal:
+## o porto tem de alcançar o mar, não uma lagoa/enseada isolada. Medido em
+## Heraklion: 1 célula (o cais é a célula de costa, como os demais portos).
+const PORT_SNAP_CELLS := 8.0
 
 ## nome, origem (lon, lat), destino (lon, lat), ponto do estreito (lon, lat)
 const ROUTES := [
@@ -57,11 +71,12 @@ func _ready() -> void:
 		nav.w, nav.h, nav.cw, nav.ch, _ms(started)])
 
 	_check_seas(nav)
+	_check_ports(nav)
 	for route in ROUTES:
 		_check_route(nav, route)
 
 	if _failures.is_empty():
-		print("PASS: mares conectados e rotas por Gibraltar, Dardanelos/Bósforo e Øresund")
+		print("PASS: mares conectados, portos no mar aberto e rotas por Gibraltar, Dardanelos/Bósforo e Øresund")
 		get_tree().quit(0)
 		return
 	for failure in _failures:
@@ -87,6 +102,29 @@ func _check_seas(nav) -> void:
 		if not ok:
 			_failures.append("%s separado do oceano (comp %d, main %d)" % [
 				sea[0], comp, nav.main_water])
+
+
+## A água que o cais alcança é o MESMO componente do mar aberto em frente à
+## costa? Compara com a semente de mar aberto e com o componente principal, e
+## limita a distância do cais (porto não pode atracar numa lagoa distante).
+func _check_ports(nav) -> void:
+	print("--- agua nos portos (main=%d)" % nav.main_water)
+	for entry in PORTS:
+		var label: String = String(entry[0])
+		var port_cell := _cell_of(entry[1])
+		var sea_comp: int = nav.component(_cell_of(entry[2]), "ship")
+		var snapped: Vector2i = nav.snap(port_cell, "ship")
+		var comp: int = nav.component(snapped, "ship")
+		var cells: float = Vector2(port_cell).distance_to(Vector2(snapped))
+		var ok: bool = snapped.x >= 0 and sea_comp >= 0 and comp == sea_comp \
+				and comp == int(nav.main_water) and cells <= PORT_SNAP_CELLS
+		print("  %-8s comp=%-4d mar=%-4d cais->agua %.1f cel %s" % [
+			label, comp, sea_comp, cells, "ok" if ok else "SEPARADO"])
+		if not ok:
+			_failures.append(
+					("%s: agua do porto nao e o mar aberto (comp %d, mar %d, main %d, "
+					+ "cais->agua %.1f celulas, teto %.0f)") % [
+					label, comp, sea_comp, nav.main_water, cells, PORT_SNAP_CELLS])
 
 
 func _check_route(nav, route: Array) -> void:

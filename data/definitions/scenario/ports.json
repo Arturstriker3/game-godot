@@ -405,6 +405,15 @@
     "port_of": "GRC-ATH"
   },
   {
+    "id": "GRC-HER",
+    "name": "Heraklion",
+    "nation": "GRC",
+    "x": 2849.1,
+    "y": 759.1,
+    "landmass": "europe",
+    "port_of": "GRC-HER"
+  },
+  {
     "id": "GRC-THE",
     "name": "Thessaloniki",
     "nation": "GRC",

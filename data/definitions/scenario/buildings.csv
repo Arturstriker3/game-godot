@@ -320,6 +320,7 @@ GNB-GAB,gnb_gab_wheat,Gabu — trigo,14.8
 GNQ-BAT,gnq_bat_wheat,Bata — trigo,51.9
 GNQ-CIU,gnq_ciu_wheat,Ciudad de la Paz — trigo,0.6
 GRC-ATH,grc_ath_wheat,Atenas — trigo,199.2
+GRC-HER,grc_her_wheat,Heraklion — trigo,53.8
 GRC-THE,grc_the_wheat,Salônica — trigo,95.3
 GRD-SAI,grd_sai_wheat,São Jorge — trigo,2.2
 GRL-AAS,grl_aas_wheat,Aasiaat — trigo,0.9
@@ -402,7 +403,7 @@ IRQ-ERB,irq_erb_wheat,Arbil — trigo,483.8
 ISL-AKU,isl_aku_wheat,Akureyri — trigo,5.8
 ISL-REY,isl_rey_wheat,Reykjavík — trigo,35.7
 ISR-HAI,isr_hai_wheat,Haifa — trigo,85.6
-ISR-JER,isr_jer_wheat,Jerusalém — trigo,291.5
+ISR-TLV,isr_tlv_wheat,Tel Aviv — trigo,1247.1
 ITA-GEN,ita_gen_wheat,Gênova — trigo,174.0
 ITA-MIL,ita_mil_wheat,Milão — trigo,411.4
 ITA-NAP,ita_nap_wheat,Nápoles — trigo,272.7
@@ -629,8 +630,8 @@ PRT-LIS,prt_lis_wheat,Lisboa — trigo,155.3
 PRT-POR,prt_por_wheat,Porto — trigo,75.8
 PRY-ASU,pry_asu_wheat,Assunção — trigo,444.7
 PRY-CIU,pry_ciu_wheat,Ciudad del Este — trigo,90.5
-PSX-EAS,psx_eas_wheat,Jerusalém Oriental — trigo,128.5
 PSX-GAZ,psx_gaz_wheat,Faixa de Gaza — trigo,123.0
+PSX-RAM,psx_ram_wheat,Ramallah — trigo,29.3
 PYF-ATU,pyf_atu_wheat,Atuona — trigo,0.5
 PYF-OTE,pyf_ote_wheat,Otepa — trigo,0.3
 PYF-PAP,pyf_pap_wheat,Papeete — trigo,7.9

@@ -98,7 +98,7 @@ IRL,Ireland,ie,#6f9f6a,Dublin,EUR,republic,industrial,europe,5484367,850.6
 IRN,Iran,ir,#3d6b5a,Tehran,IRR,republic,resource,middle_east,92417681,1820.6
 IRQ,Iraq,iq,#7f93b8,Baghdad,IQD,federation,resource,middle_east,47020774,670.8
 ISL,Iceland,is,#8fa0b8,Reykjavík,ISK,republic,maritime,europe,392404,32.7
-ISR,Israel,il,#9dc3e6,Jerusalem,ILS,republic,balanced,middle_east,10122800,604.5
+ISR,Israel,il,#9dc3e6,Tel Aviv,ILS,republic,balanced,middle_east,10122800,604.5
 ITA,Italy,it,#4f8a5a,Rome,EUR,republic,industrial,europe,58915656,3700.1
 JAM,Jamaica,jm,#4ba08b,Kingston,JMD,monarchy,balanced,north_america,2837077,37.7
 JEY,Jersey,je,#9b5a88,Saint Helier,GBP,territory,balanced,europe,90812,
@@ -169,7 +169,7 @@ PRI,Puerto Rico,pr,#894949,San Juan,USD,territory,industrial,north_america,31848
 PRK,North Korea,kp,#a05a6a,Pyongyang,KPW,republic,balanced,asia,26571036,
 PRT,Portugal,pt,#4a6f9c,Lisbon,EUR,republic,maritime,europe,10804871,574.2
 PRY,Paraguay,py,#b0687a,Asunción,PYG,republic,industrial,south_america,7013078,141.5
-PSX,Palestine,ps,#608949,East Jerusalem,ILS,republic,balanced,middle_east,5413596,27.1
+PSX,Palestine,ps,#608949,Ramallah,ILS,republic,balanced,middle_east,5413596,27.1
 PYF,French Polynesia,pf,#797648,Papeete,XPF,territory,balanced,oceania,282465,
 QAT,Qatar,qa,#b99583,Doha,QAR,monarchy,resource,middle_east,2972215,383.1
 ROU,Romania,ro,#8d6f35,Bucharest,RON,republic,balanced,europe,19020271,968.0
