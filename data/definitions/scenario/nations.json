@@ -1,18 +1,5 @@
 [
   {
-    "id": "ABW",
-    "name": "Aruba",
-    "flag": "aw",
-    "color": "#6e6e9c",
-    "capital": "Oranjestad",
-    "currency": "AWG",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 108785,
-    "gdp_ppp_bn": 5.6
-  },
-  {
     "id": "AFG",
     "name": "Afghanistan",
     "flag": "af",
@@ -39,18 +26,6 @@
     "gdp_ppp_bn": 400.2
   },
   {
-    "id": "AIA",
-    "name": "Anguilla",
-    "flag": "ai",
-    "color": "#9a6356",
-    "capital": "The Valley",
-    "currency": "XCD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 13254
-  },
-  {
     "id": "ALB",
     "name": "Albania",
     "flag": "al",
@@ -62,31 +37,6 @@
     "region": "europe",
     "population": 2349580,
     "gdp_ppp_bn": 66.3
-  },
-  {
-    "id": "ALD",
-    "name": "Åland",
-    "flag": "ax",
-    "color": "#5a9b88",
-    "capital": "Mariehamn",
-    "currency": "EUR",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 26711
-  },
-  {
-    "id": "AND",
-    "name": "Andorra",
-    "flag": "ad",
-    "color": "#b98383",
-    "capital": "Andorra la Vella",
-    "currency": "EUR",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 82904,
-    "gdp_ppp_bn": 6.6
   },
   {
     "id": "ARE",
@@ -126,31 +76,6 @@
     "region": "asia",
     "population": 3086700,
     "gdp_ppp_bn": 76.4
-  },
-  {
-    "id": "ASM",
-    "name": "American Samoa",
-    "flag": "as",
-    "color": "#5a9b88",
-    "capital": "Pago Pago",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 46029
-  },
-  {
-    "id": "ATG",
-    "name": "Antigua and Barbuda",
-    "flag": "ag",
-    "color": "#a04b70",
-    "capital": "Saint John’s",
-    "currency": "XCD",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 94209,
-    "gdp_ppp_bn": 3.4
   },
   {
     "id": "AUS",
@@ -309,18 +234,6 @@
     "gdp_ppp_bn": 81.1
   },
   {
-    "id": "BLM",
-    "name": "Saint Barthélemy",
-    "flag": "bl",
-    "color": "#4b8da0",
-    "capital": "Gustavia",
-    "currency": "EUR",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 8450
-  },
-  {
     "id": "BLR",
     "name": "Belarus",
     "flag": "by",
@@ -347,19 +260,6 @@
     "gdp_ppp_bn": 6.3
   },
   {
-    "id": "BMU",
-    "name": "Bermuda",
-    "flag": "bm",
-    "color": "#a0774b",
-    "capital": "Hamilton",
-    "currency": "BMD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 64555,
-    "gdp_ppp_bn": 7.7
-  },
-  {
     "id": "BOL",
     "name": "Bolivia",
     "flag": "bo",
@@ -384,19 +284,6 @@
     "region": "south_america",
     "population": 212812405,
     "gdp_ppp_bn": 4986.9
-  },
-  {
-    "id": "BRB",
-    "name": "Barbados",
-    "flag": "bb",
-    "color": "#894949",
-    "capital": "Bridgetown",
-    "currency": "BBD",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 282623,
-    "gdp_ppp_bn": 7.3
   },
   {
     "id": "BRN",
@@ -555,18 +442,6 @@
     "gdp_ppp_bn": 47.0
   },
   {
-    "id": "COK",
-    "name": "Cook Islands",
-    "flag": "ck",
-    "color": "#62955a",
-    "capital": "Avarua",
-    "currency": "NZD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 21388
-  },
-  {
     "id": "COL",
     "name": "Colombia",
     "flag": "co",
@@ -578,32 +453,6 @@
     "region": "south_america",
     "population": 53425635,
     "gdp_ppp_bn": 1209.6
-  },
-  {
-    "id": "COM",
-    "name": "Comoros",
-    "flag": "km",
-    "color": "#6b4989",
-    "capital": "Moroni",
-    "currency": "KMF",
-    "government": "federation",
-    "ai_profile": "agrarian",
-    "region": "africa",
-    "population": 882847,
-    "gdp_ppp_bn": 3.7
-  },
-  {
-    "id": "CPV",
-    "name": "Cape Verde",
-    "flag": "cv",
-    "color": "#49895c",
-    "capital": "Praia",
-    "currency": "CVE",
-    "government": "republic",
-    "ai_profile": "resource",
-    "region": "africa",
-    "population": 527326,
-    "gdp_ppp_bn": 6.4
   },
   {
     "id": "CRI",
@@ -629,32 +478,6 @@
     "ai_profile": "balanced",
     "region": "north_america",
     "population": 10937203
-  },
-  {
-    "id": "CUW",
-    "name": "Curaçao",
-    "flag": "cw",
-    "color": "#a04b96",
-    "capital": "Willemstad",
-    "currency": "XCG",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 156263,
-    "gdp_ppp_bn": 5.1
-  },
-  {
-    "id": "CYM",
-    "name": "Cayman Islands",
-    "flag": "ky",
-    "color": "#6b4989",
-    "capital": "George Town",
-    "currency": "KYD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 75844,
-    "gdp_ppp_bn": 6.9
   },
   {
     "id": "CYP",
@@ -707,19 +530,6 @@
     "region": "africa",
     "population": 1184076,
     "gdp_ppp_bn": 10.0
-  },
-  {
-    "id": "DMA",
-    "name": "Dominica",
-    "flag": "dm",
-    "color": "#a0774b",
-    "capital": "Roseau",
-    "currency": "XCD",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 65871,
-    "gdp_ppp_bn": 1.5
   },
   {
     "id": "DNK",
@@ -864,18 +674,6 @@
     "gdp_ppp_bn": 15.2
   },
   {
-    "id": "FLK",
-    "name": "Falkland Islands",
-    "flag": "fk",
-    "color": "#4ba067",
-    "capital": "Stanley",
-    "currency": "FKP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "south_america",
-    "population": 2638
-  },
-  {
     "id": "FRA",
     "name": "France",
     "flag": "fr",
@@ -887,32 +685,6 @@
     "region": "europe",
     "population": 68720337,
     "gdp_ppp_bn": 4396.4
-  },
-  {
-    "id": "FRO",
-    "name": "Faroe Islands",
-    "flag": "fo",
-    "color": "#6e6e9c",
-    "capital": "Tórshavn",
-    "currency": "DKK",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 54900,
-    "gdp_ppp_bn": 4.5
-  },
-  {
-    "id": "FSM",
-    "name": "Federated States of Micronesia",
-    "flag": "fm",
-    "color": "#7aa04b",
-    "capital": "Palikir",
-    "currency": "USD",
-    "government": "federation",
-    "ai_profile": "agrarian",
-    "region": "oceania",
-    "population": 113683,
-    "gdp_ppp_bn": 0.5
   },
   {
     "id": "GAB",
@@ -954,18 +726,6 @@
     "gdp_ppp_bn": 115.8
   },
   {
-    "id": "GGY",
-    "name": "Guernsey",
-    "flag": "gg",
-    "color": "#a0604b",
-    "capital": "Saint Peter Port",
-    "currency": "GBP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 65228
-  },
-  {
     "id": "GHA",
     "name": "Ghana",
     "flag": "gh",
@@ -977,18 +737,6 @@
     "region": "africa",
     "population": 35064272,
     "gdp_ppp_bn": 301.9
-  },
-  {
-    "id": "GIB",
-    "name": "Gibraltar",
-    "flag": "gi",
-    "color": "#804ba0",
-    "capital": "Gibraltar",
-    "currency": "GIP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 40126
   },
   {
     "id": "GIN",
@@ -1056,32 +804,6 @@
     "gdp_ppp_bn": 471.4
   },
   {
-    "id": "GRD",
-    "name": "Grenada",
-    "flag": "gd",
-    "color": "#49895c",
-    "capital": "Saint George's",
-    "currency": "XCD",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 117303,
-    "gdp_ppp_bn": 2.5
-  },
-  {
-    "id": "GRL",
-    "name": "Greenland",
-    "flag": "gl",
-    "color": "#4ba08b",
-    "capital": "Nuuk",
-    "currency": "DKK",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 56831,
-    "gdp_ppp_bn": 4.5
-  },
-  {
     "id": "GTM",
     "name": "Guatemala",
     "flag": "gt",
@@ -1095,18 +817,6 @@
     "gdp_ppp_bn": 284.0
   },
   {
-    "id": "GUM",
-    "name": "Guam",
-    "flag": "gu",
-    "color": "#4ba08b",
-    "capital": "Hagåtña",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 168999
-  },
-  {
     "id": "GUY",
     "name": "Guyana",
     "flag": "gy",
@@ -1118,19 +828,6 @@
     "region": "south_america",
     "population": 835986,
     "gdp_ppp_bn": 81.8
-  },
-  {
-    "id": "HKG",
-    "name": "Hong Kong",
-    "flag": "hk",
-    "color": "#885a9b",
-    "capital": "Hong Kong",
-    "currency": "HKD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "asia",
-    "population": 7498900,
-    "gdp_ppp_bn": 603.1
   },
   {
     "id": "HND",
@@ -1196,18 +893,6 @@
     "region": "asia",
     "population": 285721236,
     "gdp_ppp_bn": 5045.8
-  },
-  {
-    "id": "IMN",
-    "name": "Isle of Man",
-    "flag": "im",
-    "color": "#4ba067",
-    "capital": "Douglas",
-    "currency": "GBP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 84118
   },
   {
     "id": "IND",
@@ -1314,18 +999,6 @@
     "gdp_ppp_bn": 37.7
   },
   {
-    "id": "JEY",
-    "name": "Jersey",
-    "flag": "je",
-    "color": "#9b5a88",
-    "capital": "Saint Helier",
-    "currency": "GBP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 90812
-  },
-  {
     "id": "JOR",
     "name": "Jordan",
     "flag": "jo",
@@ -1402,32 +1075,6 @@
     "region": "asia",
     "population": 17847982,
     "gdp_ppp_bn": 152.5
-  },
-  {
-    "id": "KIR",
-    "name": "Kiribati",
-    "flag": "ki",
-    "color": "#a04b4b",
-    "capital": "Tarawa",
-    "currency": "AUD",
-    "government": "republic",
-    "ai_profile": "agrarian",
-    "region": "oceania",
-    "population": 136488,
-    "gdp_ppp_bn": 0.5
-  },
-  {
-    "id": "KNA",
-    "name": "Saint Kitts and Nevis",
-    "flag": "kn",
-    "color": "#89497b",
-    "capital": "Basseterre",
-    "currency": "XCD",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 46922,
-    "gdp_ppp_bn": 1.7
   },
   {
     "id": "KOR",
@@ -1508,31 +1155,6 @@
     "gdp_ppp_bn": 123.2
   },
   {
-    "id": "LCA",
-    "name": "Saint Lucia",
-    "flag": "lc",
-    "color": "#50a04b",
-    "capital": "Castries",
-    "currency": "XCD",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 180149,
-    "gdp_ppp_bn": 5.2
-  },
-  {
-    "id": "LIE",
-    "name": "Liechtenstein",
-    "flag": "li",
-    "color": "#6b604e",
-    "capital": "Vaduz",
-    "currency": "CHF",
-    "government": "monarchy",
-    "ai_profile": "industrial",
-    "region": "europe",
-    "population": 41024
-  },
-  {
     "id": "LKA",
     "name": "Sri Lanka",
     "flag": "lk",
@@ -1598,31 +1220,6 @@
     "gdp_ppp_bn": 85.3
   },
   {
-    "id": "MAC",
-    "name": "Macau",
-    "flag": "mo",
-    "color": "#4ba067",
-    "capital": "Macau",
-    "currency": "MOP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "asia",
-    "population": 685900,
-    "gdp_ppp_bn": 94.0
-  },
-  {
-    "id": "MAF",
-    "name": "Saint Martin",
-    "flag": "mf",
-    "color": "#948b4a",
-    "capital": "Marigot",
-    "currency": "EUR",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 24941
-  },
-  {
     "id": "MAR",
     "name": "Morocco",
     "flag": "ma",
@@ -1634,18 +1231,6 @@
     "region": "africa",
     "population": 38430770,
     "gdp_ppp_bn": 433.7
-  },
-  {
-    "id": "MCO",
-    "name": "Monaco",
-    "flag": "mc",
-    "color": "#a04b96",
-    "capital": "Monaco",
-    "currency": "EUR",
-    "government": "monarchy",
-    "ai_profile": "maritime",
-    "region": "europe",
-    "population": 38341
   },
   {
     "id": "MDA",
@@ -1674,19 +1259,6 @@
     "gdp_ppp_bn": 63.9
   },
   {
-    "id": "MDV",
-    "name": "Maldives",
-    "flag": "mv",
-    "color": "#496e89",
-    "capital": "Male",
-    "currency": "MVR",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "asia",
-    "population": 529676,
-    "gdp_ppp_bn": 15.1
-  },
-  {
     "id": "MEX",
     "name": "Mexico",
     "flag": "mx",
@@ -1698,19 +1270,6 @@
     "region": "north_america",
     "population": 131946900,
     "gdp_ppp_bn": 3413.3
-  },
-  {
-    "id": "MHL",
-    "name": "Marshall Islands",
-    "flag": "mh",
-    "color": "#5a7f9b",
-    "capital": "Majuro",
-    "currency": "USD",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 36282,
-    "gdp_ppp_bn": 0.3
   },
   {
     "id": "MKD",
@@ -1791,18 +1350,6 @@
     "gdp_ppp_bn": 74.2
   },
   {
-    "id": "MNP",
-    "name": "Northern Mariana Islands",
-    "flag": "mp",
-    "color": "#4b8da0",
-    "capital": "Saipan",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 43541
-  },
-  {
     "id": "MOZ",
     "name": "Mozambique",
     "flag": "mz",
@@ -1827,18 +1374,6 @@
     "region": "africa",
     "population": 5315065,
     "gdp_ppp_bn": 40.8
-  },
-  {
-    "id": "MSR",
-    "name": "Montserrat",
-    "flag": "ms",
-    "color": "#a04b4b",
-    "capital": "Plymouth",
-    "currency": "XCD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 9341
   },
   {
     "id": "MUS",
@@ -1893,18 +1428,6 @@
     "gdp_ppp_bn": 37.1
   },
   {
-    "id": "NCL",
-    "name": "New Caledonia",
-    "flag": "nc",
-    "color": "#797648",
-    "capital": "Nouméa",
-    "currency": "XPF",
-    "government": "territory",
-    "ai_profile": "resource",
-    "region": "oceania",
-    "population": 295333
-  },
-  {
     "id": "NED",
     "name": "Netherlands",
     "flag": "nl",
@@ -1929,18 +1452,6 @@
     "region": "africa",
     "population": 27917831,
     "gdp_ppp_bn": 60.8
-  },
-  {
-    "id": "NFK",
-    "name": "Norfolk Island",
-    "flag": "nf",
-    "color": "#7aa04b",
-    "capital": "Kingston",
-    "currency": "AUD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 1828
   },
   {
     "id": "NGA",
@@ -1969,18 +1480,6 @@
     "gdp_ppp_bn": 65.1
   },
   {
-    "id": "NIU",
-    "name": "Niue",
-    "flag": "nu",
-    "color": "#a98957",
-    "capital": "Alofi",
-    "currency": "NZD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 2166
-  },
-  {
     "id": "NOR",
     "name": "Norway",
     "flag": "no",
@@ -2005,19 +1504,6 @@
     "region": "asia",
     "population": 29618118,
     "gdp_ppp_bn": 182.9
-  },
-  {
-    "id": "NRU",
-    "name": "Nauru",
-    "flag": "nr",
-    "color": "#4b65a0",
-    "capital": "Yaren",
-    "currency": "AUD",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 12025,
-    "gdp_ppp_bn": 0.2
   },
   {
     "id": "NZL",
@@ -2098,19 +1584,6 @@
     "gdp_ppp_bn": 1468.8
   },
   {
-    "id": "PLW",
-    "name": "Palau",
-    "flag": "pw",
-    "color": "#4b65a0",
-    "capital": "Ngerulmud",
-    "currency": "USD",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 17663,
-    "gdp_ppp_bn": 0.4
-  },
-  {
     "id": "PNG",
     "name": "Papua New Guinea",
     "flag": "pg",
@@ -2135,19 +1608,6 @@
     "region": "europe",
     "population": 36435861,
     "gdp_ppp_bn": 1977.1
-  },
-  {
-    "id": "PRI",
-    "name": "Puerto Rico",
-    "flag": "pr",
-    "color": "#894949",
-    "capital": "San Juan",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "industrial",
-    "region": "north_america",
-    "population": 3184835,
-    "gdp_ppp_bn": 166.2
   },
   {
     "id": "PRK",
@@ -2199,18 +1659,6 @@
     "region": "middle_east",
     "population": 5413596,
     "gdp_ppp_bn": 27.1
-  },
-  {
-    "id": "PYF",
-    "name": "French Polynesia",
-    "flag": "pf",
-    "color": "#797648",
-    "capital": "Papeete",
-    "currency": "XPF",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 282465
   },
   {
     "id": "QAT",
@@ -2329,18 +1777,6 @@
     "gdp_ppp_bn": 998.3
   },
   {
-    "id": "SHN",
-    "name": "Saint Helena",
-    "flag": "sh",
-    "color": "#896a49",
-    "capital": "Jamestown",
-    "currency": "SHP",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "africa",
-    "population": 7460
-  },
-  {
     "id": "SLB",
     "name": "Solomon Islands",
     "flag": "sb",
@@ -2380,19 +1816,6 @@
     "gdp_ppp_bn": 89.8
   },
   {
-    "id": "SMR",
-    "name": "San Marino",
-    "flag": "sm",
-    "color": "#604ba0",
-    "capital": "San Marino",
-    "currency": "EUR",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 34109,
-    "gdp_ppp_bn": 2.7
-  },
-  {
     "id": "SOM",
     "name": "Somalia",
     "flag": "so",
@@ -2406,18 +1829,6 @@
     "gdp_ppp_bn": 32.3
   },
   {
-    "id": "SPM",
-    "name": "Saint Pierre and Miquelon",
-    "flag": "pm",
-    "color": "#8c955a",
-    "capital": "Saint-Pierre",
-    "currency": "EUR",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 7012
-  },
-  {
     "id": "SRB",
     "name": "Serbia",
     "flag": "rs",
@@ -2429,19 +1840,6 @@
     "region": "europe",
     "population": 6549143,
     "gdp_ppp_bn": 222.1
-  },
-  {
-    "id": "STP",
-    "name": "São Tomé and Príncipe",
-    "flag": "st",
-    "color": "#9b5a88",
-    "capital": "São Tomé",
-    "currency": "STN",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "africa",
-    "population": 240254,
-    "gdp_ppp_bn": 1.5
   },
   {
     "id": "SUR",
@@ -2509,32 +1907,6 @@
     "gdp_ppp_bn": 15.7
   },
   {
-    "id": "SXM",
-    "name": "Sint Maarten",
-    "flag": "sx",
-    "color": "#50a04b",
-    "capital": "Philipsburg",
-    "currency": "XCG",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 43923,
-    "gdp_ppp_bn": 2.5
-  },
-  {
-    "id": "SYC",
-    "name": "Seychelles",
-    "flag": "sc",
-    "color": "#804ba0",
-    "capital": "Victoria",
-    "currency": "SCR",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "africa",
-    "population": 122730,
-    "gdp_ppp_bn": 4.4
-  },
-  {
     "id": "SYR",
     "name": "Syria",
     "flag": "sy",
@@ -2546,19 +1918,6 @@
     "region": "middle_east",
     "population": 25620427,
     "gdp_ppp_bn": 110.2
-  },
-  {
-    "id": "TCA",
-    "name": "Turks and Caicos Islands",
-    "flag": "tc",
-    "color": "#776953",
-    "capital": "Cockburn Town",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 46855,
-    "gdp_ppp_bn": 1.8
   },
   {
     "id": "TCD",
@@ -2639,19 +1998,6 @@
     "gdp_ppp_bn": 6.8
   },
   {
-    "id": "TON",
-    "name": "Tonga",
-    "flag": "to",
-    "color": "#948b4a",
-    "capital": "Nuku‘alofa",
-    "currency": "TOP",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 103742,
-    "gdp_ppp_bn": 0.9
-  },
-  {
     "id": "TTO",
     "name": "Trinidad and Tobago",
     "flag": "tt",
@@ -2689,19 +2035,6 @@
     "region": "asia",
     "population": 85878556,
     "gdp_ppp_bn": 3889.3
-  },
-  {
-    "id": "TUV",
-    "name": "Tuvalu",
-    "flag": "tv",
-    "color": "#4ba08b",
-    "capital": "Funafuti",
-    "currency": "AUD",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 9492,
-    "gdp_ppp_bn": 0.1
   },
   {
     "id": "TWN",
@@ -2794,31 +2127,6 @@
     "gdp_ppp_bn": 504.0
   },
   {
-    "id": "VAT",
-    "name": "Vatican City",
-    "flag": "va",
-    "color": "#a04b70",
-    "capital": "Vatican City",
-    "currency": "EUR",
-    "government": "city_state",
-    "ai_profile": "balanced",
-    "region": "europe",
-    "population": 921
-  },
-  {
-    "id": "VCT",
-    "name": "Saint Vincent and the Grenadines",
-    "flag": "vc",
-    "color": "#797648",
-    "capital": "Kingstown",
-    "currency": "XCD",
-    "government": "monarchy",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 99924,
-    "gdp_ppp_bn": 2.3
-  },
-  {
     "id": "VEN",
     "name": "Venezuela",
     "flag": "ve",
@@ -2829,31 +2137,6 @@
     "ai_profile": "resource",
     "region": "south_america",
     "population": 28516896
-  },
-  {
-    "id": "VGB",
-    "name": "British Virgin Islands",
-    "flag": "vg",
-    "color": "#885a9b",
-    "capital": "Road Town",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 39732
-  },
-  {
-    "id": "VIR",
-    "name": "United States Virgin Islands",
-    "flag": "vi",
-    "color": "#608949",
-    "capital": "Charlotte Amalie",
-    "currency": "USD",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "north_america",
-    "population": 103792,
-    "gdp_ppp_bn": 5.2
   },
   {
     "id": "VNM",
@@ -2867,44 +2150,6 @@
     "region": "asia",
     "population": 101598527,
     "gdp_ppp_bn": 1837.8
-  },
-  {
-    "id": "VUT",
-    "name": "Vanuatu",
-    "flag": "vu",
-    "color": "#7aa04b",
-    "capital": "Port-Vila",
-    "currency": "VUV",
-    "government": "republic",
-    "ai_profile": "agrarian",
-    "region": "oceania",
-    "population": 335169,
-    "gdp_ppp_bn": 1.5
-  },
-  {
-    "id": "WLF",
-    "name": "Wallis and Futuna",
-    "flag": "wf",
-    "color": "#4f4f89",
-    "capital": "Mata-Utu",
-    "currency": "XPF",
-    "government": "territory",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 16025
-  },
-  {
-    "id": "WSM",
-    "name": "Samoa",
-    "flag": "ws",
-    "color": "#49897f",
-    "capital": "Apia",
-    "currency": "WST",
-    "government": "republic",
-    "ai_profile": "balanced",
-    "region": "oceania",
-    "population": 219306,
-    "gdp_ppp_bn": 2.0
   },
   {
     "id": "XKX",

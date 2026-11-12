@@ -14,7 +14,7 @@
 			"fruit",
 			"cotton"
 		],
-		"provinces_without_raster": 144,
+		"provinces_without_raster": 71,
 		"source": "tools/build_province_nature.py"
 	},
 	"provinces": {
@@ -2017,29 +2017,6 @@
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
-			}
-		},
-		"88": {
-			"nation": "MAF",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 1002,
-			"altitude_m": 46,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.868,
-			"forest_cover": 0.483,
-			"cultivable": 0.296,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.399,
-				"maize": 0.57,
-				"potato": 0.0,
-				"soy": 0.791,
-				"sugarcane": 0.2,
-				"coffee": 0.062,
-				"fruit": 0.041,
-				"cotton": 0.782
 			}
 		},
 		"90": {
@@ -9495,7 +9472,7 @@
 			}
 		},
 		"415": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 6.5,
 			"precip_mm": 1217,
@@ -9518,7 +9495,7 @@
 			}
 		},
 		"416": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 3.9,
 			"precip_mm": 1301,
@@ -9541,7 +9518,7 @@
 			}
 		},
 		"417": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -9564,7 +9541,7 @@
 			}
 		},
 		"418": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -9587,7 +9564,7 @@
 			}
 		},
 		"419": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -9610,7 +9587,7 @@
 			}
 		},
 		"420": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -9633,7 +9610,7 @@
 			}
 		},
 		"421": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -9656,7 +9633,7 @@
 			}
 		},
 		"422": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -9679,7 +9656,7 @@
 			}
 		},
 		"423": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -12669,7 +12646,7 @@
 			}
 		},
 		"553": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 794,
@@ -12715,7 +12692,7 @@
 			}
 		},
 		"555": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 794,
@@ -12738,7 +12715,7 @@
 			}
 		},
 		"556": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 794,
@@ -12784,7 +12761,7 @@
 			}
 		},
 		"558": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 886,
@@ -12807,7 +12784,7 @@
 			}
 		},
 		"559": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 886,
@@ -12830,7 +12807,7 @@
 			}
 		},
 		"560": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 886,
@@ -12853,7 +12830,7 @@
 			}
 		},
 		"561": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 886,
@@ -12876,7 +12853,7 @@
 			}
 		},
 		"562": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 12.8,
 			"precip_mm": 896,
@@ -12899,7 +12876,7 @@
 			}
 		},
 		"563": {
-			"nation": "SMR",
+			"nation": "ITA",
 			"climate": "temperate_humid",
 			"temp_c": 13.3,
 			"precip_mm": 794,
@@ -14417,7 +14394,7 @@
 			}
 		},
 		"632": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 3.6,
 			"precip_mm": 1332,
@@ -14440,7 +14417,7 @@
 			}
 		},
 		"633": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 2.9,
 			"precip_mm": 1394,
@@ -14486,7 +14463,7 @@
 			}
 		},
 		"635": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 5.7,
 			"precip_mm": 1134,
@@ -14509,7 +14486,7 @@
 			}
 		},
 		"636": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 5.6,
 			"precip_mm": 1135,
@@ -14555,7 +14532,7 @@
 			}
 		},
 		"638": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 5.6,
 			"precip_mm": 1135,
@@ -14578,7 +14555,7 @@
 			}
 		},
 		"639": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 5.7,
 			"precip_mm": 1134,
@@ -17683,7 +17660,7 @@
 			}
 		},
 		"775": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -17706,7 +17683,7 @@
 			}
 		},
 		"776": {
-			"nation": "LIE",
+			"nation": "CHE",
 			"climate": "temperate_humid",
 			"temp_c": 5.0,
 			"precip_mm": 1464,
@@ -37072,7 +37049,7 @@
 			}
 		},
 		"1619": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 21.9,
 			"precip_mm": 2103,
@@ -39970,7 +39947,7 @@
 			}
 		},
 		"1747": {
-			"nation": "NCL",
+			"nation": "FRA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 21.4,
 			"precip_mm": 2114,
@@ -43051,29 +43028,6 @@
 				"cotton": 0.748
 			}
 		},
-		"1884": {
-			"nation": "CUW",
-			"climate": "tropical_seasonal_steppe",
-			"temp_c": 27.8,
-			"precip_mm": 574,
-			"altitude_m": 25,
-			"soil_type": "kastanozem",
-			"fertility": 0.35,
-			"water": 0.583,
-			"forest_cover": 0.133,
-			"cultivable": 0.188,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.333,
-				"potato": 0.0,
-				"soy": 0.223,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.295
-			}
-		},
 		"1885": {
 			"nation": "PAN",
 			"climate": "tropical_humid",
@@ -43690,29 +43644,6 @@
 				"potato": 0.0,
 				"soy": 0.0,
 				"sugarcane": 0.69,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"1912": {
-			"nation": "ABW",
-			"climate": "tropical_seasonal_steppe",
-			"temp_c": 27.9,
-			"precip_mm": 428,
-			"altitude_m": 43,
-			"soil_type": "kastanozem",
-			"fertility": 0.35,
-			"water": 0.485,
-			"forest_cover": 0.132,
-			"cultivable": 0.156,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.05,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
@@ -46131,98 +46062,6 @@
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.801
-			}
-		},
-		"2020": {
-			"nation": "TCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 771,
-			"altitude_m": 9,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.714,
-			"forest_cover": 0.487,
-			"cultivable": 0.242,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.505,
-				"potato": 0.0,
-				"soy": 0.766,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.799
-			}
-		},
-		"2021": {
-			"nation": "TCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 732,
-			"altitude_m": 5,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.688,
-			"forest_cover": 0.488,
-			"cultivable": 0.234,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.483,
-				"potato": 0.0,
-				"soy": 0.74,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.753
-			}
-		},
-		"2022": {
-			"nation": "TCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.4,
-			"precip_mm": 768,
-			"altitude_m": 5,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.712,
-			"forest_cover": 0.488,
-			"cultivable": 0.242,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.485,
-				"potato": 0.0,
-				"soy": 0.742,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.801
-			}
-		},
-		"2023": {
-			"nation": "TCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.4,
-			"precip_mm": 790,
-			"altitude_m": 3,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.727,
-			"forest_cover": 0.488,
-			"cultivable": 0.247,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.492,
-				"potato": 0.0,
-				"soy": 0.75,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.802
 			}
 		},
 		"2024": {
@@ -49652,52 +49491,6 @@
 				"cotton": 0.131
 			}
 		},
-		"2177": {
-			"nation": "SPM",
-			"climate": "temperate_humid",
-			"temp_c": 5.4,
-			"precip_mm": 1327,
-			"altitude_m": 31,
-			"soil_type": "fluvisol",
-			"fertility": 0.88,
-			"water": 1.0,
-			"forest_cover": 0.381,
-			"cultivable": 0.679,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.572,
-				"potato": 0.0,
-				"soy": 0.324,
-				"sugarcane": 0.0,
-				"coffee": 0.518,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2178": {
-			"nation": "SPM",
-			"climate": "temperate_humid",
-			"temp_c": 5.3,
-			"precip_mm": 1389,
-			"altitude_m": 84,
-			"soil_type": "fluvisol",
-			"fertility": 0.88,
-			"water": 1.0,
-			"forest_cover": 0.376,
-			"cultivable": 0.681,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.568,
-				"potato": 0.0,
-				"soy": 0.322,
-				"sugarcane": 0.0,
-				"coffee": 0.515,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"2179": {
 			"nation": "IND",
 			"climate": "tropical_seasonal_humid",
@@ -51978,24 +51771,24 @@
 		"2278": {
 			"nation": "TUR",
 			"climate": "temperate_humid",
-			"temp_c": 13.7,
-			"precip_mm": 695,
-			"altitude_m": 335,
+			"temp_c": 13.4,
+			"precip_mm": 708,
+			"altitude_m": 331,
 			"soil_type": "fluvisol",
 			"fertility": 0.88,
-			"water": 0.663,
+			"water": 0.672,
 			"forest_cover": 0.355,
-			"cultivable": 0.459,
+			"cultivable": 0.465,
 			"crops": {
-				"wheat": 0.908,
+				"wheat": 0.909,
 				"rice": 0.0,
-				"maize": 0.908,
+				"maize": 0.909,
 				"potato": 0.934,
-				"soy": 0.869,
+				"soy": 0.893,
 				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.849,
-				"cotton": 0.66
+				"coffee": 0.024,
+				"fruit": 0.901,
+				"cotton": 0.687
 			}
 		},
 		"2279": {
@@ -58048,7 +57841,7 @@
 			}
 		},
 		"2544": {
-			"nation": "GRL",
+			"nation": "DNK",
 			"climate": "polar_desert",
 			"temp_c": -16.7,
 			"precip_mm": 1215,
@@ -58071,7 +57864,7 @@
 			}
 		},
 		"2545": {
-			"nation": "GRL",
+			"nation": "DNK",
 			"climate": "polar_desert",
 			"temp_c": -25.4,
 			"precip_mm": 557,
@@ -58094,7 +57887,7 @@
 			}
 		},
 		"2546": {
-			"nation": "GRL",
+			"nation": "DNK",
 			"climate": "polar_desert",
 			"temp_c": -16.4,
 			"precip_mm": 220,
@@ -58117,7 +57910,7 @@
 			}
 		},
 		"2547": {
-			"nation": "GRL",
+			"nation": "DNK",
 			"climate": "polar_desert",
 			"temp_c": -14.0,
 			"precip_mm": 158,
@@ -58140,7 +57933,7 @@
 			}
 		},
 		"2548": {
-			"nation": "GRL",
+			"nation": "DNK",
 			"climate": "subpolar_desert",
 			"temp_c": -10.5,
 			"precip_mm": 471,
@@ -58163,7 +57956,7 @@
 			}
 		},
 		"2549": {
-			"nation": "GRL",
+			"nation": "DNK",
 			"climate": "subpolar_desert",
 			"temp_c": -10.4,
 			"precip_mm": 1602,
@@ -58186,7 +57979,7 @@
 			}
 		},
 		"2552": {
-			"nation": "PYF",
+			"nation": "FRA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 26.1,
 			"precip_mm": 1575,
@@ -58209,7 +58002,7 @@
 			}
 		},
 		"2553": {
-			"nation": "PYF",
+			"nation": "FRA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.6,
 			"precip_mm": 1974,
@@ -58232,7 +58025,7 @@
 			}
 		},
 		"2555": {
-			"nation": "PYF",
+			"nation": "FRA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 25.8,
 			"precip_mm": 1845,
@@ -58250,52 +58043,6 @@
 				"soy": 0.109,
 				"sugarcane": 0.786,
 				"coffee": 0.205,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2557": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2291,
-			"altitude_m": 100,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.666,
-			"cultivable": 0.252,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.739,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.617,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2559": {
-			"nation": "MHL",
-			"climate": "tropical_humid",
-			"temp_c": 27.9,
-			"precip_mm": 3185,
-			"altitude_m": 6,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.264,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
 			}
@@ -58622,98 +58369,6 @@
 				"cotton": 0.008
 			}
 		},
-		"2581": {
-			"nation": "GRD",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 1838,
-			"altitude_m": 159,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.471,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.757,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.118,
-				"sugarcane": 0.738,
-				"coffee": 0.177,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2582": {
-			"nation": "GRD",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 1838,
-			"altitude_m": 159,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.471,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.757,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.118,
-				"sugarcane": 0.738,
-				"coffee": 0.177,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2583": {
-			"nation": "GRD",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 1838,
-			"altitude_m": 159,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.471,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.757,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.118,
-				"sugarcane": 0.738,
-				"coffee": 0.177,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2584": {
-			"nation": "GRD",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 1838,
-			"altitude_m": 159,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.471,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.757,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.118,
-				"sugarcane": 0.738,
-				"coffee": 0.177,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"2586": {
 			"nation": "NED",
 			"climate": "tropical_seasonal_steppe",
@@ -58735,489 +58390,6 @@
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.187
-			}
-		},
-		"2587": {
-			"nation": "GRD",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.1,
-			"precip_mm": 1739,
-			"altitude_m": 57,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.787,
-				"maize": 0.083,
-				"potato": 0.0,
-				"soy": 0.317,
-				"sugarcane": 0.78,
-				"coffee": 0.03,
-				"fruit": 0.0,
-				"cotton": 0.118
-			}
-		},
-		"2589": {
-			"nation": "VCT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.4,
-			"precip_mm": 1578,
-			"altitude_m": 38,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.484,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.792,
-				"maize": 0.285,
-				"potato": 0.0,
-				"soy": 0.623,
-				"sugarcane": 0.788,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.436
-			}
-		},
-		"2590": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.8,
-			"precip_mm": 1519,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.786,
-				"maize": 0.418,
-				"potato": 0.0,
-				"soy": 0.75,
-				"sugarcane": 0.779,
-				"coffee": 0.102,
-				"fruit": 0.0,
-				"cotton": 0.545
-			}
-		},
-		"2591": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.8,
-			"precip_mm": 1519,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.786,
-				"maize": 0.418,
-				"potato": 0.0,
-				"soy": 0.75,
-				"sugarcane": 0.779,
-				"coffee": 0.102,
-				"fruit": 0.0,
-				"cotton": 0.545
-			}
-		},
-		"2592": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 1607,
-			"altitude_m": 85,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.479,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.779,
-				"maize": 0.295,
-				"potato": 0.0,
-				"soy": 0.572,
-				"sugarcane": 0.768,
-				"coffee": 0.133,
-				"fruit": 0.0,
-				"cotton": 0.369
-			}
-		},
-		"2593": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 1563,
-			"altitude_m": 137,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.474,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.764,
-				"maize": 0.385,
-				"potato": 0.0,
-				"soy": 0.646,
-				"sugarcane": 0.747,
-				"coffee": 0.201,
-				"fruit": 0.0,
-				"cotton": 0.439
-			}
-		},
-		"2595": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 1607,
-			"altitude_m": 85,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.479,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.779,
-				"maize": 0.295,
-				"potato": 0.0,
-				"soy": 0.572,
-				"sugarcane": 0.768,
-				"coffee": 0.133,
-				"fruit": 0.0,
-				"cotton": 0.369
-			}
-		},
-		"2597": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.8,
-			"precip_mm": 1519,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.786,
-				"maize": 0.418,
-				"potato": 0.0,
-				"soy": 0.75,
-				"sugarcane": 0.779,
-				"coffee": 0.102,
-				"fruit": 0.0,
-				"cotton": 0.545
-			}
-		},
-		"2598": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.8,
-			"precip_mm": 1519,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.786,
-				"maize": 0.418,
-				"potato": 0.0,
-				"soy": 0.75,
-				"sugarcane": 0.779,
-				"coffee": 0.102,
-				"fruit": 0.0,
-				"cotton": 0.545
-			}
-		},
-		"2600": {
-			"nation": "VCT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.2,
-			"precip_mm": 2091,
-			"altitude_m": 68,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.481,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.784,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.775,
-				"coffee": 0.002,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2601": {
-			"nation": "VCT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.2,
-			"precip_mm": 2091,
-			"altitude_m": 68,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.481,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.784,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.775,
-				"coffee": 0.002,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2602": {
-			"nation": "VCT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.2,
-			"precip_mm": 2085,
-			"altitude_m": 218,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.465,
-			"cultivable": 0.346,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.741,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.714,
-				"coffee": 0.057,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2603": {
-			"nation": "VCT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.2,
-			"precip_mm": 2091,
-			"altitude_m": 68,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.481,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.784,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.775,
-				"coffee": 0.002,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2604": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.0,
-			"precip_mm": 2083,
-			"altitude_m": 171,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.47,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.754,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.733,
-				"coffee": 0.063,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2605": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.0,
-			"precip_mm": 2083,
-			"altitude_m": 171,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.47,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.754,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.733,
-				"coffee": 0.063,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2606": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.0,
-			"precip_mm": 2083,
-			"altitude_m": 171,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.47,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.754,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.733,
-				"coffee": 0.063,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2607": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2153,
-			"altitude_m": 120,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.769,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.754,
-				"coffee": 0.015,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2608": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2153,
-			"altitude_m": 120,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.769,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.754,
-				"coffee": 0.015,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2609": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2153,
-			"altitude_m": 120,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.769,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.754,
-				"coffee": 0.015,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2610": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2153,
-			"altitude_m": 120,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.769,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.754,
-				"coffee": 0.015,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2611": {
-			"nation": "LCA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2153,
-			"altitude_m": 120,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.769,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.754,
-				"coffee": 0.015,
-				"fruit": 0.0,
-				"cotton": 0.0
 			}
 		},
 		"2615": {
@@ -59243,489 +58415,6 @@
 				"cotton": 0.0
 			}
 		},
-		"2617": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.1,
-			"precip_mm": 1998,
-			"altitude_m": 442,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.44,
-			"cultivable": 0.353,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.676,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.622,
-				"coffee": 0.243,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2618": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.6,
-			"precip_mm": 2045,
-			"altitude_m": 361,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.449,
-			"cultivable": 0.351,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.7,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.655,
-				"coffee": 0.152,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2619": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.5,
-			"precip_mm": 1896,
-			"altitude_m": 408,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.444,
-			"cultivable": 0.352,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.686,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.007,
-				"sugarcane": 0.636,
-				"coffee": 0.322,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2620": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.5,
-			"precip_mm": 1896,
-			"altitude_m": 408,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.444,
-			"cultivable": 0.352,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.686,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.007,
-				"sugarcane": 0.636,
-				"coffee": 0.322,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2621": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.6,
-			"precip_mm": 2045,
-			"altitude_m": 361,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.449,
-			"cultivable": 0.351,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.7,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.655,
-				"coffee": 0.152,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2622": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.1,
-			"precip_mm": 1998,
-			"altitude_m": 442,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.44,
-			"cultivable": 0.353,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.676,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.622,
-				"coffee": 0.243,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2623": {
-			"nation": "DMA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.1,
-			"precip_mm": 1998,
-			"altitude_m": 442,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.44,
-			"cultivable": 0.353,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.676,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.622,
-				"coffee": 0.243,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2629": {
-			"nation": "MSR",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.8,
-			"precip_mm": 1568,
-			"altitude_m": 183,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.469,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.751,
-				"maize": 0.368,
-				"potato": 0.0,
-				"soy": 0.627,
-				"sugarcane": 0.728,
-				"coffee": 0.186,
-				"fruit": 0.0,
-				"cotton": 0.417
-			}
-		},
-		"2634": {
-			"nation": "ATG",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.7,
-			"precip_mm": 1001,
-			"altitude_m": 6,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.867,
-			"forest_cover": 0.488,
-			"cultivable": 0.294,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.403,
-				"maize": 0.546,
-				"potato": 0.0,
-				"soy": 0.802,
-				"sugarcane": 0.202,
-				"coffee": 0.017,
-				"fruit": 0.011,
-				"cotton": 0.8
-			}
-		},
-		"2635": {
-			"nation": "ATG",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 1100,
-			"altitude_m": 44,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.933,
-			"forest_cover": 0.484,
-			"cultivable": 0.318,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.593,
-				"maize": 0.552,
-				"potato": 0.0,
-				"soy": 0.792,
-				"sugarcane": 0.393,
-				"coffee": 0.034,
-				"fruit": 0.015,
-				"cotton": 0.783
-			}
-		},
-		"2636": {
-			"nation": "ATG",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 1100,
-			"altitude_m": 44,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.933,
-			"forest_cover": 0.484,
-			"cultivable": 0.318,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.593,
-				"maize": 0.552,
-				"potato": 0.0,
-				"soy": 0.792,
-				"sugarcane": 0.393,
-				"coffee": 0.034,
-				"fruit": 0.015,
-				"cotton": 0.783
-			}
-		},
-		"2639": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 1360,
-			"altitude_m": 177,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.469,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.752,
-				"maize": 0.644,
-				"potato": 0.0,
-				"soy": 0.757,
-				"sugarcane": 0.731,
-				"coffee": 0.199,
-				"fruit": 0.0,
-				"cotton": 0.722
-			}
-		},
-		"2642": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 1360,
-			"altitude_m": 177,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.469,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.752,
-				"maize": 0.644,
-				"potato": 0.0,
-				"soy": 0.757,
-				"sugarcane": 0.731,
-				"coffee": 0.199,
-				"fruit": 0.0,
-				"cotton": 0.722
-			}
-		},
-		"2644": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 1345,
-			"altitude_m": 167,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.47,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.755,
-				"maize": 0.653,
-				"potato": 0.0,
-				"soy": 0.76,
-				"sugarcane": 0.735,
-				"coffee": 0.211,
-				"fruit": 0.0,
-				"cotton": 0.726
-			}
-		},
-		"2645": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 1345,
-			"altitude_m": 167,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.47,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.755,
-				"maize": 0.653,
-				"potato": 0.0,
-				"soy": 0.76,
-				"sugarcane": 0.735,
-				"coffee": 0.211,
-				"fruit": 0.0,
-				"cotton": 0.726
-			}
-		},
-		"2646": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.2,
-			"precip_mm": 1285,
-			"altitude_m": 92,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.478,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.777,
-				"maize": 0.591,
-				"potato": 0.0,
-				"soy": 0.779,
-				"sugarcane": 0.737,
-				"coffee": 0.103,
-				"fruit": 0.003,
-				"cotton": 0.761
-			}
-		},
-		"2647": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 1360,
-			"altitude_m": 177,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.469,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.752,
-				"maize": 0.644,
-				"potato": 0.0,
-				"soy": 0.757,
-				"sugarcane": 0.731,
-				"coffee": 0.199,
-				"fruit": 0.0,
-				"cotton": 0.722
-			}
-		},
-		"2648": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.2,
-			"precip_mm": 1285,
-			"altitude_m": 92,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.478,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.777,
-				"maize": 0.591,
-				"potato": 0.0,
-				"soy": 0.779,
-				"sugarcane": 0.737,
-				"coffee": 0.103,
-				"fruit": 0.003,
-				"cotton": 0.761
-			}
-		},
-		"2649": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.2,
-			"precip_mm": 1285,
-			"altitude_m": 92,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.478,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.777,
-				"maize": 0.591,
-				"potato": 0.0,
-				"soy": 0.779,
-				"sugarcane": 0.737,
-				"coffee": 0.103,
-				"fruit": 0.003,
-				"cotton": 0.761
-			}
-		},
-		"2650": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.2,
-			"precip_mm": 1285,
-			"altitude_m": 92,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.478,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.777,
-				"maize": 0.591,
-				"potato": 0.0,
-				"soy": 0.779,
-				"sugarcane": 0.737,
-				"coffee": 0.103,
-				"fruit": 0.003,
-				"cotton": 0.761
-			}
-		},
-		"2651": {
-			"nation": "KNA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 1345,
-			"altitude_m": 167,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.47,
-			"cultivable": 0.345,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.755,
-				"maize": 0.653,
-				"potato": 0.0,
-				"soy": 0.76,
-				"sugarcane": 0.735,
-				"coffee": 0.211,
-				"fruit": 0.0,
-				"cotton": 0.726
-			}
-		},
 		"2652": {
 			"nation": "NED",
 			"climate": "tropical_seasonal_humid",
@@ -59749,31 +58438,8 @@
 				"cotton": 0.761
 			}
 		},
-		"2653": {
-			"nation": "ATG",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.7,
-			"precip_mm": 953,
-			"altitude_m": 15,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.835,
-			"forest_cover": 0.487,
-			"cultivable": 0.284,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.306,
-				"maize": 0.581,
-				"potato": 0.0,
-				"soy": 0.799,
-				"sugarcane": 0.106,
-				"coffee": 0.06,
-				"fruit": 0.048,
-				"cotton": 0.796
-			}
-		},
 		"2656": {
-			"nation": "PRI",
+			"nation": "USA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 24.4,
 			"precip_mm": 1395,
@@ -59816,213 +58482,6 @@
 				"coffee": 0.091,
 				"fruit": 0.007,
 				"cotton": 0.774
-			}
-		},
-		"2658": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.7,
-			"precip_mm": 920,
-			"altitude_m": 11,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.813,
-			"forest_cover": 0.487,
-			"cultivable": 0.276,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.24,
-				"maize": 0.558,
-				"potato": 0.0,
-				"soy": 0.8,
-				"sugarcane": 0.04,
-				"coffee": 0.027,
-				"fruit": 0.024,
-				"cotton": 0.798
-			}
-		},
-		"2663": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 1020,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.88,
-			"forest_cover": 0.482,
-			"cultivable": 0.3,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.432,
-				"maize": 0.57,
-				"potato": 0.0,
-				"soy": 0.788,
-				"sugarcane": 0.234,
-				"coffee": 0.064,
-				"fruit": 0.04,
-				"cotton": 0.776
-			}
-		},
-		"2665": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 1020,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.88,
-			"forest_cover": 0.482,
-			"cultivable": 0.3,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.432,
-				"maize": 0.57,
-				"potato": 0.0,
-				"soy": 0.788,
-				"sugarcane": 0.234,
-				"coffee": 0.064,
-				"fruit": 0.04,
-				"cotton": 0.776
-			}
-		},
-		"2666": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 1020,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.88,
-			"forest_cover": 0.482,
-			"cultivable": 0.3,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.432,
-				"maize": 0.57,
-				"potato": 0.0,
-				"soy": 0.788,
-				"sugarcane": 0.234,
-				"coffee": 0.064,
-				"fruit": 0.04,
-				"cotton": 0.776
-			}
-		},
-		"2668": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.9,
-			"precip_mm": 954,
-			"altitude_m": 9,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.836,
-			"forest_cover": 0.487,
-			"cultivable": 0.284,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.308,
-				"maize": 0.528,
-				"potato": 0.0,
-				"soy": 0.794,
-				"sugarcane": 0.108,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.799
-			}
-		},
-		"2669": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.7,
-			"precip_mm": 920,
-			"altitude_m": 11,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.813,
-			"forest_cover": 0.487,
-			"cultivable": 0.276,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.24,
-				"maize": 0.558,
-				"potato": 0.0,
-				"soy": 0.8,
-				"sugarcane": 0.04,
-				"coffee": 0.027,
-				"fruit": 0.024,
-				"cotton": 0.798
-			}
-		},
-		"2670": {
-			"nation": "VIR",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 1123,
-			"altitude_m": 25,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.949,
-			"forest_cover": 0.486,
-			"cultivable": 0.323,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.643,
-				"maize": 0.553,
-				"potato": 0.0,
-				"soy": 0.797,
-				"sugarcane": 0.442,
-				"coffee": 0.032,
-				"fruit": 0.013,
-				"cotton": 0.792
-			}
-		},
-		"2671": {
-			"nation": "VIR",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 1092,
-			"altitude_m": 51,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.928,
-			"forest_cover": 0.483,
-			"cultivable": 0.316,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.576,
-				"maize": 0.548,
-				"potato": 0.0,
-				"soy": 0.79,
-				"sugarcane": 0.375,
-				"coffee": 0.03,
-				"fruit": 0.014,
-				"cotton": 0.78
-			}
-		},
-		"2672": {
-			"nation": "VGB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.2,
-			"precip_mm": 1112,
-			"altitude_m": 72,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.941,
-			"forest_cover": 0.481,
-			"cultivable": 0.322,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.61,
-				"maize": 0.601,
-				"potato": 0.0,
-				"soy": 0.784,
-				"sugarcane": 0.41,
-				"coffee": 0.114,
-				"fruit": 0.048,
-				"cotton": 0.77
 			}
 		},
 		"2673": {
@@ -60807,29 +59266,6 @@
 				"cotton": 0.645
 			}
 		},
-		"2708": {
-			"nation": "TCA",
-			"climate": "tropical_seasonal_steppe",
-			"temp_c": 26.6,
-			"precip_mm": 726,
-			"altitude_m": 5,
-			"soil_type": "kastanozem",
-			"fertility": 0.35,
-			"water": 0.684,
-			"forest_cover": 0.134,
-			"cultivable": 0.22,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.424,
-				"potato": 0.0,
-				"soy": 0.653,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.663
-			}
-		},
 		"2709": {
 			"nation": "CUB",
 			"climate": "tropical_seasonal_humid",
@@ -61359,75 +59795,6 @@
 				"cotton": 0.887
 			}
 		},
-		"2741": {
-			"nation": "BMU",
-			"climate": "subtropical_humid",
-			"temp_c": 22.2,
-			"precip_mm": 1509,
-			"altitude_m": 20,
-			"soil_type": "cambisol",
-			"fertility": 0.62,
-			"water": 1.0,
-			"forest_cover": 0.368,
-			"cultivable": 0.483,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.883,
-				"maize": 0.577,
-				"potato": 0.0,
-				"soy": 0.864,
-				"sugarcane": 0.88,
-				"coffee": 0.305,
-				"fruit": 0.0,
-				"cotton": 0.64
-			}
-		},
-		"2742": {
-			"nation": "BMU",
-			"climate": "subtropical_humid",
-			"temp_c": 22.2,
-			"precip_mm": 1509,
-			"altitude_m": 20,
-			"soil_type": "cambisol",
-			"fertility": 0.62,
-			"water": 1.0,
-			"forest_cover": 0.368,
-			"cultivable": 0.483,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.883,
-				"maize": 0.577,
-				"potato": 0.0,
-				"soy": 0.864,
-				"sugarcane": 0.88,
-				"coffee": 0.305,
-				"fruit": 0.0,
-				"cotton": 0.64
-			}
-		},
-		"2744": {
-			"nation": "BMU",
-			"climate": "subtropical_humid",
-			"temp_c": 22.2,
-			"precip_mm": 1509,
-			"altitude_m": 20,
-			"soil_type": "cambisol",
-			"fertility": 0.62,
-			"water": 1.0,
-			"forest_cover": 0.368,
-			"cultivable": 0.483,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.883,
-				"maize": 0.577,
-				"potato": 0.0,
-				"soy": 0.864,
-				"sugarcane": 0.88,
-				"coffee": 0.305,
-				"fruit": 0.0,
-				"cotton": 0.64
-			}
-		},
 		"2746": {
 			"nation": "RUS",
 			"climate": "temperate_steppe",
@@ -61911,75 +60278,6 @@
 				"cotton": 0.75
 			}
 		},
-		"2772": {
-			"nation": "COM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.7,
-			"precip_mm": 2029,
-			"altitude_m": 162,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.471,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.757,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.737,
-				"coffee": 0.164,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2773": {
-			"nation": "COM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.3,
-			"precip_mm": 1693,
-			"altitude_m": 235,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.463,
-			"cultivable": 0.347,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.736,
-				"maize": 0.201,
-				"potato": 0.0,
-				"soy": 0.384,
-				"sugarcane": 0.707,
-				"coffee": 0.474,
-				"fruit": 0.0,
-				"cotton": 0.186
-			}
-		},
-		"2774": {
-			"nation": "COM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 19.6,
-			"precip_mm": 2171,
-			"altitude_m": 1169,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.362,
-			"cultivable": 0.263,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.377,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.153,
-				"coffee": 0.035,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"2775": {
 			"nation": "MUS",
 			"climate": "tropical_seasonal_humid",
@@ -62118,282 +60416,6 @@
 				"cotton": 0.763
 			}
 		},
-		"2783": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2787": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2790": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2793": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2794": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2797": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2798": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2800": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.2,
-			"precip_mm": 2337,
-			"altitude_m": 184,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.654,
-			"cultivable": 0.255,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.716,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.536,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2801": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.9,
-			"precip_mm": 2278,
-			"altitude_m": 75,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.67,
-			"cultivable": 0.251,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.746,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.641,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2802": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.6,
-			"precip_mm": 2291,
-			"altitude_m": 100,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.666,
-			"cultivable": 0.252,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.739,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.617,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2804": {
-			"nation": "STP",
-			"climate": "tropical_humid",
-			"temp_c": 24.1,
-			"precip_mm": 2047,
-			"altitude_m": 37,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.676,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.756,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.752,
-				"coffee": 0.211,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2805": {
-			"nation": "STP",
-			"climate": "tropical_humid",
-			"temp_c": 24.6,
-			"precip_mm": 2168,
-			"altitude_m": 185,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.654,
-			"cultivable": 0.255,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.716,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.694,
-				"coffee": 0.035,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"2806": {
 			"nation": "GNQ",
 			"climate": "tropical_humid",
@@ -62435,443 +60457,6 @@
 				"potato": 0.0,
 				"soy": 0.0,
 				"sugarcane": 0.27,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2809": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.0,
-			"precip_mm": 268,
-			"altitude_m": 115,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.379,
-			"forest_cover": 0.013,
-			"cultivable": 0.03,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2810": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_steppe",
-			"temp_c": 20.6,
-			"precip_mm": 340,
-			"altitude_m": 692,
-			"soil_type": "kastanozem",
-			"fertility": 0.35,
-			"water": 0.427,
-			"forest_cover": 0.113,
-			"cultivable": 0.097,
-			"crops": {
-				"wheat": 0.088,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2811": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.0,
-			"precip_mm": 268,
-			"altitude_m": 115,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.379,
-			"forest_cover": 0.013,
-			"cultivable": 0.03,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2812": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 22.6,
-			"precip_mm": 268,
-			"altitude_m": 333,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.379,
-			"forest_cover": 0.012,
-			"cultivable": 0.03,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2813": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 22.6,
-			"precip_mm": 268,
-			"altitude_m": 333,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.379,
-			"forest_cover": 0.012,
-			"cultivable": 0.03,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2814": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.0,
-			"precip_mm": 232,
-			"altitude_m": 205,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.355,
-			"forest_cover": 0.012,
-			"cultivable": 0.028,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2815": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.7,
-			"precip_mm": 201,
-			"altitude_m": 74,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.334,
-			"forest_cover": 0.013,
-			"cultivable": 0.027,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2816": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.7,
-			"precip_mm": 201,
-			"altitude_m": 74,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.334,
-			"forest_cover": 0.013,
-			"cultivable": 0.027,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2817": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.4,
-			"precip_mm": 217,
-			"altitude_m": 79,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.345,
-			"forest_cover": 0.013,
-			"cultivable": 0.027,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2818": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 22.6,
-			"precip_mm": 268,
-			"altitude_m": 333,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.379,
-			"forest_cover": 0.012,
-			"cultivable": 0.03,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2819": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.5,
-			"precip_mm": 153,
-			"altitude_m": 34,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.302,
-			"forest_cover": 0.013,
-			"cultivable": 0.024,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2820": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 23.5,
-			"precip_mm": 68,
-			"altitude_m": 64,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.245,
-			"forest_cover": 0.013,
-			"cultivable": 0.019,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2821": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 22.3,
-			"precip_mm": 180,
-			"altitude_m": 205,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.32,
-			"forest_cover": 0.012,
-			"cultivable": 0.025,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2822": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 23.0,
-			"precip_mm": 161,
-			"altitude_m": 104,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.307,
-			"forest_cover": 0.013,
-			"cultivable": 0.024,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2823": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 23.0,
-			"precip_mm": 64,
-			"altitude_m": 16,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.243,
-			"forest_cover": 0.013,
-			"cultivable": 0.019,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2824": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 23.1,
-			"precip_mm": 140,
-			"altitude_m": 53,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.293,
-			"forest_cover": 0.013,
-			"cultivable": 0.023,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2825": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_steppe",
-			"temp_c": 20.8,
-			"precip_mm": 308,
-			"altitude_m": 609,
-			"soil_type": "kastanozem",
-			"fertility": 0.35,
-			"water": 0.405,
-			"forest_cover": 0.116,
-			"cultivable": 0.092,
-			"crops": {
-				"wheat": 0.017,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2826": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.2,
-			"precip_mm": 116,
-			"altitude_m": 90,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.277,
-			"forest_cover": 0.013,
-			"cultivable": 0.022,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2827": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 22.0,
-			"precip_mm": 284,
-			"altitude_m": 273,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.389,
-			"forest_cover": 0.012,
-			"cultivable": 0.031,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
@@ -64050,52 +61635,6 @@
 				"cotton": 0.358
 			}
 		},
-		"2886": {
-			"nation": "JEY",
-			"climate": "temperate_humid",
-			"temp_c": 11.9,
-			"precip_mm": 800,
-			"altitude_m": 4,
-			"soil_type": "fluvisol",
-			"fertility": 0.88,
-			"water": 0.733,
-			"forest_cover": 0.383,
-			"cultivable": 0.497,
-			"crops": {
-				"wheat": 0.999,
-				"rice": 0.0,
-				"maize": 0.899,
-				"potato": 0.999,
-				"soy": 0.649,
-				"sugarcane": 0.0,
-				"coffee": 0.333,
-				"fruit": 0.999,
-				"cotton": 0.314
-			}
-		},
-		"2887": {
-			"nation": "GGY",
-			"climate": "temperate_humid",
-			"temp_c": 11.2,
-			"precip_mm": 853,
-			"altitude_m": 49,
-			"soil_type": "fluvisol",
-			"fertility": 0.88,
-			"water": 0.769,
-			"forest_cover": 0.379,
-			"cultivable": 0.522,
-			"crops": {
-				"wheat": 0.987,
-				"rice": 0.0,
-				"maize": 0.738,
-				"potato": 0.815,
-				"soy": 0.49,
-				"sugarcane": 0.0,
-				"coffee": 0.399,
-				"fruit": 0.985,
-				"cotton": 0.136
-			}
-		},
 		"2888": {
 			"nation": "GBR",
 			"climate": "cool_temperate_humid",
@@ -64139,29 +61678,6 @@
 				"sugarcane": 0.0,
 				"coffee": 0.474,
 				"fruit": 0.814,
-				"cotton": 0.0
-			}
-		},
-		"2890": {
-			"nation": "IMN",
-			"climate": "cool_temperate_humid",
-			"temp_c": 9.4,
-			"precip_mm": 859,
-			"altitude_m": 46,
-			"soil_type": "podzol",
-			"fertility": 0.52,
-			"water": 0.773,
-			"forest_cover": 0.451,
-			"cultivable": 0.293,
-			"crops": {
-				"wheat": 0.737,
-				"rice": 0.0,
-				"maize": 0.422,
-				"potato": 0.659,
-				"soy": 0.217,
-				"sugarcane": 0.0,
-				"coffee": 0.184,
-				"fruit": 0.816,
 				"cotton": 0.0
 			}
 		},
@@ -64300,167 +61816,6 @@
 				"sugarcane": 0.0,
 				"coffee": 0.0,
 				"fruit": 0.255,
-				"cotton": 0.0
-			}
-		},
-		"2897": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.7,
-			"precip_mm": 552,
-			"altitude_m": 7,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.568,
-			"forest_cover": 0.435,
-			"cultivable": 0.134,
-			"crops": {
-				"wheat": 0.195,
-				"rice": 0.0,
-				"maize": 0.307,
-				"potato": 0.429,
-				"soy": 0.059,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.703,
-				"cotton": 0.0
-			}
-		},
-		"2898": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.6,
-			"precip_mm": 563,
-			"altitude_m": 13,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.575,
-			"forest_cover": 0.434,
-			"cultivable": 0.136,
-			"crops": {
-				"wheat": 0.184,
-				"rice": 0.0,
-				"maize": 0.319,
-				"potato": 0.419,
-				"soy": 0.068,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.702,
-				"cotton": 0.0
-			}
-		},
-		"2899": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.7,
-			"precip_mm": 552,
-			"altitude_m": 7,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.568,
-			"forest_cover": 0.435,
-			"cultivable": 0.134,
-			"crops": {
-				"wheat": 0.195,
-				"rice": 0.0,
-				"maize": 0.307,
-				"potato": 0.429,
-				"soy": 0.059,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.703,
-				"cotton": 0.0
-			}
-		},
-		"2900": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.6,
-			"precip_mm": 544,
-			"altitude_m": 2,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.563,
-			"forest_cover": 0.435,
-			"cultivable": 0.133,
-			"crops": {
-				"wheat": 0.188,
-				"rice": 0.0,
-				"maize": 0.295,
-				"potato": 0.422,
-				"soy": 0.052,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.704,
-				"cotton": 0.0
-			}
-		},
-		"2901": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.7,
-			"precip_mm": 582,
-			"altitude_m": 11,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.588,
-			"forest_cover": 0.435,
-			"cultivable": 0.139,
-			"crops": {
-				"wheat": 0.2,
-				"rice": 0.0,
-				"maize": 0.37,
-				"potato": 0.435,
-				"soy": 0.095,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.702,
-				"cotton": 0.0
-			}
-		},
-		"2902": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 6.0,
-			"precip_mm": 570,
-			"altitude_m": 5,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.58,
-			"forest_cover": 0.435,
-			"cultivable": 0.137,
-			"crops": {
-				"wheat": 0.235,
-				"rice": 0.0,
-				"maize": 0.338,
-				"potato": 0.47,
-				"soy": 0.078,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.704,
-				"cotton": 0.0
-			}
-		},
-		"2903": {
-			"nation": "FRO",
-			"climate": "subpolar_humid",
-			"temp_c": 6.7,
-			"precip_mm": 2677,
-			"altitude_m": 153,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 1.0,
-			"forest_cover": 0.421,
-			"cultivable": 0.239,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
 				"cotton": 0.0
 			}
 		},
@@ -64786,75 +62141,6 @@
 				"cotton": 0.069
 			}
 		},
-		"2922": {
-			"nation": "ALD",
-			"climate": "cool_temperate_humid",
-			"temp_c": 6.2,
-			"precip_mm": 535,
-			"altitude_m": 4,
-			"soil_type": "podzol",
-			"fertility": 0.52,
-			"water": 0.557,
-			"forest_cover": 0.456,
-			"cultivable": 0.21,
-			"crops": {
-				"wheat": 0.304,
-				"rice": 0.0,
-				"maize": 0.337,
-				"potato": 0.579,
-				"soy": 0.051,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.827,
-				"cotton": 0.0
-			}
-		},
-		"2923": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 6.2,
-			"precip_mm": 566,
-			"altitude_m": 3,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.577,
-			"forest_cover": 0.435,
-			"cultivable": 0.136,
-			"crops": {
-				"wheat": 0.259,
-				"rice": 0.0,
-				"maize": 0.339,
-				"potato": 0.494,
-				"soy": 0.077,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.704,
-				"cotton": 0.0
-			}
-		},
-		"2924": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.8,
-			"precip_mm": 537,
-			"altitude_m": 3,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.558,
-			"forest_cover": 0.435,
-			"cultivable": 0.132,
-			"crops": {
-				"wheat": 0.214,
-				"rice": 0.0,
-				"maize": 0.277,
-				"potato": 0.449,
-				"soy": 0.042,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.704,
-				"cotton": 0.0
-			}
-		},
 		"2925": {
 			"nation": "NOR",
 			"climate": "polar_humid",
@@ -64970,190 +62256,6 @@
 				"cotton": 0.739
 			}
 		},
-		"2937": {
-			"nation": "TON",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.3,
-			"precip_mm": 2244,
-			"altitude_m": 27,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.485,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.795,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.734,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2938": {
-			"nation": "WLF",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.3,
-			"precip_mm": 2805,
-			"altitude_m": 125,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.508,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2940": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.9,
-			"precip_mm": 3550,
-			"altitude_m": 277,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.458,
-			"cultivable": 0.348,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.03,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2941": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 21.6,
-			"precip_mm": 3583,
-			"altitude_m": 885,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.392,
-			"cultivable": 0.257,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.008,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2942": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 22.7,
-			"precip_mm": 3572,
-			"altitude_m": 704,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.412,
-			"cultivable": 0.253,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.014,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2943": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.4,
-			"precip_mm": 3514,
-			"altitude_m": 376,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.448,
-			"cultivable": 0.351,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.05,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2944": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.4,
-			"precip_mm": 3514,
-			"altitude_m": 376,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.448,
-			"cultivable": 0.351,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.05,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2945": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.4,
-			"precip_mm": 3183,
-			"altitude_m": 17,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.487,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.277,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"2946": {
 			"nation": "SLB",
 			"climate": "tropical_seasonal_humid",
@@ -65244,29 +62346,6 @@
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
-			}
-		},
-		"2954": {
-			"nation": "COK",
-			"climate": "tropical_humid",
-			"temp_c": 27.3,
-			"precip_mm": 1556,
-			"altitude_m": 6,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.351,
-				"potato": 0.0,
-				"soy": 0.658,
-				"sugarcane": 0.764,
-				"coffee": 0.099,
-				"fruit": 0.0,
-				"cotton": 0.466
 			}
 		},
 		"2955": {
@@ -65614,167 +62693,6 @@
 				"cotton": 0.0
 			}
 		},
-		"2973": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.0,
-			"precip_mm": 2461,
-			"altitude_m": 4,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.726,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.432,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2988": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.4,
-			"precip_mm": 2369,
-			"altitude_m": 3,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.55,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2989": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.6,
-			"precip_mm": 2387,
-			"altitude_m": 4,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.526,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2990": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.8,
-			"precip_mm": 1925,
-			"altitude_m": 3,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2992": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.8,
-			"precip_mm": 1857,
-			"altitude_m": 0,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.682,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.766,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.057,
-				"sugarcane": 0.766,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2993": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.5,
-			"precip_mm": 1776,
-			"altitude_m": 4,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.022,
-				"potato": 0.0,
-				"soy": 0.181,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.046
-			}
-		},
-		"2994": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.7,
-			"precip_mm": 1843,
-			"altitude_m": 2,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.766,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.079,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"2995": {
 			"nation": "PHL",
 			"climate": "tropical_humid",
@@ -65796,75 +62714,6 @@
 				"coffee": 0.122,
 				"fruit": 0.0,
 				"cotton": 0.243
-			}
-		},
-		"2996": {
-			"nation": "FSM",
-			"climate": "tropical_humid",
-			"temp_c": 27.3,
-			"precip_mm": 5280,
-			"altitude_m": 88,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.668,
-			"cultivable": 0.252,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"2997": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.3,
-			"precip_mm": 1734,
-			"altitude_m": 3,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.063,
-				"potato": 0.0,
-				"soy": 0.254,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.126
-			}
-		},
-		"2998": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.1,
-			"precip_mm": 1741,
-			"altitude_m": 3,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.059,
-				"potato": 0.0,
-				"soy": 0.251,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.113
 			}
 		},
 		"2999": {
@@ -66465,31 +63314,8 @@
 				"cotton": 0.0
 			}
 		},
-		"3030": {
-			"nation": "FLK",
-			"climate": "cool_temperate_humid",
-			"temp_c": 6.8,
-			"precip_mm": 547,
-			"altitude_m": 24,
-			"soil_type": "podzol",
-			"fertility": 0.52,
-			"water": 0.565,
-			"forest_cover": 0.454,
-			"cultivable": 0.214,
-			"crops": {
-				"wheat": 0.381,
-				"rice": 0.0,
-				"maize": 0.007,
-				"potato": 0.656,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.822,
-				"cotton": 0.0
-			}
-		},
 		"3032": {
-			"nation": "NCL",
+			"nation": "FRA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 20.8,
 			"precip_mm": 1695,
@@ -66512,7 +63338,7 @@
 			}
 		},
 		"3033": {
-			"nation": "NCL",
+			"nation": "FRA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 23.6,
 			"precip_mm": 1451,
@@ -66532,121 +63358,6 @@
 				"coffee": 0.376,
 				"fruit": 0.0,
 				"cotton": 0.694
-			}
-		},
-		"3034": {
-			"nation": "TON",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 23.2,
-			"precip_mm": 1834,
-			"altitude_m": 121,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.475,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.768,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.127,
-				"sugarcane": 0.753,
-				"coffee": 0.442,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3035": {
-			"nation": "COK",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 23.6,
-			"precip_mm": 1988,
-			"altitude_m": 114,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.476,
-			"cultivable": 0.343,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.77,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.756,
-				"coffee": 0.238,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3036": {
-			"nation": "TON",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 23.8,
-			"precip_mm": 1788,
-			"altitude_m": 21,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.486,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.797,
-				"maize": 0.023,
-				"potato": 0.0,
-				"soy": 0.223,
-				"sugarcane": 0.794,
-				"coffee": 0.374,
-				"fruit": 0.0,
-				"cotton": 0.024
-			}
-		},
-		"3037": {
-			"nation": "VUT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.3,
-			"precip_mm": 1973,
-			"altitude_m": 52,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.483,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.788,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.782,
-				"coffee": 0.181,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3038": {
-			"nation": "TON",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.3,
-			"precip_mm": 2012,
-			"altitude_m": 7,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.488,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.801,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.8,
-				"coffee": 0.073,
-				"fruit": 0.0,
-				"cotton": 0.0
 			}
 		},
 		"3039": {
@@ -66670,29 +63381,6 @@
 				"coffee": 0.349,
 				"fruit": 0.136,
 				"cotton": 0.751
-			}
-		},
-		"3040": {
-			"nation": "NIU",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.8,
-			"precip_mm": 2296,
-			"altitude_m": 58,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.786,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.655,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
 			}
 		},
 		"3041": {
@@ -66736,259 +63424,6 @@
 				"potato": 0.0,
 				"soy": 0.0,
 				"sugarcane": 0.125,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3043": {
-			"nation": "VUT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.4,
-			"precip_mm": 2454,
-			"altitude_m": 155,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.472,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.724,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.426,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3045": {
-			"nation": "VUT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.0,
-			"precip_mm": 2728,
-			"altitude_m": 156,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.471,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.551,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.089,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3046": {
-			"nation": "VUT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 23.2,
-			"precip_mm": 3395,
-			"altitude_m": 527,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.431,
-			"cultivable": 0.249,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.111,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3048": {
-			"nation": "VUT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.6,
-			"precip_mm": 3087,
-			"altitude_m": 231,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.463,
-			"cultivable": 0.347,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.315,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3051": {
-			"nation": "ASM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.1,
-			"precip_mm": 3615,
-			"altitude_m": 318,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.454,
-			"cultivable": 0.349,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3052": {
-			"nation": "VUT",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.1,
-			"precip_mm": 3622,
-			"altitude_m": 259,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.46,
-			"cultivable": 0.347,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3053": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.4,
-			"precip_mm": 3433,
-			"altitude_m": 205,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.466,
-			"cultivable": 0.346,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.104,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3054": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.4,
-			"precip_mm": 3433,
-			"altitude_m": 205,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.466,
-			"cultivable": 0.346,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.104,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3055": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.6,
-			"precip_mm": 3379,
-			"altitude_m": 149,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.472,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.14,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3056": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.2,
-			"precip_mm": 3751,
-			"altitude_m": 412,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.444,
-			"cultivable": 0.352,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3057": {
-			"nation": "WSM",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 24.9,
-			"precip_mm": 3465,
-			"altitude_m": 274,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.459,
-			"cultivable": 0.348,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.082,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
@@ -67040,146 +63475,8 @@
 				"cotton": 0.0
 			}
 		},
-		"3062": {
-			"nation": "PLW",
-			"climate": "tropical_humid",
-			"temp_c": 26.2,
-			"precip_mm": 3529,
-			"altitude_m": 43,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.675,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.045,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3063": {
-			"nation": "PLW",
-			"climate": "tropical_humid",
-			"temp_c": 26.1,
-			"precip_mm": 3493,
-			"altitude_m": 58,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.673,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.067,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3064": {
-			"nation": "PLW",
-			"climate": "tropical_humid",
-			"temp_c": 26.1,
-			"precip_mm": 3493,
-			"altitude_m": 58,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.673,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.067,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3065": {
-			"nation": "PLW",
-			"climate": "tropical_humid",
-			"temp_c": 26.1,
-			"precip_mm": 3493,
-			"altitude_m": 58,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.673,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.067,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3066": {
-			"nation": "PLW",
-			"climate": "tropical_humid",
-			"temp_c": 26.2,
-			"precip_mm": 3529,
-			"altitude_m": 43,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.675,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.045,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3067": {
-			"nation": "PLW",
-			"climate": "tropical_humid",
-			"temp_c": 26.1,
-			"precip_mm": 3493,
-			"altitude_m": 58,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.673,
-			"cultivable": 0.25,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.067,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"3074": {
-			"nation": "GUM",
+			"nation": "USA",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 26.7,
 			"precip_mm": 2171,
@@ -67199,98 +63496,6 @@
 				"coffee": 0.01,
 				"fruit": 0.0,
 				"cotton": 0.0
-			}
-		},
-		"3075": {
-			"nation": "MNP",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 2164,
-			"altitude_m": 241,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.462,
-			"cultivable": 0.347,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.734,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.704,
-				"coffee": 0.014,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3076": {
-			"nation": "MNP",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.7,
-			"precip_mm": 2039,
-			"altitude_m": 24,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.486,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.796,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.793,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3077": {
-			"nation": "MNP",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 27.6,
-			"precip_mm": 2051,
-			"altitude_m": 50,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.483,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.789,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.783,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3079": {
-			"nation": "MNP",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.5,
-			"precip_mm": 1757,
-			"altitude_m": 135,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.474,
-			"cultivable": 0.344,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.764,
-				"maize": 0.059,
-				"potato": 0.0,
-				"soy": 0.275,
-				"sugarcane": 0.748,
-				"coffee": 0.043,
-				"fruit": 0.0,
-				"cotton": 0.08
 			}
 		},
 		"3080": {
@@ -67592,52 +63797,6 @@
 				"cotton": 0.296
 			}
 		},
-		"3095": {
-			"nation": "COK",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.1,
-			"precip_mm": 1941,
-			"altitude_m": 16,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.487,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.798,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.797,
-				"coffee": 0.147,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3096": {
-			"nation": "COK",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.0,
-			"precip_mm": 1990,
-			"altitude_m": 31,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.485,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.794,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.79,
-				"coffee": 0.128,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"3101": {
 			"nation": "IOA",
 			"climate": "tropical_seasonal_humid",
@@ -67657,29 +63816,6 @@
 				"soy": 0.0,
 				"sugarcane": 0.756,
 				"coffee": 0.504,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3102": {
-			"nation": "COK",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 28.3,
-			"precip_mm": 2244,
-			"altitude_m": 7,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.488,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.801,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.742,
-				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
 			}
@@ -67707,144 +63843,6 @@
 				"cotton": 0.0
 			}
 		},
-		"3109": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.8,
-			"precip_mm": 2141,
-			"altitude_m": 2,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.766,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3110": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.8,
-			"precip_mm": 2049,
-			"altitude_m": 4,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3111": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.8,
-			"precip_mm": 2109,
-			"altitude_m": 3,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3119": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 27.9,
-			"precip_mm": 1681,
-			"altitude_m": 5,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.126,
-				"potato": 0.0,
-				"soy": 0.362,
-				"sugarcane": 0.764,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.227
-			}
-		},
-		"3120": {
-			"nation": "MDV",
-			"climate": "tropical_humid",
-			"temp_c": 28.2,
-			"precip_mm": 1684,
-			"altitude_m": 4,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.681,
-			"cultivable": 0.248,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.765,
-				"maize": 0.115,
-				"potato": 0.0,
-				"soy": 0.339,
-				"sugarcane": 0.765,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.222
-			}
-		},
-		"3124": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.7,
-			"precip_mm": 961,
-			"altitude_m": 22,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.841,
-			"forest_cover": 0.486,
-			"cultivable": 0.286,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.321,
-				"maize": 0.56,
-				"potato": 0.0,
-				"soy": 0.797,
-				"sugarcane": 0.121,
-				"coffee": 0.036,
-				"fruit": 0.028,
-				"cotton": 0.793
-			}
-		},
 		"3128": {
 			"nation": "GBR",
 			"climate": "temperate_humid",
@@ -67868,31 +63866,8 @@
 				"cotton": 0.111
 			}
 		},
-		"3129": {
-			"nation": "COK",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 25.7,
-			"precip_mm": 2055,
-			"altitude_m": 25,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.486,
-			"cultivable": 0.34,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.796,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.793,
-				"coffee": 0.063,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
 		"3134": {
-			"nation": "MAC",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2001,
@@ -67915,7 +63890,7 @@
 			}
 		},
 		"3136": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.9,
 			"precip_mm": 1864,
@@ -67938,7 +63913,7 @@
 			}
 		},
 		"3137": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.2,
 			"precip_mm": 1862,
@@ -67961,7 +63936,7 @@
 			}
 		},
 		"3138": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -67984,7 +63959,7 @@
 			}
 		},
 		"3140": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -68007,7 +63982,7 @@
 			}
 		},
 		"3141": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.3,
 			"precip_mm": 2023,
@@ -68030,7 +64005,7 @@
 			}
 		},
 		"3143": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 21.9,
 			"precip_mm": 2103,
@@ -68053,7 +64028,7 @@
 			}
 		},
 		"3144": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -68076,7 +64051,7 @@
 			}
 		},
 		"3145": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.5,
 			"precip_mm": 2011,
@@ -68099,7 +64074,7 @@
 			}
 		},
 		"3146": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -68122,7 +64097,7 @@
 			}
 		},
 		"3149": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -68145,7 +64120,7 @@
 			}
 		},
 		"3150": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -68168,7 +64143,7 @@
 			}
 		},
 		"3151": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.3,
 			"precip_mm": 2023,
@@ -68191,7 +64166,7 @@
 			}
 		},
 		"3152": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.1,
 			"precip_mm": 2033,
@@ -68210,52 +64185,6 @@
 				"sugarcane": 0.745,
 				"coffee": 0.026,
 				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"3153": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.9,
-			"precip_mm": 560,
-			"altitude_m": 8,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.573,
-			"forest_cover": 0.435,
-			"cultivable": 0.136,
-			"crops": {
-				"wheat": 0.218,
-				"rice": 0.0,
-				"maize": 0.317,
-				"potato": 0.453,
-				"soy": 0.066,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.703,
-				"cotton": 0.0
-			}
-		},
-		"3154": {
-			"nation": "ALD",
-			"climate": "subpolar_humid",
-			"temp_c": 5.4,
-			"precip_mm": 561,
-			"altitude_m": 1,
-			"soil_type": "podzol",
-			"fertility": 0.32,
-			"water": 0.574,
-			"forest_cover": 0.436,
-			"cultivable": 0.136,
-			"crops": {
-				"wheat": 0.16,
-				"rice": 0.0,
-				"maize": 0.339,
-				"potato": 0.395,
-				"soy": 0.075,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.704,
 				"cotton": 0.0
 			}
 		},
@@ -83600,52 +79529,6 @@
 				"cotton": 0.09
 			}
 		},
-		"3830": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.8,
-			"precip_mm": 1519,
-			"altitude_m": 59,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.482,
-			"cultivable": 0.341,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.786,
-				"maize": 0.418,
-				"potato": 0.0,
-				"soy": 0.75,
-				"sugarcane": 0.779,
-				"coffee": 0.102,
-				"fruit": 0.0,
-				"cotton": 0.545
-			}
-		},
-		"3831": {
-			"nation": "BRB",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.6,
-			"precip_mm": 1607,
-			"altitude_m": 85,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 1.0,
-			"forest_cover": 0.479,
-			"cultivable": 0.342,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.779,
-				"maize": 0.295,
-				"potato": 0.0,
-				"soy": 0.572,
-				"sugarcane": 0.768,
-				"coffee": 0.133,
-				"fruit": 0.0,
-				"cotton": 0.369
-			}
-		},
 		"3832": {
 			"nation": "AZE",
 			"climate": "temperate_steppe",
@@ -96182,7 +92065,7 @@
 			}
 		},
 		"4378": {
-			"nation": "AND",
+			"nation": "ESP",
 			"climate": "temperate_humid",
 			"temp_c": 5.6,
 			"precip_mm": 1135,
@@ -96480,75 +92363,6 @@
 				"cotton": 0.125
 			}
 		},
-		"4392": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.0,
-			"precip_mm": 232,
-			"altitude_m": 205,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.355,
-			"forest_cover": 0.012,
-			"cultivable": 0.028,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"4393": {
-			"nation": "CPV",
-			"climate": "tropical_seasonal_desert",
-			"temp_c": 24.7,
-			"precip_mm": 201,
-			"altitude_m": 74,
-			"soil_type": "arenosol",
-			"fertility": 0.08,
-			"water": 0.334,
-			"forest_cover": 0.013,
-			"cultivable": 0.027,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.0,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.0,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"4395": {
-			"nation": "AIA",
-			"climate": "tropical_seasonal_humid",
-			"temp_c": 26.9,
-			"precip_mm": 954,
-			"altitude_m": 9,
-			"soil_type": "acrisol",
-			"fertility": 0.48,
-			"water": 0.836,
-			"forest_cover": 0.487,
-			"cultivable": 0.284,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.308,
-				"maize": 0.528,
-				"potato": 0.0,
-				"soy": 0.794,
-				"sugarcane": 0.108,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.799
-			}
-		},
 		"4396": {
 			"nation": "AZE",
 			"climate": "temperate_steppe",
@@ -96573,7 +92387,7 @@
 			}
 		},
 		"4398": {
-			"nation": "HKG",
+			"nation": "CHN",
 			"climate": "tropical_seasonal_humid",
 			"temp_c": 22.4,
 			"precip_mm": 2118,
@@ -96731,52 +92545,6 @@
 				"coffee": 0.616,
 				"fruit": 0.0,
 				"cotton": 0.012
-			}
-		},
-		"4407": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
-			}
-		},
-		"4408": {
-			"nation": "SYC",
-			"climate": "tropical_humid",
-			"temp_c": 26.4,
-			"precip_mm": 2315,
-			"altitude_m": 150,
-			"soil_type": "ferralsol",
-			"fertility": 0.42,
-			"water": 1.0,
-			"forest_cover": 0.659,
-			"cultivable": 0.254,
-			"crops": {
-				"wheat": 0.0,
-				"rice": 0.725,
-				"maize": 0.0,
-				"potato": 0.0,
-				"soy": 0.0,
-				"sugarcane": 0.572,
-				"coffee": 0.0,
-				"fruit": 0.0,
-				"cotton": 0.0
 			}
 		},
 		"4409": {

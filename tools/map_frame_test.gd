@@ -1,7 +1,7 @@
 extends Node3D
 
-## Teste de fumaça POR FRAME do mapa com o cenário real (231 nações, 858 cidades,
-## portos do ports.csv). Reproduz o fluxo do jogo — CityWorld.build + _process a
+## Teste de fumaça POR FRAME do mapa com o cenário real (nações e cidades do
+## cenário, portos do ports.csv). Reproduz o fluxo do jogo — CityWorld.build + _process a
 ## cada frame — com a câmera viajando e dando zoom in/out por Europa, Bálcãs,
 ## Rússia, Ásia e Américas. Qualquer erro de script no caminho falha o teste.
 ##
@@ -318,9 +318,9 @@ func _check_capital_flags() -> void:
 		if flag == null or flag.texture == null:
 			_failures.append("bandeira: capital %s sem textura no build"
 					% String(record["id"]))
-	if all_capitals != 231:
-		_failures.append("bandeira: %d capitais no cenário (esperado 231)"
-				% all_capitals)
+	if all_capitals != _expected_capitals():
+		_failures.append("bandeira: %d capitais no cenário (esperado %d)"
+				% [all_capitals, _expected_capitals()])
 
 	# E as que estão de fato visíveis neste frame acendem a bandeira.
 	var capitals := 0
@@ -612,6 +612,18 @@ static func _is_beige(color: Color) -> bool:
 	return color.r > 0.62 and color.r < 0.83 and color.g > 0.6 \
 			and color.g < 0.8 and color.b > 0.5 and color.b < 0.72 \
 			and absf(color.r - color.g) < 0.12
+
+
+func _expected_capitals() -> int:
+	## Contagem de capitais vem do próprio cenário; nada de constante mágica.
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(CITIES_PATH))
+	if parsed == null:
+		return 0
+	var total := 0
+	for city in parsed:
+		if bool(city.get("capital", false)):
+			total += 1
+	return total
 
 
 func _finish() -> void:

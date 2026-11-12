@@ -213,7 +213,7 @@
     "x": 4140.3,
     "y": 910.3,
     "landmass": "asia",
-    "port_of": "CHN-DON"
+    "port_of": "HKG-HON"
   },
   {
     "id": "CYP-LIM",
@@ -636,7 +636,7 @@
     "x": 2666.9,
     "y": 619.8,
     "landmass": "continent",
-    "port_of": "ITA-MIL"
+    "port_of": "SMR-SANM"
   },
   {
     "id": "ITA-PAL",
@@ -654,7 +654,7 @@
     "x": 2673.0,
     "y": 669.2,
     "landmass": "continent",
-    "port_of": "ITA-ROM"
+    "port_of": "VAT-VATI"
   },
   {
     "id": "ITA-ROME",
@@ -663,7 +663,7 @@
     "x": 2672.1,
     "y": 670.8,
     "landmass": "continent",
-    "port_of": "ITA-ROM"
+    "port_of": "VAT-VATI"
   },
   {
     "id": "JPN-FUK",
@@ -774,15 +774,6 @@
     "port_of": "KAZ-ATY"
   },
   {
-    "id": "KIR-TAR",
-    "name": "Tarawa",
-    "nation": "KIR",
-    "x": 4904.8,
-    "y": 1230.5,
-    "landmass": "kiribati",
-    "port_of": "KIR-TAR"
-  },
-  {
     "id": "KOR-BUS",
     "name": "Busan",
     "nation": "KOR",
@@ -812,11 +803,11 @@
   {
     "id": "MCO-MON",
     "name": "Monaco",
-    "nation": "MCO",
+    "nation": "FRA",
     "x": 2603.5,
     "y": 643.0,
     "landmass": "continent",
-    "port_of": "MCO-MON"
+    "port_of": "MCO-MONA"
   },
   {
     "id": "MEX-TIJ",
@@ -983,11 +974,11 @@
   {
     "id": "SMR-SAN",
     "name": "San Marino",
-    "nation": "SMR",
+    "nation": "ITA",
     "x": 2673.6,
     "y": 640.0,
     "landmass": "continent",
-    "port_of": "SMR-SAN"
+    "port_of": "SMR-SANM"
   },
   {
     "id": "SUR-PBM",

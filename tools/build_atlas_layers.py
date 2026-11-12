@@ -25,6 +25,8 @@ Saídas em map/map_data/atlas/:
                       centroide (5000x2500) e área global de cada província
   minimap.png       RGB8  mapa político global reduzido para o minimapa
   nations.json      âncora do nome de cada nação jogável (pixels 5000x2500)
+  removed_nations.png  L8  terra das nações apagadas pela curadoria (1 = mar
+                    depois da remoção); lido por tools/generate_nav_mask.py
 
 Uso:
   python tools/build_atlas_layers.py
@@ -44,6 +46,8 @@ import shapefile
 from PIL import Image, ImageDraw
 from scipy.ndimage import (binary_dilation as nd_dilate, distance_transform_edt,
                            label as nd_label)
+
+from world_nation_curation import atlas_owner_map, atlas_removed
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "map", "map_data", "atlas")
@@ -110,6 +114,14 @@ REMOVED_ISLAND_REGIONS = [
 GAME_TAGS = {"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NLD": "NED",
              "BEL": "BEL", "VEN": "VEN", "SUR": "SUR", "GUY": "GUY"}
 
+# Curadoria de nações (tools/world_nation_curation.py): microestados e
+# territórios grandes têm as geometrias FUNDIDAS no dono (a nação deixa de
+# existir e o vizinho/mãe pinta a área); territórios minúsculos e ilhas
+# soberanas removidas NÃO são rasterizados (a terra vira mar). O id global das
+# províncias admin-1 não muda: só o dono e a presença no raster mudam.
+ATLAS_OWNER = atlas_owner_map()
+ATLAS_REMOVED = atlas_removed()
+
 # Cores das nações jogáveis. Fonte de verdade: a coluna `color` de
 # data/definitions/world/out/nations.csv (tom "papelaria" da F3, saturação ×0,86
 # + correção do par BWA×AGO). Mantidas aqui para o atlas estático e o editor
@@ -142,6 +154,8 @@ def read_admin0():
     reader = shapefile.Reader(ADMIN0, encoding="utf-8")
     names = [field[0] for field in reader.fields[1:]]
     countries = []
+    removed = []
+    merged = {}
     for shape, record in zip(reader.shapes(), reader.records()):
         fields = dict(zip(names, record))
         tag = str(fields.get("ADM0_A3") or "").strip()
@@ -150,15 +164,31 @@ def read_admin0():
         parts = split_parts(shape)
         if not parts:
             continue
+        if tag in ATLAS_REMOVED:
+            removed.extend(parts)
+            continue
         area = sum(abs(ring_area(part)) for part in parts)
+        owner = ATLAS_OWNER.get(tag, tag)
+        if owner != tag:
+            merged.setdefault(owner, []).extend(parts)
+            continue
         countries.append({
             "tag": tag,
             "mapcolor": int(fields.get("MAPCOLOR9") or 1),
             "parts": parts,
             "area": area,
         })
+    # Funde a geometria dos microestados/territórios grandes no dono. O desenho
+    # em ordem mantém a forma do dono por baixo e preenche os enclaves com o
+    # MESMO id de dono — a fronteira interna desaparece (anexação real).
+    for owner, parts in merged.items():
+        target = next((c for c in countries if c["tag"] == owner), None)
+        if target is None:
+            raise SystemExit(f"curadoria: dono {owner} ausente do admin-0")
+        target["parts"].extend(parts)
+        target["area"] += sum(abs(ring_area(part)) for part in parts)
     countries.sort(key=lambda item: item["area"], reverse=True)
-    return countries
+    return countries, removed
 
 
 def read_admin1_all():
@@ -758,21 +788,49 @@ def write_minimap(world):
     small.save(os.path.join(OUT, "minimap.png"), optimize=True)
 
 
+def write_removed_land(removed_parts):
+    """Grava a máscara da terra das nações apagadas (1 = terra removida).
+
+    O `nav_mask.png` é derivado de um raster antigo (`provinces.png`, fora do
+    repositório); esta máscara permite que `tools/generate_nav_mask.py` apague
+    no mar as ilhas que saíram do atlas. Resolução do mundo (8192×4096)."""
+    grid = Grid((-180.0, -90.0, 180.0, 90.0), WORLD_W)
+    canvas = Image.new("L", (grid.width, grid.height), 0)
+    draw = ImageDraw.Draw(canvas)
+    for ring in removed_parts:
+        draw.polygon(grid.project(ring), fill=255)
+    canvas.save(os.path.join(OUT, "removed_nations.png"), optimize=True)
+    print(f"[removidas] {len(removed_parts)} anel(éis) de terra viraram mar "
+          f"(removed_nations.png)")
+
+
 def main():
     for path in (ADMIN0, ADMIN1):
         if not os.path.exists(path + ".shp"):
             raise SystemExit(f"Fonte Natural Earth ausente: {path}.shp")
     os.makedirs(OUT, exist_ok=True)
 
-    countries = read_admin0()
-    print(f"países={len(countries)}")
+    countries, removed_parts = read_admin0()
+    print(f"países={len(countries)} | nações apagadas={len(ATLAS_REMOVED)}")
 
     # Uma lista ÚNICA de províncias admin-1; id global = índice 1..N.
     provinces, province_countries, province_bboxes = read_admin1_all()
     print(f"províncias admin-1 no mundo={len(provinces)}")
+    # O id GLOBAL não muda (contrato do dataset). Só o DONO muda (fusão) e a
+    # presença no raster (nação apagada).
+    original_countries = list(province_countries)
+    province_countries = [ATLAS_OWNER.get(tag, tag) for tag in province_countries]
+    kept_ids = {index + 1 for index, tag in enumerate(original_countries)
+                if tag not in ATLAS_REMOVED}
 
     region_shapes, region_countries, region_ids = select_region(
         provinces, province_countries, province_bboxes, REGION)
+    region_rows = [(shape, country, pid) for shape, country, pid
+                   in zip(region_shapes, region_countries, region_ids)
+                   if pid in kept_ids]
+    region_shapes = [row[0] for row in region_rows]
+    region_countries = [row[1] for row in region_rows]
+    region_ids = [row[2] for row in region_rows]
     print(f"províncias na região={len(region_shapes)}")
 
     region = build_layer("region", REGION, REGION_W, countries,
@@ -786,14 +844,21 @@ def main():
     # O edt+índices em 8192×4096 é pesado; se faltar memória, use supersample=1
     # (a camada mundial em baixa resolução perde províncias sub-texel, como o
     # departamento de Paris, e o id diverge do raster da região).
-    world_ids = list(range(1, len(provinces) + 1))
+    world_ids = [index + 1 for index, tag in enumerate(original_countries)
+                 if tag not in ATLAS_REMOVED]
+    world_shapes = [shape for shape, tag in zip(provinces, original_countries)
+                    if tag not in ATLAS_REMOVED]
+    world_countries = [country for tag, country
+                       in zip(original_countries, province_countries)
+                       if tag not in ATLAS_REMOVED]
     world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
-                        provinces, province_countries, world_ids, supersample=SUPERSAMPLE,
+                        world_shapes, world_countries, world_ids, supersample=SUPERSAMPLE,
                         band_rows=512, color_step=max(WORLD_W // 4096, 1),
                         removed_reference=(region["removed_grid"],
                                            region["removed_mask"]))
     write_provinces_json(region, world, province_countries, countries)
     write_minimap(world)
+    write_removed_land(removed_parts)
     print(f"escrito em {OUT}")
 
 

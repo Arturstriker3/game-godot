@@ -342,3 +342,145 @@ PNGs (`godot --headless --import`), `atlas_common.gdshaderinc::atlas_owner`
 agora recusa id ≤ 0/fora da textura e os dois `dyn_block` marcam "sem dono";
 o fragmento descarta a máscara de terra nesses pixels, então id/owner ausente
 renderiza mar, nunca preto.
+
+## 14. Curadoria de micro-nações e territórios (2026-11, t57)
+
+Decisão aprovada pelo usuário e centralizada em `tools/world_nation_curation.py`
+(fonte única lida por `build_world_cities.py`, `build_atlas_layers.py`,
+`generate_nav_mask.py` e `build_province_nature.py`). O critério evita que uma
+regeneração completa reintroduza uma nação removida ou perca uma fusão:
+
+- **Fica** a nação soberana com `população ≥ 500.000` **ou** `área ≥ 10.000 km²`;
+- **Ficam sempre** as exceções estratégicas `STRATEGIC_KEEP`: Singapura,
+  Bahrein, Catar, Brunei, Luxemburgo, Malta, Chipre e Djibuti (abaixo do limiar);
+- **Microestados europeus** não viram mar nem nação própria: o território e as
+  províncias passam ao vizinho (anexação);
+- **Dependentes grandes** (população/área acima do limiar, ou nomeados pelo
+  usuário) são fundidos na nação-mãe;
+- **Ilhas soberanas e dependentes minúsculos** são apagados: cidade, porto,
+  construções e nação saem; no atlas e no `nav_mask.png` a terra vira mar;
+- Quatro ilhas soberanas que passariam pelo critério por área/população
+  (Vanuatu, Maldivas, Comores, Cabo Verde) saem por decisão explícita: ilha sem
+  hinterlândia continental não paga o custo de mapa. Malvinas também saem por
+  decisão explícita apesar dos 12.173 km².
+
+`audit_source()` falha se uma nação abaixo do limiar não estiver classificada,
+se um território não tiver destino, se uma tag não existir na fonte ou se uma
+tag tiver dois destinos. Total: **60 tags** — 5 anexadas, 7 fundidas, 48 apagadas
+(21 soberanas + 27 territórios).
+
+### 14.1 Números antes/depois
+
+| Item | Antes | Depois |
+|---|---:|---:|
+| Nações no cenário | 231 | **171** |
+| Cidades no cenário | 858 | **794** |
+| Portos no cenário | 138 | **137** |
+| Construções iniciais | 858 | **794** |
+| Chaves i18n | 1.458 | **1.273** |
+| Províncias do atlas | 4.527 | **4.272** |
+| Territórios em `history/territories` | 250 | **202** |
+
+A revisão de balance da t57 mediu **fome em 166 das 171 nações** do cenário
+reduzido (o teste headless de longo prazo continua verde: 365 dias, 0 violação
+de conservação — §15).
+
+### 14.2 Anexadas (5) — território e províncias passam ao vizinho
+
+| Tag | Nação | Passa para | Pop. | Área km² |
+|---|---|---|---:|---:|
+| AND | Andorra | ESP | 82.904 | 468 |
+| LIE | Liechtenstein | CHE | 41.024 | 160 |
+| MCO | Mônaco | FRA | 38.341 | 1 |
+| SMR | San Marino | ITA | 34.109 | 61 |
+| VAT | Vaticano | ITA | 921 | 0 |
+
+### 14.3 Fundidas (7) — províncias, cidades e portos passam à nação-mãe
+
+| Tag | Território | Passa para | Pop. | Área km² |
+|---|---|---|---:|---:|
+| GRL | Groenlândia | DNK | 56.831 | 2.166.086 |
+| GUM | Guam | USA | 168.999 | 549 |
+| HKG | Hong Kong | CHN | 7.498.900 | 1.092 |
+| MAC | Macau | CHN | 685.900 | 33 |
+| NCL | Nova Caledônia | FRA | 295.333 | 19.060 |
+| PRI | Porto Rico | USA | 3.184.835 | 9.104 |
+| PYF | Polinésia Francesa | FRA | 282.465 | 4.167 |
+
+### 14.4 Apagadas (48) — a terra vira mar
+
+**Soberanas (21):** São Cristóvão e Névis (KNA), Antígua e Barbuda (ATG),
+Dominica (DMA), Santa Lúcia (LCA), São Vicente e Granadinas (VCT), Granada
+(GRD), Barbados (BRB), Tuvalu (TUV), Nauru (NRU), Kiribati (KIR), Ilhas
+Marshall (MHL), Palau (PLW), Micronésia (FSM), Tonga (TON), Samoa (WSM), São
+Tomé e Príncipe (STP), Seicheles (SYC), Vanuatu (VUT), Maldivas (MDV), Comores
+(COM), Cabo Verde (CPV).
+
+**Territórios (27):** Gibraltar (GIB), Bermudas (BMU), Malvinas (FLK), Ilhas
+Virgens Americanas (VIR), Ilhas Virgens Britânicas (VGB), Ilhas Faroé (FRO),
+Samoa Americana (ASM), Marianas do Norte (MNP), Curaçao (CUW), Aruba (ABW),
+Sint Maarten (SXM), Cayman (CYM), Turcas e Caicos (TCA), Anguilla (AIA),
+Montserrat (MSR), Santa Helena (SHN), Ilhas Cook (COK), Niue (NIU), Wallis e
+Futuna (WLF), São Pedro e Miquelon (SPM), São Martinho FR (MAF), São Bartolomeu
+(BLM), Norfolk (NFK), Ilha de Man (IMN), Jersey (JEY), Guernsey (GGY), Åland
+(ALD).
+
+**Exceções explícitas (acima do limiar, saem por decisão do usuário):**
+Vanuatu (335.169 hab., 12.200 km²), Maldivas (529.676, 300 km²), Comores
+(882.847, 2.170 km²), Cabo Verde (527.326, 4.033 km²) e Malvinas (2.638,
+12.173 km²).
+
+### 14.5 Rótulo "VILA" no Pacífico (Port Vila / Vanuatu)
+
+A captura `docs/map_visual/micro_cleanup/pacific/` tem `tag: before` no
+manifest, mas foi tirada às 12:33 — depois do rebuild do atlas (12:27) — e já
+não mostra a ilha. A origem do rótulo era a cidade `VUT-POR` (Port-Vila,
+168,31E / 17,73S), que existia em `data/definitions/scenario/cities.json` no
+HEAD e era produzida por `build_world_cities.py` a partir da linha `VUT-POR` de
+`data/definitions/world/cities_source.csv`; o nome era desenhado por
+`map/city_world.gd` (`_build_cities` → `Label3D`) e a ilha vinha do atlas
+(no HEAD, `world_sdf` = 218 no ponto).
+
+Com `VUT` na lista `REMOVED_SOVEREIGNS`, a cidade sai do cenário (0 ocorrências
+de `VUT-POR`), a ilha sai do atlas (`world_sdf` = 0 no ponto) e o
+`nav_mask.png` passa a tratar a coordenada como água (pixel 0). A recaptura
+`docs/map_visual/micro_cleanup/pacific_after/` (tag `after`, mesmo foco
+`FJI-SUV`, 1920×1080) não mostra a ilha nem o rótulo em nenhum zoom
+(d013/d026/d052/d120); Fiji/Suva, Honiara, Nouméa e Port Moresby continuam.
+
+### 14.6 Sobras e poda reprodutível
+
+Os arquivos de **fonte** (`nations_source.csv`, `cities_source.csv`,
+`ports_source.csv`) e os **relatórios** (`world/_coverage_before_after.csv`,
+`world/_import_report.csv`, `world/out/_meta.json`) mantêm as 60 tags por
+desenho: a curadoria exige que a tag exista na fonte e registra o destino.
+Cidades anexadas/fundidas preservam o id de origem (`GRL-*`, `MCO-*`, `SMR-*`…)
+com `nation`/`home_nation` já apontando para a mãe; as chaves i18n dessas
+cidades continuam válidas. `data/definitions/natural/country_names.json` é um
+dicionário de nomes da fonte (não um roster) e por isso também mantém as tags.
+
+Ficavam defasados três inputs derivados do atlas, capazes de reintroduzir as
+ilhas removidas numa regeneração de `build_natural_geography.py`:
+
+```powershell
+python tools/reconstruct_natural_inputs.py --prune
+# provinces.txt: -255 (4.272) | provinces.json: -255 (4.272)
+# territories.json: -48 territórios vazios (202)
+```
+
+A poda também reescreve `province_owner`/`province_controller` das províncias
+que mudaram de dono (anexações e fusões), então `data/history/provinces/
+provinces.json` passa a ter os mesmos 191 donos do atlas. Verificação: nenhuma
+das 60 tags aparece como dono em `data/` ou `map/` fora de fonte/relatório.
+
+### 14.7 Como reproduzir
+
+```powershell
+python tools/build_world_cities.py --check     # 171 / 794 / 137, 0 avisos
+python tools/build_world_cities.py             # world/out + scenario/
+python tools/build_atlas_layers.py             # atlas/*.png, provinces.json, removed_nations.png
+python tools/generate_nav_mask.py              # nav_mask.png (terra removida vira água)
+python tools/build_province_nature.py          # province_areas/nature e depósitos
+python tools/reconstruct_natural_inputs.py --prune
+```
+

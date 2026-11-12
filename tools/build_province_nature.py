@@ -41,6 +41,7 @@ import sys
 import tifffile
 
 import build_natural_geography as bng
+from world_nation_curation import TERRITORY_MOTHER
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NATURAL = os.path.join(ROOT, "data", "definitions", "natural")
@@ -225,6 +226,15 @@ def main() -> int:
     for tid, pids in by_territory.items():
         if not pids:
             unowned.append(tid)
+            # Território apagado pela curadoria não tem mais província no
+            # atlas. O dono não pode continuar sendo uma nação que saiu do
+            # cenário: herda a nação-mãe declarada (SPM->FRA, MNP->USA).
+            entry = territories[tid]
+            old_owner = str(entry.get("owner") or entry.get("adm0_a3") or "")
+            mother = TERRITORY_MOTHER.get(old_owner)
+            if mother:
+                entry["owner"] = mother
+                entry["adm0_a3"] = NATION_CODE_OVERRIDES.get(mother, mother)
             continue
         area_by_tag = {}
         for pid in pids:

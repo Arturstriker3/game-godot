@@ -44,6 +44,689 @@
         "GRC-HER"
       ]
     },
+    "nation_curation": {
+      "source": "tools/world_nation_curation.py",
+      "keep_rule": {
+        "population_min": 500000,
+        "area_km2_min": 10000.0
+      },
+      "strategic_keep": [
+        "BHR",
+        "BRN",
+        "CYP",
+        "DJI",
+        "LUX",
+        "MLT",
+        "QAT",
+        "SGP"
+      ],
+      "annexed": [
+        {
+          "tag": "AND",
+          "name": "Andorra",
+          "status": "sovereign",
+          "population": 82904,
+          "area_km2": 468.0,
+          "action": "annexed",
+          "target": "ESP",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "LIE",
+          "name": "Liechtenstein",
+          "status": "sovereign",
+          "population": 41024,
+          "area_km2": 160.0,
+          "action": "annexed",
+          "target": "CHE",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "MCO",
+          "name": "Monaco",
+          "status": "sovereign",
+          "population": 38341,
+          "area_km2": 1.9,
+          "action": "annexed",
+          "target": "FRA",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "SMR",
+          "name": "San Marino",
+          "status": "sovereign",
+          "population": 34109,
+          "area_km2": 61.2,
+          "action": "annexed",
+          "target": "ITA",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "VAT",
+          "name": "Vatican City",
+          "status": "observer",
+          "population": 921,
+          "area_km2": 0.4,
+          "action": "annexed",
+          "target": "ITA",
+          "below_threshold": true,
+          "override": ""
+        }
+      ],
+      "merged": [
+        {
+          "tag": "GRL",
+          "name": "Greenland",
+          "status": "territory",
+          "population": 56831,
+          "area_km2": 2166086.0,
+          "action": "merged",
+          "target": "DNK",
+          "below_threshold": false,
+          "override": ""
+        },
+        {
+          "tag": "GUM",
+          "name": "Guam",
+          "status": "territory",
+          "population": 168999,
+          "area_km2": 549.0,
+          "action": "merged",
+          "target": "USA",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "HKG",
+          "name": "Hong Kong",
+          "status": "territory",
+          "population": 7498900,
+          "area_km2": 1092.0,
+          "action": "merged",
+          "target": "CHN",
+          "below_threshold": false,
+          "override": ""
+        },
+        {
+          "tag": "MAC",
+          "name": "Macau",
+          "status": "territory",
+          "population": 685900,
+          "area_km2": 33.0,
+          "action": "merged",
+          "target": "CHN",
+          "below_threshold": false,
+          "override": ""
+        },
+        {
+          "tag": "NCL",
+          "name": "New Caledonia",
+          "status": "territory",
+          "population": 295333,
+          "area_km2": 19060.0,
+          "action": "merged",
+          "target": "FRA",
+          "below_threshold": false,
+          "override": ""
+        },
+        {
+          "tag": "PRI",
+          "name": "Puerto Rico",
+          "status": "territory",
+          "population": 3184835,
+          "area_km2": 9104.0,
+          "action": "merged",
+          "target": "USA",
+          "below_threshold": false,
+          "override": ""
+        },
+        {
+          "tag": "PYF",
+          "name": "French Polynesia",
+          "status": "territory",
+          "population": 282465,
+          "area_km2": 4167.0,
+          "action": "merged",
+          "target": "FRA",
+          "below_threshold": true,
+          "override": ""
+        }
+      ],
+      "removed": [
+        {
+          "tag": "ABW",
+          "name": "Aruba",
+          "status": "territory",
+          "population": 108785,
+          "area_km2": 180.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "AIA",
+          "name": "Anguilla",
+          "status": "territory",
+          "population": 13254,
+          "area_km2": 102.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "ALD",
+          "name": "Åland",
+          "status": "territory",
+          "population": 26711,
+          "area_km2": 1580.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "ASM",
+          "name": "American Samoa",
+          "status": "territory",
+          "population": 46029,
+          "area_km2": 199.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "ATG",
+          "name": "Antigua and Barbuda",
+          "status": "sovereign",
+          "population": 94209,
+          "area_km2": 443.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "BLM",
+          "name": "Saint Barthélemy",
+          "status": "territory",
+          "population": 8450,
+          "area_km2": 21.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "BMU",
+          "name": "Bermuda",
+          "status": "territory",
+          "population": 64555,
+          "area_km2": 53.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "BRB",
+          "name": "Barbados",
+          "status": "sovereign",
+          "population": 282623,
+          "area_km2": 431.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "COK",
+          "name": "Cook Islands",
+          "status": "territory",
+          "population": 21388,
+          "area_km2": 240.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "COM",
+          "name": "Comoros",
+          "status": "sovereign",
+          "population": 882847,
+          "area_km2": 2170.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": false,
+          "override": "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
+        },
+        {
+          "tag": "CPV",
+          "name": "Cape Verde",
+          "status": "sovereign",
+          "population": 527326,
+          "area_km2": 4033.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": false,
+          "override": "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
+        },
+        {
+          "tag": "CUW",
+          "name": "Curaçao",
+          "status": "territory",
+          "population": 156263,
+          "area_km2": 444.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "CYM",
+          "name": "Cayman Islands",
+          "status": "territory",
+          "population": 75844,
+          "area_km2": 262.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "DMA",
+          "name": "Dominica",
+          "status": "sovereign",
+          "population": 65871,
+          "area_km2": 754.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "FLK",
+          "name": "Falkland Islands",
+          "status": "territory",
+          "population": 2638,
+          "area_km2": 12173.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": false,
+          "override": "Pedido do usuário (Malvinas): apagar, apesar de 12.173 km²"
+        },
+        {
+          "tag": "FRO",
+          "name": "Faroe Islands",
+          "status": "territory",
+          "population": 54900,
+          "area_km2": 1399.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "FSM",
+          "name": "Federated States of Micronesia",
+          "status": "sovereign",
+          "population": 113683,
+          "area_km2": 702.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "GGY",
+          "name": "Guernsey",
+          "status": "territory",
+          "population": 65228,
+          "area_km2": 78.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "GIB",
+          "name": "Gibraltar",
+          "status": "territory",
+          "population": 40126,
+          "area_km2": 6.5,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "GRD",
+          "name": "Grenada",
+          "status": "sovereign",
+          "population": 117303,
+          "area_km2": 344.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "IMN",
+          "name": "Isle of Man",
+          "status": "territory",
+          "population": 84118,
+          "area_km2": 572.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "JEY",
+          "name": "Jersey",
+          "status": "territory",
+          "population": 90812,
+          "area_km2": 116.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "KIR",
+          "name": "Kiribati",
+          "status": "sovereign",
+          "population": 136488,
+          "area_km2": 811.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "KNA",
+          "name": "Saint Kitts and Nevis",
+          "status": "sovereign",
+          "population": 46922,
+          "area_km2": 261.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "LCA",
+          "name": "Saint Lucia",
+          "status": "sovereign",
+          "population": 180149,
+          "area_km2": 616.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "MAF",
+          "name": "Saint Martin",
+          "status": "territory",
+          "population": 24941,
+          "area_km2": 53.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "MDV",
+          "name": "Maldives",
+          "status": "sovereign",
+          "population": 529676,
+          "area_km2": 300.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": false,
+          "override": "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
+        },
+        {
+          "tag": "MHL",
+          "name": "Marshall Islands",
+          "status": "sovereign",
+          "population": 36282,
+          "area_km2": 181.3,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "MNP",
+          "name": "Northern Mariana Islands",
+          "status": "territory",
+          "population": 43541,
+          "area_km2": 477.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "MSR",
+          "name": "Montserrat",
+          "status": "territory",
+          "population": 9341,
+          "area_km2": 102.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "NFK",
+          "name": "Norfolk Island",
+          "status": "territory",
+          "population": 1828,
+          "area_km2": 34.6,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "NIU",
+          "name": "Niue",
+          "status": "territory",
+          "population": 2166,
+          "area_km2": 260.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "NRU",
+          "name": "Nauru",
+          "status": "sovereign",
+          "population": 12025,
+          "area_km2": 21.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "PLW",
+          "name": "Palau",
+          "status": "sovereign",
+          "population": 17663,
+          "area_km2": 458.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "SHN",
+          "name": "Saint Helena",
+          "status": "territory",
+          "population": 7460,
+          "area_km2": 410.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "SPM",
+          "name": "Saint Pierre and Miquelon",
+          "status": "territory",
+          "population": 7012,
+          "area_km2": 242.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "STP",
+          "name": "São Tomé and Príncipe",
+          "status": "sovereign",
+          "population": 240254,
+          "area_km2": 1001.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "SXM",
+          "name": "Sint Maarten",
+          "status": "territory",
+          "population": 43923,
+          "area_km2": 34.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "SYC",
+          "name": "Seychelles",
+          "status": "sovereign",
+          "population": 122730,
+          "area_km2": 455.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "TCA",
+          "name": "Turks and Caicos Islands",
+          "status": "territory",
+          "population": 46855,
+          "area_km2": 948.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "TON",
+          "name": "Tonga",
+          "status": "sovereign",
+          "population": 103742,
+          "area_km2": 748.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "TUV",
+          "name": "Tuvalu",
+          "status": "sovereign",
+          "population": 9492,
+          "area_km2": 26.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "VCT",
+          "name": "Saint Vincent and the Grenadines",
+          "status": "sovereign",
+          "population": 99924,
+          "area_km2": 389.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "VGB",
+          "name": "British Virgin Islands",
+          "status": "territory",
+          "population": 39732,
+          "area_km2": 153.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "VIR",
+          "name": "United States Virgin Islands",
+          "status": "territory",
+          "population": 103792,
+          "area_km2": 352.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "VUT",
+          "name": "Vanuatu",
+          "status": "sovereign",
+          "population": 335169,
+          "area_km2": 12200.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": false,
+          "override": "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
+        },
+        {
+          "tag": "WLF",
+          "name": "Wallis and Futuna",
+          "status": "territory",
+          "population": 16025,
+          "area_km2": 274.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        },
+        {
+          "tag": "WSM",
+          "name": "Samoa",
+          "status": "sovereign",
+          "population": 219306,
+          "area_km2": 2944.0,
+          "action": "removed",
+          "target": "",
+          "below_threshold": true,
+          "override": ""
+        }
+      ]
+    },
     "color_min_delta_e": 30,
     "color_min_delta_e_floor": 25,
     "color_traditional_source": "data/definitions/world/traditional_colors.csv",
@@ -354,37 +1037,21 @@
         "to": "#b99583",
         "min_delta_e": 34.9,
         "target_met": true
-      },
-      {
-        "tag": "AND",
-        "kind": "auto",
-        "from": "#b77949",
-        "to": "#b98383",
-        "min_delta_e": 34.3,
-        "target_met": true
-      },
-      {
-        "tag": "LIE",
-        "kind": "auto",
-        "from": "#776953",
-        "to": "#6b604e",
-        "min_delta_e": 30.3,
-        "target_met": true
       }
     ]
   },
   "counts": {
-    "nations": 231,
-    "cities": 858,
-    "ports": 138,
-    "buildings": 858,
-    "i18n_keys": 1458,
+    "nations": 171,
+    "cities": 794,
+    "ports": 137,
+    "buildings": 794,
+    "i18n_keys": 1273,
     "legacy_cities": 40,
     "legacy_ports": 18,
     "scenario_ports": 138,
-    "cities_with_pt_exonym": 262,
-    "cities_with_es_exonym": 262,
-    "cities_pt_same_as_en": 573
+    "cities_with_pt_exonym": 252,
+    "cities_with_es_exonym": 250,
+    "cities_pt_same_as_en": 519
   },
   "top10": [
     {
@@ -393,7 +1060,11 @@
     },
     {
       "nation": "USA",
-      "cities": 28
+      "cities": 31
+    },
+    {
+      "nation": "CHN",
+      "cities": 27
     },
     {
       "nation": "BRA",
@@ -404,12 +1075,12 @@
       "cities": 25
     },
     {
-      "nation": "CHN",
+      "nation": "IND",
       "cities": 25
     },
     {
-      "nation": "IND",
-      "cities": 25
+      "nation": "FRA",
+      "cities": 21
     },
     {
       "nation": "IDN",
@@ -422,10 +1093,6 @@
     {
       "nation": "PAK",
       "cities": 14
-    },
-    {
-      "nation": "FRA",
-      "cities": 13
     }
   ],
   "coverage": [

@@ -18,6 +18,7 @@ províncias em 8192× lat −60..84, 737 territórios). Esta reconstrução usa 
 (estado = nação, mesmo desenho do gerador legado).
 """
 
+import argparse
 import colorsys
 import json
 import os
@@ -44,6 +45,69 @@ def key_colors(count):
             colors.append(key)
         index += 1
     return colors
+
+
+def read_atlas_owners():
+    """Ids PRV do atlas canônico -> dono atual (nation/country)."""
+    with open(ATLAS, encoding="utf-8") as handle:
+        data = json.load(handle)
+    return {
+        f"PRV{province['id']:06d}": province.get("nation") or province.get("country") or "NNN"
+        for province in data["provinces"]
+    }
+
+
+def prune_to_atlas():
+    """Remove dos inputs naturais as províncias que saíram do atlas.
+
+    Os três arquivos abaixo são derivados do atlas (docstring acima) e ficaram
+    defasados quando a curadoria apagou ilhas e anexou/fundiu territórios: uma
+    regeneração futura de `build_natural_geography.py` reintroduziria as ilhas
+    removidas. A poda preserva ordem, ids e formatação; só remove o que o atlas
+    já não tem e reescreve o dono das províncias que trocaram de nação.
+    """
+    owner = read_atlas_owners()
+    keep = set(owner)
+
+    province_txt = os.path.join(DEFS, "provinces.txt")
+    with open(province_txt, "r", encoding="utf-8", newline="") as handle:
+        lines = handle.readlines()
+    kept_lines = [line for line in lines if line.split(";", 1)[0] in keep]
+    with open(province_txt, "w", encoding="utf-8", newline="") as handle:
+        handle.writelines(kept_lines)
+
+    history_path = os.path.join(HIST, "provinces", "provinces.json")
+    with open(history_path, encoding="utf-8") as handle:
+        history = json.load(handle)
+    pruned_history = {
+        key: {"province_owner": owner[key], "province_controller": owner[key]}
+        for key in history if key in keep
+    }
+    with open(history_path, "w", encoding="utf-8") as handle:
+        json.dump(pruned_history, handle, indent="\t", ensure_ascii=False)
+        handle.write("\n")
+
+    territories_path = os.path.join(HIST, "territories", "territories.json")
+    with open(territories_path, encoding="utf-8") as handle:
+        territories = json.load(handle)
+    pruned_territories = {}
+    dropped_territories = 0
+    for territory_id, payload in territories.items():
+        members = [pid for pid in payload.get("provinces", []) if pid in keep]
+        if not members:
+            dropped_territories += 1
+            continue
+        pruned_territories[territory_id] = {**payload, "provinces": members}
+    with open(territories_path, "w", encoding="utf-8") as handle:
+        json.dump(pruned_territories, handle, indent="\t", ensure_ascii=False)
+        handle.write("\n")
+
+    print(f"atlas:              {len(keep)} províncias")
+    print(f"provinces.txt:      -{len(lines) - len(kept_lines)} (restam {len(kept_lines)})")
+    print(f"provinces.json:     -{len(history) - len(pruned_history)} "
+          f"(restam {len(pruned_history)})")
+    print(f"territories.json:   -{dropped_territories} territórios vazios "
+          f"(restam {len(pruned_territories)})")
 
 
 def main():
@@ -99,4 +163,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--prune", action="store_true",
+        help="só remove dos 3 inputs as províncias ausentes do atlas (não regrava o resto)",
+    )
+    args = parser.parse_args()
+    if args.prune:
+        prune_to_atlas()
+    else:
+        main()

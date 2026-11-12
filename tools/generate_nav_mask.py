@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PROVINCES_TXT = ROOT / "data" / "definitions" / "provinces.txt"
 PROVINCES_PNG = ROOT / "map" / "map_data" / "provinces.png"
 OUTPUT = ROOT / "map" / "map_data" / "nav_mask.png"
+## Máscara da terra das nações apagadas (gerada por tools/build_atlas_layers.py).
+REMOVED_LAND_PNG = ROOT / "map" / "map_data" / "atlas" / "removed_nations.png"
 BLOCK = 2
 
 ## Mesmo limiar do `MASK_WATER_MAX` do trade_convoys.gd.
@@ -304,6 +306,26 @@ def remove_island_regions(mask: np.ndarray) -> int:
     return removed
 
 
+def remove_removed_nations(mask: np.ndarray) -> int:
+    """Apaga da máscara a terra das nações removidas pela curadoria.
+
+    `removed_nations.png` é gerada pelo atlas (mesma projeção equirretangular);
+    a célula do nav_mask (2×2 px de `provinces.png`) cobre ~0,144°, então a
+    máscara é reduzida com BOX (qualquer cobertura vira terra) e dilatada 1
+    célula para não sobrar costa. Só terra/costa vira água: água nunca é
+    "secada"."""
+    if not REMOVED_LAND_PNG.exists():
+        return 0
+    image = Image.open(REMOVED_LAND_PNG).convert("L")
+    height, width = mask.shape
+    image = image.resize((width, height), Image.BOX)
+    hit = np.asarray(image) > 0
+    hit = ndimage.binary_dilation(hit, iterations=1)
+    cleared = int(np.count_nonzero((mask > WATER_MAX) & hit))
+    mask[(mask > WATER_MAX) & hit] = 0
+    return cleared
+
+
 def build_mask() -> np.ndarray:
     water = load_water_colors()
     pixels = np.asarray(Image.open(PROVINCES_PNG).convert("RGB"))
@@ -341,6 +363,10 @@ def main() -> None:
     removed = remove_island_regions(mask)
     if removed:
         print("ilhas do Egeu: %d celula(s) de terra viraram agua" % removed)
+
+    removed = remove_removed_nations(mask)
+    if removed:
+        print("nações removidas: %d celula(s) de terra viraram agua" % removed)
 
     Image.fromarray(mask, mode="L").save(OUTPUT)
     print("gerado %s (%dx%d)" % (OUTPUT, mask.shape[1], mask.shape[0]))

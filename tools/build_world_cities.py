@@ -57,6 +57,10 @@ from world_city_curation import (
     CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
     FORCED_PORTS,
 )
+from world_nation_curation import (
+    KEEP_AREA_KM2, KEEP_POP, STRATEGIC_KEEP, audit_source, classify,
+    transfer_target,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
@@ -200,6 +204,59 @@ def curate_ports(rows):
     for spec in FORCED_PORTS:
         kept[spec["id"]] = dict(spec)
     return list(kept.values())
+
+
+def curate_nations(rows):
+    """Aplica a curadoria de `tools/world_nation_curation.py` ao roster.
+
+    Devolve (nações mantidas, relatório, erros). A validação é a mesma que
+    gera o relatório: nenhuma nação abaixo do limiar pode ficar sem destino.
+    """
+    report, errors = audit_source(rows)
+    kept = [row for row in rows if classify(row["iso3"])[0] == "kept"]
+    return kept, report, errors
+
+
+def remap_nations(cities, ports):
+    """Reatribui cidades/portos das nações anexadas/fundidas e remove as apagadas.
+
+    Microestado anexado e território fundido passam a pertencer ao destino; as
+    entidades de uma ilha removida saem com a nação. A capital herdada vira
+    cidade comum: cada nação mantém exatamente uma capital (a sua própria).
+    """
+    remapped = []
+    for row in cities:
+        action, target = classify(row["nation"])
+        if action == "removed":
+            continue
+        item = dict(row)
+        item["_origin"] = row["nation"]
+        item["nation"] = target
+        remapped.append(item)
+
+    by_nation = defaultdict(list)
+    for row in remapped:
+        by_nation[row["nation"]].append(row)
+    for nation, group in by_nation.items():
+        capitals = [row for row in group if row.get("capital") == "1"]
+        if not capitals:
+            continue
+        keep = next((row for row in capitals if row["_origin"] == nation), capitals[0])
+        for row in capitals:
+            if row is not keep:
+                row["capital"] = "0"
+
+    ports_out = []
+    removed_ports = []
+    for row in ports:
+        action, target = classify(row["nation"])
+        if action == "removed":
+            removed_ports.append(row["id"])
+            continue
+        item = dict(row)
+        item["nation"] = target
+        ports_out.append(item)
+    return remapped, ports_out, removed_ports
 
 
 def read_csv(path):
@@ -420,6 +477,7 @@ def main():
     args = parser.parse_args()
 
     nations_src = read_csv(os.path.join(WORLD, "nations_source.csv"))
+    nations_src, nation_report, nation_errors = curate_nations(nations_src)
     colors, color_report = resolve_scenario_colors(nations_src)
     cities_src = read_csv(os.path.join(WORLD, "cities_source.csv"))
     ports_src = read_csv(os.path.join(WORLD, "ports_source.csv"))
@@ -435,7 +493,9 @@ def main():
         report = {r["tag"]: r for r in read_csv(report_path)}
 
     problems = []
+    problems.extend(nation_errors)
     cities_src, curated_out = curate_cities(cities_src)
+    cities_src, ports_src, removed_ports = remap_nations(cities_src, ports_src)
     nations_by_id = {r["iso3"]: r for r in nations_src}
     if len(nations_by_id) != len(nations_src):
         problems.append("nações: iso3 duplicado")
@@ -516,7 +576,9 @@ def main():
                 problems.append(f"legado {row['id']}: {field} divergente")
         if int(src["population"]) != int(row["population"]):
             problems.append(f"legado {row['id']}: população divergente")
-        if src["nation"] != row["nation"]:
+        origin = row.get("_origin", row["nation"])
+        allowed_nations = {origin, transfer_target(origin)} - {""}
+        if src["nation"] not in allowed_nations:
             problems.append(f"legado {row['id']}: nação divergente")
 
     # portos: os 18 do cenário anterior à fase 1 continuam intactos
@@ -537,7 +599,9 @@ def main():
     # (a contagem por origem mudava depois da primeira promoção, que já leva ao
     # cenário também os portos novos).
     source_port_ids = {r["id"] for r in ports_src}
-    missing_ports = sorted(set(scenario_ports) - source_port_ids)
+    missing_ports = sorted(
+        pid for pid in set(scenario_ports) - source_port_ids
+        if classify(scenario_ports[pid]["nation"])[0] != "removed")
     if missing_ports:
         problems.append("portos do cenário fora da fonte: "
                         + ", ".join(missing_ports))
@@ -610,6 +674,11 @@ def main():
     if curated_out:
         print("curadoria: fora da fonte ->", ", ".join(sorted(curated_out)))
     print("curadoria: forçadas ->", ", ".join(spec["id"] for spec in FORCED_CITIES))
+    removed_nations = [item for item in nation_report if item["action"] == "removed"]
+    transferred = [item for item in nation_report if item["action"] != "removed"]
+    print(f"nações curadas: {len(nation_report)} afetadas "
+          f"(removidas {len(removed_nations)}, anexadas/fundidas {len(transferred)}) | "
+          f"portos removidos com a nação: {len(removed_ports)}")
     print(f"portos: {len(ports_out)} (no cenário antes: {len(scenario_ports)}, "
           f"originais: {len(LEGACY_PORTS)})")
     print(f"construções: {len(buildings_out)}")
@@ -678,6 +747,17 @@ def main():
                 "forced": [spec["id"] for spec in FORCED_CITIES],
                 "capital_overrides": CAPITAL_OVERRIDES,
                 "forced_ports": [spec["id"] for spec in FORCED_PORTS],
+            },
+            "nation_curation": {
+                "source": "tools/world_nation_curation.py",
+                "keep_rule": {"population_min": KEEP_POP, "area_km2_min": KEEP_AREA_KM2},
+                "strategic_keep": sorted(STRATEGIC_KEEP),
+                "annexed": [item for item in nation_report
+                            if item["action"] == "annexed"],
+                "merged": [item for item in nation_report
+                           if item["action"] == "merged"],
+                "removed": [item for item in nation_report
+                            if item["action"] == "removed"],
             },
             "color_min_delta_e": 30,
             "color_min_delta_e_floor": 25,

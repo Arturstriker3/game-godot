@@ -11181,7 +11181,7 @@
 		{
 			"id": "DEP-COPPER-000268",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "copper",
 			"px": 4975.0,
 			"py": 1501.1,
@@ -11207,7 +11207,7 @@
 		{
 			"id": "DEP-COPPER-000269",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "copper",
 			"px": 4979.8,
 			"py": 1489.8,
@@ -11626,7 +11626,7 @@
 		{
 			"id": "DEP-COPPER-000283",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "copper",
 			"px": 1691.1,
 			"py": 574.8,
@@ -28725,7 +28725,7 @@
 		{
 			"id": "DEP-GOLD-000181",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "gold",
 			"px": 4622.3,
 			"py": 1398.1,
@@ -38795,7 +38795,7 @@
 		{
 			"id": "DEP-IRON-000293",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "iron",
 			"px": 4963.9,
 			"py": 1501.8,
@@ -39246,7 +39246,7 @@
 		{
 			"id": "DEP-IRON-000306",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "iron",
 			"px": 1614.6,
 			"py": 542.6,
@@ -39276,7 +39276,7 @@
 		{
 			"id": "DEP-IRON-000307",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "iron",
 			"px": 1627.5,
 			"py": 553.1,
@@ -39302,7 +39302,7 @@
 		{
 			"id": "DEP-IRON-000308",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "iron",
 			"px": 1687.5,
 			"py": 577.5,
@@ -44403,7 +44403,7 @@
 		{
 			"id": "DEP-IRON-000444",
 			"territory": "TRT000400",
-			"owner": "HKG",
+			"owner": "CHN",
 			"resource": "iron",
 			"px": 4088.5,
 			"py": 924.2,
@@ -58636,7 +58636,7 @@
 		{
 			"id": "DEP-REE-000003",
 			"territory": "TRT000400",
-			"owner": "HKG",
+			"owner": "CHN",
 			"resource": "rare_earths",
 			"px": 4097.2,
 			"py": 895.8,
@@ -75041,7 +75041,7 @@
 		{
 			"id": "DEP-LEAD-900650",
 			"territory": "TRT000148",
-			"owner": "GRL",
+			"owner": "DNK",
 			"resource": "lead",
 			"px": 1788.1,
 			"py": 267.5,
@@ -91904,7 +91904,7 @@
 		{
 			"id": "DEP-GOLD-901320",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "gold",
 			"px": 1687.6,
 			"py": 587.0,
@@ -91931,7 +91931,7 @@
 		{
 			"id": "DEP-GOLD-901321",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "gold",
 			"px": 1721.5,
 			"py": 558.7,
@@ -91959,7 +91959,7 @@
 		{
 			"id": "DEP-LEAD-901322",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "lead",
 			"px": 1661.1,
 			"py": 613.0,
@@ -91986,7 +91986,7 @@
 		{
 			"id": "DEP-LEAD-901323",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "lead",
 			"px": 1710.3,
 			"py": 571.8,
@@ -92012,7 +92012,7 @@
 		{
 			"id": "DEP-TUNGSTEN-901324",
 			"territory": "TRT000266",
-			"owner": "SPM",
+			"owner": "CAN",
 			"resource": "tungsten",
 			"px": 1706.9,
 			"py": 589.0,
@@ -110350,7 +110350,7 @@
 		{
 			"id": "DEP-LEAD-902032",
 			"territory": "TRT000400",
-			"owner": "HKG",
+			"owner": "CHN",
 			"resource": "lead",
 			"px": 4092.6,
 			"py": 921.3,
@@ -110378,7 +110378,7 @@
 		{
 			"id": "DEP-LEAD-902033",
 			"territory": "TRT000400",
-			"owner": "HKG",
+			"owner": "CHN",
 			"resource": "lead",
 			"px": 4111.1,
 			"py": 916.7,
@@ -110405,7 +110405,7 @@
 		{
 			"id": "DEP-TUNGSTEN-902034",
 			"territory": "TRT000400",
-			"owner": "HKG",
+			"owner": "CHN",
 			"resource": "tungsten",
 			"px": 4090.5,
 			"py": 914.0,
@@ -110435,7 +110435,7 @@
 		{
 			"id": "DEP-TUNGSTEN-902035",
 			"territory": "TRT000400",
-			"owner": "HKG",
+			"owner": "CHN",
 			"resource": "tungsten",
 			"px": 4121.3,
 			"py": 920.4,
@@ -123002,7 +123002,7 @@
 		{
 			"id": "DEP-GOLD-902523",
 			"territory": "TRT000523",
-			"owner": "GRL",
+			"owner": "DNK",
 			"resource": "gold",
 			"px": 2041.7,
 			"py": 305.6,
@@ -146125,7 +146125,7 @@
 		{
 			"id": "DEP-BAUXITE-903432",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "bauxite",
 			"px": 4722.2,
 			"py": 1381.9,
@@ -146152,7 +146152,7 @@
 		{
 			"id": "DEP-BAUXITE-903433",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "bauxite",
 			"px": 4822.9,
 			"py": 1541.6,
@@ -146178,7 +146178,7 @@
 		{
 			"id": "DEP-BAUXITE-903434",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "bauxite",
 			"px": 4982.6,
 			"py": 1493.0,
@@ -146205,7 +146205,7 @@
 		{
 			"id": "DEP-GOLD-903435",
 			"territory": "TRT000711",
-			"owner": "NCL",
+			"owner": "FRA",
 			"resource": "gold",
 			"px": 4973.4,
 			"py": 1489.3,
@@ -146396,7 +146396,7 @@
 		{
 			"id": "DEP-PHOSPHATE-903443",
 			"territory": "TRT000713",
-			"owner": "PYF",
+			"owner": "FRA",
 			"resource": "phosphate",
 			"px": 435.2,
 			"py": 1456.7,
@@ -146828,7 +146828,7 @@
 		{
 			"id": "DEP-PHOSPHATE-903463",
 			"territory": "TRT000737",
-			"owner": "MNP",
+			"owner": "USA",
 			"resource": "phosphate",
 			"px": 4818.4,
 			"py": 1257.2,
