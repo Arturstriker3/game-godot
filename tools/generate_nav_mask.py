@@ -49,6 +49,26 @@ REMOVED_ISLETS = [
      "radius_deg": 0.18, "max_cells": 8},
 ]
 
+## Ilhas do mar Egeu removidas por inteiro (mesma curadoria e mesma caixa do
+## atlas, ver `REMOVED_ISLAND_REGIONS` em tools/build_atlas_layers.py): todo
+## componente de terra inteiro dentro da caixa vira agua, exceto os seeds de
+## `keep` (Creta, Eubeia e as ilhas do mar de Marmara). Roda DEPOIS dos
+## estreitos: se rodasse antes, o corte dos Dardanelos poderia ser tracado por
+## cima de uma ilha removida.
+REMOVED_ISLAND_REGIONS = [
+    {
+        "name": "egeu",
+        "box": (23.35, 30.05, 35.25, 41.05),
+        "keep": [
+            ("crete", 24.90, 35.30),
+            ("euboea", 24.10, 38.60),
+            ("marmara", 27.62, 40.62),
+            ("marmara_avsa", 27.63, 40.455),
+        ],
+        "max_km2": 3000.0,
+    },
+]
+
 ## nome, caixa (lon0, lon1, lat0, lat1), mar A (lon, lat), mar B (lon, lat)
 STRAITS = [
     ("gibraltar", (-6.6, -4.6, 35.4, 36.4), (-7.0, 35.7), (-3.0, 36.6)),
@@ -210,6 +230,80 @@ def remove_islets(mask: np.ndarray) -> int:
     return removed
 
 
+def cell_km2(width: int, height: int, lat: float) -> float:
+    """Area (km2) de uma celula do nav_mask na latitude do componente."""
+    radius = 6371.0
+    dlon = np.radians(360.0 / width)
+    dlat = np.radians(180.0 / height)
+    return (radius ** 2) * np.cos(np.radians(lat)) * dlon * dlat
+
+
+def remove_island_regions(mask: np.ndarray) -> int:
+    """Zera os componentes de terra inteiros dentro das regioes de curadoria.
+
+    Mesmo mecanismo do atlas: componente que encosta na borda da caixa e
+    continente (ou esta cortado) e fica; os seeds de `keep` ficam; o resto
+    vira agua. Rodar depois dos estreitos (ver comentario da tabela)."""
+    removed = 0
+    height, width = mask.shape
+    for spec in REMOVED_ISLAND_REGIONS:
+        lon0, lon1, lat0, lat1 = spec["box"]
+        x0, y0 = pixel_of(lon0, lat1, width, height)
+        x1, y1 = pixel_of(lon1, lat0, width, height)
+        x0, x1 = max(0, x0), min(width - 1, x1)
+        y0, y1 = max(0, y0), min(height - 1, y1)
+        if x1 <= x0 or y1 <= y0:
+            continue
+        sub = mask[y0:y1 + 1, x0:x1 + 1] > WATER_MAX
+        labels, count = ndimage.label(sub)
+        kept_by_seed = set()
+        for label, klon, klat in spec["keep"]:
+            kx, ky = pixel_of(klon, klat, width, height)
+            kx, ky = kx - x0, ky - y0
+            component = 0
+            best_distance = None
+            for dy in range(-1, 2):
+                for dx in range(-1, 2):
+                    xx, yy = kx + dx, ky + dy
+                    if (0 <= xx < sub.shape[1] and 0 <= yy < sub.shape[0]
+                            and labels[yy, xx]):
+                        distance = dx * dx + dy * dy
+                        if best_distance is None or distance < best_distance:
+                            best_distance, component = distance, int(labels[yy, xx])
+            if component:
+                kept_by_seed.add(component)
+                print("  %-16s mantido" % label)
+            else:
+                print("  %-16s seed fora da terra (ilha menor que 1 celula)" % label)
+        removed_here = 0
+        kept_mask = np.isin(labels, list(kept_by_seed))
+        # A grade e 16 km/celula: ilhas finas (Eubeia) e ilhotas de costa se
+        # partem em varios componentes. Componente encostado (8-vizinhos) em
+        # terra mantida NAO e removido, senao abriria um buraco na costa.
+        near_kept = ndimage.binary_dilation(
+            kept_mask, structure=np.ones((3, 3), dtype=bool))
+        for index in range(1, count + 1):
+            if index in kept_by_seed:
+                continue
+            ys, xs = np.where(labels == index)
+            if (xs.min() == 0 or ys.min() == 0
+                    or xs.max() == sub.shape[1] - 1
+                    or ys.max() == sub.shape[0] - 1):
+                continue
+            if near_kept[ys, xs].any():
+                print("  %-16s mantido: encosta em terra mantida" % spec["name"])
+                continue
+            lat = 90.0 - ((ys.mean() + y0) / height) * 180.0
+            if xs.size * cell_km2(width, height, lat) > spec["max_km2"]:
+                continue
+            mask[ys + y0, xs + x0] = 0
+            removed_here += xs.size
+            print("  %-16s removido: %d celula(s)" % (spec["name"], xs.size))
+        removed += removed_here
+        print("  %-16s %d celula(s) no total" % (spec["name"], removed_here))
+    return removed
+
+
 def build_mask() -> np.ndarray:
     water = load_water_colors()
     pixels = np.asarray(Image.open(PROVINCES_PNG).convert("RGB"))
@@ -243,6 +337,10 @@ def main() -> None:
     removed = remove_islets(mask)
     if removed:
         print("ilhotes: %d celula(s) de terra viraram agua" % removed)
+
+    removed = remove_island_regions(mask)
+    if removed:
+        print("ilhas do Egeu: %d celula(s) de terra viraram agua" % removed)
 
     Image.fromarray(mask, mode="L").save(OUTPUT)
     print("gerado %s (%dx%d)" % (OUTPUT, mask.shape[1], mask.shape[0]))

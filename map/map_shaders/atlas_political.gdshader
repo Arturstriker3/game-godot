@@ -86,10 +86,12 @@ float value_noise(vec2 p) {
 }
 
 // Bloco de território dinâmico de UMA camada: lê o canal B do SDF e o raster
-// de id de província, e devolve o dono do lado certo da divisa e se os dois
-// lados têm donos diferentes. Igual para a região e para o mundo.
+// de id de província, e devolve o dono do lado certo da divisa, se os dois
+// lados têm donos diferentes e se este pixel tem dono válido. Igual para a
+// região e para o mundo.
 void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
-		out float out_differ, out vec3 out_nation, out float out_highlight) {
+		out float out_differ, out vec3 out_nation, out float out_highlight,
+		out float out_no_owner) {
 	vec2 e = 1.0 / vec2(textureSize(sdf_tex, 0));
 	float b_tx = (texture(sdf_tex, uv).b * 255.0 - 128.0) / 8.0;
 	float b_l = (texture(sdf_tex, uv - vec2(e.x, 0.0)).b * 255.0 - 128.0) / 8.0;
@@ -111,10 +113,20 @@ void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
 	float id_other = atlas_province_id(prov_tex, other_uv);
 	vec4 owner_here = atlas_owner(province_owner, owner_columns, id_here);
 	vec4 owner_other = atlas_owner(province_owner, owner_columns, id_other);
-	float differ = (round(owner_here.a * 255.0) != round(owner_other.a * 255.0)) ? 1.0 : 0.0;
+	float index_here = round(owner_here.a * 255.0);
+	float index_other = round(owner_other.a * 255.0);
+	// Sem id de província ou sem dono publicado = pixel sem território. O
+	// fragmento usa isto para descartar a máscara de terra: uma ilha removida
+	// do atlas nunca mais pinta preto, mesmo com raster/importação defasada.
+	float has_here = (id_here > 0.5 && index_here > 0.0) ? 1.0 : 0.0;
+	float has_other = (id_other > 0.5 && index_other > 0.0) ? 1.0 : 0.0;
+	float differ = (has_here > 0.5 && has_other > 0.5
+			&& index_here != index_other) ? 1.0 : 0.0;
 	out_differ = differ * reliable;
-	out_nation = owner_here.rgb;
-	out_highlight = (round(owner_here.a * 255.0) == float(highlight_owner)) ? 1.0 : 0.0;
+	out_nation = (has_here > 0.5) ? owner_here.rgb : vec3(0.0);
+	out_highlight = (has_here > 0.5
+			&& index_here == float(highlight_owner)) ? 1.0 : 0.0;
+	out_no_owner = 1.0 - has_here;
 }
 
 void fragment() {
@@ -169,15 +181,24 @@ void fragment() {
 	float world_differ = 0.0;
 	float region_highlight = 0.0;
 	float world_highlight = 0.0;
+	float region_no_owner = 0.0;
+	float world_no_owner = 0.0;
 	vec3 region_dyn_nation = nation;
 	vec3 world_dyn_nation = nation;
 	if (dynamic_territory) {
-		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation, region_highlight);
-		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation, world_highlight);
+		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation,
+				region_highlight, region_no_owner);
+		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation,
+				world_highlight, world_no_owner);
 	}
 	float differ = (region_w > 0.5) ? region_differ : world_differ;
 	vec3 dyn_nation = (region_w > 0.5) ? region_dyn_nation : world_dyn_nation;
 	float highlight = (region_w > 0.5) ? region_highlight : world_highlight;
+	// Pixel sem província/dono válido não é terra: vira mar (era o preto das
+	// ilhas removidas do Egeu quando o raster ainda trazia o id antigo).
+	float no_owner = dynamic_territory
+			? ((region_w > 0.5) ? region_no_owner : world_no_owner) : 0.0;
+	float has_territory = 1.0 - no_owner;
 
 	// Cor da nação passa a ser a cor do dono (substitui region/world color).
 	if (dynamic_territory) {
@@ -259,10 +280,10 @@ void fragment() {
 	sea *= 0.985 + value_noise(plane * 6.0) * 0.03;
 
 	// --- Composição ----------------------------------------------------------
-	float land_mask = smoothstep(-0.5, 0.5, coast / px_coast);
+	float land_mask = smoothstep(-0.5, 0.5, coast / px_coast) * has_territory;
 	vec3 color = mix(sea, land, land_mask);
 
-	float coast_line = ink_line(abs(coast), px_coast, coast_width_px);
+	float coast_line = ink_line(abs(coast), px_coast, coast_width_px) * has_territory;
 	color = mix(color, coast_ink, coast_line * 0.85);
 
 	float country_px = max(country_width_px, country_width_world / eff_border_px);

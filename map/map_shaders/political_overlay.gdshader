@@ -47,8 +47,9 @@ uniform float coast_width_px = 1.15;
 const float COAST_OPACITY = 0.45;
 
 // Bloco de território dinâmico de UMA camada (mesmas regras do atlas político).
+// `out_no_owner` marca pixel sem província/dono válido (mar/sem território).
 void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
-		out float out_differ, out vec3 out_nation) {
+		out float out_differ, out vec3 out_nation, out float out_no_owner) {
 	vec2 e = 1.0 / vec2(textureSize(sdf_tex, 0));
 	float b_tx = (texture(sdf_tex, uv).b * 255.0 - 128.0) / 8.0;
 	float b_l = (texture(sdf_tex, uv - vec2(e.x, 0.0)).b * 255.0 - 128.0) / 8.0;
@@ -65,9 +66,15 @@ void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
 	float id_other = atlas_province_id(prov_tex, other_uv);
 	vec4 owner_here = atlas_owner(province_owner, owner_columns, id_here);
 	vec4 owner_other = atlas_owner(province_owner, owner_columns, id_other);
-	float differ = (round(owner_here.a * 255.0) != round(owner_other.a * 255.0)) ? 1.0 : 0.0;
+	float index_here = round(owner_here.a * 255.0);
+	float index_other = round(owner_other.a * 255.0);
+	float has_here = (id_here > 0.5 && index_here > 0.0) ? 1.0 : 0.0;
+	float has_other = (id_other > 0.5 && index_other > 0.0) ? 1.0 : 0.0;
+	float differ = (has_here > 0.5 && has_other > 0.5
+			&& index_here != index_other) ? 1.0 : 0.0;
 	out_differ = differ * reliable;
-	out_nation = owner_here.rgb;
+	out_nation = (has_here > 0.5) ? owner_here.rgb : vec3(0.0);
+	out_no_owner = 1.0 - has_here;
 }
 
 void fragment() {
@@ -110,14 +117,21 @@ void fragment() {
 	// --- Território dinâmico (região e mundo) -------------------------------
 	float region_differ = 0.0;
 	float world_differ = 0.0;
+	float region_no_owner = 0.0;
+	float world_no_owner = 0.0;
 	vec3 region_dyn_nation = nation;
 	vec3 world_dyn_nation = nation;
 	if (dynamic_territory) {
-		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation);
-		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation);
+		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation,
+				region_no_owner);
+		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation,
+				world_no_owner);
 	}
 	float differ = (region_w > 0.5) ? region_differ : world_differ;
 	vec3 dyn_nation = (region_w > 0.5) ? region_dyn_nation : world_dyn_nation;
+	float no_owner = dynamic_territory
+			? ((region_w > 0.5) ? region_no_owner : world_no_owner) : 0.0;
+	float has_territory = 1.0 - no_owner;
 
 	// Cor da nação passa a ser a cor do dono.
 	if (dynamic_territory) {
@@ -125,7 +139,8 @@ void fragment() {
 	}
 
 	// Terra (máscara suave da costa) para limitar preenchimento e fronteira.
-	float land = smoothstep(-0.5, 0.5, coast / px_coast);
+	// Pixel sem dono válido não entra como terra: nunca pinta preto.
+	float land = smoothstep(-0.5, 0.5, coast / px_coast) * has_territory;
 
 	// Fronteira de país em tinta, descartando o salto do eixo medial. Com
 	// território dinâmico, a fronteira é a divisa entre donos (região e mundo).
@@ -144,8 +159,8 @@ void fragment() {
 	float country_px = max(country_width_px, country_width_world / eff_border_px);
 	float country_line = ink_line(eff_border, eff_border_px, country_px) * land * eff_border_real;
 
-	// Linha de costa fina.
-	float coast_line = ink_line(abs(coast), px_coast, coast_width_px);
+	// Linha de costa fina (também some onde não há território válido).
+	float coast_line = ink_line(abs(coast), px_coast, coast_width_px) * has_territory;
 
 	// --- Composição "over" em alfa pré-multiplicado -------------------------
 	float fill_alpha = land * fill_opacity;

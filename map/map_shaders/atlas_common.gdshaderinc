@@ -67,8 +67,15 @@ float atlas_province_id(sampler2D region_province, vec2 uv) {
 
 // Busca a cor e o índice do dono da província `id` na textura de donos.
 // rgb = cor do dono, a * 255 = índice do dono. Texel (id % cols, id / cols).
+// Id ausente/fora da textura devolve alfa 0 ("sem dono"). Sem esta guarda o
+// id 0 caía no texel (0,0) — que nunca é escrito — e a ilha removida (id que
+// saiu de provinces.json) pintava preto em vez de mar.
 vec4 atlas_owner(sampler2D province_owner, int owner_columns, float id) {
-	int iid = int(id);
+	int iid = int(round(id));
+	ivec2 texels = textureSize(province_owner, 0);
+	if (iid <= 0 || iid >= texels.x * texels.y) {
+		return vec4(0.0);
+	}
 	ivec2 px = ivec2(iid % owner_columns, iid / owner_columns);
 	return texelFetch(province_owner, px, 0);
 }

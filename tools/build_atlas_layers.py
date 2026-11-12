@@ -36,12 +36,14 @@ numpy, pillow, pyshp e scipy.
 from __future__ import annotations
 
 import json
+import math
 import os
 
 import numpy as np
 import shapefile
 from PIL import Image, ImageDraw
-from scipy.ndimage import distance_transform_edt, label as nd_label
+from scipy.ndimage import (binary_dilation as nd_dilate, distance_transform_edt,
+                           label as nd_label)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "map", "map_data", "atlas")
@@ -75,6 +77,33 @@ WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
 REMOVED_ISLETS = [
     {"name": "suez_gulf_shadwan", "lon": 33.98, "lat": 27.51,
      "radius_deg": 0.18, "max_px": 4096},
+]
+
+# Ilhas do mar Egeu removidas por inteiro (curadoria 2026-11). Mesmo mecanismo
+# dos ilhotes, mas por REGIÃO: todo componente de terra inteiro dentro da caixa
+# e com área <= `max_km2` é zerado. Ficam de fora:
+#   - os componentes que encostam na borda da caixa (continente grego, Anatólia,
+#     Trácia e o norte do Peloponeso, que entram pela borda oeste);
+#   - os seeds de `keep`: Creta e Eubeia (pedido explícito) e as duas ilhas do
+#     mar de Mármara (Gökçeada/Imbros e Bozcaada/Tenedos são Egeu e saem; Marmara
+#     e Avşa ficam porque o Mármara não é o Egeu).
+# A caixa cobre o Egeu de 23,35E (a oeste das Cíclades, leste de Kythira) a
+# 30,05E (litoral turco) e de 35,25N (Creta, que sai pela borda sul) a 41,05N
+# (Trácia/Mármara). Nada no Jônico (a oeste de 23,35E) nem em Chipre é tocado.
+# `max_km2` = 3000: maior ilha do Egeu é Lesbos (1.633 km²); Creta (8.336) e
+# Eubeia (3.684) ficam acima do teto e ainda estão nos seeds.
+REMOVED_ISLAND_REGIONS = [
+    {
+        "name": "egeu",
+        "box": (23.35, 30.05, 35.25, 41.05),
+        "keep": [
+            ("crete", 24.90, 35.30),
+            ("euboea", 24.10, 38.60),
+            ("marmara", 27.62, 40.62),
+            ("marmara_avsa", 27.63, 40.455),
+        ],
+        "max_km2": 3000.0,
+    },
 ]
 
 # Código do Natural Earth -> tag do jogo (o jogo usa NED para a Holanda).
@@ -317,6 +346,146 @@ def remove_islets(owners, provinces, grid, specs):
                   f"em lon={lon:.3f} lat={lat:.3f}")
 
 
+def component_km2(grid, pixels, lat):
+    """Área aproximada (km²) de um componente de `pixels` na grade do atlas.
+
+    Mesma projeção equirretangular de `tools/compute_province_areas.py`."""
+    radius = 6371.0
+    dlon = math.radians((grid.lon1 - grid.lon0) / grid.width)
+    dlat = math.radians((grid.lat1 - grid.lat0) / grid.height)
+    return pixels * (radius ** 2) * math.cos(math.radians(lat)) * dlon * dlat
+
+
+def seed_label(labels, x, y, radius=3):
+    """Id do componente de terra mais próximo do seed (tolerância em px).
+
+    Ilhas pequenas (Avşa, no Mármara) têm o centroide a 1-2 texels de um pixel
+    de terra; sem a tolerância o seed cairia na água e a ilha seria removida."""
+    best = 0
+    best_distance = None
+    height, width = labels.shape
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            xx, yy = x + dx, y + dy
+            if 0 <= xx < width and 0 <= yy < height and labels[yy, xx]:
+                distance = dx * dx + dy * dy
+                if best_distance is None or distance < best_distance:
+                    best_distance, best = distance, int(labels[yy, xx])
+    return best
+
+
+def remove_island_regions(owners, provinces, grid, specs, layer, keep_mask=False):
+    """Zera os componentes de terra inteiros dentro de uma região de curadoria.
+
+    Diferente de `remove_islets` (uma caixa pequena por ilhote), aqui a caixa é
+    o mar inteiro: cada componente INTEIRO dentro dela e com área <= `max_km2`
+    é removido, exceto os seeds de `keep`. Componente que encosta na borda da
+    caixa é continente (ou está cortado por ela) e fica. O id de província dos
+    pixels removidos também volta a 0. Com `keep_mask`, devolve o booleano dos
+    pixels zerados (usado para corrigir a camada mundial)."""
+    removed = np.zeros(owners.shape, dtype=bool) if keep_mask else None
+    removed_total = 0
+    for spec in specs:
+        lon0, lon1, lat0, lat1 = spec["box"]
+        x0 = int((lon0 - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)
+        x1 = int((lon1 - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width) + 1
+        y0 = int((grid.lat1 - lat1) / (grid.lat1 - grid.lat0) * grid.height)
+        y1 = int((grid.lat1 - lat0) / (grid.lat1 - grid.lat0) * grid.height) + 1
+        x0, x1 = max(0, x0), min(grid.width, x1)
+        y0, y1 = max(0, y0), min(grid.height, y1)
+        if x1 <= x0 or y1 <= y0:
+            continue
+        sub = owners[y0:y1, x0:x1] != 0
+        labels, count = nd_label(sub)
+
+        kept_by_seed = set()
+        for label, klon, klat in spec["keep"]:
+            kx = int(round((klon - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)) - x0
+            ky = int(round((grid.lat1 - klat) / (grid.lat1 - grid.lat0) * grid.height)) - y0
+            component = seed_label(labels, kx, ky)
+            if component:
+                kept_by_seed.add(component)
+                print(f"[ilhas:{layer}] mantém {label}")
+            else:
+                print(f"[ilhas:{layer}] AVISO: seed {label} caiu fora da terra")
+
+        rows = []
+        for index in range(1, count + 1):
+            if index in kept_by_seed:
+                continue
+            ys, xs = np.where(labels == index)
+            if (xs.min() == 0 or ys.min() == 0
+                    or xs.max() == sub.shape[1] - 1
+                    or ys.max() == sub.shape[0] - 1):
+                continue  # encosta na borda: continente ou componente cortado
+            area = int(xs.size)
+            row = ys.mean() + y0
+            col = xs.mean() + x0
+            lat = grid.lat1 - (row + 0.5) / grid.height * (grid.lat1 - grid.lat0)
+            lon = grid.lon0 + (col + 0.5) / grid.width * (grid.lon1 - grid.lon0)
+            km2 = component_km2(grid, area, lat)
+            if km2 > spec["max_km2"]:
+                print(f"[ilhas:{layer}] mantém componente de {area} px "
+                      f"(~{km2:.0f} km², acima do teto)")
+                continue
+            owners[ys + y0, xs + x0] = 0
+            if provinces is not None:
+                provinces[ys + y0, xs + x0] = 0
+            if removed is not None:
+                removed[ys + y0, xs + x0] = True
+            removed_total += area
+            rows.append((km2, area, lon, lat))
+
+        rows.sort(reverse=True)
+        for km2, area, lon, lat in rows:
+            print(f"[ilhas:{layer}] {spec['name']}: {area:5d} px "
+                  f"~{km2:7.1f} km² lon={lon:8.3f} lat={lat:7.3f}")
+        print(f"[ilhas:{layer}] {spec['name']}: {len(rows)} componente(s), "
+              f"{sum(r[1] for r in rows)} px removidos")
+    return removed
+
+
+def apply_removed_mask(owners, provinces, grid, ref_grid, ref_mask):
+    """Repete no raster grosso a remoção feita na camada fina (região).
+
+    A camada mundial (4,9 km/texel) funde ilhas a menos de 1 texel do
+    continente — Samos fica a 1,6 km da Anatólia — e o componente passa a
+    encostar na borda da caixa, escapando da remoção por componente. A máscara
+    da região é ~2,6x mais fina; com 1 px de dilatação, todo pixel mundial que
+    cai nela vira água. Nunca toca a máscara fora da caixa do Egeu."""
+    if ref_mask is None or not ref_mask.any():
+        return 0
+    mask = nd_dilate(ref_mask, np.ones((3, 3), dtype=bool))
+    ys, xs = np.nonzero(mask)
+    lon_lo = ref_grid.lon0 + xs.min() / ref_grid.width * (ref_grid.lon1 - ref_grid.lon0)
+    lon_hi = ref_grid.lon0 + (xs.max() + 1) / ref_grid.width * (ref_grid.lon1 - ref_grid.lon0)
+    lat_hi = ref_grid.lat1 - ys.min() / ref_grid.height * (ref_grid.lat1 - ref_grid.lat0)
+    lat_lo = ref_grid.lat1 - (ys.max() + 1) / ref_grid.height * (ref_grid.lat1 - ref_grid.lat0)
+    x0 = max(0, int((lon_lo - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width))
+    x1 = min(grid.width, int((lon_hi - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width) + 1)
+    y0 = max(0, int((grid.lat1 - lat_hi) / (grid.lat1 - grid.lat0) * grid.height))
+    y1 = min(grid.height, int((grid.lat1 - lat_lo) / (grid.lat1 - grid.lat0) * grid.height) + 1)
+    cols = np.arange(x0, x1)
+    lons = grid.lon0 + (cols + 0.5) / grid.width * (grid.lon1 - grid.lon0)
+    rx = ((lons - ref_grid.lon0) / (ref_grid.lon1 - ref_grid.lon0)
+          * ref_grid.width).astype(np.int32)
+    np.clip(rx, 0, ref_grid.width - 1, out=rx)
+    cleared = 0
+    for row in range(y0, y1):
+        lat = grid.lat1 - (row + 0.5) / grid.height * (grid.lat1 - grid.lat0)
+        ry = int((ref_grid.lat1 - lat) / (ref_grid.lat1 - ref_grid.lat0) * ref_grid.height)
+        ry = min(max(ry, 0), ref_grid.height - 1)
+        hit = mask[ry, rx]
+        if not hit.any():
+            continue
+        hit_cols = cols[hit]
+        owners[row, hit_cols] = 0
+        if provinces is not None:
+            provinces[row, hit_cols] = 0
+        cleared += int(hit_cols.size)
+    return cleared
+
+
 def coast_field(land):
     """Distância assinada à costa em texels da grade alta (>0 = terra)."""
     if not land.any():
@@ -357,7 +526,8 @@ def process_rows(owners, provinces, supersample):
 
 def build_layer(name, bounds, width, countries, province_shapes,
                 province_countries=None, province_ids=None, supersample=SUPERSAMPLE,
-                band_rows=None, color_step=1):
+                band_rows=None, color_step=1, return_removed=False,
+                removed_reference=None):
     """Constrói uma camada do atlas.
 
     `band_rows` (linhas da grade BAIXA) processa os campos de distância em
@@ -378,6 +548,15 @@ def build_layer(name, bounds, width, countries, province_shapes,
         provinces = rasterize_ids(hi, province_shapes, province_ids)
     if REMOVED_ISLETS:
         remove_islets(owners, provinces, hi, REMOVED_ISLETS)
+    removed_mask = None
+    if REMOVED_ISLAND_REGIONS:
+        removed_mask = remove_island_regions(
+            owners, provinces, hi, REMOVED_ISLAND_REGIONS, name,
+            keep_mask=return_removed)
+    if removed_reference is not None:
+        cleared = apply_removed_mask(owners, provinces, hi, *removed_reference)
+        print(f"[{name}] {cleared} px que a camada fina removeu e o raster "
+              f"grosso tinha fundido no continente")
 
     coast_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     borders_lo = np.empty((lo_height, lo_width), dtype=np.float32)
@@ -443,6 +622,8 @@ def build_layer(name, bounds, width, countries, province_shapes,
         "borders": border_unsigned_lo,
         "color": color,
         "province_ids": province_ids_lo,
+        "removed_mask": removed_mask,
+        "removed_grid": hi,
     }
 
 def country_color(country):
@@ -596,7 +777,7 @@ def main():
 
     region = build_layer("region", REGION, REGION_W, countries,
                          region_shapes, region_countries, region_ids,
-                         supersample=SUPERSAMPLE)
+                         supersample=SUPERSAMPLE, return_removed=True)
     with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
         json.dump(nation_anchors(region, countries), handle, indent="\t")
         handle.write("\n")
@@ -608,7 +789,9 @@ def main():
     world_ids = list(range(1, len(provinces) + 1))
     world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
                         provinces, province_countries, world_ids, supersample=SUPERSAMPLE,
-                        band_rows=512, color_step=max(WORLD_W // 4096, 1))
+                        band_rows=512, color_step=max(WORLD_W // 4096, 1),
+                        removed_reference=(region["removed_grid"],
+                                           region["removed_mask"]))
     write_provinces_json(region, world, province_countries, countries)
     write_minimap(world)
     print(f"escrito em {OUT}")

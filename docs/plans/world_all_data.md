@@ -237,3 +237,108 @@ presente, VEN-CBL ausente, ΔE de vizinhos < 30, id duplicado. Estado atual:
 2. `GAME_STATE.md` ainda descreve 66 nações / 252 cidades; atualizar na promoção.
 3. Badge de porto para os 114 portos sem `port_of` exige decidir a cidade de
    origem no cenário.
+
+## 13. Curadoria do mapa: ilhas removidas do Egeu (2026-11)
+
+`REMOVED_ISLAND_REGIONS` (em `tools/build_atlas_layers.py` e
+`tools/generate_nav_mask.py`) zera todo componente de terra inteiro dentro da
+caixa **23,35–30,05E / 35,25–41,05N** com área **≤ 3.000 km²**, exceto Creta,
+Eubeia e as ilhas do mar de Mármara (Gökçeada/Imbros e Bozcaada/Tenedos do
+Egeu saem; Marmara e Avşa ficam). O mesmo corte vale para o `nav_mask.png` e
+para os rasters do atlas (`region_sdf`, `region_province`, `region_color` e
+`world_*`). **70 componentes, 16.050 px** na grade alta da região (supersample
+2: 8.192 px sobre 70°). O log do build (`[ilhas:region]`) não registra nomes:
+a coluna "nome aproximado" foi atribuída pelo centroide; componentes de 1 px
+ficam sem nome.
+
+| Nome aproximado | lon | lat | Área (px) |
+|---|---:|---:|---:|
+| Lesbos | 26.244 | 39.171 | 2452 |
+| Rodes | 27.951 | 36.186 | 2028 |
+| Quios | 26.016 | 38.404 | 1295 |
+| Lemnos | 25.226 | 39.920 | 777 |
+| Samos | 26.815 | 37.735 | 727 |
+| Tasos | 24.656 | 40.689 | 624 |
+| Naxos | 25.488 | 37.062 | 623 |
+| Andros | 24.852 | 37.862 | 584 |
+| Karpathos | 27.158 | 35.600 | 476 |
+| Imbros (Gökçeada) | 25.838 | 40.164 | 450 |
+| Kos | 27.126 | 36.817 | 438 |
+| Icária | 26.152 | 37.598 | 396 |
+| Skyros | 24.553 | 38.868 | 333 |
+| Tinos | 25.132 | 37.610 | 308 |
+| Paros | 25.198 | 37.062 | 302 |
+| Samotrácia | 25.583 | 40.458 | 295 |
+| Milos | 24.439 | 36.707 | 263 |
+| Amorgos | 25.906 | 36.849 | 195 |
+| Kea | 24.331 | 37.616 | 192 |
+| Kalymnos | 26.973 | 36.992 | 179 |
+| Ios | 25.332 | 36.722 | 164 |
+| Kythnos | 24.419 | 37.400 | 164 |
+| Skopelos | 23.691 | 39.135 | 163 |
+| Astypalaia | 26.352 | 36.573 | 157 |
+| Mykonos | 25.377 | 37.458 | 142 |
+| Sifnos | 24.706 | 36.978 | 141 |
+| Santorini (Thira) | 25.435 | 36.400 | 136 |
+| Syros | 24.918 | 37.434 | 134 |
+| Aegina | 23.493 | 37.737 | 133 |
+| Serifos | 24.481 | 37.160 | 119 |
+| Symi | 27.832 | 36.587 | 118 |
+| Kassos | 26.930 | 35.397 | 112 |
+| Tilos | 27.365 | 36.428 | 110 |
+| Leros | 26.833 | 37.149 | 100 |
+| Alonnisos | 23.914 | 39.216 | 94 |
+| Skiathos | 23.459 | 39.173 | 83 |
+| Hydra | 23.476 | 37.338 | 80 |
+| Psara | 25.578 | 38.576 | 76 |
+| Tenedos (Bozcaada) | 26.040 | 39.824 | 74 |
+| Agios Efstratios | 25.004 | 39.519 | 73 |
+| Sikinos | 25.126 | 36.682 | 72 |
+| Patmos | 26.559 | 37.331 | 67 |
+| Kimolos | 24.560 | 36.814 | 66 |
+| Nisyros | 27.167 | 36.587 | 59 |
+| Anafi | 25.782 | 36.373 | 58 |
+| Folegandros | 24.905 | 36.632 | 56 |
+| Antiparos | 25.058 | 37.005 | 54 |
+| Ilhéu ao sul de Rodes | 27.569 | 36.229 | 49 |
+| Ilhéu a leste de Alonnisos | 24.067 | 39.329 | 43 |
+| Gyaros | 24.712 | 37.611 | 35 |
+| Ilhéu a oeste de Milos | 24.640 | 36.773 | 34 |
+| Ilhéu a leste de Ios | 25.455 | 36.843 | 32 |
+| Poros | 23.482 | 37.528 | 31 |
+| Ilhéu a oeste de Amorgos | 25.649 | 36.891 | 29 |
+| Ilhéu a noroeste de Amorgos | 25.812 | 37.113 | 24 |
+| Ilhéu a sudeste do Peloponeso | 23.460 | 36.913 | 7 |
+| Ilhéu a leste de Quios | 26.838 | 38.524 | 7 |
+| Ilhéu a sudeste do Peloponeso | 23.883 | 36.838 | 5 |
+| Ilhéu de 1 px | 28.094 | 36.055 | 1 |
+| Ilhéu de 1 px | 28.880 | 36.670 | 1 |
+| Ilhéu de 1 px | 28.299 | 36.721 | 1 |
+| Ilhéu de 1 px | 25.735 | 36.798 | 1 |
+| Ilhéu de 1 px | 25.838 | 37.140 | 1 |
+| Ilhéu de 1 px | 25.240 | 37.149 | 1 |
+| Ilhéu de 1 px | 26.949 | 37.790 | 1 |
+| Ilhéu de 1 px | 26.453 | 38.422 | 1 |
+| Ilhéu de 1 px | 26.812 | 38.542 | 1 |
+| Ilhéu de 1 px | 23.360 | 39.960 | 1 |
+| Ilhéu de 1 px | 23.830 | 40.011 | 1 |
+| Ilhéu de 1 px | 25.453 | 40.037 | 1 |
+
+Os ids **PRV002832** e **PRV002866** (as duas maiores ilhas do Egeu) também
+saíram de `data/definitions/natural/province_areas.json`,
+`data/definitions/provinces.txt`, `data/history/provinces/provinces.json` e
+`data/history/territories/territories.json`. Nenhuma cidade, porto ou jazida
+usava esses ids.
+
+O ilhote **Shadwan** (33,98N 27,51E) continua removido por `REMOVED_ISLETS`
+(camada mundial) e o `world_sdf`/`world_province` já o tratam como mar; a
+captura política confirma água no ponto.
+
+**Correção do preto:** o cache de importação do Godot pode continuar servindo
+o atlas antigo (o jogo não reimporta ao rodar), e nele as ilhas ainda eram
+terra com ids que já não existiam em `provinces.json`. O shader lia o texel 0
+da textura de donos — nunca escrito — e pintava preto. Além de reimportar os
+PNGs (`godot --headless --import`), `atlas_common.gdshaderinc::atlas_owner`
+agora recusa id ≤ 0/fora da textura e os dois `dyn_block` marcam "sem dono";
+o fragmento descarta a máscara de terra nesses pixels, então id/owner ausente
+renderiza mar, nunca preto.

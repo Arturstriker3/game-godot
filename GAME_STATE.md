@@ -95,6 +95,21 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   - `paper_flat.png` 512×256 — textura neutra de papel (terreno do modo político); a base branca dos demais modos é desenhada por shader.
   - `atlas/world_color.png`, `atlas/world_sdf.png`, `atlas/region_color.png`, `atlas/region_sdf.png`, `atlas/minimap.png`, `atlas/nations.json` — camadas do mapa atlas geradas por `tools/build_atlas_layers.py` (Natural Earth 10m).
   - `nav_mask.png` 2500×1250 (terra/água/costa, pathfinding A* dos comboios).
+- **Curadoria do Egeu (2026-11):** `REMOVED_ISLAND_REGIONS` (em
+  `tools/build_atlas_layers.py` e `tools/generate_nav_mask.py`) removeu **70
+  componentes (16.050 px)** de terra do Egeu — todas as ilhas da caixa
+  23,35–30,05E / 35,25–41,05N, exceto Creta, Eubeia e as ilhas do Mármara — do
+  SDF/província/cor do atlas e do `nav_mask.png`; saíram também as províncias
+  `PRV002832`/`PRV002866` de `province_areas.json`, `provinces.txt`,
+  `data/history/provinces` e `data/history/territories`. Nenhuma cidade, porto
+  ou jazida foi afetada. Shadwan segue removido por `REMOVED_ISLETS`. O shader
+  (`atlas_owner` + `dyn_block`) agora trata id de província/dono ausente como
+  **mar/sem território** (nunca lê o texel 0, preto) e o `world_sdf` já é água
+  nas ilhas. **Atenção:** o jogo usa o cache `.godot/imported/`; depois de
+  regerar os PNGs do atlas é preciso rodar `godot --headless --import`, senão as
+  capturas continuam mostrando o mapa antigo. Lista completa em
+  `docs/plans/world_all_data.md` §13; evidência em
+  `docs/map_visual/aegean_clean/` (d013/d026/d052/d120, foco GRC-ATH).
 - **Províncias/territórios/países:** `data/history/provinces/provinces.json` (14.402 províncias), `data/history/territories/territories.json` (737 territórios), `data/history/countries/` (193 JSON); `data/definitions/*.txt` restringidos a 4 países (NNN/GBR/FRA/DEU). O jogo ao vivo usa **8 nações** (GBR, FRA, DEU, NED, BEL, VEN, SUR, GUY).
 - **Base natural = 739 territórios:** 737 legados + **BHR `TRT000738`** e **QAT `TRT000739`**, criados por `tools/add_gulf_territories.py` (média de centróide das províncias desses países no atlas + clima real WorldClim pelo mesmo método do `apply_real_climate`). O script também reatribui os depósitos do Golfo ao país real: **North Field → QAT**, **Khuff/Awali → BHR**, **Ghawar → SAU** (antes Ghawar ficava em KWT e o North Field em KWT/SAU por centróide mais próximo). Roda **antes** de `apply_deposit_supplement.py` e é idempotente.
 - **Fronteiras:** legado = Voronoi + SDF via Jump Flooding Algorithm (`jfa.glsl`/`jfa_encode.glsl` + `map_texture_sdf.gd`); jogo = raster Natural Earth composto por shader.

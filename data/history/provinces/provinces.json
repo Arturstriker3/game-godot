@@ -11211,10 +11211,6 @@
 		"province_owner": "GRC",
 		"province_controller": "GRC"
 	},
-	"PRV002832": {
-		"province_owner": "GRC",
-		"province_controller": "GRC"
-	},
 	"PRV002833": {
 		"province_owner": "CYP",
 		"province_controller": "CYP"
@@ -11334,10 +11330,6 @@
 	"PRV002865": {
 		"province_owner": "PRT",
 		"province_controller": "PRT"
-	},
-	"PRV002866": {
-		"province_owner": "GRC",
-		"province_controller": "GRC"
 	},
 	"PRV002867": {
 		"province_owner": "GRC",
