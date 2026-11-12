@@ -5,45 +5,45 @@ AGO,Angola,ao,#885a9b,Luanda,AOA,republic,resource,africa,39040039,400.2
 AIA,Anguilla,ai,#9a6356,The Valley,XCD,territory,balanced,north_america,13254,
 ALB,Albania,al,#9b5a88,Tirana,ALL,republic,agrarian,europe,2349580,66.3
 ALD,Åland,ax,#5a9b88,Mariehamn,EUR,territory,balanced,europe,26711,
-AND,Andorra,ad,#b77949,Andorra la Vella,EUR,monarchy,balanced,europe,82904,6.6
-ARE,United Arab Emirates,ae,#4ba067,Abu Dhabi,AED,monarchy,resource,middle_east,11513149,871.7
-ARG,Argentina,ar,#4b65a0,Buenos Aires,ARS,federation,agrarian,south_america,45851378,1494.1
-ARM,Armenia,am,#5a9b88,Yerevan,AMD,republic,balanced,asia,3086700,76.4
+AND,Andorra,ad,#cbb8ae,Andorra la Vella,EUR,monarchy,balanced,europe,82904,6.6
+ARE,United Arab Emirates,ae,#aecbcb,Abu Dhabi,AED,monarchy,resource,middle_east,11513149,871.7
+ARG,Argentina,ar,#8fb2d4,Buenos Aires,ARS,federation,agrarian,south_america,45851378,1494.1
+ARM,Armenia,am,#83b995,Yerevan,AMD,republic,balanced,asia,3086700,76.4
 ASM,American Samoa,as,#5a9b88,Pago Pago,USD,territory,balanced,oceania,46029,
 ATG,Antigua and Barbuda,ag,#a04b70,Saint John’s,XCD,monarchy,balanced,north_america,94209,3.4
-AUS,Australia,au,#948b4a,Canberra,AUD,monarchy,resource,oceania,27614411,1986.4
-AUT,Austria,at,#a04b4b,Vienna,EUR,federation,industrial,europe,9208163,707.0
+AUS,Australia,au,#6fa596,Canberra,AUD,monarchy,resource,oceania,27614411,1986.4
+AUT,Austria,at,#dcc2c6,Vienna,EUR,federation,industrial,europe,9208163,707.0
 AZE,Azerbaijan,az,#604ba0,Baku,AZN,republic,resource,asia,10246996,267.6
 BDI,Burundi,bi,#a98957,Gitega,BIF,republic,resource,africa,14390003,18.0
-BEL,Belgium,be,#7aa04b,Brussels,EUR,monarchy,industrial,europe,11941781,891.8
+BEL,Belgium,be,#b9a944,Brussels,EUR,monarchy,industrial,europe,11941781,891.8
 BEN,Benin,bj,#608949,Porto-Novo,XOF,republic,agrarian,africa,14814460,71.4
 BFA,Burkina Faso,bf,#a04b96,Ouagadougou,XOF,republic,resource,africa,24074580,73.9
 BGD,Bangladesh,bd,#7aa04b,Dhaka,BDT,republic,industrial,asia,175686899,1783.9
-BGR,Bulgaria,bg,#4b8da0,Sofia,BGN,republic,balanced,europe,6433302,286.0
+BGR,Bulgaria,bg,#3f8f5f,Sofia,BGN,republic,balanced,europe,6433302,286.0
 BHR,Bahrain,bh,#a0604b,Manama,BHD,monarchy,resource,middle_east,1600366,113.6
 BHS,The Bahamas,bs,#948b4a,Nassau,BSD,monarchy,balanced,north_america,403033,16.6
 BIH,Bosnia and Herzegovina,ba,#4f4f89,Sarajevo,BAM,federation,balanced,europe,3140095,81.1
 BLM,Saint Barthélemy,bl,#4b8da0,Gustavia,EUR,territory,balanced,north_america,8450,
-BLR,Belarus,by,#49897f,Minsk,BYN,republic,industrial,europe,9085991,315.4
+BLR,Belarus,by,#54abab,Minsk,BYN,republic,industrial,europe,9085991,315.4
 BLZ,Belize,bz,#604ba0,Belmopan,BZD,monarchy,balanced,north_america,422924,6.3
 BMU,Bermuda,bm,#a0774b,Hamilton,BMD,territory,balanced,north_america,64555,7.7
-BOL,Bolivia,bo,#5a9b88,Sucre,BOB,republic,balanced,south_america,12581843,162.0
-BRA,Brazil,br,#a0774b,Brasília,BRL,federation,industrial,south_america,212812405,4986.9
+BOL,Bolivia,bo,#83b9a7,Sucre,BOB,republic,balanced,south_america,12581843,162.0
+BRA,Brazil,br,#4f8a4f,Brasília,BRL,federation,industrial,south_america,212812405,4986.9
 BRB,Barbados,bb,#894949,Bridgetown,BBD,republic,balanced,north_america,282623,7.3
 BRN,Brunei,bn,#4f4f89,Bandar Seri Begawan,BND,monarchy,resource,asia,466330,43.1
 BTN,Bhutan,bt,#9a6356,Thimphu,BTN,monarchy,balanced,asia,796682,15.6
 BWA,Botswana,bw,#a54062,Gaborone,BWP,republic,balanced,africa,2562122,53.0
 CAF,Central African Republic,cf,#604ba0,Bangui,XAF,republic,resource,africa,5513282,7.2
-CAN,Canada,ca,#a0604b,Ottawa,CAD,monarchy,resource,north_america,41651653,2780.1
+CAN,Canada,ca,#b86f66,Ottawa,CAD,monarchy,resource,north_america,41651653,2780.1
 CHE,Switzerland,ch,#89497b,Bern,CHF,federation,industrial,europe,9092436,932.1
-CHL,Chile,cl,#a98957,Santiago,CLP,republic,resource,south_america,19859921,750.2
-CHN,People's Republic of China,cn,#50a04b,Beijing,CNY,republic,industrial,asia,1406585000,41259.8
+CHL,Chile,cl,#a3283a,Santiago,CLP,republic,resource,south_america,19859921,750.2
+CHN,People's Republic of China,cn,#c9a94e,Beijing,CNY,republic,industrial,asia,1406585000,41259.8
 CIV,Ivory Coast,ci,#8c955a,Yamoussoukro,XOF,republic,balanced,africa,32711547,268.5
 CMR,Cameroon,cm,#9a6356,Yaoundé,XAF,republic,balanced,africa,29879337,172.9
 COD,Democratic Republic of the Congo,cd,#4ba067,Kinshasa,CDF,republic,resource,africa,112832473,216.6
 COG,Republic of the Congo,cg,#4b8da0,Brazzaville,XAF,republic,resource,africa,6484437,47.0
 COK,Cook Islands,ck,#62955a,Avarua,NZD,territory,balanced,oceania,21388,
-COL,Colombia,co,#49897f,Bogotá,COP,republic,balanced,south_america,53425635,1209.6
+COL,Colombia,co,#cfc06a,Bogotá,COP,republic,balanced,south_america,53425635,1209.6
 COM,Comoros,km,#6b4989,Moroni,KMF,federation,agrarian,africa,882847,3.7
 CPV,Cape Verde,cv,#49895c,Praia,CVE,republic,resource,africa,527326,6.4
 CRI,Costa Rica,cr,#5a7f9b,San José,CRC,republic,balanced,north_america,5152950,174.2
@@ -51,20 +51,20 @@ CUB,Cuba,cu,#a04b70,Havana,CUP,republic,balanced,north_america,10937203,
 CUW,Curaçao,cw,#a04b96,Willemstad,XCG,territory,balanced,north_america,156263,5.1
 CYM,Cayman Islands,ky,#6b4989,George Town,KYD,territory,balanced,north_america,75844,6.9
 CYP,Cyprus,cy,#4b65a0,Nicosia,EUR,republic,maritime,europe,1370754,63.7
-CZE,Czech Republic,cz,#a98957,Prague,CZK,republic,industrial,europe,10886878,658.5
+CZE,Czech Republic,cz,#9c7e50,Prague,CZK,republic,industrial,europe,10886878,658.5
 DEU,Germany,de,#71757b,Berlin,EUR,federation,industrial,europe,83491249,6295.8
 DJI,Djibouti,dj,#a0604b,Djibouti,DJF,republic,balanced,africa,1184076,10.0
 DMA,Dominica,dm,#a0774b,Roseau,XCD,republic,balanced,north_america,65871,1.5
 DNK,Denmark,dk,#608949,Copenhagen,DKK,monarchy,maritime,europe,6009169,500.1
 DOM,Dominican Republic,do,#a04b70,Santo Domingo,DOP,republic,balanced,north_america,11520487,330.9
 DZA,Algeria,dz,#7aa04b,Algiers,DZD,republic,resource,africa,47435312,881.6
-ECU,Ecuador,ec,#b77949,Quito,USD,republic,balanced,south_america,18289896,306.5
-EGY,Egypt,eg,#8c955a,Cairo,EGP,republic,balanced,africa,118365995,2391.5
+ECU,Ecuador,ec,#cbc2ae,Quito,USD,republic,balanced,south_america,18289896,306.5
+EGY,Egypt,eg,#c4a86a,Cairo,EGP,republic,balanced,africa,118365995,2391.5
 ERI,Eritrea,er,#804ba0,Asmara,ERN,republic,balanced,africa,3607003,
-ESP,Spain,es,#608949,Madrid,EUR,monarchy,maritime,europe,49355143,2954.8
-EST,Estonia,ee,#49895c,Tallinn,EUR,republic,balanced,europe,1366475,71.2
+ESP,Spain,es,#c08a4a,Madrid,EUR,monarchy,maritime,europe,49355143,2954.8
+EST,Estonia,ee,#83b983,Tallinn,EUR,republic,balanced,europe,1366475,71.2
 ETH,Ethiopia,et,#49895c,Addis Ababa,ETB,federation,agrarian,africa,135472051,490.6
-FIN,Finland,fi,#4b65a0,Helsinki,EUR,republic,industrial,europe,5646436,372.0
+FIN,Finland,fi,#ccd6dc,Helsinki,EUR,republic,industrial,europe,5646436,372.0
 FJI,Fiji,fj,#a0774b,Suva,FJD,republic,balanced,oceania,933154,15.2
 FLK,Falkland Islands,fk,#4ba067,Stanley,FKP,territory,balanced,south_america,2638,
 FRA,France,fr,#4b65a0,Paris,EUR,republic,industrial,europe,68720337,4396.4
@@ -72,7 +72,7 @@ FRO,Faroe Islands,fo,#6e6e9c,Tórshavn,DKK,territory,balanced,europe,54900,4.5
 FSM,Federated States of Micronesia,fm,#7aa04b,Palikir,USD,federation,agrarian,oceania,113683,0.5
 GAB,Gabon,ga,#50a04b,Libreville,XAF,republic,resource,africa,2593130,57.6
 GBR,United Kingdom,gb,#9a4e4a,London,GBP,monarchy,maritime,europe,69487000,4489.3
-GEO,Georgia,ge,#7aa04b,Tbilisi,GEL,republic,balanced,asia,3935766,115.8
+GEO,Georgia,ge,#84b24b,Tbilisi,GEL,republic,balanced,asia,3935766,115.8
 GGY,Guernsey,gg,#a0604b,Saint Peter Port,GBP,territory,balanced,europe,65228,
 GHA,Ghana,gh,#5a7f9b,Accra,GHS,republic,resource,africa,35064272,301.9
 GIB,Gibraltar,gi,#804ba0,Gibraltar,GIP,territory,balanced,europe,40126,
@@ -80,7 +80,7 @@ GIN,Guinea,gn,#a04b4b,Conakry,GNF,republic,agrarian,africa,15099727,74.5
 GMB,The Gambia,gm,#804ba0,Banjul,GMD,republic,agrarian,africa,2822093,10.5
 GNB,Guinea Bissau,gw,#496e89,Bissau,XOF,republic,resource,africa,2249515,7.4
 GNQ,Equatorial Guinea,gq,#6e6e9c,Ciudad de la Paz,XAF,republic,resource,africa,1938431,31.3
-GRC,Greece,gr,#62955a,Athens,EUR,republic,maritime,europe,10413962,471.4
+GRC,Greece,gr,#7fa3c4,Athens,EUR,republic,maritime,europe,10413962,471.4
 GRD,Grenada,gd,#49895c,Saint George's,XCD,monarchy,balanced,north_america,117303,2.5
 GRL,Greenland,gl,#4ba08b,Nuuk,DKK,territory,balanced,north_america,56831,4.5
 GTM,Guatemala,gt,#894949,Guatemala City,GTQ,republic,balanced,north_america,18687881,284.0
@@ -88,29 +88,29 @@ GUM,Guam,gu,#4ba08b,Hagåtña,USD,territory,balanced,oceania,168999,
 GUY,Guyana,gy,#93649c,Georgetown,GYD,republic,resource,south_america,835986,81.8
 HKG,Hong Kong,hk,#885a9b,Hong Kong,HKD,territory,balanced,asia,7498900,603.1
 HND,Honduras,hn,#4f4f89,Tegucigalpa,HNL,republic,balanced,north_america,11005850,86.6
-HRV,Croatia,hr,#a0774b,Zagreb,EUR,republic,maritime,europe,3876200,197.5
+HRV,Croatia,hr,#987640,Zagreb,EUR,republic,maritime,europe,3876200,197.5
 HTI,Haiti,ht,#62955a,Port-au-Prince,HTG,republic,industrial,north_america,11906095,37.3
-HUN,Hungary,hu,#885a9b,Budapest,HUF,republic,industrial,europe,9514251,474.2
-IDN,Indonesia,id,#a04b70,Jakarta,IDR,republic,agrarian,asia,285721236,5045.8
+HUN,Hungary,hu,#8faa6e,Budapest,HUF,republic,industrial,europe,9514251,474.2
+IDN,Indonesia,id,#b9706a,Jakarta,IDR,republic,agrarian,asia,285721236,5045.8
 IMN,Isle of Man,im,#4ba067,Douglas,GBP,territory,balanced,europe,84118,
-IND,India,in,#804ba0,New Delhi,INR,federation,agrarian,asia,1463865525,17197.4
+IND,India,in,#d27a3b,New Delhi,INR,federation,agrarian,asia,1463865525,17197.4
 IRL,Ireland,ie,#4ba08b,Dublin,EUR,republic,industrial,europe,5484367,850.6
-IRN,Iran,ir,#896a49,Tehran,IRR,republic,resource,middle_east,92417681,1820.6
-IRQ,Iraq,iq,#4ba08b,Baghdad,IQD,federation,resource,middle_east,47020774,670.8
+IRN,Iran,ir,#3d6b5a,Tehran,IRR,republic,resource,middle_east,92417681,1820.6
+IRQ,Iraq,iq,#83a7b9,Baghdad,IQD,federation,resource,middle_east,47020774,670.8
 ISL,Iceland,is,#89497b,Reykjavík,ISK,republic,maritime,europe,392404,32.7
-ISR,Israel,il,#a04b70,Jerusalem,ILS,republic,balanced,middle_east,10122800,604.5
-ITA,Italy,it,#797648,Rome,EUR,republic,industrial,europe,58915656,3700.1
+ISR,Israel,il,#b24b83,Jerusalem,ILS,republic,balanced,middle_east,10122800,604.5
+ITA,Italy,it,#4f8a5a,Rome,EUR,republic,industrial,europe,58915656,3700.1
 JAM,Jamaica,jm,#4ba08b,Kingston,JMD,monarchy,balanced,north_america,2837077,37.7
 JEY,Jersey,je,#9b5a88,Saint Helier,GBP,territory,balanced,europe,90812,
 JOR,Jordan,jo,#4b65a0,Amman,JOD,monarchy,industrial,middle_east,11520684,145.5
-JPN,Japan,jp,#948b4a,Tokyo,JPY,monarchy,industrial,asia,123366734,6837.2
+JPN,Japan,jp,#d8d2bc,Tokyo,JPY,monarchy,industrial,asia,123366734,6837.2
 KAZ,Kazakhstan,kz,#4b8da0,Astana,KZT,republic,resource,asia,20843754,923.2
 KEN,Kenya,ke,#b77949,Nairobi,KES,republic,agrarian,africa,57532493,403.6
 KGZ,Kyrgyzstan,kg,#604ba0,Bishkek,KGS,republic,resource,asia,7343064,67.7
 KHM,Cambodia,kh,#a0604b,Phnom Penh,KHR,monarchy,industrial,asia,17847982,152.5
 KIR,Kiribati,ki,#a04b4b,Tarawa,AUD,republic,agrarian,oceania,136488,0.5
 KNA,Saint Kitts and Nevis,kn,#89497b,Basseterre,XCD,monarchy,balanced,north_america,46922,1.7
-KOR,South Korea,kr,#8c955a,Seoul,KRW,republic,industrial,asia,51684564,3262.6
+KOR,South Korea,kr,#5f7fa8,Seoul,KRW,republic,industrial,asia,51684564,3262.6
 KWT,Kuwait,kw,#9a6356,Kuwait City,KWD,monarchy,resource,middle_east,4865298,274.7
 LAO,Laos,la,#496e89,Vientiane,LAK,republic,balanced,asia,7873046,81.7
 LBN,Lebanon,lb,#496e89,Beirut,LBP,republic,balanced,middle_east,5849421,69.2
@@ -130,13 +130,13 @@ MCO,Monaco,mc,#a04b96,Monaco,EUR,monarchy,maritime,europe,38341,
 MDA,Moldova,md,#6b4989,Chisinau,MDL,republic,agrarian,europe,2360527,47.2
 MDG,Madagascar,mg,#a04b4b,Antananarivo,MGA,republic,agrarian,africa,32740678,63.9
 MDV,Maldives,mv,#496e89,Male,MVR,republic,balanced,asia,529676,15.1
-MEX,Mexico,mx,#608949,Mexico City,MXN,federation,industrial,north_america,131946900,3413.3
+MEX,Mexico,mx,#6d7f4c,Mexico City,MXN,federation,industrial,north_america,131946900,3413.3
 MHL,Marshall Islands,mh,#5a7f9b,Majuro,USD,republic,balanced,oceania,36282,0.3
-MKD,North Macedonia,mk,#776953,Skopje,MKD,republic,balanced,europe,1820909,51.0
+MKD,North Macedonia,mk,#6d644c,Skopje,MKD,republic,balanced,europe,1820909,51.0
 MLI,Mali,ml,#496e89,Bamako,XOF,republic,resource,africa,25198821,88.3
 MLT,Malta,mt,#49897f,Valletta,EUR,republic,maritime,europe,579704,41.9
-MMR,Myanmar,mm,#a0604b,Nay Pyi Taw,MMK,republic,industrial,asia,54850648,329.7
-MNE,Montenegro,me,#a98957,Podgorica,EUR,republic,maritime,europe,623129,22.1
+MMR,Myanmar,mm,#9b6350,Nay Pyi Taw,MMK,republic,industrial,asia,54850648,329.7
+MNE,Montenegro,me,#b09365,Podgorica,EUR,republic,maritime,europe,623129,22.1
 MNG,Mongolia,mn,#5a7f9b,Ulan Bator,MNT,republic,resource,asia,3568978,74.2
 MNP,Northern Mariana Islands,mp,#4b8da0,Saipan,USD,territory,balanced,oceania,43541,
 MOZ,Mozambique,mz,#496e89,Maputo,MZN,republic,resource,africa,35631653,60.5
@@ -144,7 +144,7 @@ MRT,Mauritania,mr,#b77949,Nouakchott,MRU,republic,resource,africa,5315065,40.8
 MSR,Montserrat,ms,#a04b4b,Plymouth,XCD,territory,balanced,north_america,9341,
 MUS,Mauritius,mu,#8c955a,Port Louis,MUR,republic,balanced,africa,1243741,41.9
 MWI,Malawi,mw,#49895c,Lilongwe,MWK,republic,agrarian,africa,22216120,42.2
-MYS,Malaysia,my,#a98957,Kuala Lumpur,MYR,monarchy,industrial,asia,35977838,1493.0
+MYS,Malaysia,my,#a99157,Kuala Lumpur,MYR,monarchy,industrial,asia,35977838,1493.0
 NAM,Namibia,na,#4b8da0,Windhoek,NAD,republic,balanced,africa,3092816,37.1
 NCL,New Caledonia,nc,#797648,Nouméa,XPF,territory,resource,oceania,295333,
 NED,Netherlands,nl,#b77949,Amsterdam,EUR,republic,maritime,europe,18087633,1579.4
@@ -153,30 +153,30 @@ NFK,Norfolk Island,nf,#7aa04b,Kingston,AUD,territory,balanced,oceania,1828,
 NGA,Nigeria,ng,#6e6e9c,Abuja,NGN,federation,agrarian,africa,237527782,2264.0
 NIC,Nicaragua,ni,#948b4a,Managua,NIO,republic,balanced,north_america,7007502,65.1
 NIU,Niue,nu,#a98957,Alofi,NZD,territory,balanced,oceania,2166,
-NOR,Norway,no,#49897f,Oslo,NOK,monarchy,maritime,europe,5610870,583.8
+NOR,Norway,no,#8f4340,Oslo,NOK,monarchy,maritime,europe,5610870,583.8
 NPL,Nepal,np,#896a49,Kathmandu,NPR,federation,agrarian,asia,29618118,182.9
 NRU,Nauru,nr,#4b65a0,Yaren,AUD,republic,balanced,oceania,12025,0.2
 NZL,New Zealand,nz,#6e6e9c,Wellington,NZD,monarchy,balanced,oceania,5324700,305.4
-OMN,Oman,om,#896a49,Muscat,OMR,monarchy,resource,middle_east,5494691,232.4
-PAK,Pakistan,pk,#5a7f9b,Islamabad,PKR,federation,agrarian,asia,255219554,1677.7
+OMN,Oman,om,#b98383,Muscat,OMR,monarchy,resource,middle_east,5494691,232.4
+PAK,Pakistan,pk,#649e5e,Islamabad,PKR,federation,agrarian,asia,255219554,1677.7
 PAN,Panama,pa,#a04b96,Panama City,PAB,republic,balanced,north_america,4571189,200.7
-PER,Peru,pe,#6b4989,Lima,PEN,republic,resource,south_america,34576665,650.6
+PER,Peru,pe,#c07a6a,Lima,PEN,republic,resource,south_america,34576665,650.6
 PHL,Philippines,ph,#89497b,Manila,PHP,republic,industrial,asia,116786962,1468.8
 PLW,Palau,pw,#4b65a0,Ngerulmud,USD,republic,balanced,oceania,17663,0.4
 PNG,Papua New Guinea,pg,#49895c,Port Moresby,PGK,monarchy,resource,oceania,10762817,56.1
-POL,Poland,pl,#4f4f89,Warsaw,PLN,republic,industrial,europe,36435861,1977.1
+POL,Poland,pl,#ded3b8,Warsaw,PLN,republic,industrial,europe,36435861,1977.1
 PRI,Puerto Rico,pr,#894949,San Juan,USD,territory,industrial,north_america,3184835,166.2
 PRK,North Korea,kp,#6b4989,Pyongyang,KPW,republic,balanced,asia,26571036,
-PRT,Portugal,pt,#9b5a88,Lisbon,EUR,republic,maritime,europe,10804871,574.2
+PRT,Portugal,pt,#4a6f9c,Lisbon,EUR,republic,maritime,europe,10804871,574.2
 PRY,Paraguay,py,#9b5a88,Asunción,PYG,republic,industrial,south_america,7013078,141.5
 PSX,Palestine,ps,#608949,East Jerusalem,ILS,republic,balanced,middle_east,5413596,27.1
 PYF,French Polynesia,pf,#797648,Papeete,XPF,territory,balanced,oceania,282465,
-QAT,Qatar,qa,#62955a,Doha,QAR,monarchy,resource,middle_east,2972215,383.1
-ROU,Romania,ro,#776953,Bucharest,RON,republic,balanced,europe,19020271,968.0
-RUS,Russia,ru,#a04b4b,Moscow,RUB,federation,resource,europe,143513328,7235.6
+QAT,Qatar,qa,#b99583,Doha,QAR,monarchy,resource,middle_east,2972215,383.1
+ROU,Romania,ro,#8d6f35,Bucharest,RON,republic,balanced,europe,19020271,968.0
+RUS,Russia,ru,#3f6b4a,Moscow,RUB,federation,resource,europe,143513328,7235.6
 RWA,Rwanda,rw,#a04b4b,Kigali,RWF,republic,agrarian,africa,14569341,60.7
 SAH,Western Sahara,eh,#4ba08b,Tifariti,MAD,republic,balanced,africa,273008,
-SAU,Saudi Arabia,sa,#a04b96,Riyadh,SAR,monarchy,resource,middle_east,36973555,2728.0
+SAU,Saudi Arabia,sa,#7fa877,Riyadh,SAR,monarchy,resource,middle_east,36973555,2728.0
 SDN,Sudan,sd,#894949,Khartoum,SDG,federation,resource,africa,51662147,113.3
 SEN,Senegal,sn,#4ba067,Dakar,XOF,republic,balanced,africa,18931966,103.4
 SGP,Singapore,sg,#604ba0,Singapore,SGD,city_state,industrial,asia,6111175,998.3
@@ -187,38 +187,38 @@ SLV,El Salvador,sv,#8c955a,San Salvador,USD,republic,balanced,north_america,6365
 SMR,San Marino,sm,#604ba0,San Marino,EUR,republic,balanced,europe,34109,2.7
 SOM,Somalia,so,#804ba0,Mogadishu,SOS,federation,resource,africa,19654739,32.3
 SPM,Saint Pierre and Miquelon,pm,#8c955a,Saint-Pierre,EUR,territory,balanced,north_america,7012,
-SRB,Serbia,rs,#50a04b,Belgrade,RSD,republic,balanced,europe,6549143,222.1
+SRB,Serbia,rs,#b06a6a,Belgrade,RSD,republic,balanced,europe,6549143,222.1
 STP,São Tomé and Príncipe,st,#9b5a88,São Tomé,STN,republic,balanced,africa,240254,1.5
-SUR,Suriname,sr,#49895c,Paramaribo,SRD,republic,resource,south_america,639850,14.5
+SUR,Suriname,sr,#aecbae,Paramaribo,SRD,republic,resource,south_america,639850,14.5
 SVK,Slovakia,sk,#49897f,Bratislava,EUR,republic,industrial,europe,5413813,266.9
 SVN,Slovenia,si,#4b8da0,Ljubljana,EUR,republic,industrial,europe,2130986,126.2
-SWE,Sweden,se,#a0774b,Stockholm,SEK,monarchy,industrial,europe,10596620,768.6
+SWE,Sweden,se,#5b7fa8,Stockholm,SEK,monarchy,industrial,europe,10596620,768.6
 SWZ,Eswatini,sz,#a04b96,Mbabane,SZL,monarchy,industrial,africa,1256174,15.7
 SXM,Sint Maarten,sx,#50a04b,Philipsburg,XCG,territory,balanced,north_america,43923,2.5
 SYC,Seychelles,sc,#804ba0,Victoria,SCR,republic,balanced,africa,122730,4.4
-SYR,Syria,sy,#a0774b,Damascus,SYP,republic,agrarian,middle_east,25620427,110.2
+SYR,Syria,sy,#ab5454,Damascus,SYP,republic,agrarian,middle_east,25620427,110.2
 TCA,Turks and Caicos Islands,tc,#776953,Cockburn Town,USD,territory,balanced,north_america,46855,1.8
 TCD,Chad,td,#62955a,N'Djamena,XAF,republic,resource,africa,21003705,61.0
 TGO,Togo,tg,#b77949,Lomé,XOF,republic,agrarian,africa,8591626,35.0
 THA,Thailand,th,#4ba067,Bangkok,THB,monarchy,industrial,asia,71619863,1880.0
 TJK,Tajikistan,tj,#797648,Dushanbe,TJS,republic,agrarian,asia,10786734,63.9
-TKM,Turkmenistan,tm,#62955a,Ashgabat,TMT,republic,resource,asia,7618847,172.2
+TKM,Turkmenistan,tm,#5f9956,Ashgabat,TMT,republic,resource,asia,7618847,172.2
 TLS,East Timor,tl,#50a04b,Dili,USD,republic,resource,oceania,1418517,6.8
 TON,Tonga,to,#948b4a,Nuku‘alofa,TOP,monarchy,balanced,oceania,103742,0.9
 TTO,Trinidad and Tobago,tt,#896a49,Port of Spain,TTD,republic,balanced,north_america,1367764,50.8
 TUN,Tunisia,tn,#9a6356,Tunis,TND,republic,balanced,africa,12348573,188.1
-TUR,Turkey,tr,#9b5a88,Ankara,TRY,republic,industrial,asia,85878556,3889.3
+TUR,Turkey,tr,#807d42,Ankara,TRY,republic,industrial,asia,85878556,3889.3
 TUV,Tuvalu,tv,#4ba08b,Funafuti,AUD,monarchy,balanced,oceania,9492,0.1
 TWN,Taiwan,tw,#894949,Taipei,TWD,republic,balanced,asia,23451837,
 TZA,Tanzania,tz,#89497b,Dodoma,TZS,republic,agrarian,africa,70545865,305.6
 UGA,Uganda,ug,#4b65a0,Kampala,UGX,republic,agrarian,africa,51384894,179.2
-UKR,Ukraine,ua,#50a04b,Kyiv,UAH,republic,agrarian,europe,38980376,690.4
-URY,Uruguay,uy,#5a9b88,Montevideo,UYU,republic,balanced,south_america,3384688,129.7
-USA,United States of America,us,#604ba0,Washington,USD,federation,industrial,north_america,341784857,30769.7
+UKR,Ukraine,ua,#c2ad45,Kyiv,UAH,republic,agrarian,europe,38980376,690.4
+URY,Uruguay,uy,#426186,Montevideo,UYU,republic,balanced,south_america,3384688,129.7
+USA,United States of America,us,#6f8fbb,Washington,USD,federation,industrial,north_america,341784857,30769.7
 UZB,Uzbekistan,uz,#894949,Tashkent,UZS,republic,resource,asia,37053428,504.0
 VAT,Vatican City,va,#a04b70,Vatican City,EUR,city_state,balanced,europe,921,
 VCT,Saint Vincent and the Grenadines,vc,#797648,Kingstown,XCD,monarchy,balanced,north_america,99924,2.3
-VEN,Venezuela,ve,#d5bc47,Caracas,VES,federation,resource,south_america,28516896,
+VEN,Venezuela,ve,#8e7238,Caracas,VES,federation,resource,south_america,28516896,
 VGB,British Virgin Islands,vg,#885a9b,Road Town,USD,territory,balanced,north_america,39732,
 VIR,United States Virgin Islands,vi,#608949,Charlotte Amalie,USD,territory,balanced,north_america,103792,5.2
 VNM,Vietnam,vn,#885a9b,Hanoi,VND,republic,industrial,asia,101598527,1837.8
@@ -226,7 +226,7 @@ VUT,Vanuatu,vu,#7aa04b,Port-Vila,VUV,republic,agrarian,oceania,335169,1.5
 WLF,Wallis and Futuna,wf,#4f4f89,Mata-Utu,XPF,territory,balanced,oceania,16025,
 WSM,Samoa,ws,#49897f,Apia,WST,republic,balanced,oceania,219306,2.0
 XKX,Kosovo,xk,#5a7f9b,Pristina,EUR,republic,balanced,europe,1576876,30.4
-YEM,Yemen,ye,#7aa04b,Sanaa,YER,republic,agrarian,middle_east,41773878,
+YEM,Yemen,ye,#ab8e54,Sanaa,YER,republic,agrarian,middle_east,41773878,
 ZAF,South Africa,za,#797648,Pretoria,ZAR,republic,resource,africa,64747319,1029.9
 ZMB,Zambia,zm,#776953,Lusaka,ZMW,republic,resource,africa,21913874,96.0
 ZWE,Zimbabwe,zw,#5a9b88,Harare,ZWG,republic,balanced,africa,16950795,109.7

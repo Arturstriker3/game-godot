@@ -128,25 +128,36 @@ Resultado: **menor par 35,1** (ZAF–ZWE), nenhum par < 35. As correções estã
 `COLOR_OVERRIDE` no importador e são reaplicadas a cada geração; o build só
 consome `color` de `nations_source.csv`.
 
-### 6.1 Divergência com o mapa (pendência de outra tarefa)
+### 6.1 Cores tradicionais das nações (F3)
 
-`map/territory_map.gd` (`_build_nation_palette`) pinta as **8 nações jogáveis**
-(GBR, FRA, DEU, NED, BEL, VEN, SUR, GUY) com a cor canônica de
-`map/map_data/atlas/provinces.json` (`nation_colors`) e ignora a coluna `color`
-de `nations.csv` para elas. Os três pares corrigidos envolvem justamente essas
-nações, então **no mapa** eles continuam com o tom antigo até `nation_colors`
-receber os mesmos valores:
+`data/definitions/world/traditional_colors.csv` (`iso3,color_hex,nota`) guarda a
+cor historicamente associada de **41 nações**, já no tom "papelaria" (levemente
+dessaturado, como FRA/DEU/GBR). Regras do resolvedor (`tools/nation_colors.py`):
 
-| Tag | `provinces.json` hoje | `nations.csv` (este commit) |
-| --- | --- | --- |
-| FRA | `[80, 108, 156]` (#506c9c) | `#4462a7` |
-| BEL | `[182, 156, 74]` (#b69c4a) | `#7ba744` |
-| SUR | `[72, 140, 160]` (#488ca0) | `#448e5a` |
+1. **Prioridade:** a cor tradicional vence a paleta automática; as demais nações
+   mantêm a cor automática do importador (dessaturação ×0,86).
+2. **Adjacência de TERRA:** `world_province.png` com a máscara de
+   `world_sdf.png` (R>128), pares com ≥ 10 px de contato; cache em
+   `data/definitions/world/nation_adjacency.json` (162 tags com aresta).
+3. **ΔE:** alvo 30, piso aceito 25 entre vizinhos; também exige distância RGB
+   ≥ 0,16 (a mesma rede de segurança de `territory_map.gd`), para o runtime não
+   trocar a cor do CSV por um tom de papelaria.
+4. **Conflito entre duas tradicionais:** muda-se só o TOM da de menor prioridade
+   (matiz ±12°, luminosidade ±16%, saturação ±12%) — a família (matiz) é mantida.
+   A automática só cede (inclusive mudando de família) quando a tradicional
+   vizinha não tem candidato dentro da própria família.
 
-Enquanto isso não for feito, UI (cor de nação nos dados) e mapa divergem nessas
-três nações. A alternativa, se o mapa preferir manter a paleta canônica, é
-reverter `COLOR_OVERRIDE` e aceitar os pares FRA–SUR 24,5 / BEL–NED 25,1 /
-DEU–FRA 25,3.
+Estado atual: **41 tradicionais, 300 pares de vizinhos, menor ΔE 30,1**
+(CHN–IND), **nenhum par abaixo de 30**. 29 tons foram ajustados (8 tradicionais,
+21 automáticos) e o relatório completo sai em `colors` no `_meta.json` do build.
+
+Regeneração: `tools/apply_traditional_colors.py` regrava **apenas** a coluna
+`color` de `scenario/nations.csv` (+ `nations.json` e `provinces.json ->
+nation_colors`); o pipeline completo (`tools/build_world_cities.py
+--write-scenario`) usa a mesma função. `map/territory_map.gd` lê o CSV para
+**todas** as nações, inclusive as 8 jogáveis; as texturas estáticas
+`world_color.png`/`region_color.png` não são regeradas por este script (o mapa
+dinâmico usa a textura de donos publicada em runtime).
 
 ## 7. Bandeiras
 

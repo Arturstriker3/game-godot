@@ -9,6 +9,8 @@ Entrada:
     data/definitions/world/nations_source.csv
     data/definitions/world/cities_source.csv
     data/definitions/world/ports_source.csv
+    data/definitions/world/traditional_colors.csv      (cor histórica por iso3)
+    data/definitions/world/nation_adjacency.json       (cache da adjacência de terra)
     data/definitions/world/_import_report.csv          (raio de cobertura)
     data/definitions/world/_coverage_before_after.csv  (antes/depois)
     data/definitions/scenario/{cities,ports,buildings}.csv (contrato legado)
@@ -25,6 +27,9 @@ Regras (docs/plans/world_all_data.md):
     cota = 1 + clamp(1 + floor(pop/25M) + floor(PIB_PPP_bn/1500)
                      + floor(área_km²/600k), 1, 24)
     cobertura de cidades-fonte ≤ 700 km; porto separado só com costa a ≥ 15 km.
+    cor: tradicional (traditional_colors.csv) tem prioridade; vizinhos de terra
+    com ΔE(Lab) ≥ 30 (piso 25) e RGB ≥ 0,16; conflito entre tradicionais muda só
+    o TOM (matiz ±12°). Ver tools/nation_colors.py.
 
 Uso:
     python tools/build_world_cities.py            # gera out/
@@ -42,6 +47,8 @@ import os
 import sys
 import unicodedata
 from collections import Counter, defaultdict
+
+import nation_colors
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
@@ -89,8 +96,31 @@ def tone_color(hexcolor):
 
 
 def scenario_color(iso3, hexcolor):
-    """Cor final do cenário: tom uniforme + correção pontual documentada."""
+    """Cor BASE do cenário: tom uniforme + correção pontual documentada."""
     return COLOR_TONE_OVERRIDE.get(iso3, tone_color(hexcolor))
+
+
+def resolve_scenario_colors(nations_src):
+    """Aplica tradicionais (prioridade) e repara vizinhos na adjacência de TERRA.
+
+    A base de cada nação é a cor automática do importador já dessaturada; as
+    nações de `traditional_colors.csv` entram com a cor pedida (tom papelaria).
+    O relatório traz o menor ΔE entre vizinhos e os tons ajustados.
+    """
+    base = {}
+    area = {}
+    for row in nations_src:
+        iso3 = row["iso3"]
+        base[iso3] = scenario_color(iso3, row["color"])
+        area[iso3] = float(row["area_km2"] or 0)
+    order = sorted(base, key=lambda tag: (-area[tag], tag))
+    traditional = nation_colors.load_traditional()
+    graph = nation_colors.load_or_refresh_adjacency()
+    unknown = sorted(tag for tag in traditional if tag not in base)
+    if unknown:
+        raise SystemExit(f"traditional_colors.csv: tags fora do cenário: {', '.join(unknown)}")
+    colors, report = nation_colors.assign_colors(base, traditional, graph, order)
+    return colors, report
 
 
 def norm_name(text):
@@ -323,6 +353,7 @@ def main():
     args = parser.parse_args()
 
     nations_src = read_csv(os.path.join(WORLD, "nations_source.csv"))
+    colors, color_report = resolve_scenario_colors(nations_src)
     cities_src = read_csv(os.path.join(WORLD, "cities_source.csv"))
     ports_src = read_csv(os.path.join(WORLD, "ports_source.csv"))
     scenario_cities = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "cities.csv"))}
@@ -434,7 +465,7 @@ def main():
             "id": iso3,
             "name": nation["name_en"],
             "flag": nation["iso2"].lower(),
-            "color": scenario_color(iso3, nation["color"]),
+            "color": colors[iso3],
             "capital": nation["capital_en"],
             "currency": nation["currency"],
             "government": nation["government"],
@@ -491,6 +522,17 @@ def main():
           f"originais: {len(LEGACY_PORTS)})")
     print(f"construções: {len(buildings_out)}")
     print(f"chaves i18n: {len(i18n_out)}")
+    min_pair = color_report["min_pair"]
+    pair_text = f"{min_pair[1]}-{min_pair[2]}" if min_pair else "-"
+    print(f"cores tradicionais: {color_report['traditional_count']} | "
+          f"menor ΔE entre vizinhos: {color_report['min_delta_e']} ({pair_text}) | "
+          f"tons ajustados: {len(color_report['changed'])}")
+    if color_report["below_floor"]:
+        problems.append("cores: ΔE abaixo do piso entre vizinhos: "
+                        + ", ".join(f"{d} {a}-{b}" for d, a, b in color_report["below_floor"]))
+    if color_report["rgb_below_min"]:
+        problems.append("cores: distância RGB abaixo de 0,16 entre vizinhos: "
+                        + ", ".join(f"{d} {a}-{b}" for d, a, b in color_report["rgb_below_min"]))
     print("top 10 nações por cidades:", ", ".join(f"{k} {v}" for k, v in top10))
     for p in problems:
         print(f"AVISO: {p}")
@@ -539,7 +581,20 @@ def main():
             "port_point_km": 15,
             "legacy": "40 cidades do cenário preservadas, exceto VEN-PAY (trocada por VEN-CBL)",
             "color_min_delta_e": 30,
-            "color_note": "ΔE(Lab) entre vizinhos de fronteira; auditoria e menor par em docs/plans/world_all_data.md",
+            "color_min_delta_e_floor": 25,
+            "color_traditional_source": "data/definitions/world/traditional_colors.csv",
+            "color_adjacency": "terra: world_province.png com máscara world_sdf.png (R>128), "
+                               ">= 10 px de contato; cache em nation_adjacency.json",
+            "color_note": "tradicionais têm prioridade (tom papelaria); ajuste só de TOM "
+                          "na família (±12° de matiz); automáticas herdam a paleta do "
+                          "importador e só cedem se conflitarem com uma tradicional. "
+                          "Menor par e auditoria em docs/plans/world_all_data.md",
+        },
+        "colors": {
+            "traditional_count": color_report["traditional_count"],
+            "min_delta_e": color_report["min_delta_e"],
+            "min_pair": color_report["min_pair"],
+            "adjusted": color_report["changed"],
         },
         "counts": {
             "nations": len(nations_out),
