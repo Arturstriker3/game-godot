@@ -433,9 +433,11 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
                                 else mapping.get(target, target))
     port_of = assign_port_of(final_cities, ports_out, final_overrides)
     # Dois portos da mesma nação, com o mesmo nome e o mesmo `port_of` são o
-    # MESMO porto no mapa (dois pinos no lugar). O caso de Roma foi fundido na
-    # r4 (`EXCLUDED_PORTS`); os demais achados ficam como AVISO para curadoria,
-    # sem bloquear o build (podem ser portos distintos da mesma aglomeração).
+    # MESMO porto no mapa (dois pinos no lugar). As duplicatas conhecidas
+    # (Roma na r4; Guangzhou/Xangai/Medan/Nagoya/Bursa/LA na r5) já saem em
+    # `EXCLUDED_PORTS`; este laço é a rede de segurança e deve ficar silencioso
+    # (portos distintos da mesma aglomeração continuam possíveis, mas hoje não
+    # há nenhum).
     seen_ports = {}
     for row in sorted(ports_out, key=lambda r: r["id"]):
         key = (row["nation"], norm_name(row["name"]), port_of.get(row["id"], ""))
@@ -648,11 +650,13 @@ def main():
             problems.append(f"porto legado {pid}: coordenada divergente")
     # todo porto do cenário precisa continuar existindo na fonte, com o mesmo id
     # (a contagem por origem mudava depois da primeira promoção, que já leva ao
-    # cenário também os portos novos).
+    # cenário também os portos novos). Porto que a curadoria excluiu
+    # (`EXCLUDED_PORTS`) é removido de propósito — não é órfão.
     source_port_ids = {r["id"] for r in ports_src}
     missing_ports = sorted(
         pid for pid in set(scenario_ports) - source_port_ids
-        if classify(scenario_ports[pid]["nation"])[0] != "removed")
+        if classify(scenario_ports[pid]["nation"])[0] != "removed"
+        and pid not in EXCLUDED_PORTS)
     if missing_ports:
         problems.append("portos do cenário fora da fonte: "
                         + ", ".join(missing_ports))

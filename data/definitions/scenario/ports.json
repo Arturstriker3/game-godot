@@ -171,15 +171,6 @@
     "port_of": "CHN-DON"
   },
   {
-    "id": "CHN-GUA",
-    "name": "Guangzhou",
-    "nation": "CHN",
-    "x": 4073.2,
-    "y": 929.3,
-    "landmass": "asia",
-    "port_of": "CHN-GUA"
-  },
-  {
     "id": "CHN-GUAN",
     "name": "Guangzhou",
     "nation": "CHN",
@@ -187,15 +178,6 @@
     "y": 931.4,
     "landmass": "asia",
     "port_of": "CHN-GUA"
-  },
-  {
-    "id": "CHN-SHA",
-    "name": "Shanghai",
-    "nation": "CHN",
-    "x": 4187.3,
-    "y": 816.3,
-    "landmass": "asia",
-    "port_of": "CHN-SHA"
   },
   {
     "id": "CHN-SHAN",
@@ -504,15 +486,6 @@
     "port_of": "IDN-MAL"
   },
   {
-    "id": "IDN-MED",
-    "name": "Medan",
-    "nation": "IDN",
-    "x": 3871.2,
-    "y": 1200.3,
-    "landmass": "java",
-    "port_of": "IDN-MED"
-  },
-  {
     "id": "IDN-MEDA",
     "name": "Medan",
     "nation": "IDN",
@@ -700,15 +673,6 @@
     "y": 780.3,
     "landmass": "japan",
     "port_of": "JPN-FUK"
-  },
-  {
-    "id": "JPN-NAG",
-    "name": "Nagoya",
-    "nation": "JPN",
-    "x": 4401.6,
-    "y": 761.4,
-    "landmass": "japan",
-    "port_of": "JPN-NAG"
   },
   {
     "id": "JPN-NAGO",
@@ -1071,15 +1035,6 @@
     "port_of": "TUR-ADA"
   },
   {
-    "id": "TUR-BUR",
-    "name": "Bursa",
-    "nation": "TUR",
-    "x": 2903.7,
-    "y": 691.2,
-    "landmass": "continent",
-    "port_of": "TUR-BUR"
-  },
-  {
     "id": "TUR-BURS",
     "name": "Bursa",
     "nation": "TUR",
@@ -1170,15 +1125,6 @@
     "port_of": "USA-JAC"
   },
   {
-    "id": "USA-LOS",
-    "name": "Los Angeles",
-    "nation": "USA",
-    "x": 857.2,
-    "y": 777.9,
-    "landmass": "north_america",
-    "port_of": "USA-LOS"
-  },
-  {
     "id": "USA-LOSA",
     "name": "Los Angeles",
     "nation": "USA",
@@ -1231,15 +1177,6 @@
     "y": 711.4,
     "landmass": "north_america",
     "port_of": "USA-WAS"
-  },
-  {
-    "id": "VEN-CCS",
-    "name": "Caracas",
-    "nation": "VEN",
-    "x": 1570.7,
-    "y": 1104.4,
-    "landmass": "guiana",
-    "port_of": "VEN-CCS"
   },
   {
     "id": "VEN-LAG",

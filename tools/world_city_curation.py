@@ -101,6 +101,44 @@ Portos dos ex-microestados: `ITA-ROM`/`ITA-ROME` passam a Roma (`ITA-ROM`) e
 (Milão, `ITA-MIL` — Pádua/Veneza não estão no roster). O mapa de `port_of`
 fica em `PORT_OF_OVERRIDES`. A r4 fundiu o porto duplicado de Roma: fica só
 `ITA-ROM` (foz do Tibre, Fiumicino/Ostia) e `ITA-ROME` sai em `EXCLUDED_PORTS`.
+
+Curadoria r5 (2026-11-12)
+-------------------------
+Portos duplicados: a fonte de 2026 (`ports_source.csv`) mantém os portos do
+cenário da fase 1 (114) e acrescenta 23 pontos "snap na costa" para cidades com
+`port = yes` que ainda não tinham porto. Quando a cidade já tinha porto legado,
+os dois registros ficaram no cenário — dois pinos para o MESMO porto. Em todos
+os casos o ponto legado é o **centro da cidade** (terra; 24–44 km de distância
+assinada à costa medida no `world_sdf.png`) e o ponto de 2026 é a **costa
+real**, a ~5–10 km dela no raster. Fica o ponto de 2026
+(`EXCLUDED_PORTS`), com o `port_of` apontando para a cidade final do cenário:
+
+* Guangzhou: fica `CHN-GUAN` (foz do rio das Pérolas, a caminho de Nansha);
+  sai `CHN-GUA` (centro da cidade, ~25 km rio acima).
+* Xangai: fica `CHN-SHAN` (Waigaoqiao, na foz do Yangtzé); sai `CHN-SHA`
+  (centro, no rio Huangpu, ~34 km da costa).
+* Medan: fica `IDN-MEDA` (Belawan, o porto real); sai `IDN-MED` (centro de
+  Medan, ~20 km da costa; a `landmass` "java" do legado nem casava com a
+  cidade, que é "indonesia").
+* Nagoya: fica `JPN-NAGO` (Nagoya Port, baía de Ise); sai `JPN-NAG` (centro,
+  ~44 km da costa).
+* Bursa: fica `TUR-BURS` (costa de Mudanya, o porto de Bursa no mar de
+  Mármara); sai `TUR-BUR` (centro, ~17 km da costa; `landmass` "continent" não
+  casava com a cidade, que é "asia").
+* Los Angeles: fica `USA-LOSA` (costa de Playa del Rey/Dockweiler, em mar
+  aberto); sai `USA-LOS` (centro, ~34 km da costa). San Pedro/Long Beach ficam
+  ~25 km ao sul, fora da célula do mapa (≈8 km/px); `USA-LOS` é pior que o
+  ponto costeiro.
+* Caracas: fica `VEN-LAG` (La Guaira, o porto real na costa); sai `VEN-CCS`
+  (centro de Caracas, ~12 km da costa). `VEN-LAG` é um dos 18 portos legados
+  do contrato e continua intacto.
+
+O detector geral (`same name`, `<15 km`, mesmo `port_of` com >1 porto) não
+achou outro caso: os demais grupos de `port_of` (Durrës/Tirana,
+Baku/Sumqayıt, Fukuoka/Kitakyushu, Reykjavík/Reykjanesbær etc.) são portos
+distintos e reais, longe entre si; a atribuição de `port_of` sem limite de
+distância (Hamamatsu→Nagoya, Jacksonville→Miami) é uma pendência de dados
+separada, não um pino duplicado.
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -736,12 +774,25 @@ FORCED_CITIES = [
 
 # Portos repetidos: dois registros para o MESMO porto (mesma nação + mesmo
 # `port_of`) são um bug de fonte — o mapa desenha dois pinos no mesmo lugar.
-# Fica o id canônico. `ITA-ROME` é o ponto "snap na costa" da fonte de 2026,
-# a ~2 km da praia de Ostia; o porto de Roma do cenário é `ITA-ROM`, na foz do
-# Tibre (Fiumicino/Ostia), o mesmo ponto legado. Civitavecchia é o porto
-# comercial real, mas fica 60 km a noroeste e não tem cidade no roster.
+# Fica o id canônico; o removido é sempre o pior situado (centro da cidade em
+# terra). As decisões da r4/r5 estão explicadas no docstring do módulo.
+#
+# Roma (r4): `ITA-ROME` é o ponto "snap na costa" da fonte de 2026, a ~2 km da
+# praia de Ostia; o porto de Roma do cenário é `ITA-ROM`, na foz do Tibre
+# (Fiumicino/Ostia), o mesmo ponto legado. Aqui o legado era o melhor ponto.
 EXCLUDED_PORTS = {
     "ITA-ROME": "duplicado de ITA-ROM (mesmo porto de Roma; ponto snap offshore)",
+    # r5 (2026-11-12): pares legado (centro da cidade) × 2026 (costa real).
+    # Fica o ponto de 2026; ver o docstring para a posição de cada porto.
+    "CHN-GUA": "duplicado de CHN-GUAN (Guangzhou; era o centro da cidade, no rio)",
+    "CHN-SHA": "duplicado de CHN-SHAN (Xangai; era o centro, no rio Huangpu)",
+    "IDN-MED": "duplicado de IDN-MEDA (Medan; era o centro, ~20 km da costa)",
+    "JPN-NAG": "duplicado de JPN-NAGO (Nagoya; era o centro, ~44 km da costa)",
+    "TUR-BUR": "duplicado de TUR-BURS (Bursa; era o centro, ~17 km do mar)",
+    "USA-LOS": "duplicado de USA-LOSA (Los Angeles; era o centro, ~34 km da costa)",
+    # Extra do detector geral (<15 km do mesmo port_of): Caracas não é porto;
+    # o porto real é La Guaira, que já é um dos 18 portos legados.
+    "VEN-CCS": "duplicado de VEN-LAG (Caracas; o porto real é La Guaira)",
 }
 
 # Portos cujo `port_of` não pode ser inferido (a cidade de mesmo nome não

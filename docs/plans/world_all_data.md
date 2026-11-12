@@ -978,11 +978,11 @@ como **cidade** da fonte continua existindo (`cities_source.csv`) e é o alvo de
 final `ITA-ROM`). `build_world_cities.py` passou a **avisar** quando dois portos
 da mesma nação têm o mesmo nome e o mesmo `port_of`.
 
-Duplicatas do mesmo tipo encontradas e **não** alteradas (fora do escopo desta
-rodada, todas do importador de 2026): `CHN-GUAN`×`CHN-GUA` (Guangzhou),
-`CHN-SHAN`×`CHN-SHA` (Shanghai), `IDN-MEDA`×`IDN-MED` (Medan),
-`JPN-NAGO`×`JPN-NAG` (Nagoya), `TUR-BURS`×`TUR-BUR` (Bursa) e
-`USA-LOSA`×`USA-LOS` (Los Angeles). O aviso aparece no build para curadoria.
+Duplicatas do mesmo tipo encontradas nesta rodada e deixadas para depois:
+`CHN-GUAN`×`CHN-GUA` (Guangzhou), `CHN-SHAN`×`CHN-SHA` (Shanghai),
+`IDN-MEDA`×`IDN-MED` (Medan), `JPN-NAGO`×`JPN-NAG` (Nagoya),
+`TUR-BURS`×`TUR-BUR` (Bursa) e `USA-LOSA`×`USA-LOS` (Los Angeles). Elas foram
+fundidas na r5 — ver §18.10. O aviso do build continua como rede de segurança.
 
 ### 18.7 "Tomar cidade entrega território" — o que existe
 
@@ -1049,5 +1049,67 @@ de TRT000232 (UKR) para TRT000190 (RUS).
   (`map3d_political_d052.png`, `map3d_political_d026.png`, foco `UKR-KYI`,
   `manifest_map3d_political.json`) + recortes `front_crop_d026.png` e
   `front_crop_d052.png` mostrando a frente RUS/UKR.
+
+### 18.10 Adendo r5 — portos duplicados fundidos (2026-11-12)
+
+O bloco acima (§18.1–18.9) é a rodada r4; os números de portos lá (143) são
+os de antes deste adendo. A fonte de `ports_source.csv` mantém os 114 portos
+do cenário da fase 1 e acrescenta 23 pontos "snap na costa" de 2026. Para as
+cidades que **já tinham** porto legado, os dois registros sobreviveram ao
+`promote_scenario`: um pino no centro da cidade (terra) e outro na costa. Na
+r5 todos foram fundidos em `EXCLUDED_PORTS` (`tools/world_city_curation.py`),
+ficando o ponto de costa:
+
+| cidade | mantido (ponto de costa) | removido (centro da cidade) | entre os dois |
+|---|---|---|---:|
+| Guangzhou | `CHN-GUAN` — foz do rio das Pérolas, a caminho de Nansha | `CHN-GUA` | 20,7 km |
+| Xangai | `CHN-SHAN` — Waigaoqiao, foz do Yangtzé | `CHN-SHA` | 14,0 km |
+| Medan | `IDN-MEDA` — Belawan, o porto real | `IDN-MED` | 19,1 km |
+| Nagoya | `JPN-NAGO` — Nagoya Port, baía de Ise | `JPN-NAG` | 17,6 km |
+| Bursa | `TUR-BURS` — costa de Mudanya, mar de Mármara | `TUR-BUR` | 17,0 km |
+| Los Angeles | `USA-LOSA` — costa de Playa del Rey/Dockweiler | `USA-LOS` | 17,0 km |
+| Caracas (extra) | `VEN-LAG` — La Guaira, o porto real (legado) | `VEN-CCS` | 14,4 km |
+
+Critério: manter o registro **melhor situado em mar aberto/porto real**. A
+distância assinada à costa no `world_sdf.png` (R, `(r-128)/2` texels de
+4,9 km) mostra o legado a +24,5 km (Guangzhou), +34,3 (Xangai), +44,1 (Medan),
++44,1 (Nagoya), +34,3 (Bursa), +34,3 (LA) e +29,4 (Caracas) *dentro* de terra;
+os mantidos ficam a +4,9–9,8 km, já na costa. `CHN-GUAN` é o ponto do estuário
+mais próximo do porto de Nansha (~29 km; Nansha é distrito de Guangzhou, sem
+entrada própria no roster);
+`CHN-SHAN` é Waigaoqiao (o maior terminal de contentores de Xangai);
+`USA-LOSA` está a ~25 km ao norte de San Pedro/Long Beach, que ficam fora da
+célula de ≈8 km/px — é o melhor dos dois pontos disponíveis.
+
+**Detector geral** (nome normalizado igual, par < 15 km, mesmo `port_of` com
+mais de um porto): além dos seis pares, só apareceu `VEN-CCS`×`VEN-LAG` (14,4
+km, mesmo `port_of = VEN-CCS`), fundido como extra. Os demais grupos de
+`port_of` com >1 porto (Durrës/Tirana, Baku/Sumqayıt, Semarang/Yogyakarta,
+Reykjavík/Reykjanesbær, Fukuoka/Kitakyushu, Nagoya/Hamamatsu,
+Tokyo/Sendai, Podgorica/Nikšić, Miami/Jacksonville) são **portos distintos e
+reais**, longe entre si; o `port_of` deles vem da regra "cidade da mesma nação
+mais próxima" do `assign_port_of`, que não tem teto de distância (Hamamatsu→
+Nagoya, Jacksonville→Miami) — pendência de dados separada, não um pino
+duplicado, fora do escopo desta rodada.
+
+**Reprodução e verificação:**
+
+* `python tools/build_world_cities.py --write-scenario` → **143 → 136 portos**,
+  136/136 com `port_of`; o aviso de duplicata ficou silencioso. O build também
+  passou a ignorar `EXCLUDED_PORTS` na checagem de "porto do cenário fora da
+  fonte" (o porto sai de propósito), então a primeira execução já fecha limpa.
+* `python tools/build_scenario_data.py` → `ports.json` 136.
+* `python tools/validate_scenario_data.py` → **0 erros, 0 avisos** (10 arquivos).
+* `build_world_cities.py --check` → **exit 0**.
+* i18n: saem 7 chaves `port.name.*` (21 linhas no `i18n.json`); as chaves
+  `city.name.*` das mesmas cidades (Shanghai, Guangzhou, Medan, Nagoya, Bursa,
+  Los Angeles, Caracas) ficam. 1.646 chaves no total.
+* Nenhum `port_of` órfão ou de outra nação (136/136); nenhuma cidade perdeu
+  porto: a checagem `nearest_port` (mesma nação + `landmass`, haversine como no
+  núcleo C++) antes/depois mudou só 19 cidades — as 7 envolvidas e vizinhas do
+  mesmo país, com 2–20 km de deslocamento para a costa.
+* `nav_strait_test.tscn`: **PASS**; `economy_integration_test.gd`: **OK**;
+  `convoy_lifecycle_test.tscn`: **OK** (20 dias, 408 viagens/408 chegadas,
+  0 fantasmas).
 
 

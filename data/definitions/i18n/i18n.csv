@@ -1462,9 +1462,7 @@ port.name.BRA-SAL,Salvador,Salvador,Salvador
 port.name.CAN-MON,Montreal,Montreal,Montreal
 port.name.CAN-VAN,Vancouver,Vancouver,Vancouver
 port.name.CHN-DON,Dongguan,Dongguan,Dongguan
-port.name.CHN-GUA,Guangzhou,Guangzhou,Guangzhou
 port.name.CHN-GUAN,Guangzhou,Guangzhou,Guangzhou
-port.name.CHN-SHA,Shanghai,Shanghai,Shanghai
 port.name.CHN-SHAN,Shanghai,Shanghai,Shanghai
 port.name.CHN-XIA,Xiamen,Xiamen,Xiamen
 port.name.CYP-LIM,Limassol,Limassol,Limassol
@@ -1499,7 +1497,6 @@ port.name.IDN-BAT,Batam,Batam,Batam
 port.name.IDN-JAK,Jakarta,Jakarta,Jakarta
 port.name.IDN-MAK,Makassar,Makassar,Makassar
 port.name.IDN-MAL,Malang,Malang,Malang
-port.name.IDN-MED,Medan,Medan,Medan
 port.name.IDN-MEDA,Medan,Medan,Medan
 port.name.IDN-PAL,Palembang,Palembang,Palembang
 port.name.IDN-SEM,Semarang,Semarang,Semarang
@@ -1521,7 +1518,6 @@ port.name.JPN-FUK,Fukuoka,Fukuoka,Fukuoka
 port.name.JPN-HAM,Hamamatsu,Hamamatsu,Hamamatsu
 port.name.JPN-HIR,Hiroshima,Hiroshima,Hiroshima
 port.name.JPN-KIT,Kitakyushu,Kitakyushu,Kitakyushu
-port.name.JPN-NAG,Nagoya,Nagoya,Nagoya
 port.name.JPN-NAGO,Nagoya,Nagoya,Nagoya
 port.name.JPN-NAH,Naha,Naha,Naha
 port.name.JPN-OKA,Okayama,Okayama,Okayama
@@ -1562,7 +1558,6 @@ port.name.SWE-GOT,Gothenburg,Gothenburg,Gothenburg
 port.name.SWE-STO,Stockholm,Stockholm,Stockholm
 port.name.THA-BAN,Bangkok,Bangkok,Bangkok
 port.name.TUR-ADA,Adana,Adana,Adana
-port.name.TUR-BUR,Bursa,Bursa,Bursa
 port.name.TUR-BURS,Bursa,Bursa,Bursa
 port.name.TUR-IST,Istanbul,Istanbul,Istanbul
 port.name.TUR-IZM,Izmir,Izmir,Izmir
@@ -1573,14 +1568,12 @@ port.name.USA-BET,Bethel,Bethel,Bethel
 port.name.USA-BOS,Boston,Boston,Boston
 port.name.USA-HOU,Houston,Houston,Houston
 port.name.USA-JAC,Jacksonville,Jacksonville,Jacksonville
-port.name.USA-LOS,Los Angeles,Los Angeles,Los Angeles
 port.name.USA-LOSA,Los Angeles,Los Angeles,Los Angeles
 port.name.USA-MIA,Miami,Miami,Miami
 port.name.USA-NEW,New York,New York,New York
 port.name.USA-PHI,Philadelphia,Philadelphia,Philadelphia
 port.name.USA-SAN,San Francisco,San Francisco,San Francisco
 port.name.USA-WAS,Washington,Washington,Washington
-port.name.VEN-CCS,Caracas,Caracas,Caracas
 port.name.VEN-LAG,La Guaira,La Guaira,La Guaira
 port.name.VEN-MAR,Maracaibo,Maracaibo,Maracaibo
 port.name.VEN-VLN,Valencia,Valencia,Valencia
