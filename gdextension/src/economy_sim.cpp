@@ -780,8 +780,13 @@ constexpr double kDemoOpexPerTon = 2.5;   // 50 opex / 20 t
 // vendável fica menor que a demanda e a última compradora — ex.: Cayenne — não
 // recebe nada).
 constexpr double kDemoTradeBufferDays = 0.0;
-// Teto de cargas de comércio por dia (proteção contra loop).
-constexpr std::size_t kDemoMaxShipmentsPerDay = 64;
+// Teto de cargas de comércio por dia (proteção contra loop). Com 40 cidades,
+// 64 bastava; com 252 e 66 nações, 64 embarques/dia deixavam as cidades de
+// índice alto (SAU, CHN...) permanentemente fora da fila — todas as
+// compradoras com estoque zero empatam em cobertura relativa 3,0 e as 64
+// primeiras do índice consumiam o teto todos os dias (§19). 512 cobre o pico
+// de reabastecimento mundial e cai sozinho quando os estoques enchem.
+constexpr std::size_t kDemoMaxShipmentsPerDay = 512;
 // Capacidade de transporte diária de uma cidade, por habitante (t/dia). 1 kg
 // por habitante/dia (~3x a necessidade alimentar de 0,3 kg) — um teto físico
 // para o comércio não mover carga "infinita" num único dia, sem apertar o fluxo
@@ -902,6 +907,7 @@ void EconomySim::initialize_demo() {
 	demo_ports_.clear();
 	demo_last_orders_.clear();
 	demo_bankruptcies_ = 0;
+	demo_depleted_mines_ = 0;
 	demo_transport_cash_ = 10000.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
@@ -1012,6 +1018,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_ports_.clear();
 	demo_last_orders_.clear();
 	demo_bankruptcies_ = 0;
+	demo_depleted_mines_ = 0;
 	demo_transport_cash_ = 0.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
@@ -1074,11 +1081,20 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		building.input_product = -1;
 		const double capacity =
 			safe_nonneg(static_cast<double>(d["output_tons_per_day"]));
+		// Aptidão da cultura escolhida na bacia da cidade (opcional; 1.0 no
+		// caminho legado). A capacidade nominal é o teto de terra; a produção
+		// efetiva da fase 4b é capacidade × aptidão. Folha e opex acompanham a
+		// FRAÇÃO APTA da terra — antes seguiam a capacidade nominal inteira e
+		// uma fazenda de aptidão 4% pagava 100% dos custos para produzir 4%,
+		// falindo em 60 dias (§19). Sem essa correção o mundo perdia 83 das 252
+		// fazendas iniciais no dia 61.
+		const double aptitude = std::clamp(
+			safe_nonneg(static_cast<double>(d.get("aptitude", 1.0))), 0.0, 1.0);
 		building.capacity = capacity;
 		building.input_per_output = 0.0;
-		building.jobs = capacity * kDemoJobsPerTon;
+		building.jobs = capacity * aptitude * kDemoJobsPerTon;
 		building.wage = kDemoFarmWage;
-		building.opex = capacity * kDemoOpexPerTon;
+		building.opex = capacity * aptitude * kDemoOpexPerTon;
 		demo_buildings_.push_back(std::move(building));
 	}
 
@@ -1302,12 +1318,18 @@ void EconomySim::demo_trade_food() {
 		return;
 	}
 
-	// Compradores com menor déficit primeiro: o buffer de uma cidade pequena é
-	// minúsculo e barato de completar; na ordem descendente a maior cidade monta
-	// o buffer e espreme as pequenas, que ficam sem nada. Ascendente garante que
-	// todos comam antes de alguém estocar.
+	// Compradores com MENOR COBERTURA RELATIVA primeiro (gap / necessidade):
+	// sob escassez, todas as cidades convergem para a mesma fração atendida.
+	// A ordem anterior era gap ABSOLUTO ascendente — ou seja, completava o
+	// buffer de quem já estava quase cheio e deixava as megacidades (Baku,
+	// Xangai, São Paulo) no fim da fila todos os dias; com a oferta mundial
+	// abaixo da necessidade, elas nunca eram alcançadas (§19).
 	std::stable_sort(buyers.begin(), buyers.end(),
-		[](const Buyer& left, const Buyer& right) { return left.gap < right.gap; });
+		[](const Buyer& left, const Buyer& right) {
+			const double left_need = std::max(1e-9, left.city->pop.need);
+			const double right_need = std::max(1e-9, right.city->pop.need);
+			return left.gap / left_need > right.gap / right_need;
+		});
 
 	// Índice espacial e ofertas por produto, montados UMA vez por dia.
 	//
@@ -1552,9 +1574,17 @@ void EconomySim::demo_trade_food() {
 			// Segurança alimentar: o governo subsidia a parte da importação que a
 			// firma não consegue pagar (cidade sem produção/caixa). Conserva
 			// dinheiro — firma + governo pagam exatamente o custo (carga + frete).
+			// As FAMÍLIAS são as compradoras finais: quando o capital de giro da
+			// firma e o orçamento público não cobrem a carga, a poupança das
+			// famílias entra como pagamento. O alimento chega ao mercado e é
+			// comprado por elas no dia seguinte, devolvendo o caixa à firma — é
+			// o mesmo dinheiro, não uma transferência nova. Sem isso, uma cidade
+			// com poupança alta e firma sem caixa (São Paulo, 28 M) ficava com
+			// fome enquanto o dinheiro dormia na conta das famílias (§19).
 			const double firm_cash = std::max(0.0, buyer.city->firm_cash);
 			const double gov_budget = std::max(0.0, buyer.city->government_budget);
-			const double payable = firm_cash + gov_budget;
+			const double savings = std::max(0.0, buyer.city->pop.savings);
+			const double payable = firm_cash + gov_budget + savings;
 			double amount_tons = amount_wanted_ge / factor;
 			if (amount_tons * unit_cost > payable) {
 				amount_tons = unit_cost > 0.0 ? payable / unit_cost : 0.0;
@@ -1567,12 +1597,16 @@ void EconomySim::demo_trade_food() {
 
 			const double total_cost = amount_tons * unit_cost;
 			const double firm_share = std::min(total_cost, firm_cash);
-			const double gov_share = total_cost - firm_share;
+			const double gov_share = std::min(total_cost - firm_share, gov_budget);
+			const double savings_share = std::max(
+				0.0, total_cost - firm_share - gov_share);
 			const double cost = amount_tons * price;
 			const double freight = unit_freight * amount_tons;
 
 			buyer.city->firm_cash -= firm_share;
 			buyer.city->government_budget -= gov_share;
+			buyer.city->pop.savings = std::max(
+				0.0, buyer.city->pop.savings - savings_share);
 			seller->firm_cash += cost;
 			buyer.city->service_cash += freight;
 			buyer.city->freight_revenue += freight;
@@ -1801,6 +1835,15 @@ void EconomySim::demo_tick_core() {
 	for (auto it = demo_buildings_.begin(); it != demo_buildings_.end();) {
 		if (it->bankrupt) {
 			++demo_bankruptcies_;
+			it = demo_buildings_.erase(it);
+			continue;
+		}
+		// Mina com jazida esgotada encerra a operação no dia seguinte: o fim da
+		// reserva é o fim econômico planejado, não uma insolvência. Contá-la
+		// como falência inflava o número (99 minas de ouro/diamante de jazidas
+		// de poucos dias em 730 d) e escondia as falências de verdade (§19).
+		if (it->depleted) {
+			++demo_depleted_mines_;
 			it = demo_buildings_.erase(it);
 			continue;
 		}
@@ -2057,6 +2100,10 @@ void EconomySim::demo_tick_core() {
 			const double extracted_kt = output / kDemoTonsPerKiloton;
 			deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
 			deposit.extracted_kt += extracted_kt;
+			// Reserva zerada: a mina encerra no próximo dia SEM virar falência.
+			if (deposit.remaining_kt <= 1e-9) {
+				building.depleted = true;
+			}
 		}
 
 		city->markets[building.output_product].stock += output;
@@ -2514,6 +2561,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		demand("demand"),
 		dependents("dependents"),
 		depleted("depleted"),
+		depleted_mines("depleted_mines"),
 		deposits("deposits"),
 		depth_m("depth_m"),
 		desired("desired"),
@@ -2941,6 +2989,7 @@ Dictionary EconomySim::get_demo_status() {
 	root[k.foreign_cash] = demo_foreign_cash_;
 	root[k.construction_cash] = demo_construction_cash_;
 	root[k.bankruptcies] = demo_bankruptcies_;
+	root[k.depleted_mines] = demo_depleted_mines_;
 
 	// Cabeçalho: os contêineres são pendurados no dicionário UMA vez; a partir
 	// daí só são redimensionados/reescritos no lugar.

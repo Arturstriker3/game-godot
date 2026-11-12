@@ -1173,3 +1173,162 @@ Testes headless executados (todos **exit 0**): `economy_city_catchment_test`,
 `economy_deposit_ownership_test`, `map_pick_test` e a cena
 `label_layout_test.tscn`. `economy_panel_test.gd` não foi rodado (BOM
 pré-existente, conforme `AGENTS.md`).
+
+---
+
+## 19. Fase 1 — 66 nações e 252 cidades (Europa + G20)
+
+### 19.1 Escopo
+
+O cenário saiu de **8 nações / 40 cidades** para **66 nações / 252 cidades**
+(Europa + G20), com 18 portos e 252 fazendas iniciais. A geografia deixou de
+ter tabela fixa: `GeographyService` lê `data/definitions/scenario/nations.json`
+como fonte de verdade dos códigos e resolve as divergências só onde existem
+(`NED → NLD`, `XKX → KOS` nas províncias). Nação sem província no atlas
+(Vaticano) recebe uma fração simbólica (0,1%) da província mais próxima para
+não ficar sem terra.
+
+Duas lacunas de dado são declaradas, não preenchidas: **KOS** não tem território
+na base natural atual (XKX fica sem jazida própria) e **VAT** não tem província
+(terra doada).
+
+### 19.2 Correções econômicas (causa → correção)
+
+| sintoma | causa medida | correção |
+|---|---|---|
+| 83 das 252 fazendas iniciais fechavam no dia 61 | folha e opex seguiam a **capacidade nominal** inteira, mesmo com aptidão de 4% — a fazenda pagava 100% do custo para produzir 4% | núcleo dimensiona `jobs` e `opex` pela **fração apta** da terra (`aptitude` vinda do GDScript); produção efetiva continua capacidade × aptidão |
+| SAU, CHN e cidades de índice alto ficavam fora da fila de compra todos os dias | teto de **64 embarques/dia**; todas as compradoras com estoque zero empatavam em cobertura relativa 3,0 e as 64 primeiras consumiam o teto | teto **512** (cai sozinho quando os estoques enchem) e fila por **menor cobertura relativa** (`gap / necessidade`), não por gap absoluto |
+| megacidades (São Paulo, Xangai, Baku) com fome ao lado de dinheiro parado | família com poupança alta e firma sem capital de giro não conseguia pagar a carga | a **poupança das famílias** entra como pagamento da carga (mesmo dinheiro, sem transferência nova) |
+| contagem de falências inflada (99 "falências" em 730 d) | mina com **jazida esgotada** era contada como insolvência | reserva zerada encerra a mina no dia seguinte e vai para `depleted_mines`, não para `bankruptcies` |
+| AZE/ISL/SAU com fazenda inerte (aptidão 0) | cultura inicial escolhida pela **melhor aptidão nacional**, não da bacia | `_initial_staple()` é **estritamente local**: trigo só onde a bacia tem trigo ≥ 0,30; senão o básico de maior aptidão × caloria **da cidade** |
+| Viena importadora permanente sem renda | meta nacional rateada pela terra apta de cada cidade (Viena: 15% da terra, 89% da população) | cada cidade se alimenta da própria bacia; o excedente nacional (necessidade × 1,10) é rateado pela **terra ociosa** |
+| faixas de rótulo sobrepostas na Europa densa | capital ignorava colisão de tela; com 66 nações (Roma/Vaticano a < 1 px, 5 capitais nos Bálcãs) os nomes se sobrepunham | capital só cede a **outra capital de maior população**; texto abaixo de 15% de alfa não entra no layout (sem nome-fantasma no zoom out) |
+| `No loader found for res://assets/flags/me.png` | 9 bandeiras novas sem `.import` | `godot --headless --path . --import`: 176 PNGs / 176 `.import`; teste headless confirma **66/66** bandeiras carregando como `Texture2D` |
+
+### 19.3 Resultado de 730 dias
+
+| métrica | resultado |
+|---|---|
+| `money_total` | **1.966.826.637,60** (conservado em todos os dias) |
+| `foreign_cash` | **−21.596.489.966,24** (conta externa sem orçamento — §15) |
+| falências (insolvência) | **8** |
+| fechamentos totais | **184** (8 insolvências + **176 minas com jazida esgotada**) |
+| violações de invariante | **0** |
+| satisfação alimentar | **62/66 ≥ 70%**; 4 pendências de modelo (ISL 0%, AZE 10%, SAU 29%, IDN 69,4%) |
+
+As 8 insolvências são todas **fazendas privadas de arroz/trigo/milho** com
+utilização ≤ 15% e prejuízo antes de fechar: ZAF 1, IDN 2, USA 1, CHN 2, RUS 1,
+MEX 1 — nenhuma é mina.
+
+### 19.4 Tabela por nação (fim do dia 730)
+
+`comida` = satisfação alimentar da nação (`consumed / need` agregado);
+`falências` = insolvências; `fechamentos` = fechamentos de prédios, que incluem
+as minas com reserva esgotada. Fonte: `docs/economy/bankruptcy_diag.json`
+(`nations` + `closures`).
+
+| nação | pop. | comida | falências | fechamentos |
+|---|---:|---:|---:|---:|
+| ALB | 614.415 | 100% | 0 | 0 |
+| AND | 20.430 | 100% | 0 | 0 |
+| ARG | 20.360.000 | 100% | 0 | 1 |
+| ARM | 1.724.667 | 70% | 0 | 0 |
+| AUS | 14.692.752 | 100% | 0 | 0 |
+| AUT | 2.703.270 | 100% | 0 | 0 |
+| AZE | 4.152.000 | 10% | 0 | 1 |
+| BEL | 3.517.430 | 100% | 0 | 2 |
+| BGR | 1.599.489 | 100% | 0 | 0 |
+| BIH | 917.837 | 100% | 0 | 0 |
+| BLR | 2.601.193 | 100% | 0 | 0 |
+| BRA | 72.300.000 | 100% | 0 | 22 |
+| CAN | 17.760.000 | 100% | 0 | 3 |
+| CHE | 1.651.631 | 100% | 0 | 2 |
+| CHN | 268.753.766 | 100% | 2 | 14 |
+| CYP | 354.452 | 100% | 0 | 0 |
+| CZE | 1.964.296 | 100% | 0 | 3 |
+| DEU | 17.307.900 | 100% | 0 | 7 |
+| DNK | 2.115.273 | 100% | 0 | 0 |
+| ESP | 15.250.000 | 100% | 0 | 6 |
+| EST | 485.431 | 100% | 0 | 0 |
+| FIN | 1.840.646 | 100% | 0 | 6 |
+| FRA | 18.650.060 | 100% | 0 | 2 |
+| GBR | 20.791.406 | 100% | 0 | 5 |
+| GEO | 1.706.949 | 100% | 0 | 0 |
+| GRC | 3.892.778 | 100% | 0 | 3 |
+| GUY | 170.373 | 100% | 0 | 2 |
+| HRV | 813.422 | 100% | 0 | 0 |
+| HUN | 2.702.402 | 100% | 0 | 0 |
+| IDN | 60.970.000 | 69% | 2 | 16 |
+| IND | 163.500.000 | 92% | 0 | 6 |
+| IRL | 1.794.004 | 100% | 0 | 3 |
+| ISL | 138.642 | 0% | 0 | 2 |
+| ITA | 17.373.260 | 100% | 0 | 1 |
+| JPN | 83.690.000 | 100% | 0 | 12 |
+| KOR | 36.495.000 | 100% | 0 | 0 |
+| LIE | 5.197 | 100% | 0 | 0 |
+| LTU | 831.746 | 100% | 0 | 0 |
+| LUX | 76.684 | 100% | 0 | 0 |
+| LVA | 820.698 | 100% | 0 | 0 |
+| MCO | 32.965 | 100% | 0 | 0 |
+| MDA | 792.994 | 100% | 0 | 0 |
+| MEX | 53.220.000 | 74% | 1 | 14 |
+| MKD | 549.940 | 100% | 0 | 1 |
+| MLT | 6.794 | 100% | 0 | 0 |
+| MNE | 295.064 | 100% | 0 | 0 |
+| NED | 3.478.680 | 100% | 0 | 0 |
+| NOR | 1.584.029 | 100% | 0 | 0 |
+| POL | 6.139.159 | 100% | 0 | 1 |
+| PRT | 4.310.000 | 100% | 0 | 3 |
+| ROU | 2.628.954 | 100% | 0 | 1 |
+| RUS | 39.120.000 | 100% | 1 | 6 |
+| SAU | 17.675.000 | 29% | 0 | 5 |
+| SMR | 4.500 | 100% | 0 | 0 |
+| SRB | 1.680.000 | 100% | 0 | 1 |
+| SUR | 240.924 | 100% | 0 | 3 |
+| SVK | 648.781 | 100% | 0 | 0 |
+| SVN | 368.429 | 100% | 0 | 0 |
+| SWE | 2.958.462 | 100% | 0 | 1 |
+| TUR | 32.093.684 | 100% | 0 | 5 |
+| UKR | 6.425.000 | 100% | 0 | 0 |
+| USA | 116.250.000 | 100% | 1 | 12 |
+| VAT | 829 | 100% | 0 | 0 |
+| VEN | 7.293.300 | 100% | 0 | 7 |
+| XKX | 721.464 | 100% | 0 | 0 |
+| ZAF | 26.387.693 | 100% | 1 | 5 |
+
+### 19.5 Pendência de modelo: ISL, AZE, SAU e IDN
+
+As quatro nações abaixo de 70% **não são bug de dados nem de conservação** —
+`money_total` conserva e não há violação de invariante em 730 dias. Elas têm
+pouca ou nenhuma terra cultivável na bacia e dependem de **importar** comida,
+mas o modelo não tem um mecanismo de pagamento para isso:
+
+- **ISL (0%)** e **AZE (10%)**: produção local praticamente zero; a cidade
+  precisa comprar de fora do país e não há **renda urbana** que financie a
+  compra contínua (o orçamento público drena e a demanda fica sem lastro).
+- **SAU (29%)**: idem — a base é deserto; o petróleo não fecha a conta de
+  alimento porque a receita de exportação não é convertida em **tesouro** com
+  que a cidade compre comida.
+- **IDN (69,4%)**: arquipélago com bacias desiguais; a produção nacional não
+  chega às ilhas deficitárias, e o frete/estoque não substitui a falta de
+  renda para importar.
+
+**O que falta no modelo** (registrado como pendência, não implementado aqui):
+renda urbana/tesouro que permita à cidade **importar** alimento de forma
+sustentável — hoje a compra externa é financiada por `foreign_cash` negativo
+sem orçamento (§15) e não existe tesouro nacional acumulável. Enquanto isso, o
+número honesto é o que está na tabela: essas quatro nações não fecham 70%.
+
+### 19.6 Verificação
+
+Testes headless executados nesta fase, cada um com exit code próprio (todos
+**exit 0**): `economy_integration_test`, `economy_live_path_test`,
+`economy_bistability_test`, `population_demo_test`, `territory_test`,
+`economy_long_run_test`, `economy_city_catchment_test`,
+`economy_deposit_ownership_test`, `deposit_ring_test`, `map_pick_test`,
+`economy_tick_async_test` e as cenas `label_layout_test`,
+`convoy_lifecycle_test` e `nav_strait_test`. `economy_panel_test.gd` não foi
+rodado (BOM pré-existente, conforme `AGENTS.md`).
+
+Desempenho (build release, medido nesta fase): tick de 11,1 / 14,3 ms (p50/p99)
+e benchmark de 650 cidades em 23,6 ms.
