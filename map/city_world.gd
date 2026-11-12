@@ -85,9 +85,6 @@ const MINERAL_KEYS := ["coal", "copper", "gas", "iron", "oil",
 const RENEWABLE_CROPS := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
 const CROP_ACCESS_MIN := 0.30
 
-const MARKER_COLOR := Color("#0A1212")
-const MARKER_DOT := Color("#E8E2D0")
-
 ## Orçamento de renderização das cidades.
 const MAX_DETAILED_CITIES := 40
 ## Rótulos não dependem mais do LOD 3D: qualquer cidade pode receber nome quando
@@ -115,7 +112,7 @@ const CAMERA_MOVE_EPSILON := 0.06
 ## roda varredura e layout completos já neste frame (o teste e o clique no HUD
 ## esperam a tela pronta). Pan normal anda bem menos que isso por frame.
 const LAYOUT_JUMP := 4.0
-## No nível LONGE as bolas mudam pouco: o buffer do MultiMesh é reescrito a
+## No nível LONGE os ícones mudam pouco: o buffer do MultiMesh é reescrito a
 ## ~4 Hz durante o pan e imediatamente quando a câmera para.
 const FAR_ICON_INTERVAL := 0.25
 
@@ -212,12 +209,14 @@ const ICON_COLOR := Color("#E8E2D0")          # marfim: alto contraste no selo e
 ## LOD de zoom em 3 níveis, com histerese (não pisca na fronteira) e fade curto
 ## de 150 ms. A distância é a da câmera ao ponto do chão que ela mira — a mesma
 ## referência do enquadramento (d=52 perto, 120 médio, 260 longe).
-##   LONGE  (estratégico) > 178 u: só CAPITAIS (estrela + selo), sem nomes,
+##   LONGE  (estratégico) > 178 u: só as CAPITAIS (estrela, sem selo), sem nomes,
 ##           bandeiras, portos, tecido urbano ou veículos; as demais cidades
-##           não têm marcador nenhum (nem bola).
-##   MÉDIO  (66..168)      : capitais com bandeira + nome; demais só bola pequena;
-##           cidades da nação do jogador também têm nome.
-##   PERTO  (<= 74)        : todos os nomes, portos, construções, tecido e veículos.
+##           não têm marcador nenhum.
+##   MÉDIO  (66..168)      : só capitais (bandeira + estrela + nome) e cidades da
+##           nação do jogador (ícone normal + nome); as demais não têm marcador
+##           nenhum.
+##   PERTO  (<= 74)        : todos os nomes, ícones normais, portos, construções,
+##           tecido e veículos.
 ## A histerese separa entrada e saída: 66/74 no perto e 168/178 no médio.
 const ZOOM_NEAR_ENTER := 66.0
 const ZOOM_NEAR_EXIT := 74.0
@@ -229,11 +228,7 @@ const LEVEL_FADE_SECONDS := 0.15
 ## colisão retângulo a retângulo). Capital > nação do jogador > população.
 const LABEL_MAX_PER_CELL := 4
 
-## Bolas dos ícones por nível: no longe, o glifo de prédio some e fica só o
-## selo; a capital tem a estrela e uma bola maior.
-const FAR_BALL_SCALE := 0.62
-const MID_BALL_SCALE := 0.78
-const CAPITAL_BALL_SCALE := 0.95
+## No LONGE a estrela da capital fica ~20% maior; não há selo atrás dela.
 const FAR_CAPITAL_ICON_SCALE := 1.2
 
 ## Bandeiras: atlas único + MultiMesh (uma draw call). Cada célula copia a
@@ -249,16 +244,6 @@ const NATION_LABEL_NEAR_SMALL := 95.0
 const NATION_LABEL_FADE := 18.0
 const NATION_LABEL_SMALL_EXTENT := 12.0
 
-## Fallback dos marcadores enquanto nations.csv não abre. A fonte real é a
-## coluna `color` do cenário (231 nações), lida em `_marker_colors` no build.
-const NATION_COLORS := {
-	"GBR": Color("#8C3A3C"),
-	"FRA": Color("#3C5A86"),
-	"DEU": Color("#5E6668"),
-	"NED": Color("#A1653A"),
-	"BEL": Color("#A39244"),
-}
-
 var _content: Node3D
 ## Cidades, portos e rótulos ficam numa cópia ÚNICA. O wrap do mundo (cópias
 ## laterais) só duplica as superfícies baratas do `_content`; cada lugar é
@@ -271,8 +256,6 @@ var _atlas_material: ShaderMaterial
 var _political_material: ShaderMaterial
 var _mode_layer: Node3D
 var _city_nodes: Array[Dictionary] = []
-## tag -> cor da nação (nations.csv), usada nos marcadores e nos discos.
-var _marker_colors: Dictionary = {}
 var _port_nodes: Array[Dictionary] = []
 var _hovered_id := ""
 var _mode := "political"
@@ -425,7 +408,6 @@ enum ZoomLevel { FAR, MID, NEAR }
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
 func build(cities: Array, ports: Array) -> void:
 	_load_city_flags()
-	_marker_colors = TerritoryMapScript.scenario_colors()
 	# Geografia: se o Economy (autoload) já carregou os JSON naturais, o mapa
 	# reutiliza a MESMA instância. Sem ele, o parse de deposits.json (3,3 MB,
 	# ~2 s) sai do caminho crítico e vem por thread (`_poll_geo_load`).
@@ -630,14 +612,16 @@ func place_pick_radius_px(place_id: String, camera: Camera3D) -> float:
 			_place_footprint(place_id))
 
 
-## O lugar responde a hover/clique no nível atual? No LONGE só a capital tem
-## marcador desenhado — as demais cidades e os portos não são alvo (nem hover,
-## nem clique). Nos níveis MÉDIO e PERTO nada muda.
+## O lugar responde a hover/clique no nível atual? Fora do PERTO só responde o
+## que tem marcador desenhado: no MÉDIO, capitais e cidades da nação do jogador;
+## no LONGE, apenas as capitais. Portos só no PERTO. Sem isso, o clique pegaria
+## cidades invisíveis (o mesmo lugar das antigas "bolinhas").
 func _place_pickable(record: Dictionary) -> bool:
-	if _zoom_level != ZoomLevel.FAR:
+	if _zoom_level == ZoomLevel.NEAR:
 		return true
-	return String(record.get("kind", "")) == "city" \
-			and bool(record.get("capital", false))
+	if String(record.get("kind", "")) != "city":
+		return false
+	return _city_marker_wanted(record)
 
 
 ## Melhor lugar da lista sob o cursor (score < 1 dentro do raio de tela).
@@ -1300,7 +1284,6 @@ func _refresh_territory(cities: Array) -> void:
 	if changed:
 		_minimap_texture = null  # invalida: o minimapa regenera sob demanda
 		_reposition_nation_labels()
-		_update_city_nation_colors(cities)
 		territory_changed.emit()
 
 
@@ -1312,35 +1295,6 @@ func minimap_texture() -> ImageTexture:
 	if _minimap_texture == null:
 		_minimap_texture = _territory.minimap_texture()
 	return _minimap_texture
-
-
-## Cor da nação do marcador: nations.csv (231) com o fallback histórico das 5
-## jogáveis. Depois de o TerritoryMap existir, ele é a fonte (inclui a paleta
-## de desempate de vizinhos).
-func _marker_color(tag: String) -> Color:
-	if _territory != null:
-		var live: Color = _territory.nation_color(tag)
-		if live.a > 0.0:
-			return live
-	return _marker_colors.get(tag, NATION_COLORS.get(tag, Color.WHITE))
-
-
-## Quando o dono de uma cidade muda (override de território), o marcador passa
-## a usar a cor da nação efetiva, não a original. O rótulo já é neutro (#E8E2D0).
-func _update_city_nation_colors(cities: Array) -> void:
-	for city in cities:
-		var city_id := String(city.get("id", ""))
-		var tag := String(_territory_overrides.get(city_id, city.get("nation", "")))
-		for node in _city_nodes:
-			if String(node.get("id", "")) != city_id:
-				continue
-			var color: Color = _marker_color(tag)
-			var discs: Array = node.get("discs", [])
-			if discs.size() > 1:
-				var mat: StandardMaterial3D = (discs[1] as MeshInstance3D).material_override
-				if mat != null:
-					mat.albedo_color = color
-			break
 
 
 func _apply_territory_materials() -> void:
@@ -1423,17 +1377,14 @@ func _build_cities(cities: Array) -> void:
 	for city: Dictionary in cities:
 		var city_id := String(city.get("id", ""))
 		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
-		var color: Color = _marker_color(String(city["nation"]))
 		var capital := bool(_capital_by_id.get(city_id, false))
-		var discs: Array = []
 		var icon: Sprite3D = null
 		var ring: Sprite3D = null
 		if detailed_ids.has(city_id):
-			discs = _spawn_city_marker(position, String(city.get("name", "")), color)
 			var icon_texture := STAR_ICON if capital else CITY_ICON
 			# Bandeira agora é MultiMesh (atlas único): o marcador detalhado só
-			# tem ícone + aro. O glifo aparece no nível PERTO/nome; no longe fica
-			# só a bola do selo.
+			# tem ícone + selo. O glifo aparece quando o nível pede a cidade; no
+			# LONGE é só a estrela da capital, sem o selo atrás.
 			var marker := _add_place_icon(10, icon_texture)
 			icon = marker["icon"]
 			ring = marker["ring"]
@@ -1452,8 +1403,6 @@ func _build_cities(cities: Array) -> void:
 			"capital": capital,
 			"nation": String(city.get("nation", "")),
 			"detailed": detailed_ids.has(city_id),
-			"discs": discs,
-			"disc_local": _disc_local_positions(discs),
 			"label": null,
 			"label_alpha": 1.0,
 			"label_target": 1.0,
@@ -1895,20 +1844,13 @@ func _place_city_marker(record: Dictionary) -> void:
 
 	var ring: Sprite3D = record.get("ring")
 	if ring != null:
-		ring.pixel_size = ring_h * _city_ball_scale(record) / PLACE_ICON_SOURCE
+		ring.pixel_size = ring_h / PLACE_ICON_SOURCE
 		ring.position = anchor
 
 	var text_w := _city_text_width(record)
 	var text_center := anchor + Vector3(ring_h * 0.5 + gap + text_w * 0.5,
 			0.0, 0.0)
 	record["text_center"] = text_center
-
-	# Marcador em camadas (só cidades detalhadas): mesma cópia de wrap.
-	var discs: Array = record.get("discs", [])
-	var bases: Array = record.get("disc_local", [])
-	for index in discs.size():
-		(discs[index] as MeshInstance3D).position = bases[index] \
-				+ Vector3(wrap, 0.0, 0.0)
 
 	# Nome do pool já atribuído: acompanha o wrap e o fade sem refazer a
 	# colisão de tela (a cor base vem do layout e é preservada).
@@ -2049,43 +1991,6 @@ static func _combined_aabb(root: Node3D) -> AABB:
 			found = true
 		stack.append_array(node.get_children())
 	return result
-
-
-## Marcador estratégico em camadas; devolve os discos para o controle de LOD.
-func _spawn_city_marker(position: Vector3, _city_name: String, color: Color) -> Array:
-	var discs: Array = []
-	discs.append(_add_disc(position + Vector3(0.0, 0.14, 0.0), 0.85, 0.10, MARKER_COLOR))
-	discs.append(_add_disc(position + Vector3(0.0, 0.20, 0.0), 0.57, 0.12, color))
-	discs.append(_add_disc(position + Vector3(0.0, 0.27, 0.0), 0.19, 0.10, MARKER_DOT))
-	return discs
-
-
-static func _disc_local_positions(discs: Array) -> Array[Vector3]:
-	var result: Array[Vector3] = []
-	for disc in discs:
-		result.append((disc as MeshInstance3D).position)
-	return result
-
-
-## Disco plano usado para desenhar o marcador da cidade em camadas.
-func _add_disc(position: Vector3, radius: float, height: float, color: Color) -> MeshInstance3D:
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 24
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	instance.material_override = material
-	instance.position = position
-	_places.add_child(instance)
-	return instance
-
 
 
 ## Frame do mapa: nível de zoom (3 níveis com histerese/fade), varredura do LOD
@@ -2229,7 +2134,8 @@ func zoom_distance() -> float:
 	return _zoom_distance
 
 
-## Define a nação do jogador: no nível MÉDIO, as cidades dela mantêm o nome.
+## Define a nação do jogador: no nível MÉDIO, as cidades dela mantêm o ícone
+## normal e o nome.
 func set_player_nation(tag: String) -> void:
 	if tag == _player_nation:
 		return
@@ -2305,43 +2211,30 @@ func _refresh_level_targets(snap: bool) -> void:
 	_flags_dirty = true
 
 
-## O nível atual mostra o nome desta cidade? PERTO: todas. MÉDIO: capitais e a
-## nação do jogador. LONGE: nenhuma (só as capitais têm marcador, sem nome).
+## O nível atual mostra o nome desta cidade? PERTO: todas. MÉDIO: capitais e as
+## cidades da nação do jogador. LONGE: nenhuma (só a estrela das capitais).
 func _city_label_wanted(record: Dictionary) -> bool:
-	if _zoom_level == ZoomLevel.NEAR:
-		return true
 	if _zoom_level == ZoomLevel.FAR:
 		return false
+	if _zoom_level == ZoomLevel.NEAR:
+		return true
+	return _city_marker_wanted(record)
+
+
+## O nível atual desenha o marcador desta cidade? PERTO: todas. MÉDIO: capitais
+## e cidades da nação do jogador. LONGE: só as capitais (estrela).
+func _city_marker_wanted(record: Dictionary) -> bool:
+	if _zoom_level < 0 or _zoom_level == ZoomLevel.NEAR:
+		return true
 	if bool(record.get("capital", false)):
 		return true
+	return _zoom_level == ZoomLevel.MID and _is_player_city(record)
+
+
+## Cidade pertence à nação do jogador? Vazio = nenhuma nação declarada ainda.
+func _is_player_city(record: Dictionary) -> bool:
 	return not _player_nation.is_empty() \
 			and String(record.get("nation", "")) == _player_nation
-
-
-## O nível atual desenha o marcador desta cidade? No LONGE só a capital tem
-## estrela/selo; as demais cidades somem por completo (sem bola, sem disco).
-func _city_marker_wanted(record: Dictionary) -> bool:
-	return _zoom_level != ZoomLevel.FAR or bool(record.get("capital", false))
-
-
-## O glifo (prédios/estrela) acompanha o nome; a capital mantém a estrela no
-## nível LONGE. A bola do selo aparece em todos os níveis (só para capitais no
-## LONGE, ver `_city_marker_wanted`).
-func _want_city_glyph(record: Dictionary) -> bool:
-	if _zoom_level == ZoomLevel.FAR:
-		return bool(record.get("capital", false))
-	return bool(record.get("capital", false)) \
-			or _zoom_level == ZoomLevel.NEAR \
-			or float(record.get("label_alpha", 0.0)) > 0.5
-
-
-## Escala da bola (selo) por nível: longe pequena, capital um pouco maior.
-func _city_ball_scale(record: Dictionary) -> float:
-	if _zoom_level == ZoomLevel.NEAR:
-		return 1.0
-	if bool(record.get("capital", false)):
-		return CAPITAL_BALL_SCALE
-	return MID_BALL_SCALE if _zoom_level == ZoomLevel.MID else FAR_BALL_SCALE
 
 
 ## Avança o fade de 150 ms de todos os registros na fila. Devolve `true` se
@@ -2371,8 +2264,8 @@ func _advance_level_fade(delta: float) -> bool:
 	return true
 
 
-## Aplica o alfa do fade ao rótulo/glyph já existentes. A bola do selo não
-## escurece: o nível LONGE continua mostrando todas as cidades.
+## Aplica o alfa do fade ao rótulo/glyph já existentes. O selo atrás do ícone
+## acompanha o glifo (no LONGE ele não existe: fica só a estrela da capital).
 func _apply_fade_visual(record: Dictionary) -> void:
 	if String(record.get("kind", "")) != "city":
 		return
@@ -2382,7 +2275,7 @@ func _apply_fade_visual(record: Dictionary) -> void:
 		label.modulate.a = alpha
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
-		icon.visible = _want_city_glyph(record)
+		icon.visible = _city_marker_wanted(record)
 		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
 
 
@@ -3153,15 +3046,16 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 		return
 	record["lod_step"] = step
 	var alpha := float(record.get("label_alpha", 1.0))
-	var glyph := _want_city_glyph(record)
+	var marker := _city_marker_wanted(record)
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
-		icon.visible = glyph
+		icon.visible = marker
 		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
 	var ring: Sprite3D = record.get("ring")
 	if ring != null:
-		# A bola do selo existe em todos os níveis; no LONGE só a capital tem.
-		ring.visible = _city_marker_wanted(record)
+		# O selo é apenas o fundo do ícone: sem glifo não há bolinha, e no LONGE
+		# a capital fica só com a estrela.
+		ring.visible = marker and _zoom_level != ZoomLevel.FAR
 		ring.transparency = 0.0
 
 
@@ -3196,19 +3090,6 @@ func _apply_city_lod(record: Dictionary, distance: float,
 	if on_screen and _city_marker_wanted(record):
 		_visible_city_records.append(record)
 	_apply_place_label_lod(record, distance)
-
-	# Marcador discreto (continental) das cidades detalhadas: só no nível LONGE,
-	# quando a bola do MultiMesh/Sprite já tomou o lugar do nome — e só para a
-	# capital, que é a única cidade com marcador nesse nível.
-	var discs: Array = record["discs"]
-	if not discs.is_empty():
-		var marker_alpha := 1.0 if _zoom_level == ZoomLevel.FAR \
-				and _city_marker_wanted(record) else 0.0
-		for disc in discs:
-			var mesh := disc as MeshInstance3D
-			mesh.visible = marker_alpha > 0.01
-			mesh.transparency = 1.0 - marker_alpha
-
 	_update_urban(record, distance, on_screen)
 
 
@@ -3361,7 +3242,7 @@ func _apply_lod_city(record: Dictionary, camera_local: Vector3,
 	record["wrap_x"] = wrap
 	var detailed := bool(record.get("detailed", false))
 	if _zoom_level == ZoomLevel.FAR and not detailed:
-		# Nível estratégico: sem nome/tecido; a bola usa um pixel_size único do
+		# Nível estratégico: sem nome/tecido; o ícone usa um pixel_size único do
 		# zoom (sem sqrt por cidade). Só a capital entra — as demais cidades não
 		# têm marcador nenhum no LONGE.
 		record["pixel_size"] = clampf(LABEL_PIXEL_PER_UNIT * _zoom_distance,
@@ -3486,8 +3367,8 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 	for record in _visible_city_records:
 		if bool(record.get("detailed", false)):
 			continue
-		# Troca de nível: a lista visível pode ser do nível anterior; no LONGE
-		# só a capital desenha (nada de bolinha de cidade comum).
+		# Troca de nível: a lista visível pode ser do nível anterior; no
+		# MÉDIO/LONGE só entra quem tem marcador agora.
 		if not _city_marker_wanted(record):
 			continue
 		# A lista já passou pelo culling de tela no scan; a instância usa a
@@ -3495,17 +3376,17 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 		var local: Vector3 = record["anchor"] \
 				+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
 		var size := _city_icon_size(record)
-		if _want_city_glyph(record):
-			if bool(record.get("capital", false)):
-				_set_mm_local(_city_star_mm, star_index, local, size)
-				star_index += 1
-			else:
-				_set_mm_local(_city_icon_mm, plain_index, local, size)
-				plain_index += 1
-		# A bola do selo é o ícone do nível LONGE e acompanha todos os níveis.
-		_set_mm_local(_city_ring_mm, ring_index, local,
-				size * RING_SCALE * _city_ball_scale(record))
-		ring_index += 1
+		if bool(record.get("capital", false)):
+			_set_mm_local(_city_star_mm, star_index, local, size)
+			star_index += 1
+		else:
+			_set_mm_local(_city_icon_mm, plain_index, local, size)
+			plain_index += 1
+		# O selo escuro é só o fundo do ícone; sem glifo (ou no LONGE) não há
+		# bolinha solta no mapa.
+		if _zoom_level != ZoomLevel.FAR:
+			_set_mm_local(_city_ring_mm, ring_index, local, size * RING_SCALE)
+			ring_index += 1
 	_set_mm_count(_city_icon_mm, plain_index)
 	_set_mm_count(_city_star_mm, star_index)
 	_set_mm_count(_city_ring_mm, ring_index)

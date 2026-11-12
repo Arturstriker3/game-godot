@@ -21,8 +21,11 @@ const MAX_DELTA_PX := 1.0
 const CAMERA_OFFSET := Vector3(0.0, 50.0, 30.0)
 ## Mesmo enquadramento a > 178 u do alvo (nível LONGE do LOD).
 const CAMERA_OFFSET_FAR := Vector3(0.0, 200.0, 120.0)
-## Espelha `CityWorld.ZoomLevel.FAR` (usar a classe aqui forçaria o compile de
+## Enquadramento a ~117 u do alvo (nível MÉDIO do LOD: 66..168 u).
+const CAMERA_OFFSET_MID := Vector3(0.0, 100.0, 60.0)
+## Espelha `CityWorld.ZoomLevel` (usar a classe aqui forçaria o compile de
 ## city_world.gd antes dos autoloads no modo --script).
+const MID_LEVEL := 1
 const FAR_LEVEL := 2
 ## Canto superior esquerdo: era aqui que o rótulo de Caracas (projetado no plano
 ## da câmera) roubava o clique "vazio" e abria o painel.
@@ -60,6 +63,7 @@ func _run() -> void:
 	await _test_deposit_toggle()
 	await _test_empty_and_escape()
 	await _test_far_capitals_only()
+	await _test_mid_capitals_and_player()
 
 	_game.queue_free()
 	await process_frame
@@ -501,6 +505,11 @@ func _test_far_capitals_only() -> void:
 			_failures.append("LONGE: porto %s ainda é clicável" % port)
 	print("LONGE: capital=%s clicável/hover | comum=%s e porto=%s sem alvo"
 			% [capital, common, port])
+	# Sem bolinha solta: no LONGE o único marcador é a estrela da capital.
+	await _settle_icons()
+	if _mm_visible(_world.get("_city_ring_mm")) != 0:
+		_failures.append("LONGE: %d bolinhas de selo ainda desenhadas"
+				% _mm_visible(_world.get("_city_ring_mm")))
 	_world.set_hover("")
 	_close_overlay()
 
@@ -550,6 +559,177 @@ func _focus_far(world_pos: Vector3) -> void:
 		if _world.zoom_level() == FAR_LEVEL and fading is Array \
 				and fading.is_empty():
 			break
+
+
+# --- MÉDIO: capitais + nação do jogador ---------------------------------------
+
+## No nível MÉDIO só capitais e cidades da nação do jogador têm marcador/nome —
+## e são os únicos alvos de clique. As demais não respondem (era ali que as
+## bolinhas apareciam), e o buffer do selo tem exatamente uma instância por
+## glifo desenhado (sem bola solta).
+func _test_mid_capitals_and_player() -> void:
+	_close_overlay()
+	_world.clear_selection()
+	_world.set_player_nation("")
+	_world.set_hover("")
+
+	var capital := "BEL-BRU"
+	var common := "BEL-ANR"
+	if not _world._records_by_id.has(capital) \
+			or not _world._records_by_id.has(common):
+		capital = await _find_mid_city(true)
+		common = await _find_mid_city(false)
+	if capital.is_empty() or common.is_empty():
+		_failures.append("MÉDIO: sem capital/cidade comum na tela para testar")
+		return
+
+	await _focus_mid(_world.city_world_position(capital))
+	var capital_center := _camera.unproject_position(
+			_world.city_world_position(capital))
+	var capital_hit: String = _world.pick_city(capital_center, _camera)
+	var capital_radius: float = _world.place_pick_radius_px(capital, _camera)
+	if capital_hit != capital or capital_radius <= 0.0:
+		_failures.append("MÉDIO: capital %s não respondeu (hit='%s' raio=%.1f)"
+				% [capital, capital_hit, capital_radius])
+	_world.set_hover(capital)
+	if _world._hover == null or not _world._hover.visible:
+		_failures.append("MÉDIO: capital %s sem anel de hover" % capital)
+	_world.set_hover("")
+
+	await _focus_mid(_world.city_world_position(common))
+	var common_center := _camera.unproject_position(
+			_world.city_world_position(common))
+	var common_hit: String = _world.pick_city(common_center, _camera)
+	var common_radius: float = _world.place_pick_radius_px(common, _camera)
+	if common_hit == common:
+		_failures.append("MÉDIO: cidade comum %s ainda é clicável" % common)
+	if common_radius > 0.0:
+		_failures.append("MÉDIO: cidade comum %s com raio de pick %.1f"
+				% [common, common_radius])
+	_world.set_hover(common)
+	if _world._hover != null and _world._hover.visible:
+		_failures.append("MÉDIO: cidade comum %s com anel de hover" % common)
+	_world.set_hover("")
+
+	_check_mid_visible_only("MÉDIO")
+	_check_ring_matches_glyphs("MÉDIO")
+
+	# Exceção: as cidades da nação do jogador voltam com ícone normal + nome.
+	var record: Dictionary = _world._records_by_id[common]
+	var nation := String(record.get("nation", ""))
+	_world.set_player_nation(nation)
+	await _settle_mid()
+	if not bool(_world._city_marker_wanted(record)):
+		_failures.append("MÉDIO: cidade %s da nação %s sem marcador"
+				% [common, nation])
+	if float(record.get("label_target", 0.0)) < 1.0:
+		_failures.append("MÉDIO: cidade %s da nação %s sem alvo de nome"
+				% [common, nation])
+	var player_center := _camera.unproject_position(
+			_world.city_world_position(common))
+	var player_hit: String = _world.pick_city(player_center, _camera)
+	var player_radius: float = _world.place_pick_radius_px(common, _camera)
+	if player_hit != common or player_radius <= 0.0:
+		_failures.append(
+				"MÉDIO: cidade %s da nação do jogador não respondeu (hit='%s' raio=%.1f)"
+				% [common, player_hit, player_radius])
+	_world.set_hover(common)
+	if _world._hover == null or not _world._hover.visible:
+		_failures.append("MÉDIO: cidade %s do jogador sem anel de hover" % common)
+	_world.set_hover("")
+	_check_mid_visible_only("MÉDIO nação do jogador")
+	_check_ring_matches_glyphs("MÉDIO nação do jogador")
+
+	print("MÉDIO: capital=%s clicável/hover | comum=%s sem alvo | %s (%s) com ícone+nome"
+			% [capital, common, common, nation])
+	_world.set_player_nation("")
+	_world.clear_selection()
+	_world.set_hover("")
+	_close_overlay()
+
+
+## No MÉDIO, toda cidade na lista visível é capital ou pertence ao jogador.
+func _check_mid_visible_only(tag: String) -> void:
+	var player := String(_world.get("_player_nation"))
+	for record in _world._visible_city_records:
+		if bool(record.get("capital", false)):
+			continue
+		if player != "" and String(record.get("nation", "")) == player:
+			continue
+		_failures.append("%s: cidade %s com marcador no nível médio"
+				% [tag, String(record.get("id", ""))])
+
+
+## Sem bolinha solta: o buffer do selo tem uma instância por glifo desenhado.
+func _check_ring_matches_glyphs(tag: String) -> void:
+	var rings := _mm_visible(_world.get("_city_ring_mm"))
+	var glyphs := _mm_visible(_world.get("_city_icon_mm")) \
+			+ _mm_visible(_world.get("_city_star_mm"))
+	if rings != glyphs:
+		_failures.append("%s: %d selos para %d ícones (bolinha solta)"
+				% [tag, rings, glyphs])
+
+
+func _mm_visible(instance: Variant) -> int:
+	if not (instance is MultiMeshInstance3D):
+		return 0
+	var mm: MultiMesh = (instance as MultiMeshInstance3D).multimesh
+	return mm.visible_instance_count if mm != null else 0
+
+
+## Cidade (capital ou comum) na tela no MÉDIO, com o pick coerente com o nível.
+func _find_mid_city(capital: bool) -> String:
+	for record in _world._city_nodes:
+		if bool(record.get("capital", false)) != capital:
+			continue
+		var id := String(record["id"])
+		await _focus_mid(_world.city_world_position(id))
+		var center := _camera.unproject_position(_world.city_world_position(id))
+		if not Rect2(Vector2.ZERO, Vector2(root.size)).grow(-4.0).has_point(center):
+			continue
+		var hit: String = _world.pick_city(center, _camera)
+		if capital:
+			if hit == id:
+				return id
+		elif hit != id:
+			return id
+	return ""
+
+
+## Coloca a câmera no nível MÉDIO (~117 u) e espera nível, fade e buffers.
+func _focus_mid(world_pos: Vector3) -> void:
+	_camera.global_position = world_pos + CAMERA_OFFSET_MID
+	_camera.look_at(world_pos, Vector3.UP)
+	for _frame in 60:
+		await process_frame
+		var fading: Variant = _world.get("_level_fade_queue")
+		if _world.zoom_level() == MID_LEVEL and fading is Array \
+				and fading.is_empty():
+			break
+	await _settle_icons()
+
+
+## Deixa o buffer de ícones do MultiMesh refletir o nível já assentado.
+func _settle_icons() -> void:
+	for _frame in 60:
+		await process_frame
+		if not bool(_world.get("_icons_dirty")):
+			return
+
+
+## Espera o layout fatiado do MÉDIO assentar depois de trocar a nação do jogador.
+func _settle_mid() -> void:
+	for _frame in 120:
+		await process_frame
+		var fading: Variant = _world.get("_level_fade_queue")
+		if _world.zoom_level() == MID_LEVEL and fading is Array \
+				and fading.is_empty() \
+				and not bool(_world.get("_layout_job_active")) \
+				and not bool(_world.get("_layout_dirty")) \
+				and not bool(_world.get("_layout_pending")) \
+				and not bool(_world.get("_layout_after_scan")):
+			break
+	await _settle_icons()
 
 
 # --- Apoio --------------------------------------------------------------------
