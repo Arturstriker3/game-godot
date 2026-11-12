@@ -77,6 +77,10 @@ def main() -> None:
             "x": float(row["x"]),
             "y": float(row["y"]),
             "landmass": row["landmass"].strip(),
+            # Cidade de origem do porto: o mapa usa para saber de quem ele é
+            # (badge quando o ponto de costa encosta no tecido urbano). Vazio
+            # quando a fonte não tem cidade (o mapa trata como porto isolado).
+            "port_of": row.get("port_of", "").strip(),
         })
 
     nations = []

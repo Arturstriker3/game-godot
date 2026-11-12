@@ -1,7 +1,9 @@
 """Gera data/definitions/world/out/ a partir das fontes do mundo (2026).
 
-Etapa de projeção e validação. Não roda Godot e NÃO altera
-data/definitions/scenario/ (a promoção do cenário é uma tarefa separada).
+Etapa de projeção e validação. Não roda Godot. Sem `--write-scenario` não
+altera data/definitions/scenario/; com a flag, promove out/ para o cenário
+(CSVs), migra os ids das cidades da fase 1 que continuam sendo a MESMA cidade
+(nome/coordenada), completa `port_of` dos portos órfãos e mescla o i18n.
 
 Entrada:
     data/definitions/world/nations_source.csv
@@ -27,14 +29,18 @@ Regras (docs/plans/world_all_data.md):
 Uso:
     python tools/build_world_cities.py            # gera out/
     python tools/build_world_cities.py --check    # valida sem escrever
+    python tools/build_world_cities.py --write-scenario  # promove para o cenário
 """
 from __future__ import annotations
 
 import argparse
+import colorsys
 import csv
 import json
+import math
 import os
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +61,49 @@ LEGACY_PORTS = [
 
 # Cidade-estado com uma única cidade: a cota mínima de 2 não se aplica.
 SINGLE_CITY = {"VAT"}
+
+# Tom "papelaria": dessatura as cores do CSV sem mudar matiz nem luminosidade.
+# O usuário achou as cores da F2 saturadas demais para o mapa de papel; 14% de
+# saturação a menos mantém o ΔE entre vizinhos de FRONTEIRA ≥ 30 depois da
+# auditoria feita com a adjacência de TERRA do mapa (ver docs/plans/world_all_data.md).
+COLOR_SATURATION = 0.86
+# Único par que continua abaixo de ΔE 30 na adjacência de terra do mapa depois
+# do tom: BWA×AGO (29,6 antes). O novo tom fica a ΔE 33,1 do vizinho (o mais
+# próximo) e a 8,4 do tom original, preservando a identidade da cor.
+COLOR_TONE_OVERRIDE = {"BWA": "#a54062"}
+# Distância máxima (km) para considerar que uma cidade da fase 1 e uma cidade
+# re-derivada da fonte são a MESMA cidade. Nome normalizado igual aceita até
+# 120 km (a fonte às vezes escolhe outro núcleo da mesma aglomeração); sem nome
+# igual, só casamos até 15 km (mesma mancha urbana).
+MATCH_NAME_KM = 120.0
+MATCH_COORD_KM = 15.0
+
+
+def tone_color(hexcolor):
+    """Dessatura `hexcolor` mantendo matiz e luminosidade (HSL)."""
+    value = hexcolor.lstrip("#")
+    rgb = tuple(int(value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+    hue, light, sat = colorsys.rgb_to_hls(*rgb)
+    r, g, b = colorsys.hls_to_rgb(hue, light, sat * COLOR_SATURATION)
+    return "#%02x%02x%02x" % tuple(round(c * 255) for c in (r, g, b))
+
+
+def scenario_color(iso3, hexcolor):
+    """Cor final do cenário: tom uniforme + correção pontual documentada."""
+    return COLOR_TONE_OVERRIDE.get(iso3, tone_color(hexcolor))
+
+
+def norm_name(text):
+    text = unicodedata.normalize("NFKD", text)
+    return " ".join("".join(c for c in text if not unicodedata.combining(c))
+                    .lower().replace("-", " ").split())
+
+
+def km_between_px(a, b):
+    """Distância aproximada em km entre dois pontos x/y da projeção global."""
+    dx = (float(a[0]) - float(b[0])) * 40075.0 / MAP_W
+    dy = (float(a[1]) - float(b[1])) * 20037.0 / MAP_H
+    return math.hypot(dx, dy)
 
 
 def lonlat_to_xy(lon, lat):
@@ -86,9 +135,191 @@ def building_code(city_id, legacy):
     return city_id.lower().replace("-", "_")
 
 
+def plan_city_ids(cities_out, scenario_cities, legacy_ids):
+    """Mapeia o id da fonte (out) para o id FINAL do cenário.
+
+    Contrato: as 40 cidades legadas mantêm o id (já são o mesmo id em out). As
+    demais cidades da fase 1 mantêm o id anterior quando a cidade física é a
+    mesma — nome normalizado igual a ≤120 km ou coordenada a ≤15 km, mesma
+    nação. Uma cidade antiga só pode corresponder a uma cidade nova (casamento
+    guloso e determinístico por menor distância).
+    """
+    by_nation = defaultdict(list)
+    for row in scenario_cities.values():
+        if row["id"] not in legacy_ids:
+            by_nation[row["nation"]].append(row)
+    pairs = []
+    for row in cities_out:
+        if row["id"] in legacy_ids:
+            continue
+        for old in by_nation.get(row["nation"], []):
+            distance = km_between_px((row["x"], row["y"]), (old["x"], old["y"]))
+            same_name = norm_name(row["name"]) == norm_name(old["name"])
+            if same_name and distance <= MATCH_NAME_KM:
+                pairs.append(((0, distance, old["id"], row["id"]), row, old))
+            elif distance <= MATCH_COORD_KM:
+                pairs.append(((1, distance, old["id"], row["id"]), row, old))
+    pairs.sort(key=lambda item: item[0])
+    used_old, used_new, matches = set(), set(), {}
+    for _score, row, old in pairs:
+        if old["id"] in used_old or row["id"] in used_new:
+            continue
+        used_old.add(old["id"])
+        used_new.add(row["id"])
+        matches[row["id"]] = old["id"]
+    mapping = {}
+    taken = set(legacy_ids)
+    for row in cities_out:
+        out_id = row["id"]
+        final_id = matches.get(out_id, out_id)
+        if final_id in taken:
+            final_id = out_id
+        taken.add(final_id)
+        mapping[out_id] = final_id
+    dropped = [cid for cid in scenario_cities if cid not in legacy_ids
+               and cid not in used_old]
+    stats = {
+        "legacy": len(legacy_ids),
+        "kept_old_id": len(matches),
+        "same_name": sum(1 for row in cities_out if row["id"] in matches
+                         and norm_name(row["name"]) == norm_name(
+                             scenario_cities[matches[row["id"]]]["name"])),
+        "dropped_phase1": len(dropped),
+        "dropped_ids": sorted(dropped),
+        "new_id": sum(1 for row in cities_out if mapping[row["id"]] == row["id"]
+                      and row["id"] not in legacy_ids),
+    }
+    return mapping, stats
+
+
+def assign_port_of(cities, ports):
+    """Completa `port_of` com a cidade da MESMA nação mais próxima (km)."""
+    by_nation = defaultdict(list)
+    for city in cities:
+        by_nation[city["nation"]].append(city)
+    result = {}
+    for port in ports:
+        existing = port.get("port_of", "").strip()
+        if existing:
+            result[port["id"]] = existing
+            continue
+        best_id, best_d = "", float("inf")
+        for city in by_nation.get(port["nation"], []):
+            distance = km_between_px((port["x"], port["y"]), (city["x"], city["y"]))
+            if distance < best_d or (distance == best_d and city["id"] < best_id):
+                best_id, best_d = city["id"], distance
+        result[port["id"]] = best_id
+    return result
+
+
+def merge_i18n(existing, generated, old_nations, old_cities, old_ports):
+    """Mescla o i18n gerado no CSV existente, preservando as chaves de UI.
+
+    Remove só as chaves de nação/cidade/porto que deixaram de existir (e as que
+    serão reescritas) e mantém todo o resto intacto.
+    """
+    def is_entity_key(key):
+        if key.startswith("city.name.") or key.startswith("port.name."):
+            return True
+        if key.startswith("nation.name."):
+            return True
+        if key.startswith("nation.") and key.split(".", 1)[1] in old_nations:
+            return True
+        return False
+
+    merged = {row["key"]: row for row in existing if not is_entity_key(row["key"])}
+    for row in generated:
+        merged[row["key"]] = row
+    return [merged[key] for key in sorted(merged)]
+
+
+def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out,
+                     scenario_cities, scenario_ports, scenario_nations):
+    """Escreve os CSVs do cenário com ids migrados e `port_of` completo."""
+    source_legacy = read_csv(os.path.join(WORLD, "cities_source.csv"))
+    legacy_ids = {row["id"] for row in source_legacy if row["legacy"] == "yes"}
+    mapping, stats = plan_city_ids(cities_out, scenario_cities, legacy_ids)
+
+    scenario_cities_out = []
+    for row in cities_out:
+        final = row["id"] if row["id"] in legacy_ids else mapping[row["id"]]
+        scenario_cities_out.append({
+            "id": final, "nation": row["nation"], "home_nation": row["home_nation"],
+            "name": row["name"], "population": row["population"], "x": row["x"],
+            "y": row["y"], "landmass": row["landmass"], "capital": row["capital"],
+        })
+    scenario_cities_out.sort(key=lambda r: r["id"])
+
+    # `port_of` usa os ids FINAIS das cidades.
+    final_cities = [{"id": (row["id"] if row["id"] in legacy_ids else mapping[row["id"]]),
+                     "nation": row["nation"], "x": row["x"], "y": row["y"]}
+                    for row in cities_out]
+    port_of = assign_port_of(final_cities, ports_out)
+    ports_final = []
+    for row in ports_out:
+        ports_final.append({
+            "id": row["id"], "name": row["name"], "nation": row["nation"],
+            "x": row["x"], "y": row["y"], "landmass": row["landmass"],
+            "port_of": port_of.get(row["id"], ""),
+        })
+    ports_final.sort(key=lambda r: r["id"])
+
+    buildings_final = []
+    for row in buildings_out:
+        city_id = row["city_id"]
+        final = city_id if city_id in legacy_ids else mapping[city_id]
+        code = building_code(final, final in legacy_ids)
+        buildings_final.append({
+            "city_id": final,
+            "building_id": f"{code}_wheat",
+            "name": row["name"],
+            "output_tons_per_day": row["output_tons_per_day"],
+        })
+    buildings_final.sort(key=lambda r: r["city_id"])
+
+    # i18n: a chave da cidade acompanha o id final; o valor não muda.
+    generated_i18n = []
+    for row in i18n_out:
+        entry = dict(row)
+        if entry["key"].startswith("city.name."):
+            out_id = entry["key"].split(".", 2)[2]
+            final = out_id if out_id in legacy_ids else mapping.get(out_id, out_id)
+            entry["key"] = f"city.name.{final}"
+        generated_i18n.append(entry)
+
+    scenario_fields = ["id", "name", "flag", "color", "capital", "currency",
+                       "government", "ai_profile", "region", "population",
+                       "gdp_ppp_bn"]
+    city_fields = ["id", "nation", "home_nation", "name", "population", "x", "y",
+                   "landmass", "capital"]
+    port_fields = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
+    building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
+    i18n_fields = ["key", "pt_BR", "en", "es"]
+
+    write_csv(SCENARIO, "nations.csv", nations_out, scenario_fields)
+    write_csv(SCENARIO, "cities.csv", scenario_cities_out, city_fields)
+    write_csv(SCENARIO, "ports.csv", ports_final, port_fields)
+    write_csv(SCENARIO, "buildings.csv", buildings_final, building_fields)
+
+    i18n_path = os.path.join(ROOT, "data", "definitions", "i18n", "i18n.csv")
+    existing_i18n = read_csv(i18n_path) if os.path.exists(i18n_path) else []
+    merged = merge_i18n(existing_i18n, generated_i18n,
+                        set(scenario_nations), set(scenario_cities),
+                        set(scenario_ports))
+    with open(i18n_path, "w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=i18n_fields)
+        writer.writeheader()
+        for row in merged:
+            writer.writerow({k: row.get(k, "") for k in i18n_fields})
+
+    return stats, ports_final, merged
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="valida sem escrever")
+    parser.add_argument("--write-scenario", action="store_true",
+                        help="promove out/ para data/definitions/scenario (CSV) e mescla i18n")
     args = parser.parse_args()
 
     nations_src = read_csv(os.path.join(WORLD, "nations_source.csv"))
@@ -96,6 +327,7 @@ def main():
     ports_src = read_csv(os.path.join(WORLD, "ports_source.csv"))
     scenario_cities = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "cities.csv"))}
     scenario_ports = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "ports.csv"))}
+    scenario_nations = {r["id"]: r for r in read_csv(os.path.join(SCENARIO, "nations.csv"))}
     scenario_buildings = {r["city_id"]: r for r in
                           read_csv(os.path.join(SCENARIO, "buildings.csv"))}
     report = {}
@@ -202,7 +434,7 @@ def main():
             "id": iso3,
             "name": nation["name_en"],
             "flag": nation["iso2"].lower(),
-            "color": nation["color"],
+            "color": scenario_color(iso3, nation["color"]),
             "capital": nation["capital_en"],
             "currency": nation["currency"],
             "government": nation["government"],
@@ -333,6 +565,26 @@ def main():
         json.dump(meta, fh, ensure_ascii=False, indent=2)
         fh.write("\n")
     print(f"OK -> {os.path.relpath(OUT, ROOT)}")
+
+    if args.write_scenario:
+        stats, ports_final, merged = promote_scenario(
+            nations_out, cities_out, ports_out, buildings_out, i18n_out,
+            scenario_cities, scenario_ports, scenario_nations)
+        missing = [row for row in ports_final if not row["port_of"]]
+        print("")
+        print("== cenário promovido ==")
+        print(f"nações: {len(nations_out)} | cidades: {len(cities_out)} | "
+              f"portos: {len(ports_final)} | construções: {len(buildings_out)}")
+        print(f"ids mantidos da fase 1: {stats['kept_old_id']} "
+              f"(nome igual: {stats['same_name']}) | ids novos: {stats['new_id']} "
+              f"| legados: {stats['legacy']}")
+        print(f"cidades antigas fora da seleção nova: {stats['dropped_phase1']}")
+        if stats["dropped_ids"]:
+            print("  " + ", ".join(stats["dropped_ids"]))
+        print(f"portos com port_of: {len(ports_final) - len(missing)}/{len(ports_final)}")
+        print(f"i18n: {len(merged)} chaves em data/definitions/i18n/i18n.csv")
+        if missing:
+            problems.append(f"portos sem port_of: {len(missing)}")
     return 1 if problems else 0
 
 

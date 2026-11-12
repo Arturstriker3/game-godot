@@ -54,7 +54,7 @@ CITY_FIELDS = [
     "landmass",
     "capital",
 ]
-PORT_FIELDS = ["id", "name", "nation", "x", "y", "landmass"]
+PORT_FIELDS = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
 BUILDING_FIELDS_CSV = ["city_id", "building_id", "name", "output_tons_per_day"]
 BUILDING_FIELDS_JSON = ["city_id", "id", "name", "output_tons_per_day"]
 # Schema do plano §5. `population`/`gdp_ppp_bn` são opcionais: nação sem dado
@@ -410,9 +410,18 @@ def validate_cities(sec: Section, rows: list, structure: list) -> set:
                 sec.errors.append(
                     f"{row.label}: population não é numérico ({data.get('population')!r})"
                 )
-            elif population <= 0:
+            elif population < 0:
                 sec.errors.append(
-                    f"{row.label}: population deve ser > 0 (valor: {fmt_number(population)})"
+                    f"{row.label}: population não pode ser negativa "
+                    f"(valor: {fmt_number(population)})"
+                )
+            elif population == 0:
+                # Zero é um dado da fonte, não um número faltando (Plymouth foi
+                # abandonada após a erupção; Ngerulmud tem 0 habitantes no
+                # GeoNames). Fica avisado para não passar em silêncio; a
+                # economia trata a cidade com necessidade 0.
+                sec.warnings.append(
+                    f"{row.label}: population 0 declarada na fonte"
                 )
 
         check_coordinate(sec, row, "x", X_RANGE)
@@ -570,6 +579,35 @@ def check_nation_refs(
                     sec.errors.append(message)
                 else:
                     sec.warnings.append(message)
+
+
+def check_port_of(
+    sec: Section,
+    ports: list,
+    cities: list,
+    cities_label: str,
+) -> None:
+    """`port_of`, quando declarado, é uma cidade da MESMA nação do porto.
+
+    O mapa usa o campo para saber de quem é o porto (badge quando o ponto de
+    costa encosta no tecido urbano). Cidade inexistente ou de outra nação
+    deixaria o porto órfão em silêncio.
+    """
+    city_nation = {
+        as_text(row.data.get("id")): as_text(row.data.get("nation")) for row in cities
+    }
+    for row in ports:
+        port_of = as_text(row.data.get("port_of"))
+        if not port_of:
+            continue
+        if port_of not in city_nation:
+            sec.errors.append(
+                f"{row.label}: port_of '{port_of}' não existe em {cities_label}"
+            )
+        elif city_nation[port_of] != as_text(row.data.get("nation")):
+            sec.errors.append(
+                f"{row.label}: port_of '{port_of}' é de outra nação"
+            )
 
 
 def check_nation_i18n(sec: Section, i18n: dict, nation_ids: set) -> None:
@@ -846,6 +884,9 @@ def build_report(root: Path) -> Report:
         if fmt in ports and fmt in nation_ids:
             sec, rows, _structure = ports[fmt]
             check_nation_refs(sec, rows, nation_ids[fmt], rel_path(scenario_dir / f"nations.{fmt}", root))
+            if fmt in cities:
+                _city_sec, city_rows, _city_structure = cities[fmt]
+                check_port_of(sec, rows, city_rows, cities_label)
 
     for entity, csv_items, json_items in (
         ("cities", city_ids.get("csv"), city_ids.get("json")),
