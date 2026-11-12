@@ -1257,8 +1257,9 @@ func _build_mode_layer(cities: Array) -> void:
 
 
 func _build_cities(cities: Array) -> void:
-	# Só as maiores ganham o modelo 3D detalhado; todas as demais entram no
-	# MultiMesh de discos e podem receber rótulo pelo pool.
+	# Só as maiores ganham o modelo 3D detalhado. As demais ficam apenas com o
+	# ícone e o rótulo do pool: sem disco raso no chão (a "mancha" clara que
+	# aparecia sob Alexandria/Tanta/Suez) e sem tecido urbano próprio.
 	var ordered := cities.duplicate()
 	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a.get("population", 0.0)) > float(b.get("population", 0.0))
@@ -1321,13 +1322,6 @@ func _build_cities(cities: Array) -> void:
 				if bool(record["detailed"]) else fade.y
 		if bool(record["detailed"]):
 			_detailed_records.append(record)
-
-	var rest: Array = []
-	for city: Dictionary in cities:
-		if not detailed_ids.has(String(city.get("id", ""))):
-			rest.append(city)
-	if not rest.is_empty():
-		_build_city_multimesh(rest)
 
 
 ## Pool de rótulos e ícones distantes (MultiMesh). Criado uma vez no build; o
@@ -1401,40 +1395,6 @@ func _make_billboard_multimesh(texture: Texture2D, priority: int,
 	_places.add_child(instance)
 	return instance
 
-
-
-func _build_city_multimesh(cities: Array) -> void:
-	if cities.is_empty():
-		return
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = 0.55
-	mesh.bottom_radius = 0.55
-	mesh.height = 0.08
-	mesh.radial_segments = 12
-
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-
-	var multimesh := MultiMesh.new()
-	multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	multimesh.use_colors = true
-	multimesh.mesh = mesh
-	multimesh.instance_count = cities.size()
-
-	var basis := Basis()
-	for index in cities.size():
-		var city: Dictionary = cities[index]
-		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
-		multimesh.set_instance_transform(index,
-			Transform3D(basis, position + Vector3(0.0, 0.16, 0.0)))
-		multimesh.set_instance_color(index, _marker_color(String(city["nation"])))
-
-	var instance := MultiMeshInstance3D.new()
-	instance.multimesh = multimesh
-	instance.material_override = material
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_places.add_child(instance)
 
 
 ## Portos como entidades 3D: modelo port.glb (sem disco de fundo, como a cidade).
@@ -2591,9 +2551,17 @@ func _fade_in(distance: float, start: float, end: float) -> float:
 ## está na tela (construir fora do frustum só gerava picos de 5 ms por frame à
 ## toa). Depois de construída, só alterna a visibilidade (histerese evita
 ## reconstrução em vaivém).
+##
+## Só as cidades detalhadas (as 40 maiores) têm modelo 3D. As demais mostram
+## apenas ícone + nome em qualquer zoom: sem tecido urbano, sem solo orgânico e
+## sem o disco raso que virava uma mancha clara sob o marcador.
 func _update_urban(record: Dictionary, distance: float,
 		on_screen: bool) -> void:
 	var urban: Node3D = record.get("urban")
+	if not bool(record.get("detailed", false)):
+		if urban != null:
+			urban.visible = false
+		return
 	if urban == null:
 		if on_screen and distance <= URBAN_BUILD_DISTANCE \
 				and not bool(record.get("urban_queued", false)):
@@ -2689,7 +2657,9 @@ func _apply_lod_city(record: Dictionary, camera_local: Vector3,
 	var distance := sqrt(dx * dx + dy * dy + dz * dz)
 	# Só testa o frustum para decidir a entrada de uma cidade ainda não
 	# construída; com `urban` pronto, `_update_urban` ignora `on_screen`.
-	var on_screen := distance <= URBAN_BUILD_DISTANCE \
+	# Cidade sem modelo detalhado nunca entra na fila: nem projeta frustum.
+	var on_screen := bool(record.get("detailed", false)) \
+			and distance <= URBAN_BUILD_DISTANCE \
 			and record.get("urban") == null and _in_frustum(record, camera)
 	_apply_city_lod(record, distance, on_screen)
 
