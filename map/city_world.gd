@@ -187,7 +187,11 @@ const LABEL_FADE_CAPITAL_END := 260.0
 const LABEL_FADE_LARGE_START := 100.0
 const LABEL_FADE_LARGE_END := 160.0
 const LABEL_FADE_MEDIUM_START := 75.0
-const LABEL_FADE_MEDIUM_END := 110.0
+## Fim do fade da cidade média em 100 (era 110): com a câmera inclinada, uma
+## cidade do lado próximo da tela fica a ~103 u no zoom out de 120 e ainda
+## aparecia com nome (alpha 0,18 > o corte de 0,15). O zoom out deve manter só
+## capitais e cidades grandes.
+const LABEL_FADE_MEDIUM_END := 100.0
 const LABEL_FADE_SMALL_START := 58.0
 const LABEL_FADE_SMALL_END := 90.0
 const LABEL_LARGE_POPULATION := 1000000.0
@@ -200,6 +204,8 @@ const NATION_LABEL_NEAR_SMALL := 95.0
 const NATION_LABEL_FADE := 18.0
 const NATION_LABEL_SMALL_EXTENT := 12.0
 
+## Fallback dos marcadores enquanto nations.csv não abre. A fonte real é a
+## coluna `color` do cenário (231 nações), lida em `_marker_colors` no build.
 const NATION_COLORS := {
 	"GBR": Color("#8C3A3C"),
 	"FRA": Color("#3C5A86"),
@@ -220,6 +226,8 @@ var _atlas_material: ShaderMaterial
 var _political_material: ShaderMaterial
 var _mode_layer: Node3D
 var _city_nodes: Array[Dictionary] = []
+## tag -> cor da nação (nations.csv), usada nos marcadores e nos discos.
+var _marker_colors: Dictionary = {}
 var _port_nodes: Array[Dictionary] = []
 var _hovered_id := ""
 var _mode := "political"
@@ -318,6 +326,7 @@ signal territory_changed
 ## Monta o mundo: chão de satélite, camada geopolítica e modelos de cidade.
 func build(cities: Array, ports: Array) -> void:
 	_load_city_flags()
+	_marker_colors = TerritoryMapScript.scenario_colors()
 	# Geografia: se o Economy (autoload) já carregou os JSON naturais, o mapa
 	# reutiliza a MESMA instância. Sem ele, o parse de deposits.json (3,3 MB,
 	# ~2 s) sai do caminho crítico e vem por thread (`_poll_geo_load`).
@@ -1159,6 +1168,17 @@ func minimap_texture() -> ImageTexture:
 	return _minimap_texture
 
 
+## Cor da nação do marcador: nations.csv (231) com o fallback histórico das 5
+## jogáveis. Depois de o TerritoryMap existir, ele é a fonte (inclui a paleta
+## de desempate de vizinhos).
+func _marker_color(tag: String) -> Color:
+	if _territory != null:
+		var live: Color = _territory.nation_color(tag)
+		if live.a > 0.0:
+			return live
+	return _marker_colors.get(tag, NATION_COLORS.get(tag, Color.WHITE))
+
+
 ## Quando o dono de uma cidade muda (override de território), o marcador passa
 ## a usar a cor da nação efetiva, não a original. O rótulo já é neutro (#E8E2D0).
 func _update_city_nation_colors(cities: Array) -> void:
@@ -1168,7 +1188,7 @@ func _update_city_nation_colors(cities: Array) -> void:
 		for node in _city_nodes:
 			if String(node.get("id", "")) != city_id:
 				continue
-			var color: Color = NATION_COLORS.get(tag, Color.WHITE)
+			var color: Color = _marker_color(tag)
 			var discs: Array = node.get("discs", [])
 			if discs.size() > 1:
 				var mat: StandardMaterial3D = (discs[1] as MeshInstance3D).material_override
@@ -1250,7 +1270,7 @@ func _build_cities(cities: Array) -> void:
 	for city: Dictionary in cities:
 		var city_id := String(city.get("id", ""))
 		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
-		var color: Color = NATION_COLORS.get(city["nation"], Color.WHITE)
+		var color: Color = _marker_color(String(city["nation"]))
 		var capital := bool(_capital_by_id.get(city_id, false))
 		var discs: Array = []
 		var icon: Sprite3D = null
@@ -1408,8 +1428,7 @@ func _build_city_multimesh(cities: Array) -> void:
 		var position: Vector3 = pixel_to_world(Vector2(city["x"], city["y"]))
 		multimesh.set_instance_transform(index,
 			Transform3D(basis, position + Vector3(0.0, 0.16, 0.0)))
-		multimesh.set_instance_color(index,
-			NATION_COLORS.get(city["nation"], Color.WHITE))
+		multimesh.set_instance_color(index, _marker_color(String(city["nation"])))
 
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = multimesh
@@ -1437,7 +1456,12 @@ func _build_ports(ports: Array) -> void:
 
 		var port_id := String(port["id"])
 		var port_name := String(port["name"])
-		var city_record: Dictionary = city_by_id.get(port_id, {})
+		# `port_of` (ports.csv) é a cidade de origem declarada pelo cenário —
+		# inclusive para os portos de costa que não compartilham id/nome com a
+		# cidade. Sem ele, cai no id e depois no nome (contrato antigo).
+		var port_of := String(port.get("port_of", ""))
+		var city_record: Dictionary = city_by_id.get(port_of, {}) \
+				if port_of != "" else city_by_id.get(port_id, {})
 		if city_record.is_empty():
 			city_record = city_by_name.get(port_name.to_lower(), {})
 		var same_city := false
@@ -1445,7 +1469,7 @@ func _build_ports(ports: Array) -> void:
 			var city: Dictionary = city_record.get("city", {})
 			var city_name := String(city.get("name", "")).to_lower()
 			var distance := pos.distance_to(city_record["position"])
-			same_city = city_name == port_name.to_lower() \
+			same_city = port_of != "" or city_name == port_name.to_lower() \
 					or distance <= PORT_ICON_MERGE_DISTANCE
 
 		# Porto: âncora pequena no ponto de costa, SEM nome e SEM bandeira.

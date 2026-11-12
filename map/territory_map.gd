@@ -14,12 +14,12 @@ const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const GeographyScript := preload("res://core/economy/geography_service.gd")
 const OWNER_COLUMNS := 64
 
-## Cores do mapa político por nação. Fonte de verdade: `color` de
-## `data/definitions/scenario/nations.csv` (as 66 nações do cenário). As 8 nações
-## jogáveis mantêm a cor canônica de `provinces.json` (design do atlas); as
-## demais deixam de cair no bege neutro gerado pelo MAPCOLOR9 do Natural Earth.
-## Quando a cor do cenário fica indistinguível da de um VIZINHO, entra a paleta
-## de papelaria abaixo (regra MAPCOLOR: vizinhos nunca com o mesmo tom).
+## Cores do mapa político por nação. Fonte ÚNICA: `color` de
+## `data/definitions/scenario/nations.csv` — as 231 nações, inclusive as 8
+## jogáveis (o `nation_colors` de `provinces.json` carrega os mesmos valores, só
+## para o atlas estático e o editor). Quando a cor do CSV fica indistinguível da
+## de um VIZINHO, a paleta de papelaria abaixo é a rede de segurança (regra
+## MAPCOLOR: vizinhos nunca com o mesmo tom); com os dados da F3 ela não entra.
 const NATIONS_CSV := "res://data/definitions/scenario/nations.csv"
 ## Tons "papelaria" (baixa saturação, mesmo peso visual do atlas) usados só para
 ## desempatar vizinhos. Ordem estável: o resultado é determinístico.
@@ -140,30 +140,33 @@ func load_data() -> void:
 	_loaded = not _provinces.is_empty()
 
 
-## Monta a cor de cada nação do cenário: jogáveis canônicas, demais vindas de
-## nations.csv, trocadas pela paleta de papelaria se repetirem o tom de um
-## vizinho (ver PAPER_PALETTE). Chave = tag de dono usada em `_owner_image`.
+## Monta a cor de cada nação: TODAS vêm de nations.csv (as 8 jogáveis também —
+## `provinces.json` só repete os mesmos valores para o atlas/editor). A cor do
+## CSV é trocada pela paleta de papelaria apenas se repetir o tom de um vizinho
+## (ver PAPER_PALETTE). Chave = tag de dono usada em `_owner_image`.
 func _build_nation_palette() -> void:
 	_palette.clear()
-	for tag: Variant in _nation_colors:
-		_palette[String(tag)] = _nation_colors[tag]
-	var scenario := _scenario_colors()
+	var scenario := scenario_colors()
+	# Fallback do atlas enquanto nations.csv não abrir (nunca em jogo normal):
+	# mantém as jogáveis pintadas em vez de cair no bege neutro.
 	if scenario.is_empty():
+		for tag: Variant in _nation_colors:
+			_palette[String(tag)] = _nation_colors[tag]
 		return
 	_adjacency = _country_adjacency()
 	var tags: Array = scenario.keys()
 	tags.sort()
 	for tag: Variant in tags:
 		var name := String(tag)
-		if _palette.has(name):
-			continue
 		var wanted: Color = scenario[tag]
 		_palette[name] = wanted if _palette_fits(name, wanted) \
 				else _paper_color_for(name, wanted)
 
 
-## Cor de cada nação em `nations.csv` (coluna `color`, hex `#rrggbb`).
-func _scenario_colors() -> Dictionary:
+## Cor de cada nação em `nations.csv` (coluna `color`, hex `#rrggbb`). Estática
+## para o CityWorld pintar os marcadores com a MESMA fonte antes de o
+## TerritoryMap existir (a ordem do build cria as cidades primeiro).
+static func scenario_colors() -> Dictionary:
 	var out: Dictionary = {}
 	var file := FileAccess.open(NATIONS_CSV, FileAccess.READ)
 	if file == null:
@@ -256,23 +259,41 @@ func _country_adjacency() -> Dictionary:
 	var columns := int(ceil(float(width) / float(step)))
 	var rows := int(ceil(float(height) / float(step)))
 	var sampled: Array[PackedInt32Array] = []
+	var land: Array[PackedByteArray] = []
+	# O raster de províncias PREENCHE o mar com a província de terra mais
+	# próxima (id 0 nunca aparece). Sem a máscara de terra, duas costas a até
+	# ADJACENCY_STEP pixels viram "vizinhas" (Gibraltar, Órmuz, Bioko) e a
+	# paleta trocava cores por um par que não existe no mapa. A máscara é o
+	# canal R do world_sdf.png (>0,5 = terra), a mesma convenção do shader.
+	var sdf := _world_sdf_raster()
+	var sdf_w := sdf.get_width() if sdf != null else 0
+	var sdf_h := sdf.get_height() if sdf != null else 0
 	for ry in rows:
 		var row := PackedInt32Array()
+		var land_row := PackedByteArray()
 		row.resize(columns)
+		land_row.resize(columns)
 		var py := mini(ry * step, height - 1)
+		var ty := clampi(int(float(py) / float(height) * float(sdf_h)), 0, sdf_h - 1)
 		for rx in columns:
 			var px := mini(rx * step, width - 1)
 			var color := ids.get_pixel(px, py)
 			row[rx] = int(round(color.r * 255.0 + color.g * 255.0 * 256.0))
+			if sdf != null:
+				var tx := clampi(int(float(px) / float(width) * float(sdf_w)), 0, sdf_w - 1)
+				land_row[rx] = 1 if sdf.get_pixel(tx, ty).r > 0.5 else 0
+			else:
+				land_row[rx] = 1
 		sampled.append(row)
+		land.append(land_row)
 	for ry in rows:
 		for rx in columns:
 			var id_a: int = sampled[ry][rx]
-			if id_a <= 0 or id_a >= tag_by_id.size():
+			if id_a <= 0 or id_a >= tag_by_id.size() or land[ry][rx] == 0:
 				continue
-			if rx + 1 < columns:
+			if rx + 1 < columns and land[ry][rx + 1] != 0:
 				_connect_nations(edges, id_a, int(sampled[ry][rx + 1]), tag_by_id)
-			if ry + 1 < rows:
+			if ry + 1 < rows and land[ry + 1][rx] != 0:
 				_connect_nations(edges, id_a, int(sampled[ry + 1][rx]), tag_by_id)
 	return edges
 
@@ -635,9 +656,9 @@ func _write_owner_image(owners: Dictionary) -> void:
 		_texture.update(_image)
 
 
-## Cor final do dono no mapa político. A paleta vem de nations.csv (66 nações),
-## com a paleta de papelaria desempatando vizinhos; tags fora do cenário caem na
-## cor da província do atlas.
+## Cor final do dono no mapa político. A paleta vem de nations.csv (231 nações),
+## com a paleta de papelaria apenas como rede de segurança; tags fora do cenário
+## caem na cor da província do atlas.
 func _color_for(tag: String, province: Dictionary) -> Color:
 	if _palette.has(tag):
 		return _palette[tag]

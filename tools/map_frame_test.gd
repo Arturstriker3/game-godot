@@ -1,6 +1,6 @@
 extends Node3D
 
-## Teste de fumaça POR FRAME do mapa com o cenário real (66 nações, 252 cidades,
+## Teste de fumaça POR FRAME do mapa com o cenário real (231 nações, 858 cidades,
 ## portos do ports.csv). Reproduz o fluxo do jogo — CityWorld.build + _process a
 ## cada frame — com a câmera viajando e dando zoom in/out por Europa, Bálcãs,
 ## Rússia, Ásia e Américas. Qualquer erro de script no caminho falha o teste.
@@ -49,13 +49,10 @@ const FRAMES_PER_REGION := 50
 ## ~7 s nesta máquina; 120 s é teto rígido, não orçamento.
 const TEST_TIMEOUT_SEC := 120.0
 ## Distância RGB mínima entre vizinhos no mapa político (mesma regra do
-## TerritoryMap.COLOR_MIN_DISTANCE).
+## TerritoryMap.COLOR_MIN_DISTANCE). O ΔE ≥ 30 dos dados é auditado no gerador;
+## aqui o RGB é o proxy barato que o próprio mapa aplica.
 const COLOR_MIN_DISTANCE := 0.16
 const OWNER_COLUMNS := 64
-## Cores canônicas de design (provinces.json) das 8 nações jogáveis: pares
-## vizinhos entre elas são aceitos como estão (FRA/SUR se tocam na Guiana).
-const ORIGINAL_NATIONS: Array[String] = ["GBR", "FRA", "DEU", "NED", "BEL",
-		"VEN", "SUR", "GUY"]
 
 
 ## Coleta todo erro reportado pela engine (SCRIPT ERROR incluso) enquanto o
@@ -381,8 +378,6 @@ func _check_nation_colors() -> void:
 			var neighbor := String(neighbor_value)
 			if tag > neighbor or not tags.has(neighbor):
 				continue
-			if ORIGINAL_NATIONS.has(tag) and ORIGINAL_NATIONS.has(neighbor):
-				continue  # cores canônicas do design, par já existente
 			var other: Color = territory.nation_color(neighbor)
 			if _distance(color, other) < COLOR_MIN_DISTANCE:
 				_failures.append("vizinhos %s/%s com tons iguais (%.2f)" % [

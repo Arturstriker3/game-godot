@@ -66,15 +66,22 @@ REGION_TO_GLOBAL = (REGION[2] - REGION[0]) / REGION_W * (GLOBAL_W / 360.0)
 WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
 
 # Código do Natural Earth -> tag do jogo (o jogo usa NED para a Holanda).
-GAME_TAGS = {"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NLD": "NED", "BEL": "BEL"}
+GAME_TAGS = {"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NLD": "NED",
+             "BEL": "BEL", "VEN": "VEN", "SUR": "SUR", "GUY": "GUY"}
 
-# Cores das nações jogáveis: tons sóbrios de carta, legíveis sob o terreno.
+# Cores das nações jogáveis. Fonte de verdade: a coluna `color` de
+# data/definitions/world/out/nations.csv (tom "papelaria" da F3, saturação ×0,86
+# + correção do par BWA×AGO). Mantidas aqui para o atlas estático e o editor
+# continuarem idênticos ao mapa dinâmico; `territory_map.gd` lê o CSV.
 NATION_COLORS = {
-    "GBR": (160, 72, 68),
-    "FRA": (80, 108, 156),
-    "DEU": (112, 117, 124),
-    "NED": (192, 120, 64),
-    "BEL": (182, 156, 74),
+    "GBR": (154, 78, 74),
+    "FRA": (75, 101, 160),
+    "DEU": (113, 117, 123),
+    "NED": (183, 121, 73),
+    "BEL": (122, 160, 75),
+    "VEN": (213, 188, 71),
+    "SUR": (73, 137, 92),
+    "GUY": (147, 100, 156),
 }
 
 # Nações não jogáveis: variação discreta de pergaminho por MAPCOLOR9 do Natural
