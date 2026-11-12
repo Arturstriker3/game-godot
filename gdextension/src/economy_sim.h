@@ -125,6 +125,24 @@ public:
 		double reserve_kt, double quality, double depth_m);
 
 	/**
+	 * Define o índice de renda externa de uma cidade (multiplicador sobre a
+	 * renda-base de serviços/exportações não modelados).
+	 *
+	 * A nação recebe renda do resto do mundo proporcional ao seu PIB PPP per
+	 * capita REAL: o `GeographyService` calcula, a partir de `nations.csv`
+	 * (gdp_ppp_bn/population), um índice normalizado para que a média mundial
+	 * ponderada por população fique em 1,0 — ou seja, a renda média continua
+	 * `kDemoExternalIncomePerCapita`. Nações ricas sem terra (SAU/QAT/ISL)
+	 * importam mais; nações pobres recebem o piso (10% da média) e continuam
+	 * frágeis. O valor é pago pelo setor externo (`foreign_cash`), então
+	 * `money_total` continua conservado.
+	 * @param city_id Identificador da cidade.
+	 * @param index Multiplicador (0 = sem renda externa; 1 = média mundial).
+	 *              Limitado a [0, 8] para conter dados corrompidos.
+	 */
+	void demo_set_external_income_index(const String& city_id, double index);
+
+	/**
 	 * Define o teto de demanda externa (t/dia) de um produto para uma cidade.
 	 * É a demanda LIMITADA do resto do mundo para bens brutos (minerais, soja,
 	 * algodão e madeira): a fase 4d compra no máximo este teto por dia, e a
@@ -365,6 +383,10 @@ private:
 		double taxes = 0.0;
 		double service_spend = 0.0;
 		double disposable = 0.0;
+		// Renda externa do dia (serviços urbanos/pesca vendidos ao resto do
+		// mundo). Não é salário doméstico: entra no orçamento das famílias e é
+		// paga pelo setor externo (foreign_cash), conservando o dinheiro total.
+		double external_income = 0.0;
 		double food_spend = 0.0;
 		double consumed = 0.0;
 		double need = 0.0;
@@ -399,6 +421,10 @@ private:
 		double firm_cash = 0.0;
 		double service_cash = 0.0;
 		double government_budget = 0.0;
+		// Multiplicador da renda externa (PIB PPP per capita da nação,
+		// normalizado pela média mundial ponderada = 1,0). Ver
+		// demo_set_external_income_index e §20 do balance_review.
+		double external_income_index = 1.0;
 		double service_jobs = 0.0;
 		double service_wage = 0.0;
 		double service_wage_bill = 0.0;
@@ -507,7 +533,7 @@ private:
 	// UTF-32 e aloca uma String a cada escrita; com as chaves prontas a escrita
 	// fica só com o hash e a atribuição.
 	struct DemoStatusKeys {
-		String amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
+		String amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
 		DemoStatusKeys();
 	};
 

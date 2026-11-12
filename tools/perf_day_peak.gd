@@ -190,6 +190,12 @@ func _ready() -> void:
 		frames_total += value
 	print("[perf] pump: %.1f frames/dia em média; orçamento %d µs/frame" % [
 		frames_total / float(_days), convoys.FRAME_BUDGET_US])
+	# Memória do processo com o mundo REAL carregado (858 cidades): é o custo
+	# estático do cenário, sim, IA e comboios — sem o mapa 3D.
+	var live_status: Dictionary = Economy.sim.get_demo_status()
+	print("[perf] memória estática com %d cidades: %.1f MB" % [
+		(live_status.get("cities", []) as Array).size(),
+		float(OS.get_static_memory_usage()) / (1024.0 * 1024.0)])
 
 	get_tree().quit(0)
 

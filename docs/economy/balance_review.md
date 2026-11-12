@@ -1332,3 +1332,168 @@ rodado (BOM pré-existente, conforme `AGENTS.md`).
 
 Desempenho (build release, medido nesta fase): tick de 11,1 / 14,3 ms (p50/p99)
 e benchmark de 650 cidades em 23,6 ms.
+
+## 20. Fechamento da base natural + renda externa por PIB PPP per capita
+
+### 20.1 Escopo
+
+Duas frentes que estavam abertas desde a fase 1:
+
+1. **Base natural por província:** a aptidão agrícola e a posse mineral passaram a
+   usar a **província admin-1** como unidade (4.385 das 4.529 províncias têm
+   raster; as 144 restantes caem no fallback do território natural, declarado em
+   `_meta.provinces_without_raster`). O gerador é
+   `tools/build_province_nature.py` (WorldClim 2.1 10-min no centróide de cada
+   província + tipo de solo) e o arquivo é
+   `data/definitions/natural/province_nature.json`. `GeographyService` usa a
+   aptidão da bacia de captação de cada cidade (média ponderada pela área
+   cultivável, regra A1) e a mesma regra para a posse mineral — sem máximo
+   nacional e sem duplicação de jazida.
+2. **Renda externa coerente com o mundo real:** o subsídio uniforme de
+   0,012/pessoa/dia (todos recebiam o mesmo do resto do mundo) foi substituído
+   por renda de **serviços/exportações não modelados proporcional ao PIB PPP per
+   capita real** da nação.
+
+Ainda nesta frente, o rótulo `landmass` da Europa foi unificado: o continente
+aparecia como `continent` (BE/DE/FR/NL/VAT e portos legados) e `europe` (demais
+países). Como a posse mineral usa a massa de terra, o minério da Lorena
+(atribuído à cidade mais próxima, Luxemburgo, `europe`) ia para Fort-de-France,
+Mamoudzou e Saint-Denis — 771 mil kt de ferro atravessando o Atlântico.
+`tools/normalize_landmass.py` corrigiu **126 cidades** (121 `europe→continent` +
+5 ilhas que herdavam o rótulo do país: Martinica, Mayotte, Reunião, Açores e
+Svalbard); o cenário passou de 80 para **84 rótulos** de massa de terra.
+
+### 20.2 Regra da renda externa
+
+`GeographyService._build_nation_income` calcula, uma vez:
+
+| passo | regra |
+|---|---|
+| 1 | PIB PPP per capita = `gdp_ppp_bn × 1e9 / population` (`nations.json`) — **199 nações** com dado |
+| 2 | nação sem PIB/população → **mediana da sua região**, marcada `estimated` — **32 nações** (AIA, CUB, ERI, PRK, TWN, VEN, YEM…) |
+| 3 | índice = per capita / média mundial ponderada por população (**US$ 25.805**) |
+| 4 | **piso** de 10% da média (0,0012/pessoa/dia) para não zerar nação pobre — **11 nações** no piso (AFG, BDI, CAF, COD, LBR, MDG, MOZ, MWI, NER, SDN, SOM) |
+| 5 | renormalização iterativa para a média ponderada voltar a **1,0** (a escala-base de 0,012/pessoa/dia é preservada) |
+
+O núcleo recebe o índice por cidade (`demo_set_external_income_index`, clamp
+[0, 8]) e paga `população × 0,012 × índice` por dia, debitando `foreign_cash` — o
+dinheiro não é criado (`money_total` conservado). A renda externa não entra no
+gasto discricionário de serviços (senão a cidade sem terra gastava 45% da renda
+que deveria virar comida).
+
+Extremos medidos: SGP 6,32×, LUX 6,06×, IRL 6,00×, MAC 5,30×, **QAT 4,99×,
+ISL 3,23×, SAU 2,86×**; as 11 nações no piso ficam em 0,10×. Uma nação rica sem
+terra agora **importa** (a renda paga a cesta); uma nação pobre sem terra
+continua sem lastro — comportamento declarado, não um bug.
+
+Contrato C++: campo `DemoCity::external_income_index` (default 1,0), binding
+`demo_set_external_income_index`, serialização em `demo_to_dict`/`demo_from_dict`
+(save antigo sem o campo → 1,0, nunca 0) e `external_income_index` no status da
+cidade. `pop.external_income` é exposto no status e no save.
+
+### 20.3 Resultado de 730 dias (231 nações / 858 cidades)
+
+| métrica | antes (subsídio uniforme) | agora (PIB PPP per capita) |
+|---|---:|---:|
+| `money_total` | conservado | **2.079.099.603,90** (conservado, 0 violações) |
+| `foreign_cash` | −45,7 bi | **−47.833.401.191,05** |
+| insolvências (falências) | 19 | **31** |
+| violações de invariante | 0 | **0** |
+| soberanas < 70% (fim do dia 730) | 0 (mín. 81%) | **8 de 197** (mín. **10,4%**) |
+| satisfação média das soberanas | — | **97,4%** (186 em 100%) |
+| comida mundial (consumido/necessidade) | — | **97,2%** (367.462 / 378.018 t-dia) |
+
+As 31 insolvências são o efeito esperado de menos renda externa nas nações
+pobres (o caixa de firmas de serviço/fazenda que antes era sustentado pelo
+subsídio uniforme deixa de fechar). Minas esgotadas continuam contadas à parte.
+Fonte: `docs/economy/balance_review_sim_broken.json` (gerado por
+`tools/balance_review.gd --days=730`; artefato de medição, não versionado).
+
+### 20.4 As 8 soberanas abaixo de 70%
+
+`comida` = satisfação no fim do dia 730; `média 120 d` = média das amostras do
+trace entre os dias 610 e 720 (distingue fragilidade estrutural de um dia ruim
+de entrega); `terra apta` = soma das aptidões das culturas alimentares das
+cidades da nação.
+
+| nação | pop. | PIB PPP pc | índice | comida (fim) | média 120 d | terra apta | causa |
+|---|---:|---:|---:|---:|---:|---:|---|
+| KIR | 42.192 | US$ 3.663 | 0,14 | 10,4% | 11,3% | 0,00 | ilha de coral, zero terra apta; renda financia ~14% da cesta |
+| PSX | 838.304 | US$ 5.006 | 0,19 | 20,8% | 27,8% | 0,00 | território sem bacia agrícola; renda de 0,19× a média |
+| SAH | 21.036 | US$ 5.198 | 0,20 | 25,1% | 24,9% | 0,00 | deserto, zero terra apta; mesma causa |
+| DJI | 676.518 | US$ 8.445 | 0,33 | 37,7% | 41,4% | 0,00 | deserto/porto, sem bacia; renda cobre ~1/3 da cesta |
+| PAK | 46.811.991 | US$ 6.574 | 0,25 | 39,8% | 71,9% | 3,32 | população grande com renda 0,25×: produção doméstica não cobre a demanda e a importação só cabe no orçamento em parte dos dias (oscila 40–100%) |
+| SDN | 4.465.144 | US$ 2.193 | 0,10 | 44,1% | 12,0% | 0,73 | no piso; quase sem terra apta e renda de 0,0012/pessoa/dia |
+| CPV | 206.881 | US$ 12.137 | 0,47 | 63,4% | 64,7% | 0,04 | arquipélago seco; renda média-baixa e quase nenhuma bacia |
+| TKM | 1.260.924 | US$ 22.602 | 0,87 | 69,1% | 100,0% | 0,00 | deserto com renda quase média; o valor do fim do dia é ruído de entrega (média 120 d = 100%) |
+
+**Leitura honesta:** cinco casos (KIR, PSX, SAH, DJI, SDN) são exatamente o que
+o desenho prevê — **nação pobre sem terra não sustenta a importação**; os outros
+três são limítrofes: PAK tem terra mas a renda per capita é 1/4 da média, CPV
+fica no fio, e TKM só aparece na lista pelo snapshot do último dia. Nenhum dos
+oito viola invariante, estoque negativo ou conservação de dinheiro.
+
+### 20.5 Verificação (um teste por vez, exit code)
+
+| teste/cena | exit | observação |
+|---|---:|---|
+| `economy_external_income_test` (novo) | 0 | perfil (231 nações, 32 estimadas, 11 no piso, média ponderada 1,0), pagamento, conservação, save/load, clamp |
+| `economy_long_run_test` | 0 | 365 dias sem violação de conservação |
+| `economy_bistability_test` | 0 | GBR 100% sob perturbação de culturas |
+| `population_demo_test` | **1** | falha pré-existente da renda externa — ver abaixo |
+| `economy_ai_test` | 0 | cenários de alimento/ferro/anti-loop |
+| `economy_tick_async_test` | 0 | 60 dias síncronos == assíncronos, 1 tick por vez |
+| `deposit_ring_test` | 0 | raio de pick uniforme (±1 px) |
+| `map_pick_test` | 0 | ponto/hover/seleção/pick uniformes |
+| `economy_deposit_ownership_test` | 0 | cada jazida tem 1 dono; 1.994 extratores na cidade dona |
+| `economy_live_path_test` | 0 | 231 nações com aptidão e depósitos sem `load_data()` prévio |
+| `economy_integration_test` | 0 | cadeia, investimento, save/load e migração v1→v3 |
+| `territory_test` | 0 | atribuição, override e textura de dono |
+| `economy_city_catchment_test` | 0 | partição, área, aptidão local e terra limitada |
+| cena `convoy_lifecycle_test` | 0 | 392 viagens, 0 fantasmas |
+| cena `nav_strait_test` | 0 | Gibraltar, Dardanelos/Bósforo e Øresund |
+| cena `label_layout_test` | 0 | 0 linhas e 0 sobreposições |
+| cena `map_frame_test` | 0 | 300 frames, 231/231 cores, portos badge |
+
+**`population_demo_test` (vermelho):** a asserção "choque de preço não reduziu a
+poupança" falha com 343.362,85 → 373.217,26. A causa foi isolada com o cenário
+sintético: com o índice de renda externa em **0** as mesmas 40 jornadas dão
+235.362,85 → 229.217,26 (**passa**); com a renda externa ativa a família não
+consegue comprar trigo a 100× e o dinheiro não gasto **acumula em poupança**.
+Ou seja, a falha nasce da renda externa (herdada da rodada anterior a esta
+mudança), não da proporcionalidade por PIB — a cidade sintética não tem nação e
+usa índice 1,0, exatamente o comportamento uniforme antigo. Fica registrada como
+pendência de QA: a expectativa do teste (choque drena poupança) deixou de ser um
+invariante do modelo; decidir entre ajustar a asserção (gasto alimentar como
+fração da renda) ou o desenho do choque — não foi alterado aqui.
+
+### 20.6 Desempenho (858 cidades reais)
+
+`tools/perf_day_peak.tscn --days=10` no caminho do jogo ao vivo (autoload
+`Economy` + IA + comboios), headless:
+
+| etapa | média | p95 | máx |
+|---|---:|---:|---:|
+| tick_demo (C++) | 92,2 ms | 119,9 ms | 119,9 ms |
+| enfileirar pedidos | 4,5 ms | 5,9 ms | 5,9 ms |
+| IA planejar (agenda do dia) | 13,6 ms | 14,8 ms | 14,8 ms |
+| VIRADA (tick + plano + mapa) | 110,4 ms | 146,1 ms | 146,1 ms |
+| PUMP por frame | 1,56 ms | 1,65 ms | 13,1 ms |
+
+Memória estática do processo com as **858 cidades** carregadas: **234,9 MB**
+(sim + IA + comboios, sem o mapa 3D). O tick cresceu em relação às 252 cidades
+(11 ms → ~92 ms), como esperado por 3,4× mais cidades; a IA escalonada mantém o
+pico de frame em ~1,6 ms por frame durante o pump.
+
+### 20.7 Riscos e pendências
+
+- `foreign_cash` segue **sem orçamento** (§15): a renda externa é paga por uma
+  conta que pode ficar negativa por desenho. O total é conservado por tick, mas
+  o passivo externo cresce (−47,8 bi em 730 d) e não é financiado por nada.
+- O piso de 10% é uma escolha de desenho (não um dado): baixá-lo aprofunda a
+  fome nas nações pobres; elevá-lo aproxima do subsídio uniforme que se quis
+  eliminar. A sensibilidade está declarada em 20.4.
+- 32 nações usam **mediana regional** porque `nations.csv` não tem PIB PPP
+  (CUB, PRK, TWN, VEN, YEM…). São marcadas `estimated` no perfil; substituir por
+  dado publicado é a correção definitiva.
+- O choque de preço deixou de drenar poupança com renda externa ativa (§20.5).

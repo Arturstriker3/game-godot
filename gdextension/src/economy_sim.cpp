@@ -115,6 +115,8 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_set_external_demand", "city_id", "product",
 	                     "ceiling_t_per_day"),
 	                     &EconomySim::demo_set_external_demand);
+	ClassDB::bind_method(D_METHOD("demo_set_external_income_index", "city_id", "index"),
+	                     &EconomySim::demo_set_external_income_index);
 	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
 	                     &EconomySim::demo_set_goods);
 	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
@@ -695,6 +697,21 @@ Dictionary EconomySim::order_to_dict(const TradeOrder& order) const {
 namespace {
 
 constexpr double kDemoNeedPerCapita = 0.0003;
+// Renda externa das famílias: serviços urbanos, pesca e turismo vendidos ao
+// resto do mundo. Dimensão derivada da própria cesta de subsistência — a
+// necessidade alimentar per capita (0,0003 t/dia) paga ao preço-base do trigo
+// (40/t) = 0,012 por pessoa/dia. É o que uma cidade SEM terra produtiva
+// (deserto, gelo, ilha de coral) precisa ganhar para importar o alimento que
+// não planta; sem isso o caixa zera, a IA não investe e a nação passa fome
+// mesmo com dinheiro parado no resto do mundo (§20). Sai do setor externo
+// (foreign_cash), então `money_total` continua conservado.
+//
+// A renda NÃO é uniforme: é proporcional ao PIB PPP per capita REAL da nação
+// (índice por cidade, ver demo_set_external_income_index), normalizado para que
+// a média mundial ponderada por população continue nesta base. Um subsídio
+// igual para todos seria o resto do mundo pagando o mesmo a Noruega e ao
+// Burundi — nem é renda de serviços, nem é exportação.
+constexpr double kDemoExternalIncomePerCapita = 0.012;
 constexpr double kDemoLaborShare = 0.55;
 constexpr double kDemoServiceShare = 0.30;
 constexpr double kDemoServiceWage = 0.15;
@@ -1891,6 +1908,7 @@ void EconomySim::demo_tick_core() {
 		city.pop.taxes = 0.0;
 		city.pop.service_spend = 0.0;
 		city.pop.disposable = 0.0;
+		city.pop.external_income = 0.0;
 		city.pop.food_spend = 0.0;
 		city.pop.consumed = 0.0;
 		city.pop.need = 0.0;
@@ -2173,7 +2191,23 @@ void EconomySim::demo_tick_core() {
 		pop.transfers = pop.taxes * kDemoTransferShare;
 		pop.disposable = std::max(0.0,
 			pop.wage_income + pop.capital_income + pop.transfers - pop.taxes);
-		pop.service_spend = pop.disposable * kDemoServiceSpendShare;
+		// Renda externa (serviços urbanos/pesca/turismo): o resto do mundo paga
+		// por serviços da cidade. Entra no orçamento das famílias e sai do setor
+		// externo — é a renda que financia a importação de alimento onde não há
+		// terra produtiva. Não é tributada nem infla a folha doméstica (§20).
+		// O índice por cidade vem do PIB PPP per capita da nação (GeographyService,
+		// nations.csv), normalizado para média mundial = 1,0; cidade sem índice
+		// declarado (cenário sintético, save antigo) mantém a média (1,0).
+		pop.external_income = city.population * kDemoExternalIncomePerCapita
+			* city.external_income_index;
+		pop.disposable += pop.external_income;
+		demo_foreign_cash_ -= pop.external_income;
+		// A renda externa é renda de subsistência: o gasto discricionário em
+		// serviços incide só sobre a renda DOMÉSTICA. Sem isso a cidade sem
+		// terra gastava 45% da renda externa em serviços e sobrava menos que a
+		// cesta (TKM ficava em 64% em 730 d, §20).
+		pop.service_spend = std::max(0.0,
+			pop.disposable - pop.external_income) * kDemoServiceSpendShare;
 		city.service_cash += pop.service_spend;
 		city.government_budget += pop.taxes - pop.transfers;
 
@@ -2573,6 +2607,8 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		export_value("export_value"),
 		exported("exported"),
 		external_demand("external_demand"),
+		external_income("external_income"),
+		external_income_index("external_income_index"),
 		extracted_kt("extracted_kt"),
 		firm_cash("firm_cash"),
 		food_spend("food_spend"),
@@ -2712,6 +2748,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	dict[k.gdp] = city.gdp;
 	dict[k.gdp_per_capita] = city.population > 0.0
 		? city.gdp / city.population : 0.0;
+	dict[k.external_income_index] = city.external_income_index;
 	dict[k.firm_cash] = city.firm_cash;
 	dict[k.service_cash] = city.service_cash;
 	dict[k.government_budget] = city.government_budget;
@@ -2808,6 +2845,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	pop[k.taxes] = city.pop.taxes;
 	pop[k.service_spend] = city.pop.service_spend;
 	pop[k.disposable] = city.pop.disposable;
+	pop[k.external_income] = city.pop.external_income;
 	pop[k.food_spend] = city.pop.food_spend;
 	pop[k.consumed] = city.pop.consumed;
 	pop[k.need] = city.pop.need;
@@ -3309,6 +3347,20 @@ void EconomySim::demo_set_external_demand(const String& city_id, const String& p
 	demo_status_invalidate();
 }
 
+void EconomySim::demo_set_external_income_index(const String& city_id, double index) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	// [0, 8]: 0 desliga a renda (calibração/teste), 8 cobre com folga a maior
+	// razão PIB PPP per capita do cenário (Singapura ≈ 6,3× a média mundial) e
+	// corta dados corrompidos sem virar um teto econômico silencioso.
+	city->external_income_index = std::clamp(index, 0.0, 8.0);
+	++demo_status_static_version_;
+	demo_status_invalidate();
+}
+
 Dictionary EconomySim::demo_invest(const String& city_id, const String& building_id,
 		double amount) {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
@@ -3516,6 +3568,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["construction_revenue_pending"] = city.construction_revenue_pending;
 		entry["capital_income_next"] = city.capital_income_next;
 		entry["gdp"] = city.gdp;
+		entry["external_income_index"] = city.external_income_index;
 
 		Array suitability;
 		Array revenue;
@@ -3570,6 +3623,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		pop["taxes"] = city.pop.taxes;
 		pop["service_spend"] = city.pop.service_spend;
 		pop["disposable"] = city.pop.disposable;
+		pop["external_income"] = city.pop.external_income;
 		pop["food_spend"] = city.pop.food_spend;
 		pop["consumed"] = city.pop.consumed;
 		pop["need"] = city.pop.need;
@@ -3698,6 +3752,9 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		city.firm_cash = double(entry.get("firm_cash", 0.0));
 		city.service_cash = double(entry.get("service_cash", 0.0));
 		city.government_budget = double(entry.get("government_budget", 0.0));
+		// Save antigo não tem o índice: mantém a média mundial (1,0).
+		city.external_income_index = std::clamp(
+			double(entry.get("external_income_index", 1.0)), 0.0, 8.0);
 		city.service_jobs = double(entry.get("service_jobs", 0.0));
 		city.service_wage = double(entry.get("service_wage", 0.0));
 		city.service_wage_bill = double(entry.get("service_wage_bill", 0.0));
@@ -3772,6 +3829,7 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		city.pop.taxes = double(pop.get("taxes", 0.0));
 		city.pop.service_spend = double(pop.get("service_spend", 0.0));
 		city.pop.disposable = double(pop.get("disposable", 0.0));
+		city.pop.external_income = double(pop.get("external_income", 0.0));
 		city.pop.food_spend = double(pop.get("food_spend", 0.0));
 		city.pop.consumed = double(pop.get("consumed", 0.0));
 		city.pop.need = double(pop.get("need", 0.0));
