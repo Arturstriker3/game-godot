@@ -174,6 +174,10 @@ func _capture_map3d() -> void:
 	for distance in DISTANCES:
 		_camera.position = Vector3(0.0, 0.0, distance)
 		await get_tree().process_frame
+		# Tecido urbano e modelos de porto entram pela fila com orçamento: deixa
+		# a fila drenar (até um teto) antes da foto, senão o PNG mostraria só
+		# parte das cidades visíveis no zoom próximo.
+		await _settle_lod(world)
 		if not _select.is_empty():
 			world.select_city(_select)
 		var urban := world.find_children("Urban_*", "", true, false)
@@ -187,6 +191,28 @@ func _capture_map3d() -> void:
 		})
 		if _bench:
 			await _benchmark("d%03d" % int(distance))
+
+
+## Drena as filas de construção do LOD (1 modelo/frame) até esvaziar, com teto
+## de 120 frames. Só para a captura: a cena de jogo continua sem espera.
+func _settle_lod(world: Node3D) -> void:
+	# Dois frames primeiro: o sinal `process_frame` chega antes do `_process`
+	# do CityWorld que enfileira os modelos deste zoom. Sem isso a fila parecia
+	# vazia e a foto saía com só o primeiro tecido construído.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var idle := 0
+	for _frame in 180:
+		var urban_queue: Array = world.get("_urban_queue")
+		var port_queue: Array = world.get("_port_model_queue")
+		if urban_queue.is_empty() and port_queue.is_empty():
+			idle += 1
+			if idle >= 2:
+				return
+		else:
+			idle = 0
+		await get_tree().process_frame
+	await get_tree().process_frame
 
 
 ## Mesmo procedimento de game/main_game.gd: centraliza as cidades na origem.

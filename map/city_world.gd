@@ -59,6 +59,13 @@ const PLACE_ICON_GAP := 0.3     # respiro entre ícone e início do texto, em em
 const BADGE_TEXTURE: Texture2D = preload("res://assets/icons/places/badge.png")
 const RING_SCALE := 1.45        # selo ~45% maior que o ícone
 const FLAG_SCALE := 0.6         # bandeira ~60% da altura do ícone
+## Raio do anel de hover/seleção em pixels de TELA, em qualquer zoom. É um
+## alvo visual fixo: antes o aro crescia com o footprint (1,8 u de fallback) e
+## no zoom aproximado virava um anel de centenas de pixels, deslocado do ícone.
+const PLACE_RING_RADIUS_PX := 26.0
+## O aro fica levemente acima do ponto do chão (z-fighting), mas o centro
+## projetado continua no ícone (±2 px até d013).
+const PLACE_RING_LIFT := 0.02
 ## Abaixo desta distância (u) o porto coincide com a cidade: a âncora vira um
 ## badge pequeno sobre o ícone da cidade, sem aro próprio.
 const PORT_ICON_MERGE_DISTANCE := 0.5
@@ -158,6 +165,17 @@ const PORT_BADGE_GAP_PX := 2.0
 ## entra com fade só depois que a cidade já sumiu.
 const URBAN_BUILD_DISTANCE := 96.0
 const CITY_VISIBLE_DISTANCE := 100.0
+## Tecido urbano vale para TODAS as cidades (858) e é construído sob demanda,
+## pela mesma fila com orçamento. O teto de modelos vivos evita memória crescendo
+## sem limite em pans longos; a histerese segura os que foram liberados (sem
+## reconstruir em vaivém enquanto a câmera não se afastar).
+const MAX_URBAN_MODELS := 96
+const URBAN_TRIM_HYSTERESIS := 16
+## Distância (u) que a câmera precisa variar para um tecido liberado poder
+## voltar a ser construído: evita o vaivém quando a fila está no teto.
+const URBAN_HOLD_RELEASE := 16.0
+## Base do modelo urbano acima do plano do mapa (o tecido se funde ao terreno).
+const URBAN_GROUND_LIFT := 0.05
 const MARKER_FADE_IN_START := 100.0
 const MARKER_FADE_IN_END := 112.0
 ## Escala da cidade no mapa. As cidades ficam em posições geográficas reais:
@@ -278,6 +296,8 @@ var _port_model_queue: Array[Dictionary] = []
 ## Modelos de porto vivos (record["model"] != null). O trim só precisa varrer
 ## os 650 registros quando o total passa de `MAX_PORT_MODELS`.
 var _live_port_models := 0
+## Modelos urbanos vivos (record["urban"] != null), para o teto de memória.
+var _live_urban_models := 0
 var _records_by_id: Dictionary = {}
 ## Listas de VISÍVEIS montadas no LOD de cada frame: o trabalho de layout/ícones
 ## percorre só elas, não os 650 lugares.
@@ -690,11 +710,7 @@ func select_port(port_id: String) -> void:
 	_selection.visible = active
 	_selection_dot.visible = active
 	if active:
-		var ring_radius := _ring_world_radius(port_id)
-		var base: Vector3 = port_world_position(port_id) + Vector3(0.0, 0.15, 0.0)
-		_selection.scale = Vector3(ring_radius, 1.0, ring_radius)
-		_selection.global_position = base
-		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
+		_place_indicator(_selection, _selection_dot, port_id)
 
 
 func selected_city() -> String:
@@ -753,11 +769,7 @@ func select_city(city_id: String) -> void:
 	_selection.visible = active
 	_selection_dot.visible = active
 	if active:
-		var ring_radius := _ring_world_radius(city_id)
-		var base: Vector3 = city_world_position(city_id) + Vector3(0.0, 0.15, 0.0)
-		_selection.scale = Vector3(ring_radius, 1.0, ring_radius)
-		_selection.global_position = base
-		_selection_dot.global_position = base + Vector3(0.0, 0.03, 0.0)
+		_place_indicator(_selection, _selection_dot, city_id)
 
 
 ## Realça no mapa o território da nação da cidade selecionada (clareia as
@@ -801,9 +813,7 @@ func set_hover(place_id: String) -> void:
 		return
 	_hover.visible = not place_id.is_empty()
 	if _hover.visible:
-		var ring_radius := _ring_world_radius(place_id)
-		_hover.scale = Vector3(ring_radius, 1.0, ring_radius)
-		_hover.global_position = _place_position(place_id) + Vector3(0.0, 0.15, 0.0)
+		_place_indicator(_hover, null, place_id)
 
 
 ## Muda a cor do nome e do ícone da construção (cidade ou porto). No hover, o
@@ -874,20 +884,52 @@ func _place_footprint(place_id: String) -> float:
 	return _port_footprint(record)
 
 
-## Raio em unidades de mundo do anel de hover/seleção. É o raio de pick em
-## PIXELS convertido para o mundo na profundidade do lugar, então o anel mostra
-## a área clicável real: cidade e porto ficam com o mesmo raio em tela (piso de
-## 26 px) e, no zoom aproximado, o anel volta a abraçar o ícone desenhado.
+## Posição do centro visual do lugar: o próprio ícone (âncora da cidade ou o
+## marcador desenhado do porto), já na cópia do wrap que está na tela. É a
+## fonte ÚNICA do anel de hover/seleção e do ponto central do selecionado.
+func _indicator_position(place_id: String) -> Vector3:
+	var record: Dictionary = _records_by_id.get(place_id, {})
+	if record.is_empty():
+		return Vector3.ZERO
+	if String(record.get("kind", "")) == "city":
+		return to_global(record["anchor"]
+				+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0))
+	var marker: Vector3 = record.get("marker_world", record["position"])
+	return to_global(marker)
+
+
+## Raio em unidades de mundo de um anel de `PLACE_RING_RADIUS_PX` pixels de
+## tela na profundidade do ícone. Fixo em qualquer zoom: o aro acompanha o
+## ícone, não o footprint da cidade (que no zoom próximo é muito maior que o
+## símbolo desenhado).
 func _ring_world_radius(place_id: String) -> float:
-	var footprint := _place_footprint(place_id)
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
-		return footprint
-	var position := _place_position(place_id)
-	var raw: float = MapPickScript.icon_radius_px(camera, position, footprint)
-	if raw <= 0.0:
-		return footprint
-	return footprint * place_pick_radius_px(place_id, camera) / raw
+		return _place_footprint(place_id)
+	var position := _indicator_position(place_id)
+	if camera.is_position_behind(position):
+		return 0.5
+	var px_per_world := _screen_px_per_world(camera, position,
+			camera.global_transform.basis.x)
+	if px_per_world <= 0.0:
+		return 0.5
+	return PLACE_RING_RADIUS_PX / px_per_world
+
+
+## Coloca anel (e o ponto central opcional) no ícone do lugar, com o raio fixo
+## de 26 px. Roda também a cada frame do LOD: o aro continua centrado e do
+## mesmo tamanho em tela durante pan/zoom, em vez de congelar na escala em que
+## o hover começou.
+func _place_indicator(ring: MeshInstance3D, dot: MeshInstance3D,
+		place_id: String) -> void:
+	if ring == null or place_id.is_empty():
+		return
+	var radius := _ring_world_radius(place_id)
+	var base := _indicator_position(place_id) + Vector3(0.0, PLACE_RING_LIFT, 0.0)
+	ring.scale = Vector3(radius, 1.0, radius)
+	ring.global_position = base
+	if dot != null:
+		dot.global_position = base + Vector3(0.0, 0.03, 0.0)
 
 
 func _create_indicators() -> void:
@@ -1071,6 +1113,9 @@ func _on_locale_changed(_locale: String) -> void:
 	for record in _city_nodes:
 		record["text"] = ""
 		record["text_width"] = 0.0
+		# Força a reancoragem do rótulo: a largura do nome mudou, mas
+		# `_place_city_marker` só recalcula quando o passo/wrap mudam.
+		record["placed_step"] = -1
 	_invalidate_layout()
 
 
@@ -1257,9 +1302,10 @@ func _build_mode_layer(cities: Array) -> void:
 
 
 func _build_cities(cities: Array) -> void:
-	# Só as maiores ganham o modelo 3D detalhado. As demais ficam apenas com o
-	# ícone e o rótulo do pool: sem disco raso no chão (a "mancha" clara que
-	# aparecia sob Alexandria/Tanta/Suez) e sem tecido urbano próprio.
+	# As maiores começam com o modelo detalhado (estrela/prédios, discos e
+	# bandeira próprios); TODAS as cidades recebem o tecido urbano ao aproximar,
+	# construído sob demanda pela fila com orçamento. O disco raso que virava
+	# mancha clara foi removido de vez — não volta com o tecido.
 	var ordered := cities.duplicate()
 	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a.get("population", 0.0)) > float(b.get("population", 0.0))
@@ -1286,12 +1332,21 @@ func _build_cities(cities: Array) -> void:
 			icon = marker["icon"]
 			ring = marker["ring"]
 			flag = marker["flag"]
+		elif capital:
+			# Capital fora das 40 detalhadas também tem bandeira: o ícone é o
+			# star do MultiMesh, mas a bandeira é um Sprite3D no mesmo conjunto
+			# [bandeira][selo][nome], como nas capitais detalhadas.
+			flag = _new_flag(String(city["nation"]))
 		var record := {
 			"id": city_id,
 			"kind": "city",
 			"city": city,
 			"position": position,
-			"anchor": position + Vector3(0.0, 1.0, 0.0),
+			# Âncora = ponto geográfico da cidade (sem elevação): ícone, rótulo,
+			# anel e tecido urbano projetam no MESMO x,y do cities.json. O antigo
+			# +1 u parecia inofensivo no zoom out, mas a d013 deslocava o ícone
+			# ~1° ao norte (Al Mansurah aparecia na costa).
+			"anchor": position,
 			"ground": position,
 			"priority": float(city.get("population", 0.0)),
 			"capital": capital,
@@ -1477,7 +1532,13 @@ func _build_ports(ports: Array) -> void:
 			"model_queued": false,
 		}
 		_port_nodes.append(record)
-		_records_by_id[port_id] = record
+		# Porto com o MESMO id da cidade (porto fundido no tecido urbano) não
+		# pode sobrescrever o registro da cidade: o id é a chave de pick, do
+		# anel e do footprint. Antes o anel de Washington/Taipei/Dongguan era
+		# ancorado no porto, ~17 px longe do ícone da cidade.
+		var existing: Dictionary = _records_by_id.get(port_id, {})
+		if existing.is_empty() or String(existing.get("kind", "")) != "city":
+			_records_by_id[port_id] = record
 		# Faixa de fade do selo e raio de assentamento do LOD (modelo 3D).
 		record["fade_start"] = LABEL_FADE_SMALL_START
 		record["fade_end"] = LABEL_FADE_SMALL_END
@@ -1550,7 +1611,9 @@ func _new_flag(nation: String) -> Sprite3D:
 	flag.texture = texture
 	flag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	flag.no_depth_test = true
-	flag.render_priority = 10
+	# Acima dos rótulos (10): a bandeira da capital é o último item a sumir.
+	flag.render_priority = 12
+	flag.visible = false
 	_places.add_child(flag)
 	return flag
 
@@ -1862,6 +1925,7 @@ func _process(_delta: float) -> void:
 	# layout (que é fatiado) e mantém discos/ícones/nomes colados na cópia mais
 	# próxima da câmera.
 	_apply_wrap_positions()
+	_update_place_indicators()
 	# Layout simples (projeção + colisão): âncora fixa, sem linhas-guia. Nomes
 	# que ainda colidem dão lugar ao ícone da cidade menor (prioridade).
 	if _should_relayout(moved):
@@ -1931,6 +1995,17 @@ func _apply_wrap_positions() -> void:
 		# Discos do LOD continental continuam visíveis bem depois do nome.
 		if float(record.get("label_alpha", 0.0)) <= 0.01:
 			_place_city_marker(record)
+
+
+## Reancora os anéis de hover/seleção no ícone do lugar. Sem isso, um zoom com
+## o cursor parado deixava o aro no raio/escala do frame anterior (enorme e
+## deslocado), mesmo com o ícone já noutra projeção.
+func _update_place_indicators() -> void:
+	if _hover != null and _hover.visible and not _hovered_id.is_empty() \
+			and _hovered_id != _selected_id:
+		_place_indicator(_hover, null, _hovered_id)
+	if _selection != null and _selection.visible and not _selected_id.is_empty():
+		_place_indicator(_selection, _selection_dot, _selected_id)
 
 
 ## A posição do registro (já com o wrap) está dentro do frustum da câmera?
@@ -2044,6 +2119,7 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"record": record,
 			"icon_rect": icon_rect,
 			"text_rect": text_rect,
+			"flag_rect": _flag_rect(record, camera),
 			"capital": bool(record.get("capital", false)),
 			"hovered": String(record["id"]) == _hovered_id,
 			"priority": float(record.get("priority", 0.0)),
@@ -2060,6 +2136,7 @@ func _layout_place_labels(camera: Camera3D) -> void:
 		var record: Dictionary = entry["record"]
 		var icon_rect: Rect2 = entry["icon_rect"]
 		var text_rect: Rect2 = entry["text_rect"]
+		var flag_rect: Rect2 = entry["flag_rect"]
 		var text_allowed := true
 		# Texto quase invisível (fim do fade) não entra: o ícone fica, o nome não.
 		if float(record.get("label_alpha", 1.0)) < LABEL_TEXT_MIN_ALPHA:
@@ -2082,6 +2159,10 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			_configure_city_label(label, record)
 			_active_labels.append(record)
 		var block: Rect2 = icon_rect
+		# A bandeira da capital também ocupa tela: entra no bloco (e portanto na
+		# grade de colisão) para que nenhum porto/rótulo vizinho desenhe em cima.
+		if flag_rect.size.x > 0.0:
+			block = block.merge(flag_rect)
 		if text_allowed:
 			block = block.merge(text_rect)
 		_grid_insert(_label_grid, block)
@@ -2093,9 +2174,12 @@ func _layout_place_labels(camera: Camera3D) -> void:
 			"rect": block,
 			"text_rect": text_rect,
 			"icon_rect": icon_rect,
+			"flag_rect": flag_rect,
 			"text_visible": text_allowed,
 			"marker_visible": icon == null or icon.visible,
 			"flag_visible": flag != null and flag.visible,
+			"flag_loaded": flag != null and flag.texture != null,
+			"label_alpha": float(record.get("label_alpha", 1.0)),
 			"capital": bool(record.get("capital", false)),
 			"population": float(record.get("priority", 0.0)),
 			"same_city": false,
@@ -2253,6 +2337,7 @@ func _append_port_report(record: Dictionary, rect: Rect2, visible: bool,
 		"rect": rect,
 		"text_rect": Rect2(),
 		"icon_rect": rect,
+		"flag_rect": Rect2(),
 		"text_visible": false,
 		"marker_visible": visible,
 		"flag_visible": false,
@@ -2320,6 +2405,30 @@ func _city_metrics(record: Dictionary, camera: Camera3D) -> Dictionary:
 static func _metrics_rect(metrics: Dictionary, key: String = "rect") -> Rect2:
 	var value: Variant = metrics.get(key)
 	return value if typeof(value) == TYPE_RECT2 else Rect2()
+
+
+## Retângulo de tela da bandeira da capital no frame, com o MESMO espaçamento
+## de `_place_city_marker`: centro à esquerda do aro (um `flag_h` além da borda,
+## mais o `gap`), sprite 2:1 de altura `icon_h * FLAG_SCALE`. Sem bandeira no
+## record (cidade comum ou textura ausente) devolve `Rect2` vazio — o layout
+## trata isso como "não ocupa tela". A posição usa a cópia de wrap mais próxima,
+## como `_city_metrics`.
+func _flag_rect(record: Dictionary, camera: Camera3D) -> Rect2:
+	var flag: Sprite3D = record.get("flag")
+	if flag == null or flag.texture == null:
+		return Rect2()
+	var anchor: Vector3 = record["anchor"] \
+			+ Vector3(float(record.get("wrap_x", 0.0)), 0.0, 0.0)
+	var em := float(record["font_size"]) * float(record["pixel_size"])
+	var icon_h := em * PLACE_ICON_HEIGHT
+	var ring_h := icon_h * RING_SCALE
+	var gap := em * PLACE_ICON_GAP
+	var flag_h := icon_h * FLAG_SCALE
+	var center: Vector3 = to_global(anchor + Vector3(
+			-ring_h * 0.5 - gap - flag_h, 0.0, 0.0))
+	if camera.is_position_behind(center):
+		return Rect2()
+	return _world_rect_to_screen(camera, center, flag_h, flag_h * 0.5)
 
 
 ## O selo do porto é um badge da própria cidade (estático ou deste frame)?
@@ -2547,22 +2656,27 @@ func _fade_in(distance: float, start: float, end: float) -> float:
 	return clampf((distance - start) / (end - start), 0.0, 1.0)
 
 
-## Pede a construção da cidade modular quando a câmera se aproxima E a cidade
+## Pede a construção do tecido urbano quando a câmera se aproxima E a cidade
 ## está na tela (construir fora do frustum só gerava picos de 5 ms por frame à
 ## toa). Depois de construída, só alterna a visibilidade (histerese evita
 ## reconstrução em vaivém).
 ##
-## Só as cidades detalhadas (as 40 maiores) têm modelo 3D. As demais mostram
-## apenas ícone + nome em qualquer zoom: sem tecido urbano, sem solo orgânico e
-## sem o disco raso que virava uma mancha clara sob o marcador.
+## Vale para TODAS as cidades, não só as 40 detalhadas: ao aproximar, qualquer
+## cidade ganha prédios/blocos na própria posição e no tamanho do estágio de
+## população. Não há disco de fundo nem clareamento do terreno — o solo urbano
+## é o shader orgânico escuro do `UrbanGrowthManager`.
 func _update_urban(record: Dictionary, distance: float,
 		on_screen: bool) -> void:
 	var urban: Node3D = record.get("urban")
-	if not bool(record.get("detailed", false)):
-		if urban != null:
-			urban.visible = false
-		return
 	if urban == null:
+		# Liberado pelo teto de modelos: só reconstrói quando a câmera mudou
+		# de faixa (aproximou o bastante) em relação ao ponto em que liberou.
+		if bool(record.get("urban_hold", false)):
+			if record.has("urban_hold_distance") \
+					and distance >= float(record["urban_hold_distance"]) \
+							- URBAN_HOLD_RELEASE:
+				return
+			record["urban_hold"] = false
 		if on_screen and distance <= URBAN_BUILD_DISTANCE \
 				and not bool(record.get("urban_queued", false)):
 			record["urban_queued"] = true
@@ -2572,7 +2686,8 @@ func _update_urban(record: Dictionary, distance: float,
 	if urban.visible != want_visible:
 		urban.visible = want_visible
 	var target: Vector3 = record["position"] \
-			+ Vector3(record["wrap_x"], 0.0, 0.0) + Vector3(0.0, 0.16, 0.0)
+			+ Vector3(record["wrap_x"], 0.0, 0.0) \
+			+ Vector3(0.0, URBAN_GROUND_LIFT, 0.0)
 	if not urban.position.is_equal_approx(target):
 		urban.position = target
 
@@ -2596,6 +2711,7 @@ func _process_lod_queues(camera: Camera3D) -> void:
 		record["urban"] = _build_urban(record)
 		if Time.get_ticks_usec() - start >= LOD_BUILD_BUDGET_USEC:
 			break
+	_trim_urban_models(camera_local)
 	while not _port_model_queue.is_empty():
 		var record: Dictionary = _port_model_queue.pop_front()
 		record["model_queued"] = false
@@ -2609,6 +2725,37 @@ func _process_lod_queues(camera: Camera3D) -> void:
 		if Time.get_ticks_usec() - start >= LOD_BUILD_BUDGET_USEC:
 			break
 	_trim_port_models(camera_local)
+
+
+## Mantém no máximo `MAX_URBAN_MODELS` tecidos urbanos vivos. Sem isso, um pan
+## pelo mundo inteiro acumularia 858 modelos de cidade. Libera os mais
+## distantes e marca `urban_hold` para não reconstruir o mesmo enquanto a
+## câmera não se afastar (evita o vaivém construir/liberar).
+func _trim_urban_models(camera_local: Vector3) -> void:
+	if _live_urban_models <= MAX_URBAN_MODELS:
+		return
+	var live: Array[Dictionary] = []
+	for record in _city_nodes:
+		if record.get("urban") != null:
+			live.append(record)
+	if live.size() <= MAX_URBAN_MODELS:
+		_live_urban_models = live.size()
+		return
+	live.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _camera_distance(a, camera_local) > _camera_distance(b, camera_local)
+	)
+	var target := maxi(1, MAX_URBAN_MODELS - URBAN_TRIM_HYSTERESIS)
+	var excess := live.size() - target
+	if excess <= 0:
+		_live_urban_models = live.size()
+		return
+	for index in excess:
+		var urban: Node3D = live[index]["urban"]
+		urban.queue_free()
+		live[index]["urban"] = null
+		live[index]["urban_hold"] = true
+		live[index]["urban_hold_distance"] = _camera_distance(live[index], camera_local)
+	_live_urban_models = live.size() - excess
 
 
 ## Distância da câmera ao registro, já resolvendo o wrap em X e incluindo a
@@ -2657,9 +2804,7 @@ func _apply_lod_city(record: Dictionary, camera_local: Vector3,
 	var distance := sqrt(dx * dx + dy * dy + dz * dz)
 	# Só testa o frustum para decidir a entrada de uma cidade ainda não
 	# construída; com `urban` pronto, `_update_urban` ignora `on_screen`.
-	# Cidade sem modelo detalhado nunca entra na fila: nem projeta frustum.
-	var on_screen := bool(record.get("detailed", false)) \
-			and distance <= URBAN_BUILD_DISTANCE \
+	var on_screen := distance <= URBAN_BUILD_DISTANCE \
 			and record.get("urban") == null and _in_frustum(record, camera)
 	_apply_city_lod(record, distance, on_screen)
 
@@ -2669,7 +2814,8 @@ func _build_urban(record: Dictionary) -> Node3D:
 	var manager := UrbanGrowthScript.new() as Node3D
 	manager.name = "Urban_" + String(record["id"])
 	manager.position = record["position"] \
-			+ Vector3(record["wrap_x"], 0.0, 0.0) + Vector3(0.0, 0.16, 0.0)
+			+ Vector3(record["wrap_x"], 0.0, 0.0) \
+			+ Vector3(0.0, URBAN_GROUND_LIFT, 0.0)
 	manager.scale = Vector3.ONE * URBAN_SCALE
 	_places.add_child(manager)
 
@@ -2684,6 +2830,7 @@ func _build_urban(record: Dictionary) -> Node3D:
 		"jobs": float(city.get("jobs", 0.0)),
 	})
 	manager.apply_industry(IndustryProfileScript.derive(city))
+	_live_urban_models += 1
 	return manager
 
 

@@ -97,57 +97,74 @@ func _test_radius() -> void:
 	await _focus(_world.port_world_position(port))
 	_check_hit("port", port, port_radius)
 
-	# O anel de hover/seleção mostra exatamente o raio de pick em tela.
+	# O anel de hover tem raio fixo de 26 px e centro no ícone; o pick mantém
+	# o próprio footprint (piso de 26 px).
 	await _test_rings(city, port)
 
 
-## O anel (hover e seleção) tem o mesmo raio em TELA do pick, tanto na cidade
-## quanto no porto. Sem isso o porto ficava com um anel minúsculo (~9 px)
-## enquanto o clique pegava 26 px.
+## O anel (hover e seleção) tem raio fixo de 26 px em tela e fica centrado no
+## ícone do lugar, em qualquer zoom. Antes ele usava o footprint da cidade
+## (1,8 u no fallback): no zoom próximo virava um anel de centenas de pixels,
+## deslocado do símbolo desenhado.
 func _test_rings(city: String, port: String) -> void:
 	_world.clear_selection()
+	var expected := MapPick.MIN_RADIUS_PX
 
 	await _focus(_world.city_world_position(city))
-	var city_pos: Vector3 = _world.city_world_position(city)
-	var city_pick: float = _world.place_pick_radius_px(city, _camera)
 	_world.set_hover(city)
-	var city_hover: float = MapPick.icon_radius_px(_camera, city_pos,
-			_world._hover.scale.x)
+	var city_hover: float = MapPick.icon_radius_px(_camera,
+			_world._hover.global_position, _world._hover.scale.x)
+	_check_ring_center("cidade hover", city, _world._hover.global_position)
 	_world.set_hover("")
 	_world.select_city(city)
-	var city_select: float = MapPick.icon_radius_px(_camera, city_pos,
-			_world._selection.scale.x)
+	var city_select: float = MapPick.icon_radius_px(_camera,
+			_world._selection.global_position, _world._selection.scale.x)
+	_check_ring_center("cidade seleção", city, _world._selection.global_position)
+	var city_pick: float = _world.place_pick_radius_px(city, _camera)
 	_world.clear_selection()
 
 	await _focus(_world.port_world_position(port))
-	var port_pos: Vector3 = _world.port_world_position(port)
-	var port_pick: float = _world.place_pick_radius_px(port, _camera)
 	_world.set_hover(port)
-	var port_hover: float = MapPick.icon_radius_px(_camera, port_pos,
-			_world._hover.scale.x)
+	var port_hover: float = MapPick.icon_radius_px(_camera,
+			_world._hover.global_position, _world._hover.scale.x)
+	_check_ring_center("porto hover", port, _world._hover.global_position)
 	_world.set_hover("")
 	_world.select_port(port)
-	var port_select: float = MapPick.icon_radius_px(_camera, port_pos,
-			_world._selection.scale.x)
+	var port_select: float = MapPick.icon_radius_px(_camera,
+			_world._selection.global_position, _world._selection.scale.x)
+	_check_ring_center("porto seleção", port, _world._selection.global_position)
+	var port_pick: float = _world.place_pick_radius_px(port, _camera)
 	_world.clear_selection()
 
 	print(("anel cidade hover=%.1f seleção=%.1f pick=%.1f | "
 			+ "porto hover=%.1f seleção=%.1f pick=%.1f")
 			% [city_hover, city_select, city_pick,
 			port_hover, port_select, port_pick])
-	for pair in [["cidade hover", city_hover, city_pick],
-			["cidade seleção", city_select, city_pick],
-			["porto hover", port_hover, port_pick],
-			["porto seleção", port_select, port_pick]]:
-		if absf(float(pair[1]) - float(pair[2])) > MAX_DELTA_PX:
-			_failures.append("%s %.1fpx != pick %.1fpx"
-					% [String(pair[0]), float(pair[1]), float(pair[2])])
-	if absf(city_hover - port_hover) > MAX_DELTA_PX:
-		_failures.append("anel de hover difere cidade/porto: %.1fpx vs %.1fpx"
-				% [city_hover, port_hover])
-	if absf(city_select - port_select) > MAX_DELTA_PX:
-		_failures.append("anel de seleção difere cidade/porto: %.1fpx vs %.1fpx"
-				% [city_select, port_select])
+	for pair in [["cidade hover", city_hover], ["cidade seleção", city_select],
+			["porto hover", port_hover], ["porto seleção", port_select]]:
+		if absf(float(pair[1]) - expected) > MAX_DELTA_PX:
+			_failures.append("%s %.1fpx != %.0fpx"
+					% [String(pair[0]), float(pair[1]), expected])
+	if city_pick < expected - MAX_DELTA_PX \
+			or port_pick < expected - MAX_DELTA_PX:
+		_failures.append("pick abaixo do piso: cidade=%.1f porto=%.1f"
+				% [city_pick, port_pick])
+
+
+## O centro projetado do anel tem de coincidir com o ícone do lugar (±2 px).
+func _check_ring_center(tag: String, place_id: String, ring_world: Vector3) -> void:
+	var record: Dictionary = _world._records_by_id[place_id]
+	var icon: Vector3
+	if _world.place_kind(place_id) == "city":
+		icon = _world._city_icon_world(record)
+	else:
+		# O ícone do porto é o `marker_world` (pode ser o badge ao lado da
+		# cidade); não comparar com o ponto bruto de costa.
+		icon = _world.to_global(record["marker_world"])
+	var delta := _camera.unproject_position(ring_world).distance_to(
+			_camera.unproject_position(icon))
+	if delta > 2.0:
+		_failures.append("%s %s: anel a %.1f px do ícone" % [tag, place_id, delta])
 
 
 func _check_hit(kind: String, place_id: String, radius: float) -> void:

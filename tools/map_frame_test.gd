@@ -44,6 +44,17 @@ const NEAR_DISTANCE := 48.0
 const FAR_DISTANCE := 130.0
 const PORT_CHECK_DISTANCE := 52.0
 const FRAMES_PER_REGION := 50
+## Alinhamento ícone/rótulo/anel × cidade: amostra aleatória + os casos do
+## Egito que apareciam deslocados (Al Mansurah na costa), em 3 zooms.
+const ALIGN_SAMPLE := 12
+const ALIGN_ZOOMS: Array[float] = [13.0, 26.0, 52.0]
+const ALIGN_FIXED: Array[String] = ["EGY-ALM", "EGY-TAN", "EGY-CAI"]
+const ALIGN_TOLERANCE_PX := 2.0
+const RING_RADIUS_PX := 26.0
+## Espelham `map/city_world.gd` (contrato do rótulo composto).
+const PLACE_ICON_HEIGHT := 1.0
+const PLACE_RING_SCALE := 1.45
+const PLACE_ICON_GAP := 0.3
 ## Se a varredura travar (erro que interrompe o await), o timer encerra com
 ## falha em vez de deixar o runner headless pendurado no CI. A varredura leva
 ## ~7 s nesta máquina; 120 s é teto rígido, não orçamento.
@@ -147,6 +158,8 @@ func _run() -> void:
 	for city_id: String in PORT_CITIES:
 		await _check_port_badge(city_id)
 
+	await _check_city_alignment(cities)
+	await _check_capital_flags()
 	_check_nation_colors()
 
 	get_tree().root.size = VIEWPORT
@@ -174,6 +187,161 @@ func _focus(city_id: String) -> void:
 	_world.position = Vector3.ZERO
 	if _world.has_method("city_world_position"):
 		_world.position = -_world.city_world_position(city_id)
+
+
+## (a) Para N cidades (amostra fixa do Egito + aleatórias) em 3 zooms:
+##   |pos_ícone − pos_cidade| < 2 px;
+##   |centro_anel − pos_ícone| < 2 px e raio do anel = 26 px;
+##   rótulo ancorado no ícone por offset fixo (mesmo y/z, x = selo+respiro+texto).
+## É a regressão do +1 u na âncora: no zoom próximo ele jogava o símbolo para o
+## norte (Al Mansurah, que fica ~1 u da costa, aparecia em cima da praia).
+func _check_city_alignment(cities: Array) -> void:
+	var sample := _alignment_sample(cities)
+	var worst_icon := 0.0
+	var worst_ring := 0.0
+	var checked := 0
+	for city_id: String in sample:
+		if not _world._records_by_id.has(city_id):
+			_failures.append("alinhamento: cidade %s fora do mapa" % city_id)
+			continue
+		for zoom: float in ALIGN_ZOOMS:
+			_focus(city_id)
+			_pivot.rotation_degrees = Vector3(PITCH_DEG, 0.0, 0.0)
+			_camera.position = Vector3(0.0, 0.0, zoom)
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var record: Dictionary = _world._records_by_id[city_id]
+			var icon_world: Vector3 = _world._city_icon_world(record)
+			var city_world: Vector3 = _world.city_world_position(city_id)
+			if _camera.is_position_behind(icon_world):
+				_failures.append("alinhamento %s d%03d: ícone atrás da câmera"
+						% [city_id, int(zoom)])
+				continue
+			var icon_px := _camera.unproject_position(icon_world)
+			var city_px := _camera.unproject_position(city_world)
+			var icon_delta := icon_px.distance_to(city_px)
+			worst_icon = maxf(worst_icon, icon_delta)
+			if icon_delta > ALIGN_TOLERANCE_PX:
+				_failures.append("alinhamento %s d%03d: ícone a %.1f px da cidade"
+						% [city_id, int(zoom), icon_delta])
+
+			_world.set_hover(city_id)
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var hover: MeshInstance3D = _world._hover
+			if hover == null or not hover.visible:
+				_failures.append("alinhamento %s d%03d: anel de hover ausente"
+						% [city_id, int(zoom)])
+				_world.set_hover("")
+				continue
+			var ring_px := _camera.unproject_position(hover.global_position)
+			var ring_delta := ring_px.distance_to(icon_px)
+			worst_ring = maxf(worst_ring, ring_delta)
+			if ring_delta > ALIGN_TOLERANCE_PX:
+				_failures.append("alinhamento %s d%03d: anel a %.1f px do ícone"
+						% [city_id, int(zoom), ring_delta])
+			var ring_radius: float = MapPick.icon_radius_px(_camera,
+					hover.global_position, hover.scale.x)
+			if absf(ring_radius - RING_RADIUS_PX) > 1.0:
+				_failures.append("alinhamento %s d%03d: anel com raio %.1f px"
+						% [city_id, int(zoom), ring_radius])
+			_check_label_anchor(city_id, record, zoom)
+			_world.set_hover("")
+			await get_tree().process_frame
+			checked += 1
+	print("[map_frames] alinhamento: %d medições, pior ícone=%.2f px, pior anel=%.2f px"
+			% [checked, worst_icon, worst_ring])
+
+
+## Amostra reprodutível: os casos fixos do Egito + cidades sorteadas.
+func _alignment_sample(cities: Array) -> Array[String]:
+	var ids: Array[String] = []
+	for fixed in ALIGN_FIXED:
+		if _world._records_by_id.has(fixed):
+			ids.append(fixed)
+	var pool: Array[String] = []
+	for city: Dictionary in cities:
+		var id := String(city.get("id", ""))
+		if not id.is_empty() and not ids.has(id):
+			pool.append(id)
+	pool.sort()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261112
+	while ids.size() < ALIGN_SAMPLE and not pool.is_empty():
+		var index := rng.randi_range(0, pool.size() - 1)
+		ids.append(pool[index])
+		pool.remove_at(index)
+	return ids
+
+
+## Rótulo ancorado ao ícone: mesmo y/z da âncora e deslocamento em X = meio
+## selo + respiro + meio texto. Verifica também que o Label3D está no texto.
+func _check_label_anchor(city_id: String, record: Dictionary, zoom: float) -> void:
+	var label: Label3D = record.get("label")
+	if label == null:
+		_failures.append("alinhamento %s d%03d: rótulo não atribuído"
+				% [city_id, int(zoom)])
+		return
+	var wrap := float(record.get("wrap_x", 0.0))
+	var anchor: Vector3 = record["anchor"] + Vector3(wrap, 0.0, 0.0)
+	var em := float(record["font_size"]) * float(record["pixel_size"])
+	var ring_h := em * PLACE_ICON_HEIGHT * PLACE_RING_SCALE
+	var gap := em * PLACE_ICON_GAP
+	var text_w: float = _world._city_text_width(record)
+	var expected := ring_h * 0.5 + gap + text_w * 0.5
+	var center: Vector3 = record["text_center"]
+	var delta := center - anchor
+	if absf(delta.x - expected) > 0.002 or absf(delta.y) > 0.002 \
+			or absf(delta.z) > 0.002:
+		_failures.append(("alinhamento %s d%03d: rótulo fora da âncora "
+				+ "(dx=%.3f esperado=%.3f, dy=%.3f, dz=%.3f)")
+				% [city_id, int(zoom), delta.x, expected, delta.y, delta.z])
+	if not label.position.is_equal_approx(center):
+		_failures.append("alinhamento %s d%03d: Label3D fora de text_center"
+				% [city_id, int(zoom)])
+
+
+## (b) 100% das capitais visíveis no LOD têm bandeira carregada e acesa.
+func _check_capital_flags() -> void:
+	_focus("EGY-CAI")
+	_pivot.rotation_degrees = Vector3(PITCH_DEG, 0.0, 0.0)
+	_camera.position = Vector3(0.0, 0.0, PORT_CHECK_DISTANCE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	# Contrato global: TODAS as capitais do cenário têm bandeira carregada.
+	var all_capitals := 0
+	for record in _world._city_nodes:
+		if not bool(record.get("capital", false)):
+			continue
+		all_capitals += 1
+		var flag: Sprite3D = record.get("flag")
+		if flag == null or flag.texture == null:
+			_failures.append("bandeira: capital %s sem textura no build"
+					% String(record["id"]))
+	if all_capitals != 231:
+		_failures.append("bandeira: %d capitais no cenário (esperado 231)"
+				% all_capitals)
+
+	# E as que estão de fato visíveis neste frame acendem a bandeira.
+	var capitals := 0
+	for record in _world._visible_city_records:
+		if not bool(record.get("capital", false)):
+			continue
+		capitals += 1
+		var id := String(record["id"])
+		var flag: Sprite3D = record.get("flag")
+		if flag == null:
+			_failures.append("bandeira: capital %s sem Sprite3D" % id)
+			continue
+		if flag.texture == null:
+			_failures.append("bandeira: capital %s sem textura" % id)
+		if not flag.visible:
+			_failures.append("bandeira: capital %s com bandeira apagada" % id)
+	if capitals == 0:
+		_failures.append("bandeira: nenhuma capital visível para auditar")
+	else:
+		print("[map_frames] bandeiras: %d capitais visíveis, 100%% com textura"
+				% capitals)
 
 
 ## Regressão direta do crash: `_port_metrics` pode voltar SEM "rect" depois de

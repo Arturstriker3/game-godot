@@ -193,6 +193,28 @@ func _check_capitals(tag: String, report: Array, cities: Array, screen: Rect2) -
 				tag, city_id, blocker if blocker != "" else "cidade comum"])
 
 
+## (c2) Toda capital na tela tem bandeira CARREGADA e visível. A bandeira é o
+## último elemento a sumir junto com o nome: se o nome colidiu e foi ocultado,
+## a bandeira continua; se o nome está visível, a bandeira também precisa estar.
+func _check_capital_flags(tag: String, report: Array, screen: Rect2) -> void:
+	var checked := 0
+	for entry: Dictionary in report:
+		if String(entry["kind"]) != "city" or not bool(entry["capital"]):
+			continue
+		var rect: Rect2 = entry["rect"]
+		if rect.size.x <= 0.0 or not rect.intersects(screen):
+			continue
+		checked += 1
+		var id := String(entry["id"])
+		if not bool(entry.get("flag_loaded", false)):
+			_failures.append("%s: capital %s sem bandeira carregada" % [tag, id])
+			continue
+		if bool(entry["text_visible"]) and not bool(entry["flag_visible"]):
+			_failures.append("%s: capital %s com nome mas sem bandeira" % [tag, id])
+	if checked == 0:
+		_failures.append("%s: nenhuma capital com bandeira no layout" % tag)
+
+
 ## (d) Todo porto a no máximo ~12 px do ponto de costa. Porto fundido na cidade
 ## (badge) tem deslocamento zero; os demais só se afastam da costa o mínimo.
 func _check_ports(tag: String, report: Array) -> void:
@@ -245,6 +267,7 @@ func _check_default(size: Vector2i, focus: String, cities: Array) -> void:
 	_check_no_lines(tag)
 	_check_text_overlaps(tag, report, screen)
 	_check_capitals(tag, report, cities, screen)
+	_check_capital_flags(tag, report, screen)
 	_check_ports(tag, report)
 	_check_port_clearance(tag, report, screen)
 
@@ -277,6 +300,7 @@ func _check_zoom_out(size: Vector2i, focus: String, cities: Array) -> void:
 	_check_no_lines(tag)
 	_check_text_overlaps(tag, report, screen)
 	_check_capitals(tag, report, cities, screen)
+	_check_capital_flags(tag, report, screen)
 	_check_ports(tag, report)
 
 	# No zoom out, só capitais e cidades grandes mantêm nome.
