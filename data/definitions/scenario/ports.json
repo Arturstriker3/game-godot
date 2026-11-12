@@ -666,15 +666,6 @@
     "port_of": "ITA-ROM"
   },
   {
-    "id": "ITA-ROME",
-    "name": "Rome",
-    "nation": "ITA",
-    "x": 2672.1,
-    "y": 670.8,
-    "landmass": "continent",
-    "port_of": "ITA-ROM"
-  },
-  {
     "id": "JPN-FUK",
     "name": "Fukuoka",
     "nation": "JPN",

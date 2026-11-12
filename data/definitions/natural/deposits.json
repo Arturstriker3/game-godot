@@ -883,7 +883,7 @@
 		{
 			"id": "DEP-COAL-000027",
 			"territory": "TRT000466",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "coal",
 			"px": 3027.8,
 			"py": 579.2,
@@ -29867,7 +29867,7 @@
 		{
 			"id": "DEP-IRON-000031",
 			"territory": "TRT000005",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "iron",
 			"px": 2988.5,
 			"py": 585.7,
@@ -29895,7 +29895,7 @@
 		{
 			"id": "DEP-IRON-000032",
 			"territory": "TRT000005",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "iron",
 			"px": 3021.6,
 			"py": 595.9,
@@ -39553,7 +39553,7 @@
 		{
 			"id": "DEP-IRON-000318",
 			"territory": "TRT000280",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "iron",
 			"px": 3005.5,
 			"py": 620.6,
@@ -46241,7 +46241,7 @@
 		{
 			"id": "DEP-IRON-000499",
 			"territory": "TRT000466",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "iron",
 			"px": 3030.6,
 			"py": 581.4,
@@ -54585,7 +54585,7 @@
 		{
 			"id": "DEP-IRON-000739",
 			"territory": "TRT000698",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "iron",
 			"px": 3021.3,
 			"py": 573.4,
@@ -59212,7 +59212,7 @@
 		{
 			"id": "DEP-BAUXITE-900035",
 			"territory": "TRT000005",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "bauxite",
 			"px": 2988.0,
 			"py": 585.4,
@@ -93452,7 +93452,7 @@
 		{
 			"id": "DEP-PHOSPHATE-901387",
 			"territory": "TRT000280",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "phosphate",
 			"px": 2969.2,
 			"py": 611.6,
@@ -117240,7 +117240,7 @@
 		{
 			"id": "DEP-LEAD-902305",
 			"territory": "TRT000466",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "lead",
 			"px": 3023.4,
 			"py": 573.5,
@@ -117267,7 +117267,7 @@
 		{
 			"id": "DEP-PHOSPHATE-902306",
 			"territory": "TRT000466",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "phosphate",
 			"px": 3024.3,
 			"py": 575.7,
@@ -144770,7 +144770,7 @@
 		{
 			"id": "DEP-BAUXITE-903382",
 			"territory": "TRT000698",
-			"owner": "UKR",
+			"owner": "RUS",
 			"resource": "bauxite",
 			"px": 3007.9,
 			"py": 547.2,

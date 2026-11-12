@@ -2,7 +2,7 @@
 
 > Fonte central de conhecimento do jogo. Consulte antes de qualquer mudança importante e atualize as seções afetadas ao concluir uma implementação.
 >
-> - **Última auditoria:** 2026-11-12 (curadoria r3: **177 nações / 802 cidades / 144 portos**, atlas **4.223 províncias**; Okinawa (Naha), Miyakojima e Guam (Hagåtña, território USA) de volta ao atlas e ao `nav_mask`, Oradea e Ruse no roster, portos `ITA-ROM`/`ITA-ROME`→Roma e `ITA-PAD`→Milão, cidade do Vaticano removida (5 km de Roma); `validate_scenario_data` 0 erros/0 avisos — ver §5 e `docs/plans/world_all_data.md` §17. Antes disso, curadoria de micro-nações e territórios: **231→171 nações, 858→794 cidades, 138→137 portos**, 60 tags (5 anexadas, 7 fundidas, 48 apagadas) em `tools/world_nation_curation.py`, atlas **4.527→4.272** províncias e `nav_mask.png` sem as ilhas removidas; `economy_long_run_test` verde (365 dias, 0 violações) — ver §5 e `docs/plans/world_all_data.md` §14. Antes disso, fechamento da base natural + renda externa: **231 nações / 857 cidades**, curadoria do Egito — Port Said/Suez fora, Marsa Matruh dentro, ver §5 —, aptidão agrícola e posse mineral por **província admin-1**, `landmass` da Europa unificado em `continent` — 126 cidades reajustadas, 80→84 rótulos — e renda externa **proporcional ao PIB PPP per capita real** da nação, não mais um subsídio uniforme; 730 dias: **31 insolvências, 0 violações, `money_total` conservado, 189/197 soberanas ≥ 70%, média 97,4%** — 8 soberanas abaixo (KIR/PSX/SAH/DJI/PAK/SDN/CPV/TKM), causa em `docs/economy/balance_review.md` §20. Onda de desempenho de 12/11: a virada do dia medida no **caminho real** (tick no `WorkerThreadPool`) caiu de ~25 ms para **7,1 ms de frame** (máx 8,3 ms; nenhum frame > 16 ms) e o tick fica em **31–35 ms na DLL release** com as 858 cidades — ver §13.5. `population_demo_test` voltou a verde isolando a renda externa (§20.5).)
+> - **Última auditoria:** 2026-11-12 (curadoria r4: território ocupado pela Rússia na Ucrânia (~2026) mostrado como **RUS** no mapa político — Crimeia/Sevastopol já vinham RUS do Natural Earth, Luhansk inteira e as partes ocupadas de Donetsk/Zaporizhzhia/Kherson reatribuídas no pipeline (`OCCUPIED_REGIONS`/`OCCUPIED_FRONT` em `tools/world_nation_curation.py`), com 3 províncias sintéticas para a frente; porto duplicado de Roma fundido em `ITA-ROM`; **atlas 4.226 províncias**, **177 nações / 802 cidades / 143 portos**; `validate_scenario_data` 0 erros/0 avisos, `territory_test`/`nav_strait_test`/`economy_integration_test`/`economy_city_catchment_test` verdes; captura `docs/map_visual/ukraine_front/` — ver §5 e `docs/plans/world_all_data.md` §18. Antes disso, curadoria r3: **177 nações / 802 cidades / 144 portos**, atlas **4.223 províncias**; Okinawa (Naha), Miyakojima e Guam (Hagåtña, território USA) de volta ao atlas e ao `nav_mask`, Oradea e Ruse no roster, portos `ITA-ROM`/`ITA-ROME`→Roma e `ITA-PAD`→Milão, cidade do Vaticano removida (5 km de Roma); `validate_scenario_data` 0 erros/0 avisos — ver §5 e `docs/plans/world_all_data.md` §17. Antes disso, curadoria de micro-nações e territórios: **231→171 nações, 858→794 cidades, 138→137 portos**, 60 tags (5 anexadas, 7 fundidas, 48 apagadas) em `tools/world_nation_curation.py`, atlas **4.527→4.272** províncias e `nav_mask.png` sem as ilhas removidas; `economy_long_run_test` verde (365 dias, 0 violações) — ver §5 e `docs/plans/world_all_data.md` §14. Antes disso, fechamento da base natural + renda externa: **231 nações / 857 cidades**, curadoria do Egito — Port Said/Suez fora, Marsa Matruh dentro, ver §5 —, aptidão agrícola e posse mineral por **província admin-1**, `landmass` da Europa unificado em `continent` — 126 cidades reajustadas, 80→84 rótulos — e renda externa **proporcional ao PIB PPP per capita real** da nação, não mais um subsídio uniforme; 730 dias: **31 insolvências, 0 violações, `money_total` conservado, 189/197 soberanas ≥ 70%, média 97,4%** — 8 soberanas abaixo (KIR/PSX/SAH/DJI/PAK/SDN/CPV/TKM), causa em `docs/economy/balance_review.md` §20. Onda de desempenho de 12/11: a virada do dia medida no **caminho real** (tick no `WorkerThreadPool`) caiu de ~25 ms para **7,1 ms de frame** (máx 8,3 ms; nenhum frame > 16 ms) e o tick fica em **31–35 ms na DLL release** com as 858 cidades — ver §13.5. `population_demo_test` voltou a verde isolando a renda externa (§20.5).)
 > - **Fonte última da verdade:** o código. Em divergência entre este documento e o código, o código vence.
 > - **Nome:** o projeto vive em `G:\projetos\opengs-game`; o app se chama **Open Grand Strategy** (`project.godot`), mas o menu de pausa e documentos internos usam o nome **WarEconomy**. `README.md` descreve o mapa upstream "OpenGS" (províncias), que coexiste com o jogo de cidades como ferramenta de edição.
 
@@ -138,11 +138,31 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   remotas) na §16.2 do plano; capturas políticas 1920×1080 em
   `docs/map_visual/curation_r2/` (caribbean, ukraine_poland, indian_ocean_west,
   mediterranean_west), sem manchas pretas.
-  **Pendências de dados:** Donetsk/Mariupol (`RUS-DON`/`RUS-MAR`) estão na
+  **Pendências de território:** Donetsk/Mariupol (`RUS-DON`/`RUS-MAR`) estão na
   província 926, dona **UKR** e atribuída a `UKR-KHA` (0 províncias próprias);
-  **decisão da r3: não mexer no território**, o usuário ajusta a frente depois
-  (permanece declarado em §15). As pendências de Oradea e dos portos
-  `ITA-ROM`/`ITA-ROME`/`ITA-PAD` foram resolvidas na r3 (§17 do plano).
+  **decisão da r3: não mexer no território**, o usuário ajusta a frente depois.
+  **Resolvido na r4 (§18):** a província UA-14 foi dividida na frente aproximada
+  (2025–2026, ISW/DeepStateMAP), a parte ocupada virou a província **4597**
+  (RUS), e Donetsk/Mariupol passam a administrá-la; a parte ucraniana (926,
+  Kramatorsk/Pokrovsk) continua UKR sob `UKR-KHA`. As pendências de Oradea e dos
+  portos `ITA-ROM`/`ITA-ROME`/`ITA-PAD` foram resolvidas na r3 (§17 do plano);
+  o porto duplicado de Roma foi fundido na r4.
+- **Ocupação russa da Ucrânia — r4 (2026-11-12):** a reatribuição de dono é
+  **dados de pipeline**, não edição manual de JSON. `OCCUPIED_REGIONS` decide
+  por província (ISO 3166-2 do Natural Earth) e `OCCUPIED_FRONT` é o polígono
+  aproximado da frente; `build_atlas_layers.py` repinta o dono no raster
+  (cor estática/fronteira do canal G) e dá **id sintético** à parte ocupada das
+  províncias divididas (o id original fica com a Ucrânia). Resultado:
+  **Luhansk (923) inteira RUS**, **Donetsk ocupada (4597) RUS** com
+  Kramatorsk/Pokrovsk UKR (926), **Zaporizhzhia sul (4599) RUS** com a cidade
+  de Zaporizhzhia UKR (2272), **Kherson margem esquerda (4598) RUS** com a
+  cidade de Kherson UKR (1641); Kharkiv e Dnipro ficam UKR. Catchment e jazidas
+  são derivados da província no runtime (`nation_tag_at`): os depósitos de
+  Donbas/Azov vão para RUS-DON/RUS-MAR. `province_nature`, `province_areas`,
+  `territory_areas`, `nature`/`agriculture`/`deposits` (campo legado `owner`) e
+  `data/history/*` foram regerados; apenas Luhansk mudou de território
+  (TRT000232 UKR → TRT000190 RUS). Evidência: `docs/map_visual/ukraine_front/`
+  (1920×1080, foco UKR-KYI, d052 e d026 + recortes da frente).
 - **Províncias/territórios/países:** `data/history/provinces/provinces.json` (14.402 províncias), `data/history/territories/territories.json` (737 territórios), `data/history/countries/` (193 JSON); `data/definitions/*.txt` restringidos a 4 países (NNN/GBR/FRA/DEU). O jogo ao vivo usa **8 nações** (GBR, FRA, DEU, NED, BEL, VEN, SUR, GUY).
 - **Base natural = 739 territórios:** 737 legados + **BHR `TRT000738`** e **QAT `TRT000739`**, criados por `tools/add_gulf_territories.py` (média de centróide das províncias desses países no atlas + clima real WorldClim pelo mesmo método do `apply_real_climate`). O script também reatribui os depósitos do Golfo ao país real: **North Field → QAT**, **Khuff/Awali → BHR**, **Ghawar → SAU** (antes Ghawar ficava em KWT e o North Field em KWT/SAU por centróide mais próximo). Roda **antes** de `apply_deposit_supplement.py` e é idempotente.
 - **Fronteiras:** legado = Voronoi + SDF via Jump Flooding Algorithm (`jfa.glsl`/`jfa_encode.glsl` + `map_texture_sdf.gd`); jogo = raster Natural Earth composto por shader.

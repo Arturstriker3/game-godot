@@ -58,6 +58,7 @@ import nation_colors
 from world_city_curation import (
     CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
     FORCED_PORTS, LEGACY_EXCLUDED, PORT_OF_OVERRIDES,
+    EXCLUDED_PORTS,
 )
 from world_nation_curation import (
     KEEP_AREA_KM2, KEEP_POP, STRATEGIC_KEEP, audit_source, classify,
@@ -196,13 +197,18 @@ def curate_cities(rows):
 
 
 def curate_ports(rows):
-    """Aplica a curadoria de portos (FORCED_PORTS) à fonte de portos.
+    """Aplica a curadoria de portos à fonte de portos.
 
-    Porto forçado ocupa o id da cidade da mesma nação (`port_of`) e não é
-    recriado se a fonte já o trouxer. Uma regeneração do importador não perde
-    o porto de Creta.
+    Remove `EXCLUDED_PORTS` (duplicata do mesmo porto; ver
+    `tools/world_city_curation.py`) e aplica `FORCED_PORTS` (o porto forçado
+    ocupa o id da cidade da mesma nação). A checagem de duplicata que sobra
+    depois do `port_of` final fica em `promote_scenario`.
     """
-    kept = {row["id"]: dict(row) for row in rows}
+    kept = {}
+    for row in rows:
+        if row["id"] in EXCLUDED_PORTS:
+            continue
+        kept[row["id"]] = dict(row)
     for spec in FORCED_PORTS:
         kept[spec["id"]] = dict(spec)
     return list(kept.values())
@@ -426,6 +432,19 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
         final_overrides[pid] = (target if target in legacy_ids
                                 else mapping.get(target, target))
     port_of = assign_port_of(final_cities, ports_out, final_overrides)
+    # Dois portos da mesma nação, com o mesmo nome e o mesmo `port_of` são o
+    # MESMO porto no mapa (dois pinos no lugar). O caso de Roma foi fundido na
+    # r4 (`EXCLUDED_PORTS`); os demais achados ficam como AVISO para curadoria,
+    # sem bloquear o build (podem ser portos distintos da mesma aglomeração).
+    seen_ports = {}
+    for row in sorted(ports_out, key=lambda r: r["id"]):
+        key = (row["nation"], norm_name(row["name"]), port_of.get(row["id"], ""))
+        if key in seen_ports:
+            print(f"AVISO: portos com o mesmo nome e port_of: "
+                  f"{seen_ports[key]} e {row['id']} "
+                  f"({row['nation']} {row['name']!r})")
+            continue
+        seen_ports[key] = row["id"]
     ports_final = []
     for row in ports_out:
         ports_final.append({

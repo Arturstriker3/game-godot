@@ -69,10 +69,15 @@ e Zaporizhzhia (UKR) na frente leste (Kharkiv e Dnipro já existiam); Cluj-Napoc
 Bari (ITA). As populações são censos/estimativas oficiais da fonte declarada em
 cada `source`, não números nossos.
 
-Pendência de território: Sevastopol, Donetsk e Mariupol pertencem a RUS como
-cidade, mas a província admin-1 do atlas continua UKR. O jogo hoje pinta o
-território pela cidade de mesma `home_nation`; como a cidade é RUS e a província
-é UKR, ela fica com a cidade e sem a província até o usuário ajustar a frente.
+Pendência de território (RESOLVIDA na r4, 2026-11-12): Sevastopol, Donetsk e
+Mariupol pertencem a RUS como cidade e a província admin-1 do atlas era UKR.
+Agora o atlas reatribui o dono no pipeline
+(`world_nation_curation.OCCUPIED_REGIONS`/`OCCUPIED_FRONT`, lido por
+`build_atlas_layers.py`): a Crimeia já era RUS no Natural Earth, Luhansk
+inteira passa a RUS e Donetsk/Zaporizhzhia/Kherson são divididas na frente
+aproximada (2025–2026, ISW/DeepStateMAP). Donetsk e Mariupol administram a
+parte ocupada da UA-14; Zaporizhzhia e Kherson (UKR) ficam com a parte
+ucraniana. Nada é editado à mão no JSON.
 
 Curadoria r3 (2026-11-12)
 -------------------------
@@ -94,7 +99,8 @@ Marino–Roma 226 km, Vaduz–Zürich 77 km (ficam; são a cidade do anexador).
 Portos dos ex-microestados: `ITA-ROM`/`ITA-ROME` passam a Roma (`ITA-ROM`) e
 `ITA-PAD` passa para a cidade italiana que administra o território do porto
 (Milão, `ITA-MIL` — Pádua/Veneza não estão no roster). O mapa de `port_of`
-fica em `PORT_OF_OVERRIDES`.
+fica em `PORT_OF_OVERRIDES`. A r4 fundiu o porto duplicado de Roma: fica só
+`ITA-ROM` (foz do Tibre, Fiumicino/Ostia) e `ITA-ROME` sai em `EXCLUDED_PORTS`.
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -393,9 +399,9 @@ FORCED_CITIES = [
         "role": "port",
         "landmass": "continent",
         "pop_src": "city_proper",
-        "note": ("curadoria r2: cidade russa na Crimeia (pedido do usuário); "
-                 "a província admin-1 continua UKR no atlas — pendência de "
-                 "território documentada, por ora só a posse da cidade muda"),
+        "note": ("curadoria r2/r4: cidade russa na Crimeia (pedido do usuário); "
+                 "a província admin-1 (UA-40) já é RUS no atlas desde o "
+                 "Natural Earth, então a cidade administra o território"),
         "source": ("Rosstat — censo 2021 da Crimeia (547.820 hab.); "
                    "coordenadas 44.6167N 33.5254E"),
         "legacy": "no",
@@ -416,8 +422,9 @@ FORCED_CITIES = [
         "role": "city",
         "landmass": "continent",
         "pop_src": "city_proper",
-        "note": ("curadoria r2: cidade ucraniana que defende o front sul "
-                 "(pedido do usuário); a província continua UKR"),
+        "note": ("curadoria r2/r4: cidade ucraniana que defende o front sul "
+                 "(pedido do usuário); a província UA-65 fica UKR na margem "
+                 "direita do Dnipro (OCCUPIED_FRONT)"),
         "source": ("State Statistics Service of Ukraine — estimativa em "
                    "2022-01-01 (279.131 hab.); coordenadas 46.6354N 32.6169E"),
         "legacy": "no",
@@ -438,9 +445,10 @@ FORCED_CITIES = [
         "role": "city",
         "landmass": "continent",
         "pop_src": "city_proper",
-        "note": ("curadoria r2: cidade ocupada na linha de frente (dono RUS, "
-                 "pedido do usuário). A província admin-1 é UKR no atlas: "
-                 "pendência de território, por ora só a posse da cidade muda"),
+        "note": ("curadoria r2/r4: cidade ocupada na linha de frente (dono "
+                 "RUS, pedido do usuário). A parte ocupada da província UA-14 "
+                 "é RUS no atlas (OCCUPIED_REGIONS), então a cidade "
+                 "administra o território ocupado"),
         "source": ("State Statistics Service of Ukraine — estimativa em "
                    "2022-01-01 (901.645 hab.); coordenadas 48.0159N 37.8028E"),
         "legacy": "no",
@@ -461,9 +469,10 @@ FORCED_CITIES = [
         "role": "port",
         "landmass": "continent",
         "pop_src": "city_proper",
-        "note": ("curadoria r2: cidade ocupada no litoral de Azov (dono RUS, "
-                 "pedido do usuário); porto real na costa. A província admin-1 "
-                 "é UKR no atlas — pendência de território documentada"),
+        "note": ("curadoria r2/r4: cidade ocupada no litoral de Azov (dono "
+                 "RUS, pedido do usuário); porto real na costa. A parte "
+                 "ocupada da província UA-14 é RUS no atlas "
+                 "(OCCUPIED_REGIONS), então a cidade administra o território"),
         "source": ("State Statistics Service of Ukraine — estimativa em "
                    "2022-01-01 (425.681 hab.); coordenadas 47.0951N 37.5413E"),
         "legacy": "no",
@@ -484,8 +493,10 @@ FORCED_CITIES = [
         "role": "city",
         "landmass": "continent",
         "pop_src": "city_proper",
-        "note": ("curadoria r2: cidade ucraniana que defende o front leste "
-                 "(pedido do usuário); Kharkiv e Dnipro já existiam no cenário"),
+        "note": ("curadoria r2/r4: cidade ucraniana que defende o front leste "
+                 "(pedido do usuário); a província UA-23 fica UKR ao norte da "
+                 "frente (OCCUPIED_FRONT), então a cidade administra a parte "
+                 "ucraniana"),
         "source": ("State Statistics Service of Ukraine — estimativa em "
                    "2022-01-01 (710.052 hab.); coordenadas 47.8388N 35.1396E"),
         "legacy": "no",
@@ -723,16 +734,25 @@ FORCED_CITIES = [
     },
 ]
 
+# Portos repetidos: dois registros para o MESMO porto (mesma nação + mesmo
+# `port_of`) são um bug de fonte — o mapa desenha dois pinos no mesmo lugar.
+# Fica o id canônico. `ITA-ROME` é o ponto "snap na costa" da fonte de 2026,
+# a ~2 km da praia de Ostia; o porto de Roma do cenário é `ITA-ROM`, na foz do
+# Tibre (Fiumicino/Ostia), o mesmo ponto legado. Civitavecchia é o porto
+# comercial real, mas fica 60 km a noroeste e não tem cidade no roster.
+EXCLUDED_PORTS = {
+    "ITA-ROME": "duplicado de ITA-ROM (mesmo porto de Roma; ponto snap offshore)",
+}
+
 # Portos cujo `port_of` não pode ser inferido (a cidade de mesmo nome não
 # existe no roster): mapa id do porto -> id da cidade na FONTE
 # (`cities_source.csv`). A promoção traduz o alvo para o id final do cenário
 # com o mesmo `plan_city_ids` das cidades (ITA-ROME -> ITA-ROM). O build falha
 # se o alvo não existir na fonte ou for de outra nação.
 PORT_OF_OVERRIDES = {
-    # Uma das duas entradas de Roma no `ports.csv`; ambas passam a apontar para
-    # a cidade Roma (eram VAT-VATI, removida na r3 por estar a 5 km de Roma).
+    # Porto de Roma: aponta para a cidade Roma (`ITA-ROM` no cenário; a fonte
+    # chama a cidade de `ITA-ROME`).
     "ITA-ROM": "ITA-ROME",
-    "ITA-ROME": "ITA-ROME",
     # Pádua/Veneza não estão no roster. O porto fica no litoral de Veneza e o
     # território (Veneto) é administrado pela cidade italiana mais próxima,
     # Milão — a mesma regra de atribuição de província do jogo.

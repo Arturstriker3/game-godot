@@ -697,8 +697,8 @@ cidade administra.
 | Sevastopol (Crimeia) | `RUS-SEV` | RUS | RUS | 2 | porto `RUS-SEV` |
 | Kherson | `UKR-KHE` | UKR | UKR | 3 | frente |
 | Zaporizhzhia | `UKR-ZAP` | UKR | UKR | 1 | frente |
-| Donetsk | `RUS-DON` | RUS | **UKR** | **0** | **pendência**: cidade RUS na província 926 (UKR), atribuída a `UKR-KHA` |
-| Mariupol | `RUS-MAR` | RUS | **UKR** | **0** | **pendência**: mesma província 926 |
+| Donetsk | `RUS-DON` | RUS | **UKR** | **0** | **pendência da r2** (resolvida na r4): cidade RUS na província 926 (UKR), atribuída a `UKR-KHA` |
+| Mariupol | `RUS-MAR` | RUS | **UKR** | **0** | **pendência da r2** (resolvida na r4): mesma província 926 |
 | Cluj-Napoca | `ROU-CLJ` | ROU | ROU | 17 | — |
 | Oradea | — | — | — | — | **ausente** do roster (ROU tem Bucareste, Cluj-Napoca, Iaşi) |
 | Kaohsiung | `TWN-KAO` | TWN | TWN | 4 | — |
@@ -820,6 +820,9 @@ Decisão do usuário nesta rodada: **não mexer no território**; o ajuste da fr
 província 926 (dona **UKR**, atribuída a `UKR-KHA`) e seguem sem província
 própria — a pendência permanece declarada em `GAME_STATE.md` §15 e na §16.2.
 
+> **Resolvido na r4 (§18):** a UA-14 foi dividida na frente aproximada; a parte
+> ocupada virou a província 4597 (RUS), administrada por `RUS-DON`.
+
 ### 17.6 Como reproduzir
 
 ```powershell
@@ -850,4 +853,201 @@ Conferência rápida do atlas/nav (pixel): Naha e Hagåtña com `world_sdf.r > 1
 (terra), `removed_islands.png = 0` e `removed_nations.png = 0`; `nav_mask.png`
 com célula de terra (128/255) nos três seeds. Nenhuma célula de terra do
 `nav_mask` muda para água nesta rodada — só as 48 devolvidas.
+
+## 18. Curadoria r4 — território ocupado pela Rússia na Ucrânia (2026) e porto único de Roma (2026-11-12)
+
+Rodada de **dados**: o mapa político passa a mostrar como **RUS** o território
+ocupado pela Rússia na Ucrânia na situação ~2026, e o porto duplicado de Roma é
+fundido em um só. O roster fica com **177 nações, 802 cidades e 143 portos**
+(uma linha a menos em `ports.csv`/`ports.json`); o atlas passa a **4.226
+províncias** (+3 ids sintéticos para a parte ocupada das províncias divididas).
+
+### 18.1 Fonte e precisão (declaradas)
+
+A linha de frente é **aproximada** a partir dos mapas públicos do **ISW**
+(`Russia's Offensive Campaign Assessment` / "Ukraine Control Map") e do
+**DeepStateMAP**, na situação observada em **2025–2026**. A geometria é um
+polígono em graus (≈ 10 km de resolução de desenho) e o raster do atlas tem
+~4,9 km/texel: o resultado é uma **carta aproximada**, não uma fronteira
+reconhecida nem um levantamento topográfico. A decisão e o polígono vivem em
+`tools/world_nation_curation.py` (`OCCUPIED_REGIONS` + `OCCUPIED_FRONT`) —
+mudou a fonte, edita-se o polígono e roda-se o pipeline; **nada é editado à mão
+em JSON**.
+
+### 18.2 Mecanismo (reprodutível)
+
+`tools/build_atlas_layers.py` lê `OCCUPIED_REGIONS` (por código **ISO 3166-2**
+da província admin-1 do Natural Earth, ex.: `UA-14`) e `OCCUPIED_FRONT`:
+
+* `whole_provinces` — a província inteira muda de dono (Luhansk);
+* `front_provinces` — só os pixels dentro do polígono mudam de dono **e**
+  recebem um **id sintético** (alocado depois do último admin-1 da fonte, na
+  ordem das províncias → determinístico). O id original continua com a Ucrânia,
+  então nenhuma referência antiga (jazida, natureza, save) muda de significado;
+* `paint_occupation` trabalha só na janela da bbox de cada província (memória
+  não cresce com o mundo), repinta `owners` (cor estática e fronteira do canal
+  G do SDF) e relabela `provinces` (canal B + raster de id usado pelo shader).
+
+O dono no jogo não é lido do arquivo de cor: `TerritoryMap` publica o dono por
+id de província em `province_owner` e o shader usa esse valor quando
+`dynamic_territory` está ligado; a atribuição província→cidade vem de
+`provinces.json` (`nation`), então catchment e jazidas acompanham
+automaticamente (`GeographyService.nation_tag_at`).
+
+### 18.3 O que mudou (províncias)
+
+Áreas da tabela são a estimativa do projeto (`tools/compute_province_areas.py`,
+Voronoi dos centróides sobre o `nav_mask`; `data_quality = estimate_display`),
+não a área oficial do oblast.
+
+| província | id | ISO | antes | depois | centroide | área km² (estimativa) |
+|---|---|---:|---|---|---|---:|
+| Crimeia | 1640 | UA-43 | RUS | RUS | 34,39E 45,31N | 17.288 |
+| Sevastopol | 2273 | UA-40 | RUS | RUS | 33,63E 44,58N | 7.429 |
+| Luhansk (inteira) | 923 | UA-09 | UKR | **RUS** | 39,01E 48,97N | 38.377 |
+| Donetsk ocupada | **4597** | UA-14 | — | **RUS** | 37,84E 47,79N | 26.545 |
+| Donetsk ucraniana (Kramatorsk/Pokrovsk) | 926 | UA-14 | UKR | UKR | 37,38E 48,60N | 17.769 |
+| Zaporizhzhia ocupada (sul) | **4599** | UA-23 | — | **RUS** | 35,78E 47,09N | 18.609 |
+| Zaporizhzhia ucraniana (cidade) | 2272 | UA-23 | UKR | UKR | 35,47E 47,79N | 13.237 |
+| Kherson margem esquerda | **4598** | UA-65 | — | **RUS** | 33,77E 46,45N | 17.326 |
+| Kherson margem direita (cidade) | 1641 | UA-65 | UKR | UKR | 33,28E 47,03N | 20.025 |
+
+Crimeia/Sevastopol não precisaram de mudança: o admin-0 do Natural Earth já as
+traz como RUS (era a origem da pendência da r2). **Kharkiv (922), Dnipro
+(3224), Kyiv (4366), Mykolaiv (2274) e as cidades de Zaporizhzhia/Kherson
+continuam UKR.**
+
+### 18.4 Polígono da frente (`OCCUPIED_FRONT`)
+
+Pontos (lon, lat): `31.60,46.38 → 32.20,46.47 → 32.60,46.53 → 33.20,46.72 →
+33.70,46.90 → 34.30,47.20 → 34.60,47.56 → 35.10,47.58 → 35.70,47.55 →
+36.40,47.70 → 36.90,47.85 → 37.20,48.15 → 37.90,48.60 → 38.10,48.80 →
+38.90,49.05`, fechando pela caixa externa (`41.20,49.60 → 41.20,43.80 →
+31.60,43.80`). Só pixels das províncias de `front_provinces` são repintados,
+então a caixa externa não afeta outro país.
+
+Conferência pixel a pixel no `world_province.png` (nations após o build):
+
+| referência | coordenada | id | nação |
+|---|---|---:|---|
+| Donetsk | 37,80E 48,02N | 4597 | RUS |
+| Mariupol | 37,54E 47,10N | 4597 | RUS |
+| Kramatorsk | 37,53E 48,72N | 926 | UKR |
+| Pokrovsk | 37,18E 48,29N | 926 | UKR |
+| Zaporizhzhia | 35,14E 47,84N | 2272 | UKR |
+| Melitopol | 35,37E 46,84N | 4599 | RUS |
+| Berdiansk | 36,79E 46,76N | 4599 | RUS |
+| Kherson | 32,62E 46,64N | 1641 | UKR |
+| Nova Kakhovka | 33,37E 46,75N | 4598 | RUS |
+| Enerhodar | 34,65E 47,51N | 4599 | RUS |
+| Kharkiv | 36,23E 49,99N | 922 | UKR |
+| Dnipro | 35,05E 48,46N | 3224 | UKR |
+| Luhansk | 39,31E 48,57N | 923 | RUS |
+| Kyiv | 30,52E 50,45N | 4366 | UKR |
+| Sevastopol | 33,52E 44,62N | 2273 | RUS |
+
+### 18.5 Catchment e jazidas
+
+A bacia de captação e a posse mineral são derivadas da **província** no
+runtime. Resultado (mesma regra A1 de `GeographyService`):
+
+| província | cidade que administra |
+|---|---|
+| Luhansk (923) e Donetsk ocupada (4597) | `RUS-DON` |
+| Zaporizhzhia ocupada (4599) | `RUS-MAR` |
+| Kherson margem esquerda (4598) | `RUS-SEV` |
+| Donetsk ucraniana (926) | `UKR-KHA` (cidade UKR mais próxima) |
+| Zaporizhzhia ucraniana (2272) | `UKR-ZAP` |
+| Kherson margem direita (1641) | `UKR-KHE` |
+
+Jazidas: o campo legado `owner` de `deposits.json` reflete o dono do território
+natural e mudou em 11 registros (Donbas/Azov → RUS); o **runtime não lê esse
+campo** — `assign_deposits` usa `nation_tag_at(px, py)`, a província do atlas.
+Efeito prático: carvão/ferro de Donbas e Azov passam para RUS-DON/RUS-MAR.
+
+### 18.6 Porto duplicado de Roma
+
+`ITA-ROME` (ponto "snap na costa" de 2026, ~2 km da praia de Ostia) era o mesmo
+porto de `ITA-ROM` (foz do Tibre/Fiumicino-Ostia, o ponto legado), ambos com
+`name = "Rome"` e `port_of = ITA-ROM`. Decisão em
+`tools/world_city_curation.py` (`EXCLUDED_PORTS`): fica **`ITA-ROM`**; sai a
+chave i18n `port.name.ITA-ROME` e a linha correspondente em `ports.csv/json`
+(144 → 143). Nenhuma rota, prédio ou save referencia o id do porto: `ITA-ROME`
+como **cidade** da fonte continua existindo (`cities_source.csv`) e é o alvo de
+`port_of` (`PORT_OF_OVERRIDES`: `ITA-ROM → ITA-ROME`, traduzido para a cidade
+final `ITA-ROM`). `build_world_cities.py` passou a **avisar** quando dois portos
+da mesma nação têm o mesmo nome e o mesmo `port_of`.
+
+Duplicatas do mesmo tipo encontradas e **não** alteradas (fora do escopo desta
+rodada, todas do importador de 2026): `CHN-GUAN`×`CHN-GUA` (Guangzhou),
+`CHN-SHAN`×`CHN-SHA` (Shanghai), `IDN-MEDA`×`IDN-MED` (Medan),
+`JPN-NAGO`×`JPN-NAG` (Nagoya), `TUR-BURS`×`TUR-BUR` (Bursa) e
+`USA-LOSA`×`USA-LOS` (Los Angeles). O aviso aparece no build para curadoria.
+
+### 18.7 "Tomar cidade entrega território" — o que existe
+
+Existe o **vínculo cidade→província**, não uma mecânica de guerra:
+
+* `map/territory_map.gd::assign()` liga cada província à cidade mais próxima da
+  **mesma `home_nation`** (vínculo estável) e `update()` pinta o dono de cada
+  província com a **`nation` atual** da cidade dona; mudar a nação de uma
+  cidade repinta as províncias dela na textura `province_owner` (lida por
+  `dyn_block` no shader — o `dyn_nation`).
+* O gatilho existente é de **debug/seleção**: `city_world.debug_set_city_nation()`
+  / `debug_clear_territory_overrides()`. `tools/territory_test.gd` cobre o
+  caminho completo (BEL-BRU → FRA repinta as províncias de Bruxelas e só elas;
+  clear volta tudo; a textura de dono publica o índice certo) e passa nesta
+  rodada.
+* **Não existe** captura/ocupação de cidade em jogo (nem cerco, nem combate,
+  nem troca de dono por evento). Faltaria: um sistema de guerra/ocupação que
+  escreva a `nation` da cidade (ou um override persistente) e chame
+  `territory.update()`/`refresh_modes`; o repaint em si **já funciona** e não
+  precisou ser implementado.
+
+### 18.8 Como reproduzir
+
+```powershell
+$env:PYTHONUTF8=1
+python tools/build_atlas_layers.py            # dono + ids sintéticos + SDF/cor
+python tools/reconstruct_natural_inputs.py --prune   # dono/território (histórico)
+python tools/compute_province_areas.py        # área por província (Voronoi)
+python tools/build_province_nature.py         # province_nature/nature/agriculture/deposits
+python tools/compute_territory_areas.py       # área por território
+python tools/build_world_cities.py --write-scenario  # portos/cidades/i18n
+python tools/build_scenario_data.py           # scenario/*.json + i18n.json
+python tools/validate_scenario_data.py
+& $godot --headless --path . --import
+```
+
+`nav_mask.png` não muda (nenhuma ilha entrou/saiu; a terra é a mesma), então
+`generate_nav_mask.py` não é necessário nesta rodada.
+
+Os ids sintéticos vivem no **atlas** (`provinces.json`) e nos rasters/SDFs —
+é o que o jogo lê. Os inputs legados `data/definitions/provinces.txt` e
+`data/history/provinces/provinces.json` continuam listando só as províncias
+admin-1 de origem (mesma defasagem já existente para as 63 províncias do
+Caribe da r2): eles alimentam só `build_natural_geography.py`/`generate_nav_mask.py`,
+que não rodaram aqui; a natureza das províncias novas é gerada por
+`build_province_nature.py` direto do atlas. `reconstruct_natural_inputs.py
+--prune` sincroniza o dono das províncias existentes (Luhansk) e move Luhansk
+de TRT000232 (UKR) para TRT000190 (RUS).
+
+### 18.9 Verificação e evidência
+
+* `validate_scenario_data`: **0 erros, 0 avisos** (10 arquivos).
+* `build_world_cities.py --check`: **exit 0** (143 portos, nenhuma referência
+  órfã; só os avisos das duplicatas pré-existentes).
+* `tools/territory_test.gd`: **OK** (177 nações com província; dono inicial ==
+  nação; override repinta; textura de dono).
+* `tools/nav_strait_test.tscn`: **PASS** (mares conectados, portos no mar).
+* `tools/economy_integration_test.gd`: **OK** (geografia, cadeia, investimento,
+  save/load).
+* `tools/economy_city_catchment_test.gd`: **OK** (partição, conservação de área,
+  toda cidade com terra; 4.204 províncias com aptidão).
+* `godot --headless --import`: reimportou os rasters do atlas e o i18n.
+* Captura política 1920×1080: `docs/map_visual/ukraine_front/`
+  (`map3d_political_d052.png`, `map3d_political_d026.png`, foco `UKR-KYI`,
+  `manifest_map3d_political.json`) + recortes `front_crop_d026.png` e
+  `front_crop_d052.png` mostrando a frente RUS/UKR.
+
 

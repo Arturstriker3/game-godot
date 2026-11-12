@@ -47,6 +47,32 @@ Onde há conflito, vale a LISTA EXPLÍCITA do usuário; o critério serve para
 provar que nada ficou de fora. `audit_source()` falha se uma nação abaixo do
 limiar não estiver classificada, se um território não tiver destino, se uma
 tag não existir na fonte ou se um tag tiver dois destinos.
+
+Ocupação russa da Ucrânia (situação ~2026)
+------------------------------------------
+Decisão do usuário (2026-11-12): o mapa político mostra o território ocupado
+pela Rússia como RUS. O dono das províncias admin-1 é reatribuído no pipeline
+(`OCCUPIED_REGIONS` + `OCCUPIED_FRONT`, lidos por `tools/build_atlas_layers.py`),
+nunca à mão no JSON.
+
+Fonte e precisão: a linha de frente é APROXIMADA a partir dos mapas públicos do
+ISW (`Russia's Offensive Campaign Assessment` / "Ukraine Control Map") e do
+DeepStateMAP, na situação observada em 2025–2026. As coordenadas são um
+polígono de ~0,1° (≈ 10 km) desenhado à mão sobre esses mapas; o raster do
+atlas tem ~4,9 km/texel, então a frente no jogo é uma aproximação de carta,
+não uma fronteira reconhecida nem um levantamento topográfico. Onde a fonte
+mudar, basta editar o polígono — nada mais no repositório depende dele.
+
+Regras:
+  * Crimeia e Sevastopol já vêm do Natural Earth como RUS (admin-0);
+  * Luhansk inteira passa a RUS (≈99% ocupada na fonte);
+  * Donetsk, Zaporizhzhia e Kherson são DIVIDIDAS no polígono da frente: a
+    parte a leste/sul vira RUS (Donetsk, Mariupol, Melitopol, Berdiansk,
+    margem esquerda do Dnipro) e a parte ucraniana continua UKR — as cidades
+    de Zaporizhzhia e Kherson, Kharkiv e Dnipro ficam UKR;
+  * as províncias divididas ganham um id NOVO para a parte ocupada; o id
+    original fica com a Ucrânia, então nenhuma referência antiga (jazida,
+    natureza, save) muda de significado.
 """
 
 from __future__ import annotations
@@ -193,6 +219,52 @@ TRANSFERS = {**MICROSTATES, **MERGED_TERRITORIES}
 # Toda tag que deixa de existir como nação.
 REMOVED = set(MICROSTATES) | set(REMOVED_SOVEREIGNS) | set(REMOVED_TERRITORIES) \
     | set(MERGED_TERRITORIES)
+
+# ---------------------------------------------------------------------------
+# Ocupação russa da Ucrânia (situação ~2026) — ver o docstring do módulo.
+# Chave: código ISO 3166-2 da província admin-1 do Natural Earth.
+# * whole_provinces: a província INTEIRA passa ao alvo;
+# * front_provinces: dividida por OCCUPIED_FRONT; a parte ocupada vira uma
+#   província NOVA (id sintético) e o id original fica com a Ucrânia.
+OCCUPIED_REGIONS = {
+    "target": "RUS",
+    "whole_provinces": {
+        "UA-09": "Luhansk (≈99% ocupada)",
+    },
+    "front_provinces": {
+        "UA-14": "Donetsk (Donetsk/Mariupol ocupadas; Kramatorsk UKR)",
+        "UA-23": "Zaporizhzhia (sul ocupado; cidade de Zaporizhzhia UKR)",
+        "UA-65": "Kherson (margem esquerda ocupada; cidade de Kherson UKR)",
+    },
+}
+
+# Polígono (lon, lat) da ÁREA OCUPADA a leste/sul da frente aproximada.
+# Arestas: frente (Dnipro→Vasylivka→Pokrovsk→Siversk→Luhansk), depois a caixa
+# externa pelo mar de Azov/Rússia e pelo mar Negro. Só os pixels das
+# províncias de `front_provinces` são repintados, então a caixa externa não
+# toca nenhum outro país. Cidades de referência que ficam FORA (UKR): Kherson
+# (32,62E 46,64N), Zaporizhzhia (35,14E 47,84N), Pokrovsk (37,18E 48,29N),
+# Kramatorsk (37,55E 48,72N), Kharkiv (36,23E 49,99N) e Dnipro (35,05E 48,46N).
+OCCUPIED_FRONT = [
+    (31.60, 46.38),  # estuário do Dnipro, a oeste de Kherson
+    (32.20, 46.47),
+    (32.60, 46.53),  # ao sul da cidade de Kherson (46,635N → UKR)
+    (33.20, 46.72),
+    (33.70, 46.90),  # Nova Kakhovka (46,75N), margem esquerda → RUS
+    (34.30, 47.20),
+    (34.60, 47.56),  # Enerhodar (47,51N), margem sul da represa → RUS
+    (35.10, 47.58),  # Vasylivka; cidade de Zaporizhzhia (47,84N) fica UKR
+    (35.70, 47.55),
+    (36.40, 47.70),  # Orikhiv/Huliaipole ao sul
+    (36.90, 47.85),  # Velyka Novosilka
+    (37.20, 48.15),  # a oeste de Pokrovsk (Pokrovsk fica UKR)
+    (37.90, 48.60),  # Toretsk/Chasiv Yar
+    (38.10, 48.80),  # Siversk
+    (38.90, 49.05),  # borda com Luhansk (a província inteira já é RUS)
+    (41.20, 49.60),  # caixa externa: mar de Azov/Rússia
+    (41.20, 43.80),
+    (31.60, 43.80),
+]
 
 
 def transfer_target(tag: str) -> str:

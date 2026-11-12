@@ -64,7 +64,9 @@ def prune_to_atlas():
     defasados quando a curadoria apagou ilhas e anexou/fundiu territórios: uma
     regeneração futura de `build_natural_geography.py` reintroduziria as ilhas
     removidas. A poda preserva ordem, ids e formatação; só remove o que o atlas
-    já não tem e reescreve o dono das províncias que trocaram de nação.
+    já não tem e reescreve o dono das províncias que trocaram de nação. Uma
+    província que trocou de dono (ex.: ocupação) muda de território para o
+    território que já representa o novo dono — ids TRT preservados.
     """
     owner = read_atlas_owners()
     keep = set(owner)
@@ -90,6 +92,51 @@ def prune_to_atlas():
     territories_path = os.path.join(HIST, "territories", "territories.json")
     with open(territories_path, encoding="utf-8") as handle:
         territories = json.load(handle)
+
+    # Dono de cada território = maioria dos membros (determinístico: empate vai
+    # para a tag alfabética). Depois de uma mudança de dono no atlas (ocupação
+    # de província), o membro que TROCOU de dono muda para o território que já
+    # representa o novo dono — sem criar território novo e sem reescrever os
+    # ids TRT usados por `nature.json`/`deposits.json`. Só entram aqui as
+    # províncias cujo dono mudou neste passe; o resto preserva a divisão
+    # legada (os territórios nasceram de células Voronoi, não da nação).
+    changed = {province_id for province_id in keep
+               if owner.get(province_id) != history.get(province_id, {}).get(
+                   "province_owner")}
+    counts = {}
+    for territory_id, payload in territories.items():
+        tally = {}
+        for province_id in payload.get("provinces", []):
+            tag = owner.get(province_id, "")
+            if tag:
+                tally[tag] = tally.get(tag, 0) + 1
+        if tally:
+            counts[territory_id] = sorted(
+                tally.items(), key=lambda item: (-item[1], item[0]))[0][0]
+    destination = {}
+    for territory_id, tag in sorted(counts.items()):
+        destination.setdefault(tag, territory_id)
+    arrivals = {}
+    moved = 0
+    for territory_id, payload in territories.items():
+        members = []
+        for province_id in payload.get("provinces", []):
+            if province_id not in keep:
+                continue
+            tag = owner.get(province_id, "")
+            target = destination.get(tag)
+            if province_id in changed and target and target != territory_id:
+                arrivals.setdefault(target, []).append(province_id)
+                moved += 1
+            else:
+                members.append(province_id)
+        payload["provinces"] = members
+    for territory_id, extra in arrivals.items():
+        known = set(territories[territory_id]["provinces"])
+        territories[territory_id]["provinces"].extend(
+            province_id for province_id in extra if province_id not in known)
+        territories[territory_id]["provinces"].sort()
+
     pruned_territories = {}
     dropped_territories = 0
     for territory_id, payload in territories.items():
@@ -106,7 +153,8 @@ def prune_to_atlas():
     print(f"provinces.txt:      -{len(lines) - len(kept_lines)} (restam {len(kept_lines)})")
     print(f"provinces.json:     -{len(history) - len(pruned_history)} "
           f"(restam {len(pruned_history)})")
-    print(f"territories.json:   -{dropped_territories} territórios vazios "
+    print(f"territories.json:   -{dropped_territories} territórios vazios, "
+          f"+{moved} província(s) de dono trocado movida(s) "
           f"(restam {len(pruned_territories)})")
 
 
@@ -166,7 +214,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--prune", action="store_true",
-        help="só remove dos 3 inputs as províncias ausentes do atlas (não regrava o resto)",
+        help="só sincroniza com o atlas (remove províncias ausentes, reescreve "
+             "o dono e move a província de dono trocado para o território "
+             "do novo dono; não regrava o resto)",
     )
     args = parser.parse_args()
     if args.prune:

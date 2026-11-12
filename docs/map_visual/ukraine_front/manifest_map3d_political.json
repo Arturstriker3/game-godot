@@ -1,0 +1,50 @@
+{
+  "bench": {},
+  "city_count": 802,
+  "distances": [
+    52.0,
+    26.0
+  ],
+  "engine": "4.7.2-stable (official)",
+  "focus": "UKR-KYI",
+  "mode": "political",
+  "renderer": "forward_plus",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_political_d026.png": {
+      "distance": 26.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/ukraine_front/map3d_political_d026.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "saved": true,
+      "urban_cities": 90
+    },
+    "map3d_political_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/ukraine_front/map3d_political_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "saved": true,
+      "urban_cities": 83
+    }
+  },
+  "tag": "front2026",
+  "timestamp": "2026-11-12T18:03:37",
+  "warnings": []
+}

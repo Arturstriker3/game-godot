@@ -1032,12 +1032,12 @@
   "counts": {
     "nations": 177,
     "cities": 802,
-    "ports": 144,
+    "ports": 143,
     "buildings": 802,
-    "i18n_keys": 1300,
+    "i18n_keys": 1299,
     "legacy_cities": 39,
     "legacy_ports": 18,
-    "scenario_ports": 142,
+    "scenario_ports": 144,
     "cities_with_pt_exonym": 250,
     "cities_with_es_exonym": 257,
     "cities_pt_same_as_en": 529

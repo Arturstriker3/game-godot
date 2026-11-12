@@ -30,6 +30,12 @@ Saídas em map/map_data/atlas/:
   removed_islands.png L8  terra das ilhas pequenas removidas pela regra de
                     área (1 = mar); lido por tools/generate_nav_mask.py
 
+Ocupação (tools/world_nation_curation.py, OCCUPIED_REGIONS/OCCUPIED_FRONT):
+antes dos SDFs o dono das províncias ocupadas é repintado no raster e a parte
+ocupada das províncias divididas recebe um id sintético (depois do último
+admin-1 da fonte). O id original continua com a Ucrânia, então nenhuma
+referência antiga muda de significado; `provinces.json` ganha as linhas novas.
+
 Uso:
   python tools/build_atlas_layers.py
 
@@ -51,7 +57,8 @@ from scipy.ndimage import (binary_dilation as nd_dilate, distance_transform_edt,
                            find_objects as nd_objects, label as nd_label,
                            sum as nd_sum)
 
-from world_nation_curation import atlas_owner_map, atlas_removed
+from world_nation_curation import (OCCUPIED_FRONT, OCCUPIED_REGIONS,
+                                   atlas_owner_map, atlas_removed)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "map", "map_data", "atlas")
@@ -242,12 +249,14 @@ def read_admin1_all():
     """Lê TODAS as províncias admin-1 do shapefile (sem filtro de bbox).
 
     O id global é o índice 1..N na lista única. Devolve as geometrias, o
-    código ADM0 de cada uma e a bbox (para a seleção da região)."""
+    código ADM0, a bbox (para a seleção da região) e o ISO 3166-2 (chave
+    estável das decisões de curadoria por província, ex.: UA-09)."""
     reader = shapefile.Reader(ADMIN1, encoding="utf-8")
     names = [field[0] for field in reader.fields[1:]]
     shapes = []
     countries = []
     bboxes = []
+    iso_codes = []
     for shape, record in zip(reader.shapes(), reader.records()):
         parts = split_parts(shape)
         if not parts:
@@ -257,7 +266,8 @@ def read_admin1_all():
         shapes.append(parts)
         countries.append(adm0)
         bboxes.append(shape.bbox)
-    return shapes, countries, bboxes
+        iso_codes.append(str(fields.get("iso_3166_2") or "").strip())
+    return shapes, countries, bboxes, iso_codes
 
 
 def select_region(provinces, province_countries, province_bboxes, bounds):
@@ -783,10 +793,99 @@ def process_rows(owners, provinces, supersample):
     return coast_lo, borders_lo, provinces_lo
 
 
+def plan_occupation(iso_codes, bboxes):
+    """Reatribui dono de província admin-1 (OCCUPIED_REGIONS).
+
+    Devolve uma lista de especificações na ordem das províncias da fonte:
+      {pid, target, mode ("whole"|"front"), new_id (0 = mantém o id), bbox}
+    `new_id` começa depois do último admin-1 e é estável: regenerar a mesma
+    fonte produz os mesmos ids. O id ORIGINAL de uma província dividida fica
+    com a Ucrânia (nenhuma referência antiga muda de significado)."""
+    target = OCCUPIED_REGIONS.get("target", "")
+    whole = OCCUPIED_REGIONS.get("whole_provinces", {})
+    front = OCCUPIED_REGIONS.get("front_provinces", {})
+    if not target or not (whole or front):
+        return []
+    specs = []
+    next_id = len(iso_codes) + 1
+    for index, code in enumerate(iso_codes):
+        if code in whole:
+            mode, new_id = "whole", 0
+        elif code in front:
+            mode, new_id = "front", next_id
+            next_id += 1
+        else:
+            continue
+        specs.append({
+            "pid": index + 1,
+            "target": target,
+            "mode": mode,
+            "new_id": new_id,
+            "bbox": tuple(float(v) for v in bboxes[index]),
+        })
+    return specs
+
+
+def pixel_window(grid, bbox):
+    """Janela (x0, x1, y0, y1) da bbox lon/lat na grade, com 2 px de margem."""
+    lon0, lat0, lon1, lat1 = bbox
+    x0 = int(math.floor((lon0 - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)) - 2
+    x1 = int(math.ceil((lon1 - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)) + 2
+    y0 = int(math.floor((grid.lat1 - lat1) / (grid.lat1 - grid.lat0) * grid.height)) - 2
+    y1 = int(math.ceil((grid.lat1 - lat0) / (grid.lat1 - grid.lat0) * grid.height)) + 2
+    return (max(x0, 0), min(x1, grid.width), max(y0, 0), min(y1, grid.height))
+
+
+def front_mask(grid, ring, window):
+    """Máscara booleana do polígono da frente dentro da janela da grade."""
+    x0, x1, y0, y1 = window
+    image = Image.new("L", (x1 - x0, y1 - y0), 0)
+    draw = ImageDraw.Draw(image)
+    points = [((lon - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width - x0,
+               (grid.lat1 - lat) / (grid.lat1 - grid.lat0) * grid.height - y0)
+              for lon, lat in ring]
+    draw.polygon(points, fill=255)
+    return np.asarray(image, dtype=np.uint8) > 0
+
+
+def paint_occupation(owners, provinces, grid, countries, specs):
+    """Repinta dono (e id, se dividida) das províncias ocupadas.
+
+    Trabalha só na janela da bbox de cada província: a memória não cresce com
+    o mundo. `owners` recebe o índice do país alvo (a cor estática e a
+    fronteira do canal G seguem daqui); nas províncias divididas o raster de
+    id recebe o id NOVO na parte ocupada, então o mapa dinâmico (dono por id)
+    também mostra a frente."""
+    if not specs or provinces is None:
+        return 0
+    index_by_tag = {country["tag"]: index
+                    for index, country in enumerate(countries, start=1)}
+    painted = 0
+    for spec in specs:
+        target_index = index_by_tag.get(spec["target"])
+        if target_index is None:
+            raise SystemExit(
+                f"ocupação: alvo {spec['target']} ausente do admin-0")
+        window = pixel_window(grid, spec["bbox"])
+        x0, x1, y0, y1 = window
+        if x1 <= x0 or y1 <= y0:
+            continue
+        sub_owners = owners[y0:y1, x0:x1]
+        sub_provinces = provinces[y0:y1, x0:x1]
+        hit = sub_provinces == spec["pid"]
+        if spec["mode"] == "front":
+            hit &= front_mask(grid, OCCUPIED_FRONT, window)
+        sub_owners[hit & (sub_owners != 0)] = target_index
+        if spec["new_id"]:
+            sub_provinces[hit] = spec["new_id"]
+        painted += int(hit.sum())
+    return painted
+
+
 def build_layer(name, bounds, width, countries, province_shapes,
                 province_countries=None, province_ids=None, supersample=SUPERSAMPLE,
                 band_rows=None, color_step=1, return_removed=False,
-                removed_reference=None, islands=False):
+                removed_reference=None, islands=False, occupation=None):
     """Constrói uma camada do atlas.
 
     `band_rows` (linhas da grade BAIXA) processa os campos de distância em
@@ -805,6 +904,10 @@ def build_layer(name, bounds, width, countries, province_shapes,
     provinces = None
     if province_shapes:
         provinces = rasterize_ids(hi, province_shapes, province_ids)
+    if occupation:
+        painted = paint_occupation(owners, provinces, hi, countries, occupation)
+        print(f"[{name}] ocupação: {painted} px repintados "
+              f"({len(occupation)} província(s))")
     if REMOVED_ISLETS:
         islet_mask = np.zeros(owners.shape, dtype=bool)
         remove_islets(owners, provinces, hi, REMOVED_ISLETS, mark_mask=islet_mask)
@@ -911,16 +1014,22 @@ def write_province_png(name, ids_lo):
     Image.fromarray(rgb, "RGB").save(os.path.join(OUT, f"{name}_province.png"), optimize=True)
 
 
-def write_provinces_json(region, world, province_countries, countries):
+def write_provinces_json(region, world, province_countries, countries, occupation=None):
     """provinces.json: uma entrada por id global com área > 0 em qualquer camada.
 
     Centroide (x, y) e área vêm da camada MUNDIAL (px globais 5000×2500);
     quando uma província só existe na região (pequena demais para o mundo),
-    usa a camada da região como fallback."""
+    usa a camada da região como fallback. `province_countries` já inclui os
+    ids sintéticos da ocupação (o dono é o alvo); `occupation` só troca o
+    `country`/cor das províncias inteiras que mudaram de dono."""
     region_ids = region["province_ids"]
     world_ids = world["province_ids"]
     total = len(province_countries)
     country_by_tag = {c["tag"]: c for c in countries}
+    country_override = {}
+    for spec in occupation or []:
+        if spec["mode"] == "whole":
+            country_override[spec["pid"]] = spec["target"]
 
     def centroid_of(ids_lo, grid):
         counts = np.bincount(ids_lo.ravel(), minlength=total + 1)
@@ -953,7 +1062,7 @@ def write_provinces_json(region, world, province_countries, countries):
 
         lon = grid.lon0 + (col + 0.5) / grid.width * (grid.lon1 - grid.lon0)
         lat = grid.lat1 - (row + 0.5) / grid.height * (grid.lat1 - grid.lat0)
-        adm0 = province_countries[pid - 1]
+        adm0 = country_override.get(pid) or province_countries[pid - 1]
         game_tag = GAME_TAGS.get(adm0)
         nation = game_tag if game_tag else adm0
         country = country_by_tag.get(adm0)
@@ -1078,7 +1187,7 @@ def main():
     print(f"países={len(countries)} | nações apagadas={len(ATLAS_REMOVED)}")
 
     # Uma lista ÚNICA de províncias admin-1; id global = índice 1..N.
-    provinces, province_countries, province_bboxes = read_admin1_all()
+    provinces, province_countries, province_bboxes, iso_codes = read_admin1_all()
     print(f"províncias admin-1 no mundo={len(provinces)}")
     # O id GLOBAL não muda (contrato do dataset). Só o DONO muda (fusão) e a
     # presença no raster (nação apagada).
@@ -1086,6 +1195,20 @@ def main():
     province_countries = [ATLAS_OWNER.get(tag, tag) for tag in province_countries]
     kept_ids = {index + 1 for index, tag in enumerate(original_countries)
                 if tag not in ATLAS_REMOVED}
+
+    # Ocupação russa (world_nation_curation.OCCUPIED_REGIONS): reatribui o dono
+    # por província e cria um id sintético para a parte ocupada das províncias
+    # divididas. Os ids novos entram DEPOIS do último admin-1, na ordem da
+    # fonte, então a regeneração é determinística.
+    occupation = plan_occupation(iso_codes, province_bboxes)
+    new_ids = sorted(spec["new_id"] for spec in occupation if spec["new_id"])
+    for new_id in new_ids:
+        if new_id != len(province_countries) + 1:
+            raise SystemExit("ocupação: alocação de id fora de ordem")
+        province_countries.append(OCCUPIED_REGIONS["target"])
+    if occupation:
+        print(f"ocupação: {len(occupation)} província(s) reatribuída(s), "
+              f"{len(new_ids)} id(s) novo(s) para a parte ocupada")
 
     region_shapes, region_countries, region_ids = select_region(
         provinces, province_countries, province_bboxes, REGION)
@@ -1110,18 +1233,19 @@ def main():
     world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
                         world_shapes, world_countries, world_ids, supersample=SUPERSAMPLE,
                         band_rows=512, color_step=max(WORLD_W // 4096, 1),
-                        return_removed=True, islands=True)
+                        return_removed=True, islands=True, occupation=occupation)
 
     region = build_layer("region", REGION, REGION_W, countries,
                          region_shapes, region_countries, region_ids,
                          supersample=SUPERSAMPLE,
                          removed_reference=(world["removed_grid"],
-                                            world["removed_mask"]))
+                                            world["removed_mask"]),
+                         occupation=occupation)
     with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
         json.dump(nation_anchors(region, countries), handle, indent="\t")
         handle.write("\n")
 
-    write_provinces_json(region, world, province_countries, countries)
+    write_provinces_json(region, world, province_countries, countries, occupation)
     write_minimap(world)
     write_removed_land(removed_parts)
     write_removed_islets(world["removed_mask"], world["removed_grid"])
