@@ -52,8 +52,8 @@
 		"province_controller": "ARG"
 	},
 	"PRV000014": {
-		"province_owner": "ESB",
-		"province_controller": "ESB"
+		"province_owner": "CYP",
+		"province_controller": "CYP"
 	},
 	"PRV000015": {
 		"province_owner": "CYP",
@@ -2756,8 +2756,8 @@
 		"province_controller": "UGA"
 	},
 	"PRV000693": {
-		"province_owner": "USG",
-		"province_controller": "USG"
+		"province_owner": "CUB",
+		"province_controller": "CUB"
 	},
 	"PRV000694": {
 		"province_owner": "CUB",
@@ -6484,8 +6484,8 @@
 		"province_controller": "IND"
 	},
 	"PRV001627": {
-		"province_owner": "CYN",
-		"province_controller": "CYN"
+		"province_owner": "CYP",
+		"province_controller": "CYP"
 	},
 	"PRV001628": {
 		"province_owner": "CYP",
@@ -6500,16 +6500,16 @@
 		"province_controller": "KAS"
 	},
 	"PRV001631": {
-		"province_owner": "KAB",
-		"province_controller": "KAB"
+		"province_owner": "KAZ",
+		"province_controller": "KAZ"
 	},
 	"PRV001632": {
 		"province_owner": "SYR",
 		"province_controller": "SYR"
 	},
 	"PRV001633": {
-		"province_owner": "WSB",
-		"province_controller": "WSB"
+		"province_owner": "CYP",
+		"province_controller": "CYP"
 	},
 	"PRV001634": {
 		"province_owner": "CYP",

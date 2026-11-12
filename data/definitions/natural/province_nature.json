@@ -318,7 +318,7 @@
 			}
 		},
 		"14": {
-			"nation": "ESB",
+			"nation": "CYP",
 			"climate": "subtropical_steppe",
 			"temp_c": 19.2,
 			"precip_mm": 407,
@@ -37210,7 +37210,7 @@
 			}
 		},
 		"1627": {
-			"nation": "CYN",
+			"nation": "CYP",
 			"climate": "temperate_steppe",
 			"temp_c": 19.4,
 			"precip_mm": 403,
@@ -37302,7 +37302,7 @@
 			}
 		},
 		"1631": {
-			"nation": "KAB",
+			"nation": "KAZ",
 			"climate": "temperate_desert",
 			"temp_c": 8.7,
 			"precip_mm": 122,
@@ -37348,7 +37348,7 @@
 			}
 		},
 		"1633": {
-			"nation": "WSB",
+			"nation": "CYP",
 			"climate": "subtropical_steppe",
 			"temp_c": 19.6,
 			"precip_mm": 388,

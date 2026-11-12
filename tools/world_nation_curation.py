@@ -207,6 +207,25 @@ REMOVED_UNOWNED_AREAS = {
     "SGS": "Geórgia do Sul e Sandwich do Sul",
 }
 
+# Enclaves admin-0 do Natural Earth que NÃO existem em nations_source.csv (não
+# têm linha no roster e por isso ficavam bege no mapa político), mas são terra
+# cercada por UMA nação do cenário. O dono é o país que os cerca — a mesma
+# regra do Baikonur, que fica KAZ apesar do arrendamento à Rússia.
+#
+# Varredura que define a lista (raster `world_province.png` + `world_sdf.png`,
+# 2026-11-12): blobs de terra cujo `nation` não está no roster e cujos únicos
+# vizinhos de terra (ignorando outros blobs sem dono) são UMA nação. Ficam de
+# fora, declarados: Kosovo (ALB/MKD/MNE/SRB), Somalilândia (DJI/ETH/SOM),
+# Sudão do Sul (6 vizinhos), Siachen (CHN/IND/PAK), Antártida (0 vizinhos) e
+# as ilhas minúsculas CLP/CSI/IOA (0 vizinhos) — nenhum é enclave de uma nação.
+UNOWNED_ENCLAVES = {
+    "KAB": "KAZ",  # Baikonur (cosmódromo arrendado à Rússia; província 1631)
+    "USG": "CUB",  # Base Naval de Guantánamo (arrendada aos EUA)
+    "CYN": "CYP",  # Chipre do Norte (de facto; o cenário tem só a ilha CYP)
+    "ESB": "CYP",  # Dhekelia (base soberana do Reino Unido dentro de Chipre)
+    "WSB": "CYP",  # Akrotiri (base soberana do Reino Unido dentro de Chipre)
+}
+
 # Decisões explícitas acima do limiar: o relatório tem de declará-las.
 EXPLICIT_OVERRIDES = {
     "PYF": "Pedido do usuário (Polinésia Francesa): apagar por inteiro",
@@ -280,7 +299,10 @@ def atlas_owner_map() -> dict:
     para NED em `write_provinces_json`).
     """
     overrides = {"NED": "NLD"}
-    return {tag: overrides.get(target, target) for tag, target in TRANSFERS.items()}
+    owners = {tag: overrides.get(target, target) for tag, target in TRANSFERS.items()}
+    # Enclaves sem nação no roster passam ao país que os cerca (UNOWNED_ENCLAVES).
+    owners.update(UNOWNED_ENCLAVES)
+    return owners
 
 
 def atlas_removed() -> set:

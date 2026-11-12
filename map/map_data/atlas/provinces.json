@@ -213,12 +213,12 @@
 		},
 		{
 			"id": 14,
-			"country": "ESB",
-			"nation": "ESB",
+			"country": "CYP",
+			"nation": "CYP",
 			"color": [
-				184,
-				172,
-				142
+				199,
+				178,
+				152
 			],
 			"x": 2968.9,
 			"y": 764.1,
@@ -9001,8 +9001,8 @@
 		},
 		{
 			"id": 693,
-			"country": "USG",
-			"nation": "USG",
+			"country": "CUB",
+			"nation": "CUB",
 			"color": [
 				199,
 				178,
@@ -21117,12 +21117,12 @@
 		},
 		{
 			"id": 1627,
-			"country": "CYN",
-			"nation": "CYN",
+			"country": "CYP",
+			"nation": "CYP",
 			"color": [
+				199,
 				178,
-				186,
-				176
+				152
 			],
 			"x": 2967.0,
 			"y": 760.0,
@@ -21169,8 +21169,8 @@
 		},
 		{
 			"id": 1631,
-			"country": "KAB",
-			"nation": "KAB",
+			"country": "KAZ",
+			"nation": "KAZ",
 			"color": [
 				184,
 				172,
@@ -21195,12 +21195,12 @@
 		},
 		{
 			"id": 1633,
-			"country": "WSB",
-			"nation": "WSB",
+			"country": "CYP",
+			"nation": "CYP",
 			"color": [
-				184,
-				172,
-				142
+				199,
+				178,
+				152
 			],
 			"x": 2957.9,
 			"y": 769.5,
