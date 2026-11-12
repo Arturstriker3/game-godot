@@ -53,12 +53,13 @@ Curadoria r2 (2026-11-12)
 Ilhas remotas: saem Saint-Denis (Reunião), Fort-de-France (Martinica),
 Mamoudzou (Mayotte), Port Louis (Maurício), Port Mathurin (Rodrigues),
 Longyearbyen (Svalbard), Angra do Heroísmo (Açores), Funchal (Madeira),
-Ogasawara, Hagåtña (Guam), San Andrés, Hanga Roa (Páscoa) e as cinco cidades da
-Polinésia Francesa. Com as cidades fora, a regra de ilhas do atlas converte a
-terra em mar (as grandes — Reunião, Svalbard, Bioko — têm caixa explícita em
+Ogasawara, San Andrés, Hanga Roa (Páscoa) e as cinco cidades da Polinésia
+Francesa. Com as cidades fora, a regra de ilhas do atlas converte a terra em
+mar (as grandes — Reunião, Svalbard, Bioko — têm caixa explícita em
 `tools/build_atlas_layers.py`). Malta fica só com Valletta (Victoria, em Gozo,
 sai), e a Groenlândia fica com Nuuk + Ilulissat (sítio UNESCO; Aasiaat,
-Qaqortoq e Sisimiut saem).
+Qaqortoq e Sisimiut saem). A r3 devolveu Hagåtña (Guam), Naha (Okinawa) e
+manteve Miyakojima.
 
 Cidades novas (16): Brest (BLR) e Białystok (POL) na fronteira; Gdańsk (POL)
 com porto; Kaliningrado (RUS) com porto em Baltiysk; Lviv (UKR); Sevastopol
@@ -72,6 +73,28 @@ Pendência de território: Sevastopol, Donetsk e Mariupol pertencem a RUS como
 cidade, mas a província admin-1 do atlas continua UKR. O jogo hoje pinta o
 território pela cidade de mesma `home_nation`; como a cidade é RUS e a província
 é UKR, ela fica com a cidade e sem a província até o usuário ajustar a frente.
+
+Curadoria r3 (2026-11-12)
+-------------------------
+Ilhas devolvidas: **Okinawa** (Naha, `JPN-NAH`, com porto), **Miyakojima**
+(cidade `JPN-MIY` já existia; a ilha é mantida e ganha seed) e **Guam**
+(`GUM-HAG`, Hagåtña, com porto em Apra Harbor; Guam volta a ser território dos
+EUA em `world_nation_curation.py`). As três ficam no atlas e no `nav_mask` por
+`ISLAND_KEEP_SEEDS` + cidade/porto.
+
+Cidades novas: **Oradea** (`ROU-ORA`, fronteira com a Hungria) e **Ruse**
+(`BGR-RUS`, no Danúbio, a leste de Bucareste).
+
+Microestados (cidades): as cidades dos microestados anexados continuam no
+cenário como cidade do anexador, exceto quando estão coladas a outra cidade
+(< 60 km). Distâncias medidas no plano do jogo: Vaticano–Roma **5 km** (sai,
+`VAT-VATI`), Mônaco–Gênova 142 km, Andorra-a-Velha–Toulouse 121 km, San
+Marino–Roma 226 km, Vaduz–Zürich 77 km (ficam; são a cidade do anexador).
+
+Portos dos ex-microestados: `ITA-ROM`/`ITA-ROME` passam a Roma (`ITA-ROM`) e
+`ITA-PAD` passa para a cidade italiana que administra o território do porto
+(Milão, `ITA-MIL` — Pádua/Veneza não estão no roster). O mapa de `port_of`
+fica em `PORT_OF_OVERRIDES`.
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -91,7 +114,6 @@ EXCLUDED_CITIES = {
     "PRT-ANG": "Angra do Heroísmo (Açores): arquipélago removido do mapa",
     "PRT-FUN": "Funchal (Madeira): ilha removida do mapa",
     "JPN-OGA": "Ogasawara: ilhas removidas do mapa",
-    "GUM-HAG": "Hagåtña (Guam): território removido",
     "COL-SAN": "San Andrés: ilha removida do mapa",
     "CHL-HAN": "Hanga Roa (Ilha de Páscoa): ilha removida do mapa",
     "PYF-PAP": "Papeete (Polinésia Francesa): território removido por inteiro",
@@ -104,6 +126,19 @@ EXCLUDED_CITIES = {
     "GRL-AAS": "Aasiaat: Groenlândia fica com Nuuk + Ilulissat",
     "GRL-QAQ": "Qaqortoq: Groenlândia fica com Nuuk + Ilulissat",
     "GRL-SIS": "Sisimiut: Groenlândia fica com Nuuk + Ilulissat",
+    # Curadoria r3 (2026-11-12): microestados fundidos em ITA/FRA/ESP/CHE.
+    # Só sai a cidade colada a outra (< 60 km). Vaticano fica a 5 km de Roma;
+    # Mônaco (142 km de Gênova), Andorra-a-Velha (121 km de Toulouse), San
+    # Marino (226 km de Roma) e Vaduz (77 km de Zürich) continuam como cidade
+    # do anexador — não há outra cidade no mesmo núcleo.
+    "VAT-VATI": "Cidade do Vaticano: 5 km de Roma (mesmo núcleo urbano)",
+}
+
+# Cidades legadas (as 40 do cenário da fase 1) que a curadoria remove: o
+# contrato de 40 passa a exigir `40 - len(LEGACY_EXCLUDED)` e a cidade sai do
+# cenário. Hoje só o Vaticano — o resto do bloco legado continua intacto.
+LEGACY_EXCLUDED = {
+    "VAT-VATI": "colada a Roma (5 km); cidade passa a ser ITA-ROM",
 }
 
 # Nomes normalizados (só [a-z0-9]) por nação: pega a mesma cidade caso uma
@@ -121,11 +156,11 @@ EXCLUDED_CITY_NAMES = {
     "NOR": {"longyearbyen"},
     "PRT": {"angradoheroismo", "funchal"},
     "JPN": {"ogasawara"},
-    "GUM": {"hagatna"},
     "COL": {"sanandres"},
     "CHL": {"hangaroa"},
     "PYF": {"papeete", "vaitoare", "otepa", "atuona", "rikitea"},
     "GRL": {"aasiaat", "qaqortoq", "sisimiut"},
+    "VAT": {"vaticancity"},
 }
 
 # Capital do jogo por nação quando a capital do GeoNames é uma cidade excluída
@@ -588,7 +623,121 @@ FORCED_CITIES = [
         "legacy": "no",
         "initial_farm_tons": "",
     },
+    # ---------------------------------------------------------------- r3 (2026-11-12)
+    # Ilhas devolvidas: Okinawa e Guam ganham cidade + porto; Miyakojima já
+    # tinha cidade (JPN-MIY) e é mantida com seed no atlas.
+    {
+        "nation": "JPN",
+        "id": "JPN-NAH",
+        "name_en": "Naha",
+        "name_pt": "Naha",
+        "name_es": "Naha",
+        "lat": 26.2124,
+        "lon": 127.6809,
+        "population": 317625,
+        "population_year": 2020,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "japan",
+        "pop_src": "city_proper",
+        "note": ("curadoria r3: capital de Okinawa e maior cidade da ilha "
+                 "(pedido do usuário); porto real de Naha na costa oeste "
+                 "(port_of = JPN-NAH)"),
+        "source": ("Statistics Bureau of Japan — censo 2020, Naha-shi "
+                   "(317.625 hab.); coordenadas 26.2124N 127.6809E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "USA",
+        "id": "GUM-HAG",
+        "name_en": "Hagåtña",
+        "name_pt": "Hagåtña",
+        "name_es": "Agaña",
+        "lat": 13.4744,
+        "lon": 144.7504,
+        "population": 943,
+        "population_year": 2020,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "guam",
+        "pop_src": "city_proper",
+        "note": ("curadoria r3: capital de Guam, devolvida como território dos "
+                 "EUA (pedido do usuário); porto comercial real em Apra Harbor "
+                 "(port_of = GUM-HAG). A população é a do CDP de Hagåtña, não a "
+                 "da ilha"),
+        "source": ("U.S. Census Bureau — 2020 Census of Guam, Hagåtña CDP "
+                   "(943 hab.); coordenadas 13.4744N 144.7504E; Apra Harbor "
+                   "13.4430N 144.6520E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "ROU",
+        "id": "ROU-ORA",
+        "name_en": "Oradea",
+        "name_pt": "Oradea",
+        "name_es": "Oradea",
+        "lat": 47.0722,
+        "lon": 21.9211,
+        "population": 183105,
+        "population_year": 2021,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "continent",
+        "pop_src": "city_proper",
+        "note": ("curadoria r3: capital do condado de Bihor, a ~10 km da "
+                 "fronteira húngara (pedido do usuário); fecha o noroeste "
+                 "romeno entre Cluj-Napoca e a fronteira"),
+        "source": ("INS — censo 2021 (183.105 hab.); coordenadas "
+                   "47.0722N 21.9211E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "BGR",
+        "id": "BGR-RUS",
+        "name_en": "Ruse",
+        "name_pt": "Ruse",
+        "name_es": "Ruse",
+        "lat": 43.8486,
+        "lon": 25.9540,
+        "population": 123134,
+        "population_year": 2021,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "continent",
+        "pop_src": "city_proper",
+        "note": ("curadoria r3: maior cidade búlgara do Danúbio, a ~65 km a "
+                 "leste de Bucareste (pedido do usuário); o Danúbio é a "
+                 "fronteira BGR-ROU, então a cidade encosta na fronteira "
+                 "(como Oradea, decisão explícita do usuário)"),
+        "source": ("NSI Bulgária — censo 2021 (123.134 hab.); coordenadas "
+                   "43.8486N 25.9540E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
 ]
+
+# Portos cujo `port_of` não pode ser inferido (a cidade de mesmo nome não
+# existe no roster): mapa id do porto -> id da cidade na FONTE
+# (`cities_source.csv`). A promoção traduz o alvo para o id final do cenário
+# com o mesmo `plan_city_ids` das cidades (ITA-ROME -> ITA-ROM). O build falha
+# se o alvo não existir na fonte ou for de outra nação.
+PORT_OF_OVERRIDES = {
+    # Uma das duas entradas de Roma no `ports.csv`; ambas passam a apontar para
+    # a cidade Roma (eram VAT-VATI, removida na r3 por estar a 5 km de Roma).
+    "ITA-ROM": "ITA-ROME",
+    "ITA-ROME": "ITA-ROME",
+    # Pádua/Veneza não estão no roster. O porto fica no litoral de Veneza e o
+    # território (Veneto) é administrado pela cidade italiana mais próxima,
+    # Milão — a mesma regra de atribuição de província do jogo.
+    "ITA-PAD": "ITA-MILA",
+}
 
 # Portos que entram sempre. O ponto é a costa real (não o centro da cidade):
 # o mapa usa `port_of` para o badge da cidade e o nav_mask alcança a célula.
@@ -658,5 +807,28 @@ FORCED_PORTS = [
         "port_of": "RUS-SEV",
         "source": ("baía de Sevastopol, mar Negro (44.610N 33.520E); "
                    "port_of = RUS-SEV"),
+    },
+    # ---------------------------------------------------------------- r3 (2026-11-12)
+    {
+        "nation": "JPN",
+        "id": "JPN-NAH",
+        "name": "Naha",
+        "lat": 26.2167,
+        "lon": 127.6667,
+        "landmass": "japan",
+        "port_of": "JPN-NAH",
+        "source": ("porto de Naha, costa oeste de Okinawa "
+                   "(26.2167N 127.6667E); port_of = JPN-NAH"),
+    },
+    {
+        "nation": "USA",
+        "id": "GUM-HAG",
+        "name": "Hagåtña",
+        "lat": 13.4430,
+        "lon": 144.6520,
+        "landmass": "guam",
+        "port_of": "GUM-HAG",
+        "source": ("Apra Harbor, porto comercial de Guam "
+                   "(13.443N 144.652E); port_of = GUM-HAG"),
     },
 ]

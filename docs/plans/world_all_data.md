@@ -741,3 +741,113 @@ id/dono ausente como mar (GAME_STATE §4).
 # idem com --focus=UKR-LVI / MDG-ANT / ITA-CAG e --run=curation_r2/{ukraine_poland,indian_ocean_west,mediterranean_west}
 ```
 
+## 17. Curadoria r3 — Okinawa, Miyako, Guam, Oradea, Ruse e portos da Itália (2026-11-12, t64)
+
+Rodada sobre os mesmos mecanismos da r2 (`tools/world_nation_curation.py`,
+`tools/world_city_curation.py`, `ISLAND_KEEP_SEEDS` em
+`tools/build_atlas_layers.py`). O roster do cenário fica com **177 nações, 802
+cidades e 144 portos** (`data/definitions/scenario/*.json`); o atlas tem
+**4.223 províncias** (+1: Guam voltou como província dos EUA) e o
+`nav_mask.png` ganhou **48 células de terra** (11 cheias + 37 de costa) sem
+perder nenhuma.
+
+### 17.1 Ilhas devolvidas
+
+As três entram no atlas **e** no `nav_mask` por `ISLAND_KEEP_SEEDS` (mesma
+decisão nas duas ferramentas) + cidade/porto no cenário. Okinawa (1.206 km²) e
+Guam (549 km²) ficam abaixo do limiar de 2.000 km² e sem o seed seriam
+removidas; Miyakojima (159 km²) já estava na lista de seeds da r2 por ter a
+cidade `JPN-MIY` e continua.
+
+| ilha | cidade | id | pop. (fonte) | porto | `port_of` |
+|---|---|---|---:|---|---|
+| Okinawa | Naha | `JPN-NAH` | 317.625 (censo 2020, Statistics Bureau of Japan) | Naha, costa oeste (26,2167N 127,6667E) | `JPN-NAH` |
+| Miyakojima | Miyakojima | `JPN-MIY` | 54.908 (já no roster; GeoNames 2026) | — | — |
+| Guam | Hagåtña | `GUM-HAG` | 943 (2020 Census of Guam, CDP) | Apra Harbor (13,443N 144,652E) | `GUM-HAG` |
+
+Guam volta a ser **território dos EUA**: `GUM` saiu de `REMOVED_TERRITORIES`
+e entrou em `MERGED_TERRITORIES` (`GUM → USA`), o mesmo destino da r1. A
+província admin-1 de Guam (id 3074) reaparece com `nation = USA`; a população
+da cidade é a do CDP de Hagåtña (943), não a da ilha (153.836), porque o modelo
+de cidade é o núcleo urbano.
+
+### 17.2 Cidades novas
+
+| cidade | id | nação | pop. (fonte) | coordenadas | nota |
+|---|---|---|---:|---|---|
+| Oradea | `ROU-ORA` | ROU | 183.105 (INS, censo 2021) | 47,0722N 21,9211E | capital de Bihor, ~10 km da fronteira húngara |
+| Ruse | `BGR-RUS` | BGR | 123.134 (NSI, censo 2021) | 43,8486N 25,9540E | maior cidade búlgara do Danúbio, ~65 km de Bucareste |
+
+As duas encostam em fronteira (Oradea com a Hungria; Ruse com a Romênia, cujo
+limite é o próprio Danúbio). São **decisão explícita do usuário**, registrada no
+`note` de cada entrada; a regra de fronteira de 40 km vale para a seleção
+automática, não para `FORCED_CITIES`.
+
+### 17.3 Microestados: cidade duplicada só sai se estiver colada
+
+Regra aplicada: cidade de microestado anexado continua no cenário como cidade do
+anexador, **exceto** se estiver a < 60 km de outra cidade (mesmo núcleo urbano).
+Distâncias medidas no plano do jogo:
+
+| cidade | id | nação | vizinha mais próxima | km | decisão |
+|---|---|---|---|---:|---|
+| Cidade do Vaticano | `VAT-VATI` | ITA | Roma (`ITA-ROM`) | 5,0 | **removida** |
+| Mônaco | `MCO-MONA` | FRA | Gênova (`ITA-GEN`) | 141,9 | mantida |
+| Andorra-a-Velha | `AND-AND` | ESP | Toulouse (`FRA-TLS`) | 121,1 | mantida |
+| San Marino | `SMR-SANM` | ITA | Roma (`ITA-ROM`) | 226,2 | mantida |
+| Vaduz | `LIE-VADU` | CHE | Zürich (`CHE-ZUR`) | 77,2 | mantida (não citada no pedido, mesmo critério) |
+
+A saída do Vaticano é a **única exceção ao contrato legado** (as 40 cidades da
+fase 1): `LEGACY_EXCLUDED` em `world_city_curation.py` declara a exceção e
+`build_world_cities.py` passa a exigir `40 - len(LEGACY_EXCLUDED)` = 39.
+
+### 17.4 Portos dos ex-microestados
+
+| porto | antes (`port_of`) | depois | motivo |
+|---|---|---|---|
+| `ITA-ROM` | `VAT-VATI` | `ITA-ROM` | porto de Roma (Ostia/Tibre) |
+| `ITA-ROME` | `VAT-VATI` | `ITA-ROM` | segunda entrada de Roma; aponta para a mesma cidade |
+| `ITA-PAD` | `SMR-SANM` | `ITA-MIL` | Pádua/Veneza não estão no roster; o porto fica no litoral de Veneza e o território (Veneto) é administrado pela cidade italiana mais próxima, Milão — a mesma regra de província do jogo |
+
+O mapa fica em `PORT_OF_OVERRIDES` (ids da **fonte**; a promoção traduz para o
+id final com o mesmo `plan_city_ids` das cidades). O build valida que o alvo
+existe e é da mesma nação; `assign_port_of` só aceita o override nesse caso.
+
+### 17.5 Donetsk/Mariupol (RUS em província UKR) — mantido, documentado
+
+Decisão do usuário nesta rodada: **não mexer no território**; o ajuste da frente
+é feito depois. `RUS-DON` e `RUS-MAR` continuam com `nation = RUS` dentro da
+província 926 (dona **UKR**, atribuída a `UKR-KHA`) e seguem sem província
+própria — a pendência permanece declarada em `GAME_STATE.md` §15 e na §16.2.
+
+### 17.6 Como reproduzir
+
+```powershell
+# pipeline completo (na ordem)
+python tools/build_atlas_layers.py
+python tools/generate_nav_mask.py
+python tools/reconstruct_natural_inputs.py --prune
+python tools/compute_province_areas.py
+python tools/compute_territory_areas.py
+python tools/build_province_nature.py
+python tools/build_resource_map.py
+python tools/build_world_cities.py --write-scenario
+python tools/apply_traditional_colors.py --refresh-adjacency
+python tools/build_scenario_data.py
+python tools/validate_scenario_data.py
+& $godot --headless --path . --import
+
+# testes e capturas
+& $godot --headless --path . --script res://tools/territory_test.gd
+& $godot --headless --path . --script res://tools/nav_strait_test.gd
+& $godot --headless --path . --script res://tools/economy_integration_test.gd
+& $godot --headless --path . --script res://tools/map_frame_test.gd
+& $godot --path . res://tools/map_capture.tscn -- --set=map3d --mode=political --tag=r3 --focus=JPN-NAH --run=curation_r3/okinawa_taiwan --width=1920 --height=1080
+# idem com --focus=ROU-BUC e --run=curation_r3/romenia_bulgaria
+```
+
+Conferência rápida do atlas/nav (pixel): Naha e Hagåtña com `world_sdf.r > 128`
+(terra), `removed_islands.png = 0` e `removed_nations.png = 0`; `nav_mask.png`
+com célula de terra (128/255) nos três seeds. Nenhuma célula de terra do
+`nav_mask` muda para água nesta rodada — só as 48 devolvidas.
+

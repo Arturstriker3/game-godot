@@ -828,6 +828,18 @@
     "capital": false
   },
   {
+    "id": "BGR-RUS",
+    "nation": "BGR",
+    "home_nation": "BGR",
+    "name": "Ruse",
+    "population": 123134.0,
+    "production": 36.9,
+    "x": 2860.5,
+    "y": 641.0,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "BGR-SOF",
     "nation": "BGR",
     "home_nation": "BGR",
@@ -3696,6 +3708,18 @@
     "capital": true
   },
   {
+    "id": "GUM-HAG",
+    "nation": "USA",
+    "home_nation": "USA",
+    "name": "Hagåtña",
+    "population": 943.0,
+    "production": 0.3,
+    "x": 4510.4,
+    "y": 1062.9,
+    "landmass": "guam",
+    "capital": false
+  },
+  {
     "id": "GUY-GEO",
     "nation": "GUY",
     "home_nation": "GUY",
@@ -4772,6 +4796,18 @@
     "production": 699.7,
     "x": 4401.5,
     "y": 761.4,
+    "landmass": "japan",
+    "capital": false
+  },
+  {
+    "id": "JPN-NAH",
+    "nation": "JPN",
+    "home_nation": "JPN",
+    "name": "Naha",
+    "population": 317625.0,
+    "production": 95.3,
+    "x": 4273.3,
+    "y": 885.9,
     "landmass": "japan",
     "capital": false
   },
@@ -7152,6 +7188,18 @@
     "capital": false
   },
   {
+    "id": "ROU-ORA",
+    "nation": "ROU",
+    "home_nation": "ROU",
+    "name": "Oradea",
+    "population": 183105.0,
+    "production": 54.9,
+    "x": 2804.5,
+    "y": 596.2,
+    "landmass": "continent",
+    "capital": false
+  },
+  {
     "id": "RUS-ARK",
     "nation": "RUS",
     "home_nation": "RUS",
@@ -9226,18 +9274,6 @@
     "y": 676.9,
     "landmass": "asia",
     "capital": true
-  },
-  {
-    "id": "VAT-VATI",
-    "nation": "ITA",
-    "home_nation": "ITA",
-    "name": "Vatican City",
-    "population": 829.0,
-    "production": 0.2,
-    "x": 2673.0,
-    "y": 668.0,
-    "landmass": "continent",
-    "capital": false
   },
   {
     "id": "VCT-KIN",

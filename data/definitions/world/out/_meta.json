@@ -39,7 +39,6 @@
         "PRT-ANG": "Angra do Heroísmo (Açores): arquipélago removido do mapa",
         "PRT-FUN": "Funchal (Madeira): ilha removida do mapa",
         "JPN-OGA": "Ogasawara: ilhas removidas do mapa",
-        "GUM-HAG": "Hagåtña (Guam): território removido",
         "COL-SAN": "San Andrés: ilha removida do mapa",
         "CHL-HAN": "Hanga Roa (Ilha de Páscoa): ilha removida do mapa",
         "PYF-PAP": "Papeete (Polinésia Francesa): território removido por inteiro",
@@ -49,7 +48,8 @@
         "PYF-RIK": "Rikitea (Polinésia Francesa): território removido por inteiro",
         "GRL-AAS": "Aasiaat: Groenlândia fica com Nuuk + Ilulissat",
         "GRL-QAQ": "Qaqortoq: Groenlândia fica com Nuuk + Ilulissat",
-        "GRL-SIS": "Sisimiut: Groenlândia fica com Nuuk + Ilulissat"
+        "GRL-SIS": "Sisimiut: Groenlândia fica com Nuuk + Ilulissat",
+        "VAT-VATI": "Cidade do Vaticano: 5 km de Roma (mesmo núcleo urbano)"
       },
       "forced": [
         "EGY-MAT",
@@ -71,7 +71,11 @@
         "ESP-PMI",
         "FRA-AJA",
         "ITA-CAG",
-        "ITA-BAR"
+        "ITA-BAR",
+        "JPN-NAH",
+        "GUM-HAG",
+        "ROU-ORA",
+        "BGR-RUS"
       ],
       "capital_overrides": {
         "ISR": "ISR-TLV",
@@ -83,7 +87,9 @@
         "RUS-KGD",
         "TWN-KAO",
         "RUS-MAR",
-        "RUS-SEV"
+        "RUS-SEV",
+        "JPN-NAH",
+        "GUM-HAG"
       ]
     },
     "nation_curation": {
@@ -209,6 +215,17 @@
           "action": "merged",
           "target": "DNK",
           "below_threshold": false,
+          "override": ""
+        },
+        {
+          "tag": "GUM",
+          "name": "Guam",
+          "status": "territory",
+          "population": 168999,
+          "area_km2": 549.0,
+          "action": "merged",
+          "target": "USA",
+          "below_threshold": true,
           "override": ""
         },
         {
@@ -399,17 +416,6 @@
           "target": "",
           "below_threshold": true,
           "override": ""
-        },
-        {
-          "tag": "GUM",
-          "name": "Guam",
-          "status": "territory",
-          "population": 168999,
-          "area_km2": 549.0,
-          "action": "removed",
-          "target": "",
-          "below_threshold": true,
-          "override": "Pedido do usuário (Guam): apagar, apesar de território nomeado"
         },
         {
           "tag": "IMN",
@@ -1025,16 +1031,16 @@
   },
   "counts": {
     "nations": 177,
-    "cities": 799,
-    "ports": 142,
-    "buildings": 799,
-    "i18n_keys": 1295,
-    "legacy_cities": 40,
+    "cities": 802,
+    "ports": 144,
+    "buildings": 802,
+    "i18n_keys": 1300,
+    "legacy_cities": 39,
     "legacy_ports": 18,
     "scenario_ports": 142,
-    "cities_with_pt_exonym": 251,
+    "cities_with_pt_exonym": 250,
     "cities_with_es_exonym": 257,
-    "cities_pt_same_as_en": 525
+    "cities_pt_same_as_en": 529
   },
   "top10": [
     {
@@ -1043,7 +1049,7 @@
     },
     {
       "nation": "USA",
-      "cities": 30
+      "cities": 31
     },
     {
       "nation": "CHN",

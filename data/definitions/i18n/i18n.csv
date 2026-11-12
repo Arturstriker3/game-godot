@@ -119,6 +119,7 @@ city.name.BGD-PAB,Pābna,Pābna,Pābna
 city.name.BGD-RAM,Rāmganj,Rāmganj,Rāmganj
 city.name.BGD-RAN,Rangpur,Rangpur,Rangpur
 city.name.BGR-PLO,Plovdiv,Plovdiv,Plovdiv
+city.name.BGR-RUS,Ruse,Ruse,Ruse
 city.name.BGR-SOF,Sófia,Sofia,Sofía
 city.name.BHR-MAN,Manama,Manama,Manama
 city.name.BHS-LUC,Lucaya,Lucaya,Lucaya
@@ -358,6 +359,7 @@ city.name.GRL-ILU,Ilulissat,Ilulissat,Ilulissat
 city.name.GRL-NUU,Nuuk,Nuuk,Nuuk
 city.name.GTM-COB,Cobán,Cobán,Cobán
 city.name.GTM-GUA,Cidade da Guatemala,Guatemala City,Ciudad de Guatemala
+city.name.GUM-HAG,Hagåtña,Hagåtña,Agaña
 city.name.GUY-GEO,Georgetown,Georgetown,Georgetown
 city.name.GUY-LIN,Linden,Linden,Linden
 city.name.HKG-HON,Hong Kong,Hong Kong,Hong Kong
@@ -448,6 +450,7 @@ city.name.JPN-KOB,Kōbe,Kobe,Kōbe
 city.name.JPN-KYO,Quioto,Kyoto,Kioto
 city.name.JPN-MIY,Miyako-jima,Miyakojima,Isla Miyako
 city.name.JPN-NAG,Nagoia,Nagoya,Nagoya
+city.name.JPN-NAH,Naha,Naha,Naha
 city.name.JPN-OSA,Osaka,Osaka,Osaka
 city.name.JPN-SAP,Sapporo,Sapporo,Sapporo
 city.name.JPN-TOK,Tóquio,Tokyo,Tokio
@@ -646,6 +649,7 @@ city.name.QAT-MAD,Al Shamal,Madīnat ash Shamāl,Madinat ash Shamal
 city.name.ROU-BUC,Bucareste,Bucharest,Bucarest
 city.name.ROU-CLJ,Cluj-Napoca,Cluj-Napoca,Cluj-Napoca
 city.name.ROU-IAS,Iași,Iaşi,Iași
+city.name.ROU-ORA,Oradea,Oradea,Oradea
 city.name.RUS-ARK,Arcangel,Arkhangel’sk,Arcángel
 city.name.RUS-BIL,Bilibino,Bilibino,Bilibino
 city.name.RUS-BIR,Birobidjan,Birobidzhan,Birobidzhán
@@ -819,7 +823,6 @@ city.name.USA-WAS,Washington,Washington,Washington
 city.name.UZB-AND,Andijon,Andijon,Andijon
 city.name.UZB-MUY,Mŭynoq,Mŭynoq,Mŭynoq
 city.name.UZB-TAS,Tashkent,Tashkent,Taskent
-city.name.VAT-VATI,Cidade do Vaticano,Vatican City,Ciudad del Vaticano
 city.name.VCT-KIN,Kingstown,Kingstown,Kingstown
 city.name.VEN-CBL,Ciudad Bolívar,Ciudad Bolívar,Ciudad Bolívar
 city.name.VEN-CCS,Caracas,Caracas,Caracas
@@ -1487,6 +1490,7 @@ port.name.GEO-BAT,Batumi,Batumi,Batumi
 port.name.GRC-ATH,Athens,Athens,Athens
 port.name.GRC-HER,Heraklion,Heraklion,Heraklion
 port.name.GRC-THE,Thessaloniki,Thessaloniki,Thessaloniki
+port.name.GUM-HAG,Hagåtña,Hagåtña,Hagåtña
 port.name.GUY-GEO,Georgetown,Georgetown,Georgetown
 port.name.HND-SAN,San Pedro Sula,San Pedro Sula,San Pedro Sula
 port.name.HRV-SPL,Split,Split,Split
@@ -1520,6 +1524,7 @@ port.name.JPN-HIR,Hiroshima,Hiroshima,Hiroshima
 port.name.JPN-KIT,Kitakyushu,Kitakyushu,Kitakyushu
 port.name.JPN-NAG,Nagoya,Nagoya,Nagoya
 port.name.JPN-NAGO,Nagoya,Nagoya,Nagoya
+port.name.JPN-NAH,Naha,Naha,Naha
 port.name.JPN-OKA,Okayama,Okayama,Okayama
 port.name.JPN-OSA,Osaka,Osaka,Osaka
 port.name.JPN-SAP,Sapporo,Sapporo,Sapporo

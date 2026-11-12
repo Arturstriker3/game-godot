@@ -46,6 +46,7 @@ GEO-BAT,Batumi,GEO,3078.3,671.7,continent,GEO-BAT
 GRC-ATH,Athens,GRC,2829.9,723.0,continent,GRC-ATH
 GRC-HER,Heraklion,GRC,2849.1,759.1,europe,GRC-HER
 GRC-THE,Thessaloniki,GRC,2818.9,685.7,continent,GRC-THE
+GUM-HAG,Hagåtña,USA,4509.1,1063.3,guam,GUM-HAG
 GUY-GEO,Georgetown,GUY,1692.3,1154.4,guiana,GUY-GEO
 HND-SAN,San Pedro Sula,HND,1275.6,1032.1,north_america,HND-SAN
 HRV-SPL,Split,HRV,2728.6,646.1,continent,HRV-SPL
@@ -69,16 +70,17 @@ IRL-DUB,Dublin,IRL,2413.6,509.3,ireland,IRL-DUB
 ISL-REY,Reykjavík,ISL,2196.3,359.8,iceland,ISL-REY
 ISL-REYK,Reykjanesbær,ISL,2187.2,361.6,iceland,ISL-REY
 ITA-NAP,Naples,ITA,2698.7,682.7,continent,ITA-NAP
-ITA-PAD,Padua,ITA,2666.9,619.8,continent,SMR-SANM
+ITA-PAD,Padua,ITA,2666.9,619.8,continent,ITA-MIL
 ITA-PAL,Palermo,ITA,2685.9,721.1,continent,ITA-PAL
-ITA-ROM,Rome,ITA,2673.0,669.2,continent,VAT-VATI
-ITA-ROME,Rome,ITA,2672.1,670.8,continent,VAT-VATI
+ITA-ROM,Rome,ITA,2673.0,669.2,continent,ITA-ROM
+ITA-ROME,Rome,ITA,2672.1,670.8,continent,ITA-ROM
 JPN-FUK,Fukuoka,JPN,4311.8,783.4,japan,JPN-FUK
 JPN-HAM,Hamamatsu,JPN,4413.1,768.1,japan,JPN-NAG
 JPN-HIR,Hiroshima,JPN,4339.9,772.4,japan,JPN-HIR
 JPN-KIT,Kitakyushu,JPN,4317.9,780.3,japan,JPN-FUK
 JPN-NAG,Nagoya,JPN,4401.6,761.4,japan,JPN-NAG
 JPN-NAGO,Nagoya,JPN,4400.0,762.9,japan,JPN-NAG
+JPN-NAH,Naha,JPN,4273.1,885.9,japan,JPN-NAH
 JPN-OKA,Okayama,JPN,4360.7,769.3,japan,JPN-KOB
 JPN-OSA,Osaka,JPN,4382.0,768.7,japan,JPN-OSA
 JPN-SAP,Sapporo,JPN,4463.2,652.2,japan,JPN-SAP

@@ -30,9 +30,11 @@ Regras (docs/plans/world_all_data.md):
     cor: tradicional (traditional_colors.csv) tem prioridade; vizinhos de terra
     com ΔE(Lab) ≥ 30 (piso 25) e RGB ≥ 0,16; conflito entre tradicionais muda só
     o TOM (matiz ±12°). Ver tools/nation_colors.py.
-    curadoria: tools/world_city_curation.py — EGY-POR/EGY-SUE, ISR-JER e
-    PSX-EAS saem; EGY-MAT, ISR-TLV, PSX-RAM e GRC-HER entram, com o porto
-    GRC-HER; vale no out/ e na promoção para o cenário.
+    curadoria: tools/world_city_curation.py — lista explícita de exclusões,
+    forçadas e portos; vale no out/ e na promoção para o cenário.
+    `PORT_OF_OVERRIDES` fixa o `port_of` dos portos que não têm cidade de
+    mesmo nome no roster (ITA-PAD) e `LEGACY_EXCLUDED` declara a cidade legada
+    removida (VAT-VATI).
 
 Uso:
     python tools/build_world_cities.py            # gera out/
@@ -55,7 +57,7 @@ from collections import Counter, defaultdict
 import nation_colors
 from world_city_curation import (
     CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
-    FORCED_PORTS,
+    FORCED_PORTS, LEGACY_EXCLUDED, PORT_OF_OVERRIDES,
 )
 from world_nation_curation import (
     KEEP_AREA_KM2, KEEP_POP, STRATEGIC_KEEP, audit_source, classify,
@@ -342,13 +344,24 @@ def plan_city_ids(cities_out, scenario_cities, legacy_ids):
     return mapping, stats
 
 
-def assign_port_of(cities, ports):
-    """Completa `port_of` com a cidade da MESMA nação mais próxima (km)."""
+def assign_port_of(cities, ports, overrides=None):
+    """Completa `port_of` com a cidade da MESMA nação mais próxima (km).
+
+    `overrides` (curadoria) decide os portos cuja cidade não existe no roster
+    (ITA-PAD) ou que herdam um id de microestado fundido (ITA-ROM). Os alvos já
+    vêm no id FINAL do cenário.
+    """
+    overrides = overrides or {}
     by_nation = defaultdict(list)
     for city in cities:
         by_nation[city["nation"]].append(city)
     result = {}
     for port in ports:
+        override = overrides.get(port["id"], "").strip()
+        if override and any(city["id"] == override
+                            for city in by_nation.get(port["nation"], [])):
+            result[port["id"]] = override
+            continue
         existing = port.get("port_of", "").strip()
         if existing:
             # `port_of` da fonte só vale se a cidade existe e é da MESMA nação;
@@ -408,7 +421,11 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
     final_cities = [{"id": (row["id"] if row["id"] in legacy_ids else mapping[row["id"]]),
                      "nation": row["nation"], "x": row["x"], "y": row["y"]}
                     for row in cities_out]
-    port_of = assign_port_of(final_cities, ports_out)
+    final_overrides = {}
+    for pid, target in PORT_OF_OVERRIDES.items():
+        final_overrides[pid] = (target if target in legacy_ids
+                                else mapping.get(target, target))
+    port_of = assign_port_of(final_cities, ports_out, final_overrides)
     ports_final = []
     for row in ports_out:
         ports_final.append({
@@ -525,6 +542,14 @@ def main():
     for spec in FORCED_PORTS:
         if spec["id"] not in out_port_ids:
             problems.append(f"curadoria: porto {spec['id']} ausente do out/")
+    for pid, target in sorted(PORT_OF_OVERRIDES.items()):
+        port = next((row for row in ports_src if row["id"] == pid), None)
+        if port is None:
+            problems.append(f"curadoria: porto {pid} de PORT_OF_OVERRIDES ausente da fonte")
+        elif not any(row["id"] == target and row["nation"] == port["nation"]
+                     for row in cities_src):
+            problems.append(f"curadoria: porto {pid} -> {target} inválido "
+                            "(cidade ausente ou de outra nação)")
 
     by_nation = defaultdict(list)
     for row in cities_src:
@@ -553,11 +578,18 @@ def main():
 
     # contrato legado: as 40 cidades com legacy=yes (id, coordenadas, população
     # e nação iguais às do cenário). VEN-PAY foi substituída por VEN-CBL, que
-    # ainda não existe no cenário (a promoção é outra tarefa).
+    # ainda não existe no cenário (a promoção é outra tarefa). A r3 tirou do
+    # bloco só o Vaticano (colado a Roma): `LEGACY_EXCLUDED` declara a exceção.
     legacy_cities = [r for r in cities_src if r["legacy"] == "yes"]
-    if len(legacy_cities) != 40:
-        problems.append(f"legado: {len(legacy_cities)} cidades com legacy=yes (esperado 40)")
+    expected_legacy = 40 - len(LEGACY_EXCLUDED)
+    if len(legacy_cities) != expected_legacy:
+        problems.append(f"legado: {len(legacy_cities)} cidades com legacy=yes "
+                        f"(esperado {expected_legacy})")
     found_ids = {r["id"] for r in legacy_cities}
+    for cid in sorted(LEGACY_EXCLUDED):
+        if cid in found_ids or any(r["id"] == cid for r in cities_src):
+            problems.append(f"legado: {cid} deveria estar fora da curadoria "
+                            f"({LEGACY_EXCLUDED[cid]})")
     for cid in found_ids:
         if cid not in scenario_cities:
             problems.append(f"legado: {cid} não está no cenário")

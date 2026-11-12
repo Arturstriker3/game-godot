@@ -414,6 +414,12 @@
     "output_tons_per_day": 98.8
   },
   {
+    "city_id": "BGR-RUS",
+    "id": "bgr_rus_wheat",
+    "name": "Ruse — trigo",
+    "output_tons_per_day": 36.9
+  },
+  {
     "city_id": "BGR-SOF",
     "id": "bgr_sof_wheat",
     "name": "Sófia — trigo",
@@ -1848,6 +1854,12 @@
     "output_tons_per_day": 298.5
   },
   {
+    "city_id": "GUM-HAG",
+    "id": "gum_hag_wheat",
+    "name": "Hagåtña — trigo",
+    "output_tons_per_day": 0.3
+  },
+  {
     "city_id": "GUY-GEO",
     "id": "geo_wheat",
     "name": "Georgetown — trigo",
@@ -2386,6 +2398,12 @@
     "id": "jpn_nag_wheat",
     "name": "Nagoia — trigo",
     "output_tons_per_day": 699.7
+  },
+  {
+    "city_id": "JPN-NAH",
+    "id": "jpn_nah_wheat",
+    "name": "Naha — trigo",
+    "output_tons_per_day": 95.3
   },
   {
     "city_id": "JPN-OSA",
@@ -3576,6 +3594,12 @@
     "output_tons_per_day": 113.7
   },
   {
+    "city_id": "ROU-ORA",
+    "id": "rou_ora_wheat",
+    "name": "Oradea — trigo",
+    "output_tons_per_day": 54.9
+  },
+  {
     "city_id": "RUS-ARK",
     "id": "rus_ark_wheat",
     "name": "Arcangel — trigo",
@@ -4612,12 +4636,6 @@
     "id": "uzb_tas_wheat",
     "name": "Tashkent — trigo",
     "output_tons_per_day": 593.4
-  },
-  {
-    "city_id": "VAT-VATI",
-    "id": "vati_wheat",
-    "name": "Cidade do Vaticano — trigo",
-    "output_tons_per_day": 0.2
   },
   {
     "city_id": "VCT-KIN",

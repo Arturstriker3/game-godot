@@ -423,6 +423,15 @@
     "port_of": "GRC-THE"
   },
   {
+    "id": "GUM-HAG",
+    "name": "Hagåtña",
+    "nation": "USA",
+    "x": 4509.1,
+    "y": 1063.3,
+    "landmass": "guam",
+    "port_of": "GUM-HAG"
+  },
+  {
     "id": "GUY-GEO",
     "name": "Georgetown",
     "nation": "GUY",
@@ -636,7 +645,7 @@
     "x": 2666.9,
     "y": 619.8,
     "landmass": "continent",
-    "port_of": "SMR-SANM"
+    "port_of": "ITA-MIL"
   },
   {
     "id": "ITA-PAL",
@@ -654,7 +663,7 @@
     "x": 2673.0,
     "y": 669.2,
     "landmass": "continent",
-    "port_of": "VAT-VATI"
+    "port_of": "ITA-ROM"
   },
   {
     "id": "ITA-ROME",
@@ -663,7 +672,7 @@
     "x": 2672.1,
     "y": 670.8,
     "landmass": "continent",
-    "port_of": "VAT-VATI"
+    "port_of": "ITA-ROM"
   },
   {
     "id": "JPN-FUK",
@@ -718,6 +727,15 @@
     "y": 762.9,
     "landmass": "japan",
     "port_of": "JPN-NAG"
+  },
+  {
+    "id": "JPN-NAH",
+    "name": "Naha",
+    "nation": "JPN",
+    "x": 4273.1,
+    "y": 885.9,
+    "landmass": "japan",
+    "port_of": "JPN-NAH"
   },
   {
     "id": "JPN-OKA",

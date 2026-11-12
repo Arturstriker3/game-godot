@@ -19,8 +19,13 @@ Rodada r2 (2026-11-12): o usuário devolveu as pequenas nações do Caribe
 Dominica, São Cristóvão e Névis) como nações jogáveis — exceção estratégica
 regional, apesar de todas ficarem abaixo do limiar. Aruba e Curaçao continuam
 territórios e são fundidos na Holanda (NED). As Malvinas voltam como território
-britânico (GBR) com a cidade de Stanley. Maurício, Guam e a Polinésia Francesa
-saem por inteiro; os dois últimos eram territórios fundidos e passam a apagados.
+britânico (GBR) com a cidade de Stanley. Maurício e a Polinésia Francesa saem
+por inteiro e passam a apagados.
+
+Rodada r3 (2026-11-12): Guam volta como território dos EUA (mesmo destino da
+r1: fundido em USA, com Hagåtña e porto em Apra Harbor). A ilha de Okinawa
+(Naha) e Miyakojima voltam ao mapa como cidades japonesas; as três são mantidas
+no atlas e no nav_mask pelos seeds de `build_atlas_layers.py`.
 
 Microestados europeus não viram mar nem nação própria: o território é
 ANEXADO ao vizinho e as províncias passam a ser do vizinho.
@@ -134,13 +139,13 @@ MERGED_TERRITORIES = {
     "FLK": "GBR",  # Malvinas (r2: território britânico, Stanley no cenário)
     "CUW": "NED",  # Curaçao (r2: território holandês)
     "ABW": "NED",  # Aruba (r2: território holandês)
+    "GUM": "USA",  # Guam (r3: devolvido como território dos EUA, Hagåtña no cenário)
 }
 
 # Territórios minúsculos removidos: a terra vira mar.
 REMOVED_TERRITORIES = {
     "GIB": "Gibraltar",
     "BMU": "Bermudas",
-    "GUM": "Guam",
     "VIR": "Ilhas Virgens Americanas",
     "VGB": "Ilhas Virgens Britânicas",
     "FRO": "Ilhas Faroé",
@@ -178,7 +183,6 @@ REMOVED_UNOWNED_AREAS = {
 
 # Decisões explícitas acima do limiar: o relatório tem de declará-las.
 EXPLICIT_OVERRIDES = {
-    "GUM": "Pedido do usuário (Guam): apagar, apesar de território nomeado",
     "PYF": "Pedido do usuário (Polinésia Francesa): apagar por inteiro",
     **{tag: "Pedido do usuário: ilha sem hinterlândia, apagar apesar do critério"
        for tag in sorted(EXPLICIT_REMOVE_OVERRIDE)},

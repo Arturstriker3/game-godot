@@ -103,11 +103,11 @@ def main() -> int:
     agriculture = agriculture_doc["territories"]
     crops = list(bng.CROPS.keys())
 
-    # r2: territórios que saíram do cenário por inteiro (MUS, PYF, GUM, ATF,
-    # SGS...). Os territórios FUNDIDOS (FLK->GBR, ABW/CUW->NED) continuam e
-    # herdam a nação-mãe; os apagados não têm província no atlas e não podem
-    # gerar marcador de recurso no mar. A lista vem da curadoria, não é
-    # inventada.
+    # r2/r3: territórios que saíram do cenário por inteiro (MUS, PYF, ATF,
+    # SGS...). Os territórios FUNDIDOS (FLK->GBR, ABW/CUW->NED, GUM->USA na r3)
+    # continuam e herdam a nação-mãe; os apagados não têm província no atlas e
+    # não podem gerar marcador de recurso no mar. A lista vem da curadoria, não
+    # é inventada.
     removed_natural = atlas_removed() - set(MERGED_TERRITORIES)
     removed_tids = {
         tid for tid, entry in territories.items()

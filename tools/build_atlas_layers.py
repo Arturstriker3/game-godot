@@ -84,10 +84,11 @@ WORLD_TO_GLOBAL = GLOBAL_W / WORLD_W
 #   o pathfinding do canal (33,5–34,7E 27–28N).
 # - r2 (2026-11-12): ilhas grandes que a regra de área (<2.000 km²) não pega e
 #   que o usuário mandou remover. Todas ficam sem cidade/porto no cenário. As
-#   ilhas <2.000 km² (Maurício, Mayotte, Martinica, Açores, Madeira, Guam,
+#   ilhas <2.000 km² (Maurício, Mayotte, Martinica, Açores, Madeira,
 #   Ogasawara, Páscoa, San Andrés, Polinésia) continuam saindo pela regra de
-#   área; as que viraram país/território removido (MUS, PYF, GUM) já saem em
-#   `read_admin0` via `atlas_removed()`.
+#   área; as que viraram país/território removido (MUS, PYF) já saem em
+#   `read_admin0` via `atlas_removed()`. Guam voltou na r3 (território USA) e
+#   Okinawa/Miyakojima ficam pelos seeds abaixo.
 REMOVED_ISLETS = [
     {"name": "suez_gulf_shadwan", "lon": 33.98, "lat": 27.51,
      "radius_deg": 0.18, "max_px": 4096},
@@ -125,8 +126,15 @@ COASTAL_KEEP_KM = 3.0
 # Exceções que não têm entidade no cenário: as Malvinas voltaram como território
 # britânico (GBR) com Stanley; o seed garante a ilha mesmo se o recorte de costa
 # ficar ambíguo. As demais ilhas com cidade/porto se mantêm por `load_keep_points`.
+# Curadoria de ilhas devolvidas (r3, 2026-11-12): Okinawa (Naha), Miyakojima
+# (cidade `JPN-MIY`) e Guam (Hagåtña, território dos EUA) ficam no atlas e no
+# nav_mask. As três têm cidade/porto no cenário; o seed garante a ilha mesmo
+# quando o build roda antes da promoção do `cities.json` (ordem do pipeline).
 ISLAND_KEEP_SEEDS = [
     ("falklands_stanley", -58.90, -51.70),
+    ("okinawa_naha", 127.68, 26.21),
+    ("miyakojima", 125.28, 24.79),
+    ("guam_hagatna", 144.75, 13.47),
 ]
 
 # Faixas usadas só no relatório/log (a remoção é global). A primeira que

@@ -46,6 +46,7 @@ GEO-BAT,Batumi,GEO,3078.3,671.7,continent,
 GRC-ATH,Athens,GRC,2829.9,723.0,continent,
 GRC-HER,Heraklion,GRC,2849.1,759.1,europe,GRC-HER
 GRC-THE,Thessaloniki,GRC,2818.9,685.7,continent,
+GUM-HAG,Hagåtña,USA,4509.1,1063.3,guam,GUM-HAG
 GUY-GEO,Georgetown,GUY,1692.3,1154.4,guiana,
 HND-SAN,San Pedro Sula,HND,1275.6,1032.1,north_america,HND-SAN
 HRV-SPL,Split,HRV,2728.6,646.1,continent,
@@ -79,6 +80,7 @@ JPN-HIR,Hiroshima,JPN,4339.9,772.4,japan,
 JPN-KIT,Kitakyushu,JPN,4317.9,780.3,japan,
 JPN-NAG,Nagoya,JPN,4401.6,761.4,japan,
 JPN-NAGO,Nagoya,JPN,4400.0,762.9,japan,JPN-NAGO
+JPN-NAH,Naha,JPN,4273.1,885.9,japan,JPN-NAH
 JPN-OKA,Okayama,JPN,4360.7,769.3,japan,
 JPN-OSA,Osaka,JPN,4382.0,768.7,japan,
 JPN-SAP,Sapporo,JPN,4463.2,652.2,japan,

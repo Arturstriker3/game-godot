@@ -68,6 +68,7 @@ BGD-PAB,bgd_pab_wheat,Pābna — trigo,56.0
 BGD-RAM,bgd_ram_wheat,Rāmganj — trigo,16.6
 BGD-RAN,bgd_ran_wheat,Rangpur — trigo,309.4
 BGR-PLO,bgr_plo_wheat,Plovdiv — trigo,98.8
+BGR-RUS,bgr_rus_wheat,Ruse — trigo,36.9
 BGR-SOF,bgr_sof_wheat,Sófia — trigo,345.8
 BHR-MAN,bhr_man_wheat,Manama — trigo,44.1
 BHS-LUC,bhs_luc_wheat,Lucaya — trigo,14.0
@@ -307,6 +308,7 @@ GRL-ILU,grl_ilu_wheat,Ilulissat — trigo,1.3
 GRL-NUU,grl_nuu_wheat,Nuuk — trigo,4.4
 GTM-COB,gtm_cob_wheat,Cobán — trigo,63.6
 GTM-GUA,gtm_gua_wheat,Cidade da Guatemala — trigo,298.5
+GUM-HAG,gum_hag_wheat,Hagåtña — trigo,0.3
 GUY-GEO,geo_wheat,Georgetown — trigo,37.7
 GUY-LIN,guy_lin_wheat,Linden — trigo,13.4
 HKG-HON,hkg_hon_wheat,Hong Kong — trigo,2218.8
@@ -397,6 +399,7 @@ JPN-KOB,jpn_kob_wheat,Kōbe — trigo,457.5
 JPN-KYO,jpn_kyo_wheat,Quioto — trigo,439.1
 JPN-MIY,jpn_miy_wheat,Miyako-jima — trigo,16.5
 JPN-NAG,jpn_nag_wheat,Nagoia — trigo,699.7
+JPN-NAH,jpn_nah_wheat,Naha — trigo,95.3
 JPN-OSA,jpn_osa_wheat,Osaka — trigo,826.2
 JPN-SAP,jpn_sap_wheat,Sapporo — trigo,592.1
 JPN-TOK,jpn_tok_wheat,Tóquio — trigo,2920.0
@@ -595,6 +598,7 @@ QAT-MAD,qat_mad_wheat,Al Shamal — trigo,1.6
 ROU-BUC,rou_buc_wheat,Bucareste — trigo,563.1
 ROU-CLJ,rou_clj_wheat,Cluj-Napoca — trigo,86.0
 ROU-IAS,rou_ias_wheat,Iași — trigo,113.7
+ROU-ORA,rou_ora_wheat,Oradea — trigo,54.9
 RUS-ARK,rus_ark_wheat,Arcangel — trigo,104.9
 RUS-BIL,rus_bil_wheat,Bilibino — trigo,1.7
 RUS-BIR,rus_bir_wheat,Birobidjan — trigo,22.1
@@ -768,7 +772,6 @@ USA-WAS,usa_was_wheat,Washington — trigo,206.9
 UZB-AND,uzb_and_wheat,Andijon — trigo,224.3
 UZB-MUY,uzb_muy_wheat,Mŭynoq — trigo,4.0
 UZB-TAS,uzb_tas_wheat,Tashkent — trigo,593.4
-VAT-VATI,vati_wheat,Cidade do Vaticano — trigo,0.2
 VCT-KIN,vct_kin_wheat,Kingstown — trigo,7.4
 VEN-CBL,ven_cbl_wheat,Ciudad Bolívar — trigo,123.8
 VEN-CCS,ccs_wheat,Caracas — trigo,772.2

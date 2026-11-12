@@ -26,6 +26,8 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
+from build_atlas_layers import ISLAND_KEEP_SEEDS
+
 ROOT = Path(__file__).resolve().parents[1]
 PROVINCES_TXT = ROOT / "data" / "definitions" / "provinces.txt"
 PROVINCES_PNG = ROOT / "map" / "map_data" / "provinces.png"
@@ -36,6 +38,9 @@ REMOVED_LAND_PNG = ROOT / "map" / "map_data" / "atlas" / "removed_nations.png"
 ## decisão é tomada UMA vez no atlas (grade de ~2,4 km); repetir o limiar aqui
 ## em células de 16 km faria a máscara de navegação divergir do mapa visual.
 REMOVED_ISLANDS_PNG = ROOT / "map" / "map_data" / "atlas" / "removed_islands.png"
+## Atlas (campo de distância da costa). A base publicada `nav_mask.png` só perde
+## terra; ilha que volta ao atlas é reimportada daqui (ver `restore_islands`).
+WORLD_SDF_PNG = ROOT / "map" / "map_data" / "atlas" / "world_sdf.png"
 BLOCK = 2
 
 ## Mesmo limiar do `MASK_WATER_MAX` do trade_convoys.gd.
@@ -261,6 +266,57 @@ def remove_removed_nations(mask: np.ndarray) -> int:
     return cleared
 
 
+def restore_islands(mask: np.ndarray) -> int:
+    """Reintegra ao nav_mask a terra das ilhas devolvidas pela curadoria.
+
+    A `nav_mask.png` publicada é a base e o gerador só tira terra (estreitos,
+    ilhas removidas); uma ilha que volta ao atlas não reapareceria sozinha.
+    Para cada seed de `ISLAND_KEEP_SEEDS` (a MESMA decisão de
+    `build_atlas_layers.py`), lê o `world_sdf.png` (>128 = terra), isola o
+    componente de terra do seed e devolve as células de navegação
+    correspondentes (255 = terra cheia, 128 = costa), sem nunca "secar" água.
+    """
+    if not WORLD_SDF_PNG.exists():
+        print("world_sdf.png ausente: ilhas devolvidas nao restauradas")
+        return 0
+    land = np.asarray(Image.open(WORLD_SDF_PNG).convert("RGB"))[:, :, 0] > 128
+    atlas_h, atlas_w = land.shape
+    nav_h, nav_w = mask.shape
+    cell_px = (atlas_w / nav_w) * (atlas_h / nav_h)
+    radius = max(1, int(round(3.0 / 360.0 * atlas_w)))  # janela de 3° no seed
+    raised = 0
+    for name, lon, lat in ISLAND_KEEP_SEEDS:
+        sx = int((lon + 180.0) / 360.0 * atlas_w)
+        sy = int((90.0 - lat) / 180.0 * atlas_h)
+        x0, x1 = max(0, sx - radius), min(atlas_w, sx + radius + 1)
+        y0, y1 = max(0, sy - radius), min(atlas_h, sy + radius + 1)
+        sub = land[y0:y1, x0:x1]
+        if not sub.any():
+            print("ilha devolvida %s: seed sem terra no atlas" % name)
+            continue
+        labels, _count = ndimage.label(sub)
+        ys, xs = np.nonzero(sub)
+        nearest = int(np.argmin((ys + y0 - sy) ** 2 + (xs + x0 - sx) ** 2))
+        component = labels[ys[nearest], xs[nearest]]
+        keep = labels[ys, xs] == component
+        rows = ys[keep] + y0
+        cols = xs[keep] + x0
+        nav_y = np.minimum((rows * nav_h / atlas_h).astype(np.int64), nav_h - 1)
+        nav_x = np.minimum((cols * nav_w / atlas_w).astype(np.int64), nav_w - 1)
+        counts = np.bincount(nav_y * nav_w + nav_x,
+                             minlength=nav_h * nav_w).reshape(nav_h, nav_w)
+        fraction = counts / cell_px
+        target = np.where(fraction >= 0.999, 255,
+                          np.where(fraction >= 0.5, 128, 0)).astype(np.uint8)
+        grow = target > mask
+        if grow.any():
+            mask[grow] = target[grow]
+            raised += int(grow.sum())
+            print("ilha devolvida %s: %d celula(s) de terra"
+                  % (name, int(grow.sum())))
+    return raised
+
+
 def build_mask() -> np.ndarray:
     water = load_water_colors()
     pixels = np.asarray(Image.open(PROVINCES_PNG).convert("RGB"))
@@ -286,6 +342,10 @@ def main() -> None:
         mask = np.asarray(Image.open(OUTPUT).convert("L")).copy()
     else:
         raise SystemExit("sem provinces.png e sem nav_mask.png: nada a gerar")
+
+    restored = restore_islands(mask)
+    if restored:
+        print("ilhas devolvidas: %d celula(s) de terra restauradas" % restored)
 
     opened = carve_straits(mask)
     if opened:

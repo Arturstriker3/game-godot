@@ -62213,21 +62213,21 @@
 		"2916": {
 			"nation": "JPN",
 			"climate": "subtropical_humid",
-			"temp_c": 23.5,
-			"precip_mm": 2176,
-			"altitude_m": 32,
+			"temp_c": 22.9,
+			"precip_mm": 2130,
+			"altitude_m": 9,
 			"soil_type": "cambisol",
 			"fertility": 0.62,
 			"water": 1.0,
-			"forest_cover": 0.367,
-			"cultivable": 0.484,
+			"forest_cover": 0.369,
+			"cultivable": 0.483,
 			"crops": {
 				"wheat": 0.0,
-				"rice": 0.879,
+				"rice": 0.886,
 				"maize": 0.0,
 				"potato": 0.0,
 				"soy": 0.0,
-				"sugarcane": 0.875,
+				"sugarcane": 0.885,
 				"coffee": 0.0,
 				"fruit": 0.0,
 				"cotton": 0.0
@@ -63379,6 +63379,29 @@
 				"soy": 0.0,
 				"sugarcane": 0.0,
 				"coffee": 0.0,
+				"fruit": 0.0,
+				"cotton": 0.0
+			}
+		},
+		"3074": {
+			"nation": "USA",
+			"climate": "tropical_seasonal_humid",
+			"temp_c": 26.7,
+			"precip_mm": 2171,
+			"altitude_m": 100,
+			"soil_type": "acrisol",
+			"fertility": 0.48,
+			"water": 1.0,
+			"forest_cover": 0.478,
+			"cultivable": 0.342,
+			"crops": {
+				"wheat": 0.0,
+				"rice": 0.774,
+				"maize": 0.0,
+				"potato": 0.0,
+				"soy": 0.0,
+				"sugarcane": 0.762,
+				"coffee": 0.01,
 				"fruit": 0.0,
 				"cotton": 0.0
 			}
