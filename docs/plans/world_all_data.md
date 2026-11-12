@@ -240,6 +240,12 @@ presente, VEN-CBL ausente, ΔE de vizinhos < 30, id duplicado. Estado atual:
 
 ## 13. Curadoria do mapa: ilhas removidas do Egeu (2026-11)
 
+> **Substituída pela §15 (t59).** A caixa `REMOVED_ISLAND_REGIONS` descrita
+> abaixo foi trocada pela regra global de área < 2.000 km². Esta seção fica
+> como registro da rodada anterior: 61 dos 70 componentes continuam fora, 9
+> mantêm terra (fusão com massa maior/costa) e Gökçeada e a ilha de Mármara,
+> antes preservadas, saem. A lista canônica atual é `islet_removed.csv`.
+
 `REMOVED_ISLAND_REGIONS` (em `tools/build_atlas_layers.py` e
 `tools/generate_nav_mask.py`) zera todo componente de terra inteiro dentro da
 caixa **23,35–30,05E / 35,25–41,05N** com área **≤ 3.000 km²**, exceto Creta,
@@ -483,4 +489,176 @@ python tools/generate_nav_mask.py              # nav_mask.png (terra removida vi
 python tools/build_province_nature.py          # province_areas/nature e depósitos
 python tools/reconstruct_natural_inputs.py --prune
 ```
+
+## 15. Curadoria global de ilhas: limiar de 2.000 km² (2026-11, t59)
+
+**Regra aprovada pelo usuário.** Todo componente de terra **isolado** (8-vizinhos)
+com área **< 2.000 km²** vira mar no atlas e no `nav_mask.png`. A decisão é tomada
+**uma vez**, na camada mundial (`WORLD_W = 8192`, supersample 2 → 16.384×8.192,
+~2,4 km/texel em latitude), e a camada da região recebe a mesma máscara
+(`apply_removed_mask`), para o mapa regional e o global nunca divergirem.
+Substitui a caixa do Egeu da §13 (ver nota no fim desta seção).
+
+Implementação: `remove_small_islands()` em `tools/build_atlas_layers.py`;
+`ISLAND_MAX_KM2 = 2000.0`. Constantes vizinhas:
+
+| Constante | Valor | Papel |
+|---|---:|---|
+| `ISLAND_MAX_KM2` | 2.000 | limiar de área real (km²) |
+| `COASTAL_KEEP_KM` | 3,0 | ilha a menos disso de massa maior fica (costa colada) |
+| `ISLAND_KEEP_SEEDS` | `[]` | exceções manuais (nome, lon, lat) |
+| `KEEP_ENTITY_RADIUS` | city 2 / port 2 / deposit 1 texel | tolerância do seed da entidade |
+
+O que **fica**:
+
+1. ilha com **cidade, porto/capital ou jazida** do cenário (`load_keep_points()` lê
+   `data/definitions/scenario/cities.json`, `ports.json` e
+   `data/definitions/natural/deposits.json` a cada build — cidade nova numa ilha
+   pequena a mantém automaticamente);
+2. ilha a **≤ 3 km** de uma massa de terra maior (proteção do litoral: Eubeia,
+   Samos, ilhas costeiras que abririam buraco na costa);
+3. componente que **encosta na borda** da camada (continente cortado pelo raster);
+4. seeds explícitos de `ISLAND_KEEP_SEEDS`.
+
+O que **sai**: todo o resto abaixo de 2.000 km² — inclusive ilhas com população
+real, desde que não tenham cidade/porto/jazida no cenário (ex.: Lesbos, Simeulue,
+Fuerteventura, Natuna Besar; ver lista completa em `docs/plans/islet_removed.csv`).
+
+### 15.1 Números do build aplicado (t59)
+
+- **1.632 componentes**, **350.020 km²** somados (0 componentes ≥ 2.000 km²).
+- 120.883 px na grade mundial do build (16.384×8.192).
+- 191 componentes ≥ 500 km² concentram 188.503 km² (54%); 753 ≥ 100 km²
+  concentram 311.892 km² (89%); mediana 83,4 km²; menor 2,0 km²;
+  maior 1.979,7 km² (Simeulue).
+- Splits gravados: `map/map_data/atlas/removed_islands.png` (1 = terra virou mar,
+  8.192×4.096), lido por `tools/generate_nav_mask.py`.
+
+| Faixa (`ISLAND_REGIONS`) | Removidos | km² | mantidos: entidade | costa | borda/seed |
+|---|---:|---:|---:|---:|---:|
+| Pacífico | 568 | 90.646 | 20 | 63 | 5 |
+| Outros (fora das faixas) | 283 | 81.221 | 5 | 80 | 0 |
+| Sudeste Asiático | 259 | 60.817 | 14 | 14 | 0 |
+| Ártico | 206 | 58.965 | 3 | 64 | 0 |
+| Caribe | 99 | 19.440 | 5 | 6 | 0 |
+| Mediterrâneo | 86 | 18.351 | 2 | 11 | 0 |
+| Índico | 75 | 10.619 | 4 | 5 | 0 |
+| Norte da Europa | 56 | 9.962 | 0 | 14 | 0 |
+| **Total** | **1.632** | **350.020** | **53** | **257** | **5** |
+
+"Outros" e "Mediterrâneo" incluem as ilhas do Egeu da §13, agora decididas pela
+regra global (Creta e Eubeia ficam por área; Gökçeada e a ilha de Mármara saem
+por não ter entidade; Bozcaada/Tenedos funde-se à Anatólia no raster mundial).
+Shadwan (Golfo de Suez) **não** entra nesta conta: já era removido antes, por
+`REMOVED_ISLETS`, e o build real o apaga antes da regra de área.
+
+### 15.2 Os 15 maiores removidos
+
+Nome aproximado atribuído pelo centroide/bbox + gazetteer (GeoNames por país:
+`T.ISL/T.ISLS/T.ATOL`; casamento pelo ponto mais próximo do centroide dentro do
+bbox do componente, com desempate por nome de ilha × rochedo/ponta). A área é a
+medida no raster (ver 15.4). Lista completa, ordenada por área decrescente, em
+`docs/plans/islet_removed.csv` (1.632 linhas; colunas `rank`,
+`nome_aproximado`, `confianca`, `origem_nome`, `regiao`, `pais`, `tag`, `lon`,
+`lat`, `area_km2`, `pixels`, bbox, `cidade_proxima`, `cidade_km`, `gn_nome`,
+`gn_km`). Só os 15 abaixo foram conferidos um a um (bbox + Wikidata/artigo:
+`confianca=alta`); os demais são **aproximados** — `media` = o ponto do
+gazetteer caiu dentro do bbox do componente, `baixa` = veio de vizinho/cidade
+ou não houve casamento. Nome repetido em componentes diferentes só ocorre em
+8 casos (fragmentos do mesmo arquipélago).
+
+| # | Nome aproximado | País | lon | lat | km² |
+|---:|---|---|---:|---:|---:|
+| 1 | Simeulue | IDN | 96,066 | 2,645 | 1.979,7 |
+| 2 | Lesbos | GRC | 26,249 | 39,171 | 1.915,9 |
+| 3 | Bolshoy Begichev | RUS | 112,516 | 74,333 | 1.910,2 |
+| 4 | Charcot | ATA | −75,109 | −69,959 | 1.904,5 |
+| 5 | Natuna Besar (Bunguran) | IDN | 108,210 | 3,933 | 1.899,8 |
+| 6 | Ilhas Pagai (Norte e Sul) | IDN | 100,233 | −2,888 | 1.889,9 |
+| 7 | Mainland (Shetland) | GBR | −1,237 | 60,380 | 1.873,5 |
+| 8 | Vidal Gormaz | CHL | −74,790 | −52,030 | 1.873,1 |
+| 9 | Kunashir | RUS | 145,959 | 44,167 | 1.862,6 |
+| 10 | Fuerteventura | ESP | −14,043 | 28,403 | 1.822,0 |
+| 11 | Great Inagua | BHS | −73,349 | 21,080 | 1.810,2 |
+| 12 | Air Force | CAN | −74,087 | 67,925 | 1.803,7 |
+| 13 | Guadalupe | FRA | −61,561 | 16,238 | 1.788,2 |
+| 14 | Graham Bell | RUS | 64,150 | 80,918 | 1.731,8 |
+| 15 | Catanduanes | PHL | 124,231 | 13,789 | 1.727,6 |
+
+O componente é o que foi removido, não a ilha "oficial": em arquipélagos densos
+o raster funde ilhas vizinhas num só componente (Pagai do Norte + do Sul;
+Mainland + Yell/Unst nas Shetlands), e o nome é o da ilha principal.
+
+### 15.3 Como manter uma ilha (exceção manual)
+
+Duas formas, ambas **sem** mexer no código da regra:
+
+1. **Entidade no cenário (preferida):** registre cidade, porto ou jazida na ilha
+   (`cities.json`/`ports.json` em x/y do plano 5000×2500, ou `deposits.json` em
+   lon/lat). O build mantém a ilha automaticamente na próxima execução.
+2. **Seed explícito:** acrescente `("nome", lon, lat)` em `ISLAND_KEEP_SEEDS`
+   (`tools/build_atlas_layers.py`):
+
+```python
+ISLAND_KEEP_SEEDS = [
+    ("Samos", 26.815, 37.735),   # já fica pela costa; exemplo de formato
+    ("MinhaIlha", 12.345, -3.210),
+]
+```
+
+O seed usa o componente de terra mais próximo em até 3 texels (o centroide de
+uma ilha pequena pode cair na água). Seed fora da terra gera aviso
+`[ilhas:world] AVISO: seed ... caiu fora da terra` e não protege nada.
+
+### 15.4 Sanidade da área (latitudes altas)
+
+A área **não** é contada em pixels: `remove_small_islands()` soma
+`R²·dlon·dlat·cos(lat)` linha a linha na projeção equirretangular
+(`lat` do centro de cada linha). Sem o `cos(lat)`, um componente do Ártico a 80°N
+sairia ~5,8× maior. Verificação do build: o teto de área usado na triagem
+(`min_px_km2` com a latitude mais extrema do recorte) nunca deixa um componente
+passar como "pequeno" por engano em latitude alta.
+
+Limite conhecido: o raster mundial (~4,9 km/texel, supersample 2,4 km) **infla**
+ilhas pequenas em ~5–25% (1 texel de costa a mais em cada borda). Comparações
+com a área real: Simeulue 1.979 vs 1.754 (+13%), Lesbos 1.916 vs 1.633 (+17%),
+Fuerteventura 1.822 vs 1.660 (+10%), Catanduanes 1.728 vs 1.482 (+17%). O erro
+é para cima, então a regra é **conservadora**: nenhuma ilha acima de 2.000 km²
+reais foi removida; na prática o corte real fica em ~1.600–1.900 km². A soma de
+350.020 km² é a soma dessas áreas medidas (não de áreas oficiais).
+
+### 15.5 Como reproduzir e conferir
+
+```powershell
+# relatório seco da regra: não escreve nada, lista removidos e mantidos
+python tools/build_atlas_layers.py --report-islands
+
+# build completo (atlas + removed_islands.png) e máscara de navegação
+python tools/build_atlas_layers.py
+python tools/generate_nav_mask.py
+
+# o jogo usa o cache .godot/imported/: reimportar antes de capturar
+& $godot --headless --path . --import
+& $godot --path . res://tools/map_capture.tscn -- --set=map3d --mode=political --tag=after --focus=GRC-ATH
+```
+
+Conferências do build aplicado: `--report-islands` imprime
+`removidos 1632 componentes ... ~350020 km²`, a tabela por faixa de 15.1 e a
+lista dos 60 maiores; nenhum `mantém` pode ser de ilha com cidade/porto/jazida
+(o build aborta com `ERRO: ... ilha(s) com cidade/porto/jazida caíram na
+remoção`). Capturas: `docs/map_visual/islet_cleanup/{aegean_med,caribbean,
+indonesia_philippines,scandinavia_baltic}/` (d013/d026/d052/d120).
+
+### 15.6 Relação com a §13 (caixa do Egeu)
+
+A `REMOVED_ISLAND_REGIONS` (caixa 23,35–30,05E / 35,25–41,05N, ≤ 3.000 km²) foi
+**substituída** pela regra global desta seção em `build_atlas_layers.py` e
+`generate_nav_mask.py`. O resultado no Egeu **não** é idêntico: 61 dos 70
+componentes da §13 continuam removidos; 9 mantêm terra porque, no raster mundial
+de ~4,9 km/texel, fundem-se a uma massa maior (Samos com a Anatólia, Hidra com o
+Peloponeso) ou ficam pela proteção de costa, e 5 dos "ilhéus de 1 px" daquela
+rodada nem formam componente próprio na camada mundial. Creta e Eubeia continuam
+(área). Gökçeada e a ilha de Mármara, que a caixa mantinha por exceção, agora
+**saem** (menos de 2.000 km², sem entidade). Os números da §13 descrevem a
+rodada anterior; a lista canônica atual é `docs/plans/islet_removed.csv`.
 

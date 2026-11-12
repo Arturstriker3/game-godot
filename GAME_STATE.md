@@ -95,21 +95,34 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   - `paper_flat.png` 512×256 — textura neutra de papel (terreno do modo político); a base branca dos demais modos é desenhada por shader.
   - `atlas/world_color.png`, `atlas/world_sdf.png`, `atlas/region_color.png`, `atlas/region_sdf.png`, `atlas/minimap.png`, `atlas/nations.json` — camadas do mapa atlas geradas por `tools/build_atlas_layers.py` (Natural Earth 10m).
   - `nav_mask.png` 2500×1250 (terra/água/costa, pathfinding A* dos comboios).
-- **Curadoria do Egeu (2026-11):** `REMOVED_ISLAND_REGIONS` (em
-  `tools/build_atlas_layers.py` e `tools/generate_nav_mask.py`) removeu **70
-  componentes (16.050 px)** de terra do Egeu — todas as ilhas da caixa
-  23,35–30,05E / 35,25–41,05N, exceto Creta, Eubeia e as ilhas do Mármara — do
-  SDF/província/cor do atlas e do `nav_mask.png`; saíram também as províncias
-  `PRV002832`/`PRV002866` de `province_areas.json`, `provinces.txt`,
-  `data/history/provinces` e `data/history/territories`. Nenhuma cidade, porto
-  ou jazida foi afetada. Shadwan segue removido por `REMOVED_ISLETS`. O shader
-  (`atlas_owner` + `dyn_block`) agora trata id de província/dono ausente como
-  **mar/sem território** (nunca lê o texel 0, preto) e o `world_sdf` já é água
-  nas ilhas. **Atenção:** o jogo usa o cache `.godot/imported/`; depois de
-  regerar os PNGs do atlas é preciso rodar `godot --headless --import`, senão as
-  capturas continuam mostrando o mapa antigo. Lista completa em
-  `docs/plans/world_all_data.md` §13; evidência em
-  `docs/map_visual/aegean_clean/` (d013/d026/d052/d120, foco GRC-ATH).
+- **Curadoria global de ilhas < 2.000 km² (2026-11, t59):** a regra aprovada
+  pelo usuário substitui a antiga `REMOVED_ISLAND_REGIONS` (caixa do Egeu ≤
+  3.000 km²): **todo componente de terra isolado (8-vizinhos) com área <
+  2.000 km² vira mar** no atlas e no `nav_mask.png`. Decisão tomada uma vez na
+  camada mundial (`tools/build_atlas_layers.py::remove_small_islands`, 16.384×
+  8.192) e repetida na região por `apply_removed_mask`; `nav_mask` lê
+  `atlas/removed_islands.png` em `tools/generate_nav_mask.py`. Ficam: ilha com
+  cidade/porto/capital/jazida, ilha a ≤ 3 km de massa maior (costa colada),
+  componente na borda da camada e seeds de `ISLAND_KEEP_SEEDS`. **1.632
+  componentes, 350.020 km²**; nada ≥ 2.000 km² (maior: Simeulue, 1.979,7 km²);
+  por faixa: Pacífico 568, fora das faixas 283, Sudeste Asiático 259, Ártico
+  206, Caribe 99, Mediterrâneo 86, Índico 75, Norte da Europa 56. No Egeu, 61
+  dos 70 componentes da rodada anterior continuam fora; Gökçeada e a ilha de
+  Mármara, antes preservadas pela caixa, agora saem; Creta e Eubeia ficam por
+  área. A área é real (soma de `cos(lat)` por linha, não pixels); o raster
+  infla ilhas pequenas em ~5–25%, então o corte efetivo fica em ~1.600–1.900
+  km² reais (conservador). Nenhuma cidade, porto ou jazida foi afetada
+  (o build aborta se uma ilha com entidade cair na remoção). Lista completa,
+  nomes aproximados, números por região e como manter uma ilha via
+  `ISLAND_KEEP_SEEDS`: `docs/plans/world_all_data.md` §15 e
+  `docs/plans/islet_removed.csv` (1.632 linhas, ordem de área decrescente).
+  **Atenção:** o jogo usa o cache `.godot/imported/`; depois de regerar os PNGs
+  do atlas é preciso rodar `godot --headless --import`, senão as capturas
+  continuam mostrando o mapa antigo. Evidência: `docs/map_visual/islet_cleanup/`
+  (aegean_med, caribbean, indonesia_philippines, scandinavia_baltic;
+  d013/d026/d052/d120) e `docs/map_visual/aegean_clean/` (rodada anterior).
+  O shader (`atlas_owner` + `dyn_block`) trata id de província/dono ausente como
+  **mar/sem território** (nunca lê o texel 0, preto).
 - **Províncias/territórios/países:** `data/history/provinces/provinces.json` (14.402 províncias), `data/history/territories/territories.json` (737 territórios), `data/history/countries/` (193 JSON); `data/definitions/*.txt` restringidos a 4 países (NNN/GBR/FRA/DEU). O jogo ao vivo usa **8 nações** (GBR, FRA, DEU, NED, BEL, VEN, SUR, GUY).
 - **Base natural = 739 territórios:** 737 legados + **BHR `TRT000738`** e **QAT `TRT000739`**, criados por `tools/add_gulf_territories.py` (média de centróide das províncias desses países no atlas + clima real WorldClim pelo mesmo método do `apply_real_climate`). O script também reatribui os depósitos do Golfo ao país real: **North Field → QAT**, **Khuff/Awali → BHR**, **Ghawar → SAU** (antes Ghawar ficava em KWT e o North Field em KWT/SAU por centróide mais próximo). Roda **antes** de `apply_deposit_supplement.py` e é idempotente.
 - **Fronteiras:** legado = Voronoi + SDF via Jump Flooding Algorithm (`jfa.glsl`/`jfa_encode.glsl` + `map_texture_sdf.gd`); jogo = raster Natural Earth composto por shader.

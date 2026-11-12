@@ -27,6 +27,8 @@ Saídas em map/map_data/atlas/:
   nations.json      âncora do nome de cada nação jogável (pixels 5000x2500)
   removed_nations.png  L8  terra das nações apagadas pela curadoria (1 = mar
                     depois da remoção); lido por tools/generate_nav_mask.py
+  removed_islands.png L8  terra das ilhas pequenas removidas pela regra de
+                    área (1 = mar); lido por tools/generate_nav_mask.py
 
 Uso:
   python tools/build_atlas_layers.py
@@ -40,12 +42,14 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 
 import numpy as np
 import shapefile
 from PIL import Image, ImageDraw
 from scipy.ndimage import (binary_dilation as nd_dilate, distance_transform_edt,
-                           label as nd_label)
+                           find_objects as nd_objects, label as nd_label,
+                           sum as nd_sum)
 
 from world_nation_curation import atlas_owner_map, atlas_removed
 
@@ -83,32 +87,42 @@ REMOVED_ISLETS = [
      "radius_deg": 0.18, "max_px": 4096},
 ]
 
-# Ilhas do mar Egeu removidas por inteiro (curadoria 2026-11). Mesmo mecanismo
-# dos ilhotes, mas por REGIÃO: todo componente de terra inteiro dentro da caixa
-# e com área <= `max_km2` é zerado. Ficam de fora:
-#   - os componentes que encostam na borda da caixa (continente grego, Anatólia,
-#     Trácia e o norte do Peloponeso, que entram pela borda oeste);
-#   - os seeds de `keep`: Creta e Eubeia (pedido explícito) e as duas ilhas do
-#     mar de Mármara (Gökçeada/Imbros e Bozcaada/Tenedos são Egeu e saem; Marmara
-#     e Avşa ficam porque o Mármara não é o Egeu).
-# A caixa cobre o Egeu de 23,35E (a oeste das Cíclades, leste de Kythira) a
-# 30,05E (litoral turco) e de 35,25N (Creta, que sai pela borda sul) a 41,05N
-# (Trácia/Mármara). Nada no Jônico (a oeste de 23,35E) nem em Chipre é tocado.
-# `max_km2` = 3000: maior ilha do Egeu é Lesbos (1.633 km²); Creta (8.336) e
-# Eubeia (3.684) ficam acima do teto e ainda estão nos seeds.
-REMOVED_ISLAND_REGIONS = [
-    {
-        "name": "egeu",
-        "box": (23.35, 30.05, 35.25, 41.05),
-        "keep": [
-            ("crete", 24.90, 35.30),
-            ("euboea", 24.10, 38.60),
-            ("marmara", 27.62, 40.62),
-            ("marmara_avsa", 27.63, 40.455),
-        ],
-        "max_km2": 3000.0,
-    },
+# Curadoria global de ilhas pequenas (fase B, 2026-11). A regra é por LIMIAR
+# DE ÁREA, não por caixa: todo componente de terra ISOLADO (8-vizinhos) com
+# área < ISLAND_MAX_KM2 vira mar, no atlas e no nav_mask (este último lê
+# `removed_islands.png`, gerado aqui). Ficam:
+#   - ilhas com cidade, porto/capital ou jazida do cenário (`load_keep_points`);
+#   - ilhas a menos de COASTAL_KEEP_KM de uma massa de terra maior — ilhas
+#     costeiras coladas (Eubeia, Samos) não podem abrir buraco no litoral;
+#   - componentes que encostam na borda da camada (continente cortado);
+#   - seeds explícitos de ISLAND_KEEP_SEEDS (exceções sem entidade no cenário).
+# A área é calculada em km² reais na projeção equirretangular do atlas,
+# somando cos(lat) por linha — nunca em pixels. A decisão é tomada UMA vez, na
+# camada mundial; a camada da região recebe a mesma máscara (apply_removed_mask)
+# para o mapa regional e o global nunca divergirem.
+ISLAND_MAX_KM2 = 2000.0
+COASTAL_KEEP_KM = 3.0
+ISLAND_KEEP_SEEDS = []
+
+# Faixas usadas só no relatório/log (a remoção é global). A primeira que
+# contém o centroide vence; fora de todas = "Outros".
+ISLAND_REGIONS = [
+    ("Ártico", -180.0, 180.0, 66.5, 90.0),
+    ("Caribe", -90.0, -58.0, 8.0, 28.0),
+    ("Mediterrâneo", -6.0, 37.0, 30.0, 46.0),
+    ("Sudeste Asiático", 95.0, 142.0, -12.0, 24.0),
+    ("Pacífico", 110.0, 180.0, -50.0, 60.0),
+    ("Pacífico", -180.0, -70.0, -50.0, 60.0),
+    ("Índico", 40.0, 110.0, -45.0, 30.0),
+    ("Norte da Europa", -25.0, 35.0, 54.0, 72.0),
 ]
+
+# Entidades que mantêm a ilha onde estão. Cidade/porto: x/y do plano 5000x2500
+# do cenário. Jazida: lon/lat do MRDS/suplemento. Raio em texels para absorver
+# o arredondamento do raster (portos ficam na borda d'água).
+KEEP_ENTITY_RADIUS = {"city": 2, "port": 2, "deposit": 1}
+SCENARIO_DIR = os.path.join(ROOT, "data", "definitions", "scenario")
+NATURAL_DIR = os.path.join(ROOT, "data", "definitions", "natural")
 
 # Código do Natural Earth -> tag do jogo (o jogo usa NED para a Holanda).
 GAME_TAGS = {"GBR": "GBR", "FRA": "FRA", "DEU": "DEU", "NLD": "NED",
@@ -376,21 +390,18 @@ def remove_islets(owners, provinces, grid, specs):
                   f"em lon={lon:.3f} lat={lat:.3f}")
 
 
-def component_km2(grid, pixels, lat):
-    """Área aproximada (km²) de um componente de `pixels` na grade do atlas.
-
-    Mesma projeção equirretangular de `tools/compute_province_areas.py`."""
-    radius = 6371.0
-    dlon = math.radians((grid.lon1 - grid.lon0) / grid.width)
-    dlat = math.radians((grid.lat1 - grid.lat0) / grid.height)
-    return pixels * (radius ** 2) * math.cos(math.radians(lat)) * dlon * dlat
+def grid_pixel(grid, lon, lat):
+    """Pixel (x, y) do centro lon/lat na grade do atlas."""
+    x = int(round((lon - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width - 0.5))
+    y = int(round((grid.lat1 - lat) / (grid.lat1 - grid.lat0) * grid.height - 0.5))
+    return x, y
 
 
 def seed_label(labels, x, y, radius=3):
     """Id do componente de terra mais próximo do seed (tolerância em px).
 
-    Ilhas pequenas (Avşa, no Mármara) têm o centroide a 1-2 texels de um pixel
-    de terra; sem a tolerância o seed cairia na água e a ilha seria removida."""
+    Ilhas pequenas têm o centroide a 1-2 texels de um pixel de terra; sem a
+    tolerância o seed cairia na água e a ilha seria removida."""
     best = 0
     best_distance = None
     height, width = labels.shape
@@ -404,75 +415,256 @@ def seed_label(labels, x, y, radius=3):
     return best
 
 
-def remove_island_regions(owners, provinces, grid, specs, layer, keep_mask=False):
-    """Zera os componentes de terra inteiros dentro de uma região de curadoria.
+def island_region(lon, lat):
+    """Nome da faixa de relatório que contém o centroide (primeira vence)."""
+    for name, lon0, lon1, lat0, lat1 in ISLAND_REGIONS:
+        if lon0 <= lon <= lon1 and lat0 <= lat <= lat1:
+            return name
+    return "Outros"
 
-    Diferente de `remove_islets` (uma caixa pequena por ilhote), aqui a caixa é
-    o mar inteiro: cada componente INTEIRO dentro dela e com área <= `max_km2`
-    é removido, exceto os seeds de `keep`. Componente que encosta na borda da
-    caixa é continente (ou está cortado por ela) e fica. O id de província dos
-    pixels removidos também volta a 0. Com `keep_mask`, devolve o booleano dos
-    pixels zerados (usado para corrigir a camada mundial)."""
-    removed = np.zeros(owners.shape, dtype=bool) if keep_mask else None
-    removed_total = 0
-    for spec in specs:
-        lon0, lon1, lat0, lat1 = spec["box"]
-        x0 = int((lon0 - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)
-        x1 = int((lon1 - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width) + 1
-        y0 = int((grid.lat1 - lat1) / (grid.lat1 - grid.lat0) * grid.height)
-        y1 = int((grid.lat1 - lat0) / (grid.lat1 - grid.lat0) * grid.height) + 1
-        x0, x1 = max(0, x0), min(grid.width, x1)
-        y0, y1 = max(0, y0), min(grid.height, y1)
-        if x1 <= x0 or y1 <= y0:
+
+def load_keep_points():
+    """Cidade, porto/capital e jazida que impedem a remoção da ilha.
+
+    Cidades e portos usam x/y do plano 5000×2500 do cenário (o mesmo que o
+    jogo); jazidas usam lon/lat do MRDS/suplemento. A lista é lida a cada
+    build: uma cidade nova numa ilha pequena a mantém automaticamente."""
+    points = []
+    for filename, kind in (("cities.json", "city"), ("ports.json", "port")):
+        path = os.path.join(SCENARIO_DIR, filename)
+        if not os.path.exists(path):
             continue
-        sub = owners[y0:y1, x0:x1] != 0
-        labels, count = nd_label(sub)
+        with open(path, encoding="utf-8") as handle:
+            for item in json.load(handle):
+                if item.get("x") is None or item.get("y") is None:
+                    continue
+                points.append({
+                    "kind": kind,
+                    "name": str(item.get("id", kind)),
+                    "lon": float(item["x"]) / GLOBAL_W * 360.0 - 180.0,
+                    "lat": 90.0 - float(item["y"]) / GLOBAL_H * 180.0,
+                })
+    deposits_path = os.path.join(NATURAL_DIR, "deposits.json")
+    if os.path.exists(deposits_path):
+        with open(deposits_path, encoding="utf-8") as handle:
+            for item in json.load(handle).get("deposits", []):
+                if item.get("lon") is None or item.get("lat") is None:
+                    continue
+                points.append({
+                    "kind": "deposit",
+                    "name": str(item.get("id", "deposit")),
+                    "lon": float(item["lon"]),
+                    "lat": float(item["lat"]),
+                })
+    return points
 
-        kept_by_seed = set()
-        for label, klon, klat in spec["keep"]:
-            kx = int(round((klon - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width)) - x0
-            ky = int(round((grid.lat1 - klat) / (grid.lat1 - grid.lat0) * grid.height)) - y0
-            component = seed_label(labels, kx, ky)
-            if component:
-                kept_by_seed.add(component)
-                print(f"[ilhas:{layer}] mantém {label}")
-            else:
-                print(f"[ilhas:{layer}] AVISO: seed {label} caiu fora da terra")
 
-        rows = []
-        for index in range(1, count + 1):
-            if index in kept_by_seed:
-                continue
-            ys, xs = np.where(labels == index)
-            if (xs.min() == 0 or ys.min() == 0
-                    or xs.max() == sub.shape[1] - 1
-                    or ys.max() == sub.shape[0] - 1):
-                continue  # encosta na borda: continente ou componente cortado
-            area = int(xs.size)
-            row = ys.mean() + y0
-            col = xs.mean() + x0
-            lat = grid.lat1 - (row + 0.5) / grid.height * (grid.lat1 - grid.lat0)
-            lon = grid.lon0 + (col + 0.5) / grid.width * (grid.lon1 - grid.lon0)
-            km2 = component_km2(grid, area, lat)
-            if km2 > spec["max_km2"]:
-                print(f"[ilhas:{layer}] mantém componente de {area} px "
-                      f"(~{km2:.0f} km², acima do teto)")
-                continue
-            owners[ys + y0, xs + x0] = 0
+def remove_small_islands(owners, provinces, grid, layer, countries=None,
+                         keep_mask=False, dry_run=False):
+    """Remove todo componente de terra isolado com área < ISLAND_MAX_KM2.
+
+    Componentes de 8-vizinhos: a ilha é uma massa de terra sem ligação com
+    outra. Ficam as ilhas com cidade/porto/jazida (`load_keep_points`), a menos
+    de COASTAL_KEEP_KM de uma massa maior (proteção do litoral), as cortadas
+    pela borda da camada e os seeds de ISLAND_KEEP_SEEDS. A área soma
+    cos(lat) por linha na projeção equirretangular (km² reais).
+
+    Devolve `(removed_mask, report)`: `removed_mask` é None sem `keep_mask`;
+    `report` é a lista de componentes removidos (dicts) para documentação.
+    Com `dry_run`, nada é alterado — só o relatório é produzido."""
+    radius = 6371.0
+    dlon = math.radians((grid.lon1 - grid.lon0) / grid.width)
+    dlat = math.radians((grid.lat1 - grid.lat0) / grid.height)
+    span_lon = grid.lon1 - grid.lon0
+    span_lat = grid.lat1 - grid.lat0
+    land = owners != 0
+    print(f"[ilhas:{layer}] procurando componentes em {grid.width}x{grid.height}")
+    labels, count = nd_label(land, structure=np.ones((3, 3), dtype=bool))
+    sizes = nd_sum(land, labels, np.arange(count + 1)).astype(np.int64)
+    objects = nd_objects(labels)
+    removed_mask = np.zeros(owners.shape, dtype=bool) if keep_mask else None
+
+    keep_points = load_keep_points()
+    keep_labels = {}
+    unresolved = []
+    for point in keep_points:
+        x, y = grid_pixel(grid, point["lon"], point["lat"])
+        component = seed_label(labels, x, y, KEEP_ENTITY_RADIUS[point["kind"]])
+        if component:
+            keep_labels.setdefault(component, point)
+        elif point["kind"] != "deposit":
+            unresolved.append(point)
+    seed_labels = {}
+    for name, slon, slat in ISLAND_KEEP_SEEDS:
+        x, y = grid_pixel(grid, slon, slat)
+        component = seed_label(labels, x, y, 3)
+        if component:
+            seed_labels[component] = name
+        else:
+            print(f"[ilhas:{layer}] AVISO: seed {name} caiu fora da terra")
+
+    def tag_of(index, row, col):
+        if countries is None:
+            return "?"
+        owner = int(owners[row, col])
+        if 0 < owner <= len(countries):
+            return countries[owner - 1]["tag"]
+        return "?"
+
+    # Passo 1: área de cada componente. Os que já passam do teto por qualquer
+    # latitude possível são marcados como massa maior sem rasterizar o recorte.
+    size_cap = 60000
+    big_ids = []
+    candidates = []
+    for index in range(1, count + 1):
+        pixels = int(sizes[index])
+        if pixels <= 0:
+            continue
+        sl = objects[index - 1]
+        top_lat = grid.lat1 - sl[0].start / grid.height * span_lat
+        bottom_lat = grid.lat1 - sl[0].stop / grid.height * span_lat
+        max_abs_lat = min(max(abs(top_lat), abs(bottom_lat)), 89.9)
+        min_px_km2 = (radius ** 2) * dlon * dlat * math.cos(math.radians(max_abs_lat))
+        if pixels > size_cap or pixels * min_px_km2 >= ISLAND_MAX_KM2:
+            big_ids.append(index)
+            continue
+
+        sub = labels[sl] == index
+        ys_rel, xs_rel = np.nonzero(sub)
+        rows = ys_rel + sl[0].start
+        cols = xs_rel + sl[1].start
+        lat_rows = grid.lat1 - (rows + 0.5) / grid.height * span_lat
+        pixels_km2 = (radius ** 2) * dlon * dlat * np.cos(np.radians(lat_rows))
+        km2 = float(pixels_km2.sum())
+        lat = float(lat_rows.mean())
+        lon = grid.lon0 + (float(cols.mean()) + 0.5) / grid.width * span_lon
+        tag = tag_of(index, int(rows.mean()), int(cols.mean()))
+
+        reason = None
+        detail = ""
+        if index in keep_labels:
+            reason = "entidade"
+            detail = f"{keep_labels[index]['kind']}:{keep_labels[index]['name']}"
+        elif index in seed_labels:
+            reason = "seed"
+            detail = seed_labels[index]
+        elif (sl[0].start == 0 or sl[1].start == 0
+              or sl[0].stop == grid.height or sl[1].stop == grid.width):
+            reason = "borda"
+
+        if reason is None and km2 >= ISLAND_MAX_KM2:
+            big_ids.append(index)
+            continue
+
+        candidates.append({
+            "index": index, "sl": sl, "km2": km2, "lat": lat, "lon": lon,
+            "tag": tag, "pixels": pixels, "reason": reason, "detail": detail,
+            "region": island_region(lon, lat),
+        })
+
+    is_big = np.zeros(count + 1, dtype=bool)
+    if big_ids:
+        is_big[np.asarray(big_ids, dtype=np.int64)] = True
+
+    # Passo 2: para os candidatos restantes, a distância até uma massa MAIOR
+    # decide entre "ilha costeira colada" (fica) e ilha isolada (sai).
+    removed = []
+    kept = []
+    for cand in candidates:
+        if cand["reason"]:
+            kept.append(cand)
+            continue
+        sl = cand["sl"]
+        lat = cand["lat"]
+        dx_km = radius * dlon * math.cos(math.radians(lat))
+        dy_km = radius * dlat
+        pad = int(math.ceil(COASTAL_KEEP_KM / max(min(dx_km, dy_km), 1e-6))) + 2
+        pad = min(pad, 80)
+        y0 = max(0, sl[0].start - pad)
+        x0 = max(0, sl[1].start - pad)
+        y1 = min(grid.height, sl[0].stop + pad)
+        x1 = min(grid.width, sl[1].stop + pad)
+        ref = is_big[labels[y0:y1, x0:x1]]
+        edge_km = float("inf")
+        if ref.any():
+            distance = distance_transform_edt(~ref, sampling=(dy_km, dx_km))
+            sub = labels[sl] == cand["index"]
+            ys_rel, xs_rel = np.nonzero(sub)
+            local = distance[ys_rel + sl[0].start - y0, xs_rel + sl[1].start - x0]
+            # Distância entre centros de pixels menos meio pixel de cada lado:
+            # um canal de 1 texel ainda conta como "colado".
+            edge_km = float(local.min()) - 0.5 * (dx_km + dy_km)
+        if edge_km <= COASTAL_KEEP_KM:
+            cand["reason"] = "costa"
+            cand["detail"] = f"{edge_km:.1f} km"
+            kept.append(cand)
+            continue
+
+        sub = labels[sl] == cand["index"]
+        ys_rel, xs_rel = np.nonzero(sub)
+        rows = ys_rel + sl[0].start
+        cols = xs_rel + sl[1].start
+        if not dry_run:
+            owners[rows, cols] = 0
             if provinces is not None:
-                provinces[ys + y0, xs + x0] = 0
-            if removed is not None:
-                removed[ys + y0, xs + x0] = True
-            removed_total += area
-            rows.append((km2, area, lon, lat))
+                provinces[rows, cols] = 0
+            if removed_mask is not None:
+                removed_mask[rows, cols] = True
+        removed.append(cand)
 
-        rows.sort(reverse=True)
-        for km2, area, lon, lat in rows:
-            print(f"[ilhas:{layer}] {spec['name']}: {area:5d} px "
-                  f"~{km2:7.1f} km² lon={lon:8.3f} lat={lat:7.3f}")
-        print(f"[ilhas:{layer}] {spec['name']}: {len(rows)} componente(s), "
-              f"{sum(r[1] for r in rows)} px removidos")
-    return removed
+    removed_ids = {cand["index"] for cand in removed}
+    leaked = sorted(removed_ids & set(keep_labels))
+    if leaked:
+        raise SystemExit(f"[ilhas:{layer}] ERRO: {len(leaked)} ilha(s) com "
+                         f"cidade/porto/jazida caíram na remoção")
+    if unresolved:
+        for point in unresolved:
+            print(f"[ilhas:{layer}] AVISO: {point['kind']}:{point['name']} "
+                  f"não caiu em terra na grade (lon={point['lon']:.3f} "
+                  f"lat={point['lat']:.3f})")
+
+    # Relatório: por faixa, removidos e mantidos por motivo.
+    summary = {}
+    for cand in removed:
+        row = summary.setdefault(cand["region"], [0, 0.0, 0, 0, 0])
+        row[0] += 1
+        row[1] += cand["km2"]
+    for cand in kept:
+        row = summary.setdefault(cand["region"], [0, 0.0, 0, 0, 0])
+        if cand["reason"] == "entidade":
+            row[2] += 1
+        elif cand["reason"] == "costa":
+            row[3] += 1
+        else:
+            row[4] += 1
+
+    if removed:
+        print(f"[ilhas:{layer}] removidos {len(removed)} componentes, "
+              f"{sum(c['pixels'] for c in removed)} px, "
+              f"~{sum(c['km2'] for c in removed):.0f} km²")
+    else:
+        print(f"[ilhas:{layer}] nenhum componente abaixo de {ISLAND_MAX_KM2:.0f} km²")
+    print(f"[ilhas:{layer}] {'região':<18} {'remov.':>7} {'km²':>10} "
+          f"{'entidade':>9} {'costa':>6} {'borda/seed':>11}")
+    for name, row in sorted(summary.items(), key=lambda item: -item[1][1]):
+        print(f"[ilhas:{layer}] {name:<18} {row[0]:>7} {row[1]:>10.0f} "
+              f"{row[2]:>9} {row[3]:>6} {row[4]:>11}")
+
+    limit = len(removed) if dry_run else 60
+    for cand in sorted(removed, key=lambda item: -item["km2"])[:limit]:
+        print(f"[ilhas:{layer}] remove {cand['region']}/{cand['tag']} "
+              f"{cand['pixels']:5d} px ~{cand['km2']:7.1f} km² "
+              f"lon={cand['lon']:8.3f} lat={cand['lat']:7.3f}")
+    if len(removed) > limit:
+        print(f"[ilhas:{layer}] ... mais {len(removed) - limit} remoções "
+              f"(log completo só no modo --report-islands)")
+
+    for cand in sorted((c for c in kept if c["reason"] == "entidade"),
+                       key=lambda item: -item["km2"]):
+        print(f"[ilhas:{layer}] mantém {cand['detail']} "
+              f"({cand['region']}/{cand['tag']} ~{cand['km2']:.0f} km²)")
+
+    return removed_mask, removed
 
 
 def apply_removed_mask(owners, provinces, grid, ref_grid, ref_mask):
@@ -557,7 +749,7 @@ def process_rows(owners, provinces, supersample):
 def build_layer(name, bounds, width, countries, province_shapes,
                 province_countries=None, province_ids=None, supersample=SUPERSAMPLE,
                 band_rows=None, color_step=1, return_removed=False,
-                removed_reference=None):
+                removed_reference=None, islands=False):
     """Constrói uma camada do atlas.
 
     `band_rows` (linhas da grade BAIXA) processa os campos de distância em
@@ -579,14 +771,13 @@ def build_layer(name, bounds, width, countries, province_shapes,
     if REMOVED_ISLETS:
         remove_islets(owners, provinces, hi, REMOVED_ISLETS)
     removed_mask = None
-    if REMOVED_ISLAND_REGIONS:
-        removed_mask = remove_island_regions(
-            owners, provinces, hi, REMOVED_ISLAND_REGIONS, name,
-            keep_mask=return_removed)
+    if islands:
+        removed_mask, _removed = remove_small_islands(
+            owners, provinces, hi, name, countries, keep_mask=return_removed)
     if removed_reference is not None:
         cleared = apply_removed_mask(owners, provinces, hi, *removed_reference)
-        print(f"[{name}] {cleared} px que a camada fina removeu e o raster "
-              f"grosso tinha fundido no continente")
+        print(f"[{name}] {cleared} px da remoção de ilhas da camada mundial "
+              f"(o raster fino preservaria a ilha)")
 
     coast_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     borders_lo = np.empty((lo_height, lo_width), dtype=np.float32)
@@ -804,6 +995,37 @@ def write_removed_land(removed_parts):
           f"(removed_nations.png)")
 
 
+def write_removed_islets(removed_mask, removed_grid):
+    """Grava `removed_islands.png` (1 = terra que virou mar).
+
+    Mesma resolução de `removed_nations.png` (8192×4096). A redução é por
+    MAX (qualquer texel removido marca o pixel), para não sumir um ilhéu fino.
+    Lida por `tools/generate_nav_mask.py`."""
+    if removed_mask is None:
+        return
+    height = removed_mask.shape[0] // 2 * 2
+    width = removed_mask.shape[1] // 2 * 2
+    blocks = removed_mask[:height, :width].reshape(height // 2, 2, width // 2, 2)
+    small = blocks.any(axis=(1, 3))
+    image = Image.fromarray((small.astype(np.uint8) * 255), "L")
+    image.save(os.path.join(OUT, "removed_islands.png"), optimize=True)
+    print(f"[ilhas] removed_islands.png: {int(small.sum())} px de terra viraram "
+          f"mar na grade {removed_grid.width}x{removed_grid.height}")
+
+
+def report_islands():
+    """Relatório seco da regra de ilhas (não escreve nada; `--report-islands`)."""
+    countries, _removed = read_admin0()
+    print(f"países={len(countries)} | nações apagadas={len(ATLAS_REMOVED)}")
+    hi = Grid((-180.0, -90.0, 180.0, 90.0), WORLD_W * SUPERSAMPLE)
+    owners = rasterize_ids(hi, [c["parts"] for c in countries],
+                           range(1, len(countries) + 1))
+    # Mesma ordem do build: as caixas de curadoria (Suez/Shadwan) saem antes,
+    # senão o relatório conta esses ilhotes como removidos pela regra de área.
+    remove_islets(owners, None, hi, REMOVED_ISLETS)
+    remove_small_islands(owners, None, hi, "world", countries, dry_run=True)
+
+
 def main():
     for path in (ADMIN0, ADMIN1):
         if not os.path.exists(path + ".shp"):
@@ -833,17 +1055,9 @@ def main():
     region_ids = [row[2] for row in region_rows]
     print(f"províncias na região={len(region_shapes)}")
 
-    region = build_layer("region", REGION, REGION_W, countries,
-                         region_shapes, region_countries, region_ids,
-                         supersample=SUPERSAMPLE, return_removed=True)
-    with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
-        json.dump(nation_anchors(region, countries), handle, indent="\t")
-        handle.write("\n")
-
-    # Camada mundial: TODAS as províncias, com supersample como a região.
-    # O edt+índices em 8192×4096 é pesado; se faltar memória, use supersample=1
-    # (a camada mundial em baixa resolução perde províncias sub-texel, como o
-    # departamento de Paris, e o id diverge do raster da região).
+    # Camada mundial PRIMEIRO: a regra de ilhas é decidida uma vez nela e a
+    # camada da região recebe a mesma máscara (o mapa regional tem 2,6× mais
+    # resolução e, sem isso, manteria uma ilha que o mundo já converteu em mar).
     world_ids = [index + 1 for index, tag in enumerate(original_countries)
                  if tag not in ATLAS_REMOVED]
     world_shapes = [shape for shape, tag in zip(provinces, original_countries)
@@ -854,13 +1068,26 @@ def main():
     world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
                         world_shapes, world_countries, world_ids, supersample=SUPERSAMPLE,
                         band_rows=512, color_step=max(WORLD_W // 4096, 1),
-                        removed_reference=(region["removed_grid"],
-                                           region["removed_mask"]))
+                        return_removed=True, islands=True)
+
+    region = build_layer("region", REGION, REGION_W, countries,
+                         region_shapes, region_countries, region_ids,
+                         supersample=SUPERSAMPLE,
+                         removed_reference=(world["removed_grid"],
+                                            world["removed_mask"]))
+    with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
+        json.dump(nation_anchors(region, countries), handle, indent="\t")
+        handle.write("\n")
+
     write_provinces_json(region, world, province_countries, countries)
     write_minimap(world)
     write_removed_land(removed_parts)
+    write_removed_islets(world["removed_mask"], world["removed_grid"])
     print(f"escrito em {OUT}")
 
 
 if __name__ == "__main__":
-    main()
+    if "--report-islands" in sys.argv:
+        report_islands()
+    else:
+        main()
