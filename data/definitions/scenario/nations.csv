@@ -5,7 +5,7 @@ AGO,Angola,ao,#b06a7a,Luanda,AOA,republic,resource,africa,39040039,400.2
 AIA,Anguilla,ai,#9a6356,The Valley,XCD,territory,balanced,north_america,13254,
 ALB,Albania,al,#b0625f,Tirana,ALL,republic,agrarian,europe,2349580,66.3
 ALD,Åland,ax,#5a9b88,Mariehamn,EUR,territory,balanced,europe,26711,
-AND,Andorra,ad,#cbb8ae,Andorra la Vella,EUR,monarchy,balanced,europe,82904,6.6
+AND,Andorra,ad,#b98383,Andorra la Vella,EUR,monarchy,balanced,europe,82904,6.6
 ARE,United Arab Emirates,ae,#aecbcb,Abu Dhabi,AED,monarchy,resource,middle_east,11513149,871.7
 ARG,Argentina,ar,#8fb2d4,Buenos Aires,ARS,federation,agrarian,south_america,45851378,1494.1
 ARM,Armenia,am,#816da8,Yerevan,AMD,republic,balanced,asia,3086700,76.4
@@ -14,7 +14,7 @@ ATG,Antigua and Barbuda,ag,#a04b70,Saint John’s,XCD,monarchy,balanced,north_am
 AUS,Australia,au,#6fa596,Canberra,AUD,monarchy,resource,oceania,27614411,1986.4
 AUT,Austria,at,#dcc2c6,Vienna,EUR,federation,industrial,europe,9208163,707.0
 AZE,Azerbaijan,az,#7f9fb5,Baku,AZN,republic,resource,asia,10246996,267.6
-BDI,Burundi,bi,#83b995,Gitega,BIF,republic,resource,africa,14390003,18.0
+BDI,Burundi,bi,#aecbae,Gitega,BIF,republic,resource,africa,14390003,18.0
 BEL,Belgium,be,#b9a944,Brussels,EUR,monarchy,industrial,europe,11941781,891.8
 BEN,Benin,bj,#b9b983,Porto-Novo,XOF,republic,agrarian,africa,14814460,71.4
 BFA,Burkina Faso,bf,#a04b96,Ouagadougou,XOF,republic,resource,africa,24074580,73.9
@@ -189,7 +189,7 @@ SOM,Somalia,so,#7fa3c4,Mogadishu,SOS,federation,resource,africa,19654739,32.3
 SPM,Saint Pierre and Miquelon,pm,#8c955a,Saint-Pierre,EUR,territory,balanced,north_america,7012,
 SRB,Serbia,rs,#b06a6a,Belgrade,RSD,republic,balanced,europe,6549143,222.1
 STP,São Tomé and Príncipe,st,#9b5a88,São Tomé,STN,republic,balanced,africa,240254,1.5
-SUR,Suriname,sr,#aecbae,Paramaribo,SRD,republic,resource,south_america,639850,14.5
+SUR,Suriname,sr,#83b9a7,Paramaribo,SRD,republic,resource,south_america,639850,14.5
 SVK,Slovakia,sk,#b5765a,Bratislava,EUR,republic,industrial,europe,5413813,266.9
 SVN,Slovenia,si,#8f8fb8,Ljubljana,EUR,republic,industrial,europe,2130986,126.2
 SWE,Sweden,se,#5b7fa8,Stockholm,SEK,monarchy,industrial,europe,10596620,768.6
@@ -201,7 +201,7 @@ TCA,Turks and Caicos Islands,tc,#776953,Cockburn Town,USD,territory,balanced,nor
 TCD,Chad,td,#abab54,N'Djamena,XAF,republic,resource,africa,21003705,61.0
 TGO,Togo,tg,#be6c42,Lomé,XOF,republic,agrarian,africa,8591626,35.0
 THA,Thailand,th,#7f7fb5,Bangkok,THB,monarchy,industrial,asia,71619863,1880.0
-TJK,Tajikistan,tj,#71ab54,Dushanbe,TJS,republic,agrarian,asia,10786734,63.9
+TJK,Tajikistan,tj,#83b995,Dushanbe,TJS,republic,agrarian,asia,10786734,63.9
 TKM,Turkmenistan,tm,#5f9956,Ashgabat,TMT,republic,resource,asia,7618847,172.2
 TLS,East Timor,tl,#50a04b,Dili,USD,republic,resource,oceania,1418517,6.8
 TON,Tonga,to,#948b4a,Nuku‘alofa,TOP,monarchy,balanced,oceania,103742,0.9

@@ -1518,16 +1518,10 @@
     "output_tons_per_day": 122.8
   },
   {
-    "city_id": "EGY-POR",
-    "id": "egy_por_wheat",
-    "name": "Porto Said — trigo",
-    "output_tons_per_day": 234.2
-  },
-  {
-    "city_id": "EGY-SUE",
-    "id": "egy_sue_wheat",
-    "name": "Suez — trigo",
-    "output_tons_per_day": 209.9
+    "city_id": "EGY-MAT",
+    "id": "egy_mat_wheat",
+    "name": "Marsa Matruh — trigo",
+    "output_tons_per_day": 58.0
   },
   {
     "city_id": "EGY-TAN",

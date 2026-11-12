@@ -20,6 +20,9 @@ Regras (docs/plans/world_all_data.md):
     porto: cidade a ≤ 50 km da costa; ponto de costa a ≥ 15 km do centro vira
            porto separado; abaixo disso a cidade é marcada como porto dela mesma.
     cor: vizinhos de fronteira com ΔE ≥ 30 (Lab); correções em COLOR_OVERRIDE.
+    curadoria: tools/world_city_curation.py — cidades excluídas (EGY-POR,
+               EGY-SUE: canal de Suez) e forçadas (EGY-MAT: Marsa Matruh) são
+               aplicadas na seleção, então sobrevivem a uma regeneração.
 
 Uso:
     python tools/import_world_sources.py --cache <dir> [--write] [--fetch-names]
@@ -45,6 +48,8 @@ from collections import defaultdict
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+
+from world_city_curation import EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
@@ -433,9 +438,14 @@ class World:
                 rows += self.cities15.get(iso2, [])
                 rows += self.cities5.get(iso2, [])
         by_key = {}
+        excluded_names = EXCLUDED_CITY_NAMES.get(tag, set())
         for row in rows:
             if abs(row["lat"]) < 0.01 and abs(row["lon"]) < 0.01:
                 continue
+            if excluded_names and (
+                    re.sub(r"[^a-z0-9]", "", norm(row["name"])) in excluded_names
+                    or re.sub(r"[^a-z0-9]", "", norm(row["ascii"])) in excluded_names):
+                continue  # curadoria: cidade excluída não entra como candidata
             if (self.entities[tag]["info"]["area"] >= 20_000
                     and not self.own_land(tag, row["lat"], row["lon"], tolerance=6)):
                 continue
@@ -858,6 +868,8 @@ class World:
             for row in rows:
                 if row["id"] == "VEN-PAY":
                     continue  # substituída por Ciudad Bolívar (regra C)
+                if row["id"] in EXCLUDED_CITIES:
+                    continue  # curadoria: Port Said/Suez fora do cenário
                 if row["id"] in ids or row["id"] in legacy_done:
                     continue
                 lat, lon = self.inverse_project(float(row["x"]), float(row["y"]))
@@ -910,6 +922,29 @@ class World:
             selected[tag] = (chosen, covered, target, cap)
         if extras:
             print(f"componentes habitados adicionados fora da cota: {extras}")
+
+        # 2c. cidades forçadas (curadoria): entram mesmo fora da cota
+        for spec in FORCED_CITIES:
+            tag = spec["nation"]
+            if tag not in selected:
+                problems.append(f"{spec['id']}: nação {tag} não está na lista")
+                continue
+            chosen, covered, target, cap = selected[tag]
+            if any(c.get("forced_id") == spec["id"] or c["id"] == spec["id"]
+                   for c in chosen):
+                continue
+            chosen.append({
+                "id": spec["id"], "name": spec["name_en"],
+                "ascii": spec["name_en"], "alternates": "",
+                "lat": spec["lat"], "lon": spec["lon"], "fcode": "PPLA",
+                "cc": "", "admin1": "", "pop": int(spec["population"]),
+                "forced_id": spec["id"], "forced_source": spec["source"],
+                "forced_note": spec["note"],
+                "forced_year": spec.get("population_year", 2026),
+                "forced_port": spec["port"],
+            })
+            extra_by_tag[tag] += 1
+            selected[tag] = (chosen, covered, target, cap)
 
         # 3. cores
         tags = list(selected)
@@ -1011,9 +1046,12 @@ class World:
                     farm = f"{population_c * POP_PER_TON:.1f}"
                     note = ("centro regional (cobertura)" if c.get("coverage")
                             else "maior cidade disponível")
+                    source = "GeoNames cities15000/cities500 2026 (city proper)"
                     if c.get("forced_id") == "VEN-CBL":
                         note = "substitui VEN-PAY (Puerto Ayacucho), a < 5 km da fronteira"
-                    source = "GeoNames cities15000/cities500 2026 (city proper)"
+                    elif c.get("forced_id"):
+                        note = c.get("forced_note") or note
+                        source = c.get("forced_source") or source
                     landmass = self.landmass(tag, c)
                     name_pt = clean_name(tr_pt.get(name_en, ""), name_en)
                     name_pt = PT_BR_OVERRIDE.get(name_pt, name_pt)
@@ -1028,7 +1066,9 @@ class World:
                 cities_out.append({
                     "nation": tag, "id": cid, "name_en": name_en, "name_pt": name_pt,
                     "name_es": name_es, "lat": lat, "lon": lon,
-                    "population": population_c, "population_year": 2026,
+                    "population": population_c,
+                    "population_year": (2026 if legacy
+                                        else c.get("forced_year", 2026)),
                     "capital": capital, "port": port, "role": role,
                     "landmass": landmass,
                     "pop_src": "agglomeration" if legacy else "city_proper",
@@ -1104,6 +1144,8 @@ class World:
         for c in cities_out:
             if c["id"] == "VEN-PAY":
                 problems.append("VEN-PAY ainda presente")
+            if c["id"] in EXCLUDED_CITIES:
+                problems.append(f"{c['id']}: excluída por curadoria reapareceu")
             if c["legacy"] == "yes":
                 src = self.legacy_cities.get(c["id"])
                 if src and (abs(float(src["x"]) - self.project(c["lat"], c["lon"])[0]) > 0.2
@@ -1111,6 +1153,9 @@ class World:
                     problems.append(f"{c['id']}: coordenada legada divergente")
         if not any(c["id"] == "VEN-CBL" for c in cities_out):
             problems.append("VEN-CBL (Ciudad Bolívar) ausente: substitui VEN-PAY")
+        for spec in FORCED_CITIES:
+            if not any(c["id"] == spec["id"] for c in cities_out):
+                problems.append(f"{spec['id']}: cidade forçada ausente")
         ids = [c["id"] for c in cities_out]
         if len(ids) != len(set(ids)):
             problems.append("cidades: ids duplicados")

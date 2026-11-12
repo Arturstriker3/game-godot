@@ -249,12 +249,11 @@ ECU-GUA,ecu_gua_wheat,Guaiaquil — trigo,817.1
 ECU-PUE,ecu_pue_wheat,Puerto Ayora — trigo,3.8
 EGY-CAI,egy_cai_wheat,Cairo — trigo,2882.1
 EGY-ALE,egy_ale_wheat,Alexandria — trigo,1579.1
-EGY-POR,egy_por_wheat,Porto Said — trigo,234.2
-EGY-SUE,egy_sue_wheat,Suez — trigo,209.9
 EGY-ALM,egy_alm_wheat,Almançora — trigo,186.6
 EGY-TAN,egy_tan_wheat,Tanta — trigo,173.0
 EGY-ASS,egy_ass_wheat,Assiut — trigo,158.6
 EGY-KOM,egy_kom_wheat,Kom Ombo — trigo,122.8
+EGY-MAT,egy_mat_wheat,Marsa Matruh — trigo,58.0
 ERI-ASM,eri_asm_wheat,Asmara — trigo,169.2
 ERI-KER,eri_ker_wheat,Keren — trigo,22.4
 ESP-MADR,esp_madr_wheat,Madri — trigo,976.8

@@ -3036,26 +3036,14 @@
     "capital": false
   },
   {
-    "id": "EGY-POR",
+    "id": "EGY-MAT",
     "nation": "EGY",
     "home_nation": "EGY",
-    "name": "Port Said",
-    "population": 780515.0,
-    "production": 234.2,
-    "x": 2948.6,
-    "y": 815.8,
-    "landmass": "africa",
-    "capital": false
-  },
-  {
-    "id": "EGY-SUE",
-    "nation": "EGY",
-    "home_nation": "EGY",
-    "name": "Suez",
-    "population": 699541.0,
-    "production": 209.9,
-    "x": 2951.8,
-    "y": 833.7,
+    "name": "Marsa Matruh",
+    "population": 193293.0,
+    "production": 58.0,
+    "x": 2878.0,
+    "y": 814.8,
     "landmass": "africa",
     "capital": false
   },

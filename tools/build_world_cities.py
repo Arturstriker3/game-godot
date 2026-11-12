@@ -30,6 +30,8 @@ Regras (docs/plans/world_all_data.md):
     cor: tradicional (traditional_colors.csv) tem prioridade; vizinhos de terra
     com ΔE(Lab) ≥ 30 (piso 25) e RGB ≥ 0,16; conflito entre tradicionais muda só
     o TOM (matiz ±12°). Ver tools/nation_colors.py.
+    curadoria: tools/world_city_curation.py — EGY-POR/EGY-SUE saem e EGY-MAT
+    (Marsa Matruh) entra, valendo no out/ e na promoção para o cenário.
 
 Uso:
     python tools/build_world_cities.py            # gera out/
@@ -44,11 +46,13 @@ import csv
 import json
 import math
 import os
+import re
 import sys
 import unicodedata
 from collections import Counter, defaultdict
 
 import nation_colors
+from world_city_curation import EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
@@ -138,6 +142,34 @@ def km_between_px(a, b):
 
 def lonlat_to_xy(lon, lat):
     return (lon + 180.0) / 360.0 * MAP_W, (90.0 - lat) / 180.0 * MAP_H
+
+
+def curate_cities(rows):
+    """Aplica a curadoria de `tools/world_city_curation.py` à fonte de cidades.
+
+    Remove as cidades excluídas (por id e, por segurança, por nome normalizado)
+    e acrescenta as forçadas com os valores declarados. Assim uma regeneração
+    do importador não reintroduz Port Said/Suez nem perde Marsa Matruh.
+    """
+    excluded_here = []
+    kept = []
+    blocked = {re.sub(r"[^a-z0-9]", "", norm_name(name))
+               for names in EXCLUDED_CITY_NAMES.values() for name in names}
+    for row in rows:
+        if row["id"] in EXCLUDED_CITIES:
+            excluded_here.append(row["id"])
+            continue
+        if (row["nation"] in EXCLUDED_CITY_NAMES and
+                re.sub(r"[^a-z0-9]", "", norm_name(row["name_en"])) in blocked):
+            excluded_here.append(row["id"])
+            continue
+        kept.append(row)
+    kept_ids = {row["id"] for row in kept}
+    for spec in FORCED_CITIES:
+        if spec["id"] in kept_ids:
+            kept = [row for row in kept if row["id"] != spec["id"]]
+        kept.append(dict(spec))
+    return kept, excluded_here
 
 
 def read_csv(path):
@@ -367,6 +399,7 @@ def main():
         report = {r["tag"]: r for r in read_csv(report_path)}
 
     problems = []
+    cities_src, curated_out = curate_cities(cities_src)
     nations_by_id = {r["iso3"]: r for r in nations_src}
     if len(nations_by_id) != len(nations_src):
         problems.append("nações: iso3 duplicado")
@@ -383,6 +416,15 @@ def main():
     for row in ports_src:
         if row["nation"] not in nations_by_id:
             problems.append(f"porto {row['id']}: nação desconhecida {row['nation']}")
+
+    # curadoria (tools/world_city_curation.py): exclusões e forçadas valem no out/
+    out_ids = {r["id"] for r in cities_src}
+    for cid, reason in EXCLUDED_CITIES.items():
+        if cid in out_ids:
+            problems.append(f"curadoria: {cid} deveria estar fora ({reason})")
+    for spec in FORCED_CITIES:
+        if spec["id"] not in out_ids:
+            problems.append(f"curadoria: {spec['id']} ausente do out/")
 
     by_nation = defaultdict(list)
     for row in cities_src:
@@ -451,11 +493,14 @@ def main():
         x, y = lonlat_to_xy(float(row["lon"]), float(row["lat"]))
         if abs(float(src["x"]) - x) > 0.2 or abs(float(src["y"]) - y) > 0.2:
             problems.append(f"porto legado {pid}: coordenada divergente")
-    scenario_ports_src = [r for r in ports_src
-                          if r["source"].startswith("scenario/ports.csv")]
-    if len(scenario_ports_src) != len(scenario_ports):
-        problems.append(f"portos do cenário: {len(scenario_ports_src)} carregados "
-                        f"de {len(scenario_ports)}")
+    # todo porto do cenário precisa continuar existindo na fonte, com o mesmo id
+    # (a contagem por origem mudava depois da primeira promoção, que já leva ao
+    # cenário também os portos novos).
+    source_port_ids = {r["id"] for r in ports_src}
+    missing_ports = sorted(set(scenario_ports) - source_port_ids)
+    if missing_ports:
+        problems.append("portos do cenário fora da fonte: "
+                        + ", ".join(missing_ports))
 
     # saída
     nations_out, cities_out, ports_out, buildings_out, i18n_out = [], [], [], [], []
@@ -518,7 +563,10 @@ def main():
     top10 = counts.most_common(10)
     print(f"nações: {len(nations_out)}")
     print(f"cidades: {len(cities_out)} (legado: {sum(1 for c in cities_src if c['legacy'] == 'yes')})")
-    print(f"portos: {len(ports_out)} (do cenário: {len(scenario_ports_src)}, "
+    if curated_out:
+        print("curadoria: fora da fonte ->", ", ".join(sorted(curated_out)))
+    print("curadoria: forçadas ->", ", ".join(spec["id"] for spec in FORCED_CITIES))
+    print(f"portos: {len(ports_out)} (no cenário antes: {len(scenario_ports)}, "
           f"originais: {len(LEGACY_PORTS)})")
     print(f"construções: {len(buildings_out)}")
     print(f"chaves i18n: {len(i18n_out)}")
@@ -580,6 +628,11 @@ def main():
             "port_city_coast_km": 25,
             "port_point_km": 15,
             "legacy": "40 cidades do cenário preservadas, exceto VEN-PAY (trocada por VEN-CBL)",
+            "curation": {
+                "source": "tools/world_city_curation.py",
+                "excluded": {cid: reason for cid, reason in EXCLUDED_CITIES.items()},
+                "forced": [spec["id"] for spec in FORCED_CITIES],
+            },
             "color_min_delta_e": 30,
             "color_min_delta_e_floor": 25,
             "color_traditional_source": "data/definitions/world/traditional_colors.csv",
@@ -604,7 +657,7 @@ def main():
             "i18n_keys": len(i18n_out),
             "legacy_cities": sum(1 for c in cities_src if c["legacy"] == "yes"),
             "legacy_ports": len(LEGACY_PORTS),
-            "scenario_ports": len(scenario_ports_src),
+            "scenario_ports": len(scenario_ports),
             "cities_with_pt_exonym": sum(1 for c in cities_src
                                          if c["name_pt"] != c["name_en"]),
             "cities_with_es_exonym": sum(1 for c in cities_src

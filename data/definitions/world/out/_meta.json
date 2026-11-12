@@ -22,20 +22,356 @@
     "port_city_coast_km": 25,
     "port_point_km": 15,
     "legacy": "40 cidades do cenário preservadas, exceto VEN-PAY (trocada por VEN-CBL)",
+    "curation": {
+      "source": "tools/world_city_curation.py",
+      "excluded": {
+        "EGY-POR": "Port Said: eixo do canal de Suez terá mecânica própria",
+        "EGY-SUE": "Suez: eixo do canal de Suez terá mecânica própria"
+      },
+      "forced": [
+        "EGY-MAT"
+      ]
+    },
     "color_min_delta_e": 30,
-    "color_note": "ΔE(Lab) entre vizinhos de fronteira; auditoria e menor par em docs/plans/world_all_data.md"
+    "color_min_delta_e_floor": 25,
+    "color_traditional_source": "data/definitions/world/traditional_colors.csv",
+    "color_adjacency": "terra: world_province.png com máscara world_sdf.png (R>128), >= 10 px de contato; cache em nation_adjacency.json",
+    "color_note": "tradicionais têm prioridade (tom papelaria); ajuste só de TOM na família (±12° de matiz); automáticas herdam a paleta do importador e só cedem se conflitarem com uma tradicional. Menor par e auditoria em docs/plans/world_all_data.md"
+  },
+  "colors": {
+    "traditional_count": 102,
+    "min_delta_e": 30.1,
+    "min_pair": [
+      30.1,
+      "CHN",
+      "IND"
+    ],
+    "adjusted": [
+      {
+        "tag": "IND",
+        "kind": "traditional",
+        "from": "#cf9455",
+        "to": "#d27a3b",
+        "min_delta_e": 30.1,
+        "target_met": true
+      },
+      {
+        "tag": "EGY",
+        "kind": "traditional",
+        "from": "#c4a86a",
+        "to": "#c3ab53",
+        "min_delta_e": 31.2,
+        "target_met": true
+      },
+      {
+        "tag": "VEN",
+        "kind": "traditional",
+        "from": "#b08a3c",
+        "to": "#8e7238",
+        "min_delta_e": 30.9,
+        "target_met": true
+      },
+      {
+        "tag": "PAK",
+        "kind": "traditional",
+        "from": "#5f8f5a",
+        "to": "#649e5e",
+        "min_delta_e": 31.7,
+        "target_met": true
+      },
+      {
+        "tag": "TUR",
+        "kind": "traditional",
+        "from": "#7d7a45",
+        "to": "#807d42",
+        "min_delta_e": 32.0,
+        "target_met": true
+      },
+      {
+        "tag": "KEN",
+        "kind": "traditional",
+        "from": "#6f9a63",
+        "to": "#5f7f56",
+        "min_delta_e": 31.0,
+        "target_met": true
+      },
+      {
+        "tag": "OMN",
+        "kind": "traditional",
+        "from": "#b0985f",
+        "to": "#ac904d",
+        "min_delta_e": 31.6,
+        "target_met": true
+      },
+      {
+        "tag": "ROU",
+        "kind": "traditional",
+        "from": "#a8843f",
+        "to": "#8d6f35",
+        "min_delta_e": 30.2,
+        "target_met": true
+      },
+      {
+        "tag": "BLR",
+        "kind": "traditional",
+        "from": "#b0a060",
+        "to": "#948050",
+        "min_delta_e": 30.9,
+        "target_met": true
+      },
+      {
+        "tag": "URY",
+        "kind": "traditional",
+        "from": "#4f74a0",
+        "to": "#426186",
+        "min_delta_e": 31.2,
+        "target_met": true
+      },
+      {
+        "tag": "TUN",
+        "kind": "traditional",
+        "from": "#b8a06a",
+        "to": "#b18d5a",
+        "min_delta_e": 30.4,
+        "target_met": true
+      },
+      {
+        "tag": "BGD",
+        "kind": "traditional",
+        "from": "#4f7f5a",
+        "to": "#4c8258",
+        "min_delta_e": 31.6,
+        "target_met": true
+      },
+      {
+        "tag": "NPL",
+        "kind": "traditional",
+        "from": "#b0564a",
+        "to": "#a24f44",
+        "min_delta_e": 30.4,
+        "target_met": true
+      },
+      {
+        "tag": "HUN",
+        "kind": "traditional",
+        "from": "#8fae6a",
+        "to": "#8faa6e",
+        "min_delta_e": 31.0,
+        "target_met": true
+      },
+      {
+        "tag": "JOR",
+        "kind": "traditional",
+        "from": "#b8a07a",
+        "to": "#a7895a",
+        "min_delta_e": 30.4,
+        "target_met": true
+      },
+      {
+        "tag": "CZE",
+        "kind": "traditional",
+        "from": "#7f9ab8",
+        "to": "#5b71ab",
+        "min_delta_e": 30.8,
+        "target_met": true
+      },
+      {
+        "tag": "GEO",
+        "kind": "traditional",
+        "from": "#b0846a",
+        "to": "#b47b66",
+        "min_delta_e": 30.4,
+        "target_met": true
+      },
+      {
+        "tag": "LTU",
+        "kind": "traditional",
+        "from": "#b8a860",
+        "to": "#bbbd5b",
+        "min_delta_e": 32.1,
+        "target_met": true
+      },
+      {
+        "tag": "HRV",
+        "kind": "traditional",
+        "from": "#b8a055",
+        "to": "#b58e43",
+        "min_delta_e": 31.6,
+        "target_met": true
+      },
+      {
+        "tag": "BEL",
+        "kind": "traditional",
+        "from": "#b39a4a",
+        "to": "#b9a944",
+        "min_delta_e": 33.2,
+        "target_met": true
+      },
+      {
+        "tag": "ARM",
+        "kind": "traditional",
+        "from": "#8f7fae",
+        "to": "#816da8",
+        "min_delta_e": 32.8,
+        "target_met": true
+      },
+      {
+        "tag": "LUX",
+        "kind": "traditional",
+        "from": "#b07a72",
+        "to": "#b4776e",
+        "min_delta_e": 30.4,
+        "target_met": true
+      },
+      {
+        "tag": "TCD",
+        "kind": "auto",
+        "from": "#62955a",
+        "to": "#abab54",
+        "min_delta_e": 33.8,
+        "target_met": true
+      },
+      {
+        "tag": "MOZ",
+        "kind": "auto",
+        "from": "#496e89",
+        "to": "#5454ab",
+        "min_delta_e": 47.7,
+        "target_met": true
+      },
+      {
+        "tag": "ZMB",
+        "kind": "auto",
+        "from": "#776953",
+        "to": "#6d614c",
+        "min_delta_e": 30.7,
+        "target_met": true
+      },
+      {
+        "tag": "TKM",
+        "kind": "auto",
+        "from": "#62955a",
+        "to": "#5f9956",
+        "min_delta_e": 32.1,
+        "target_met": true
+      },
+      {
+        "tag": "ZWE",
+        "kind": "auto",
+        "from": "#5a9b88",
+        "to": "#569f8a",
+        "min_delta_e": 30.4,
+        "target_met": true
+      },
+      {
+        "tag": "CIV",
+        "kind": "auto",
+        "from": "#8c955a",
+        "to": "#83b983",
+        "min_delta_e": 34.4,
+        "target_met": true
+      },
+      {
+        "tag": "LAO",
+        "kind": "auto",
+        "from": "#496e89",
+        "to": "#54abab",
+        "min_delta_e": 41.5,
+        "target_met": true
+      },
+      {
+        "tag": "KHM",
+        "kind": "auto",
+        "from": "#a0604b",
+        "to": "#ab8e54",
+        "min_delta_e": 42.1,
+        "target_met": true
+      },
+      {
+        "tag": "SUR",
+        "kind": "auto",
+        "from": "#49895c",
+        "to": "#83b9a7",
+        "min_delta_e": 31.0,
+        "target_met": true
+      },
+      {
+        "tag": "TJK",
+        "kind": "auto",
+        "from": "#797648",
+        "to": "#83b995",
+        "min_delta_e": 34.7,
+        "target_met": true
+      },
+      {
+        "tag": "BEN",
+        "kind": "auto",
+        "from": "#608949",
+        "to": "#b9b983",
+        "min_delta_e": 31.4,
+        "target_met": true
+      },
+      {
+        "tag": "ARE",
+        "kind": "auto",
+        "from": "#4ba067",
+        "to": "#aecbcb",
+        "min_delta_e": 31.6,
+        "target_met": true
+      },
+      {
+        "tag": "TGO",
+        "kind": "auto",
+        "from": "#b77949",
+        "to": "#be6c42",
+        "min_delta_e": 31.7,
+        "target_met": true
+      },
+      {
+        "tag": "BDI",
+        "kind": "auto",
+        "from": "#a98957",
+        "to": "#aecbae",
+        "min_delta_e": 31.8,
+        "target_met": true
+      },
+      {
+        "tag": "QAT",
+        "kind": "auto",
+        "from": "#62955a",
+        "to": "#b99583",
+        "min_delta_e": 34.9,
+        "target_met": true
+      },
+      {
+        "tag": "AND",
+        "kind": "auto",
+        "from": "#b77949",
+        "to": "#b98383",
+        "min_delta_e": 34.3,
+        "target_met": true
+      },
+      {
+        "tag": "LIE",
+        "kind": "auto",
+        "from": "#776953",
+        "to": "#6b604e",
+        "min_delta_e": 30.3,
+        "target_met": true
+      }
+    ]
   },
   "counts": {
     "nations": 231,
-    "cities": 858,
+    "cities": 857,
     "ports": 137,
-    "buildings": 858,
-    "i18n_keys": 1457,
+    "buildings": 857,
+    "i18n_keys": 1456,
     "legacy_cities": 40,
     "legacy_ports": 18,
-    "scenario_ports": 114,
-    "cities_with_pt_exonym": 265,
-    "cities_with_es_exonym": 265,
+    "scenario_ports": 137,
+    "cities_with_pt_exonym": 264,
+    "cities_with_es_exonym": 264,
     "cities_pt_same_as_en": 570
   },
   "top10": [
