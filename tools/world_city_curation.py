@@ -139,6 +139,23 @@ Baku/Sumqayıt, Fukuoka/Kitakyushu, Reykjavík/Reykjanesbær etc.) são portos
 distintos e reais, longe entre si; a atribuição de `port_of` sem limite de
 distância (Hamamatsu→Nagoya, Jacksonville→Miami) é uma pendência de dados
 separada, não um pino duplicado.
+
+Curadoria r6 (2026-11-12)
+-------------------------
+Sudão do Sul (`SSD`) e Somalilândia (`SOL`) entram como nações jogáveis (ver
+`world_nation_curation.NATION_SUPPLEMENT`). Como não existiam no roster, a fonte
+de cidades nunca teve linhas delas; as cidades entram por `FORCED_CITIES`:
+
+* SSD: **Juba** (capital; peso = censo 2008, 230.195), **Malakal** (126.483) e
+  **Wau** (118.331) — os três números são do último censo do Sudão (2008) e
+  servem de PESO de aglomeração; a população exibida é o rateio da população
+  nacional de 2026 (`build_world_cities.distribute_national_population`).
+* SOL: **Hargeisa** (capital) e **Berbera** (porto, `FORCED_PORTS`, ponto de
+  costa no golfo de Aden). Não há censo publicado: os pesos (1,2 M e 0,25 M) são
+  estimativas públicas declaradas, não números de jogo.
+
+Nenhuma capital é duplicada: `CAPITAL_OVERRIDES` aponta SSD→SSD-JUB e
+SOL→SOL-HAR, e as demais cidades entram com `capital = "0"`.
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -213,6 +230,8 @@ EXCLUDED_CITY_NAMES = {
 CAPITAL_OVERRIDES = {
     "ISR": "ISR-TLV",
     "PSX": "PSX-RAM",
+    "SSD": "SSD-JUB",
+    "SOL": "SOL-HAR",
 }
 
 # Cidades que entram sempre, mesmo fora da cota/da seleção automática.
@@ -770,6 +789,127 @@ FORCED_CITIES = [
         "legacy": "no",
         "initial_farm_tons": "",
     },
+    # ---------------------------------------------------------------- r6 (2026-11-12)
+    # Sudão do Sul (SSD) e Somalilândia (SOL) não existiam no roster, então a
+    # fonte de cidades nunca foi gerada para elas. As cidades entram pela
+    # curadoria (o importador as traria do GeoNames se a fonte fosse refeita).
+    # PESO = população da aglomeração usada como unidade de simulação; a
+    # população EXIBIDA é o rateio da população nacional de 2026 (build).
+    # Sudão do Sul: censo de 2008 (último censo; Southern Sudan Centre for
+    # Census) — números reais, usados como peso relativo.
+    {
+        "nation": "SSD",
+        "id": "SSD-JUB",
+        "name_en": "Juba",
+        "name_pt": "Juba",
+        "name_es": "Juba",
+        "lat": 4.8517,
+        "lon": 31.5825,
+        "population": 230195,
+        "population_year": 2008,
+        "capital": "1",
+        "port": "no",
+        "role": "capital",
+        "landmass": "africa",
+        "pop_src": "city_proper",
+        "note": ("curadoria r6: capital do Sudão do Sul (pedido do usuário); "
+                 "peso = censo 2008, a população exibida vem do rateio nacional"),
+        "source": ("censo 2008 do Sudão (Juba 230.195 hab.); coordenadas "
+                   "4.8517N 31.5825E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "SSD",
+        "id": "SSD-MAL",
+        "name_en": "Malakal",
+        "name_pt": "Malakal",
+        "name_es": "Malakal",
+        "lat": 9.5334,
+        "lon": 31.6605,
+        "population": 126483,
+        "population_year": 2008,
+        "capital": "0",
+        "port": "no",
+        "role": "regional",
+        "landmass": "africa",
+        "pop_src": "city_proper",
+        "note": ("curadoria r6: centro do Alto Nilo (pedido do usuário); "
+                 "peso = censo 2008"),
+        "source": ("censo 2008 do Sudão (Malakal 126.483 hab.); coordenadas "
+                   "9.5334N 31.6605E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "SSD",
+        "id": "SSD-WAU",
+        "name_en": "Wau",
+        "name_pt": "Wau",
+        "name_es": "Wau",
+        "lat": 7.7011,
+        "lon": 27.9894,
+        "population": 118331,
+        "population_year": 2008,
+        "capital": "0",
+        "port": "no",
+        "role": "regional",
+        "landmass": "africa",
+        "pop_src": "city_proper",
+        "note": ("curadoria r6: centro do Bahr el Ghazal Ocidental (pedido do "
+                 "usuário); peso = censo 2008"),
+        "source": ("censo 2008 do Sudão (Wau 118.331 hab.); coordenadas "
+                   "7.7011N 27.9894E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    # Somalilândia: não há censo publicado; os pesos são estimativas públicas
+    # (Hargeisa ~1,2 M; Berbera ~0,25 M) e a população exibida vem do rateio
+    # nacional (5,7 M), não destes números.
+    {
+        "nation": "SOL",
+        "id": "SOL-HAR",
+        "name_en": "Hargeisa",
+        "name_pt": "Hargeisa",
+        "name_es": "Hargeisa",
+        "lat": 9.5600,
+        "lon": 44.0650,
+        "population": 1200000,
+        "population_year": 2023,
+        "capital": "1",
+        "port": "no",
+        "role": "capital",
+        "landmass": "africa",
+        "pop_src": "estimate",
+        "note": ("curadoria r6: capital da Somalilândia (pedido do usuário); "
+                 "peso = estimativa pública, população exibida = rateio nacional"),
+        "source": ("estimativa pública (~1,2 M, 2023); coordenadas "
+                   "9.5600N 44.0650E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "SOL",
+        "id": "SOL-BER",
+        "name_en": "Berbera",
+        "name_pt": "Berbera",
+        "name_es": "Berbera",
+        "lat": 10.4356,
+        "lon": 45.0143,
+        "population": 250000,
+        "population_year": 2023,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "africa",
+        "pop_src": "estimate",
+        "note": ("curadoria r6: único porto de águas profundas do golfo de "
+                 "Aden (pedido do usuário); peso = estimativa pública"),
+        "source": ("estimativa pública (~250 mil, 2023); porto 10.439N "
+                   "45.010E; coordenadas 10.4356N 45.0143E"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
 ]
 
 # Portos repetidos: dois registros para o MESMO porto (mesma nação + mesmo
@@ -901,5 +1041,20 @@ FORCED_PORTS = [
         "port_of": "GUM-HAG",
         "source": ("Apra Harbor, porto comercial de Guam "
                    "(13.443N 144.652E); port_of = GUM-HAG"),
+    },
+    # ---------------------------------------------------------------- r6 (2026-11-12)
+    # Berbera: porto de águas profundas do golfo de Aden, o único da
+    # Somalilândia. O ponto é a costa real (o centro da cidade fica ~1 km
+    # terra adentro); o nav_mask alcança a célula pelo golfo.
+    {
+        "nation": "SOL",
+        "id": "SOL-BER",
+        "name": "Berbera",
+        "lat": 10.4390,
+        "lon": 45.0100,
+        "landmass": "africa",
+        "port_of": "SOL-BER",
+        "source": ("porto de Berbera, golfo de Aden (10.439N 45.010E); "
+                   "port_of = SOL-BER"),
     },
 ]

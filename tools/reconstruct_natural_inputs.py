@@ -23,10 +23,17 @@ import colorsys
 import json
 import os
 
+from world_nation_curation import ATLAS_TAG_ALIASES
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ATLAS = os.path.join(ROOT, "map", "map_data", "atlas", "provinces.json")
 DEFS = os.path.join(ROOT, "data", "definitions")
 HIST = os.path.join(ROOT, "data", "history")
+
+
+def game_tag(tag):
+    """Tag do atlas (Natural Earth) -> tag do jogo (KOS -> XKX, SDS -> SSD)."""
+    return ATLAS_TAG_ALIASES.get(tag, tag)
 
 
 def key_colors(count):
@@ -52,7 +59,8 @@ def read_atlas_owners():
     with open(ATLAS, encoding="utf-8") as handle:
         data = json.load(handle)
     return {
-        f"PRV{province['id']:06d}": province.get("nation") or province.get("country") or "NNN"
+        f"PRV{province['id']:06d}": game_tag(
+            province.get("nation") or province.get("country") or "NNN")
         for province in data["provinces"]
     }
 
@@ -165,7 +173,7 @@ def main():
     colors = key_colors(len(provinces))
 
     def nation_of(province):
-        return province.get("nation") or province.get("country") or "NNN"
+        return game_tag(province.get("nation") or province.get("country") or "NNN")
 
     # provinces.txt — o id preserva o id global do atlas (PRV%06d), para que o
     # mesmo ponto (px, py) mapeie para a MESMA província que o raster

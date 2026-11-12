@@ -3276,8 +3276,13 @@ func _build_urban(record: Dictionary) -> Node3D:
 	# Crescimento orgânico só em terra firme e dentro do território da nação.
 	manager.buildable_filter = _make_urban_filter(
 			manager.position, String(city.get("nation", "")))
+	# O tecido urbano cresce pela aglomeração da fonte (`sim_population`), não
+	# pela população nacional rateada — senão toda cidade viraria metrópole.
+	var urban_population := float(city.get("sim_population", 0.0))
+	if urban_population <= 0.0:
+		urban_population = float(city.get("population", 0.0))
 	manager.apply_indicators({
-		"population": float(city.get("population", 0.0)),
+		"population": urban_population,
 		"industrialization": float(city.get("industrialization", 0.0)),
 		"income": float(city.get("income", 0.5)),
 		"jobs": float(city.get("jobs", 0.0)),

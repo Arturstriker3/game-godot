@@ -144,8 +144,10 @@ SGP,Singapore,sg,#604ba0,Singapore,SGD,city_state,industrial,asia,6111175,998.3
 SLB,Solomon Islands,sb,#896a49,Honiara,SBD,monarchy,resource,oceania,838645,2.3
 SLE,Sierra Leone,sl,#776953,Freetown,SLE,republic,agrarian,africa,8819794,32.8
 SLV,El Salvador,sv,#8c955a,San Salvador,USD,republic,balanced,north_america,6365503,89.8
+SOL,Somaliland,sol,#1f6b3a,Hargeisa,SLS,republic,agrarian,africa,5700000,
 SOM,Somalia,so,#7fa3c4,Mogadishu,SOS,federation,resource,africa,19654739,32.3
 SRB,Serbia,rs,#b06a6a,Belgrade,RSD,republic,balanced,europe,6549143,222.1
+SSD,South Sudan,ss,#245c66,Juba,SSP,republic,agrarian,africa,12188788,
 SUR,Suriname,sr,#83b9a7,Paramaribo,SRD,republic,resource,south_america,639850,14.5
 SVK,Slovakia,sk,#b5765a,Bratislava,EUR,republic,industrial,europe,5413813,266.9
 SVN,Slovenia,si,#8f8fb8,Ljubljana,EUR,republic,industrial,europe,2130986,126.2
@@ -171,7 +173,7 @@ UZB,Uzbekistan,uz,#b8a45f,Tashkent,UZS,republic,resource,asia,37053428,504.0
 VCT,Saint Vincent and the Grenadines,vc,#4f8f74,Kingstown,XCD,monarchy,balanced,north_america,99924,2.3
 VEN,Venezuela,ve,#8e7238,Caracas,VES,federation,resource,south_america,28516896,
 VNM,Vietnam,vn,#b06a7a,Hanoi,VND,republic,industrial,asia,101598527,1837.8
-XKX,Kosovo,xk,#5a7f9b,Pristina,EUR,republic,balanced,europe,1576876,30.4
+XKX,Kosovo,xk,#3d6fa8,Pristina,EUR,republic,balanced,europe,1576876,30.4
 YEM,Yemen,ye,#9a6a70,Sanaa,YER,republic,agrarian,middle_east,41773878,
 ZAF,South Africa,za,#7f8c4f,Pretoria,ZAR,republic,resource,africa,64747319,1029.9
 ZMB,Zambia,zm,#6d614c,Lusaka,ZMW,republic,resource,africa,21913874,96.0

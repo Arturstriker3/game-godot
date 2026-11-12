@@ -39,12 +39,12 @@ const MAP_H := 2500.0
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 
 ## Tag do jogo -> código ISO-3 do Natural Earth (adm0_a3). A identidade cobre
-## quase todas; só NED (NLD) e XKX (KOS) divergem. KOS não tem território na base
-## natural atual (lacuna declarada), então XKX fica sem jazida própria.
-const NATION_CODE_OVERRIDES := {"NED": "NLD", "XKX": "KOS"}
+## quase todas; só NED (NLD), XKX (KOS) e SSD (SDS) divergem. As províncias do
+## Kosovo já existem na base natural (tag KOS) desde a r6 e entram em XKX.
+const NATION_CODE_OVERRIDES := {"NED": "NLD", "XKX": "KOS", "SSD": "SDS"}
 ## Tag do jogo -> tag `nation` do atlas admin-1 (provinces.json). Só Kosovo
-## diverge (XKX no jogo, KOS no atlas).
-const PROVINCE_TAG_OVERRIDES := {"XKX": "KOS"}
+## (XKX/KOS) e Sudão do Sul (SSD/SDS) divergem; Somalilândia é SOL nos dois.
+const PROVINCE_TAG_OVERRIDES := {"XKX": "KOS", "SSD": "SDS"}
 ## Fração mínima de uma província doada quando a nação NÃO tem nenhuma província
 ## própria (Vaticano é o único caso). A regra de fração normal divide pela
 ## distância; aqui o piso evita cidade sem terra e mantém a doação simbólica
@@ -598,7 +598,12 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 	for city in cities:
 		var city_id := String(city.get("id", ""))
 		nation_of[city_id] = String(city.get("nation", ""))
-		population_of[city_id] = float(city.get("population", 0.0))
+		# `population` é a população real exibida; a fazenda inicial se dimensiona
+		# pela unidade de simulação (`sim_population`), como o núcleo C++.
+		var sim_population := float(city.get("sim_population", 0.0))
+		if sim_population <= 0.0:
+			sim_population = float(city.get("population", 0.0))
+		population_of[city_id] = sim_population
 	# 1ª passada: cultura, aptidão e capacidade física de cada fazenda.
 	var entries: Array = []
 	var land_eff_by_city := {}

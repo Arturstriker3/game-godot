@@ -57,7 +57,7 @@ BIO12_PATH = os.path.join(WC, "wc2.1_10m_bio_12.tif")
 CELL = 0.16666666666666666  # 10 arc-min = 1/6 grau
 
 # Tag do jogo -> ISO-3 do Natural Earth (a mesma tabela do GeographyService).
-NATION_CODE_OVERRIDES = {"NED": "NLD", "XKX": "KOS"}
+NATION_CODE_OVERRIDES = {"NED": "NLD", "XKX": "KOS", "SSD": "SDS"}
 
 
 def read_json(path):

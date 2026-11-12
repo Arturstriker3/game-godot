@@ -669,11 +669,16 @@ SLE-FRE,sle_fre_wheat,Freetown — trigo,240.8
 SLE-KEN,sle_ken_wheat,Kenema — trigo,76.5
 SLV-SAN,slv_san_wheat,San Salvador — trigo,157.8
 SLV-SANM,slv_sanm_wheat,San Miguel de la Frontera — trigo,74.1
+SOL-HAR,sol_har_wheat,Hargeisa — trigo,360.0
+SOL-BER,sol_ber_wheat,Berbera — trigo,75.0
 SOM-MOG,som_mog_wheat,Mogadíscio — trigo,776.2
 SOM-KIS,som_kis_wheat,Kismayo — trigo,70.5
 SOM-ELD,som_eld_wheat,El Dibir — trigo,60.0
 SRB-BELG,srb_belg_wheat,Belgrado — trigo,382.1
 SRB-NIS2,srb_nis2_wheat,Niš — trigo,75.0
+SSD-JUB,ssd_jub_wheat,Juba — trigo,69.1
+SSD-MAL,ssd_mal_wheat,Malakal — trigo,37.9
+SSD-WAU,ssd_wau_wheat,Wau — trigo,35.5
 SUR-PBM,pbm_wheat,Paramaribo — trigo,72.3
 SUR-BRO,sur_bro_wheat,Brokopondo — trigo,4.4
 SVK-BRAT,svk_brat_wheat,Bratislava — trigo,127.1

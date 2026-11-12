@@ -227,12 +227,7 @@
   ],
   "CSI": [],
   "CUB": [],
-  "CYN": [
-   "CYP"
-  ],
-  "CYP": [
-   "CYN"
-  ],
+  "CYP": [],
   "CZE": [
    "AUT",
    "DEU",
@@ -284,7 +279,6 @@
    "ETH",
    "SDN"
   ],
-  "ESB": [],
   "ESP": [
    "FRA",
    "PRT"
@@ -455,9 +449,6 @@
    "SYR"
   ],
   "JPN": [],
-  "KAB": [
-   "KAZ"
-  ],
   "KAS": [
    "CHN",
    "IND",
@@ -465,7 +456,6 @@
   ],
   "KAZ": [
    "CHN",
-   "KAB",
    "KGZ",
    "RUS",
    "TKM",
@@ -929,7 +919,6 @@
    "CAN",
    "MEX"
   ],
-  "USG": [],
   "UZB": [
    "AFG",
    "KAZ",
@@ -948,7 +937,6 @@
    "KHM",
    "LAO"
   ],
-  "WSB": [],
   "YEM": [
    "OMN",
    "SAU"

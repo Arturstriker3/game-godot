@@ -45,6 +45,9 @@ def main() -> None:
             "home_nation": row["home_nation"].strip(),
             "name": row["name"].strip(),
             "population": float(row["population"]),
+            # Unidade de simulação: aglomeração da fonte. O núcleo C++ consome
+            # este campo; `population` é a população nacional real rateada.
+            "sim_population": float(row.get("sim_population") or row["population"]),
             "production": 0.0,  # preenchido pelas construções
             "x": float(row["x"]),
             "y": float(row["y"]),

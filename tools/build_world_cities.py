@@ -61,8 +61,8 @@ from world_city_curation import (
     EXCLUDED_PORTS,
 )
 from world_nation_curation import (
-    KEEP_AREA_KM2, KEEP_POP, STRATEGIC_KEEP, audit_source, classify,
-    transfer_target,
+    ATLAS_TAG_ALIASES, KEEP_AREA_KM2, KEEP_POP, NO_ISO2, STRATEGIC_KEEP,
+    audit_source, classify, quota, supplement_nations, transfer_target,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -130,7 +130,7 @@ def resolve_scenario_colors(nations_src):
         area[iso3] = float(row["area_km2"] or 0)
     order = sorted(base, key=lambda tag: (-area[tag], tag))
     traditional = nation_colors.load_traditional()
-    graph = nation_colors.load_or_refresh_adjacency()
+    graph = game_graph(nation_colors.load_or_refresh_adjacency())
     unknown = sorted(tag for tag in traditional if tag not in base)
     if unknown:
         raise SystemExit(f"traditional_colors.csv: tags fora do cenário: {', '.join(unknown)}")
@@ -281,9 +281,74 @@ def write_csv(directory, name, rows, fields):
             writer.writerow({k: row.get(k, "") for k in fields})
 
 
-def quota(population, gdp_bn, area_km2):
-    extra = 1 + int(population // 25_000_000) + int(gdp_bn // 1500) + int(area_km2 // 600_000)
-    return 1 + max(1, min(24, extra))
+def game_graph(graph):
+    """Adjacência do atlas (tags do Natural Earth) -> tags do jogo.
+
+    O raster usa KOS/SDS; o roster usa XKX/SSD. Sem esta ponte as três nações
+    novas (e Kosovo) ficariam sem auditoria de cor: `graph.get("XKX")` seria
+    vazio e a regra ΔE ≥ 30 nunca veria os vizinhos reais.
+    """
+    def tag(name):
+        return ATLAS_TAG_ALIASES.get(name, name)
+
+    out = {}
+    for name, neighbors in graph.items():
+        out.setdefault(tag(name), set()).update(tag(other) for other in neighbors)
+    return {name: sorted(neighbors) for name, neighbors in sorted(out.items())}
+
+
+def distribute_national_population(nations_out, cities_out):
+    """Divide a população NACIONAL real entre as cidades da nação.
+
+    Contrato (2026-11):
+      * `sim_population` = aglomeração da fonte (GeoNames, city proper) — a
+        UNIDADE DE SIMULAÇÃO. O núcleo econômico continua consumindo este
+        número, então o balanço (comida, caixa, empregos, preços) não muda;
+      * `population` = população real 2026 da nação (nations.csv), distribuída
+        entre as cidades proporcionalmente à aglomeração. O fator por nação
+        (P / Σ aglomerações) aplica a mesma parcela rural do catchment a todas
+        as cidades, que é o rateio proporcional pedido: quem tem mais peso
+        urbano administra mais população rural.
+      * a soma por nação é EXATA (o resto do arredondamento vai para as maiores
+        frações, com desempate por id — determinístico).
+
+    Devolve a lista de problemas (vazia quando todas as somas batem).
+    """
+    nation_pop = {row["id"]: int(float(row["population"] or 0))
+                  for row in nations_out}
+    by_nation = defaultdict(list)
+    for city in cities_out:
+        by_nation[city["nation"]].append(city)
+
+    for group in by_nation.values():
+        total = nation_pop.get(group[0]["nation"], 0)
+        weights = [max(0, int(city.get("sim_population", 0))) for city in group]
+        weight_sum = sum(weights)
+        if total <= 0:
+            continue
+        if weight_sum <= 0:
+            base, extra = divmod(total, len(group))
+            for index, city in enumerate(group):
+                city["population"] = base + (1 if index < extra else 0)
+            continue
+        raw = [total * weight / weight_sum for weight in weights]
+        values = [int(value) for value in raw]
+        remainder = total - sum(values)
+        order = sorted(range(len(group)),
+                       key=lambda i: (-(raw[i] - values[i]), group[i]["id"]))
+        for index in order[:remainder]:
+            values[index] += 1
+        for city, value in zip(group, values):
+            city["population"] = value
+
+    problems = []
+    for tag, group in sorted(by_nation.items()):
+        got = sum(int(city["population"]) for city in group)
+        if got != nation_pop.get(tag, 0):
+            problems.append(
+                f"{tag}: soma das cidades {got} != população nacional "
+                f"{nation_pop.get(tag, 0)}")
+    return problems
 
 
 def building_code(city_id, legacy):
@@ -418,7 +483,9 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
         final = row["id"] if row["id"] in legacy_ids else mapping[row["id"]]
         scenario_cities_out.append({
             "id": final, "nation": row["nation"], "home_nation": row["home_nation"],
-            "name": row["name"], "population": row["population"], "x": row["x"],
+            "name": row["name"], "population": row["population"],
+            "sim_population": row.get("sim_population", row["population"]),
+            "x": row["x"],
             "y": row["y"], "landmass": row["landmass"], "capital": row["capital"],
         })
     scenario_cities_out.sort(key=lambda r: r["id"])
@@ -482,8 +549,8 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
     scenario_fields = ["id", "name", "flag", "color", "capital", "currency",
                        "government", "ai_profile", "region", "population",
                        "gdp_ppp_bn"]
-    city_fields = ["id", "nation", "home_nation", "name", "population", "x", "y",
-                   "landmass", "capital"]
+    city_fields = ["id", "nation", "home_nation", "name", "population",
+                   "sim_population", "x", "y", "landmass", "capital"]
     port_fields = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
     building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
     i18n_fields = ["key", "pt_BR", "en", "es"]
@@ -515,6 +582,7 @@ def main():
     args = parser.parse_args()
 
     nations_src = read_csv(os.path.join(WORLD, "nations_source.csv"))
+    nations_src = supplement_nations(nations_src)
     nations_src, nation_report, nation_errors = curate_nations(nations_src)
     colors, color_report = resolve_scenario_colors(nations_src)
     cities_src = read_csv(os.path.join(WORLD, "cities_source.csv"))
@@ -540,7 +608,7 @@ def main():
     for row in nations_src:
         if not row["name_en"] or not row["name_pt"] or not row["name_es"]:
             problems.append(f"{row['iso3']}: nome i18n vazio")
-        if not row["iso2"]:
+        if not row["iso2"] and row["iso3"] not in NO_ISO2:
             problems.append(f"{row['iso3']}: sem iso2")
     for row in cities_src:
         if row["nation"] not in nations_by_id:
@@ -627,8 +695,11 @@ def main():
         for field, value in (("x", x), ("y", y)):
             if abs(float(src[field]) - value) > 0.2:
                 problems.append(f"legado {row['id']}: {field} divergente")
-        if int(src["population"]) != int(row["population"]):
-            problems.append(f"legado {row['id']}: população divergente")
+        # O contrato legado preserva a população de SIMULAÇÃO (aglomeração);
+        # `population` passou a ser a parcela da população nacional real (2026).
+        simulated = src.get("sim_population") or src["population"]
+        if int(simulated) != int(row["population"]):
+            problems.append(f"legado {row['id']}: população de simulação divergente")
         origin = row.get("_origin", row["nation"])
         allowed_nations = {origin, transfer_target(origin)} - {""}
         if src["nation"] not in allowed_nations:
@@ -671,7 +742,7 @@ def main():
         nations_out.append({
             "id": iso3,
             "name": nation["name_en"],
-            "flag": nation["iso2"].lower(),
+            "flag": nation.get("flag") or nation["iso2"].lower(),
             "color": colors[iso3],
             "capital": forced_capital_names.get(iso3, nation["capital_en"]),
             "currency": nation["currency"],
@@ -691,7 +762,12 @@ def main():
             x, y = lonlat_to_xy(float(city["lon"]), float(city["lat"]))
             cities_out.append({
                 "id": city["id"], "nation": iso3, "home_nation": iso3,
-                "name": city["name_en"], "population": int(city["population"]),
+                "name": city["name_en"],
+                # `population` é reescrita pela distribuição nacional abaixo;
+                # `sim_population` guarda a aglomeração da fonte (unidade de
+                # simulação) e NUNCA é reescrita pelo build.
+                "population": int(city["population"]),
+                "sim_population": int(city["population"]),
                 "x": round(x, 1), "y": round(y, 1),
                 "landmass": city["landmass"], "capital": city["capital"],
             })
@@ -705,6 +781,10 @@ def main():
             })
             i18n_out.append({"key": f"city.name.{city['id']}", "pt_BR": city["name_pt"],
                              "en": city["name_en"], "es": city["name_es"]})
+
+    # População: real (nations.csv) nas cidades, aglomeração em sim_population.
+    # Ver `distribute_national_population`.
+    problems.extend(distribute_national_population(nations_out, cities_out))
 
     for port in sorted(ports_src, key=lambda r: r["id"]):
         x, y = lonlat_to_xy(float(port["lon"]), float(port["lat"]))
@@ -758,8 +838,8 @@ def main():
 
     nation_fields = ["id", "name", "flag", "color", "capital", "currency", "government",
                      "ai_profile", "region", "population", "gdp_ppp_bn"]
-    city_fields = ["id", "nation", "home_nation", "name", "population", "x", "y",
-                   "landmass", "capital"]
+    city_fields = ["id", "nation", "home_nation", "name", "population",
+                   "sim_population", "x", "y", "landmass", "capital"]
     port_fields = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
     building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
     i18n_fields = ["key", "pt_BR", "en", "es"]

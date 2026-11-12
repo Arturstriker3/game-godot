@@ -75,11 +75,18 @@
         "JPN-NAH",
         "GUM-HAG",
         "ROU-ORA",
-        "BGR-RUS"
+        "BGR-RUS",
+        "SSD-JUB",
+        "SSD-MAL",
+        "SSD-WAU",
+        "SOL-HAR",
+        "SOL-BER"
       ],
       "capital_overrides": {
         "ISR": "ISR-TLV",
-        "PSX": "PSX-RAM"
+        "PSX": "PSX-RAM",
+        "SSD": "SSD-JUB",
+        "SOL": "SOL-HAR"
       },
       "forced_ports": [
         "GRC-HER",
@@ -89,7 +96,8 @@
         "RUS-MAR",
         "RUS-SEV",
         "JPN-NAH",
-        "GUM-HAG"
+        "GUM-HAG",
+        "SOL-BER"
       ]
     },
     "nation_curation": {
@@ -723,7 +731,7 @@
     "color_note": "tradicionais têm prioridade (tom papelaria); ajuste só de TOM na família (±12° de matiz); automáticas herdam a paleta do importador e só cedem se conflitarem com uma tradicional. Menor par e auditoria em docs/plans/world_all_data.md"
   },
   "colors": {
-    "traditional_count": 109,
+    "traditional_count": 112,
     "min_delta_e": 30.1,
     "min_pair": [
       30.1,
@@ -1030,17 +1038,17 @@
     ]
   },
   "counts": {
-    "nations": 177,
-    "cities": 802,
-    "ports": 136,
-    "buildings": 802,
-    "i18n_keys": 1292,
+    "nations": 179,
+    "cities": 807,
+    "ports": 137,
+    "buildings": 807,
+    "i18n_keys": 1302,
     "legacy_cities": 39,
     "legacy_ports": 18,
-    "scenario_ports": 136,
+    "scenario_ports": 137,
     "cities_with_pt_exonym": 250,
     "cities_with_es_exonym": 257,
-    "cities_pt_same_as_en": 529
+    "cities_pt_same_as_en": 534
   },
   "top10": [
     {

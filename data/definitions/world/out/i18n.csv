@@ -672,11 +672,16 @@ city.name.SLE-KEN,Kenema,Kenema,Kenema
 city.name.SLV-SAN,San Salvador,San Salvador,San Salvador
 city.name.SLV-SANM,San Miguel de la Frontera,San Miguel,San Miguel
 city.name.SMR-SANM,San Marino,San Marino,San Marino
+city.name.SOL-BER,Berbera,Berbera,Berbera
+city.name.SOL-HAR,Hargeisa,Hargeisa,Hargeisa
 city.name.SOM-ELD,El Dibir,El Dibir,El Dibir
 city.name.SOM-KIS,Kismayo,Kismayo,Kismaayo
 city.name.SOM-MOG,Mogadíscio,Mogadishu,Mogadiscio
 city.name.SRB-BELG,Belgrado,Belgrade,Belgrado
 city.name.SRB-NIS2,Niš,Niš,Niš
+city.name.SSD-JUB,Juba,Juba,Juba
+city.name.SSD-MAL,Malakal,Malakal,Malakal
+city.name.SSD-WAU,Wau,Wau,Wau
 city.name.SUR-BRO,Brokopondo,Brokopondo,Brokopondo
 city.name.SUR-PBM,Paramaribo,Paramaribo,Paramaribo
 city.name.SVK-BRAT,Bratislava,Bratislava,Bratislava
@@ -946,8 +951,10 @@ nation.SGP,Singapura,Singapore,Singapur
 nation.SLB,Ilhas Salomão,Solomon Islands,Islas Salomón
 nation.SLE,Serra Leoa,Sierra Leone,Sierra Leona
 nation.SLV,El Salvador,El Salvador,El Salvador
+nation.SOL,Somalilândia,Somaliland,Somalilandia
 nation.SOM,Somália,Somalia,Somalia
 nation.SRB,Sérvia,Serbia,Serbia
+nation.SSD,Sudão do Sul,South Sudan,Sudán del Sur
 nation.SUR,Suriname,Suriname,Surinam
 nation.SVK,Eslováquia,Slovakia,Eslovaquia
 nation.SVN,Eslovénia,Slovenia,Eslovenia
@@ -1123,8 +1130,10 @@ nation.name.SGP,Singapura,Singapore,Singapur
 nation.name.SLB,Ilhas Salomão,Solomon Islands,Islas Salomón
 nation.name.SLE,Serra Leoa,Sierra Leone,Sierra Leona
 nation.name.SLV,El Salvador,El Salvador,El Salvador
+nation.name.SOL,Somalilândia,Somaliland,Somalilandia
 nation.name.SOM,Somália,Somalia,Somalia
 nation.name.SRB,Sérvia,Serbia,Serbia
+nation.name.SSD,Sudão do Sul,South Sudan,Sudán del Sur
 nation.name.SUR,Suriname,Suriname,Surinam
 nation.name.SVK,Eslováquia,Slovakia,Eslovaquia
 nation.name.SVN,Eslovénia,Slovenia,Eslovenia
@@ -1265,6 +1274,7 @@ port.name.SAU-DAM,Dammam,Dammam,Dammam
 port.name.SAU-JED,Jeddah,Jeddah,Jeddah
 port.name.SLV-SAN,San Salvador,San Salvador,San Salvador
 port.name.SMR-SAN,San Marino,San Marino,San Marino
+port.name.SOL-BER,Berbera,Berbera,Berbera
 port.name.SUR-PBM,Paramaribo,Paramaribo,Paramaribo
 port.name.SWE-GOT,Gothenburg,Gothenburg,Gothenburg
 port.name.SWE-STO,Stockholm,Stockholm,Stockholm

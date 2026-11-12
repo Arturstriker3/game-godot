@@ -108,8 +108,8 @@
 		"province_controller": "ETH"
 	},
 	"PRV000028": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV000029": {
 		"province_owner": "ETH",
@@ -936,20 +936,20 @@
 		"province_controller": "AZE"
 	},
 	"PRV000238": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000239": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000240": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000241": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000242": {
 		"province_owner": "TUR",
@@ -1428,24 +1428,24 @@
 		"province_controller": "CAF"
 	},
 	"PRV000361": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV000362": {
 		"province_owner": "CAF",
 		"province_controller": "CAF"
 	},
 	"PRV000363": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV000364": {
 		"province_owner": "COD",
 		"province_controller": "COD"
 	},
 	"PRV000365": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV000366": {
 		"province_owner": "DJI",
@@ -2592,24 +2592,24 @@
 		"province_controller": "MKD"
 	},
 	"PRV000652": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000653": {
 		"province_owner": "MKD",
 		"province_controller": "MKD"
 	},
 	"PRV000654": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000655": {
 		"province_owner": "MKD",
 		"province_controller": "MKD"
 	},
 	"PRV000656": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000657": {
 		"province_owner": "MKD",
@@ -2624,8 +2624,8 @@
 		"province_controller": "MKD"
 	},
 	"PRV000660": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000661": {
 		"province_owner": "MKD",
@@ -2768,8 +2768,8 @@
 		"province_controller": "IND"
 	},
 	"PRV000696": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000697": {
 		"province_owner": "SRB",
@@ -2784,36 +2784,36 @@
 		"province_controller": "SRB"
 	},
 	"PRV000700": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000701": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000702": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000703": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000704": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000705": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000706": {
 		"province_owner": "MNE",
 		"province_controller": "MNE"
 	},
 	"PRV000707": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV000708": {
 		"province_owner": "MNE",
@@ -4440,16 +4440,16 @@
 		"province_controller": "ETH"
 	},
 	"PRV001114": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV001115": {
 		"province_owner": "ETH",
 		"province_controller": "ETH"
 	},
 	"PRV001116": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV001117": {
 		"province_owner": "TCD",
@@ -6452,8 +6452,8 @@
 		"province_controller": "SDN"
 	},
 	"PRV001618": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV001619": {
 		"province_owner": "CHN",
@@ -6464,8 +6464,8 @@
 		"province_controller": "CHN"
 	},
 	"PRV001622": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV001623": {
 		"province_owner": "SDN",
@@ -12012,12 +12012,12 @@
 		"province_controller": "SDN"
 	},
 	"PRV003411": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV003412": {
-		"province_owner": "SDS",
-		"province_controller": "SDS"
+		"province_owner": "SSD",
+		"province_controller": "SSD"
 	},
 	"PRV003413": {
 		"province_owner": "ESP",
@@ -13064,28 +13064,28 @@
 		"province_controller": "KWT"
 	},
 	"PRV003674": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV003675": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV003676": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV003677": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV003678": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV003679": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV003680": {
 		"province_owner": "KEN",
@@ -16496,36 +16496,36 @@
 		"province_controller": "MDG"
 	},
 	"PRV004551": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004552": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004553": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004554": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004555": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004556": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004557": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004558": {
-		"province_owner": "KOS",
-		"province_controller": "KOS"
+		"province_owner": "XKX",
+		"province_controller": "XKX"
 	},
 	"PRV004560": {
 		"province_owner": "MLT",

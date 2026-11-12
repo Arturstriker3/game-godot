@@ -27,6 +27,17 @@ r1: fundido em USA, com Hagåtña e porto em Apra Harbor). A ilha de Okinawa
 (Naha) e Miyakojima voltam ao mapa como cidades japonesas; as três são mantidas
 no atlas e no nav_mask pelos seeds de `build_atlas_layers.py`.
 
+Rodada r6 (2026-11-12): Sudão do Sul (SSD), Kosovo (XKX) e Somalilândia (SOL)
+entram como nações JOGÁVEIS (pedido do usuário). As três já existem como
+polígonos admin-0 no Natural Earth, mas ficavam sem linha no roster e por isso
+pintavam bege. Kosovo já tinha linha na fonte (status "special") e cidades;
+o que faltava era o reconhecimento das províncias tag KOS como XKX. Sudão do
+Sul e Somalilândia entram por `NATION_SUPPLEMENT` (abaixo), aplicado por
+`build_world_cities.curate_nations`: a decisão vive aqui, então regenerar a
+fonte (`import_world_sources.py`) não remove as duas do cenário. As províncias
+continuam com as tags do Natural Earth (SDS/KOS/SOL); `ATLAS_TAG_ALIASES` faz a
+ponte para o tag do jogo em cores, geografia e território.
+
 Microestados europeus não viram mar nem nação própria: o território é
 ANEXADO ao vizinho e as províncias passam a ser do vizinho.
 
@@ -80,6 +91,87 @@ from __future__ import annotations
 # Limiar do critério (não é número de jogo: é a regra de curadoria aprovada).
 KEEP_POP = 500_000
 KEEP_AREA_KM2 = 10_000.0
+
+# Tag `nation` do atlas admin-0/admin-1 do Natural Earth -> tag do jogo.
+# O resto é identidade. SDS é o ADM0_A3 do Natural Earth para o Sudão do Sul
+# (o roster usa SSD, o ISO 3166 oficial); KOS é o código do Natural Earth para
+# Kosovo (o roster usa XKX, o código de uso livre). A ponte vale para cores,
+# geografia (GeographyService/build_province_nature) e território.
+ATLAS_TAG_ALIASES = {"KOS": "XKX", "SDS": "SSD"}
+
+# Nações jogáveis que NÃO existem em `nations_source.csv` (a geração da fonte
+# não as produz) e entram pelo build. Kosovo já tem linha na fonte e não está
+# aqui. Os campos seguem o schema de `nations_source.csv`; `quota()` é calculada
+# no build.
+#
+# Fontes (2026, as mesmas famílias da fonte):
+#   * população: UN WPP 2024 (revisão média) / WDI SP.POP.TOTL — mesmo lote dos
+#     demais países do arquivo (ex.: Sudão 51.662.147 e Somália 19.654.739 batem
+#     com a WPP 2024 para 2025);
+#   * Sudão do Sul: 12.188.788 (WPP 2024, 2025) e área 644.329 km² (GeoNames
+#     countryInfo). PIB PPP: não está na base local (a geração foi feita sem
+#     rede); fica AUSENTE e declarado, não estimado.
+#   * Somalilândia: não há série WDI (não é membro do Banco Mundial). População
+#     5.700.000 (estimativa pública, ~2023) e área 176.120 km² (fronteiras de
+#     facto), declaradas como estimativa. PIB: só existe estimativa NOMINAL
+#     (~US$ 3,5 bi, 2022); não é convertida para PPP aqui — fica ausente.
+NATION_SUPPLEMENT = {
+    "SSD": {
+        "iso2": "SS", "name_en": "South Sudan", "name_pt": "Sudão do Sul",
+        "name_es": "Sudán del Sur", "capital_en": "Juba",
+        "currency": "SSP", "government": "republic", "region": "africa",
+        "ai_profile": "agrarian", "population": 12188788, "population_year": 2025,
+        "gdp_ppp_bn": "", "gdp_year": "", "data_quality": "missing_gdp",
+        "area_km2": 644329.0, "status": "sovereign", "color": "#245c66",
+        "source": ("população: UN WPP 2024 / WDI SP.POP.TOTL (2025); área: "
+                   "GeoNames countryInfo 2026; PIB PPP: ausente na base local "
+                   "(não estimado)"),
+    },
+    "SOL": {
+        "iso2": "", "flag": "sol", "name_en": "Somaliland",
+        "name_pt": "Somalilândia",
+        "name_es": "Somalilandia", "capital_en": "Hargeisa",
+        "currency": "SLS", "government": "republic", "region": "africa",
+        "ai_profile": "agrarian", "population": 5700000, "population_year": 2023,
+        "gdp_ppp_bn": "", "gdp_year": "", "data_quality": "missing_gdp",
+        "area_km2": 176120.0, "status": "special", "color": "#1f6b3a",
+        "source": ("estimativas públicas (não há série WDI): população ~5,7 M "
+                   "(2023) e área 176.120 km² de facto; PIB só nominal (~US$ 3,5 "
+                   "bi, 2022) — PPP ausente, não convertido"),
+    },
+}
+
+# Nação sem ISO 3166-1: o roster aceita iso2 vazio (o jogo mostra o estado
+# vazio da bandeira em vez de inventar um país).
+NO_ISO2 = {"SOL"}
+
+
+def quota(population, gdp_bn, area_km2):
+    """Cota de cidades aprovada (docs/plans/world_all_data.md §2)."""
+    extra = 1 + int(population // 25_000_000) + int(gdp_bn // 1500) \
+        + int(area_km2 // 600_000)
+    return 1 + max(1, min(24, extra))
+
+
+def supplement_nations(rows):
+    """Acrescenta `NATION_SUPPLEMENT` ao roster que veio da fonte.
+
+    Idempotente (tag já presente não é duplicado) e determinístico. A cota é
+    calculada com a mesma fórmula do build; `data_quality` acompanha a fonte.
+    """
+    present = {row["iso3"] for row in rows}
+    out = [dict(row) for row in rows]
+    for tag in sorted(NATION_SUPPLEMENT):
+        if tag in present:
+            continue
+        row = dict(NATION_SUPPLEMENT[tag])
+        row["iso3"] = tag
+        row["quota"] = quota(float(row["population"] or 0),
+                             float(row["gdp_ppp_bn"] or 0),
+                             float(row["area_km2"] or 0))
+        out.append(row)
+    out.sort(key=lambda row: row["iso3"])
+    return out
 
 # Exceções estratégicas: ficam mesmo abaixo do limiar (pop/área).
 STRATEGIC_KEEP = {
@@ -215,9 +307,9 @@ REMOVED_UNOWNED_AREAS = {
 # Varredura que define a lista (raster `world_province.png` + `world_sdf.png`,
 # 2026-11-12): blobs de terra cujo `nation` não está no roster e cujos únicos
 # vizinhos de terra (ignorando outros blobs sem dono) são UMA nação. Ficam de
-# fora, declarados: Kosovo (ALB/MKD/MNE/SRB), Somalilândia (DJI/ETH/SOM),
-# Sudão do Sul (6 vizinhos), Siachen (CHN/IND/PAK), Antártida (0 vizinhos) e
-# as ilhas minúsculas CLP/CSI/IOA (0 vizinhos) — nenhum é enclave de uma nação.
+# fora, declarados: Siachen (CHN/IND/PAK), Antártida (0 vizinhos) e as ilhas
+# minúsculas CLP/CSI/IOA (0 vizinhos) — nenhum é enclave de uma nação. Kosovo,
+# Somalilândia e Sudão do Sul saíram desta lista na r6: agora são jogáveis.
 UNOWNED_ENCLAVES = {
     "KAB": "KAZ",  # Baikonur (cosmódromo arrendado à Rússia; província 1631)
     "USG": "CUB",  # Base Naval de Guantánamo (arrendada aos EUA)

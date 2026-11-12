@@ -21,6 +21,11 @@ pelo mapa e pelos rótulos de nação.
   as bandeiras em domínio público a partir dos SVGs do Wikimedia Commons
   (licença livre; atribuição não obrigatória, registrada aqui por transparência).
 
+- **1 arquivo adicionado na curadoria r6** (`world: Sudão do Sul, Kosovo e
+  Somalilândia jogáveis`): `ss` (Sudão do Sul, flagcdn.com) e `sol`
+  (Somalilândia, Wikimedia Commons — mesmo desenho livre). `SOL` não tem ISO
+  3166-1; o arquivo usa o tag do jogo em vez do ISO2, como `xk` em Kosovo.
+
 ## Regras
 
 - O nome do arquivo é o **ISO2 minúsculo** da nação (`assets/flags/<iso2>.png`).
@@ -29,3 +34,5 @@ pelo mapa e pelos rótulos de nação.
   manter a largura de 40 px e atualizar este arquivo.
 - `xk` (Kosovo) não é ISO 3166-1 oficial; usa-se o código de uso livre `XK` e o
   arquivo `xk.png`, coerente com `iso2` de `data/definitions/world/nations_source.csv`.
+- `sol` (Somalilândia) também não é ISO 3166-1; usa-se o tag do jogo como nome
+  do arquivo, declarado no campo `flag` de `NATION_SUPPLEMENT`.

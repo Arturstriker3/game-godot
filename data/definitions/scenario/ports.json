@@ -990,6 +990,15 @@
     "port_of": "SMR-SANM"
   },
   {
+    "id": "SOL-BER",
+    "name": "Berbera",
+    "nation": "SOL",
+    "x": 3125.1,
+    "y": 1105.0,
+    "landmass": "africa",
+    "port_of": "SOL-BER"
+  },
+  {
     "id": "SUR-PBM",
     "name": "Paramaribo",
     "nation": "SUR",

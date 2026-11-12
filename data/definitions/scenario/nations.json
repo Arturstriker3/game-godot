@@ -1881,6 +1881,18 @@
     "gdp_ppp_bn": 89.8
   },
   {
+    "id": "SOL",
+    "name": "Somaliland",
+    "flag": "sol",
+    "color": "#1f6b3a",
+    "capital": "Hargeisa",
+    "currency": "SLS",
+    "government": "republic",
+    "ai_profile": "agrarian",
+    "region": "africa",
+    "population": 5700000
+  },
+  {
     "id": "SOM",
     "name": "Somalia",
     "flag": "so",
@@ -1905,6 +1917,18 @@
     "region": "europe",
     "population": 6549143,
     "gdp_ppp_bn": 222.1
+  },
+  {
+    "id": "SSD",
+    "name": "South Sudan",
+    "flag": "ss",
+    "color": "#245c66",
+    "capital": "Juba",
+    "currency": "SSP",
+    "government": "republic",
+    "ai_profile": "agrarian",
+    "region": "africa",
+    "population": 12188788
   },
   {
     "id": "SUR",
@@ -2233,7 +2257,7 @@
     "id": "XKX",
     "name": "Kosovo",
     "flag": "xk",
-    "color": "#5a7f9b",
+    "color": "#3d6fa8",
     "capital": "Pristina",
     "currency": "EUR",
     "government": "republic",

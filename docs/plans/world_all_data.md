@@ -1112,4 +1112,90 @@ duplicado, fora do escopo desta rodada.
   `convoy_lifecycle_test.tscn`: **OK** (20 dias, 408 viagens/408 chegadas,
   0 fantasmas).
 
+## 19. Curadoria r6 — Sudão do Sul, Kosovo e Somalilândia jogáveis + população nacional 2026 (2026-11-12)
+
+Rodada de **dados e contrato**: **179 nações, 807 cidades e 137 portos**
+(antes 177/802/136). Entram **Sudão do Sul (SSD)** e **Somalilândia (SOL)** pelo
+`NATION_SUPPLEMENT` de `tools/world_nation_curation.py`; **Kosovo (XKX)** já
+estava no roster e passa a receber as províncias do atlas com tag **KOS**.
+
+### 19.1 Curadoria
+
+| nação | cidades forçadas | população nacional 2026 | `sim_population` | PIB PPP |
+|---|---|---:|---:|---|
+| SSD | `SSD-JUB` (Juba, capital), `SSD-MAL` (Malakal), `SSD-WAU` (Wau) | 12.188.788 | 475.009 | ausente (declarado) |
+| SOL | `SOL-HAR` (Hargeisa, capital), `SOL-BER` (Berbera, com porto) | 5.700.000 | 1.450.000 | ausente (declarado) |
+| XKX | `XKX-PRI` (Pristina, capital), `XKX-PRIZ` (Prizren) | 1.576.876 | 721.464 | ausente (declarado) |
+
+* `ATLAS_TAG_ALIASES = {"KOS": "XKX", "SDS": "SSD"}` converte a tag do atlas
+  (Natural Earth) para a tag do jogo em `reconstruct_natural_inputs.py`,
+  `build_province_nature.py` e na adjacência de cores
+  (`build_world_cities.game_graph`).
+* `NATION_CODE_OVERRIDES` (`geography_service.gd` e `build_province_nature.py`)
+  e `PROVINCE_TAG_OVERRIDES` ganham `SSD → SDS`.
+* Bandeiras: `ss` (flagcdn.com) e `sol` (Wikimedia Commons, Somalilândia não
+  tem ISO 3166-1 — o campo `flag` do supplement declara o arquivo). `xk` já
+  existia. `map_frame_test` exige bandeira em toda capital visível e passa.
+* A cota de cidades é a mesma fórmula; nenhuma nação existente perdeu cidade ou
+  porto. `validate_scenario_data` fecha **0 erros / 0 avisos**.
+
+### 19.2 População: exibição × simulação
+
+O jogo exibe a **população nacional real de 2026** rateada entre as cidades;
+a simulação continua na **aglomeração da fonte** (`sim_population`), para o
+balanço calibrado não mudar.
+
+| contrato | campo | total |
+|---|---|---:|
+| população exibida (HUD, painéis, nações) | `population` | **8.203.501.062** |
+| unidade de simulação (comida, caixa, empregos, preços) | `sim_population` | **1.271.720.509** |
+
+`tools/build_world_cities.distribute_national_population` divide
+`nations.csv.population` entre as cidades proporcionalmente à aglomeração, com
+resto por maior fração e desempate por id (determinístico); a soma por nação é
+exata. O C++ (`DemoCity` e o `City` legado) lê `sim_population` com fallback
+para `population` (save antigo ou cenário sintético), serializa o campo em
+`demo_to_dict`/`demo_from_dict`, preenche o benchmark com
+`sim_population = population` e usa a unidade de simulação em renda externa,
+necessidade, metas de caixa, mercado de trabalho e divisões per-capita do
+status. O status expõe `sim_population` por cidade; o total exibido soma
+`population`. `GeographyService.resolve_initial_farms` e o crescimento urbano
+(`map/city_world.gd`) também usam `sim_population`.
+
+### 19.3 Pipeline e verificação
+
+```powershell
+$env:PYTHONUTF8=1
+python tools/build_world_cities.py --write-scenario
+python tools/build_atlas_layers.py
+python tools/generate_nav_mask.py
+python tools/reconstruct_natural_inputs.py --prune
+python tools/compute_province_areas.py
+python tools/build_province_nature.py
+python tools/build_resource_map.py
+python tools/apply_traditional_colors.py --refresh-adjacency
+python tools/build_scenario_data.py
+python tools/validate_scenario_data.py
+python tools/build_world_cities.py --check
+& $godot --headless --path . --import
+```
+
+* `validate_scenario_data`: **0 erros, 0 avisos** (10 arquivos).
+* `build_world_cities.py --check`: **exit 0**.
+* `territory_test.gd`: **OK** — 179 nações jogáveis com província, dono inicial
+  igual à nação.
+* `map_frame_test.tscn`: **OK** — 300 frames, 179/179 nações com cor, 61
+  capitais visíveis com 100% de bandeira.
+* `economy_world_test.gd`: **OK** — 60 dias, 0 violações, `money_total`
+  conservado (2.098.338.839,85); 179/179 nações com satisfação média ≥ 70%
+  (177 com todas as cidades ≥ 70%; BEL e NED têm uma cidade em 60%/40%).
+* `economy_long_run_test.gd`: **OK** — 365 dias sem violação.
+* `perf_day_peak.tscn`: **exit 0** — tick 75,2 ms médio (p95 94,6; máx 149,0),
+  frame de pico 80,2 ms com 807 cidades.
+* Captura política 1920×1080: `docs/map_visual/new_nations/horn/` (foco
+  `SOL-HAR`, d120/d052) e `docs/map_visual/new_nations/balkans/` (foco
+  `XKX-PRI`, d120/d052), manifestos sem avisos.
+
+
+
 

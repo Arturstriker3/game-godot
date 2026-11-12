@@ -1,0 +1,50 @@
+{
+  "bench": {},
+  "city_count": 807,
+  "distances": [
+    120.0,
+    52.0
+  ],
+  "engine": "4.7.2-stable (official)",
+  "focus": "SOL-HAR",
+  "mode": "political",
+  "renderer": "forward_plus",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_political_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/new_nations/horn/map3d_political_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "saved": true,
+      "urban_cities": 57
+    },
+    "map3d_political_d120.png": {
+      "distance": 120.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/new_nations/horn/map3d_political_d120.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "saved": true,
+      "urban_cities": 0
+    }
+  },
+  "tag": "horn",
+  "timestamp": "2026-11-12T19:45:16",
+  "warnings": []
+}
