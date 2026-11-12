@@ -317,7 +317,7 @@ Medido com `tools/convoy_lifecycle_test.tscn` (20 dias da economia real, headles
 - **Tweens:** um tween por comboio com id de geração; o tween antigo é morto ao reciclar o nó e `_on_tween_finished`/`_finish_convoy` ignoram geração velha.
 - **A\*:** a causa dos trechos "sem rota" era reexpansão, não só o teto: a heurística inflada (peso 1,05) é inconsistente com passos diagonais e a mesma célula era reaberta dezenas de vezes (Calais→Belfast: 24.001 pops para 1.104 células). Com conjunto fechado, o trecho fecha em 1.541 nós. Rotas oceânicas de desvio longo (Saint-Nazaire→Bristol) ainda estouram 24 mil nós finos porque a heurística aponta em linha reta para um percurso que contorna a costa: entram em fallback de A\* em grade grossa (16 px, aresta validada na linha fina) e o último trecho (≤2 células grosseiras, ex.: enseada de Bristol) é fechado por um A\* fino com teto próprio, revalidado amostra a amostra. Custo continua dentro do orçamento de 1,5 ms/frame (`perf_day_peak --days=10`: pico de frame 8,63 ms; pump por frame 1,54 / 1,62 / 3,67 ms média/p95/máx).
 - **Estreitos (corrigido):** no `nav_mask.png` o Mediterrâneo, o Negro e o Báltico estavam em componentes de água separados do Atlântico (Gibraltar tem 14 km e cada célula da máscara cobre ~16 km), então trechos como Marseille→Bristol não tinham rota marítima. `tools/generate_nav_mask.py` agora abre o menor corte de terra entre os dois mares — Gibraltar (2 células), Dardanelos (14), Bósforo (9), Øresund (8), Suez (27) e Kiel (1); Panamá já estava conectado. São 61 células de 3,1 M (37 de terra, 24 de costa) virando água, verificado por conectividade. Do lado do pathfinding, `NavGrid` trocou a amostra do pixel central por um grafo grosseiro de divisas (union-find = componentes exatas da conectividade fina; nó = centro navegável ou corredor atravessando a célula; salto por passagem estreita custa `NARROW_HOP_PENALTY`) e o refino do caminho grosseiro segue os pontos de passagem na divisa, não os centros. `tools/nav_strait_test.tscn` cobre os três níveis (mares, portos no mar aberto e rota): o porto `GRC-HER` precisa alcançar o MESMO componente do mar aberto (semente 24,6E 35,1N), não uma enseada isolada.
-- **Escala:** caminhão e navio medem 0,6875 u no maior eixo (antes o caminhão media 0,275 u, menor que o medalhão) e o medalhão fica a 0,56 u acima do veículo.
+- **Escala:** navio mede 0,6875 u no maior eixo e o avião 0,55 u; o caminhão agora mede **0,460625 u** (33% menor que os 0,6875 u anteriores, para não encobrir a via). O medalhão fica a 0,56 u acima do veículo.
 
 ### 13.2 Virada do dia: mapa de recursos e IA (feito)
 
@@ -510,6 +510,30 @@ externa — §20.5), `economy_long_run_test` (365 d), cenas `convoy_lifecycle_te
 `label_layout_test` (0 linhas, 0 sobreposições) e `perf_day_peak --days=10`
 (caminho worker: **36 s** de parede, virada 5,4 ms de média / 6,9 de pico; antes
 do conserto do harness passava de 8 min e era morto por timeout).
+
+### 13.6 Separação de caminhões e aviões; caminhão 33% menor (feito)
+
+`map/convoy_spacing.gd` estende `TradeConvoys` (o jogo e os testes instanciam a
+extensão; o núcleo em `core/economy/` não foi tocado) e resolve o empilhamento
+visual de veículos:
+
+- **Caminhões:** 3 faixas laterais de 0,16 u e caixa de fila de 0,52 u ao longo
+  da rota. O comprimento caiu de 0,6875 u para **0,460625 u** (`× 0,67`); a
+  hitbox (`collision_radius`) acompanha a largura do modelo.
+- **Aviões:** 3 camadas de altitude de 0,07 u + 0,22 u de offset lateral, com
+  fila de 0,62 u. Não há validação de terreno (eles voam).
+- **Navios:** mantêm o empurrão radial curto (0,09 u) — agora consultado por um
+  índice espacial uniforme de célula 0,8 u (vizinhança 3×3), sem O(n²).
+- **Terreno:** a faixa do caminhão só é aplicada se o ponto continuar em terra;
+  senão fica só a fila, e o veículo nunca é jogado na água. Empates exatos usam
+  o id do nó para dar sinais opostos e desfazer o empilhamento.
+- **Custo medido:** `tools/vehicle_spacing_test.tscn` (24 caminhões no mesmo
+  ponto, pior caso) = **0,606 ms/frame**; `tools/vehicle_spacing_capture.tscn`
+  com 24 comboios reais na tela, 1600×900, vsync off = **4,24 / 4,25 / 4,35 ms**
+  (média/p95/máx). `perf_day_peak` (30 dias) manteve o pump em **1,56 / 1,67 /
+  4,87 ms** (antes: 1,56 / 1,67 / 5,68). As capturas antes/depois estão em
+  `docs/map_visual/vehicle_spacing/` (o mapa não desenha estradas; a foto usa o
+  par de caminhões real mais próximo e o teste cobre o caso denso).
 
 ---
 

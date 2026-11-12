@@ -12,7 +12,7 @@ extends Node3D
 ##   godot --headless --path . res://tools/ai_scale_bench.tscn -- \
 ##       --nations=190 --cities=650 --days=14 --ports=120 [--pretick=20]
 
-const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
+const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 const EconomicAIScript: Script = preload("res://core/economy/ai/economic_ai.gd")
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const AI_BUDGET_US := 1500

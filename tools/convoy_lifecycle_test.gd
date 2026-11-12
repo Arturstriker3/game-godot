@@ -12,7 +12,7 @@ extends Node3D
 ## Uso:
 ##   godot --headless --path . res://tools/convoy_lifecycle_test.tscn
 
-const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
+const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 
 const DAYS := 20
 ## Acelera só o tween (o relógio da economia fica congelado): 45 s de trecho

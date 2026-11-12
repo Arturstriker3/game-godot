@@ -1,0 +1,94 @@
+{
+  "bench": {
+    "road_near": {
+      "avg_ms": 4.237,
+      "convoy_total": 24,
+      "frames": 180,
+      "p95_ms": 4.254,
+      "worst_ms": 4.352
+    }
+  },
+  "city_count": 799,
+  "convoy_total": 24,
+  "convoys": {
+    "plane": 0,
+    "ship": 20,
+    "truck": 4
+  },
+  "day": 2,
+  "engine": "4.7.2-stable (official)",
+  "legacy": false,
+  "port_count": 142,
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "ship_focus": {
+    "distance_from_start": 2.34,
+    "focus": [
+      40.76,
+      -46.39
+    ]
+  },
+  "shots": {
+    "port_ship_d013.png": {
+      "distance": 13.0,
+      "error": 0,
+      "focus": [
+        40.76,
+        -46.39
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/after/port_ship_d013.png"
+    },
+    "port_ship_d026.png": {
+      "distance": 26.0,
+      "error": 0,
+      "focus": [
+        40.76,
+        -46.39
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/after/port_ship_d026.png"
+    },
+    "road_trucks_close_d009.png": {
+      "distance": 9.49380254745483,
+      "error": 0,
+      "focus": [
+        21.46,
+        24.58
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/after/road_trucks_close_d009.png"
+    },
+    "road_trucks_d013.png": {
+      "distance": 13.0,
+      "error": 0,
+      "focus": [
+        21.46,
+        24.58
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/after/road_trucks_d013.png"
+    },
+    "truck_scale_d003.png": {
+      "distance": 3.0,
+      "error": 0,
+      "focus": [
+        21.46,
+        24.58
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/after/truck_scale_d003.png"
+    }
+  },
+  "tag": "after",
+  "timestamp": "2026-11-12T16:21:36",
+  "truck_pair": {
+    "current_distance": 6.33,
+    "distance": 6.33,
+    "focus": [
+      21.46,
+      24.58
+    ],
+    "source": "current",
+    "start_distance": 6.8
+  },
+  "warnings": []
+}

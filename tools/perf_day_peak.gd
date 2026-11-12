@@ -31,7 +31,7 @@ extends Node
 ##       [--tick-mode=sync|worker] [--profile=0|1] \
 ##       [--map-mode=none|political|resources] [--map-territory=0|1]
 
-const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
+const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
 const TickSchedulerScript: Script = preload("res://core/economy/tick_scheduler.gd")

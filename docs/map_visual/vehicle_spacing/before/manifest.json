@@ -1,0 +1,86 @@
+{
+  "bench": {},
+  "city_count": 799,
+  "convoy_total": 17,
+  "convoys": {
+    "plane": 0,
+    "ship": 13,
+    "truck": 4
+  },
+  "day": 1,
+  "engine": "4.7.2-stable (official)",
+  "legacy": true,
+  "port_count": 142,
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "ship_focus": {
+    "distance_from_start": 0.0,
+    "focus": [
+      22.09,
+      -21.63
+    ]
+  },
+  "shots": {
+    "port_ship_d013.png": {
+      "distance": 13.0,
+      "error": 0,
+      "focus": [
+        22.09,
+        -21.63
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/before/port_ship_d013.png"
+    },
+    "port_ship_d026.png": {
+      "distance": 26.0,
+      "error": 0,
+      "focus": [
+        22.09,
+        -21.63
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/before/port_ship_d026.png"
+    },
+    "road_trucks_close_d009.png": {
+      "distance": 9.42513298988342,
+      "error": 0,
+      "focus": [
+        21.64,
+        24.85
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/before/road_trucks_close_d009.png"
+    },
+    "road_trucks_d013.png": {
+      "distance": 13.0,
+      "error": 0,
+      "focus": [
+        21.64,
+        24.85
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/before/road_trucks_d013.png"
+    },
+    "truck_scale_d003.png": {
+      "distance": 3.0,
+      "error": 0,
+      "focus": [
+        21.64,
+        24.85
+      ],
+      "path": "res://docs/map_visual/vehicle_spacing/before/truck_scale_d003.png"
+    }
+  },
+  "tag": "before",
+  "timestamp": "2026-11-12T16:16:35",
+  "truck_pair": {
+    "current_distance": 6.28,
+    "distance": 6.28,
+    "focus": [
+      21.64,
+      24.85
+    ],
+    "source": "current",
+    "start_distance": 6.28
+  },
+  "warnings": []
+}

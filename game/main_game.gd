@@ -4,7 +4,7 @@ extends Node3D
 ## enquadra a cÃƒÂ¢mera sobre a Europa, conecta o comÃƒÂ©rcio aos comboios 3D e sobe o HUD.
 
 const CityWorldScript: Script = preload("res://map/city_world.gd")
-const ConvoysScript: Script = preload("res://core/economy/trade_convoys.gd")
+const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 const HudScript: Script = preload("res://core/ui/hud.gd")
 
 ## InclinaÃƒÂ§ÃƒÂ£o da cÃƒÂ¢mera (graus) e distÃƒÂ¢ncia do alvo.
