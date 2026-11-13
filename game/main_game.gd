@@ -1,19 +1,19 @@
 extends Node3D
 
-## Cena principal: monta o mundo de cidades (fundo tÃƒÂ¡tico + cidades + Voronoi),
-## enquadra a cÃƒÂ¢mera sobre a Europa, conecta o comÃƒÂ©rcio aos comboios 3D e sobe o HUD.
+## Cena principal: monta o mundo de cidades (fundo tático + cidades + Voronoi),
+## enquadra a câmera sobre a Europa, conecta o comércio aos comboios 3D e sobe o HUD.
 
 const CityWorldScript: Script = preload("res://map/city_world.gd")
 const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 const HudScript: Script = preload("res://core/ui/hud.gd")
 
-## InclinaÃƒÂ§ÃƒÂ£o da cÃƒÂ¢mera (graus) e distÃƒÂ¢ncia do alvo.
+## Inclinação da câmera (graus) e distância do alvo.
 const CAMERA_PITCH_DEG := -56.0
 const CAMERA_DISTANCE := 52.0
 
-## Limite do centro da cÃƒÂ¢mera na folha (latitudes). Em X o mundo dÃƒÂ¡ a volta e
-## as cÃƒÂ³pias laterais garantem que nÃƒÂ£o hÃƒÂ¡ vazio; em Z o centro fica entre estas
-## latitudes. AlÃƒÂ©m delas hÃƒÂ¡ uma folga elÃƒÂ¡stica: dÃƒÂ¡ para empurrar atÃƒÂ©
+## Limite do centro da câmera na folha (latitudes). Em X o mundo dá a volta e
+## as cópias laterais garantem que não há vazio; em Z o centro fica entre estas
+## latitudes. Além delas há uma folga elástica: dá para empurrar até
 ## CAMERA_OVERSHOOT unidades e a mola devolve ao soltar.
 const CAMERA_LAT_NORTH := 78.0
 const CAMERA_LAT_SOUTH := -60.0
@@ -33,7 +33,7 @@ var _last_hover := ""
 
 func _ready() -> void:
 	GameCursor.install()
-	# Roda depois da cÃƒÂ¢mera e do jogador: o limite vale para qualquer movimento
+	# Roda depois da câmera e do jogador: o limite vale para qualquer movimento
 	# (teclado, borda da tela, arrasto, move_to).
 	process_priority = 100
 	_build_city_world()
@@ -50,7 +50,7 @@ func _ready() -> void:
 	city_world.territory_changed.connect(_on_territory_changed)
 
 
-## MantÃƒÂ©m os modos de mapa (populaÃƒÂ§ÃƒÂ£o, economia, indÃƒÂºstria, recursos) vivos.
+## Mantém os modos de mapa (população, economia, indústria, recursos) vivos.
 func _on_status_updated(summary: Dictionary) -> void:
 	city_world.refresh_modes(summary.get("cities", []))
 
@@ -82,7 +82,7 @@ func _build_city_world() -> void:
 	_center_world(cities)
 
 
-## Coloca o centro das cidades na origem para a cÃƒÂ¢mera enquadrar a Europa.
+## Coloca o centro das cidades na origem para a câmera enquadrar a Europa.
 func _center_world(cities: Array) -> void:
 	if cities.is_empty():
 		return
@@ -109,7 +109,7 @@ func _on_speed_changed(index: int) -> void:
 	convoys.set_time_scale(rate, paused)
 
 
-## CÃƒÂ¢mera inclinada sobre o centro do mapa; o controle comeÃƒÂ§a daqui.
+## Câmera inclinada sobre o centro do mapa; o controle começa daqui.
 func _setup_camera() -> void:
 	var player := get_node_or_null("Player")
 	if player == null:
@@ -131,7 +131,7 @@ func _build_hud() -> void:
 	hud.window_closed.connect(_on_hud_window_closed)
 
 
-## Faixa permitida para o centro da cÃƒÂ¢mera em Z (coordenadas globais).
+## Faixa permitida para o centro da câmera em Z (coordenadas globais).
 func _camera_z_bounds() -> Vector2:
 	var height: float = city_world.PLANE_SIZE.y
 	var north: float = (90.0 - CAMERA_LAT_NORTH) / 180.0 * height - height * 0.5
@@ -139,16 +139,16 @@ func _camera_z_bounds() -> Vector2:
 	return Vector2(north, south) + Vector2.ONE * city_world.position.z
 
 
-## Destino de move_to sempre dentro da folha (sem usar a folga elÃƒÂ¡stica).
+## Destino de move_to sempre dentro da folha (sem usar a folga elástica).
 func _clamp_camera_target(target: Vector3) -> Vector3:
 	var bounds := _camera_z_bounds()
 	target.z = clampf(target.z, bounds.x, bounds.y)
 	return target
 
 
-## Limite elÃƒÂ¡stico: no mÃƒÂ¡ximo CAMERA_OVERSHOOT alÃƒÂ©m da folha, e a mola puxa de
+## Limite elástico: no máximo CAMERA_OVERSHOOT além da folha, e a mola puxa de
 ## volta. Enquanto o jogador empurra (tecla, borda ou arrasto) ele sente
-## resistÃƒÂªncia; ao soltar, a cÃƒÂ¢mera volta suavemente.
+## resistência; ao soltar, a câmera volta suavemente.
 func _apply_camera_limit(player: Node3D, delta: float) -> void:
 	var bounds := _camera_z_bounds()
 	var z := clampf(player.global_position.z,
@@ -178,7 +178,7 @@ func _build_vignette() -> void:
 	add_child(layer)
 
 
-## Clique no minimapa: leva a cÃƒÂ¢mera ao ponto (UV do mapa -> mundo).
+## Clique no minimapa: leva a câmera ao ponto (UV do mapa -> mundo).
 func _on_map_point_requested(map_uv: Vector2) -> void:
 	var player := get_node_or_null("Player")
 	if player == null:
@@ -190,7 +190,7 @@ func _on_map_point_requested(map_uv: Vector2) -> void:
 	player.move_to(Vector2(target.x, target.z), 4.0)
 
 
-## ÃƒÂrea do chÃƒÂ£o vista pela cÃƒÂ¢mera, em UV do mapa, para o minimapa.
+## Área do chão vista pela câmera, em UV do mapa, para o minimapa.
 func _update_minimap(player) -> void:
 	var camera: Camera3D = player.camera
 	var size: Vector2 = city_world.PLANE_SIZE
@@ -205,7 +205,7 @@ func _update_minimap(player) -> void:
 	hud.set_minimap_view(center, ground / size)
 
 
-## Centraliza a cÃƒÂ¢mera na cidade e destaca o marcador.
+## Centraliza a câmera na cidade e destaca o marcador.
 func _on_city_focused(city_id: String) -> void:
 	city_world.select_city(city_id)
 	var target: Vector3 = _clamp_camera_target(city_world.city_world_position(city_id))
@@ -347,8 +347,8 @@ func _handle_map_click(mouse: Vector2) -> bool:
 	return true
 
 
-## Realce/cursor da cidade sob o cursor. Roda por frame para nÃƒÂ£o ficar preso
-## quando o mouse entra na UI (o Motion nÃƒÂ£o chega ao _unhandled_input ali).
+## Realce/cursor da cidade sob o cursor. Roda por frame para não ficar preso
+## quando o mouse entra na UI (o Motion não chega ao _unhandled_input ali).
 func _update_city_hover_pass() -> void:
 	if hud == null or city_world == null:
 		return
@@ -413,9 +413,9 @@ func _gui_blocks_map_hover() -> bool:
 	return hovered.mouse_filter != Control.MOUSE_FILTER_IGNORE
 
 
-## MantÃƒÂ©m a cÃƒÂ¢mera dentro de um perÃƒÂ­odo do mapa: ao passar da borda em X, ela
-## reaparece do outro lado, onde a cÃƒÂ³pia lateral do mundo continua a paisagem.
-## Em Z aplica o limite elÃƒÂ¡stico da folha.
+## Mantém a câmera dentro de um período do mapa: ao passar da borda em X, ela
+## reaparece do outro lado, onde a cópia lateral do mundo continua a paisagem.
+## Em Z aplica o limite elástico da folha.
 func _process(delta: float) -> void:
 	if city_world == null:
 		return

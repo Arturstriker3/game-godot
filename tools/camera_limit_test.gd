@@ -1,8 +1,8 @@
 extends SceneTree
 
-## Limite elÃ¡stico da cÃ¢mera (game/main_game.gd): o centro nunca passa da folga
-## alÃ©m da folha e a mola o devolve para dentro; destinos de move_to jÃ¡ saem
-## presos Ã  folha.
+## Limite elástico da câmera (game/main_game.gd): o centro nunca passa da folga
+## além da folha e a mola o devolve para dentro; destinos de move_to já saem
+## presos à folha.
 ##   godot --headless --path . --script res://tools/camera_limit_test.gd
 
 const MAIN_SCENE := "res://game/main_game.tscn"
@@ -12,7 +12,7 @@ func _init() -> void:
 	_run.call_deferred()
 
 
-## Espera tempo real (a mola Ã© por tempo, e em headless os quadros sÃ£o curtos).
+## Espera tempo real (a mola é por tempo, e em headless os quadros são curtos).
 func _wait_seconds(seconds: float) -> void:
 	var end := Time.get_ticks_msec() + int(seconds * 1000.0)
 	while Time.get_ticks_msec() < end:
@@ -27,7 +27,7 @@ func _run() -> void:
 
 	var player := game.get_node("Player") as Node3D
 	# Em headless o mouse fica em (0,0), no canto: a rolagem pela borda empurraria
-	# a cÃ¢mera o tempo todo e mascararia a mola.
+	# a câmera o tempo todo e mascararia a mola.
 	player.camera_can_automatic_pan = false
 	var bounds: Vector2 = game._camera_z_bounds()
 	var overshoot: float = game.CAMERA_OVERSHOOT
@@ -41,7 +41,7 @@ func _run() -> void:
 				% [player.global_position.z, bounds.x - overshoot])
 	await _wait_seconds(1.5)
 	if absf(player.global_position.z - bounds.x) > 0.5:
-		failures.append("mola nÃ£o devolveu ao norte: z=%.2f alvo=%.2f"
+		failures.append("mola não devolveu ao norte: z=%.2f alvo=%.2f"
 				% [player.global_position.z, bounds.x])
 
 	# 2) Mesmo teste ao sul.
@@ -51,13 +51,13 @@ func _run() -> void:
 		failures.append("passou da folga sul: z=%.2f" % player.global_position.z)
 	await _wait_seconds(1.5)
 	if absf(player.global_position.z - bounds.y) > 0.5:
-		failures.append("mola nÃ£o devolveu ao sul: z=%.2f alvo=%.2f"
+		failures.append("mola não devolveu ao sul: z=%.2f alvo=%.2f"
 				% [player.global_position.z, bounds.y])
 
 	# 3) Destino de move_to fora da folha sai preso dentro dela.
 	var target: Vector3 = game._clamp_camera_target(Vector3(0.0, 0.0, bounds.x - 300.0))
 	if not is_equal_approx(target.z, bounds.x):
-		failures.append("move_to nÃ£o foi preso: z=%.2f" % target.z)
+		failures.append("move_to não foi preso: z=%.2f" % target.z)
 
 	# 4) Dentro da folha nada muda.
 	var inside := (bounds.x + bounds.y) * 0.5
