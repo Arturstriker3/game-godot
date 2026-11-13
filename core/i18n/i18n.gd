@@ -258,6 +258,9 @@ const TEMPLATE_STRINGS := {
 		"hud.city_list.collapse": "Recolher lista",
 		"hud.city_list.expand": "Expandir lista",
 		"hud.city_list.alert": "Déficit de comida",
+
+		"stats.history.months": "{n} meses",
+		"tpl.quadro.trend.note": "Série mensal amostrada no fechamento do dia; até 12 meses.",
 	},
 	"en": {
 		"tpl.common.page": "Page {page} of {pages}",
@@ -499,6 +502,9 @@ const TEMPLATE_STRINGS := {
 		"hud.city_list.collapse": "Collapse list",
 		"hud.city_list.expand": "Expand list",
 		"hud.city_list.alert": "Food deficit",
+
+		"stats.history.months": "{n} months",
+		"tpl.quadro.trend.note": "Monthly series sampled at day close; up to 12 months.",
 	},
 	"es": {
 		"tpl.common.page": "Página {page} de {pages}",
@@ -740,6 +746,9 @@ const TEMPLATE_STRINGS := {
 		"hud.city_list.collapse": "Contraer lista",
 		"hud.city_list.expand": "Expandir lista",
 		"hud.city_list.alert": "Déficit de comida",
+
+		"stats.history.months": "{n} meses",
+		"tpl.quadro.trend.note": "Serie mensual muestreada al cierre del día; hasta 12 meses.",
 	},
 }
 

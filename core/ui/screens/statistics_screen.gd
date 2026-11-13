@@ -28,6 +28,15 @@ var _summary: Dictionary = {}
 var _indicator := 0
 var _group := 0
 var _groups: Array = []  # [{"key": "world"/region, "label": chave i18n}]
+var _history: RefCounted = null
+
+## Indicador do ranking → campo da série mensal por nação.
+const TREND_FIELDS := {
+	"population": "population",
+	"gdp": "gdp",
+	"food": "food",
+	"minerals": "reserves",
+}
 
 var _root: UiTemplateBuilder.TemplateRoot
 var _slots := {}
@@ -53,6 +62,12 @@ func refresh(summary: Dictionary) -> void:
 		_rebuild()
 		return
 	_refresh()
+
+
+## Serviço de histórico de 12 meses, fornecido pelo HUD. Sem ele (ou com menos
+## de 2 meses amostrados), a tendência mostra o estado vazio honesto.
+func set_history_service(service: RefCounted) -> void:
+	_history = service
 
 
 func set_indicator(index: int) -> void:
@@ -209,19 +224,40 @@ func _content_block() -> Dictionary:
 							{"type": "ruled_heading",
 									"text": "@tpl.quadro.trend", "size": 20},
 							{
-								"type": "paper_card", "border": "dashed",
-								"fill": "papel", "pad": 14, "gap": 8,
+								"type": "column", "slot": "trend.series",
+								"gap": 6, "hidden": true,
+								"blocks": [
+									{"type": "line_chart", "height": 128,
+											"slot": "trend.chart",
+											"tone": "tinta",
+											"autoscale": true},
+									{"type": "label", "text": "",
+											"font": "typed", "size": 12,
+											"tone": "suave",
+											"slot": "trend.range"},
+								],
+							},
+							{
+								"type": "paper_card", "slot": "trend.empty",
+								"border": "dashed", "fill": "papel",
+								"pad": 14, "gap": 8,
 								"blocks": [
 									{"type": "label",
 											"text": "@tpl.quadro.trend.empty.title",
-											"font": "display", "size": 20},
+											"font": "display", "size": 20,
+											"slot": "trend.empty.title"},
 									{"type": "label",
 											"text": "@tpl.quadro.trend.empty.body",
 											"font": "typed", "size": 13,
 											"tone": "suave", "wrap": true,
-											"wrap_width": 400},
+											"wrap_width": 400,
+											"slot": "trend.empty.body"},
 								],
 							},
+							{"type": "label", "text": "@tpl.quadro.trend.note",
+									"font": "typed", "size": 12,
+									"tone": "suave", "wrap": true,
+									"wrap_width": 400, "slot": "trend.note"},
 							{"type": "spacer", "grow": true},
 						],
 					},
@@ -261,6 +297,7 @@ func _refresh() -> void:
 	_refresh_chips()
 	_refresh_ranking()
 	_refresh_position()
+	_refresh_trend()
 
 
 func _refresh_chips() -> void:
@@ -329,6 +366,62 @@ func _refresh_position() -> void:
 	}))
 	_set_text("position.above", _neighbour_text(group, group_index - 1))
 	_set_text("position.below", _neighbour_text(group, group_index + 1))
+
+
+## Tendência de 12 meses do indicador atual, para a nação do jogador. Sem 2
+## meses amostrados (ou com buraco na série), o cartão mantém o estado vazio;
+## nada é interpolado.
+func _refresh_trend() -> void:
+	var field := String(TREND_FIELDS.get(String(INDICATORS[_indicator]["key"]),
+			"population"))
+	var values: PackedFloat32Array = PackedFloat32Array()
+	var labels := PackedStringArray()
+	if _history != null:
+		values = _history.nation_monthly(PLAYER_NATION, field)
+		labels = _history.month_labels()
+	var valid := values.size() >= 2 and labels.size() == values.size() \
+			and _all_finite(values)
+	_set_hidden("trend.series", not valid)
+	_set_hidden("trend.empty", valid)
+	if not valid:
+		return
+	var chart := _slots.get("trend.chart") as UiTemplateBuilder.LineChart
+	if chart != null:
+		var series: Array[float] = []
+		for value in values:
+			series.append(value)
+		chart.values.assign(series)
+		# População/PIB/reservas têm escala absoluta; comida é razão.
+		chart.autoscale = field != "food"
+		chart.queue_redraw()
+	_set_text("trend.range", "%s → %s · %s" % [
+		_month_text(labels[0]), _month_text(labels[labels.size() - 1]),
+		I18n.t("stats.history.months", {"n": UiKit.number(values.size())}),
+	])
+
+
+func _set_hidden(slot: String, hidden: bool) -> void:
+	var node := _slots.get(slot) as Control
+	if node != null:
+		node.visible = not hidden
+
+
+static func _all_finite(values: PackedFloat32Array) -> bool:
+	for value in values:
+		if not is_finite(value):
+			return false
+	return true
+
+
+## "2026-03" → "março 2026" no idioma ativo (sem inventar nome se faltar a chave).
+func _month_text(key: String) -> String:
+	var parts := key.split("-")
+	if parts.size() < 2:
+		return key
+	var number := int(parts[1])
+	var translated := I18n.t("month.%d" % number)
+	var name := "%02d" % number if translated == "month.%d" % number else translated
+	return "%s %s" % [name, parts[0]]
 
 
 func _neighbour_text(group: Array, index: int) -> String:

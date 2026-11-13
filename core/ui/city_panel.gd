@@ -31,6 +31,8 @@ const CHART_SAMPLES := 15
 ## Amostras mínimas para o bloco Histórico desenhar a série; com menos que
 ## isso (dia 1) ele mostra o estado vazio em vez de uma barra solta.
 const HISTORY_MIN_SAMPLES := 2
+## Meses mínimos para a ficha trocar a série diária pela mensal (12 meses).
+const HISTORY_MIN_MONTHS := 2
 ## Cobertura em dias que enche a barra do gráfico de abastecimento.
 const COVERAGE_FULL_DAYS := 7.0
 
@@ -46,6 +48,7 @@ var _slots := {}
 var _producer_ids: Array[String] = []
 
 var _history := EconomyHistory.new()
+var _service: RefCounted = null
 var _geo := GeographyService.new()
 var _geo_loaded := false
 var _geo_city_id := ""
@@ -84,6 +87,13 @@ func current_tab() -> String:
 
 func current_city_id() -> String:
 	return _city_id
+
+
+## Serviço compartilhado de histórico (12 meses), fornecido pelo HUD. O painel
+## usa as séries mensais quando existem; senão os 30 dias do serviço; senão o
+## histórico local amostrado enquanto a ficha está aberta.
+func set_history_service(service: RefCounted) -> void:
+	_service = service
 
 
 func set_tab(tab: String) -> void:
@@ -264,8 +274,8 @@ func _refresh_overview() -> void:
 	_set_text("ov.flow.dispatched", _tons(float(city.get("dispatched", 0.0))))
 
 	_set_chart("ov.chart", _coverage_series(), _coverage_tones())
-	_set_text("ov.chart.range", _chart_range())
-	_update_history_empty("ov.chart")
+	_set_text("ov.chart.range", _coverage_range())
+	_update_history_empty("ov.chart", _coverage_series().size())
 
 
 func _refresh_population() -> void:
@@ -298,16 +308,27 @@ func _refresh_population() -> void:
 			_level_color(attendance))
 	_set_meter("pop.attendance", attendance, _level_color(attendance))
 
+	var population := _service_series("population")
 	var population_series: Array[float] = []
-	for value in _history.series("population"):
-		population_series.append(value)
+	for value in population.get("values", []):
+		population_series.append(float(value))
+	if population_series.size() < HISTORY_MIN_SAMPLES:
+		population_series.clear()
+		for value in _history.series("population"):
+			population_series.append(value)
 	_set_chart_values("pop.chart.population", population_series)
-	_update_history_empty("pop.chart.population")
+	_update_history_empty("pop.chart.population", population_series.size())
+
+	var income_history := _service_series("income")
 	var income_series: Array[float] = []
-	for value in _history.series("income"):
-		income_series.append(clampf(value, 0.0, 1.0))
+	for value in income_history.get("values", []):
+		income_series.append(clampf(float(value), 0.0, 1.0))
+	if income_series.size() < HISTORY_MIN_SAMPLES:
+		income_series.clear()
+		for value in _history.series("income"):
+			income_series.append(clampf(value, 0.0, 1.0))
 	_set_chart_values("pop.chart.income", income_series)
-	_update_history_empty("pop.chart.income")
+	_update_history_empty("pop.chart.income", income_series.size())
 
 
 func _refresh_production() -> void:
@@ -371,7 +392,7 @@ func _refresh_market() -> void:
 	for index in range(start, samples.size()):
 		stock_series.append(samples[index])
 	_set_chart_values("mkt.chart", stock_series)
-	_update_history_empty("mkt.chart")
+	_update_history_empty("mkt.chart", stock_series.size())
 
 	var orders := _related_orders()
 	var rows: Array = []
@@ -635,11 +656,18 @@ func _orders_total(orders: Array, outgoing: bool) -> float:
 	return total
 
 
-## Cobertura de estoque por dia, limitada ao eixo do gráfico (7 dias).
+## Cobertura de estoque por dia, limitada ao eixo do gráfico (7 dias). Usa a
+## série de 12 meses do serviço quando ela existe; senão cai no histórico local
+## amostrado enquanto a ficha está aberta.
 func _coverage_series() -> Array[float]:
+	var service := _service_series("food")
+	var values: Array[float] = []
+	for value in service.get("values", []):
+		values.append(clampf(float(value), 0.0, COVERAGE_FULL_DAYS))
+	if values.size() >= HISTORY_MIN_SAMPLES:
+		return values
 	var stock := _history.series("wheat_stock")
 	var need := _history.series("wheat_need")
-	var values: Array[float] = []
 	var start := maxi(stock.size() - CHART_SAMPLES, 0)
 	for index in range(start, stock.size()):
 		var demand := need[index] if index < need.size() else 0.0
@@ -647,6 +675,64 @@ func _coverage_series() -> Array[float]:
 				else clampf(stock[index] / demand, 0.0, COVERAGE_FULL_DAYS)
 		values.append(days)
 	return values
+
+
+## Série do serviço de histórico: mensal quando já há 2+ meses, senão os 30 dias.
+## Devolve `{}` quando não há pontos suficientes ou a série tem buraco (NAN).
+func _service_series(field: String) -> Dictionary:
+	if _service == null or _city_id.is_empty():
+		return {}
+	if int(_service.month_count()) >= HISTORY_MIN_MONTHS:
+		var monthly: PackedFloat32Array = _service.city_monthly(_city_id, field)
+		if monthly.size() >= HISTORY_MIN_SAMPLES and _all_finite(monthly):
+			return {"values": _to_floats(monthly), "monthly": true}
+	var daily: PackedFloat32Array = _service.city_daily(_city_id, field)
+	if daily.size() >= HISTORY_MIN_SAMPLES and _all_finite(daily):
+		return {"values": _to_floats(daily), "monthly": false}
+	return {}
+
+
+static func _all_finite(values: PackedFloat32Array) -> bool:
+	for value in values:
+		if not is_finite(value):
+			return false
+	return true
+
+
+static func _to_floats(values: PackedFloat32Array) -> Array[float]:
+	var out: Array[float] = []
+	for value in values:
+		out.append(value)
+	return out
+
+
+## Intervalo do gráfico: dias para a série diária, meses para a mensal.
+func _series_range(monthly: bool) -> String:
+	if not monthly:
+		return _chart_range()
+	var labels: PackedStringArray = _service.month_labels()
+	if labels.size() < 2:
+		return ""
+	return "%s → %s" % [_month_text(labels[0]),
+			_month_text(labels[labels.size() - 1])]
+
+
+func _coverage_range() -> String:
+	var service := _service_series("food")
+	if service.is_empty():
+		return _chart_range()
+	return _series_range(bool(service.get("monthly", false)))
+
+
+## "2026-03" → "março 2026" no idioma ativo (sem inventar nome se faltar a chave).
+func _month_text(key: String) -> String:
+	var parts := key.split("-")
+	if parts.size() < 2:
+		return key
+	var number := int(parts[1])
+	var translated := I18n.t("month.%d" % number)
+	var name := "%02d" % number if translated == "month.%d" % number else translated
+	return "%s %s" % [name, parts[0]]
 
 
 ## Tom de cada barra do gráfico de abastecimento: a altura é o estoque em dias,
@@ -674,10 +760,10 @@ func _chart_range() -> String:
 			I18n.t("hud.day_short"), int(days[days.size() - 1])]
 
 
-## O bloco Histórico só existe depois do segundo dia amostrado. No dia 1 não há
+## O bloco Histórico só existe depois do segundo ponto amostrado. No dia 1 não há
 ## série para desenhar, então o gráfico e a nota dão lugar ao estado vazio.
-func _update_history_empty(prefix: String) -> void:
-	var has_history := _history.count() >= HISTORY_MIN_SAMPLES
+func _update_history_empty(prefix: String, count: int) -> void:
+	var has_history := count >= HISTORY_MIN_SAMPLES
 	_set_hidden(prefix + ".series", not has_history)
 	_set_hidden(prefix + ".empty", has_history)
 

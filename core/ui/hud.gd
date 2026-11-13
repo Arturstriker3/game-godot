@@ -18,6 +18,7 @@ const ALERTS_MODEL: Script = preload("res://core/ui/alerts.gd")
 const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
 const CITY_TOOLTIP: Script = preload("res://core/ui/city_tooltip.gd")
 const NATION_CITY_LIST: Script = preload("res://core/ui/nation_city_list.gd")
+const HISTORY_SERVICE: Script = preload("res://core/stats/history_service.gd")
 
 ## Contexto pedido pelo HUD para o mapa (câmera e camada de dados).
 signal city_focused(city_id: String)
@@ -202,11 +203,16 @@ var _alerts_badge: PanelContainer
 var _alerts_badge_label: Label
 var _settings_layer: Control
 var _settings_view := ""
+## Histórico de 12 meses amostrado no fechamento do dia (T3 e T5).
+var _history: RefCounted
 
 
 func _ready() -> void:
 	layer = 50
 	UiKit.set_locale(I18n.locale)
+	# Antes de qualquer amostragem: `_on_status` (chamado no fim do _ready) já
+	# registra o primeiro dia, e a ficha T3/estatísticas recebem o serviço.
+	_history = HISTORY_SERVICE.new()
 
 	# Ordem das camadas, de trás para frente: barra/doca, telas de papel (T1–T5),
 	# legenda, minimapa, alertas, ficha lateral (T3), menu Esc (T6) e sub-fichas.
@@ -1843,6 +1849,8 @@ func _instantiate_screens() -> void:
 	_screens["politics"].economy_requested.connect(_on_politics_economy)
 	_screens["politics"].map_requested.connect(_on_politics_map)
 	_screens["statistics"].close_requested.connect(_close_screen)
+	if _screens["statistics"].has_method("set_history_service"):
+		_screens["statistics"].set_history_service(_history)
 
 
 ## Alertas é uma janela (T2 compacto), não uma tela de fundo: mora numa camada
@@ -1876,6 +1884,7 @@ func _build_city_layer() -> void:
 	_city_screen = CITY_PANEL.new()
 	_city_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_city_screen.visible = false
+	_city_screen.set_history_service(_history)
 	_city_screen.navigate_city.connect(_on_city_navigate)
 	_city_screen.back_requested.connect(_go_back)
 	_city_screen.close_requested.connect(_close_screen)
@@ -2501,8 +2510,26 @@ func _log_orders(summary: Dictionary) -> void:
 	summary["trade_log"] = _order_log
 
 
+## Amostra o dia publicado no histórico de 12 meses. O balde mensal vem do
+## calendário do jogo; a amostragem roda uma vez por dia, sem varrer entidades
+## por frame (o status já chega agregado por cidade).
+func _sample_history(summary: Dictionary) -> void:
+	if _history == null:
+		return
+	var date: Dictionary = Economy.game_date()
+	var month_key := "%04d-%02d" % [int(date.get("year", 0)),
+			int(date.get("month", 1))]
+	_history.sample(int(summary.get("day", 0)), summary, month_key)
+
+
+## Serviço de histórico (T3/T5 e testes).
+func history_service() -> RefCounted:
+	return _history
+
+
 func _on_status(summary: Dictionary) -> void:
 	_summary = summary
+	_sample_history(summary)
 	_log_orders(summary)
 	_update_top_bar()
 	_refresh_city_list()
