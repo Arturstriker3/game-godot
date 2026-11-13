@@ -203,7 +203,7 @@ var _legend_hint: Control
 var _legend_all: Button
 var _legend_all_glyph: Control
 var _legend_back: Button
-var _legend_flag: TextureRect
+var _legend_flag: Control
 var _legend_labels := {}
 var _legend_state := "filters"
 ## Um ajuste de altura por frame basta: o mínimo do Control só existe depois do
@@ -658,13 +658,9 @@ func _legend_header(kind: String, title: String, subtitle: String,
 	header.add_child(title_row)
 
 	if flag != null:
-		_legend_flag = TextureRect.new()
-		_legend_flag.texture = flag
-		_legend_flag.custom_minimum_size = Vector2(24.0, 16.0)
-		_legend_flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_legend_flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		_legend_flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		_legend_flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# Bandeira em 640 px, proporção do país preservada (sem cortar) e
+		# moldura de tinta de 1 px.
+		_legend_flag = UiKit.flag_view(flag, Vector2(24.0, 16.0))
 		title_row.add_child(_legend_flag)
 
 	_legend_title = UiKit.label(title, UiKit.FS_SUBTITLE, UiKit.TINTA)
@@ -998,7 +994,7 @@ func show_city_resources(city_id: String, entries: Array) -> void:
 	var flag: Texture2D = null
 	if not city.is_empty():
 		title = I18n.city_name(String(city["id"]), String(city["name"]))
-		flag = Economy.flag_texture(String(city["nation"]))
+		flag = UiKit.nation_flag(String(city["nation"]))
 	_legend_header("", title, "", flag, "back")
 
 	var body := _legend_paper_sheet()
@@ -1764,14 +1760,9 @@ func _nation_block() -> Control:
 	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(swatch)
 
-	var flag := TextureRect.new()
-	flag.texture = Economy.flag_texture(PLAYER_NATION)
-	flag.custom_minimum_size = Vector2(40.0, 27.0)
-	flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(flag)
+	# Bandeira em 640 px dentro de 40×27, proporção do país preservada.
+	box.add_child(UiKit.flag_view(UiKit.nation_flag(PLAYER_NATION),
+			Vector2(40.0, 27.0)))
 
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", 0)
@@ -2462,7 +2453,7 @@ func _show_flow_tooltip(flow: Dictionary) -> void:
 	_city_tooltip.show_content(
 			"%s → %s" % [I18n.city_name(from_id, from_id),
 					I18n.city_name(to_id, to_id)],
-			Economy.flag_texture(from_nation),
+			UiKit.nation_flag(from_nation),
 			I18n.t(mode_key), rows)
 
 
@@ -2543,7 +2534,7 @@ func _city_tooltip_content(city: Dictionary, mode: String) -> Dictionary:
 		subtitle += " · " + I18n.t("map.icon.industry")
 	return {
 		"title": I18n.city_name(id, String(city.get("name", ""))),
-		"flag": Economy.flag_texture(nation),
+		"flag": UiKit.nation_flag(nation),
 		"subtitle": subtitle,
 		"rows": rows,
 	}

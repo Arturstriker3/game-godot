@@ -24,7 +24,8 @@ const LABEL_COLOR := UiKit.TINTA_SUAVE
 const VALUE_COLOR := UiKit.TINTA
 
 var _title: Label
-var _flag: TextureRect
+var _head: HBoxContainer
+var _flag: Control
 var _subtitle: Label
 var _rows: VBoxContainer
 
@@ -44,14 +45,7 @@ func _init() -> void:
 	head.add_theme_constant_override("separation", 6)
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(head)
-
-	_flag = TextureRect.new()
-	_flag.custom_minimum_size = Vector2(20.0, 14.0)
-	_flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.add_child(_flag)
+	_head = head
 
 	_title = _label("", 15, VALUE_COLOR, UiKit.PAPER_DISPLAY_FONT)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -91,13 +85,26 @@ static func _label(text: String, size: int, color: Color, font: Font) -> Label:
 	return node
 
 
+## Bandeira pequena (20×14) na proporção do país, com moldura de tinta de 1 px.
+## Trocada a cada cidade: a ficha acompanha o cursor.
+func _set_flag(texture: Texture2D) -> void:
+	if _flag != null:
+		_head.remove_child(_flag)
+		_flag.queue_free()
+		_flag = null
+	if texture == null:
+		return
+	_flag = UiKit.flag_view(texture, Vector2(20.0, 14.0))
+	_head.add_child(_flag)
+	_head.move_child(_flag, 0)
+
+
 ## Conteúdo já formatado pelo HUD. `rows` é uma lista de
 ## `{"label", "value", "color"}`; linhas sem valor simplesmente não existem.
 func show_content(title: String, flag: Texture2D, subtitle: String,
 		rows: Array) -> void:
 	_title.text = title
-	_flag.texture = flag
-	_flag.visible = flag != null
+	_set_flag(flag)
 	_subtitle.text = subtitle
 	_subtitle.visible = not subtitle.is_empty()
 

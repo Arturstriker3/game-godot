@@ -308,3 +308,44 @@ Pendência registrada: para o modo rotas exibir as fronteiras discretas do
 `map/city_world.gd::set_mode` - `show_overlay := mode not in ["geographic",
 "political"]` (hoje `routes` está na lista de exclusão). A base do modo já é
 a carta branca.
+
+## Bandeiras em alta resolução no Dossiê (2026-11)
+
+**Antes:** o bloco `flag` do Dossiê (T1) pedia 160x96 e carregava o PNG w40 do
+mapa (40 px de largura) num `TextureRect` com
+`STRETCH_KEEP_ASPECT_COVERED`. Resultado: bandeira ampliada ~4x (pixelada) e
+cortada quando a proporção do país não era 2:1; a barra superior e o tooltip
+sofriam do mesmo upscale.
+
+**Depois:** `assets/flags_hi/` traz as mesmas bandeiras em **640 px**
+(flagcdn.com / Wikimedia Commons, domínio público, mipmaps no import) e a UI
+usa `UiKit.flag_view`: proporção nativa do país, filtro linear + mipmaps e
+moldura de tinta de 1 px. O mapa continua com o atlas w40 + MultiMesh.
+
+| Nação | Proporção | Envelope exibido |
+|---|---|---|
+| Reino Unido (GBR) | 2:1 | 160x80 |
+| Suíça (CHE) | 1:1 | 96x96 |
+| Catar (QAT) | ~1:2,55 | 160x63 |
+
+Capturas (1920x1080, janela real):
+
+- `docs/ui/captures/fix_round/dossie_bandeira.png` (GBR)
+- `docs/ui/captures/fix_round/dossie_bandeira_suica.png` (CHE)
+- `docs/ui/captures/fix_round/dossie_bandeira_catar.png` (QAT)
+
+Como reproduzir:
+
+```powershell
+& $godot --path . res://tools/flag_capture.tscn
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --phase=f4 --run=bandeiras `
+    --sizes=1920x1080,1600x900,1366x768,2560x1440
+```
+
+Resultado: `ui_capture` gerou 108 capturas (4 resoluções x 27 estados) com
+**0** problemas no `layout_report.json` (nenhum `offscreen`,
+`text_overflow`, `text_elided` ou `focus_hidden`); a mesma rodada em
+espanhol (`--locale=es`) e com a legenda de cidade (`--legend=city`) também
+fechou sem problemas. Testes: `politics_dossier_test` (agora verifica textura
+≥ 500 px e envelope 160x80), `city_tooltip_test` e `menu_smoke_test.tscn`.

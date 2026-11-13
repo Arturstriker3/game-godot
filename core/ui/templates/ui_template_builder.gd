@@ -26,7 +26,6 @@ const TEMPLATE_IDS := ["dossie", "registro", "ficha", "telegrama", "quadro",
 const TOP_BAR_CLEARANCE := 68.0
 const VIEW_W := 1920.0
 const VIEW_H := 1080.0
-const FLAGS_DIR := "res://assets/flags/"
 
 const RESOURCE_NAMES := ["resource.coal", "resource.gas", "resource.iron",
 		"resource.oil", "resource.wheat"]
@@ -1921,26 +1920,16 @@ static func _ranking_row(block: Dictionary, ctx: Dictionary) -> Control:
 	return row
 
 
+## Bandeira da nação: usa a arte de 640 px (`assets/flags_hi/`) e encaixa a
+## proporção nativa dentro do envelope `width`×`height` — o Reino Unido 2:1 fica
+## 160×80 e a Suíça 1:1 fica 96×96, sem esticar e sem cortar. `width`/`height`
+## do bloco valem como envelope máximo, não como caixa fixa.
 static func _flag(block: Dictionary, ctx: Dictionary) -> Control:
 	var code := _text(block, "code", ctx)
-	var holder := PanelContainer.new()
-	holder.add_theme_stylebox_override("panel",
-			_paper_style(Color(0, 0, 0, 0), UiKit.TINTA, 0.0, 1, ["all"]))
-	holder.custom_minimum_size = Vector2(float(block.get("width", 160.0)),
+	var box := Vector2(float(block.get("width", 160.0)),
 			float(block.get("height", 96.0)))
-	holder.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-
-	var texture: Texture2D = null
-	if not code.is_empty():
-		var path := FLAGS_DIR + code.to_lower() + ".png"
-		if ResourceLoader.exists(path):
-			texture = load(path) as Texture2D
-	var rect := TextureRect.new()
-	rect.texture = texture
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(rect)
+	var holder := UiKit.flag_view(UiKit.flag_texture(code), box)
+	holder.set_meta("tpl_flag_envelope", true)
 	return holder
 
 
@@ -2054,9 +2043,9 @@ static func _apply_flags(node: Control, block: Dictionary) -> void:
 		node.set_meta("tpl_slot", String(block["slot"]))
 	if bool(block.get("hidden", false)):
 		node.visible = false
-	if block.has("width"):
+	if block.has("width") and not node.has_meta("tpl_flag_envelope"):
 		node.custom_minimum_size.x = float(block["width"])
-	if block.has("height"):
+	if block.has("height") and not node.has_meta("tpl_flag_envelope"):
 		node.custom_minimum_size.y = float(block["height"])
 	if block.has("w"):
 		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL

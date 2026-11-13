@@ -64,6 +64,26 @@ func _run() -> void:
 	if not _has_label(screen.get("_root"), _i18n("pol.picker.title")):
 		_failures.append("lista de nações ausente")
 
+	# Bandeira: arte de 640 px (não o w40 do mapa), proporção do país
+	# preservada (GBR 2:1 dentro do envelope 160×96) e moldura de 1 px.
+	var flag_rect := _flag_rect(screen.get("_root"))
+	if flag_rect == null or flag_rect.texture == null:
+		_failures.append("dossiê sem bandeira desenhada")
+	else:
+		var tex := flag_rect.texture
+		print("bandeira GBR=%dx%d exibida em %s" % [tex.get_width(),
+				tex.get_height(), flag_rect.get_parent().custom_minimum_size])
+		if tex.get_width() < 500:
+			_failures.append("bandeira do dossiê usa a arte pequena: %d px"
+					% tex.get_width())
+		if flag_rect.stretch_mode != TextureRect.STRETCH_KEEP_ASPECT_CENTERED:
+			_failures.append("bandeira do dossiê pode esticar (stretch_mode %d)"
+					% flag_rect.stretch_mode)
+		var fitted: Vector2 = (flag_rect.get_parent() as Control).custom_minimum_size
+		if not fitted.is_equal_approx(Vector2(160.0, 80.0)):
+			_failures.append("envelope da bandeira 2:1 deveria ser 160×80, veio %s"
+					% fitted)
+
 	var picker: Variant = screen.get("_picker")
 	if picker == null:
 		_failures.append("sem tabela de nações")
@@ -114,6 +134,22 @@ func _has_label(source: Node, text: String) -> bool:
 		for child in node.get_children():
 			pending.append(child)
 	return false
+
+
+## Primeiro TextureRect dentro de um envelope de bandeira do template.
+func _flag_rect(source: Node) -> TextureRect:
+	if source == null:
+		return null
+	var pending: Array[Node] = [source]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control and node.has_meta("tpl_flag_envelope"):
+			for child in node.get_children():
+				if child is TextureRect:
+					return child as TextureRect
+		for child in node.get_children():
+			pending.append(child)
+	return null
 
 
 func _frames(count: int) -> void:

@@ -1,0 +1,31 @@
+# Bandeiras de UI em alta resolução (assets/flags_hi)
+
+Bandeiras exibidas em **UI** (Dossiê T1, barra superior, legenda do mapa e
+ficha da cidade), na mesma arte dos PNGs de 40 px do mapa em `assets/flags/`.
+Nada aqui é desenho novo: é a mesma bandeira de cada país, só em resolução maior.
+
+## Origem e licença
+
+- **232 arquivos**: `https://flagcdn.com/w640/<iso2>.png` — flagcdn.com distribui
+  as bandeiras em **domínio público**, a partir dos SVGs do Wikimedia Commons.
+  É a mesma fonte dos PNGs w40 registrados em `assets/flags/CREDITS.txt`.
+- **1 arquivo**: `sol.png` (Somalilândia, sem ISO 3166-1). Renderizado do SVG
+  `Flag_of_Somaliland.svg` do Wikimedia Commons (`Special:FilePath?width=640`),
+  a mesma origem livre já usada para o `sol.png` de 40 px.
+- Total: **233 bandeiras** = 179 nações do cenário + territórios + `sol`/`xk`.
+  Não há bandeira desenhada à mão, inventada ou de fonte sem licença livre.
+
+## Regras
+
+- Nome do arquivo = ISO2 minúsculo da nação (`gb.png`), com os tags do jogo
+  quando não há ISO (`sol.png`, `xk.png` em Kosovo).
+- Largura de 640 px, proporção nativa de cada país preservada
+  (Reino Unido 2:1, Suíça 1:1, Catar ~1:2,55, Nepal ~1:1,22). Não se normaliza
+  para uma caixa comum: a UI encaixa a bandeira no envelope, sem esticar.
+- Importadas com **mipmaps** (`mipmaps/generate=true`) e desenhadas com
+  `TEXTURE_FILTER_LINEAR_WITH_MIPMAPS`, para encolher limpo até 20–160 px.
+- **Só para UI.** O mapa continua usando `assets/flags/*.png` (w40) no atlas +
+  MultiMesh (`map/city_world.gd`); esta pasta não entra no atlas.
+- Ausência de arquivo = nação sem bandeira: a UI mostra o espaço vazio, nunca
+  um placeholder.
+- Ao trocar uma bandeira, atualizar as duas pastas e este arquivo.

@@ -36,3 +36,8 @@ pelo mapa e pelos rótulos de nação.
   arquivo `xk.png`, coerente com `iso2` de `data/definitions/world/nations_source.csv`.
 - `sol` (Somalilândia) também não é ISO 3166-1; usa-se o tag do jogo como nome
   do arquivo, declarado no campo `flag` de `NATION_SUPPLEMENT`.
+
+## UI (640 px)
+
+Bandeiras exibidas em UI vivem em `assets/flags_hi/` (mesma fonte e mesma
+licenca, largura de 640 px, mipmaps). Esta pasta w40 continua sendo a do mapa.

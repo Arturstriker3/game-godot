@@ -1192,6 +1192,83 @@ static func nation_color(tag: String) -> Color:
 	return NATION_COLORS.get(tag, STEEL)
 
 
+# --- Bandeiras ---------------------------------------------------------------
+## Bandeiras de UI: 640 px de largura, mesma arte e mesma licença dos PNGs de
+## 40 px do mapa (`assets/flags/`). Ver `assets/flags/CREDITS.txt`.
+const FLAGS_UI_DIR := "res://assets/flags_hi/"
+## Bandeiras pequenas do atlas do mapa (w40); fallback quando falta a alta.
+const FLAGS_DIR := "res://assets/flags/"
+
+## Bandeira para UI: prefere a versão de 640 px e só cai para a de 40 px quando
+## não existe alta. `null` = nação sem bandeira (nunca se desenha placeholder).
+static func flag_texture(code: String) -> Texture2D:
+	var tag := code.strip_edges().to_lower()
+	if tag.is_empty():
+		return null
+	var high := FLAGS_UI_DIR + tag + ".png"
+	if ResourceLoader.exists(high):
+		return load(high) as Texture2D
+	var small := FLAGS_DIR + tag + ".png"
+	if ResourceLoader.exists(small):
+		return load(small) as Texture2D
+	return null
+
+## Bandeira de uma nação do cenário pelo tag (`GBR`): o arquivo é o campo
+## `flag` de `nations.json`, nunca o próprio tag.
+static func nation_flag(tag: String) -> Texture2D:
+	return flag_texture(String(WorldFacts.nation(tag).get("flag", "")))
+
+## Tamanho da bandeira dentro de um envelope, na proporção nativa do país
+## (Reino Unido 2:1, Suíça 1:1, Nepal ~1:1,22, Catar ~1:2,55). Nunca estica:
+## o lado que não cabe é reduzido junto.
+static func flag_size(texture: Texture2D, box: Vector2) -> Vector2:
+	if texture == null or box.x <= 0.0 or box.y <= 0.0:
+		return box
+	var aspect := float(texture.get_width()) / maxf(float(texture.get_height()), 1.0)
+	var width := box.y * aspect
+	var height := box.y
+	if width > box.x:
+		width = box.x
+		height = width / aspect
+	return Vector2(roundf(maxf(width, 1.0)), roundf(maxf(height, 1.0)))
+
+## Bandeira pronta para UI: moldura de tinta de 1 px, proporção do país
+## preservada e filtro linear com mipmaps (a arte de 640 px encolhe limpa em
+## vez de ser ampliada a partir do PNG de 40 px do mapa).
+static func flag_view(texture: Texture2D, box: Vector2,
+		framed: bool = true) -> Control:
+	if texture == null:
+		# Sem bandeira = sem desenho: nada de moldura vazia (estado vazio
+		# honesto, nunca um placeholder).
+		var empty := Control.new()
+		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		empty.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		empty.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		return empty
+	var holder := PanelContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	holder.custom_minimum_size = flag_size(texture, box)
+	if framed:
+		var border := StyleBoxFlat.new()
+		border.bg_color = Color(0, 0, 0, 0)
+		border.border_color = TINTA
+		border.set_border_width_all(1)
+		border.set_corner_radius_all(0)
+		holder.add_theme_stylebox_override("panel", border)
+	else:
+		holder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var rect := TextureRect.new()
+	rect.texture = texture
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(rect)
+	return holder
+
+
 # Idioma usado na formatação de números; o HUD sincroniza com o I18n.
 static var _locale := "pt_BR"
 
