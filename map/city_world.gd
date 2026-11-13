@@ -263,6 +263,64 @@ const NATION_LABEL_FAR_CAPITAL_MIN_PX := 96.0
 const NATION_CAPITAL_LABEL_SIZE := 16
 const NATION_CAPITAL_LABEL_SCALE := 0.62
 
+## Nomes geográficos curados (≈40): regiões em terra e oceanos/mares. São tinta
+## de fundo: só no LONGE (mares também no MÉDIO), em Cinzel itálico com
+## espaçamento largo, e nunca sobre capital/nome de nação ou outro nome regional.
+## `lon`/`lat` são o centro aproximado da região, sem inventar fronteira.
+const REGIONS := [
+	{"key": "siberia", "lon": 95.0, "lat": 62.0, "kind": "land"},
+	{"key": "sahara", "lon": 14.0, "lat": 22.0, "kind": "land"},
+	{"key": "amazon", "lon": -61.0, "lat": -5.0, "kind": "land"},
+	{"key": "sahel", "lon": 15.0, "lat": 15.0, "kind": "land"},
+	{"key": "patagonia", "lon": -69.0, "lat": -45.0, "kind": "land"},
+	{"key": "great_plains", "lon": -100.0, "lat": 40.0, "kind": "land"},
+	{"key": "scandinavia", "lon": 17.0, "lat": 65.0, "kind": "land"},
+	{"key": "balkans", "lon": 22.0, "lat": 43.0, "kind": "land"},
+	{"key": "caucasus", "lon": 44.0, "lat": 42.0, "kind": "land"},
+	{"key": "central_asia", "lon": 68.0, "lat": 43.0, "kind": "land"},
+	{"key": "tibet", "lon": 88.0, "lat": 32.0, "kind": "land"},
+	{"key": "gobi", "lon": 105.0, "lat": 43.0, "kind": "land"},
+	{"key": "arabia", "lon": 45.0, "lat": 23.0, "kind": "land"},
+	{"key": "indochina", "lon": 104.0, "lat": 15.0, "kind": "land"},
+	{"key": "outback", "lon": 133.0, "lat": -25.0, "kind": "land"},
+	{"key": "pampas", "lon": -63.0, "lat": -35.0, "kind": "land"},
+	{"key": "andes", "lon": -70.0, "lat": -20.0, "kind": "land"},
+	{"key": "himalaya", "lon": 84.0, "lat": 29.0, "kind": "land"},
+	{"key": "anatolia", "lon": 33.0, "lat": 39.0, "kind": "land"},
+	{"key": "iberia", "lon": -4.0, "lat": 40.0, "kind": "land"},
+	{"key": "atlantic", "lon": -30.0, "lat": 10.0, "kind": "sea"},
+	{"key": "pacific", "lon": -150.0, "lat": 0.0, "kind": "sea"},
+	{"key": "indian_ocean", "lon": 80.0, "lat": -20.0, "kind": "sea"},
+	{"key": "mediterranean", "lon": 18.0, "lat": 35.0, "kind": "sea"},
+	{"key": "black_sea", "lon": 35.0, "lat": 43.0, "kind": "sea"},
+	{"key": "caspian", "lon": 51.0, "lat": 42.0, "kind": "sea"},
+	{"key": "red_sea", "lon": 38.0, "lat": 20.0, "kind": "sea"},
+	{"key": "persian_gulf", "lon": 51.0, "lat": 27.0, "kind": "sea"},
+	{"key": "south_china_sea", "lon": 115.0, "lat": 15.0, "kind": "sea"},
+	{"key": "caribbean", "lon": -75.0, "lat": 15.0, "kind": "sea"},
+	{"key": "gulf_mexico", "lon": -90.0, "lat": 25.0, "kind": "sea"},
+	{"key": "baltic", "lon": 19.0, "lat": 57.0, "kind": "sea"},
+	{"key": "north_sea", "lon": 3.0, "lat": 56.0, "kind": "sea"},
+	{"key": "bering", "lon": -170.0, "lat": 58.0, "kind": "sea"},
+	{"key": "okhotsk", "lon": 150.0, "lat": 55.0, "kind": "sea"},
+	{"key": "japan_sea", "lon": 135.0, "lat": 42.0, "kind": "sea"},
+	{"key": "bengal", "lon": 88.0, "lat": 15.0, "kind": "sea"},
+	{"key": "arabian_sea", "lon": 64.0, "lat": 15.0, "kind": "sea"},
+	{"key": "coral_sea", "lon": 155.0, "lat": -18.0, "kind": "sea"},
+	{"key": "arctic", "lon": 0.0, "lat": 78.0, "kind": "sea"},
+	{"key": "southern_ocean", "lon": 0.0, "lat": -55.0, "kind": "sea"},
+]
+const REGION_LAND_COLOR := Color(0.07, 0.08, 0.09, 0.35)
+const REGION_SEA_COLOR := Color(0.55, 0.74, 0.80, 0.40)
+const REGION_LABEL_SIZE := 64
+const REGION_LABEL_SPACING := 12
+## Altura-alvo na TELA (px): nomes regionais são constantes no zoom LONGE, como
+## os nomes de nação. O `pixel_size` é recalculado pela profundidade do ponto.
+const REGION_LAND_SCREEN_PX := 11.0
+const REGION_SEA_SCREEN_PX := 10.0
+const REGION_LABEL_PIXEL_MAX := 0.20
+const REGION_COLLIDE_PAD := 5.0
+
 var _content: Node3D
 ## Cidades, portos e rótulos ficam numa cópia ÚNICA. O wrap do mundo (cópias
 ## laterais) só duplica as superfícies baratas do `_content`; cada lugar é
@@ -291,6 +349,8 @@ var _capital_city_by_nation: Dictionary = {}
 ## Labels com fade em andamento (150 ms) e relatório do último layout.
 var _nation_fade_active: Array[Label3D] = []
 var _nation_label_report_cache: Array[Dictionary] = []
+## Nomes geográficos de terra/mar (letra apagada no LONGE; mares também no MÉDIO).
+var _region_records: Array[Dictionary] = []
 
 ## Território dinâmico (províncias -> dono).
 var _territory: TerritoryMap
@@ -465,6 +525,7 @@ func build(cities: Array, ports: Array) -> void:
 	# Os nomes de nação precisam do território já atribuído (âncora/extensão de
 	# TODAS as nações, não só a lista legada de nations.json).
 	_build_nation_labels()
+	_build_region_labels()
 	_build_lod_grid()
 	set_mode(_mode)
 
@@ -567,6 +628,8 @@ func set_mode(mode: String) -> void:
 		_mode_layer.set_mode(mode)
 	if _trade_flows != null:
 		_trade_flows.set_active(mode == "routes")
+	if mode != "political" and mode != "routes":
+		_hide_region_labels()
 	_nation_labels_dirty = true
 
 
@@ -1304,6 +1367,11 @@ func _on_locale_changed(_locale: String) -> void:
 				if label != null:
 					label.text = I18n.nation_name(
 							String(label.get_meta("tag"))).to_upper()
+	for record in _region_records:
+		var region_label: Label3D = record.get("label")
+		if region_label != null:
+			region_label.text = I18n.t(
+					"map.region." + String(record.get("key", ""))).to_upper()
 	# Nomes das cidades: o pool é reconfigurado no próximo layout; aqui só
 	# invalidamos o texto/largura em cache.
 	for record in _city_nodes:
@@ -1897,6 +1965,163 @@ func _set_nation_label_visible(label: Label3D, value: bool,
 		_nation_fade_active.append(label)
 
 
+## Nomes de regiões e mares: texto deitado no chão, em Cinzel itálico com
+## espaçamento largo. A lista é curada (sem fronteira inventada); a posição é o
+## centro aproximado em lon/lat e a visibilidade é decidida no layout.
+func _build_region_labels() -> void:
+	var holder := Node3D.new()
+	holder.name = "RegionLabels"
+	_places.add_child(holder)
+	_region_records.clear()
+	var font := FontVariation.new()
+	font.base_font = NATION_LABEL_FONT
+	font.variation_opentype = {"wght": 500}
+	# Inclinação de itálico por transformação da fonte (a Cinzel não tem eixo
+	# itálico próprio); o espaçamento largo vem do `spacing_glyph`.
+	font.variation_transform = Transform2D(Vector2(1.0, 0.0),
+			Vector2(0.18, 1.0), Vector2.ZERO)
+	font.spacing_glyph = REGION_LABEL_SPACING
+	for spec: Dictionary in REGIONS:
+		var key := String(spec["key"])
+		var kind := String(spec["kind"])
+		var color: Color = REGION_SEA_COLOR if kind == "sea" \
+				else REGION_LAND_COLOR
+		var label := Label3D.new()
+		label.name = "Region_" + key
+		label.text = I18n.t("map.region." + key).to_upper()
+		label.font = font
+		label.font_size = REGION_LABEL_SIZE
+		label.pixel_size = REGION_LABEL_PIXEL_MAX
+		label.modulate = color
+		label.outline_size = 0
+		label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+		label.double_sided = false
+		label.alpha_cut = Label3D.ALPHA_CUT_DISABLED
+		label.render_priority = 1
+		label.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+		label.visible = false
+		holder.add_child(label)
+		var center_px := _lonlat_to_px(float(spec["lon"]), float(spec["lat"]))
+		var base := pixel_to_world(center_px)
+		label.position = base + Vector3(0.0, 0.12, 0.0)
+		_region_records.append({
+			"key": key,
+			"kind": kind,
+			"label": label,
+			"base": base,
+			"color": color,
+		})
+
+
+static func _lonlat_to_px(lon: float, lat: float) -> Vector2:
+	return Vector2((lon + 180.0) / 360.0 * MAP_SIZE_PX.x,
+			(90.0 - lat) / 180.0 * MAP_SIZE_PX.y)
+
+
+func _hide_region_labels() -> void:
+	for record in _region_records:
+		var label: Label3D = record.get("label")
+		if label != null:
+			label.visible = false
+
+
+## Atualiza posição/tamanho/visibilidade dos nomes geográficos. Roda junto com
+## o layout de nações (câmera parada), então não entra no caminho quente do pan.
+func _update_region_labels(camera: Camera3D) -> void:
+	if camera == null or (_mode != "political" and _mode != "routes"):
+		_hide_region_labels()
+		return
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		_hide_region_labels()
+		return
+	var screen := Rect2(Vector2.ZERO, viewport.get_visible_rect().size)
+	var far := _zoom_level == ZoomLevel.FAR
+	var mid := _zoom_level == ZoomLevel.MID
+	if not far and not mid:
+		_hide_region_labels()
+		return
+	var occupied: Array[Rect2] = []
+	# Nunca sobre capital, nome de nação ou nome de capital do LONGE.
+	for entry: Dictionary in _nation_label_report_cache:
+		if not bool(entry.get("visible", false)):
+			continue
+		var rect: Rect2 = entry.get("rect", Rect2())
+		if rect.size.x > 0.0 and rect.size.y > 0.0:
+			occupied.append(rect.grow(REGION_COLLIDE_PAD))
+	for entry: Dictionary in _label_rects:
+		if String(entry.get("kind", "")) != "city" \
+				or not bool(entry.get("capital", false)):
+			continue
+		var rect: Rect2 = entry.get("rect", Rect2())
+		if rect.size.x > 0.0 and rect.size.y > 0.0:
+			occupied.append(rect.grow(REGION_COLLIDE_PAD))
+	for record in _region_records:
+		var label: Label3D = record.get("label")
+		if label == null:
+			continue
+		var is_sea := String(record.get("kind", "")) == "sea"
+		if not far and not (mid and is_sea):
+			label.visible = false
+			continue
+		var base: Vector3 = record["base"]
+		label.position = base + Vector3(_wrap_offset(base.x), 0.12, 0.0)
+		# Tamanho constante na tela: a 11/10 px de altura o nome continua
+		# legível no d500 sem competir com o nome de nação.
+		var px_per_world := _screen_px_per_world(camera,
+				label.global_position, camera.global_transform.basis.y)
+		if px_per_world <= 0.0001:
+			label.visible = false
+			continue
+		var font_h := maxf(label.font.get_height(label.font_size), 1.0)
+		var target_px := REGION_SEA_SCREEN_PX if is_sea \
+				else REGION_LAND_SCREEN_PX
+		label.pixel_size = clampf(target_px / (font_h * px_per_world),
+				LABEL_PIXEL_MIN, REGION_LABEL_PIXEL_MAX)
+		var text := String(label.text)
+		var text_w := label.font.get_string_size(text,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, label.font_size).x \
+				* label.pixel_size
+		var text_h := label.font.get_height(label.font_size) * label.pixel_size
+		var rect := _region_label_screen_rect(camera, label, text_w, text_h)
+		if rect.size.x <= 0.0 or not screen.grow(24.0).intersects(rect):
+			label.visible = false
+			continue
+		var blocked := false
+		for other: Rect2 in occupied:
+			if other.intersects(rect):
+				blocked = true
+				break
+		if blocked:
+			label.visible = false
+			continue
+		label.visible = true
+		occupied.append(rect.grow(REGION_COLLIDE_PAD))
+
+
+## Retângulo em tela do texto deitado no chão (mesmo método do nome de nação).
+func _region_label_screen_rect(camera: Camera3D, label: Label3D,
+		text_w: float, text_h: float) -> Rect2:
+	if text_w <= 0.0 or text_h <= 0.0:
+		return Rect2()
+	var axis := Vector3.RIGHT
+	var perp := Vector3.BACK
+	var center := label.global_position
+	var rect := Rect2()
+	var first := true
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			var point := center + axis * (sx * text_w * 0.5) \
+					+ perp * (sz * text_h * 0.5)
+			if camera.is_position_behind(point):
+				return Rect2()
+			var projected := camera.unproject_position(point)
+			if first:
+				rect = Rect2(projected, Vector2.ZERO)
+				first = false
+			else:
+				rect = rect.expand(projected)
+	return rect
 
 
 func _build_trade_flows(cities: Array) -> void:
@@ -2642,6 +2867,7 @@ func _process(delta: float) -> void:
 	if not moved and _nation_labels_dirty and not _layout_job_active:
 		if _mode == "political" or _mode == "routes":
 			_update_nation_labels(camera)
+		_update_region_labels(camera)
 		_nation_labels_dirty = false
 
 	# Câmera parada, nada sujo, nenhum fade/job e nenhuma fila: o frame custa só
