@@ -3,13 +3,18 @@
 
 Entrada (curadoria, ``tools/culture_sources/``):
     cultures.csv          catálogo de culturas (id, nomes i18n, família, idioma,
-                          religião, notas). A coluna ``color`` é opcional: quando
-                          ausente/vazia, a cor é derivada de forma determinística.
+                          religião, notas, parent). A coluna ``color`` é opcional:
+                          quando ausente/vazia, a cor é derivada de forma
+                          determinística. ``parent`` marca subgrupo de outra
+                          cultura (ex.: hokkien -> han) e nunca pode aparecer no
+                          mesmo mix que o ancestral.
     nation_cultures.csv   por nação: cultura principal, culturas aceitas,
                           composição étnica (``id:share;...``), fonte e ano.
     city_overrides_*.csv  dado regional por cidade (``city_id,culture,share,
-                          source``); a soma pode ser < 100 e o resto vira
-                          ``outras``.
+                          source,subcultures``); a soma pode ser < 100 e o resto
+                          vira ``outras``. ``subcultures`` (opcional) detalha
+                          subgrupos da cultura daquela linha, como
+                          ``hokkien:24;cantones:13`` em percentual da cidade.
 
 Saída (``data/definitions/culture/``):
     cultures.csv / cultures.json
@@ -20,6 +25,8 @@ Regras:
 * nenhum número é inventado aqui: o script só agrega/normaliza a curadoria;
 * cidade sem override usa a composição nacional com um ajuste de diversidade
   declarado (capitais e metrópoles mais diversas) e ``source=national_fallback``;
+* culturas são mutualmente exclusivas no mesmo nível: um mix não pode conter uma
+  cultura e seu ``parent`` (nem avô/neto); subgrupos vão em ``subcultures``;
 * cores são geradas em OKLCH e escolhidas para manter ΔE00 >= 25 dentro da
   mesma família (modo de mapa futuro).
 
@@ -44,9 +51,9 @@ SOURCES = Path("tools/culture_sources")
 OUT_DIR = Path("data/definitions/culture")
 SCENARIO = Path("data/definitions/scenario")
 
-CULTURE_FIELDS = ["id", "name_pt", "name_en", "name_es", "family", "language", "religion", "color"]
+CULTURE_FIELDS = ["id", "name_pt", "name_en", "name_es", "family", "language", "religion", "parent", "color"]
 NATION_FIELDS = ["nation", "primary_culture", "accepted_cultures", "composition", "source", "year"]
-CITY_FIELDS = ["city_id", "nation", "city", "cultures", "source"]
+CITY_FIELDS = ["city_id", "nation", "city", "cultures", "subcultures", "source"]
 OVERRIDE_FIELDS = ["city_id", "culture", "share", "source"]
 
 OTHER = "outras"
@@ -89,6 +96,60 @@ def parse_composition(text: str, where: str) -> list[tuple[str, float]]:
     total = sum(v for _, v in entries)
     if abs(total - 100.0) > 0.05:
         raise SystemExit(f"{where}: composição soma {total:g}, esperado 100")
+    return entries
+
+
+def culture_chain(culture_id: str, parents: dict[str, str]) -> list[str]:
+    """Ancestrais de ``culture_id`` do mais próximo ao mais distante."""
+    chain: list[str] = []
+    seen: set[str] = set()
+    current = parents.get(culture_id, "")
+    while current:
+        if current in seen:
+            raise SystemExit(f"cultures.csv: ciclo de parent em {culture_id!r}")
+        seen.add(current)
+        chain.append(current)
+        current = parents.get(current, "")
+    return chain
+
+
+def check_exclusive(entries: list[tuple[str, float]], parents: dict[str, str], where: str) -> None:
+    """Um mix não pode conter uma cultura e seu ancestral (nem descendente)."""
+    named = {cid for cid, _ in entries if cid != OTHER}
+    for cid in sorted(named):
+        for ancestor in culture_chain(cid, parents):
+            if ancestor in named:
+                raise SystemExit(
+                    f"{where}: {cid!r} e seu ancestral {ancestor!r} no mesmo mix "
+                    "(use subcultures para detalhar)"
+                )
+
+
+def parse_subcultures(
+    text: str, parents: dict[str, str], known: set[str], parent_id: str, where: str
+) -> list[tuple[str, float]]:
+    entries: list[tuple[str, float]] = []
+    for raw in (text or "").split(";"):
+        raw = raw.strip()
+        if not raw:
+            continue
+        if ":" not in raw:
+            raise SystemExit(f"{where}: subcultura inválida {raw!r}")
+        cid, share = raw.split(":", 1)
+        cid = cid.strip()
+        if cid not in known:
+            raise SystemExit(f"{where}: subcultura desconhecida {cid!r}")
+        if parent_id not in culture_chain(cid, parents):
+            raise SystemExit(f"{where}: {cid!r} não é subcultura de {parent_id!r}")
+        try:
+            value = float(share)
+        except ValueError:
+            raise SystemExit(f"{where}: fração inválida em subcultura {raw!r}")
+        if value <= 0:
+            raise SystemExit(f"{where}: subcultura não positiva {raw!r}")
+        entries.append((cid, value))
+    if len({cid for cid, _ in entries}) != len(entries):
+        raise SystemExit(f"{where}: subcultura repetida")
     return entries
 
 
@@ -309,6 +370,13 @@ def main(argv: list[str] | None = None) -> int:
     if len(ids) != len(set(ids)):
         raise SystemExit("cultures.csv: ids duplicados")
     known = set(ids)
+    parents = {c["id"]: (c.get("parent") or "").strip() for c in cultures}
+    for cid, parent in parents.items():
+        if parent and parent not in known:
+            raise SystemExit(f"cultures.csv: parent desconhecido {parent!r} em {cid!r}")
+        if parent == cid:
+            raise SystemExit(f"cultures.csv: {cid!r} é parent de si mesma")
+        culture_chain(cid, parents)  # valida ciclos
 
     nations = read_csv(SOURCES / "nation_cultures.csv", NATION_FIELDS)
     scenario_nations = {r["id"] for r in read_csv(SCENARIO / "nations.csv", ["id"])}
@@ -329,19 +397,30 @@ def main(argv: list[str] | None = None) -> int:
         for accepted in filter(None, row["accepted_cultures"].split(";")):
             if accepted not in known:
                 raise SystemExit(f"{where}: cultura aceita desconhecida {accepted!r}")
+        check_exclusive(mix, parents, where)
         nation_mix[row["nation"]] = mix
 
-    overrides: dict[str, list[tuple[str, float, str]]] = {}
+    overrides: dict[str, list[tuple[str, float, str, list[tuple[str, float]]]]] = {}
     for path in sorted(SOURCES.glob("city_overrides_*.csv")):
         for row in read_csv(path, OVERRIDE_FIELDS):
             where = f"{path.name}:{row['city_id']}"
-            if row["culture"] not in known:
+            if row["culture"] not in known and row["culture"] != OTHER:
                 raise SystemExit(f"{where}: cultura desconhecida {row['culture']!r}")
             try:
                 share = float(row["share"])
             except ValueError:
                 raise SystemExit(f"{where}: fração inválida {row['share']!r}")
-            overrides.setdefault(row["city_id"], []).append((row["culture"], share, row["source"]))
+            subs = parse_subcultures(
+                row.get("subcultures", ""), parents, known, row["culture"], where
+            )
+            if subs and sum(v for _, v in subs) > share + 0.05:
+                raise SystemExit(
+                    f"{where}: subculturas somam {sum(v for _, v in subs):g} > {share:g} de "
+                    f"{row['culture']!r}"
+                )
+            overrides.setdefault(row["city_id"], []).append(
+                (row["culture"], share, row["source"], subs)
+            )
 
     cities = read_csv(SCENARIO / "cities.csv", ["id", "nation", "name", "population", "capital"])
     unknown_city = sorted(set(overrides) - {c["id"] for c in cities})
@@ -359,6 +438,7 @@ def main(argv: list[str] | None = None) -> int:
             "family": c["family"],
             "language": c["language"],
             "religion": c["religion"],
+            "parent": c.get("parent", ""),
             "color": colors[c["id"]],
         }
         for c in cultures
@@ -366,22 +446,30 @@ def main(argv: list[str] | None = None) -> int:
 
     city_rows = []
     regional = 0
+    with_subcultures = 0
     for city in cities:
         population = int(float(city["population"] or 0))
         capital = city["capital"] == "1"
+        subculture_text = ""
         if city["id"] in overrides:
-            entries = overrides[city["id"]]
-            total = sum(share for _, share, _ in entries)
+            entries = list(overrides[city["id"]])
+            total = sum(share for _, share, _, _ in entries)
             if total > 100.05:
                 raise SystemExit(f"city_overrides:{city['id']} soma {total:g} > 100")
-            entries = list(entries)
+            check_exclusive([(cid, share) for cid, share, _, _ in entries], parents, f"city_overrides:{city['id']}")
             if total < 99.95:
-                entries.append((OTHER, 100.0 - total, entries[0][2]))
-            rounded = round_shares([(cid, share) for cid, share, _ in entries], city["id"])
+                entries.append((OTHER, 100.0 - total, entries[0][2], []))
+            rounded = round_shares([(cid, share) for cid, share, _, _ in entries], city["id"])
             sources = []
-            for _, _, source in entries:
+            sub_parts = []
+            for _, _, source, subs in entries:
                 if source not in sources:
                     sources.append(source)
+                for scid, share in subs:
+                    sub_parts.append(f"{scid}:{share:g}")
+            if sub_parts:
+                subculture_text = ";".join(sub_parts)
+                with_subcultures += 1
             source = " + ".join(sources)
             regional += 1
         else:
@@ -396,6 +484,7 @@ def main(argv: list[str] | None = None) -> int:
                 "nation": city["nation"],
                 "city": city["name"],
                 "cultures": mixture,
+                "subcultures": subculture_text,
                 "source": source,
             }
         )
@@ -404,6 +493,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"culturas: {len(cultures)}")
     print(f"nações: {len(nations)}")
     print(f"cidades: {total} (regional {regional}, fallback {total - regional})")
+    print(f"cidades com subculturas: {with_subcultures}")
 
     if args.check:
         print("--check: nada gravado")

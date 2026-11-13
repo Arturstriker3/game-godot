@@ -4,11 +4,15 @@
 Verifica ``data/definitions/culture/``:
 
 * ``cultures.csv``/``cultures.json`` — ids únicos, nomes i18n, família, idioma,
-  religião e cor legível; ΔE*ab >= 25 entre culturas da mesma família;
+  religião, ``parent`` válido (sem ciclo) e cor legível; ΔE*ab >= 25 entre
+  culturas da mesma família;
 * ``nation_cultures.csv`` — toda nação do cenário coberta, cultura principal na
-  composição, aceitas existentes e composição somando 100;
+  composição, aceitas existentes, composição somando 100 e nenhuma cultura
+  junto de seu ancestral;
 * ``city_cultures.csv`` — todas as 834 cidades cobertas, soma 100, no máximo 5
-  culturas nomeadas + ``outras``, culturas existentes e nação correta.
+  culturas nomeadas + ``outras``, culturas existentes, nação correta, nenhuma
+  cultura junto de seu ancestral e ``subcultures`` coerentes (subgrupo com
+  ``parent`` presente no mix e fração <= à do ancestral).
 
 Uso::
 
@@ -73,6 +77,34 @@ def parse_mix(text: str) -> list[tuple[str, float]]:
     return entries
 
 
+def ancestors(culture_id: str, parents: dict[str, str]) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    current = parents.get(culture_id, "")
+    while current:
+        if current in seen:
+            raise ValueError(f"ciclo de parent em {culture_id!r}")
+        seen.add(current)
+        out.append(current)
+        current = parents.get(current, "")
+    return out
+
+
+def exclusive_errors(
+    entries: list[tuple[str, float]], parents: dict[str, str], label: str
+) -> list[str]:
+    found: list[str] = []
+    named = {cid for cid, _ in entries if cid != OTHER}
+    for cid in sorted(named):
+        for ancestor in ancestors(cid, parents):
+            if ancestor in named:
+                found.append(
+                    f"{label}: {cid!r} e seu ancestral {ancestor!r} no mesmo mix "
+                    "(use subcultures)"
+                )
+    return found
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -109,8 +141,11 @@ def main(argv: list[str] | None = None) -> int:
     # --- catálogo ---------------------------------------------------------
     required = ("id", "name_pt", "name_en", "name_es", "family", "language", "religion", "color")
     ids: set[str] = set()
+    parents: dict[str, str] = {}
     lab: dict[str, tuple[float, float, float]] = {}
     families: dict[str, list[str]] = {}
+    if "parent" not in (cultures[0].keys() if cultures else ()):
+        errors.append("cultures.csv: coluna 'parent' ausente")
     for index, row in enumerate(cultures, start=1):
         label = f"cultures.csv:{index}"
         for field in required:
@@ -124,12 +159,24 @@ def main(argv: list[str] | None = None) -> int:
         if cid == OTHER:
             errors.append(f"{label}: 'outras' é reservado")
         ids.add(cid)
+        parents[cid] = (row.get("parent") or "").strip()
         color = (row.get("color") or "").strip()
         if color and not HEX.match(color):
             errors.append(f"{label}: cor inválida {color!r}")
         elif color:
             lab[cid] = srgb_to_lab(color)
         families.setdefault((row.get("family") or "").strip(), []).append(cid)
+
+    for cid, parent in sorted(parents.items()):
+        if parent and parent not in ids:
+            errors.append(f"cultures.csv:{cid}: parent desconhecido {parent!r}")
+        elif parent == cid:
+            errors.append(f"cultures.csv:{cid}: parent de si mesma")
+        else:
+            try:
+                ancestors(cid, parents)
+            except ValueError as exc:
+                errors.append(f"cultures.csv:{cid}: {exc}")
 
     for family, members in sorted(families.items()):
         for i, left in enumerate(members):
@@ -188,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
             errors.append(f"{label}: fonte ausente")
         if not (row.get("year") or "").strip():
             warnings.append(f"{label}: ano da fonte ausente")
+        errors.extend(exclusive_errors(mix, parents, label))
 
     # --- cidades ----------------------------------------------------------
     scenario_city = {r.get("id"): r for r in scenario_cities}
@@ -222,6 +270,32 @@ def main(argv: list[str] | None = None) -> int:
                 errors.append(f"{label}: fração não positiva {cid}:{share:g}")
             if cid != OTHER and cid not in ids:
                 errors.append(f"{label}: cultura desconhecida {cid!r}")
+        errors.extend(exclusive_errors(mix, parents, label))
+        mix_by_id = {cid: share for cid, share in mix}
+        try:
+            subs = parse_mix(row.get("subcultures", ""))
+        except ValueError as exc:
+            errors.append(f"{label}: subculturas: {exc}")
+            subs = []
+        seen_subs = {cid for cid, _ in subs}
+        for scid, share in subs:
+            if scid not in ids:
+                errors.append(f"{label}: subcultura desconhecida {scid!r}")
+                continue
+            if share <= 0:
+                errors.append(f"{label}: subcultura não positiva {scid}:{share:g}")
+            chain = ancestors(scid, parents)
+            holder = next((cid for cid in chain if cid in mix_by_id), None)
+            if holder is None:
+                errors.append(f"{label}: subcultura {scid!r} sem cultura ancestral no mix")
+            elif share > mix_by_id[holder] + 0.05:
+                errors.append(
+                    f"{label}: subcultura {scid}:{share:g} > {holder}:{mix_by_id[holder]:g}"
+                )
+            if scid in mix_by_id:
+                errors.append(f"{label}: subcultura {scid!r} também nomeada no mix")
+        if len(seen_subs) != len(subs):
+            errors.append(f"{label}: subcultura repetida")
         city = scenario_city.get(city_id)
         if city is not None and city.get("nation") != row.get("nation"):
             errors.append(

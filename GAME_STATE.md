@@ -421,11 +421,12 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **População exibida × população de simulação:** desde a r6, `population` (status/save/cenário) é a população nacional real rateada e `simulation_population`/`sim_population` é a aglomeração que alimenta o modelo. Não são intercambiáveis: o HUD soma a primeira; o núcleo calcula com a segunda. Save antigo sem o campo usa `population` como unidade de simulação (comportamento anterior).
 - **Divergência de documentação:** a i18n e `DESIGN.md` ainda dizem que emprego/salários/poupança "não são simulados", mas o demo **simula** os três (só a migração realmente não existe).
 
-### Dados de cultura (v1, 2026-11) — dados apenas
+### Dados de cultura (v1.1, 2026-11) — dados apenas
 
-- `data/definitions/culture/`: 158 culturas em 41 famílias, 179 nações (principal + aceitas + composição com fonte e ano) e as 834 cidades (224 com dado regional, 610 `national_fallback`).
-- Fonte curada em `tools/culture_sources/`; `tools/build_cultures.py` gera e `tools/validate_cultures.py` valida (0 erros).
-- **Não ligado a economia, C++, UI nem save/load.** Limitações e plano de uso futuro em `docs/plans/culture_data.md`.
+- `data/definitions/culture/`: 189 culturas em 42 famílias, 179 nações (principal + aceitas + composição com fonte e ano) e as 834 cidades (319 com dado regional, 515 `national_fallback`).
+- **v1.1:** subgrupos chineses usam `parent=han` + coluna `subcultures` (nenhuma cultura aparece junto do pai; validador barra); hispano-americanos têm identidade nacional própria (`argentino`, `mexicano`, `peruano` etc.) e `castelhano` fica na Espanha; Donetsk, Mariupol, Sebastopol, Zaporíjia e Kherson usam `source=estimate_post2022` (incerteza alta, documentada); dado regional novo nos Balcãs, Cáucaso, Ásia Central, Sudeste Asiático, Baluchistão e África.
+- Fonte curada em `tools/culture_sources/`; `tools/build_cultures.py` gera e `tools/validate_cultures.py` valida (0 erros, 0 avisos).
+- **Não ligado a economia, C++, UI nem save/load.** Regras, fontes e limitações (Srinagar/Simferopol/Bilbao/Bolzano ausentes) em `docs/plans/culture_data.md`.
 
 ---
 
