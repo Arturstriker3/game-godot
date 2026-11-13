@@ -37,6 +37,9 @@ const MAX_GAP_CELLS := 4.0
 ## de mar aberto em frente à costa (lon, lat).
 const PORTS := [
 	["GRC-HER", Vector2(25.133, 35.344), Vector2(24.6, 35.1)],
+	# Algeciras (r7): o porto fica na Baía de Gibraltar, a ~1 km do centro; a
+	# semente é o mar aberto do Estreito, a sul da baía.
+	["ESP-ALG", Vector2(-5.441, 36.128), Vector2(-5.45, 35.95)],
 ]
 ## Distância máxima (células finas) do cais até a água do componente principal:
 ## o porto tem de alcançar o mar, não uma lagoa/enseada isolada. Medido em

@@ -1470,6 +1470,12 @@
     "output_tons_per_day": 22.4
   },
   {
+    "city_id": "ESP-ALG",
+    "id": "esp_alg_wheat",
+    "name": "Algeciras — trigo",
+    "output_tons_per_day": 75.0
+  },
+  {
     "city_id": "ESP-BAR",
     "id": "esp_bar_wheat",
     "name": "Barcelona — trigo",

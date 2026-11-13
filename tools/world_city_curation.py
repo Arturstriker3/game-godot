@@ -156,6 +156,27 @@ de cidades nunca teve linhas delas; as cidades entram por `FORCED_CITIES`:
 
 Nenhuma capital é duplicada: `CAPITAL_OVERRIDES` aponta SSD→SSD-JUB e
 SOL→SOL-HAR, e as demais cidades entram com `capital = "0"`.
+
+Curadoria r7 (2026-11-13)
+-------------------------
+Espanha/Gibraltar (pedido do usuário): o sul da Espanha não tinha nenhuma
+cidade — a mais próxima é Madrid, a 514 km do Estreito (Sevilla, Málaga e Cádiz
+nunca estiveram no roster). ENTRA `ESP-ALG` (**Algeciras**), a cidade espanhola
+do próprio Estreito de Gibraltar, com porto na Baía de Gibraltar. A escolha é
+Algeciras e não Cádiz porque as duas respeitam os ≥ 40 km de qualquer outra
+cidade (não há cidade ESP no sul) e Algeciras é o núcleo urbano/portuário que
+está de fato no estreito.
+
+População: 249.847 hab. — aglomeração urbana da Baía de Algeciras (INE, padrón
+municipal de 2025-01-01: Algeciras 126.589 + La Línea de la Concepción 64.499 +
+San Roque 34.310 + Los Barrios 24.449). É o peso de aglomeração
+(`sim_population`); a população exibida é o rateio da população nacional de
+2026 (`build_world_cities.distribute_national_population`).
+
+Porto `ESP-ALG` (`FORCED_PORTS`, `port_of = ESP-ALG`): Muelle Juan Carlos I,
+na Baía de Gibraltar, a ~1 km do centro — porto dentro da cidade (como
+Heraklion/Gdańsk). A regra de 15–25 km vale para porto separado de uma cidade
+cujo centro fica longe da costa; aqui não se aplica.
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -910,6 +931,36 @@ FORCED_CITIES = [
         "legacy": "no",
         "initial_farm_tons": "",
     },
+    # ---------------------------------------------------------------- r7 (2026-11-13)
+    # Sul da Espanha: não havia cidade ESP abaixo de Madrid/Valencia. Algeciras
+    # é o núcleo espanhol do Estreito de Gibraltar (cidade + porto da Baía de
+    # Gibraltar); Cádiz ficaria igualmente a > 40 km de tudo, mas está a ~100 km
+    # a oeste do estreito. Peso = aglomeração urbana da Baía de Algeciras.
+    {
+        "nation": "ESP",
+        "id": "ESP-ALG",
+        "name_en": "Algeciras",
+        "name_pt": "Algeciras",
+        "name_es": "Algeciras",
+        "lat": 36.1333,
+        "lon": -5.4500,
+        "population": 249847,
+        "population_year": 2025,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r7: fecha o sul da Espanha, no Estreito de "
+                 "Gibraltar (pedido do usuário); peso = aglomeração da Baía de "
+                 "Algeciras; porto próprio na baía (port_of = ESP-ALG)"),
+        "source": ("INE — padrón municipal 2025-01-01: Algeciras 126.589 + "
+                   "La Línea de la Concepción 64.499 + San Roque 34.310 + "
+                   "Los Barrios 24.449 = 249.847 hab. (aglomeração urbana da "
+                   "Baía de Algeciras); coordenadas 36.1333N 5.4500W"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
 ]
 
 # Portos repetidos: dois registros para o MESMO porto (mesma nação + mesmo
@@ -1056,5 +1107,19 @@ FORCED_PORTS = [
         "port_of": "SOL-BER",
         "source": ("porto de Berbera, golfo de Aden (10.439N 45.010E); "
                    "port_of = SOL-BER"),
+    },
+    # ---------------------------------------------------------------- r7 (2026-11-13)
+    # Algeciras: o ponto é o Muelle Juan Carlos I, na Baía de Gibraltar (a ~1 km
+    # do centro). O porto é da própria cidade, como Heraklion/Gdańsk.
+    {
+        "nation": "ESP",
+        "id": "ESP-ALG",
+        "name": "Algeciras",
+        "lat": 36.1280,
+        "lon": -5.4410,
+        "landmass": "continent",
+        "port_of": "ESP-ALG",
+        "source": ("Muelle Juan Carlos I, porto de Algeciras na Baía de "
+                   "Gibraltar (36.128N 5.441W); port_of = ESP-ALG"),
     },
 ]

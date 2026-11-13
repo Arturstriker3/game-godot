@@ -80,7 +80,8 @@
         "SSD-MAL",
         "SSD-WAU",
         "SOL-HAR",
-        "SOL-BER"
+        "SOL-BER",
+        "ESP-ALG"
       ],
       "capital_overrides": {
         "ISR": "ISR-TLV",
@@ -97,7 +98,8 @@
         "RUS-SEV",
         "JPN-NAH",
         "GUM-HAG",
-        "SOL-BER"
+        "SOL-BER",
+        "ESP-ALG"
       ]
     },
     "nation_curation": {
@@ -1039,16 +1041,16 @@
   },
   "counts": {
     "nations": 179,
-    "cities": 807,
-    "ports": 137,
-    "buildings": 807,
-    "i18n_keys": 1302,
+    "cities": 808,
+    "ports": 138,
+    "buildings": 808,
+    "i18n_keys": 1304,
     "legacy_cities": 39,
     "legacy_ports": 18,
     "scenario_ports": 137,
     "cities_with_pt_exonym": 250,
     "cities_with_es_exonym": 257,
-    "cities_pt_same_as_en": 534
+    "cities_pt_same_as_en": 535
   },
   "top10": [
     {

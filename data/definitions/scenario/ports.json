@@ -243,6 +243,15 @@
     "port_of": "DNK-COP"
   },
   {
+    "id": "ESP-ALG",
+    "name": "Algeciras",
+    "nation": "ESP",
+    "x": 2424.4,
+    "y": 748.2,
+    "landmass": "continent",
+    "port_of": "ESP-ALG"
+  },
+  {
     "id": "ESP-BAR",
     "name": "Barcelona",
     "nation": "ESP",
