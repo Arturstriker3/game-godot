@@ -347,12 +347,17 @@ func _sync_map_overlays() -> void:
 	_minimap.visible = not is_overlay_open()
 
 
-## Sincroniza o estado visual do minimapa e da legenda com o modo ativo.
+## Sincroniza o estado visual do minimapa e da legenda com o modo ativo. A
+## legenda só recebe mouse no modo recursos: fora dele ela fica invisível E
+## ignorando input (nenhum Control oculto captura clique do mapa).
 func _refresh_mode_bar() -> void:
 	if _minimap != null:
 		_minimap.set_active_mode(_mode)
 	if _legend != null:
-		_legend.visible = _mode == "resources"
+		var show_legend := _mode == "resources"
+		_legend.visible = show_legend
+		_legend.mouse_filter = Control.MOUSE_FILTER_STOP if show_legend \
+				else Control.MOUSE_FILTER_IGNORE
 
 
 ## Legenda/filtro do mapa de recursos (canto inferior esquerdo) — "Etiqueta de
@@ -385,6 +390,8 @@ func _build_legend() -> void:
 
 	_render_legend_filters()
 	_legend.visible = _mode == "resources"
+	if not _legend.visible:
+		_legend.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 ## Ajusta a largura e a altura da etiqueta ao conteúdo (cresce para a direita e
@@ -494,6 +501,8 @@ func show_general_legend() -> void:
 	if _legend_box != null:
 		_render_legend_filters()
 		_legend.visible = _mode == "resources"
+		_legend.mouse_filter = Control.MOUSE_FILTER_STOP if _legend.visible \
+				else Control.MOUSE_FILTER_IGNORE
 
 
 ## Folha de papel claro (corpo) "colada" na etiqueta, com padding reduzido.

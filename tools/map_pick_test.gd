@@ -65,6 +65,7 @@ func _run() -> void:
 	await _test_far_capitals_only()
 	await _test_mid_capitals_and_player()
 	await _test_resources_mid_i()
+	await _test_mode_switch_clears_selection()
 
 	_game.queue_free()
 	await process_frame
@@ -699,6 +700,69 @@ func _test_resources_mid_i() -> void:
 	_world.clear_selection()
 	_world.set_hover("")
 	_close_overlay()
+
+
+## TROCA DE MODO: cidade selecionada no mapa de recursos não pode "roubar" o
+## primeiro clique do mapa político. Ao voltar ao político a seleção/legenda do
+## modo anterior é limpa e o PRIMEIRO clique na cidade abre a ficha T3.
+func _test_mode_switch_clears_selection() -> void:
+	_close_overlay()
+	_world.clear_selection()
+	_world.set_player_nation("")
+	_hud.set_map_mode("resources")
+	await process_frame
+
+	var city := ""
+	for record in _world._city_nodes:
+		var id := String(record["id"])
+		await _focus(_world.city_world_position(id))
+		var center := _camera.unproject_position(_world.city_world_position(id))
+		if _world.pick_city(center, _camera) != id:
+			continue
+		# Uma jazida sob a cidade teria prioridade no modo recursos; escolhe uma
+		# cidade sem depósito para testar o caminho cidade → legenda Cidade.
+		if _world.pick_deposit(center, _camera) >= 0:
+			continue
+		city = id
+		break
+	if city.is_empty():
+		_failures.append("TROCA DE MODO: sem cidade sem depósito para testar")
+		_hud.set_map_mode("political")
+		return
+
+	await _focus(_world.city_world_position(city))
+	var center := _camera.unproject_position(_world.city_world_position(city))
+	_game._handle_map_click(center)
+	if _world.selected_place_id() != city:
+		_failures.append("TROCA DE MODO: clique no modo recursos não selecionou %s"
+				% city)
+	if _hud._legend_state != "city":
+		_failures.append("TROCA DE MODO: legenda não foi ao estado Cidade (%s)"
+				% _hud._legend_state)
+
+	_hud.set_map_mode("political")
+	await process_frame
+	if _world.has_selection():
+		_failures.append("TROCA DE MODO: seleção do modo recursos sobreviveu")
+	if _hud._legend_state != "filters":
+		_failures.append("TROCA DE MODO: legenda ficou no estado %s"
+				% _hud._legend_state)
+	if _hud._legend.visible or _hud._legend.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+		_failures.append("TROCA DE MODO: legenda oculta ainda captura input")
+
+	# O primeiro clique no político tem de abrir a ficha, não só desselecionar.
+	await _focus(_world.city_world_position(city))
+	center = _camera.unproject_position(_world.city_world_position(city))
+	_game._handle_map_click(center)
+	if _world.selected_place_id() != city:
+		_failures.append("TROCA DE MODO: 1º clique não selecionou %s" % city)
+	if not _hud.is_window_open():
+		_failures.append("TROCA DE MODO: 1º clique não abriu a ficha T3")
+	_hud.close_window()
+	_world.clear_selection()
+	_hud.show_general_legend()
+	print("TROCA DE MODO: %s selecionada em recursos → político abre a ficha no 1º clique"
+			% city)
 
 
 ## No MÉDIO, toda cidade na lista visível é capital ou pertence ao jogador.

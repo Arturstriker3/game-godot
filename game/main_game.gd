@@ -204,7 +204,15 @@ func _on_city_focused(city_id: String) -> void:
 	player.move_to(Vector2(target.x, target.z))
 
 
+## Troca de modo de mapa: descarta a seleção/legenda do modo anterior antes de
+## aplicar o novo. Sem isso, uma cidade selecionada no mapa de recursos ficava
+## com o anel ativo e o primeiro clique no político só a desselecionava (a ficha
+## T3 só abria no segundo clique).
 func _on_map_mode_requested(mode: String) -> void:
+	if city_world == null:
+		return
+	if city_world.current_mode() != mode:
+		_clear_map_selection()
 	city_world.set_mode(mode)
 
 
