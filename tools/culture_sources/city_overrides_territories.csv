@@ -1,25 +1,21 @@
-city_id,culture,share,source,subcultures
-ABW-ORA,caribenho,80,estimativa regional (Aruba 2023),
-ABW-ORA,neerlandes,8,estimativa regional (Aruba 2023),
-CUW-WIL,caribenho,75,estimativa regional (Curaçao 2023),
-CUW-WIL,neerlandes,8,estimativa regional (Curaçao 2023),
-GRL-NUU,inuit,88,Censo 2023 (Groenlândia),
-GRL-NUU,dinamarques,10,Censo 2023 (Groenlândia),
-GRL-ILU,inuit,90,Censo 2023 (Groenlândia),
-GRL-ILU,dinamarques,8,Censo 2023 (Groenlândia),
-FLK-STA,ingles,80,Censo 2021 (Ilhas Malvinas),
-FLK-STA,castelhano,10,Censo 2021 (Ilhas Malvinas),
-NCL-NOU,melanesio,40,Estimativa regional (Nova Caledônia 2023),
-NCL-NOU,frances,35,Estimativa regional (Nova Caledônia 2023),
-NCL-NOU,papua,10,Estimativa regional (Nova Caledônia 2023),
-NCL-WE,melanesio,95,Estimativa regional (Nova Caledônia 2023),
-PRI-SAN,porto_riquenho,92,ACS 2023 (Puerto Rico),
-PRI-SAN,outras,8,ACS 2023 (Puerto Rico),
-PRI-PON,porto_riquenho,96,ACS 2023 (Puerto Rico),
-PRI-PON,outras,4,ACS 2023 (Puerto Rico),
-LIE-VADU,alemao,85,Statistik Liechtenstein 2023,
-LIE-VADU,italiano,5,Statistik Liechtenstein 2023,
-MCO-MONA,frances,60,IMSEE 2023 (Mônaco),
-MCO-MONA,italiano,15,IMSEE 2023 (Mônaco),
-MCO-MONA,ingles,10,IMSEE 2023 (Mônaco),
-SMR-SANM,italiano,95,Ufficio Statistica 2023 (San Marino),
+city_id,culture,share,source
+ABW-ORA,neerlandes,88,estimativa regional (Aruba 2023)
+CUW-WIL,neerlandes,83,estimativa regional (Curaçao 2023)
+GRL-NUU,inuit,88,Censo 2023 (Groenlândia)
+GRL-NUU,dinamarques,10,Censo 2023 (Groenlândia)
+GRL-ILU,inuit,90,Censo 2023 (Groenlândia)
+GRL-ILU,dinamarques,8,Censo 2023 (Groenlândia)
+FLK-STA,britanico,80,Censo 2021 (Ilhas Malvinas)
+FLK-STA,espanhol,10,Censo 2021 (Ilhas Malvinas)
+NCL-NOU,frances,35,Estimativa regional (Nova Caledônia 2023)
+NCL-NOU,outras,50,Estimativa regional (Nova Caledônia 2023)
+NCL-WE,outras,95,Estimativa regional (Nova Caledônia 2023)
+PRI-SAN,americano,92,ACS 2023 (Puerto Rico)
+PRI-SAN,outras,8,ACS 2023 (Puerto Rico)
+PRI-PON,americano,96,ACS 2023 (Puerto Rico)
+PRI-PON,outras,4,ACS 2023 (Puerto Rico)
+LIE-VADU,suico,90,Statistik Liechtenstein 2023
+MCO-MONA,frances,60,IMSEE 2023 (Mônaco)
+MCO-MONA,italiano,15,IMSEE 2023 (Mônaco)
+MCO-MONA,britanico,10,IMSEE 2023 (Mônaco)
+SMR-SANM,italiano,95,Ufficio Statistica 2023 (San Marino)

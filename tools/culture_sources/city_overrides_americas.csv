@@ -1,157 +1,152 @@
-city_id,culture,share,source,subcultures
-USA-NEW,americano,48,ACS 2023 (condado),
-USA-NEW,han,11,ACS 2023 (condado),
-USA-NEW,porto_riquenho,8,ACS 2023 (condado),
-USA-NEW,dominicano,6,ACS 2023 (condado),
-USA-NEW,mexicano_americano,5,ACS 2023 (condado),
-USA-LOS,mexicano_americano,45,ACS 2023 (condado),
-USA-LOS,americano,27,ACS 2023 (condado),
-USA-LOS,han,8,ACS 2023 (condado),
-USA-LOS,filipino,4,ACS 2023 (condado),
-USA-LOS,coreano,3,ACS 2023 (condado),
-USA-MIA,cubano,40,ACS 2023 (condado),
-USA-MIA,americano,22,ACS 2023 (condado),
-USA-MIA,haitiano,6,ACS 2023 (condado),
-USA-MIA,venezuelano,4,ACS 2023 (condado),
-USA-MIA,colombiano,3,ACS 2023 (condado),
-USA-CHI,mexicano_americano,32,ACS 2023 (condado),
-USA-CHI,americano,33,ACS 2023 (condado),
-USA-CHI,han,4,ACS 2023 (condado),
-USA-CHI,polones,4,ACS 2023 (condado),
-USA-HOU,mexicano_americano,38,ACS 2023 (condado),
-USA-HOU,americano,24,ACS 2023 (condado),
-USA-HOU,han,5,ACS 2023 (condado),
-USA-HOU,vietnamita,4,ACS 2023 (condado),
-USA-SANA,mexicano_americano,55,ACS 2023 (condado),
-USA-SANA,americano,24,ACS 2023 (condado),
-USA-HON,americano,40,ACS 2023 (condado),
-USA-HON,filipino,18,ACS 2023 (condado),
-USA-HON,japones,12,ACS 2023 (condado),
-USA-HON,havaiano,10,ACS 2023 (condado),
-USA-HON,han,5,ACS 2023 (condado),
-USA-ANC,americano,69,ACS 2023 (condado),
-USA-ANC,inuit,8,ACS 2023 (condado),
-USA-ANC,filipino,4,ACS 2023 (condado),
-USA-ANC,han,3,ACS 2023 (condado),
-USA-UTQ,inuit,75,ACS 2023 (condado),
-USA-UTQ,americano,20,ACS 2023 (condado),
-USA-BET,inuit,82,ACS 2023 (condado),
-USA-BET,americano,15,ACS 2023 (condado),
-MEX-MEXI,mexicano,90,INEGI 2020 (CDMX),
-MEX-MEXI,nahua,5,INEGI 2020 (CDMX),
-MEX-MEXI,outras,5,INEGI 2020 (CDMX),
-MEX-MER,mexicano,65,INEGI 2020 (Yucatán),
-MEX-MER,maia,30,INEGI 2020 (Yucatán),
-MEX-MER,outras,5,INEGI 2020 (Yucatán),
-MEX-TUX,mexicano,60,INEGI 2020 (Chiapas),
-MEX-TUX,maia,30,INEGI 2020 (Chiapas),
-MEX-TUX,outras,10,INEGI 2020 (Chiapas),
-BRA-SAO,brasileiro,78,"estimativa municipal (IBGE 2022, origem)",
-BRA-SAO,italiano,7,"estimativa municipal (IBGE 2022, origem)",
-BRA-SAO,portugues,5,"estimativa municipal (IBGE 2022, origem)",
-BRA-SAO,japones,3,"estimativa municipal (IBGE 2022, origem)",
-BRA-RIO,brasileiro,85,"estimativa municipal (IBGE 2022, origem)",
-BRA-RIO,portugues,5,"estimativa municipal (IBGE 2022, origem)",
-BRA-POR,brasileiro,82,"estimativa municipal (IBGE 2022, origem)",
-BRA-POR,alemao,7,"estimativa municipal (IBGE 2022, origem)",
-BRA-POR,italiano,6,"estimativa municipal (IBGE 2022, origem)",
-ARG-BUE,argentino,65,INDEC 2022 (CABA),
-ARG-BUE,italiano,15,INDEC 2022 (CABA),
-ARG-BUE,outras,20,INDEC 2022 (CABA),
-ARG-COR,argentino,70,INDEC 2022 (Córdoba),
-ARG-COR,italiano,12,INDEC 2022 (Córdoba),
-ARG-COR,outras,18,INDEC 2022 (Córdoba),
-CHL-SAN,chileno,85,Censo 2017 (INE),
-CHL-SAN,mapuche,10,Censo 2017 (INE),
-CHL-SAN,outras,5,Censo 2017 (INE),
-PER-LIM,peruano,70,Censo 2017 (INEI),
-PER-LIM,quechua,15,Censo 2017 (INEI),
-PER-LIM,aimara,3,Censo 2017 (INEI),
-PER-LIM,outras,12,Censo 2017 (INEI),
-PER-ARE,peruano,70,Censo 2017 (INEI),
-PER-ARE,quechua,20,Censo 2017 (INEI),
-PER-ARE,outras,10,Censo 2017 (INEI),
-BOL-LAP,boliviano,45,Censo 2012 (INE),
-BOL-LAP,aimara,30,Censo 2012 (INE),
-BOL-LAP,quechua,20,Censo 2012 (INE),
-BOL-LAP,outras,5,Censo 2012 (INE),
-BOL-SCZ,boliviano,65,Censo 2012 (INE),
-BOL-SCZ,quechua,10,Censo 2012 (INE),
-BOL-SCZ,outras,25,Censo 2012 (INE),
-BOL-COC,boliviano,45,Censo 2012 (INE),
-BOL-COC,quechua,40,Censo 2012 (INE),
-BOL-COC,aimara,5,Censo 2012 (INE),
-BOL-COC,outras,10,Censo 2012 (INE),
-ECU-QUI,equatoriano,75,Censo 2022 (INEC),
-ECU-QUI,quechua,10,Censo 2022 (INEC),
-ECU-QUI,outras,15,Censo 2022 (INEC),
-GTM-GUA,guatemalteco,55,Censo 2018 (INE),
-GTM-GUA,maia,40,Censo 2018 (INE),
-GTM-GUA,outras,5,Censo 2018 (INE),
-GTM-COB,guatemalteco,25,Censo 2018 (INE),
-GTM-COB,maia,70,Censo 2018 (INE),
-GTM-COB,outras,5,Censo 2018 (INE),
-HND-TEG,hondurenho,85,Censo 2013 (INE),
-HND-TEG,maia,5,Censo 2013 (INE),
-HND-TEG,outras,10,Censo 2013 (INE),
-SLV-SAN,salvadorenho,85,Censo 2019,
-SLV-SAN,maia,12,Censo 2019,
-SLV-SAN,outras,3,Censo 2019,
-CRI-LIM,costa_riquenho,60,Censo 2022 (INEC),
-CRI-LIM,crioulo,30,Censo 2022 (INEC),
-CRI-LIM,outras,10,Censo 2022 (INEC),
-CRI-SAN,costa_riquenho,90,Censo 2022 (INEC),
-CRI-SAN,outras,10,Censo 2022 (INEC),
-PAN-PAN,panamenho,88,Censo 2023 (INEC),
-PAN-PAN,outras,12,Censo 2023 (INEC),
-CUB-HAV,cubano,95,Censo 2012 (ONEI),
-CUB-HAV,outras,5,Censo 2012 (ONEI),
-CUB-SAN,cubano,95,Censo 2012 (ONEI),
-CUB-SAN,outras,5,Censo 2012 (ONEI),
-URY-MON,uruguaio,89,Censo 2023 (INE),
-URY-MON,italiano,5,Censo 2023 (INE),
-URY-MON,outras,6,Censo 2023 (INE),
-PRY-ASU,paraguaio,60,Censo 2022 (INE),
-PRY-ASU,guarani,35,Censo 2022 (INE),
-PRY-ASU,outras,5,Censo 2022 (INE),
-VEN-CCS,venezuelano,90,Censo 2011 (INE),
-VEN-CCS,outras,10,Censo 2011 (INE),
-COL-BOG,colombiano,90,Censo 2018 (DANE),
-COL-BOG,outras,10,Censo 2018 (DANE),
-COL-CAL,colombiano,95,Censo 2018 (DANE),
-COL-CAL,outras,5,Censo 2018 (DANE),
-COL-BAR,colombiano,95,Censo 2018 (DANE),
-COL-BAR,outras,5,Censo 2018 (DANE),
-GUY-GEO,guianense,50,Censo 2012 (Bureau of Statistics),
-GUY-GEO,hindustani,40,Censo 2012 (Bureau of Statistics),
-GUY-GEO,outras,10,Censo 2012 (Bureau of Statistics),
-SUR-PBM,hindustani,27,Censo 2012 (distrito),
-SUR-PBM,crioulo,15,Censo 2012 (distrito),
-SUR-PBM,javanes,14,Censo 2012 (distrito),
-SUR-PBM,caribenho,10,Censo 2012 (distrito),
-TTO-POR,trinitario,56,Censo 2011 (região),
-TTO-POR,hindustani,35,Censo 2011 (região),
-TTO-POR,outras,9,Censo 2011 (região),
-JAM-KIN,jamaicano,95,Censo 2011 (paróquia),
-JAM-KIN,outras,5,Censo 2011 (paróquia),
-MEX-MON,mexicano,92,INEGI 2020 (Nuevo León),
-MEX-MON,outras,8,INEGI 2020 (Nuevo León),
-MEX-PUE,mexicano,80,INEGI 2020 (Puebla),
-MEX-PUE,nahua,12,INEGI 2020 (Puebla),
-MEX-PUE,outras,8,INEGI 2020 (Puebla),
-ARG-NEU,argentino,70,INDEC 2022 (Neuquén),
-ARG-NEU,mapuche,10,INDEC 2022 (Neuquén),
-ARG-NEU,outras,20,INDEC 2022 (Neuquén),
-NIC-MAN,nicaraguense,85,estimativa regional (INIDE 2023),
-NIC-MAN,crioulo,5,estimativa regional (INIDE 2023),
-NIC-MAN,outras,10,estimativa regional (INIDE 2023),
-NIC-LEO,nicaraguense,90,estimativa regional (INIDE 2023),
-NIC-LEO,outras,10,estimativa regional (INIDE 2023),
-DOM-SAN,dominicano,85,Censo 2022 (ONE),
-DOM-SAN,haitiano,7,Censo 2022 (ONE),
-DOM-SAN,outras,8,Censo 2022 (ONE),
-DOM-SANT,dominicano,95,Censo 2022 (ONE),
-DOM-SANT,outras,5,Censo 2022 (ONE),
-PRY-CIU,paraguaio,55,Censo 2022 (INE),
-PRY-CIU,guarani,30,Censo 2022 (INE),
-PRY-CIU,outras,15,Censo 2022 (INE),
+city_id,culture,share,source
+USA-NEW,americano,56,ACS 2023 (condado)
+USA-NEW,chines,11,ACS 2023 (condado)
+USA-NEW,dominicano,6,ACS 2023 (condado)
+USA-NEW,mexicano,5,ACS 2023 (condado)
+USA-LOS,mexicano,45,ACS 2023 (condado)
+USA-LOS,americano,27,ACS 2023 (condado)
+USA-LOS,chines,8,ACS 2023 (condado)
+USA-LOS,filipino,4,ACS 2023 (condado)
+USA-LOS,sul_coreano,3,ACS 2023 (condado)
+USA-MIA,cubano,40,ACS 2023 (condado)
+USA-MIA,americano,22,ACS 2023 (condado)
+USA-MIA,haitiano,6,ACS 2023 (condado)
+USA-MIA,venezuelano,4,ACS 2023 (condado)
+USA-MIA,colombiano,3,ACS 2023 (condado)
+USA-CHI,americano,33,ACS 2023 (condado)
+USA-CHI,mexicano,32,ACS 2023 (condado)
+USA-CHI,chines,4,ACS 2023 (condado)
+USA-CHI,polones,4,ACS 2023 (condado)
+USA-HOU,mexicano,38,ACS 2023 (condado)
+USA-HOU,americano,24,ACS 2023 (condado)
+USA-HOU,chines,5,ACS 2023 (condado)
+USA-HOU,vietnamita,4,ACS 2023 (condado)
+USA-SANA,mexicano,55,ACS 2023 (condado)
+USA-SANA,americano,24,ACS 2023 (condado)
+USA-HON,americano,40,ACS 2023 (condado)
+USA-HON,filipino,18,ACS 2023 (condado)
+USA-HON,japones,12,ACS 2023 (condado)
+USA-HON,havaiano,10,ACS 2023 (condado)
+USA-HON,chines,5,ACS 2023 (condado)
+USA-ANC,americano,69,ACS 2023 (condado)
+USA-ANC,inuit,8,ACS 2023 (condado)
+USA-ANC,filipino,4,ACS 2023 (condado)
+USA-ANC,chines,3,ACS 2023 (condado)
+USA-UTQ,inuit,75,ACS 2023 (condado)
+USA-UTQ,americano,20,ACS 2023 (condado)
+USA-BET,inuit,82,ACS 2023 (condado)
+USA-BET,americano,15,ACS 2023 (condado)
+MEX-MEXI,mexicano,90,INEGI 2020 (CDMX)
+MEX-MEXI,nahua,5,INEGI 2020 (CDMX)
+MEX-MEXI,outras,5,INEGI 2020 (CDMX)
+MEX-MER,mexicano,65,INEGI 2020 (Yucatán)
+MEX-MER,maia,30,INEGI 2020 (Yucatán)
+MEX-MER,outras,5,INEGI 2020 (Yucatán)
+MEX-TUX,mexicano,60,INEGI 2020 (Chiapas)
+MEX-TUX,maia,30,INEGI 2020 (Chiapas)
+MEX-TUX,outras,10,INEGI 2020 (Chiapas)
+BRA-SAO,brasileiro,78,"estimativa municipal (IBGE 2022, origem)"
+BRA-SAO,italiano,7,"estimativa municipal (IBGE 2022, origem)"
+BRA-SAO,portugues,5,"estimativa municipal (IBGE 2022, origem)"
+BRA-SAO,japones,3,"estimativa municipal (IBGE 2022, origem)"
+BRA-RIO,brasileiro,85,"estimativa municipal (IBGE 2022, origem)"
+BRA-RIO,portugues,5,"estimativa municipal (IBGE 2022, origem)"
+BRA-POR,brasileiro,82,"estimativa municipal (IBGE 2022, origem)"
+BRA-POR,alemao,7,"estimativa municipal (IBGE 2022, origem)"
+BRA-POR,italiano,6,"estimativa municipal (IBGE 2022, origem)"
+ARG-BUE,argentino,65,INDEC 2022 (CABA)
+ARG-BUE,italiano,15,INDEC 2022 (CABA)
+ARG-BUE,outras,20,INDEC 2022 (CABA)
+ARG-COR,argentino,70,INDEC 2022 (Córdoba)
+ARG-COR,italiano,12,INDEC 2022 (Córdoba)
+ARG-COR,outras,18,INDEC 2022 (Córdoba)
+CHL-SAN,chileno,85,Censo 2017 (INE)
+CHL-SAN,mapuche,10,Censo 2017 (INE)
+CHL-SAN,outras,5,Censo 2017 (INE)
+PER-LIM,peruano,70,Censo 2017 (INEI)
+PER-LIM,quechua,15,Censo 2017 (INEI)
+PER-LIM,aimara,3,Censo 2017 (INEI)
+PER-LIM,outras,12,Censo 2017 (INEI)
+PER-ARE,peruano,70,Censo 2017 (INEI)
+PER-ARE,quechua,20,Censo 2017 (INEI)
+PER-ARE,outras,10,Censo 2017 (INEI)
+BOL-LAP,boliviano,45,Censo 2012 (INE)
+BOL-LAP,aimara,30,Censo 2012 (INE)
+BOL-LAP,quechua,20,Censo 2012 (INE)
+BOL-LAP,outras,5,Censo 2012 (INE)
+BOL-SCZ,boliviano,65,Censo 2012 (INE)
+BOL-SCZ,quechua,10,Censo 2012 (INE)
+BOL-SCZ,outras,25,Censo 2012 (INE)
+BOL-COC,boliviano,45,Censo 2012 (INE)
+BOL-COC,quechua,40,Censo 2012 (INE)
+BOL-COC,aimara,5,Censo 2012 (INE)
+BOL-COC,outras,10,Censo 2012 (INE)
+ECU-QUI,equatoriano,75,Censo 2022 (INEC)
+ECU-QUI,quechua,10,Censo 2022 (INEC)
+ECU-QUI,outras,15,Censo 2022 (INEC)
+GTM-GUA,guatemalteco,55,Censo 2018 (INE)
+GTM-GUA,maia,40,Censo 2018 (INE)
+GTM-GUA,outras,5,Censo 2018 (INE)
+GTM-COB,maia,70,Censo 2018 (INE)
+GTM-COB,guatemalteco,25,Censo 2018 (INE)
+GTM-COB,outras,5,Censo 2018 (INE)
+HND-TEG,hondurenho,85,Censo 2013 (INE)
+HND-TEG,maia,5,Censo 2013 (INE)
+HND-TEG,outras,10,Censo 2013 (INE)
+SLV-SAN,salvadorenho,85,Censo 2019
+SLV-SAN,maia,12,Censo 2019
+SLV-SAN,outras,3,Censo 2019
+CRI-LIM,costa_riquenho,90,Censo 2022 (INEC)
+CRI-LIM,outras,10,Censo 2022 (INEC)
+CRI-SAN,costa_riquenho,90,Censo 2022 (INEC)
+CRI-SAN,outras,10,Censo 2022 (INEC)
+PAN-PAN,panamenho,88,Censo 2023 (INEC)
+PAN-PAN,outras,12,Censo 2023 (INEC)
+CUB-HAV,cubano,95,Censo 2012 (ONEI)
+CUB-HAV,outras,5,Censo 2012 (ONEI)
+CUB-SAN,cubano,95,Censo 2012 (ONEI)
+CUB-SAN,outras,5,Censo 2012 (ONEI)
+URY-MON,uruguaio,89,Censo 2023 (INE)
+URY-MON,italiano,5,Censo 2023 (INE)
+URY-MON,outras,6,Censo 2023 (INE)
+PRY-ASU,paraguaio,60,Censo 2022 (INE)
+PRY-ASU,guarani,35,Censo 2022 (INE)
+PRY-ASU,outras,5,Censo 2022 (INE)
+VEN-CCS,venezuelano,90,Censo 2011 (INE)
+VEN-CCS,outras,10,Censo 2011 (INE)
+COL-BOG,colombiano,90,Censo 2018 (DANE)
+COL-BOG,outras,10,Censo 2018 (DANE)
+COL-CAL,colombiano,95,Censo 2018 (DANE)
+COL-CAL,outras,5,Censo 2018 (DANE)
+COL-BAR,colombiano,95,Censo 2018 (DANE)
+COL-BAR,outras,5,Censo 2018 (DANE)
+GUY-GEO,guianense,50,Censo 2012 (Bureau of Statistics)
+GUY-GEO,indiano,40,Censo 2012 (Bureau of Statistics)
+GUY-GEO,outras,10,Censo 2012 (Bureau of Statistics)
+SUR-PBM,surinames,39,Censo 2012 (distrito)
+SUR-PBM,indiano,27,Censo 2012 (distrito)
+TTO-POR,trinitario,56,Censo 2011 (região)
+TTO-POR,indiano,35,Censo 2011 (região)
+TTO-POR,outras,9,Censo 2011 (região)
+JAM-KIN,jamaicano,95,Censo 2011 (paróquia)
+JAM-KIN,outras,5,Censo 2011 (paróquia)
+MEX-MON,mexicano,92,INEGI 2020 (Nuevo León)
+MEX-MON,outras,8,INEGI 2020 (Nuevo León)
+MEX-PUE,mexicano,80,INEGI 2020 (Puebla)
+MEX-PUE,nahua,12,INEGI 2020 (Puebla)
+MEX-PUE,outras,8,INEGI 2020 (Puebla)
+ARG-NEU,argentino,70,INDEC 2022 (Neuquén)
+ARG-NEU,mapuche,10,INDEC 2022 (Neuquén)
+ARG-NEU,outras,20,INDEC 2022 (Neuquén)
+NIC-MAN,nicaraguense,90,estimativa regional (INIDE 2023)
+NIC-MAN,outras,10,estimativa regional (INIDE 2023)
+NIC-LEO,nicaraguense,90,estimativa regional (INIDE 2023)
+NIC-LEO,outras,10,estimativa regional (INIDE 2023)
+DOM-SAN,dominicano,85,Censo 2022 (ONE)
+DOM-SAN,haitiano,7,Censo 2022 (ONE)
+DOM-SAN,outras,8,Censo 2022 (ONE)
+DOM-SANT,dominicano,95,Censo 2022 (ONE)
+DOM-SANT,outras,5,Censo 2022 (ONE)
+PRY-CIU,paraguaio,55,Censo 2022 (INE)
+PRY-CIU,guarani,30,Censo 2022 (INE)
+PRY-CIU,outras,15,Censo 2022 (INE)

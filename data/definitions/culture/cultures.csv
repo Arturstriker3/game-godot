@@ -1,209 +1,207 @@
-id,name_pt,name_en,name_es,family,language,religion,parent,color
-russo,Russo,Russian,ruso,eslava oriental,russo,ortodoxia,,#526b8b
-ucraniano,Ucraniano,Ukrainian,ucraniano,eslava oriental,ucraniano,ortodoxia,,#a63f66
-bielorrusso,Bielorrusso,Belarusian,bielorruso,eslava oriental,bielorrusso,ortodoxia,,#7b6540
-polones,Polonês,Polish,polaco,eslava ocidental,polonês,catolicismo,,#d95497
-tcheco,Tcheco,Czech,checo,eslava ocidental,tcheco,catolicismo,,#c1908c
-eslovaco,Eslovaco,Slovak,eslovaco,eslava ocidental,eslovaco,catolicismo,,#986feb
-servio,Sérvio,Serbian,serbio,eslava meridional,sérvio,ortodoxia,,#54a31b
-croata,Croata,Croatian,croata,eslava meridional,croata,catolicismo,,#a5883e
-bosnio,Bósnio,Bosniak,bosnio,eslava meridional,bósnio,islã sunita,,#b04aaf
-esloveno,Esloveno,Slovene,esloveno,eslava meridional,esloveno,catolicismo,,#4f9f77
-macedonio,Macedônio,Macedonian,macedonio,eslava meridional,macedônio,ortodoxia,,#1a95d8
-bulgaro,Búlgaro,Bulgarian,búlgaro,eslava meridional,búlgaro,ortodoxia,,#ab7d8b
-lituano,Lituano,Lithuanian,lituano,báltica,lituano,catolicismo,,#192846
-leto,Letão,Latvian,letón,báltica,letão,protestantismo,,#2a2b02
-estoniano,Estoniano,Estonian,estonio,urálica,estoniano,protestantismo,,#5f3a50
-finlandes,Finlandês,Finnish,finlandés,urálica,finlandês,protestantismo,,#6f3600
-hungaro,Húngaro,Hungarian,húngaro,urálica,húngaro,catolicismo,,#2d5316
-alemao,Alemão,German,alemán,germânica ocidental,alemão,protestantismo,,#d5a39f
-neerlandes,Neerlandês,Dutch,neerlandés,germânica ocidental,neerlandês,protestantismo,,#c8ce0b
-flamengo,Flamengo,Flemish,flamenco,germânica ocidental,neerlandês (flamengo),catolicismo,,#9fbd78
-afrikaans,Africâner,Afrikaner,afrikáner,germânica ocidental,africâner,protestantismo,,#ee67aa
-ingles,Inglês,English,inglés,germânica ocidental,inglês,protestantismo,,#58c3d2
-escoces,Escocês,Scottish,escocés,celta,gaélico escocês/inglês,protestantismo,,#873f3c
-gales,Galês,Welsh,galés,celta,galês,protestantismo,,#5a5d04
-norte_irlandes,Norte-irlandês,Northern Irish,norirlandés,germânica ocidental,inglês (ulster),protestantismo,,#401b28
-irlandes,Irlandês,Irish,irlandés,celta,irlandês,catolicismo,,#0e5e8a
-dinamarques,Dinamarquês,Danish,danés,germânica nórdica,dinamarquês,protestantismo,,#7c5d7b
-noruegues,Norueguês,Norwegian,noruego,germânica nórdica,norueguês,protestantismo,,#4e7639
-sueco,Sueco,Swedish,sueco,germânica nórdica,sueco,protestantismo,,#b72855
-islandes,Islandês,Icelandic,islandés,germânica nórdica,islandês,protestantismo,,#945829
-frances,Francês,French,francés,latina francesa,francês,catolicismo,,#63c6af
-quebequense,Quebequense,Québécois,quebequés,latina francesa,francês (quebequense),catolicismo,,#7db7ee
-valao,Valão,Walloon,valón,latina francesa,francês (valão),catolicismo,,#e397b8
-italiano,Italiano,Italian,italiano,latina italiana,italiano,catolicismo,,#b72855
-romeno,Romeno,Romanian,rumano,latina balcânica,romeno,ortodoxia,,#ce9cd9
-grego,Grego,Greek,griego,helênica,grego,ortodoxia,,#a36d35
-albanes,Albanês,Albanian,albanés,albanesa,albanês,islã sunita,,#edba7a
-catalao,Catalão,Catalan,catalán,latina ibérica,catalão,catolicismo,,#7e1945
-basco,Basco,Basque,vasco,isolada,basco,catolicismo,,#ad8071
-castelhano,Castelhano,Castilian,castellano,latina ibérica,espanhol,catolicismo,,#1f487c
-galego,Galego,Galician,gallego,latina ibérica,galego,catolicismo,,#3c2ea4
-portugues,Português,Portuguese,portugués,latina ibérica,português,catolicismo,,#6d5331
-maltes,Maltês,Maltese,maltés,semítica árabe,maltês,catolicismo,,#e8d6ab
-turco,Turco,Turkish,turco,turcomana,turco,islã sunita,,#031d6c
-azeri,Azeri,Azerbaijani,azerí,turcomana,azeri,islã xiita,,#d4c398
-georgiano,Georgiano,Georgian,georgiano,caucasiana,georgiano,ortodoxia oriental,,#25e1ce
-armenio,Armênio,Armenian,armenio,caucasiana,armênio,ortodoxia oriental,,#c4c99c
-checheno,Checheno,Chechen,checheno,caucasiana,checheno,islã sunita,,#b6c3ec
-curdo,Curdo,Kurdish,kurdo,iraniana,curdo,islã sunita,,#d68580
-persa,Persa,Persian,persa,iraniana,persa,islã xiita,,#37b880
-tadjique,Tadjique,Tajik,tayiko,iraniana,tadjique,islã sunita,,#f4741e
-pashto,Passhto,Pashtun,pastún,iraniana,passhto,islã sunita,,#a9a254
-turcomeno,Turcomeno,Turkmen,turcomano,turcomana,turcomeno,islã sunita,,#1d4301
-cazaque,Cazaque,Kazakh,kazajo,turcomana,cazaque,islã sunita,,#b1c4ec
-uzbeque,Uzbeque,Uzbek,uzbeko,turcomana,uzbeque,islã sunita,,#a40834
-quirguiz,Quirguiz,Kyrgyz,kirguís,turcomana,quirguiz,islã sunita,,#77de96
-tatar,Tártaro,Tatar,tártaro,turcomana,tártaro,islã sunita,,#401b28
-uigur,Uigur,Uyghur,uigur,turcomana,uigur,islã sunita,,#7e4a09
-mongol,Mongol,Mongol,mongol,mongol,mongol,budismo,,#6f000e
-tibetano,Tibetano,Tibetan,tibetano,sino-tibetana,tibetano,budismo,,#da892f
-arabe_levantino,Árabe levantino,Levantine Arab,árabe levantino,semítica árabe,árabe levantino,islã sunita,,#e3814a
-arabe_egipcio,Árabe egípcio,Egyptian Arab,árabe egipcio,semítica árabe,árabe egípcio,islã sunita,,#75a1dc
-arabe_magrebino,Árabe magrebino,Maghrebi Arab,árabe magrebí,semítica árabe,árabe magrebino,islã sunita,,#ada21e
-arabe_peninsular,Árabe peninsular,Peninsula Arab,árabe peninsular,semítica árabe,árabe peninsular,islã sunita,,#49ba4e
-arabe_iraquiano,Árabe iraquiano,Iraqi Arab,árabe iraquí,semítica árabe,árabe iraquiano,islã xiita,,#e3769b
-arabe_sudanes,Árabe sudanês,Sudanese Arab,árabe sudanés,semítica árabe,árabe sudanês,islã sunita,,#b77df8
-arabe_chadiano,Árabe chadiano,Chadian Arab,árabe chadiano,semítica árabe,árabe chadiano,islã sunita,,#47b3a5
-hebraico,Hebraico,Hebrew,hebreo,semítica hebraica,hebraico,judaísmo,,#adcfac
-berbere,Berbere (amazigue),Berber,bereber,berbere,tamazigue,islã sunita,,#704a60
-tuaregue,Tuaregue,Tuareg,tuareg,berbere,tamasheq,islã sunita,,#7e4a09
-somali,Somali,Somali,somalí,cuxítica,somali,islã sunita,,#5891c6
-afar,Afar,Afar,afar,cuxítica,afar,islã sunita,,#a38764
-amhara,Amhara,Amhara,amhara,semítica etiópe,amárico,ortodoxia oriental,,#d4a2aa
-oromo,Oromo,Oromo,oromo,cuxítica,oromo,islã sunita,,#39a08a
-tigrinio,Tigrínio,Tigrinya,tigriña,semítica etiópe,tigrínio,ortodoxia oriental,,#bbb467
-hausea,Hauçá,Hausa,hausa,nigero-congolesa,hauçá,islã sunita,,#237fc8
-ioruba,Iorubá,Yoruba,yoruba,nigero-congolesa,iorubá,cristianismo,,#cb9317
-igbo,Igbo,Igbo,igbo,nigero-congolesa,igbo,cristianismo,,#de5388
-fulani,Fula (fulani),Fula,fula,nigero-congolesa,fula,islã sunita,,#4d8683
-wolof,Wolof,Wolof,wólof,nigero-congolesa,wolof,islã sunita,,#26dafe
-akan,Akan,Akan,akan,nigero-congolesa,akan,cristianismo,,#491b71
-bambara,Bambara,Bambara,bambara,nigero-congolesa,bambara,islã sunita,,#623a46
-songai,Songai,Songhai,songhai,nigero-congolesa,songai,islã sunita,,#e2db8c
-kanuri,Canúri,Kanuri,kanuri,nigero-congolesa,canúri,islã sunita,,#7db20d
-ewe,Ewé,Ewe,ewé,nigero-congolesa,ewé,cristianismo,,#385107
-fon,Fon,Fon,fon,nigero-congolesa,fon,cristianismo,,#953307
-mossi,Mossi,Mossi,mossi,nigero-congolesa,mooré,animismo,,#65e0a5
-sango,Sango,Sango,sango,nigero-congolesa,sango,cristianismo,,#e287f7
-crioulo,Crioulo,Creole,criollo,crioula,crioulo,catolicismo,,#c9b7fe
-suaili,Suaíli,Swahili,suajili,banta,suaíli,islã sunita,,#fd7dcd
-kikuyu,Kikuyu,Kikuyu,kikuyu,banta,kikuyu,cristianismo,,#fbd509
-ganda,Ganda,Ganda,ganda,banta,luganda,cristianismo,,#12ace6
-luo,Luo,Luo,luo,nilótica,luo,cristianismo,,#6dd6e6
-dinka,Dinka,Dinka,dinka,nilótica,dinka,cristianismo,,#b1d18a
-nuer,Nuer,Nuer,nuer,nilótica,nuer,animismo,,#c9b7fe
-zulu,Zulu,Zulu,zulú,banta,zulu,animismo,,#dae16d
-xhosa,Xhosa,Xhosa,xhosa,banta,xhosa,cristianismo,,#d8dcaf
-soto,Soto,Sotho,sotho,banta,soto,cristianismo,,#f4741e
-tsuana,Tsuana,Tswana,tsuana,banta,tsuana,cristianismo,,#d5d2fe
-shona,Shona,Shona,shona,banta,shona,cristianismo,,#39f3fc
-chewa,Chewa,Chewa,chewa,banta,chewa,cristianismo,,#b89b51
-kikongo,Kikongo,Kongo,kikongo,banta,kikongo,catolicismo,,#7db20d
-lingala,Lingala,Lingala,lingala,banta,lingala,catolicismo,,#401b28
-luba,Luba,Luba,luba,banta,tshiluba,catolicismo,,#031d6c
-bemba,Bemba,Bemba,bemba,banta,bemba,cristianismo,,#bf8f9d
-mbundu,Ambundu,Ambundu,ambundu,banta,kimbundu,catolicismo,,#961770
-ovimbundu,Ovimbundu,Ovimbundu,ovimbundu,banta,umbundu,catolicismo,,#6af99b
-ovambo,Ovambo,Ovambo,ovambo,banta,oshiwambo,protestantismo,,#145154
-herero,Herero,Herero,herero,banta,herero,protestantismo,,#fa6865
-tsonga,Tsonga,Tsonga,tsonga,banta,tsonga,animismo,,#962d3c
-macua,Macua,Makua,makua,banta,macua,islã sunita,,#1d4301
-suazi,Suázi,Swazi,suazi,banta,suázi,cristianismo,,#30598f
-ndebele,Ndebele,Ndebele,ndebele,banta,ndebele,animismo,,#6f3600
-fang,Fang,Fang,fang,banta,fang,cristianismo,,#62b289
-malgaxe,Malgaxe,Malagasy,malgache,austronésia,malgaxe,cristianismo,,#e6b5c2
-hindustani,Hindustani (hindi-urdu),Hindustani,indostaní,indo-ariana,hindi-urdu,hinduísmo,,#87c568
-urdu,Urdu,Urdu,urdu,indo-ariana,urdu,islã sunita,,#1d4301
-punjabi,Punjabi,Punjabi,punyabí,indo-ariana,punjabi,sikhismo,,#031d6c
-bengali,Bengali,Bengali,bengalí,indo-ariana,bengali,islã sunita,,#d49ad1
-gujarati,Guzerate,Gujarati,guyaratí,indo-ariana,guzerate,hinduísmo,,#d6ab32
-marata,Marata,Marathi,maratí,indo-ariana,marata,hinduísmo,,#15c3f2
-cingales,Cingalês,Sinhalese,cingalés,indo-ariana,cingalês,budismo,,#fd8d78
-nepali,Nepali,Nepali,nepalí,indo-ariana,nepali,hinduísmo,,#401b28
-tamil,Tâmil,Tamil,tamil,dravidiana,tâmil,hinduísmo,,#d3646f
-telugu,Telugu,Telugu,telugu,dravidiana,telugu,hinduísmo,,#c67712
-malaio,Malaio,Malay,malayo,austronésia,malaio,islã sunita,,#37bffa
-javanes,Javanês,Javanese,javanés,austronésia,javanês,islã sunita,,#c67712
-filipino,Filipino (tagalo),Filipino,filipino,austronésia,tagalo,catolicismo,,#528679
-tailandes,Tailandês,Thai,tailandés,tai-kadai,tailandês,budismo,,#97c25b
-lao,Lao,Lao,lao,tai-kadai,lao,budismo,,#e7a13c
-vietnamita,Vietnamita,Vietnamese,vietnamita,austro-asiática,vietnamita,budismo,,#8caa66
-khmer,Khmer,Khmer,jemer,austro-asiática,khmer,budismo,,#c1908c
-birmanes,Birmanês,Bamar,birmano,sino-tibetana,birmanês,budismo,,#515479
-han,Han,Han Chinese,han,sino-tibetana,mandarim,taoísmo/confucionismo,,#3947ba
-cantones,Cantonês,Cantonese,cantonés,sino-tibetana,cantonês,taoísmo/confucionismo,han,#874033
-hokkien,Hokkien,Hokkien,hokkien,sino-tibetana,minnan,taoísmo/confucionismo,han,#961770
-japones,Japonês,Japanese,japonés,japonesa,japonês,xintoísmo,,#6b4680
-coreano,Coreano,Korean,coreano,coreana,coreano,sem religião,,#e5cdf5
-papua,Papua,Papuan,papú,papua,línguas papuas,cristianismo,,#961770
-maori,Maori,Māori,maorí,austronésia,maori,cristianismo,,#c8ce0b
-fijiano,Fijiano,iTaukei,fiyiano,austronésia,fijiano,cristianismo,,#407a1a
-melanesio,Melanésio,Melanesian,melanesio,austronésia,pidgin melanésio,cristianismo,,#21e79b
-timorense,Timorense,Timorese,timorense,austronésia,tétum,catolicismo,,#fd7dcd
-brasileiro,Brasileiro,Brazilian,brasileño,americana,português,catolicismo,,#f3aad4
-mexicano,Mexicano,Mexican,mexicano,hispano-americana,espanhol,catolicismo,,#1d4301
-canadense_ingles,Canadense inglês,English Canadian,canadiense inglés,americana,inglês,protestantismo,,#fcb452
-caribenho,Caribenho,Caribbean,caribeño,caribenha,crioulo inglês,protestantismo,,#e55454
-quechua,Quíchua,Quechua,quechua,ameríndia,quíchua,catolicismo,,#fed25f
-aimara,Aimará,Aymara,aimara,ameríndia,aimará,catolicismo,,#b187e5
-guarani,Guarani,Guarani,guaraní,ameríndia,guarani,catolicismo,,#f3669a
-maia,Maia,Maya,maya,ameríndia,línguas maias,catolicismo,,#7db20d
-inuit,Inuit-iúpik,Inuit-Yupik,inuit-yupik,esquimó-aleúte,inuktitut/iúpik,cristianismo,,#002758
-grandes_lagos,Grandes Lagos (ruandês/rundi),Great Lakes (Rwandan/Rundi),Grandes Lagos (ruandés/rundi),banta,kinyarwanda/kirundi,cristianismo,,#a78beb
-montenegrino,Montenegrino,Montenegrin,montenegrino,eslava meridional,montenegrino,ortodoxia,,#e55454
-kru,Cru (kpelle/bassa),Kru (Kpelle/Bassa),kru (kpelle/bassa),nigero-congolesa,kpelle,animismo,,#e6b5c2
-guatemalteco,Guatemalteco,Guatemalan,guatemalteco,hispano-americana,espanhol,catolicismo,,#401b28
-hondurenho,Hondurenho,Honduran,hondureño,hispano-americana,espanhol,catolicismo,,#39045f
-salvadorenho,Salvadorenho,Salvadoran,salvadoreño,hispano-americana,espanhol,catolicismo,,#dbe237
-nicaraguense,Nicaraguense,Nicaraguan,nicaragüense,hispano-americana,espanhol,catolicismo,,#145154
-costa_riquenho,Costa-riquenho,Costa Rican,costarricense,hispano-americana,espanhol,catolicismo,,#c19187
-panamenho,Panamenho,Panamanian,panameño,hispano-americana,espanhol,catolicismo,,#fcc0f9
-cubano,Cubano,Cuban,cubano,hispano-americana,espanhol,catolicismo,,#62b289
-dominicano,Dominicano,Dominican,dominicano,hispano-americana,espanhol,catolicismo,,#57a9d2
-porto_riquenho,Porto-riquenho,Puerto Rican,puertorriqueño,hispano-americana,espanhol,catolicismo,,#39f3fc
-colombiano,Colombiano,Colombian,colombiano,hispano-americana,espanhol,catolicismo,,#54a31b
-venezuelano,Venezuelano,Venezuelan,venezolano,hispano-americana,espanhol,catolicismo,,#8c517f
-equatoriano,Equatoriano,Ecuadorian,ecuatoriano,hispano-americana,espanhol,catolicismo,,#c39810
-peruano,Peruano,Peruvian,peruano,hispano-americana,espanhol,catolicismo,,#d9df91
-boliviano,Boliviano,Bolivian,boliviano,hispano-americana,espanhol,catolicismo,,#de5388
-chileno,Chileno,Chilean,chileno,hispano-americana,espanhol,catolicismo,,#e25c26
-argentino,Argentino,Argentine,argentino,hispano-americana,espanhol,catolicismo,,#897cdc
-uruguaio,Uruguaio,Uruguayan,uruguayo,hispano-americana,espanhol,catolicismo,,#0d376a
-paraguaio,Paraguaio,Paraguayan,paraguayo,hispano-americana,espanhol,catolicismo,,#6af99b
-mapuche,Mapuche,Mapuche,mapuche,ameríndia,mapudungun,catolicismo,,#d4a499
-nahua,Nahua,Nahua,nahua,ameríndia,náuatle,catolicismo,,#7fc492
-sunda,Sundanês,Sundanese,sundanés,austronésia,sundanês,islã sunita,,#cfe296
-batak,Batak,Batak,batak,austronésia,batak,protestantismo,,#765998
-minangkabau,Minangkabau,Minangkabau,minangkabau,austronésia,minangkabau,islã sunita,,#3b2300
-bugis,Bugis,Bugis,bugis,austronésia,bugis,islã sunita,,#aa3f4d
-moro,Moro,Moro,moro,austronésia,idiomas moro,islã sunita,,#000c7f
-hakka,Hakka,Hakka,hakka,sino-tibetana,hacá,taoísmo/confucionismo,han,#5a5d04
-teochew,Teochew,Teochew,teochew,sino-tibetana,teochew,taoísmo/confucionismo,han,#2e8d6f
-balochi,Belúchi,Baloch,baluchi,iraniana,balúchi,islã sunita,,#8c9fc5
-tartaro_crimeia,Tártaro da Crimeia,Crimean Tatar,tártaro de Crimea,turcomana,tártaro da Crimeia,islã sunita,,#c8ce0b
-americano,Americano,American,estadounidense,americana,inglês,protestantismo,,#86cdff
-mexicano_americano,México-americano,Mexican American,mexicoestadounidense,hispano-americana,espanhol,catolicismo,,#6f3600
-belizense,Belizense,Belizean,beliceño,caribenha,espanhol/crioulo inglês,catolicismo,,#b7739b
-guianense,Guianense,Guyanese,guyanés,caribenha,crioulo inglês,protestantismo,,#fbd509
-haitiano,Haitiano,Haitian,haitiano,caribenha,crioulo haitiano,catolicismo,,#411b23
-jamaicano,Jamaicano,Jamaican,jamaicano,caribenha,crioulo inglês,protestantismo,,#22136a
-trinitario,Trinitário,Trinidadian,trinitense,caribenha,crioulo inglês,protestantismo,,#004144
-bahamense,Baamense,Bahamian,bahamés,caribenha,crioulo inglês,protestantismo,,#44a080
-barbadense,Barbadense,Barbadian,barbadense,caribenha,crioulo inglês,protestantismo,,#4e94c3
-antiguano,Antiguano,Antiguan,antiguano,caribenha,crioulo inglês,protestantismo,,#9e8c3e
-dominiquense,Dominiquense,Dominican (Dominica),dominiqués,caribenha,crioulo inglês,catolicismo,,#54a31b
-granadino,Granadino,Grenadian,granadino,caribenha,crioulo inglês,catolicismo,,#6880f8
-sancristovense,São-cristovense,Kittitian,sancristobaleño,caribenha,crioulo inglês,protestantismo,,#46fbae
-santa_luciense,Santa-luciense,Saint Lucian,santalucense,caribenha,crioulo inglês,catolicismo,,#1d4301
-sao_vicentino,São-vicentino,Saint Vincentian,sanvicentino,caribenha,crioulo inglês,protestantismo,,#fbcbba
-canares,Canarês,Kannada,canarés,dravidiana,canarês,hinduísmo,,#309bb3
-malaiala,Malaiala,Malayali,malayali,dravidiana,malaiala,hinduísmo,,#997dbe
-australiano,Australiano,Australian,australiano,anglo-oceânica,inglês,protestantismo,,#331f3e
-neozelandes,Neozelandês,New Zealander,neozelandés,anglo-oceânica,inglês,protestantismo,,#000c7f
-aborigene,Aborígene australiano,Aboriginal Australian,aborigen australiano,aborígene,línguas aborígenes,espiritualidades indígenas,,#4e5f3a
-havaiano,Havaiano,Native Hawaiian,nativo hawaiano,polinésia,havaiano,espiritualidades indígenas,,#6dd9d5
-nativo_americano,Nativo americano,American Indian/Alaska Native,nativo americano,ameríndia,diversas línguas indígenas,espiritualidades indígenas,,#62bfe0
-indigena_brasileiro,Indígena brasileiro,Brazilian Indigenous,indígena brasileño,ameríndia,línguas indígenas brasileiras,espiritualidades indígenas,,#f86f3c
-luxemburgues,Luxemburguês,Luxembourgish,luksemburgués,germânica ocidental,luxemburguês,catolicismo,,#ee9c46
+id,name_pt,name_en,name_es,family,language,religion,nation,home_region,color
+afegao,Afegão,Afghan,afgano,iraniana,passhto,islã sunita,AFG,,#8c9fc5
+angolano,Angolano,Angolan,angoleño,bantu central,umbundu,catolicismo,AGO,,#6f000e
+albanes,Albanês,Albanian,albanés,albanesa,albanês,islã sunita,ALB,,#edba7a
+emiratense,Emiratense,Emirati,emiratí,árabe peninsular,árabe peninsular,islã sunita,ARE,,#bb5c22
+argentino,Argentino,Argentine,argentino,hispano-americana,espanhol,catolicismo,ARG,,#897cdc
+armenio,Armênio,Armenian,armenio,caucasiana,armênio,ortodoxia oriental,ARM,,#c4c99c
+antiguano,Antiguano,Antiguan,antiguano,caribenha,crioulo inglês,protestantismo,ATG,,#9e8c3e
+australiano,Australiano,Australian,australiano,anglo-oceânica,inglês,protestantismo,AUS,,#331f3e
+austriaco,Austríaco,Austrian,austríaco,germânica ocidental,alemão,protestantismo,AUT,,#d5a39f
+azerbaijano,Azerbaijano,Azerbaijani,azerbaiyano,turcomana,azeri,islã xiita,AZE,,#d4c398
+burundines,Burundinês,Burundian,burundés,bantu oriental,kinyarwanda/kirundi,cristianismo,BDI,,#cc3e66
+belga,Belga,Belgian,belga,germânica ocidental,neerlandês (flamengo),catolicismo,BEL,,#9fbd78
+beninense,Beninense,Beninese,beninés,golfo-da-guiné,fon,cristianismo,BEN,,#a78beb
+burquinense,Burquinense,Burkinabé,burkinés,golfo-da-guiné,mooré,animismo,BFA,,#f86f3c
+bengali,Bengali,Bangladeshi,bangladesí,indo-ariana,bengali,islã sunita,BGD,,#d49ad1
+bulgaro,Búlgaro,Bulgarian,búlgaro,eslava meridional,búlgaro,ortodoxia,BGR,,#ab7d8b
+bareinita,Bareinita,Bahraini,bareiní,árabe peninsular,árabe peninsular,islã sunita,BHR,,#6676b6
+bahamense,Baamense,Bahamian,bahamés,caribenha,crioulo inglês,protestantismo,BHS,,#44a080
+bosnio,Bósnio,Bosnian,bosnio,eslava meridional,bósnio,islã sunita,BIH,,#b04aaf
+bielorrusso,Bielorrusso,Belarusian,bielorruso,eslava oriental,bielorrusso,ortodoxia,BLR,,#7b6540
+belizense,Belizense,Belizean,beliceño,caribenha,espanhol/crioulo inglês,catolicismo,BLZ,,#b7739b
+boliviano,Boliviano,Bolivian,boliviano,hispano-americana,espanhol,catolicismo,BOL,,#de5388
+brasileiro,Brasileiro,Brazilian,brasileño,americana,português,catolicismo,BRA,,#f3aad4
+barbadense,Barbadense,Barbadian,barbadense,caribenha,crioulo inglês,protestantismo,BRB,,#4e94c3
+bruneano,Bruneano,Bruneian,bruneano,austronésia,malaio,islã sunita,BRN,,#765998
+butanes,Butanês,Bhutanese,butanés,sino-tibetana,tibetano,budismo,BTN,,#874033
+botsuanense,Botsuanense,Botswanan,botsuano,bantu oriental,tsuana,cristianismo,BWA,,#9e5cad
+centro_africano,Centro-africano,Central African,centroafricano,bantu central,sango,cristianismo,CAF,,#51471f
+canadense,Canadense,Canadian,canadiense,americana,inglês,protestantismo,CAN,,#fcb452
+suico,Suíço,Swiss,suizo,germânica ocidental,alemão,protestantismo,CHE,,#401b28
+chileno,Chileno,Chilean,chileno,hispano-americana,espanhol,catolicismo,CHL,,#e25c26
+chines,Chinês,Chinese,chino,sino-tibetana,mandarim,taoísmo/confucionismo,CHN,,#5a5d04
+marfinense,Marfinense,Ivorian,marfileño,golfo-da-guiné,akan,cristianismo,CIV,,#401b28
+camaronense,Camaronense,Cameroonian,camerunés,bantu central,fang,cristianismo,CMR,,#102f7f
+congoles_rdc,Congolês (RDC),Congolese (DRC),congoleño (RDC),bantu central,lingala,catolicismo,COD,,#446f86
+congoles,Congolês,Congolese,congoleño,bantu central,kikongo,catolicismo,COG,,#961770
+colombiano,Colombiano,Colombian,colombiano,hispano-americana,espanhol,catolicismo,COL,,#54a31b
+costa_riquenho,Costa-riquenho,Costa Rican,costarricense,hispano-americana,espanhol,catolicismo,CRI,,#c19187
+cubano,Cubano,Cuban,cubano,hispano-americana,espanhol,catolicismo,CUB,,#62b289
+cipriota,Cipriota,Cypriot,chipriota,helênica,grego,ortodoxia,CYP,,#a36d35
+tcheco,Tcheco,Czech,checo,eslava ocidental,tcheco,catolicismo,CZE,,#c1908c
+alemao,Alemão,German,alemán,germânica ocidental,alemão,protestantismo,DEU,,#ee67aa
+djibutiense,Djibutiense,Djiboutian,yibutí,chifre-africano,somali,islã sunita,DJI,,#b5ed60
+dominiquense,Dominiquense,Dominican (Dominica),dominiqués,caribenha,crioulo inglês,catolicismo,DMA,,#e55454
+dinamarques,Dinamarquês,Danish,danés,germânica nórdica,dinamarquês,protestantismo,DNK,,#7c5d7b
+dominicano,Dominicano,Dominican,dominicano,hispano-americana,espanhol,catolicismo,DOM,,#57a9d2
+argelino,Argelino,Algerian,argelino,árabe magrebina,árabe magrebino,islã sunita,DZA,,#6aa4da
+equatoriano,Equatoriano,Ecuadorian,ecuatoriano,hispano-americana,espanhol,catolicismo,ECU,,#c39810
+egipcio,Egípcio,Egyptian,egipcio,árabe nilótica,árabe egípcio,islã sunita,EGY,,#9e8c3e
+eritreu,Eritreu,Eritrean,eritreo,chifre-africano,tigrínio,ortodoxia oriental,ERI,,#401b28
+espanhol,Espanhol,Spanish,español,latina ibérica,espanhol,catolicismo,ESP,,#7e1945
+estoniano,Estoniano,Estonian,estonio,urálica,estoniano,protestantismo,EST,,#5f3a50
+etiope,Etíope,Ethiopian,etíope,chifre-africano,oromo,islã sunita,ETH,,#031d6c
+finlandes,Finlandês,Finnish,finlandés,urálica,finlandês,protestantismo,FIN,,#6f3600
+fijiano,Fijiano,iTaukei,fiyiano,austronésia,fijiano,cristianismo,FJI,,#aa3f4d
+frances,Francês,French,francés,latina francesa,francês,catolicismo,FRA,,#63c6af
+gabonense,Gabonense,Gabonese,gabonés,bantu central,fang,cristianismo,GAB,,#cb7227
+britanico,Britânico,British,británico,germânica ocidental,inglês,protestantismo,GBR,,#58c3d2
+georgiano,Georgiano,Georgian,georgiano,caucasiana,georgiano,ortodoxia oriental,GEO,,#25e1ce
+ganense,Ganense,Ghanaian,ghanés,golfo-da-guiné,akan,cristianismo,GHA,,#d4a499
+guineense,Guineense,Guinean,guineano,golfo-da-guiné,fula,islã sunita,GIN,,#7fc492
+gambiano,Gambiano,Gambian,gambiano,golfo-da-guiné,wolof,islã sunita,GMB,,#7db20d
+bissauguineense,Bissau-guineense,Bissau-Guinean,bisauguineano,golfo-da-guiné,crioulo,catolicismo,GNB,,#f3669a
+equatoguineense,Equatoguineense,Equatoguinean,ecuatoguineano,bantu central,fang,cristianismo,GNQ,,#3d8f40
+grego,Grego,Greek,griego,helênica,grego,ortodoxia,GRC,,#548a53
+granadino,Granadino,Grenadian,granadino,caribenha,crioulo inglês,catolicismo,GRD,,#54a31b
+guatemalteco,Guatemalteco,Guatemalan,guatemalteco,hispano-americana,espanhol,catolicismo,GTM,,#401b28
+guianense,Guianense,Guyanese,guyanés,caribenha,crioulo inglês,protestantismo,GUY,,#6880f8
+hondurenho,Hondurenho,Honduran,hondureño,hispano-americana,espanhol,catolicismo,HND,,#39045f
+croata,Croata,Croatian,croata,eslava meridional,croata,catolicismo,HRV,,#a5883e
+haitiano,Haitiano,Haitian,haitiano,caribenha,crioulo haitiano,catolicismo,HTI,,#fbd509
+hungaro,Húngaro,Hungarian,húngaro,urálica,húngaro,catolicismo,HUN,,#2d5316
+indonesio,Indonésio,Indonesian,indonesio,austronésia,javanês,islã sunita,IDN,,#528679
+indiano,Indiano,Indian,indio,indo-ariana,hindi-urdu,hinduísmo,IND,,#fd8d78
+irlandes,Irlandês,Irish,irlandés,celta,irlandês,catolicismo,IRL,,#873f3c
+iraniano,Iraniano,Iranian,iraní,iraniana,persa,islã xiita,IRN,,#37b880
+iraquiano,Iraquiano,Iraqi,iraquí,árabe levantina,árabe iraquiano,islã xiita,IRQ,,#9297dc
+islandes,Islandês,Icelandic,islandés,germânica nórdica,islandês,protestantismo,ISL,,#945829
+israelense,Israelense,Israeli,israelí,semítica hebraica,hebraico,judaísmo,ISR,,#adcfac
+italiano,Italiano,Italian,italiano,latina italiana,italiano,catolicismo,ITA,,#b72855
+jamaicano,Jamaicano,Jamaican,jamaicano,caribenha,crioulo inglês,protestantismo,JAM,,#411b23
+jordaniano,Jordaniano,Jordanian,jordano,árabe levantina,árabe levantino,islã sunita,JOR,,#e3769b
+japones,Japonês,Japanese,japonés,japonesa,japonês,xintoísmo,JPN,,#6b4680
+cazaque,Cazaque,Kazakh,kazajo,turcomana,cazaque,islã sunita,KAZ,,#b1c4ec
+queniano,Queniano,Kenyan,keniano,bantu oriental,kikuyu,cristianismo,KEN,,#1a95d8
+quirguiz,Quirguiz,Kyrgyz,kirguís,turcomana,quirguiz,islã sunita,KGZ,,#77de96
+cambojano,Cambojano,Cambodian,camboyano,austro-asiática,khmer,budismo,KHM,,#c1908c
+sancristovense,São-cristovense,Kittitian,sancristobaleño,caribenha,crioulo inglês,protestantismo,KNA,,#22136a
+sul_coreano,Sul-coreano,South Korean,surcoreano,coreana,coreano,sem religião,KOR,,#fad18a
+kuwaitiano,Kuwaitiano,Kuwaiti,kuwaití,árabe peninsular,árabe peninsular,islã sunita,KWT,,#689885
+laosiano,Laosiano,Lao,laosiano,tai-kadai,lao,budismo,LAO,,#e7a13c
+libanes,Libanês,Lebanese,libanés,árabe levantina,árabe levantino,islã sunita,LBN,,#e3814a
+liberiano,Liberiano,Liberian,liberiano,golfo-da-guiné,kpelle,animismo,LBR,,#62bfe0
+libio,Líbio,Libyan,libio,árabe magrebina,árabe magrebino,islã sunita,LBY,,#cf84a5
+santa_luciense,Santa-luciense,Saint Lucian,santalucense,caribenha,crioulo inglês,catolicismo,LCA,,#46fbae
+srilankes,Srilankês,Sri Lankan,esrilanqués,indo-ariana,cingalês,budismo,LKA,,#15c3f2
+lesotense,Lesotense,Basotho,lesotense,bantu oriental,soto,cristianismo,LSO,,#cd4805
+lituano,Lituano,Lithuanian,lituano,báltica,lituano,catolicismo,LTU,,#192846
+luxemburgues,Luxemburguês,Luxembourgish,luxemburgués,germânica ocidental,luxemburguês,catolicismo,LUX,,#ee9c46
+leto,Letão,Latvian,letón,báltica,letão,protestantismo,LVA,,#2a2b02
+marroquino,Marroquino,Moroccan,marroquí,árabe magrebina,árabe magrebino,islã sunita,MAR,,#e3814a
+moldavio,Moldávio,Moldovan,moldavo,latina balcânica,romeno,ortodoxia,MDA,,#ce9cd9
+malgaxe,Malgaxe,Malagasy,malgache,austronésia,malgaxe,cristianismo,MDG,,#37bffa
+mexicano,Mexicano,Mexican,mexicano,hispano-americana,espanhol,catolicismo,MEX,,#1d4301
+macedonio,Macedônio,Macedonian,macedonio,eslava meridional,macedônio,ortodoxia,MKD,,#1a95d8
+malines,Malinês,Malian,maliense,golfo-da-guiné,bambara,islã sunita,MLI,,#fed25f
+maltes,Maltês,Maltese,maltés,semítica árabe,maltês,catolicismo,MLT,,#47b3a5
+birmanes,Birmanês,Burmese,birmano,sino-tibetana,birmanês,budismo,MMR,,#515479
+montenegrino,Montenegrino,Montenegrin,montenegrino,eslava meridional,montenegrino,ortodoxia,MNE,,#e55454
+mongol,Mongol,Mongolian,mongol,mongol,mongol,budismo,MNG,,#6f000e
+mocambicano,Moçambicano,Mozambican,mozambiqueño,bantu oriental,macua,islã sunita,MOZ,,#ab826d
+mauritano,Mauritano,Mauritanian,mauritano,árabe magrebina,árabe magrebino,islã sunita,MRT,,#ada21e
+malauiano,Malauiano,Malawian,malauí,bantu oriental,chewa,cristianismo,MWI,,#159425
+malasio,Malásio,Malaysian,malasio,austronésia,malaio,islã sunita,MYS,,#c67712
+namibiano,Namibiano,Namibian,namibio,bantu oriental,oshiwambo,protestantismo,NAM,,#39a08a
+neerlandes,Neerlandês,Dutch,neerlandés,germânica ocidental,neerlandês,protestantismo,NED,,#c8ce0b
+nigerino,Nigerino,Nigerien,nigerino,golfo-da-guiné,hauçá,islã sunita,NER,,#1d4301
+nigeriano,Nigeriano,Nigerian,nigeriano,golfo-da-guiné,hauçá,islã sunita,NGA,,#031d6c
+nicaraguense,Nicaraguense,Nicaraguan,nicaragüense,hispano-americana,espanhol,catolicismo,NIC,,#6f3600
+noruegues,Norueguês,Norwegian,noruego,germânica nórdica,norueguês,protestantismo,NOR,,#4e7639
+nepales,Nepalês,Nepali,nepalí,indo-ariana,nepali,hinduísmo,NPL,,#d6ab32
+neozelandes,Neozelandês,New Zealander,neozelandés,anglo-oceânica,inglês,protestantismo,NZL,,#000c7f
+omanense,Omanense,Omani,omaní,árabe peninsular,árabe peninsular,islã sunita,OMN,,#e287f7
+paquistanes,Paquistanês,Pakistani,paquistaní,indo-ariana,urdu,islã sunita,PAK,,#87c568
+panamenho,Panamenho,Panamanian,panameño,hispano-americana,espanhol,catolicismo,PAN,,#145154
+peruano,Peruano,Peruvian,peruano,hispano-americana,espanhol,catolicismo,PER,,#6af99b
+filipino,Filipino,Filipino,filipino,austronésia,tagalo,catolicismo,PHL,,#407a1a
+papuano,Papua-nova-guineense,Papua New Guinean,papú-neoguineano,papua,línguas papuas,cristianismo,PNG,,#885b5d
+polones,Polonês,Polish,polaco,eslava ocidental,polonês,catolicismo,POL,,#d95497
+norte_coreano,Norte-coreano,North Korean,norcoreano,coreana,coreano,sem religião,PRK,,#e5cdf5
+portugues,Português,Portuguese,portugués,latina ibérica,português,catolicismo,PRT,,#3c2ea4
+paraguaio,Paraguaio,Paraguayan,paraguayo,hispano-americana,espanhol,catolicismo,PRY,,#fcc0f9
+palestino,Palestino,Palestinian,palestino,árabe levantina,árabe levantino,islã sunita,PSX,,#ada21e
+catariano,Catariano,Qatari,catarí,árabe peninsular,árabe peninsular,islã sunita,QAT,,#ba5277
+romeno,Romeno,Romanian,rumano,latina balcânica,romeno,ortodoxia,ROU,,#fe8b85
+russo,Russo,Russian,ruso,eslava oriental,russo,ortodoxia,RUS,,#526b8b
+ruandes,Ruandês,Rwandan,ruandés,bantu oriental,kinyarwanda/kirundi,cristianismo,RWA,,#c39810
+saaraui,Saarauí,Sahrawi,saharaui,árabe magrebina,árabe magrebino,islã sunita,SAH,,#4fb772
+saudita,Saudita,Saudi,saudí,árabe peninsular,árabe peninsular,islã sunita,SAU,,#21e79b
+sudanes,Sudanês,Sudanese,sudanés,árabe nilótica,árabe sudanês,islã sunita,SDN,,#44a080
+senegales,Senegalês,Senegalese,senegalés,golfo-da-guiné,wolof,islã sunita,SEN,,#7a4d00
+singapurense,Singapurense,Singaporean,singapurense,austronésia,mandarim,taoísmo/confucionismo,SGP,,#21e79b
+salomonico,Salomônico,Solomon Islander,salomonense,austronésia,pidgin melanésio,cristianismo,SLB,,#c8ce0b
+serra_leones,Serra-leonês,Sierra Leonean,sierraleonés,golfo-da-guiné,kpelle,animismo,SLE,,#145154
+salvadorenho,Salvadorenho,Salvadoran,salvadoreño,hispano-americana,espanhol,catolicismo,SLV,,#d9df91
+somalilandes,Somalilandês,Somalilander,somalilandés,chifre-africano,somali,islã sunita,SOL,,#7e4a09
+somali,Somali,Somali,somalí,chifre-africano,somali,islã sunita,SOM,,#1d4301
+servio,Sérvio,Serbian,serbio,eslava meridional,sérvio,ortodoxia,SRB,,#54a31b
+sul_sudanes,Sul-sudanês,South Sudanese,sursudanés,chifre-africano,dinka,cristianismo,SSD,,#a40834
+surinames,Surinamês,Surinamese,surinamés,caribenha,hindi-urdu,hinduísmo,SUR,,#fbcbba
+eslovaco,Eslovaco,Slovak,eslovaco,eslava ocidental,eslovaco,catolicismo,SVK,,#986feb
+esloveno,Esloveno,Slovene,esloveno,eslava meridional,esloveno,catolicismo,SVN,,#4f9f77
+sueco,Sueco,Swedish,sueco,germânica nórdica,sueco,protestantismo,SWE,,#b72855
+suaziliense,Suaziliense,Swazi,suazi,bantu oriental,suázi,cristianismo,SWZ,,#cfe296
+sirio,Sírio,Syrian,sirio,árabe levantina,árabe levantino,islã sunita,SYR,,#4fb772
+chadiano,Chadiano,Chadian,chadiano,árabe nilótica,árabe chadiano,islã sunita,TCD,,#ad7d85
+togoles,Togolês,Togolese,togolés,golfo-da-guiné,ewé,cristianismo,TGO,,#901d7d
+tailandes,Tailandês,Thai,tailandés,tai-kadai,tailandês,budismo,THA,,#97c25b
+tadjique,Tadjique,Tajik,tayiko,iraniana,tadjique,islã sunita,TJK,,#f4741e
+turcomeno,Turcomeno,Turkmen,turcomano,turcomana,turcomeno,islã sunita,TKM,,#1d4301
+timorense,Timorense,Timorese,timorense,austronésia,tétum,catolicismo,TLS,,#3b2300
+trinitario,Trinitário,Trinidadian,trinitense,caribenha,crioulo inglês,protestantismo,TTO,,#004144
+tunisiano,Tunisiano,Tunisian,tunecino,árabe magrebina,árabe magrebino,islã sunita,TUN,,#b77df8
+turco,Turco,Turkish,turco,turcomana,turco,islã sunita,TUR,,#031d6c
+taiwanes,Taiwanês,Taiwanese,taiwanés,sino-tibetana,mandarim,taoísmo/confucionismo,TWN,,#3947ba
+tanzaniano,Tanzaniano,Tanzanian,tanzano,bantu oriental,suaíli,islã sunita,TZA,,#000c7f
+ugandense,Ugandense,Ugandan,ugandés,bantu oriental,luganda,cristianismo,UGA,,#e5cdf5
+ucraniano,Ucraniano,Ukrainian,ucraniano,eslava oriental,ucraniano,ortodoxia,UKR,,#a63f66
+uruguaio,Uruguaio,Uruguayan,uruguayo,hispano-americana,espanhol,catolicismo,URY,,#39f3fc
+americano,Americano,American,estadounidense,americana,inglês,protestantismo,USA,,#86cdff
+uzbeque,Uzbeque,Uzbek,uzbeko,turcomana,uzbeque,islã sunita,UZB,,#a40834
+sao_vicentino,São-vicentino,Saint Vincentian,sanvicentino,caribenha,crioulo inglês,protestantismo,VCT,,#1d4301
+venezuelano,Venezuelano,Venezuelan,venezolano,hispano-americana,espanhol,catolicismo,VEN,,#dbe237
+vietnamita,Vietnamita,Vietnamese,vietnamita,austro-asiática,vietnamita,budismo,VNM,,#8caa66
+kosovar,Kosovar,Kosovar,kosovar,albanesa,albanês,islã sunita,XKX,,#92d7a4
+iemenita,Iemenita,Yemeni,yemení,árabe peninsular,árabe peninsular,islã sunita,YEM,,#62891b
+sul_africano,Sul-africano,South African,sudafricano,bantu oriental,zulu,animismo,ZAF,,#401b28
+zambiano,Zambiano,Zambian,zambiano,bantu oriental,bemba,cristianismo,ZMB,,#1d4301
+zimbabuense,Zimbabuense,Zimbabwean,zimbabuense,bantu oriental,shona,cristianismo,ZWE,,#46fbae
+curdo,Curdo,Kurdish,kurdo,iraniana,curdo,islã sunita,,TUR-DIY;IRQ-ERB;IRN-KSH,#a9a254
+catalao,Catalão,Catalan,catalán,latina ibérica,catalão,catolicismo,,ESP-BAR;ESP-VAL;AND-AND,#1f487c
+basco,Basco,Basque,vasco,isolada,basco,catolicismo,,ESP;FRA,#ad8071
+quebequense,Quebequense,Québécois,quebequés,latina francesa,francês (quebequense),catolicismo,,CAN-MON;CAN-QUE,#7db7ee
+uigur,Uigur,Uyghur,uigur,turcomana,uigur,islã sunita,,CHN-URU;CHN-KAS,#7e4a09
+tibetano,Tibetano,Tibetan,tibetano,sino-tibetana,tibetano,budismo,,CHN-LHA,#961770
+tamil,Tâmil,Tamil,tamil,dravidiana,tâmil,hinduísmo,,LKA-COL;LKA-JAF,#309bb3
+tartaro_crimeia,Tártaro da Crimeia,Crimean Tatar,tártaro de Crimea,turcomana,tártaro da Crimeia,islã sunita,,RUS-SEV,#c8ce0b
+berbere,Berbere (amazigue),Berber,bereber,berbere,tamazigue,islã sunita,,MAR-CAS;MAR-RAK;MAR-AGA;DZA-ALG,#704a60
+tuaregue,Tuaregue,Tuareg,tuareg,berbere,tamasheq,islã sunita,,MLI-GAO;NER-AGA;DZA-TIN,#7e4a09
+checheno,Checheno,Chechen,checheno,caucasiana,checheno,islã sunita,,RUS,#b6c3ec
+tatar,Tártaro,Tatar,tártaro,turcomana,tártaro,islã sunita,,RUS-KAZ,#401b28
+afar,Afar,Afar,afar,cuxítica,afar,islã sunita,,DJI-DJI;ETH-WAR,#a38764
+balochi,Belúchi,Baloch,baluchi,iraniana,balúchi,islã sunita,,PAK-QUE;IRN,#d68580
+papua,Papua (Nova Guiné Ocidental),Papuan (Western New Guinea),papú (Nueva Guinea Occidental),papua,línguas papuas,cristianismo,,IDN-WAM,#961770
+maori,Maori,Māori,maorí,austronésia,maori,cristianismo,,NZL-AUC;NZL-WEL;NZL-CHR,#e6b5c2
+aborigene,Aborígene australiano,Aboriginal Australian,aborigen australiano,aborígene,línguas aborígenes,espiritualidades indígenas,,AUS-ALI;AUS-DAR,#4e5f3a
+havaiano,Havaiano,Native Hawaiian,nativo hawaiano,polinésia,havaiano,espiritualidades indígenas,,USA-HON,#6dd9d5
+inuit,Inuit-iúpik,Inuit-Yupik,inuit-yupik,esquimó-aleúte,inuktitut/iúpik,cristianismo,,CAN-IQA;CAN-KUU;CAN-IGL;CAN-RAN;CAN-INU;USA-UTQ;USA-BET,#002758
+nativo_americano,Nativo americano,American Indian/Alaska Native,nativo americano,ameríndia,diversas línguas indígenas,espiritualidades indígenas,,USA-ANC;USA-BET;USA-SIT;USA-UNA;USA-UTQ,#62bfe0
+indigena_brasileiro,Indígena brasileiro,Brazilian Indigenous,indígena brasileño,ameríndia,línguas indígenas brasileiras,espiritualidades indígenas,,BRA-MAN;BRA-BOA,#f86f3c
+quechua,Quíchua,Quechua,quechua,ameríndia,quíchua,catolicismo,,PER-ARE;PER-IQU;PER-TRU;BOL-COC;ECU-GUA,#fed25f
+aimara,Aimará,Aymara,aimara,ameríndia,aimará,catolicismo,,BOL-LAP;PER-ARE,#b187e5
+guarani,Guarani,Guarani,guaraní,ameríndia,guarani,catolicismo,,PRY-ASU;PRY-CIU,#f3669a
+maia,Maia,Maya,maya,ameríndia,línguas maias,catolicismo,,GTM-GUA;GTM-COB;MEX-MER;MEX-CAN,#7db20d
+mapuche,Mapuche,Mapuche,mapuche,ameríndia,mapudungun,catolicismo,,CHL-ANT;CHL-PUN;ARG-NEU,#d4a499
+nahua,Nahua,Nahua,nahua,ameríndia,náuatle,catolicismo,,MEX-MEXI;MEX-PUE,#7fc492

@@ -1,209 +1,207 @@
-id,name_pt,name_en,name_es,family,language,religion,notes,parent
-russo,Russo,Russian,ruso,eslava oriental,russo,ortodoxia,,
-ucraniano,Ucraniano,Ukrainian,ucraniano,eslava oriental,ucraniano,ortodoxia,,
-bielorrusso,Bielorrusso,Belarusian,bielorruso,eslava oriental,bielorrusso,ortodoxia,,
-polones,Polonês,Polish,polaco,eslava ocidental,polonês,catolicismo,,
-tcheco,Tcheco,Czech,checo,eslava ocidental,tcheco,catolicismo,,
-eslovaco,Eslovaco,Slovak,eslovaco,eslava ocidental,eslovaco,catolicismo,,
-servio,Sérvio,Serbian,serbio,eslava meridional,sérvio,ortodoxia,,
-croata,Croata,Croatian,croata,eslava meridional,croata,catolicismo,,
-bosnio,Bósnio,Bosniak,bosnio,eslava meridional,bósnio,islã sunita,,
-esloveno,Esloveno,Slovene,esloveno,eslava meridional,esloveno,catolicismo,,
-macedonio,Macedônio,Macedonian,macedonio,eslava meridional,macedônio,ortodoxia,,
-bulgaro,Búlgaro,Bulgarian,búlgaro,eslava meridional,búlgaro,ortodoxia,,
-lituano,Lituano,Lithuanian,lituano,báltica,lituano,catolicismo,,
-leto,Letão,Latvian,letón,báltica,letão,protestantismo,,
-estoniano,Estoniano,Estonian,estonio,urálica,estoniano,protestantismo,,
-finlandes,Finlandês,Finnish,finlandés,urálica,finlandês,protestantismo,,
-hungaro,Húngaro,Hungarian,húngaro,urálica,húngaro,catolicismo,,
-alemao,Alemão,German,alemán,germânica ocidental,alemão,protestantismo,,
-neerlandes,Neerlandês,Dutch,neerlandés,germânica ocidental,neerlandês,protestantismo,,
-flamengo,Flamengo,Flemish,flamenco,germânica ocidental,neerlandês (flamengo),catolicismo,,
-afrikaans,Africâner,Afrikaner,afrikáner,germânica ocidental,africâner,protestantismo,,
-ingles,Inglês,English,inglés,germânica ocidental,inglês,protestantismo,,
-escoces,Escocês,Scottish,escocés,celta,gaélico escocês/inglês,protestantismo,,
-gales,Galês,Welsh,galés,celta,galês,protestantismo,,
-norte_irlandes,Norte-irlandês,Northern Irish,norirlandés,germânica ocidental,inglês (ulster),protestantismo,,
-irlandes,Irlandês,Irish,irlandés,celta,irlandês,catolicismo,,
-dinamarques,Dinamarquês,Danish,danés,germânica nórdica,dinamarquês,protestantismo,,
-noruegues,Norueguês,Norwegian,noruego,germânica nórdica,norueguês,protestantismo,,
-sueco,Sueco,Swedish,sueco,germânica nórdica,sueco,protestantismo,,
-islandes,Islandês,Icelandic,islandés,germânica nórdica,islandês,protestantismo,,
-frances,Francês,French,francés,latina francesa,francês,catolicismo,,
-quebequense,Quebequense,Québécois,quebequés,latina francesa,francês (quebequense),catolicismo,,
-valao,Valão,Walloon,valón,latina francesa,francês (valão),catolicismo,,
-italiano,Italiano,Italian,italiano,latina italiana,italiano,catolicismo,,
-romeno,Romeno,Romanian,rumano,latina balcânica,romeno,ortodoxia,,
-grego,Grego,Greek,griego,helênica,grego,ortodoxia,,
-albanes,Albanês,Albanian,albanés,albanesa,albanês,islã sunita,,
-catalao,Catalão,Catalan,catalán,latina ibérica,catalão,catolicismo,,
-basco,Basco,Basque,vasco,isolada,basco,catolicismo,,
-castelhano,Castelhano,Castilian,castellano,latina ibérica,espanhol,catolicismo,,
-galego,Galego,Galician,gallego,latina ibérica,galego,catolicismo,,
-portugues,Português,Portuguese,portugués,latina ibérica,português,catolicismo,,
-maltes,Maltês,Maltese,maltés,semítica árabe,maltês,catolicismo,,
-turco,Turco,Turkish,turco,turcomana,turco,islã sunita,,
-azeri,Azeri,Azerbaijani,azerí,turcomana,azeri,islã xiita,,
-georgiano,Georgiano,Georgian,georgiano,caucasiana,georgiano,ortodoxia oriental,,
-armenio,Armênio,Armenian,armenio,caucasiana,armênio,ortodoxia oriental,,
-checheno,Checheno,Chechen,checheno,caucasiana,checheno,islã sunita,,
-curdo,Curdo,Kurdish,kurdo,iraniana,curdo,islã sunita,,
-persa,Persa,Persian,persa,iraniana,persa,islã xiita,,
-tadjique,Tadjique,Tajik,tayiko,iraniana,tadjique,islã sunita,,
-pashto,Passhto,Pashtun,pastún,iraniana,passhto,islã sunita,,
-turcomeno,Turcomeno,Turkmen,turcomano,turcomana,turcomeno,islã sunita,,
-cazaque,Cazaque,Kazakh,kazajo,turcomana,cazaque,islã sunita,,
-uzbeque,Uzbeque,Uzbek,uzbeko,turcomana,uzbeque,islã sunita,,
-quirguiz,Quirguiz,Kyrgyz,kirguís,turcomana,quirguiz,islã sunita,,
-tatar,Tártaro,Tatar,tártaro,turcomana,tártaro,islã sunita,,
-uigur,Uigur,Uyghur,uigur,turcomana,uigur,islã sunita,,
-mongol,Mongol,Mongol,mongol,mongol,mongol,budismo,,
-tibetano,Tibetano,Tibetan,tibetano,sino-tibetana,tibetano,budismo,,
-arabe_levantino,Árabe levantino,Levantine Arab,árabe levantino,semítica árabe,árabe levantino,islã sunita,,
-arabe_egipcio,Árabe egípcio,Egyptian Arab,árabe egipcio,semítica árabe,árabe egípcio,islã sunita,,
-arabe_magrebino,Árabe magrebino,Maghrebi Arab,árabe magrebí,semítica árabe,árabe magrebino,islã sunita,,
-arabe_peninsular,Árabe peninsular,Peninsula Arab,árabe peninsular,semítica árabe,árabe peninsular,islã sunita,,
-arabe_iraquiano,Árabe iraquiano,Iraqi Arab,árabe iraquí,semítica árabe,árabe iraquiano,islã xiita,,
-arabe_sudanes,Árabe sudanês,Sudanese Arab,árabe sudanés,semítica árabe,árabe sudanês,islã sunita,,
-arabe_chadiano,Árabe chadiano,Chadian Arab,árabe chadiano,semítica árabe,árabe chadiano,islã sunita,,
-hebraico,Hebraico,Hebrew,hebreo,semítica hebraica,hebraico,judaísmo,,
-berbere,Berbere (amazigue),Berber,bereber,berbere,tamazigue,islã sunita,,
-tuaregue,Tuaregue,Tuareg,tuareg,berbere,tamasheq,islã sunita,,
-somali,Somali,Somali,somalí,cuxítica,somali,islã sunita,,
-afar,Afar,Afar,afar,cuxítica,afar,islã sunita,,
-amhara,Amhara,Amhara,amhara,semítica etiópe,amárico,ortodoxia oriental,,
-oromo,Oromo,Oromo,oromo,cuxítica,oromo,islã sunita,,
-tigrinio,Tigrínio,Tigrinya,tigriña,semítica etiópe,tigrínio,ortodoxia oriental,,
-hausea,Hauçá,Hausa,hausa,nigero-congolesa,hauçá,islã sunita,,
-ioruba,Iorubá,Yoruba,yoruba,nigero-congolesa,iorubá,cristianismo,,
-igbo,Igbo,Igbo,igbo,nigero-congolesa,igbo,cristianismo,,
-fulani,Fula (fulani),Fula,fula,nigero-congolesa,fula,islã sunita,,
-wolof,Wolof,Wolof,wólof,nigero-congolesa,wolof,islã sunita,,
-akan,Akan,Akan,akan,nigero-congolesa,akan,cristianismo,,
-bambara,Bambara,Bambara,bambara,nigero-congolesa,bambara,islã sunita,,
-songai,Songai,Songhai,songhai,nigero-congolesa,songai,islã sunita,,
-kanuri,Canúri,Kanuri,kanuri,nigero-congolesa,canúri,islã sunita,,
-ewe,Ewé,Ewe,ewé,nigero-congolesa,ewé,cristianismo,,
-fon,Fon,Fon,fon,nigero-congolesa,fon,cristianismo,,
-mossi,Mossi,Mossi,mossi,nigero-congolesa,mooré,animismo,,
-sango,Sango,Sango,sango,nigero-congolesa,sango,cristianismo,,
-crioulo,Crioulo,Creole,criollo,crioula,crioulo,catolicismo,,
-suaili,Suaíli,Swahili,suajili,banta,suaíli,islã sunita,,
-kikuyu,Kikuyu,Kikuyu,kikuyu,banta,kikuyu,cristianismo,,
-ganda,Ganda,Ganda,ganda,banta,luganda,cristianismo,,
-luo,Luo,Luo,luo,nilótica,luo,cristianismo,,
-dinka,Dinka,Dinka,dinka,nilótica,dinka,cristianismo,,
-nuer,Nuer,Nuer,nuer,nilótica,nuer,animismo,,
-zulu,Zulu,Zulu,zulú,banta,zulu,animismo,,
-xhosa,Xhosa,Xhosa,xhosa,banta,xhosa,cristianismo,,
-soto,Soto,Sotho,sotho,banta,soto,cristianismo,,
-tsuana,Tsuana,Tswana,tsuana,banta,tsuana,cristianismo,,
-shona,Shona,Shona,shona,banta,shona,cristianismo,,
-chewa,Chewa,Chewa,chewa,banta,chewa,cristianismo,,
-kikongo,Kikongo,Kongo,kikongo,banta,kikongo,catolicismo,,
-lingala,Lingala,Lingala,lingala,banta,lingala,catolicismo,,
-luba,Luba,Luba,luba,banta,tshiluba,catolicismo,,
-bemba,Bemba,Bemba,bemba,banta,bemba,cristianismo,,
-mbundu,Ambundu,Ambundu,ambundu,banta,kimbundu,catolicismo,,
-ovimbundu,Ovimbundu,Ovimbundu,ovimbundu,banta,umbundu,catolicismo,,
-ovambo,Ovambo,Ovambo,ovambo,banta,oshiwambo,protestantismo,,
-herero,Herero,Herero,herero,banta,herero,protestantismo,,
-tsonga,Tsonga,Tsonga,tsonga,banta,tsonga,animismo,,
-macua,Macua,Makua,makua,banta,macua,islã sunita,,
-suazi,Suázi,Swazi,suazi,banta,suázi,cristianismo,,
-ndebele,Ndebele,Ndebele,ndebele,banta,ndebele,animismo,,
-fang,Fang,Fang,fang,banta,fang,cristianismo,,
-malgaxe,Malgaxe,Malagasy,malgache,austronésia,malgaxe,cristianismo,,
-hindustani,Hindustani (hindi-urdu),Hindustani,indostaní,indo-ariana,hindi-urdu,hinduísmo,identidade do cinturão hindi-urdu; substitui o rótulo 'hindi' e inclui o urdu,
-urdu,Urdu,Urdu,urdu,indo-ariana,urdu,islã sunita,,
-punjabi,Punjabi,Punjabi,punyabí,indo-ariana,punjabi,sikhismo,,
-bengali,Bengali,Bengali,bengalí,indo-ariana,bengali,islã sunita,,
-gujarati,Guzerate,Gujarati,guyaratí,indo-ariana,guzerate,hinduísmo,,
-marata,Marata,Marathi,maratí,indo-ariana,marata,hinduísmo,,
-cingales,Cingalês,Sinhalese,cingalés,indo-ariana,cingalês,budismo,,
-nepali,Nepali,Nepali,nepalí,indo-ariana,nepali,hinduísmo,,
-tamil,Tâmil,Tamil,tamil,dravidiana,tâmil,hinduísmo,,
-telugu,Telugu,Telugu,telugu,dravidiana,telugu,hinduísmo,,
-malaio,Malaio,Malay,malayo,austronésia,malaio,islã sunita,,
-javanes,Javanês,Javanese,javanés,austronésia,javanês,islã sunita,,
-filipino,Filipino (tagalo),Filipino,filipino,austronésia,tagalo,catolicismo,,
-tailandes,Tailandês,Thai,tailandés,tai-kadai,tailandês,budismo,,
-lao,Lao,Lao,lao,tai-kadai,lao,budismo,,
-vietnamita,Vietnamita,Vietnamese,vietnamita,austro-asiática,vietnamita,budismo,,
-khmer,Khmer,Khmer,jemer,austro-asiática,khmer,budismo,,
-birmanes,Birmanês,Bamar,birmano,sino-tibetana,birmanês,budismo,,
-han,Han,Han Chinese,han,sino-tibetana,mandarim,taoísmo/confucionismo,,
-cantones,Cantonês,Cantonese,cantonés,sino-tibetana,cantonês,taoísmo/confucionismo,,han
-hokkien,Hokkien,Hokkien,hokkien,sino-tibetana,minnan,taoísmo/confucionismo,,han
-japones,Japonês,Japanese,japonés,japonesa,japonês,xintoísmo,,
-coreano,Coreano,Korean,coreano,coreana,coreano,sem religião,,
-papua,Papua,Papuan,papú,papua,línguas papuas,cristianismo,,
-maori,Maori,Māori,maorí,austronésia,maori,cristianismo,,
-fijiano,Fijiano,iTaukei,fiyiano,austronésia,fijiano,cristianismo,,
-melanesio,Melanésio,Melanesian,melanesio,austronésia,pidgin melanésio,cristianismo,,
-timorense,Timorense,Timorese,timorense,austronésia,tétum,catolicismo,,
-brasileiro,Brasileiro,Brazilian,brasileño,americana,português,catolicismo,,
-mexicano,Mexicano,Mexican,mexicano,hispano-americana,espanhol,catolicismo,,
-canadense_ingles,Canadense inglês,English Canadian,canadiense inglés,americana,inglês,protestantismo,,
-caribenho,Caribenho,Caribbean,caribeño,caribenha,crioulo inglês,protestantismo,,
-quechua,Quíchua,Quechua,quechua,ameríndia,quíchua,catolicismo,,
-aimara,Aimará,Aymara,aimara,ameríndia,aimará,catolicismo,,
-guarani,Guarani,Guarani,guaraní,ameríndia,guarani,catolicismo,,
-maia,Maia,Maya,maya,ameríndia,línguas maias,catolicismo,,
-inuit,Inuit-iúpik,Inuit-Yupik,inuit-yupik,esquimó-aleúte,inuktitut/iúpik,cristianismo,agrega inuit (Canadá/Groenlândia) e iúpiat/iúpik do Alasca,
-grandes_lagos,Grandes Lagos (ruandês/rundi),Great Lakes (Rwandan/Rundi),Grandes Lagos (ruandés/rundi),banta,kinyarwanda/kirundi,cristianismo,guarda-chuva para RWA e BDI,
-montenegrino,Montenegrino,Montenegrin,montenegrino,eslava meridional,montenegrino,ortodoxia,,
-kru,Cru (kpelle/bassa),Kru (Kpelle/Bassa),kru (kpelle/bassa),nigero-congolesa,kpelle,animismo,guarda-chuva para a Libéria,
-guatemalteco,Guatemalteco,Guatemalan,guatemalteco,hispano-americana,espanhol,catolicismo,,
-hondurenho,Hondurenho,Honduran,hondureño,hispano-americana,espanhol,catolicismo,,
-salvadorenho,Salvadorenho,Salvadoran,salvadoreño,hispano-americana,espanhol,catolicismo,,
-nicaraguense,Nicaraguense,Nicaraguan,nicaragüense,hispano-americana,espanhol,catolicismo,,
-costa_riquenho,Costa-riquenho,Costa Rican,costarricense,hispano-americana,espanhol,catolicismo,,
-panamenho,Panamenho,Panamanian,panameño,hispano-americana,espanhol,catolicismo,,
-cubano,Cubano,Cuban,cubano,hispano-americana,espanhol,catolicismo,,
-dominicano,Dominicano,Dominican,dominicano,hispano-americana,espanhol,catolicismo,,
-porto_riquenho,Porto-riquenho,Puerto Rican,puertorriqueño,hispano-americana,espanhol,catolicismo,,
-colombiano,Colombiano,Colombian,colombiano,hispano-americana,espanhol,catolicismo,,
-venezuelano,Venezuelano,Venezuelan,venezolano,hispano-americana,espanhol,catolicismo,,
-equatoriano,Equatoriano,Ecuadorian,ecuatoriano,hispano-americana,espanhol,catolicismo,,
-peruano,Peruano,Peruvian,peruano,hispano-americana,espanhol,catolicismo,,
-boliviano,Boliviano,Bolivian,boliviano,hispano-americana,espanhol,catolicismo,,
-chileno,Chileno,Chilean,chileno,hispano-americana,espanhol,catolicismo,,
-argentino,Argentino,Argentine,argentino,hispano-americana,espanhol,catolicismo,,
-uruguaio,Uruguaio,Uruguayan,uruguayo,hispano-americana,espanhol,catolicismo,,
-paraguaio,Paraguaio,Paraguayan,paraguayo,hispano-americana,espanhol,catolicismo,,
-mapuche,Mapuche,Mapuche,mapuche,ameríndia,mapudungun,catolicismo,,
-nahua,Nahua,Nahua,nahua,ameríndia,náuatle,catolicismo,,
-sunda,Sundanês,Sundanese,sundanés,austronésia,sundanês,islã sunita,,
-batak,Batak,Batak,batak,austronésia,batak,protestantismo,,
-minangkabau,Minangkabau,Minangkabau,minangkabau,austronésia,minangkabau,islã sunita,,
-bugis,Bugis,Bugis,bugis,austronésia,bugis,islã sunita,,
-moro,Moro,Moro,moro,austronésia,idiomas moro,islã sunita,,
-hakka,Hakka,Hakka,hakka,sino-tibetana,hacá,taoísmo/confucionismo,subgrupo han,han
-teochew,Teochew,Teochew,teochew,sino-tibetana,teochew,taoísmo/confucionismo,subgrupo han,han
-balochi,Belúchi,Baloch,baluchi,iraniana,balúchi,islã sunita,,
-tartaro_crimeia,Tártaro da Crimeia,Crimean Tatar,tártaro de Crimea,turcomana,tártaro da Crimeia,islã sunita,,
-americano,Americano,American,estadounidense,americana,inglês,protestantismo,"identidade nacional dos EUA (todas as origens europeias, africanas e mistas); não é categoria racial",
-mexicano_americano,México-americano,Mexican American,mexicoestadounidense,hispano-americana,espanhol,catolicismo,identidade cultural de origem mexicana nos EUA (chicano/tejano),
-belizense,Belizense,Belizean,beliceño,caribenha,espanhol/crioulo inglês,catolicismo,identidade nacional de Belize (maioria hispanofalante antes rotulada 'mestizo'),
-guianense,Guianense,Guyanese,guyanés,caribenha,crioulo inglês,protestantismo,identidade nacional da Guiana (crioula/afro-guianense e mestiça),
-haitiano,Haitiano,Haitian,haitiano,caribenha,crioulo haitiano,catolicismo,identidade nacional do Haiti,
-jamaicano,Jamaicano,Jamaican,jamaicano,caribenha,crioulo inglês,protestantismo,identidade nacional da Jamaica,
-trinitario,Trinitário,Trinidadian,trinitense,caribenha,crioulo inglês,protestantismo,identidade nacional de Trinidad e Tobago (crioula/afro-trinitária),
-bahamense,Baamense,Bahamian,bahamés,caribenha,crioulo inglês,protestantismo,identidade nacional das Bahamas,
-barbadense,Barbadense,Barbadian,barbadense,caribenha,crioulo inglês,protestantismo,identidade nacional de Barbados,
-antiguano,Antiguano,Antiguan,antiguano,caribenha,crioulo inglês,protestantismo,identidade nacional de Antígua e Barbuda,
-dominiquense,Dominiquense,Dominican (Dominica),dominiqués,caribenha,crioulo inglês,catolicismo,identidade nacional da Dominica (não confundir com a República Dominicana),
-granadino,Granadino,Grenadian,granadino,caribenha,crioulo inglês,catolicismo,identidade nacional de Granada,
-sancristovense,São-cristovense,Kittitian,sancristobaleño,caribenha,crioulo inglês,protestantismo,identidade nacional de São Cristóvão e Névis,
-santa_luciense,Santa-luciense,Saint Lucian,santalucense,caribenha,crioulo inglês,catolicismo,identidade nacional de Santa Lúcia,
-sao_vicentino,São-vicentino,Saint Vincentian,sanvicentino,caribenha,crioulo inglês,protestantismo,identidade nacional de São Vicente e Granadinas,
-canares,Canarês,Kannada,canarés,dravidiana,canarês,hinduísmo,grande cultura linguística da Índia (Karnataka),
-malaiala,Malaiala,Malayali,malayali,dravidiana,malaiala,hinduísmo,grande cultura linguística da Índia (Kerala),
-australiano,Australiano,Australian,australiano,anglo-oceânica,inglês,protestantismo,identidade nacional da Austrália (ancestralidades 'australiana' e 'inglesa' do censo),
-neozelandes,Neozelandês,New Zealander,neozelandés,anglo-oceânica,inglês,protestantismo,identidade nacional da Nova Zelândia (europeu neozelandês),
-aborigene,Aborígene australiano,Aboriginal Australian,aborigen australiano,aborígene,línguas aborígenes,espiritualidades indígenas,"povos aborígenes da Austrália (agregado; Censo 2021: 3,2%)",
-havaiano,Havaiano,Native Hawaiian,nativo hawaiano,polinésia,havaiano,espiritualidades indígenas,kānaka maoli; identidade cultural dos nativos do Havaí,
-nativo_americano,Nativo americano,American Indian/Alaska Native,nativo americano,ameríndia,diversas línguas indígenas,espiritualidades indígenas,"agregado das nações indígenas dos EUA (ACS 2023: 1,3%); não é categoria racial",
-indigena_brasileiro,Indígena brasileiro,Brazilian Indigenous,indígena brasileño,ameríndia,línguas indígenas brasileiras,espiritualidades indígenas,"agregado dos povos indígenas do Brasil (Censo 2022: 0,83%)",
-luxemburgues,Luxemburguês,Luxembourgish,luksemburgués,germânica ocidental,luxemburguês,catolicismo,identidade nacional de Luxemburgo; composição por nacionalidade,
+id,name_pt,name_en,name_es,family,language,religion,nation,home_region,notes
+afegao,Afegão,Afghan,afgano,iraniana,passhto,islã sunita,AFG,,cultura nacional de AFG
+angolano,Angolano,Angolan,angoleño,bantu central,umbundu,catolicismo,AGO,,cultura nacional de AGO
+albanes,Albanês,Albanian,albanés,albanesa,albanês,islã sunita,ALB,,cultura nacional de ALB
+emiratense,Emiratense,Emirati,emiratí,árabe peninsular,árabe peninsular,islã sunita,ARE,,cultura nacional de ARE
+argentino,Argentino,Argentine,argentino,hispano-americana,espanhol,catolicismo,ARG,,cultura nacional de ARG
+armenio,Armênio,Armenian,armenio,caucasiana,armênio,ortodoxia oriental,ARM,,cultura nacional de ARM
+antiguano,Antiguano,Antiguan,antiguano,caribenha,crioulo inglês,protestantismo,ATG,,cultura nacional de ATG
+australiano,Australiano,Australian,australiano,anglo-oceânica,inglês,protestantismo,AUS,,cultura nacional de AUS
+austriaco,Austríaco,Austrian,austríaco,germânica ocidental,alemão,protestantismo,AUT,,cultura nacional de AUT
+azerbaijano,Azerbaijano,Azerbaijani,azerbaiyano,turcomana,azeri,islã xiita,AZE,,cultura nacional de AZE
+burundines,Burundinês,Burundian,burundés,bantu oriental,kinyarwanda/kirundi,cristianismo,BDI,,cultura nacional de BDI
+belga,Belga,Belgian,belga,germânica ocidental,neerlandês (flamengo),catolicismo,BEL,,cultura nacional de BEL
+beninense,Beninense,Beninese,beninés,golfo-da-guiné,fon,cristianismo,BEN,,cultura nacional de BEN
+burquinense,Burquinense,Burkinabé,burkinés,golfo-da-guiné,mooré,animismo,BFA,,cultura nacional de BFA
+bengali,Bengali,Bangladeshi,bangladesí,indo-ariana,bengali,islã sunita,BGD,,cultura nacional de BGD
+bulgaro,Búlgaro,Bulgarian,búlgaro,eslava meridional,búlgaro,ortodoxia,BGR,,cultura nacional de BGR
+bareinita,Bareinita,Bahraini,bareiní,árabe peninsular,árabe peninsular,islã sunita,BHR,,cultura nacional de BHR
+bahamense,Baamense,Bahamian,bahamés,caribenha,crioulo inglês,protestantismo,BHS,,cultura nacional de BHS
+bosnio,Bósnio,Bosnian,bosnio,eslava meridional,bósnio,islã sunita,BIH,,cultura nacional de BIH
+bielorrusso,Bielorrusso,Belarusian,bielorruso,eslava oriental,bielorrusso,ortodoxia,BLR,,cultura nacional de BLR
+belizense,Belizense,Belizean,beliceño,caribenha,espanhol/crioulo inglês,catolicismo,BLZ,,cultura nacional de BLZ
+boliviano,Boliviano,Bolivian,boliviano,hispano-americana,espanhol,catolicismo,BOL,,cultura nacional de BOL
+brasileiro,Brasileiro,Brazilian,brasileño,americana,português,catolicismo,BRA,,cultura nacional de BRA
+barbadense,Barbadense,Barbadian,barbadense,caribenha,crioulo inglês,protestantismo,BRB,,cultura nacional de BRB
+bruneano,Bruneano,Bruneian,bruneano,austronésia,malaio,islã sunita,BRN,,cultura nacional de BRN
+butanes,Butanês,Bhutanese,butanés,sino-tibetana,tibetano,budismo,BTN,,cultura nacional de BTN
+botsuanense,Botsuanense,Botswanan,botsuano,bantu oriental,tsuana,cristianismo,BWA,,cultura nacional de BWA
+centro_africano,Centro-africano,Central African,centroafricano,bantu central,sango,cristianismo,CAF,,cultura nacional de CAF
+canadense,Canadense,Canadian,canadiense,americana,inglês,protestantismo,CAN,,cultura nacional de CAN
+suico,Suíço,Swiss,suizo,germânica ocidental,alemão,protestantismo,CHE,,cultura nacional de CHE
+chileno,Chileno,Chilean,chileno,hispano-americana,espanhol,catolicismo,CHL,,cultura nacional de CHL
+chines,Chinês,Chinese,chino,sino-tibetana,mandarim,taoísmo/confucionismo,CHN,,cultura nacional de CHN
+marfinense,Marfinense,Ivorian,marfileño,golfo-da-guiné,akan,cristianismo,CIV,,cultura nacional de CIV
+camaronense,Camaronense,Cameroonian,camerunés,bantu central,fang,cristianismo,CMR,,cultura nacional de CMR
+congoles_rdc,Congolês (RDC),Congolese (DRC),congoleño (RDC),bantu central,lingala,catolicismo,COD,,cultura nacional de COD
+congoles,Congolês,Congolese,congoleño,bantu central,kikongo,catolicismo,COG,,cultura nacional de COG
+colombiano,Colombiano,Colombian,colombiano,hispano-americana,espanhol,catolicismo,COL,,cultura nacional de COL
+costa_riquenho,Costa-riquenho,Costa Rican,costarricense,hispano-americana,espanhol,catolicismo,CRI,,cultura nacional de CRI
+cubano,Cubano,Cuban,cubano,hispano-americana,espanhol,catolicismo,CUB,,cultura nacional de CUB
+cipriota,Cipriota,Cypriot,chipriota,helênica,grego,ortodoxia,CYP,,cultura nacional de CYP
+tcheco,Tcheco,Czech,checo,eslava ocidental,tcheco,catolicismo,CZE,,cultura nacional de CZE
+alemao,Alemão,German,alemán,germânica ocidental,alemão,protestantismo,DEU,,cultura nacional de DEU
+djibutiense,Djibutiense,Djiboutian,yibutí,chifre-africano,somali,islã sunita,DJI,,cultura nacional de DJI
+dominiquense,Dominiquense,Dominican (Dominica),dominiqués,caribenha,crioulo inglês,catolicismo,DMA,,cultura nacional de DMA
+dinamarques,Dinamarquês,Danish,danés,germânica nórdica,dinamarquês,protestantismo,DNK,,cultura nacional de DNK
+dominicano,Dominicano,Dominican,dominicano,hispano-americana,espanhol,catolicismo,DOM,,cultura nacional de DOM
+argelino,Argelino,Algerian,argelino,árabe magrebina,árabe magrebino,islã sunita,DZA,,cultura nacional de DZA
+equatoriano,Equatoriano,Ecuadorian,ecuatoriano,hispano-americana,espanhol,catolicismo,ECU,,cultura nacional de ECU
+egipcio,Egípcio,Egyptian,egipcio,árabe nilótica,árabe egípcio,islã sunita,EGY,,cultura nacional de EGY
+eritreu,Eritreu,Eritrean,eritreo,chifre-africano,tigrínio,ortodoxia oriental,ERI,,cultura nacional de ERI
+espanhol,Espanhol,Spanish,español,latina ibérica,espanhol,catolicismo,ESP,,cultura nacional de ESP
+estoniano,Estoniano,Estonian,estonio,urálica,estoniano,protestantismo,EST,,cultura nacional de EST
+etiope,Etíope,Ethiopian,etíope,chifre-africano,oromo,islã sunita,ETH,,cultura nacional de ETH
+finlandes,Finlandês,Finnish,finlandés,urálica,finlandês,protestantismo,FIN,,cultura nacional de FIN
+fijiano,Fijiano,iTaukei,fiyiano,austronésia,fijiano,cristianismo,FJI,,cultura nacional de FJI
+frances,Francês,French,francés,latina francesa,francês,catolicismo,FRA,,cultura nacional de FRA
+gabonense,Gabonense,Gabonese,gabonés,bantu central,fang,cristianismo,GAB,,cultura nacional de GAB
+britanico,Britânico,British,británico,germânica ocidental,inglês,protestantismo,GBR,,cultura nacional de GBR
+georgiano,Georgiano,Georgian,georgiano,caucasiana,georgiano,ortodoxia oriental,GEO,,cultura nacional de GEO
+ganense,Ganense,Ghanaian,ghanés,golfo-da-guiné,akan,cristianismo,GHA,,cultura nacional de GHA
+guineense,Guineense,Guinean,guineano,golfo-da-guiné,fula,islã sunita,GIN,,cultura nacional de GIN
+gambiano,Gambiano,Gambian,gambiano,golfo-da-guiné,wolof,islã sunita,GMB,,cultura nacional de GMB
+bissauguineense,Bissau-guineense,Bissau-Guinean,bisauguineano,golfo-da-guiné,crioulo,catolicismo,GNB,,cultura nacional de GNB
+equatoguineense,Equatoguineense,Equatoguinean,ecuatoguineano,bantu central,fang,cristianismo,GNQ,,cultura nacional de GNQ
+grego,Grego,Greek,griego,helênica,grego,ortodoxia,GRC,,cultura nacional de GRC
+granadino,Granadino,Grenadian,granadino,caribenha,crioulo inglês,catolicismo,GRD,,cultura nacional de GRD
+guatemalteco,Guatemalteco,Guatemalan,guatemalteco,hispano-americana,espanhol,catolicismo,GTM,,cultura nacional de GTM
+guianense,Guianense,Guyanese,guyanés,caribenha,crioulo inglês,protestantismo,GUY,,cultura nacional de GUY
+hondurenho,Hondurenho,Honduran,hondureño,hispano-americana,espanhol,catolicismo,HND,,cultura nacional de HND
+croata,Croata,Croatian,croata,eslava meridional,croata,catolicismo,HRV,,cultura nacional de HRV
+haitiano,Haitiano,Haitian,haitiano,caribenha,crioulo haitiano,catolicismo,HTI,,cultura nacional de HTI
+hungaro,Húngaro,Hungarian,húngaro,urálica,húngaro,catolicismo,HUN,,cultura nacional de HUN
+indonesio,Indonésio,Indonesian,indonesio,austronésia,javanês,islã sunita,IDN,,cultura nacional de IDN
+indiano,Indiano,Indian,indio,indo-ariana,hindi-urdu,hinduísmo,IND,,cultura nacional de IND
+irlandes,Irlandês,Irish,irlandés,celta,irlandês,catolicismo,IRL,,cultura nacional de IRL
+iraniano,Iraniano,Iranian,iraní,iraniana,persa,islã xiita,IRN,,cultura nacional de IRN
+iraquiano,Iraquiano,Iraqi,iraquí,árabe levantina,árabe iraquiano,islã xiita,IRQ,,cultura nacional de IRQ
+islandes,Islandês,Icelandic,islandés,germânica nórdica,islandês,protestantismo,ISL,,cultura nacional de ISL
+israelense,Israelense,Israeli,israelí,semítica hebraica,hebraico,judaísmo,ISR,,cultura nacional de ISR
+italiano,Italiano,Italian,italiano,latina italiana,italiano,catolicismo,ITA,,cultura nacional de ITA
+jamaicano,Jamaicano,Jamaican,jamaicano,caribenha,crioulo inglês,protestantismo,JAM,,cultura nacional de JAM
+jordaniano,Jordaniano,Jordanian,jordano,árabe levantina,árabe levantino,islã sunita,JOR,,cultura nacional de JOR
+japones,Japonês,Japanese,japonés,japonesa,japonês,xintoísmo,JPN,,cultura nacional de JPN
+cazaque,Cazaque,Kazakh,kazajo,turcomana,cazaque,islã sunita,KAZ,,cultura nacional de KAZ
+queniano,Queniano,Kenyan,keniano,bantu oriental,kikuyu,cristianismo,KEN,,cultura nacional de KEN
+quirguiz,Quirguiz,Kyrgyz,kirguís,turcomana,quirguiz,islã sunita,KGZ,,cultura nacional de KGZ
+cambojano,Cambojano,Cambodian,camboyano,austro-asiática,khmer,budismo,KHM,,cultura nacional de KHM
+sancristovense,São-cristovense,Kittitian,sancristobaleño,caribenha,crioulo inglês,protestantismo,KNA,,cultura nacional de KNA
+sul_coreano,Sul-coreano,South Korean,surcoreano,coreana,coreano,sem religião,KOR,,cultura nacional de KOR
+kuwaitiano,Kuwaitiano,Kuwaiti,kuwaití,árabe peninsular,árabe peninsular,islã sunita,KWT,,cultura nacional de KWT
+laosiano,Laosiano,Lao,laosiano,tai-kadai,lao,budismo,LAO,,cultura nacional de LAO
+libanes,Libanês,Lebanese,libanés,árabe levantina,árabe levantino,islã sunita,LBN,,cultura nacional de LBN
+liberiano,Liberiano,Liberian,liberiano,golfo-da-guiné,kpelle,animismo,LBR,,cultura nacional de LBR
+libio,Líbio,Libyan,libio,árabe magrebina,árabe magrebino,islã sunita,LBY,,cultura nacional de LBY
+santa_luciense,Santa-luciense,Saint Lucian,santalucense,caribenha,crioulo inglês,catolicismo,LCA,,cultura nacional de LCA
+srilankes,Srilankês,Sri Lankan,esrilanqués,indo-ariana,cingalês,budismo,LKA,,cultura nacional de LKA
+lesotense,Lesotense,Basotho,lesotense,bantu oriental,soto,cristianismo,LSO,,cultura nacional de LSO
+lituano,Lituano,Lithuanian,lituano,báltica,lituano,catolicismo,LTU,,cultura nacional de LTU
+luxemburgues,Luxemburguês,Luxembourgish,luxemburgués,germânica ocidental,luxemburguês,catolicismo,LUX,,cultura nacional de LUX
+leto,Letão,Latvian,letón,báltica,letão,protestantismo,LVA,,cultura nacional de LVA
+marroquino,Marroquino,Moroccan,marroquí,árabe magrebina,árabe magrebino,islã sunita,MAR,,cultura nacional de MAR
+moldavio,Moldávio,Moldovan,moldavo,latina balcânica,romeno,ortodoxia,MDA,,cultura nacional de MDA
+malgaxe,Malgaxe,Malagasy,malgache,austronésia,malgaxe,cristianismo,MDG,,cultura nacional de MDG
+mexicano,Mexicano,Mexican,mexicano,hispano-americana,espanhol,catolicismo,MEX,,cultura nacional de MEX
+macedonio,Macedônio,Macedonian,macedonio,eslava meridional,macedônio,ortodoxia,MKD,,cultura nacional de MKD
+malines,Malinês,Malian,maliense,golfo-da-guiné,bambara,islã sunita,MLI,,cultura nacional de MLI
+maltes,Maltês,Maltese,maltés,semítica árabe,maltês,catolicismo,MLT,,cultura nacional de MLT
+birmanes,Birmanês,Burmese,birmano,sino-tibetana,birmanês,budismo,MMR,,cultura nacional de MMR
+montenegrino,Montenegrino,Montenegrin,montenegrino,eslava meridional,montenegrino,ortodoxia,MNE,,cultura nacional de MNE
+mongol,Mongol,Mongolian,mongol,mongol,mongol,budismo,MNG,,cultura nacional de MNG
+mocambicano,Moçambicano,Mozambican,mozambiqueño,bantu oriental,macua,islã sunita,MOZ,,cultura nacional de MOZ
+mauritano,Mauritano,Mauritanian,mauritano,árabe magrebina,árabe magrebino,islã sunita,MRT,,cultura nacional de MRT
+malauiano,Malauiano,Malawian,malauí,bantu oriental,chewa,cristianismo,MWI,,cultura nacional de MWI
+malasio,Malásio,Malaysian,malasio,austronésia,malaio,islã sunita,MYS,,cultura nacional de MYS
+namibiano,Namibiano,Namibian,namibio,bantu oriental,oshiwambo,protestantismo,NAM,,cultura nacional de NAM
+neerlandes,Neerlandês,Dutch,neerlandés,germânica ocidental,neerlandês,protestantismo,NED,,cultura nacional de NED
+nigerino,Nigerino,Nigerien,nigerino,golfo-da-guiné,hauçá,islã sunita,NER,,cultura nacional de NER
+nigeriano,Nigeriano,Nigerian,nigeriano,golfo-da-guiné,hauçá,islã sunita,NGA,,cultura nacional de NGA
+nicaraguense,Nicaraguense,Nicaraguan,nicaragüense,hispano-americana,espanhol,catolicismo,NIC,,cultura nacional de NIC
+noruegues,Norueguês,Norwegian,noruego,germânica nórdica,norueguês,protestantismo,NOR,,cultura nacional de NOR
+nepales,Nepalês,Nepali,nepalí,indo-ariana,nepali,hinduísmo,NPL,,cultura nacional de NPL
+neozelandes,Neozelandês,New Zealander,neozelandés,anglo-oceânica,inglês,protestantismo,NZL,,cultura nacional de NZL
+omanense,Omanense,Omani,omaní,árabe peninsular,árabe peninsular,islã sunita,OMN,,cultura nacional de OMN
+paquistanes,Paquistanês,Pakistani,paquistaní,indo-ariana,urdu,islã sunita,PAK,,cultura nacional de PAK
+panamenho,Panamenho,Panamanian,panameño,hispano-americana,espanhol,catolicismo,PAN,,cultura nacional de PAN
+peruano,Peruano,Peruvian,peruano,hispano-americana,espanhol,catolicismo,PER,,cultura nacional de PER
+filipino,Filipino,Filipino,filipino,austronésia,tagalo,catolicismo,PHL,,cultura nacional de PHL
+papuano,Papua-nova-guineense,Papua New Guinean,papú-neoguineano,papua,línguas papuas,cristianismo,PNG,,cultura nacional de PNG
+polones,Polonês,Polish,polaco,eslava ocidental,polonês,catolicismo,POL,,cultura nacional de POL
+norte_coreano,Norte-coreano,North Korean,norcoreano,coreana,coreano,sem religião,PRK,,cultura nacional de PRK
+portugues,Português,Portuguese,portugués,latina ibérica,português,catolicismo,PRT,,cultura nacional de PRT
+paraguaio,Paraguaio,Paraguayan,paraguayo,hispano-americana,espanhol,catolicismo,PRY,,cultura nacional de PRY
+palestino,Palestino,Palestinian,palestino,árabe levantina,árabe levantino,islã sunita,PSX,,cultura nacional de PSX
+catariano,Catariano,Qatari,catarí,árabe peninsular,árabe peninsular,islã sunita,QAT,,cultura nacional de QAT
+romeno,Romeno,Romanian,rumano,latina balcânica,romeno,ortodoxia,ROU,,cultura nacional de ROU
+russo,Russo,Russian,ruso,eslava oriental,russo,ortodoxia,RUS,,cultura nacional de RUS
+ruandes,Ruandês,Rwandan,ruandés,bantu oriental,kinyarwanda/kirundi,cristianismo,RWA,,cultura nacional de RWA
+saaraui,Saarauí,Sahrawi,saharaui,árabe magrebina,árabe magrebino,islã sunita,SAH,,cultura nacional de SAH
+saudita,Saudita,Saudi,saudí,árabe peninsular,árabe peninsular,islã sunita,SAU,,cultura nacional de SAU
+sudanes,Sudanês,Sudanese,sudanés,árabe nilótica,árabe sudanês,islã sunita,SDN,,cultura nacional de SDN
+senegales,Senegalês,Senegalese,senegalés,golfo-da-guiné,wolof,islã sunita,SEN,,cultura nacional de SEN
+singapurense,Singapurense,Singaporean,singapurense,austronésia,mandarim,taoísmo/confucionismo,SGP,,cultura nacional de SGP
+salomonico,Salomônico,Solomon Islander,salomonense,austronésia,pidgin melanésio,cristianismo,SLB,,cultura nacional de SLB
+serra_leones,Serra-leonês,Sierra Leonean,sierraleonés,golfo-da-guiné,kpelle,animismo,SLE,,cultura nacional de SLE
+salvadorenho,Salvadorenho,Salvadoran,salvadoreño,hispano-americana,espanhol,catolicismo,SLV,,cultura nacional de SLV
+somalilandes,Somalilandês,Somalilander,somalilandés,chifre-africano,somali,islã sunita,SOL,,cultura nacional de SOL
+somali,Somali,Somali,somalí,chifre-africano,somali,islã sunita,SOM,,cultura nacional de SOM
+servio,Sérvio,Serbian,serbio,eslava meridional,sérvio,ortodoxia,SRB,,cultura nacional de SRB
+sul_sudanes,Sul-sudanês,South Sudanese,sursudanés,chifre-africano,dinka,cristianismo,SSD,,cultura nacional de SSD
+surinames,Surinamês,Surinamese,surinamés,caribenha,hindi-urdu,hinduísmo,SUR,,cultura nacional de SUR
+eslovaco,Eslovaco,Slovak,eslovaco,eslava ocidental,eslovaco,catolicismo,SVK,,cultura nacional de SVK
+esloveno,Esloveno,Slovene,esloveno,eslava meridional,esloveno,catolicismo,SVN,,cultura nacional de SVN
+sueco,Sueco,Swedish,sueco,germânica nórdica,sueco,protestantismo,SWE,,cultura nacional de SWE
+suaziliense,Suaziliense,Swazi,suazi,bantu oriental,suázi,cristianismo,SWZ,,cultura nacional de SWZ
+sirio,Sírio,Syrian,sirio,árabe levantina,árabe levantino,islã sunita,SYR,,cultura nacional de SYR
+chadiano,Chadiano,Chadian,chadiano,árabe nilótica,árabe chadiano,islã sunita,TCD,,cultura nacional de TCD
+togoles,Togolês,Togolese,togolés,golfo-da-guiné,ewé,cristianismo,TGO,,cultura nacional de TGO
+tailandes,Tailandês,Thai,tailandés,tai-kadai,tailandês,budismo,THA,,cultura nacional de THA
+tadjique,Tadjique,Tajik,tayiko,iraniana,tadjique,islã sunita,TJK,,cultura nacional de TJK
+turcomeno,Turcomeno,Turkmen,turcomano,turcomana,turcomeno,islã sunita,TKM,,cultura nacional de TKM
+timorense,Timorense,Timorese,timorense,austronésia,tétum,catolicismo,TLS,,cultura nacional de TLS
+trinitario,Trinitário,Trinidadian,trinitense,caribenha,crioulo inglês,protestantismo,TTO,,cultura nacional de TTO
+tunisiano,Tunisiano,Tunisian,tunecino,árabe magrebina,árabe magrebino,islã sunita,TUN,,cultura nacional de TUN
+turco,Turco,Turkish,turco,turcomana,turco,islã sunita,TUR,,cultura nacional de TUR
+taiwanes,Taiwanês,Taiwanese,taiwanés,sino-tibetana,mandarim,taoísmo/confucionismo,TWN,,cultura nacional de TWN
+tanzaniano,Tanzaniano,Tanzanian,tanzano,bantu oriental,suaíli,islã sunita,TZA,,cultura nacional de TZA
+ugandense,Ugandense,Ugandan,ugandés,bantu oriental,luganda,cristianismo,UGA,,cultura nacional de UGA
+ucraniano,Ucraniano,Ukrainian,ucraniano,eslava oriental,ucraniano,ortodoxia,UKR,,cultura nacional de UKR
+uruguaio,Uruguaio,Uruguayan,uruguayo,hispano-americana,espanhol,catolicismo,URY,,cultura nacional de URY
+americano,Americano,American,estadounidense,americana,inglês,protestantismo,USA,,cultura nacional de USA
+uzbeque,Uzbeque,Uzbek,uzbeko,turcomana,uzbeque,islã sunita,UZB,,cultura nacional de UZB
+sao_vicentino,São-vicentino,Saint Vincentian,sanvicentino,caribenha,crioulo inglês,protestantismo,VCT,,cultura nacional de VCT
+venezuelano,Venezuelano,Venezuelan,venezolano,hispano-americana,espanhol,catolicismo,VEN,,cultura nacional de VEN
+vietnamita,Vietnamita,Vietnamese,vietnamita,austro-asiática,vietnamita,budismo,VNM,,cultura nacional de VNM
+kosovar,Kosovar,Kosovar,kosovar,albanesa,albanês,islã sunita,XKX,,cultura nacional de XKX
+iemenita,Iemenita,Yemeni,yemení,árabe peninsular,árabe peninsular,islã sunita,YEM,,cultura nacional de YEM
+sul_africano,Sul-africano,South African,sudafricano,bantu oriental,zulu,animismo,ZAF,,cultura nacional de ZAF
+zambiano,Zambiano,Zambian,zambiano,bantu oriental,bemba,cristianismo,ZMB,,cultura nacional de ZMB
+zimbabuense,Zimbabuense,Zimbabwean,zimbabuense,bantu oriental,shona,cristianismo,ZWE,,cultura nacional de ZWE
+curdo,Curdo,Kurdish,kurdo,iraniana,curdo,islã sunita,,TUR-DIY;IRQ-ERB;IRN-KSH,povo sem estado no cenário (Curdistão dividido)
+catalao,Catalão,Catalan,catalán,latina ibérica,catalão,catolicismo,,ESP-BAR;ESP-VAL;AND-AND,povo sem estado (Catalunha)
+basco,Basco,Basque,vasco,isolada,basco,catolicismo,,ESP;FRA,povo sem estado (País Basco); o cenário não tem cidade-núcleo basca
+quebequense,Quebequense,Québécois,quebequés,latina francesa,francês (quebequense),catolicismo,,CAN-MON;CAN-QUE,povo sem estado (Quebec)
+uigur,Uigur,Uyghur,uigur,turcomana,uigur,islã sunita,,CHN-URU;CHN-KAS,povo sem estado (Xinjiang)
+tibetano,Tibetano,Tibetan,tibetano,sino-tibetana,tibetano,budismo,,CHN-LHA,povo sem estado (Tibete)
+tamil,Tâmil,Tamil,tamil,dravidiana,tâmil,hinduísmo,,LKA-COL;LKA-JAF,povo sem estado no Sri Lanka (Tâmil Eelam)
+tartaro_crimeia,Tártaro da Crimeia,Crimean Tatar,tártaro de Crimea,turcomana,tártaro da Crimeia,islã sunita,,RUS-SEV,povo sem estado (crimeus deportados; Crimeia sob a Rússia no cenário)
+berbere,Berbere (amazigue),Berber,bereber,berbere,tamazigue,islã sunita,,MAR-CAS;MAR-RAK;MAR-AGA;DZA-ALG,povos amazigues sem estado
+tuaregue,Tuaregue,Tuareg,tuareg,berbere,tamasheq,islã sunita,,MLI-GAO;NER-AGA;DZA-TIN,povo sem estado (Saara/Sael)
+checheno,Checheno,Chechen,checheno,caucasiana,checheno,islã sunita,,RUS,povo sem estado (Chechênia)
+tatar,Tártaro,Tatar,tártaro,turcomana,tártaro,islã sunita,,RUS-KAZ,povo sem estado (Tataristão); distinto do tártaro da Crimeia
+afar,Afar,Afar,afar,cuxítica,afar,islã sunita,,DJI-DJI;ETH-WAR,povo sem estado (Depressão de Afar)
+balochi,Belúchi,Baloch,baluchi,iraniana,balúchi,islã sunita,,PAK-QUE;IRN,povo sem estado (Baluchistão)
+papua,Papua (Nova Guiné Ocidental),Papuan (Western New Guinea),papú (Nueva Guinea Occidental),papua,línguas papuas,cristianismo,,IDN-WAM,povos papuas sob a Indonésia; distinto do nacional de Papua-Nova Guiné
+maori,Maori,Māori,maorí,austronésia,maori,cristianismo,,NZL-AUC;NZL-WEL;NZL-CHR,povo sem estado (Aotearoa)
+aborigene,Aborígene australiano,Aboriginal Australian,aborigen australiano,aborígene,línguas aborígenes,espiritualidades indígenas,,AUS-ALI;AUS-DAR,povos aborígenes da Austrália
+havaiano,Havaiano,Native Hawaiian,nativo hawaiano,polinésia,havaiano,espiritualidades indígenas,,USA-HON,povo sem estado (Havaí)
+inuit,Inuit-iúpik,Inuit-Yupik,inuit-yupik,esquimó-aleúte,inuktitut/iúpik,cristianismo,,CAN-IQA;CAN-KUU;CAN-IGL;CAN-RAN;CAN-INU;USA-UTQ;USA-BET,povos inuit/iúpik
+nativo_americano,Nativo americano,American Indian/Alaska Native,nativo americano,ameríndia,diversas línguas indígenas,espiritualidades indígenas,,USA-ANC;USA-BET;USA-SIT;USA-UNA;USA-UTQ,nações indígenas dos EUA
+indigena_brasileiro,Indígena brasileiro,Brazilian Indigenous,indígena brasileño,ameríndia,línguas indígenas brasileiras,espiritualidades indígenas,,BRA-MAN;BRA-BOA,povos indígenas do Brasil
+quechua,Quíchua,Quechua,quechua,ameríndia,quíchua,catolicismo,,PER-ARE;PER-IQU;PER-TRU;BOL-COC;ECU-GUA,povos quíchuas
+aimara,Aimará,Aymara,aimara,ameríndia,aimará,catolicismo,,BOL-LAP;PER-ARE,povo aimará
+guarani,Guarani,Guarani,guaraní,ameríndia,guarani,catolicismo,,PRY-ASU;PRY-CIU,povo guarani
+maia,Maia,Maya,maya,ameríndia,línguas maias,catolicismo,,GTM-GUA;GTM-COB;MEX-MER;MEX-CAN,povos maias
+mapuche,Mapuche,Mapuche,mapuche,ameríndia,mapudungun,catolicismo,,CHL-ANT;CHL-PUN;ARG-NEU,povo mapuche
+nahua,Nahua,Nahua,nahua,ameríndia,náuatle,catolicismo,,MEX-MEXI;MEX-PUE,povos nahuas

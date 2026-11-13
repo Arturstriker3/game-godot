@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
-"""Valida os dados de cultura do OpenGS Game.
+"""Valida os dados de cultura do OpenGS Game (modelo v2: uma nação, uma cultura).
 
 Verifica ``data/definitions/culture/``:
 
 * ``cultures.csv``/``cultures.json`` — ids únicos, nomes i18n, família, idioma,
-  religião, ``parent`` válido (sem ciclo) e cor legível; ΔE*ab >= 25 entre
-  culturas da mesma família; **nenhuma categoria racial/cor** (lista negada por
-  id e por nome);
+  religião e cor legível; ΔE*ab >= 25 entre culturas da mesma família;
+  **exatamente uma cultura nacional por nação do cenário** (``nation`` = tag);
+  povos sem estado com ``nation`` vazio e ``home_region`` válido (cidade do
+  cenário ou tag de nação); nenhuma cultura híbrida/hifenizada ou subgrupo
+  (``parent``/``subcultures`` não podem existir); nenhuma categoria racial/cor;
 * ``nation_cultures.csv`` — toda nação do cenário coberta, cultura principal
-  **nacional** (existe, está na composição com fração >= ``PRIMARY_MIN_SHARE``,
-  é a maior cultura nomeada salvo exceção documentada e não é categoria racial),
-  aceitas existentes, composição somando 100 e nenhuma cultura junto de seu
-  ancestral;
-* ``city_cultures.csv`` — todas as 834 cidades cobertas, soma 100, no máximo 5
-  culturas nomeadas + ``outras``, culturas existentes, nação correta, nenhuma
-  cultura junto de seu ancestral e ``subcultures`` coerentes (subgrupo com
-  ``parent`` presente no mix e fração <= à do ancestral).
+  igual à cultura nacional da nação (e presente na composição), composição
+  somando 100, aceitas existentes e sem repetir a principal;
+* ``city_cultures.csv`` — todas as cidades cobertas, soma 100, no máximo 5
+  culturas nomeadas + ``outras``, culturas existentes e nação correta.
 
 Uso::
 
@@ -44,20 +42,29 @@ MAX_NAMED_CITIES = 5
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 # Culturas por identidade nacional/cultural — nunca por raça ou cor.
-# Qualquer reaparição destes ids ou destes termos em id/nome falha o validador.
-BANNED_IDS = {"afro_latino", "mestico", "afro_americano", "anglo_americano", "hispanico"}
+# Reaparecer como id/nome falha o validador.
+BANNED_IDS = {
+    "afro_latino", "mestico", "afro_americano", "anglo_americano", "hispanico",
+    "latino_americano", "chicano", "tejano", "mexicano_americano",
+    "porto_riquenho", "canadense_ingles",
+}
 BANNED_NAME = re.compile(
-    r"\b(branc[oa]s?|negr[oa]s?|pard[oa]s?|afro[\w-]*|mesti[\wç]*|racial|ra[cç]a|etnia racial)\b",
+    r"\b(branc[oa]s?|negr[oa]s?|pard[oa]s?|afro[\w-]*|mesti[\wç]*|racial|ra[cç]a|"
+    r"chican[oa]s?|tejan[oa]s?|hispano|anglo)\b",
     re.IGNORECASE,
 )
+HYBRID_ID = re.compile(r"(^|_)(afro|hispano|anglo|mesti|latino|chicano|tejano)(_|$)")
+# Sufixos hifenizados de identidade (ex.: mexican_americano, chines_americano).
+HYPHENATED_ID = re.compile(r"_(americano|brasileiro|canadense|britanico|frances|"
+                           r"alemao|italiano|portugues|espanhol|japones)$")
+# Ids legítimos de povos (sem estado) que contêm sufixos de nacionalidade.
+HYPHENATED_OK = {"nativo_americano", "indigena_brasileiro"}
 
 # Fração mínima da cultura principal e exceções de "maior cultura nomeada":
-# no Paquistão a principal é o urdu (identidade nacional/lingua franca), menor
-# que o punjabi na composição publicada; nos Emirados e no Catar a identidade
-# nacional dos cidadãos é menor que o conjunto de residentes estrangeiros.
+# nos Emirados e no Catar a identidade nacional dos cidadãos é menor que o
+# conjunto de residentes estrangeiros (censos por nacionalidade/origem).
 PRIMARY_MIN_SHARE = 5.0
 PRIMARY_NOT_LARGEST_OK = {
-    "PAK": "urdu é a identidade nacional; punjabi é a maior língua materna",
     "ARE": "identidade nacional dos cidadãos; residentes estrangeiros são a maioria",
     "QAT": "identidade nacional dos cidadãos; residentes estrangeiros são a maioria",
 }
@@ -99,34 +106,6 @@ def parse_mix(text: str) -> list[tuple[str, float]]:
     return entries
 
 
-def ancestors(culture_id: str, parents: dict[str, str]) -> list[str]:
-    out: list[str] = []
-    seen: set[str] = set()
-    current = parents.get(culture_id, "")
-    while current:
-        if current in seen:
-            raise ValueError(f"ciclo de parent em {culture_id!r}")
-        seen.add(current)
-        out.append(current)
-        current = parents.get(current, "")
-    return out
-
-
-def exclusive_errors(
-    entries: list[tuple[str, float]], parents: dict[str, str], label: str
-) -> list[str]:
-    found: list[str] = []
-    named = {cid for cid, _ in entries if cid != OTHER}
-    for cid in sorted(named):
-        for ancestor in ancestors(cid, parents):
-            if ancestor in named:
-                found.append(
-                    f"{label}: {cid!r} e seu ancestral {ancestor!r} no mesmo mix "
-                    "(use subcultures)"
-                )
-    return found
-
-
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -160,14 +139,24 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERRO: falha ao ler dados: {exc}")
         return 2
 
+    scenario_nation_ids = {r.get("id") for r in scenario_nations}
+    scenario_city_ids = {r.get("id") for r in scenario_cities}
+
     # --- catálogo ---------------------------------------------------------
-    required = ("id", "name_pt", "name_en", "name_es", "family", "language", "religion", "color")
+    required = ("id", "name_pt", "name_en", "name_es", "family", "language",
+                "religion", "color")
+    header = set(cultures[0].keys()) if cultures else set()
+    for column in ("nation", "home_region"):
+        if column not in header:
+            errors.append(f"cultures.csv: coluna obrigatória ausente {column!r}")
+    for banned_column in ("parent", "subcultures"):
+        if banned_column in header:
+            errors.append(f"cultures.csv: coluna proibida {banned_column!r} (modelo nacional)")
     ids: set[str] = set()
-    parents: dict[str, str] = {}
     lab: dict[str, tuple[float, float, float]] = {}
     families: dict[str, list[str]] = {}
-    if "parent" not in (cultures[0].keys() if cultures else ()):
-        errors.append("cultures.csv: coluna 'parent' ausente")
+    national: dict[str, str] = {}
+    stateless: list[str] = []
     for index, row in enumerate(cultures, start=1):
         label = f"cultures.csv:{index}"
         for field in required:
@@ -183,17 +172,17 @@ def main(argv: list[str] | None = None) -> int:
         ids.add(cid)
         if cid in BANNED_IDS:
             errors.append(f"{label}: categoria racial/cor proibida no id {cid!r}")
-        for text in (
-            cid,
-            (row.get("name_pt") or ""),
-            (row.get("name_en") or ""),
-            (row.get("name_es") or ""),
-        ):
+        if HYBRID_ID.search(cid):
+            errors.append(f"{label}: cultura híbrida proibida no id {cid!r}")
+        if HYPHENATED_ID.search(cid) and cid not in HYPHENATED_OK:
+            errors.append(f"{label}: identidade hifenizada proibida no id {cid!r}")
+        for text in (cid, (row.get("name_pt") or ""), (row.get("name_en") or ""),
+                     (row.get("name_es") or "")):
             if BANNED_NAME.search(text):
                 errors.append(
-                    f"{label}: categoria racial/cor em {text!r} (use identidade nacional/cultural)"
+                    f"{label}: categoria racial/cor ou hibridismo em {text!r} "
+                    "(use identidade nacional)"
                 )
-        parents[cid] = (row.get("parent") or "").strip()
         color = (row.get("color") or "").strip()
         if color and not HEX.match(color):
             errors.append(f"{label}: cor inválida {color!r}")
@@ -201,16 +190,37 @@ def main(argv: list[str] | None = None) -> int:
             lab[cid] = srgb_to_lab(color)
         families.setdefault((row.get("family") or "").strip(), []).append(cid)
 
-    for cid, parent in sorted(parents.items()):
-        if parent and parent not in ids:
-            errors.append(f"cultures.csv:{cid}: parent desconhecido {parent!r}")
-        elif parent == cid:
-            errors.append(f"cultures.csv:{cid}: parent de si mesma")
+        tag = (row.get("nation") or "").strip()
+        home = (row.get("home_region") or "").strip()
+        if tag:
+            if tag not in scenario_nation_ids:
+                errors.append(f"{label}: nation desconhecida {tag!r}")
+            if home:
+                errors.append(f"{label}: cultura nacional com home_region preenchido")
+            if tag in national:
+                errors.append(
+                    f"{label}: segunda cultura nacional para {tag} "
+                    f"({national[tag]!r} e {cid!r})"
+                )
+            else:
+                national[tag] = cid
         else:
-            try:
-                ancestors(cid, parents)
-            except ValueError as exc:
-                errors.append(f"cultures.csv:{cid}: {exc}")
+            if not home:
+                errors.append(f"{label}: povo sem estado sem home_region")
+            for region in (r.strip() for r in home.split(";")):
+                if not region:
+                    continue
+                if region not in scenario_city_ids and region not in scenario_nation_ids:
+                    errors.append(
+                        f"{label}: home_region desconhecido {region!r} "
+                        "(esperado cidade do cenário ou tag de nação)"
+                    )
+            stateless.append(cid)
+
+    for tag in sorted(scenario_nation_ids - set(national)):
+        errors.append(f"cultures.csv: nação {tag} sem cultura nacional")
+    for tag in sorted(set(national) - scenario_nation_ids):
+        errors.append(f"cultures.csv: cultura nacional para nação fora do cenário {tag}")
 
     for family, members in sorted(families.items()):
         for i, left in enumerate(members):
@@ -227,13 +237,16 @@ def main(argv: list[str] | None = None) -> int:
     if json_ids != [c.get("id") for c in cultures]:
         errors.append("cultures.json não corresponde a cultures.csv (ids/ordem)")
     for row in cultures_json:
-        if row.get("color") != next(
-            (c.get("color") for c in cultures if c.get("id") == row.get("id")), None
-        ):
+        source = next((c for c in cultures if c.get("id") == row.get("id")), None)
+        if source is None:
+            continue
+        if row.get("color") != source.get("color"):
             errors.append(f"cultures.json: cor divergente para {row.get('id')!r}")
+        for field in ("nation", "home_region"):
+            if (row.get(field) or "") != (source.get(field) or ""):
+                errors.append(f"cultures.json: {field} divergente para {row.get('id')!r}")
 
     # --- nações -----------------------------------------------------------
-    scenario_nation_ids = {r.get("id") for r in scenario_nations}
     nation_ids = {r.get("nation") for r in nations}
     for missing in sorted(scenario_nation_ids - nation_ids):
         errors.append(f"nation_cultures.csv: nação ausente {missing}")
@@ -253,12 +266,15 @@ def main(argv: list[str] | None = None) -> int:
             errors.append(f"{label}: composição soma {total:g}")
         used = {cid for cid, _ in mix}
         primary = (row.get("primary_culture") or "").strip()
+        expected = national.get(nation, "")
+        if expected and primary != expected:
+            errors.append(
+                f"{label}: cultura principal {primary!r} != cultura nacional {expected!r}"
+            )
         if primary not in ids:
             errors.append(f"{label}: cultura principal desconhecida {primary!r}")
         if primary not in used:
             errors.append(f"{label}: cultura principal fora da composição")
-        if primary in BANNED_IDS:
-            errors.append(f"{label}: cultura principal é categoria racial {primary!r}")
         if primary == OTHER:
             errors.append(f"{label}: 'outras' não pode ser a cultura principal")
         if primary in used:
@@ -277,23 +293,21 @@ def main(argv: list[str] | None = None) -> int:
                 )
         for cid in sorted(used - ids - {OTHER}):
             errors.append(f"{label}: cultura desconhecida {cid!r}")
-        if used & BANNED_IDS:
-            errors.append(f"{label}: composição usa categoria racial {sorted(used & BANNED_IDS)}")
         for accepted in filter(None, (row.get("accepted_cultures") or "").split(";")):
             accepted = accepted.strip()
             if accepted not in ids:
                 errors.append(f"{label}: cultura aceita desconhecida {accepted!r}")
             if accepted == primary:
                 errors.append(f"{label}: cultura principal listada como aceita")
-            if accepted in BANNED_IDS:
-                errors.append(f"{label}: cultura aceita é categoria racial {accepted!r}")
         if not (row.get("source") or "").strip():
             errors.append(f"{label}: fonte ausente")
         if not (row.get("year") or "").strip():
             warnings.append(f"{label}: ano da fonte ausente")
-        errors.extend(exclusive_errors(mix, parents, label))
 
     # --- cidades ----------------------------------------------------------
+    header = set(cities[0].keys()) if cities else set()
+    if "subcultures" in header:
+        errors.append("city_cultures.csv: coluna proibida 'subcultures' (modelo nacional)")
     scenario_city = {r.get("id"): r for r in scenario_cities}
     city_ids = [r.get("city_id") for r in cities]
     for missing in sorted(set(scenario_city) - set(city_ids)):
@@ -326,32 +340,6 @@ def main(argv: list[str] | None = None) -> int:
                 errors.append(f"{label}: fração não positiva {cid}:{share:g}")
             if cid != OTHER and cid not in ids:
                 errors.append(f"{label}: cultura desconhecida {cid!r}")
-        errors.extend(exclusive_errors(mix, parents, label))
-        mix_by_id = {cid: share for cid, share in mix}
-        try:
-            subs = parse_mix(row.get("subcultures", ""))
-        except ValueError as exc:
-            errors.append(f"{label}: subculturas: {exc}")
-            subs = []
-        seen_subs = {cid for cid, _ in subs}
-        for scid, share in subs:
-            if scid not in ids:
-                errors.append(f"{label}: subcultura desconhecida {scid!r}")
-                continue
-            if share <= 0:
-                errors.append(f"{label}: subcultura não positiva {scid}:{share:g}")
-            chain = ancestors(scid, parents)
-            holder = next((cid for cid in chain if cid in mix_by_id), None)
-            if holder is None:
-                errors.append(f"{label}: subcultura {scid!r} sem cultura ancestral no mix")
-            elif share > mix_by_id[holder] + 0.05:
-                errors.append(
-                    f"{label}: subcultura {scid}:{share:g} > {holder}:{mix_by_id[holder]:g}"
-                )
-            if scid in mix_by_id:
-                errors.append(f"{label}: subcultura {scid!r} também nomeada no mix")
-        if len(seen_subs) != len(subs):
-            errors.append(f"{label}: subcultura repetida")
         city = scenario_city.get(city_id)
         if city is not None and city.get("nation") != row.get("nation"):
             errors.append(
@@ -365,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             regional += 1
 
-    print(f"culturas: {len(cultures)}")
+    print(f"culturas: {len(cultures)} ({len(national)} nacionais + {len(stateless)} sem estado)")
     print(f"famílias: {len(families)}")
     print(f"nações: {len(nations)}")
     print(f"cidades: {len(cities)} (regional {regional}, fallback {fallback})")

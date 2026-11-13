@@ -1,231 +1,225 @@
-city_id,culture,share,source,subcultures
-LVA-RIG,leto,47,Censo municipal 2023 (CSP),
-LVA-RIG,russo,36,Censo municipal 2023 (CSP),
-LVA-RIG,bielorrusso,4,Censo municipal 2023 (CSP),
-LVA-RIG,ucraniano,4,Censo municipal 2023 (CSP),
-LVA-DAU,leto,20,Censo municipal 2023 (CSP),
-LVA-DAU,russo,55,Censo municipal 2023 (CSP),
-LVA-DAU,polones,10,Censo municipal 2023 (CSP),
-LVA-DAU,bielorrusso,7,Censo municipal 2023 (CSP),
-LVA-DAU,ucraniano,4,Censo municipal 2023 (CSP),
-EST-TAL,estoniano,54,Statistikaamet 2023,
-EST-TAL,russo,37,Statistikaamet 2023,
-EST-TAL,ucraniano,3,Statistikaamet 2023,
-EST-TAL,bielorrusso,1,Statistikaamet 2023,
-EST-TAR,estoniano,80,Statistikaamet 2023,
-EST-TAR,russo,15,Statistikaamet 2023,
-LTU-VIL,lituano,67,Censo 2021 (município),
-LTU-VIL,polones,13,Censo 2021 (município),
-LTU-VIL,russo,10,Censo 2021 (município),
-LTU-VIL,bielorrusso,3,Censo 2021 (município),
-LTU-KAU,lituano,93,Censo 2021 (município),
-LTU-KAU,russo,3,Censo 2021 (município),
-UKR-KYI,ucraniano,83,Censo 2001 (município),
-UKR-KYI,russo,12,Censo 2001 (município),
-UKR-LVI,ucraniano,88,Censo 2001 (município),
-UKR-LVI,russo,8,Censo 2001 (município),
-UKR-LVI,polones,1,Censo 2001 (município),
-UKR-KHA,ucraniano,70,Censo 2001 (município),
-UKR-KHA,russo,26,Censo 2001 (município),
-UKR-ODE,ucraniano,62,Censo 2001 (município),
-UKR-ODE,russo,29,Censo 2001 (município),
-UKR-ODE,romeno,2,Censo 2001 (município),
-UKR-DNI,ucraniano,65,Censo 2001 (município),
-UKR-DNI,russo,30,Censo 2001 (município),
-UKR-ZAP,ucraniano,75,estimate_post2022,
-UKR-ZAP,russo,20,estimate_post2022,
-UKR-ZAP,outras,5,estimate_post2022,
-UKR-KHE,ucraniano,80,estimate_post2022,
-UKR-KHE,russo,15,estimate_post2022,
-UKR-KHE,outras,5,estimate_post2022,
-RUS-DON,russo,70,estimate_post2022,
-RUS-DON,ucraniano,25,estimate_post2022,
-RUS-DON,outras,5,estimate_post2022,
-RUS-SEV,russo,81,estimate_post2022,
-RUS-SEV,ucraniano,14,estimate_post2022,
-RUS-SEV,tartaro_crimeia,1,estimate_post2022,
-RUS-SEV,outras,4,estimate_post2022,
-RUS-MAR,russo,75,estimate_post2022,
-RUS-MAR,ucraniano,20,estimate_post2022,
-RUS-MAR,outras,5,estimate_post2022,
-RUS-MOS,russo,84,Censo 2021 (município),
-RUS-MOS,tatar,2,Censo 2021 (município),
-RUS-MOS,ucraniano,2,Censo 2021 (município),
-RUS-KAZ,tatar,47,Censo 2021 (município),
-RUS-KAZ,russo,48,Censo 2021 (município),
-BLR-MIN,bielorrusso,76,Censo 2019 (município),
-BLR-MIN,russo,16,Censo 2019 (município),
-BLR-MIN,ucraniano,4,Censo 2019 (município),
-BLR-BRE,bielorrusso,83,Censo 2019 (município),
-BLR-BRE,russo,11,Censo 2019 (município),
-MDA-CHI,romeno,67,Censo 2014 (município),
-MDA-CHI,russo,11,Censo 2014 (município),
-MDA-CHI,ucraniano,9,Censo 2014 (município),
-MDA-TIR,russo,41,Censo 2015 (Transnístria),
-MDA-TIR,ucraniano,27,Censo 2015 (Transnístria),
-MDA-TIR,romeno,26,Censo 2015 (Transnístria),
-KAZ-ALM,cazaque,60,Censo 2021 (município),
-KAZ-ALM,russo,27,Censo 2021 (município),
-KAZ-ALM,uigur,5,Censo 2021 (município),
-KAZ-ALM,uzbeque,2,Censo 2021 (município),
-KAZ-AST,cazaque,79,Censo 2021 (município),
-KAZ-AST,russo,13,Censo 2021 (município),
-KGZ-BIS,quirguiz,65,Censo 2022 (município),
-KGZ-BIS,russo,15,Censo 2022 (município),
-KGZ-BIS,uzbeque,7,Censo 2022 (município),
-KGZ-OSH,quirguiz,60,Censo 2022 (município),
-KGZ-OSH,uzbeque,35,Censo 2022 (município),
-UZB-TAS,uzbeque,70,estimativa regional (Stat. Uzbequistão 2023),
-UZB-TAS,russo,10,estimativa regional (Stat. Uzbequistão 2023),
-UZB-TAS,tatar,4,estimativa regional (Stat. Uzbequistão 2023),
-UZB-TAS,cazaque,3,estimativa regional (Stat. Uzbequistão 2023),
-TJK-DUS,tadjique,85,estimativa regional (Agenstat 2023),
-TJK-DUS,uzbeque,5,estimativa regional (Agenstat 2023),
-TJK-DUS,russo,3,estimativa regional (Agenstat 2023),
-TKM-ASH,turcomeno,77,estimativa regional (Stat. Turcomenistão 2023),
-TKM-ASH,russo,7,estimativa regional (Stat. Turcomenistão 2023),
-TKM-ASH,uzbeque,5,estimativa regional (Stat. Turcomenistão 2023),
-AZE-BAK,azeri,90,estimativa regional (Stat. Azerbaijão 2023),
-AZE-BAK,russo,4,estimativa regional (Stat. Azerbaijão 2023),
-GEO-TBI,georgiano,87,Censo 2014 (município),
-GEO-TBI,armenio,4,Censo 2014 (município),
-GEO-TBI,azeri,2,Censo 2014 (município),
-GEO-TBI,russo,2,Censo 2014 (município),
-ARM-YER,armenio,98,Censo 2022 (município),
-ESP-BAR,catalao,55,Idescat 2023 (identidade/língua),
-ESP-BAR,castelhano,30,Idescat 2023 (identidade/língua),
-ESP-VAL,catalao,40,Idescat 2023 (identidade/língua),
-ESP-VAL,castelhano,50,Idescat 2023 (identidade/língua),
-ESP-MAD,castelhano,85,INE 2023 (língua habitual),
-ESP-SEV,castelhano,95,INE 2023 (língua habitual),
-AND-AND,catalao,45,Govern d'Andorra 2023,
-AND-AND,castelhano,25,Govern d'Andorra 2023,
-AND-AND,portugues,15,Govern d'Andorra 2023,
-AND-AND,frances,5,Govern d'Andorra 2023,
-BEL-BRU,frances,50,Statbel 2023 (origem),
-BEL-BRU,flamengo,15,Statbel 2023 (origem),
-BEL-BRU,arabe_magrebino,8,Statbel 2023 (origem),
-BEL-BRU,turco,3,Statbel 2023 (origem),
-BEL-ANR,flamengo,85,Statbel 2023 (origem),
-BEL-ANR,frances,3,Statbel 2023 (origem),
-BEL-LGG,frances,70,Statbel 2023 (origem),
-BEL-LGG,valao,10,Statbel 2023 (origem),
-CHE-BER,alemao,80,Censo 2020 (BFS),
-CHE-BER,frances,10,Censo 2020 (BFS),
-CHE-BER,italiano,3,Censo 2020 (BFS),
-CAN-MON,quebequense,60,Statistics Canada 2021 (língua materna),
-CAN-MON,canadense_ingles,15,Statistics Canada 2021 (língua materna),
-CAN-MON,frances,5,Statistics Canada 2021 (língua materna),
-CAN-QUE,quebequense,92,Statistics Canada 2021 (língua materna),
-CAN-QUE,canadense_ingles,3,Statistics Canada 2021 (língua materna),
-CAN-TOR,canadense_ingles,50,Statistics Canada 2021 (língua materna),
-CAN-TOR,han,10,Statistics Canada 2021 (língua materna),
-CAN-TOR,punjabi,6,Statistics Canada 2021 (língua materna),
-CAN-TOR,italiano,4,Statistics Canada 2021 (língua materna),
-CAN-IQA,inuit,50,Statistics Canada 2021 (língua materna),
-CAN-IQA,canadense_ingles,40,Statistics Canada 2021 (língua materna),
-CAN-KUU,inuit,90,Statistics Canada 2021 (língua materna),
-SRB-BEL,servio,90,Censo 2022 (SORS),
-SRB-BEL,outras,10,Censo 2022 (SORS),
-SRB-NIS,servio,93,Censo 2022 (SORS),
-SRB-NIS,outras,7,Censo 2022 (SORS),
-BIH-SAR,bosnio,81,Censo 2013 (BHAS),
-BIH-SAR,servio,4,Censo 2013 (BHAS),
-BIH-SAR,croata,3,Censo 2013 (BHAS),
-BIH-SAR,outras,12,Censo 2013 (BHAS),
-BIH-BAN,servio,89,Censo 2013 (BHAS),
-BIH-BAN,croata,4,Censo 2013 (BHAS),
-BIH-BAN,bosnio,3,Censo 2013 (BHAS),
-BIH-BAN,outras,4,Censo 2013 (BHAS),
-MKD-SKO,macedonio,63,Censo 2021 (SSO),
-MKD-SKO,albanes,22,Censo 2021 (SSO),
-MKD-SKO,turco,2,Censo 2021 (SSO),
-MKD-SKO,bosnio,2,Censo 2021 (SSO),
-MKD-SKO,outras,11,Censo 2021 (SSO),
-MKD-PRI,macedonio,88,Censo 2021 (SSO),
-MKD-PRI,outras,12,Censo 2021 (SSO),
-XKX-PRI,albanes,97,Censo 2011 (KAS),
-XKX-PRI,outras,3,Censo 2011 (KAS),
-XKX-PRIZ,albanes,82,Censo 2011 (KAS),
-XKX-PRIZ,bosnio,9,Censo 2011 (KAS),
-XKX-PRIZ,turco,5,Censo 2011 (KAS),
-XKX-PRIZ,outras,4,Censo 2011 (KAS),
-MNE-POD,montenegrino,57,Censo 2011 (MONSTAT),
-MNE-POD,servio,26,Censo 2011 (MONSTAT),
-MNE-POD,bosnio,5,Censo 2011 (MONSTAT),
-MNE-POD,albanes,5,Censo 2011 (MONSTAT),
-MNE-POD,outras,7,Censo 2011 (MONSTAT),
-MNE-PLJ,servio,60,Censo 2011 (MONSTAT),
-MNE-PLJ,montenegrino,28,Censo 2011 (MONSTAT),
-MNE-PLJ,bosnio,8,Censo 2011 (MONSTAT),
-MNE-PLJ,outras,4,Censo 2011 (MONSTAT),
-HRV-ZAG,croata,91,Censo 2021 (DZS),
-HRV-ZAG,servio,3,Censo 2021 (DZS),
-HRV-ZAG,outras,6,Censo 2021 (DZS),
-HRV-SPL,croata,94,Censo 2021 (DZS),
-HRV-SPL,outras,6,Censo 2021 (DZS),
-SVN-LJU,esloveno,84,"Censo 2002 (SURS, etnia declarada)",
-SVN-LJU,servio,4,"Censo 2002 (SURS, etnia declarada)",
-SVN-LJU,croata,3,"Censo 2002 (SURS, etnia declarada)",
-SVN-LJU,bosnio,2,"Censo 2002 (SURS, etnia declarada)",
-SVN-LJU,outras,7,"Censo 2002 (SURS, etnia declarada)",
-GEO-BAT,georgiano,92,Censo 2014 (Geostat),
-GEO-BAT,russo,4,Censo 2014 (Geostat),
-GEO-BAT,armenio,3,Censo 2014 (Geostat),
-GEO-BAT,outras,1,Censo 2014 (Geostat),
-AZE-GAN,azeri,97,Censo 2019 (Azstat),
-AZE-GAN,outras,3,Censo 2019 (Azstat),
-ROU-BUC,romeno,85,Censo 2021 (INS),
-ROU-BUC,outras,15,Censo 2021 (INS),
-ROU-IAS,romeno,95,Censo 2021 (INS),
-ROU-IAS,outras,5,Censo 2021 (INS),
-ROU-CLJ,romeno,80,Censo 2021 (INS),
-ROU-CLJ,hungaro,15,Censo 2021 (INS),
-ROU-CLJ,outras,5,Censo 2021 (INS),
-ROU-ORA,romeno,70,Censo 2021 (INS),
-ROU-ORA,hungaro,25,Censo 2021 (INS),
-ROU-ORA,outras,5,Censo 2021 (INS),
-BGR-SOF,bulgaro,85,Censo 2021 (NSI),
-BGR-SOF,outras,15,Censo 2021 (NSI),
-BGR-PLO,bulgaro,85,Censo 2021 (NSI),
-BGR-PLO,turco,4,Censo 2021 (NSI),
-BGR-PLO,outras,11,Censo 2021 (NSI),
-SVK-BRA,eslovaco,90,Censo 2021 (SODB),
-SVK-BRA,hungaro,3,Censo 2021 (SODB),
-SVK-BRA,outras,7,Censo 2021 (SODB),
-SVK-KOS,eslovaco,85,Censo 2021 (SODB),
-SVK-KOS,hungaro,4,Censo 2021 (SODB),
-SVK-KOS,outras,11,Censo 2021 (SODB),
-BLR-GOM,bielorrusso,84,Censo 2019 (Belstat),
-BLR-GOM,russo,12,Censo 2019 (Belstat),
-BLR-GOM,ucraniano,2,Censo 2019 (Belstat),
-BLR-GOM,outras,2,Censo 2019 (Belstat),
-KAZ-SHY,cazaque,74,Censo 2021 (BNS),
-KAZ-SHY,uzbeque,17,Censo 2021 (BNS),
-KAZ-SHY,russo,5,Censo 2021 (BNS),
-KAZ-SHY,outras,4,Censo 2021 (BNS),
-KAZ-AKT,cazaque,83,Censo 2021 (BNS),
-KAZ-AKT,russo,12,Censo 2021 (BNS),
-KAZ-AKT,outras,5,Censo 2021 (BNS),
-KAZ-UST,russo,55,Censo 2021 (BNS),
-KAZ-UST,cazaque,40,Censo 2021 (BNS),
-KAZ-UST,outras,5,Censo 2021 (BNS),
-KAZ-ATY,cazaque,92,Censo 2021 (BNS),
-KAZ-ATY,russo,6,Censo 2021 (BNS),
-KAZ-ATY,outras,2,Censo 2021 (BNS),
-UZB-SAM,uzbeque,88,estimativa 2020 (Goskomstat),
-UZB-SAM,tadjique,8,estimativa 2020 (Goskomstat),
-UZB-SAM,outras,4,estimativa 2020 (Goskomstat),
-UZB-AND,uzbeque,90,estimativa 2020 (Goskomstat),
-UZB-AND,outras,10,estimativa 2020 (Goskomstat),
-TJK-ISF,tadjique,96,estimativa 2020 (Tajstat),
-TJK-ISF,outras,4,estimativa 2020 (Tajstat),
-TKM-TUR,turcomeno,88,Censo 2012 (Turkmenstat),
-TKM-TUR,uzbeque,8,Censo 2012 (Turkmenstat),
-TKM-TUR,russo,2,Censo 2012 (Turkmenstat),
-TKM-TUR,outras,2,Censo 2012 (Turkmenstat),
-GBR-LDN,ingles,50,"Censo 2021 (ONS, etnia e lingua materna)",
-GBR-LDN,caribenho,5,"Censo 2021 (ONS, etnia e lingua materna)",
-GBR-LDN,punjabi,4,"Censo 2021 (ONS, etnia e lingua materna)",
-GBR-LDN,bengali,4,"Censo 2021 (ONS, etnia e lingua materna)",
-GBR-LDN,urdu,3,"Censo 2021 (ONS, etnia e lingua materna)",
+city_id,culture,share,source
+LVA-RIG,leto,47,Censo municipal 2023 (CSP)
+LVA-RIG,russo,36,Censo municipal 2023 (CSP)
+LVA-RIG,bielorrusso,4,Censo municipal 2023 (CSP)
+LVA-RIG,ucraniano,4,Censo municipal 2023 (CSP)
+LVA-DAU,russo,55,Censo municipal 2023 (CSP)
+LVA-DAU,leto,20,Censo municipal 2023 (CSP)
+LVA-DAU,polones,10,Censo municipal 2023 (CSP)
+LVA-DAU,bielorrusso,7,Censo municipal 2023 (CSP)
+LVA-DAU,ucraniano,4,Censo municipal 2023 (CSP)
+EST-TAL,estoniano,54,Statistikaamet 2023
+EST-TAL,russo,37,Statistikaamet 2023
+EST-TAL,ucraniano,3,Statistikaamet 2023
+EST-TAL,bielorrusso,1,Statistikaamet 2023
+EST-TAR,estoniano,80,Statistikaamet 2023
+EST-TAR,russo,15,Statistikaamet 2023
+LTU-VIL,lituano,67,Censo 2021 (município)
+LTU-VIL,polones,13,Censo 2021 (município)
+LTU-VIL,russo,10,Censo 2021 (município)
+LTU-VIL,bielorrusso,3,Censo 2021 (município)
+LTU-KAU,lituano,93,Censo 2021 (município)
+LTU-KAU,russo,3,Censo 2021 (município)
+UKR-KYI,ucraniano,83,Censo 2001 (município)
+UKR-KYI,russo,12,Censo 2001 (município)
+UKR-LVI,ucraniano,88,Censo 2001 (município)
+UKR-LVI,russo,8,Censo 2001 (município)
+UKR-LVI,polones,1,Censo 2001 (município)
+UKR-KHA,ucraniano,70,Censo 2001 (município)
+UKR-KHA,russo,26,Censo 2001 (município)
+UKR-ODE,ucraniano,62,Censo 2001 (município)
+UKR-ODE,russo,29,Censo 2001 (município)
+UKR-ODE,romeno,2,Censo 2001 (município)
+UKR-DNI,ucraniano,65,Censo 2001 (município)
+UKR-DNI,russo,30,Censo 2001 (município)
+UKR-ZAP,ucraniano,75,estimate_post2022
+UKR-ZAP,russo,20,estimate_post2022
+UKR-ZAP,outras,5,estimate_post2022
+UKR-KHE,ucraniano,80,estimate_post2022
+UKR-KHE,russo,15,estimate_post2022
+UKR-KHE,outras,5,estimate_post2022
+RUS-DON,russo,70,estimate_post2022
+RUS-DON,ucraniano,25,estimate_post2022
+RUS-DON,outras,5,estimate_post2022
+RUS-SEV,russo,81,estimate_post2022
+RUS-SEV,ucraniano,14,estimate_post2022
+RUS-SEV,tartaro_crimeia,1,estimate_post2022
+RUS-SEV,outras,4,estimate_post2022
+RUS-MAR,russo,75,estimate_post2022
+RUS-MAR,ucraniano,20,estimate_post2022
+RUS-MAR,outras,5,estimate_post2022
+RUS-MOS,russo,84,Censo 2021 (município)
+RUS-MOS,tatar,2,Censo 2021 (município)
+RUS-MOS,ucraniano,2,Censo 2021 (município)
+RUS-KAZ,russo,48,Censo 2021 (município)
+RUS-KAZ,tatar,47,Censo 2021 (município)
+BLR-MIN,bielorrusso,76,Censo 2019 (município)
+BLR-MIN,russo,16,Censo 2019 (município)
+BLR-MIN,ucraniano,4,Censo 2019 (município)
+BLR-BRE,bielorrusso,83,Censo 2019 (município)
+BLR-BRE,russo,11,Censo 2019 (município)
+MDA-CHI,moldavio,67,Censo 2014 (município)
+MDA-CHI,russo,11,Censo 2014 (município)
+MDA-CHI,ucraniano,9,Censo 2014 (município)
+MDA-TIR,russo,41,Censo 2015 (Transnístria)
+MDA-TIR,ucraniano,27,Censo 2015 (Transnístria)
+MDA-TIR,moldavio,26,Censo 2015 (Transnístria)
+KAZ-ALM,cazaque,60,Censo 2021 (município)
+KAZ-ALM,russo,27,Censo 2021 (município)
+KAZ-ALM,uigur,5,Censo 2021 (município)
+KAZ-ALM,uzbeque,2,Censo 2021 (município)
+KAZ-AST,cazaque,79,Censo 2021 (município)
+KAZ-AST,russo,13,Censo 2021 (município)
+KGZ-BIS,quirguiz,65,Censo 2022 (município)
+KGZ-BIS,russo,15,Censo 2022 (município)
+KGZ-BIS,uzbeque,7,Censo 2022 (município)
+KGZ-OSH,quirguiz,60,Censo 2022 (município)
+KGZ-OSH,uzbeque,35,Censo 2022 (município)
+UZB-TAS,uzbeque,70,estimativa regional (Stat. Uzbequistão 2023)
+UZB-TAS,russo,10,estimativa regional (Stat. Uzbequistão 2023)
+UZB-TAS,tatar,4,estimativa regional (Stat. Uzbequistão 2023)
+UZB-TAS,cazaque,3,estimativa regional (Stat. Uzbequistão 2023)
+TJK-DUS,tadjique,85,estimativa regional (Agenstat 2023)
+TJK-DUS,uzbeque,5,estimativa regional (Agenstat 2023)
+TJK-DUS,russo,3,estimativa regional (Agenstat 2023)
+TKM-ASH,turcomeno,77,estimativa regional (Stat. Turcomenistão 2023)
+TKM-ASH,russo,7,estimativa regional (Stat. Turcomenistão 2023)
+TKM-ASH,uzbeque,5,estimativa regional (Stat. Turcomenistão 2023)
+AZE-BAK,azerbaijano,90,estimativa regional (Stat. Azerbaijão 2023)
+AZE-BAK,russo,4,estimativa regional (Stat. Azerbaijão 2023)
+GEO-TBI,georgiano,87,Censo 2014 (município)
+GEO-TBI,armenio,4,Censo 2014 (município)
+GEO-TBI,azerbaijano,2,Censo 2014 (município)
+GEO-TBI,russo,2,Censo 2014 (município)
+ARM-YER,armenio,98,Censo 2022 (município)
+ESP-BAR,catalao,55,Idescat 2023 (identidade/língua)
+ESP-BAR,espanhol,30,Idescat 2023 (identidade/língua)
+ESP-VAL,espanhol,50,Idescat 2023 (identidade/língua)
+ESP-VAL,catalao,40,Idescat 2023 (identidade/língua)
+ESP-MAD,espanhol,85,INE 2023 (língua habitual)
+ESP-SEV,espanhol,95,INE 2023 (língua habitual)
+AND-AND,catalao,45,Govern d'Andorra 2023
+AND-AND,espanhol,25,Govern d'Andorra 2023
+AND-AND,portugues,15,Govern d'Andorra 2023
+AND-AND,frances,5,Govern d'Andorra 2023
+BEL-BRU,belga,65,Statbel 2023 (origem)
+BEL-BRU,marroquino,8,Statbel 2023 (origem)
+BEL-BRU,turco,3,Statbel 2023 (origem)
+BEL-ANR,belga,88,Statbel 2023 (origem)
+BEL-LGG,belga,80,Statbel 2023 (origem)
+CHE-BER,suico,93,Censo 2020 (BFS)
+CAN-MON,quebequense,65,Statistics Canada 2021 (língua materna)
+CAN-MON,canadense,15,Statistics Canada 2021 (língua materna)
+CAN-QUE,quebequense,92,Statistics Canada 2021 (língua materna)
+CAN-QUE,canadense,3,Statistics Canada 2021 (língua materna)
+CAN-TOR,canadense,50,Statistics Canada 2021 (língua materna)
+CAN-TOR,chines,10,Statistics Canada 2021 (língua materna)
+CAN-TOR,indiano,6,Statistics Canada 2021 (língua materna)
+CAN-TOR,italiano,4,Statistics Canada 2021 (língua materna)
+CAN-IQA,inuit,50,Statistics Canada 2021 (língua materna)
+CAN-IQA,canadense,40,Statistics Canada 2021 (língua materna)
+CAN-KUU,inuit,90,Statistics Canada 2021 (língua materna)
+SRB-BEL,servio,90,Censo 2022 (SORS)
+SRB-BEL,outras,10,Censo 2022 (SORS)
+SRB-NIS,servio,93,Censo 2022 (SORS)
+SRB-NIS,outras,7,Censo 2022 (SORS)
+BIH-SAR,bosnio,81,Censo 2013 (BHAS)
+BIH-SAR,servio,4,Censo 2013 (BHAS)
+BIH-SAR,croata,3,Censo 2013 (BHAS)
+BIH-SAR,outras,12,Censo 2013 (BHAS)
+BIH-BAN,servio,89,Censo 2013 (BHAS)
+BIH-BAN,croata,4,Censo 2013 (BHAS)
+BIH-BAN,bosnio,3,Censo 2013 (BHAS)
+BIH-BAN,outras,4,Censo 2013 (BHAS)
+MKD-SKO,macedonio,63,Censo 2021 (SSO)
+MKD-SKO,albanes,22,Censo 2021 (SSO)
+MKD-SKO,bosnio,2,Censo 2021 (SSO)
+MKD-SKO,turco,2,Censo 2021 (SSO)
+MKD-SKO,outras,11,Censo 2021 (SSO)
+MKD-PRI,macedonio,88,Censo 2021 (SSO)
+MKD-PRI,outras,12,Censo 2021 (SSO)
+XKX-PRI,kosovar,97,Censo 2011 (KAS)
+XKX-PRI,outras,3,Censo 2011 (KAS)
+XKX-PRIZ,kosovar,82,Censo 2011 (KAS)
+XKX-PRIZ,bosnio,9,Censo 2011 (KAS)
+XKX-PRIZ,turco,5,Censo 2011 (KAS)
+XKX-PRIZ,outras,4,Censo 2011 (KAS)
+MNE-POD,montenegrino,57,Censo 2011 (MONSTAT)
+MNE-POD,servio,26,Censo 2011 (MONSTAT)
+MNE-POD,albanes,5,Censo 2011 (MONSTAT)
+MNE-POD,bosnio,5,Censo 2011 (MONSTAT)
+MNE-POD,outras,7,Censo 2011 (MONSTAT)
+MNE-PLJ,servio,60,Censo 2011 (MONSTAT)
+MNE-PLJ,montenegrino,28,Censo 2011 (MONSTAT)
+MNE-PLJ,bosnio,8,Censo 2011 (MONSTAT)
+MNE-PLJ,outras,4,Censo 2011 (MONSTAT)
+HRV-ZAG,croata,91,Censo 2021 (DZS)
+HRV-ZAG,servio,3,Censo 2021 (DZS)
+HRV-ZAG,outras,6,Censo 2021 (DZS)
+HRV-SPL,croata,94,Censo 2021 (DZS)
+HRV-SPL,outras,6,Censo 2021 (DZS)
+SVN-LJU,esloveno,84,"Censo 2002 (SURS, etnia declarada)"
+SVN-LJU,servio,4,"Censo 2002 (SURS, etnia declarada)"
+SVN-LJU,croata,3,"Censo 2002 (SURS, etnia declarada)"
+SVN-LJU,bosnio,2,"Censo 2002 (SURS, etnia declarada)"
+SVN-LJU,outras,7,"Censo 2002 (SURS, etnia declarada)"
+GEO-BAT,georgiano,92,Censo 2014 (Geostat)
+GEO-BAT,russo,4,Censo 2014 (Geostat)
+GEO-BAT,armenio,3,Censo 2014 (Geostat)
+GEO-BAT,outras,1,Censo 2014 (Geostat)
+AZE-GAN,azerbaijano,97,Censo 2019 (Azstat)
+AZE-GAN,outras,3,Censo 2019 (Azstat)
+ROU-BUC,romeno,85,Censo 2021 (INS)
+ROU-BUC,outras,15,Censo 2021 (INS)
+ROU-IAS,romeno,95,Censo 2021 (INS)
+ROU-IAS,outras,5,Censo 2021 (INS)
+ROU-CLJ,romeno,80,Censo 2021 (INS)
+ROU-CLJ,hungaro,15,Censo 2021 (INS)
+ROU-CLJ,outras,5,Censo 2021 (INS)
+ROU-ORA,romeno,70,Censo 2021 (INS)
+ROU-ORA,hungaro,25,Censo 2021 (INS)
+ROU-ORA,outras,5,Censo 2021 (INS)
+BGR-SOF,bulgaro,85,Censo 2021 (NSI)
+BGR-SOF,outras,15,Censo 2021 (NSI)
+BGR-PLO,bulgaro,85,Censo 2021 (NSI)
+BGR-PLO,turco,4,Censo 2021 (NSI)
+BGR-PLO,outras,11,Censo 2021 (NSI)
+SVK-BRA,eslovaco,90,Censo 2021 (SODB)
+SVK-BRA,hungaro,3,Censo 2021 (SODB)
+SVK-BRA,outras,7,Censo 2021 (SODB)
+SVK-KOS,eslovaco,85,Censo 2021 (SODB)
+SVK-KOS,hungaro,4,Censo 2021 (SODB)
+SVK-KOS,outras,11,Censo 2021 (SODB)
+BLR-GOM,bielorrusso,84,Censo 2019 (Belstat)
+BLR-GOM,russo,12,Censo 2019 (Belstat)
+BLR-GOM,ucraniano,2,Censo 2019 (Belstat)
+BLR-GOM,outras,2,Censo 2019 (Belstat)
+KAZ-SHY,cazaque,74,Censo 2021 (BNS)
+KAZ-SHY,uzbeque,17,Censo 2021 (BNS)
+KAZ-SHY,russo,5,Censo 2021 (BNS)
+KAZ-SHY,outras,4,Censo 2021 (BNS)
+KAZ-AKT,cazaque,83,Censo 2021 (BNS)
+KAZ-AKT,russo,12,Censo 2021 (BNS)
+KAZ-AKT,outras,5,Censo 2021 (BNS)
+KAZ-UST,russo,55,Censo 2021 (BNS)
+KAZ-UST,cazaque,40,Censo 2021 (BNS)
+KAZ-UST,outras,5,Censo 2021 (BNS)
+KAZ-ATY,cazaque,92,Censo 2021 (BNS)
+KAZ-ATY,russo,6,Censo 2021 (BNS)
+KAZ-ATY,outras,2,Censo 2021 (BNS)
+UZB-SAM,uzbeque,88,estimativa 2020 (Goskomstat)
+UZB-SAM,tadjique,8,estimativa 2020 (Goskomstat)
+UZB-SAM,outras,4,estimativa 2020 (Goskomstat)
+UZB-AND,uzbeque,90,estimativa 2020 (Goskomstat)
+UZB-AND,outras,10,estimativa 2020 (Goskomstat)
+TJK-ISF,tadjique,96,estimativa 2020 (Tajstat)
+TJK-ISF,outras,4,estimativa 2020 (Tajstat)
+TKM-TUR,turcomeno,88,Censo 2012 (Turkmenstat)
+TKM-TUR,uzbeque,8,Censo 2012 (Turkmenstat)
+TKM-TUR,russo,2,Censo 2012 (Turkmenstat)
+TKM-TUR,outras,2,Censo 2012 (Turkmenstat)
+GBR-LDN,britanico,50,"Censo 2021 (ONS, etnia e lingua materna)"
+GBR-LDN,jamaicano,5,"Censo 2021 (ONS, etnia e lingua materna)"
+GBR-LDN,bengali,4,"Censo 2021 (ONS, etnia e lingua materna)"
+GBR-LDN,indiano,4,"Censo 2021 (ONS, etnia e lingua materna)"
+GBR-LDN,paquistanes,3,"Censo 2021 (ONS, etnia e lingua materna)"

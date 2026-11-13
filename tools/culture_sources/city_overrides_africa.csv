@@ -1,189 +1,123 @@
-city_id,culture,share,source,subcultures
-EGY-CAI,arabe_egipcio,95,estimativa regional (CAPMAS 2023),
-EGY-ALE,arabe_egipcio,92,estimativa regional (CAPMAS 2023),
-MAR-CAS,arabe_magrebino,75,estimativa regional (HCP 2023),
-MAR-CAS,berbere,20,estimativa regional (HCP 2023),
-MAR-RAK,arabe_magrebino,70,estimativa regional (HCP 2023),
-MAR-RAK,berbere,25,estimativa regional (HCP 2023),
-MAR-AGA,arabe_magrebino,55,estimativa regional (HCP 2023),
-MAR-AGA,berbere,40,estimativa regional (HCP 2023),
-DZA-ALG,arabe_magrebino,75,estimativa regional (ONS 2023),
-DZA-ALG,berbere,22,estimativa regional (ONS 2023),
-DZA-TIN,arabe_magrebino,60,estimativa regional (ONS 2023),
-DZA-TIN,tuaregue,35,estimativa regional (ONS 2023),
-TUN-TUN,arabe_magrebino,95,estimativa regional (INS 2023),
-LBY-TRI,arabe_magrebino,75,estimativa regional (Líbia 2023),
-LBY-TRI,berbere,15,estimativa regional (Líbia 2023),
-LBY-TRI,tuaregue,3,estimativa regional (Líbia 2023),
-SDN-KHA,arabe_sudanes,60,estimativa regional (Sudão 2023),
-SDN-KHA,nuer,5,estimativa regional (Sudão 2023),
-SDN-KHA,dinka,5,estimativa regional (Sudão 2023),
-SSD-JUB,dinka,40,estimativa regional (Sudão do Sul 2023),
-SSD-JUB,nuer,15,estimativa regional (Sudão do Sul 2023),
-ETH-ADD,amhara,45,Censo 2007 (município),
-ETH-ADD,oromo,30,Censo 2007 (município),
-ETH-ADD,tigrinio,8,Censo 2007 (município),
-ETH-MEK,tigrinio,85,Censo 2007 (município),
-ETH-MEK,amhara,8,Censo 2007 (município),
-ETH-JIJ,somali,85,Censo 2007 (município),
-ETH-JIJ,oromo,8,Censo 2007 (município),
-ETH-BAH,amhara,90,Censo 2007 (município),
-ETH-GON,amhara,85,Censo 2007 (município),
-ETH-GON,tigrinio,10,Censo 2007 (município),
-ETH-AWA,oromo,40,Censo 2007 (município),
-ETH-AWA,amhara,20,Censo 2007 (município),
-ETH-NAZ,oromo,55,Censo 2007 (município),
-ETH-NAZ,amhara,25,Censo 2007 (município),
-ERI-ASM,tigrinio,75,estimativa regional (Eritreia 2023),
-DJI-DJI,somali,60,estimativa regional (Djibuti 2023),
-DJI-DJI,afar,35,estimativa regional (Djibuti 2023),
-SOM-MOG,somali,95,estimativa regional (Somália 2023),
-SOL-HAR,somali,95,estimativa regional (Somalilândia 2023),
-KEN-NAI,kikuyu,35,Censo 2019 (condado),
-KEN-NAI,luo,12,Censo 2019 (condado),
-KEN-NAI,suaili,10,Censo 2019 (condado),
-KEN-MOM,suaili,60,Censo 2019 (condado),
-KEN-MOM,kikuyu,10,Censo 2019 (condado),
-TZA-DAR,suaili,70,Censo 2022 (região),
-TZA-ZAN,suaili,90,Censo 2022 (região),
-UGA-KAM,ganda,18,Censo 2014 (distrito),
-UGA-KAM,luo,10,Censo 2014 (distrito),
-RWA-KIG,grandes_lagos,95,Censo 2022 (Ruanda),
-BDI-BUJ,grandes_lagos,85,estimativa regional (Burundi 2023),
-COD-KIN,lingala,60,estimativa regional (RD Congo 2023),
-COD-KIN,kikongo,25,estimativa regional (RD Congo 2023),
-COD-LUB,luba,50,estimativa regional (RD Congo 2023),
-COD-LUB,kikongo,15,estimativa regional (RD Congo 2023),
-AGO-LUA,mbundu,50,Censo 2014 (província),
-AGO-LUA,ovimbundu,25,Censo 2014 (província),
-AGO-LUA,kikongo,15,Censo 2014 (província),
-AGO-BEN,ovimbundu,55,Censo 2014 (província),
-AGO-BEN,mbundu,30,Censo 2014 (província),
-MOZ-MAP,tsonga,60,Censo 2017 (província),
-MOZ-MAP,macua,10,Censo 2017 (província),
-ZAF-JOH,zulu,30,Censo 2022 (município),
-ZAF-JOH,soto,15,Censo 2022 (município),
-ZAF-JOH,tsuana,10,Censo 2022 (município),
-ZAF-JOH,ingles,8,Censo 2022 (município),
-ZAF-JOH,afrikaans,8,Censo 2022 (município),
-ZAF-CAP,afrikaans,40,Censo 2022 (município),
-ZAF-CAP,xhosa,30,Censo 2022 (município),
-ZAF-CAP,ingles,20,Censo 2022 (município),
-ZAF-DUR,zulu,70,Censo 2022 (município),
-ZAF-DUR,ingles,15,Censo 2022 (município),
-ZAF-PRE,afrikaans,45,Censo 2022 (município),
-ZAF-PRE,tsuana,20,Censo 2022 (município),
-ZAF-PRE,zulu,10,Censo 2022 (município),
-NAM-WIN,ovambo,40,Censo 2023 (região),
-NAM-WIN,afrikaans,20,Censo 2023 (região),
-NAM-WIN,herero,10,Censo 2023 (região),
-BWA-GAB,tsuana,60,Censo 2022 (distrito),
-ZWE-HAR,shona,85,Censo 2022 (província),
-ZWE-HAR,ndebele,10,Censo 2022 (província),
-ZWE-BUL,ndebele,60,Censo 2022 (província),
-ZWE-BUL,shona,30,Censo 2022 (província),
-ZMB-LUS,bemba,40,Censo 2022 (província),
-ZMB-LUS,chewa,10,Censo 2022 (província),
-MWI-LIL,chewa,60,Censo 2018 (distrito),
-NGA-LAG,ioruba,70,estimativa regional (Nigéria 2023),
-NGA-LAG,igbo,12,estimativa regional (Nigéria 2023),
-NGA-LAG,hausea,8,estimativa regional (Nigéria 2023),
-NGA-KAN,hausea,90,estimativa regional (Nigéria 2023),
-NGA-KAN,fulani,5,estimativa regional (Nigéria 2023),
-NGA-IBA,ioruba,90,estimativa regional (Nigéria 2023),
-NGA-ABU,ioruba,25,estimativa regional (Nigéria 2023),
-NGA-ABU,hausea,20,estimativa regional (Nigéria 2023),
-NGA-ABU,igbo,15,estimativa regional (Nigéria 2023),
-NGA-POR,igbo,60,estimativa regional (Nigéria 2023),
-NGA-POR,ioruba,10,estimativa regional (Nigéria 2023),
-NGA-ONI,igbo,90,estimativa regional (Nigéria 2023),
-NGA-KAD,hausea,50,estimativa regional (Nigéria 2023),
-NGA-KAD,ioruba,10,estimativa regional (Nigéria 2023),
-GHA-ACC,akan,45,Censo 2021 (região),
-GHA-ACC,ewe,15,Censo 2021 (região),
-GHA-KUM,akan,85,Censo 2021 (região),
-CIV-ABI,akan,35,estimativa regional (Costa do Marfim 2023),
-CIV-ABI,bambara,15,estimativa regional (Costa do Marfim 2023),
-SEN-DAK,wolof,75,Censo 2019 (região),
-SEN-DAK,fulani,10,Censo 2019 (região),
-MLI-BAM,bambara,60,estimativa regional (Mali 2023),
-MLI-BAM,fulani,10,estimativa regional (Mali 2023),
-MLI-BAM,songai,5,estimativa regional (Mali 2023),
-MLI-GAO,songai,60,estimativa regional (Mali 2023),
-MLI-GAO,tuaregue,15,estimativa regional (Mali 2023),
-MLI-GAO,fulani,10,estimativa regional (Mali 2023),
-BFA-OUA,mossi,60,Censo 2019 (região),
-NER-NIA,hausea,55,estimativa regional (Níger 2023),
-NER-NIA,songai,15,estimativa regional (Níger 2023),
-NER-NIA,fulani,10,estimativa regional (Níger 2023),
-NER-NIA,tuaregue,5,estimativa regional (Níger 2023),
-NER-AGA,tuaregue,40,estimativa regional (Níger 2023),
-NER-AGA,hausea,35,estimativa regional (Níger 2023),
-TCD-NDJ,arabe_chadiano,40,estimativa regional (Chade 2023),
-TCD-NDJ,kanuri,5,estimativa regional (Chade 2023),
-TCD-NDJ,hausea,5,estimativa regional (Chade 2023),
-CAF-BAN,sango,60,estimativa regional (RCA 2023),
-BEN-COT,fon,55,Censo 2013 (departamento),
-BEN-COT,ioruba,15,Censo 2013 (departamento),
-TGO-LOM,ewe,60,Censo 2010 (região),
-GIN-CON,fulani,40,estimativa regional (Guiné 2023),
-SLE-FRE,kru,30,Censo 2015 (distrito),
-SLE-FRE,crioulo,25,Censo 2015 (distrito),
-LBR-MON,kru,60,estimativa regional (Libéria 2023),
-GNB-BIS,crioulo,40,Censo 2009 (região),
-MRT-NOU,arabe_magrebino,60,estimativa regional (Mauritânia 2023),
-MRT-NOU,fulani,15,estimativa regional (Mauritânia 2023),
-MRT-NOU,wolof,10,estimativa regional (Mauritânia 2023),
-SAH-TIF,arabe_magrebino,85,estimativa regional (Saara Ocidental 2023),
-NGA-MAI,kanuri,55,estimativa regional (Borno 2023),
-NGA-MAI,hausea,25,estimativa regional (Borno 2023),
-NGA-MAI,fulani,10,estimativa regional (Borno 2023),
-NGA-MAI,outras,10,estimativa regional (Borno 2023),
-NGA-SOK,hausea,65,estimativa regional (Sokoto 2023),
-NGA-SOK,fulani,25,estimativa regional (Sokoto 2023),
-NGA-SOK,outras,10,estimativa regional (Sokoto 2023),
-NGA-ABA,igbo,90,"Censo 2006 (NPC, estimativa)",
-NGA-ABA,outras,10,"Censo 2006 (NPC, estimativa)",
-NGA-ILO,ioruba,80,"Censo 2006 (NPC, estimativa)",
-NGA-ILO,fulani,10,"Censo 2006 (NPC, estimativa)",
-NGA-ILO,outras,10,"Censo 2006 (NPC, estimativa)",
-NGA-JOS,hausea,30,"Censo 2006 (NPC, estimativa)",
-NGA-JOS,ioruba,10,"Censo 2006 (NPC, estimativa)",
-NGA-JOS,igbo,10,"Censo 2006 (NPC, estimativa)",
-NGA-JOS,outras,50,"Censo 2006 (NPC, estimativa)",
-NGA-BEN,ioruba,40,"Censo 2006 (NPC, estimativa)",
-NGA-BEN,outras,60,"Censo 2006 (NPC, estimativa)",
-ETH-WAR,somali,90,"Censo 2007 (CSA, estimativa)",
-ETH-WAR,oromo,5,"Censo 2007 (CSA, estimativa)",
-ETH-WAR,outras,5,"Censo 2007 (CSA, estimativa)",
-ZAF-GQE,xhosa,60,Censo 2022 (Stats SA),
-ZAF-GQE,afrikaans,15,Censo 2022 (Stats SA),
-ZAF-GQE,ingles,10,Censo 2022 (Stats SA),
-ZAF-GQE,outras,15,Censo 2022 (Stats SA),
-ZAF-UPI,afrikaans,80,Censo 2022 (Stats SA),
-ZAF-UPI,tsuana,10,Censo 2022 (Stats SA),
-ZAF-UPI,xhosa,5,Censo 2022 (Stats SA),
-ZAF-UPI,outras,5,Censo 2022 (Stats SA),
-KEN-WAJ,somali,95,Censo 2019 (KNBS),
-KEN-WAJ,outras,5,Censo 2019 (KNBS),
-MAR-RAB,arabe_magrebino,85,Censo 2014 (HCP),
-MAR-RAB,berbere,10,Censo 2014 (HCP),
-MAR-RAB,outras,5,Censo 2014 (HCP),
-MAR-FEZ,arabe_magrebino,90,Censo 2014 (HCP),
-MAR-FEZ,berbere,8,Censo 2014 (HCP),
-MAR-FEZ,outras,2,Censo 2014 (HCP),
-DZA-ORA,arabe_magrebino,85,estimativa regional (ONS 2023),
-DZA-ORA,berbere,10,estimativa regional (ONS 2023),
-DZA-ORA,outras,5,estimativa regional (ONS 2023),
-DZA-CON,arabe_magrebino,88,estimativa regional (ONS 2023),
-DZA-CON,berbere,10,estimativa regional (ONS 2023),
-DZA-CON,outras,2,estimativa regional (ONS 2023),
-TUN-SFA,arabe_magrebino,97,Censo 2014 (INS),
-TUN-SFA,outras,3,Censo 2014 (INS),
-EGY-ALM,arabe_egipcio,97,estimativa regional (CAPMAS 2023),
-EGY-ALM,outras,3,estimativa regional (CAPMAS 2023),
-SDN-POR,arabe_sudanes,70,"Censo 2008 (CBS, estimativa)",
-SDN-POR,outras,30,"Censo 2008 (CBS, estimativa)",
-SDN-NYA,arabe_sudanes,50,"Censo 2008 (CBS, estimativa)",
-SDN-NYA,fulani,10,"Censo 2008 (CBS, estimativa)",
-SDN-NYA,outras,40,"Censo 2008 (CBS, estimativa)",
+city_id,culture,share,source
+EGY-CAI,egipcio,95,estimativa regional (CAPMAS 2023)
+EGY-ALE,egipcio,92,estimativa regional (CAPMAS 2023)
+MAR-CAS,marroquino,75,estimativa regional (HCP 2023)
+MAR-CAS,berbere,20,estimativa regional (HCP 2023)
+MAR-RAK,marroquino,70,estimativa regional (HCP 2023)
+MAR-RAK,berbere,25,estimativa regional (HCP 2023)
+MAR-AGA,marroquino,55,estimativa regional (HCP 2023)
+MAR-AGA,berbere,40,estimativa regional (HCP 2023)
+DZA-ALG,argelino,75,estimativa regional (ONS 2023)
+DZA-ALG,berbere,22,estimativa regional (ONS 2023)
+DZA-TIN,argelino,60,estimativa regional (ONS 2023)
+DZA-TIN,tuaregue,35,estimativa regional (ONS 2023)
+TUN-TUN,tunisiano,95,estimativa regional (INS 2023)
+LBY-TRI,libio,75,estimativa regional (Líbia 2023)
+LBY-TRI,berbere,15,estimativa regional (Líbia 2023)
+LBY-TRI,tuaregue,3,estimativa regional (Líbia 2023)
+SDN-KHA,sudanes,60,estimativa regional (Sudão 2023)
+SDN-KHA,sul_sudanes,10,estimativa regional (Sudão 2023)
+SSD-JUB,sul_sudanes,55,estimativa regional (Sudão do Sul 2023)
+ETH-ADD,etiope,83,Censo 2007 (município)
+ETH-MEK,etiope,93,Censo 2007 (município)
+ETH-JIJ,etiope,93,Censo 2007 (município)
+ETH-BAH,etiope,90,Censo 2007 (município)
+ETH-GON,etiope,95,Censo 2007 (município)
+ETH-AWA,etiope,60,Censo 2007 (município)
+ETH-NAZ,etiope,80,Censo 2007 (município)
+ERI-ASM,eritreu,75,estimativa regional (Eritreia 2023)
+DJI-DJI,djibutiense,60,estimativa regional (Djibuti 2023)
+DJI-DJI,afar,35,estimativa regional (Djibuti 2023)
+SOM-MOG,somali,95,estimativa regional (Somália 2023)
+SOL-HAR,somalilandes,95,estimativa regional (Somalilândia 2023)
+KEN-NAI,queniano,57,Censo 2019 (condado)
+KEN-MOM,queniano,70,Censo 2019 (condado)
+TZA-DAR,tanzaniano,70,Censo 2022 (região)
+TZA-ZAN,tanzaniano,90,Censo 2022 (região)
+UGA-KAM,ugandense,28,Censo 2014 (distrito)
+RWA-KIG,ruandes,95,Censo 2022 (Ruanda)
+BDI-BUJ,burundines,85,estimativa regional (Burundi 2023)
+COD-KIN,congoles_rdc,85,estimativa regional (RD Congo 2023)
+COD-LUB,congoles_rdc,65,estimativa regional (RD Congo 2023)
+AGO-LUA,angolano,90,Censo 2014 (província)
+AGO-BEN,angolano,85,Censo 2014 (província)
+MOZ-MAP,mocambicano,70,Censo 2017 (província)
+ZAF-JOH,sul_africano,71,Censo 2022 (município)
+ZAF-CAP,sul_africano,90,Censo 2022 (município)
+ZAF-DUR,sul_africano,85,Censo 2022 (município)
+ZAF-PRE,sul_africano,75,Censo 2022 (município)
+NAM-WIN,namibiano,70,Censo 2023 (região)
+BWA-GAB,botsuanense,60,Censo 2022 (distrito)
+ZWE-HAR,zimbabuense,95,Censo 2022 (província)
+ZWE-BUL,zimbabuense,90,Censo 2022 (província)
+ZMB-LUS,zambiano,50,Censo 2022 (província)
+MWI-LIL,malauiano,60,Censo 2018 (distrito)
+NGA-LAG,nigeriano,90,estimativa regional (Nigéria 2023)
+NGA-KAN,nigeriano,95,estimativa regional (Nigéria 2023)
+NGA-IBA,nigeriano,90,estimativa regional (Nigéria 2023)
+NGA-ABU,nigeriano,60,estimativa regional (Nigéria 2023)
+NGA-POR,nigeriano,70,estimativa regional (Nigéria 2023)
+NGA-ONI,nigeriano,90,estimativa regional (Nigéria 2023)
+NGA-KAD,nigeriano,60,estimativa regional (Nigéria 2023)
+GHA-ACC,ganense,60,Censo 2021 (região)
+GHA-KUM,ganense,85,Censo 2021 (região)
+CIV-ABI,marfinense,50,estimativa regional (Costa do Marfim 2023)
+SEN-DAK,senegales,85,Censo 2019 (região)
+MLI-BAM,malines,75,estimativa regional (Mali 2023)
+MLI-GAO,malines,70,estimativa regional (Mali 2023)
+MLI-GAO,tuaregue,15,estimativa regional (Mali 2023)
+BFA-OUA,burquinense,60,Censo 2019 (região)
+NER-NIA,nigerino,80,estimativa regional (Níger 2023)
+NER-NIA,tuaregue,5,estimativa regional (Níger 2023)
+NER-AGA,tuaregue,40,estimativa regional (Níger 2023)
+NER-AGA,nigerino,35,estimativa regional (Níger 2023)
+TCD-NDJ,chadiano,50,estimativa regional (Chade 2023)
+CAF-BAN,centro_africano,60,estimativa regional (RCA 2023)
+BEN-COT,beninense,70,Censo 2013 (departamento)
+TGO-LOM,togoles,60,Censo 2010 (região)
+GIN-CON,guineense,40,estimativa regional (Guiné 2023)
+SLE-FRE,serra_leones,55,Censo 2015 (distrito)
+LBR-MON,liberiano,60,estimativa regional (Libéria 2023)
+GNB-BIS,bissauguineense,40,Censo 2009 (região)
+MRT-NOU,mauritano,85,estimativa regional (Mauritânia 2023)
+SAH-TIF,saaraui,85,estimativa regional (Saara Ocidental 2023)
+NGA-MAI,nigeriano,90,estimativa regional (Borno 2023)
+NGA-MAI,outras,10,estimativa regional (Borno 2023)
+NGA-SOK,nigeriano,90,estimativa regional (Sokoto 2023)
+NGA-SOK,outras,10,estimativa regional (Sokoto 2023)
+NGA-ABA,nigeriano,90,"Censo 2006 (NPC, estimativa)"
+NGA-ABA,outras,10,"Censo 2006 (NPC, estimativa)"
+NGA-ILO,nigeriano,90,"Censo 2006 (NPC, estimativa)"
+NGA-ILO,outras,10,"Censo 2006 (NPC, estimativa)"
+NGA-JOS,nigeriano,50,"Censo 2006 (NPC, estimativa)"
+NGA-JOS,outras,50,"Censo 2006 (NPC, estimativa)"
+NGA-BEN,nigeriano,40,"Censo 2006 (NPC, estimativa)"
+NGA-BEN,outras,60,"Censo 2006 (NPC, estimativa)"
+ETH-WAR,etiope,95,"Censo 2007 (CSA, estimativa)"
+ETH-WAR,outras,5,"Censo 2007 (CSA, estimativa)"
+ZAF-GQE,sul_africano,85,Censo 2022 (Stats SA)
+ZAF-GQE,outras,15,Censo 2022 (Stats SA)
+ZAF-UPI,sul_africano,95,Censo 2022 (Stats SA)
+ZAF-UPI,outras,5,Censo 2022 (Stats SA)
+KEN-WAJ,queniano,95,Censo 2019 (KNBS)
+KEN-WAJ,outras,5,Censo 2019 (KNBS)
+MAR-RAB,marroquino,85,Censo 2014 (HCP)
+MAR-RAB,berbere,10,Censo 2014 (HCP)
+MAR-RAB,outras,5,Censo 2014 (HCP)
+MAR-FEZ,marroquino,90,Censo 2014 (HCP)
+MAR-FEZ,berbere,8,Censo 2014 (HCP)
+MAR-FEZ,outras,2,Censo 2014 (HCP)
+DZA-ORA,argelino,85,estimativa regional (ONS 2023)
+DZA-ORA,berbere,10,estimativa regional (ONS 2023)
+DZA-ORA,outras,5,estimativa regional (ONS 2023)
+DZA-CON,argelino,88,estimativa regional (ONS 2023)
+DZA-CON,berbere,10,estimativa regional (ONS 2023)
+DZA-CON,outras,2,estimativa regional (ONS 2023)
+TUN-SFA,tunisiano,97,Censo 2014 (INS)
+TUN-SFA,outras,3,Censo 2014 (INS)
+EGY-ALM,egipcio,97,estimativa regional (CAPMAS 2023)
+EGY-ALM,outras,3,estimativa regional (CAPMAS 2023)
+SDN-POR,sudanes,70,"Censo 2008 (CBS, estimativa)"
+SDN-POR,outras,30,"Censo 2008 (CBS, estimativa)"
+SDN-NYA,sudanes,60,"Censo 2008 (CBS, estimativa)"
+SDN-NYA,outras,40,"Censo 2008 (CBS, estimativa)"
