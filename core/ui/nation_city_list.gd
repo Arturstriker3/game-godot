@@ -1,8 +1,8 @@
 extends PanelContainer
 class_name NationCityList
 
-## Ficha manila recolhível com as cidades da nação do jogador, ancorada acima
-## do minimapa.
+## Ficha manila recolhível com as cidades da nação do jogador, colada à borda
+## direita abaixo da topbar (acima do minimapa).
 ##
 ## Ordem: população decrescente (quem chama já ordena e formata). Um clique
 ## centraliza a câmera (mesmo pedido do minimapa, via `city_focused`) e o duplo
@@ -139,15 +139,15 @@ func row_at(index: int) -> Control:
 	return _rows[index] if index >= 0 and index < _rows.size() else null
 
 
-## Altura acompanha o conteúdo: ancorada pelo rodapé no HUD, a ficha cresce
-## para cima quando expande e encolhe quando recolhe.
+## Altura acompanha o conteúdo: ancorada pelo topo no HUD, a ficha cresce para
+## baixo quando expande e encolhe quando recolhe, sem subir sobre a topbar.
 func _sync_size() -> void:
 	# A altura mínima própria precisa ser zerada antes de medir: se ficasse no
 	# valor expandido, o `max(custom, conteúdo)` nunca deixaria a ficha recolher.
 	custom_minimum_size.y = 0.0
 	var min_h := get_combined_minimum_size().y
 	custom_minimum_size.y = min_h
-	offset_top = offset_bottom - min_h
+	offset_bottom = offset_top + min_h
 
 
 func _sync_header() -> void:

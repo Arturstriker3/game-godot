@@ -1393,18 +1393,18 @@ func set_minimap_territory(texture: Texture2D) -> void:
 		_minimap.set_territory_texture(texture)
 
 
-## Ficha manila das cidades da nação do jogador, ancorada acima do minimapa e
-## alinhada à direita dele. Um clique centraliza a câmera (mesmo `city_focused`
-## do minimapa) e o duplo clique abre a ficha T3.
+## Ficha manila das cidades da nação do jogador, colada à borda direita abaixo da
+## topbar (o antigo espaço da doca), recolhível e ACIMA do minimapa. Um clique
+## centraliza a câmera (mesmo `city_focused` do minimapa) e o duplo clique abre a
+## ficha T3.
 func _build_city_list() -> void:
 	_city_list = NATION_CITY_LIST.new()
-	_city_list.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_city_list.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_root.add_child(_city_list)
-	var full := Minimap.total_size()
 	_city_list.offset_right = -UiKit.SPACE_LG
 	_city_list.offset_left = _city_list.offset_right - CITY_LIST_WIDTH
-	_city_list.offset_bottom = -(UiKit.SPACE_XL + full.y + UiKit.SPACE_SM)
-	_city_list.offset_top = _city_list.offset_bottom
+	_city_list.offset_top = TOP_BAR_HEIGHT + UiKit.SPACE_SM
+	_city_list.offset_bottom = _city_list.offset_top
 	_city_list.city_clicked.connect(func(city_id: String) -> void:
 		city_focused.emit(city_id))
 	_city_list.city_activated.connect(func(city_id: String) -> void:

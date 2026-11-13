@@ -82,7 +82,8 @@ func _run() -> void:
 	_hud.call("close_window")
 	await _frames(2)
 
-	# Recolher/expandir mantem a lista ancorada acima do minimapa.
+	# Recolher/expandir mantém a lista colada abaixo da topbar e acima do
+	# minimapa: o topo fica fixo e a altura cresce/encolhe para baixo.
 	var expanded: Rect2 = _list.get_global_rect()
 	_list.call("set_collapsed", true)
 	await _frames(2)
@@ -92,8 +93,8 @@ func _run() -> void:
 	if collapsed.size.y >= expanded.size.y:
 		_failures.append("lista recolhida nao encolheu (%.0f >= %.0f)"
 				% [collapsed.size.y, expanded.size.y])
-	if not is_equal_approx(collapsed.end.y, expanded.end.y):
-		_failures.append("lista recolhida perdeu a ancora inferior")
+	if not is_equal_approx(collapsed.position.y, expanded.position.y):
+		_failures.append("lista recolhida perdeu a ancora superior")
 	_list.call("set_collapsed", false)
 	await _frames(2)
 
