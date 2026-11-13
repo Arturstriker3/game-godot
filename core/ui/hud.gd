@@ -17,6 +17,7 @@ const ALERTS_SCREEN: Script = preload("res://core/ui/screens/alerts_screen.gd")
 const ALERTS_MODEL: Script = preload("res://core/ui/alerts.gd")
 const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
 const CITY_TOOLTIP: Script = preload("res://core/ui/city_tooltip.gd")
+const NATION_CITY_LIST: Script = preload("res://core/ui/nation_city_list.gd")
 
 ## Contexto pedido pelo HUD para o mapa (câmera e camada de dados).
 signal city_focused(city_id: String)
@@ -33,6 +34,9 @@ signal legend_reset_requested
 signal window_closed
 
 const PLAYER_NATION := "GBR"
+
+## Largura da ficha de cidades da nação (a mesma folha do minimapa).
+const CITY_LIST_WIDTH := 288.0
 
 ## Atraso do tooltip de cidade: a ficha só aparece depois que o mouse fica
 ## parado sobre a cidade por este tempo (~250 ms). Mover para outra cidade
@@ -175,6 +179,8 @@ var _mode := "political"
 var _menu_layer: Control
 var _menu_screen: Control
 var _minimap: Minimap
+## Ficha manila com as cidades da nação do jogador, acima do minimapa.
+var _city_list
 ## Ficha de papel que acompanha a cidade sob o mouse (camada mais alta do HUD).
 var _tooltip_layer: Control
 var _city_tooltip: PanelContainer
@@ -213,6 +219,7 @@ func _ready() -> void:
 	_build_screen_layer()
 	_build_legend()
 	_build_minimap()
+	_build_city_list()
 	_build_alerts_layer()
 	_build_city_layer()
 	_build_menu()
@@ -358,9 +365,13 @@ func _configure_minimap() -> void:
 func _sync_map_overlays() -> void:
 	if is_overlay_open():
 		clear_city_tooltip()
-	if _minimap == null:
-		return
-	_minimap.visible = not is_overlay_open()
+	var overlay := is_overlay_open()
+	if _minimap != null:
+		_minimap.visible = not overlay
+	if _city_list != null:
+		# Mesma regra do minimapa: a ficha de cidades recolhe inteira quando
+		# qualquer tela/janela do HUD está aberta.
+		_city_list.visible = not overlay
 
 
 ## Sincroniza o estado visual do minimapa e da legenda com o modo ativo. A
@@ -1330,6 +1341,51 @@ func set_minimap_view(center_uv: Vector2, size_uv: Vector2) -> void:
 func set_minimap_territory(texture: Texture2D) -> void:
 	if _minimap != null:
 		_minimap.set_territory_texture(texture)
+
+
+## Ficha manila das cidades da nação do jogador, ancorada acima do minimapa e
+## alinhada à direita dele. Um clique centraliza a câmera (mesmo `city_focused`
+## do minimapa) e o duplo clique abre a ficha T3.
+func _build_city_list() -> void:
+	_city_list = NATION_CITY_LIST.new()
+	_city_list.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_root.add_child(_city_list)
+	var full := Minimap.total_size()
+	_city_list.offset_right = -UiKit.SPACE_LG
+	_city_list.offset_left = _city_list.offset_right - CITY_LIST_WIDTH
+	_city_list.offset_bottom = -(UiKit.SPACE_XL + full.y + UiKit.SPACE_SM)
+	_city_list.offset_top = _city_list.offset_bottom
+	_city_list.city_clicked.connect(func(city_id: String) -> void:
+		city_focused.emit(city_id))
+	_city_list.city_activated.connect(func(city_id: String) -> void:
+		open_city(city_id))
+
+
+## Cidades da nação do jogador, da mais populosa para a menos. O texto é
+## formatado aqui; a lista só desenha (mesma divisão de trabalho do UiKit).
+func _refresh_city_list() -> void:
+	if _city_list == null:
+		return
+	var cities: Array = []
+	for city in _summary.get("cities", []):
+		if String(city.get("nation", "")) == PLAYER_NATION:
+			cities.append(city)
+	cities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("population", 0.0)) > float(b.get("population", 0.0)))
+
+	var rows: Array = []
+	for city in cities:
+		rows.append({
+			"id": String(city.get("id", "")),
+			"name": I18n.city_name(String(city.get("id", "")),
+					String(city.get("name", ""))),
+			"population": _compact_population(float(city.get("population", 0.0))),
+			"alert": float(city.get("deficit", 0.0)) > 0.0,
+		})
+	_city_list.set_rows(I18n.t("hud.city_list.title", {
+		"nation": I18n.nation_name(PLAYER_NATION),
+		"n": UiKit.number(cities.size()),
+	}), rows)
 
 
 # --- Barra superior ----------------------------------------------------------
@@ -2449,6 +2505,7 @@ func _on_status(summary: Dictionary) -> void:
 	_summary = summary
 	_log_orders(summary)
 	_update_top_bar()
+	_refresh_city_list()
 
 	if _window_layer.visible and not _stack.is_empty():
 		var entry: Dictionary = _stack.back()
@@ -2466,6 +2523,7 @@ func _on_locale_changed(_locale: String) -> void:
 	_configure_minimap()
 	_refresh_mode_bar()
 	_refresh_legend()
+	_refresh_city_list()
 	_render_menu_texts()
 	_render_settings_texts()
 	# Barra, doca e minimapa foram reconstruídos: reaplica o cursor de mão.

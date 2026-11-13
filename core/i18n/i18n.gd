@@ -252,6 +252,12 @@ const TEMPLATE_STRINGS := {
 		"tooltip.city.deficit": "Déficit",
 		"tooltip.city.deposits": "Jazidas",
 		"tooltip.city.port": "Porto",
+
+		"hud.city_list.title": "{nation} · {n}",
+		"hud.city_list.empty": "Sem cidades nesta nação.",
+		"hud.city_list.collapse": "Recolher lista",
+		"hud.city_list.expand": "Expandir lista",
+		"hud.city_list.alert": "Déficit de comida",
 	},
 	"en": {
 		"tpl.common.page": "Page {page} of {pages}",
@@ -487,6 +493,12 @@ const TEMPLATE_STRINGS := {
 		"tooltip.city.deficit": "Deficit",
 		"tooltip.city.deposits": "Deposits",
 		"tooltip.city.port": "Port",
+
+		"hud.city_list.title": "{nation} · {n}",
+		"hud.city_list.empty": "No cities in this nation.",
+		"hud.city_list.collapse": "Collapse list",
+		"hud.city_list.expand": "Expand list",
+		"hud.city_list.alert": "Food deficit",
 	},
 	"es": {
 		"tpl.common.page": "Página {page} de {pages}",
@@ -722,6 +734,12 @@ const TEMPLATE_STRINGS := {
 		"tooltip.city.deficit": "Déficit",
 		"tooltip.city.deposits": "Yacimientos",
 		"tooltip.city.port": "Puerto",
+
+		"hud.city_list.title": "{nation} · {n}",
+		"hud.city_list.empty": "Sin ciudades en esta nación.",
+		"hud.city_list.collapse": "Contraer lista",
+		"hud.city_list.expand": "Expandir lista",
+		"hud.city_list.alert": "Déficit de comida",
 	},
 }
 
