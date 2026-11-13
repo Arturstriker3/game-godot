@@ -110,7 +110,7 @@ func _run() -> void:
 		_failures.append("tooltip continuou visível fora da seta")
 
 	# 5. A ficha de cidade continua funcionando no mesmo dono.
-	var city := _find_city_point()
+	var city := await _find_city_point()
 	if city.is_empty():
 		print("aviso: nenhuma cidade sob o mouse; ficha de cidade não conferida")
 	else:
@@ -184,7 +184,9 @@ func _find_empty_point() -> Vector2:
 	return SAFE_RECT.position + Vector2(12.0, 12.0)
 
 
-## Cidade visível com ponto de tela na área segura e sem porto no mesmo ponto.
+## Cidade visível com ponto de tela na área segura, sem porto no mesmo ponto e
+## onde nenhum Control do HUD captura o mouse (a barra lateral de painéis cobre
+## a faixa esquerda do mapa e o hover ali é do painel, não do mapa).
 func _find_city_point() -> Dictionary:
 	for record in _world.get("_city_nodes"):
 		if not (record is Dictionary):
@@ -199,6 +201,10 @@ func _find_city_point() -> Dictionary:
 		if _world.pick_city(screen, _camera) != id:
 			continue
 		if not _world.pick_port(screen, _camera).is_empty():
+			continue
+		_move_mouse(screen)
+		await process_frame
+		if root.gui_get_hovered_control() != null:
 			continue
 		return {"id": id, "point": screen}
 	return {}

@@ -49,8 +49,16 @@ func _ready() -> void:
 	Economy.speed_changed.connect(_on_speed_changed)
 	_on_speed_changed(Economy.speed)
 	hud.resource_filter_changed.connect(city_world.set_resource_filter)
+	hud.trade_filter_changed.connect(_on_trade_filter_changed)
 	Economy.status_updated.connect(_on_status_updated)
 	city_world.territory_changed.connect(_on_territory_changed)
+
+
+## Filtro por modal da legenda de rotas: a camada guarda o agregado e só
+## redesenha o que está ligado.
+func _on_trade_filter_changed(land: bool, sea: bool) -> void:
+	if city_world != null:
+		city_world.set_trade_flow_filter(land, sea)
 
 
 ## Mantém os modos de mapa (população, economia, indústria, recursos) vivos.
@@ -467,6 +475,12 @@ func _process(delta: float) -> void:
 	_update_tooltip()
 	if hud != null:
 		_update_minimap(player)
+		# Legenda de rotas: top-N do zoom, total agregado e arcos desenhados.
+		# Números reais do mapa; a legenda mostra estado vazio quando não há.
+		if hud.map_mode() == "routes":
+			hud.set_routes_stats(city_world.trade_flow_limit(),
+					city_world.trade_flow_total(), city_world.trade_flow_count(),
+					city_world.trade_flow_days())
 
 
 ## Ficha única do mouse: a seta de comércio tem prioridade quando é a única

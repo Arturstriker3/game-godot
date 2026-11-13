@@ -26,6 +26,8 @@ signal city_focused(city_id: String)
 signal map_mode_requested(mode: String)
 ## Filtro da legenda de recursos: chave -> visível. Vazio = todos.
 signal resource_filter_changed(enabled: Dictionary)
+## Filtro por modal da legenda de rotas: terrestre / marítimo.
+signal trade_filter_changed(land: bool, sea: bool)
 ## Clique no minimapa: ponto do mapa em UV (0..1).
 signal map_point_requested(map_uv: Vector2)
 ## Pedido de limpeza de TODA a seleção ativa no mapa (anel de depósito/trigo,
@@ -138,6 +140,12 @@ const RESOURCE_LEGEND := [
 	{"key": "cotton", "color": Color("#E8E0D0")},
 	{"key": "wood", "color": Color("#5B8C5A")},
 ]
+## Cores das setas de comércio no modo rotas (mesmas de map/trade_flow_layer.gd).
+const ROUTE_LAND_COLOR := Color("#C9A24A")
+const ROUTE_SEA_COLOR := Color("#6F8F8C")
+## Escala da amostra de espessura na legenda (t/dia): três degraus do arco.
+const ROUTE_THICKNESS_STEPS := [100.0, 1000.0, 10000.0]
+
 const RESOURCE_POINTS_PATH := "res://map/map_data/atlas/resource_points.json"
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
 ## Nomes de país/nação (adm0_a3 -> pt/en/es) gerados do Natural Earth admin-0,
@@ -198,6 +206,9 @@ var _legend_back: Button
 var _legend_flag: TextureRect
 var _legend_labels := {}
 var _legend_state := "filters"
+## Um ajuste de altura por frame basta: o mínimo do Control só existe depois do
+## layout, então `_fit_legend` repete no frame seguinte.
+var _legend_fit_pending := false
 var _legend_data: Dictionary = {}
 var _legend_city_entries: Array = []
 var _resource_enabled := {}
@@ -205,6 +216,16 @@ var _resource_counts := {}
 var _resource_checks := {}
 var _resource_rows := {}
 var _mode := "political"
+
+## Legenda do modo rotas: filtro por modal, amostras e números reais do mapa
+## (`set_routes_stats`); sem fluxos, mostra o estado vazio honesto.
+var _route_filter := {"land": true, "sea": true}
+var _route_checks := {}
+var _route_rows := {}
+var _route_stats := {"limit": 0, "total": 0, "shown": 0, "days": 0}
+var _routes_meta: Label
+var _routes_count: Label
+var _routes_empty: Label
 
 var _menu_layer: Control
 var _menu_screen: Control
@@ -418,13 +439,13 @@ func _sync_map_overlays() -> void:
 
 
 ## Sincroniza o estado visual do minimapa e da legenda com o modo ativo. A
-## legenda só recebe mouse no modo recursos: fora dele ela fica invisível E
-## ignorando input (nenhum Control oculto captura clique do mapa).
+## legenda só recebe mouse nos modos recursos e rotas: fora deles ela fica
+## invisível E ignorando input (nenhum Control oculto captura clique do mapa).
 func _refresh_mode_bar() -> void:
 	if _minimap != null:
 		_minimap.set_active_mode(_mode)
 	if _legend != null:
-		var show_legend := _mode == "resources"
+		var show_legend := _mode in ["resources", "routes"]
 		_legend.visible = show_legend
 		_legend.mouse_filter = Control.MOUSE_FILTER_STOP if show_legend \
 				else Control.MOUSE_FILTER_IGNORE
@@ -459,14 +480,31 @@ func _build_legend() -> void:
 	margin.add_child(_legend_box)
 
 	_render_legend_filters()
-	_legend.visible = _mode == "resources"
+	_legend.visible = _mode in ["resources", "routes"]
 	if not _legend.visible:
 		_legend.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 ## Ajusta a largura e a altura da etiqueta ao conteúdo (cresce para a direita e
-## para cima; ancorada embaixo à esquerda).
+## para cima; ancorada embaixo à esquerda). A largura/altura mínima de um
+## Control só é recalculada depois do layout, então o ajuste é refeito no frame
+## seguinte: sem isso a etiqueta herdava a altura da lista de recursos anterior.
 func _fit_legend() -> void:
+	if _legend == null:
+		return
+	_fit_legend_now()
+	if not _legend_fit_pending:
+		_legend_fit_pending = true
+		_fit_legend_next_frame()
+
+
+func _fit_legend_next_frame() -> void:
+	await get_tree().process_frame
+	_legend_fit_pending = false
+	_fit_legend_now()
+
+
+func _fit_legend_now() -> void:
 	if _legend == null:
 		return
 	_fit_legend_width()
@@ -563,6 +601,8 @@ func _clear_legend_content() -> void:
 	_legend_labels.clear()
 	_resource_checks.clear()
 	_resource_rows.clear()
+	_route_checks.clear()
+	_route_rows.clear()
 	_legend_title = null
 	_legend_subtitle = null
 	_legend_hint = null
@@ -570,14 +610,20 @@ func _clear_legend_content() -> void:
 	_legend_all_glyph = null
 	_legend_back = null
 	_legend_flag = null
+	_routes_meta = null
+	_routes_count = null
+	_routes_empty = null
 
 
-## Restaura a legenda geral (filtros) no mapa de recursos — usado quando a
-## seleção de depósito é limpa (clique no vazio).
+## Restaura a legenda geral do modo ativo — filtros de recursos ou a etiqueta de
+## rotas — usado quando a seleção de depósito é limpa (clique no vazio).
 func show_general_legend() -> void:
 	if _legend_box != null:
-		_render_legend_filters()
-		_legend.visible = _mode == "resources"
+		if _mode == "routes":
+			_render_routes_legend()
+		else:
+			_render_legend_filters()
+		_legend.visible = _mode in ["resources", "routes"]
 		_legend.mouse_filter = Control.MOUSE_FILTER_STOP if _legend.visible \
 				else Control.MOUSE_FILTER_IGNORE
 
@@ -601,7 +647,8 @@ func _legend_paper_sheet() -> PanelContainer:
 ## + subtítulo unidos por " · " em Special Elite TINTA_SUAVE, abaixo do título.
 ## Nada acima do título — ele começa sempre na mesma altura nos quatro estados.
 func _legend_header(kind: String, title: String, subtitle: String,
-		flag: Texture2D, right: String, subtitle_tip: String = "") -> void:
+		flag: Texture2D, right: String, subtitle_tip: String = "",
+		force_subtitle: bool = false) -> void:
 	var header := VBoxContainer.new()
 	header.add_theme_constant_override("separation", 1)
 	_legend_box.add_child(header)
@@ -640,7 +687,7 @@ func _legend_header(kind: String, title: String, subtitle: String,
 			title_row.add_child(_legend_back)
 
 	var line2 := _legend_line2(kind, subtitle)
-	if not line2.is_empty():
+	if not line2.is_empty() or force_subtitle:
 		_legend_subtitle = UiKit.label(line2, UiKit.FS_CAPTION + 1, UiKit.TINTA_SUAVE)
 		_legend_subtitle.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 		if not subtitle_tip.is_empty():
@@ -1331,6 +1378,191 @@ func _refresh_all_button() -> void:
 			"map.legend.uncheck_all_tip" if all_on else "map.legend.all_tip")
 
 
+## Etiqueta do modo rotas — a MESMA "Etiqueta de inventário" manila do mapa de
+## recursos: título, período + top-N, filtro por modal, amostras de cor/espessura
+## e rodapé. Os números vêm do mapa por `set_routes_stats`; sem dado, a etiqueta
+## mostra o estado vazio honesto, nunca um volume inventado.
+func _render_routes_legend() -> void:
+	if _legend_box == null:
+		return
+	_legend_state = "routes"
+	_clear_legend_content()
+
+	_legend_header("", I18n.t("map.legend.routes.title"), _routes_meta_text(),
+			null, "", "", true)
+	_routes_meta = _legend_subtitle
+
+	var body := _legend_paper_sheet()
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 3)
+	body.add_child(box)
+	_legend_box.add_child(body)
+
+	for modal in ["land", "sea"]:
+		box.add_child(_make_routes_filter_row(modal))
+
+	box.add_child(_legend_section_title(
+			I18n.t("map.legend.routes.thickness") + " · " \
+			+ I18n.t("map.routes.unit")))
+	for step in ROUTE_THICKNESS_STEPS:
+		box.add_child(_routes_thickness_row(float(step)))
+
+	_routes_count = UiKit.label("", UiKit.FS_SMALL - 1, UiKit.TINTA_SUAVE)
+	_routes_count.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	_routes_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(_routes_count)
+
+	_routes_empty = UiKit.label(I18n.t("map.legend.routes.empty"),
+			UiKit.FS_SMALL, UiKit.TINTA_SUAVE)
+	_routes_empty.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	_routes_empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_routes_empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(_routes_empty)
+
+	_legend_hint = _legend_footer(I18n.t("map.legend.routes.hint"))
+	box.add_child(_legend_hint)
+
+	_refresh_routes_rows()
+	_refresh_routes_meta()
+	_fit_legend()
+
+
+## Filete curto de seção na folha de papel (sem rótulo; o título vem depois).
+func _legend_section_title(text: String) -> Control:
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 3)
+	block.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rule := UiKit.rule(Color(UiKit.TINTA, 0.35))
+	rule.custom_minimum_size.x = LEGEND_WIDTH - LEGEND_LEFT_PAD - LEGEND_RIGHT_PAD - 20.0
+	block.add_child(rule)
+	var label := UiKit.label(text.to_upper(), UiKit.FS_CAPTION, UiKit.TINTA_SUAVE)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	block.add_child(label)
+	return block
+
+
+## Linha de filtro do modal: carimbo redondo + amostra da seta + nome. Desligar
+## só esconde aquele modal no mapa (o agregado de 7 dias continua intacto).
+func _make_routes_filter_row(modal: String) -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(180.0, 26.0)
+	button.add_theme_stylebox_override("normal",
+			UiKit.flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0.0))
+	button.add_theme_stylebox_override("hover",
+			UiKit.surface(Color(UiKit.MANILA, 0.22), 2.0))
+	button.add_theme_stylebox_override("pressed",
+			UiKit.surface(Color(UiKit.MANILA, 0.38), 2.0))
+	button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
+	button.pressed.connect(func() -> void: _toggle_route_modal(modal))
+
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 2.0
+	row.offset_right = -2.0
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	button.add_child(row)
+
+	var stamp := LegendStamp.new()
+	row.add_child(stamp)
+	_route_checks[modal] = stamp
+
+	var color := ROUTE_LAND_COLOR if modal == "land" else ROUTE_SEA_COLOR
+	row.add_child(LegendFlowSample.new(color, 3.0))
+
+	var label := UiKit.label(I18n.t("map.routes." + modal), UiKit.FS_SMALL,
+			UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+
+	_route_rows[modal] = button
+	return button
+
+
+## Linha da escala de espessura: amostra da seta com o mesmo traço do mapa e o
+## volume correspondente (t/dia) à direita.
+func _routes_thickness_row(volume: float) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var thickness := lerpf(2.0, 8.0, clampf(log(1.0 + volume) / log(10001.0),
+			0.0, 1.0))
+	row.add_child(LegendFlowSample.new(UiKit.TINTA, thickness))
+	var label := UiKit.label(UiKit.number(volume), UiKit.FS_SMALL, UiKit.TINTA)
+	label.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+	row.add_child(DottedLeader.new())
+	var value := UiKit.label(I18n.t("map.routes.unit"), UiKit.FS_CAPTION + 1,
+			UiKit.TINTA_SUAVE)
+	value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(value)
+	return row
+
+
+func _toggle_route_modal(modal: String) -> void:
+	_route_filter[modal] = not bool(_route_filter.get(modal, true))
+	_refresh_routes_rows()
+	trade_filter_changed.emit(bool(_route_filter.get("land", true)),
+			bool(_route_filter.get("sea", true)))
+
+
+func _refresh_routes_rows() -> void:
+	for modal in _route_checks:
+		var on := bool(_route_filter.get(modal, true))
+		(_route_checks[modal] as LegendStamp).set_on(on)
+		var row: Button = _route_rows.get(modal)
+		if row != null:
+			row.modulate = Color(1, 1, 1, 1.0 if on else 0.42)
+
+
+## Texto da linha 2: "Últimos 7 dias · Top 24" com os valores reais do mapa.
+func _routes_meta_text() -> String:
+	var days := int(_route_stats.get("days", 0))
+	var top := int(_route_stats.get("limit", 0))
+	var parts := PackedStringArray()
+	if days > 0:
+		parts.append(I18n.t("map.legend.routes.days",
+				{"days": UiKit.number(days)}))
+	if top > 0:
+		parts.append(I18n.t("map.legend.routes.top",
+				{"n": UiKit.number(top)}))
+	return " · ".join(parts)
+
+
+## Números vivos da legenda: limite top-N do zoom, total agregado e quantos
+## arcos estão desenhados depois do filtro. Chamado por main_game.gd.
+func set_routes_stats(limit: int, total: int, shown: int, days: int) -> void:
+	var next := {"limit": limit, "total": total, "shown": shown, "days": days}
+	if next == _route_stats:
+		return
+	_route_stats = next
+	_refresh_routes_meta()
+
+
+func _refresh_routes_meta() -> void:
+	if _legend_state != "routes":
+		return
+	if _routes_meta != null:
+		_routes_meta.text = _routes_meta_text()
+	if _routes_count != null:
+		var total := int(_route_stats.get("total", 0))
+		var shown := int(_route_stats.get("shown", 0))
+		_routes_count.text = "" if total <= 0 else I18n.t(
+				"map.legend.routes.showing",
+				{"shown": UiKit.number(shown), "total": UiKit.number(total)})
+	if _routes_empty != null:
+		_routes_empty.visible = int(_route_stats.get("total", 0)) <= 0
+	if _legend != null:
+		_fit_legend()
+
+
 ## Reconstrói a legenda ao trocar de idioma, preservando o estado atual.
 func _refresh_legend() -> void:
 	if _legend == null or not _legend.visible:
@@ -1343,6 +1575,8 @@ func _refresh_legend() -> void:
 		"city":
 			show_city_resources(String(_legend_data.get("city_id", "")),
 					_legend_city_entries)
+		"routes":
+			_render_routes_legend()
 		_:
 			_render_legend_filters()
 
@@ -1352,8 +1586,11 @@ func _set_map_mode(mode: String) -> void:
 		return
 	_mode = mode
 	_refresh_mode_bar()
-	if mode == "resources" and _legend_box != null:
-		_render_legend_filters()
+	if _legend_box != null:
+		if mode == "resources":
+			_render_legend_filters()
+		elif mode == "routes":
+			_render_routes_legend()
 	map_mode_requested.emit(mode)
 
 

@@ -252,3 +252,59 @@ Teste headless (`tools/trade_template_test.gd`):
 PASS com `pedidos=107`, `trechos=1`, `rotas=3` (caminhão/navio/avião),
 `mercado=807` e o clique na primeira cidade empilhando a ficha T3.
 
+
+## Frente 10 - barra lateral esquerda, lista de cidades e modo rotas (t24)
+
+Três entregas visuais, cada uma com evidência própria em
+`docs/ui/captures/layout_lateral/` (a pasta `docs/ui/captures/` é ignorada
+pelo git, como as demais capturas):
+
+| Arquivo | O que mostra |
+|---|---|
+| `hud_barra_esquerda.png` | HUD limpo em 1920×1080 (pt_BR) com a barra lateral de painéis à esquerda e a lista de cidades à direita |
+| `tela_aberta.png` | Tela de Economia aberta: a folha começa à direita da barra e o botão ativo fica preenchido de latão |
+| `rotas_legenda.png` | Modo rotas com a etiqueta "Rotas comerciais" (filtro por modal, escala de espessura e estado vazio honesto, porque a captura roda sem o mapa) |
+| `layout_report.json` | Relatório da rodada de 27 estados × 1920×1080/1366×768 |
+| `layout_report_es.json` | Rodada extra em `es` (27 estados em 1366×768), 0 achados |
+| `layout_report_rotas.json` | O mesmo roteiro com `--mapmode=routes` |
+
+Reproduzir (a captura precisa de janela; `--headless` trava em
+`RenderingServer.frame_post_draw`):
+
+```powershell
+# janela normal (não minimizada: janela minimizada para de renderizar)
+& $godot --path . res://tools/ui_capture.tscn -- --phase=lateral --run=rail `
+    --sizes=1920x1080,1366x768 --locale=pt_BR `
+    --out=res://docs/ui/captures/layout_lateral
+& $godot --path . res://tools/ui_capture.tscn -- --phase=lateral --run=routes `
+    --sizes=1920x1080,1366x768 --locale=pt_BR --mapmode=routes `
+    --out=res://docs/ui/captures/layout_lateral
+```
+
+Resultado: **54 auditorias por rodada, 0** `offscreen`, `text_overflow`,
+`text_elided`, `focus_hidden` ou `i18n_key` nas duas; a rodada extra em `es`
+(27 auditorias em 1366×768) também ficou limpa, então a barra lateral, a lista
+de cidades e a legenda de rotas não quebram ao trocar de idioma. Na primeira
+rodada a etiqueta do modo rotas herdava a altura da lista de recursos (625 px
+de papel vazio): `HUD._fit_legend` passou a refazer o ajuste no frame seguinte,
+porque o tamanho mínimo de um `Control` só existe depois do layout.
+
+Testes headless:
+
+```powershell
+& $godot --headless --path . --script res://tools/nation_city_list_test.gd
+& $godot --headless --path . --script res://tools/trade_flow_tooltip_test.gd
+& $godot --headless --path . --script res://tools/map_pick_test.gd
+& $godot --headless --path . --script res://tools/cursor_hover_test.gd
+& $godot --headless --path . res://tools/menu_smoke_test.tscn
+```
+
+Todos PASS. `trade_flow_tooltip_test` passou a ignorar cidades sob um
+`Control` do HUD (a barra lateral cobre a faixa esquerda do mapa, então o
+hover ali é do painel).
+
+Pendência registrada: para o modo rotas exibir as fronteiras discretas do
+`PoliticalLayer` (como o mapa de recursos), falta uma linha em
+`map/city_world.gd::set_mode` - `show_overlay := mode not in ["geographic",
+"political"]` (hoje `routes` está na lista de exclusão). A base do modo já é
+a carta branca.

@@ -52,8 +52,8 @@ Forma e ritmo:
 - Sem sombras projetadas, sem gradientes, sem vidro, sem glow.
 - Réguas de 1 px (`UiKit.rule`) separam cabeçalho, colunas e tabela.
 - Espaçamento em escala fixa: 4 / 8 / 12 / 16 / 24 px (`SPACE_XS`…`SPACE_XL`).
-- Controle padrão de 30 px de altura; doca de 108 px de largura por 52 px de
-  altura de botão.
+- Controle padrão de 30 px de altura; barra lateral de 208 px de largura por
+  48 px de altura de botão.
 - Movimento só em hover/foco: 0,12 s (`DURATION_FAST`) e 0,20 s (`DURATION`).
 
 
@@ -313,10 +313,17 @@ substituir as cinco cidades atuais.
   (`map/map_data/atlas/minimap.png`, mesmo pipeline do atlas, dinâmico por dono
   de província) em tom sépia, moldura `TINTA` e retângulo `CARIMBO` com a área
   vista pela câmera; clicar ou arrastar leva a câmera ao ponto.
-- Doca à direita, 108 px de largura, **seis botões** de 52 px — Economia,
-  Comércio, Produção, População, Política e Estatísticas — com tooltip
-  “1 · Economia” … “6 · Estatísticas”, ligados às teclas `1`–`6`. O botão ativo
-  usa fundo `BG_DEEP` e borda latão.
+- **Barra lateral de painéis** à esquerda (T7, opção A), 208 px, colada à
+  topbar: fundo `BARRA_FUNDO`, filete duplo de latão na borda direita e **seis
+  botões** de 48 px — Economia, Comércio, Produção, População, Política e
+  Estatísticas. Cada botão traz o ícone num **selo redondo de 28 px** (inativo:
+  papel `efe4c6`, glifo `2d2a24` e anel latão; ativo: fundo `2d2a24`, glifo
+  latão e anel papel), o rótulo em caixa alta Barlow Condensed e o número do
+  atalho à direita; tooltip “1 · Economia” … “6 · Estatísticas”, ligados às
+  teclas `1`–`6` e cursor de mão. O botão ativo é preenchido de latão `#b9a77a`
+  com texto `#2d2a24` — o mesmo tratamento dos botões de velocidade. As telas
+  de papel começam à direita da barra, então a navegação nunca fica por baixo
+  de uma folha.
 - **Telas em folha de papel** (templates T1–T5): cada tela ocupa a viewport
   inteira sobre o mapa e desenha a própria moldura — véu de papel abaixo da
   barra superior, crumb, título, fechar e rodapé de atalhos. O HUD apenas as
@@ -326,9 +333,22 @@ substituir as cinco cidades atuais.
 - A ficha de cidade (`city_panel.gd`, T3) mora em camada própria, ancorada à
   direita, sobre o mapa, em cinco abas de pasta (Visão geral, População,
   Produção, Mercado, Recursos); o crumb mostra a trilha e o voltar retorna ao
-  contexto anterior. Enquanto ela está aberta, doca e minimapa recolhem.
-- Modos de mapa no minimapa (político e recursos); trocar de modo só altera
-  uniformes da camada, sem reconstruir a geometria.
+  contexto anterior. Enquanto ela está aberta, minimapa e lista de cidades
+  recolhem; a barra lateral de painéis continua visível.
+- Modos de mapa no minimapa (político, recursos e rotas); trocar de modo só
+  altera uniformes da camada, sem reconstruir a geometria.
+- **Lista de cidades da nação** (ficha manila recolhível, `nation_city_list.gd`)
+  colada à borda direita logo abaixo da topbar, com a largura do minimapa
+  (288 px) — o lugar que era da doca. Topo fixo; a ficha cresce para baixo ao
+  expandir e some inteira quando uma tela, ficha ou menu abre, como o minimapa.
+  Ordem por população, clique centraliza a câmera, duplo clique abre a ficha T3
+  e o “!” de carimbo marca déficit do dia.
+- **Modo rotas** sobre a carta branca (a mesma base do mapa de recursos), com as
+  setas de comércio dos últimos 7 dias por volume. A legenda é a “Etiqueta de
+  inventário” manila à esquerda: título “Rotas comerciais”, período + top-N do
+  zoom (números publicados pelo mapa), filtro por modal (terrestre em latão,
+  marítimo em aço), escala de espessura em 100 / 1.000 / 10.000 t/dia e estado
+  vazio honesto quando não há rotas.
 - Mapa sempre visível atrás; o véu é o da própria folha de papel (ou o do menu).
 - Menu de pausa (Esc, T6): ficha de papel com retomar, salvar/carregar
   (desabilitados, "em breve"), configurações, atalhos, créditos e sair; as
@@ -350,8 +370,8 @@ substituir as cinco cidades atuais.
 ## Navegação
 
 - `1`–`6` abrem as seis telas; `Esc` fecha o menu, depois a tela (ou a ficha de
-  cidade), depois abre o menu. Clicar de novo no botão ativo da doca fecha a
-  tela.
+  cidade), depois abre o menu. Clicar de novo no botão ativo da barra lateral
+  fecha a tela.
 - Pilha de contexto (`_stack`): uma tela é a raiz; abrir uma cidade empilha um
   nível e a ficha mostra a trilha (`Economia › Londres`). O mesmo vale para os
   atalhos dos alertas e das tabelas de mercado, que abrem a cidade já na aba
@@ -359,7 +379,8 @@ substituir as cinco cidades atuais.
 - O botão `!N` na barra superior abre a lista de alertas econômicos
   priorizados; cada linha leva à cidade responsável.
 - As telas se fecham pelo `×` da moldura, pelo `Esc` ou pelo botão ativo da
-  doca; não há mais clique no fundo escuro para fechar (o fundo é o mapa).
+  barra lateral; não há mais clique no fundo escuro para fechar (o fundo é o
+  mapa).
 - Todo controle interativo tem `focus_mode = FOCUS_ALL`; ao abrir uma tela o
   HUD foca o primeiro controle útil (`UiKit.focus_first`) e, se a tela não tem
   controle acionável (por exemplo, lista de alertas vazia), foca o fechar.
@@ -369,7 +390,8 @@ substituir as cinco cidades atuais.
 ## Componentes
 
 Duas camadas, ambas nativas de `Control`: o **cromo do HUD**
-(`core/ui/ui_kit.gd`) desenha barra, doca, minimapa, legenda, menu e a ficha de
+(`core/ui/ui_kit.gd`) desenha barra, barra lateral de painéis, minimapa,
+legenda, lista de cidades, menu e a ficha de
 cidade; as **folhas de papel** (`core/ui/templates/ui_template_builder.gd`)
 desenham as seis telas, o menu (T6) e as sub-fichas. Cada tela é uma spec JSON
 mais um script fino (`core/ui/screens/*.gd`) que injeta os dados e liga os
@@ -573,8 +595,8 @@ Minimapa (canto inferior direito, `core/ui/minimap.gd`):
   `ABA_INATIVA`, ícone `TINTA_SUAVE`, borda `TINTA`; ativa: fundo `TINTA`,
   ícone `BARRA_TEXTO`. Tooltips e troca de modo preservados; clique/arraste
   continua levando a câmera ao ponto (UV 0..1), restrito à área do mapa.
-- Sem zoom; os botões Economia/Comércio/Produção/População/Política da doca
-  não são alterados.
+- Sem zoom; os botões Economia/Comércio/Produção/População/Política da barra
+  lateral não são alterados.
 
 Legenda — "Etiqueta de inventário" (canto inferior esquerdo, modo recursos):
 
@@ -766,8 +788,9 @@ estado de jogo.
 ## Arquivos
 
 - `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes do cromo.
-- `core/ui/hud.gd` — barra, doca (6 telas), camada das folhas de papel, pilha
-  de contexto, ficha de cidade, menu, sub-fichas e histórico de pedidos.
+- `core/ui/hud.gd` — barra, barra lateral de painéis (6 telas), camada das
+  folhas de papel, pilha de contexto, ficha de cidade, menu, sub-fichas e
+  histórico de pedidos.
 - `core/ui/city_panel.gd` — ficha de cidade (T3) com cinco abas.
 - `core/ui/alerts.gd` — derivação dos alertas econômicos priorizados.
 - `core/ui/world_facts.gd` — dados de cenário (nações, território, portos,

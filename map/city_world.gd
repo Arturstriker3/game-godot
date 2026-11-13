@@ -612,10 +612,11 @@ func _exit_tree() -> void:
 
 
 ## Troca o modo de mapa sem reconstruir a geometria: só visibilidade e uniformes.
-## O modo "political" usa base de atlas (chapado); os demais usam satélite.
+## O modo "political" usa base de atlas (chapado); rotas usa a carta branca
+## (MapBase) como os modos de recursos, e os demais usam satélite.
 func set_mode(mode: String) -> void:
 	_mode = mode
-	var is_atlas := mode == "political" or mode == "routes"
+	var is_atlas := mode == "political"
 	var show_overlay := mode not in ["geographic", "political", "routes"]
 
 	# Aplica em todas as cópias laterais (wrap), não só na central.
@@ -2249,6 +2250,25 @@ func trade_flow_count() -> int:
 	if _trade_flows == null:
 		return 0
 	return _trade_flows.flow_count()
+
+
+## Filtro por modal da legenda de rotas (terrestre/marítimo).
+func set_trade_flow_filter(land: bool, sea: bool) -> void:
+	if _trade_flows != null:
+		_trade_flows.set_modal_filter(land, sea)
+
+
+## Números da legenda do modo rotas: top-N do zoom, total agregado e janela.
+func trade_flow_limit() -> int:
+	return _trade_flows.flow_limit() if _trade_flows != null else 0
+
+
+func trade_flow_total() -> int:
+	return _trade_flows.flow_total() if _trade_flows != null else 0
+
+
+func trade_flow_days() -> int:
+	return _trade_flows.history_days() if _trade_flows != null else 0
 
 
 func _build_mode_layer(cities: Array) -> void:

@@ -55,6 +55,10 @@ var _sea_ribbon: MultiMeshInstance3D
 var _sea_head: MultiMeshInstance3D
 var _land_material: StandardMaterial3D
 var _sea_material: StandardMaterial3D
+## Filtro por modal da legenda: desligar esconde as setas daquele modal sem
+## descartar o agregado de 7 dias (ligar de novo volta a desenhar).
+var _show_land := true
+var _show_sea := true
 
 
 func _ready() -> void:
@@ -182,6 +186,35 @@ func set_active(active: bool) -> void:
 
 func is_active() -> bool:
 	return visible
+
+
+## Filtro por modal (legenda do modo rotas). Só reescreve a geometria; o
+## agregado e a janela de dias continuam intactos.
+func set_modal_filter(show_land: bool, show_sea: bool) -> void:
+	if show_land == _show_land and show_sea == _show_sea:
+		return
+	_show_land = show_land
+	_show_sea = show_sea
+	_dirty = true
+
+
+func _modal_enabled(modal: String) -> bool:
+	return _show_sea if modal == "sea" else _show_land
+
+
+## Limite top-N do nível de zoom atual (o mesmo que a legenda exibe).
+func flow_limit() -> int:
+	return _flow_limit()
+
+
+## Total de pares agregados na janela, antes do corte de top-N e do filtro.
+func flow_total() -> int:
+	return _flows.size()
+
+
+## Tamanho da janela rolante em dias (a legenda mostra "últimos N dias").
+func history_days() -> int:
+	return HISTORY_DAYS
 
 
 ## Fluxo sob o cursor, ou -1. Considera as polilinhas desenhadas no último
@@ -337,13 +370,18 @@ func _rebuild(camera: Camera3D) -> void:
 		_write_instances(_sea_ribbon, [])
 		_write_instances(_sea_head, [])
 		return
-	var limit := mini(_flow_limit(), _flows.size())
+	var limit := _flow_limit()
 	var max_volume := maxf(float(_flows[0].get("tons_per_day", 1.0)), 0.0001)
 	var log_max := log(1.0 + max_volume)
 	var ribbons: Dictionary = {"land": [], "sea": []}
 	var heads: Dictionary = {"land": [], "sea": []}
-	for index in limit:
+	var drawn_count := 0
+	for index in _flows.size():
+		if drawn_count >= limit:
+			break
 		var flow: Dictionary = _flows[index]
+		if not _modal_enabled(String(flow["mode"])):
+			continue
 		var from_id := String(flow["from_city"])
 		var to_id := String(flow["to_city"])
 		var from_local: Vector3 = _city_positions[from_id]
@@ -375,6 +413,7 @@ func _rebuild(camera: Camera3D) -> void:
 		drawn["thickness_px"] = thickness_px
 		_drawn.append(drawn)
 		_build_arc(camera, points, thickness_px, ribbons[modal], heads[modal])
+		drawn_count += 1
 	_write_instances(_land_ribbon, ribbons["land"])
 	_write_instances(_land_head, heads["land"])
 	_write_instances(_sea_ribbon, ribbons["sea"])
