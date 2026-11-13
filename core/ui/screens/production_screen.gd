@@ -38,7 +38,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-## O HUD deixa a spec desenhar a janela de papel em vez do painel modal antigo.
+## A tela desenha a própria moldura de papel (template T2), sobre o mapa.
 func uses_window_shell() -> bool:
 	return true
 

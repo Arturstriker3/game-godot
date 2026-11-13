@@ -7,7 +7,7 @@ Implementada em nós `Control` do Godot; tokens, tema e componentes em
 
 ## Modo
 
-Operate: o jogador lê o estado da economia e abre a janela certa. Densidade
+Operate: o jogador lê o estado da economia e abre a tela certa. Densidade
 alta, hierarquia tipográfica clara, nenhum número inventado. A interface é
 estado puro — os componentes recebem texto e valores já formatados e nunca
 executam lógica econômica.
@@ -24,7 +24,7 @@ Cores (`UiKit`):
 | `PANEL_HOVER` | `#1E2E29` | hover de botões e linhas |
 | `EDGE` | `#2C3B35` | borda de 1 px de painéis |
 | `EDGE_SOFT` | `#22302B` | réguas e trilhos |
-| `OVERLAY` | `rgba(5,8,10,0.62)` | véu atrás de janelas e menu |
+| `OVERLAY` | `rgba(5,8,10,0.62)` | véu escuro (legado; as telas usam `PAPER_VEU`) |
 | `TEXT` | `#E2DFD2` | texto principal |
 | `TEXT_DIM` | `#9AA69B` | texto secundário |
 | `TEXT_MUTED` | `#7F8C82` | legendas e notas |
@@ -251,7 +251,7 @@ substituir as cinco cidades atuais.
   estável; rotação livre desorienta.
 - **Edge scroll:** habilitado com margem de 16 px. Move a câmera quando o mouse
   encosta nas bordas da tela; inativo com o mouse sobre qualquer controle da
-  interface (barra, doca, janela, minimapa) ou fora da janela.
+  interface (barra, doca, telas, minimapa) ou fora da janela.
 - **Drag pan:** arrastar com o botão do meio move a câmera (em vez de rotacionar).
   Threshold de 4 px antes de ativar para não conflitar com clique.
 - **Zoom:** mínimo 10 u, máximo 500 u (cobre o mundo inteiro).
@@ -272,7 +272,7 @@ substituir as cinco cidades atuais.
 
 ## Composição
 
-- Barra superior fixa de **48 px** (estilo HOI3, mais compacto): nação (nome +
+- Barra superior fixa de **64 px** (estilo HOI3): nação (nome +
   "Sua nação"), data e progresso do dia, quatro indicadores (população, estoque,
   déficit, trânsito), velocidade, idioma e menu. Os indicadores têm tooltip
   explicando a origem do número; ao pausar, o rótulo do dia troca para "Pausado"
@@ -283,23 +283,26 @@ substituir as cinco cidades atuais.
   (`map/map_data/atlas/minimap.png`, mesmo pipeline do atlas, dinâmico por dono
   de província) em tom sépia, moldura `TINTA` e retângulo `CARIMBO` com a área
   vista pela câmera; clicar ou arrastar leva a câmera ao ponto.
-- Doca à direita, 108 px de largura, cinco botões de 52 px (Economia,
-  Comércio, Produção, População, Política) com tooltip “1 · Economia” etc. O
-  botão ativo usa fundo `BG_DEEP` e borda latão.
-- Janela modal responsiva: 86% × 84% da tela, limitada a 960×560 e 1800×1000;
-  em 1920×1080 resulta em 1651×907. Cabeçalho com voltar (quando há contexto
-  empilhado), breadcrumb, título, subtítulo, dica contextual e fechar; rodapé
-  com atalhos e selo `ESC`.
-- O painel de cidade (`city_panel.gd`) é empilhado sobre a tela de origem e
-  organizado em cinco abas (Visão geral, População, Produção, Mercado,
-  Recursos); o breadcrumb mostra a trilha e o voltar retorna ao contexto
-  anterior sem abrir outra janela.
-- Barra de modos de mapa no canto inferior esquerdo (político, geográfico,
-  população, econômico, industrial, recursos); trocar de modo só altera
+- Doca à direita, 108 px de largura, **seis botões** de 52 px — Economia,
+  Comércio, Produção, População, Política e Estatísticas — com tooltip
+  “1 · Economia” … “6 · Estatísticas”, ligados às teclas `1`–`6`. O botão ativo
+  usa fundo `BG_DEEP` e borda latão.
+- **Telas em folha de papel** (templates T1–T5): cada tela ocupa a viewport
+  inteira sobre o mapa e desenha a própria moldura — véu de papel abaixo da
+  barra superior, crumb, título, fechar e rodapé de atalhos. O HUD apenas as
+  empilha numa camada própria (`_window_layer`); **não existe painel modal
+  escuro**. Os valores de cada tela vêm do resumo da economia ou de
+  `WorldFacts`, nunca de números fixos.
+- A ficha de cidade (`city_panel.gd`, T3) mora em camada própria, ancorada à
+  direita, sobre o mapa, em cinco abas de pasta (Visão geral, População,
+  Produção, Mercado, Recursos); o crumb mostra a trilha e o voltar retorna ao
+  contexto anterior. Enquanto ela está aberta, doca e minimapa recolhem.
+- Modos de mapa no minimapa (político e recursos); trocar de modo só altera
   uniformes da camada, sem reconstruir a geometria.
-- Mapa sempre visível atrás; véu `OVERLAY` apenas com janela ou menu aberto.
-- Menu de pausa (Esc): cartão de 460 px com título Cinzel, retomar, créditos,
-  sair e atalhos.
+- Mapa sempre visível atrás; o véu é o da própria folha de papel (ou o do menu).
+- Menu de pausa (Esc, T6): ficha de papel com retomar, salvar/carregar
+  (desabilitados, "em breve"), configurações, atalhos, créditos e sair; as
+  sub-fichas de configurações/atalhos/créditos dividem o mesmo envelope.
 
 ## Resolução e escala
 
@@ -316,14 +319,17 @@ substituir as cinco cidades atuais.
 
 ## Navegação
 
-- `1`–`5` abrem os cinco painéis; `Esc` fecha o menu, depois a janela, depois
-  abre o menu.
-- Pilha de contexto (`_stack`): um painel é a raiz; abrir uma cidade ou uma
-  cidade produtora empilha um nível e o breadcrumb (`Economia › Londres`)
-  mostra onde o jogador está. O mesmo vale para os atalhos dos alertas e das
-  tabelas de mercado, que abrem a cidade já na aba correspondente.
+- `1`–`6` abrem as seis telas; `Esc` fecha o menu, depois a tela (ou a ficha de
+  cidade), depois abre o menu. Clicar de novo no botão ativo da doca fecha a
+  tela.
+- Pilha de contexto (`_stack`): uma tela é a raiz; abrir uma cidade empilha um
+  nível e a ficha mostra a trilha (`Economia › Londres`). O mesmo vale para os
+  atalhos dos alertas e das tabelas de mercado, que abrem a cidade já na aba
+  correspondente. O voltar aparece na própria ficha quando há pilha.
 - O botão `!N` na barra superior abre a lista de alertas econômicos
   priorizados; cada linha leva à cidade responsável.
+- As telas se fecham pelo `×` da moldura, pelo `Esc` ou pelo botão ativo da
+  doca; não há mais clique no fundo escuro para fechar (o fundo é o mapa).
 - Todo controle interativo tem `focus_mode = FOCUS_ALL`; ao abrir uma tela o
   HUD foca o primeiro controle útil (`UiKit.focus_first`) e, se a tela não tem
   controle acionável (por exemplo, lista de alertas vazia), foca o fechar.
@@ -332,7 +338,14 @@ substituir as cinco cidades atuais.
 
 ## Componentes
 
-Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
+Duas camadas, ambas nativas de `Control`: o **cromo do HUD**
+(`core/ui/ui_kit.gd`) desenha barra, doca, minimapa, legenda, menu e a ficha de
+cidade; as **folhas de papel** (`core/ui/templates/ui_template_builder.gd`)
+desenham as seis telas, o menu (T6) e as sub-fichas. Cada tela é uma spec JSON
+mais um script fino (`core/ui/screens/*.gd`) que injeta os dados e liga os
+sinais — nenhum script calcula regra de jogo.
+
+Construtores de `ui_kit.gd`:
 
 - Botões: `primary_button` (latão sólido, uma por tela), `secondary_button`,
   `ghost_button`, `icon_button` (glifo + tooltip obrigatório).
@@ -352,6 +365,25 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
 - Toda a API antiga (`flat`, `label`, `metric`, `table_*`) foi preservada para
   o painel econômico de validação (`game/economy_panel_demo.tscn`).
 
+Telas nos templates (todas declaram `uses_window_shell() == true` e são
+montadas por `UiTemplateBuilder`):
+
+| Tela | Atalho | Template | Spec / origem | Conteúdo |
+|---|---|---|---|---|
+| Economia | `1` | T2 | `registro.json` | registro de nações/cidades, busca, filtros, ficha selecionada |
+| Comércio | `2` | T2 | `comercio.json` | abas Pedidos/Rotas/Mercado, tabelas e detalhe |
+| Produção | `3` | T2 | `producao.json` | abas Cadeia/Cidades, busca, ficha da cidade produtora |
+| População | `4` | T2 | `populacao.json` | abas Nações/Cidades, nação→cidades |
+| Política | `5` | T1 | `dossie.json` | dossiê da nação, lista lateral, ações “Abrir economia” / “Ver no mapa” |
+| Estatísticas | `6` | T5 | `quadro.json` | ranking por indicador, grupos mundo/região, sua posição, tendência vazia |
+| Alertas | `!N` | T2 compacto | montado em `alerts_screen.gd` | alertas priorizados → cidade na aba do dado |
+| Ficha de cidade | clique | T3 | `ficha.json` | abas de pasta sobre o mapa |
+| Menu e sub-fichas | `Esc` | T6 | `menu.json` | pausa; configurações, atalhos e créditos no mesmo envelope |
+
+Nenhuma tela usa o antigo painel modal escuro (removido em `hud.gd` junto com
+`_window`, `_backdrop`, `_window_body`, cabeçalho/rodapé próprios,
+`_apply_window_size`, `_render_crumb`, `_screen_subtitle` e `SCREEN_HINTS`).
+
 ## Movimento
 
 - Sem animação de entrada. O progresso do dia se move continuamente na barra
@@ -361,16 +393,22 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
 
 ## Validação
 
-- `tools/ui_capture.tscn` instancia o HUD sobre o mapa, percorre HUD, os quatro
-  painéis, busca sem resultado, detalhe de cidade e menu nas quatro
-  resoluções, grava PNGs e `layout_report.json`.
+- `tools/ui_capture.tscn` instancia o HUD sobre o mapa e percorre 27 estados
+  (HUD, seis telas — incluindo o quadro comparativo no Mundo e por região —,
+  busca sem resultado, ficha de cidade nas cinco abas, alertas, menu e as três
+  sub-fichas) nas quatro resoluções, gravando PNGs e `layout_report.json`.
+  `--locale=pt_BR|en|es` fixa o idioma da captura (não grava em
+  `user://settings.cfg`).
 - O relatório é objetivo: retângulos dos `Control`, foco atual, transbordo
-  para fora da viewport, texto cortado/elidido e rolagem necessária. Não é
-  inspeção visual e não substitui revisão humana.
+  para fora da viewport, texto cortado/elidido, chave de i18n vazando e
+  rolagem necessária. Não é inspeção visual e não substitui revisão humana.
 - `tools/vision_review.py` mede brilho, contraste, saturação, nitidez e bordas
   das capturas, e compara antes/depois (MAE, RMSE, SSIM).
-- Saídas em `docs/ui/` (`captures/antes`, `captures/f4/final`,
-  `comparison.md`).
+- Saídas em `docs/ui/` (`captures/antes`, `captures/templates_live/<run>`).
+  Última execução (2026-11-13, pt-BR, 1920×1080, 1600×900, 1366×768 e
+  2560×1440): 108 capturas, **0 `offscreen`, 0 `text_overflow`, 0
+  `text_elided`, 0 `focus_hidden`**; o único aviso é `scroll_needed` nas abas
+  da ficha de cidade, que rolam por projeto.
 
 
 ## Conteúdo e i18n
@@ -378,7 +416,7 @@ Construtores em `core/ui/ui_kit.gd`, todos nativos de `Control`:
 - Todo texto vem de `core/i18n/i18n.gd` (pt-BR, en, es), trocável em tempo de
   execução; as telas se reconstroem ao trocar o idioma.
 - Pedidos de comércio são guardados em um histórico rolante de 240 entradas no
-  HUD, para a janela de Comércio não ficar vazia nos dias sem pedido novo. A
+  HUD, para a tela de Comércio não ficar vazia nos dias sem pedido novo. A
   aba de mercado usa apenas os pedidos do dia atual; o histórico serve às abas
   de pedidos e rotas.
 - Onde a simulação não tem dado (produção/construção, diplomacia, preços,
@@ -546,7 +584,7 @@ UiTemplateBuilder`) devolve uma árvore de `Control` pronta para entrar no HUD.
 O gerador **não conhece economia**: todo valor chega já formatado (literal,
 `$caminho` em `spec.data` ou `@chave` de i18n) e nenhum bloco calcula regra de
 jogo. Os mockups HTML de referência ficam em `docs/ui/templates/T1_dossie.html`
-… `T5_quadro.html`.
+… `T6_menu.html`.
 
 ### Formato da spec
 
@@ -639,15 +677,16 @@ screen.choice_selected.connect(func(id: String) -> void: print(id))
 add_child(screen)
 ```
 
-`build(spec, overrides)` copia a spec (`duplicate(true)`), aplica `overrides`
+`UiTemplateBuilder.build(spec, overrides)` copia a spec (`duplicate(true)`), aplica `overrides`
 sobre `spec.data` (sem tocar nos blocos) e devolve um
 `UiTemplateBuilder.TemplateRoot` já em `PRESET_FULL_RECT`, com os sinais
 `close_requested` e `choice_selected(id)`. Atalhos: `dossie()`, `registro()`,
-`ficha()`, `telegrama()`, `quadro()` — cada um carrega a spec e chama `build`.
+`ficha()`, `telegrama()`, `quadro()` e `menu()` — cada um carrega a spec e
+chama `build`.
 Spec ausente ou inválida: `load_spec` faz `push_error` e devolve `{}`; `build({})`
 produz uma moldura `window` vazia.
 
-### Os cinco templates
+### Os seis templates
 
 | # | Spec | Envelope | Blocos-chave | Quando usar |
 |---|---|---|---|---|
@@ -656,12 +695,14 @@ produz uma moldura `window` vazia.
 | T3 | `data/ui/templates/ficha.json` | `side_panel` | `folder_tabs` (5 abas, `close`), `kpi_card` sem moldura, `bar_chart`, `note_card` nas abas sem dado | ficha lateral de uma entidade (cidade) com abas de pasta, sobre o mapa |
 | T4 | `data/ui/templates/telegrama.json` | `telegram` (`pauses_game: true`) | `telegram_card` com DE/PARA/ASSUNTO, corpo datilografado e 3 `choice_button` | evento que interrompe o jogo e exige decisão (importar, racionar, esperar) |
 | T5 | `data/ui/templates/quadro.json` | `window` | `chip_filter` de indicador/grupo, `ranking_row` com destaque, posição + `line_chart` | comparação entre nações e posição relativa; leitura de ranking |
+| T6 | `data/ui/templates/menu.json` | `window` | ficha de pausa com `menu_button` (retomar, salvar/carregar desabilitados, configurações, atalhos, créditos, sair) | menu de pausa do `Esc` e sub-fichas (configurações, atalhos, créditos) |
 
-Cada tela tem mockup estático correspondente (`T1`…`T5` em
-`docs/ui/templates/`, usado como referência visual na revisão). O T2 tem duas
-specs: `registro.json` (Economia) e `comercio.json` (Comércio, com
-`folder_tabs` de Pedidos/Rotas/Mercado); a tela de Alertas monta a spec T2
-compacta em código.
+Cada tela tem mockup estático correspondente (`T1`…`T6` em
+`docs/ui/templates/`, usado como referência visual na revisão). O T2 tem quatro
+specs: `registro.json` (Economia), `comercio.json` (Comércio, com
+`folder_tabs` de Pedidos/Rotas/Mercado), `producao.json` (Produção) e
+`populacao.json` (População); a tela de Alertas monta a spec T2 compacta em
+código.
 
 ### Galeria e evidência
 
@@ -684,32 +725,34 @@ erro. 1366×768 e 2560×1440 não foram capturados (o `stretch` do projeto é
 ### Ressalva
 
 Os valores das specs de galeria (população, PIB, séries, nomes de cidade) são
-**demonstração** — servem para validar layout, não são lidos da economia. A
-spec `registro.json` (T2) é usada pela tela de Economia com dados reais do
-resumo; a tela de Alertas monta uma spec T2 compacta em código
-(`alerts_screen.gd`, janela 640–880 × 460–620) com a mesma tabela e painel de
-estado vazio. A ficha de cidade (T3) já estava ligada. `data_table` e
+**demonstração** — servem para validar layout, não são lidos da economia. As
+specs usadas em jogo (Economia, Comércio, Produção, População, Política,
+Estatísticas, Alertas, ficha e menu) recebem valores do resumo da economia ou
+de `WorldFacts`; só os mockups da galeria são demonstrativos. `data_table` e
 `folder_tabs` guardam estado de exibição (ordem, página, aba ativa), nunca
 estado de jogo.
 
 ## Arquivos
 
-- `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes.
-- `core/ui/hud.gd` — barra, doca, janela, pilha de contexto, menu, painel de
-  configurações (idioma) e histórico de pedidos.
-- `core/ui/city_panel.gd` — painel de cidade com cinco abas.
+- `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes do cromo.
+- `core/ui/hud.gd` — barra, doca (6 telas), camada das folhas de papel, pilha
+  de contexto, ficha de cidade, menu, sub-fichas e histórico de pedidos.
+- `core/ui/city_panel.gd` — ficha de cidade (T3) com cinco abas.
 - `core/ui/alerts.gd` — derivação dos alertas econômicos priorizados.
+- `core/ui/world_facts.gd` — dados de cenário (nações, território, portos,
+  jazidas) lidos dos JSON; usado por Política e Estatísticas.
 - `core/ui/screens/*.gd` — Economia, Comércio (pedidos, rotas, mercado),
-  Produção, População, Política e Alertas.
+  Produção, População, Política, Estatísticas e Alertas.
 - `core/ui/city_detail.gd` — painel anterior da cidade, mantido como legado e
   não usado pelo HUD.
 - `core/i18n/i18n.gd` — textos em pt-BR, en e es.
 - `core/ui/templates/ui_template_builder.gd` — gerador de telas a partir de
   spec JSON (envelopes, blocos de papel, `$dado` e `@chave`).
-- `data/ui/templates/*.json` — specs dos cinco templates (`dossie`, `registro`,
-  `ficha`, `telegrama`, `quadro`).
+- `data/ui/templates/*.json` — specs dos seis templates (`dossie`, `registro`,
+  `ficha`, `telegrama`, `quadro`, `menu`) e as variantes T2 `comercio`,
+  `producao` e `populacao`.
 - `tools/ui_capture.gd` / `.tscn` — captura e auditoria de layout.
-- `tools/ui_template_gallery.gd` / `.tscn` — galeria dos cinco templates
+- `tools/ui_template_gallery.gd` / `.tscn` — galeria dos templates
   (PNG + `layout_report.json`).
 - `docs/ui/` — capturas antes/depois e métricas objetivas.
-- `docs/ui/templates/` — mockups HTML `T1`…`T5` e capturas do gerador.
+- `docs/ui/templates/` — mockups HTML `T1`…`T6` e capturas do gerador.

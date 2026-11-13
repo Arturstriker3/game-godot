@@ -45,8 +45,8 @@ func _run() -> void:
 		return
 	if not screen.visible:
 		_failures.append("comércio não ficou visível")
-	if _hud.get("_window").visible:
-		_failures.append("painel modal escuro continuou aberto (esperado T2)")
+	if not _hud.get("_window_layer").visible:
+		_failures.append("camada das telas não abriu (esperado T2)")
 	if not bool(screen.call("uses_window_shell")):
 		_failures.append("comércio não declara moldura própria")
 

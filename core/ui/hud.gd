@@ -3,7 +3,8 @@ extends CanvasLayer
 ## HUD principal do WarEconomy — "Industrial Strategy, Premium Dark".
 ##
 ## Estrutura: barra superior com nação, calendário, indicadores e velocidade;
-## doca lateral de painéis; janela modal com pilha de navegação; menu (Esc).
+## doca com as seis telas; telas de papel (templates T1–T5) sobre o mapa;
+## ficha de cidade (T3) na lateral; menu de pausa (T6) no Esc.
 ## O HUD não simula nada: lê `Economy` e desenha. Todo texto vem do `I18n`.
 
 const ECONOMY_SCREEN: Script = preload("res://core/ui/screens/economy_screen.gd")
@@ -39,9 +40,6 @@ const BAR_NAME_SIZE := 24
 const BAR_DATE_SIZE := 17
 const BAR_CAPTION_SIZE := 16
 const BAR_VALUE_SIZE := 23
-const WINDOW_MIN := Vector2(960.0, 560.0)
-const WINDOW_MAX := Vector2(1800.0, 1000.0)
-const WINDOW_RATIO := Vector2(0.86, 0.84)
 
 const SCREEN_ORDER := ["economy", "trade", "production", "population", "politics",
 		"statistics"]
@@ -54,15 +52,6 @@ const SCREEN_LABELS := {
 	"politics": "dock.politics",
 	"statistics": "dock.statistics",
 	"alerts": "hud.alerts",
-}
-const SCREEN_HINTS := {
-	"economy": "econ.hint",
-	"trade": "trade.hint",
-	"production": "prod.hint",
-	"population": "pop.hint",
-	"politics": "pol.hint",
-	"statistics": "stats.hint",
-	"alerts": "alerts.hint",
 }
 ## Botões de camada do mapa (quadrados, acima do minimapa). Os demais modos
 ## (população/economia/indústria) continuam no mapa, mas sem botão por enquanto.
@@ -150,15 +139,8 @@ var _stack: Array[Dictionary] = []
 var _root: Control
 var _top_holder: PanelContainer
 var _dock_holder: VBoxContainer
+## Camada das telas de papel (T1–T5): cada tela desenha a própria moldura.
 var _window_layer: Control
-var _backdrop: ColorRect
-var _window: PanelContainer
-var _window_crumb: Label
-var _window_title: Label
-var _window_subtitle: Label
-var _window_body: VBoxContainer
-var _window_hint: Label
-var _back_button: Button
 ## Camada própria da ficha de cidade: painel lateral direito, sobre o mapa.
 var _city_layer: Control
 var _city_screen: CITY_PANEL
@@ -208,7 +190,7 @@ func _ready() -> void:
 	_build_root()
 	_build_top_bar()
 	_build_dock()
-	_build_window()
+	_build_screen_layer()
 	_build_city_layer()
 	_build_menu()
 	_build_settings()
@@ -218,10 +200,8 @@ func _ready() -> void:
 	Economy.status_updated.connect(_on_status)
 	Economy.speed_changed.connect(func(_index: int) -> void: _update_top_bar())
 	I18n.locale_changed.connect(_on_locale_changed)
-	get_viewport().size_changed.connect(_apply_window_size)
 
 	_on_status(_initial_summary())
-	_apply_window_size()
 
 
 func _process(_delta: float) -> void:
@@ -1700,113 +1680,25 @@ func _refresh_dock_state() -> void:
 		UiKit.set_tab_active(_dock_buttons[id], id == root_screen)
 
 
-# --- Janela ------------------------------------------------------------------
+# --- Camada das telas ---------------------------------------------------------
 
-func _build_window() -> void:
+## As telas de papel (T1–T5) desenham a própria moldura sobre o mapa; a camada
+## só as empilha e fica invisível quando não há tela aberta.
+func _build_screen_layer() -> void:
 	_window_layer = Control.new()
 	_window_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_window_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_window_layer.visible = false
 	_root.add_child(_window_layer)
-
-	_backdrop = ColorRect.new()
-	_backdrop.color = UiKit.OVERLAY
-	_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	_backdrop.gui_input.connect(_on_backdrop_input)
-	_window_layer.add_child(_backdrop)
-
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_window_layer.add_child(center)
-
-	_window = PanelContainer.new()
-	_window.custom_minimum_size = WINDOW_MIN
-	_window.mouse_filter = Control.MOUSE_FILTER_STOP
-	var style := UiKit.flat(UiKit.PANEL, UiKit.EDGE, 20.0)
-	style.content_margin_top = UiKit.SPACE_LG
-	style.content_margin_bottom = UiKit.SPACE_MD
-	_window.add_theme_stylebox_override("panel", style)
-	center.add_child(_window)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	_window.add_child(box)
-
-	box.add_child(_window_header())
-	box.add_child(UiKit.rule(Color(UiKit.BRASS, 0.35)))
-
-	_window_body = VBoxContainer.new()
-	_window_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_window_body.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	box.add_child(_window_body)
-
-	box.add_child(UiKit.rule())
-	box.add_child(_window_footer())
-
 	_instantiate_screens()
-
-
-func _window_header() -> Control:
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", UiKit.SPACE_SM)
-
-	_back_button = UiKit.ghost_button("‹ " + I18n.t("common.back"))
-	_back_button.custom_minimum_size.y = 26.0
-	_back_button.visible = false
-	_back_button.pressed.connect(_go_back)
-	header.add_child(_back_button)
-
-	var titles := VBoxContainer.new()
-	titles.add_theme_constant_override("separation", 0)
-	titles.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_window_crumb = UiKit.caption("", UiKit.BRASS)
-	titles.add_child(_window_crumb)
-	_window_title = UiKit.title("", 22)
-	titles.add_child(_window_title)
-	_window_subtitle = UiKit.caption("", UiKit.TEXT_MUTED)
-	titles.add_child(_window_subtitle)
-	header.add_child(titles)
-
-	header.add_child(UiKit.spacer())
-
-	_window_hint = UiKit.label("", UiKit.FS_CAPTION + 1, UiKit.TEXT_MUTED)
-	_window_hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	header.add_child(_window_hint)
-
-	var close := UiKit.icon_button("×", I18n.t("common.close"))
-	close.pressed.connect(_close_screen)
-	header.add_child(close)
-
-	return header
-
-
-func _window_footer() -> Control:
-	var footer := HBoxContainer.new()
-	footer.add_theme_constant_override("separation", UiKit.SPACE_SM)
-
-	var shortcuts := UiKit.label(I18n.t("hud.shortcuts"), UiKit.FS_CAPTION, UiKit.TEXT_MUTED)
-	footer.add_child(shortcuts)
-	footer.add_child(UiKit.spacer())
-
-	var esc := UiKit.status_pill("ESC", "neutral")
-	footer.add_child(esc)
-	return footer
 
 
 func _instantiate_screens() -> void:
 	for id in SCREEN_ORDER:
 		var screen: Node = _new_screen(id)
 		screen.visible = false
-		# Telas que trazem a própria moldura (spec de template) vivem na camada
-		# da janela, sobre o mapa, em vez de dentro do painel modal escuro.
-		if _uses_window_shell(screen):
-			screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			_window_layer.add_child(screen)
-		else:
-			screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
-			_window_body.add_child(screen)
+		screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_window_layer.add_child(screen)
 		_screens[id] = screen
 
 	_screens["economy"].city_requested.connect(_on_city_requested)
@@ -1824,22 +1716,11 @@ func _instantiate_screens() -> void:
 
 	var alerts_screen: Node = ALERTS_SCREEN.new()
 	alerts_screen.visible = false
-	if _uses_window_shell(alerts_screen):
-		alerts_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_window_layer.add_child(alerts_screen)
-	else:
-		alerts_screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		_window_body.add_child(alerts_screen)
+	alerts_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_window_layer.add_child(alerts_screen)
 	_screens["alerts"] = alerts_screen
 	alerts_screen.alert_requested.connect(_on_city_navigate)
 	alerts_screen.close_requested.connect(_close_screen)
-
-
-## A tela monta a própria moldura de papel (template T2)? Então o HUD esconde
-## o painel modal escuro e deixa a spec desenhar a janela.
-func _uses_window_shell(screen: Node) -> bool:
-	return screen != null and screen.has_method("uses_window_shell") \
-			and bool(screen.call("uses_window_shell"))
 
 
 ## A ficha de cidade não é um modal: ela mora numa camada própria, ancorada à
@@ -1879,15 +1760,6 @@ func _new_screen(id: String) -> Node:
 			return POLITICS_SCREEN.new()
 
 
-func _apply_window_size() -> void:
-	if _window == null:
-		return
-	var viewport_size := get_viewport().get_visible_rect().size
-	_window.custom_minimum_size = Vector2(
-		clampf(viewport_size.x * WINDOW_RATIO.x, WINDOW_MIN.x, WINDOW_MAX.x),
-		clampf(viewport_size.y * WINDOW_RATIO.y, WINDOW_MIN.y, WINDOW_MAX.y))
-
-
 func _toggle_screen(id: String) -> void:
 	if _active == id and _window_layer.visible and _stack.size() <= 1:
 		_close_screen()
@@ -1922,11 +1794,6 @@ func _show_top() -> void:
 	var kind := String(entry["kind"])
 	var id := String(entry["id"])
 	_active = id if kind == "screen" else "city"
-	# Telas T2 desenham a própria janela de papel; o painel modal recolhe.
-	var screen_node: Node = _screens[id] if kind == "screen" else null
-	var sheet := screen_node != null and _uses_window_shell(screen_node)
-	_window.visible = not sheet
-	_backdrop.visible = not sheet
 
 	_city_screen.visible = false
 	for screen_id in _screens:
@@ -1935,10 +1802,6 @@ func _show_top() -> void:
 	if kind == "screen":
 		_screens[id].visible = true
 		_screens[id].refresh(_summary)
-		_window_title.text = I18n.t(SCREEN_LABELS[id])
-		_window_subtitle.text = _screen_subtitle(id)
-		_window_hint.text = I18n.t(SCREEN_HINTS[id])
-		_render_crumb()
 	else:
 		var city := _find_city(id)
 		_city_screen.visible = true
@@ -1950,7 +1813,6 @@ func _show_top() -> void:
 		_city_screen.set_crumb(_city_crumb(city), _stack.size() > 1)
 		city_focused.emit(id)
 
-	_back_button.visible = _stack.size() > 1
 	_window_layer.visible = kind == "screen"
 	_city_layer.visible = kind == "city"
 	# O minimapa fica no canto inferior direito e a doca no topo direito: ambos
@@ -1959,13 +1821,9 @@ func _show_top() -> void:
 		_minimap.visible = kind == "screen"
 	if _dock_holder != null:
 		_dock_holder.visible = kind == "screen"
-	_apply_window_size()
 	_refresh_dock_state()
-	var focus_root: Control = _city_screen if kind == "city" \
-			else (_screens[id] if sheet else _window_body)
+	var focus_root: Control = _city_screen if kind == "city" else _screens[id]
 	UiKit.focus_first(focus_root)
-	if get_viewport().gui_get_focus_owner() == null:
-		UiKit.focus_first(_city_screen if kind == "city" else _window)
 	UiSfx.play(UiSfx.Sound.OPEN if was_open else UiSfx.Sound.MAXIMIZE)
 
 
@@ -1988,18 +1846,6 @@ func _city_crumb(city: Dictionary) -> String:
 	return trail
 
 
-func _render_crumb() -> void:
-	var parts := PackedStringArray()
-	for entry in _stack:
-		if String(entry["kind"]) == "screen":
-			parts.append(I18n.t(SCREEN_LABELS[String(entry["id"])]))
-		else:
-			var city := _find_city(String(entry["id"]))
-			parts.append(I18n.t("city.title") if city.is_empty() \
-					else I18n.city_name(city["id"], city["name"]))
-	_window_crumb.text = " › ".join(parts)
-
-
 ## Volta um nível; se já está na raiz, fecha a janela.
 func _go_back() -> void:
 	if _stack.size() <= 1:
@@ -2018,48 +1864,8 @@ func current_context() -> Array:
 	return _stack.duplicate(true)
 
 
-func _screen_subtitle(id: String) -> String:
-	var cities: Array = _summary.get("cities", [])
-	match id:
-		"economy":
-			return I18n.t("econ.summary", {
-				"cities": UiKit.number(cities.size()),
-				"deficit": UiKit.number(_deficit_count(cities)),
-				"transit": UiKit.number(_transit_total(cities)) + " t",
-			})
-		"trade":
-			return I18n.t("trade.subtitle")
-		"production":
-			return I18n.t("dock.production")
-		"population":
-			var population := 0.0
-			for city in cities:
-				population += float(city["population"])
-			return I18n.t("hud.population") + " " \
-					+ UiKit.number(population / 1_000_000.0, 1) + " M"
-		"alerts":
-			return I18n.t("alerts.subtitle", {"count": _alerts().size()})
-		_:
-			return I18n.t("dock.politics")
-
-
-func _deficit_count(cities: Array) -> int:
-	var total := 0
-	for city in cities:
-		if float(city["deficit"]) > 0.0:
-			total += 1
-	return total
-
-
 func _alerts() -> Array:
 	return ALERTS_MODEL.derive(_summary)
-
-
-func _transit_total(cities: Array) -> float:
-	var total := 0.0
-	for city in cities:
-		total += float(city["in_transit"])
-	return total
 
 
 func _close_screen() -> void:
@@ -2075,16 +1881,9 @@ func _close_screen() -> void:
 		_minimap.visible = true
 	if _dock_holder != null:
 		_dock_holder.visible = true
-	_back_button.visible = false
 	_refresh_dock_state()
 	if was_visible:
 		window_closed.emit()
-
-
-func _on_backdrop_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
-			and event.pressed:
-		_close_screen()
 
 
 # --- Detalhe da cidade --------------------------------------------------------
@@ -2396,9 +2195,7 @@ func _on_status(summary: Dictionary) -> void:
 	if _window_layer.visible and not _stack.is_empty():
 		var entry: Dictionary = _stack.back()
 		if String(entry["kind"]) == "screen":
-			var id := String(entry["id"])
-			_window_subtitle.text = _screen_subtitle(id)
-			_screens[id].refresh(summary)
+			_screens[String(entry["id"])].refresh(_summary)
 	elif _city_layer.visible:
 		_city_screen.refresh(summary)
 

@@ -55,8 +55,8 @@ func _run() -> void:
 		return
 	if not screen.visible:
 		_failures.append("tela de alertas não ficou visível após open_screen")
-	if _hud.get("_window").visible:
-		_failures.append("painel modal escuro continuou aberto (esperado T2)")
+	if not _hud.get("_window_layer").visible:
+		_failures.append("camada das telas não abriu (esperado T2)")
 	if not screen.has_method("uses_window_shell") \
 			or not bool(screen.call("uses_window_shell")):
 		_failures.append("tela de alertas não declara moldura própria")

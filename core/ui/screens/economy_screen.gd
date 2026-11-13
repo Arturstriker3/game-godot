@@ -47,7 +47,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-## O HUD usa isto para trocar a janela modal própria pela moldura da spec.
+## A tela desenha a própria moldura de papel (template T2), sobre o mapa.
 func uses_window_shell() -> bool:
 	return true
 
