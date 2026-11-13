@@ -617,14 +617,18 @@ func _exit_tree() -> void:
 func set_mode(mode: String) -> void:
 	_mode = mode
 	var is_atlas := mode == "political"
-	var show_overlay := mode not in ["geographic", "political", "routes"]
+	# Rotas usa a carta branca (MapBase), mas mantém as fronteiras discretas do
+	# overlay político — como o mapa de recursos. Só a geografia (fundo de
+	# satélite) e o atlas político (que já desenha costa e fronteiras) dispensam.
+	var show_overlay := mode not in ["geographic", "political"]
 
 	# Aplica em todas as cópias laterais (wrap), não só na central.
 	for root in _content_roots():
 		_set_child_visible(root, "MapBase", not is_atlas)
 		_set_child_visible(root, "AtlasBase", is_atlas)
 		# O atlas já desenha costa e fronteiras; o overlay serve aos modos de
-		# calor, que continuam sobre o satélite com fronteiras discretas.
+		# calor e a rotas, que continuam sobre a carta branca com fronteiras
+		# discretas.
 		_set_child_visible(root, "PoliticalLayer", show_overlay)
 		var labels := root.get_node_or_null("NationLabels")
 		if labels != null:
@@ -1682,6 +1686,16 @@ func _apply_territory_materials() -> void:
 		_political_material.set_shader_parameter("world_province", ATLAS_WORLD_PROVINCE)
 		_political_material.set_shader_parameter("province_owner", owner)
 		_political_material.set_shader_parameter("dynamic_territory", true)
+
+	# Hover no nome/bandeira da nação: registra os materiais do mapa para que
+	# `set_highlight_nation`/`clear_highlight` reescrevam o uniforme sozinhos
+	# (antes só a captura registrava, e o hover in-game não acendia o latão).
+	# O overlay dos modos de calor não declara `highlight_nation` e é ignorado
+	# pela própria API.
+	if _atlas_material != null:
+		_territory.apply_nation_highlight(_atlas_material)
+	if _political_material != null:
+		_territory.apply_nation_highlight(_political_material)
 
 
 ## Debug: força a nação de uma cidade (override de território).

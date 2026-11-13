@@ -218,12 +218,11 @@ e no build do atlas (sem mudar `nav_mask`, pathfinding ou economia):
   latão. `dyn_block` passou a devolver `nation_fill`/`nation_edge` por camada.
   O hover do nome/bandeira (`city_world.set_nation_highlight`, com guarda
   `has_method`) chama `set_highlight_nation`, que reescreve os materiais
-  registrados. **Pendência:** `city_world.gd` ainda não chama
-  `apply_nation_highlight` nos próprios materiais (`_atlas_material`/
-  `_political_material`), então hoje o destaque aparece via
-  `map_capture --highlight=TAG` e `tools/nation_highlight_test.gd`; o hover
-  in-game só ganha o efeito quando esse arquivo (em edição por outra tarefa)
-  registrar os dois materiais.
+  registrados. `city_world._apply_territory_materials` registra
+  `_atlas_material` e `_political_material` com `apply_nation_highlight` no
+  build, então o hover in-game acende o latão sem passo manual (o overlay dos
+  modos de calor não declara `highlight_nation` e é ignorado pela API).
+  Coberto por `tools/nation_highlight_test.gd`.
   Evidência de captura: `tools/map_capture.gd -- --highlight=TAG`.
   Limite conhecido: o destaque é por índice de dono, então tags cujo código de
   atlas difere do roster (KOS→XKX) iluminam só os índices daquele código; as 8
@@ -262,6 +261,10 @@ e no build do atlas (sem mudar `nav_mask`, pathfinding ou economia):
   publicados pelo mapa (`HUD.set_routes_stats` ← `trade_flow_limit/total/days`),
   filtro por modal (`set_modal_filter`, sem descartar o agregado de 7 dias),
   escala de espessura em 100 / 1.000 / 10.000 t/dia e estado vazio honesto.
+- **Fronteiras discretas no modo rotas:** `city_world.set_mode` mostra o
+  `PoliticalLayer` (o mesmo overlay dos modos de calor: `fill_opacity` 0,028 e
+  `border_opacity` 0,42) em rotas; só `geographic` e `political` o dispensam
+  (`show_overlay := mode not in ["geographic", "political"]`).
 - **Nomes de regiões e mares:** lista curada de 41 centros em
   `CityWorld.REGIONS` (sem fronteira inventada), texto em Cinzel itálico com
   espaçamento largo. Só no LONGE; mares também no MÉDIO. A visibilidade respeita
