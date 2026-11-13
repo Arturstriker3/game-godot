@@ -62,6 +62,9 @@ const PLACE_ICON_GAP := 0.3
 ## falha em vez de deixar o runner headless pendurado no CI. A varredura leva
 ## ~7 s nesta máquina; 120 s é teto rígido, não orçamento.
 const TEST_TIMEOUT_SEC := 120.0
+## Raio (u) em torno da origem do mundo (lat 0/lon 0) em que nenhum marcador
+## visível pode nascer: ali é o golfo da Guiné, não há cidade.
+const ORIGIN_RADIUS := 1.0
 ## Distância RGB mínima entre vizinhos no mapa político (mesma regra do
 ## TerritoryMap.COLOR_MIN_DISTANCE). O ΔE ≥ 30 dos dados é auditado no gerador;
 ## aqui o RGB é o proxy barato que o próprio mapa aplica.
@@ -139,6 +142,8 @@ func _run() -> void:
 	_world = load("res://map/city_world.gd").new()
 	add_child(_world)
 	_world.build(cities, ports)
+	# Antes de mover a câmera: nada visível pode ter nascido na origem.
+	_check_no_marker_at_origin()
 
 	_pivot = Node3D.new()
 	add_child(_pivot)
@@ -532,6 +537,47 @@ func _check_port_offset_edge() -> void:
 func _collect_errors(tag: String) -> void:
 	for error: String in _logger.take():
 		_failures.append("%s: erro de script: %s" % [tag, error])
+
+
+## (0) Nenhum marcador/ícone/rótulo VISÍVEL pode ficar na origem do mundo
+## (lat 0/lon 0, golfo da Guiné) quando não há cidade lá. Era o marcador
+## detalhado que nascia em (0,0,0) e só era posicionado quando o LOD varria a
+## região — a "cidade no meio do mar" vista perto da África.
+func _check_no_marker_at_origin() -> void:
+	if not _world.position.is_equal_approx(Vector3.ZERO):
+		_failures.append("origem: o mapa já foi deslocado antes da checagem")
+		return
+	for record: Dictionary in _world._city_nodes:
+		var anchor: Vector3 = _world.to_global(record["anchor"])
+		if anchor.length() < ORIGIN_RADIUS:
+			print("[map_frames] origem: há cidade real em (0,0,0); checagem ignorada")
+			return
+	var offenders: Array[String] = []
+	for city_record: Dictionary in _world._city_nodes:
+		var city_id := String(city_record.get("id", ""))
+		for key: String in ["icon", "ring"]:
+			var sprite: Sprite3D = city_record.get(key)
+			if sprite != null and sprite.visible \
+					and sprite.global_position.length() < ORIGIN_RADIUS:
+				offenders.append("%s.%s" % [city_id, key])
+		var label: Label3D = city_record.get("label")
+		if label != null and label.visible \
+				and label.global_position.length() < ORIGIN_RADIUS:
+			offenders.append("%s.label" % city_id)
+	# Rede de segurança: qualquer Sprite3D/Label3D visível sob o mapa.
+	for node: Node in _world.find_children("*", "Sprite3D", true, false):
+		var sprite := node as Sprite3D
+		if sprite.visible and sprite.global_position.length() < ORIGIN_RADIUS:
+			offenders.append("Sprite3D %s" % sprite.name)
+	for node: Node in _world.find_children("*", "Label3D", true, false):
+		var label := node as Label3D
+		if label.visible and label.global_position.length() < ORIGIN_RADIUS:
+			offenders.append("Label3D %s" % label.name)
+	if offenders.is_empty():
+		print("[map_frames] origem: nenhum marcador visível em (0,0,0)")
+		return
+	_failures.append("marcador visível na origem (0,0,0): "
+			+ ", ".join(offenders))
 
 
 ## Espera o layout fatiado e o fade de nível assentarem (máx. 90 frames).

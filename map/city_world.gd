@@ -1418,6 +1418,11 @@ func _build_cities(cities: Array) -> void:
 		}
 		_city_nodes.append(record)
 		_records_by_id[city_id] = record
+		# Marcador detalhado já nasce no lugar: o laço de LOD só varre perto da
+		# câmera, então o que fica longe do scan ficaria em (0,0,0) até o mapa
+		# se aproximar (marcador visível no golfo da Guiné).
+		if icon != null or ring != null:
+			_place_city_marker(record)
 		# Raio em que o LOD ainda atualiza este registro. Não é mais a faixa de
 		# fade do nome (o nível de zoom decide o texto); serve ao tecido urbano
 		# e ao assentamento do registro longe da câmera.
@@ -1635,6 +1640,10 @@ func _add_place_icon(render_priority: int, texture: Texture2D) -> Dictionary:
 	icon.modulate = ICON_COLOR
 	icon.no_depth_test = true
 	icon.render_priority = render_priority - 1
+	# Nasce invisível: até `_place_city_marker`/layout posicionar o marcador ele
+	# ficaria na origem do mundo (lat 0/lon 0, golfo da Guiné) — a "cidade no
+	# meio do mar" que aparecia para quem olhava a África.
+	icon.visible = false
 	_places.add_child(icon)
 
 	var ring := Sprite3D.new()
@@ -1643,6 +1652,7 @@ func _add_place_icon(render_priority: int, texture: Texture2D) -> Dictionary:
 	ring.transparent = true
 	ring.no_depth_test = true
 	ring.render_priority = render_priority - 2
+	ring.visible = false
 	_places.add_child(ring)
 
 	return {"icon": icon, "ring": ring}
