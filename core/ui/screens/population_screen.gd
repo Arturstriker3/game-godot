@@ -324,8 +324,6 @@ func _update_nation_card(nation: Dictionary) -> void:
 			marked = true
 			break
 	_set_hidden("nations.card.marks", not marked)
-	_set_text("nations.card.source",
-			CultureMixView.source_line(CultureDb.nation_source(tag)))
 
 
 func _update_city_card(city: Dictionary) -> void:
@@ -349,12 +347,6 @@ func _update_city_card(city: Dictionary) -> void:
 	if _city_cultures != null:
 		_city_cultures.show_mix(CultureDb.city_mix(city_id),
 				I18n.t("pop.culture.empty"), false)
-	var source := CultureDb.city_source(city_id)
-	var estimate := bool(source.get("estimate", false))
-	_set_hidden("cities.card.estimate", not estimate)
-	var line := "" if estimate else CultureMixView.source_line(source)
-	_set_text("cities.card.source", line)
-	_set_hidden("cities.card.source", line.is_empty())
 
 
 # --- Dados -------------------------------------------------------------------

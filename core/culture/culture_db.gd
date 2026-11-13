@@ -7,16 +7,16 @@ class_name CultureDb
 ## tarefa; por isso tudo é lido **por nome de coluna**, nunca por posição, e
 ## nenhum id de cultura é presumido. O serviço apenas indexa o que existe:
 ##
-## - `cultures.json` (catálogo: id, nomes pt/en/es, família, cor, parent) com
-##   `cultures.csv` como alternativa quando o JSON não existe;
-## - `nation_cultures.csv`: cultura principal, aceitas, composição (%) e fonte;
-## - `city_cultures.csv`: mistura por cidade (até 5 + outras), fonte e
-##   subculturas.
+## - `cultures.json` (catálogo: id, nomes pt/en/es, família, cor, `nation`,
+##   `home_region`) com `cultures.csv` como alternativa quando o JSON não existe;
+## - `nation_cultures.csv`: cultura principal (a nacional), aceitas e composição;
+## - `city_cultures.csv`: mistura por cidade (até 5 + outras).
 ##
 ## Nada é derivado por regra de jogo: composições chegam da fonte e são
 ## devolvidas na ordem da fonte (maior participação primeiro, "outras" no fim).
 ## A cor hex é a da fonte; o nome sai no idioma ativo, ou no idioma pedido em
-## `culture_name(id, locale)`.
+## `culture_name(id, locale)`. A fonte/ano fica nos dados, mas não é exposta:
+## a interface mostra apenas a composição.
 
 const CULTURE_DIR := "res://data/definitions/culture"
 const CATALOG_JSON := CULTURE_DIR + "/cultures.json"
@@ -26,8 +26,6 @@ const CITY_CSV := CULTURE_DIR + "/city_cultures.csv"
 
 ## Id agregado que fecha a composição; recebe rótulo i18n em vez do catálogo.
 const OTHER_ID := "outras"
-## Fontes que declaram a mistura da cidade como estimativa.
-const ESTIMATE_SOURCES: Array[String] = ["national_fallback", "estimate_post2022"]
 
 const LOCALE_SUFFIX := {"pt_BR": "pt", "pt": "pt", "en": "en", "es": "es"}
 
@@ -38,6 +36,7 @@ const INK_FALLBACK := Color("#2b2418")
 static var _cultures: Dictionary = {}
 static var _nations: Dictionary = {}
 static var _cities: Dictionary = {}
+static var _by_nation: Dictionary = {}
 static var _loaded := false
 
 
@@ -50,6 +49,7 @@ static func load_data(force: bool = false) -> bool:
 	_cultures.clear()
 	_nations.clear()
 	_cities.clear()
+	_by_nation.clear()
 	_loaded = true
 	_load_catalog()
 	_load_nations()
@@ -62,7 +62,8 @@ static func is_loaded() -> bool:
 
 
 ## Catálogo de uma cultura: {id, name (idioma ativo), family, color (hex),
-## color_value (Color), parent}. Cultura fora do catálogo devolve `{}`.
+## color_value (Color), nation (tag ou ""), home_region (Array[String])}.
+## Cultura fora do catálogo devolve `{}`.
 static func culture(id: String) -> Dictionary:
 	load_data()
 	var entry: Dictionary = _cultures.get(id, {})
@@ -74,8 +75,16 @@ static func culture(id: String) -> Dictionary:
 		"family": String(entry.get("family", "")),
 		"color": String(entry.get("color", "")),
 		"color_value": culture_color(id),
-		"parent": String(entry.get("parent", "")),
+		"nation": String(entry.get("nation", "")),
+		"home_region": (entry.get("home_region", []) as Array).duplicate(),
 	}
+
+
+## Id da cultura nacional de uma tag ("" se a nação não tem dado). É a chave
+## cultura ↔ nação usada pela futura migração.
+static func national_culture(tag: String) -> String:
+	load_data()
+	return String(_by_nation.get(tag, ""))
 
 
 ## Nome no idioma ativo (ou no `locale` pedido). Ids desconhecidos aparecem
@@ -159,30 +168,6 @@ static func accepted(tag: String) -> Array:
 	return result
 
 
-## Fonte da composição nacional: {text, year, estimate}.
-static func nation_source(tag: String) -> Dictionary:
-	load_data()
-	var entry: Dictionary = _nations.get(tag, {})
-	var source := String(entry.get("source", ""))
-	return {
-		"text": source,
-		"year": String(entry.get("year", "")),
-		"estimate": is_estimate(source),
-	}
-
-
-## Fonte da mistura da cidade: {text, estimate, subcultures}.
-static func city_source(city_id: String) -> Dictionary:
-	load_data()
-	var entry: Dictionary = _cities.get(city_id, {})
-	var source := String(entry.get("source", ""))
-	return {
-		"text": source,
-		"estimate": is_estimate(source),
-		"subcultures": entry.get("subcultures", []),
-	}
-
-
 static func has_nation(tag: String) -> bool:
 	load_data()
 	return _nations.has(tag)
@@ -210,9 +195,10 @@ static func culture_count() -> int:
 	return _cultures.size()
 
 
-## `national_fallback` e `estimate_post2022` são estimativas declaradas.
-static func is_estimate(source: String) -> bool:
-	return ESTIMATE_SOURCES.has(source.strip_edges())
+## Ids do catálogo na ordem de leitura (JSON/CSV).
+static func culture_ids() -> Array:
+	load_data()
+	return _cultures.keys()
 
 
 # --- Composição ---------------------------------------------------------------
@@ -272,15 +258,24 @@ static func _load_catalog() -> void:
 		var id := _text(entry, ["id", "culture"])
 		if id.is_empty():
 			continue
+		var nation := _text(entry, ["nation"])
+		var home: Array = []
+		for region in _text(entry, ["home_region"]).split(";", false):
+			var clean := region.strip_edges()
+			if not clean.is_empty():
+				home.append(clean)
 		_cultures[id] = {
 			"id": id,
 			"name_pt": _text(entry, ["name_pt", "pt"]),
 			"name_en": _text(entry, ["name_en", "en"]),
 			"name_es": _text(entry, ["name_es", "es"]),
 			"family": _text(entry, ["family", "familia"]),
-			"parent": _text(entry, ["parent"]),
+			"nation": nation,
+			"home_region": home,
 			"color": _text(entry, ["color", "cor"]),
 		}
+		if not nation.is_empty() and not _by_nation.has(nation):
+			_by_nation[nation] = id
 
 
 static func _load_nations() -> void:
@@ -302,8 +297,6 @@ static func _load_nations() -> void:
 			"accepted": accepted_list,
 			"accepted_lookup": accepted_lookup,
 			"mix": _parse_composition(_text(entry, ["composition", "mix"])),
-			"source": _text(entry, ["source"]),
-			"year": _text(entry, ["year"]),
 		}
 
 
@@ -314,10 +307,7 @@ static func _load_cities() -> void:
 		if city_id.is_empty():
 			continue
 		_cities[city_id] = {
-			"nation": _text(entry, ["nation", "tag"]),
 			"mix": _parse_composition(_text(entry, ["cultures", "composition"])),
-			"subcultures": _parse_composition(_text(entry, ["subcultures"])),
-			"source": _text(entry, ["source"]),
 		}
 
 

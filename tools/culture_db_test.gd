@@ -1,8 +1,9 @@
 extends SceneTree
 
-## Contrato de leitura das culturas: catálogo, composição nacional, mistura por
-## cidade, papéis (principal/aceita), "outras" no fim, nomes nos três idiomas e
-## marcação de estimativa. O teste não presume ids: descobre tudo pela API.
+## Contrato de leitura das culturas: catálogo (nacional + sem estado),
+## composição nacional, mistura por cidade, papéis (principal/aceita), "outras"
+## no fim e nomes nos três idiomas. O teste não presume ids: descobre tudo pela
+## API. Fonte e "estimativa" não são mais expostas.
 ##
 ##   godot --headless --path . --script res://tools/culture_db_test.gd
 
@@ -88,17 +89,24 @@ func _check_nations(tags: Array) -> void:
 			_fail("%s: primary() sem id" % key)
 		if not CultureDbScript.accepted(key).is_empty():
 			with_accepted += 1
-		var source: Dictionary = CultureDbScript.nation_source(key)
-		result_ok(not String(source.get("text", "")).is_empty(),
-				"%s: fonte nacional vazia" % key)
+		var national_id := CultureDbScript.national_culture(key)
+		if national_id.is_empty():
+			_fail("%s: sem cultura nacional" % key)
+		else:
+			var national := CultureDbScript.culture(national_id)
+			if national.is_empty():
+				_fail("%s: cultura nacional %s fora do catálogo" % [key, national_id])
+			elif String(national.get("nation", "")) != key:
+				_fail("%s: cultura nacional sem nation=%s" % [key, key])
+			elif String(primary.get("id", "")) != national_id:
+				_fail("%s: primary() %s != nacional %s"
+						% [key, String(primary.get("id", "")), national_id])
 
 	print("principal na composição=%d/%d aceitas=%d/%d outras-por-último=%d/%d"
 			% [with_primary, tags.size(), with_accepted, tags.size(),
 			others_last, others_present])
 	if with_primary < int(tags.size() * 0.9):
 		_fail("só %d nações têm a principal na composição" % with_primary)
-	if with_accepted < int(tags.size() * 0.5):
-		_fail("poucas nações com culturas aceitas: %d" % with_accepted)
 
 	# Fora do arquivo: vazio, sem inventar.
 	if not CultureDbScript.nation_mix("ZZZ").is_empty():
@@ -110,10 +118,8 @@ func _check_nations(tags: Array) -> void:
 
 
 func _check_cities(ids: Array) -> void:
-	var estimates := 0
 	var measured := 0
 	var max_entries := 0
-	var with_subcultures := 0
 	for city_id: Variant in ids:
 		var key := String(city_id)
 		var mix: Array = CultureDbScript.city_mix(key)
@@ -145,38 +151,44 @@ func _check_cities(ids: Array) -> void:
 			total += percent
 		if absf(total - 100.0) > 2.0:
 			_fail("%s: mistura soma %.1f%%" % [key, total])
-		var source: Dictionary = CultureDbScript.city_source(key)
-		result_ok(not String(source.get("text", "")).is_empty(),
-				"%s: fonte da cidade vazia" % key)
-		if bool(source.get("estimate", false)):
-			estimates += 1
-		if not (source.get("subcultures", []) as Array).is_empty():
-			with_subcultures += 1
 
-	print("cidades medidas=%d máx. entradas=%d estimativas=%d subculturas=%d"
-			% [measured, max_entries, estimates, with_subcultures])
-	if estimates <= 0:
-		_fail("nenhuma cidade estimada (national_fallback/estimate_post2022)")
-	if estimates >= measured:
-		_fail("todas as cidades marcadas como estimativa")
-	if with_subcultures <= 0:
-		_fail("coluna subcultures não foi lida")
+	print("cidades medidas=%d máx. entradas=%d" % [measured, max_entries])
+	if measured != ids.size():
+		_fail("cidades lidas=%d mas com mistura=%d" % [ids.size(), measured])
 	if not CultureDbScript.city_mix("ZZZ").is_empty():
 		_fail("cidade inexistente devolveu mistura")
 	if CultureDbScript.has_city("ZZZ"):
 		_fail("has_city aceitou id inexistente")
 
-	# A fonte é quem decide: o teste só confirma a marcação declarada.
-	for known in ["national_fallback", "estimate_post2022"]:
-		if not CultureDbScript.is_estimate(known):
-			_fail("%s deveria ser estimativa" % known)
-	if CultureDbScript.is_estimate("Censo 2022 (município)"):
-		_fail("censo marcado como estimativa")
-	if CultureDbScript.is_estimate(""):
-		_fail("fonte vazia marcada como estimativa")
-
 
 func _check_catalog(tags: Array, cities: Array) -> void:
+	var national := 0
+	var stateless := 0
+	for id: Variant in CultureDbScript.culture_ids():
+		var entry: Dictionary = CultureDbScript.culture(String(id))
+		if entry.is_empty():
+			_fail("catalogou id vazio na leitura: %s" % id)
+			continue
+		if entry.has("parent"):
+			_fail("%s: campo 'parent' ainda exposto" % id)
+		var tag := String(entry.get("nation", ""))
+		var home: Array = entry.get("home_region", [])
+		if tag.is_empty():
+			stateless += 1
+			if home.is_empty():
+				_fail("%s: povo sem estado sem home_region" % id)
+		else:
+			national += 1
+			if not home.is_empty():
+				_fail("%s: cultura nacional com home_region" % id)
+			if CultureDbScript.national_culture(tag) != String(id):
+				_fail("%s: nation=%s não aponta de volta" % [id, tag])
+	print("catálogo nacional=%d sem estado=%d" % [national, stateless])
+	if national != tags.size():
+		_fail("%d culturas nacionais para %d nações" % [national, tags.size()])
+	if stateless <= 0:
+		_fail("catálogo sem povos sem estado")
+
 	var complete := 0
 	var colored := 0
 	var total := 0
@@ -269,8 +281,8 @@ func _fail(message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("PASS: catálogo, nações e cidades lidos por coluna; papéis, "
-				+ "ordem e estimativas conferidos")
+		print("PASS: catálogo nacional (1 por nação) e povos sem estado lidos por "
+				+ "coluna; papéis e ordem conferidos")
 		quit(0)
 		return
 	for failure in _failures:

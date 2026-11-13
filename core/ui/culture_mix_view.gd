@@ -39,17 +39,6 @@ func _clear() -> void:
 		child.queue_free()
 
 
-## Linha de fonte da composição. Fonte-marcador (`national_fallback`,
-## `estimate_post2022`) nunca aparece crua: vira a palavra "estimativa".
-static func source_line(source: Dictionary) -> String:
-	if bool(source.get("estimate", false)):
-		return I18n.t("pop.culture.estimate")
-	var text := String(source.get("text", "")).strip_edges()
-	if text.is_empty():
-		return ""
-	return I18n.t("pop.culture.source", {"source": text})
-
-
 func _row(item: Dictionary, show_marks: bool) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)

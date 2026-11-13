@@ -221,16 +221,6 @@
                               "size": 11,
                               "tone": "suave",
                               "slot": "nations.card.marks"
-                            },
-                            {
-                              "type": "label",
-                              "text": "",
-                              "font": "typed",
-                              "size": 11,
-                              "tone": "suave",
-                              "wrap": true,
-                              "wrap_width": 330,
-                              "slot": "nations.card.source"
                             }
                           ]
                         },
@@ -397,25 +387,6 @@
                           "slot": "cities.card.cultures",
                           "gap": 2,
                           "blocks": []
-                        },
-                        {
-                          "type": "label",
-                          "text": "@pop.culture.estimate",
-                          "font": "typed",
-                          "size": 11,
-                          "tone": "suave",
-                          "slot": "cities.card.estimate",
-                          "hidden": true
-                        },
-                        {
-                          "type": "label",
-                          "text": "",
-                          "font": "typed",
-                          "size": 11,
-                          "tone": "suave",
-                          "wrap": true,
-                          "wrap_width": 330,
-                          "slot": "cities.card.source"
                         },
                         {
                           "type": "paper_card",

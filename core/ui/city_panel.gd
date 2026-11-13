@@ -348,12 +348,6 @@ func _refresh_cultures(city_id: String) -> void:
 	if _culture_view != null:
 		_culture_view.show_mix(CultureDb.city_mix(city_id),
 				I18n.t("pop.culture.empty"), false)
-	var source := CultureDb.city_source(city_id)
-	var estimate := bool(source.get("estimate", false))
-	_set_hidden("city.cultures.estimate", not estimate)
-	var line := "" if estimate else CultureMixView.source_line(source)
-	_set_text("city.cultures.source", line)
-	_set_hidden("city.cultures.source", line.is_empty())
 
 
 func _refresh_production() -> void:

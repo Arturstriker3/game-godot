@@ -258,8 +258,8 @@ func _capture_cultures(size_text: String) -> void:
 			"ficha_cidade_culturas" + suffix,
 			func() -> void: _open_city_culture(_culture_city_id()))
 	await _capture_state(directory, width, height,
-			"ficha_cidade_culturas_estimativa" + suffix,
-			func() -> void: _open_city_culture(_estimate_city_id()))
+			"ficha_cidade_culturas_povo_sem_estado" + suffix,
+			func() -> void: _open_city_culture("ESP-BAR"))
 	_reset_ui()
 
 
@@ -466,22 +466,6 @@ func _culture_city_id() -> String:
 		if String(city.get("id", "")) == "GBR-LDN":
 			return "GBR-LDN"
 	return _first_city_id()
-
-
-## Maior cidade cuja fonte é marcador de estimativa (national_fallback /
-## estimate_post2022), para a captura da nota "estimativa".
-func _estimate_city_id() -> String:
-	var best := ""
-	var best_population := -1.0
-	for city in Economy.last_summary.get("cities", []):
-		var city_id := String(city.get("id", ""))
-		if not bool(CultureDb.city_source(city_id).get("estimate", false)):
-			continue
-		var population := float(city.get("population", 0.0))
-		if population > best_population:
-			best_population = population
-			best = city_id
-	return best
 
 
 func _context() -> Array:

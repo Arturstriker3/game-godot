@@ -147,10 +147,7 @@ func _run() -> void:
 		else:
 			var city_id := String(sheet.call("current_city_id"))
 			var mix := _city_mix_size(city_id)
-			var source := _city_source(city_id)
-			print("ficha %s: %d culturas (estimativa=%s)"
-					% [city_id, (sheet_view as Node).get_child_count(),
-					str(source.get("estimate", false))])
+			print("ficha %s: %d culturas" % [city_id, (sheet_view as Node).get_child_count()])
 			if mix != (sheet_view as Node).get_child_count():
 				_failures.append("ficha desenhou %d de %d culturas"
 						% [(sheet_view as Node).get_child_count(), mix])
@@ -160,11 +157,6 @@ func _run() -> void:
 func _city_mix_size(city_id: String) -> int:
 	var db := load("res://core/culture/culture_db.gd")
 	return (db.city_mix(city_id) as Array).size()
-
-
-func _city_source(city_id: String) -> Dictionary:
-	var db := load("res://core/culture/culture_db.gd")
-	return db.city_source(city_id) as Dictionary
 
 
 func _nation_name(tag: String) -> String:
