@@ -1,227 +1,305 @@
-extends VBoxContainer
+extends Control
 
-## Produção nacional: a cadeia do trigo com os números reais de cada cidade.
-## A simulação atual modela apenas trigo; as etapas seguintes aparecem como
-## planejadas, sem números inventados.
+## Produção no template T2 (Registro da Papelaria).
+##
+## Duas abas de pasta: **Cadeia** (o trigo e as cidades produtoras) e
+## **Cidades** (produção, consumo e cobertura de todas as cidades). A tabela, a
+## busca e a ficha lateral são estado de exibição; os números vêm do resumo
+## publicado pela simulação, sem cálculo econômico aqui.
+##
+## Clicar numa linha seleciona e alimenta a ficha; Enter ou duplo clique abre a
+## ficha T3 da cidade na aba Produção (o HUD empilha a cidade sobre esta tela).
 
 signal city_requested(city_id: String)
+signal close_requested
 
-const TABS := ["chain", "cities"]
-const TAB_LABELS := {"chain": "prod.tab.chain", "cities": "prod.tab.cities"}
-const CITY_WEIGHTS := [1.4, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-const CITY_ALIGN := [false, false, true, true, true, true, true]
+const SPEC_ID := "producao"
+const TAB_IDS := ["chain", "cities"]
 
 var _summary: Dictionary = {}
-var _tab := "chain"
-var _tab_buttons := {}
-var _body: VBoxContainer
-var _scroll: ScrollContainer
+var _tab_index := 0
+var _query := ""
+var _selected := {"chain": "", "cities": ""}
+
+var _root: UiTemplateBuilder.TemplateRoot
+var _slots := {}
+var _tables := {}
+var _tabs: UiTemplateBuilder.FolderTabs
+var _search: LineEdit
+var _structure_key := ""
+
+## Linhas da última atualização, na ordem das tabelas (índice = linha).
+var _chain_rows: Array = []
+var _city_rows: Array = []
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", UiKit.SPACE_MD)
-	size_flags_vertical = Control.SIZE_EXPAND_FILL
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", UiKit.SPACE_XS)
-	for id in TABS:
-		var button := UiKit.tab_button("")
-		button.pressed.connect(_set_tab.bind(id))
-		tabs.add_child(button)
-		_tab_buttons[id] = button
-	tabs.add_child(UiKit.spacer())
-	add_child(tabs)
-	add_child(UiKit.rule())
 
-	_scroll = ScrollContainer.new()
-	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	UiKit.bind_scroll_sfx(_scroll)
-	add_child(_scroll)
+## O HUD deixa a spec desenhar a janela de papel em vez do painel modal antigo.
+func uses_window_shell() -> bool:
+	return true
 
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	_scroll.add_child(_body)
 
-	_render()
-
+# --- API ---------------------------------------------------------------------
 
 func refresh(summary: Dictionary) -> void:
 	_summary = summary
-	_render()
-
-
-func _set_tab(id: String) -> void:
-	_tab = id
-	_render()
-
-
-func _render() -> void:
-	if _body == null:
+	if _root == null or _structure_key != I18n.locale:
+		_rebuild()
 		return
-	for id in _tab_buttons:
-		_tab_buttons[id].text = I18n.t(TAB_LABELS[id])
-		UiKit.set_tab_active(_tab_buttons[id], id == _tab)
-
-	UiKit.clear(_body)
-	_body.add_child(_glance())
-
-	if _tab == "chain":
-		_build_chain()
-	else:
-		_build_cities()
+	_refresh()
 
 
-func _glance() -> Control:
-	var totals := _totals()
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	for item in [
-		["city.glance.production", _tons(totals["production"]) + I18n.t("common.per_day")],
-		["city.glance.demand", _tons(totals["need"]) + I18n.t("common.per_day")],
-		["econ.col.deficit", _tons(totals["deficit"])],
-		["city.glance.coverage", _coverage_text(totals["coverage"])],
-	]:
-		var card := PanelContainer.new()
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var style := UiKit.flat(UiKit.PANEL_RAISED, UiKit.EDGE_SOFT, 10.0)
-		style.content_margin_top = 8.0
-		style.content_margin_bottom = 8.0
-		card.add_theme_stylebox_override("panel", style)
-		var box := VBoxContainer.new()
-		box.add_theme_constant_override("separation", 0)
-		box.add_child(UiKit.caption(I18n.t(String(item[0]))))
-		box.add_child(UiKit.label(String(item[1]), UiKit.FS_TITLE, UiKit.TEXT))
-		card.add_child(box)
-		row.add_child(card)
-	return row
+## Aceita "chain"/"cities" (captura) ou o índice da aba.
+func _set_tab(id: Variant) -> void:
+	var index := 1 if (str(id) == "cities" or (id is int and int(id) == 1)) else 0
+	_tab_index = index
+	if _tabs != null:
+		_tabs.select(index)
+	_refresh()
 
 
-func _build_chain() -> void:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.add_child(_chain_heading())
-	_body.add_child(card)
+# --- Montagem ----------------------------------------------------------------
 
-	var producers := _producers()
-	var card_list := UiKit.card(UiKit.SPACE_MD)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	card_list.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.producers.title"), UiKit.BRASS))
-	box.add_child(UiKit.rule())
+func _rebuild() -> void:
+	_structure_key = I18n.locale
+	if _root != null and is_instance_valid(_root):
+		remove_child(_root)
+		_root.queue_free()
+	_slots.clear()
+	_tables.clear()
+	_tabs = null
+	_search = null
 
-	if producers.is_empty():
-		box.add_child(UiKit.paragraph(I18n.t("city.producers.empty"), UiKit.FS_SMALL,
-				UiKit.TEXT_MUTED, 520.0))
-	else:
-		for city in producers:
-			box.add_child(_city_row(city))
-	_body.add_child(card_list)
-
-
-func _chain_heading() -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	box.add_child(UiKit.caption(I18n.t("city.chain.title"), UiKit.BRASS))
-
-	var flow := HBoxContainer.new()
-	flow.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	flow.add_child(_chain_node(I18n.t("product.wheat"), "positive", true))
-	box.add_child(flow)
-	box.add_child(UiKit.paragraph(I18n.t("city.chain.note"), UiKit.FS_SMALL,
-			UiKit.TEXT_DIM, 520.0))
-	return box
+	_root = UiTemplateBuilder.build(UiTemplateBuilder.load_spec(SPEC_ID))
+	_root.name = "ProductionRegistry"
+	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.close_requested.connect(func() -> void: close_requested.emit())
+	_root.choice_selected.connect(_on_choice)
+	add_child(_root)
+	_index_slots()
+	_refresh()
 
 
-func _chain_node(text: String, tone: String, modeled: bool) -> Control:
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	box.add_theme_constant_override("separation", 2)
-	box.add_child(UiKit.status_pill(text, tone))
-	box.add_child(UiKit.caption(I18n.t("city.chain.modeled") if modeled \
-			else I18n.t("city.chain.unmodeled"), UiKit.TEXT_MUTED))
-	return box
+func _index_slots() -> void:
+	var pending: Array[Node] = [_root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control:
+			var slot := String((node as Control).get_meta("tpl_slot", ""))
+			if not slot.is_empty():
+				_slots[slot] = node
+		for child in node.get_children():
+			pending.append(child)
+
+	_tabs = _slots.get("tabs") as UiTemplateBuilder.FolderTabs
+	if _tabs != null:
+		_tabs.tab_changed.connect(_on_tab_changed)
+		_tabs.select(_tab_index)
+
+	for index in TAB_IDS.size():
+		var table := _slots.get("%s.table" % TAB_IDS[index]) \
+				as UiTemplateBuilder.DataTableView
+		if table == null:
+			continue
+		table.row_selected.connect(_on_row_selected.bind(TAB_IDS[index]))
+		table.row_activated.connect(_on_row_activated.bind(TAB_IDS[index]))
+		_tables[TAB_IDS[index]] = table
+
+	_search = _line_edit("cities.search")
+	if _search != null:
+		_search.text = _query
+		_search.text_changed.connect(_on_search_changed)
 
 
-func _arrow() -> Label:
-	var arrow := UiKit.label("→", UiKit.FS_SUBTITLE, UiKit.TEXT_MUTED)
-	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	return arrow
+func _line_edit(slot: String) -> LineEdit:
+	var node := _slots.get(slot) as Node
+	if node == null:
+		return null
+	var pending: Array[Node] = [node]
+	while not pending.is_empty():
+		var current: Node = pending.pop_front()
+		if current is LineEdit:
+			return current as LineEdit
+		pending.append_array(current.get_children())
+	return null
 
 
-func _build_cities() -> void:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("prod.tab.cities"), UiKit.BRASS))
-	box.add_child(UiKit.rule())
-	box.add_child(UiKit.table_header([
-		I18n.t("econ.col.city"),
-		I18n.t("econ.col.nation"),
-		I18n.t("econ.col.production"),
-		I18n.t("city.consumed"),
-		I18n.t("econ.col.stock"),
-		I18n.t("econ.col.deficit"),
-		I18n.t("city.coverage"),
-	], CITY_WEIGHTS, CITY_ALIGN))
+# --- Eventos -----------------------------------------------------------------
 
-	for city in _sorted_cities():
-		box.add_child(_city_row(city))
-	_body.add_child(card)
+func _on_tab_changed(index: int) -> void:
+	_tab_index = clampi(index, 0, TAB_IDS.size() - 1)
 
 
-func _city_row(city: Dictionary) -> Control:
+func _on_search_changed(text: String) -> void:
+	_query = text.strip_edges()
+	_refresh_cities()
+	var table := _tables.get("cities") as UiTemplateBuilder.DataTableView
+	if table != null:
+		table.reset_page()
+
+
+func _on_choice(id: String) -> void:
+	if id == "open_chain" or id == "open_cities":
+		_open_selected(id.get_slice("_", 1))
+
+
+func _on_row_selected(index: int, tab: String) -> void:
+	var rows: Array = _rows_for(tab)
+	if index < 0 or index >= rows.size():
+		return
+	_selected[tab] = String(rows[index].get("id", ""))
+	_update_card(tab, index)
+
+
+func _on_row_activated(index: int, tab: String) -> void:
+	_on_row_selected(index, tab)
+	var id := String(_selected.get(tab, ""))
+	if not id.is_empty():
+		city_requested.emit(id)
+
+
+func _open_selected(tab: String) -> void:
+	var id := String(_selected.get(tab, ""))
+	if not id.is_empty():
+		city_requested.emit(id)
+
+
+# --- Desenho -----------------------------------------------------------------
+
+func _refresh() -> void:
+	if _root == null:
+		return
+	_refresh_chain()
+	_refresh_cities()
+
+
+func _refresh_chain() -> void:
+	var table := _tables.get("chain") as UiTemplateBuilder.DataTableView
+	if table == null:
+		return
+	_chain_rows = _producers()
+	var cells: Array = []
+	for city in _chain_rows:
+		cells.append(_cells(city, false))
+	var index := _selected_index("chain", _chain_rows)
+	table.update_rows(cells, index)
+	_selected["chain"] = String(_chain_rows[index].get("id", "")) if index >= 0 else ""
+
+	_set_text("chain.count", I18n.t("tpl.common.result",
+			{"n": UiKit.number(_chain_rows.size())}))
+	_set_hidden("chain.table", _chain_rows.is_empty())
+	_set_hidden("chain.card", _chain_rows.is_empty())
+	_set_hidden("chain.empty", not _chain_rows.is_empty())
+	_update_card("chain", index)
+
+
+func _refresh_cities() -> void:
+	var table := _tables.get("cities") as UiTemplateBuilder.DataTableView
+	if table == null:
+		return
+	var all: Array = _summary.get("cities", [])
+	_city_rows = _filtered_cities()
+	var cells: Array = []
+	for city in _city_rows:
+		cells.append(_cells(city, true))
+	var index := _selected_index("cities", _city_rows)
+	table.update_rows(cells, index)
+	_selected["cities"] = String(_city_rows[index].get("id", "")) if index >= 0 else ""
+
+	_set_text("cities.count", I18n.t("tpl.common.result", {
+		"n": UiKit.number(_city_rows.size()) if _query.is_empty() else \
+				"%s / %s" % [UiKit.number(_city_rows.size()), UiKit.number(all.size())],
+	}))
+	_set_hidden("cities.table", _city_rows.is_empty())
+	_set_hidden("cities.card", _city_rows.is_empty())
+	_set_hidden("cities.empty", not _city_rows.is_empty())
+	_update_card("cities", index)
+
+
+## Células na ordem das colunas da spec (a mesma dos dois blocos).
+func _cells(city: Dictionary, with_need: bool) -> Array:
+	var production := float(city.get("production", 0.0))
+	var stock := float(city.get("stockpile", 0.0))
+	var deficit := float(city.get("deficit", 0.0))
+	var consumed := float(city.get("consumed", 0.0))
+	var need := float(city.get("need", 0.0))
+	var coverage := INF if need <= 1e-9 else stock / need
+	var cells: Array = [
+		I18n.city_name(String(city.get("id", "")), String(city.get("name", ""))),
+		I18n.nation_name(String(city.get("nation", ""))),
+		UiKit.number(production) + " t",
+	]
+	if with_need:
+		cells.append(UiKit.number(consumed) + " t")
+	cells.append(UiKit.number(stock) + " t")
+	cells.append({"text": UiKit.number(deficit) + " t",
+			"tone": "carimbo" if deficit > 0.0 else "suave"})
+	cells.append({"text": _coverage_text(coverage),
+			"tone": _coverage_tone(coverage)})
+	return cells
+
+
+func _update_card(tab: String, index: int) -> void:
+	var rows: Array = _rows_for(tab)
+	if index < 0 or index >= rows.size():
+		return
+	var city: Dictionary = rows[index]
+	var prefix := "%s.card" % tab
 	var need := float(city.get("need", 0.0))
 	var stock := float(city.get("stockpile", 0.0))
-	var coverage := INF if need <= 1e-9 else stock / need
 	var deficit := float(city.get("deficit", 0.0))
+	var coverage := INF if need <= 1e-9 else stock / need
 
-	var row := UiKit.row_button()
-	row.add_child(UiKit.table_row([
-		I18n.city_name(city["id"], city["name"]),
-		I18n.nation_name(city["nation"]),
-		UiKit.number(float(city["production"])) + " t",
-		UiKit.number(float(city["consumed"])) + " t",
-		UiKit.number(stock) + " t",
-		UiKit.number(deficit) + " t",
-		_coverage_text(coverage),
-	], CITY_WEIGHTS, [
-		UiKit.TEXT, UiKit.nation_color(city["nation"]), UiKit.BRASS,
-		UiKit.TEXT_DIM, UiKit.TEXT,
-		UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE,
-		_coverage_color(coverage),
-	], CITY_ALIGN))
-	var id := String(city["id"])
-	row.pressed.connect(func() -> void: city_requested.emit(id))
-	return row
-
-
-func _totals() -> Dictionary:
-	var production := 0.0
-	var need := 0.0
-	var stock := 0.0
-	var deficit := 0.0
-	for city in _summary.get("cities", []):
-		production += float(city.get("production", 0.0))
-		need += float(city.get("need", 0.0))
-		stock += float(city.get("stockpile", 0.0))
-		deficit += float(city.get("deficit", 0.0))
-	return {
-		"production": production,
-		"need": need,
-		"stock": stock,
-		"deficit": deficit,
-		"coverage": INF if need <= 1e-9 else stock / need,
-	}
+	_set_text(prefix + ".name", I18n.city_name(String(city.get("id", "")),
+			String(city.get("name", ""))))
+	_set_hidden(prefix + ".tag", deficit <= 0.0)
+	_set_text(prefix + ".kv.nation", I18n.nation_name(String(city.get("nation", ""))))
+	_set_text(prefix + ".kv.production",
+			UiKit.number(float(city.get("production", 0.0))) + " t")
+	if tab == "cities":
+		_set_text(prefix + ".kv.consumed",
+				UiKit.number(float(city.get("consumed", 0.0))) + " t")
+	else:
+		_set_text(prefix + ".kv.need", UiKit.number(need) + " t")
+	_set_text(prefix + ".kv.stock", UiKit.number(stock) + " t")
+	if tab == "cities":
+		_set_text(prefix + ".kv.deficit", UiKit.number(deficit) + " t",
+				UiKit.CARIMBO if deficit > 0.0 else UiKit.TINTA)
+	_set_text(prefix + ".kv.coverage", _coverage_text(coverage),
+			UiKit.coverage_color(coverage))
+	_set_text(prefix + ".note", _note_text(stock, need, deficit))
 
 
-func _sorted_cities() -> Array:
-	var cities: Array = _summary.get("cities", []).duplicate()
-	cities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return float(a.get("production", 0.0)) > float(b.get("production", 0.0)))
-	return cities
+## Nota da ficha: cobertura e, quando há, a demanda não atendida. Derivada dos
+## campos do resumo; sem demanda, não se inventa número.
+func _note_text(stock: float, need: float, deficit: float) -> String:
+	if need <= 0.0:
+		return I18n.t("tpl.registro.note.empty")
+	var days := stock / need
+	if deficit > 0.0:
+		return I18n.t("tpl.registro.note.short", {
+			"amount": UiKit.number(deficit) + " t",
+			"days": UiKit.number(days, 1),
+		})
+	return I18n.t("tpl.registro.note.coverage", {"days": UiKit.number(days, 1)})
+
+
+# --- Dados -------------------------------------------------------------------
+
+func _rows_for(tab: String) -> Array:
+	return _chain_rows if tab == "chain" else _city_rows
+
+
+func _selected_index(tab: String, rows: Array) -> int:
+	var wanted := String(_selected.get(tab, ""))
+	for index in rows.size():
+		if String(rows[index].get("id", "")) == wanted:
+			return index
+	return 0 if not rows.is_empty() else -1
 
 
 func _producers() -> Array:
@@ -232,9 +310,29 @@ func _producers() -> Array:
 	return producers
 
 
-static func _tons(value: float) -> String:
-	return UiKit.number(value) + " t"
+func _filtered_cities() -> Array:
+	var cities := _sorted_cities()
+	if _query.is_empty():
+		return cities
+	var needle := _query.to_lower()
+	var result: Array = []
+	for city in cities:
+		var name := I18n.city_name(String(city.get("id", "")),
+				String(city.get("name", ""))).to_lower()
+		var nation := I18n.nation_name(String(city.get("nation", ""))).to_lower()
+		if name.contains(needle) or nation.contains(needle):
+			result.append(city)
+	return result
 
+
+func _sorted_cities() -> Array:
+	var cities: Array = _summary.get("cities", []).duplicate()
+	cities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("production", 0.0)) > float(b.get("production", 0.0)))
+	return cities
+
+
+# --- Utilidades ---------------------------------------------------------------
 
 func _coverage_text(days: float) -> String:
 	if is_inf(days):
@@ -242,9 +340,26 @@ func _coverage_text(days: float) -> String:
 	return UiKit.number(days, 1) + " " + I18n.t("common.days_short")
 
 
-func _coverage_color(days: float) -> Color:
+func _coverage_tone(days: float) -> String:
 	if is_inf(days) or days >= 7.0:
-		return UiKit.POSITIVE
+		return "positive"
 	if days >= 2.0:
-		return UiKit.WARNING
-	return UiKit.NEGATIVE
+		return "alerta"
+	return "carimbo"
+
+
+func _set_text(slot: String, text: String,
+		color: Color = Color(0, 0, 0, 0)) -> void:
+	var node := _slots.get(slot) as Label
+	if node == null:
+		return
+	node.text = text
+	if color.a > 0.0:
+		node.add_theme_color_override("font_color", color)
+
+
+func _set_hidden(slot: String, hidden: bool) -> void:
+	var node := _slots.get(slot) as CanvasItem
+	if node == null:
+		return
+	node.visible = not hidden

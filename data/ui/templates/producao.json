@@ -1,0 +1,419 @@
+{
+  "id": "producao",
+  "title": "@prod.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [0.86, 0.84],
+    "min": [960, 560],
+    "max": [1800, 1000],
+    "pauses_game": false
+  },
+  "data": {
+    "chain": {"name": "-", "nation": "-", "production": "-", "need": "-",
+      "stock": "-", "coverage": "-", "note": "@tpl.registro.note.empty"},
+    "cities": {"name": "-", "nation": "-", "production": "-", "consumed": "-",
+      "stock": "-", "deficit": "-", "coverage": "-",
+      "note": "@tpl.registro.note.empty"}
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "@prod.crumb",
+      "title": "@prod.title",
+      "title_slot": "nav.title",
+      "footer": [
+        {"text": "@tpl.footer.tabs_switch"},
+        {"text": "@tpl.footer.table"},
+        {"spacer": true},
+        {"seal": "ESC"},
+        {"text": "@tpl.footer.close"}
+      ],
+      "body": [
+        {
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
+            {
+              "label": "@prod.tab.chain",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 12,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "paper_card",
+                          "pad": 16,
+                          "gap": 8,
+                          "title": "@city.chain.title",
+                          "title_size": 18,
+                          "blocks": [
+                            {
+                              "type": "tag_row",
+                              "tags": [
+                                {"text": "@city.chain.modeled", "tone": "positive"},
+                                {"text": "@resource.wheat", "tone": "suave"}
+                              ]
+                            },
+                            {
+                              "type": "label",
+                              "text": "@city.chain.note",
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 620
+                            }
+                          ]
+                        },
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "0"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "chain.count"
+                            },
+                            {"type": "spacer", "w": 1}
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "chain.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 8,
+                          "page": 1,
+                          "sort_col": 2,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@tpl.registro.footer.select",
+                          "columns": [
+                            {"label": "@econ.col.city", "weight": 2.2, "align": "left"},
+                            {"label": "@econ.col.nation", "weight": 1.4, "align": "left"},
+                            {"label": "@econ.col.production", "weight": 1.1, "align": "right"},
+                            {"label": "@econ.col.stock", "weight": 1, "align": "right"},
+                            {"label": "@econ.col.deficit", "weight": 1, "align": "right"},
+                            {"label": "@city.coverage", "weight": 1, "align": "right"}
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "chain.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@city.producers.title",
+                              "font": "display",
+                              "size": 22
+                            },
+                            {
+                              "type": "label",
+                              "text": "@city.producers.empty",
+                              "font": "body",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 620
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "chain.card",
+                      "pad": 16,
+                      "gap": 10,
+                      "width": 400,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tpl.registro.selected",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "$chain.name",
+                          "font": "display",
+                          "size": 24,
+                          "slot": "chain.card.name"
+                        },
+                        {
+                          "type": "tag_row",
+                          "slot": "chain.card.tag",
+                          "tags": [
+                            {"text": "@tpl.registro.tag.deficit", "tone": "carimbo"}
+                          ]
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.nation",
+                          "value": "$chain.nation",
+                          "value_slot": "chain.card.kv.nation"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.production",
+                          "value": "$chain.production",
+                          "value_slot": "chain.card.kv.production"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.need",
+                          "value": "$chain.need",
+                          "value_slot": "chain.card.kv.need"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.stock",
+                          "value": "$chain.stock",
+                          "value_slot": "chain.card.kv.stock"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.coverage",
+                          "value": "$chain.coverage",
+                          "value_slot": "chain.card.kv.coverage"
+                        },
+                        {
+                          "type": "paper_card",
+                          "border": "dashed",
+                          "fill": "papel",
+                          "pad": 12,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "$chain.note",
+                              "font": "typed",
+                              "size": 13,
+                              "wrap": true,
+                              "wrap_width": 330,
+                              "slot": "chain.card.note"
+                            }
+                          ]
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "button",
+                          "text": "@tpl.registro.open_sheet",
+                          "variant": "primary",
+                          "id": "open_chain"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@prod.tab.cities",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 12,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "cities.search",
+                              "placeholder": "@tpl.registro.search",
+                              "width": 340
+                            },
+                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "0"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "cities.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "cities.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 10,
+                          "page": 1,
+                          "sort_col": 2,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@tpl.registro.footer.select",
+                          "columns": [
+                            {"label": "@econ.col.city", "weight": 2, "align": "left"},
+                            {"label": "@econ.col.nation", "weight": 1.3, "align": "left"},
+                            {"label": "@econ.col.production", "weight": 1.1, "align": "right"},
+                            {"label": "@city.consumed", "weight": 1.1, "align": "right"},
+                            {"label": "@econ.col.stock", "weight": 1, "align": "right"},
+                            {"label": "@econ.col.deficit", "weight": 1, "align": "right"},
+                            {"label": "@city.coverage", "weight": 1, "align": "right"}
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "cities.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@econ.empty.filtered",
+                              "font": "display",
+                              "size": 22
+                            },
+                            {
+                              "type": "label",
+                              "text": "@econ.empty.filtered.body",
+                              "font": "body",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 620
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "cities.card",
+                      "pad": 16,
+                      "gap": 10,
+                      "width": 400,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tpl.registro.selected",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "$cities.name",
+                          "font": "display",
+                          "size": 24,
+                          "slot": "cities.card.name"
+                        },
+                        {
+                          "type": "tag_row",
+                          "slot": "cities.card.tag",
+                          "tags": [
+                            {"text": "@tpl.registro.tag.deficit", "tone": "carimbo"}
+                          ]
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.nation",
+                          "value": "$cities.nation",
+                          "value_slot": "cities.card.kv.nation"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.production",
+                          "value": "$cities.production",
+                          "value_slot": "cities.card.kv.production"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.consumed",
+                          "value": "$cities.consumed",
+                          "value_slot": "cities.card.kv.consumed"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.stock",
+                          "value": "$cities.stock",
+                          "value_slot": "cities.card.kv.stock"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.deficit",
+                          "value": "$cities.deficit",
+                          "value_slot": "cities.card.kv.deficit"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.coverage",
+                          "value": "$cities.coverage",
+                          "value_slot": "cities.card.kv.coverage"
+                        },
+                        {
+                          "type": "paper_card",
+                          "border": "dashed",
+                          "fill": "papel",
+                          "pad": 12,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "$cities.note",
+                              "font": "typed",
+                              "size": 13,
+                              "wrap": true,
+                              "wrap_width": 330,
+                              "slot": "cities.card.note"
+                            }
+                          ]
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "button",
+                          "text": "@tpl.registro.open_sheet",
+                          "variant": "primary",
+                          "id": "open_cities"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

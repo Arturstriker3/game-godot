@@ -1810,6 +1810,7 @@ func _instantiate_screens() -> void:
 	_screens["trade"].city_requested.connect(_on_city_market)
 	_screens["trade"].close_requested.connect(_close_screen)
 	_screens["production"].city_requested.connect(_on_city_production)
+	_screens["production"].close_requested.connect(_close_screen)
 	_screens["population"].city_requested.connect(_on_city_population)
 
 	var alerts_screen: Node = ALERTS_SCREEN.new()
