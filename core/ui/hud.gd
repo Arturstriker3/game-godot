@@ -221,6 +221,25 @@ func _process(_delta: float) -> void:
 	_update_clock()
 
 
+## Esc de janela antes do GUI: o motor consome `ui_cancel` para fechar um
+## tooltip visível (e um controle focado pode engolir o evento na fase GUI),
+## então a ficha/painel/menu/ajustes fecham aqui, na fase `_input`, mesmo com
+## tooltip ou foco. Sem sobreposição o evento segue para o mapa (desseleção) e
+## depois para `_unhandled_input` (menu de pausa).
+func _input(event: InputEvent) -> void:
+	if not event.is_action_pressed("ui_cancel") or event.is_echo():
+		return
+	if _settings_layer != null and _settings_layer.visible:
+		_close_settings()
+	elif _menu_layer.visible:
+		_close_menu()
+	elif _window_layer.visible or _city_layer.visible:
+		_close_screen()
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		if _settings_layer != null and _settings_layer.visible:

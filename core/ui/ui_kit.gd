@@ -360,9 +360,27 @@ static func _button_base(text: String) -> Button:
 ## que emita `pressed`. Chamado no fim de `UiTemplateBuilder.build` e nas
 ## camadas do HUD, então o que o jogo cria hoje e o que vier depois herda a
 ## regra sem ajuste item a item.
+##
+## O pass SÓ pinta `mouse_default_cursor_shape`: nada de foco, `mouse_filter`
+## ou hierarquia. O setter, porém, pede ao viewport para atualizar o cursor
+## quando o controle está sob o mouse, e essa atualização injeta um
+## `InputEventMouseMotion` sintético: ele inicia o timer de tooltip do controle
+## e o motor passa a consumir o próximo `ui_cancel` para fechar o tooltip (a
+## ficha deixava de fechar com Esc). Com o GUI desligado durante o passe, o
+## refresh não roda e o efeito colateral desaparece.
 static func pointer_cursor(root: Node) -> void:
 	if root == null:
 		return
+	var viewport := root.get_viewport() if root.is_inside_tree() else null
+	var gui_was_disabled := viewport != null and viewport.gui_disable_input
+	if viewport != null:
+		viewport.gui_disable_input = true
+	_paint_pointer_cursor(root)
+	if viewport != null:
+		viewport.gui_disable_input = gui_was_disabled
+
+
+static func _paint_pointer_cursor(root: Node) -> void:
 	for child in root.get_children():
 		if child is Control:
 			var clickable := child.has_signal("pressed")
@@ -371,7 +389,7 @@ static func pointer_cursor(root: Node) -> void:
 			if clickable:
 				(child as Control).mouse_default_cursor_shape = \
 						Control.CURSOR_POINTING_HAND
-		pointer_cursor(child)
+		_paint_pointer_cursor(child)
 
 
 ## Associa um efeito sonoro de interface ao clique do botão.
