@@ -341,8 +341,28 @@ static func _button_base(text: String) -> Button:
 	button.custom_minimum_size.y = CONTROL_HEIGHT
 	button.add_theme_font_size_override("font_size", FS_SMALL)
 	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_bind_sfx(button)
 	return button
+
+
+## Cursor de mão em TODO controle clicável, por padrão: botões (menos os
+## desabilitados), linhas clicáveis (`RowButton`, `PaperRow`) e qualquer painel
+## que emita `pressed`. Chamado no fim de `UiTemplateBuilder.build` e nas
+## camadas do HUD, então o que o jogo cria hoje e o que vier depois herda a
+## regra sem ajuste item a item.
+static func pointer_cursor(root: Node) -> void:
+	if root == null:
+		return
+	for child in root.get_children():
+		if child is Control:
+			var clickable := child.has_signal("pressed")
+			if child is BaseButton:
+				clickable = not (child as BaseButton).disabled
+			if clickable:
+				(child as Control).mouse_default_cursor_shape = \
+						Control.CURSOR_POINTING_HAND
+		pointer_cursor(child)
 
 
 ## Associa um efeito sonoro de interface ao clique do botão.
@@ -635,6 +655,7 @@ static func tab_button(text: String) -> Button:
 	button.text = text
 	button.focus_mode = Control.FOCUS_ALL
 	button.custom_minimum_size.y = CONTROL_HEIGHT
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.add_theme_font_size_override("font_size", FS_SMALL)
 	set_tab_active(button, false)
 	_bind_sfx(button, UiSfx.Sound.SWITCH)
@@ -676,6 +697,7 @@ static func filter_chip(text: String) -> Button:
 	button.text = text
 	button.toggle_mode = true
 	button.custom_minimum_size.y = 26.0
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.add_theme_font_size_override("font_size", FS_CAPTION + 1)
 	button.add_theme_stylebox_override("normal", flat(Color(0, 0, 0, 0), EDGE_SOFT, 10.0))
 	button.add_theme_stylebox_override("hover", flat(PANEL_HOVER, STEEL, 10.0))

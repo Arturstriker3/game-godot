@@ -66,6 +66,8 @@ static func total_size() -> Vector2:
 func _ready() -> void:
 	custom_minimum_size = total_size()
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# A área da folha é clicável (leva a câmera ao ponto): cursor de mão.
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	clip_contents = false
 
 	var frame_size := MAP_SIZE + Vector2(FRAME_BORDER + FRAME_PAD, FRAME_BORDER + FRAME_PAD) * 2.0
@@ -192,6 +194,7 @@ func set_map_modes(modes: Array, icons: Dictionary, tooltips: Dictionary, active
 		var mode_name := String(mode)
 		var button := Button.new()
 		button.focus_mode = Control.FOCUS_NONE
+		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		button.custom_minimum_size = Vector2(TAB_W, TAB_H)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.tooltip_text = String(tooltips.get(mode_name, ""))

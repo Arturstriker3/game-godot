@@ -661,13 +661,17 @@ static func build(spec: Dictionary, overrides: Dictionary = {}) -> TemplateRoot:
 			root.add_child(_body_column(merged.get("blocks", []), ctx, 12))
 		_:
 			root.add_child(_window_shell(merged, ctx))
+	# Regra do design system: todo controle clicável da tela usa a mão.
+	UiKit.pointer_cursor(root)
 	return root
 
 
 ## Constrói um bloco isolado (ex.: linha de ranking que o host atualiza no
 ## lugar). Os valores podem chegar prontos em `data`; nenhuma regra é aplicada.
 static func build_block(block: Dictionary, data: Dictionary = {}) -> Control:
-	return _build_block(block, {"data": data, "spec": {"data": data}})
+	var node := _build_block(block, {"data": data, "spec": {"data": data}})
+	UiKit.pointer_cursor(node)
+	return node
 
 
 static func dossie(overrides: Dictionary = {}) -> TemplateRoot:

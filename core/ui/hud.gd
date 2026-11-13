@@ -210,6 +210,9 @@ func _ready() -> void:
 	I18n.locale_changed.connect(_on_locale_changed)
 
 	_on_status(_initial_summary())
+	# Barra, doca, minimapa e menus nascem fora do gerador de telas: a regra do
+	# cursor de mão é aplicada de uma vez na camada inteira.
+	UiKit.pointer_cursor(_root)
 
 
 func _process(_delta: float) -> void:
@@ -2244,6 +2247,8 @@ func _on_locale_changed(_locale: String) -> void:
 	_refresh_legend()
 	_render_menu_texts()
 	_render_settings_texts()
+	# Barra, doca e minimapa foram reconstruídos: reaplica o cursor de mão.
+	UiKit.pointer_cursor(_root)
 
 	if is_window_open() and not _stack.is_empty():
 		_show_top()
