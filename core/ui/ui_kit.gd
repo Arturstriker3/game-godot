@@ -42,6 +42,15 @@ const TINTA := Color("#2b2418")            # tinta (texto principal)
 const TINTA_SUAVE := Color("#5a4a2c")      # tinta suave (rótulos)
 const CARIMBO := Color("#a3241a")          # carimbo (déficit, alerta)
 const CARIMBO_BARRA := Color("#e0605a")     # carimbo sobre a barra escura (déficit/badge)
+
+# --- Tokens: botão fechar "Lacre de cera" ------------------------------------
+## Círculo de cera CARIMBO com borda escura e anel interno; hover/pressed
+## clareiam e escurecem o lacre; o X é papel claro.
+const SEAL_BORDER := Color("#7a1a12")       # borda 2 px do lacre
+const SEAL_HOVER := Color("#c43c30")        # preenchimento no hover
+const SEAL_PRESSED := Color("#8e1f17")      # preenchimento pressionado
+const SEAL_SIZE_BAR := 38                   # sobre a barra escura (window_frame)
+const SEAL_SIZE_PAPER := 52                 # sobre papel (telegrama, menu, T3)
 const POSITIVO := Color("#3c5a22")         # positivo (verde-papel)
 const ALERTA := Color("#7a5410")           # alerta (âmbar-papel)
 const BARRA_FUNDO := Color("#2d2a24")      # fundo da barra superior
@@ -462,6 +471,86 @@ static func icon_button(glyph: String, tooltip_text: String = "") -> Button:
 	button.add_theme_color_override("font_hover_color", TEXT)
 	button.tooltip_text = tooltip_text
 	return button
+
+
+# --- Botão fechar: "Lacre de cera" ------------------------------------------
+## Fechar de TODAS as telas: círculo de cera CARIMBO (#a3241a), borda 2 px
+## #7a1a12, anel interno de 3 px #c43c30 e X em papel (#efe6cc) na Black Ops
+## One. Hover: fundo #c43c30 e anel #e0605a; pressed: #8e1f17; foco: anel
+## latão de 1 px. `size` = 38 sobre a barra escura, 52 sobre papel.
+static func close_seal_button(size: int = SEAL_SIZE_BAR) -> Button:
+	var button := Button.new()
+	button.text = "X"
+	button.custom_minimum_size = Vector2(size, size)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.tooltip_text = I18n.t("tpl.common.close")
+	button.add_theme_font_override("font", PAPER_DISPLAY_FONT)
+	button.add_theme_font_size_override("font_size", int(round(size * 0.5)))
+	for state in ["font_color", "font_hover_color", "font_pressed_color",
+			"font_focus_color", "font_hover_pressed_color"]:
+		button.add_theme_color_override(state, PAPEL_CLARO)
+
+	var radius := int(round(size * 0.5))
+	button.add_theme_stylebox_override("normal", _seal_style(CARIMBO, radius))
+	button.add_theme_stylebox_override("hover", _seal_style(SEAL_HOVER, radius))
+	button.add_theme_stylebox_override("pressed", _seal_style(SEAL_PRESSED, radius))
+	button.add_theme_stylebox_override("focus", _seal_focus(radius))
+	_bind_sfx(button, UiSfx.Sound.CLOSE)
+
+	# Anel interno de 3 px: painel redondo vazado, recuado 4 px da borda.
+	var ring := Panel.new()
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ring.offset_left = 4.0
+	ring.offset_top = 4.0
+	ring.offset_right = -4.0
+	ring.offset_bottom = -4.0
+	var inner_radius := maxi(radius - 4, 2)
+	var ring_rest := _seal_ring_style(STAGE_START, inner_radius)
+	var ring_hover := _seal_ring_style(CARIMBO_BARRA, inner_radius)
+	ring.add_theme_stylebox_override("panel", ring_rest)
+	button.add_child(ring)
+	button.mouse_entered.connect(func() -> void:
+		ring.add_theme_stylebox_override("panel", ring_hover))
+	button.mouse_exited.connect(func() -> void:
+		ring.add_theme_stylebox_override("panel", ring_rest))
+	return button
+
+
+## Disco de cera: fundo cheio, borda 2 px SEAL_BORDER e cantos redondos no raio.
+static func _seal_style(fill: Color, radius: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = SEAL_BORDER
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(radius)
+	return style
+
+
+## Anel interno vazado de 3 px (sem preenchimento).
+static func _seal_ring_style(color: Color, radius: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = color
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(radius)
+	return style
+
+
+## Foco do lacre: anel latão de 1 px por fora do disco (não cobre a cera).
+static func _seal_focus(radius: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = BRASS
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(radius + 2)
+	style.expand_margin_left = 2.0
+	style.expand_margin_right = 2.0
+	style.expand_margin_top = 2.0
+	style.expand_margin_bottom = 2.0
+	return style
 
 
 ## Barra de proporção (0..1) sobre trilho escuro.

@@ -21,6 +21,7 @@ const TEMPLATE_STRINGS := {
 	"pt_BR": {
 		"tpl.common.page": "Página {page} de {pages}",
 		"tpl.common.result": "{n} resultados",
+		"tpl.common.close": "Fechar (Esc)",
 		"tpl.footer.panels": "1–5 painéis",
 		"tpl.footer.tabs": "Tab navegar",
 		"tpl.footer.close": "fechar",
@@ -249,6 +250,7 @@ const TEMPLATE_STRINGS := {
 	"en": {
 		"tpl.common.page": "Page {page} of {pages}",
 		"tpl.common.result": "{n} results",
+		"tpl.common.close": "Close (Esc)",
 		"tpl.footer.panels": "1–5 panels",
 		"tpl.footer.tabs": "Tab to navigate",
 		"tpl.footer.close": "close",
@@ -477,6 +479,7 @@ const TEMPLATE_STRINGS := {
 	"es": {
 		"tpl.common.page": "Página {page} de {pages}",
 		"tpl.common.result": "{n} resultados",
+		"tpl.common.close": "Cerrar (Esc)",
 		"tpl.footer.panels": "1–5 paneles",
 		"tpl.footer.tabs": "Tab para navegar",
 		"tpl.footer.close": "cerrar",

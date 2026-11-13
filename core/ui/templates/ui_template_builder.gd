@@ -783,12 +783,21 @@ static func _telegram_shell(spec: Dictionary, ctx: Dictionary) -> Control:
 
 	var shell: Dictionary = spec.get("shell", {})
 	var size: Array = shell.get("size", [720, 800])
+	# O lacre de cera ocupa o canto superior direito do papel; o cabeçalho do
+	# telegrama reserva essa faixa para o texto não passar por baixo do disco.
+	ctx["close_gutter"] = float(UiKit.SEAL_SIZE_PAPER) + 12.0
+
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(float(size[0]), float(size[1]))
+	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.mouse_filter = Control.MOUSE_FILTER_STOP
+
 	var card := PaperPanel.new()
+	card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	card.add_theme_stylebox_override("panel",
 			_paper_style(UiKit.PAPEL, UiKit.TINTA, 0.0, 1, ["all"]))
-	card.custom_minimum_size = Vector2(float(size[0]), float(size[1]))
-	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	holder.add_child(card)
 
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 0)
@@ -800,13 +809,23 @@ static func _telegram_shell(spec: Dictionary, ctx: Dictionary) -> Control:
 		_apply_flags(node, block)
 		body.add_child(node)
 
+	var seal := float(UiKit.SEAL_SIZE_PAPER)
+	var close := UiKit.close_seal_button(UiKit.SEAL_SIZE_PAPER)
+	close.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	close.offset_left = -(seal + 14.0)
+	close.offset_top = 14.0
+	close.offset_right = -14.0
+	close.offset_bottom = 14.0 + seal
+	close.pressed.connect(func() -> void: _emit_close(close))
+	holder.add_child(close)
+
 	var tilt := Tilt.new()
 	tilt.angle = float(shell.get("angle", -0.6))
 	tilt.add_theme_constant_override("margin_left", 16)
 	tilt.add_theme_constant_override("margin_right", 16)
 	tilt.add_theme_constant_override("margin_top", 16)
 	tilt.add_theme_constant_override("margin_bottom", 16)
-	tilt.add_child(card)
+	tilt.add_child(holder)
 	center.add_child(tilt)
 	return layer
 
@@ -837,20 +856,39 @@ static func _dossier_shell(spec: Dictionary, ctx: Dictionary) -> Control:
 	var height := clampf(float(shell.get("height", 800.0)), 380.0,
 			VIEW_H - TOP_BAR_CLEARANCE - 56.0)
 
-	var card := VBoxContainer.new()
-	card.add_theme_constant_override("separation", 0)
-	card.custom_minimum_size = Vector2(width, height)
-	card.mouse_filter = Control.MOUSE_FILTER_STOP
-	center.add_child(card)
+	# A folha do menu é a própria ficha de papel: o lacre de cera fica solto no
+	# canto superior direito, por cima do papel (52 px, sem empurrar o conteúdo
+	# centralizado). O contêiner externo mede a ficha para o CenterContainer.
+	var sheet := Control.new()
+	sheet.custom_minimum_size = Vector2(width, height)
+	sheet.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.add_child(sheet)
 
-	card.add_child(_dossier_body(spec, shell, ctx))
+	var card := VBoxContainer.new()
+	card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	card.add_theme_constant_override("separation", 0)
+	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	sheet.add_child(card)
+	# Faixa superior livre para o lacre: o texto da ficha começa abaixo do disco,
+	# nunca por baixo dele.
+	card.add_child(_dossier_body(spec, shell, ctx, 88.0))
+
+	var close := UiKit.close_seal_button(UiKit.SEAL_SIZE_PAPER)
+	var seal := float(UiKit.SEAL_SIZE_PAPER)
+	close.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	close.offset_left = -(seal + 18.0)
+	close.offset_top = 18.0
+	close.offset_right = -18.0
+	close.offset_bottom = 18.0 + seal
+	close.pressed.connect(func() -> void: _emit_close(close))
+	sheet.add_child(close)
 	return layer
 
 
 ## Folha de papel da ficha: começa na borda de cima da ficha (sem a antiga
 ## etiqueta manila "arquivo do gabinete / dia") — o T6 abre direto no papel.
 static func _dossier_body(spec: Dictionary, shell: Dictionary,
-		ctx: Dictionary) -> Control:
+		ctx: Dictionary, top_pad: float = 26.0) -> Control:
 	var body := PanelContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -858,7 +896,7 @@ static func _dossier_body(spec: Dictionary, shell: Dictionary,
 			["top", "left", "right", "bottom"])
 	style.content_margin_left = 34.0
 	style.content_margin_right = 34.0
-	style.content_margin_top = 26.0
+	style.content_margin_top = top_pad
 	style.content_margin_bottom = 22.0
 	body.add_theme_stylebox_override("panel", style)
 
@@ -938,7 +976,7 @@ static func _window_frame(block: Dictionary, ctx: Dictionary) -> Control:
 		seal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		header.add_child(seal)
 
-	var close := _close_button()
+	var close := UiKit.close_seal_button(UiKit.SEAL_SIZE_BAR)
 	close.pressed.connect(func() -> void: _emit_close(close))
 	header.add_child(close)
 
@@ -1563,8 +1601,11 @@ static func _folder_tabs(block: Dictionary, ctx: Dictionary) -> Control:
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.mouse_filter = Control.MOUSE_FILTER_PASS
 
+	var has_close := bool(block.get("close", false))
 	var bar_wrap := MarginContainer.new()
-	bar_wrap.custom_minimum_size.y = 48.0
+	# Com o lacre de cera (52 px, sobre papel) a barra das abas cresce o
+	# suficiente para o disco caber inteiro sem apertar as abas.
+	bar_wrap.custom_minimum_size.y = 58.0 if has_close else 48.0
 	bar_wrap.add_theme_constant_override("margin_left", 24)
 	bar_wrap.add_theme_constant_override("margin_right", 16)
 	var bar := HBoxContainer.new()
@@ -1617,9 +1658,9 @@ static func _folder_tabs(block: Dictionary, ctx: Dictionary) -> Control:
 
 	root.active = clampi(active, 0, maxi(root.pages.size() - 1, 0))
 
-	if bool(block.get("close", false)):
+	if has_close:
 		bar.add_child(UiKit.spacer())
-		var close := _close_button(40.0, 38.0, true)
+		var close := UiKit.close_seal_button(UiKit.SEAL_SIZE_PAPER)
 		close.pressed.connect(func() -> void: _emit_close(close))
 		bar.add_child(close)
 
@@ -1769,7 +1810,15 @@ static func _telegram_card(block: Dictionary, ctx: Dictionary) -> Control:
 
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
-	content.add_child(head)
+	var gutter := float(ctx.get("close_gutter", 0.0))
+	if gutter > 0.0:
+		# Faixa reservada ao lacre de cera no canto do papel.
+		var head_wrap := MarginContainer.new()
+		head_wrap.add_theme_constant_override("margin_right", int(gutter))
+		head_wrap.add_child(head)
+		content.add_child(head_wrap)
+	else:
+		content.add_child(head)
 	var title := _display(_text(block, "title", ctx), 30, UiKit.TINTA)
 	head.add_child(title)
 	var header_rule := Hairline.new(UiKit.TINTA, 2.0)
@@ -1964,31 +2013,6 @@ static func _seal(text: String) -> Control:
 	var label := _typed(text, 12, UiKit.BARRA_ROTULO)
 	panel.add_child(label)
 	return panel
-
-
-static func _close_button(width: float = 36.0, height: float = 32.0,
-		filled: bool = false) -> Button:
-	var button := Button.new()
-	button.text = "✕"
-	button.custom_minimum_size = Vector2(width, height)
-	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
-	button.add_theme_font_size_override("font_size", 16)
-	button.add_theme_stylebox_override("normal",
-			_paper_style(UiKit.BARRA_FUNDO if filled else Color(0, 0, 0, 0),
-					UiKit.BARRA_FILETE, 0.0, 1, ["all"]))
-	button.add_theme_stylebox_override("hover",
-			_paper_style(Color(UiKit.BARRA_FILETE, 0.22), UiKit.BARRA_FILETE,
-					0.0, 1, ["all"]))
-	button.add_theme_stylebox_override("pressed",
-			_paper_style(Color(UiKit.CARIMBO, 0.25), UiKit.CARIMBO, 0.0, 1,
-					["all"]))
-	button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO_BARRA))
-	button.add_theme_color_override("font_color", UiKit.BARRA_TEXTO)
-	button.add_theme_color_override("font_hover_color", UiKit.BARRA_TEXTO)
-	button.tooltip_text = I18n.t("common.close")
-	UiKit._bind_sfx(button, UiSfx.Sound.CLOSE)
-	return button
 
 
 static func _mini_paper_button(glyph: String) -> Button:
