@@ -97,13 +97,13 @@ nacional de origem.
 
 | cidade | mistura |
 | --- | --- |
-| Los Angeles (USA-LOS) | `mexicano:45;americano:27;chinês:8;filipino:4;sul-coreano:3;outras:13` |
-| Nova York (USA-NEW) | `americano:56;chinês:11;dominicano:6;mexicano:5;outras:22` |
-| São Paulo (BRA-SAO) | `brasileiro:78;italiano:7;português:5;japonês:3;outras:7` |
-| Londres (GBR-LDN) | `britânico:50;jamaicano:5;bengali:4;indiano:4;paquistanês:3;outras:34` |
-| Berlim (DEU-BER) | `alemão:64;turco:12;polonês:5;russo:5;outras:14` (fallback nacional) |
-| Paris (FRA-PAR) | `francês:60;marroquino:11;italiano:5;português:5;outras:19` |
-| Barcelona (ESP-BAR) | `catalão:55;espanhol:30;outras:15` |
+| Los Angeles (USA-LOS) | `mexicano:45;americano:27;chines:8;filipino:4;sul_coreano:3;outras:13` |
+| Nova York (USA-NEW) | `americano:56;chines:11;dominicano:6;mexicano:5;outras:22` |
+| São Paulo (BRA-SAO) | `brasileiro:78;italiano:7;portugues:5;japones:3;outras:7` |
+| Londres (GBR-LDN) | `britanico:50;jamaicano:5;bengali:4;indiano:4;paquistanes:3;outras:34` |
+| Berlim (DEU-BER) | `alemao:64;turco:12;polones:5;russo:5;outras:14` (fallback nacional) |
+| Paris (FRA-PAR) | `frances:60;marroquino:11;italiano:5;portugues:5;outras:19` |
+| Barcelona (ESP-BAR) | `catalao:55;espanhol:30;outras:15` |
 | Montreal (CAN-MON) | `quebequense:65;canadense:15;outras:20` |
 | Lagos (NGA-LAG) | `nigeriano:90;outras:10` |
 | Mumbai (IND-MUM) | `indiano:75;outras:25` |
