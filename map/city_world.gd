@@ -897,7 +897,10 @@ func set_hover(place_id: String) -> void:
 		_set_label_color(_hovered_id, false)
 		_hovered_id = place_id
 		_set_label_color(place_id, true)
-		_invalidate_layout()
+		# Hover só reordena o layout de cidade/porto. NÃO invalida os nomes de
+		# nação: passar o mouse sobre uma cidade não pode fazer os nomes dos
+		# países sumirem/voltarem (era o "pisca" ao mexer o mouse).
+		_invalidate_layout(false)
 
 	if _selection == null:
 		_create_indicators()
@@ -2283,9 +2286,12 @@ func _wrap_offset(x: float) -> float:
 
 
 ## Força um layout no próximo frame (hover, seleção, idioma, filtro, modo).
-func _invalidate_layout() -> void:
+## `nation_labels = false` para mudanças puramente de estilo (hover): os nomes
+## de nação não devem ser reavaliados por causa do mouse.
+func _invalidate_layout(nation_labels: bool = true) -> void:
 	_layout_dirty = true
-	_nation_labels_dirty = true
+	if nation_labels:
+		_nation_labels_dirty = true
 
 
 ## Nível de zoom atual (enum `ZoomLevel`). Exposto para testes/captura.
