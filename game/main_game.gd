@@ -361,8 +361,9 @@ func _update_city_hover_pass() -> void:
 	if player == null:
 		return
 	var mouse := get_viewport().get_mouse_position()
-	# Mapa de recursos: depósito tem prioridade (cursor "i", badge sobre o ponto
-	# e clique mostram a ficha do depósito na legenda).
+	# Cidade, porto e jazida são clicáveis em TODOS os modos: o hover sempre vira
+	# mão (nunca o I-beam de texto). No mapa de recursos a jazida tem prioridade
+	# (badge sobre o ponto e clique abre a ficha do depósito na legenda).
 	if hud.map_mode() == "resources":
 		var deposit: int = city_world.pick_deposit(mouse, player.camera)
 		if deposit >= 0:
@@ -370,7 +371,7 @@ func _update_city_hover_pass() -> void:
 				_last_hover = ""
 				city_world.set_hover("")
 			city_world.set_deposit_hover(deposit)
-			GameCursor.set_state(false, "info")
+			GameCursor.set_state(false, "deposit")
 			return
 	city_world.set_deposit_hover(-1)
 	var port_id: String = city_world.pick_port(mouse, player.camera)
@@ -383,7 +384,7 @@ func _update_city_hover_pass() -> void:
 	if not port_id.is_empty():
 		kind = "port"
 	elif not city_id.is_empty():
-		kind = "info" if hud.map_mode() != "political" else "city"
+		kind = "city"
 	GameCursor.set_state(false, kind)
 
 

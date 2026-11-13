@@ -52,7 +52,12 @@ static func set_city_hover(active: bool) -> void:
 
 
 static func _set_shape(shape: int) -> void:
-	if shape == _shape:
+	# O GUI do Godot sobrescreve o cursor global (o LineEdit de busca usa
+	# CURSOR_IBEAM). Com o cache dizendo "mão", o shape não era reaplicado ao
+	# voltar para o mapa e o I-beam ficava sobre as cidades. Comparar com o
+	# cursor real garante a mão sempre que o mouse está sobre o mapa.
+	var current: int = Input.get_current_cursor_shape()
+	if shape == _shape and current == shape:
 		return
 	_shape = shape
 	Input.set_default_cursor_shape(shape)

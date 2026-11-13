@@ -545,6 +545,8 @@ func _legend_header(kind: String, title: String, subtitle: String,
 
 	_legend_title = UiKit.label(title, UiKit.FS_SUBTITLE, UiKit.TINTA)
 	_legend_title.add_theme_font_override("font", UiKit.PAPER_DISPLAY_FONT)
+	# Texto do mapa: não captura o mouse (nem vira cursor de texto por cima).
+	_legend_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_legend_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_legend_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	title_row.add_child(_legend_title)
@@ -589,6 +591,8 @@ func _legend_footer(text: String) -> Control:
 
 	var block := VBoxContainer.new()
 	block.add_theme_constant_override("separation", 4)
+	# Rótulo de instrução: só texto, então não segura o mouse do mapa.
+	block.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var rule := UiKit.rule(Color(UiKit.TINTA, 0.4))
 	rule.custom_minimum_size.x = width
@@ -600,6 +604,7 @@ func _legend_footer(text: String) -> Control:
 	node.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	node.add_theme_constant_override("line_spacing", 0)
 	node.custom_minimum_size.x = width
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	block.add_child(node)
 	return block
 
@@ -701,6 +706,8 @@ func _legend_row(color: Color, text: String, detail: String,
 	if not tip.is_empty():
 		label.tooltip_text = tip
 		label.mouse_filter = Control.MOUSE_FILTER_STOP
+	else:
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(label)
 	if not detail.is_empty():
 		row.add_child(DottedLeader.new())
@@ -708,6 +715,7 @@ func _legend_row(color: Color, text: String, detail: String,
 		value.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 		value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		value.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(value)
 	return row
 
