@@ -1,188 +1,285 @@
-extends VBoxContainer
+extends Control
 
-## Janela de População: totais nacionais, grupos por nação e por cidade, com a
-## relação entre renda, consumo e atendimento da demanda.
+## População no template T2 (Registro da Papelaria).
 ##
-## Nada aqui é inventado: os números vêm do resumo da simulação. O que o modelo
-## ainda não cobre (desemprego, salários nominais, poupança, migração) aparece
-## explicitamente como não modelado.
+## Duas abas de pasta: **Nações** (população, cidades, empregos, renda e
+## atendimento agregados por nação) e **Cidades** (os mesmos campos por cidade).
+## A tabela, a busca e a ficha lateral são estado de exibição; todos os números
+## vêm do resumo publicado pela simulação.
+##
+## O que o modelo não cobre (desemprego, salários nominais, poupança, migração)
+## é declarado no cartão de nota em vez de virar número.
 
 signal city_requested(city_id: String)
+signal close_requested
 
-const NATION_WEIGHTS := [1.6, 1.0, 0.8, 1.2, 1.0, 1.0]
-const NATION_ALIGN := [false, true, true, true, true, true]
-const CITY_WEIGHTS := [1.4, 1.0, 1.0, 0.8, 0.9, 1.0, 1.0]
-const CITY_ALIGN := [false, false, true, true, true, true, true]
+const SPEC_ID := "populacao"
+const TAB_IDS := ["nations", "cities"]
 
 var _summary: Dictionary = {}
-var _tab := 0
-var _tab_buttons: Array[Button] = []
-var _body: VBoxContainer
+var _tab_index := 0
+var _query := ""
+var _selected_city := ""
+
+var _root: UiTemplateBuilder.TemplateRoot
+var _slots := {}
+var _tables := {}
+var _tabs: UiTemplateBuilder.FolderTabs
+var _search: LineEdit
+var _structure_key := ""
+
+## Cidades visíveis na tabela (busca aplicada); o índice da linha aponta aqui.
+var _shown_cities: Array = []
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", UiKit.SPACE_MD)
-	size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	add_child(_build_tabs())
-	add_child(UiKit.rule())
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	UiKit.bind_scroll_sfx(scroll)
-
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(card)
-
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	card.add_child(_body)
-
-	add_child(scroll)
-	_render()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-func _build_tabs() -> HBoxContainer:
-	var bar := UiKit.tab_bar()
-	for index in 2:
-		var button := UiKit.tab_button("")
-		button.pressed.connect(_set_tab.bind(index))
-		bar.add_child(button)
-		_tab_buttons.append(button)
-	bar.add_child(UiKit.spacer())
-	return bar
+func uses_window_shell() -> bool:
+	return true
 
+
+# --- API ---------------------------------------------------------------------
 
 func refresh(summary: Dictionary) -> void:
 	_summary = summary
-	_retranslate()
-	_render()
-
-
-func _retranslate() -> void:
-	if _tab_buttons.size() < 2:
+	if _root == null or _structure_key != I18n.locale:
+		_rebuild()
 		return
-	_tab_buttons[0].text = I18n.t("econ.tab.nations")
-	_tab_buttons[1].text = I18n.t("econ.tab.cities")
+	_refresh()
 
 
-func _set_tab(index: int) -> void:
-	_tab = index
-	_render()
+## Aceita o índice da aba (captura) ou "nations"/"cities".
+func _set_tab(id: Variant) -> void:
+	var index := 1 if (str(id) == "cities" or (id is int and int(id) == 1)) else 0
+	_tab_index = index
+	if _tabs != null:
+		_tabs.select(index)
+	_refresh()
 
 
-func _render() -> void:
-	if _body == null:
+# --- Montagem ----------------------------------------------------------------
+
+func _rebuild() -> void:
+	_structure_key = I18n.locale
+	if _root != null and is_instance_valid(_root):
+		remove_child(_root)
+		_root.queue_free()
+	_slots.clear()
+	_tables.clear()
+	_tabs = null
+	_search = null
+
+	_root = UiTemplateBuilder.build(UiTemplateBuilder.load_spec(SPEC_ID))
+	_root.name = "PopulationRegistry"
+	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.close_requested.connect(func() -> void: close_requested.emit())
+	_root.choice_selected.connect(_on_choice)
+	add_child(_root)
+	_index_slots()
+	_refresh()
+
+
+func _index_slots() -> void:
+	var pending: Array[Node] = [_root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control:
+			var slot := String((node as Control).get_meta("tpl_slot", ""))
+			if not slot.is_empty():
+				_slots[slot] = node
+		for child in node.get_children():
+			pending.append(child)
+
+	_tabs = _slots.get("tabs") as UiTemplateBuilder.FolderTabs
+	if _tabs != null:
+		_tabs.tab_changed.connect(_on_tab_changed)
+		_tabs.select(_tab_index)
+
+	for index in TAB_IDS.size():
+		var table := _slots.get("%s.table" % TAB_IDS[index]) \
+				as UiTemplateBuilder.DataTableView
+		if table == null:
+			continue
+		table.row_selected.connect(_on_row_selected.bind(TAB_IDS[index]))
+		table.row_activated.connect(_on_row_activated.bind(TAB_IDS[index]))
+		_tables[TAB_IDS[index]] = table
+
+	_search = _line_edit("cities.search")
+	if _search != null:
+		_search.text = _query
+		_search.text_changed.connect(_on_search_changed)
+
+	var nation_search := _line_edit("nations.search")
+	if nation_search != null:
+		nation_search.text = _query
+		nation_search.text_changed.connect(_on_search_changed)
+
+
+func _line_edit(slot: String) -> LineEdit:
+	var node := _slots.get(slot) as Node
+	if node == null:
+		return null
+	var pending: Array[Node] = [node]
+	while not pending.is_empty():
+		var current: Node = pending.pop_front()
+		if current is LineEdit:
+			return current as LineEdit
+		pending.append_array(current.get_children())
+	return null
+
+
+# --- Eventos -----------------------------------------------------------------
+
+func _on_tab_changed(index: int) -> void:
+	_tab_index = clampi(index, 0, TAB_IDS.size() - 1)
+
+
+func _on_search_changed(text: String) -> void:
+	_query = text.strip_edges()
+	for slot in ["nations.search", "cities.search"]:
+		var field := _line_edit(slot)
+		if field != null and field.text != text:
+			field.text = text
+	_refresh()
+	for table in _tables.values():
+		(table as UiTemplateBuilder.DataTableView).reset_page()
+
+
+## Duplo clique numa nação leva às cidades dela (busca pelo nome localizado).
+func _on_row_activated(index: int, tab: String) -> void:
+	if tab == "nations":
+		var nations := _nation_rows()
+		if index < 0 or index >= nations.size():
+			return
+		var nation: Dictionary = nations[index]
+		_query = I18n.nation_name(String(nation.get("tag", "")))
+		_set_tab("cities")
+		_on_search_changed(_query)
 		return
-
-	for i in _tab_buttons.size():
-		UiKit.set_tab_active(_tab_buttons[i], i == _tab)
-
-	UiKit.clear(_body)
-	_body.add_child(_glance())
-	_body.add_child(_note())
-	_body.add_child(UiKit.rule())
-
-	if _tab == 0:
-		_render_nations()
-	else:
-		_render_cities()
+	_on_row_selected(index, tab)
+	_open_selected()
 
 
-## Faixa de indicadores agregados, todos derivados do resumo da simulação.
-func _glance() -> Control:
+func _on_row_selected(index: int, tab: String) -> void:
+	if tab != "cities" or index < 0 or index >= _shown_cities.size():
+		return
+	_selected_city = String(_shown_cities[index].get("id", ""))
+	_update_city_card(_shown_cities[index])
+
+
+func _on_choice(id: String) -> void:
+	if id == "open":
+		_open_selected()
+
+
+func _open_selected() -> void:
+	if not _selected_city.is_empty():
+		city_requested.emit(_selected_city)
+
+
+# --- Desenho -----------------------------------------------------------------
+
+func _refresh() -> void:
+	if _root == null:
+		return
+	_refresh_totals()
+	_refresh_nations()
+	_refresh_cities()
+
+
+func _refresh_totals() -> void:
 	var totals := _totals()
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_XL)
-
-	row.add_child(_pair(I18n.t("pop.total"),
-			UiKit.number(float(totals["population"]) / 1_000_000.0, 1) + " M"))
-	row.add_child(_pair(I18n.t("pop.jobs"), UiKit.number(float(totals["jobs"]))))
-	row.add_child(_pair(I18n.t("pop.income"),
-			UiKit.number(float(totals["income"]) * 100.0) + "%"))
-	row.add_child(_pair(I18n.t("pop.consumption"),
-			UiKit.number(float(totals["consumed"])) + " t"))
-	row.add_child(_pair(I18n.t("pop.attendance"),
+	_set_text("nations.card.kv.population", _population_text(
+			float(totals["population"])))
+	_set_text("nations.card.kv.jobs", UiKit.number(float(totals["jobs"])))
+	_set_text("nations.card.kv.income",
+			UiKit.number(float(totals["income"]) * 100.0) + "%")
+	_set_text("nations.card.kv.consumption",
+			UiKit.number(float(totals["consumed"])) + " t")
+	_set_text("nations.card.kv.attendance",
 			UiKit.number(float(totals["attendance"]) * 100.0) + "%",
-			_attendance_color(float(totals["attendance"]))))
-	return row
+			_attendance_color(float(totals["attendance"])))
 
 
-func _note() -> Control:
-	var note := UiKit.paragraph(I18n.t("pop.note"), UiKit.FS_CAPTION + 1,
-			UiKit.TEXT_MUTED, 780.0)
-	return note
-
-
-func _render_nations() -> void:
-	var nations := _nation_rows()
-	if nations.is_empty():
-		_body.add_child(UiKit.empty_state(I18n.t("pop.empty"), I18n.t("pop.empty.body")))
+func _refresh_nations() -> void:
+	var table := _tables.get("nations") as UiTemplateBuilder.DataTableView
+	if table == null:
 		return
-
-	_body.add_child(UiKit.table_header([
-		I18n.t("econ.col.nation"),
-		I18n.t("econ.col.population"),
-		I18n.t("econ.col.cities"),
-		I18n.t("pop.jobs"),
-		I18n.t("pop.col.income"),
-		I18n.t("pop.attendance"),
-	], NATION_WEIGHTS, NATION_ALIGN))
-
-	for nation in nations:
-		_body.add_child(UiKit.table_row([
-			I18n.nation_name(nation["tag"]),
-			UiKit.number(float(nation["population"]) / 1_000_000.0, 1) + " M",
-			UiKit.number(float(nation["cities"])),
-			UiKit.number(float(nation["jobs"])),
-			UiKit.number(float(nation["income"]) * 100.0) + "%",
-			UiKit.number(float(nation["attendance"]) * 100.0) + "%",
-		], NATION_WEIGHTS, [
-			UiKit.nation_color(nation["tag"]), UiKit.TEXT, UiKit.TEXT_DIM,
-			UiKit.TEXT_DIM, UiKit.STEEL,
-			_attendance_color(float(nation["attendance"])),
-		], NATION_ALIGN))
+	var all := _nation_rows()
+	var rows := _filtered_nations(all)
+	var cells: Array = []
+	for nation in rows:
+		cells.append([
+			I18n.nation_name(String(nation.get("tag", ""))),
+			_population_text(float(nation.get("population", 0.0))),
+			UiKit.number(float(nation.get("cities", 0.0))),
+			UiKit.number(float(nation.get("jobs", 0.0))),
+			UiKit.number(float(nation.get("income", 0.0)) * 100.0) + "%",
+			{"text": UiKit.number(float(nation.get("attendance", 0.0)) * 100.0)
+					+ "%", "tone": _attendance_tone(
+					float(nation.get("attendance", 0.0)))},
+		])
+	table.update_rows(cells)
+	_set_text("nations.count", I18n.t("tpl.common.result",
+			{"n": _count_text(rows.size(), all.size())}))
+	_set_hidden("nations.table", rows.is_empty())
+	_set_hidden("nations.empty", not rows.is_empty())
 
 
-func _render_cities() -> void:
-	var cities := _city_rows()
-	if cities.is_empty():
-		_body.add_child(UiKit.empty_state(I18n.t("pop.empty"), I18n.t("pop.empty.body")))
+func _refresh_cities() -> void:
+	var table := _tables.get("cities") as UiTemplateBuilder.DataTableView
+	if table == null:
 		return
+	var all := _city_rows()
+	var rows := _filtered_cities(all)
+	_shown_cities = rows
+	var cells: Array = []
+	for city in rows:
+		var attendance := _attendance(city)
+		cells.append([
+			I18n.city_name(String(city.get("id", "")), String(city.get("name", ""))),
+			I18n.nation_name(String(city.get("nation", ""))),
+			_population_text(float(city.get("population", 0.0))),
+			UiKit.number(float(city.get("jobs", 0.0))),
+			UiKit.number(float(city.get("income", 0.0)) * 100.0) + "%",
+			UiKit.number(float(city.get("consumed", 0.0))) + " t",
+			{"text": UiKit.number(attendance * 100.0) + "%",
+					"tone": _attendance_tone(attendance)},
+		])
+	var index := _index_of(rows, _selected_city)
+	table.update_rows(cells, index)
+	_selected_city = String(rows[index].get("id", "")) if index >= 0 else ""
 
-	_body.add_child(UiKit.table_header([
-		I18n.t("econ.col.city"),
-		I18n.t("econ.col.nation"),
-		I18n.t("econ.col.population"),
-		I18n.t("pop.jobs"),
-		I18n.t("pop.col.income"),
-		I18n.t("pop.consumption"),
-		I18n.t("pop.attendance"),
-	], CITY_WEIGHTS, CITY_ALIGN))
+	_set_text("cities.count", I18n.t("tpl.common.result",
+			{"n": _count_text(rows.size(), all.size())}))
+	_set_hidden("cities.table", rows.is_empty())
+	_set_hidden("cities.card", rows.is_empty())
+	_set_hidden("cities.empty", not rows.is_empty())
+	_update_city_card(rows[index] if index >= 0 else {})
 
-	for city in cities:
-		var row := UiKit.row_button()
-		row.add_child(UiKit.table_row([
-			I18n.city_name(city["id"], city["name"]),
-			I18n.nation_name(city["nation"]),
-			UiKit.number(float(city["population"]) / 1_000_000.0, 1) + " M",
-			UiKit.number(float(city["jobs"])),
-			UiKit.number(float(city["income"]) * 100.0) + "%",
-			UiKit.number(float(city["consumed"])) + " t",
-			UiKit.number(float(_attendance(city)) * 100.0) + "%",
-		], CITY_WEIGHTS, [
-			UiKit.TEXT, UiKit.nation_color(city["nation"]), UiKit.TEXT,
-			UiKit.TEXT_DIM, UiKit.STEEL, UiKit.TEXT_DIM,
-			_attendance_color(_attendance(city)),
-		], CITY_ALIGN))
 
-		var city_id := String(city["id"])
-		row.pressed.connect(func() -> void: city_requested.emit(city_id))
-		_body.add_child(row)
+func _update_city_card(city: Dictionary) -> void:
+	if city.is_empty():
+		return
+	var attendance := _attendance(city)
+	_set_text("cities.card.name", I18n.city_name(String(city.get("id", "")),
+			String(city.get("name", ""))))
+	_set_text("cities.card.kv.nation", I18n.nation_name(String(city.get("nation", ""))))
+	_set_text("cities.card.kv.population", _population_text(
+			float(city.get("population", 0.0))))
+	_set_text("cities.card.kv.jobs", UiKit.number(float(city.get("jobs", 0.0))))
+	_set_text("cities.card.kv.income",
+			UiKit.number(float(city.get("income", 0.0)) * 100.0) + "%")
+	_set_text("cities.card.kv.consumed",
+			UiKit.number(float(city.get("consumed", 0.0))) + " t")
+	_set_text("cities.card.kv.attendance",
+			UiKit.number(attendance * 100.0) + "%", _attendance_color(attendance))
 
+
+# --- Dados -------------------------------------------------------------------
 
 ## Proporção da demanda de trigo efetivamente consumida.
 func _attendance(city: Dictionary) -> float:
@@ -198,6 +295,14 @@ func _attendance_color(ratio: float) -> Color:
 	if ratio >= 0.80:
 		return UiKit.WARNING
 	return UiKit.NEGATIVE
+
+
+func _attendance_tone(ratio: float) -> String:
+	if ratio >= 0.95:
+		return "positive"
+	if ratio >= 0.80:
+		return "alerta"
+	return "carimbo"
 
 
 func _totals() -> Dictionary:
@@ -225,17 +330,17 @@ func _totals() -> Dictionary:
 	}
 
 
-## Agrega as cidades por nação: população, empregos, renda e atendimento.
+## Agrega as cidades por nação; a ordem é por população (maior primeiro).
 func _nation_rows() -> Array:
 	var buckets := {}
-
 	for city in _summary.get("cities", []):
-		var tag := String(city["nation"])
+		var tag := String(city.get("nation", ""))
+		if tag.is_empty():
+			continue
 		if not buckets.has(tag):
-			buckets[tag] = {
-				"tag": tag, "population": 0.0, "cities": 0.0, "jobs": 0.0,
-				"consumed": 0.0, "need": 0.0, "weighted_income": 0.0,
-			}
+			buckets[tag] = {"tag": tag, "population": 0.0, "cities": 0.0,
+					"jobs": 0.0, "consumed": 0.0, "need": 0.0,
+					"weighted_income": 0.0}
 		var bucket: Dictionary = buckets[tag]
 		var city_population := float(city.get("population", 0.0))
 		bucket["population"] = float(bucket["population"]) + city_population
@@ -260,7 +365,6 @@ func _nation_rows() -> Array:
 					if population > 0.0 else 0.0,
 			"attendance": float(bucket["consumed"]) / need if need > 0.0 else 1.0,
 		})
-
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a["population"]) > float(b["population"]))
 	return rows
@@ -273,10 +377,75 @@ func _city_rows() -> Array:
 	return cities
 
 
-func _pair(caption_text: String, value_text: String,
-		color: Color = UiKit.TEXT) -> VBoxContainer:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 0)
-	box.add_child(UiKit.caption(caption_text))
-	box.add_child(UiKit.label(value_text, UiKit.FS_SUBTITLE, color))
-	return box
+func _filtered_nations(nations: Array) -> Array:
+	if _query.is_empty():
+		return nations
+	var needle := _query.to_lower()
+	var result: Array = []
+	for nation in nations:
+		var name := I18n.nation_name(String(nation.get("tag", ""))).to_lower()
+		if name.contains(needle) \
+				or String(nation.get("tag", "")).to_lower().contains(needle):
+			result.append(nation)
+	return result
+
+
+func _filtered_cities(cities: Array) -> Array:
+	if _query.is_empty():
+		return cities
+	var needle := _query.to_lower()
+	var result: Array = []
+	for city in cities:
+		var name := I18n.city_name(String(city.get("id", "")),
+				String(city.get("name", ""))).to_lower()
+		var nation := I18n.nation_name(String(city.get("nation", ""))).to_lower()
+		if name.contains(needle) or nation.contains(needle):
+			result.append(city)
+	return result
+
+
+# --- Utilidades ---------------------------------------------------------------
+
+func _population_text(value: float) -> String:
+	if value >= 1_000_000_000.0:
+		return UiKit.number(value / 1_000_000_000.0, 2) + " " \
+				+ I18n.t("common.billion")
+	if value >= 1_000_000.0:
+		return UiKit.number(value / 1_000_000.0, 1) + " " \
+				+ I18n.t("common.million")
+	if value >= 1_000.0:
+		return UiKit.number(value / 1_000.0, 1) + " " \
+				+ I18n.t("common.thousand")
+	return UiKit.number(value)
+
+
+func _count_text(shown: int, total: int) -> String:
+	if shown == total:
+		return UiKit.number(shown)
+	return "%s / %s" % [UiKit.number(shown), UiKit.number(total)]
+
+
+func _index_of(rows: Array, city_id: String) -> int:
+	if city_id.is_empty():
+		return 0 if not rows.is_empty() else -1
+	for index in rows.size():
+		if String(rows[index].get("id", "")) == city_id:
+			return index
+	return 0 if not rows.is_empty() else -1
+
+
+func _set_text(slot: String, text: String,
+		color: Color = Color(0, 0, 0, 0)) -> void:
+	var node := _slots.get(slot) as Label
+	if node == null:
+		return
+	node.text = text
+	if color.a > 0.0:
+		node.add_theme_color_override("font_color", color)
+
+
+func _set_hidden(slot: String, hidden: bool) -> void:
+	var node := _slots.get(slot) as CanvasItem
+	if node == null:
+		return
+	node.visible = not hidden

@@ -1,0 +1,371 @@
+{
+  "id": "populacao",
+  "title": "@pop.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [0.86, 0.84],
+    "min": [960, 560],
+    "max": [1800, 1000],
+    "pauses_game": false
+  },
+  "data": {
+    "nations": {"population": "-", "jobs": "-", "income": "-",
+      "consumption": "-", "attendance": "-"},
+    "cities": {"name": "-", "nation": "-", "population": "-", "jobs": "-",
+      "income": "-", "consumed": "-", "attendance": "-"}
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "@pop.crumb",
+      "title": "@pop.title",
+      "title_slot": "nav.title",
+      "footer": [
+        {"text": "@tpl.footer.tabs_switch"},
+        {"text": "@tpl.footer.table"},
+        {"spacer": true},
+        {"seal": "ESC"},
+        {"text": "@tpl.footer.close"}
+      ],
+      "body": [
+        {
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
+            {
+              "label": "@econ.tab.nations",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 12,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "nations.search",
+                              "placeholder": "@tpl.registro.search.nation",
+                              "width": 340
+                            },
+                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "0"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "nations.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "nations.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 10,
+                          "page": 1,
+                          "sort_col": -1,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@pop.nation.hint",
+                          "columns": [
+                            {"label": "@econ.col.nation", "weight": 2, "align": "left"},
+                            {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
+                            {"label": "@econ.col.cities", "weight": 1, "align": "right"},
+                            {"label": "@pop.jobs", "weight": 1.1, "align": "right"},
+                            {"label": "@pop.col.income", "weight": 1, "align": "right"},
+                            {"label": "@pop.attendance", "weight": 1, "align": "right"}
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "nations.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@pop.empty",
+                              "font": "display",
+                              "size": 22
+                            },
+                            {
+                              "type": "label",
+                              "text": "@pop.empty.body",
+                              "font": "body",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 620
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "nations.card",
+                      "pad": 18,
+                      "gap": 12,
+                      "width": 400,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@pop.card.totals",
+                          "font": "display",
+                          "size": 22
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.total",
+                          "value": "$nations.population",
+                          "value_slot": "nations.card.kv.population"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.jobs",
+                          "value": "$nations.jobs",
+                          "value_slot": "nations.card.kv.jobs"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.income",
+                          "value": "$nations.income",
+                          "value_slot": "nations.card.kv.income"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.consumption",
+                          "value": "$nations.consumption",
+                          "value_slot": "nations.card.kv.consumption"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.attendance",
+                          "value": "$nations.attendance",
+                          "value_slot": "nations.card.kv.attendance"
+                        },
+                        {
+                          "type": "paper_card",
+                          "border": "dashed",
+                          "fill": "papel",
+                          "pad": 12,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@pop.note.short",
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 330,
+                              "slot": "nations.card.note"
+                            }
+                          ]
+                        },
+                        {"type": "spacer", "grow": true}
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@econ.tab.cities",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 12,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "cities.search",
+                              "placeholder": "@tpl.registro.search",
+                              "width": 340
+                            },
+                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "0"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "cities.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "cities.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 10,
+                          "page": 1,
+                          "sort_col": -1,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@tpl.registro.footer.select",
+                          "columns": [
+                            {"label": "@econ.col.city", "weight": 2, "align": "left"},
+                            {"label": "@econ.col.nation", "weight": 1.3, "align": "left"},
+                            {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
+                            {"label": "@pop.jobs", "weight": 1, "align": "right"},
+                            {"label": "@pop.col.income", "weight": 0.9, "align": "right"},
+                            {"label": "@pop.consumption", "weight": 1, "align": "right"},
+                            {"label": "@pop.attendance", "weight": 1, "align": "right"}
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "cities.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@pop.empty",
+                              "font": "display",
+                              "size": 22
+                            },
+                            {
+                              "type": "label",
+                              "text": "@pop.empty.body",
+                              "font": "body",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 620
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "cities.card",
+                      "pad": 18,
+                      "gap": 12,
+                      "width": 400,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tpl.registro.selected",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "$cities.name",
+                          "font": "display",
+                          "size": 24,
+                          "slot": "cities.card.name"
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.nation",
+                          "value": "$cities.nation",
+                          "value_slot": "cities.card.kv.nation"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.population",
+                          "value": "$cities.population",
+                          "value_slot": "cities.card.kv.population"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.jobs",
+                          "value": "$cities.jobs",
+                          "value_slot": "cities.card.kv.jobs"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.col.income",
+                          "value": "$cities.income",
+                          "value_slot": "cities.card.kv.income"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.consumption",
+                          "value": "$cities.consumed",
+                          "value_slot": "cities.card.kv.consumed"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.attendance",
+                          "value": "$cities.attendance",
+                          "value_slot": "cities.card.kv.attendance"
+                        },
+                        {
+                          "type": "paper_card",
+                          "border": "dashed",
+                          "fill": "papel",
+                          "pad": 12,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@pop.note.short",
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 330
+                            }
+                          ]
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "button",
+                          "text": "@tpl.registro.open_sheet",
+                          "variant": "primary",
+                          "id": "open"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

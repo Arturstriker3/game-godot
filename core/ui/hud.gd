@@ -1812,6 +1812,7 @@ func _instantiate_screens() -> void:
 	_screens["production"].city_requested.connect(_on_city_production)
 	_screens["production"].close_requested.connect(_close_screen)
 	_screens["population"].city_requested.connect(_on_city_population)
+	_screens["population"].close_requested.connect(_close_screen)
 
 	var alerts_screen: Node = ALERTS_SCREEN.new()
 	alerts_screen.visible = false
