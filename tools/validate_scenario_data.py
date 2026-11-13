@@ -6,11 +6,21 @@ construções e nações), o arquivo de bens da economia
 ``data/definitions/economy/goods.json`` e, se existir,
 ``data/definitions/i18n/i18n.csv``.
 
+Também cruza cada cidade/porto com o ATLAS: o ponto tem de estar em terra na
+camada que o shader usa (``world_sdf.png`` ou a região de alta resolução) e
+dentro de uma província com dono (``world_province.png`` + ``provinces.json``).
+Cidade/porto em água aberta (sem terra a ``COAST_TOLERANCE_KM``) é ERRO — é o
+caso da ilha removida em que a entidade ficou para trás. Os pontos encostados
+na costa (até 2 texels do raster, 4,9 km/texel) são a quantização do atlas, não
+uma cidade no mar; os portos ainda ficam no lado de ÁGUA da costa por desenho
+(curadoria r5). Use ``--land-report`` para ver a distância à terra de cada um.
+
 Uso::
 
     python tools/validate_scenario_data.py
     python tools/validate_scenario_data.py --root .
     python tools/validate_scenario_data.py --strict
+    python tools/validate_scenario_data.py --land-report
 
 Códigos de saída:
 
@@ -18,7 +28,9 @@ Códigos de saída:
 * ``1`` — erros de validação (ou avisos com ``--strict``);
 * ``2`` — arquivo ausente, ilegível ou com estrutura inválida.
 
-Somente biblioteca padrão.
+A checagem de dados é só biblioteca padrão. A leitura do atlas usa numpy e
+Pillow — as mesmas dependências de ``build_atlas_layers.py`` — e, sem elas,
+o validador avisa que a checagem de terra não foi executada.
 """
 
 from __future__ import annotations
@@ -72,6 +84,26 @@ NATION_FIELDS = [
 ]
 COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
 FLAGS_DIR = Path("assets/flags")
+
+# --- Atlas: cidade/porto tem de estar em terra ------------------------------
+# Mesmas texturas e convenção do shader (`atlas_common.gdshaderinc`): canal R =
+# distância assinada à costa, > 128 é terra. A região (Europa) tem 1,9 km/texel
+# e substitui o mundo dentro de `REGION_BOUNDS` (a mesma caixa do shader).
+WORLD_SDF_FILE = Path("map/map_data/atlas/world_sdf.png")
+REGION_SDF_FILE = Path("map/map_data/atlas/region_sdf.png")
+WORLD_PROVINCE_FILE = Path("map/map_data/atlas/world_province.png")
+ATLAS_PROVINCES_FILE = Path("map/map_data/atlas/provinces.json")
+LAND_MIN_VALUE = 129  # R > 128 = terra
+REGION_BOUNDS = (-25.0, 33.0, 45.0, 72.0)
+# 2 texels do mundo (~4,9 km cada): a costa do atlas é um campo de distância
+# discretizado, então a cidade costeira pode cair 1 texel no lado da água sem
+# que isso seja "cidade no mar". Uma ilha removida deixa a cidade a centenas de
+# quilômetros da terra — muito acima deste limite.
+COAST_TOLERANCE_KM = 10.0
+KM_PER_WORLD_TEXEL = 40075.0 / 8192.0   # largura do mundo (8192 texels)
+KM_PER_REGION_TEXEL = 40075.0 / 360.0 * (REGION_BOUNDS[2] - REGION_BOUNDS[0]) / 4096.0
+PLAN_SIZE = (5000.0, 2500.0)
+
 GOODS_FIELDS = ["id", "name", "base_price", "food"]
 # Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp), na
 # mesma ordem de data/definitions/economy/goods.json.
@@ -124,6 +156,7 @@ class Report:
         self.sections: list[Section] = []
         self._index: dict[str, Section] = {}
         self.io_failure = False
+        self.entities: list = []
 
     def section(self, label: str) -> Section:
         sec = self._index.get(label)
@@ -728,6 +761,248 @@ def check_i18n_ids(
 
 
 # --------------------------------------------------------------------------
+# Atlas: cidade/porto em terra e dentro de província com dono
+# --------------------------------------------------------------------------
+
+_RASTER_CACHE: dict = {}
+
+
+def _numpy_and_pillow():
+    """Importa numpy/Pillow sob demanda (dependências do pipeline do atlas)."""
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        return None, None
+    return np, Image
+
+
+def load_land_raster(root: Path, relative: Path):
+    """Canal R (costa) do SDF do atlas como matriz, ou None.
+
+    Devolve ``(array, km_por_texel, motivo)``; ``motivo`` só é preenchido quando
+    a textura não pôde ser lida.
+    """
+    key = str(relative)
+    if key in _RASTER_CACHE:
+        return _RASTER_CACHE[key]
+    np, Image = _numpy_and_pillow()
+    if np is None:
+        result = (None, 0.0, "numpy/Pillow ausentes")
+        _RASTER_CACHE[key] = result
+        return result
+    path = root / relative
+    if not path.exists():
+        result = (None, 0.0, f"{relative.as_posix()} ausente")
+        _RASTER_CACHE[key] = result
+        return result
+    try:
+        with Image.open(path) as image:
+            # Só o canal R (costa); Luminância misturaria fronteiras (G/B).
+            array = np.asarray(image.getchannel(0))
+    except (OSError, ValueError) as exc:
+        result = (None, 0.0, f"{relative.as_posix()} ilegível: {exc}")
+        _RASTER_CACHE[key] = result
+        return result
+    km = KM_PER_WORLD_TEXEL if relative == WORLD_SDF_FILE else KM_PER_REGION_TEXEL
+    result = (array, km, "")
+    _RASTER_CACHE[key] = result
+    return result
+
+
+def load_province_raster(root: Path):
+    """Id global da província por pixel (R + G*256) ou None."""
+    key = "__provinces__"
+    if key in _RASTER_CACHE:
+        return _RASTER_CACHE[key]
+    np, Image = _numpy_and_pillow()
+    if np is None:
+        result = (None, {}, "numpy/Pillow ausentes")
+        _RASTER_CACHE[key] = result
+        return result
+    path = root / WORLD_PROVINCE_FILE
+    data_path = root / ATLAS_PROVINCES_FILE
+    if not path.exists() or not data_path.exists():
+        result = (None, {}, "raster/roster de províncias ausente")
+        _RASTER_CACHE[key] = result
+        return result
+    try:
+        with Image.open(path) as image:
+            rgb = np.asarray(image.convert("RGB")).astype(np.int32)
+        with data_path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        provinces = {int(item.get("id", 0)): item
+                     for item in data.get("provinces", [])}
+        ids = rgb[:, :, 0] + rgb[:, :, 1] * 256
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        result = (None, {}, f"províncias ilegíveis: {exc}")
+        _RASTER_CACHE[key] = result
+        return result
+    result = (ids, provinces, "")
+    _RASTER_CACHE[key] = result
+    return result
+
+
+def plan_to_lonlat(x: float, y: float) -> tuple:
+    """x/y do plano 5000×2500 para lon/lat equirretangular."""
+    return (x / PLAN_SIZE[0] * 360.0 - 180.0,
+            90.0 - y / PLAN_SIZE[1] * 180.0)
+
+
+def lonlat_to_pixel(lon: float, lat: float, width: int, height: int) -> tuple:
+    return (int(round((lon + 180.0) / 360.0 * width - 0.5)),
+            int(round((90.0 - lat) / 180.0 * height - 0.5)))
+
+
+def region_to_pixel(lon: float, lat: float, width: int, height: int) -> tuple:
+    lon0, lat0, lon1, lat1 = REGION_BOUNDS
+    return (int(round((lon - lon0) / (lon1 - lon0) * width - 0.5)),
+            int(round((lat1 - lat) / (lat1 - lat0) * height - 0.5)))
+
+
+def point_in_region(lon: float, lat: float) -> bool:
+    lon0, lat0, lon1, lat1 = REGION_BOUNDS
+    return lon0 <= lon <= lon1 and lat0 <= lat <= lat1
+
+
+def nearest_land_km(array, px: int, py: int, km_per_texel: float,
+                    start_radius: int = 64) -> float:
+    """Distância (km) até o texel de terra mais próximo; ``inf`` se não houver."""
+    height, width = array.shape
+    radius = start_radius
+    while True:
+        x0, x1 = max(0, px - radius), min(width, px + radius + 1)
+        y0, y1 = max(0, py - radius), min(height, py + radius + 1)
+        window = array[y0:y1, x0:x1] >= LAND_MIN_VALUE
+        ys, xs = window.nonzero()
+        if len(ys):
+            dx = xs + x0 - px
+            dy = ys + y0 - py
+            return float(math.sqrt(int((dx * dx + dy * dy).min())) * km_per_texel)
+        if x0 == 0 and y0 == 0 and x1 == width and y1 == height:
+            return float("inf")
+        radius = min(radius * 4, max(width, height))
+
+
+def land_distance_km(root: Path, x: float, y: float) -> tuple:
+    """``(distância_km, é_terra, camada, motivo)`` do ponto no atlas.
+
+    Usa a região de alta resolução quando o ponto está dentro dela — a mesma
+    escolha do shader.
+    """
+    lon, lat = plan_to_lonlat(x, y)
+    if point_in_region(lon, lat):
+        array, km, reason = load_land_raster(root, REGION_SDF_FILE)
+        if array is not None:
+            px, py = region_to_pixel(lon, lat, array.shape[1], array.shape[0])
+            if 0 <= px < array.shape[1] and 0 <= py < array.shape[0]:
+                if int(array[py, px]) >= LAND_MIN_VALUE:
+                    return 0.0, True, "região", ""
+                return (nearest_land_km(array, px, py, km), False,
+                        "região", reason)
+    array, km, reason = load_land_raster(root, WORLD_SDF_FILE)
+    if array is None:
+        return 0.0, True, "mundo", reason
+    px, py = lonlat_to_pixel(lon, lat, array.shape[1], array.shape[0])
+    if not (0 <= px < array.shape[1] and 0 <= py < array.shape[0]):
+        return 0.0, True, "mundo", "ponto fora do raster"
+    if int(array[py, px]) >= LAND_MIN_VALUE:
+        return 0.0, True, "mundo", ""
+    return nearest_land_km(array, px, py, km), False, "mundo", ""
+
+
+def province_owner(root: Path, x: float, y: float) -> tuple:
+    """``(id, país_dono, motivo)`` da província do ponto no atlas."""
+    ids, provinces, reason = load_province_raster(root)
+    if ids is None:
+        return 0, "", reason
+    lon, lat = plan_to_lonlat(x, y)
+    px, py = lonlat_to_pixel(lon, lat, ids.shape[1], ids.shape[0])
+    if not (0 <= px < ids.shape[1] and 0 <= py < ids.shape[0]):
+        return 0, "", "ponto fora do raster"
+    key = int(ids[py, px])
+    record = provinces.get(key, {})
+    return key, as_text(record.get("country")), ""
+
+
+def check_land_points(report: Report, root: Path, loaded: dict, kind: str) -> None:
+    """Cidade/porto em água aberta ou em província sem dono = erro.
+
+    Roda sobre o JSON (o arquivo que o jogo carrega). A camada usada é a mesma
+    do shader: a região de alta resolução dentro de ``REGION_BOUNDS``, o mundo
+    fora dela.
+    """
+    if "json" not in loaded:
+        return
+    sec, rows, _structure = loaded["json"]
+    if not rows:
+        return
+    _, _, reason = load_land_raster(root, WORLD_SDF_FILE)
+    if reason:
+        sec.warnings.append(f"checagem de terra não executada: {reason}")
+        return
+    for row in rows:
+        x = parse_number(row.data.get("x"))
+        y = parse_number(row.data.get("y"))
+        if x is None or y is None:
+            continue  # check_coordinate já aponta o problema
+        distance, on_land, layer, error = land_distance_km(root, x, y)
+        if error:
+            sec.warnings.append(f"checagem de terra não executada: {error}")
+            return
+        item = as_text(row.data.get("id")) or row.label
+        lon, lat = plan_to_lonlat(x, y)
+        if not on_land and distance > COAST_TOLERANCE_KM:
+            sec.errors.append(
+                f"{row.label}: {kind} '{item}' em água no atlas "
+                f"({layer}, {fmt_number(round(distance, 1))} km da terra; "
+                f"lat {lat:.3f}, lon {lon:.3f}) — ilha removida? remova em "
+                "tools/world_city_curation.py (EXCLUDED/EXCLUDED_PORTS) ou "
+                "corrija a coordenada"
+            )
+            continue
+        if on_land:
+            province_id, country, why = province_owner(root, x, y)
+            if why:
+                sec.warnings.append(f"checagem de província não executada: {why}")
+                return
+            if not country:
+                sec.errors.append(
+                    f"{row.label}: {kind} '{item}' está na província "
+                    f"{province_id} sem dono no atlas "
+                    f"(lat {lat:.3f}, lon {lon:.3f})"
+                )
+
+
+def land_report(root: Path, loaded_pairs: list) -> None:
+    """Tabela de auditoria: distância à terra de cada cidade/porto."""
+    print()
+    print("Distância à terra no atlas (pontos no lado da água):")
+    print(f"{'tipo':7} {'id':11} {'nome':28} {'lat':>8} {'lon':>9} "
+          f"{'km':>9}  camada")
+    entries = []
+    for kind, loaded in loaded_pairs:
+        if "json" not in loaded:
+            continue
+        _sec, rows, _structure = loaded["json"]
+        for row in rows:
+            x = parse_number(row.data.get("x"))
+            y = parse_number(row.data.get("y"))
+            if x is None or y is None:
+                continue
+            distance, on_land, layer, _error = land_distance_km(root, x, y)
+            if on_land or distance <= 0.0:
+                continue
+            lon, lat = plan_to_lonlat(x, y)
+            entries.append((distance, kind, as_text(row.data.get("id")),
+                            as_text(row.data.get("name")), lat, lon, layer))
+    entries.sort(reverse=True)
+    for distance, kind, item, name, lat, lon, layer in entries:
+        print(f"{kind:7} {item:11} {name[:28]:28} {lat:8.3f} {lon:9.3f} "
+              f"{distance:9.1f}  {layer}")
+
+
+# --------------------------------------------------------------------------
 # Consistência CSV x JSON
 # --------------------------------------------------------------------------
 
@@ -858,7 +1133,6 @@ def build_report(root: Path) -> Report:
         if fmt in nations:
             sec, rows, structure = nations[fmt]
             nation_ids[fmt] = validate_nations(sec, rows, structure, root)
-
     building_ids = {}
     for fmt in ("csv", "json"):
         if fmt not in buildings:
@@ -928,6 +1202,9 @@ def build_report(root: Path) -> Report:
             nation_union |= values
         check_nation_i18n(i18n_sec, i18n_keys, nation_union)
 
+    check_land_points(report, root, cities, "cidade")
+    check_land_points(report, root, ports, "porto")
+    report.entities = [("cidade", cities), ("porto", ports)]
     return report
 
 
@@ -948,11 +1225,18 @@ def main(argv: Optional[list] = None) -> int:
         action="store_true",
         help="trata avisos como erros (código de saída 1)",
     )
+    parser.add_argument(
+        "--land-report",
+        action="store_true",
+        help="lista a distância à terra de cada cidade/porto (auditoria do atlas)",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.root).expanduser().resolve()
     report = build_report(root)
     total_errors, total_warnings = print_report(report, root)
+    if args.land_report:
+        land_report(root, getattr(report, "entities", []))
 
     if report.io_failure:
         return 2
