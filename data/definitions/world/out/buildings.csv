@@ -4,6 +4,7 @@ AFG-HER,afg_her_wheat,Herat — trigo,172.3
 AFG-KAN,afg_kan_wheat,Kandahar — trigo,157.0
 AFG-MAZ,afg_maz_wheat,Mazar-e Sharif — trigo,157.0
 AGO-LUA,ago_lua_wheat,Luanda — trigo,832.9
+AGO-BEN,ago_ben_wheat,Benguela — trigo,411.0
 AGO-LUB,ago_lub_wheat,Lubango — trigo,180.2
 AGO-HUA,ago_hua_wheat,Huambo — trigo,178.6
 AGO-SAU,ago_sau_wheat,Saurimo — trigo,117.9
@@ -14,6 +15,7 @@ ARE-ABU,are_abu_wheat,Abu Dhabi — trigo,542.1
 ARE-DUB,are_dub_wheat,Dubai — trigo,1137.0
 ARG-BUEN,arg_buen_wheat,Buenos Aires — trigo,867.3
 ARG-CORD,arg_cord_wheat,Córdova — trigo,632.0
+ARG-MEN,arg_men_wheat,Mendoza — trigo,357.0
 ARG-ROSA,arg_rosa_wheat,Rosário — trigo,284.5
 ARG-MAR,arg_mar_wheat,Mar del Plata — trigo,178.0
 ARG-SAN,arg_san_wheat,San Miguel de Tucumán — trigo,164.7
@@ -80,6 +82,8 @@ BLZ-BEL,blz_bel_wheat,Belmopan — trigo,4.0
 BLZ-BELI,blz_beli_wheat,Cidade de Belize — trigo,19.6
 BOL-SUC,bol_suc_wheat,Sucre — trigo,67.5
 BOL-LAP,bol_lap_wheat,La Paz — trigo,601.4
+BOL-SCZ,bol_scz_wheat,Santa Cruz de la Sierra — trigo,597.0
+BOL-COC,bol_coc_wheat,Cochabamba — trigo,387.0
 BOL-SAN,bol_san_wheat,San Ignacio de Velasco — trigo,7.1
 BRA-BRA,bra_bra_wheat,Brasília — trigo,662.3
 BRA-SAOP,bra_saop_wheat,São Paulo — trigo,3720.1
@@ -154,6 +158,7 @@ CHN-SHAN,chn_shan_wheat,Xangai — trigo,7462.3
 CHN-CHON,chn_chon_wheat,Chongqing — trigo,6600.0
 CHN-CHEN,chn_chen_wheat,Chengdu — trigo,6281.3
 CHN-GUAN,chn_guan_wheat,Cantão — trigo,5603.0
+CHN-XIA,chn_xia_wheat,Xiamen — trigo,4740.0
 CHN-TIAN,chn_tian_wheat,Tianjin — trigo,4159.8
 CHN-WUHA,chn_wuha_wheat,Wuhan — trigo,4121.7
 CHN-XIA2,chn_xia2_wheat,Xiam — trigo,3885.9
@@ -197,7 +202,9 @@ COG-OWA,cog_owa_wheat,Owando — trigo,10.7
 COL-BOG,col_bog_wheat,Bogotá — trigo,2302.3
 COL-CAL,col_cal_wheat,Cáli — trigo,717.9
 COL-MED,col_med_wheat,Medellín — trigo,600.0
+COL-BUC,col_buc_wheat,Bucaramanga — trigo,420.0
 COL-BAR,col_bar_wheat,Barranquilla — trigo,361.9
+COL-CUC,col_cuc_wheat,Cúcuta — trigo,348.0
 COL-MIT,col_mit_wheat,Mitú — trigo,9.0
 CRI-SAN,cri_san_wheat,San José — trigo,100.5
 CRI-LIM,cri_lim_wheat,Limón — trigo,18.9
@@ -213,6 +220,7 @@ DEU-CGN,cgn_wheat,Colónia — trigo,681
 DEU-MUC,muc_wheat,Munique — trigo,646.2
 DEU-FFM,ffm_wheat,Frankfurt — trigo,544.3
 DEU-STR,str_wheat,Estugarda — trigo,440.3
+DEU-NUR,deu_nur_wheat,Nuremberga — trigo,339.0
 DEU-LEJ,lej_wheat,Leipzig — trigo,218.5
 DEU-DUS,deu_dus_wheat,Düsseldorf — trigo,185.6
 DEU-DOR,deu_dor_wheat,Dortmund — trigo,176.5
@@ -248,6 +256,8 @@ ERI-ASM,eri_asm_wheat,Asmara — trigo,169.2
 ERI-KER,eri_ker_wheat,Keren — trigo,22.4
 ESP-MADR,esp_madr_wheat,Madri — trigo,976.8
 ESP-BARC,esp_barc_wheat,Barcelona — trigo,505.9
+ESP-SEV,esp_sev_wheat,Sevilha — trigo,393.0
+ESP-MLG,esp_mlg_wheat,Málaga — trigo,336.0
 ESP-VALE,esp_vale_wheat,Valência — trigo,247.3
 ESP-PMI,esp_pmi_wheat,Palma — trigo,127.0
 ESP-LAS,esp_las_wheat,Las Palmas de Gran Canaria — trigo,115.1
@@ -271,6 +281,7 @@ FJI-LAU,fji_lau_wheat,Lautoka — trigo,15.7
 FRA-PAR,par_wheat,Paris — trigo,5641
 FRA-LYS,lys_wheat,Lião — trigo,516.5
 FRA-MRS,mrs_wheat,Marselha — trigo,494.7
+FRA-BOR,fra_bor_wheat,Bordéus — trigo,351.0
 FRA-TLS,tls_wheat,Toulouse — trigo,328.1
 FRA-LIL,lil_wheat,Lille — trigo,319.1
 FRA-NTE,nte_wheat,Nantes — trigo,206.7
@@ -374,6 +385,7 @@ IRN-MAS,irn_mas_wheat,Mexede — trigo,692.2
 IRN-ISF,irn_isf_wheat,Isfahan — trigo,464.1
 IRN-TAB,irn_tab_wheat,Tabriz — trigo,427.4
 IRN-SHI,irn_shi_wheat,Xiraz — trigo,375.0
+IRN-KSH,irn_ksh_wheat,Kermanshah — trigo,348.0
 IRN-QOM,irn_qom_wheat,Qom — trigo,270.0
 IRN-AHV,irn_ahv_wheat,Ahvaz — trigo,252.3
 IRN-IRA,irn_ira_wheat,Iranshahr — trigo,39.4
@@ -386,6 +398,7 @@ ISR-TLV,isr_tlv_wheat,Tel Aviv — trigo,1247.1
 ISR-HAI,isr_hai_wheat,Haifa — trigo,85.6
 ITA-ROME,ita_rome_wheat,Roma — trigo,695.7
 ITA-MILA,ita_mila_wheat,Milão — trigo,411.4
+ITA-PADU,ita_padu_wheat,Pádua — trigo,318.0
 ITA-NAPL,ita_napl_wheat,Nápoles — trigo,272.7
 ITA-TURI,ita_turi_wheat,Turim — trigo,254.2
 ITA-PALE,ita_pale_wheat,Palermo — trigo,194.5
@@ -403,6 +416,7 @@ JPN-NAGO,jpn_nago_wheat,Nagoia — trigo,699.7
 JPN-SAPP,jpn_sapp_wheat,Sapporo — trigo,592.1
 JPN-FUKU,jpn_fuku_wheat,Fukuoka — trigo,483.7
 JPN-KOB,jpn_kob_wheat,Kōbe — trigo,457.5
+JPN-SEN,jpn_sen_wheat,Sendai — trigo,456.0
 JPN-KYO,jpn_kyo_wheat,Quioto — trigo,439.1
 JPN-HIRO,jpn_hiro_wheat,Hiroshima — trigo,360.2
 JPN-NAH,jpn_nah_wheat,Naha — trigo,95.3
@@ -453,6 +467,9 @@ LVA-RIGA,lva_riga_wheat,Riga — trigo,222.8
 LVA-DAUG,lva_daug_wheat,Daugavpils — trigo,23.4
 MAR-RAB,mar_rab_wheat,Rabat — trigo,496.7
 MAR-CAS,mar_cas_wheat,Casablanca — trigo,1099.8
+MAR-FEZ,mar_fez_wheat,Fez — trigo,399.0
+MAR-AGA,mar_aga_wheat,Agadir — trigo,390.0
+MAR-RAK,mar_rak_wheat,Marraquexe — trigo,345.0
 MAR-IML,mar_iml_wheat,Imlili — trigo,0.7
 MDA-CHIS,mda_chis_wheat,Chişinău — trigo,190.8
 MDA-TIRA,mda_tira_wheat,Tiraspol — trigo,47.1
@@ -462,9 +479,11 @@ MDG-FIA,mdg_fia_wheat,Fianarantsoa — trigo,60.9
 MEX-MEX,mex_mex_wheat,Cidade do México — trigo,3688.3
 MEX-TIJU,mex_tiju_wheat,Tijuana — trigo,576.8
 MEX-PUEB,mex_pueb_wheat,Puebla — trigo,507.7
+MEX-JUZ,mex_juz_wheat,Cidade Juárez — trigo,498.0
 MEX-SAN,mex_san_wheat,Querétaro — trigo,478.3
 MEX-LEON,mex_leon_wheat,León de Los Aldama — trigo,473.9
 MEX-ZAP,mex_zap_wheat,Zapopan — trigo,442.9
+MEX-TOR,mex_tor_wheat,Torreón — trigo,438.0
 MEX-MER,mex_mer_wheat,Mérida — trigo,360.3
 MEX-MONT,mex_mont_wheat,Monterrey — trigo,340.7
 MEX-CHI,mex_chi_wheat,Chihuahua — trigo,277.7
@@ -501,6 +520,7 @@ MRT-ZOU,mrt_zou_wheat,Zouérat — trigo,16.6
 MWI-LIL,mwi_lil_wheat,Lilongué — trigo,334.7
 MWI-BLA,mwi_bla_wheat,Blantyre — trigo,270.8
 MYS-KUA,mys_kua_wheat,Kuala Lumpur — trigo,436.2
+MYS-GEO,mys_geo_wheat,George Town — trigo,630.0
 MYS-JOH,mys_joh_wheat,Jor Baru — trigo,257.4
 MYS-KOT,mys_kot_wheat,Kota Kinabalu — trigo,150.1
 MYS-KUC,mys_kuc_wheat,Kuching — trigo,120.8
@@ -602,6 +622,7 @@ RUS-MOSC,rus_mosc_wheat,Moscou — trigo,3114.4
 RUS-SAIN,rus_sain_wheat,São Petersburgo — trigo,1605.6
 RUS-NOVO,rus_novo_wheat,Novosibirsk — trigo,483.8
 RUS-YEKA,rus_yeka_wheat,Ecaterimburgo — trigo,448.5
+RUS-KRA,rus_kra_wheat,Krasnodar — trigo,417.0
 RUS-NIZH,rus_nizh_wheat,Níjni Novgorod — trigo,377.7
 RUS-KAZA,rus_kaza_wheat,Cazã — trigo,373.0
 RUS-CHEL,rus_chel_wheat,Cheliabinsk — trigo,360.7
@@ -723,6 +744,8 @@ TUR-GAZI,tur_gazi_wheat,Gaziantepe — trigo,666.7
 TUR-DIYA,tur_diya_wheat,Diyarbakır — trigo,550.1
 TUR-ADAN,tur_adan_wheat,Adana — trigo,545.0
 TUR-KAY,tur_kay_wheat,Caiseri — trigo,435.7
+TUR-ANT,tur_ant_wheat,Antália — trigo,429.0
+TUR-KON,tur_kon_wheat,Cônia — trigo,426.0
 TWN-TAI,twn_tai_wheat,Taipé — trigo,2361.6
 TWN-TAIC,twn_taic_wheat,Taichung — trigo,855.1
 TWN-KAO,twn_kao_wheat,Kaohsiung — trigo,820.2
@@ -746,6 +769,8 @@ URY-MON,ury_mon_wheat,Montevidéu — trigo,381.2
 URY-SAL,ury_sal_wheat,Salto — trigo,34.2
 USA-WASH,usa_wash_wheat,Washington — trigo,206.9
 USA-NEWY,usa_newy_wheat,Nova York — trigo,2641.3
+USA-BOS,usa_bos_wheat,Boston — trigo,2355.0
+USA-MIA,usa_mia_wheat,Miami — trigo,2010.0
 USA-LOSA,usa_losa_wheat,Los Angeles — trigo,1146.3
 USA-CHIC,usa_chic_wheat,Chicago — trigo,799.3
 USA-HOUS,usa_hous_wheat,Houston — trigo,694.2
@@ -776,6 +801,7 @@ USA-UNA,usa_una_wheat,Unalaska — trigo,1.3
 USA-UTQ,usa_utq_wheat,Barrow — trigo,1.3
 GUM-HAG,gum_hag_wheat,Hagåtña — trigo,0.3
 UZB-TAS,uzb_tas_wheat,Tashkent — trigo,593.4
+UZB-SAM,uzb_sam_wheat,Samarcanda — trigo,369.0
 UZB-AND,uzb_and_wheat,Andijon — trigo,224.3
 UZB-MUY,uzb_muy_wheat,Mŭynoq — trigo,4.0
 VCT-KIN,vct_kin_wheat,Kingstown — trigo,7.4

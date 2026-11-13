@@ -177,6 +177,41 @@ Porto `ESP-ALG` (`FORCED_PORTS`, `port_of = ESP-ALG`): Muelle Juan Carlos I,
 na Baía de Gibraltar, a ~1 km do centro — porto dentro da cidade (como
 Heraklion/Gdańsk). A regra de 15–25 km vale para porto separado de uma cidade
 cujo centro fica longe da costa; aqui não se aplica.
+
+Curadoria r8 (2026-11-13, item 14)
+----------------------------------
+Auditoria de cidades faltantes nas nações grandes/populosas: para cada nação
+com área >= 500.000 km² ou população >= 30 M (67 nações), comparam-se as
+cidades do cenário com as 10 maiores aglomerações de 2026-01-01 de
+`citypopulation.de` (Thomas Brinkhoff, Major Agglomerations of the World) e
+listam-se as ausentes com > 1 M hab. a >= 150 km de QUALQUER cidade do cenário.
+O auditor reprodutível é `tools/audit_missing_cities.py`; a lista completa, a
+tabela e as exclusões de borda estão em `docs/plans/world_all_data.md` §21.
+
+Espanha: ENTRAM `ESP-SEV` (Sevilha, 1,31 M) e `ESP-MLG` (Málaga, 1,12 M), a
+pedido do usuário, mesmo com 147,4 km e 112,7 km de Algeciras — a regra de
+150 km do item 14(b) é para a revisão automática, não para o pedido explícito.
+Málaga tem porto próprio (Porto de Málaga). Sevilha tem porto fluvial no
+Guadalquivir; o `nav_mask` não carrega o rio, então o ponto do porto fica na
+foz (Sanlúcar de Barrameda, ~80 km), que é o acesso marítimo real do porto.
+Cádiz NÃO entra: Sevilha tem acesso marítimo pelo estuário.
+
+Cidades novas (24): Nürnberg, Boston, Fez, Pádua, Miami, George Town, Mendoza,
+Samarcanda, Cochabamba, Bordéus, Marraquexe, Konya, Krasnodar, Benguela, Santa
+Cruz de la Sierra, Xiamen, Kermanshah, Bucaramanga, Sendai, Antalya, Torreón,
+Cúcuta, Agadir e Ciudad Juárez. Todas usam a aglomeração 2026-01-01 como peso
+(`pop_src = agglomeration`) e as coordenadas do centro urbano (Wikidata).
+Nenhuma duplica cidade existente (< 25 km). Krasnodar entra apesar do teto
+histórico de 40 cidades por nação: a Rússia já estava em 44 desde as forçadas
+da r2, e o teto nunca foi uma validação do build — é uma regra da seleção
+automática.
+
+Portos: os portos legados `USA-BOS` (Boston), `USA-MIA` (Miami), `CHN-XIA`
+(Xiamen), `JPN-SEN` (Sendai) e `ITA-PAD` (Pádua/Veneza) passam a apontar para
+as cidades novas (`PORT_OF_OVERRIDES`). Os portos novos são George Town
+(Penang), Benguela, Antalya, Agadir, Málaga e Sevilha (`FORCED_PORTS`).
+Pádua é o caso do r3: o porto de Veneza ficava com Milão porque Pádua não
+estava no roster; agora a cidade existe e o porto passa a ela.
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -961,6 +996,626 @@ FORCED_CITIES = [
         "legacy": "no",
         "initial_farm_tons": "",
     },
+    # ---------------------------------------------------------------- r8 (2026-11-13, item 14)
+    # Auditoria das 10 maiores aglomerações de 2026-01-01 (citypopulation.de)
+    # nas 67 nações com área >= 500.000 km² ou população >= 30 M. Entram as
+    # ausentes > 1 M hab. a >= 150 km de qualquer cidade do cenário; a lista
+    # completa e as exclusões de borda estão em docs/plans/world_all_data.md §21.
+    {
+        "nation": "ESP",
+        "id": "ESP-SEV",
+        "name_en": "Seville",
+        "name_pt": "Sevilha",
+        "name_es": "Sevilla",
+        "lat": 37.3886,
+        "lon": -5.9950,
+        "population": 1310000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8 (item 14a): pedido do usuário; 4ª aglomeração "
+                 "da Espanha, a 147,4 km de Algeciras (a regra de 150 km do "
+                 "item 14b é para a revisão automática, não para o pedido). "
+                 "Porto fluvial do Guadalquivir representado na foz (~80 km), "
+                 "porque o nav_mask não carrega o rio; Cádiz não entra"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Sevilla 1.310.000; "
+                   "coordenadas 37.3886N 5.9950W (Wikidata Q8717)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "ESP",
+        "id": "ESP-MLG",
+        "name_en": "Málaga",
+        "name_pt": "Málaga",
+        "name_es": "Málaga",
+        "lat": 36.7167,
+        "lon": -4.4167,
+        "population": 1120000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8 (item 14a): pedido do usuário; 5ª aglomeração "
+                 "da Espanha, a 112,7 km de Algeciras; porto próprio (Porto de "
+                 "Málaga, port_of = ESP-MLG)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Málaga 1.120.000; "
+                   "coordenadas 36.7167N 4.4167W (Wikidata Q8851)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "DEU",
+        "id": "DEU-NUR",
+        "name_en": "Nuremberg",
+        "name_pt": "Nuremberga",
+        "name_es": "Núremberg",
+        "lat": 49.4539,
+        "lon": 11.0775,
+        "population": 1130000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 8ª aglomeração da Alemanha, a 150,7 km de "
+                 "Munique (a >1 M mais próxima) — preenche o vazio da Francônia"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Nürnberg 1.130.000; "
+                   "coordenadas 49.4539N 11.0775E (Wikidata Q2090)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "USA",
+        "id": "USA-BOS",
+        "name_en": "Boston",
+        "name_pt": "Boston",
+        "name_es": "Boston",
+        "lat": 42.3603,
+        "lon": -71.0578,
+        "population": 7850000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "north_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 6ª aglomeração dos EUA, a 158,6 km de "
+                 "Portland (ME), a cidade mais próxima do cenário; porto "
+                 "legado USA-BOS passa a ela (PORT_OF_OVERRIDES)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Boston 7.850.000; "
+                   "coordenadas 42.3603N 71.0578W (Wikidata Q100)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "MAR",
+        "id": "MAR-FEZ",
+        "name_en": "Fez",
+        "name_pt": "Fez",
+        "name_es": "Fez",
+        "lat": 34.0333,
+        "lon": -5.0000,
+        "population": 1330000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "africa",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 4ª aglomeração de Marrocos, a 168,9 km de "
+                 "Rabat; fecha o vazio do interior norte (Fez-Meknès)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Fès 1.330.000; "
+                   "coordenadas 34.0333N 5.0000W (Wikidata Q233633)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "ITA",
+        "id": "ITA-PADU",
+        "name_en": "Padua",
+        "name_pt": "Pádua",
+        "name_es": "Padua",
+        "lat": 45.4078,
+        "lon": 11.8733,
+        "population": 1060000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 5ª aglomeração da Itália, a 170 km de San "
+                 "Marino; o porto de Veneza/Pádua (ITA-PAD) deixa de ir para "
+                 "Milão e passa a Pádua (PORT_OF_OVERRIDES)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Padova 1.060.000; "
+                   "coordenadas 45.4078N 11.8733E (Wikidata Q617)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "USA",
+        "id": "USA-MIA",
+        "name_en": "Miami",
+        "name_pt": "Miami",
+        "name_es": "Miami",
+        "lat": 25.7742,
+        "lon": -80.1936,
+        "population": 6700000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "north_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 10ª aglomeração dos EUA, a 174 km da cidade "
+                 "mais próxima do cenário (Lucaya, Bahamas); porto legado "
+                 "USA-MIA passa a ela (PORT_OF_OVERRIDES)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Miami 6.700.000; "
+                   "coordenadas 25.7742N 80.1936W (Wikidata Q8652)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "MYS",
+        "id": "MYS-GEO",
+        "name_en": "George Town",
+        "name_pt": "George Town",
+        "name_es": "George Town",
+        "lat": 5.4145,
+        "lon": 100.3292,
+        "population": 2100000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "asia",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 2ª aglomeração da Malásia, a 177,7 km de Hat "
+                 "Yai (Tailândia); capital de Penang, com porto em Butterworth "
+                 "(port_of = MYS-GEO)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): George Town 2.100.000; "
+                   "coordenadas 5.4145N 100.3292E (Wikidata Q61092)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "ARG",
+        "id": "ARG-MEN",
+        "name_en": "Mendoza",
+        "name_pt": "Mendoza",
+        "name_es": "Mendoza",
+        "lat": -32.8897,
+        "lon": -68.8444,
+        "population": 1190000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "south_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 4ª aglomeração da Argentina, a 179,2 km de "
+                 "Santiago (Chile); fecha o vazio de Cuyo, aos pés dos Andes"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Mendoza 1.190.000; "
+                   "coordenadas 32.8897S 68.8444W (Wikidata Q44237)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "UZB",
+        "id": "UZB-SAM",
+        "name_en": "Samarkand",
+        "name_pt": "Samarcanda",
+        "name_es": "Samarcanda",
+        "lat": 39.6547,
+        "lon": 66.9758,
+        "population": 1230000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "asia",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 3ª aglomeração do Uzbequistão, a 199,5 km de "
+                 "Dushanbe (Tajiquistão); fecha o vazio entre Tashkent e a "
+                 "fronteira tajique"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Samarqand 1.230.000; "
+                   "coordenadas 39.6547N 66.9758E (Wikidata Q5753)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "BOL",
+        "id": "BOL-COC",
+        "name_en": "Cochabamba",
+        "name_pt": "Cochabamba",
+        "name_es": "Cochabamba",
+        "lat": -17.3935,
+        "lon": -66.1570,
+        "population": 1290000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "south_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 3ª aglomeração da Bolívia, a 205,8 km de "
+                 "Sucre; fecha o vale central entre La Paz e Santa Cruz"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Cochabamba 1.290.000; "
+                   "coordenadas 17.3935S 66.1570W (Wikidata Q183124)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "FRA",
+        "id": "FRA-BOR",
+        "name_en": "Bordeaux",
+        "name_pt": "Bordéus",
+        "name_es": "Burdeos",
+        "lat": 44.8378,
+        "lon": -0.5794,
+        "population": 1170000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 6ª aglomeração da França, a 211,9 km de "
+                 "Toulouse; preenche o vazio do sudoeste (Aquitânia). Porto "
+                 "de estuário (Gironde), não costeiro: sem ponto no cenário"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Bordeaux 1.170.000; "
+                   "coordenadas 44.8378N 0.5794W (Wikidata Q1479)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "MAR",
+        "id": "MAR-RAK",
+        "name_en": "Marrakesh",
+        "name_pt": "Marraquexe",
+        "name_es": "Marrakech",
+        "lat": 31.6295,
+        "lon": -7.9811,
+        "population": 1150000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "africa",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 6ª aglomeração de Marrocos, a 220,5 km de "
+                 "Casablanca; centro do sul (Marrakech-Safi)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Marrakech 1.150.000; "
+                   "coordenadas 31.6295N 7.9811W (Wikidata Q101625)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "TUR",
+        "id": "TUR-KON",
+        "name_en": "Konya",
+        "name_pt": "Cônia",
+        "name_es": "Konya",
+        "lat": 37.8728,
+        "lon": 32.4921,
+        "population": 1420000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "asia",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 8ª aglomeração da Turquia, a 229,4 km de "
+                 "Ankara; maior cidade da Anatólia Central"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Konya 1.420.000; "
+                   "coordenadas 37.8728N 32.4921E (Wikidata Q79857)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "RUS",
+        "id": "RUS-KRA",
+        "name_en": "Krasnodar",
+        "name_pt": "Krasnodar",
+        "name_es": "Krasnodar",
+        "lat": 45.0333,
+        "lon": 38.9833,
+        "population": 1390000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "continent",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: top-10 da Rússia (1,39 M), a 249,2 km de "
+                 "Rostov-on-Don; maior cidade do Kuban, no sul russo. A "
+                 "Rússia já tinha 44 cidades (o teto histórico de 40 foi "
+                 "superado pelas forçadas da r2); esta é a 45ª, explícita"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Krasnodar 1.390.000; "
+                   "coordenadas 45.0333N 38.9833E (Wikidata Q3646)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "AGO",
+        "id": "AGO-BEN",
+        "name_en": "Benguela",
+        "name_pt": "Benguela",
+        "name_es": "Benguela",
+        "lat": -12.5500,
+        "lon": 13.4167,
+        "population": 1370000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "africa",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 2ª aglomeração de Angola, a 253,2 km de "
+                 "Huambo; porto de Benguela (port_of = AGO-BEN)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Benguela 1.370.000; "
+                   "coordenadas 12.5500S 13.4167E (Wikidata Q214248)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "BOL",
+        "id": "BOL-SCZ",
+        "name_en": "Santa Cruz de la Sierra",
+        "name_pt": "Santa Cruz de la Sierra",
+        "name_es": "Santa Cruz de la Sierra",
+        "lat": -17.7892,
+        "lon": -63.1975,
+        "population": 1990000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "south_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 1ª aglomeração da Bolívia, a 258,1 km de "
+                 "Sucre; maior cidade do país e centro das terras baixas"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Santa Cruz 1.990.000; "
+                   "coordenadas 17.7892S 63.1975W (Wikidata Q170688)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "CHN",
+        "id": "CHN-XIA",
+        "name_en": "Xiamen",
+        "name_pt": "Xiamen",
+        "name_es": "Xiamen",
+        "lat": 24.4797,
+        "lon": 118.0819,
+        "population": 15800000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "asia",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 5ª aglomeração da China, a 266,5 km de "
+                 "Taipei; fecha o vazio do litoral de Fujian (Xiamen-Quanzhou-"
+                 "Putian); porto legado CHN-XIA passa a ela"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Xiàmén 15.800.000; "
+                   "coordenadas 24.4797N 118.0819E (Wikidata Q68744)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "IRN",
+        "id": "IRN-KSH",
+        "name_en": "Kermanshah",
+        "name_pt": "Kermanshah",
+        "name_es": "Kermanshah",
+        "lat": 34.3167,
+        "lon": 47.0686,
+        "population": 1160000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "asia",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 8ª aglomeração do Irã, a 269,0 km de Bagdá; "
+                 "fecha o vazio do oeste iraniano (Kermanshah)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Kermānshāh 1.160.000; "
+                   "coordenadas 34.3167N 47.0686E (Wikidata Q180078)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "COL",
+        "id": "COL-BUC",
+        "name_en": "Bucaramanga",
+        "name_pt": "Bucaramanga",
+        "name_es": "Bucaramanga",
+        "lat": 7.1186,
+        "lon": -73.1161,
+        "population": 1400000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "south_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 5ª aglomeração da Colômbia, a 288,1 km de "
+                 "Medellín; capital de Santander, no vale do Magdalena"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Bucaramanga 1.400.000; "
+                   "coordenadas 7.1186N 73.1161W (Wikidata Q243766)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "JPN",
+        "id": "JPN-SEN",
+        "name_en": "Sendai",
+        "name_pt": "Sendai",
+        "name_es": "Sendai",
+        "lat": 38.2682,
+        "lon": 140.8694,
+        "population": 1520000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "japan",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 9ª aglomeração do Japão, a 305 km de Tóquio; "
+                 "maior cidade de Tohoku; porto legado JPN-SEN passa a ela"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Sendai 1.520.000; "
+                   "coordenadas 38.2682N 140.8694E (Wikidata Q46747)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "TUR",
+        "id": "TUR-ANT",
+        "name_en": "Antalya",
+        "name_pt": "Antália",
+        "name_es": "Antalya",
+        "lat": 36.9081,
+        "lon": 30.6956,
+        "population": 1430000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "asia",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 7ª aglomeração da Turquia, a 307 km de "
+                 "Nicósia; maior cidade da costa mediterrânea turca, com "
+                 "porto próprio (port_of = TUR-ANT)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Antalya 1.430.000; "
+                   "coordenadas 36.9081N 30.6956E (Wikidata Q6487)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "MEX",
+        "id": "MEX-TOR",
+        "name_en": "Torreón",
+        "name_pt": "Torreón",
+        "name_es": "Torreón",
+        "lat": 25.5439,
+        "lon": -103.4190,
+        "population": 1460000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "north_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 10ª aglomeração do México, a 311,3 km de "
+                 "Monterrey; centro da Comarca Lagunera, no norte árido"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Torreón 1.460.000; "
+                   "coordenadas 25.5439N 103.4190W (Wikidata Q386991)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "COL",
+        "id": "COL-CUC",
+        "name_en": "Cúcuta",
+        "name_pt": "Cúcuta",
+        "name_es": "Cúcuta",
+        "lat": 7.9075,
+        "lon": -72.5047,
+        "population": 1160000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "south_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 7ª aglomeração da Colômbia, a 318,2 km de "
+                 "Maracaibo; cidade de fronteira com a Venezuela (~15 km) — "
+                 "exceção explícita de curadoria, como Brest/Białystok na r2"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Cúcuta 1.160.000; "
+                   "coordenadas 7.9075N 72.5047W (Wikidata Q216847)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "MAR",
+        "id": "MAR-AGA",
+        "name_en": "Agadir",
+        "name_pt": "Agadir",
+        "name_es": "Agadir",
+        "lat": 30.4214,
+        "lon": -9.5831,
+        "population": 1300000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "yes",
+        "role": "port",
+        "landmass": "africa",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 5ª aglomeração de Marrocos, a 336,2 km de "
+                 "Tindouf (Argélia); maior cidade do sul, com porto próprio "
+                 "(port_of = MAR-AGA)"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Agadir 1.300.000; "
+                   "coordenadas 30.4214N 9.5831W (Wikidata Q170525)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
+    {
+        "nation": "MEX",
+        "id": "MEX-JUZ",
+        "name_en": "Ciudad Juárez",
+        "name_pt": "Cidade Juárez",
+        "name_es": "Ciudad Juárez",
+        "lat": 31.6685,
+        "lon": -106.4200,
+        "population": 1660000,
+        "population_year": 2026,
+        "capital": "0",
+        "port": "no",
+        "role": "city",
+        "landmass": "north_america",
+        "pop_src": "agglomeration",
+        "note": ("curadoria r8: 9ª aglomeração do México, a 338,8 km de "
+                 "Chihuahua; aglomeração transfronteiriça com El Paso (EUA) — "
+                 "exceção explícita de curadoria"),
+        "source": ("Thomas Brinkhoff, Major Agglomerations of the World, "
+                   "citypopulation.de (2026-01-01): Ciudad Juárez 1.660.000; "
+                   "coordenadas 31.6685N 106.4200W (Wikidata Q26590)"),
+        "legacy": "no",
+        "initial_farm_tons": "",
+    },
 ]
 
 # Portos repetidos: dois registros para o MESMO porto (mesma nação + mesmo
@@ -995,10 +1650,17 @@ PORT_OF_OVERRIDES = {
     # Porto de Roma: aponta para a cidade Roma (`ITA-ROM` no cenário; a fonte
     # chama a cidade de `ITA-ROME`).
     "ITA-ROM": "ITA-ROME",
-    # Pádua/Veneza não estão no roster. O porto fica no litoral de Veneza e o
-    # território (Veneto) é administrado pela cidade italiana mais próxima,
-    # Milão — a mesma regra de atribuição de província do jogo.
-    "ITA-PAD": "ITA-MILA",
+    # Pádua/Veneza: o porto fica no litoral de Veneza. Na r3, Pádua não estava
+    # no roster e o porto ia para Milão; na r8 a cidade `ITA-PADU` entra e o
+    # porto passa a ela (a cidade mais próxima do porto no roster).
+    "ITA-PAD": "ITA-PADU",
+    # r8 (item 14): portos legados de cidades que entraram no cenário. Sem o
+    # override, `port_of` continuaria apontando para a cidade antiga mais
+    # próxima (Portland, Jacksonville, Hong Kong, Tóquio), que não é o porto.
+    "USA-BOS": "USA-BOS",
+    "USA-MIA": "USA-MIA",
+    "CHN-XIA": "CHN-XIA",
+    "JPN-SEN": "JPN-SEN",
 }
 
 # Portos que entram sempre. O ponto é a costa real (não o centro da cidade):
@@ -1121,5 +1783,75 @@ FORCED_PORTS = [
         "port_of": "ESP-ALG",
         "source": ("Muelle Juan Carlos I, porto de Algeciras na Baía de "
                    "Gibraltar (36.128N 5.441W); port_of = ESP-ALG"),
+    },
+    # ---------------------------------------------------------------- r8 (2026-11-13, item 14)
+    # Portos novos das cidades costeiras da r8. O ponto é a costa/porto real,
+    # não o centro da cidade; o nav_mask alcança a célula pelo mar em frente.
+    {
+        "nation": "ESP",
+        "id": "ESP-SEV",
+        "name": "Seville",
+        "lat": 36.7750,
+        "lon": -6.3550,
+        "landmass": "continent",
+        "port_of": "ESP-SEV",
+        "source": ("foz do Guadalquivir, Sanlúcar de Barrameda (36.775N "
+                   "6.355W): acesso marítimo do porto fluvial de Sevilha, a "
+                   "~80 km da cidade; port_of = ESP-SEV"),
+    },
+    {
+        "nation": "ESP",
+        "id": "ESP-MLG",
+        "name": "Málaga",
+        "lat": 36.7120,
+        "lon": -4.4150,
+        "landmass": "continent",
+        "port_of": "ESP-MLG",
+        "source": ("Porto de Málaga, costa mediterrânea (36.712N 4.415W); "
+                   "port_of = ESP-MLG"),
+    },
+    {
+        "nation": "MYS",
+        "id": "MYS-GEO",
+        "name": "George Town",
+        "lat": 5.3940,
+        "lon": 100.3660,
+        "landmass": "asia",
+        "port_of": "MYS-GEO",
+        "source": ("Porto de Penang, Butterworth (5.394N 100.366E); "
+                   "port_of = MYS-GEO"),
+    },
+    {
+        "nation": "AGO",
+        "id": "AGO-BEN",
+        "name": "Benguela",
+        "lat": -12.5780,
+        "lon": 13.4050,
+        "landmass": "africa",
+        "port_of": "AGO-BEN",
+        "source": ("Porto de Benguela, costa atlântica (12.578S 13.405E); "
+                   "port_of = AGO-BEN"),
+    },
+    {
+        "nation": "TUR",
+        "id": "TUR-ANT",
+        "name": "Antalya",
+        "lat": 36.8850,
+        "lon": 30.7050,
+        "landmass": "asia",
+        "port_of": "TUR-ANT",
+        "source": ("Porto de Antalya, costa mediterrânea (36.885N 30.705E); "
+                   "port_of = TUR-ANT"),
+    },
+    {
+        "nation": "MAR",
+        "id": "MAR-AGA",
+        "name": "Agadir",
+        "lat": 30.4200,
+        "lon": -9.6050,
+        "landmass": "africa",
+        "port_of": "MAR-AGA",
+        "source": ("Porto de Agadir, costa atlântica (30.420N 9.605W); "
+                   "port_of = MAR-AGA"),
     },
 ]

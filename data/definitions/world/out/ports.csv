@@ -1,4 +1,5 @@
 id,name,nation,x,y,landmass,port_of
+AGO-BEN,Benguela,AGO,2686.2,1424.7,africa,AGO-BEN
 ALB-DUR,Durrës,ALB,2770.7,676.6,continent,
 ALB-TIR,Tirana,ALB,2773.1,676.6,continent,
 ARE-DUB,Dubai,ARE,3266.6,900.3,asia,ARE-DUB
@@ -28,6 +29,8 @@ DNK-AAR,Aarhus,DNK,2641.9,470.3,continent,
 DNK-COP,Copenhagen,DNK,2674.9,477.0,continent,
 ESP-ALG,Algeciras,ESP,2424.4,748.2,continent,ESP-ALG
 ESP-BAR,Barcelona,ESP,2530.2,675.4,continent,
+ESP-MLG,Málaga,ESP,2438.7,740.1,continent,ESP-MLG
+ESP-SEV,Seville,ESP,2411.7,739.2,continent,ESP-SEV
 ESP-VAL,Valencia,ESP,2494.8,702.2,continent,
 EST-TAL,Tallinn,EST,2843.9,424.5,continent,
 FIN-HEL,Helsinki,FIN,2846.4,414.7,continent,
@@ -86,12 +89,14 @@ KAZ-ATY,Atyrau,KAZ,3219.6,597.5,asia,KAZ-ATY
 KOR-BUS,Busan,KOR,4292.3,762.6,asia,
 KOR-SEO,Seoul,KOR,4261.8,728.5,asia,
 LVA-RIG,Riga,LVA,2835.4,459.3,continent,
+MAR-AGA,Agadir,MAR,2366.6,827.5,africa,MAR-AGA
 MCO-MON,Monaco,FRA,2603.5,643.0,continent,
 MEX-TIJ,Tijuana,MEX,875.5,798.6,north_america,
 MLT-VAL,Valletta,MLT,2701.7,751.6,malta,
 MMR-YAN,Yangon,MMR,3836.7,1018.7,asia,MMR-YAN
 MNE-NIK,Nikšić,MNE,2760.9,658.9,continent,
 MNE-POD,Podgorica,MNE,2765.8,663.1,continent,
+MYS-GEO,George Town,MYS,3894.0,1175.1,asia,MYS-GEO
 MYS-KUC,Kuching,MYS,4032.6,1226.2,asia,MYS-KUC
 NED-AMS,Amsterdam,NED,2563.8,521.4,continent,
 NED-GRO,Groningen,NED,2588.5,508.4,continent,NED-GRO
@@ -116,6 +121,7 @@ SWE-GOT,Gothenburg,SWE,2666.3,448.9,continent,
 SWE-STO,Stockholm,SWE,2751.2,426.3,continent,
 THA-BAN,Bangkok,THA,3897.1,1061.4,asia,THA-BAN
 TUR-ADA,Adana,TUR,2989.2,738.8,continent,
+TUR-ANT,Antalya,TUR,2926.5,737.7,asia,TUR-ANT
 TUR-BURS,Bursa,TUR,2902.2,689.7,asia,TUR-BURS
 TUR-IST,Istanbul,TUR,2902.5,680.8,continent,
 TUR-IZM,Izmir,TUR,2877.5,716.9,continent,

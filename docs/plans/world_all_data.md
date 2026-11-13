@@ -50,6 +50,10 @@ contrato.
 | Construções iniciais (`*_wheat`) | 858 |
 | Chaves i18n | 1.457 |
 
+> **Nota (r8, 2026-11-13):** esta tabela é o retrato da F2 (base de 231
+> nações/858 cidades). O estado atual depois das curadorias r2–r8 está no fim
+> do documento — **§21.5: 179 nações, 834 cidades, 144 portos**.
+
 Nações por tipo: **192 soberanas**, **34 territórios**, **3 especiais**
 (Taiwan, Kosovo, Sara Ocidental), **2 observadoras** (Palestina, Vaticano).
 
@@ -1300,6 +1304,200 @@ Político 1920×1080, distância d060 (zoom país), manifestos sem avisos:
 `docs/map_visual/provinces_dense/usa/` (`USA-WAS`),
 `docs/map_visual/provinces_dense/russia/` (`RUS-MOS`, Rússia europeia) e
 `docs/map_visual/provinces_dense/india/` (`IND-DEL`).
+
+## 21. Curadoria r8 — cidades faltantes em nações grandes/populosas (2026-11-13, item 14)
+
+### 21.1 Método
+
+Para cada nação com **área ≥ 500.000 km² OU população ≥ 30 M** (67 nações do
+roster), comparam-se as cidades do cenário com as **10 maiores aglomerações de
+2026-01-01** de *Thomas Brinkhoff, Major Agglomerations of the World*
+(`https://www.citypopulation.de/en/world/agglomerations/`). O critério de
+ausência é **> 1.000.000 hab.** e **≥ 150 km de QUALQUER cidade do cenário**
+(distância geodésica no elipsoide, a mesma do build). A tabela da fonte está no
+snapshot `tools/agglomerations_2026.csv` (652 aglomerações, 2026-01-01);
+as coordenadas das cidades que não estão na fonte do cenário vêm do centro
+urbano do Wikidata (declaradas em `tools/audit_missing_cities.py` e no campo
+`source` de cada entrada).
+
+A auditoria é reprodutível: `python tools/audit_missing_cities.py` roda contra o
+cenário **atual** e deve devolver **0 ausentes** (é a checagem de que a r8
+fechou as lacunas). Para reproduzir a lista **anterior** à r8, aponte o CSV do
+commit-base:
+
+```powershell
+git show HEAD:data/definitions/scenario/cities.csv | Out-File -Encoding utf8 $env:TEMP\cities_before_r8.csv
+python tools/audit_missing_cities.py --scenario $env:TEMP\cities_before_r8.csv
+```
+
+A decisão de entrar é sempre explícita em `tools/world_city_curation.py`
+(`FORCED_CITIES`/`FORCED_PORTS`), como nas rodadas anteriores. Nenhuma cidade é
+inventada: a população é a aglomeração da fonte e o peso de simulação; a
+população exibida é o rateio da população nacional de 2026
+(`build_world_cities.distribute_national_population`, contrato da r6).
+
+### 21.2 Cidades adicionadas (26)
+
+| id | nação | cidade | aglom. 2026 | rank na nação | km até a cidade mais próxima (antes) | porto |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| `AGO-BEN` | AGO | Benguela | 1.370.000 | 2 | 253,2 km de `AGO-HUA` | `AGO-BEN` |
+| `ARG-MEN` | ARG | Mendoza | 1.190.000 | 4 | 179,2 km de `CHL-SAN` | — |
+| `BOL-COC` | BOL | Cochabamba | 1.290.000 | 3 | 205,8 km de `BOL-SUC` | — |
+| `BOL-SCZ` | BOL | Santa Cruz de la Sierra | 1.990.000 | 1 | 258,1 km de `BOL-SUC` | — |
+| `CHN-XIA` | CHN | Xiamen | 15.800.000 | 5 | 266,5 km de `TWN-TAIC` | `CHN-XIA` |
+| `COL-BUC` | COL | Bucaramanga | 1.400.000 | 5 | 288,1 km de `COL-MED` | — |
+| `COL-CUC` | COL | Cúcuta | 1.160.000 | 7 | 318,2 km de `VEN-MAR` | — |
+| `DEU-NUR` | DEU | Nuremberg | 1.130.000 | 8 | 150,7 km de `DEU-MUC` | — |
+| `ESP-MLG` | ESP | Málaga | 1.120.000 | 5 | 112,7 km de `ESP-ALG` (pedido) | `ESP-MLG` |
+| `ESP-SEV` | ESP | Sevilha | 1.310.000 | 4 | 147,4 km de `ESP-ALG` (pedido) | `ESP-SEV` |
+| `FRA-BOR` | FRA | Bordeaux | 1.170.000 | 6 | 211,9 km de `FRA-TLS` | — |
+| `IRN-KSH` | IRN | Kermanshah | 1.160.000 | 8 | 269,0 km de `IRQ-BAG` | — |
+| `ITA-PADU` | ITA | Pádua | 1.060.000 | 5 | 170,0 km de `SMR-SANM` | `ITA-PAD` |
+| `JPN-SEN` | JPN | Sendai | 1.520.000 | 9 | 305,0 km de `JPN-TOK` | `JPN-SEN` |
+| `MAR-AGA` | MAR | Agadir | 1.300.000 | 5 | 336,2 km de `DZA-TIN` | `MAR-AGA` |
+| `MAR-FEZ` | MAR | Fez | 1.330.000 | 4 | 168,9 km de `MAR-RAB` | — |
+| `MAR-RAK` | MAR | Marraquexe | 1.150.000 | 6 | 220,5 km de `MAR-CAS` | — |
+| `MEX-JUZ` | MEX | Ciudad Juárez | 1.660.000 | 9 | 338,8 km de `MEX-CHI` | — |
+| `MEX-TOR` | MEX | Torreón | 1.460.000 | 10 | 311,3 km de `MEX-MON` | — |
+| `MYS-GEO` | MYS | George Town | 2.100.000 | 2 | 177,7 km de `THA-HAT` | `MYS-GEO` |
+| `RUS-KRA` | RUS | Krasnodar | 1.390.000 | 9 | 249,2 km de `RUS-ROS` | — |
+| `TUR-ANT` | TUR | Antalya | 1.430.000 | 7 | 307,0 km de `CYP-NIC` | `TUR-ANT` |
+| `TUR-KON` | TUR | Konya | 1.420.000 | 8 | 229,4 km de `TUR-ANK` | — |
+| `USA-BOS` | USA | Boston | 7.850.000 | 6 | 158,6 km de `USA-POR` | `USA-BOS` |
+| `USA-MIA` | USA | Miami | 6.700.000 | 10 | 174,1 km de `BHS-LUC` | `USA-MIA` |
+| `UZB-SAM` | UZB | Samarcanda | 1.230.000 | 3 | 199,5 km de `TJK-DUS` | — |
+
+As distâncias são medidas no centro urbano; a lista completa sai de
+`tools/audit_missing_cities.py --scenario <base>`. **Cúcuta** (fronteira com a
+Venezuela, ~15 km) e **Ciudad Juárez** (aglomeração transfronteiriça com El
+Paso) são exceções explícitas de curadoria à faixa de 40 km, como
+Brest/Białystok na r2. **Nuremberg** fica a 150,7 km de Munique — 0,7 km acima
+do limiar; é a última entrada da lista por distância.
+
+**Espanha (pedido explícito, item 14a).** Sevilha (1,31 M, 4ª) e Málaga
+(1,12 M, 5ª) entram mesmo com **147,4 km** e **112,7 km** de Algeciras: a regra
+de 150 km do item 14b é o filtro da revisão automática, não do pedido. Málaga
+tem porto próprio (`ESP-MLG`, Porto de Málaga). Sevilha tem porto fluvial no
+Guadalquivir; o `nav_mask` não carrega o rio, então o porto é representado na
+**foz (Sanlúcar de Barrameda, ~80 km)**, que é o acesso marítimo real do porto.
+**Cádiz não entra**: Sevilha tem acesso marítimo pelo estuário e Cádiz não foi
+pedida.
+
+### 21.3 Excluídas pela regra dos 150 km (declaradas)
+
+| aglomeração | nação | pop 2026 | cidade mais próxima do cenário | km |
+| --- | --- | ---: | --- | ---: |
+| Basra | IRQ | 1.750.000 | `IRN-AHV` (Ahvaz) | 122,5 |
+| Najaf | IRQ | 1.070.000 | `IRQ-BAG` (Bagdá) | 146,3 |
+| Hofuf | SAU | 1.070.000 | `SAU-DAM` (Dammam) | 129,3 |
+| Barquisimeto | VEN | 1.370.000 | `VEN-VLN` (Valencia) | 146,5 |
+| Tânger | MAR | 1.460.000 | `ESP-ALG` (Algeciras) | 51,8 |
+| Nice | FRA | 1.010.000 | `MCO-MONA` (Mônaco) | 13,4 |
+| Goma | COD | 1.050.000 | `RWA-GIS` (Gisenyi) | 5,2 |
+| Bukavu | COD | 1.140.000 | `RWA-GIS` (Gisenyi) | 98,9 |
+| Okayama | JPN | 2.175.000 | `JPN-KOB` (Kobe) | 115,3 |
+| Vancouver | CAN | 3.325.000 | `CAN-VIC` (Victoria) | 95,8 |
+| Valparaíso | CHL | 1.070.000 | `CHL-SAN` (Santiago) | 100,8 |
+| Cartagena | COL | 1.270.000 | `COL-BAR` (Barranquilla) | 99,7 |
+| Mannheim | DEU | 1.550.000 | `DEU-FFM` (Frankfurt) | 71,2 |
+| Hannover | DEU | 1.090.000 | `DEU-BRE` (Bremen) | 100,0 |
+| Bielefeld | DEU | 1.080.000 | `DEU-DOR` (Dortmund) | 93,0 |
+| Southampton | GBR | 1.200.000 | `GBR-BRS` (Bristol) | 102,0 |
+| Yogyakarta | IDN | 1.790.000 | `IDN-SEM` (Semarang) | 89,6 |
+| Surakarta | IDN | 1.710.000 | `IDN-SEM` (Semarang) | 78,9 |
+| Kirkuk | IRQ | 1.190.000 | `IRQ-ERB` (Erbil) | 87,9 |
+| Kitakyushu | JPN | 1.950.000 | `JPN-FUK` (Fukuoka) | 52,9 |
+| Hamamatsu | JPN | 1.300.000 | `JPN-NAG` (Nagoya) | 91,0 |
+| Ulsan | KOR | 1.070.000 | `KOR-BUS` (Busan) | 55,0 |
+| Changwon | KOR | 1.000.000 | `KOR-BUS` (Busan) | 34,9 |
+| Toluca | MEX | 2.775.000 | `MEX-MEXI` (Cidade do México) | 57,4 |
+| Angeles | PHL | 1.720.000 | `PHL-MAN` (Manila) | 73,8 |
+| Katowice | POL | 2.175.000 | `POL-KRA` (Kraków) | 68,9 |
+| Namangan | UZB | 1.400.000 | `UZB-AND` (Andijon) | 62,6 |
+| Maracay | VEN | 1.500.000 | `VEN-VLN` (Valencia) | 46,5 |
+| São Francisco | USA | 7.700.000 | `USA-SANJ` (San Jose) | 66,9 |
+
+As aglomerações que já estavam no cenário com outro nome não foram duplicadas:
+Chattogram/Chittagong (`BGD-CHA`), New Delhi/Delhi (`IND-DEL`), Ho Chi Minh
+(`VNM-HOC`), Gqeberha/Port Elizabeth (`ZAF-GQE`), Donetsk (`RUS-DON`),
+San Miguel de Tucumán/Tucumán (`ARG-SAN`), Cebu City/Cebu (`PHL-CEB`),
+Santiago de Querétaro/Querétaro (`MEX-QUE`), León de los Aldama/León
+(`MEX-LEO`), New York City/New York (`USA-NEW`) e Rhein-Ruhr
+(`DEU-CGN`/`DEU-DUS`/`DEU-DOR`). O mesmo vale para Vancouver (Victoria) e
+Nice (Mônaco), citados na tabela por serem > 1 M e fronteiriços.
+
+### 21.4 Portos
+
+| porto | cidade | situação |
+| --- | --- | --- |
+| `USA-BOS` | Boston | legado re-apontado de `USA-POR` para `USA-BOS` |
+| `USA-MIA` | Miami | legado re-apontado de `USA-JAC` para `USA-MIA` |
+| `CHN-XIA` | Xiamen | legado re-apontado de `HKG-HON` para `CHN-XIA` |
+| `JPN-SEN` | Sendai | legado re-apontado de `JPN-TOK` para `JPN-SEN` |
+| `ITA-PAD` | Pádua/Veneza | legado re-apontado de `ITA-MIL` para `ITA-PADU` |
+| `MYS-GEO` | George Town | novo, Porto de Penang (Butterworth) |
+| `AGO-BEN` | Benguela | novo, Porto de Benguela |
+| `TUR-ANT` | Antalya | novo, Porto de Antalya |
+| `MAR-AGA` | Agadir | novo, Porto de Agadir |
+| `ESP-MLG` | Málaga | novo, Porto de Málaga |
+| `ESP-SEV` | Sevilha | novo, foz do Guadalquivir (~80 km) |
+
+Os portos legados já existiam no cenário e apontavam para a cidade antiga mais
+próxima (Portland, Jacksonville, Hong Kong, Tóquio, Milão); agora que as
+cidades existem, `PORT_OF_OVERRIDES` corrige o `port_of`. **Pádua** é o caso do
+r3: o porto de Veneza/Pádua ficava com Milão porque Pádua não estava no roster;
+a cidade entra e o porto passa a ela. **Bordeaux** é porto de estuário
+(Gironde), não costeiro: não ganhou ponto (a regra exige cidade a ≤ 25 km da
+costa). **Krasnodar** é interior (~100 km do mar Negro), sem porto.
+
+### 21.5 Contagens e verificação
+
+| item | antes | depois |
+| --- | ---: | ---: |
+| Nações | 179 | **179** |
+| Cidades | 808 | **834** |
+| Portos | 138 | **144** |
+| Construções iniciais | 808 | **834** |
+| Chaves i18n | — | **1.690** |
+
+Top 10 por cidades (depois): **RUS 45, USA 33, CHN 28, BRA 25, CAN 25, IND 25,
+IDN 19, AUS 18, FRA 15, MEX 14**. A Rússia já estava em 44 desde as forçadas da
+r2 (o teto histórico de 40 é regra da seleção automática, não validação do
+build); Krasnodar é a 45ª, explícita.
+
+* `build_world_cities.py --write-scenario`: **834 cidades / 144 portos / 834
+  construções / 1.690 chaves i18n**; `port_of` 144/144.
+* `build_scenario_data.py`: `cities.json` 834, `ports.json` 144,
+  `buildings.json` 834, `nations.json` 179, `i18n.json` 1.690.
+* `validate_scenario_data.py`: **0 erros, 0 avisos** (10 arquivos), incluindo a
+  checagem de terra/província de cada cidade e porto no atlas.
+* `territory_test.gd`: **OK** — 179 nações jogáveis com província, dono inicial
+  igual à nação.
+* `economy_integration_test.gd`: **OK** — geografia, cadeia, investimento e
+  save/load.
+* `economy_world_test.gd`: **OK** — 60 dias, 0 violações, `money_total`
+  conservado (2.200.539.587,40); **834 cidades, 0 abaixo de 70%** (mínimo 89%,
+  `GBR-LDN`). A r6 tinha BEL/NED com uma cidade em 60%/40%; não há regressão de
+  fome.
+* `nav_strait_test.tscn`: **PASS** — mares conectados, cais de Heraklion e
+  Algeciras no mar aberto, rotas por Gibraltar/Dardanelos/Bósforo/Øresund.
+
+### 21.6 Como reproduzir
+
+```powershell
+python tools/audit_missing_cities.py            # 0 ausentes no cenário atual
+python tools/build_world_cities.py --write-scenario
+python tools/build_scenario_data.py
+python tools/validate_scenario_data.py
+& $godot --headless --path . --script res://tools/territory_test.gd
+& $godot --headless --path . --script res://tools/economy_integration_test.gd
+& $godot --headless --path . --script res://tools/economy_world_test.gd
+& $godot --headless --path . res://tools/nav_strait_test.tscn
+```
+
+Não foi necessário recalcular o catchment: `GeographyService.assign_provinces`
+roda no boot e particiona as províncias entre as cidades do cenário; não há
+arquivo de catchment no pipeline.
 
 
 

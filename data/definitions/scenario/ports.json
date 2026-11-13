@@ -1,5 +1,14 @@
 [
   {
+    "id": "AGO-BEN",
+    "name": "Benguela",
+    "nation": "AGO",
+    "x": 2686.2,
+    "y": 1424.7,
+    "landmass": "africa",
+    "port_of": "AGO-BEN"
+  },
+  {
     "id": "ALB-DUR",
     "name": "Durrës",
     "nation": "ALB",
@@ -195,7 +204,7 @@
     "x": 4140.3,
     "y": 910.3,
     "landmass": "asia",
-    "port_of": "HKG-HON"
+    "port_of": "CHN-XIA"
   },
   {
     "id": "CYP-LIM",
@@ -259,6 +268,24 @@
     "y": 675.4,
     "landmass": "continent",
     "port_of": "ESP-BAR"
+  },
+  {
+    "id": "ESP-MLG",
+    "name": "Málaga",
+    "nation": "ESP",
+    "x": 2438.7,
+    "y": 740.1,
+    "landmass": "continent",
+    "port_of": "ESP-MLG"
+  },
+  {
+    "id": "ESP-SEV",
+    "name": "Seville",
+    "nation": "ESP",
+    "x": 2411.7,
+    "y": 739.2,
+    "landmass": "continent",
+    "port_of": "ESP-SEV"
   },
   {
     "id": "ESP-VAL",
@@ -627,7 +654,7 @@
     "x": 2666.9,
     "y": 619.8,
     "landmass": "continent",
-    "port_of": "ITA-MIL"
+    "port_of": "ITA-PADU"
   },
   {
     "id": "ITA-PAL",
@@ -735,7 +762,7 @@
     "x": 4457.1,
     "y": 718.7,
     "landmass": "japan",
-    "port_of": "JPN-TOK"
+    "port_of": "JPN-SEN"
   },
   {
     "id": "JPN-TOK",
@@ -781,6 +808,15 @@
     "y": 459.3,
     "landmass": "continent",
     "port_of": "LVA-RIG"
+  },
+  {
+    "id": "MAR-AGA",
+    "name": "Agadir",
+    "nation": "MAR",
+    "x": 2366.6,
+    "y": 827.5,
+    "landmass": "africa",
+    "port_of": "MAR-AGA"
   },
   {
     "id": "MCO-MON",
@@ -835,6 +871,15 @@
     "y": 663.1,
     "landmass": "continent",
     "port_of": "MNE-POD"
+  },
+  {
+    "id": "MYS-GEO",
+    "name": "George Town",
+    "nation": "MYS",
+    "x": 3894.0,
+    "y": 1175.1,
+    "landmass": "asia",
+    "port_of": "MYS-GEO"
   },
   {
     "id": "MYS-KUC",
@@ -1053,6 +1098,15 @@
     "port_of": "TUR-ADA"
   },
   {
+    "id": "TUR-ANT",
+    "name": "Antalya",
+    "nation": "TUR",
+    "x": 2926.5,
+    "y": 737.7,
+    "landmass": "asia",
+    "port_of": "TUR-ANT"
+  },
+  {
     "id": "TUR-BURS",
     "name": "Bursa",
     "nation": "TUR",
@@ -1122,7 +1176,7 @@
     "x": 1513.4,
     "y": 661.9,
     "landmass": "north_america",
-    "port_of": "USA-POR"
+    "port_of": "USA-BOS"
   },
   {
     "id": "USA-HOU",
@@ -1158,7 +1212,7 @@
     "x": 1386.4,
     "y": 892.0,
     "landmass": "north_america",
-    "port_of": "USA-JAC"
+    "port_of": "USA-MIA"
   },
   {
     "id": "USA-NEW",

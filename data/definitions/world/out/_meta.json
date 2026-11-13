@@ -81,7 +81,33 @@
         "SSD-WAU",
         "SOL-HAR",
         "SOL-BER",
-        "ESP-ALG"
+        "ESP-ALG",
+        "ESP-SEV",
+        "ESP-MLG",
+        "DEU-NUR",
+        "USA-BOS",
+        "MAR-FEZ",
+        "ITA-PADU",
+        "USA-MIA",
+        "MYS-GEO",
+        "ARG-MEN",
+        "UZB-SAM",
+        "BOL-COC",
+        "FRA-BOR",
+        "MAR-RAK",
+        "TUR-KON",
+        "RUS-KRA",
+        "AGO-BEN",
+        "BOL-SCZ",
+        "CHN-XIA",
+        "IRN-KSH",
+        "COL-BUC",
+        "JPN-SEN",
+        "TUR-ANT",
+        "MEX-TOR",
+        "COL-CUC",
+        "MAR-AGA",
+        "MEX-JUZ"
       ],
       "capital_overrides": {
         "ISR": "ISR-TLV",
@@ -99,7 +125,13 @@
         "JPN-NAH",
         "GUM-HAG",
         "SOL-BER",
-        "ESP-ALG"
+        "ESP-ALG",
+        "ESP-SEV",
+        "ESP-MLG",
+        "MYS-GEO",
+        "AGO-BEN",
+        "TUR-ANT",
+        "MAR-AGA"
       ]
     },
     "nation_curation": {
@@ -1041,29 +1073,29 @@
   },
   "counts": {
     "nations": 179,
-    "cities": 808,
-    "ports": 138,
-    "buildings": 808,
-    "i18n_keys": 1304,
+    "cities": 834,
+    "ports": 144,
+    "buildings": 834,
+    "i18n_keys": 1336,
     "legacy_cities": 39,
     "legacy_ports": 18,
-    "scenario_ports": 137,
-    "cities_with_pt_exonym": 250,
-    "cities_with_es_exonym": 257,
-    "cities_pt_same_as_en": 535
+    "scenario_ports": 138,
+    "cities_with_pt_exonym": 259,
+    "cities_with_es_exonym": 262,
+    "cities_pt_same_as_en": 552
   },
   "top10": [
     {
       "nation": "RUS",
-      "cities": 44
+      "cities": 45
     },
     {
       "nation": "USA",
-      "cities": 31
+      "cities": 33
     },
     {
       "nation": "CHN",
-      "cities": 27
+      "cities": 28
     },
     {
       "nation": "BRA",
@@ -1087,10 +1119,10 @@
     },
     {
       "nation": "FRA",
-      "cities": 14
+      "cities": 15
     },
     {
-      "nation": "PAK",
+      "nation": "MEX",
       "cities": 14
     }
   ],
