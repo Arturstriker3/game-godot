@@ -9,7 +9,6 @@
   },
   "data": {
     "crumb": "@tpl.ficha.crumb",
-    "day_label": "DIA 12",
     "city": "@city.name.GBR-LDN",
     "tag": {
       "capital": "@tpl.ficha.tag.capital",
@@ -126,15 +125,7 @@
               "tone": "suave",
               "slot": "nav.crumb"
             },
-            {"type": "spacer", "grow": true},
-            {
-              "type": "label",
-              "text": "$day_label",
-              "font": "typed",
-              "size": 12,
-              "tone": "carimbo",
-              "slot": "nav.day"
-            }
+            {"type": "spacer", "grow": true}
           ]
         },
         {"type": "rule", "color": "tinta", "thickness": 1, "dashed": true}

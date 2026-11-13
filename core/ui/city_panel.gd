@@ -205,7 +205,6 @@ func _refresh() -> void:
 
 func _refresh_nav() -> void:
 	_set_text("nav.crumb", _crumb)
-	_set_text("nav.day", _day_text())
 	_set_hidden("nav.back", not _show_back)
 	var city := _city()
 	_set_text("ov.city", I18n.t("city.title") if city.is_empty() \
@@ -518,7 +517,6 @@ func _context() -> Dictionary:
 
 	return {
 		"crumb": _crumb,
-		"day_label": _day_text(),
 		"city": I18n.t("city.title") if city.is_empty() \
 				else I18n.city_name(String(city.get("id", "")),
 						String(city.get("name", ""))),
@@ -682,10 +680,6 @@ func _update_history_empty(prefix: String) -> void:
 	var has_history := _history.count() >= HISTORY_MIN_SAMPLES
 	_set_hidden(prefix + ".series", not has_history)
 	_set_hidden(prefix + ".empty", has_history)
-
-
-func _day_text() -> String:
-	return I18n.t("tpl.ficha.day", {"day": int(_summary.get("day", 0))})
 
 
 func _value_label(raw: String) -> String:

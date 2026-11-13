@@ -6,9 +6,6 @@
     "width": 480,
     "height": 800,
     "pauses_game": true,
-    "label": "@tpl.menu.label",
-    "label_meta": "@tpl.menu.label_meta",
-    "params": {"day": "$day"},
     "footer": [
       {"text": "@tpl.menu.last_save", "params": {"when": "$last_save"}},
       {"spacer": true},
@@ -17,7 +14,6 @@
   },
   "data": {
     "title": "Open Grand Strategy",
-    "day": "0",
     "last_save": "—",
     "version": "@tpl.menu.version"
   },

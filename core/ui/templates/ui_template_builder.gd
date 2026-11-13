@@ -839,58 +839,19 @@ static func _dossier_shell(spec: Dictionary, ctx: Dictionary) -> Control:
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	center.add_child(card)
 
-	card.add_child(_dossier_label(shell, ctx))
 	card.add_child(_dossier_body(spec, shell, ctx))
 	return layer
 
 
-## Etiqueta manila com furo: cabeçalho da ficha de pausa (T6).
-static func _dossier_label(shell: Dictionary, ctx: Dictionary) -> Control:
-	var bar := PanelContainer.new()
-	bar.custom_minimum_size.y = 62.0
-	bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	var style := _paper_style(UiKit.BRASS, UiKit.TINTA, 0.0, 1,
-			["top", "left", "right"])
-	style.content_margin_left = 22.0
-	style.content_margin_right = 22.0
-	bar.add_theme_stylebox_override("panel", style)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	bar.add_child(row)
-
-	var hole := PanelContainer.new()
-	hole.custom_minimum_size = Vector2(18.0, 18.0)
-	hole.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var hole_style := _paper_style(Color("#5f625e"), Color("#8a6a34"), 0.0, 3,
-			["all"], 9)
-	hole.add_theme_stylebox_override("panel", hole_style)
-	row.add_child(hole)
-
-	var label := _typed(_text(shell, "label", ctx), 13, UiKit.TINTA)
-	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(label)
-
-	var meta := _text(shell, "label_meta", ctx)
-	if not meta.is_empty():
-		row.add_child(UiKit.spacer())
-		var meta_label := _typed(meta, 12, UiKit.TINTA_SUAVE)
-		meta_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		row.add_child(meta_label)
-	return bar
-
-
-## Folha de papel da ficha: corpo rolável? Não — o T6 cabe na altura da ficha.
+## Folha de papel da ficha: começa na borda de cima da ficha (sem a antiga
+## etiqueta manila "arquivo do gabinete / dia") — o T6 abre direto no papel.
 static func _dossier_body(spec: Dictionary, shell: Dictionary,
 		ctx: Dictionary) -> Control:
 	var body := PanelContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := _paper_style(UiKit.PAPEL, UiKit.TINTA, 0.0, 1,
-			["left", "right", "bottom"])
+			["top", "left", "right", "bottom"])
 	style.content_margin_left = 34.0
 	style.content_margin_right = 34.0
 	style.content_margin_top = 26.0

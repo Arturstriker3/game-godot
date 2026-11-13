@@ -1982,7 +1982,6 @@ func _render_menu_card() -> void:
 	UiKit.clear(_menu_layer)
 	_menu_screen = UiTemplateBuilder.menu({
 		"title": _app_name(),
-		"day": str(int(_summary.get("day", 0))),
 		"last_save": "—",
 		"version": _build_version(),
 	})
@@ -2152,8 +2151,6 @@ func _sheet_spec(view: String) -> Dictionary:
 			"width": 480,
 			"height": 620,
 			"pauses_game": true,
-			"label": "@tpl.menu.label",
-			"label_meta": "@tpl.menu.sheet." + view,
 		},
 		"data": {"version": _build_version()},
 		"blocks": blocks,
