@@ -9,7 +9,7 @@
 // As texturas têm canais RGB8 codificados como distâncias assinadas:
 //   R = costa       (raw*255-128)/2 * texel   (>0 é terra)
 //   G = fronteira de país  (raw*255-128)/8 * texel  (linha no zero)
-//   B = divisa admin-1     (raw*255-128)/8 * texel  (só na região)
+//   B = divisa admin-1     (raw*255-128)/8 * texel  (linha no zero; região E mundo)
 // `texel` é o tamanho de um texel em unidades do plano (plano = 1000×500).
 
 // Decodifica a distância assinada à costa (canal R do SDF).
@@ -53,9 +53,17 @@ float pixel_along(float field, float floor_px) {
 }
 
 // Linha anti-aliasada: `dist` e `px` em unidades do plano, largura em pixels.
-float ink_line(float dist, float px, float width_px) {
+// `soft_px` é a meia-largura da transição em pixels de tela (0,6 no padrão do
+// atlas): valores maiores esfumam a linha e escondem a quantização de campos
+// de distância de baixa resolução, sem mudar a largura nominal.
+float ink_line_soft(float dist, float px, float width_px, float soft_px) {
 	float d_px = dist / px;
-	return 1.0 - smoothstep(width_px * 0.5 - 0.6, width_px * 0.5 + 0.6, d_px);
+	return 1.0 - smoothstep(width_px * 0.5 - soft_px,
+			width_px * 0.5 + soft_px, d_px);
+}
+
+float ink_line(float dist, float px, float width_px) {
+	return ink_line_soft(dist, px, width_px, 0.6);
 }
 
 // Decodifica o id da província no raster `region_province`: id = R + G*256.

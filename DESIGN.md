@@ -86,7 +86,11 @@ vetores do Natural Earth 10m por `tools/build_atlas_layers.py`
 - **Fronteiras de país:** tinta `#17191B`, mínimo 1,8 px e ~2 km de largura no
   mundo (engrossam ao aproximar); faixa 30% mais escura junto à fronteira, por
   dentro de cada país.
-- **Províncias:** divisas admin-1 reais, 0,85 px a 40%; somem ao afastar.
+- **Províncias:** divisas admin-1 reais no mundo todo — alta resolução na
+  região europeia e camada mundial (4,9 km/texel) fora dela, com transição
+  suave na borda da caixa; 0,85 px a 40% (halo mais largo fora da região, para
+  esconder a quantização do texel). Só entre províncias do mesmo dono (a
+  fronteira nacional é a linha grossa) e somem no zoom continental/longe.
 - **Costa:** linha de 1,15 px; mar com faixa rasa clara e duas linhas de nível
   paralelas à costa (somem ao afastar).
 - **Terra:** cor da nação × tom do papel (`paper_flat.png`) × grão de papel procedural. Nações jogáveis em tons sóbrios

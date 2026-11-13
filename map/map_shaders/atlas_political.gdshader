@@ -9,7 +9,8 @@ shader_type spatial;
 // escadinha das máscaras ampliadas.
 //
 // Duas resoluções: uma região Europa (~1,9 km/texel) e o mundo inteiro
-// (~4,9 km/texel), misturadas na borda da região.
+// (~4,9 km/texel), misturadas na borda da região. As divisas admin-1 valem
+// nas duas camadas (canal B) e usam a mesma mistura, sem costura na caixa.
 //
 // Composição: terreno (luminância do satélite) × cor da nação, faixa de cor
 // junto à fronteira, divisas de província, mar com batimetria de costa e
@@ -191,7 +192,6 @@ void fragment() {
 		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation,
 				world_highlight, world_no_owner);
 	}
-	float differ = (region_w > 0.5) ? region_differ : world_differ;
 	vec3 dyn_nation = (region_w > 0.5) ? region_dyn_nation : world_dyn_nation;
 	float highlight = (region_w > 0.5) ? region_highlight : world_highlight;
 	// Pixel sem província/dono válido não é terra: vira mar (era o preto das
@@ -248,16 +248,29 @@ void fragment() {
 	// Leve escurecimento na orla costeira para a terra "assentar".
 	land *= mix(1.0, 0.90, 1.0 - smoothstep(0.0, 0.35, coast));
 
-	// Divisas de província: finas, somem ao afastar a câmera. Só na região —
-	// fora dela a divisa admin-1 fica poluída em 4,9 km/texel e não é desenhada.
+	// Divisas de província: finas, somem ao afastar a câmera. Valem no mundo
+	// inteiro: dentro da caixa da Europa vêm da camada regional (alta
+	// resolução) e fora dela do SDF mundial (4,9 km/texel). A distância é a
+	// mesma mistura de `region_w` usada no resto do shader, então a borda da
+	// caixa não tem costura; só o halo muda — fora da região ele é mais largo
+	// para esconder a quantização do texel mundial, que no zoom de país chega
+	// a ~1,5 texel por pixel de tela.
+	// O fade por zoom some no nível continental: a divisa aparece com o país
+	// inteiro na tela (px ≈ 0,09) e some antes do LOD longe (px ≈ 0,19).
 	// Com território dinâmico, só onde os donos são iguais (senão duplica a
 	// fronteira grossa).
-	float province_fade = 1.0 - smoothstep(0.05, 0.13, px);
-	float province_line_dist = mix(1e3, abs(province_r), region_w);
-	float province_line = ink_line(province_line_dist, px_province, province_width_px)
+	float province_fade = 1.0 - smoothstep(0.055, 0.20, px);
+	float province_soft = mix(1.0, 0.6, region_w);
+	float province_line = ink_line_soft(abs(province_signed), px_province,
+			province_width_px, province_soft)
 		* province_opacity * province_fade * province_real;
 	if (dynamic_territory) {
-		province_line *= 1.0 - differ;
+		float same_owner = mix(1.0 - world_differ, 1.0 - region_differ, region_w);
+		province_line *= same_owner;
+	} else {
+		// Sem dono publicado não há como distinguir divisa de fronteira
+		// nacional: fora da região não desenha (evita duplicar a grossa).
+		province_line *= region_w;
 	}
 	land = mix(land, land * 0.55, province_line);
 

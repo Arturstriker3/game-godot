@@ -1,0 +1,65 @@
+{
+  "build_ms": 1453.95,
+  "cities": 807,
+  "engine": "4.7.2-stable (official)",
+  "far_idle": {
+    "avg_ms": 0.004,
+    "frames": 600,
+    "max_ms": 0.015,
+    "p95_ms": 0.006,
+    "p99_ms": 0.009
+  },
+  "far_pan": {
+    "avg_ms": 0.329,
+    "frames": 600,
+    "max_ms": 2.024,
+    "p95_ms": 1.642,
+    "p99_ms": 1.73
+  },
+  "focus": "BEL-BRU",
+  "mid_idle": {
+    "avg_ms": 0.004,
+    "frames": 600,
+    "max_ms": 0.009,
+    "p95_ms": 0.005,
+    "p99_ms": 0.005
+  },
+  "mid_pan": {
+    "avg_ms": 0.842,
+    "frames": 600,
+    "max_ms": 4.544,
+    "p95_ms": 3.918,
+    "p99_ms": 4.195
+  },
+  "near_idle": {
+    "avg_ms": 0.004,
+    "frames": 600,
+    "max_ms": 0.012,
+    "p95_ms": 0.005,
+    "p99_ms": 0.005
+  },
+  "near_pan": {
+    "avg_ms": 0.672,
+    "frames": 600,
+    "max_ms": 4.764,
+    "p95_ms": 2.985,
+    "p99_ms": 4.292
+  },
+  "nodes": 4425,
+  "parts": {
+    "city_flag_nodes": 0,
+    "labels": 160,
+    "multimesh_nodes": 814,
+    "visible_proxy_draws": 292
+  },
+  "ports": 137,
+  "sample_frames": 600,
+  "tag": "province_world",
+  "zoom_pan": {
+    "avg_ms": 0.714,
+    "frames": 600,
+    "max_ms": 5.833,
+    "p95_ms": 3.84,
+    "p99_ms": 4.836
+  }
+}
