@@ -610,6 +610,12 @@ static func build(spec: Dictionary, overrides: Dictionary = {}) -> TemplateRoot:
 	return root
 
 
+## Constrói um bloco isolado (ex.: linha de ranking que o host atualiza no
+## lugar). Os valores podem chegar prontos em `data`; nenhuma regra é aplicada.
+static func build_block(block: Dictionary, data: Dictionary = {}) -> Control:
+	return _build_block(block, {"data": data, "spec": {"data": data}})
+
+
 static func dossie(overrides: Dictionary = {}) -> TemplateRoot:
 	return build(load_spec("dossie"), overrides)
 
@@ -1192,6 +1198,7 @@ static func _kpi_card(block: Dictionary, ctx: Dictionary) -> Control:
 	if not delta.is_empty():
 		var line := _body_label(delta, float(block.get("delta_size", 14.0)),
 				_tone(String(block.get("tone", "positive"))))
+		_tag_slot(line, block, "delta_slot")
 		box.add_child(line)
 	return panel
 

@@ -1813,6 +1813,9 @@ func _instantiate_screens() -> void:
 	_screens["production"].close_requested.connect(_close_screen)
 	_screens["population"].city_requested.connect(_on_city_population)
 	_screens["population"].close_requested.connect(_close_screen)
+	_screens["politics"].close_requested.connect(_close_screen)
+	_screens["politics"].economy_requested.connect(_on_politics_economy)
+	_screens["politics"].map_requested.connect(_on_politics_map)
 
 	var alerts_screen: Node = ALERTS_SCREEN.new()
 	alerts_screen.visible = false
@@ -2098,6 +2101,20 @@ func _on_city_market(city_id: String) -> void:
 
 func _on_city_population(city_id: String) -> void:
 	_on_city_navigate(city_id, "population")
+
+
+## "Abrir economia" no dossiê T1 troca a tela raiz pela Economia (T2).
+func _on_politics_economy() -> void:
+	_open_screen("economy")
+
+
+## "Ver no mapa" fecha o dossiê e centra a câmera na primeira cidade da nação.
+func _on_politics_map(tag: String) -> void:
+	_close_screen()
+	for city in _summary.get("cities", []):
+		if String(city.get("nation", "")) == tag:
+			city_focused.emit(String(city.get("id", "")))
+			return
 
 
 func _find_city(city_id: String) -> Dictionary:

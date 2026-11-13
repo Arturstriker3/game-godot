@@ -23,7 +23,7 @@ const DEFAULT_SIZES := ["1920x1080", "1600x900", "1366x768", "2560x1440"]
 ## deles seguido de ponto é uma chave que vazou para a interface.
 const I18N_PREFIXES := ["alerts", "city", "climate", "common", "deposit", "dock",
 		"econ", "hud", "map", "mode", "month", "pol", "pop", "prod", "product",
-		"relief", "resource", "scope", "trade"]
+		"relief", "resource", "scope", "stats", "trade", "tpl"]
 
 var _phase := "after"
 var _out_root := "res://docs/ui/captures"
@@ -203,6 +203,8 @@ func _capture_resolution(size_text: String) -> void:
 			func() -> void: _population_tab(0))
 	await _capture_state(directory, width, height, "20_population_cities",
 			func() -> void: _population_tab(1))
+	await _capture_state(directory, width, height, "23_politics_other",
+			func() -> void: _politics_nation("FRA"))
 	_reset_ui()
 
 
@@ -369,6 +371,12 @@ func _population_tab(index: int) -> void:
 	_show_screen("population")
 	var screen: Node = _hud.get("_screens")["population"]
 	screen.call("_set_tab", index)
+
+
+func _politics_nation(tag: String) -> void:
+	_show_screen("politics")
+	var screen: Node = _hud.get("_screens")["politics"]
+	screen.call("select_nation", tag)
 
 
 func _context() -> Array:
