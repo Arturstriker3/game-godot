@@ -175,33 +175,68 @@ func _check_main_minerals(applied: Dictionary) -> void:
 				_failures.append("%s: mineral principal %s ausente após a atribuição" % [tag, mineral])
 
 
-## (c) Isolamento ultramarino por massa de terra: Caiena (FRA-CAY) só recebe
-## depósitos da Guiana Francesa (lon < -30) e Paris (FRA-PAR) só os da França
-## continental (lon >= -30). A Guiana real TEM ferro/bauxita/cobre/chumbo (MRDS),
-## então banir esses minerais em Caiena era falso positivo; a verificação correta
-## é pela localização do depósito, não por uma lista de minerais.
+## (c) Isolamento ultramarino por massa de terra: cada cidade só declara os
+## depósitos da SUA massa de terra (`landmass` de cities.json — o mesmo proxy de
+## continente da regra A1 em `GeographyService._landmass_of`). A versão anterior
+## separava "Guiana (lon < -30) x continente" e chamava todo o resto de
+## continental: a Nova Caledônia (lon ≈ 165) caía nesse balde e a reserva de
+## ferro/bauxita de Nouméa era cobrada de Paris. O jogo declara a reserva na
+## cidade da MESMA massa (Nouméa); o recorte por longitude era defeito do teste.
 func _check_overseas_isolation(applied: Dictionary, geo) -> void:
 	var crops := ["wheat", "rice", "maize", "potato", "soy", "cotton", "wood"]
-	var guiana_totals := {}
-	var continental_totals := {}
+	var cities := _load_array(CITIES_PATH)
+	# Massas de terra onde a FRA tem cidade: as únicas que podem declarar.
+	var landmasses := {}
+	for city in cities:
+		if String(city.get("nation", "")) != "FRA":
+			continue
+		landmasses[String(city.get("landmass", ""))] = true
+	# Esperado por massa: cada depósito da FRA vai para a massa da cidade FRA
+	# mais próxima do ponto (regra A1 com fallback "cidade mais próxima da
+	# nação"). Guiana, Córsega e Nova Caledônia nunca entram no continente.
+	var expected := {}
 	for deposit: Dictionary in _load_dict(DEPOSITS_PATH).get("deposits", []):
 		if bool(deposit.get("facility", false)):
 			continue
 		if geo.deposit_nation_tag(deposit) != "FRA":
 			continue
+		var landmass := _landmass_of_nearest_city(cities, "FRA", deposit)
+		if landmass == "":
+			continue
+		if not expected.has(landmass):
+			expected[landmass] = {}
 		var resource := String(deposit.get("resource", ""))
 		var qty := float(deposit.get("quantity_kt", 0.0))
-		var bucket: Dictionary = guiana_totals if float(deposit.get("lon", 0.0)) < -30.0 \
-				else continental_totals
-		bucket[resource] = float(bucket.get(resource, 0.0)) + qty
+		expected[landmass][resource] = float(expected[landmass].get(resource, 0.0)) + qty
 	# A França continental agora tem várias cidades: os depósitos nacionais são
 	# divididos entre elas pela regra A1, então a soma por massa de terra agrega
-	# todas as cidades daquela massa (não só Paris/Caiena).
-	var cities := _load_array(CITIES_PATH)
-	var guiana_applied := _sum_applied_by_landmass(applied, cities, "FRA", "guiana")
-	var continental_applied := _sum_applied_by_landmass(applied, cities, "FRA", "continent")
-	_check_landmass_side("FRA guiana", guiana_applied, guiana_totals, crops)
-	_check_landmass_side("FRA continent", continental_applied, continental_totals, crops)
+	# todas as cidades daquela massa.
+	var keys: Array = landmasses.keys()
+	keys.sort()
+	for landmass: String in keys:
+		var declared := _sum_applied_by_landmass(applied, cities, "FRA", landmass)
+		_check_landmass_side("FRA " + landmass, declared,
+			expected.get(landmass, {}), crops)
+
+
+## Massa de terra (campo `landmass`) da cidade `tag` mais próxima do depósito,
+## em coordenadas do plano 5000×2500. Espelha `_assign_deposits`/A1: o depósito
+## pertence à massa da cidade da nação mais próxima, nunca a um balde fixo.
+func _landmass_of_nearest_city(cities: Array, tag: String, deposit: Dictionary) -> String:
+	var px := float(deposit.get("px", 0.0))
+	var py := float(deposit.get("py", 0.0))
+	var best := ""
+	var best_distance := INF
+	for city in cities:
+		if String(city.get("nation", "")) != tag:
+			continue
+		var dx := float(city.get("x", 0.0)) - px
+		var dy := float(city.get("y", 0.0)) - py
+		var distance := dx * dx + dy * dy
+		if distance < best_distance:
+			best_distance = distance
+			best = String(city.get("landmass", ""))
+	return best
 
 
 ## Soma as reservas minerais (chaves que não são culturas) de todas as cidades

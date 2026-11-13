@@ -4,7 +4,8 @@
 		"data_quality": "design_decision",
 		"generated_by": "tools/build_resource_map.py (lê este arquivo)",
 		"unit": "marcadores (total mundial por recurso)",
-		"note": "Ordens de grandeza definidas por legibilidade: culturas alimentares básicas (trigo/arroz/milho/soja) recebem mais marcadores por serem amplamente distribuídas; renováveis de menor relevância visual (batata/algodão/madeira) e fósseis/minerais de base (petróleo/gás/carvão/ferro/cobre) ficam num patamar médio; bauxita/fosfato/ouro num patamar menor; os demais minerais no piso. A divisão entre países usa a participação real (produção FAOSTAT para culturas, reserve_calibration.json para minerais), com escala amortecida √participação e teto de 12% por país."
+		"note": "Ordens de grandeza definidas por legibilidade: culturas alimentares básicas (trigo/arroz/milho/soja) recebem mais marcadores por serem amplamente distribuídas; renováveis de menor relevância visual (batata/algodão/madeira) e fósseis/minerais de base (petróleo/gás/carvão/ferro/cobre) ficam num patamar médio; bauxita/fosfato/ouro num patamar menor; os demais minerais no piso. A divisão entre países usa a participação real (produção FAOSTAT para culturas, reserve_calibration.json para minerais), com escala amortecida √participação e teto de 12% por país.",
+		"floor_note": "Piso por nação (2026-11-13): toda nação com ≥1 jazida tem ≥1 marcador mineral (build_resource_map.py, escolhido no recurso onde a nação tem maior participação mundial). O piso é requisito de correção — antes dele, 57 nações com jazida (RWA/cobre de Kabanga entre elas) ficavam invisíveis no mapa. O piso consome a cota do recurso: o total por recurso continua o de projeto (a repartição por participação distribui o que sobra depois dos pisos). Se a distância mínima de 120 km entre marcadores do mesmo recurso barrar a cota, o piso vence e o total do recurso sobe 1 (caso medido: GEO/ouro, 50→51) — o build imprime o caso. O teto de 12% por país continua valendo."
 	},
 	"budgets": {
 		"wheat": 120,
@@ -28,5 +29,9 @@
 		"sulfur": 30,
 		"diamond": 30,
 		"uranium": 40
-	}
+	},
+	"floor_extra": {
+		"gold": 1
+	},
+	"_floor_extra_note": "Excedente declarado do piso por nação sobre a cota do recurso: 1 marcador de OURO (GEO). A cota de ouro é 50 e as 50 cotas já estão ocupadas; o piso de GEO foi barrado pela distância mínima de 120 km entre marcadores do mesmo recurso na repartição, mas o anel anti-sobreposição afasta os vizinhos e o marcador entra em seguida (total 51). O piso é requisito de correção (nenhuma nação com jazida invisível), então o excedente é declarado aqui em vez de inflar a cota do recurso — inflar a cota realimenta a repartição (o apportion preenche até o orçamento) e o total subiria de novo. resource_marker_test soma este campo ao orçamento do recurso."
 }

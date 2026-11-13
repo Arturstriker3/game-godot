@@ -1821,3 +1821,137 @@ Nenhum dos dois foi alterado nesta frente (fora do escopo pedido): a primeira é
 - Reserva mundial (soma de `quantity_kt` sem facilities): `eb73cf4` **1.711.767.758,1 kt** → atual **1.711.987.758,1 kt**; todo o delta (**+220.000 kt**) é gás em Timor-Leste. Gás: 111.165.810 → 111.385.810 kt.
 - Cidades sem jazida própria: **168 → 167** (contagem das tabelas de `economy_deposit_ownership_test` nos dois worktrees). As 7 que passaram a zero e as 8 que ganharam conferem uma a uma com o item 2 acima.
 - `resource_points.json`: **553** marcadores minerais; QAT agrega 2 depósitos (**18.515.133 kt**, igual ao HEAD), TLS agrega 2 (**220.000 kt**), SYR **63.627 kt**. **Limitação registrada:** o cobre de Kabanga aparece na economia de `RWA-KIG`, mas Rwanda não recebe marcador no mapa — a repartição de marcadores por país dá cota 0 ao RWA nesse recurso (o marcador de cobre da TZA, que no HEAD somava 3.637.345 kt incluindo Kabanga, cai 190 kt). É só renderização; a reserva do jogo está correta.
+
+### 22.10 Área de ilhas pequenas e piso de marcadores por nação (2026-11-13)
+
+Fecha as duas pendências do §22.9.1: (1) `area_km2 = 0` nas províncias de
+**BRB/GRD/KNA/VCT** (aptidão agrícola 0) e (2) **RWA sem marcador** de cobre no
+mapa. Fora do escopo, nenhum equilíbrio econômico mudou.
+
+#### 22.10.1 Área: célula de Voronoi vazia → área real do Natural Earth
+
+**Causa medida.** `province_areas.json` tem 15.547 províncias e **240 com
+`area_km2 = 0`** em **24 nações**. Duas origens, ambas no método (não no clima):
+
+| origem | exemplo | por quê |
+|---|---|---|
+| ilha menor que a célula de ~16 km do `nav_mask` | BRB (10), GRD (6), KNA (12), VCT (4), LCA, DMA, ATG, MLT (50), FJI | o `nav_mask` é a base publicada antiga e **não tem pixel de terra** na ilha (o `removed_islands.png` não a remove: a cobertura < 50% na redução BOX). Ilha sem pixel = nenhuma célula de Voronoi |
+| província minúscula cercada por centróides vizinhos | SVN (71 municípios), MKD (9), CHE (6), CHN (11), PHL (8), ITA (5) | com 16 km/célula, a província de ~100 km² não fica com nenhum pixel (o pixel pertence ao centróide vizinho mais próximo) |
+
+Área 0 zera a aptidão: `city_crop_suitability` e `city_forest_cover` pesam por
+`área × cultivável`, então a cidade recebia 0 em todas as culturas e em madeira,
+apesar de `province_nature.json` já ter o clima real (GRD arroz 0,757).
+
+**Correção na fonte** (`tools/compute_province_areas.py`): província cuja célula
+de Voronoi fica **vazia** recebe a área real do **Natural Earth admin-1** já
+gravada em `provinces.json` (`area_global`, contagem de pixels da camada
+mundial 5000×2500), convertida para km² na **mesma projeção equirretangular**
+(R = 6371 km, cos(lat) no centróide). Área positiva do raster **nunca** é
+substituída. Nada é inventado: o número vem da geometria admin-1 da fonte; a
+metade que usa o fallback fica declarada em `_meta`.
+
+| medição | antes | depois |
+|---|---:|---:|
+| províncias com área 0 | 240 | **0** |
+| províncias usando área do Natural Earth | — | 240 (31.889,1 km²) |
+| área de terra total | 148.346.092,5 km² | 148.377.983,0 km² (+0,02%) |
+| BRB (10 províncias) | 0 | 537 km² (real ~430) |
+| GRD (6) | 0 | 395 km² (real ~344) |
+| KNA (12) | 0 | 349 km² (real ~261) |
+| VCT (4) | 0 | 368 km² (real ~389) |
+
+`economy_live_path_test` (mesmo caminho do jogo, sem `load_data()` prévio):
+BRB **0,000 → 0,776**, GRD **0,000 → 0,743**, KNA **0,000 → 0,753**, VCT
+**0,000 → 0,773** (aptidão máxima entre as culturas). KNA segue declarando
+**16.285 kt** (cobre, chumbo, ouro, ferro, fosfato) — a reserva nunca esteve em
+falta, só a terra.
+
+`province_nature.json` **não mudou** (o clima já estava lá; a área não é gravada
+nesse arquivo). `nature.json`/`agriculture.json` mudaram em **74 linhas**: são as
+médias ponderadas por área dos territórios que contêm as províncias corrigidas
+(antes o peso dessas províncias era 0).
+
+#### 22.10.2 Marcadores: piso de 1 por nação com jazida
+
+**Causa medida.** A repartição por participação (√participação, teto 12% por
+país, piso só para país com ≥0,5% ou depósito curado) cobria **104 das 161
+nações** com jazida. **57 nações** ficavam invisíveis no mapa com reserva real
+declarada na economia (RWA/cobre de Kabanga, 189,9 kt, entre elas):
+
+`AFG ALB ARM ATG BEL BEN BFA BGD BGR BHS BLR CHE CIV CLP COG DMA DNK ERI EST ETH FJI GAB GTM HND HRV HTI IOA IRL KGZ KNA KOS LBN LBR LCA LTU MDG MKD MLI MNE MNG MWI NPL PAK PAN RWA SDN SDS SLV SOL SOM SVK SVN TGO TJK TKM TWN TZA`
+
+**Correção na fonte** (`tools/build_resource_map.py`), em duas partes:
+
+1. **`nation_floor_resources`**: toda nação com ≥1 jazida escolhe **um** recurso
+   — aquele onde tem a **maior participação mundial** (desempate: maior reserva,
+   depois o recurso e o id do depósito). A escolha é feita **antes** da
+   repartição, então o piso **consome cota**: o total mundial por recurso
+   continua o de projeto (557 minerais hoje, contra 553 antes; a diferença são
+   pisos que ocuparam folga de recursos abaixo do orçamento).
+2. **`ensure_nation_marker_floors`**: rede de segurança depois da repartição —
+   nação com jazida que ainda assim ficou sem marcador recebe 1, do maior
+   depósito (respeitando a distância mínima de 120 km do mesmo recurso quando há
+   alternativa). Nesta rodada só **GEO/ouro** caiu aqui (a cota foi barrada pela
+   distância, e o anel anti-sobreposição afasta os vizinhos logo depois). O
+   excedente é **declarado** em `marker_budget.json` (`floor_extra: {"gold": 1}`)
+   em vez de inflar a cota — inflar realimenta o `apportion`, que preenche até o
+   orçamento, e o total subiria de novo.
+
+| medição | antes | depois |
+|---|---:|---:|
+| nações com jazida com ≥1 marcador | 104/161 | **161/161** |
+| marcadores minerais | 553 | 557 |
+| renováveis | 590 | 590 |
+| `resource_marker_test.py` | OK | **OK** (orçamento+teto 12%, 120 km, nada no mar, valor > 0) |
+
+**Posição das jazidas (ajuste junto):** `deposit_position` passou a usar o
+**atlas** (`world_sdf.png`, ~4,9 km/px) antes de encostar no `nav_mask` (~16 km):
+30 depósitos ficam em terra no atlas e em "mar" na célula do `nav_mask` — não
+podem ser deslocados para a célula vizinha (Santa Lúcia/Fiji saíam do país).
+`resource_marker_test.py` usa a mesma regra (é mar só quando **as duas** bases
+dizem água), senão marcador em ilha sem pixel no `nav_mask` seria falso positivo.
+
+#### 22.10.3 Limitações registradas
+
+- **Marcador de micro-ilha cai no território natural, não na ilha.** O dado
+  natural tem 739 territórios (regiões grossas): a jazida da ilha pertence ao
+  território continental mais próximo, e o anel anti-sobreposição posiciona os
+  marcadores do território ao redor do centróide dele. Medido: `RWA`/cobre no
+  anel de **Singida (TZA)**; `LCA`, `DMA` e `ATG`/ouro no anel de **Monagas
+  (VEN)**; `KNA`/cobre no anel de **La Estrelleta (DOM)**. É o mesmo
+  comportamento que já valia para `TTO`/ouro no HEAD — a diferença é que agora
+  essas nações **aparecem**. Corrigir exigiria território natural mais fino ou
+  ancorar o anel no próprio depósito (muda 862 marcadores: fora do escopo).
+- **Área do fallback em micro-ilhas é ±10–35% da real** (KNA 349 × 261 km²):
+  é a resolução do atlas (1 px = ~24 km²), a mesma incerteza do método Voronoi
+  para territórios pequenos; a ordem de grandeza está correta e o dado é
+  declarado como estimativa de exibição.
+- **`build_province_nature.py` deixou de reescrever `owner` das jazidas.** Ele
+  gravava o dono por maioria de área do território e desfazia a posse curada do
+  `assign_deposit_owners.py` (RWA→TZA no Kabanga, 251 depósitos). Agora só
+  remove jazida de território apagado; a posse continua sendo do
+  `assign_deposit_owners.py`.
+
+#### 22.10.4 Testes desta rodada
+
+| teste | resultado |
+|---|---|
+| `economy_live_path_test` | **exit 0** — 179 nações com aptidão e depósitos; FRA por `landmass` |
+| `economy_deposit_ownership_test` | exit 0 — partição/conservação; extratores **2.005** (eram 2.027: a média por área mudou levemente a decisão de investimento em 180 d, não a posse) |
+| `economy_world_test` | exit 0 |
+| `economy_integration_test` | exit 0 |
+| `economy_long_run_test` (365 d) | exit 0 — conservação |
+| `deposit_ring_test` | exit 0 (557 minerais) |
+| `resource_marker_test.py` | OK (0 falhas) |
+| `build_resource_map.py` ×2 | mesmo SHA-256 (`107DFFEB…D467BC`) |
+
+**O que mudou no teste, e por quê:** `_check_overseas_isolation` separava Guiana
+por `lon < -30` e chamava o resto de "continental". A Nova Caledônia (lon ≈ 165)
+caía nesse balde e a reserva de ferro (2.462.951 kt) e bauxita (1.383 kt) de
+Nouméa era cobrada de Paris — exatamente a diferença medida
+(4.042.951 − 2.462.951 = 1.580.000; 194.363 − 1.383 = 192.980). O teste agora
+agrupa por **massa de terra** (`landmass` de `cities.json`), a mesma proxy de
+continente que o `GeographyService` usa: cada depósito vai para a massa da
+cidade da nação mais próxima e é comparado com o que as cidades daquela massa
+declaram. O jogo estava certo; o recorte é que estava errado.
+

@@ -18,6 +18,15 @@ depósito relevante. Dentro do país, escolhem-se os territórios de maior aptid
 entre marcadores do MESMO recurso (Poisson-disc/greedy) e nunca no mar
 (nav_mask), mantendo o anel anti-sobreposição entre recursos do mesmo território.
 
+PISO POR NAÇÃO (minerais): toda nação com ≥1 jazida tem ≥1 marcador. A nação
+escolhe UM recurso antes da repartição (aquele onde tem a maior participação
+mundial) e esse piso CONSOME a cota do recurso — o total mundial por recurso
+continua o de projeto. Depois da repartição, uma rede de segurança
+(`ensure_nation_marker_floors`) cobre a nação que ainda ficou sem marcador (a
+distância mínima de 120 km pode barrar a cota); esse excedente é declarado em
+`marker_budget.json` (`floor_extra`), porque inflar a cota realimenta o
+`apportion` (que preenche até o orçamento) e o total subiria de novo.
+
 Fontes: tools/mode_icons/ (ícones, créditos no CREDITS.txt) e
 data/definitions/natural/ (depósitos e agricultura do Natural Earth).
 
@@ -149,6 +158,36 @@ def read_json(name: str) -> dict:
 def load_nav():
     path = os.path.join(ROOT, "map", "map_data", "nav_mask.png")
     return Image.open(path).convert("L")
+
+
+## Terra do atlas (`world_sdf.png`, ~4,9 km/px): a mesma base do mapa visual e
+## mais fina que a célula de ~16 km do nav_mask. Carregada sob demanda.
+_WORLD_LAND = None
+
+
+def world_land():
+    global _WORLD_LAND
+    if _WORLD_LAND is None:
+        path = os.path.join(ROOT, "map", "map_data", "atlas", "world_sdf.png")
+        if not os.path.exists(path):
+            _WORLD_LAND = False
+        else:
+            _WORLD_LAND = np.asarray(
+                Image.open(path).convert("RGB"))[:, :, 0] > 128
+    return _WORLD_LAND
+
+
+def is_atlas_land(px: float, py: float) -> bool:
+    """True se o ponto cai em TERRA no atlas (resolução de ~4,9 km)."""
+    land = world_land()
+    if land is False:
+        return False
+    height, width = land.shape
+    x = int(px / MAP_W * width)
+    y = int(py / MAP_H * height)
+    if not (0 <= x < width and 0 <= y < height):
+        return False
+    return bool(land[y, x])
 
 
 def nav_cell(nav: Image.Image, px: float, py: float) -> tuple:
@@ -300,22 +339,24 @@ def compute_territory_areas(nature: dict, nav: Image.Image) -> dict:
 
 def apportion(budget: int, weights: dict, floors: set) -> dict:
     """Divide `budget` marcadores entre países proporcionalmente a √participação,
-    com teto por país (12%) e piso 1 para os países `floors`. Total <= budget."""
+    com teto por país (12%) e piso 1 para os países `floors`. Total <= budget,
+    salvo quando o piso por si só excede o orçamento — aí o piso vence (nenhuma
+    nação com jazida pode ficar sem marcador) e o build avisa."""
     ceiling = max(1, int(round(budget * CEILING_FRACTION)))
     counts = {code: 0 for code in weights}
     order = sorted(weights, key=lambda c: (-weights[c], c))
 
-    # Pisos primeiro (países relevantes), depois cortados do menor peso se
-    # excederem o orçamento.
+    # Pisos primeiro (países relevantes + piso por nação). Eles consomem o
+    # orçamento: o restante é distribuído abaixo.
     for code in order:
         if code in floors:
             counts[code] = 1
     total = sum(counts.values())
     if total > budget:
-        for code in reversed(order):
-            if counts[code] == 1 and total > budget:
-                counts[code] = 0
-                total -= 1
+        # O piso é requisito de correção; o orçamento é meta de legibilidade.
+        # Nunca cortar daqui: o arquivo de orçamento precisa subir (declarado).
+        print("[piso] orçamento %d < %d pisos de país: piso mantido"
+              % (budget, total))
 
     remaining = budget - total
     total_weight = sum(weights.values())
@@ -356,7 +397,11 @@ def deposit_is_offshore(nav: Image.Image, dep: dict) -> bool:
 
 def deposit_position(nav: Image.Image, dep: dict, offshore: bool) -> tuple:
     """Posição do marcador de um depósito: offshore mantém o campo em água;
-    os demais encostam na terra mais próxima (nunca marcador no mar)."""
+    os demais ficam em TERRA. O nav_mask (célula de ~16 km) decide a navegação,
+    mas o atlas é mais fino (~4,9 km/px): depósito que cai em terra no atlas
+    NÃO é deslocado para a célula vizinha — ilhas menores que a célula de
+    16 km (Santa Lúcia, Fiji) perdiam o marcador para o continente. Só quando
+    nem o atlas tem terra ali é que se encosta na terra mais próxima."""
     px = float(dep.get("px", 0.0))
     py = float(dep.get("py", 0.0))
     if offshore:
@@ -364,6 +409,8 @@ def deposit_position(nav: Image.Image, dep: dict, offshore: bool) -> tuple:
     x, y = nav_cell(nav, px, py)
     if 0 <= x < nav.width and 0 <= y < nav.height \
             and nav.getpixel((x, y)) < 128:
+        if is_atlas_land(px, py):
+            return (px, py)
         landed = nearest_land_px(nav, px, py, WHEAT_SNAP_MAX_NAV_PX)
         if landed is not None:
             return landed
@@ -371,7 +418,8 @@ def deposit_position(nav: Image.Image, dep: dict, offshore: bool) -> tuple:
 
 
 def build_mineral_markers(nav, nature, deposits, budgets, calibration,
-                          area_km2, territory_country, country_territories):
+                          area_km2, territory_country, country_territories,
+                          floor_resources=None):
     markers = []
     for resource in MINERALS:
         budget = int(budgets.get(resource, 0))
@@ -411,6 +459,13 @@ def build_mineral_markers(nav, nature, deposits, budgets, calibration,
 
         floors = {code for code in participation
                   if participation[code] >= RELEVANT_SHARE}
+        # Piso por nação: toda nação com ≥1 jazida tem ≥1 marcador, no recurso
+        # onde ela tem a maior participação mundial (escolhido antes da
+        # repartição, em `nation_floor_resources`). O piso consome a cota do
+        # recurso — o total mundial por recurso não muda.
+        for code, floor_resource in (floor_resources or {}).items():
+            if floor_resource == resource and code in participation:
+                floors.add(code)
         # Piso 1 para país com depósito relevante: campo real nomeado (curado ou
         # suplemento com fonte pública). Ex.: Khuff/Awali (BHR) tem só ~0,13% da
         # reserva mundial de gás, mas é um campo produtor real que deve aparecer
@@ -700,7 +755,149 @@ def build_participation(named_shares: dict, country_totals: dict) -> dict:
     return participation
 
 
+def nation_participation(nature, deposits, calibration, territory_country) -> dict:
+    """Participação (0..1) de cada país na reserva de cada recurso mineral.
+
+    Mesma conta de `build_mineral_markers` (reserva do país / participação da
+    fonte), mas feita uma vez para todos os recursos — usada só pelo piso de
+    marcadores por nação."""
+    totals = {}
+    for dep in deposits:
+        if dep.get("facility"):
+            continue
+        resource = str(dep.get("resource", ""))
+        if resource not in MINERALS:
+            continue
+        tid = str(dep.get("territory", ""))
+        if not tid or tid not in nature:
+            continue
+        code = str(dep.get("owner", "")) or territory_country.get(tid, "")
+        if not code:
+            continue
+        bucket = totals.setdefault(resource, {})
+        bucket[code] = bucket.get(code, 0.0) + float(dep.get("quantity_kt", 0.0))
+    return {resource: build_participation(calibration_shares(calibration, resource),
+                                          country_totals)
+            for resource, country_totals in totals.items()}
+
+
+def nation_floor_resources(nature, deposits, calibration, territory_country) -> dict:
+    """Recurso do piso de cada nação com ≥1 jazida: `{ISO3: recurso}`.
+
+    O piso é do país, não do recurso: a nação entra no mapa UMA vez, no recurso
+    onde tem a maior participação mundial (empate: maior reserva, depois o
+    recurso e o id do depósito — determinístico). Essa escolha é feita antes da
+    repartição, para o piso consumir a cota do recurso (o total mundial por
+    recurso continua o de projeto)."""
+    participation = nation_participation(nature, deposits, calibration,
+                                         territory_country)
+    best = {}
+    for dep in deposits:
+        if dep.get("facility"):
+            continue
+        resource = str(dep.get("resource", ""))
+        if resource not in MINERALS:
+            continue
+        tid = str(dep.get("territory", ""))
+        if not tid or tid not in nature:
+            continue
+        code = str(dep.get("owner", "")) or territory_country.get(tid, "")
+        if not code:
+            continue
+        share = float(participation.get(resource, {}).get(code, 0.0))
+        row = (-share, -float(dep.get("quantity_kt", 0.0)), resource,
+               str(dep.get("id", "")))
+        if code not in best or row < best[code]:
+            best[code] = row
+    return {code: row[2] for code, row in best.items()}
+
+
+def ensure_nation_marker_floors(nav, nature, deposits, calibration, area_km2,
+                                territory_country, markers):
+    """Piso: toda nação com ≥1 jazida tem ≥1 marcador mineral no mapa.
+
+    A repartição por participação (√participação, teto de 12%, piso só para
+    país "relevante") dava cota 0 a nações com reserva pequena mas real — o
+    cobre de Kabanga (RWA, 189,9 kt) aparece na economia de RWA-KIG e não tinha
+    marcador nenhum. Aqui cada nação ainda sem marcador recebe UM, do recurso
+    onde ela tem a MAIOR participação mundial (empate: maior reserva, depois o
+    recurso e o id do depósito — ordem determinística), na posição do depósito
+    (mesma regra `deposit_position`). O marcador extra respeita a distância
+    mínima entre marcadores do MESMO recurso quando há um depósito alternativo
+    que a respeite; se não houver, o piso vale mesmo assim (a nação não pode
+    ficar invisível) e o caso é impresso para auditoria.
+
+    Devolve a lista de marcadores adicionados (mesmo formato dos demais)."""
+    covered = {str(m["region"].get("country", "")) for m in markers}
+    rows = []  # (dep, code, tid)
+    for dep in deposits:
+        if dep.get("facility"):
+            continue
+        tid = str(dep.get("territory", ""))
+        if not tid or tid not in nature:
+            continue
+        code = str(dep.get("owner", "")) or territory_country.get(tid, "")
+        if not code or code in covered:
+            continue
+        rows.append((dep, code, tid))
+    if not rows:
+        return []
+
+    participation = nation_participation(nature, deposits, calibration,
+                                         territory_country)
+    candidates = {}
+    for dep, code, tid in rows:
+        resource = str(dep.get("resource", ""))
+        share = float(participation.get(resource, {}).get(code, 0.0))
+        candidates.setdefault(code, []).append(
+            (-share, -float(dep.get("quantity_kt", 0.0)), resource,
+             str(dep.get("id", "")), dep, tid))
+    for code in candidates:
+        candidates[code].sort(key=lambda row: row[:4])
+
+    placed = {}
+    for marker in markers:
+        placed.setdefault(str(marker.get("resource", "")), []).append(
+            (float(marker["px"]), float(marker["py"])))
+
+    added = []
+    for code in sorted(candidates):
+        chosen = None
+        blocked = None
+        for _share, _qty, resource, _dep_id, dep, tid in candidates[code]:
+            offshore = deposit_is_offshore(nav, dep)
+            pos = deposit_position(nav, dep, offshore)
+            free = all(km_distance(pos[0], pos[1], other[0], other[1])
+                       >= MIN_SAME_RESOURCE_DIST_KM
+                       for other in placed.get(resource, []))
+            if free:
+                chosen = (resource, dep, tid, offshore, pos)
+                break
+            if blocked is None:
+                blocked = (resource, dep, tid, offshore, pos)
+        if chosen is None:
+            # Piso garantido: nenhuma jazida da nação respeita a distância
+            # mínima do recurso — o marcador entra no maior depósito e fica
+            # registrado no log (a alternativa é a nação sumir do mapa).
+            chosen = blocked
+            print("[piso] %s: marcador de %s a menos de %.0f km de outro do "
+                  "mesmo recurso (piso mantido)" % (code, chosen[0],
+                                                   MIN_SAME_RESOURCE_DIST_KM))
+        resource, dep, tid, offshore, pos = chosen
+        placed.setdefault(resource, []).append(pos)
+        seed = {"pos": pos, "dep": dep, "tid": tid, "offshore": offshore,
+                "members": [(dep, tid, offshore)]}
+        added.append(make_mineral_marker(resource, seed, area_km2,
+                                         territory_country))
+    if added:
+        print("[piso] %d marcador(es) para nações que estavam sem marcador: %s"
+              % (len(added), ", ".join(sorted(
+                  {str(m["region"]["country"]) for m in added}))))
+    return added
+
+
 def apply_ring_anti_overlap(nav, nature, markers):
+
     """Anel anti-sobreposição entre recursos DIFERENTES do MESMO território
     (regra pré-existente). Reagrupa os marcadores onshore ancorados no mesmo
     território ao redor do centróide; offshore mantém a posição de campo.
@@ -713,6 +910,7 @@ def apply_ring_anti_overlap(nav, nature, markers):
         if marker.get("offshore"):
             continue
         by_terr.setdefault(marker["territory"], []).append(marker)
+    moved = 0
     for tid, group in by_terr.items():
         if len(group) <= 1:
             continue
@@ -729,8 +927,15 @@ def apply_ring_anti_overlap(nav, nature, markers):
         for marker, (px, py) in zip(group, positions):
             if _violates_min_distance(marker, px, py, markers):
                 continue
+            if abs(px - float(marker["px"])) < 0.05 \
+                    and abs(py - float(marker["py"])) < 0.05:
+                continue
+            moved += 1
             marker["px"] = round(px, 1)
             marker["py"] = round(py, 1)
+    if moved:
+        print("[anel] %d marcador(es) reposicionado(s) no anel do território"
+              % moved)
 
 
 def _violates_min_distance(marker: dict, px: float, py: float,
@@ -765,7 +970,15 @@ def build_points() -> None:
 
     mineral_markers = build_mineral_markers(
         nav, nature, deposits, budgets, calibration, area_km2,
-        territory_country, country_territories)
+        territory_country, country_territories,
+        floor_resources=nation_floor_resources(
+            nature, deposits, calibration, territory_country))
+    # Rede de segurança do piso: nação com jazida que ainda ficou sem marcador
+    # (as cotas do recurso já incluem o piso; aqui só entram as que a distância
+    # mínima do recurso barrou).
+    mineral_markers += ensure_nation_marker_floors(
+        nav, nature, deposits, calibration, area_km2, territory_country,
+        mineral_markers)
     renewable_markers = build_renewable_markers(
         nav, nature, agriculture, budgets, crop_shares, area_km2,
         territory_country, country_territories)

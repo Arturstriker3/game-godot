@@ -21,6 +21,7 @@ import math
 import os
 import sys
 
+import numpy as np
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,8 +64,9 @@ def nav_cell(nav, px, py):
     return (int(px / MAP_W * nav.width), int(py / MAP_H * nav.height))
 
 
-def check_budget_and_ceiling(points, key_for, budgets, kind):
-    """Total por recurso <= orçamento; teto 12% por país (region.country)."""
+def check_budget_and_ceiling(points, key_for, budgets, extras, kind):
+    """Total por recurso <= orçamento (+ excedente declarado do piso por nação);
+    teto 12% por país (region.country)."""
     totals = {}
     per_country = {}
     for point in points:
@@ -74,10 +76,14 @@ def check_budget_and_ceiling(points, key_for, budgets, kind):
         per_country.setdefault(resource, {}).setdefault(country, 0)
         per_country[resource][country] += 1
     for resource, count in totals.items():
-        budget = int(budgets.get(resource, 0))
+        extra = int(extras.get(resource, 0))
+        budget = int(budgets.get(resource, 0)) + extra
         if count > budget:
-            fail("%s[%s]: total %d > orçamento %d" % (kind, resource, count, budget))
-        ceiling = max(1, int(round(budget * CEILING_FRACTION)))
+            fail("%s[%s]: total %d > orçamento %d%s" % (
+                kind, resource, count, budget,
+                " (cota %d + piso %d)" % (budgets.get(resource, 0), extra)
+                if extra else ""))
+        ceiling = max(1, int(round(int(budgets.get(resource, 0)) * CEILING_FRACTION)))
         for country, n in per_country[resource].items():
             if n > ceiling:
                 fail("%s[%s]: país %s tem %d marcadores > teto %d (12%% de %d)"
@@ -100,8 +106,33 @@ def check_distance(points, key_for, kind):
                     return  # uma falha por grupo basta
 
 
-def check_sea(points, nav, key_for, kind):
-    """Nenhum marcador no mar, exceto offshore (índice 9 == 1)."""
+def load_atlas_land():
+    """Terra do atlas (`world_sdf.png`, >128), a mesma base do mapa visual.
+
+    O nav_mask é a máscara de NAVEGAÇÃO (célula de ~16 km); o atlas é ~4,9 km/px.
+    Uma ilha menor que a célula do nav_mask tem marcador em terra no mapa e
+    "mar" no nav_mask — o marcador é válido. Devolve None se o arquivo faltar
+    (aí o nav_mask volta a ser a única regra)."""
+    path = os.path.join(ATLAS, "world_sdf.png")
+    if not os.path.exists(path):
+        return None
+    return np.asarray(Image.open(path).convert("RGB"))[:, :, 0] > 128
+
+
+def atlas_is_land(land, px, py):
+    if land is None:
+        return False
+    height, width = land.shape
+    x = int(px / MAP_W * width)
+    y = int(py / MAP_H * height)
+    if not (0 <= x < width and 0 <= y < height):
+        return False
+    return bool(land[y, x])
+
+
+def check_sea(points, nav, land, key_for, kind):
+    """Nenhum marcador no mar: água no nav_mask E água no atlas, exceto offshore
+    (índice 9 == 1)."""
     for point in points:
         offshore = bool(point[9]) if len(point) > 9 else False
         if offshore:
@@ -111,9 +142,12 @@ def check_sea(points, nav, key_for, kind):
             fail("%s[%s]: marcador fora do nav_mask em (%s, %s)"
                  % (kind, key_for(int(point[2])), point[0], point[1]))
             continue
-        if nav.getpixel((x, y)) < 128:
-            fail("%s[%s]: marcador no mar em (%s, %s) sem offshore"
-                 % (kind, key_for(int(point[2])), point[0], point[1]))
+        if nav.getpixel((x, y)) >= 128:
+            continue
+        if atlas_is_land(land, float(point[0]), float(point[1])):
+            continue
+        fail("%s[%s]: marcador no mar em (%s, %s) sem offshore"
+             % (kind, key_for(int(point[2])), point[0], point[1]))
 
 
 def check_nonzero(points, key_for, kind):
@@ -129,20 +163,25 @@ def main():
     with open(os.path.join(ATLAS, "resource_points.json"), encoding="utf-8") as fh:
         data = json.load(fh)
     with open(os.path.join(NATURAL, "marker_budget.json"), encoding="utf-8") as fh:
-        budgets = json.load(fh)["budgets"]
+        budget_doc = json.load(fh)
+    budgets = budget_doc["budgets"]
+    extras = budget_doc.get("floor_extra", {})
     nav = Image.open(NAV).convert("L")
+    land = load_atlas_land()
 
     minerals = data.get("minerals", [])
     renewables = data.get("renewables", [])
 
     print("minerais=%d renováveis=%d" % (len(minerals), len(renewables)))
 
-    check_budget_and_ceiling(minerals, lambda i: MINERALS[i], budgets, "mineral")
-    check_budget_and_ceiling(renewables, lambda i: RENEWABLES[i], budgets, "renovável")
+    check_budget_and_ceiling(minerals, lambda i: MINERALS[i], budgets, extras,
+                             "mineral")
+    check_budget_and_ceiling(renewables, lambda i: RENEWABLES[i], budgets, extras,
+                             "renovável")
     check_distance(minerals, lambda i: MINERALS[i], "mineral")
     check_distance(renewables, lambda i: RENEWABLES[i], "renovável")
-    check_sea(minerals, nav, lambda i: MINERALS[i], "mineral")
-    check_sea(renewables, nav, lambda i: RENEWABLES[i], "renovável")
+    check_sea(minerals, nav, land, lambda i: MINERALS[i], "mineral")
+    check_sea(renewables, nav, land, lambda i: RENEWABLES[i], "renovável")
     check_nonzero(minerals, lambda i: MINERALS[i], "mineral")
     check_nonzero(renewables, lambda i: RENEWABLES[i], "renovável")
 

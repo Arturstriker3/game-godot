@@ -261,18 +261,18 @@ def main() -> int:
         territories[tid]["adm0_a3"] = code
         owned += 1
 
-    # Depósitos: o campo `owner` (legado, não lido pelo runtime) passa a refletir
-    # o dono do território. O runtime usa nature.json.adm0_a3 em assign_deposits.
-    # Depósito de território apagado na r2 (terra virou mar) sai do arquivo:
-    # não há chão no cenário para ele.
+    # Depósitos: o campo `owner` NÃO é recalculado aqui. A posse canônica vem
+    # de tools/assign_deposit_owners.py (centróide + raster de fronteira +
+    # offshore + exceções) e é lida pelo runtime em `deposit_nation_tag`;
+    # reescrevê-la pela maioria de área do território devolveria jazidas
+    # curadas ao vizinho (Kabanga/RWA → TZA, por exemplo). Este script só
+    # remove os depósitos de território apagado na r2 (terra virou mar).
     deposits_doc = read_json(os.path.join(NATURAL, "deposits.json"))
     kept_deposits = []
     for deposit in deposits_doc.get("deposits", []):
         tid = str(deposit.get("territory", ""))
         if tid in removed_tids:
             continue
-        if tid in territories:
-            deposit["owner"] = territories[tid].get("owner", deposit.get("owner", ""))
         kept_deposits.append(deposit)
     deposits_doc["deposits"] = kept_deposits
 
