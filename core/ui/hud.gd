@@ -16,6 +16,7 @@ const STATISTICS_SCREEN: Script = preload("res://core/ui/screens/statistics_scre
 const ALERTS_SCREEN: Script = preload("res://core/ui/screens/alerts_screen.gd")
 const ALERTS_MODEL: Script = preload("res://core/ui/alerts.gd")
 const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
+const CITY_TOOLTIP: Script = preload("res://core/ui/city_tooltip.gd")
 
 ## Contexto pedido pelo HUD para o mapa (câmera e camada de dados).
 signal city_focused(city_id: String)
@@ -32,6 +33,11 @@ signal legend_reset_requested
 signal window_closed
 
 const PLAYER_NATION := "GBR"
+
+## Atraso do tooltip de cidade: a ficha só aparece depois que o mouse fica
+## parado sobre a cidade por este tempo (~250 ms). Mover para outra cidade
+## reinicia a contagem; sair do mapa esconde na hora.
+const HOVER_DELAY_MS := 250
 
 ## Altura da barra superior (fase 1b: 48 → 64 px, +1/3, para legibilidade).
 const TOP_BAR_HEIGHT := 64.0
@@ -169,6 +175,13 @@ var _mode := "political"
 var _menu_layer: Control
 var _menu_screen: Control
 var _minimap: Minimap
+## Ficha de papel que acompanha a cidade sob o mouse (camada mais alta do HUD).
+var _tooltip_layer: Control
+var _city_tooltip: PanelContainer
+var _tooltip_city := ""
+var _tooltip_mode := ""
+var _tooltip_since := 0
+var _tooltip_point := Vector2.ZERO
 
 var _metric_values := {}
 var _date_label: Label
@@ -204,6 +217,7 @@ func _ready() -> void:
 	_build_city_layer()
 	_build_menu()
 	_build_settings()
+	_build_city_tooltip()
 
 	Economy.status_updated.connect(_on_status)
 	Economy.speed_changed.connect(func(_index: int) -> void: _update_top_bar())
@@ -342,6 +356,8 @@ func _configure_minimap() -> void:
 ## de mapa voltam assim que a sobreposição fecha. A ordem dos nós já garante
 ## que as telas ficam atrás do minimapa e as janelas ficam por cima.
 func _sync_map_overlays() -> void:
+	if is_overlay_open():
+		clear_city_tooltip()
 	if _minimap == null:
 		return
 	_minimap.visible = not is_overlay_open()
@@ -1810,6 +1826,174 @@ func _build_city_layer() -> void:
 	_city_layer.add_child(_city_screen)
 
 
+## Camada do tooltip de cidade: a mais alta do HUD (nada a cobre) e invisível
+## para o mouse. A ficha só entra na tela quando o hover passa de
+## `HOVER_DELAY_MS` e nenhuma sobreposição está aberta.
+func _build_city_tooltip() -> void:
+	_tooltip_layer = Control.new()
+	_tooltip_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_tooltip_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_tooltip_layer)
+
+	_city_tooltip = CITY_TOOLTIP.new()
+	_city_tooltip.name = "CityTooltip"
+	_tooltip_layer.add_child(_city_tooltip)
+
+
+## Hover de cidade vindo do mapa: registra o ponto, reinicia o relógio ao trocar
+## de cidade e mostra a ficha depois do atraso. Chamado a cada frame enquanto o
+## mouse está sobre uma cidade; trocar de modo (político ↔ recursos) reconstrói
+## o conteúdo na hora.
+func hover_city_tooltip(city_id: String, screen_point: Vector2,
+		mode: String = "") -> void:
+	if _city_tooltip == null or city_id.is_empty() or is_overlay_open():
+		clear_city_tooltip()
+		return
+	_tooltip_point = screen_point
+	if city_id != _tooltip_city:
+		_tooltip_city = city_id
+		_tooltip_mode = mode
+		_tooltip_since = Time.get_ticks_msec()
+		_city_tooltip.hide_tooltip()
+		return
+	if not _city_tooltip.visible:
+		if mode != _tooltip_mode:
+			_tooltip_mode = mode
+		if Time.get_ticks_msec() - _tooltip_since >= HOVER_DELAY_MS:
+			_show_city_tooltip(city_id, mode)
+	elif mode != _tooltip_mode:
+		_tooltip_mode = mode
+		_show_city_tooltip(city_id, mode)
+	if _city_tooltip.visible:
+		_city_tooltip.set_anchor_point(_tooltip_point)
+
+
+## Mostra a ficha agora, sem esperar o atraso (capturas de UI e pré-visualização).
+func preview_city_tooltip(city_id: String, screen_point: Vector2,
+		mode: String = "") -> void:
+	if _city_tooltip == null:
+		return
+	_tooltip_city = city_id
+	_tooltip_mode = mode
+	_tooltip_since = Time.get_ticks_msec() - HOVER_DELAY_MS
+	_tooltip_point = screen_point
+	_show_city_tooltip(city_id, mode)
+	if _city_tooltip.visible:
+		_city_tooltip.set_anchor_point(screen_point)
+
+
+func clear_city_tooltip() -> void:
+	_tooltip_city = ""
+	if _city_tooltip != null:
+		_city_tooltip.hide_tooltip()
+
+
+func city_tooltip_visible() -> bool:
+	return _city_tooltip != null and _city_tooltip.visible
+
+
+func _show_city_tooltip(city_id: String, mode: String) -> void:
+	var city := _find_city(city_id)
+	if city.is_empty() or _city_tooltip == null:
+		clear_city_tooltip()
+		return
+	var content := _city_tooltip_content(city, mode)
+	_city_tooltip.show_content(String(content["title"]), content["flag"],
+			String(content["subtitle"]), content["rows"])
+
+
+## Ficha da cidade em texto já formatado. Nenhum número é inventado: campo
+## ausente vira "—" e o porto só aparece quando o cenário declara um.
+func _city_tooltip_content(city: Dictionary, mode: String) -> Dictionary:
+	var id := String(city.get("id", ""))
+	var nation := String(city.get("nation", ""))
+	var population := float(city.get("population", 0.0))
+	var need := float(city.get("need", 0.0))
+	var consumed := float(city.get("consumed", 0.0))
+	var deficit := float(city.get("deficit", 0.0))
+
+	var rows: Array = []
+	rows.append({
+		"label": I18n.t("tooltip.city.population"),
+		"value": _compact_population(population),
+	})
+
+	var coverage := -1.0
+	if need > 0.0:
+		coverage = clampf(consumed / need, 0.0, 1.0)
+	rows.append({
+		"label": I18n.t("tooltip.city.food"),
+		"value": I18n.t("common.na") if coverage < 0.0 \
+				else "%d%%" % int(round(coverage * 100.0)),
+		"color": _paper_coverage_color(coverage),
+	})
+
+	rows.append({
+		"label": I18n.t("tooltip.city.deficit"),
+		"value": UiKit.number(deficit) + " t",
+		"color": UiKit.CARIMBO if deficit > 0.0 else UiKit.TINTA,
+	})
+
+	var total := 0
+	var main_resource := ""
+	var main_remaining := -1.0
+	var deposits: Dictionary = city.get("deposits", {})
+	for resource in deposits:
+		var entry: Dictionary = deposits[resource]
+		total += 1
+		var remaining := float(entry.get("remaining_kt", 0.0))
+		if remaining > main_remaining:
+			main_remaining = remaining
+			main_resource = String(resource)
+	var deposits_text := UiKit.number(total)
+	if mode == "resources" and not main_resource.is_empty():
+		deposits_text += " · " + I18n.t("resource." + main_resource)
+	rows.append({
+		"label": I18n.t("tooltip.city.deposits"),
+		"value": deposits_text,
+	})
+
+	var ports := WorldFacts.ports_for_city(id)
+	if not ports.is_empty():
+		var port_text := String(ports[0])
+		if ports.size() > 1:
+			port_text += " +%d" % (ports.size() - 1)
+		rows.append({
+			"label": I18n.t("tooltip.city.port"),
+			"value": port_text,
+		})
+
+	return {
+		"title": I18n.city_name(id, String(city.get("name", ""))),
+		"flag": Economy.flag_texture(nation),
+		"subtitle": I18n.nation_name(nation),
+		"rows": rows,
+	}
+
+
+## Cobertura de comida em % sobre papel: abaixo de 70% é carimbo, entre 70% e
+## 85% é alerta, acima disso fica tinta. Sem demanda registrada, tinta neutra.
+func _paper_coverage_color(ratio: float) -> Color:
+	if ratio < 0.0:
+		return UiKit.TINTA
+	if ratio < 0.70:
+		return UiKit.CARIMBO
+	if ratio < 0.85:
+		return UiKit.ALERTA
+	return UiKit.TINTA
+
+
+func _compact_population(value: float) -> String:
+	if value >= 1_000_000_000.0:
+		return UiKit.number(value / 1_000_000_000.0, 1) + " " \
+				+ I18n.t("common.billion")
+	if value >= 1_000_000.0:
+		return UiKit.number(value / 1_000_000.0, 1) + " M"
+	if value >= 1_000.0:
+		return UiKit.number(value / 1_000.0, 1) + " k"
+	return UiKit.number(value)
+
+
 func _new_screen(id: String) -> Node:
 	match id:
 		"economy":
@@ -2276,6 +2460,7 @@ func _on_status(summary: Dictionary) -> void:
 
 func _on_locale_changed(_locale: String) -> void:
 	UiKit.set_locale(I18n.locale)
+	clear_city_tooltip()
 	_render_top_bar()
 	_render_dock()
 	_configure_minimap()

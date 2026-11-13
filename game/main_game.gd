@@ -409,5 +409,24 @@ func _process(delta: float) -> void:
 	_apply_camera_limit(player, delta)
 
 	_update_city_hover_pass()
+	_update_city_tooltip()
 	if hud != null:
 		_update_minimap(player)
+
+
+## Ficha de papel da cidade sob o mouse: o mapa só informa QUAL cidade está em
+## hover e ONDE ela está na tela. O atraso de ~250 ms, o conteúdo e a decisão de
+## esconder com sobreposição aberta ficam no HUD (camada de apresentação).
+func _update_city_tooltip() -> void:
+	if hud == null or city_world == null:
+		return
+	if hud.is_overlay_open() or _last_hover.is_empty() \
+			or city_world.place_kind(_last_hover) != "city":
+		hud.clear_city_tooltip()
+		return
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+	var point: Vector2 = player.camera.unproject_position(
+			city_world.city_world_position(_last_hover))
+	hud.hover_city_tooltip(_last_hover, point, hud.map_mode())

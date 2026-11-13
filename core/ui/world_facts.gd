@@ -29,6 +29,8 @@ static var _world_reserve := 0.0
 static var _nations_loaded := false
 static var _territory_loaded := false
 static var _deposits_loaded := false
+static var _city_ports: Dictionary = {}
+static var _ports_loaded := false
 
 
 ## tag -> {id, name, flag, color, capital, currency, government, ai_profile,
@@ -64,6 +66,13 @@ static func territory(tag: String) -> Dictionary:
 static func deposits(tag: String) -> Dictionary:
 	_load_deposits()
 	return _deposits.get(tag, {})
+
+
+## Nomes dos portos que pertencem a uma cidade (`port_of` no cenário). Uma
+## cidade sem porto devolve uma lista vazia; nada é inferido de coordenadas.
+static func ports_for_city(city_id: String) -> Array:
+	_load_city_ports()
+	return _city_ports.get(city_id, [])
 
 
 static func world_reserve_kt() -> float:
@@ -142,6 +151,25 @@ static func _load_deposits() -> void:
 		var bucket: Dictionary = _deposits.get(owner, {})
 		bucket[resource] = float(bucket.get(resource, 0.0)) + reserve
 		_deposits[owner] = bucket
+
+
+## city id -> [nomes de porto], na ordem do `ports.json` do cenário.
+static func _load_city_ports() -> void:
+	if _ports_loaded:
+		return
+	_ports_loaded = true
+	var data: Variant = _read_json(PORTS_PATH)
+	if typeof(data) != TYPE_ARRAY:
+		return
+	for port: Variant in data:
+		if typeof(port) != TYPE_DICTIONARY:
+			continue
+		var host := String(port.get("port_of", ""))
+		if host.is_empty():
+			continue
+		var names: Array = _city_ports.get(host, [])
+		names.append(String(port.get("name", "")))
+		_city_ports[host] = names
 
 
 static func _read_json(path: String) -> Variant:

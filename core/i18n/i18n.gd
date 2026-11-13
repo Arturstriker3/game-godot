@@ -246,6 +246,12 @@ const TEMPLATE_STRINGS := {
 		"tpl.menu.shortcut.fullscreen": "Alternar tela cheia",
 		"tpl.menu.shortcut.focus": "Navegar com Tab e setas; Enter ativa",
 		"hud.credits.body": "Open Grand Strategy — simulação econômica de código aberto. Imagens de satélite © Esri, Maxar, Earthstar Geographics.",
+
+		"tooltip.city.population": "População",
+		"tooltip.city.food": "Comida",
+		"tooltip.city.deficit": "Déficit",
+		"tooltip.city.deposits": "Jazidas",
+		"tooltip.city.port": "Porto",
 	},
 	"en": {
 		"tpl.common.page": "Page {page} of {pages}",
@@ -475,6 +481,12 @@ const TEMPLATE_STRINGS := {
 		"tpl.menu.shortcut.fullscreen": "Toggle fullscreen",
 		"tpl.menu.shortcut.focus": "Navigate with Tab and arrows; Enter activates",
 		"hud.credits.body": "Open Grand Strategy — open-source economic simulation. Satellite imagery © Esri, Maxar, Earthstar Geographics.",
+
+		"tooltip.city.population": "Population",
+		"tooltip.city.food": "Food",
+		"tooltip.city.deficit": "Deficit",
+		"tooltip.city.deposits": "Deposits",
+		"tooltip.city.port": "Port",
 	},
 	"es": {
 		"tpl.common.page": "Página {page} de {pages}",
@@ -704,6 +716,12 @@ const TEMPLATE_STRINGS := {
 		"tpl.menu.shortcut.fullscreen": "Alternar pantalla completa",
 		"tpl.menu.shortcut.focus": "Navegar con Tab y flechas; Enter activa",
 		"hud.credits.body": "Open Grand Strategy — simulación económica de código abierto. Imágenes de satélite © Esri, Maxar, Earthstar Geographics.",
+
+		"tooltip.city.population": "Población",
+		"tooltip.city.food": "Comida",
+		"tooltip.city.deficit": "Déficit",
+		"tooltip.city.deposits": "Yacimientos",
+		"tooltip.city.port": "Puerto",
 	},
 }
 
@@ -800,6 +818,14 @@ func nation_name(tag: String) -> String:
 	var key := "nation.name.%s" % tag
 	var value := t(key)
 	return value if value != key else t("nation.%s" % tag)
+
+
+## Nome curto para caber no território (rótulo do mapa): `nation.short.<tag>`
+## quando existir; senão o próprio ISO3. Nunca devolve chave crua.
+func nation_short(tag: String) -> String:
+	var key := "nation.short.%s" % tag
+	var value := t(key)
+	return value if value != key else tag
 
 
 ## Nome localizado de uma cidade a partir do id (GBR-LDN...).
