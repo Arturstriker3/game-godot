@@ -11,6 +11,7 @@ const TRADE_SCREEN: Script = preload("res://core/ui/screens/trade_screen.gd")
 const PRODUCTION_SCREEN: Script = preload("res://core/ui/screens/production_screen.gd")
 const POPULATION_SCREEN: Script = preload("res://core/ui/screens/population_screen.gd")
 const POLITICS_SCREEN: Script = preload("res://core/ui/screens/politics_screen.gd")
+const STATISTICS_SCREEN: Script = preload("res://core/ui/screens/statistics_screen.gd")
 const ALERTS_SCREEN: Script = preload("res://core/ui/screens/alerts_screen.gd")
 const ALERTS_MODEL: Script = preload("res://core/ui/alerts.gd")
 const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
@@ -42,7 +43,8 @@ const WINDOW_MIN := Vector2(960.0, 560.0)
 const WINDOW_MAX := Vector2(1800.0, 1000.0)
 const WINDOW_RATIO := Vector2(0.86, 0.84)
 
-const SCREEN_ORDER := ["economy", "trade", "production", "population", "politics"]
+const SCREEN_ORDER := ["economy", "trade", "production", "population", "politics",
+		"statistics"]
 const MAX_ORDER_LOG := 240
 const SCREEN_LABELS := {
 	"economy": "dock.economy",
@@ -50,6 +52,7 @@ const SCREEN_LABELS := {
 	"production": "dock.production",
 	"population": "dock.population",
 	"politics": "dock.politics",
+	"statistics": "dock.statistics",
 	"alerts": "hud.alerts",
 }
 const SCREEN_HINTS := {
@@ -58,6 +61,7 @@ const SCREEN_HINTS := {
 	"production": "prod.hint",
 	"population": "pop.hint",
 	"politics": "pol.hint",
+	"statistics": "stats.hint",
 	"alerts": "alerts.hint",
 }
 ## Botões de camada do mapa (quadrados, acima do minimapa). Os demais modos
@@ -1816,6 +1820,7 @@ func _instantiate_screens() -> void:
 	_screens["politics"].close_requested.connect(_close_screen)
 	_screens["politics"].economy_requested.connect(_on_politics_economy)
 	_screens["politics"].map_requested.connect(_on_politics_map)
+	_screens["statistics"].close_requested.connect(_close_screen)
 
 	var alerts_screen: Node = ALERTS_SCREEN.new()
 	alerts_screen.visible = false
@@ -1866,6 +1871,8 @@ func _new_screen(id: String) -> Node:
 			return PRODUCTION_SCREEN.new()
 		"population":
 			return POPULATION_SCREEN.new()
+		"statistics":
+			return STATISTICS_SCREEN.new()
 		"alerts":
 			return ALERTS_SCREEN.new()
 		_:

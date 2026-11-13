@@ -11,6 +11,7 @@ extends Control
 ##         --sizes=1920x1080,1600x900,1366x768,2560x1440
 ##
 ## Argumentos: --phase=<rótulo>  --sizes=<WxH,...>  --out=<dir>  --run=<pasta>
+##              --locale=pt_BR|en|es (idioma da captura; não grava em settings)
 ## O relatório não afirma inspeção visual: mede retângulos, textos e recortes.
 
 const HudScript: Script = preload("res://core/ui/hud.gd")
@@ -32,6 +33,7 @@ var _sizes: Array[String] = []
 var _plain := false
 var _map_mode := ""
 var _legend_demo := ""
+var _locale := ""
 var _hud
 var _report := {"shots": [], "audits": [], "skipped": [], "phase": ""}
 
@@ -43,7 +45,13 @@ func _ready() -> void:
 	if _sizes.is_empty():
 		_sizes.assign(DEFAULT_SIZES)
 
+	# Idioma da captura: o `user://settings.cfg` do operador não pode decidir o
+	# que a auditoria fotografa. `set_locale` não grava a preferência.
+	if not _locale.is_empty():
+		I18n.set_locale(_locale)
+
 	_report["phase"] = _phase
+	_report["locale"] = I18n.locale
 	_report["timestamp"] = Time.get_datetime_string_from_system()
 	_report["engine"] = Engine.get_version_info().get("string", "")
 	_report["stretch"] = {
@@ -93,6 +101,8 @@ func _parse_args() -> void:
 				_map_mode = value
 			"--legend":
 				_legend_demo = value
+			"--locale":
+				_locale = value
 
 
 ## Fundo neutro: textura real do mapa escurecida, ou cor chapada com --plain.
@@ -180,6 +190,8 @@ func _capture_resolution(size_text: String) -> void:
 		_report["skipped"].append("08_menu: HUD sem menu de pausa")
 
 	# Fluxo incremental: cidade → abas → alertas → produção → cidade produtora → voltar.
+	# O menu e as sub-fichas (08*) são modais: fecham antes, senão cobrem o resto.
+	_reset_ui()
 	await _capture_state(directory, width, height, "09_city_population",
 			func() -> void: _city_tab("population"))
 	await _capture_state(directory, width, height, "10_city_production",
@@ -203,6 +215,10 @@ func _capture_resolution(size_text: String) -> void:
 			func() -> void: _population_tab(0))
 	await _capture_state(directory, width, height, "20_population_cities",
 			func() -> void: _population_tab(1))
+	await _capture_state(directory, width, height, "21_statistics",
+			func() -> void: _statistics_group(0))
+	await _capture_state(directory, width, height, "22_statistics_region",
+			func() -> void: _statistics_group(1))
 	await _capture_state(directory, width, height, "23_politics_other",
 			func() -> void: _politics_nation("FRA"))
 	_reset_ui()
@@ -371,6 +387,13 @@ func _population_tab(index: int) -> void:
 	_show_screen("population")
 	var screen: Node = _hud.get("_screens")["population"]
 	screen.call("_set_tab", index)
+
+
+func _statistics_group(index: int) -> void:
+	_show_screen("statistics")
+	var screen: Node = _hud.get("_screens")["statistics"]
+	if screen != null and screen.has_method("set_group"):
+		screen.call("set_group", index)
 
 
 func _politics_nation(tag: String) -> void:
