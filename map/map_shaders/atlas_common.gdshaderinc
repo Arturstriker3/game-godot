@@ -10,6 +10,10 @@
 //   R = costa       (raw*255-128)/2 * texel   (>0 é terra)
 //   G = fronteira de país  (raw*255-128)/8 * texel  (linha no zero)
 //   B = divisa admin-1     (raw*255-128)/8 * texel  (linha no zero; região E mundo)
+//   A = água interior      (raw*255-128)/8 * texel  (rio/lago no zero;
+//       dentro de lago o valor leva +LAKE_BIAS texels)
+// O canal B do raster de província (não do SDF) é a distância às fronteiras
+// disputadas, na mesma codificação de G.
 // `texel` é o tamanho de um texel em unidades do plano (plano = 1000×500).
 
 // Decodifica a distância assinada à costa (canal R do SDF).
@@ -25,6 +29,20 @@ float atlas_border_signed(float raw, float texel) {
 
 // Decodifica a distância ASSINADA à divisa admin-1 (canal B do SDF).
 float atlas_province_signed(float raw, float texel) {
+	return (raw * 255.0 - 128.0) / 8.0 * texel;
+}
+
+// Decodifica a distância ASSINADA à água interior (canal A do SDF): costa de
+// rio/lago no cruzamento por zero. Dentro de um lago o gerador soma `LAKE_BIAS`
+// texels, então `valor - LAKE_BIAS` é a distância à margem do lago e o valor
+// bruto separa lago (>= LAKE_BIAS) de rio (linha fina).
+float atlas_water_signed(float raw, float texel) {
+	return (raw * 255.0 - 128.0) / 8.0 * texel;
+}
+
+// Decodifica a distância ASSINADA às fronteiras disputadas (canal B do raster
+// de província; mesma codificação do canal G do SDF).
+float atlas_disputed_signed(float raw, float texel) {
 	return (raw * 255.0 - 128.0) / 8.0 * texel;
 }
 

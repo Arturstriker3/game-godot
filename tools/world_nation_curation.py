@@ -378,6 +378,35 @@ OCCUPIED_FRONT = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Fronteiras disputadas (2026-11) — o mapa político as desenha TRACEJADAS.
+#
+# Pares de ADM0_A3 do Natural Earth, o MESMO tag do raster admin-0 (`KOS`,
+# `SAH`, `CYN`, `PSX`, `SOL` — não os tags do roster). A lista é a fonte única:
+# `tools/build_atlas_layers.py` grava o campo de distância dessas linhas no
+# canal B de `region_province.png`/`world_province.png`, e o shader troca a
+# linha cheia por tracejada só ali (mesma espessura, mesma tinta). Nada de
+# edição manual de raster: mudar a lista e rodar o build basta.
+#
+# A linha de frente RUS/UKR sai de graça: as províncias de `OCCUPIED_REGIONS`
+# são repintadas como RUS no build, então a divisa RUS×UKR já é o traçado das
+# frentes. `CYN` continua na lista mesmo depois de `UNOWNED_ENCLAVES` fundir a
+# ilha em CYP: o build detecta o par pelas províncias admin-1 de origem, então
+# a linha verde aparece como divisa interna de Chipre.
+DISPUTED_BORDERS = [
+    ("RUS", "UKR", "linha de frente Rússia/Ucrânia (OCCUPIED_REGIONS)"),
+    ("IND", "PAK", "Caxemira — linha de controle Índia/Paquistão"),
+    ("IND", "CHN", "Caxemira/Aksai Chin — Índia/China"),
+    ("PAK", "CHN", "Caxemira — Paquistão/China (Siachen)"),
+    ("SAH", "MAR", "Saara Ocidental/Marrocos"),
+    ("KOS", "SRB", "Kosovo/Sérvia"),
+    ("CYN", "CYP", "Chipre do Norte — linha verde"),
+    ("PRK", "KOR", "Coreias — DMZ"),
+    ("ISR", "PSX", "Israel/Palestina"),
+    ("SOL", "SOM", "Somalilândia/Somália"),
+]
+
+
 def transfer_target(tag: str) -> str:
     """Nação que recebe o território de `tag`, ou "" se não há transferência."""
     return TRANSFERS.get(tag, "")

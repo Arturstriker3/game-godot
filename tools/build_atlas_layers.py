@@ -5,10 +5,16 @@ campos de distância (SDF): o shader reconstrói linhas nítidas e com
 anti-aliasing em qualquer distância de câmera.
 
 Saídas em map/map_data/atlas/:
-  region_sdf.png    RGB8  Europa em alta resolução
+  region_sdf.png    RGBA8 Europa em alta resolução
                      R = distância assinada à costa (128 + d*2 texels; >128 = terra)
                      G = distância assinada à fronteira de país (128 + d*8 texels)
                      B = distância assinada à divisa admin-1 (128 + d*8 texels)
+                     A = distância assinada à ÁGUA INTERIOR (128 + d*8 texels):
+                         rios (Natural Earth 10m rivers_lake_centerlines,
+                         scalerank <= 4) e lagos (ne_10m_lakes, scalerank <= 4).
+                         Dentro de um lago o campo recebe LAKE_BIAS texels, então
+                         `a - LAKE_BIAS` continua sendo a distância à margem; o
+                         shader separa lago (>= LAKE_BIAS) de rio (linha fina).
                      Nas fronteiras o sinal vem da ordem dos ids dos dois lados:
                      um campo sem sinal tem um "V" na linha que a interpolação
                      bilinear achata (a linha some quando passa entre texels); com
@@ -16,11 +22,14 @@ Saídas em map/map_data/atlas/:
                      medial, longe da linha — o shader descarta esse salto.
   region_color.png  RGB8  cor política (estendida sobre o mar, sem borda alfa)
   region_province.png RGB8  id da província admin-1 por pixel (id = R + G*256,
-                      B=0; id 0 preenchido com a província de terra mais próxima)
-  world_sdf.png     RGB8  mesmo formato, mundo inteiro em baixa resolução
+                      B = distância assinada às FRONTEIRAS DISPUTADAS
+                      (128 + d*8 texels; ver DISPUTED_BORDERS em
+                      tools/world_nation_curation.py)
+  world_sdf.png     RGBA8 mesmo formato, mundo inteiro em baixa resolução
   world_color.png   RGB8
   world_province.png RGB8 id GLOBAL da província admin-1 por pixel (id = R+G*256,
-                      sem zeros: preenchido com a província de terra mais próxima)
+                      sem zeros: preenchido com a província de terra mais próxima;
+                      B = fronteiras disputadas, como na região)
   provinces.json      id global, país (ADM0_A3), nação (tag do jogo), cor estática,
                       nome, centroide (5000x2500) e área global de cada província
   minimap.png       RGB8  mapa político global reduzido para o minimapa
@@ -53,8 +62,8 @@ Uso:
   python tools/build_atlas_layers.py --no-subdivide       # admin-1 puro (pré-fase B)
   python tools/build_atlas_layers.py --report-islands     # relatório seco de ilhas
 
-Requer Natural Earth 10m admin-0 e admin-1 (NE_DIR, padrão G:\\tools\\ne_extract),
-numpy, pillow, pyshp e scipy.
+Requer Natural Earth 10m admin-0, admin-1, rivers_lake_centerlines e lakes
+(NE_DIR, padrão G:\\tools\\ne_extract), numpy, pillow, pyshp e scipy.
 """
 
 from __future__ import annotations
@@ -72,8 +81,9 @@ from scipy.ndimage import (binary_dilation as nd_dilate, distance_transform_edt,
                            sum as nd_sum)
 from scipy.spatial import cKDTree
 
-from world_nation_curation import (OCCUPIED_FRONT, OCCUPIED_REGIONS,
-                                   atlas_owner_map, atlas_removed)
+from world_nation_curation import (DISPUTED_BORDERS, OCCUPIED_FRONT,
+                                   OCCUPIED_REGIONS, atlas_owner_map,
+                                   atlas_removed)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "map", "map_data", "atlas")
@@ -81,6 +91,23 @@ NE_DIR = os.environ.get("NE_DIR", r"G:\tools\ne_extract")
 ADMIN0 = os.path.join(NE_DIR, "ne_10m_admin_0_countries", "ne_10m_admin_0_countries")
 ADMIN1 = os.path.join(NE_DIR, "ne_10m_admin_1_states_provinces",
                       "ne_10m_admin_1_states_provinces")
+RIVERS = os.path.join(NE_DIR, "ne_10m_rivers_lake_centerlines",
+                      "ne_10m_rivers_lake_centerlines")
+LAKES = os.path.join(NE_DIR, "ne_10m_lakes", "ne_10m_lakes")
+
+# Água interior (fase C, 2026-11): rios e lagos do Natural Earth 10m. O corte
+# por `scalerank` mantém os ~200 rios e ~180 lagos que aparecem numa carta de
+# escala continental (Nilo, Danúbio, Amazonas, Mississippi, Yangtzé, Ganges,
+# Mekong, Congo, Níger, Paraná, Eufrates, Indo, Ob, Ienissei, Lena, Amur,
+# Huang He, São Lourenço, Grandes Lagos, Vitória, Tanganica, Malawi, Baikal,
+# Ladoga, Titicaca). Lagos que já são mar no raster (Cáspio, Aral) não são
+# pintados: a máscara de água é recortada pela terra do admin-0.
+RIVER_MAX_SCALERANK = 4
+LAKE_MAX_SCALERANK = 4
+# Viés (em texels BAIXOS) somado ao interior dos lagos. Separa lago de rio no
+# shader: `campo - LAKE_BIAS` é a distância à margem do lago; rios nunca
+# passam de ~1 texel de interior. Tem de bater com `lake_bias` do shader.
+LAKE_BIAS = 4.0
 
 # Região de alta resolução (graus). Precisa bater com `region_bounds` no shader.
 REGION = (-25.0, 33.0, 45.0, 72.0)  # lon0, lat0, lon1, lat1
@@ -277,6 +304,49 @@ def read_admin0():
     return countries, removed
 
 
+def read_rivers():
+    """Centrelines dos maiores rios (scalerank <= RIVER_MAX_SCALERANK).
+
+    Devolve [(pontos, scalerank)] — a espessura do traço no raster depende do
+    scalerank (ver `river_stroke_px`). Fonte: Natural Earth 10m
+    rivers_lake_centerlines, a mesma escala do admin-0/admin-1."""
+    if not os.path.exists(RIVERS + ".shp"):
+        raise SystemExit(f"Fonte Natural Earth ausente: {RIVERS}.shp "
+                         f"(ne_10m_rivers_lake_centerlines)")
+    reader = shapefile.Reader(RIVERS, encoding="utf-8")
+    names = [field[0] for field in reader.fields[1:]]
+    out = []
+    for shape, record in zip(reader.shapes(), reader.records()):
+        fields = dict(zip(names, record))
+        rank = int(fields.get("scalerank") or 0)
+        if rank > RIVER_MAX_SCALERANK:
+            continue
+        for part in split_parts(shape):
+            out.append((part, rank))
+    return out
+
+
+def read_lakes():
+    """Contornos dos maiores lagos (scalerank <= LAKE_MAX_SCALERANK).
+
+    Devolve [(anel, scalerank)] na mesma convenção do admin-0 (anel fechado que
+    o ImageDraw preenche). Lagos que já são mar no raster (Cáspio, Aral) caem no
+    recorte por terra de `water_masks`."""
+    if not os.path.exists(LAKES + ".shp"):
+        raise SystemExit(f"Fonte Natural Earth ausente: {LAKES}.shp (ne_10m_lakes)")
+    reader = shapefile.Reader(LAKES, encoding="utf-8")
+    names = [field[0] for field in reader.fields[1:]]
+    out = []
+    for shape, record in zip(reader.shapes(), reader.records()):
+        fields = dict(zip(names, record))
+        rank = int(fields.get("scalerank") or 0)
+        if rank > LAKE_MAX_SCALERANK:
+            continue
+        for part in split_parts(shape):
+            out.append((part, rank))
+    return out
+
+
 def read_admin1_all():
     """Lê TODAS as províncias admin-1 do shapefile (sem filtro de bbox).
 
@@ -393,6 +463,123 @@ def signed_border_distance(ids, neighbor):
     magnitude = np.where(same_side, dist + 0.5, np.maximum(dist - 0.5, 0.0))
     del dist, rows, cols, nearest_id
     return np.where(ids > other, magnitude, -magnitude).astype(np.float32)
+
+
+def river_stroke_px(rank, supersample):
+    """Espessura do traço do rio na grade alta, em pixels.
+
+    rank <= 1 (Nilo, Amazonas, Mississipi, Danúbio...) fica com 2 texels BAIXOS
+    de largura; os demais com 1. O interior do campo resultante separa "rio
+    grande" (≈1 texel) de "rio fino" (≈0,5 texel), e o shader usa isso para
+    manter os grandes visíveis por mais tempo no zoom afastado."""
+    return max(1, int(round((2.0 if rank <= 1 else 1.0) * supersample)))
+
+
+def water_masks(grid, land, rivers, lakes, supersample):
+    """Máscaras (água, lago) na grade ALTA, recortadas à terra do atlas.
+
+    `água` é a união de rios e lagos — é ela que vira o campo de distância do
+    canal A; `lago` só marca onde o interior recebe LAKE_BIAS (a separação
+    lago×rio do shader).
+
+    O recorte por `land` (admin-0 rasterizado) tira a água que já é mar no
+    mapa — Cáspio e Aral não são desenhados duas vezes — e impede que um rio
+    desenhe uma linha no oceano. Onde um rio atravessa um lago, o pixel fica
+    como lago (a lâmina e a margem do lago já cobrem a água; o rio não precisa
+    ser desenhado por cima)."""
+    lake_canvas = Image.new("L", (grid.width, grid.height), 0)
+    lake_draw = ImageDraw.Draw(lake_canvas)
+    for ring, _rank in lakes:
+        lake_draw.polygon(grid.project(ring), fill=255)
+    lake = np.asarray(lake_canvas, dtype=np.uint8) > 0
+    del lake_canvas, lake_draw
+    lake &= land
+
+    river_canvas = Image.new("L", (grid.width, grid.height), 0)
+    river_draw = ImageDraw.Draw(river_canvas)
+    for part, rank in rivers:
+        river_draw.line(grid.project(part), fill=255,
+                        width=river_stroke_px(rank, supersample))
+    river = np.asarray(river_canvas, dtype=np.uint8) > 0
+    del river_canvas, river_draw
+    river &= land
+    river &= ~lake
+    return (river | lake), lake
+
+
+def disputed_index():
+    """(tag -> classe, conjunto de pares, tags) de DISPUTED_BORDERS.
+
+    `pares` é o conjunto de chaves classe_a*64 + classe_b nos dois sentidos."""
+    tags = sorted({tag for pair in DISPUTED_BORDERS for tag in pair[:2]})
+    index = {tag: position + 1 for position, tag in enumerate(tags)}
+    pairs = set()
+    for first, second in (pair[:2] for pair in DISPUTED_BORDERS):
+        pairs.add(index[first] * 64 + index[second])
+        pairs.add(index[second] * 64 + index[first])
+    return index, pairs, tags
+
+
+def dispute_classes(tag_list, index, size):
+    """Classe de disputa por índice de uma lista de tags (0 = fora da lista).
+
+    Índices acima da lista ficam com classe 0 (não são disputados por
+    acidente), nunca com a classe do último tag."""
+    array = np.zeros(max(size, len(tag_list)), dtype=np.int32)
+    for pid in range(1, min(len(tag_list), array.size)):
+        array[pid] = index.get(tag_list[pid], 0)
+    return array
+
+
+def extend_dispute_tags(tag_list, subdivision):
+    """Repete a classe do pai nas filhas da subdivisão.
+
+    As células Voronoi nascem DEPOIS dos tags admin-1 (id novo, mesmo país do
+    pai). Sem isto, um id acima da lista cairia em "sem disputa" e um país
+    disputado subdividido (o Saara Ocidental é uma admin-1 só, dividida em ~26
+    células) perderia a fronteira tracejada."""
+    if not subdivision:
+        return tag_list
+    tags = list(tag_list)
+    for pid, entry in subdivision.items():
+        parent = tags[pid] if pid < len(tags) else ""
+        for cell in entry["cells"]:
+            cid = int(cell["id"])
+            if cid >= len(tags):
+                tags.extend([""] * (cid + 1 - len(tags)))
+            tags[cid] = parent
+    return tags
+
+
+def pair_marks(ids, classes, pairs):
+    """1 nos pixels de divisa cujo par de classes (aqui, vizinho) é disputado.
+
+    Devolve (máscara, vizinho do outro lado da divisa)."""
+    neighbor = border_neighbors(ids, ids > 0)
+    here = classes[np.minimum(ids, classes.size - 1)]
+    there = classes[np.minimum(neighbor, classes.size - 1)]
+    keys = here * 64 + there
+    marks = np.isin(keys, np.fromiter(pairs, dtype=np.int32))
+    del here, there, keys
+    return marks, neighbor
+
+
+def disputed_field(province_ids, province_classes, owner_ids, owner_classes, pairs):
+    """Distância assinada às fronteiras disputadas, na grade BAIXA.
+
+    A divisa é disputada quando o par de classes está em `pairs` em QUALQUER
+    das duas leituras: o raster admin-0 (dono, pega Saara/Somalilândia/frente
+    RUS×UKR depois da ocupação) ou o raster admin-1 pela tag de ORIGEM (pega a
+    linha verde de Chipre, cujas províncias foram fundidas em CYP no dono).
+    A distância/sinal usa o raster de província — é a mesma grade da textura
+    que o shader lê com `filter_nearest`. Devolve (campo, marcas)."""
+    province_marks, province_neighbor = pair_marks(province_ids, province_classes,
+                                                   pairs)
+    owner_marks, _owner_neighbor = pair_marks(owner_ids, owner_classes, pairs)
+    marks = province_marks | owner_marks
+    marked = np.where(marks, province_neighbor, 0)
+    del province_marks, owner_marks
+    return signed_border_distance(province_ids, marked), marks
 
 
 def downsample(values, factor):
@@ -801,11 +988,12 @@ def coast_field(land):
     return coast
 
 
-def process_rows(owners, provinces, supersample):
+def process_rows(owners, provinces, supersample, water=None, lakes=None):
     """Campos SDF (resolução baixa) de uma janela de linhas da grade alta.
 
-    Devolve (costa, fronteira de país, divisa admin-1), cada um com
-    altura = linhas // supersample."""
+    Devolve (costa, fronteira de país, divisa admin-1, água interior), cada um
+    com altura = linhas // supersample. `water`/`lakes` são as máscaras da
+    mesma janela; sem elas o canal de água sai a -1e4 (nenhuma água)."""
     land = owners != 0
     coast_lo = downsample(coast_field(land), supersample) / supersample
 
@@ -825,7 +1013,20 @@ def process_rows(owners, provinces, supersample):
         del province_neighbor, province_field
     else:
         provinces_lo = np.full(coast_lo.shape, 1e6, dtype=np.float32)
-    return coast_lo, borders_lo, provinces_lo
+
+    if water is not None and water.any():
+        water_field = coast_field(water)
+        # O interior do lago ganha LAKE_BIAS texels BAIXOS (aplicado na grade
+        # alta): o shader reconhece lago por `campo >= LAKE_BIAS` e ainda lê a
+        # distância à margem como `campo - LAKE_BIAS`.
+        if lakes is not None and lakes.any():
+            water_field = np.where(lakes, water_field + LAKE_BIAS * supersample,
+                                   water_field)
+        water_lo = downsample(water_field, supersample) / supersample
+        del water_field
+    else:
+        water_lo = np.full(coast_lo.shape, -1e4, dtype=np.float32)
+    return coast_lo, borders_lo, provinces_lo, water_lo
 
 
 def load_scenario_cities():
@@ -1337,7 +1538,7 @@ def build_layer(name, bounds, width, countries, province_shapes,
                 removed_reference=None, islands=False, occupation=None,
                 subdivision_cities=None, subdivision_names=None,
                 subdivision_countries=None, subdivision_next_id=None,
-                subdivision_plan=None):
+                subdivision_plan=None, rivers=None, lakes=None, dispute_tags=None):
     """Constrói uma camada do atlas.
 
     `band_rows` (linhas da grade BAIXA) processa os campos de distância em
@@ -1352,7 +1553,12 @@ def build_layer(name, bounds, width, countries, province_shapes,
     o plano em `subdivision`; a camada regional recebe `subdivision_plan` e
     reaplica a MESMA partição. O plano é calculado DEPOIS das remoções de ilha
     e da ocupação: nenhum id nasce para pixels que viraram mar e as células
-    herdam o dono já repintado."""
+    herdam o dono já repintado.
+
+    Água interior (fase C): `rivers`/`lakes` (de `read_rivers`/`read_lakes`)
+    entram no canal A do SDF; `dispute_tags` (tags admin-1 ORIGINAIS indexadas
+    por id de província) gera o campo de fronteiras disputadas no canal B do
+    raster de províncias."""
     hi = Grid(bounds, width * supersample)
     lo_height = hi.height // supersample
     lo_width = width
@@ -1402,24 +1608,40 @@ def build_layer(name, bounds, width, countries, province_shapes,
     coast_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     borders_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     provinces_lo = np.empty((lo_height, lo_width), dtype=np.float32)
+    water_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     margin = 160 if band_rows else 0  # linhas altas; > 128 (alcance da costa)
     step = band_rows or lo_height
+
+    # Água interior DEPOIS de toda remoção/ocupação: a máscara é recortada pela
+    # terra final, então um lago que já é mar (Cáspio) não é pintado de novo.
+    if rivers is not None or lakes is not None:
+        print(f"[{name}] água interior: {len(rivers or [])} traço(s) de rio, "
+              f"{len(lakes or [])} anel(éis) de lago")
+        water_hi, lake_hi = water_masks(hi, owners != 0, rivers or [], lakes or [],
+                                        supersample)
+    else:
+        water_hi = lake_hi = None
+
     for start in range(0, lo_height, step):
         stop = min(start + step, lo_height)
         hi_start = max(start * supersample - margin, 0)
         hi_stop = min(stop * supersample + margin, hi.height)
         if band_rows:
             print(f"[{name}] faixa {start}-{stop} / {lo_height}")
-        c, b, p = process_rows(
+        c, b, p, w = process_rows(
             owners[hi_start:hi_stop, :],
             provinces[hi_start:hi_stop, :] if provinces is not None else None,
-            supersample)
+            supersample,
+            water=water_hi[hi_start:hi_stop, :] if water_hi is not None else None,
+            lakes=lake_hi[hi_start:hi_stop, :] if lake_hi is not None else None)
         off = (start * supersample - hi_start) // supersample
         n = stop - start
         coast_lo[start:stop] = c[off:off + n, :lo_width]
         borders_lo[start:stop] = b[off:off + n, :lo_width]
         provinces_lo[start:stop] = p[off:off + n, :lo_width]
-        del c, b, p
+        water_lo[start:stop] = w[off:off + n, :lo_width]
+        del c, b, p, w
+    del water_hi, lake_hi
 
     border_unsigned_lo = np.abs(borders_lo)
 
@@ -1427,9 +1649,10 @@ def build_layer(name, bounds, width, countries, province_shapes,
         encode(coast_lo, SDF_COAST_SCALE, 128.0),
         encode(borders_lo, SDF_LINE_SCALE, 128.0),
         encode(provinces_lo, SDF_LINE_SCALE, 128.0),
+        encode(water_lo, SDF_LINE_SCALE, 128.0),
     ])
-    Image.fromarray(sdf, "RGB").save(os.path.join(OUT, f"{name}_sdf.png"), optimize=True)
-    del sdf, coast_lo, borders_lo, provinces_lo
+    Image.fromarray(sdf, "RGBA").save(os.path.join(OUT, f"{name}_sdf.png"), optimize=True)
+    del sdf, coast_lo, borders_lo, provinces_lo, water_lo
 
     province_ids_lo = None
     if provinces is not None:
@@ -1439,6 +1662,27 @@ def build_layer(name, bounds, width, countries, province_shapes,
 
     owners_lo = owners[::supersample, ::supersample][:lo_height, :lo_width]
     del owners
+
+    # Fronteiras disputadas: campo na MESMA grade do raster de províncias (o
+    # canal B é lido com `filter_nearest` no shader, então a precisão útil é a
+    # de um texel baixo). A marcação vem do raster admin-0 (dono, já ocupado) e
+    # da tag admin-1 de origem (a linha verde de Chipre existe só nas
+    # províncias: CYN foi fundido em CYP no dono).
+    disputed_lo = None
+    if province_ids_lo is not None and dispute_tags is not None:
+        index, pairs, tags = disputed_index()
+        size = int(province_ids_lo.max()) + 1
+        province_classes = dispute_classes(
+            extend_dispute_tags(dispute_tags, subdivision), index, size)
+        owner_classes = dispute_classes([""] + [c["tag"] for c in countries],
+                                        index, len(countries) + 1)
+        disputed_lo, marks = disputed_field(province_ids_lo, province_classes,
+                                            owners_lo, owner_classes, pairs)
+        print(f"[{name}] fronteiras disputadas: {len(pairs) // 2} par(es) de "
+              f"{len(tags)} tag(s) ({', '.join(tags)}); {int(marks.sum())} px "
+              f"de divisa marcados")
+        del marks, province_classes, owner_classes
+
     palette = np.zeros((len(countries) + 1, 3), dtype=np.uint8)
     for index, country in enumerate(countries, start=1):
         palette[index] = country_color(country)
@@ -1454,7 +1698,8 @@ def build_layer(name, bounds, width, countries, province_shapes,
         os.path.join(OUT, f"{name}_color.png"), optimize=True)
 
     if province_ids_lo is not None:
-        write_province_png(name, province_ids_lo)
+        write_province_png(name, province_ids_lo, disputed_lo)
+    del disputed_lo
 
     return {
         "grid": grid,
@@ -1476,18 +1721,23 @@ def country_color(country):
     return NEUTRAL_PALETTE[(country["mapcolor"] - 1) % len(NEUTRAL_PALETTE)]
 
 
-def write_province_png(name, ids_lo):
-    """Grava o raster de id de província (id = R + G*256, B=0).
+def write_province_png(name, ids_lo, disputed_lo=None):
+    """Grava o raster de id de província (id = R + G*256, B = fronteiras disputadas).
 
     Pixels com id 0 (mar/lacunas) recebem o id da província de terra mais
     próxima (mesmo preenchimento usado para a cor política), para o shader
-    nunca amostrar id 0 e o preenchimento por filtro nunca misturar com "nada"."""
+    nunca amostrar id 0 e o preenchimento por filtro nunca misturar com "nada".
+    O canal B é a distância assinada às fronteiras disputadas (mesma codificação
+    do canal G do SDF: 128 + d*8 texels); sem `disputed_lo` fica 0, que o
+    shader lê como "nenhuma fronteira disputada"."""
     nearest = distance_transform_edt(ids_lo == 0, return_distances=False, return_indices=True)
     ids_filled = ids_lo[nearest[0], nearest[1]]
     del nearest
     rgb = np.zeros((*ids_filled.shape, 3), dtype=np.uint8)
     rgb[..., 0] = (ids_filled & 0xFF).astype(np.uint8)
     rgb[..., 1] = ((ids_filled >> 8) & 0xFF).astype(np.uint8)
+    if disputed_lo is not None:
+        rgb[..., 2] = encode(disputed_lo, SDF_LINE_SCALE, 128.0)
     Image.fromarray(rgb, "RGB").save(os.path.join(OUT, f"{name}_province.png"), optimize=True)
 
 
@@ -1709,6 +1959,19 @@ def main():
             effective_countries[spec["pid"] - 1] = spec["target"]
     next_id = len(province_countries) + 1
 
+    # Tag de ORIGEM (admin-1) por id de província para as fronteiras
+    # disputadas (`DISPUTED_BORDERS`): é ela que mantém a linha verde de Chipre
+    # (as províncias de CYN foram fundidas em CYP no dono). A frente RUS×UKR
+    # vem do raster admin-0, que já recebeu a ocupação.
+    dispute_tags = [""] + list(original_countries)
+
+    # Água interior (fase C): rios e lagos do Natural Earth 10m, lidos uma vez
+    # e rasterizados nas duas camadas.
+    rivers = read_rivers()
+    lakes = read_lakes()
+    print(f"água interior: {len(rivers)} trecho(s) de rio, {len(lakes)} lago(s) "
+          f"(scalerank <= {RIVER_MAX_SCALERANK}/{LAKE_MAX_SCALERANK})")
+
     region_shapes, region_countries, region_ids = select_region(
         provinces, province_countries, province_bboxes, REGION)
     region_rows = [(shape, country, pid) for shape, country, pid
@@ -1738,7 +2001,9 @@ def main():
                         subdivision_cities=subdivision_cities,
                         subdivision_names=province_names,
                         subdivision_countries=effective_countries,
-                        subdivision_next_id=next_id)
+                        subdivision_next_id=next_id,
+                        rivers=rivers, lakes=lakes,
+                        dispute_tags=dispute_tags)
 
     # Filhas da subdivisão: ids consecutivos logo depois do último id existente.
     subdivision = world["subdivision"] or {}
@@ -1756,7 +2021,9 @@ def main():
                          supersample=SUPERSAMPLE,
                          removed_reference=(world["removed_grid"],
                                             world["removed_mask"]),
-                         occupation=occupation, subdivision_plan=subdivision)
+                         occupation=occupation, subdivision_plan=subdivision,
+                         rivers=rivers, lakes=lakes,
+                         dispute_tags=dispute_tags)
     with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
         json.dump(nation_anchors(region, countries), handle, indent="\t")
         handle.write("\n")

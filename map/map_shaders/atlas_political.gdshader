@@ -13,8 +13,10 @@ shader_type spatial;
 // nas duas camadas (canal B) e usam a mesma mistura, sem costura na caixa.
 //
 // Composição: terreno (luminância do satélite) × cor da nação, faixa de cor
-// junto à fronteira, divisas de província, mar com batimetria de costa e
-// linhas de nível, linha de costa e fronteiras em tinta.
+// junto à fronteira, divisas de província, água interior (rios e lagos),
+// mar com batimetria de costa e linhas de nível, linha de costa e fronteiras
+// em tinta. Fronteiras disputadas usam tracejado de tela; a nação apontada
+// por `highlight_nation` ganha preenchimento mais claro e contorno em latão.
 
 render_mode unshaded, cull_disabled;
 
@@ -36,6 +38,13 @@ uniform int owner_columns = 64;
 uniform bool dynamic_territory = false;
 uniform int highlight_owner = -1;
 uniform float dynamic_band_width = 0.3;
+// Destaque de NAÇÃO (hover do nome/bandeira, API TerritoryMap): o território
+// inteiro do dono clareia `highlight_fill` e a divisa com os vizinhos (e a
+// costa) ganha um contorno de latão de `highlight_border_px`.
+uniform int highlight_nation = -1;
+uniform vec3 highlight_color : source_color = vec3(0.788, 0.635, 0.290);
+uniform float highlight_border_px = 2.0;
+uniform float highlight_fill : hint_range(0.0, 0.5) = 0.08;
 
 // Janela da região em graus (lon0, lat0, lon1, lat1) — igual ao gerador.
 uniform vec4 region_bounds = vec4(-25.0, 33.0, 45.0, 72.0);
@@ -69,6 +78,26 @@ uniform float coast_width_px = 1.15;
 uniform float vignette_start : hint_range(0.0, 0.5) = 0.09;
 uniform vec3 vignette_color : source_color = vec3(0.0392, 0.0549, 0.0588);
 
+// Água interior (Natural Earth 10m: rios e lagos). `lake_bias` é o viés de
+// interior gravado no canal A do SDF (LAKE_BIAS em tools/build_atlas_layers.py).
+uniform float lake_bias = 4.0;
+uniform vec3 river_color : source_color = vec3(0.137, 0.282, 0.373);
+uniform float river_fade_near = 0.045;
+uniform float river_fade_far = 0.130;
+uniform float river_big_scale = 2.2;
+// Largura MÍNIMA do rio em pixels de tela: o traço rasterizado é de 1–2 texels
+// e some quando o texel fica menor que o pixel; este piso mantém o rio legível
+// no zoom continental. Perto, o traço do raster é mais largo e domina (o rio
+// engrossa ao aproximar).
+uniform float river_min_width_px = 1.2;
+uniform float lake_fade_near = 0.14;
+uniform float lake_fade_far = 0.30;
+
+// Fronteiras disputadas: tracejado em ESPAÇO DE TELA (6 px de traço, 4 de
+// vão), mesma tinta e mesma espessura da fronteira comum.
+uniform float dash_on_px = 6.0;
+uniform float dash_period_px = 10.0;
+
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
 float hash(vec2 p) {
@@ -90,9 +119,12 @@ float value_noise(vec2 p) {
 // de id de província, e devolve o dono do lado certo da divisa, se os dois
 // lados têm donos diferentes e se este pixel tem dono válido. Igual para a
 // região e para o mundo.
+// `out_nation_fill` = pixel pertence à nação destacada; `out_nation_edge` =
+// pixel está na divisa entre a nação destacada e outro dono (contorno).
 void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
 		out float out_differ, out vec3 out_nation, out float out_highlight,
-		out float out_no_owner) {
+		out float out_no_owner, out float out_nation_fill,
+		out float out_nation_edge) {
 	vec2 e = 1.0 / vec2(textureSize(sdf_tex, 0));
 	float b_tx = (texture(sdf_tex, uv).b * 255.0 - 128.0) / 8.0;
 	float b_l = (texture(sdf_tex, uv - vec2(e.x, 0.0)).b * 255.0 - 128.0) / 8.0;
@@ -128,6 +160,19 @@ void dyn_block(sampler2D sdf_tex, sampler2D prov_tex, vec2 uv,
 	out_highlight = (has_here > 0.5
 			&& index_here == float(highlight_owner)) ? 1.0 : 0.0;
 	out_no_owner = 1.0 - has_here;
+	// Destaque de nação: preenchimento em todo o território do dono e contorno
+	// onde exatamente um dos lados da divisa é dele (o lado do mar fica com a
+	// tinta da costa, reforçada no fragmento).
+	// `highlight_nation < 0` = sem destaque: nem preenchimento nem contorno.
+	float highlight_on = (highlight_nation >= 0) ? 1.0 : 0.0;
+	float hi_here = (highlight_on > 0.5 && has_here > 0.5
+			&& index_here == float(highlight_nation)) ? 1.0 : 0.0;
+	float hi_other = (highlight_on > 0.5 && has_other > 0.5
+			&& index_other == float(highlight_nation)) ? 1.0 : 0.0;
+	out_nation_fill = hi_here;
+	// Contorno onde EXATAMENTE um dos lados é da nação destacada (a divisa com
+	// os vizinhos); o lado do mar é resolvido no fragmento, pela costa.
+	out_nation_edge = differ * reliable * abs(hi_here - hi_other);
 }
 
 void fragment() {
@@ -143,9 +188,9 @@ void fragment() {
 	vec2 ruv = atlas_region_uv(UV, region_bounds);
 	float region_w = atlas_region_weight(ruv);
 
-	vec3 w_sdf = texture(world_sdf, UV).rgb;
+	vec4 w_sdf = texture(world_sdf, UV);
 	vec3 w_col = texture(world_color, UV).rgb;
-	vec3 r_sdf = texture(region_sdf, ruv).rgb;
+	vec4 r_sdf = texture(region_sdf, ruv);
 	vec3 r_col = texture(region_color, ruv).rgb;
 
 	float coast_w = atlas_coast_distance(w_sdf.r, world_texel);
@@ -184,16 +229,24 @@ void fragment() {
 	float world_highlight = 0.0;
 	float region_no_owner = 0.0;
 	float world_no_owner = 0.0;
+	float region_nation_fill = 0.0;
+	float world_nation_fill = 0.0;
+	float region_nation_edge = 0.0;
+	float world_nation_edge = 0.0;
 	vec3 region_dyn_nation = nation;
 	vec3 world_dyn_nation = nation;
 	if (dynamic_territory) {
 		dyn_block(region_sdf, region_province, ruv, region_differ, region_dyn_nation,
-				region_highlight, region_no_owner);
+				region_highlight, region_no_owner, region_nation_fill,
+				region_nation_edge);
 		dyn_block(world_sdf, world_province, UV, world_differ, world_dyn_nation,
-				world_highlight, world_no_owner);
+				world_highlight, world_no_owner, world_nation_fill,
+				world_nation_edge);
 	}
 	vec3 dyn_nation = (region_w > 0.5) ? region_dyn_nation : world_dyn_nation;
 	float highlight = (region_w > 0.5) ? region_highlight : world_highlight;
+	float nation_fill = (region_w > 0.5) ? region_nation_fill : world_nation_fill;
+	float nation_edge = (region_w > 0.5) ? region_nation_edge : world_nation_edge;
 	// Pixel sem província/dono válido não é terra: vira mar (era o preto das
 	// ilhas removidas do Egeu quando o raster ainda trazia o id antigo).
 	float no_owner = dynamic_territory
@@ -279,6 +332,9 @@ void fragment() {
 	if (dynamic_territory && highlight > 0.5) {
 		land = mix(land, land * 1.12 + vec3(0.035, 0.030, 0.018), 0.55);
 	}
+	// Destaque de NAÇÃO (hover do nome/bandeira): clareamento leve e uniforme
+	// do território inteiro; o contorno de latão entra na composição final.
+	land *= 1.0 + highlight_fill * nation_fill;
 
 	// --- Mar -----------------------------------------------------------------
 	float depth = max(-coast, 0.0);
@@ -299,9 +355,69 @@ void fragment() {
 	float coast_line = ink_line(abs(coast), px_coast, coast_width_px) * has_territory;
 	color = mix(color, coast_ink, coast_line * 0.85);
 
+	// --- Água interior (rios e lagos, canal A do SDF) ------------------------
+	// O campo é normalizado em texels da camada em uso: `wtpx` = texels por
+	// pixel de tela (a medida de espessura que o resto do shader usa).
+	float texel = mix(world_texel, region_texel, region_w);
+	float water_tx = mix(atlas_water_signed(w_sdf.a, world_texel) / world_texel,
+			atlas_water_signed(r_sdf.a, region_texel) / region_texel, region_w);
+	float wtpx = max(px / texel, 1e-4);
+	// Lâmina rasa = rio; o interior do lago começa em `lake_bias` texels.
+	float shallow = 1.0 - smoothstep(lake_bias * 0.35, lake_bias * 0.7, water_tx);
+	float lake_fill = smoothstep(-0.6 * wtpx, 0.6 * wtpx, water_tx - lake_bias)
+		* (1.0 - smoothstep(lake_fade_near, lake_fade_far, px));
+	// Rio: lâmina rasterizada (1-2 texels) preenchida com a cor da água; longe
+	// o traço fica sub-pixel e some, mas os rios largos (scalerank 0-1) ficam
+	// ~2x mais tempo no zoom afastado.
+	float big_river = smoothstep(0.7, 1.3, water_tx);
+	float river_vis = mix(
+		1.0 - smoothstep(river_fade_near, river_fade_far, px),
+		1.0 - smoothstep(river_fade_far, river_fade_far * river_big_scale, px),
+		big_river);
+	float river_band = smoothstep(-0.5 * river_min_width_px * wtpx,
+			0.5 * river_min_width_px * wtpx, water_tx) * shallow;
+	float river_amount = river_band * river_vis * land_mask;
+	vec3 lake_color = mix(sea_shallow, sea_deep, 0.35);
+	color = mix(color, lake_color, lake_fill);
+	// Rio: cor da água plena no núcleo (a banda já dá o anti-aliasing da
+	// margem), escurecendo o traço o suficiente para ler sobre o papel claro.
+	color = mix(color, river_color, river_amount);
+	// Margem: mesma tinta da costa, como o mar, mas fina e translúcida no rio —
+	// grosso demais ela cobriria a lâmina de 1 px e o traço leria cinza em vez
+	// de água. Só aparece quando a lâmina é maior que um pixel (`edge_gate`).
+	float edge_gate = 1.0 - smoothstep(0.8, 1.6, wtpx);
+	float water_edge = ink_line(abs(water_tx), wtpx, coast_width_px * 0.55)
+		* max(lake_fill, river_amount) * land_mask * edge_gate;
+	color = mix(color, coast_ink, water_edge * 0.6);
+	// Fronteira entre nações NÃO atravessa lago (o raster de província é de
+	// terra; sem isto a linha cortaria Vitória, Baikal, os Grandes Lagos).
 	float country_px = max(country_width_px, country_width_world / eff_border_px);
-	float country_line = ink_line(eff_border, eff_border_px, country_px) * land_mask * eff_border_real;
-	color = mix(color, ink, country_line * 0.92);
+	float country_line = ink_line(eff_border, eff_border_px, country_px)
+		* land_mask * eff_border_real * (1.0 - lake_fill);
+
+	// --- Fronteiras disputadas: tracejado de tela ----------------------------
+	// O canal B do raster de província marca a divisa entre os pares de
+	// DISPUTED_BORDERS (tools/world_nation_curation.py). Ali a linha cheia dá
+	// lugar a 6 px de traço / 4 px de vão, mesma tinta e mesma espessura.
+	float disputed = abs(mix(
+			atlas_disputed_signed(texture(world_province, UV).b, world_texel),
+			atlas_disputed_signed(texture(region_province, ruv).b, region_texel),
+			region_w));
+	float disputed_gate = 1.0 - smoothstep(0.6 * texel, 1.8 * texel, disputed);
+	float dash = step(mod(FRAGCOORD.x + FRAGCOORD.y, dash_period_px), dash_on_px);
+	float solid = mix(1.0, dash, disputed_gate);
+	color = mix(color, ink, country_line * solid * 0.92);
+
+	// Contorno de latão do destaque de nação: divisa com os outros donos e,
+	// no lado do mar, a própria costa. Sem destaque (`highlight_nation < 0`) o
+	// latão é zero por construção — nenhum resquício dourado na fronteira.
+	float highlight_on = (highlight_nation >= 0) ? 1.0 : 0.0;
+	float brass = ink_line(eff_border, eff_border_px, highlight_border_px)
+		* nation_edge * eff_border_real * land_mask;
+	brass = max(brass, ink_line(abs(coast), px_coast, highlight_border_px)
+			* nation_fill);
+	color = mix(color, highlight_color,
+			clamp(brass, 0.0, 1.0) * 0.9 * highlight_on);
 
 	// --- Vinheta polar -------------------------------------------------------
 	float pole = min(UV.y, 1.0 - UV.y);
