@@ -51,6 +51,13 @@ SCENARIO_DIR = Path("data/definitions/scenario")
 ECONOMY_DIR = Path("data/definitions/economy")
 GOODS_FILE = ECONOMY_DIR / "goods.json"
 I18N_FILE = Path("data/definitions/i18n/i18n.csv")
+CULTURE_DIR = Path("data/definitions/culture")
+CULTURE_FILES = (
+    "cultures.csv",
+    "cultures.json",
+    "nation_cultures.csv",
+    "city_cultures.csv",
+)
 
 X_RANGE = (0.0, 5000.0)
 Y_RANGE = (0.0, 2500.0)
@@ -1093,6 +1100,19 @@ def print_report(report: Report, root: Path) -> tuple:
 # --------------------------------------------------------------------------
 
 
+def check_culture_data(report: Report, root: Path) -> None:
+    """Dados de cultura são opcionais: ausência é aviso, nunca erro."""
+    sec = report.section(rel_path(root / CULTURE_DIR, root))
+    present = [name for name in CULTURE_FILES if (root / CULTURE_DIR / name).is_file()]
+    sec.records = len(present)
+    missing = [name for name in CULTURE_FILES if name not in present]
+    if missing:
+        sec.warnings.append(
+            "dados de cultura opcionais ausentes (não usados pelo jogo ainda): "
+            + ", ".join(missing)
+        )
+
+
 def build_report(root: Path) -> Report:
     report = Report()
     scenario_dir = root / SCENARIO_DIR
@@ -1204,6 +1224,7 @@ def build_report(root: Path) -> Report:
 
     check_land_points(report, root, cities, "cidade")
     check_land_points(report, root, ports, "porto")
+    check_culture_data(report, root)
     report.entities = [("cidade", cities), ("porto", ports)]
     return report
 
