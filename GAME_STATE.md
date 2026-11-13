@@ -101,7 +101,7 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
   - `ne2.png` 5000×2500 (terreno Blue Marble, mapa legado).
   - `height.png`/`normal.png` 5000×2500 — **placeholders planos** (sem relevo real).
   - `paper_flat.png` 512×256 — textura neutra de papel (terreno do modo político); a base branca dos demais modos é desenhada por shader.
-  - `atlas/world_color.png`, `atlas/world_sdf.png`, `atlas/region_color.png`, `atlas/region_sdf.png`, `atlas/minimap.png`, `atlas/nations.json` — camadas do mapa atlas geradas por `tools/build_atlas_layers.py` (Natural Earth 10m).
+  - `atlas/world_color.png`, `atlas/world_sdf.png`, `atlas/region_color.png`, `atlas/region_sdf.png`, `atlas/minimap.png`, `atlas/nations.json` — camadas do mapa atlas geradas por `tools/build_atlas_layers.py` (Natural Earth 10m). Os `*_sdf.png` são **RGBA8** (A = água interior: rios/lagos) e os `*_province.png` usam o canal B para as **fronteiras disputadas** — ver "Mapa político — rios, fronteiras disputadas e destaque de nação (2026-11)".
   - `nav_mask.png` 2500×1250 (terra/água/costa, pathfinding A* dos comboios).
 - **Curadoria global de ilhas < 2.000 km² (2026-11, t59):** a regra aprovada
   pelo usuário substitui a antiga `REMOVED_ISLAND_REGIONS` (caixa do Egeu ≤
@@ -178,6 +178,112 @@ Fontes: `DESIGN.md` (design system) e `docs/` (evidências). Este documento abso
 - **Fontes de dados:** Natural Earth 10m, NASA GIBS Blue Marble, Esri World Imagery, USGS MRDS (depósitos), WorldClim 2.1 10-min (clima/altitude).
 - **Limitações:** sem relevo real (heightmap/normal planos); `generate_opengs_map.py` com parâmetros divergentes dos dados commitados (8192×, lat −60..84 vs 5000×2500 global); terreno de todas as províncias = PLAINS.
 - **Reprodução do dataset (gap conhecido):** a cadeia de geração dos dados naturais é `reconstruct_natural_inputs.py` (atlas `provinces.json` → `provinces.txt`, `data/history/provinces`, `data/history/territories`) → `build_natural_geography.py` (→ `nature.json`, `agriculture.json`, `deposits.json`) → **`add_gulf_territories.py` (BHR/QAT + depósitos do Golfo)** → `apply_deposit_supplement.py` → `mark_facilities.py` → `apply_real_climate.py` → `build_resource_map.py` (→ `resource_points.json`, lendo `marker_budget.json` + `crop_production_shares.json` + `reserve_calibration.json`). `tools/reconstruct_natural_inputs.py` reconstrói `provinces.txt` + `data/history/` a partir do atlas commitado; `fetch_usgs_deposits.py` baixa o `tools/data/mrds_deposits.jsonl` (gitignored, USGS WFS via r.jina.ai). **Divergência conhecida:** os dados naturais commitados (`nature.json` **739** territórios = 737 + BHR/QAT, `deposits.json` 5.279 depósitos após o MRDS/suplementos) vieram de um gerador **Voronoi legado** (~14.402 províncias em 8192×, lat −60..84) cujos parâmetros não estão no repo; a reconstrução atual usa as 4.529 províncias admin-1 do atlas e agrupa **um território por nação** (~250) — então uma regeneração produz uma base **diferente** (não byte-idêntica) da commitada. **A base de ~250 foi avaliada e descartada nesta rodada:** 1 território/nação derruba o detalhe de NED/VEN (recurso agregado por país em vez de por região) e desloca o **Ghawar** para fora de SAU — a base de 737 + os 2 territórios do Golfo é a que vale. Detalhes em `docs/reproducibility_report.md`. **Ordem e posse (2026-11-13):** `build_province_nature.py` roda **depois** de `compute_province_areas.py` e **não reescreve mais** o `owner` das jazidas (antes gravava o dono por maioria de área do território e desfazia a posse curada do `assign_deposit_owners.py`); a ordem canônica é `compute_province_areas.py` → `build_province_nature.py` → `assign_deposit_owners.py` → `build_resource_map.py`.
+
+### Mapa político — rios, fronteiras disputadas e destaque de nação (2026-11)
+
+Três melhorias aprovadas no mapa político/atlas, todas no `atlas_political.gdshader`
+e no build do atlas (sem mudar `nav_mask`, pathfinding ou economia):
+
+- **Água interior (rios e lagos, Natural Earth 10m):** `tools/build_atlas_layers.py`
+  lê `ne_10m_rivers_lake_centerlines` (scalerank ≤ 4 → 198 linhas) e
+  `ne_10m_lakes` (scalerank ≤ 4 → 183 lagos), rasteriza as duas máscaras na
+  grade alta, recorta pela terra do admin-0 (Cáspio/Aral já são mar e não são
+  pintados) e grava o campo de distância assinado no **canal A** de
+  `region_sdf.png`/`world_sdf.png` (agora RGBA8; os canais RGB continuam
+  idênticos — `paper_map`/`political_overlay` não mudam). O interior de lago
+  recebe `LAKE_BIAS = 4` texels, então `campo − 4` continua sendo a distância à
+  margem e o shader separa lago (≥ 4) de rio (lâmina de 1–2 texels). Shader:
+  rio = lâmina fina `#3C5A66` (~1 px, engrossa ao aproximar, some por volta de
+  px 0,035–0,09 e os rios de scalerank 0–1 duram ~2× mais); lago = cor da água
+  (`sea_shallow`→`sea_deep`) com margem em `coast_ink`, como o mar; a fronteira
+  entre nações é recortada pelo lago (não corta Vitória/Baikal/Grandes Lagos).
+  O canal A vale também fora da caixa da Europa (camada mundial, 4,9 km/texel).
+- **Fronteiras disputadas tracejadas:** `DISPUTED_BORDERS` em
+  `tools/world_nation_curation.py` é a fonte única (RUS/UKR — a frente das
+  províncias de `OCCUPIED_REGIONS`; IND/PAK/CHN na Caxemira; SAH/MAR; KOS/SRB;
+  CYN/CYP, a linha verde; PRK/KOR; ISR/PSX; SOL/SOM). O build detecta o par nas
+  províncias admin-1 **de origem** (pega Chipre do Norte, cujas províncias foram
+  fundidas em CYP) e no **dono efetivo** (pega a frente RUS×UKR depois da
+  ocupação) e grava a distância assinada daquelas linhas no **canal B** de
+  `region_province.png`/`world_province.png` (antes era 0; o shader só lê R+G
+  para o id, então nada muda para o território dinâmico). No shader, onde o
+  canal B acusa a linha, a fronteira cheia dá lugar a **6 px de traço / 4 px de
+  vão em espaço de tela** (`FRAGCOORD`, `dash_on_px`/`dash_period_px`), com a
+  mesma tinta e a mesma espessura; todos os outros pares seguem cheios.
+- **Destaque de nação (API):** `TerritoryMap.set_highlight_nation(tag)` /
+  `clear_highlight()` + `apply_nation_highlight(material)`. O shader ganhou
+  `highlight_nation` (índice do dono), `highlight_color` (`#C9A24A`),
+  `highlight_border_px` (2 px) e `highlight_fill` (8%): o território inteiro
+  clareia 8% e a divisa com os outros donos (e a costa) recebe contorno de
+  latão. `dyn_block` passou a devolver `nation_fill`/`nation_edge` por camada.
+  O hover do nome/bandeira (`city_world.set_nation_highlight`, com guarda
+  `has_method`) chama `set_highlight_nation`, que reescreve os materiais
+  registrados. **Pendência:** `city_world.gd` ainda não chama
+  `apply_nation_highlight` nos próprios materiais (`_atlas_material`/
+  `_political_material`), então hoje o destaque aparece via
+  `map_capture --highlight=TAG` e `tools/nation_highlight_test.gd`; o hover
+  in-game só ganha o efeito quando esse arquivo (em edição por outra tarefa)
+  registrar os dois materiais.
+  Evidência de captura: `tools/map_capture.gd -- --highlight=TAG`.
+  Limite conhecido: o destaque é por índice de dono, então tags cujo código de
+  atlas difere do roster (KOS→XKX) iluminam só os índices daquele código; as 8
+  nações jogáveis têm índice único.
+- **Correção do latão residual (2026-11, t23):** `set_highlight_nation`/
+  `clear_highlight` escreviam o uniforme só nos materiais passados a
+  `apply_nation_highlight`, então o valor antigo sobrevivia no material e
+  sobrava contorno dourado sem destaque ativo. `territory_map.gd` agora guarda
+  os materiais em `WeakRef` e **reescreve todos** a cada troca (limpa a lista de
+  materiais liberados); no shader, o latão é multiplicado por `highlight_on`
+  (`highlight_nation >= 0`), então sem destaque a contribuição é zero por
+  construção — nenhum resquício dourado na fronteira. Coberto por
+  `tools/nation_highlight_test.gd`.
+- **Evidência:** `docs/map_visual/melhorias/` (1920×1080: frente Ucrânia,
+  Caxemira, Egito/Nilo, Europa central com Danúbio/Reno, Grandes Lagos, África
+  oriental e destaque de nação). Recapturas de fechamento da t23:
+  `central_europe` (rios), `highlight_fra` (FRA destacada) e `highlight_control`
+  (sem destaque, 0 latão). Build log: `docs/map_visual/melhorias/build_atlas.log`.
+
+### Rotas, nomes regionais e ícones de lugar (2026-11)
+
+- **Setas de comércio (modo "Rotas"):** `map/trade_flow_layer.gd` guarda os
+  últimos 7 dias de `trade_orders_ready`, agrega por par `from_city|to_city|modal`
+  e desenha os maiores fluxos (Top-N por faixa de zoom: 24 LONGE / 40 MÉDIO /
+  60 PERTO). Volume = soma de `amount` ÷ dias guardados (t/dia); produto
+  principal = bem de maior volume do par; modal = `sea` se alguma perna é
+  `ship`. **Render por MultiMesh** (4 nós: faixa e cabeça × terrestre/marítimo):
+  comprimento, largura e direção vão no transform de cada instância, então a
+  malha só é reescrita ao mudar o **conjunto de fluxos**, a **faixa de zoom** ou
+  o **wrap** (meia largura do plano). Pan e tween não reconstroem nada. O
+  tooltip (`_update_tooltip` único no `main_game` + `_tooltip_kind` no HUD)
+  mostra origem → destino, modal, produto e volume depois de ~250 ms; a ficha
+  de cidade e a de fluxo não se apagam mais no mesmo frame.
+- **Nomes de regiões e mares:** lista curada de 41 centros em
+  `CityWorld.REGIONS` (sem fronteira inventada), texto em Cinzel itálico com
+  espaçamento largo. Só no LONGE; mares também no MÉDIO. A visibilidade respeita
+  a colisão com nomes de nação/capital e some fora de político/rotas. i18n em
+  `map.region.*` (pt-BR/en/es). Evidência: `tools/map_capture.gd`.
+- **Ícones de lugar:** `star.png` para capital, `port.png` para porto e
+  `factory.svg` para cidade industrial. A regra é
+  `INDUSTRY_ICON_THRESHOLD = 0.35` sobre `industrialization`; os MultiMesh de
+  prédio/fábrica nascem dimensionados para o roster e `refresh_modes` troca o
+  glifo quando o valor cruza o limiar, sem recriar buffer.
+- **Hover no nome/bandeira da nação:** `CityWorld.pick_nation_hover` (nome no
+  chão + bandeira da capital) chama `set_nation_highlight`, protegido por
+  `has_method` — a API `set_highlight_nation`/`apply_nation_highlight` é do
+  `TerritoryMap` (seção acima).
+- **Achado do núcleo (não corrigido aqui, sem dado inventado):** no status ao
+  vivo, `industrialization` = `secondary_capacity / total_capacity`
+  (`gdextension/src/economy_sim.cpp`, status demo). O cenário só declara
+  construções **primárias** (`input_product < 0`, ex.: `DEU-BER` com
+  `production` 2.190 t/dia), então `secondary_capacity` é 0 e o valor fica
+  **0,0 nas 834 cidades** mesmo após 30–90 dias (probe headless de 30 dias:
+  máximo `industrialization` = 0,0). Consequência: o ícone industrial nunca
+  aparece e o perfil urbano (`industry_profile.gd`) fica só com módulos
+  primários. O ícone e a regra ficam prontos, aguardando o núcleo criar
+  indústria secundária.
+- **Testes:** `tools/trade_flow_tooltip_test.gd` (atraso, conteúdo, clear
+  cruzado e ficha de cidade); `camera_pan_bench --routes=60` vs `--routes=0`
+  (near_pan 0,69 × 0,67 ms, +3%, duas repetições).
 
 ---
 

@@ -13,6 +13,10 @@ class_name TerritoryMap
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const GeographyScript := preload("res://core/economy/geography_service.gd")
 const OWNER_COLUMNS := 64
+## Cor do contorno do destaque de nação (borda de latão do atlas político).
+const HIGHLIGHT_BRASS := Color("#c9a24a")
+## Espessura do contorno do destaque de nação, em pixels de tela (shader).
+const HIGHLIGHT_BORDER_PX := 2.0
 
 ## Grade do modelo de rótulo de nação (mesma proporção 2:1 do mapa). 512×256
 ## dá células de ~9,8 px do mapa: suficiente para achar o maior pedaço contíguo
@@ -91,6 +95,16 @@ var _input_nations := PackedStringArray()
 var _input_xy := PackedFloat64Array()
 var _override_keys := PackedStringArray()
 var _override_vals := PackedStringArray()
+## Destaque de nação (hover do nome/bandeira): tag canônica e índice do dono
+## usados pelo shader. `_highlight_index` = -1 sem destaque.
+var _highlight_tag := ""
+var _highlight_index := -1
+## Materiais do mapa político que já receberam `apply_nation_highlight` (a
+## instância é a MESMA criada pelo CityWorld). Guardados como referência FRACA
+## e reescritos a cada troca de destaque: sem isto, `set_highlight_nation`
+## mudava só o estado interno e o material ficava com o latão do destaque
+## anterior para sempre (contorno dourado sem destaque ativo).
+var _highlight_materials: Array[WeakRef] = []
 
 
 ## Lê provinces.json e monta os índices de dono e a lista de províncias.
@@ -114,6 +128,9 @@ func load_data() -> void:
 	_input_xy = PackedFloat64Array()
 	_override_keys = PackedStringArray()
 	_override_vals = PackedStringArray()
+	_highlight_tag = ""
+	_highlight_index = -1
+	_highlight_materials.clear()
 
 	var file := FileAccess.open(PROVINCES_PATH, FileAccess.READ)
 	if file == null:
@@ -515,6 +532,118 @@ func owner_image() -> Image:
 ## nação no shader. -1 se a tag não é conhecida.
 func owner_index(tag: String) -> int:
 	return int(_tag_index.get(tag, -1))
+
+
+## Realça no mapa político TODO o território da nação `tag`: preenchimento 8%
+## mais claro e contorno de latão de 2 px (uniformes `highlight_nation`,
+## `highlight_color` e `highlight_border_px` de atlas_political.gdshader).
+## Devolve o índice do dono usado pelo shader (-1 = tag desconhecida/sem
+## território, e o destaque é limpo).
+##
+## O destaque é por ÍNDICE de dono (a chave da textura `province_owner`), a
+## mesma unidade que o destaque da seleção de cidade já usava: uma tag cujo
+## código de atlas difere do roster (KOS/XKX) ilumina só os índices daquele
+## código. Para as 8 nações jogáveis o índice é único.
+##
+## Os materiais registrados por `apply_nation_highlight` são reescritos aqui e
+## em `clear_highlight` — quem chama a API não precisa (nem deve) lembrar de
+## reaplicar: sem destaque o uniforme volta a -1 e o latão desaparece por
+## completo.
+func set_highlight_nation(tag: String) -> int:
+	if tag.is_empty():
+		clear_highlight()
+		return -1
+	var canonical := canonical_tag(tag)
+	var index := owner_index(canonical)
+	if index <= 0 and canonical != tag:
+		index = owner_index(tag)
+	if index <= 0:
+		# Tag do roster -> código do atlas (XKX -> KOS, SSD -> SDS).
+		index = _owner_index_canonical(canonical)
+	if index <= 0:
+		clear_highlight()
+		return -1
+	_highlight_tag = canonical
+	_highlight_index = index
+	_push_highlight()
+	return index
+
+
+## Remove o destaque de nação (o shader volta a `highlight_nation = -1`).
+func clear_highlight() -> void:
+	_highlight_tag = ""
+	_highlight_index = -1
+	_push_highlight()
+
+
+## Tag (canônica) da nação destacada; "" quando não há destaque. Exposto para
+## a interface ligar o hover do nome/bandeira (a escrita no material é
+## `apply_nation_highlight`).
+func highlight_nation_tag() -> String:
+	return _highlight_tag
+
+
+## Índice do dono destacado no shader; -1 quando não há destaque.
+func highlight_nation_index() -> int:
+	return _highlight_index
+
+
+## Escreve o destaque atual no material do mapa político e REGISTRA o material
+## para as próximas trocas (set/clear reescrevem sozinhos). Materiais cujo
+## shader não declara `highlight_nation` (overlay dos modos de calor) são
+## ignorados.
+func apply_nation_highlight(material: Material) -> void:
+	var shader_material := material as ShaderMaterial
+	if shader_material == null or shader_material.shader == null:
+		return
+	if not _has_uniform(shader_material.shader, "highlight_nation"):
+		return
+	if not _is_registered(shader_material):
+		_highlight_materials.append(weakref(shader_material))
+	_write_highlight(shader_material)
+
+
+## Reaplica o destaque em todos os materiais registrados (chamado por
+## `set_highlight_nation`/`clear_highlight`). Materiais já liberados são
+## descartados da lista.
+func _push_highlight() -> void:
+	var alive: Array[WeakRef] = []
+	for ref: WeakRef in _highlight_materials:
+		var shader_material := ref.get_ref() as ShaderMaterial
+		if shader_material == null:
+			continue
+		alive.append(ref)
+		_write_highlight(shader_material)
+	_highlight_materials = alive
+
+
+func _is_registered(shader_material: ShaderMaterial) -> bool:
+	for ref: WeakRef in _highlight_materials:
+		if ref.get_ref() == shader_material:
+			return true
+	return false
+
+
+func _write_highlight(shader_material: ShaderMaterial) -> void:
+	shader_material.set_shader_parameter("highlight_nation", _highlight_index)
+	shader_material.set_shader_parameter("highlight_color", HIGHLIGHT_BRASS)
+	shader_material.set_shader_parameter("highlight_border_px", HIGHLIGHT_BORDER_PX)
+
+
+## Primeiro índice de dono cujo tag canônico é `canonical` (a mesma nação pode
+## ter mais de um código no raster: o da província e o da tag de cidade).
+func _owner_index_canonical(canonical: String) -> int:
+	for key: Variant in _tag_index:
+		if canonical_tag(String(key)) == canonical:
+			return int(_tag_index[key])
+	return -1
+
+
+static func _has_uniform(shader: Shader, uniform_name: String) -> bool:
+	for uniform: Dictionary in shader.get_shader_uniform_list():
+		if String(uniform.get("name", "")) == uniform_name:
+			return true
+	return false
 
 
 ## Cor do dono no mapa político (a mesma escrita na textura de províncias).

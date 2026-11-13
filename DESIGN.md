@@ -93,6 +93,32 @@ vetores do Natural Earth 10m por `tools/build_atlas_layers.py`
   fronteira nacional é a linha grossa) e somem no zoom continental/longe.
 - **Costa:** linha de 1,15 px; mar com faixa rasa clara e duas linhas de nível
   paralelas à costa (somem ao afastar).
+- **Rios e lagos (Natural Earth 10m):** `rivers_lake_centerlines` (scalerank
+  ≤ 4: Nilo, Danúbio, Reno, Volga, Amazonas, Mississipi, Yangtzé, Ganges,
+  Mekong, Congo, Níger, Paraná, Eufrates/Tigre, Indo, Ob, Ienissei, Lena, Amur,
+  Huang He, São Lourenço…) e `lakes` (scalerank ≤ 4: Grandes Lagos, Vitória,
+  Tanganica, Malawi, Baikal, Ladoga, Titicaca) entram no **canal A** de
+  `region_sdf/world_sdf` como campo de distância assinado (`LAKE_BIAS` de 4
+  texels separa lago de rio). Rio = lâmina fina azul-acinzentada (`#3C5A66`,
+  ~1 px; engrossa ao aproximar e some no zoom continental, os rios de scalerank
+  0–1 duram ~2× mais). Lago = cor da água com margem em tinta de costa, como o
+  mar; a fronteira entre nações não atravessa lago. `nav_mask`/pathfinding não
+  mudam (a água é só desenho).
+- **Fronteiras disputadas:** tracejado de **espaço de tela** (6 px de traço,
+  4 px de vão, mesma tinta e espessura) nos pares de
+  `tools/world_nation_curation.py::DISPUTED_BORDERS`: frente Rússia/Ucrânia
+  (províncias de `OCCUPIED_REGIONS`), Caxemira (IND/PAK/CHN), Saara Ocidental
+  (SAH/MAR), Kosovo/Sérvia, linha verde de Chipre, DMZ das Coreias,
+  Israel/Palestina e Somalilândia/Somália. A linha sai pré-rasterizada no
+  **canal B** de `region_province/world_province`; nenhum outro par muda.
+- **Destaque de nação:** `TerritoryMap.set_highlight_nation(tag)` /
+  `clear_highlight()` clareiam 8% todo o território do dono e desenham contorno
+  de latão `#C9A24A` de 2 px na divisa com os vizinhos (e na costa).
+  `apply_nation_highlight(material)` escreve os uniformes e registra o material
+  (referência fraca); `set_highlight_nation`/`clear_highlight` reescrevem todos
+  os materiais registrados, então sem destaque o shader volta a
+  `highlight_nation = -1` e o latão é zero (`highlight_on`) — nenhum contorno
+  dourado residual. Usado pelo hover do nome/bandeira da nação.
 - **Terra:** cor da nação × tom do papel (`paper_flat.png`) × grão de papel procedural. Nações jogáveis em tons sóbrios
   (GBR `#A04844`, FRA `#506C9C`, DEU `#70757C`, NED `#C07840`, BEL `#B69C4A`);
   as demais em pergaminho com leve variação por `MAPCOLOR9`.
@@ -108,7 +134,11 @@ vetores do Natural Earth 10m por `tools/build_atlas_layers.py`
   divisa fina onde são iguais; a faixa escura junto à fronteira tem 0,3 u (cabe
   dentro de uma província). O nome da nação se reposiciona sobre o território
   possuído e some se a nação perde tudo.
-- **Regenerar:** `python tools/build_atlas_layers.py` (pyshp + scipy).
+- **Regenerar:** `python tools/build_atlas_layers.py` (pyshp + scipy). Precisa
+  dos quatro conjuntos Natural Earth 10m em `NE_DIR` (padrão
+  `G:\tools\ne_extract`): `admin_0_countries`, `admin_1_states_provinces`,
+  `rivers_lake_centerlines` e `lakes`. Depois, `godot --headless --import` para
+  o cache de texturas receber os PNGs novos.
 
 ## Camada geopolítica (modos sobre o satélite)
 
