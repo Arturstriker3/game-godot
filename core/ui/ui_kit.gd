@@ -493,11 +493,25 @@ static func icon_button(glyph: String, tooltip_text: String = "") -> Button:
 
 
 # --- Botão fechar: "Lacre de cera" ------------------------------------------
+## Papel semântico do controle no HUD (meta `UI_ROLE`). `ROLE_CLOSE` marca o
+## botão de fechar/lacre: `focus_first` nunca começa por ele.
+const UI_ROLE := "ui_role"
+const ROLE_CLOSE := "close"
+## Meta para o `focus_first` preferir um controle (busca, aba ativa, 1ª linha).
+const UI_FOCUS_PREFERRED := "ui_focus_preferred"
+
+## Estado do lacre: o anel interno acende no hover e, no foco, SÓ quando a
+## navegação vem do teclado (`keyboard_nav`).
+static var _seal_lights: Array = []
+
 ## Fechar de TODAS as telas: círculo de cera CARIMBO (#a3241a), borda 2 px
 ## #7a1a12, anel interno de 3 px #c43c30 e X em papel (#efe6cc) DESENHADO em
 ## vetor (não um glifo de fonte, que aparecia como letra "x" em algumas telas).
-## Hover: fundo #c43c30 e anel #e0605a; pressed: #8e1f17; foco: anel latão de
-## 1 px. `size` = 38 sobre a barra escura, 52 sobre papel.
+## Hover: fundo #c43c30 e anel #e0605a; pressed: #8e1f17.
+## Foco: SEM anel em volta — o anel latão do tema virava uma moldura dourada no
+## X ao abrir a tela. O realce de foco é o próprio anel interno do lacre
+## (#e0605a) e só aparece na navegação por teclado.
+## `size` = 38 sobre a barra escura, 52 sobre papel.
 static func close_seal_button(size: int = SEAL_SIZE_BAR) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(size, size)
@@ -506,12 +520,13 @@ static func close_seal_button(size: int = SEAL_SIZE_BAR) -> Button:
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.tooltip_text = I18n.t("tpl.common.close")
 	button.accessibility_name = I18n.t("tpl.common.close")
+	button.set_meta(UI_ROLE, ROLE_CLOSE)
 
 	var radius := int(round(size * 0.5))
 	button.add_theme_stylebox_override("normal", _seal_style(CARIMBO, radius))
 	button.add_theme_stylebox_override("hover", _seal_style(SEAL_HOVER, radius))
 	button.add_theme_stylebox_override("pressed", _seal_style(SEAL_PRESSED, radius))
-	button.add_theme_stylebox_override("focus", _seal_focus(radius))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	_bind_sfx(button, UiSfx.Sound.CLOSE)
 
 	# Anel interno de 3 px: painel redondo vazado, recuado 4 px da borda.
@@ -523,14 +538,27 @@ static func close_seal_button(size: int = SEAL_SIZE_BAR) -> Button:
 	ring.offset_right = -4.0
 	ring.offset_bottom = -4.0
 	var inner_radius := maxi(radius - 4, 2)
-	var ring_rest := _seal_ring_style(STAGE_START, inner_radius)
-	var ring_hover := _seal_ring_style(CARIMBO_BARRA, inner_radius)
-	ring.add_theme_stylebox_override("panel", ring_rest)
+	ring.add_theme_stylebox_override("panel",
+			_seal_ring_style(STAGE_START, inner_radius))
 	button.add_child(ring)
+
+	var light := {
+		"button": button,
+		"ring": ring,
+		"radius": inner_radius,
+		"hover": false,
+	}
+	_seal_lights.append(light)
+	button.tree_exiting.connect(func() -> void: _seal_lights.erase(light))
+	button.tree_entered.connect(func() -> void: ensure_nav_guard(button))
 	button.mouse_entered.connect(func() -> void:
-		ring.add_theme_stylebox_override("panel", ring_hover))
+		light["hover"] = true
+		_paint_seal_ring(light))
 	button.mouse_exited.connect(func() -> void:
-		ring.add_theme_stylebox_override("panel", ring_rest))
+		light["hover"] = false
+		_paint_seal_ring(light))
+	button.focus_entered.connect(func() -> void: _paint_seal_ring(light))
+	button.focus_exited.connect(func() -> void: _paint_seal_ring(light))
 
 	# X vetorial por cima do anel: idêntico em 38 e 52 px, em qualquer fonte.
 	var cross := SealCross.new()
@@ -586,18 +614,24 @@ static func _seal_ring_style(color: Color, radius: int) -> StyleBoxFlat:
 	return style
 
 
-## Foco do lacre: anel latão de 1 px por fora do disco (não cobre a cera).
-static func _seal_focus(radius: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0)
-	style.border_color = BRASS
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(radius + 2)
-	style.expand_margin_left = 2.0
-	style.expand_margin_right = 2.0
-	style.expand_margin_top = 2.0
-	style.expand_margin_bottom = 2.0
-	return style
+## Realce do lacre: anel interno #e0605a no hover e no foco por teclado; fora
+## disso, o anel de descanso (#c43c30). Sem moldura em volta do disco.
+static func _paint_seal_ring(light: Dictionary) -> void:
+	var button = light.get("button")
+	var ring = light.get("ring")
+	if not is_instance_valid(button) or not is_instance_valid(ring):
+		return
+	var hovered: bool = bool(light.get("hover", false))
+	var focused: bool = bool(button.has_focus()) and keyboard_nav
+	var lit: bool = hovered or focused
+	ring.add_theme_stylebox_override("panel", _seal_ring_style(
+			CARIMBO_BARRA if lit else STAGE_START, int(light.get("radius", 2))))
+
+
+## Repinta todos os lacres vivos (usado quando o modo de navegação muda).
+static func _refresh_seal_lights() -> void:
+	for light in _seal_lights.duplicate():
+		_paint_seal_ring(light)
 
 
 ## Barra de proporção (0..1) sobre trilho escuro.
@@ -964,18 +998,178 @@ static func toast(parent: Control, text: String, tone: String = "neutral",
 	tween.tween_callback(holder.queue_free)
 
 
-## Foca o primeiro controle focável e visível da árvore.
+# --- Foco: anel só na navegação por teclado ----------------------------------
+## `true` quando a última entrada foi teclado/gamepad de NAVEGAÇÃO (Tab, setas,
+## Enter, D-pad). Abrir uma tela com o mouse ou por atalho não acende anel
+## nenhum; o primeiro Tab/seta devolve o anel a todos os controles.
+static var keyboard_nav := false
+## Controles com o anel de foco temporariamente escondido (abertura de tela).
+static var _muted_focus: Array = []
+static var _nav_guard: Node = null
+
+
+## Observa a entrada global para saber se o jogador está no teclado. Vive no
+## root da árvore, com `PROCESS_MODE_ALWAYS`, e não consome evento nenhum.
+class NavGuard extends Node:
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _input(event: InputEvent) -> void:
+		UiKit.note_input(event)
+
+
+## Instala o observador uma única vez (`focus_first` e todo lacre chamam).
+static func ensure_nav_guard(node: Node) -> void:
+	if _nav_guard != null and is_instance_valid(_nav_guard):
+		return
+	if node == null or not node.is_inside_tree():
+		return
+	var guard := NavGuard.new()
+	guard.name = "UiKitNavGuard"
+	_nav_guard = guard
+	node.get_tree().root.add_child.call_deferred(guard)
+
+
+## Atualiza `keyboard_nav` a partir do evento. Tecla/controle de navegação liga
+## o modo teclado (e devolve os anéis escondidos); clique de mouse desliga.
+static func note_input(event: InputEvent) -> void:
+	if event == null:
+		return
+	if event is InputEventKey:
+		var key := event as InputEventKey
+		if key.pressed and not key.echo and _is_nav_key(key):
+			_enter_keyboard_nav()
+	elif event is InputEventJoypadButton:
+		if (event as InputEventJoypadButton).pressed:
+			_enter_keyboard_nav()
+	elif event is InputEventJoypadMotion:
+		if absf((event as InputEventJoypadMotion).axis_value) > 0.5:
+			_enter_keyboard_nav()
+	elif event is InputEventMouseButton and event.pressed:
+		if keyboard_nav:
+			keyboard_nav = false
+			_refresh_seal_lights()
+
+
+static func _enter_keyboard_nav() -> void:
+	if keyboard_nav and _muted_focus.is_empty():
+		return
+	keyboard_nav = true
+	_restore_focus_rings()
+	_refresh_seal_lights()
+
+
+static func _is_nav_key(event: InputEventKey) -> bool:
+	if event.physical_keycode == KEY_TAB or event.keycode == KEY_TAB:
+		return true
+	return event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER,
+			KEY_KP_ENTER, KEY_SPACE, KEY_PAGEUP, KEY_PAGEDOWN, KEY_HOME, KEY_END]
+
+
+## Esconde o anel de foco de um controle até a primeira tecla de navegação.
+## Usado ao abrir telas: o foco existe (teclado funciona), mas não acende nada.
+static func mute_focus_ring(control: Control) -> void:
+	if control == null or not is_instance_valid(control):
+		return
+	var id := control.get_instance_id()
+	for entry in _muted_focus:
+		if int(entry["id"]) == id:
+			return
+	# Telas fechadas com o mouse nunca recebem tecla: descarta as entradas mortas.
+	_muted_focus = _muted_focus.filter(func(entry: Dictionary) -> bool:
+		return is_instance_valid(entry["node"]))
+	_muted_focus.append({
+		"id": id,
+		"node": control,
+		"had_override": control.has_theme_stylebox_override("focus"),
+		"style": control.get_theme_stylebox("focus"),
+	})
+	control.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
+## Devolve o `focus` original aos controles silenciados e limpa a lista.
+static func _restore_focus_rings() -> void:
+	for entry in _muted_focus:
+		var control = entry["node"]
+		if not is_instance_valid(control):
+			continue
+		if bool(entry["had_override"]) and entry["style"] != null:
+			control.add_theme_stylebox_override("focus", entry["style"])
+		else:
+			control.remove_theme_stylebox_override("focus")
+	_muted_focus.clear()
+
+
+## Foca um controle sem acender anel: o realce só nasce na navegação por
+## teclado. Fecha o ciclo com `mute_focus_ring`.
+static func focus_silent(control: Control) -> void:
+	if control == null or not is_instance_valid(control):
+		return
+	control.grab_focus()
+	if keyboard_nav:
+		return
+	ensure_nav_guard(control)
+	mute_focus_ring(control)
+
+
+## Foca o primeiro controle ÚTIL da tela. Nunca escolhe o botão de fechar
+## (`ROLE_CLOSE`): abrir uma tela não pode começar pelo lacre. Prefere busca,
+## aba ativa e primeira linha da tabela; empate decidido pela ordem de leitura
+## do contêiner. Sem candidato, o foco fica livre (em vez de cair no fechar).
 static func focus_first(root: Node) -> void:
+	if root == null:
+		return
+	var preferred: Control = null
+	var fallback: Control = null
 	var stack: Array[Node] = [root]
 	while not stack.is_empty():
 		var node: Node = stack.pop_front()
 		if node is Control:
 			var control := node as Control
-			if control.is_visible_in_tree() and control.focus_mode == Control.FOCUS_ALL \
-					and control.custom_minimum_size != Vector2.ZERO:
-				control.grab_focus()
-				return
+			if _focus_candidate(control):
+				if _is_focus_preferred(control):
+					preferred = control
+					break
+				if fallback == null:
+					fallback = control
 		stack.append_array(node.get_children())
+
+	var target: Control = preferred if preferred != null else fallback
+	if target == null:
+		if root.is_inside_tree():
+			root.get_viewport().gui_release_focus()
+		return
+	focus_silent(target)
+
+
+## Controle que pode receber o foco inicial: visível, focável, não desabilitado
+## e não marcado como fechar.
+static func _focus_candidate(control: Control) -> bool:
+	if not control.is_visible_in_tree():
+		return false
+	if control.focus_mode != Control.FOCUS_ALL:
+		return false
+	if control.custom_minimum_size == Vector2.ZERO \
+			and control.get_combined_minimum_size() == Vector2.ZERO:
+		# Sem medida nenhuma: é respiro/placeholder, não um alvo de foco.
+		return false
+	if is_close(control):
+		return false
+	if control is BaseButton and (control as BaseButton).disabled:
+		return false
+	return true
+
+
+static func _is_focus_preferred(control: Control) -> bool:
+	if control.has_meta(UI_FOCUS_PREFERRED):
+		return bool(control.get_meta(UI_FOCUS_PREFERRED))
+	return control is LineEdit or control is TextEdit or control is TabBar
+
+
+## `true` se o controle é o botão de fechar/lacre de uma tela.
+static func is_close(control: Control) -> bool:
+	return control != null and control.has_meta(UI_ROLE) \
+			and String(control.get_meta(UI_ROLE)) == ROLE_CLOSE
 
 
 ## Remove e libera os filhos de um contêiner imediatamente.

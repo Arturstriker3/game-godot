@@ -382,10 +382,15 @@ substituir as cinco cidades atuais.
   barra lateral; não há mais clique no fundo escuro para fechar (o fundo é o
   mapa).
 - Todo controle interativo tem `focus_mode = FOCUS_ALL`; ao abrir uma tela o
-  HUD foca o primeiro controle útil (`UiKit.focus_first`) e, se a tela não tem
-  controle acionável (por exemplo, lista de alertas vazia), foca o fechar.
+  HUD foca o primeiro controle útil (`UiKit.focus_first`): busca, aba ativa ou
+  primeira linha da tabela. O botão de fechar (lacre) nunca é o foco inicial —
+  sem controle acionável (por exemplo, lista de alertas vazia), o foco fica
+  livre em vez de cair no `×`.
 - Abas, filtros, cabeçalhos ordenáveis e linhas de tabela também recebem foco;
-  o anel de foco é latão de 1 px, sem glow.
+  o anel de foco é latão de 1 px, sem glow — e só aparece na navegação por
+  teclado (Tab/setas). Abrir por clique ou atalho foca sem acender anel; o
+  lacre não tem anel em volta em nenhum caso: o realce de foco dele é o próprio
+  anel interno, que acende #e0605a.
 
 ## Componentes
 

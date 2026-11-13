@@ -501,6 +501,10 @@ class DataTableView extends PanelContainer:
 		var panel := PaperRow.new()
 		panel.index = row_index
 		panel.focus_mode = Control.FOCUS_ALL
+		# A primeira linha é o alvo preferido do foco ao abrir a tela: melhor que
+		# um botão isolado no cromo e infinitamente melhor que o fechar.
+		if row_index == 0:
+			panel.set_meta(UiKit.UI_FOCUS_PREFERRED, true)
 		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		UiTemplateBuilder._apply_row_style(panel, selected)
 		panel.pressed.connect(_on_row_pressed)
@@ -1653,6 +1657,9 @@ static func _folder_tabs(block: Dictionary, ctx: Dictionary) -> Control:
 		var button := _folder_tab_button(_text(tab, "label", ctx),
 				index == active)
 		button.pressed.connect(root.select.bind(index))
+		if index == active:
+			# A aba ativa é o foco natural ao abrir a ficha.
+			button.set_meta(UiKit.UI_FOCUS_PREFERRED, true)
 		bar.add_child(button)
 		root.buttons.append(button)
 
