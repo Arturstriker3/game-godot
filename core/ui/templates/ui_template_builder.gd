@@ -102,6 +102,10 @@ class DottedLeader extends Control:
 
 
 ## Barras verticais (abastecimento por dia, distribuições curtas).
+##
+## O gráfico pinta o próprio papel antes das barras: um `Control` sem StyleBox
+## não herda fundo e, sem essa placa, uma série de uma amostra virava um bloco
+## escuro de ponta a ponta. Abaixo de `min_samples` só o papel e a base ficam.
 class BarChart extends Control:
 	var values: Array[float] = []
 	var tones: Array[Color] = []
@@ -109,9 +113,26 @@ class BarChart extends Control:
 	var gap := 6.0
 	## Escala fixa (ex.: 7 dias de cobertura). 0 = normaliza pelo pico.
 	var scale_max := 0.0
+	## Papel claro da placa: nunca o fundo escuro do tema.
+	var paper := UiKit.PAPEL_CLARO
+	var frame := Color(UiKit.TINTA, 0.35)
+	## Amostras mínimas para desenhar barras (1 ponto não é série).
+	var min_samples := 2
+
+	func _paint_paper() -> void:
+		if size.x <= 0.0 or size.y <= 0.0:
+			return
+		draw_rect(Rect2(Vector2.ZERO, size), paper)
+		draw_rect(Rect2(Vector2(0.5, 0.5), size - Vector2(1.0, 1.0)),
+				frame, false, 1.0)
 
 	func _draw() -> void:
-		if values.is_empty():
+		_paint_paper()
+		if size.x <= 0.0 or size.y <= 0.0:
+			return
+		draw_line(Vector2(2.0, size.y - 0.5), Vector2(size.x - 2.0, size.y - 0.5),
+				baseline, 1.0)
+		if values.size() < min_samples:
 			return
 		var peak := 0.0001
 		if scale_max > 0.0:
@@ -122,38 +143,71 @@ class BarChart extends Control:
 		var count := values.size()
 		var bar_width := maxf((size.x - gap * (count - 1)) / count, 1.0)
 		for index in count:
-			var height := (size.y - 2.0) * clampf(values[index] / peak, 0.0, 1.0)
-			var rect := Rect2(Vector2(index * (bar_width + gap),
-					size.y - 1.0 - height), Vector2(bar_width, height))
+			var height := (size.y - 3.0) * clampf(values[index] / peak, 0.0, 1.0)
+			var rect := Rect2(Vector2(1.0 + index * (bar_width + gap),
+					size.y - 1.5 - height), Vector2(bar_width, height))
 			var color := UiKit.TINTA
 			if index < tones.size():
 				color = tones[index]
+			if color.a <= 0.0:
+				color = UiKit.TINTA
 			draw_rect(rect, color)
-		draw_line(Vector2(0.0, size.y - 0.5), Vector2(size.x, size.y - 0.5),
-				baseline, 1.0)
 
 
-## Linha de tendência com duas guias tracejadas e eixo de base.
+## Linha de tendência sobre papel claro: duas réguas tracejadas finas, base de
+## tinta e marcador no último valor.
 class LineChart extends Control:
 	var values: Array[float] = []
-	var line_color := UiKit.CARIMBO
-	var guide := UiKit.TINTA_SUAVE
-	var thickness := 3.0
+	var line_color := UiKit.TINTA
+	var guide := Color(UiKit.TINTA_SUAVE, 0.45)
+	var thickness := 1.6
+	## `true` desenha a faixa mín..máx da própria série (população absoluta);
+	## `false` trata os valores como índice 0..1 (renda, posições).
+	var autoscale := false
+	var paper := UiKit.PAPEL_CLARO
+	var frame := Color(UiKit.TINTA, 0.35)
+	var min_samples := 2
+
+	func _paint_paper() -> void:
+		if size.x <= 0.0 or size.y <= 0.0:
+			return
+		draw_rect(Rect2(Vector2.ZERO, size), paper)
+		draw_rect(Rect2(Vector2(0.5, 0.5), size - Vector2(1.0, 1.0)),
+				frame, false, 1.0)
 
 	func _draw() -> void:
-		for step: float in [1.0 / 3.0, 2.0 / 3.0]:
-			var y: float = size.y * step
-			draw_dashed_line(Vector2(0.0, y), Vector2(size.x, y), guide, 1.0, 3.0)
-		draw_line(Vector2(0.0, size.y - 0.5), Vector2(size.x, size.y - 0.5),
-				UiKit.TINTA, 1.0)
-		if values.size() < 2:
+		_paint_paper()
+		if size.x <= 0.0 or size.y <= 0.0:
 			return
+		var inner := size.y - 4.0
+		for step: float in [1.0 / 3.0, 2.0 / 3.0]:
+			var y: float = 2.0 + inner * step
+			draw_dashed_line(Vector2(2.0, y), Vector2(size.x - 2.0, y), guide,
+					1.0, 3.0)
+		draw_line(Vector2(2.0, size.y - 1.5), Vector2(size.x - 2.0, size.y - 1.5),
+				UiKit.TINTA, 1.0)
+		if values.size() < min_samples:
+			return
+		var low := 0.0
+		var high := 1.0
+		if autoscale:
+			low = values[0]
+			high = values[0]
+			for value in values:
+				low = minf(low, value)
+				high = maxf(high, value)
+			if high - low < 1e-9:
+				high = low + 1.0
+		var span := maxf(high - low, 1e-9)
 		var points := PackedVector2Array()
 		for index in values.size():
-			var x := size.x * float(index) / float(values.size() - 1)
-			var y := size.y - 1.0 - clampf(values[index], 0.0, 1.0) * (size.y - 2.0)
+			var x := 2.0 + (size.x - 4.0) * float(index) \
+					/ float(values.size() - 1)
+			var ratio := clampf((values[index] - low) / span, 0.0, 1.0)
+			var y := size.y - 1.5 - ratio * inner
 			points.append(Vector2(x, y))
 		draw_polyline(points, line_color, thickness, true)
+		draw_circle(points[points.size() - 1], 2.0, line_color)
 
 
 ## Papel com borda opcionalmente tracejada (moldura do telegrama, notas).
@@ -1422,6 +1476,10 @@ static func _paper_action(block: Dictionary, ctx: Dictionary) -> Button:
 			UiKit.TINTA, 22.0, 1, ["all"]))
 	button.add_theme_stylebox_override("pressed",
 			_paper_style(UiKit.ABA_INATIVA, UiKit.TINTA, 22.0, 1, ["all"]))
+	# Sem este override o estado desabilitado cai no StyleBox escuro do tema
+	# padrão e o botão vira um bloco preto sobre o papel.
+	button.add_theme_stylebox_override("disabled",
+			_paper_style(UiKit.PAPEL, Color(UiKit.TINTA, 0.45), 22.0, 1, ["all"]))
 	button.add_theme_color_override("font_color", normal_text)
 	button.add_theme_color_override("font_hover_color",
 			UiKit.PAPEL_CLARO if primary else UiKit.TINTA)
@@ -1644,7 +1702,7 @@ static func _bar_chart(block: Dictionary) -> Control:
 	var chart := BarChart.new()
 	chart.custom_minimum_size.y = float(block.get("height", 140.0))
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chart.size_flags_vertical = Control.SIZE_SHRINK_END
+	chart.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	chart.gap = float(block.get("bar_gap", 6.0))
 	chart.scale_max = float(block.get("scale_max", 0.0))
 	for value in block.get("values", []):
@@ -1658,8 +1716,9 @@ static func _line_chart(block: Dictionary) -> Control:
 	var chart := LineChart.new()
 	chart.custom_minimum_size.y = float(block.get("height", 160.0))
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	chart.line_color = _tone(String(block.get("tone", "carimbo")))
+	chart.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	chart.line_color = _tone(String(block.get("tone", "tinta")))
+	chart.autoscale = bool(block.get("autoscale", false))
 	for value in block.get("values", []):
 		chart.values.append(float(value))
 	return chart

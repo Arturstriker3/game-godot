@@ -303,10 +303,12 @@ func _refresh_population() -> void:
 	for value in _history.series("population"):
 		population_series.append(value)
 	_set_chart_values("pop.chart.population", population_series)
+	_update_history_empty("pop.chart.population")
 	var income_series: Array[float] = []
 	for value in _history.series("income"):
 		income_series.append(clampf(value, 0.0, 1.0))
 	_set_chart_values("pop.chart.income", income_series)
+	_update_history_empty("pop.chart.income")
 
 
 func _refresh_production() -> void:

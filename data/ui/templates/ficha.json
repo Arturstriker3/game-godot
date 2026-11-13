@@ -211,7 +211,12 @@
                   ]
                 },
                 {
+                  "type": "row",
+                  "gap": 12,
+                  "blocks": [
+                {
                   "type": "column",
+                  "w": 1.0,
                   "gap": 6,
                   "blocks": [
                     {"type": "ruled_heading", "text": "@city.history.title", "size": 18},
@@ -258,7 +263,7 @@
                       "hidden": true,
                       "fill": "claro",
                       "border": "dashed",
-                      "pad": 14,
+                      "pad": 12,
                       "gap": 6,
                       "blocks": [
                         {
@@ -275,7 +280,7 @@
                           "size": 13,
                           "tone": "suave",
                           "wrap": true,
-                          "wrap_width": 520,
+                          "wrap_width": 300,
                           "slot": "ov.chart.empty.body"
                         }
                       ]
@@ -284,6 +289,7 @@
                 },
                 {
                   "type": "paper_card",
+                  "w": 1.0,
                   "title": "@city.balance.title",
                   "title_size": 18,
                   "pad": 14,
@@ -331,9 +337,16 @@
                       "value_slot": "ov.bal.coverage_text"
                     }
                   ]
+                }
+                  ]
                 },
                 {
+                  "type": "row",
+                  "gap": 12,
+                  "blocks": [
+                {
                   "type": "paper_card",
+                  "w": 1.0,
                   "title": "@city.jobs.title",
                   "title_size": 18,
                   "pad": 14,
@@ -382,6 +395,7 @@
                 },
                 {
                   "type": "paper_card",
+                  "w": 1.0,
                   "title": "@city.flow.title",
                   "title_size": 18,
                   "pad": 14,
@@ -419,6 +433,8 @@
                     }
                   ]
                 }
+                  ]
+                }
               ]
             }
           ]
@@ -430,135 +446,224 @@
               "type": "scroll",
               "blocks": [
                 {
-                  "type": "paper_card",
-                  "title": "@city.jobs.title",
-                  "title_size": 18,
-                  "pad": 14,
-                  "gap": 6,
+                  "type": "row",
+                  "gap": 12,
                   "blocks": [
                     {
-                      "type": "kv_row",
-                      "key": "@city.glance.population",
-                      "value": "$jobs.population",
-                      "value_slot": "pop.jobs.population"
+                      "type": "paper_card",
+                      "w": 1.0,
+                      "title": "@city.jobs.title",
+                      "title_size": 18,
+                      "pad": 14,
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "kv_row",
+                          "key": "@city.glance.population",
+                          "value": "$jobs.population",
+                          "value_slot": "pop.jobs.population"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.jobs",
+                          "value": "$jobs.count",
+                          "value_slot": "pop.jobs.count"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.jobs_per_k",
+                          "value": "$jobs.per_k",
+                          "value_slot": "pop.jobs.per_k"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.income_index",
+                          "value": 0,
+                          "text": "$jobs.income",
+                          "label_width": 120,
+                          "value_width": 50,
+                          "tone": "positive",
+                          "meter_slot": "pop.jobs.income",
+                          "value_slot": "pop.jobs.income_text"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.industrialization",
+                          "value": 0,
+                          "text": "$jobs.industry",
+                          "label_width": 120,
+                          "value_width": 50,
+                          "meter_slot": "pop.jobs.industry",
+                          "value_slot": "pop.jobs.industry_text"
+                        }
+                      ]
                     },
                     {
-                      "type": "kv_row",
-                      "key": "@city.jobs",
-                      "value": "$jobs.count",
-                      "value_slot": "pop.jobs.count"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.jobs_per_k",
-                      "value": "$jobs.per_k",
-                      "value_slot": "pop.jobs.per_k"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.income_index",
-                      "value": 0,
-                      "text": "$jobs.income",
-                      "label_width": 150,
-                      "value_width": 50,
-                      "tone": "positive",
-                      "meter_slot": "pop.jobs.income",
-                      "value_slot": "pop.jobs.income_text"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.industrialization",
-                      "value": 0,
-                      "text": "$jobs.industry",
-                      "label_width": 150,
-                      "value_width": 50,
-                      "meter_slot": "pop.jobs.industry",
-                      "value_slot": "pop.jobs.industry_text"
+                      "type": "paper_card",
+                      "w": 1.0,
+                      "title": "@city.consumed",
+                      "title_size": 18,
+                      "pad": 14,
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "kv_row",
+                          "key": "@city.consumed",
+                          "value": "$population.consumed",
+                          "value_slot": "pop.consumed"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.per_person_kg",
+                          "value": "$population.consumed_kg",
+                          "value_slot": "pop.consumed_kg"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.need_per_person_kg",
+                          "value": "$population.need_kg",
+                          "value_slot": "pop.need_kg"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.attendance",
+                          "value": 0,
+                          "text": "$population.attendance",
+                          "label_width": 130,
+                          "value_width": 54,
+                          "tone": "positive",
+                          "meter_slot": "pop.attendance",
+                          "value_slot": "pop.attendance_text"
+                        },
+                        {
+                          "type": "label",
+                          "text": "@city.income_index.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave"
+                        }
+                      ]
                     }
                   ]
                 },
                 {
-                  "type": "paper_card",
-                  "title": "@city.consumed",
-                  "title_size": 18,
-                  "pad": 14,
-                  "gap": 6,
+                  "type": "row",
+                  "gap": 12,
                   "blocks": [
                     {
-                      "type": "kv_row",
-                      "key": "@city.consumed",
-                      "value": "$population.consumed",
-                      "value_slot": "pop.consumed"
+                      "type": "column",
+                      "w": 1.0,
+                      "gap": 6,
+                      "blocks": [
+                        {"type": "ruled_heading", "text": "@city.glance.population", "size": 18},
+                        {
+                          "type": "column",
+                          "slot": "pop.chart.population.series",
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "line_chart",
+                              "height": 96,
+                              "slot": "pop.chart.population",
+                              "tone": "tinta",
+                              "autoscale": true,
+                              "values": [0.62, 0.66, 0.7, 0.74, 0.78, 0.82, 0.86]
+                            },
+                            {
+                              "type": "label",
+                              "text": "@city.history.note",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "pop.chart.population.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 12,
+                          "gap": 4,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@city.history.empty.title",
+                              "font": "display",
+                              "size": 16,
+                              "slot": "pop.chart.population.empty.title"
+                            },
+                            {
+                              "type": "label",
+                              "text": "@city.history.empty.body",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 300,
+                              "slot": "pop.chart.population.empty.body"
+                            }
+                          ]
+                        }
+                      ]
                     },
                     {
-                      "type": "kv_row",
-                      "key": "@city.per_person_kg",
-                      "value": "$population.consumed_kg",
-                      "value_slot": "pop.consumed_kg"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.need_per_person_kg",
-                      "value": "$population.need_kg",
-                      "value_slot": "pop.need_kg"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.attendance",
-                      "value": 0,
-                      "text": "$population.attendance",
-                      "label_width": 170,
-                      "value_width": 54,
-                      "tone": "positive",
-                      "meter_slot": "pop.attendance",
-                      "value_slot": "pop.attendance_text"
-                    },
-                    {
-                      "type": "label",
-                      "text": "@city.income_index.note",
-                      "font": "typed",
-                      "size": 12,
-                      "tone": "suave"
-                    }
-                  ]
-                },
-                {
-                  "type": "column",
-                  "gap": 6,
-                  "blocks": [
-                    {"type": "ruled_heading", "text": "@city.glance.population", "size": 18},
-                    {
-                      "type": "bar_chart",
-                      "height": 96,
-                      "slot": "pop.chart.population",
-                      "values": [0.62, 0.66, 0.7, 0.74, 0.78, 0.82, 0.86]
-                    },
-                    {
-                      "type": "label",
-                      "text": "@city.history.note",
-                      "font": "typed",
-                      "size": 12,
-                      "tone": "suave"
-                    }
-                  ]
-                },
-                {
-                  "type": "column",
-                  "gap": 6,
-                  "blocks": [
-                    {"type": "ruled_heading", "text": "@city.income_index", "size": 18},
-                    {
-                      "type": "line_chart",
-                      "height": 88,
-                      "slot": "pop.chart.income",
-                      "values": [0.5, 0.55, 0.6, 0.58, 0.66, 0.7, 0.74]
-                    },
-                    {
-                      "type": "label",
-                      "text": "@city.income_index.note",
-                      "font": "typed",
-                      "size": 12,
-                      "tone": "suave"
+                      "type": "column",
+                      "w": 1.0,
+                      "gap": 6,
+                      "blocks": [
+                        {"type": "ruled_heading", "text": "@city.income_index", "size": 18},
+                        {
+                          "type": "column",
+                          "slot": "pop.chart.income.series",
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "line_chart",
+                              "height": 96,
+                              "slot": "pop.chart.income",
+                              "tone": "carimbo",
+                              "values": [0.5, 0.55, 0.6, 0.58, 0.66, 0.7, 0.74]
+                            },
+                            {
+                              "type": "label",
+                              "text": "@city.income_index.note",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "pop.chart.income.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 12,
+                          "gap": 4,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@city.history.empty.title",
+                              "font": "display",
+                              "size": 16,
+                              "slot": "pop.chart.income.empty.title"
+                            },
+                            {
+                              "type": "label",
+                              "text": "@city.history.empty.body",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 300,
+                              "slot": "pop.chart.income.empty.body"
+                            }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 },
@@ -579,6 +684,121 @@
               "type": "scroll",
               "blocks": [
                 {
+                  "type": "row",
+                  "gap": 12,
+                  "blocks": [
+                    {
+                      "type": "paper_card",
+                      "w": 1.0,
+                      "title": "@city.tab.production",
+                      "title_size": 18,
+                      "pad": 14,
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "kv_row",
+                          "key": "@city.production",
+                          "value": "$production.production",
+                          "value_slot": "prod.production"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.consumed",
+                          "value": "$production.consumed",
+                          "value_slot": "prod.consumed"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.stock",
+                          "value": "$production.stock",
+                          "value_slot": "prod.stock"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.coverage",
+                          "value": "$production.coverage",
+                          "value_slot": "prod.coverage"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.industrialization",
+                          "value": "$production.industry",
+                          "value_slot": "prod.industry"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "w": 1.0,
+                      "title": "@city.industry.title",
+                      "title_size": 18,
+                      "pad": 14,
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "meter_row",
+                          "label": "@city.industry.steel",
+                          "value": 0,
+                          "text": "$industry.steel",
+                          "label_width": 110,
+                          "value_width": 50,
+                          "meter_slot": "prod.ind.steel",
+                          "value_slot": "prod.ind.steel_text"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.industry.manufacturing",
+                          "value": 0,
+                          "text": "$industry.manufacturing",
+                          "label_width": 110,
+                          "value_width": 50,
+                          "meter_slot": "prod.ind.manufacturing",
+                          "value_slot": "prod.ind.manufacturing_text"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.industry.refining",
+                          "value": 0,
+                          "text": "$industry.refining",
+                          "label_width": 110,
+                          "value_width": 50,
+                          "meter_slot": "prod.ind.refining",
+                          "value_slot": "prod.ind.refining_text"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.industry.power",
+                          "value": 0,
+                          "text": "$industry.power",
+                          "label_width": 110,
+                          "value_width": 50,
+                          "meter_slot": "prod.ind.power",
+                          "value_slot": "prod.ind.power_text"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.industry.storage",
+                          "value": 0,
+                          "text": "$industry.storage",
+                          "label_width": 110,
+                          "value_width": 50,
+                          "meter_slot": "prod.ind.storage",
+                          "value_slot": "prod.ind.storage_text"
+                        },
+                        {
+                          "type": "label",
+                          "text": "@city.industry.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 320
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
                   "type": "paper_card",
                   "title": "@city.chain.title",
                   "title_size": 18,
@@ -597,113 +817,6 @@
                       "text": "@city.chain.note",
                       "font": "typed",
                       "size": 13,
-                      "tone": "suave",
-                      "wrap": true,
-                      "wrap_width": 700
-                    }
-                  ]
-                },
-                {
-                  "type": "paper_card",
-                  "title": "@city.tab.production",
-                  "title_size": 18,
-                  "pad": 14,
-                  "gap": 6,
-                  "blocks": [
-                    {
-                      "type": "kv_row",
-                      "key": "@city.production",
-                      "value": "$production.production",
-                      "value_slot": "prod.production"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.consumed",
-                      "value": "$production.consumed",
-                      "value_slot": "prod.consumed"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.stock",
-                      "value": "$production.stock",
-                      "value_slot": "prod.stock"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.coverage",
-                      "value": "$production.coverage",
-                      "value_slot": "prod.coverage"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.industrialization",
-                      "value": "$production.industry",
-                      "value_slot": "prod.industry"
-                    }
-                  ]
-                },
-                {
-                  "type": "paper_card",
-                  "title": "@city.industry.title",
-                  "title_size": 18,
-                  "pad": 14,
-                  "gap": 6,
-                  "blocks": [
-                    {
-                      "type": "meter_row",
-                      "label": "@city.industry.steel",
-                      "value": 0,
-                      "text": "$industry.steel",
-                      "label_width": 140,
-                      "value_width": 50,
-                      "meter_slot": "prod.ind.steel",
-                      "value_slot": "prod.ind.steel_text"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.industry.manufacturing",
-                      "value": 0,
-                      "text": "$industry.manufacturing",
-                      "label_width": 140,
-                      "value_width": 50,
-                      "meter_slot": "prod.ind.manufacturing",
-                      "value_slot": "prod.ind.manufacturing_text"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.industry.refining",
-                      "value": 0,
-                      "text": "$industry.refining",
-                      "label_width": 140,
-                      "value_width": 50,
-                      "meter_slot": "prod.ind.refining",
-                      "value_slot": "prod.ind.refining_text"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.industry.power",
-                      "value": 0,
-                      "text": "$industry.power",
-                      "label_width": 140,
-                      "value_width": 50,
-                      "meter_slot": "prod.ind.power",
-                      "value_slot": "prod.ind.power_text"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.industry.storage",
-                      "value": 0,
-                      "text": "$industry.storage",
-                      "label_width": 140,
-                      "value_width": 50,
-                      "meter_slot": "prod.ind.storage",
-                      "value_slot": "prod.ind.storage_text"
-                    },
-                    {
-                      "type": "label",
-                      "text": "@city.industry.note",
-                      "font": "typed",
-                      "size": 12,
                       "tone": "suave",
                       "wrap": true,
                       "wrap_width": 700
@@ -904,47 +1017,87 @@
               "type": "scroll",
               "blocks": [
                 {
-                  "type": "column",
-                  "slot": "res.territory",
-                  "gap": 6,
+                  "type": "row",
+                  "gap": 12,
                   "blocks": [
                     {
-                      "type": "label",
-                      "text": "$resources.territory",
-                      "font": "typed",
-                      "size": 12,
-                      "tone": "suave",
-                      "slot": "res.territory_label"
+                      "type": "column",
+                      "w": 1.0,
+                      "slot": "res.territory",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "$resources.territory",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "res.territory_label"
+                        },
+                        {"type": "ruled_heading", "text": "@city.resources.title", "size": 18},
+                        {
+                          "type": "kv_row",
+                          "key": "@city.resources.climate",
+                          "value": "$resources.climate",
+                          "value_slot": "res.climate"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.resources.relief",
+                          "value": "$resources.relief",
+                          "value_slot": "res.relief"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.resources.deposits",
+                          "value": "$resources.deposits",
+                          "value_slot": "res.deposits_count"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@city.resources.wheat",
+                          "value": 0,
+                          "text": "$resources.fertility",
+                          "label_width": 130,
+                          "value_width": 54,
+                          "tone": "positive",
+                          "meter_slot": "res.fertility",
+                          "value_slot": "res.fertility_text"
+                        }
+                      ]
                     },
-                    {"type": "ruled_heading", "text": "@city.resources.title", "size": 18},
                     {
-                      "type": "kv_row",
-                      "key": "@city.resources.climate",
-                      "value": "$resources.climate",
-                      "value_slot": "res.climate"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.resources.relief",
-                      "value": "$resources.relief",
-                      "value_slot": "res.relief"
-                    },
-                    {
-                      "type": "kv_row",
-                      "key": "@city.resources.deposits",
-                      "value": "$resources.deposits",
-                      "value_slot": "res.deposits_count"
-                    },
-                    {
-                      "type": "meter_row",
-                      "label": "@city.resources.wheat",
-                      "value": 0,
-                      "text": "$resources.fertility",
-                      "label_width": 170,
-                      "value_width": 54,
-                      "tone": "positive",
-                      "meter_slot": "res.fertility",
-                      "value_slot": "res.fertility_text"
+                      "type": "paper_card",
+                      "w": 1.0,
+                      "title": "@city.resources.prospect.title",
+                      "title_size": 18,
+                      "pad": 14,
+                      "gap": 8,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@city.resources.prospect.body",
+                          "font": "typed",
+                          "size": 13,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 320
+                        },
+                        {
+                          "type": "button",
+                          "text": "@city.resources.prospect.action",
+                          "variant": "paper",
+                          "disabled": true,
+                          "tooltip": "@city.resources.prospect.disabled"
+                        },
+                        {
+                          "type": "label",
+                          "text": "@city.resources.prospect.disabled",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave"
+                        }
+                      ]
                     }
                   ]
                 },
@@ -1001,38 +1154,6 @@
                       "tone": "suave",
                       "slot": "res.deposits_more",
                       "hidden": true
-                    }
-                  ]
-                },
-                {
-                  "type": "paper_card",
-                  "title": "@city.resources.prospect.title",
-                  "title_size": 18,
-                  "pad": 14,
-                  "gap": 8,
-                  "blocks": [
-                    {
-                      "type": "label",
-                      "text": "@city.resources.prospect.body",
-                      "font": "typed",
-                      "size": 13,
-                      "tone": "suave",
-                      "wrap": true,
-                      "wrap_width": 700
-                    },
-                    {
-                      "type": "button",
-                      "text": "@city.resources.prospect.action",
-                      "variant": "paper",
-                      "disabled": true,
-                      "tooltip": "@city.resources.prospect.disabled"
-                    },
-                    {
-                      "type": "label",
-                      "text": "@city.resources.prospect.disabled",
-                      "font": "typed",
-                      "size": 12,
-                      "tone": "suave"
                     }
                   ]
                 }

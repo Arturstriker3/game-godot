@@ -407,8 +407,9 @@ Nenhuma tela usa o antigo painel modal escuro (removido em `hud.gd` junto com
 - Saídas em `docs/ui/` (`captures/antes`, `captures/templates_live/<run>`).
   Última execução (2026-11-13, pt-BR, 1920×1080, 1600×900, 1366×768 e
   2560×1440): 108 capturas, **0 `offscreen`, 0 `text_overflow`, 0
-  `text_elided`, 0 `focus_hidden`**; o único aviso é `scroll_needed` nas abas
-  da ficha de cidade, que rolam por projeto.
+  `text_elided`, 0 `focus_hidden` e 0 `scroll_needed`** — as abas da ficha de
+  cidade agora usam duas colunas e cabem em 1920×1080; en e es conferidos em
+  1920×1080 com o mesmo resultado.
 
 
 ## Conteúdo e i18n
@@ -645,8 +646,8 @@ saber que deve pausar a simulação (hoje só o T4).
 | `button` | `text`, `variant` (`paper`/`primary`/`ghost`), `params` |
 | `data_table` | `columns` (`label`, `weight`, `align`), `rows` (string ou `{text, tone, strong}`), `selected`, `page_size` (9), `page`, `sort_col`, `descending`, `footer_left` |
 | `folder_tabs` | `tabs` (`label`, `blocks`), `active`, `gap`, `close` |
-| `bar_chart` | `values`, `tones`, `height`, `bar_gap` |
-| `line_chart` | `values`, `tone`, `height` |
+| `bar_chart` | `values`, `tones`, `height`, `bar_gap`, `scale_max` — placa de papel claro e moldura fina; com menos de 2 amostras desenha só a base (sem bloco escuro) |
+| `line_chart` | `values`, `tone`, `height`, `autoscale` (faixa mín..máx da própria série; sem ele os valores são índice 0..1) |
 | `choice_button` | `id`, `title`, `consequence`, `note_width`, `height` |
 | `telegram_card` | `title`, `meta`, `fields` (`key`, `value`), `body`, `body_width`, `choice_label`, `choices`, `footer`, `footer_width`, `stamp` |
 | `ranking_row` | `rank`, `name`, `ratio`, `value`, `highlight` (★ + carimbo) |
