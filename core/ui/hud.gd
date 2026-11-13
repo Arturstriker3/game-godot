@@ -141,6 +141,8 @@ var _top_holder: PanelContainer
 var _dock_holder: VBoxContainer
 ## Camada das telas de papel (T1–T5): cada tela desenha a própria moldura.
 var _window_layer: Control
+## Camada dos alertas (T2 compacto): janela sobre o minimapa, como o menu.
+var _alerts_layer: Control
 ## Camada própria da ficha de cidade: painel lateral direito, sobre o mapa.
 var _city_layer: Control
 var _city_screen: CITY_PANEL
@@ -187,15 +189,21 @@ func _ready() -> void:
 	layer = 50
 	UiKit.set_locale(I18n.locale)
 
+	# Ordem das camadas, de trás para frente: barra/doca, telas de papel (T1–T5),
+	# legenda, minimapa, alertas, ficha lateral (T3), menu Esc (T6) e sub-fichas.
+	# As telas ficam atrás do minimapa; toda janela (ficha, alertas, menu) fica
+	# por cima dele e, enquanto está aberta, o minimapa recolhe (ver
+	# `_sync_map_overlays`).
 	_build_root()
 	_build_top_bar()
 	_build_dock()
 	_build_screen_layer()
+	_build_legend()
+	_build_minimap()
+	_build_alerts_layer()
 	_build_city_layer()
 	_build_menu()
 	_build_settings()
-	_build_minimap()
-	_build_legend()
 
 	Economy.status_updated.connect(_on_status)
 	Economy.speed_changed.connect(func(_index: int) -> void: _update_top_bar())
@@ -263,6 +271,7 @@ func toggle_menu() -> void:
 
 func is_window_open() -> bool:
 	return (_window_layer != null and _window_layer.visible) \
+			or (_alerts_layer != null and _alerts_layer.visible) \
 			or (_city_layer != null and _city_layer.visible)
 
 
@@ -304,6 +313,16 @@ func _configure_minimap() -> void:
 	for mode in MAP_MODES:
 		tooltips[mode] = I18n.t("map." + mode)
 	_minimap.set_map_modes(MAP_MODES, MODE_ICONS, tooltips, _mode)
+
+
+## Minimapa recolhido enquanto houver qualquer sobreposição aberta (tela de
+## papel, ficha T3, alertas, menu Esc ou sub-ficha): a folha e as abas de tipo
+## de mapa voltam assim que a sobreposição fecha. A ordem dos nós já garante
+## que as telas ficam atrás do minimapa e as janelas ficam por cima.
+func _sync_map_overlays() -> void:
+	if _minimap == null:
+		return
+	_minimap.visible = not is_overlay_open()
 
 
 ## Sincroniza o estado visual do minimapa e da legenda com o modo ativo.
@@ -1714,10 +1733,20 @@ func _instantiate_screens() -> void:
 	_screens["politics"].map_requested.connect(_on_politics_map)
 	_screens["statistics"].close_requested.connect(_close_screen)
 
+
+## Alertas é uma janela (T2 compacto), não uma tela de fundo: mora numa camada
+## própria acima do minimapa e abaixo da ficha/menu, como os demais diálogos.
+func _build_alerts_layer() -> void:
+	_alerts_layer = Control.new()
+	_alerts_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_alerts_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_alerts_layer.visible = false
+	_root.add_child(_alerts_layer)
+
 	var alerts_screen: Node = ALERTS_SCREEN.new()
 	alerts_screen.visible = false
 	alerts_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_window_layer.add_child(alerts_screen)
+	_alerts_layer.add_child(alerts_screen)
 	_screens["alerts"] = alerts_screen
 	alerts_screen.alert_requested.connect(_on_city_navigate)
 	alerts_screen.close_requested.connect(_close_screen)
@@ -1815,12 +1844,16 @@ func _show_top() -> void:
 
 	_window_layer.visible = kind == "screen"
 	_city_layer.visible = kind == "city"
+	# A janela de alertas vive na camada própria, acima do minimapa. A camada
+	# das telas continua marcada como aberta para manter o contrato de
+	# `is_window_open()` (usado pelo mapa e pelos testes de UI).
+	if _alerts_layer != null:
+		_alerts_layer.visible = kind == "screen" and id == "alerts"
 	# O minimapa fica no canto inferior direito e a doca no topo direito: ambos
 	# ficam exatamente sob a ficha, então recolhem enquanto ela está aberta.
-	if _minimap != null:
-		_minimap.visible = kind == "screen"
 	if _dock_holder != null:
 		_dock_holder.visible = kind == "screen"
+	_sync_map_overlays()
 	_refresh_dock_state()
 	var focus_root: Control = _city_screen if kind == "city" else _screens[id]
 	UiKit.focus_first(focus_root)
@@ -1876,12 +1909,13 @@ func _close_screen() -> void:
 	_stack.clear()
 	_window_layer.visible = false
 	_city_layer.visible = false
+	if _alerts_layer != null:
+		_alerts_layer.visible = false
 	_city_screen.visible = false
-	if _minimap != null:
-		_minimap.visible = true
 	if _dock_holder != null:
 		_dock_holder.visible = true
 	_refresh_dock_state()
+	_sync_map_overlays()
 	if was_visible:
 		window_closed.emit()
 
@@ -1991,6 +2025,7 @@ func _open_menu() -> void:
 	# Recria a ficha: dia e idioma podem ter mudado desde a última abertura.
 	_render_menu_card()
 	_menu_layer.visible = true
+	_sync_map_overlays()
 	UiKit.focus_first(_menu_layer)
 	UiSfx.play(UiSfx.Sound.OPEN)
 
@@ -1999,6 +2034,7 @@ func _close_menu() -> void:
 	if _menu_layer.visible:
 		UiSfx.play(UiSfx.Sound.CLOSE)
 	_menu_layer.visible = false
+	_sync_map_overlays()
 
 
 func _is_fullscreen() -> bool:
@@ -2149,6 +2185,7 @@ func _open_settings(view: String = "settings") -> void:
 	_render_settings_card(view)
 	_settings_layer.visible = true
 	_menu_layer.visible = false
+	_sync_map_overlays()
 	UiKit.focus_first(_settings_layer)
 	UiSfx.play(UiSfx.Sound.OPEN)
 
@@ -2158,6 +2195,7 @@ func _close_settings() -> void:
 		UiSfx.play(UiSfx.Sound.CLOSE)
 	_settings_layer.visible = false
 	_menu_layer.visible = true
+	_sync_map_overlays()
 	UiKit.focus_first(_menu_layer)
 
 
