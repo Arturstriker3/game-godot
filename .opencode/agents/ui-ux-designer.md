@@ -2,7 +2,7 @@
 description: Projeta e revisa HUD, painéis, temas, i18n visual e estados vazios do OpenGS Game.
 mode: all
 model: deepseek/deepseek-v4-pro
-steps: 100
+steps: 200
 permissions:
   - action: edit
     resource: "core/economy/**"
