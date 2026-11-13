@@ -658,7 +658,10 @@ produz uma moldura `window` vazia.
 | T5 | `data/ui/templates/quadro.json` | `window` | `chip_filter` de indicador/grupo, `ranking_row` com destaque, posição + `line_chart` | comparação entre nações e posição relativa; leitura de ranking |
 
 Cada tela tem mockup estático correspondente (`T1`…`T5` em
-`docs/ui/templates/`), usado como referência visual na revisão.
+`docs/ui/templates/`, usado como referência visual na revisão). O T2 tem duas
+specs: `registro.json` (Economia) e `comercio.json` (Comércio, com
+`folder_tabs` de Pedidos/Rotas/Mercado); a tela de Alertas monta a spec T2
+compacta em código.
 
 ### Galeria e evidência
 

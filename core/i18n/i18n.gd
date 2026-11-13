@@ -103,6 +103,10 @@ const TEMPLATE_STRINGS := {
 		"tpl.alerts.col.detail": "Situação",
 		"tpl.alerts.footer": "Clique numa linha para abrir a cidade · ↑↓ navegar",
 
+		"tpl.trade.crumb": "Comércio › Logística",
+		"tpl.trade.footer": "Clique num pedido para ver os trechos · ↑↓ navegar",
+		"tpl.trade.leg": "Trecho",
+
 		"city.history.empty.title": "Histórico ainda vazio",
 		"city.history.empty.body": "A série começa a ser desenhada no segundo dia simulado.",
 
@@ -296,6 +300,10 @@ const TEMPLATE_STRINGS := {
 		"tpl.alerts.col.detail": "Detail",
 		"tpl.alerts.footer": "Click a row to open the city · ↑↓ navigate",
 
+		"tpl.trade.crumb": "Trade › Logistics",
+		"tpl.trade.footer": "Click an order to see its legs · ↑↓ navigate",
+		"tpl.trade.leg": "Leg",
+
 		"city.history.empty.title": "No history yet",
 		"city.history.empty.body": "The series starts on the second simulated day.",
 
@@ -488,6 +496,10 @@ const TEMPLATE_STRINGS := {
 		"tpl.alerts.col.kind": "Alerta",
 		"tpl.alerts.col.detail": "Situación",
 		"tpl.alerts.footer": "Haga clic en una fila para abrir la ciudad · ↑↓ navegar",
+
+		"tpl.trade.crumb": "Comercio › Logística",
+		"tpl.trade.footer": "Haga clic en un pedido para ver sus tramos · ↑↓ navegar",
+		"tpl.trade.leg": "Tramo",
 
 		"city.history.empty.title": "Sin histórico aún",
 		"city.history.empty.body": "La serie empieza a dibujarse en el segundo día simulado.",

@@ -1808,6 +1808,7 @@ func _instantiate_screens() -> void:
 	_screens["economy"].city_requested.connect(_on_city_requested)
 	_screens["economy"].close_requested.connect(_close_screen)
 	_screens["trade"].city_requested.connect(_on_city_market)
+	_screens["trade"].close_requested.connect(_close_screen)
 	_screens["production"].city_requested.connect(_on_city_production)
 	_screens["population"].city_requested.connect(_on_city_population)
 

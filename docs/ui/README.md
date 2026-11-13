@@ -218,3 +218,37 @@ Resultado (`captures/f6/t4/`, 24 estados × 4 resoluções): **96 capturas**,
 series starts on the second simulated day.” e `11_city_market` repete o mesmo
 estado antes do bloco de preços não modelados.
 
+## Frente 9 — comércio no T2 com abas de pasta
+
+Comércio e Logística passou a usar a spec `data/ui/templates/comercio.json`
+(T2, `window` 1651×907) com três abas de pasta:
+
+- **Pedidos** — tabela do dia (dia, origem, destino, mercado, carga, trânsito,
+  frete) e, ao lado, o cartão **Trechos do pedido** do registro selecionado
+  (modo, trecho, distância, carga, viagens, trânsito, frete);
+- **Rotas** — soma por modo de transporte (caminhão, navio, avião);
+- **Mercado** — busca, chips `Todas`/`Com déficit`/`Com escassez`, contador
+  “n de total”, cartão nacional (oferta, demanda, estoque, déficit, cobertura)
+  e a tabela por cidade; clicar numa linha abre a ficha T3.
+
+A ordenação, a página e a seleção continuam sendo estado de exibição da
+`data_table`. O texto de preços não modelados continua no cartão nacional.
+
+| Conjunto | Caminho | Resoluções | Estados |
+|---|---|---|---|
+| Frente 9 | `captures/f6/t6/` | 1920×1080, 1600×900, 1366×768, 2560×1440 | 24 |
+
+Resultado: **96 capturas**, **0** problemas de `offscreen`, `text_overflow`,
+`text_elided`, `focus_hidden` ou `i18n_key`. A primeira rodada (`f6/t5`) acusou
+`offscreen` na tabela de mercado com 14 linhas por página; a página caiu para
+7 linhas (o que cabe no cartão sem rolagem) e a rodada seguinte ficou limpa.
+
+Teste headless (`tools/trade_template_test.gd`):
+
+```powershell
+& $godot --headless --path . --script res://tools/trade_template_test.gd
+```
+
+PASS com `pedidos=107`, `trechos=1`, `rotas=3` (caminhão/navio/avião),
+`mercado=807` e o clique na primeira cidade empilhando a ficha T3.
+

@@ -1,0 +1,412 @@
+{
+  "id": "comercio",
+  "title": "@trade.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [0.86, 0.84],
+    "min": [960, 560],
+    "max": [1800, 1000],
+    "pauses_game": false
+  },
+  "data": {
+    "crumb": "@tpl.trade.crumb",
+    "title": "@trade.title",
+    "orders": {
+      "count": "0",
+      "from": "@city.name.GBR-LDN",
+      "to": "Rotterdam",
+      "amount": "1.290 t",
+      "hours": "18,0 h",
+      "freight": "38"
+    }
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "$crumb",
+      "title": "$title",
+      "title_slot": "nav.title",
+      "footer": [
+        {"text": "@tpl.footer.tabs_switch"},
+        {"spacer": true},
+        {"seal": "ESC"},
+        {"text": "@tpl.footer.close"}
+      ],
+      "body": [
+        {
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
+            {
+              "label": "@trade.tab.orders",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@trade.today",
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave"
+                            },
+                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "$orders.count"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "trade.orders.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "trade.orders",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 10,
+                          "page": 1,
+                          "sort_col": 0,
+                          "descending": true,
+                          "footer_left": "@tpl.trade.footer",
+                          "columns": [
+                            {"label": "@hud.day_short", "weight": 0.6, "align": "right"},
+                            {"label": "@trade.col.from", "weight": 1.5, "align": "left"},
+                            {"label": "@trade.col.to", "weight": 1.5, "align": "left"},
+                            {"label": "@trade.col.scope", "weight": 0.9, "align": "left"},
+                            {"label": "@trade.col.amount", "weight": 1, "align": "right"},
+                            {"label": "@trade.col.hours", "weight": 0.8, "align": "right"},
+                            {"label": "@trade.col.freight", "weight": 0.9, "align": "right"}
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "trade.orders.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@trade.empty",
+                              "font": "display",
+                              "size": 22,
+                              "slot": "trade.orders.empty.title"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "trade.legs",
+                      "width": 720,
+                      "pad": 14,
+                      "gap": 8,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@trade.legs",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "$orders.from → $orders.to",
+                          "font": "display",
+                          "size": 20,
+                          "slot": "trade.legs.title"
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@trade.col.amount",
+                          "value": "$orders.amount",
+                          "value_slot": "trade.legs.amount"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@trade.col.hours",
+                          "value": "$orders.hours",
+                          "value_slot": "trade.legs.hours"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@trade.col.freight",
+                          "value": "$orders.freight",
+                          "value_slot": "trade.legs.freight"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "trade.legs.table",
+                          "page_size": 5,
+                          "page": 1,
+                          "sort_col": -1,
+                          "footer_left": "@trade.legs",
+                          "columns": [
+                            {"label": "@trade.col.mode", "weight": 0.7, "align": "left"},
+                            {"label": "@tpl.trade.leg", "weight": 2, "align": "left"},
+                            {"label": "@trade.col.distance", "weight": 0.9, "align": "right"},
+                            {"label": "@trade.col.amount", "weight": 0.9, "align": "right"},
+                            {"label": "@trade.col.trips", "weight": 0.7, "align": "right"},
+                            {"label": "@trade.col.hours", "weight": 0.8, "align": "right"},
+                            {"label": "@trade.col.freight", "weight": 0.8, "align": "right"}
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "label",
+                          "text": "@trade.select",
+                          "font": "typed",
+                          "size": 13,
+                          "tone": "suave",
+                          "slot": "trade.legs.empty",
+                          "hidden": true
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@trade.tab.routes",
+              "blocks": [
+                {
+                  "type": "data_table",
+                  "slot": "trade.routes",
+                  "page_size": 6,
+                  "page": 1,
+                  "sort_col": -1,
+                  "footer_left": "@trade.subtitle",
+                  "columns": [
+                    {"label": "@trade.col.mode", "weight": 1, "align": "left"},
+                    {"label": "@trade.col.trips", "weight": 1, "align": "right"},
+                    {"label": "@trade.col.distance", "weight": 1.4, "align": "right"},
+                    {"label": "@trade.col.amount", "weight": 1.2, "align": "right"},
+                    {"label": "@trade.col.freight", "weight": 1, "align": "right"}
+                  ],
+                  "rows": []
+                },
+                {"type": "spacer", "grow": true}
+              ]
+            },
+            {
+              "label": "@trade.tab.market",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 10,
+                  "blocks": [
+                    {
+                      "type": "search_field",
+                      "slot": "trade.search",
+                      "placeholder": "@econ.search",
+                      "width": 340
+                    },
+                    {
+                      "type": "chip_filter",
+                      "slot": "trade.filter.all",
+                      "text": "@econ.filter.all",
+                      "active": true
+                    },
+                    {
+                      "type": "chip_filter",
+                      "slot": "trade.filter.deficit",
+                      "text": "@econ.filter.deficit"
+                    },
+                    {
+                      "type": "chip_filter",
+                      "slot": "trade.filter.scarcity",
+                      "text": "@trade.market.scarcity"
+                    },
+                    {"type": "spacer", "w": 1},
+                    {
+                      "type": "label",
+                      "text": "@econ.pill.count",
+                      "params": {"shown": "0", "total": "0"},
+                      "font": "typed",
+                      "size": 13,
+                      "tone": "suave",
+                      "slot": "trade.count"
+                    }
+                  ]
+                },
+                {
+                  "type": "paper_card",
+                  "slot": "trade.national",
+                  "pad": 12,
+                  "gap": 6,
+                  "blocks": [
+                    {
+                      "type": "label",
+                      "text": "@trade.market.national",
+                      "font": "typed",
+                      "size": 12,
+                      "tone": "suave",
+                      "uppercase": true
+                    },
+                    {
+                      "type": "row",
+                      "gap": 18,
+                      "blocks": [
+                        {
+                          "type": "column",
+                          "w": 1,
+                          "blocks": [
+                            {
+                              "type": "kv_row",
+                              "key": "@trade.col.offer",
+                              "value": "—",
+                              "value_slot": "trade.national.offer"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "column",
+                          "w": 1,
+                          "blocks": [
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.need",
+                              "value": "—",
+                              "value_slot": "trade.national.need"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "column",
+                          "w": 1,
+                          "blocks": [
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.stock",
+                              "value": "—",
+                              "value_slot": "trade.national.stock"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "column",
+                          "w": 1,
+                          "blocks": [
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.deficit",
+                              "value": "—",
+                              "value_slot": "trade.national.deficit"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "column",
+                          "w": 1,
+                          "blocks": [
+                            {
+                              "type": "kv_row",
+                              "key": "@city.coverage",
+                              "value": "—",
+                              "value_slot": "trade.national.coverage"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "label",
+                      "text": "@trade.market.prices",
+                      "font": "typed",
+                      "size": 12,
+                      "tone": "suave",
+                      "wrap": true,
+                      "wrap_width": 1500
+                    }
+                  ]
+                },
+                {
+                  "type": "data_table",
+                  "slot": "trade.market",
+                  "grow": true,
+                  "selected": -1,
+                  "page_size": 7,
+                  "page": 1,
+                  "sort_col": 5,
+                  "descending": false,
+                  "footer_left": "@tpl.footer.table",
+                  "columns": [
+                    {"label": "@econ.col.city", "weight": 2, "align": "left"},
+                    {"label": "@trade.col.offer", "weight": 1.1, "align": "right"},
+                    {"label": "@econ.col.need", "weight": 1.1, "align": "right"},
+                    {"label": "@econ.col.stock", "weight": 1.1, "align": "right"},
+                    {"label": "@econ.col.deficit", "weight": 1.1, "align": "right"},
+                    {"label": "@city.coverage", "weight": 1, "align": "right"},
+                    {"label": "@trade.col.imports", "weight": 1.1, "align": "right"},
+                    {"label": "@trade.col.exports", "weight": 1.1, "align": "right"}
+                  ],
+                  "rows": []
+                },
+                {
+                  "type": "paper_card",
+                  "slot": "trade.market.empty",
+                  "hidden": true,
+                  "fill": "claro",
+                  "border": "dashed",
+                  "pad": 18,
+                  "gap": 10,
+                  "blocks": [
+                    {
+                      "type": "label",
+                      "text": "@econ.empty.filtered",
+                      "font": "display",
+                      "size": 22,
+                      "slot": "trade.market.empty.title"
+                    },
+                    {
+                      "type": "label",
+                      "text": "@econ.empty.filtered.body",
+                      "font": "body",
+                      "size": 15,
+                      "tone": "suave",
+                      "wrap": true,
+                      "wrap_width": 640,
+                      "slot": "trade.market.empty.body"
+                    },
+                    {
+                      "type": "button",
+                      "text": "@econ.filter.clear",
+                      "id": "clear",
+                      "width": 220,
+                      "align": "start",
+                      "slot": "trade.market.empty.clear"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
