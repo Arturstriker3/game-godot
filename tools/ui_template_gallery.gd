@@ -24,6 +24,7 @@ const TEMPLATES := [
 	{"id": "ficha", "label": "T3 Ficha com abas"},
 	{"id": "telegrama", "label": "T4 Telegrama"},
 	{"id": "quadro", "label": "T5 Quadro comparativo"},
+	{"id": "menu", "label": "T6 Menu de pausa"},
 ]
 
 ## Prefixos de chaves de i18n: um rótulo com prefixo + ponto é chave vazada.

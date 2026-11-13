@@ -21,7 +21,8 @@ class_name UiTemplateBuilder
 ## `grow` (expande no eixo do contêiner) e `align`.
 
 const TEMPLATE_DIR := "res://data/ui/templates"
-const TEMPLATE_IDS := ["dossie", "registro", "ficha", "telegrama", "quadro"]
+const TEMPLATE_IDS := ["dossie", "registro", "ficha", "telegrama", "quadro",
+		"menu"]
 const TOP_BAR_CLEARANCE := 68.0
 const VIEW_W := 1920.0
 const VIEW_H := 1080.0
@@ -492,6 +493,8 @@ static func build(spec: Dictionary, overrides: Dictionary = {}) -> TemplateRoot:
 			root.add_child(_side_panel(merged, ctx))
 		"telegram":
 			root.add_child(_telegram_shell(merged, ctx))
+		"dossier_menu":
+			root.add_child(_dossier_shell(merged, ctx))
 		"bare":
 			root.add_child(_body_column(merged.get("blocks", []), ctx, 12))
 		_:
@@ -517,6 +520,10 @@ static func telegrama(overrides: Dictionary = {}) -> TemplateRoot:
 
 static func quadro(overrides: Dictionary = {}) -> TemplateRoot:
 	return build(load_spec("quadro"), overrides)
+
+
+static func menu(overrides: Dictionary = {}) -> TemplateRoot:
+	return build(load_spec("menu"), overrides)
 
 
 ## O host (HUD) deve pausar a simulação ao mostrar esta spec.
@@ -630,6 +637,124 @@ static func _telegram_shell(spec: Dictionary, ctx: Dictionary) -> Control:
 	tilt.add_child(card)
 	center.add_child(tilt)
 	return layer
+
+
+static func _dossier_shell(spec: Dictionary, ctx: Dictionary) -> Control:
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(_veil())
+	layer.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton \
+				and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_emit_close(layer))
+
+	var area := Control.new()
+	area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	area.offset_top = TOP_BAR_CLEARANCE
+	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(area)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	area.add_child(center)
+
+	var shell: Dictionary = spec.get("shell", {})
+	var width := float(shell.get("width", 480.0))
+	var height := clampf(float(shell.get("height", 800.0)), 380.0,
+			VIEW_H - TOP_BAR_CLEARANCE - 56.0)
+
+	var card := VBoxContainer.new()
+	card.add_theme_constant_override("separation", 0)
+	card.custom_minimum_size = Vector2(width, height)
+	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.add_child(card)
+
+	card.add_child(_dossier_label(shell, ctx))
+	card.add_child(_dossier_body(spec, shell, ctx))
+	return layer
+
+
+## Etiqueta manila com furo: cabeçalho da ficha de pausa (T6).
+static func _dossier_label(shell: Dictionary, ctx: Dictionary) -> Control:
+	var bar := PanelContainer.new()
+	bar.custom_minimum_size.y = 62.0
+	bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	var style := _paper_style(UiKit.BRASS, UiKit.TINTA, 0.0, 1,
+			["top", "left", "right"])
+	style.content_margin_left = 22.0
+	style.content_margin_right = 22.0
+	bar.add_theme_stylebox_override("panel", style)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bar.add_child(row)
+
+	var hole := PanelContainer.new()
+	hole.custom_minimum_size = Vector2(18.0, 18.0)
+	hole.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hole.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hole_style := _paper_style(Color("#5f625e"), Color("#8a6a34"), 0.0, 3,
+			["all"], 9)
+	hole.add_theme_stylebox_override("panel", hole_style)
+	row.add_child(hole)
+
+	var label := _typed(_text(shell, "label", ctx), 13, UiKit.TINTA)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+
+	var meta := _text(shell, "label_meta", ctx)
+	if not meta.is_empty():
+		row.add_child(UiKit.spacer())
+		var meta_label := _typed(meta, 12, UiKit.TINTA_SUAVE)
+		meta_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(meta_label)
+	return bar
+
+
+## Folha de papel da ficha: corpo rolável? Não — o T6 cabe na altura da ficha.
+static func _dossier_body(spec: Dictionary, shell: Dictionary,
+		ctx: Dictionary) -> Control:
+	var body := PanelContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.mouse_filter = Control.MOUSE_FILTER_STOP
+	var style := _paper_style(UiKit.PAPEL, UiKit.TINTA, 0.0, 1,
+			["left", "right", "bottom"])
+	style.content_margin_left = 34.0
+	style.content_margin_right = 34.0
+	style.content_margin_top = 26.0
+	style.content_margin_bottom = 22.0
+	body.add_theme_stylebox_override("panel", style)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(column)
+
+	for block in spec.get("blocks", []):
+		var node := _build_block(block, ctx)
+		if node == null:
+			continue
+		_apply_flags(node, block)
+		column.add_child(node)
+
+	var footer: Array = shell.get("footer", [])
+	if not footer.is_empty():
+		column.add_child(_spacer_height(4))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		for item in footer:
+			if bool(item.get("spacer", false)):
+				row.add_child(UiKit.spacer())
+				continue
+			var hint := _typed(_text(item, "text", ctx), 12, UiKit.TINTA_SUAVE)
+			hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(hint)
+		column.add_child(row)
+	return body
 
 
 static func _veil() -> ColorRect:
@@ -810,6 +935,8 @@ static func _build_block(block: Dictionary, ctx: Dictionary) -> Control:
 			return _search(block, ctx)
 		"button":
 			return _paper_action(block, ctx)
+		"menu_button":
+			return _menu_button(block, ctx)
 		"data_table":
 			return _data_table(block, ctx)
 		"folder_tabs":
@@ -1169,6 +1296,93 @@ static func _paper_action(block: Dictionary, ctx: Dictionary) -> Button:
 	button.add_theme_color_override("font_hover_color",
 			UiKit.PAPEL_CLARO if primary else UiKit.TINTA)
 	UiKit._bind_sfx(button)
+	return button
+
+
+## Botão de ficha (T6): rótulo à esquerda, atalho em Special Elite à direita.
+static func _menu_button(block: Dictionary, ctx: Dictionary) -> Button:
+	var variant := String(block.get("variant", "paper"))
+	var primary := variant == "primary"
+	var quit := variant == "quit"
+	var button := Button.new()
+	button.custom_minimum_size.y = float(block.get("height", 50.0))
+	button.focus_mode = Control.FOCUS_ALL
+	button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
+
+	var normal_fill := UiKit.PAPEL_CLARO
+	var border := UiKit.TINTA
+	var border_width := 1
+	var text_color := UiKit.TINTA
+	var hint_color := UiKit.TINTA_SUAVE
+	if primary:
+		normal_fill = UiKit.TINTA
+		border = UiKit.TINTA
+		text_color = UiKit.PAPEL_CLARO
+		hint_color = UiKit.BARRA_FILETE
+	elif quit:
+		border = UiKit.CARIMBO
+		border_width = 2
+		text_color = UiKit.CARIMBO
+		hint_color = UiKit.CARIMBO
+
+	var hover_fill := UiKit.BARRA_FUNDO if primary else UiKit.PAPEL
+	button.add_theme_stylebox_override("normal",
+			_paper_style(normal_fill, border, 0.0, border_width, ["all"]))
+	button.add_theme_stylebox_override("hover",
+			_paper_style(hover_fill, border, 0.0, border_width, ["all"]))
+	button.add_theme_stylebox_override("pressed",
+			_paper_style(UiKit.ABA_INATIVA, UiKit.TINTA, 0.0, 1, ["all"]))
+	button.add_theme_stylebox_override("disabled",
+			_paper_style(UiKit.PAPEL, Color(UiKit.TINTA, 0.35), 0.0, 1, ["all"]))
+	button.add_theme_color_override("font_color", text_color)
+	button.add_theme_color_override("font_hover_color",
+			UiKit.PAPEL_CLARO if primary else text_color)
+	button.add_theme_color_override("font_disabled_color", UiKit.TINTA_SUAVE)
+
+	var enabled := bool(block.get("enabled", true))
+	if not enabled:
+		text_color = Color(UiKit.TINTA_SUAVE, 0.72)
+		hint_color = Color(UiKit.TINTA_SUAVE, 0.72)
+	button.disabled = not enabled
+	if not enabled:
+		button.focus_mode = Control.FOCUS_NONE
+	var tip := _text(block, "tooltip", ctx)
+	if not tip.is_empty():
+		button.tooltip_text = tip
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 2)
+	margin.add_theme_constant_override("margin_bottom", 2)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(margin)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(row)
+
+	var title := _display(_text(block, "text", ctx), 19 if primary else 18,
+			text_color)
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(title)
+
+	row.add_child(UiKit.spacer())
+
+	var hint := _text(block, "hint", ctx)
+	if not hint.is_empty():
+		var hint_label := _typed(hint, 12, hint_color)
+		hint_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(hint_label)
+
+	var id := String(block.get("id", ""))
+	button.pressed.connect(func() -> void: _emit_choice(button, id))
+	UiKit._bind_sfx(button, UiSfx.Sound.SELECT)
 	return button
 
 

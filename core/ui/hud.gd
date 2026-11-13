@@ -177,8 +177,7 @@ var _resource_rows := {}
 var _mode := "political"
 
 var _menu_layer: Control
-var _menu_credits: Label
-var _menu_fullscreen: Button
+var _menu_screen: Control
 var _minimap: Minimap
 
 var _metric_values := {}
@@ -193,7 +192,7 @@ var _last_clock_hour := -1
 var _alerts_badge: PanelContainer
 var _alerts_badge_label: Label
 var _settings_layer: Control
-var _settings_buttons := {}
+var _settings_view := ""
 
 
 func _ready() -> void:
@@ -2045,70 +2044,55 @@ func _build_menu() -> void:
 	_render_menu_card()
 
 
-## Conteúdo do menu: mantido separado para a troca de idioma recriar só ele.
+## Conteúdo do menu: ficha T6 (Papelaria) do gerador de telas. A camada
+## `_menu_layer` é reaproveitada; o conteúdo é recriado na troca de idioma.
 func _render_menu_card() -> void:
-	var backdrop := ColorRect.new()
-	backdrop.color = UiKit.OVERLAY
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	backdrop.gui_input.connect(func(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
-				and event.pressed:
-			_close_menu())
-	_menu_layer.add_child(backdrop)
+	UiKit.clear(_menu_layer)
+	_menu_screen = UiTemplateBuilder.menu({
+		"title": _app_name(),
+		"day": str(int(_summary.get("day", 0))),
+		"last_save": "—",
+		"version": _build_version(),
+	})
+	_menu_screen.close_requested.connect(_close_menu)
+	_menu_screen.choice_selected.connect(_on_menu_choice)
+	_menu_layer.add_child(_menu_screen)
 
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_menu_layer.add_child(center)
 
-	var panel := UiKit.card(UiKit.SPACE_XL)
-	panel.custom_minimum_size.x = 460.0
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	center.add_child(panel)
+## Nome do projeto (a ficha não inventa marca própria).
+func _app_name() -> String:
+	return String(ProjectSettings.get_setting("application/config/name",
+			"Open Grand Strategy"))
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	panel.add_child(box)
 
-	box.add_child(UiKit.title("WarEconomy", UiKit.FS_DISPLAY))
-	box.add_child(UiKit.caption(I18n.t("hud.subtitle"), UiKit.TEXT_MUTED))
-	box.add_child(UiKit.rule(Color(UiKit.BRASS, 0.35)))
+## Versão declarada no projeto; sem ela, o estado honesto "pré-alpha".
+func _build_version() -> String:
+	var version := String(ProjectSettings.get_setting(
+			"application/config/version", ""))
+	return version if not version.is_empty() else I18n.t("tpl.menu.version")
 
-	var resume := UiKit.primary_button(I18n.t("hud.menu.resume"))
-	resume.pressed.connect(_close_menu)
-	box.add_child(resume)
 
-	var credits := UiKit.secondary_button(I18n.t("hud.menu.credits"))
-	credits.pressed.connect(_toggle_credits)
-	box.add_child(credits)
+## Ações da ficha de pausa. Salvar/Carregar não existem: os botões nascem
+## desabilitados na spec com tooltip "em breve".
+func _on_menu_choice(id: String) -> void:
+	match id:
+		"resume":
+			_close_menu()
+		"settings":
+			_open_settings()
+		"shortcuts":
+			_open_settings("shortcuts")
+		"credits":
+			_open_settings("credits")
+		"quit":
+			get_tree().quit()
 
-	var settings := UiKit.secondary_button(I18n.t("hud.menu.settings"))
-	settings.pressed.connect(_open_settings)
-	box.add_child(settings)
-
-	_menu_fullscreen = UiKit.secondary_button("")
-	_menu_fullscreen.pressed.connect(_toggle_fullscreen)
-	box.add_child(_menu_fullscreen)
-	_refresh_fullscreen_button()
-
-	_menu_credits = UiKit.paragraph(I18n.t("hud.credits.body"), UiKit.FS_SMALL,
-			UiKit.TEXT_MUTED, 400.0)
-	_menu_credits.visible = false
-	box.add_child(_menu_credits)
-
-	var quit := UiKit.ghost_button(I18n.t("hud.menu.quit"))
-	quit.pressed.connect(func() -> void: get_tree().quit())
-	box.add_child(quit)
-
-	box.add_child(UiKit.rule())
-	box.add_child(UiKit.caption(I18n.t("hud.shortcuts"), UiKit.TEXT_MUTED))
 
 
 func _open_menu() -> void:
+	# Recria a ficha: dia e idioma podem ter mudado desde a última abertura.
+	_render_menu_card()
 	_menu_layer.visible = true
-	if _menu_credits != null:
-		_menu_credits.visible = false
 	UiKit.focus_first(_menu_layer)
 	UiSfx.play(UiSfx.Sound.OPEN)
 
@@ -2117,10 +2101,6 @@ func _close_menu() -> void:
 	if _menu_layer.visible:
 		UiSfx.play(UiSfx.Sound.CLOSE)
 	_menu_layer.visible = false
-
-
-func _toggle_credits() -> void:
-	_menu_credits.visible = not _menu_credits.visible
 
 
 func _is_fullscreen() -> bool:
@@ -2136,15 +2116,9 @@ func _toggle_fullscreen() -> void:
 		# barra de tarefas do Windows não ficar por cima.
 		DisplayServer.window_move_to_foreground()
 		get_window().grab_focus()
-	_refresh_fullscreen_button()
 	UiSfx.play(UiSfx.Sound.TOGGLE)
-
-
-func _refresh_fullscreen_button() -> void:
-	if _menu_fullscreen == null:
-		return
-	_menu_fullscreen.text = I18n.t(
-		"hud.menu.fullscreen.on" if _is_fullscreen() else "hud.menu.fullscreen.off")
+	if _settings_layer != null and _settings_layer.visible:
+		_render_settings_texts()
 
 
 # --- Configurações (painel de papel sobre o menu) ------------------------------
@@ -2158,52 +2132,104 @@ func _build_settings() -> void:
 	_render_settings_card()
 
 
-## Conteúdo do painel: ficha de papel com título e três botões de idioma.
-## Recriado ao trocar idioma para atualizar os rótulos e o destaque.
-func _render_settings_card() -> void:
+## Sub-ficha do menu (T6): configurações, atalhos e créditos no mesmo estilo
+## da ficha de pausa. `view` vazio mantém a sub-ficha atual.
+func _render_settings_card(view: String = "") -> void:
+	if not view.is_empty():
+		_settings_view = view
+	if _settings_view.is_empty():
+		return
 	UiKit.clear(_settings_layer)
-	_settings_buttons.clear()
-
-	var backdrop := ColorRect.new()
-	backdrop.color = UiKit.OVERLAY
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	backdrop.gui_input.connect(_on_settings_backdrop_input)
-	_settings_layer.add_child(backdrop)
-
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_settings_layer.add_child(center)
-
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size.x = 420.0
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.add_theme_stylebox_override("panel", UiKit.paper_stylebox())
-	center.add_child(panel)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	panel.add_child(box)
-
-	var title := UiKit.title(I18n.t("hud.menu.settings"), UiKit.FS_TITLE)
-	title.add_theme_color_override("font_color", UiKit.TINTA)
-	box.add_child(title)
-
-	box.add_child(UiKit.rule(Color(UiKit.CARIMBO, 0.45)))
-
-	for code in I18n.SUPPORTED_LOCALES:
-		var button := _make_language_button(code)
-		box.add_child(button)
-		_settings_buttons[code] = button
-
-	box.add_child(UiKit.rule(Color(UiKit.TINTA_SUAVE, 0.4)))
-	var hint := UiKit.label(I18n.t("hud.shortcuts"), UiKit.FS_CAPTION, UiKit.TINTA_SUAVE)
-	box.add_child(hint)
+	var screen := UiTemplateBuilder.build(_sheet_spec(_settings_view))
+	screen.close_requested.connect(_close_settings)
+	screen.choice_selected.connect(_on_sheet_choice)
+	_settings_layer.add_child(screen)
 
 
-## Reconstrói o painel de configurações preservando se está aberto.
+## Specs das sub-fichas: só descrevem estado; nenhuma regra de jogo aqui.
+func _sheet_spec(view: String) -> Dictionary:
+	var blocks: Array = []
+	match view:
+		"settings":
+			blocks = [
+				{"type": "label", "text": "@hud.menu.settings", "font": "display",
+						"size": 28, "align": "center"},
+				{"type": "rule", "double": true},
+			]
+			for code in I18n.SUPPORTED_LOCALES:
+				var active := code == I18n.locale
+				blocks.append({
+					"type": "menu_button",
+					"id": "lang:" + code,
+					"text": "@lang." + code,
+					"hint": "@tpl.menu.active" if active else "",
+					"variant": "primary" if active else "paper",
+				})
+			blocks.append({"type": "spacer", "grow": true})
+			blocks.append({
+				"type": "menu_button",
+				"id": "fullscreen",
+				"text": "@tpl.menu.fullscreen",
+				"hint": "@tpl.menu.fullscreen.on" if _is_fullscreen() \
+						else "@tpl.menu.fullscreen.off",
+			})
+			blocks.append({"type": "menu_button", "id": "back",
+					"text": "@tpl.menu.back", "hint": "ESC"})
+		"shortcuts":
+			blocks = [
+				{"type": "label", "text": "@tpl.menu.shortcuts", "font": "display",
+						"size": 28, "align": "center"},
+				{"type": "rule", "double": true},
+			]
+			for pair in [
+					["esc", "tpl.menu.shortcut.esc"],
+					["panels", "tpl.menu.shortcut.panels"],
+					["fullscreen", "tpl.menu.shortcut.fullscreen"],
+					["focus", "tpl.menu.shortcut.focus"]]:
+				blocks.append({
+					"type": "kv_row",
+					"key": "@" + String(pair[1]),
+					"value": "@tpl.menu.key." + String(pair[0]),
+					"size": 15,
+					"value_width": 52,
+					"tone": "suave",
+				})
+			blocks.append({"type": "spacer", "grow": true})
+			blocks.append({"type": "menu_button", "id": "back",
+					"text": "@tpl.menu.back", "hint": "ESC"})
+		"credits":
+			blocks = [
+				{"type": "label", "text": "@hud.menu.credits", "font": "display",
+						"size": 28, "align": "center"},
+				{"type": "rule", "double": true},
+				{"type": "note_card", "title": "@hud.subtitle",
+						"body": "@hud.credits.body", "width": 400,
+						"fill": "claro", "border": "solid"},
+				{"type": "spacer", "grow": true},
+				{"type": "label", "text": "$version", "font": "typed", "size": 12,
+						"tone": "suave", "align": "center"},
+				{"type": "menu_button", "id": "back", "text": "@tpl.menu.back",
+						"hint": "ESC"},
+			]
+	return {
+		"id": "menu_sheet",
+		"shell": {
+			"kind": "dossier_menu",
+			"width": 480,
+			"height": 620,
+			"pauses_game": true,
+			"label": "@tpl.menu.label",
+			"label_meta": "@tpl.menu.sheet." + view,
+		},
+		"data": {"version": _build_version()},
+		"blocks": blocks,
+	}
+
+
+## Reconstrói a sub-ficha preservando se está aberta.
 func _render_settings_texts() -> void:
+	if _settings_view.is_empty():
+		return
 	var was_visible := _settings_layer.visible
 	_render_settings_card()
 	_settings_layer.visible = was_visible
@@ -2216,55 +2242,13 @@ func _language_name(code: String) -> String:
 	return I18n.t("lang." + code)
 
 
-func _make_language_button(code: String) -> Button:
-	var button := Button.new()
-	button.text = _language_name(code)
-	button.custom_minimum_size.y = UiKit.CONTROL_HEIGHT
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
-	button.add_theme_font_size_override("font_size", UiKit.FS_SMALL)
-	button.tooltip_text = _language_name(code)
-	button.pressed.connect(_on_settings_language.bind(code))
-	_style_language_choice(button, code == I18n.locale)
-	return button
-
-
-## Estilo de ficha datilografada: idioma ativo em tinta sólida, demais em papel.
-func _style_language_choice(button: Button, active: bool) -> void:
-	if active:
-		button.add_theme_stylebox_override("normal",
-				UiKit.flat(UiKit.TINTA, UiKit.TINTA, 8.0))
-		button.add_theme_stylebox_override("hover",
-				UiKit.flat(UiKit.TINTA, UiKit.TINTA, 8.0))
-		button.add_theme_stylebox_override("pressed",
-				UiKit.flat(UiKit.TINTA, UiKit.TINTA, 8.0))
-		button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
-		button.add_theme_color_override("font_color", UiKit.PAPEL_CLARO)
-		button.add_theme_color_override("font_hover_color", UiKit.PAPEL_CLARO)
-		button.add_theme_color_override("font_pressed_color", UiKit.PAPEL_CLARO)
-		button.add_theme_color_override("font_focus_color", UiKit.PAPEL_CLARO)
-	else:
-		button.add_theme_stylebox_override("normal",
-				UiKit.flat(UiKit.PAPEL_CLARO, UiKit.TINTA_SUAVE, 8.0))
-		button.add_theme_stylebox_override("hover",
-				UiKit.flat(UiKit.PAPEL, UiKit.CARIMBO, 8.0))
-		button.add_theme_stylebox_override("pressed",
-				UiKit.flat(UiKit.ABA_INATIVA, UiKit.TINTA_SUAVE, 8.0))
-		button.add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
-		button.add_theme_color_override("font_color", UiKit.TINTA)
-		button.add_theme_color_override("font_hover_color", UiKit.TINTA)
-		button.add_theme_color_override("font_pressed_color", UiKit.TINTA_SUAVE)
-		button.add_theme_color_override("font_focus_color", UiKit.TINTA)
-
-
 func _on_settings_language(code: String) -> void:
 	I18n.save_locale(code)
 	I18n.set_locale(code)
 
 
-func _open_settings() -> void:
-	_render_settings_card()
+func _open_settings(view: String = "settings") -> void:
+	_render_settings_card(view)
 	_settings_layer.visible = true
 	_menu_layer.visible = false
 	UiKit.focus_first(_settings_layer)
@@ -2276,12 +2260,17 @@ func _close_settings() -> void:
 		UiSfx.play(UiSfx.Sound.CLOSE)
 	_settings_layer.visible = false
 	_menu_layer.visible = true
+	UiKit.focus_first(_menu_layer)
 
 
-func _on_settings_backdrop_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
-			and event.pressed:
+## Ações da sub-ficha: idioma, tela cheia e voltar.
+func _on_sheet_choice(id: String) -> void:
+	if id == "back":
 		_close_settings()
+	elif id == "fullscreen":
+		_toggle_fullscreen()
+	elif id.begins_with("lang:"):
+		_on_settings_language(id.trim_prefix("lang:"))
 
 
 # --- Eventos ------------------------------------------------------------------

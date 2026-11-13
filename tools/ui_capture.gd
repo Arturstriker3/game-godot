@@ -170,6 +170,12 @@ func _capture_resolution(size_text: String) -> void:
 			func() -> void: _show_city(_first_city_id()))
 	if _menu_available():
 		await _capture_state(directory, width, height, "08_menu", _open_menu)
+		await _capture_state(directory, width, height, "08b_menu_settings",
+				func() -> void: _open_menu_sheet("settings"))
+		await _capture_state(directory, width, height, "08c_menu_shortcuts",
+				func() -> void: _open_menu_sheet("shortcuts"))
+		await _capture_state(directory, width, height, "08d_menu_credits",
+				func() -> void: _open_menu_sheet("credits"))
 	else:
 		_report["skipped"].append("08_menu: HUD sem menu de pausa")
 
@@ -202,6 +208,10 @@ func _capture_resolution(size_text: String) -> void:
 
 ## Fecha menu e janela para o próximo estado ou resolução começar neutro.
 func _reset_ui() -> void:
+	if "_settings_layer" in _hud:
+		var settings: Control = _hud.get("_settings_layer")
+		if settings != null and settings.visible:
+			_hud.call("_close_settings")
 	if _menu_available():
 		var menu: Control = _hud.get("_menu_layer")
 		if menu.visible:
@@ -281,6 +291,16 @@ func _capture_state(directory: String, width: int, height: int, state: String,
 func _open_menu() -> void:
 	_close_window()
 	_hud.toggle_menu()
+
+
+## Abre uma sub-ficha do menu (configurações, atalhos ou créditos).
+func _open_menu_sheet(view: String) -> void:
+	_close_window()
+	var menu: Control = _hud.get("_menu_layer")
+	if not menu.visible:
+		_hud.toggle_menu()
+	if _hud.has_method("_open_settings"):
+		_hud.call("_open_settings", view)
 
 
 func _open_economy_tab(index: int) -> void:

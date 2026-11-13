@@ -1,0 +1,99 @@
+{
+  "id": "menu",
+  "title": "@tpl.menu.title",
+  "shell": {
+    "kind": "dossier_menu",
+    "width": 480,
+    "height": 800,
+    "pauses_game": true,
+    "label": "@tpl.menu.label",
+    "label_meta": "@tpl.menu.label_meta",
+    "params": {"day": "$day"},
+    "footer": [
+      {"text": "@tpl.menu.last_save", "params": {"when": "$last_save"}},
+      {"spacer": true},
+      {"text": "$version"}
+    ]
+  },
+  "data": {
+    "title": "Open Grand Strategy",
+    "day": "0",
+    "last_save": "—",
+    "version": "@tpl.menu.version"
+  },
+  "blocks": [
+    {
+      "type": "label",
+      "text": "@tpl.menu.paused",
+      "font": "typed",
+      "size": 13,
+      "tone": "suave",
+      "align": "center"
+    },
+    {
+      "type": "label",
+      "text": "$title",
+      "font": "display",
+      "size": 34,
+      "align": "center",
+      "wrap": true,
+      "wrap_width": 380
+    },
+    {
+      "type": "stamp",
+      "text": "@tpl.menu.stamp",
+      "size": 18,
+      "angle": 9,
+      "align": "end"
+    },
+    {"type": "rule", "double": true},
+    {
+      "type": "menu_button",
+      "id": "resume",
+      "text": "@hud.menu.resume",
+      "hint": "ESC",
+      "variant": "primary",
+      "height": 54
+    },
+    {
+      "type": "menu_button",
+      "id": "save",
+      "text": "@tpl.menu.save",
+      "hint": "F5",
+      "enabled": false,
+      "tooltip": "@tpl.menu.soon"
+    },
+    {
+      "type": "menu_button",
+      "id": "load",
+      "text": "@tpl.menu.load",
+      "hint": "F9",
+      "enabled": false,
+      "tooltip": "@tpl.menu.soon"
+    },
+    {
+      "type": "menu_button",
+      "id": "settings",
+      "text": "@hud.menu.settings",
+      "hint": "@tpl.menu.hint.settings"
+    },
+    {
+      "type": "menu_button",
+      "id": "shortcuts",
+      "text": "@tpl.menu.shortcuts",
+      "hint": "@tpl.menu.hint.shortcuts"
+    },
+    {
+      "type": "menu_button",
+      "id": "credits",
+      "text": "@hud.menu.credits"
+    },
+    {"type": "spacer", "grow": true},
+    {
+      "type": "menu_button",
+      "id": "quit",
+      "text": "@tpl.menu.quit",
+      "variant": "quit"
+    }
+  ]
+}
