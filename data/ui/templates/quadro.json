@@ -1,0 +1,149 @@
+{
+  "id": "quadro",
+  "title": "@tpl.quadro.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [0.86, 0.84],
+    "min": [960, 560],
+    "max": [1800, 1000],
+    "pauses_game": false
+  },
+  "data": {
+    "rank": "4",
+    "group_size": "7",
+    "world_rank": "21",
+    "world_total": "179"
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "@tpl.quadro.crumb",
+      "title": "@tpl.quadro.title",
+      "footer": [
+        {"text": "@tpl.footer.indicator"},
+        {"text": "@tpl.footer.group"},
+        {"spacer": true},
+        {"seal": "ESC"},
+        {"text": "@tpl.footer.close"}
+      ],
+      "body": [
+        {
+          "type": "column",
+          "gap": 14,
+          "grow": true,
+          "blocks": [
+            {
+              "type": "row",
+              "gap": 10,
+              "blocks": [
+                {"type": "label", "text": "@tpl.quadro.indicator", "font": "typed", "size": 13, "tone": "suave"},
+                {"type": "chip_filter", "text": "@tpl.quadro.ind.population", "active": true},
+                {"type": "chip_filter", "text": "@tpl.quadro.ind.gdp"},
+                {"type": "chip_filter", "text": "@tpl.quadro.ind.food"},
+                {"type": "chip_filter", "text": "@tpl.quadro.ind.minerals"},
+                {"type": "spacer", "width": 24},
+                {"type": "label", "text": "@tpl.quadro.group", "font": "typed", "size": 13, "tone": "suave"},
+                {"type": "chip_filter", "text": "@tpl.quadro.group.g7_select"},
+                {"type": "spacer", "w": 1}
+              ]
+            },
+            {
+              "type": "row",
+              "gap": 16,
+              "w": 1,
+              "grow": true,
+              "blocks": [
+                {
+                  "type": "paper_card",
+                  "pad": 20,
+                  "gap": 14,
+                  "w": 1.4,
+                  "grow": true,
+                  "blocks": [
+                    {"type": "ruled_heading", "text": "@tpl.quadro.ranking"},
+                    {"type": "ranking_row", "rank": "1", "name": "@nation.name.USA", "ratio": 1.0, "value": "342"},
+                    {"type": "ranking_row", "rank": "2", "name": "@nation.name.JPN", "ratio": 0.36, "value": "123"},
+                    {"type": "ranking_row", "rank": "3", "name": "@nation.name.DEU", "ratio": 0.245, "value": "84"},
+                    {"type": "ranking_row", "rank": "4", "name": "@nation.name.GBR", "ratio": 0.198, "value": "68", "highlight": true},
+                    {"type": "ranking_row", "rank": "5", "name": "@nation.name.FRA", "ratio": 0.193, "value": "66"},
+                    {"type": "ranking_row", "rank": "6", "name": "@nation.name.ITA", "ratio": 0.172, "value": "59"},
+                    {"type": "ranking_row", "rank": "7", "name": "@nation.name.CAN", "ratio": 0.117, "value": "40"},
+                    {"type": "spacer", "grow": true},
+                    {"type": "label", "text": "@tpl.quadro.source", "font": "typed", "size": 12, "tone": "suave", "wrap": true, "wrap_width": 500}
+                  ]
+                },
+                {
+                  "type": "column",
+                  "gap": 16,
+                  "w": 1,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "paper_card",
+                      "pad": 20,
+                      "gap": 10,
+                      "blocks": [
+                        {"type": "ruled_heading", "text": "@tpl.quadro.position"},
+                        {
+                          "type": "row",
+                          "gap": 12,
+                          "blocks": [
+                            {
+                              "type": "row",
+                              "gap": 2,
+                              "blocks": [
+                                {"type": "label", "text": "$rank", "font": "display", "size": 56, "tone": "carimbo"},
+                                {"type": "label", "text": "@tpl.quadro.rank_suffix", "font": "display", "size": 30, "tone": "carimbo"}
+                              ]
+                            },
+                            {
+                              "type": "label",
+                              "text": "@tpl.quadro.position.note",
+                              "params": {"group": "$group_size", "group_name": "@tpl.quadro.group.g7", "world": "$world_rank", "world_total": "$world_total"},
+                              "font": "typed",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 460
+                            }
+                          ]
+                        },
+                        {"type": "kv_row", "key": "@tpl.quadro.above", "value": "@tpl.quadro.above.value"},
+                        {"type": "kv_row", "key": "@tpl.quadro.below", "value": "@tpl.quadro.below.value"}
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "pad": 20,
+                      "gap": 10,
+                      "grow": true,
+                      "blocks": [
+                        {"type": "ruled_heading", "text": "@tpl.quadro.trend"},
+                        {
+                          "type": "line_chart",
+                          "height": 160,
+                          "grow": true,
+                          "tone": "carimbo",
+                          "values": [0.253, 0.267, 0.273, 0.293, 0.300, 0.327, 0.340, 0.353, 0.373, 0.387, 0.407, 0.427]
+                        },
+                        {
+                          "type": "row",
+                          "gap": 12,
+                          "blocks": [
+                            {"type": "label", "text": "@tpl.quadro.month.start", "font": "typed", "size": 12, "tone": "suave"},
+                            {"type": "spacer", "w": 1},
+                            {"type": "label", "text": "@tpl.quadro.month.end", "font": "typed", "size": 12, "tone": "suave"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

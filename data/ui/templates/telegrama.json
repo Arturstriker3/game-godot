@@ -1,0 +1,50 @@
+{
+  "id": "telegrama",
+  "title": "@tpl.telegram.title",
+  "shell": {
+    "kind": "telegram",
+    "size": [720, 800],
+    "angle": -0.6,
+    "pauses_game": true
+  },
+  "data": {
+    "number": "0447",
+    "status": "@tpl.telegram.urgent",
+    "received": "@tpl.telegram.received"
+  },
+  "blocks": [
+    {
+      "type": "telegram_card",
+      "grow": true,
+      "title": "@tpl.telegram.title",
+      "meta": "@tpl.telegram.meta",
+      "params": {"number": "$number", "status": "$status", "date": "$received"},
+      "fields": [
+        {"key": "@tpl.telegram.from", "value": "@tpl.telegram.from.value"},
+        {"key": "@tpl.telegram.to", "value": "@tpl.telegram.to.value"},
+        {"key": "@tpl.telegram.subject", "value": "@tpl.telegram.subject.value"}
+      ],
+      "body": "@tpl.telegram.body",
+      "choice_label": "@tpl.telegram.choice_label",
+      "choices": [
+        {
+          "id": "import",
+          "title": "@tpl.telegram.choice.import",
+          "consequence": "@tpl.telegram.choice.import.note"
+        },
+        {
+          "id": "ration",
+          "title": "@tpl.telegram.choice.ration",
+          "consequence": "@tpl.telegram.choice.ration.note"
+        },
+        {
+          "id": "wait",
+          "title": "@tpl.telegram.choice.wait",
+          "consequence": "@tpl.telegram.choice.wait.note"
+        }
+      ],
+      "footer": "@tpl.telegram.footer",
+      "stamp": "@tpl.telegram.stamp"
+    }
+  ]
+}

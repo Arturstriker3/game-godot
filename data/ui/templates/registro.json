@@ -1,0 +1,176 @@
+{
+  "id": "registro",
+  "title": "@tpl.registro.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [0.86, 0.84],
+    "min": [960, 560],
+    "max": [1800, 1000],
+    "pauses_game": false
+  },
+  "data": {
+    "results": "12",
+    "capital": "@city.name.GBR-LDN",
+    "selected_population": "15,1 M",
+    "selected_employed": "7,9 M",
+    "selected_wage": "$ 3.140",
+    "selected_province": "Greater London",
+    "selected_area": "18"
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "@tpl.registro.crumb",
+      "title": "@tpl.registro.title",
+      "footer": [
+        {"text": "@tpl.footer.search"},
+        {"text": "@tpl.footer.filters"},
+        {"spacer": true},
+        {"seal": "ESC"},
+        {"text": "@tpl.footer.close"}
+      ],
+      "body": [
+        {
+          "type": "row",
+          "gap": 16,
+          "grow": true,
+          "blocks": [
+            {
+              "type": "column",
+              "gap": 12,
+              "w": 1,
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 10,
+                  "blocks": [
+                    {
+                      "type": "search_field",
+                      "placeholder": "@tpl.registro.search",
+                      "width": 340
+                    },
+                    {
+                      "type": "chip_filter",
+                      "text": "@tpl.registro.filter.all",
+                      "params": {"n": "12"},
+                      "active": true
+                    },
+                    {
+                      "type": "chip_filter",
+                      "text": "@tpl.registro.filter.deficit",
+                      "params": {"n": "4"}
+                    },
+                    {
+                      "type": "chip_filter",
+                      "text": "@tpl.registro.filter.ports",
+                      "params": {"n": "6"}
+                    },
+                    {
+                      "type": "chip_filter",
+                      "text": "@tpl.registro.filter.capitals",
+                      "params": {"n": "1"}
+                    },
+                    {"type": "spacer", "w": 1},
+                    {
+                      "type": "label",
+                      "text": "@tpl.common.result",
+                      "params": {"n": "$results"},
+                      "font": "typed",
+                      "size": 13,
+                      "tone": "suave"
+                    }
+                  ]
+                },
+                {
+                  "type": "data_table",
+                  "grow": true,
+                  "selected": 0,
+                  "page_size": 9,
+                  "page": 1,
+                  "sort_col": 1,
+                  "descending": true,
+                  "footer_left": "@tpl.footer.table",
+                  "columns": [
+                    {"label": "@tpl.registro.col.city", "weight": 2.2, "align": "left"},
+                    {"label": "@tpl.registro.col.population", "weight": 1.2, "align": "right"},
+                    {"label": "@tpl.registro.col.food", "weight": 1, "align": "right"},
+                    {"label": "@tpl.registro.col.stock", "weight": 1, "align": "right"},
+                    {"label": "@tpl.registro.col.deficit", "weight": 1, "align": "right"},
+                    {"label": "@tpl.registro.col.deposits", "weight": 1, "align": "right"}
+                  ],
+                  "rows": [
+                    ["★ @city.name.GBR-LDN", "15,1 M", "78%", "12.410 t", {"text": "9.880 t", "tone": "carimbo"}, "3"],
+                    ["Manchester", "6,4 M", "91%", "5.220 t", "—", "2"],
+                    ["Birmingham", "6,1 M", "88%", "4.900 t", "—", "4"],
+                    ["Glasgow", "4,0 M", {"text": "69%", "tone": "alerta"}, "2.130 t", {"text": "1.410 t", "tone": "carimbo"}, "2"],
+                    ["Leeds", "3,8 M", "93%", "3.040 t", "—", "1"],
+                    ["⚓ Liverpool", "3,2 M", "85%", "6.770 t", "—", "0"],
+                    ["Belfast", "1,9 M", {"text": "72%", "tone": "alerta"}, "1.010 t", {"text": "620 t", "tone": "carimbo"}, "1"],
+                    ["Cardiff", "1,5 M", "90%", "1.180 t", "—", "3"],
+                    ["Bristol", "0,9 M", "87%", "880 t", "—", "0"],
+                    ["Sheffield", "0,8 M", "86%", "760 t", "—", "2"],
+                    ["Newcastle", "0,7 M", "89%", "640 t", "—", "1"],
+                    ["Nottingham", "0,6 M", "88%", "520 t", "—", "0"]
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paper_card",
+              "width": 440,
+              "pad": 18,
+              "gap": 12,
+              "blocks": [
+                {
+                  "type": "label",
+                  "text": "@tpl.registro.selected",
+                  "font": "typed",
+                  "size": 12,
+                  "tone": "suave",
+                  "uppercase": true
+                },
+                {"type": "label", "text": "$capital", "font": "display", "size": 28},
+                {
+                  "type": "tag_row",
+                  "tags": [
+                    {"text": "@tpl.registro.tag.capital", "tone": "neutral"},
+                    {"text": "@tpl.registro.tag.deficit", "tone": "carimbo"},
+                    {"text": "@tpl.registro.tag.port", "params": {"port": "Tilbury"}, "tone": "neutral"}
+                  ]
+                },
+                {"type": "rule", "thickness": 1, "color": "tinta"},
+                {"type": "kv_row", "key": "@tpl.registro.province", "value": "$selected_province"},
+                {"type": "kv_row", "key": "@tpl.registro.area", "value": "$selected_area"},
+                {"type": "kv_row", "key": "@tpl.registro.employed", "value": "$selected_employed"},
+                {"type": "kv_row", "key": "@tpl.registro.wage", "value": "$selected_wage"},
+                {
+                  "type": "paper_card",
+                  "border": "dashed",
+                  "fill": "papel",
+                  "pad": 12,
+                  "gap": 6,
+                  "blocks": [
+                    {
+                      "type": "label",
+                      "text": "@tpl.registro.note",
+                      "font": "typed",
+                      "size": 14,
+                      "wrap": true,
+                      "wrap_width": 340
+                    }
+                  ]
+                },
+                {"type": "spacer", "grow": true},
+                {
+                  "type": "button",
+                  "text": "@tpl.registro.open_sheet",
+                  "variant": "primary"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "id": "dossie",
+  "title": "@tpl.dossie.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [0.86, 0.84],
+    "min": [960, 560],
+    "max": [1800, 1000],
+    "pauses_game": false
+  },
+  "data": {
+    "nation": "@nation.name.GBR",
+    "flag": "gb",
+    "capital": "@city.name.GBR-LDN",
+    "government": "@tpl.dossie.gov.monarchy",
+    "cities": "12",
+    "provinces": "214",
+    "ports": "6",
+    "area": "243.610 km²",
+    "population": "67,6 M",
+    "gdp": "$ 4,1 tri",
+    "food": "84%",
+    "cash": "$ 212 bi"
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "@tpl.dossie.crumb",
+      "title": "@tpl.dossie.title",
+      "seal": "@tpl.dossie.seal",
+      "params": {"number": "0217"},
+      "footer": [
+        {"text": "@tpl.footer.panels"},
+        {"text": "@tpl.footer.tabs"},
+        {"spacer": true},
+        {"seal": "ESC"},
+        {"text": "@tpl.footer.close"}
+      ],
+      "body": [
+        {
+          "type": "row",
+          "gap": 16,
+          "grow": true,
+          "blocks": [
+            {
+              "type": "column",
+              "gap": 12,
+              "width": 380,
+              "blocks": [
+                {
+                  "type": "paper_card",
+                  "pad": 20,
+                  "gap": 12,
+                  "blocks": [
+                    {"type": "flag", "code": "$flag", "width": 160, "height": 96},
+                    {
+                      "type": "label",
+                      "text": "$nation",
+                      "font": "display",
+                      "size": 30
+                    },
+                    {
+                      "type": "label",
+                      "text": "@tpl.dossie.capital_line",
+                      "params": {"city": "$capital", "government": "$government"},
+                      "font": "typed",
+                      "size": 14,
+                      "tone": "suave"
+                    },
+                    {"type": "rule", "thickness": 1, "color": "tinta"},
+                    {"type": "kv_row", "key": "@tpl.dossie.cities", "value": "$cities"},
+                    {"type": "kv_row", "key": "@tpl.dossie.provinces", "value": "$provinces"},
+                    {"type": "kv_row", "key": "@tpl.dossie.ports", "value": "$ports"},
+                    {"type": "kv_row", "key": "@tpl.dossie.area", "value": "$area"}
+                  ]
+                },
+                {
+                  "type": "stamp",
+                  "text": "@tpl.dossie.own",
+                  "size": 20,
+                  "angle": -3,
+                  "align": "start"
+                },
+                {"type": "spacer", "grow": true},
+                {
+                  "type": "button",
+                  "text": "@tpl.dossie.open_economy",
+                  "variant": "primary"
+                },
+                {
+                  "type": "button",
+                  "text": "@tpl.dossie.view_map",
+                  "variant": "paper"
+                }
+              ]
+            },
+            {
+              "type": "column",
+              "gap": 16,
+              "w": 1,
+              "blocks": [
+                {
+                  "type": "grid",
+                  "columns": 4,
+                  "gap": 12,
+                  "blocks": [
+                    {
+                      "type": "kpi_card",
+                      "label": "@tpl.dossie.kpi.population",
+                      "value": "$population",
+                      "delta": "@tpl.dossie.delta.population",
+                      "tone": "positive",
+                      "size": 30
+                    },
+                    {
+                      "type": "kpi_card",
+                      "label": "@tpl.dossie.kpi.gdp",
+                      "value": "$gdp",
+                      "delta": "@tpl.dossie.delta.gdp",
+                      "tone": "positive",
+                      "size": 30
+                    },
+                    {
+                      "type": "kpi_card",
+                      "label": "@tpl.dossie.kpi.food",
+                      "value": "$food",
+                      "delta": "@tpl.dossie.delta.food",
+                      "tone": "alerta",
+                      "size": 30
+                    },
+                    {
+                      "type": "kpi_card",
+                      "label": "@tpl.dossie.kpi.cash",
+                      "value": "$cash",
+                      "delta": "@tpl.dossie.delta.cash",
+                      "tone": "carimbo",
+                      "size": 30
+                    }
+                  ]
+                },
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "w": 1,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "paper_card",
+                      "pad": 18,
+                      "gap": 10,
+                      "w": 1,
+                      "grow": true,
+                      "title": "@tpl.dossie.resources",
+                      "blocks": [
+                        {
+                          "type": "meter_row",
+                          "label": "@resource.gas",
+                          "value": 72,
+                          "text": "72%",
+                          "tone": "tinta"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@resource.coal",
+                          "value": 41,
+                          "text": "41%",
+                          "tone": "tinta"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@resource.iron",
+                          "value": 18,
+                          "text": "18%",
+                          "tone": "carimbo"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@resource.wheat",
+                          "value": 84,
+                          "text": "84%",
+                          "tone": "positive"
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "label",
+                          "text": "@tpl.dossie.resources.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 300
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "pad": 18,
+                      "gap": 10,
+                      "w": 1,
+                      "grow": true,
+                      "title": "@tpl.dossie.relations",
+                      "blocks": [
+                        {
+                          "type": "kv_row",
+                          "key": "@nation.name.FRA",
+                          "value": "@tpl.relation.ally",
+                          "tone": "positive"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@nation.name.USA",
+                          "value": "@tpl.relation.ally",
+                          "tone": "positive"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@nation.name.DEU",
+                          "value": "@tpl.relation.neutral",
+                          "tone": "tinta"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@nation.name.RUS",
+                          "value": "@tpl.relation.hostile",
+                          "tone": "carimbo"
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "label",
+                          "text": "@tpl.dossie.relations.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 300
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

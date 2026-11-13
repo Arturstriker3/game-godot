@@ -49,6 +49,17 @@ const BARRA_FILETE := Color("#b9a77a")     # filete/borda da barra superior
 const BARRA_TEXTO := Color("#efe4c6")      # valor na barra superior
 const BARRA_ROTULO := Color("#b3a47e")     # rótulo na barra superior
 
+# --- Tokens: gerador de telas da paleta C ----------------------------------
+## Véu atrás das janelas/cartões de papel (não cobre a barra superior).
+const PAPER_VEU := Color(0.02, 0.03, 0.04, 0.55)
+## Escala tipográfica das fichas (Black Ops One para títulos, Special Elite
+## para rótulos, Barlow Condensed para dados).
+const FS_PAPER_HERO := 30
+const FS_PAPER_TITLE := 24
+const FS_PAPER_HEADING := 20
+const FS_PAPER_VALUE := 17
+const FS_PAPER_LABEL := 12
+
 # --- Tokens: "Etiqueta de inventário" (legenda do mapa de recursos) -----------
 const MANILA := Color("#c9a96a")            # papel pardo da etiqueta
 const MANILA_LIGHT := Color("#d8bd84")      # manila claro (botão "Todos")

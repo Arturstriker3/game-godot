@@ -538,6 +538,155 @@ Legenda — "Etiqueta de inventário" (canto inferior esquerdo, modo recursos):
   ocupando toda a largura da folha, com quebra de linha.
 
 
+## Gerador de interface e templates
+
+Gerador de telas da paleta C: uma spec JSON descreve o envelope e a lista de
+blocos, e `core/ui/templates/ui_template_builder.gd` (`class_name
+UiTemplateBuilder`) devolve uma árvore de `Control` pronta para entrar no HUD.
+O gerador **não conhece economia**: todo valor chega já formatado (literal,
+`$caminho` em `spec.data` ou `@chave` de i18n) e nenhum bloco calcula regra de
+jogo. Os mockups HTML de referência ficam em `docs/ui/templates/T1_dossie.html`
+… `T5_quadro.html`.
+
+### Formato da spec
+
+| Campo | Tipo | Uso |
+|---|---|---|
+| `id` | string | nome da raiz (`Template_<id>`) |
+| `title` | string | título da tela (informativo) |
+| `shell` | objeto | envelope (tabela abaixo) |
+| `data` | objeto | valores prontos, acessíveis por `$caminho` |
+| `blocks` | array | corpo: dentro do `window_frame`, coluna do `side_panel` ou lista do `bare` |
+
+Referências de texto (iguais em qualquer bloco):
+
+| Sintaxe | Resolução |
+|---|---|
+| `"@tpl.dossie.title"` | `I18n.t("tpl.dossie.title")` |
+| `"@tpl.quadro.position.note"` + `"params"` | `I18n.t(chave, params)`; `params` são resolvidos antes da tradução |
+| `"$nation"` | `data.nation` — caminho com pontos (`"$selected.population"`) |
+| `"$capital"` cujo valor é `"@city.name.GBR-LDN"` | a i18n é resolvida em seguida (nome de cidade/nação vindo de `data`) |
+| `"★ @city.name.GBR-LDN"` | tokens embutidos (depois de espaço) resolvidos parte a parte |
+| `"$ 4,1 tri"` | literal: dinheiro já formatado não é token (o caminho precisa ser um identificador) |
+
+Layout comum aos blocos: `width`/`height` (mínimos), `w` (peso num `row` ou
+`column`), `grow` (expande nos dois eixos) e `mh` (mínimo vertical).
+
+### Envelopes (`shell.kind`)
+
+| `kind` | Props | Comportamento |
+|---|---|---|
+| `window` | `ratio` (0,86 × 0,84), `min` (960 × 560), `max` (1800 × 1000), `pauses_game` | véu escuro + moldura centralizada abaixo da barra superior (`TOP_BAR_CLEARANCE` = 68 px); usa o primeiro bloco `window_frame` da spec |
+| `side_panel` | `width` (820), `top` (68), `pauses_game` | coluna ancorada à direita, sem véu; `blocks` são empilhados |
+| `telegram` | `size` (720 × 800), `angle`, `pauses_game` | véu + folha de papel centralizada; `blocks` empilhados |
+| `bare` | — | só a coluna de `blocks`, sem moldura (para embutir em painel existente) |
+
+`UiTemplateBuilder.pauses_game(spec)` expõe `shell.pauses_game` para o host
+saber que deve pausar a simulação (hoje só o T4).
+
+### Blocos
+
+| Bloco | Props principais |
+|---|---|
+| `row` / `column` | `gap`, `blocks`, `w`, `grow` |
+| `grid` | `columns` (2), `gap`, `blocks` |
+| `scroll` | `height`, `gap`, `blocks` (rolagem vertical; SFX de rolagem) |
+| `spacer` | `width`, `height`, `w`, `grow` (empurra o resto) |
+| `rule` | `color`, `thickness`, `dashed`, `double` (filete duplo) |
+| `window_frame` | `crumb`, `title`, `seal`, `params`, `footer` (`{text}` / `{seal}` / `{spacer}`), `body` |
+| `paper_card` | `title`, `title_size`, `fill`, `border` (`solid`/`dashed`), `border_color`, `pad`, `gap`, `edges`, `blocks` |
+| `note_card` | `title`, `body`, `width`, `fill`, `border`, `pad` (aba ainda sem dados) |
+| `kpi_card` | `label`, `value`, `delta`, `tone`, `value_tone`, `size`, `delta_size`, `fill` |
+| `meter_row` | `label`, `value` (0–1 ou 0–100), `text`, `tone`, `height`, `label_width`, `value_width`, `label_size`, `value_size` |
+| `kv_row` | `key`, `value`, `tone`, `size`, `value_width` (líder pontilhado entre as colunas) |
+| `ruled_heading` | `text`, `size` (título + filete de 2 px) |
+| `stamp` | `text`, `size`, `angle`, `align` (`start`/`center`/`end`) — selo girado sem afetar o layout |
+| `tag` / `tag_row` | `text`, `tone` (`neutral`/`carimbo`/`suave`); `tag_row.tags` |
+| `chip_filter` | `text`, `active`, `params` |
+| `search_field` | `placeholder`, `width` |
+| `button` | `text`, `variant` (`paper`/`primary`/`ghost`), `params` |
+| `data_table` | `columns` (`label`, `weight`, `align`), `rows` (string ou `{text, tone, strong}`), `selected`, `page_size` (9), `page`, `sort_col`, `descending`, `footer_left` |
+| `folder_tabs` | `tabs` (`label`, `blocks`), `active`, `gap`, `close` |
+| `bar_chart` | `values`, `tones`, `height`, `bar_gap` |
+| `line_chart` | `values`, `tone`, `height` |
+| `choice_button` | `id`, `title`, `consequence`, `note_width`, `height` |
+| `telegram_card` | `title`, `meta`, `fields` (`key`, `value`), `body`, `body_width`, `choice_label`, `choices`, `footer`, `footer_width`, `stamp` |
+| `ranking_row` | `rank`, `name`, `ratio`, `value`, `highlight` (★ + carimbo) |
+| `flag` | `code` (arquivo `assets/flags/<code>.png`), `width` (160), `height` (96) |
+| `label` | `text`, `font` (`body`/`display`/`typed`), `size`, `tone`, `uppercase`, `wrap`, `wrap_width`, `align` |
+| `heading_row` | `text`, `trailing`, `size` (título com complemento à direita) |
+
+Tipografia e tons dos blocos:
+
+- `font: "display"` → Black Ops One; `font: "typed"` → Special Elite;
+  `font: "body"` (padrão) → Barlow Condensed.
+- `tone`: `tinta`, `positive`/`positivo`, `negative`/`carimbo`, `warning`/`alerta`,
+  `suave`/`tinta_suave`, `filete`, `barra_texto`, `barra_rotulo`, `carimbo_barra`, `none`.
+- `fill`: `papel`, `claro`, `inativa`, `barra`, `none`/`transparent`.
+- Tokens novos no `UiKit` para esta família: `PAPER_VEU` (véu das janelas) e a
+  escala `FS_PAPER_HERO/TITLE/HEADING/VALUE/LABEL` (30/24/20/17/12).
+
+### Como criar uma tela nova
+
+```gdscript
+var spec := UiTemplateBuilder.load_spec("ficha")   # lê data/ui/templates/ficha.json
+var screen := UiTemplateBuilder.build(spec, {
+    "city": "Paris",
+    "population": "11,2 M",
+})
+screen.close_requested.connect(func() -> void: screen.queue_free())
+screen.choice_selected.connect(func(id: String) -> void: print(id))
+add_child(screen)
+```
+
+`build(spec, overrides)` copia a spec (`duplicate(true)`), aplica `overrides`
+sobre `spec.data` (sem tocar nos blocos) e devolve um
+`UiTemplateBuilder.TemplateRoot` já em `PRESET_FULL_RECT`, com os sinais
+`close_requested` e `choice_selected(id)`. Atalhos: `dossie()`, `registro()`,
+`ficha()`, `telegrama()`, `quadro()` — cada um carrega a spec e chama `build`.
+Spec ausente ou inválida: `load_spec` faz `push_error` e devolve `{}`; `build({})`
+produz uma moldura `window` vazia.
+
+### Os cinco templates
+
+| # | Spec | Envelope | Blocos-chave | Quando usar |
+|---|---|---|---|---|
+| T1 | `data/ui/templates/dossie.json` | `window` | perfil (bandeira + `kv_row`), 4 `kpi_card`, dois `paper_card` (recursos em `meter_row` e relações) | visão geral de nação: identidade + números + relações, leitura única |
+| T2 | `data/ui/templates/registro.json` | `window` | `search_field` + `chip_filter`, `data_table` paginada/ordenável, painel de seleção | listas longas (cidades, províncias) com busca, filtro e detalhe à direita |
+| T3 | `data/ui/templates/ficha.json` | `side_panel` | `folder_tabs` (5 abas, `close`), `kpi_card` sem moldura, `bar_chart`, `note_card` nas abas sem dado | ficha lateral de uma entidade (cidade) com abas de pasta, sobre o mapa |
+| T4 | `data/ui/templates/telegrama.json` | `telegram` (`pauses_game: true`) | `telegram_card` com DE/PARA/ASSUNTO, corpo datilografado e 3 `choice_button` | evento que interrompe o jogo e exige decisão (importar, racionar, esperar) |
+| T5 | `data/ui/templates/quadro.json` | `window` | `chip_filter` de indicador/grupo, `ranking_row` com destaque, posição + `line_chart` | comparação entre nações e posição relativa; leitura de ranking |
+
+Cada tela tem mockup estático correspondente (`T1`…`T5` em
+`docs/ui/templates/`), usado como referência visual na revisão.
+
+### Galeria e evidência
+
+```powershell
+$godot = "C:\Users\artur\OneDrive\Área de Trabalho\Godot_v4.7.2-stable_win64.exe"
+& $godot --path . res://tools/ui_template_gallery.tscn -- --sizes=1920x1080,1600x900
+```
+
+`tools/ui_template_gallery.tscn` instancia o HUD real e o mapa de fundo, monta
+cada template por cima e grava PNG em `docs/ui/templates/captures/<id>.png`
+(+ `_<WxH>.png` fora de 1920×1080) e `layout_report.json`. A auditoria percorre
+a árvore e reporta `offscreen`, `i18n_key` (rótulo com prefixo de chave em vez
+de texto), `text_overflow`/`text_elided`, `scroll_needed` e `focus_hidden`.
+
+Última execução (Godot 4.7.2-stable, 2026-11-13T01:03:57): 5 templates ×
+2 resoluções × 3 idiomas = **30 auditorias, 0 problemas**, 10 PNGs gravados sem
+erro. 1366×768 e 2560×1440 não foram capturados (o `stretch` do projeto é
+`canvas_items`/`expand` sobre 1920×1080; a janela é proporcional).
+
+### Ressalva
+
+Os valores das specs (população, PIB, séries, nomes de cidade) são
+**demonstração** — servem para validar layout, não são lidos da economia. O
+gerador só é usado por `tools/ui_template_gallery.gd`; nenhuma tela do HUD o
+chama ainda, e as chaves `tpl.*` de `core/i18n/i18n.gd` existem apenas para
+estes templates. `data_table` e `folder_tabs` guardam estado de exibição
+(ordem, página, aba ativa), nunca estado de jogo.
+
 ## Arquivos
 
 - `core/ui/ui_kit.gd` — tokens, tema e biblioteca de componentes.
@@ -550,5 +699,12 @@ Legenda — "Etiqueta de inventário" (canto inferior esquerdo, modo recursos):
 - `core/ui/city_detail.gd` — painel anterior da cidade, mantido como legado e
   não usado pelo HUD.
 - `core/i18n/i18n.gd` — textos em pt-BR, en e es.
+- `core/ui/templates/ui_template_builder.gd` — gerador de telas a partir de
+  spec JSON (envelopes, blocos de papel, `$dado` e `@chave`).
+- `data/ui/templates/*.json` — specs dos cinco templates (`dossie`, `registro`,
+  `ficha`, `telegrama`, `quadro`).
 - `tools/ui_capture.gd` / `.tscn` — captura e auditoria de layout.
+- `tools/ui_template_gallery.gd` / `.tscn` — galeria dos cinco templates
+  (PNG + `layout_report.json`).
 - `docs/ui/` — capturas antes/depois e métricas objetivas.
+- `docs/ui/templates/` — mockups HTML `T1`…`T5` e capturas do gerador.

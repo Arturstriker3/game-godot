@@ -1,0 +1,232 @@
+{
+  "id": "ficha",
+  "title": "@tpl.ficha.tab.overview",
+  "shell": {
+    "kind": "side_panel",
+    "width": 820,
+    "top": 68,
+    "pauses_game": false
+  },
+  "data": {
+    "city": "@city.name.GBR-LDN",
+    "population": "15,1 M",
+    "employed": "7,9 M",
+    "gdp": "$ 731 bi",
+    "produced_industry": "4.120 t/d",
+    "produced_services": "$ 1,9 bi/d",
+    "produced_wheat": "860 t/d",
+    "consumed_wheat": "1.290 t/d",
+    "consumed_gas": "2.300 t/d",
+    "consumed_iron": "410 t/d"
+  },
+  "blocks": [
+    {
+      "type": "folder_tabs",
+      "close": true,
+      "active": 0,
+      "gap": 18,
+      "tabs": [
+        {
+          "label": "@tpl.ficha.tab.overview",
+          "blocks": [
+            {
+              "type": "row",
+              "gap": 18,
+              "blocks": [
+                {
+                  "type": "column",
+                  "gap": 6,
+                  "w": 1,
+                  "blocks": [
+                    {
+                      "type": "label",
+                      "text": "@tpl.ficha.crumb",
+                      "font": "typed",
+                      "size": 13,
+                      "tone": "suave"
+                    },
+                    {"type": "label", "text": "$city", "font": "display", "size": 40},
+                    {
+                      "type": "tag_row",
+                      "tags": [
+                        {"text": "@tpl.ficha.tag.capital", "tone": "neutral"},
+                        {"text": "@tpl.ficha.tag.port", "tone": "neutral"},
+                        {"text": "@tpl.ficha.tag.provinces", "tone": "neutral"}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "stamp",
+                  "text": "@tpl.ficha.stamp",
+                  "size": 18,
+                  "angle": 4,
+                  "align": "end"
+                }
+              ]
+            },
+            {
+              "type": "grid",
+              "columns": 3,
+              "gap": 12,
+              "blocks": [
+                {
+                  "type": "kpi_card",
+                  "fill": "none",
+                  "label": "@tpl.ficha.kpi.population",
+                  "value": "$population",
+                  "size": 28
+                },
+                {
+                  "type": "kpi_card",
+                  "fill": "none",
+                  "label": "@tpl.ficha.kpi.employed",
+                  "value": "$employed",
+                  "size": 28
+                },
+                {
+                  "type": "kpi_card",
+                  "fill": "none",
+                  "label": "@tpl.ficha.kpi.gdp",
+                  "value": "$gdp",
+                  "size": 28
+                }
+              ]
+            },
+            {
+              "type": "column",
+              "gap": 8,
+              "blocks": [
+                {"type": "ruled_heading", "text": "@tpl.ficha.supply"},
+                {
+                  "type": "bar_chart",
+                  "height": 140,
+                  "values": [0.82, 0.80, 0.79, 0.84, 0.76, 0.72, 0.70, 0.66, 0.64, 0.68, 0.71, 0.74, 0.78, 0.78, 0.77],
+                  "tones": ["tinta", "tinta", "tinta", "tinta", "tinta", "alerta", "alerta", "carimbo", "carimbo", "carimbo", "alerta", "alerta", "tinta", "tinta", "tinta"]
+                },
+                {
+                  "type": "row",
+                  "gap": 12,
+                  "blocks": [
+                    {"type": "label", "text": "@tpl.ficha.date.start", "font": "typed", "size": 12, "tone": "suave"},
+                    {"type": "spacer", "w": 1},
+                    {"type": "label", "text": "@tpl.ficha.supply.note", "font": "typed", "size": 12, "tone": "suave"},
+                    {"type": "spacer", "w": 1},
+                    {"type": "label", "text": "@tpl.ficha.date.end", "font": "typed", "size": 12, "tone": "suave"}
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "row",
+              "gap": 16,
+              "blocks": [
+                {
+                  "type": "column",
+                  "gap": 6,
+                  "w": 1,
+                  "blocks": [
+                    {
+                      "type": "label",
+                      "text": "@tpl.ficha.produces",
+                      "font": "typed",
+                      "size": 13,
+                      "tone": "suave",
+                      "uppercase": true
+                    },
+                    {"type": "kv_row", "key": "@tpl.ficha.industrial_goods", "value": "$produced_industry"},
+                    {"type": "kv_row", "key": "@tpl.ficha.services", "value": "$produced_services"},
+                    {"type": "kv_row", "key": "@resource.wheat", "value": "$produced_wheat"}
+                  ]
+                },
+                {
+                  "type": "column",
+                  "gap": 6,
+                  "w": 1,
+                  "blocks": [
+                    {
+                      "type": "label",
+                      "text": "@tpl.ficha.consumes",
+                      "font": "typed",
+                      "size": 13,
+                      "tone": "suave",
+                      "uppercase": true
+                    },
+                    {"type": "kv_row", "key": "@resource.wheat", "value": "$consumed_wheat", "tone": "carimbo"},
+                    {"type": "kv_row", "key": "@resource.gas", "value": "$consumed_gas"},
+                    {"type": "kv_row", "key": "@resource.iron", "value": "$consumed_iron"}
+                  ]
+                }
+              ]
+            },
+            {"type": "spacer", "grow": true},
+            {
+              "type": "row",
+              "gap": 10,
+              "blocks": [
+                {"type": "button", "text": "@tpl.ficha.import_wheat", "variant": "primary"},
+                {"type": "button", "text": "@tpl.ficha.center", "variant": "paper"},
+                {"type": "spacer", "w": 1},
+                {
+                  "type": "label",
+                  "text": "@tpl.footer.tabs_switch",
+                  "font": "typed",
+                  "size": 12,
+                  "tone": "suave"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "@tpl.ficha.tab.population",
+          "blocks": [
+            {
+              "type": "note_card",
+              "title": "@tpl.ficha.preview.title",
+              "body": "@tpl.ficha.preview.body",
+              "fill": "papel",
+              "border": "dashed"
+            }
+          ]
+        },
+        {
+          "label": "@tpl.ficha.tab.production",
+          "blocks": [
+            {
+              "type": "note_card",
+              "title": "@tpl.ficha.preview.title",
+              "body": "@tpl.ficha.preview.body",
+              "fill": "papel",
+              "border": "dashed"
+            }
+          ]
+        },
+        {
+          "label": "@tpl.ficha.tab.market",
+          "blocks": [
+            {
+              "type": "note_card",
+              "title": "@tpl.ficha.preview.title",
+              "body": "@tpl.ficha.preview.body",
+              "fill": "papel",
+              "border": "dashed"
+            }
+          ]
+        },
+        {
+          "label": "@tpl.ficha.tab.resources",
+          "blocks": [
+            {
+              "type": "note_card",
+              "title": "@tpl.ficha.preview.title",
+              "body": "@tpl.ficha.preview.body",
+              "fill": "papel",
+              "border": "dashed"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

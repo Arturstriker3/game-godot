@@ -1,0 +1,3434 @@
+{
+  "audits": [
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@729": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@729/@ColorRect@601": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@729/@Control@602": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@729/@Control@602/@CenterContainer@603": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@729/@Control@602/@CenterContainer@603/@PanelContainer@728": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@729/@Control@602/@CenterContainer@603/@PanelContainer@728/@VBoxContainer@604": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Política › Dossiê",
+        "Dossiê da nação",
+        "CONFIDENCIAL · Nº 0217",
+        "Reino Unido",
+        "Capital · Londres · Monarquia parlamentar",
+        "Cidades",
+        "12",
+        "Províncias",
+        "214",
+        "Portos",
+        "6",
+        "Território",
+        "243.610 km²",
+        "SUA NAÇÃO",
+        "POPULAÇÃO",
+        "67,6 M",
+        "▲ 0,3% ao ano",
+        "PIB (PPC)",
+        "$ 4,1 tri",
+        "▲ 1,1%",
+        "COMIDA",
+        "84%",
+        "cobertura de 5 dias",
+        "CAIXA DO GOVERNO",
+        "$ 212 bi",
+        "▼ 2,4% no mês",
+        "Recursos estratégicos",
+        "Gás",
+        "72%",
+        "Carvão",
+        "41%",
+        "Ferro",
+        "18%",
+        "Trigo",
+        "84%",
+        "Autossuficiência = produção ÷ consumo dos últimos 30 dias.",
+        "Relações",
+        "França",
+        "Aliado",
+        "Estados Unidos",
+        "Aliado",
+        "Alemanha",
+        "Neutro",
+        "Rússia",
+        "Hostil",
+        "Diplomacia ainda não simulada — status fixo do cenário 2026.",
+        "1–5 painéis",
+        "Tab navegar",
+        "ESC",
+        "fechar"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "dossie",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@942": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@942/@ColorRect@814": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@942/@Control@815": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@942/@Control@815/@CenterContainer@816": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@942/@Control@815/@CenterContainer@816/@PanelContainer@941": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@942/@Control@815/@CenterContainer@816/@PanelContainer@941/@VBoxContainer@817": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Politics › Dossier",
+        "Nation dossier",
+        "CONFIDENTIAL · No. 0217",
+        "United Kingdom",
+        "Capital · London · Parliamentary monarchy",
+        "Cities",
+        "12",
+        "Provinces",
+        "214",
+        "Ports",
+        "6",
+        "Territory",
+        "243.610 km²",
+        "YOUR NATION",
+        "POPULATION",
+        "67,6 M",
+        "▲ 0.3% per year",
+        "GDP (PPP)",
+        "$ 4,1 tri",
+        "▲ 1.1%",
+        "FOOD",
+        "84%",
+        "5 days of coverage",
+        "GOVERNMENT TREASURY",
+        "$ 212 bi",
+        "▼ 2.4% this month",
+        "Strategic resources",
+        "Gas",
+        "72%",
+        "Coal",
+        "41%",
+        "Iron",
+        "18%",
+        "Wheat",
+        "84%",
+        "Self-sufficiency = production ÷ consumption over the last 30 days.",
+        "Relations",
+        "France",
+        "Ally",
+        "United States of America",
+        "Ally",
+        "Germany",
+        "Neutral",
+        "Russia",
+        "Hostile",
+        "Diplomacy is not simulated yet — fixed status for the 2026 scenario.",
+        "1–5 panels",
+        "Tab to navigate",
+        "ESC",
+        "close"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "dossie",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@1155": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@1155/@ColorRect@1027": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@1155/@Control@1028": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@1155/@Control@1028/@CenterContainer@1029": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@1155/@Control@1028/@CenterContainer@1029/@PanelContainer@1154": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@1155/@Control@1028/@CenterContainer@1029/@PanelContainer@1154/@VBoxContainer@1030": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Política › Dosier",
+        "Dosier de la nación",
+        "CONFIDENCIAL · N.º 0217",
+        "Reino Unido",
+        "Capital · Londres · Monarquía parlamentaria",
+        "Ciudades",
+        "12",
+        "Provincias",
+        "214",
+        "Puertos",
+        "6",
+        "Territorio",
+        "243.610 km²",
+        "TU NACIÓN",
+        "POBLACIÓN",
+        "67,6 M",
+        "▲ 0,3% anual",
+        "PIB (PPA)",
+        "$ 4,1 tri",
+        "▲ 1,1%",
+        "COMIDA",
+        "84%",
+        "cobertura de 5 días",
+        "CAJA DEL GOBIERNO",
+        "$ 212 bi",
+        "▼ 2,4% en el mes",
+        "Recursos estratégicos",
+        "Gas",
+        "72%",
+        "Carbón",
+        "41%",
+        "Hierro",
+        "18%",
+        "Trigo",
+        "84%",
+        "Autosuficiencia = producción ÷ consumo de los últimos 30 días.",
+        "Relaciones",
+        "Francia",
+        "Aliado",
+        "Estados Unidos",
+        "Aliado",
+        "Alemania",
+        "Neutral",
+        "Rusia",
+        "Hostil",
+        "La diplomacia aún no se simula — estado fijo del escenario 2026.",
+        "1–5 paneles",
+        "Tab para navegar",
+        "ESC",
+        "cerrar"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "dossie",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1415": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1415/@ColorRect@1240": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1415/@Control@1241": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1415/@Control@1241/@CenterContainer@1242": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1415/@Control@1241/@CenterContainer@1242/@PanelContainer@1414": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1415/@Control@1241/@CenterContainer@1242/@PanelContainer@1414/@VBoxContainer@1243": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Economia ›",
+        "Registro de cidades",
+        "⌕",
+        "12 resultados",
+        "★ Londres",
+        "15,1 M",
+        "78%",
+        "12.410 t",
+        "9.880 t",
+        "3",
+        "Manchester",
+        "6,4 M",
+        "91%",
+        "5.220 t",
+        "—",
+        "2",
+        "Birmingham",
+        "6,1 M",
+        "88%",
+        "4.900 t",
+        "—",
+        "4",
+        "Glasgow",
+        "4,0 M",
+        "69%",
+        "2.130 t",
+        "1.410 t",
+        "2",
+        "Leeds",
+        "3,8 M",
+        "93%",
+        "3.040 t",
+        "—",
+        "1",
+        "⚓ Liverpool",
+        "3,2 M",
+        "85%",
+        "6.770 t",
+        "—",
+        "0",
+        "Belfast",
+        "1,9 M",
+        "72%",
+        "1.010 t",
+        "620 t",
+        "1",
+        "Cardiff",
+        "1,5 M",
+        "90%",
+        "1.180 t",
+        "—",
+        "3",
+        "Bristol",
+        "0,9 M",
+        "87%",
+        "880 t",
+        "—",
+        "0",
+        "Clique numa linha para abrir a ficha · ↑↓ navegar",
+        "Página 1 de 2"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "registro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1675": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1675/@ColorRect@1500": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1675/@Control@1501": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1675/@Control@1501/@CenterContainer@1502": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1675/@Control@1501/@CenterContainer@1502/@PanelContainer@1674": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1675/@Control@1501/@CenterContainer@1502/@PanelContainer@1674/@VBoxContainer@1503": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Economy ›",
+        "City register",
+        "⌕",
+        "12 results",
+        "★ London",
+        "15,1 M",
+        "78%",
+        "12.410 t",
+        "9.880 t",
+        "3",
+        "Manchester",
+        "6,4 M",
+        "91%",
+        "5.220 t",
+        "—",
+        "2",
+        "Birmingham",
+        "6,1 M",
+        "88%",
+        "4.900 t",
+        "—",
+        "4",
+        "Glasgow",
+        "4,0 M",
+        "69%",
+        "2.130 t",
+        "1.410 t",
+        "2",
+        "Leeds",
+        "3,8 M",
+        "93%",
+        "3.040 t",
+        "—",
+        "1",
+        "⚓ Liverpool",
+        "3,2 M",
+        "85%",
+        "6.770 t",
+        "—",
+        "0",
+        "Belfast",
+        "1,9 M",
+        "72%",
+        "1.010 t",
+        "620 t",
+        "1",
+        "Cardiff",
+        "1,5 M",
+        "90%",
+        "1.180 t",
+        "—",
+        "3",
+        "Bristol",
+        "0,9 M",
+        "87%",
+        "880 t",
+        "—",
+        "0",
+        "Click a row to open the sheet · ↑↓ navigate",
+        "Page 1 of 2"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "registro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1935": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1935/@ColorRect@1760": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1935/@Control@1761": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1935/@Control@1761/@CenterContainer@1762": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1935/@Control@1761/@CenterContainer@1762/@PanelContainer@1934": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@1935/@Control@1761/@CenterContainer@1762/@PanelContainer@1934/@VBoxContainer@1763": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Economía ›",
+        "Registro de ciudades",
+        "⌕",
+        "12 resultados",
+        "★ Londres",
+        "15,1 M",
+        "78%",
+        "12.410 t",
+        "9.880 t",
+        "3",
+        "Manchester",
+        "6,4 M",
+        "91%",
+        "5.220 t",
+        "—",
+        "2",
+        "Birmingham",
+        "6,1 M",
+        "88%",
+        "4.900 t",
+        "—",
+        "4",
+        "Glasgow",
+        "4,0 M",
+        "69%",
+        "2.130 t",
+        "1.410 t",
+        "2",
+        "Leeds",
+        "3,8 M",
+        "93%",
+        "3.040 t",
+        "—",
+        "1",
+        "⚓ Liverpool",
+        "3,2 M",
+        "85%",
+        "6.770 t",
+        "—",
+        "0",
+        "Belfast",
+        "1,9 M",
+        "72%",
+        "1.010 t",
+        "620 t",
+        "1",
+        "Cardiff",
+        "1,5 M",
+        "90%",
+        "1.180 t",
+        "—",
+        "3",
+        "Bristol",
+        "0,9 M",
+        "87%",
+        "880 t",
+        "—",
+        "0",
+        "Haz clic en una fila para abrir la ficha · ↑↓ navegar",
+        "Página 1 de 2"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "registro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127/@VBoxContainer@2020": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127/@VBoxContainer@2020/@VBoxContainer@2126": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127/@VBoxContainer@2020/@VBoxContainer@2126/@MarginContainer@2022": {
+          "class": "MarginContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127/@VBoxContainer@2020/@VBoxContainer@2126/@MarginContainer@2022/@HBoxContainer@2021": {
+          "class": "HBoxContainer",
+          "rect": [
+            1124.0,
+            68.0,
+            780.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127/@VBoxContainer@2020/@VBoxContainer@2126/@PanelContainer@2023": {
+          "class": "PanelContainer",
+          "rect": [
+            1100.0,
+            129.0,
+            820.0,
+            951.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2127/@VBoxContainer@2020/@VBoxContainer@2126/@PanelContainer@2023/@VBoxContainer@2098": {
+          "class": "VBoxContainer",
+          "rect": [
+            1128.0,
+            153.0,
+            764.0,
+            903.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Reino Unido › Inglaterra › Greater London",
+        "Londres",
+        "CAPITAL",
+        "PORTO: TILBURY",
+        "18 PROVÍNCIAS",
+        "DÉFICIT DE TRIGO",
+        "POPULAÇÃO",
+        "15,1 M",
+        "EMPREGADOS",
+        "7,9 M",
+        "PIB LOCAL",
+        "$ 731 bi",
+        "Abastecimento · últimos 30 dias",
+        "4 dez",
+        "Cobertura de comida (%) — vermelho abaixo de 70%",
+        "3 jan",
+        "PRODUZ",
+        "Bens industriais",
+        "4.120 t/d",
+        "Serviços",
+        "$ 1,9 bi/d",
+        "Trigo",
+        "860 t/d",
+        "CONSOME",
+        "Trigo",
+        "1.290 t/d",
+        "Gás",
+        "2.300 t/d",
+        "Ferro",
+        "410 t/d",
+        "← → trocar aba · ESC fechar"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "ficha",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319/@VBoxContainer@2212": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319/@VBoxContainer@2212/@VBoxContainer@2318": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319/@VBoxContainer@2212/@VBoxContainer@2318/@MarginContainer@2214": {
+          "class": "MarginContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319/@VBoxContainer@2212/@VBoxContainer@2318/@MarginContainer@2214/@HBoxContainer@2213": {
+          "class": "HBoxContainer",
+          "rect": [
+            1124.0,
+            68.0,
+            780.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319/@VBoxContainer@2212/@VBoxContainer@2318/@PanelContainer@2215": {
+          "class": "PanelContainer",
+          "rect": [
+            1100.0,
+            129.0,
+            820.0,
+            951.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2319/@VBoxContainer@2212/@VBoxContainer@2318/@PanelContainer@2215/@VBoxContainer@2290": {
+          "class": "VBoxContainer",
+          "rect": [
+            1128.0,
+            153.0,
+            764.0,
+            903.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "United Kingdom › England › Greater London",
+        "London",
+        "CAPITAL",
+        "PORT: TILBURY",
+        "18 PROVINCES",
+        "WHEAT DEFICIT",
+        "POPULATION",
+        "15,1 M",
+        "EMPLOYED",
+        "7,9 M",
+        "LOCAL GDP",
+        "$ 731 bi",
+        "Supply · last 30 days",
+        "Dec 4",
+        "Food coverage (%) — red below 70%",
+        "Jan 3",
+        "PRODUCES",
+        "Industrial goods",
+        "4.120 t/d",
+        "Services",
+        "$ 1,9 bi/d",
+        "Wheat",
+        "860 t/d",
+        "CONSUMES",
+        "Wheat",
+        "1.290 t/d",
+        "Gas",
+        "2.300 t/d",
+        "Iron",
+        "410 t/d",
+        "← → switch tab · ESC close"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "ficha",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511/@VBoxContainer@2404": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511/@VBoxContainer@2404/@VBoxContainer@2510": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511/@VBoxContainer@2404/@VBoxContainer@2510/@MarginContainer@2406": {
+          "class": "MarginContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511/@VBoxContainer@2404/@VBoxContainer@2510/@MarginContainer@2406/@HBoxContainer@2405": {
+          "class": "HBoxContainer",
+          "rect": [
+            1124.0,
+            68.0,
+            780.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511/@VBoxContainer@2404/@VBoxContainer@2510/@PanelContainer@2407": {
+          "class": "PanelContainer",
+          "rect": [
+            1100.0,
+            129.0,
+            820.0,
+            951.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@2511/@VBoxContainer@2404/@VBoxContainer@2510/@PanelContainer@2407/@VBoxContainer@2482": {
+          "class": "VBoxContainer",
+          "rect": [
+            1128.0,
+            153.0,
+            764.0,
+            903.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Reino Unido › Inglaterra › Greater London",
+        "Londres",
+        "CAPITAL",
+        "PUERTO: TILBURY",
+        "18 PROVINCIAS",
+        "DÉFICIT DE TRIGO",
+        "POBLACIÓN",
+        "15,1 M",
+        "EMPLEADOS",
+        "7,9 M",
+        "PIB LOCAL",
+        "$ 731 bi",
+        "Abastecimiento · últimos 30 días",
+        "4 dic",
+        "Cobertura de comida (%) — rojo por debajo de 70%",
+        "3 ene",
+        "PRODUCE",
+        "Bienes industriales",
+        "4.120 t/d",
+        "Servicios",
+        "$ 1,9 bi/d",
+        "Trigo",
+        "860 t/d",
+        "CONSUME",
+        "Trigo",
+        "1.290 t/d",
+        "Gas",
+        "2.300 t/d",
+        "Hierro",
+        "410 t/d",
+        "← → cambiar pestaña · ESC cerrar"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "ficha",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2651": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2651/@ColorRect@2596": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2651/@Control@2597": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2651/@Control@2597/@CenterContainer@2598": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2651/@Control@2597/@CenterContainer@2598/@MarginContainer@2650": {
+          "class": "MarginContainer",
+          "rect": [
+            584.0,
+            158.0,
+            752.0,
+            832.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2651/@Control@2597/@CenterContainer@2598/@MarginContainer@2650/@PanelContainer@2649": {
+          "class": "PanelContainer",
+          "rect": [
+            600.0,
+            174.0,
+            720.0,
+            800.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "TELEGRAMA",
+        "Nº 0447 · URGENTE",
+        "DE:",
+        "Ministério do Abastecimento",
+        "PARA:",
+        "Gabinete do Primeiro-Ministro",
+        "ASSUNTO:",
+        "Escassez de trigo em Londres",
+        "ESTOQUES DE TRIGO EM LONDRES CAEM HÁ SEIS DIAS PT COBERTURA EM 66 POR CENTO PT PORTO DE TILBURY CONGESTIONADO PT AGUARDAMOS INSTRUÇÕES PT",
+        "ESCOLHA UMA RESPOSTA",
+        "A · Importar trigo de emergência",
+        "−$ 1,2 bi do caixa · cobertura volta a 85% em 3 dias",
+        "B · Racionar consumo",
+        "Consumo −15% por 30 dias · satisfação −8",
+        "C · Aguardar o mercado",
+        "Sem custo · risco de fome se o déficit continuar",
+        "Recebido 3 jan 2026 · 01:00 · o jogo fica pausado até a decisão",
+        "PRIORIDADE"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": true,
+      "resolution": "1920x1080",
+      "template": "telegrama",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2791": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2791/@ColorRect@2736": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2791/@Control@2737": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2791/@Control@2737/@CenterContainer@2738": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2791/@Control@2737/@CenterContainer@2738/@MarginContainer@2790": {
+          "class": "MarginContainer",
+          "rect": [
+            584.0,
+            158.0,
+            752.0,
+            832.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2791/@Control@2737/@CenterContainer@2738/@MarginContainer@2790/@PanelContainer@2789": {
+          "class": "PanelContainer",
+          "rect": [
+            600.0,
+            174.0,
+            720.0,
+            800.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "TELEGRAM",
+        "No. 0447 · URGENT",
+        "FROM:",
+        "Ministry of Supply",
+        "TO:",
+        "Office of the Prime Minister",
+        "SUBJECT:",
+        "Wheat shortage in London",
+        "WHEAT STOCKS IN LONDON HAVE FALLEN FOR SIX DAYS STOP COVERAGE AT 66 PER CENT STOP PORT OF TILBURY CONGESTED STOP AWAITING INSTRUCTIONS STOP",
+        "CHOOSE A REPLY",
+        "A · Import emergency wheat",
+        "−$1.2 bn from the treasury · coverage returns to 85% in 3 days",
+        "B · Ration consumption",
+        "Consumption −15% for 30 days · satisfaction −8",
+        "C · Wait for the market",
+        "No cost · risk of famine if the deficit continues",
+        "Received 3 Jan 2026 · 01:00 · the game stays paused until the decision",
+        "PRIORITY"
+      ],
+      "locale": "en",
+      "pauses_game": true,
+      "resolution": "1920x1080",
+      "template": "telegrama",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2931": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2931/@ColorRect@2876": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2931/@Control@2877": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2931/@Control@2877/@CenterContainer@2878": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2931/@Control@2877/@CenterContainer@2878/@MarginContainer@2930": {
+          "class": "MarginContainer",
+          "rect": [
+            584.0,
+            158.0,
+            752.0,
+            832.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@2931/@Control@2877/@CenterContainer@2878/@MarginContainer@2930/@PanelContainer@2929": {
+          "class": "PanelContainer",
+          "rect": [
+            600.0,
+            174.0,
+            720.0,
+            800.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "TELEGRAMA",
+        "N.º 0447 · URGENTE",
+        "DE:",
+        "Ministerio de Abastecimiento",
+        "PARA:",
+        "Gabinete del Primer Ministro",
+        "ASUNTO:",
+        "Escasez de trigo en Londres",
+        "LAS EXISTENCIAS DE TRIGO EN LONDRES CAEN DESDE HACE SEIS DÍAS STOP COBERTURA DEL 66 POR CIENTO STOP PUERTO DE TILBURY CONGESTIONADO STOP ESPERAMOS INSTRUCCIONES STOP",
+        "ELIGE UNA RESPUESTA",
+        "A · Importar trigo de emergencia",
+        "−$ 1,2 mil millones de la caja · la cobertura vuelve al 85% en 3 días",
+        "B · Racionar el consumo",
+        "Consumo −15% durante 30 días · satisfacción −8",
+        "C · Esperar al mercado",
+        "Sin coste · riesgo de hambre si continúa el déficit",
+        "Recibido 3 ene 2026 · 01:00 · el juego queda en pausa hasta la decisión",
+        "PRIORIDAD"
+      ],
+      "locale": "es",
+      "pauses_game": true,
+      "resolution": "1920x1080",
+      "template": "telegrama",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3125": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3125/@ColorRect@3016": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3125/@Control@3017": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3125/@Control@3017/@CenterContainer@3018": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3125/@Control@3017/@CenterContainer@3018/@PanelContainer@3124": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3125/@Control@3017/@CenterContainer@3018/@PanelContainer@3124/@VBoxContainer@3019": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Estatísticas ›",
+        "Quadro comparativo",
+        "Indicador",
+        "Grupo",
+        "Ranking · População (milhões)",
+        "1",
+        "Estados Unidos",
+        "342",
+        "2",
+        "Japão",
+        "123",
+        "3",
+        "Alemanha",
+        "84",
+        "4",
+        "★ Reino Unido",
+        "68",
+        "5",
+        "França",
+        "66",
+        "6",
+        "Itália",
+        "59",
+        "7",
+        "Canadá",
+        "40",
+        "Fonte: cenário 2026 (ONU WPP). Sua nação em vermelho.",
+        "Sua posição",
+        "4",
+        "º",
+        "de 7 no G7 · 21º de 179 no mundo",
+        "Acima",
+        "Alemanha · +16 M",
+        "Abaixo",
+        "França · −2 M",
+        "Tendência · 12 meses",
+        "jan 2025",
+        "jan 2026",
+        "I trocar indicador",
+        "G trocar grupo",
+        "ESC",
+        "fechar"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "quadro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3319": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3319/@ColorRect@3210": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3319/@Control@3211": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3319/@Control@3211/@CenterContainer@3212": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3319/@Control@3211/@CenterContainer@3212/@PanelContainer@3318": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3319/@Control@3211/@CenterContainer@3212/@PanelContainer@3318/@VBoxContainer@3213": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Statistics ›",
+        "Comparison board",
+        "Indicator",
+        "Group",
+        "Ranking · Population (millions)",
+        "1",
+        "United States of America",
+        "342",
+        "2",
+        "Japan",
+        "123",
+        "3",
+        "Germany",
+        "84",
+        "4",
+        "★ United Kingdom",
+        "68",
+        "5",
+        "France",
+        "66",
+        "6",
+        "Italy",
+        "59",
+        "7",
+        "Canada",
+        "40",
+        "Source: 2026 scenario (UN WPP). Your nation in red.",
+        "Your position",
+        "4",
+        "th",
+        "of 7 in the G7 · 21th of 179 worldwide",
+        "Above",
+        "Germany · +16 M",
+        "Below",
+        "France · −2 M",
+        "Trend · 12 months",
+        "Jan 2025",
+        "Jan 2026",
+        "I switch indicator",
+        "G switch group",
+        "ESC",
+        "close"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "quadro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3513": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3513/@ColorRect@3404": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3513/@Control@3405": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3513/@Control@3405/@CenterContainer@3406": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3513/@Control@3405/@CenterContainer@3406/@PanelContainer@3512": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@3513/@Control@3405/@CenterContainer@3406/@PanelContainer@3512/@VBoxContainer@3407": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Estadísticas ›",
+        "Cuadro comparativo",
+        "Indicador",
+        "Grupo",
+        "Ranking · Población (millones)",
+        "1",
+        "Estados Unidos",
+        "342",
+        "2",
+        "Japón",
+        "123",
+        "3",
+        "Alemania",
+        "84",
+        "4",
+        "★ Reino Unido",
+        "68",
+        "5",
+        "Francia",
+        "66",
+        "6",
+        "Italia",
+        "59",
+        "7",
+        "Canadá",
+        "40",
+        "Fuente: escenario 2026 (ONU WPP). Tu nación en rojo.",
+        "Tu posición",
+        "4",
+        "º",
+        "de 7 en el G7 · 21º de 179 en el mundo",
+        "Arriba",
+        "Alemania · +16 M",
+        "Abajo",
+        "Francia · −2 M",
+        "Tendencia · 12 meses",
+        "ene 2025",
+        "ene 2026",
+        "I cambiar indicador",
+        "G cambiar grupo",
+        "ESC",
+        "cerrar"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1920x1080",
+      "template": "quadro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3726": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3726/@ColorRect@3598": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3726/@Control@3599": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3726/@Control@3599/@CenterContainer@3600": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3726/@Control@3599/@CenterContainer@3600/@PanelContainer@3725": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3726/@Control@3599/@CenterContainer@3600/@PanelContainer@3725/@VBoxContainer@3601": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Política › Dossiê",
+        "Dossiê da nação",
+        "CONFIDENCIAL · Nº 0217",
+        "Reino Unido",
+        "Capital · Londres · Monarquia parlamentar",
+        "Cidades",
+        "12",
+        "Províncias",
+        "214",
+        "Portos",
+        "6",
+        "Território",
+        "243.610 km²",
+        "SUA NAÇÃO",
+        "POPULAÇÃO",
+        "67,6 M",
+        "▲ 0,3% ao ano",
+        "PIB (PPC)",
+        "$ 4,1 tri",
+        "▲ 1,1%",
+        "COMIDA",
+        "84%",
+        "cobertura de 5 dias",
+        "CAIXA DO GOVERNO",
+        "$ 212 bi",
+        "▼ 2,4% no mês",
+        "Recursos estratégicos",
+        "Gás",
+        "72%",
+        "Carvão",
+        "41%",
+        "Ferro",
+        "18%",
+        "Trigo",
+        "84%",
+        "Autossuficiência = produção ÷ consumo dos últimos 30 dias.",
+        "Relações",
+        "França",
+        "Aliado",
+        "Estados Unidos",
+        "Aliado",
+        "Alemanha",
+        "Neutro",
+        "Rússia",
+        "Hostil",
+        "Diplomacia ainda não simulada — status fixo do cenário 2026.",
+        "1–5 painéis",
+        "Tab navegar",
+        "ESC",
+        "fechar"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "dossie",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3939": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3939/@ColorRect@3811": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3939/@Control@3812": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3939/@Control@3812/@CenterContainer@3813": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3939/@Control@3812/@CenterContainer@3813/@PanelContainer@3938": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@3939/@Control@3812/@CenterContainer@3813/@PanelContainer@3938/@VBoxContainer@3814": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Politics › Dossier",
+        "Nation dossier",
+        "CONFIDENTIAL · No. 0217",
+        "United Kingdom",
+        "Capital · London · Parliamentary monarchy",
+        "Cities",
+        "12",
+        "Provinces",
+        "214",
+        "Ports",
+        "6",
+        "Territory",
+        "243.610 km²",
+        "YOUR NATION",
+        "POPULATION",
+        "67,6 M",
+        "▲ 0.3% per year",
+        "GDP (PPP)",
+        "$ 4,1 tri",
+        "▲ 1.1%",
+        "FOOD",
+        "84%",
+        "5 days of coverage",
+        "GOVERNMENT TREASURY",
+        "$ 212 bi",
+        "▼ 2.4% this month",
+        "Strategic resources",
+        "Gas",
+        "72%",
+        "Coal",
+        "41%",
+        "Iron",
+        "18%",
+        "Wheat",
+        "84%",
+        "Self-sufficiency = production ÷ consumption over the last 30 days.",
+        "Relations",
+        "France",
+        "Ally",
+        "United States of America",
+        "Ally",
+        "Germany",
+        "Neutral",
+        "Russia",
+        "Hostile",
+        "Diplomacy is not simulated yet — fixed status for the 2026 scenario.",
+        "1–5 panels",
+        "Tab to navigate",
+        "ESC",
+        "close"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "dossie",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@4152": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@4152/@ColorRect@4024": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@4152/@Control@4025": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@4152/@Control@4025/@CenterContainer@4026": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@4152/@Control@4025/@CenterContainer@4026/@PanelContainer@4151": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_dossie/@Control@4152/@Control@4025/@CenterContainer@4026/@PanelContainer@4151/@VBoxContainer@4027": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Política › Dosier",
+        "Dosier de la nación",
+        "CONFIDENCIAL · N.º 0217",
+        "Reino Unido",
+        "Capital · Londres · Monarquía parlamentaria",
+        "Ciudades",
+        "12",
+        "Provincias",
+        "214",
+        "Puertos",
+        "6",
+        "Territorio",
+        "243.610 km²",
+        "TU NACIÓN",
+        "POBLACIÓN",
+        "67,6 M",
+        "▲ 0,3% anual",
+        "PIB (PPA)",
+        "$ 4,1 tri",
+        "▲ 1,1%",
+        "COMIDA",
+        "84%",
+        "cobertura de 5 días",
+        "CAJA DEL GOBIERNO",
+        "$ 212 bi",
+        "▼ 2,4% en el mes",
+        "Recursos estratégicos",
+        "Gas",
+        "72%",
+        "Carbón",
+        "41%",
+        "Hierro",
+        "18%",
+        "Trigo",
+        "84%",
+        "Autosuficiencia = producción ÷ consumo de los últimos 30 días.",
+        "Relaciones",
+        "Francia",
+        "Aliado",
+        "Estados Unidos",
+        "Aliado",
+        "Alemania",
+        "Neutral",
+        "Rusia",
+        "Hostil",
+        "La diplomacia aún no se simula — estado fijo del escenario 2026.",
+        "1–5 paneles",
+        "Tab para navegar",
+        "ESC",
+        "cerrar"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "dossie",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4412": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4412/@ColorRect@4237": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4412/@Control@4238": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4412/@Control@4238/@CenterContainer@4239": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4412/@Control@4238/@CenterContainer@4239/@PanelContainer@4411": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4412/@Control@4238/@CenterContainer@4239/@PanelContainer@4411/@VBoxContainer@4240": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Economia ›",
+        "Registro de cidades",
+        "⌕",
+        "12 resultados",
+        "★ Londres",
+        "15,1 M",
+        "78%",
+        "12.410 t",
+        "9.880 t",
+        "3",
+        "Manchester",
+        "6,4 M",
+        "91%",
+        "5.220 t",
+        "—",
+        "2",
+        "Birmingham",
+        "6,1 M",
+        "88%",
+        "4.900 t",
+        "—",
+        "4",
+        "Glasgow",
+        "4,0 M",
+        "69%",
+        "2.130 t",
+        "1.410 t",
+        "2",
+        "Leeds",
+        "3,8 M",
+        "93%",
+        "3.040 t",
+        "—",
+        "1",
+        "⚓ Liverpool",
+        "3,2 M",
+        "85%",
+        "6.770 t",
+        "—",
+        "0",
+        "Belfast",
+        "1,9 M",
+        "72%",
+        "1.010 t",
+        "620 t",
+        "1",
+        "Cardiff",
+        "1,5 M",
+        "90%",
+        "1.180 t",
+        "—",
+        "3",
+        "Bristol",
+        "0,9 M",
+        "87%",
+        "880 t",
+        "—",
+        "0",
+        "Clique numa linha para abrir a ficha · ↑↓ navegar",
+        "Página 1 de 2"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "registro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4672": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4672/@ColorRect@4497": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4672/@Control@4498": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4672/@Control@4498/@CenterContainer@4499": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4672/@Control@4498/@CenterContainer@4499/@PanelContainer@4671": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4672/@Control@4498/@CenterContainer@4499/@PanelContainer@4671/@VBoxContainer@4500": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Economy ›",
+        "City register",
+        "⌕",
+        "12 results",
+        "★ London",
+        "15,1 M",
+        "78%",
+        "12.410 t",
+        "9.880 t",
+        "3",
+        "Manchester",
+        "6,4 M",
+        "91%",
+        "5.220 t",
+        "—",
+        "2",
+        "Birmingham",
+        "6,1 M",
+        "88%",
+        "4.900 t",
+        "—",
+        "4",
+        "Glasgow",
+        "4,0 M",
+        "69%",
+        "2.130 t",
+        "1.410 t",
+        "2",
+        "Leeds",
+        "3,8 M",
+        "93%",
+        "3.040 t",
+        "—",
+        "1",
+        "⚓ Liverpool",
+        "3,2 M",
+        "85%",
+        "6.770 t",
+        "—",
+        "0",
+        "Belfast",
+        "1,9 M",
+        "72%",
+        "1.010 t",
+        "620 t",
+        "1",
+        "Cardiff",
+        "1,5 M",
+        "90%",
+        "1.180 t",
+        "—",
+        "3",
+        "Bristol",
+        "0,9 M",
+        "87%",
+        "880 t",
+        "—",
+        "0",
+        "Click a row to open the sheet · ↑↓ navigate",
+        "Page 1 of 2"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "registro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4932": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4932/@ColorRect@4757": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4932/@Control@4758": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4932/@Control@4758/@CenterContainer@4759": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4932/@Control@4758/@CenterContainer@4759/@PanelContainer@4931": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_registro/@Control@4932/@Control@4758/@CenterContainer@4759/@PanelContainer@4931/@VBoxContainer@4760": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Economía ›",
+        "Registro de ciudades",
+        "⌕",
+        "12 resultados",
+        "★ Londres",
+        "15,1 M",
+        "78%",
+        "12.410 t",
+        "9.880 t",
+        "3",
+        "Manchester",
+        "6,4 M",
+        "91%",
+        "5.220 t",
+        "—",
+        "2",
+        "Birmingham",
+        "6,1 M",
+        "88%",
+        "4.900 t",
+        "—",
+        "4",
+        "Glasgow",
+        "4,0 M",
+        "69%",
+        "2.130 t",
+        "1.410 t",
+        "2",
+        "Leeds",
+        "3,8 M",
+        "93%",
+        "3.040 t",
+        "—",
+        "1",
+        "⚓ Liverpool",
+        "3,2 M",
+        "85%",
+        "6.770 t",
+        "—",
+        "0",
+        "Belfast",
+        "1,9 M",
+        "72%",
+        "1.010 t",
+        "620 t",
+        "1",
+        "Cardiff",
+        "1,5 M",
+        "90%",
+        "1.180 t",
+        "—",
+        "3",
+        "Bristol",
+        "0,9 M",
+        "87%",
+        "880 t",
+        "—",
+        "0",
+        "Haz clic en una fila para abrir la ficha · ↑↓ navegar",
+        "Página 1 de 2"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "registro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124/@VBoxContainer@5017": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124/@VBoxContainer@5017/@VBoxContainer@5123": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124/@VBoxContainer@5017/@VBoxContainer@5123/@MarginContainer@5019": {
+          "class": "MarginContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124/@VBoxContainer@5017/@VBoxContainer@5123/@MarginContainer@5019/@HBoxContainer@5018": {
+          "class": "HBoxContainer",
+          "rect": [
+            1124.0,
+            68.0,
+            780.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124/@VBoxContainer@5017/@VBoxContainer@5123/@PanelContainer@5020": {
+          "class": "PanelContainer",
+          "rect": [
+            1100.0,
+            129.0,
+            820.0,
+            951.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5124/@VBoxContainer@5017/@VBoxContainer@5123/@PanelContainer@5020/@VBoxContainer@5095": {
+          "class": "VBoxContainer",
+          "rect": [
+            1128.0,
+            153.0,
+            764.0,
+            903.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Reino Unido › Inglaterra › Greater London",
+        "Londres",
+        "CAPITAL",
+        "PORTO: TILBURY",
+        "18 PROVÍNCIAS",
+        "DÉFICIT DE TRIGO",
+        "POPULAÇÃO",
+        "15,1 M",
+        "EMPREGADOS",
+        "7,9 M",
+        "PIB LOCAL",
+        "$ 731 bi",
+        "Abastecimento · últimos 30 dias",
+        "4 dez",
+        "Cobertura de comida (%) — vermelho abaixo de 70%",
+        "3 jan",
+        "PRODUZ",
+        "Bens industriais",
+        "4.120 t/d",
+        "Serviços",
+        "$ 1,9 bi/d",
+        "Trigo",
+        "860 t/d",
+        "CONSOME",
+        "Trigo",
+        "1.290 t/d",
+        "Gás",
+        "2.300 t/d",
+        "Ferro",
+        "410 t/d",
+        "← → trocar aba · ESC fechar"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "ficha",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316/@VBoxContainer@5209": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316/@VBoxContainer@5209/@VBoxContainer@5315": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316/@VBoxContainer@5209/@VBoxContainer@5315/@MarginContainer@5211": {
+          "class": "MarginContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316/@VBoxContainer@5209/@VBoxContainer@5315/@MarginContainer@5211/@HBoxContainer@5210": {
+          "class": "HBoxContainer",
+          "rect": [
+            1124.0,
+            68.0,
+            780.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316/@VBoxContainer@5209/@VBoxContainer@5315/@PanelContainer@5212": {
+          "class": "PanelContainer",
+          "rect": [
+            1100.0,
+            129.0,
+            820.0,
+            951.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5316/@VBoxContainer@5209/@VBoxContainer@5315/@PanelContainer@5212/@VBoxContainer@5287": {
+          "class": "VBoxContainer",
+          "rect": [
+            1128.0,
+            153.0,
+            764.0,
+            903.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "United Kingdom › England › Greater London",
+        "London",
+        "CAPITAL",
+        "PORT: TILBURY",
+        "18 PROVINCES",
+        "WHEAT DEFICIT",
+        "POPULATION",
+        "15,1 M",
+        "EMPLOYED",
+        "7,9 M",
+        "LOCAL GDP",
+        "$ 731 bi",
+        "Supply · last 30 days",
+        "Dec 4",
+        "Food coverage (%) — red below 70%",
+        "Jan 3",
+        "PRODUCES",
+        "Industrial goods",
+        "4.120 t/d",
+        "Services",
+        "$ 1,9 bi/d",
+        "Wheat",
+        "860 t/d",
+        "CONSUMES",
+        "Wheat",
+        "1.290 t/d",
+        "Gas",
+        "2.300 t/d",
+        "Iron",
+        "410 t/d",
+        "← → switch tab · ESC close"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "ficha",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508/@VBoxContainer@5401": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508/@VBoxContainer@5401/@VBoxContainer@5507": {
+          "class": "VBoxContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508/@VBoxContainer@5401/@VBoxContainer@5507/@MarginContainer@5403": {
+          "class": "MarginContainer",
+          "rect": [
+            1100.0,
+            68.0,
+            820.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508/@VBoxContainer@5401/@VBoxContainer@5507/@MarginContainer@5403/@HBoxContainer@5402": {
+          "class": "HBoxContainer",
+          "rect": [
+            1124.0,
+            68.0,
+            780.0,
+            61.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508/@VBoxContainer@5401/@VBoxContainer@5507/@PanelContainer@5404": {
+          "class": "PanelContainer",
+          "rect": [
+            1100.0,
+            129.0,
+            820.0,
+            951.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_ficha/@Control@5508/@VBoxContainer@5401/@VBoxContainer@5507/@PanelContainer@5404/@VBoxContainer@5479": {
+          "class": "VBoxContainer",
+          "rect": [
+            1128.0,
+            153.0,
+            764.0,
+            903.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Reino Unido › Inglaterra › Greater London",
+        "Londres",
+        "CAPITAL",
+        "PUERTO: TILBURY",
+        "18 PROVINCIAS",
+        "DÉFICIT DE TRIGO",
+        "POBLACIÓN",
+        "15,1 M",
+        "EMPLEADOS",
+        "7,9 M",
+        "PIB LOCAL",
+        "$ 731 bi",
+        "Abastecimiento · últimos 30 días",
+        "4 dic",
+        "Cobertura de comida (%) — rojo por debajo de 70%",
+        "3 ene",
+        "PRODUCE",
+        "Bienes industriales",
+        "4.120 t/d",
+        "Servicios",
+        "$ 1,9 bi/d",
+        "Trigo",
+        "860 t/d",
+        "CONSUME",
+        "Trigo",
+        "1.290 t/d",
+        "Gas",
+        "2.300 t/d",
+        "Hierro",
+        "410 t/d",
+        "← → cambiar pestaña · ESC cerrar"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "ficha",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5648": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5648/@ColorRect@5593": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5648/@Control@5594": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5648/@Control@5594/@CenterContainer@5595": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5648/@Control@5594/@CenterContainer@5595/@MarginContainer@5647": {
+          "class": "MarginContainer",
+          "rect": [
+            584.0,
+            158.0,
+            752.0,
+            832.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5648/@Control@5594/@CenterContainer@5595/@MarginContainer@5647/@PanelContainer@5646": {
+          "class": "PanelContainer",
+          "rect": [
+            600.0,
+            174.0,
+            720.0,
+            800.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "TELEGRAMA",
+        "Nº 0447 · URGENTE",
+        "DE:",
+        "Ministério do Abastecimento",
+        "PARA:",
+        "Gabinete do Primeiro-Ministro",
+        "ASSUNTO:",
+        "Escassez de trigo em Londres",
+        "ESTOQUES DE TRIGO EM LONDRES CAEM HÁ SEIS DIAS PT COBERTURA EM 66 POR CENTO PT PORTO DE TILBURY CONGESTIONADO PT AGUARDAMOS INSTRUÇÕES PT",
+        "ESCOLHA UMA RESPOSTA",
+        "A · Importar trigo de emergência",
+        "−$ 1,2 bi do caixa · cobertura volta a 85% em 3 dias",
+        "B · Racionar consumo",
+        "Consumo −15% por 30 dias · satisfação −8",
+        "C · Aguardar o mercado",
+        "Sem custo · risco de fome se o déficit continuar",
+        "Recebido 3 jan 2026 · 01:00 · o jogo fica pausado até a decisão",
+        "PRIORIDADE"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": true,
+      "resolution": "1600x900",
+      "template": "telegrama",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5788": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5788/@ColorRect@5733": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5788/@Control@5734": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5788/@Control@5734/@CenterContainer@5735": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5788/@Control@5734/@CenterContainer@5735/@MarginContainer@5787": {
+          "class": "MarginContainer",
+          "rect": [
+            584.0,
+            158.0,
+            752.0,
+            832.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5788/@Control@5734/@CenterContainer@5735/@MarginContainer@5787/@PanelContainer@5786": {
+          "class": "PanelContainer",
+          "rect": [
+            600.0,
+            174.0,
+            720.0,
+            800.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "TELEGRAM",
+        "No. 0447 · URGENT",
+        "FROM:",
+        "Ministry of Supply",
+        "TO:",
+        "Office of the Prime Minister",
+        "SUBJECT:",
+        "Wheat shortage in London",
+        "WHEAT STOCKS IN LONDON HAVE FALLEN FOR SIX DAYS STOP COVERAGE AT 66 PER CENT STOP PORT OF TILBURY CONGESTED STOP AWAITING INSTRUCTIONS STOP",
+        "CHOOSE A REPLY",
+        "A · Import emergency wheat",
+        "−$1.2 bn from the treasury · coverage returns to 85% in 3 days",
+        "B · Ration consumption",
+        "Consumption −15% for 30 days · satisfaction −8",
+        "C · Wait for the market",
+        "No cost · risk of famine if the deficit continues",
+        "Received 3 Jan 2026 · 01:00 · the game stays paused until the decision",
+        "PRIORITY"
+      ],
+      "locale": "en",
+      "pauses_game": true,
+      "resolution": "1600x900",
+      "template": "telegrama",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5928": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5928/@ColorRect@5873": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5928/@Control@5874": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5928/@Control@5874/@CenterContainer@5875": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5928/@Control@5874/@CenterContainer@5875/@MarginContainer@5927": {
+          "class": "MarginContainer",
+          "rect": [
+            584.0,
+            158.0,
+            752.0,
+            832.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_telegrama/@Control@5928/@Control@5874/@CenterContainer@5875/@MarginContainer@5927/@PanelContainer@5926": {
+          "class": "PanelContainer",
+          "rect": [
+            600.0,
+            174.0,
+            720.0,
+            800.0
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "TELEGRAMA",
+        "N.º 0447 · URGENTE",
+        "DE:",
+        "Ministerio de Abastecimiento",
+        "PARA:",
+        "Gabinete del Primer Ministro",
+        "ASUNTO:",
+        "Escasez de trigo en Londres",
+        "LAS EXISTENCIAS DE TRIGO EN LONDRES CAEN DESDE HACE SEIS DÍAS STOP COBERTURA DEL 66 POR CIENTO STOP PUERTO DE TILBURY CONGESTIONADO STOP ESPERAMOS INSTRUCCIONES STOP",
+        "ELIGE UNA RESPUESTA",
+        "A · Importar trigo de emergencia",
+        "−$ 1,2 mil millones de la caja · la cobertura vuelve al 85% en 3 días",
+        "B · Racionar el consumo",
+        "Consumo −15% durante 30 días · satisfacción −8",
+        "C · Esperar al mercado",
+        "Sin coste · riesgo de hambre si continúa el déficit",
+        "Recibido 3 ene 2026 · 01:00 · el juego queda en pausa hasta la decisión",
+        "PRIORIDAD"
+      ],
+      "locale": "es",
+      "pauses_game": true,
+      "resolution": "1600x900",
+      "template": "telegrama",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6122": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6122/@ColorRect@6013": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6122/@Control@6014": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6122/@Control@6014/@CenterContainer@6015": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6122/@Control@6014/@CenterContainer@6015/@PanelContainer@6121": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6122/@Control@6014/@CenterContainer@6015/@PanelContainer@6121/@VBoxContainer@6016": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Estatísticas ›",
+        "Quadro comparativo",
+        "Indicador",
+        "Grupo",
+        "Ranking · População (milhões)",
+        "1",
+        "Estados Unidos",
+        "342",
+        "2",
+        "Japão",
+        "123",
+        "3",
+        "Alemanha",
+        "84",
+        "4",
+        "★ Reino Unido",
+        "68",
+        "5",
+        "França",
+        "66",
+        "6",
+        "Itália",
+        "59",
+        "7",
+        "Canadá",
+        "40",
+        "Fonte: cenário 2026 (ONU WPP). Sua nação em vermelho.",
+        "Sua posição",
+        "4",
+        "º",
+        "de 7 no G7 · 21º de 179 no mundo",
+        "Acima",
+        "Alemanha · +16 M",
+        "Abaixo",
+        "França · −2 M",
+        "Tendência · 12 meses",
+        "jan 2025",
+        "jan 2026",
+        "I trocar indicador",
+        "G trocar grupo",
+        "ESC",
+        "fechar"
+      ],
+      "locale": "pt_BR",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "quadro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6316": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6316/@ColorRect@6207": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6316/@Control@6208": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6316/@Control@6208/@CenterContainer@6209": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6316/@Control@6208/@CenterContainer@6209/@PanelContainer@6315": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6316/@Control@6208/@CenterContainer@6209/@PanelContainer@6315/@VBoxContainer@6210": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Statistics ›",
+        "Comparison board",
+        "Indicator",
+        "Group",
+        "Ranking · Population (millions)",
+        "1",
+        "United States of America",
+        "342",
+        "2",
+        "Japan",
+        "123",
+        "3",
+        "Germany",
+        "84",
+        "4",
+        "★ United Kingdom",
+        "68",
+        "5",
+        "France",
+        "66",
+        "6",
+        "Italy",
+        "59",
+        "7",
+        "Canada",
+        "40",
+        "Source: 2026 scenario (UN WPP). Your nation in red.",
+        "Your position",
+        "4",
+        "th",
+        "of 7 in the G7 · 21th of 179 worldwide",
+        "Above",
+        "Germany · +16 M",
+        "Below",
+        "France · −2 M",
+        "Trend · 12 months",
+        "Jan 2025",
+        "Jan 2026",
+        "I switch indicator",
+        "G switch group",
+        "ESC",
+        "close"
+      ],
+      "locale": "en",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "quadro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    },
+    {
+      "elements": {
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6510": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            0.0,
+            1920.0,
+            1080.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6510/@ColorRect@6401": {
+          "class": "ColorRect",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6510/@Control@6402": {
+          "class": "Control",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6510/@Control@6402/@CenterContainer@6403": {
+          "class": "CenterContainer",
+          "rect": [
+            0.0,
+            68.0,
+            1920.0,
+            1012.0
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6510/@Control@6402/@CenterContainer@6403/@PanelContainer@6509": {
+          "class": "PanelContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        },
+        "/root/UiTemplateGallery/@CanvasLayer@515/@Control@516/Shot_quadro/@Control@6510/@Control@6402/@CenterContainer@6403/@PanelContainer@6509/@VBoxContainer@6404": {
+          "class": "VBoxContainer",
+          "rect": [
+            134.0,
+            120.0,
+            1651.19995117188,
+            907.200012207031
+          ]
+        }
+      },
+      "focus": "",
+      "issues": [],
+      "labels": [
+        "Estadísticas ›",
+        "Cuadro comparativo",
+        "Indicador",
+        "Grupo",
+        "Ranking · Población (millones)",
+        "1",
+        "Estados Unidos",
+        "342",
+        "2",
+        "Japón",
+        "123",
+        "3",
+        "Alemania",
+        "84",
+        "4",
+        "★ Reino Unido",
+        "68",
+        "5",
+        "Francia",
+        "66",
+        "6",
+        "Italia",
+        "59",
+        "7",
+        "Canadá",
+        "40",
+        "Fuente: escenario 2026 (ONU WPP). Tu nación en rojo.",
+        "Tu posición",
+        "4",
+        "º",
+        "de 7 en el G7 · 21º de 179 en el mundo",
+        "Arriba",
+        "Alemania · +16 M",
+        "Abajo",
+        "Francia · −2 M",
+        "Tendencia · 12 meses",
+        "ene 2025",
+        "ene 2026",
+        "I cambiar indicador",
+        "G cambiar grupo",
+        "ESC",
+        "cerrar"
+      ],
+      "locale": "es",
+      "pauses_game": false,
+      "resolution": "1600x900",
+      "template": "quadro",
+      "viewport": [
+        1920.0,
+        1080.0
+      ]
+    }
+  ],
+  "engine": "4.7.2-stable (official)",
+  "phase": "templates",
+  "shots": [
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/dossie.png",
+      "resolution": "1920x1080",
+      "template": "dossie"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/registro.png",
+      "resolution": "1920x1080",
+      "template": "registro"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/ficha.png",
+      "resolution": "1920x1080",
+      "template": "ficha"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/telegrama.png",
+      "resolution": "1920x1080",
+      "template": "telegrama"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/quadro.png",
+      "resolution": "1920x1080",
+      "template": "quadro"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/dossie_1600x900.png",
+      "resolution": "1600x900",
+      "template": "dossie"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/registro_1600x900.png",
+      "resolution": "1600x900",
+      "template": "registro"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/ficha_1600x900.png",
+      "resolution": "1600x900",
+      "template": "ficha"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/telegrama_1600x900.png",
+      "resolution": "1600x900",
+      "template": "telegrama"
+    },
+    {
+      "error": 0,
+      "path": "res://docs/ui/templates/captures/quadro_1600x900.png",
+      "resolution": "1600x900",
+      "template": "quadro"
+    }
+  ],
+  "skipped": [],
+  "stretch": {
+    "aspect": "expand",
+    "mode": "canvas_items"
+  },
+  "timestamp": "2026-11-13T01:03:57"
+}
