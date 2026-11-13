@@ -493,22 +493,18 @@ static func icon_button(glyph: String, tooltip_text: String = "") -> Button:
 
 # --- Botão fechar: "Lacre de cera" ------------------------------------------
 ## Fechar de TODAS as telas: círculo de cera CARIMBO (#a3241a), borda 2 px
-## #7a1a12, anel interno de 3 px #c43c30 e X em papel (#efe6cc) na Black Ops
-## One. Hover: fundo #c43c30 e anel #e0605a; pressed: #8e1f17; foco: anel
-## latão de 1 px. `size` = 38 sobre a barra escura, 52 sobre papel.
+## #7a1a12, anel interno de 3 px #c43c30 e X em papel (#efe6cc) DESENHADO em
+## vetor (não um glifo de fonte, que aparecia como letra "x" em algumas telas).
+## Hover: fundo #c43c30 e anel #e0605a; pressed: #8e1f17; foco: anel latão de
+## 1 px. `size` = 38 sobre a barra escura, 52 sobre papel.
 static func close_seal_button(size: int = SEAL_SIZE_BAR) -> Button:
 	var button := Button.new()
-	button.text = "X"
 	button.custom_minimum_size = Vector2(size, size)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.tooltip_text = I18n.t("tpl.common.close")
-	button.add_theme_font_override("font", PAPER_DISPLAY_FONT)
-	button.add_theme_font_size_override("font_size", int(round(size * 0.5)))
-	for state in ["font_color", "font_hover_color", "font_pressed_color",
-			"font_focus_color", "font_hover_pressed_color"]:
-		button.add_theme_color_override(state, PAPEL_CLARO)
+	button.accessibility_name = I18n.t("tpl.common.close")
 
 	var radius := int(round(size * 0.5))
 	button.add_theme_stylebox_override("normal", _seal_style(CARIMBO, radius))
@@ -534,7 +530,39 @@ static func close_seal_button(size: int = SEAL_SIZE_BAR) -> Button:
 		ring.add_theme_stylebox_override("panel", ring_hover))
 	button.mouse_exited.connect(func() -> void:
 		ring.add_theme_stylebox_override("panel", ring_rest))
+
+	# X vetorial por cima do anel: idêntico em 38 e 52 px, em qualquer fonte.
+	var cross := SealCross.new()
+	cross.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.add_child(cross)
 	return button
+
+
+## Cruz do lacre desenhada com `draw_line`: duas linhas de 3 px, pontas
+## arredondadas (círculos do raio do traço) e cor de papel. O tamanho acompanha
+## o botão, então o X é o mesmo desenho em 38 e em 52 px.
+class SealCross extends Control:
+	const STROKE_PX := 3.0
+	## Meia-diagonal da cruz como fração do diâmetro do lacre.
+	const ARM_RATIO := 0.145
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			queue_redraw()
+
+	func _draw() -> void:
+		var arm := minf(size.x, size.y) * ARM_RATIO
+		var center := size * 0.5
+		for direction in [Vector2(-1.0, -1.0), Vector2(-1.0, 1.0)]:
+			var a: Vector2 = center + direction * arm
+			var b: Vector2 = center - direction * arm
+			draw_line(a, b, PAPEL_CLARO, STROKE_PX, true)
+			# O `draw_line` do Godot só tem ponta reta; os círculos arredondam.
+			draw_circle(a, STROKE_PX * 0.5, PAPEL_CLARO)
+			draw_circle(b, STROKE_PX * 0.5, PAPEL_CLARO)
 
 
 ## Disco de cera: fundo cheio, borda 2 px SEAL_BORDER e cantos redondos no raio.
