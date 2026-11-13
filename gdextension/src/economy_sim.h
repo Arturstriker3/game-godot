@@ -186,6 +186,22 @@ public:
 	 */
 	bool demo_spend_government(const String& city_id, double amount);
 
+	/**
+	 * Expande a capacidade de um porto (obra pública): o custo sai do orçamento
+	 * da cidade-sede e é pago ao setor de construção; a capacidade entra em
+	 * operação depois de `kDemoPortBuildDays` dias.
+	 * @param port_id Identificador do porto (ports.json).
+	 * @param t_per_day Capacidade a adicionar, em t/dia.
+	 * @returns {expanded, cost, days, capacity, error}.
+	 */
+	Dictionary demo_expand_port(const String& port_id, double t_per_day);
+
+	/**
+	 * Hook de teste/administração: define a capacidade corrente de um porto,
+	 * mantendo a base (nível 1). Não cobra nem agenda obra.
+	 */
+	void demo_set_port_capacity(const String& port_id, double t_per_day);
+
 	/** Serializa todo o estado do cenário (save). */
 	Dictionary demo_to_dict() const;
 
@@ -294,6 +310,20 @@ private:
 		std::string nation;  // dono (estratégico: sem porto, sem mar)
 		MapPoint center;
 		std::string landmass;
+		// Cidade-sede (`port_of`). NÃO é dono exclusivo: qualquer cidade da
+		// nação na mesma massa de terra usa o porto (ver port_design.md).
+		std::string host_city;
+		// Capacidade e fila (t/dia). `base_capacity_t_per_day` é o nível 1
+		// (população da cidade-sede); `capacity_t_per_day` já inclui a expansão.
+		double base_capacity_t_per_day = 0.0;
+		double capacity_t_per_day = 0.0;
+		double used_today_t = 0.0;  // carga comprometida no dia corrente
+		double queue_t = 0.0;       // pico de carga acima da capacidade no dia
+		double delay_hours = 0.0;   // atraso acumulado do dia (fila)
+		double demurrage = 0.0;     // custo de fila do dia (pago ao frete)
+		// Obra de expansão em andamento (API demo_expand_port).
+		double pending_capacity_t_per_day = 0.0;
+		int pending_days = 0;
 	};
 
 	struct TradeOrder {
@@ -560,7 +590,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput;
 		DemoStatusKeys();
 	};
 
@@ -740,6 +770,31 @@ private:
 	void demo_national_fiscal_transfer();
 	const Port* demo_nearest_port(const std::string& nation, const std::string& landmass,
 	                              const MapPoint& from) const;
+	Port* find_demo_port(const std::string& id);
+	/**
+	 * Índice da cidade da nação/massa mais próxima do ponto (-1 se nenhuma).
+	 * Usado como cidade-sede/cobradora quando `port_of` não aponta para uma
+	 * cidade existente (cenário sintético, save antigo).
+	 */
+	int demo_city_index_near(const std::string& nation, const std::string& landmass,
+	                         const MapPoint& from) const;
+	/**
+	 * Capacidade inicial de cada porto (nível 1) pela população de simulação da
+	 * cidade-sede (`port_of`); sem sede conhecida, usa a cidade mais próxima da
+	 * mesma nação/massa e, por fim, o piso de referência. Chamado no fim de
+	 * initialize_demo_world e de demo_from_dict (save sem portos).
+	 */
+	void demo_init_port_capacities();
+	/** Zera o uso do dia e as métricas de fila de todos os portos. */
+	void demo_reset_port_usage();
+	/** Aplica obras de expansão de porto cujo prazo venceu neste dia. */
+	void demo_tick_port_expansion();
+	/**
+	 * Compromete `tons` de carga num porto e devolve o atraso em dias (fila).
+	 * Acumula `used_today_t`, `queue_t`, `delay_hours` e `demurrage`;
+	 * `demurrage_out` recebe o custo de fila a cobrar do comprador.
+	 */
+	double demo_port_charge(Port& port, double tons, double& demurrage_out);
 	static int demo_product_index(const String& product);
 	// Slot da cesta alimentar (0..kDemoFoodProducts-1) -> id de produto.
 	static int demo_food_product(int slot);

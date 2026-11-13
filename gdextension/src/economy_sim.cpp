@@ -46,6 +46,10 @@ constexpr double kMapWidth = 5000.0;
 constexpr double kMapHeight = 2500.0;
 constexpr double kHoursPerDay = 24.0;
 
+// Sobrecarga de embarque por lote (a frota sai em comboio, não em série).
+// Usada por make_leg (tempo do trecho), por isso vive no primeiro bloco.
+constexpr double kDemoLoadHoursPerBatch = 0.5;
+
 // 0,3 kg de trigo por pessoa por dia, em toneladas.
 constexpr double kNeedPerCapita = 0.0003;
 
@@ -141,6 +145,10 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_build);
 	ClassDB::bind_method(D_METHOD("demo_spend_government", "city_id", "amount"),
 	                     &EconomySim::demo_spend_government);
+	ClassDB::bind_method(D_METHOD("demo_expand_port", "port_id", "t_per_day"),
+	                     &EconomySim::demo_expand_port);
+	ClassDB::bind_method(D_METHOD("demo_set_port_capacity", "port_id", "t_per_day"),
+	                     &EconomySim::demo_set_port_capacity);
 	ClassDB::bind_method(D_METHOD("demo_to_dict"), &EconomySim::demo_to_dict);
 	ClassDB::bind_method(D_METHOD("demo_from_dict", "data"), &EconomySim::demo_from_dict);
 	ClassDB::bind_method(D_METHOD("demo_set_balance", "values"),
@@ -159,9 +167,12 @@ void EconomySim::_bind_methods() {
 const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
 	// capacidade de lote = carga útil de uma composição/frota padrão.
 	// custo em unidades monetárias por tonelada-quilômetro.
-	static const ModeSpec kTruck{TransportMode::Truck, "truck", 65.0, 1200.0, 0.10, 6.0};
-	static const ModeSpec kShip{TransportMode::Ship, "ship", 35.0, 12000.0, 0.02, 24.0};
-	static const ModeSpec kPlane{TransportMode::Plane, "plane", 750.0, 400.0, 0.80, 24.0};
+	// Calibragem do porto (port_design.md §3): um caminhão leva 25 t, um navio
+	// 2.000 t (80× mais) a 1/5 do custo por t·km; o avião é a ponte de
+	// emergência, com lote pequeno.
+	static const ModeSpec kTruck{TransportMode::Truck, "truck", 65.0, 25.0, 0.10, 6.0};
+	static const ModeSpec kShip{TransportMode::Ship, "ship", 35.0, 2000.0, 0.02, 24.0};
+	static const ModeSpec kPlane{TransportMode::Plane, "plane", 750.0, 20.0, 0.80, 24.0};
 
 	switch (mode) {
 		case TransportMode::Ship:
@@ -495,11 +506,12 @@ EconomySim::Leg EconomySim::make_leg(TransportMode mode, const std::string& from
 	const ModeSpec& mode_spec = spec(mode);
 	const double distance = distance_km(from_point, to_point);
 
-	// Viagens necessárias para escoar o lote; o prazo considera a última delas.
-	// O tempo de viagem soma a sobrecarga de carga/descarga (turnaround).
+	// Viagens necessárias para escoar o lote (cada lote = um veículo). A frota
+	// parte em comboio: o prazo é o do veículo mais o embarque dos lotes, não
+	// `tempo × nº de veículos`. O transbordo soma a sobrecarga de carga/descarga.
 	const int trips = std::max(1, static_cast<int>(std::ceil(load_tons / mode_spec.batch_capacity_tons)));
-	const double hours = distance / mode_spec.speed_kmh * static_cast<double>(trips)
-	                     + mode_spec.turnaround_hours;
+	const double hours = distance / mode_spec.speed_kmh + mode_spec.turnaround_hours
+	                     + static_cast<double>(trips) * kDemoLoadHoursPerBatch;
 
 	Leg leg;
 	leg.mode = mode;
@@ -739,6 +751,24 @@ constexpr double kDemoFreightPerTonKm = 0.10;
 // Frete marítimo (entre massas de terra), espelhando a taxa de navio do
 // mercado legado: 5x mais barato que o caminhão por tonelada-km.
 constexpr double kDemoFreightShipPerTonKm = 0.02;
+
+// ---------------------------------------------------------------------------
+// Portos (ver docs/economy/port_design.md).
+//
+// Capacidade de nível 1 pela população de simulação da cidade-sede: piso de
+// 1.000 t/dia (~0,4 Mt/ano, porto pequeno) e teto de 50.000 t/dia (~18 Mt/ano,
+// calado de metrópole). O nível multiplica a base (1..N).
+// ---------------------------------------------------------------------------
+constexpr double kDemoPortBaseTons = 1000.0;
+constexpr double kDemoPortTonsPerCapita = 0.002;  // 2 kg/habitante/dia
+constexpr double kDemoPortMaxTons = 50000.0;
+// Capital público por t/dia de capacidade nova e prazo da obra.
+constexpr double kDemoPortCapitalPerTonCapacity = 500.0;
+constexpr int kDemoPortBuildDays = 30;
+// Tempo de transbordo (carga/descarga) por operação no cais.
+constexpr double kDemoPortHandlingHours = 8.0;
+// Fila: custo de demurrage por tonelada e por dia de atraso fracionário.
+constexpr double kDemoPortDemurragePerTonDay = 0.5;
 constexpr double kDemoPriceSmoothing = 0.20;
 
 // Produção segue as vendas do dia anterior, com pequena folga de estoque.
@@ -1145,10 +1175,16 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		port.nation = std::string(String(d["nation"]).utf8().get_data());
 		port.center = {static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 		port.landmass = std::string(String(d.get("landmass", "")).utf8().get_data());
+		// Cidade-sede: só a âncora do porto (não é dono exclusivo do tráfego).
+		port.host_city = std::string(String(d.get("port_of", d.get("host_city", "")))
+			.utf8().get_data());
 		demo_ports_.push_back(std::move(port));
 	}
 
 	demo_rebuild_indexes();
+	// Capacidade de nível 1 depende da população da cidade-sede: só depois do
+	// índice de cidades (e de os portos existirem).
+	demo_init_port_capacities();
 }
 
 EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) {
@@ -1290,6 +1326,11 @@ void EconomySim::demo_trade_food() {
 	// o alimento que entregar a caloria mais barata (preço + frete por
 	// tonelada-equivalente de grão), mais perto primeiro quando há empate. O
 	// frete é serviço doméstico do comprador (conserva o dinheiro).
+	//
+	// Porto (docs/economy/port_design.md): a travessia entre massas de terra
+	// passa obrigatoriamente por um porto da nação em cada ponta; a capacidade
+	// diária do cais é consumida aqui e o excesso vira fila (atraso + demurrage).
+	demo_reset_port_usage();
 
 	struct Buyer {
 		int index;
@@ -1383,20 +1424,64 @@ void EconomySim::demo_trade_food() {
 	// externo. São vendedores REAIS: o dinheiro continua indo para uma firma
 	// existente, sem mercado agregado artificial.
 	const std::size_t city_count = demo_cities_.size();
+	// Porto nacional de cada cidade (mesma nação e massa de terra), escolhido
+	// uma vez por dia: o mais próximo é o de menor frete terrestre. É o porto
+	// que a cidade usa para exportar/importar — `port_of` só aponta a sede.
+	std::vector<int> city_port(city_count, -1);
+	if (!demo_ports_.empty()) {
+		// Baldes por (nação, massa de terra): a cidade só compara com os portos
+		// que pode usar (porto nacional na própria massa), não com os ~138 do
+		// mundo. Custa uma fração de uma passada cidades × portos.
+		std::unordered_map<std::string, std::vector<int>> ports_by_region;
+		ports_by_region.reserve(demo_ports_.size() * 2);
+		for (std::size_t pi = 0; pi < demo_ports_.size(); ++pi) {
+			const Port& port = demo_ports_[pi];
+			ports_by_region[port.nation + '\n' + port.landmass]
+				.push_back(static_cast<int>(pi));
+		}
+		for (std::size_t ci = 0; ci < city_count; ++ci) {
+			const DemoCity& city = demo_cities_[ci];
+			const auto found =
+				ports_by_region.find(city.nation + '\n' + city.landmass);
+			if (found == ports_by_region.end()) {
+				continue;
+			}
+			int best_port = -1;
+			double best_distance = 0.0;
+			for (const int pi : found->second) {
+				const double distance =
+					distance_km(city.center, demo_ports_[static_cast<std::size_t>(pi)].center);
+				if (best_port < 0 || distance < best_distance) {
+					best_port = pi;
+					best_distance = distance;
+				}
+			}
+			city_port[ci] = best_port;
+		}
+	}
 	const bool exhaustive = city_count <= kDemoTradeExhaustiveLimit;
 	const double cell = kDemoTradeCellMapUnits;
 	const int grid_w = std::max(1, static_cast<int>(std::ceil(kMapWidth / cell)));
 	const int grid_h = std::max(1, static_cast<int>(std::ceil(kMapHeight / cell)));
 	std::vector<std::vector<int>> grid(
 		static_cast<std::size_t>(grid_w * grid_h));
+	// Bitmask de células com pelo menos um vendedor: quando a oferta do dia é
+	// escassa (regra do porto deixa parte do mundo sem rota marítima), o anel
+	// varria a grade inteira por comprador. A máscara evita tocar nas ~12 mil
+	// listas vazias (cache miss por célula) sem mudar QUEM é candidato: o
+	// filtro de `sellable_ge` dentro de scan_cell continua valendo.
+	std::vector<char> cell_has_seller(static_cast<std::size_t>(grid_w * grid_h), 0);
 	auto cell_index = [cell, grid_w, grid_h](const MapPoint& point) {
 		const int ix = std::clamp(static_cast<int>(point.x / cell), 0, grid_w - 1);
 		const int iy = std::clamp(static_cast<int>(point.y / cell), 0, grid_h - 1);
 		return iy * grid_w + ix;
 	};
 	for (std::size_t si = 0; si < city_count; ++si) {
-		grid[static_cast<std::size_t>(cell_index(demo_cities_[si].center))]
-			.push_back(static_cast<int>(si));
+		const int index = cell_index(demo_cities_[si].center);
+		grid[static_cast<std::size_t>(index)].push_back(static_cast<int>(si));
+		if (sellable_ge[si] > 1e-9) {
+			cell_has_seller[static_cast<std::size_t>(index)] = 1;
+		}
 	}
 
 	// Ofertas por slot da cesta, ordenadas pelo custo por caloria do preço
@@ -1440,6 +1525,25 @@ void EconomySim::demo_trade_food() {
 	// vendedor se esgota no meio do dia.
 	int sellers_left = total_sellers;
 
+	// Vendedores alcançáveis por um comprador (regra do porto): na mesma massa
+	// de terra sempre; entre massas, só se AS DUAS pontas têm porto. Contagens
+	// iniciais do dia são um teto (só diminuem quando um vendedor esgota), então
+	// nunca descartam um comprador que ainda poderia comprar. Sem isso, um
+	// comprador sem rota possível varria a grade inteira (12 mil células) todos
+	// os dias atrás de vendedores que nunca poderiam servi-lo.
+	std::unordered_map<std::string, int> sellers_in_landmass;
+	std::unordered_map<std::string, int> port_sellers_in_landmass;
+	int port_sellers_total = 0;
+	for (std::size_t si = 0; si < city_count; ++si) {
+		if (sellable_ge[si] <= 1e-9) {
+			continue;
+		}
+		++sellers_in_landmass[demo_cities_[si].landmass];
+		if (city_port[si] >= 0) {
+			++port_sellers_in_landmass[demo_cities_[si].landmass];
+			++port_sellers_total;
+		}
+	}
 	std::size_t shipments = 0;
 	for (Buyer& buyer : buyers) {
 		if (sellers_left <= 0) {
@@ -1459,6 +1563,17 @@ void EconomySim::demo_trade_food() {
 		};
 
 		// Candidatos do comprador: K vendedores mais próximos + mercado externo.
+		// Rota possível? Na mesma massa de terra, caminhão direto; entre massas,
+		// só com porto nas duas pontas. Comprador sem nenhum vendedor alcançável
+		// não gera oferta: sair aqui evita varrer a grade inteira por dia.
+		const int buyer_port = city_port[static_cast<std::size_t>(buyer.index)];
+		const int local_sellers = sellers_in_landmass[buyer.city->landmass];
+		const int local_port_sellers = port_sellers_in_landmass[buyer.city->landmass];
+		const int reachable_sellers = local_sellers + (buyer_port >= 0
+			? port_sellers_total - local_port_sellers : 0);
+		if (reachable_sellers <= 0) {
+			continue;
+		}
 		std::vector<int> candidates;
 		if (exhaustive) {
 			candidates.reserve(city_count);
@@ -1477,19 +1592,45 @@ void EconomySim::demo_trade_food() {
 			// varrendo células vazias muito além do mapa: com grade 157×79 e
 			// menos de K vendedores no mundo, cada comprador percorria ~5,2 M
 			// células (O(raio³) acumulado) — o bench ficava minutos parado.
-			const int max_radius = std::max(
-				std::max(bx, grid_w - 1 - bx), std::max(by, grid_h - 1 - by));
-			const int wanted = std::min(k_neighbors, sellers_left);
+			//
+			// Teto ECONÔMICO (regra do porto): sem porto só há caminhão, cujo
+			// frete já supera o preço do alimento bem antes de 2.000 km (~8
+			// células de 250 km). Com porto, o navio é 5× mais barato e o anel
+			// cobre o globo. Sem esse teto, um comprador sem rota marítima
+			// varria a grade inteira todos os dias atrás de vendedores que nunca
+			// seriam competitivos.
+			const int ring_radius_limit = buyer_port >= 0 ? 48 : 8;
+			const int max_radius = std::min(std::max(
+				std::max(bx, grid_w - 1 - bx), std::max(by, grid_h - 1 - by)),
+				ring_radius_limit);
+			const int wanted = std::min(k_neighbors,
+				std::min(sellers_left, reachable_sellers));
 			// Limite de segurança: nenhum comprador visita mais células que a
-			// grade inteira, mesmo que as condições acima mudem.
-			int cells_budget = grid_w * grid_h;
+			// grade inteira. Com oferta escassa (fim do dia, porto bloqueando
+			// rotas), o anel tentava provar que não havia mais ninguém até o
+			// fim do mapa para cada comprador; 1.024 células (raio ~16, ~4.000
+			// km) já cobrem o alcance econômico — além dele entra o mercado
+			// externo (M ofertas mais baratas do globo), que é anexado sempre.
+			int cells_budget = std::min(grid_w * grid_h, 1024);
 			auto scan_cell = [&](int ix, int iy) {
 				if (ix < 0 || ix >= grid_w || iy < 0 || iy >= grid_h || cells_budget <= 0) {
 					return;
 				}
 				--cells_budget;
-				for (const int si : grid[static_cast<std::size_t>(iy * grid_w + ix)]) {
+				const std::size_t cell_offset =
+					static_cast<std::size_t>(iy * grid_w + ix);
+				if (cell_has_seller[cell_offset] == 0) {
+					return;
+				}
+				for (const int si : grid[cell_offset]) {
 					if (si == buyer.index || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
+						continue;
+					}
+					// Sem porto, a cidade só compra dentro da própria massa de
+					// terra: vendedores do outro lado do mar não são candidatos.
+					if (buyer_port < 0
+							&& demo_cities_[static_cast<std::size_t>(si)].landmass
+								!= buyer.city->landmass) {
 						continue;
 					}
 					candidates.push_back(si);
@@ -1549,10 +1690,27 @@ void EconomySim::demo_trade_food() {
 				continue;
 			}
 			const bool same_landmass = seller.landmass == buyer.city->landmass;
-			const double freight_rate = same_landmass
-				? kDemoFreightPerTonKm : kDemoFreightShipPerTonKm;
-			const double unit_freight =
-				distance_km(seller.center, buyer.city->center) * freight_rate;
+			double unit_freight = 0.0;
+			if (same_landmass) {
+				unit_freight =
+					distance_km(seller.center, buyer.city->center) * kDemoFreightPerTonKm;
+			} else {
+				// Travessia marítima só entre nações COM porto na massa de terra
+				// de cada cidade: cidade→porto (caminhão) + porto→porto (navio) +
+				// porto→cidade (caminhão). Sem porto de um dos lados, não há
+				// oferta: a nação só comercia por terra com vizinhos.
+				const int seller_port = city_port[static_cast<std::size_t>(si)];
+				const int buyer_port = city_port[buyer.index];
+				if (seller_port < 0 || buyer_port < 0) {
+					continue;
+				}
+				const Port& sp = demo_ports_[static_cast<std::size_t>(seller_port)];
+				const Port& bp = demo_ports_[static_cast<std::size_t>(buyer_port)];
+				unit_freight =
+					distance_km(seller.center, sp.center) * kDemoFreightPerTonKm
+					+ distance_km(sp.center, bp.center) * kDemoFreightShipPerTonKm
+					+ distance_km(bp.center, buyer.city->center) * kDemoFreightPerTonKm;
+			}
 			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
 				const int product = demo_food_product(slot);
 				const double factor = demo_food_calories(product);
@@ -1665,14 +1823,13 @@ void EconomySim::demo_trade_food() {
 			buyer.city->imported[product] += amount_tons;
 			buyer.city->import_value[product] += cost;
 
-			demo_in_transit_.push_back({buyer.city->id, product, amount_tons, day_ + 1});
-
 			const bool same_landmass = seller->landmass == buyer.city->landmass;
 
 			// Pedido de comércio para os comboios 3D e o HUD. Na mesma massa de
-			// terra vai de caminhão em linha reta; entre massas, o navio entra
-			// pelo porto do vendedor e sai pelo porto do comprador (infraestrutura
-			// nacional: sem porto, sem travessia marítima — cai no direto).
+			// terra vai de caminhão em linha reta; entre massas, o caminhão
+			// termina no porto nacional, o navio liga os dois cais e outro
+			// caminhão entrega na cidade (infraestrutura nacional: o porto serve
+			// a nação toda, não só a cidade-sede).
 			TradeOrder order;
 			order.from_city = seller->id;
 			order.to_city = buyer.city->id;
@@ -1683,6 +1840,7 @@ void EconomySim::demo_trade_food() {
 
 			double total_transit = 0.0;
 			double total_freight_cost = 0.0;
+			double port_delay_days = 0.0;
 			if (same_landmass) {
 				Leg leg = make_leg(TransportMode::Truck, seller->id, buyer.city->id,
 					seller->center, buyer.city->center, amount_tons);
@@ -1690,47 +1848,65 @@ void EconomySim::demo_trade_food() {
 				total_freight_cost = leg.cost;
 				order.legs.push_back(std::move(leg));
 			} else {
-				const Port* seller_port = demo_nearest_port(
-					seller->nation, seller->landmass, seller->center);
-				const Port* buyer_port = demo_nearest_port(
-					buyer.city->nation, buyer.city->landmass, buyer.city->center);
-				if (seller_port != nullptr && buyer_port != nullptr) {
+				const int seller_port_index = city_port[static_cast<std::size_t>(si)];
+				const int buyer_port_index = city_port[buyer.index];
+				// A oferta só entra na lista com os dois portos (ver o bloco de
+				// ofertas); checar aqui é rede de segurança, não caminho normal.
+				if (seller_port_index >= 0 && buyer_port_index >= 0) {
+					Port& seller_port =
+						demo_ports_[static_cast<std::size_t>(seller_port_index)];
+					Port& buyer_port =
+						demo_ports_[static_cast<std::size_t>(buyer_port_index)];
 					// Cidade -> porto do vendedor (caminhão).
-					if (distance_km(seller->center, seller_port->center) > 1.0) {
+					if (distance_km(seller->center, seller_port.center) > 1.0) {
 						Leg leg = make_leg(TransportMode::Truck, seller->id,
-							seller_port->name, seller->center, seller_port->center, amount_tons);
+							seller_port.id, seller->center, seller_port.center, amount_tons);
 						total_transit += leg.transit_hours;
 						total_freight_cost += leg.cost;
 						order.legs.push_back(std::move(leg));
 					}
-					// Porto -> porto (navio).
+					// Porto -> porto (navio): a única travessia marítima.
 					{
-						Leg leg = make_leg(TransportMode::Ship, seller_port->name,
-							buyer_port->name, seller_port->center, buyer_port->center, amount_tons);
+						Leg leg = make_leg(TransportMode::Ship, seller_port.id,
+							buyer_port.id, seller_port.center, buyer_port.center, amount_tons);
 						total_transit += leg.transit_hours;
 						total_freight_cost += leg.cost;
 						order.legs.push_back(std::move(leg));
 					}
 					// Porto do comprador -> cidade (caminhão).
-					if (distance_km(buyer_port->center, buyer.city->center) > 1.0) {
-						Leg leg = make_leg(TransportMode::Truck, buyer_port->name,
-							buyer.city->id, buyer_port->center, buyer.city->center, amount_tons);
+					if (distance_km(buyer_port.center, buyer.city->center) > 1.0) {
+						Leg leg = make_leg(TransportMode::Truck, buyer_port.id,
+							buyer.city->id, buyer_port.center, buyer.city->center, amount_tons);
 						total_transit += leg.transit_hours;
 						total_freight_cost += leg.cost;
 						order.legs.push_back(std::move(leg));
 					}
-				} else {
-					// Sem porto na rota: navio direto entre cidades.
-					Leg leg = make_leg(TransportMode::Ship, seller->id, buyer.city->id,
-						seller->center, buyer.city->center, amount_tons);
-					total_transit = leg.transit_hours;
-					total_freight_cost = leg.cost;
-					order.legs.push_back(std::move(leg));
+					// Transbordo nos dois cais + fila do dia. O atraso de fila
+					// atrasa a CHEGADA em dias inteiros; o demurrage é pago pelo
+					// orçamento público do comprador ao setor de frete dele
+					// (dinheiro conservado; sem verba, a fila só atrasa).
+					total_transit += 2.0 * kDemoPortHandlingHours;
+					double demurrage = 0.0;
+					port_delay_days +=
+						demo_port_charge(seller_port, amount_tons, demurrage);
+					port_delay_days +=
+						demo_port_charge(buyer_port, amount_tons, demurrage);
+					const double demurrage_paid = std::min(
+						demurrage, std::max(0.0, buyer.city->government_budget));
+					buyer.city->government_budget -= demurrage_paid;
+					buyer.city->service_cash += demurrage_paid;
+					buyer.city->freight_revenue += demurrage_paid;
+					total_freight_cost += demurrage_paid;
+					total_transit += port_delay_days * kHoursPerDay;
 				}
 			}
 			order.transit_hours = total_transit;
 			order.freight_cost = total_freight_cost;
 			demo_last_orders_.push_back(std::move(order));
+
+			const int arrival_day =
+				day_ + 1 + static_cast<int>(std::ceil(port_delay_days));
+			demo_in_transit_.push_back({buyer.city->id, product, amount_tons, arrival_day});
 
 			sellable_ge[si] -= ge;
 			if (sellable_ge[si] <= 1e-9) {
@@ -1791,6 +1967,169 @@ const EconomySim::Port* EconomySim::demo_nearest_port(const std::string& nation,
 		}
 	}
 	return best;
+}
+
+EconomySim::Port* EconomySim::find_demo_port(const std::string& id) {
+	for (Port& port : demo_ports_) {
+		if (port.id == id) {
+			return &port;
+		}
+	}
+	return nullptr;
+}
+
+int EconomySim::demo_city_index_near(const std::string& nation,
+		const std::string& landmass, const MapPoint& from) const {
+	int best = -1;
+	double best_distance = 0.0;
+	for (std::size_t index = 0; index < demo_cities_.size(); ++index) {
+		const DemoCity& city = demo_cities_[index];
+		if (city.nation != nation || city.landmass != landmass) {
+			continue;
+		}
+		const double distance = distance_km(from, city.center);
+		if (best < 0 || distance < best_distance) {
+			best = static_cast<int>(index);
+			best_distance = distance;
+		}
+	}
+	return best;
+}
+
+void EconomySim::demo_init_port_capacities() {
+	// Capacidade de nível 1 pela população de simulação da cidade-sede. Sem
+	// `port_of` válido (bench sintético), usa a cidade da nação/massa mais
+	// próxima do cais; sem nenhuma, o piso de referência.
+	for (Port& port : demo_ports_) {
+		double population = 0.0;
+		const DemoCity* host = port.host_city.empty()
+			? nullptr : find_demo_city(port.host_city);
+		if (host != nullptr) {
+			population = host->simulation_population;
+		} else {
+			const int near = demo_city_index_near(port.nation, port.landmass, port.center);
+			if (near >= 0) {
+				port.host_city = demo_cities_[static_cast<std::size_t>(near)].id;
+				population =
+					demo_cities_[static_cast<std::size_t>(near)].simulation_population;
+			}
+		}
+		port.base_capacity_t_per_day = std::clamp(
+			kDemoPortBaseTons + kDemoPortTonsPerCapita * safe_nonneg(population),
+			kDemoPortBaseTons, kDemoPortMaxTons);
+		port.capacity_t_per_day = port.base_capacity_t_per_day;
+		port.used_today_t = 0.0;
+		port.queue_t = 0.0;
+		port.delay_hours = 0.0;
+		port.demurrage = 0.0;
+		port.pending_capacity_t_per_day = 0.0;
+		port.pending_days = 0;
+	}
+}
+
+void EconomySim::demo_reset_port_usage() {
+	for (Port& port : demo_ports_) {
+		port.used_today_t = 0.0;
+		port.queue_t = 0.0;
+		port.delay_hours = 0.0;
+		port.demurrage = 0.0;
+	}
+}
+
+void EconomySim::demo_tick_port_expansion() {
+	for (Port& port : demo_ports_) {
+		if (port.pending_capacity_t_per_day <= 1e-9) {
+			continue;
+		}
+		if (port.pending_days > 0) {
+			--port.pending_days;
+		}
+		if (port.pending_days <= 0) {
+			port.capacity_t_per_day += port.pending_capacity_t_per_day;
+			port.pending_capacity_t_per_day = 0.0;
+		}
+	}
+}
+
+double EconomySim::demo_port_charge(Port& port, double tons, double& demurrage_out) {
+	const double load = safe_nonneg(tons);
+	const double capacity = std::max(1.0, port.capacity_t_per_day);
+	const double overflow = std::max(0.0, port.used_today_t + load - capacity);
+	// Fila medida em dias de capacidade: 1.000 t acima de um cais de 1.000 t/dia
+	// custa um dia de atraso; um excesso pequeno atrasa só uma fração do dia.
+	const double delay_days = overflow / capacity;
+	const double demurrage = overflow * delay_days * kDemoPortDemurragePerTonDay;
+	port.used_today_t += load;
+	port.queue_t = std::max(port.queue_t, overflow);
+	port.delay_hours += delay_days * kHoursPerDay;
+	port.demurrage += demurrage;
+	demurrage_out += demurrage;
+	return delay_days;
+}
+
+Dictionary EconomySim::demo_expand_port(const String& port_id, double t_per_day) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["expanded"] = false;
+	result["cost"] = 0.0;
+	result["days"] = 0;
+	result["capacity"] = 0.0;
+	result["error"] = "";
+
+	Port* port = find_demo_port(std::string(port_id.utf8().get_data()));
+	if (port == nullptr) {
+		result["error"] = "porto desconhecido";
+		return result;
+	}
+	result["capacity"] = port->capacity_t_per_day;
+	const double add = safe_nonneg(t_per_day);
+	if (add <= 1e-9) {
+		result["error"] = "capacidade invalida";
+		return result;
+	}
+
+	// Obra pública: paga o orçamento da cidade-sede e credita o setor de
+	// construção (dinheiro conservado).
+	int payer_index = -1;
+	if (!port->host_city.empty()) {
+		const auto found = demo_city_lookup_.find(port->host_city);
+		if (found != demo_city_lookup_.end()) {
+			payer_index = found->second;
+		}
+	}
+	if (payer_index < 0) {
+		payer_index = demo_city_index_near(port->nation, port->landmass, port->center);
+	}
+	if (payer_index < 0) {
+		result["error"] = "cidade-sede ausente";
+		return result;
+	}
+	DemoCity& payer = demo_cities_[static_cast<std::size_t>(payer_index)];
+	const double cost = add * kDemoPortCapitalPerTonCapacity;
+	if (payer.government_budget + 1e-9 < cost) {
+		result["error"] = "orcamento insuficiente";
+		return result;
+	}
+	payer.government_budget -= cost;
+	demo_construction_cash_ += cost;
+	port->pending_capacity_t_per_day += add;
+	port->pending_days = std::max(port->pending_days, kDemoPortBuildDays);
+	demo_status_invalidate();
+	result["expanded"] = true;
+	result["cost"] = cost;
+	result["days"] = port->pending_days;
+	return result;
+}
+
+void EconomySim::demo_set_port_capacity(const String& port_id, double t_per_day) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Port* port = find_demo_port(std::string(port_id.utf8().get_data()));
+	if (port == nullptr) {
+		return;
+	}
+	port->base_capacity_t_per_day = safe_nonneg(t_per_day);
+	port->capacity_t_per_day = port->base_capacity_t_per_day;
+	demo_status_invalidate();
 }
 
 Dictionary EconomySim::tick_demo() {
@@ -1892,6 +2231,8 @@ void EconomySim::demo_tick_core() {
 
 	++day_;
 	demo_last_orders_.clear();
+	// Obras de porto com prazo vencido entram em operação neste dia.
+	demo_tick_port_expansion();
 
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
@@ -2748,7 +3089,13 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		wage_income("wage_income"),
 		workers("workers"),
 		x("x"),
-		y("y")
+		y("y"),
+		host_city("host_city"),
+		capacity_t_per_day("capacity_t_per_day"),
+		delay_hours("delay_hours"),
+		level("level"),
+		queue("queue"),
+		throughput("throughput")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -3217,6 +3564,18 @@ Dictionary EconomySim::get_demo_status() {
 		dict[k.x] = port.center.x;
 		dict[k.y] = port.center.y;
 		dict[k.landmass] = String(port.landmass.c_str());
+		// Capacidade/fila (port_design.md §2): o porto serve a nação toda;
+		// `host_city` é só a sede (âncora e base da capacidade).
+		dict[k.host_city] = String(port.host_city.c_str());
+		const double base = std::max(1.0, port.base_capacity_t_per_day);
+		dict[k.level] = std::max(1, static_cast<int>(std::ceil(
+			port.capacity_t_per_day / base)));
+		dict[k.capacity_t_per_day] = port.capacity_t_per_day;
+		dict[k.throughput] = port.used_today_t;
+		dict[k.queue] = port.queue_t;
+		dict[k.delay_hours] = port.delay_hours;
+		dict[k.utilization] = port.capacity_t_per_day > 0.0
+			? port.used_today_t / port.capacity_t_per_day : 0.0;
 		cache.ports[index] = dict;
 	}
 
@@ -3814,6 +4173,27 @@ Dictionary EconomySim::demo_to_dict() const {
 		transit.append(entry);
 	}
 	data["in_transit"] = transit;
+
+	// Portos: identidade + capacidade/fila/obra. Campos aditivos (v3 continua
+	// válido; save anterior não tem a chave e o loader mantém os portos do
+	// mundo, recalculando a capacidade).
+	Array ports;
+	for (const Port& port : demo_ports_) {
+		Dictionary entry;
+		entry["id"] = String(port.id.c_str());
+		entry["name"] = String(port.name.c_str());
+		entry["nation"] = String(port.nation.c_str());
+		entry["landmass"] = String(port.landmass.c_str());
+		entry["host_city"] = String(port.host_city.c_str());
+		entry["x"] = port.center.x;
+		entry["y"] = port.center.y;
+		entry["base_capacity_t_per_day"] = port.base_capacity_t_per_day;
+		entry["capacity_t_per_day"] = port.capacity_t_per_day;
+		entry["pending_capacity_t_per_day"] = port.pending_capacity_t_per_day;
+		entry["pending_days"] = port.pending_days;
+		ports.append(entry);
+	}
+	data["ports"] = ports;
 	return data;
 }
 
@@ -4072,7 +4452,42 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		shipment.arrival_day = int(entry.get("arrival_day", 0));
 		demo_in_transit_.push_back(shipment);
 	}
+
+	// Portos (campo aditivo, ausente em saves anteriores ao porto): o save
+	// preserva capacidade, expansão em obra e fila do dia. Sem "ports", mantém
+	// os portos do mundo já carregado e recalcula a capacidade pela população
+	// que veio no save (save antigo é compatível: comportamento anterior).
+	const bool has_saved_ports = data.has("ports");
+	if (has_saved_ports) {
+		demo_ports_.clear();
+		Array ports = data.get("ports", Array());
+		for (int index = 0; index < ports.size(); ++index) {
+			Dictionary entry = ports[index];
+			Port port;
+			port.id = std::string(String(entry.get("id", "")).utf8().get_data());
+			port.name = std::string(String(entry.get("name", "")).utf8().get_data());
+			port.nation = std::string(String(entry.get("nation", "")).utf8().get_data());
+			port.landmass =
+				std::string(String(entry.get("landmass", "")).utf8().get_data());
+			port.host_city =
+				std::string(String(entry.get("host_city", "")).utf8().get_data());
+			port.center = {double(entry.get("x", 0.0)), double(entry.get("y", 0.0))};
+			port.base_capacity_t_per_day =
+				safe_nonneg(double(entry.get("base_capacity_t_per_day", 0.0)));
+			port.capacity_t_per_day =
+				safe_nonneg(double(entry.get("capacity_t_per_day",
+					port.base_capacity_t_per_day)));
+			port.pending_capacity_t_per_day =
+				safe_nonneg(double(entry.get("pending_capacity_t_per_day", 0.0)));
+			port.pending_days = std::max(0, int(entry.get("pending_days", 0)));
+			demo_ports_.push_back(std::move(port));
+		}
+	}
+
 	demo_rebuild_indexes();
+	if (!has_saved_ports && !demo_ports_.empty()) {
+		demo_init_port_capacities();
+	}
 }
 
 // ---------------------------------------------------------------------------
