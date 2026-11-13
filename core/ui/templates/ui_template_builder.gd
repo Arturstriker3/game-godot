@@ -107,13 +107,18 @@ class BarChart extends Control:
 	var tones: Array[Color] = []
 	var baseline := UiKit.TINTA
 	var gap := 6.0
+	## Escala fixa (ex.: 7 dias de cobertura). 0 = normaliza pelo pico.
+	var scale_max := 0.0
 
 	func _draw() -> void:
 		if values.is_empty():
 			return
 		var peak := 0.0001
-		for value in values:
-			peak = maxf(peak, value)
+		if scale_max > 0.0:
+			peak = scale_max
+		else:
+			for value in values:
+				peak = maxf(peak, value)
 		var count := values.size()
 		var bar_width := maxf((size.x - gap * (count - 1)) / count, 1.0)
 		for index in count:
@@ -187,6 +192,9 @@ class PaperRow extends PanelContainer:
 		if event is InputEventMouseButton \
 				and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			pressed.emit(index)
+		elif event is InputEventKey and event.pressed and not event.echo \
+				and event.is_action("ui_accept"):
+			pressed.emit(index)
 
 
 ## Gira um selo sem afetar a medida do layout (o contêiner externo mede).
@@ -207,6 +215,8 @@ class Tilt extends MarginContainer:
 
 ## Tabela com ordenação, seleção e paginação — só estado de exibição.
 class DataTableView extends PanelContainer:
+	signal row_activated(index: int)
+
 	var columns: Array = []
 	var rows: Array = []
 	var selected := -1
@@ -226,7 +236,8 @@ class DataTableView extends PanelContainer:
 	func setup(spec: Dictionary, ctx: Dictionary) -> void:
 		_ctx = ctx
 		columns = spec.get("columns", [])
-		rows = _resolve_rows(spec.get("rows", []), ctx)
+		var source_rows: Array = spec.get("rows", [])
+		rows = _resolve_rows(source_rows, ctx)
 		selected = int(spec.get("selected", -1))
 		page_size = maxi(int(spec.get("page_size", 9)), 1)
 		page = maxi(int(spec.get("page", 1)) - 1, 0)
@@ -255,6 +266,12 @@ class DataTableView extends PanelContainer:
 		box.add_child(filler)
 		box.add_child(UiTemplateBuilder._line(UiKit.TINTA, 1.0))
 		box.add_child(_build_footer())
+		_refresh()
+
+
+	## Substitui as linhas no lugar (o host atualiza a tabela a cada dia).
+	func update_rows(source: Array) -> void:
+		rows = _resolve_rows(source, _ctx)
 		_refresh()
 
 
@@ -450,9 +467,43 @@ class DataTableView extends PanelContainer:
 		selected = index
 		UiSfx.play(UiSfx.Sound.SELECT)
 		_refresh()
+		row_activated.emit(index)
+
+
+## Abas de pasta com seleção programável: o host troca de aba sem reconstruir a
+## tela (ficha de cidade) e recebe `tab_changed` quando o usuário clica.
+class FolderTabs extends VBoxContainer:
+	signal tab_changed(index: int)
+
+	var active := 0
+	var pages: Array[Control] = []
+	var buttons: Array[Button] = []
+
+	func select(index: int) -> void:
+		if pages.is_empty():
+			return
+		active = clampi(index, 0, pages.size() - 1)
+		for page_index in pages.size():
+			pages[page_index].visible = page_index == active
+		for button_index in buttons.size():
+			UiTemplateBuilder._folder_tab_style(buttons[button_index],
+					button_index == active)
+		tab_changed.emit(active)
 
 
 # --- API pública ------------------------------------------------------------
+
+## Nó com `slot` na spec (o host atualiza o valor no lugar, sem reconstruir).
+static func slot_node(root: Node, slot: String) -> Control:
+	var pending: Array[Node] = [root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control and (node as Control).get_meta("tpl_slot", "") == slot:
+			return node as Control
+		for child in node.get_children():
+			pending.append(child)
+	return null
+
 
 ## Lê a spec de `data/ui/templates/<id>.json`.
 static func load_spec(id: String) -> Dictionary:
@@ -924,8 +975,12 @@ static func _build_block(block: Dictionary, ctx: Dictionary) -> Control:
 			var tags := HBoxContainer.new()
 			tags.add_theme_constant_override("separation", 8)
 			for item in block.get("tags", []):
-				tags.add_child(_tag(_text(item, "text", ctx),
-						String(item.get("tone", "neutral"))))
+				var text := _text(item, "text", ctx)
+				if text.is_empty():
+					continue
+				var tag := _tag(text, String(item.get("tone", "neutral")))
+				_tag_slot(tag, item, "slot")
+				tags.add_child(tag)
 			return tags
 		"chip_filter":
 			var chip := _chip(_text(block, "text", ctx),
@@ -1071,6 +1126,7 @@ static func _kpi_card(block: Dictionary, ctx: Dictionary) -> Control:
 	var value := _display(_text(block, "value", ctx),
 			float(block.get("size", 30.0)), _tone(String(block.get("value_tone",
 					"tinta"))))
+	_tag_slot(value, block, "value_slot")
 	box.add_child(value)
 
 	var delta := _text(block, "delta", ctx)
@@ -1096,10 +1152,12 @@ static func _meter_row(block: Dictionary, ctx: Dictionary) -> Control:
 		ratio /= 100.0
 	var bar := MeterBar.new(ratio, _tone(String(block.get("tone", "tinta"))),
 			float(block.get("height", 10.0)))
+	_tag_slot(bar, block, "meter_slot")
 	row.add_child(bar)
 
 	var value := _body_label(_text(block, "text", ctx),
 			float(block.get("value_size", 16.0)), UiKit.TINTA)
+	_tag_slot(value, block, "value_slot")
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value.custom_minimum_size.x = float(block.get("value_width", 60.0))
 	value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -1119,6 +1177,7 @@ static func _kv_row(block: Dictionary, ctx: Dictionary) -> Control:
 	var value := _body_label(_text(block, "value", ctx),
 			float(block.get("size", 17.0)),
 			_tone(String(block.get("tone", "tinta"))))
+	_tag_slot(value, block, "value_slot")
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value.custom_minimum_size.x = float(block.get("value_width", 0.0))
 	row.add_child(value)
@@ -1296,6 +1355,17 @@ static func _paper_action(block: Dictionary, ctx: Dictionary) -> Button:
 	button.add_theme_color_override("font_hover_color",
 			UiKit.PAPEL_CLARO if primary else UiKit.TINTA)
 	UiKit._bind_sfx(button)
+
+	if bool(block.get("disabled", false)):
+		button.disabled = true
+		button.focus_mode = Control.FOCUS_NONE
+		button.add_theme_color_override("font_disabled_color", UiKit.TINTA_SUAVE)
+	var tip := _text(block, "tooltip", ctx)
+	if not tip.is_empty():
+		button.tooltip_text = tip
+	var id := String(block.get("id", ""))
+	if not id.is_empty():
+		button.pressed.connect(func() -> void: _emit_choice(button, id))
 	return button
 
 
@@ -1394,7 +1464,7 @@ static func _data_table(block: Dictionary, ctx: Dictionary) -> Control:
 
 
 static func _folder_tabs(block: Dictionary, ctx: Dictionary) -> Control:
-	var root := VBoxContainer.new()
+	var root := FolderTabs.new()
 	root.add_theme_constant_override("separation", 0)
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -1420,9 +1490,22 @@ static func _folder_tabs(block: Dictionary, ctx: Dictionary) -> Control:
 	body.mouse_filter = Control.MOUSE_FILTER_PASS
 	root.add_child(body)
 
+	# `body` é um PanelContainer e só posiciona UM filho: cabeçalho e páginas
+	# precisam de uma coluna única, senão o cabeçalho sobrepõe o conteúdo da aba.
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation",
+			int(block.get("header_gap", 10)))
+	stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(stack)
+
+	# Cabeçalho fixo (trilha/voltar), acima das páginas e dentro do papel.
+	var header: Array = block.get("header", [])
+	if not header.is_empty():
+		var header_column := _body_column(header, ctx, int(block.get("header_gap", 10)))
+		header_column.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		stack.add_child(header_column)
+
 	var tabs: Array = block.get("tabs", [])
-	var pages: Array[Control] = []
-	var buttons: Array[Button] = []
 	var active := int(block.get("active", 0))
 
 	for index in tabs.size():
@@ -1430,19 +1513,15 @@ static func _folder_tabs(block: Dictionary, ctx: Dictionary) -> Control:
 		var page := _body_column(tab.get("blocks", []), ctx,
 				int(block.get("gap", 18)))
 		page.visible = index == active
-		body.add_child(page)
-		pages.append(page)
-		buttons.append(_folder_tab_button(_text(tab, "label", ctx),
-				index == active))
-
-	for index in buttons.size():
-		var button := buttons[index]
-		button.pressed.connect(func() -> void:
-			for other in pages.size():
-				pages[other].visible = other == index
-			for other in buttons.size():
-				_folder_tab_style(buttons[other], other == index))
+		stack.add_child(page)
+		root.pages.append(page)
+		var button := _folder_tab_button(_text(tab, "label", ctx),
+				index == active)
+		button.pressed.connect(root.select.bind(index))
 		bar.add_child(button)
+		root.buttons.append(button)
+
+	root.active = clampi(active, 0, maxi(root.pages.size() - 1, 0))
 
 	if bool(block.get("close", false)):
 		bar.add_child(UiKit.spacer())
@@ -1483,6 +1562,10 @@ static func _folder_tab_style(button: Button, active: bool) -> void:
 	button.add_theme_color_override("font_color",
 			UiKit.TINTA if active else UiKit.TINTA_SUAVE)
 	button.add_theme_color_override("font_hover_color", UiKit.TINTA)
+	button.add_theme_color_override("font_focus_color",
+			UiKit.TINTA if active else UiKit.TINTA_SUAVE)
+	button.add_theme_color_override("font_pressed_color", UiKit.TINTA)
+	button.add_theme_color_override("font_hover_pressed_color", UiKit.TINTA)
 	button.add_theme_constant_override("outline_size", 0)
 
 
@@ -1492,6 +1575,7 @@ static func _bar_chart(block: Dictionary) -> Control:
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart.size_flags_vertical = Control.SIZE_SHRINK_END
 	chart.gap = float(block.get("bar_gap", 6.0))
+	chart.scale_max = float(block.get("scale_max", 0.0))
 	for value in block.get("values", []):
 		chart.values.append(float(value))
 	for tone in block.get("tones", []):
@@ -1840,6 +1924,10 @@ static func _spacer_height(height: float) -> Control:
 
 
 static func _apply_flags(node: Control, block: Dictionary) -> void:
+	if block.has("slot"):
+		node.set_meta("tpl_slot", String(block["slot"]))
+	if bool(block.get("hidden", false)):
+		node.visible = false
 	if block.has("width"):
 		node.custom_minimum_size.x = float(block["width"])
 	if block.has("height"):
@@ -1853,6 +1941,11 @@ static func _apply_flags(node: Control, block: Dictionary) -> void:
 	if block.has("mh"):
 		node.custom_minimum_size.y = maxf(node.custom_minimum_size.y,
 				float(block["mh"]))
+
+
+static func _tag_slot(node: Control, block: Dictionary, key: String) -> void:
+	if block.has(key):
+		node.set_meta("tpl_slot", String(block[key]))
 
 
 static func _first_block(spec: Dictionary, type: String) -> Dictionary:

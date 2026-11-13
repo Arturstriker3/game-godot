@@ -155,7 +155,9 @@ var _window_subtitle: Label
 var _window_body: VBoxContainer
 var _window_hint: Label
 var _back_button: Button
-var _city_screen: VBoxContainer
+## Camada própria da ficha de cidade: painel lateral direito, sobre o mapa.
+var _city_layer: Control
+var _city_screen: CITY_PANEL
 var _alerts_button: Button
 var _legend: Control
 var _legend_box: VBoxContainer
@@ -203,6 +205,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_dock()
 	_build_window()
+	_build_city_layer()
 	_build_menu()
 	_build_settings()
 	_build_minimap()
@@ -229,7 +232,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_settings()
 		elif _menu_layer.visible:
 			_close_menu()
-		elif _window_layer.visible:
+		elif _window_layer.visible or _city_layer.visible:
 			_close_screen()
 		else:
 			_open_menu()
@@ -242,7 +245,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	if _window_layer.visible or _menu_layer.visible:
+	if is_window_open() or _menu_layer.visible:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key := (event as InputEventKey).keycode
@@ -275,13 +278,15 @@ func toggle_menu() -> void:
 
 
 func is_window_open() -> bool:
-	return _window_layer.visible
+	return (_window_layer != null and _window_layer.visible) \
+			or (_city_layer != null and _city_layer.visible)
 
 
-## Qualquer sobreposição do HUD (painel, menu ou ajustes) está aberta? O mapa
-## usa isso para não roubar o Esc de quem está fechando uma sobreposição.
+## Qualquer sobreposição do HUD (painel, ficha de cidade, menu ou ajustes) está
+## aberta? O mapa usa isso para não roubar o Esc de quem está fechando uma
+## sobreposição.
 func is_overlay_open() -> bool:
-	return _window_layer.visible or _menu_layer.visible \
+	return is_window_open() or _menu_layer.visible \
 			or (_settings_layer != null and _settings_layer.visible)
 
 
@@ -1806,11 +1811,24 @@ func _instantiate_screens() -> void:
 	_screens["alerts"] = alerts_screen
 	alerts_screen.alert_requested.connect(_on_city_requested)
 
+
+## A ficha de cidade não é um modal: ela mora numa camada própria, ancorada à
+## direita e por cima do mapa (template T3). A camada só capta o mouse na
+## coluna do painel; o resto do mapa continua visível.
+func _build_city_layer() -> void:
+	_city_layer = Control.new()
+	_city_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_city_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_city_layer.visible = false
+	_root.add_child(_city_layer)
+
 	_city_screen = CITY_PANEL.new()
+	_city_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_city_screen.visible = false
-	_city_screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_city_screen.navigate_city.connect(_on_city_navigate)
-	_window_body.add_child(_city_screen)
+	_city_screen.back_requested.connect(_go_back)
+	_city_screen.close_requested.connect(_close_screen)
+	_city_layer.add_child(_city_screen)
 
 
 func _new_screen(id: String) -> Node:
@@ -1867,7 +1885,7 @@ func _show_top() -> void:
 		_close_screen()
 		return
 
-	var was_open := _window_layer.visible
+	var was_open := is_window_open()
 	var entry: Dictionary = _stack.back()
 	var kind := String(entry["kind"])
 	var id := String(entry["id"])
@@ -1883,6 +1901,7 @@ func _show_top() -> void:
 		_window_title.text = I18n.t(SCREEN_LABELS[id])
 		_window_subtitle.text = _screen_subtitle(id)
 		_window_hint.text = I18n.t(SCREEN_HINTS[id])
+		_render_crumb()
 	else:
 		var city := _find_city(id)
 		_city_screen.visible = true
@@ -1890,22 +1909,38 @@ func _show_top() -> void:
 		if not entry.has("tab") or String(entry["tab"]).is_empty():
 			entry["tab"] = _city_screen.current_tab()
 		_city_screen.set_tab(String(entry["tab"]))
-		_window_title.text = I18n.t("city.title") if city.is_empty() \
-				else I18n.city_name(city["id"], city["name"])
-		_window_subtitle.text = I18n.t("hud.player_nation") if city.is_empty() \
-				else I18n.nation_name(city["nation"])
-		_window_hint.text = I18n.t("city.hint")
+		# Trilha honesta: nação › cidade. O "voltar" só aparece com pilha.
+		_city_screen.set_crumb(_city_crumb(city), _stack.size() > 1)
 		city_focused.emit(id)
 
 	_back_button.visible = _stack.size() > 1
-	_render_crumb()
-	_window_layer.visible = true
+	_window_layer.visible = kind == "screen"
+	_city_layer.visible = kind == "city"
+	# O minimapa fica no canto inferior direito e a doca no topo direito: ambos
+	# ficam exatamente sob a ficha, então recolhem enquanto ela está aberta.
+	if _minimap != null:
+		_minimap.visible = kind == "screen"
+	if _dock_holder != null:
+		_dock_holder.visible = kind == "screen"
 	_apply_window_size()
 	_refresh_dock_state()
-	UiKit.focus_first(_window_body)
+	var focus_root: Control = _city_screen if kind == "city" else _window_body
+	UiKit.focus_first(focus_root)
 	if get_viewport().gui_get_focus_owner() == null:
-		UiKit.focus_first(_window)
+		UiKit.focus_first(_city_screen if kind == "city" else _window)
 	UiSfx.play(UiSfx.Sound.OPEN if was_open else UiSfx.Sound.MAXIMIZE)
+
+
+## Trilha da ficha: nação da cidade › nome localizado. Sem nação conhecida, só
+## o nome — nada de inventar hierarquia administrativa.
+func _city_crumb(city: Dictionary) -> String:
+	if city.is_empty():
+		return ""
+	var name := I18n.city_name(String(city["id"]), String(city["name"]))
+	var nation := I18n.nation_name(String(city.get("nation", "")))
+	if nation.is_empty() or nation.begins_with("nation."):
+		return name
+	return "%s › %s" % [nation, name]
 
 
 func _render_crumb() -> void:
@@ -1983,13 +2018,18 @@ func _transit_total(cities: Array) -> float:
 
 
 func _close_screen() -> void:
-	var was_visible := _window_layer.visible
+	var was_visible := is_window_open()
 	if was_visible:
 		UiSfx.play(UiSfx.Sound.MINIMIZE)
 	_active = ""
 	_stack.clear()
 	_window_layer.visible = false
+	_city_layer.visible = false
 	_city_screen.visible = false
+	if _minimap != null:
+		_minimap.visible = true
+	if _dock_holder != null:
+		_dock_holder.visible = true
 	_back_button.visible = false
 	_refresh_dock_state()
 	if was_visible:
@@ -2300,8 +2340,8 @@ func _on_status(summary: Dictionary) -> void:
 			var id := String(entry["id"])
 			_window_subtitle.text = _screen_subtitle(id)
 			_screens[id].refresh(summary)
-		else:
-			_city_screen.refresh(summary)
+	elif _city_layer.visible:
+		_city_screen.refresh(summary)
 
 
 func _on_locale_changed(_locale: String) -> void:
@@ -2314,7 +2354,7 @@ func _on_locale_changed(_locale: String) -> void:
 	_render_menu_texts()
 	_render_settings_texts()
 
-	if _window_layer.visible and not _stack.is_empty():
+	if is_window_open() and not _stack.is_empty():
 		_show_top()
 
 

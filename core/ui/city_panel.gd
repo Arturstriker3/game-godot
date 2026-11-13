@@ -1,13 +1,19 @@
-extends VBoxContainer
+extends Control
 
-## Painel de cidade com abas, alimentado apenas pelo status publicado pela
-## simulação. Nenhum indicador é inventado: campos que o modelo não possui
-## aparecem como "não modelado", com explicação.
+## Ficha de cidade no template T3 (Papelaria): shell lateral com abas de pasta.
 ##
-## A estrutura é montada uma vez por (cidade, aba, idioma) e depois apenas
-## atualizada no lugar — rolagem e foco não são perdidos a cada dia simulado.
+## O layout vem de `data/ui/templates/ficha.json`; este script só formata os
+## valores publicados pela simulação e atualiza os nós marcados com `slot` no
+## lugar — trocar de aba, de cidade ou de idioma reconstrói a folha, mas um dia
+## novo apenas reescreve textos, medidores, gráficos e tabelas. Nada é inventado:
+## indicadores ausentes viram "—" e as abas sem dado mostram a nota de ausência.
+##
+## A navegação continua no HUD: `navigate_city` empilha outra cidade (tabelas de
+## produtores/pedidos) e `back_requested` volta um nível da pilha de contexto.
 
 signal navigate_city(city_id: String, tab: String)
+signal back_requested
+signal close_requested
 
 const TABS := ["overview", "population", "production", "market", "resources"]
 const TAB_LABELS := {
@@ -18,79 +24,34 @@ const TAB_LABELS := {
 	"resources": "city.tab.resources",
 }
 const SECTORS := ["steel", "manufacturing", "refining", "power", "storage"]
-const RESOURCE_TABLE_WEIGHTS := [1.2, 1.0, 1.0, 0.8, 0.9]
-const RESOURCE_TABLE_ALIGN := [false, false, true, true, true]
 const MAX_DEPOSIT_ROWS := 8
+const MAX_PRODUCER_ROWS := 48
+const MAX_ORDER_ROWS := 24
+const CHART_SAMPLES := 15
+## Cobertura em dias que enche a barra do gráfico de abastecimento.
+const COVERAGE_FULL_DAYS := 7.0
 
 var _summary: Dictionary = {}
 var _city_id := ""
 var _tab := "overview"
+var _crumb := ""
+var _show_back := false
 var _structure_key := ""
+var _root: UiTemplateBuilder.TemplateRoot
+var _tabs: UiTemplateBuilder.FolderTabs
+var _slots := {}
+var _producer_ids: Array[String] = []
 
 var _history := EconomyHistory.new()
 var _geo := GeographyService.new()
-
-var _tab_bar: HBoxContainer
-var _tab_buttons := {}
-var _pills: HBoxContainer
-var _coverage_pill: PanelContainer
-var _deficit_pill: PanelContainer
-var _body: VBoxContainer
-var _scroll: ScrollContainer
-
-var _values := {}
-var _charts := {}
-var _meters := {}
-var _rows := {}
+var _geo_loaded := false
+var _geo_city_id := ""
+var _geo_summary: Dictionary = {}
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", UiKit.SPACE_MD)
-	size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	add_child(_build_header())
-	add_child(UiKit.rule())
-	add_child(_build_scroll())
-
-
-func _build_header() -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_SM)
-
-	_tab_bar = UiKit.tab_bar()
-	for id in TABS:
-		var button := UiKit.tab_button("")
-		button.pressed.connect(_set_tab.bind(id))
-		_tab_bar.add_child(button)
-		_tab_buttons[id] = button
-	row.add_child(_tab_bar)
-
-	row.add_child(UiKit.spacer())
-
-	_pills = HBoxContainer.new()
-	_pills.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	_pills.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_coverage_pill = UiKit.status_pill("", "neutral")
-	_deficit_pill = UiKit.status_pill("", "neutral")
-	_pills.add_child(_coverage_pill)
-	_pills.add_child(_deficit_pill)
-	row.add_child(_pills)
-
-	return row
-
-
-func _build_scroll() -> ScrollContainer:
-	_scroll = ScrollContainer.new()
-	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	UiKit.bind_scroll_sfx(_scroll)
-
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	_scroll.add_child(_body)
-
-	return _scroll
+	# A folha ocupa a tela inteira, mas só a coluna lateral capta o mouse.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 # --- API ---------------------------------------------------------------------
@@ -101,8 +62,10 @@ func open_city(city_id: String, summary: Dictionary) -> void:
 	_summary = summary
 	if changed:
 		_history.clear()
+		_geo_city_id = ""
+		_geo_summary = {}
+	_producer_ids.clear()
 	_sample_history()
-	_structure_key = ""
 	_render()
 
 
@@ -123,13 +86,98 @@ func current_city_id() -> String:
 func set_tab(tab: String) -> void:
 	if not TAB_LABELS.has(tab):
 		return
-	_tab = tab
+	if _tabs == null:
+		_tab = tab
+		_render()
+		return
+	_tabs.select(TABS.find(tab))
+
+
+func set_crumb(crumb: String, show_back: bool) -> void:
+	_crumb = crumb
+	_show_back = show_back
+	_refresh_nav()
+
+
+# --- Montagem ----------------------------------------------------------------
+
+func _render() -> void:
+	if _city().is_empty():
+		_clear()
+		return
+	var key := "%s|%s" % [_city_id, I18n.locale]
+	if key != _structure_key or _root == null:
+		_rebuild()
+		return
+	_refresh()
+
+
+func _rebuild() -> void:
+	_structure_key = "%s|%s" % [_city_id, I18n.locale]
+	if _root != null and is_instance_valid(_root):
+		remove_child(_root)
+		_root.queue_free()
+	_root = UiTemplateBuilder.ficha(_context())
+	_root.name = "CitySheet"
+	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.close_requested.connect(func() -> void: close_requested.emit())
+	_root.choice_selected.connect(_on_choice)
+	add_child(_root)
+	_index_slots()
+	_refresh()
+
+
+func _clear() -> void:
+	if _root != null and is_instance_valid(_root):
+		remove_child(_root)
+		_root.queue_free()
+	_root = null
+	_slots.clear()
+	_tabs = null
 	_structure_key = ""
-	_render()
 
 
-func _set_tab(tab: String) -> void:
-	set_tab(tab)
+func _index_slots() -> void:
+	_slots.clear()
+	_producer_ids.clear()
+	var pending: Array[Node] = [_root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control:
+			var slot := String((node as Control).get_meta("tpl_slot", ""))
+			if not slot.is_empty():
+				_slots[slot] = node
+		for child in node.get_children():
+			pending.append(child)
+
+	_tabs = _slots.get("tabs") as UiTemplateBuilder.FolderTabs
+	if _tabs != null:
+		_tabs.tab_changed.connect(_on_tab_changed)
+		_tabs.select(TABS.find(_tab))
+	var producers := _slots.get("prod.producers") \
+			as UiTemplateBuilder.DataTableView
+	if producers != null:
+		producers.row_activated.connect(_on_producer_row)
+
+
+func _on_choice(id: String) -> void:
+	if id == "back":
+		back_requested.emit()
+
+
+func _on_tab_changed(index: int) -> void:
+	if index < 0 or index >= TABS.size():
+		return
+	if TABS[index] == _tab:
+		return
+	_tab = TABS[index]
+	_refresh()
+
+
+func _on_producer_row(index: int) -> void:
+	if index < 0 or index >= _producer_ids.size():
+		return
+	navigate_city.emit(_producer_ids[index], "production")
 
 
 # --- Ciclo de desenho ---------------------------------------------------------
@@ -141,61 +189,31 @@ func _sample_history() -> void:
 	_history.sample(int(_summary.get("day", 0)), city)
 
 
-func _render() -> void:
-	var city := _city()
-	if city.is_empty() or _body == null:
+func _refresh() -> void:
+	if _root == null or _city().is_empty():
 		return
-
-	_retranslate_tabs()
-	for id in _tab_buttons:
-		UiKit.set_tab_active(_tab_buttons[id], id == _tab)
-
-	var key := "%s|%s|%s" % [_city_id, _tab, I18n.locale]
-	if key != _structure_key:
-		_structure_key = key
-		_build_body(city)
-
-	_refresh_values(city)
+	_refresh_nav()
+	_refresh_overview()
+	_refresh_population()
+	_refresh_production()
+	_refresh_market()
+	_refresh_resources()
 
 
-func _retranslate_tabs() -> void:
-	for id in _tab_buttons:
-		_tab_buttons[id].text = I18n.t(TAB_LABELS[id])
+func _refresh_nav() -> void:
+	_set_text("nav.crumb", _crumb)
+	_set_text("nav.day", _day_text())
+	_set_hidden("nav.back", not _show_back)
+	var city := _city()
+	_set_text("ov.city", I18n.t("city.title") if city.is_empty() \
+			else I18n.city_name(String(city.get("id", "")),
+					String(city.get("name", ""))))
 
 
-func _build_body(city: Dictionary) -> void:
-	var position := _scroll.scroll_vertical
-	UiKit.clear(_body)
-	_values.clear()
-	_charts.clear()
-	_meters.clear()
-	_rows.clear()
+# --- Abas ---------------------------------------------------------------------
 
-	_body.add_child(_glance_strip())
-
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", UiKit.SPACE_MD)
-	grid.add_theme_constant_override("v_separation", UiKit.SPACE_MD)
-	_body.add_child(grid)
-
-	match _tab:
-		"population":
-			_build_population(grid, city)
-		"production":
-			_build_production(grid, city)
-		"market":
-			_build_market(grid, city)
-		"resources":
-			_build_resources(grid, city)
-		_:
-			_build_overview(grid, city)
-
-	_scroll.set_deferred("scroll_vertical", position)
-
-
-func _refresh_values(city: Dictionary) -> void:
+func _refresh_overview() -> void:
+	var city := _city()
 	var pop := float(city.get("population", 0.0))
 	var production := float(city.get("production", 0.0))
 	var need := float(city.get("need", 0.0))
@@ -206,523 +224,375 @@ func _refresh_values(city: Dictionary) -> void:
 	var jobs := float(city.get("jobs", 0.0))
 	var income := float(city.get("income", 0.0))
 	var industrialization := float(city.get("industrialization", 0.0))
-
-	_set_value("glance.population", _compact(pop))
-	_set_value("glance.production", _tons(production) + I18n.t("common.per_day"))
-	_set_value("glance.demand", _tons(need) + I18n.t("common.per_day"))
-	_set_value("glance.coverage", _coverage_text(coverage), _coverage_color(coverage))
-
-	UiKit.apply_pill(_coverage_pill,
-			I18n.t("city.glance.coverage") + " · " + _coverage_text(coverage),
-			_coverage_tone(coverage))
-	UiKit.apply_pill(_deficit_pill,
-			I18n.t("city.deficit") + " · " + _tons(deficit),
-			"negative" if deficit > 0.0 else "positive")
-
-	_set_value("balance.production", _tons(production) + I18n.t("common.per_day"))
-	_set_value("balance.consumed", _tons(consumed) + I18n.t("common.per_day"))
-	_set_value("balance.need", _tons(need) + I18n.t("common.per_day"))
-	_set_value("balance.stock", _tons(stock))
-	_set_value("balance.deficit", _tons(deficit),
-			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE)
-	_set_value("balance.coverage", _coverage_text(coverage), _coverage_color(coverage))
-	_set_meter("balance.coverage", coverage / 7.0, _coverage_color(coverage))
-
-	_set_value("jobs.population", _compact(pop))
-	_set_value("jobs.jobs", UiKit.number(jobs))
-	_set_value("jobs.per_k", UiKit.number(jobs / maxf(pop, 1.0) * 1000.0, 1))
-	_set_value("jobs.income", UiKit.number(income, 2), _level_color(income))
-	_set_meter("jobs.income", income, _level_color(income))
-	_set_value("jobs.industry", "%.0f%%" % (industrialization * 100.0),
-			_level_color(industrialization))
-	_set_meter("jobs.industry", industrialization, _level_color(industrialization))
-
 	var orders := _related_orders()
-	_set_value("flow.outgoing", _tons(_orders_total(orders, true)))
-	_set_value("flow.incoming", _tons(_orders_total(orders, false)))
-	_set_value("flow.orders", UiKit.number(orders.size()))
-	_set_value("flow.transit", _tons(float(city.get("in_transit", 0.0))))
-	_set_value("flow.dispatched", _tons(float(city.get("dispatched", 0.0))))
 
-	_set_value("pop.consumed", _tons(consumed) + I18n.t("common.per_day"))
-	_set_value("pop.consumed_kg", "%s kg" % UiKit.number(consumed * 1000.0 / maxf(pop, 1.0), 2))
-	_set_value("pop.need_kg", "%s kg" % UiKit.number(need * 1000.0 / maxf(pop, 1.0), 2))
-	_set_value("pop.attendance", "%.0f%%" % (minf(1.0, consumed / maxf(need, 1e-9)) * 100.0),
-			_level_color(minf(1.0, consumed / maxf(need, 1e-9))))
-	_set_meter("pop.attendance", minf(1.0, consumed / maxf(need, 1e-9)),
-			_level_color(minf(1.0, consumed / maxf(need, 1e-9))))
+	_set_text("ov.kpi.population", _compact(pop))
+	_set_text("ov.kpi.production", _tons(production) + I18n.t("common.per_day"))
+	_set_text("ov.kpi.demand", _tons(need) + I18n.t("common.per_day"))
+	_set_text("ov.kpi.coverage", _coverage_text(coverage),
+			_coverage_color(coverage))
+	_set_hidden("ov.tag.deficit", deficit <= 0.0)
 
-	_refresh_charts()
+	_set_text("ov.bal.production", _tons(production) + I18n.t("common.per_day"))
+	_set_text("ov.bal.consumed", _tons(consumed) + I18n.t("common.per_day"))
+	_set_text("ov.bal.need", _tons(need) + I18n.t("common.per_day"))
+	_set_text("ov.bal.stock", _tons(stock))
+	_set_text("ov.bal.deficit", _tons(deficit),
+			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE)
+	_set_text("ov.bal.coverage_text", _coverage_text(coverage),
+			_coverage_color(coverage))
+	_set_meter("ov.bal.coverage", coverage / COVERAGE_FULL_DAYS,
+			_coverage_color(coverage))
 
-	_set_value("prod.production", _tons(production) + I18n.t("common.per_day"))
-	_set_value("prod.consumed", _tons(consumed) + I18n.t("common.per_day"))
-	_set_value("prod.stock", _tons(stock))
-	_set_value("prod.coverage", _coverage_text(coverage), _coverage_color(coverage))
-	_set_value("prod.industry", "%.0f%%" % (industrialization * 100.0),
+	_set_text("ov.jobs.population", _compact(pop))
+	_set_text("ov.jobs.count", UiKit.number(jobs))
+	_set_text("ov.jobs.per_k", UiKit.number(jobs / maxf(pop, 1.0) * 1000.0, 1))
+	_set_text("ov.jobs.income_text", UiKit.number(income, 2),
+			_level_color(income))
+	_set_text("ov.jobs.industry_text", _percent(industrialization),
+			_level_color(industrialization))
+	_set_meter("ov.jobs.income", income, _level_color(income))
+	_set_meter("ov.jobs.industry", industrialization,
 			_level_color(industrialization))
 
-	_set_value("market.supply", _tons(production) + I18n.t("common.per_day"))
-	_set_value("market.demand", _tons(need) + I18n.t("common.per_day"))
-	_set_value("market.stock", _tons(stock))
-	_set_value("market.shortage", _tons(deficit),
-			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE)
+	_set_text("ov.flow.outgoing", _tons(_orders_total(orders, true)))
+	_set_text("ov.flow.incoming", _tons(_orders_total(orders, false)))
+	_set_text("ov.flow.orders", UiKit.number(orders.size()))
+	_set_text("ov.flow.transit", _tons(float(city.get("in_transit", 0.0))))
+	_set_text("ov.flow.dispatched", _tons(float(city.get("dispatched", 0.0))))
+
+	_set_chart("ov.chart", _coverage_series(), _coverage_tones())
+	_set_text("ov.chart.range", _chart_range())
 
 
-func _refresh_charts() -> void:
-	if _charts.has("flow"):
-		(_charts["flow"] as UiChart).set_series([
-			{"values": _history.series("wheat_stock"), "color": UiKit.STEEL, "fill": false},
-			{"values": _history.series("deficit"), "color": UiKit.NEGATIVE, "fill": false},
-		])
-	if _charts.has("population"):
-		(_charts["population"] as UiChart).set_series([
-			{"values": _history.series("population"), "color": UiKit.BRASS, "fill": true},
-		])
-	if _charts.has("income"):
-		(_charts["income"] as UiChart).set_series([
-			{"values": _history.series("income"), "color": UiKit.POSITIVE, "fill": false},
-			{"values": _history.series("industrialization"), "color": UiKit.STEEL, "fill": false},
-		])
-	if _charts.has("market"):
-		(_charts["market"] as UiChart).set_series([
-			{"values": _history.series("wheat_stock"), "color": UiKit.STEEL, "fill": true},
-			{"values": _history.series("deficit"), "color": UiKit.NEGATIVE, "fill": false},
-		])
+func _refresh_population() -> void:
+	var city := _city()
+	var pop := float(city.get("population", 0.0))
+	var need := float(city.get("need", 0.0))
+	var consumed := float(city.get("consumed", 0.0))
+	var jobs := float(city.get("jobs", 0.0))
+	var income := float(city.get("income", 0.0))
+	var industrialization := float(city.get("industrialization", 0.0))
+	var attendance := minf(1.0, consumed / maxf(need, 1e-9))
+
+	_set_text("pop.jobs.population", _compact(pop))
+	_set_text("pop.jobs.count", UiKit.number(jobs))
+	_set_text("pop.jobs.per_k", UiKit.number(jobs / maxf(pop, 1.0) * 1000.0, 1))
+	_set_text("pop.jobs.income_text", UiKit.number(income, 2),
+			_level_color(income))
+	_set_text("pop.jobs.industry_text", _percent(industrialization),
+			_level_color(industrialization))
+	_set_meter("pop.jobs.income", income, _level_color(income))
+	_set_meter("pop.jobs.industry", industrialization,
+			_level_color(industrialization))
+
+	_set_text("pop.consumed", _tons(consumed) + I18n.t("common.per_day"))
+	_set_text("pop.consumed_kg", "%s kg" % UiKit.number(
+			consumed * 1000.0 / maxf(pop, 1.0), 2))
+	_set_text("pop.need_kg", "%s kg" % UiKit.number(
+			need * 1000.0 / maxf(pop, 1.0), 2))
+	_set_text("pop.attendance_text", _percent(attendance),
+			_level_color(attendance))
+	_set_meter("pop.attendance", attendance, _level_color(attendance))
+
+	var population_series: Array[float] = []
+	for value in _history.series("population"):
+		population_series.append(value)
+	_set_chart_values("pop.chart.population", population_series)
+	var income_series: Array[float] = []
+	for value in _history.series("income"):
+		income_series.append(clampf(value, 0.0, 1.0))
+	_set_chart_values("pop.chart.income", income_series)
 
 
-# --- Faixa de destaque --------------------------------------------------------
+func _refresh_production() -> void:
+	var city := _city()
+	var production := float(city.get("production", 0.0))
+	var consumed := float(city.get("consumed", 0.0))
+	var need := float(city.get("need", 0.0))
+	var stock := float(city.get("stockpile", 0.0))
+	var industrialization := float(city.get("industrialization", 0.0))
+	var coverage := _coverage(stock, need)
 
-func _glance_strip() -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	for key in ["population", "production", "demand", "coverage"]:
-		var card := PanelContainer.new()
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var style := UiKit.flat(UiKit.PANEL_RAISED, UiKit.EDGE_SOFT, 10.0)
-		style.content_margin_top = 8.0
-		style.content_margin_bottom = 8.0
-		card.add_theme_stylebox_override("panel", style)
-
-		var box := VBoxContainer.new()
-		box.add_theme_constant_override("separation", 0)
-		box.add_child(UiKit.caption(I18n.t("city.glance." + key)))
-		var value := UiKit.label("—", UiKit.FS_TITLE, UiKit.TEXT)
-		box.add_child(value)
-		card.add_child(box)
-		row.add_child(card)
-		_values["glance." + key] = value
-	return row
-
-
-# --- Abas ---------------------------------------------------------------------
-
-func _build_overview(grid: GridContainer, city: Dictionary) -> void:
-	var balance := _section(grid, "city.balance.title", "—")
-	_metric(balance, "balance.production", "city.production")
-	_metric(balance, "balance.consumed", "city.consumed")
-	_metric(balance, "balance.need", "city.need")
-	_metric(balance, "balance.stock", "city.stock")
-	_metric(balance, "balance.deficit", "city.deficit")
-	_metric(balance, "balance.coverage", "city.coverage")
-	_meters["balance.coverage"] = _inline_meter(balance)
-
-	var jobs := _section(grid, "city.jobs.title", "city.income_index.note")
-	_metric(jobs, "jobs.population", "city.glance.population")
-	_metric(jobs, "jobs.jobs", "city.jobs")
-	_metric(jobs, "jobs.per_k", "city.jobs_per_k")
-	_metric(jobs, "jobs.income", "city.income_index")
-	_meters["jobs.income"] = _inline_meter(jobs)
-	_metric(jobs, "jobs.industry", "city.industrialization")
-	_meters["jobs.industry"] = _inline_meter(jobs)
-
-	var flow := _section(grid, "city.flow.title", "")
-	_metric(flow, "flow.outgoing", "city.flow.outgoing")
-	_metric(flow, "flow.incoming", "city.flow.incoming")
-	_metric(flow, "flow.orders", "city.flow.orders")
-	_metric(flow, "flow.transit", "city.transit")
-	_metric(flow, "flow.dispatched", "city.dispatched")
-
-	var history := _section(grid, "city.history.title", "city.history.note")
-	var chart := UiChart.new(96.0)
-	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	history.add_content(chart)
-	_charts["flow"] = chart
-	history.add_content(_legend([
-		[I18n.t("city.stock"), UiKit.STEEL],
-		[I18n.t("city.deficit"), UiKit.NEGATIVE],
-	]))
-
-
-func _build_population(grid: GridContainer, _city: Dictionary) -> void:
-	var work := _section(grid, "city.jobs.title", "city.income_index.note")
-	_metric(work, "jobs.population", "city.glance.population")
-	_metric(work, "jobs.jobs", "city.jobs")
-	_metric(work, "jobs.per_k", "city.jobs_per_k")
-	_metric(work, "jobs.income", "city.income_index")
-	_meters["jobs.income"] = _inline_meter(work)
-	_metric(work, "jobs.industry", "city.industrialization")
-	_meters["jobs.industry"] = _inline_meter(work)
-
-	var consumption := _section(grid, "city.consumed", "—")
-	_metric(consumption, "pop.consumed", "city.consumed")
-	_metric(consumption, "pop.consumed_kg", "city.per_person_kg")
-	_metric(consumption, "pop.need_kg", "city.need_per_person_kg")
-	_metric(consumption, "pop.attendance", "city.attendance")
-	_meters["pop.attendance"] = _inline_meter(consumption)
-
-	var trend := _section(grid, "city.history.title", "city.history.note")
-	var chart := UiChart.new(96.0)
-	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	trend.add_content(chart)
-	_charts["population"] = chart
-	trend.add_content(_legend([[I18n.t("city.glance.population"), UiKit.BRASS]]))
-
-	var income := _section(grid, "city.income_index", "city.history.note")
-	var income_chart := UiChart.new(96.0)
-	income_chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	income.add_content(income_chart)
-	_charts["income"] = income_chart
-	income.add_content(_legend([
-		[I18n.t("city.income_index"), UiKit.POSITIVE],
-		[I18n.t("city.industrialization"), UiKit.STEEL],
-	]))
-
-	grid.add_child(_unavailable_card())
-
-
-func _build_production(grid: GridContainer, city: Dictionary) -> void:
-	grid.add_child(_chain_card())
-
-	var local := _section(grid, "city.tab.production", "—")
-	_metric(local, "prod.production", "city.production")
-	_metric(local, "prod.consumed", "city.consumed")
-	_metric(local, "prod.stock", "city.stock")
-	_metric(local, "prod.coverage", "city.coverage")
-	_metric(local, "prod.industry", "city.industrialization")
-
-	grid.add_child(_industry_card(city))
-	grid.add_child(_producers_card())
-
-
-func _build_market(grid: GridContainer, _city: Dictionary) -> void:
-	var market := _section(grid, "city.supply", "—")
-	_metric(market, "market.supply", "city.supply")
-	_metric(market, "market.demand", "city.demand_short")
-	_metric(market, "market.stock", "city.stock")
-	_metric(market, "market.shortage", "city.deficit")
-
-	var history := _section(grid, "city.history.title", "city.history.note")
-	var chart := UiChart.new(96.0)
-	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	history.add_content(chart)
-	_charts["market"] = chart
-	history.add_content(_legend([
-		[I18n.t("city.stock"), UiKit.STEEL],
-		[I18n.t("city.deficit"), UiKit.NEGATIVE],
-	]))
-
-	grid.add_child(_unmodeled_card("city.market.unmodeled.title",
-			"city.market.unmodeled.body"))
-	grid.add_child(_orders_card())
-
-
-func _build_resources(grid: GridContainer, city: Dictionary) -> void:
-	_geo.load_data()
-	var center := Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0)))
-	var id := String(city.get("id", ""))
-	var summary := _geo.territory_summary(id, center)
-
-	if summary.is_empty():
-		grid.add_child(_state_card(UiKit.empty_state(
-				I18n.t("city.resources.title"), I18n.t("city.resources.empty"))))
-		return
-
-	var territory := _section(grid, "city.resources.title", String(summary.get("territory", "")))
-	_metric_text(territory, "city.resources.climate", _value_label(String(summary.get("climate", ""))))
-	_metric_text(territory, "city.resources.relief", _value_label(String(summary.get("relief", ""))))
-	_metric_text(territory, "city.resources.wheat",
-			"%.0f%%" % (float(summary.get("wheat", 0.0)) * 100.0))
-	territory.add_content(UiKit.meter(float(summary.get("wheat", 0.0)), UiKit.POSITIVE, 5))
-	_metric_text(territory, "city.resources.deposits",
-			UiKit.number(float(summary.get("deposits", 0))))
-
-	grid.add_child(_deposits_card(id, center))
-	grid.add_child(_prospect_card())
-
-
-# --- Cartões -----------------------------------------------------------------
-
-func _section(grid: GridContainer, title_key: String, hint_text: String) -> UiSection:
-	# O hint chega como chave de i18n; textos literais ("—", "") voltam iguais.
-	var section := UiSection.new(I18n.t(title_key), I18n.t(hint_text))
-	section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_child(section)
-	return section
-
-
-func _metric(section: UiSection, key: String, label_key: String) -> void:
-	_values[key] = section.add_metric(I18n.t(label_key), "—")
-
-
-func _metric_text(section: UiSection, label_key: String, value_text: String) -> void:
-	section.add_metric(I18n.t(label_key), value_text)
-
-
-func _inline_meter(section: UiSection) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	var meter := UiKit.meter(0.0, UiKit.STEEL, 4)
-	meter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(meter)
-	section.add_content(row)
-	return meter
-
-
-func _unavailable_card() -> Control:
-	return _unmodeled_card("city.unavailable.title", "city.unavailable.body")
-
-
-func _unmodeled_card(title_key: String, body_key: String) -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	card.add_child(box)
-
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	head.add_child(UiKit.status_pill(I18n.t("city.chain.unmodeled"), "warning"))
-	head.add_child(UiKit.label(I18n.t(title_key), UiKit.FS_SUBTITLE, UiKit.TEXT))
-	box.add_child(head)
-	box.add_child(UiKit.paragraph(I18n.t(body_key), UiKit.FS_SMALL, UiKit.TEXT_DIM, 460.0))
-	return card
-
-
-func _state_card(state: Control) -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_child(state)
-	return card
-
-
-func _chain_card() -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.chain.title"), UiKit.BRASS))
-
-	var flow := HBoxContainer.new()
-	flow.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	flow.add_child(_chain_node(I18n.t("product.wheat"), "positive", true))
-	box.add_child(flow)
-
-	box.add_child(UiKit.paragraph(I18n.t("city.chain.note"), UiKit.FS_SMALL,
-			UiKit.TEXT_DIM, 460.0))
-	return card
-
-
-func _chain_node(text: String, tone: String, modeled: bool) -> Control:
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	box.add_theme_constant_override("separation", 2)
-
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", UiKit.SPACE_XS)
-	head.add_child(UiKit.status_pill(text, tone))
-	box.add_child(head)
-	box.add_child(UiKit.caption(I18n.t("city.chain.modeled") if modeled \
-			else I18n.t("city.chain.unmodeled"), UiKit.TEXT_MUTED))
-	return box
-
-
-func _chain_arrow() -> Label:
-	var arrow := UiKit.label("→", UiKit.FS_SUBTITLE, UiKit.TEXT_MUTED)
-	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	return arrow
-
-
-func _industry_card(city: Dictionary) -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.industry.title"), UiKit.BRASS))
+	_set_text("prod.production", _tons(production) + I18n.t("common.per_day"))
+	_set_text("prod.consumed", _tons(consumed) + I18n.t("common.per_day"))
+	_set_text("prod.stock", _tons(stock))
+	_set_text("prod.coverage", _coverage_text(coverage),
+			_coverage_color(coverage))
+	_set_text("prod.industry", _percent(industrialization),
+			_level_color(industrialization))
 
 	var profile := IndustryProfile.derive(city)
 	for sector in SECTORS:
-		_row_share(box, I18n.t("city.industry." + sector),
-				float(profile.get(sector, 0.0)))
-	box.add_child(UiKit.paragraph(I18n.t("city.industry.note"), UiKit.FS_CAPTION,
-			UiKit.TEXT_MUTED, 460.0))
-	return card
-
-
-func _row_share(parent: VBoxContainer, text: String, ratio: float) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	row.add_child(UiKit.label(text, UiKit.FS_SMALL, UiKit.TEXT_DIM))
-	row.add_child(UiKit.spacer())
-	row.add_child(UiKit.label("%.0f%%" % (ratio * 100.0), UiKit.FS_SMALL, UiKit.TEXT))
-	parent.add_child(row)
-	parent.add_child(UiKit.meter(ratio, UiKit.STEEL, 4))
-
-
-func _producers_card() -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.producers.title"), UiKit.BRASS))
-	box.add_child(UiKit.rule())
+		var ratio := clampf(float(profile.get(sector, 0.0)), 0.0, 1.0)
+		_set_meter("prod.ind." + sector, ratio, _level_color(ratio))
+		_set_text("prod.ind.%s_text" % sector, _percent(ratio),
+				_level_color(ratio))
 
 	var producers := _producers()
-	if producers.is_empty():
-		box.add_child(UiKit.paragraph(I18n.t("city.producers.empty"), UiKit.FS_SMALL,
-				UiKit.TEXT_MUTED, 420.0))
-		return card
-
-	box.add_child(UiKit.table_header([
-		I18n.t("econ.col.city"),
-		I18n.t("econ.col.nation"),
-		I18n.t("econ.col.production"),
-		I18n.t("econ.col.deficit"),
-	], [1.4, 1.0, 1.0, 1.0], [false, false, true, true]))
-
-	for city in producers:
-		var row := UiKit.row_button()
-		var deficit := float(city["deficit"])
-		row.add_child(UiKit.table_row([
-			I18n.city_name(city["id"], city["name"]),
-			I18n.nation_name(city["nation"]),
-			UiKit.number(float(city["production"])) + " t",
-			UiKit.number(deficit) + " t",
-		], [1.4, 1.0, 1.0, 1.0], [
-			UiKit.TEXT, UiKit.nation_color(city["nation"]), UiKit.BRASS,
-			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE,
-		], [false, false, true, true]))
-		var id := String(city["id"])
-		row.pressed.connect(func() -> void: navigate_city.emit(id, "production"))
-		box.add_child(row)
-
-	return card
+	_producer_ids.clear()
+	var rows: Array = []
+	for city_row in producers.slice(0, MAX_PRODUCER_ROWS):
+		var deficit := float(city_row["deficit"])
+		rows.append([
+			I18n.city_name(city_row["id"], city_row["name"]),
+			I18n.nation_name(city_row["nation"]),
+			UiKit.number(float(city_row["production"])) + " t",
+			{"text": UiKit.number(deficit) + " t",
+					"tone": "carimbo" if deficit > 0.0 else "suave"},
+		])
+		_producer_ids.append(String(city_row["id"]))
+	_set_table("prod.producers", rows, "prod.producers.empty", rows.is_empty())
 
 
-func _orders_card() -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+func _refresh_market() -> void:
+	var city := _city()
+	var production := float(city.get("production", 0.0))
+	var need := float(city.get("need", 0.0))
+	var stock := float(city.get("stockpile", 0.0))
+	var deficit := float(city.get("deficit", 0.0))
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.orders.title"), UiKit.BRASS))
-	box.add_child(UiKit.rule())
+	_set_text("mkt.supply", _tons(production) + I18n.t("common.per_day"))
+	_set_text("mkt.demand", _tons(need) + I18n.t("common.per_day"))
+	_set_text("mkt.stock", _tons(stock))
+	_set_text("mkt.shortage", _tons(deficit),
+			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE)
+
+	var stock_series: Array[float] = []
+	var samples: Array[float] = []
+	for value in _history.series("wheat_stock"):
+		samples.append(value)
+	var start := maxi(samples.size() - CHART_SAMPLES, 0)
+	for index in range(start, samples.size()):
+		stock_series.append(samples[index])
+	_set_chart_values("mkt.chart", stock_series)
 
 	var orders := _related_orders()
-	if orders.is_empty():
-		box.add_child(UiKit.paragraph(I18n.t("city.orders.empty"), UiKit.FS_SMALL,
-				UiKit.TEXT_MUTED, 420.0))
-		return card
-
-	box.add_child(UiKit.table_header([
-		I18n.t("hud.day_short"),
-		I18n.t("trade.col.from"),
-		I18n.t("trade.col.to"),
-		I18n.t("trade.col.amount"),
-		I18n.t("trade.col.freight"),
-	], [0.6, 1.3, 1.3, 1.0, 1.0], [true, false, false, true, true]))
-
-	for order in orders.slice(0, 8):
-		box.add_child(UiKit.table_row([
+	var rows: Array = []
+	for order in orders.slice(0, MAX_ORDER_ROWS):
+		rows.append([
 			UiKit.number(float(order.get("day", 0))),
 			I18n.city_name(order["from_city"], order["from_city"]),
 			I18n.city_name(order["to_city"], order["to_city"]),
 			UiKit.number(float(order["amount"])) + " t",
 			UiKit.number(float(order["freight_cost"])),
-		], [0.6, 1.3, 1.3, 1.0, 1.0], [
-			UiKit.TEXT_MUTED, UiKit.TEXT, UiKit.TEXT, UiKit.STEEL, UiKit.BRASS,
-		], [true, false, false, true, true]))
-
-	return card
+		])
+	_set_table("mkt.orders", rows, "mkt.orders.empty", rows.is_empty())
 
 
-## Jazidas PRÓPRIAS da cidade (regra A1). O território pode ser compartilhado
-## por várias cidades; a jazida, não. Cidade sem jazida própria mostra o estado
-## vazio em vez de listar o minério dos vizinhos.
-func _deposits_card(city_id: String, _center: Vector2) -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+func _refresh_resources() -> void:
+	var city := _city()
+	if _tab != "resources" and not _geo_loaded:
+		return
+	if not _geo_loaded:
+		_geo.load_data()
+		_geo_loaded = true
+	var id := String(city.get("id", ""))
+	if id != _geo_city_id:
+		_geo_city_id = id
+		_geo_summary = _geo.territory_summary(id, Vector2(
+				float(city.get("x", 0.0)), float(city.get("y", 0.0))))
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.resources.deposits"), UiKit.BRASS))
-	box.add_child(UiKit.rule())
+	var summary := _geo_summary
+	var has_territory := not summary.is_empty()
+	_set_hidden("res.territory", not has_territory)
+	_set_hidden("res.territory_empty", has_territory)
+	_set_hidden("res.deposits_section", not has_territory)
+	if not has_territory:
+		return
+
+	_set_text("res.territory_label", String(summary.get("territory", "")))
+	_set_text("res.climate", _value_label(String(summary.get("climate", ""))))
+	_set_text("res.relief", _value_label(String(summary.get("relief", ""))))
+	_set_text("res.deposits_count", UiKit.number(
+			float(summary.get("deposits", 0))))
+	var wheat := clampf(float(summary.get("wheat", 0.0)), 0.0, 1.0)
+	_set_text("res.fertility_text", _percent(wheat), _level_color(wheat))
+	_set_meter("res.fertility", wheat, _level_color(wheat))
 
 	var known: Array = []
-	for deposit in _geo.deposits_for_city(city_id):
+	for deposit in _geo.deposits_for_city(id):
 		if String(deposit.get("status", "")) != "Unknown":
 			known.append(deposit)
-
-	if known.is_empty():
-		box.add_child(UiKit.paragraph(I18n.t("city.resources.deposits.empty"), UiKit.FS_SMALL,
-				UiKit.TEXT_MUTED, 420.0))
-		return card
-
-	box.add_child(UiKit.table_header([
-		I18n.t("city.resources.table.resource"),
-		I18n.t("city.resources.table.status"),
-		I18n.t("city.resources.table.quantity"),
-		I18n.t("city.resources.table.quality"),
-		I18n.t("city.resources.table.depth"),
-	], RESOURCE_TABLE_WEIGHTS, RESOURCE_TABLE_ALIGN))
-
+	var rows: Array = []
 	for deposit in known.slice(0, MAX_DEPOSIT_ROWS):
-		box.add_child(UiKit.table_row([
+		rows.append([
 			I18n.t("resource.%s" % deposit.get("resource", "")),
 			I18n.t("deposit.%s" % deposit.get("status", "")),
 			"%s kt" % UiKit.number(float(deposit.get("recoverable_kt", 0.0))),
 			UiKit.number(float(deposit.get("quality", 0.0)), 2),
 			"%d m" % int(deposit.get("depth_m", 0)),
-		], RESOURCE_TABLE_WEIGHTS, [
-			UiKit.TEXT, UiKit.STEEL, UiKit.TEXT, UiKit.TEXT_DIM, UiKit.TEXT_DIM,
-		], RESOURCE_TABLE_ALIGN))
-
-	if known.size() > MAX_DEPOSIT_ROWS:
-		box.add_child(UiKit.label(I18n.t("city.resources.more",
-				{"count": known.size() - MAX_DEPOSIT_ROWS}), UiKit.FS_CAPTION,
-				UiKit.TEXT_MUTED))
-	return card
+		])
+	_set_table("res.deposits", rows, "res.deposits_empty", rows.is_empty())
+	var extra := maxi(known.size() - MAX_DEPOSIT_ROWS, 0)
+	_set_hidden("res.deposits_more", extra <= 0)
+	if extra > 0:
+		_set_text("res.deposits_more",
+				I18n.t("city.resources.more", {"count": extra}))
 
 
-func _prospect_card() -> Control:
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+# --- Slots --------------------------------------------------------------------
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
-	card.add_child(box)
-	box.add_child(UiKit.caption(I18n.t("city.resources.prospect.title"), UiKit.BRASS))
-	box.add_child(UiKit.paragraph(I18n.t("city.resources.prospect.body"), UiKit.FS_SMALL,
-			UiKit.TEXT_DIM, 460.0))
-
-	var action := UiKit.secondary_button(I18n.t("city.resources.prospect.action"))
-	action.disabled = true
-	action.tooltip_text = I18n.t("city.resources.prospect.disabled")
-	action.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	box.add_child(action)
-	box.add_child(UiKit.caption(I18n.t("city.resources.prospect.disabled"), UiKit.TEXT_MUTED))
-	return card
+func _set_text(slot: String, text: String,
+		color: Color = Color(0, 0, 0, 0)) -> void:
+	var label := _slots.get(slot) as Label
+	if label == null:
+		return
+	label.text = text
+	if color.a > 0.0:
+		label.add_theme_color_override("font_color", color)
 
 
-# --- Auxiliares ---------------------------------------------------------------
+func _set_hidden(slot: String, hidden: bool) -> void:
+	var node := _slots.get(slot) as Control
+	if node != null:
+		node.visible = not hidden
+
+
+func _set_meter(slot: String, ratio: float, color: Color) -> void:
+	var meter := _slots.get(slot) as UiTemplateBuilder.MeterBar
+	if meter == null:
+		return
+	meter.ratio = clampf(ratio, 0.0, 1.0)
+	meter.fill = color
+	meter.queue_redraw()
+
+
+func _set_chart(slot: String, values: Array[float],
+		tones: Array[Color] = []) -> void:
+	var node := _slots.get(slot) as UiTemplateBuilder.BarChart
+	if node == null:
+		return
+	node.values.assign(values)
+	node.tones.assign(tones)
+	node.queue_redraw()
+
+
+func _set_chart_values(slot: String, values: Array[float]) -> void:
+	var bar := _slots.get(slot) as UiTemplateBuilder.BarChart
+	if bar != null:
+		bar.values.assign(values)
+		bar.queue_redraw()
+		return
+	var line := _slots.get(slot) as UiTemplateBuilder.LineChart
+	if line != null:
+		line.values.assign(values)
+		line.queue_redraw()
+
+
+func _set_table(slot: String, rows: Array, empty_slot: String,
+		empty: bool) -> void:
+	var table := _slots.get(slot) as UiTemplateBuilder.DataTableView
+	if table != null:
+		table.update_rows(rows)
+		_set_hidden(slot, empty)
+	_set_hidden(empty_slot, not empty)
+
+
+# --- Dados --------------------------------------------------------------------
+
+func _context() -> Dictionary:
+	var city := _city()
+	var pop := float(city.get("population", 0.0))
+	var production := float(city.get("production", 0.0))
+	var need := float(city.get("need", 0.0))
+	var consumed := float(city.get("consumed", 0.0))
+	var stock := float(city.get("stockpile", 0.0))
+	var deficit := float(city.get("deficit", 0.0))
+	var coverage := _coverage(stock, need)
+	var jobs := float(city.get("jobs", 0.0))
+	var income := float(city.get("income", 0.0))
+	var industrialization := float(city.get("industrialization", 0.0))
+	var profile := IndustryProfile.derive(city)
+	var industry := {}
+	for sector in SECTORS:
+		industry[sector] = _percent(float(profile.get(sector, 0.0)))
+	var resources := _context_resources(city)
+
+	return {
+		"crumb": _crumb,
+		"day_label": _day_text(),
+		"city": I18n.t("city.title") if city.is_empty() \
+				else I18n.city_name(String(city.get("id", "")),
+						String(city.get("name", ""))),
+		"tag": {"deficit": I18n.t("city.deficit")},
+		"kpi": {
+			"population": _compact(pop),
+			"production": _tons(production) + I18n.t("common.per_day"),
+			"demand": _tons(need) + I18n.t("common.per_day"),
+			"coverage": _coverage_text(coverage),
+		},
+		"balance": {
+			"production": _tons(production) + I18n.t("common.per_day"),
+			"consumed": _tons(consumed) + I18n.t("common.per_day"),
+			"need": _tons(need) + I18n.t("common.per_day"),
+			"stock": _tons(stock),
+			"deficit": _tons(deficit),
+			"coverage": _coverage_text(coverage),
+		},
+		"jobs": {
+			"population": _compact(pop),
+			"count": UiKit.number(jobs),
+			"per_k": UiKit.number(jobs / maxf(pop, 1.0) * 1000.0, 1),
+			"income": UiKit.number(income, 2),
+			"industry": _percent(industrialization),
+		},
+		"flow": {
+			"outgoing": _tons(0.0),
+			"incoming": _tons(0.0),
+			"orders": "0",
+			"transit": _tons(float(city.get("in_transit", 0.0))),
+			"dispatched": _tons(float(city.get("dispatched", 0.0))),
+		},
+		"chart": {"range": _chart_range()},
+		"population": {
+			"consumed": _tons(consumed) + I18n.t("common.per_day"),
+			"consumed_kg": "%s kg" % UiKit.number(
+					consumed * 1000.0 / maxf(pop, 1.0), 2),
+			"need_kg": "%s kg" % UiKit.number(need * 1000.0 / maxf(pop, 1.0), 2),
+			"attendance": _percent(minf(1.0, consumed / maxf(need, 1e-9))),
+		},
+		"production": {
+			"production": _tons(production) + I18n.t("common.per_day"),
+			"consumed": _tons(consumed) + I18n.t("common.per_day"),
+			"stock": _tons(stock),
+			"coverage": _coverage_text(coverage),
+			"industry": _percent(industrialization),
+		},
+		"industry": industry,
+		"market": {
+			"supply": _tons(production) + I18n.t("common.per_day"),
+			"demand": _tons(need) + I18n.t("common.per_day"),
+			"stock": _tons(stock),
+			"shortage": _tons(deficit),
+		},
+		"resources": resources,
+	}
+
+
+## A geografia só é carregada na aba Recursos (custo de carga alto).
+func _context_resources(city: Dictionary) -> Dictionary:
+	if _tab == "resources" and not city.is_empty():
+		if not _geo_loaded:
+			_geo.load_data()
+			_geo_loaded = true
+		var id := String(city.get("id", ""))
+		if id != _geo_city_id:
+			_geo_city_id = id
+			_geo_summary = _geo.territory_summary(id, Vector2(
+					float(city.get("x", 0.0)), float(city.get("y", 0.0))))
+	if _geo_summary.is_empty():
+		return {"territory": "", "climate": "—", "relief": "—",
+				"fertility": "—", "deposits": "0"}
+	var summary := _geo_summary
+	return {
+		"territory": String(summary.get("territory", "")),
+		"climate": _value_label(String(summary.get("climate", ""))),
+		"relief": _value_label(String(summary.get("relief", ""))),
+		"fertility": _percent(float(summary.get("wheat", 0.0))),
+		"deposits": UiKit.number(float(summary.get("deposits", 0))),
+	}
+
 
 func _city() -> Dictionary:
 	for city in _summary.get("cities", []):
@@ -760,44 +630,47 @@ func _orders_total(orders: Array, outgoing: bool) -> float:
 	return total
 
 
-func _set_value(key: String, text: String, color: Color = UiKit.TEXT) -> void:
-	var node = _values.get(key)
-	if node is Label:
-		(node as Label).text = text
-		(node as Label).add_theme_color_override("font_color", color)
-	elif node is PanelContainer:
-		var label := (node as PanelContainer).get_child(0) as Label
-		if label != null:
-			label.text = text
+## Cobertura de estoque por dia, limitada ao eixo do gráfico (7 dias).
+func _coverage_series() -> Array[float]:
+	var stock := _history.series("wheat_stock")
+	var need := _history.series("wheat_need")
+	var values: Array[float] = []
+	var start := maxi(stock.size() - CHART_SAMPLES, 0)
+	for index in range(start, stock.size()):
+		var demand := need[index] if index < need.size() else 0.0
+		var days := COVERAGE_FULL_DAYS if demand <= 1e-9 \
+				else clampf(stock[index] / demand, 0.0, COVERAGE_FULL_DAYS)
+		values.append(days)
+	return values
 
 
-func _set_meter(key: String, ratio: float, color: Color) -> void:
-	var meter := _meters.get(key) as Control
-	if meter == null or meter.get_child_count() < 2:
-		return
-	var fill := meter.get_child(1) as ColorRect
-	if fill == null:
-		return
-	fill.anchor_right = clampf(ratio, 0.0, 1.0)
-	fill.offset_right = 0.0
-	fill.color = color
+## Tom de cada barra do gráfico de abastecimento: a altura é o estoque em dias,
+## mas a cor segue a fração da escala cheia (7 dias = 100%) — vermelho abaixo de
+## 70%, alerta entre 70% e 85%, tinta acima. É a leitura da nota do template
+## ("vermelho abaixo de 70%"), não um dado novo.
+func _coverage_tones() -> Array[Color]:
+	var tones: Array[Color] = []
+	for days in _coverage_series():
+		var ratio := clampf(days / COVERAGE_FULL_DAYS, 0.0, 1.0)
+		if ratio < 0.70:
+			tones.append(UiKit.CARIMBO)
+		elif ratio < 0.85:
+			tones.append(UiKit.ALERTA)
+		else:
+			tones.append(UiKit.TINTA)
+	return tones
 
 
-func _legend(items: Array) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", UiKit.SPACE_MD)
-	for item in items:
-		var pair := HBoxContainer.new()
-		pair.add_theme_constant_override("separation", 4)
-		var swatch := ColorRect.new()
-		swatch.color = item[1]
-		swatch.custom_minimum_size = Vector2(8.0, 8.0)
-		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		pair.add_child(swatch)
-		pair.add_child(UiKit.label(String(item[0]), UiKit.FS_CAPTION, UiKit.TEXT_MUTED))
-		row.add_child(pair)
-	return row
+func _chart_range() -> String:
+	var days := _history.series("day")
+	if days.size() < 2:
+		return ""
+	return "%s %d → %s %d" % [I18n.t("hud.day_short"), int(days[0]),
+			I18n.t("hud.day_short"), int(days[days.size() - 1])]
+
+
+func _day_text() -> String:
+	return I18n.t("tpl.ficha.day", {"day": int(_summary.get("day", 0))})
 
 
 func _value_label(raw: String) -> String:
@@ -813,6 +686,10 @@ func _value_label(raw: String) -> String:
 
 static func _tons(value: float) -> String:
 	return UiKit.number(value) + " t"
+
+
+static func _percent(ratio: float) -> String:
+	return "%.0f%%" % (clampf(ratio, 0.0, 1.0) * 100.0)
 
 
 static func _compact(value: float) -> String:
@@ -839,14 +716,6 @@ static func _coverage_color(days: float) -> Color:
 	if days >= 2.0:
 		return UiKit.WARNING
 	return UiKit.NEGATIVE
-
-
-static func _coverage_tone(days: float) -> String:
-	if is_inf(days) or days >= 7.0:
-		return "positive"
-	if days >= 2.0:
-		return "warning"
-	return "negative"
 
 
 static func _level_color(value: float) -> Color:
