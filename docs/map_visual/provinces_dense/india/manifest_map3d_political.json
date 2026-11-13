@@ -1,0 +1,35 @@
+{
+  "bench": {},
+  "city_count": 807,
+  "distances": [
+    60.0
+  ],
+  "engine": "4.7.2-stable (official)",
+  "focus": "IND-DEL",
+  "mode": "political",
+  "renderer": "forward_plus",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_political_d060.png": {
+      "distance": 60.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/provinces_dense/india/map3d_political_d060.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "saved": true,
+      "urban_cities": 81
+    }
+  },
+  "tag": "dense",
+  "timestamp": "2026-11-12T21:41:13",
+  "warnings": []
+}

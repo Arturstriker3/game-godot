@@ -1196,6 +1196,111 @@ python tools/build_world_cities.py --check
   `SOL-HAR`, d120/d052) e `docs/map_visual/new_nations/balkans/` (foco
   `XKX-PRI`, d120/d052), manifestos sem avisos.
 
+## 20. Fase B — subdivisão das províncias grandes (~10 mil km²) (2026-11-12)
+
+As 4.596 províncias admin-1 do Natural Earth têm média de ~34,7 mil km²
+(Europa Ocidental ~6,7 mil): um país grande ficava com poucas províncias
+gigantes, e a bacia agrícola/território herdava essa grossura. A Fase B
+subdivide **apenas os admin-1 acima de 15.000 km²** (1,5 × alvo) em células
+Voronoi de ~10 mil km² — a geometria de cada célula é o próprio raster do pai,
+então nenhuma célula cruza admin-1, fronteira nacional, enclave ou ilha
+removida.
+
+### 20.1 Parâmetros (`tools/build_atlas_layers.py`)
+
+| constante | valor | efeito |
+|---|---:|---|
+| `PROVINCE_TARGET_KM2` | 10.000 | alvo de área por célula |
+| `PROVINCE_SUBDIVIDE_RATIO` | 1,5 | só subdivide pai acima de 15.000 km² |
+| `PROVINCE_MIN_KM2` | 2.500 | célula menor é fundida na vizinha de maior fronteira |
+| `PROVINCE_MAX_CELLS` | 320 | teto de memória por pai |
+| `PROVINCE_LLOYD_ITERATIONS` | 2 | relaxamento na fase de PLANO |
+| `PROVINCE_SUBDIVIDE_SKIP` | `{"ATA"}` | Antártica: 2 admin-1 de 12,2 M km² gerariam ~1.225 células de gelo sem nação/cidade/recurso |
+
+* Número de células = `round(área_do_pai / 10.000)`, mínimo 2. As sementes
+  começam pelas cidades do cenário dentro do pai (ordem de população) e o resto
+  é preenchimento uniforme por área, determinístico (semente = id do pai).
+* O id ORIGINAL do admin-1 fica com a célula da maior cidade (contrato do
+  dataset: referências antigas continuam apontando para a mesma capital). As
+  filhas recebem ids novos em ordem de alocação, depois dos ids sintéticos da
+  ocupação russa; o nome vem da cidade mais populosa da célula ou `<pai> N`.
+* `apply_subdivision(iterations=0)` repinta as duas camadas com a **mesma
+  Voronoi das sementes gravadas**. Relaxar de novo na camada regional era um
+  bug: uma semente instável (célula espremida entre vizinhas) migrava e a
+  célula virava uma fatia. Com `iterations=0` a partição é idêntica à do plano
+  e a atribuição continua recortada aos pixels do pai.
+
+### 20.2 Resultado
+
+* **1.103 admin-1 subdivididos → 12.424 células** (11.321 filhas novas);
+  total **15.920 províncias** (limite do canal de 16 bits: 65.535).
+* Maiores pais: Sakha 302 células, Western Australia 254, Krasnoyarsk 228,
+  Nunavut 206, Queensland 173, Xinjiang 162, Amazonas 157, Alaska 149.
+* `provinces.json`: **15.547 entradas** (os 373 ids de nações apagadas ficam
+  fora do arquivo, como antes), ids únicos, sem id órfão — todo id presente em
+  terra no raster tem linha, e todo id do JSON existe em `world_province.png`
+  ou `region_province.png` (112 províncias minúsculas só existem na camada
+  regional, como já acontecia).
+* Contagem por nação (amostra): **FRA 108** (101 + Guiana e territórios
+  ultramarinos), **BRA 849**, **USA 948**, **RUS 1.691**, **IND 322**,
+  **CHN 956**, **CAN 990**, **AUS 772**.
+
+### 20.3 Verificação de área
+
+* A menor filha pelo critério do plano (área do polígono admin-1) tem
+  **2.572 km²** — nenhuma abaixo de `PROVINCE_MIN_KM2`. Nenhuma ilha virou
+  filha pequena (a subdivisão não cria célula em componente solto do pai).
+* 11 filhas têm **menos de 2.500 km² de TERRA** no `nav_mask`, todas em costa
+  de lago grande: 6 em Michigan/Keweenaw (Lago Superior), Ontario 48,
+  Minnesota 8 e Wisconsin 16 (Grandes Lagos), Kagera 2 e Mwanza 2 (Lago
+  Vitória). A área do plano delas é 4.889–10.415 km² porque o polígono admin-1
+  inclui a água do lago; a célula é legítima, só tem pouca terra.
+* Estreitos e `nav_mask` não mudam (a subdivisão só reparte ids dentro do
+  mesmo pai; a silhueta de terra é a mesma). `nav_strait_test` continua verde.
+
+### 20.4 Pipeline e verificação
+
+```powershell
+python tools/build_atlas_layers.py
+python tools/generate_nav_mask.py
+python tools/reconstruct_natural_inputs.py --prune
+python tools/compute_province_areas.py
+python tools/build_province_nature.py
+python tools/build_resource_map.py
+python tools/build_world_cities.py --write-scenario
+python tools/build_scenario_data.py
+python tools/validate_scenario_data.py
+& $godot --headless --path . --import
+```
+
+* `validate_scenario_data`: **0 erros, 0 avisos** (10 arquivos).
+* `reconstruct_natural_inputs --prune`: atlas 15.547 províncias; `provinces.txt`
+  e `provinces.json` de histórico ficam em 4.160 (podadas); territórios 188.
+* `compute_province_areas`: 15.547 províncias, área de terra total
+  148.346.094 km².
+* `build_resource_map`: `resource_points.json` regerado — **557 marcadores
+  minerais | 590 renováveis**, com `province_id` coerente com os ids novos.
+* `map_scale_bench` (794 cidades, 137 portos sintéticos; baseline
+  `docs/map_visual/map_scale_before_fase_b.json`): build **704,7 → 1.000,3 ms**
+  (abaixo da meta de 1,5 s), memória **+206,9 → +218,4 MB** (meta 250 MB),
+  pico de frame 32,2 → 46,0 ms (a checagem de frame já falhava antes; `_process`
+  perto/longe/pan continua ≤ 2 ms na média). O custo extra é a textura/lookup
+  de províncias ~3,8× maior.
+* Testes verdes: `territory_test` (179 nações com província, dono inicial ==
+  nação), `map_frame_test.tscn` (300 frames, 179/179 nações com cor),
+  `map_pick_test` (raio uniforme e desseleção), `nav_strait_test.tscn`
+  (mares conectados e rotas por Gibraltar/Dardanelos/Öresund),
+  `economy_integration_test` (smoke: geografia, cadeia, investimento e
+  save/load).
+
+### 20.5 Capturas
+
+Político 1920×1080, distância d060 (zoom país), manifestos sem avisos:
+`docs/map_visual/provinces_dense/brasil/` (`BRA-SAO`),
+`docs/map_visual/provinces_dense/usa/` (`USA-WAS`),
+`docs/map_visual/provinces_dense/russia/` (`RUS-MOS`, Rússia europeia) e
+`docs/map_visual/provinces_dense/india/` (`IND-DEL`).
+
 
 
 

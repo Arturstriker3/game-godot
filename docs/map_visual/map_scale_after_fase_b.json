@@ -1,0 +1,32 @@
+{
+  "build_ms": 1000.335,
+  "checks": {
+    "build": true,
+    "frame": false,
+    "memory": true,
+    "process": true
+  },
+  "cities": 794,
+  "engine": "4.7.2-stable (official)",
+  "first_lod_ms": 45.982,
+  "lod_drain_frames": 17,
+  "lod_drain_ms": 40.184,
+  "memory_mb": 218.381072998047,
+  "nodes": 282,
+  "pass": false,
+  "peak_frame_ms": 45.982,
+  "ports": 137,
+  "process_far_avg_ms": 0.227450000000001,
+  "process_far_max_ms": 10.787,
+  "process_near_avg_ms": 0.00725833333333334,
+  "process_near_max_ms": 0.015,
+  "process_pan_avg_ms": 1.33586666666667,
+  "process_pan_max_ms": 7.089,
+  "tag": "after_fase_b",
+  "targets": {
+    "build_ms": 1500.0,
+    "frame_ms": 16.0,
+    "memory_mb": 250.0,
+    "process_ms": 2.0
+  }
+}

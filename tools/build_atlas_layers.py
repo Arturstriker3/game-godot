@@ -22,13 +22,24 @@ Saídas em map/map_data/atlas/:
   world_province.png RGB8 id GLOBAL da província admin-1 por pixel (id = R+G*256,
                       sem zeros: preenchido com a província de terra mais próxima)
   provinces.json      id global, país (ADM0_A3), nação (tag do jogo), cor estática,
-                      centroide (5000x2500) e área global de cada província
+                      nome, centroide (5000x2500) e área global de cada província
   minimap.png       RGB8  mapa político global reduzido para o minimapa
   nations.json      âncora do nome de cada nação jogável (pixels 5000x2500)
   removed_nations.png  L8  terra das nações apagadas pela curadoria (1 = mar
                     depois da remoção); lido por tools/generate_nav_mask.py
   removed_islands.png L8  terra das ilhas pequenas removidas pela regra de
                     área (1 = mar); lido por tools/generate_nav_mask.py
+
+Densidade de províncias (fase B, 2026-11): admin-1 com área acima de
+`PROVINCE_TARGET_KM2 * PROVINCE_SUBDIVIDE_RATIO` (~15 mil km²) é subdividido em
+round(área / PROVINCE_TARGET_KM2) células Voronoi com relaxamento de Lloyd,
+sempre RECORTADAS aos pixels do próprio pai (nunca cruzam admin-1 nem fronteira
+nacional). As sementes são as cidades do cenário dentro do pai (ordenadas por
+população) + preenchimento determinístico por área (RNG semeado pelo id do pai).
+O pai mantém o id na célula que contém a maior cidade (ou o centróide); as
+filhas recebem ids novos anexados ao fim da faixa global (≤ 65.535) e nome de
+cidade ou "<pai> N". O plano nasce na camada mundial e é reaplicado na regional,
+de modo que as duas camadas têm as MESMAS províncias.
 
 Ocupação (tools/world_nation_curation.py, OCCUPIED_REGIONS/OCCUPIED_FRONT):
 antes dos SDFs o dono das províncias ocupadas é repintado no raster e a parte
@@ -37,7 +48,10 @@ admin-1 da fonte). O id original continua com a Ucrânia, então nenhuma
 referência antiga muda de significado; `provinces.json` ganha as linhas novas.
 
 Uso:
-  python tools/build_atlas_layers.py
+  python tools/build_atlas_layers.py                      # densidade da fase B
+  python tools/build_atlas_layers.py --target-km2=8000    # alvo menor = mais províncias
+  python tools/build_atlas_layers.py --no-subdivide       # admin-1 puro (pré-fase B)
+  python tools/build_atlas_layers.py --report-islands     # relatório seco de ilhas
 
 Requer Natural Earth 10m admin-0 e admin-1 (NE_DIR, padrão G:\\tools\\ne_extract),
 numpy, pillow, pyshp e scipy.
@@ -56,6 +70,7 @@ from PIL import Image, ImageDraw
 from scipy.ndimage import (binary_dilation as nd_dilate, distance_transform_edt,
                            find_objects as nd_objects, label as nd_label,
                            sum as nd_sum)
+from scipy.spatial import cKDTree
 
 from world_nation_curation import (OCCUPIED_FRONT, OCCUPIED_REGIONS,
                                    atlas_owner_map, atlas_removed)
@@ -203,6 +218,23 @@ NEUTRAL_PALETTE = [
 SDF_COAST_SCALE = 2.0
 SDF_LINE_SCALE = 8.0
 
+# Densidade de províncias (fase B, 2026-11): alvo de ~10 mil km² por província
+# (Europa Ocidental tem ~6,7 mil; a média mundial do admin-1 era ~34,7 mil).
+# Admin-1 acima de PROVINCE_SUBDIVIDE_RATIO × alvo é subdividido; célula abaixo
+# de PROVINCE_MIN_KM2 é fundida na vizinha (evita fatias e províncias órfãs, que
+# não teriam entrada em provinces.json). O teto por pai existe para memória: a
+# maior admin-1 (Sakha, ~3,05 M km²) fica com 305 células, abaixo do teto.
+PROVINCE_TARGET_KM2 = 10000.0
+PROVINCE_SUBDIVIDE_RATIO = 1.5
+PROVINCE_MIN_KM2 = 2500.0
+PROVINCE_MAX_CELLS = 320
+PROVINCE_LLOYD_ITERATIONS = 2
+# Antártica: 2 admin-1 de 12,2 M km² gerariam ~1.225 províncias de gelo sem
+# nação, cidade ou recurso no cenário (não está em nations.csv). A exclusão é
+# declarada: as duas admin-1 atuais continuam como estão.
+PROVINCE_SUBDIVIDE_SKIP = {"ATA"}
+EARTH_RADIUS_KM = 6371.0
+
 
 def read_admin0():
     reader = shapefile.Reader(ADMIN0, encoding="utf-8")
@@ -249,14 +281,16 @@ def read_admin1_all():
     """Lê TODAS as províncias admin-1 do shapefile (sem filtro de bbox).
 
     O id global é o índice 1..N na lista única. Devolve as geometrias, o
-    código ADM0, a bbox (para a seleção da região) e o ISO 3166-2 (chave
-    estável das decisões de curadoria por província, ex.: UA-09)."""
+    código ADM0, a bbox (para a seleção da região), o ISO 3166-2 (chave
+    estável das decisões de curadoria por província, ex.: UA-09) e o NOME da
+    admin-1 (usado para nomear as províncias filhas: "<pai> N")."""
     reader = shapefile.Reader(ADMIN1, encoding="utf-8")
     names = [field[0] for field in reader.fields[1:]]
     shapes = []
     countries = []
     bboxes = []
     iso_codes = []
+    labels = []
     for shape, record in zip(reader.shapes(), reader.records()):
         parts = split_parts(shape)
         if not parts:
@@ -267,7 +301,8 @@ def read_admin1_all():
         countries.append(adm0)
         bboxes.append(shape.bbox)
         iso_codes.append(str(fields.get("iso_3166_2") or "").strip())
-    return shapes, countries, bboxes, iso_codes
+        labels.append(str(fields.get("name") or fields.get("NAME") or "").strip())
+    return shapes, countries, bboxes, iso_codes, labels
 
 
 def select_region(provinces, province_countries, province_bboxes, bounds):
@@ -793,6 +828,420 @@ def process_rows(owners, provinces, supersample):
     return coast_lo, borders_lo, provinces_lo
 
 
+def load_scenario_cities():
+    """Cidades do cenário em lon/lat, ordenadas por população (peso da semente).
+
+    A posição vem de `x`/`y` no plano 5000×2500 do jogo — a MESMA projeção do
+    atlas —, então a cidade cai no pixel da própria província. Cidade sem
+    `x`/`y` é ignorada (não inventamos posição)."""
+    path = os.path.join(SCENARIO_DIR, "cities.json")
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as handle:
+        rows = json.load(handle)
+    cities = []
+    for item in rows:
+        if item.get("x") is None or item.get("y") is None:
+            continue
+        cities.append({
+            "id": str(item.get("id", "")),
+            "name": str(item.get("name") or item.get("id", "")),
+            "population": float(item.get("population") or 0.0),
+            "lon": float(item["x"]) / GLOBAL_W * 360.0 - 180.0,
+            "lat": 90.0 - float(item["y"]) / GLOBAL_H * 180.0,
+        })
+    cities.sort(key=lambda city: (-city["population"], city["id"]))
+    return cities
+
+
+def row_km2(grid):
+    """Área de uma célula da grade, por linha (equirretangular, R = 6371 km)."""
+    rows = np.arange(grid.height, dtype=np.float64)
+    lat = grid.lat1 - (rows + 0.5) / grid.height * (grid.lat1 - grid.lat0)
+    dlon = math.radians((grid.lon1 - grid.lon0) / grid.width)
+    dlat = math.radians((grid.lat1 - grid.lat0) / grid.height)
+    return (EARTH_RADIUS_KM ** 2) * np.cos(np.radians(lat)) * dlon * dlat
+
+
+def area_by_id(ids, cells_km2, total):
+    """Área (km²) de cada id do raster, em faixas de linhas (memória constante)."""
+    area = np.zeros(total + 1, dtype=np.float64)
+    if ids is None:
+        return area
+    width = ids.shape[1]
+    band = max(1, int(4_000_000 // max(width, 1)))
+    for start in range(0, ids.shape[0], band):
+        stop = min(start + band, ids.shape[0])
+        sub = ids[start:stop]
+        weights = np.repeat(cells_km2[start:stop], width)
+        counts = np.bincount(sub.ravel(), weights=weights)
+        size = min(counts.size, total + 1)
+        area[:size] += counts[:size]
+    return area
+
+
+def lonlat_to_px(grid, lon, lat):
+    """Pixel (x, y) fracionário de lon/lat na grade (mesmo centro de grid_pixel)."""
+    x = (lon - grid.lon0) / (grid.lon1 - grid.lon0) * grid.width - 0.5
+    y = (grid.lat1 - lat) / (grid.lat1 - grid.lat0) * grid.height - 0.5
+    return x, y
+
+
+def px_to_lonlat(grid, x, y):
+    """lon/lat do centro do pixel (x, y) da grade."""
+    lon = grid.lon0 + (x + 0.5) / grid.width * (grid.lon1 - grid.lon0)
+    lat = grid.lat1 - (y + 0.5) / grid.height * (grid.lat1 - grid.lat0)
+    return lon, lat
+
+
+def seed_points(rows, cols, count, city_seeds, rng):
+    """Sementes (x, y) dentro do pai: cidades primeiro, preenchimento depois.
+
+    As cidades entram na ordem de população (o chamador já as ordenou). O
+    preenchimento é amostrado uniformemente nos pixels do pai — amostragem por
+    área, sem rejeição cara — e rejeita sementes mais próximas que ~0,55 do lado
+    da célula esperada (grade de ocupação O(1), não O(n²)). Determinístico: a
+    única fonte de aleatoriedade é o `rng` semeado pelo id do pai."""
+    if rows.size == 0 or count <= 0:
+        return np.zeros((0, 2), dtype=np.float64)
+    seeds = [[float(x), float(y)] for x, y in city_seeds[:count]]
+    spacing = max(math.sqrt(rows.size / count) * 0.85, 1.5)
+    buckets = {}
+    for seed in seeds:
+        buckets.setdefault((int(seed[0] // spacing), int(seed[1] // spacing)),
+                           []).append(seed)
+
+    def far_enough(x, y):
+        gx, gy = int(x // spacing), int(y // spacing)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for sx, sy in buckets.get((gx + dx, gy + dy), ()):
+                    if (sx - x) ** 2 + (sy - y) ** 2 < spacing ** 2:
+                        return False
+        return True
+
+    def add(x, y):
+        seeds.append([float(x), float(y)])
+        buckets.setdefault((int(x // spacing), int(y // spacing)),
+                           []).append(seeds[-1])
+
+    attempts = 0
+    limit = count * 40
+    while len(seeds) < count and attempts < limit:
+        attempts += 1
+        index = int(rng.integers(0, rows.size))
+        x = float(cols[index])
+        y = float(rows[index])
+        if far_enough(x, y):
+            add(x, y)
+    while len(seeds) < count:
+        index = int(rng.integers(0, rows.size))
+        add(float(cols[index]), float(rows[index]))
+    return np.asarray(seeds, dtype=np.float64)
+
+
+def lloyd(rows, cols, weights, seeds, iterations):
+    """Voronoi + relaxamento de Lloyd; devolve (rótulo por pixel, sementes).
+
+    Os centróides são ponderados pela área real de cada pixel (`weights`), não
+    pelo número de pixels: em províncias muito longas em latitude a diferença
+    é visível. Célula que fica sem pixel mantém a semente onde está."""
+    if len(seeds) <= 1:
+        return np.zeros(rows.size, dtype=np.int64), np.asarray(seeds, dtype=np.float64)
+    points = np.column_stack((cols, rows)).astype(np.float64)
+    seeds = np.array(seeds, dtype=np.float64)
+    for _ in range(max(int(iterations), 0)):
+        tree = cKDTree(seeds)
+        _, label = tree.query(points, k=1)
+        total = np.bincount(label, weights=weights, minlength=len(seeds))
+        xsum = np.bincount(label, weights=weights * points[:, 0], minlength=len(seeds))
+        ysum = np.bincount(label, weights=weights * points[:, 1], minlength=len(seeds))
+        moving = total > 0.0
+        seeds[moving, 0] = xsum[moving] / total[moving]
+        seeds[moving, 1] = ysum[moving] / total[moving]
+    tree = cKDTree(seeds)
+    _, label = tree.query(points, k=1)
+    return label.astype(np.int64), seeds
+
+
+def merge_tiny_cells(rows, cols, labels, weights, origin, shape, seeds, stride=1):
+    """Funde células abaixo de PROVINCE_MIN_KM2 na vizinha de maior fronteira.
+
+    A área considerada é o MENOR entre a área real (pixels da grade alta) e a
+    área que sobrevive à amostragem de `provinces.json` (`[::stride]`): sem
+    isso, uma célula feita de ilhotas finas pode ter área alta em pixels e quase
+    nenhum pixel amostrado — ela entraria no raster e sairia do JSON, ou seja,
+    viraria um id órfão. Célula SEM vizinho de borda (ilha dentro do pai) vai
+    para a célula viva mais próxima: a ilha pequena continua inteira, numa única
+    província. Devolve (rótulos densos 0..m-1, sementes vivas)."""
+    count = len(seeds)
+    if count <= 1:
+        return labels, np.asarray(seeds, dtype=np.float64)
+    area = np.bincount(labels, weights=weights, minlength=count)
+    visible = ((rows % stride) == 0) & ((cols % stride) == 0)
+    if stride > 1 and visible.any():
+        seen = np.bincount(labels[visible], weights=weights[visible], minlength=count)
+        area = np.minimum(area, seen * (stride ** 2))
+    lab2d = np.full(shape, -1, dtype=np.int64)
+    lab2d[rows - origin[0], cols - origin[1]] = labels
+    border = np.zeros((count, count), dtype=np.int64)
+    for axis in (0, 1):
+        if axis == 0:
+            first, second = lab2d[:-1, :], lab2d[1:, :]
+        else:
+            first, second = lab2d[:, :-1], lab2d[:, 1:]
+        shared = (first >= 0) & (second >= 0) & (first != second)
+        if not shared.any():
+            continue
+        pair = first[shared] * count + second[shared]
+        counts = np.bincount(pair, minlength=count * count).reshape(count, count)
+        border += counts + counts.T
+
+    remap = np.arange(count, dtype=np.int64)
+    live_area = area.copy()
+    for index in np.argsort(area, kind="stable"):
+        index = int(index)
+        if remap[index] != index or live_area[index] >= PROVINCE_MIN_KM2:
+            continue
+        row = border[index].copy()
+        row[index] = 0
+        if row.max() > 0:
+            target = int(np.argmax(row))
+        else:
+            alive = np.array([j for j in range(count) if remap[j] == j and j != index],
+                             dtype=np.int64)
+            if alive.size == 0:
+                continue
+            distance = ((seeds[alive, 0] - seeds[index, 0]) ** 2
+                        + (seeds[alive, 1] - seeds[index, 1]) ** 2)
+            target = int(alive[int(np.argmin(distance))])
+        remap[index] = target
+        live_area[target] += live_area[index]
+        border[target] += border[index]
+        border[:, target] += border[:, index]
+
+    roots = np.zeros(count, dtype=np.int64)
+    for index in range(count):
+        node = index
+        while remap[node] != node:
+            node = int(remap[node])
+        roots[index] = node
+    keep = sorted({int(root) for root in roots})
+    lookup = np.zeros(count, dtype=np.int64)
+    for dense, root in enumerate(keep):
+        lookup[roots == root] = dense
+    dense_labels = lookup[roots[labels]]
+    return dense_labels, np.asarray(seeds, dtype=np.float64)[np.asarray(keep, dtype=np.int64)]
+
+
+def parent_pixels(provinces, pid, window):
+    """Pixels (globais) do pai dentro da janela e a origem usada."""
+    y0, x0 = window[0].start, window[1].start
+    mask = provinces[window] == pid
+    rows_rel, cols_rel = np.nonzero(mask)
+    shape = (window[0].stop - y0, window[1].stop - x0)
+    return rows_rel + y0, cols_rel + x0, shape
+
+
+def plan_subdivision(provinces, grid, province_countries, names, cities, next_id,
+                     layer="world"):
+    """Subdivide os admin-1 grandes (plano calculado UMA vez, na camada mundial).
+
+    A geometria de cada célula é o próprio raster do pai: nenhuma célula cruza
+    admin-1, fronteira nacional, enclave ou ilha removida — o recorte é
+    literalmente o conjunto de pixels do pai. Devolve `(plan, children)`:
+    `plan[pid]` guarda as células (id, semente em lon/lat, nome) nas DUAS
+    camadas; `children` é a lista de ids novos com dono e nome, na ordem de
+    alocação (a mesma dos ids globais)."""
+    if PROVINCE_TARGET_KM2 <= 0.0:
+        return {}, []
+    total = len(province_countries)
+    cells_km2 = row_km2(grid)
+    if int(provinces.max()) > total:
+        raise SystemExit(f"subdivisão: id {int(provinces.max())} acima do total "
+                         f"de províncias ({total})")
+    area = area_by_id(provinces, cells_km2, total)
+    threshold = PROVINCE_TARGET_KM2 * PROVINCE_SUBDIVIDE_RATIO
+    candidates = [pid for pid in range(1, total + 1)
+                  if area[pid] > threshold
+                  and province_countries[pid - 1] not in PROVINCE_SUBDIVIDE_SKIP]
+    if not candidates:
+        return {}, []
+    print(f"[subdivisão:{layer}] {len(candidates)} admin-1 acima de {threshold:.0f} km² "
+          f"(alvo {PROVINCE_TARGET_KM2:.0f} km²)")
+    objects = nd_objects(provinces, max_label=total)
+    city_px = [(lonlat_to_px(grid, city["lon"], city["lat"]), city) for city in cities]
+    plan = {}
+    children = []
+    for pid in candidates:
+        window_slices = objects[pid - 1]
+        if window_slices is None:
+            continue
+        window = (slice(window_slices[0].start, window_slices[0].stop),
+                  slice(window_slices[1].start, window_slices[1].stop))
+        rows, cols, shape = parent_pixels(provinces, pid, window)
+        if rows.size == 0:
+            continue
+        weights = cells_km2[rows]
+        parent_area = float(weights.sum())
+        count = int(round(parent_area / PROVINCE_TARGET_KM2))
+        count = max(2, min(count, PROVINCE_MAX_CELLS))
+        origin = (window[0].start, window[1].start)
+
+        # Sementes: cidades do cenário dentro do pai (já ordenadas por
+        # população). O pixel da cidade pode cair no mar/na vizinha por
+        # arredondamento; procura-se um pixel do pai num raio de 2.
+        city_seeds = []
+        used_pixels = set()
+        for (cx, cy), city in city_px:
+            if not (window[1].start - 2 <= cx < window[1].stop + 2
+                    and window[0].start - 2 <= cy < window[0].stop + 2):
+                continue
+            hit = None
+            for dr in range(-2, 3):
+                for dc in range(-2, 3):
+                    rx = int(round(cx)) + dc
+                    ry = int(round(cy)) + dr
+                    if not (window[1].start <= rx < window[1].stop
+                            and window[0].start <= ry < window[0].stop):
+                        continue
+                    if provinces[ry, rx] != pid:
+                        continue
+                    if hit is None or abs(dr) + abs(dc) < hit[0]:
+                        hit = (abs(dr) + abs(dc), rx, ry)
+            if hit is None or (hit[1], hit[2]) in used_pixels:
+                continue
+            used_pixels.add((hit[1], hit[2]))
+            city_seeds.append((float(hit[1]), float(hit[2])))
+            if len(city_seeds) >= count:
+                break
+
+        rng = np.random.default_rng((pid * 2654435761) % (2 ** 32))
+        seeds = seed_points(rows, cols, count, city_seeds, rng)
+        labels, seeds = lloyd(rows, cols, weights, seeds, PROVINCE_LLOYD_ITERATIONS)
+        labels, seeds = merge_tiny_cells(rows, cols, labels, weights, origin, shape,
+                                         seeds, stride=SUPERSAMPLE)
+        if len(seeds) < 2:
+            continue
+
+        lab2d = np.full(shape, -1, dtype=np.int64)
+        lab2d[rows - origin[0], cols - origin[1]] = labels
+        cell_km2 = np.bincount(labels, weights=weights, minlength=len(seeds))
+
+        # Nome de cada célula: da cidade mais populosa dentro dela (a lista
+        # `city_seeds` segue a ordem de população, então a primeira vence).
+        city_name = {}
+        for x, y in city_seeds:
+            cell = int(lab2d[int(y) - origin[0], int(x) - origin[1]])
+            if cell < 0 or cell in city_name:
+                continue
+            for (cx, cy), city in city_px:
+                if int(round(cx)) == int(x) and int(round(cy)) == int(y):
+                    city_name[cell] = city["name"]
+                    break
+
+        # Âncora: a célula da maior cidade do pai; sem cidade, a do centróide
+        # ponderado por área. Ela fica com o id ORIGINAL (contrato do dataset).
+        if city_seeds:
+            anchor_x, anchor_y = int(city_seeds[0][0]), int(city_seeds[0][1])
+        else:
+            anchor_x = int(round(float(np.average(cols, weights=weights))))
+            anchor_y = int(round(float(np.average(rows, weights=weights))))
+        anchor_cell = -1
+        ax = anchor_x - origin[1]
+        ay = anchor_y - origin[0]
+        if 0 <= ay < shape[0] and 0 <= ax < shape[1] and lab2d[ay, ax] >= 0:
+            anchor_cell = int(lab2d[ay, ax])
+        if anchor_cell < 0:
+            distance = (cols - anchor_x) ** 2 + (rows - anchor_y) ** 2
+            anchor_cell = int(labels[int(np.argmin(distance))])
+
+        parent_name = (names[pid - 1] if names and pid - 1 < len(names) else "").strip()
+        parent_name = parent_name or f"PRV{pid:06d}"
+        cells = []
+        number = 0
+        for cell in range(len(seeds)):
+            number += 1
+            if cell == anchor_cell:
+                cell_id = pid
+                cell_name = parent_name
+            else:
+                cell_id = next_id
+                next_id += 1
+                cell_name = city_name.get(cell) or f"{parent_name} {number}"
+            lon, lat = px_to_lonlat(grid, float(seeds[cell, 0]), float(seeds[cell, 1]))
+            cells.append({
+                "id": cell_id,
+                "seed": [round(lon, 5), round(lat, 5)],
+                "name": cell_name,
+                "area_km2": round(float(cell_km2[cell]), 1),
+            })
+            if cell_id != pid:
+                children.append({
+                    "id": cell_id,
+                    "parent": pid,
+                    "country": province_countries[pid - 1],
+                    "name": cell_name,
+                })
+        if next_id > 65535:
+            raise SystemExit(f"subdivisão: id {next_id} acima do limite de 65.535 "
+                             f"do canal de província (world_province.png)")
+        plan[pid] = {
+            "parent": pid,
+            "name": parent_name,
+            "area_km2": round(parent_area, 1),
+            "cells": cells,
+        }
+
+    if plan:
+        sizes = sorted((entry["area_km2"] for entry in plan.values()), reverse=True)
+        cells = sum(len(entry["cells"]) for entry in plan.values())
+        print(f"[subdivisão:{layer}] {len(plan)} admin-1 -> {cells} células "
+              f"({cells - len(plan)} filhas novas); maior pai {sizes[0]:.0f} km²")
+        for pid in sorted(plan, key=lambda key: -plan[key]["area_km2"])[:8]:
+            entry = plan[pid]
+            print(f"[subdivisão:{layer}] {entry['name']} ({pid}) "
+                  f"{entry['area_km2']:.0f} km² -> {len(entry['cells'])} células")
+    return plan, children
+
+
+def apply_subdivision(provinces, grid, plan, layer="", iterations=0):
+    """Repinta o raster de ids de uma camada com as células do plano.
+
+    As sementes vêm em lon/lat (idênticas nas duas camadas) e a partição é a
+    Voronoi DELAS: `iterations=0` (padrão) reproduz exatamente o plano na
+    camada mundial e, na regional, a mesma partição na resolução fina. Relaxar
+    de novo aqui era um bug — uma semente instável (célula espremida entre
+    vizinhas) migrava e a célula virava uma fatia. A atribuição é sempre
+    recortada aos pixels do pai (o pai no raster já vem sem ilhas removidas e
+    com a ocupação pintada)."""
+    if not plan:
+        return 0
+    cells_km2 = row_km2(grid)
+    objects = nd_objects(provinces, max_label=max(plan))
+    painted = 0
+    for pid in sorted(plan):
+        entry = plan[pid]
+        slices = objects[pid - 1]
+        if slices is None:
+            continue
+        window = (slice(slices[0].start, slices[0].stop),
+                  slice(slices[1].start, slices[1].stop))
+        rows, cols, _shape = parent_pixels(provinces, pid, window)
+        if rows.size == 0:
+            continue
+        weights = cells_km2[rows]
+        seeds = np.asarray([lonlat_to_px(grid, cell["seed"][0], cell["seed"][1])
+                            for cell in entry["cells"]], dtype=np.float64)
+        labels, _seeds = lloyd(rows, cols, weights, seeds, iterations)
+        ids = np.asarray([cell["id"] for cell in entry["cells"]], dtype=np.uint16)
+        sub = provinces[window]
+        sub[provinces[window] == pid] = ids[labels]
+        painted += 1
+    print(f"[subdivisão:{layer}] {painted} admin-1 repintados com células Voronoi")
+    return painted
+
+
 def plan_occupation(iso_codes, bboxes):
     """Reatribui dono de província admin-1 (OCCUPIED_REGIONS).
 
@@ -885,7 +1334,10 @@ def paint_occupation(owners, provinces, grid, countries, specs):
 def build_layer(name, bounds, width, countries, province_shapes,
                 province_countries=None, province_ids=None, supersample=SUPERSAMPLE,
                 band_rows=None, color_step=1, return_removed=False,
-                removed_reference=None, islands=False, occupation=None):
+                removed_reference=None, islands=False, occupation=None,
+                subdivision_cities=None, subdivision_names=None,
+                subdivision_countries=None, subdivision_next_id=None,
+                subdivision_plan=None):
     """Constrói uma camada do atlas.
 
     `band_rows` (linhas da grade BAIXA) processa os campos de distância em
@@ -893,7 +1345,14 @@ def build_layer(name, bounds, width, countries, province_shapes,
     (mundo em 8192 px). A margem cobre o alcance codificado dos SDFs (costa
     ±64 texels baixos = 128 altos), então o resultado é igual ao da grade
     inteira. `color_step` > 1 grava `<name>_color.png` em resolução menor
-    (a cor é chapada por país; não precisa da resolução do SDF)."""
+    (a cor é chapada por país; não precisa da resolução do SDF).
+
+    Subdivisão (fase B): a camada MUNDIAL recebe `subdivision_cities`/
+    `subdivision_names`/`subdivision_countries`/`subdivision_next_id` e devolve
+    o plano em `subdivision`; a camada regional recebe `subdivision_plan` e
+    reaplica a MESMA partição. O plano é calculado DEPOIS das remoções de ilha
+    e da ocupação: nenhum id nasce para pixels que viraram mar e as células
+    herdam o dono já repintado."""
     hi = Grid(bounds, width * supersample)
     lo_height = hi.height // supersample
     lo_width = width
@@ -923,6 +1382,22 @@ def build_layer(name, bounds, width, countries, province_shapes,
         cleared = apply_removed_mask(owners, provinces, hi, *removed_reference)
         print(f"[{name}] {cleared} px da remoção de ilhas da camada mundial "
               f"(o raster fino preservaria a ilha)")
+
+    # Densidade de províncias (fase B): depois de toda remoção/ocupação, para
+    # nenhuma célula nascer sobre mar e todas herdarem o dono já pintado.
+    subdivision = None
+    subdivision_children = []
+    if provinces is not None and subdivision_plan is not None:
+        apply_subdivision(provinces, hi, subdivision_plan, name)
+        subdivision = subdivision_plan
+    elif (provinces is not None and subdivision_cities is not None
+          and subdivision_countries is not None
+          and subdivision_next_id is not None):
+        subdivision, subdivision_children = plan_subdivision(
+            provinces, hi, subdivision_countries, subdivision_names,
+            subdivision_cities, subdivision_next_id, name)
+        if subdivision:
+            apply_subdivision(provinces, hi, subdivision, name)
 
     coast_lo = np.empty((lo_height, lo_width), dtype=np.float32)
     borders_lo = np.empty((lo_height, lo_width), dtype=np.float32)
@@ -990,6 +1465,8 @@ def build_layer(name, bounds, width, countries, province_shapes,
         "province_ids": province_ids_lo,
         "removed_mask": removed_mask,
         "removed_grid": hi,
+        "subdivision": subdivision,
+        "subdivision_children": subdivision_children,
     }
 
 def country_color(country):
@@ -1014,14 +1491,17 @@ def write_province_png(name, ids_lo):
     Image.fromarray(rgb, "RGB").save(os.path.join(OUT, f"{name}_province.png"), optimize=True)
 
 
-def write_provinces_json(region, world, province_countries, countries, occupation=None):
+def write_provinces_json(region, world, province_countries, countries, occupation=None,
+                         names=None):
     """provinces.json: uma entrada por id global com área > 0 em qualquer camada.
 
     Centroide (x, y) e área vêm da camada MUNDIAL (px globais 5000×2500);
     quando uma província só existe na região (pequena demais para o mundo),
     usa a camada da região como fallback. `province_countries` já inclui os
-    ids sintéticos da ocupação (o dono é o alvo); `occupation` só troca o
-    `country`/cor das províncias inteiras que mudaram de dono."""
+    ids sintéticos da ocupação (o dono é o alvo) e as filhas da subdivisão
+    (herdam o dono do pai); `occupation` só troca o `country`/cor das
+    províncias inteiras que mudaram de dono. `names` é a lista paralela de
+    nomes (admin-1 da fonte + "<pai> N"/cidade das filhas)."""
     region_ids = region["province_ids"]
     world_ids = world["province_ids"]
     total = len(province_countries)
@@ -1069,6 +1549,7 @@ def write_provinces_json(region, world, province_countries, countries, occupatio
         color = list(country_color(country)) if country else list(NEUTRAL_PALETTE[0])
         rows.append({
             "id": pid,
+            "name": (names[pid - 1] if names and pid - 1 < len(names) else ""),
             "country": adm0,
             "nation": nation,
             "color": color,
@@ -1178,6 +1659,12 @@ def report_islands():
 
 
 def main():
+    global PROVINCE_TARGET_KM2
+    for arg in sys.argv[1:]:
+        if arg == "--no-subdivide":
+            PROVINCE_TARGET_KM2 = 0.0
+        elif arg.startswith("--target-km2="):
+            PROVINCE_TARGET_KM2 = float(arg.split("=", 1)[1])
     for path in (ADMIN0, ADMIN1):
         if not os.path.exists(path + ".shp"):
             raise SystemExit(f"Fonte Natural Earth ausente: {path}.shp")
@@ -1187,7 +1674,8 @@ def main():
     print(f"países={len(countries)} | nações apagadas={len(ATLAS_REMOVED)}")
 
     # Uma lista ÚNICA de províncias admin-1; id global = índice 1..N.
-    provinces, province_countries, province_bboxes, iso_codes = read_admin1_all()
+    (provinces, province_countries, province_bboxes, iso_codes,
+     province_names) = read_admin1_all()
     print(f"províncias admin-1 no mundo={len(provinces)}")
     # O id GLOBAL não muda (contrato do dataset). Só o DONO muda (fusão) e a
     # presença no raster (nação apagada).
@@ -1202,13 +1690,24 @@ def main():
     # fonte, então a regeneração é determinística.
     occupation = plan_occupation(iso_codes, province_bboxes)
     new_ids = sorted(spec["new_id"] for spec in occupation if spec["new_id"])
+    name_of_new = {spec["new_id"]: province_names[spec["pid"] - 1]
+                   for spec in occupation if spec["new_id"]}
     for new_id in new_ids:
         if new_id != len(province_countries) + 1:
             raise SystemExit("ocupação: alocação de id fora de ordem")
         province_countries.append(OCCUPIED_REGIONS["target"])
+        province_names.append(name_of_new.get(new_id, ""))
     if occupation:
         print(f"ocupação: {len(occupation)} província(s) reatribuída(s), "
               f"{len(new_ids)} id(s) novo(s) para a parte ocupada")
+
+    # Dono efetivo: a província ocupada INTEIRA muda de dono em provinces.json;
+    # as filhas da subdivisão herdam esse dono (não o código admin-0 original).
+    effective_countries = list(province_countries)
+    for spec in occupation:
+        if spec["mode"] == "whole":
+            effective_countries[spec["pid"] - 1] = spec["target"]
+    next_id = len(province_countries) + 1
 
     region_shapes, region_countries, region_ids = select_region(
         provinces, province_countries, province_bboxes, REGION)
@@ -1230,22 +1729,40 @@ def main():
     world_countries = [country for tag, country
                        in zip(original_countries, province_countries)
                        if tag not in ATLAS_REMOVED]
+    subdivision_cities = load_scenario_cities()
+    print(f"subdivisão: {len(subdivision_cities)} cidade(s) do cenário como sementes")
     world = build_layer("world", (-180.0, -90.0, 180.0, 90.0), WORLD_W, countries,
                         world_shapes, world_countries, world_ids, supersample=SUPERSAMPLE,
                         band_rows=512, color_step=max(WORLD_W // 4096, 1),
-                        return_removed=True, islands=True, occupation=occupation)
+                        return_removed=True, islands=True, occupation=occupation,
+                        subdivision_cities=subdivision_cities,
+                        subdivision_names=province_names,
+                        subdivision_countries=effective_countries,
+                        subdivision_next_id=next_id)
+
+    # Filhas da subdivisão: ids consecutivos logo depois do último id existente.
+    subdivision = world["subdivision"] or {}
+    for child in world["subdivision_children"]:
+        if child["id"] != len(province_countries) + 1:
+            raise SystemExit("subdivisão: alocação de id fora de ordem")
+        province_countries.append(child["country"])
+        province_names.append(child["name"])
+    if subdivision:
+        print(f"subdivisão: {len(province_countries)} províncias no total "
+              f"(limite do canal de 16 bits: 65.535)")
 
     region = build_layer("region", REGION, REGION_W, countries,
                          region_shapes, region_countries, region_ids,
                          supersample=SUPERSAMPLE,
                          removed_reference=(world["removed_grid"],
                                             world["removed_mask"]),
-                         occupation=occupation)
+                         occupation=occupation, subdivision_plan=subdivision)
     with open(os.path.join(OUT, "nations.json"), "w", encoding="utf-8") as handle:
         json.dump(nation_anchors(region, countries), handle, indent="\t")
         handle.write("\n")
 
-    write_provinces_json(region, world, province_countries, countries, occupation)
+    write_provinces_json(region, world, province_countries, countries, occupation,
+                         province_names)
     write_minimap(world)
     write_removed_land(removed_parts)
     write_removed_islets(world["removed_mask"], world["removed_grid"])
