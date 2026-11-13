@@ -1955,3 +1955,140 @@ continente que o `GeographyService` usa: cada depósito vai para a massa da
 cidade da nação mais próxima e é comparado com o que as cidades daquela massa
 declaram. O jogo estava certo; o recorte é que estava errado.
 
+## 23. Porto nacional: capacidade, fila e transbordo (t13, 2026-11-13)
+
+Design completo em `docs/economy/port_design.md`; regras em
+`gdextension/src/economy_sim.cpp`; teste próprio `tools/port_capacity_test.gd`.
+Medições com o cenário de **834 cidades / 144 portos** (commit `dbff887`) e os
+dois DLLs recompilados (`debug` e `release`).
+
+**Antes:** o porto era só decorativo. `demo_nearest_port()` escolhia o cais da
+mesma nação/massa para desenhar `TradeOrder.legs`; o frete era distância em
+linha reta × tarifa (0,10 por t·km dentro da massa, 0,02 entre massas) e a carga
+chegava **sempre** em `day + 1`. `port_of` era metadado ignorado pelo núcleo.
+
+### 23.1 Regras implementadas
+
+- **Porto nacional:** qualquer cidade da nação na mesma massa de terra usa
+  qualquer porto da nação (`port_of` = cidade-sede, não dono). Nação sem porto
+  não tem travessia marítima — só comércio terrestre.
+- **Rota marítima:** caminhão cidade→porto + navio porto→porto + caminhão
+  porto→cidade, com **transbordo de 8 h por operação** (16 h no total).
+- **Capacidade nível 1:** `clamp(1000 + 0,002 × sim_população(cidade-sede),
+  1000, 50 000)` t/dia. Nível `= max(1, ceil(capacidade / base))`, então o nível
+  cresce com a expansão e cada nível novo vale `base` t/dia.
+- **Fila:** `overflow = max(0, used + x − capacidade)`; `atraso = overflow /
+  capacidade` (dias); `demurrage = overflow × atraso × 0,5`; a chegada é adiada
+  em `ceil(atraso)` dias. O demurrage sai do **orçamento público da cidade
+  compradora** para o setor de frete dela (dinheiro conservado); sem verba, a
+  fila atrasa mas não cobra.
+- **Expansão (API, sem UI):** `demo_expand_port(port_id, t_por_dia)` custa
+  **500 × t_por_dia** do orçamento da cidade-sede, pago ao setor de construção,
+  e entra em operação depois de **30 dias**. `demo_set_port_capacity()` é o hook
+  de teste. Portos e obras vão no save (`demo_to_dict`/`demo_from_dict`).
+
+### 23.2 Modais (o que o navio ganha)
+
+| modal | lote (1 veículo) | velocidade | custo (t·km) | turnaround |
+|---|---:|---:|---:|---:|
+| caminhão | 25 t | 65 km/h | 0,10 | 6 h |
+| navio | **2 000 t** (80× o caminhão) | 35 km/h | **0,02 (5× menor)** | 24 h |
+| avião | 20 t | 750 km/h | 0,80 | 24 h |
+
+O lote é **um veículo**: 500 t viram 20 caminhões ou 1 navio; a frota parte em
+comboio (o prazo é o do veículo + 0,5 h de embarque por lote).
+
+### 23.3 Capacidade instalada medida (144 portos)
+
+| métrica | valor |
+|---|---:|
+| portos | 144 |
+| capacidade total (nível 1) | **877 277 t/dia** |
+| mediana | 3 620 t/dia |
+| mínimo | 1 002 t/dia |
+| máximo | 50 000 t/dia (`CHN-SHAN`) — **teto atingido** |
+
+Top-5 por capacidade: `CHN-SHAN` 50 000 (teto), `CHN-GUAN` 38 353, `CHN-XIA`
+32 600, `TUR-IST` 32 403, `IND-MUM` 26 384 t/dia. O teto de 50 000 corta
+Xangai, cujo interior (população de simulação) pediria ~100 mil t/dia.
+
+### 23.4 Uso no cenário real (30 dias, `initialize_demo_world` + `tick_demo`)
+
+| dia | vazão total | fila | portos com fila | atraso | % comida |
+|---|---:|---:|---:|---:|---:|
+| 1 | 0 t | 0 t | 0 | 0 h | 99,41% |
+| 10 | 5 347 t | 0 t | 0 | 0 h | 99,48% |
+| 30 | 5 533 t | 792 t | 1 | 23,2 h | 99,82% |
+
+A vazão é **0,6% da capacidade instalada**: no mundo real a fila é zero quase
+sempre e existe para o jogador saturar um cais de propósito. No dia 10, **8 dos
+17 pedidos** (2 673 de 6 703 t, 39,9%) eram marítimos; no dia 30, 7 de 7.
+Demurrage no cenário real ≈ 0 (e **não é publicado por porto no status** — v1).
+
+### 23.5 Segurança alimentar: antes × depois (world test, 60 dias)
+
+Mesmo cenário e mesmos dados; "antes" = núcleo do `HEAD` (`dbff887`) e "depois"
+= esta implementação, ambos compilados e medidos na mesma máquina.
+
+| métrica | antes (sem porto) | depois (porto nacional) |
+|---|---:|---:|
+| satisfação média | 99,84% | **99,90%** |
+| mínimo | 40% (`NED-AMS`) | **60%** (`BEL-BRU`) |
+| cidades < 70% | 2 | 2 |
+| cidades < 100% | 15 | **6** |
+| dinheiro (drift) | 0,0000 | **0,0000** |
+| Cayenne (`FRA-CAY`) | 100% | **100%** |
+
+- **Ganho:** Amsterdã 40% → 100% (o porto nacional deu rota ao cais holandês) e
+  o número de cidades abaixo de 100% caiu de 15 para 6.
+- **Custo:** Londres 96% → **63%**. É o efeito previsto no design (§6): importar
+  de outra massa de terra agora paga caminhão + navio + caminhão em vez da linha
+  reta com tarifa só de navio. Bruxelas fica em 60% **nos dois lados** (déficit
+  intencional de capital, não regressão do porto). As duas capitais deficitárias
+  seguem sendo as únicas abaixo de 70% — calibrar isso é decisão de balanço
+  (frete/verba), não de mecânica.
+
+### 23.6 Fila e expansão forçadas (`port_capacity_test`)
+
+- Saturação com capacidade artificial de 2 000 t/dia e 2 700 t no dia:
+  **vazão 2 700 t, fila 700 t, atraso 8,4 h** e chegada adiada.
+- Expansão de **+5 000 t/dia**: custo **2 500 000** (500 por t·dia) debitado do
+  orçamento da sede e creditado na construção; obra de **30 dias**; capacidade
+  **2 000 → 7 000 t/dia (nível 4)**; depois da obra, vazão 1 500 t e **fila 0**.
+- `money_total` conservado em todos os 32 dias (demurrage/obra só movem caixa) e
+  nenhum invariante violado.
+
+### 23.7 Performance
+
+`perf_day_peak --days=10 --tick-mode=worker --map-mode=political`:
+
+| etapa | baseline (`perf_858_debug_after`) | com porto | Δ |
+|---|---:|---:|---:|
+| tick C++ (parede do worker) | 75,65 ms | **74,84 ms** | **−1,1%** |
+| tick em regime (dia > 2) | 84,08 ms | 79,13 ms | −5,9% |
+| tick máximo | 110,88 ms | 91,26 ms | −17,7% |
+| frame da main (virada) | 7,02 ms | 9,72 ms | +38% |
+
+O custo do porto no tick é **nulo dentro do ruído** (−1,1% com 24 cidades a
+menos que o baseline de 858): uma passada por dia escolhendo o porto de cada
+cidade + O(1) por porto por embarque, e o status ganha 8 campos por porto. O
+frame da main subiu, mas **não pelo porto**: o tempo está no lado GDScript (log
+de pedidos 2,97 → 4,27 ms, IA fatiada 66,8 → 82,3 ms) e a medição rodou com o
+editor aberto; o pico de 9,72 ms continua abaixo do orçamento de 16,7 ms.
+
+### 23.8 Testes desta rodada
+
+| teste | resultado |
+|---|---|
+| `port_capacity_test` | **exit 0** — porto nacional, fila, expansão, conservação |
+| `economy_integration_test` | exit 0 |
+| `economy_world_test` (834 cidades, 60 d) | exit 0 — 0 violações, drift 0,00, Cayenne 100% |
+| `economy_long_run_test` (365 d) | exit 0 — conservação |
+| `convoy_lifecycle_test` | exit 0 — 407 viagens, 407 chegadas, 0 fantasmas |
+| `nav_strait_test` | exit 0 — 6 mares no mesmo componente; 4 rotas ok |
+| `perf_day_peak` | tick 74,84 ms (−1,1% vs baseline) |
+
+**Pendente (fora do escopo):** UI de porto (capacidade/fila/nível e botão de
+expandir) — só a API existe; troca de porto por congestionamento e hub
+internacional ficam para a v2.
+
