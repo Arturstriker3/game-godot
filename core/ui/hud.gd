@@ -1795,11 +1795,18 @@ func _instantiate_screens() -> void:
 	for id in SCREEN_ORDER:
 		var screen: Node = _new_screen(id)
 		screen.visible = false
-		screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		_window_body.add_child(screen)
+		# Telas que trazem a própria moldura (spec de template) vivem na camada
+		# da janela, sobre o mapa, em vez de dentro do painel modal escuro.
+		if _uses_window_shell(screen):
+			screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			_window_layer.add_child(screen)
+		else:
+			screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			_window_body.add_child(screen)
 		_screens[id] = screen
 
 	_screens["economy"].city_requested.connect(_on_city_requested)
+	_screens["economy"].close_requested.connect(_close_screen)
 	_screens["trade"].city_requested.connect(_on_city_market)
 	_screens["production"].city_requested.connect(_on_city_production)
 	_screens["population"].city_requested.connect(_on_city_population)
@@ -1810,6 +1817,13 @@ func _instantiate_screens() -> void:
 	_window_body.add_child(alerts_screen)
 	_screens["alerts"] = alerts_screen
 	alerts_screen.alert_requested.connect(_on_city_requested)
+
+
+## A tela monta a própria moldura de papel (template T2)? Então o HUD esconde
+## o painel modal escuro e deixa a spec desenhar a janela.
+func _uses_window_shell(screen: Node) -> bool:
+	return screen != null and screen.has_method("uses_window_shell") \
+			and bool(screen.call("uses_window_shell"))
 
 
 ## A ficha de cidade não é um modal: ela mora numa camada própria, ancorada à
@@ -1890,6 +1904,11 @@ func _show_top() -> void:
 	var kind := String(entry["kind"])
 	var id := String(entry["id"])
 	_active = id if kind == "screen" else "city"
+	# Telas T2 desenham a própria janela de papel; o painel modal recolhe.
+	var screen_node: Node = _screens[id] if kind == "screen" else null
+	var sheet := screen_node != null and _uses_window_shell(screen_node)
+	_window.visible = not sheet
+	_backdrop.visible = not sheet
 
 	_city_screen.visible = false
 	for screen_id in _screens:
@@ -1924,23 +1943,31 @@ func _show_top() -> void:
 		_dock_holder.visible = kind == "screen"
 	_apply_window_size()
 	_refresh_dock_state()
-	var focus_root: Control = _city_screen if kind == "city" else _window_body
+	var focus_root: Control = _city_screen if kind == "city" \
+			else (_screens[id] if sheet else _window_body)
 	UiKit.focus_first(focus_root)
 	if get_viewport().gui_get_focus_owner() == null:
 		UiKit.focus_first(_city_screen if kind == "city" else _window)
 	UiSfx.play(UiSfx.Sound.OPEN if was_open else UiSfx.Sound.MAXIMIZE)
 
 
-## Trilha da ficha: nação da cidade › nome localizado. Sem nação conhecida, só
-## o nome — nada de inventar hierarquia administrativa.
+## Trilha da ficha: nação da cidade › nome localizado; quando a ficha foi
+## aberta de uma tela (tabela do registro, alertas), inclui a tela de origem.
+## Sem nação conhecida, só o nome — nada de inventar hierarquia administrativa.
 func _city_crumb(city: Dictionary) -> String:
 	if city.is_empty():
 		return ""
 	var name := I18n.city_name(String(city["id"]), String(city["name"]))
 	var nation := I18n.nation_name(String(city.get("nation", "")))
-	if nation.is_empty() or nation.begins_with("nation."):
-		return name
-	return "%s › %s" % [nation, name]
+	var trail := name
+	if not nation.is_empty() and not nation.begins_with("nation."):
+		trail = "%s › %s" % [nation, name]
+	if _stack.size() > 1:
+		var origin: Dictionary = _stack[_stack.size() - 2]
+		if String(origin.get("kind", "")) == "screen":
+			trail = "%s › %s" % [
+					I18n.t(SCREEN_LABELS[String(origin["id"])]), trail]
+	return trail
 
 
 func _render_crumb() -> void:

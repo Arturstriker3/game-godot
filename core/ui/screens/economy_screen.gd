@@ -1,300 +1,507 @@
-extends VBoxContainer
+extends Control
 
-## Janela de Economia: visão por nação e por cidade, com abertura do detalhe.
+## Tela de Economia no template T2 (Registro da Papelaria).
 ##
-## A tela só formata os dados que recebe em `refresh()`; busca e filtros são
-## estado local de interface e nunca tocam na simulação.
+## O desenho vem de `data/ui/templates/registro.json` (`UiTemplateBuilder.registro`):
+## janela de papel, busca, filtros, contador, tabela ordenável/paginada e a ficha
+## resumida à direita. Este script só formata o resumo publicado pela simulação —
+## busca, filtro, ordenação, página e seleção são estado local de interface e
+## nunca tocam na simulação.
+##
+## A linha selecionada ganha a tarja CARIMBO e alimenta a ficha da direita.
+## Enter/duplo clique (ou o botão da ficha) empilha a cidade no HUD, que abre a
+## ficha T3; o "voltar" da ficha devolve esta tela com seleção e filtros intactos.
 
 signal city_requested(city_id: String)
-
-const NATION_WEIGHTS := [2.0, 1.0, 1.1, 1.1, 1.1, 1.0, 1.0]
-const NATION_ALIGN := [false, true, true, true, true, true, true]
-const CITY_WEIGHTS := [1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-const CITY_ALIGN := [false, false, true, true, true, true, true, true]
+signal close_requested
 
 const FILTER_ALL := "all"
 const FILTER_DEFICIT := "deficit"
 const FILTER_TRANSIT := "transit"
+const VIEW_NATIONS := 0
+const VIEW_CITIES := 1
 
 var _summary: Dictionary = {}
-var _tab := 0
+var _view := VIEW_NATIONS
 var _filter := FILTER_ALL
 var _query := ""
 
-var _tab_buttons: Array[Button] = []
-var _filter_chips := {}
-var _filter_row: HBoxContainer
+var _root: UiTemplateBuilder.TemplateRoot
+var _slots := {}
+var _tables := {}
+var _chips := {}
+var _tabs: UiTemplateBuilder.FolderTabs
 var _search: LineEdit
-var _body: VBoxContainer
-var _count_pill: PanelContainer
+var _nation_search: LineEdit
+var _structure_key := ""
+
+## Linhas da última atualização, na mesma ordem das tabelas (índice = linha).
+var _nation_rows: Array = []
+var _city_rows: Array = []
+var _selected_nation := ""
+var _selected_city := ""
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", UiKit.SPACE_MD)
-	size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	add_child(_build_header())
-	add_child(UiKit.rule())
-	add_child(_build_scroll())
-
-	_render()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-func _build_header() -> VBoxContainer:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", UiKit.SPACE_SM)
-
-	var tabs := UiKit.tab_bar()
-	for index in 2:
-		var button := UiKit.tab_button("")
-		button.pressed.connect(_set_tab.bind(index))
-		tabs.add_child(button)
-		_tab_buttons.append(button)
-	tabs.add_child(UiKit.spacer())
-
-	_search = UiKit.search_field("")
-	_search.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_search.text_changed.connect(_on_search_changed)
-	tabs.add_child(_search)
-	box.add_child(tabs)
-
-	box.add_child(_build_filters())
-	return box
+## O HUD usa isto para trocar a janela modal própria pela moldura da spec.
+func uses_window_shell() -> bool:
+	return true
 
 
-func _build_filters() -> HBoxContainer:
-	_filter_row = UiKit.toolbar()
-	for id in [FILTER_ALL, FILTER_DEFICIT, FILTER_TRANSIT]:
-		var chip := UiKit.filter_chip("")
-		chip.pressed.connect(_set_filter.bind(id))
-		_filter_row.add_child(chip)
-		_filter_chips[id] = chip
+# --- API ---------------------------------------------------------------------
 
-	_filter_row.add_child(UiKit.spacer())
-
-	_count_pill = UiKit.status_pill("", "steel")
-	_filter_row.add_child(_count_pill)
-	return _filter_row
-
-
-func _build_scroll() -> ScrollContainer:
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	UiKit.bind_scroll_sfx(scroll)
-
-	var card := UiKit.card(UiKit.SPACE_MD)
-	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.add_child(card)
-
-	_body = VBoxContainer.new()
-	_body.add_theme_constant_override("separation", 2)
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_child(_body)
-
-	return scroll
-
-
-## Atualiza os dados vindos do núcleo C++.
 func refresh(summary: Dictionary) -> void:
 	_summary = summary
-	_retranslate()
-	_render()
-
-
-## Reconstrói todos os rótulos quando o idioma muda.
-func _retranslate() -> void:
-	if _tab_buttons.size() < 2:
+	if _root == null or _structure_key != I18n.locale:
+		_rebuild()
 		return
-	_tab_buttons[0].text = I18n.t("econ.tab.nations")
-	_tab_buttons[1].text = I18n.t("econ.tab.cities")
-	_search.placeholder_text = I18n.t("econ.search")
-	_filter_chips[FILTER_ALL].text = I18n.t("econ.filter.all")
-	_filter_chips[FILTER_DEFICIT].text = I18n.t("econ.filter.deficit")
-	_filter_chips[FILTER_TRANSIT].text = I18n.t("econ.filter.transit")
+	_refresh()
 
 
 func _set_tab(index: int) -> void:
-	_tab = index
-	_render()
+	_view = VIEW_CITIES if index == VIEW_CITIES else VIEW_NATIONS
+	if _tabs == null:
+		_refresh()
+		return
+	_tabs.select(_view)
+
+
+# --- Montagem ----------------------------------------------------------------
+
+func _rebuild() -> void:
+	_structure_key = I18n.locale
+	if _root != null and is_instance_valid(_root):
+		remove_child(_root)
+		_root.queue_free()
+	_slots.clear()
+	_tables.clear()
+	_chips.clear()
+	_tabs = null
+	_search = null
+	_nation_search = null
+
+	_root = UiTemplateBuilder.registro()
+	_root.name = "EconomyRegistry"
+	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.close_requested.connect(func() -> void: close_requested.emit())
+	_root.choice_selected.connect(_on_choice)
+	add_child(_root)
+	_index_slots()
+	_refresh()
+
+
+func _index_slots() -> void:
+	var pending: Array[Node] = [_root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control:
+			var slot := String((node as Control).get_meta("tpl_slot", ""))
+			if not slot.is_empty():
+				_slots[slot] = node
+		for child in node.get_children():
+			pending.append(child)
+
+	_tabs = _slots.get("tabs") as UiTemplateBuilder.FolderTabs
+	if _tabs != null:
+		_tabs.tab_changed.connect(_on_tab_changed)
+		_tabs.select(_view)
+		_view = _tabs.active
+
+	for entry in [[VIEW_NATIONS, "nations"], [VIEW_CITIES, "cities"]]:
+		var table := _slots.get("%s.table" % entry[1]) \
+				as UiTemplateBuilder.DataTableView
+		if table == null:
+			continue
+		table.row_selected.connect(_on_row_selected.bind(entry[0]))
+		table.row_activated.connect(_on_row_activated.bind(entry[0]))
+		_tables[entry[0]] = table
+
+	_search = _line_edit("cities.search")
+	_nation_search = _line_edit("nations.search")
+	for field in [_search, _nation_search]:
+		if field != null:
+			field.text_changed.connect(_on_search_changed)
+
+	for id in [FILTER_ALL, FILTER_DEFICIT, FILTER_TRANSIT]:
+		var chip := _slots.get("filter.%s" % id) as Button
+		if chip == null:
+			continue
+		chip.pressed.connect(_set_filter.bind(id))
+		_chips[id] = chip
+
+
+func _line_edit(slot: String) -> LineEdit:
+	var node := _slots.get(slot) as Node
+	if node == null:
+		return null
+	var pending: Array[Node] = [node]
+	while not pending.is_empty():
+		var current: Node = pending.pop_front()
+		if current is LineEdit:
+			return current as LineEdit
+		pending.append_array(current.get_children())
+	return null
+
+
+# --- Eventos -----------------------------------------------------------------
+
+func _on_tab_changed(index: int) -> void:
+	_view = index
+	_refresh_nav()
 
 
 func _set_filter(id: String) -> void:
+	if _filter == id:
+		return
 	_filter = id
-	_render()
+	_refresh()
+	_reset_page(VIEW_CITIES)
 
 
 func _on_search_changed(text: String) -> void:
 	_query = text.strip_edges()
-	_render()
+	for field in [_search, _nation_search]:
+		if field != null and field.text != text:
+			field.text = text
+	_refresh()
+	_reset_page(VIEW_NATIONS)
+	_reset_page(VIEW_CITIES)
 
 
-func _render() -> void:
-	if not is_node_ready() or _body == null:
+func _reset_page(view: int) -> void:
+	var table := _tables.get(view) as UiTemplateBuilder.DataTableView
+	if table != null:
+		table.reset_page()
+
+
+func _clear_filters() -> void:
+	_filter = FILTER_ALL
+	_query = ""
+	for field in [_search, _nation_search]:
+		if field != null:
+			field.text = ""
+	_refresh()
+	_reset_page(VIEW_NATIONS)
+	_reset_page(VIEW_CITIES)
+
+
+func _on_choice(id: String) -> void:
+	match id:
+		"clear":
+			_clear_filters()
+		"open":
+			_open_selected()
+
+
+func _on_row_selected(index: int, view: int) -> void:
+	if view == VIEW_CITIES:
+		if index < 0 or index >= _city_rows.size():
+			return
+		_selected_city = String(_city_rows[index].get("id", ""))
+		_update_city_card(index)
 		return
+	if index < 0 or index >= _nation_rows.size():
+		return
+	_selected_nation = String(_nation_rows[index].get("tag", ""))
+	_update_nation_card(index)
 
-	for i in _tab_buttons.size():
-		UiKit.set_tab_active(_tab_buttons[i], i == _tab)
 
-	# Os filtros de déficit/trânsito só fazem sentido na visão por cidade.
-	var chips_visible := _tab == 1
-	for id in _filter_chips:
-		_filter_chips[id].visible = chips_visible
-		UiKit.set_chip_active(_filter_chips[id], id == _filter)
+func _on_row_activated(index: int, view: int) -> void:
+	_on_row_selected(index, view)
+	_open_selected()
 
-	UiKit.clear(_body)
 
-	if _tab == 0:
-		_render_nations()
-		_update_results(_summary.get("nations", []).size(), _filtered_nations().size())
+## Só a cidade tem ficha T3; numa nação, abre a primeira cidade do registro
+## (o antigo clique na linha da nação fazia o mesmo).
+func _open_selected() -> void:
+	if _view == VIEW_CITIES:
+		if not _selected_city.is_empty():
+			city_requested.emit(_selected_city)
+		return
+	var city_id := _first_city_of_nation(_selected_nation)
+	if not city_id.is_empty():
+		city_requested.emit(city_id)
+
+
+func _first_city_of_nation(tag: String) -> String:
+	for city in _summary.get("cities", []):
+		if String(city.get("nation", "")) == tag:
+			return String(city.get("id", ""))
+	return ""
+
+
+# --- Desenho -----------------------------------------------------------------
+
+func _refresh() -> void:
+	if _root == null:
+		return
+	_refresh_nav()
+	_refresh_nations()
+	_refresh_cities()
+
+
+func _refresh_nav() -> void:
+	var key := "tpl.registro.title" if _view == VIEW_CITIES \
+			else "tpl.registro.title.nations"
+	_set_text("nav.title", I18n.t(key))
+	if _tabs != null and _tabs.active != _view:
+		_tabs.select(_view)
+
+
+func _refresh_nations() -> void:
+	var table := _tables.get(VIEW_NATIONS) as UiTemplateBuilder.DataTableView
+	if table == null:
+		return
+	var all: Array = _summary.get("nations", [])
+	var rows := _filtered_nations(all)
+	_nation_rows = rows
+
+	var cells: Array = []
+	for nation in rows:
+		var deficit := float(nation.get("deficit", 0.0))
+		cells.append([
+			I18n.nation_name(String(nation.get("tag", ""))),
+			UiKit.number(float(nation.get("population", 0.0)) / 1_000_000.0, 1) + " M",
+			UiKit.number(float(nation.get("production", 0.0))) + " t",
+			UiKit.number(float(nation.get("need", 0.0))) + " t",
+			UiKit.number(float(nation.get("stockpile", 0.0))) + " t",
+			{"text": UiKit.number(deficit) + " t",
+					"tone": "carimbo" if deficit > 0.0 else "suave"},
+			UiKit.number(float(nation.get("in_transit", 0.0))) + " t",
+		])
+
+	var index := _index_of(_nation_rows, "tag", _selected_nation)
+	if index < 0:
+		index = 0 if not rows.is_empty() else -1
+	table.update_rows(cells, index)
+	if index >= 0:
+		_selected_nation = String(rows[index].get("tag", ""))
+
+	_set_text("nations.count", I18n.t("econ.pill.count", {
+		"shown": UiKit.number(rows.size()),
+		"total": UiKit.number(all.size()),
+	}))
+	_update_empty(VIEW_NATIONS, rows.is_empty(), all.is_empty())
+	_update_nation_card(index)
+
+
+func _refresh_cities() -> void:
+	var table := _tables.get(VIEW_CITIES) as UiTemplateBuilder.DataTableView
+	if table == null:
+		return
+	var all: Array = _summary.get("cities", [])
+	var rows := _filtered_cities(all)
+	_city_rows = rows
+
+	var cells: Array = []
+	for city in rows:
+		var deficit := float(city.get("deficit", 0.0))
+		cells.append([
+			I18n.city_name(String(city.get("id", "")),
+					String(city.get("name", ""))),
+			I18n.nation_name(String(city.get("nation", ""))),
+			UiKit.number(float(city.get("population", 0.0)) / 1_000_000.0, 1) + " M",
+			UiKit.number(float(city.get("production", 0.0))) + " t",
+			UiKit.number(float(city.get("need", 0.0))) + " t",
+			UiKit.number(float(city.get("stockpile", 0.0))) + " t",
+			{"text": UiKit.number(deficit) + " t",
+					"tone": "carimbo" if deficit > 0.0 else "suave"},
+			UiKit.number(float(city.get("in_transit", 0.0))) + " t",
+		])
+
+	var index := _index_of(_city_rows, "id", _selected_city)
+	if index < 0:
+		index = 0 if not rows.is_empty() else -1
+	table.update_rows(cells, index)
+	if index >= 0:
+		_selected_city = String(rows[index].get("id", ""))
+
+	_update_chips()
+	_set_text("cities.count", I18n.t("econ.pill.count", {
+		"shown": UiKit.number(rows.size()),
+		"total": UiKit.number(all.size()),
+	}))
+	_update_empty(VIEW_CITIES, rows.is_empty(), all.is_empty())
+	_update_city_card(index)
+
+
+func _update_chips() -> void:
+	var counts := _city_counts()
+	for id in _chips:
+		var chip: Button = _chips[id]
+		chip.text = I18n.t("tpl.registro.filter.%s" % id,
+				{"n": UiKit.number(int(counts.get(id, 0)))})
+		UiTemplateBuilder.set_chip_active(chip, id == _filter)
+
+
+func _update_empty(view: int, empty: bool, no_data: bool) -> void:
+	var prefix := "nations" if view == VIEW_NATIONS else "cities"
+	_set_hidden("%s.table" % prefix, empty)
+	_set_hidden("%s.card" % prefix, empty)
+	_set_hidden("%s.empty" % prefix, not empty)
+	if not empty:
+		return
+	if no_data:
+		_set_text("%s.empty.title" % prefix,
+				I18n.t("tpl.registro.empty.%s" % prefix))
+		_set_text("%s.empty.body" % prefix, I18n.t("tpl.registro.empty.wait"))
 	else:
-		_render_cities()
-		_update_results(_summary.get("cities", []).size(), _filtered_cities().size())
+		_set_text("%s.empty.title" % prefix,
+				I18n.t("econ.empty.filtered") if view == VIEW_CITIES \
+				else I18n.t("tpl.registro.empty.nations_filtered"))
+		_set_text("%s.empty.body" % prefix,
+				I18n.t("econ.empty.filtered.body") if view == VIEW_CITIES \
+				else I18n.t("tpl.registro.empty.nations_body"))
+	_set_hidden("%s.empty.clear" % prefix, no_data)
 
 
-func _update_results(total: int, shown: int) -> void:
-	var text := I18n.t("econ.pill.count", {
-		"shown": UiKit.number(shown),
-		"total": UiKit.number(total),
-	})
-	var label := _count_pill.get_child(0) as Label
-	label.text = text
-	_count_pill.tooltip_text = text
+func _update_nation_card(index: int) -> void:
+	if index < 0 or index >= _nation_rows.size():
+		return
+	var nation: Dictionary = _nation_rows[index]
+	var deficit := float(nation.get("deficit", 0.0))
+	_set_text("nations.card.name", I18n.nation_name(String(nation.get("tag", ""))))
+	_set_hidden("nations.card.tag", deficit <= 0.0)
+	_set_text("nations.card.kv.cities",
+			UiKit.number(float(nation.get("city_count", 0.0))))
+	_set_text("nations.card.kv.population",
+			UiKit.number(float(nation.get("population", 0.0)) / 1_000_000.0, 1) + " M")
+	_set_text("nations.card.kv.production",
+			UiKit.number(float(nation.get("production", 0.0))) + " t")
+	_set_text("nations.card.kv.need",
+			UiKit.number(float(nation.get("need", 0.0))) + " t")
+	_set_text("nations.card.kv.stock",
+			UiKit.number(float(nation.get("stockpile", 0.0))) + " t")
+	_set_text("nations.card.kv.deficit", UiKit.number(deficit) + " t",
+			UiKit.CARIMBO if deficit > 0.0 else UiKit.TINTA)
+	_set_text("nations.card.kv.transit",
+			UiKit.number(float(nation.get("in_transit", 0.0))) + " t")
+	_set_text("nations.card.note", _note_text(
+			float(nation.get("stockpile", 0.0)),
+			float(nation.get("need", 0.0)), deficit))
 
 
-func _filtered_nations() -> Array:
-	var nations: Array = _summary.get("nations", [])
+func _update_city_card(index: int) -> void:
+	if index < 0 or index >= _city_rows.size():
+		return
+	var city: Dictionary = _city_rows[index]
+	var deficit := float(city.get("deficit", 0.0))
+	_set_text("cities.card.name", I18n.city_name(String(city.get("id", "")),
+			String(city.get("name", ""))))
+	_set_hidden("cities.card.tag", deficit <= 0.0)
+	_set_text("cities.card.kv.nation",
+			I18n.nation_name(String(city.get("nation", ""))))
+	_set_text("cities.card.kv.population",
+			UiKit.number(float(city.get("population", 0.0)) / 1_000_000.0, 1) + " M")
+	_set_text("cities.card.kv.production",
+			UiKit.number(float(city.get("production", 0.0))) + " t")
+	_set_text("cities.card.kv.need",
+			UiKit.number(float(city.get("need", 0.0))) + " t")
+	_set_text("cities.card.kv.stock",
+			UiKit.number(float(city.get("stockpile", 0.0))) + " t")
+	_set_text("cities.card.kv.deficit", UiKit.number(deficit) + " t",
+			UiKit.CARIMBO if deficit > 0.0 else UiKit.TINTA)
+	_set_text("cities.card.kv.transit",
+			UiKit.number(float(city.get("in_transit", 0.0))) + " t")
+	_set_text("cities.card.note", _note_text(
+			float(city.get("stockpile", 0.0)),
+			float(city.get("need", 0.0)), deficit))
+
+
+## Nota da ficha: cobertura do estoque e, quando há, a demanda não atendida.
+## Derivada dos campos do status; sem demanda não se inventa número.
+func _note_text(stock: float, need: float, deficit: float) -> String:
+	if need <= 0.0:
+		return I18n.t("tpl.registro.note.empty")
+	var days := stock / need
+	if deficit > 0.0:
+		return I18n.t("tpl.registro.note.short", {
+			"amount": UiKit.number(deficit) + " t",
+			"days": UiKit.number(days, 1),
+		})
+	return I18n.t("tpl.registro.note.coverage", {"days": UiKit.number(days, 1)})
+
+
+# --- Filtros -----------------------------------------------------------------
+
+func _filtered_nations(nations: Array) -> Array:
 	if _query.is_empty():
 		return nations
-
 	var needle := _query.to_lower()
 	var result: Array = []
 	for nation in nations:
-		var name := I18n.nation_name(nation["tag"]).to_lower()
-		if name.contains(needle) or String(nation["tag"]).to_lower().contains(needle):
+		var name := I18n.nation_name(String(nation.get("tag", ""))).to_lower()
+		if name.contains(needle) \
+				or String(nation.get("tag", "")).to_lower().contains(needle):
 			result.append(nation)
 	return result
 
 
-func _filtered_cities() -> Array:
-	var cities: Array = _summary.get("cities", [])
-	var needle := _query.to_lower()
+func _filtered_cities(cities: Array) -> Array:
 	var result: Array = []
-
 	for city in cities:
-		if _filter == FILTER_DEFICIT and float(city["deficit"]) <= 0.0:
+		if _filter == FILTER_DEFICIT and float(city.get("deficit", 0.0)) <= 0.0:
 			continue
-		if _filter == FILTER_TRANSIT and float(city["in_transit"]) <= 0.0:
+		if _filter == FILTER_TRANSIT \
+				and float(city.get("in_transit", 0.0)) <= 0.0:
 			continue
-		if not needle.is_empty():
-			var name := I18n.city_name(city["id"], city["name"]).to_lower()
-			var nation := I18n.nation_name(city["nation"]).to_lower()
-			if not (name.contains(needle) or nation.contains(needle)):
-				continue
+		if not _matches_query(city):
+			continue
 		result.append(city)
-
 	return result
 
 
-func _render_nations() -> void:
-	var nations := _filtered_nations()
-	if nations.is_empty():
-		_body.add_child(_empty_result())
-		return
-
-	_body.add_child(UiKit.table_header([
-		I18n.t("econ.col.nation"),
-		I18n.t("econ.col.population"),
-		I18n.t("econ.col.production"),
-		I18n.t("econ.col.need"),
-		I18n.t("econ.col.stock"),
-		I18n.t("econ.col.deficit"),
-		I18n.t("econ.col.transit"),
-	], NATION_WEIGHTS, NATION_ALIGN))
-	_body.add_child(UiKit.rule())
-
-	for nation in nations:
-		var tag: String = nation["tag"]
-		var deficit := float(nation["deficit"])
-
-		var row := UiKit.row_button()
-		row.add_child(UiKit.table_row([
-			I18n.nation_name(tag),
-			UiKit.number(float(nation["population"]) / 1_000_000.0, 1) + " M",
-			UiKit.number(float(nation["production"])) + " t",
-			UiKit.number(float(nation["need"])) + " t",
-			UiKit.number(float(nation["stockpile"])) + " t",
-			UiKit.number(deficit) + " t",
-			UiKit.number(float(nation["in_transit"])) + " t",
-		], NATION_WEIGHTS, [
-			UiKit.nation_color(tag), UiKit.TEXT, UiKit.TEXT_DIM, UiKit.TEXT_DIM,
-			UiKit.TEXT, UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE,
-			UiKit.STEEL,
-		], NATION_ALIGN))
-
-		row.pressed.connect(_request_nation_city.bind(tag))
-		_body.add_child(row)
+func _matches_query(city: Dictionary) -> bool:
+	if _query.is_empty():
+		return true
+	var needle := _query.to_lower()
+	var name := I18n.city_name(String(city.get("id", "")),
+			String(city.get("name", ""))).to_lower()
+	var nation := I18n.nation_name(String(city.get("nation", ""))).to_lower()
+	return name.contains(needle) or nation.contains(needle)
 
 
-func _render_cities() -> void:
-	var cities := _filtered_cities()
-	if cities.is_empty():
-		_body.add_child(_empty_result())
-		return
-
-	_body.add_child(UiKit.table_header([
-		I18n.t("econ.col.city"),
-		I18n.t("econ.col.nation"),
-		I18n.t("econ.col.population"),
-		I18n.t("econ.col.production"),
-		I18n.t("econ.col.need"),
-		I18n.t("econ.col.stock"),
-		I18n.t("econ.col.deficit"),
-		I18n.t("econ.col.transit"),
-	], CITY_WEIGHTS, CITY_ALIGN))
-	_body.add_child(UiKit.rule())
-
-	for city in cities:
-		var deficit := float(city["deficit"])
-		var row := UiKit.row_button()
-		row.add_child(UiKit.table_row([
-			I18n.city_name(city["id"], city["name"]),
-			I18n.nation_name(city["nation"]),
-			UiKit.number(float(city["population"]) / 1_000_000.0, 1) + " M",
-			UiKit.number(float(city["production"])) + " t",
-			UiKit.number(float(city["need"])) + " t",
-			UiKit.number(float(city["stockpile"])) + " t",
-			UiKit.number(deficit) + " t",
-			UiKit.number(float(city["in_transit"])) + " t",
-		], CITY_WEIGHTS, [
-			UiKit.TEXT, UiKit.nation_color(city["nation"]), UiKit.TEXT_DIM,
-			UiKit.TEXT_DIM, UiKit.TEXT, UiKit.TEXT,
-			UiKit.NEGATIVE if deficit > 0.0 else UiKit.POSITIVE, UiKit.STEEL,
-		], CITY_ALIGN))
-
-		row.pressed.connect(func() -> void: city_requested.emit(city["id"]))
-		_body.add_child(row)
-
-
-## Estado vazio de busca/filtro: não confundir com "sem dados da simulação".
-func _empty_result() -> Control:
-	return UiKit.empty_state(
-			I18n.t("econ.empty.filtered"),
-			I18n.t("econ.empty.filtered.body"),
-			I18n.t("econ.filter.clear"),
-			_clear_filters)
-
-
-func _clear_filters() -> void:
-	_query = ""
-	_filter = FILTER_ALL
-	_search.text = ""
-	_render()
-
-
-## Uma nação pode ter várias cidades; abre a primeira delas.
-func _request_nation_city(tag: String) -> void:
+## Contagem dos chips: considera a busca, não o filtro ativo.
+func _city_counts() -> Dictionary:
+	var counts := {FILTER_ALL: 0, FILTER_DEFICIT: 0, FILTER_TRANSIT: 0}
 	for city in _summary.get("cities", []):
-		if city["nation"] == tag:
-			city_requested.emit(city["id"])
-			return
+		if not _matches_query(city):
+			continue
+		counts[FILTER_ALL] = int(counts[FILTER_ALL]) + 1
+		if float(city.get("deficit", 0.0)) > 0.0:
+			counts[FILTER_DEFICIT] = int(counts[FILTER_DEFICIT]) + 1
+		if float(city.get("in_transit", 0.0)) > 0.0:
+			counts[FILTER_TRANSIT] = int(counts[FILTER_TRANSIT]) + 1
+	return counts
+
+
+# --- Utilidades ---------------------------------------------------------------
+
+func _index_of(rows: Array, key: String, value: String) -> int:
+	if value.is_empty():
+		return -1
+	for index in rows.size():
+		if String(rows[index].get(key, "")) == value:
+			return index
+	return -1
+
+
+func _set_text(slot: String, text: String,
+		color: Color = Color(0, 0, 0, 0)) -> void:
+	var node := _slots.get(slot) as Label
+	if node == null:
+		return
+	node.text = text
+	if color.a > 0.0:
+		node.add_theme_color_override("font_color", color)
+
+
+func _set_hidden(slot: String, hidden: bool) -> void:
+	var node := _slots.get(slot) as CanvasItem
+	if node == null:
+		return
+	node.visible = not hidden

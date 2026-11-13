@@ -9,19 +9,39 @@
     "pauses_game": false
   },
   "data": {
-    "results": "12",
-    "capital": "@city.name.GBR-LDN",
-    "selected_population": "15,1 M",
-    "selected_employed": "7,9 M",
-    "selected_wage": "$ 3.140",
-    "selected_province": "Greater London",
-    "selected_area": "18"
+    "crumb": "@tpl.registro.crumb",
+    "title": "@tpl.registro.title",
+    "nations": {
+      "results": "5",
+      "name": "@tpl.registro.demo.nation",
+      "cities": "12",
+      "population": "68,4 M",
+      "production": "21.980 t",
+      "need": "20.400 t",
+      "stock": "39.353 t",
+      "deficit": "0 t",
+      "transit": "2.300 t",
+      "note": "@tpl.registro.demo.note"
+    },
+    "cities": {
+      "results": "12",
+      "name": "@city.name.GBR-LDN",
+      "nation": "@tpl.registro.demo.nation",
+      "population": "15,1 M",
+      "production": "4.120 t",
+      "need": "3.980 t",
+      "stock": "12.410 t",
+      "deficit": "0 t",
+      "transit": "2.300 t",
+      "note": "@tpl.registro.demo.note"
+    }
   },
   "blocks": [
     {
       "type": "window_frame",
-      "crumb": "@tpl.registro.crumb",
-      "title": "@tpl.registro.title",
+      "crumb": "$crumb",
+      "title": "$title",
+      "title_slot": "nav.title",
       "footer": [
         {"text": "@tpl.footer.search"},
         {"text": "@tpl.footer.filters"},
@@ -31,140 +51,455 @@
       ],
       "body": [
         {
-          "type": "row",
-          "gap": 16,
-          "grow": true,
-          "blocks": [
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
             {
-              "type": "column",
-              "gap": 12,
-              "w": 1,
+              "label": "@econ.tab.nations",
               "blocks": [
                 {
                   "type": "row",
-                  "gap": 10,
+                  "gap": 16,
+                  "grow": true,
                   "blocks": [
                     {
-                      "type": "search_field",
-                      "placeholder": "@tpl.registro.search",
-                      "width": 340
+                      "type": "column",
+                      "gap": 12,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "nations.search",
+                              "placeholder": "@tpl.registro.search.nation",
+                              "width": 340
+                            },
+                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "$nations.results"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "nations.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "nations.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 12,
+                          "page": 1,
+                          "sort_col": 1,
+                          "descending": true,
+                          "footer_left": "@tpl.registro.footer.select",
+                          "columns": [
+                            {"label": "@econ.col.nation", "weight": 2.2, "align": "left"},
+                            {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
+                            {"label": "@econ.col.production", "weight": 1.1, "align": "right"},
+                            {"label": "@econ.col.need", "weight": 1.1, "align": "right"},
+                            {"label": "@econ.col.stock", "weight": 1, "align": "right"},
+                            {"label": "@econ.col.deficit", "weight": 1, "align": "right"},
+                            {"label": "@econ.col.transit", "weight": 1, "align": "right"}
+                          ],
+                          "rows": [
+                            ["Reino Unido", "68,4 M", "21.980 t", "20.400 t", "39.353 t", "0 t", "2.300 t"],
+                            ["França", "66,5 M", "22.400 t", "21.900 t", "41.200 t", "0 t", "1.870 t"],
+                            ["Alemanha", "83,8 M", "24.100 t", "23.700 t", "45.600 t", "0 t", "2.140 t"],
+                            ["Países Baixos", "17,9 M", "6.200 t", "5.900 t", "11.400 t", {"text": "310 t", "tone": "carimbo"}, "680 t"],
+                            ["Bélgica", "11,7 M", "4.100 t", "4.050 t", "7.800 t", "0 t", "420 t"]
+                          ]
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "nations.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@tpl.registro.empty.nations",
+                              "font": "display",
+                              "size": 22,
+                              "slot": "nations.empty.title"
+                            },
+                            {
+                              "type": "label",
+                              "text": "@tpl.registro.empty.nations_body",
+                              "font": "body",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 640,
+                              "slot": "nations.empty.body"
+                            },
+                            {
+                              "type": "button",
+                              "text": "@econ.filter.clear",
+                              "id": "clear",
+                              "width": 220,
+                              "align": "start",
+                              "slot": "nations.empty.clear"
+                            }
+                          ]
+                        }
+                      ]
                     },
                     {
-                      "type": "chip_filter",
-                      "text": "@tpl.registro.filter.all",
-                      "params": {"n": "12"},
-                      "active": true
-                    },
-                    {
-                      "type": "chip_filter",
-                      "text": "@tpl.registro.filter.deficit",
-                      "params": {"n": "4"}
-                    },
-                    {
-                      "type": "chip_filter",
-                      "text": "@tpl.registro.filter.ports",
-                      "params": {"n": "6"}
-                    },
-                    {
-                      "type": "chip_filter",
-                      "text": "@tpl.registro.filter.capitals",
-                      "params": {"n": "1"}
-                    },
-                    {"type": "spacer", "w": 1},
-                    {
-                      "type": "label",
-                      "text": "@tpl.common.result",
-                      "params": {"n": "$results"},
-                      "font": "typed",
-                      "size": 13,
-                      "tone": "suave"
+                      "type": "paper_card",
+                      "slot": "nations.card",
+                      "width": 440,
+                      "pad": 18,
+                      "gap": 12,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tpl.registro.selected",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "$nations.name",
+                          "font": "display",
+                          "size": 28,
+                          "slot": "nations.card.name"
+                        },
+                        {
+                          "type": "tag_row",
+                          "slot": "nations.card.tag",
+                          "tags": [
+                            {"text": "@tpl.registro.tag.deficit", "tone": "carimbo"}
+                          ]
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.cities",
+                          "value": "$nations.cities",
+                          "value_slot": "nations.card.kv.cities"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.population",
+                          "value": "$nations.population",
+                          "value_slot": "nations.card.kv.population"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.production",
+                          "value": "$nations.production",
+                          "value_slot": "nations.card.kv.production"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.need",
+                          "value": "$nations.need",
+                          "value_slot": "nations.card.kv.need"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.stock",
+                          "value": "$nations.stock",
+                          "value_slot": "nations.card.kv.stock"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.deficit",
+                          "value": "$nations.deficit",
+                          "value_slot": "nations.card.kv.deficit"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.transit",
+                          "value": "$nations.transit",
+                          "value_slot": "nations.card.kv.transit"
+                        },
+                        {
+                          "type": "paper_card",
+                          "border": "dashed",
+                          "fill": "papel",
+                          "pad": 12,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "$nations.note",
+                              "font": "typed",
+                              "size": 14,
+                              "wrap": true,
+                              "wrap_width": 340,
+                              "slot": "nations.card.note"
+                            }
+                          ]
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "button",
+                          "text": "@tpl.registro.open_sheet",
+                          "variant": "primary",
+                          "id": "open",
+                          "slot": "nations.card.open",
+                          "hidden": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "@tpl.registro.hint.nations",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 380,
+                          "slot": "nations.card.hint"
+                        }
+                      ]
                     }
-                  ]
-                },
-                {
-                  "type": "data_table",
-                  "grow": true,
-                  "selected": 0,
-                  "page_size": 9,
-                  "page": 1,
-                  "sort_col": 1,
-                  "descending": true,
-                  "footer_left": "@tpl.footer.table",
-                  "columns": [
-                    {"label": "@tpl.registro.col.city", "weight": 2.2, "align": "left"},
-                    {"label": "@tpl.registro.col.population", "weight": 1.2, "align": "right"},
-                    {"label": "@tpl.registro.col.food", "weight": 1, "align": "right"},
-                    {"label": "@tpl.registro.col.stock", "weight": 1, "align": "right"},
-                    {"label": "@tpl.registro.col.deficit", "weight": 1, "align": "right"},
-                    {"label": "@tpl.registro.col.deposits", "weight": 1, "align": "right"}
-                  ],
-                  "rows": [
-                    ["★ @city.name.GBR-LDN", "15,1 M", "78%", "12.410 t", {"text": "9.880 t", "tone": "carimbo"}, "3"],
-                    ["Manchester", "6,4 M", "91%", "5.220 t", "—", "2"],
-                    ["Birmingham", "6,1 M", "88%", "4.900 t", "—", "4"],
-                    ["Glasgow", "4,0 M", {"text": "69%", "tone": "alerta"}, "2.130 t", {"text": "1.410 t", "tone": "carimbo"}, "2"],
-                    ["Leeds", "3,8 M", "93%", "3.040 t", "—", "1"],
-                    ["⚓ Liverpool", "3,2 M", "85%", "6.770 t", "—", "0"],
-                    ["Belfast", "1,9 M", {"text": "72%", "tone": "alerta"}, "1.010 t", {"text": "620 t", "tone": "carimbo"}, "1"],
-                    ["Cardiff", "1,5 M", "90%", "1.180 t", "—", "3"],
-                    ["Bristol", "0,9 M", "87%", "880 t", "—", "0"],
-                    ["Sheffield", "0,8 M", "86%", "760 t", "—", "2"],
-                    ["Newcastle", "0,7 M", "89%", "640 t", "—", "1"],
-                    ["Nottingham", "0,6 M", "88%", "520 t", "—", "0"]
                   ]
                 }
               ]
             },
             {
-              "type": "paper_card",
-              "width": 440,
-              "pad": 18,
-              "gap": 12,
+              "label": "@econ.tab.cities",
               "blocks": [
                 {
-                  "type": "label",
-                  "text": "@tpl.registro.selected",
-                  "font": "typed",
-                  "size": 12,
-                  "tone": "suave",
-                  "uppercase": true
-                },
-                {"type": "label", "text": "$capital", "font": "display", "size": 28},
-                {
-                  "type": "tag_row",
-                  "tags": [
-                    {"text": "@tpl.registro.tag.capital", "tone": "neutral"},
-                    {"text": "@tpl.registro.tag.deficit", "tone": "carimbo"},
-                    {"text": "@tpl.registro.tag.port", "params": {"port": "Tilbury"}, "tone": "neutral"}
-                  ]
-                },
-                {"type": "rule", "thickness": 1, "color": "tinta"},
-                {"type": "kv_row", "key": "@tpl.registro.province", "value": "$selected_province"},
-                {"type": "kv_row", "key": "@tpl.registro.area", "value": "$selected_area"},
-                {"type": "kv_row", "key": "@tpl.registro.employed", "value": "$selected_employed"},
-                {"type": "kv_row", "key": "@tpl.registro.wage", "value": "$selected_wage"},
-                {
-                  "type": "paper_card",
-                  "border": "dashed",
-                  "fill": "papel",
-                  "pad": 12,
-                  "gap": 6,
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
                   "blocks": [
                     {
-                      "type": "label",
-                      "text": "@tpl.registro.note",
-                      "font": "typed",
-                      "size": 14,
-                      "wrap": true,
-                      "wrap_width": 340
+                      "type": "column",
+                      "gap": 12,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "cities.search",
+                              "placeholder": "@tpl.registro.search",
+                              "width": 340
+                            },
+                            {
+                              "type": "chip_filter",
+                              "slot": "filter.all",
+                              "text": "@tpl.registro.filter.all",
+                              "params": {"n": "12"},
+                              "active": true
+                            },
+                            {
+                              "type": "chip_filter",
+                              "slot": "filter.deficit",
+                              "text": "@tpl.registro.filter.deficit",
+                              "params": {"n": "4"}
+                            },
+                            {
+                              "type": "chip_filter",
+                              "slot": "filter.transit",
+                              "text": "@tpl.registro.filter.transit",
+                              "params": {"n": "6"}
+                            },
+                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {"n": "$cities.results"},
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "suave",
+                              "slot": "cities.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "cities.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 12,
+                          "page": 1,
+                          "sort_col": 1,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@tpl.registro.footer.select",
+                          "columns": [
+                            {"label": "@econ.col.city", "weight": 2.2, "align": "left"},
+                            {"label": "@econ.col.nation", "weight": 1.4, "align": "left"},
+                            {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
+                            {"label": "@econ.col.production", "weight": 1.1, "align": "right"},
+                            {"label": "@econ.col.need", "weight": 1.1, "align": "right"},
+                            {"label": "@econ.col.stock", "weight": 1, "align": "right"},
+                            {"label": "@econ.col.deficit", "weight": 1, "align": "right"},
+                            {"label": "@econ.col.transit", "weight": 1, "align": "right"}
+                          ],
+                          "rows": [
+                            ["Londres", "Reino Unido", "15,1 M", "4.120 t", "3.980 t", "12.410 t", "0 t", "2.300 t"],
+                            ["Manchester", "Reino Unido", "6,4 M", "1.840 t", "1.700 t", "5.220 t", "0 t", "640 t"],
+                            ["Birmingham", "Reino Unido", "6,1 M", "1.650 t", "1.610 t", "4.900 t", {"text": "120 t", "tone": "carimbo"}, "380 t"],
+                            ["Glasgow", "Reino Unido", "4,0 M", "980 t", "1.050 t", "2.130 t", {"text": "210 t", "tone": "carimbo"}, "410 t"],
+                            ["Leeds", "Reino Unido", "3,8 M", "1.120 t", "1.000 t", "3.040 t", "0 t", "120 t"],
+                            ["Liverpool", "Reino Unido", "3,2 M", "1.240 t", "840 t", "6.770 t", "0 t", "0 t"],
+                            ["Belfast", "Reino Unido", "1,9 M", "470 t", "500 t", "1.010 t", {"text": "90 t", "tone": "carimbo"}, "160 t"],
+                            ["Cardiff", "Reino Unido", "1,5 M", "520 t", "390 t", "1.180 t", "0 t", "0 t"],
+                            ["Bristol", "Reino Unido", "0,9 M", "310 t", "240 t", "880 t", "0 t", "60 t"],
+                            ["Sheffield", "Reino Unido", "0,8 M", "280 t", "210 t", "760 t", "0 t", "0 t"],
+                            ["Newcastle", "Reino Unido", "0,7 M", "240 t", "190 t", "640 t", "0 t", "0 t"],
+                            ["Nottingham", "Reino Unido", "0,6 M", "210 t", "160 t", "520 t", "0 t", "0 t"]
+                          ]
+                        },
+                        {
+                          "type": "paper_card",
+                          "slot": "cities.empty",
+                          "hidden": true,
+                          "fill": "claro",
+                          "border": "dashed",
+                          "pad": 18,
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@econ.empty.filtered",
+                              "font": "display",
+                              "size": 22,
+                              "slot": "cities.empty.title"
+                            },
+                            {
+                              "type": "label",
+                              "text": "@econ.empty.filtered.body",
+                              "font": "body",
+                              "size": 15,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 640,
+                              "slot": "cities.empty.body"
+                            },
+                            {
+                              "type": "button",
+                              "text": "@econ.filter.clear",
+                              "id": "clear",
+                              "width": 220,
+                              "align": "start",
+                              "slot": "cities.empty.clear"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "cities.card",
+                      "width": 440,
+                      "pad": 18,
+                      "gap": 12,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tpl.registro.selected",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "$cities.name",
+                          "font": "display",
+                          "size": 28,
+                          "slot": "cities.card.name"
+                        },
+                        {
+                          "type": "tag_row",
+                          "slot": "cities.card.tag",
+                          "tags": [
+                            {"text": "@tpl.registro.tag.deficit", "tone": "carimbo"}
+                          ]
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.nation",
+                          "value": "$cities.nation",
+                          "value_slot": "cities.card.kv.nation"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.population",
+                          "value": "$cities.population",
+                          "value_slot": "cities.card.kv.population"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.production",
+                          "value": "$cities.production",
+                          "value_slot": "cities.card.kv.production"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.need",
+                          "value": "$cities.need",
+                          "value_slot": "cities.card.kv.need"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.stock",
+                          "value": "$cities.stock",
+                          "value_slot": "cities.card.kv.stock"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.deficit",
+                          "value": "$cities.deficit",
+                          "value_slot": "cities.card.kv.deficit"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.transit",
+                          "value": "$cities.transit",
+                          "value_slot": "cities.card.kv.transit"
+                        },
+                        {
+                          "type": "paper_card",
+                          "border": "dashed",
+                          "fill": "papel",
+                          "pad": 12,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "$cities.note",
+                              "font": "typed",
+                              "size": 14,
+                              "wrap": true,
+                              "wrap_width": 340,
+                              "slot": "cities.card.note"
+                            }
+                          ]
+                        },
+                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "button",
+                          "text": "@tpl.registro.open_sheet",
+                          "variant": "primary",
+                          "id": "open",
+                          "slot": "cities.card.open"
+                        }
+                      ]
                     }
                   ]
-                },
-                {"type": "spacer", "grow": true},
-                {
-                  "type": "button",
-                  "text": "@tpl.registro.open_sheet",
-                  "variant": "primary"
                 }
               ]
             }

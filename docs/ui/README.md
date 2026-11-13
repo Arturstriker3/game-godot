@@ -138,3 +138,32 @@ Correções do ciclo verificadas pela captura e pela suíte headless:
 - cobertura, índice de renda e qualidade de depósito passaram a usar o
   separador decimal do idioma (`0,0 d` em vez de `0.0 d`).
 
+## Frente 6 — registro no template T2
+
+A tela de Economia deixou o painel modal escuro e passou a desenhar a própria
+janela de papel da spec `data/ui/templates/registro.json` (T2): busca, filtros,
+contador, tabela ordenável/paginada nas abas Nações e Cidades, e a ficha
+resumida à direita. Duas abas de pasta (`folder_tabs`) e uma única tabela por
+aba; a linha selecionada ganha a tarja CARIMBO e alimenta a ficha lateral.
+
+| Conjunto | Caminho | Resoluções | Estados |
+|---|---|---|---|
+| Frente 6 | `captures/f6/t2/` | 1920×1080, 1600×900, 1366×768, 2560×1440 | 24 |
+
+Resultado: **96 capturas**, **0** problemas de `offscreen`, `text_overflow`,
+`text_elided`, `focus_hidden` ou `i18n_key`. O único achado do relatório é
+`scroll_needed` (rolagem real e esperada) em telas alheias a esta frente.
+
+Estados do T2 verificados por conteúdo no relatório, não por leitura visual:
+
+- `01_economy_nations`: “City register” / “Registro de nações”, contador
+  “0 of 807” e a tabela de nações;
+- `02_economy_cities`: aba Cidades com chips “All · n”, “Deficit · n”,
+  “In transit · n” e a ficha lateral da cidade selecionada;
+- `03_economy_empty`: busca sem resultado mostra “No city matches the filter.”
+  e mantém o botão de limpar filtros.
+
+A captura roda no idioma persistido em `user://settings.cfg` (esta rodada saiu
+em inglês); a troca de idioma reconstrói a spec e o relatório não aponta chave
+vazada em nenhum dos 96 estados.
+

@@ -176,8 +176,10 @@ class PaperPanel extends PanelContainer:
 
 
 ## Linha de tabela em papel: seleção com tarja de carimbo e base pontilhada.
+## `pressed` seleciona; `activated` (Enter, duplo clique) abre o detalhe.
 class PaperRow extends PanelContainer:
 	signal pressed(index: int)
+	signal activated(index: int)
 
 	var index := 0
 	var selected := false
@@ -192,9 +194,11 @@ class PaperRow extends PanelContainer:
 		if event is InputEventMouseButton \
 				and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			pressed.emit(index)
+			if event.double_click:
+				activated.emit(index)
 		elif event is InputEventKey and event.pressed and not event.echo \
 				and event.is_action("ui_accept"):
-			pressed.emit(index)
+			activated.emit(index)
 
 
 ## Gira um selo sem afetar a medida do layout (o contêiner externo mede).
@@ -214,8 +218,11 @@ class Tilt extends MarginContainer:
 
 
 ## Tabela com ordenação, seleção e paginação — só estado de exibição.
+## `activate: "single"` (padrão) abre no primeiro clique; `"double"` só abre no
+## Enter ou no duplo clique, deixando o primeiro clique selecionar a linha.
 class DataTableView extends PanelContainer:
 	signal row_activated(index: int)
+	signal row_selected(index: int)
 
 	var columns: Array = []
 	var rows: Array = []
@@ -225,6 +232,7 @@ class DataTableView extends PanelContainer:
 	var sort_col := 1
 	var descending := true
 	var footer_left := ""
+	var activate := "single"
 
 	var _rows_holder: VBoxContainer
 	var _page_label: Label
@@ -244,6 +252,7 @@ class DataTableView extends PanelContainer:
 		sort_col = int(spec.get("sort_col", 1))
 		descending = bool(spec.get("descending", true))
 		footer_left = UiTemplateBuilder._text(spec, "footer_left", ctx)
+		activate = String(spec.get("activate", "single"))
 
 		add_theme_stylebox_override("panel",
 				UiTemplateBuilder._paper_style(UiKit.PAPEL_CLARO, UiKit.TINTA,
@@ -270,8 +279,41 @@ class DataTableView extends PanelContainer:
 
 
 	## Substitui as linhas no lugar (o host atualiza a tabela a cada dia).
-	func update_rows(source: Array) -> void:
+	## `index` != -2 já deixa a seleção na linha pedida (lista de origem).
+	func update_rows(source: Array, index: int = -2) -> void:
+		var keep_focus := _focused_row() >= 0
+		if index != -2:
+			selected = index
 		rows = _resolve_rows(source, _ctx)
+		_refresh()
+		if keep_focus:
+			_focus_row(selected)
+
+
+	## Índice da linha que está com o foco de teclado (-1 se nenhuma).
+	func _focused_row() -> int:
+		for child in _rows_holder.get_children():
+			if child is PaperRow and (child as Control).has_focus():
+				return (child as PaperRow).index
+		return -1
+
+
+	func _focus_row(index: int) -> void:
+		for child in _rows_holder.get_children():
+			if child is PaperRow and (child as PaperRow).index == index:
+				(child as Control).grab_focus()
+				return
+
+
+	## Marca a linha selecionada pelo índice da lista de origem (não da página).
+	func set_selected(index: int) -> void:
+		selected = index
+		_refresh()
+
+
+	## Volta para a primeira página (busca e filtros mudaram a lista).
+	func reset_page() -> void:
+		page = 0
 		_refresh()
 
 
@@ -372,6 +414,11 @@ class DataTableView extends PanelContainer:
 			_rows_holder.remove_child(child)
 			child.queue_free()
 
+		if rows.is_empty():
+			selected = -1
+		else:
+			selected = clampi(selected, 0, rows.size() - 1)
+
 		var order: Array[int] = []
 		for index in rows.size():
 			order.append(index)
@@ -399,22 +446,17 @@ class DataTableView extends PanelContainer:
 	func _build_row(row_index: int, cells: Array) -> Control:
 		var panel := PaperRow.new()
 		panel.index = row_index
-		panel.selected = row_index == selected
 		panel.focus_mode = Control.FOCUS_ALL
 		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		var idle := UiTemplateBuilder._flat(
-				UiKit.ABA_INATIVA if panel.selected else Color(0, 0, 0, 0),
-				Color(0, 0, 0, 0))
-		panel.add_theme_stylebox_override("panel", idle)
+		UiTemplateBuilder._apply_row_style(panel, selected)
 		panel.pressed.connect(_on_row_pressed)
+		panel.activated.connect(_on_row_activated)
 		panel.mouse_entered.connect(func() -> void:
 			if panel.index != selected:
 				panel.add_theme_stylebox_override("panel",
 						UiTemplateBuilder._flat(UiKit.PAPEL, Color(0, 0, 0, 0))))
 		panel.mouse_exited.connect(func() -> void:
-			if panel.index != selected:
-				panel.add_theme_stylebox_override("panel",
-						UiTemplateBuilder._flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0))))
+			UiTemplateBuilder._apply_row_style(panel, selected))
 
 		var margin := MarginContainer.new()
 		margin.add_theme_constant_override("margin_left", 16)
@@ -464,10 +506,25 @@ class DataTableView extends PanelContainer:
 
 
 	func _on_row_pressed(index: int) -> void:
-		selected = index
 		UiSfx.play(UiSfx.Sound.SELECT)
-		_refresh()
+		_select_row(index)
+		row_selected.emit(index)
+		if activate != "double":
+			row_activated.emit(index)
+
+
+	func _on_row_activated(index: int) -> void:
+		UiSfx.play(UiSfx.Sound.SELECT)
+		_select_row(index)
 		row_activated.emit(index)
+
+
+	## Marca a linha sem reconstruir a tabela: o foco (e o Enter) fica na linha.
+	func _select_row(index: int) -> void:
+		selected = index
+		for child in _rows_holder.get_children():
+			if child is PaperRow:
+				UiTemplateBuilder._apply_row_style(child, selected)
 
 
 ## Abas de pasta com seleção programável: o host troca de aba sem reconstruir a
@@ -839,11 +896,13 @@ static func _window_frame(block: Dictionary, ctx: Dictionary) -> Control:
 
 	var crumb := _typed(_text(block, "crumb", ctx), 13, UiKit.BARRA_ROTULO)
 	crumb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_tag_slot(crumb, block, "crumb_slot")
 	header.add_child(crumb)
 
 	var title := _display(_text(block, "title", ctx), 24, UiKit.BARRA_TEXTO)
 	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	title.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_tag_slot(title, block, "title_slot")
 	header.add_child(title)
 
 	header.add_child(UiKit.spacer())
@@ -1267,6 +1326,13 @@ static func _chip(text: String, active: bool) -> Button:
 	button.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
 	button.add_theme_font_size_override("font_size", 14)
 	button.add_theme_constant_override("outline_size", 0)
+	set_chip_active(button, active)
+	UiKit._bind_sfx(button, UiSfx.Sound.TOGGLE)
+	return button
+
+
+## Estado ativo/inativo do `chip_filter` sem recriar o botão (filtros mudam).
+static func set_chip_active(button: Button, active: bool) -> void:
 	button.add_theme_stylebox_override("normal", _paper_style(
 			UiKit.TINTA if active else UiKit.PAPEL_CLARO,
 			UiKit.TINTA, 14.0, 1, ["all"]))
@@ -1281,8 +1347,6 @@ static func _chip(text: String, active: bool) -> Button:
 			UiKit.PAPEL_CLARO if active else UiKit.TINTA)
 	button.add_theme_color_override("font_hover_color",
 			UiKit.PAPEL_CLARO if active else UiKit.TINTA)
-	UiKit._bind_sfx(button, UiSfx.Sound.TOGGLE)
-	return button
 
 
 static func _search(block: Dictionary, ctx: Dictionary) -> Control:
@@ -2148,6 +2212,15 @@ static func _flat(fill: Color, border: Color) -> StyleBoxFlat:
 	style.border_color = border
 	style.set_border_width_all(1)
 	return style
+
+
+## Seleção da linha em papel: fundo de aba inativa + tarja CARIMBO no `_draw`.
+static func _apply_row_style(row: PaperRow, selected_index: int) -> void:
+	row.selected = row.index == selected_index
+	row.add_theme_stylebox_override("panel", _flat(
+			UiKit.ABA_INATIVA if row.selected else Color(0, 0, 0, 0),
+			Color(0, 0, 0, 0)))
+	row.queue_redraw()
 
 
 static func _emit_close(source: Node) -> void:
