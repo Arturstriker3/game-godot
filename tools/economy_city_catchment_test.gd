@@ -2,9 +2,9 @@ extends SceneTree
 
 ## Teste da bacia de captação por cidade em PROVÍNCIAS admin-1 (agricultura e
 ## madeira pertencem à cidade mais próxima da mesma nação e mesma massa de terra
-## — regra A1). A unidade é a província (atlas `provinces.json`, ~4.529), não o
-## território natural (739) — este era grosso demais (França 11, Reino Unido 4,
-## Bélgica 1) e deixava 9 das 33 cidades sem terra.
+## — regra A1). A unidade é a província (atlas `provinces.json`, ~15,9 mil desde
+## a Fase B), não o território natural (739) — este era grosso demais (França 11,
+## Reino Unido 4, Bélgica 1) e deixava 9 das 33 cidades sem terra.
 ##
 ## Verifica:
 ##  (a) cada província de uma nação jogável é atribuída a ≥ 1 cidade e as

@@ -141,6 +141,11 @@ var _province_by_code: Dictionary = {}
 var _province_grid: Dictionary = {}     # Vector2i -> [province_id]
 var _province_center: Dictionary = {}   # province_id -> Vector2 px
 var _province_tag: Dictionary = {}      # province_id -> tag do jogo
+## Cidades normalizadas agrupadas por tag (montado uma vez por lista). A bacia
+## percorre ~15,9 mil províncias; varrer as 807 cidades em cada uma custava
+## segundos no boot (ver docs/economy/balance_review.md §22).
+var _city_groups: Dictionary = {}       # tag -> [cidade normalizada]
+var _city_groups_signature := ""
 var _catchment: Dictionary = {}  # city_id -> [province_id] (atribuição A1)
 ## city_id -> {province_id: fração}. Ausente = 1.0 (província inteira). Só é
 ## fracionária na divisão de uma província entre uma cidade cercada e a vizinha
@@ -758,6 +763,7 @@ func assign_provinces(cities: Array) -> Dictionary:
 	if not load_data():
 		return {}
 	var norm := _normalized_cities(cities)
+	_ensure_city_groups(norm)
 	var catchment := {}
 	for province in _provinces:
 		var tag := nation_for_province_tag(String(province.get("nation", "")))
@@ -834,7 +840,7 @@ func _share_nearest_province(city: Dictionary, _peers: Array, all_cities: Array,
 	var point := Vector2(float(nearest.get("x", 0.0)), float(nearest.get("y", 0.0)))
 	var owner_tag := nation_for_province_tag(String(nearest.get("nation", "")))
 	var owner_id := String(city["id"]) if owner_tag == "" \
-			else _nearest_city(all_cities, owner_tag, point, "")
+			else _nearest_city(_city_groups.get(owner_tag, []), point, "")
 	if owner_id == String(city["id"]):
 		return
 	if owner_id == "":
@@ -936,6 +942,23 @@ func _normalized_cities(cities: Array) -> Array:
 	return out
 
 
+## Agrupa as cidades normalizadas por tag de nação (uma vez por lista). A bacia
+## de captação percorre ~15,9 mil províncias e antes varria as 807 cidades em
+## cada uma (`_nearest_city_of_nation`); agora varre só as cidades da nação.
+## Assinatura = a mesma de `assign_deposits`, então o cache acompanha o caller.
+func _ensure_city_groups(norm: Array) -> void:
+	var signature := _assignment_signature(norm)
+	if signature == _city_groups_signature:
+		return
+	_city_groups_signature = signature
+	_city_groups.clear()
+	for city in norm:
+		var tag := String(city.get("tag", ""))
+		if not _city_groups.has(tag):
+			_city_groups[tag] = []
+		(_city_groups[tag] as Array).append(city)
+
+
 ## Aptidão (0..1) de uma cultura na BACIA da cidade: média ponderada pela área
 ## cultivável (área_km² × fração cultivável) de cada PROVÍNCIA atribuída. A
 ## aptidão e a fração cultivável de cada província herdam do território natural
@@ -958,7 +981,7 @@ func city_crop_suitability(city_id: String, crop: String) -> float:
 			value = clampf(float(crops.get(crop, 0.0)), 0.0, 1.0)
 		else:
 			# Fallback declarado: província sem raster herda o território.
-			var tid := String(_province_territory.get(pid, ""))
+			var tid := _territory_of_province(pid)
 			if tid == "":
 				continue
 			cultivable = clampf(
@@ -985,7 +1008,7 @@ func city_forest_cover(city_id: String) -> float:
 		if not province_data.is_empty():
 			value = clampf(float(province_data.get("forest_cover", 0.0)), 0.0, 1.0)
 		else:
-			var tid := String(_province_territory.get(pid, ""))
+			var tid := _territory_of_province(pid)
 			if tid == "":
 				continue
 			value = clampf(
@@ -1014,7 +1037,7 @@ func province_cultivable_area_km2(province_id: int) -> float:
 	if not province_data.is_empty():
 		return float(_area_by_province.get(province_id, 0.0)) \
 			* clampf(float(province_data.get("cultivable", 0.0)), 0.0, 1.0)
-	var tid := String(_province_territory.get(province_id, ""))
+	var tid := _territory_of_province(province_id)
 	if tid == "":
 		return 0.0
 	return float(_area_by_province.get(province_id, 0.0)) \
@@ -1136,6 +1159,7 @@ func owners_for_territories(territories: Array, resource: String) -> Array:
 ## ignorados. Idempotente: a mesma lista de cidades reaproveita o cache.
 func assign_deposits(cities: Array) -> Dictionary:
 	var norm := _normalized_cities(cities)
+	_ensure_city_groups(norm)
 	var signature := _assignment_signature(norm)
 	if signature == _assign_signature:
 		return _deposits_by_city
@@ -1381,19 +1405,29 @@ func _aggregate_deposits(deposits: Array) -> Dictionary:
 ## Sem cidade na massa de terra, cai para a cidade mais próxima da nação
 ## (qualquer landmass), para nunca perder um depósito da nação.
 func _nearest_city_of_nation(cities: Array, tag: String, point: Vector2) -> String:
+	var candidates: Array = _city_groups.get(tag, [])
+	if candidates.is_empty():
+		for city in cities:
+			if String(city["tag"]) == tag:
+				candidates.append(city)
+		if candidates.is_empty():
+			return ""
+	# Massa de terra da cidade mais próxima de QUALQUER nação (comportamento
+	# original). A lista de candidatos já vem restrita à nação, então a busca
+	# não varre as 807 cidades por província/depósito.
 	var landmass := _landmass_of(point, cities)
-	var candidate := _nearest_city(cities, tag, point, landmass)
+	var candidate := _nearest_city(candidates, point, landmass)
 	if candidate != "":
 		return candidate
-	return _nearest_city(cities, tag, point, "")
+	return _nearest_city(candidates, point, "")
 
 
-func _nearest_city(cities: Array, tag: String, point: Vector2, landmass: String) -> String:
+## Cidade da lista mais próxima de `point` na mesma massa de terra ("" = sem
+## restrição). A lista já vem restrita à nação (`_city_groups`).
+func _nearest_city(candidates: Array, point: Vector2, landmass: String) -> String:
 	var best_id := ""
 	var best_distance := INF
-	for city in cities:
-		if String(city["tag"]) != tag:
-			continue
+	for city in candidates:
 		if landmass != "" and String(city["landmass"]) != landmass:
 			continue
 		var distance: float = (city["center"] as Vector2).distance_squared_to(point)
@@ -1490,10 +1524,23 @@ func _load_provinces() -> void:
 	# Herança da aptidão/cobertura florestal pelo centróide da província: o
 	# território natural mais próximo (não restrito ao país — províncias
 	# ultramarinas como a Guiana Francesa herdam do território tropical vizinho,
-	# não da França continental, que fica a ~8.000 km).
-	for province in _provinces:
-		var point := Vector2(float(province["x"]), float(province["y"]))
-		_province_territory[int(province["id"])] = _nearest_territory(point)
+	# não da França continental, que fica a ~8.000 km). Calculada SOB DEMANDA
+	# (`_territory_of_province`): só as ~44 províncias sem raster usam o
+	# fallback, e varrer os 739 territórios para as 15,9 mil províncias no boot
+	# custava ~5 s (Fase B — ver docs/economy/balance_review.md §22).
+
+
+## Território natural que "contém" a província (centróide mais próximo),
+## calculado e cacheado na primeira consulta. É o fallback declarado da aptidão
+## para província sem amostra de raster (centróide em água).
+func _territory_of_province(province_id: int) -> String:
+	if _province_territory.has(province_id):
+		return String(_province_territory[province_id])
+	var territory := ""
+	if _province_center.has(province_id):
+		territory = _nearest_territory(_province_center[province_id])
+	_province_territory[province_id] = territory
+	return territory
 
 
 func _read_json(path: String) -> Dictionary:

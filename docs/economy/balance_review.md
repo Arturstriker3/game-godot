@@ -1583,3 +1583,189 @@ acima é o mesmo balanço, com a população exibida nova.
   `assets/icons/places/resource_wheat.png` são regenerados pelo
   `build_resource_map.py` com ruído não determinístico e **não** entram no
   commit desta rodada.
+
+## 22. Rebalanceio econômico após a subdivisão de províncias (Fase B, 2026-11-12)
+
+O commit `dc707b2` subdividiu os admin-1 acima de 15.000 km² em células Voronoi
+de ~10 mil km²: **4.226 → 15.920 províncias** (15.547 entradas em
+`provinces.json`). A cadeia regerou `province_areas`, `province_nature`,
+`nature`/`agriculture` (agora média ponderada por área das províncias) e as
+atribuições derivadas. Esta seção mede o efeito econômico com o mesmo cenário
+(**179 nações / 807 cidades**) antes (`bf7bd67`, dados de 4.226 províncias) e
+depois, e registra o que foi corrigido.
+
+### 22.1 Metodologia
+
+| medição | ferramenta | antes | depois |
+|---|---|---|---|
+| fome por nação (60 d) e geografia por cidade | `tools/economy_rebalance_scan.gd` (novo) | `economy_rebalance_scan_before.json` | `economy_rebalance_scan.json` |
+| balanço longo (730 d) | `tools/balance_review.gd --days=730` | worktree em `bf7bd67` | HEAD |
+| conservação (365 d) | `tools/economy_long_run_test.gd --tag=…` | verde | verde |
+| virada do dia | `tools/perf_day_peak.tscn --days=30` | 82,2 ms (pico) | 77,6–81,0 ms (pico) |
+| fases do tick C++ | `tools/real_tick_profile.gd --days=6` | 73,5 ms (p95 150,2) | 71,4 ms (p95 145,1) |
+| custo de carga da geografia | `tools/geography_load_profile.gd` (novo) | 3,60 s | 2,96 s (12,49 s sem a correção) |
+| bacia e posse mineral | `economy_city_catchment_test.gd`, `economy_deposit_ownership_test.gd` | verdes | verdes |
+
+O "antes" roda numa worktree temporária em `bf7bd67` (mesmas 807 cidades, mesmo
+`cities.json`; só os dados naturais são os de 4.226 províncias). Os JSON de
+medição ficam **fora do commit**, como os das rodadas anteriores.
+
+### 22.2 Fome, falências e conservação
+
+| indicador | antes (4.226) | depois (15.920) |
+|---|---:|---:|
+| 60 d — nações com satisfação média ≥ 70% | 179/179 | 179/179 |
+| 60 d — nações com **todas** as cidades ≥ 70% | 179/179 | 179/179 |
+| 730 d — nações < 70% (média nacional) | 6 | 6 |
+| 730 d — falências de construções | 29 | 14 |
+| 730 d — `foreign_cash` | −47,42 bi | −48,69 bi |
+| 730 d — `money_total` / violações | conservado / 0 | conservado / 0 |
+| `economy_long_run_test` (365 d) | verde | verde |
+
+As 6 nações abaixo de 70% em 730 d são **as mesmas** nos dois lados (DJI, PAK,
+PSX, SAH, SDN, SOL), com valores mistos: DJI 47%→26%, SOL 29%→57%, PAK
+43%→51%, PSX 21%→14%, SAH 21%→15%, SDN 44%→45%. É a crise de
+demanda/liquidez já documentada (§15·"Fome com alimento em estoque"), não uma
+regressão da subdivisão. Em 60 d nenhuma nação fica abaixo de 70% (a baseline
+§21.3 tinha BEL/NED com uma cidade abaixo); o número de falências **cai** de 29
+para 14 em 730 d.
+
+### 22.3 Terra agrícola por cidade
+
+| indicador | antes | depois | Δ |
+|---|---:|---:|---:|
+| área cultivável somada das cidades (km²) | 25.791.582 | 26.835.685 | +4,05% |
+| área cultivável somada das províncias (km²) | 25.632.839 | 26.694.802 | +4,14% |
+| área cultivável **efetiva de trigo** (área × aptidão) | 4.944.015 | 4.789.809 | −3,12% |
+| área total das províncias (km²) | 148.346.092,7 | 148.346.092,5 | 0,00% |
+| nações com variação > 20% na área cultivável | — | 61 | — |
+| Gini médio da terra entre cidades da mesma nação | 0,239 | 0,220 | −8% |
+
+A área total das províncias é **idêntica** (a subdivisão só reparte o mesmo
+polígono) e o teste de bacia continua provando partição e conservação
+(15.541 províncias em 807 cidades, 3 divididas; nenhuma cidade sem terra).
+
+A variação por nação vem da **amostragem de clima**: antes o clima era lido uma
+vez no centróide de cada admin-1 e aplicado à região inteira; agora cada célula
+de ~10 mil km² tem a sua amostra. Isso corrige distorções grandes nos dois
+sentidos — AUS +70%, ZAF +82%, COD +54% (células desérticas deixam de ditar o
+país) e BHR −96%, TLS −90%, KWT −82%, LSO −73%, NPL −66%, ISL −66% (uma amostra
+úmida deixava de valer para o país todo; Timor-Leste tinha 56.934 km²
+cultiváveis, 3,8× a área do país, e passa a 5.799 km²). Nada é inventado: os
+números continuam vindo do WorldClim 2.1 no centróide da província.
+
+### 22.4 Jazidas: o que a densidade corrigiu
+
+| indicador | antes | depois |
+|---|---:|---:|
+| depósitos (sem fundições) | 5.230 | 5.230 |
+| reserva total atribuída a cidades (kt) | 1.711.712.684 | 1.711.713.295 |
+| pares cidade×recurso com reserva | 2.272 | 2.254 |
+| cidades sem nenhuma jazida | 159 | 168 |
+| Gini médio da reserva entre cidades da mesma nação | 0,324 | 0,306 |
+
+A reserva total é a mesma (a diferença de 611 kt é arredondamento de
+`snappedf(…, 0,001)` na agregação). O que mudou foi **de quem é cada jazida**:
+385 depósitos (**8,18% da reserva**) passaram para a nação onde o ponto real do
+MRDS cai. O centróide de um admin-1 enorme errava perto de fronteiras e no mar:
+
+| nação | reserva antes (kt) | depois (kt) | causa |
+|---|---:|---:|---|
+| SAU | 195.563 | 40.771.265 | campos offshore do Golfo estavam em BHR/KWT/QAT |
+| VEN | 42.137.720 | 70.954.400 | campos da faixa do Orinoco estavam em COL |
+| IRN | 30.954.374 | 59.713.385 | campos do Golfo estavam em QAT/ARE/IRQ |
+| BHR | 28.614.643 | 160.074 | ilha não tem 28 Gt de petróleo |
+| COL | 29.124.110 | 403.627 | idem, herdava a Venezuela |
+| QAT | 34.556.608 | 18.515.133 | North Field dividido com IRN |
+| RUS | 271.218.145 | 272.836.202 | +0,6% (sem "explosão") |
+| CAN | 29.891.396 | 28.457.977 | −4,8% (sem "explosão") |
+
+A hipótese de "Rússia/Canadá com recursos explosivos" **não se confirmou**; as
+explosões são correções de posse. Nenhuma jazida é duplicada e cada uma
+continua com um único dono (`economy_deposit_ownership_test`: partição,
+conservação por nação e 1.999 extratores na cidade dona).
+
+**Cidades que ficaram sem jazida (25) × que ganharam (16).** Em **23 das 25** a
+jazida antiga está, pelo raster de província, em **outro país** — exemplos:
+AFG-HER (ferro em IRN), MNG-ULAA (ouro em RUS), DJI-DJI (cobre em SOL), NED-ENS
+(carvão/ferro na DEU), TLS-DIL/TLS-MAL (gás em AUS), SAH-MEH (fosfato em MAR).
+O recorte completo (cidade, depósito, coordenada e nação verdadeira) fica em
+`docs/economy/deposit_lost_cities.json`, **não versionado**, cruzando
+`deposits.json` com o raster `world_province.png`/`region_province.png`. Em
+**2** (RWA-KIG e SYR-ALE) a jazida está na própria nação e foi perdida porque o
+centróide de uma célula vizinha é mais próximo — limitação conhecida da regra
+por centróide; usar o raster de província como fonte as recuperaria, mas
+moveria 108 depósitos (2% da reserva) e deixaria **6 cidades de microestado**
+(LUX, LIE, SGP, VNM-CAN/HUE, CHE) sem jazida, então a regra foi mantida.
+
+### 22.5 Custo de carga da bacia (e a correção)
+
+| etapa | antes (4.226) | depois sem correção | depois corrigido |
+|---|---:|---:|---:|
+| `load_data` | 2.057 ms | 7.226 ms | **533 ms** |
+| `assign_provinces` | 1.265 ms | 3.830 ms | **1.704 ms** |
+| `assign_deposits` | 1.280 ms | 1.416 ms | **720 ms** |
+| **total** | **3.602 ms** | **12.472 ms** | **2.957 ms** |
+
+Duas causas, corrigidas em `core/economy/geography_service.gd` sem mudar
+resultado (a distribuição de jazidas e a bacia ficaram **idênticas** às de antes
+da correção, conferidas campo a campo no JSON do scan):
+
+1. **Herança de território sob demanda.** `_load_provinces` varria os 739
+   territórios para **cada** província (15.920 × 739 ≈ 11,8 M distâncias) só
+   para preencher um fallback que apenas as ~44 províncias sem raster usam.
+   Agora `_territory_of_province()` calcula e cacheia na primeira consulta.
+2. **Cidades agrupadas por nação.** `assign_provinces`/`assign_deposits`
+   varriam as 807 cidades em cada uma das 15.920 províncias, duas vezes
+   (massa de terra + candidata). `_ensure_city_groups` monta `tag → cidades`
+   uma vez por lista; a busca passa a varrer só as cidades da nação (~4,5 em
+   média). A massa de terra continua vindo da cidade mais próxima de qualquer
+   nação, exatamente como antes — por isso Macau/Guangzhou e os demais
+   resultados não mudam.
+
+O custo restante é o parse dos JSON (≈0,5 s) e a busca da massa de terra por
+província; o tick não usa nada disso.
+
+### 22.6 Tick e frame
+
+`real_tick_profile` (6 dias, autoload real) mostra as **fases iguais**: trade
+36,51→35,87 ms, status 25,20→24,35 ms, arrival 8,83→8,30 ms; tick completo
+73,5→71,4 ms (p95 150,2→145,1). A subdivisão não entra no tick.
+
+`perf_day_peak` (30 dias, sync/debug, cenário real, duas execuções no depois):
+
+| medição (ms) | antes | depois (execução 1 / 2) |
+|---|---:|---:|
+| tick em regime — média | 79,69 | 75,41 / 78,53 |
+| tick em regime — p95 | 95,64 | 94,23 / 100,85 |
+| tick em regime — máx | 149,22 | 149,13 / 155,03 |
+| frame de pico (virada\|frames) — média | 82,17 | 77,58 / 81,01 |
+
+A pior execução fica **+5,4% no p95** e as médias ficam **abaixo** do antes;
+nada chega perto do limite de 15%. A variação entre execuções é da fase
+`trade` (rotas/pedidos do dia), que o perfil por fase mostra igual.
+
+
+### 22.7 O que foi alterado e o que não foi
+
+- **Alterado:** `core/economy/geography_service.gd` (carga da bacia, sem mudar
+  resultado); `tools/economy_rebalance_scan.gd` e
+  `tools/geography_load_profile.gd` (novos, só medição); comentário
+  desatualizado do teste de bacia.
+- **Não alterado:** C++ (`gdextension/src/economy_sim.*`) — nenhuma regra do
+  núcleo mudou, então não houve recompilação; coeficientes de
+  `data/definitions/economy`; dados naturais (a regeração já estava no commit
+  da Fase B).
+- **Não revertido:** as correções de posse mineral e de área agrícola por
+  amostragem mais fina. Reverter exigiria manter a atribuição sabidamente
+  errada (BHR com 28 Gt, COL com a reserva da Venezuela) só para preservar a
+  foto anterior.
+
+### 22.8 Pendências
+
+- 2 cidades (RWA-KIG, SYR-ALE) perdem jazida própria pela regra de centróide;
+  o raster resolveria, mas o custo medido (6 microestados sem jazida) foi
+  considerado pior nesta rodada.
+- As 6 nações com fome em 730 d continuam dependendo da renda
+  urbana/tesouro nacional (pendência de modelo já registrada em §15/§20.7).
+- `foreign_cash` segue sem orçamento (−48,7 bi em 730 d).
