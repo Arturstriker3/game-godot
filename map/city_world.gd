@@ -511,6 +511,7 @@ func _exit_tree() -> void:
 ## Troca o modo de mapa sem reconstruir a geometria: só visibilidade e uniformes.
 ## O modo "political" usa base de atlas (chapado); os demais usam satélite.
 func set_mode(mode: String) -> void:
+	var previous := _mode
 	_mode = mode
 	var is_atlas := mode == "political"
 	var show_overlay := mode not in ["geographic", "political"]
@@ -531,6 +532,12 @@ func set_mode(mode: String) -> void:
 		_political_material.set_shader_parameter("border_opacity", 0.42)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
+	# O modo recursos mantém o selo/ícone de TODA cidade visível (o "I" que abre
+	# a legenda da cidade); o político só mostra capitais/nação do jogador no
+	# MÉDIO. Trocar de modo precisa refazer os alvos de LOD na hora.
+	if previous != mode and _zoom_level >= 0:
+		_refresh_level_targets(false)
+		_invalidate_layout()
 
 
 ## Filtro da legenda de recursos: esconde marcadores do mapa.
@@ -2223,21 +2230,29 @@ func _refresh_level_targets(snap: bool) -> void:
 
 ## O nível atual mostra o nome desta cidade? PERTO: todas. MÉDIO: capitais e as
 ## cidades da nação do jogador. LONGE: nenhuma (só a estrela das capitais).
+## O nome não segue o marcador do modo recursos: ali o "I" aparece sem nome.
 func _city_label_wanted(record: Dictionary) -> bool:
 	if _zoom_level == ZoomLevel.FAR:
 		return false
 	if _zoom_level == ZoomLevel.NEAR:
 		return true
-	return _city_marker_wanted(record)
+	if bool(record.get("capital", false)):
+		return true
+	return _is_player_city(record)
 
 
 ## O nível atual desenha o marcador desta cidade? PERTO: todas. MÉDIO: capitais
 ## e cidades da nação do jogador. LONGE: só as capitais (estrela).
+## No modo recursos o marcador é a porta de entrada da legenda "Cidade": o "I"
+## (selo + glifo) fica em TODA cidade visível no MÉDIO, como antes do LOD de 3
+## níveis; no LONGE continua só a capital, o mesmo recorte do mapa político.
 func _city_marker_wanted(record: Dictionary) -> bool:
 	if _zoom_level < 0 or _zoom_level == ZoomLevel.NEAR:
 		return true
 	if bool(record.get("capital", false)):
 		return true
+	if _mode == "resources":
+		return _zoom_level == ZoomLevel.MID
 	return _zoom_level == ZoomLevel.MID and _is_player_city(record)
 
 
@@ -2276,6 +2291,8 @@ func _advance_level_fade(delta: float) -> bool:
 
 ## Aplica o alfa do fade ao rótulo/glyph já existentes. O selo atrás do ícone
 ## acompanha o glifo (no LONGE ele não existe: fica só a estrela da capital).
+## No modo recursos o marcador é o "I" clicável da cidade: ele não herda o fade
+## do nome, senão a cidade sem nome no MÉDIO ficaria sem o marcador.
 func _apply_fade_visual(record: Dictionary) -> void:
 	if String(record.get("kind", "")) != "city":
 		return
@@ -2286,7 +2303,9 @@ func _apply_fade_visual(record: Dictionary) -> void:
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
 		icon.visible = _city_marker_wanted(record)
-		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
+		icon.modulate.a = 1.0 \
+				if _mode == "resources" or bool(record.get("capital", false)) \
+				else alpha
 
 
 ## Varredura do LOD: portos e cidades só nas células que cobrem a viewport
@@ -3060,7 +3079,10 @@ func _apply_place_label_lod(record: Dictionary, distance: float) -> void:
 	var icon: Sprite3D = record.get("icon")
 	if icon != null:
 		icon.visible = marker
-		icon.modulate.a = 1.0 if bool(record.get("capital", false)) else alpha
+		# No modo recursos o "I" é o alvo do clique: opaco mesmo sem nome.
+		icon.modulate.a = 1.0 \
+				if _mode == "resources" or bool(record.get("capital", false)) \
+				else alpha
 	var ring: Sprite3D = record.get("ring")
 	if ring != null:
 		# O selo é apenas o fundo do ícone: sem glifo não há bolinha, e no LONGE

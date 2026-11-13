@@ -64,6 +64,7 @@ func _run() -> void:
 	await _test_empty_and_escape()
 	await _test_far_capitals_only()
 	await _test_mid_capitals_and_player()
+	await _test_resources_mid_i()
 
 	_game.queue_free()
 	await process_frame
@@ -643,6 +644,58 @@ func _test_mid_capitals_and_player() -> void:
 	print("MÉDIO: capital=%s clicável/hover | comum=%s sem alvo | %s (%s) com ícone+nome"
 			% [capital, common, common, nation])
 	_world.set_player_nation("")
+	_world.clear_selection()
+	_world.set_hover("")
+	_close_overlay()
+
+
+## MODO RECURSOS: o "I" (selo + glifo da cidade) é o alvo que abre a legenda
+## "Cidade". No MÉDIO TODA cidade visível mantém esse marcador e responde ao
+## clique; no LONGE continua só a capital. O político não muda (testes acima).
+func _test_resources_mid_i() -> void:
+	_close_overlay()
+	_world.clear_selection()
+	_world.set_player_nation("")
+	_world.set_hover("")
+	_world.set_mode("resources")
+
+	var capital := "BEL-BRU"
+	var common := "BEL-ANR"
+	if not _world._records_by_id.has(capital) \
+			or not _world._records_by_id.has(common):
+		_failures.append("RECURSOS: sem capital/cidade para testar o \"I\" no MÉDIO")
+		_world.set_mode("political")
+		return
+	var record: Dictionary = _world._records_by_id[common]
+	await _focus_mid(_world.city_world_position(common))
+	if not bool(_world._city_marker_wanted(record)):
+		_failures.append("RECURSOS MÉDIO: cidade comum %s sem marcador \"I\""
+				% common)
+	var center := _camera.unproject_position(_world.city_world_position(common))
+	var hit: String = _world.pick_city(center, _camera)
+	var radius: float = _world.place_pick_radius_px(common, _camera)
+	if hit != common or radius <= 0.0:
+		_failures.append("RECURSOS MÉDIO: %s não respondeu (hit='%s' raio=%.1f)"
+				% [common, hit, radius])
+	_check_ring_matches_glyphs("MÉDIO recursos")
+
+	# LONGE: o recorte original do modo recursos — só a capital.
+	await _focus_far(_world.city_world_position(common))
+	var far_center := _camera.unproject_position(
+			_world.city_world_position(common))
+	if _world.pick_city(far_center, _camera) == common:
+		_failures.append("RECURSOS LONGE: cidade comum %s ainda é clicável" % common)
+	if _world.place_pick_radius_px(common, _camera) > 0.0:
+		_failures.append("RECURSOS LONGE: cidade comum %s com raio de pick" % common)
+	await _focus_far(_world.city_world_position(capital))
+	var capital_center := _camera.unproject_position(
+			_world.city_world_position(capital))
+	if _world.pick_city(capital_center, _camera) != capital:
+		_failures.append("RECURSOS LONGE: capital %s não respondeu" % capital)
+	print("RECURSOS: MÉDIO %s com \"I\" clicável | LONGE só %s"
+			% [common, capital])
+
+	_world.set_mode("political")
 	_world.clear_selection()
 	_world.set_hover("")
 	_close_overlay()
