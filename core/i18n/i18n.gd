@@ -98,6 +98,11 @@ const TEMPLATE_STRINGS := {
 		"tpl.registro.demo.nation": "Reino Unido",
 		"tpl.registro.demo.note": "Estoque cobre 3,1 dias de demanda.",
 
+		"tpl.alerts.crumb": "Economia › Alertas",
+		"tpl.alerts.col.kind": "Alerta",
+		"tpl.alerts.col.detail": "Situação",
+		"tpl.alerts.footer": "Clique numa linha para abrir a cidade · ↑↓ navegar",
+
 		"tpl.ficha.tab.overview": "Visão geral",
 		"tpl.ficha.tab.population": "População",
 		"tpl.ficha.tab.production": "Produção",
@@ -283,6 +288,11 @@ const TEMPLATE_STRINGS := {
 		"tpl.registro.demo.nation": "United Kingdom",
 		"tpl.registro.demo.note": "Stock covers 3.1 days of demand.",
 
+		"tpl.alerts.crumb": "Economy › Alerts",
+		"tpl.alerts.col.kind": "Alert",
+		"tpl.alerts.col.detail": "Detail",
+		"tpl.alerts.footer": "Click a row to open the city · ↑↓ navigate",
+
 		"tpl.ficha.tab.overview": "Overview",
 		"tpl.ficha.tab.population": "Population",
 		"tpl.ficha.tab.production": "Production",
@@ -467,6 +477,11 @@ const TEMPLATE_STRINGS := {
 		"tpl.registro.empty.wait": "Los números aparecen cuando se publica el primer día.",
 		"tpl.registro.demo.nation": "Reino Unido",
 		"tpl.registro.demo.note": "El stock cubre 3,1 días de demanda.",
+
+		"tpl.alerts.crumb": "Economía › Alertas",
+		"tpl.alerts.col.kind": "Alerta",
+		"tpl.alerts.col.detail": "Situación",
+		"tpl.alerts.footer": "Haga clic en una fila para abrir la ciudad · ↑↓ navegar",
 
 		"tpl.ficha.tab.overview": "Visión general",
 		"tpl.ficha.tab.population": "Población",

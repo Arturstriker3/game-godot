@@ -631,8 +631,8 @@ Tipografia e tons dos blocos:
 ```gdscript
 var spec := UiTemplateBuilder.load_spec("ficha")   # lê data/ui/templates/ficha.json
 var screen := UiTemplateBuilder.build(spec, {
-    "city": "Paris",
-    "population": "11,2 M",
+	"city": "Paris",
+	"population": "11,2 M",
 })
 screen.close_requested.connect(func() -> void: screen.queue_free())
 screen.choice_selected.connect(func(id: String) -> void: print(id))
@@ -680,12 +680,14 @@ erro. 1366×768 e 2560×1440 não foram capturados (o `stretch` do projeto é
 
 ### Ressalva
 
-Os valores das specs (população, PIB, séries, nomes de cidade) são
-**demonstração** — servem para validar layout, não são lidos da economia. O
-gerador só é usado por `tools/ui_template_gallery.gd`; nenhuma tela do HUD o
-chama ainda, e as chaves `tpl.*` de `core/i18n/i18n.gd` existem apenas para
-estes templates. `data_table` e `folder_tabs` guardam estado de exibição
-(ordem, página, aba ativa), nunca estado de jogo.
+Os valores das specs de galeria (população, PIB, séries, nomes de cidade) são
+**demonstração** — servem para validar layout, não são lidos da economia. A
+spec `registro.json` (T2) é usada pela tela de Economia com dados reais do
+resumo; a tela de Alertas monta uma spec T2 compacta em código
+(`alerts_screen.gd`, janela 640–880 × 460–620) com a mesma tabela e painel de
+estado vazio. A ficha de cidade (T3) já estava ligada. `data_table` e
+`folder_tabs` guardam estado de exibição (ordem, página, aba ativa), nunca
+estado de jogo.
 
 ## Arquivos
 

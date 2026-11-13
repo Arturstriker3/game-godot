@@ -1813,10 +1813,15 @@ func _instantiate_screens() -> void:
 
 	var alerts_screen: Node = ALERTS_SCREEN.new()
 	alerts_screen.visible = false
-	alerts_screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_window_body.add_child(alerts_screen)
+	if _uses_window_shell(alerts_screen):
+		alerts_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_window_layer.add_child(alerts_screen)
+	else:
+		alerts_screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_window_body.add_child(alerts_screen)
 	_screens["alerts"] = alerts_screen
-	alerts_screen.alert_requested.connect(_on_city_requested)
+	alerts_screen.alert_requested.connect(_on_city_navigate)
+	alerts_screen.close_requested.connect(_close_screen)
 
 
 ## A tela monta a própria moldura de papel (template T2)? Então o HUD esconde

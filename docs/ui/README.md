@@ -167,3 +167,35 @@ A captura roda no idioma persistido em `user://settings.cfg` (esta rodada saiu
 em inglês); a troca de idioma reconstrói a spec e o relatório não aponta chave
 vazada em nenhum dos 96 estados.
 
+## Frente 7 — alertas no T2 compacto
+
+A lista de Alertas deixou o painel modal escuro e virou uma janela T2 compacta
+(640–880 × 460–620 px, `_spec()` em `core/ui/screens/alerts_screen.gd`) com o
+mesmo `window_frame`, `data_table` paginada e estado vazio do registro. As
+linhas continuam vindo de `core/ui/alerts.gd` (no máximo 6, priorizadas por
+gravidade); nada é inventado quando não há alerta.
+
+Colunas: **Alerta** (tipo, em carimbo quando o tom é negativo), **Cidade**,
+**Nação** e **Situação** (o texto do alerta com os mesmos campos do modelo).
+Clicar ou dar Enter numa linha empilha a ficha T3 na aba que explica o dado:
+**mercado** para déficit e estoque baixo, **produção** para cidade sem
+produção.
+
+| Conjunto | Caminho | Resoluções | Estados |
+|---|---|---|---|
+| Frente 7 | `captures/f6/t3/` | 1920×1080, 1600×900, 1366×768, 2560×1440 | 24 |
+
+Resultado: **96 capturas**, **0** problemas de `offscreen`, `text_overflow`,
+`text_elided`, `focus_hidden` ou `i18n_key`; `13_alerts` mostra “6 active”,
+“Deficit / Karachi / Pakistan / Deficit of 3,429 t of wheat.” e foco de teclado
+nas quatro resoluções.
+
+Navegação verificada por teste headless novo (`tools/alerts_nav_test.gd`):
+
+```powershell
+& $godot --headless --path . --script res://tools/alerts_nav_test.gd
+```
+
+O teste monta o HUD real, abre os alertas e aciona as três primeiras linhas:
+PASS com `PAK-KAR (deficit)` abrindo a ficha na aba `market`.
+
