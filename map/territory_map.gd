@@ -14,6 +14,15 @@ const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 const GeographyScript := preload("res://core/economy/geography_service.gd")
 const OWNER_COLUMNS := 64
 
+## Grade do modelo de rótulo de nação (mesma proporção 2:1 do mapa). 512×256
+## dá células de ~9,8 px do mapa: suficiente para achar o maior pedaço contíguo
+## e o polo de inacessibilidade de países pequenos sem varrer os 33 milhões de
+## texels do raster de 8192×4096 na abertura.
+const NATION_LABEL_GRID := Vector2i(512, 256)
+## Sistema de coordenadas do mapa (o mesmo `pixel_to_world` do CityWorld):
+## 5000×2500 px. Usado para converter a grade de rótulos em px do mapa.
+const MAP_SIZE_PX := Vector2(5000.0, 2500.0)
+
 ## Cores do mapa político por nação. Fonte ÚNICA: `color` de
 ## `data/definitions/scenario/nations.csv` — as 231 nações, inclusive as 8
 ## jogáveis (o `nation_colors` de `provinces.json` carrega os mesmos valores, só
@@ -66,6 +75,12 @@ var _minimap_image: Image
 var _minimap_texture: ImageTexture
 var _max_id := 0
 var _loaded := false
+## Modelo de rótulo por nação (maior pedaço contíguo): cache invalidado quando
+## os donos mudam. `_pid_canonical` mapeia id de província -> tag canônica do
+## dono atual, para a checagem de encaixe do rótulo.
+var _nation_models: Dictionary = {}
+var _nation_models_ready := false
+var _pid_canonical: Dictionary = {}
 ## Últimos insumos vistos, em colunas tipadas. A virada do dia chama `update()`
 ## todo dia com o mesmo conjunto de cidades; comparar coluna a coluna custa
 ## ~0,3 ms em 858 cidades, enquanto montar duas assinaturas de texto (com
@@ -90,6 +105,9 @@ func load_data() -> void:
 	_owners.clear()
 	_max_id = 0
 	_loaded = false
+	_nation_models.clear()
+	_nation_models_ready = false
+	_pid_canonical.clear()
 	_input_ids = PackedStringArray()
 	_input_homes = PackedStringArray()
 	_input_nations = PackedStringArray()
@@ -410,6 +428,10 @@ func update(cities: Array, overrides: Dictionary) -> bool:
 	if owners_changed or _texture == null:
 		_write_owner_image(new_owners)
 	_owners = new_owners
+	if owners_changed:
+		_nation_models.clear()
+		_nation_models_ready = false
+		_pid_canonical.clear()
 	return owners_changed
 
 
@@ -652,37 +674,294 @@ func provinces() -> Array:
 	return _provinces.duplicate()
 
 
-## Âncora do rótulo de uma nação: centroide de província possuída mais próximo
-## do centroide ponderado por área. Vazio se a nação não tem território.
+## Âncora do rótulo de uma nação: polo de inacessibilidade (centro do maior
+## círculo inscrito) do MAIOR pedaço contíguo do território, com o eixo principal
+## (PCA) e as dimensões úteis. O formato antigo (`x`, `y`, `extent_px`) continua
+## válido para os chamadores legados.
 func nation_anchor(tag: String) -> Dictionary:
-	var total_area := 0.0
-	var weighted := Vector2.ZERO
-	var owned: Array[Dictionary] = []
-	for province in _provinces:
-		var pid: int = province["id"]
-		var owner := canonical_tag(String(_owners.get(pid, String(province["country"]))),
-				province)
-		if owner != tag:
-			continue
-		var area := float(province["area"])
-		weighted += Vector2(float(province["x"]), float(province["y"])) * area
-		total_area += area
-		owned.append(province)
-	if owned.is_empty() or total_area <= 0.0:
+	var model := nation_label_model(tag)
+	if model.is_empty():
 		return {}
-
-	var centroid := weighted / total_area
-	var best: Dictionary = {}
-	var best_d := INF
-	for province in owned:
-		var d := Vector2(float(province["x"]), float(province["y"])).distance_to(centroid)
-		if d < best_d:
-			best_d = d
-			best = province
 	return {
-		"x": float(best["x"]),
-		"y": float(best["y"]),
-		"extent_px": sqrt(total_area),
+		"x": float(model["x"]),
+		"y": float(model["y"]),
+		"extent_px": float(model["extent_px"]),
+	}
+
+
+## Modelo de TODOS os rótulos de nação (tag -> dicionário). Calculado uma vez por
+## conjunto de donos: amostra o raster de províncias numa grade 512×256, separa
+## o maior componente contíguo de cada nação e deriva polo, eixo e dimensões.
+func nation_label_models() -> Dictionary:
+	if not _nation_models_ready:
+		_build_nation_label_models()
+	return _nation_models
+
+
+func nation_label_model(tag: String) -> Dictionary:
+	var models := nation_label_models()
+	var model: Dictionary = models.get(tag, {})
+	return model
+
+
+## Tag canônica do dono numa UV do mapa (0..1). Vazio no mar/desconhecido.
+func canonical_owner_at_uv(uv: Vector2) -> String:
+	if uv.x < 0.0 or uv.x > 1.0 or uv.y < 0.0 or uv.y > 1.0:
+		return ""
+	if not land_at_uv(uv):
+		return ""
+	return canonical_tag(owner_at_uv(uv))
+
+
+func _build_nation_label_models() -> void:
+	_nation_models_ready = true
+	_nation_models.clear()
+	_pid_canonical.clear()
+	var ids := _world_province_raster()
+	var sdf := _world_sdf_raster()
+	if ids == null or _provinces.is_empty():
+		return
+
+	# id de província -> tag canônica do dono atual (fonte: _owners + cenário).
+	for province: Dictionary in _provinces:
+		var pid := int(province["id"])
+		_pid_canonical[pid] = canonical_tag(
+				String(_owners.get(pid, String(province["country"]))), province)
+
+	var gw := NATION_LABEL_GRID.x
+	var gh := NATION_LABEL_GRID.y
+	var total := gw * gh
+	var grid := PackedInt32Array()
+	grid.resize(total)
+	var tag_ids: Dictionary = {}
+	var id_tags: Array[String] = []
+	var iw := ids.get_width()
+	var ih := ids.get_height()
+	var sw := sdf.get_width() if sdf != null else 0
+	var sh := sdf.get_height() if sdf != null else 0
+	for gy in gh:
+		var sy := clampi(int((float(gy) + 0.5) / float(gh) * float(ih)), 0, ih - 1)
+		var sfy := clampi(int((float(gy) + 0.5) / float(gh) * float(sh)), 0, sh - 1) \
+				if sdf != null else 0
+		for gx in gw:
+			if sdf != null:
+				var sfx := clampi(int((float(gx) + 0.5) / float(gw) * float(sw)),
+						0, sw - 1)
+				if sdf.get_pixel(sfx, sfy).r <= 0.5:
+					continue
+			var sx := clampi(int((float(gx) + 0.5) / float(gw) * float(iw)),
+					0, iw - 1)
+			var color := ids.get_pixel(sx, sy)
+			var pid := int(round(color.r * 255.0 + color.g * 255.0 * 256.0))
+			var tag := String(_pid_canonical.get(pid, ""))
+			if tag.is_empty():
+				continue
+			var tid := int(tag_ids.get(tag, 0))
+			if tid == 0:
+				id_tags.append(tag)
+				tid = id_tags.size()
+				tag_ids[tag] = tid
+			grid[gy * gw + gx] = tid
+
+	# Maior componente 4-conectado de cada nação, com wrap em X.
+	var seen := PackedByteArray()
+	seen.resize(total)
+	var largest: Dictionary = {}
+	var queue := PackedInt32Array()
+	for start in total:
+		if seen[start] != 0 or grid[start] == 0:
+			continue
+		var tid := grid[start]
+		queue.clear()
+		queue.append(start)
+		seen[start] = 1
+		var comp := PackedInt32Array()
+		var head := 0
+		while head < queue.size():
+			var cell := queue[head]
+			head += 1
+			comp.append(cell)
+			@warning_ignore("integer_division")
+			var cy := cell / gw
+			var cx := cell - cy * gw
+			for dir in 4:
+				var nx := cx + (1 if dir == 0 else (-1 if dir == 1 else 0))
+				var ny := cy + (1 if dir == 2 else (-1 if dir == 3 else 0))
+				if ny < 0 or ny >= gh:
+					continue
+				if nx < 0:
+					nx += gw
+				elif nx >= gw:
+					nx -= gw
+				var next := ny * gw + nx
+				if seen[next] == 0 and grid[next] == tid:
+					seen[next] = 1
+					queue.append(next)
+		var previous: PackedInt32Array = largest.get(tid, PackedInt32Array())
+		if comp.size() > previous.size():
+			largest[tid] = comp
+
+	for tid: Variant in largest:
+		var comp: PackedInt32Array = largest[tid]
+		var tag: String = id_tags[int(tid) - 1]
+		_nation_models[tag] = _model_from_component(comp, gw, gh)
+
+
+## Deriva polo, eixo (limitado a ±35°) e dimensões do maior componente. As
+## coordenadas X são "desenroladas" para o componente atravessar o antimeridiano
+## como um bloco contíguo (Rússia, Fiji).
+func _model_from_component(comp: PackedInt32Array, gw: int, gh: int) -> Dictionary:
+	var ref := comp[0]
+	@warning_ignore("integer_division")
+	var ref_y := ref / gw
+	var ref_x := ref - ref_y * gw
+	var count := comp.size()
+	var xs := PackedInt32Array()
+	xs.resize(count)
+	var ys := PackedInt32Array()
+	ys.resize(count)
+	var min_x := gw * 2
+	var max_x := -1
+	var min_y := gh
+	var max_y := -1
+	for index in count:
+		var cell := comp[index]
+		@warning_ignore("integer_division")
+		var y := cell / gw
+		var x := cell - y * gw
+		# Desenrola em torno da célula de referência: um país normal fica
+		# compacto; só quem cruza o antimeridiano vira um bloco contínuo.
+		var unwrapped := ref_x + (posmod(x - ref_x + gw / 2, gw) - gw / 2)
+		xs[index] = unwrapped
+		ys[index] = y
+		min_x = mini(min_x, unwrapped)
+		max_x = maxi(max_x, unwrapped)
+		min_y = mini(min_y, y)
+		max_y = maxi(max_y, y)
+
+	# PCA: eixo principal do componente (coordenadas de célula, X desenrolado).
+	var mean_x := 0.0
+	var mean_y := 0.0
+	for index in count:
+		mean_x += float(xs[index]) + 0.5
+		mean_y += float(ys[index]) + 0.5
+	mean_x /= float(count)
+	mean_y /= float(count)
+	var cov_xx := 0.0
+	var cov_yy := 0.0
+	var cov_xy := 0.0
+	for index in count:
+		var dx := float(xs[index]) + 0.5 - mean_x
+		var dy := float(ys[index]) + 0.5 - mean_y
+		cov_xx += dx * dx
+		cov_yy += dy * dy
+		cov_xy += dx * dy
+	var angle := 0.5 * atan2(2.0 * cov_xy, cov_xx - cov_yy)
+	# PCA é um eixo não orientado: normaliza para (-90°, 90°] e limita a ±35°.
+	if angle > PI * 0.5:
+		angle -= PI
+	elif angle <= -PI * 0.5:
+		angle += PI
+	angle = clampf(angle, deg_to_rad(-35.0), deg_to_rad(35.0))
+
+	var axis := Vector2(cos(angle), sin(angle))
+	var perp := Vector2(-axis.y, axis.x)
+	var min_axis := INF
+	var max_axis := -INF
+	var min_perp := INF
+	var max_perp := -INF
+	for index in count:
+		var dx := float(xs[index]) + 0.5 - mean_x
+		var dy := float(ys[index]) + 0.5 - mean_y
+		var a := dx * axis.x + dy * axis.y
+		var p := dx * perp.x + dy * perp.y
+		min_axis = minf(min_axis, a)
+		max_axis = maxf(max_axis, a)
+		min_perp = minf(min_perp, p)
+		max_perp = maxf(max_perp, p)
+
+	# Polo de inacessibilidade: maior distância ao contorno do componente,
+	# calculada por transformada de distância em duas passadas no bounding box.
+	var bw := max_x - min_x + 1
+	var bh := max_y - min_y + 1
+	var mask := PackedByteArray()
+	mask.resize(bw * bh)
+	for index in count:
+		mask[(ys[index] - min_y) * bw + (xs[index] - min_x)] = 1
+	var dist := PackedFloat32Array()
+	dist.resize(bw * bh)
+	dist.fill(INF)
+	var diagonal := 1.41421356
+	for y in bh:
+		for x in bw:
+			var i := y * bw + x
+			if mask[i] == 0:
+				continue
+			if x == 0 or x == bw - 1 or y == 0 or y == bh - 1 \
+					or mask[i - 1] == 0 or mask[i + 1] == 0 \
+					or mask[i - bw] == 0 or mask[i + bw] == 0:
+				dist[i] = 1.0
+	for y in bh:
+		for x in bw:
+			var i := y * bw + x
+			if mask[i] == 0:
+				continue
+			var d := dist[i]
+			if x > 0:
+				d = minf(d, dist[i - 1] + 1.0)
+			if y > 0:
+				d = minf(d, dist[i - bw] + 1.0)
+				if x > 0:
+					d = minf(d, dist[i - bw - 1] + diagonal)
+				if x + 1 < bw:
+					d = minf(d, dist[i - bw + 1] + diagonal)
+			dist[i] = d
+	for y in range(bh - 1, -1, -1):
+		for x in range(bw - 1, -1, -1):
+			var i := y * bw + x
+			if mask[i] == 0:
+				continue
+			var d := dist[i]
+			if x + 1 < bw:
+				d = minf(d, dist[i + 1] + 1.0)
+			if y + 1 < bh:
+				d = minf(d, dist[i + bw] + 1.0)
+				if x > 0:
+					d = minf(d, dist[i + bw - 1] + diagonal)
+				if x + 1 < bw:
+					d = minf(d, dist[i + bw + 1] + diagonal)
+			dist[i] = d
+	var pole_i := 0
+	var pole_dist := 0.0
+	for i in dist.size():
+		if mask[i] == 0:
+			continue
+		if dist[i] > pole_dist:
+			pole_dist = dist[i]
+			pole_i = i
+	@warning_ignore("integer_division")
+	var pole_y := min_y + pole_i / bw
+	var pole_x := min_x + pole_i - (pole_y - min_y) * bw
+	pole_x = posmod(pole_x, gw)
+
+	var cell_w := MAP_SIZE_PX.x / float(gw)
+	var cell_h := MAP_SIZE_PX.y / float(gh)
+	var width_px := (max_axis - min_axis + 1.0) * cell_w
+	var height_px := (max_perp - min_perp + 1.0) * cell_h
+	var area_px := float(count) * cell_w * cell_h
+	return {
+		"tag": "",
+		"x": (float(pole_x) + 0.5) * cell_w,
+		"y": (float(pole_y) + 0.5) * cell_h,
+		"anchor_px": Vector2((float(pole_x) + 0.5) * cell_w,
+				(float(pole_y) + 0.5) * cell_h),
+		"angle": angle,
+		"width_px": width_px,
+		"height_px": height_px,
+		"radius_px": pole_dist * minf(cell_w, cell_h),
+		"area_px": area_px,
+		"extent_px": sqrt(area_px),
+		"cells": count,
 	}
 
 

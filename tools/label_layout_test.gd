@@ -8,10 +8,16 @@ extends Node3D
 ##  (d) cada ícone de porto fica a no máximo ~12 px do ponto de costa do
 ##      ports.csv (nunca deslocado para longe, nunca com linha);
 ##  (e) no zoom out só capitais e cidades grandes mantêm o nome (LOD), e nenhum
-##      rótulo atravessa outro.
+##      rótulo atravessa outro;
+##  (f) todo nome de nação visível está encaixado no território (≥95% do
+##      retângulo dentro do dono) e não cruza outro nome de nação nem o rótulo de
+##      capital do LONGE (cruzar o texto de uma cidade é permitido: o país é
+##      tinta de fundo);
+##  (g) no LONGE (d260) os nomes de nação continuam aparecendo — no chão para os
+##      países grandes, sob a estrela da capital para os pequenos.
 ##
 ## Focos: Benelux/Ruhr (BEL-BRU), Ilhas Britânicas (GBR-LDN), Glasgow, Amsterdã
-## e Paris, em 1920×1080 e 1366×768.
+## e Paris, em 1920×1080 e 1366×768; Bálcãs, Caribe e França no LONGE.
 ##
 ## Uso:
 ##   godot --headless --path . res://tools/label_layout_test.tscn
@@ -23,7 +29,11 @@ const PITCH_DEG := -56.0
 const CAMERA_FOV := 75.0
 const DEFAULT_DISTANCE := 52.0
 const ZOOM_OUT_DISTANCE := 120.0
+const FAR_DISTANCE := 260.0
 const MAX_PORT_OFFSET_PX := 12.5
+## Encaixe mínimo do nome de nação no próprio território (regra
+## `CityWorld._fit_nation_text`): 95% do retângulo de amostragem dentro do dono.
+const NATION_INSIDE_MIN := 0.95
 ## Folga de colisão do layout (`LABEL_COLLIDE_PAD_PX` em `map/city_world.gd`):
 ## um nome cede quando o bloco vizinho encosta — não só quando há interseção
 ## estrita. O teste precisa da mesma folga para reconhecer quem bloqueou.
@@ -32,6 +42,7 @@ const LABEL_YIELD_PAD_PX := 3.0
 const SIZES := [Vector2i(1920, 1080), Vector2i(1366, 768)]
 const FOCUSES := ["BEL-BRU", "GBR-LDN", "GBR-GLA", "NED-AMS", "FRA-PAR"]
 const ZOOM_OUT_FOCUSES := ["BEL-BRU", "FRA-PAR"]
+const FAR_FOCUSES := ["SRB-BEL", "CUB-HAV", "FRA-PAR"]
 
 var _failures: Array[String] = []
 var _world: Node3D
@@ -91,13 +102,18 @@ func _run() -> void:
 			_camera.position = Vector3(0.0, 0.0, ZOOM_OUT_DISTANCE)
 			await _settle()
 			_check_zoom_out(size, focus, cities)
+		for focus in FAR_FOCUSES:
+			_focus(focus)
+			_camera.position = Vector3(0.0, 0.0, FAR_DISTANCE)
+			await _settle()
+			_check_far(size, focus)
 
 	_finish()
 
 
-## Espera o layout fatiado e o fade de nível assentarem (máx. 90 frames). O
-## fade de 150 ms pode atravessar os dois frames antigos do teste; sem isso a
-## checagem lia o layout anterior.
+## Espera o layout fatiado, o fade de nível e o fade dos nomes de nação
+## assentarem (máx. 90 frames). O fade de 150 ms pode atravessar os dois frames
+## antigos do teste; sem isso a checagem lia o layout anterior.
 func _settle() -> void:
 	for _frame in 90:
 		await get_tree().process_frame
@@ -105,7 +121,9 @@ func _settle() -> void:
 				and not bool(_world.get("_layout_dirty")) \
 				and not bool(_world.get("_layout_pending")) \
 				and not bool(_world.get("_layout_after_scan")) \
-				and (_world.get("_level_fade_queue") as Array).is_empty():
+				and not bool(_world.get("_nation_labels_dirty")) \
+				and (_world.get("_level_fade_queue") as Array).is_empty() \
+				and (_world.get("_nation_fade_active") as Array).is_empty():
 			return
 
 
@@ -282,6 +300,7 @@ func _check_default(size: Vector2i, focus: String, cities: Array) -> void:
 	_check_capital_flags(tag, report, screen)
 	_check_ports(tag, report)
 	_check_port_clearance(tag, report, screen)
+	_check_nation_labels(tag, report, _world.nation_label_report(), screen)
 
 	# Evidência (não falha): cobertura de nomes no zoom padrão.
 	var on_screen := 0
@@ -314,6 +333,7 @@ func _check_zoom_out(size: Vector2i, focus: String, cities: Array) -> void:
 	_check_capitals(tag, report, cities, screen)
 	_check_capital_flags(tag, report, screen)
 	_check_ports(tag, report)
+	_check_nation_labels(tag, report, _world.nation_label_report(), screen)
 
 	# No zoom out, só capitais e cidades grandes mantêm nome.
 	var visible := 0
@@ -330,6 +350,116 @@ func _check_zoom_out(size: Vector2i, focus: String, cities: Array) -> void:
 				tag, entry["id"]])
 	if visible == 0:
 		_failures.append("%s: nenhum rótulo no zoom out (nem capitais)" % tag)
+
+
+## (f) Nomes de nação: encaixe no território e nenhum cruzamento entre eles.
+## Todo nome visível tem ≥95% do retângulo dentro do dono (a mesma regra de
+## `CityWorld._fit_nation_text`), nenhum cruza outro nome de nação nem o rótulo
+## de capital do LONGE. Cruzar o TEXTO de uma cidade é permitido por projeto: o
+## nome do país é tinta de fundo (render_priority 2) e o nome da cidade fica por
+## cima - a alternativa era a Europa sem nenhum nome de país no PERTO/MÉDIO.
+func _check_nation_labels(tag: String, city_report: Array, nation_report: Array,
+		screen: Rect2) -> void:
+	var nations: Array = []
+	var capitals: Array = []
+	var city_texts := 0
+	for entry: Dictionary in city_report:
+		if String(entry.get("kind", "")) == "city" \
+				and bool(entry.get("text_visible", false)):
+			city_texts += 1
+	for entry: Dictionary in nation_report:
+		if not bool(entry.get("visible", false)):
+			continue
+		var rect: Rect2 = entry.get("rect", Rect2())
+		if rect.size.x <= 0.0 or not rect.intersects(screen):
+			continue
+		match String(entry.get("kind", "")):
+			"nation":
+				var inside := float(entry.get("inside", 1.0))
+				if inside < NATION_INSIDE_MIN:
+					_failures.append(
+							"%s: nome de nação %s com %.0f%% fora do território"
+							% [tag, entry.get("tag", "?"), (1.0 - inside) * 100.0])
+				nations.append(entry)
+			"capital":
+				capitals.append(entry)
+
+	for i in nations.size():
+		for j in range(i + 1, nations.size()):
+			var a: Dictionary = nations[i]
+			var b: Dictionary = nations[j]
+			if (a["rect"] as Rect2).intersects(b["rect"]):
+				_failures.append("%s: nomes de nação sobrepostos %s × %s" % [
+					tag, a.get("tag", "?"), b.get("tag", "?")])
+	for nation: Dictionary in nations:
+		var nr: Rect2 = nation["rect"]
+		for capital: Dictionary in capitals:
+			if nr.intersects(capital["rect"]):
+				_failures.append("%s: nome de nação %s sobre a capital %s" % [
+					tag, nation.get("tag", "?"), capital.get("tag", "?")])
+
+	# O hover de cidade/porto reordena só o layout de cidade: se ele invalidasse
+	# os nomes de nação, mexer o mouse faria os nomes dos países piscarem.
+	var before := _visible_nation_tags(nation_report)
+	_world.set_hover("BEL-BRU")
+	if bool(_world.get("_nation_labels_dirty")):
+		_failures.append("%s: hover de cidade invalidou os nomes de nação" % tag)
+	if _visible_nation_tags(_world.nation_label_report()) != before:
+		_failures.append("%s: hover de cidade mudou os nomes de nação" % tag)
+	_world.set_hover("")
+
+	if not nations.is_empty():
+		print("[labels] %s: %d nomes de nação sobre %d nomes de cidade, menor encaixe %.0f%%" % [
+			tag, nations.size(), city_texts,
+			_nation_min_inside(nations) * 100.0])
+
+
+func _nation_min_inside(nations: Array) -> float:
+	var lowest := 1.0
+	for entry: Dictionary in nations:
+		lowest = minf(lowest, float(entry.get("inside", 1.0)))
+	return lowest
+
+
+## Tags visíveis dos nomes de nação (chão + sob a estrela), para comparar antes
+## e depois de um evento que não deveria mexer neles.
+func _visible_nation_tags(report: Array) -> Array[String]:
+	var out: Array[String] = []
+	for entry: Dictionary in report:
+		if String(entry.get("kind", "")) == "city" \
+				or not bool(entry.get("visible", false)):
+			continue
+		out.append(String(entry.get("kind", "")) + ":" + String(entry.get("tag", "")))
+	out.sort()
+	return out
+
+
+## (g) LONGE: os nomes de nação continuam no mapa (chão nos países grandes,
+## sob a estrela da capital nos pequenos) e passam nas mesmas checagens.
+func _check_far(size: Vector2i, focus: String) -> void:
+	var tag := _tag(size, focus, FAR_DISTANCE)
+	var screen := Rect2(Vector2.ZERO, Vector2(size))
+	var report: Array = _world.label_layout_report()
+	var nation_report: Array = _world.nation_label_report()
+
+	_check_no_lines(tag)
+	_check_nation_labels(tag, report, nation_report, screen)
+
+	var on_floor := 0
+	var on_capital := 0
+	for entry: Dictionary in nation_report:
+		if not bool(entry.get("visible", false)):
+			continue
+		if not (entry.get("rect", Rect2()) as Rect2).intersects(screen):
+			continue
+		if String(entry.get("kind", "")) == "nation":
+			on_floor += 1
+		elif String(entry.get("kind", "")) == "capital":
+			on_capital += 1
+	if on_floor + on_capital == 0:
+		_failures.append("%s: nenhum nome de nação no LONGE" % tag)
+	print("[labels] %s: LONGE com %d nomes no chão e %d sob a capital" % [
+		tag, on_floor, on_capital])
 
 
 func _finish() -> void:
