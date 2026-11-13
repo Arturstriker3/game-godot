@@ -28,6 +28,9 @@ const MAX_DEPOSIT_ROWS := 8
 const MAX_PRODUCER_ROWS := 48
 const MAX_ORDER_ROWS := 24
 const CHART_SAMPLES := 15
+## Amostras mínimas para o bloco Histórico desenhar a série; com menos que
+## isso (dia 1) ele mostra o estado vazio em vez de uma barra solta.
+const HISTORY_MIN_SAMPLES := 2
 ## Cobertura em dias que enche a barra do gráfico de abastecimento.
 const COVERAGE_FULL_DAYS := 7.0
 
@@ -263,6 +266,7 @@ func _refresh_overview() -> void:
 
 	_set_chart("ov.chart", _coverage_series(), _coverage_tones())
 	_set_text("ov.chart.range", _chart_range())
+	_update_history_empty("ov.chart")
 
 
 func _refresh_population() -> void:
@@ -366,6 +370,7 @@ func _refresh_market() -> void:
 	for index in range(start, samples.size()):
 		stock_series.append(samples[index])
 	_set_chart_values("mkt.chart", stock_series)
+	_update_history_empty("mkt.chart")
 
 	var orders := _related_orders()
 	var rows: Array = []
@@ -667,6 +672,14 @@ func _chart_range() -> String:
 		return ""
 	return "%s %d → %s %d" % [I18n.t("hud.day_short"), int(days[0]),
 			I18n.t("hud.day_short"), int(days[days.size() - 1])]
+
+
+## O bloco Histórico só existe depois do segundo dia amostrado. No dia 1 não há
+## série para desenhar, então o gráfico e a nota dão lugar ao estado vazio.
+func _update_history_empty(prefix: String) -> void:
+	var has_history := _history.count() >= HISTORY_MIN_SAMPLES
+	_set_hidden(prefix + ".series", not has_history)
+	_set_hidden(prefix + ".empty", has_history)
 
 
 func _day_text() -> String:

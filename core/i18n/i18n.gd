@@ -103,6 +103,9 @@ const TEMPLATE_STRINGS := {
 		"tpl.alerts.col.detail": "Situação",
 		"tpl.alerts.footer": "Clique numa linha para abrir a cidade · ↑↓ navegar",
 
+		"city.history.empty.title": "Histórico ainda vazio",
+		"city.history.empty.body": "A série começa a ser desenhada no segundo dia simulado.",
+
 		"tpl.ficha.tab.overview": "Visão geral",
 		"tpl.ficha.tab.population": "População",
 		"tpl.ficha.tab.production": "Produção",
@@ -293,6 +296,9 @@ const TEMPLATE_STRINGS := {
 		"tpl.alerts.col.detail": "Detail",
 		"tpl.alerts.footer": "Click a row to open the city · ↑↓ navigate",
 
+		"city.history.empty.title": "No history yet",
+		"city.history.empty.body": "The series starts on the second simulated day.",
+
 		"tpl.ficha.tab.overview": "Overview",
 		"tpl.ficha.tab.population": "Population",
 		"tpl.ficha.tab.production": "Production",
@@ -482,6 +488,9 @@ const TEMPLATE_STRINGS := {
 		"tpl.alerts.col.kind": "Alerta",
 		"tpl.alerts.col.detail": "Situación",
 		"tpl.alerts.footer": "Haga clic en una fila para abrir la ciudad · ↑↓ navegar",
+
+		"city.history.empty.title": "Sin histórico aún",
+		"city.history.empty.body": "La serie empieza a dibujarse en el segundo día simulado.",
 
 		"tpl.ficha.tab.overview": "Visión general",
 		"tpl.ficha.tab.population": "Población",

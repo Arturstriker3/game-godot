@@ -216,32 +216,67 @@
                   "blocks": [
                     {"type": "ruled_heading", "text": "@city.history.title", "size": 18},
                     {
-                      "type": "bar_chart",
-                      "height": 112,
-                      "slot": "ov.chart",
-                      "scale_max": 7,
-                      "values": [0.82, 0.80, 0.79, 0.84, 0.76, 0.72, 0.70, 0.66, 0.64, 0.68, 0.71, 0.74],
-                      "tones": ["tinta", "tinta", "tinta", "tinta", "tinta", "alerta", "alerta", "carimbo", "carimbo", "carimbo", "alerta", "tinta"]
+                      "type": "column",
+                      "slot": "ov.chart.series",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "bar_chart",
+                          "height": 112,
+                          "slot": "ov.chart",
+                          "scale_max": 7,
+                          "values": [0.82, 0.80, 0.79, 0.84, 0.76, 0.72, 0.70, 0.66, 0.64, 0.68, 0.71, 0.74],
+                          "tones": ["tinta", "tinta", "tinta", "tinta", "tinta", "alerta", "alerta", "carimbo", "carimbo", "carimbo", "alerta", "tinta"]
+                        },
+                        {
+                          "type": "row",
+                          "gap": 12,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@city.history.note",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave"
+                            },
+                            {"type": "spacer", "grow": true},
+                            {
+                              "type": "label",
+                              "text": "$chart.range",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "slot": "ov.chart.range"
+                            }
+                          ]
+                        }
+                      ]
                     },
                     {
-                      "type": "row",
-                      "gap": 12,
+                      "type": "paper_card",
+                      "slot": "ov.chart.empty",
+                      "hidden": true,
+                      "fill": "claro",
+                      "border": "dashed",
+                      "pad": 14,
+                      "gap": 6,
                       "blocks": [
                         {
                           "type": "label",
-                          "text": "@city.history.note",
-                          "font": "typed",
-                          "size": 12,
-                          "tone": "suave"
+                          "text": "@city.history.empty.title",
+                          "font": "display",
+                          "size": 18,
+                          "slot": "ov.chart.empty.title"
                         },
-                        {"type": "spacer", "grow": true},
                         {
                           "type": "label",
-                          "text": "$chart.range",
+                          "text": "@city.history.empty.body",
                           "font": "typed",
-                          "size": 12,
+                          "size": 13,
                           "tone": "suave",
-                          "slot": "ov.chart.range"
+                          "wrap": true,
+                          "wrap_width": 520,
+                          "slot": "ov.chart.empty.body"
                         }
                       ]
                     }
@@ -764,17 +799,52 @@
                   "blocks": [
                     {"type": "ruled_heading", "text": "@city.history.title", "size": 18},
                     {
-                      "type": "bar_chart",
-                      "height": 96,
-                      "slot": "mkt.chart",
-                      "values": [0.7, 0.72, 0.7, 0.66, 0.6, 0.62, 0.7]
+                      "type": "column",
+                      "slot": "mkt.chart.series",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "bar_chart",
+                          "height": 96,
+                          "slot": "mkt.chart",
+                          "values": [0.7, 0.72, 0.7, 0.66, 0.6, 0.62, 0.7]
+                        },
+                        {
+                          "type": "label",
+                          "text": "@city.history.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave"
+                        }
+                      ]
                     },
                     {
-                      "type": "label",
-                      "text": "@city.history.note",
-                      "font": "typed",
-                      "size": 12,
-                      "tone": "suave"
+                      "type": "paper_card",
+                      "slot": "mkt.chart.empty",
+                      "hidden": true,
+                      "fill": "claro",
+                      "border": "dashed",
+                      "pad": 14,
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@city.history.empty.title",
+                          "font": "display",
+                          "size": 18,
+                          "slot": "mkt.chart.empty.title"
+                        },
+                        {
+                          "type": "label",
+                          "text": "@city.history.empty.body",
+                          "font": "typed",
+                          "size": 13,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 560,
+                          "slot": "mkt.chart.empty.body"
+                        }
+                      ]
                     }
                   ]
                 },

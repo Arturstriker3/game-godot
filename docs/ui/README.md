@@ -199,3 +199,22 @@ Navegação verificada por teste headless novo (`tools/alerts_nav_test.gd`):
 O teste monta o HUD real, abre os alertas e aciona as três primeiras linhas:
 PASS com `PAK-KAR (deficit)` abrindo a ficha na aba `market`.
 
+## Frente 8 — histórico da ficha de cidade no dia 1
+
+O bloco **Histórico** da ficha T3 (abas Visão geral e Mercado) desenhava uma
+única barra no dia 1, porque a série tem exatamente a amostra do dia corrente.
+Agora o gráfico e a nota dão lugar a um cartão de papel tracejado com o estado
+vazio honesto — “Histórico ainda vazio / A série começa a ser desenhada no
+segundo dia simulado.” (`city.history.empty.*`, pt-BR/en/es) — e voltam a
+aparecer do segundo dia em diante.
+
+```powershell
+& $godot --path . res://tools/ui_capture.tscn -- --phase=f6 --run=t4 `
+    --sizes=1920x1080,1600x900,1366x768,2560x1440
+```
+
+Resultado (`captures/f6/t4/`, 24 estados × 4 resoluções): **96 capturas**,
+**0** problemas de layout. `07_city` mostra “History / No history yet / The
+series starts on the second simulated day.” e `11_city_market` repete o mesmo
+estado antes do bloco de preços não modelados.
+
