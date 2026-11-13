@@ -426,6 +426,7 @@ func _apply_values() -> void:
 	_set_text("kpi.food.delta", data["food_delta"])
 	_set_text("kpi.cash.value", data["cash"])
 	_set_text("kpi.cash.delta", data["cash_delta"])
+	_set_text("culture.line", data["culture_line"])
 
 	var stats := _stats(_tag)
 	var food := _food_ratio(stats)
@@ -468,6 +469,7 @@ func _data(tag: String) -> Dictionary:
 		"cash_delta": I18n.t("tpl.dossie.delta.cash"),
 		"stamp": I18n.t("tpl.dossie.own") if tag == PLAYER_NATION \
 				else I18n.t("tpl.dossie.foreign"),
+		"culture_line": _culture_line(tag),
 	}
 
 
@@ -533,6 +535,25 @@ func _name_size(name: String) -> int:
 	if name.length() <= 26:
 		return 26
 	return 22
+
+
+## "Cultura principal · aceitas" — principal + aceitas publicadas pela fonte.
+## Sem dado, o dossiê mostra "—" em vez de inventar composição.
+func _culture_line(tag: String) -> String:
+	var primary := CultureDb.primary(tag)
+	var names: Array[String] = []
+	for entry: Variant in CultureDb.accepted(tag):
+		var name := String((entry as Dictionary).get("name", "")).strip_edges()
+		if not name.is_empty():
+			names.append(name)
+	var head := String(primary.get("name", "")).strip_edges()
+	if head.is_empty() and names.is_empty():
+		return I18n.t("common.na")
+	if names.is_empty():
+		return head
+	if head.is_empty():
+		return ", ".join(PackedStringArray(names))
+	return "%s · %s" % [head, ", ".join(PackedStringArray(names))]
 
 
 # --- Formatação ---------------------------------------------------------------

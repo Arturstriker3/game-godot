@@ -542,6 +542,56 @@
                   "gap": 12,
                   "blocks": [
                     {
+                      "type": "paper_card",
+                      "w": 1.0,
+                      "title": "@pop.culture.title",
+                      "title_size": 18,
+                      "pad": 14,
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "column",
+                          "slot": "city.cultures",
+                          "gap": 2,
+                          "blocks": []
+                        },
+                        {
+                          "type": "label",
+                          "text": "@pop.culture.estimate",
+                          "font": "typed",
+                          "size": 11,
+                          "tone": "suave",
+                          "slot": "city.cultures.estimate",
+                          "hidden": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "",
+                          "font": "typed",
+                          "size": 11,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 720,
+                          "slot": "city.cultures.source"
+                        },
+                        {
+                          "type": "label",
+                          "text": "@pop.culture.note",
+                          "font": "typed",
+                          "size": 11,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 720
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "row",
+                  "gap": 12,
+                  "blocks": [
+                    {
                       "type": "column",
                       "w": 1.0,
                       "gap": 6,

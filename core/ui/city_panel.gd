@@ -46,6 +46,7 @@ var _root: UiTemplateBuilder.TemplateRoot
 var _tabs: UiTemplateBuilder.FolderTabs
 var _slots := {}
 var _producer_ids: Array[String] = []
+var _culture_view: CultureMixView
 
 var _history := EconomyHistory.new()
 var _service: RefCounted = null
@@ -147,12 +148,14 @@ func _clear() -> void:
 	_root = null
 	_slots.clear()
 	_tabs = null
+	_culture_view = null
 	_structure_key = ""
 
 
 func _index_slots() -> void:
 	_slots.clear()
 	_producer_ids.clear()
+	_culture_view = null
 	var pending: Array[Node] = [_root]
 	while not pending.is_empty():
 		var node: Node = pending.pop_back()
@@ -171,6 +174,12 @@ func _index_slots() -> void:
 			as UiTemplateBuilder.DataTableView
 	if producers != null:
 		producers.row_activated.connect(_on_producer_row)
+
+	var culture_holder := _slots.get("city.cultures") as Control
+	if culture_holder != null:
+		_culture_view = CultureMixView.new()
+		_culture_view.name = "CityCultures"
+		culture_holder.add_child(_culture_view)
 
 
 func _on_choice(id: String) -> void:
@@ -329,6 +338,22 @@ func _refresh_population() -> void:
 			income_series.append(clampf(value, 0.0, 1.0))
 	_set_chart_values("pop.chart.income", income_series)
 	_update_history_empty("pop.chart.income", income_series.size())
+
+	_refresh_cultures(String(city.get("id", "")))
+
+
+## Composição cultural da cidade: mesma lista da tela de População, sem
+## marcadores (a fonte não declara principal/aceitas por cidade).
+func _refresh_cultures(city_id: String) -> void:
+	if _culture_view != null:
+		_culture_view.show_mix(CultureDb.city_mix(city_id),
+				I18n.t("pop.culture.empty"), false)
+	var source := CultureDb.city_source(city_id)
+	var estimate := bool(source.get("estimate", false))
+	_set_hidden("city.cultures.estimate", not estimate)
+	var line := "" if estimate else CultureMixView.source_line(source)
+	_set_text("city.cultures.source", line)
+	_set_hidden("city.cultures.source", line.is_empty())
 
 
 func _refresh_production() -> void:

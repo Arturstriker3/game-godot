@@ -20,7 +20,8 @@
     "population": "67,6 M",
     "gdp": "$ 4,1 tri",
     "food": "84%",
-    "cash": "$ 212 bi"
+    "cash": "$ 212 bi",
+    "culture_line": "—"
   },
   "blocks": [
     {
@@ -71,7 +72,24 @@
                     {"type": "kv_row", "key": "@tpl.dossie.cities", "value": "$cities"},
                     {"type": "kv_row", "key": "@tpl.dossie.provinces", "value": "$provinces"},
                     {"type": "kv_row", "key": "@tpl.dossie.ports", "value": "$ports"},
-                    {"type": "kv_row", "key": "@tpl.dossie.area", "value": "$area"}
+                    {"type": "kv_row", "key": "@tpl.dossie.area", "value": "$area"},
+                    {
+                      "type": "label",
+                      "text": "@pol.culture.line",
+                      "font": "typed",
+                      "size": 12,
+                      "tone": "suave",
+                      "uppercase": true
+                    },
+                    {
+                      "type": "label",
+                      "text": "$culture_line",
+                      "slot": "culture.line",
+                      "font": "body",
+                      "size": 15,
+                      "wrap": true,
+                      "wrap_width": 336
+                    }
                   ]
                 },
                 {

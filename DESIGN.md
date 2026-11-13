@@ -701,7 +701,7 @@ saber que deve pausar a simulação (hoje só o T4).
 | `chip_filter` | `text`, `active`, `params` |
 | `search_field` | `placeholder`, `width` |
 | `button` | `text`, `variant` (`paper`/`primary`/`ghost`), `params` |
-| `data_table` | `columns` (`label`, `weight`, `align`), `rows` (string ou `{text, tone, strong}`), `selected`, `page_size` (9), `page`, `sort_col`, `descending`, `footer_left` |
+| `data_table` | `columns` (`label`, `weight`, `align`), `rows` (string ou `{text, tone, strong, size, chip}`), `selected`, `page_size` (9), `page`, `sort_col`, `descending`, `footer_left` |
 | `folder_tabs` | `tabs` (`label`, `blocks`), `active`, `gap`, `close` |
 | `bar_chart` | `values`, `tones`, `height`, `bar_gap`, `scale_max` — placa de papel claro e moldura fina; com menos de 2 amostras desenha só a base (sem bloco escuro) |
 | `line_chart` | `values`, `tone`, `height`, `autoscale` (faixa mín..máx da própria série; sem ele os valores são índice 0..1) |
@@ -761,6 +761,27 @@ specs: `registro.json` (Economia), `comercio.json` (Comércio, com
 `folder_tabs` de Pedidos/Rotas/Mercado), `producao.json` (Produção) e
 `populacao.json` (População); a tela de Alertas monta a spec T2 compacta em
 código.
+
+### Culturas (leitura de dado)
+
+O dado cultural (`data/definitions/culture/`, revisado fora da UI) é lido por
+`core/culture/culture_db.gd` (`class_name CultureDb`, só leitura): catálogo
+(`cultures.json`, com `cultures.csv` de alternativa), composição nacional e
+mistura por cidade. As colunas são lidas **pelo nome do cabeçalho** — o serviço
+não presume ids — e a composição é devolvida na ordem da fonte, com `outras`
+traduzido e sempre no fim. `national_fallback` e `estimate_post2022` são
+declarados como estimativa (`estimate: true`), nunca exibidos como token cru.
+
+A lista aparece no papel com `core/ui/culture_mix_view.gd`
+(`class_name CultureMixView`): nome em Barlow Condensed, barra fina de 6 px na
+cor da cultura e participação à direita; na composição nacional, `★` marca a
+principal e `✓` as aceitas (a mistura de cidade não tem papéis). Células de
+`data_table` aceitam `chip: "#rrggbb"` para o quadrado de cor ao lado do nome.
+
+Onde: T2 População (coluna + ficha da nação e da cidade), T3 População (cartão
+Culturas) e T1 Dossiê (`Cultura principal · aceitas`). Nada disso alimenta a
+simulação: a UI só mostra o que a fonte publicou, e o vazio honesto
+(`pop.culture.empty`) aparece quando a fonte não tem o recorte.
 
 ### Galeria e evidência
 

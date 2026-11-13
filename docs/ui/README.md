@@ -349,3 +349,57 @@ Resultado: `ui_capture` gerou 108 capturas (4 resoluções x 27 estados) com
 espanhol (`--locale=es`) e com a legenda de cidade (`--legend=city`) também
 fechou sem problemas. Testes: `politics_dossier_test` (agora verifica textura
 ≥ 500 px e envelope 160x80), `city_tooltip_test` e `menu_smoke_test.tscn`.
+
+## Culturas nas telas — População, ficha e dossiê (2026-11)
+
+**Antes:** nenhuma tela mostrava cultura. O dado existia em
+`data/definitions/culture/` (208 culturas, 179 nações, 834 cidades) sem leitor.
+
+**Depois:** `core/culture/culture_db.gd` lê os três arquivos por nome de coluna
+(sem presumir ids) e a interface mostra a composição em três lugares:
+
+| Tela (template) | O que passou a aparecer |
+|---|---|
+| População T2 — aba Nações | coluna **Cultura principal** (chip de cor + nome) e, na ficha lateral, o bloco **Culturas** com todas as culturas do país, % em barra fina na cor da cultura, `★` principal, `✓` aceitas, `outras` no fim, legenda e fonte |
+| População T2 — aba Cidades | coluna **Cultura** (maior participação) e o bloco **Culturas** na ficha da cidade, com a fonte (`Censo …`) ou a nota **estimativa** quando a fonte é `national_fallback`/`estimate_post2022` |
+| Ficha T3 — aba População | cartão **Culturas** com a mesma lista da cidade e a fonte/estimativa |
+| Dossiê T1 | linha **Cultura principal · aceitas** (ex.: `Inglês · Escocês, Galês, Norte-irlandês, Irlandês`) |
+
+Sem dado, a lista mostra `pop.culture.empty` (pt-BR/en/es); nenhum percentual é
+inventado, somado ou reescalado. A UI não altera a economia.
+
+Capturas (1920×1080; a pasta `docs/ui/captures/` é ignorada pelo git):
+
+| Arquivo | O que mostra |
+|---|---|
+| `populacao_nacoes.png` | aba Nações com o Brasil selecionado e o cartão Culturas (★/✓, fonte IBGE) |
+| `populacao_cidades.png` | aba Cidades com a coluna Cultura e a ficha de Mumbai |
+| `ficha_cidade_culturas.png` | ficha T3 de Londres na aba População com o cartão Culturas |
+| `ficha_cidade_culturas_estimativa.png` | mesma ficha numa cidade cuja fonte é `national_fallback`, com a nota `estimativa` |
+| `populacao_*_1366x768.png`, `ficha_*_1366x768.png` | as mesmas telas na janela de 1366×768 |
+| `layout_report.json` | auditoria das 8 capturas |
+
+Reproduzir (janela real; `--headless` trava em `RenderingServer.frame_post_draw`):
+
+```powershell
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --set=culturas --out=res://docs/ui/captures/culturas `
+    --sizes=1920x1080,1366x768 --locale=pt_BR
+```
+
+Resultado: **8 capturas, 0** `offscreen`, `text_overflow`, `text_elided` ou
+`focus_hidden`; o roteiro completo (`--set` omitido) fecha 54 auditorias em
+1920×1080 e 1366×768 com **0** problemas (`docs/ui/captures/culturas/regressao/`).
+
+Testes headless:
+
+```powershell
+& $godot --headless --path . --script res://tools/culture_db_test.gd
+& $godot --headless --path . --script res://tools/population_template_test.gd
+& $godot --headless --path . --script res://tools/politics_dossier_test.gd
+```
+
+`culture_db_test` confere catálogo, composição (soma 100%, ordem, `outras` no
+fim), papéis, fontes/estimativas e nomes nos três idiomas; os outros dois abrem
+o HUD real e verificam a coluna, o cartão da nação (Brasil), a ficha da cidade e
+a linha do dossiê.

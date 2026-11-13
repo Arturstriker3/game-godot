@@ -82,6 +82,7 @@
                           "footer_left": "@pop.nation.hint",
                           "columns": [
                             {"label": "@econ.col.nation", "weight": 2, "align": "left"},
+                            {"label": "@pop.culture.primary", "weight": 1.6, "align": "left"},
                             {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
                             {"label": "@econ.col.cities", "weight": 1, "align": "right"},
                             {"label": "@pop.jobs", "weight": 1.1, "align": "right"},
@@ -181,6 +182,58 @@
                             }
                           ]
                         },
+                        {
+                          "type": "paper_card",
+                          "slot": "nations.card.detail",
+                          "pad": 18,
+                          "gap": 8,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@tpl.registro.selected",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "uppercase": true
+                            },
+                            {
+                              "type": "label",
+                              "text": "",
+                              "font": "display",
+                              "size": 20,
+                              "slot": "nations.card.detail.name"
+                            },
+                            {
+                              "type": "ruled_heading",
+                              "text": "@pop.culture.title",
+                              "size": 16
+                            },
+                            {
+                              "type": "column",
+                              "slot": "nations.card.cultures",
+                              "gap": 2,
+                              "blocks": []
+                            },
+                            {
+                              "type": "label",
+                              "text": "@pop.culture.marks",
+                              "font": "typed",
+                              "size": 11,
+                              "tone": "suave",
+                              "slot": "nations.card.marks"
+                            },
+                            {
+                              "type": "label",
+                              "text": "",
+                              "font": "typed",
+                              "size": 11,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 330,
+                              "slot": "nations.card.source"
+                            }
+                          ]
+                        },
                         {"type": "spacer", "grow": true}
                       ]
                     }
@@ -237,6 +290,7 @@
                           "columns": [
                             {"label": "@econ.col.city", "weight": 2, "align": "left"},
                             {"label": "@econ.col.nation", "weight": 1.3, "align": "left"},
+                            {"label": "@pop.culture", "weight": 1.4, "align": "left"},
                             {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
                             {"label": "@pop.jobs", "weight": 1, "align": "right"},
                             {"label": "@pop.col.income", "weight": 0.9, "align": "right"},
@@ -331,6 +385,37 @@
                           "key": "@pop.attendance",
                           "value": "$cities.attendance",
                           "value_slot": "cities.card.kv.attendance"
+                        },
+                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "ruled_heading",
+                          "text": "@pop.culture.title",
+                          "size": 16
+                        },
+                        {
+                          "type": "column",
+                          "slot": "cities.card.cultures",
+                          "gap": 2,
+                          "blocks": []
+                        },
+                        {
+                          "type": "label",
+                          "text": "@pop.culture.estimate",
+                          "font": "typed",
+                          "size": 11,
+                          "tone": "suave",
+                          "slot": "cities.card.estimate",
+                          "hidden": true
+                        },
+                        {
+                          "type": "label",
+                          "text": "",
+                          "font": "typed",
+                          "size": 11,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 330,
+                          "slot": "cities.card.source"
                         },
                         {
                           "type": "paper_card",

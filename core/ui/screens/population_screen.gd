@@ -20,6 +20,7 @@ var _summary: Dictionary = {}
 var _tab_index := 0
 var _query := ""
 var _selected_city := ""
+var _selected_nation := ""
 
 var _root: UiTemplateBuilder.TemplateRoot
 var _slots := {}
@@ -30,6 +31,10 @@ var _structure_key := ""
 
 ## Cidades visíveis na tabela (busca aplicada); o índice da linha aponta aqui.
 var _shown_cities: Array = []
+## Nações visíveis na tabela; a linha selecionada alimenta o cartão da direita.
+var _shown_nations: Array = []
+var _nation_cultures: CultureMixView
+var _city_cultures: CultureMixView
 
 
 func _ready() -> void:
@@ -60,6 +65,18 @@ func _set_tab(id: Variant) -> void:
 	_refresh()
 
 
+## Seleciona a nação do cartão lateral (captura e duplo clique).
+func select_nation(tag: String) -> void:
+	if tag.is_empty():
+		return
+	_selected_nation = tag
+	_refresh_nations()
+
+
+func current_nation() -> String:
+	return _selected_nation
+
+
 # --- Montagem ----------------------------------------------------------------
 
 func _rebuild() -> void:
@@ -71,6 +88,8 @@ func _rebuild() -> void:
 	_tables.clear()
 	_tabs = null
 	_search = null
+	_nation_cultures = null
+	_city_cultures = null
 
 	_root = UiTemplateBuilder.build(UiTemplateBuilder.load_spec(SPEC_ID))
 	_root.name = "PopulationRegistry"
@@ -117,6 +136,21 @@ func _index_slots() -> void:
 		nation_search.text = _query
 		nation_search.text_changed.connect(_on_search_changed)
 
+	_nation_cultures = _mount_cultures("nations.card.cultures",
+			"NationCultures")
+	_city_cultures = _mount_cultures("cities.card.cultures", "CityCultures")
+
+
+## Monta a lista de culturas no envelope do template (um componente por cartão).
+func _mount_cultures(slot: String, node_name: String) -> CultureMixView:
+	var holder := _slots.get(slot) as Control
+	if holder == null:
+		return null
+	var view := CultureMixView.new()
+	view.name = node_name
+	holder.add_child(view)
+	return view
+
 
 func _line_edit(slot: String) -> LineEdit:
 	var node := _slots.get(slot) as Node
@@ -151,10 +185,9 @@ func _on_search_changed(text: String) -> void:
 ## Duplo clique numa nação leva às cidades dela (busca pelo nome localizado).
 func _on_row_activated(index: int, tab: String) -> void:
 	if tab == "nations":
-		var nations := _nation_rows()
-		if index < 0 or index >= nations.size():
+		if index < 0 or index >= _shown_nations.size():
 			return
-		var nation: Dictionary = nations[index]
+		var nation: Dictionary = _shown_nations[index]
 		_query = I18n.nation_name(String(nation.get("tag", "")))
 		_set_tab("cities")
 		_on_search_changed(_query)
@@ -164,6 +197,12 @@ func _on_row_activated(index: int, tab: String) -> void:
 
 
 func _on_row_selected(index: int, tab: String) -> void:
+	if tab == "nations":
+		if index < 0 or index >= _shown_nations.size():
+			return
+		_selected_nation = String(_shown_nations[index].get("tag", ""))
+		_update_nation_card(_shown_nations[index])
+		return
 	if tab != "cities" or index < 0 or index >= _shown_cities.size():
 		return
 	_selected_city = String(_shown_cities[index].get("id", ""))
@@ -210,10 +249,13 @@ func _refresh_nations() -> void:
 		return
 	var all := _nation_rows()
 	var rows := _filtered_nations(all)
+	_shown_nations = rows
 	var cells: Array = []
 	for nation in rows:
+		var tag := String(nation.get("tag", ""))
 		cells.append([
-			I18n.nation_name(String(nation.get("tag", ""))),
+			I18n.nation_name(tag),
+			_primary_culture_cell(CultureDb.primary(tag)),
 			_population_text(float(nation.get("population", 0.0))),
 			UiKit.number(float(nation.get("cities", 0.0))),
 			UiKit.number(float(nation.get("jobs", 0.0))),
@@ -222,7 +264,11 @@ func _refresh_nations() -> void:
 					+ "%", "tone": _attendance_tone(
 					float(nation.get("attendance", 0.0)))},
 		])
-	table.update_rows(cells)
+	var index := _nation_index(rows)
+	table.update_rows(cells, index)
+	if index >= 0:
+		_selected_nation = String(rows[index].get("tag", ""))
+	_update_nation_card(rows[index] if index >= 0 else {})
 	_set_text("nations.count", I18n.t("tpl.common.result",
 			{"n": _count_text(rows.size(), all.size())}))
 	_set_hidden("nations.table", rows.is_empty())
@@ -242,6 +288,7 @@ func _refresh_cities() -> void:
 		cells.append([
 			I18n.city_name(String(city.get("id", "")), String(city.get("name", ""))),
 			I18n.nation_name(String(city.get("nation", ""))),
+			_primary_culture_cell(_city_top_culture(String(city.get("id", "")))),
 			_population_text(float(city.get("population", 0.0))),
 			UiKit.number(float(city.get("jobs", 0.0))),
 			UiKit.number(float(city.get("income", 0.0)) * 100.0) + "%",
@@ -261,6 +308,26 @@ func _refresh_cities() -> void:
 	_update_city_card(rows[index] if index >= 0 else {})
 
 
+func _update_nation_card(nation: Dictionary) -> void:
+	var has_nation := not nation.is_empty()
+	_set_hidden("nations.card.detail", not has_nation)
+	if not has_nation:
+		return
+	var tag := String(nation.get("tag", ""))
+	_set_text("nations.card.detail.name", I18n.nation_name(tag))
+	var mix := CultureDb.nation_mix(tag)
+	if _nation_cultures != null:
+		_nation_cultures.show_mix(mix, I18n.t("pop.culture.empty"), true)
+	var marked := false
+	for item: Variant in mix:
+		if String((item as Dictionary).get("role", "")) != "":
+			marked = true
+			break
+	_set_hidden("nations.card.marks", not marked)
+	_set_text("nations.card.source",
+			CultureMixView.source_line(CultureDb.nation_source(tag)))
+
+
 func _update_city_card(city: Dictionary) -> void:
 	if city.is_empty():
 		return
@@ -277,6 +344,17 @@ func _update_city_card(city: Dictionary) -> void:
 			UiKit.number(float(city.get("consumed", 0.0))) + " t")
 	_set_text("cities.card.kv.attendance",
 			UiKit.number(attendance * 100.0) + "%", _attendance_color(attendance))
+
+	var city_id := String(city.get("id", ""))
+	if _city_cultures != null:
+		_city_cultures.show_mix(CultureDb.city_mix(city_id),
+				I18n.t("pop.culture.empty"), false)
+	var source := CultureDb.city_source(city_id)
+	var estimate := bool(source.get("estimate", false))
+	_set_hidden("cities.card.estimate", not estimate)
+	var line := "" if estimate else CultureMixView.source_line(source)
+	_set_text("cities.card.source", line)
+	_set_hidden("cities.card.source", line.is_empty())
 
 
 # --- Dados -------------------------------------------------------------------
@@ -432,6 +510,35 @@ func _index_of(rows: Array, city_id: String) -> int:
 		if String(rows[index].get("id", "")) == city_id:
 			return index
 	return 0 if not rows.is_empty() else -1
+
+
+## Índice da nação selecionada; sem ela, a primeira (maior população).
+func _nation_index(rows: Array) -> int:
+	if _selected_nation.is_empty():
+		return 0 if not rows.is_empty() else -1
+	for index in rows.size():
+		if String(rows[index].get("tag", "")) == _selected_nation:
+			return index
+	return 0 if not rows.is_empty() else -1
+
+
+# --- Culturas -----------------------------------------------------------------
+
+## Célula "Cultura principal" da tabela: nome + chip na cor da fonte.
+func _primary_culture_cell(entry: Dictionary) -> Dictionary:
+	if entry.is_empty():
+		return {"text": I18n.t("common.na"), "tone": "suave", "size": 15}
+	return {
+		"text": String(entry.get("name", "")),
+		"chip": String(entry.get("color", "")),
+		"size": 15,
+	}
+
+
+## Cultura de maior participação na cidade (a fonte já manda "outras" ao fim).
+func _city_top_culture(city_id: String) -> Dictionary:
+	var mix := CultureDb.city_mix(city_id)
+	return mix[0] if not mix.is_empty() else {}
 
 
 func _set_text(slot: String, text: String,

@@ -34,6 +34,7 @@ var _plain := false
 var _map_mode := ""
 var _legend_demo := ""
 var _locale := ""
+var _set := "full"
 var _hud
 var _report := {"shots": [], "audits": [], "skipped": [], "phase": ""}
 
@@ -75,6 +76,13 @@ func _ready() -> void:
 		])
 	await _wait_for_data()
 
+	if _set == "culturas":
+		for size in _sizes:
+			await _capture_cultures(size)
+		_write_report()
+		get_tree().quit()
+		return
+
 	for size in _sizes:
 		await _capture_resolution(size)
 
@@ -103,6 +111,8 @@ func _parse_args() -> void:
 				_legend_demo = value
 			"--locale":
 				_locale = value
+			"--set":
+				_set = value
 
 
 ## Fundo neutro: textura real do mapa escurecida, ou cor chapada com --plain.
@@ -221,6 +231,35 @@ func _capture_resolution(size_text: String) -> void:
 			func() -> void: _statistics_group(1))
 	await _capture_state(directory, width, height, "23_politics_other",
 			func() -> void: _politics_nation("FRA"))
+	_reset_ui()
+
+
+## Roteiro enxuto das culturas (--set=culturas): três telas nomeadas. A captura
+## de 1920×1080 sai sem sufixo; as demais levam `_<L>x<A>` para não sobrescrever.
+func _capture_cultures(size_text: String) -> void:
+	var parts := size_text.split("x")
+	var width := int(parts[0])
+	var height := int(parts[1]) if parts.size() > 1 else int(float(width) * 0.5625)
+
+	get_window().size = Vector2i(width, height)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_reset_ui()
+
+	var directory := _out_root
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
+	var suffix := "" if width == 1920 else "_%dx%d" % [width, height]
+
+	await _capture_state(directory, width, height, "populacao_nacoes" + suffix,
+			func() -> void: _population_nation("BRA"))
+	await _capture_state(directory, width, height, "populacao_cidades" + suffix,
+			func() -> void: _population_tab(1))
+	await _capture_state(directory, width, height,
+			"ficha_cidade_culturas" + suffix,
+			func() -> void: _open_city_culture(_culture_city_id()))
+	await _capture_state(directory, width, height,
+			"ficha_cidade_culturas_estimativa" + suffix,
+			func() -> void: _open_city_culture(_estimate_city_id()))
 	_reset_ui()
 
 
@@ -402,6 +441,49 @@ func _politics_nation(tag: String) -> void:
 	screen.call("select_nation", tag)
 
 
+## Aba Cidades da População com a nação pedida em foco na aba Nações.
+func _population_nation(tag: String) -> void:
+	_population_tab(0)
+	var screen: Node = _hud.get("_screens")["population"]
+	if screen.has_method("select_nation"):
+		screen.call("select_nation", tag)
+
+
+## Ficha T3 na aba População de uma cidade com composição cultural publicada.
+func _open_city_culture(city_id: String) -> void:
+	if city_id.is_empty():
+		_report["skipped"].append("ficha de culturas: cidade ausente")
+		return
+	_show_city(city_id)
+	var panel: Node = _hud.get("_city_screen")
+	if panel != null and panel.has_method("set_tab"):
+		panel.call("set_tab", "population")
+
+
+## Cidade com mistura real (censo): preferência por Londres, se estiver no resumo.
+func _culture_city_id() -> String:
+	for city in Economy.last_summary.get("cities", []):
+		if String(city.get("id", "")) == "GBR-LDN":
+			return "GBR-LDN"
+	return _first_city_id()
+
+
+## Maior cidade cuja fonte é marcador de estimativa (national_fallback /
+## estimate_post2022), para a captura da nota "estimativa".
+func _estimate_city_id() -> String:
+	var best := ""
+	var best_population := -1.0
+	for city in Economy.last_summary.get("cities", []):
+		var city_id := String(city.get("id", ""))
+		if not bool(CultureDb.city_source(city_id).get("estimate", false)):
+			continue
+		var population := float(city.get("population", 0.0))
+		if population > best_population:
+			best_population = population
+			best = city_id
+	return best
+
+
 func _context() -> Array:
 	if _hud != null and _hud.has_method("current_context"):
 		return _hud.current_context()
@@ -526,7 +608,8 @@ func _check_scroll(scroll: ScrollContainer, data: Dictionary) -> void:
 
 
 func _write_report() -> void:
-	var path := "%s/%s/%s/layout_report.json" % [_out_root, _phase, _run]
+	var path := _out_root + "/layout_report.json" if _set == "culturas" \
+			else "%s/%s/%s/layout_report.json" % [_out_root, _phase, _run]
 	DirAccess.make_dir_recursive_absolute(
 			ProjectSettings.globalize_path(path.get_base_dir()))
 	var file := FileAccess.open(path, FileAccess.WRITE)

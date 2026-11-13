@@ -2157,15 +2157,43 @@ static func _alignment(column: Dictionary) -> HorizontalAlignment:
 			== "right" else HORIZONTAL_ALIGNMENT_LEFT
 
 
-static func _cell_label(cell: Dictionary, column: Dictionary) -> Label:
+static func _cell_label(cell: Dictionary, column: Dictionary) -> Control:
 	var color := _tone(String(cell.get("tone", "tinta")))
-	var label := _body_label(String(cell.get("text", "")), 17, color)
+	var label := _body_label(String(cell.get("text", "")),
+			float(cell.get("size", 17)), color)
 	if bool(cell.get("strong", false)):
 		label.add_theme_font_override("font", UiKit.CAPTION_FONT)
 	label.horizontal_alignment = _alignment(column)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	# Célula com chip de cor (culturas): quadrado chapado na cor da fonte antes
+	# do texto. Sem `chip`, o rótulo continua sendo a própria célula.
+	var chip := String(cell.get("chip", "")).strip_edges()
+	if chip.is_empty():
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.size_flags_stretch_ratio = float(column.get("weight", 1.0))
+		return label
+
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_stretch_ratio = float(column.get("weight", 1.0))
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.alignment = BoxContainer.ALIGNMENT_END \
+			if _alignment(column) == HORIZONTAL_ALIGNMENT_RIGHT \
+			else BoxContainer.ALIGNMENT_BEGIN
+
+	var swatch := PanelContainer.new()
+	swatch.custom_minimum_size = Vector2(9.0, 9.0)
+	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	swatch.add_theme_stylebox_override("panel",
+			_flat(Color.from_string(chip, UiKit.TINTA_SUAVE), UiKit.TINTA_SUAVE))
+	box.add_child(swatch)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.size_flags_stretch_ratio = float(column.get("weight", 1.0))
-	return label
+	box.add_child(label)
+	return box
 
 
 static func _compare_cells(left: String, right: String) -> int:

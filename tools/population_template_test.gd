@@ -54,8 +54,27 @@ func _run() -> void:
 	if nations == null or nations.rows.is_empty():
 		_failures.append("aba Nações sem nações")
 	else:
-		print("nações=%d primeira=%s pop=%s" % [nations.rows.size(),
-				_cell(nations, 0, 0), _cell(nations, 0, 1)])
+		print("nações=%d primeira=%s cultura=%s pop=%s" % [nations.rows.size(),
+				_cell(nations, 0, 0), _cell(nations, 0, 1), _cell(nations, 0, 2)])
+		if _cell(nations, 0, 1).is_empty():
+			_failures.append("coluna Cultura principal vazia")
+		if _cell(nations, 0, 1) == "—":
+			_failures.append("nação com cultura principal ausente")
+
+	# Cartão lateral da nação: lista de culturas montada pelo CultureMixView.
+	screen.call("select_nation", "BRA")
+	await _frames(3)
+	var nation_view: Variant = screen.get("_nation_cultures")
+	if nation_view == null or (nation_view as Node).get_child_count() == 0:
+		_failures.append("cartão da nação sem lista de culturas")
+	else:
+		var detail := _slot_node(screen.get("_root"), "nations.card.detail.name") \
+				as Label
+		var expected := _nation_name("BRA")
+		if detail == null or detail.text != expected:
+			_failures.append("cartão da nação não mostra o Brasil (%s)"
+					% (detail.text if detail != null else "sem slot"))
+		print("Brasil: %d culturas no cartão" % (nation_view as Node).get_child_count())
 
 	screen.call("_set_tab", 1)
 	await _frames(3)
@@ -63,8 +82,14 @@ func _run() -> void:
 	if cities == null or cities.rows.is_empty():
 		_failures.append("aba Cidades sem cidades")
 	else:
-		print("cidades=%d primeira=%s pop=%s atend=%s" % [cities.rows.size(),
-				_cell(cities, 0, 0), _cell(cities, 0, 2), _cell(cities, 0, 6)])
+		print("cidades=%d primeira=%s cultura=%s pop=%s atend=%s"
+				% [cities.rows.size(), _cell(cities, 0, 0),
+				_cell(cities, 0, 2), _cell(cities, 0, 3), _cell(cities, 0, 7)])
+		if _cell(cities, 0, 2).is_empty() or _cell(cities, 0, 2) == "—":
+			_failures.append("coluna Cultura da cidade vazia")
+	var city_view: Variant = screen.get("_city_cultures")
+	if city_view == null or (city_view as Node).get_child_count() == 0:
+		_failures.append("ficha lateral da cidade sem lista de culturas")
 
 	var search: Variant = screen.get("_search")
 	if search == null:
@@ -110,7 +135,41 @@ func _run() -> void:
 	elif String(stack.back().get("tab", "")) != "population":
 		_failures.append("ficha abriu na aba %s, esperado population"
 				% String(stack.back().get("tab", "")))
+
+	# A ficha T3 desenha a mesma lista na aba População.
+	var sheet: Node = _hud.get("_city_screen")
+	if sheet == null:
+		_failures.append("HUD sem ficha de cidade")
+	else:
+		var sheet_view: Variant = sheet.get("_culture_view")
+		if sheet_view == null or (sheet_view as Node).get_child_count() == 0:
+			_failures.append("ficha da cidade sem bloco de culturas")
+		else:
+			var city_id := String(sheet.call("current_city_id"))
+			var mix := _city_mix_size(city_id)
+			var source := _city_source(city_id)
+			print("ficha %s: %d culturas (estimativa=%s)"
+					% [city_id, (sheet_view as Node).get_child_count(),
+					str(source.get("estimate", false))])
+			if mix != (sheet_view as Node).get_child_count():
+				_failures.append("ficha desenhou %d de %d culturas"
+						% [(sheet_view as Node).get_child_count(), mix])
 	_finish()
+
+
+func _city_mix_size(city_id: String) -> int:
+	var db := load("res://core/culture/culture_db.gd")
+	return (db.city_mix(city_id) as Array).size()
+
+
+func _city_source(city_id: String) -> Dictionary:
+	var db := load("res://core/culture/culture_db.gd")
+	return db.city_source(city_id) as Dictionary
+
+
+func _nation_name(tag: String) -> String:
+	var node := root.get_node_or_null("I18n")
+	return "" if node == null else String(node.call("nation_name", tag))
 
 
 func _cell(table, row: int, column: int) -> String:

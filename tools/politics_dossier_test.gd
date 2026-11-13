@@ -63,6 +63,13 @@ func _run() -> void:
 		_failures.append("nota de diplomacia não simulada ausente")
 	if not _has_label(screen.get("_root"), _i18n("pol.picker.title")):
 		_failures.append("lista de nações ausente")
+	if not _has_label(screen.get("_root"),
+			_i18n("pol.culture.line").to_upper()):
+		_failures.append("rótulo de cultura principal/aceitas ausente")
+	var culture := _text(slots, "culture.line")
+	print("GBR cultura=%s" % culture)
+	if culture.is_empty() or culture == "—":
+		_failures.append("linha de cultura do dossiê vazia")
 
 	# Bandeira: arte de 640 px (não o w40 do mapa), proporção do país
 	# preservada (GBR 2:1 dentro do envelope 160×96) e moldura de 1 px.
@@ -97,11 +104,17 @@ func _run() -> void:
 	await _frames(4)
 	slots = screen.get("_slots")
 	var fra_population := _text(slots, "kpi.population.value")
-	print("FRA pop=%s pib=%s" % [fra_population, _text(slots, "kpi.gdp.value")])
+	var fra_culture := _text(slots, "culture.line")
+	print("FRA pop=%s pib=%s cultura=%s" % [fra_population,
+			_text(slots, "kpi.gdp.value"), fra_culture])
 	if String(screen.call("current_nation")) != "FRA":
 		_failures.append("selecionar a França não trocou o dossiê")
 	if fra_population == population:
 		_failures.append("dossiê da França repetiu a população do Reino Unido")
+	if fra_culture.is_empty() or fra_culture == "—":
+		_failures.append("linha de cultura da França vazia")
+	if fra_culture == culture:
+		_failures.append("linha de cultura não trocou com a nação")
 
 	# "Ver no mapa" emite a nação selecionada.
 	var seen := {"tag": ""}
