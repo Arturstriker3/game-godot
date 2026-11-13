@@ -147,16 +147,15 @@ func _check_no_duplication(applied: Dictionary, cities: Array, geo) -> void:
 
 
 ## Soma da quantidade (kt) dos depósitos de cada nação jogável nos dados. A
-## nação de cada depósito é a da província mais próxima do ponto real (mesma
-## regra do serviço, exposta em `nation_tag_at`).
+## nação de cada depósito vem do pipeline de posse (`owner`), a mesma regra do
+## serviço, exposta em `deposit_nation_tag`.
 func _nation_deposit_totals(geo) -> Dictionary:
 	var deposits: Array = _load_dict(DEPOSITS_PATH).get("deposits", [])
 	var totals := {}
 	for deposit: Dictionary in deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var tag: String = geo.nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
-				float(deposit.get("py", 0.0))))
+		var tag: String = geo.deposit_nation_tag(deposit)
 		if tag == "":
 			continue
 		totals[tag] = float(totals.get(tag, 0.0)) + float(deposit.get("quantity_kt", 0.0))
@@ -188,8 +187,7 @@ func _check_overseas_isolation(applied: Dictionary, geo) -> void:
 	for deposit: Dictionary in _load_dict(DEPOSITS_PATH).get("deposits", []):
 		if bool(deposit.get("facility", false)):
 			continue
-		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
-		if geo.nation_tag_at(point) != "FRA":
+		if geo.deposit_nation_tag(deposit) != "FRA":
 			continue
 		var resource := String(deposit.get("resource", ""))
 		var qty := float(deposit.get("quantity_kt", 0.0))
@@ -291,15 +289,14 @@ func _cities_with_center(cities: Array) -> Array:
 
 
 ## Conjunto de tags de nação cujos depósitos existem nos dados naturais, pela
-## província mais próxima do ponto real (a regra de posse declarada).
+## regra de posse declarada (`owner`, com fallback de centróide).
 func _nations_with_deposits(geo) -> Dictionary:
 	var deposits: Array = _load_dict(DEPOSITS_PATH).get("deposits", [])
 	var tags := {}
 	for deposit: Dictionary in deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var tag: String = geo.nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
-				float(deposit.get("py", 0.0))))
+		var tag: String = geo.deposit_nation_tag(deposit)
 		if tag != "":
 			tags[tag] = true
 	return tags

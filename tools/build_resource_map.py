@@ -387,7 +387,11 @@ def build_mineral_markers(nav, nature, deposits, budgets, calibration,
             tid = str(dep.get("territory", ""))
             if not tid or tid not in nature:
                 continue
-            code = territory_country.get(tid, "")
+            # A nação dona vem do pipeline de posse (`owner`); o território
+            # natural é a região geográfica e pode ser de outro país quando a
+            # nação não tem território na base (Timor-Leste, por exemplo).
+            # Sem `owner`, mantém o país do território (comportamento legado).
+            code = str(dep.get("owner", "")) or territory_country.get(tid, "")
             if not code:
                 continue
             offshore = deposit_is_offshore(nav, dep)
@@ -472,8 +476,17 @@ def make_mineral_marker(resource, seed, area_km2, territory_country):
         depth_w += float(dep.get("depth_m", 0.0)) * qty
         statuses.append(str(dep.get("status", "Unknown")))
         tids.append(tid)
-    status = STATUS_CODES.get(max(set(statuses), key=statuses.count), 4) \
-        if statuses else 4
+    # Moda dos status com desempate determinístico (maior contagem, depois
+    # ordem alfabética). Antes o desempate vinha da ordem de iteração de um
+    # `set` de strings, que muda com o PYTHONHASHSEED — duas rodadas seguidas
+    # geravam `resource_points.json` diferentes.
+    status = 4
+    if statuses:
+        counts = {}
+        for value in statuses:
+            counts[value] = counts.get(value, 0) + 1
+        top = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0]
+        status = STATUS_CODES.get(top, 4)
     distinct_tids = sorted(set(tids))
     area = sum(area_km2.get(tid, 0.0) for tid in distinct_tids)
     return {
@@ -492,7 +505,11 @@ def make_mineral_marker(resource, seed, area_km2, territory_country):
         # permanece no mar).
         "offshore": 1 if seed["offshore"] else 0,
         "region": {
-            "country": territory_country.get(seed["tid"], ""),
+            # Nação dona (posse) quando declarada; o território é a região
+            # geográfica que contém o ponto (pode ser de outro país em campos
+            # offshore de nações sem território natural, ex.: Timor-Leste).
+            "country": str(seed["dep"].get("owner", ""))
+                    or territory_country.get(seed["tid"], ""),
             "territories": distinct_tids,
             "area_km2": round(area, 1),
             "aggregate": len(members) > 1,

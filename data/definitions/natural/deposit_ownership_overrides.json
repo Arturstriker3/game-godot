@@ -1,0 +1,30 @@
+{
+ "_meta": {
+  "note": "Exceções explícitas de posse de jazidas offshore. A regra padrão é a nação costeira mais próxima (linha mediana aproximada): ponto em água -> célula de terra mais próxima do nav_mask -> país da província no world_province.png. Estas exceções vencem a regra porque o preenchimento de mar do raster erra o país real do campo.",
+  "applied_by": "tools/assign_deposit_owners.py",
+  "sources": {
+   "Bayu-Undan": "Tratado do Mar de Timor (2018); ANP Timor-Leste; campo no Joint Petroleum Development Area, atribuído a TLS",
+   "Greater Sunrise": "Tratado do Mar de Timor (2018): divisão de receita 70/30 (80/20 se o gasoduto for para TLS); o campo é atribuído a TLS conforme decisão do projeto",
+   "Rovuma": "Bacia do Rovuma (MOZ); a costa mais próxima no nav_mask cai na Tanzânia e o campo é moçambicano",
+   "Brent": "Setor britânico do Mar do Norte (UKCS); o centróide de província mais próximo é norueguês",
+   "North Field": "Parte catari do campo (QatarEnergy); o raster de província em terra já é QAT, a exceção trava a posse",
+   "South Pars": "Parte iraniana do mesmo campo (NIOC); segue IRN",
+   "North Pars": "Campo iraniano (NIOC); segue IRN",
+   "Kish": "Campo iraniano (NIOC); segue IRN",
+   "Khuff/Awali": "Campo do Bahrein (NOGA); o centróide de província mais próximo é QAT/SAU"
+  }
+ },
+ "by_name": {
+  "Bayu-Undan": "TLS",
+  "Greater Sunrise": "TLS",
+  "Rovuma": "MOZ",
+  "Brent": "GBR",
+  "North Field": "QAT",
+  "North Field (East/South)": "QAT",
+  "South Pars": "IRN",
+  "North Pars": "IRN",
+  "Kish": "IRN",
+  "Khuff/Awali": "BHR"
+ },
+ "by_id": {}
+}

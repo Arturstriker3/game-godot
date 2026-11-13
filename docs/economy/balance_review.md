@@ -1769,3 +1769,55 @@ nada chega perto do limite de 15%. A variação entre execuções é da fase
 - As 6 nações com fome em 730 d continuam dependendo da renda
   urbana/tesouro nacional (pendência de modelo já registrada em §15/§20.7).
 - `foreign_cash` segue sem orçamento (−48,7 bi em 730 d).
+
+### 22.9 Jazidas perdidas: Doha, Timor-Leste, Kigali e Aleppo (2026-11-13)
+
+A subdivisão deixou 25 cidades sem jazida própria (`docs/economy/deposit_lost_cities.json`). Em **20** a jazida está mesmo no país vizinho (Herat/IRN, Osh/TJK, Sanaa/SAU etc.) e nada muda. As **5** restantes foram corrigidas na fonte — `deposits.json` é regenerado, não editado à mão:
+
+| cidade | antes | agora | origem |
+|---|---|---|---|
+| `QAT-DOH` | 0 | gás ×1 — North Field East/South, 7.121.205 kt | setor catari do North Field (QatarEnergy); reserva anterior dividida, total idêntico |
+| `TLS-DIL` | 0 | gás ×1 — Greater Sunrise, 104.000 kt | Woodside ~5,1 Tcf; Tratado do Mar de Timor 2018 |
+| `TLS-MAL` | 0 | gás ×1 — Bayu-Undan, 116.000 kt | Santos/ConocoPhillips ~5,7 Tcf; ANP Timor-Leste |
+| `RWA-KIG` | 0 | cobre ×1 — Kabanga, 189,9 kt | raster de província RWA a ~5 km da fronteira |
+| `SYR-ALE` | 0 | fosfato ×1 — Khneifis, 18.626,9 kt | raster de província SYR a ~10 km da fronteira |
+
+A posse passou a ser gravada no próprio dado por `tools/assign_deposit_owners.py` (campo `owner` ISO-3; `owner_rule` só nas exceções). O runtime (`GeographyService.deposit_nation_tag`) lê esse campo e mantém o fallback de centróide para dados antigos.
+
+1. **Offshore (óleo/gás em água):** nação da célula de terra mais próxima no `nav_mask` (linha mediana aproximada), não o preenchimento de mar do `world_province.png`. Campos que mudariam com a regra: **Brent** (NOR → GBR, setor UKCS), **Rovuma** (MOZ → TZA pela costa mais próxima; mantido MOZ por exceção) e **Shtokman** (sem terra no raio de 320 km; mantido RUS pelo centróide). Exceções explícitas em `data/definitions/natural/deposit_ownership_overrides.json`: Bayu-Undan/Greater Sunrise → TLS (Tratado de 2018), Rovuma → MOZ, Brent → GBR, North Field/South Pars/North Pars/Kish/Khuff-Awali travados.
+2. **Terra perto de fronteira:** a província de centróide continua valendo, exceto quando o raster de província do ponto discorda e o ponto está a **≤ 10 km** da fronteira; aí vale o raster. **62 jazidas (1,2%)** passaram de país por essa tolerância. As 20 cidades legítimas não entram porque nelas raster == centróide. **7 cidades** que tinham jazida mal atribuída passaram a zero (`BGR-RUS`, `BLZ-BEL`, `CAN-LON`, `CHE-BER`, `DNK-COP`, `LUX-LUXE`, `VNM-CAN`) e **8** ganharam (as 5 acima + `ARM-YER`, `BGR-SOF`, `CRI-LIM`); o total de cidades sem jazida cai de **168 para 167**. Os 20 casos legítimos continuam sem jazida própria (teste).
+3. **Qatar:** no HEAD o North Field já era QAT (`QAT-MAD`); o gás que Doha perdeu era **Kish**, campo iraniano. Para Doha não ficar sem gás, a reserva catari do North Field foi dividida nos setores públicos East/South (6+4 de 26 tcm) e West (16 tcm): East/South (**7.121.205 kt**) vai para `QAT-DOH` e West (**11.393.928 kt**) fica com `QAT-MAD`. A soma é exatamente a reserva anterior (**18.515.133 kt**); nada é criado.
+4. **Timor-Leste:** Bayu-Undan (~5,7 Tcf, **116.000 kt**) vai para `TLS-MAL` e Greater Sunrise (~5,1 Tcf, **104.000 kt**) para `TLS-DIL`, com fonte pública e `data_quality:"estimated_public_source"`. O vínculo antigo com AUS/IDN (campos a 400–750 km) era artefato do centróide grosso; esses campos continuam AUS/IDN. O acréscimo documentado é **+220.000 kt** (0,2% da reserva de gás); a soma crua do `deposits.json` passa de **1.711.767.758 kt** para **1.711.987.758 kt**.
+
+Pipeline: `apply_deposit_supplement.py` (idempotente; ajustes maduros marcados `already_applied`; divisão do North Field), `assign_deposit_owners.py` (novo), `build_resource_map.py` (`resource_points.json` passa a agrupar pelo `owner`; 553 marcadores minerais), `build_scenario_data.py` e `validate_scenario_data.py` (0 erros/0 avisos).
+
+Testes: `economy_deposit_ownership_test` (5 alvos com jazida, 20 legítimos sem, partição/conservação, 2.027 extratores), `economy_city_catchment_test`, `economy_integration_test`, `economy_world_test` e `economy_long_run_test` (365 d) — todos exit 0. `economy_live_path_test` continua falhando pelos 6 casos já presentes em `eb73cf4` (aptidão 0 em BRB/GRD/KNA/VCT e isolamento FRA por landmass), não é regressão desta mudança.
+
+#### 22.9.1 Adendo de fechamento — verificação em 2026-11-13
+
+**`economy_live_path_test` é falha pré-existente, não regressão.** Rodado num worktree limpo de `eb73cf4` (sem nenhuma alteração desta frente): **as mesmas 6 falhas**, exit 1, nos mesmos dois grupos.
+
+| falha | `eb73cf4` (limpo) | worktree atual |
+|---|---|---|
+| `BRB`, `GRD`, `KNA`, `VCT` aptidão 0 | 4 casos | 4 casos |
+| `FRA continent iron` | 1.475.966 ≠ 3.938.917 kt | 1.580.000 ≠ 4.042.951 kt |
+| `FRA continent bauxite` | 192.980 ≠ 194.363 kt | 192.980 ≠ 194.363 kt (idêntico) |
+
+Causas, medidas nos dados e **anteriores a esta frente**:
+
+1. **Ilhas sem área de província:** `province_areas.json` grava `area_km2 = 0.0` para as províncias de BRB/GRD/KNA/VCT (ilhas menores que a resolução do raster); `city_cultivable_area_km2` = 0 → aptidão 0 em todas as culturas. O dado de clima existe (`province_nature.json` tem as províncias, ex.: GRD arroz 0,757); falta a área.
+2. **Nova Caledônia no balde "continental":** `_check_overseas_isolation` separa Guiana por `lon < -30` e chama todo o resto de "continental". Os depósitos de ferro (**2.462.951 kt**) e bauxita (**1.383 kt**) da Nova Caledônia (`lon ≈ 165`) caem no balde continental, mas as cidades de Nouméa têm `landmass` própria e nunca declaram essa reserva. `4.042.951 − 2.462.951 = 1.580.000` e `194.363 − 1.383 = 192.980`, exatamente os valores declarados. É defeito do teste; o jogo declara a reserva na cidade da mesma massa de terra.
+
+Nenhum dos dois foi alterado nesta frente (fora do escopo pedido): a primeira é lacuna de dado de área, a segunda é recorte do próprio teste. Ficam registradas como pendência.
+
+**Idempotência do pipeline (corrigida nesta sessão).** Duas reexecuções dos scripts mudavam arquivos versionados sem mudar dado de jogo:
+
+- `assign_deposit_owners.py` reescrevia `deposits.json` sempre, zerando `_meta.deposit_ownership.changed_owner`/`changed_territory` (625/379 da rodada que de fato mudou o dado). Agora só grava quando a posse/território mudou, quando o `_meta` não existe ou quando o total de jazidas mudou; rodada sem mudança imprime "sem mudanças de posse" e deixa o arquivo byte a byte igual (hash conferido).
+- `build_resource_map.py` gerava `resource_points.json` **não determinístico**: o `status` do marcador é a moda dos status dos membros e o desempate vinha da ordem de iteração de um `set` de strings (`PYTHONHASHSEED`). Duas rodadas seguidas diferiam em **71 de 553 marcadores** (campo `status`, índice 6). Desempate agora é determinístico (maior contagem, depois ordem alfabética); duas rodadas consecutivas produzem o mesmo hash.
+
+**Reconferência dos números do §22.9** (medidos nesta sessão, não copiados):
+
+- `deposits.json`: **5.281 registros**, **5.233** não-facility, todos com `owner`; **5.231** atribuídos a nação jogável. Por regra: centróide **5.129**, `border_tolerance` **62**, `offshore_coast` **32**, `override` **10**.
+- Reserva mundial (soma de `quantity_kt` sem facilities): `eb73cf4` **1.711.767.758,1 kt** → atual **1.711.987.758,1 kt**; todo o delta (**+220.000 kt**) é gás em Timor-Leste. Gás: 111.165.810 → 111.385.810 kt.
+- Cidades sem jazida própria: **168 → 167** (contagem das tabelas de `economy_deposit_ownership_test` nos dois worktrees). As 7 que passaram a zero e as 8 que ganharam conferem uma a uma com o item 2 acima.
+- `resource_points.json`: **553** marcadores minerais; QAT agrega 2 depósitos (**18.515.133 kt**, igual ao HEAD), TLS agrega 2 (**220.000 kt**), SYR **63.627 kt**. **Limitação registrada:** o cobre de Kabanga aparece na economia de `RWA-KIG`, mas Rwanda não recebe marcador no mapa — a repartição de marcadores por país dá cota 0 ao RWA nesse recurso (o marcador de cobre da TZA, que no HEAD somava 3.637.345 kt incluindo Kabanga, cai 190 kt). É só renderização; a reserva do jogo está correta.

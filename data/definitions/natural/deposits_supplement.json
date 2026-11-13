@@ -92,7 +92,8 @@
    "quantity_kt": 1400000.0,
    "quality": 0.88,
    "depth_m": 3100,
-   "status": "Producer"
+   "status": "Producer",
+   "owner": "IRN"
   },
   {
    "resource": "gas",
@@ -900,7 +901,8 @@
    "depth_m": 3200,
    "status": "Producer",
    "source": "Energy Institute Statistical Review of World Energy 2024; QatarEnergy (North Field, ~24 tcm reservas provadas)",
-   "data_quality": "estimated_public_source"
+   "data_quality": "estimated_public_source",
+   "owner": "QAT"
   },
   {
    "name": "Khuff/Awali",
@@ -912,34 +914,83 @@
    "depth_m": 3000,
    "status": "Producer",
    "source": "US EIA / Bahrain NOGA (formação Khuff, campo Awali, ~0,1–0,2 tcm)",
-   "data_quality": "estimated_public_source"
+   "data_quality": "estimated_public_source",
+   "owner": "BHR"
+  },
+  {
+   "name": "Bayu-Undan",
+   "resource": "gas",
+   "lon": 126.2,
+   "lat": -11.3,
+   "quantity_kt": 116000.0,
+   "quality": 0.88,
+   "depth_m": 3000,
+   "status": "Producer",
+   "source": "Santos/ConocoPhillips (Bayu-Undan, ~5,7 Tcf de gás recuperável; ANP Timor-Leste)",
+   "data_quality": "estimated_public_source",
+   "owner": "TLS"
+  },
+  {
+   "name": "Greater Sunrise",
+   "resource": "gas",
+   "lon": 128.2,
+   "lat": -9.6,
+   "quantity_kt": 104000.0,
+   "quality": 0.86,
+   "depth_m": 3000,
+   "status": "Prospect",
+   "source": "Woodside (Greater Sunrise, ~5,1 Tcf de gás recuperável); Tratado do Mar de Timor 2018 (divisão de receita)",
+   "data_quality": "estimated_public_source",
+   "owner": "TLS"
+  },
+  {
+   "name": "North Field (East/South)",
+   "resource": "gas",
+   "lon": 52.2,
+   "lat": 25.9,
+   "quantity_kt": 7121205.0,
+   "quality": 0.9,
+   "depth_m": 3200,
+   "status": "Producer",
+   "source": "QatarEnergy (setores North Field East 6 tcm + North Field South 4 tcm de 26 tcm publicados); divisão da reserva catari já calibrada do North Field",
+   "data_quality": "estimated_public_source",
+   "owner": "QAT"
   }
  ],
  "adjustments": [
   {
    "name": "Brent",
    "quantity_kt": 150000.0,
-   "status": "Past Producer"
+   "status": "Past Producer",
+   "already_applied": true
   },
   {
    "name": "Forties",
    "quantity_kt": 100000.0,
-   "status": "Past Producer"
+   "status": "Past Producer",
+   "already_applied": true
   },
   {
    "name": "Groningen",
    "quantity_kt": 50000.0,
-   "status": "Past Producer"
+   "status": "Past Producer",
+   "already_applied": true
   },
   {
    "name": "Statfjord",
    "quantity_kt": 150000.0,
-   "status": "Past Producer"
+   "status": "Past Producer",
+   "already_applied": true
   },
   {
    "name": "Oseberg",
    "quantity_kt": 150000.0,
-   "status": "Past Producer"
+   "status": "Past Producer",
+   "already_applied": true
+  },
+  {
+   "name": "North Field",
+   "quantity_kt": 11393928.0
   }
  ]
 }

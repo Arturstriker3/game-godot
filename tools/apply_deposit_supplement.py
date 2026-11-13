@@ -139,10 +139,31 @@ def assign_territory(record, nature, nav, province_raster, province_country,
     return True
 
 
+def assign_country_territory(record, nature, country_territories, px, py):
+    """Atribui `territory` ao território mais próximo da NAÇÃO DECLARADA em
+    `owner` (adm0_a3), sem consultar o raster de província em terra.
+
+    É o caminho dos campos offshore cuja posição o raster pinta no vizinho:
+    Bayu-Undan/Greater Sunrise caem no mar de Timor preenchido como IDN/AUS,
+    mas o Tratado do Mar de Timor (2018) os atribui a TLS. Retorna True se o
+    país tem território na natureza e a atribuição foi feita."""
+    country = str(record.get("owner", ""))
+    if country in ("", "NNN"):
+        return False
+    territory = nearest_territory_among(
+        nature, country_territories.get(country, []), px, py)
+    if not territory:
+        return False
+    record["territory"] = territory
+    return True
+
+
 def write_json(path, data):
-    """Escreve preservando o formato atual (indent=1, CRLF, sem LF final)."""
-    text = json.dumps(data, indent=1, ensure_ascii=False).replace("\n", "\r\n")
-    with open(path, "w", encoding="utf-8", newline="") as handle:
+    """Escreve no formato do `deposits.json` atual: indentação por TAB, LF e
+    newline final. O formato antigo (indent=1, CRLF) reescrevia o arquivo
+    inteiro a cada rodada e escondia o diff real."""
+    text = json.dumps(data, indent="\t", ensure_ascii=False) + "\n"
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(text)
 
 
@@ -179,6 +200,10 @@ def main():
     data = read_json(DEPOSITS)
     deposits = data["deposits"]
     existing = {str(d.get("names", [""])[0]).lower() for d in deposits}
+    by_name = {}
+    for deposit in deposits:
+        for deposit_name in deposit.get("names", []):
+            by_name[str(deposit_name).lower()] = deposit
     templates = {key: find_template(deposits, name) for key, name in TEMPLATES.items()}
     nature = read_json(NATURE).get("territories", {})
     nav = load_nav()
@@ -190,10 +215,20 @@ def main():
             str(entry.get("adm0_a3", "")), []).append(territory)
 
     added = 0
+    synced_owners = 0
     next_id = _max_id_suffix(deposits) + 1
     for field in read_json(SUPPLEMENT)["fields"]:
         name = field["name"]
         if name.lower() in existing:
+            # Registro já presente (MRDS/curado): o suplemento é a fonte do
+            # `owner` explícito quando ele existe. Quantidade/qualidade do
+            # registro existente são preservadas (a calibração pode tê-las
+            # ajustado); só a posse declarada é sincronizada.
+            deposit = by_name.get(name.lower())
+            if deposit is not None and field.get("owner"):
+                if str(deposit.get("owner", "")) != str(field["owner"]):
+                    deposit["owner"] = str(field["owner"])
+                    synced_owners += 1
             continue
         resource = field["resource"]
         template = templates[resource]
@@ -203,7 +238,7 @@ def main():
         record["id"] = "DEP-%s-%06d" % (resource.upper(), next_id)
         next_id += 1
         record["territory"] = ""
-        record["owner"] = "NNN"
+        record["owner"] = field.get("owner", "NNN")
         record["px"] = round(px, 1)
         record["py"] = round(py, 1)
         record["lon"] = field["lon"]
@@ -222,8 +257,15 @@ def main():
                                            "real_location_estimated_attributes")
         if field.get("source"):
             record["source"] = field["source"]
+        # Posse explícita (TLS no Mar de Timor, QAT no North Field): atribui o
+        # território da NAÇÃO DECLARADA, não o raster de província em terra —
+        # o mar de Timor é preenchido pelo raster com IDN e o campo é TLS.
+        if str(record.get("owner", "")) not in ("", "NNN") \
+                and assign_country_territory(record, nature, country_territories, px, py):
+            pass
         deposits.append(record)
         existing.add(name.lower())
+        by_name[name.lower()] = record
         added += 1
 
     # Repara depósitos órfãos (territory vazio): atribui o território pelo
@@ -237,6 +279,15 @@ def main():
     for deposit in deposits:
         if str(deposit.get("territory", "")) != "":
             continue
+        px = float(deposit.get("px", 0.0))
+        py = float(deposit.get("py", 0.0))
+        # Posse declarada vence o raster: cobre campos offshore cujo país real
+        # não é o preenchimento de mar do world_province.png.
+        if str(deposit.get("owner", "")) not in ("", "NNN") \
+                and assign_country_territory(
+                    deposit, nature, country_territories, px, py):
+            repaired += 1
+            continue
         if assign_territory(deposit, nature, nav, province_raster,
                             province_country, country_territories):
             repaired += 1
@@ -249,13 +300,30 @@ def main():
         write_json(DEPOSITS, data)
 
     # Ajustes de campos maduros: reserva restante em vez da original.
+    # Idempotência: o nome do ajuste fica em `_meta.supplement_adjustments_applied`
+    # e um ajuste já aplicado não é reaplicado. Sem isso, rodar o suplemento sobre
+    # um deposits.json JÁ CALIBRADO reduzia a reserva dos campos maduros de novo
+    # (Brent/Forties/Statfjord/Oseberg/Groningen) — a calibração posterior não é
+    # chamada nesta rodada, então o total mundial tinha de ficar intacto.
     by_name = {}
     for deposit in deposits:
         for name in deposit.get("names", []):
             by_name[str(name).lower()] = deposit
+    applied_adjustments = data.setdefault("_meta", {}).setdefault(
+        "supplement_adjustments_applied", [])
+    if not isinstance(applied_adjustments, list):
+        applied_adjustments = []
+        data["_meta"]["supplement_adjustments_applied"] = applied_adjustments
     adjusted = 0
     for adjustment in read_json(SUPPLEMENT).get("adjustments", []):
-        deposit = by_name.get(str(adjustment["name"]).lower())
+        name = str(adjustment["name"])
+        if name in applied_adjustments:
+            continue
+        if adjustment.get("already_applied"):
+            # Ajuste histórico já incorporado à base calibrada (ex.: Brent).
+            applied_adjustments.append(name)
+            continue
+        deposit = by_name.get(name.lower())
         if deposit is None:
             continue
         old = float(deposit.get("quantity_kt", 0.0))
@@ -267,14 +335,16 @@ def main():
                 float(deposit.get("max_rate_kt_day", 0.0)) * ratio, 1)
         if "status" in adjustment:
             deposit["status"] = adjustment["status"]
+        applied_adjustments.append(name)
         adjusted += 1
 
     # Garante unicidade (corrige IDs duplicados de execuções antigas).
     renumbered = _normalize_ids(deposits)
 
-    if added or adjusted or renumbered or repaired:
+    if added or adjusted or renumbered or repaired or synced_owners:
         write_json(DEPOSITS, data)
     print("depósitos adicionados:", added, "de", len(read_json(SUPPLEMENT)["fields"]),
+          "| proprietários sincronizados:", synced_owners,
           "| ajustados:", adjusted, "| IDs renumerados:", renumbered,
           "| território atribuído:", repaired, "(offshore:", offshore,
           "| sem terra:", unassigned, ")")

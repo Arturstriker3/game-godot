@@ -54,6 +54,9 @@ const CITY_STATE_MIN_SHARE := 0.001
 static var _nation_codes_cache: Dictionary = {}
 static var _province_tag_by_nation: Dictionary = {}
 static var _nation_by_province_tag: Dictionary = {}
+## ISO-3 -> tag do jogo. Espelho de `_nation_codes_cache`, usado para ler o
+## campo `owner` dos depósitos (posse gravada por tools/assign_deposit_owners.py).
+static var _tag_by_code: Dictionary = {}
 static var _playable_cache: Dictionary = {}
 static var _registry_ready := false
 ## tag do jogo -> {region, population, gdp_ppp_bn} de nations.json. Fonte da
@@ -176,6 +179,7 @@ static func _load_registry() -> void:
 	_nation_codes_cache.clear()
 	_province_tag_by_nation.clear()
 	_nation_by_province_tag.clear()
+	_tag_by_code.clear()
 	_playable_cache.clear()
 	_nation_rows_cache.clear()
 	_nation_income_cache.clear()
@@ -198,6 +202,7 @@ static func _load_registry() -> void:
 		var code := String(NATION_CODE_OVERRIDES.get(tag, tag))
 		var province_tag := String(PROVINCE_TAG_OVERRIDES.get(tag, tag))
 		_nation_codes_cache[tag] = code
+		_tag_by_code[code] = tag
 		_province_tag_by_nation[tag] = province_tag
 		_nation_by_province_tag[province_tag] = tag
 		_playable_cache[tag] = true
@@ -207,6 +212,13 @@ static func _load_registry() -> void:
 static func nation_code(tag: String) -> String:
 	_load_registry()
 	return String(_nation_codes_cache.get(tag, ""))
+
+
+## Código ISO-3 -> tag do jogo ("" se o país não é jogável). É a leitura do
+## campo `owner` gravado pelo pipeline de posse dos depósitos.
+static func tag_for_code(code: String) -> String:
+	_load_registry()
+	return String(_tag_by_code.get(code, ""))
 
 
 ## tag do jogo -> tag `nation` usada pelas províncias do atlas.
@@ -447,6 +459,21 @@ func nation_tag_at(center_px: Vector2) -> String:
 	return String(_province_tag.get(_nearest_province(center_px), ""))
 
 
+## Nação dona de um depósito. O pipeline `tools/assign_deposit_owners.py`
+## grava `owner` (ISO-3) com a regra declarada: costa mais próxima para
+## offshore (linha mediana aproximada) e raster de província com tolerância de
+## 10 km para terra perto de fronteira. Sem `owner` (dados antigos ou extra do
+## mapa), cai na província de centróide mais próximo — regra histórica.
+func deposit_nation_tag(deposit: Dictionary) -> String:
+	var code := String(deposit.get("owner", ""))
+	if code != "":
+		var tag := tag_for_code(code)
+		if tag != "":
+			return tag
+	return nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
+			float(deposit.get("py", 0.0))))
+
+
 ## Território mais próximo de um ponto (sem cache por cidade).
 func _nearest_territory(center_px: Vector2) -> String:
 	var best_id := ""
@@ -527,8 +554,8 @@ func _nation_territories(code: String) -> Array:
 
 
 ## Depósitos de TODOS os territórios da nação (acesso nacional, não só o
-## território mais próximo da capital). A nação de cada depósito vem da
-## província mais próxima do ponto real (regra de `nation_tag_at`).
+## território mais próximo da capital). A nação de cada depósito vem do campo
+## `owner` do pipeline de posse, com fallback de centróide (`deposit_nation_tag`).
 func deposits_for_nation(code: String) -> Array:
 	if not load_data():
 		return []
@@ -536,8 +563,7 @@ func deposits_for_nation(code: String) -> Array:
 	for deposit in _deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
-		var tag := nation_tag_at(point)
+		var tag := deposit_nation_tag(deposit)
 		if tag != "" and nation_code(tag) == code:
 			result.append(deposit)
 	return result
@@ -1171,11 +1197,11 @@ func assign_deposits(cities: Array) -> Dictionary:
 		if bool(deposit.get("facility", false)):
 			continue
 		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
-		# Dono pela província mais próxima do PONTO REAL do depósito. O
-		# território natural agrupa 739 regiões grossas do mundo antigo; usar o
-		# adm0_a3 dele jogava 14,8% dos depósitos na nação errada (e deixava 98
-		# nações sem nenhum). A província admin-1 é o dado fino do atlas.
-		var tag := nation_tag_at(point)
+		# Dono pelo campo `owner` do pipeline de posse (offshore por costa mais
+		# próxima; terra por província com tolerância de 10 km na fronteira).
+		# Sem `owner`, cai na província admin-1 mais próxima do PONTO REAL — o
+		# território natural (739 regiões grossas) jogava 14,8% na nação errada.
+		var tag := deposit_nation_tag(deposit)
 		if tag == "" or not is_playable(tag):
 			continue
 		var city_id := _nearest_city_of_nation(norm, tag, point)

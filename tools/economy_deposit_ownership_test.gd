@@ -25,6 +25,20 @@ const DEPOSITS_PATH := "res://data/definitions/natural/deposits.json"
 const NATURE_PATH := "res://data/definitions/natural/nature.json"
 const PROVINCES_PATH := "res://map/map_data/atlas/provinces.json"
 
+## Cidades que a regra de posse tinha deixado sem jazida própria e que o
+## pipeline de posse corrigiu (docs/economy/deposit_lost_cities.json).
+const TARGET_CITIES: Array[String] = [
+	"QAT-DOH", "TLS-DIL", "TLS-MAL", "RWA-KIG", "SYR-ALE",
+]
+## Os 20 casos legítimos: a jazida perdida está mesmo no país vizinho e a
+## cidade deve continuar sem jazida própria (não reabrir).
+const LEGITIMATE_NEIGHBOR_CITIES: Array[String] = [
+	"AFG-HER", "AFG-MAZ", "AGO-LUM", "BGD-KHU", "BHS-LUC", "CAN-INU",
+	"CUW-WIL", "DJI-ALI", "DJI-DJI", "GNQ-BAT", "KGZ-OSH", "LSO-MAS",
+	"MNG-DAR", "MNG-ULAA", "NED-ENS", "SAH-MEH", "SAH-TIC", "TCD-FAY",
+	"VNM-HAI", "YEM-SAN",
+]
+
 ## Dias de simulação com a IA ativa antes de auditar os extratores construídos.
 const DAYS := 180
 
@@ -46,6 +60,7 @@ func _init() -> void:
 	var assigned: Dictionary = geo.assign_deposits(city_list)
 
 	_check_partition(geo, city_list, assigned, deposits, nature)
+	_check_target_cities(geo)
 	_check_conservation(geo, city_list)
 	_print_table(geo, city_list)
 	_check_extractors(geo, city_list, cities)
@@ -68,9 +83,11 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 	for tag: String in geo.nation_codes():
 		tag_of_code[String(geo.nation_code(tag))] = String(tag)
 
-	# Regra declarada: a nação da jazida é a da PROVÍNCIA mais próxima do ponto
-	# real (MRDS), não a do território natural. Confere uma amostra contra a
-	# implementação bruta (independente da grade espacial do serviço).
+	# Regra declarada no pipeline de posse (`tools/assign_deposit_owners.py`):
+	# `owner` (ISO-3) quando a nação é jogável; sem ele, a província de
+	# centróide mais próximo (regra histórica). Confere a amostra nos dois
+	# caminhos — o campo `owner` tem de bater com o serviço e, quando falta, o
+	# serviço tem de bater com a implementação bruta do centróide.
 	var provinces: Array = _read_json_dict(PROVINCES_PATH).get("provinces", [])
 	var checked := 0
 	for deposit in deposits:
@@ -79,6 +96,13 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 		if checked >= 200:
 			break
 		checked += 1
+		var service_tag: String = geo.deposit_nation_tag(deposit)
+		var owner := String(deposit.get("owner", ""))
+		if owner != "" and tag_of_code.has(owner):
+			if service_tag != String(tag_of_code[owner]):
+				_fail("nação do depósito %s: owner=%s, serviço=%s" % [
+					String(deposit.get("id", "")), owner, service_tag])
+			continue
 		var point := Vector2(float(deposit.get("px", 0.0)), float(deposit.get("py", 0.0)))
 		var best_tag := ""
 		var best_distance := INF
@@ -89,19 +113,17 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 				best_distance = distance
 				best_tag = GeoScript.nation_for_province_tag(
 						String(province.get("nation", "")))
-		var service_tag: String = geo.nation_tag_at(point)
 		if best_tag != service_tag:
 			_fail("nação do depósito %s: serviço=%s, bruto=%s" % [
 				String(deposit.get("id", "")), service_tag, best_tag])
 
-	# Esperado, lido do JSON cru com a regra do ponto real.
+	# Esperado, lido do JSON cru com a regra do pipeline de posse.
 	var expected_total := 0
 	var expected_by_nation := {}
 	for deposit in deposits:
 		if bool(deposit.get("facility", false)):
 			continue
-		var tag: String = geo.nation_tag_at(Vector2(float(deposit.get("px", 0.0)),
-				float(deposit.get("py", 0.0))))
+		var tag: String = geo.deposit_nation_tag(deposit)
 		if tag == "" or not tag_of_code.has(String(geo.nation_code(tag))):
 			continue
 		expected_total += 1
@@ -122,12 +144,10 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 			seen[key] = city_id
 			got_total += 1
 			var city_nation := _nation_of(city_list, String(city_id))
-			var code := String(geo.nation_code(geo.nation_tag_at(
-					Vector2(float(deposit.get("px", 0.0)),
-							float(deposit.get("py", 0.0))))))
-			if String(tag_of_code.get(code, "")) != city_nation:
+			var deposit_tag: String = geo.deposit_nation_tag(deposit)
+			if deposit_tag != city_nation:
 				_fail("jazida %s atribuída a %s (%s) mas pertence a %s" % [
-					key, city_id, city_nation, code])
+					key, city_id, city_nation, deposit_tag])
 
 	if got_total != expected_total:
 		_fail("partição: %d jazidas atribuídas, esperado %d" % [got_total, expected_total])
@@ -148,7 +168,41 @@ func _check_partition(geo, city_list: Array, assigned: Dictionary, deposits: Arr
 				tag, int(got_by_nation.get(tag, 0)), int(expected_by_nation[tag])])
 
 
-# --- 2. Conservação e ficha --------------------------------------------------
+# --- 2. Cidades-alvo e casos legítimos ---------------------------------------
+
+## As 5 cidades que perderam a jazida na subdivisão têm de voltar a ter ≥ 1
+## jazida própria; os 20 casos legítimos (jazida realmente no vizinho) têm de
+## continuar sem jazida própria.
+func _check_target_cities(geo) -> void:
+	var missing: Array[String] = []
+	for city_id in TARGET_CITIES:
+		var own: Dictionary = geo.city_mineral_reserves(city_id)
+		if own.is_empty():
+			missing.append(city_id)
+			continue
+		var keys: Array = own.keys()
+		keys.sort()
+		var parts: Array = []
+		for resource in keys:
+			parts.append("%s×%d (%.1f kt)" % [resource,
+				int(own[resource]["count"]), float(own[resource]["reserve_kt"])])
+		print("[deposit] alvo %s: %s" % [city_id, ", ".join(parts)])
+	if not missing.is_empty():
+		_fail("cidades-alvo ainda sem jazida própria: %s" % ", ".join(missing))
+	var reopened: Array[String] = []
+	for city_id in LEGITIMATE_NEIGHBOR_CITIES:
+		var own: Dictionary = geo.city_mineral_reserves(city_id)
+		if not own.is_empty():
+			reopened.append(city_id)
+	if not reopened.is_empty():
+		_fail("casos legítimos reabertos (não deveriam ter jazida própria): %s" % \
+				", ".join(reopened))
+	else:
+		print("[deposit] casos legítimos: %d cidades continuam sem jazida própria" % \
+				LEGITIMATE_NEIGHBOR_CITIES.size())
+
+
+# --- 3. Conservação e ficha --------------------------------------------------
 
 func _check_conservation(geo, city_list: Array) -> void:
 	var by_nation := _cities_by_nation(city_list)

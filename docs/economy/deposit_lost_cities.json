@@ -1,0 +1,354 @@
+[
+ {
+  "city": "AFG-HER",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "IRN": 1
+  },
+  "example": {
+   "id": "DEP-COPPER-000075",
+   "resource": "copper",
+   "lat": 29.65,
+   "lon": 60.92
+  }
+ },
+ {
+  "city": "AFG-MAZ",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "TKM": 1
+  },
+  "example": {
+   "id": "DEP-SULFUR-902279",
+   "resource": "sulfur",
+   "lat": 37.42,
+   "lon": 66.31
+  }
+ },
+ {
+  "city": "AGO-LUM",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "ZMB": 1
+  },
+  "example": {
+   "id": "DEP-IRON-000608",
+   "resource": "iron",
+   "lat": -13.08,
+   "lon": 22.75
+  }
+ },
+ {
+  "city": "BGD-KHU",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "IND": 1
+  },
+  "example": {
+   "id": "DEP-LEAD-000006",
+   "resource": "lead",
+   "lat": 22.05,
+   "lon": 88.92
+  }
+ },
+ {
+  "city": "BHS-LUC",
+  "old_deposits": 2,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "USA": 2
+  },
+  "example": {
+   "id": "DEP-IRON-000073",
+   "resource": "iron",
+   "lat": 27.02,
+   "lon": -80.47
+  }
+ },
+ {
+  "city": "CAN-INU",
+  "old_deposits": 5,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "USA": 5
+  },
+  "example": {
+   "id": "DEP-IRON-000012",
+   "resource": "iron",
+   "lat": 69.09,
+   "lon": -143.3
+  }
+ },
+ {
+  "city": "CUW-WIL",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "VEN": 1
+  },
+  "example": {
+   "id": "DEP-PHOSPHATE-903037",
+   "resource": "phosphate",
+   "lat": 11.49,
+   "lon": -68.86
+  }
+ },
+ {
+  "city": "DJI-ALI",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "SOL": 1
+  },
+  "example": {
+   "id": "DEP-URANIUM-902807",
+   "resource": "uranium",
+   "lat": 10.39,
+   "lon": 43.28
+  }
+ },
+ {
+  "city": "DJI-DJI",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "SOL": 1
+  },
+  "example": {
+   "id": "DEP-COPPER-000627",
+   "resource": "copper",
+   "lat": 10.26,
+   "lon": 44.4
+  }
+ },
+ {
+  "city": "GNQ-BAT",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "CMR": 1
+  },
+  "example": {
+   "id": "DEP-IRON-000415",
+   "resource": "iron",
+   "lat": 2.6,
+   "lon": 10.0
+  }
+ },
+ {
+  "city": "KGZ-OSH",
+  "old_deposits": 2,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "TJK": 2
+  },
+  "example": {
+   "id": "DEP-BAUXITE-902865",
+   "resource": "bauxite",
+   "lat": 40.47,
+   "lon": 70.28
+  }
+ },
+ {
+  "city": "LSO-MAS",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "ZAF": 1
+  },
+  "example": {
+   "id": "DEP-COPPER-000235",
+   "resource": "copper",
+   "lat": -30.95,
+   "lon": 29.3
+  }
+ },
+ {
+  "city": "MNG-DAR",
+  "old_deposits": 3,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "RUS": 3
+  },
+  "example": {
+   "id": "DEP-GOLD-900174",
+   "resource": "gold",
+   "lat": 50.8,
+   "lon": 108.56
+  }
+ },
+ {
+  "city": "MNG-ULAA",
+  "old_deposits": 6,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "CHN": 5,
+   "RUS": 1
+  },
+  "example": {
+   "id": "DEP-COPPER-000167",
+   "resource": "copper",
+   "lat": 42.01,
+   "lon": 95.93
+  }
+ },
+ {
+  "city": "NED-ENS",
+  "old_deposits": 3,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "DEU": 3
+  },
+  "example": {
+   "id": "DEP-IRON-000699",
+   "resource": "iron",
+   "lat": 51.67,
+   "lon": 6.67
+  }
+ },
+ {
+  "city": "QAT-DOH",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "IRN": 1
+  },
+  "example": {
+   "id": "DEP-GAS-000034",
+   "resource": "gas",
+   "lat": 26.5,
+   "lon": 53.5
+  }
+ },
+ {
+  "city": "RWA-KIG",
+  "old_deposits": 1,
+  "own_territory_lost": 1,
+  "true_nations": {
+   "RWA": 1
+  },
+  "example": {
+   "id": "DEP-COPPER-000253",
+   "resource": "copper",
+   "lat": -2.16,
+   "lon": 30.83
+  }
+ },
+ {
+  "city": "SAH-MEH",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "MAR": 1
+  },
+  "example": {
+   "id": "DEP-PHOSPHATE-900251",
+   "resource": "phosphate",
+   "lat": 24.66,
+   "lon": -13.14
+  }
+ },
+ {
+  "city": "SAH-TIC",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "MRT": 1
+  },
+  "example": {
+   "id": "DEP-IRON-000182",
+   "resource": "iron",
+   "lat": 22.67,
+   "lon": -12.63
+  }
+ },
+ {
+  "city": "SYR-ALE",
+  "old_deposits": 1,
+  "own_territory_lost": 1,
+  "true_nations": {
+   "SYR": 1
+  },
+  "example": {
+   "id": "DEP-PHOSPHATE-902956",
+   "resource": "phosphate",
+   "lat": 36.6,
+   "lon": 38.78
+  }
+ },
+ {
+  "city": "TCD-FAY",
+  "old_deposits": 1,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "NER": 1
+  },
+  "example": {
+   "id": "DEP-GOLD-900126",
+   "resource": "gold",
+   "lat": 19.5,
+   "lon": 14.58
+  }
+ },
+ {
+  "city": "TLS-DIL",
+  "old_deposits": 4,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "AUS": 3,
+   "IDN": 1
+  },
+  "example": {
+   "id": "DEP-COPPER-000552",
+   "resource": "copper",
+   "lat": -13.05,
+   "lon": 131.04
+  }
+ },
+ {
+  "city": "TLS-MAL",
+  "old_deposits": 5,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "AUS": 5
+  },
+  "example": {
+   "id": "DEP-IRON-000442",
+   "resource": "iron",
+   "lat": -16.13,
+   "lon": 123.49
+  }
+ },
+ {
+  "city": "VNM-HAI",
+  "old_deposits": 4,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "CHN": 4
+  },
+  "example": {
+   "id": "DEP-COPPER-000464",
+   "resource": "copper",
+   "lat": 23.13,
+   "lon": 106.72
+  }
+ },
+ {
+  "city": "YEM-SAN",
+  "old_deposits": 2,
+  "own_territory_lost": 0,
+  "true_nations": {
+   "SAU": 2
+  },
+  "example": {
+   "id": "DEP-COPPER-000374",
+   "resource": "copper",
+   "lat": 18.02,
+   "lon": 43.7
+  }
+ }
+]
