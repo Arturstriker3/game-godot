@@ -237,12 +237,16 @@ const FAR_CAPITAL_ICON_SCALE := 1.2
 const FLAG_CELL := Vector2i(40, 27)
 const FLAG_ATLAS_COLS := 16
 
-## Nomes de nação gravados no mapa.
+## Nomes de nação gravados no mapa. A visibilidade é por TAMANHO DO PAÍS NA TELA
+## (px): o nome entra quando o país tem pelo menos NATION_LABEL_MIN_SCREEN_PX de
+## largura, então nações pequenas só aparecem ao aproximar. O fade evita o
+## "pisca" na borda do limiar. O layout de cidade (capitais/bandeiras) tem
+## prioridade: o nome cede quando colide.
 const NATION_LABEL_COLOR := Color(0.07, 0.08, 0.09, 0.68)
-const NATION_LABEL_NEAR := 34.0
-const NATION_LABEL_NEAR_SMALL := 95.0
-const NATION_LABEL_FADE := 18.0
-const NATION_LABEL_SMALL_EXTENT := 12.0
+const NATION_LABEL_MIN_SCREEN_PX := 40.0
+const NATION_LABEL_FADE_SCREEN_PX := 14.0
+const NATION_LABEL_SCREEN_PAD := 64.0
+const NATION_LABEL_CITY_PAD := 3.0
 
 var _content: Node3D
 ## Cidades, portos e rótulos ficam numa cópia ÚNICA. O wrap do mundo (cópias
@@ -342,6 +346,9 @@ var _layout_camera_basis := Basis()
 var _layout_camera_fov := -1.0
 var _layout_viewport := Vector2.ZERO
 var _layout_dirty := true
+## Nomes de nação só são reavaliados quando a câmera para (ou troca de modo/
+## zoom/idioma): durante o pan o custo seria pago a ~12 Hz sem ganho visível.
+var _nation_labels_dirty := true
 ## Um movimento que caiu no throttle precisa de um layout posterior mesmo que a
 ## câmera já esteja parada (refazer ao parar).
 var _layout_pending := false
@@ -429,8 +436,10 @@ func build(cities: Array, ports: Array) -> void:
 	_build_ports(ports)
 	_build_city_labels()
 	_build_flag_renderer()
-	_build_nation_labels()
 	_init_territory(cities)
+	# Os nomes de nação precisam do território já atribuído (âncora/extensão de
+	# TODAS as nações, não só a lista legada de nations.json).
+	_build_nation_labels()
 	_build_lod_grid()
 	set_mode(_mode)
 
@@ -538,6 +547,7 @@ func set_mode(mode: String) -> void:
 	if previous != mode and _zoom_level >= 0:
 		_refresh_level_targets(false)
 		_invalidate_layout()
+	_nation_labels_dirty = true
 
 
 ## Filtro da legenda de recursos: esconde marcadores do mapa.
@@ -1152,20 +1162,25 @@ func _build_political_layer() -> void:
 	_content.add_child(_political_layer)
 
 
-## Nomes das nações jogáveis gravados no chão, como numa carta. A âncora é o
-## centroide da maior massa de terra de cada nação (tools/build_atlas_layers.py).
+## Nomes de TODAS as nações com território, gravados no chão, como numa carta.
+## A lista não é mais a de nations.json (5 âncoras legadas): as âncoras das
+## nações do cenário vêm do território atual (`TerritoryMap.nation_anchor`), com
+## as 5 âncoras históricas preservadas quando o território é o original.
 func _build_nation_labels() -> void:
 	# Conecta antes de qualquer retorno: os rótulos de cidade também dependem
 	# deste sinal para acompanhar o idioma.
 	if not I18n.locale_changed.is_connected(_on_locale_changed):
 		I18n.locale_changed.connect(_on_locale_changed)
 	_nation_anchors.clear()
-	if not FileAccess.file_exists(ATLAS_NATIONS_PATH):
+	if FileAccess.file_exists(ATLAS_NATIONS_PATH):
+		var anchors: Variant = JSON.parse_string(
+				FileAccess.get_file_as_string(ATLAS_NATIONS_PATH))
+		if typeof(anchors) == TYPE_DICTIONARY:
+			_nation_anchors = anchors
+
+	var tags := _nation_label_tags()
+	if tags.is_empty():
 		return
-	var anchors: Variant = JSON.parse_string(FileAccess.get_file_as_string(ATLAS_NATIONS_PATH))
-	if typeof(anchors) != TYPE_DICTIONARY:
-		return
-	_nation_anchors = anchors
 
 	var font := FontVariation.new()
 	font.base_font = NATION_LABEL_FONT
@@ -1175,11 +1190,11 @@ func _build_nation_labels() -> void:
 	var holder := Node3D.new()
 	holder.name = "NationLabels"
 	_content.add_child(holder)
-	for tag: Variant in anchors:
+	for tag: String in tags:
 		var label := Label3D.new()
-		label.name = "Nation_" + String(tag)
-		label.set_meta("tag", String(tag))
-		label.text = I18n.t("nation." + String(tag)).to_upper()
+		label.name = "Nation_" + tag
+		label.set_meta("tag", tag)
+		label.text = I18n.nation_name(tag).to_upper()
 		label.font = font
 		label.font_size = 64
 		label.outline_size = 0
@@ -1189,8 +1204,29 @@ func _build_nation_labels() -> void:
 		label.alpha_cut = Label3D.ALPHA_CUT_DISABLED
 		label.render_priority = 2
 		label.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+		label.visible = false
 		holder.add_child(label)
 		_place_nation_label(label)
+
+
+## Tags com nome que devem existir no mapa: as nações do cenário presentes no
+## território atual + as âncoras históricas. Tags sem tradução (territórios sem
+## nome no i18n, ex. ATA/CLP/CSI/IOA/KAS) ficam de fora — nada de chave crua.
+func _nation_label_tags() -> Array[String]:
+	var found: Dictionary = {}
+	for tag: Variant in _nation_anchors:
+		found[String(tag)] = true
+	if _territory != null:
+		for tag: String in _territory.nation_tags():
+			found[tag] = true
+	var out: Array[String] = []
+	for tag: Variant in found:
+		var text := I18n.nation_name(String(tag))
+		if text.begins_with("nation."):
+			continue
+		out.append(String(tag))
+	out.sort()
+	return out
 
 
 func _on_locale_changed(_locale: String) -> void:
@@ -1198,7 +1234,8 @@ func _on_locale_changed(_locale: String) -> void:
 		var holder := root.get_node_or_null("NationLabels")
 		if holder != null:
 			for label in holder.get_children():
-				(label as Label3D).text = I18n.t("nation." + String(label.get_meta("tag"))).to_upper()
+				(label as Label3D).text = I18n.nation_name(
+						String(label.get_meta("tag"))).to_upper()
 				_fit_nation_label(label)
 	# Nomes das cidades: o pool é reconfigurado no próximo layout; aqui só
 	# invalidamos o texto/largura em cache.
@@ -1221,24 +1258,27 @@ static func _fit_nation_label(label: Label3D) -> void:
 	if width > 0.0:
 		pixel_size = minf(pixel_size, extent * 0.85 / width)
 	label.pixel_size = pixel_size
+	# Largura do texto em unidades de mundo do mapa, cacheada para o layout de
+	# visibilidade (o texto só muda na troca de idioma).
+	label.set_meta("text_width", width * pixel_size)
 
 
 ## Posiciona/redimensiona um rótulo de nação: com território original usa a
-## âncora do nations.json; senão usa a âncora do território atual. Sem
-## território, esconde (meta "has_territory" = false).
+## âncora histórica do nations.json; senão recalcula sobre as províncias
+## possuídas. Sem território, esconde (meta "has_territory" = false).
 func _place_nation_label(label: Label3D) -> void:
 	var tag := String(label.get_meta("tag"))
 	var anchor: Dictionary = {}
 	var extent_px := 40.0
-	if _territory != null and not _territory.is_original(tag):
+	if _nation_anchors.has(tag) and (_territory == null or _territory.is_original(tag)):
+		anchor = _nation_anchors[tag]
+		extent_px = float(anchor.get("extent_px", 40.0))
+	elif _territory != null:
 		anchor = _territory.nation_anchor(tag)
 		if anchor.is_empty():
 			label.set_meta("has_territory", false)
 			label.visible = false
 			return
-		extent_px = float(anchor.get("extent_px", 40.0))
-	elif _nation_anchors.has(tag):
-		anchor = _nation_anchors[tag]
 		extent_px = float(anchor.get("extent_px", 40.0))
 	else:
 		label.set_meta("has_territory", false)
@@ -1248,8 +1288,6 @@ func _place_nation_label(label: Label3D) -> void:
 	label.set_meta("has_territory", true)
 	var extent := extent_px * PIXEL_TO_WORLD
 	label.set_meta("extent", extent)
-	label.set_meta("min_distance", NATION_LABEL_NEAR if extent >= NATION_LABEL_SMALL_EXTENT
-			else NATION_LABEL_NEAR_SMALL)
 	label.position = pixel_to_world(Vector2(float(anchor["x"]), float(anchor["y"]))) \
 			+ Vector3(0.0, 0.2, 0.0)
 	_fit_nation_label(label)
@@ -1334,29 +1372,134 @@ func debug_clear_territory_overrides() -> void:
 		_refresh_territory(_last_cities)
 
 
-## Nomes de nação entram ao afastar e somem perto, para não disputar com as
-## cidades; nações pequenas (Benelux) só aparecem quando os nomes de cidade saem.
-func _update_nation_labels(camera_position: Vector3) -> void:
+## Nomes de nação entram por TAMANHO DO PAÍS NA TELA: o nome aparece quando o
+## país tem ≥ NATION_LABEL_MIN_SCREEN_PX de largura projetada e o alfa sobe no
+## fade. Capitais/bandeiras e nomes de cidade já aceitos pelo layout têm
+## prioridade (declutter); o maior país vence entre dois nomes que colidem.
+func _update_nation_labels(camera: Camera3D) -> void:
+	if camera == null or _mode != "political":
+		return
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		return
+	var screen := Rect2(Vector2.ZERO,
+			viewport.get_visible_rect().size).grow(NATION_LABEL_SCREEN_PAD)
+	var chosen_root := _wrap_offset(0.0)
 	for root in _content_roots():
 		var holder := root.get_node_or_null("NationLabels") as Node3D
-		if holder == null or not holder.visible:
+		if holder == null:
 			continue
+		var active_root := absf(root.position.x - chosen_root) <= 1.0
+		if not active_root:
+			# Só a cópia do wrap que está na tela precisa dos nomes. Esconder o
+			# holder inteiro evita 2×N toggles de visibilidade por layout.
+			if holder.visible:
+				holder.visible = false
+			continue
+		if not holder.visible:
+			holder.visible = true
+		var candidates: Array[Dictionary] = []
 		for child in holder.get_children():
 			var label := child as Label3D
-			# Nação sem território (override moveu tudo) não mostra o nome.
-			if label.has_meta("has_territory") and not bool(label.get_meta("has_territory")):
-				label.visible = false
+			if label == null:
 				continue
-			var near := float(label.get_meta("min_distance"))
-			var distance := camera_position.distance_to(label.global_position)
-			var alpha := _fade_in(distance, near, near + NATION_LABEL_FADE)
-			label.visible = alpha > 0.01
-			label.modulate.a = NATION_LABEL_COLOR.a * alpha
+			if label.has_meta("has_territory") \
+					and not bool(label.get_meta("has_territory")):
+				_set_nation_label_visible(label, false)
+				continue
+			if camera.is_position_behind(label.global_position):
+				_set_nation_label_visible(label, false)
+				continue
+			var extent := float(label.get_meta("extent", 0.0))
+			var text_w := float(label.get_meta("text_width", 0.0))
+			var em := float(label.font_size) * float(label.pixel_size)
+			if extent <= 0.0 or text_w <= 0.0 or em <= 0.0:
+				_set_nation_label_visible(label, false)
+				continue
+			var extent_rect := _world_rect_to_screen(camera, label.global_position,
+					extent * 0.5, extent * 0.5)
+			if extent_rect.size.x <= 0.0 or not screen.intersects(extent_rect):
+				_set_nation_label_visible(label, false)
+				continue
+			var text_rect := _world_rect_to_screen(camera, label.global_position,
+					text_w * 0.5, em * 0.62)
+			var max_text := maxf(screen.size.x, screen.size.y)
+			if text_rect.size.x <= 0.0 or text_rect.size.x > max_text \
+					or text_rect.size.y > max_text:
+				_set_nation_label_visible(label, false)
+				continue
+			var screen_extent := extent_rect.size.x
+			var alpha := clampf((screen_extent - NATION_LABEL_MIN_SCREEN_PX) \
+					/ NATION_LABEL_FADE_SCREEN_PX, 0.0, 1.0)
+			if alpha <= 0.01:
+				_set_nation_label_visible(label, false)
+				continue
+			candidates.append({
+				"label": label,
+				"rect": text_rect,
+				"alpha": alpha,
+				"weight": screen_extent,
+			})
+
+		if candidates.is_empty():
+			continue
+		# Ocupação de tela: o layout de cidade/porto do frame anterior + os
+		# bloqueios de capital/bandeira deste frame (o layout de cidade só roda
+		# depois; no LONGE ele nem roda e a grade anterior pode estar velha).
+		var grid: Dictionary = {}
+		var max_blocker := maxf(screen.size.x, screen.size.y)
+		for record in _city_nodes:
+			if not bool(record.get("capital", false)):
+				continue
+			if float(record.get("label_alpha", 0.0)) <= 0.01:
+				continue
+			# Ícone da capital direto da âncora: o `text_center` só existe depois
+			# do layout de cidade, que roda DEPOIS deste passo (e não roda no
+			# LONGE, justamente onde os nomes de nação mais aparecem).
+			var wrap := float(record.get("wrap_x", 0.0))
+			var anchor_local: Vector3 = record.get("anchor", Vector3.ZERO)
+			var anchor_world := to_global(anchor_local + Vector3(wrap, 0.0, 0.0))
+			if camera.is_position_behind(anchor_world):
+				continue
+			var em := float(record.get("font_size", LABEL_SIZE_STANDARD)) \
+					* float(record.get("pixel_size", LABEL_PIXEL_MIN))
+			var icon_h := em * PLACE_ICON_HEIGHT
+			var icon_rect := _world_rect_to_screen(camera, anchor_world,
+					icon_h * 0.5, icon_h * 0.5)
+			# Capital praticamente sob a câmera projeta um retângulo gigante; a
+			# grade de ocupação percorreria milhares de células. Ignora o
+			# bloqueio acima do tamanho da tela (o ícone não está legível).
+			if icon_rect.size.x > 0.0 and icon_rect.size.x <= max_blocker \
+					and icon_rect.size.y <= max_blocker:
+				_grid_insert(grid, icon_rect)
+			var flag_rect := _flag_rect(record, camera)
+			if flag_rect.size.x > 0.0 and flag_rect.size.x <= max_blocker \
+					and flag_rect.size.y <= max_blocker:
+				_grid_insert(grid, flag_rect)
+
+		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return float(a["weight"]) > float(b["weight"]))
+		for candidate in candidates:
+			var label: Label3D = candidate["label"]
+			var rect: Rect2 = candidate["rect"]
+			if _grid_hits(_label_grid, rect, NATION_LABEL_CITY_PAD) \
+					or _grid_hits(grid, rect, NATION_LABEL_CITY_PAD):
+				_set_nation_label_visible(label, false)
+				continue
+			_grid_insert(grid, rect)
+			_set_nation_label_visible(label, true)
+			var alpha: float = candidate["alpha"]
+			var tint := Color(NATION_LABEL_COLOR.r, NATION_LABEL_COLOR.g,
+					NATION_LABEL_COLOR.b, NATION_LABEL_COLOR.a * alpha)
+			if label.modulate != tint:
+				label.modulate = tint
 
 
-## Rampa 0..1 usada pelas faixas próprias dos nomes de nação.
-static func _fade_in(distance: float, start: float, end: float) -> float:
-	return clampf((distance - start) / (end - start), 0.0, 1.0)
+## Troca a visibilidade do rótulo só quando muda: o setter do Label3D é caro e
+## era chamado para os 3×179 rótulos a cada layout.
+static func _set_nation_label_visible(label: Label3D, value: bool) -> void:
+	if label.visible != value:
+		label.visible = value
 
 
 func _build_mode_layer(cities: Array) -> void:
@@ -2039,7 +2182,10 @@ func _process(delta: float) -> void:
 	if _update_zoom_level(camera):
 		_refresh_level_targets(first_level)
 		_layout_dirty = true
+		_nation_labels_dirty = true
 		_convoy_timer = 0.0
+	if moved:
+		_nation_labels_dirty = true
 	var fading := _advance_level_fade(delta)
 	_last_camera_local = camera_local
 
@@ -2056,6 +2202,14 @@ func _process(delta: float) -> void:
 		_apply_icon_transforms(camera)
 	if _flags_dirty:
 		_apply_flag_transforms(camera)
+
+	# Nomes de nação: atualiza só com a câmera parada. Durante o pan/zoom a
+	# geometria do texto não muda; reavaliar colisão/visibilidade a 12 Hz custava
+	# mais que o resto do frame.
+	if not moved and _nation_labels_dirty:
+		if _mode == "political":
+			_update_nation_labels(camera)
+		_nation_labels_dirty = false
 
 	# Câmera parada, nada sujo, nenhum fade/job e nenhuma fila: o frame custa só
 	# a comparação da câmera. Modelo na fila continua drenando (é o pico real).
@@ -2098,7 +2252,6 @@ func _process(delta: float) -> void:
 		_layout_accum = 0.0
 		_layout_pending = false
 		_layout_dirty = false
-		_update_nation_labels(camera_position)
 		var scan_start := Time.get_ticks_usec()
 		_scan_lod(camera, camera_local, jump)
 		_apply_wrap_positions()
@@ -2139,6 +2292,7 @@ func _wrap_offset(x: float) -> float:
 ## Força um layout no próximo frame (hover, seleção, idioma, filtro, modo).
 func _invalidate_layout() -> void:
 	_layout_dirty = true
+	_nation_labels_dirty = true
 
 
 ## Nível de zoom atual (enum `ZoomLevel`). Exposto para testes/captura.
@@ -2545,6 +2699,10 @@ func _clear_labels_only() -> void:
 			label.visible = false
 	_label_rects.clear()
 	_drawn_ports.clear()
+	# No LONGE o layout de cidade não roda: sem limpar a grade, os nomes de
+	# nação colidiriam com blocos de cidade que não estão mais na tela.
+	_label_grid.clear()
+	_label_cell_counts.clear()
 	_layout_job_active = false
 
 
