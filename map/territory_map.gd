@@ -545,6 +545,40 @@ func owner_at_uv(uv: Vector2) -> String:
 	return String(_owners.get(pid, ""))
 
 
+## Tag canônica (a do nations.csv/jogo) de um dono. O raster admin-0 usa tags
+## que divergem do cenário em três casos — NLD/NED, KOS/XKX e SDS/SSD — e sem a
+## normalização o minimapa e o mapa político cairiam na cor neutra do atlas.
+## `province` só é necessário para o caso NLD (o registro tem `nation = NED`).
+func canonical_tag(tag: String, province: Dictionary = {}) -> String:
+	if _palette.has(tag):
+		return tag
+	var mapped := GeographyScript.nation_for_province_tag(tag)
+	if mapped != "":
+		return mapped
+	if not province.is_empty():
+		var nation := String(province.get("nation", ""))
+		if _palette.has(nation):
+			return nation
+		var mapped_nation := GeographyScript.nation_for_province_tag(nation)
+		if mapped_nation != "":
+			return mapped_nation
+	return tag
+
+
+## Tags canônicas de TODAS as nações com território no mundo (donos atuais).
+func nation_tags() -> Array[String]:
+	var found: Dictionary = {}
+	for province in _provinces:
+		var pid: int = province["id"]
+		var raw := String(_owners.get(pid, String(province["country"])))
+		found[canonical_tag(raw, province)] = true
+	var tags: Array[String] = []
+	for tag: Variant in found:
+		tags.append(String(tag))
+	tags.sort()
+	return tags
+
+
 ## Imagem RGB8 do minimapa: cor do dono por pixel, amostrando o raster de ids
 ## do mundo inteiro (world_province.png) e colorindo pelo dono atual. Água usa a
 ## cor de mar do atlas; terra usa a cor do dono com o mesmo fator do minimapa
@@ -625,13 +659,16 @@ func nation_anchor(tag: String) -> Dictionary:
 	var weighted := Vector2.ZERO
 	var owned: Array[Dictionary] = []
 	for province in _provinces:
-		if String(_owners.get(int(province["id"]), "")) != tag:
+		var pid: int = province["id"]
+		var owner := canonical_tag(String(_owners.get(pid, String(province["country"]))),
+				province)
+		if owner != tag:
 			continue
 		var area := float(province["area"])
 		weighted += Vector2(float(province["x"]), float(province["y"])) * area
 		total_area += area
 		owned.append(province)
-	if owned.is_empty():
+	if owned.is_empty() or total_area <= 0.0:
 		return {}
 
 	var centroid := weighted / total_area
@@ -695,6 +732,11 @@ func _write_owner_image(owners: Dictionary) -> void:
 ## com a paleta de papelaria apenas como rede de segurança; tags fora do cenário
 ## caem na cor da província do atlas.
 func _color_for(tag: String, province: Dictionary) -> Color:
+	var canonical := canonical_tag(tag, province)
+	if _palette.has(canonical):
+		return _palette[canonical]
+	if _nation_colors.has(canonical):
+		return _nation_colors[canonical]
 	if _palette.has(tag):
 		return _palette[tag]
 	if _nation_colors.has(tag):

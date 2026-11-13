@@ -41,6 +41,7 @@ func _ready() -> void:
 	_setup_camera()
 	_build_vignette()
 	_build_hud()
+	_refresh_minimap_territory()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
 	Economy.speed_changed.connect(_on_speed_changed)
 	_on_speed_changed(Economy.speed)
@@ -56,8 +57,18 @@ func _on_status_updated(summary: Dictionary) -> void:
 
 ## Donos de território mudaram: atualiza a textura do minimapa.
 func _on_territory_changed() -> void:
-	if hud != null:
-		hud.set_minimap_territory(city_world.minimap_texture())
+	_refresh_minimap_territory()
+
+
+## Aplica no minimapa a textura de dono por província (mundo inteiro, cores do
+## nations.csv). No build o sinal `territory_changed` ainda não disparou, então a
+## folha ficaria com o minimap.png legado (só GBR/FRA/DEU).
+func _refresh_minimap_territory() -> void:
+	if hud == null or city_world == null:
+		return
+	var texture: Texture2D = city_world.minimap_texture()
+	if texture != null:
+		hud.set_minimap_territory(texture)
 
 
 func _build_city_world() -> void:
