@@ -55,6 +55,9 @@ const BAR_VALUE_SIZE := 23
 const SCREEN_ORDER := ["economy", "trade", "production", "population", "politics",
 		"statistics"]
 const MAX_ORDER_LOG := 240
+## Mesmo limiar de `CityWorld.INDUSTRY_ICON_THRESHOLD` (tooltip coerente com o
+## glifo de fábrica desenhado no mapa).
+const INDUSTRY_ICON_THRESHOLD := 0.35
 const SCREEN_LABELS := {
 	"economy": "dock.economy",
 	"trade": "dock.trade",
@@ -2118,10 +2121,14 @@ func _city_tooltip_content(city: Dictionary, mode: String) -> Dictionary:
 			"value": port_text,
 		})
 
+	var subtitle := I18n.nation_name(nation)
+	if not bool(city.get("capital", false)) \
+			and float(city.get("industrialization", 0.0)) >= INDUSTRY_ICON_THRESHOLD:
+		subtitle += " · " + I18n.t("map.icon.industry")
 	return {
 		"title": I18n.city_name(id, String(city.get("name", ""))),
 		"flag": Economy.flag_texture(nation),
-		"subtitle": I18n.nation_name(nation),
+		"subtitle": subtitle,
 		"rows": rows,
 	}
 

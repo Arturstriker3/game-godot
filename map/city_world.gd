@@ -53,6 +53,10 @@ const PORT_SIZE := 0.6
 const CITY_ICON: Texture2D = preload("res://assets/icons/places/city.png")
 const STAR_ICON: Texture2D = preload("res://assets/icons/places/star.png")
 const PORT_ICON: Texture2D = preload("res://assets/icons/places/port.png")
+## Cidade industrial: chaminé/fábrica (game-icons.net, mesma tinta do selo).
+const INDUSTRY_ICON: Texture2D = preload("res://assets/icons/products/factory.svg")
+## Industrialização a partir da qual a cidade troca o prédio pela fábrica.
+const INDUSTRY_ICON_THRESHOLD := 0.35
 ## Ícone de lugar: ao lado do nome, com a mesma tinta e altura proporcional ao
 ## texto — ícone + nome leem como um selo único ancorado na cidade.
 const PLACE_ICON_SOURCE := 512.0
@@ -381,9 +385,11 @@ var _active_labels: Array[Dictionary] = []
 var _label_grid: Dictionary = {}
 ## Ícones distantes por instancing (cidade/porto) e modelos sob demanda.
 var _city_icon_mm: MultiMeshInstance3D
+var _city_industry_mm: MultiMeshInstance3D
 var _city_star_mm: MultiMeshInstance3D
 var _city_ring_mm: MultiMeshInstance3D
 var _city_icon_plain_records: Array = []
+var _city_icon_industry_records: Array = []
 var _city_icon_star_records: Array = []
 var _port_icon_mm: MultiMeshInstance3D
 var _port_ring_mm: MultiMeshInstance3D
@@ -662,7 +668,37 @@ func current_mode() -> String:
 func refresh_modes(cities: Array) -> void:
 	if _mode_layer != null:
 		_mode_layer.refresh(cities)
+	_refresh_city_indicators(cities)
 	_refresh_territory(cities)
+
+
+## Atualiza o dicionário da cidade (industrialização, população etc.) e troca o
+## glifo de prédio/fábrica quando o status cruza o limiar. O MultiMesh já nasce
+## dimensionado para o roster inteiro, então nada é recriado.
+func _refresh_city_indicators(cities: Array) -> void:
+	var by_id := {}
+	for city in cities:
+		if city is Dictionary:
+			by_id[String(city.get("id", ""))] = city
+	var changed := false
+	for record in _city_nodes:
+		var city: Dictionary = by_id.get(String(record.get("id", "")), {})
+		if city.is_empty():
+			continue
+		record["city"] = city
+		if bool(record.get("capital", false)):
+			continue
+		var industrial := float(city.get("industrialization", 0.0)) \
+				>= INDUSTRY_ICON_THRESHOLD
+		if industrial == bool(record.get("industrial", false)):
+			continue
+		record["industrial"] = industrial
+		var icon: Sprite3D = record.get("icon")
+		if icon != null:
+			icon.texture = INDUSTRY_ICON if industrial else CITY_ICON
+		changed = true
+	if changed:
+		_icons_dirty = true
 
 
 ## Ponto (px do mapa) onde a câmera começa: MEDIANA das cidades, não a média —
@@ -2187,6 +2223,9 @@ func _build_cities(cities: Array) -> void:
 		var ring: Sprite3D = null
 		if detailed_ids.has(city_id):
 			var icon_texture := STAR_ICON if capital else CITY_ICON
+			if not capital and float(city.get("industrialization", 0.0)) \
+					>= INDUSTRY_ICON_THRESHOLD:
+				icon_texture = INDUSTRY_ICON
 			# Bandeira agora é MultiMesh (atlas único): o marcador detalhado só
 			# tem ícone + selo. O glifo aparece quando o nível pede a cidade; no
 			# LONGE é só a estrela da capital, sem o selo atrás.
@@ -2207,6 +2246,9 @@ func _build_cities(cities: Array) -> void:
 			"priority": float(city.get("population", 0.0)),
 			"capital": capital,
 			"nation": String(city.get("nation", "")),
+			"industrial": not capital \
+					and float(city.get("industrialization", 0.0)) \
+					>= INDUSTRY_ICON_THRESHOLD,
 			"detailed": detailed_ids.has(city_id),
 			"label": null,
 			"label_alpha": 1.0,
@@ -2259,19 +2301,28 @@ func _build_city_labels() -> void:
 	# Ícones de cidade fora do LOD detalhado: prédios (comum) e estrela
 	# (capital), cada um com o selo escuro, desenhados por instancing.
 	var plain: Array = []
+	var industry: Array = []
 	var stars: Array = []
 	for record in _city_nodes:
 		if bool(record["detailed"]):
 			continue
 		if bool(record["capital"]):
 			stars.append(record)
+		elif bool(record.get("industrial", false)):
+			industry.append(record)
 		else:
 			plain.append(record)
-	_city_icon_mm = _make_billboard_multimesh(CITY_ICON, 9, plain.size())
+	# Os buffers de prédio/fábrica são dimensionados para TODAS as cidades
+	# não-detalhadas: a industrialização pode mudar no refresh do status e o
+	# registro troca de buffer sem recriar o MultiMesh.
+	var movable := plain.size() + industry.size()
+	_city_icon_mm = _make_billboard_multimesh(CITY_ICON, 9, movable)
+	_city_industry_mm = _make_billboard_multimesh(INDUSTRY_ICON, 9, movable)
 	_city_star_mm = _make_billboard_multimesh(STAR_ICON, 9, stars.size())
 	_city_ring_mm = _make_billboard_multimesh(BADGE_TEXTURE, 8,
-			plain.size() + stars.size())
+			movable + stars.size())
 	_city_icon_plain_records = plain
+	_city_icon_industry_records = industry
 	_city_icon_star_records = stars
 
 
@@ -4206,11 +4257,12 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 	_icons_dirty = false
 	# Sem registros (ou sem MultiMesh) não há nada a compactar; evita escrever
 	# em buffer nulo quando o build não criou algum dos grupos.
-	if _city_icon_mm == null and _city_star_mm == null \
-			and _city_ring_mm == null and _port_icon_mm == null \
-			and _port_ring_mm == null:
+	if _city_icon_mm == null and _city_industry_mm == null \
+			and _city_star_mm == null and _city_ring_mm == null \
+			and _port_icon_mm == null and _port_ring_mm == null:
 		return
 	var plain_index := 0
+	var industry_index := 0
 	var star_index := 0
 	var ring_index := 0
 	for record in _visible_city_records:
@@ -4228,6 +4280,9 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 		if bool(record.get("capital", false)):
 			_set_mm_local(_city_star_mm, star_index, local, size)
 			star_index += 1
+		elif bool(record.get("industrial", false)):
+			_set_mm_local(_city_industry_mm, industry_index, local, size)
+			industry_index += 1
 		else:
 			_set_mm_local(_city_icon_mm, plain_index, local, size)
 			plain_index += 1
@@ -4237,6 +4292,7 @@ func _apply_icon_transforms(camera: Camera3D) -> void:
 			_set_mm_local(_city_ring_mm, ring_index, local, size * RING_SCALE)
 			ring_index += 1
 	_set_mm_count(_city_icon_mm, plain_index)
+	_set_mm_count(_city_industry_mm, industry_index)
 	_set_mm_count(_city_star_mm, star_index)
 	_set_mm_count(_city_ring_mm, ring_index)
 

@@ -1689,8 +1689,7 @@
   "trade.tab.orders": "Pedidos",
   "trade.tab.routes": "Rotas",
   "trade.title": "Comércio e logística",
-  "trade.today": "Pedidos do dia"
-,
+  "trade.today": "Pedidos do dia",
   "map.routes": "Rotas",
   "map.routes.land": "Terrestre",
   "map.routes.sea": "Marítimo",
@@ -1737,7 +1736,8 @@
   "map.region.arabian_sea": "Mar da Arábia",
   "map.region.coral_sea": "Mar de Coral",
   "map.region.arctic": "Oceano Ártico",
-  "map.region.southern_ocean": "Oceano Antártico"
+  "map.region.southern_ocean": "Oceano Antártico",
+  "map.icon.industry": "Cidade industrial"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -3429,8 +3429,7 @@
   "trade.tab.orders": "Orders",
   "trade.tab.routes": "Routes",
   "trade.title": "Trade and logistics",
-  "trade.today": "Today's orders"
-,
+  "trade.today": "Today's orders",
   "map.routes": "Routes",
   "map.routes.land": "Overland",
   "map.routes.sea": "Maritime",
@@ -3477,7 +3476,8 @@
   "map.region.arabian_sea": "Arabian Sea",
   "map.region.coral_sea": "Coral Sea",
   "map.region.arctic": "Arctic Ocean",
-  "map.region.southern_ocean": "Southern Ocean"
+  "map.region.southern_ocean": "Southern Ocean",
+  "map.icon.industry": "Industrial city"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -5169,8 +5169,7 @@
   "trade.tab.orders": "Pedidos",
   "trade.tab.routes": "Rutas",
   "trade.title": "Comercio y logística",
-  "trade.today": "Pedidos del día"
-,
+  "trade.today": "Pedidos del día",
   "map.routes": "Rutas",
   "map.routes.land": "Terrestre",
   "map.routes.sea": "Marítimo",
@@ -5217,6 +5216,7 @@
   "map.region.arabian_sea": "mar de Arabia",
   "map.region.coral_sea": "mar del Coral",
   "map.region.arctic": "océano Ártico",
-  "map.region.southern_ocean": "océano Antártico"
+  "map.region.southern_ocean": "océano Antártico",
+  "map.icon.industry": "Ciudad industrial"
  }
 }
