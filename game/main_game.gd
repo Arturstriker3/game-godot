@@ -283,6 +283,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if hud == null or hud.is_window_open():
 		return
+	if event is InputEventMouseMotion:
+		# O hover também responde ao evento (e não só ao polling do _process):
+		# além de ser a entrada real do jogador, é o caminho exercitado pelo
+		# teste headless de cursor.
+		_update_city_hover_at(event.position)
+		return
 	if not event.is_action_pressed("province_select"):
 		return
 	if _handle_map_click(get_viewport().get_mouse_position()):
@@ -344,13 +350,22 @@ func _handle_map_click(mouse: Vector2) -> bool:
 ## Realce/cursor da cidade sob o cursor. Roda por frame para nÃƒÂ£o ficar preso
 ## quando o mouse entra na UI (o Motion nÃƒÂ£o chega ao _unhandled_input ali).
 func _update_city_hover_pass() -> void:
+	if hud == null or city_world == null:
+		return
+	_update_city_hover_at(get_viewport().get_mouse_position())
+
+
+## Núcleo do hover, com a posição de tela explícita: o `_process` passa a
+## posição real do viewport e o teste headless chama este método direto (o
+## headless não move o mouse do SO). Não abre janela nem depende de DisplayServer.
+func _update_city_hover_at(mouse: Vector2) -> void:
 	if city_world == null or hud == null:
 		return
 	var player := get_node_or_null("Player")
 	var dragging: bool = player != null and player.has_method("is_dragging") \
 			and player.is_dragging()
 	var blocked: bool = hud.is_window_open() \
-			or get_viewport().gui_get_hovered_control() != null
+			or _gui_blocks_map_hover()
 	if dragging or blocked:
 		if not _last_hover.is_empty():
 			_last_hover = ""
@@ -360,7 +375,6 @@ func _update_city_hover_pass() -> void:
 		return
 	if player == null:
 		return
-	var mouse := get_viewport().get_mouse_position()
 	# Cidade, porto e jazida são clicáveis em TODOS os modos: o hover sempre vira
 	# mão (nunca o I-beam de texto). No mapa de recursos a jazida tem prioridade
 	# (badge sobre o ponto e clique abre a ficha do depósito na legenda).
@@ -386,6 +400,17 @@ func _update_city_hover_pass() -> void:
 	elif not city_id.is_empty():
 		kind = "city"
 	GameCursor.set_state(false, kind)
+
+
+## Algum Control do HUD está mesmo sob o mouse? Só conta o que PODE capturar o
+## mouse (STOP/PASS); a raiz e as camadas de sobreposição são IGNORE e não
+## aparecem aqui. Um Control invisível/cheio com STOP roubava o hover do mapa e
+## devolvia a seta; `_map_hover_controls` mantém só o que realmente cobre tela.
+func _gui_blocks_map_hover() -> bool:
+	var hovered: Control = get_viewport().gui_get_hovered_control()
+	if hovered == null:
+		return false
+	return hovered.mouse_filter != Control.MOUSE_FILTER_IGNORE
 
 
 ## MantÃƒÂ©m a cÃƒÂ¢mera dentro de um perÃƒÂ­odo do mapa: ao passar da borda em X, ela
