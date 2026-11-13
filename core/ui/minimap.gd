@@ -17,6 +17,11 @@ signal mode_requested(mode: String)
 
 const MAP_TEXTURE: Texture2D = preload("res://map/map_data/atlas/minimap.png")
 
+## Abas verticais de tipo de mapa à esquerda da folha. Ligadas: os modos
+## (político, recursos, rotas) ficam junto ao minimapa, como antes da barra
+## lateral de painéis.
+const TABS_ENABLED := true
+
 ## Tamanho com que a textura do mapa é desenhada, na proporção 2:1 da textura
 ## (512×256). A moldura externa é determinística (244×127): 1 px de TINTA + 4 px
 ## de papel em volta da textura, centralizada. Com o cabeçalho colado ao topo
@@ -59,7 +64,8 @@ var _active_mode := ""
 ## `_ready`, para o HUD posicionar o nó antes de adicioná-lo à árvore.
 static func total_size() -> Vector2:
 	var frame := MAP_SIZE + Vector2(FRAME_BORDER + FRAME_PAD, FRAME_BORDER + FRAME_PAD) * 2.0
-	return Vector2(TAB_W + SIDE_MARGIN * 2.0 + frame.x,
+	var tabs := TAB_W if TABS_ENABLED else 0.0
+	return Vector2(tabs + SIDE_MARGIN * 2.0 + frame.x,
 			HEADER_HEIGHT + frame.y + BOTTOM_MARGIN)
 
 
@@ -73,7 +79,7 @@ func _ready() -> void:
 	var frame_size := MAP_SIZE + Vector2(FRAME_BORDER + FRAME_PAD, FRAME_BORDER + FRAME_PAD) * 2.0
 	var sheet_w := SIDE_MARGIN * 2.0 + frame_size.x
 	var sheet_h := HEADER_HEIGHT + frame_size.y + BOTTOM_MARGIN
-	var sheet_x := TAB_W
+	var sheet_x := TAB_W if TABS_ENABLED else 0.0
 	var frame_x := sheet_x + SIDE_MARGIN
 	var frame_y := HEADER_HEIGHT
 	_frame_y = frame_y
@@ -146,14 +152,15 @@ func _ready() -> void:
 	add_child(_view_wrap)
 	_layout_view()
 
-	# Pilha de abas de tipo de mapa à esquerda da folha. VBox alinhada ao topo da
-	# área do mapa (primeira aba na borda superior da moldura); os modos são
-	# construídos por `set_map_modes`, então adicionar um modo não mexe no layout.
+	# Pilha de abas de tipo de mapa à esquerda da folha (quando ligada). VBox
+	# alinhada ao topo da área do mapa; os modos são construídos por
+	# `set_map_modes`, então adicionar um modo não mexe no layout.
 	_tab_box = VBoxContainer.new()
 	_tab_box.position = Vector2(0.0, frame_y)
 	_tab_box.size = Vector2(TAB_W, 0.0)
 	_tab_box.add_theme_constant_override("separation", TAB_GAP)
 	_tab_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tab_box.visible = TABS_ENABLED
 	add_child(_tab_box)
 
 
@@ -182,6 +189,8 @@ func set_title(text: String) -> void:
 ## As abas são filhos de um VBox com separação fixa; adicionar um modo só
 ## acrescenta um item, sem alterar o layout.
 func set_map_modes(modes: Array, icons: Dictionary, tooltips: Dictionary, active: String) -> void:
+	if not TABS_ENABLED:
+		return
 	for button in _mode_buttons.values():
 		if is_instance_valid(button):
 			button.queue_free()

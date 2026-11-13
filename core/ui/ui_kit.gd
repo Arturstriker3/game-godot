@@ -109,8 +109,9 @@ const SPACE_LG := 16
 const SPACE_XL := 24
 
 const CONTROL_HEIGHT := 30
-const DOCK_WIDTH := 108.0
-const DOCK_BUTTON_HEIGHT := 52.0
+## Barra lateral esquerda de painéis (ver `hud.gd::RAIL_WIDTH`).
+const DOCK_WIDTH := 208.0
+const DOCK_BUTTON_HEIGHT := 48.0
 const RADIUS := 2
 
 const DURATION_FAST := 0.12

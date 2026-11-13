@@ -3,7 +3,8 @@ extends CanvasLayer
 ## HUD principal do WarEconomy — "Industrial Strategy, Premium Dark".
 ##
 ## Estrutura: barra superior com nação, calendário, indicadores e velocidade;
-## doca com as seis telas; telas de papel (templates T1–T5) sobre o mapa;
+## barra lateral esquerda com as seis telas (T7, opção A); telas de papel
+## (templates T1–T5) sobre o mapa;
 ## ficha de cidade (T3) na lateral; menu de pausa (T6) no Esc.
 ## O HUD não simula nada: lê `Economy` e desenha. Todo texto vem do `I18n`.
 
@@ -39,6 +40,16 @@ const PLAYER_NATION := "GBR"
 ## Largura da ficha de cidades da nação (a mesma folha do minimapa).
 const CITY_LIST_WIDTH := 288.0
 
+## Barra lateral de painéis (esquerda, T7 opção A): colada à topbar, fundo
+## BARRA_FUNDO e filete duplo de latão na borda direita. Cada painel é um botão
+## de 48 px no estilo dos de velocidade, com o ícone num selo redondo de 28 px.
+## Os modos de mapa NÃO ficam aqui: continuam nas abas do minimapa.
+const RAIL_WIDTH := 208.0
+const RAIL_PAD := 10.0
+const RAIL_BUTTON_HEIGHT := 48.0
+## Respiro entre a barra e as folhas de papel (telas/janelas).
+const RAIL_PANEL_GAP := 12.0
+
 ## Atraso do tooltip de cidade: a ficha só aparece depois que o mouse fica
 ## parado sobre a cidade por este tempo (~250 ms). Mover para outra cidade
 ## reinicia a contagem; sair do mapa esconde na hora.
@@ -67,8 +78,20 @@ const SCREEN_LABELS := {
 	"statistics": "dock.statistics",
 	"alerts": "hud.alerts",
 }
-## Botões de camada do mapa (quadrados, acima do minimapa). Os demais modos
-## (população/economia/indústria) continuam no mapa, mas sem botão por enquanto.
+## Ícones da barra lateral esquerda (silhueta branca, tingível). Reaproveita a
+## arte existente de ícones de produto/indicador; só o de estatísticas é novo
+## (`assets/icons/stats.svg`, mesmo traço de population/deficit/bell).
+const SCREEN_ICONS := {
+	"economy": preload("res://assets/icons/products/coin.svg"),
+	"trade": preload("res://assets/icons/products/truck.svg"),
+	"production": preload("res://assets/icons/products/factory.svg"),
+	"population": preload("res://assets/icons/population.svg"),
+	"politics": preload("res://assets/icons/products/sword.svg"),
+	"statistics": preload("res://assets/icons/stats.svg"),
+}
+## Modos de camada do mapa. As abas ficam junto ao minimapa (canto inferior
+## direito); população/economia/indústria continuam no mapa, mas sem botão por
+## enquanto.
 const MAP_MODES := ["political", "resources", "routes"]
 const MODE_ICONS := {
 	"political": preload("res://assets/ui/map_mode_political.png"),
@@ -153,7 +176,9 @@ var _stack: Array[Dictionary] = []
 
 var _root: Control
 var _top_holder: PanelContainer
-var _dock_holder: VBoxContainer
+## Barra lateral esquerda de painéis (antes "doca" à direita).
+var _dock_holder: Control
+var _rail_box: VBoxContainer
 ## Camada das telas de papel (T1–T5): cada tela desenha a própria moldura.
 var _window_layer: Control
 ## Camada dos alertas (T2 compacto): janela sobre o minimapa, como o menu.
@@ -230,13 +255,16 @@ func _ready() -> void:
 	# `_sync_map_overlays`).
 	_build_root()
 	_build_top_bar()
-	_build_dock()
 	_build_screen_layer()
 	_build_legend()
 	_build_minimap()
 	_build_city_list()
 	_build_alerts_layer()
 	_build_city_layer()
+	# A barra lateral nasce depois das camadas de tela/ficha para ficar POR CIMA
+	# delas: nenhuma folha de papel cobre a navegação. O menu (T6) e as
+	# sub-fichas continuam acima, como modais.
+	_build_dock()
 	_build_menu()
 	_build_settings()
 	_build_city_tooltip()
@@ -412,8 +440,8 @@ func _build_legend() -> void:
 	_legend.anchor_top = 1.0
 	_legend.anchor_right = 0.0
 	_legend.anchor_bottom = 1.0
-	_legend.offset_left = UiKit.SPACE_LG
-	_legend.offset_right = UiKit.SPACE_LG + LEGEND_WIDTH
+	_legend.offset_left = _legend_left()
+	_legend.offset_right = _legend_left() + LEGEND_WIDTH
 	_legend.offset_bottom = -UiKit.SPACE_LG
 	_legend.offset_top = _legend.offset_bottom
 	_legend.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -446,6 +474,12 @@ func _fit_legend() -> void:
 	_legend.offset_top = _legend.offset_bottom - maxf(min_size.y, LEGEND_MIN_HEIGHT)
 
 
+## Margem esquerda da etiqueta: sempre à direita da barra lateral de painéis,
+## para a legenda e os modos de mapa não se sobreporem.
+func _legend_left() -> float:
+	return RAIL_WIDTH + UiKit.SPACE_LG
+
+
 ## Ajusta a largura da etiqueta para que o título caiba inteiro em uma linha,
 ## junto do botão (Todos/Voltar), crescendo até LEGEND_MAX_WIDTH. Se ainda não
 ## couber, reduz a fonte do título em até 2 px. O título nunca quebra em linha.
@@ -461,7 +495,8 @@ func _fit_legend_width() -> void:
 		if _legend_flag != null:
 			content += _legend_flag.custom_minimum_size.x + UiKit.SPACE_SM
 		if content <= LEGEND_MAX_WIDTH or reduced >= 2:
-			_legend.offset_right = UiKit.SPACE_LG \
+			_legend.offset_left = _legend_left()
+			_legend.offset_right = _legend_left() \
 					+ clampf(content, LEGEND_WIDTH, LEGEND_MAX_WIDTH)
 			return
 		_shrink_legend_title()
@@ -1780,49 +1815,190 @@ func _set_metric(key: String, text: String, color: Color = UiKit.TEXT) -> void:
 	label.add_theme_color_override("font_color", color)
 
 
-# --- Doca --------------------------------------------------------------------
+# --- Barra lateral de painéis (esquerda) -------------------------------------
 
+## Barra vertical colada à topbar (T7 opção A): fundo BARRA_FUNDO, filete duplo
+## de latão na borda direita e os seis painéis — selo redondo com o ícone,
+## rótulo em caixa alta e o número do atalho à direita.
 func _build_dock() -> void:
-	_dock_holder = VBoxContainer.new()
-	_dock_holder.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_dock_holder.offset_left = -(UiKit.DOCK_WIDTH + 10.0)
-	_dock_holder.offset_right = -10.0
-	_dock_holder.offset_top = TOP_BAR_HEIGHT + 10.0
-	_dock_holder.offset_bottom = TOP_BAR_HEIGHT + 10.0 \
-			+ SCREEN_ORDER.size() * (UiKit.DOCK_BUTTON_HEIGHT + 6.0)
-	_dock_holder.add_theme_constant_override("separation", 6)
+	_dock_holder = Control.new()
+	_dock_holder.name = "PanelRail"
+	_dock_holder.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	_dock_holder.offset_left = 0.0
+	_dock_holder.offset_right = RAIL_WIDTH
+	_dock_holder.offset_top = TOP_BAR_HEIGHT
+	_dock_holder.offset_bottom = 0.0
+	_dock_holder.mouse_filter = Control.MOUSE_FILTER_STOP
 	_root.add_child(_dock_holder)
+
+	var background := Panel.new()
+	background.name = "RailBackground"
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = UiKit.BARRA_FUNDO
+	style.set_border_width_all(0)
+	style.set_corner_radius_all(0)
+	background.add_theme_stylebox_override("panel", style)
+	_dock_holder.add_child(background)
+
+	# Filete duplo na borda direita: duas linhas de 1 px com 2 px de vão.
+	for offset in [4.0, 1.0]:
+		var line := ColorRect.new()
+		line.color = UiKit.BARRA_FILETE
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+		line.offset_left = -offset
+		line.offset_right = -offset + 1.0
+		_dock_holder.add_child(line)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", int(RAIL_PAD))
+	margin.add_theme_constant_override("margin_right", int(RAIL_PAD + 4))
+	margin.add_theme_constant_override("margin_top", int(RAIL_PAD))
+	margin.add_theme_constant_override("margin_bottom", int(RAIL_PAD))
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dock_holder.add_child(margin)
+
+	_rail_box = VBoxContainer.new()
+	_rail_box.add_theme_constant_override("separation", 6)
+	_rail_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(_rail_box)
 
 	_render_dock()
 
 
 func _render_dock() -> void:
-	UiKit.clear(_dock_holder)
+	if _rail_box == null:
+		return
+	UiKit.clear(_rail_box)
 	_dock_buttons.clear()
 
 	for index in SCREEN_ORDER.size():
-		var id: String = SCREEN_ORDER[index]
-		var button := Button.new()
-		button.focus_mode = Control.FOCUS_NONE
-		button.text = I18n.t(SCREEN_LABELS[id])
-		button.custom_minimum_size.y = UiKit.DOCK_BUTTON_HEIGHT
-		button.add_theme_font_size_override("font_size", UiKit.FS_SMALL)
-		button.tooltip_text = "%d · %s" % [index + 1, I18n.t(SCREEN_LABELS[id])]
+		var id := String(SCREEN_ORDER[index])
+		var button := _rail_button(id, index + 1)
 		button.pressed.connect(_toggle_screen.bind(id))
-		_dock_holder.add_child(button)
+		_rail_box.add_child(button)
 		_dock_buttons[id] = button
 
+	_rail_box.add_child(UiKit.spacer())
 	_refresh_dock_state()
 
 
-func _refresh_dock_state() -> void:
-	var root_screen := ""
+## Botão de painel: selo redondo com o ícone + rótulo curto em caixa alta
+## (Barlow Condensed) + número do atalho à direita.
+func _rail_button(id: String, shortcut: int) -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(0.0, RAIL_BUTTON_HEIGHT)
+	button.tooltip_text = "%d · %s" % [shortcut, I18n.t(SCREEN_LABELS[id])]
+
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 7.0
+	row.offset_right = -8.0
+	row.add_theme_constant_override("separation", 7)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(row)
+
+	var seal := RailSeal.new(SCREEN_ICONS[id])
+	row.add_child(seal)
+
+	var label := UiKit.label(I18n.t(SCREEN_LABELS[id]).to_upper(), UiKit.FS_SMALL,
+			UiKit.BARRA_TEXTO)
+	label.add_theme_font_override("font", UiKit.CAPTION_FONT)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
+
+	var key := UiKit.label(str(shortcut), UiKit.FS_CAPTION + 1, UiKit.BARRA_ROTULO)
+	key.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+	key.custom_minimum_size.x = 16.0
+	key.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	key.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(key)
+
+	button.set_meta("seal", seal)
+	button.set_meta("label", label)
+	button.set_meta("key", key)
+	button.mouse_entered.connect(func() -> void: _paint_rail_hover(button, true))
+	button.mouse_exited.connect(func() -> void: _paint_rail_hover(button, false))
+	_rail_style(button, false)
+	return button
+
+
+## Ativo = latão sólido com texto/glifo na cor do BARRA_FUNDO (igual aos botões
+## de velocidade); inativo = contorno de latão com hover que clareia o fundo.
+func _rail_style(button: Button, active: bool) -> void:
+	if active:
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(UiKit.BARRA_FILETE, UiKit.BARRA_FILETE, 0.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(UiKit.BARRA_FILETE.lightened(0.08), UiKit.BARRA_FILETE,
+				0.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(UiKit.BARRA_FILETE.darkened(0.08), UiKit.BARRA_FILETE,
+				0.0))
+		button.add_theme_stylebox_override("focus",
+				UiKit.outline(UiKit.BARRA_FUNDO))
+		button.add_theme_color_override("font_color", UiKit.BARRA_FUNDO)
+		button.add_theme_color_override("font_hover_color", UiKit.BARRA_FUNDO)
+		button.add_theme_color_override("font_pressed_color", UiKit.BARRA_FUNDO)
+	else:
+		button.add_theme_stylebox_override("normal",
+				UiKit.flat(Color(0, 0, 0, 0), UiKit.BARRA_FILETE, 0.0))
+		button.add_theme_stylebox_override("hover",
+				UiKit.flat(Color(UiKit.BARRA_FILETE, 0.16), UiKit.BARRA_FILETE,
+				0.0))
+		button.add_theme_stylebox_override("pressed",
+				UiKit.flat(Color(UiKit.BARRA_FILETE, 0.28), UiKit.BARRA_FILETE,
+				0.0))
+		button.add_theme_stylebox_override("focus",
+				UiKit.outline(UiKit.BARRA_FILETE))
+		button.add_theme_color_override("font_color", UiKit.BARRA_ROTULO)
+		button.add_theme_color_override("font_hover_color", UiKit.BARRA_TEXTO)
+		button.add_theme_color_override("font_pressed_color", UiKit.BARRA_TEXTO)
+	_paint_rail_button(button)
+
+
+func _paint_rail_button(button: Button, hover: bool = false) -> void:
+	var active := _rail_is_active(button)
+	var color := UiKit.BARRA_FUNDO if active \
+			else (UiKit.BARRA_TEXTO if hover else UiKit.BARRA_ROTULO)
+	if button.has_meta("seal"):
+		(button.get_meta("seal") as RailSeal).set_state(active, hover)
+	for meta in ["label", "key"]:
+		if button.has_meta(meta):
+			var label: Label = button.get_meta(meta)
+			label.add_theme_color_override("font_color", color)
+
+
+func _paint_rail_hover(button: Button, hover: bool) -> void:
+	_paint_rail_button(button, hover)
+
+
+func _rail_is_active(button: Button) -> bool:
+	for id in _dock_buttons:
+		if _dock_buttons[id] == button:
+			return id == _root_screen()
+	return false
+
+
+func _root_screen() -> String:
 	for entry in _stack:
 		if String(entry["kind"]) == "screen":
-			root_screen = String(entry["id"])
-			break
+			return String(entry["id"])
+	return ""
+
+
+func _refresh_dock_state() -> void:
+	var root_screen := _root_screen()
 	for id in _dock_buttons:
-		UiKit.set_tab_active(_dock_buttons[id], id == root_screen)
+		_rail_style(_dock_buttons[id], id == root_screen)
 
 
 # --- Camada das telas ---------------------------------------------------------
@@ -1832,6 +2008,9 @@ func _refresh_dock_state() -> void:
 func _build_screen_layer() -> void:
 	_window_layer = Control.new()
 	_window_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# As folhas de papel começam à direita da barra lateral: a navegação nunca
+	# fica por baixo de uma tela.
+	_window_layer.offset_left = RAIL_WIDTH + RAIL_PANEL_GAP
 	_window_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_window_layer.visible = false
 	_root.add_child(_window_layer)
@@ -2234,10 +2413,8 @@ func _show_top() -> void:
 	# `is_window_open()` (usado pelo mapa e pelos testes de UI).
 	if _alerts_layer != null:
 		_alerts_layer.visible = kind == "screen" and id == "alerts"
-	# O minimapa fica no canto inferior direito e a doca no topo direito: ambos
-	# ficam exatamente sob a ficha, então recolhem enquanto ela está aberta.
-	if _dock_holder != null:
-		_dock_holder.visible = kind == "screen"
+	# A barra lateral de painéis permanece visível SOBRE as telas: continua sendo
+	# a navegação entre painéis. Minimapa e lista de cidades recolhem.
 	_sync_map_overlays()
 	_refresh_dock_state()
 	var focus_root: Control = _city_screen if kind == "city" else _screens[id]
@@ -2297,8 +2474,6 @@ func _close_screen() -> void:
 	if _alerts_layer != null:
 		_alerts_layer.visible = false
 	_city_screen.visible = false
-	if _dock_holder != null:
-		_dock_holder.visible = true
 	_refresh_dock_state()
 	_sync_map_overlays()
 	if was_visible:
@@ -2807,6 +2982,72 @@ class SituationBar extends Control:
 			if i < _level:
 				style.bg_color = COLORS[_level - 1]
 			draw_style_box(style, rect)
+
+
+## Selo redondo do botão da barra lateral (T7 opção A): círculo de 28 px, anel
+## de 1 px e o glifo do painel dentro. Inativo: papel com glifo de tinta e anel
+## de latão. Ativo (botão preenchido de latão): fundo de tinta, glifo latão e
+## anel de papel — o selo lê como botão de cera sobre a faixa clara.
+class RailSeal extends Control:
+	const SIZE := 28.0
+	const RING := 1.0
+	const GLYPH := 15.0
+
+	var _texture: Texture2D
+	var _active := false
+	var _hover := false
+
+	func _init(texture: Texture2D) -> void:
+		_texture = texture
+		custom_minimum_size = Vector2(SIZE, SIZE)
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_state(active: bool, hover: bool) -> void:
+		if active == _active and hover == _hover:
+			return
+		_active = active
+		_hover = hover
+		queue_redraw()
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := minf(size.x, size.y) * 0.5 - RING * 0.5
+		var fill := UiKit.BARRA_FUNDO if _active else UiKit.BARRA_TEXTO
+		var ring := UiKit.BARRA_TEXTO if _active else UiKit.BARRA_FILETE
+		var glyph := UiKit.BARRA_FILETE if _active else UiKit.BARRA_FUNDO
+		if _hover and not _active:
+			fill = UiKit.PAPEL_CLARO
+		draw_circle(center, radius, fill, true, -1.0, true)
+		draw_arc(center, radius, 0.0, TAU, 32, ring, RING, true)
+		var side := Vector2(GLYPH, GLYPH)
+		draw_texture_rect(_texture, Rect2(center - side * 0.5, side), false, glyph)
+
+
+## Amostra de cor/espessura da seta de comércio: traço horizontal na cor do
+## modal (latão/aço) com uma ponta de seta, do mesmo jeito que o mapa desenha.
+class LegendFlowSample extends Control:
+	var _color: Color
+	var _thickness: float
+
+	func _init(color: Color, thickness: float) -> void:
+		_color = color
+		_thickness = maxf(thickness, 1.0)
+		custom_minimum_size = Vector2(52.0, maxf(12.0, _thickness + 4.0))
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var y := size.y * 0.5
+		var tip_x := size.x - 2.0
+		draw_line(Vector2(0.0, y), Vector2(tip_x - 1.0, y), _color, _thickness,
+				true)
+		var head := PackedVector2Array([
+			Vector2(tip_x, y),
+			Vector2(tip_x - 5.0, y - 3.5),
+			Vector2(tip_x - 5.0, y + 3.5),
+		])
+		draw_colored_polygon(head, _color)
 
 
 ## Amostra de cor (círculo para mineral, losango para renovável) — espelha o
