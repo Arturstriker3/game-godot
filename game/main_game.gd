@@ -30,6 +30,7 @@ var convoys
 var hud
 var _last_hover := ""
 var _last_flow := -1
+var _last_nation_hover := ""
 
 
 func _ready() -> void:
@@ -235,8 +236,10 @@ func _on_map_mode_requested(mode: String) -> void:
 	if city_world.current_mode() != mode:
 		_clear_map_selection()
 	_last_flow = -1
+	_last_nation_hover = ""
 	if hud != null:
 		hud.clear_tooltip()
+	city_world.set_nation_highlight("")
 	city_world.set_mode(mode)
 
 
@@ -383,11 +386,20 @@ func _update_city_hover_at(mouse: Vector2) -> void:
 		if not _last_hover.is_empty():
 			_last_hover = ""
 			city_world.set_hover("")
+		_last_flow = -1
+		_last_nation_hover = ""
+		city_world.set_nation_highlight("")
 		city_world.set_deposit_hover(-1)
 		GameCursor.set_state(dragging, "")
 		return
 	if player == null:
 		return
+	# Hover no nome da nação ou na bandeira da capital: destaca o território.
+	# A chamada do TerritoryMap é protegida por `has_method` (tarefa paralela).
+	var nation_hover: String = city_world.pick_nation_hover(mouse, player.camera)
+	if nation_hover != _last_nation_hover:
+		_last_nation_hover = nation_hover
+		city_world.set_nation_highlight(nation_hover)
 	# Cidade, porto e jazida são clicáveis em TODOS os modos: o hover sempre vira
 	# mão (nunca o I-beam de texto). No mapa de recursos a jazida tem prioridade
 	# (badge sobre o ponto e clique abre a ficha do depósito na legenda).

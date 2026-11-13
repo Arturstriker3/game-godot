@@ -359,6 +359,8 @@ var _region_records: Array[Dictionary] = []
 ## Território dinâmico (províncias -> dono).
 var _territory: TerritoryMap
 var _territory_overrides: Dictionary = {}
+## Nação realçada pelo hover no nome/bandeira (delegado ao TerritoryMap).
+var _highlighted_nation := ""
 var _geo: RefCounted
 var _geo_catchment_ready := false
 ## `true` quando `_geo` é a instância do Economy (compartilhada, já carregada e
@@ -636,6 +638,7 @@ func set_mode(mode: String) -> void:
 		_trade_flows.set_active(mode == "routes")
 	if mode != "political" and mode != "routes":
 		_hide_region_labels()
+		set_nation_highlight("")
 	_nation_labels_dirty = true
 
 
@@ -1577,6 +1580,58 @@ func territory() -> TerritoryMap:
 	return _territory
 
 
+## Nação sob o cursor quando o mouse está sobre o NOME no chão ou a BANDEIRA da
+## capital. Só vale no modo político/rotas, onde esses elementos existem.
+func pick_nation_hover(screen_position: Vector2, camera: Camera3D) -> String:
+	if camera == null or (_mode != "political" and _mode != "routes"):
+		return ""
+	var flag_tag := _pick_capital_flag(screen_position, camera)
+	if not flag_tag.is_empty():
+		return flag_tag
+	return _pick_nation_name(screen_position)
+
+
+func _pick_nation_name(screen_position: Vector2) -> String:
+	for entry: Dictionary in _nation_label_report_cache:
+		if not bool(entry.get("visible", false)):
+			continue
+		var rect: Rect2 = entry.get("rect", Rect2())
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+			continue
+		if rect.grow(2.0).has_point(screen_position):
+			return String(entry.get("tag", ""))
+	return ""
+
+
+func _pick_capital_flag(screen_position: Vector2, camera: Camera3D) -> String:
+	for record: Dictionary in _flag_records:
+		if float(record.get("label_alpha", 0.0)) <= 0.01:
+			continue
+		var center := _flag_world_center(record)
+		if camera.is_position_behind(center):
+			continue
+		var rect := _flag_rect(record, camera)
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+			continue
+		if rect.grow(2.0).has_point(screen_position):
+			return String(record.get("nation", ""))
+	return ""
+
+
+## Realce do território da nação. O `TerritoryMap` desta tarefa paralela pode
+## ainda não expor os métodos; a chamada é protegida por `has_method`.
+func set_nation_highlight(tag: String) -> void:
+	if tag == _highlighted_nation:
+		return
+	_highlighted_nation = tag
+	if _territory == null:
+		return
+	if _territory.has_method("clear_highlight"):
+		_territory.call("clear_highlight")
+	if not tag.is_empty() and _territory.has_method("set_highlight_nation"):
+		_territory.call("set_highlight_nation", tag)
+
+
 func _init_territory(cities: Array) -> void:
 	_last_cities = cities.duplicate()
 	_territory = TerritoryMapScript.new()
@@ -1596,6 +1651,9 @@ func _refresh_territory(cities: Array) -> void:
 	if changed:
 		_minimap_texture = null  # invalida: o minimapa regenera sob demanda
 		_reposition_nation_labels()
+		if not _highlighted_nation.is_empty() \
+				and _territory.has_method("set_highlight_nation"):
+			_territory.call("set_highlight_nation", _highlighted_nation)
 		territory_changed.emit()
 
 

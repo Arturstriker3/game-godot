@@ -43,6 +43,9 @@ var _height := 900
 var _bench := false
 ## Opcional: id da cidade a destacar (ex.: FRA-PAR) para conferir a seleção.
 var _select := ""
+## Opcional: tag de nação a destacar no mapa político via API
+## (`TerritoryMap.set_highlight_nation`, ex.: FRA) — evidência do item 4.
+var _highlight := ""
 ## Opcional: id da cidade a enquadrar no centro (ex.: FRA-CAY).
 var _focus := ""
 ## Overrides de território: pares [city_id, tag] via --territory.
@@ -131,6 +134,8 @@ func _parse_args() -> void:
 				_bench = value != "0" and value != "false"
 			"--select":
 				_select = value
+			"--highlight":
+				_highlight = value
 			"--focus":
 				_focus = value
 			"--territory":
@@ -190,6 +195,8 @@ func _capture_map3d() -> void:
 	_manifest["city_count"] = cities.size()
 	_manifest["distances"] = _distances if not _distances.is_empty() else DISTANCES
 	world.set_mode(_mode)
+	if not _highlight.is_empty():
+		_apply_nation_highlight(world)
 	if not _hide_resources.is_empty():
 		var filter := {}
 		for key in ["coal", "copper", "gas", "iron", "oil", "wheat"]:
@@ -252,6 +259,22 @@ func _center_world(world: Node3D, cities: Array) -> void:
 func _apply_territory_overrides(world: Node3D) -> void:
 	for pair in _territory_pairs:
 		world.debug_set_city_nation(String(pair[0]), String(pair[1]))
+
+
+## Destaque de nação (--highlight=TAG) pela API do TerritoryMap: só lê os
+## membros privados do CityWorld (mesmo acesso de leitura que a captura já usa
+## para as filas de LOD) — nenhuma lógica de jogo é duplicada aqui.
+func _apply_nation_highlight(world: Node3D) -> void:
+	var territory: Variant = world.get("_territory")
+	if territory == null:
+		_manifest["warnings"].append("território indisponível para --highlight")
+		return
+	var index: int = territory.set_highlight_nation(_highlight)
+	_manifest["highlight"] = {"tag": _highlight, "owner_index": index}
+	for key in ["_atlas_material", "_political_material"]:
+		var material: Variant = world.get(key)
+		if material != null:
+			territory.apply_nation_highlight(material)
 
 
 # --- Baseline plano (mesmos assets, sem perspectiva nem cidades) ------------
