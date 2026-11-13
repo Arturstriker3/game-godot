@@ -41,6 +41,8 @@ var _out := ""
 var _focus := "BEL-BRU"
 var _samples := SAMPLE_FRAMES
 var _world_path := WORLD_PATH
+## Dias reais de economia a rodar para medir o modo rotas ligado (0 = desligado).
+var _route_days := 0
 var _world: Node3D
 var _pivot: Node3D
 var _camera: Camera3D
@@ -59,6 +61,8 @@ func _ready() -> void:
 			_samples = maxi(int(arg.split("=")[1]), 60)
 		elif arg.begins_with("--world="):
 			_world_path = arg.split("=")[1]
+		elif arg.begins_with("--routes="):
+			_route_days = maxi(int(arg.split("=")[1]), 0)
 	get_tree().root.size = Vector2i(1920, 1080)
 	_run.call_deferred()
 
@@ -74,8 +78,21 @@ func _load_array(path: String) -> Array:
 
 func _run() -> void:
 	await get_tree().process_frame
+	var route_history: Array = []
 	var cities := _load_array(CITIES_PATH)
 	var ports := _load_array(PORTS_PATH)
+	if _route_days > 0:
+		var economy := get_node_or_null("/root/Economy")
+		if economy != null:
+			economy.set_speed(0)
+			for _day in _route_days:
+				economy._run_day()
+				if not economy.last_summary.is_empty():
+					route_history.append(economy.last_summary.duplicate(true))
+			if not route_history.is_empty():
+				var last: Dictionary = route_history[route_history.size() - 1]
+				cities = last.get("cities", cities)
+				ports = last.get("ports", ports)
 	if cities.is_empty():
 		print("[camera_bench] sem cidades; abortando")
 		get_tree().quit(1)
@@ -90,6 +107,11 @@ func _run() -> void:
 	_world = script.new() as Node3D
 	add_child(_world)
 	_world.build(cities, ports)
+	if _route_days > 0:
+		for summary in route_history:
+			_world.record_trade_orders(summary.get("trade_orders", []),
+					int(summary.get("day", 0)))
+		_world.set_mode("routes")
 	var build_ms := _elapsed_ms(build_start)
 
 	_pivot = Node3D.new()
@@ -122,6 +144,7 @@ func _run() -> void:
 	_results["nodes"] = _count_nodes(_world)
 	_results["engine"] = Engine.get_version_info().get("string", "")
 	_results["sample_frames"] = _samples
+	_results["routes"] = _route_days
 
 	_results["near_pan"] = _measure_pan(NEAR_DISTANCE, PAN_STEP)
 	_results["mid_pan"] = _measure_pan(MID_DISTANCE, PAN_STEP)
@@ -222,6 +245,12 @@ func _measure_idle() -> Dictionary:
 func _time_process() -> float:
 	var start := Time.get_ticks_usec()
 	_world._process(1.0 / 60.0)
+	# O bench chama `CityWorld._process` na mão; o filho `TradeFlowLayer` também
+	# é medido quando o modo rotas está ligado.
+	if _route_days > 0:
+		var layer: Node = _world.get("_trade_flows")
+		if layer != null:
+			layer._process(1.0 / 60.0)
 	return _elapsed_ms(start)
 
 

@@ -42,6 +42,7 @@ const FLAG_SHADER: Shader = preload("res://map/map_shaders/flag_atlas.gdshader")
 const LABEL_FONT: Font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
 
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
+const TradeFlowLayerScript: Script = preload("res://map/trade_flow_layer.gd")
 const UrbanGrowthScript: Script = preload("res://core/urban/urban_growth_manager.gd")
 const IndustryProfileScript: Script = preload("res://core/urban/industry_profile.gd")
 const TerritoryMapScript: Script = preload("res://map/territory_map.gd")
@@ -420,6 +421,8 @@ var _layout_job_camera: Camera3D
 ## frustum, checada a ~6 Hz — a posição lógica do tween continua.
 var _convoy_renderer: Node = null
 var _convoy_timer := 0.0
+## Camada de setas de comércio (modo rotas): agregado de 7 dias dos pedidos.
+var _trade_flows: Node = null
 
 ## Cópias laterais do mundo (wrap em X): o rótulo clicável é o da cópia que
 ## está de fato na tela, não necessariamente a central. Com o pool de rótulos,
@@ -455,6 +458,7 @@ func build(cities: Array, ports: Array) -> void:
 	_build_mode_layer(cities)
 	_build_cities(cities)
 	_build_ports(ports)
+	_build_trade_flows(cities)
 	_build_city_labels()
 	_build_flag_renderer()
 	_init_territory(cities)
@@ -542,8 +546,8 @@ func _exit_tree() -> void:
 ## O modo "political" usa base de atlas (chapado); os demais usam satélite.
 func set_mode(mode: String) -> void:
 	_mode = mode
-	var is_atlas := mode == "political"
-	var show_overlay := mode not in ["geographic", "political"]
+	var is_atlas := mode == "political" or mode == "routes"
+	var show_overlay := mode not in ["geographic", "political", "routes"]
 
 	# Aplica em todas as cópias laterais (wrap), não só na central.
 	for root in _content_roots():
@@ -561,6 +565,8 @@ func set_mode(mode: String) -> void:
 		_political_material.set_shader_parameter("border_opacity", 0.42)
 	if _mode_layer != null:
 		_mode_layer.set_mode(mode)
+	if _trade_flows != null:
+		_trade_flows.set_active(mode == "routes")
 	_nation_labels_dirty = true
 
 
@@ -1535,7 +1541,7 @@ func debug_clear_territory_overrides() -> void:
 ## entre dois nomes que colidem. Histerese + fade de 150 ms evitam o pisca.
 func _update_nation_labels(camera: Camera3D) -> void:
 	_nation_label_report_cache.clear()
-	if camera == null or _mode != "political":
+	if camera == null or (_mode != "political" and _mode != "routes"):
 		_hide_nation_labels()
 		return
 	var viewport := camera.get_viewport()
@@ -1889,6 +1895,41 @@ func _set_nation_label_visible(label: Label3D, value: bool,
 		label.visible = true
 	if not _nation_fade_active.has(label):
 		_nation_fade_active.append(label)
+
+
+
+
+func _build_trade_flows(cities: Array) -> void:
+	_trade_flows = TradeFlowLayerScript.new()
+	_trade_flows.name = "TradeFlows"
+	add_child(_trade_flows)
+	_trade_flows.setup(self)
+
+
+## Alimenta a janela de 7 dias do modo rotas. Chamado por `main_game` a cada
+## `Economy.trade_orders_ready`.
+func record_trade_orders(orders: Array, day: int) -> void:
+	if _trade_flows != null:
+		_trade_flows.record_orders(orders, day)
+
+
+## Fluxo sob o cursor no modo rotas (-1 fora de uma seta).
+func pick_trade_flow(screen_position: Vector2, camera: Camera3D) -> int:
+	if _trade_flows == null or _mode != "routes":
+		return -1
+	return _trade_flows.pick_flow(screen_position, camera)
+
+
+func trade_flow_info(index: int) -> Dictionary:
+	if _trade_flows == null:
+		return {}
+	return _trade_flows.flow_info(index)
+
+
+func trade_flow_count() -> int:
+	if _trade_flows == null:
+		return 0
+	return _trade_flows.flow_count()
 
 
 func _build_mode_layer(cities: Array) -> void:
@@ -2599,7 +2640,7 @@ func _process(delta: float) -> void:
 	# pela metade: esperar o commit evita o nome de país sobre um nome de cidade
 	# que ainda não foi aceito.
 	if not moved and _nation_labels_dirty and not _layout_job_active:
-		if _mode == "political":
+		if _mode == "political" or _mode == "routes":
 			_update_nation_labels(camera)
 		_nation_labels_dirty = false
 

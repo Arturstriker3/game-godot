@@ -1690,6 +1690,13 @@
   "trade.tab.routes": "Rotas",
   "trade.title": "Comércio e logística",
   "trade.today": "Pedidos do dia"
+,
+  "map.routes": "Rotas",
+  "map.routes.land": "Terrestre",
+  "map.routes.sea": "Marítimo",
+  "map.routes.product": "Produto",
+  "map.routes.volume": "Volume",
+  "map.routes.unit": "t/dia"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -3382,6 +3389,13 @@
   "trade.tab.routes": "Routes",
   "trade.title": "Trade and logistics",
   "trade.today": "Today's orders"
+,
+  "map.routes": "Routes",
+  "map.routes.land": "Overland",
+  "map.routes.sea": "Maritime",
+  "map.routes.product": "Product",
+  "map.routes.volume": "Volume",
+  "map.routes.unit": "t/day"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -5074,5 +5088,12 @@
   "trade.tab.routes": "Rutas",
   "trade.title": "Comercio y logística",
   "trade.today": "Pedidos del día"
+,
+  "map.routes": "Rutas",
+  "map.routes.land": "Terrestre",
+  "map.routes.sea": "Marítimo",
+  "map.routes.product": "Producto",
+  "map.routes.volume": "Volumen",
+  "map.routes.unit": "t/día"
  }
 }

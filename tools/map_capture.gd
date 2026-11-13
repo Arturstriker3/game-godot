@@ -49,6 +49,8 @@ var _focus := ""
 var _territory_pairs: Array[Array] = []
 ## Recursos escondidos no mapa de recursos via --hide=coal,oil.
 var _hide_resources: Array[String] = []
+## Dias de economia a rodar antes da foto para alimentar o modo rotas.
+var _route_days := 0
 
 const BENCH_WARMUP := 45
 const BENCH_FRAMES := 180
@@ -144,12 +146,24 @@ func _parse_args() -> void:
 				for chunk in value.split(","):
 					if not chunk.is_empty():
 						_hide_resources.append(chunk)
+			"--routes":
+				_route_days = maxi(int(value), 0)
 
 
 # --- Mapa 3D atual ----------------------------------------------------------
 
 func _capture_map3d() -> void:
-	var status: Dictionary = Economy.sim.get_demo_status()
+	var route_history: Array = []
+	if _route_days > 0:
+		# Ferramenta de captura: roda dias reais do núcleo (sem inventar fluxo)
+		# e guarda o resumo para alimentar a janela de 7 dias do CityWorld.
+		Economy.set_speed(0)
+		for _day in _route_days:
+			Economy._run_day()
+			if not Economy.last_summary.is_empty():
+				route_history.append(Economy.last_summary.duplicate(true))
+	var status: Dictionary = Economy.last_summary if not Economy.last_summary.is_empty() \
+			else Economy.sim.get_demo_status()
 	var cities: Array = status.get("cities", [])
 	var ports: Array = status.get("ports", [])
 	if cities.is_empty():
@@ -162,6 +176,9 @@ func _capture_map3d() -> void:
 	var world: Node3D = CityWorldScript.new()
 	add_child(world)
 	world.build(cities, ports)
+	for summary in route_history:
+		world.record_trade_orders(summary.get("trade_orders", []),
+				int(summary.get("day", 0)))
 	_apply_territory_overrides(world)
 	_center_world(world, cities)
 	if not _focus.is_empty():

@@ -29,6 +29,7 @@ var city_world
 var convoys
 var hud
 var _last_hover := ""
+var _last_flow := -1
 
 
 func _ready() -> void:
@@ -43,6 +44,7 @@ func _ready() -> void:
 	_build_hud()
 	_refresh_minimap_territory()
 	Economy.trade_orders_ready.connect(convoys.spawn_orders)
+	Economy.trade_orders_ready.connect(_on_trade_orders_ready)
 	Economy.speed_changed.connect(_on_speed_changed)
 	_on_speed_changed(Economy.speed)
 	hud.resource_filter_changed.connect(city_world.set_resource_filter)
@@ -53,6 +55,14 @@ func _ready() -> void:
 ## Mantém os modos de mapa (população, economia, indústria, recursos) vivos.
 func _on_status_updated(summary: Dictionary) -> void:
 	city_world.refresh_modes(summary.get("cities", []))
+
+
+## Alimenta a janela de 7 dias das setas de comércio (modo rotas).
+func _on_trade_orders_ready(orders: Array) -> void:
+	if city_world == null:
+		return
+	city_world.record_trade_orders(orders,
+			int(Economy.last_summary.get("day", 0)))
 
 
 ## Donos de território mudaram: atualiza a textura do minimapa.
@@ -224,6 +234,9 @@ func _on_map_mode_requested(mode: String) -> void:
 		return
 	if city_world.current_mode() != mode:
 		_clear_map_selection()
+	_last_flow = -1
+	if hud != null:
+		hud.clear_tooltip()
 	city_world.set_mode(mode)
 
 
@@ -399,6 +412,11 @@ func _update_city_hover_at(mouse: Vector2) -> void:
 		kind = "port"
 	elif not city_id.is_empty():
 		kind = "city"
+	# Setas de comércio: só quando nenhum lugar está sob o mouse (o fluxo é
+	# leitura, não alvo de clique).
+	_last_flow = -1
+	if kind.is_empty() and hud.map_mode() == "routes":
+		_last_flow = city_world.pick_trade_flow(mouse, player.camera)
 	GameCursor.set_state(false, kind)
 
 
@@ -434,23 +452,38 @@ func _process(delta: float) -> void:
 	_apply_camera_limit(player, delta)
 
 	_update_city_hover_pass()
-	_update_city_tooltip()
+	_update_tooltip()
 	if hud != null:
 		_update_minimap(player)
 
 
-## Ficha de papel da cidade sob o mouse: o mapa só informa QUAL cidade está em
-## hover e ONDE ela está na tela. O atraso de ~250 ms, o conteúdo e a decisão de
-## esconder com sobreposição aberta ficam no HUD (camada de apresentação).
-func _update_city_tooltip() -> void:
+## Ficha única do mouse: a seta de comércio tem prioridade quando é a única
+## coisa sob o cursor (o hover pass só procura fluxo se não há cidade/porto) e
+## fora dela vale a ficha de papel da cidade. Um único dono evita o vaivém em
+## que `_update_city_tooltip` e `_update_flow_tooltip` apagavam um ao outro no
+## mesmo frame. O HUD também só aceita `clear` do tipo ativo (`_tooltip_kind`).
+func _update_tooltip() -> void:
 	if hud == null or city_world == null:
 		return
-	if hud.is_overlay_open() or _last_hover.is_empty() \
-			or city_world.place_kind(_last_hover) != "city":
+	if hud.is_overlay_open():
+		hud.clear_tooltip()
+		return
+	# Fluxo: só o resumo origem → destino, produto principal e volume.
+	if _last_flow >= 0:
+		var flow: Dictionary = city_world.trade_flow_info(_last_flow)
+		if not flow.is_empty():
+			hud.hover_flow_tooltip(flow, get_viewport().get_mouse_position())
+			return
+	hud.clear_flow_tooltip()
+	# Cidade: o mapa só informa QUAL cidade está em hover e ONDE ela está na
+	# tela. O atraso de ~250 ms, o conteúdo e a decisão de esconder com
+	# sobreposição aberta ficam no HUD (camada de apresentação).
+	if _last_hover.is_empty() or city_world.place_kind(_last_hover) != "city":
 		hud.clear_city_tooltip()
 		return
 	var player := get_node_or_null("Player")
 	if player == null:
+		hud.clear_city_tooltip()
 		return
 	var point: Vector2 = player.camera.unproject_position(
 			city_world.city_world_position(_last_hover))

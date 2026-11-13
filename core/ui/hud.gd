@@ -66,10 +66,11 @@ const SCREEN_LABELS := {
 }
 ## Botões de camada do mapa (quadrados, acima do minimapa). Os demais modos
 ## (população/economia/indústria) continuam no mapa, mas sem botão por enquanto.
-const MAP_MODES := ["political", "resources"]
+const MAP_MODES := ["political", "resources", "routes"]
 const MODE_ICONS := {
 	"political": preload("res://assets/ui/map_mode_political.png"),
 	"resources": preload("res://assets/ui/map_mode_resources.png"),
+	"routes": preload("res://assets/icons/products/truck.svg"),
 }
 ## Ícones dos quatro indicadores da barra superior (paleta C). wheat/truck são
 ## reaproveitados de assets/icons/products/; population/deficit são próprios.
@@ -185,10 +186,15 @@ var _city_list
 ## Ficha de papel que acompanha a cidade sob o mouse (camada mais alta do HUD).
 var _tooltip_layer: Control
 var _city_tooltip: PanelContainer
+## Alvo ativo da ficha única: "city" ou "flow". Sem ele, `clear_city_tooltip`
+## e `clear_flow_tooltip` apagavam a ficha um do outro (o mapa chamava os dois
+## no mesmo frame). Só o `clear_*` do tipo ativo mexe na ficha.
+var _tooltip_kind := ""
 var _tooltip_city := ""
 var _tooltip_mode := ""
 var _tooltip_since := 0
 var _tooltip_point := Vector2.ZERO
+var _tooltip_flow := ""
 
 var _metric_values := {}
 var _date_label: Label
@@ -370,7 +376,7 @@ func _configure_minimap() -> void:
 ## que as telas ficam atrás do minimapa e as janelas ficam por cima.
 func _sync_map_overlays() -> void:
 	if is_overlay_open():
-		clear_city_tooltip()
+		clear_tooltip()
 	var overlay := is_overlay_open()
 	if _minimap != null:
 		_minimap.visible = not overlay
@@ -1915,8 +1921,12 @@ func hover_city_tooltip(city_id: String, screen_point: Vector2,
 		clear_city_tooltip()
 		return
 	_tooltip_point = screen_point
-	if city_id != _tooltip_city:
+	if _tooltip_kind != "city" or city_id != _tooltip_city:
+		# Alvo novo: some com o conteúdo anterior e reinicia o relógio. Limpar o
+		# alvo de fluxo aqui não pode esconder a ficha dele (só `_show_*` desenha).
+		_tooltip_kind = "city"
 		_tooltip_city = city_id
+		_tooltip_flow = ""
 		_tooltip_mode = mode
 		_tooltip_since = Time.get_ticks_msec()
 		_city_tooltip.hide_tooltip()
@@ -1938,7 +1948,9 @@ func preview_city_tooltip(city_id: String, screen_point: Vector2,
 		mode: String = "") -> void:
 	if _city_tooltip == null:
 		return
+	_tooltip_kind = "city"
 	_tooltip_city = city_id
+	_tooltip_flow = ""
 	_tooltip_mode = mode
 	_tooltip_since = Time.get_ticks_msec() - HOVER_DELAY_MS
 	_tooltip_point = screen_point
@@ -1947,14 +1959,92 @@ func preview_city_tooltip(city_id: String, screen_point: Vector2,
 		_city_tooltip.set_anchor_point(screen_point)
 
 
+## Sai do hover de cidade. No mapa o mapa chama isto todo frame em que não há
+## cidade sob o mouse (modo rotas); se a ficha ativa é de fluxo, não mexe nela.
 func clear_city_tooltip() -> void:
 	_tooltip_city = ""
+	if _city_tooltip == null or _tooltip_kind != "city":
+		return
+	_tooltip_kind = ""
+	_city_tooltip.hide_tooltip()
+
+
+## Hover de um fluxo comercial no modo rotas. O atraso é o mesmo da ficha de
+## cidade para o mapa não piscar ao atravessar uma seta; o conteúdo é montado
+## aqui, a partir do agregado que o mapa entrega (ids, modal, produto, t/dia).
+func hover_flow_tooltip(flow: Dictionary, screen_point: Vector2) -> void:
+	if _city_tooltip == null or flow.is_empty() or is_overlay_open():
+		clear_flow_tooltip()
+		return
+	var key := "%s|%s|%s" % [String(flow.get("from_city", "")),
+			String(flow.get("to_city", "")), String(flow.get("mode", ""))]
+	_tooltip_point = screen_point
+	if _tooltip_kind != "flow" or key != _tooltip_flow:
+		_tooltip_kind = "flow"
+		_tooltip_flow = key
+		_tooltip_city = ""
+		_tooltip_since = Time.get_ticks_msec()
+		_city_tooltip.hide_tooltip()
+		return
+	if not _city_tooltip.visible \
+			and Time.get_ticks_msec() - _tooltip_since >= HOVER_DELAY_MS:
+		_show_flow_tooltip(flow)
+	if _city_tooltip.visible:
+		_city_tooltip.set_anchor_point(_tooltip_point)
+
+
+## Sai do hover de fluxo. Chamado todo frame fora de uma seta; se a ficha ativa
+## é de cidade, não mexe nela.
+func clear_flow_tooltip() -> void:
+	_tooltip_flow = ""
+	if _city_tooltip == null or _tooltip_kind != "flow":
+		return
+	_tooltip_kind = ""
+	_city_tooltip.hide_tooltip()
+
+
+## Esconde a ficha ativa (qualquer tipo): tela aberta, troca de modo ou perda do
+## mouse. Nunca deixa estado pendente de um tipo só.
+func clear_tooltip() -> void:
+	_tooltip_kind = ""
+	_tooltip_city = ""
+	_tooltip_flow = ""
 	if _city_tooltip != null:
 		_city_tooltip.hide_tooltip()
 
 
 func city_tooltip_visible() -> bool:
 	return _city_tooltip != null and _city_tooltip.visible
+
+
+## Monta a ficha do fluxo: origem → destino, modal, produto principal e volume
+## em t/dia. Ids vêm do agregado do mapa; nomes/bandeiras são resolvidos aqui.
+func _show_flow_tooltip(flow: Dictionary) -> void:
+	if _city_tooltip == null:
+		return
+	var from_id := String(flow.get("from_city", ""))
+	var to_id := String(flow.get("to_city", ""))
+	var from_nation := String(flow.get("from_nation", ""))
+	var sea := String(flow.get("mode", "land")) == "sea"
+	var mode_key := "map.routes.sea" if sea else "map.routes.land"
+	var good := String(flow.get("good", ""))
+	var rows: Array = [
+		{
+			"label": I18n.t("map.routes.product"),
+			"value": I18n.t("product." + good) if not good.is_empty() else "",
+		},
+		{
+			"label": I18n.t("map.routes.volume"),
+			"value": UiKit.number(float(flow.get("tons_per_day", 0.0)), 1) \
+					+ " " + I18n.t("map.routes.unit"),
+			"color": UiKit.TINTA,
+		},
+	]
+	_city_tooltip.show_content(
+			"%s → %s" % [I18n.city_name(from_id, from_id),
+					I18n.city_name(to_id, to_id)],
+			Economy.flag_texture(from_nation),
+			I18n.t(mode_key), rows)
 
 
 func _show_city_tooltip(city_id: String, mode: String) -> void:
@@ -2544,7 +2634,7 @@ func _on_status(summary: Dictionary) -> void:
 
 func _on_locale_changed(_locale: String) -> void:
 	UiKit.set_locale(I18n.locale)
-	clear_city_tooltip()
+	clear_tooltip()
 	_render_top_bar()
 	_render_dock()
 	_configure_minimap()
