@@ -421,12 +421,13 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 - **População exibida × população de simulação:** desde a r6, `population` (status/save/cenário) é a população nacional real rateada e `simulation_population`/`sim_population` é a aglomeração que alimenta o modelo. Não são intercambiáveis: o HUD soma a primeira; o núcleo calcula com a segunda. Save antigo sem o campo usa `population` como unidade de simulação (comportamento anterior).
 - **Divergência de documentação:** a i18n e `DESIGN.md` ainda dizem que emprego/salários/poupança "não são simulados", mas o demo **simula** os três (só a migração realmente não existe).
 
-### Dados de cultura (v1.1, 2026-11) — dados apenas
+### Dados de cultura (v1.2, 2026-11) — dados apenas
 
-- `data/definitions/culture/`: 189 culturas em 42 famílias, 179 nações (principal + aceitas + composição com fonte e ano) e as 834 cidades (319 com dado regional, 515 `national_fallback`).
-- **v1.1:** subgrupos chineses usam `parent=han` + coluna `subcultures` (nenhuma cultura aparece junto do pai; validador barra); hispano-americanos têm identidade nacional própria (`argentino`, `mexicano`, `peruano` etc.) e `castelhano` fica na Espanha; Donetsk, Mariupol, Sebastopol, Zaporíjia e Kherson usam `source=estimate_post2022` (incerteza alta, documentada); dado regional novo nos Balcãs, Cáucaso, Ásia Central, Sudeste Asiático, Baluchistão e África.
-- Fonte curada em `tools/culture_sources/`; `tools/build_cultures.py` gera e `tools/validate_cultures.py` valida (0 erros, 0 avisos).
-- **Não ligado a economia, C++, UI nem save/load.** Regras, fontes e limitações (Srinagar/Simferopol/Bilbao/Bolzano ausentes) em `docs/plans/culture_data.md`.
+- `data/definitions/culture/`: **208 culturas em 45 famílias**, 179 nações (principal + aceitas + composição com fonte e ano) e as 834 cidades (321 com dado regional, 513 `national_fallback`). Contrato de arquivo **idêntico à v1.1** (mesmas colunas, mesmo `parent`/`subcultures`).
+- **v1.2 — cultura é identidade nacional/cultural, não raça:** removidas as 5 categorias raciais da v1.1 (`afro_latino`, `mestico`, `afro_americano`, `anglo_americano`, `hispanico`); EUA passam a ter `americano` (identidade nacional) + `mexicano_americano`/`porto_riquenho`/`cubano`, o Brasil `brasileiro:96` + `indigena_brasileiro:1`, a hispano-América a identidade nacional de cada país e o Caribe o gentílico de cada Estado (`jamaicano`, `trinitario`, `haitiano`, `guianense`, `belizense`…). `hindi` → `hindustani` (hindi-urdu) com `canares`/`malaiala`; novas `australiano`, `neozelandes`, `aborigene`, `havaiano`, `nativo_americano`, `luxemburgues`; `inuit` virou **Inuit-iúpik** (mesmo id).
+- **Validador:** `tools/validate_cultures.py` agora falha com **lista negada** de categorias raciais (por id e por termo em pt/en/es) e quando alguma nação não tem cultura principal nacional (existe, está na composição com ≥5% e é a maior cultura nomeada; exceções documentadas PAK/ARE/QAT). Culturas sem uso: 0.
+- Fonte curada em `tools/culture_sources/`; `tools/build_cultures.py` gera e `tools/validate_cultures.py` valida (0 erros, 0 avisos); `validate_scenario_data.py` 0 erros.
+- **Não ligado a economia, C++, UI nem save/load.** Regras, tabela de fontes, cores e limitações (Srinagar/Simferopol/Bilbao/Bolzano ausentes; fallback amplifica minorias pequenas) em `docs/plans/culture_data.md`.
 
 ---
 

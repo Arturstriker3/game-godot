@@ -206,7 +206,7 @@
     "language": "neerlandês",
     "religion": "protestantismo",
     "parent": "",
-    "color": "#ee9c46"
+    "color": "#c8ce0b"
   },
   {
     "id": "flamengo",
@@ -272,7 +272,7 @@
     "language": "inglês (ulster)",
     "religion": "protestantismo",
     "parent": "",
-    "color": "#c8ce0b"
+    "color": "#401b28"
   },
   {
     "id": "irlandes",
@@ -1265,12 +1265,12 @@
     "color": "#e6b5c2"
   },
   {
-    "id": "hindi",
-    "name_pt": "Hindi",
-    "name_en": "Hindi",
-    "name_es": "hindi",
+    "id": "hindustani",
+    "name_pt": "Hindustani (hindi-urdu)",
+    "name_en": "Hindustani",
+    "name_es": "indostaní",
     "family": "indo-ariana",
-    "language": "hindi",
+    "language": "hindi-urdu",
     "religion": "hinduísmo",
     "parent": "",
     "color": "#87c568"
@@ -1361,7 +1361,7 @@
     "language": "tâmil",
     "religion": "hinduísmo",
     "parent": "",
-    "color": "#309bb3"
+    "color": "#d3646f"
   },
   {
     "id": "telugu",
@@ -1372,7 +1372,7 @@
     "language": "telugu",
     "religion": "hinduísmo",
     "parent": "",
-    "color": "#997dbe"
+    "color": "#c67712"
   },
   {
     "id": "malaio",
@@ -1573,39 +1573,6 @@
     "color": "#fd7dcd"
   },
   {
-    "id": "anglo_americano",
-    "name_pt": "Anglo-americano",
-    "name_en": "Anglo-American",
-    "name_es": "angloamericano",
-    "family": "americana",
-    "language": "inglês",
-    "religion": "protestantismo",
-    "parent": "",
-    "color": "#f3aad4"
-  },
-  {
-    "id": "afro_americano",
-    "name_pt": "Afro-americano",
-    "name_en": "African American",
-    "name_es": "afroamericano",
-    "family": "americana",
-    "language": "inglês",
-    "religion": "protestantismo",
-    "parent": "",
-    "color": "#86cdff"
-  },
-  {
-    "id": "hispanico",
-    "name_pt": "Hispânico",
-    "name_en": "Hispanic",
-    "name_es": "hispano",
-    "family": "americana",
-    "language": "espanhol",
-    "religion": "catolicismo",
-    "parent": "",
-    "color": "#3ce1c1"
-  },
-  {
     "id": "brasileiro",
     "name_pt": "Brasileiro",
     "name_en": "Brazilian",
@@ -1614,7 +1581,7 @@
     "language": "português",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#fcb452"
+    "color": "#f3aad4"
   },
   {
     "id": "mexicano",
@@ -1625,7 +1592,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#145154"
+    "color": "#1d4301"
   },
   {
     "id": "canadense_ingles",
@@ -1636,7 +1603,7 @@
     "language": "inglês",
     "religion": "protestantismo",
     "parent": "",
-    "color": "#aad56e"
+    "color": "#fcb452"
   },
   {
     "id": "caribenho",
@@ -1647,7 +1614,7 @@
     "language": "crioulo inglês",
     "religion": "protestantismo",
     "parent": "",
-    "color": "#9e8c3e"
+    "color": "#e55454"
   },
   {
     "id": "quechua",
@@ -1658,7 +1625,7 @@
     "language": "quíchua",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#7fc492"
+    "color": "#fed25f"
   },
   {
     "id": "aimara",
@@ -1691,15 +1658,15 @@
     "language": "línguas maias",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#f86f3c"
+    "color": "#7db20d"
   },
   {
     "id": "inuit",
-    "name_pt": "Inuit",
-    "name_en": "Inuit",
-    "name_es": "inuit",
+    "name_pt": "Inuit-iúpik",
+    "name_en": "Inuit-Yupik",
+    "name_es": "inuit-yupik",
     "family": "esquimó-aleúte",
-    "language": "inuktitut",
+    "language": "inuktitut/iúpik",
     "religion": "cristianismo",
     "parent": "",
     "color": "#002758"
@@ -1746,7 +1713,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#39045f"
+    "color": "#401b28"
   },
   {
     "id": "hondurenho",
@@ -1757,7 +1724,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#1d4301"
+    "color": "#39045f"
   },
   {
     "id": "salvadorenho",
@@ -1768,7 +1735,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#0d376a"
+    "color": "#dbe237"
   },
   {
     "id": "nicaraguense",
@@ -1779,7 +1746,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#fcc0f9"
+    "color": "#145154"
   },
   {
     "id": "costa_riquenho",
@@ -1790,7 +1757,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#62b289"
+    "color": "#c19187"
   },
   {
     "id": "panamenho",
@@ -1801,7 +1768,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#6af99b"
+    "color": "#fcc0f9"
   },
   {
     "id": "cubano",
@@ -1812,7 +1779,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#57a9d2"
+    "color": "#62b289"
   },
   {
     "id": "dominicano",
@@ -1823,7 +1790,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#c39810"
+    "color": "#57a9d2"
   },
   {
     "id": "porto_riquenho",
@@ -1834,7 +1801,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#dbe237"
+    "color": "#39f3fc"
   },
   {
     "id": "colombiano",
@@ -1845,7 +1812,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#c19187"
+    "color": "#54a31b"
   },
   {
     "id": "venezuelano",
@@ -1856,7 +1823,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#82182d"
+    "color": "#8c517f"
   },
   {
     "id": "equatoriano",
@@ -1867,7 +1834,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#401b28"
+    "color": "#c39810"
   },
   {
     "id": "peruano",
@@ -1878,7 +1845,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#39f3fc"
+    "color": "#d9df91"
   },
   {
     "id": "boliviano",
@@ -1889,7 +1856,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#e25c26"
+    "color": "#de5388"
   },
   {
     "id": "chileno",
@@ -1900,7 +1867,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#54a31b"
+    "color": "#e25c26"
   },
   {
     "id": "argentino",
@@ -1911,7 +1878,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#de5388"
+    "color": "#897cdc"
   },
   {
     "id": "uruguaio",
@@ -1922,7 +1889,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#8c517f"
+    "color": "#0d376a"
   },
   {
     "id": "paraguaio",
@@ -1933,29 +1900,7 @@
     "language": "espanhol",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#d9df91"
-  },
-  {
-    "id": "afro_latino",
-    "name_pt": "Afrodescendente latino-americano",
-    "name_en": "Afro-Latin American",
-    "name_es": "afrolatinoamericano",
-    "family": "hispano-americana",
-    "language": "espanhol",
-    "religion": "catolicismo",
-    "parent": "",
-    "color": "#897cdc"
-  },
-  {
-    "id": "mestico",
-    "name_pt": "Mestiço (América Latina)",
-    "name_en": "Mestizo",
-    "name_es": "mestizo",
-    "family": "hispano-americana",
-    "language": "espanhol",
-    "religion": "catolicismo",
-    "parent": "",
-    "color": "#6f3600"
+    "color": "#6af99b"
   },
   {
     "id": "mapuche",
@@ -1966,7 +1911,7 @@
     "language": "mapudungun",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#7db20d"
+    "color": "#d4a499"
   },
   {
     "id": "nahua",
@@ -1977,7 +1922,7 @@
     "language": "náuatle",
     "religion": "catolicismo",
     "parent": "",
-    "color": "#d4a499"
+    "color": "#7fc492"
   },
   {
     "id": "sunda",
@@ -2077,5 +2022,269 @@
     "religion": "islã sunita",
     "parent": "",
     "color": "#c8ce0b"
+  },
+  {
+    "id": "americano",
+    "name_pt": "Americano",
+    "name_en": "American",
+    "name_es": "estadounidense",
+    "family": "americana",
+    "language": "inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#86cdff"
+  },
+  {
+    "id": "mexicano_americano",
+    "name_pt": "México-americano",
+    "name_en": "Mexican American",
+    "name_es": "mexicoestadounidense",
+    "family": "hispano-americana",
+    "language": "espanhol",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#6f3600"
+  },
+  {
+    "id": "belizense",
+    "name_pt": "Belizense",
+    "name_en": "Belizean",
+    "name_es": "beliceño",
+    "family": "caribenha",
+    "language": "espanhol/crioulo inglês",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#b7739b"
+  },
+  {
+    "id": "guianense",
+    "name_pt": "Guianense",
+    "name_en": "Guyanese",
+    "name_es": "guyanés",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#fbd509"
+  },
+  {
+    "id": "haitiano",
+    "name_pt": "Haitiano",
+    "name_en": "Haitian",
+    "name_es": "haitiano",
+    "family": "caribenha",
+    "language": "crioulo haitiano",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#411b23"
+  },
+  {
+    "id": "jamaicano",
+    "name_pt": "Jamaicano",
+    "name_en": "Jamaican",
+    "name_es": "jamaicano",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#22136a"
+  },
+  {
+    "id": "trinitario",
+    "name_pt": "Trinitário",
+    "name_en": "Trinidadian",
+    "name_es": "trinitense",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#004144"
+  },
+  {
+    "id": "bahamense",
+    "name_pt": "Baamense",
+    "name_en": "Bahamian",
+    "name_es": "bahamés",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#44a080"
+  },
+  {
+    "id": "barbadense",
+    "name_pt": "Barbadense",
+    "name_en": "Barbadian",
+    "name_es": "barbadense",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#4e94c3"
+  },
+  {
+    "id": "antiguano",
+    "name_pt": "Antiguano",
+    "name_en": "Antiguan",
+    "name_es": "antiguano",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#9e8c3e"
+  },
+  {
+    "id": "dominiquense",
+    "name_pt": "Dominiquense",
+    "name_en": "Dominican (Dominica)",
+    "name_es": "dominiqués",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#54a31b"
+  },
+  {
+    "id": "granadino",
+    "name_pt": "Granadino",
+    "name_en": "Grenadian",
+    "name_es": "granadino",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#6880f8"
+  },
+  {
+    "id": "sancristovense",
+    "name_pt": "São-cristovense",
+    "name_en": "Kittitian",
+    "name_es": "sancristobaleño",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#46fbae"
+  },
+  {
+    "id": "santa_luciense",
+    "name_pt": "Santa-luciense",
+    "name_en": "Saint Lucian",
+    "name_es": "santalucense",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#1d4301"
+  },
+  {
+    "id": "sao_vicentino",
+    "name_pt": "São-vicentino",
+    "name_en": "Saint Vincentian",
+    "name_es": "sanvicentino",
+    "family": "caribenha",
+    "language": "crioulo inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#fbcbba"
+  },
+  {
+    "id": "canares",
+    "name_pt": "Canarês",
+    "name_en": "Kannada",
+    "name_es": "canarés",
+    "family": "dravidiana",
+    "language": "canarês",
+    "religion": "hinduísmo",
+    "parent": "",
+    "color": "#309bb3"
+  },
+  {
+    "id": "malaiala",
+    "name_pt": "Malaiala",
+    "name_en": "Malayali",
+    "name_es": "malayali",
+    "family": "dravidiana",
+    "language": "malaiala",
+    "religion": "hinduísmo",
+    "parent": "",
+    "color": "#997dbe"
+  },
+  {
+    "id": "australiano",
+    "name_pt": "Australiano",
+    "name_en": "Australian",
+    "name_es": "australiano",
+    "family": "anglo-oceânica",
+    "language": "inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#331f3e"
+  },
+  {
+    "id": "neozelandes",
+    "name_pt": "Neozelandês",
+    "name_en": "New Zealander",
+    "name_es": "neozelandés",
+    "family": "anglo-oceânica",
+    "language": "inglês",
+    "religion": "protestantismo",
+    "parent": "",
+    "color": "#000c7f"
+  },
+  {
+    "id": "aborigene",
+    "name_pt": "Aborígene australiano",
+    "name_en": "Aboriginal Australian",
+    "name_es": "aborigen australiano",
+    "family": "aborígene",
+    "language": "línguas aborígenes",
+    "religion": "espiritualidades indígenas",
+    "parent": "",
+    "color": "#4e5f3a"
+  },
+  {
+    "id": "havaiano",
+    "name_pt": "Havaiano",
+    "name_en": "Native Hawaiian",
+    "name_es": "nativo hawaiano",
+    "family": "polinésia",
+    "language": "havaiano",
+    "religion": "espiritualidades indígenas",
+    "parent": "",
+    "color": "#6dd9d5"
+  },
+  {
+    "id": "nativo_americano",
+    "name_pt": "Nativo americano",
+    "name_en": "American Indian/Alaska Native",
+    "name_es": "nativo americano",
+    "family": "ameríndia",
+    "language": "diversas línguas indígenas",
+    "religion": "espiritualidades indígenas",
+    "parent": "",
+    "color": "#62bfe0"
+  },
+  {
+    "id": "indigena_brasileiro",
+    "name_pt": "Indígena brasileiro",
+    "name_en": "Brazilian Indigenous",
+    "name_es": "indígena brasileño",
+    "family": "ameríndia",
+    "language": "línguas indígenas brasileiras",
+    "religion": "espiritualidades indígenas",
+    "parent": "",
+    "color": "#f86f3c"
+  },
+  {
+    "id": "luxemburgues",
+    "name_pt": "Luxemburguês",
+    "name_en": "Luxembourgish",
+    "name_es": "luksemburgués",
+    "family": "germânica ocidental",
+    "language": "luxemburguês",
+    "religion": "catolicismo",
+    "parent": "",
+    "color": "#ee9c46"
   }
 ]

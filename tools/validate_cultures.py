@@ -5,10 +5,13 @@ Verifica ``data/definitions/culture/``:
 
 * ``cultures.csv``/``cultures.json`` — ids únicos, nomes i18n, família, idioma,
   religião, ``parent`` válido (sem ciclo) e cor legível; ΔE*ab >= 25 entre
-  culturas da mesma família;
-* ``nation_cultures.csv`` — toda nação do cenário coberta, cultura principal na
-  composição, aceitas existentes, composição somando 100 e nenhuma cultura
-  junto de seu ancestral;
+  culturas da mesma família; **nenhuma categoria racial/cor** (lista negada por
+  id e por nome);
+* ``nation_cultures.csv`` — toda nação do cenário coberta, cultura principal
+  **nacional** (existe, está na composição com fração >= ``PRIMARY_MIN_SHARE``,
+  é a maior cultura nomeada salvo exceção documentada e não é categoria racial),
+  aceitas existentes, composição somando 100 e nenhuma cultura junto de seu
+  ancestral;
 * ``city_cultures.csv`` — todas as 834 cidades cobertas, soma 100, no máximo 5
   culturas nomeadas + ``outras``, culturas existentes, nação correta, nenhuma
   cultura junto de seu ancestral e ``subcultures`` coerentes (subgrupo com
@@ -39,6 +42,25 @@ OTHER = "outras"
 MIN_DELTA_E = 25.0
 MAX_NAMED_CITIES = 5
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+# Culturas por identidade nacional/cultural — nunca por raça ou cor.
+# Qualquer reaparição destes ids ou destes termos em id/nome falha o validador.
+BANNED_IDS = {"afro_latino", "mestico", "afro_americano", "anglo_americano", "hispanico"}
+BANNED_NAME = re.compile(
+    r"\b(branc[oa]s?|negr[oa]s?|pard[oa]s?|afro[\w-]*|mesti[\wç]*|racial|ra[cç]a|etnia racial)\b",
+    re.IGNORECASE,
+)
+
+# Fração mínima da cultura principal e exceções de "maior cultura nomeada":
+# no Paquistão a principal é o urdu (identidade nacional/lingua franca), menor
+# que o punjabi na composição publicada; nos Emirados e no Catar a identidade
+# nacional dos cidadãos é menor que o conjunto de residentes estrangeiros.
+PRIMARY_MIN_SHARE = 5.0
+PRIMARY_NOT_LARGEST_OK = {
+    "PAK": "urdu é a identidade nacional; punjabi é a maior língua materna",
+    "ARE": "identidade nacional dos cidadãos; residentes estrangeiros são a maioria",
+    "QAT": "identidade nacional dos cidadãos; residentes estrangeiros são a maioria",
+}
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -159,6 +181,18 @@ def main(argv: list[str] | None = None) -> int:
         if cid == OTHER:
             errors.append(f"{label}: 'outras' é reservado")
         ids.add(cid)
+        if cid in BANNED_IDS:
+            errors.append(f"{label}: categoria racial/cor proibida no id {cid!r}")
+        for text in (
+            cid,
+            (row.get("name_pt") or ""),
+            (row.get("name_en") or ""),
+            (row.get("name_es") or ""),
+        ):
+            if BANNED_NAME.search(text):
+                errors.append(
+                    f"{label}: categoria racial/cor em {text!r} (use identidade nacional/cultural)"
+                )
         parents[cid] = (row.get("parent") or "").strip()
         color = (row.get("color") or "").strip()
         if color and not HEX.match(color):
@@ -223,14 +257,36 @@ def main(argv: list[str] | None = None) -> int:
             errors.append(f"{label}: cultura principal desconhecida {primary!r}")
         if primary not in used:
             errors.append(f"{label}: cultura principal fora da composição")
+        if primary in BANNED_IDS:
+            errors.append(f"{label}: cultura principal é categoria racial {primary!r}")
+        if primary == OTHER:
+            errors.append(f"{label}: 'outras' não pode ser a cultura principal")
+        if primary in used:
+            share_of = {cid: share for cid, share in mix}
+            primary_share = share_of.get(primary, 0.0)
+            largest = max((s for c, s in mix if c != OTHER), default=0.0)
+            if primary_share < PRIMARY_MIN_SHARE:
+                errors.append(
+                    f"{label}: cultura principal {primary!r} com {primary_share:g}% "
+                    f"(mínimo {PRIMARY_MIN_SHARE:g}%)"
+                )
+            if primary_share < largest and nation not in PRIMARY_NOT_LARGEST_OK:
+                errors.append(
+                    f"{label}: cultura principal {primary!r} ({primary_share:g}%) não é a "
+                    f"maior cultura nacional ({largest:g}%)"
+                )
         for cid in sorted(used - ids - {OTHER}):
             errors.append(f"{label}: cultura desconhecida {cid!r}")
+        if used & BANNED_IDS:
+            errors.append(f"{label}: composição usa categoria racial {sorted(used & BANNED_IDS)}")
         for accepted in filter(None, (row.get("accepted_cultures") or "").split(";")):
             accepted = accepted.strip()
             if accepted not in ids:
                 errors.append(f"{label}: cultura aceita desconhecida {accepted!r}")
             if accepted == primary:
                 errors.append(f"{label}: cultura principal listada como aceita")
+            if accepted in BANNED_IDS:
+                errors.append(f"{label}: cultura aceita é categoria racial {accepted!r}")
         if not (row.get("source") or "").strip():
             errors.append(f"{label}: fonte ausente")
         if not (row.get("year") or "").strip():

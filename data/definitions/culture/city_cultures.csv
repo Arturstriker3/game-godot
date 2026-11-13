@@ -1,5 +1,5 @@
 city_id,nation,city,cultures,subcultures,source
-ABW-ORA,NED,Oranjestad,caribenho:80;neerlandes:8;hispanico:7;outras:5,,estimativa regional (Aruba 2023)
+ABW-ORA,NED,Oranjestad,caribenho:80;neerlandes:8;outras:12,,estimativa regional (Aruba 2023)
 AFG-HER,AFG,Herāt,pashto:42;tadjique:27;uzbeque:10;turcomeno:4;outras:17,,national_fallback
 AFG-KAB,AFG,Kabul,pashto:38;tadjique:26;uzbeque:12;turcomeno:6;outras:18,,national_fallback
 AFG-KAN,AFG,Kandahār,pashto:42;tadjique:27;uzbeque:10;turcomeno:4;outras:17,,national_fallback
@@ -13,8 +13,8 @@ AGO-SAU,AGO,Saurimo,ovimbundu:35;mbundu:25;kikongo:15;outras:25,,national_fallba
 ALB-TIR,ALB,Tirana,albanes:76;grego:3;outras:21,,national_fallback
 ALB-VLO,ALB,Vlorë,albanes:81;grego:1;outras:18,,national_fallback
 AND-AND,ESP,Andorra la Vella,catalao:45;castelhano:25;portugues:15;frances:5;outras:10,,Govern d'Andorra 2023
-ARE-ABU,ARE,Abu Dhabi,hindi:27;urdu:16;arabe_peninsular:13;punjabi:10;filipino:8;outras:26,,national_fallback
-ARE-DUB,ARE,Dubai,hindi:27;urdu:16;arabe_peninsular:13;punjabi:10;filipino:8;outras:26,,national_fallback
+ARE-ABU,ARE,Abu Dhabi,hindustani:27;urdu:16;arabe_peninsular:13;punjabi:10;filipino:8;outras:26,,national_fallback
+ARE-DUB,ARE,Dubai,hindustani:27;urdu:16;arabe_peninsular:13;punjabi:10;filipino:8;outras:26,,national_fallback
 ARG-BUE,ARG,Buenos Aires,argentino:65;italiano:15;outras:20,,INDEC 2022 (CABA)
 ARG-COM,ARG,Comodoro Rivadavia,argentino:57;italiano:21;alemao:4;arabe_levantino:3;outras:15,,national_fallback
 ARG-COR,ARG,Córdoba,argentino:70;italiano:12;outras:18,,INDEC 2022 (Córdoba)
@@ -27,25 +27,25 @@ ARG-ROS,ARG,Rosario,argentino:55;italiano:21;alemao:4;arabe_levantino:4;outras:1
 ARG-SAN,ARG,San Miguel de Tucumán,argentino:55;italiano:21;alemao:4;arabe_levantino:4;outras:16,,national_fallback
 ARM-VAN,ARM,Vanadzor,armenio:98;outras:2,,national_fallback
 ARM-YER,ARM,Yerevan,armenio:98;outras:2,,Censo 2022 (município)
-ATG-SAI,ATG,Saint John’s,caribenho:89;outras:11,,national_fallback
-AUS-ADE,AUS,Adelaide,ingles:49;escoces:11;irlandes:9;han:6;italiano:4;outras:21,,national_fallback
-AUS-ALI,AUS,Alice Springs,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
-AUS-BRI,AUS,Brisbane,ingles:49;escoces:11;irlandes:9;han:6;italiano:4;outras:21,,national_fallback
-AUS-BRO,AUS,Broome,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
-AUS-CAN,AUS,Canberra,ingles:48;escoces:11;irlandes:10;han:6;italiano:4;outras:21,,national_fallback
-AUS-DAR,AUS,Darwin,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
-AUS-GEE,AUS,Geelong,ingles:52;escoces:10;irlandes:9;han:6;italiano:3;outras:20,,national_fallback
-AUS-GOL,AUS,Gold Coast,ingles:52;escoces:10;irlandes:9;han:6;italiano:3;outras:20,,national_fallback
-AUS-KAL,AUS,Kalgoorlie,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
-AUS-KAR,AUS,Karratha,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
-AUS-MEL,AUS,Melbourne,ingles:46;escoces:11;irlandes:10;han:7;italiano:5;outras:21,,national_fallback
-AUS-MOR,AUS,Moree,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
-AUS-NEW,AUS,Newcastle,ingles:52;escoces:10;irlandes:9;han:6;italiano:3;outras:20,,national_fallback
-AUS-PER,AUS,Perth,ingles:49;escoces:11;irlandes:9;han:6;italiano:4;outras:21,,national_fallback
-AUS-SUN,AUS,Sunshine Coast,ingles:52;escoces:10;irlandes:9;han:6;italiano:3;outras:20,,national_fallback
-AUS-SYD,AUS,Sydney,ingles:46;escoces:11;irlandes:10;han:7;italiano:5;outras:21,,national_fallback
-AUS-TOW,AUS,Townsville,ingles:52;escoces:10;irlandes:9;han:6;italiano:3;outras:20,,national_fallback
-AUS-WEI,AUS,Weipa,ingles:55;escoces:9;irlandes:8;han:5;italiano:3;outras:20,,national_fallback
+ATG-SAI,ATG,Saint John’s,antiguano:89;outras:11,,national_fallback
+AUS-ADE,AUS,Adelaide,australiano:53;irlandes:10;escoces:10;han:6;aborigene:4;outras:17,,national_fallback
+AUS-ALI,AUS,Alice Springs,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
+AUS-BRI,AUS,Brisbane,australiano:53;irlandes:10;escoces:10;han:6;aborigene:4;outras:17,,national_fallback
+AUS-BRO,AUS,Broome,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
+AUS-CAN,AUS,Canberra,australiano:52;irlandes:10;escoces:10;han:6;aborigene:4;outras:18,,national_fallback
+AUS-DAR,AUS,Darwin,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
+AUS-GEE,AUS,Geelong,australiano:56;irlandes:10;escoces:9;han:6;aborigene:3;outras:16,,national_fallback
+AUS-GOL,AUS,Gold Coast,australiano:56;irlandes:10;escoces:9;han:6;aborigene:3;outras:16,,national_fallback
+AUS-KAL,AUS,Kalgoorlie,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
+AUS-KAR,AUS,Karratha,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
+AUS-MEL,AUS,Melbourne,australiano:49;irlandes:11;escoces:10;han:7;aborigene:5;outras:18,,national_fallback
+AUS-MOR,AUS,Moree,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
+AUS-NEW,AUS,Newcastle,australiano:56;irlandes:10;escoces:9;han:6;aborigene:3;outras:16,,national_fallback
+AUS-PER,AUS,Perth,australiano:53;irlandes:10;escoces:10;han:6;aborigene:4;outras:17,,national_fallback
+AUS-SUN,AUS,Sunshine Coast,australiano:56;irlandes:10;escoces:9;han:6;aborigene:3;outras:16,,national_fallback
+AUS-SYD,AUS,Sydney,australiano:49;irlandes:11;escoces:10;han:7;aborigene:5;outras:18,,national_fallback
+AUS-TOW,AUS,Townsville,australiano:56;irlandes:10;escoces:9;han:6;aborigene:3;outras:16,,national_fallback
+AUS-WEI,AUS,Weipa,australiano:60;irlandes:9;escoces:8;han:5;aborigene:3;outras:15,,national_fallback
 AUT-GRA,AUT,Graz,alemao:74;servio:3;turco:3;croata:2;outras:18,,national_fallback
 AUT-VIE,AUT,Vienna,alemao:66;servio:5;turco:5;croata:3;outras:21,,national_fallback
 AZE-BAK,AZE,Baku,azeri:90;russo:4;outras:6,,estimativa regional (Stat. Azerbaijão 2023)
@@ -72,47 +72,47 @@ BGD-RAN,BGD,Rangpur,bengali:95;outras:5,,national_fallback
 BGR-PLO,BGR,Plovdiv,bulgaro:85;turco:4;outras:11,,Censo 2021 (NSI)
 BGR-RUS,BGR,Ruse,bulgaro:73;turco:10;romeno:4;outras:13,,national_fallback
 BGR-SOF,BGR,Sofia,bulgaro:85;outras:15,,Censo 2021 (NSI)
-BHR-MAN,BHR,Manama,arabe_peninsular:40;hindi:21;urdu:10;filipino:8;outras:21,,national_fallback
-BHS-LUC,BHS,Lucaya,caribenho:90;outras:10,,national_fallback
-BHS-NAS,BHS,Nassau,caribenho:86;outras:14,,national_fallback
+BHR-MAN,BHR,Manama,arabe_peninsular:40;hindustani:21;urdu:10;filipino:8;outras:21,,national_fallback
+BHS-LUC,BHS,Lucaya,bahamense:95;outras:5,,national_fallback
+BHS-NAS,BHS,Nassau,bahamense:92;outras:8,,national_fallback
 BIH-BAN,BIH,Banja Luka,servio:89;croata:4;bosnio:3;outras:4,,Censo 2013 (BHAS)
 BIH-SAR,BIH,Sarajevo,bosnio:81;servio:4;croata:3;outras:12,,Censo 2013 (BHAS)
 BLR-BRE,BLR,Brest,bielorrusso:83;russo:11;outras:6,,Censo 2019 (município)
 BLR-GOM,BLR,Homyel',bielorrusso:84;russo:12;ucraniano:2;outras:2,,Censo 2019 (Belstat)
 BLR-MIN,BLR,Minsk,bielorrusso:76;russo:16;ucraniano:4;outras:4,,Censo 2019 (município)
-BLZ-BEL,BLZ,Belmopan,mestico:51;crioulo:26;maia:12;outras:11,,national_fallback
-BLZ-BELI,BLZ,Belize City,mestico:51;crioulo:26;maia:12;outras:11,,national_fallback
+BLZ-BEL,BLZ,Belmopan,belizense:51;crioulo:26;maia:12;outras:11,,national_fallback
+BLZ-BELI,BLZ,Belize City,belizense:51;crioulo:26;maia:12;outras:11,,national_fallback
 BOL-COC,BOL,Cochabamba,boliviano:45;quechua:40;aimara:5;outras:10,,Censo 2012 (INE)
 BOL-LAP,BOL,La Paz,boliviano:45;aimara:30;quechua:20;outras:5,,Censo 2012 (INE)
 BOL-SAN,BOL,San Ignacio de Velasco,boliviano:45;quechua:35;aimara:15;outras:5,,national_fallback
 BOL-SCZ,BOL,Santa Cruz de la Sierra,boliviano:65;quechua:10;outras:25,,Censo 2012 (INE)
 BOL-SUC,BOL,Sucre,boliviano:42;quechua:34;aimara:17;outras:7,,national_fallback
-BRA-BEL,BRA,Belo Horizonte,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-BELE,BRA,Belém,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-BOA,BRA,Boa Vista,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-BRAS,BRA,Brasília,brasileiro:54;portugues:12;italiano:9;alemao:7;japones:3;outras:15,,national_fallback
-BRA-CAM,BRA,Campinas,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-CAMPO,BRA,Campo Grande,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-CRU,BRA,Cruzeiro do Sul,brasileiro:66;portugues:9;italiano:7;alemao:5;japones:1;outras:12,,national_fallback
-BRA-CUI,BRA,Cuiabá,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-CUR,BRA,Curitiba,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-FOR,BRA,Fortaleza,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-GOI,BRA,Goiânia,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-MAC,BRA,Maceió,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-MAN,BRA,Manaus,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-NAT,BRA,Natal,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-PAL,BRA,Palmas,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-POR,BRA,Porto Alegre,brasileiro:60;alemao:10;italiano:10;outras:20,,Censo 2022 (município)
-BRA-PORTO,BRA,Porto Velho,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-REC,BRA,Recife,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-RIO,BRA,Rio de Janeiro,brasileiro:75;portugues:7;outras:18,,Censo 2022 (município)
-BRA-SAL,BRA,Salvador,brasileiro:58;portugues:11;italiano:9;alemao:6;japones:2;outras:14,,national_fallback
-BRA-SAO,BRA,São Paulo,brasileiro:70;italiano:8;portugues:6;japones:3;outras:13,,Censo 2022 (município)
-BRA-SAOL,BRA,São Luís,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-SIN,BRA,Sinop,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRA-TEF,BRA,Tefé,brasileiro:66;portugues:9;italiano:7;alemao:5;japones:1;outras:12,,national_fallback
-BRA-TER,BRA,Teresina,brasileiro:63;portugues:10;italiano:7;alemao:5;japones:2;outras:13,,national_fallback
-BRB-BRI,BRB,Bridgetown,caribenho:92;outras:8,,national_fallback
+BRA-BEL,BRA,Belo Horizonte,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-BELE,BRA,Belém,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-BOA,BRA,Boa Vista,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-BRAS,BRA,Brasília,brasileiro:86;indigena_brasileiro:4;italiano:4;portugues:3;outras:3,,national_fallback
+BRA-CAM,BRA,Campinas,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-CAMPO,BRA,Campo Grande,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-CRU,BRA,Cruzeiro do Sul,brasileiro:94;indigena_brasileiro:2;italiano:2;portugues:1;outras:1,,national_fallback
+BRA-CUI,BRA,Cuiabá,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-CUR,BRA,Curitiba,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-FOR,BRA,Fortaleza,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-GOI,BRA,Goiânia,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-MAC,BRA,Maceió,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-MAN,BRA,Manaus,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-NAT,BRA,Natal,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-PAL,BRA,Palmas,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-POR,BRA,Porto Alegre,brasileiro:82;alemao:7;italiano:6;outras:5,,"estimativa municipal (IBGE 2022, origem)"
+BRA-PORTO,BRA,Porto Velho,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-REC,BRA,Recife,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-RIO,BRA,Rio de Janeiro,brasileiro:85;portugues:5;outras:10,,"estimativa municipal (IBGE 2022, origem)"
+BRA-SAL,BRA,Salvador,brasileiro:90;indigena_brasileiro:3;italiano:3;portugues:2;outras:2,,national_fallback
+BRA-SAO,BRA,São Paulo,brasileiro:78;italiano:7;portugues:5;japones:3;outras:7,,"estimativa municipal (IBGE 2022, origem)"
+BRA-SAOL,BRA,São Luís,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-SIN,BRA,Sinop,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRA-TEF,BRA,Tefé,brasileiro:94;indigena_brasileiro:2;italiano:2;portugues:1;outras:1,,national_fallback
+BRA-TER,BRA,Teresina,brasileiro:92;indigena_brasileiro:2;italiano:2;portugues:2;outras:2,,national_fallback
+BRB-BRI,BRB,Bridgetown,barbadense:92;outras:8,,national_fallback
 BRN-BAN,BRN,Bandar Seri Begawan,malaio:60;han:13;outras:27,,national_fallback
 BRN-KUA,BRN,Kuala Belait,malaio:65;han:10;outras:25,,national_fallback
 BTN-PHU,BTN,Phuntsholing,tibetano:60;nepali:35;outras:5,,Censo 2017 (NSB)
@@ -134,7 +134,7 @@ CAN-IQA,CAN,Iqaluit,inuit:50;canadense_ingles:40;outras:10,,Statistics Canada 20
 CAN-KIT,CAN,Kitchener,canadense_ingles:53;quebequense:23;inuit:2;outras:22,,national_fallback
 CAN-KUU,CAN,Kuujjuaq,inuit:90;outras:10,,Statistics Canada 2021 (língua materna)
 CAN-LON,CAN,London,canadense_ingles:51;quebequense:23;inuit:3;outras:23,,national_fallback
-CAN-MON,CAN,Montréal,quebequense:60;canadense_ingles:15;frances:5;hispanico:5;outras:15,,Statistics Canada 2021 (língua materna)
+CAN-MON,CAN,Montréal,quebequense:60;canadense_ingles:15;frances:5;outras:20,,Statistics Canada 2021 (língua materna)
 CAN-OTT,CAN,Ottawa,canadense_ingles:49;quebequense:24;inuit:4;outras:23,,national_fallback
 CAN-PRI,CAN,Prince George,canadense_ingles:53;quebequense:23;inuit:2;outras:22,,national_fallback
 CAN-QUE,CAN,Québec,quebequense:92;canadense_ingles:3;outras:5,,Statistics Canada 2021 (língua materna)
@@ -143,7 +143,7 @@ CAN-SAS,CAN,Saskatoon,canadense_ingles:53;quebequense:23;inuit:2;outras:22,,nati
 CAN-STJ,CAN,St. John's,canadense_ingles:53;quebequense:23;inuit:2;outras:22,,national_fallback
 CAN-THO,CAN,Thompson,canadense_ingles:55;quebequense:22;inuit:2;outras:21,,national_fallback
 CAN-TIM,CAN,Timmins,canadense_ingles:55;quebequense:22;inuit:2;outras:21,,national_fallback
-CAN-TOR,CAN,Toronto,canadense_ingles:50;han:10;punjabi:6;hispanico:5;italiano:4;outras:25,,Statistics Canada 2021 (língua materna)
+CAN-TOR,CAN,Toronto,canadense_ingles:50;han:10;punjabi:6;italiano:4;outras:30,,Statistics Canada 2021 (língua materna)
 CAN-VIC,CAN,Victoria,canadense_ingles:51;quebequense:23;inuit:3;outras:23,,national_fallback
 CAN-WHI,CAN,Whitehorse,canadense_ingles:55;quebequense:22;inuit:2;outras:21,,national_fallback
 CAN-WIN,CAN,Winnipeg,canadense_ingles:51;quebequense:23;inuit:3;outras:23,,national_fallback
@@ -198,18 +198,18 @@ COD-TSH,COD,Tshikapa,lingala:33;kikongo:20;luba:20;suaili:11;outras:16,,national
 COG-BRA,COG,Brazzaville,kikongo:42;lingala:31;outras:27,,national_fallback
 COG-OWA,COG,Owando,kikongo:45;lingala:30;outras:25,,national_fallback
 COG-POI,COG,Pointe-Noire,kikongo:43;lingala:31;outras:26,,national_fallback
-COL-BAR,COL,Barranquilla,colombiano:80;afro_latino:15;outras:5,,Censo 2018 (DANE)
-COL-BOG,COL,Bogotá,colombiano:85;afro_latino:5;outras:10,,Censo 2018 (DANE)
-COL-BUC,COL,Bucaramanga,colombiano:80;afro_latino:11;outras:9,,national_fallback
-COL-CAL,COL,Cali,colombiano:85;afro_latino:10;outras:5,,Censo 2018 (DANE)
-COL-CUC,COL,Cúcuta,colombiano:80;afro_latino:11;outras:9,,national_fallback
-COL-MED,COL,Medellín,colombiano:77;afro_latino:12;outras:11,,national_fallback
-COL-MIT,COL,Mitú,colombiano:85;afro_latino:8;outras:7,,national_fallback
+COL-BAR,COL,Barranquilla,colombiano:95;outras:5,,Censo 2018 (DANE)
+COL-BOG,COL,Bogotá,colombiano:90;outras:10,,Censo 2018 (DANE)
+COL-BUC,COL,Bucaramanga,colombiano:90;outras:10,,national_fallback
+COL-CAL,COL,Cali,colombiano:95;outras:5,,Censo 2018 (DANE)
+COL-CUC,COL,Cúcuta,colombiano:90;outras:10,,national_fallback
+COL-MED,COL,Medellín,colombiano:88;outras:12,,national_fallback
+COL-MIT,COL,Mitú,colombiano:93;outras:7,,national_fallback
 CRI-LIM,CRI,Limón,costa_riquenho:60;crioulo:30;outras:10,,Censo 2022 (INEC)
-CRI-SAN,CRI,San José,costa_riquenho:85;afro_latino:5;outras:10,,Censo 2022 (INEC)
-CUB-HAV,CUB,Havana,cubano:80;afro_latino:15;outras:5,,Censo 2012 (ONEI)
-CUB-SAN,CUB,Santiago de Cuba,cubano:75;afro_latino:20;outras:5,,Censo 2012 (ONEI)
-CUW-WIL,NED,Willemstad,caribenho:75;neerlandes:8;hispanico:8;outras:9,,estimativa regional (Curaçao 2023)
+CRI-SAN,CRI,San José,costa_riquenho:90;outras:10,,Censo 2022 (INEC)
+CUB-HAV,CUB,Havana,cubano:95;outras:5,,Censo 2012 (ONEI)
+CUB-SAN,CUB,Santiago de Cuba,cubano:95;outras:5,,Censo 2012 (ONEI)
+CUW-WIL,NED,Willemstad,caribenho:75;neerlandes:8;outras:17,,estimativa regional (Curaçao 2023)
 CYP-LIM,CYP,Limassol,grego:72;turco:20;outras:8,,national_fallback
 CYP-NIC,CYP,Nicosia,grego:70;turco:21;outras:9,,national_fallback
 CZE-BRN,CZE,Brno,tcheco:83;eslovaco:5;ucraniano:3;outras:9,,national_fallback
@@ -228,11 +228,11 @@ DEU-NUR,DEU,Nuremberg,alemao:69;turco:10;polones:4;russo:4;outras:13,,national_f
 DEU-STR,DEU,Stuttgart,alemao:69;turco:10;polones:4;russo:4;outras:13,,national_fallback
 DJI-ALI,DJI,Ali Sabih,somali:60;afar:35;outras:5,,national_fallback
 DJI-DJI,DJI,Djibouti,somali:60;afar:35;outras:5,,estimativa regional (Djibuti 2023)
-DMA-ROS,DMA,Roseau,caribenho:94;outras:6,,national_fallback
+DMA-ROS,DMA,Roseau,dominiquense:94;outras:6,,national_fallback
 DNK-AAR,DNK,Århus,dinamarques:81;turco:3;alemao:2;outras:14,,national_fallback
 DNK-COP,DNK,Copenhagen,dinamarques:78;turco:4;alemao:2;outras:16,,national_fallback
-DOM-SAN,DOM,Santo Domingo,dominicano:75;afro_latino:15;crioulo:7;outras:3,,Censo 2022 (ONE)
-DOM-SANT,DOM,Santiago de los Caballeros,dominicano:80;afro_latino:15;outras:5,,Censo 2022 (ONE)
+DOM-SAN,DOM,Santo Domingo,dominicano:85;haitiano:7;outras:8,,Censo 2022 (ONE)
+DOM-SANT,DOM,Santiago de los Caballeros,dominicano:95;outras:5,,Censo 2022 (ONE)
 DZA-ALG,DZA,Algiers,arabe_magrebino:75;berbere:22;outras:3,,estimativa regional (ONS 2023)
 DZA-ANN,DZA,Annaba,arabe_magrebino:69;berbere:29;outras:2,,national_fallback
 DZA-BEC,DZA,Béchar,arabe_magrebino:69;berbere:29;outras:2,,national_fallback
@@ -240,8 +240,8 @@ DZA-CON,DZA,Constantine,arabe_magrebino:88;berbere:10;outras:2,,estimativa regio
 DZA-ORA,DZA,Oran,arabe_magrebino:85;berbere:10;outras:5,,estimativa regional (ONS 2023)
 DZA-TAM,DZA,Tamanghasset,arabe_magrebino:70;berbere:29;outras:1,,national_fallback
 DZA-TIN,DZA,Tindouf,arabe_magrebino:60;tuaregue:35;outras:5,,estimativa regional (ONS 2023)
-ECU-GUA,ECU,Guayaquil,equatoriano:70;quechua:12;afro_latino:8;outras:10,,national_fallback
-ECU-PUE,ECU,Puerto Ayora,equatoriano:80;quechua:8;afro_latino:5;outras:7,,national_fallback
+ECU-GUA,ECU,Guayaquil,equatoriano:77;quechua:12;outras:11,,national_fallback
+ECU-PUE,ECU,Puerto Ayora,equatoriano:85;quechua:8;outras:7,,national_fallback
 ECU-QUI,ECU,Quito,equatoriano:75;quechua:10;outras:15,,Censo 2022 (INEC)
 EGY-ALE,EGY,Alexandria,arabe_egipcio:92;outras:8,,estimativa regional (CAPMAS 2023)
 EGY-ALM,EGY,Al Mansurah,arabe_egipcio:97;outras:3,,estimativa regional (CAPMAS 2023)
@@ -273,8 +273,8 @@ ETH-WAR,ETH,Warder,somali:90;oromo:5;outras:5,,"Censo 2007 (CSA, estimativa)"
 FIN-HEL,FIN,Helsinki,finlandes:81;sueco:9;russo:4;outras:6,,national_fallback
 FIN-ROV,FIN,Rovaniemi,finlandes:87;sueco:6;russo:3;outras:4,,national_fallback
 FIN-TAM,FIN,Tampere,finlandes:85;sueco:7;russo:3;outras:5,,national_fallback
-FJI-LAU,FJI,Lautoka,fijiano:56;hindi:37;outras:7,,national_fallback
-FJI-SUV,FJI,Suva,fijiano:54;hindi:38;outras:8,,national_fallback
+FJI-LAU,FJI,Lautoka,fijiano:56;hindustani:37;outras:7,,national_fallback
+FJI-SUV,FJI,Suva,fijiano:54;hindustani:38;outras:8,,national_fallback
 FLK-STA,GBR,Stanley,ingles:80;castelhano:10;outras:10,,Censo 2021 (Ilhas Malvinas)
 FRA-AJA,FRA,Ajaccio,frances:72;arabe_magrebino:8;italiano:3;portugues:2;outras:15,,national_fallback
 FRA-BOR,FRA,Bordeaux,frances:69;arabe_magrebino:9;italiano:3;portugues:3;outras:16,,national_fallback
@@ -294,7 +294,7 @@ GBR-BFS,GBR,Belfast,ingles:68;escoces:10;gales:7;norte_irlandes:4;outras:11,,nat
 GBR-BHX,GBR,Birmingham,ingles:64;escoces:11;gales:8;norte_irlandes:5;outras:12,,national_fallback
 GBR-BRS,GBR,Bristol,ingles:68;escoces:10;gales:7;norte_irlandes:4;outras:11,,national_fallback
 GBR-GLA,GBR,Glasgow,ingles:68;escoces:10;gales:7;norte_irlandes:4;outras:11,,national_fallback
-GBR-LDN,GBR,London,ingles:59;escoces:12;gales:9;norte_irlandes:6;outras:14,,national_fallback
+GBR-LDN,GBR,London,ingles:50;caribenho:5;punjabi:4;bengali:4;urdu:3;outras:34,,"Censo 2021 (ONS, etnia e lingua materna)"
 GBR-LEE,GBR,Leeds,ingles:68;escoces:10;gales:7;norte_irlandes:4;outras:11,,national_fallback
 GBR-MAN,GBR,Manchester,ingles:64;escoces:11;gales:8;norte_irlandes:5;outras:12,,national_fallback
 GBR-NCL,GBR,Newcastle,ingles:68;escoces:10;gales:7;norte_irlandes:4;outras:11,,national_fallback
@@ -315,21 +315,21 @@ GNQ-CIU,GNQ,Ciudad de la Paz,fang:83;outras:17,,national_fallback
 GRC-ATH,GRC,Athens,grego:80;albanes:9;outras:11,,national_fallback
 GRC-HER,GRC,Heraklion,grego:87;albanes:6;outras:7,,national_fallback
 GRC-THE,GRC,Thessaloníki,grego:87;albanes:6;outras:7,,national_fallback
-GRD-SAI,GRD,Saint George's,caribenho:94;outras:6,,national_fallback
+GRD-SAI,GRD,Saint George's,granadino:94;outras:6,,national_fallback
 GRL-ILU,DNK,Ilulissat,inuit:90;dinamarques:8;outras:2,,Censo 2023 (Groenlândia)
 GRL-NUU,DNK,Nuuk,inuit:88;dinamarques:10;outras:2,,Censo 2023 (Groenlândia)
 GTM-COB,GTM,Cobán,guatemalteco:25;maia:70;outras:5,,Censo 2018 (INE)
 GTM-GUA,GTM,Guatemala City,guatemalteco:55;maia:40;outras:5,,Censo 2018 (INE)
-GUM-HAG,USA,Hagåtña,anglo_americano:45;hispanico:19;afro_americano:12;alemao:10;irlandes:6;outras:8,,national_fallback
-GUY-GEO,GUY,Georgetown,caribenho:40;hindi:40;mestico:10;outras:10,,Censo 2012 (Bureau of Statistics)
-GUY-LIN,GUY,Linden,caribenho:40;hindi:30;mestico:10;outras:20,,national_fallback
+GUM-HAG,USA,Hagåtña,americano:77;mexicano_americano:11;filipino:2;han:2;porto_riquenho:2;outras:6,,national_fallback
+GUY-GEO,GUY,Georgetown,guianense:50;hindustani:40;outras:10,,Censo 2012 (Bureau of Statistics)
+GUY-LIN,GUY,Linden,guianense:50;hindustani:40;outras:10,,national_fallback
 HKG-HON,CHN,Hong Kong,han:92;ingles:5;outras:3,cantones:88,Censo 2021 (HKCSD)
 HND-SAN,HND,San Pedro Sula,hondurenho:75;maia:11;crioulo:8;outras:6,,national_fallback
 HND-TEG,HND,Tegucigalpa,hondurenho:85;maia:5;outras:10,,Censo 2013 (INE)
 HRV-SPL,HRV,Split,croata:94;outras:6,,Censo 2021 (DZS)
 HRV-ZAG,HRV,Zagreb,croata:91;servio:3;outras:6,,Censo 2021 (DZS)
-HTI-POR,HTI,Port-au-Prince,crioulo:86;frances:8;outras:6,,national_fallback
-HTI-PORT,HTI,Port-de-Paix,crioulo:92;frances:5;outras:3,,national_fallback
+HTI-POR,HTI,Port-au-Prince,haitiano:86;frances:8;outras:6,,national_fallback
+HTI-PORT,HTI,Port-de-Paix,haitiano:92;frances:5;outras:3,,national_fallback
 HUN-BUD,HUN,Budapest,hungaro:75;romeno:5;outras:20,,national_fallback
 HUN-DEB,HUN,Debrecen,hungaro:83;romeno:2;outras:15,,national_fallback
 IDN-AMB,IDN,Ambon,javanes:37;malaio:16;sunda:11;han:4;papua:3;outras:29,,national_fallback
@@ -351,31 +351,31 @@ IDN-SEM,IDN,Semarang,javanes:85;malaio:5;han:4;outras:6,,"Censo 2020 (BPS, munic
 IDN-SUR,IDN,Surabaya,javanes:80;sunda:5;malaio:8;han:3;outras:4,,"Censo 2020 (BPS, municipal)"
 IDN-TAS,IDN,Tasikmalaya,sunda:92;outras:8,,"Censo 2020 (BPS, municipal)"
 IDN-WAM,IDN,Wamena,papua:85;javanes:10;outras:5,,Censo 2020 (província)
-IND-AHM,IND,Ahmedabad,gujarati:85;hindi:10;outras:5,,Censo 2011 (município)
-IND-BAN,IND,Bengaluru,tamil:35;telugu:20;hindi:10;urdu:5;outras:30,,Censo 2011 (município)
-IND-BHO,IND,Bhopal,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-CAM,IND,Campbell Bay,hindi:44;bengali:8;marata:7;telugu:7;tamil:6;outras:28,,national_fallback
+IND-AHM,IND,Ahmedabad,gujarati:85;hindustani:10;outras:5,,Censo 2011 (município)
+IND-BAN,IND,Bengaluru,tamil:35;telugu:20;hindustani:10;urdu:5;outras:30,,Censo 2011 (município)
+IND-BHO,IND,Bhopal,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-CAM,IND,Campbell Bay,hindustani:48;bengali:8;marata:7;telugu:7;tamil:6;outras:24,,national_fallback
 IND-CHE,IND,Chennai,tamil:78;telugu:5;outras:17,,Censo 2011 (município)
-IND-COI,IND,Coimbatore,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-DEL,IND,New Delhi,hindi:80;punjabi:5;urdu:5;outras:10,,Censo 2011 (município)
-IND-HYD,IND,Hyderabad,telugu:60;urdu:20;hindi:10;outras:10,,Censo 2011 (município)
-IND-IMP,IND,Imphal,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-INDO,IND,Indore,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-JAI,IND,Jaipur,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-KAL,IND,Kallakurichi,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-KAN,IND,Kanpur,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-KOL,IND,Kolkata,bengali:85;hindi:8;outras:7,,Censo 2011 (município)
-IND-LUC,IND,Lucknow,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-LUD,IND,Ludhiana,punjabi:85;hindi:10;outras:5,,Censo 2011 (município)
-IND-MAD,IND,Madurai,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-MUM,IND,Mumbai,marata:45;hindi:20;gujarati:5;urdu:5;outras:25,,Censo 2011 (município)
-IND-NAG,IND,Nagpur,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-NAS,IND,Nashik,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-PAT,IND,Patna,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-PUN,IND,Pune,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-RAS,IND,Rasapūdipalem,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-SUR,IND,Surat,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
-IND-VAD,IND,Vadodara,hindi:38;bengali:10;marata:9;telugu:9;tamil:8;outras:26,,national_fallback
+IND-COI,IND,Coimbatore,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-DEL,IND,New Delhi,hindustani:80;punjabi:5;urdu:5;outras:10,,Censo 2011 (município)
+IND-HYD,IND,Hyderabad,telugu:60;urdu:20;hindustani:10;outras:10,,Censo 2011 (município)
+IND-IMP,IND,Imphal,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-INDO,IND,Indore,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-JAI,IND,Jaipur,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-KAL,IND,Kallakurichi,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-KAN,IND,Kanpur,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-KOL,IND,Kolkata,bengali:85;hindustani:8;outras:7,,Censo 2011 (município)
+IND-LUC,IND,Lucknow,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-LUD,IND,Ludhiana,punjabi:85;hindustani:10;outras:5,,Censo 2011 (município)
+IND-MAD,IND,Madurai,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-MUM,IND,Mumbai,marata:45;hindustani:20;gujarati:5;urdu:5;outras:25,,Censo 2011 (município)
+IND-NAG,IND,Nagpur,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-NAS,IND,Nashik,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-PAT,IND,Patna,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-PUN,IND,Pune,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-RAS,IND,Rasapūdipalem,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-SUR,IND,Surat,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
+IND-VAD,IND,Vadodara,hindustani:37;bengali:9;marata:8;telugu:8;tamil:8;outras:30,,national_fallback
 IRL-COR,IRL,Cork,irlandes:82;ingles:14;outras:4,,national_fallback
 IRL-DUB,IRL,Dublin,irlandes:77;ingles:17;outras:6,,national_fallback
 IRN-AHV,IRN,Ahvaz,persa:50;arabe_iraquiano:20;outras:30,,estimativa regional (Irã 2023)
@@ -403,8 +403,8 @@ ITA-PADU,ITA,Padua,italiano:79;romeno:6;albanes:4;outras:11,,national_fallback
 ITA-PAL,ITA,Palermo,italiano:83;romeno:5;albanes:3;outras:9,,national_fallback
 ITA-ROM,ITA,Rome,italiano:75;romeno:7;albanes:5;outras:13,,national_fallback
 ITA-TUR,ITA,Turin,italiano:79;romeno:6;albanes:4;outras:11,,national_fallback
-JAM-KIN,JAM,Kingston,caribenho:90;afro_americano:5;outras:5,,Censo 2011 (paróquia)
-JAM-MON,JAM,Montego Bay,caribenho:90;afro_americano:5;outras:5,,national_fallback
+JAM-KIN,JAM,Kingston,jamaicano:95;outras:5,,Censo 2011 (paróquia)
+JAM-MON,JAM,Montego Bay,jamaicano:95;outras:5,,national_fallback
 JOR-AMM,JOR,Amman,arabe_levantino:80;curdo:7;outras:13,,national_fallback
 JOR-IRB,JOR,Irbid,arabe_levantino:86;curdo:5;outras:9,,national_fallback
 JPN-FUK,JPN,Fukuoka,japones:95;coreano:3;outras:2,,national_fallback
@@ -432,15 +432,15 @@ KGZ-BIS,KGZ,Bishkek,quirguiz:65;russo:15;uzbeque:7;outras:13,,Censo 2022 (munic�
 KGZ-OSH,KGZ,Osh,quirguiz:60;uzbeque:35;outras:5,,Censo 2022 (município)
 KHM-PHN,KHM,Phnom Penh,khmer:86;vietnamita:6;outras:8,,national_fallback
 KHM-TAK,KHM,Takeo,khmer:90;vietnamita:4;outras:6,,national_fallback
-KNA-BAS,KNA,Basseterre,caribenho:90;outras:10,,national_fallback
+KNA-BAS,KNA,Basseterre,sancristovense:90;outras:10,,national_fallback
 KOR-BUS,KOR,Busan,coreano:91;han:5;outras:4,,national_fallback
 KOR-CHE,KOR,Cheongju-si,coreano:93;han:4;outras:3,,national_fallback
 KOR-DAE,KOR,Daegu,coreano:91;han:5;outras:4,,national_fallback
 KOR-DAEJ,KOR,Daejeon,coreano:93;han:4;outras:3,,national_fallback
 KOR-GWA,KOR,Gwangju,coreano:93;han:4;outras:3,,national_fallback
 KOR-SEO,KOR,Seoul,coreano:88;han:6;outras:6,,national_fallback
-KWT-ALA,KWT,Al Aḩmadī,arabe_peninsular:29;hindi:25;arabe_egipcio:11;urdu:11;outras:24,,national_fallback
-KWT-KUW,KWT,Kuwait City,arabe_peninsular:29;hindi:25;arabe_egipcio:11;urdu:11;outras:24,,national_fallback
+KWT-ALA,KWT,Al Aḩmadī,arabe_peninsular:29;hindustani:25;arabe_egipcio:11;urdu:11;outras:24,,national_fallback
+KWT-KUW,KWT,Kuwait City,arabe_peninsular:29;hindustani:25;arabe_egipcio:11;urdu:11;outras:24,,national_fallback
 LAO-SAV,LAO,Savannakhet,lao:62;khmer:4;outras:34,,national_fallback
 LAO-VIE,LAO,Vientiane,lao:58;khmer:7;outras:35,,national_fallback
 LBN-BEI,LBN,Beirut,arabe_levantino:70;armenio:10;frances:5;outras:15,,estimativa regional (Líbano 2023)
@@ -452,7 +452,7 @@ LBY-BEN,LBY,Benghazi,arabe_magrebino:75;berbere:18;outras:7,,national_fallback
 LBY-MIS,LBY,Misratah,arabe_magrebino:75;berbere:18;outras:7,,national_fallback
 LBY-SAB,LBY,Sabha,arabe_magrebino:77;berbere:17;outras:6,,national_fallback
 LBY-TRI,LBY,Tripoli,arabe_magrebino:75;berbere:15;tuaregue:3;outras:7,,estimativa regional (Líbia 2023)
-LCA-CAS,LCA,Castries,caribenho:83;outras:17,,national_fallback
+LCA-CAS,LCA,Castries,santa_luciense:94;outras:6,,national_fallback
 LIE-VADU,CHE,Vaduz,alemao:85;italiano:5;outras:10,,Statistik Liechtenstein 2023
 LKA-COL,LKA,Colombo,cingales:75;tamil:15;outras:10,,Censo 2012 (distrito)
 LKA-JAF,LKA,Jaffna,tamil:90;cingales:5;outras:5,,Censo 2012 (distrito)
@@ -460,7 +460,7 @@ LSO-MAP,LSO,Maputsoe,soto:99;outras:1,,national_fallback
 LSO-MAS,LSO,Maseru,soto:97;outras:3,,national_fallback
 LTU-KAU,LTU,Kaunas,lituano:93;russo:3;outras:4,,Censo 2021 (município)
 LTU-VIL,LTU,Vilnius,lituano:67;polones:13;russo:10;bielorrusso:3;outras:7,,Censo 2021 (município)
-LUX-LUXE,LUX,Luxembourg,frances:46;alemao:17;portugues:16;outras:21,,national_fallback
+LUX-LUXE,LUX,Luxembourg,luxemburgues:47;portugues:16;frances:9;italiano:5;alemao:3;outras:20,,national_fallback
 LVA-DAU,LVA,Daugavpils,leto:20;russo:55;polones:10;bielorrusso:7;ucraniano:4;outras:4,,Censo municipal 2023 (CSP)
 LVA-RIG,LVA,Riga,leto:47;russo:36;bielorrusso:4;ucraniano:4;outras:9,,Censo municipal 2023 (CSP)
 MAC-MAC,CHN,Macau,han:90;portugues:2;outras:8,cantones:85,Censo 2021 (DSEC)
@@ -476,19 +476,19 @@ MDA-TIR,MDA,Tiraspol,russo:41;ucraniano:27;romeno:26;outras:6,,Censo 2015 (Trans
 MDG-ANT,MDG,Antananarivo,malgaxe:86;frances:6;outras:8,,national_fallback
 MDG-FIA,MDG,Fianarantsoa,malgaxe:92;frances:3;outras:5,,national_fallback
 MDG-TOA,MDG,Toamasina,malgaxe:90;frances:4;outras:6,,national_fallback
-MEX-CAN,MEX,Cancún,mexicano:72;nahua:6;afro_latino:3;maia:3;outras:16,,national_fallback
-MEX-CHI,MEX,Chihuahua,mexicano:72;nahua:6;afro_latino:3;maia:3;outras:16,,national_fallback
-MEX-GUA,MEX,Zapopan,mexicano:68;nahua:6;afro_latino:4;maia:4;outras:18,,national_fallback
-MEX-HER,MEX,Hermosillo,mexicano:72;nahua:6;afro_latino:3;maia:3;outras:16,,national_fallback
-MEX-JUZ,MEX,Ciudad Juárez,mexicano:68;nahua:6;afro_latino:4;maia:4;outras:18,,national_fallback
-MEX-LEO,MEX,León de los Aldama,mexicano:68;nahua:6;afro_latino:4;maia:4;outras:18,,national_fallback
+MEX-CAN,MEX,Cancún,mexicano:74;nahua:6;maia:3;outras:17,,national_fallback
+MEX-CHI,MEX,Chihuahua,mexicano:74;nahua:6;maia:3;outras:17,,national_fallback
+MEX-GUA,MEX,Zapopan,mexicano:71;nahua:7;maia:4;outras:18,,national_fallback
+MEX-HER,MEX,Hermosillo,mexicano:74;nahua:6;maia:3;outras:17,,national_fallback
+MEX-JUZ,MEX,Ciudad Juárez,mexicano:71;nahua:7;maia:4;outras:18,,national_fallback
+MEX-LEO,MEX,León de los Aldama,mexicano:71;nahua:7;maia:4;outras:18,,national_fallback
 MEX-MER,MEX,Mérida,mexicano:65;maia:30;outras:5,,INEGI 2020 (Yucatán)
-MEX-MEXI,MEX,Mexico City,mexicano:88;nahua:5;maia:2;outras:5,,INEGI 2020 (CDMX)
+MEX-MEXI,MEX,Mexico City,mexicano:90;nahua:5;outras:5,,INEGI 2020 (CDMX)
 MEX-MON,MEX,Monterrey,mexicano:92;outras:8,,INEGI 2020 (Nuevo León)
 MEX-PUE,MEX,Puebla,mexicano:80;nahua:12;outras:8,,INEGI 2020 (Puebla)
-MEX-QUE,MEX,Santiago de Querétaro,mexicano:68;nahua:6;afro_latino:4;maia:4;outras:18,,national_fallback
-MEX-TIJ,MEX,Tijuana,mexicano:68;nahua:6;afro_latino:4;maia:4;outras:18,,national_fallback
-MEX-TOR,MEX,Torreón,mexicano:68;nahua:6;afro_latino:4;maia:4;outras:18,,national_fallback
+MEX-QUE,MEX,Santiago de Querétaro,mexicano:71;nahua:7;maia:4;outras:18,,national_fallback
+MEX-TIJ,MEX,Tijuana,mexicano:71;nahua:7;maia:4;outras:18,,national_fallback
+MEX-TOR,MEX,Torreón,mexicano:71;nahua:7;maia:4;outras:18,,national_fallback
 MEX-TUX,MEX,Tuxtla,mexicano:60;maia:30;outras:10,,INEGI 2020 (Chiapas)
 MKD-PRI,MKD,Prilep,macedonio:88;outras:12,,Censo 2021 (SSO)
 MKD-SKO,MKD,Skopje,macedonio:63;albanes:22;turco:2;bosnio:2;outras:11,,Censo 2021 (SSO)
@@ -557,15 +557,15 @@ NIC-MAN,NIC,Managua,nicaraguense:85;crioulo:5;outras:10,,estimativa regional (IN
 NOR-BER,NOR,Bergen,noruegues:77;polones:3;sueco:3;outras:17,,national_fallback
 NOR-OSL,NOR,Oslo,noruegues:73;polones:4;sueco:4;outras:19,,national_fallback
 NOR-TRO,NOR,Tromsø,noruegues:82;polones:2;sueco:2;outras:14,,national_fallback
-NPL-BHA,NPL,Bharatpur,nepali:80;hindi:10;outras:10,,Censo 2021 (CBS)
-NPL-KAT,NPL,Kathmandu,nepali:70;hindi:10;tibetano:5;outras:15,,Censo 2021 (município)
+NPL-BHA,NPL,Bharatpur,nepali:80;hindustani:10;outras:10,,Censo 2021 (CBS)
+NPL-KAT,NPL,Kathmandu,nepali:70;hindustani:10;tibetano:5;outras:15,,Censo 2021 (município)
 NPL-POK,NPL,Pokhara,nepali:75;tibetano:10;outras:15,,Censo 2021 (CBS)
-NZL-AUC,NZL,Auckland,ingles:64;maori:19;han:7;outras:10,,national_fallback
-NZL-CHR,NZL,Christchurch,ingles:67;maori:18;han:6;outras:9,,national_fallback
-NZL-WEL,NZL,Wellington,ingles:64;maori:19;han:7;outras:10,,national_fallback
-OMN-IBR,OMN,Ibri,arabe_peninsular:47;hindi:20;urdu:11;filipino:6;outras:16,,national_fallback
-OMN-MUS,OMN,Muscat,arabe_peninsular:43;hindi:21;urdu:12;filipino:7;outras:17,,national_fallback
-OMN-SAL,OMN,Salalah,arabe_peninsular:47;hindi:20;urdu:11;filipino:6;outras:16,,national_fallback
+NZL-AUC,NZL,Auckland,neozelandes:64;maori:19;han:7;outras:10,,national_fallback
+NZL-CHR,NZL,Christchurch,neozelandes:67;maori:18;han:6;outras:9,,national_fallback
+NZL-WEL,NZL,Wellington,neozelandes:64;maori:19;han:7;outras:10,,national_fallback
+OMN-IBR,OMN,Ibri,arabe_peninsular:47;hindustani:20;urdu:11;filipino:6;outras:16,,national_fallback
+OMN-MUS,OMN,Muscat,arabe_peninsular:43;hindustani:21;urdu:12;filipino:7;outras:17,,national_fallback
+OMN-SAL,OMN,Salalah,arabe_peninsular:47;hindustani:20;urdu:11;filipino:6;outras:16,,national_fallback
 PAK-ARI,PAK,Arifwala,punjabi:42;pashto:16;urdu:10;outras:32,,national_fallback
 PAK-BAH,PAK,Bahawalpur,punjabi:42;pashto:16;urdu:10;outras:32,,national_fallback
 PAK-BAN,PAK,Bannu,punjabi:41;pashto:17;urdu:11;outras:31,,national_fallback
@@ -574,14 +574,14 @@ PAK-FAI,PAK,Faisalabad,punjabi:41;pashto:17;urdu:11;outras:31,,national_fallback
 PAK-GUJ,PAK,Gujranwala,punjabi:41;pashto:17;urdu:11;outras:31,,national_fallback
 PAK-HYD,PAK,Hyderabad,punjabi:41;pashto:17;urdu:11;outras:31,,national_fallback
 PAK-ISL,PAK,Islamabad,punjabi:50;urdu:25;pashto:10;outras:15,,Censo 2023 (distrito)
-PAK-KAR,PAK,Karachi,urdu:42;punjabi:15;pashto:15;hindi:7;outras:21,,Censo 2023 (distrito)
+PAK-KAR,PAK,Karachi,urdu:42;punjabi:15;pashto:15;hindustani:7;outras:21,,Censo 2023 (distrito)
 PAK-LAH,PAK,Lahore,punjabi:85;urdu:10;outras:5,,Censo 2023 (distrito)
 PAK-MUL,PAK,Multan,punjabi:41;pashto:17;urdu:11;outras:31,,national_fallback
 PAK-PES,PAK,Peshawar,pashto:90;urdu:5;outras:5,,Censo 2023 (distrito)
 PAK-QUE,PAK,Quetta,balochi:35;pashto:40;urdu:5;outras:20,,Censo 2017 (PBS)
 PAK-SAR,PAK,Sargodha,punjabi:41;pashto:17;urdu:11;outras:31,,national_fallback
-PAN-DAV,PAN,David,panamenho:70;afro_latino:17;outras:13,,national_fallback
-PAN-PAN,PAN,Panama City,panamenho:73;afro_latino:15;outras:12,,Censo 2023 (INEC)
+PAN-DAV,PAN,David,panamenho:86;outras:14,,national_fallback
+PAN-PAN,PAN,Panama City,panamenho:88;outras:12,,Censo 2023 (INEC)
 PER-ARE,PER,Arequipa,peruano:70;quechua:20;outras:10,,Censo 2017 (INEI)
 PER-IQU,PER,Iquitos,peruano:55;quechua:26;aimara:12;outras:7,,national_fallback
 PER-LIM,PER,Lima,peruano:70;quechua:15;aimara:3;outras:12,,Censo 2017 (INEI)
@@ -603,8 +603,8 @@ POL-KRA,POL,Kraków,polones:87;ucraniano:4;bielorrusso:3;outras:6,,national_fall
 POL-ODZ,POL,Łódź,polones:87;ucraniano:4;bielorrusso:3;outras:6,,national_fallback
 POL-WAR,POL,Warsaw,polones:83;ucraniano:6;bielorrusso:3;outras:8,,national_fallback
 POL-WRO,POL,Wrocław,polones:87;ucraniano:4;bielorrusso:3;outras:6,,national_fallback
-PRI-PON,USA,Ponce,porto_riquenho:88;afro_latino:8;outras:4,,ACS 2023 (Puerto Rico)
-PRI-SAN,USA,San Juan,porto_riquenho:85;afro_latino:8;outras:7,,ACS 2023 (Puerto Rico)
+PRI-PON,USA,Ponce,porto_riquenho:96;outras:4,,ACS 2023 (Puerto Rico)
+PRI-SAN,USA,San Juan,porto_riquenho:92;outras:8,,ACS 2023 (Puerto Rico)
 PRK-HAM,PRK,Hamhŭng,coreano:98;outras:2,,national_fallback
 PRK-PYO,PRK,Pyongyang,coreano:96;outras:4,,national_fallback
 PRK-WON,PRK,Wŏnsan,coreano:98;outras:2,,national_fallback
@@ -614,8 +614,8 @@ PRY-ASU,PRY,Asunción,paraguaio:60;guarani:35;outras:5,,Censo 2022 (INE)
 PRY-CIU,PRY,Ciudad del Este,paraguaio:55;guarani:30;outras:15,,Censo 2022 (INE)
 PSX-GAZ,PSX,Gaza,arabe_levantino:95;outras:5,,PCBS 2023
 PSX-RAM,PSX,Ramallah,arabe_levantino:90;outras:10,,PCBS 2023
-QAT-DOH,QAT,Doha,hindi:28;arabe_peninsular:20;filipino:12;urdu:12;outras:28,,national_fallback
-QAT-MAD,QAT,Madīnat ash Shamāl,hindi:30;arabe_peninsular:20;filipino:10;urdu:10;outras:30,,national_fallback
+QAT-DOH,QAT,Doha,hindustani:28;arabe_peninsular:20;filipino:12;urdu:12;outras:28,,national_fallback
+QAT-MAD,QAT,Madīnat ash Shamāl,hindustani:30;arabe_peninsular:20;filipino:10;urdu:10;outras:30,,national_fallback
 ROU-BUC,ROU,Bucharest,romeno:85;outras:15,,Censo 2021 (INS)
 ROU-CLJ,ROU,Cluj-Napoca,romeno:80;hungaro:15;outras:5,,Censo 2021 (INS)
 ROU-IAS,ROU,Iaşi,romeno:95;outras:5,,Censo 2021 (INS)
@@ -670,13 +670,13 @@ RWA-KIG,RWA,Kigali,grandes_lagos:95;outras:5,,Censo 2022 (Ruanda)
 SAH-MEH,SAH,Meharrize,arabe_magrebino:80;tuaregue:15;outras:5,,national_fallback
 SAH-TIC,SAH,Tichla,arabe_magrebino:80;tuaregue:15;outras:5,,national_fallback
 SAH-TIF,SAH,Tifariti,arabe_magrebino:85;outras:15,,estimativa regional (Saara Ocidental 2023)
-SAU-DAM,SAU,Dammam,arabe_peninsular:59;hindi:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
-SAU-JED,SAU,Jeddah,arabe_peninsular:55;hindi:13;arabe_egipcio:7;urdu:7;outras:18,,national_fallback
-SAU-KHA,SAU,Khamis Mushait,arabe_peninsular:59;hindi:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
-SAU-MAD,SAU,Madinah,arabe_peninsular:59;hindi:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
-SAU-MEC,SAU,Makkah,arabe_peninsular:59;hindi:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
-SAU-RIY,SAU,Riyadh,arabe_peninsular:51;hindi:14;arabe_egipcio:9;urdu:8;outras:18,,national_fallback
-SAU-TAB,SAU,Tabuk,arabe_peninsular:59;hindi:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
+SAU-DAM,SAU,Dammam,arabe_peninsular:59;hindustani:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
+SAU-JED,SAU,Jeddah,arabe_peninsular:55;hindustani:13;arabe_egipcio:7;urdu:7;outras:18,,national_fallback
+SAU-KHA,SAU,Khamis Mushait,arabe_peninsular:59;hindustani:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
+SAU-MAD,SAU,Madinah,arabe_peninsular:59;hindustani:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
+SAU-MEC,SAU,Makkah,arabe_peninsular:59;hindustani:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
+SAU-RIY,SAU,Riyadh,arabe_peninsular:51;hindustani:14;arabe_egipcio:9;urdu:8;outras:18,,national_fallback
+SAU-TAB,SAU,Tabuk,arabe_peninsular:59;hindustani:12;arabe_egipcio:6;urdu:6;outras:17,,national_fallback
 SDN-ALQ,SDN,Al Qadarif,arabe_sudanes:55;dinka:7;fulani:6;nuer:6;outras:26,,national_fallback
 SDN-ELO,SDN,El Obeid,arabe_sudanes:55;dinka:7;fulani:6;nuer:6;outras:26,,national_fallback
 SDN-KHA,SDN,Khartoum,arabe_sudanes:60;nuer:5;dinka:5;outras:30,,estimativa regional (Sudão 2023)
@@ -704,8 +704,8 @@ SRB-NIS,SRB,Niš,servio:93;outras:7,,Censo 2022 (SORS)
 SSD-JUB,SSD,Juba,dinka:40;nuer:15;outras:45,,estimativa regional (Sudão do Sul 2023)
 SSD-MAL,SSD,Malakal,dinka:39;nuer:26;outras:35,,national_fallback
 SSD-WAU,SSD,Wau,dinka:39;nuer:26;outras:35,,national_fallback
-SUR-BRO,SUR,Brokopondo,hindi:27;crioulo:15;javanes:14;caribenho:10;outras:34,,national_fallback
-SUR-PBM,SUR,Paramaribo,hindi:27;crioulo:15;javanes:14;caribenho:10;outras:34,,Censo 2012 (distrito)
+SUR-BRO,SUR,Brokopondo,hindustani:27;crioulo:15;javanes:14;caribenho:10;outras:34,,national_fallback
+SUR-PBM,SUR,Paramaribo,hindustani:27;crioulo:15;javanes:14;caribenho:10;outras:34,,Censo 2012 (distrito)
 SVK-BRA,SVK,Bratislava,eslovaco:90;hungaro:3;outras:7,,Censo 2021 (SODB)
 SVK-KOS,SVK,Košice,eslovaco:85;hungaro:4;outras:11,,Censo 2021 (SODB)
 SVN-LJU,SVN,Ljubljana,esloveno:84;servio:4;croata:3;bosnio:2;outras:7,,"Censo 2002 (SURS, etnia declarada)"
@@ -735,8 +735,8 @@ TKM-ASH,TKM,Ashgabat,turcomeno:77;russo:7;uzbeque:5;outras:11,,estimativa region
 TKM-TUR,TKM,Türkmenabat,turcomeno:88;uzbeque:8;russo:2;outras:2,,Censo 2012 (Turkmenstat)
 TLS-DIL,TLS,Dili,timorense:81;portugues:6;malaio:4;outras:9,,national_fallback
 TLS-MAL,TLS,Maliana,timorense:90;portugues:3;malaio:2;outras:5,,national_fallback
-TTO-MON,TTO,Mon Repos,caribenho:39;afro_americano:34;hindi:25;outras:2,,national_fallback
-TTO-POR,TTO,Port of Spain,caribenho:40;hindi:24;afro_americano:34;outras:2,,Censo 2011 (região)
+TTO-MON,TTO,Mon Repos,trinitario:55;hindustani:35;outras:10,,national_fallback
+TTO-POR,TTO,Port of Spain,trinitario:56;hindustani:35;outras:9,,Censo 2011 (região)
 TUN-SFA,TUN,Sfax,arabe_magrebino:97;outras:3,,Censo 2014 (INS)
 TUN-TUN,TUN,Tunis,arabe_magrebino:95;outras:5,,estimativa regional (INS 2023)
 TUR-ADA,TUR,Adana,turco:70;curdo:22;outras:8,,national_fallback
@@ -768,48 +768,48 @@ UKR-KYI,UKR,Kyiv,ucraniano:83;russo:12;outras:5,,Censo 2001 (município)
 UKR-LVI,UKR,Lviv,ucraniano:88;russo:8;polones:1;outras:3,,Censo 2001 (município)
 UKR-ODE,UKR,Odesa,ucraniano:62;russo:29;romeno:2;outras:7,,Censo 2001 (município)
 UKR-ZAP,UKR,Zaporizhzhia,ucraniano:75;russo:20;outras:5,,estimate_post2022
-URY-MON,URY,Montevideo,uruguaio:85;italiano:5;afro_latino:4;outras:6,,Censo 2023 (INE)
-URY-SAL,URY,Salto,uruguaio:82;italiano:6;afro_latino:5;outras:7,,national_fallback
-USA-ANC,USA,Anchorage,anglo_americano:60;inuit:5;outras:35,,ACS 2023 (condado)
-USA-AUS,USA,Austin,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-BET,USA,Bethel,anglo_americano:45;hispanico:19;afro_americano:12;alemao:10;irlandes:6;outras:8,,national_fallback
-USA-BIL,USA,Billings,anglo_americano:42;hispanico:19;afro_americano:12;alemao:11;irlandes:7;outras:9,,national_fallback
-USA-BOS,USA,Boston,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-CHA,USA,Charlotte,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-CHI,USA,Chicago,hispanico:30;afro_americano:25;anglo_americano:30;outras:15,,ACS 2023 (condado)
-USA-COL,USA,Columbus,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-DAL,USA,Dallas,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-DEN,USA,Denver,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-FOR,USA,Fort Worth,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-HON,USA,Honolulu,anglo_americano:40;filipino:20;han:15;japones:10;outras:15,,ACS 2023 (condado)
-USA-HOU,USA,Houston,hispanico:40;anglo_americano:25;afro_americano:17;outras:18,,ACS 2023 (condado)
-USA-JAC,USA,Jacksonville,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-LOS,USA,Los Angeles,hispanico:45;anglo_americano:25;han:8;outras:22,,ACS 2023 (condado)
-USA-MIA,USA,Miami,hispanico:65;afro_americano:15;anglo_americano:10;outras:10,,ACS 2023 (condado)
-USA-MIN,USA,Minneapolis,anglo_americano:41;hispanico:19;afro_americano:13;alemao:11;irlandes:7;outras:9,,national_fallback
-USA-NAS,USA,Nashville,anglo_americano:41;hispanico:19;afro_americano:13;alemao:11;irlandes:7;outras:9,,national_fallback
-USA-NEW,USA,New York City,anglo_americano:30;hispanico:25;afro_americano:20;han:8;outras:17,,ACS 2023 (condado)
-USA-PHI,USA,Philadelphia,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-PHO,USA,Phoenix,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-POR,USA,Portland,anglo_americano:42;hispanico:19;afro_americano:12;alemao:11;irlandes:7;outras:9,,national_fallback
-USA-REN,USA,Reno,anglo_americano:41;hispanico:19;afro_americano:13;alemao:11;irlandes:7;outras:9,,national_fallback
-USA-SANA,USA,San Antonio,hispanico:60;anglo_americano:25;outras:15,,ACS 2023 (condado)
-USA-SANJ,USA,San Jose,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-SEA,USA,Seattle,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
-USA-SIT,USA,Sitka,anglo_americano:45;hispanico:19;afro_americano:12;alemao:10;irlandes:6;outras:8,,national_fallback
-USA-UNA,USA,Unalaska,anglo_americano:45;hispanico:19;afro_americano:12;alemao:10;irlandes:6;outras:8,,national_fallback
-USA-UTQ,USA,Utqiagvik,inuit:60;anglo_americano:25;outras:15,,ACS 2023 (condado)
-USA-WAS,USA,Washington,anglo_americano:38;hispanico:19;afro_americano:13;alemao:12;irlandes:8;outras:10,,national_fallback
+URY-MON,URY,Montevideo,uruguaio:89;italiano:5;outras:6,,Censo 2023 (INE)
+URY-SAL,URY,Salto,uruguaio:87;italiano:6;outras:7,,national_fallback
+USA-ANC,USA,Anchorage,americano:69;inuit:8;filipino:4;han:3;outras:16,,ACS 2023 (condado)
+USA-AUS,USA,Austin,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-BET,USA,Bethel,inuit:82;americano:15;outras:3,,ACS 2023 (condado)
+USA-BIL,USA,Billings,americano:73;mexicano_americano:12;filipino:3;han:3;porto_riquenho:2;outras:7,,national_fallback
+USA-BOS,USA,Boston,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-CHA,USA,Charlotte,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-CHI,USA,Chicago,mexicano_americano:32;americano:33;han:4;polones:4;outras:27,,ACS 2023 (condado)
+USA-COL,USA,Columbus,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-DAL,USA,Dallas,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-DEN,USA,Denver,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-FOR,USA,Fort Worth,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-HON,USA,Honolulu,americano:40;filipino:18;japones:12;havaiano:10;han:5;outras:15,,ACS 2023 (condado)
+USA-HOU,USA,Houston,mexicano_americano:38;americano:24;han:5;vietnamita:4;outras:29,,ACS 2023 (condado)
+USA-JAC,USA,Jacksonville,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-LOS,USA,Los Angeles,mexicano_americano:45;americano:27;han:8;filipino:4;coreano:3;outras:13,,ACS 2023 (condado)
+USA-MIA,USA,Miami,cubano:40;americano:22;haitiano:6;venezuelano:4;colombiano:3;outras:25,,ACS 2023 (condado)
+USA-MIN,USA,Minneapolis,americano:69;mexicano_americano:13;filipino:3;han:3;porto_riquenho:3;outras:9,,national_fallback
+USA-NAS,USA,Nashville,americano:69;mexicano_americano:13;filipino:3;han:3;porto_riquenho:3;outras:9,,national_fallback
+USA-NEW,USA,New York City,americano:48;han:11;porto_riquenho:8;dominicano:6;mexicano_americano:5;outras:22,,ACS 2023 (condado)
+USA-PHI,USA,Philadelphia,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-PHO,USA,Phoenix,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-POR,USA,Portland,americano:73;mexicano_americano:12;filipino:3;han:3;porto_riquenho:2;outras:7,,national_fallback
+USA-REN,USA,Reno,americano:69;mexicano_americano:13;filipino:3;han:3;porto_riquenho:3;outras:9,,national_fallback
+USA-SANA,USA,San Antonio,mexicano_americano:55;americano:24;outras:21,,ACS 2023 (condado)
+USA-SANJ,USA,San Jose,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-SEA,USA,Seattle,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
+USA-SIT,USA,Sitka,americano:77;mexicano_americano:11;filipino:2;han:2;porto_riquenho:2;outras:6,,national_fallback
+USA-UNA,USA,Unalaska,americano:77;mexicano_americano:11;filipino:2;han:2;porto_riquenho:2;outras:6,,national_fallback
+USA-UTQ,USA,Utqiagvik,inuit:75;americano:20;outras:5,,ACS 2023 (condado)
+USA-WAS,USA,Washington,americano:64;mexicano_americano:14;filipino:4;han:4;porto_riquenho:4;outras:10,,national_fallback
 UZB-AND,UZB,Andijon,uzbeque:90;outras:10,,estimativa 2020 (Goskomstat)
 UZB-MUY,UZB,Mŭynoq,uzbeque:83;tadjique:5;cazaque:3;tatar:2;outras:7,,national_fallback
 UZB-SAM,UZB,Samarkand,uzbeque:88;tadjique:8;outras:4,,estimativa 2020 (Goskomstat)
 UZB-TAS,UZB,Tashkent,uzbeque:70;russo:10;tatar:4;cazaque:3;outras:13,,estimativa regional (Stat. Uzbequistão 2023)
-VCT-KIN,VCT,Kingstown,caribenho:88;outras:12,,national_fallback
-VEN-CBL,VEN,Ciudad Bolívar,venezuelano:74;afro_latino:12;italiano:4;portugues:3;outras:7,,national_fallback
-VEN-CCS,VEN,Caracas,venezuelano:80;afro_latino:10;outras:10,,Censo 2011 (INE)
-VEN-CGU,VEN,Ciudad Guayana,venezuelano:74;afro_latino:12;italiano:4;portugues:3;outras:7,,national_fallback
-VEN-MAR,VEN,Maracaibo,venezuelano:69;afro_latino:14;italiano:5;portugues:4;outras:8,,national_fallback
-VEN-VLN,VEN,Valencia,venezuelano:69;afro_latino:14;italiano:5;portugues:4;outras:8,,national_fallback
+VCT-KIN,VCT,Kingstown,sao_vicentino:88;outras:12,,national_fallback
+VEN-CBL,VEN,Ciudad Bolívar,venezuelano:85;italiano:5;portugues:3;outras:7,,national_fallback
+VEN-CCS,VEN,Caracas,venezuelano:90;outras:10,,Censo 2011 (INE)
+VEN-CGU,VEN,Ciudad Guayana,venezuelano:85;italiano:5;portugues:3;outras:7,,national_fallback
+VEN-MAR,VEN,Maracaibo,venezuelano:81;italiano:6;portugues:4;outras:9,,national_fallback
+VEN-VLN,VEN,Valencia,venezuelano:81;italiano:6;portugues:4;outras:9,,national_fallback
 VNM-CAN,VNM,Cần Thơ,vietnamita:78;han:3;khmer:2;outras:17,,national_fallback
 VNM-DAN,VNM,Da Nang,vietnamita:81;han:2;khmer:2;outras:15,,national_fallback
 VNM-HAI,VNM,Haiphong,vietnamita:78;han:3;khmer:2;outras:17,,national_fallback
