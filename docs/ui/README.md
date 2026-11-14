@@ -403,3 +403,78 @@ Testes headless:
 fim), papéis, fontes/estimativas e nomes nos três idiomas; os outros dois abrem
 o HUD real e verificam a coluna, o cartão da nação (Brasil), a ficha da cidade e
 a linha do dossiê.
+
+## Frente F6 — Mercado, Logística e consumo (2026-11-14)
+
+**Antes:** o jogo tinha seis telas de papel (Economia, Comércio, Produção,
+População, Política, Estatísticas). Não havia tela de Mercado nem de Logística;
+a aba Cadeia da Produção só listava receitas (insumos → produto → subprodutos →
+“quem consome” em texto); População não tinha consumo; a ficha da cidade não
+mostrava necessidades nem fluxo de comércio; o detalhe do pedido em Comércio não
+dizia o bem, o preço entregue nem a moeda. Nas tabelas, o `page_size` fixo da
+spec (6–8 linhas) deixava metade da área em branco, e vários ícones claros
+(algodão, arroz ensacado) sumiam no papel: o SVG é silhueta branca e o
+`icon_color` do bem chegava quase na cor do fundo.
+
+**Depois:**
+
+| Onde | O que passou a existir |
+|---|---|
+| **Mercado** (T2, `mercado.json` + `market_screen.gd`) | abas Bens/Ofertas; cidades à esquerda com busca; 114 bens com ícone, preço na moeda local, estoque, oferta, demanda, importação e exportação; filtro por setor; ficha do bem com preço local, preço de importação, estoque, demanda, moeda e âncora; ofertas do dia com origem + frete + tarifa → **preço entregue** na moeda do comprador; estado vazio honesto quando o dia não publicou pedido |
+| **Logística** (T2, `logistica.json` + `logistics_screen.gd`) | abas Frota, Câmbio, Tarifas e Portos; 179 nações com caminhões/navios/aviões, combustível e fila; moedas com taxa, regime, base e receita de tarifas; editor de tarifa com aplicação real (`demo_set_tariff`); portos com capacidade, uso, fila e expansão (`demo_expand_port`) |
+| **Produção — aba Cadeia** | nova coluna **Origem** (`Jazida`/`Fazenda`/`Fábrica` + cidades produtoras) ao lado de **Quem consome**, que agora traz os **ícones dos bens consumidores**; a tabela de cidades produtoras continua abaixo |
+| **População — aba Consumo** | tabela/cartão por cidade com satisfação básico/vida/luxo, duráveis e satisfação geral (`pop.*`), só leitura do status |
+| **Ficha da cidade (T3)** | blocos novos na aba População (necessidades por nível + duráveis) e no Mercado (moeda, câmbio e receita de tarifas), além de “Trabalho e renda” e “Fluxo de comércio” na visão geral |
+| **Comércio — detalhe do pedido** | linhas de **bem**, **preço entregue** e **moeda** antes da tabela de trechos |
+| **Docas** | selos **MERCADO (2)** e **LOGÍSTICA (8)**, com preload das telas no HUD; clicar num porto do mapa abre a Logística na aba Portos |
+| **Gerador** | `select_field` (PaperSelect) e célula de tabela com ícone/chip de cor reaproveitados pelas novas telas |
+
+**Tabelas que preenchem a altura.** `DataTableView` ganhou `fill_height`: a
+tabela mede a altura de uma linha e calcula `floor(altura disponível / altura da
+linha)` a cada `NOTIFICATION_RESIZED`, então o número de linhas por página muda
+com a janela (Mercado passou de 6 para 10 bens por página em 1920×1080;
+Logística de 8 para 12 nações; Produção de 5 para 6 cidades). O `page_size` da
+spec fica só como medida antes do primeiro layout.
+
+**Ícones legíveis.** `ProductIcons.readable(tint, fundo)` garante contraste
+WCAG ≥ 3:1 sobre o papel, escurecendo o tint na direção da tinta quando o bem é
+claro; `ProductIcons.make` aceita o fundo e as células de tabela passam
+`PAPEL_CLARO`. `market_template_test` verifica os **114** ícones: textura não
+nula e contraste ≥ 3:1. `production_template_test` verifica a origem e os
+ícones dos consumidores; `20` traduções de bens que estavam em português no
+inglês (e as equivalentes em espanhol) foram corrigidas no `i18n.csv`/`.json`.
+
+**Capturas (janela real; `--headless` trava em `RenderingServer.frame_post_draw`):**
+
+```powershell
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --phase=f6f --run=final `
+    --sizes=1920x1080,1600x900,1366x768,2560x1440
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --phase=f6f --run=final_en --sizes=1366x768 --locale=en
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --phase=f6f --run=final_es --sizes=1366x768 --locale=es
+```
+
+Resultado: **136** capturas (34 estados × 4 resoluções) em pt-BR + **34** em
+inglês + **34** em espanhol, todas com **0** `offscreen`, `text_overflow`,
+`text_elided`, `focus_hidden`, `i18n_key` ou `scroll_needed` no
+`layout_report.json`. `25_market_offers` agora sai com oferta real: quando o dia
+1 ainda não publicou pedidos, a captura avança até 3 dias de forma síncrona
+(`_ensure_trade_orders`) e seleciona bem/cidade do primeiro pedido — nenhum
+número é inventado. Evidência em `docs/ui/captures/f6f/final*/` (a pasta
+`captures/` é ignorada pelo git).
+
+Testes headless (todos PASS):
+
+```powershell
+& $godot --headless --path . --script res://tools/market_template_test.gd
+& $godot --headless --path . --script res://tools/logistics_template_test.gd
+& $godot --headless --path . --script res://tools/production_template_test.gd
+& $godot --headless --path . --script res://tools/trade_template_test.gd
+& $godot --headless --path . --script res://tools/population_template_test.gd
+& $godot --headless --path . --script res://tools/city_tooltip_test.gd
+& $godot --headless --path . --script res://tools/nation_city_list_test.gd
+& $godot --headless --path . --script res://tools/politics_dossier_test.gd
+& $godot --headless --path . --script res://tools/economy_integration_test.gd
+```
