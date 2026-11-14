@@ -776,6 +776,19 @@ Dictionary EconomySim::order_to_dict(const TradeOrder& order) const {
 namespace {
 
 constexpr double kDemoNeedPerCapita = 0.0003;
+// F3: reserva de alimento (dias) que a POP mantém em poupança antes de gastar
+// em life/luxury. Sem ela, a compra de conforto drenava a poupança usada para
+// importar comida em nações sem terra (EGY/SAH em 365 d). É uma regra
+// prudencial declarada, não um número observado: o colchão cobre uma década de
+// cesta, então o conforto é pago essencialmente pela renda corrente, não pela
+// poupança que financia a importação de alimento (EGY tinha poupança acima de
+// um ano e ainda perdia comida em 365 d).
+constexpr double kDemoFoodReserveDays = 3650.0;
+// F3: teto do gasto institucional (paper/computer) como fração do valor da
+// cesta alimentar diária da cidade. A compra do Estado não pode competir com a
+// importação de comida (EGY caía a 0,708 em 365 d quando o computer drenava o
+// orçamento). Estimativa declarada, calibrável no laboratório.
+constexpr double kDemoGovernmentGoodsFoodShare = 0.05;
 // Renda externa das famílias: serviços urbanos, pesca e turismo vendidos ao
 // resto do mundo. Dimensão derivada da própria cesta de subsistência — a
 // necessidade alimentar per capita (0,0003 t/dia) paga ao preço-base do trigo
@@ -3362,6 +3375,20 @@ void EconomySim::demo_tick_core() {
 							* (1.0 - demo_durable_decay_));
 				}
 			}
+			// Reserva de alimento: a POP só compra life/luxury com a poupança
+			// acima de kDemoFoodReserveDays de cesta. Isso preserva a capacidade
+			// de importar comida em nações sem terra (o alimento continua sendo
+			// a primeira prioridade do orçamento).
+			double needs_budget = budget;
+			if (cheapest_food > 0.0) {
+				const double reserve = pop.need * kDemoFoodReserveDays * cheapest_food;
+				// Protege no máximo a poupança existente: se ela já é menor que
+				// o colchão, a renda corrente do dia continua disponível.
+				const double protected_savings =
+					std::min(std::max(0.0, pop.savings), reserve);
+				needs_budget = std::max(0.0, budget - protected_savings);
+			}
+			double needs_spent = 0.0;
 			double weighted = 0.0;
 			double weight_sum = 0.0;
 			for (int level_index = 0;
@@ -3385,7 +3412,7 @@ void EconomySim::demo_tick_core() {
 						* city.simulation_population;
 					level_want += want_ge;
 					level_got += demo_consume_category(
-						city, category, want_ge, budget, pop.needs_spend);
+						city, category, want_ge, needs_budget, needs_spent);
 				}
 				pop.level_want[level_index] = level_want;
 				pop.level_consumed[level_index] = level_got;
@@ -3411,6 +3438,8 @@ void EconomySim::demo_tick_core() {
 					break;
 				}
 			}
+			pop.needs_spend = needs_spent;
+			budget -= needs_spent;
 		} else {
 			// Sem needs.json (AGRIA/PORTUS e saves antigos): um único nível,
 			// exatamente o comportamento validado.
@@ -4967,26 +4996,18 @@ void EconomySim::demo_seed_industry() {
 		}
 		const DemoRecipe& mid = demo_recipes_[static_cast<std::size_t>(mid_recipe)];
 		const DemoRecipe& final = demo_recipes_[static_cast<std::size_t>(final_recipe)];
+		// Só as fábricas são semeadas: a matéria-prima entra por comércio (o
+		// `demo_trade_goods` já trata o insumo da receita) e a IA constrói as
+		// fazendas de algodão/madeira quando o shortage aparece. Semear a
+		// fazenda aqui tirava mão de obra primária das fazendas de alimento.
 		const double total_cost =
-			final_capacity * kDemoCapitalPerCapacity
-			+ final_capacity * mid.capital_per_capacity
+			final_capacity * mid.capital_per_capacity
 			+ final_capacity * final.capital_per_capacity;
 		if (city.government_budget < total_cost) {
 			return 0;
 		}
 		const String city_id(city.id.c_str());
 		int built = 0;
-		const String raw_building_id(("SEED-" + std::string(raw_id) + "-" + city.id).c_str());
-		Dictionary raw = demo_build(city_id, raw_building_id, String(raw_id), -1,
-			raw_product, final_capacity, 0.0, 0.0, 0.0, 1.0, "state",
-			final_capacity * kDemoCapitalPerCapacity);
-		if (bool(raw.get("created", false))) {
-			if (DemoBuilding* node = find_demo_building(city.id,
-					std::string(raw_building_id.utf8().get_data()))) {
-				node->strategic = true;
-			}
-			++built;
-		}
 		const String mid_building_id(("SEED-" + std::string(mid_id) + "-" + city.id).c_str());
 		Dictionary mid_build = demo_build(city_id, mid_building_id, String(mid_id),
 			-1, demo_recipes_[static_cast<std::size_t>(mid_recipe)].output,
@@ -5016,15 +5037,37 @@ void EconomySim::demo_seed_industry() {
 		return built;
 	};
 	if (demo_needs_loaded_) {
-		const int chain_cities = std::min<int>(3, static_cast<int>(order.size()));
-		for (int slot = 0; slot < chain_cities; ++slot) {
-			DemoCity& city = demo_cities_[static_cast<std::size_t>(order[slot])];
+		// Só capital com folga alimentar: a fábrica de referência não pode
+		// competir com a comida de uma nação importadora (EGY/SAH). A folga é
+		// medida pela capacidade primária de alimento já instalada × aptidão.
+		int chains_seeded = 0;
+		const int scan = std::min<int>(24, static_cast<int>(order.size()));
+		for (int slot = 0; slot < scan && chains_seeded < 3; ++slot) {
+			const int city_index = order[static_cast<std::size_t>(slot)];
+			DemoCity& city = demo_cities_[static_cast<std::size_t>(city_index)];
+			double food_capacity = 0.0;
+			for (const int bi : demo_buildings_by_city_[static_cast<std::size_t>(city_index)]) {
+				const DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
+				if (demo_food_calories(building.output_product) > 0.0) {
+					food_capacity += building.capacity
+						* city.suitability[building.output_product];
+				}
+			}
+			const double food_need = city.simulation_population * kDemoNeedPerCapita;
+			if (food_capacity < food_need * 1.10) {
+				continue;
+			}
+			int built = 0;
 			// basic/clothing: 0,0004 t/mês por habitante.
-			created += seed_final_chain(city, "cotton", "fabric", "clothes",
+			built += seed_final_chain(city, "cotton", "fabric", "clothes",
 				0.0004 / 30.0, 20.0);
 			// institutional/government paper: 0,005 × âncora alimentar/dia.
-			created += seed_final_chain(city, "wood", "cellulose", "paper",
+			built += seed_final_chain(city, "wood", "cellulose", "paper",
 				kDemoNeedPerCapita * 0.005, 10.0);
+			if (built > 0) {
+				++chains_seeded;
+				created += built;
+			}
 		}
 	}
 	demo_industry_seeded_ = true;
@@ -5224,7 +5267,7 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 		double anchor_share;  // fração de kDemoNeedPerCapita por dia
 	} kEstimatedGovernmentNeeds[] = {
 		{"paper", 0.005},
-		{"computer", 0.001},
+		{"computer", 0.0001},
 	};
 	for (int index = 0; index < government.size(); ++index) {
 		const String id = String(government[index]);
@@ -5324,7 +5367,36 @@ void EconomySim::demo_consume_government(DemoCity& city) {
 	if (!demo_needs_loaded_ || demo_government_products_.empty()) {
 		return;
 	}
+	// Teto prudencial: a compra institucional não pode consumir mais que uma
+	// fração do valor da cesta alimentar diária da cidade. Sem o teto, o
+	// computer (preço alto) drenava o orçamento que importa comida em nações
+	// sem terra (EGY 1,000 → 0,708 em 365 d).
+	double cheapest_food = 0.0;
+	for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
+		const int product = demo_food_product(slot);
+		const double factor = demo_food_calories(product);
+		if (factor <= 0.0) {
+			continue;
+		}
+		const double per_calorie = city.markets[product].price / factor;
+		if (per_calorie > 0.0
+				&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
+			cheapest_food = per_calorie;
+		}
+	}
 	double budget = std::max(0.0, city.government_budget);
+	if (cheapest_food > 0.0) {
+		const double food_value = city.simulation_population
+			* kDemoNeedPerCapita * cheapest_food;
+		budget = std::min(budget,
+			food_value * kDemoGovernmentGoodsFoodShare);
+	} else {
+		budget = std::min(budget, budget * 0.01);
+	}
+	// Divisão igual entre os bens institucionais: o computer (caro) não pode
+	// consumir a cota inteira e deixar o paper sem compra.
+	const double per_product_budget = budget / std::max<std::size_t>(
+		1, demo_government_products_.size());
 	for (std::size_t index = 0; index < demo_government_products_.size(); ++index) {
 		const int product = demo_government_products_[index];
 		if (product < 0 || product >= demo_products_) {
@@ -5341,8 +5413,8 @@ void EconomySim::demo_consume_government(DemoCity& city) {
 			continue;
 		}
 		double desired_tons = want;
-		if (desired_tons * price > budget) {
-			desired_tons = std::max(0.0, budget) / price;
+		if (desired_tons * price > per_product_budget) {
+			desired_tons = std::max(0.0, per_product_budget) / price;
 		}
 		if (desired_tons <= 1e-12) {
 			continue;
@@ -5357,7 +5429,6 @@ void EconomySim::demo_consume_government(DemoCity& city) {
 		market.stock -= quantity;
 		market.demand += quantity;
 		market.sold += quantity;
-		budget -= paid;
 		city.government_budget -= paid;
 		city.government_goods_spend += paid;
 		city.firm_cash += paid;

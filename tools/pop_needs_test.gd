@@ -290,7 +290,9 @@ func _test_government_consumption() -> void:
 ## Demanda de bem final vira demanda de mercado mesmo sem estoque (sinal p/ IA).
 func _test_demand_signal() -> void:
 	var sim := _new_sim()
-	_inject(sim, {"bread": 1000.0}, 1000000.0, 1000000.0)
+	# Poupança acima do colchão alimentar (10 anos de cesta) para a POP ter
+	# orçamento discricionário e registrar a demanda desejada.
+	_inject(sim, {"bread": 1000.0}, 100000000.0, 1000000.0)
 	var status: Dictionary = sim.tick_demo()
 	for id in ["clothes", "medicine", "phone", "car"]:
 		var market := _market(status, id)

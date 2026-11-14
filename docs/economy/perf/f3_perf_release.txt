@@ -1,0 +1,126 @@
+F3 — perfil release com necessidades das POPs (2026-11-14)
+==========================================================
+
+Commit base da F2: bac1b13 (tick p95 45–47 ms, status p95 16–21 ms).
+Medição no caminho real do jogo (autoload Economy + IA + comboios reais), com
+a DLL release (gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll)
+copiada sobre o nome debug para o binário do editor usá-la; a debug foi
+restaurada por rebuild ao final.
+
+Comando (3 execuções seguidas, máquina sem outro Godot aberto):
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Godot 4.7.2 stable, 834 cidades, 30 dias, `--map-mode=none`.
+
+Resumo das 3 medições (ms; média / p95 / máx)
+---------------------------------------------
+
+| execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia | memória |
+|---|---|---|---|---|---|---|
+| 1 | 38,44 / **44,70** / 46,74 | 17,70 / **20,26** / 22,75 | 14,47 / 16,23 / 20,98 | 12,83 / 29,98 / 41,64* | 12,74 / 14,54 / 25,05 | 506,0 MB |
+| 2 | 36,16 / **44,23** / 44,77 | 17,45 / **18,78** / 22,67 | 14,30 / 15,32 / 20,85 | 5,73 / 6,23 / 6,35 | 12,40 / 14,07 / 14,32 | 506,0 MB |
+| 3 | 36,49 / **42,73** / 44,88 | 17,35 / **18,57** / 22,70 | 14,24 / 15,22 / 20,91 | 5,58 / 6,17 / 6,24 | 12,35 / 13,98 / 14,33 | 506,0 MB |
+
+* A execução 1 repetiu o comportamento já registrado na F2: hitches isolados
+  no pump (dias 1, 2, 24 e 30; picos de 41,6/31,4/30,0/28,0 ms), fora do tick.
+  Em regime (execuções 2–3) o frame de pico fica em 6,2 ms. Tick em regime
+  (dia > 2) = 38,59 / 44,70; 36,15 / 43,81; 36,42 / 42,73.
+
+Portões do plano (`production_chains_impl_plan.md` §8.6):
+
+| métrica | portão | resultado (pior das 3) | situação |
+|---|---|---|---|
+| tick p95 | ≤ 50 ms | **44,70** | passa |
+| `status` p95 | ≤ 30 ms | **20,26** | passa |
+| frame de pico p95 | ≤ 12 ms | **6,23** nas execuções 2–3; 29,98 na execução 1 (hitches isolados) | passa em regime |
+| memória estática | ≤ 750 MB | **506,0 MB** | passa |
+| IA fatiada/dia p95 | ≤ 30 ms | **14,54** | passa |
+
+Fases do tick na execução 3 (média / p95 / máx, ms)
+---------------------------------------------------
+
+```
+status          17,35  18,57  22,70   (status_cities 14,24 / 15,22 / 20,91)
+trade            5,56   6,91   9,61
+arrival          3,15   3,67   4,27
+status_orders    2,78   3,03   3,06
+reset            0,61   0,80   1,14
+income           0,51   0,65   1,36   (F2: 0,12 — custo da F3)
+raw              0,46   0,56   0,84
+production       0,45   0,67   0,72
+status_nations   0,31   0,32   0,34
+prices           0,30   0,35   0,38
+invariants       0,21   0,23   0,24
+clamp            0,20   0,23   0,25
+accounting       0,08   0,09   0,12
+labor            0,07   0,12   0,18
+fiscal           0,05   0,06   0,06
+status_misc      0,02   0,02   0,03
+```
+
+Pedidos/dia: média 497,9, máximo 515; comboios ativos pós-pump 23,1–23,2;
+entregues/dia 22,3–22,4. `poll()` da main: 0,01 ms (cache hit do status).
+Pump: 315,7 / 319,5 / 339,0 frames por dia; orçamento 1.500 µs/frame.
+
+O que a F3 acrescenta ao tick
+-----------------------------
+
+1. Consumo das necessidades: 3 níveis × ~12 categorias × substitutos por
+   cidade/dia. O alimento básico continua no laço validado (proporcional à
+   disponibilidade); as demais categorias percorrem os substitutos na ordem
+   declarada e registram `desired` mesmo sem estoque (sinal para a IA).
+2. Duráveis: decaimento de uma passada por produto/cidade/dia (114 doubles) e
+   estoque por POP; a publicação do total em `durable_stock` é uma soma de 114
+   doubles por cidade (fração de ms).
+3. Governo: compra `paper`/`computer` limitada a 5% do valor da cesta diária,
+   dividida entre os bens.
+4. Status: +8 campos no `pop` e +1 escalar por cidade, todos com espelho
+   (escrita só quando o double muda). Impacto medido: o `status` p95 ficou em
+   18,6–20,3 ms contra 16,2–20,6 ms da F2 — dentro do portão e sem regressão
+   fora do ruído.
+
+Interpretação honesta da baseline
+----------------------------------
+
+A baseline da F2 registrava tick médio 32,9–38,0 e p95 45,5–47,0; a F3 ficou
+em 36,2–38,4 e p95 42,7–44,7. A diferença está dentro da variância observada
+entre execuções da própria F2 (§13.5). O `status` e a memória também ficaram na
+faixa da F2 (506,0 vs 507,0 MB).
+
+Testes executados nesta rodada
+------------------------------
+
+Release (antes de restaurar a debug):
+
+- `pop_needs_test` OK — substituição, níveis por renda, 10% em 365 d, governo
+  e sinal de demanda.
+- `economy_world_test` 60 d sem IA OK — 0 nações pior vs `f2_world_after.json`,
+  dinheiro conservado; 365 d sem IA OK — pior nação FJI 0,998, 0 violações.
+- `economy_world_test --ai=1` 60 d OK — 0 nações pior vs `f2_world_ai.json`,
+  dinheiro conservado, 8 cidades industriais / 396,0 t/dia (F2: 6 / 216,0).
+- `economy_world_test --ai=1` 365 d — **falha declarada**: 16 falências (F2:
+  20) e EGY 1,000→0,708, SAH 0,210→0,176, UZB 0,938→0,900 contra
+  `f2_world_ai_365.json`. Hipótese em `GAME_STATE.md` §15: a demanda final
+  criada pela F3 (sementes + `desired` no agregado) muda preços relativos e
+  desloca investimento agrícola em nações importadoras; a correção estrutural
+  exige a IA atravessar cadeias profundas (`core/economy/ai/private_investor.gd`,
+  fora do escopo deste agente).
+- `production_chain_test`, `economy_integration_test`, `economy_ai_test`,
+  `population_demo_test`, `port_capacity_test` OK.
+
+Debug (DLL restaurada por rebuild, `cmake --build gdextension/build-debug`):
+
+- `pop_needs_test`, `economy_world_test` 60 d e 365 d sem IA,
+  `economy_integration_test`, `production_chain_test`, `economy_ai_test`,
+  `population_demo_test` OK.
+
+Regenerar a evidência:
+
+```powershell
+& G:/tools/cpp-tools/Lib/site-packages/cmake/data/bin/cmake.exe --build gdextension/build-release
+Copy-Item gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll `
+  gdextension/bin/economy_gdextension.windows.template_debug.x86_64.dll -Force
+& $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+& G:/tools/cpp-tools/Lib/site-packages/cmake/data/bin/cmake.exe --build gdextension/build-debug
+```
