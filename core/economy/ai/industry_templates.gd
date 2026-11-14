@@ -106,6 +106,10 @@ static var _goods_index: Dictionary = {}
 static var _recipes_by_output: Dictionary = {}
 static var _recipe_templates: Dictionary = {}
 static var _all_cache: Dictionary = {}
+## Templates NÃO alimentares pré-achatados como Array de entradas (evita o
+## `FOOD_RESOURCES.has` e o hash de String por template no laço quente do
+## investidor — 114 bens × cidade × dia).
+static var _non_food_templates: Array = []
 
 
 static func _ensure_loaded() -> void:
@@ -203,11 +207,33 @@ static func _ensure_loaded() -> void:
 		if not _all_cache.has(output):
 			_all_cache[output] = _recipe_templates[output]
 
+	# Lista plana dos templates não alimentares, na MESMA ordem de _all_cache
+	# (primários por declaração, depois receitas por ordem do recipes.json).
+	# Preserva a ordem de decisão do laço original.
+	_non_food_templates.clear()
+	for resource: String in _all_cache:
+		if FOOD_RESOURCES.has(resource):
+			continue
+		var template: Dictionary = _all_cache[resource]
+		_non_food_templates.append({
+			"resource": resource,
+			"output": int(template.get("output", -1)),
+			"is_recipe": template.has("recipes"),
+			"template": template,
+		})
+
 
 ## Todos os templates (primários + receitas industriais), carregados uma vez.
 static func all_templates() -> Dictionary:
 	_ensure_loaded()
 	return _all_cache
+
+
+## Lista pré-achatada dos templates não alimentares (ordem estável = ordem de
+## _all_cache). Usada pelo laço quente do investidor privado.
+static func non_food_templates() -> Array:
+	_ensure_loaded()
+	return _non_food_templates
 
 
 ## Receitas alternativas de um bem (array vazio quando é primário).
@@ -259,6 +285,19 @@ static func caloric_factor(resource: String) -> float:
 	if TEMPLATES.has(resource):
 		return float(TEMPLATES[resource].get("caloric_factor", 1.0))
 	return float(_recipe_templates.get(resource, {}).get("caloric_factor", 1.0))
+
+
+## Conjunto O(1) dos produtos produzidos por construções locais (chave =
+## output_product). A IA consulta isso em _input_available em vez de varrer
+## city["buildings"] por insumo a cada receita do laço quente (custo medido:
+## receita × insumo × construção × template por cidade).
+static func local_products(city: Dictionary) -> Dictionary:
+	var products: Dictionary = {}
+	for building in city.get("buildings", []):
+		var product := int(building.get("output_product", -1))
+		if product >= 0:
+			products[product] = true
+	return products
 
 
 ## true se a cidade já tem uma construção que produz o bem (mesmo output). Usado

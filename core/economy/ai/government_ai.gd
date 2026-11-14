@@ -63,9 +63,14 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	var budget := float(city["government_budget"])
 	var available := budget * BUDGET_SHARE
 	var capital_cost := float(status.get("capital_cost_per_capacity", 2000.0))
-	var center := _center(city)
 	if available <= 0.0:
 		return
+
+	# Índice O(1) das construções locais por produto (contagem e utilização
+	# efetiva). _buildings_of_type/_avg_utilization varriam city["buildings"] a
+	# cada mineral do laço quente (custo medido: ~14 varreduras × cidade). Aqui
+	# é UMA varredura por cidade.
+	var bindex := _building_index(city)
 
 	# 1. Segurança alimentar (B3): quando há FOME REAL (déficit de consumo em
 	# toneladas-equivalentes de grão), constrói a cultura com melhor aptidão ×
@@ -105,7 +110,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			if capacity * capital_cost > available:
 				capacity = available / capital_cost
 			if capacity >= MIN_STATE_CAPACITY:
-				var gate := _build_gate(city_id, city, day, product)
+				var gate := _build_gate(city_id, city, day, product, bindex)
 				if gate != "":
 					_log(day, city_id, "avoid", resource, gate, capacity * capital_cost)
 				else:
@@ -138,22 +143,26 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	# sempre atrás do cooldown de construção.
 	var suitability: Array = city.get("suitability", [0.0])
 	var candidates: Array = []
-	for resource in Templates.MINERAL_RESOURCES:
-		var template: Dictionary = Templates.TEMPLATES[resource]
-		var product := int(template["output"])
-		if product >= suitability.size() or float(suitability[product]) <= 0.0:
-			continue
-		if not _has_deposit(city, resource):
-			continue
-		if _buildings_of_type(city, product) > 0:
-			continue
-		var mineral_market: Dictionary = city["markets"][product]
-		var margin: float = (float(mineral_market["price"])
-			- Templates.variable_cost_mined(resource, city))
-		if margin <= 0.0 or float(mineral_market.get("surplus", 0.0)) > 0.0:
-			continue
-		candidates.append({"resource": resource, "product": product,
-			"template": template, "margin": margin})
+	# Sem jazida declarada a cidade não pode abrir mina nenhuma: pula o laço de
+	# 14 minerais inteiro (custo medido: ~14 varreduras de mercado × cidade).
+	var deposits: Dictionary = city.get("deposits", {})
+	if not deposits.is_empty():
+		for resource in Templates.MINERAL_RESOURCES:
+			var template: Dictionary = Templates.TEMPLATES[resource]
+			var product := int(template["output"])
+			if product >= suitability.size() or float(suitability[product]) <= 0.0:
+				continue
+			if not _has_deposit(city, resource):
+				continue
+			if _buildings_of_type(city, product, bindex) > 0:
+				continue
+			var mineral_market: Dictionary = city["markets"][product]
+			var margin: float = (float(mineral_market["price"])
+				- Templates.variable_cost_mined(resource, city))
+			if margin <= 0.0 or float(mineral_market.get("surplus", 0.0)) > 0.0:
+				continue
+			candidates.append({"resource": resource, "product": product,
+				"template": template, "margin": margin})
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return float(a["margin"]) > float(b["margin"]))
 	for candidate in candidates:
@@ -161,7 +170,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 		var product: int = candidate["product"]
 		var template: Dictionary = candidate["template"]
 		var margin: float = float(candidate["margin"])
-		var gate := _build_gate(city_id, city, day, product)
+		var gate := _build_gate(city_id, city, day, product, bindex)
 		if gate != "":
 			_log(day, city_id, "avoid", resource, gate, 0.0)
 			continue
@@ -270,21 +279,46 @@ func _has_deposit(city: Dictionary, resource: String) -> bool:
 
 
 ## Bloqueio anti-loop: cooldown por cidade, teto por tipo e utilização efetiva.
-## Retorna "" quando pode construir, senão o motivo da recusa.
-func _build_gate(city_id: String, city: Dictionary, day: int, product: int) -> String:
+## Retorna "" quando pode construir, senão o motivo da recusa. `bindex` é o
+## índice O(1) de construções por produto (calculado 1× por cidade).
+func _build_gate(city_id: String, city: Dictionary, day: int, product: int,
+		bindex: Dictionary = {}) -> String:
 	var last_build := int(_last_build_day.get(city_id, -BUILD_COOLDOWN_DAYS))
 	if day - last_build < BUILD_COOLDOWN_DAYS:
 		return "cooldown de construção (%d d desde a última)" % (day - last_build)
-	if _buildings_of_type(city, product) >= MAX_BUILDINGS_PER_TYPE:
+	if _buildings_of_type(city, product, bindex) >= MAX_BUILDINGS_PER_TYPE:
 		return "teto de %d construções deste tipo" % MAX_BUILDINGS_PER_TYPE
-	var utilization := _avg_utilization(city, product)
+	var utilization := _avg_utilization(city, product, bindex)
 	if utilization < MIN_AVG_UTILIZATION:
 		return "utilização média %.0f%% < %.0f%%" % [
 			utilization * 100.0, MIN_AVG_UTILIZATION * 100.0]
 	return ""
 
 
-func _buildings_of_type(city: Dictionary, product: int) -> int:
+## Índice O(1) das construções locais por produto: {"counts": product→n,
+## "util_sum": product→Σ util. efetiva, "util_n": product→n}. Construído 1× por
+## cidade; _buildings_of_type/_avg_utilization o consultam em vez de varrer
+## city["buildings"] a cada mineral (custo medido no laço quente).
+func _building_index(city: Dictionary) -> Dictionary:
+	var counts: Dictionary = {}
+	var util_sum: Dictionary = {}
+	var util_n: Dictionary = {}
+	for building in city.get("buildings", []):
+		var product := int(building.get("output_product", -1))
+		if product < 0:
+			continue
+		counts[product] = int(counts.get(product, 0)) + 1
+		var utilization := float(building.get("utilization", 0.0))
+		var suitability := float(building.get("site_suitability", 1.0))
+		var effective := clampf(utilization / maxf(suitability, 0.01), 0.0, 1.0)
+		util_sum[product] = float(util_sum.get(product, 0.0)) + effective
+		util_n[product] = int(util_n.get(product, 0)) + 1
+	return {"counts": counts, "util_sum": util_sum, "util_n": util_n}
+
+
+func _buildings_of_type(city: Dictionary, product: int, bindex: Dictionary = {}) -> int:
+	if not bindex.is_empty():
+		return int((bindex["counts"] as Dictionary).get(product, 0))
 	var count := 0
 	for building in city.get("buildings", []):
 		if int(building.get("output_product", -1)) == product:
@@ -294,8 +328,16 @@ func _buildings_of_type(city: Dictionary, product: int) -> int:
 
 ## Utilização média efetiva: normaliza pela aptidão do terreno (uma lavoura em
 ## região de aptidão 0,3 produz no máximo 30% da capacidade nominal — isso não é
-## ociosidade). Transformações (site_suitability=1) ficam inalteradas.
-func _avg_utilization(city: Dictionary, product: int) -> float:
+## ociosidade). Transformações (site_suitability=1) ficam inalteradas. `bindex` é
+## o índice O(1) de construções por produto (calculado 1× por cidade).
+func _avg_utilization(city: Dictionary, product: int, bindex: Dictionary = {}) -> float:
+	if not bindex.is_empty():
+		var util_sum: Dictionary = bindex["util_sum"]
+		var util_n: Dictionary = bindex["util_n"]
+		var n: int = int(util_n.get(product, 0))
+		if n == 0:
+			return 1.0
+		return float(util_sum.get(product, 0.0)) / float(n)
 	var total := 0.0
 	var count := 0
 	for building in city.get("buildings", []):

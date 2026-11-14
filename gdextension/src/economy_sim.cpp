@@ -728,6 +728,25 @@ Dictionary EconomySim::leg_to_dict(const Leg& leg) const {
 	return dict;
 }
 
+// Versão do status: mesmo conteúdo de leg_to_dict, mas escrevendo em um
+// Dictionary reaproveitado e com chaves StringName (sem hash por escrita).
+void EconomySim::demo_fill_leg_status(Dictionary& dict, const Leg& leg) const {
+	const ModeSpec& mode_spec = spec(leg.mode);
+	const DemoStatusKeys& k = demo_status_keys_;
+	dict[k.mode] = String(mode_spec.name);
+	dict[k.from] = String(leg.from.c_str());
+	dict[k.to] = String(leg.to.c_str());
+	dict[k.from_px] = Vector2(leg.from_point.x, leg.from_point.y);
+	dict[k.to_px] = Vector2(leg.to_point.x, leg.to_point.y);
+	dict[k.distance_km] = leg.distance_km;
+	dict[k.load_tons] = leg.load_tons;
+	dict[k.trips] = leg.trips;
+	dict[k.transit_hours] = leg.transit_hours;
+	dict[k.cost] = leg.cost;
+	dict[k.speed_kmh] = mode_spec.speed_kmh;
+	dict[k.batch_capacity_tons] = mode_spec.batch_capacity_tons;
+}
+
 Dictionary EconomySim::order_to_dict(const TradeOrder& order) const {
 	Dictionary dict;
 	dict["from_city"] = String(order.from_city.c_str());
@@ -1023,6 +1042,7 @@ void EconomySim::demo_set_goods(const Array& goods) {
 			}
 		}
 		++demo_status_static_version_;
+		++demo_status_deposit_version_;
 		demo_status_invalidate();
 	}
 }
@@ -1034,6 +1054,7 @@ void EconomySim::initialize_demo() {
 	demo_status_live_ = -1;
 	demo_status_built_day_ = -1;
 	++demo_status_static_version_;
+	++demo_status_deposit_version_;
 	demo_active_ = true;
 	demo_world_mode_ = false;
 	day_ = 0;
@@ -1151,6 +1172,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_status_live_ = -1;
 	demo_status_built_day_ = -1;
 	++demo_status_static_version_;
+	++demo_status_deposit_version_;
 	demo_active_ = true;
 	demo_world_mode_ = true;
 	day_ = 0;
@@ -2714,7 +2736,9 @@ void EconomySim::demo_tick_core() {
 	demo_seed_industry();
 
 	// Retrato para reverter o tick se um invariante rígido for violado.
-	DemoSnapshot before;
+	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
+	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).
+	DemoSnapshot& before = demo_snapshot_buffer_;
 	demo_snapshot(before);
 	const double money_before = demo_money_total();
 
@@ -3721,7 +3745,26 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		delay_hours("delay_hours"),
 		level("level"),
 		queue("queue"),
-		throughput("throughput")
+		throughput("throughput"),
+		recipe("recipe"),
+		inputs("inputs"),
+		byproducts("byproducts"),
+		qty("qty"),
+		capital_per_capacity("capital_per_capacity"),
+		last_utilization("last_utilization"),
+		strategic("strategic"),
+		yield("yield"),
+		from("from"),
+		to("to"),
+		from_px("from_px"),
+		to_px("to_px"),
+		distance_km("distance_km"),
+		load_tons("load_tons"),
+		trips("trips"),
+		speed_kmh("speed_kmh"),
+		batch_capacity_tons("batch_capacity_tons"),
+		dispatched("dispatched"),
+		cost("cost")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -3772,24 +3815,40 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	// `population` = populacao real exibida; `sim_population` = unidade de
 	// simulacao. As divisoes per-capita usam a segunda, para nao mudar com o
 	// rateio nacional (o PIB nasce da populacao de simulacao).
-	dict[k.population] = city.population;
-	dict[k.simulation_population] = city.simulation_population;
-	dict[k.gdp] = city.gdp;
-	dict[k.gdp_per_capita] = city.simulation_population > 0.0
-		? city.gdp / city.simulation_population : 0.0;
-	dict[k.external_income_index] = city.external_income_index;
-	dict[k.firm_cash] = city.firm_cash;
-	dict[k.service_cash] = city.service_cash;
-	dict[k.government_budget] = city.government_budget;
-	dict[k.service_revenue] = city.service_revenue;
-	dict[k.service_profit] = city.service_profit;
-	dict[k.opex_revenue] = city.opex_revenue;
-	dict[k.freight_revenue] = city.freight_revenue;
-	dict[k.construction_revenue] = city.construction_revenue;
-	dict[k.service_wage] = city.service_jobs > 0.0
-		? city.service_wage_bill / city.service_jobs : 0.0;
-	dict[k.disposable_per_capita] = city.simulation_population > 0.0
-		? city.pop.disposable / city.simulation_population : 0.0;
+	//
+	// Cada escrita é uma chamada à ponte GDExtension com hash da chave
+	// (~200 ns): 25 campos × 834 cidades custavam ~4 ms/dia. População,
+	// população de simulação e os indicadores derivados ficam parados em boa
+	// parte das cidades — comparar double antes evita reescrevê-los.
+	double* scalar_mirror = slot.scalar_written;
+	bool& scalar_filled = slot.scalar_written_filled;
+	int scalar_index = 0;
+	auto sync_scalar = [&dict, &k, scalar_mirror, &scalar_filled, &scalar_index](
+			StringName key, double value) {
+		if (!scalar_filled || scalar_mirror[scalar_index] != value) {
+			dict[key] = value;
+			scalar_mirror[scalar_index] = value;
+		}
+		++scalar_index;
+	};
+	sync_scalar(k.population, city.population);
+	sync_scalar(k.simulation_population, city.simulation_population);
+	sync_scalar(k.gdp, city.gdp);
+	sync_scalar(k.gdp_per_capita, city.simulation_population > 0.0
+		? city.gdp / city.simulation_population : 0.0);
+	sync_scalar(k.external_income_index, city.external_income_index);
+	sync_scalar(k.firm_cash, city.firm_cash);
+	sync_scalar(k.service_cash, city.service_cash);
+	sync_scalar(k.government_budget, city.government_budget);
+	sync_scalar(k.service_revenue, city.service_revenue);
+	sync_scalar(k.service_profit, city.service_profit);
+	sync_scalar(k.opex_revenue, city.opex_revenue);
+	sync_scalar(k.freight_revenue, city.freight_revenue);
+	sync_scalar(k.construction_revenue, city.construction_revenue);
+	sync_scalar(k.service_wage, city.service_jobs > 0.0
+		? city.service_wage_bill / city.service_jobs : 0.0);
+	sync_scalar(k.disposable_per_capita, city.simulation_population > 0.0
+		? city.pop.disposable / city.simulation_population : 0.0);
 
 	// Padrão de vida: quantas cestas alimentares diárias a renda disponível
 	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
@@ -3809,7 +3868,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	const double basket_cost = kDemoNeedPerCapita * cheapest_price;
 	const double living_standard = basket_cost > 0.0
 		? (city.pop.disposable / city.simulation_population) / basket_cost : 0.0;
-	dict[k.living_standard] = living_standard;
+	sync_scalar(k.living_standard, living_standard);
 
 	// Indicadores derivados, no espírito do formato legado, para a camada
 	// visual: produção primária (t/dia), empregos, renda relativa, grau de
@@ -3827,16 +3886,17 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			secondary_capacity += building.capacity * building.output_scale;
 		}
 	}
-	dict[k.production] = production;
-	dict[k.jobs] = city.pop.employed;
-	dict[k.income] = std::clamp(living_standard, 0.0, 1.0);
-	dict[k.industrialization] = total_capacity > 0.0
-		? std::clamp(secondary_capacity / total_capacity, 0.0, 1.0) : 0.0;
-	dict[k.stockpile] = city.markets[0].stock;
-	dict[k.need] = city.pop.need;
-	dict[k.deficit] = std::max(0.0, city.pop.need - city.pop.consumed);
-	dict[k.consumed] = city.pop.consumed;
-	dict[k.in_transit] = in_transit;
+	sync_scalar(k.production, production);
+	sync_scalar(k.jobs, city.pop.employed);
+	sync_scalar(k.income, std::clamp(living_standard, 0.0, 1.0));
+	sync_scalar(k.industrialization, total_capacity > 0.0
+		? std::clamp(secondary_capacity / total_capacity, 0.0, 1.0) : 0.0);
+	sync_scalar(k.stockpile, city.markets[0].stock);
+	sync_scalar(k.need, city.pop.need);
+	sync_scalar(k.deficit, std::max(0.0, city.pop.need - city.pop.consumed));
+	sync_scalar(k.consumed, city.pop.consumed);
+	sync_scalar(k.in_transit, in_transit);
+	slot.scalar_written_filled = true;
 
 	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
 	// da chave = sem dado, não "zero"). O bloco ESTÁTICO (reserva inicial,
@@ -3856,75 +3916,142 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			slot.deposit_key.emplace_back(demo_product_name(product));
 		}
 	}
-	// Jazida descoberta depois do primeiro dia (a IA chama `demo_set_deposit`
-	// ao revelar/conquistar) sobe a versão estática: o bloco de reserva precisa
-	// ser reescrito, senão o status mostraria a jazida antiga para sempre.
-	if (slot.deposit_static_version != demo_status_static_version_) {
-		slot.deposit_present.assign(static_cast<std::size_t>(demo_products_), 0);
-		slot.deposit_static_version = demo_status_static_version_;
+	// Jazida descoberta depois do primeiro dia (a IA/geografia chama
+	// `demo_set_deposit`): a lista de jazidas rastreadas é recalculada uma vez e
+	// só as novas entram no dicionário (as antigas mantêm o bloco estático).
+	if (slot.deposit_tracked_version != demo_status_deposit_version_) {
+		slot.deposit_tracked.clear();
+		for (int product = 0; product < demo_products_; ++product) {
+			if (city.deposits[product].tracked) {
+				slot.deposit_tracked.push_back(product);
+			}
+		}
+		slot.deposit_tracked_version = demo_status_deposit_version_;
 	}
-	for (int product = 0; product < demo_products_; ++product) {
-		const DemoDeposit& deposit = city.deposits[product];
-		if (!deposit.tracked) {
-			continue;
+	// `deposits` só é remontado quando a cidade tem jazida rastreada. Cidade
+	// sem jazida publica o dicionário vazio UMA vez (a chave sempre existe:
+	// ausência seria "sem dado", não "sem reserva"); sem isso o bloco custava
+	// ~4,5 ms/dia só de referenciar 834 dicionários.
+	if (slot.deposit_tracked.empty()) {
+		if (!slot.deposits_published) {
+			dict[k.deposits] = slot.deposits;
+			slot.deposits_published = true;
 		}
-		Dictionary& entry = slot.deposit_entry[static_cast<std::size_t>(product)];
-		DemoDeposit& previous = slot.deposit_written[static_cast<std::size_t>(product)];
-		const bool first = slot.deposit_present[static_cast<std::size_t>(product)] == 0;
-		if (first) {
-			entry[k.initial_kt] = deposit.initial_kt;
-			entry[k.quality] = deposit.quality;
-			entry[k.depth_m] = deposit.depth_m;
-			entry[k.efficiency] = demo_extraction_efficiency(deposit);
-			entry[k.opex_factor] = demo_depth_opex_factor(deposit);
-			slot.deposits[slot.deposit_key[static_cast<std::size_t>(product)]] = entry;
-			slot.deposit_present[static_cast<std::size_t>(product)] = 1;
+	} else {
+		for (const int product : slot.deposit_tracked) {
+			const DemoDeposit& deposit = city.deposits[product];
+			Dictionary& entry = slot.deposit_entry[static_cast<std::size_t>(product)];
+			DemoDeposit& previous = slot.deposit_written[static_cast<std::size_t>(product)];
+			const bool first = slot.deposit_present[static_cast<std::size_t>(product)] == 0;
+			if (first) {
+				entry[k.initial_kt] = deposit.initial_kt;
+				entry[k.quality] = deposit.quality;
+				entry[k.depth_m] = deposit.depth_m;
+				entry[k.efficiency] = demo_extraction_efficiency(deposit);
+				entry[k.opex_factor] = demo_depth_opex_factor(deposit);
+				slot.deposits[slot.deposit_key[static_cast<std::size_t>(product)]] = entry;
+				slot.deposit_present[static_cast<std::size_t>(product)] = 1;
+			}
+			if (first || previous.remaining_kt != deposit.remaining_kt) {
+				entry[k.remaining_kt] = deposit.remaining_kt;
+				previous.remaining_kt = deposit.remaining_kt;
+			}
+			if (first || previous.extracted_kt != deposit.extracted_kt) {
+				entry[k.extracted_kt] = deposit.extracted_kt;
+				previous.extracted_kt = deposit.extracted_kt;
+			}
+			const bool depleted = deposit.remaining_kt <= 0.0;
+			if (first || slot.deposit_depleted[static_cast<std::size_t>(product)] != (depleted ? 1 : 0)) {
+				entry[k.depleted] = depleted;
+				slot.deposit_depleted[static_cast<std::size_t>(product)] = depleted ? 1 : 0;
+			}
 		}
-		if (first || previous.remaining_kt != deposit.remaining_kt) {
-			entry[k.remaining_kt] = deposit.remaining_kt;
-			previous.remaining_kt = deposit.remaining_kt;
-		}
-		if (first || previous.extracted_kt != deposit.extracted_kt) {
-			entry[k.extracted_kt] = deposit.extracted_kt;
-			previous.extracted_kt = deposit.extracted_kt;
-		}
-		const bool depleted = deposit.remaining_kt <= 0.0;
-		if (first || slot.deposit_depleted[static_cast<std::size_t>(product)] != (depleted ? 1 : 0)) {
-			entry[k.depleted] = depleted;
-			slot.deposit_depleted[static_cast<std::size_t>(product)] = depleted ? 1 : 0;
+		// Dictionary é por referência no Godot 4: uma única atribuição basta —
+		// as entradas novas e os valores atualizados aparecem no publicado.
+		// (Reatribuir todo dia custava ~1,4 µs × 662 cidades ≈ 0,9 ms.)
+		if (!slot.deposits_published) {
+			dict[k.deposits] = slot.deposits;
+			slot.deposits_published = true;
 		}
 	}
-	dict[k.deposits] = slot.deposits;
 
 	Dictionary& pop = slot.pop;
-	pop[k.population] = city.pop.population;
-	pop[k.labor_force] = city.pop.labor_force;
-	pop[k.employed] = city.pop.employed;
-	pop[k.unemployed] = city.pop.unemployed;
-	pop[k.dependents] = city.pop.dependents;
-	pop[k.wage_income] = city.pop.wage_income;
-	pop[k.capital_income] = city.pop.capital_income;
-	pop[k.transfers] = city.pop.transfers;
-	pop[k.taxes] = city.pop.taxes;
-	pop[k.service_spend] = city.pop.service_spend;
-	pop[k.disposable] = city.pop.disposable;
-	pop[k.external_income] = city.pop.external_income;
-	pop[k.food_spend] = city.pop.food_spend;
-	pop[k.consumed] = city.pop.consumed;
-	pop[k.need] = city.pop.need;
-	pop[k.satisfaction] = city.pop.satisfaction;
-	pop[k.savings] = city.pop.savings;
-	slot.desired_by_category.resize(demo_food_products_.size());
-	slot.consumed_by_category.resize(demo_food_products_.size());
-	for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
-		slot.desired_by_category[food] = city.pop.desired_by_category[food];
-		slot.consumed_by_category[food] = city.pop.consumed_by_category[food];
+	// Valores diários: só reescreve o que mudou. Cada `pop[chave] = valor` é
+	// uma chamada à ponte GDExtension com hash da chave (~190 ns); com 20
+	// campos × 834 cidades isso custava ~3 ms/dia. `population`,
+	// `labor_force` e `dependents` quase nunca mudam.
+	{
+		double* mirror = slot.pop_written;
+		bool& filled = slot.pop_written_filled;
+		int index = 0;
+		auto sync_pop = [&pop, &k, mirror, &filled, &index](StringName key, double value) {
+			if (!filled || mirror[index] != value) {
+				pop[key] = value;
+				mirror[index] = value;
+			}
+			++index;
+		};
+		sync_pop(k.population, city.pop.population);
+		sync_pop(k.labor_force, city.pop.labor_force);
+		sync_pop(k.employed, city.pop.employed);
+		sync_pop(k.unemployed, city.pop.unemployed);
+		sync_pop(k.dependents, city.pop.dependents);
+		sync_pop(k.wage_income, city.pop.wage_income);
+		sync_pop(k.capital_income, city.pop.capital_income);
+		sync_pop(k.transfers, city.pop.transfers);
+		sync_pop(k.taxes, city.pop.taxes);
+		sync_pop(k.service_spend, city.pop.service_spend);
+		sync_pop(k.disposable, city.pop.disposable);
+		sync_pop(k.external_income, city.pop.external_income);
+		sync_pop(k.food_spend, city.pop.food_spend);
+		sync_pop(k.consumed, city.pop.consumed);
+		sync_pop(k.need, city.pop.need);
+		sync_pop(k.satisfaction, city.pop.satisfaction);
+		sync_pop(k.savings, city.pop.savings);
+		if (!filled) {
+			slot.desired_by_category.resize(demo_food_products_.size());
+			slot.consumed_by_category.resize(demo_food_products_.size());
+		}
+		for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
+			slot.desired_by_category[food] = city.pop.desired_by_category[food];
+			slot.consumed_by_category[food] = city.pop.consumed_by_category[food];
+		}
+		if (!filled) {
+			pop[k.desired_by_category] = slot.desired_by_category;
+			pop[k.consumed_by_category] = slot.consumed_by_category;
+		} else {
+			bool changed = false;
+			for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
+				if (slot.pop_food_written[food] != city.pop.desired_by_category[food]
+						|| slot.pop_food_written[demo_food_products_.size() + food]
+							!= city.pop.consumed_by_category[food]) {
+					changed = true;
+					break;
+				}
+			}
+			if (changed) {
+				pop[k.desired_by_category] = slot.desired_by_category;
+				pop[k.consumed_by_category] = slot.consumed_by_category;
+			}
+		}
+		for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
+			slot.pop_food_written[food] = city.pop.desired_by_category[food];
+			slot.pop_food_written[demo_food_products_.size() + food] =
+				city.pop.consumed_by_category[food];
+		}
+		filled = true;
 	}
-	pop[k.desired_by_category] = slot.desired_by_category;
-	pop[k.consumed_by_category] = slot.consumed_by_category;
-	dict[k.pop] = pop;
+	if (!slot.pop_published) {
+		dict[k.pop] = pop;
+		slot.pop_published = true;
+	}
 
-	slot.markets.resize(demo_products_);
+	// `resize` com o mesmo tamanho já provoca copy-on-write no Array
+	// compartilhado com o dicionário publicado (medido: ~4,5 ms/dia, 114
+	// Variants copiados por cidade). Só redimensiona quando muda de fato.
+	if (slot.markets.size() != demo_products_) {
+		slot.markets.resize(demo_products_);
+	}
 	if (slot.market_entry.size() < demo_products_) {
 		slot.market_entry.resize(static_cast<std::size_t>(demo_products_));
 		slot.market_written.resize(static_cast<std::size_t>(demo_products_));
@@ -3932,6 +4059,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.io_written.assign(static_cast<std::size_t>(4 * demo_products_), 0.0);
 		slot.io_filled.assign(4, 0);
 	}
+	bool markets_dirty = false;
 	for (int product = 0; product < demo_products_; ++product) {
 		const DemoMarket& source = city.markets[product];
 		DemoMarket& previous = slot.market_written[static_cast<std::size_t>(product)];
@@ -3950,14 +4078,18 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			previous = source;
 			slot.market_written_filled[static_cast<std::size_t>(product)] = 1;
 			slot.markets[product] = market;
+			markets_dirty = true;
 			continue;
 		}
-		// Caminho comum (mercado inteiro igual ao dia anterior): um memcmp de
-		// 64 bytes e NENHUM acesso ao Dictionary. Com 114 bens × 834 cidades,
-		// tocar o dicionário em todo produto custava ~11 ms por dia.
-		if (std::memcmp(&previous, &source, sizeof(DemoMarket)) == 0) {
+		// Caminho comum (mercado publicado igual ao dia anterior): NENHUM
+		// acesso ao Dictionary. A comparação cobre os 8 campos publicados, que
+		// são contíguos (ver DemoMarket): um memcmp de 64 bytes por produto.
+		// `sold_prev` é interno e muda TODO dia (`sold_prev = sold` no reset);
+		// por isso fica no fim do struct, fora do bloco comparado.
+		if (std::memcmp(&previous, &source, sizeof(double) * 8) == 0) {
 			continue;
 		}
+		markets_dirty = true;
 		Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
 		if (previous.stock != source.stock) {
 			market[k.stock] = source.stock;
@@ -3992,7 +4124,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			previous.surplus = source.surplus;
 		}
 	}
-	dict[k.markets] = slot.markets;
+	// Sem nenhuma mudança o Array publicado continua o mesmo objeto: reatribuir
+	// só custaria uma chamada à ponte GDExtension por cidade (~0,3 ms/dia).
+	if (markets_dirty) {
+		dict[k.markets] = slot.markets;
+	}
 
 	slot.imported.resize(demo_products_);
 	slot.exported.resize(demo_products_);
@@ -4038,62 +4174,93 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	slot.buildings.resize(local_buildings.size());
 	if (slot.building_entry.size() < local_buildings.size()) {
 		slot.building_entry.resize(local_buildings.size());
+		slot.building_cache.resize(local_buildings.size());
 	}
 	for (std::size_t index = 0; index < local_buildings.size(); ++index) {
 		const DemoBuilding& building =
 			demo_buildings_[static_cast<std::size_t>(local_buildings[index])];
 		Dictionary& entry = slot.building_entry[index];
-		entry[k.id] = String(building.id.c_str());
-		entry[k.kind] = building.kind;
-		entry[k.resource] = String(building.resource.c_str());
-		entry[k.owner] = String(building.owner.c_str());
-		entry[k.input_product] = building.input_product;
-		entry[k.output_product] = building.output_product;
-		if (building.recipe >= 0
-				&& building.recipe < static_cast<int>(demo_recipes_.size())) {
-			const DemoRecipe& recipe =
-				demo_recipes_[static_cast<std::size_t>(building.recipe)];
-			entry["recipe"] = String(recipe.id.c_str());
-			Array inputs;
-			Array byproducts;
-			inputs.resize(recipe.input_count);
-			byproducts.resize(recipe.byproduct_count);
-			for (int slot = 0; slot < recipe.input_count; ++slot) {
-				Dictionary input;
-				input["good"] = String(demo_product_name(recipe.inputs[slot]));
-				input["qty"] = recipe.input_qty[slot];
-				inputs[slot] = input;
-			}
-			for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
-				Dictionary byproduct;
-				byproduct["good"] = String(demo_product_name(recipe.byproducts[slot]));
-				byproduct["qty"] = recipe.byproduct_qty[slot];
-				byproducts[slot] = byproduct;
-			}
-			entry["inputs"] = inputs;
-			entry["byproducts"] = byproducts;
-			entry["yield"] = recipe.yield;
-		} else {
-			entry["recipe"] = "";
-			entry["inputs"] = Array();
-			entry["byproducts"] = Array();
+		DemoStatusCitySlot::BuildingCache& cached = slot.building_cache[index];
+		// Bloco estático: só quando a construção nasce (ou muda de identidade).
+		if (!cached.filled || cached.id_src != building.id) {
+			cached.id_src = building.id;
+			cached.id = String(building.id.c_str());
+			entry[k.id] = cached.id;
+			entry[k.kind] = building.kind;
+			cached.resource_src = building.resource;
+			cached.resource = String(building.resource.c_str());
+			entry[k.resource] = cached.resource;
+			cached.owner_src = building.owner;
+			cached.owner = String(building.owner.c_str());
+			entry[k.owner] = cached.owner;
+			entry[k.input_product] = building.input_product;
+			entry[k.output_product] = building.output_product;
+			entry[k.capital_per_capacity] = building.capital_per_capacity;
+			entry[k.strategic] = building.strategic;
+			cached.recipe = -2;
+			cached.filled = true;
 		}
-		entry["capital_per_capacity"] = building.capital_per_capacity;
-		entry["last_utilization"] = building.last_utilization;
-		entry["strategic"] = building.strategic;
-		entry[k.capacity] = building.capacity;
-		entry[k.jobs] = building.jobs;
-		entry[k.wage] = building.wage;
-		entry[k.opex] = building.opex;
-		entry[k.workers] = building.workers;
-		entry[k.utilization] = building.utilization;
-		entry[k.output_scale] = building.output_scale;
-		entry[k.loss_days] = building.loss_days;
-		entry[k.revenue] = building.revenue;
-		entry[k.input_value] = building.input_value;
-		entry[k.costs] = building.costs;
-		entry[k.profit] = building.profit;
-		entry[k.site_suitability] = city.suitability[building.output_product];
+		// Receita (insumos/subprodutos): as Arrays/Dictionaries só são
+		// reconstruídos quando a receita da construção muda — nunca por dia.
+		if (cached.recipe != building.recipe) {
+			cached.recipe = building.recipe;
+			if (building.recipe >= 0
+					&& building.recipe < static_cast<int>(demo_recipes_.size())) {
+				const DemoRecipe& recipe =
+					demo_recipes_[static_cast<std::size_t>(building.recipe)];
+				entry[k.recipe] = String(recipe.id.c_str());
+				Array inputs;
+				Array byproducts;
+				inputs.resize(recipe.input_count);
+				byproducts.resize(recipe.byproduct_count);
+				for (int slot = 0; slot < recipe.input_count; ++slot) {
+					Dictionary input;
+					input[k.good] = String(demo_product_name(recipe.inputs[slot]));
+					input[k.qty] = recipe.input_qty[slot];
+					inputs[slot] = input;
+				}
+				for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+					Dictionary byproduct;
+					byproduct[k.good] = String(demo_product_name(recipe.byproducts[slot]));
+					byproduct[k.qty] = recipe.byproduct_qty[slot];
+					byproducts[slot] = byproduct;
+				}
+				entry[k.inputs] = inputs;
+				entry[k.byproducts] = byproducts;
+				entry[k.yield] = recipe.yield;
+			} else {
+				entry[k.recipe] = String();
+				entry[k.inputs] = Array();
+				entry[k.byproducts] = Array();
+			}
+		}
+		// Valores diários: só reescreve o que mudou (comparar double é ~20×
+		// mais barato que um Dictionary::operator[] com hash de StringName).
+		auto sync_double = [&entry, &cached](StringName key, double& mirror,
+				double value) {
+			if (mirror != value) {
+				entry[key] = value;
+				mirror = value;
+			}
+		};
+		sync_double(k.last_utilization, cached.last_utilization, building.last_utilization);
+		sync_double(k.capacity, cached.capacity, building.capacity);
+		sync_double(k.jobs, cached.jobs, building.jobs);
+		sync_double(k.wage, cached.wage, building.wage);
+		sync_double(k.opex, cached.opex, building.opex);
+		sync_double(k.workers, cached.workers, building.workers);
+		sync_double(k.utilization, cached.utilization, building.utilization);
+		sync_double(k.output_scale, cached.output_scale, building.output_scale);
+		if (cached.loss_days != static_cast<double>(building.loss_days)) {
+			entry[k.loss_days] = building.loss_days;
+			cached.loss_days = static_cast<double>(building.loss_days);
+		}
+		sync_double(k.revenue, cached.revenue, building.revenue);
+		sync_double(k.input_value, cached.input_value, building.input_value);
+		sync_double(k.costs, cached.costs, building.costs);
+		sync_double(k.profit, cached.profit, building.profit);
+		sync_double(k.site_suitability, cached.site,
+			city.suitability[building.output_product]);
 		slot.buildings[index] = entry;
 	}
 	dict[k.buildings] = slot.buildings;
@@ -4252,6 +4419,9 @@ Dictionary EconomySim::get_demo_status() {
 	cache.orders.resize(demo_last_orders_.size());
 	cache.order_slots.resize(demo_last_orders_.size());
 	cache.order_leg_slots.resize(demo_last_orders_.size());
+	if (cache.order_leg_entry.size() < cache.order_slots.size()) {
+		cache.order_leg_entry.resize(cache.order_slots.size());
+	}
 	for (std::size_t index = 0; index < demo_last_orders_.size(); ++index) {
 		const TradeOrder& order = demo_last_orders_[index];
 		Dictionary& dict = cache.order_slots[index];
@@ -4267,8 +4437,14 @@ Dictionary EconomySim::get_demo_status() {
 		dict[k.freight_cost] = order.freight_cost;
 		Array& legs = cache.order_leg_slots[index];
 		legs.resize(order.legs.size());
+		std::vector<Dictionary>& leg_entries = cache.order_leg_entry[index];
+		if (leg_entries.size() < order.legs.size()) {
+			leg_entries.resize(order.legs.size());
+		}
 		for (std::size_t leg_index = 0; leg_index < order.legs.size(); ++leg_index) {
-			legs[leg_index] = leg_to_dict(order.legs[leg_index]);
+			Dictionary& leg_dict = leg_entries[leg_index];
+			demo_fill_leg_status(leg_dict, order.legs[leg_index]);
+			legs[leg_index] = leg_dict;
 		}
 		dict[k.legs] = legs;
 		cache.orders[index] = dict;
@@ -4745,7 +4921,7 @@ bool EconomySim::demo_set_deposit(const String& city_id, const String& product,
 	deposit.initial_kt = safe_nonneg(reserve_kt);
 	deposit.remaining_kt = deposit.initial_kt;
 	deposit.extracted_kt = 0.0;
-	++demo_status_static_version_;
+	++demo_status_deposit_version_;
 	demo_status_invalidate();
 	return true;
 }
@@ -4948,10 +5124,20 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		building.last_utilization = 0.25;
 	}
 	demo_buildings_.push_back(building);
+	// Índice por cidade: insere SÓ a construção nova. Reconstruir o índice
+	// inteiro (834 cidades) a cada build custava ~0,1 ms; a IA faz ~160
+	// builds/dia, o que somava ~15 ms/dia no trabalho fatiado (medido).
+	// O tick já reconstrói o índice no início, após remover falidas.
+	const std::size_t city_index = static_cast<std::size_t>(city - demo_cities_.data());
+	if (city_index < demo_buildings_by_city_.size()) {
+		demo_buildings_by_city_[city_index].push_back(
+			static_cast<int>(demo_buildings_.size() - 1));
+	} else {
+		demo_rebuild_indexes();
+	}
 
 	// O investimento é pago ao setor de construção doméstico e entra no PIB
 	// do próximo tick como receita de construção.
-	demo_rebuild_indexes();
 	city->service_cash += cost;
 	city->construction_revenue_pending += cost;
 	result["created"] = true;
@@ -5193,6 +5379,7 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 	demo_status_live_ = -1;
 	demo_status_built_day_ = -1;
 	++demo_status_static_version_;
+	++demo_status_deposit_version_;
 	// Recusa save de versão futura (maior que a que este binário conhece).
 	const int version = int(data.get("version", 0));
 	if (version > kDemoSaveVersion) {

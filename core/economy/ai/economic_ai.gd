@@ -46,6 +46,10 @@ func setup(sim_node: Object, geography: Object) -> bool:
 	private_investor.setup(sim, geo)
 	government = GovernmentAIScript.new()
 	government.setup(sim, geo)
+	# Pré-aquece o cache de templates (goods.json + recipes.json) fora do laço
+	# do tick: o primeiro all_templates() do dia 1 pagava o parse dos JSON
+	# (~6 ms medidos) dentro do trabalho fatiado da IA.
+	Templates.all_templates()
 	return geo.load_data()
 
 

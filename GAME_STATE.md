@@ -702,6 +702,25 @@ externa — §20.5), `economy_long_run_test` (365 d), cenas `convoy_lifecycle_te
 (caminho worker: **36 s** de parede, virada 5,4 ms de média / 6,9 de pico; antes
 do conserto do harness passava de 8 min e era morto por timeout).
 
+**Onda F2 — receitas industriais no núcleo e performance (2026-11-14):** o C++
+passa a carregar as receitas (`demo_set_recipes`) e a publicação do status ganhou
+espelhos por cidade que só reescrevem o que mudou: os 25 escalares (população,
+PIB, caixas, indicadores derivados), o bloco estático de cada construção
+(`BuildingCache`: id/kind/resource/owner/receita/insumos/subprodutos), a lista de
+jazidas rastreadas (deixa de varrer os 114 bens/dia) e as pernas de pedido
+reaproveitadas; os 8 campos publicados de `DemoMarket` ficam contíguos para
+comparar com um `memcmp` de 64 bytes. Medição release no caminho worker
+(`tools/perf_day_peak.tscn`, 834 cidades, 30 dias,
+`docs/economy/perf/f2_perf_release_after.txt`): **tick 51,7 ms de média
+(p95 55,7; máx 56,0)**, **`status` 31,4 (p95 34,2)**, **trabalho da IA
+fatiado/dia 24,0 (p95 41,0)**, frame de pico 6,9 (p95 8,8) e **507,9 MB** de
+memória estática. Contra os portões do §8.6 do plano
+(`docs/economy/production_chains_impl_plan.md`): frame e memória passam; **tick
+p95 (≤ 50 ms) e `status` p95 (≤ 30 ms) estouram — o portão de tick ainda não
+está fechado** e a F3 não deve começar antes de aplicar as mitigações. Testes:
+`production_chain_test`, `economy_integration_test`, `economy_ai_test`,
+`population_demo_test` e `economy_world_test` (60 d no cenário real) verdes.
+
 ### 13.6 Separação de caminhões e aviões; caminhão 33% menor (feito)
 
 `map/convoy_spacing.gd` estende `TradeConvoys` (o jogo e os testes instanciam a

@@ -371,6 +371,10 @@ private:
 	static constexpr int kDemoFoodProductIds[5] = {0, 2, 3, 16, 17};
 	static constexpr double kDemoCaloricFactor[5] = {1.0, 1.0, 1.0, 0.25, 1.3};
 
+	// Os 8 campos PUBLICADOS no status ficam primeiro e em ordem fixa: o cache
+	// de publicação compara o bloco inteiro com um memcmp de 64 bytes (um
+	// único teste em vez de 8 comparações de double por produto/cidade).
+	// `sold_prev` é interno (muda todo dia) e fica no fim, fora da comparação.
 	struct DemoMarket {
 		double stock = 0.0;
 		double price = 1.0;
@@ -378,10 +382,13 @@ private:
 		double supply = 0.0;   // produção ofertada no dia
 		double desired = 0.0;  // demanda desejada antes de estoque/orçamento
 		double sold = 0.0;     // vendas realizadas no dia
-		double sold_prev = 0.0; // vendas do dia anterior (base da produção)
 		double shortage = 0.0; // demanda desejada não atendida
 		double surplus = 0.0;  // estoque acima do necessário
+		double sold_prev = 0.0; // vendas do dia anterior (base da produção) — interno
 	};
+	static_assert(offsetof(DemoMarket, stock) == 0, "DemoMarket: stock primeiro");
+	static_assert(offsetof(DemoMarket, surplus) == 7 * sizeof(double),
+		"DemoMarket: os 8 campos publicados precisam ser contíguos");
 
 	struct DemoRecipe {
 		std::string id;
@@ -573,6 +580,9 @@ private:
 	// origem muda, comparando contra a cópia em std::string (memcmp barato).
 	// ------------------------------------------------------------------
 	struct DemoStatusCitySlot {
+		// Quantidade de escalares publicados em demo_fill_city_status; o
+		// espelho abaixo é indexado por ordem de chamada de sync_scalar.
+		static constexpr int kDemoStatusScalarCount = 25;
 		Dictionary dict;
 		// Strings estáveis: evitam realocar String a cada dia.
 		std::string id_src, name_src, nation_src, home_src, landmass_src;
@@ -590,16 +600,48 @@ private:
 		std::vector<char> deposit_depleted;     // último `depleted` publicado
 		std::vector<DemoDeposit> deposit_written;  // último valor publicado
 		std::vector<String> deposit_key;        // nome do produto (chave)
-		// Versão estática com que o bloco de jazida foi escrito: uma jazida
-		// descoberta depois (`demo_set_deposit`) força reescrevê-lo.
-		int deposit_static_version = -1;
+		// Lista de produtos com jazida rastreada nesta cidade. Recalculada só
+		// quando uma jazida nova é descoberta: o laço diário percorre apenas as
+		// jazidas da cidade, não os 114 bens (medido: ~4,5 ms/dia só de varredura).
+		std::vector<int> deposit_tracked;
+		int deposit_tracked_version = -1;
+		bool deposits_published = false;
 		Dictionary pop;
+		// Espelhos do que já foi escrito em `pop`: só reescreve o que mudou
+		// (cada escrita é uma chamada à ponte GDExtension com hash da chave).
+		double pop_written[20] = {};
+		bool pop_written_filled = false;
+		bool pop_published = false;
+		// Espelho dos 25 escalares publicados por cidade (população, PIB,
+		// caixas, indicadores derivados): escrita só quando o double muda.
+		double scalar_written[kDemoStatusScalarCount] = {};
+		bool scalar_written_filled = false;
+		// desejado/consumido por categoria alimentar (2 × kDemoMaxFoodProducts).
+		double pop_food_written[2 * kDemoMaxFoodProducts] = {};
 		Array desired_by_category;
 		Array consumed_by_category;
 		Array markets;
 		std::vector<Dictionary> market_entry;  // 1 por produto
 		Array buildings;
 		std::vector<Dictionary> building_entry;  // cresce com a cidade
+		// Bloco ESTÁTICO de cada construção (id, kind, resource, owner, receita,
+		// insumos, subprodutos): escrito uma vez e reescrito só quando a
+		// construção muda. Antes cada prédio alocava Strings + Arrays todos os
+		// dias (medido: ~12 ms/dia com ~4 mil prédios no dia 30).
+		struct BuildingCache {
+			std::string id_src, resource_src, owner_src;
+			String id, resource, owner;
+			bool filled = false;
+			int recipe = -2;
+			// Últimos valores diários publicados (comparação de double evita
+			// reescrever o Dictionary para prédios parados).
+			double capacity = -1.0, jobs = -1.0, wage = -1.0, opex = -1.0;
+			double output_scale = -1.0, site = -1.0, last_utilization = -1.0;
+			double workers = -1.0, utilization = -1.0, revenue = -1.0;
+			double input_value = -1.0, costs = -1.0, profit = -1.0;
+			double loss_days = -1.0;
+		};
+		std::vector<BuildingCache> building_cache;
 		Array imported, exported, import_value, export_value;
 		// Cópias dos últimos valores gravados em `markets` e nos quatro fluxos
 		// de comércio. A cidade típica movimenta 2–5 dos 21 produtos: escrever
@@ -621,7 +663,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost;
 		DemoStatusKeys();
 	};
 
@@ -642,7 +684,11 @@ private:
 		std::vector<DemoStatusCitySlot> city_slots;
 		std::vector<Dictionary> port_slots;
 		std::vector<Dictionary> order_slots;
-		std::vector<Array> order_leg_slots;		std::vector<Dictionary> nation_slots;
+		std::vector<Array> order_leg_slots;
+		// Dicionários de perna reaproveitados (1 por perna de pedido): antes
+		// cada pedido alocava um Dictionary novo por perna a cada dia.
+		std::vector<std::vector<Dictionary>> order_leg_entry;
+		std::vector<Dictionary> nation_slots;
 		// Caminho total em trânsito por cidade (evita varredura O(cidades ×
 		// cargas) dentro do laço de cidades).
 		std::vector<double> in_transit_by_city;
@@ -774,6 +820,8 @@ private:
 	Dictionary port_to_dict(const Port& port) const;
 	Dictionary nation_to_dict(const std::string& tag) const;
 	Dictionary leg_to_dict(const Leg& leg) const;
+	/** Preenche um Dictionary de perna para o status, reutilizando as chaves. */
+	void demo_fill_leg_status(Dictionary& dict, const Leg& leg) const;
 	Dictionary order_to_dict(const TradeOrder& order) const;
 
 	DemoCity* find_demo_city(const std::string& id);
@@ -968,6 +1016,12 @@ private:
 	// Sobe quando um campo estático das cidades muda (aptidão, demanda externa,
 	// depósitos revelados): força a reescrita desses contêineres no status.
 	int demo_status_static_version_ = 0;
+	// Sobe quando uma jazida nova é revelada (demo_set_deposit/save). Separado
+	// da versão estática para uma descoberta não forçar a reescrita de
+	// aptidão/demanda externa de todas as cidades (~190 mil escritas/dia).
+	int demo_status_deposit_version_ = 0;
+	// Retrato do tick reaproveitado entre dias (ver demo_tick_core).
+	DemoSnapshot demo_snapshot_buffer_;
 	// Serializa o acesso ao estado demo entre a thread do tick e a main thread
 	// (UI, IA, ferramentas). O `sim` tem UM escritor por convenção
 	// (tick_scheduler); o mutex é a rede de segurança para quem chamar

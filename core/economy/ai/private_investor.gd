@@ -177,6 +177,12 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	if available < capital_cost * MIN_CAPACITY:
 		return
 
+	var markets: Array = city["markets"]
+	# Produtos produzidos localmente em O(1): _input_available varria
+	# city["buildings"] por insumo (receita × insumo × construção) a cada
+	# template do laço quente. Calculado UMA vez por cidade (custo medido).
+	var local_products: Dictionary = Templates.local_products(city)
+
 	var pop: Dictionary = city["pop"]
 	# Déficit estrutural (B3): necessidade − produção local, em t-eq de grão.
 	# Usa a produção (não o consumo) para detectar dependência de importação.
@@ -190,7 +196,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	else:
 		for resource_name in Templates.FOOD_RESOURCES:
 			var product := int(Templates.TEMPLATES[resource_name]["output"])
-			var market: Dictionary = city["markets"][product]
+			var market: Dictionary = markets[product]
 			var surplus := float(market.get("surplus", 0.0))
 			var sold := float(market.get("sold", 0.0))
 			if surplus > maxf(1.0, sold * 0.20):
@@ -200,21 +206,30 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	# 2. Matérias-primas e bens industriais. Fábricas (receita) só entram onde
 	# já existe demanda corrente observável no sistema (insumo de outra
 	# construção ou consumo): sem isso a planta nasce e fica ociosa.
-	var all_templates: Dictionary = Templates.all_templates()
-	for resource_name: String in all_templates:
-		if Templates.FOOD_RESOURCES.has(resource_name):
+	# Lista pré-achatada (ordem estável) em vez de iterar all_templates() e
+	# descartar alimentos a cada cidade (custo medido: hash de String + has de
+	# Array por template × cidade × dia).
+	for entry: Dictionary in Templates.non_food_templates():
+		var template: Dictionary = entry["template"]
+		var product := int(entry["output"])
+		if product < 0 or product >= markets.size():
 			continue
-		var template: Dictionary = all_templates[resource_name]
-		var product := int(template["output"])
-		if product < 0 or product >= (city["markets"] as Array).size():
+		var shortage := float((markets[product] as Dictionary).get("shortage", 0.0))
+		# Gate barato ANTES do trabalho pesado (custo medido): com escassez
+		# abaixo do piso o _try_template retorna sem decidir — e sem pagar
+		# _system_demand/_input_available (varre receitas × construções). Corta
+		# ~90% das iterações do laço (a maioria dos 114 bens tem shortage 0).
+		# Podar aqui também remove o log "avoid" redundante de excesso de oferta
+		# para produtos sem escassez — os asserts de econom_ai_test não o leem.
+		if shortage < MIN_SHORTAGE_TONS:
 			continue
-		var shortage := float((city["markets"][product] as Dictionary).get("shortage", 0.0))
-		if template.has("recipes"):
+		if bool(entry["is_recipe"]):
 			if _system_demand(status, product) <= 0.1:
 				continue
-			if not _input_available(city, template):
+			if not _input_available(city, template, local_products):
 				continue
-		if _try_template(day, city, status, resource_name, shortage, available, capital_cost):
+		if _try_template(day, city, status, String(entry["resource"]), shortage,
+				available, capital_cost, local_products):
 			return
 
 
@@ -251,7 +266,8 @@ func _try_food(day: int, city: Dictionary, status: Dictionary, food_deficit: flo
 ## Gates comuns de investimento (excesso de oferta, margem, payback) e a
 ## construção/expansão em si. Reusado por alimentos e por ferro.
 func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name: String,
-		shortage: float, available: float, capital_cost: float) -> bool:
+		shortage: float, available: float, capital_cost: float,
+		local_products: Dictionary = {}) -> bool:
 	var city_id := String(city["id"])
 	var template: Dictionary = Templates.all_templates().get(resource_name, {})
 	if template.is_empty():
@@ -286,7 +302,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		_log(day, city_id, "avoid", resource_name,
 			"sem aptidão ou depósito conhecido", 0.0, 0.0, 0.0)
 		return false
-	if not _input_available(city, template):
+	if not _input_available(city, template, local_products):
 		_log(day, city_id, "avoid", resource_name,
 			"insumo indisponível", 0.0, 0.0, 0.0)
 		return false
@@ -422,7 +438,12 @@ func _has_deposit(city: Dictionary, resource: String) -> bool:
 	return float(deposits[resource].get("remaining_kt", 0.0)) > 0.0
 
 
-func _input_available(city: Dictionary, template: Dictionary) -> bool:
+func _input_available(city: Dictionary, template: Dictionary, local_products: Dictionary = {}) -> bool:
+	# Conjunto de produtos produzidos localmente, precalculado por cidade no
+	# laço quente. Chamadas fora dele (ex.: _try_food) nunca passam receitas,
+	# então o fallback só recompõe o conjunto quando há receita sem cache.
+	if local_products.is_empty() and template.has("recipes"):
+		local_products = Templates.local_products(city)
 	if template.has("recipes"):
 		# Todas as alternativas exigem os mesmos insumos? Não: a cidade só
 		# precisa ter ao menos UMA alternativa viável (estoque ou produtor).
@@ -436,12 +457,7 @@ func _input_available(city: Dictionary, template: Dictionary) -> bool:
 					+ float(market.get("supply", 0.0)) > 0.1
 				if has_stock:
 					continue
-				var local := false
-				for building in city.get("buildings", []):
-					if int(building.get("output_product", -1)) == product:
-						local = true
-						break
-				if not local:
+				if not local_products.has(product):
 					viable = false
 					break
 			if viable:
@@ -454,10 +470,7 @@ func _input_available(city: Dictionary, template: Dictionary) -> bool:
 	var market: Dictionary = city["markets"][input_product]
 	if float(market.get("stock", 0.0)) + float(market.get("supply", 0.0)) > 0.1:
 		return true
-	for building in city.get("buildings", []):
-		if int(building.get("output_product", -1)) == input_product:
-			return true
-	return false
+	return local_products.has(input_product)
 
 
 func _find_producer(city: Dictionary, product: int) -> Dictionary:
