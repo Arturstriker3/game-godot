@@ -173,12 +173,17 @@ public:
 	/**
 	 * Cria uma construção nova. O custo sai do caixa da empresa (private) ou do
 	 * orçamento do governo (state) e é pago ao setor de construção.
+	 * `recipe_id` (opcional, v4): receita industrial de recipes.json; quando
+	 * presente, input_product/input_per_output são derivados do primeiro
+	 * insumo da receita (compatibilidade de exibição) e a fase de produção usa
+	 * a receita completa (1..6 insumos + subprodutos).
 	 * @returns Resumo com "created", "cost" e "error".
 	 */
 	Dictionary demo_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
-		double input_per_output, const String& owner, double cost);
+		double input_per_output, const String& owner, double cost,
+		const String& recipe_id = "");
 
 	/**
 	 * Gasta orçamento público em serviços domésticos (ex.: prospecção).
@@ -332,6 +337,7 @@ private:
 		std::string from_nation;
 		std::string to_nation;
 		MarketScope scope = MarketScope::Regional;
+		int product = -1;
 		double amount = 0.0;
 		double transit_hours = 0.0;
 		double freight_cost = 0.0;
@@ -350,21 +356,20 @@ private:
 		Gas = 14, Oil = 15, Potato = 16, Soy = 17, Cotton = 18, Wood = 19,
 		Uranium = 20
 	};
-	// Mesma ordem de data/definitions/economy/goods.json.
-	static constexpr int kDemoProducts = 21;
-	// Farinha/pão foram removidos da cadeia (subprodutos ficam para depois):
-	// a comida é consumida diretamente das culturas. A cesta alimentar (B3) é
-	// substituível entre trigo, arroz, milho, batata e soja.
+	// Mesma ordem de data/definitions/economy/goods.json. A contagem é variável
+	// (demo_set_goods): os 21 primários continuam nas posições 0..20 e os 93
+	// bens industriais entram em 21..113. kDemoMaxProducts é só o teto de
+	// segurança do vetor.
+	static constexpr int kDemoMaxProducts = 160;
+	static constexpr int kDemoMaxRecipeInputs = 6;
+	// Cesta alimentar (B3/B4) agora data-driven (demo_set_needs), derivada de
+	// needs.json (basic/food/substitutes + equivalence.calories). O padrão
+	// preserva a cesta validada de 5 culturas até o autoload carregar o dado.
 	// A necessidade é medida em toneladas-equivalentes de grão: o fator calórico
 	// converte tonelada real em tonelada-equivalente (batata ~1/4 das calorias).
-	static constexpr int kDemoFoodProducts = 5;
-	// Ids de produto (índice em kDemoProductNames) e fator calórico por slot da
-	// cesta. Fonte (FAO/INFOODS, composição média): cereais ~3600 kcal/kg;
-	// batata fresca ~770 kcal/kg — ~1/4 das calorias por tonelada (fator 0,25);
-	// soja seca (grãos maduros) ~4460 kcal/kg (USDA FoodData Central) vs trigo
-	// ~3400 kcal/kg (FAO/INFOODS) — 446/340 ≈ 1,31, arredondado para 1,3.
-	static constexpr int kDemoFoodProductIds[kDemoFoodProducts] = {0, 2, 3, 16, 17};
-	static constexpr double kDemoCaloricFactor[kDemoFoodProducts] = {1.0, 1.0, 1.0, 0.25, 1.3};
+	static constexpr int kDemoMaxFoodProducts = 16;
+	static constexpr int kDemoFoodProductIds[5] = {0, 2, 3, 16, 17};
+	static constexpr double kDemoCaloricFactor[5] = {1.0, 1.0, 1.0, 0.25, 1.3};
 
 	struct DemoMarket {
 		double stock = 0.0;
@@ -378,6 +383,23 @@ private:
 		double surplus = 0.0;  // estoque acima do necessário
 	};
 
+	struct DemoRecipe {
+		std::string id;
+		int output = -1;
+		double yield = 1.0;
+		int input_count = 0;
+		int inputs[kDemoMaxRecipeInputs] = {};
+		double input_qty[kDemoMaxRecipeInputs] = {};
+		int byproduct_count = 0;
+		int byproducts[kDemoMaxRecipeInputs] = {};
+		double byproduct_qty[kDemoMaxRecipeInputs] = {};
+		// Engenharia do processo (data/definitions/economy/recipes.json).
+		double capital_per_capacity = 2000.0;
+		double jobs_per_ton = 7.5;
+		double wage = 2.0;
+		double opex_per_ton = 2.5;
+	};
+
 	struct DemoBuilding {
 		std::string id;
 		std::string city;
@@ -386,17 +408,26 @@ private:
 		std::string owner = "private"; // private ou state
 		int input_product = -1; // -1 = extração primária (sem insumo)
 		int output_product = 0;
+		// Receita industrial (-1 = produtor primário com input_product/ratio).
+		// A receita completa (até 6 insumos + subprodutos) vive em demo_recipes_.
+		int recipe = -1;
 		double capacity = 0.0;
 		double input_per_output = 0.0;
+		double capital_per_capacity = 2000.0;
 		double jobs = 0.0;
 		double wage = 0.0;
 		double opex = 0.0;
 		double workers = 0.0;
 		double utilization = 0.0;
+		double last_utilization = 1.0; // operação do dia anterior (custos)
 		double output_scale = 1.0; // reduzido por prejuízos persistentes
 		int loss_days = 0;
 		bool bankrupt = false; // fechada por insolvência (prejuízo persistente)
 		bool depleted = false; // jazida esgotada: encerra sem contar falência
+		// Planta estratégica semeada no bootstrap industrial (decisão §12.3):
+		// não fecha por insolvência enquanto não há demanda final (F3); o
+		// governo cobre o prejuízo. Marcada explicitamente para o save/status.
+		bool strategic = false;
 		double revenue = 0.0;
 		double input_value = 0.0;
 		double costs = 0.0;
@@ -428,9 +459,9 @@ private:
 		double need = 0.0;
 		double satisfaction = 0.0;
 		double savings = 0.0;
-		// Consumo por categoria (hoje só trigo): desejado e realizado.
-		double desired_by_category[kDemoFoodProducts] = {0.0};
-		double consumed_by_category[kDemoFoodProducts] = {0.0};
+		// Consumo por categoria/slot da cesta alimentar (data-driven).
+		std::vector<double> desired_by_category;
+		std::vector<double> consumed_by_category;
 	};
 
 	// Reserva mineral do território da cidade para um produto. Compartilhada
@@ -481,24 +512,24 @@ private:
 		double construction_revenue_pending = 0.0;
 		double capital_income_next = 0.0;
 		double gdp = 0.0;
-		double revenue_by_product[kDemoProducts] = {};
+		double revenue_by_product[kDemoMaxProducts] = {};
 		// Fluxos comerciais do dia, por produto.
-		double imported[kDemoProducts] = {};
-		double exported[kDemoProducts] = {};
-		double import_value[kDemoProducts] = {};
-		double export_value[kDemoProducts] = {};
+		double imported[kDemoMaxProducts] = {};
+		double exported[kDemoMaxProducts] = {};
+		double import_value[kDemoMaxProducts] = {};
+		double export_value[kDemoMaxProducts] = {};
 		// Aptidão territorial por produto (0..1). A produção primária é
 		// multiplicada por ela; o GeographyService sobrescreve com dados reais.
 		// Inicializador: trigo/ferro/arroz = 1.0, os demais = 0.0 (default).
-		double suitability[kDemoProducts] = {1.0, 1.0, 1.0};
+		double suitability[kDemoMaxProducts] = {1.0, 1.0, 1.0};
 		// Teto de demanda externa (t/dia) por produto, declarado pelo
 		// GeographyService (participação da nação no mercado mundial). 0 = sem
 		// exportação deste bem nesta cidade.
-		double external_demand[kDemoProducts] = {};
+		double external_demand[kDemoMaxProducts] = {};
 		// Reservas minerais por produto (extração com esgotamento).
-		DemoDeposit deposits[kDemoProducts];
+		DemoDeposit deposits[kDemoMaxProducts];
 		DemoPop pop;
-		DemoMarket markets[kDemoProducts];
+		DemoMarket markets[kDemoMaxProducts];
 	};
 
 	// Fases medidas por demo_set_profiling (ordem = ordem do tick).
@@ -525,10 +556,10 @@ private:
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;
-		double produced[kDemoProducts] = {};
-		double consumed_total[kDemoProducts] = {};
-		double produced_today[kDemoProducts] = {};
-		double consumed_today[kDemoProducts] = {};
+		double produced[kDemoMaxProducts] = {};
+		double consumed_total[kDemoMaxProducts] = {};
+		double produced_today[kDemoMaxProducts] = {};
+		double consumed_today[kDemoMaxProducts] = {};
 		int day = 0;
 	};
 
@@ -767,6 +798,7 @@ private:
 	void demo_snapshot(DemoSnapshot& out) const;
 	void demo_restore(const DemoSnapshot& in);
 	void demo_trade_food();
+	void demo_trade_goods();
 	void demo_national_fiscal_transfer();
 	const Port* demo_nearest_port(const std::string& nation, const std::string& landmass,
 	                              const MapPoint& from) const;
@@ -795,21 +827,48 @@ private:
 	 * `demurrage_out` recebe o custo de fila a cobrar do comprador.
 	 */
 	double demo_port_charge(Port& port, double tons, double& demurrage_out);
-	static int demo_product_index(const String& product);
-	// Slot da cesta alimentar (0..kDemoFoodProducts-1) -> id de produto.
-	static int demo_food_product(int slot);
+	int demo_product_index(const String& product) const;
+	// Slot da cesta alimentar (0..demo_food_products_.size()-1) -> id de produto.
+	int demo_food_product(int slot) const;
 	// Id de produto -> fator calórico (0.0 se não for alimento da cesta).
-	static double demo_food_calories(int product);
-	static const char* demo_product_name(int product);
+	double demo_food_calories(int product) const;
+	const char* demo_product_name(int product) const;
+	int demo_recipe_index(const String& recipe_id) const;
+	/**
+	 * Escolhe a receita de menor custo unitário corrente entre as alternativas
+	 * do produto cujos insumos existem na cidade (empate: primeira declarada).
+	 * Devolve -1 quando o produto não tem receita ou nenhum insumo disponível.
+	 */
+	int demo_pick_recipe(const DemoCity& city, int output_product) const;
 	static double demo_extraction_efficiency(const DemoDeposit& deposit);
 	static double demo_depth_opex_factor(const DemoDeposit& deposit);
 	double demo_base_price(int product) const;
 	/**
-	 * Define os preços-base dos bens a partir de dados externos (goods.json).
-	 * Cada item deve ter "id" (wheat/iron/...) e "base_price". Bens
-	 * desconhecidos mantêm o preço padrão.
+	 * Define os bens e preços-base a partir de dados externos (goods.json).
+	 * Cada item deve ter "id" (wheat/iron/...), "base_price" e, opcionalmente,
+	 * "order" (0..kDemoMaxProducts-1). A ordem 0..20 dos primários é preservada
+	 * e os bens novos entram nas posições seguintes. Pode ser chamado antes ou
+	 * depois da inicialização: o estado existente é preservado por índice.
 	 */
 	void demo_set_goods(const Array& goods);
+	/**
+	 * Define as receitas industriais (recipes.json): produto, yield, insumos com
+	 * quantidade, subprodutos e engenharia (jobs/wage/opex/capital por t/dia).
+	 */
+	void demo_set_recipes(const Array& recipes);
+	/**
+	 * Define a cesta alimentar a partir de needs.json: usa
+	 * `levels.basic.categories.food.substitutes` e `equivalence.calories`.
+	 * Mantém a cesta de 5 culturas quando o dicionário não traz o dado.
+	 */
+	void demo_set_needs(const Dictionary& needs);
+	/**
+	 * Bootstrap industrial (§12.3): no cenário real, semeia uma planta
+	 * estratégica de referência (moinho + padaria) em poucas capitais quando o
+	 * mundo ainda não tem nenhuma construção secundária. Nota: é uma
+	 * ESTIMATIVA de transição, não dado observado; run once, marcada no status.
+	 */
+	void demo_seed_industry();
 	DemoBuilding* find_demo_building(const std::string& city_id, const std::string& id);
 
 	void tick_benchmark_internal();
@@ -877,12 +936,24 @@ private:
 	double demo_foreign_cash_ = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.
 	double demo_construction_cash_ = 0.0;
-	double demo_produced_[kDemoProducts] = {};
-	double demo_consumed_total_[kDemoProducts] = {};
-	double demo_produced_today_[kDemoProducts] = {};
-	double demo_consumed_today_[kDemoProducts] = {};
+	double demo_produced_[kDemoMaxProducts] = {};
+	double demo_consumed_total_[kDemoMaxProducts] = {};
+	double demo_produced_today_[kDemoMaxProducts] = {};
+	double demo_consumed_today_[kDemoMaxProducts] = {};
+	// Produtos ativos (demo_set_goods). 21 por padrão (cenário de validação).
+	int demo_products_ = 21;
+	std::vector<std::string> demo_product_names_;
+	std::unordered_map<std::string, int> demo_product_lookup_;
+	// Receitas industriais e índice por id (recipes.json).
+	std::vector<DemoRecipe> demo_recipes_;
+	std::unordered_map<std::string, int> demo_recipe_lookup_;
+	// Cesta alimentar data-driven (needs.json); default = 5 culturas validadas.
+	std::vector<int> demo_food_products_;
+	std::vector<double> demo_food_factors_;
+	// Bootstrap industrial já executado neste mundo.
+	bool demo_industry_seeded_ = false;
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
-	double demo_base_prices_[kDemoProducts] = {
+	double demo_base_prices_[kDemoMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
 		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0, 35.0, 45.0, 70.0, 25.0, 500.0};
 	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots

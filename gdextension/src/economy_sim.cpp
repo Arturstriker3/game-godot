@@ -10,6 +10,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstring>
 #include <utility>
 
 namespace godot {
@@ -78,7 +79,7 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // anteriores.
 // v3: farinha/pão removidos da cadeia (enum DemoProduct deslocou -2 a partir do
 // ferro) e 21 produtos. demo_from_dict remapeia saves v1/v2 (com farinha/pão).
-constexpr int kDemoSaveVersion = 3;
+constexpr int kDemoSaveVersion = 4;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -97,7 +98,30 @@ double radians(double degrees) {
 
 } // namespace
 
-EconomySim::EconomySim() = default;
+EconomySim::EconomySim() {
+	// Produtos padrão (21 primários) e cesta alimentar validada. O autoload
+	// sobrescreve ambos com goods.json/needs.json via demo_set_goods/needs.
+	demo_products_ = 21;
+	demo_product_names_.clear();
+	demo_product_names_.reserve(21);
+	static const char* const kDefaults[21] = {
+		"wheat", "iron", "rice", "maize", "bauxite", "lead", "gold",
+		"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
+		"coal", "copper", "gas", "oil", "potato", "soy", "cotton", "wood", "uranium"};
+	for (int index = 0; index < 21; ++index) {
+		demo_product_names_.emplace_back(kDefaults[index]);
+	}
+	demo_product_lookup_.clear();
+	for (int index = 0; index < demo_products_; ++index) {
+		demo_product_lookup_[demo_product_names_[static_cast<std::size_t>(index)]] = index;
+	}
+	demo_food_products_.clear();
+	demo_food_factors_.clear();
+	for (int index = 0; index < 5; ++index) {
+		demo_food_products_.push_back(kDemoFoodProductIds[index]);
+		demo_food_factors_.push_back(kDemoCaloricFactor[index]);
+	}
+}
 
 EconomySim::~EconomySim() {
 	// Se o sim for liberado com um dia AINDA rodando na thread do pool (o jogo
@@ -137,12 +161,18 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_external_income_index);
 	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
 	                     &EconomySim::demo_set_goods);
+	ClassDB::bind_method(D_METHOD("demo_set_recipes", "recipes"),
+	                     &EconomySim::demo_set_recipes);
+	ClassDB::bind_method(D_METHOD("demo_set_needs", "needs"),
+	                     &EconomySim::demo_set_needs);
+	ClassDB::bind_method(D_METHOD("demo_seed_industry"),
+	                     &EconomySim::demo_seed_industry);
 	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
 	                     &EconomySim::demo_invest);
 	ClassDB::bind_method(D_METHOD("demo_build", "city_id", "building_id", "resource",
 	                     "input_product", "output_product", "capacity", "jobs", "wage",
-	                     "opex", "input_per_output", "owner", "cost"),
-	                     &EconomySim::demo_build);
+	                     "opex", "input_per_output", "owner", "cost", "recipe_id"),
+	                     &EconomySim::demo_build, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("demo_spend_government", "city_id", "amount"),
 	                     &EconomySim::demo_spend_government);
 	ClassDB::bind_method(D_METHOD("demo_expand_port", "port_id", "t_per_day"),
@@ -862,12 +892,8 @@ constexpr double kDemoTradeCapacityPerCapita = 0.001;
 	// vendedores, então a célula só afeta a constante do custo de busca.
 	constexpr double kDemoTradeCellMapUnits = 32.0;
 
-// Ordem idêntica à de data/definitions/economy/goods.json.
-constexpr const char* kDemoProductNames[21] = {
-	"wheat", "iron", "rice", "maize", "bauxite", "lead", "gold",
-	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond",
-	"coal", "copper", "gas", "oil", "potato", "soy", "cotton", "wood", "uranium",
-};
+// Ordem idêntica à de data/definitions/economy/goods.json (posições 0..20).
+// A lista padrão vive no construtor (EconomySim::EconomySim).
 
 // ---------------------------------------------------------------------------
 // Migração de índice de produto (save v1/v2 -> v3).
@@ -931,7 +957,7 @@ double EconomySim::demo_depth_opex_factor(const DemoDeposit& deposit) {
 }
 
 double EconomySim::demo_base_price(int product) const {
-	if (product >= 0 && product < kDemoProducts) {
+	if (product >= 0 && product < demo_products_) {
 		return demo_base_prices_[product];
 	}
 	return 40.0;
@@ -939,18 +965,65 @@ double EconomySim::demo_base_price(int product) const {
 
 void EconomySim::demo_set_goods(const Array& goods) {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	// Atualiza os preços-base a partir de dados externos (goods.json). Mantém o
-	// preço padrão para bens ausentes ou inválidos.
+	// Tabela de produtos: 21 primários nas posições 0..20 (ordem do goods.json
+	// legado) e os bens novos em `order` (21..113). O núcleo não lê arquivos:
+	// todo o conteúdo entra por aqui, no padrão do demo_set_goods antigo.
+	const int previous_products = demo_products_;
+	std::vector<std::string> names = demo_product_names_;
+	std::vector<double> prices(kDemoMaxProducts, 0.0);
+	for (int index = 0; index < previous_products; ++index) {
+		if (index < static_cast<int>(names.size())) {
+			prices[static_cast<std::size_t>(index)] = demo_base_prices_[index];
+		}
+	}
 	for (int index = 0; index < goods.size(); ++index) {
 		const Dictionary entry = goods[index];
-		const int product = demo_product_index(String(entry.get("id", "")));
-		if (product < 0) {
+		const String id = String(entry.get("id", ""));
+		if (id.is_empty()) {
 			continue;
 		}
+		int order = entry.has("order") ? int(entry.get("order", index)) : index;
+		order = std::clamp(order, 0, kDemoMaxProducts - 1);
+		if (static_cast<int>(names.size()) <= order) {
+			names.resize(static_cast<std::size_t>(order) + 1);
+		}
+		names[static_cast<std::size_t>(order)] = std::string(id.utf8().get_data());
 		const double price = safe_nonneg(static_cast<double>(entry.get("base_price", 0.0)));
 		if (price > 0.0) {
-			demo_base_prices_[product] = price;
+			prices[static_cast<std::size_t>(order)] = price;
 		}
+	}
+	int product_count = 21;
+	for (int index = 0; index < static_cast<int>(names.size()); ++index) {
+		if (!names[static_cast<std::size_t>(index)].empty()) {
+			product_count = std::max(product_count, index + 1);
+		}
+	}
+	product_count = std::min(product_count, kDemoMaxProducts);
+	names.resize(static_cast<std::size_t>(product_count));
+	demo_product_names_ = std::move(names);
+	demo_product_lookup_.clear();
+	demo_product_lookup_.reserve(static_cast<std::size_t>(product_count) * 2);
+	for (int index = 0; index < product_count; ++index) {
+		const std::string& name = demo_product_names_[static_cast<std::size_t>(index)];
+		if (!name.empty()) {
+			demo_product_lookup_[name] = index;
+		}
+		const double price = prices[static_cast<std::size_t>(index)];
+		demo_base_prices_[index] = price > 0.0 ? price : 40.0;
+	}
+	demo_products_ = product_count;
+
+	// Mundo já inicializado: os produtos novos entram com o preço-base e sem
+	// estoque. Os índices existentes (0..previous_products-1) não mudam.
+	if (demo_active_ && product_count > previous_products) {
+		for (DemoCity& city : demo_cities_) {
+			for (int product = previous_products; product < product_count; ++product) {
+				city.markets[product].price = demo_base_prices_[product];
+			}
+		}
+		++demo_status_static_version_;
+		demo_status_invalidate();
 	}
 }
 
@@ -974,7 +1047,8 @@ void EconomySim::initialize_demo() {
 	demo_transport_cash_ = 10000.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
-	for (int index = 0; index < kDemoProducts; ++index) {
+	demo_industry_seeded_ = false;
+	for (int index = 0; index < kDemoMaxProducts; ++index) {
 		demo_produced_[index] = 0.0;
 		demo_consumed_total_[index] = 0.0;
 		demo_produced_today_[index] = 0.0;
@@ -997,7 +1071,7 @@ void EconomySim::initialize_demo() {
 	agria.pop.savings = 50000.0;
 	agria.suitability[0] = kDemoReferenceWheatSuitability;
 	agria.markets[0] = {100.0, demo_base_price(0), 0.0, 0.0};
-	for (int product = 1; product < kDemoProducts; ++product) {
+	for (int product = 1; product < demo_products_; ++product) {
 		agria.markets[product].price = demo_base_price(product);
 	}
 	demo_cities_.push_back(agria);
@@ -1018,7 +1092,7 @@ void EconomySim::initialize_demo() {
 	portus.pop.savings = 100000.0;
 	portus.suitability[0] = 0.625;
 	portus.markets[0] = {0.0, demo_base_price(0), 0.0, 0.0};
-	for (int product = 1; product < kDemoProducts; ++product) {
+	for (int product = 1; product < demo_products_; ++product) {
 		portus.markets[product].price = demo_base_price(product);
 	}
 	demo_cities_.push_back(portus);
@@ -1061,6 +1135,10 @@ void EconomySim::initialize_demo() {
 		farm.opex = 50.0;
 		demo_buildings_.push_back(farm);
 	}
+	for (DemoCity& city : demo_cities_) {
+		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
+		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
+	}
 	demo_rebuild_indexes();
 }
 
@@ -1087,7 +1165,8 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_transport_cash_ = 0.0;
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
-	for (int index = 0; index < kDemoProducts; ++index) {
+	demo_industry_seeded_ = false;
+	for (int index = 0; index < kDemoMaxProducts; ++index) {
 		demo_produced_[index] = 0.0;
 		demo_consumed_total_[index] = 0.0;
 		demo_produced_today_[index] = 0.0;
@@ -1118,11 +1197,13 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		city.service_wage = kDemoServiceWage;
 		city.pop.population = city.simulation_population;
 		city.pop.savings = city.simulation_population * kDemoSavingsPerCapita;
+		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
+		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
 		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
 		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
 		// o dado real em tempo de execução.
 		city.suitability[0] = 1.0;
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			city.markets[product] = {0.0, demo_base_price(product), 0.0, 0.0};
 		}
 		demo_cities_.push_back(std::move(city));
@@ -1240,7 +1321,7 @@ void EconomySim::demo_snapshot(DemoSnapshot& out) const {
 	out.transport_cash = demo_transport_cash_;
 	out.foreign_cash = demo_foreign_cash_;
 	out.construction_cash = demo_construction_cash_;
-	for (int index = 0; index < kDemoProducts; ++index) {
+	for (int index = 0; index < demo_products_; ++index) {
 		out.produced[index] = demo_produced_[index];
 		out.consumed_total[index] = demo_consumed_total_[index];
 		out.produced_today[index] = demo_produced_today_[index];
@@ -1256,7 +1337,7 @@ void EconomySim::demo_restore(const DemoSnapshot& in) {
 	demo_transport_cash_ = in.transport_cash;
 	demo_foreign_cash_ = in.foreign_cash;
 	demo_construction_cash_ = in.construction_cash;
-	for (int index = 0; index < kDemoProducts; ++index) {
+	for (int index = 0; index < demo_products_; ++index) {
 		demo_produced_[index] = in.produced[index];
 		demo_consumed_total_[index] = in.consumed_total[index];
 		demo_produced_today_[index] = in.produced_today[index];
@@ -1293,7 +1374,7 @@ std::vector<std::string> EconomySim::demo_check_invariants(double money_before) 
 		check_nonneg("government", city.government_budget);
 		check_nonneg("savings", city.pop.savings);
 
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			const DemoMarket& market = city.markets[product];
 			const double base = demo_base_price(product);
 			if (!std::isfinite(market.price) || market.price < base * 0.5 - 1e-6
@@ -1345,7 +1426,7 @@ void EconomySim::demo_trade_food() {
 	for (std::size_t i = 0; i < demo_cities_.size(); ++i) {
 		const DemoCity& city = demo_cities_[i];
 		double ge = 0.0;
-		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 			const int product = demo_food_product(slot);
 			ge += city.markets[product].stock * demo_food_calories(product);
 		}
@@ -1486,12 +1567,12 @@ void EconomySim::demo_trade_food() {
 
 	// Ofertas por slot da cesta, ordenadas pelo custo por caloria do preço
 	// (preço/fator, sem frete): as M primeiras formam o mercado externo.
-	std::vector<std::vector<int>> offers_by_slot(kDemoFoodProducts);
+	std::vector<std::vector<int>> offers_by_slot(demo_food_products_.size());
 	for (std::size_t si = 0; si < city_count; ++si) {
 		if (sellable_ge[si] <= 1e-9) {
 			continue;
 		}
-		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 			const int product = demo_food_product(slot);
 			const double factor = demo_food_calories(product);
 			if (factor <= 0.0) {
@@ -1505,7 +1586,7 @@ void EconomySim::demo_trade_food() {
 			}
 		}
 	}
-	for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+	for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 		const int product = demo_food_product(slot);
 		std::vector<int>& list = offers_by_slot[slot];
 		// Dentro de um slot o fator calórico é o mesmo para todos: ordenar pelo
@@ -1668,7 +1749,7 @@ void EconomySim::demo_trade_food() {
 			}
 			// Mercado externo: as M ofertas mais baratas por caloria de cada
 			// alimento da cesta (o resto do mundo, do ponto de vista do comprador).
-			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 				const std::vector<int>& list = offers_by_slot[slot];
 				const int limit = std::min(k_external, static_cast<int>(list.size()));
 				for (int i = 0; i < limit; ++i) {
@@ -1683,7 +1764,7 @@ void EconomySim::demo_trade_food() {
 		}
 
 		std::vector<Offer> offers;
-		offers.reserve(candidates.size() * kDemoFoodProducts);
+		offers.reserve(candidates.size() * demo_food_products_.size());
 		for (const int si : candidates) {
 			DemoCity& seller = demo_cities_[static_cast<std::size_t>(si)];
 			if (&seller == buyer.city || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
@@ -1711,7 +1792,7 @@ void EconomySim::demo_trade_food() {
 					+ distance_km(sp.center, bp.center) * kDemoFreightShipPerTonKm
 					+ distance_km(bp.center, buyer.city->center) * kDemoFreightPerTonKm;
 			}
-			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 				const int product = demo_food_product(slot);
 				const double factor = demo_food_calories(product);
 				if (factor <= 0.0) {
@@ -1761,7 +1842,7 @@ void EconomySim::demo_trade_food() {
 			const double capacity_ge =
 				buyer.city->simulation_population * kDemoTradeCapacityPerCapita;
 			double imported_ge = 0.0;
-			for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+			for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 				const int p = demo_food_product(slot);
 				imported_ge += buyer.city->imported[p] * demo_food_calories(p);
 			}
@@ -1836,6 +1917,7 @@ void EconomySim::demo_trade_food() {
 			order.from_nation = seller->nation;
 			order.to_nation = buyer.city->nation;
 			order.scope = MarketScope::International;
+			order.product = product;
 			order.amount = amount_tons;
 
 			double total_transit = 0.0;
@@ -1916,6 +1998,410 @@ void EconomySim::demo_trade_food() {
 			}
 			remaining -= ge;
 			++shipments;
+		}
+	}
+}
+
+void EconomySim::demo_trade_goods() {
+	// Comércio inter-cidades de TODOS os bens não alimentares (insumos e bens
+	// industriais). A cesta alimentar continua no demo_trade_food (validado);
+	// aqui a demanda é a necessidade DIÁRIA das construções locais (receitas ou
+	// insumo legado). Reaproveita a mesma malha de rotas/frete/portos do
+	// comércio de alimento: caminhão na mesma massa de terra, navio entre
+	// massas com porto nacional nas duas pontas.
+	if (demo_cities_.empty() || demo_products_ <= 0) {
+		return;
+	}
+	const std::size_t city_count = demo_cities_.size();
+	// Necessidade diária de insumo por cidade/produto (capacidade nominal,
+	// não a produção do dia: o estoque-alvo é o que mantém a fábrica operando).
+	std::vector<double> city_demand(city_count * static_cast<std::size_t>(demo_products_), 0.0);
+	for (std::size_t ci = 0; ci < city_count; ++ci) {
+		const DemoCity& city = demo_cities_[ci];
+		for (const int bi : demo_buildings_by_city_[ci]) {
+			const DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
+			const double capacity = building.capacity * building.output_scale;
+			if (capacity <= 0.0) {
+				continue;
+			}
+			if (building.recipe >= 0
+					&& building.recipe < static_cast<int>(demo_recipes_.size())) {
+				const DemoRecipe& recipe =
+					demo_recipes_[static_cast<std::size_t>(building.recipe)];
+				for (int slot = 0; slot < recipe.input_count; ++slot) {
+					const int product = recipe.inputs[slot];
+					if (product < 0 || product >= demo_products_) {
+						continue;
+					}
+					city_demand[ci * static_cast<std::size_t>(demo_products_)
+						+ static_cast<std::size_t>(product)] +=
+						capacity * recipe.input_qty[slot] / recipe.yield;
+				}
+			} else if (building.input_product >= 0
+					&& building.input_product < demo_products_) {
+				city_demand[ci * static_cast<std::size_t>(demo_products_)
+					+ static_cast<std::size_t>(building.input_product)] +=
+					capacity * building.input_per_output;
+			}
+		}
+		(void)city;
+	}
+	// Trânsito a caminho da cidade, por produto.
+	std::vector<double> in_transit(city_demand.size(), 0.0);
+	for (const DemoShipment& shipment : demo_in_transit_) {
+		const auto found = demo_city_lookup_.find(shipment.to_city);
+		if (found == demo_city_lookup_.end()) {
+			continue;
+		}
+		const std::size_t offset =
+			static_cast<std::size_t>(found->second) * static_cast<std::size_t>(demo_products_)
+			+ static_cast<std::size_t>(shipment.product);
+		if (offset < in_transit.size()) {
+			in_transit[offset] += shipment.amount;
+		}
+	}
+	// Porto nacional de cada cidade (mesma nação + massa de terra). Sem porto,
+	// a cidade só comercia por caminhão dentro da própria massa.
+	std::vector<int> city_port(city_count, -1);
+	if (!demo_ports_.empty()) {
+		std::unordered_map<std::string, std::vector<int>> ports_by_region;
+		ports_by_region.reserve(demo_ports_.size() * 2);
+		for (std::size_t pi = 0; pi < demo_ports_.size(); ++pi) {
+			const Port& port = demo_ports_[pi];
+			ports_by_region[port.nation + '\n' + port.landmass]
+				.push_back(static_cast<int>(pi));
+		}
+		for (std::size_t ci = 0; ci < city_count; ++ci) {
+			const DemoCity& city = demo_cities_[ci];
+			const auto found = ports_by_region.find(city.nation + '\n' + city.landmass);
+			if (found == ports_by_region.end()) {
+				continue;
+			}
+			int best_port = -1;
+			double best_distance = 0.0;
+			for (const int pi : found->second) {
+				const double distance = distance_km(
+					city.center, demo_ports_[static_cast<std::size_t>(pi)].center);
+				if (best_port < 0 || distance < best_distance) {
+					best_port = pi;
+					best_distance = distance;
+				}
+			}
+			city_port[ci] = best_port;
+		}
+	}
+	// Grade espacial (~250 km por célula) para os K vizinhos.
+	const double cell = kDemoTradeCellMapUnits;
+	const int grid_w = std::max(1, static_cast<int>(std::ceil(kMapWidth / cell)));
+	const int grid_h = std::max(1, static_cast<int>(std::ceil(kMapHeight / cell)));
+	std::vector<std::vector<int>> grid(static_cast<std::size_t>(grid_w * grid_h));
+	auto cell_index = [cell, grid_w, grid_h](const MapPoint& point) {
+		const int ix = std::clamp(static_cast<int>(point.x / cell), 0, grid_w - 1);
+		const int iy = std::clamp(static_cast<int>(point.y / cell), 0, grid_h - 1);
+		return iy * grid_w + ix;
+	};
+	for (std::size_t ci = 0; ci < city_count; ++ci) {
+		grid[static_cast<std::size_t>(cell_index(demo_cities_[ci].center))]
+			.push_back(static_cast<int>(ci));
+	}
+	const int k_neighbors = std::max(1, demo_trade_neighbors_);
+	const int k_external = std::max(0, demo_trade_external_);
+	std::size_t shipments = 0;
+	// Itera só os produtos com demanda E oferta no dia (nunca 114 × cidades).
+	for (int product = 0; product < demo_products_ && shipments < kDemoMaxShipmentsPerDay;
+			++product) {
+		if (demo_food_calories(product) > 0.0) {
+			continue;  // cesta alimentar: demo_trade_food
+		}
+		struct Buyer {
+			int city_index;
+			double gap;
+			double daily;
+		};
+		struct Seller {
+			int city_index;
+			double sellable;
+			double price;
+		};
+		std::vector<Buyer> buyers;
+		std::vector<Seller> sellers;
+		for (std::size_t ci = 0; ci < city_count; ++ci) {
+			const std::size_t offset = ci * static_cast<std::size_t>(demo_products_)
+				+ static_cast<std::size_t>(product);
+			const double daily = city_demand[offset];
+			const DemoMarket& market = demo_cities_[ci].markets[product];
+			const double stock = std::max(0.0, market.stock);
+			if (daily > 1e-9) {
+				const double target = daily * demo_inventory_cover_days_;
+				const double gap = target - (stock + in_transit[offset]);
+				if (gap > 1e-9) {
+					buyers.push_back({static_cast<int>(ci), gap, daily});
+				}
+			}
+			// Vendedor: estoque acima da própria necessidade de 1 dia.
+			const double own_need = daily;
+			const double sellable = stock - own_need;
+			if (sellable > 1e-9 && market.price > 0.0) {
+				sellers.push_back({static_cast<int>(ci), sellable, market.price});
+			}
+		}
+		if (buyers.empty() || sellers.empty()) {
+			continue;
+		}
+		std::stable_sort(buyers.begin(), buyers.end(),
+			[](const Buyer& left, const Buyer& right) {
+				return left.gap / std::max(1e-9, left.daily)
+					> right.gap / std::max(1e-9, right.daily);
+			});
+		// Ofertas globais mais baratas: o "mercado externo" do comprador.
+		std::vector<int> cheapest(sellers.size());
+		for (std::size_t i = 0; i < cheapest.size(); ++i) {
+			cheapest[i] = static_cast<int>(i);
+		}
+		std::stable_sort(cheapest.begin(), cheapest.end(),
+			[&sellers](int left, int right) {
+				return sellers[static_cast<std::size_t>(left)].price
+					< sellers[static_cast<std::size_t>(right)].price;
+			});
+		for (Buyer& buyer : buyers) {
+			if (shipments >= kDemoMaxShipmentsPerDay) {
+				break;
+			}
+			DemoCity& buyer_city = demo_cities_[static_cast<std::size_t>(buyer.city_index)];
+			const std::size_t buyer_offset =
+				static_cast<std::size_t>(buyer.city_index) * static_cast<std::size_t>(demo_products_)
+				+ static_cast<std::size_t>(product);
+			double remaining = std::max(0.0, buyer.gap);
+			if (remaining <= 1e-9) {
+				continue;
+			}
+			// Candidatos: K vizinhos vendedores + M ofertas mais baratas.
+			std::vector<int> candidates;
+			const int bx = std::clamp(
+				static_cast<int>(buyer_city.center.x / cell), 0, grid_w - 1);
+			const int by = std::clamp(
+				static_cast<int>(buyer_city.center.y / cell), 0, grid_h - 1);
+			const int max_radius = std::min(8,
+				std::max(std::max(bx, grid_w - 1 - bx), std::max(by, grid_h - 1 - by)));
+			int cells_budget = std::min(grid_w * grid_h, 512);
+			for (int radius = 0; radius <= max_radius && cells_budget > 0; ++radius) {
+				if (static_cast<int>(candidates.size()) >= k_neighbors) {
+					break;
+				}
+				for (int ix = bx - radius; ix <= bx + radius; ++ix) {
+					for (int iy = by - radius; iy <= by + radius; ++iy) {
+						if (ix != bx - radius && ix != bx + radius
+								&& iy != by - radius && iy != by + radius) {
+							continue;
+						}
+						if (ix < 0 || ix >= grid_w || iy < 0 || iy >= grid_h
+								|| cells_budget <= 0) {
+							continue;
+						}
+						--cells_budget;
+						for (const int si : grid[static_cast<std::size_t>(iy * grid_w + ix)]) {
+							if (si == buyer.city_index) {
+								continue;
+							}
+							const std::size_t offset =
+								static_cast<std::size_t>(si) * static_cast<std::size_t>(demo_products_)
+								+ static_cast<std::size_t>(product);
+							if (city_demand[offset] >= 0.0
+									&& demo_cities_[static_cast<std::size_t>(si)]
+										.markets[product].stock
+										- city_demand[offset] > 1e-9) {
+								candidates.push_back(si);
+							}
+						}
+					}
+				}
+			}
+			const int external_limit = std::min(k_external,
+				static_cast<int>(cheapest.size()));
+			for (int i = 0; i < external_limit; ++i) {
+				const int si = sellers[static_cast<std::size_t>(
+					cheapest[static_cast<std::size_t>(i)])].city_index;
+				if (si != buyer.city_index) {
+					candidates.push_back(si);
+				}
+			}
+			std::sort(candidates.begin(), candidates.end());
+			candidates.erase(std::unique(candidates.begin(), candidates.end()),
+				candidates.end());
+			struct Offer {
+				int seller_index;
+				double unit_cost;
+				double unit_freight;
+			};
+			std::vector<Offer> offers;
+			offers.reserve(candidates.size());
+			for (const int si : candidates) {
+				DemoCity& seller = demo_cities_[static_cast<std::size_t>(si)];
+				const std::size_t offset =
+					static_cast<std::size_t>(si) * static_cast<std::size_t>(demo_products_)
+					+ static_cast<std::size_t>(product);
+				if (seller.markets[product].stock - city_demand[offset] <= 1e-9) {
+					continue;
+				}
+				double unit_freight = 0.0;
+				if (seller.landmass == buyer_city.landmass) {
+					unit_freight = distance_km(seller.center, buyer_city.center)
+						* kDemoFreightPerTonKm;
+				} else {
+					const int seller_port = city_port[static_cast<std::size_t>(si)];
+					const int buyer_port = city_port[static_cast<std::size_t>(buyer.city_index)];
+					if (seller_port < 0 || buyer_port < 0) {
+						continue;
+					}
+					const Port& sp = demo_ports_[static_cast<std::size_t>(seller_port)];
+					const Port& bp = demo_ports_[static_cast<std::size_t>(buyer_port)];
+					unit_freight =
+						distance_km(seller.center, sp.center) * kDemoFreightPerTonKm
+						+ distance_km(sp.center, bp.center) * kDemoFreightShipPerTonKm
+						+ distance_km(bp.center, buyer_city.center) * kDemoFreightPerTonKm;
+				}
+				offers.push_back({si, seller.markets[product].price + unit_freight,
+					unit_freight});
+			}
+			std::stable_sort(offers.begin(), offers.end(),
+				[](const Offer& left, const Offer& right) {
+					return left.unit_cost < right.unit_cost;
+				});
+			for (const Offer& offer : offers) {
+				if (remaining <= 1e-9 || shipments >= kDemoMaxShipmentsPerDay) {
+					break;
+				}
+				DemoCity& seller = demo_cities_[static_cast<std::size_t>(offer.seller_index)];
+				const std::size_t seller_offset =
+					static_cast<std::size_t>(offer.seller_index) * static_cast<std::size_t>(demo_products_)
+					+ static_cast<std::size_t>(product);
+				const double sellable = std::max(0.0,
+					seller.markets[product].stock - city_demand[seller_offset]);
+				if (sellable <= 1e-9) {
+					continue;
+				}
+				// Capacidade de transporte do comprador (mesmo teto do alimento).
+				double imported_total = 0.0;
+				for (int p = 0; p < demo_products_; ++p) {
+					imported_total += buyer_city.imported[p];
+				}
+				const double room = std::max(0.0,
+					buyer_city.simulation_population * kDemoTradeCapacityPerCapita
+					- imported_total);
+				double amount = std::min(remaining, std::min(sellable, room));
+				if (amount <= 1e-9) {
+					continue;
+				}
+				// Pagamento: firma doméstica (comprador) -> firma vendedora +
+				// frete ao serviço do comprador. Governo cobre o que a firma não
+				// puder (insumo essencial), conservando o dinheiro.
+				const double unit_price = seller.markets[product].price;
+				const double unit_cost = unit_price + offer.unit_freight;
+				const double payable = std::max(0.0, buyer_city.firm_cash)
+					+ std::max(0.0, buyer_city.government_budget);
+				if (amount * unit_cost > payable) {
+					amount = unit_cost > 0.0 ? payable / unit_cost : 0.0;
+				}
+				if (amount <= 1e-9) {
+					continue;
+				}
+				const double total_cost = amount * unit_cost;
+				const double firm_share = std::min(total_cost,
+					std::max(0.0, buyer_city.firm_cash));
+				const double gov_share = std::min(total_cost - firm_share,
+					std::max(0.0, buyer_city.government_budget));
+				const double paid = firm_share + gov_share;
+				if (paid <= 1e-9) {
+					continue;
+				}
+				const double goods_value = amount * unit_price;
+				const double freight = amount * offer.unit_freight;
+				buyer_city.firm_cash -= firm_share;
+				buyer_city.government_budget -= gov_share;
+				seller.firm_cash += goods_value;
+				buyer_city.service_cash += freight;
+				buyer_city.freight_revenue += freight;
+
+				seller.markets[product].stock -= amount;
+				seller.markets[product].desired += amount;
+				seller.markets[product].demand += amount;
+				seller.markets[product].sold += amount;
+				seller.revenue_by_product[product] += goods_value;
+				seller.exported[product] += amount;
+				seller.export_value[product] += goods_value;
+				buyer_city.imported[product] += amount;
+				buyer_city.import_value[product] += goods_value;
+
+				TradeOrder order;
+				order.from_city = seller.id;
+				order.to_city = buyer_city.id;
+				order.from_nation = seller.nation;
+				order.to_nation = buyer_city.nation;
+				order.scope = seller.nation == buyer_city.nation
+					? MarketScope::Regional : MarketScope::International;
+				order.product = product;
+				order.amount = amount;
+				double total_transit = 0.0;
+				double total_freight_cost = 0.0;
+				double port_delay_days = 0.0;
+				if (seller.landmass == buyer_city.landmass) {
+					Leg leg = make_leg(TransportMode::Truck, seller.id, buyer_city.id,
+						seller.center, buyer_city.center, amount);
+					total_transit = leg.transit_hours;
+					total_freight_cost = leg.cost;
+					order.legs.push_back(std::move(leg));
+				} else {
+					const int seller_port = city_port[static_cast<std::size_t>(
+						offer.seller_index)];
+					const int buyer_port = city_port[static_cast<std::size_t>(buyer.city_index)];
+					if (seller_port >= 0 && buyer_port >= 0) {
+						Port& sp = demo_ports_[static_cast<std::size_t>(seller_port)];
+						Port& bp = demo_ports_[static_cast<std::size_t>(buyer_port)];
+						if (distance_km(seller.center, sp.center) > 1.0) {
+							Leg leg = make_leg(TransportMode::Truck, seller.id, sp.id,
+								seller.center, sp.center, amount);
+							total_transit += leg.transit_hours;
+							total_freight_cost += leg.cost;
+							order.legs.push_back(std::move(leg));
+						}
+						{
+							Leg leg = make_leg(TransportMode::Ship, sp.id, bp.id,
+								sp.center, bp.center, amount);
+							total_transit += leg.transit_hours;
+							total_freight_cost += leg.cost;
+							order.legs.push_back(std::move(leg));
+						}
+						if (distance_km(bp.center, buyer_city.center) > 1.0) {
+							Leg leg = make_leg(TransportMode::Truck, bp.id, buyer_city.id,
+								bp.center, buyer_city.center, amount);
+							total_transit += leg.transit_hours;
+							total_freight_cost += leg.cost;
+							order.legs.push_back(std::move(leg));
+						}
+						total_transit += 2.0 * kDemoPortHandlingHours;
+						double demurrage = 0.0;
+						port_delay_days += demo_port_charge(sp, amount, demurrage);
+						port_delay_days += demo_port_charge(bp, amount, demurrage);
+						const double demurrage_paid = std::min(demurrage,
+							std::max(0.0, buyer_city.government_budget));
+						buyer_city.government_budget -= demurrage_paid;
+						buyer_city.service_cash += demurrage_paid;
+						buyer_city.freight_revenue += demurrage_paid;
+						total_freight_cost += demurrage_paid;
+						total_transit += port_delay_days * kHoursPerDay;
+					}
+				}
+				order.transit_hours = total_transit;
+				order.freight_cost = total_freight_cost;
+				demo_last_orders_.push_back(std::move(order));
+				const int arrival_day =
+					day_ + 1 + static_cast<int>(std::ceil(port_delay_days));
+				demo_in_transit_.push_back(
+					{buyer_city.id, product, amount, arrival_day});
+				in_transit[buyer_offset] += amount;
+				remaining -= amount;
+				++shipments;
+			}
 		}
 	}
 }
@@ -2223,6 +2709,9 @@ void EconomySim::demo_tick_core() {
 	if (!demo_active_) {
 		initialize_demo();
 	}
+	// §12.3: se o mundo real ainda não tem indústria, semeia poucas plantas de
+	// referência (moinho + padaria) antes de contar dinheiro/invariantes.
+	demo_seed_industry();
 
 	// Retrato para reverter o tick se um invariante rígido for violado.
 	DemoSnapshot before;
@@ -2263,8 +2752,8 @@ void EconomySim::demo_tick_core() {
 	// podem somar dois passos de 5% e produzir um salto de 10% no mesmo dia.
 	std::vector<std::vector<double>> open_prices(demo_cities_.size());
 	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
-		open_prices[city_index].resize(kDemoProducts);
-		for (int product = 0; product < kDemoProducts; ++product) {
+		open_prices[city_index].resize(demo_products_);
+		for (int product = 0; product < demo_products_; ++product) {
 			open_prices[city_index][product] =
 				demo_cities_[city_index].markets[product].price;
 		}
@@ -2285,7 +2774,7 @@ void EconomySim::demo_tick_core() {
 	lap(kDemoPhaseArrival);
 
 	// 2. Zera os fluxos do dia.
-	for (int index = 0; index < kDemoProducts; ++index) {
+	for (int index = 0; index < demo_products_; ++index) {
 		demo_produced_today_[index] = 0.0;
 		demo_consumed_today_[index] = 0.0;
 	}
@@ -2309,7 +2798,7 @@ void EconomySim::demo_tick_core() {
 		city.construction_revenue = city.construction_revenue_pending;
 		city.construction_revenue_pending = 0.0;
 		city.gdp = 0.0;
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			city.markets[product].demand = 0.0;
 			city.markets[product].supply = 0.0;
 			city.markets[product].desired = 0.0;
@@ -2323,7 +2812,11 @@ void EconomySim::demo_tick_core() {
 			city.import_value[product] = 0.0;
 			city.export_value[product] = 0.0;
 		}
-		for (int product = 0; product < kDemoFoodProducts; ++product) {
+		if (city.pop.desired_by_category.size() != demo_food_products_.size()) {
+			city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
+			city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
+		}
+		for (int product = 0; product < static_cast<int>(demo_food_products_.size()); ++product) {
 			city.pop.desired_by_category[product] = 0.0;
 			city.pop.consumed_by_category[product] = 0.0;
 		}
@@ -2344,9 +2837,9 @@ void EconomySim::demo_tick_core() {
 	// 3. Mercado de trabalho e salários.
 	// Minas mais fundas custam mais para operar: opex × fator de profundidade
 	// (1.0 para tudo que não é extração com jazida declarada).
-	auto opex_factor = [](const DemoCity& owner_city, const DemoBuilding& building) {
+	auto opex_factor = [this](const DemoCity& owner_city, const DemoBuilding& building) {
 		if (building.input_product >= 0 || building.output_product < 0
-				|| building.output_product >= kDemoProducts) {
+				|| building.output_product >= demo_products_) {
 			return 1.0;
 		}
 		return demo_depth_opex_factor(owner_city.deposits[building.output_product]);
@@ -2355,26 +2848,52 @@ void EconomySim::demo_tick_core() {
 		DemoCity& city = demo_cities_[city_index];
 		const std::vector<int>& local_buildings =
 			demo_buildings_by_city_[city_index];
-		double modeled_jobs = 0.0;
+		double primary_jobs = 0.0;
+		double secondary_jobs = 0.0;
 		for (const int bi : local_buildings) {
-			modeled_jobs += demo_buildings_[static_cast<std::size_t>(bi)].jobs;
+			const DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
+			// Primária = extração/fazenda (sem receita industrial). Fábricas
+			// (receita ou insumo legado) são secundárias.
+			if (building.recipe < 0 && building.input_product < 0) {
+				primary_jobs += building.jobs;
+			} else {
+				secondary_jobs += building.jobs;
+			}
 		}
 		// O emprego de serviços é persistente: cresce ou recua conforme a
 		// receita do setor, em vez de ser recalculado a cada dia.
 		const double labor_force = city.simulation_population * kDemoLaborShare;
 		city.pop.labor_force = labor_force;
 
+		// §5.3 — alocação de trabalho em duas classes. A fazenda/extaração
+		// (necessidade básica) tem prioridade; a fábrica só usa a mão de obra
+		// que sobra. Antes um `fill` único diluía as fazendas a cada fábrica
+		// nova e a comida caía junto com a industrialização.
 		const double available = std::max(0.0, labor_force - city.service_jobs);
-		const double fill = modeled_jobs > 0.0
-			? std::clamp(available / modeled_jobs, 0.0, 1.0) : 0.0;
+		double primary_fill = 1.0;
+		double secondary_fill = 0.0;
+		if (primary_jobs > 0.0) {
+			primary_fill = std::clamp(available / primary_jobs, 0.0, 1.0);
+			secondary_fill = available > primary_jobs && secondary_jobs > 0.0
+				? std::clamp((available - primary_jobs) / secondary_jobs, 0.0, 1.0)
+				: 0.0;
+		} else if (secondary_jobs > 0.0) {
+			secondary_fill = std::clamp(available / secondary_jobs, 0.0, 1.0);
+		}
 
 		double modeled_wages = 0.0;
 		double opex_total = 0.0;
 		for (const int bi : local_buildings) {
 			DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
+			const bool secondary = building.recipe >= 0 || building.input_product >= 0;
+			const double fill = secondary ? secondary_fill : primary_fill;
 			building.workers = building.jobs * fill;
-			modeled_wages += building.workers * building.wage;
-			opex_total += building.opex * opex_factor(city, building);
+			// Planta secundária ociosa não paga a folha/opex cheios: os custos
+			// acompanham a operação do dia anterior (piso de 5% de stand-by).
+			const double operating = secondary
+				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			modeled_wages += building.workers * building.wage * operating;
+			opex_total += building.opex * opex_factor(city, building) * operating;
 		}
 
 		// Restrição de liquidez: a empresa não paga folha nem opex com dinheiro
@@ -2388,8 +2907,12 @@ void EconomySim::demo_tick_core() {
 		opex_total *= pay_scale;
 		for (const int bi : local_buildings) {
 			DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
-			building.paid_wages = building.workers * building.wage * pay_scale;
-			building.paid_opex = building.opex * opex_factor(city, building) * pay_scale;
+			const bool secondary = building.recipe >= 0 || building.input_product >= 0;
+			const double operating = secondary
+				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			building.paid_wages = building.workers * building.wage * operating * pay_scale;
+			building.paid_opex = building.opex * opex_factor(city, building)
+				* operating * pay_scale;
 		}
 
 		city.service_wage_bill = city.service_jobs * city.service_wage;
@@ -2397,7 +2920,8 @@ void EconomySim::demo_tick_core() {
 		// saldo disponível no início do dia, sem crédito implícito.
 		city.service_wage_bill = std::min(city.service_wage_bill,
 				std::max(0.0, city.service_cash));
-		city.pop.employed = city.service_jobs + modeled_jobs * fill;
+		city.pop.employed = city.service_jobs
+			+ primary_jobs * primary_fill + secondary_jobs * secondary_fill;
 		city.pop.unemployed = std::max(0.0, labor_force - city.pop.employed);
 		city.pop.dependents =
 			std::max(0.0, city.simulation_population - labor_force);
@@ -2419,13 +2943,13 @@ void EconomySim::demo_tick_core() {
 	// Capacidade por cidade/produto, calculada uma vez por dia. Antes, cada
 	// construção varria TODAS as construções do mundo para achar a capacidade
 	// local do seu produto — O(construções²), inviável em escala mundial.
-	std::vector<std::array<double, kDemoProducts>> capacity_by_city_product(
+	std::vector<std::array<double, kDemoMaxProducts>> capacity_by_city_product(
 		demo_cities_.size());
 	for (auto& slots : capacity_by_city_product) {
 		slots.fill(0.0);
 	}
 	for (const DemoBuilding& building : demo_buildings_) {
-		if (building.output_product < 0 || building.output_product >= kDemoProducts) {
+		if (building.output_product < 0 || building.output_product >= demo_products_) {
 			continue;
 		}
 		const auto found = demo_city_lookup_.find(building.city);
@@ -2439,7 +2963,7 @@ void EconomySim::demo_tick_core() {
 	for (DemoBuilding& building : demo_buildings_) {
 		DemoCity* city = find_demo_city(building.city);
 		if (city == nullptr || building.output_product < 0
-				|| building.output_product >= kDemoProducts) {
+				|| building.output_product >= demo_products_) {
 			continue;
 		}
 
@@ -2452,10 +2976,11 @@ void EconomySim::demo_tick_core() {
 		const double sold_prev = city->markets[building.output_product].sold_prev;
 		const double labor = building.jobs > 0.0
 			? building.workers / building.jobs : 1.0;
+		const bool primary = building.recipe < 0 && building.input_product < 0;
 		// Extração: aptidão territorial × eficiência pela qualidade do minério
 		// (1.0 quando não há jazida declarada).
 		DemoDeposit& deposit = city->deposits[building.output_product];
-		const double suitability = building.input_product < 0
+		const double suitability = primary
 			? std::clamp(city->suitability[building.output_product], 0.0, 1.0)
 				* demo_extraction_efficiency(deposit)
 			: 1.0;
@@ -2472,6 +2997,9 @@ void EconomySim::demo_tick_core() {
 		// parada brusca quando o estoque está acima do necessário.
 		double target = sold_prev;
 		if (sold_prev <= 0.0) {
+			// Produtor novo (ou sem vendas) enche o mercado com a capacidade
+			// EFETIVA (output_scale), o que dá ao produto a primeira oferta
+			// observável — é o que permite o comércio/consumo começar.
 			target = effective_capacity;
 		} else {
 			const double desired_stock = sold_prev * demo_inventory_cover_days_;
@@ -2482,7 +3010,53 @@ void EconomySim::demo_tick_core() {
 		const double desired_output = target * capacity_share * labor;
 		double input_used = 0.0;
 		double output = desired_output;
-		if (building.input_product >= 0) {
+		if (building.recipe >= 0) {
+			// Receita industrial (1..6 insumos, yield e subprodutos). A
+			// alternativa de menor custo corrente entre as disponíveis na
+			// cidade é escolhida a cada dia (determinístico; empate = primeira).
+			const int chosen = demo_pick_recipe(*city, building.output_product);
+			if (chosen >= 0) {
+				building.recipe = chosen;
+			}
+			const DemoRecipe& recipe =
+				demo_recipes_[static_cast<std::size_t>(building.recipe)];
+			const double batch = recipe.yield > 0.0
+				? desired_output / recipe.yield : 0.0;
+			double scale = 1.0;
+			for (int slot = 0; slot < recipe.input_count; ++slot) {
+				const int input = recipe.inputs[slot];
+				const double needed = recipe.input_qty[slot] * batch;
+				DemoMarket& input_market = city->markets[input];
+				input_market.desired += needed;
+				if (needed > 1e-12) {
+					scale = std::min(scale, input_market.stock / needed);
+				}
+			}
+			scale = std::clamp(scale, 0.0, 1.0);
+			for (int slot = 0; slot < recipe.input_count; ++slot) {
+				const int input = recipe.inputs[slot];
+				const double used = recipe.input_qty[slot] * batch * scale;
+				DemoMarket& input_market = city->markets[input];
+				input_market.stock = std::max(0.0, input_market.stock - used);
+				input_market.demand += used;
+				input_market.sold += used;
+				city->revenue_by_product[input] += used * input_market.price;
+				building.input_value += used * input_market.price;
+				input_used += used;
+			}
+			output = batch * scale * recipe.yield;
+			for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+				const int product = recipe.byproducts[slot];
+				const double amount = recipe.byproduct_qty[slot] * batch * scale;
+				if (amount <= 0.0) {
+					continue;
+				}
+				city->markets[product].stock += amount;
+				city->markets[product].supply += amount;
+				demo_produced_[product] += amount;
+				demo_produced_today_[product] += amount;
+			}
+		} else if (building.input_product >= 0) {
 			const double needed_input = desired_output * building.input_per_output;
 			DemoMarket& input_market = city->markets[building.input_product];
 			input_market.desired += needed_input;
@@ -2517,31 +3091,42 @@ void EconomySim::demo_tick_core() {
 		city->markets[building.output_product].supply += output;
 		building.utilization = building.capacity > 0.0
 			? output / building.capacity : 0.0;
+		building.last_utilization = building.utilization;
 		demo_produced_[building.output_product] += output;
 		demo_produced_today_[building.output_product] += output;
 	}
 
 	lap(kDemoPhaseProduction);
 
-	// 4c. Recursos brutos (minerais, soja, algodão e madeira): sem consumo local
-	// nem cadeia de refino nesta etapa. O ferro entra aqui (não há mais um caso
-	// especial 4c com 20 t/dia fixo): usa o mesmo teto data-driven dos demais.
-	// O resto do mundo compra ao preço do
-	// mercado até um TETO de demanda externa por cidade (external_demand),
-	// declarado pelo GeographyService como a participação da nação no mercado
-	// mundial (reserva esgotada em ~25 anos — o mesmo horizonte de
-	// max_rate_kt_day do deposits.json). Com o teto, a produção acima dele vira
-	// estoque e a fase 8 derruba o preço (escassez < 1) — é a "curva" de demanda
-	// limitada, que evita sobra absurda e não inventa consumo infinito. A
-	// extração continua limitada pela reserva (fase 4), então o esgotamento da
-	// jazida encerra a receita. Os alimentos da cesta (B3: trigo, arroz, milho,
-	// batata e soja) ficam FORA desta venda externa — são consumidos pelas
-	// famílias (fase 5) e negociados entre cidades (fase 6); vendê-los aqui
-	// deixava as cidades produtoras de arroz/milho sem nada para comer.
+	// 4c. Recursos brutos (minerais, soja, algodão e madeira): o resto do mundo
+	// compra ao preço do mercado até um TETO de demanda externa por cidade
+	// (external_demand), declarado pelo GeographyService como a participação da
+	// nação no mercado mundial (reserva esgotada em ~25 anos — o mesmo horizonte
+	// de max_rate_kt_day do deposits.json). Com o teto, a produção acima dele
+	// vira estoque e a fase 8 derruba o preço. §5.4: só é exportado o bem com
+	// `external_demand > 0` que NÃO é insumo de nenhuma construção ativa no
+	// mundo (regra explícita, no lugar do antigo filtro "não é comida").
+	std::vector<char> product_is_input(static_cast<std::size_t>(demo_products_), 0);
+	for (const DemoBuilding& building : demo_buildings_) {
+		if (building.recipe >= 0
+				&& building.recipe < static_cast<int>(demo_recipes_.size())) {
+			const DemoRecipe& recipe = demo_recipes_[static_cast<std::size_t>(building.recipe)];
+			for (int slot = 0; slot < recipe.input_count; ++slot) {
+				if (recipe.inputs[slot] >= 0 && recipe.inputs[slot] < demo_products_) {
+					product_is_input[static_cast<std::size_t>(recipe.inputs[slot])] = 1;
+				}
+			}
+		} else if (building.input_product >= 0 && building.input_product < demo_products_) {
+			product_is_input[static_cast<std::size_t>(building.input_product)] = 1;
+		}
+	}
 	for (DemoCity& city : demo_cities_) {
-		for (int product = kDemoFirstRawProduct; product < kDemoProducts; ++product) {
+		for (int product = kDemoFirstRawProduct; product < demo_products_; ++product) {
 			if (demo_food_calories(product) > 0.0) {
 				continue;
+			}
+			if (product_is_input[static_cast<std::size_t>(product)] != 0) {
+				continue;  // insumo de cadeia ativa: fica no mercado interno
 			}
 			const double ceiling = city.external_demand[product];
 			if (ceiling <= 0.0) {
@@ -2609,7 +3194,7 @@ void EconomySim::demo_tick_core() {
 		// (preço / fator calórico); com os preços-base, o trigo segue o mais
 		// barato. Sai do orçamento público — conserva o dinheiro.
 		double cheapest_food = 0.0;
-		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 			const int product = demo_food_product(slot);
 			const double factor = demo_food_calories(product);
 			if (factor <= 0.0) {
@@ -2640,14 +3225,14 @@ void EconomySim::demo_tick_core() {
 		double consumed = 0.0;      // toneladas-equivalentes de grão
 		double food_spend = 0.0;
 		double total_avail = 0.0;
-		double avail_ge[kDemoFoodProducts] = {};
-		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		std::vector<double> avail_ge(demo_food_products_.size(), 0.0);
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 			const int product = demo_food_product(slot);
 			avail_ge[slot] = city.markets[product].stock * demo_food_calories(product);
 			total_avail += avail_ge[slot];
 		}
 		double remaining_need = pop.need;
-		for (int slot = 0; slot < kDemoFoodProducts && remaining_need > 1e-12; ++slot) {
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()) && remaining_need > 1e-12; ++slot) {
 			const int product = demo_food_product(slot);
 			const double factor = demo_food_calories(product);
 			if (factor <= 0.0) {
@@ -2705,6 +3290,8 @@ void EconomySim::demo_tick_core() {
 	// déficit compram das que têm excedente, mais barato por caloria. Cobre tanto
 	// o cenário de validação (AGRIA/PORTUS) quanto o mundo real.
 	demo_trade_food();
+	// 6b. Comércio dos demais bens (insumos industriais), pela mesma malha.
+	demo_trade_goods();
 
 	lap(kDemoPhaseTrade);
 
@@ -2713,7 +3300,7 @@ void EconomySim::demo_tick_core() {
 		DemoCity& city = demo_cities_[city_index];
 		const std::vector<int>& local_buildings =
 			demo_buildings_by_city_[city_index];
-		double capacity_by_output[kDemoProducts] = {};
+		std::array<double, kDemoMaxProducts> capacity_by_output{};
 		for (const int bi : local_buildings) {
 			const DemoBuilding& building =
 				demo_buildings_[static_cast<std::size_t>(bi)];
@@ -2730,6 +3317,25 @@ void EconomySim::demo_tick_core() {
 			building.costs = building.paid_wages + building.paid_opex
 				+ building.input_value;
 			building.profit = building.revenue - building.costs;
+		}
+		// Planta estratégica (bootstrap industrial §12.3): enquanto a demanda
+		// final não existe (F3), o governo cobre o prejuízo da planta de
+		// referência em vez de deixá-la fechar. Transferência explícita
+		// governo -> firma: conserva o dinheiro e não maquia o resultado do
+		// setor (a perda continua visível em `profit` antes do subsídio).
+		for (const int bi : local_buildings) {
+			DemoBuilding& building =
+				demo_buildings_[static_cast<std::size_t>(bi)];
+			if (!building.strategic || building.profit >= 0.0) {
+				continue;
+			}
+			const double subsidy = std::min(-building.profit,
+				std::max(0.0, city.government_budget));
+			if (subsidy > 0.0) {
+				city.government_budget -= subsidy;
+				city.firm_cash += subsidy;
+				building.profit += subsidy;
+			}
 		}
 
 		// A receita de serviços inclui consumo das famílias, opex empresarial,
@@ -2783,15 +3389,20 @@ void EconomySim::demo_tick_core() {
 		for (const int bi : local_buildings) {
 			DemoBuilding& building =
 				demo_buildings_[static_cast<std::size_t>(bi)];
-			if (building.profit < 0.0) {
+			// Planta secundária ociosa não é insolvente: sem operação no dia,
+			// não acumula dias de prejuízo (o custo de stand-by já é pequeno).
+			const bool operating = building.recipe < 0 && building.input_product < 0
+				? true : building.utilization > 1e-9;
+			if (building.profit < 0.0 && operating) {
 				++building.loss_days;
 			} else {
 				building.loss_days = 0;
 			}
 			// Falência: prejuízo persistente além do corte fecha a firma. A
 			// regra é explícita — a construção some (capacidade e empregos), em
-			// vez de ficar produzindo no piso no vermelho para sempre.
-			if (building.loss_days >= kDemoLossDaysBeforeClose) {
+			// vez de ficar produzindo no piso no vermelho para sempre. Planta
+			// estratégica é mantida pelo governo (ver subsídio acima).
+			if (building.loss_days >= kDemoLossDaysBeforeClose && !building.strategic) {
 				building.bankrupt = true;
 			}
 			if (building.loss_days >= kDemoLossDaysBeforeCut) {
@@ -2808,7 +3419,7 @@ void EconomySim::demo_tick_core() {
 		// sustenta nem o salário de subsistência, sobra desemprego de verdade —
 		// não um piso artificial de 5% de vagas.
 		double cheapest_food = 0.0;
-		for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 			const int product = demo_food_product(slot);
 			const double factor = demo_food_calories(product);
 			if (factor <= 0.0) {
@@ -2851,16 +3462,16 @@ void EconomySim::demo_tick_core() {
 		DemoCity& city = demo_cities_[city_index];
 		const std::vector<int>& local_buildings =
 			demo_buildings_by_city_[city_index];
-		bool has_producer[kDemoProducts] = {};
+		std::vector<char> has_producer(static_cast<std::size_t>(demo_products_), 0);
 		for (const int bi : local_buildings) {
 			const DemoBuilding& building =
 				demo_buildings_[static_cast<std::size_t>(bi)];
 			if (building.output_product >= 0
-					&& building.output_product < kDemoProducts) {
+					&& building.output_product < demo_products_) {
 				has_producer[building.output_product] = true;
 			}
 		}
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			if (!has_producer[product]) {
 				// Sem produção local o preço vem da importação (trigo em Portus).
 				continue;
@@ -2886,14 +3497,29 @@ void EconomySim::demo_tick_core() {
 			const double unit_labor_opex = kind_capacity > 0.0
 				? kind_labor_opex / kind_capacity : 0.0;
 
-			// Piso de custo: insumo declarado pela receita + mão de obra/opex
-			// por unidade de capacidade.
+			// Piso de custo: insumos da receita + mão de obra/opex por unidade
+			// de capacidade. Receitas alternativas usam o custo dos insumos da
+			// receita escolhida (a de menor custo corrente na cidade).
 			double cost_floor = base;
 			for (const int bi : local_buildings) {
 				const DemoBuilding& building =
 					demo_buildings_[static_cast<std::size_t>(bi)];
-				if (building.output_product == product
-						&& building.input_product >= 0) {
+				if (building.output_product != product) {
+					continue;
+				}
+				if (building.recipe >= 0
+						&& building.recipe < static_cast<int>(demo_recipes_.size())) {
+					const DemoRecipe& recipe =
+						demo_recipes_[static_cast<std::size_t>(building.recipe)];
+					double input_cost = 0.0;
+					for (int slot = 0; slot < recipe.input_count; ++slot) {
+						input_cost += recipe.input_qty[slot] / recipe.yield
+							* city.markets[recipe.inputs[slot]].price;
+					}
+					cost_floor = input_cost + unit_labor_opex;
+					break;
+				}
+				if (building.input_product >= 0) {
 					cost_floor = city.markets[building.input_product].price
 						* building.input_per_output + unit_labor_opex;
 					break;
@@ -2912,7 +3538,7 @@ void EconomySim::demo_tick_core() {
 		}
 
 		// Registro de escassez e excesso para diagnóstico e visualização.
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			DemoMarket& market = city.markets[product];
 			market.shortage = std::max(0.0, market.desired - market.demand);
 			market.surplus = std::max(0.0, market.stock
@@ -2926,7 +3552,7 @@ void EconomySim::demo_tick_core() {
 	// de preço (importação, custo e escassez). O piso e o teto continuam
 	// valendo mesmo que o preço de abertura esteja fora da faixa.
 	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			DemoMarket& market = demo_cities_[city_index].markets[product];
 			const double base = demo_base_price(product);
 			const double step = base * 0.05;
@@ -3131,9 +3757,9 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.center[1] = city.center.y;
 		dict[k.center] = slot.center;
 
-		slot.suitability.resize(kDemoProducts);
-		slot.external_demand.resize(kDemoProducts);
-		for (int product = 0; product < kDemoProducts; ++product) {
+		slot.suitability.resize(demo_products_);
+		slot.external_demand.resize(demo_products_);
+		for (int product = 0; product < demo_products_; ++product) {
 			slot.suitability[product] = city.suitability[product];
 			slot.external_demand[product] = city.external_demand[product];
 		}
@@ -3168,7 +3794,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	// Padrão de vida: quantas cestas alimentares diárias a renda disponível
 	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
 	double cheapest_price = 0.0;
-	for (int food = 0; food < kDemoFoodProducts; ++food) {
+	for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
 		const int product = demo_food_product(food);
 		const double factor = demo_food_calories(product);
 		if (factor <= 0.0) {
@@ -3218,26 +3844,26 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	// mudam reserva restante, extraído e esgotado. Antes o dicionário inteiro
 	// era reconstruído a cada dia — custo que crescia com as cidades mineiras
 	// do cenário real (o mundo sintético do bench não tem depósito nenhum).
-	if (slot.deposit_entry.size() < kDemoProducts) {
-		slot.deposit_entry.resize(static_cast<std::size_t>(kDemoProducts));
-		slot.deposit_present.assign(static_cast<std::size_t>(kDemoProducts), 0);
-		slot.deposit_depleted.assign(static_cast<std::size_t>(kDemoProducts), 0);
-		slot.deposit_written.assign(static_cast<std::size_t>(kDemoProducts),
+	if (slot.deposit_entry.size() < demo_products_) {
+		slot.deposit_entry.resize(static_cast<std::size_t>(demo_products_));
+		slot.deposit_present.assign(static_cast<std::size_t>(demo_products_), 0);
+		slot.deposit_depleted.assign(static_cast<std::size_t>(demo_products_), 0);
+		slot.deposit_written.assign(static_cast<std::size_t>(demo_products_),
 			DemoDeposit{});
 		slot.deposit_key.clear();
-		slot.deposit_key.reserve(static_cast<std::size_t>(kDemoProducts));
-		for (int product = 0; product < kDemoProducts; ++product) {
-			slot.deposit_key.emplace_back(kDemoProductNames[product]);
+		slot.deposit_key.reserve(static_cast<std::size_t>(demo_products_));
+		for (int product = 0; product < demo_products_; ++product) {
+			slot.deposit_key.emplace_back(demo_product_name(product));
 		}
 	}
 	// Jazida descoberta depois do primeiro dia (a IA chama `demo_set_deposit`
 	// ao revelar/conquistar) sobe a versão estática: o bloco de reserva precisa
 	// ser reescrito, senão o status mostraria a jazida antiga para sempre.
 	if (slot.deposit_static_version != demo_status_static_version_) {
-		slot.deposit_present.assign(static_cast<std::size_t>(kDemoProducts), 0);
+		slot.deposit_present.assign(static_cast<std::size_t>(demo_products_), 0);
 		slot.deposit_static_version = demo_status_static_version_;
 	}
-	for (int product = 0; product < kDemoProducts; ++product) {
+	for (int product = 0; product < demo_products_; ++product) {
 		const DemoDeposit& deposit = city.deposits[product];
 		if (!deposit.tracked) {
 			continue;
@@ -3288,9 +3914,9 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	pop[k.need] = city.pop.need;
 	pop[k.satisfaction] = city.pop.satisfaction;
 	pop[k.savings] = city.pop.savings;
-	slot.desired_by_category.resize(kDemoFoodProducts);
-	slot.consumed_by_category.resize(kDemoFoodProducts);
-	for (int food = 0; food < kDemoFoodProducts; ++food) {
+	slot.desired_by_category.resize(demo_food_products_.size());
+	slot.consumed_by_category.resize(demo_food_products_.size());
+	for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
 		slot.desired_by_category[food] = city.pop.desired_by_category[food];
 		slot.consumed_by_category[food] = city.pop.consumed_by_category[food];
 	}
@@ -3298,20 +3924,20 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	pop[k.consumed_by_category] = slot.consumed_by_category;
 	dict[k.pop] = pop;
 
-	slot.markets.resize(kDemoProducts);
-	if (slot.market_entry.size() < kDemoProducts) {
-		slot.market_entry.resize(static_cast<std::size_t>(kDemoProducts));
-		slot.market_written.resize(static_cast<std::size_t>(kDemoProducts));
-		slot.market_written_filled.assign(static_cast<std::size_t>(kDemoProducts), 0);
-		slot.io_written.assign(static_cast<std::size_t>(4 * kDemoProducts), 0.0);
+	slot.markets.resize(demo_products_);
+	if (slot.market_entry.size() < demo_products_) {
+		slot.market_entry.resize(static_cast<std::size_t>(demo_products_));
+		slot.market_written.resize(static_cast<std::size_t>(demo_products_));
+		slot.market_written_filled.assign(static_cast<std::size_t>(demo_products_), 0);
+		slot.io_written.assign(static_cast<std::size_t>(4 * demo_products_), 0.0);
 		slot.io_filled.assign(4, 0);
 	}
-	for (int product = 0; product < kDemoProducts; ++product) {
+	for (int product = 0; product < demo_products_; ++product) {
 		const DemoMarket& source = city.markets[product];
-		Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
 		DemoMarket& previous = slot.market_written[static_cast<std::size_t>(product)];
 		if (slot.market_written_filled[static_cast<std::size_t>(product)] == 0) {
 			// Primeira gravação desta cidade: cria as chaves do mercado.
+			Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
 			market[k.product] = product;
 			market[k.stock] = source.stock;
 			market[k.price] = source.price;
@@ -3326,8 +3952,13 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			slot.markets[product] = market;
 			continue;
 		}
-		// Depois disso o Dictionary é mutado no lugar: só valores diferentes do
-		// último status publicado pagam o custo de hash.
+		// Caminho comum (mercado inteiro igual ao dia anterior): um memcmp de
+		// 64 bytes e NENHUM acesso ao Dictionary. Com 114 bens × 834 cidades,
+		// tocar o dicionário em todo produto custava ~11 ms por dia.
+		if (std::memcmp(&previous, &source, sizeof(DemoMarket)) == 0) {
+			continue;
+		}
+		Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
 		if (previous.stock != source.stock) {
 			market[k.stock] = source.stock;
 			previous.stock = source.stock;
@@ -3363,13 +3994,14 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	}
 	dict[k.markets] = slot.markets;
 
-	slot.imported.resize(kDemoProducts);
-	slot.exported.resize(kDemoProducts);
-	slot.import_value.resize(kDemoProducts);
-	slot.export_value.resize(kDemoProducts);
+	slot.imported.resize(demo_products_);
+	slot.exported.resize(demo_products_);
+	slot.import_value.resize(demo_products_);
+	slot.export_value.resize(demo_products_);
 	{
-		// Quatro arrays de fluxo, cada um com 21 produtos: idem mercados, só
-		// produtos com comércio mudam (o resto fica em 0 dia após dia).
+		// Quatro arrays de fluxo, um por produto (demo_products_): idem
+		// mercados, só produtos com comércio mudam (o resto fica em 0 dia após
+		// dia) e a linha inteira é comparada com um memcmp antes do hash.
 		const double* source_values[4] = {
 			city.imported, city.exported, city.import_value, city.export_value};
 		Array* targets[4] = {
@@ -3378,9 +4010,14 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		for (int array_index = 0; array_index < 4; ++array_index) {
 			Array& target = *targets[array_index];
 			double* previous = &slot.io_written[static_cast<std::size_t>(
-				array_index * kDemoProducts)];
+				array_index * demo_products_)];
 			const bool first = slot.io_filled[static_cast<std::size_t>(array_index)] == 0;
-			for (int product = 0; product < kDemoProducts; ++product) {
+			// Linha inteira igual ao status anterior: nenhum hash a pagar.
+			if (!first && std::memcmp(previous, source_values[array_index],
+					sizeof(double) * static_cast<std::size_t>(demo_products_)) == 0) {
+				continue;
+			}
+			for (int product = 0; product < demo_products_; ++product) {
 				const double value = source_values[array_index][product];
 				if (first || previous[product] != value) {
 					target[product] = value;
@@ -3412,6 +4049,38 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		entry[k.owner] = String(building.owner.c_str());
 		entry[k.input_product] = building.input_product;
 		entry[k.output_product] = building.output_product;
+		if (building.recipe >= 0
+				&& building.recipe < static_cast<int>(demo_recipes_.size())) {
+			const DemoRecipe& recipe =
+				demo_recipes_[static_cast<std::size_t>(building.recipe)];
+			entry["recipe"] = String(recipe.id.c_str());
+			Array inputs;
+			Array byproducts;
+			inputs.resize(recipe.input_count);
+			byproducts.resize(recipe.byproduct_count);
+			for (int slot = 0; slot < recipe.input_count; ++slot) {
+				Dictionary input;
+				input["good"] = String(demo_product_name(recipe.inputs[slot]));
+				input["qty"] = recipe.input_qty[slot];
+				inputs[slot] = input;
+			}
+			for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+				Dictionary byproduct;
+				byproduct["good"] = String(demo_product_name(recipe.byproducts[slot]));
+				byproduct["qty"] = recipe.byproduct_qty[slot];
+				byproducts[slot] = byproduct;
+			}
+			entry["inputs"] = inputs;
+			entry["byproducts"] = byproducts;
+			entry["yield"] = recipe.yield;
+		} else {
+			entry["recipe"] = "";
+			entry["inputs"] = Array();
+			entry["byproducts"] = Array();
+		}
+		entry["capital_per_capacity"] = building.capital_per_capacity;
+		entry["last_utilization"] = building.last_utilization;
+		entry["strategic"] = building.strategic;
 		entry[k.capacity] = building.capacity;
 		entry[k.jobs] = building.jobs;
 		entry[k.wage] = building.wage;
@@ -3469,14 +4138,14 @@ Dictionary EconomySim::get_demo_status() {
 	// Cabeçalho: os contêineres são pendurados no dicionário UMA vez; a partir
 	// daí só são redimensionados/reescritos no lugar.
 	if (!cache.header_filled) {
-		cache.products.resize(kDemoProducts);
-		for (int index = 0; index < kDemoProducts; ++index) {
-			cache.products[index] = String(kDemoProductNames[index]);
+		cache.products.resize(demo_products_);
+		for (int index = 0; index < demo_products_; ++index) {
+			cache.products[index] = String(demo_product_name(index));
 		}
-		cache.tot_produced.resize(kDemoProducts);
-		cache.tot_consumed.resize(kDemoProducts);
-		cache.tot_produced_today.resize(kDemoProducts);
-		cache.tot_consumed_today.resize(kDemoProducts);
+		cache.tot_produced.resize(demo_products_);
+		cache.tot_consumed.resize(demo_products_);
+		cache.tot_produced_today.resize(demo_products_);
+		cache.tot_consumed_today.resize(demo_products_);
 		root[k.capital_cost_per_capacity] = kDemoCapitalPerCapacity;
 		root[k.products] = cache.products;
 		root[k.cities] = cache.cities;
@@ -3512,10 +4181,10 @@ Dictionary EconomySim::get_demo_status() {
 	// Totais do sistema por produto — a mesma soma que a IA fazia em GDScript
 	// sobre `cities[]` (858 cidades × 21 mercados, ~13 ms no frame da virada).
 	// Aqui é uma passada de doubles na memória do núcleo, na thread do tick.
-	cache.tot_surplus.resize(kDemoProducts);
-	cache.tot_sold.resize(kDemoProducts);
-	cache.tot_demand.resize(kDemoProducts);
-	for (int product = 0; product < kDemoProducts; ++product) {
+	cache.tot_surplus.resize(demo_products_);
+	cache.tot_sold.resize(demo_products_);
+	cache.tot_demand.resize(demo_products_);
+	for (int product = 0; product < demo_products_; ++product) {
 		cache.tot_surplus[product] = 0.0;
 		cache.tot_sold[product] = 0.0;
 		cache.tot_demand[product] = 0.0;
@@ -3523,7 +4192,7 @@ Dictionary EconomySim::get_demo_status() {
 	// Soma só os valores positivos, na ordem das cidades: idêntico (bit a bit)
 	// ao laço que o `PrivateInvestor.prepare_totals` fazia.
 	for (const DemoCity& city : demo_cities_) {
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			const DemoMarket& market = city.markets[product];
 			if (market.surplus > 0.0) {
 				cache.tot_surplus[product] += market.surplus;
@@ -3591,7 +4260,8 @@ Dictionary EconomySim::get_demo_status() {
 		dict[k.from_nation] = String(order.from_nation.c_str());
 		dict[k.to_nation] = String(order.to_nation.c_str());
 		dict[k.scope] = String(scope_name(order.scope));
-		dict[k.good] = "wheat";
+		dict[k.good] = order.product >= 0 && order.product < demo_products_
+			? String(demo_product_name(order.product)) : String("wheat");
 		dict[k.amount] = order.amount;
 		dict[k.transit_hours] = order.transit_hours;
 		dict[k.freight_cost] = order.freight_cost;
@@ -3681,7 +4351,7 @@ Dictionary EconomySim::get_demo_status() {
 		cache.nations[index] = nation;
 	}
 
-	for (int index = 0; index < kDemoProducts; ++index) {
+	for (int index = 0; index < demo_products_; ++index) {
 		cache.tot_produced[index] = demo_produced_[index];
 		cache.tot_consumed[index] = demo_consumed_total_[index];
 		cache.tot_produced_today[index] = demo_produced_today_[index];
@@ -3709,33 +4379,299 @@ void EconomySim::demo_price_shock(const String& product, double multiplier) {
 	demo_status_invalidate();
 }
 
-int EconomySim::demo_product_index(const String& product) {
-	for (int index = 0; index < kDemoProducts; ++index) {
-		if (product == kDemoProductNames[index]) {
-			return index;
-		}
+int EconomySim::demo_product_index(const String& product) const {
+	const auto found = demo_product_lookup_.find(std::string(product.utf8().get_data()));
+	if (found == demo_product_lookup_.end()) {
+		return -1;
 	}
-	return -1;
+	return found->second;
 }
 
-int EconomySim::demo_food_product(int slot) {
-	return (slot >= 0 && slot < kDemoFoodProducts) ? kDemoFoodProductIds[slot] : -1;
+int EconomySim::demo_food_product(int slot) const {
+	return (slot >= 0 && slot < static_cast<int>(demo_food_products_.size()))
+		? demo_food_products_[static_cast<std::size_t>(slot)] : -1;
 }
 
-double EconomySim::demo_food_calories(int product) {
-	for (int slot = 0; slot < kDemoFoodProducts; ++slot) {
-		if (kDemoFoodProductIds[slot] == product) {
-			return kDemoCaloricFactor[slot];
+double EconomySim::demo_food_calories(int product) const {
+	for (std::size_t slot = 0; slot < demo_food_products_.size(); ++slot) {
+		if (demo_food_products_[slot] == product) {
+			return demo_food_factors_[slot];
 		}
 	}
 	return 0.0;
 }
 
-const char* EconomySim::demo_product_name(int product) {
-	if (product >= 0 && product < kDemoProducts) {
-		return kDemoProductNames[product];
+const char* EconomySim::demo_product_name(int product) const {
+	if (product >= 0 && product < demo_products_
+			&& product < static_cast<int>(demo_product_names_.size())) {
+		return demo_product_names_[static_cast<std::size_t>(product)].c_str();
 	}
-	return kDemoProductNames[0];
+	return "";
+}
+
+int EconomySim::demo_recipe_index(const String& recipe_id) const {
+	const auto found = demo_recipe_lookup_.find(std::string(recipe_id.utf8().get_data()));
+	if (found == demo_recipe_lookup_.end()) {
+		return -1;
+	}
+	return found->second;
+}
+
+int EconomySim::demo_pick_recipe(const DemoCity& city, int output_product) const {
+	int best = -1;
+	double best_cost = 0.0;
+	for (std::size_t index = 0; index < demo_recipes_.size(); ++index) {
+		const DemoRecipe& recipe = demo_recipes_[index];
+		if (recipe.output != output_product || recipe.input_count <= 0
+				|| recipe.yield <= 0.0) {
+			continue;
+		}
+		bool available = true;
+		double cost = 0.0;
+		for (int slot = 0; slot < recipe.input_count; ++slot) {
+			const int input = recipe.inputs[slot];
+			const double qty = recipe.input_qty[slot];
+			if (input < 0 || input >= demo_products_ || qty <= 0.0) {
+				available = false;
+				break;
+			}
+			const DemoMarket& market = city.markets[input];
+			// Insumo só conta como disponível quando há estoque físico: uma
+			// receita sem insumo produziria zero e venceria a comparação de custo.
+			if (market.stock <= 1e-9) {
+				available = false;
+				break;
+			}
+			const double unit_price = market.price > 0.0
+				? market.price : demo_base_price(input);
+			cost += qty * unit_price / recipe.yield;
+		}
+		if (!available) {
+			continue;
+		}
+		if (best < 0 || cost < best_cost) {
+			best = static_cast<int>(index);
+			best_cost = cost;
+		}
+	}
+	return best;
+}
+
+void EconomySim::demo_set_recipes(const Array& recipes) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	demo_recipes_.clear();
+	demo_recipe_lookup_.clear();
+	demo_recipes_.reserve(static_cast<std::size_t>(recipes.size()));
+	for (int index = 0; index < recipes.size(); ++index) {
+		const Dictionary entry = recipes[index];
+		const String output_id = String(entry.get("output", ""));
+		const int output = demo_product_index(output_id);
+		if (output < 0) {
+			continue;  // receita de bem que não existe no goods.json carregado
+		}
+		DemoRecipe recipe;
+		recipe.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		recipe.output = output;
+		recipe.yield = std::max(1e-9, safe_nonneg(
+			static_cast<double>(entry.get("yield", 1.0))));
+		recipe.capital_per_capacity = std::max(1.0, safe_nonneg(
+			static_cast<double>(entry.get("capital_per_capacity", 2000.0))));
+		recipe.jobs_per_ton = safe_nonneg(
+			static_cast<double>(entry.get("jobs_per_ton", 7.5)));
+		recipe.wage = safe_nonneg(static_cast<double>(entry.get("wage", 2.0)));
+		recipe.opex_per_ton = safe_nonneg(
+			static_cast<double>(entry.get("opex_per_ton", 2.5)));
+		Array inputs = entry.get("inputs", Array());
+		for (int slot = 0; slot < inputs.size() && slot < kDemoMaxRecipeInputs; ++slot) {
+			const Dictionary input = inputs[slot];
+			const int product = demo_product_index(String(input.get("good", "")));
+			const double qty = safe_nonneg(static_cast<double>(input.get("qty", 1.0)));
+			if (product < 0 || qty <= 0.0) {
+				continue;
+			}
+			recipe.inputs[recipe.input_count] = product;
+			recipe.input_qty[recipe.input_count] = qty;
+			++recipe.input_count;
+		}
+		if (recipe.input_count <= 0) {
+			continue;
+		}
+		Array byproducts = entry.get("byproducts", Array());
+		for (int slot = 0; slot < byproducts.size() && slot < kDemoMaxRecipeInputs; ++slot) {
+			const Dictionary item = byproducts[slot];
+			const int product = demo_product_index(String(item.get("good", "")));
+			const double qty = safe_nonneg(static_cast<double>(item.get("qty", 1.0)));
+			if (product < 0 || qty <= 0.0) {
+				continue;
+			}
+			recipe.byproducts[recipe.byproduct_count] = product;
+			recipe.byproduct_qty[recipe.byproduct_count] = qty;
+			++recipe.byproduct_count;
+		}
+		demo_recipe_lookup_[recipe.id] = static_cast<int>(demo_recipes_.size());
+		demo_recipes_.push_back(recipe);
+	}
+}
+
+void EconomySim::demo_seed_industry() {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	if (!demo_world_mode_ || demo_industry_seeded_ || demo_recipes_.empty()
+			|| demo_cities_.empty()) {
+		return;
+	}
+	for (const DemoBuilding& building : demo_buildings_) {
+		if (building.recipe >= 0 || building.input_product >= 0) {
+			demo_industry_seeded_ = true;  // o mundo já tem indústria
+			return;
+		}
+	}
+	const int flour_product = demo_product_index(String("flour"));
+	const int bread_product = demo_product_index(String("bread"));
+	int flour_recipe = -1;
+	int bread_recipe = -1;
+	for (std::size_t index = 0; index < demo_recipes_.size(); ++index) {
+		if (demo_recipes_[index].output == flour_product && flour_recipe < 0) {
+			flour_recipe = static_cast<int>(index);
+		}
+		if (demo_recipes_[index].output == bread_product && bread_recipe < 0) {
+			bread_recipe = static_cast<int>(index);
+		}
+	}
+	if (flour_recipe < 0) {
+		return;  // recipes.json ainda não carregou
+	}
+	// Maiores cidades (capitais/megacidades) por população de simulação.
+	std::vector<int> order(demo_cities_.size());
+	for (std::size_t index = 0; index < order.size(); ++index) {
+		order[index] = static_cast<int>(index);
+	}
+	std::stable_sort(order.begin(), order.end(), [this](int left, int right) {
+		return demo_cities_[static_cast<std::size_t>(left)].simulation_population
+			> demo_cities_[static_cast<std::size_t>(right)].simulation_population;
+	});
+	const int seed_cities = std::min<int>(6, static_cast<int>(order.size()));
+	int created = 0;
+	for (int slot = 0; slot < seed_cities; ++slot) {
+		DemoCity& city = demo_cities_[static_cast<std::size_t>(order[slot])];
+		// Capacidade de referência = 5% da necessidade alimentar diária da
+		// cidade, em toneladas de farinha/pão. É uma ESTIMATIVA de transição
+		// (§12.3), não um dado observado; calibrada no laboratório em F3.
+		const double capacity = std::clamp(
+			city.simulation_population * kDemoNeedPerCapita * 0.05, 2.0, 20.0);
+		const DemoRecipe& flour = demo_recipes_[static_cast<std::size_t>(flour_recipe)];
+		const double cost = capacity * flour.capital_per_capacity;
+		if (city.firm_cash + city.government_budget < cost * 2.0) {
+			continue;
+		}
+		const String city_id(city.id.c_str());
+		const String mill_id(("SEED-FLOUR-" + city.id).c_str());
+		Dictionary mill = demo_build(city_id, mill_id, "flour", -1, flour_product,
+			capacity, 0.0, 0.0, 0.0, 1.0, "state", cost, String(flour.id.c_str()));
+		if (!bool(mill.get("created", false))) {
+			continue;
+		}
+		if (DemoBuilding* built = find_demo_building(city.id,
+				std::string(mill_id.utf8().get_data()))) {
+			built->strategic = true;
+		}
+		++created;
+		if (bread_recipe >= 0) {
+			const DemoRecipe& bread =
+				demo_recipes_[static_cast<std::size_t>(bread_recipe)];
+			const double bread_capacity = capacity * 0.8;
+			const double bread_cost = bread_capacity * bread.capital_per_capacity;
+			const String bakery_id(("SEED-BREAD-" + city.id).c_str());
+			Dictionary bakery = demo_build(city_id, bakery_id, "bread", -1,
+				bread_product, bread_capacity, 0.0, 0.0, 0.0, 1.0, "state",
+				bread_cost, String(bread.id.c_str()));
+			if (bool(bakery.get("created", false))) {
+				if (DemoBuilding* built = find_demo_building(city.id,
+						std::string(bakery_id.utf8().get_data()))) {
+					built->strategic = true;
+				}
+				++created;
+			}
+		}
+	}
+	demo_industry_seeded_ = true;
+	if (created > 0) {
+		UtilityFunctions::print(String(("economia: bootstrap industrial (estimativa) — "
+			+ std::to_string(created) + " plantas de referência semeadas").c_str()));
+	}
+}
+
+void EconomySim::demo_set_needs(const Dictionary& needs) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	// Cesta alimentar a partir do nível básico de needs.json. Só a categoria
+	// `food` tem âncora física no núcleo hoje (kDemoNeedPerCapita); as demais
+	// categorias ficam para F3.
+	const Dictionary levels = needs.get("levels", Dictionary());
+	const Dictionary basic = levels.get("basic", Dictionary());
+	const Dictionary categories = basic.get("categories", Dictionary());
+	const Dictionary food = categories.get("food", Dictionary());
+	const Array substitutes = food.get("substitutes", Array());
+	if (substitutes.is_empty()) {
+		return;  // mantém a cesta validada (5 culturas)
+	}
+	const Dictionary equivalence = needs.get("equivalence", Dictionary());
+	const Dictionary calories = equivalence.get("calories", Dictionary());
+	std::vector<int> products;
+	std::vector<double> factors;
+	for (int index = 0; index < substitutes.size()
+			&& static_cast<int>(products.size()) < kDemoMaxFoodProducts; ++index) {
+		const String id = String(substitutes[index]);
+		const int product = demo_product_index(id);
+		if (product < 0) {
+			continue;
+		}
+		double factor = 1.0;
+		if (calories.has(id)) {
+			factor = static_cast<double>(calories[id]);
+		}
+		factor = std::clamp(factor, 0.05, 4.0);
+		// Mantém a ordem data-driven, mas garante os 5 grãos validados no
+		// início quando estão entre os substitutos (a ordem de consumo importa
+		// sob orçamento apertado: os mais baratos/legados primeiro).
+		products.push_back(product);
+		factors.push_back(factor);
+	}
+	if (products.size() < 2) {
+		return;
+	}
+	// Ordem de consumo: os 5 grãos/raízes validados primeiro (a ordem importa
+	// sob orçamento apertado e no fallback "sem estoque"); os processados
+	// (bread/meat/canned_food/bagged_rice) entram depois.
+	static const char* const kLegacyFood[] = {
+		"wheat", "rice", "maize", "potato", "soy"};
+	std::vector<int> ordered_products;
+	std::vector<double> ordered_factors;
+	for (const char* legacy : kLegacyFood) {
+		const int index = demo_product_index(String(legacy));
+		for (std::size_t slot = 0; slot < products.size(); ++slot) {
+			if (products[slot] == index) {
+				ordered_products.push_back(products[slot]);
+				ordered_factors.push_back(factors[slot]);
+				break;
+			}
+		}
+	}
+	for (std::size_t slot = 0; slot < products.size(); ++slot) {
+		bool duplicate = false;
+		for (const int existing : ordered_products) {
+			if (existing == products[slot]) {
+				duplicate = true;
+				break;
+			}
+		}
+		if (!duplicate) {
+			ordered_products.push_back(products[slot]);
+			ordered_factors.push_back(factors[slot]);
+		}
+	}
+	demo_food_products_ = std::move(ordered_products);
+	demo_food_factors_ = std::move(ordered_factors);
+	++demo_status_static_version_;
+	demo_status_invalidate();
 }
 
 EconomySim::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
@@ -3884,7 +4820,7 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 		}
 	}
 
-	const double capacity_added = amount / kDemoCapitalPerCapacity;
+	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
 	city->firm_cash -= amount;
 	// A expansão é construída por serviços domésticos: o dinheiro vira
 	// receita de construção (contada no PIB do próximo tick) e não desaparece
@@ -3901,7 +4837,8 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 Dictionary EconomySim::demo_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
-		double input_per_output, const String& owner, double cost) {
+		double input_per_output, const String& owner, double cost,
+		const String& recipe_id) {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	Dictionary result;
 	result["created"] = false;
@@ -3923,24 +4860,50 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		result["error"] = "construção já existe";
 		return result;
 	}
-	if (output_product < 0 || output_product >= kDemoProducts) {
+	if (output_product < 0 || output_product >= demo_products_) {
 		result["error"] = "produto inválido";
 		return result;
 	}
-	if (input_product < -1 || input_product >= kDemoProducts) {
+	if (input_product < -1 || input_product >= demo_products_) {
 		result["error"] = "insumo inválido";
 		return result;
+	}
+	int recipe = -1;
+	if (!recipe_id.is_empty()) {
+		recipe = demo_recipe_index(recipe_id);
+		if (recipe < 0) {
+			result["error"] = "receita desconhecida";
+			return result;
+		}
+		const DemoRecipe& chosen = demo_recipes_[static_cast<std::size_t>(recipe)];
+		if (chosen.output != output_product) {
+			result["error"] = "receita não produz o bem";
+			return result;
+		}
+		// O primeiro insumo da receita alimenta os campos legados de exibição
+		// (input_product/input_per_output); a fase 4 usa a receita completa.
+		input_product = chosen.inputs[0];
+		input_per_output = chosen.input_qty[0] / chosen.yield;
+		if (jobs <= 0.0) {
+			jobs = capacity * chosen.jobs_per_ton;
+		}
+		if (wage <= 0.0) {
+			wage = chosen.wage;
+		}
+		if (opex <= 0.0) {
+			opex = capacity * chosen.opex_per_ton;
+		}
 	}
 	if (capacity <= 0.0 || jobs < 0.0 || wage < 0.0 || opex < 0.0 || cost < 0.0) {
 		result["error"] = "parâmetros inválidos";
 		return result;
 	}
-	if (input_product < 0
+	if (recipe < 0 && input_product < 0
 			&& city->suitability[output_product] <= 0.0) {
 		result["error"] = "sem aptidão territorial";
 		return result;
 	}
-	if (input_product < 0) {
+	if (recipe < 0 && input_product < 0) {
 		const DemoDeposit& deposit = city->deposits[output_product];
 		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
 			result["error"] = "reserva esgotada";
@@ -3970,11 +4933,20 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	building.owner = state_owned ? "state" : "private";
 	building.input_product = input_product;
 	building.output_product = output_product;
+	building.recipe = recipe;
 	building.capacity = capacity;
 	building.input_per_output = input_per_output;
+	building.capital_per_capacity = capacity > 0.0
+		? std::max(1.0, cost / capacity) : kDemoCapitalPerCapacity;
 	building.jobs = jobs;
 	building.wage = wage;
 	building.opex = opex;
+	// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
+	// produção/oferta no primeiro dia e deixa a curva de preço reagir.
+	if (recipe >= 0 || input_product >= 0) {
+		building.output_scale = 0.25;
+		building.last_utilization = 0.25;
+	}
 	demo_buildings_.push_back(building);
 
 	// O investimento é pago ao setor de construção doméstico e entra no PIB
@@ -4015,9 +4987,17 @@ Dictionary EconomySim::demo_to_dict() const {
 	data["foreign_cash"] = demo_foreign_cash_;
 	data["construction_cash"] = demo_construction_cash_;
 
+	// Lista canônica de produtos (id na posição do índice). O contrato é por
+	// `order`; os 21 primeiros são os mesmos do save v3.
+	Array product_names;
+	for (int index = 0; index < demo_products_; ++index) {
+		product_names.append(String(demo_product_name(index)));
+	}
+	data["products"] = product_names;
+
 	Array produced;
 	Array consumed;
-	for (int index = 0; index < kDemoProducts; ++index) {
+	for (int index = 0; index < demo_products_; ++index) {
 		produced.append(demo_produced_[index]);
 		consumed.append(demo_consumed_total_[index]);
 	}
@@ -4061,7 +5041,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		Array import_value;
 		Array export_value;
 		Array external_demand;
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			suitability.append(city.suitability[product]);
 			revenue.append(city.revenue_by_product[product]);
 			imported.append(city.imported[product]);
@@ -4080,7 +5060,7 @@ Dictionary EconomySim::demo_to_dict() const {
 
 		// Reservas minerais (só jazidas declaradas): o saldo restante persiste.
 		Dictionary deposits;
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			const DemoDeposit& deposit = city.deposits[product];
 			if (!deposit.tracked) {
 				continue;
@@ -4091,7 +5071,7 @@ Dictionary EconomySim::demo_to_dict() const {
 			deposit_entry["extracted_kt"] = deposit.extracted_kt;
 			deposit_entry["quality"] = deposit.quality;
 			deposit_entry["depth_m"] = deposit.depth_m;
-			deposits[String(kDemoProductNames[product])] = deposit_entry;
+			deposits[String(demo_product_name(product))] = deposit_entry;
 		}
 		entry["deposits"] = deposits;
 
@@ -4115,7 +5095,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		pop["savings"] = city.pop.savings;
 		Array desired_by_category;
 		Array consumed_by_category;
-		for (int product = 0; product < kDemoFoodProducts; ++product) {
+		for (int product = 0; product < static_cast<int>(demo_food_products_.size()); ++product) {
 			desired_by_category.append(city.pop.desired_by_category[product]);
 			consumed_by_category.append(city.pop.consumed_by_category[product]);
 		}
@@ -4124,7 +5104,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["pop"] = pop;
 
 		Array markets;
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			Dictionary market;
 			market["stock"] = city.markets[product].stock;
 			market["price"] = city.markets[product].price;
@@ -4152,12 +5132,19 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["owner"] = String(building.owner.c_str());
 		entry["input_product"] = building.input_product;
 		entry["output_product"] = building.output_product;
+		entry["recipe"] = building.recipe >= 0
+			&& building.recipe < static_cast<int>(demo_recipes_.size())
+			? String(demo_recipes_[static_cast<std::size_t>(building.recipe)].id.c_str())
+			: String("");
 		entry["capacity"] = building.capacity;
 		entry["input_per_output"] = building.input_per_output;
+		entry["capital_per_capacity"] = building.capital_per_capacity;
 		entry["jobs"] = building.jobs;
 		entry["wage"] = building.wage;
 		entry["opex"] = building.opex;
 		entry["output_scale"] = building.output_scale;
+		entry["last_utilization"] = building.last_utilization;
+		entry["strategic"] = building.strategic;
 		entry["loss_days"] = building.loss_days;
 		buildings.append(entry);
 	}
@@ -4226,10 +5213,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 	Array produced = data.get("produced_total", Array());
 	Array consumed = data.get("consumed_total", Array());
 	if (needs_migration) {
-		produced = demo_migrate_product_array(produced, kDemoProducts);
-		consumed = demo_migrate_product_array(consumed, kDemoProducts);
+		produced = demo_migrate_product_array(produced, demo_products_);
+		consumed = demo_migrate_product_array(consumed, demo_products_);
 	}
-	for (int index = 0; index < kDemoProducts; ++index) {
+	for (int index = 0; index < demo_products_; ++index) {
 		demo_produced_[index] = index < produced.size() ? double(produced[index]) : 0.0;
 		demo_consumed_total_[index] =
 			index < consumed.size() ? double(consumed[index]) : 0.0;
@@ -4284,15 +5271,15 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		Array export_value = entry.get("export_value", Array());
 		Array external_demand = entry.get("external_demand", Array());
 		if (needs_migration) {
-			suitability = demo_migrate_product_array(suitability, kDemoProducts);
-			revenue = demo_migrate_product_array(revenue, kDemoProducts);
-			imported = demo_migrate_product_array(imported, kDemoProducts);
-			exported = demo_migrate_product_array(exported, kDemoProducts);
-			import_value = demo_migrate_product_array(import_value, kDemoProducts);
-			export_value = demo_migrate_product_array(export_value, kDemoProducts);
-			external_demand = demo_migrate_product_array(external_demand, kDemoProducts);
+			suitability = demo_migrate_product_array(suitability, demo_products_);
+			revenue = demo_migrate_product_array(revenue, demo_products_);
+			imported = demo_migrate_product_array(imported, demo_products_);
+			exported = demo_migrate_product_array(exported, demo_products_);
+			import_value = demo_migrate_product_array(import_value, demo_products_);
+			export_value = demo_migrate_product_array(export_value, demo_products_);
+			external_demand = demo_migrate_product_array(external_demand, demo_products_);
 		}
-		for (int product = 0; product < kDemoProducts; ++product) {
+		for (int product = 0; product < demo_products_; ++product) {
 			city.suitability[product] = product < suitability.size()
 				? double(suitability[product]) : (product >= 1 ? 0.0 : 1.0);
 			city.revenue_by_product[product] = product < revenue.size()
@@ -4310,8 +5297,8 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 
 		Dictionary saved_deposits = entry.get("deposits", Dictionary());
-		for (int product = 0; product < kDemoProducts; ++product) {
-			const String key = String(kDemoProductNames[product]);
+		for (int product = 0; product < demo_products_; ++product) {
+			const String key = String(demo_product_name(product));
 			if (!saved_deposits.has(key)) {
 				continue;
 			}
@@ -4345,7 +5332,9 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		city.pop.savings = double(pop.get("savings", 0.0));
 		Array desired_by_category = pop.get("desired_by_category", Array());
 		Array consumed_by_category = pop.get("consumed_by_category", Array());
-		for (int product = 0; product < kDemoFoodProducts; ++product) {
+		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
+		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
+		for (int product = 0; product < static_cast<int>(demo_food_products_.size()); ++product) {
 			city.pop.desired_by_category[product] =
 				product < desired_by_category.size()
 					? double(desired_by_category[product]) : 0.0;
@@ -4360,8 +5349,8 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			// deslocados -2). Mercados sem correspondência no layout antigo
 			// recebem o preço-base.
 			Array remapped;
-			remapped.resize(kDemoProducts);
-			for (int new_index = 0; new_index < kDemoProducts; ++new_index) {
+			remapped.resize(demo_products_);
+			for (int new_index = 0; new_index < demo_products_; ++new_index) {
 				const int old_index = (new_index == 0) ? 0 : (new_index + 2);
 				if (old_index >= 0 && old_index < markets.size()) {
 					remapped[new_index] = markets[old_index];
@@ -4382,12 +5371,12 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			markets = remapped;
 		}
 		// Saves antigos (4 produtos) não trazem mercados dos novos bens: preço-base.
-		for (int product = markets.size(); product < kDemoProducts; ++product) {
+		for (int product = markets.size(); product < demo_products_; ++product) {
 			if (product >= 0) {
 				city.markets[product].price = demo_base_price(product);
 			}
 		}
-		for (int product = 0; product < kDemoProducts && product < markets.size(); ++product) {
+		for (int product = 0; product < demo_products_ && product < markets.size(); ++product) {
 			Dictionary market = markets[product];
 			city.markets[product].stock = double(market.get("stock", 0.0));
 			city.markets[product].price = double(market.get("price", 1.0));
@@ -4425,10 +5414,18 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 		building.capacity = double(entry.get("capacity", 0.0));
 		building.input_per_output = double(entry.get("input_per_output", 0.0));
+		// Receita industrial: o id é resolvido na tabela carregada por
+		// demo_set_recipes (v4). Save v3 não tem a chave -> produtor legado.
+		const String recipe_id = String(entry.get("recipe", ""));
+		building.recipe = recipe_id.is_empty() ? -1 : demo_recipe_index(recipe_id);
+		building.capital_per_capacity = std::max(1.0, safe_nonneg(
+			double(entry.get("capital_per_capacity", kDemoCapitalPerCapacity))));
 		building.jobs = double(entry.get("jobs", 0.0));
 		building.wage = double(entry.get("wage", 0.0));
 		building.opex = double(entry.get("opex", 0.0));
 		building.output_scale = double(entry.get("output_scale", 1.0));
+		building.last_utilization = double(entry.get("last_utilization", 1.0));
+		building.strategic = bool(entry.get("strategic", false));
 		building.loss_days = int(entry.get("loss_days", 0));
 		demo_buildings_.push_back(building);
 	}

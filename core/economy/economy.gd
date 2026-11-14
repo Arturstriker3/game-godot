@@ -46,6 +46,10 @@ const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 ## Bens (id, nome, preço-base) — data-driven, editáveis sem recompilar o C++.
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
+## Receitas industriais (1..6 insumos, alternativas e subprodutos).
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+## Necessidades das POPs (cesta básica data-driven; níveis completos em F3).
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 ## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Bandeiras por código ISO-2 (moddável: adicione assets/flags/<código>.png).
@@ -75,13 +79,17 @@ var _shutting_down := false
 
 func _ready() -> void:
 	sim = EconomySim.new()
+	# Dados das cadeias ANTES de inicializar o mundo: o núcleo resolve os ids
+	# dos produtos/insumos e as receitas no momento em que cria as construções.
+	sim.demo_set_goods(_load_goods())
+	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
+	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
 	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
 	# aptidão × caloria da nação (antes de criar os prédios no núcleo). Sem dados,
 	# mantém trigo.
 	var geo := GeographyService.new()
 	var cities := _load_cities()
 	sim.initialize_demo_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
-	sim.demo_set_goods(_load_goods())
 	_load_nations()
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
@@ -170,6 +178,28 @@ func _load_goods() -> Array:
 		push_error("Economy: %s não é um array JSON" % GOODS_PATH)
 		return []
 	return data
+
+
+## Lê um array JSON de dados (receitas). Ausência vira [] sem quebrar a carga.
+func _load_json_array(path: String) -> Array:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % path)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data if typeof(data) == TYPE_ARRAY else []
+
+
+## Lê um dicionário JSON de dados (necessidades das POPs).
+func _load_json_dict(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_error("Economy: não abriu %s" % path)
+		return {}
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data if typeof(data) == TYPE_DICTIONARY else {}
 
 
 ## Lê as nações do cenário (JSON) para `_nations` (tag -> {name, flag}).

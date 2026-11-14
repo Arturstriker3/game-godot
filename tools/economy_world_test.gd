@@ -4,22 +4,46 @@ extends SceneTree
 ## do cenário real (cities/ports/buildings.json) em vez do cenário AGRIA/PORTUS.
 ## Valida os invariantes em runtime, os campos de compatibilidade do status e a
 ## ausência de NaN ao longo de uma partida. Roda headless e falha com != 0.
+##
+## F2 (cadeias de produção): carrega goods/recipes/needs ANTES de inicializar o
+## mundo, mede industrialização e comida por nação no fim e escreve um JSON
+## (`--out=...`) comparável entre o binário novo e o baseline (c5abccb). Com o
+## binário antigo (sem demo_set_recipes), o teste roda o caminho de 21 bens.
+##
+##   godot --headless --path . --script res://tools/economy_world_test.gd
+##     [--days=60] [--out=path.json] [--baseline=path.json]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 
-const DAYS := 60
+const DEFAULT_DAYS := 60
+## Queda máxima tolerada de satisfação por nação vs. baseline (p.p. / 100).
+const FOOD_TOLERANCE := 0.02
+
+var _days := DEFAULT_DAYS
+var _out := ""
+var _baseline_path := ""
 
 var _failures: Array[String] = []
 
 
 func _init() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--days="):
+			_days = maxi(1, int(arg.split("=")[1]))
+		elif arg.begins_with("--out="):
+			_out = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--baseline="):
+			_baseline_path = arg.split("=", true, 1)[1]
 	_test_world()
 	if _failures.is_empty():
-		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % DAYS)
+		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % _days)
 		quit(0)
 	else:
 		print("[world] FALHAS (%d):" % _failures.size())
@@ -32,16 +56,29 @@ func _fail(msg: String) -> void:
 	_failures.append(msg)
 
 
-func _load_array(path: String) -> Array:
+func _load_json(path: String) -> Variant:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		_fail("nao abriu " + path)
-		return []
+		return null
 	var data: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
+	return data
+
+
+func _load_array(path: String) -> Array:
+	var data: Variant = _load_json(path)
 	if typeof(data) != TYPE_ARRAY:
 		_fail(path + " nao e um array JSON")
 		return []
+	return data
+
+
+func _load_dict(path: String) -> Dictionary:
+	var data: Variant = _load_json(path)
+	if typeof(data) != TYPE_DICTIONARY:
+		_fail(path + " nao e um objeto JSON")
+		return {}
 	return data
 
 
@@ -49,20 +86,31 @@ func _test_world() -> void:
 	var cities := _load_array(CITIES_PATH)
 	var ports := _load_array(PORTS_PATH)
 	var buildings := _load_array(BUILDINGS_PATH)
-	if cities.is_empty() or buildings.is_empty():
-		_fail("cenario vazio (cidades=%d, construcoes=%d)" % [cities.size(), buildings.size()])
+	var goods := _load_array(GOODS_PATH)
+	if cities.is_empty() or buildings.is_empty() or goods.is_empty():
+		_fail("cenario vazio (cidades=%d, construcoes=%d, bens=%d)" % [
+			cities.size(), buildings.size(), goods.size()])
 		return
 
 	var sim = EconomySim.new()
+	# F2: receitas e cesta alimentar antes de criar o mundo — os ids de insumo
+	# são resolvidos na carga e as construções semeiam com a receita correta.
+	# Binário anterior a F2 não tem os setters: cai no caminho de 21 bens.
+	var has_chains: bool = sim.has_method("demo_set_recipes") \
+		and sim.has_method("demo_set_needs")
+	sim.demo_set_goods(goods)
+	if has_chains:
+		sim.demo_set_recipes(_load_array(RECIPES_PATH))
+		sim.demo_set_needs(_load_dict(NEEDS_PATH))
 	sim.initialize_demo_world(cities, ports, buildings)
-
-	# A produção de buildings.csv é efetiva (já reflete a geografia, como no
-	# modelo legado). A aptidão de trigo do GeographyService fica para a
-	# melhoria 1.9 (terreno/clima na produção); aqui a suitability padrão é 1.0.
+	var expected_products := goods.size() if has_chains else 21
 
 	var status: Dictionary = sim.get_demo_status()
 
 	# Contrato de status: campos de compatibilidade com o formato legado.
+	if Array(status.get("products", [])).size() != expected_products:
+		_fail("status: lista de produtos tem %d posicoes (esperado %d)" % [
+			Array(status.get("products", [])).size(), expected_products])
 	for city in status["cities"]:
 		var cid := String(city["id"])
 		for key in ["x", "y", "nation", "population", "production", "jobs",
@@ -71,11 +119,16 @@ func _test_world() -> void:
 				_fail("%s: falta campo de compatibilidade '%s'" % [cid, key])
 		if not is_finite(float(city["population"])):
 			_fail("%s: populacao nao finita" % cid)
+		var markets: Array = city.get("markets", [])
+		if markets.size() != expected_products:
+			_fail("%s: mercados com %d posicoes (esperado %d)" % [
+				cid, markets.size(), expected_products])
+			break
 
 	var money_initial := float(status["money_total"])
 	var cayenne_fed := false
 
-	for day in DAYS:
+	for day in _days:
 		status = sim.tick_demo()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
@@ -108,7 +161,55 @@ func _test_world() -> void:
 	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [
 		money_initial, money_final, money_final - money_initial])
 	if int(status.get("bankruptcies", 0)) > 0:
-		_fail("fazendas do mundo real faliram (%d) — balanço quebrado" % int(status.get("bankruptcies", 0)))
+		_fail("construções do mundo real faliram (%d) — balanço quebrado" % int(
+			status.get("bankruptcies", 0)))
+
+	# Industrialização (F2): o cenário real parte de 0. Com receitas carregadas,
+	# o bootstrap semeia moinho+padaria em capitais e a contagem precisa sair do
+	# zero. Guarda a regressão "industrialização nunca sai de 0".
+	var industrial_cities := 0
+	var max_industrialization := 0.0
+	var industrial_capacity := 0.0
+	for city in status["cities"]:
+		var value := float(city.get("industrialization", 0.0))
+		max_industrialization = maxf(max_industrialization, value)
+		if value > 0.0:
+			industrial_cities += 1
+		for building in city.get("buildings", []):
+			if String(building.get("recipe", "")) != "":
+				industrial_capacity += float(building.get("capacity", 0.0))
+	print("[world] industrializacao: %d cidades > 0 | max %.4f | capacidade %s %.1f t/dia" % [
+		industrial_cities, max_industrialization,
+		"industrial" if has_chains else "legada", industrial_capacity])
+	if has_chains and industrial_cities == 0:
+		_fail("industrializacao: nenhuma cidade saiu de 0 em %d dias" % _days)
+	if has_chains and industrial_capacity <= 0.0:
+		_fail("industrializacao: nenhuma construcao com receita no mundo")
+
+	# Comida por nação (consumido / necessidade) — mesma métrica da Aceitação
+	# F2: nenhuma nação pode piorar vs. o baseline (c5abccb).
+	var nations := _nation_food(status)
+	print("[world] comida por nacao (consumido/necessidade):")
+	for tag in nations:
+		var row: Dictionary = nations[tag]
+		print("  %-4s cidades=%3d comida=%.3f pior=%.3f (%s) ind=%.4f" % [
+			tag, int(row["cities"]), float(row["food"]), float(row["worst"]),
+			String(row["worst_city"]), float(row["industrialization"])])
+	var weakest := 1.0
+	var weakest_nation := ""
+	for tag in nations:
+		var value := float(nations[tag]["food"])
+		if value < weakest:
+			weakest = value
+			weakest_nation = String(tag)
+	print("[world] pior nacao: %s %.3f" % [weakest_nation, weakest])
+
+	if _baseline_path != "":
+		_compare_baseline(nations)
+
+	if _out != "":
+		_write_report(nations, status, has_chains)
+
 	print("[world] resumo final:")
 	for city in status["cities"]:
 		var pop: Dictionary = city["pop"]
@@ -121,3 +222,92 @@ func _test_world() -> void:
 			float(city["stockpile"]),
 			float(city["firm_cash"]),
 		])
+
+
+## Agrega comida e industrialização por nação (cons=Σconsumido, need=Σnecessidade).
+func _nation_food(status: Dictionary) -> Dictionary:
+	var nations: Dictionary = {}
+	for city in status.get("cities", []):
+		var tag := String(city.get("nation", ""))
+		if not nations.has(tag):
+			nations[tag] = {
+				"cities": 0, "consumed": 0.0, "need": 0.0,
+				"worst": 1.0, "worst_city": "", "industrialization": 0.0,
+			}
+		var row: Dictionary = nations[tag]
+		var pop: Dictionary = city.get("pop", {})
+		row["cities"] = int(row["cities"]) + 1
+		row["consumed"] = float(row["consumed"]) + float(pop.get("consumed", 0.0))
+		row["need"] = float(row["need"]) + float(pop.get("need", 0.0))
+		row["industrialization"] = float(row["industrialization"]) \
+			+ float(city.get("industrialization", 0.0))
+		var satisfaction := float(pop.get("satisfaction", 0.0))
+		if satisfaction < float(row["worst"]):
+			row["worst"] = satisfaction
+			row["worst_city"] = String(city.get("id", ""))
+	for tag in nations:
+		var row: Dictionary = nations[tag]
+		var need := float(row["need"])
+		row["food"] = float(row["consumed"]) / need if need > 0.0 else 1.0
+		row["industrialization"] = float(row["industrialization"]) \
+			/ maxf(1.0, float(row["cities"]))
+	return nations
+
+
+func _compare_baseline(nations: Dictionary) -> void:
+	var baseline: Variant = _load_json(_baseline_path)
+	if typeof(baseline) != TYPE_DICTIONARY:
+		_fail("baseline ilegivel: " + _baseline_path)
+		return
+	var rows: Dictionary = (baseline as Dictionary).get("nations", {})
+	var worse := 0
+	for tag in nations:
+		if not rows.has(tag):
+			continue
+		var before := float((rows[tag] as Dictionary).get("food", 1.0))
+		var after := float(nations[tag]["food"])
+		var delta := after - before
+		if delta < -FOOD_TOLERANCE:
+			_fail("%s: comida piorou %.3f -> %.3f (limite -%.2f)" % [
+				tag, before, after, FOOD_TOLERANCE])
+			++worse
+	print("[world] baseline %s: %d nacoes comparadas, %d pioraram" % [
+		_baseline_path, rows.size(), worse])
+
+
+func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool) -> void:
+	var dir := _out.get_base_dir()
+	if dir != "" and not DirAccess.dir_exists_absolute(dir):
+		DirAccess.make_dir_recursive_absolute(dir)
+	var file := FileAccess.open(_out, FileAccess.WRITE)
+	if file == null:
+		_fail("nao abriu para escrita: " + _out)
+		return
+	var report := {
+		"meta": {
+			"days": _days,
+			"chains": has_chains,
+			"products": Array(status.get("products", [])).size(),
+			"money_total": float(status.get("money_total", 0.0)),
+			"bankruptcies": int(status.get("bankruptcies", 0)),
+		},
+		"nations": _strip(nations),
+	}
+	file.store_string(JSON.stringify(report, "  "))
+	file.close()
+	print("[world] escrito %s" % _out)
+
+
+## Só os campos agregados vão para o JSON (o dict interno tem floats crus).
+func _strip(nations: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for tag in nations:
+		var row: Dictionary = nations[tag]
+		out[tag] = {
+			"cities": int(row["cities"]),
+			"food": float(row["food"]),
+			"worst": float(row["worst"]),
+			"worst_city": String(row["worst_city"]),
+			"industrialization": float(row["industrialization"]),
+		}
+	return out

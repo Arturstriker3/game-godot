@@ -6,6 +6,10 @@ extends SceneTree
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+
 const DAYS := 20
 const MONEY_EPSILON := 0.5
 const EPSILON := 0.001
@@ -60,8 +64,43 @@ func _test_geography() -> void:
 		agria, wheat, portus, deposits.size()])
 
 
+## Bens, receitas e cesta alimentar carregados antes de criar o mundo (F2): o
+## núcleo resolve os ids de insumo na carga e os arrays por produto passam a
+## ter a contagem do goods.json (114). Sem isso o C++ mantém os 21 primários.
+var _expected_products := 21
+
+
+func _load_chains(sim) -> void:
+	var goods := _load_json_array(GOODS_PATH)
+	sim.demo_set_goods(goods)
+	_expected_products = maxi(21, goods.size())
+	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
+	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
+
+
+func _load_json_array(path: String) -> Array:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_fail("dados: nao abriu " + path)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data if typeof(data) == TYPE_ARRAY else []
+
+
+func _load_json_dict(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_fail("dados: nao abriu " + path)
+		return {}
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data if typeof(data) == TYPE_DICTIONARY else {}
+
+
 func _test_economy() -> void:
 	var sim = EconomySim.new()
+	_load_chains(sim)
 	sim.initialize_demo()
 
 	var geo = GeographyServiceScript.new()
@@ -97,15 +136,16 @@ func _check_status_contract(status: Dictionary) -> void:
 		_fail("status: modo deveria ser demo")
 	if int(status.get("calendar_day", -1)) != 0:
 		_fail("status: calendário inicial deveria ser 0")
-	if Array(status.get("products", [])).size() != 21:
-		_fail("status: lista de produtos incompleta")
+	if Array(status.get("products", [])).size() != _expected_products:
+		_fail("status: lista de produtos incompleta (%d/%d)" % [
+			Array(status.get("products", [])).size(), _expected_products])
 	if Array(status.get("cities", [])).size() != 2:
 		_fail("status: cenário deveria ter duas cidades")
 	for city in status.get("cities", []):
-		if Array(city.get("suitability", [])).size() != 21:
+		if Array(city.get("suitability", [])).size() != _expected_products:
 			_fail("%s: aptidões ausentes no status" % city.get("id", "?"))
 		for field in ["imported", "exported", "import_value", "export_value"]:
-			if Array(city.get(field, [])).size() != 21:
+			if Array(city.get(field, [])).size() != _expected_products:
 				_fail("%s: %s ausente no status" % [city.get("id", "?"), field])
 
 
@@ -228,9 +268,14 @@ func _check_investment(sim) -> void:
 
 func _check_save_load(sim) -> void:
 	var snapshot: Dictionary = sim.demo_to_dict()
-	if int(snapshot.get("version", 0)) != 3:
-		_fail("save: versão do schema deveria ser 3 (é %s)" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 4:
+		_fail("save: versão do schema deveria ser 4 (é %s)" % str(snapshot.get("version")))
+	if Array(snapshot.get("products", [])).size() != _expected_products:
+		_fail("save: lista de produtos incompleta")
 	var restored = EconomySim.new()
+	# O load resolve a receita de cada construção por id: as tabelas precisam
+	# estar carregadas antes de demo_from_dict.
+	_load_chains(restored)
 	restored.demo_from_dict(snapshot)
 
 	if JSON.stringify(restored.demo_to_dict()) != JSON.stringify(snapshot):
@@ -275,6 +320,7 @@ func _check_save_migration() -> void:
 		"in_transit": [],
 	}
 	var migrated := EconomySim.new()
+	_load_chains(migrated)
 	migrated.demo_from_dict(v1)
 	var after: Dictionary = migrated.demo_to_dict()
 
@@ -283,8 +329,9 @@ func _check_save_migration() -> void:
 		_fail("migração: nenhuma cidade carregada")
 		return
 	var markets: Array = cities[0].get("markets", [])
-	if markets.size() != 21:
-		_fail("migração: mercados deveriam ter 21 posições (%d)" % markets.size())
+	if markets.size() != _expected_products:
+		_fail("migração: mercados deveriam ter %d posições (%d)" % [
+			_expected_products, markets.size()])
 		return
 	# Ferro (novo índice 1) herda estoque/preço do antigo índice 3.
 	if absf(float(markets[1]["stock"]) - 111.0) > EPSILON \

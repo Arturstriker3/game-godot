@@ -95,19 +95,170 @@ const RENEWABLE_RESOURCES: Array[String] = ["cotton", "wood"]
 ## firma/investimento dos renováveis (soja/madeira) que vêm depois na iteração.
 const BULK_LOW_VALUE_RESOURCES: Array[String] = ["sulfur"]
 
+## Dados das cadeias (F2): receitas e ids de produto vêm dos mesmos JSON que o
+## núcleo carrega. O template de uma receita NÃO fixa índices: o índice é o
+## `order` do goods.json, preservando os 21 primários em 0..20.
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+
+static var _loaded := false
+static var _goods_index: Dictionary = {}
+static var _recipes_by_output: Dictionary = {}
+static var _recipe_templates: Dictionary = {}
+static var _all_cache: Dictionary = {}
+
+
+static func _ensure_loaded() -> void:
+	if _loaded:
+		return
+	_loaded = true
+	_goods_index.clear()
+	_recipes_by_output.clear()
+	_recipe_templates.clear()
+	_all_cache.clear()
+
+	var goods_file := FileAccess.open(GOODS_PATH, FileAccess.READ)
+	if goods_file != null:
+		var goods: Variant = JSON.parse_string(goods_file.get_as_text())
+		goods_file.close()
+		if typeof(goods) == TYPE_ARRAY:
+			for index in (goods as Array).size():
+				var entry: Variant = goods[index]
+				if typeof(entry) != TYPE_DICTIONARY:
+					continue
+				var id := String((entry as Dictionary).get("id", ""))
+				if id.is_empty():
+					continue
+				_goods_index[id] = int((entry as Dictionary).get("order", index))
+
+	var recipes_file := FileAccess.open(RECIPES_PATH, FileAccess.READ)
+	if recipes_file == null:
+		return
+	var recipes: Variant = JSON.parse_string(recipes_file.get_as_text())
+	recipes_file.close()
+	if typeof(recipes) != TYPE_ARRAY:
+		return
+	for entry: Variant in recipes:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var recipe: Dictionary = entry
+		var output := String(recipe.get("output", ""))
+		if output.is_empty() or not _goods_index.has(output):
+			continue
+		var inputs: Array = []
+		for item: Variant in recipe.get("inputs", []):
+			if typeof(item) != TYPE_DICTIONARY:
+				continue
+			var good := String((item as Dictionary).get("good", ""))
+			if not _goods_index.has(good):
+				continue
+			inputs.append({
+				"good": good,
+				"product": int(_goods_index[good]),
+				"qty": float((item as Dictionary).get("qty", 1.0)),
+			})
+		if inputs.is_empty():
+			continue
+		var normalized := {
+			"id": String(recipe.get("id", "")),
+			"output_id": output,
+			"output": int(_goods_index[output]),
+			"sector": String(recipe.get("sector", "")),
+			"yield": maxf(0.001, float(recipe.get("yield", 1.0))),
+			"inputs": inputs,
+			"jobs_per_ton": float(recipe.get("jobs_per_ton", 7.5)),
+			"wage": float(recipe.get("wage", 2.0)),
+			"opex_per_ton": float(recipe.get("opex_per_ton", 2.5)),
+			"capital_per_capacity": float(recipe.get("capital_per_capacity", 2000.0)),
+			"byproducts": recipe.get("byproducts", []),
+		}
+		if not _recipes_by_output.has(output):
+			_recipes_by_output[output] = []
+		(_recipes_by_output[output] as Array).append(normalized)
+
+	for output: String in _recipes_by_output:
+		var list: Array = _recipes_by_output[output]
+		# Template de vitrine: a primeira alternativa declarada define a
+		# engenharia (jobs/opex); o custo real é sempre recalculado pela
+		# alternativa mais barata disponível (best_recipe).
+		var first: Dictionary = list[0]
+		_recipe_templates[output] = {
+			"output": int(first["output"]),
+			"output_id": output,
+			"input": int((first["inputs"][0] as Dictionary)["product"]),
+			"inputs": first["inputs"],
+			"recipe": String(first["id"]),
+			"recipes": list,
+			"yield": float(first["yield"]),
+			"jobs_per_ton": float(first["jobs_per_ton"]),
+			"wage": float(first["wage"]),
+			"opex_per_ton": float(first["opex_per_ton"]),
+			"capital_per_capacity": float(first["capital_per_capacity"]),
+			"input_ratio": 0.0,
+			"caloric_factor": 0.0,
+		}
+
+	_all_cache = TEMPLATES.duplicate(true)
+	for output: String in _recipe_templates:
+		if not _all_cache.has(output):
+			_all_cache[output] = _recipe_templates[output]
+
+
+## Todos os templates (primários + receitas industriais), carregados uma vez.
+static func all_templates() -> Dictionary:
+	_ensure_loaded()
+	return _all_cache
+
+
+## Receitas alternativas de um bem (array vazio quando é primário).
+static func recipes_for(resource: String) -> Array:
+	_ensure_loaded()
+	return _recipes_by_output.get(resource, [])
+
+
+## Alternativa de menor custo corrente na cidade (preço dos insumos / yield).
+## Devolve {} quando nenhuma receita tem insumo disponível.
+static func best_recipe(resource: String, city: Dictionary) -> Dictionary:
+	var best: Dictionary = {}
+	var best_cost := INF
+	for recipe: Dictionary in recipes_for(resource):
+		var cost := 0.0
+		var available := true
+		for item: Dictionary in recipe["inputs"]:
+			var product := int(item["product"])
+			var markets: Array = city.get("markets", [])
+			if product < 0 or product >= markets.size():
+				available = false
+				break
+			var price := float((markets[product] as Dictionary).get("price", 0.0))
+			if price <= 0.0:
+				price = 1.0
+			cost += float(item["qty"]) * price / float(recipe["yield"])
+		if available and cost < best_cost:
+			best_cost = cost
+			best = recipe
+	return best
+
+
 
 static func has(resource: String) -> bool:
-	return TEMPLATES.has(resource)
+	_ensure_loaded()
+	return TEMPLATES.has(resource) or _recipe_templates.has(resource)
 
 
 static func output_of(resource: String) -> int:
-	return int(TEMPLATES.get(resource, {}).get("output", -1))
+	_ensure_loaded()
+	if TEMPLATES.has(resource):
+		return int(TEMPLATES[resource].get("output", -1))
+	return int(_recipe_templates.get(resource, {}).get("output", -1))
 
 
 ## Fator calórico de uma cultura (tonelada-equivalente de grão por tonelada
 ## real). Batata ~1/4; demais culturas 1.0. Fonte FAO em economy_sim.h.
 static func caloric_factor(resource: String) -> float:
-	return float(TEMPLATES.get(resource, {}).get("caloric_factor", 1.0))
+	if TEMPLATES.has(resource):
+		return float(TEMPLATES[resource].get("caloric_factor", 1.0))
+	return float(_recipe_templates.get(resource, {}).get("caloric_factor", 1.0))
 
 
 ## true se a cidade já tem uma construção que produz o bem (mesmo output). Usado
@@ -148,9 +299,21 @@ static func local_food_supply(city: Dictionary) -> float:
 
 ## Custo variável estimado por tonelada, com o preço do insumo de mercado.
 static func variable_cost(resource: String, city: Dictionary) -> float:
-	var template: Dictionary = TEMPLATES[resource]
+	var template: Dictionary = all_templates().get(resource, {})
+	if template.is_empty():
+		return 0.0
 	var unit := (float(template["jobs_per_ton"]) * float(template["wage"])
 		+ float(template["opex_per_ton"]))
+	if template.has("recipes"):
+		var recipe := best_recipe(resource, city)
+		if recipe.is_empty():
+			return unit
+		var inputs: Array = recipe["inputs"]
+		for item: Dictionary in inputs:
+			var product := int(item["product"])
+			unit += (float(item["qty"]) / float(recipe["yield"])
+				* float((city["markets"][product] as Dictionary).get("price", 0.0)))
+		return unit
 	var input_product := int(template["input"])
 	if input_product >= 0:
 		unit += (float(template["input_ratio"])
@@ -164,7 +327,7 @@ static func variable_cost(resource: String, city: Dictionary) -> float:
 ## legado). É a margem "honesta" para decidir se vale abrir a mina: minas muito
 ## fundas de mineral de baixo valor não devem ser construídas.
 static func variable_cost_mined(resource: String, city: Dictionary) -> float:
-	var template: Dictionary = TEMPLATES[resource]
+	var template: Dictionary = all_templates()[resource]
 	var opex_factor := 1.0
 	var deposits: Dictionary = city.get("deposits", {})
 	if deposits.has(resource):

@@ -1,0 +1,2342 @@
+{
+ "version": 1,
+ "source": "Claude Docs 'OpenGS — Cadeias de produção e consumo cultural'",
+ "primaries": [
+  "wheat",
+  "rice",
+  "maize",
+  "potato",
+  "soy",
+  "cotton",
+  "wood",
+  "coal",
+  "oil",
+  "gas",
+  "uranium",
+  "iron",
+  "copper",
+  "bauxite",
+  "lead",
+  "gold",
+  "tungsten",
+  "rare_earths",
+  "phosphate",
+  "sulfur",
+  "diamond"
+ ],
+ "goods": [
+  {
+   "id": "flour",
+   "name": "Farinha",
+   "sector": "food",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "wheat"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [
+    "bran"
+   ],
+   "use": [
+    "bread"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "bran",
+   "name": "Farelo",
+   "sector": "food",
+   "kind": "byproduct",
+   "recipes": [],
+   "byproducts": [],
+   "use": [
+    "feed",
+    "organic_fertilizer"
+   ],
+   "durable": false,
+   "note": "sobra do moinho (farinha)"
+  },
+  {
+   "id": "bread",
+   "name": "Pão",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "flour"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_basic"
+   ],
+   "durable": false,
+   "note": "comida de topo; rende ~1.6x grão cru"
+  },
+  {
+   "id": "bagged_rice",
+   "name": "Arroz ensacado",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "rice",
+      "plastic"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "rice",
+      "paper"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_basic"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "feed",
+   "name": "Ração",
+   "sector": "food",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "maize"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "soy"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "bran"
+     ],
+     "yield": 0.8
+    },
+    {
+     "inputs": [
+      "rice"
+     ],
+     "yield": 0.7
+    },
+    {
+     "inputs": [
+      "potato"
+     ],
+     "yield": 0.5
+    },
+    {
+     "inputs": [
+      "wheat"
+     ],
+     "yield": 0.6
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "meat"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "meat",
+   "name": "Carne",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "feed"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_basic",
+    "pop_life",
+    "canned_food",
+    "combat_ration"
+   ],
+   "durable": false,
+   "note": "feita na Fazenda de criação; comida de topo"
+  },
+  {
+   "id": "canned_food",
+   "name": "Comida enlatada",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "meat",
+      "containers"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_basic",
+    "pop_life",
+    "combat_ration",
+    "army"
+   ],
+   "durable": false,
+   "note": "comida de topo"
+  },
+  {
+   "id": "combat_ration",
+   "name": "Ração de combate",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "canned_food",
+      "meat",
+      "plastic"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "alcohol",
+   "name": "Bebida alcoólica",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "wheat",
+      "containers"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "rice",
+      "containers"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "maize",
+      "containers"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "potato",
+      "containers"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life",
+    "premium_spirits"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "premium_spirits",
+   "name": "Destilado premium",
+   "sector": "food",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "alcohol",
+      "planks"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_luxury"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "ethanol",
+   "name": "Etanol",
+   "sector": "food",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "maize"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "fuel"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "fertilizer",
+   "name": "Fertilizante",
+   "sector": "agro",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "gas",
+      "phosphate"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "farm"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "organic_fertilizer",
+   "name": "Adubo orgânico",
+   "sector": "agro",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "bran"
+     ],
+     "yield": 0.3
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "farm"
+   ],
+   "durable": false,
+   "note": "substituto fraco do fertilizante"
+  },
+  {
+   "id": "fabric",
+   "name": "Tecido",
+   "sector": "textile",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "cotton"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "clothes",
+    "uniforms",
+    "shoes",
+    "luxury_furniture",
+    "body_armor",
+    "infantry_gear"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "synthetic_fabric",
+   "name": "Tecido sintético",
+   "sector": "textile",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "plastic",
+      "chemicals"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "clothes",
+    "uniforms",
+    "body_armor",
+    "tires"
+   ],
+   "durable": false,
+   "note": "substitui tecido, mais caro"
+  },
+  {
+   "id": "clothes",
+   "name": "Roupas",
+   "sector": "textile",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "fabric"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "synthetic_fabric"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_basic"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "uniforms",
+   "name": "Uniformes",
+   "sector": "textile",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "fabric"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "synthetic_fabric"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "shoes",
+   "name": "Calçados",
+   "sector": "textile",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "fabric",
+      "plastic"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "planks",
+   "name": "Tábuas",
+   "sector": "wood",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "wood"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [
+    "sawdust"
+   ],
+   "use": [
+    "furniture",
+    "luxury_furniture",
+    "pallets",
+    "tools",
+    "construction_material",
+    "premium_spirits",
+    "containers"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "sawdust",
+   "name": "Serragem",
+   "sector": "wood",
+   "kind": "byproduct",
+   "recipes": [],
+   "byproducts": [],
+   "use": [
+    "cellulose",
+    "pallets"
+   ],
+   "durable": false,
+   "note": "sobra das tábuas"
+  },
+  {
+   "id": "furniture",
+   "name": "Móveis",
+   "sector": "wood",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "planks"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "luxury_furniture",
+   "name": "Móveis de luxo",
+   "sector": "wood",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "planks",
+      "fabric"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_luxury"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "cellulose",
+   "name": "Celulose",
+   "sector": "wood",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "wood"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "sawdust"
+     ],
+     "yield": 0.7
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "paper"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "paper",
+   "name": "Papel",
+   "sector": "wood",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "cellulose"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "government",
+    "bagged_rice",
+    "containers"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "pallets",
+   "name": "Pallets",
+   "sector": "wood",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "planks"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "sawdust"
+     ],
+     "yield": 0.7
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "port"
+   ],
+   "durable": false,
+   "note": "porto consome por tonelada embarcada"
+  },
+  {
+   "id": "charcoal",
+   "name": "Carvão vegetal",
+   "sector": "wood",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "wood"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [],
+   "durable": false,
+   "note": "produz o MESMO item coal"
+  },
+  {
+   "id": "fuel",
+   "name": "Combustível",
+   "sector": "chemical",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "oil"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "ethanol"
+     ],
+     "yield": 0.8
+    },
+    {
+     "inputs": [
+      "gas"
+     ],
+     "yield": 0.4
+    },
+    {
+     "inputs": [
+      "coal"
+     ],
+     "yield": 0.2
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet",
+    "army",
+    "pop_life"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "plastic",
+   "name": "Plástico",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "oil"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "gas"
+     ],
+     "yield": 0.5
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "many"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "chemicals",
+   "name": "Químicos",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "oil",
+      "refined_sulfur"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "gas"
+     ],
+     "yield": 0.5
+    },
+    {
+     "inputs": [
+      "coal"
+     ],
+     "yield": 0.2
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "many"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "rubber",
+   "name": "Borracha",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "oil",
+      "refined_sulfur"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "tires"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "refined_sulfur",
+   "name": "Enxofre refinado",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "sulfur"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "chemicals",
+    "rubber",
+    "gunpowder"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "gunpowder",
+   "name": "Pólvora",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "refined_sulfur",
+      "coal"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "ammunition",
+    "explosives"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "explosives",
+   "name": "Explosivos",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "gunpowder",
+      "chemicals"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "artillery_ammo",
+    "mine"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "carbon_fiber",
+   "name": "Fibra de carbono",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "plastic",
+      "chemicals",
+      "coal"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "fuselage",
+    "military_drone"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "medicine",
+   "name": "Remédios",
+   "sector": "chemical",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "chemicals",
+      "plastic"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life",
+    "vaccines"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "antibiotics",
+   "name": "Antibióticos",
+   "sector": "chemical",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "chemicals"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "vaccines",
+   "name": "Vacinas",
+   "sector": "chemical",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "medicine",
+      "chemicals"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "plastic_parts",
+   "name": "Peças plásticas",
+   "sector": "chemical",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "plastic"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "car",
+    "appliances",
+    "computer",
+    "phone",
+    "drone"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "iron_ingot",
+   "name": "Lingote de ferro",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "iron"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "steel",
+    "cast_parts",
+    "mechanical_parts",
+    "hardware",
+    "tools"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "steel",
+   "name": "Aço",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "iron_ingot",
+      "coal"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "many"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "steel_sheet",
+   "name": "Chapas de aço",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "chassis",
+    "appliances",
+    "car"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "special_alloy",
+   "name": "Liga especial",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "tungsten_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "fuselage",
+    "artillery",
+    "body_armor"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "cast_parts",
+   "name": "Peças fundidas",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "iron_ingot",
+      "coal"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "engine",
+    "industrial_machinery",
+    "artillery"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "mechanical_parts",
+   "name": "Peças mecânicas",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "iron_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "engine",
+    "chassis",
+    "robots",
+    "industrial_machinery",
+    "spare_parts"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "hardware",
+   "name": "Ferragens",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "iron_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "construction_material",
+    "steel_structure",
+    "small_arms",
+    "infantry_gear"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "copper_ingot",
+   "name": "Lingote de cobre",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "copper"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "wires",
+    "casing",
+    "electronic_components",
+    "circuit_board"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "wires",
+   "name": "Fios e cabos",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "copper_ingot"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "aluminum_ingot"
+     ],
+     "yield": 0.7
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "engine",
+    "micromotor",
+    "electrical_material"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "aluminum_ingot",
+   "name": "Lingote de alumínio",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "bauxite"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "containers",
+    "fuselage",
+    "engine",
+    "wires"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "lead_ingot",
+   "name": "Lingote de chumbo",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "lead"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "projectile",
+    "batteries"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "tungsten_ingot",
+   "name": "Lingote de tungstênio",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "tungsten"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "industrial_tools",
+    "special_alloy"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "gold_bar",
+   "name": "Barra de ouro",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "gold"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "jewelry",
+    "electronic_components",
+    "treasury"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "processed_rare_earths",
+   "name": "Terras raras processadas",
+   "sector": "metal",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "rare_earths"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "chips",
+    "sensors",
+    "micromotor"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "tools",
+   "name": "Ferramentas",
+   "sector": "machinery",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "planks",
+      "iron_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "farm",
+    "workshop",
+    "construction"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "industrial_tools",
+   "name": "Ferramentas industriais",
+   "sector": "machinery",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "tungsten_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "precision_tools",
+    "mining_machine",
+    "artillery",
+    "industrial_machinery"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "precision_tools",
+   "name": "Ferramentas de precisão",
+   "sector": "machinery",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "industrial_tools",
+      "diamond"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "chips"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "engine",
+   "name": "Motor",
+   "sector": "machinery",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "mechanical_parts",
+      "wires",
+      "cast_parts"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "steel",
+      "mechanical_parts",
+      "wires",
+      "aluminum_ingot"
+     ],
+     "yield": 1.2
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "truck",
+    "tractor",
+    "car",
+    "cargo_ship",
+    "cargo_plane",
+    "mining_machine"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "micromotor",
+   "name": "Micromotor e bobinas",
+   "sector": "machinery",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "wires",
+      "processed_rare_earths"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "appliances",
+    "drone",
+    "robots",
+    "industrial_machinery"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "tires",
+   "name": "Pneus",
+   "sector": "machinery",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "rubber",
+      "synthetic_fabric"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "truck",
+    "tractor",
+    "car",
+    "spare_parts"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "chassis",
+   "name": "Chassi",
+   "sector": "machinery",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel_sheet",
+      "mechanical_parts"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "truck",
+    "tractor",
+    "car"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "tractor",
+   "name": "Trator",
+   "sector": "machinery",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "chassis",
+      "engine",
+      "tires"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "farm"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "mining_machine",
+   "name": "Máquina de mineração",
+   "sector": "machinery",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "engine",
+      "industrial_tools"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "mine"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "robots",
+   "name": "Robôs industriais",
+   "sector": "machinery",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "mechanical_parts",
+      "chips",
+      "micromotor",
+      "sensors",
+      "electrical_material"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "factory"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "industrial_machinery",
+   "name": "Maquinário industrial",
+   "sector": "machinery",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "mechanical_parts",
+      "industrial_tools",
+      "micromotor",
+      "cast_parts",
+      "electrical_material"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "factory"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "spare_parts",
+   "name": "Peças de reposição",
+   "sector": "machinery",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "mechanical_parts",
+      "tires"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet",
+    "machines"
+   ],
+   "durable": false,
+   "note": "consumidas todo mês"
+  },
+  {
+   "id": "construction_material",
+   "name": "Material de construção",
+   "sector": "construction",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "planks",
+      "hardware"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "building"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "steel_structure",
+   "name": "Estrutura metálica",
+   "sector": "construction",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "hardware"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "building",
+    "naval_hull"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "electrical_material",
+   "name": "Material elétrico",
+   "sector": "construction",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "wires",
+      "plastic",
+      "electronic_components"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "building",
+    "robots",
+    "industrial_machinery",
+    "cargo_ship",
+    "cargo_plane"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "truck",
+   "name": "Caminhão",
+   "sector": "transport",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "chassis",
+      "engine",
+      "tires",
+      "batteries"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "car",
+   "name": "Automóvel",
+   "sector": "transport",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "chassis",
+      "steel_sheet",
+      "engine",
+      "tires",
+      "plastic_parts",
+      "batteries"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_luxury"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "naval_hull",
+   "name": "Casco naval",
+   "sector": "transport",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "steel_structure",
+      "steel"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "cargo_ship"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "cargo_ship",
+   "name": "Navio de carga",
+   "sector": "transport",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "naval_hull",
+      "engine",
+      "electronic_components",
+      "electrical_material",
+      "sensors"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "fuselage",
+   "name": "Fuselagem",
+   "sector": "transport",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "aluminum_ingot",
+      "special_alloy",
+      "carbon_fiber"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "cargo_plane"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "cargo_plane",
+   "name": "Avião de carga",
+   "sector": "transport",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "fuselage",
+      "engine",
+      "electronic_components",
+      "electrical_material",
+      "sensors"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "vehicle_fleet"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "electronic_components",
+   "name": "Componentes eletrônicos",
+   "sector": "electronics",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "copper_ingot",
+      "plastic",
+      "gold_bar"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "many"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "circuit_board",
+   "name": "Placa de circuito",
+   "sector": "electronics",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "electronic_components",
+      "copper_ingot",
+      "plastic"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "computer",
+    "phone"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "chips",
+   "name": "Chips",
+   "sector": "electronics",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "electronic_components",
+      "processed_rare_earths",
+      "precision_tools",
+      "chemicals"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "sensors",
+    "robots",
+    "computer",
+    "phone",
+    "drone"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "sensors",
+   "name": "Sensores e óptica",
+   "sector": "electronics",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "chips",
+      "processed_rare_earths"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "drone",
+    "robots",
+    "artillery",
+    "cargo_ship",
+    "cargo_plane"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "batteries",
+   "name": "Baterias",
+   "sector": "electronics",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "lead_ingot",
+      "chemicals"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "phone",
+    "car",
+    "truck",
+    "drone",
+    "infantry_gear"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "appliances",
+   "name": "Eletrodomésticos",
+   "sector": "electronics",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "steel_sheet",
+      "micromotor",
+      "electronic_components",
+      "plastic_parts"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "computer",
+   "name": "Computador",
+   "sector": "electronics",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "circuit_board",
+      "chips",
+      "plastic_parts"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_luxury",
+    "government"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "phone",
+   "name": "Celular",
+   "sector": "electronics",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "circuit_board",
+      "chips",
+      "plastic_parts",
+      "batteries"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_life"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "drone",
+   "name": "Drone",
+   "sector": "electronics",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "plastic_parts",
+      "micromotor",
+      "chips",
+      "sensors",
+      "batteries"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_luxury",
+    "military_drone"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "containers",
+   "name": "Recipientes",
+   "sector": "packaging",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "aluminum_ingot"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "plastic"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "planks"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "paper"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "alcohol",
+    "canned_food"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "jewelry",
+   "name": "Joias",
+   "sector": "luxury",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "gold_bar",
+      "diamond"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "pop_luxury"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "casing",
+   "name": "Estojo",
+   "sector": "military",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "copper_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "ammunition",
+    "artillery_ammo"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "projectile",
+   "name": "Projétil",
+   "sector": "military",
+   "kind": "intermediate",
+   "recipes": [
+    {
+     "inputs": [
+      "lead_ingot"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "ammunition"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "ammunition",
+   "name": "Munição",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "casing",
+      "projectile",
+      "gunpowder"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army",
+    "military_drone"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "artillery_ammo",
+   "name": "Munição de artilharia",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "casing",
+      "explosives",
+      "steel"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "small_arms",
+   "name": "Armas leves",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "hardware"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "artillery",
+   "name": "Artilharia",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "steel",
+      "special_alloy",
+      "industrial_tools",
+      "cast_parts",
+      "sensors"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": true,
+   "note": ""
+  },
+  {
+   "id": "military_drone",
+   "name": "Drone militar",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "drone",
+      "ammunition",
+      "carbon_fiber"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "body_armor",
+   "name": "Colete de infantaria",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "fabric",
+      "special_alloy"
+     ],
+     "yield": 1.0
+    },
+    {
+     "inputs": [
+      "synthetic_fabric",
+      "special_alloy"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "note": ""
+  },
+  {
+   "id": "infantry_gear",
+   "name": "Equipamento de infantaria",
+   "sector": "military",
+   "kind": "final",
+   "recipes": [
+    {
+     "inputs": [
+      "fabric",
+      "hardware",
+      "electronic_components",
+      "batteries"
+     ],
+     "yield": 1.0
+    }
+   ],
+   "byproducts": [],
+   "use": [
+    "army"
+   ],
+   "durable": false,
+   "note": ""
+  }
+ ],
+ "pop_needs": {
+  "basic": {
+   "food": [
+    "bread",
+    "meat",
+    "canned_food",
+    "bagged_rice",
+    "wheat",
+    "rice",
+    "maize",
+    "potato",
+    "soy"
+   ],
+   "clothing": [
+    "clothes"
+   ]
+  },
+  "life": {
+   "protein": [
+    "meat",
+    "canned_food"
+   ],
+   "footwear": [
+    "shoes"
+   ],
+   "health": [
+    "medicine",
+    "antibiotics",
+    "vaccines"
+   ],
+   "home": [
+    "furniture",
+    "appliances"
+   ],
+   "communication": [
+    "phone"
+   ],
+   "leisure": [
+    "alcohol"
+   ],
+   "transport": [
+    "fuel"
+   ]
+  },
+  "luxury": {
+   "status": [
+    "jewelry",
+    "luxury_furniture",
+    "premium_spirits"
+   ],
+   "tech": [
+    "computer",
+    "drone"
+   ],
+   "transport": [
+    "car"
+   ]
+  }
+ },
+ "durable_replacement_per_year": 0.1,
+ "consumption_rules": [
+  "construir prédio consome construction_material ou steel_structure + electrical_material",
+  "porto consome pallets por tonelada embarcada",
+  "minas consomem explosives para render mais",
+  "governo e empresas consomem paper e computer",
+  "veículos e máquinas consomem spare_parts por mês; fazendas/oficinas consomem tools",
+  "army consome uniforms, ammunition, combat_ration, fuel etc."
+ ],
+ "market": {
+  "delivered_price": "origem + frete + tarifa, convertido pela moeda do comprador",
+  "freight": "exige frota (truck/cargo_ship/cargo_plane) e fuel; sem frota/combustível a carga não sai",
+  "currency": "cada nação tem moeda própria e câmbio",
+  "layers": [
+   "local",
+   "regional",
+   "global"
+  ],
+  "policies": [
+   "tarifa",
+   "subsídio",
+   "cota",
+   "embargo",
+   "acordo comercial",
+   "sanção"
+  ]
+ },
+ "pending": [
+  "eletricidade",
+  "aquecimento das POPs",
+  "urânio",
+  "projétil perfurante",
+  "blindado",
+  "preferências culturais"
+ ]
+}

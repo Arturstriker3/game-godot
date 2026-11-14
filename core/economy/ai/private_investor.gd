@@ -12,6 +12,9 @@ const MIN_PAYBACK_DAYS := 150.0
 ## isso a mina de enxofre (margem ~7–11/t → payback 180–290 d) nunca passa o
 ## gate de 150 d e fica com extração 0 (B4).
 const MIN_PAYBACK_DAYS_BULK := 730.0
+## Fábricas (F2): a demanda final ainda é parcial (F3), então a indústria usa
+## um horizonte de payback maior que o de uma mina/fazenda madura.
+const MIN_PAYBACK_DAYS_INDUSTRY := 730.0
 const EXPORT_CAPACITY_FACTOR := 1.2
 const MIN_MARGIN_PER_TON := 0.5
 const MIN_SHORTAGE_TONS := 0.5
@@ -194,12 +197,23 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 				_log(day, city_id, "avoid", resource_name,
 					"excesso de oferta local (%.1f t)" % surplus, 0.0, 0.0, 0.0)
 
-	# 2. Matérias-primas não alimentares (ferro): lógica existente.
-	for resource_name in Templates.TEMPLATES:
+	# 2. Matérias-primas e bens industriais. Fábricas (receita) só entram onde
+	# já existe demanda corrente observável no sistema (insumo de outra
+	# construção ou consumo): sem isso a planta nasce e fica ociosa.
+	var all_templates: Dictionary = Templates.all_templates()
+	for resource_name: String in all_templates:
 		if Templates.FOOD_RESOURCES.has(resource_name):
 			continue
-		var product := int(Templates.TEMPLATES[resource_name]["output"])
-		var shortage := float(city["markets"][product].get("shortage", 0.0))
+		var template: Dictionary = all_templates[resource_name]
+		var product := int(template["output"])
+		if product < 0 or product >= (city["markets"] as Array).size():
+			continue
+		var shortage := float((city["markets"][product] as Dictionary).get("shortage", 0.0))
+		if template.has("recipes"):
+			if _system_demand(status, product) <= 0.1:
+				continue
+			if not _input_available(city, template):
+				continue
 		if _try_template(day, city, status, resource_name, shortage, available, capital_cost):
 			return
 
@@ -239,7 +253,10 @@ func _try_food(day: int, city: Dictionary, status: Dictionary, food_deficit: flo
 func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name: String,
 		shortage: float, available: float, capital_cost: float) -> bool:
 	var city_id := String(city["id"])
-	var template: Dictionary = Templates.TEMPLATES[resource_name]
+	var template: Dictionary = Templates.all_templates().get(resource_name, {})
+	if template.is_empty():
+		return false
+	var is_recipe := template.has("recipes")
 	var product := int(template["output"])
 	var market: Dictionary = city["markets"][product]
 	var sold := float(market.get("sold", 0.0))
@@ -276,7 +293,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 
 	var price := float(market["price"])
 	var observed: float = Templates.observed_cost(city, product)
-	var is_mineral := Templates.MINERAL_RESOURCES.has(resource_name)
+	var is_mineral := Templates.MINERAL_RESOURCES.has(resource_name) and not is_recipe
 	# Margem "honesta" para minas: inclui o fator de profundidade da jazida
 	# (opex_factor) quando ainda não há produtor observado. Sem isso a IA
 	# investiria em jazidas muito fundas de mineral de baixo valor.
@@ -287,12 +304,19 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		unit_cost = Templates.variable_cost_mined(resource_name, city)
 	else:
 		unit_cost = Templates.variable_cost(resource_name, city)
-	var margin: float = price - unit_cost
+	# Fábrica sem demanda madura: o preço de referência é o piso de custo
+	# (o núcleo garante cost_floor × 1,05 na fase de preços), não o preço
+	# corrente de um mercado que ainda não se formou.
+	var reference_price := price
+	if is_recipe:
+		reference_price = maxf(price, unit_cost * 1.05)
+	var margin: float = reference_price - unit_cost
 	if margin <= MIN_MARGIN_PER_TON:
 		_log(day, city_id, "avoid", resource_name,
 			"margem %.2f/t insuficiente" % margin, 0.0, 0.0, 0.0)
 		return false
 
+	var unit_capital := float(template.get("capital_per_capacity", capital_cost))
 	var capacity := clampf(shortage, MIN_CAPACITY, MAX_CAPACITY)
 	if is_mineral:
 		# Mesmo dimensionamento da mina estatal (B4): teto na demanda externa
@@ -312,18 +336,20 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		if land_cap > 0.0:
 			var used := Templates.existing_capacity(city, product)
 			capacity = minf(capacity, maxf(0.0, land_cap - used))
-	if capacity * capital_cost > available:
-		capacity = available / capital_cost
+	if capacity * unit_capital > available:
+		capacity = available / unit_capital
 	if capacity < MIN_CAPACITY:
 		return false
-	var cost := capacity * capital_cost
+	var cost := capacity * unit_capital
 	var daily_profit := margin * capacity
 	var payback := cost / maxf(daily_profit, 0.001)
-	var risk := _price_risk(city_id, product, price)
+	var risk := _price_risk(city_id, product, reference_price)
 	var adjusted_payback := payback / maxf(0.5, 1.0 - risk)
-	var payback_limit := MIN_PAYBACK_DAYS_BULK \
-		if Templates.BULK_LOW_VALUE_RESOURCES.has(resource_name) \
-		else MIN_PAYBACK_DAYS
+	var payback_limit := MIN_PAYBACK_DAYS
+	if is_recipe:
+		payback_limit = MIN_PAYBACK_DAYS_INDUSTRY
+	elif Templates.BULK_LOW_VALUE_RESOURCES.has(resource_name):
+		payback_limit = MIN_PAYBACK_DAYS_BULK
 	if adjusted_payback > payback_limit:
 		_log(day, city_id, "avoid", resource_name,
 			"payback ajustado %.0f d > %.0f d" % [adjusted_payback, payback_limit],
@@ -339,13 +365,30 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		action = "expand"
 		result = _sim.demo_invest(city_id, target, cost)
 	else:
+		var input_product := int(template["input"])
+		var input_ratio := float(template.get("input_ratio", 0.0))
+		var jobs_per_ton := float(template["jobs_per_ton"])
+		var wage := float(template["wage"])
+		var opex_per_ton := float(template["opex_per_ton"])
+		var recipe_id := ""
+		if is_recipe:
+			var recipe: Dictionary = Templates.best_recipe(resource_name, city)
+			if recipe.is_empty():
+				return false
+			recipe_id = String(recipe["id"])
+			var first_input: Dictionary = recipe["inputs"][0]
+			input_product = int(first_input["product"])
+			input_ratio = float(first_input["qty"]) / float(recipe["yield"])
+			jobs_per_ton = float(recipe["jobs_per_ton"])
+			wage = float(recipe["wage"])
+			opex_per_ton = float(recipe["opex_per_ton"])
 		target = "AI-%s-%d" % [resource_name.to_upper(), _id_counter]
 		_id_counter += 1
 		result = _sim.demo_build(city_id, target, resource_name,
-			int(template["input"]), product, capacity,
-			capacity * float(template["jobs_per_ton"]), float(template["wage"]),
-			capacity * float(template["opex_per_ton"]),
-			float(template["input_ratio"]), "private", cost)
+			input_product, product, capacity,
+			capacity * jobs_per_ton, wage,
+			capacity * opex_per_ton,
+			input_ratio, "private", cost, recipe_id)
 
 	var error := String(result.get("error", ""))
 	if error != "":
@@ -359,6 +402,8 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 
 
 func _resource_available(city: Dictionary, resource_name: String, template: Dictionary) -> bool:
+	if template.has("recipes"):
+		return true  # transformação: depende de insumo, não de aptidão/depósito
 	if int(template["input"]) >= 0:
 		return true
 	var product := int(template["output"])
@@ -378,6 +423,31 @@ func _has_deposit(city: Dictionary, resource: String) -> bool:
 
 
 func _input_available(city: Dictionary, template: Dictionary) -> bool:
+	if template.has("recipes"):
+		# Todas as alternativas exigem os mesmos insumos? Não: a cidade só
+		# precisa ter ao menos UMA alternativa viável (estoque ou produtor).
+		var any := false
+		for recipe: Dictionary in template.get("recipes", []):
+			var viable := true
+			for item: Dictionary in recipe["inputs"]:
+				var product := int(item["product"])
+				var market: Dictionary = city["markets"][product]
+				var has_stock := float(market.get("stock", 0.0)) \
+					+ float(market.get("supply", 0.0)) > 0.1
+				if has_stock:
+					continue
+				var local := false
+				for building in city.get("buildings", []):
+					if int(building.get("output_product", -1)) == product:
+						local = true
+						break
+				if not local:
+					viable = false
+					break
+			if viable:
+				any = true
+				break
+		return any
 	var input_product := int(template["input"])
 	if input_product < 0:
 		return true
@@ -396,6 +466,12 @@ func _find_producer(city: Dictionary, product: int) -> Dictionary:
 				and String(building.get("owner", "private")) != "state"):
 			return building
 	return {}
+
+
+func _system_demand(status: Dictionary, product: int) -> float:
+	if not is_same(_totals_status, status):
+		prepare_totals(status)
+	return system_total(product, "demand")
 
 
 func _system_surplus(status: Dictionary, product: int) -> float:

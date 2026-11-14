@@ -1,0 +1,324 @@
+extends SceneTree
+
+## Teste das cadeias de produção (F2) no núcleo demo:
+##   1. moinho (trigo -> farinha + farelo) + padaria (farinha -> pão): receita
+##      de 1 insumo com SUBPRODUTO, cadeia de 3 níveis operando;
+##   2. receita de 4 insumos (motor): produção limitada pelo insumo mais
+##      escasso e consumo exatamente igual à saída (coeficiente 1:1);
+##   3. alternativa de receita escolhida pelo MENOR CUSTO corrente
+##      (fábrica de ração: trigo -> milho com choque de preço);
+##   4. trabalho primário (fazenda) com prioridade: uma fábrica nova não
+##      reduz a folha da fazenda (§5.3).
+##
+## Cenário: AGRIA/PORTUS (initialize_demo), o mesmo dos testes de população e
+## de porto. Estoque/caixa de partida são um FIXTURE explícito do teste (não
+## dado de simulação): sem insumo estocado nenhuma receita pode rodar no dia 1.
+##
+##   godot --headless --path . --script res://tools/production_chain_test.gd
+
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+
+const EPSILON := 1e-4
+
+var _failures: Array[String] = []
+var _goods_order: Dictionary = {}
+
+var _goods: Array = []
+var _recipes: Array = []
+var _needs: Dictionary = {}
+
+
+func _init() -> void:
+	_goods = _load_array(GOODS_PATH)
+	_recipes = _load_array(RECIPES_PATH)
+	_needs = _load_dict(NEEDS_PATH)
+	for index in _goods.size():
+		_goods_order[String((_goods[index] as Dictionary).get("id", ""))] = index
+
+	if _goods.is_empty() or _recipes.is_empty():
+		_fail("dados: goods/recipes nao carregaram")
+	else:
+		_test_flour_bread_chain()
+		_test_multi_input_recipe()
+		_test_recipe_alternative()
+		_test_labor_priority()
+
+	if _failures.is_empty():
+		print("[chain] OK: multi-insumo, subproduto, alternativa e trabalho validados.")
+		quit(0)
+	else:
+		print("[chain] FALHAS (%d):" % _failures.size())
+		for failure in _failures:
+			print(" - " + failure)
+		quit(1)
+
+
+func _fail(msg: String) -> void:
+	_failures.append(msg)
+
+
+func _load_array(path: String) -> Array:
+	var data: Variant = _load_json(path)
+	return data if typeof(data) == TYPE_ARRAY else []
+
+
+func _load_dict(path: String) -> Dictionary:
+	var data: Variant = _load_json(path)
+	return data if typeof(data) == TYPE_DICTIONARY else {}
+
+
+func _load_json(path: String) -> Variant:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_fail("dados: nao abriu " + path)
+		return null
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data
+
+
+func _product(id: String) -> int:
+	return int(_goods_order.get(id, -1))
+
+
+## Mundo demo com bens/receitas/necessidades carregados ANTES de criar as
+## construções (mesma ordem do autoload Economy).
+func _new_sim():
+	var sim = EconomySim.new()
+	sim.demo_set_goods(_goods)
+	sim.demo_set_recipes(_recipes)
+	sim.demo_set_needs(_needs)
+	sim.initialize_demo()
+	return sim
+
+
+## Fixture: estoque de mercado/caixa de AGRIA antes do primeiro tick. AGRIA é
+## o cenário sintético do teste; os números não representam o mundo real.
+func _fixture(sim, stocks: Dictionary, population: float = -1.0) -> void:
+	var snapshot: Dictionary = sim.demo_to_dict()
+	for city: Dictionary in snapshot.get("cities", []):
+		if String(city.get("id", "")) != "AGRIA":
+			continue
+		city["firm_cash"] = 500000.0
+		city["government_budget"] = 500000.0
+		if population > 0.0:
+			city["population"] = population
+			city["sim_population"] = population
+			city["service_jobs"] = population * 0.30
+			var pop: Dictionary = city.get("pop", {})
+			pop["population"] = population
+		var markets: Array = city.get("markets", [])
+		for good: String in stocks:
+			var index := _product(good)
+			if index < 0 or index >= markets.size():
+				_fail("fixture: produto desconhecido " + good)
+				continue
+			var market: Dictionary = markets[index]
+			market["stock"] = float(stocks[good])
+			markets[index] = market
+		city["markets"] = markets
+	sim.demo_from_dict(snapshot)
+
+
+func _city(status: Dictionary, id: String) -> Dictionary:
+	for city: Dictionary in status.get("cities", []):
+		if String(city.get("id", "")) == id:
+			return city
+	return {}
+
+
+func _building(city: Dictionary, id: String) -> Dictionary:
+	for building: Dictionary in city.get("buildings", []):
+		if String(building.get("id", "")) == id:
+			return building
+	return {}
+
+
+func _stock(city: Dictionary, good: String) -> float:
+	var index := _product(good)
+	var markets: Array = city.get("markets", [])
+	if index < 0 or index >= markets.size():
+		return -1.0
+	return float((markets[index] as Dictionary).get("stock", 0.0))
+
+
+func _produced(status: Dictionary, good: String) -> float:
+	var index := _product(good)
+	var produced: Array = status.get("produced_total", [])
+	if index < 0 or index >= produced.size():
+		return -1.0
+	return float(produced[index])
+
+
+## 1. Cadeia de 3 níveis: trigo -> farinha (+ farelo) -> pão.
+func _test_flour_bread_chain() -> void:
+	var sim = _new_sim()
+	_fixture(sim, {"wheat": 300.0})
+	var flour := _product("flour")
+	var bread := _product("bread")
+	var mill: Dictionary = sim.demo_build("AGRIA", "T-MILL", "flour", -1, flour,
+		10.0, 0.0, 0.0, 0.0, 1.0, "private", 40000.0, "flour")
+	var bakery: Dictionary = sim.demo_build("AGRIA", "T-BAKERY", "bread", -1, bread,
+		8.0, 0.0, 0.0, 0.0, 1.0, "private", 32000.0, "bread")
+	if not bool(mill.get("created", false)):
+		_fail("cadeia: moinho nao criado (%s)" % String(mill.get("error", "")))
+		return
+	if not bool(bakery.get("created", false)):
+		_fail("cadeia: padaria nao criada (%s)" % String(bakery.get("error", "")))
+		return
+
+	var wheat_before := 0.0
+	var status: Dictionary = sim.get_demo_status()
+	wheat_before = _stock(_city(status, "AGRIA"), "wheat")
+	for day in 4:
+		status = sim.tick_demo()
+		var agria := _city(status, "AGRIA")
+		for good in ["wheat", "flour", "bran", "bread"]:
+			if _stock(agria, good) < -EPSILON:
+				_fail("cadeia: estoque negativo de %s no dia %d" % [good, day + 1])
+		if float(agria.get("pop", {}).get("satisfaction", 0.0)) <= 0.0:
+			_fail("cadeia: POPs sem comida no dia %d" % (day + 1))
+
+	var agria := _city(status, "AGRIA")
+	var mill_status := _building(agria, "T-MILL")
+	var bakery_status := _building(agria, "T-BAKERY")
+	if String(mill_status.get("recipe", "")) != "flour":
+		_fail("cadeia: moinho nao usa a receita 'flour' (%s)" % str(
+			mill_status.get("recipe", "")))
+	var byproducts: Array = mill_status.get("byproducts", [])
+	var has_bran := false
+	for item: Dictionary in byproducts:
+		if String(item.get("good", "")) == "bran":
+			has_bran = true
+	if not has_bran:
+		_fail("cadeia: farelo ausente nos subprodutos do moinho")
+	if _produced(status, "flour") <= 0.0:
+		_fail("cadeia: farinha nao produzida")
+	if _produced(status, "bran") <= 0.0:
+		_fail("cadeia: farelo (subproduto) nao produzido")
+	if _produced(status, "bread") <= 0.0:
+		_fail("cadeia: pao nao produzido (farinha do dia anterior nao chegou)")
+	if String(bakery_status.get("recipe", "")) != "bread":
+		_fail("cadeia: padaria sem receita 'bread'")
+	var wheat_after := _stock(agria, "wheat")
+	if wheat_after > wheat_before + 1e-6:
+		_fail("cadeia: trigo do moinho nao foi consumido")
+	print("[chain] trigo %.1f -> farelo %.1f | farinha %.1f | pao %.1f" % [
+		wheat_before - wheat_after, _produced(status, "bran"),
+		_produced(status, "flour"), _produced(status, "bread")])
+
+
+## 2. Receita de 4 insumos: o mais escasso limita a saída e cada insumo
+## consumido é exatamente a saída (coeficiente 1:1 da receita engine_a).
+func _test_multi_input_recipe() -> void:
+	var sim = _new_sim()
+	_fixture(sim, {
+		"steel": 50.0, "mechanical_parts": 4.0, "wires": 1000.0,
+		"cast_parts": 1000.0,
+	})
+	var engine := _product("engine")
+	var built: Dictionary = sim.demo_build("AGRIA", "T-ENGINE", "engine", -1,
+		engine, 10.0, 0.0, 0.0, 0.0, 1.0, "private", 60000.0, "engine_a")
+	if not bool(built.get("created", false)):
+		_fail("multi: fabrica de motor nao criada (%s)" % String(built.get("error", "")))
+		return
+
+	var inputs := ["steel", "mechanical_parts", "wires", "cast_parts"]
+	var before: Dictionary = {}
+	var status: Dictionary = sim.get_demo_status()
+	for good in inputs:
+		before[good] = _stock(_city(status, "AGRIA"), good)
+	for day in 2:
+		status = sim.tick_demo()
+		var agria := _city(status, "AGRIA")
+		for good in inputs:
+			if _stock(agria, good) < -EPSILON:
+				_fail("multi: estoque negativo de %s no dia %d" % [good, day + 1])
+
+	var agria := _city(status, "AGRIA")
+	var produced := _produced(status, "engine")
+	if produced <= 0.0:
+		_fail("multi: motor nao produzido")
+	var building := _building(agria, "T-ENGINE")
+	if String(building.get("recipe", "")) != "engine_a":
+		_fail("multi: receita alternativa escolhida sem insumo (engine_b)")
+	for good in inputs:
+		var consumed: float = float(before[good]) - _stock(agria, good)
+		if absf(consumed - produced) > 1e-3:
+			_fail("multi: %s consumido %.4f != saida %.4f" % [good, consumed, produced])
+	if _stock(agria, "mechanical_parts") > 1e-3:
+		_fail("multi: insumo mais escasso nao foi limitante (resta %.3f)" % _stock(
+			agria, "mechanical_parts"))
+	print("[chain] motor %.2f t | insumo escasso restante %.3f | consumos %s" % [
+		produced, _stock(agria, "mechanical_parts"),
+		", ".join(inputs.map(func(g): return "%.2f" % (float(before[g]) - _stock(agria, g))))])
+
+
+## 3. Alternativa pelo menor custo corrente: com trigo 40/t (yield 0,6 ->
+## 66,67/t de ração) e milho 42/t (yield 1 -> 42/t), a fábrica de ração escolhe
+## feed_a. Um choque no milho (x2 -> 84/t) inverte para feed_f (trigo).
+func _test_recipe_alternative() -> void:
+	var sim = _new_sim()
+	_fixture(sim, {"wheat": 300.0, "maize": 100.0})
+	var feed := _product("feed")
+	var built: Dictionary = sim.demo_build("AGRIA", "T-FEED", "feed", -1, feed,
+		10.0, 0.0, 0.0, 0.0, 1.0, "private", 40000.0, "feed_a")
+	if not bool(built.get("created", false)):
+		_fail("alternativa: fabrica de racao nao criada (%s)" % String(built.get(
+			"error", "")))
+		return
+	var status: Dictionary = sim.tick_demo()
+	var chosen := String(_building(_city(status, "AGRIA"), "T-FEED").get("recipe", ""))
+	if chosen != "feed_a":
+		_fail("alternativa: com milho 42 e trigo 66,7, esperado feed_a (obtido %s)" % chosen)
+	sim.demo_price_shock("maize", 2.0)
+	status = sim.tick_demo()
+	chosen = String(_building(_city(status, "AGRIA"), "T-FEED").get("recipe", ""))
+	if chosen != "feed_f":
+		_fail("alternativa: com milho a 84, esperado feed_f (obtido %s)" % chosen)
+	print("[chain] racao: alternativa trocada por menor custo corrente (%s)" % chosen)
+
+
+## 4. §5.3: o trabalho primário tem prioridade. Cidade pequena (2000 hab.):
+## 1100 na força de trabalho, 600 em serviços, 450 nas fazendas e a sobra (50)
+## para a fábrica de 80 empregos — a fazenda continua com 150/150.
+func _test_labor_priority() -> void:
+	var sim = _new_sim()
+	_fixture(sim, {}, 2000.0)
+	var status: Dictionary = sim.get_demo_status()
+	var agria := _city(status, "AGRIA")
+	var farm_before := _building(agria, "FARM-A-1")
+	if farm_before.is_empty():
+		_fail("trabalho: fazenda de AGRIA ausente")
+		return
+	var farm_jobs := float(farm_before.get("jobs", 0.0))
+
+	var engine := _product("engine")
+	var built: Dictionary = sim.demo_build("AGRIA", "T-ENGINE-LABOR", "engine", -1,
+		engine, 20.0, 0.0, 0.0, 0.0, 1.0, "private", 120000.0, "engine_a")
+	if not bool(built.get("created", false)):
+		_fail("trabalho: fabrica nao criada (%s)" % String(built.get("error", "")))
+		return
+
+	status = sim.tick_demo()
+	agria = _city(status, "AGRIA")
+	var farm := _building(agria, "FARM-A-1")
+	var factory := _building(agria, "T-ENGINE-LABOR")
+	var workers := float(farm.get("workers", 0.0))
+	if absf(workers - farm_jobs) > 0.01:
+		_fail("trabalho: fazenda perdeu mao de obra (%.1f de %.1f)" % [workers, farm_jobs])
+	var factory_jobs := float(factory.get("jobs", 0.0))
+	var factory_workers := float(factory.get("workers", 0.0))
+	if factory_jobs <= 0.0:
+		_fail("trabalho: fabrica sem empregos declarados")
+	elif factory_workers >= factory_jobs:
+		_fail("trabalho: fabrica ocupou toda a folha (%.1f/%.1f), sem racionar" % [
+			factory_workers, factory_jobs])
+	var pop: Dictionary = agria.get("pop", {})
+	if float(pop.get("employed", 0.0)) > float(pop.get("labor_force", 0.0)) + 0.01:
+		_fail("trabalho: empregados acima da forca de trabalho")
+	print("[chain] trabalho: fazenda %.0f/%.0f | fabrica %.1f/%.1f | desempregados %.1f" % [
+		workers, farm_jobs, factory_workers, factory_jobs,
+		float(pop.get("unemployed", 0.0))])
