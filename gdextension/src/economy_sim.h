@@ -453,8 +453,8 @@ private:
 		Uranium = 20
 	};
 	// Mesma ordem de data/definitions/economy/goods.json. A contagem é variável
-	// (demo_set_goods): os 21 primários continuam nas posições 0..20 e os 93
-	// bens industriais entram em 21..113. kDemoMaxProducts é só o teto de
+	// (demo_set_goods): os 21 primários continuam nas posições 0..20 e os 92
+	// bens industriais entram em 21..112. kDemoMaxProducts é só o teto de
 	// segurança do vetor.
 	static constexpr int kDemoMaxProducts = 160;
 	static constexpr int kDemoMaxRecipeInputs = 6;
@@ -823,7 +823,7 @@ private:
 		std::vector<String> deposit_key;        // nome do produto (chave)
 		// Lista de produtos com jazida rastreada nesta cidade. Recalculada só
 		// quando uma jazida nova é descoberta: o laço diário percorre apenas as
-		// jazidas da cidade, não os 114 bens (medido: ~4,5 ms/dia só de varredura).
+		// jazidas da cidade, não os 113 bens (medido: ~4,5 ms/dia só de varredura).
 		std::vector<int> deposit_tracked;
 		int deposit_tracked_version = -1;
 		bool deposits_published = false;

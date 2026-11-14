@@ -372,7 +372,6 @@
     "uniforms",
     "shoes",
     "luxury_furniture",
-    "body_armor",
     "infantry_gear"
    ],
    "durable": false,
@@ -396,7 +395,6 @@
    "use": [
     "clothes",
     "uniforms",
-    "body_armor",
     "tires"
    ],
    "durable": false,
@@ -1030,8 +1028,7 @@
    "byproducts": [],
    "use": [
     "fuselage",
-    "artillery",
-    "body_armor"
+    "artillery"
    ],
    "durable": false,
    "note": ""
@@ -2182,34 +2179,6 @@
       "drone",
       "ammunition",
       "carbon_fiber"
-     ],
-     "yield": 1.0
-    }
-   ],
-   "byproducts": [],
-   "use": [
-    "army"
-   ],
-   "durable": false,
-   "note": ""
-  },
-  {
-   "id": "body_armor",
-   "name": "Colete de infantaria",
-   "sector": "military",
-   "kind": "final",
-   "recipes": [
-    {
-     "inputs": [
-      "fabric",
-      "special_alloy"
-     ],
-     "yield": 1.0
-    },
-    {
-     "inputs": [
-      "synthetic_fabric",
-      "special_alloy"
      ],
      "yield": 1.0
     }

@@ -4,7 +4,7 @@
 Guarda o contrato de `data/definitions/economy/{goods,recipes,needs,currencies}.json`,
 do i18n (`product.<id>`/`resource.<id>` × pt-BR/en/es) e dos ícones do Icon Forge:
 
-  - 114 bens, ids únicos, `order` 0..113 e os 21 do núcleo em 0..20 na ordem canônica;
+  - 113 bens, ids únicos, `order` 0..112 e os 21 do núcleo em 0..20 na ordem canônica;
   - todo insumo, saída e subproduto de receita existe; sem ciclo; `yield > 0`;
   - todo bem tem produtor (receita, subproduto declarado ou alias) e consumidor
     (insumo de receita, necessidade das POPs, `use` institucional declarado ou

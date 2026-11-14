@@ -567,7 +567,6 @@
       "uniforms",
       "shoes",
       "luxury_furniture",
-      "body_armor",
       "infantry_gear"
     ]
   },
@@ -587,7 +586,6 @@
     "use": [
       "clothes",
       "uniforms",
-      "body_armor",
       "tires"
     ],
     "note": "substitui tecido, mais caro"
@@ -1078,8 +1076,7 @@
     "food": false,
     "use": [
       "fuselage",
-      "artillery",
-      "body_armor"
+      "artillery"
     ]
   },
   {
@@ -1983,23 +1980,6 @@
   },
   {
     "order": 112,
-    "id": "body_armor",
-    "name": "Colete de infantaria",
-    "sector": "military",
-    "kind": "final",
-    "tier": "final",
-    "durable": false,
-    "base_price": 763.51,
-    "base_price_source": "derived:v1",
-    "price_source": "derived",
-    "icon_color": "#6B7A5A",
-    "food": false,
-    "use": [
-      "army"
-    ]
-  },
-  {
-    "order": 113,
     "id": "infantry_gear",
     "name": "Equipamento de infantaria",
     "sector": "military",

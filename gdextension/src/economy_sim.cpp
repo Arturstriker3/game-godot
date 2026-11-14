@@ -86,7 +86,10 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // moedas já carregadas e o preço do mercado.
 // v7: preço de mercado na ÂNCORA (F5, opção c). Saves v6 e anteriores tinham o
 // preço na moeda local; demo_from_dict converte pela taxa da nação.
-constexpr int kDemoSaveVersion = 7;
+// v8: `body_armor` removido da cadeia (decisão do dono). Saves v7 com 114
+// produtos são remapeados por id (`products`) e o índice 112 passa a ser
+// `infantry_gear`.
+constexpr int kDemoSaveVersion = 8;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -1107,6 +1110,26 @@ static Array demo_migrate_product_array(const Array& old, int products) {
 	return out;
 }
 
+// Remapeia um array por-produto usando o vetor old_index -> new_index (-1
+// descarta o produto). Posições sem correspondência ficam 0.0.
+static Array demo_remap_product_array(const Array& old,
+		const std::vector<int>& remap, int products) {
+	Array out;
+	out.resize(products);
+	for (int index = 0; index < products; ++index) {
+		out[index] = 0.0;
+	}
+	const int limit = static_cast<int>(
+		std::min<std::size_t>(static_cast<std::size_t>(old.size()), remap.size()));
+	for (int old_index = 0; old_index < limit; ++old_index) {
+		const int new_index = remap[static_cast<std::size_t>(old_index)];
+		if (new_index >= 0 && new_index < products) {
+			out[new_index] = old[old_index];
+		}
+	}
+	return out;
+}
+
 } // namespace
 
 // Eficiência da extração (0.5..1). Sem reserva declarada não há qualidade
@@ -1544,7 +1567,7 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 void EconomySim::demo_set_goods(const Array& goods) {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	// Tabela de produtos: 21 primários nas posições 0..20 (ordem do goods.json
-	// legado) e os bens novos em `order` (21..113). O núcleo não lê arquivos:
+	// legado) e os bens novos em `order` (21..112). O núcleo não lê arquivos:
 	// todo o conteúdo entra por aqui, no padrão do demo_set_goods antigo.
 	const int previous_products = demo_products_;
 	std::vector<std::string> names = demo_product_names_;
@@ -7619,7 +7642,45 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 	// Saves v1/v2 (antes da remoção de farinha/pão) trazem índices de produto
 	// no layout antigo (farinha=1, pão=2, ferro=3...): remapeia para o layout
 	// atual (ferro=1, arroz=2...), descartando farinha/pão.
-	const bool needs_migration = version < 3;
+	//
+	// Saves v7 trazem a lista `products` com 114 ids (inclui `body_armor`).
+	// Quando ela existe, a migração é POR ID (o nome do produto vence o
+	// índice), então remoções futuras não deslocam estoques, mercados,
+	// construções ou cargas em trânsito.
+	const Array saved_products = data.get("products", Array());
+	const bool has_saved_products = saved_products.size() > 0;
+	const bool needs_legacy_migration = !has_saved_products && version < 3;
+	std::vector<int> product_remap;
+	if (has_saved_products) {
+		product_remap.resize(
+			static_cast<std::size_t>(saved_products.size()), -1);
+		for (int index = 0; index < saved_products.size(); ++index) {
+			product_remap[static_cast<std::size_t>(index)] =
+				demo_product_index(String(saved_products[index]));
+		}
+	}
+	const auto migrate_array = [&](const Array& old) -> Array {
+		if (has_saved_products) {
+			return demo_remap_product_array(old, product_remap, demo_products_);
+		}
+		if (needs_legacy_migration) {
+			return demo_migrate_product_array(old, demo_products_);
+		}
+		return old;
+	};
+	const auto migrate_index = [&](int old_index) -> int {
+		if (has_saved_products) {
+			if (old_index < 0
+					|| old_index >= static_cast<int>(product_remap.size())) {
+				return -1;
+			}
+			return product_remap[static_cast<std::size_t>(old_index)];
+		}
+		if (needs_legacy_migration) {
+			return demo_migrate_product_index(old_index);
+		}
+		return old_index;
+	};
 	demo_active_ = bool(data.get("active", true));
 	demo_world_mode_ = bool(data.get("world_mode", false));
 	day_ = int(data.get("day", 0));
@@ -7700,12 +7761,8 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		demo_rebuild_tariff_lookup();
 	}
 
-	Array produced = data.get("produced_total", Array());
-	Array consumed = data.get("consumed_total", Array());
-	if (needs_migration) {
-		produced = demo_migrate_product_array(produced, demo_products_);
-		consumed = demo_migrate_product_array(consumed, demo_products_);
-	}
+	Array produced = migrate_array(data.get("produced_total", Array()));
+	Array consumed = migrate_array(data.get("consumed_total", Array()));
 	for (int index = 0; index < demo_products_; ++index) {
 		demo_produced_[index] = index < produced.size() ? double(produced[index]) : 0.0;
 		demo_consumed_total_[index] =
@@ -7766,16 +7823,14 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		Array export_value = entry.get("export_value", Array());
 		Array external_demand = entry.get("external_demand", Array());
 		Array import_price = entry.get("import_price", Array());
-		if (needs_migration) {
-			suitability = demo_migrate_product_array(suitability, demo_products_);
-			revenue = demo_migrate_product_array(revenue, demo_products_);
-			imported = demo_migrate_product_array(imported, demo_products_);
-			exported = demo_migrate_product_array(exported, demo_products_);
-			import_value = demo_migrate_product_array(import_value, demo_products_);
-			export_value = demo_migrate_product_array(export_value, demo_products_);
-			external_demand = demo_migrate_product_array(external_demand, demo_products_);
-			import_price = demo_migrate_product_array(import_price, demo_products_);
-		}
+		suitability = migrate_array(suitability);
+		revenue = migrate_array(revenue);
+		imported = migrate_array(imported);
+		exported = migrate_array(exported);
+		import_value = migrate_array(import_value);
+		export_value = migrate_array(export_value);
+		external_demand = migrate_array(external_demand);
+		import_price = migrate_array(import_price);
 		for (int product = 0; product < demo_products_; ++product) {
 			city.suitability[product] = product < suitability.size()
 				? double(suitability[product]) : (product >= 1 ? 0.0 : 1.0);
@@ -7874,28 +7929,29 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 
 		Array markets = entry.get("markets", Array());
-		if (needs_migration) {
-			// Remapeia os mercados antigos (farinha/pão descartados; ferro etc.
-			// deslocados -2). Mercados sem correspondência no layout antigo
-			// recebem o preço-base.
+		if (has_saved_products || needs_legacy_migration) {
+			// Remapeia os mercados antigos por id (save v7 com 114 produtos,
+			// descartando `body_armor`) ou pelo deslocamento -2 (save v1/v2 com
+			// farinha/pão). Mercado sem correspondência recebe o preço-base.
 			Array remapped;
 			remapped.resize(demo_products_);
 			for (int new_index = 0; new_index < demo_products_; ++new_index) {
-				const int old_index = (new_index == 0) ? 0 : (new_index + 2);
-				if (old_index >= 0 && old_index < markets.size()) {
+				Dictionary m;
+				m["stock"] = 0.0;
+				m["price"] = demo_base_price(new_index);
+				m["demand"] = 0.0;
+				m["supply"] = 0.0;
+				m["desired"] = 0.0;
+				m["sold"] = 0.0;
+				m["sold_prev"] = 0.0;
+				m["shortage"] = 0.0;
+				m["surplus"] = 0.0;
+				remapped[new_index] = m;
+			}
+			for (int old_index = 0; old_index < markets.size(); ++old_index) {
+				const int new_index = migrate_index(old_index);
+				if (new_index >= 0 && new_index < demo_products_) {
 					remapped[new_index] = markets[old_index];
-				} else {
-					Dictionary m;
-					m["stock"] = 0.0;
-					m["price"] = demo_base_price(new_index);
-					m["demand"] = 0.0;
-					m["supply"] = 0.0;
-					m["desired"] = 0.0;
-					m["sold"] = 0.0;
-					m["sold_prev"] = 0.0;
-					m["shortage"] = 0.0;
-					m["surplus"] = 0.0;
-					remapped[new_index] = m;
 				}
 			}
 			markets = remapped;
@@ -7935,11 +7991,13 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			std::string(String(entry.get("owner", "private")).utf8().get_data());
 		building.input_product = int(entry.get("input_product", -1));
 		building.output_product = int(entry.get("output_product", 0));
-		if (needs_migration) {
-			building.input_product = demo_migrate_product_index(building.input_product);
-			building.output_product = demo_migrate_product_index(building.output_product);
+		if (has_saved_products || needs_legacy_migration) {
+			building.input_product = migrate_index(building.input_product);
+			building.output_product = migrate_index(building.output_product);
 			if (building.output_product < 0) {
-				continue;  // moinho/padaria (farinha/pão): construção removida da cadeia
+				// Produto removido da cadeia (farinha/pão ou body_armor):
+				// construção descartada.
+				continue;
 			}
 		}
 		building.capacity = double(entry.get("capacity", 0.0));
@@ -7968,10 +8026,12 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		shipment.to_city =
 			std::string(String(entry.get("to_city", "")).utf8().get_data());
 		shipment.product = int(entry.get("product", 0));
-		if (needs_migration) {
-			const int migrated = demo_migrate_product_index(shipment.product);
+		if (has_saved_products || needs_legacy_migration) {
+			const int migrated = migrate_index(shipment.product);
 			if (migrated < 0) {
-				continue;  // farinha/pão em trânsito: descartado
+				// Produto removido da cadeia em trânsito (farinha/pão ou
+				// body_armor): carga descartada.
+				continue;
 			}
 			shipment.product = migrated;
 		}

@@ -2,11 +2,11 @@
 """Gera e valida os dados das cadeias de produção (Fase F1 do plano).
 
 Fontes de verdade:
-  - docs/economy/production_chains_spec.json  (93 bens, receitas, necessidades)
+  - docs/economy/production_chains_spec.json  (92 bens, receitas, necessidades)
   - data/definitions/scenario/nations.json    (PIB PPP e moeda por nação)
 
 Saídas (nada aqui toca a simulação C++; o núcleo ignora os bens que não conhece):
-  - data/definitions/economy/goods.json       (114 bens, ordem canônica 0..113)
+  - data/definitions/economy/goods.json       (113 bens, ordem canônica 0..112)
   - data/definitions/economy/recipes.json     (receitas normalizadas)
   - data/definitions/economy/needs.json       (necessidades das POPs)
   - data/definitions/economy/currencies.json  (moeda por nação e câmbio derivado)
@@ -148,7 +148,7 @@ EQUIVALENCE = {
     "protein": {"meat": 1.0, "canned_food": 0.8},
 }
 
-# Traduções en/es dos 93 bens novos (pt-BR vem do `name` da spec).
+# Traduções en/es dos 92 bens novos (pt-BR vem do `name` da spec).
 TRANSLATIONS = {
     "flour": ("Flour", "Harina"),
     "bran": ("Bran", "Salvado"),
@@ -241,7 +241,6 @@ TRANSLATIONS = {
     "small_arms": ("Small arms", "Armas ligeras"),
     "artillery": ("Artillery", "Artillería"),
     "military_drone": ("Military drone", "Dron militar"),
-    "body_armor": ("Body armor", "Chaleco de infantería"),
     "infantry_gear": ("Infantry gear", "Equipo de infantería"),
 }
 
@@ -652,7 +651,7 @@ def write_report(goods: list[dict], recipes: list[dict]) -> None:
         "",
         "Gerado por `tools/build_goods_chain.py report`. Não editar à mão.",
         "",
-        f"- Bens: **{len(goods)}** (21 primários em `order` 0..20, 93 novos em 21..113)",
+        f"- Bens: **{len(goods)}** (21 primários em `order` 0..20, 92 novos em 21..112)",
         f"- Receitas: **{len(recipes)}** (coeficiente unitário padrão onde a spec não traz qty)",
         "- Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`",
         "  pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.",
@@ -700,10 +699,10 @@ def check_all() -> list[str]:
     spec_ids = [g["id"] for g in spec["goods"]]
 
     # --- goods
-    if len(goods) != 114:
-        problems.append(f"goods.json: {len(goods)} bens (esperado 114)")
-    if len(spec_ids) != 93:
-        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 93)")
+    if len(goods) != 113:
+        problems.append(f"goods.json: {len(goods)} bens (esperado 113)")
+    if len(spec_ids) != 92:
+        problems.append(f"spec: {len(spec_ids)} bens novos (esperado 92)")
     ids = [g.get("id", "") for g in goods]
     if len(set(ids)) != len(ids):
         problems.append("goods.json: ids repetidos")

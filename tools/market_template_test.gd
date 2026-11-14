@@ -1,6 +1,6 @@
 extends SceneTree
 
-## Mercado no T2: abas Bens/Ofertas, tabela dos 114 bens com ícone e preço na
+## Mercado no T2: abas Bens/Ofertas, tabela dos 113 bens com ícone e preço na
 ## moeda local, filtro por setor, busca e detalhe do preço entregue.
 ##
 ##   godot --headless --path . --script res://tools/market_template_test.gd
@@ -55,8 +55,8 @@ func _run() -> void:
 		print("cidades=%d primeira=%s" % [cities.rows.size(), _cell(cities, 0, 0)])
 
 	var goods: Variant = screen.get("_goods_table")
-	if goods == null or goods.rows.size() != 114:
-		_failures.append("tabela de bens com %d linhas (esperado 114)"
+	if goods == null or goods.rows.size() != 113:
+		_failures.append("tabela de bens com %d linhas (esperado 113)"
 				% (0 if goods == null else goods.rows.size()))
 	else:
 		var first: Dictionary = goods.rows[0][0]
@@ -71,7 +71,7 @@ func _run() -> void:
 
 	screen.call("_set_sector", "food")
 	await _frames(3)
-	if goods != null and goods.rows.size() >= 114:
+	if goods != null and goods.rows.size() >= 113:
 		_failures.append("filtro de setor não reduziu a tabela")
 	else:
 		print("setor food=%d" % (0 if goods == null else goods.rows.size()))
@@ -217,7 +217,7 @@ func _wait_for_summary() -> bool:
 func _finish() -> void:
 	_hud.queue_free()
 	if _failures.is_empty():
-		print("PASS: mercado com 114 bens, ícones, moeda local e ofertas")
+		print("PASS: mercado com 113 bens, ícones, moeda local e ofertas")
 		quit(0)
 		return
 	for failure in _failures:

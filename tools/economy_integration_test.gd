@@ -66,7 +66,7 @@ func _test_geography() -> void:
 
 ## Bens, receitas e cesta alimentar carregados antes de criar o mundo (F2): o
 ## núcleo resolve os ids de insumo na carga e os arrays por produto passam a
-## ter a contagem do goods.json (114). Sem isso o C++ mantém os 21 primários.
+## ter a contagem do goods.json (113). Sem isso o C++ mantém os 21 primários.
 var _expected_products := 21
 
 
@@ -128,6 +128,7 @@ func _test_economy() -> void:
 	_check_investment(sim)
 	_check_save_load(sim)
 	_check_save_migration()
+	_check_save_migration_v7()
 	_check_suitability_gate()
 
 
@@ -268,8 +269,8 @@ func _check_investment(sim) -> void:
 
 func _check_save_load(sim) -> void:
 	var snapshot: Dictionary = sim.demo_to_dict()
-	if int(snapshot.get("version", 0)) != 7:
-		_fail("save: versão do schema deveria ser 7 (é %s)" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 8:
+		_fail("save: versão do schema deveria ser 8 (é %s)" % str(snapshot.get("version")))
 	# F4: a frota/combustível por nação faz parte do save (v5) e precisa
 	# sobreviver ao round-trip; sem o bloco, o load rederivaria a frota.
 	if not snapshot.has("fleets") or Array(snapshot.get("fleets", [])).is_empty():
@@ -359,6 +360,104 @@ func _check_save_migration() -> void:
 	elif not (outputs.has(1) and outputs.has(0)):
 		_fail("migração: mina de ferro deveria virar output 1 (outputs=%s)" % str(outputs))
 	print("[integration] migração v1->v3: mercados e construções remapeados corretamente.")
+
+
+## Migração por id do save v7 com 114 produtos: `body_armor` (order 112) sai e
+## `infantry_gear` (113) passa a ocupar 112. As posições por produto (mercados,
+## produção, construções e cargas) têm de seguir o id, não o índice antigo.
+func _check_save_migration_v7() -> void:
+	var sim := EconomySim.new()
+	_load_chains(sim)
+	sim.initialize_demo()
+	sim.tick_demo()
+	var current: Dictionary = sim.demo_to_dict()
+	var products: Array = current.get("products", [])
+	if products.size() != _expected_products or String(products[112]) != "infantry_gear":
+		_fail("migração v7: layout atual inesperado (%d produtos, último=%s)" % [
+			products.size(), "" if products.is_empty() else String(products[-1])])
+		return
+
+	var old := current.duplicate(true)
+	old["version"] = 7
+	var old_products: Array = products.duplicate()
+	old_products.insert(112, "body_armor")
+	old["products"] = old_products
+
+	# Sentinela no índice 112 (body_armor); o valor real de infantry_gear fica 113.
+	var old_produced: Array = Array(current["produced_total"]).duplicate()
+	old_produced.insert(112, 777.0)
+	old["produced_total"] = old_produced
+	var old_consumed: Array = Array(current["consumed_total"]).duplicate()
+	old_consumed.insert(112, 777.0)
+	old["consumed_total"] = old_consumed
+
+	var old_cities: Array = Array(current["cities"]).duplicate(true)
+	for city in old_cities:
+		var markets: Array = Array(city["markets"]).duplicate(true)
+		markets.insert(112, _v1_market(1234.0, 56.78))
+		city["markets"] = markets
+	old["cities"] = old_cities
+
+	# Uma construção em body_armor (descartada) e uma em infantry_gear (vira 112).
+	old["buildings"] = [
+		{"id": "ARMOR-OLD-1", "city": "AGRIA", "kind": 1,
+			"output_product": 112, "recipe": "body_armor_a", "capacity": 5.0},
+		{"id": "INFANTRY-113", "city": "AGRIA", "kind": 1,
+			"output_product": 113, "recipe": "infantry_gear", "capacity": 5.0},
+	]
+	# body_armor em trânsito é descartado; infantry_gear vira produto 112.
+	old["in_transit"] = [
+		{"to_city": "AGRIA", "product": 112, "amount": 5.0, "arrival_day": 999},
+		{"to_city": "AGRIA", "product": 113, "amount": 7.0, "arrival_day": 999},
+	]
+
+	var migrated := EconomySim.new()
+	_load_chains(migrated)
+	migrated.demo_from_dict(old)
+	var after: Dictionary = migrated.demo_to_dict()
+
+	var after_products: Array = after.get("products", [])
+	if after_products.size() != _expected_products or after_products.has("body_armor") \
+			or String(after_products[112]) != "infantry_gear":
+		_fail("migração v7: lista de produtos não remapeada (%d, body_armor=%s)" % [
+			after_products.size(), str(after_products.has("body_armor"))])
+		return
+
+	var after_produced: Array = Array(after["produced_total"])
+	if after_produced.size() != _expected_products \
+			or not is_equal_approx(float(after_produced[112]), float(old_produced[113])):
+		_fail("migração v7: produced_total não seguiu o id")
+	var after_consumed: Array = Array(after["consumed_total"])
+	if after_consumed.size() != _expected_products \
+			or not is_equal_approx(float(after_consumed[112]), float(old_consumed[113])):
+		_fail("migração v7: consumed_total não seguiu o id")
+
+	var after_markets: Array = Array(Array(after["cities"])[0]["markets"])
+	var old_markets: Array = Array(old_cities[0]["markets"])
+	if after_markets.size() != _expected_products:
+		_fail("migração v7: mercados com %d posições" % after_markets.size())
+	elif absf(float(after_markets[112]["stock"]) - float(old_markets[113]["stock"])) > EPSILON:
+		_fail("migração v7: mercado de infantry_gear não herdou o índice 113")
+
+	var outputs: Array = []
+	for building in after.get("buildings", []):
+		outputs.append(int(building.get("output_product", -1)))
+	if outputs != [112]:
+		_fail("migração v7: construções esperadas [112] (%s)" % str(outputs))
+
+	var transit: Array = after.get("in_transit", [])
+	if transit.size() != 1 or int(transit[0]["product"]) != 112 \
+			or absf(float(transit[0]["amount"]) - 7.0) > EPSILON:
+		_fail("migração v7: trânsito não remapeado (%s)" % str(transit))
+
+	# Round-trip do save já migrado: carregar de novo tem de reproduzir o dict.
+	var restored := EconomySim.new()
+	_load_chains(restored)
+	restored.demo_from_dict(after)
+	if JSON.stringify(restored.demo_to_dict()) != JSON.stringify(after):
+		_fail("migração v7: round-trip do save migrado divergiu")
+	else:
+		print("[integration] migração v7->v8: body_armor descartado por id e round-trip estável.")
 
 
 func _v1_market(stock: float, price: float) -> Dictionary:

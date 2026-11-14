@@ -2,8 +2,8 @@
 
 Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 
-- Bens: **114** (21 primários em `order` 0..20, 93 novos em 21..113)
-- Receitas: **116** (coeficiente unitário padrão onde a spec não traz qty)
+- Bens: **113** (21 primários em `order` 0..20, 92 novos em 21..112)
+- Receitas: **114** (coeficiente unitário padrão onde a spec não traz qty)
 - Preços: primários = `calibrated:legacy` (dado já calibrado); novos = `derived:v1`
   pela fórmula `min_receita(Σ qty × preço_insumo / yield) × (1 + margem)`.
 - Margens: raw 0 · byproduct 0,10 · intermediate 0,25 · final 0,45 · durável/luxo 0,80.
@@ -127,8 +127,7 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 | 109 | `small_arms` | final | final | military | 351.00 | `derived:v1` |
 | 110 | `artillery` | final | final | military | 37348.56 | `derived:v1` |
 | 111 | `military_drone` | final | final | military | 93771.35 | `derived:v1` |
-| 112 | `body_armor` | final | final | military | 763.51 | `derived:v1` |
-| 113 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
+| 112 | `infantry_gear` | final | final | military | 7422.19 | `derived:v1` |
 
 ## Receitas normalizadas
 
@@ -245,6 +244,4 @@ Gerado por `tools/build_goods_chain.py report`. Não editar à mão.
 - `small_arms` â†’ `small_arms` (yield 1): 1× `steel`, 1× `hardware`
 - `artillery` â†’ `artillery` (yield 1): 1× `steel`, 1× `special_alloy`, 1× `industrial_tools`, 1× `cast_parts`, 1× `sensors`
 - `military_drone` â†’ `military_drone` (yield 1): 1× `drone`, 1× `ammunition`, 1× `carbon_fiber`
-- `body_armor_a` â†’ `body_armor` (yield 1): 1× `fabric`, 1× `special_alloy`
-- `body_armor_b` â†’ `body_armor` (yield 1): 1× `synthetic_fabric`, 1× `special_alloy`
 - `infantry_gear` â†’ `infantry_gear` (yield 1): 1× `fabric`, 1× `hardware`, 1× `electronic_components`, 1× `batteries`

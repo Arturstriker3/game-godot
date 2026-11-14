@@ -215,7 +215,7 @@ func _refresh_chain() -> void:
 	_update_card("chain", index)
 
 
-## Seletor do bem da cadeia (114 ids de goods.json, na ordem do contrato).
+## Seletor do bem da cadeia (113 ids de goods.json, na ordem do contrato).
 func _refresh_chain_goods() -> void:
 	if _chain_select == null:
 		return

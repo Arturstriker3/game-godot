@@ -3,7 +3,7 @@ extends SceneTree
 ## F4 — frete exige frota e combustível.
 ##
 ## Cenário mínimo AGRIA/PORTUS (determinístico, 2 cidades, 1 nação DEMO), com os
-## 114 bens carregados para os estoques de fuel/truck/spare_parts existirem.
+## 113 bens carregados para os estoques de fuel/truck/spare_parts existirem.
 ## Valida o contrato da frota nacional:
 ##   - frota inicial é derivada de população/PIB (`source: derived`);
 ##   - sem caminhão, nenhum pedido terrestre embarca;
