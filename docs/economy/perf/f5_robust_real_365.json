@@ -1,0 +1,1264 @@
+{
+  "meta": {
+    "bankruptcies": 35,
+    "chains": true,
+    "days": 365,
+    "money_total": 2200539587.39979,
+    "products": 114
+  },
+  "nations": {
+    "AFG": {
+      "cities": 4,
+      "food": 0.888562591163547,
+      "industrialization": 0.0,
+      "worst": 0.0986378911410109,
+      "worst_city": "AFG-KAN"
+    },
+    "AGO": {
+      "cities": 6,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "AGO-BEN"
+    },
+    "ALB": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "ARE": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999998,
+      "worst_city": "ARE-ABU"
+    },
+    "ARG": {
+      "cities": 10,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999998,
+      "worst_city": "ARG-MEN"
+    },
+    "ARM": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "ARM-YER"
+    },
+    "ATG": {
+      "cities": 1,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "AUS": {
+      "cities": 18,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999686,
+      "worst_city": "AUS-MOR"
+    },
+    "AUT": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "AZE": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999994,
+      "worst_city": "AZE-GAN"
+    },
+    "BDI": {
+      "cities": 2,
+      "food": 0.999999999999996,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "BDI-BUJ"
+    },
+    "BEL": {
+      "cities": 3,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "BEL-ANR"
+    },
+    "BEN": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BFA": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BGD": {
+      "cities": 10,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BGR": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BHR": {
+      "cities": 1,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BHS": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BIH": {
+      "cities": 2,
+      "food": 0.999999999999993,
+      "industrialization": 0.0,
+      "worst": 0.999999999999991,
+      "worst_city": "BIH-SAR"
+    },
+    "BLR": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "BLR-GOM"
+    },
+    "BLZ": {
+      "cities": 2,
+      "food": 0.999999999999957,
+      "industrialization": 0.0,
+      "worst": 0.999999999999948,
+      "worst_city": "BLZ-BELI"
+    },
+    "BOL": {
+      "cities": 5,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "BOL-SUC"
+    },
+    "BRA": {
+      "cities": 25,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999972,
+      "worst_city": "BRA-TEF"
+    },
+    "BRB": {
+      "cities": 1,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BRN": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BTN": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "BWA": {
+      "cities": 3,
+      "food": 0.999999999999992,
+      "industrialization": 0.0,
+      "worst": 0.999999999999985,
+      "worst_city": "BWA-GAB"
+    },
+    "CAF": {
+      "cities": 3,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "CAF-BAN"
+    },
+    "CAN": {
+      "cities": 25,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999802,
+      "worst_city": "CAN-IQA"
+    },
+    "CHE": {
+      "cities": 3,
+      "food": 0.999999999999989,
+      "industrialization": 0.0,
+      "worst": 0.999999999999976,
+      "worst_city": "CHE-BER"
+    },
+    "CHL": {
+      "cities": 4,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "CHL-SAN"
+    },
+    "CHN": {
+      "cities": 28,
+      "food": 1.0,
+      "industrialization": 0.0006080594544222,
+      "worst": 0.999999999999936,
+      "worst_city": "CHN-GAR"
+    },
+    "CIV": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "CMR": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "COD": {
+      "cities": 9,
+      "food": 1.0,
+      "industrialization": 0.000114267275101064,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "COG": {
+      "cities": 3,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999907,
+      "worst_city": "COG-OWA"
+    },
+    "COL": {
+      "cities": 7,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.99999999999991,
+      "worst_city": "COL-MIT"
+    },
+    "CRI": {
+      "cities": 2,
+      "food": 0.99999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999932,
+      "worst_city": "CRI-LIM"
+    },
+    "CUB": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "CYP": {
+      "cities": 2,
+      "food": 0.999999999999993,
+      "industrialization": 0.0,
+      "worst": 0.999999999999991,
+      "worst_city": "CYP-LIM"
+    },
+    "CZE": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "DEU": {
+      "cities": 12,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999995,
+      "worst_city": "DEU-DUS"
+    },
+    "DJI": {
+      "cities": 2,
+      "food": 0.295631892427713,
+      "industrialization": 0.0,
+      "worst": 0.295602320893605,
+      "worst_city": "DJI-DJI"
+    },
+    "DMA": {
+      "cities": 1,
+      "food": 0.999999999999758,
+      "industrialization": 0.0,
+      "worst": 0.999999999999758,
+      "worst_city": "DMA-ROS"
+    },
+    "DNK": {
+      "cities": 4,
+      "food": 0.986824625762721,
+      "industrialization": 0.0,
+      "worst": 0.0,
+      "worst_city": "GRL-ILU"
+    },
+    "DOM": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "DZA": {
+      "cities": 7,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999975,
+      "worst_city": "DZA-TAM"
+    },
+    "ECU": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "EGY": {
+      "cities": 7,
+      "food": 0.770748069259314,
+      "industrialization": 0.0,
+      "worst": 0.589544727945909,
+      "worst_city": "EGY-CAI"
+    },
+    "ERI": {
+      "cities": 2,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "ERI-ASM"
+    },
+    "ESP": {
+      "cities": 9,
+      "food": 0.984413563371151,
+      "industrialization": 0.0,
+      "worst": 0.623111097720629,
+      "worst_city": "ESP-LAS"
+    },
+    "EST": {
+      "cities": 2,
+      "food": 0.999999999999995,
+      "industrialization": 0.0,
+      "worst": 0.999999999999971,
+      "worst_city": "EST-TAR"
+    },
+    "ETH": {
+      "cities": 8,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999995,
+      "worst_city": "ETH-GON"
+    },
+    "FIN": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "FJI": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "FRA": {
+      "cities": 15,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999727,
+      "worst_city": "NCL-WE"
+    },
+    "GAB": {
+      "cities": 2,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "GAB-LIB"
+    },
+    "GBR": {
+      "cities": 11,
+      "food": 0.999898886975422,
+      "industrialization": 0.0,
+      "worst": 0.0,
+      "worst_city": "FLK-STA"
+    },
+    "GEO": {
+      "cities": 2,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999977,
+      "worst_city": "GEO-BAT"
+    },
+    "GHA": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "GIN": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "GMB": {
+      "cities": 1,
+      "food": 0.999999999999946,
+      "industrialization": 0.0,
+      "worst": 0.999999999999946,
+      "worst_city": "GMB-BAN"
+    },
+    "GNB": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "GNQ": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "GRC": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "GRD": {
+      "cities": 1,
+      "food": 0.999999999999427,
+      "industrialization": 0.0,
+      "worst": 0.999999999999427,
+      "worst_city": "GRD-SAI"
+    },
+    "GTM": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "GUY": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "HND": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "HRV": {
+      "cities": 2,
+      "food": 0.999999999999992,
+      "industrialization": 0.0,
+      "worst": 0.99999999999999,
+      "worst_city": "HRV-ZAG"
+    },
+    "HTI": {
+      "cities": 2,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "HTI-POR"
+    },
+    "HUN": {
+      "cities": 2,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999998,
+      "worst_city": "HUN-BUD"
+    },
+    "IDN": {
+      "cities": 19,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "IDN-BAN"
+    },
+    "IND": {
+      "cities": 25,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "IND-LUC"
+    },
+    "IRL": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "IRN": {
+      "cities": 9,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999986,
+      "worst_city": "IRN-IRA"
+    },
+    "IRQ": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "IRQ-ALM"
+    },
+    "ISL": {
+      "cities": 2,
+      "food": 0.999999999999982,
+      "industrialization": 0.0,
+      "worst": 0.999999999999956,
+      "worst_city": "ISL-AKU"
+    },
+    "ISR": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "ITA": {
+      "cities": 10,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999293,
+      "worst_city": "SMR-SANM"
+    },
+    "JAM": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "JOR": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "JOR-IRB"
+    },
+    "JPN": {
+      "cities": 11,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "JPN-OSA"
+    },
+    "KAZ": {
+      "cities": 6,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "KAZ-SHY"
+    },
+    "KEN": {
+      "cities": 4,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "KEN-KAK"
+    },
+    "KGZ": {
+      "cities": 2,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "KGZ-BIS"
+    },
+    "KHM": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "KNA": {
+      "cities": 1,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "KNA-BAS"
+    },
+    "KOR": {
+      "cities": 6,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "KOR-BUS"
+    },
+    "KWT": {
+      "cities": 2,
+      "food": 0.999999999999996,
+      "industrialization": 0.0,
+      "worst": 0.999999999999976,
+      "worst_city": "KWT-KUW"
+    },
+    "LAO": {
+      "cities": 2,
+      "food": 0.999999999999996,
+      "industrialization": 0.0,
+      "worst": 0.99999999999997,
+      "worst_city": "LAO-SAV"
+    },
+    "LBN": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999993,
+      "worst_city": "LBN-TRI"
+    },
+    "LBR": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "LBY": {
+      "cities": 5,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "LCA": {
+      "cities": 1,
+      "food": 0.999999999999819,
+      "industrialization": 0.0,
+      "worst": 0.999999999999819,
+      "worst_city": "LCA-CAS"
+    },
+    "LKA": {
+      "cities": 2,
+      "food": 0.999999999999995,
+      "industrialization": 0.0,
+      "worst": 0.999999999999994,
+      "worst_city": "LKA-COL"
+    },
+    "LSO": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "LTU": {
+      "cities": 2,
+      "food": 0.999999999999996,
+      "industrialization": 0.0,
+      "worst": 0.999999999999989,
+      "worst_city": "LTU-KAU"
+    },
+    "LUX": {
+      "cities": 1,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "LVA": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "MAR": {
+      "cities": 6,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999177,
+      "worst_city": "MAR-IML"
+    },
+    "MDA": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "MDG": {
+      "cities": 3,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999991,
+      "worst_city": "MDG-TOA"
+    },
+    "MEX": {
+      "cities": 14,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "MEX-GUA"
+    },
+    "MKD": {
+      "cities": 2,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "MKD-SKO"
+    },
+    "MLI": {
+      "cities": 5,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "MLT": {
+      "cities": 1,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "MMR": {
+      "cities": 5,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "MMR-NAY"
+    },
+    "MNE": {
+      "cities": 2,
+      "food": 0.999999999999988,
+      "industrialization": 0.0,
+      "worst": 0.999999999999987,
+      "worst_city": "MNE-POD"
+    },
+    "MNG": {
+      "cities": 4,
+      "food": 0.999999999999996,
+      "industrialization": 0.0,
+      "worst": 0.999999999999971,
+      "worst_city": "MNG-ERD"
+    },
+    "MOZ": {
+      "cities": 4,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999991,
+      "worst_city": "MOZ-CHI"
+    },
+    "MRT": {
+      "cities": 4,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999965,
+      "worst_city": "MRT-ZOU"
+    },
+    "MWI": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "MYS": {
+      "cities": 5,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "MYS-GEO"
+    },
+    "NAM": {
+      "cities": 3,
+      "food": 0.999999999999992,
+      "industrialization": 0.0,
+      "worst": 0.999999999999945,
+      "worst_city": "NAM-WAL"
+    },
+    "NED": {
+      "cities": 7,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "NED-RTM"
+    },
+    "NER": {
+      "cities": 5,
+      "food": 0.978538164506466,
+      "industrialization": 0.0,
+      "worst": 0.688669070548191,
+      "worst_city": "NER-TAH"
+    },
+    "NGA": {
+      "cities": 13,
+      "food": 0.829473286049224,
+      "industrialization": 0.0,
+      "worst": 0.563687432956203,
+      "worst_city": "NGA-LAG"
+    },
+    "NIC": {
+      "cities": 2,
+      "food": 0.999999999999994,
+      "industrialization": 0.0,
+      "worst": 0.999999999999993,
+      "worst_city": "NIC-MAN"
+    },
+    "NOR": {
+      "cities": 3,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999989,
+      "worst_city": "NOR-BER"
+    },
+    "NPL": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "NZL": {
+      "cities": 3,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999991,
+      "worst_city": "NZL-WEL"
+    },
+    "OMN": {
+      "cities": 3,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999988,
+      "worst_city": "OMN-SAL"
+    },
+    "PAK": {
+      "cities": 14,
+      "food": 0.460884540104288,
+      "industrialization": 0.0,
+      "worst": 0.220542830511396,
+      "worst_city": "PAK-HYD"
+    },
+    "PAN": {
+      "cities": 2,
+      "food": 0.999999999999993,
+      "industrialization": 0.0,
+      "worst": 0.999999999999992,
+      "worst_city": "PAN-PAN"
+    },
+    "PER": {
+      "cities": 5,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "PHL": {
+      "cities": 6,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "PNG": {
+      "cities": 4,
+      "food": 0.999999999999965,
+      "industrialization": 0.0,
+      "worst": 0.999999999999915,
+      "worst_city": "PNG-ARA"
+    },
+    "POL": {
+      "cities": 6,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "PRK": {
+      "cities": 3,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999992,
+      "worst_city": "PRK-WON"
+    },
+    "PRT": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "PRY": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "PSX": {
+      "cities": 2,
+      "food": 0.185512489136591,
+      "industrialization": 0.0,
+      "worst": 0.185485853869606,
+      "worst_city": "PSX-GAZ"
+    },
+    "QAT": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "ROU": {
+      "cities": 4,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "RUS": {
+      "cities": 45,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999997263,
+      "worst_city": "RUS-PRO"
+    },
+    "RWA": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "RWA-KIG"
+    },
+    "SAH": {
+      "cities": 3,
+      "food": 0.240395523166421,
+      "industrialization": 0.0,
+      "worst": 0.234480155103081,
+      "worst_city": "SAH-TIF"
+    },
+    "SAU": {
+      "cities": 7,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "SAU-KHA"
+    },
+    "SDN": {
+      "cities": 7,
+      "food": 0.534582516679997,
+      "industrialization": 0.0,
+      "worst": 0.0985064917677265,
+      "worst_city": "SDN-KHA"
+    },
+    "SEN": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "SEN-DAK"
+    },
+    "SGP": {
+      "cities": 1,
+      "food": 0.90600945002625,
+      "industrialization": 0.0,
+      "worst": 0.90600945002625,
+      "worst_city": "SGP-SIN"
+    },
+    "SLB": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "SLE": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "SLV": {
+      "cities": 2,
+      "food": 0.999999999999995,
+      "industrialization": 0.0,
+      "worst": 0.999999999999984,
+      "worst_city": "SLV-SANM"
+    },
+    "SOL": {
+      "cities": 2,
+      "food": 0.588795701658689,
+      "industrialization": 0.0,
+      "worst": 0.503128139504252,
+      "worst_city": "SOL-HAR"
+    },
+    "SOM": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "SRB": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "SSD": {
+      "cities": 3,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999994,
+      "worst_city": "SSD-JUB"
+    },
+    "SUR": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "SVK": {
+      "cities": 2,
+      "food": 0.999999999999996,
+      "industrialization": 0.0,
+      "worst": 0.999999999999994,
+      "worst_city": "SVK-BRA"
+    },
+    "SVN": {
+      "cities": 2,
+      "food": 0.999999999999982,
+      "industrialization": 0.0,
+      "worst": 0.999999999999966,
+      "worst_city": "SVN-MAR"
+    },
+    "SWE": {
+      "cities": 3,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999995,
+      "worst_city": "SWE-GOT"
+    },
+    "SWZ": {
+      "cities": 2,
+      "food": 0.999999999999982,
+      "industrialization": 0.0,
+      "worst": 0.999999999999957,
+      "worst_city": "SWZ-MBA"
+    },
+    "SYR": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "SYR-DAM"
+    },
+    "TCD": {
+      "cities": 4,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "TGO": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "THA": {
+      "cities": 5,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": "THA-BAN"
+    },
+    "TJK": {
+      "cities": 2,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "TJK-ISF"
+    },
+    "TKM": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "TLS": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "TTO": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "TUN": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "TUR": {
+      "cities": 10,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "TUR-ANT"
+    },
+    "TWN": {
+      "cities": 3,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999998,
+      "worst_city": "TWN-KAO"
+    },
+    "TZA": {
+      "cities": 5,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999997,
+      "worst_city": "TZA-MWA"
+    },
+    "UGA": {
+      "cities": 4,
+      "food": 0.999999999999997,
+      "industrialization": 0.0,
+      "worst": 0.999999999999988,
+      "worst_city": "UGA-NJE"
+    },
+    "UKR": {
+      "cities": 7,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "URY": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "USA": {
+      "cities": 33,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999959,
+      "worst_city": "USA-POR"
+    },
+    "UZB": {
+      "cities": 4,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "UZB-AND"
+    },
+    "VCT": {
+      "cities": 1,
+      "food": 0.999999999999864,
+      "industrialization": 0.0,
+      "worst": 0.999999999999864,
+      "worst_city": "VCT-KIN"
+    },
+    "VEN": {
+      "cities": 5,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999996,
+      "worst_city": "VEN-VLN"
+    },
+    "VNM": {
+      "cities": 7,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "XKX": {
+      "cities": 2,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 1.0,
+      "worst_city": ""
+    },
+    "YEM": {
+      "cities": 3,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999705,
+      "worst_city": "YEM-ALG"
+    },
+    "ZAF": {
+      "cities": 6,
+      "food": 1.0,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "ZAF-CAP"
+    },
+    "ZMB": {
+      "cities": 3,
+      "food": 0.999999999999999,
+      "industrialization": 0.0,
+      "worst": 0.999999999999999,
+      "worst_city": "ZMB-LUS"
+    },
+    "ZWE": {
+      "cities": 2,
+      "food": 0.999999999999998,
+      "industrialization": 0.0,
+      "worst": 0.999999999999998,
+      "worst_city": "ZWE-HAR"
+    }
+  }
+}

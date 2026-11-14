@@ -101,6 +101,55 @@ const LAND_COMPETING_RESOURCES: Array[String] = ["cotton", "wood"]
 ## firma/investimento dos renováveis (soja/madeira) que vêm depois na iteração.
 const BULK_LOW_VALUE_RESOURCES: Array[String] = ["sulfur"]
 
+## F5 — faixa morta dos limiares de decisão da IA (robustez às taxas reais).
+##
+## O preço local é `base ÷ taxa` e a IA compara o preço-âncora (preço × taxa);
+## com taxa não binária o resultado difere do mundo XGS por ~1 ulp (2e-16
+## relativo). Um limiar comparado no fio (margem mínima, payback, folga de
+## comida, escassez) transforma essa diferença invisível em uma decisão
+## diferente e o mundo — caótico por construção — diverge ao longo de 365 d
+## (ver GAME_STATE §15). Todo limiar da IA é avaliado com uma faixa morta
+## RELATIVA: diferenças abaixo dela são "no limiar" e a decisão cai no ramo
+## conservador (não constrói, não atravessa a cadeia, não expande).
+##
+## A faixa é 1e-9 (não 1%): medido no teste de mundo, uma faixa de 1% na folga
+## alimentar encolhia a expansão de comida e derrubava EGY de 0,979 para 0,740
+## em 60 d. 1e-9 remove o ruído de 1 ulp (ordens de grandeza abaixo) sem mudar
+## nenhuma decisão economicamente interpretável.
+const DECISION_DEADBAND := 1e-9
+const DECISION_FLOOR := 1e-12
+
+
+## true só quando `value` está CLARAMENTE acima de `threshold` (fora da faixa
+## morta relativa). Use o negativo para os gates invertidos: um valor dentro da
+## faixa é tratado como "não passou" — nunca decide por 1 ulp.
+static func clear_above(value: float, threshold: float) -> bool:
+	if value <= threshold:
+		return false
+	return value > threshold + maxf(DECISION_FLOOR, absf(threshold) * DECISION_DEADBAND)
+
+
+## true só quando `value` está CLARAMENTE abaixo de `threshold`.
+static func clear_below(value: float, threshold: float) -> bool:
+	if value >= threshold:
+		return false
+	return value < threshold - maxf(DECISION_FLOOR, absf(threshold) * DECISION_DEADBAND)
+
+
+## F5 — a conversão de câmbio é INEXATA quando a taxa não é 1 nem uma potência
+## de 2. Com 1,0 (XGS) ou 0,5 (`--fx=half`), `preço × taxa` devolve exatamente o
+## valor pré-F5; a IA pode rodar o caminho calibrado original sem amortecer.
+static func inexact_fx(rate: float) -> bool:
+	if rate <= 0.0:
+		return false
+	# Potências de 2 usadas nos testes/mundo XGS (1 e 0,5) e vizinhas comuns:
+	# a comparação exata evita log/pow no laço quente (receitas × cidade).
+	if rate == 1.0 or rate == 0.5 or rate == 2.0 or rate == 0.25 \
+			or rate == 4.0 or rate == 0.125 or rate == 8.0:
+		return false
+	return true
+
+
 ## Dados das cadeias (F2): receitas e ids de produto vêm dos mesmos JSON que o
 ## núcleo carrega. O template de uma receita NÃO fixa índices: o índice é o
 ## `order` do goods.json, preservando os 21 primários em 0..20.
@@ -271,6 +320,7 @@ static func anchor_price(city: Dictionary, product: int) -> float:
 static func best_recipe(resource: String, city: Dictionary) -> Dictionary:
 	var best: Dictionary = {}
 	var best_cost := INF
+	var robust := inexact_fx(float(city.get("fx_rate", 1.0)))
 	for recipe: Dictionary in recipes_for(resource):
 		var cost := 0.0
 		var available := true
@@ -284,7 +334,12 @@ static func best_recipe(resource: String, city: Dictionary) -> Dictionary:
 			if price <= 0.0:
 				price = 1.0
 			cost += float(item["qty"]) * price / float(recipe["yield"])
-		if available and cost < best_cost:
+		# Ranking com faixa morta só com câmbio inexato (F5): custos empatados
+		# dentro de 1e-9 relativo mantêm a primeira alternativa da ordem
+		# declarada em recipes.json. No mundo XGS (taxa 1) a comparação é a
+		# original.
+		var better := clear_below(cost, best_cost) if robust else cost < best_cost
+		if available and (best.is_empty() or better):
 			best_cost = cost
 			best = recipe
 	return best

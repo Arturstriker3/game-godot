@@ -1,0 +1,61 @@
+F5 — IA robusta às taxas reais: perf release e evidências de mundo (2026-11-14)
+===============================================================================
+
+Escopo: só IA/dados (core/economy/ai/*.gd) e o critério de aceite
+(tools/economy_world_test.gd + tools/economy_world_sweep.gd). O núcleo C++ está
+byte-idêntico ao HEAD (4ad978d/2babed5): nenhum rebuild de release foi necessário
+além da DLL de debug, que foi reconstruída e restaurada.
+
+Perf release (caminho real do jogo, DLL release copiada sobre o nome debug e a
+debug real de 11.742.720 bytes restaurada ao final):
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+  etapa                          média    p95     máx
+  tick C++ (parede do worker)    41,18   48,60   48,87  ms   (portão <= 50)
+  tick em regime (dia > 2)       41,31   48,60   48,87  ms
+  status C++                     19,25   20,60   24,40  ms   (portão <= 30)
+  IA trabalho fatiado/dia        18,51   21,19   22,24  ms   (portão <= 30)
+  VIRADA (frame da main)         12,74   13,52   13,52  ms
+  FRAME DE PICO                  12,74   13,52   13,52  ms
+  memória estática (834 cidades) 512,8 MB                     (portão <= 750)
+
+Comparação com F5 pré-rodada: tick p95 47,2-48,3 → 48,60; status p95 20,5-21,1
+→ 20,60; IA p95 18,2-18,8 → 21,19 (ainda dentro de 30). A IA paga ~2,4 ms/dia
+pela faixa morta e pela agregação de cobertura alimentar por nação.
+
+Mundo (economy_world_test --ai=1, baseline f4_world_ai_*; tolerância de comida
+0,025 e falências baseline + 2):
+
+  variação                       365 d                              situação
+  --currencies=0 (XGS)           0 nações piores, falências <= 28   verde
+  --fx=half (0,5 exato)          0 nações piores, falências <= 28   verde
+  --fx=real (taxas reais)        4 nações piores, 35 falências      FALHA
+     AFG 1,000 -> 0,889 | DJI 0,391 -> 0,296 | EGY 1,000 -> 0,771 |
+     NGA 1,000 -> 0,829
+  60 d com IA (taxas reais)      0 nações piores                    verde
+  60 d sem IA                    0 nações piores                    verde
+
+Diagnóstico (A/B sem IA): real vs XGS em 365 d difere no máximo 0,0005 de comida
+— o núcleo isolado é estável. A divergência nasce das decisões discretas de
+comércio/IA sob 1 ulp de `preço local = base ÷ taxa`, não de vazamento de
+unidade. A faixa morta de 1e-9 remove o ruído no limiar, mas não impede o desvio
+acumulado de caixa/oferta ao longo de 365 d.
+
+Testados e descartados por medição (60 d):
+  - faixa morta de 1% na folga alimentar: EGY 0,979 -> 0,740;
+  - EMA por cidade da margem/folga: atrasava a primeira fazenda;
+  - histerese 1,10/1,06: SDN/SOL pioravam;
+  - regra de fome a 85%: cortava a renda mineral que paga a comida;
+  - ordenação de ofertas com tolerância no C++: EGY 0,482 em 60 d.
+
+Pendência: eliminar o round-trip `(base ÷ taxa) × taxa` na fonte (preço interno
+na âncora, local só publicado — opção c, que perde o teste de inversão por taxa)
+ou aceitar a excetuação documentada. A IA sozinha não fecha os 365 d reais.
+
+Suíte verde nesta rodada: currency_trade, fleet_fuel, pop_needs,
+production_chain, economy_integration, economy_ai, population_demo,
+port_capacity, economy_world_test 60 d (com/sem IA), XGS/half 365 d.
+
+Arquivos de apoio: `f5_robust_xgs_365.json`, `f5_robust_half_365.json`,
+`f5_robust_real_365.json`.
