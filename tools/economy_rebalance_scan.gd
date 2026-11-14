@@ -22,6 +22,8 @@ const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
 const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 
 var _days := 60
 var _out := "res://docs/economy/economy_rebalance_scan.json"
@@ -51,6 +53,11 @@ func _load_json(path: String) -> Variant:
 func _load_array(path: String) -> Array:
 	var data: Variant = _load_json(path)
 	return data if typeof(data) == TYPE_ARRAY else []
+
+
+func _load_dict(path: String) -> Dictionary:
+	var data: Variant = _load_json(path)
+	return data if typeof(data) == TYPE_DICTIONARY else {}
 
 
 func _cities_with_center(cities: Array) -> Array:
@@ -92,8 +99,12 @@ func _run() -> void:
 	var geo = GeographyServiceScript.new()
 	geo.load_data()
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
+	# F2/F3: bens, receitas e necessidades ANTES do mundo — os ids de insumo e
+	# as categorias das POPs são resolvidos na carga.
 	sim.demo_set_goods(goods)
+	sim.demo_set_recipes(_load_array(RECIPES_PATH))
+	sim.demo_set_needs(_load_dict(NEEDS_PATH))
+	sim.initialize_demo_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
 	geo.apply_to_sim(sim, _cities_with_center(cities))
 	var ai = EconomicAIScript.new()
 	ai.setup(sim, geo)

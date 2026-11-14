@@ -362,6 +362,8 @@ private:
 	// segurança do vetor.
 	static constexpr int kDemoMaxProducts = 160;
 	static constexpr int kDemoMaxRecipeInputs = 6;
+	// F3: níveis de necessidade (basic/life/luxury, needs.json).
+	static constexpr int kDemoMaxNeedsLevels = 3;
 	// Cesta alimentar (B3/B4) agora data-driven (demo_set_needs), derivada de
 	// needs.json (basic/food/substitutes + equivalence.calories). O padrão
 	// preserva a cesta validada de 5 culturas até o autoload carregar o dado.
@@ -389,6 +391,24 @@ private:
 	static_assert(offsetof(DemoMarket, stock) == 0, "DemoMarket: stock primeiro");
 	static_assert(offsetof(DemoMarket, surplus) == 7 * sizeof(double),
 		"DemoMarket: os 8 campos publicados precisam ser contíguos");
+
+	// F3: uma categoria de necessidade (needs.json → levels.<nível>.categories).
+	// `substitutes` mantém a ordem declarada (do melhor ao último caso) e
+	// `equivalence` converte tonelada real em tonelada-equivalente da categoria.
+	struct DemoNeedsCategory {
+		std::string id;
+		double per_capita_day = 0.0;  // per_capita_t_month / 30
+		std::vector<int> substitutes;
+		std::vector<double> equivalence;
+	};
+
+	// F3: um nível (basic/life/luxury) com peso na satisfação agregada.
+	struct DemoNeedsLevel {
+		std::string id;
+		int priority = 1;
+		double weight = 0.0;
+		std::vector<DemoNeedsCategory> categories;
+	};
 
 	struct DemoRecipe {
 		std::string id;
@@ -469,6 +489,19 @@ private:
 		// Consumo por categoria/slot da cesta alimentar (data-driven).
 		std::vector<double> desired_by_category;
 		std::vector<double> consumed_by_category;
+		// F3: necessidades em três níveis. `level_*` têm kDemoMaxNeedsLevels
+		// posições (t-eq/dia). `needs_satisfaction` é a média ponderada dos
+		// níveis com dado; `needs_level` é o maior nível atendido (>= metade da
+		// cesta). `pop.satisfaction` continua sendo a satisfação ALIMENTAR
+		// (contrato do status/UI legado e do teste de fome).
+		std::vector<double> level_want;
+		std::vector<double> level_consumed;
+		std::vector<double> level_satisfaction;
+		std::vector<double> durable_stock;  // por produto (toneladas)
+		double needs_spend = 0.0;           // life + luxury no dia
+		double durable_spend = 0.0;         // compras de duráveis no dia
+		double needs_satisfaction = 0.0;
+		int needs_level = 0;
 	};
 
 	// Reserva mineral do território da cidade para um produto. Compartilhada
@@ -519,6 +552,8 @@ private:
 		double construction_revenue_pending = 0.0;
 		double capital_income_next = 0.0;
 		double gdp = 0.0;
+		// F3: compra institucional do Estado no dia (paper/computer).
+		double government_goods_spend = 0.0;
 		double revenue_by_product[kDemoMaxProducts] = {};
 		// Fluxos comerciais do dia, por produto.
 		double imported[kDemoMaxProducts] = {};
@@ -582,7 +617,7 @@ private:
 	struct DemoStatusCitySlot {
 		// Quantidade de escalares publicados em demo_fill_city_status; o
 		// espelho abaixo é indexado por ordem de chamada de sync_scalar.
-		static constexpr int kDemoStatusScalarCount = 25;
+		static constexpr int kDemoStatusScalarCount = 26;
 		Dictionary dict;
 		// Strings estáveis: evitam realocar String a cada dia.
 		std::string id_src, name_src, nation_src, home_src, landmass_src;
@@ -609,7 +644,7 @@ private:
 		Dictionary pop;
 		// Espelhos do que já foi escrito em `pop`: só reescreve o que mudou
 		// (cada escrita é uma chamada à ponte GDExtension com hash da chave).
-		double pop_written[20] = {};
+		double pop_written[26] = {};
 		bool pop_written_filled = false;
 		bool pop_published = false;
 		// Espelho dos 25 escalares publicados por cidade (população, PIB,
@@ -668,7 +703,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend;
 		DemoStatusKeys();
 	};
 
@@ -915,6 +950,21 @@ private:
 	 * Mantém a cesta de 5 culturas quando o dicionário não traz o dado.
 	 */
 	void demo_set_needs(const Dictionary& needs);
+	// F3: zera/redimensiona o estado de necessidades de uma POP (duráveis por
+	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
+	void demo_init_pop_needs(DemoPop& pop) const;
+	/**
+	 * Consome uma categoria de necessidade da POP. `want_ge` é a cesta do dia em
+	 * toneladas-equivalentes; devolve o consumido em t-eq e debita o orçamento.
+	 * Percorre os substitutos na ordem declarada (do melhor ao último caso),
+	 * registrando a demanda mesmo quando não há estoque (sinal para a IA).
+	 * A cesta alimentar básica mantém o laço próprio validado (proporcional à
+	 * disponibilidade) e não passa por aqui.
+	 */
+	double demo_consume_category(DemoCity& city, const DemoNeedsCategory& category,
+		double want_ge, double& budget, double& spend);
+	// F3: compra institucional do governo (paper/computer) no dia.
+	void demo_consume_government(DemoCity& city);
 	/**
 	 * Bootstrap industrial (§12.3): no cenário real, semeia uma planta
 	 * estratégica de referência (moinho + padaria) em poucas capitais quando o
@@ -1003,6 +1053,18 @@ private:
 	// Cesta alimentar data-driven (needs.json); default = 5 culturas validadas.
 	std::vector<int> demo_food_products_;
 	std::vector<double> demo_food_factors_;
+	// F3: tabela de necessidades por nível (needs.json), substitutos,
+	// equivalência e consumo institucional do governo. `demo_needs_loaded_`
+	// falso = comportamento de 1 nível (cenário AGRIA/PORTUS e saves antigos).
+	std::vector<DemoNeedsLevel> demo_needs_levels_;
+	bool demo_needs_loaded_ = false;
+	int demo_needs_food_level_ = -1;
+	// Decaimento diário que perde exatamente durable_replacement_per_year em
+	// 365 dias: 1 - (1 - r)^(1/365).
+	double demo_durable_decay_ = 0.0;
+	std::vector<char> demo_product_durable_;  // por produto (goods.json durable)
+	std::vector<int> demo_government_products_;
+	std::vector<double> demo_government_per_capita_day_;
 	// Bootstrap industrial já executado neste mundo.
 	bool demo_industry_seeded_ = false;
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).

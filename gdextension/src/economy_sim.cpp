@@ -121,6 +121,8 @@ EconomySim::EconomySim() {
 		demo_food_products_.push_back(kDemoFoodProductIds[index]);
 		demo_food_factors_.push_back(kDemoCaloricFactor[index]);
 	}
+	// F3: sem goods.json carregado nenhum dos 21 primários é durável.
+	demo_product_durable_.assign(kDemoMaxProducts, 0);
 }
 
 EconomySim::~EconomySim() {
@@ -990,10 +992,14 @@ void EconomySim::demo_set_goods(const Array& goods) {
 	const int previous_products = demo_products_;
 	std::vector<std::string> names = demo_product_names_;
 	std::vector<double> prices(kDemoMaxProducts, 0.0);
+	std::vector<char> durable(kDemoMaxProducts, 0);
 	for (int index = 0; index < previous_products; ++index) {
 		if (index < static_cast<int>(names.size())) {
 			prices[static_cast<std::size_t>(index)] = demo_base_prices_[index];
 		}
+	}
+	for (int index = 0; index < static_cast<int>(demo_product_durable_.size()); ++index) {
+		durable[static_cast<std::size_t>(index)] = demo_product_durable_[static_cast<std::size_t>(index)];
 	}
 	for (int index = 0; index < goods.size(); ++index) {
 		const Dictionary entry = goods[index];
@@ -1011,6 +1017,8 @@ void EconomySim::demo_set_goods(const Array& goods) {
 		if (price > 0.0) {
 			prices[static_cast<std::size_t>(order)] = price;
 		}
+		durable[static_cast<std::size_t>(order)] =
+			bool(entry.get("durable", false)) ? 1 : 0;
 	}
 	int product_count = 21;
 	for (int index = 0; index < static_cast<int>(names.size()); ++index) {
@@ -1032,6 +1040,7 @@ void EconomySim::demo_set_goods(const Array& goods) {
 		demo_base_prices_[index] = price > 0.0 ? price : 40.0;
 	}
 	demo_products_ = product_count;
+	demo_product_durable_ = std::move(durable);
 
 	// Mundo já inicializado: os produtos novos entram com o preço-base e sem
 	// estoque. Os índices existentes (0..previous_products-1) não mudam.
@@ -1159,6 +1168,7 @@ void EconomySim::initialize_demo() {
 	for (DemoCity& city : demo_cities_) {
 		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
 		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
+		demo_init_pop_needs(city.pop);
 	}
 	demo_rebuild_indexes();
 }
@@ -1221,6 +1231,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		city.pop.savings = city.simulation_population * kDemoSavingsPerCapita;
 		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
 		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
+		demo_init_pop_needs(city.pop);
 		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
 		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
 		// o dado real em tempo de execução.
@@ -2814,6 +2825,18 @@ void EconomySim::demo_tick_core() {
 		city.pop.consumed = 0.0;
 		city.pop.need = 0.0;
 		city.pop.satisfaction = 0.0;
+		city.pop.needs_spend = 0.0;
+		city.pop.durable_spend = 0.0;
+		city.pop.needs_satisfaction = 0.0;
+		city.pop.needs_level = 0;
+		// F3: níveis e duráveis (redimensiona só quando o mundo mudou).
+		demo_init_pop_needs(city.pop);
+		for (int need_level = 0; need_level < kDemoMaxNeedsLevels; ++need_level) {
+			city.pop.level_want[need_level] = 0.0;
+			city.pop.level_consumed[need_level] = 0.0;
+			city.pop.level_satisfaction[need_level] = 0.0;
+		}
+		city.government_goods_spend = 0.0;
 		city.service_wage_bill = 0.0;
 		city.service_revenue = 0.0;
 		city.service_profit = 0.0;
@@ -3231,13 +3254,14 @@ void EconomySim::demo_tick_core() {
 			}
 		}
 		const double food_cost = pop.need * cheapest_food;
+		double food_topup = 0.0;
 		if (cheapest_food > 0.0 && budget < food_cost) {
-			const double topup = std::min(food_cost - budget,
+			food_topup = std::min(food_cost - budget,
 				std::max(0.0, city.government_budget));
-			if (topup > 0.0) {
-				budget += topup;
-				city.government_budget -= topup;
-				pop.transfers += topup;
+			if (food_topup > 0.0) {
+				budget += food_topup;
+				city.government_budget -= food_topup;
+				pop.transfers += food_topup;
 			}
 		}
 
@@ -3305,6 +3329,99 @@ void EconomySim::demo_tick_core() {
 		pop.food_spend = food_spend;
 		pop.satisfaction = pop.need > 0.0
 			? std::clamp(consumed / pop.need, 0.0, 1.0) : 1.0;
+
+		// Subsídio de subsistência não gasto volta ao governo: sem isso, a
+		// cidade sem estoque de alimento convertia o subsídio em poupança e ele
+		// acabava financiando life/luxury (dinheiro conservado, mas fora do
+		// destino). Devolver mantém o piso alimentar e a prioridade basic.
+		if (food_topup > 0.0) {
+			const double unused = std::min(food_topup, std::max(0.0, budget));
+			if (unused > 0.0) {
+				budget -= unused;
+				city.government_budget += unused;
+				pop.transfers -= unused;
+			}
+		}
+
+		// F3: necessidades das POPs em três níveis (basic/life/luxury). O
+		// orçamento é sequencial: o alimento básico acima já foi pago; aqui
+		// entram as demais categorias do basic, depois life e por último luxury
+		// — o nível alcançado é consequência da renda disponível. Faltar
+		// basic/food continua derrubando `pop.satisfaction` (fome); faltar
+		// life/luxury derruba a satisfação do nível e a agregada.
+		if (demo_needs_loaded_) {
+			// Duráveis: descarte com perda de durable_replacement_per_year, na
+			// taxa diária que perde exatamente r em 365 dias.
+			for (int product = 0; product < demo_products_; ++product) {
+				if (product < static_cast<int>(pop.durable_stock.size())
+						&& product < static_cast<int>(demo_product_durable_.size())
+						&& demo_product_durable_[static_cast<std::size_t>(product)] != 0) {
+					pop.durable_stock[static_cast<std::size_t>(product)] =
+						std::max(0.0,
+							pop.durable_stock[static_cast<std::size_t>(product)]
+							* (1.0 - demo_durable_decay_));
+				}
+			}
+			double weighted = 0.0;
+			double weight_sum = 0.0;
+			for (int level_index = 0;
+					level_index < static_cast<int>(demo_needs_levels_.size())
+					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
+				const DemoNeedsLevel& level =
+					demo_needs_levels_[static_cast<std::size_t>(level_index)];
+				double level_want = 0.0;
+				double level_got = 0.0;
+				for (const DemoNeedsCategory& category : level.categories) {
+					// A cesta alimentar básica tem laço próprio (validado) e já
+					// foi consumida acima; reaproveita `pop.need/consumed` para
+					// não cobrar duas vezes a mesma refeição.
+					if (level_index == demo_needs_food_level_
+							&& category.id == std::string("food")) {
+						level_want += pop.need;
+						level_got += pop.consumed;
+						continue;
+					}
+					const double want_ge = category.per_capita_day
+						* city.simulation_population;
+					level_want += want_ge;
+					level_got += demo_consume_category(
+						city, category, want_ge, budget, pop.needs_spend);
+				}
+				pop.level_want[level_index] = level_want;
+				pop.level_consumed[level_index] = level_got;
+				const double satisfaction = level_want > 0.0
+					? std::clamp(level_got / level_want, 0.0, 1.0) : 0.0;
+				pop.level_satisfaction[level_index] = satisfaction;
+				if (level_want > 0.0 && level.weight > 0.0) {
+					weighted += satisfaction * level.weight;
+					weight_sum += level.weight;
+				}
+			}
+			pop.needs_satisfaction = weight_sum > 0.0
+				? std::clamp(weighted / weight_sum, 0.0, 1.0) : 0.0;
+			// Nível alcançado = maior nível com pelo menos metade da cesta,
+			// exigindo os níveis anteriores (basic → life → luxury).
+			pop.needs_level = 0;
+			for (int level_index = 0;
+					level_index < static_cast<int>(demo_needs_levels_.size())
+					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
+				if (pop.level_satisfaction[level_index] >= 0.5) {
+					pop.needs_level = level_index + 1;
+				} else {
+					break;
+				}
+			}
+		} else {
+			// Sem needs.json (AGRIA/PORTUS e saves antigos): um único nível,
+			// exatamente o comportamento validado.
+			pop.needs_satisfaction = pop.satisfaction;
+			pop.level_want[0] = pop.need;
+			pop.level_consumed[0] = pop.consumed;
+			pop.level_satisfaction[0] = pop.satisfaction;
+			pop.needs_level = pop.satisfaction >= 0.5 ? 1 : 0;
+		}
+		// Consumo institucional do Estado (paper/computer) — decisão §12.10.
+		demo_consume_government(city);
 		pop.savings = budget;
 	}
 
@@ -3764,7 +3881,16 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		speed_kmh("speed_kmh"),
 		batch_capacity_tons("batch_capacity_tons"),
 		dispatched("dispatched"),
-		cost("cost")
+		cost("cost"),
+		needs_level("needs_level"),
+		needs_satisfaction("needs_satisfaction"),
+		basic_satisfaction("basic_satisfaction"),
+		life_satisfaction("life_satisfaction"),
+		luxury_satisfaction("luxury_satisfaction"),
+		needs_spend("needs_spend"),
+		durable_spend("durable_spend"),
+		durable_stock("durable_stock"),
+		government_goods_spend("government_goods_spend")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -3840,6 +3966,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.firm_cash, city.firm_cash);
 	sync_scalar(k.service_cash, city.service_cash);
 	sync_scalar(k.government_budget, city.government_budget);
+	sync_scalar(k.government_goods_spend, city.government_goods_spend);
 	sync_scalar(k.service_revenue, city.service_revenue);
 	sync_scalar(k.service_profit, city.service_profit);
 	sync_scalar(k.opex_revenue, city.opex_revenue);
@@ -4008,6 +4135,21 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		sync_pop(k.need, city.pop.need);
 		sync_pop(k.satisfaction, city.pop.satisfaction);
 		sync_pop(k.savings, city.pop.savings);
+		sync_pop(k.needs_level, double(city.pop.needs_level));
+		sync_pop(k.needs_satisfaction, city.pop.needs_satisfaction);
+		sync_pop(k.basic_satisfaction, city.pop.level_satisfaction.size() > 0
+			? city.pop.level_satisfaction[0] : 0.0);
+		sync_pop(k.life_satisfaction, city.pop.level_satisfaction.size() > 1
+			? city.pop.level_satisfaction[1] : 0.0);
+		sync_pop(k.luxury_satisfaction, city.pop.level_satisfaction.size() > 2
+			? city.pop.level_satisfaction[2] : 0.0);
+		sync_pop(k.needs_spend, city.pop.needs_spend);
+		sync_pop(k.durable_spend, city.pop.durable_spend);
+		double durable_total = 0.0;
+		for (const double tons : city.pop.durable_stock) {
+			durable_total += tons;
+		}
+		sync_pop(k.durable_stock, durable_total);
 		if (!filled) {
 			slot.desired_by_category.resize(demo_food_products_.size());
 			slot.consumed_by_category.resize(demo_food_products_.size());
@@ -4380,8 +4522,12 @@ Dictionary EconomySim::get_demo_status() {
 			if (market.sold > 0.0) {
 				cache.tot_sold[product] += market.sold;
 			}
-			if (market.demand > 0.0) {
-				cache.tot_demand[product] += market.demand;
+			// F3: a IA usa este agregado como "existe demanda corrente no
+			// sistema". Com bens finais ainda sem produtor, `demand` (compras
+			// realizadas) é zero e só `desired` carrega a necessidade das POPs —
+			// publicar `desired` permite a fábrica nascer onde há demanda real.
+			if (market.desired > 0.0) {
+				cache.tot_demand[product] += market.desired;
 			}
 		}
 	}
@@ -4782,6 +4928,105 @@ void EconomySim::demo_seed_industry() {
 			}
 		}
 	}
+	// F3: corrente final representativa (bem de POP) para a demanda final não
+	// ficar só no papel. A IA ainda não atravessa a cadeia inteira quando o
+	// insumo não existe (gate de `_input_available` + uma construção por
+	// visita), então as 3 maiores cidades com aptidão para a matéria-prima
+	// recebem uma cadeia de referência cotton→fabric→clothes e wood→cellulose→
+	// paper. É ESTIMATIVA de transição (§12.3), marcada `strategic`, não dado
+	// observado; as capacidades derivam da necessidade per capita do nível.
+	auto recipe_for = [this](const char* output_id) {
+		const int product = demo_product_index(String(output_id));
+		for (std::size_t index = 0; index < demo_recipes_.size(); ++index) {
+			if (demo_recipes_[index].output == product) {
+				return static_cast<int>(index);
+			}
+		}
+		return -1;
+	};
+	auto seed_final_chain = [this, &recipe_for](DemoCity& city, const char* raw_id,
+			const char* mid_id, const char* final_id, double per_capita_day,
+			double max_capacity) -> int {
+		const int raw_product = demo_product_index(String(raw_id));
+		const int mid_recipe = recipe_for(mid_id);
+		const int final_recipe = recipe_for(final_id);
+		if (raw_product < 0 || mid_recipe < 0 || final_recipe < 0) {
+			return 0;
+		}
+		// Sem aptidão para a matéria-prima não há cadeia local (nada inventado).
+		if (city.suitability[raw_product] < 0.30) {
+			return 0;
+		}
+		const double final_capacity = std::clamp(
+			city.simulation_population * per_capita_day, 2.0, max_capacity);
+		for (const auto& existing : demo_buildings_) {
+			if (existing.city == city.id
+					&& existing.id.find("SEED-" + std::string(final_id)) != std::string::npos) {
+				return 0;  // já semeada
+			}
+		}
+		const DemoRecipe& mid = demo_recipes_[static_cast<std::size_t>(mid_recipe)];
+		const DemoRecipe& final = demo_recipes_[static_cast<std::size_t>(final_recipe)];
+		const double total_cost =
+			final_capacity * kDemoCapitalPerCapacity
+			+ final_capacity * mid.capital_per_capacity
+			+ final_capacity * final.capital_per_capacity;
+		if (city.government_budget < total_cost) {
+			return 0;
+		}
+		const String city_id(city.id.c_str());
+		int built = 0;
+		const String raw_building_id(("SEED-" + std::string(raw_id) + "-" + city.id).c_str());
+		Dictionary raw = demo_build(city_id, raw_building_id, String(raw_id), -1,
+			raw_product, final_capacity, 0.0, 0.0, 0.0, 1.0, "state",
+			final_capacity * kDemoCapitalPerCapacity);
+		if (bool(raw.get("created", false))) {
+			if (DemoBuilding* node = find_demo_building(city.id,
+					std::string(raw_building_id.utf8().get_data()))) {
+				node->strategic = true;
+			}
+			++built;
+		}
+		const String mid_building_id(("SEED-" + std::string(mid_id) + "-" + city.id).c_str());
+		Dictionary mid_build = demo_build(city_id, mid_building_id, String(mid_id),
+			-1, demo_recipes_[static_cast<std::size_t>(mid_recipe)].output,
+			final_capacity, 0.0, 0.0, 0.0, 1.0, "state",
+			final_capacity * mid.capital_per_capacity,
+			String(mid.id.c_str()));
+		if (bool(mid_build.get("created", false))) {
+			if (DemoBuilding* node = find_demo_building(city.id,
+					std::string(mid_building_id.utf8().get_data()))) {
+				node->strategic = true;
+			}
+			++built;
+		}
+		const String final_building_id(("SEED-" + std::string(final_id) + "-" + city.id).c_str());
+		Dictionary final_build = demo_build(city_id, final_building_id, String(final_id),
+			-1, demo_recipes_[static_cast<std::size_t>(final_recipe)].output,
+			final_capacity, 0.0, 0.0, 0.0, 1.0, "state",
+			final_capacity * final.capital_per_capacity,
+			String(final.id.c_str()));
+		if (bool(final_build.get("created", false))) {
+			if (DemoBuilding* node = find_demo_building(city.id,
+					std::string(final_building_id.utf8().get_data()))) {
+				node->strategic = true;
+			}
+			++built;
+		}
+		return built;
+	};
+	if (demo_needs_loaded_) {
+		const int chain_cities = std::min<int>(3, static_cast<int>(order.size()));
+		for (int slot = 0; slot < chain_cities; ++slot) {
+			DemoCity& city = demo_cities_[static_cast<std::size_t>(order[slot])];
+			// basic/clothing: 0,0004 t/mês por habitante.
+			created += seed_final_chain(city, "cotton", "fabric", "clothes",
+				0.0004 / 30.0, 20.0);
+			// institutional/government paper: 0,005 × âncora alimentar/dia.
+			created += seed_final_chain(city, "wood", "cellulose", "paper",
+				kDemoNeedPerCapita * 0.005, 10.0);
+		}
+	}
 	demo_industry_seeded_ = true;
 	if (created > 0) {
 		UtilityFunctions::print(String(("economia: bootstrap industrial (estimativa) — "
@@ -4859,8 +5104,283 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 	}
 	demo_food_products_ = std::move(ordered_products);
 	demo_food_factors_ = std::move(ordered_factors);
+
+	// F3: níveis completos (basic/life/luxury). A cesta alimentar acima é o
+	// contrato validado e continua com o laço próprio no tick; aqui entram os
+	// níveis e as categorias não alimentares, com a ordem dos substitutos
+	// preservada (do melhor ao último caso).
+	demo_needs_levels_.clear();
+	demo_needs_food_level_ = -1;
+	demo_needs_loaded_ = false;
+	demo_government_products_.clear();
+	demo_government_per_capita_day_.clear();
+	const Dictionary levels_dict = needs.get("levels", Dictionary());
+	const Array level_names = levels_dict.keys();
+	struct ParsedLevel {
+		int priority = 1;
+		String name;
+		Dictionary data;
+	};
+	std::vector<ParsedLevel> parsed_levels;
+	parsed_levels.reserve(static_cast<std::size_t>(level_names.size()));
+	for (int index = 0; index < level_names.size(); ++index) {
+		const String name = String(level_names[index]);
+		const Dictionary data = levels_dict.get(name, Dictionary());
+		if (data.is_empty()) {
+			continue;
+		}
+		ParsedLevel entry;
+		entry.priority = int(data.get("priority", index + 1));
+		entry.name = name;
+		entry.data = data;
+		parsed_levels.push_back(std::move(entry));
+	}
+	std::stable_sort(parsed_levels.begin(), parsed_levels.end(),
+		[](const ParsedLevel& left, const ParsedLevel& right) {
+			return left.priority < right.priority;
+		});
+	for (const ParsedLevel& parsed : parsed_levels) {
+		if (static_cast<int>(demo_needs_levels_.size()) >= kDemoMaxNeedsLevels) {
+			break;
+		}
+		DemoNeedsLevel level;
+		level.id = std::string(parsed.name.utf8().get_data());
+		level.priority = parsed.priority;
+		level.weight = std::clamp(
+			static_cast<double>(parsed.data.get("satisfaction_weight", 0.0)), 0.0, 1.0);
+		const int level_index = static_cast<int>(demo_needs_levels_.size());
+		const Dictionary categories = parsed.data.get("categories", Dictionary());
+		const Array category_names = categories.keys();
+		for (int ci = 0; ci < category_names.size(); ++ci) {
+			const String category_name = String(category_names[ci]);
+			const Dictionary category_data = categories.get(category_name, Dictionary());
+			const Array substitutes = category_data.get("substitutes", Array());
+			if (substitutes.is_empty()) {
+				continue;
+			}
+			DemoNeedsCategory category;
+			category.id = std::string(category_name.utf8().get_data());
+			category.per_capita_day = std::max(0.0,
+				static_cast<double>(category_data.get("per_capita_t_month", 0.0)))
+				/ 30.0;
+			// Cada categoria declara a tabela de equivalência que usa
+			// (ex.: basic/food → equivalence.calories).
+			const String eq_key = String(category_data.get("equivalence_key", ""));
+			Dictionary eq_table;
+			if (!eq_key.is_empty()) {
+				eq_table = equivalence.get(eq_key, Dictionary());
+			}
+			for (int si = 0; si < substitutes.size(); ++si) {
+				const String id = String(substitutes[si]);
+				const int product = demo_product_index(id);
+				if (product < 0) {
+					continue;
+				}
+				double factor = 1.0;
+				if (eq_table.has(id)) {
+					factor = static_cast<double>(eq_table[id]);
+				}
+				factor = std::clamp(factor, 0.05, 8.0);
+				category.substitutes.push_back(product);
+				category.equivalence.push_back(factor);
+			}
+			if (category.substitutes.empty()) {
+				continue;
+			}
+			if (category_name == String("food") && demo_needs_food_level_ < 0) {
+				demo_needs_food_level_ = level_index;
+			}
+			level.categories.push_back(std::move(category));
+		}
+		if (level.categories.empty()) {
+			continue;
+		}
+		demo_needs_levels_.push_back(std::move(level));
+	}
+	if (demo_needs_levels_.empty()) {
+		++demo_status_static_version_;
+		demo_status_invalidate();
+		return;
+	}
+	demo_needs_loaded_ = true;
+	const double replacement_per_year = std::clamp(
+		static_cast<double>(needs.get("durable_replacement_per_year", 0.1)), 0.0, 0.99);
+	demo_durable_decay_ = replacement_per_year > 0.0
+		? 1.0 - std::pow(1.0 - replacement_per_year, 1.0 / 365.0) : 0.0;
+	// Consumo institucional (decisão §12.10): o Estado compra paper/computer.
+	// O dado de needs.json lista os BENS (`institutional.government`); a
+	// quantidade não existe na spec, então usa-se uma fração ESTIMADA da âncora
+	// alimentar (kDemoNeedPerCapita), declarada na tabela abaixo e registrada em
+	// GAME_STATE/perf como estimativa — nunca como medição. Se um needs.json
+	// futuro trouxer `institutional_per_capita_t_month.government.<bem>`, ele
+	// vence a estimativa.
+	const Dictionary institutional = needs.get("institutional", Dictionary());
+	const Array government = institutional.get("government", Array());
+	const Dictionary quantities_root =
+		needs.get("institutional_per_capita_t_month", Dictionary());
+	const Dictionary quantities = quantities_root.get("government", Dictionary());
+	static const struct {
+		const char* id;
+		double anchor_share;  // fração de kDemoNeedPerCapita por dia
+	} kEstimatedGovernmentNeeds[] = {
+		{"paper", 0.005},
+		{"computer", 0.001},
+	};
+	for (int index = 0; index < government.size(); ++index) {
+		const String id = String(government[index]);
+		const int product = demo_product_index(id);
+		if (product < 0) {
+			continue;
+		}
+		double per_day = 0.0;
+		if (quantities.has(id)) {
+			per_day = std::max(0.0, static_cast<double>(quantities[id])) / 30.0;
+		} else {
+			for (const auto& estimate : kEstimatedGovernmentNeeds) {
+				if (id == String(estimate.id)) {
+					per_day = kDemoNeedPerCapita * estimate.anchor_share;
+					break;
+				}
+			}
+		}
+		if (per_day <= 0.0) {
+			continue;
+		}
+		demo_government_products_.push_back(product);
+		demo_government_per_capita_day_.push_back(per_day);
+	}
+	// Necessidades carregadas depois do mundo: o estado por cidade acompanha.
+	for (DemoCity& city : demo_cities_) {
+		demo_init_pop_needs(city.pop);
+	}
 	++demo_status_static_version_;
 	demo_status_invalidate();
+}
+
+double EconomySim::demo_consume_category(DemoCity& city,
+		const DemoNeedsCategory& category, double want_ge, double& budget,
+		double& spend) {
+	if (want_ge <= 0.0 || category.substitutes.empty()) {
+		return 0.0;
+	}
+	double remaining = want_ge;
+	double consumed_ge = 0.0;
+	for (std::size_t slot = 0;
+			slot < category.substitutes.size() && remaining > 1e-12; ++slot) {
+		const int product = category.substitutes[slot];
+		if (product < 0 || product >= demo_products_) {
+			continue;
+		}
+		const double factor = category.equivalence[slot];
+		if (factor <= 0.0) {
+			continue;
+		}
+		DemoMarket& market = city.markets[product];
+		const double price = market.price;
+		if (price <= 0.0) {
+			continue;
+		}
+		// Demanda desejada registrada mesmo sem estoque: é o sinal de escassez
+		// que a IA lê (`market.shortage`) para abrir a fábrica do bem final.
+		double desired_tons = remaining / factor;
+		if (desired_tons * price > budget) {
+			desired_tons = std::max(0.0, budget) / price;
+		}
+		if (desired_tons <= 1e-12) {
+			continue;
+		}
+		market.desired += desired_tons;
+		const double quantity = std::min(desired_tons,
+			std::max(0.0, market.stock));
+		if (quantity <= 0.0) {
+			continue;
+		}
+		const double paid = quantity * price;
+		market.stock -= quantity;
+		market.demand += quantity;
+		market.sold += quantity;
+		budget -= paid;
+		spend += paid;
+		city.revenue_by_product[product] += paid;
+		city.firm_cash += paid;
+		demo_consumed_total_[product] += quantity;
+		demo_consumed_today_[product] += quantity;
+		const double got_ge = quantity * factor;
+		consumed_ge += got_ge;
+		remaining = std::max(0.0, remaining - got_ge);
+		const bool durable = product < static_cast<int>(demo_product_durable_.size())
+			&& demo_product_durable_[static_cast<std::size_t>(product)] != 0;
+		if (durable) {
+			if (product < static_cast<int>(city.pop.durable_stock.size())) {
+				city.pop.durable_stock[static_cast<std::size_t>(product)] += quantity;
+			}
+			city.pop.durable_spend += paid;
+		}
+	}
+	return consumed_ge;
+}
+
+void EconomySim::demo_consume_government(DemoCity& city) {
+	if (!demo_needs_loaded_ || demo_government_products_.empty()) {
+		return;
+	}
+	double budget = std::max(0.0, city.government_budget);
+	for (std::size_t index = 0; index < demo_government_products_.size(); ++index) {
+		const int product = demo_government_products_[index];
+		if (product < 0 || product >= demo_products_) {
+			continue;
+		}
+		const double want = demo_government_per_capita_day_[index]
+			* city.simulation_population;
+		if (want <= 1e-12) {
+			continue;
+		}
+		DemoMarket& market = city.markets[product];
+		const double price = market.price;
+		if (price <= 0.0) {
+			continue;
+		}
+		double desired_tons = want;
+		if (desired_tons * price > budget) {
+			desired_tons = std::max(0.0, budget) / price;
+		}
+		if (desired_tons <= 1e-12) {
+			continue;
+		}
+		market.desired += desired_tons;
+		const double quantity = std::min(desired_tons,
+			std::max(0.0, market.stock));
+		if (quantity <= 0.0) {
+			continue;
+		}
+		const double paid = quantity * price;
+		market.stock -= quantity;
+		market.demand += quantity;
+		market.sold += quantity;
+		budget -= paid;
+		city.government_budget -= paid;
+		city.government_goods_spend += paid;
+		city.firm_cash += paid;
+		city.revenue_by_product[product] += paid;
+		demo_consumed_total_[product] += quantity;
+		demo_consumed_today_[product] += quantity;
+	}
+}
+
+void EconomySim::demo_init_pop_needs(DemoPop& pop) const {
+	if (pop.level_want.size() != kDemoMaxNeedsLevels) {
+		pop.level_want.assign(kDemoMaxNeedsLevels, 0.0);
+	}
+	if (pop.level_consumed.size() != kDemoMaxNeedsLevels) {
+		pop.level_consumed.assign(kDemoMaxNeedsLevels, 0.0);
+	}
+	if (pop.level_satisfaction.size() != kDemoMaxNeedsLevels) {
+		pop.level_satisfaction.assign(kDemoMaxNeedsLevels, 0.0);
+	}
+	// `resize` preserva o prefixo: um bem novo não zera o estoque durável.
+	if (pop.durable_stock.size() != static_cast<std::size_t>(std::max(0, demo_products_))) {
+		pop.durable_stock.resize(static_cast<std::size_t>(std::max(0, demo_products_)), 0.0);
+	}
 }
 
 EconomySim::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
@@ -5300,7 +5820,39 @@ Dictionary EconomySim::demo_to_dict() const {
 		}
 		pop["desired_by_category"] = desired_by_category;
 		pop["consumed_by_category"] = consumed_by_category;
+		// F3: estado das necessidades (níveis, duráveis e gasto próprio). Campos
+		// aditivos: save v4 anterior continua carregando (default zero).
+		Dictionary needs_state;
+		needs_state["level"] = city.pop.needs_level;
+		needs_state["satisfaction"] = city.pop.needs_satisfaction;
+		needs_state["spend"] = city.pop.needs_spend;
+		needs_state["durable_spend"] = city.pop.durable_spend;
+		Array level_satisfaction;
+		Array level_want;
+		Array level_consumed;
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			level_satisfaction.append(level < static_cast<int>(
+				city.pop.level_satisfaction.size()) ? city.pop.level_satisfaction[level] : 0.0);
+			level_want.append(level < static_cast<int>(
+				city.pop.level_want.size()) ? city.pop.level_want[level] : 0.0);
+			level_consumed.append(level < static_cast<int>(
+				city.pop.level_consumed.size()) ? city.pop.level_consumed[level] : 0.0);
+		}
+		needs_state["level_satisfaction"] = level_satisfaction;
+		needs_state["level_want"] = level_want;
+		needs_state["level_consumed"] = level_consumed;
+		Dictionary durable_stock;
+		for (int product = 0; product < demo_products_
+				&& product < static_cast<int>(city.pop.durable_stock.size()); ++product) {
+			if (city.pop.durable_stock[static_cast<std::size_t>(product)] > 0.0) {
+				durable_stock[String(demo_product_name(product))] =
+					city.pop.durable_stock[static_cast<std::size_t>(product)];
+			}
+		}
+		needs_state["durable_stock"] = durable_stock;
+		pop["needs"] = needs_state;
 		entry["pop"] = pop;
+		entry["government_goods_spend"] = city.government_goods_spend;
 
 		Array markets;
 		for (int product = 0; product < demo_products_; ++product) {
@@ -5530,6 +6082,35 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		city.pop.need = double(pop.get("need", 0.0));
 		city.pop.satisfaction = double(pop.get("satisfaction", 0.0));
 		city.pop.savings = double(pop.get("savings", 0.0));
+		// F3: estado das necessidades (aditivo; save anterior = zero).
+		demo_init_pop_needs(city.pop);
+		Dictionary needs_state = pop.get("needs", Dictionary());
+		city.pop.needs_level = int(needs_state.get("level", 0));
+		city.pop.needs_satisfaction = double(needs_state.get("satisfaction",
+			city.pop.satisfaction));
+		city.pop.needs_spend = double(needs_state.get("spend", 0.0));
+		city.pop.durable_spend = double(needs_state.get("durable_spend", 0.0));
+		Array saved_level_sat = needs_state.get("level_satisfaction", Array());
+		Array saved_level_want = needs_state.get("level_want", Array());
+		Array saved_level_cons = needs_state.get("level_consumed", Array());
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			city.pop.level_satisfaction[level] = level < saved_level_sat.size()
+				? double(saved_level_sat[level]) : 0.0;
+			city.pop.level_want[level] = level < saved_level_want.size()
+				? double(saved_level_want[level]) : 0.0;
+			city.pop.level_consumed[level] = level < saved_level_cons.size()
+				? double(saved_level_cons[level]) : 0.0;
+		}
+		Dictionary saved_durable = needs_state.get("durable_stock", Dictionary());
+		for (int product = 0; product < demo_products_
+				&& product < static_cast<int>(city.pop.durable_stock.size()); ++product) {
+			const String key = String(demo_product_name(product));
+			if (saved_durable.has(key)) {
+				city.pop.durable_stock[static_cast<std::size_t>(product)] =
+					std::max(0.0, double(saved_durable[key]));
+			}
+		}
+		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));
 		Array desired_by_category = pop.get("desired_by_category", Array());
 		Array consumed_by_category = pop.get("consumed_by_category", Array());
 		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);

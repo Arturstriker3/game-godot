@@ -14,6 +14,7 @@ extends SceneTree
 ##     [--days=60] [--out=path.json] [--baseline=path.json]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -29,6 +30,9 @@ const FOOD_TOLERANCE := 0.02
 var _days := DEFAULT_DAYS
 var _out := ""
 var _baseline_path := ""
+## `--ai=1` roda o mesmo pipeline do jogo (geografia real + EconomicAI) por
+## dia. O padrão (0) mede só o núcleo e preserva o comparativo de comida da F2.
+var _ai_enabled := false
 
 var _failures: Array[String] = []
 
@@ -41,6 +45,8 @@ func _init() -> void:
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--baseline="):
 			_baseline_path = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--ai="):
+			_ai_enabled = arg.split("=", true, 1)[1] == "1"
 	_test_world()
 	if _failures.is_empty():
 		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % _days)
@@ -102,8 +108,22 @@ func _test_world() -> void:
 	if has_chains:
 		sim.demo_set_recipes(_load_array(RECIPES_PATH))
 		sim.demo_set_needs(_load_dict(NEEDS_PATH))
+	# Pipeline do jogo ao vivo (opcional): geografia real + IA econômica. Sem
+	# isso, o teste mede só o núcleo (comparativo de comida da F2). Com `--ai=1`
+	# a demanda final da F3 passa a ser vista pelo investidor. A fazenda inicial
+	# é resolvida para o alimento de maior aptidão × caloria, como no autoload.
+	var geo: Object = null
+	if _ai_enabled and has_chains:
+		geo = GeographyServiceScript.new()
+		geo.load_data()
+		buildings = geo.resolve_initial_farms(buildings, cities)
 	sim.initialize_demo_world(cities, ports, buildings)
 	var expected_products := goods.size() if has_chains else 21
+	var ai: Object = null
+	if geo != null:
+		geo.apply_to_sim(sim, _cities_with_center(cities))
+		ai = EconomicAIScript.new()
+		ai.setup(sim, geo)
 
 	var status: Dictionary = sim.get_demo_status()
 
@@ -130,6 +150,8 @@ func _test_world() -> void:
 
 	for day in _days:
 		status = sim.tick_demo()
+		if ai != null:
+			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
@@ -204,6 +226,43 @@ func _test_world() -> void:
 			weakest_nation = String(tag)
 	print("[world] pior nacao: %s %.3f" % [weakest_nation, weakest])
 
+	# F3: níveis de necessidade — média agregada e distribuição do nível
+	# alcançado. "sem dado" (binário anterior à F3) fica fora da média.
+	var needs_sum := 0.0
+	var needs_count := 0
+	var level_cities := {0: 0, 1: 0, 2: 0, 3: 0}
+	for city in status["cities"]:
+		var pop: Dictionary = city.get("pop", {})
+		if pop.has("needs_satisfaction"):
+			needs_sum += float(pop["needs_satisfaction"])
+			needs_count += 1
+			var level := int(pop.get("needs_level", 0))
+			level_cities[level] = int(level_cities.get(level, 0)) + 1
+	if needs_count > 0:
+		print("[world] necessidades: satisfacao media %.3f | niveis %s" % [
+			needs_sum / float(needs_count), str(level_cities)])
+	else:
+		print("[world] necessidades: sem dado (binario sem F3)")
+	if ai != null:
+		var builds: Dictionary = {}
+		var build_count := 0
+		var decisions: Array = ai.get_decisions()
+		for decision in decisions:
+			if String(decision.get("action", "")) == "build":
+				var resource := String(decision.get("resource", ""))
+				builds[resource] = int(builds.get(resource, 0)) + 1
+				build_count += 1
+		print("[world] IA: %d decisoes, %d builds %s" % [
+			decisions.size(), build_count, str(builds)])
+		var final_reasons: Dictionary = {}
+		for decision in decisions:
+			var resource := String(decision.get("resource", ""))
+			if resource not in ["clothes", "furniture", "paper", "medicine", "bread"]:
+				continue
+			var key := "%s:%s" % [resource, String(decision.get("action", ""))]
+			final_reasons[key] = int(final_reasons.get(key, 0)) + 1
+		print("[world] IA bens finais: %s" % str(final_reasons))
+
 	if _baseline_path != "":
 		_compare_baseline(nations)
 
@@ -222,6 +281,18 @@ func _test_world() -> void:
 			float(city["stockpile"]),
 			float(city["firm_cash"]),
 		])
+
+
+## Cidades no formato que o GeographyService.apply_to_sim espera.
+func _cities_with_center(cities: Array) -> Array:
+	var result: Array = []
+	for city in cities:
+		result.append({
+			"id": String(city.get("id", "")),
+			"nation": String(city.get("nation", "")),
+			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
+		})
+	return result
 
 
 ## Agrega comida e industrialização por nação (cons=Σconsumido, need=Σnecessidade).
