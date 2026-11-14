@@ -221,6 +221,35 @@ public:
 	void demo_set_balance(const Dictionary& values);
 
 	/**
+	 * F4: define a frota nacional (hook de teste/administração). Marca a frota
+	 * como `derived: false` (valor declarado, não derivado). Libera os veículos
+	 * ocupados; o combustível e as peças passam a ser exatamente os informados.
+	 */
+	void demo_set_fleet(const String& nation, double trucks, double ships,
+		double planes, double fuel, double spare_parts);
+
+	/** F4: fotografia da frota de uma nação (contagens, saúde, fila do dia). */
+	Dictionary demo_get_fleet(const String& nation) const;
+
+	/**
+	 * F4: compra `amount` toneladas do bem no mercado interno da nação e
+	 * transfere para a frota (1 t de truck/cargo_ship/cargo_plane = 1 veículo;
+	 * fuel/spare_parts vão para o estoque). Paga com o orçamento da cidade-sede
+	 * (maior população de simulação), até `budget_share` do caixa dela.
+	 * @returns {bought, spent, unfilled, error}.
+	 */
+	Dictionary demo_fleet_buy(const String& nation, const String& product,
+		double amount, double budget_share = 0.1);
+
+	/**
+	 * Hook de teste/administração: define o estoque de um produto no mercado de
+	 * uma cidade (não é usado pelo jogo; serve para exercitar a compra de frota
+	 * em cenários controlados).
+	 */
+	void demo_set_market_stock(const String& city_id, const String& product,
+		double stock);
+
+	/**
 	 * Cria um mundo sintético determinístico para benchmark.
 	 * @param city_count Número de cidades.
 	 * @param buildings_per_city Construções por cidade (mínimo 3).
@@ -257,6 +286,13 @@ private:
 		double batch_capacity_tons;
 		double cost_per_ton_km;
 		double turnaround_hours;
+		// F4: o frete deixa de ser só distância × tarifa. `fuel_per_ton_km` é o
+		// combustível físico consumido (t de fuel por t·km) e
+		// `fleet_cost_per_ton_km` é o uso da frota (depreciação/crew/seguro)
+		// somado ao preço do frete. Coeficientes de combustível na ordem física
+		// (caminhão com retorno vazio, navio a 20 kn, avião cargueiro).
+		double fuel_per_ton_km;
+		double fleet_cost_per_ton_km;
 	};
 
 	// Coordenadas no grid do mapa (5000x2500), na projeção equiretangular.
@@ -517,6 +553,54 @@ private:
 		double extracted_kt = 0.0;
 	};
 
+	// F4: frota nacional de frete. Os veículos são um estoque físico (1 t do
+	// bem `truck`/`cargo_ship`/`cargo_plane` = 1 veículo — a produção da F2
+	// entra no estoque) e o combustível é consumido por t·km de cada trecho.
+	// `health` (0,5..1,0) reduz a capacidade quando faltam `spare_parts` na
+	// manutenção mensal.
+	struct DemoFleet {
+		double trucks = 0.0;
+		double ships = 0.0;
+		double planes = 0.0;
+		// Veículos ocupados por cargas em trânsito (liberados na chegada).
+		double trucks_busy = 0.0;
+		double ships_busy = 0.0;
+		double planes_busy = 0.0;
+		// Alvo derivado de população/PIB (demo_init_fleets), usado pela
+		// reposição mensal do governo.
+		double target_trucks = 0.0;
+		double target_ships = 0.0;
+		double target_planes = 0.0;
+		double health[3] = {1.0, 1.0, 1.0};
+		double fuel = 0.0;         // t de combustível no estoque da nação
+		// Reserva-alvo de combustível (t), derivada de população/PIB na criação
+		// da frota; a compra mensal repõe o consumo até este nível.
+		double fuel_target = 0.0;
+		double spare_parts = 0.0;  // t de peças no estoque da nação
+		double fuel_used_today = 0.0;
+		double fuel_used_total = 0.0;
+		double fuel_bought_total = 0.0;
+		double parts_used_total = 0.0;
+		double vehicles_bought_total = 0.0;
+		// Carga (t) que não embarcou no dia por falta de veículo/combustível.
+		double queue_today = 0.0;
+		double missed_no_fleet = 0.0;
+		double missed_no_fuel = 0.0;
+		// true = frota inicial derivada de população/PIB (source: derived).
+		bool derived = true;
+	};
+
+	// Necessidade de transporte de um pedido (por trecho): veículos e fuel.
+	struct DemoTransportDemand {
+		double trucks = 0.0;
+		double ships = 0.0;
+		double planes = 0.0;
+		double fuel = 0.0;
+		double distance_truck_km = 0.0;
+		double distance_ship_km = 0.0;
+	};
+
+
 	struct DemoCity {
 		std::string id;
 		std::string name;
@@ -588,6 +672,13 @@ private:
 		int product = 0;
 		double amount = 0.0;
 		int arrival_day = 0;
+		// F4: frota reservada pelo pedido (liberada na chegada). O combustível
+		// já foi debitado no embarque; fica registrado para auditoria/save.
+		std::string fleet_nation;
+		double fleet_trucks = 0.0;
+		double fleet_ships = 0.0;
+		double fleet_planes = 0.0;
+		double fuel = 0.0;
 	};
 
 	// Retrato do estado demo para reverter um tick que viole um invariante.
@@ -595,6 +686,7 @@ private:
 		std::vector<DemoCity> cities;
 		std::vector<DemoBuilding> buildings;
 		std::vector<DemoShipment> transit;
+		std::unordered_map<std::string, DemoFleet> fleets;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;
@@ -703,7 +795,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes;
 		DemoStatusKeys();
 	};
 
@@ -887,6 +979,53 @@ private:
 	void demo_restore(const DemoSnapshot& in);
 	void demo_trade_food();
 	void demo_trade_goods();
+	// F4: manutenção mensal (peças/atrito) e compra de combustível, peças e
+	// veículos pelo governo. Roda depois do reset e antes do comércio.
+	void demo_tick_fleet();
+	// Deriva a frota inicial de população/PIB (source: derived): veículos,
+	// estoque de combustível e de peças. Chamado ao inicializar e ao carregar
+	// um save sem o bloco `fleets`.
+	void demo_init_fleets();
+	// População de simulação e índice de renda (PIB PPP) ponderados por nação.
+	double demo_nation_sim_population(const std::string& nation) const;
+	double demo_nation_income_index(const std::string& nation) const;
+	/**
+	 * F4: a nação tem folga alimentar? Soma o estoque de comida (em t-eq de
+	 * grão) das cidades e compara com a necessidade diária ×
+	 * `kDemoFleetFoodSecureDays`. Sem essa folga, o governo não investe em
+	 * frota: o orçamento público fica com a comida.
+	 */
+	bool demo_nation_food_secure(const std::string& nation) const;
+	/**
+	 * Frota/combustível necessários para um pedido. Na mesma massa de terra o
+	 * trecho é caminhão; entre massas é caminhão → navio → caminhão (os dois
+	 * cais). Veículos = ceil(tons / capacidade do ModeSpec) por trecho.
+	 */
+	DemoTransportDemand demo_route_demand(const DemoCity& seller,
+		const DemoCity& buyer, int seller_port, int buyer_port, double tons) const;
+	/**
+	 * Fração (0..1) do pedido que a frota livre + combustível da nação
+	 * comportam hoje. `fuel_limited` indica qual insumo foi o gargalo (para a
+	 * fila e o motivo no log/status).
+	 */
+	double demo_fleet_capacity_scale(const std::string& nation,
+		const DemoTransportDemand& demand, bool& fuel_limited) const;
+	/** Reserva veículos/fuel para um pedido que está embarcando. */
+	void demo_fleet_reserve(const std::string& nation,
+		const DemoTransportDemand& demand);
+	/** Libera os veículos de um pedido que chegou. */
+	void demo_fleet_release(const std::string& nation,
+		const DemoTransportDemand& demand);
+	/** Custo unitário do frete (tarifa + combustível + uso da frota), por t·km. */
+	double demo_leg_unit_freight(TransportMode mode, double distance_km) const;
+	/**
+	 * F4: custo unitário do frete só com a tarifa, por t·km. Alimentos usam
+	 * esta base: a segurança alimentar tem prioridade e o custo de
+	 * combustível/frota da logística de comida não é repassado ao comprador
+	 * (o consumo físico de fuel continua valendo em `demo_route_demand`).
+	 */
+	double demo_leg_unit_freight_food(TransportMode mode, double distance_km) const;
+	double demo_fleet_fuel_price() const;
 	void demo_national_fiscal_transfer();
 	const Port* demo_nearest_port(const std::string& nation, const std::string& landmass,
 	                              const MapPoint& from) const;
@@ -1027,6 +1166,8 @@ private:
 	// Índices derivados do mundo demo (ver demo_rebuild_indexes).
 	std::unordered_map<std::string, int> demo_city_lookup_;
 	std::vector<std::vector<int>> demo_buildings_by_city_;
+	// F4: cidades por nação (ordem de índice) para a frota/compra do governo.
+	std::unordered_map<std::string, std::vector<int>> demo_cities_by_nation_;
 	std::vector<DemoShipment> demo_in_transit_;
 	std::vector<std::string> demo_invariant_violations_;
 	// Portos do cenário real (modo mundo) e pedidos de comércio do último tick,
@@ -1067,6 +1208,15 @@ private:
 	std::vector<double> demo_government_per_capita_day_;
 	// Bootstrap industrial já executado neste mundo.
 	bool demo_industry_seeded_ = false;
+	// F4: frota por nação (ordem determinística em demo_fleet_order_) e índices
+	// dos bens da frota (fuel/truck/cargo_ship/cargo_plane/spare_parts).
+	std::unordered_map<std::string, DemoFleet> demo_fleets_;
+	std::vector<std::string> demo_fleet_order_;
+	int demo_fleet_product_fuel_ = -1;
+	int demo_fleet_product_truck_ = -1;
+	int demo_fleet_product_ship_ = -1;
+	int demo_fleet_product_plane_ = -1;
+	int demo_fleet_product_parts_ = -1;
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
 	double demo_base_prices_[kDemoMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,

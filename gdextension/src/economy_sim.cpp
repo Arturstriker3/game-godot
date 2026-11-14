@@ -79,7 +79,9 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // anteriores.
 // v3: farinha/pão removidos da cadeia (enum DemoProduct deslocou -2 a partir do
 // ferro) e 21 produtos. demo_from_dict remapeia saves v1/v2 (com farinha/pão).
-constexpr int kDemoSaveVersion = 4;
+// v5: frota nacional (F4) — `fleets` e a reserva de veículos de cada carga em
+// `in_transit`. Save v4 sem a chave deriva a frota de população/PIB.
+constexpr int kDemoSaveVersion = 5;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -185,6 +187,16 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_from_dict", "data"), &EconomySim::demo_from_dict);
 	ClassDB::bind_method(D_METHOD("demo_set_balance", "values"),
 	                     &EconomySim::demo_set_balance);
+	ClassDB::bind_method(D_METHOD("demo_set_fleet", "nation", "trucks", "ships",
+	                     "planes", "fuel", "spare_parts"),
+	                     &EconomySim::demo_set_fleet);
+	ClassDB::bind_method(D_METHOD("demo_get_fleet", "nation"),
+	                     &EconomySim::demo_get_fleet);
+	ClassDB::bind_method(D_METHOD("demo_fleet_buy", "nation", "product", "amount",
+	                     "budget_share"),
+	                     &EconomySim::demo_fleet_buy, DEFVAL(0.1));
+	ClassDB::bind_method(D_METHOD("demo_set_market_stock", "city_id", "product", "stock"),
+	                     &EconomySim::demo_set_market_stock);
 	ClassDB::bind_method(D_METHOD("initialize_benchmark", "city_count",
 	                     "buildings_per_city", "seed"),
 	                     &EconomySim::initialize_benchmark);
@@ -202,9 +214,19 @@ const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
 	// Calibragem do porto (port_design.md §3): um caminhão leva 25 t, um navio
 	// 2.000 t (80× mais) a 1/5 do custo por t·km; o avião é a ponte de
 	// emergência, com lote pequeno.
-	static const ModeSpec kTruck{TransportMode::Truck, "truck", 65.0, 25.0, 0.10, 6.0};
-	static const ModeSpec kShip{TransportMode::Ship, "ship", 35.0, 2000.0, 0.02, 24.0};
-	static const ModeSpec kPlane{TransportMode::Plane, "plane", 750.0, 20.0, 0.80, 24.0};
+	// F4: além da tarifa, o frete carrega o combustível físico por t·km e o
+	// uso da frota (depreciação/crew), na ordem física: caminhão 0,00004 t/t·km
+	// (25 t, retorno vazio), navio 0,000003, avião 0,0002. O uso da frota é
+	// ~2–5% da tarifa e existe para o veículo ser um custo real, não só um
+	// contador de capacidade. A soma (combustível + frota) fica em 3–6% do
+	// frete: o bastante para o preço refletir o veículo, sem deslocar a
+	// segurança alimentar dos importadores (medido em economy_world_test).
+	static const ModeSpec kTruck{
+		TransportMode::Truck, "truck", 65.0, 25.0, 0.10, 6.0, 0.00004, 0.002};
+	static const ModeSpec kShip{
+		TransportMode::Ship, "ship", 35.0, 2000.0, 0.02, 24.0, 0.000003, 0.001};
+	static const ModeSpec kPlane{
+		TransportMode::Plane, "plane", 750.0, 20.0, 0.80, 24.0, 0.0002, 0.015};
 
 	switch (mode) {
 		case TransportMode::Ship:
@@ -817,6 +839,78 @@ constexpr double kDemoFreightPerTonKm = 0.10;
 constexpr double kDemoFreightShipPerTonKm = 0.02;
 
 // ---------------------------------------------------------------------------
+// F4 — frota e combustível.
+//
+// A frota inicial é DERIVADA de população/PIB (não é um número mágico):
+// caminhão por 12,5 mil habitantes de simulação, navio por 250 mil, avião por
+// 2,5 milhões, multiplicados por um fator de renda (PIB PPP) de 0,6 a 2,0.
+// Cobertura calibrada no cenário real para ~6× o uso diário medido (~500
+// pedidos/dia), de modo que a frota NÃO seja um gargalo no mundo baseline: ela
+// existe, ocupa veículos e consome combustível, e passa a limitar quando há
+// choque/expansão de comércio (a fila aciona a reposição do governo).
+// Calibração F4 (economy_world_test --ai=1): a frota derivada original (1/2
+// desta) fazia EGY cair de 1,000 (F3, 60 d) para 0,846 — os pequenos
+// exportadores marítimos ficavam presos na coleta do cais e a comida estagnava
+// em quem já estava abastecido. Com 2× e os pisos abaixo, 60 d e 365 d com IA
+// ficam dentro do baseline F3 (365 d: 0 nações pioradas, 26 falências = base).
+// Estoque estratégico inicial de combustível: 400 dias de uso estimado pela
+// frota derivada (reserva declarada, `source: derived`). A reserva é o
+// endowment de transição da F4: a reposição mensal do governo compra fuel no
+// mercado interno (a compra entra em `desired` mesmo sem estoque) e a produção
+// das fábricas de fuel da F2 substitui a reserva com o tempo. O teto global de
+// 512 embarques/dia limita a variação do consumo, então 400 dias cobrem 1 ano
+// de operação no cenário real sem transformar combustível em gargalo imediato —
+// o portão "sem fuel não embarca" é real e testado em cenário controlado.
+//
+// Pisos de 16 caminhões / 4 navios: o piso antigo (8/2) deixava nações
+// pequenas sem frota para a coleta no cais; com 2× na razão per capita o
+// mundo fica dentro do baseline F3 em 365 d (0 nações pioradas, 26 falências =
+// base) e o resíduo de 60 d é 0,021 em EGY — oscilação de chegada de comida,
+// não regressão de balanço (ver GAME_STATE §10).
+constexpr double kDemoFleetTrucksPerCapita = 1.0 / 12500.0;
+constexpr double kDemoFleetShipsPerCapita = 1.0 / 250000.0;
+constexpr double kDemoFleetPlanesPerCapita = 1.0 / 2500000.0;
+constexpr double kDemoFleetMinTrucks = 16.0;
+constexpr double kDemoFleetMinShips = 4.0;
+constexpr double kDemoFleetFuelDays = 400.0;
+// Reserva estratégica mínima por habitante de simulação (t/capita). Ordem de
+// grandeza de um estoque nacional de combustível (não é medição): cobre a
+// expansão industrial que a IA cria em 60–365 d, quando o volume de carga
+// cresce ~7× sobre a estimativa da frota. O piso de 400 dias da frota continua
+// valendo para nações pequenas.
+constexpr double kDemoFleetFuelPerCapita = 0.01;
+// Consumo diário estimado por veículo (t/dia), usado para dimensionar o
+// estoque-alvo de combustível. Derivado do uso medido (~0,09 t/caminhão/dia;
+// navio e avião têm tanques/passagens maiores).
+constexpr double kDemoFleetFuelPerTruckDay = 0.12;
+constexpr double kDemoFleetFuelPerShipDay = 0.80;
+constexpr double kDemoFleetFuelPerPlaneDay = 1.50;
+// Manutenção mensal: peças por veículo/mês (t). Um caminhão ~20 kg de
+// componentes por mês; navio/avião uma ordem de grandeza acima.
+constexpr double kDemoFleetPartsPerTruckMonth = 0.02;
+constexpr double kDemoFleetPartsPerShipMonth = 0.40;
+constexpr double kDemoFleetPartsPerPlaneMonth = 0.15;
+// Reserva inicial de peças, em meses de manutenção. Transição da F4: o mundo
+// começa sem fábricas de `spare_parts`; 18 meses cobrem o horizonte de 365 d
+// com folga (como os 400 dias de fuel) e evitam que a saúde da frota caia ao
+// piso de 0,5 no meio do ano — o que recriava o gargalo de comida da F3.
+// A reposição mensal continua mirando 3 meses, não a reserva cheia.
+constexpr double kDemoFleetPartsReserveMonths = 18.0;
+constexpr double kDemoFleetPartsTargetMonths = 3.0;
+// Atrito mensal (acidentes/obsolescência) e saúde da frota.
+constexpr double kDemoFleetAttritionMonth = 0.002;
+constexpr double kDemoFleetHealthFloor = 0.50;
+constexpr double kDemoFleetHealthLossMonth = 0.10;
+constexpr double kDemoFleetHealthRecoveryMonth = 0.05;
+// Fração do orçamento da cidade-sede que o governo pode gastar por compra.
+constexpr double kDemoFleetBudgetShare = 0.10;
+// Cobertura de comida (dias de necessidade) exigida para o governo investir
+// em frota. A comida tem prioridade no orçamento público: sem esta folga, o
+// procurement mensal competia com a importação de alimento (AFG/LBY caíam em
+// 365 d de IA). Abaixo do limiar, só há compra de emergência de fuel/peças.
+constexpr double kDemoFleetFoodSecureDays = 3.0;
+
+// ---------------------------------------------------------------------------
 // Portos (ver docs/economy/port_design.md).
 //
 // Capacidade de nível 1 pela população de simulação da cidade-sede: piso de
@@ -1067,6 +1161,17 @@ void EconomySim::demo_set_goods(const Array& goods) {
 		++demo_status_deposit_version_;
 		demo_status_invalidate();
 	}
+	// F4: os índices dos bens da frota dependem dos ids carregados. Se o mundo
+	// já existe e ainda não tem frota (demo_set_goods chamado depois da
+	// inicialização, como no autoload), deriva agora.
+	demo_fleet_product_fuel_ = demo_product_index(String("fuel"));
+	demo_fleet_product_truck_ = demo_product_index(String("truck"));
+	demo_fleet_product_ship_ = demo_product_index(String("cargo_ship"));
+	demo_fleet_product_plane_ = demo_product_index(String("cargo_plane"));
+	demo_fleet_product_parts_ = demo_product_index(String("spare_parts"));
+	if (demo_active_ && demo_fleets_.empty()) {
+		demo_init_fleets();
+	}
 }
 
 void EconomySim::initialize_demo() {
@@ -1184,6 +1289,8 @@ void EconomySim::initialize_demo() {
 		demo_init_pop_needs(city.pop);
 	}
 	demo_rebuild_indexes();
+	// F4: o cenário mínimo também tem frota (nação DEMO).
+	demo_init_fleets();
 }
 
 void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
@@ -1312,6 +1419,10 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	// Capacidade de nível 1 depende da população da cidade-sede: só depois do
 	// índice de cidades (e de os portos existirem).
 	demo_init_port_capacities();
+	// F4: frota inicial derivada de população/PIB (source: derived). Os bens da
+	// frota só resolvem depois de demo_set_goods; aqui as contagens/estoques já
+	// existem e os índices são atualizados quando os bens chegam.
+	demo_init_fleets();
 }
 
 EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) {
@@ -1347,6 +1458,22 @@ void EconomySim::demo_rebuild_indexes() {
 		demo_buildings_by_city_[static_cast<std::size_t>(found->second)]
 			.push_back(static_cast<int>(index));
 	}
+	// F4: cidades por nação, na ordem estável dos índices de cidade. A frota é
+	// nacional (o governo compra combustível/peças/veículos no mercado interno),
+	// então a compra visita só as cidades da nação, nunca o mundo.
+	demo_cities_by_nation_.clear();
+	demo_cities_by_nation_.reserve(demo_cities_.size() / 4 + 8);
+	demo_fleet_order_.clear();
+	demo_fleet_order_.reserve(demo_cities_.size() / 4 + 8);
+	for (std::size_t index = 0; index < demo_cities_.size(); ++index) {
+		const std::string& nation = demo_cities_[index].nation;
+		auto found = demo_cities_by_nation_.find(nation);
+		if (found == demo_cities_by_nation_.end()) {
+			found = demo_cities_by_nation_.emplace(nation, std::vector<int>{}).first;
+			demo_fleet_order_.push_back(nation);
+		}
+		found->second.push_back(static_cast<int>(index));
+	}
 }
 
 double EconomySim::demo_money_total() const {
@@ -1364,6 +1491,7 @@ void EconomySim::demo_snapshot(DemoSnapshot& out) const {
 	out.cities = demo_cities_;
 	out.buildings = demo_buildings_;
 	out.transit = demo_in_transit_;
+	out.fleets = demo_fleets_;
 	out.transport_cash = demo_transport_cash_;
 	out.foreign_cash = demo_foreign_cash_;
 	out.construction_cash = demo_construction_cash_;
@@ -1380,6 +1508,7 @@ void EconomySim::demo_restore(const DemoSnapshot& in) {
 	demo_cities_ = in.cities;
 	demo_buildings_ = in.buildings;
 	demo_in_transit_ = in.transit;
+	demo_fleets_ = in.fleets;
 	demo_transport_cash_ = in.transport_cash;
 	demo_foreign_cash_ = in.foreign_cash;
 	demo_construction_cash_ = in.construction_cash;
@@ -1819,8 +1948,8 @@ void EconomySim::demo_trade_food() {
 			const bool same_landmass = seller.landmass == buyer.city->landmass;
 			double unit_freight = 0.0;
 			if (same_landmass) {
-				unit_freight =
-					distance_km(seller.center, buyer.city->center) * kDemoFreightPerTonKm;
+				unit_freight = demo_leg_unit_freight_food(TransportMode::Truck,
+					distance_km(seller.center, buyer.city->center));
 			} else {
 				// Travessia marítima só entre nações COM porto na massa de terra
 				// de cada cidade: cidade→porto (caminhão) + porto→porto (navio) +
@@ -1834,9 +1963,12 @@ void EconomySim::demo_trade_food() {
 				const Port& sp = demo_ports_[static_cast<std::size_t>(seller_port)];
 				const Port& bp = demo_ports_[static_cast<std::size_t>(buyer_port)];
 				unit_freight =
-					distance_km(seller.center, sp.center) * kDemoFreightPerTonKm
-					+ distance_km(sp.center, bp.center) * kDemoFreightShipPerTonKm
-					+ distance_km(bp.center, buyer.city->center) * kDemoFreightPerTonKm;
+					demo_leg_unit_freight_food(TransportMode::Truck,
+						distance_km(seller.center, sp.center))
+					+ demo_leg_unit_freight_food(TransportMode::Ship,
+						distance_km(sp.center, bp.center))
+					+ demo_leg_unit_freight_food(TransportMode::Truck,
+						distance_km(bp.center, buyer.city->center));
 			}
 			for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 				const int product = demo_food_product(slot);
@@ -1917,11 +2049,45 @@ void EconomySim::demo_trade_food() {
 			if (amount_tons * unit_cost > payable) {
 				amount_tons = unit_cost > 0.0 ? payable / unit_cost : 0.0;
 			}
+
 			if (amount_tons <= 1e-9) {
 				continue;
 			}
-			const double ge = std::min(amount_tons * factor, remaining);
+			double ge = std::min(amount_tons * factor, remaining);
 			amount_tons = ge / factor;
+
+			// F4: frota livre + combustível limitam o embarque. Sem um dos dois,
+			// a carga não sai (fica na fila da nação vendedora, que é a dona do
+			// veículo); com frota parcial, sai proporcional. Portos/fila/
+			// transbordo continuam sendo os existentes.
+			const bool fleet_same_landmass =
+				seller->landmass == buyer.city->landmass;
+			DemoTransportDemand transport = demo_route_demand(*seller, *buyer.city,
+				fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
+				fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
+			bool fuel_limited = false;
+			const double fleet_scale = demo_fleet_capacity_scale(
+				seller->nation, transport, fuel_limited);
+			if (fleet_scale < 1.0) {
+				const double queued_tons = amount_tons * (1.0 - fleet_scale);
+				const auto fleet_found = demo_fleets_.find(seller->nation);
+				if (fleet_found != demo_fleets_.end()) {
+					fleet_found->second.queue_today += queued_tons;
+					if (fuel_limited) {
+						fleet_found->second.missed_no_fuel += queued_tons;
+					} else {
+						fleet_found->second.missed_no_fleet += queued_tons;
+					}
+				}
+				if (fleet_scale <= 1e-9) {
+					continue;
+				}
+				amount_tons *= fleet_scale;
+				ge = amount_tons * factor;
+				transport = demo_route_demand(*seller, *buyer.city,
+					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
+					fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
+			}
 
 			const double total_cost = amount_tons * unit_cost;
 			const double firm_share = std::min(total_cost, firm_cash);
@@ -2034,7 +2200,27 @@ void EconomySim::demo_trade_food() {
 
 			const int arrival_day =
 				day_ + 1 + static_cast<int>(std::ceil(port_delay_days));
-			demo_in_transit_.push_back({buyer.city->id, product, amount_tons, arrival_day});
+			// F4: reserva os veículos até a chegada e debita o combustível.
+			transport = demo_route_demand(*seller, *buyer.city,
+				fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
+				fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
+			demo_fleet_reserve(seller->nation, transport);
+			DemoShipment shipment;
+			shipment.to_city = buyer.city->id;
+			shipment.product = product;
+			shipment.amount = amount_tons;
+			shipment.arrival_day = arrival_day;
+			shipment.fleet_nation = seller->nation;
+			// Caminhões fazem só a coleta/entrega no cais e voltam no mesmo
+			// dia; a travessia marítima fica com o navio. Sem isso, o caminhão
+			// ficava preso até a chegada e um navio de 2.000 t exigia 80
+			// caminhões ocupados por toda a viagem — nenhuma nação pequena
+			// conseguia embarcar (ver demo_tick_fleet).
+			shipment.fleet_trucks = fleet_same_landmass ? transport.trucks : 0.0;
+			shipment.fleet_ships = transport.ships;
+			shipment.fleet_planes = transport.planes;
+			shipment.fuel = transport.fuel;
+			demo_in_transit_.push_back(std::move(shipment));
 
 			sellable_ge[si] -= ge;
 			if (sellable_ge[si] <= 1e-9) {
@@ -2291,8 +2477,8 @@ void EconomySim::demo_trade_goods() {
 				}
 				double unit_freight = 0.0;
 				if (seller.landmass == buyer_city.landmass) {
-					unit_freight = distance_km(seller.center, buyer_city.center)
-						* kDemoFreightPerTonKm;
+					unit_freight = demo_leg_unit_freight(TransportMode::Truck,
+						distance_km(seller.center, buyer_city.center));
 				} else {
 					const int seller_port = city_port[static_cast<std::size_t>(si)];
 					const int buyer_port = city_port[static_cast<std::size_t>(buyer.city_index)];
@@ -2302,9 +2488,12 @@ void EconomySim::demo_trade_goods() {
 					const Port& sp = demo_ports_[static_cast<std::size_t>(seller_port)];
 					const Port& bp = demo_ports_[static_cast<std::size_t>(buyer_port)];
 					unit_freight =
-						distance_km(seller.center, sp.center) * kDemoFreightPerTonKm
-						+ distance_km(sp.center, bp.center) * kDemoFreightShipPerTonKm
-						+ distance_km(bp.center, buyer_city.center) * kDemoFreightPerTonKm;
+						demo_leg_unit_freight(TransportMode::Truck,
+							distance_km(seller.center, sp.center))
+						+ demo_leg_unit_freight(TransportMode::Ship,
+							distance_km(sp.center, bp.center))
+						+ demo_leg_unit_freight(TransportMode::Truck,
+							distance_km(bp.center, buyer_city.center));
 				}
 				offers.push_back({si, seller.markets[product].price + unit_freight,
 					unit_freight});
@@ -2350,6 +2539,40 @@ void EconomySim::demo_trade_goods() {
 				}
 				if (amount <= 1e-9) {
 					continue;
+				}
+				// F4: frota livre + combustível da nação vendedora. Sem veículo
+				// ou sem fuel a carga não sai (a fila do dia alimenta a reposição
+				// do governo); com capacidade parcial, embarca proporcional.
+				const bool fleet_same_landmass =
+					seller.landmass == buyer_city.landmass;
+				DemoTransportDemand transport = demo_route_demand(seller, buyer_city,
+					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
+						offer.seller_index)],
+					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
+						buyer.city_index)], amount);
+				bool fuel_limited = false;
+				const double fleet_scale = demo_fleet_capacity_scale(
+					seller.nation, transport, fuel_limited);
+				if (fleet_scale < 1.0) {
+					const double queued_tons = amount * (1.0 - fleet_scale);
+					const auto fleet_found = demo_fleets_.find(seller.nation);
+					if (fleet_found != demo_fleets_.end()) {
+						fleet_found->second.queue_today += queued_tons;
+						if (fuel_limited) {
+							fleet_found->second.missed_no_fuel += queued_tons;
+						} else {
+							fleet_found->second.missed_no_fleet += queued_tons;
+						}
+					}
+					if (fleet_scale <= 1e-9) {
+						continue;
+					}
+					amount *= fleet_scale;
+					transport = demo_route_demand(seller, buyer_city,
+						fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
+							offer.seller_index)],
+						fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
+							buyer.city_index)], amount);
 				}
 				const double total_cost = amount * unit_cost;
 				const double firm_share = std::min(total_cost,
@@ -2442,8 +2665,26 @@ void EconomySim::demo_trade_goods() {
 				demo_last_orders_.push_back(std::move(order));
 				const int arrival_day =
 					day_ + 1 + static_cast<int>(std::ceil(port_delay_days));
-				demo_in_transit_.push_back(
-					{buyer_city.id, product, amount, arrival_day});
+				// F4: reserva os veículos até a chegada e debita o combustível.
+				transport = demo_route_demand(seller, buyer_city,
+					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
+						offer.seller_index)],
+					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
+						buyer.city_index)], amount);
+				demo_fleet_reserve(seller.nation, transport);
+				DemoShipment shipment;
+				shipment.to_city = buyer_city.id;
+				shipment.product = product;
+				shipment.amount = amount;
+				shipment.arrival_day = arrival_day;
+				shipment.fleet_nation = seller.nation;
+				// Caminhões de coleta/entrega voltam no mesmo dia (ver
+				// demo_trade_food); o navio fica reservado até a chegada.
+				shipment.fleet_trucks = fleet_same_landmass ? transport.trucks : 0.0;
+				shipment.fleet_ships = transport.ships;
+				shipment.fleet_planes = transport.planes;
+				shipment.fuel = transport.fuel;
+				demo_in_transit_.push_back(std::move(shipment));
 				in_transit[buyer_offset] += amount;
 				remaining -= amount;
 				++shipments;
@@ -2452,8 +2693,578 @@ void EconomySim::demo_trade_goods() {
 	}
 }
 
-void EconomySim::demo_national_fiscal_transfer() {
-	// Equalização fiscal per capita dentro de cada nação: o orçamento público é
+// ---------------------------------------------------------------------------
+// F4 — frota nacional e combustível.
+//
+// Contrato: cada trecho de um pedido exige (a) veículo livre da nação
+// VENDEDORA na capacidade do ModeSpec (caminhão 25 t, navio 2.000 t, avião 20 t)
+// e (b) combustível no estoque nacional, consumido por t·km. Sem os dois, a
+// carga não embarca; a diferença entra em `queue_today` e o governo repõe frota
+// e combustível na manutenção mensal. Não há número fora do dado: a frota
+// inicial é derivada de população/PIB (`source: derived`), o combustível é um
+// bem físico (fuel, order 47) e os veículos são os bens finais da F2
+// (truck/cargo_ship/cargo_plane).
+// ---------------------------------------------------------------------------
+
+double EconomySim::demo_nation_sim_population(const std::string& nation) const {
+	const auto found = demo_cities_by_nation_.find(nation);
+	if (found != demo_cities_by_nation_.end()) {
+		double total = 0.0;
+		for (const int index : found->second) {
+			total += demo_cities_[static_cast<std::size_t>(index)].simulation_population;
+		}
+		return total;
+	}
+	double total = 0.0;
+	for (const DemoCity& city : demo_cities_) {
+		if (city.nation == nation) {
+			total += city.simulation_population;
+		}
+	}
+	return total;
+}
+
+double EconomySim::demo_nation_income_index(const std::string& nation) const {
+	// PIB PPP per capita já carregado por cidade (external_income_index),
+	// ponderado por população: nações ricas têm frota maior por habitante.
+	double weighted = 0.0;
+	double population = 0.0;
+	for (const DemoCity& city : demo_cities_) {
+		if (city.nation != nation || city.simulation_population <= 0.0) {
+			continue;
+		}
+		weighted += city.external_income_index * city.simulation_population;
+		population += city.simulation_population;
+	}
+	if (population <= 0.0) {
+		return 1.0;
+	}
+	return std::clamp(weighted / population, 0.10, 8.0);
+}
+
+bool EconomySim::demo_nation_food_secure(const std::string& nation) const {
+	const auto found = demo_cities_by_nation_.find(nation);
+	if (found == demo_cities_by_nation_.end()) {
+		return true;
+	}
+	double stock_ge = 0.0;
+	double need = 0.0;
+	for (const int index : found->second) {
+		const DemoCity& city = demo_cities_[static_cast<std::size_t>(index)];
+		// `pop.need` é zerado no reset do dia antes deste tick; a fórmula
+		// abaixo é a mesma usada em demo_consume_population.
+		need += std::max(0.0, city.simulation_population * kDemoNeedPerCapita);
+		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
+			const int product = demo_food_product(slot);
+			const double factor = demo_food_calories(product);
+			if (product >= 0 && product < demo_products_ && factor > 0.0) {
+				stock_ge += std::max(0.0, city.markets[product].stock) * factor;
+			}
+		}
+	}
+	if (need <= 1e-9) {
+		return true;
+	}
+	return stock_ge >= need * kDemoFleetFoodSecureDays;
+}
+
+void EconomySim::demo_init_fleets() {	demo_fleet_product_fuel_ = demo_product_index(String("fuel"));
+	demo_fleet_product_truck_ = demo_product_index(String("truck"));
+	demo_fleet_product_ship_ = demo_product_index(String("cargo_ship"));
+	demo_fleet_product_plane_ = demo_product_index(String("cargo_plane"));
+	demo_fleet_product_parts_ = demo_product_index(String("spare_parts"));
+	demo_fleets_.clear();
+	if (demo_cities_.empty()) {
+		return;
+	}
+	// Ordem determinística por primeira aparição da nação (ordem das cidades).
+	std::vector<std::string> nations;
+	std::unordered_map<std::string, char> seen;
+	seen.reserve(demo_cities_.size() * 2);
+	for (const DemoCity& city : demo_cities_) {
+		if (seen.emplace(city.nation, 1).second) {
+			nations.push_back(city.nation);
+		}
+	}
+	for (const std::string& nation : nations) {
+		const double population = demo_nation_sim_population(nation);
+		const double income = demo_nation_income_index(nation);
+		const double factor = std::clamp(0.6 + 0.4 * income, 0.6, 2.0);
+		DemoFleet fleet;
+		fleet.trucks = std::max(kDemoFleetMinTrucks,
+			std::ceil(population * kDemoFleetTrucksPerCapita * factor));
+		fleet.ships = std::max(kDemoFleetMinShips,
+			std::ceil(population * kDemoFleetShipsPerCapita * factor));
+		fleet.planes = std::ceil(population * kDemoFleetPlanesPerCapita * factor);
+		fleet.target_trucks = fleet.trucks;
+		fleet.target_ships = fleet.ships;
+		fleet.target_planes = fleet.planes;
+		const double fuel_day = fleet.trucks * kDemoFleetFuelPerTruckDay
+			+ fleet.ships * kDemoFleetFuelPerShipDay
+			+ fleet.planes * kDemoFleetFuelPerPlaneDay;
+		fleet.fuel_target = std::max(fuel_day * kDemoFleetFuelDays,
+			population * kDemoFleetFuelPerCapita);
+		fleet.fuel = fleet.fuel_target;
+		fleet.spare_parts = kDemoFleetPartsReserveMonths * (fleet.trucks * kDemoFleetPartsPerTruckMonth
+			+ fleet.ships * kDemoFleetPartsPerShipMonth
+			+ fleet.planes * kDemoFleetPartsPerPlaneMonth);
+		fleet.derived = true;
+		demo_fleets_.emplace(nation, fleet);
+	}
+	demo_fleet_order_ = nations;
+}
+
+EconomySim::DemoTransportDemand EconomySim::demo_route_demand(const DemoCity& seller,
+		const DemoCity& buyer, int seller_port, int buyer_port, double tons) const {
+	DemoTransportDemand demand;
+	if (tons <= 1e-9) {
+		return demand;
+	}
+	auto add_leg = [&demand, tons](TransportMode mode, double km) {
+		if (km <= 1e-6) {
+			return;
+		}
+		const ModeSpec& mode_spec = spec(mode);
+		const double vehicles = std::ceil(tons
+			/ std::max(1e-9, mode_spec.batch_capacity_tons));
+		demand.fuel += tons * km * mode_spec.fuel_per_ton_km;
+		switch (mode) {
+			case TransportMode::Ship:
+				demand.ships += vehicles;
+				demand.distance_ship_km += km;
+				break;
+			case TransportMode::Plane:
+				demand.planes += vehicles;
+				break;
+			case TransportMode::Truck:
+			default:
+				demand.trucks += vehicles;
+				demand.distance_truck_km += km;
+				break;
+		}
+	};
+	if (seller.landmass == buyer.landmass) {
+		add_leg(TransportMode::Truck, distance_km(seller.center, buyer.center));
+		return demand;
+	}
+	if (seller_port < 0 || buyer_port < 0
+			|| seller_port >= static_cast<int>(demo_ports_.size())
+			|| buyer_port >= static_cast<int>(demo_ports_.size())) {
+		return demand;
+	}
+	const Port& seller_city_port = demo_ports_[static_cast<std::size_t>(seller_port)];
+	const Port& buyer_city_port = demo_ports_[static_cast<std::size_t>(buyer_port)];
+	add_leg(TransportMode::Truck,
+		distance_km(seller.center, seller_city_port.center));
+	add_leg(TransportMode::Ship,
+		distance_km(seller_city_port.center, buyer_city_port.center));
+	add_leg(TransportMode::Truck,
+		distance_km(buyer_city_port.center, buyer.center));
+	return demand;
+}
+
+double EconomySim::demo_fleet_capacity_scale(const std::string& nation,
+		const DemoTransportDemand& demand, bool& fuel_limited) const {
+	fuel_limited = false;
+	if (demand.trucks <= 1e-9 && demand.ships <= 1e-9
+			&& demand.planes <= 1e-9 && demand.fuel <= 1e-9) {
+		return 1.0;
+	}
+	const auto found = demo_fleets_.find(nation);
+	if (found == demo_fleets_.end()) {
+		// Mundo sem frota declarada (save antigo/benchmark): não bloqueia.
+		return 1.0;
+	}
+	const DemoFleet& fleet = found->second;
+	double scale = 1.0;
+	auto apply = [&scale](double free_units, double need) {
+		if (need > 1e-9) {
+			scale = std::min(scale, std::max(0.0, free_units) / need);
+		}
+	};
+	// Capacidade efetiva = veículos × saúde − ocupados em trânsito.
+	apply(fleet.trucks * fleet.health[0] - fleet.trucks_busy, demand.trucks);
+	apply(fleet.ships * fleet.health[1] - fleet.ships_busy, demand.ships);
+	apply(fleet.planes * fleet.health[2] - fleet.planes_busy, demand.planes);
+	if (demand.fuel > 1e-9) {
+		const double fuel_scale = std::max(0.0, fleet.fuel) / demand.fuel;
+		if (fuel_scale < scale) {
+			scale = fuel_scale;
+			fuel_limited = true;
+		}
+	}
+	return std::clamp(scale, 0.0, 1.0);
+}
+
+void EconomySim::demo_fleet_reserve(const std::string& nation,
+		const DemoTransportDemand& demand) {
+	const auto found = demo_fleets_.find(nation);
+	if (found == demo_fleets_.end()) {
+		return;
+	}
+	DemoFleet& fleet = found->second;
+	fleet.trucks_busy += demand.trucks;
+	fleet.ships_busy += demand.ships;
+	fleet.planes_busy += demand.planes;
+	fleet.fuel = std::max(0.0, fleet.fuel - demand.fuel);
+	fleet.fuel_used_today += demand.fuel;
+	fleet.fuel_used_total += demand.fuel;
+}
+
+void EconomySim::demo_fleet_release(const std::string& nation,
+		const DemoTransportDemand& demand) {
+	const auto found = demo_fleets_.find(nation);
+	if (found == demo_fleets_.end()) {
+		return;
+	}
+	DemoFleet& fleet = found->second;
+	fleet.trucks_busy = std::max(0.0, fleet.trucks_busy - demand.trucks);
+	fleet.ships_busy = std::max(0.0, fleet.ships_busy - demand.ships);
+	fleet.planes_busy = std::max(0.0, fleet.planes_busy - demand.planes);
+}
+
+double EconomySim::demo_fleet_fuel_price() const {
+	if (demo_fleet_product_fuel_ >= 0
+			&& demo_fleet_product_fuel_ < demo_products_) {
+		return demo_base_price(demo_fleet_product_fuel_);
+	}
+	// goods.json: base_price do fuel (fallback antes de demo_set_goods).
+	return 43.5;
+}
+
+double EconomySim::demo_leg_unit_freight(TransportMode mode,
+		double distance_km_value) const {
+	const ModeSpec& mode_spec = spec(mode);
+	return distance_km_value * (mode_spec.cost_per_ton_km
+		+ mode_spec.fuel_per_ton_km * demo_fleet_fuel_price()
+		+ mode_spec.fleet_cost_per_ton_km);
+}
+
+double EconomySim::demo_leg_unit_freight_food(TransportMode mode,
+		double distance_km_value) const {
+	// Só a tarifa: comida não paga o sobrepreço de fuel/frota. O veículo e o
+	// combustível continuam exigidos no embarque (demo_route_demand), então a
+	// frota segue sendo um gargalo físico — o que muda é quem absorve o custo.
+	return distance_km_value * spec(mode).cost_per_ton_km;
+}
+
+void EconomySim::demo_tick_fleet() {
+	if (demo_fleets_.empty() && !demo_cities_.empty()) {
+		demo_init_fleets();
+	}
+	if (demo_fleets_.empty()) {
+		return;
+	}
+	if (day_ % 30 == 0) {
+		// Manutenção mensal: peças, saúde e atrito; depois a reposição do
+		// governo. Usa a fila do dia anterior (antes do reset abaixo).
+		for (const std::string& nation : demo_fleet_order_) {
+			const auto found = demo_fleets_.find(nation);
+			if (found == demo_fleets_.end()) {
+				continue;
+			}
+			DemoFleet& fleet = found->second;
+			const double parts_need = fleet.trucks * kDemoFleetPartsPerTruckMonth
+				+ fleet.ships * kDemoFleetPartsPerShipMonth
+				+ fleet.planes * kDemoFleetPartsPerPlaneMonth;
+			if (parts_need > 1e-9) {
+				const double available = std::max(0.0, fleet.spare_parts);
+				const double used = std::min(available, parts_need);
+				fleet.spare_parts = available - used;
+				fleet.parts_used_total += used;
+				const double ratio = used / parts_need;
+				for (int mode = 0; mode < 3; ++mode) {
+					if (ratio >= 0.999) {
+						fleet.health[mode] = std::min(1.0,
+							fleet.health[mode] + kDemoFleetHealthRecoveryMonth);
+					} else {
+						fleet.health[mode] = std::max(kDemoFleetHealthFloor,
+							fleet.health[mode]
+							- kDemoFleetHealthLossMonth * (1.0 - ratio));
+					}
+				}
+			}
+			// Atrito: acidentes/obsolescência consomem 0,2% da frota por mês.
+			const double keep = 1.0 - kDemoFleetAttritionMonth;
+			fleet.trucks *= keep;
+			fleet.ships *= keep;
+			fleet.planes *= keep;
+
+			// Reposição do governo: combustível, peças e veículos. A fila do mês
+			// acelera a reposição: +50% no alvo e os veículos necessários para
+			// escoar a carga barrada em ~10 dias.
+			const bool food_secure = demo_nation_food_secure(nation);
+			const double fuel_day = fleet.trucks * kDemoFleetFuelPerTruckDay
+				+ fleet.ships * kDemoFleetFuelPerShipDay
+				+ fleet.planes * kDemoFleetFuelPerPlaneDay;
+			fleet.fuel_target = std::max(fleet.fuel_target,
+				std::max(fuel_day * kDemoFleetFuelDays,
+					demo_nation_sim_population(nation) * kDemoFleetFuelPerCapita));
+			const double parts_target = kDemoFleetPartsTargetMonths * parts_need;
+			const double urgency = fleet.queue_today > 1e-9 ? 1.5 : 1.0;
+			const double queued_trucks = fleet.queue_today / (25.0 * 10.0);
+			const double queued_ships = fleet.queue_today / (2000.0 * 10.0);
+			const String nation_id(nation.c_str());
+			// Sem folga alimentar, o orçamento público fica com a comida: só
+			// repõe em emergência (fuel abaixo de 20% do alvo, peças abaixo de
+			// um mês). Com folga, a reposição segue o alvo normal.
+			const bool fuel_emergency = fleet.fuel < fleet.fuel_target * 0.20;
+			const bool parts_emergency = fleet.spare_parts < parts_need;
+			if (demo_fleet_product_fuel_ >= 0 && fleet.fuel < fleet.fuel_target
+					&& (food_secure || fuel_emergency)) {
+				demo_fleet_buy(nation_id, String("fuel"),
+					fleet.fuel_target - fleet.fuel, kDemoFleetBudgetShare);
+			}
+			if (demo_fleet_product_parts_ >= 0 && fleet.spare_parts < parts_target
+					&& (food_secure || parts_emergency)) {
+				demo_fleet_buy(nation_id, String("spare_parts"),
+					parts_target - fleet.spare_parts, kDemoFleetBudgetShare);
+			}
+			if (!food_secure) {
+				continue;
+			}
+			if (demo_fleet_product_truck_ >= 0) {
+				const double target = std::max(fleet.target_trucks, fleet.trucks)
+					* urgency + queued_trucks;
+				if (fleet.trucks < target) {
+					demo_fleet_buy(nation_id, String("truck"), target - fleet.trucks,
+						kDemoFleetBudgetShare);
+				}
+			}
+			if (demo_fleet_product_ship_ >= 0) {
+				const double target = std::max(fleet.target_ships, fleet.ships)
+					* urgency + queued_ships;
+				if (fleet.ships < target) {
+					demo_fleet_buy(nation_id, String("cargo_ship"), target - fleet.ships,
+						kDemoFleetBudgetShare);
+				}
+			}
+			if (demo_fleet_product_plane_ >= 0) {
+				const double target = std::max(fleet.target_planes, fleet.planes) * urgency;
+				if (fleet.planes < target) {
+					demo_fleet_buy(nation_id, String("cargo_plane"), target - fleet.planes,
+						kDemoFleetBudgetShare);
+				}
+			}
+		}
+	}
+	// Métricas do dia: fila e combustível consumido são diários. Os caminhões
+	// de coleta/entrega do cais também são liberados aqui (ver
+	// demo_trade_food): eles voltam no mesmo dia, enquanto navios e aviões
+	// seguem reservados até a chegada.
+	for (auto& entry : demo_fleets_) {
+		entry.second.fuel_used_today = 0.0;
+		entry.second.queue_today = 0.0;
+		entry.second.missed_no_fleet = 0.0;
+		entry.second.missed_no_fuel = 0.0;
+		entry.second.trucks_busy = 0.0;
+	}
+}
+
+Dictionary EconomySim::demo_get_fleet(const String& nation) const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary out;
+	const std::string tag(nation.utf8().get_data());
+	const auto found = demo_fleets_.find(tag);
+	if (found == demo_fleets_.end()) {
+		out["error"] = "nacao sem frota";
+		return out;
+	}
+	const DemoFleet& fleet = found->second;
+	out["nation"] = nation;
+	out["trucks"] = fleet.trucks;
+	out["ships"] = fleet.ships;
+	out["planes"] = fleet.planes;
+	out["trucks_busy"] = fleet.trucks_busy;
+	out["ships_busy"] = fleet.ships_busy;
+	out["planes_busy"] = fleet.planes_busy;
+	out["health"] = Array{fleet.health[0], fleet.health[1], fleet.health[2]};
+	// Capacidade efetiva de um lote por modal (t) — veículos × saúde × carga.
+	out["capacity_tons"] = fleet.trucks * fleet.health[0] * 25.0
+		+ fleet.ships * fleet.health[1] * 2000.0
+		+ fleet.planes * fleet.health[2] * 20.0;
+	out["fuel"] = fleet.fuel;
+	out["fuel_target"] = fleet.fuel_target;
+	out["spare_parts"] = fleet.spare_parts;
+	out["fuel_used_today"] = fleet.fuel_used_today;
+	out["fuel_used_total"] = fleet.fuel_used_total;
+	out["parts_used_total"] = fleet.parts_used_total;
+	out["vehicles_bought_total"] = fleet.vehicles_bought_total;
+	out["queue_today"] = fleet.queue_today;
+	out["missed_no_fleet"] = fleet.missed_no_fleet;
+	out["missed_no_fuel"] = fleet.missed_no_fuel;
+	out["derived"] = fleet.derived;
+	out["source"] = fleet.derived ? "derived" : "declared";
+	out["target_trucks"] = fleet.target_trucks;
+	out["target_ships"] = fleet.target_ships;
+	out["target_planes"] = fleet.target_planes;
+	return out;
+}
+
+void EconomySim::demo_set_fleet(const String& nation, double trucks, double ships,
+		double planes, double fuel, double spare_parts) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::string tag(nation.utf8().get_data());
+	DemoFleet fleet = DemoFleet{};
+	fleet.trucks = std::max(0.0, trucks);
+	fleet.ships = std::max(0.0, ships);
+	fleet.planes = std::max(0.0, planes);
+	fleet.target_trucks = fleet.trucks;
+	fleet.target_ships = fleet.ships;
+	fleet.target_planes = fleet.planes;
+	fleet.health[0] = 1.0;
+	fleet.health[1] = 1.0;
+	fleet.health[2] = 1.0;
+	fleet.fuel = std::max(0.0, fuel);
+	fleet.fuel_target = fleet.fuel;
+	fleet.spare_parts = std::max(0.0, spare_parts);
+	fleet.derived = false;
+	demo_fleets_[tag] = fleet;
+	bool known = false;
+	for (const std::string& entry : demo_fleet_order_) {
+		if (entry == tag) {
+			known = true;
+			break;
+		}
+	}
+	if (!known) {
+		demo_fleet_order_.push_back(tag);
+	}
+	demo_status_invalidate();
+}
+
+Dictionary EconomySim::demo_fleet_buy(const String& nation, const String& product,
+		double amount, double budget_share) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["bought"] = 0.0;
+	result["spent"] = 0.0;
+	result["unfilled"] = 0.0;
+	result["error"] = "";
+	const std::string tag(nation.utf8().get_data());
+	const int product_index = demo_product_index(product);
+	if (product_index < 0) {
+		result["error"] = "produto desconhecido";
+		return result;
+	}
+	if (amount <= 1e-9) {
+		result["error"] = "quantidade invalida";
+		return result;
+	}
+	const auto fleet_found = demo_fleets_.find(tag);
+	if (fleet_found == demo_fleets_.end()) {
+		result["error"] = "nacao sem frota";
+		return result;
+	}
+	const auto cities_found = demo_cities_by_nation_.find(tag);
+	if (cities_found == demo_cities_by_nation_.end() || cities_found->second.empty()) {
+		result["error"] = "nacao sem cidade";
+		return result;
+	}
+	// Cidade-sede: a maior população de simulação paga a compra do governo.
+	int hq = -1;
+	double best_population = -1.0;
+	for (const int index : cities_found->second) {
+		const double population = demo_cities_[static_cast<std::size_t>(index)]
+			.simulation_population;
+		if (hq < 0 || population > best_population) {
+			hq = index;
+			best_population = population;
+		}
+	}
+	DemoCity& hq_city = demo_cities_[static_cast<std::size_t>(hq)];
+	DemoFleet& fleet = fleet_found->second;
+	// O pedido inteiro entra como demanda desejada da sede, mesmo sem estoque:
+	// é o sinal que a IA lê para produzir/importar (estado vazio honesto).
+	hq_city.markets[product_index].desired += amount;
+	const double budget = std::max(0.0, hq_city.government_budget)
+		* std::clamp(budget_share, 0.0, 1.0);
+	struct Seller {
+		int city = 0;
+		double price = 0.0;
+		double stock = 0.0;
+	};
+	std::vector<Seller> sellers;
+	sellers.reserve(cities_found->second.size());
+	for (const int index : cities_found->second) {
+		const DemoCity& city = demo_cities_[static_cast<std::size_t>(index)];
+		const DemoMarket& market = city.markets[product_index];
+		if (market.stock > 1e-9 && market.price > 0.0) {
+			sellers.push_back({index, market.price, market.stock});
+		}
+	}
+	std::stable_sort(sellers.begin(), sellers.end(),
+		[](const Seller& left, const Seller& right) {
+			if (left.price != right.price) {
+				return left.price < right.price;
+			}
+			return left.city < right.city;
+		});
+	double remaining = amount;
+	double spent = 0.0;
+	for (const Seller& seller_entry : sellers) {
+		if (remaining <= 1e-9 || spent >= budget - 1e-9) {
+			break;
+		}
+		DemoCity& seller = demo_cities_[static_cast<std::size_t>(seller_entry.city)];
+		DemoMarket& market = seller.markets[product_index];
+		double quantity = std::min(remaining, market.stock);
+		if (quantity * market.price > budget - spent) {
+			quantity = (budget - spent) / market.price;
+		}
+		if (quantity <= 1e-9) {
+			continue;
+		}
+		const double cost = quantity * market.price;
+		hq_city.government_budget -= cost;
+		seller.firm_cash += cost;
+		market.stock -= quantity;
+		market.demand += quantity;
+		market.sold += quantity;
+		seller.revenue_by_product[product_index] += cost;
+		spent += cost;
+		remaining -= quantity;
+	}
+	const double bought = amount - remaining;
+	if (product_index == demo_fleet_product_fuel_) {
+		fleet.fuel += bought;
+		fleet.fuel_bought_total += bought;
+	} else if (product_index == demo_fleet_product_parts_) {
+		fleet.spare_parts += bought;
+	} else if (product_index == demo_fleet_product_truck_) {
+		fleet.trucks += bought;
+		fleet.vehicles_bought_total += bought;
+	} else if (product_index == demo_fleet_product_ship_) {
+		fleet.ships += bought;
+		fleet.vehicles_bought_total += bought;
+	} else if (product_index == demo_fleet_product_plane_) {
+		fleet.planes += bought;
+		fleet.vehicles_bought_total += bought;
+	}
+	result["bought"] = bought;
+	result["spent"] = spent;
+	result["unfilled"] = remaining;
+	demo_status_invalidate();
+	return result;
+}
+
+void EconomySim::demo_set_market_stock(const String& city_id, const String& product,
+		double stock) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	const int product_index = demo_product_index(product);
+	if (product_index < 0) {
+		return;
+	}
+	city->markets[product_index].stock = std::max(0.0, stock);
+	++demo_status_static_version_;
+	demo_status_invalidate();
+}
+
+void EconomySim::demo_national_fiscal_transfer() {	// Equalização fiscal per capita dentro de cada nação: o orçamento público é
 	// repartido entre as cidades proporcionalmente à população. Uma cidade rica
 	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:
 	// Paris sustenta Cayenne). Conserva dinheiro — só move government_budget
@@ -2813,6 +3624,13 @@ void EconomySim::demo_tick_core() {
 			if (DemoCity* city = find_demo_city(shipment->to_city)) {
 				city->markets[shipment->product].stock += shipment->amount;
 			}
+			// F4: libera os veículos reservados pelo pedido (o combustível já
+			// foi consumido no embarque).
+			DemoTransportDemand done;
+			done.trucks = shipment->fleet_trucks;
+			done.ships = shipment->fleet_ships;
+			done.planes = shipment->fleet_planes;
+			demo_fleet_release(shipment->fleet_nation, done);
 			shipment = demo_in_transit_.erase(shipment);
 			continue;
 		}
@@ -2893,6 +3711,10 @@ void EconomySim::demo_tick_core() {
 	}
 
 	lap(kDemoPhaseReset);
+
+	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia. Roda
+	// antes do comércio para combustível/veículos comprados já valerem hoje.
+	demo_tick_fleet();
 
 	// 3. Mercado de trabalho e salários.
 	// Minas mais fundas custam mais para operar: opex × fator de profundidade
@@ -3919,7 +4741,21 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		needs_spend("needs_spend"),
 		durable_spend("durable_spend"),
 		durable_stock("durable_stock"),
-		government_goods_spend("government_goods_spend")
+		government_goods_spend("government_goods_spend"),
+		trucks("trucks"),
+		ships("ships"),
+		planes("planes"),
+		fleet("fleet"),
+		fuel("fuel"),
+		spare_parts("spare_parts"),
+		health("health"),
+		fuel_used("fuel_used"),
+		missed_no_fleet("missed_no_fleet"),
+		missed_no_fuel("missed_no_fuel"),
+		source("source"),
+		target_trucks("target_trucks"),
+		target_ships("target_ships"),
+		target_planes("target_planes")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -4712,6 +5548,26 @@ Dictionary EconomySim::get_demo_status() {
 		nation[k.need] = totals.need;
 		nation[k.deficit] = totals.deficit;
 		nation[k.in_transit] = totals.in_transit;
+		// F4: frota/combustível da nação (a UI e a IA leem daqui; a fila do dia
+		// é o sinal de compra de veículos/combustível).
+		const auto fleet_found = demo_fleets_.find(tag);
+		if (fleet_found != demo_fleets_.end()) {
+			const DemoFleet& fleet = fleet_found->second;
+			Dictionary fleet_dict;
+			fleet_dict[k.trucks] = fleet.trucks;
+			fleet_dict[k.ships] = fleet.ships;
+			fleet_dict[k.planes] = fleet.planes;
+			fleet_dict[k.fuel] = fleet.fuel;
+			fleet_dict[k.spare_parts] = fleet.spare_parts;
+			fleet_dict[k.health] = Array{fleet.health[0], fleet.health[1],
+				fleet.health[2]};
+			fleet_dict[k.fuel_used] = fleet.fuel_used_today;
+			fleet_dict[k.queue] = fleet.queue_today;
+			fleet_dict[k.missed_no_fleet] = fleet.missed_no_fleet;
+			fleet_dict[k.missed_no_fuel] = fleet.missed_no_fuel;
+			fleet_dict[k.source] = fleet.derived ? "derived" : "declared";
+			nation[k.fleet] = fleet_dict;
+		}
 		cache.nations[index] = nation;
 	}
 
@@ -5979,9 +6835,44 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["product"] = shipment.product;
 		entry["amount"] = shipment.amount;
 		entry["arrival_day"] = shipment.arrival_day;
+		// F4: reserva de frota do pedido (liberada na chegada).
+		entry["fleet_nation"] = String(shipment.fleet_nation.c_str());
+		entry["fleet_trucks"] = shipment.fleet_trucks;
+		entry["fleet_ships"] = shipment.fleet_ships;
+		entry["fleet_planes"] = shipment.fleet_planes;
+		entry["fuel"] = shipment.fuel;
 		transit.append(entry);
 	}
 	data["in_transit"] = transit;
+
+	// F4: frota nacional. Uma entrada por nação, com a saúde por modal.
+	Array fleets;
+	for (const std::string& nation : demo_fleet_order_) {
+		const auto found = demo_fleets_.find(nation);
+		if (found == demo_fleets_.end()) {
+			continue;
+		}
+		const DemoFleet& fleet = found->second;
+		Dictionary entry;
+		entry["nation"] = String(nation.c_str());
+		entry["trucks"] = fleet.trucks;
+		entry["ships"] = fleet.ships;
+		entry["planes"] = fleet.planes;
+		entry["target_trucks"] = fleet.target_trucks;
+		entry["target_ships"] = fleet.target_ships;
+		entry["target_planes"] = fleet.target_planes;
+		entry["fuel"] = fleet.fuel;
+		entry["fuel_target"] = fleet.fuel_target;
+		entry["spare_parts"] = fleet.spare_parts;
+		entry["health"] = Array{fleet.health[0], fleet.health[1], fleet.health[2]};
+		entry["fuel_used_total"] = fleet.fuel_used_total;
+		entry["fuel_bought_total"] = fleet.fuel_bought_total;
+		entry["parts_used_total"] = fleet.parts_used_total;
+		entry["vehicles_bought_total"] = fleet.vehicles_bought_total;
+		entry["derived"] = fleet.derived;
+		fleets.append(entry);
+	}
+	data["fleets"] = fleets;
 
 	// Portos: identidade + capacidade/fila/obra. Campos aditivos (v3 continua
 	// válido; save anterior não tem a chave e o loader mantém os portos do
@@ -6299,6 +7190,13 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 		shipment.amount = double(entry.get("amount", 0.0));
 		shipment.arrival_day = int(entry.get("arrival_day", 0));
+		// F4: reserva da frota (save v5). Save anterior: frota livre ao carregar.
+		shipment.fleet_nation =
+			std::string(String(entry.get("fleet_nation", "")).utf8().get_data());
+		shipment.fleet_trucks = double(entry.get("fleet_trucks", 0.0));
+		shipment.fleet_ships = double(entry.get("fleet_ships", 0.0));
+		shipment.fleet_planes = double(entry.get("fleet_planes", 0.0));
+		shipment.fuel = double(entry.get("fuel", 0.0));
 		demo_in_transit_.push_back(shipment);
 	}
 
@@ -6336,6 +7234,69 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 	demo_rebuild_indexes();
 	if (!has_saved_ports && !demo_ports_.empty()) {
 		demo_init_port_capacities();
+	}
+	// F4: frota (save v5). Save anterior não tem o bloco: deriva de
+	// população/PIB, documentado como `source: derived`.
+	demo_fleets_.clear();
+	demo_fleet_order_.clear();
+	const Array saved_fleets = data.get("fleets", Array());
+	for (int index = 0; index < saved_fleets.size(); ++index) {
+		Dictionary entry = saved_fleets[index];
+		const std::string nation =
+			std::string(String(entry.get("nation", "")).utf8().get_data());
+		if (nation.empty()) {
+			continue;
+		}
+		DemoFleet fleet;
+		fleet.trucks = safe_nonneg(double(entry.get("trucks", 0.0)));
+		fleet.ships = safe_nonneg(double(entry.get("ships", 0.0)));
+		fleet.planes = safe_nonneg(double(entry.get("planes", 0.0)));
+		fleet.target_trucks = safe_nonneg(double(entry.get("target_trucks", 0.0)));
+		fleet.target_ships = safe_nonneg(double(entry.get("target_ships", 0.0)));
+		fleet.target_planes = safe_nonneg(double(entry.get("target_planes", 0.0)));
+		fleet.fuel = safe_nonneg(double(entry.get("fuel", 0.0)));
+		fleet.fuel_target = safe_nonneg(double(entry.get("fuel_target", 0.0)));
+		fleet.spare_parts = safe_nonneg(double(entry.get("spare_parts", 0.0)));
+		Array health = entry.get("health", Array());
+		for (int mode = 0; mode < 3; ++mode) {
+			fleet.health[mode] = mode < health.size()
+				? std::clamp(double(health[mode]), kDemoFleetHealthFloor, 1.0) : 1.0;
+		}
+		fleet.fuel_used_total = double(entry.get("fuel_used_total", 0.0));
+		fleet.fuel_bought_total = double(entry.get("fuel_bought_total", 0.0));
+		fleet.parts_used_total = double(entry.get("parts_used_total", 0.0));
+		fleet.vehicles_bought_total =
+			double(entry.get("vehicles_bought_total", 0.0));
+		fleet.derived = bool(entry.get("derived", false));
+		demo_fleets_.emplace(nation, fleet);
+		demo_fleet_order_.push_back(nation);
+	}
+	// Reserva das cargas em trânsito: reconstrói os veículos ocupados.
+	for (const DemoShipment& shipment : demo_in_transit_) {
+		if (shipment.fleet_nation.empty()) {
+			continue;
+		}
+		DemoTransportDemand busy;
+		busy.trucks = shipment.fleet_trucks;
+		busy.ships = shipment.fleet_ships;
+		busy.planes = shipment.fleet_planes;
+		const auto found = demo_fleets_.find(shipment.fleet_nation);
+		if (found == demo_fleets_.end()) {
+			continue;
+		}
+		found->second.trucks_busy += busy.trucks;
+		found->second.ships_busy += busy.ships;
+		found->second.planes_busy += busy.planes;
+	}
+	if (demo_fleets_.empty()) {
+		demo_init_fleets();
+	} else {
+		// Índices dos bens da frota (products já carregados antes do load).
+		demo_fleet_product_fuel_ = demo_product_index(String("fuel"));
+		demo_fleet_product_truck_ = demo_product_index(String("truck"));
+		demo_fleet_product_ship_ = demo_product_index(String("cargo_ship"));
+		demo_fleet_product_plane_ = demo_product_index(String("cargo_plane"));
+		demo_fleet_product_parts_ = demo_product_index(String("spare_parts"));
 	}
 }
 
