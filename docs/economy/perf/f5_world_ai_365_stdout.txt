@@ -1,0 +1,1034 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+economia: bootstrap industrial (estimativa) ├ó┬Ç┬ö 24 plantas de refer├â┬¬ncia semeadas
+[world] dinheiro inicial=2200539587.40 final=2200539587.40 drift=0.0009
+[world] industrializacao: 8 cidades > 0 | max 0.0051 | capacidade industrial 396.0 t/dia
+[world] comida por nacao (consumido/necessidade):
+  NED  cidades=  7 comida=1.000 pior=1.000 (NED-RTM) ind=0.0000
+  AFG  cidades=  4 comida=0.966 pior=0.606 (AFG-MAZ) ind=0.0000
+  AGO  cidades=  6 comida=1.000 pior=1.000 (AGO-BEN) ind=0.0000
+  ALB  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  ESP  cidades=  9 comida=0.984 pior=0.623 (ESP-LAS) ind=0.0000
+  ARE  cidades=  2 comida=1.000 pior=1.000 (ARE-DUB) ind=0.0000
+  ARG  cidades= 10 comida=1.000 pior=1.000 (ARG-MEN) ind=0.0000
+  ARM  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  ATG  cidades=  1 comida=1.000 pior=1.000 () ind=0.0000
+  AUS  cidades= 18 comida=1.000 pior=1.000 (AUS-MOR) ind=0.0000
+  AUT  cidades=  2 comida=1.000 pior=1.000 (AUT-GRA) ind=0.0000
+  AZE  cidades=  2 comida=1.000 pior=1.000 (AZE-GAN) ind=0.0000
+  BDI  cidades=  2 comida=1.000 pior=1.000 (BDI-BUJ) ind=0.0000
+  BEL  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  BEN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  BFA  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  BGD  cidades= 10 comida=1.000 pior=1.000 () ind=0.0000
+  BGR  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  BHR  cidades=  1 comida=1.000 pior=1.000 () ind=0.0000
+  BHS  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  BIH  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  BLR  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  BLZ  cidades=  2 comida=1.000 pior=1.000 (BLZ-BELI) ind=0.0000
+  BOL  cidades=  5 comida=1.000 pior=1.000 () ind=0.0000
+  BRA  cidades= 25 comida=1.000 pior=1.000 (BRA-TEF) ind=0.0000
+  BRB  cidades=  1 comida=1.000 pior=1.000 () ind=0.0000
+  BRN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  BTN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  BWA  cidades=  3 comida=1.000 pior=1.000 (BWA-GAB) ind=0.0000
+  CAF  cidades=  3 comida=1.000 pior=1.000 (CAF-BAN) ind=0.0000
+  CAN  cidades= 25 comida=1.000 pior=1.000 (CAN-IQA) ind=0.0000
+  CHE  cidades=  3 comida=1.000 pior=1.000 (CHE-BER) ind=0.0000
+  CHL  cidades=  4 comida=1.000 pior=1.000 (CHL-PUE) ind=0.0000
+  CHN  cidades= 28 comida=1.000 pior=1.000 (CHN-GAR) ind=0.0006
+  CIV  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  CMR  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  COD  cidades=  9 comida=1.000 pior=1.000 () ind=0.0001
+  COG  cidades=  3 comida=1.000 pior=1.000 (COG-OWA) ind=0.0000
+  COL  cidades=  7 comida=1.000 pior=1.000 (COL-MIT) ind=0.0000
+  CRI  cidades=  2 comida=1.000 pior=1.000 (CRI-LIM) ind=0.0000
+  CUB  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  CYP  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  CZE  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  DEU  cidades= 12 comida=1.000 pior=1.000 (DEU-KAS) ind=0.0000
+  DJI  cidades=  2 comida=0.407 pior=0.398 (DJI-ALI) ind=0.0000
+  DMA  cidades=  1 comida=1.000 pior=1.000 (DMA-ROS) ind=0.0000
+  DNK  cidades=  4 comida=0.987 pior=0.000 (GRL-ILU) ind=0.0000
+  DOM  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  DZA  cidades=  7 comida=1.000 pior=1.000 (DZA-TAM) ind=0.0000
+  ECU  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  EGY  cidades=  7 comida=0.740 pior=0.584 (EGY-CAI) ind=0.0000
+  ERI  cidades=  2 comida=1.000 pior=1.000 (ERI-ASM) ind=0.0000
+  EST  cidades=  2 comida=1.000 pior=1.000 (EST-TAL) ind=0.0000
+  ETH  cidades=  8 comida=1.000 pior=1.000 (ETH-GON) ind=0.0000
+  FIN  cidades=  3 comida=1.000 pior=1.000 (FIN-ROV) ind=0.0000
+  FJI  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  GBR  cidades= 11 comida=1.000 pior=0.000 (FLK-STA) ind=0.0000
+  FRA  cidades= 15 comida=1.000 pior=1.000 (NCL-WE) ind=0.0000
+  GAB  cidades=  2 comida=1.000 pior=1.000 (GAB-LIB) ind=0.0000
+  GEO  cidades=  2 comida=1.000 pior=1.000 (GEO-BAT) ind=0.0000
+  GHA  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  GIN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  GMB  cidades=  1 comida=1.000 pior=1.000 () ind=0.0000
+  GNB  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  GNQ  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  GRC  cidades=  3 comida=1.000 pior=1.000 (GRC-HER) ind=0.0000
+  GRD  cidades=  1 comida=1.000 pior=1.000 (GRD-SAI) ind=0.0000
+  GTM  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  USA  cidades= 33 comida=1.000 pior=1.000 (USA-POR) ind=0.0000
+  GUY  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  HND  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  HRV  cidades=  2 comida=1.000 pior=1.000 (HRV-SPL) ind=0.0000
+  HTI  cidades=  2 comida=1.000 pior=1.000 (HTI-POR) ind=0.0000
+  HUN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  IDN  cidades= 19 comida=1.000 pior=1.000 (IDN-TAS) ind=0.0000
+  IND  cidades= 25 comida=1.000 pior=1.000 (IND-LUD) ind=0.0000
+  IRL  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  IRN  cidades=  9 comida=1.000 pior=1.000 (IRN-IRA) ind=0.0000
+  IRQ  cidades=  3 comida=1.000 pior=1.000 (IRQ-ALM) ind=0.0000
+  ISL  cidades=  2 comida=1.000 pior=1.000 (ISL-AKU) ind=0.0000
+  ISR  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  ITA  cidades= 10 comida=1.000 pior=1.000 (SMR-SANM) ind=0.0000
+  JAM  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  JOR  cidades=  2 comida=1.000 pior=1.000 (JOR-IRB) ind=0.0000
+  JPN  cidades= 11 comida=1.000 pior=1.000 (JPN-FUK) ind=0.0000
+  KAZ  cidades=  6 comida=1.000 pior=1.000 (KAZ-UST) ind=0.0000
+  KEN  cidades=  4 comida=1.000 pior=1.000 (KEN-NAI) ind=0.0000
+  KGZ  cidades=  2 comida=1.000 pior=1.000 (KGZ-OSH) ind=0.0000
+  KHM  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  KNA  cidades=  1 comida=1.000 pior=1.000 (KNA-BAS) ind=0.0000
+  KOR  cidades=  6 comida=1.000 pior=1.000 (KOR-BUS) ind=0.0000
+  KWT  cidades=  2 comida=1.000 pior=1.000 (KWT-ALA) ind=0.0000
+  LAO  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  LBN  cidades=  2 comida=1.000 pior=1.000 (LBN-TRI) ind=0.0000
+  LBR  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  LBY  cidades=  5 comida=1.000 pior=1.000 () ind=0.0000
+  LCA  cidades=  1 comida=1.000 pior=1.000 (LCA-CAS) ind=0.0000
+  LKA  cidades=  2 comida=1.000 pior=1.000 (LKA-COL) ind=0.0000
+  LSO  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  LTU  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  LUX  cidades=  1 comida=1.000 pior=1.000 () ind=0.0000
+  LVA  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  MAR  cidades=  6 comida=1.000 pior=1.000 (MAR-AGA) ind=0.0000
+  MDA  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  MDG  cidades=  3 comida=1.000 pior=1.000 (MDG-TOA) ind=0.0000
+  MEX  cidades= 14 comida=1.000 pior=1.000 (MEX-CHI) ind=0.0000
+  MKD  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  MLI  cidades=  5 comida=1.000 pior=1.000 () ind=0.0000
+  MLT  cidades=  1 comida=1.000 pior=1.000 () ind=0.0000
+  MMR  cidades=  5 comida=1.000 pior=1.000 (MMR-NAY) ind=0.0000
+  MNE  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  MNG  cidades=  4 comida=1.000 pior=1.000 (MNG-DAR) ind=0.0000
+  MOZ  cidades=  4 comida=1.000 pior=1.000 (MOZ-CHI) ind=0.0000
+  MRT  cidades=  4 comida=1.000 pior=1.000 (MRT-ZOU) ind=0.0000
+  MWI  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  MYS  cidades=  5 comida=1.000 pior=1.000 (MYS-GEO) ind=0.0000
+  NAM  cidades=  3 comida=1.000 pior=1.000 (NAM-WAL) ind=0.0000
+  NER  cidades=  5 comida=0.979 pior=0.689 (NER-TAH) ind=0.0000
+  NGA  cidades= 13 comida=0.834 pior=0.575 (NGA-LAG) ind=0.0000
+  NIC  cidades=  2 comida=1.000 pior=1.000 (NIC-MAN) ind=0.0000
+  NOR  cidades=  3 comida=1.000 pior=1.000 (NOR-BER) ind=0.0000
+  NPL  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  NZL  cidades=  3 comida=1.000 pior=1.000 (NZL-WEL) ind=0.0000
+  OMN  cidades=  3 comida=1.000 pior=1.000 (OMN-SAL) ind=0.0000
+  PAK  cidades= 14 comida=0.466 pior=0.243 (PAK-BAH) ind=0.0000
+  PAN  cidades=  2 comida=1.000 pior=1.000 (PAN-PAN) ind=0.0000
+  PER  cidades=  5 comida=1.000 pior=1.000 () ind=0.0000
+  PHL  cidades=  6 comida=1.000 pior=1.000 () ind=0.0000
+  PNG  cidades=  4 comida=1.000 pior=1.000 (PNG-ARA) ind=0.0000
+  POL  cidades=  6 comida=1.000 pior=1.000 (POL-ODZ) ind=0.0000
+  PRK  cidades=  3 comida=1.000 pior=1.000 (PRK-WON) ind=0.0000
+  PRT  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  PRY  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  PSX  cidades=  2 comida=0.185 pior=0.185 (PSX-GAZ) ind=0.0000
+  QAT  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  ROU  cidades=  4 comida=1.000 pior=1.000 () ind=0.0000
+  RUS  cidades= 45 comida=1.000 pior=1.000 (RUS-PAL) ind=0.0000
+  RWA  cidades=  2 comida=1.000 pior=1.000 (RWA-KIG) ind=0.0000
+  SAH  cidades=  3 comida=0.241 pior=0.236 (SAH-TIF) ind=0.0000
+  SAU  cidades=  7 comida=1.000 pior=1.000 (SAU-RIY) ind=0.0000
+  SDN  cidades=  7 comida=0.529 pior=0.086 (SDN-KHA) ind=0.0000
+  SEN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  SGP  cidades=  1 comida=0.906 pior=0.906 (SGP-SIN) ind=0.0000
+  SLB  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  SLE  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  SLV  cidades=  2 comida=1.000 pior=1.000 (SLV-SANM) ind=0.0000
+  SOL  cidades=  2 comida=0.584 pior=0.497 (SOL-HAR) ind=0.0000
+  SOM  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  SRB  cidades=  2 comida=1.000 pior=1.000 (SRB-BEL) ind=0.0000
+  SSD  cidades=  3 comida=1.000 pior=1.000 (SSD-WAU) ind=0.0000
+  SUR  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  SVK  cidades=  2 comida=1.000 pior=1.000 (SVK-KOS) ind=0.0000
+  SVN  cidades=  2 comida=1.000 pior=1.000 (SVN-MAR) ind=0.0000
+  SWE  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  SWZ  cidades=  2 comida=1.000 pior=1.000 (SWZ-MBA) ind=0.0000
+  SYR  cidades=  3 comida=1.000 pior=1.000 (SYR-DAM) ind=0.0000
+  TCD  cidades=  4 comida=1.000 pior=1.000 () ind=0.0000
+  TGO  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  THA  cidades=  5 comida=1.000 pior=1.000 (THA-BAN) ind=0.0000
+  TJK  cidades=  2 comida=1.000 pior=1.000 (TJK-ISF) ind=0.0000
+  TKM  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  TLS  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  TTO  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  TUN  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  TUR  cidades= 10 comida=1.000 pior=1.000 (TUR-ANT) ind=0.0000
+  TWN  cidades=  3 comida=1.000 pior=1.000 (TWN-TAI) ind=0.0000
+  TZA  cidades=  5 comida=1.000 pior=1.000 (TZA-ARU) ind=0.0000
+  UGA  cidades=  4 comida=1.000 pior=1.000 (UGA-NJE) ind=0.0000
+  UKR  cidades=  7 comida=1.000 pior=1.000 (UKR-DNI) ind=0.0000
+  URY  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  UZB  cidades=  4 comida=0.905 pior=0.494 (UZB-AND) ind=0.0000
+  VCT  cidades=  1 comida=1.000 pior=1.000 (VCT-KIN) ind=0.0000
+  VEN  cidades=  5 comida=1.000 pior=1.000 (VEN-VLN) ind=0.0000
+  VNM  cidades=  7 comida=1.000 pior=1.000 () ind=0.0000
+  XKX  cidades=  2 comida=1.000 pior=1.000 () ind=0.0000
+  YEM  cidades=  3 comida=1.000 pior=1.000 () ind=0.0000
+  ZAF  cidades=  6 comida=1.000 pior=1.000 (ZAF-CAP) ind=0.0000
+  ZMB  cidades=  3 comida=1.000 pior=1.000 (ZMB-LUS) ind=0.0000
+  ZWE  cidades=  2 comida=1.000 pior=1.000 (ZWE-HAR) ind=0.0000
+[world] pior nacao: PSX 0.185
+[world] necessidades: satisfacao media 0.562 | niveis { 0: 22, 1: 812, 2: 0, 3: 0 }
+[world] IA: 69065 decisoes, 712 builds { "iron": 316, "gold": 54, "copper": 103, "oil": 14, "sulfur": 14, "rare_earths": 17, "gas": 9, "tungsten": 28, "diamond": 3, "bauxite": 70, "phosphate": 57, "rice": 6, "lead": 11, "maize": 7, "coal": 1, "soy": 1, "uranium": 1 }
+[world] IA bens finais: { "clothes:avoid": 1562, "furniture:avoid": 1563, "paper:avoid": 1055, "medicine:avoid": 1562 }
+[world] baseline res://docs/economy/perf/f4_world_ai_365.json: 179 nacoes comparadas, 5 pioraram
+[world] escrito res://docs/economy/perf/f5_world_ai_365.json
+[world] resumo final:
+  ABW-ORA  pop=139898 cons=9/9 (100%) trigo_estoque=0.0 firm=3000
+  AFG-HER  pop=4158184 cons=172/172 (100%) trigo_estoque=172.3 firm=57430
+  AFG-KAB  pop=32108085 cons=1330/1330 (100%) trigo_estoque=3242.2 firm=443455
+  AFG-KAN  pop=3788921 cons=157/157 (100%) trigo_estoque=157.0 firm=0
+  AFG-MAZ  pop=3788921 cons=95/157 (61%) trigo_estoque=0.0 firm=2483
+  AGO-BEN  pop=9294887 cons=411/411 (100%) trigo_estoque=0.0 firm=137000
+  AGO-HUA  pop=4038893 cons=179/179 (100%) trigo_estoque=0.0 firm=59530
+  AGO-LUA  pop=18835159 cons=833/833 (100%) trigo_estoque=0.0 firm=277617
+  AGO-LUB  pop=4075849 cons=180/180 (100%) trigo_estoque=540.7 firm=60075
+  AGO-LUM  pop=128907 cons=6/6 (100%) trigo_estoque=0.0 firm=0
+  AGO-SAU  pop=2666344 cons=118/118 (100%) trigo_estoque=0.0 firm=39300
+  ALB-TIR  pop=1842204 cons=126/126 (100%) trigo_estoque=376.6 firm=41850
+  ALB-VLO  pop=507376 cons=35/35 (100%) trigo_estoque=103.7 firm=11526
+  AND-AND  pop=108730 cons=6/6 (100%) trigo_estoque=12.3 firm=2043
+  ARE-ABU  pop=3717038 cons=542/542 (100%) trigo_estoque=542.1 firm=0
+  ARE-DUB  pop=7796111 cons=1137/1137 (100%) trigo_estoque=1137.0 firm=0
+  ARG-BUE  pop=15215679 cons=867/867 (100%) trigo_estoque=2602.0 firm=289109
+  ARG-COM  pop=741289 cons=42/42 (100%) trigo_estoque=92.7 firm=14085
+  ARG-COR  pop=11087679 cons=632/632 (100%) trigo_estoque=1896.1 firm=210673
+  ARG-MAR  pop=3122715 cons=178/178 (100%) trigo_estoque=534.0 firm=59334
+  ARG-MBU  pop=47430 cons=3/3 (100%) trigo_estoque=0.0 firm=0
+  ARG-MEN  pop=6262935 cons=357/357 (100%) trigo_estoque=1071.0 firm=119000
+  ARG-NEU  pop=1216788 cons=69/69 (100%) trigo_estoque=69.4 firm=23120
+  ARG-RIO  pop=277259 cons=16/16 (100%) trigo_estoque=42.4 firm=5268
+  ARG-ROS  pop=4990938 cons=284/284 (100%) trigo_estoque=853.5 firm=94831
+  ARG-SAN  pop=2888666 cons=165/165 (100%) trigo_estoque=400.4 firm=55813
+  ARM-VAN  pop=197147 cons=23/23 (100%) trigo_estoque=0.0 firm=7810
+  ARM-YER  pop=2889553 cons=343/343 (100%) trigo_estoque=343.4 firm=18705
+  ATG-SAI  pop=94209 cons=16/16 (100%) trigo_estoque=0.0 firm=11484
+  AUS-ADE  pop=1993898 cons=441/441 (100%) trigo_estoque=1322.2 firm=146916
+  AUS-ALI  pop=35167 cons=8/8 (100%) trigo_estoque=0.0 firm=2591
+  AUS-BRI  pop=3773007 cons=834/834 (100%) trigo_estoque=2502.1 firm=278006
+  AUS-BRO  pop=19896 cons=4/4 (100%) trigo_estoque=4.4 firm=1466
+  AUS-CAN  pop=499101 cons=110/110 (100%) trigo_estoque=331.0 firm=36775
+  AUS-DAR  pop=189870 cons=42/42 (100%) trigo_estoque=0.0 firm=13990
+  AUS-GEE  pop=383819 cons=85/85 (100%) trigo_estoque=254.5 firm=28281
+  AUS-GOL  pop=869642 cons=192/192 (100%) trigo_estoque=0.0 firm=78709
+  AUS-KAL  pop=39456 cons=9/9 (100%) trigo_estoque=29.2 firm=7902
+  AUS-KAR  pop=23089 cons=5/5 (100%) trigo_estoque=5.1 firm=1701
+  AUS-MEL  pop=7376998 cons=1631/1631 (100%) trigo_estoque=4892.0 firm=543559
+  AUS-MOR  pop=13272 cons=3/3 (100%) trigo_estoque=0.0 firm=978
+  AUS-NEW  pop=690033 cons=153/153 (100%) trigo_estoque=457.6 firm=50844
+  AUS-PER  pop=3235987 cons=715/715 (100%) trigo_estoque=2145.9 firm=238437
+  AUS-SUN  pop=541292 cons=120/120 (100%) trigo_estoque=359.0 firm=39884
+  AUS-SYD  pop=7652828 cons=1692/1692 (100%) trigo_estoque=5074.9 firm=563883
+  AUS-TOW  pop=273215 cons=60/60 (100%) trigo_estoque=181.2 firm=20131
+  AUS-WEI  pop=3841 cons=1/1 (100%) trigo_estoque=0.0 firm=0
+  AUT-GRA  pop=1399963 cons=91/91 (100%) trigo_estoque=0.0 firm=30327
+  AUT-VIE  pop=7808200 cons=507/507 (100%) trigo_estoque=1522.3 firm=170112
+  AZE-BAK  pop=8983629 cons=705/705 (100%) trigo_estoque=705.4 firm=221850
+  AZE-GAN  pop=1263367 cons=99/99 (100%) trigo_estoque=99.2 firm=33066
+  BDI-BUJ  pop=13270433 cons=231/231 (100%) trigo_estoque=0.0 firm=76932
+  BDI-GIT  pop=1119570 cons=19/19 (100%) trigo_estoque=0.0 firm=6490
+  BEL-ANR  pop=3361443 cons=297/297 (100%) trigo_estoque=891.1 firm=99011
+  BEL-BRU  pop=6721688 cons=594/594 (100%) trigo_estoque=1781.9 firm=197986
+  BEL-LGG  pop=1858650 cons=164/164 (100%) trigo_estoque=492.7 firm=54746
+  BEN-COT  pop=10663474 cons=204/204 (100%) trigo_estoque=0.0 firm=64812
+  BEN-POR  pop=4150986 cons=79/79 (100%) trigo_estoque=0.0 firm=26432
+  BFA-BOB  pop=6561551 cons=271/271 (100%) trigo_estoque=0.0 firm=90492
+  BFA-OUA  pop=17513029 cons=725/725 (100%) trigo_estoque=0.0 firm=241527
+  BGD-BAR  pop=1953734 cons=61/61 (100%) trigo_estoque=0.0 firm=20224
+  BGD-BOG  pop=4075307 cons=127/127 (100%) trigo_estoque=0.0 firm=42186
+  BGD-CHA  pop=37870816 cons=1176/1176 (100%) trigo_estoque=0.0 firm=392022
+  BGD-DHA  pop=100047677 cons=3107/3107 (100%) trigo_estoque=0.0 firm=1035650
+  BGD-KHU  pop=14497219 cons=450/450 (100%) trigo_estoque=0.0 firm=150069
+  BGD-NAG  pop=2637282 cons=82/82 (100%) trigo_estoque=0.0 firm=27300
+  BGD-NAGA pop=2303246 cons=72/72 (100%) trigo_estoque=0.0 firm=23842
+  BGD-PAB  pop=1804374 cons=56/56 (100%) trigo_estoque=0.0 firm=18678
+  BGD-RAM  pop=533649 cons=17/17 (100%) trigo_estoque=0.0 firm=5524
+  BGD-RAN  pop=9963595 cons=309/309 (100%) trigo_estoque=0.0 firm=103139
+  BGR-PLO  pop=1320540 cons=99/99 (100%) trigo_estoque=296.5 firm=32949
+  BGR-RUS  pop=493501 cons=37/37 (100%) trigo_estoque=110.8 firm=12313
+  BGR-SOF  pop=4619261 cons=346/346 (100%) trigo_estoque=1037.3 firm=115256
+  BHR-MAN  pop=1600366 cons=44/44 (100%) trigo_estoque=24.5 firm=0
+  BHS-LUC  pop=68319 cons=14/14 (100%) trigo_estoque=0.0 firm=4653
+  BHS-NAS  pop=334714 cons=68/68 (100%) trigo_estoque=0.0 firm=22794
+  BIH-BAN  pop=756446 cons=66/66 (100%) trigo_estoque=199.0 firm=22111
+  BIH-SAR  pop=2383649 cons=209/209 (100%) trigo_estoque=627.1 firm=67293
+  BLR-BRE  pop=1209470 cons=103/103 (100%) trigo_estoque=310.0 firm=34447
+  BLR-GOM  pop=1759741 cons=150/150 (100%) trigo_estoque=0.0 firm=50119
+  BLR-MIN  pop=6116780 cons=523/523 (100%) trigo_estoque=0.0 firm=174212
+  BLZ-BEL  pop=71997 cons=4/4 (100%) trigo_estoque=0.0 firm=1338
+  BLZ-BELI pop=350927 cons=20/20 (100%) trigo_estoque=0.0 firm=6681
+  BOL-COC  pop=2933382 cons=387/387 (100%) trigo_estoque=0.0 firm=129000
+  BOL-LAP  pop=4558458 cons=601/601 (100%) trigo_estoque=0.0 firm=200465
+  BOL-SAN  pop=53595 cons=7/7 (100%) trigo_estoque=0.0 firm=2357
+  BOL-SCZ  pop=4525140 cons=597/597 (100%) trigo_estoque=0.0 firm=199000
+  BOL-SUC  pop=511268 cons=67/67 (100%) trigo_estoque=0.0 firm=22484
+  BRA-BEL  pop=12199920 cons=816/816 (100%) trigo_estoque=0.0 firm=272156
+  BRA-BELE pop=6722421 cons=450/450 (100%) trigo_estoque=0.0 firm=149964
+  BRA-BOA  pop=1881169 cons=126/126 (100%) trigo_estoque=0.0 firm=41965
+  BRA-BRAS pop=9896509 cons=662/662 (100%) trigo_estoque=0.0 firm=220772
+  BRA-CAM  pop=4624134 cons=309/309 (100%) trigo_estoque=0.0 firm=103155
+  BRA-CAMPO pop=4061727 cons=272/272 (100%) trigo_estoque=0.0 firm=90609
+  BRA-CRU  pop=399282 cons=27/27 (100%) trigo_estoque=0.0 firm=1518
+  BRA-CUI  pop=2770857 cons=185/185 (100%) trigo_estoque=0.0 firm=71262
+  BRA-CUR  pop=8735081 cons=585/585 (100%) trigo_estoque=0.0 firm=194863
+  BRA-FOR  pop=10758449 cons=720/720 (100%) trigo_estoque=0.0 firm=240000
+  BRA-GOI  pop=6885842 cons=461/461 (100%) trigo_estoque=0.0 firm=153610
+  BRA-MAC  pop=4624327 cons=309/309 (100%) trigo_estoque=0.0 firm=103160
+  BRA-MAN  pop=9949683 cons=666/666 (100%) trigo_estoque=0.0 firm=221958
+  BRA-NAT  pop=4019661 cons=269/269 (100%) trigo_estoque=0.0 firm=89671
+  BRA-PAL  pop=1373029 cons=92/92 (100%) trigo_estoque=0.0 firm=30630
+  BRA-POR  pop=6671368 cons=446/446 (100%) trigo_estoque=0.0 firm=148825
+  BRA-PORTO pop=2460780 cons=165/165 (100%) trigo_estoque=0.0 firm=80143
+  BRA-REC  pop=7411948 cons=496/496 (100%) trigo_estoque=0.0 firm=136801
+  BRA-RIO  pop=30248343 cons=2024/2024 (100%) trigo_estoque=0.0 firm=674782
+  BRA-SAL  pop=12156330 cons=814/814 (100%) trigo_estoque=0.0 firm=271184
+  BRA-SAO  pop=55586360 cons=3720/3720 (100%) trigo_estoque=0.0 firm=1240023
+  BRA-SAOL pop=4111686 cons=275/275 (100%) trigo_estoque=0.0 firm=91724
+  BRA-SIN  pop=1003136 cons=67/67 (100%) trigo_estoque=0.0 firm=22378
+  BRA-TEF  pop=355378 cons=24/24 (100%) trigo_estoque=0.0 firm=7928
+  BRA-TER  pop=3904985 cons=261/261 (100%) trigo_estoque=0.0 firm=87113
+  BRB-BRI  pop=282623 cons=30/30 (100%) trigo_estoque=0.0 firm=9851
+  BRN-BAN  pop=314225 cons=19/19 (100%) trigo_estoque=0.0 firm=6441
+  BRN-KUA  pop=152105 cons=9/9 (100%) trigo_estoque=0.0 firm=3118
+  BTN-PHU  pop=174416 cons=8/8 (100%) trigo_estoque=0.0 firm=2766
+  BTN-THI  pop=622266 cons=30/30 (100%) trigo_estoque=0.0 firm=9868
+  BWA-FRA  pop=608991 cons=31/31 (100%) trigo_estoque=93.1 firm=10342
+  BWA-GAB  pop=1450531 cons=74/74 (100%) trigo_estoque=221.7 firm=24634
+  BWA-MAU  pop=502600 cons=26/26 (100%) trigo_estoque=76.8 firm=8927
+  CAF-BAN  pop=4732652 cons=244/244 (100%) trigo_estoque=0.0 firm=81241
+  CAF-CAR  pop=751672 cons=39/39 (100%) trigo_estoque=0.0 firm=12903
+  CAF-GAM  pop=28958 cons=1/1 (100%) trigo_estoque=0.0 firm=497
+  CAN-CAL  pop=4859080 cons=392/392 (100%) trigo_estoque=0.0 firm=130678
+  CAN-CAM  pop=6544 cons=1/1 (100%) trigo_estoque=0.0 firm=23
+  CAN-EDM  pop=3758876 cons=303/303 (100%) trigo_estoque=0.0 firm=101090
+  CAN-HAL  pop=1753421 cons=141/141 (100%) trigo_estoque=0.0 firm=47156
+  CAN-HAP  pop=28155 cons=2/2 (100%) trigo_estoque=0.0 firm=757
+  CAN-IGL  pop=7619 cons=1/1 (100%) trigo_estoque=0.0 firm=205
+  CAN-INU  pop=12059 cons=1/1 (100%) trigo_estoque=0.0 firm=324
+  CAN-IQA  pop=27624 cons=2/2 (100%) trigo_estoque=0.0 firm=0
+  CAN-KIT  pop=955188 cons=77/77 (100%) trigo_estoque=231.2 firm=27796
+  CAN-KUU  pop=9921 cons=1/1 (100%) trigo_estoque=0.0 firm=267
+  CAN-LON  pop=1570348 cons=127/127 (100%) trigo_estoque=380.1 firm=42492
+  CAN-MON  pop=6555260 cons=529/529 (100%) trigo_estoque=0.0 firm=176295
+  CAN-OTT  pop=3783231 cons=305/305 (100%) trigo_estoque=0.0 firm=101745
+  CAN-PRI  pop=293538 cons=24/24 (100%) trigo_estoque=0.0 firm=11292
+  CAN-QUE  pop=1977797 cons=160/160 (100%) trigo_estoque=0.0 firm=53190
+  CAN-RAN  pop=11062 cons=1/1 (100%) trigo_estoque=0.0 firm=298
+  CAN-SAS  pop=989605 cons=80/80 (100%) trigo_estoque=0.0 firm=26614
+  CAN-STJ  pop=410971 cons=33/33 (100%) trigo_estoque=0.0 firm=11053
+  CAN-THO  pop=50860 cons=4/4 (100%) trigo_estoque=0.0 firm=1368
+  CAN-TIM  pop=155382 cons=13/13 (100%) trigo_estoque=0.0 firm=4179
+  CAN-TOR  pop=10390392 cons=838/838 (100%) trigo_estoque=0.0 firm=279436
+  CAN-VIC  pop=1076927 cons=87/87 (100%) trigo_estoque=0.0 firm=28963
+  CAN-WHI  pop=104861 cons=8/8 (100%) trigo_estoque=0.0 firm=7994
+  CAN-WIN  pop=2787301 cons=225/225 (100%) trigo_estoque=0.0 firm=74961
+  CAN-YEL  pop=75631 cons=6/6 (100%) trigo_estoque=0.0 firm=2034
+  CHE-BER  pop=2039713 cons=36/36 (100%) trigo_estoque=0.0 firm=12443
+  CHE-ZUR  pop=6965571 cons=125/125 (100%) trigo_estoque=0.0 firm=41537
+  CHL-ANT  pop=1422015 cons=120/120 (100%) trigo_estoque=65.0 firm=0
+  CHL-PUE  pop=871802 cons=74/74 (100%) trigo_estoque=73.8 firm=24590
+  CHL-PUN  pop=416328 cons=35/35 (100%) trigo_estoque=85.6 firm=11743
+  CHL-SAN  pop=17149776 cons=1451/1451 (100%) trigo_estoque=4398.7 firm=483730
+  CHN-BEI  pop=99571368 cons=5688/5688 (100%) trigo_estoque=8595.5 firm=1896074
+  CHN-CHE  pop=109953549 cons=6281/6281 (100%) trigo_estoque=0.0 firm=2093776
+  CHN-CHO  pop=115531864 cons=6600/6600 (100%) trigo_estoque=0.0 firm=2200000
+  CHN-DAL  pop=39127412 cons=2235/2235 (100%) trigo_estoque=6705.7 firm=745079
+  CHN-DAX  pop=2730753 cons=156/156 (100%) trigo_estoque=0.0 firm=52000
+  CHN-DON  pop=50649542 cons=2893/2893 (100%) trigo_estoque=0.0 firm=964487
+  CHN-GAR  pop=130814 cons=7/7 (100%) trigo_estoque=4.0 firm=434
+  CHN-GUA  pop=98079226 cons=5603/5603 (100%) trigo_estoque=0.0 firm=1867661
+  CHN-HAN  pop=62681340 cons=3581/3581 (100%) trigo_estoque=0.0 firm=1193601
+  CHN-HAR  pop=52566231 cons=3003/3003 (100%) trigo_estoque=0.0 firm=1000985
+  CHN-HEF  pop=49709585 cons=2840/2840 (100%) trigo_estoque=8398.9 firm=946588
+  CHN-JIN  pop=43863111 cons=2506/2506 (100%) trigo_estoque=7605.4 firm=835257
+  CHN-JIU  pop=2249437 cons=129/129 (100%) trigo_estoque=0.0 firm=0
+  CHN-KAS  pop=2660594 cons=152/152 (100%) trigo_estoque=21.7 firm=0
+  CHN-KUN  pop=31249153 cons=1785/1785 (100%) trigo_estoque=0.0 firm=595058
+  CHN-LHA  pop=4557732 cons=260/260 (100%) trigo_estoque=0.0 firm=0
+  CHN-NAN  pop=48915587 cons=2794/2794 (100%) trigo_estoque=8383.2 firm=931469
+  CHN-SHA  pop=130627152 cons=7462/7462 (100%) trigo_estoque=22558.9 firm=2487450
+  CHN-SHE  pop=47631125 cons=2721/2721 (100%) trigo_estoque=8163.1 firm=907009
+  CHN-TIA  pop=72816630 cons=4160/4160 (100%) trigo_estoque=4304.9 firm=1160304
+  CHN-URU  pop=21289372 cons=1216/1216 (100%) trigo_estoque=1914.8 firm=26703
+  CHN-WEI  pop=49293796 cons=2816/2816 (100%) trigo_estoque=8448.0 firm=938671
+  CHN-WUH  pop=72149649 cons=4122/4122 (100%) trigo_estoque=0.0 firm=1373900
+  CHN-WUW  pop=5305512 cons=303/303 (100%) trigo_estoque=278.0 firm=101030
+  CHN-XIA  pop=82972884 cons=4740/4740 (100%) trigo_estoque=0.0 firm=1580000
+  CHN-XIAN pop=68021522 cons=3886/3886 (100%) trigo_estoque=11657.6 firm=1295291
+  CIV-ABI  pop=27832573 cons=1896/1896 (100%) trigo_estoque=0.0 firm=658164
+  CIV-BOU  pop=3665079 cons=250/250 (100%) trigo_estoque=0.0 firm=83237
+  CIV-YAM  pop=1213895 cons=83/83 (100%) trigo_estoque=0.0 firm=27569
+  CMR-DOU  pop=13545660 cons=401/401 (100%) trigo_estoque=0.0 firm=133808
+  CMR-MAR  pop=3179917 cons=94/94 (100%) trigo_estoque=0.0 firm=31412
+  CMR-YAO  pop=13153760 cons=390/390 (100%) trigo_estoque=0.0 firm=129937
+  COD-KAN  pop=5580500 cons=382/382 (100%) trigo_estoque=0.0 firm=127170
+  COD-KIN  pop=70211308 cons=4800/4800 (100%) trigo_estoque=0.0 firm=1600000
+  COD-KIS  pop=7030539 cons=481/481 (100%) trigo_estoque=0.0 firm=140597
+  COD-KOL  pop=3467772 cons=237/237 (100%) trigo_estoque=0.0 firm=79025
+  COD-LIK  pop=2789882 cons=191/191 (100%) trigo_estoque=0.0 firm=63577
+  COD-LUB  pop=9750266 cons=667/667 (100%) trigo_estoque=0.0 firm=222193
+  COD-MBA  pop=1996682 cons=137/137 (100%) trigo_estoque=0.0 firm=45501
+  COD-MBU  pop=9221079 cons=630/630 (100%) trigo_estoque=0.0 firm=210133
+  COD-TSH  pop=2784445 cons=190/190 (100%) trigo_estoque=0.0 firm=63453
+  COG-BRA  pop=4214238 cons=595/595 (100%) trigo_estoque=0.0 firm=221509
+  COG-OWA  pop=75903 cons=11/11 (100%) trigo_estoque=0.0 firm=0
+  COG-POI  pop=2194296 cons=310/310 (100%) trigo_estoque=0.0 firm=109394
+  COL-BAR  pop=4062710 cons=362/362 (100%) trigo_estoque=0.0 firm=120632
+  COL-BOG  pop=25846168 cons=2302/2302 (100%) trigo_estoque=0.0 firm=767437
+  COL-BUC  pop=4715000 cons=420/420 (100%) trigo_estoque=0.0 firm=140000
+  COL-CAL  pop=8058868 cons=718/718 (100%) trigo_estoque=0.0 firm=239288
+  COL-CUC  pop=3906714 cons=348/348 (100%) trigo_estoque=0.0 firm=106861
+  COL-MED  pop=6735644 cons=600/600 (100%) trigo_estoque=0.0 firm=199998
+  COL-MIT  pop=100531 cons=9/9 (100%) trigo_estoque=0.0 firm=0
+  CRI-LIM  pop=816536 cons=19/19 (100%) trigo_estoque=0.0 firm=6545
+  CRI-SAN  pop=4336414 cons=101/101 (100%) trigo_estoque=0.0 firm=33501
+  CUB-HAV  pop=8701797 cons=649/649 (100%) trigo_estoque=0.0 firm=216382
+  CUB-SAN  pop=2235406 cons=167/167 (100%) trigo_estoque=0.0 firm=55587
+  CUW-WIL  pop=582948 cons=38/38 (100%) trigo_estoque=0.0 firm=12500
+  CYP-LIM  pop=595556 cons=46/46 (100%) trigo_estoque=46.2 firm=15400
+  CYP-NIC  pop=775198 cons=60/60 (100%) trigo_estoque=60.1 firm=20045
+  CZE-BRN  pop=2803736 cons=121/121 (100%) trigo_estoque=363.9 firm=40430
+  CZE-PRA  pop=8083142 cons=350/350 (100%) trigo_estoque=1049.0 firm=116558
+  DEU-BER  pop=19576714 cons=1311/1311 (100%) trigo_estoque=3933.9 firm=437100
+  DEU-BRE  pop=2447654 cons=164/164 (100%) trigo_estoque=491.9 firm=54650
+  DEU-CGN  pop=10166813 cons=681/681 (100%) trigo_estoque=2043.0 firm=221474
+  DEU-DOR  pop=2635587 cons=177/177 (100%) trigo_estoque=529.6 firm=58846
+  DEU-DUS  pop=2770949 cons=186/186 (100%) trigo_estoque=556.8 firm=61869
+  DEU-FFM  pop=8126285 cons=544/544 (100%) trigo_estoque=1633.0 firm=181440
+  DEU-HAM  pop=11803804 cons=791/791 (100%) trigo_estoque=2371.9 firm=263550
+  DEU-KAS  pop=1420219 cons=95/95 (100%) trigo_estoque=285.4 firm=31710
+  DEU-LEJ  pop=3261442 cons=218/218 (100%) trigo_estoque=655.4 firm=72820
+  DEU-MUC  pop=9647723 cons=646/646 (100%) trigo_estoque=1938.7 firm=188858
+  DEU-NUR  pop=5061013 cons=339/339 (100%) trigo_estoque=1017.0 firm=113000
+  DEU-STR  pop=6573046 cons=440/440 (100%) trigo_estoque=1320.8 firm=147180
+  DJI-ALI  pop=87523 cons=6/15 (40%) trigo_estoque=0.0 firm=0
+  DJI-DJI  pop=1096553 cons=77/188 (41%) trigo_estoque=0.0 firm=0
+  DMA-ROS  pop=65871 cons=5/5 (100%) trigo_estoque=0.0 firm=1668
+  DNK-AAR  pop=1175677 cons=86/86 (100%) trigo_estoque=256.7 firm=28527
+  DNK-COP  pop=4754319 cons=346/346 (100%) trigo_estoque=1038.3 firm=115362
+  DOM-SAN  pop=7456753 cons=661/661 (100%) trigo_estoque=0.0 firm=220194
+  DOM-SANT pop=4063734 cons=360/360 (100%) trigo_estoque=0.0 firm=120000
+  DZA-ALG  pop=26382218 cons=709/709 (100%) trigo_estoque=3143.5 firm=236423
+  DZA-ANN  pop=3824190 cons=103/103 (100%) trigo_estoque=102.8 firm=34270
+  DZA-BEC  pop=1843909 cons=50/50 (100%) trigo_estoque=99.1 firm=0
+  DZA-CON  pop=4999502 cons=134/134 (100%) trigo_estoque=134.4 firm=44803
+  DZA-ORA  pop=8964272 cons=241/241 (100%) trigo_estoque=723.0 firm=80333
+  DZA-TAM  pop=912263 cons=25/25 (100%) trigo_estoque=0.0 firm=78
+  DZA-TIN  pop=508958 cons=14/14 (100%) trigo_estoque=27.4 firm=4561
+  ECU-GUA  pop=9027824 cons=817/817 (100%) trigo_estoque=0.0 firm=281845
+  ECU-PUE  pop=42082 cons=4/4 (100%) trigo_estoque=0.0 firm=0
+  ECU-QUI  pop=9219990 cons=834/834 (100%) trigo_estoque=0.0 firm=278164
+  EGY-ALE  pop=36221649 cons=1433/1579 (91%) trigo_estoque=0.0 firm=0
+  EGY-ALM  pop=4280039 cons=187/187 (100%) trigo_estoque=0.0 firm=17726
+  EGY-ASS  pop=3638095 cons=159/159 (100%) trigo_estoque=0.0 firm=0
+  EGY-CAI  pop=66111059 cons=1684/2882 (58%) trigo_estoque=0.0 firm=0
+  EGY-KOM  pop=2816719 cons=123/123 (100%) trigo_estoque=0.0 firm=0
+  EGY-MAT  pop=1330167 cons=58/58 (100%) trigo_estoque=29.0 firm=0
+  EGY-TAN  pop=3968267 cons=173/173 (100%) trigo_estoque=0.0 firm=24538
+  ERI-ASM  pop=3184596 cons=169/169 (100%) trigo_estoque=169.2 firm=67831
+  ERI-KER  pop=422407 cons=22/22 (100%) trigo_estoque=0.0 firm=4764
+  ESP-ALG  pop=1329709 cons=75/75 (100%) trigo_estoque=184.8 firm=24985
+  ESP-BAR  pop=8974155 cons=506/506 (100%) trigo_estoque=1517.6 firm=168695
+  ESP-LAS  pop=2041108 cons=72/115 (62%) trigo_estoque=0.0 firm=38352
+  ESP-MAD  pop=17328435 cons=977/977 (100%) trigo_estoque=2930.3 firm=325594
+  ESP-MLG  pop=5960743 cons=336/336 (100%) trigo_estoque=1038.8 firm=112000
+  ESP-PMI  pop=2253108 cons=127/127 (100%) trigo_estoque=381.0 firm=42335
+  ESP-SEV  pop=6971941 cons=393/393 (100%) trigo_estoque=1179.0 firm=129536
+  ESP-VAL  pop=4387214 cons=247/247 (100%) trigo_estoque=741.9 firm=82434
+  EST-TAL  pop=1109167 cons=118/118 (100%) trigo_estoque=0.0 firm=39402
+  EST-TAR  pop=257308 cons=27/27 (100%) trigo_estoque=0.0 firm=9956
+  ETH-ADD  pop=75279586 cons=1158/1158 (100%) trigo_estoque=0.0 firm=386000
+  ETH-AWA  pop=8233949 cons=127/127 (100%) trigo_estoque=0.0 firm=42220
+  ETH-BAH  pop=6825869 cons=105/105 (100%) trigo_estoque=0.0 firm=35000
+  ETH-GON  pop=9088157 cons=140/140 (100%) trigo_estoque=0.0 firm=42695
+  ETH-JIJ  pop=9419699 cons=145/145 (100%) trigo_estoque=0.0 firm=36977
+  ETH-MEK  pop=8930187 cons=137/137 (100%) trigo_estoque=0.0 firm=8027
+  ETH-NAZ  pop=8910685 cons=137/137 (100%) trigo_estoque=0.0 firm=45690
+  ETH-WAR  pop=8783919 cons=135/135 (100%) trigo_estoque=0.8 firm=0
+  FIN-HEL  pop=3776197 cons=198/198 (100%) trigo_estoque=0.0 firm=65886
+  FIN-ROV  pop=376379 cons=20/20 (100%) trigo_estoque=0.0 firm=6567
+  FIN-TAM  pop=1493860 cons=78/78 (100%) trigo_estoque=0.0 firm=26065
+  FJI-LAU  pop=377240 cons=16/16 (100%) trigo_estoque=0.0 firm=7516
+  FJI-SUV  pop=555914 cons=23/23 (100%) trigo_estoque=0.0 firm=7737
+  FLK-STA  pop=7026 cons=0/1 (0%) trigo_estoque=0.0 firm=112
+  FRA-AJA  pop=253270 cons=22/22 (100%) trigo_estoque=66.4 firm=7382
+  FRA-BOR  pop=4014062 cons=351/351 (100%) trigo_estoque=1053.0 firm=117000
+  FRA-CAY  pop=520137 cons=45/45 (100%) trigo_estoque=0.0 firm=15161
+  FRA-CLF  pop=934999 cons=82/82 (100%) trigo_estoque=245.3 firm=27253
+  FRA-LEH  pop=796551 cons=70/70 (100%) trigo_estoque=209.0 firm=23218
+  FRA-LIL  pop=3649434 cons=319/319 (100%) trigo_estoque=957.3 firm=106372
+  FRA-LYS  pop=5906919 cons=517/517 (100%) trigo_estoque=1549.5 firm=172172
+  FRA-MRS  pop=5657265 cons=495/495 (100%) trigo_estoque=1484.1 firm=164895
+  FRA-NTE  pop=2363960 cons=207/207 (100%) trigo_estoque=620.1 firm=68904
+  FRA-PAR  pop=38706536 cons=3385/3385 (100%) trigo_estoque=10153.8 firm=1128200
+  FRA-SXB  pop=1696665 cons=148/148 (100%) trigo_estoque=445.1 firm=49454
+  FRA-TLS  pop=3752575 cons=328/328 (100%) trigo_estoque=1002.8 firm=109378
+  GAB-LIB  pop=2172066 cons=254/254 (100%) trigo_estoque=0.0 firm=84609
+  GAB-POR  pop=421064 cons=49/49 (100%) trigo_estoque=0.0 firm=19474
+  GBR-BFS  pop=2236415 cons=211/211 (100%) trigo_estoque=537.3 firm=70441
+  GBR-BHX  pop=8407120 cons=794/794 (100%) trigo_estoque=2383.2 firm=264800
+  GBR-BRS  pop=2184327 cons=206/206 (100%) trigo_estoque=619.2 firm=68800
+  GBR-GLA  pop=3597155 cons=340/340 (100%) trigo_estoque=0.0 firm=109383
+  GBR-LDN  pop=36066797 cons=3408/3408 (100%) trigo_estoque=10224.0 firm=1136000
+  GBR-LEE  pop=1702632 cons=161/161 (100%) trigo_estoque=482.7 firm=55282
+  GBR-MAN  pop=8654761 cons=818/818 (100%) trigo_estoque=0.0 firm=272600
+  GBR-NCL  pop=2457368 cons=232/232 (100%) trigo_estoque=696.6 firm=77400
+  GBR-NOT  pop=2406570 cons=227/227 (100%) trigo_estoque=682.2 firm=75800
+  GBR-SHE  pop=1766829 cons=167/167 (100%) trigo_estoque=500.8 firm=61967
+  GEO-BAT  pop=595082 cons=56/56 (100%) trigo_estoque=18.9 firm=17555
+  GEO-TBI  pop=3340684 cons=315/315 (100%) trigo_estoque=314.8 firm=104950
+  GHA-ACC  pop=13845314 cons=589/589 (100%) trigo_estoque=0.0 firm=196326
+  GHA-KUM  pop=17944513 cons=763/763 (100%) trigo_estoque=0.0 firm=254453
+  GHA-TAM  pop=3274445 cons=139/139 (100%) trigo_estoque=0.0 firm=40290
+  GIN-CON  pop=13513061 cons=579/579 (100%) trigo_estoque=0.0 firm=192839
+  GIN-NZE  pop=1586666 cons=68/68 (100%) trigo_estoque=0.0 firm=22643
+  GMB-BAN  pop=2822093 cons=11/11 (100%) trigo_estoque=0.0 firm=3378
+  GNB-BIS  pop=2022432 cons=132/132 (100%) trigo_estoque=0.0 firm=43970
+  GNB-GAB  pop=227083 cons=15/15 (100%) trigo_estoque=0.0 firm=4937
+  GNQ-BAT  pop=1916283 cons=52/52 (100%) trigo_estoque=0.0 firm=17305
+  GNQ-CIU  pop=22148 cons=1/1 (100%) trigo_estoque=0.0 firm=0
+  GRC-ATH  pop=5955727 cons=199/199 (100%) trigo_estoque=511.5 firm=66405
+  GRC-HER  pop=1608132 cons=54/54 (100%) trigo_estoque=161.4 firm=16125
+  GRC-THE  pop=2850103 cons=95/95 (100%) trigo_estoque=286.0 firm=26673
+  GRD-SAI  pop=117303 cons=2/2 (100%) trigo_estoque=0.0 firm=755
+  GRL-ILU  pop=18187 cons=0/1 (0%) trigo_estoque=0.0 firm=441
+  GRL-NUU  pop=60986 cons=0/4 (0%) trigo_estoque=0.0 firm=1480
+  GTM-COB  pop=3283147 cons=64/64 (100%) trigo_estoque=0.0 firm=21205
+  GTM-GUA  pop=15404734 cons=298/298 (100%) trigo_estoque=0.0 firm=99494
+  GUM-HAG  pop=6576 cons=0/0 (100%) trigo_estoque=0.0 firm=94
+  GUY-GEO  pop=616701 cons=38/38 (100%) trigo_estoque=0.0 firm=12568
+  GUY-LIN  pop=219285 cons=13/13 (100%) trigo_estoque=0.0 firm=4469
+  HKG-HON  pop=38840111 cons=2219/2219 (100%) trigo_estoque=0.0 firm=739608
+  HND-SAN  pop=5337751 cons=240/240 (100%) trigo_estoque=0.0 firm=80126
+  HND-TEG  pop=5668099 cons=255/255 (100%) trigo_estoque=0.0 firm=85085
+  HRV-SPL  pop=713985 cons=45/45 (100%) trigo_estoque=134.8 firm=14983
+  HRV-ZAG  pop=3162215 cons=199/199 (100%) trigo_estoque=597.2 firm=66359
+  HTI-POR  pop=9540134 cons=370/370 (100%) trigo_estoque=0.0 firm=123474
+  HTI-PORT pop=2365961 cons=92/92 (100%) trigo_estoque=0.0 firm=30622
+  HUN-BUD  pop=8523379 cons=522/522 (100%) trigo_estoque=1566.9 firm=174104
+  HUN-DEB  pop=990872 cons=61/61 (100%) trigo_estoque=182.2 firm=20240
+  IDN-AMB  pop=3247186 cons=104/104 (100%) trigo_estoque=0.0 firm=34729
+  IDN-BAN  pop=23638641 cons=758/758 (100%) trigo_estoque=0.0 firm=252816
+  IDN-BAND pop=10174806 cons=326/326 (100%) trigo_estoque=0.0 firm=108820
+  IDN-JAK  pop=79851200 cons=2562/2562 (100%) trigo_estoque=0.0 firm=854012
+  IDN-JEP  pop=11761635 cons=377/377 (100%) trigo_estoque=0.0 firm=125791
+  IDN-KUP  pop=4439449 cons=142/142 (100%) trigo_estoque=0.0 firm=53789
+  IDN-MAK  pop=13785759 cons=442/442 (100%) trigo_estoque=0.0 firm=147439
+  IDN-MAL  pop=8315618 cons=267/267 (100%) trigo_estoque=0.0 firm=88936
+  IDN-MAN  pop=4287799 cons=138/138 (100%) trigo_estoque=0.0 firm=45858
+  IDN-MED  pop=23247057 cons=746/746 (100%) trigo_estoque=0.0 firm=258107
+  IDN-PAD  pop=8816588 cons=283/283 (100%) trigo_estoque=0.0 firm=94294
+  IDN-PAL  pop=16843007 cons=540/540 (100%) trigo_estoque=0.0 firm=186440
+  IDN-PEK  pop=10917197 cons=350/350 (100%) trigo_estoque=0.0 firm=116760
+  IDN-PON  pop=6414364 cons=206/206 (100%) trigo_estoque=0.0 firm=68602
+  IDN-SAM  pop=8090719 cons=260/260 (100%) trigo_estoque=0.0 firm=86531
+  IDN-SEM  pop=15846031 cons=508/508 (100%) trigo_estoque=0.0 firm=169474
+  IDN-SUR  pop=28218883 cons=905/905 (100%) trigo_estoque=0.0 firm=301802
+  IDN-TAS  pop=7207441 cons=231/231 (100%) trigo_estoque=0.0 firm=73833
+  IDN-WAM  pop=617856 cons=20/20 (100%) trigo_estoque=0.0 firm=0
+  IND-AHM  pop=115854726 cons=1907/1907 (100%) trigo_estoque=1819.2 firm=95211
+  IND-BAN  pop=154811329 cons=2549/2549 (100%) trigo_estoque=0.0 firm=849549
+  IND-BHO  pop=32768499 cons=539/539 (100%) trigo_estoque=535.0 firm=179905
+  IND-CAM  pop=104526 cons=2/2 (100%) trigo_estoque=0.0 firm=100
+  IND-CHE  pop=85302334 cons=1404/1404 (100%) trigo_estoque=0.0 firm=468109
+  IND-COI  pop=38940512 cons=641/641 (100%) trigo_estoque=0.0 firm=213692
+  IND-DEL  pop=5791139 cons=95/95 (100%) trigo_estoque=289.2 firm=31780
+  IND-HYD  pop=127436549 cons=2098/2098 (100%) trigo_estoque=0.0 firm=761709
+  IND-IMP  pop=5051277 cons=83/83 (100%) trigo_estoque=0.0 firm=554
+  IND-INDO pop=36343422 cons=598/598 (100%) trigo_estoque=580.8 firm=136552
+  IND-JAI  pop=55509503 cons=914/914 (100%) trigo_estoque=3793.1 firm=304616
+  IND-KAL  pop=30663205 cons=505/505 (100%) trigo_estoque=0.0 firm=168269
+  IND-KAN  pop=51447395 cons=847/847 (100%) trigo_estoque=2540.9 firm=242085
+  IND-KOL  pop=84396754 cons=1389/1389 (100%) trigo_estoque=0.0 firm=463139
+  IND-LUC  pop=45046868 cons=742/742 (100%) trigo_estoque=2224.8 firm=247201
+  IND-LUD  pop=29500447 cons=486/486 (100%) trigo_estoque=1498.9 firm=161888
+  IND-MAD  pop=26707736 cons=440/440 (100%) trigo_estoque=0.0 firm=146563
+  IND-MUM  pop=231280307 cons=3808/3808 (100%) trigo_estoque=1862.8 firm=30874
+  IND-NAG  pop=43837861 cons=722/722 (100%) trigo_estoque=0.0 firm=240567
+  IND-NAS  pop=27079990 cons=446/446 (100%) trigo_estoque=0.0 firm=148605
+  IND-PAT  pop=30692543 cons=505/505 (100%) trigo_estoque=1459.9 firm=168430
+  IND-PUN  pop=56936255 cons=937/937 (100%) trigo_estoque=456.2 firm=312446
+  IND-RAS  pop=31491265 cons=518/518 (100%) trigo_estoque=0.0 firm=172813
+  IND-SUR  pop=83665183 cons=1377/1377 (100%) trigo_estoque=0.0 firm=415946
+  IND-VAD  pop=33205900 cons=547/547 (100%) trigo_estoque=0.0 firm=225052
+  IRL-COR  pop=984367 cons=67/67 (100%) trigo_estoque=0.0 firm=22400
+  IRL-DUB  pop=4500000 cons=307/307 (100%) trigo_estoque=879.6 firm=102403
+  IRN-AHV  pop=4650822 cons=252/252 (100%) trigo_estoque=252.3 firm=84115
+  IRN-IRA  pop=725602 cons=39/39 (100%) trigo_estoque=39.4 firm=13123
+  IRN-ISF  pop=8554511 cons=464/464 (100%) trigo_estoque=464.1 firm=154716
+  IRN-KSH  pop=6413820 cons=348/348 (100%) trigo_estoque=348.0 firm=116000
+  IRN-MAS  pop=12756741 cons=692/692 (100%) trigo_estoque=692.2 firm=56871
+  IRN-QOM  pop=4976240 cons=270/270 (100%) trigo_estoque=270.0 firm=90000
+  IRN-SHI  pop=6911124 cons=375/375 (100%) trigo_estoque=375.0 firm=0
+  IRN-TAB  pop=7877062 cons=427/427 (100%) trigo_estoque=427.4 firm=142464
+  IRN-TEH  pop=39551759 cons=2146/2146 (100%) trigo_estoque=2146.0 firm=689722
+  IRQ-ALM  pop=8915304 cons=620/620 (100%) trigo_estoque=619.7 firm=206560
+  IRQ-BAG  pop=31144911 cons=2165/2165 (100%) trigo_estoque=2164.7 firm=0
+  IRQ-ERB  pop=6960559 cons=484/484 (100%) trigo_estoque=483.8 firm=161270
+  ISL-AKU  pop=54595 cons=6/6 (100%) trigo_estoque=3.2 firm=211
+  ISL-REY  pop=337809 cons=36/36 (100%) trigo_estoque=23.1 firm=0
+  ISR-HAI  pop=650170 cons=86/86 (100%) trigo_estoque=85.6 firm=28532
+  ISR-TLV  pop=9472630 cons=1247/1247 (100%) trigo_estoque=1247.1 firm=0
+  ITA-BAR  pop=2269445 cons=95/95 (100%) trigo_estoque=284.4 firm=31602
+  ITA-CAG  pop=1064786 cons=44/44 (100%) trigo_estoque=133.4 firm=14827
+  ITA-GEN  pop=4165936 cons=174/174 (100%) trigo_estoque=522.1 firm=58010
+  ITA-MIL  pop=9849341 cons=411/411 (100%) trigo_estoque=1234.3 firm=137150
+  ITA-NAP  pop=6528281 cons=273/273 (100%) trigo_estoque=818.1 firm=90905
+  ITA-PADU pop=7612335 cons=318/318 (100%) trigo_estoque=954.0 firm=106000
+  ITA-PAL  pop=4655445 cons=194/194 (100%) trigo_estoque=583.4 firm=64826
+  ITA-ROM  pop=16653023 cons=696/696 (100%) trigo_estoque=2087.0 firm=231890
+  ITA-TUR  pop=6084747 cons=254/254 (100%) trigo_estoque=762.6 firm=84729
+  JAM-KIN  pop=2606715 cons=281/281 (100%) trigo_estoque=0.0 firm=93770
+  JAM-MON  pop=230362 cons=25/25 (100%) trigo_estoque=0.0 firm=8287
+  JOR-AMM  pop=7967124 cons=383/383 (100%) trigo_estoque=382.8 firm=0
+  JOR-IRB  pop=3553560 cons=171/171 (100%) trigo_estoque=170.7 firm=0
+  JPN-FUK  pop=8123080 cons=484/484 (100%) trigo_estoque=0.0 firm=161239
+  JPN-HIR  pop=6049286 cons=360/360 (100%) trigo_estoque=0.0 firm=120075
+  JPN-KOB  pop=7683573 cons=458/458 (100%) trigo_estoque=0.0 firm=152515
+  JPN-KYO  pop=7374099 cons=439/439 (100%) trigo_estoque=0.0 firm=146372
+  JPN-MIY  pop=276621 cons=16/16 (100%) trigo_estoque=0.0 firm=5823
+  JPN-NAG  pop=11749284 cons=700/700 (100%) trigo_estoque=0.0 firm=233218
+  JPN-NAH  pop=1600165 cons=95/95 (100%) trigo_estoque=0.0 firm=32170
+  JPN-OSA  pop=13873698 cons=826/826 (100%) trigo_estoque=0.0 firm=281493
+  JPN-SAP  pop=9943980 cons=592/592 (100%) trigo_estoque=0.0 firm=197383
+  JPN-SEN  pop=7657617 cons=456/456 (100%) trigo_estoque=0.0 firm=152000
+  JPN-TOK  pop=49035331 cons=2920/2920 (100%) trigo_estoque=0.0 firm=973328
+  KAZ-AKT  pop=1789820 cons=150/150 (100%) trigo_estoque=94.8 firm=0
+  KAZ-ALM  pop=7066292 cons=593/593 (100%) trigo_estoque=593.1 firm=140721
+  KAZ-AST  pop=5519118 cons=463/463 (100%) trigo_estoque=463.2 firm=0
+  KAZ-ATY  pop=1039029 cons=87/87 (100%) trigo_estoque=59.2 firm=4845
+  KAZ-SHY  pop=4289076 cons=360/360 (100%) trigo_estoque=360.0 firm=120000
+  KAZ-UST  pop=1140419 cons=96/96 (100%) trigo_estoque=0.0 firm=31907
+  KEN-KAK  pop=14206669 cons=560/560 (100%) trigo_estoque=0.0 firm=186758
+  KEN-MOM  pop=9191787 cons=362/362 (100%) trigo_estoque=0.0 firm=120833
+  KEN-NAI  pop=33448525 cons=1319/1319 (100%) trigo_estoque=0.0 firm=439707
+  KEN-WAJ  pop=685512 cons=27/27 (100%) trigo_estoque=0.0 firm=6810
+  KGZ-BIS  pop=5407423 cons=270/270 (100%) trigo_estoque=270.0 firm=64118
+  KGZ-OSH  pop=1935641 cons=97/97 (100%) trigo_estoque=0.0 firm=24082
+  KHM-PHN  pop=11617322 cons=472/472 (100%) trigo_estoque=0.0 firm=157354
+  KHM-TAK  pop=6230660 cons=253/253 (100%) trigo_estoque=0.0 firm=84393
+  KNA-BAS  pop=46922 cons=4/4 (100%) trigo_estoque=0.0 firm=1292
+  KOR-BUS  pop=8621230 cons=986/986 (100%) trigo_estoque=0.0 firm=328515
+  KOR-CHE  pop=2236294 cons=256/256 (100%) trigo_estoque=0.0 firm=85215
+  KOR-DAE  pop=6207856 cons=710/710 (100%) trigo_estoque=2087.8 firm=239017
+  KOR-DAEJ pop=3782157 cons=432/432 (100%) trigo_estoque=0.0 firm=144120
+  KOR-GWA  pop=3677269 cons=420/420 (100%) trigo_estoque=0.0 firm=146441
+  KOR-SEO  pop=27159758 cons=3105/3105 (100%) trigo_estoque=0.0 firm=1034931
+  KWT-ALA  pop=4446316 cons=191/191 (100%) trigo_estoque=191.2 firm=0
+  KWT-KUW  pop=418982 cons=18/18 (100%) trigo_estoque=8.0 firm=0
+  LAO-SAV  pop=1024221 cons=38/38 (100%) trigo_estoque=0.0 firm=12576
+  LAO-VIE  pop=6848825 cons=252/252 (100%) trigo_estoque=0.0 firm=84094
+  LBN-BEI  pop=5223997 cons=575/575 (100%) trigo_estoque=574.8 firm=191610
+  LBN-TRI  pop=625424 cons=69/69 (100%) trigo_estoque=68.8 firm=22940
+  LBR-GBA  pop=302755 cons=26/26 (100%) trigo_estoque=0.0 firm=8603
+  LBR-MON  pop=5428451 cons=463/463 (100%) trigo_estoque=0.0 firm=154255
+  LBY-ATT  pop=131522 cons=14/14 (100%) trigo_estoque=0.0 firm=0
+  LBY-BEN  pop=2163446 cons=227/227 (100%) trigo_estoque=227.2 firm=0
+  LBY-MIS  pop=1015782 cons=107/107 (100%) trigo_estoque=106.7 firm=0
+  LBY-SAB  pop=426494 cons=45/45 (100%) trigo_estoque=22.4 firm=0
+  LBY-TRI  pop=3721311 cons=391/391 (100%) trigo_estoque=390.9 firm=12931
+  LCA-CAS  pop=180149 cons=6/6 (100%) trigo_estoque=0.0 firm=5496
+  LIE-VADU pop=87152 cons=2/2 (100%) trigo_estoque=0.0 firm=520
+  LKA-COL  pop=17253710 cons=194/194 (100%) trigo_estoque=0.0 firm=64803
+  LKA-JAF  pop=4502290 cons=51/51 (100%) trigo_estoque=0.0 firm=16910
+  LSO-MAP  pop=347020 cons=19/19 (100%) trigo_estoque=55.7 firm=21989
+  LSO-MAS  pop=2016305 cons=108/108 (100%) trigo_estoque=323.8 firm=36020
+  LTU-KAU  pop=1005059 cons=87/87 (100%) trigo_estoque=260.4 firm=28938
+  LTU-VIL  pop=1883715 cons=163/163 (100%) trigo_estoque=0.0 firm=55398
+  LUX-LUXE pop=686970 cons=23/23 (100%) trigo_estoque=69.0 firm=7668
+  LVA-DAU  pop=175899 cons=23/23 (100%) trigo_estoque=0.0 firm=7813
+  LVA-RIG  pop=1671886 cons=223/223 (100%) trigo_estoque=0.0 firm=74257
+  MAC-MAC  pop=3409949 cons=195/195 (100%) trigo_estoque=0.0 firm=64934
+  MAR-AGA  pop=5487712 cons=390/390 (100%) trigo_estoque=1126.5 firm=130000
+  MAR-CAS  pop=15475154 cons=1100/1100 (100%) trigo_estoque=2995.3 firm=366595
+  MAR-FEZ  pop=5614352 cons=399/399 (100%) trigo_estoque=1345.7 firm=133000
+  MAR-IML  pop=9578 cons=1/1 (100%) trigo_estoque=0.0 firm=28
+  MAR-RAB  pop=6989459 cons=497/497 (100%) trigo_estoque=2402.3 firm=137599
+  MAR-RAK  pop=4854515 cons=345/345 (100%) trigo_estoque=1035.0 firm=115000
+  MCO-MONA pop=113097 cons=10/10 (100%) trigo_estoque=29.7 firm=3297
+  MDA-CHI  pop=1893181 cons=191/191 (100%) trigo_estoque=572.4 firm=63599
+  MDA-TIR  pop=467346 cons=47/47 (100%) trigo_estoque=141.3 firm=15700
+  MDG-ANT  pop=23282539 cons=405/405 (100%) trigo_estoque=0.0 firm=134950
+  MDG-FIA  pop=3504110 cons=61/61 (100%) trigo_estoque=0.0 firm=20311
+  MDG-TOA  pop=5954029 cons=104/104 (100%) trigo_estoque=0.0 firm=34511
+  MEX-CAN  pop=4009799 cons=267/267 (100%) trigo_estoque=0.0 firm=88880
+  MEX-CHI  pop=4176567 cons=278/278 (100%) trigo_estoque=422.7 firm=92576
+  MEX-GUA  pop=6661176 cons=443/443 (100%) trigo_estoque=0.0 firm=147649
+  MEX-HER  pop=3664364 cons=244/244 (100%) trigo_estoque=243.7 firm=81223
+  MEX-JUZ  pop=7489075 cons=498/498 (100%) trigo_estoque=833.3 firm=166000
+  MEX-LEO  pop=7127267 cons=474/474 (100%) trigo_estoque=1421.8 firm=157980
+  MEX-MER  pop=5418301 cons=360/360 (100%) trigo_estoque=0.0 firm=120100
+  MEX-MEXI pop=55465141 cons=3688/3688 (100%) trigo_estoque=0.0 firm=1229419
+  MEX-MON  pop=5122852 cons=341/341 (100%) trigo_estoque=1022.0 firm=113551
+  MEX-PUE  pop=7634259 cons=508/508 (100%) trigo_estoque=0.0 firm=169218
+  MEX-QUE  pop=7192273 cons=478/478 (100%) trigo_estoque=0.0 firm=159421
+  MEX-TIJ  pop=8673445 cons=577/577 (100%) trigo_estoque=576.8 firm=192252
+  MEX-TOR  pop=6586777 cons=438/438 (100%) trigo_estoque=1314.0 firm=146000
+  MEX-TUX  pop=2725604 cons=181/181 (100%) trigo_estoque=0.0 firm=60415
+  MKD-PRI  pop=244957 cons=22/22 (100%) trigo_estoque=66.4 firm=7529
+  MKD-SKO  pop=1575952 cons=142/142 (100%) trigo_estoque=427.4 firm=47489
+  MLI-ARA  pop=20570 cons=1/1 (100%) trigo_estoque=0.0 firm=0
+  MLI-BAM  pop=21599444 cons=1268/1268 (100%) trigo_estoque=0.0 firm=439462
+  MLI-GAO  pop=680084 cons=40/40 (100%) trigo_estoque=3.4 firm=0
+  MLI-KOU  pop=1113961 cons=65/65 (100%) trigo_estoque=0.0 firm=21803
+  MLI-SIK  pop=1784762 cons=105/105 (100%) trigo_estoque=0.0 firm=34932
+  MLT-VAL  pop=579704 cons=2/2 (100%) trigo_estoque=6.1 firm=679
+  MMR-MAN  pop=9174300 cons=362/362 (100%) trigo_estoque=0.0 firm=120810
+  MMR-MAW  pop=3332709 cons=132/132 (100%) trigo_estoque=0.0 firm=43886
+  MMR-MYE  pop=1316024 cons=52/52 (100%) trigo_estoque=0.0 firm=17330
+  MMR-NAY  pop=7024447 cons=277/278 (100%) trigo_estoque=0.0 firm=92500
+  MMR-YAN  pop=34003168 cons=1343/1343 (100%) trigo_estoque=0.0 firm=447764
+  MNE-PLJ  pop=47375 cons=6/6 (100%) trigo_estoque=0.0 firm=2110
+  MNE-POD  pop=575754 cons=71/71 (100%) trigo_estoque=0.0 firm=23685
+  MNG-DAR  pop=283338 cons=25/25 (100%) trigo_estoque=12.6 firm=0
+  MNG-ERD  pop=330393 cons=29/29 (100%) trigo_estoque=0.0 firm=0
+  MNG-ULA  pop=2853603 cons=253/253 (100%) trigo_estoque=148.4 firm=0
+  MNG-ULAA pop=101644 cons=9/9 (100%) trigo_estoque=0.0 firm=0
+  MOZ-BEI  pop=7816895 cons=206/206 (100%) trigo_estoque=619.0 firm=68829
+  MOZ-CHI  pop=4796833 cons=127/127 (100%) trigo_estoque=379.8 firm=42205
+  MOZ-MAP  pop=14262056 cons=376/376 (100%) trigo_estoque=1129.4 firm=125484
+  MOZ-NAM  pop=8755869 cons=231/231 (100%) trigo_estoque=0.0 firm=77038
+  MRT-NEM  pop=220578 cons=18/18 (100%) trigo_estoque=0.0 firm=38
+  MRT-NOU  pop=4354699 cons=355/355 (100%) trigo_estoque=0.0 firm=3509
+  MRT-NOUA pop=536918 cons=44/44 (100%) trigo_estoque=0.0 firm=0
+  MRT-ZOU  pop=202870 cons=17/17 (100%) trigo_estoque=0.0 firm=5518
+  MWI-BLA  pop=9934589 cons=271/271 (100%) trigo_estoque=0.0 firm=90259
+  MWI-LIL  pop=12281531 cons=335/335 (100%) trigo_estoque=0.0 firm=111582
+  MYS-GEO  pop=14214464 cons=630/630 (100%) trigo_estoque=0.0 firm=216317
+  MYS-JOH  pop=5808423 cons=257/257 (100%) trigo_estoque=0.0 firm=85812
+  MYS-KOT  pop=3387246 cons=150/150 (100%) trigo_estoque=0.0 firm=50042
+  MYS-KUA  pop=9841655 cons=436/436 (100%) trigo_estoque=0.0 firm=145398
+  MYS-KUC  pop=2726050 cons=121/121 (100%) trigo_estoque=0.0 firm=40274
+  NAM-RUN  pop=434615 cons=23/23 (100%) trigo_estoque=67.7 firm=7518
+  NAM-WAL  pop=425470 cons=22/22 (100%) trigo_estoque=66.2 firm=7535
+  NAM-WIN  pop=2232731 cons=116/116 (100%) trigo_estoque=347.6 firm=38622
+  NCL-NOU  pop=319272 cons=28/28 (100%) trigo_estoque=0.0 firm=9549
+  NCL-WE   pop=35595 cons=3/3 (100%) trigo_estoque=0.0 firm=1123
+  NED-AMS  pop=8436420 cons=543/543 (100%) trigo_estoque=1628.1 firm=180900
+  NED-EIN  pop=1494048 cons=96/96 (100%) trigo_estoque=288.3 firm=32037
+  NED-ENS  pop=696343 cons=45/45 (100%) trigo_estoque=134.4 firm=14932
+  NED-GRO  pop=1141678 cons=73/73 (100%) trigo_estoque=220.3 firm=24481
+  NED-RTM  pop=5596298 cons=360/360 (100%) trigo_estoque=1080.0 firm=120000
+  NER-AGA  pop=1804830 cons=45/45 (100%) trigo_estoque=0.0 firm=14955
+  NER-MAR  pop=4365195 cons=109/109 (100%) trigo_estoque=310.9 firm=37303
+  NER-NIA  pop=15974943 cons=397/397 (100%) trigo_estoque=0.0 firm=132369
+  NER-TAH  pop=1924537 cons=33/48 (69%) trigo_estoque=0.0 firm=0
+  NER-ZIN  pop=3848326 cons=96/96 (100%) trigo_estoque=287.0 firm=4018
+  NGA-ABA  pop=6998177 cons=348/348 (100%) trigo_estoque=0.0 firm=116000
+  NGA-ABU  pop=16228531 cons=807/807 (100%) trigo_estoque=0.0 firm=269000
+  NGA-BEN  pop=10750648 cons=535/535 (100%) trigo_estoque=0.0 firm=178200
+  NGA-IBA  pop=22014093 cons=1095/1095 (100%) trigo_estoque=0.0 firm=364900
+  NGA-ILO  pop=6515544 cons=324/324 (100%) trigo_estoque=0.0 firm=11595
+  NGA-JOS  pop=6274228 cons=312/312 (100%) trigo_estoque=0.0 firm=11340
+  NGA-KAD  pop=11160886 cons=555/555 (100%) trigo_estoque=0.0 firm=185000
+  NGA-KAN  pop=29621594 cons=1473/1473 (100%) trigo_estoque=0.0 firm=491000
+  NGA-LAG  pop=92834438 cons=2653/4616 (57%) trigo_estoque=0.0 firm=4305
+  NGA-MAI  pop=6696532 cons=333/333 (100%) trigo_estoque=0.0 firm=111000
+  NGA-ONI  pop=9369111 cons=466/466 (100%) trigo_estoque=0.0 firm=155300
+  NGA-POR  pop=12789772 cons=636/636 (100%) trigo_estoque=0.0 firm=212000
+  NGA-SOK  pop=6274228 cons=312/312 (100%) trigo_estoque=19.3 firm=104000
+  NIC-LEO  pop=906252 cons=43/43 (100%) trigo_estoque=0.0 firm=21401
+  NIC-MAN  pop=6101250 cons=292/292 (100%) trigo_estoque=0.0 firm=104443
+  NOR-BER  pop=1163015 cons=88/88 (100%) trigo_estoque=0.0 firm=29403
+  NOR-OSL  pop=4282063 cons=325/325 (100%) trigo_estoque=0.0 firm=108258
+  NOR-TRO  pop=165792 cons=13/13 (100%) trigo_estoque=0.0 firm=10508
+  NPL-BHA  pop=4536325 cons=111/111 (100%) trigo_estoque=0.0 firm=36938
+  NPL-KAT  pop=17712556 cons=433/433 (100%) trigo_estoque=0.0 firm=144227
+  NPL-POK  pop=7369237 cons=180/180 (100%) trigo_estoque=0.0 firm=60005
+  NZL-AUC  pop=3508230 cons=464/464 (100%) trigo_estoque=0.0 firm=154720
+  NZL-CHR  pop=950523 cons=126/126 (100%) trigo_estoque=377.3 firm=41920
+  NZL-WEL  pop=865947 cons=115/115 (100%) trigo_estoque=343.7 firm=38190
+  OMN-IBR  pop=799415 cons=49/49 (100%) trigo_estoque=36.9 firm=0
+  OMN-MUS  pop=3897489 cons=239/239 (100%) trigo_estoque=239.1 firm=79700
+  OMN-SAL  pop=797787 cons=49/49 (100%) trigo_estoque=35.4 firm=0
+  PAK-ARI  pop=4658537 cons=62/256 (24%) trigo_estoque=0.0 firm=0
+  PAK-BAH  pop=4927502 cons=66/271 (24%) trigo_estoque=0.0 firm=0
+  PAK-BAN  pop=7403233 cons=407/407 (100%) trigo_estoque=605.8 firm=128001
+  PAK-DER  pop=4160949 cons=229/229 (100%) trigo_estoque=299.3 firm=76320
+  PAK-FAI  pop=20718699 cons=507/1140 (44%) trigo_estoque=2597.2 firm=218925
+  PAK-GUJ  pop=13690646 cons=753/753 (100%) trigo_estoque=5516.4 firm=251112
+  PAK-HYD  pop=10474815 cons=160/576 (28%) trigo_estoque=0.0 firm=0
+  PAK-ISL  pop=3279931 cons=180/180 (100%) trigo_estoque=2950.1 firm=60160
+  PAK-KAR  pop=63375386 cons=940/3487 (27%) trigo_estoque=0.0 firm=0
+  PAK-LAH  pop=70898705 cons=1132/3901 (29%) trigo_estoque=4396.5 firm=0
+  PAK-MUL  pop=11830403 cons=188/651 (29%) trigo_estoque=0.0 firm=0
+  PAK-PES  pop=25944829 cons=1428/1428 (100%) trigo_estoque=3712.5 firm=475876
+  PAK-QUE  pop=8535376 cons=193/470 (41%) trigo_estoque=0.0 firm=0
+  PAK-SAR  pop=5320543 cons=293/293 (100%) trigo_estoque=1794.2 firm=97589
+  PAN-DAV  pop=771743 cons=25/25 (100%) trigo_estoque=0.0 firm=11363
+  PAN-PAN  pop=3799446 cons=122/122 (100%) trigo_estoque=0.0 firm=40817
+  PER-ARE  pop=3755748 cons=359/359 (100%) trigo_estoque=0.0 firm=120620
+  PER-IQU  pop=1186087 cons=113/113 (100%) trigo_estoque=0.0 firm=37761
+  PER-LIM  pop=24302276 cons=2321/2321 (100%) trigo_estoque=0.0 firm=773700
+  PER-PIU  pop=1978859 cons=189/189 (100%) trigo_estoque=0.0 firm=63000
+  PER-TRU  pop=3353695 cons=320/320 (100%) trigo_estoque=0.0 firm=106770
+  PHL-BUD  pop=19971015 cons=382/382 (100%) trigo_estoque=0.0 firm=127372
+  PHL-CAG  pop=11628068 cons=222/222 (100%) trigo_estoque=0.0 firm=74162
+  PHL-CEB  pop=15135772 cons=290/290 (100%) trigo_estoque=0.0 firm=96533
+  PHL-DAV  pop=28990275 cons=555/555 (100%) trigo_estoque=0.0 firm=184895
+  PHL-MAN  pop=25086949 cons=480/480 (100%) trigo_estoque=0.0 firm=160000
+  PHL-ZAM  pop=15974883 cons=306/306 (100%) trigo_estoque=0.0 firm=101885
+  PNG-ARA  pop=998844 cons=12/12 (100%) trigo_estoque=0.0 firm=9305
+  PNG-LAE  pop=1891593 cons=23/23 (100%) trigo_estoque=0.0 firm=7880
+  PNG-MOU  pop=834057 cons=10/10 (100%) trigo_estoque=0.0 firm=8328
+  PNG-POR  pop=7038323 cons=85/85 (100%) trigo_estoque=0.0 firm=35026
+  POL-BIA  pop=2312706 cons=88/88 (100%) trigo_estoque=263.3 firm=29260
+  POL-GDA  pop=3841510 cons=146/146 (100%) trigo_estoque=437.4 firm=48602
+  POL-KRA  pop=6454503 cons=245/245 (100%) trigo_estoque=735.0 firm=81661
+  POL-ODZ  pop=5057680 cons=192/192 (100%) trigo_estoque=575.9 firm=63989
+  POL-WAR  pop=13453678 cons=511/511 (100%) trigo_estoque=1531.9 firm=154913
+  POL-WRO  pop=5315784 cons=202/202 (100%) trigo_estoque=605.3 firm=67255
+  PRI-PON  pop=958751 cons=41/41 (100%) trigo_estoque=0.0 firm=13749
+  PRI-SAN  pop=2915771 cons=125/125 (100%) trigo_estoque=0.0 firm=41814
+  PRK-HAM  pop=3614050 cons=168/168 (100%) trigo_estoque=503.2 firm=56475
+  PRK-PYO  pop=20828808 cons=967/967 (100%) trigo_estoque=2899.8 firm=322200
+  PRK-WON  pop=2128178 cons=99/99 (100%) trigo_estoque=0.0 firm=33336
+  PRT-LIS  pop=7261342 cons=155/155 (100%) trigo_estoque=466.0 firm=51780
+  PRT-POR  pop=3543529 cons=76/76 (100%) trigo_estoque=227.4 firm=25269
+  PRY-ASU  pop=5826624 cons=445/445 (100%) trigo_estoque=0.0 firm=148220
+  PRY-CIU  pop=1186454 cons=91/91 (100%) trigo_estoque=0.0 firm=30182
+  PSX-GAZ  pop=4373270 cons=23/123 (19%) trigo_estoque=15.9 firm=0
+  PSX-RAM  pop=1040326 cons=5/29 (19%) trigo_estoque=4.2 firm=0
+  QAT-DOH  pop=2927514 cons=103/103 (100%) trigo_estoque=58.7 firm=0
+  QAT-MAD  pop=44701 cons=2/2 (100%) trigo_estoque=1.6 firm=0
+  ROU-BUC  pop=13098481 cons=563/563 (100%) trigo_estoque=1689.4 firm=187716
+  ROU-CLJ  pop=1999834 cons=86/86 (100%) trigo_estoque=257.9 firm=28660
+  ROU-IAS  pop=2644279 cons=114/114 (100%) trigo_estoque=341.1 firm=37895
+  ROU-ORA  pop=1277677 cons=55/55 (100%) trigo_estoque=164.8 firm=18311
+  RUS-ARK  pop=1281161 cons=105/105 (100%) trigo_estoque=0.0 firm=34974
+  RUS-BIL  pop=21089 cons=2/2 (100%) trigo_estoque=0.0 firm=576
+  RUS-BIR  pop=269693 cons=22/22 (100%) trigo_estoque=0.0 firm=7362
+  RUS-CHE  pop=4404479 cons=361/361 (100%) trigo_estoque=0.0 firm=120237
+  RUS-CHI  pop=1278462 cons=105/105 (100%) trigo_estoque=0.0 firm=34901
+  RUS-DON  pop=3302871 cons=270/270 (100%) trigo_estoque=317.9 firm=90165
+  RUS-DUD  pop=86520 cons=7/7 (100%) trigo_estoque=0.0 firm=2362
+  RUS-IRK  pop=2285333 cons=187/187 (100%) trigo_estoque=0.0 firm=62387
+  RUS-KAZ  pop=4555142 cons=373/373 (100%) trigo_estoque=0.0 firm=124350
+  RUS-KGD  pop=1796594 cons=147/147 (100%) trigo_estoque=441.4 firm=49045
+  RUS-KRA  pop=5091795 cons=417/417 (100%) trigo_estoque=1218.8 firm=139000
+  RUS-KRAS pop=3995817 cons=327/327 (100%) trigo_estoque=0.0 firm=109081
+  RUS-MAG  pop=339875 cons=28/28 (100%) trigo_estoque=0.0 firm=9278
+  RUS-MAK  pop=2184548 cons=179/179 (100%) trigo_estoque=536.7 firm=59636
+  RUS-MAR  pop=1559338 cons=128/128 (100%) trigo_estoque=127.7 firm=42568
+  RUS-MIR  pop=147655 cons=12/12 (100%) trigo_estoque=0.0 firm=8763
+  RUS-MOS  pop=38028094 cons=3114/3114 (100%) trigo_estoque=0.0 firm=1038122
+  RUS-MUR  pop=1082003 cons=89/89 (100%) trigo_estoque=0.0 firm=29537
+  RUS-NAR  pop=83930 cons=7/7 (100%) trigo_estoque=0.0 firm=336
+  RUS-NER  pop=242941 cons=20/20 (100%) trigo_estoque=0.0 firm=6632
+  RUS-NIK  pop=99462 cons=8/8 (100%) trigo_estoque=0.0 firm=2715
+  RUS-NIZ  pop=4611968 cons=378/378 (100%) trigo_estoque=0.0 firm=125901
+  RUS-NOV  pop=5908068 cons=484/484 (100%) trigo_estoque=0.0 firm=161283
+  RUS-NOVOK pop=1976701 cons=162/162 (100%) trigo_estoque=0.0 firm=53962
+  RUS-OMS  pop=4293482 cons=352/352 (100%) trigo_estoque=0.0 firm=117207
+  RUS-PAL  pop=13447 cons=1/1 (100%) trigo_estoque=0.0 firm=49
+  RUS-PER  pop=3598760 cons=295/295 (100%) trigo_estoque=0.0 firm=98242
+  RUS-PET  pop=663824 cons=54/54 (100%) trigo_estoque=0.0 firm=24884
+  RUS-PRO  pop=9290 cons=1/1 (100%) trigo_estoque=0.0 firm=0
+  RUS-PUS  pop=21686 cons=2/2 (100%) trigo_estoque=0.0 firm=0
+  RUS-ROS  pop=4140490 cons=339/339 (100%) trigo_estoque=623.0 firm=113031
+  RUS-SAI  pop=19605003 cons=1606/1606 (100%) trigo_estoque=0.0 firm=535194
+  RUS-SAM  pop=4261719 cons=349/349 (100%) trigo_estoque=0.0 firm=116340
+  RUS-SEV  pop=2006753 cons=164/164 (100%) trigo_estoque=493.0 firm=54782
+  RUS-SUR  pop=1100293 cons=90/90 (100%) trigo_estoque=0.0 firm=30037
+  RUS-TIK  pop=20880 cons=2/2 (100%) trigo_estoque=0.0 firm=0
+  RUS-TUR  pop=19942 cons=2/2 (100%) trigo_estoque=0.0 firm=544
+  RUS-UFA  pop=4104745 cons=336/336 (100%) trigo_estoque=0.0 firm=112055
+  RUS-UST  pop=367309 cons=30/30 (100%) trigo_estoque=0.0 firm=10027
+  RUS-USTN pop=33511 cons=3/3 (100%) trigo_estoque=0.0 firm=915
+  RUS-VOL  pop=3712735 cons=304/304 (100%) trigo_estoque=835.9 firm=101353
+  RUS-VOR  pop=3837341 cons=314/314 (100%) trigo_estoque=1.2 firm=104755
+  RUS-YAK  pop=863041 cons=71/71 (100%) trigo_estoque=0.0 firm=23560
+  RUS-YEK  pop=5476668 cons=449/449 (100%) trigo_estoque=0.0 firm=149507
+  RUS-YUZ  pop=728870 cons=60/60 (100%) trigo_estoque=0.0 firm=26848
+  RWA-GIS  pop=1924173 cons=52/52 (100%) trigo_estoque=0.0 firm=18939
+  RWA-KIG  pop=12645168 cons=340/340 (100%) trigo_estoque=0.0 firm=113269
+  SAH-MEH  pop=155738 cons=1/4 (24%) trigo_estoque=0.0 firm=0
+  SAH-TIC  pop=78336 cons=0/2 (25%) trigo_estoque=0.0 firm=0
+  SAH-TIF  pop=38934 cons=0/1 (24%) trigo_estoque=0.0 firm=0
+  SAU-DAM  pop=3287034 cons=376/376 (100%) trigo_estoque=375.8 firm=0
+  SAU-JED  pop=12326479 cons=1409/1409 (100%) trigo_estoque=1409.1 firm=0
+  SAU-KHA  pop=1017067 cons=116/116 (100%) trigo_estoque=60.0 firm=0
+  SAU-MAD  pop=3411629 cons=390/390 (100%) trigo_estoque=390.0 firm=0
+  SAU-MEC  pop=4143088 cons=474/474 (100%) trigo_estoque=473.6 firm=0
+  SAU-RIY  pop=11037830 cons=1262/1262 (100%) trigo_estoque=1261.8 firm=0
+  SAU-TAB  pop=1750428 cons=200/200 (100%) trigo_estoque=200.1 firm=0
+  SDN-ALQ  pop=4210879 cons=109/109 (100%) trigo_estoque=0.0 firm=36395
+  SDN-ELO  pop=4550646 cons=118/118 (100%) trigo_estoque=0.0 firm=39331
+  SDN-KHA  pop=22846856 cons=51/592 (9%) trigo_estoque=0.0 firm=0
+  SDN-KOS  pop=3992470 cons=104/104 (100%) trigo_estoque=0.0 firm=34507
+  SDN-NYA  pop=6545597 cons=170/170 (100%) trigo_estoque=0.0 firm=56573
+  SDN-POR  pop=5666166 cons=147/147 (100%) trigo_estoque=0.0 firm=0
+  SDN-WAD  pop=3849533 cons=11/100 (11%) trigo_estoque=0.0 firm=0
+  SEN-DAK  pop=13299484 cons=794/794 (100%) trigo_estoque=0.0 firm=90569
+  SEN-TOU  pop=5632482 cons=336/336 (100%) trigo_estoque=0.0 firm=112082
+  SGP-SIN  pop=6111175 cons=1533/1692 (91%) trigo_estoque=0.0 firm=563870
+  SLB-HON  pop=743505 cons=17/17 (100%) trigo_estoque=0.0 firm=5630
+  SLB-NOR  pop=95140 cons=2/2 (100%) trigo_estoque=0.0 firm=720
+  SLE-FRE  pop=6692619 cons=241/241 (100%) trigo_estoque=0.0 firm=80264
+  SLE-KEN  pop=2127175 cons=77/77 (100%) trigo_estoque=0.0 firm=36012
+  SLV-SAN  pop=4330774 cons=158/158 (100%) trigo_estoque=0.0 firm=58790
+  SLV-SANM pop=2034729 cons=74/74 (100%) trigo_estoque=0.0 firm=24713
+  SMR-SANM pop=32317 cons=1/1 (100%) trigo_estoque=0.0 firm=0
+  SOL-BER  pop=982759 cons=75/75 (100%) trigo_estoque=17.1 firm=0
+  SOL-HAR  pop=4717241 cons=179/360 (50%) trigo_estoque=73.5 firm=0
+  SOM-ELD  pop=1300762 cons=60/60 (100%) trigo_estoque=0.0 firm=0
+  SOM-KIS  pop=1527433 cons=70/70 (100%) trigo_estoque=0.0 firm=23485
+  SOM-MOG  pop=16826544 cons=776/776 (100%) trigo_estoque=0.0 firm=258718
+  SRB-BEL  pop=5474562 cons=382/382 (100%) trigo_estoque=1146.3 firm=109858
+  SRB-NIS  pop=1074581 cons=75/75 (100%) trigo_estoque=225.0 firm=25000
+  SSD-JUB  pop=5906831 cons=69/69 (100%) trigo_estoque=0.0 firm=23020
+  SSD-MAL  pop=3245569 cons=38/38 (100%) trigo_estoque=0.0 firm=8619
+  SSD-WAU  pop=3036388 cons=35/35 (100%) trigo_estoque=0.0 firm=11833
+  SUR-BRO  pop=36706 cons=4/4 (100%) trigo_estoque=0.0 firm=11184
+  SUR-PBM  pop=603144 cons=72/72 (100%) trigo_estoque=0.0 firm=24092
+  SVK-BRA  pop=3535913 cons=127/127 (100%) trigo_estoque=381.4 firm=42374
+  SVK-KOS  pop=1877900 cons=68/68 (100%) trigo_estoque=202.5 firm=22504
+  SVN-LJU  pop=1574515 cons=82/82 (100%) trigo_estoque=0.0 firm=27222
+  SVN-MAR  pop=556471 cons=29/29 (100%) trigo_estoque=86.6 firm=10210
+  SWE-GOT  pop=2860910 cons=183/183 (100%) trigo_estoque=0.0 firm=60846
+  SWE-STO  pop=7123414 cons=455/455 (100%) trigo_estoque=0.0 firm=151502
+  SWE-UME  pop=612296 cons=39/39 (100%) trigo_estoque=0.0 firm=13022
+  SWZ-MAN  pop=743507 cons=33/33 (100%) trigo_estoque=99.5 firm=11054
+  SWZ-MBA  pop=512667 cons=23/23 (100%) trigo_estoque=68.6 firm=7622
+  SYR-ALE  pop=12099244 cons=629/629 (100%) trigo_estoque=629.5 firm=179653
+  SYR-DAM  pop=9049847 cons=471/471 (100%) trigo_estoque=470.8 firm=34774
+  SYR-HOM  pop=4471336 cons=233/233 (100%) trigo_estoque=232.6 firm=77540
+  TCD-ABE  pop=1690094 cons=42/42 (100%) trigo_estoque=0.0 firm=910
+  TCD-FAY  pop=531370 cons=13/13 (100%) trigo_estoque=0.0 firm=0
+  TCD-MOU  pop=2367916 cons=59/59 (100%) trigo_estoque=0.0 firm=18069
+  TCD-NDJ  pop=16414325 cons=408/408 (100%) trigo_estoque=0.0 firm=7833
+  TGO-LOM  pop=8152725 cons=657/657 (100%) trigo_estoque=0.0 firm=218838
+  TGO-SOK  pop=438901 cons=35/35 (100%) trigo_estoque=0.0 firm=11781
+  THA-BAN  pop=62906293 cons=1531/1531 (100%) trigo_estoque=0.0 firm=510448
+  THA-CHO  pop=2700923 cons=66/66 (100%) trigo_estoque=0.0 firm=21916
+  THA-HAT  pop=2362414 cons=58/58 (100%) trigo_estoque=0.0 firm=19170
+  THA-KAB  pop=1726015 cons=42/42 (100%) trigo_estoque=0.0 firm=14006
+  THA-LAM  pop=1924218 cons=47/47 (100%) trigo_estoque=0.0 firm=15614
+  TJK-DUS  pop=7686708 cons=204/204 (100%) trigo_estoque=203.8 firm=67940
+  TJK-ISF  pop=3100026 cons=82/82 (100%) trigo_estoque=0.0 firm=34002
+  TKM-ASH  pop=6223922 cons=309/309 (100%) trigo_estoque=309.0 firm=1005
+  TKM-TUR  pop=1394925 cons=69/69 (100%) trigo_estoque=69.3 firm=23086
+  TLS-DIL  pop=1237079 cons=45/45 (100%) trigo_estoque=0.0 firm=15000
+  TLS-MAL  pop=181438 cons=7/7 (100%) trigo_estoque=0.0 firm=2200
+  TTO-MON  pop=731561 cons=17/17 (100%) trigo_estoque=0.0 firm=11114
+  TTO-POR  pop=636203 cons=15/15 (100%) trigo_estoque=0.0 firm=4903
+  TUN-SFA  pop=3557892 cons=84/84 (100%) trigo_estoque=84.2 firm=28057
+  TUN-TUN  pop=8790681 cons=208/208 (100%) trigo_estoque=208.0 firm=69321
+  TUR-ADA  pop=4403085 cons=545/545 (100%) trigo_estoque=545.0 firm=181675
+  TUR-ANK  pop=8524261 cons=1055/1055 (100%) trigo_estoque=3187.9 firm=341093
+  TUR-ANT  pop=3465756 cons=429/429 (100%) trigo_estoque=1851.2 firm=106592
+  TUR-BUR  pop=7517619 cons=931/931 (100%) trigo_estoque=2798.8 firm=310183
+  TUR-DIY  pop=4444126 cons=550/550 (100%) trigo_estoque=550.1 firm=183368
+  TUR-GAZ  pop=5386257 cons=667/667 (100%) trigo_estoque=666.7 firm=222242
+  TUR-IST  pop=38054487 cons=4710/4710 (100%) trigo_estoque=14131.4 firm=1570160
+  TUR-IZM  pop=7121260 cons=881/881 (100%) trigo_estoque=2644.5 firm=293829
+  TUR-KAY  pop=3520185 cons=436/436 (100%) trigo_estoque=435.7 firm=145246
+  TUR-KON  pop=3441520 cons=426/426 (100%) trigo_estoque=1794.9 firm=122969
+  TWN-KAO  pop=4764896 cons=820/820 (100%) trigo_estoque=0.0 firm=273400
+  TWN-TAI  pop=13719380 cons=2362/2362 (100%) trigo_estoque=163.9 firm=787190
+  TWN-TAIC pop=4967561 cons=855/855 (100%) trigo_estoque=0.0 firm=285029
+  TZA-ARU  pop=5077728 cons=185/185 (100%) trigo_estoque=0.0 firm=61763
+  TZA-DAR  pop=44261227 cons=1615/1615 (100%) trigo_estoque=0.0 firm=538373
+  TZA-DOD  pop=6290764 cons=230/230 (100%) trigo_estoque=0.0 firm=76518
+  TZA-MWA  pop=9080595 cons=331/331 (100%) trigo_estoque=0.0 firm=110452
+  TZA-ZAN  pop=5835551 cons=213/213 (100%) trigo_estoque=0.0 firm=70981
+  UGA-GUL  pop=3996731 cons=53/53 (100%) trigo_estoque=0.0 firm=17740
+  UGA-KAM  pop=37863056 cons=504/504 (100%) trigo_estoque=0.0 firm=168060
+  UGA-MBA  pop=4985776 cons=66/66 (100%) trigo_estoque=0.0 firm=22130
+  UGA-NJE  pop=4539331 cons=60/60 (100%) trigo_estoque=0.0 firm=20148
+  UKR-DNI  pop=4684569 cons=291/291 (100%) trigo_estoque=871.7 firm=96850
+  UKR-KHA  pop=6873871 cons=426/426 (100%) trigo_estoque=1280.0 firm=142113
+  UKR-KHE  pop=1350135 cons=84/84 (100%) trigo_estoque=251.2 firm=27913
+  UKR-KYI  pop=14280051 cons=886/886 (100%) trigo_estoque=2657.1 firm=295230
+  UKR-LVI  pop=3469394 cons=215/215 (100%) trigo_estoque=645.5 firm=71727
+  UKR-ODE  pop=4887889 cons=303/303 (100%) trigo_estoque=909.5 firm=101054
+  UKR-ZAP  pop=3434467 cons=213/213 (100%) trigo_estoque=639.0 firm=71005
+  URY-MON  pop=3105851 cons=381/381 (100%) trigo_estoque=0.0 firm=127074
+  URY-SAL  pop=278837 cons=34/34 (100%) trigo_estoque=0.0 firm=11408
+  USA-ANC  pop=2019437 cons=87/87 (100%) trigo_estoque=0.0 firm=28960
+  USA-AUS  pop=6795006 cons=292/292 (100%) trigo_estoque=877.0 firm=97445
+  USA-BET  pop=44977 cons=2/2 (100%) trigo_estoque=0.0 firm=645
+  USA-BIL  pop=816672 cons=35/35 (100%) trigo_estoque=105.4 firm=11712
+  USA-BOS  pop=54739561 cons=2355/2355 (100%) trigo_estoque=0.0 firm=785000
+  USA-CHA  pop=6354747 cons=273/273 (100%) trigo_estoque=0.0 firm=91131
+  USA-CHI  pop=18579737 cons=799/799 (100%) trigo_estoque=2398.0 firm=266445
+  USA-COL  pop=6367745 cons=274/274 (100%) trigo_estoque=821.9 firm=91318
+  USA-DAL  pop=9247060 cons=398/398 (100%) trigo_estoque=1193.5 firm=132609
+  USA-DEN  pop=5083590 cons=219/219 (100%) trigo_estoque=656.1 firm=72902
+  USA-FOR  pop=7029717 cons=302/302 (100%) trigo_estoque=907.3 firm=100811
+  USA-HON  pop=2447340 cons=105/105 (100%) trigo_estoque=315.9 firm=35096
+  USA-HOU  pop=16137062 cons=694/694 (100%) trigo_estoque=0.0 firm=231416
+  USA-JAC  pop=7041760 cons=303/303 (100%) trigo_estoque=0.0 firm=100983
+  USA-LOS  pop=26643969 cons=1146/1146 (100%) trigo_estoque=1359.0 firm=382091
+  USA-MIA  pop=46720389 cons=2010/2010 (100%) trigo_estoque=0.0 firm=670000
+  USA-MIN  pop=2865557 cons=123/123 (100%) trigo_estoque=369.8 firm=41094
+  USA-NAS  pop=4807647 cons=207/207 (100%) trigo_estoque=0.0 firm=68945
+  USA-NEW  pop=61393311 cons=2641/2641 (100%) trigo_estoque=0.0 firm=880419
+  USA-PHI  pop=10975219 cons=472/472 (100%) trigo_estoque=1416.5 firm=157392
+  USA-PHO  pop=11506256 cons=495/495 (100%) trigo_estoque=588.4 firm=165007
+  USA-POR  pop=466374 cons=20/20 (100%) trigo_estoque=0.0 firm=6688
+  USA-REN  pop=1842073 cons=79/79 (100%) trigo_estoque=0.0 firm=26417
+  USA-SANA pop=10645666 cons=458/458 (100%) trigo_estoque=1374.0 firm=152666
+  USA-SANJ pop=6954839 cons=299/299 (100%) trigo_estoque=299.2 firm=105670
+  USA-SEA  pop=5446028 cons=234/234 (100%) trigo_estoque=0.0 firm=78100
+  USA-SIT  pop=61803 cons=3/3 (100%) trigo_estoque=0.0 firm=886
+  USA-UNA  pop=31317 cons=1/1 (100%) trigo_estoque=0.0 firm=0
+  USA-UTQ  pop=30570 cons=1/1 (100%) trigo_estoque=0.0 firm=443
+  USA-WAS  pop=4808330 cons=207/207 (100%) trigo_estoque=620.6 firm=68955
+  UZB-AND  pop=6980666 cons=111/224 (49%) trigo_estoque=91.7 firm=0
+  UZB-MUY  pop=126022 cons=4/4 (100%) trigo_estoque=4.0 firm=0
+  UZB-SAM  pop=11481973 cons=369/369 (100%) trigo_estoque=369.0 firm=118847
+  UZB-TAS  pop=18464767 cons=593/593 (100%) trigo_estoque=593.4 firm=95790
+  VCT-KIN  pop=99924 cons=7/7 (100%) trigo_estoque=0.0 firm=2467
+  VEN-CBL  pop=1550356 cons=124/124 (100%) trigo_estoque=0.0 firm=41262
+  VEN-CCS  pop=9671433 cons=772/772 (100%) trigo_estoque=0.0 firm=257400
+  VEN-CGU  pop=2821774 cons=225/225 (100%) trigo_estoque=0.0 firm=75100
+  VEN-MAR  pop=8555498 cons=683/683 (100%) trigo_estoque=0.0 firm=227700
+  VEN-VLN  pop=5917835 cons=472/472 (100%) trigo_estoque=0.0 firm=157500
+  VNM-CAN  pop=5156753 cons=452/452 (100%) trigo_estoque=0.0 firm=150719
+  VNM-DAN  pop=4365760 cons=383/383 (100%) trigo_estoque=0.0 firm=127600
+  VNM-HAI  pop=8981971 cons=788/788 (100%) trigo_estoque=0.0 firm=294627
+  VNM-HAN  pop=27555144 cons=2416/2416 (100%) trigo_estoque=0.0 firm=805366
+  VNM-HOC  pop=47909082 cons=4201/4201 (100%) trigo_estoque=0.0 firm=1400260
+  VNM-HUE  pop=4721591 cons=414/414 (100%) trigo_estoque=0.0 firm=138000
+  VNM-THA  pop=2908226 cons=255/255 (100%) trigo_estoque=0.0 firm=85000
+  XKX-PRI  pop=1202114 cons=165/165 (100%) trigo_estoque=495.0 firm=55000
+  XKX-PRIZ pop=374762 cons=51/51 (100%) trigo_estoque=151.9 firm=17157
+  YEM-ADE  pop=14894642 cons=324/324 (100%) trigo_estoque=233.6 firm=0
+  YEM-ALG  pop=151034 cons=3/3 (100%) trigo_estoque=2.5 firm=0
+  YEM-SAN  pop=26728202 cons=581/581 (100%) trigo_estoque=574.5 firm=0
+  ZAF-CAP  pop=14883496 cons=1432/1432 (100%) trigo_estoque=4295.6 firm=477285
+  ZAF-DUR  pop=10409197 cons=1001/1001 (100%) trigo_estoque=3004.2 firm=333803
+  ZAF-GQE  pop=3274531 cons=315/315 (100%) trigo_estoque=945.1 firm=105008
+  ZAF-JOH  pop=29369371 cons=2825/2825 (100%) trigo_estoque=8476.4 firm=941818
+  ZAF-PRE  pop=6588157 cons=634/634 (100%) trigo_estoque=1901.4 firm=211269
+  ZAF-UPI  pop=222567 cons=21/21 (100%) trigo_estoque=64.2 firm=9690
+  ZMB-KIT  pop=4162796 cons=200/200 (100%) trigo_estoque=0.0 firm=66596
+  ZMB-LUS  pop=13828675 cons=664/664 (100%) trigo_estoque=1991.1 firm=221230
+  ZMB-NDO  pop=3922403 cons=188/188 (100%) trigo_estoque=0.0 firm=62750
+  ZWE-BUL  pop=5110736 cons=200/200 (100%) trigo_estoque=599.4 firm=66595
+  ZWE-HAR  pop=11840059 cons=463/463 (100%) trigo_estoque=1388.5 firm=154281
+[world] FALHAS (6):
+ - constru├º├Áes do mundo real faliram (32 > 26 do baseline) ÔÇö balan├ºo quebrado
+ - AFG: comida piorou 1.000 -> 0.966 (limite -0.03)
+ - EGY: comida piorou 1.000 -> 0.740 (limite -0.03)
+ - NGA: comida piorou 1.000 -> 0.834 (limite -0.03)
+ - SDN: comida piorou 0.559 -> 0.529 (limite -0.03)
+ - UZB: comida piorou 0.948 -> 0.905 (limite -0.03)
+economia: bootstrap industrial (estimativa) ├ó┬Ç┬ö 24 plantas de refer├â┬¬ncia semeadas

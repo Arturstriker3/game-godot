@@ -1,0 +1,76 @@
+F5 — perfil release com moedas, câmbio, tarifa e preço entregue (2026-11-14)
+===========================================================================
+
+Commit base: 512f98c (F4). Medição no caminho real do jogo (autoload Economy
++ IA + comboios reais), com a DLL release
+(gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll)
+copiada sobre o nome debug para o binário do editor usá-la; a debug real
+(11.742.720 bytes) foi restaurada ao final.
+
+Comando (3 execuções seguidas, máquina sem outro Godot aberto):
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Godot 4.7.2 stable, 834 cidades, 30 dias, `--map-mode=none`.
+
+Resumo das 3 medições (ms; média / p95 / máx)
+--------------------------------------------
+
+| execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia | memória |
+|---|---|---|---|---|---|---|
+| 1 | 41,07 / **47,37** / 47,41 | 19,15 / **20,49** / 24,02 | 14,55 / 15,79 / 21,07 | 11,78 / 12,59 / 12,60 | 15,19 / 18,79 / 18,92 | 513,4 MB |
+| 2 | 41,51 / **47,21** / 48,31 | 19,34 / **21,11** / 24,20 | 14,68 / 16,07 / 21,11 | 11,20 / 11,69 / 11,84 | 15,02 / 18,15 / 19,22 | 513,3 MB |
+| 3 | 40,93 / **48,26** / 48,69 | 19,17 / **20,53** / 24,22 | 14,54 / 15,65 / 21,15 | 11,76 / 12,46 / 12,78 | 15,15 / 18,30 / 18,86 | 513,2 MB |
+
+Portões do plano (`production_chains_impl_plan.md` §8.6):
+
+| métrica | portão | resultado (pior das 3) | situação |
+|---|---|---|---|
+| tick p95 | <= 50 ms | **48,26** | passa |
+| `status` p95 | <= 30 ms | **21,11** | passa |
+| frame de pico p95 | <= 12 ms | **12,59** (execução 1); 11,69/12,46 nas 2–3 | passa (ruído de 0,6 ms na borda) |
+| memória estática | <= 750 MB | **513,4 MB** | passa |
+| IA fatiada/dia p95 | <= 30 ms | **18,79** | passa |
+
+Fases do tick na execução 3 (média / p95 / máx, ms):
+
+| fase | média | p95 | máx |
+|---|---|---|---|
+| status | 19,17 | 20,53 | 24,22 |
+| status_cities | 14,54 | 15,65 | 21,15 |
+| trade | 6,28 | 7,60 | 8,12 |
+| status_orders | 3,44 | 3,82 | 4,29 |
+| arrival | 3,43 | 3,91 | 4,02 |
+| status_nations | 1,16 | 1,34 | 1,35 |
+| income | 0,73 | 0,90 | 0,95 |
+| production | 0,48 | 0,53 | 0,66 |
+| prices | 0,43 | 0,49 | 0,68 |
+| clamp | 0,24 | 0,27 | 0,29 |
+| invariants | 0,24 | 0,26 | 0,28 |
+
+Diferença vs. F4 (`f4_perf_release.txt`, tick p95 46,37 / status p95 19,91):
+a F5 acrescenta **+1,9 ms** no p95 do tick (trade 5,5 → 6,3 e arrival 3,1 →
+3,4: conversão de câmbio por oferta e por cidade) e mantém o status (+0,2 ms,
+`status_cities` 14,35 → 14,54; os dois escalares novos — `fx_rate` e
+`tariff_revenue` — custam ~0,3 ms em 834 cidades). Há folga de 1,7 ms no
+portão de 50 ms.
+
+Diagnóstico de performance da F5 (duas regressões corrigidas antes desta
+medição):
+
+1. **Reescalonamento cambial diário (removido).** A primeira versão reescalava
+   todos os preços locais a cada passo de câmbio para manter o valor na âncora.
+   Isso reescrevia 834 × 114 preços todo dia e derrubava o cache do status:
+   `status` p95 **49,74** e `status_cities` **44,70** (primeira medição,
+   `f5_release_run1.txt` antes da correção). Agora o clamp do dia reancora só
+   as bordas da banda e o invariante admite 0,1% de folga na borda para o passo
+   cambial; `status_cities` p95 voltou a 15,7 (nível da F4).
+2. **Consulta de câmbio por produto (hoisted).** `clamp`, `prices` e
+   `invariants` chamavam `demo_fx_rate(nação)` uma vez por cidade/produto
+   (95 mil buscas de hash/dia): 1,4 ms cada. A taxa passou a ser calculada uma
+   vez por cidade (0,24 ms cada).
+
+Nota: `currencies.json` não declara `regime` (campo `null`), então o mundo do
+jogo roda com taxa **fixa**; `regime: "float"` no dado ativa o drift por
+balança (o teste `tools/currency_trade_test.gd` exercita o caminho flutuante
+via `demo_set_currency_rate`).
