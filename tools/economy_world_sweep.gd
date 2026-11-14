@@ -1,11 +1,12 @@
 extends SceneTree
 
-## F5 — critério de aceite robusto a caos (GAME_STATE §15).
+## F5 — critério de aceite do preço na ÂNCORA (opção c, GAME_STATE §15).
 ##
-## O mundo de 365 d é caótico por construção: 1 ulp em qualquer preço pode
-## mudar a ordem de um pedido. Um único comparativo (`--fx=real`) não prova
-## robustez — prova sorte. Este sweep roda o MESMO teste de mundo em cinco
-## variações e agrega o PIOR caso por nação:
+## O preço interno é XGS e a moeda local é só exibição (`price_local`), então
+## variações de TAXA não podem mudar trajetória: o sweep roda o MESMO teste de
+## mundo em cinco variações e agrega o PIOR caso por nação. Taxas fixas
+## (`currencies.json`, regime ausente/nulo) e sementes de jitter devem fechar
+## idênticas ao XGS; qualquer queda numa delas seria vazamento da exibição.
 ##
 ##   1. taxas reais (currencies.json);
 ##   2. taxas reais + semente 1 (jitter determinístico de ±1e-9);

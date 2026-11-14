@@ -64,7 +64,9 @@ func _build_entry(day: int, city: Dictionary) -> Dictionary:
 	var exported := PackedFloat32Array()
 
 	for market in city.get("markets", []):
-		prices.append(float(market.get("price", 0.0)))
+		# Preço de EXIBIÇÃO na moeda local (âncora ÷ taxa); o núcleo guarda a
+		# âncora, que é a fonte de verdade da simulação.
+		prices.append(float(market.get("price_local", market.get("price", 0.0))))
 		stocks.append(float(market.get("stock", 0.0)))
 		production.append(float(market.get("supply", 0.0)))
 		demand.append(float(market.get("desired", 0.0)))

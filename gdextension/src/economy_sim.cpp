@@ -83,8 +83,10 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // `in_transit`. Save v4 sem a chave deriva a frota de população/PIB.
 // v6: moedas/câmbio e tarifas (F5) — `currencies`, `tariffs` e a cotação de
 // importação por cidade (`import_price`). Save v5 sem as chaves mantém as
-// moedas já carregadas e o preço local do mercado.
-constexpr int kDemoSaveVersion = 6;
+// moedas já carregadas e o preço do mercado.
+// v7: preço de mercado na ÂNCORA (F5, opção c). Saves v6 e anteriores tinham o
+// preço na moeda local; demo_from_dict converte pela taxa da nação.
+constexpr int kDemoSaveVersion = 7;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -208,8 +210,9 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_get_currency);
 	ClassDB::bind_method(D_METHOD("demo_get_currencies"),
 	                     &EconomySim::demo_get_currencies);
-	ClassDB::bind_method(D_METHOD("demo_set_currency_rate", "code", "rate", "floating"),
-	                     &EconomySim::demo_set_currency_rate, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("demo_set_currency_rate", "code", "rate", "floating",
+	                     "base_rate"),
+	                     &EconomySim::demo_set_currency_rate, DEFVAL(true), DEFVAL(-1.0));
 	ClassDB::bind_method(D_METHOD("demo_set_tariff", "buyer_nation", "seller_nation",
 	                     "product", "rate"),
 	                     &EconomySim::demo_set_tariff);
@@ -934,9 +937,11 @@ constexpr double kDemoFleetFoodSecureDays = 3.0;
 // ---------------------------------------------------------------------------
 // F5 — câmbio, tarifa e preço entregue.
 //
-// A moeda local é a unidade dos preços publicados pelos mercados; os caixas
-// continuam na âncora XGS (plano §5.6), e toda liquidação converte pela taxa
-// corrente. `rate` = valor em XGS de 1 unidade local.
+// `rate` = valor em XGS de 1 unidade local. O preço de mercado fica na ÂNCORA
+// XGS (fonte de verdade do núcleo e da IA); a moeda local é só EXIBIÇÃO
+// (`price_local = price_anchor ÷ taxa`, calculado ao publicar o status) e nunca
+// volta para a simulação. Isso remove o round-trip `(base ÷ taxa) × taxa` que
+// desviava 1 ulp nas decisões discretas (§15, F5).
 //
 // Drift diário máximo de 0,05% e banda de ±10% em torno da taxa inicial. A
 // regra é conservadora de propósito: a calibração da F4 é sensível à chegada
@@ -948,11 +953,6 @@ constexpr double kDemoFxBandLow = 0.90;
 constexpr double kDemoFxBandHigh = 1.10;
 constexpr double kDemoFxBalanceEmaDays = 30.0;
 constexpr double kDemoFxBalanceScale = 0.10;
-// Folga do invariante de preço para o passo cambial do dia: o drift máximo é
-// 0,05%/dia e os preços locais NÃO são reescalados a cada passo (o reescalonamento
-// diário reescrevia todos os mercados e custava ~30 ms de status). A folga de
-// 0,1% cobre o passo do dia mais o desvio de arredondamento.
-constexpr double kDemoFxBandTolerance = 0.001;
 
 // ---------------------------------------------------------------------------
 // Portos (ver docs/economy/port_design.md).
@@ -1171,17 +1171,24 @@ const char* EconomySim::demo_currency_code(const std::string& nation) const {
 	return currency != nullptr ? currency->code.c_str() : "XGS";
 }
 
-double EconomySim::demo_price_anchor(const DemoCity& city, int product) const {
-	if (product < 0 || product >= demo_products_) {
-		return 0.0;
+double EconomySim::demo_competitiveness(const std::string& nation) const {
+	// Fator de competitividade aplicado à âncora (F5, opção c). Com a taxa
+	// FIXA (peg) o fator é 1: o valor interno não muda. Com regime float, a
+	// taxa pode desviar ±10% da referência; o fator `taxa ÷ taxa-base`
+	// reproduz o efeito de preço rígido na moeda local (desvalorização barateia
+	// a oferta externa do país sem reescrever o preço interno), documentado em
+	// GAME_STATE §15/D-027.
+	const DemoCurrency* currency = demo_currency_for(nation);
+	if (currency == nullptr || !std::isfinite(currency->rate)
+			|| !std::isfinite(currency->base_rate)
+			|| currency->rate <= 0.0 || currency->base_rate <= 0.0) {
+		return 1.0;
 	}
-	return city.markets[product].price * demo_fx_rate(city.nation);
-}
-
-double EconomySim::demo_local_base_price(const std::string& nation,
-		int product) const {
-	const double rate = demo_fx_rate(nation);
-	return demo_base_price(product) / std::max(1e-9, rate);
+	if (!currency->floating) {
+		return 1.0;
+	}
+	return std::clamp(currency->rate / currency->base_rate,
+		kDemoFxBandLow, kDemoFxBandHigh);
 }
 
 void EconomySim::demo_rebuild_currency_indexes() {
@@ -1357,7 +1364,7 @@ Array EconomySim::demo_get_currencies() const {
 }
 
 void EconomySim::demo_set_currency_rate(const String& code, double rate,
-		bool floating) {
+		bool floating, double base_rate) {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	const auto found = demo_currency_by_code_.find(std::string(code.utf8().get_data()));
 	if (found == demo_currency_by_code_.end() || !std::isfinite(rate) || rate <= 0.0) {
@@ -1365,7 +1372,10 @@ void EconomySim::demo_set_currency_rate(const String& code, double rate,
 	}
 	DemoCurrency& currency = demo_currencies_[static_cast<std::size_t>(found->second)];
 	currency.rate = rate;
-	currency.base_rate = rate;
+	// `base_rate` fixa a referência da banda e da competitividade float. Sem
+	// ele, a taxa informada vira a própria referência (comportamento anterior).
+	currency.base_rate = (std::isfinite(base_rate) && base_rate > 0.0)
+		? base_rate : rate;
 	currency.floating = floating;
 	demo_status_invalidate();
 }
@@ -1411,15 +1421,9 @@ void EconomySim::demo_tick_fx() {
 			currency.base_rate * kDemoFxBandHigh);
 	}
 
-	// A banda de preço é relativa ao preço-base LOCAL (âncora ÷ taxa). NÃO se
-	// reescalam os preços locais a cada passo cambial: isso reescreveria
-	// 834 × 114 preços todo dia e derrubava o cache do status (status p95
-	// 19,9 → 49,7 ms no release, `docs/economy/perf/f5_release_run1.txt`). Em
-	// vez disso, a fase de clamp do dia seguinte reancora só os preços que
-	// saíram da banda (as bordas) e o invariante admite kDemoFxBandTolerance
-	// de folga para o passo do dia. O valor na âncora dos preços domésticos
-	// acompanha a taxa — é o efeito cambial pretendido (desvalorização barateia
-	// a produção nacional em âncora).
+	// O preço interno está na âncora: o passo cambial NÃO reescala preços. Só
+	// a exibição (`price_local = preço ÷ taxa`) e a competitividade das
+	// ofertas float (taxa ÷ taxa-base) leem a taxa corrente.
 }
 
 void EconomySim::demo_set_currencies(const Variant& currencies) {
@@ -1437,9 +1441,15 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 		if (entries.get_type() == Variant::ARRAY) {
 			list = entries;
 		}
-		const String regime = String(data.get("regime", "peg"));
-		if (!regime.is_empty()) {
-			default_regime = std::string(regime.utf8().get_data());
+		// `regime: null` no dado (currencies.json não tem fonte de regime) NÃO
+		// é flutuação: só o valor explícito "float" ativa o drift e o fator de
+		// competitividade. Qualquer outro valor mantém a taxa FIXA.
+		const Variant regime_var = data.get("regime", Variant());
+		if (regime_var.get_type() == Variant::STRING) {
+			const String regime = regime_var;
+			if (!regime.is_empty()) {
+				default_regime = std::string(regime.utf8().get_data());
+			}
 		}
 	} else if (currencies.get_type() == Variant::ARRAY) {
 		list = currencies;
@@ -1474,14 +1484,6 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 		fallback_rate = known_rates[known_rates.size() / 2];
 	}
 
-	// Guarda a taxa antiga por código para reescalar preços locais quando o
-	// mundo já existe (chamada depois de initialize_demo_world).
-	std::unordered_map<std::string, double> previous_rate;
-	previous_rate.reserve(demo_currencies_.size() * 2);
-	for (const DemoCurrency& currency : demo_currencies_) {
-		previous_rate[currency.code] = currency.rate;
-	}
-
 	std::vector<DemoCurrency> next;
 	next.reserve(static_cast<std::size_t>(list.size()));
 	for (int index = 0; index < list.size(); ++index) {
@@ -1494,7 +1496,7 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 		currency.code = std::string(code.utf8().get_data());
 		currency.source = std::string(String(entry.get("source", "default")).utf8().get_data());
 		const String regime = String(entry.get("regime", String(default_regime.c_str())));
-		currency.floating = regime != "peg";
+		currency.floating = regime == "float";
 		bool valid = false;
 		if (entry.has("rate_per_anchor")) {
 			const Variant raw = entry.get("rate_per_anchor", Variant());
@@ -1530,26 +1532,9 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 	demo_currencies_ = std::move(next);
 	demo_rebuild_currency_indexes();
 
-	// Mundo já inicializado: reescala cada preço local pela razão das taxas
-	// (preserva o valor na âncora). A primeira carga antes de initialize é o
-	// caminho normal do autoload.
+	// O preço interno está na âncora: carregar moedas NÃO reescala preços. A
+	// taxa só entra na exibição local e na competitividade float.
 	if (demo_active_ && !demo_cities_.empty()) {
-		for (DemoCity& city : demo_cities_) {
-			double old_rate = 1.0;
-			const auto found_prev = previous_rate.find(
-				demo_currency_code(city.nation));
-			if (found_prev != previous_rate.end() && found_prev->second > 0.0) {
-				old_rate = found_prev->second;
-			}
-			const double new_rate = std::max(1e-9, demo_fx_rate(city.nation));
-			const double scale = old_rate / new_rate;
-			if (std::abs(scale - 1.0) > 1e-12) {
-				for (int product = 0; product < demo_products_; ++product) {
-					city.markets[product].price *= scale;
-					city.import_price[product] *= scale;
-				}
-			}
-		}
 		++demo_status_static_version_;
 		demo_status_invalidate();
 	}
@@ -1619,7 +1604,7 @@ void EconomySim::demo_set_goods(const Array& goods) {
 	if (demo_active_ && product_count > previous_products) {
 		for (DemoCity& city : demo_cities_) {
 			for (int product = previous_products; product < product_count; ++product) {
-				city.markets[product].price = demo_local_base_price(city.nation, product);
+				city.markets[product].price = demo_base_price(product);
 			}
 		}
 		++demo_status_static_version_;
@@ -1683,9 +1668,9 @@ void EconomySim::initialize_demo() {
 	agria.pop.population = agria.population;
 	agria.pop.savings = 50000.0;
 	agria.suitability[0] = kDemoReferenceWheatSuitability;
-	agria.markets[0] = {100.0, demo_local_base_price(agria.nation, 0), 0.0, 0.0};
+	agria.markets[0] = {100.0, demo_base_price(0), 0.0, 0.0};
 	for (int product = 1; product < demo_products_; ++product) {
-		agria.markets[product].price = demo_local_base_price(agria.nation, product);
+		agria.markets[product].price = demo_base_price(product);
 	}
 	demo_cities_.push_back(agria);
 
@@ -1704,9 +1689,9 @@ void EconomySim::initialize_demo() {
 	portus.pop.population = portus.population;
 	portus.pop.savings = 100000.0;
 	portus.suitability[0] = 0.625;
-	portus.markets[0] = {0.0, demo_local_base_price(portus.nation, 0), 0.0, 0.0};
+	portus.markets[0] = {0.0, demo_base_price(0), 0.0, 0.0};
 	for (int product = 1; product < demo_products_; ++product) {
-		portus.markets[product].price = demo_local_base_price(portus.nation, product);
+		portus.markets[product].price = demo_base_price(product);
 	}
 	demo_cities_.push_back(portus);
 
@@ -1822,7 +1807,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		// o dado real em tempo de execução.
 		city.suitability[0] = 1.0;
 		for (int product = 0; product < demo_products_; ++product) {
-			city.markets[product] = {0.0, demo_local_base_price(city.nation, product),
+			city.markets[product] = {0.0, demo_base_price(product),
 				0.0, 0.0};
 		}
 		demo_cities_.push_back(std::move(city));
@@ -2020,22 +2005,20 @@ std::vector<std::string> EconomySim::demo_check_invariants(double money_before) 
 		check_nonneg("government", city.government_budget);
 		check_nonneg("savings", city.pop.savings);
 
-		// Taxa da moeda uma vez por cidade: o preço-base local é `base / taxa`
-		// (834 × 114 consultas de câmbio custavam ~1,2 ms/dia só aqui).
-		const double city_rate = std::max(1e-9, demo_fx_rate(city.nation));
+		// Preço na âncora: o câmbio não move mais o preço interno (só a
+		// competitividade das ofertas float e a exibição local), então a banda
+		// pode ser comparada sem folga.
 		for (int product = 0; product < demo_products_; ++product) {
 			const DemoMarket& market = city.markets[product];
-			const double base = demo_base_price(product) / city_rate;
+			const double base = demo_base_price(product);
 			const double floor_price = base * 0.5;
 			const double ceiling = base * 3.0;
-			// A folga é relativa à BORDA (teto/piso), não ao preço-base: o passo
-			// cambial do dia é 0,05% e o preço pode ficar preso na borda de ontem.
 			if (!std::isfinite(market.price)
-					|| market.price < floor_price * (1.0 - kDemoFxBandTolerance)
-					|| market.price > ceiling * (1.0 + kDemoFxBandTolerance)) {
+					|| market.price < floor_price
+					|| market.price > ceiling) {
 				violations.push_back("preço fora da banda em " + city.id + " "
 					+ demo_product_name(product) + ": " + std::to_string(market.price)
-					+ " (base local " + std::to_string(base) + ", moeda "
+					+ " (base âncora " + std::to_string(base) + ", moeda "
 					+ demo_currency_code(city.nation) + " taxa "
 					+ std::to_string(demo_fx_rate(city.nation)) + ")");
 			}
@@ -2236,7 +2219,7 @@ void EconomySim::demo_trade_food() {
 				continue;
 			}
 			const double price = demo_cities_[si].markets[product].price
-				* demo_fx_rate(demo_cities_[si].nation);
+				* demo_competitiveness(demo_cities_[si].nation);
 			const double sellable_tons = std::min(
 				demo_cities_[si].markets[product].stock, sellable_ge[si] / factor);
 			if (sellable_tons > 1e-9 && price > 0.0) {
@@ -2251,9 +2234,9 @@ void EconomySim::demo_trade_food() {
 		// preço equivale a ordenar pelo custo por caloria (sem frete).
 		std::stable_sort(list.begin(), list.end(), [this, product](int l, int r) {
 			return demo_cities_[static_cast<std::size_t>(l)].markets[product].price
-				* demo_fx_rate(demo_cities_[static_cast<std::size_t>(l)].nation)
+				* demo_competitiveness(demo_cities_[static_cast<std::size_t>(l)].nation)
 				< demo_cities_[static_cast<std::size_t>(r)].markets[product].price
-				* demo_fx_rate(demo_cities_[static_cast<std::size_t>(r)].nation);
+				* demo_competitiveness(demo_cities_[static_cast<std::size_t>(r)].nation);
 		});
 	}
 
@@ -2298,12 +2281,12 @@ void EconomySim::demo_trade_food() {
 			int seller_index;
 			int product;
 			double factor;
-			double price;          // preço local do vendedor
-			double origin_anchor;  // preço local × câmbio do vendedor
+			double price;          // preço na âncora XGS (mercado do vendedor)
+			double origin_anchor;  // preço × competitividade float do vendedor
 			double unit_freight;   // frete em âncora
 			double unit_tariff;    // tarifa em âncora
-			double delivered;      // preço entregue na moeda do comprador
-			double unit_cost_per_ge;
+			double delivered;      // preço entregue na moeda do comprador (exibição)
+			double unit_cost_per_ge;  // âncora por tonelada-equivalente de grão
 		};
 
 		// Candidatos do comprador: K vendedores mais próximos + mercado externo.
@@ -2476,17 +2459,21 @@ void EconomySim::demo_trade_food() {
 				if (price <= 0.0) {
 					continue;
 				}
-				const double seller_fx = demo_fx_rate(seller.nation);
-				const double origin_anchor = price * seller_fx;
+				const double origin_anchor =
+					price * demo_competitiveness(seller.nation);
 				const double tariff_rate = demo_tariff_rate(
 					buyer.city->nation, seller.nation, product);
 				const double unit_tariff =
 					(origin_anchor + unit_freight) * tariff_rate;
+				// Valor entregue em âncora: é ele que ordena a oferta (sem
+				// round-trip de câmbio). A moeda do comprador só divide para
+				// exibição — é fator comum, não muda a ordem.
+				const double delivered_anchor =
+					origin_anchor + unit_freight + unit_tariff;
 				const double buyer_fx = demo_fx_rate(buyer.city->nation);
 				const double delivered =
-					(origin_anchor + unit_freight + unit_tariff)
-					/ std::max(1e-9, buyer_fx);
-				const double unit_cost_per_ge = delivered / factor;
+					delivered_anchor / std::max(1e-9, buyer_fx);
+				const double unit_cost_per_ge = delivered_anchor / factor;
 				offers.push_back({si, product, factor, price, origin_anchor,
 					unit_freight, unit_tariff, delivered, unit_cost_per_ge});
 			}
@@ -2504,7 +2491,6 @@ void EconomySim::demo_trade_food() {
 			DemoCity* seller = &demo_cities_[si];
 			const int product = offer.product;
 			const double factor = offer.factor;
-			const double price = offer.price;
 			const double origin_anchor = offer.origin_anchor;
 			const double unit_freight = offer.unit_freight;
 			const double unit_tariff = offer.unit_tariff;
@@ -2639,7 +2625,8 @@ void EconomySim::demo_trade_food() {
 				? MarketScope::Regional : MarketScope::International;
 			order.product = product;
 			order.amount = amount_tons;
-			order.origin_price = price;
+			order.origin_price = origin_anchor
+				/ std::max(1e-9, demo_fx_rate(seller->nation));
 			order.origin_price_anchor = origin_anchor;
 			order.tariff = tariff_paid;
 			order.delivered_price = offer.delivered;
@@ -2647,16 +2634,14 @@ void EconomySim::demo_trade_food() {
 			order.seller_fx_rate = demo_fx_rate(seller->nation);
 			order.buyer_currency = demo_currency_code(buyer.city->nation);
 			order.seller_currency = demo_currency_code(seller->nation);
-			// Cotação que forma o preço local (§2.7): valor CIF do BEM (origem
-			// convertida + tarifa), na moeda do comprador. O frete fica de fora
-			// de propósito — ele é um serviço doméstico do comprador (pago ao
-			// `service_cash` dele, contado à parte em `import_value`), não valor
-			// de mercado do bem. Incluí-lo levava qualquer importador remoto ao
-			// teto de 3× o preço-base (frete de comida = 0,10/t·km, ~7× o preço
-			// do trigo a 3.000 km) e triplicava o custo alimentar em EGY/MRT/SDN
-			// (365 d, `economy_world_test`).
-			buyer.city->import_price[product] = (origin_anchor + unit_tariff)
-				/ std::max(1e-9, demo_fx_rate(buyer.city->nation));
+			// Cotação que forma o preço interno na ÂNCORA: valor CIF do BEM
+			// (origem efetiva + tarifa), sem o frete-serviço. O frete fica de
+			// fora de propósito — ele é um serviço doméstico do comprador (pago
+			// ao `service_cash` dele, contado à parte em `import_value`), não
+			// valor de mercado do bem. Incluí-lo levava qualquer importador
+			// remoto ao teto de 3× o preço-base e triplicava o custo alimentar
+			// em EGY/MRT/SDN (365 d, `economy_world_test`).
+			buyer.city->import_price[product] = origin_anchor + unit_tariff;
 
 			double total_transit = 0.0;
 			double total_freight_cost = 0.0;
@@ -2901,7 +2886,7 @@ void EconomySim::demo_trade_goods() {
 			const double sellable = stock - own_need;
 			if (sellable > 1e-9 && market.price > 0.0) {
 				sellers.push_back({static_cast<int>(ci), sellable,
-					market.price * demo_fx_rate(demo_cities_[ci].nation)});
+					market.price * demo_competitiveness(demo_cities_[ci].nation)});
 			}
 		}
 		if (buyers.empty() || sellers.empty()) {
@@ -2989,12 +2974,11 @@ void EconomySim::demo_trade_goods() {
 				candidates.end());
 			struct Offer {
 				int seller_index;
-				double unit_cost;      // âncora: origem + frete + tarifa
+				double unit_cost;      // âncora: origem + frete + tarifa (ordena)
 				double unit_freight;
-				double origin_price;   // moeda local do vendedor
-				double origin_anchor;
+				double origin_anchor;  // origem efetiva na âncora
 				double unit_tariff;
-				double delivered;      // moeda do comprador
+				double delivered;      // moeda do comprador (exibição)
 			};
 			std::vector<Offer> offers;
 			offers.reserve(candidates.size());
@@ -3026,19 +3010,19 @@ void EconomySim::demo_trade_goods() {
 						+ demo_leg_unit_freight(TransportMode::Truck,
 							distance_km(bp.center, buyer_city.center));
 				}
-				const double origin_price = seller.markets[product].price;
-				const double origin_anchor =
-					origin_price * demo_fx_rate(seller.nation);
+				const double origin_anchor = seller.markets[product].price
+					* demo_competitiveness(seller.nation);
 				const double tariff_rate = demo_tariff_rate(
 					buyer_city.nation, seller.nation, product);
 				const double unit_tariff =
 					(origin_anchor + unit_freight) * tariff_rate;
+				const double delivered_anchor =
+					origin_anchor + unit_freight + unit_tariff;
 				const double buyer_fx = demo_fx_rate(buyer_city.nation);
 				const double delivered =
-					(origin_anchor + unit_freight + unit_tariff)
-					/ std::max(1e-9, buyer_fx);
-				offers.push_back({si, origin_anchor + unit_freight + unit_tariff,
-					unit_freight, origin_price, origin_anchor, unit_tariff,
+					delivered_anchor / std::max(1e-9, buyer_fx);
+				offers.push_back({si, delivered_anchor,
+					unit_freight, origin_anchor, unit_tariff,
 					delivered});
 			}
 			std::stable_sort(offers.begin(), offers.end(),
@@ -3073,7 +3057,6 @@ void EconomySim::demo_trade_goods() {
 				// Pagamento: firma doméstica (comprador) -> firma vendedora +
 				// frete ao serviço do comprador. Governo cobre o que a firma não
 				// puder (insumo essencial), conservando o dinheiro.
-				const double unit_price = offer.origin_price;
 				const double unit_cost = offer.unit_cost;
 				const double payable = std::max(0.0, buyer_city.firm_cash)
 					+ std::max(0.0, buyer_city.government_budget);
@@ -3158,7 +3141,8 @@ void EconomySim::demo_trade_goods() {
 					? MarketScope::Regional : MarketScope::International;
 				order.product = product;
 				order.amount = amount;
-				order.origin_price = unit_price;
+				order.origin_price = offer.origin_anchor
+					/ std::max(1e-9, demo_fx_rate(seller.nation));
 				order.origin_price_anchor = offer.origin_anchor;
 				order.tariff = tariff_paid;
 				order.delivered_price = offer.delivered;
@@ -3166,10 +3150,11 @@ void EconomySim::demo_trade_goods() {
 				order.seller_fx_rate = demo_fx_rate(seller.nation);
 				order.buyer_currency = demo_currency_code(buyer_city.nation);
 				order.seller_currency = demo_currency_code(seller.nation);
-				// F5: a cotação que forma o preço local é o CIF do bem (origem +
-				// tarifa), sem o frete-serviço — mesma regra do comércio de comida.
-				buyer_city.import_price[product] = (offer.origin_anchor
-					+ offer.unit_tariff) / std::max(1e-9, demo_fx_rate(buyer_city.nation));
+				// F5: a cotação que forma o preço interno é o CIF do bem na
+				// âncora (origem efetiva + tarifa), sem o frete-serviço — mesma
+				// regra do comércio de comida.
+				buyer_city.import_price[product] = offer.origin_anchor
+					+ offer.unit_tariff;
 				double total_transit = 0.0;
 				double total_freight_cost = 0.0;
 				double port_delay_days = 0.0;
@@ -3752,10 +3737,10 @@ Dictionary EconomySim::demo_fleet_buy(const String& nation, const String& produc
 	for (const int index : cities_found->second) {
 		const DemoCity& city = demo_cities_[static_cast<std::size_t>(index)];
 		const DemoMarket& market = city.markets[product_index];
-		if (market.stock > 1e-9 && market.price > 0.0) {
-			sellers.push_back({index, market.price * demo_fx_rate(city.nation),
-				market.stock});
-		}
+			if (market.stock > 1e-9 && market.price > 0.0) {
+				sellers.push_back({index, market.price
+					* demo_competitiveness(city.nation), market.stock});
+			}
 	}
 	std::stable_sort(sellers.begin(), sellers.end(),
 		[](const Seller& left, const Seller& right) {
@@ -3839,9 +3824,9 @@ void EconomySim::demo_set_market_price(const String& city_id,
 	if (product_index < 0) {
 		return;
 	}
-	const double local_base = demo_local_base_price(city->nation, product_index);
+	const double base = demo_base_price(product_index);
 	city->markets[product_index].price = std::clamp(
-		std::max(1e-6, price), local_base * 0.1, local_base * 10.0);
+		std::max(1e-6, price), base * 0.1, base * 10.0);
 	demo_status_invalidate();
 }
 
@@ -4433,7 +4418,6 @@ void EconomySim::demo_tick_core() {
 
 		const std::size_t city_slot =
 			static_cast<std::size_t>(city - demo_cities_.data());
-		const double city_fx = demo_fx_rate(city->nation);
 		const double city_capacity =
 			capacity_by_city_product[city_slot][building.output_product];
 		const double capacity_share = city_capacity > 0.0
@@ -4505,8 +4489,8 @@ void EconomySim::demo_tick_core() {
 				input_market.stock = std::max(0.0, input_market.stock - used);
 				input_market.demand += used;
 				input_market.sold += used;
-				city->revenue_by_product[input] += used * input_market.price * city_fx;
-				building.input_value += used * input_market.price * city_fx;
+				city->revenue_by_product[input] += used * input_market.price;
+				building.input_value += used * input_market.price;
 				input_used += used;
 			}
 			output = batch * scale * recipe.yield;
@@ -4536,8 +4520,8 @@ void EconomySim::demo_tick_core() {
 			// construções (quando houver cadeia de refino), senão o valor
 			// adicionado do fornecedor ficaria negativo.
 			city->revenue_by_product[building.input_product] += input_used
-				* input_market.price * city_fx;
-			building.input_value = input_used * input_market.price * city_fx;
+				* input_market.price;
+			building.input_value = input_used * input_market.price;
 		} else if (deposit.tracked) {
 			// Esgotamento: a mina só extrai o que resta da reserva da jazida
 			// (compartilhada pelas minas da cidade) e a debita na mesma medida.
@@ -4603,8 +4587,7 @@ void EconomySim::demo_tick_core() {
 			if (sold <= 0.0) {
 				continue;
 			}
-			const double revenue = sold * market.price
-				* demo_fx_rate(city.nation);
+			const double revenue = sold * market.price;
 			market.stock -= sold;
 			market.demand += sold;
 			market.sold += sold;
@@ -4623,7 +4606,6 @@ void EconomySim::demo_tick_core() {
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
 	for (DemoCity& city : demo_cities_) {
 		DemoPop& pop = city.pop;
-		const double city_fx = demo_fx_rate(city.nation);
 		pop.capital_income = city.capital_income_next;
 		city.capital_income_next = 0.0;
 		pop.taxes = (pop.wage_income + pop.capital_income) * kDemoTaxRate;
@@ -4667,8 +4649,7 @@ void EconomySim::demo_tick_core() {
 			if (factor <= 0.0) {
 				continue;
 			}
-			const double per_calorie = city.markets[product].price
-				* city_fx / factor;
+			const double per_calorie = city.markets[product].price / factor;
 			if (per_calorie > 0.0
 					&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
 				cheapest_food = per_calorie;
@@ -4708,7 +4689,7 @@ void EconomySim::demo_tick_core() {
 				continue;
 			}
 			DemoMarket& market = city.markets[product];
-			const double price = market.price * city_fx;
+			const double price = market.price;
 			if (price <= 0.0) {
 				continue;
 			}
@@ -4876,7 +4857,6 @@ void EconomySim::demo_tick_core() {
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
 		DemoCity& city = demo_cities_[city_index];
-		const double city_fx = demo_fx_rate(city.nation);
 		const std::vector<int>& local_buildings =
 			demo_buildings_by_city_[city_index];
 		std::array<double, kDemoMaxProducts> capacity_by_output{};
@@ -5004,8 +4984,7 @@ void EconomySim::demo_tick_core() {
 			if (factor <= 0.0) {
 				continue;
 			}
-			const double per_calorie = city.markets[product].price
-				* city_fx / factor;
+			const double per_calorie = city.markets[product].price / factor;
 			if (per_calorie > 0.0
 					&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
 				cheapest_food = per_calorie;
@@ -5051,17 +5030,14 @@ void EconomySim::demo_tick_core() {
 				has_producer[building.output_product] = true;
 			}
 		}
-		// Taxa da moeda e base local uma vez por cidade (834 × 114 consultas de
-		// câmbio custavam ~1 ms/dia nesta fase).
-		const double city_rate = std::max(1e-9, demo_fx_rate(city.nation));
 		for (int product = 0; product < demo_products_; ++product) {
-			const double local_base = demo_base_price(product) / city_rate;
+			const double base = demo_base_price(product);
 			DemoMarket& market = city.markets[product];
 			if (!has_producer[product]) {
 				// §2.7: cidade sem produtor tem o preço disciplinado pelo CIF da
-				// importação (na moeda local), com a mesma suavização e o mesmo
+				// importação (na âncora), com a mesma suavização e o mesmo
 				// limite diário dos produtores. Sem importação registrada, o preço
-				// local permanece (não se inventa cotação).
+				// permanece (não se inventa cotação).
 				//
 				// A paridade age como TETO de concorrência: sem produtor local, o
 				// consumidor pode importar, então o preço não fica ACIMA do CIF —
@@ -5074,18 +5050,17 @@ void EconomySim::demo_tick_core() {
 					continue;
 				}
 				const double target = std::clamp(city.import_price[product],
-					local_base * 0.5, local_base * 3.0);
+					base * 0.5, base * 3.0);
 				const double capped = std::min(market.price, target);
-				const double max_step = local_base * 0.05;
+				const double max_step = base * 0.05;
 				double next_import = market.price
 					+ (capped - market.price) * kDemoPriceSmoothing;
 				next_import = std::clamp(next_import,
 					market.price - max_step, market.price + max_step);
 				market.price = std::clamp(next_import,
-					local_base * 0.5, local_base * 3.0);
+					base * 0.5, base * 3.0);
 				continue;
 			}
-			const double base = local_base;
 			// Pressão usa a demanda desejada: compras não atendidas por falta
 			// de estoque continuam pressionando o preço.
 			const double scarcity = market.desired
@@ -5104,14 +5079,10 @@ void EconomySim::demo_tick_core() {
 			}
 			const double unit_labor_opex = kind_capacity > 0.0
 				? kind_labor_opex / kind_capacity : 0.0;
-			// Salário/opex são pagos em âncora; o piso de preço é comparado com
-			// o preço LOCAL do mercado, então o custo de trabalho entra na
-			// moeda local (F5).
-			const double unit_labor_opex_local = unit_labor_opex / city_rate;
 
 			// Piso de custo: insumos da receita + mão de obra/opex por unidade
-			// de capacidade. Receitas alternativas usam o custo dos insumos da
-			// receita escolhida (a de menor custo corrente na cidade).
+			// de capacidade. Preços, salário e opex estão todos na âncora (F5),
+			// então não há conversão de moeda aqui.
 			double cost_floor = base;
 			for (const int bi : local_buildings) {
 				const DemoBuilding& building =
@@ -5128,12 +5099,12 @@ void EconomySim::demo_tick_core() {
 						input_cost += recipe.input_qty[slot] / recipe.yield
 							* city.markets[recipe.inputs[slot]].price;
 					}
-					cost_floor = input_cost + unit_labor_opex_local;
+					cost_floor = input_cost + unit_labor_opex;
 					break;
 				}
 				if (building.input_product >= 0) {
 					cost_floor = city.markets[building.input_product].price
-						* building.input_per_output + unit_labor_opex_local;
+						* building.input_per_output + unit_labor_opex;
 					break;
 				}
 			}
@@ -5164,12 +5135,9 @@ void EconomySim::demo_tick_core() {
 	// de preço (importação, custo e escassez). O piso e o teto continuam
 	// valendo mesmo que o preço de abertura esteja fora da faixa.
 	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
-		// Taxa uma vez por cidade (a base local é `base / taxa`).
-		const double city_rate = std::max(1e-9,
-			demo_fx_rate(demo_cities_[city_index].nation));
 		for (int product = 0; product < demo_products_; ++product) {
 			DemoMarket& market = demo_cities_[city_index].markets[product];
-			const double base = demo_base_price(product) / city_rate;
+			const double base = demo_base_price(product);
 			const double step = base * 0.05;
 			const double floor = base * 0.5;
 			const double ceiling = base * 3.0;
@@ -5296,6 +5264,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		population("population"),
 		ports("ports"),
 		price("price"),
+		price_local("price_local"),
 		produced_today("produced_today"),
 		produced_total("produced_total"),
 		product("product"),
@@ -5495,7 +5464,6 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 
 	// Padrão de vida: quantas cestas alimentares diárias a renda disponível
 	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
-	const double show_fx = demo_fx_rate(city.nation);
 	double cheapest_price = 0.0;
 	for (int food = 0; food < static_cast<int>(demo_food_products_.size()); ++food) {
 		const int product = demo_food_product(food);
@@ -5503,8 +5471,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		if (factor <= 0.0) {
 			continue;
 		}
-		const double per_calorie = city.markets[product].price
-			* show_fx / factor;
+		const double per_calorie = city.markets[product].price / factor;
 		if (per_calorie > 0.0
 				&& (cheapest_price <= 0.0 || per_calorie < cheapest_price)) {
 			cheapest_price = per_calorie;
@@ -5718,19 +5685,25 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.market_entry.resize(static_cast<std::size_t>(demo_products_));
 		slot.market_written.resize(static_cast<std::size_t>(demo_products_));
 		slot.market_written_filled.assign(static_cast<std::size_t>(demo_products_), 0);
+		slot.market_local_written.assign(static_cast<std::size_t>(demo_products_), 0.0);
 		slot.io_written.assign(static_cast<std::size_t>(4 * demo_products_), 0.0);
 		slot.io_filled.assign(4, 0);
 	}
+	// Preço local é EXIBIÇÃO: âncora ÷ taxa da moeda da nação (F5, opção c).
+	// Não volta para a simulação; o valor na âncora é a fonte de verdade.
+	const double local_rate = std::max(1e-9, demo_fx_rate(city.nation));
 	bool markets_dirty = false;
 	for (int product = 0; product < demo_products_; ++product) {
 		const DemoMarket& source = city.markets[product];
 		DemoMarket& previous = slot.market_written[static_cast<std::size_t>(product)];
+		const double local = source.price / local_rate;
 		if (slot.market_written_filled[static_cast<std::size_t>(product)] == 0) {
 			// Primeira gravação desta cidade: cria as chaves do mercado.
 			Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
 			market[k.product] = product;
 			market[k.stock] = source.stock;
 			market[k.price] = source.price;
+			market[k.price_local] = local;
 			market[k.demand] = source.demand;
 			market[k.supply] = source.supply;
 			market[k.desired] = source.desired;
@@ -5738,6 +5711,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			market[k.shortage] = source.shortage;
 			market[k.surplus] = source.surplus;
 			previous = source;
+			slot.market_local_written[static_cast<std::size_t>(product)] = local;
 			slot.market_written_filled[static_cast<std::size_t>(product)] = 1;
 			slot.markets[product] = market;
 			markets_dirty = true;
@@ -5748,11 +5722,17 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		// são contíguos (ver DemoMarket): um memcmp de 64 bytes por produto.
 		// `sold_prev` é interno e muda TODO dia (`sold_prev = sold` no reset);
 		// por isso fica no fim do struct, fora do bloco comparado.
-		if (std::memcmp(&previous, &source, sizeof(double) * 8) == 0) {
+		const bool local_changed = slot.market_local_written[
+			static_cast<std::size_t>(product)] != local;
+		if (!local_changed && std::memcmp(&previous, &source, sizeof(double) * 8) == 0) {
 			continue;
 		}
 		markets_dirty = true;
 		Dictionary& market = slot.market_entry[static_cast<std::size_t>(product)];
+		if (local_changed) {
+			market[k.price_local] = local;
+			slot.market_local_written[static_cast<std::size_t>(product)] = local;
+		}
 		if (previous.stock != source.stock) {
 			market[k.stock] = source.stock;
 			previous.stock = source.stock;
@@ -6281,7 +6261,7 @@ void EconomySim::demo_price_shock(const String& product, double multiplier) {
 		return;
 	}
 	for (DemoCity& city : demo_cities_) {
-		const double base = demo_local_base_price(city.nation, index);
+		const double base = demo_base_price(index);
 		city.markets[index].price = std::clamp(
 			city.markets[index].price * multiplier, base * 0.1, base * 10.0);
 	}
@@ -6352,7 +6332,7 @@ int EconomySim::demo_pick_recipe(const DemoCity& city, int output_product) const
 				break;
 			}
 			const double unit_price = market.price > 0.0
-				? market.price : demo_local_base_price(city.nation, input);
+				? market.price : demo_base_price(input);
 			cost += qty * unit_price / recipe.yield;
 		}
 		if (!available) {
@@ -6853,7 +6833,6 @@ double EconomySim::demo_consume_category(DemoCity& city,
 	}
 	double remaining = want_ge;
 	double consumed_ge = 0.0;
-	const double city_fx = demo_fx_rate(city.nation);
 	for (std::size_t slot = 0;
 			slot < category.substitutes.size() && remaining > 1e-12; ++slot) {
 		const int product = category.substitutes[slot];
@@ -6865,7 +6844,7 @@ double EconomySim::demo_consume_category(DemoCity& city,
 			continue;
 		}
 		DemoMarket& market = city.markets[product];
-		const double price = market.price * city_fx;
+		const double price = market.price;
 		if (price <= 0.0) {
 			continue;
 		}
@@ -6917,7 +6896,6 @@ void EconomySim::demo_consume_government(DemoCity& city) {
 	// fração do valor da cesta alimentar diária da cidade. Sem o teto, o
 	// computer (preço alto) drenava o orçamento que importa comida em nações
 	// sem terra (EGY 1,000 → 0,708 em 365 d).
-	const double city_fx = demo_fx_rate(city.nation);
 	double cheapest_food = 0.0;
 	for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
 		const int product = demo_food_product(slot);
@@ -6925,8 +6903,7 @@ void EconomySim::demo_consume_government(DemoCity& city) {
 		if (factor <= 0.0) {
 			continue;
 		}
-		const double per_calorie = city.markets[product].price
-			* city_fx / factor;
+		const double per_calorie = city.markets[product].price / factor;
 		if (per_calorie > 0.0
 				&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
 			cheapest_food = per_calorie;
@@ -6956,7 +6933,7 @@ void EconomySim::demo_consume_government(DemoCity& city) {
 			continue;
 		}
 		DemoMarket& market = city.markets[product];
-		const double price = market.price * city_fx;
+		const double price = market.price;
 		if (price <= 0.0) {
 			continue;
 		}
@@ -7745,6 +7722,11 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		city.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		city.name = std::string(String(entry.get("name", "")).utf8().get_data());
 		city.nation = std::string(String(entry.get("nation", "")).utf8().get_data());
+		// F5 v7: preço de mercado passou a ficar na ÂNCORA. Saves v6 e
+		// anteriores guardavam preço local; converte uma vez pela taxa da nação
+		// (as moedas foram carregadas antes das cidades).
+		const double save_fx = version >= 7
+			? 1.0 : std::max(1e-9, demo_fx_rate(city.nation));
 		city.home_nation = std::string(
 			String(entry.get("home_nation", String(city.nation.c_str()))).utf8().get_data());
 		city.landmass =
@@ -7809,10 +7791,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 				? double(export_value[product]) : 0.0;
 			city.external_demand[product] = product < external_demand.size()
 				? double(external_demand[product]) : 0.0;
-			// F5: cotação de importação (moeda local). Save anterior à F5 não
-			// tem o array: sem cotação até a primeira compra externa.
+			// F5: cotação de importação (na âncora desde o v7). Save anterior à
+			// F5 não tem o array: sem cotação até a primeira compra externa.
 			city.import_price[product] = product < import_price.size()
-				? safe_nonneg(double(import_price[product])) : 0.0;
+				? safe_nonneg(double(import_price[product])) * save_fx : 0.0;
 		}
 
 		Dictionary saved_deposits = entry.get("deposits", Dictionary());
@@ -7927,7 +7909,7 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		for (int product = 0; product < demo_products_ && product < markets.size(); ++product) {
 			Dictionary market = markets[product];
 			city.markets[product].stock = double(market.get("stock", 0.0));
-			city.markets[product].price = double(market.get("price", 1.0));
+			city.markets[product].price = double(market.get("price", 1.0)) * save_fx;
 			city.markets[product].demand = double(market.get("demand", 0.0));
 			city.markets[product].supply = double(market.get("supply", 0.0));
 			city.markets[product].desired = double(market.get("desired", 0.0));

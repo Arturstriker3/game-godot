@@ -42,18 +42,6 @@ const BASE_RISK := 0.15
 const FOOD_SLACK_FOR_CHAINS := 1.10
 const FOOD_SUPPLY_TARGET := 1.0
 
-## F5 — EMA diária (balanço alimentar do mundo/região/nação): 7 dias. O gate de
-## comida lê a média, não o valor do dia. A EMA das decisões por cidade (margem,
-## folga) foi medida e descartada: atrasava a primeira fazenda e encolhia a
-## expansão alimentar (EGY 0,979 → 0,740 em 60 d); a faixa morta cobre o ruído.
-const FOOD_EMA_ALPHA := 0.25
-## Fome (regra dura): cobertura alimentar média da nação abaixo disto bloqueia
-## investimento NÃO alimentar — comida antes de qualquer outro capital. O piso é
-## bem baixo de propósito: em déficit moderado a renda mineral É o que paga a
-## importação de comida (calibração F3/F4); só a fome severa (<50% da cesta)
-## justifica parar o capital não alimentar.
-const FAMINE_COVERAGE := 0.50
-
 const MIN_SUITABILITY_EXPORT := 0.30
 
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
@@ -81,23 +69,6 @@ var _sum_demand := PackedFloat64Array()
 ## sinal para expandir comida em regiões excedentes quando o mundo está curto.
 var _system_food_need := 0.0
 var _system_food_supply := 0.0
-## F5 — os mesmos balanços suavizados em EMA de 7 dias (dias, não visitas: o
-## `prepare_totals` roda 1× por dia no jogo e no teste de mundo). O gate
-## `system_food_short` lê a EMA, não o valor do dia: uma oscilação de 1 ulp não
-## abre/fecha a expansão de comida no mundo inteiro.
-var _system_food_need_ema := 0.0
-var _system_food_supply_ema := 0.0
-var _food_need_ema_by_region: Dictionary = {}
-var _food_supply_ema_by_region: Dictionary = {}
-## Cobertura alimentar média por nação (consumido/necessidade, EMA 7 d). Usada
-## pela regra dura de fome (nenhum investimento não alimentar em nação faminta).
-var _nation_coverage_ema: Dictionary = {}
-var _food_ema_day := -1
-## F5 — modo robusto por cidade: só quando a conversão de câmbio é INEXATA
-## (taxa não é 1 nem potência de 2). Com taxa 1 (mundo XGS) ou 0,5 exata, o
-## preço-âncora é bit-idêntico ao pré-F5 e a IA roda o caminho original, sem
-## faixa morta/EMA — preservando os resultados calibrados.
-var _robust := false
 ## Balanço por massa de terra (o comércio sem porto é terrestre): a IA expande
 ## comida na região curta, não só no agregado mundial. Sem isso a oferta nova
 ## nascia na Europa/Ásia e a fome continuava na África sem porto (NGA/DJI/LBY).
@@ -135,7 +106,7 @@ func prepare_totals(status: Dictionary) -> void:
 	totals_builds += 1
 	_totals_status = status
 	var cities: Array = status.get("cities", [])
-	_measure_food_balance(cities, int(status.get("day", _food_ema_day + 1)))
+	_measure_food_balance(cities)
 	var totals: Dictionary = status.get("market_totals", {})
 	if not totals.is_empty():
 		_sum_surplus = totals.get("surplus", PackedFloat64Array())
@@ -192,18 +163,11 @@ func _elapsed_ms(started_usec: int) -> float:
 
 ## Oferta × necessidade de comida no mundo (t-eq/dia), medida 1× por dia junto
 ## com os totais do sistema. Custa uma passada de 5 produtos por cidade.
-##
-## F5: publica o valor do dia E a EMA de 7 dias; os gates da IA leem a EMA.
-## `day` impede que chamadas repetidas no mesmo dia puxem a média de novo (o
-## teste de mundo e a ferramenta de IA podem chamar `prepare_totals` mais de
-## uma vez por dia).
-func _measure_food_balance(cities: Array, day: int) -> void:
+func _measure_food_balance(cities: Array) -> void:
 	var need := 0.0
 	var supply := 0.0
 	var region_need: Dictionary = {}
 	var region_supply: Dictionary = {}
-	var nation_consumed: Dictionary = {}
-	var nation_need: Dictionary = {}
 	for city in cities:
 		var city_need := Templates.food_need(city)
 		var city_supply := 0.0
@@ -219,99 +183,21 @@ func _measure_food_balance(cities: Array, day: int) -> void:
 		var region := String(city.get("landmass", ""))
 		region_need[region] = float(region_need.get(region, 0.0)) + city_need
 		region_supply[region] = float(region_supply.get(region, 0.0)) + city_supply
-		var nation := String(city.get("nation", ""))
-		var pop: Dictionary = city.get("pop", {})
-		nation_consumed[nation] = float(nation_consumed.get(nation, 0.0)) \
-			+ float(pop.get("consumed", 0.0))
-		nation_need[nation] = float(nation_need.get(nation, 0.0)) + city_need
 	_system_food_need = need
 	_system_food_supply = supply
 	_food_need_by_region = region_need
 	_food_supply_by_region = region_supply
-	if day == _food_ema_day:
-		return
-	var first := _food_ema_day < 0
-	_food_ema_day = day
-	_system_food_need_ema = _ema_or_first(_system_food_need_ema, need, FOOD_EMA_ALPHA, first)
-	_system_food_supply_ema = _ema_or_first(_system_food_supply_ema, supply, FOOD_EMA_ALPHA, first)
-	for region in region_need:
-		var region_first: bool = not _food_need_ema_by_region.has(region)
-		_food_need_ema_by_region[region] = _ema_or_first(
-			float(_food_need_ema_by_region.get(region, 0.0)),
-			float(region_need[region]), FOOD_EMA_ALPHA, region_first)
-		_food_supply_ema_by_region[region] = _ema_or_first(
-			float(_food_supply_ema_by_region.get(region, 0.0)),
-			float(region_supply.get(region, 0.0)), FOOD_EMA_ALPHA, region_first)
-	for nation in nation_need:
-		var nation_need_value := float(nation_need[nation])
-		if nation_need_value <= 0.0:
-			continue
-		var coverage := float(nation_consumed.get(nation, 0.0)) / nation_need_value
-		_nation_coverage_ema[nation] = _ema_or_first(
-			float(_nation_coverage_ema.get(nation, coverage)),
-			coverage, FOOD_EMA_ALPHA, not _nation_coverage_ema.has(nation))
-
-
-## EMA clássica (alpha fixo); na primeira amostra assume `value` (sem puxar
-## média de um zero artificial).
-static func _ema_or_first(previous: float, value: float, alpha: float,
-		first: bool) -> float:
-	if first:
-		return value
-	return previous + alpha * (value - previous)
 
 
 ## true enquanto a oferta de comida não cobre a necessidade com o buffer, no
 ## mundo ou na região informada (massa de terra). Região "" = mundo.
-##
-## F5: lê a EMA de 7 dias do balanço (não o valor do dia), com a faixa morta
-## relativa do limiar. A oferta do dia oscila com a chegada de fretes; a média
-## mantém a decisão "expandir comida no mundo" estável e imune a 1 ulp.
 func system_food_short(region: String = "") -> bool:
-	var need := _system_food_need_ema if _robust else _system_food_need
-	var supply := _system_food_supply_ema if _robust else _system_food_supply
-	var by_region := _food_need_ema_by_region if _robust else _food_need_by_region
-	if region != "" and by_region.has(region):
-		need = float(by_region[region])
-		var supply_by_region := _food_supply_ema_by_region if _robust \
-			else _food_supply_by_region
-		supply = float(supply_by_region.get(region, 0.0))
-	return need > 0.0 and _below(supply, need * FOOD_SUPPLY_TARGET)
-
-
-## true quando a cobertura alimentar média da nação (consumido/necessidade, EMA
-## 7 d) está em nível de fome. Regra dura: nesse estado a cidade não investe em
-## nada que não seja comida. Nações sem dado no status não são declaradas em
-## fome (ausência de dado não é fome).
-func nation_famine(nation: String) -> bool:
-	if not _nation_coverage_ema.has(nation):
-		return false
-	return _below(float(_nation_coverage_ema[nation]), FAMINE_COVERAGE)
-
-
-## F5 — a conversão é inexata quando a taxa não é 1 nem uma potência de 2. Com
-## 1.0 (XGS) ou 0.5 (teste `--fx=half`), `preço × taxa` devolve exatamente o
-## valor pré-F5 e não há o que amortecer.
-static func _inexact_fx(rate: float) -> bool:
-	return Templates.inexact_fx(rate)
-
-
-## Limiar com faixa morta só no modo robusto (câmbio inexato). No modo exato é a
-## comparação original, preservando os resultados calibrados do mundo XGS.
-## A faixa é calculada aqui (sem chamada estática a outro script) porque estes
-## gates rodam por cidade × template no laço quente da IA.
-func _above(value: float, threshold: float) -> bool:
-	if not _robust:
-		return value > threshold
-	return value > threshold + maxf(Templates.DECISION_FLOOR,
-		absf(threshold) * Templates.DECISION_DEADBAND)
-
-
-func _below(value: float, threshold: float) -> bool:
-	if not _robust:
-		return value < threshold
-	return value < threshold - maxf(Templates.DECISION_FLOOR,
-		absf(threshold) * Templates.DECISION_DEADBAND)
+	var need := _system_food_need
+	var supply := _system_food_supply
+	if region != "" and _food_need_by_region.has(region):
+		need = float(_food_need_by_region[region])
+		supply = float(_food_supply_by_region.get(region, 0.0))
+	return need > 0.0 and supply < need * FOOD_SUPPLY_TARGET
 
 
 ## Total do sistema para um produto e campo ("surplus", "sold", "demand").
@@ -354,13 +240,12 @@ func drain() -> Array:
 
 
 func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
-	_robust = _inexact_fx(float(city.get("fx_rate", 1.0)))
 	var city_id := String(city["id"])
 	var firm_cash := float(city["firm_cash"])
 	var markets: Array = city["markets"]
 	var capital_cost := float(status.get("capital_cost_per_capacity", 2000.0))
 	var available := firm_cash * CAPITAL_SHARE
-	if _below(available, capital_cost * MIN_CAPACITY):
+	if available < capital_cost * MIN_CAPACITY:
 		return
 	var pop: Dictionary = city["pop"]
 	var food_need := Templates.food_need(city)
@@ -370,15 +255,6 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	# (algodão/madeira) sem competir com a comida.
 	var food_secure := food_need <= 0.0 \
 		or food_supply >= food_need * FOOD_SLACK_FOR_CHAINS
-	if _robust and food_need > 0.0:
-		# F5: com câmbio inexato, a folga usa uma faixa de 1e-9 relativo (1 ulp
-		# não decide, mas nenhuma cidade perde o direito à cadeia por 1%). Uma
-		# faixa de 1% aqui encolhia a expansão de comida no mundo e derrubava EGY
-		# (0,979 → 0,740 em 60 d, medido).
-		food_secure = food_supply \
-			> food_need * FOOD_SLACK_FOR_CHAINS * (1.0 + Templates.DECISION_FLOOR)
-	var nation := String(city.get("nation", ""))
-	var famine := _robust and nation_famine(nation)
 	var region := String(city.get("landmass", ""))
 	# Produtos produzidos localmente em O(1): _input_available varria
 	# city["buildings"] por insumo (receita × insumo × construção) a cada
@@ -390,7 +266,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	# expande a cultura de melhor aptidão×preço: a oferta global é o que
 	# sustenta os importadores (EGY/SAH). Sem déficit e sem escassez mundial,
 	# só registra o excesso de oferta (diagnóstico).
-	if not _below(food_deficit, MIN_SHORTAGE_TONS):
+	if food_deficit >= MIN_SHORTAGE_TONS:
 		if _try_food(day, city, status, food_deficit, available, capital_cost):
 			return
 	elif system_food_short(region) and food_secure:
@@ -403,18 +279,9 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			var market: Dictionary = markets[product]
 			var surplus := float(market.get("surplus", 0.0))
 			var sold := float(market.get("sold", 0.0))
-			if _above(surplus, maxf(1.0, sold * 0.20)):
+			if surplus > maxf(1.0, sold * 0.20):
 				_log(day, city_id, "avoid", resource_name,
 					"excesso de oferta local (%.1f t)" % surplus, 0.0, 0.0, 0.0)
-
-	# 1b. Regra dura da fome (F5): nação com cobertura alimentar média abaixo de
-	# FAMINE_COVERAGE não recebe capital não alimentar. A comida vem primeiro;
-	# a renda mineral segue disponível para as nações com déficit moderado (que
-	# é o caso em que ela paga a própria comida).
-	if famine:
-		_log(day, city_id, "avoid", "food", "nação em fome: só investimento alimentar",
-			0.0, 0.0, 0.0)
-		return
 
 	# 2. Matérias-primas e bens industriais. Fábricas (receita) só entram onde
 	# já existe demanda corrente observável no sistema (insumo de outra
@@ -443,7 +310,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			# não pode nascer em cidade que ainda depende de importar comida.
 			if not food_secure:
 				continue
-			if not _above(_system_demand(status, product), 0.1):
+			if _system_demand(status, product) <= 0.1:
 				continue
 			# Atravessar a cadeia: se o insumo ainda não está estocado, a
 			# fábrica ainda pode nascer quando o insumo é produzível na cidade
@@ -473,7 +340,7 @@ func _try_food(day: int, city: Dictionary, status: Dictionary, food_deficit: flo
 		var template: Dictionary = Templates.TEMPLATES[resource_name]
 		var product := int(template["output"])
 		if product >= suitability.size() \
-				or _below(float(suitability[product]), min_suitability):
+				or float(suitability[product]) < min_suitability:
 			continue
 		var price := Templates.anchor_price(city, product)
 		# Prefere expandir uma cultura JÁ estabelecida na cidade (fix do churn de
@@ -483,9 +350,7 @@ func _try_food(day: int, city: Dictionary, status: Dictionary, food_deficit: flo
 		# de diversificar.
 		var established := Templates.has_producer(city, resource_name)
 		var score := float(suitability[product]) * price * (2.0 if established else 1.0)
-		# Ranking com faixa morta: empates dentro de 1e-9 relativo mantêm a
-		# primeira cultura da ordem declarada (wheat, rice, maize, potato, soy).
-		if best == "" or _above(score, best_score):
+		if best == "" or score > best_score:
 			best_score = score
 			best = resource_name
 	if best == "":
@@ -514,7 +379,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	# global (o produto é exportável e o importador não tem terra).
 	var food_priority := Templates.FOOD_RESOURCES.has(resource_name) \
 		and system_food_short(String(city.get("landmass", "")))
-	if _above(surplus, maxf(1.0, sold * 0.20)) and not food_priority:
+	if surplus > maxf(1.0, sold * 0.20) and not food_priority:
 		_log(day, city_id, "avoid", resource_name,
 			"excesso de oferta local (%.1f t)" % surplus, 0.0, 0.0, 0.0)
 		return false
@@ -527,12 +392,12 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	# Londres seguia importando, o orçamento drenava e a cidade caía no
 	# equilíbrio de baixo emprego. Para a cesta, vale a demanda REAL da cidade
 	# (o déficit local), não o excedente do mercado mundial.
-	if _above(system_surplus, maxf(1.0, system_sold * 0.25)) \
+	if system_surplus > maxf(1.0, system_sold * 0.25) \
 			and not Templates.FOOD_RESOURCES.has(resource_name):
 		_log(day, city_id, "avoid", resource_name,
 			"excesso de oferta no sistema (%.1f t)" % system_surplus, 0.0, 0.0, 0.0)
 		return false
-	if _below(shortage, MIN_SHORTAGE_TONS):
+	if shortage < MIN_SHORTAGE_TONS:
 		return false
 	if not _resource_available(city, resource_name, template):
 		_log(day, city_id, "avoid", resource_name,
@@ -563,10 +428,6 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	if is_recipe:
 		reference_price = maxf(price, unit_cost * 1.05)
 	var margin: float = reference_price - unit_cost
-	# F5: o gate de margem fica na comparação original. A faixa morta de 1% aqui
-	# e a EMA do sinal foram medidas e descartadas: encolhiam a expansão
-	# alimentar (EGY 0,979 → 0,740 em 60 d). O ruído de 1 ulp não move uma
-	# margem contínua para fora do limiar com frequência suficiente para decidir.
 	if margin <= MIN_MARGIN_PER_TON:
 		_log(day, city_id, "avoid", resource_name,
 			"margem %.2f/t insuficiente" % margin, 0.0, 0.0, 0.0)
@@ -592,9 +453,9 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		if land_cap > 0.0:
 			var used := Templates.existing_capacity(city, product)
 			capacity = minf(capacity, maxf(0.0, land_cap - used))
-	if not _below(capacity * unit_capital, available):
+	if capacity * unit_capital >= available:
 		capacity = available / unit_capital
-	if _below(capacity, MIN_CAPACITY):
+	if capacity < MIN_CAPACITY:
 		return false
 	var cost := capacity * unit_capital
 	var daily_profit := margin * capacity
@@ -606,7 +467,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		payback_limit = MIN_PAYBACK_DAYS_INDUSTRY
 	elif Templates.BULK_LOW_VALUE_RESOURCES.has(resource_name):
 		payback_limit = MIN_PAYBACK_DAYS_BULK
-	if _above(adjusted_payback, payback_limit):
+	if adjusted_payback > payback_limit:
 		_log(day, city_id, "avoid", resource_name,
 			"payback ajustado %.0f d > %.0f d" % [adjusted_payback, payback_limit],
 			cost, daily_profit, risk)
@@ -665,7 +526,7 @@ func _resource_available(city: Dictionary, resource_name: String, template: Dict
 	var product := int(template["output"])
 	var suitability: Array = city.get("suitability", [])
 	if product >= suitability.size() \
-			or _below(float(suitability[product]), MIN_SUITABILITY):
+			or float(suitability[product]) < MIN_SUITABILITY:
 		return false
 	if Templates.MINERAL_RESOURCES.has(resource_name):
 		return _has_deposit(city, resource_name)
@@ -676,7 +537,7 @@ func _has_deposit(city: Dictionary, resource: String) -> bool:
 	var deposits: Dictionary = city.get("deposits", {})
 	if not deposits.has(resource):
 		return false
-	return _above(float(deposits[resource].get("remaining_kt", 0.0)), 0.0)
+	return float(deposits[resource].get("remaining_kt", 0.0)) > 0.0
 
 
 func _input_available(city: Dictionary, template: Dictionary, local_products: Dictionary = {}) -> bool:
@@ -694,9 +555,8 @@ func _input_available(city: Dictionary, template: Dictionary, local_products: Di
 			for item: Dictionary in recipe["inputs"]:
 				var product := int(item["product"])
 				var market: Dictionary = city["markets"][product]
-				var has_stock := \
-					_above(float(market.get("stock", 0.0))
-						+ float(market.get("supply", 0.0)), 0.1)
+				var has_stock := float(market.get("stock", 0.0)) \
+					+ float(market.get("supply", 0.0)) > 0.1
 				if has_stock:
 					continue
 				if not local_products.has(product):
@@ -710,8 +570,8 @@ func _input_available(city: Dictionary, template: Dictionary, local_products: Di
 	if input_product < 0:
 		return true
 	var market: Dictionary = city["markets"][input_product]
-	if _above(float(market.get("stock", 0.0))
-			+ float(market.get("supply", 0.0)), 0.1):
+	if float(market.get("stock", 0.0)) \
+			+ float(market.get("supply", 0.0)) > 0.1:
 		return true
 	return local_products.has(input_product)
 
@@ -726,7 +586,7 @@ func _chain_inputs_producible(city: Dictionary, template: Dictionary,
 		var viable := true
 		for item: Dictionary in recipe["inputs"]:
 			var product := int(item["product"])
-			if _above(_system_sold(status, product), 0.1):
+			if _system_sold(status, product) > 0.1:
 				continue
 			var resource := Templates.resource_for_product(product)
 			if resource == "":

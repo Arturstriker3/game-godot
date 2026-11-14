@@ -33,29 +33,12 @@ const BUILD_COOLDOWN_DAYS := 30
 
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
-## F5 — fome (regra dura): cobertura alimentar média da nação (EMA 7 d) abaixo
-## disto bloqueia a abertura de mina. Mesma regra e mesmo piso do investidor
-## privado (`PrivateInvestor.FAMINE_COVERAGE`); só a fome severa (<50% da cesta)
-## para o capital não alimentar — no déficit moderado a renda mineral paga a
-## comida.
-const FAMINE_COVERAGE := 0.50
-const FOOD_EMA_ALPHA := 0.25
-
 var _sim: Object
 var _geo: Object
 var _decisions: Array[Dictionary] = []
 var _id_counter := 1
 # Dia da última construção por cidade (base do cooldown).
 var _last_build_day: Dictionary = {}
-# Cobertura alimentar por nação (EMA 7 d) — calculada 1× por status/dia.
-var _coverage_status: Dictionary = {}
-var _coverage_ema: Dictionary = {}
-var _coverage_day := -1
-## F5 — modo robusto por cidade: só quando a conversão de câmbio é INEXATA
-## (taxa não é 1 nem potência de 2). Com taxa 1 (mundo XGS) ou 0,5 exata, o
-## preço-âncora é bit-idêntico ao pré-F5 e a IA roda o caminho original, sem
-## faixa morta/EMA — preservando os resultados calibrados.
-var _robust := false
 
 
 func setup(sim: Object, geo: Object) -> void:
@@ -81,7 +64,6 @@ func drain() -> Array:
 
 
 func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
-	_robust = Templates.inexact_fx(float(city.get("fx_rate", 1.0)))
 	var city_id := String(city["id"])
 	var budget := float(city["government_budget"])
 	var capital_cost := float(status.get("capital_cost_per_capacity", 2000.0))
@@ -113,7 +95,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	# construir outra estatal é redundante e churna — o milho estatal de 20 t/d
 	# em Manchester/Newcastle/Marselha era construído ao lado do AI-MAIZE privado
 	# (2.185 t/d) e falia quando a escassez passava (balance_review §16).
-	if not _below(food_deficit, MIN_SHORTAGE_TONS) and not _has_food_producer(city):
+	if food_deficit >= MIN_SHORTAGE_TONS and not _has_food_producer(city):
 		var best := _best_food_crop(city)
 		if not best.is_empty():
 			var resource := String(best["resource"])
@@ -130,9 +112,9 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 				if land_cap > 0.0:
 					var used := Templates.existing_capacity(city, product)
 					capacity = minf(capacity, maxf(0.0, land_cap - used))
-			if not _below(capacity * capital_cost, available):
+			if capacity * capital_cost >= available:
 				capacity = available / capital_cost
-			if not _below(capacity, MIN_STATE_CAPACITY):
+			if capacity >= MIN_STATE_CAPACITY:
 				var gate := _build_gate(city_id, city, day, product, bindex)
 				if gate != "":
 					_log(day, city_id, "avoid", resource, gate, capacity * capital_cost)
@@ -155,15 +137,6 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 							capacity * capital_cost)
 						return
 
-	# F5 — regra dura da fome: nação com cobertura alimentar média em nível de
-	# fome não abre mina (o capital público fica com a comida). Déficits
-	# moderados seguem liberados: a renda mineral é justamente o que paga a
-	# importação de alimento nesses casos.
-	if _robust and _nation_famine(String(city.get("nation", "")), status):
-		_log(day, city_id, "avoid", "food",
-			"nação em fome: só investimento alimentar", 0.0)
-		return
-
 	# 3. Mineração estratégica (B4): mina estatal para cada mineral com jazida
 	# (aptidão > 0) e margem positiva ao preço de exportação, quando ainda não há
 	# produtor na cidade. A margem inclui o fator de profundidade da jazida
@@ -183,7 +156,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			var template: Dictionary = Templates.TEMPLATES[resource]
 			var product := int(template["output"])
 			if product >= suitability.size() \
-					or not _above(float(suitability[product]), 0.0):
+					or float(suitability[product]) <= 0.0:
 				continue
 			if not _has_deposit(city, resource):
 				continue
@@ -192,21 +165,14 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			var mineral_market: Dictionary = city["markets"][product]
 			var margin: float = (Templates.anchor_price(city, product)
 				- Templates.variable_cost_mined(resource, city))
-			if not _above(margin, 0.0) \
-					or _above(float(mineral_market.get("surplus", 0.0)), 0.0):
+			if margin <= 0.0 \
+					or float(mineral_market.get("surplus", 0.0)) > 0.0:
 				continue
 			candidates.append({"resource": resource, "product": product,
 				"template": template, "margin": margin})
-	# Ranking com faixa morta (F5): só no modo robusto margens dentro de 1e-9
-	# relativo são empate e o nome do recurso desempata. No XGS a ordem original.
-	var robust := _robust
+	# Ranking por margem decrescente (ordem original).
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var margin_a := float(a["margin"])
-		var margin_b := float(b["margin"])
-		if robust and absf(margin_a - margin_b) <= maxf(Templates.DECISION_FLOOR,
-				absf(margin_b) * Templates.DECISION_DEADBAND):
-			return String(a["resource"]) < String(b["resource"])
-		return margin_a > margin_b)
+		return float(a["margin"]) > float(b["margin"]))
 	for candidate in candidates:
 		var resource: String = candidate["resource"]
 		var product: int = candidate["product"]
@@ -219,9 +185,9 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 		var external_demand := Templates.external_demand_of(city, product)
 		var capacity := minf(MAX_STATE_MINE_CAPACITY,
 			maxf(MIN_STATE_CAPACITY, external_demand * EXPORT_CAPACITY_FACTOR))
-		if not _below(capacity * capital_cost, available):
+		if capacity * capital_cost >= available:
 			capacity = available / capital_cost
-		if _below(capacity, MIN_STATE_CAPACITY):
+		if capacity < MIN_STATE_CAPACITY:
 			continue
 		var cost := capacity * capital_cost
 		var new_id := "STATE-%s-%d" % [resource.to_upper(), _id_counter]
@@ -261,63 +227,6 @@ func _input_available(city: Dictionary, input_product: int) -> bool:
 	return false
 
 
-## F5 — faixa morta só no modo robusto (câmbio inexato). No modo exato é a
-## comparação original, preservando o mundo XGS calibrado. Calculada aqui para
-## não pagar uma chamada estática por limiar no laço quente.
-func _above(value: float, threshold: float) -> bool:
-	if not _robust:
-		return value > threshold
-	return value > threshold + maxf(Templates.DECISION_FLOOR,
-		absf(threshold) * Templates.DECISION_DEADBAND)
-
-
-func _below(value: float, threshold: float) -> bool:
-	if not _robust:
-		return value < threshold
-	return value < threshold - maxf(Templates.DECISION_FLOOR,
-		absf(threshold) * Templates.DECISION_DEADBAND)
-
-
-## Cobertura alimentar da nação (EMA de 7 dias de consumido/necessidade),
-## calculada 1× por status/dia. Nação sem dado no status não é declarada em
-## fome (ausência de dado não é fome).
-func _nation_famine(nation: String, status: Dictionary) -> bool:
-	if nation == "":
-		return false
-	if not is_same(_coverage_status, status):
-		_rebuild_coverage(status)
-	if not _coverage_ema.has(nation):
-		return false
-	return _below(float(_coverage_ema[nation]), FAMINE_COVERAGE)
-
-
-func _rebuild_coverage(status: Dictionary) -> void:
-	_coverage_status = status
-	var day := int(status.get("day", _coverage_day + 1))
-	if day == _coverage_day:
-		return
-	_coverage_day = day
-	var consumed: Dictionary = {}
-	var need: Dictionary = {}
-	for city in status.get("cities", []):
-		var nation := String(city.get("nation", ""))
-		if nation == "":
-			continue
-		var pop: Dictionary = city.get("pop", {})
-		consumed[nation] = float(consumed.get(nation, 0.0)) + float(pop.get("consumed", 0.0))
-		need[nation] = float(need.get(nation, 0.0)) + Templates.food_need(city)
-	for nation in need:
-		var total := float(need[nation])
-		if total <= 0.0:
-			continue
-		var coverage := float(consumed.get(nation, 0.0)) / total
-		if _coverage_ema.has(nation):
-			var previous := float(_coverage_ema[nation])
-			_coverage_ema[nation] = previous + FOOD_EMA_ALPHA * (coverage - previous)
-		else:
-			_coverage_ema[nation] = coverage
-
-
 ## true se a cidade já tem qualquer construção que produz um alimento da cesta.
 ## O governo só cobre onde o capital privado não chega (docstring da classe).
 func _has_food_producer(city: Dictionary) -> bool:
@@ -338,7 +247,7 @@ func _best_food_crop(city: Dictionary) -> Dictionary:
 		var template: Dictionary = Templates.TEMPLATES[resource]
 		var product := int(template["output"])
 		if product >= suitability.size() \
-				or not _above(float(suitability[product]), 0.0):
+				or float(suitability[product]) <= 0.0:
 			continue
 		var price := Templates.anchor_price(city, product)
 		# Viabilidade (bacia por província): uma fazenda cujo preço × aptidão não
@@ -346,16 +255,13 @@ func _best_food_crop(city: Dictionary) -> Dictionary:
 		# não alimenta ninguém — o governo não deve construí-la. É o churn de
 		# milho em Manchester/Newcastle (aptidão de milho ~0,38, abaixo do ponto
 		# de equilíbrio ~0,42). O investidor privado aplica o mesmo gate (margem).
-		if not _above(
-				float(suitability[product]) * price - Templates.variable_cost(resource, city),
-				0.0):
+		if float(suitability[product]) * price \
+				- Templates.variable_cost(resource, city) <= 0.0:
 			continue
 		# Prefere expandir a cultura já estabelecida (fix do churn de milho, B4).
 		var established := Templates.has_producer(city, resource)
 		var score := float(suitability[product]) * price * (2.0 if established else 1.0)
-		# Ranking com faixa morta: empate dentro de 1e-9 relativo mantém a
-		# primeira cultura da ordem declarada (wheat, rice, maize, potato, soy).
-		if best.is_empty() or _above(score, best_score):
+		if best.is_empty() or score > best_score:
 			best_score = score
 			best = {"resource": resource, "product": product, "score": score}
 	return best
@@ -369,7 +275,7 @@ func _resource_available(city: Dictionary, resource: String, product: int) -> bo
 		return true
 	var suitability: Array = city.get("suitability", [])
 	if product >= suitability.size() \
-			or not _above(float(suitability[product]), 0.0):
+			or float(suitability[product]) <= 0.0:
 		return false
 	if Templates.MINERAL_RESOURCES.has(resource):
 		return _has_deposit(city, resource)
@@ -380,7 +286,7 @@ func _has_deposit(city: Dictionary, resource: String) -> bool:
 	var deposits: Dictionary = city.get("deposits", {})
 	if not deposits.has(resource):
 		return false
-	return _above(float(deposits[resource].get("remaining_kt", 0.0)), 0.0)
+	return float(deposits[resource].get("remaining_kt", 0.0)) > 0.0
 
 
 ## Bloqueio anti-loop: cooldown por cidade, teto por tipo e utilização efetiva.
@@ -394,7 +300,7 @@ func _build_gate(city_id: String, city: Dictionary, day: int, product: int,
 	if _buildings_of_type(city, product, bindex) >= MAX_BUILDINGS_PER_TYPE:
 		return "teto de %d construções deste tipo" % MAX_BUILDINGS_PER_TYPE
 	var utilization := _avg_utilization(city, product, bindex)
-	if _below(utilization, MIN_AVG_UTILIZATION):
+	if utilization < MIN_AVG_UTILIZATION:
 		return "utilização média %.0f%% < %.0f%%" % [
 			utilization * 100.0, MIN_AVG_UTILIZATION * 100.0]
 	return ""

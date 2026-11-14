@@ -36,12 +36,12 @@ const DEFAULT_DAYS := 60
 ## foto do dia 60. Em 365 d a F4 fecha 0 nações pioradas e 26 falências (=base);
 ## o resíduo de 60 d é EGY 1,000→0,979 (oscilação de chegada, não balanço).
 const FOOD_TOLERANCE := 0.025
-## F5 — tolerância de falências sobre o baseline. O comparativo de 365 d com
-## taxas reais é um teste de CAOS: a trajetória do mundo é sensível por
-## construção (1 ulp em qualquer preço muda a ordem de um pedido). A IA tem
-## faixas mortas/EMA para não amplificar o ruído, mas a coorte de firmas pode
-## ainda diferir em poucas unidades. O critério robusto aceita baseline + 2
-## (26 → 28 em f4_world_ai_365); acima disso é regressão de balanço.
+## F5 — tolerância de falências sobre o baseline. O comparativo de 365 d é um
+## teste de CAOS: a trajetória do mundo é sensível por construção (uma oferta
+## que muda de ordem muda a coorte de firmas). Com o preço na ÂNCORA não há
+## round-trip de câmbio nas decisões (F5/opção c), então as variações de taxa
+## fixa são bit-idênticas ao XGS; a tolerância cobre diferenças de chegada.
+## O critério robusto aceita baseline + 2 (26 → 28 em f4_world_ai_365).
 const BANKRUPTCY_TOLERANCE := 2
 
 var _days := DEFAULT_DAYS
@@ -57,9 +57,10 @@ var _currencies_enabled := true
 ## `half` usa 0,5 exato em binário e `peg` — isola arredondamento de câmbio.
 var _fx_mode := "real"
 ## F5 — semente de perturbação (0 = mundo limpo). Cada semente aplica um jitter
-## determinístico de ±1e-9 relativo nas taxas de câmbio reais: invisível para
-## qualquer limiar econômico, mas acima do ruído de 1 ulp — é o caos que a IA
-## precisa absorver. O sweep (`economy_world_sweep.gd`) roda duas sementes além
+## determinístico de ±1e-9 relativo nas taxas de câmbio declaradas. Com o preço
+## na âncora o jitter só muda a exibição local (e a competitividade float, que
+## depende de uma taxa real variável): o sweep prova que a exibição não vaza
+## para a simulação. O sweep (`economy_world_sweep.gd`) roda duas sementes além
 ## das três variações de câmbio.
 var _seed := 0
 

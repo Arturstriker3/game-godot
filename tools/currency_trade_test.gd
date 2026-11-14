@@ -1,22 +1,26 @@
 extends SceneTree
 
-## F5 — moedas, câmbio, tarifa e preço entregue.
+## F5 — moedas, câmbio, tarifa e preço entregue (opção c: preço na ÂNCORA).
 ##
 ## Cenário mínimo determinístico (3 cidades, 3 nações, mesmas distâncias):
-##   SELL_A (NA, moeda XA) — trigo a 40 na moeda local
-##   SELL_B (NB, moeda XB) — trigo a 41 na moeda local
+##   SELL_A (NA, moeda XA) — trigo a 40 na âncora (XGS)
+##   SELL_B (NB, moeda XB) — trigo a 41 na âncora
 ##   BUY    (NC, moeda XC) — sem produção, importa a cesta
 ## SELL_A e SELL_B ficam equidistantes de BUY, então o frete é o mesmo e a
-## única variável é o preço entregue (origem convertida + frete + tarifa).
+## única variável é o custo entregue na âncora (origem + frete + tarifa).
 ##
-## Valida o contrato F5:
-##   - conversão: delivered_price = (origem × taxa vendedor + frete + tarifa)
-##     ÷ taxa comprador, e é isso que ordena a oferta;
-##   - o menor preço entregue escolhe o vendedor certo (B com taxa menor vence);
+## Valida o contrato F5/opção c:
+##   - `market.price` e `import_price` são ÂNCORA; a moeda local é só exibição
+##     (`price_local = price_anchor ÷ taxa`) e nunca volta para a simulação;
+##   - a comparação de ofertas é na âncora, sem round-trip `(base÷taxa)×taxa`;
+##   - um câmbio com taxa fixa NÃO muda o preço interno nem a escolha;
+##   - no regime float, a taxa atua como fator de competitividade na âncora
+##     (taxa ÷ taxa-base) e pode mudar o vendedor escolhido;
 ##   - tarifa ad valorem muda a escolha e vira receita do governo comprador;
 ##   - déficit comercial persistente desvaloriza a moeda do comprador dentro da
 ##     banda documentada (±10%) e valoriza a do exportador;
-##   - save/load preserva moedas (taxa/regime/base) e tarifas declaradas;
+##   - save/load v7 preserva moedas (taxa/regime/base) e tarifas; um save v6
+##     (preço local) migra para a âncora ao carregar;
 ##   - dinheiro conservado na âncora (`money_total`) em todos os testes.
 ##
 ##   godot --headless --path . --script res://tools/currency_trade_test.gd
@@ -63,7 +67,7 @@ func _init() -> void:
 		sim.tick_demo()
 
 	_test_conversion(sim)
-	_test_rate_inversion(sim)
+	_test_float_competitiveness(sim)
 	_test_tariff(sim)
 	_test_save_load(sim, goods)
 	_test_devaluation(sim)
@@ -71,7 +75,8 @@ func _init() -> void:
 	_finish()
 
 
-## 1. Conversão e escolha pelo menor preço entregue (taxas iguais).
+## 1. Preço na âncora: exibição local = âncora ÷ taxa e escolha pelo custo
+## entregue (taxas iguais).
 func _test_conversion(sim) -> void:
 	_prepare_markets(sim)
 	var status: Dictionary = sim.tick_demo()
@@ -91,20 +96,20 @@ func _test_conversion(sim) -> void:
 	var amount := float(order.get("amount", 0.0))
 	var freight := float(order.get("freight_cost", 0.0))
 	var unit_freight := freight / amount if amount > 0.0 else 0.0
-	print("[fx] conversão: %s -> %s origem=%.2f âncora=%.2f frete/t=%.2f entregue=%.2f (%s) taxa=%.3f" % [
-		from_city, CITY_BUY, origin, origin_anchor, unit_freight, delivered,
+	print("[fx] conversão: %s -> %s âncora=%.2f local=%.2f frete/t=%.2f entregue=%.2f (%s) taxa=%.3f" % [
+		from_city, CITY_BUY, origin_anchor, origin, unit_freight, delivered,
 		String(order.get("buyer_currency", "?")), buyer_fx])
-	if absf(origin - PRICE_A) > 1e-6:
-		_fail("conversão: origem %.4f (esperado %.2f na moeda local)" % [origin, PRICE_A])
+	if absf(origin_anchor - PRICE_A) > 1e-6:
+		_fail("conversão: origem na âncora %.4f (esperado %.2f)" % [origin_anchor, PRICE_A])
+	if absf(origin - origin_anchor / maxf(1e-9, seller_fx)) > 1e-6:
+		_fail("conversão: exibição local %.4f != âncora ÷ taxa (%.4f)" % [
+			origin, origin_anchor / maxf(1e-9, seller_fx)])
 	if absf(seller_fx - 1.0) > 1e-9 or absf(buyer_fx - 1.0) > 1e-9:
 		_fail("conversão: taxas deveriam ser 1,0 (vendedor=%.3f comprador=%.3f)" % [
 			seller_fx, buyer_fx])
-	if absf(origin_anchor - origin * seller_fx) > 1e-6:
-		_fail("conversão: origem em âncora %.4f != origem × taxa %.4f" % [
-			origin_anchor, origin * seller_fx])
-	var expected_delivered := (origin_anchor + unit_freight) / maxf(1e-9, buyer_fx)
+	var expected_delivered := origin_anchor + unit_freight
 	if absf(delivered - expected_delivered) > 1e-6:
-		_fail("conversão: entregue %.6f != (origem+frete)/taxa %.6f" % [
+		_fail("conversão: entregue %.6f != (origem ÂNCORA + frete)/taxa %.6f" % [
 			delivered, expected_delivered])
 	if String(order.get("buyer_currency", "")) != "XC":
 		_fail("conversão: moeda do comprador '%s' (esperado XC)" % [
@@ -115,34 +120,80 @@ func _test_conversion(sim) -> void:
 	var currencies: Array = status.get("currencies", [])
 	if currencies.size() != 3:
 		_fail("status: %d moedas publicadas (esperado 3)" % currencies.size())
+	# O mercado publica o preço na âncora e a exibição local.
+	var market := _city_market(status, CITY_A, PRODUCT)
+	var market_price := float(market.get("price", 0.0))
+	var price_local := float(market.get("price_local", 0.0))
+	var city_fx := _city_value(status, CITY_A, "fx_rate")
+	if absf(price_local - market_price / maxf(1e-9, city_fx)) > 1e-6:
+		_fail("status: price_local %.4f != price %.4f ÷ taxa %.3f" % [
+			price_local, market_price, city_fx])
+	if absf(market_price - origin_anchor) > 1e-6:
+		_fail("status: preço do mercado %.4f != origem na âncora %.4f" % [
+			market_price, origin_anchor])
 	_check_money(status, "conversão")
 
 
-## 2. Mudar a taxa inverte o vendedor escolhido.
-func _test_rate_inversion(sim) -> void:
-	sim.demo_set_currency_rate("XB", RATE_B, false)
+## 2. Câmbio float muda a competitividade na âncora; taxa fixa não mexe em nada.
+func _test_float_competitiveness(sim) -> void:
+	# XB desvalorizada 10% dentro da banda: taxa 0,45 com base 0,50. O preço
+	# interno continua 41 na âncora; a oferta efetiva vira 41 × 0,9 = 36,9.
+	sim.demo_set_currency_rate("XB", 0.45, true, 0.5)
 	_prepare_markets(sim)
 	var status: Dictionary = sim.tick_demo()
 	var order := _first_order(status, PRODUCT)
 	if order.is_empty():
-		_fail("câmbio: nenhum pedido de trigo no dia")
+		_fail("float: nenhum pedido de trigo no dia")
 		return
 	var from_city := String(order.get("from_city", ""))
 	var origin_anchor := float(order.get("origin_price_anchor", 0.0))
-	print("[fx] inversão: vendedor=%s origem_âncora=%.2f (XGS %.1f × %.2f) entregue=%.2f" % [
-		from_city, origin_anchor, PRICE_B, RATE_B,
-		float(order.get("delivered_price", 0.0))])
+	print("[fx] float: vendedor=%s oferta_âncora=%.2f (âncora %.1f × 0,90) entregue=%.2f" % [
+		from_city, origin_anchor, PRICE_B, float(order.get("delivered_price", 0.0))])
 	if from_city != CITY_B:
-		_fail("câmbio: vendedor %s (esperado %s — origem 41 × 0,5 = 20,5 < 40)" % [
+		_fail("float: vendedor %s (esperado %s — 41 × 0,90 = 36,9 < 40)" % [
 			from_city, CITY_B])
-	if absf(origin_anchor - PRICE_B * RATE_B) > 1e-6:
-		_fail("câmbio: origem em âncora %.4f (esperado %.4f)" % [
-			origin_anchor, PRICE_B * RATE_B])
-	_check_money(status, "câmbio")
+	if absf(origin_anchor - PRICE_B * 0.9) > 1e-6:
+		_fail("float: oferta na âncora %.4f (esperado %.4f)" % [
+			origin_anchor, PRICE_B * 0.9])
+	var seller_fx := float(order.get("seller_fx_rate", 0.0))
+	var origin_local := float(order.get("origin_price", 0.0))
+	if absf(origin_local - origin_anchor / maxf(1e-9, seller_fx)) > 1e-6:
+		_fail("float: exibição local %.4f != oferta_âncora ÷ taxa %.4f" % [
+			origin_local, origin_anchor / maxf(1e-9, seller_fx)])
+
+	# Com a MESMA taxa-base (sem desvio) o fator é 1 e o preço fixo decide:
+	# B fica em 41 e A (40) vence. A taxa sozinha não reescreve o preço.
+	sim.demo_set_currency_rate("XB", 0.5, true, 0.5)
+	_prepare_markets(sim)
+	status = sim.tick_demo()
+	order = _first_order(status, PRODUCT)
+	if order.is_empty():
+		_fail("float neutro: nenhum pedido de trigo no dia")
+		return
+	from_city = String(order.get("from_city", ""))
+	print("[fx] float neutro: vendedor=%s (B em 41 sem desvio)" % from_city)
+	if from_city != CITY_A:
+		_fail("float neutro: vendedor %s (esperado %s — sem desvio, 40 < 41)" % [
+			from_city, CITY_A])
+
+	# Regime fixo: nem uma taxa nominal muito baixa muda o preço na âncora.
+	sim.demo_set_currency_rate("XB", 0.5, false)
+	_prepare_markets(sim)
+	status = sim.tick_demo()
+	order = _first_order(status, PRODUCT)
+	if order.is_empty():
+		_fail("regime fixo: nenhum pedido de trigo no dia")
+		return
+	if String(order.get("from_city", "")) != CITY_A:
+		_fail("regime fixo: vendedor %s (esperado %s — preço na âncora não depende da taxa)" % [
+			String(order.get("from_city", "")), CITY_A])
+	_check_money(status, "câmbio float")
 
 
 ## 3. Tarifa ad valorem muda a escolha e é receita do governo comprador.
 func _test_tariff(sim) -> void:
+	# Base neutra: câmbio de XB fixo em 0,5 (fator de competitividade 1).
+	sim.demo_set_currency_rate("XB", 0.5, false)
 	sim.demo_set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
 	var effective := float(sim.demo_get_tariff(NATION_C, NATION_B, PRODUCT))
 	if absf(effective - 1.0) > 1e-9:
@@ -239,6 +290,42 @@ func _test_save_load(sim, goods: Array) -> void:
 		_fail("save/load: dinheiro %.2f -> %.2f (a âncora não foi conservada)" % [
 			money_saved, money_loaded])
 
+	# Save v6 (preço local) migra para a âncora ao carregar: o preço gravado
+	# volta multiplicado pela taxa da nação (o valor na âncora é preservado).
+	var legacy: Dictionary = saved.duplicate(true)
+	legacy["version"] = 6
+	var rate_by_nation: Dictionary = {}
+	for currency: Variant in Array(legacy.get("currencies", [])):
+		if typeof(currency) != TYPE_DICTIONARY:
+			continue
+		var rate := float((currency as Dictionary).get("rate_per_anchor", 1.0))
+		for nation: Variant in Array((currency as Dictionary).get("nations", [])):
+			rate_by_nation[String(nation)] = rate
+	for city_variant: Variant in Array(legacy.get("cities", [])):
+		if typeof(city_variant) != TYPE_DICTIONARY:
+			continue
+		var city: Dictionary = city_variant
+		var rate := float(rate_by_nation.get(String(city.get("nation", "")), 1.0))
+		for market_variant: Variant in Array(city.get("markets", [])):
+			if typeof(market_variant) != TYPE_DICTIONARY:
+				continue
+			(market_variant as Dictionary)["price"] = float(
+				(market_variant as Dictionary).get("price", 0.0)) / rate
+		var import_prices: Array = city.get("import_price", [])
+		for index in import_prices.size():
+			import_prices[index] = float(import_prices[index]) / rate
+	var migrated = EconomySim.new()
+	migrated.demo_set_goods(goods)
+	migrated.demo_from_dict(legacy)
+	var migrated_status: Dictionary = migrated.get_demo_status()
+	var anchor_before := float(_city_market(status, CITY_A, PRODUCT).get("price", 0.0))
+	var anchor_after := float(_city_market(migrated_status, CITY_A, PRODUCT).get("price", 0.0))
+	print("[fx] migração v6 -> v7: preço âncora %.4f (antes %.4f)" % [
+		float(anchor_after), float(anchor_before)])
+	if absf(float(anchor_after) - float(anchor_before)) > 1e-6:
+		_fail("migração v6: preço %.4f != âncora v7 %.4f" % [
+			float(anchor_after), float(anchor_before)])
+
 
 ## 5. Déficit persistente desvaloriza a moeda do comprador (banda ±10%).
 func _test_devaluation(sim) -> void:
@@ -334,6 +421,19 @@ func _city_value(status: Dictionary, city_id: String, key: String) -> float:
 		if typeof(city) == TYPE_DICTIONARY and String((city as Dictionary)["id"]) == city_id:
 			return float((city as Dictionary).get(key, 0.0))
 	return 0.0
+
+
+func _city_market(status: Dictionary, city_id: String, product: String) -> Dictionary:
+	for city: Variant in Array(status.get("cities", [])):
+		if typeof(city) != TYPE_DICTIONARY or String((city as Dictionary)["id"]) != city_id:
+			continue
+		for market: Variant in Array((city as Dictionary).get("markets", [])):
+			if typeof(market) == TYPE_DICTIONARY \
+					and int((market as Dictionary).get("product", -1)) >= 0:
+				# As chaves de mercado são indexadas por produto; o teste usa o
+				# primeiro produto (trigo) do cenário sintético.
+				return market as Dictionary
+	return {}
 
 
 func _check_money(status: Dictionary, label: String) -> void:

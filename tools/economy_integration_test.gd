@@ -268,8 +268,8 @@ func _check_investment(sim) -> void:
 
 func _check_save_load(sim) -> void:
 	var snapshot: Dictionary = sim.demo_to_dict()
-	if int(snapshot.get("version", 0)) != 6:
-		_fail("save: versão do schema deveria ser 6 (é %s)" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 7:
+		_fail("save: versão do schema deveria ser 7 (é %s)" % str(snapshot.get("version")))
 	# F4: a frota/combustível por nação faz parte do save (v5) e precisa
 	# sobreviver ao round-trip; sem o bloco, o load rederivaria a frota.
 	if not snapshot.has("fleets") or Array(snapshot.get("fleets", [])).is_empty():
