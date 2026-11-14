@@ -709,17 +709,46 @@ PIB, caixas, indicadores derivados), o bloco estático de cada construção
 (`BuildingCache`: id/kind/resource/owner/receita/insumos/subprodutos), a lista de
 jazidas rastreadas (deixa de varrer os 114 bens/dia) e as pernas de pedido
 reaproveitadas; os 8 campos publicados de `DemoMarket` ficam contíguos para
-comparar com um `memcmp` de 64 bytes. Medição release no caminho worker
-(`tools/perf_day_peak.tscn`, 834 cidades, 30 dias,
-`docs/economy/perf/f2_perf_release_after.txt`): **tick 51,7 ms de média
-(p95 55,7; máx 56,0)**, **`status` 31,4 (p95 34,2)**, **trabalho da IA
-fatiado/dia 24,0 (p95 41,0)**, frame de pico 6,9 (p95 8,8) e **507,9 MB** de
-memória estática. Contra os portões do §8.6 do plano
-(`docs/economy/production_chains_impl_plan.md`): frame e memória passam; **tick
-p95 (≤ 50 ms) e `status` p95 (≤ 30 ms) estouram — o portão de tick ainda não
-está fechado** e a F3 não deve começar antes de aplicar as mitigações. Testes:
-`production_chain_test`, `economy_integration_test`, `economy_ai_test`,
-`population_demo_test` e `economy_world_test` (60 d no cenário real) verdes.
+comparar com um `memcmp` de 64 bytes. A publicação dos mercados por cidade,
+portanto, **já era incremental** (só o bem que mudou é reescrito).
+
+**Fechamento do portão de tick (mesmo dia):** `Array` no Godot 4 é tipo por
+referência (validado em `--script`), então duas republicações diárias saíram do
+status da cidade: (a) os quatro arrays de fluxo de comércio
+(`imported/exported/import_value/export_value`) deixaram de ser reassinados no
+dicionário todo dia e só redimensionam quando o número de bens muda — ~3,3 mil
+chamadas/dia a menos; (b) o `Array` de construções recebe cada `Dictionary` uma
+única vez (reinserção só quando o conjunto muda de tamanho ou o prédio daquele
+índice muda de identidade, p.ex. falência) — ~2 mil escritas de elemento/dia a
+menos. Medição release no caminho worker (`tools/perf_day_peak.tscn`, 834
+cidades, 30 dias, 3 execuções, `docs/economy/perf/f2_perf_release_after.txt`):
+**tick p95 45,5–47,0** (média 32,9–38,0; antes registrado 55,7), **`status` p95
+16,2–20,6** (`status_cities` p95 13,0–16,0; antes 34,2), **frame de pico p95
+7,6 nas execuções 2–3** (a execução 1 teve três hitches isolados de 44–48 ms
+fora do tick, p95 44 — o mesmo tipo de hitch apareceu em uma medição avulsa
+anterior; virada da main 5,5–6,1 em todas), **IA fatiada/dia p95 15,3** e
+**507,0 MB** de memória estática. Contra os portões do §8.6 do plano: **tick,
+`status`, memória e IA passam**; o frame passa em regime (≤ 8,3 ms) e pede uma
+execução limpa para confirmar o portão em 3/3, por causa dos hitches da
+execução 1. Os portões desta onda (tick e `status`) estão fechados.
+
+**Baseline anterior:** os 51,7/31,4 do parágrafo original não se reproduziram
+com o binário release recompilado a partir do próprio 6fcbbaa — antes de
+qualquer mudança desta sessão a mesma máquina e comando deram tick 36,5
+(p95 43,2) e `status` 16,6 (p95 18,0). As DLLs têm praticamente o mesmo tamanho
+(1.021.440 vs 1.020.928 bytes), então o mais provável é que a de 02:35 tenha
+saído de um estado anterior aos últimos ajustes do commit de 02:38 e/ou a
+máquina estivesse carregada — `trade`/`arrival` caíram na mesma proporção, o
+que um ganho localizado no status não explicaria. Rodízio de 1/N
+das cidades (`demo_set_watched_cities`) e publicação só de bens ativos foram
+descartados: os mercados custam ~2,9 ms de 12,5 ms de `status_cities`
+(2.138 mercados sujos/dia, ~2,5 por cidade) e qualquer atraso de publicação
+mostraria ficha/tooltip de cidade não observada com dados velhos; a importação
+toca bens sem produtor local, então a lista "ativa" exigiria a mesma varredura.
+Testes: `production_chain_test`, `economy_integration_test`, `economy_ai_test`,
+`population_demo_test` e `economy_world_test` (60 d no cenário real) verdes, e
+as telas `production_template_test`, `trade_template_test`, `city_tooltip_test`,
+`nation_city_list_test` e `population_template_test` em PASS.
 
 ### 13.6 Separação de caminhões e aviões; caminhão 33% menor (feito)
 

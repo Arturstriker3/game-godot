@@ -624,6 +624,11 @@ private:
 		std::vector<Dictionary> market_entry;  // 1 por produto
 		Array buildings;
 		std::vector<Dictionary> building_entry;  // cresce com a cidade
+		// `buildings` é Array (referência): o dicionário publicado enxerga os
+		// elementos mutados. Só é preciso reinserir cada `entry` quando o
+		// conjunto muda de tamanho (ou a identidade do prédio no índice muda).
+		bool buildings_bound = false;
+		bool buildings_published = false;
 		// Bloco ESTÁTICO de cada construção (id, kind, resource, owner, receita,
 		// insumos, subprodutos): escrito uma vez e reescrito só quando a
 		// construção muda. Antes cada prédio alocava Strings + Arrays todos os

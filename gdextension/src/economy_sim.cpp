@@ -4130,10 +4130,15 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		dict[k.markets] = slot.markets;
 	}
 
-	slot.imported.resize(demo_products_);
-	slot.exported.resize(demo_products_);
-	slot.import_value.resize(demo_products_);
-	slot.export_value.resize(demo_products_);
+	// `Array` é tipo por referência no Godot 4 (validado em teste): mutar
+	// `slot.imported` já aparece no dicionário publicado. Redimensionar para o
+	// mesmo tamanho era uma chamada à ponte por array/cidade/dia sem efeito.
+	if (slot.imported.size() != demo_products_) {
+		slot.imported.resize(demo_products_);
+		slot.exported.resize(demo_products_);
+		slot.import_value.resize(demo_products_);
+		slot.export_value.resize(demo_products_);
+	}
 	{
 		// Quatro arrays de fluxo, um por produto (demo_products_): idem
 		// mercados, só produtos com comércio mudam (o resto fica em 0 dia após
@@ -4166,12 +4171,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			}
 		}
 	}
-	dict[k.imported] = slot.imported;
-	dict[k.exported] = slot.exported;
-	dict[k.import_value] = slot.import_value;
-	dict[k.export_value] = slot.export_value;
 
-	slot.buildings.resize(local_buildings.size());
+	if (slot.buildings.size() != local_buildings.size()) {
+		slot.buildings.resize(local_buildings.size());
+		slot.buildings_bound = false;
+	}
 	if (slot.building_entry.size() < local_buildings.size()) {
 		slot.building_entry.resize(local_buildings.size());
 		slot.building_cache.resize(local_buildings.size());
@@ -4181,8 +4185,9 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			demo_buildings_[static_cast<std::size_t>(local_buildings[index])];
 		Dictionary& entry = slot.building_entry[index];
 		DemoStatusCitySlot::BuildingCache& cached = slot.building_cache[index];
+		const bool identity_changed = !cached.filled || cached.id_src != building.id;
 		// Bloco estático: só quando a construção nasce (ou muda de identidade).
-		if (!cached.filled || cached.id_src != building.id) {
+		if (identity_changed) {
 			cached.id_src = building.id;
 			cached.id = String(building.id.c_str());
 			entry[k.id] = cached.id;
@@ -4199,6 +4204,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			entry[k.strategic] = building.strategic;
 			cached.recipe = -2;
 			cached.filled = true;
+		}
+		// Reinsere o `entry` no Array publicado só quando ele nasce/muda de
+		// índice; mutações do Dictionary já são visíveis pela referência.
+		if (!slot.buildings_bound || identity_changed) {
+			slot.buildings[index] = entry;
 		}
 		// Receita (insumos/subprodutos): as Arrays/Dictionaries só são
 		// reconstruídos quando a receita da construção muda — nunca por dia.
@@ -4261,9 +4271,12 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		sync_double(k.profit, cached.profit, building.profit);
 		sync_double(k.site_suitability, cached.site,
 			city.suitability[building.output_product]);
-		slot.buildings[index] = entry;
 	}
-	dict[k.buildings] = slot.buildings;
+	if (!slot.buildings_published) {
+		dict[k.buildings] = slot.buildings;
+		slot.buildings_published = true;
+	}
+	slot.buildings_bound = true;
 }
 
 Dictionary EconomySim::get_demo_status() {

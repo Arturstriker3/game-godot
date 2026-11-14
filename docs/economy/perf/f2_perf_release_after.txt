@@ -1,99 +1,154 @@
-Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+F2 — perfil release depois da otimização do status (2026-11-14)
+================================================================
 
-economia: bootstrap industrial (estimativa) ├ó┬Ç┬ö 12 plantas de refer├â┬¬ncia semeadas
-[perf] dia   1: tick   41.5  fila  1.30  plano IA  0.06  mapa  0.00  virada    3.8 | pump 1926.16 ms em 1211 frames (pico  9.85, IA 45.97)  [225 pedidos, 24 comboios, 0 entregues]
-[perf]          fases: status  23.4 (cidades  20.4, pedidos  2.6, na├º├Áes  0.4)  trade   2.6  arrival   4.9  produ├º├úo  0.3  renda  0.2  pre├ºos  0.2
-[perf] dia   2: tick   36.7  fila  1.64  plano IA  0.07  mapa  0.00  virada    5.1 | pump 1429.37 ms em 898 frames (pico  3.81, IA 37.29)  [361 pedidos, 23 comboios, 24 entregues]
-[perf]          fases: status  22.4 (cidades  18.6, pedidos  3.1, na├º├Áes  0.4)  trade   3.8  arrival   5.5  produ├º├úo  0.4  renda  0.1  pre├ºos  0.2
-[perf] dia   3: tick   41.9  fila  2.90  plano IA  0.09  mapa  0.00  virada    8.7 | pump 770.92 ms em 482 frames (pico  4.82, IA 34.86)  [464 pedidos, 23 comboios, 23 entregues]
-[perf]          fases: status  25.2 (cidades  20.7, pedidos  4.1, na├º├Áes  0.4)  trade   3.3  arrival   4.9  produ├º├úo  0.3  renda  0.2  pre├ºos  0.2
-[perf] dia   4: tick   48.7  fila  2.62  plano IA  0.09  mapa  0.00  virada    6.5 | pump 504.56 ms em 321 frames (pico  3.84, IA 34.26)  [514 pedidos, 23 comboios, 23 entregues]
-[perf]          fases: status  29.2 (cidades  22.6, pedidos  6.2, na├º├Áes  0.4)  trade   3.8  arrival   5.4  produ├º├úo  0.4  renda  0.1  pre├ºos  0.2
-[perf] dia   5: tick   42.7  fila  2.05  plano IA  0.06  mapa  0.00  virada    5.6 | pump 1223.92 ms em 770 frames (pico  4.10, IA 34.38)  [514 pedidos, 24 comboios, 23 entregues]
-[perf]          fases: status  28.8 (cidades  22.9, pedidos  5.4, na├º├Áes  0.4)  trade   4.7  arrival   5.1  produ├º├úo  0.4  renda  0.2  pre├ºos  0.2
-[perf] dia   6: tick   48.9  fila  3.12  plano IA  0.08  mapa  0.00  virada    8.8 | pump 1805.73 ms em 1169 frames (pico  7.39, IA 37.62)  [514 pedidos, 18 comboios, 24 entregues]
-[perf]          fases: status  29.8 (cidades  23.1, pedidos  6.4, na├º├Áes  0.3)  trade   5.9  arrival   5.1  produ├º├úo  0.4  renda  0.1  pre├ºos  0.4
-[perf] dia   7: tick   48.7  fila  2.39  plano IA  0.07  mapa  0.00  virada    6.3 | pump 1012.53 ms em 641 frames (pico  6.37, IA 41.04)  [514 pedidos, 19 comboios, 18 entregues]
-[perf]          fases: status  32.6 (cidades  26.9, pedidos  5.2, na├º├Áes  0.4)  trade   4.9  arrival   5.2  produ├º├úo  0.4  renda  0.2  pre├ºos  0.2
-[perf] dia   8: tick   48.8  fila  2.17  plano IA  0.06  mapa  0.00  virada    5.8 | pump 1058.43 ms em 668 frames (pico  5.47, IA 19.65)  [514 pedidos, 18 comboios, 19 entregues]
-[perf]          fases: status  31.9 (cidades  26.7, pedidos  4.8, na├º├Áes  0.4)  trade   5.7  arrival   5.5  produ├º├úo  0.5  renda  0.1  pre├ºos  0.4
-[perf] dia   9: tick   48.7  fila  2.48  plano IA  0.08  mapa  0.00  virada    7.8 | pump 1598.01 ms em 1010 frames (pico  5.21, IA 21.32)  [514 pedidos, 24 comboios, 18 entregues]
-[perf]          fases: status  31.1 (cidades  25.8, pedidos  4.9, na├º├Áes  0.3)  trade   5.8  arrival   5.1  produ├º├úo  0.5  renda  0.2  pre├ºos  0.4
-[perf] dia  10: tick   56.0  fila  3.64  plano IA  0.06  mapa  0.00  virada    7.1 | pump 979.73 ms em 626 frames (pico  3.33, IA 20.81)  [514 pedidos, 23 comboios, 24 entregues]
-[perf]          fases: status  32.7 (cidades  25.9, pedidos  6.3, na├º├Áes  0.5)  trade   7.0  arrival   5.1  produ├º├úo  0.5  renda  0.1  pre├ºos  0.4
-[perf] dia  11: tick   48.8  fila  2.06  plano IA  0.07  mapa  0.00  virada    5.8 | pump 2149.06 ms em 1343 frames (pico  5.01, IA 20.15)  [514 pedidos, 23 comboios, 23 entregues]
-[perf]          fases: status  31.6 (cidades  26.1, pedidos  5.1, na├º├Áes  0.3)  trade   6.4  arrival   5.4  produ├º├úo  0.5  renda  0.2  pre├ºos  0.4
-[perf] dia  12: tick   55.7  fila  2.42  plano IA  0.07  mapa  0.00  virada    7.2 | pump  31.54 ms em  15 frames (pico  5.77, IA 21.01)  [514 pedidos, 24 comboios, 23 entregues]
-[perf]          fases: status  33.0 (cidades  26.2, pedidos  6.2, na├º├Áes  0.5)  trade   7.3  arrival   5.7  produ├º├úo  0.5  renda  0.2  pre├ºos  0.4
-[perf] dia  13: tick   55.5  fila  3.81  plano IA  0.08  mapa  0.00  virada    8.2 | pump  22.69 ms em  14 frames (pico  4.10, IA 20.64)  [514 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  33.7 (cidades  27.4, pedidos  5.9, na├º├Áes  0.4)  trade   8.9  arrival   5.1  produ├º├úo  0.5  renda  0.2  pre├ºos  0.3
-[perf] dia  14: tick   55.5  fila  2.49  plano IA  0.06  mapa  0.00  virada    6.1 | pump 924.75 ms em 586 frames (pico  4.80, IA 25.03)  [514 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  34.0 (cidades  27.5, pedidos  6.0, na├º├Áes  0.4)  trade   6.9  arrival   4.7  produ├º├úo  0.5  renda  0.1  pre├ºos  0.4
-[perf] dia  15: tick   55.5  fila  2.87  plano IA  0.09  mapa  0.00  virada    6.3 | pump   8.20 ms em  10 frames (pico  4.27, IA 16.31)  [514 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  32.1 (cidades  26.1, pedidos  5.5, na├º├Áes  0.4)  trade   9.2  arrival   5.3  produ├º├úo  0.5  renda  0.1  pre├ºos  0.4
-[perf] dia  16: tick   55.5  fila  3.54  plano IA  0.06  mapa  0.00  virada    7.1 | pump   8.75 ms em  12 frames (pico  4.57, IA 20.16)  [514 pedidos, 23 comboios, 24 entregues]
-[perf]          fases: status  34.2 (cidades  27.9, pedidos  5.8, na├º├Áes  0.5)  trade   8.0  arrival   5.9  produ├º├úo  0.5  renda  0.2  pre├ºos  0.3
-[perf] dia  17: tick   55.5  fila  2.78  plano IA  0.07  mapa  0.00  virada    7.2 | pump  96.62 ms em  60 frames (pico  3.55, IA 20.02)  [514 pedidos, 24 comboios, 23 entregues]
-[perf]          fases: status  32.4 (cidades  26.2, pedidos  5.5, na├º├Áes  0.6)  trade   7.7  arrival   5.7  produ├º├úo  0.5  renda  0.2  pre├ºos  0.3
-[perf] dia  18: tick   55.5  fila  3.14  plano IA  0.09  mapa  0.00  virada    7.9 | pump 322.04 ms em 203 frames (pico  3.61, IA 19.53)  [514 pedidos, 23 comboios, 24 entregues]
-[perf]          fases: status  33.7 (cidades  28.2, pedidos  5.1, na├º├Áes  0.4)  trade   7.2  arrival   5.2  produ├º├úo  0.5  renda  0.1  pre├ºos  0.2
-[perf] dia  19: tick   55.5  fila  2.01  plano IA  0.06  mapa  0.00  virada    5.4 | pump   7.86 ms em  13 frames (pico  4.10, IA 20.90)  [514 pedidos, 24 comboios, 23 entregues]
-[perf]          fases: status  33.5 (cidades  25.8, pedidos  7.1, na├º├Áes  0.5)  trade   6.7  arrival   5.8  produ├º├úo  0.5  renda  0.1  pre├ºos  0.3
-[perf] dia  20: tick   48.5  fila  2.72  plano IA  0.08  mapa  0.00  virada    6.8 | pump  26.93 ms em  15 frames (pico  4.86, IA 18.62)  [514 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  31.2 (cidades  26.0, pedidos  4.9, na├º├Áes  0.3)  trade   6.3  arrival   5.9  produ├º├úo  0.5  renda  0.1  pre├ºos  0.3
-[perf] dia  21: tick   55.4  fila  3.55  plano IA  0.09  mapa  0.00  virada    7.6 | pump  49.23 ms em  28 frames (pico  4.23, IA 24.72)  [514 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  32.2 (cidades  26.5, pedidos  5.3, na├º├Áes  0.3)  trade   7.9  arrival   5.0  produ├º├úo  0.4  renda  0.1  pre├ºos  0.3
-[perf] dia  22: tick   55.5  fila  4.05  plano IA  0.09  mapa  0.00  virada    8.6 | pump 1248.46 ms em 791 frames (pico  3.56, IA 17.61)  [515 pedidos, 23 comboios, 24 entregues]
-[perf]          fases: status  33.4 (cidades  27.1, pedidos  5.8, na├º├Áes  0.4)  trade   7.2  arrival   5.0  produ├º├úo  0.5  renda  0.1  pre├ºos  0.3
-[perf] dia  23: tick   55.6  fila  2.20  plano IA  0.09  mapa  0.00  virada    7.4 | pump  13.45 ms em  12 frames (pico  5.35, IA 19.79)  [515 pedidos, 24 comboios, 23 entregues]
-[perf]          fases: status  32.6 (cidades  27.1, pedidos  5.1, na├º├Áes  0.4)  trade   6.8  arrival   5.2  produ├º├úo  0.4  renda  0.1  pre├ºos  0.3
-[perf] dia  24: tick   55.5  fila  2.11  plano IA  0.06  mapa  0.00  virada    5.5 | pump 521.27 ms em 331 frames (pico  3.52, IA 16.40)  [515 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  31.9 (cidades  26.6, pedidos  4.9, na├º├Áes  0.4)  trade   8.4  arrival   5.8  produ├º├úo  0.5  renda  0.2  pre├ºos  0.3
-[perf] dia  25: tick   55.4  fila  2.59  plano IA  0.06  mapa  0.00  virada    7.5 | pump  42.81 ms em  25 frames (pico  4.62, IA 18.64)  [515 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  32.7 (cidades  26.7, pedidos  5.4, na├º├Áes  0.5)  trade   7.3  arrival   5.6  produ├º├úo  0.5  renda  0.1  pre├ºos  0.3
-[perf] dia  26: tick   48.7  fila  2.26  plano IA  0.06  mapa  0.00  virada    5.7 | pump 1173.72 ms em 729 frames (pico  3.63, IA 17.38)  [515 pedidos, 23 comboios, 24 entregues]
-[perf]          fases: status  31.8 (cidades  25.7, pedidos  5.5, na├º├Áes  0.5)  trade   6.6  arrival   5.2  produ├º├úo  0.5  renda  0.1  pre├ºos  0.3
-[perf] dia  27: tick   55.5  fila  2.00  plano IA  0.06  mapa  0.00  virada    6.0 | pump  23.00 ms em  13 frames (pico  4.68, IA 20.58)  [515 pedidos, 24 comboios, 23 entregues]
-[perf]          fases: status  32.7 (cidades  26.7, pedidos  5.5, na├º├Áes  0.4)  trade   6.6  arrival   5.6  produ├º├úo  0.5  renda  0.1  pre├ºos  0.3
-[perf] dia  28: tick   55.5  fila  2.29  plano IA  0.06  mapa  0.00  virada    6.8 | pump  19.26 ms em  13 frames (pico  5.30, IA 20.69)  [515 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  32.9 (cidades  27.2, pedidos  5.3, na├º├Áes  0.3)  trade   7.3  arrival   5.0  produ├º├úo  0.5  renda  0.1  pre├ºos  0.4
-[perf] dia  29: tick   55.4  fila  2.17  plano IA  0.06  mapa  0.00  virada    6.2 | pump   5.96 ms em  11 frames (pico  6.16, IA 18.17)  [515 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  32.0 (cidades  25.8, pedidos  5.7, na├º├Áes  0.5)  trade   6.9  arrival   5.9  produ├º├úo  0.5  renda  0.2  pre├ºos  0.3
-[perf] dia  30: tick   55.5  fila  2.12  plano IA  0.08  mapa  0.00  virada    5.8 | pump  15.43 ms em  11 frames (pico  4.62, IA 17.41)  [515 pedidos, 24 comboios, 24 entregues]
-[perf]          fases: status  34.6 (cidades  28.9, pedidos  5.2, na├º├Áes  0.4)  trade   7.8  arrival   5.2  produ├º├úo  0.4  renda  0.2  pre├ºos  0.3
+Commit base: 6fcbbaa (F2). Medição no caminho real do jogo, com a DLL
+release (gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll
+copiada sobre o nome debug para o binário do editor usá-la; a debug foi
+restaurada por rebuild ao final).
 
-[perf] virada do dia ÔÇö 30 dias, tick=worker, sob demanda (pump por frame)
-[perf] grade de navega├º├úo/prontid├úo dos comboios: 197.8 ms (uma vez)
-[perf] pedidos/dia: m├®dia 497.9, m├íximo 515; comboios ativos/dia (p├│s-pump): 23.1; entregues/dia: 22.3
-[perf] etapa                               m├®dia      p95      m├íx
-[perf] 1. tick C++ (parede do worker)    51.74    55.69    56.02  ms
-[perf]    tick em regime (dia > 2)    52.64    55.69    56.02  ms
-[perf] 1b. poll da main (dia pronto)     0.01     0.01     0.01  ms
-[perf] 2. enfileirar pedidos          2.58     3.81     4.05  ms
-[perf] 3. IA planejar (agenda do dia)     0.07     0.09     0.09  ms
-[perf] 3b. log de pedidos (HUD)       4.02     5.56     5.67  ms
-[perf]    IA trabalho fatiado/dia    24.03    41.04    45.97  ms
-[perf]    VIRADA (frame da main)      6.69     8.67     8.78  ms
-[perf]    PUMP comboios/dia         634.01  1926.16  2149.06  ms
-[perf]    PUMP por frame              1.59     1.73     6.37  ms
-[perf]    FRAME DE PICO (virada|frames)     6.89     8.78     9.85  ms
-[perf] fase do tick C++            m├®dia      p95      m├íx
-[perf] status                      31.44    34.19    34.58
-[perf] status_cities               25.64    28.19    28.87
-[perf] trade                        6.51     8.91     9.23
-[perf] arrival                      5.34     5.89     5.91
-[perf] status_orders                5.32     6.36     7.06
-[perf] raw                          0.96     1.30     1.42
-[perf] reset                        0.56     0.75     0.79
-[perf] production                   0.46     0.53     0.55
-[perf] status_nations               0.41     0.52     0.60
-[perf] prices                       0.30     0.41     0.42
-[perf] invariants                   0.23     0.37     0.43
-[perf] clamp                        0.22     0.31     0.32
-[perf] income                       0.15     0.22     0.24
-[perf] accounting                   0.10     0.13     0.13
-[perf] labor                        0.09     0.13     0.17
-[perf] status_misc                  0.07     0.09     0.30
-[perf] fiscal                       0.06     0.09     0.10
-[perf] pump: 401.0 frames/dia em m├®dia; or├ºamento 1500 ┬Ás/frame
-[perf] mem├│ria est├ítica com 834 cidades: 507.9 MB
+Comando (3 execuções seguidas, máquina sem outro Godot aberto):
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Godot 4.7.2 stable, 834 cidades, 30 dias, `--map-mode=none`.
+
+Resumo das 3 medições (ms; média / p95 / máx)
+---------------------------------------------
+
+| execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia |
+|---|---|---|---|---|---|
+| 1 | 38,01 / **47,01** / 47,87 | 16,32 / **19,67** / 21,46 | 12,78 / 15,95 / 16,54 | 16,80 / 44,18 / 48,00¹ | 12,56 / 15,30 / 17,70 |
+| 2 | 36,15 / **45,48** / 47,70 | 16,13 / **20,58** / 20,66 | 12,55 / 15,97 / 16,88 | 6,17 / 7,59 / 7,84 | 12,29 / 14,30 / 14,87 |
+| 3 | 32,91 / **40,86** / 41,51 | 14,59 / **16,19** / 16,61 | 11,51 / 12,99 / 13,71 | 5,67 / 6,40 / 8,27 | 11,14 / 13,56 / 14,06 |
+
+¹ `pico` de frame de 44–48 ms em três dias isolados da execução 1 (pump:
+1871 ms em 1076 frames no dia 1 e 52 ms em 8 frames no dia 23). Não se
+repetiu nas execuções 2 e 3; é ruído do sistema (hitches fora do tick),
+não custo do status — a virada da main ficou em 5,5–6,1 ms e o pump por
+frame em 1,57 ms de média nas três.
+
+Portões do plano (`docs/economy/production_chains_impl_plan.md` §8.6):
+
+| métrica | portão | resultado (pior das 3) | situação |
+|---|---|---|---|
+| tick p95 | ≤ 50 ms | **47,01** | passa |
+| `status` p95 | ≤ 30 ms | **20,58** | passa |
+| frame de pico p95 | ≤ 12 ms | 7,59 nas exec. 2–3; a exec. 1 teve hitches isolados de 44–48 ms | passa em regime; confirmação pendente¹ |
+| memória estática | ≤ 750 MB | 507,0 MB | passa |
+| IA fatiada/dia p95 | ≤ 30 ms | 15,30 | passa |
+
+Fases do tick na execução 3 (média / p95 / máx, ms)
+---------------------------------------------------
+
+```
+status          14,59  16,19  16,61   (status_cities 11,51 / 12,99 / 13,71)
+trade            5,29   6,41   6,45
+arrival          2,77   3,70   3,99
+status_orders    2,75   3,08   3,19
+reset            0,45   0,76   0,82
+raw              0,43   0,68   0,73
+production       0,39   0,45   0,46
+status_nations   0,30   0,33   0,40
+prices           0,25   0,31   0,38
+invariants       0,21   0,27   0,29
+clamp            0,18   0,22   0,30
+income           0,12   0,17   0,19
+accounting       0,08   0,10   0,11
+fiscal           0,05   0,06   0,07
+labor            0,05   0,09   0,10
+status_misc      0,02   0,04   0,05
+```
+
+Pedidos/dia: média 497,9, máximo 515; comboios ativos pós-pump 23,1–23,2;
+entregues/dia 22,3–22,4. Orçamento do pump: 1500 µs/frame (344,6 / 324,2 /
+335,5 frames por dia). `poll()` da main: 0,01 ms (cache hit do status).
+
+Registro honesto do "antes"
+---------------------------
+
+A baseline registrada em GAME_STATE §13.5 (tick 51,74 / p95 55,69; status
+31,44 / p95 34,19; `status_cities` 25,64 / p95 28,19) **não se reproduziu**
+com o binário release recompilado a partir do próprio 6fcbbaa: antes de
+qualquer mudança de comportamento desta sessão (só com a subdivisão
+temporária de `status_cities` ligada), a mesma máquina e o mesmo comando deram
+tick 36,50 / p95 43,22 e status 16,58 / p95 18,01 (`status_cities` 13,13 /
+p95 14,42). O binário release usado naquela medição tem praticamente o
+mesmo tamanho do recompilado (1.021.440 vs 1.020.928 bytes, diferença de
+um par de linhas compiladas), então não é possível atribuir a diferença a
+"debug disfarçado de release"; o mais provável é que a DLL de 02:35 tenha
+sido compilada de um estado do código anterior aos últimos ajustes do
+commit de 02:38 e/ou que a máquina estivesse carregada naquela medição —
+os tempos de `trade` e `arrival` caíram na mesma proporção, o que um
+ganho localizado no status não explicaria. A subdivisão temporária de `status_cities`
+(removida antes do commit) apontou, no dia 30: escalares 2,34 ms, pop 2,57,
+mercados 2,87 (2.138 mercados sujos/dia, ~2,5 por cidade), fluxos de
+comércio 1,62, construções 2,32, cabeçalho/jazidas 0,90.
+
+O que mudou nesta sessão (núcleo)
+---------------------------------
+
+1. `Array` do Godot 4 é tipo por referência (validado em `--script`:
+   `resize` e escrita de elemento aparecem em todas as referências). O
+   status da cidade publicava `imported/exported/import_value/export_value`
+   no dicionário **todo dia** (4 chamadas por cidade ≈ 3,3 mil/dia) mesmo
+   quando nenhum valor mudou; e redimensionava os 4 arrays para o mesmo
+   tamanho. Agora o redimensionamento só ocorre quando o número de bens
+   muda e a publicação continua acontecendo uma vez (a mutação do array é
+   vista pelo dicionário).
+2. `buildings`: o `Array` publicado recebe cada `Dictionary` de construção
+   uma única vez; o dicionário é mutado no lugar. A reinserção só acontece
+   quando o conjunto muda de tamanho ou o prédio daquele índice muda de
+   identidade (falência/realocação). Antes eram ~2 mil escritas de elemento
+   por dia com o mesmo conteúdo. Bloco estático, receita e valores diários
+   seguem incrementais como estavam.
+
+Nada disso altera resultado econômico: os valores publicados são os mesmos
+(o `economy_integration_test` confere os quatro campos de comércio e o
+save/load). O mercado por cidade **já era** publicado só quando muda
+(`memcmp` de 64 bytes por produto) desde o 6fcbbaa; o custo restante é a
+varredura de 114 produtos/cidade (~1,4 ms).
+
+Ideias descartadas
+------------------
+
+- **Publicar só bens ativos por cidade**: exigiria saber quando um bem
+  inativo volta a ter estoque/produção. Importação e chegadas em trânsito
+  tocam produtos que não têm produtor local, então a lista "ativa" teria
+  de ser reconstruída por varredura — o mesmo custo que o `memcmp` atual,
+  com risco de publicar mercado velho. Não trouxe ganho mensurável no
+  protótipo de contagem.
+- **Rodízio de 1/N das cidades + `demo_set_watched_cities`**: com os
+  mercados custando ~2,9 ms de 12,5 ms, o ganho máximo seria ~2 ms e a
+  ficha/tooltip de uma cidade não observada mostraria o mercado de até N
+  dias atrás. Não vale o risco de UI; a fase já passa do portão.
+
+Testes executados
+-----------------
+
+Release (antes de restaurar a debug):
+
+- `production_template_test` PASS — abas, busca, ficha e navegação ao T3
+- `trade_template_test` PASS — pedidos, rotas, mercado e ficha
+- `city_tooltip_test` PASS — atraso, dados, recursos e borda
+- `nation_city_list_test` PASS — lista ordenada, clicável e i18n
+- `population_template_test` PASS — abas, busca e ficha T3
+- `production_chain_test` OK — multi-insumo, subproduto, alternativa, trabalho
+- `economy_integration_test` OK — geografia, cadeia, investimento, save/load
+- `economy_ai_test` OK
+- `population_demo_test` OK — conservação e ciclo
+- `economy_world_test` OK — 60 dias no cenário real sem violação
+
+Debug (DLL restaurada por rebuild, `cmake --build gdextension/build-debug`):
+
+- `economy_integration_test`, `production_chain_test`, `population_demo_test` OK
+- `economy_world_test` OK (60 d) e `politics_dossier_test` PASS (dossiê T1)
+
+Regenerar a evidência:
+
+```powershell
+& G:/tools/cpp-tools/Lib/site-packages/cmake/data/bin/cmake.exe --build gdextension/build-release
+Copy-Item gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll `
+  gdextension/bin/economy_gdextension.windows.template_debug.x86_64.dll -Force
+& $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+& G:/tools/cpp-tools/Lib/site-packages/cmake/data/bin/cmake.exe --build gdextension/build-debug
+```
