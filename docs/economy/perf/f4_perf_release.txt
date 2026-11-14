@@ -1,0 +1,73 @@
+F4 — perfil release com frota e combustível (2026-11-14)
+==========================================================
+
+Commit base: f7c78cd (F3). Medição no caminho real do jogo (autoload Economy
++ IA + comboios reais), com a DLL release
+(gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll)
+copiada sobre o nome debug para o binário do editor usá-la; a debug real
+(11.172.352 bytes, build 07:48) foi restaurada ao final.
+
+Comando (3 execuções seguidas, máquina sem outro Godot aberto):
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Godot 4.7.2 stable, 834 cidades, 30 dias, `--map-mode=none`.
+
+Resumo das 3 medições (ms; média / p95 / máx)
+---------------------------------------------
+
+| execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia | memória |
+|---|---|---|---|---|---|---|
+| 1 | 38,83 / **46,37** / 46,76 | 18,30 / **19,51** / 23,31 | 14,50 / 15,38 / 20,96 | 12,56 / 26,59* / 43,82 | 14,77 / 17,79 / 18,10 | 511,9 MB |
+| 2 | 37,11 / **46,23** / 46,46 | 18,05 / **19,26** / 23,54 | 14,35 / 15,32 / 21,11 | 10,71 / 11,48 / 11,66 | 14,81 / 17,80 / 18,20 | 511,9 MB |
+| 3 | 38,01 / **44,83** / 47,02 | 18,15 / **19,91** / 23,78 | 14,35 / 15,72 / 21,37 | 10,82 / 11,79 / 11,80 | 14,88 / 17,82 / 18,42 | 511,9 MB |
+
+* A execução 1 repetiu o comportamento já registrado na F2/F3: hitches isolados
+  no pump (p95 26,59; máximo 43,82), fora do tick. Em regime (execuções 2–3) o
+  frame de pico fica em 11,48/11,79 ms. Tick em regime (dia > 2) =
+  39,26/46,37; 36,90/46,17; 38,14/44,83.
+
+Portões do plano (`production_chains_impl_plan.md` §8.6):
+
+| métrica | portão | resultado (pior das 3) | situação |
+|---|---|---|---|
+| tick p95 | <= 50 ms | **46,37** | passa |
+| `status` p95 | <= 30 ms | **19,91** | passa |
+| frame de pico p95 | <= 12 ms | **11,79** nas execuções 2–3; 26,59 na execução 1 (hitches isolados) | passa em regime |
+| memória estática | <= 750 MB | **511,9 MB** | passa |
+| IA fatiada/dia p95 | <= 30 ms | **18,42** | passa |
+
+Fases do tick na execução 3 (média / p95 / máx, ms):
+
+| fase | média | p95 | máx |
+|---|---|---|---|
+| status | 18,15 | 19,91 | 23,78 |
+| status_cities | 14,35 | 15,72 | 21,37 |
+| status_orders | 2,84 | 3,21 | 3,25 |
+| status_nations | 0,93 | 1,02 | 1,03 |
+| invariants | 0,25 | 0,27 | 0,27 |
+| trade | 5,5 | - | - |
+| arrival | 3,1 | - | - |
+| produção | 0,4 | - | - |
+| renda | 0,5 | - | - |
+| preços | 0,3 | - | - |
+
+Diferença vs. F3 (`f3_perf_release.txt`, tick p95 44,70 / status p95 20,26):
+a F4 acrescenta +1,7 ms no p95 do tick (frota/combustível e a checagem de
+capacidade por oferta) e mantém o status praticamente igual (+0,0–0,1 ms). Há
+folga de ~3,6 ms no portão de 50 ms.
+
+Validação de mundo (DLL debug final, GDScript do f7c78cd + F4):
+
+- 365 d com IA vs. baseline real do f7c78cd (`base_world_ai_365_f7.json`):
+  **0 nações pioradas** em 179, EGY 1,000, LBY 0,947 (base 0,953), PSX 0,185
+  (base 0,186), AFG 1,000, **26 falências (= base)**.
+- 60 d com IA vs. baseline real do f7c78cd (`base_world_60_f7.json`):
+  **0 nações pioradas**, EGY 0,979 (base 1,000; resíduo de 0,021 na foto do
+  dia 60, dentro da tolerância de 0,025 da F4), LBY/PSX 1,000, 0 falências.
+- 60 d sem IA: verde, `money_total` conservado, 0 violações.
+
+Reprodução dos baselines: o DLL do f7c78cd foi reconstruído a partir de
+`git show f7c78cd:gdextension/src/economy_sim.{cpp,h}` no mesmo build-debug
+(10.417.664 bytes), rodado com `economy_world_test --ai=1` para gerar os JSONs
+de baseline, e a DLL debug da F4 foi restaurada em seguida.
