@@ -2338,9 +2338,9 @@ static func _cell_label(cell: Dictionary, column: Dictionary) -> Control:
 	label.horizontal_alignment = _alignment(column)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	# Célula com ícone(s) de produto e/ou chip de cor (culturas): os glifos
-	# entram antes do texto, na mesma linha. Sem `icon`/`icons`/`chip`, o rótulo
-	# continua sendo a própria célula (caminho barato das tabelas grandes).
+	# Célula com ícone(s) de produto e/ou chip de cor (culturas): os selos do
+	# bem entram antes do texto, na mesma linha. Sem `icon`/`icons`/`chip`, o
+	# rótulo continua sendo a própria célula (caminho barato das tabelas grandes).
 	var chip := String(cell.get("chip", "")).strip_edges()
 	var icon_specs := _cell_icons(cell)
 	if icon_specs.is_empty() and chip.is_empty():
@@ -2361,14 +2361,11 @@ static func _cell_label(cell: Dictionary, column: Dictionary) -> Control:
 		var icon_id := String((spec as Dictionary).get("id", ""))
 		if icon_id.is_empty():
 			continue
-		var icon_size := float((spec as Dictionary).get("size",
-				cell.get("icon_size", 18.0)))
-		var icon_color := Color.from_string(String((spec as Dictionary).get("color",
-				cell.get("icon_color", ""))), UiKit.TINTA)
-		var icon := ProductIcons.make(icon_id, icon_color, icon_size,
-				UiKit.PAPEL_CLARO)
-		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		box.add_child(icon)
+		# Um tratamento só para todo bem: selo de 20 px com a cor do SETOR e o
+		# glifo de tinta do Icon Forge (nada de tingir o ícone com a cor do bem).
+		var sector := String((spec as Dictionary).get("sector",
+				cell.get("sector", "")))
+		box.add_child(ProductIcons.seal(icon_id, sector))
 
 	if not chip.is_empty():
 		var swatch := PanelContainer.new()

@@ -83,6 +83,13 @@ func _ready() -> void:
 		get_tree().quit()
 		return
 
+	if _set == "icons":
+		for size in _sizes:
+			await _capture_icons(size)
+		_write_report()
+		get_tree().quit()
+		return
+
 	for size in _sizes:
 		await _capture_resolution(size)
 
@@ -277,6 +284,41 @@ func _capture_cultures(size_text: String) -> void:
 	_reset_ui()
 
 
+## Roteiro enxuto dos ícones (--set=icons): o mesmo bem em quatro contextos —
+## Mercado com todos os bens, Mercado filtrado por Química, aba Cadeia e a
+## legenda de recursos do mapa — para comparar antes/depois da unificação.
+func _capture_icons(size_text: String) -> void:
+	var parts := size_text.split("x")
+	var width := int(parts[0])
+	var height := int(parts[1]) if parts.size() > 1 else int(float(width) * 0.5625)
+
+	get_window().size = Vector2i(width, height)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_reset_ui()
+
+	var directory := "%s/%s/%s/%dx%d" % [_out_root, _phase, _run, width, height]
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
+
+	await _capture_state(directory, width, height, "01_market_all",
+			func() -> void: _market_tab(0))
+	await _capture_state(directory, width, height, "02_market_chemical",
+			func() -> void: _market_sector("chemical"))
+	await _capture_state(directory, width, height, "03_chain",
+			func() -> void: _production_tab("chain"))
+	await _capture_state(directory, width, height, "04_resource_legend",
+			_show_resource_legend)
+	_hud.set_map_mode("political")
+	await get_tree().process_frame
+	_reset_ui()
+
+
+## Fecha a janela e abre a legenda de recursos do mapa (modo recursos).
+func _show_resource_legend() -> void:
+	_close_window()
+	_hud.set_map_mode("resources")
+
+
 ## Fecha menu e janela para o próximo estado ou resolução começar neutro.
 func _reset_ui() -> void:
 	if "_settings_layer" in _hud:
@@ -449,6 +491,9 @@ func _market_tab(index: int) -> void:
 		_ensure_trade_orders()
 	if screen != null and screen.has_method("_set_tab"):
 		screen.call("_set_tab", index)
+	if screen != null and index == 0 and screen.has_method("_set_sector"):
+		# O filtro de setor sobrevive entre resoluções; a aba Bens reabre em "Todos".
+		screen.call("_set_sector", "all")
 	if screen != null and index == 1 and screen.has_method("select_good"):
 		# Oferta real: bem e cidade de destino do primeiro pedido publicado.
 		var order := _first_order()
@@ -457,6 +502,14 @@ func _market_tab(index: int) -> void:
 			screen.call("select_city", String(order.get("to_city", "")))
 		else:
 			screen.call("select_good", "wheat")
+
+
+## Aba Bens do Mercado filtrada por um setor (ex.: "chemical").
+func _market_sector(sector: String) -> void:
+	_show_screen("market")
+	var screen: Node = _hud.get("_screens")["market"]
+	if screen != null and screen.has_method("_set_sector"):
+		screen.call("_set_sector", sector)
 
 
 ## Sem pedido publicado no dia 1, a aba Ofertas não tem o que fotografar: avança

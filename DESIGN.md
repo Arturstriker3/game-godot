@@ -441,6 +441,28 @@ Nenhuma tela usa o antigo painel modal escuro (removido em `hud.gd` junto com
 `_window`, `_backdrop`, `_window_body`, cabeçalho/rodapé próprios,
 `_apply_window_size`, `_render_crumb`, `_screen_subtitle` e `SCREEN_HINTS`).
 
+### Ícones de bem — um conjunto, um tratamento
+
+- **Conjunto único:** todo bem resolve para os SVGs do Icon Forge
+  (`assets/icons/resources/`, 24×24, silhueta branca, gerados por
+  `tools/icon_forge` a partir de `resource_icons.json`). `assets/icons/products/`
+  (game-icons herdado) fica só para glifos de **navegação** — caixa, moeda,
+  fábrica, espada, navio, avião; um id de bem nunca resolve para lá, mesmo
+  quando o nome coincide (`truck`).
+- **Tratamento:** glifo em `TINTA` (16 px) dentro de um selo quadrado de 20 px,
+  raio 3, borda de 1 px `TINTA` a 50% e fundo com a cor do **setor** a 35% —
+  a geometria de `LegendResourceIcon`, o selo da legenda de recursos
+  (cidade/depósito). `ProductIcons.seal()` é o único construtor de célula.
+- **Cor por setor, não por bem:** `ProductIcons.SECTOR_TINTS` tem as 15 tintas
+  dessaturadas de `goods.json` (food, agro, mining, energy, metal, chemical,
+  machinery, construction, wood, packaging, textile, transport, electronics,
+  military, luxury); setor desconhecido cai na tinta suave. O `icon_color` de
+  `goods.json` continua sendo a cor do **recurso no mapa**, não a do ícone.
+- **Leitura:** o glifo de tinta sobre o fundo do selo mantém ≥ 3:1 (WCAG) sobre
+  `PAPEL_CLARO`; o glifo ocupa ~70% do selo e continua reconhecível em 20 px.
+  `market_template_test` verifica textura, conjunto único, setor com cor e
+  contraste em todos os bens publicados.
+
 ## Movimento
 
 - Sem animação de entrada. O progresso do dia se move continuamente na barra
@@ -571,7 +593,8 @@ Barra superior (64 px de altura):
 - Ícones: `population.svg`, `deficit.svg` e `bell.svg` são próprios (24×24);
   `wheat.svg` e `truck.svg` são reaproveitados de `assets/icons/products/` e
   rasterizados com `svg/scale=0.09375` (≈48 px) para ficarem nítidos a 24 px
-  (ver `assets/icons/CREDITS.md`).
+  (ver `assets/icons/CREDITS.md`). Esses são glifos de **barra/atalho**; o
+  ícone de um **bem** dentro das telas vem do Icon Forge (ver “Ícones de bem”).
 
 Painel Configurações (sobre o menu Esc):
 

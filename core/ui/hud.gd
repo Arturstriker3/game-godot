@@ -1285,7 +1285,7 @@ func _make_resource_row(key: String, color: Color) -> Button:
 	row.add_child(LegendSwatch.new(color, RENEWABLE_KEYS.has(key)))
 
 	# Ícone do recurso (15 px, tingido de tinta) ao lado do swatch de cor.
-	var icon := ProductIcons.make(key, UiKit.TINTA, 15.0)
+	var icon := ProductIcons.make(key, 15.0)
 	row.add_child(icon)
 
 	var label := UiKit.label(I18n.t("resource." + key), UiKit.FS_SMALL, UiKit.TINTA)

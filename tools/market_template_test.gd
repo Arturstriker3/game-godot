@@ -144,31 +144,45 @@ func _check_offer_costs(screen: Node) -> void:
 				% [origin, tariff, cif, freight, total])
 
 
-## Cada linha tem textura de ícone resolvida e tint legível sobre o papel.
-## (Os SVGs são silhuetas brancas; bens claros eram tingidos quase na cor do
-## papel e sumiam.)
+## Cada linha tem o glifo do Icon Forge e o selo do setor legível sobre o papel.
+## Um conjunto só: nenhum bem resolve para `assets/icons/products/` (o antigo
+## game-icons herdado) e o selo não é tingido com a cor do bem.
 func _check_icons(table) -> void:
 	var paper := Color("#efe6cc")
 	var missing: Array[String] = []
+	var mixed: Array[String] = []
 	var faint: Array[String] = []
+	var uncolored: Array[String] = []
 	for row in table.rows:
 		var cell: Dictionary = row[0]
 		var id := String(cell.get("icon", ""))
 		if id.is_empty() or ProductIcons.texture(id) == null:
 			missing.append(id if not id.is_empty() else "?")
 			continue
-		var tint := Color.from_string(String(cell.get("icon_color", "")),
-				Color("#2b2418"))
-		if ProductIcons.contrast(ProductIcons.readable(tint, paper), paper) < 3.0:
+		if not ProductIcons.icon_path(id).begins_with(ProductIcons.GOODS_DIR):
+			mixed.append(id)
+		var sector := String(cell.get("sector", ""))
+		if not ProductIcons.SECTOR_TINTS.has(sector):
+			uncolored.append(id)
+			continue
+		var seal_bg := ProductIcons.seal_background(sector, paper)
+		if ProductIcons.contrast(ProductIcons.INK, seal_bg) < 3.0:
 			faint.append(id)
 	if not missing.is_empty():
 		_failures.append("%d bens sem textura de ícone: %s"
 				% [missing.size(), ", ".join(missing.slice(0, 5))])
+	if not mixed.is_empty():
+		_failures.append("%d bens fora do conjunto do Icon Forge: %s"
+				% [mixed.size(), ", ".join(mixed.slice(0, 5))])
+	if not uncolored.is_empty():
+		_failures.append("%d bens em setor sem cor no selo: %s"
+				% [uncolored.size(), ", ".join(uncolored.slice(0, 5))])
 	if not faint.is_empty():
-		_failures.append("%d ícones sem contraste sobre o papel: %s"
+		_failures.append("%d selos sem contraste sobre o papel: %s"
 				% [faint.size(), ", ".join(faint.slice(0, 5))])
-	if missing.is_empty() and faint.is_empty():
-		print("ícones=%d com textura e contraste ≥ 3:1 sobre o papel"
+	if missing.is_empty() and mixed.is_empty() and uncolored.is_empty() \
+			and faint.is_empty():
+		print("ícones=%d no Icon Forge, selo do setor com contraste ≥ 3:1"
 				% table.rows.size())
 
 

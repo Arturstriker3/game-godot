@@ -361,7 +361,7 @@ func _refresh_goods() -> void:
 			{
 				"text": _good_name(good) + " · " + _sector_name(good),
 				"icon": id,
-				"icon_color": String(good.get("icon_color", "")),
+				"sector": String(good.get("sector", "")),
 			},
 			{"text": _money(price, currency),
 					"tone": "suave" if price <= 0.0 else "tinta"},

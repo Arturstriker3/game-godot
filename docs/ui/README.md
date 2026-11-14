@@ -438,13 +438,14 @@ spec fica só como medida antes do primeiro layout. Numa página cheia as linhas
 dividem a sobra menor que uma linha, para o corpo da tabela não terminar numa
 faixa vazia; a última página parcial continua alinhada ao topo.
 
-**Ícones legíveis.** `ProductIcons.readable(tint, fundo)` garante contraste
-WCAG ≥ 3:1 sobre o papel, escurecendo o tint na direção da tinta quando o bem é
-claro; `ProductIcons.make` aceita o fundo e as células de tabela passam
-`PAPEL_CLARO`. `market_template_test` verifica os **114** ícones: textura não
-nula e contraste ≥ 3:1. `production_template_test` verifica a origem e os
-ícones dos consumidores; `20` traduções de bens que estavam em português no
-inglês (e as equivalentes em espanhol) foram corrigidas no `i18n.csv`/`.json`.
+**Ícones legíveis.** O glifo de cada bem vai em `TINTA` sobre o fundo do selo
+do setor (`ProductIcons.seal_background`), com contraste ≥ 3:1 sobre
+`PAPEL_CLARO`; a cor do bem deixou de ser usada como tint. `market_template_test`
+verifica todos os bens publicados: textura não nula, caminho dentro do Icon
+Forge, setor com cor e contraste ≥ 3:1. `production_template_test` verifica a
+origem e os ícones dos consumidores; `20` traduções de bens que estavam em
+português no inglês (e as equivalentes em espanhol) foram corrigidas no
+`i18n.csv`/`.json`.
 
 **Capturas (janela real; `--headless` trava em `RenderingServer.frame_post_draw`):**
 
@@ -480,3 +481,43 @@ Testes headless (todos PASS):
 & $godot --headless --path . --script res://tools/politics_dossier_test.gd
 & $godot --headless --path . --script res://tools/economy_integration_test.gd
 ```
+
+## Ícones de bem unificados (2026-11-14)
+
+**Antes:** dois conjuntos de arte conviviam — `assets/icons/products/` (SVGs do
+game-icons herdado, 512 px) e `assets/icons/resources/` (SVGs 24×24 do Icon
+Forge). `ProductIcons` resolvia `products/` primeiro para oito ids, e um deles
+(`truck`) também é um bem: o Mercado mostrava o caminhão herdado no meio dos
+glifos da casa. E `ProductIcons.readable` (removido) tingia cada glifo com a
+cor do bem —
+dezenas de matizes, com bens claros sumindo no papel.
+
+**Depois:** um conjunto e um tratamento em todas as telas (Mercado, Cadeia,
+ficha, Comércio, Produção, Consumo). Todo bem resolve para o Icon Forge; o
+glifo vai em `TINTA` (16 px) dentro de um selo de 20 px com fundo na cor do
+**setor** a 35% e borda de tinta de 1 px — a geometria do selo da legenda de
+recursos. A legenda do mapa não mudou: ela é a referência. `products/` fica só
+com os glifos de navegação (caixa, moeda, fábrica, espada, navio, avião).
+
+**Pipeline:** `python tools/icon_forge/icon_forge.py check` → `0 problema(s)`;
+`build --out <tmp>` reproduz os SVGs publicados byte a byte, então nenhum dos
+ícones novos precisou ser regerado — eles já seguem o traço dos 21 primários.
+
+**Capturas (janela real, sem `--headless`):**
+
+```powershell
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --phase=icons_unify --run=after --set=icons `
+    --sizes=1920x1080,1600x900,1366x768,2560x1440
+```
+
+16 capturas por rodada (`01_market_all`, `02_market_chemical`, `03_chain`,
+`04_resource_legend`) em `captures/icons_unify/{before,after}/`; a página
+`captures/icons_unify/index.html` põe antes e depois lado a lado, com detalhe
+1:1 do Mercado/Química e da coluna "Quem consome". Os dois
+`layout_report.json` saem com **0** `offscreen`, `text_overflow`,
+`text_elided` e `focus_hidden`.
+
+**Teste:** `market_template_test` verifica, em cada linha, textura não nula,
+caminho dentro de `assets/icons/resources/` (conjunto único), setor com cor e
+contraste do glifo de tinta sobre o fundo do selo ≥ 3:1.

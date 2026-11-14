@@ -245,7 +245,7 @@ func _refresh_recipes() -> void:
 			{
 				"text": _recipe_name(recipe),
 				"icon": _selected_good,
-				"icon_color": _good_color(_selected_good),
+				"sector": _good_sector(_selected_good),
 			},
 			_goods_cell(recipe.get("inputs", [])),
 			UiKit.number(float(recipe.get("yield", 1.0)), 2),
@@ -258,7 +258,7 @@ func _refresh_recipes() -> void:
 			{
 				"text": I18n.t("chain.recipe.extraction"),
 				"icon": _selected_good,
-				"icon_color": _good_color(_selected_good),
+				"sector": _good_sector(_selected_good),
 			},
 			{"text": I18n.t("chain.recipe.none"), "tone": "suave"},
 			"1",
@@ -278,7 +278,7 @@ func _goods_cell(items: Array) -> Dictionary:
 	for item in items:
 		var id := String((item as Dictionary).get("good", ""))
 		var qty := float((item as Dictionary).get("qty", 1.0))
-		icons.append({"id": id, "color": _good_color(id)})
+		icons.append({"id": id, "sector": _good_sector(id)})
 		if parts.size() < 3:
 			parts.append("%s ×%s" % [_good_name(id), _qty_text(qty)])
 	if parts.is_empty():
@@ -360,10 +360,10 @@ func _good_name(id: String) -> String:
 	return id
 
 
-func _good_color(id: String) -> String:
+func _good_sector(id: String) -> String:
 	for good in _goods_cache:
 		if String(good.get("id", "")) == id:
-			return String(good.get("icon_color", ""))
+			return String(good.get("sector", ""))
 	return ""
 
 
@@ -451,7 +451,7 @@ func _consumer_icons(good_id: String) -> Array:
 		if output.is_empty() or seen.has(output):
 			continue
 		seen[output] = true
-		icons.append({"id": output, "color": _good_color(output)})
+		icons.append({"id": output, "sector": _good_sector(output)})
 		if icons.size() >= 4:
 			break
 	return icons
