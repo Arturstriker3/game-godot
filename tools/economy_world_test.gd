@@ -182,9 +182,19 @@ func _test_world() -> void:
 	var money_final := float(status["money_total"])
 	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [
 		money_initial, money_final, money_final - money_initial])
-	if int(status.get("bankruptcies", 0)) > 0:
-		_fail("construções do mundo real faliram (%d) — balanço quebrado" % int(
-			status.get("bankruptcies", 0)))
+	# Falências: o cenário sem IA exige zero. Com baseline (F2), o teto é o
+	# número medido no baseline — a coorte da IA pode falir firmas que o F2 já
+	# falia, mas não pode piorar o total. Sem baseline, o guarda antigo (0).
+	var bankruptcy_limit := 0
+	if _baseline_path != "":
+		var baseline_data: Variant = _load_json(_baseline_path)
+		if typeof(baseline_data) == TYPE_DICTIONARY:
+			bankruptcy_limit = int((baseline_data as Dictionary).get("meta", {}).get(
+				"bankruptcies", 0))
+	var bankruptcies := int(status.get("bankruptcies", 0))
+	if bankruptcies > bankruptcy_limit:
+		_fail("construções do mundo real faliram (%d > %d do baseline) — balanço quebrado" % [
+			bankruptcies, bankruptcy_limit])
 
 	# Industrialização (F2): o cenário real parte de 0. Com receitas carregadas,
 	# o bootstrap semeia moinho+padaria em capitais e a contagem precisa sair do

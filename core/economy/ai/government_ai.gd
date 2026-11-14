@@ -26,6 +26,11 @@ const MIN_AVG_UTILIZATION := 0.60
 const MAX_BUILDINGS_PER_TYPE := 6
 const BUILD_COOLDOWN_DAYS := 30
 
+## F3 — prioridade alimentar: a cidade com fome real constrói a cultura antes de
+## abrir mina (o bloco de segurança alimentar abaixo); o capital restante segue
+## para a mineração. Uma reserva de caixa para importação foi testada e
+## descartada: bloqueava a renda mineral que paga a própria comida.
+
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var _sim: Object
@@ -61,8 +66,8 @@ func drain() -> Array:
 func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	var city_id := String(city["id"])
 	var budget := float(city["government_budget"])
-	var available := budget * BUDGET_SHARE
 	var capital_cost := float(status.get("capital_cost_per_capacity", 2000.0))
+	var available := budget * BUDGET_SHARE
 	if available <= 0.0:
 		return
 

@@ -84,6 +84,12 @@ const MINERAL_RESOURCES: Array[String] = [
 ## Soja saiu daqui: agora é alimento da cesta (B3).
 const RENEWABLE_RESOURCES: Array[String] = ["cotton", "wood"]
 
+## Bens cujo fator de produção divide a mesma terra/trabalho da cesta alimentar
+## (lavouras industriais e silvicultura). A IA não os abre em cidade com déficit
+## alimentar estrutural: a prioridade é comida, e a fazenda de algodão/madeira
+## competiria pela bacia e pela mão de obra.
+const LAND_COMPETING_RESOURCES: Array[String] = ["cotton", "wood"]
+
 ## Bens bulk de baixo valor (B4): extratores de alto volume e margem fina por
 ## tonelada, com reserva de décadas. O investidor privado usa um horizonte de
 ## payback maior para eles do que para metais/energéticos de margem alta — senão
@@ -106,6 +112,8 @@ static var _goods_index: Dictionary = {}
 static var _recipes_by_output: Dictionary = {}
 static var _recipe_templates: Dictionary = {}
 static var _all_cache: Dictionary = {}
+## produto (índice do núcleo) → nome do recurso/template (para atravessar cadeias).
+static var _resource_by_product: Dictionary = {}
 ## Templates NÃO alimentares pré-achatados como Array de entradas (evita o
 ## `FOOD_RESOURCES.has` e o hash de String por template no laço quente do
 ## investidor — 114 bens × cidade × dia).
@@ -206,6 +214,12 @@ static func _ensure_loaded() -> void:
 	for output: String in _recipe_templates:
 		if not _all_cache.has(output):
 			_all_cache[output] = _recipe_templates[output]
+
+	_resource_by_product.clear()
+	for resource: String in _all_cache:
+		var product := int((_all_cache[resource] as Dictionary).get("output", -1))
+		if product >= 0 and not _resource_by_product.has(product):
+			_resource_by_product[product] = resource
 
 	# Lista plana dos templates não alimentares, na MESMA ordem de _all_cache
 	# (primários por declaração, depois receitas por ordem do recipes.json).
@@ -334,6 +348,20 @@ static func local_food_supply(city: Dictionary) -> float:
 		var supply := float(city["markets"][product].get("supply", 0.0))
 		total += supply * float(template.get("caloric_factor", 1.0))
 	return total
+
+
+## Necessidade alimentar da cidade em t-eq de grão (mesma unidade de
+## `pop.need` e de `local_food_supply`). 0 quando o status não a declara.
+static func food_need(city: Dictionary) -> float:
+	return maxf(0.0, float(city.get("pop", {}).get("need", 0.0)))
+
+
+## Nome do recurso/template que produz um produto do núcleo ("" quando o
+## produto não tem template conhecido). Usado para atravessar cadeias: o
+## insumo ausente pode ser produzido localmente ou comprado de outra cidade.
+static func resource_for_product(product: int) -> String:
+	_ensure_loaded()
+	return String(_resource_by_product.get(product, ""))
 
 
 ## Custo variável estimado por tonelada, com o preço do insumo de mercado.
