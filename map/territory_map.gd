@@ -1114,6 +1114,8 @@ func _model_from_component(comp: PackedInt32Array, gw: int, gh: int) -> Dictiona
 				(float(pole_y) + 0.5) * cell_h),
 		"angle": angle,
 		"natural_angle": natural_angle,
+		"natural_width_px": (natural_axis_span + 1.0) * cell_w,
+		"natural_height_px": (natural_perp_span + 1.0) * cell_h,
 		"width_px": width_px,
 		"height_px": height_px,
 		"axis_px": width_px,

@@ -38,6 +38,12 @@ const NATION_INSIDE_MIN := 0.95
 ## um nome cede quando o bloco vizinho encosta — não só quando há interseção
 ## estrita. O teste precisa da mesma folga para reconhecer quem bloqueou.
 const LABEL_YIELD_PAD_PX := 3.0
+## Nome de nação legível: piso de ~14 px e tinta mínima de 0,53 (alfa da cor
+## 0,66 × fade). O tamanho é proporcional ao eixo do país na tela (55–70%), com
+## tolerância para o encaixe no território (`pixel_size_max`) e o shrink.
+const NATION_SCREEN_MIN_PX := 13.0
+const NATION_INK_MIN_ALPHA := 0.53
+const NATION_PROPORTION_MIN := 0.60
 
 const SIZES := [Vector2i(1920, 1080), Vector2i(1366, 768)]
 const FOCUSES := ["BEL-BRU", "GBR-LDN", "GBR-GLA", "NED-AMS", "FRA-PAR"]
@@ -65,6 +71,10 @@ func _load_array(path: String) -> Array:
 
 
 func _run() -> void:
+	# A UI do jogo está em pt-BR: os nomes de nação no mapa vêm do mesmo I18n e
+	# precisam sair localizados (FRANÇA, EGITO, ITÁLIA), não o nome inglês do
+	# atlas. `set_locale` não grava preferência do usuário.
+	I18n.set_locale("pt_BR")
 	var cities := _load_array(CITIES_PATH)
 	var ports := _load_array(PORTS_PATH)
 	if cities.is_empty():
@@ -380,6 +390,30 @@ func _check_nation_labels(tag: String, city_report: Array, nation_report: Array,
 					_failures.append(
 							"%s: nome de nação %s com %.0f%% fora do território"
 							% [tag, entry.get("tag", "?"), (1.0 - inside) * 100.0])
+				var nation_tag := String(entry.get("tag", ""))
+				var shown := String(entry.get("text", ""))
+				var full_name := I18n.nation_name(nation_tag).to_upper()
+				var short_name := I18n.nation_short(nation_tag).to_upper()
+				if shown != full_name and shown != short_name:
+					_failures.append(
+							"%s: nome de nação %s fora do pt-BR ('%s'; esperado '%s')"
+							% [tag, nation_tag, shown, full_name])
+				var screen_h := float(entry.get("screen_h", 0.0))
+				if screen_h < NATION_SCREEN_MIN_PX:
+					_failures.append(
+							"%s: nome de nação %s com %.1f px (piso %.0f)"
+							% [tag, nation_tag, screen_h, NATION_SCREEN_MIN_PX])
+				var ink_alpha := float(entry.get("ink_alpha", 0.0)) \
+						* float(entry.get("alpha", 0.0))
+				if ink_alpha < NATION_INK_MIN_ALPHA:
+					_failures.append(
+							"%s: nome de nação %s com tinta fraca (%.2f)"
+							% [tag, nation_tag, ink_alpha])
+				var target_h := float(entry.get("screen_target_h", 0.0))
+				if target_h > 0.0 and screen_h < target_h * NATION_PROPORTION_MIN:
+					_failures.append(
+							"%s: nome de nação %s com %.1f px; alvo proporcional %.1f px"
+							% [tag, nation_tag, screen_h, target_h])
 				nations.append(entry)
 			"capital":
 				capitals.append(entry)
