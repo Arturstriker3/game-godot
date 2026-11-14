@@ -100,6 +100,10 @@ func _run() -> void:
 			_failures.append("sem ofertas e sem estado vazio honesto")
 		if not offers.rows.is_empty() and empty != null and empty.visible:
 			_failures.append("ofertas presentes com estado vazio visível")
+		if offers.columns.size() != 7:
+			_failures.append("ofertas com %d colunas (esperado 7: cidade, origem, tarifa, CIF, frete, total, camada)"
+					% offers.columns.size())
+		_check_offer_costs(screen)
 
 	screen.call("_set_tab", 0)
 	await _frames(2)
@@ -108,6 +112,36 @@ func _run() -> void:
 	if _text(screen.get("_slots"), "market.nation.name").is_empty():
 		_failures.append("resumo da nação vazio")
 	_finish()
+
+
+## O pedido cru misturava unidades: origem por tonelada e frete/tarifa TOTAIS
+## da carga. O cálculo da tela tem de devolver tudo por tonelada e fechar:
+## 300 + 5 = 305 CIF; 305 + 15 = 320 total.
+func _check_offer_costs(screen: Node) -> void:
+	var costs: Dictionary = screen.call("offer_costs", {
+		"amount": 20.0,
+		"fx_rate": 2.0,
+		"seller_fx_rate": 2.0,
+		"origin_price": 300.0,
+		"origin_price_anchor": 600.0,
+		"tariff": 200.0,
+		"freight_cost": 400.0,
+		"delivered_price": 320.0,
+	})
+	var origin := float(costs.get("origin", -1.0))
+	var tariff := float(costs.get("tariff", -1.0))
+	var cif := float(costs.get("cif", -1.0))
+	var freight := float(costs.get("freight", -1.0))
+	var total := float(costs.get("total", -1.0))
+	if not is_equal_approx(origin, 300.0) or not is_equal_approx(tariff, 5.0) \
+			or not is_equal_approx(cif, 305.0) \
+			or not is_equal_approx(freight, 15.0) \
+			or not is_equal_approx(cif + freight, total):
+		_failures.append("custo/t não fecha: origem=%.2f tarifa=%.2f CIF=%.2f frete=%.2f total=%.2f"
+				% [origin, tariff, cif, freight, total])
+	else:
+		print("custo/t: origem=%.2f tarifa=%.2f CIF=%.2f frete=%.2f total=%.2f"
+				% [origin, tariff, cif, freight, total])
 
 
 ## Cada linha tem textura de ícone resolvida e tint legível sobre o papel.

@@ -512,6 +512,7 @@ class DataTableView extends PanelContainer:
 			_rows_holder.add_child(_build_row(row_index, rows[row_index]))
 		if fill_height:
 			_measure_row_height()
+			_fill_page_rows(end - start, per_page)
 
 		_page_label.text = I18n.t("tpl.common.page",
 				{"page": page + 1, "pages": pages})
@@ -542,6 +543,17 @@ class DataTableView extends PanelContainer:
 					_row_height = measured
 					_queue_refit()
 				return
+
+
+	## Página cheia: as linhas dividem a sobra de altura (menor que uma linha)
+	## para o corpo da tabela não terminar numa faixa vazia. A última página,
+	## quando parcial, continua alinhada ao topo.
+	func _fill_page_rows(count: int, per_page: int) -> void:
+		if per_page <= 0 or count < per_page:
+			return
+		for child in _rows_holder.get_children():
+			if child is PaperRow:
+				(child as Control).size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
 	func _queue_refit() -> void:

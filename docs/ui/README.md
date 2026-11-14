@@ -420,7 +420,7 @@ spec (6–8 linhas) deixava metade da área em branco, e vários ícones claros
 
 | Onde | O que passou a existir |
 |---|---|
-| **Mercado** (T2, `mercado.json` + `market_screen.gd`) | abas Bens/Ofertas; cidades à esquerda com busca; 114 bens com ícone, preço na moeda local, estoque, oferta, demanda, importação e exportação; filtro por setor; ficha do bem com preço local, preço de importação, estoque, demanda, moeda e âncora; ofertas do dia com origem + frete + tarifa → **preço entregue** na moeda do comprador; estado vazio honesto quando o dia não publicou pedido |
+| **Mercado** (T2, `mercado.json` + `market_screen.gd`) | abas Bens/Ofertas; cidades à esquerda com busca; 114 bens com ícone, preço na moeda local, estoque, oferta, demanda, importação e exportação; filtro por setor; ficha do bem com preço local, preço de importação, estoque, demanda, moeda e âncora; ofertas do dia **por tonelada na moeda do comprador** — origem + tarifa = **CIF**, frete separado (serviço doméstico do comprador, fora do CIF) e **custo total/t** = CIF + frete, com coluna **Camada** (regional/nacional/internacional); estado vazio honesto quando o dia não publicou pedido |
 | **Logística** (T2, `logistica.json` + `logistics_screen.gd`) | abas Frota, Câmbio, Tarifas e Portos; 179 nações com caminhões/navios/aviões, combustível e fila; moedas com taxa, regime, base e receita de tarifas; editor de tarifa com aplicação real (`demo_set_tariff`); portos com capacidade, uso, fila e expansão (`demo_expand_port`) |
 | **Produção — aba Cadeia** | nova coluna **Origem** (`Jazida`/`Fazenda`/`Fábrica` + cidades produtoras) ao lado de **Quem consome**, que agora traz os **ícones dos bens consumidores**; a tabela de cidades produtoras continua abaixo |
 | **População — aba Consumo** | tabela/cartão por cidade com satisfação básico/vida/luxo, duráveis e satisfação geral (`pop.*`), só leitura do status |
@@ -434,7 +434,9 @@ tabela mede a altura de uma linha e calcula `floor(altura disponível / altura d
 linha)` a cada `NOTIFICATION_RESIZED`, então o número de linhas por página muda
 com a janela (Mercado passou de 6 para 10 bens por página em 1920×1080;
 Logística de 8 para 12 nações; Produção de 5 para 6 cidades). O `page_size` da
-spec fica só como medida antes do primeiro layout.
+spec fica só como medida antes do primeiro layout. Numa página cheia as linhas
+dividem a sobra menor que uma linha, para o corpo da tabela não terminar numa
+faixa vazia; a última página parcial continua alinhada ao topo.
 
 **Ícones legíveis.** `ProductIcons.readable(tint, fundo)` garante contraste
 WCAG ≥ 3:1 sobre o papel, escurecendo o tint na direção da tinta quando o bem é

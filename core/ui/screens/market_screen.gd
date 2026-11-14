@@ -5,8 +5,11 @@ extends Control
 ## Aba **Mercado**: lista de cidades à esquerda e a tabela dos 114 bens da
 ## cidade selecionada à direita (ícone, preço na moeda local, estoque, oferta,
 ## demanda, importação e exportação). Aba **Ofertas**: a ficha do bem escolhido
-## com o preço local, o preço de importação e as melhores ofertas do dia
-## (origem + frete + tarifa → entregue na moeda do comprador).
+## com o preço local, o preço de importação e as melhores ofertas do dia.
+## Cada oferta é exibida por tonelada na moeda do comprador: origem + tarifa =
+## CIF e o frete (serviço doméstico do comprador, fora do CIF) soma no custo
+## total/t. A tarifa e o frete publicados são totais da carga na âncora;
+## dividi-los pela carga é o que mantém a conta fechada.
 ##
 ## A tela só formata o status publicado pela simulação. Busca, filtro de setor,
 ## aba e seleção são estado de exibição; nada é calculado como regra econômica
@@ -419,13 +422,15 @@ func _refresh_detail() -> void:
 
 
 ## Ofertas do dia para o bem: só pedidos publicados da cidade compradora.
+## Tudo aparece por tonelada na moeda do comprador. O pedido publica a origem
+## por tonelada (moeda do vendedor) e tarifa/frete como TOTAIS da carga na
+## âncora; exibir esses campos crus misturava unidades e a conta não fechava.
 func _refresh_offers(city: Dictionary, good: Dictionary) -> void:
 	if _offers_table == null:
 		return
 	var good_id := String(good.get("id", ""))
 	var city_id := String(city.get("id", ""))
 	var currency := String(city.get("currency", ""))
-	var fx := maxf(float(city.get("fx_rate", 1.0)), 1e-9)
 	var rows: Array = []
 	for order in _orders():
 		if String(order.get("good", "")) != good_id:
@@ -439,14 +444,17 @@ func _refresh_offers(city: Dictionary, good: Dictionary) -> void:
 
 	var cells: Array = []
 	for order in rows:
-		var seller_currency := String(order.get("seller_currency", ""))
+		var costs := offer_costs(order)
 		cells.append([
 			I18n.city_name(String(order.get("from_city", "")),
 					String(order.get("from_city", ""))),
-			_money(float(order.get("origin_price", 0.0)), seller_currency),
-			_money(float(order.get("freight_cost", 0.0)) / fx, currency),
-			_money(float(order.get("tariff", 0.0)) / fx, currency),
-			{"text": _money(float(order.get("delivered_price", 0.0)), currency),
+			{"text": _per_ton(float(costs["origin"])), "size": 15},
+			{"text": _per_ton(float(costs["tariff"])), "size": 15,
+					"tone": "suave"},
+			{"text": _per_ton(float(costs["cif"])), "size": 15},
+			{"text": _per_ton(float(costs["freight"])), "size": 15,
+					"tone": "suave"},
+			{"text": _per_ton(float(costs["total"])), "size": 15,
 					"strong": true},
 			{"text": I18n.t("scope.%s" % String(order.get("scope", "regional"))),
 					"tone": "suave"},
@@ -454,8 +462,48 @@ func _refresh_offers(city: Dictionary, good: Dictionary) -> void:
 	_offers_table.update_rows(cells, -1)
 	_set_text("market.offers.count", I18n.t("market.offers.count",
 			{"n": UiKit.number(rows.size())}))
+	_set_text("market.offers.hint", I18n.t("market.offers.hint", {
+		"currency": currency if not currency.is_empty() else I18n.t("common.na"),
+	}))
 	_set_hidden("market.offers", rows.is_empty())
 	_set_hidden("market.offers.empty", not rows.is_empty())
+
+
+## Custo do pedido por tonelada na moeda do comprador. `origin_price_anchor`
+## (âncora/t) e `delivered_price` (moeda do comprador/t) já são unitários;
+## `tariff` e `freight_cost` são totais da carga e viram unitários aqui.
+## O frete exibido é o resíduo entregue − CIF: é o custo do serviço doméstico
+## que o comprador paga, e garante CIF + frete = custo total em toda linha.
+## Campos ausentes voltam -1 para a UI mostrar "—" em vez de zero inventado.
+func offer_costs(order: Dictionary) -> Dictionary:
+	var fx := maxf(float(order.get("fx_rate", 1.0)), 1e-9)
+	var amount := float(order.get("amount", 0.0))
+	var seller_fx := maxf(float(order.get("seller_fx_rate", fx)), 1e-9)
+	var anchor := float(order.get("origin_price_anchor", 0.0))
+	if anchor <= 0.0:
+		anchor = float(order.get("origin_price", 0.0)) * seller_fx
+	var origin := anchor / fx if anchor > 0.0 else -1.0
+	var total := float(order.get("delivered_price", 0.0))
+	if total <= 0.0:
+		total = -1.0
+	var tariff := -1.0
+	if amount > 1e-9:
+		tariff = float(order.get("tariff", 0.0)) / amount / fx
+	var cif := -1.0
+	var freight := -1.0
+	if origin > 0.0 and tariff >= 0.0:
+		cif = origin + tariff
+		if total > 0.0:
+			freight = maxf(total - cif, 0.0)
+	return {"origin": origin, "tariff": tariff, "cif": cif,
+			"freight": freight, "total": total}
+
+
+## Valor por tonelada: -1 significa "não publicado" (não zero).
+static func _per_ton(value: float) -> String:
+	if value < 0.0:
+		return I18n.t("common.na")
+	return UiKit.number(value, 1)
 
 
 # --- Dados -------------------------------------------------------------------

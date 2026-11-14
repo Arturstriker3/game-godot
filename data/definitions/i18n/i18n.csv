@@ -1912,6 +1912,9 @@ market.col.price,Preço local,Local price,Precio local
 market.col.origin,Origem,Origin,Origen
 market.col.tariff,Tarifa,Tariff,Tarifa
 market.col.delivered,Entregue,Delivered,Entregado
+market.col.cif,CIF,CIF,CIF
+market.col.total,Custo total,Total cost,Costo total
+market.col.layer,Camada,Layer,Capa
 market.sector.all,Todos,All,Todos
 market.sector.food,Alimentos,Food,Alimentos
 market.sector.agro,Agro,Agro,Agro
@@ -1936,13 +1939,13 @@ market.detail.title,Bem selecionado,Selected good,Bien seleccionado
 market.detail.import,Preço de importação,Import price,Precio de importación
 market.detail.currency,Moeda,Currency,Moneda
 market.detail.fx,Taxa (âncora),Rate (anchor),Tasa (ancla)
-market.detail.note,"Preço entregue = origem + frete + tarifa, convertido para a moeda do comprador. Sem pedido do dia, a oferta fica sem registro.","Delivered price = origin + freight + tariff, converted to the buyer's currency. Without an order today, the offer has no record.","Precio entregado = origen + flete + tarifa, convertido a la moneda del comprador. Sin pedido del día, la oferta no tiene registro."
+market.detail.note,"CIF = origem + tarifa. O frete é serviço doméstico do comprador: entra no custo total, fora do CIF. Sem pedido do dia, a oferta fica sem registro.","CIF = origin + tariff. Freight is a domestic buyer service: it adds to the total cost, outside CIF. Without an order today, the offer has no record.","CIF = origen + tarifa. El flete es un servicio doméstico del comprador: suma al costo total, fuera del CIF. Sin pedido del día, la oferta no tiene registro."
 market.tag.sector,Setor,Sector,Sector
 market.tag.kind,Tipo,Kind,Tipo
 market.offers.title,Melhores ofertas,Best offers,Mejores ofertas
 market.offers.count,{n} pedidos,{n} orders,{n} pedidos
-market.offers.hint,Na moeda do comprador,In the buyer's currency,En la moneda del comprador
-market.offers.footer,Origem + frete + tarifa → entregue,Origin + freight + tariff → delivered,Origen + flete + tarifa → entregado
+market.offers.hint,Por tonelada · moeda do comprador ({currency}),Per ton · buyer's currency ({currency}),Por tonelada · moneda del comprador ({currency})
+market.offers.footer,Origem + tarifa = CIF · CIF + frete = custo total/t,Origin + tariff = CIF · CIF + freight = total cost/t,Origen + tarifa = CIF · CIF + flete = costo total/t
 market.offers.empty.title,Sem comércio registrado,No trade recorded,Sin comercio registrado
 market.offers.empty.body,Nenhum pedido deste bem chegou à cidade no dia publicado.,No order for this good reached the city on the published day.,Ningún pedido de este bien llegó a la ciudad en el día publicado.
 logistics.title,Logística,Logistics,Logística

@@ -479,9 +479,13 @@
                                 {
                                   "type": "label",
                                   "text": "@market.offers.hint",
+                                  "params": {
+                                    "currency": "—"
+                                  },
                                   "font": "typed",
                                   "size": 12,
-                                  "tone": "suave"
+                                  "tone": "suave",
+                                  "slot": "market.offers.hint"
                                 }
                               ]
                             },
@@ -496,33 +500,38 @@
                               "footer_left": "@market.offers.footer",
                               "columns": [
                                 {
-                                  "label": "@trade.col.from",
-                                  "weight": 1.7,
+                                  "label": "@econ.col.city",
+                                  "weight": 1.5,
                                   "align": "left"
                                 },
                                 {
                                   "label": "@market.col.origin",
-                                  "weight": 1.1,
-                                  "align": "right"
-                                },
-                                {
-                                  "label": "@trade.col.freight",
-                                  "weight": 0.9,
+                                  "weight": 1.0,
                                   "align": "right"
                                 },
                                 {
                                   "label": "@market.col.tariff",
+                                  "weight": 0.8,
+                                  "align": "right"
+                                },
+                                {
+                                  "label": "@market.col.cif",
                                   "weight": 0.9,
                                   "align": "right"
                                 },
                                 {
-                                  "label": "@market.col.delivered",
-                                  "weight": 1.2,
+                                  "label": "@trade.col.freight",
+                                  "weight": 0.8,
                                   "align": "right"
                                 },
                                 {
-                                  "label": "@trade.col.scope",
-                                  "weight": 0.8,
+                                  "label": "@market.col.total",
+                                  "weight": 1.0,
+                                  "align": "right"
+                                },
+                                {
+                                  "label": "@market.col.layer",
+                                  "weight": 0.7,
                                   "align": "left"
                                 }
                               ],
