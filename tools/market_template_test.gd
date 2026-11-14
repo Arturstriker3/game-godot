@@ -1,0 +1,191 @@
+extends SceneTree
+
+## Mercado no T2: abas Bens/Ofertas, tabela dos 114 bens com ícone e preço na
+## moeda local, filtro por setor, busca e detalhe do preço entregue.
+##
+##   godot --headless --path . --script res://tools/market_template_test.gd
+
+const HUD_PATH := "res://core/ui/hud.gd"
+
+var _failures: Array[String] = []
+var _hud
+
+
+func _init() -> void:
+	_run.call_deferred()
+
+
+func _run() -> void:
+	root.size = Vector2i(1920, 1080)
+	var hud_script := load(HUD_PATH) as Script
+	if hud_script == null:
+		_failures.append("não carregou %s" % HUD_PATH)
+		_finish()
+		return
+	_hud = hud_script.new()
+	root.add_child(_hud)
+
+	print("=== market_template_test ===")
+	if not await _wait_for_summary():
+		_failures.append("economia não publicou resumo antes do teste")
+		_finish()
+		return
+
+	_hud.open_screen("market")
+	await _frames(5)
+	var screen: Node = _hud.get("_screens").get("market")
+	if screen == null:
+		_failures.append("HUD sem tela de mercado")
+		_finish()
+		return
+	if not screen.visible:
+		_failures.append("mercado não ficou visível")
+
+	var tabs: Variant = screen.get("_tabs")
+	if tabs == null or tabs.pages.size() != 2:
+		_failures.append("mercado sem as duas abas de pasta")
+	else:
+		print("abas=%d (%s/%s)" % [tabs.pages.size(), tabs.buttons[0].text,
+				tabs.buttons[1].text])
+
+	var cities: Variant = screen.get("_city_table")
+	if cities == null or cities.rows.is_empty():
+		_failures.append("tabela de cidades vazia")
+	else:
+		print("cidades=%d primeira=%s" % [cities.rows.size(), _cell(cities, 0, 0)])
+
+	var goods: Variant = screen.get("_goods_table")
+	if goods == null or goods.rows.size() != 114:
+		_failures.append("tabela de bens com %d linhas (esperado 114)"
+				% (0 if goods == null else goods.rows.size()))
+	else:
+		var first: Dictionary = goods.rows[0][0]
+		print("bens=%d primeiro=%s preço=%s" % [goods.rows.size(),
+				String(first.get("text", "")), _cell(goods, 0, 1)])
+		if String(first.get("icon", "")).is_empty():
+			_failures.append("primeira célula de bem sem ícone")
+		var price := _cell(goods, 0, 1)
+		if price.is_empty():
+			_failures.append("preço local vazio")
+		_check_icons(goods)
+
+	screen.call("_set_sector", "food")
+	await _frames(3)
+	if goods != null and goods.rows.size() >= 114:
+		_failures.append("filtro de setor não reduziu a tabela")
+	else:
+		print("setor food=%d" % (0 if goods == null else goods.rows.size()))
+	screen.call("_set_sector", "all")
+	await _frames(2)
+
+	screen.call("_on_good_search", "zzzz")
+	await _frames(3)
+	if goods != null and not goods.rows.is_empty():
+		_failures.append("busca sem resultado manteve %d bens"
+				% goods.rows.size())
+	screen.call("_on_good_search", "")
+	await _frames(2)
+
+	screen.call("_set_tab", 1)
+	await _frames(3)
+	var offers: Variant = screen.get("_offers_table")
+	if offers == null:
+		_failures.append("aba Ofertas sem tabela")
+	else:
+		var empty: Control = _slot_node(screen.get("_root"), "market.offers.empty")
+		print("ofertas=%d vazio=%s detalhe=%s" % [offers.rows.size(),
+				str(empty != null and empty.visible),
+				_text(screen.get("_slots"), "market.detail.name")])
+		if offers.rows.is_empty() and (empty == null or not empty.visible):
+			_failures.append("sem ofertas e sem estado vazio honesto")
+		if not offers.rows.is_empty() and empty != null and empty.visible:
+			_failures.append("ofertas presentes com estado vazio visível")
+
+	screen.call("_set_tab", 0)
+	await _frames(2)
+	screen.call("_on_city_selected", 0)
+	await _frames(3)
+	if _text(screen.get("_slots"), "market.nation.name").is_empty():
+		_failures.append("resumo da nação vazio")
+	_finish()
+
+
+## Cada linha tem textura de ícone resolvida e tint legível sobre o papel.
+## (Os SVGs são silhuetas brancas; bens claros eram tingidos quase na cor do
+## papel e sumiam.)
+func _check_icons(table) -> void:
+	var paper := Color("#efe6cc")
+	var missing: Array[String] = []
+	var faint: Array[String] = []
+	for row in table.rows:
+		var cell: Dictionary = row[0]
+		var id := String(cell.get("icon", ""))
+		if id.is_empty() or ProductIcons.texture(id) == null:
+			missing.append(id if not id.is_empty() else "?")
+			continue
+		var tint := Color.from_string(String(cell.get("icon_color", "")),
+				Color("#2b2418"))
+		if ProductIcons.contrast(ProductIcons.readable(tint, paper), paper) < 3.0:
+			faint.append(id)
+	if not missing.is_empty():
+		_failures.append("%d bens sem textura de ícone: %s"
+				% [missing.size(), ", ".join(missing.slice(0, 5))])
+	if not faint.is_empty():
+		_failures.append("%d ícones sem contraste sobre o papel: %s"
+				% [faint.size(), ", ".join(faint.slice(0, 5))])
+	if missing.is_empty() and faint.is_empty():
+		print("ícones=%d com textura e contraste ≥ 3:1 sobre o papel"
+				% table.rows.size())
+
+
+func _cell(table, row: int, column: int) -> String:
+	if row >= table.rows.size():
+		return ""
+	var cells: Array = table.rows[row]
+	if column >= cells.size():
+		return ""
+	var cell: Variant = cells[column]
+	return String(cell.get("text", "")) if cell is Dictionary else str(cell)
+
+
+func _text(slots: Dictionary, slot: String) -> String:
+	var node := slots.get(slot) as Label
+	return node.text if node != null else ""
+
+
+func _slot_node(source: Node, slot: String) -> Control:
+	if source == null:
+		return null
+	var pending: Array[Node] = [source]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is Control and (node as Control).get_meta("tpl_slot", "") == slot:
+			return node as Control
+		for child in node.get_children():
+			pending.append(child)
+	return null
+
+
+func _frames(count: int) -> void:
+	for _frame in count:
+		await process_frame
+
+
+func _wait_for_summary() -> bool:
+	for _frame in 600:
+		var eco := root.get_node_or_null("Economy")
+		if eco != null and not (eco.get("last_summary") as Dictionary).is_empty():
+			return true
+		await process_frame
+	return false
+
+
+func _finish() -> void:
+	_hud.queue_free()
+	if _failures.is_empty():
+		print("PASS: mercado com 114 bens, ícones, moeda local e ofertas")
+		quit(0)
+		return
+	for failure in _failures:
+		push_error("[market_test] " + failure)
+	quit(1)

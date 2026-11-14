@@ -286,12 +286,20 @@ class DataTableView extends PanelContainer:
 	var descending := true
 	var footer_left := ""
 	var activate := "single"
+	## `fill_height`: quantas linhas cabem na altura disponível viram o tamanho
+	## da página (o `page_size` da spec fica só como medida de segurança antes
+	## do primeiro layout). Mantém a tabela cheia em qualquer resolução.
+	var fill_height := false
 
 	var _rows_holder: VBoxContainer
 	var _page_label: Label
 	var _prev: Button
 	var _next: Button
 	var _ctx: Dictionary = {}
+	var _header: Control
+	var _footer: Control
+	var _row_height := 0.0
+	var _refit_queued := false
 
 
 	func setup(spec: Dictionary, ctx: Dictionary) -> void:
@@ -306,6 +314,7 @@ class DataTableView extends PanelContainer:
 		descending = bool(spec.get("descending", true))
 		footer_left = UiTemplateBuilder._text(spec, "footer_left", ctx)
 		activate = String(spec.get("activate", "single"))
+		fill_height = bool(spec.get("fill_height", false))
 
 		add_theme_stylebox_override("panel",
 				UiTemplateBuilder._paper_style(UiKit.PAPEL_CLARO, UiKit.TINTA,
@@ -315,19 +324,24 @@ class DataTableView extends PanelContainer:
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 0)
 		add_child(box)
-		box.add_child(_build_header())
+		_header = _build_header()
+		box.add_child(_header)
 
 		_rows_holder = VBoxContainer.new()
 		_rows_holder.add_theme_constant_override("separation", 0)
 		_rows_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		box.add_child(_rows_holder)
 
-		var filler := Control.new()
-		filler.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		filler.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(filler)
+		# A tabela que calcula as linhas pela altura não precisa do espaçador:
+		# o próprio bloco de linhas fica com o espaço que sobra.
+		if not fill_height:
+			var filler := Control.new()
+			filler.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			filler.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.add_child(filler)
 		box.add_child(UiTemplateBuilder._line(UiKit.TINTA, 1.0))
-		box.add_child(_build_footer())
+		_footer = _build_footer()
+		box.add_child(_footer)
 		_refresh()
 
 
@@ -463,6 +477,7 @@ class DataTableView extends PanelContainer:
 
 
 	func _refresh() -> void:
+		_refit_queued = false
 		for child in _rows_holder.get_children():
 			_rows_holder.remove_child(child)
 			child.queue_free()
@@ -482,18 +497,63 @@ class DataTableView extends PanelContainer:
 				var result := UiTemplateBuilder._compare_cells(left, right)
 				return result > 0 if descending else result < 0)
 
-		var pages := maxi(int(ceil(float(rows.size()) / float(page_size))), 1)
+		# Altura disponível / altura de uma linha: a página cresce com a janela.
+		var per_page := page_size
+		if fill_height:
+			var capacity := _capacity()
+			if capacity > 0:
+				per_page = capacity
+		var pages := maxi(int(ceil(float(rows.size()) / float(per_page))), 1)
 		page = clampi(page, 0, pages - 1)
-		var start := page * page_size
-		var end := mini(start + page_size, order.size())
+		var start := page * per_page
+		var end := mini(start + per_page, order.size())
 		for offset in range(start, end):
 			var row_index: int = order[offset]
 			_rows_holder.add_child(_build_row(row_index, rows[row_index]))
+		if fill_height:
+			_measure_row_height()
 
 		_page_label.text = I18n.t("tpl.common.page",
 				{"page": page + 1, "pages": pages})
 		_prev.disabled = page <= 0
 		_next.disabled = page >= pages - 1
+
+
+	## Linhas que cabem entre o cabeçalho e o rodapé (0 até medir a primeira).
+	func _capacity() -> int:
+		if _row_height <= 0.0 or size.y <= 0.0:
+			return 0
+		var header_height := _header.get_combined_minimum_size().y \
+				if _header != null else 0.0
+		var footer_height := _footer.get_combined_minimum_size().y \
+				if _footer != null else 0.0
+		var available := size.y - header_height - footer_height - 1.0
+		if available <= 0.0:
+			return 0
+		return maxi(int(floor(available / _row_height)), 1)
+
+
+	## Altura real de uma linha (fonte + margens), medida uma vez por tabela.
+	func _measure_row_height() -> void:
+		for child in _rows_holder.get_children():
+			if child is PaperRow:
+				var measured := (child as Control).get_combined_minimum_size().y
+				if measured > 0.0 and not is_equal_approx(measured, _row_height):
+					_row_height = measured
+					_queue_refit()
+				return
+
+
+	func _queue_refit() -> void:
+		if not fill_height or _refit_queued or not is_inside_tree():
+			return
+		_refit_queued = true
+		_refresh.call_deferred()
+
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			_queue_refit()
 
 
 	func _build_row(row_index: int, cells: Array) -> Control:
@@ -582,6 +642,100 @@ class DataTableView extends PanelContainer:
 		for child in _rows_holder.get_children():
 			if child is PaperRow:
 				UiTemplateBuilder._apply_row_style(child, selected)
+
+
+## Seletor de papel: botão que abre um menu de opções no próprio estilo da
+## ficha. Usado onde a lista é longa demais para chips (nação, parceiro, bem)
+## e o host popula os itens depois de construir a spec.
+class PaperSelect extends Button:
+	signal selected(id: String)
+
+	var items: Array = []
+	var selected_id := ""
+	var placeholder := "—"
+	var _menu: PopupMenu
+
+
+	func _init() -> void:
+		focus_mode = Control.FOCUS_ALL
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		custom_minimum_size = Vector2(240.0, 38.0)
+		add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+		add_theme_font_size_override("font_size", 14)
+		add_theme_stylebox_override("normal", UiTemplateBuilder._paper_style(
+				UiKit.PAPEL_CLARO, UiKit.TINTA, 12.0, 1, ["all"]))
+		add_theme_stylebox_override("hover", UiTemplateBuilder._paper_style(
+				UiKit.PAPEL, UiKit.TINTA, 12.0, 1, ["all"]))
+		add_theme_stylebox_override("pressed", UiTemplateBuilder._paper_style(
+				UiKit.ABA_INATIVA, UiKit.TINTA, 12.0, 1, ["all"]))
+		add_theme_stylebox_override("focus", UiKit.outline(UiKit.CARIMBO))
+		add_theme_color_override("font_color", UiKit.TINTA)
+		add_theme_color_override("font_hover_color", UiKit.TINTA)
+		add_theme_color_override("font_pressed_color", UiKit.TINTA)
+		UiKit._bind_sfx(self, UiSfx.Sound.TOGGLE)
+		pressed.connect(_open)
+		_set_text()
+
+
+	func set_items(source: Array, keep: String = "") -> void:
+		items = source.duplicate()
+		var wanted := keep if not keep.is_empty() else selected_id
+		selected_id = ""
+		for item in items:
+			if String((item as Dictionary).get("id", "")) == wanted:
+				selected_id = wanted
+				break
+		if selected_id.is_empty() and not items.is_empty():
+			selected_id = String((items[0] as Dictionary).get("id", ""))
+		_set_text()
+
+
+	func select(id: String) -> void:
+		selected_id = id
+		_set_text()
+
+
+	func _set_text() -> void:
+		var label := placeholder
+		for item in items:
+			if String((item as Dictionary).get("id", "")) == selected_id:
+				label = String((item as Dictionary).get("label", placeholder))
+				break
+		text = label + "  ▾"
+		tooltip_text = label
+
+
+	func _open() -> void:
+		if items.is_empty():
+			return
+		if _menu != null and is_instance_valid(_menu):
+			_menu.queue_free()
+		_menu = PopupMenu.new()
+		_menu.add_theme_font_override("font", UiKit.PAPER_BODY_FONT)
+		_menu.add_theme_font_size_override("font_size", 14)
+		_menu.add_theme_color_override("font_color", UiKit.TINTA)
+		_menu.add_theme_color_override("font_hover_color", UiKit.PAPEL_CLARO)
+		_menu.add_theme_stylebox_override("panel", UiTemplateBuilder._paper_style(
+				UiKit.PAPEL_CLARO, UiKit.TINTA, 6.0, 1, ["all"]))
+		_menu.add_theme_stylebox_override("hover", UiTemplateBuilder._flat(
+				UiKit.TINTA, UiKit.TINTA))
+		for index in items.size():
+			var item: Dictionary = items[index]
+			_menu.add_item(String(item.get("label", "")), index)
+			if String(item.get("id", "")) == selected_id:
+				_menu.set_item_checked(index, true)
+		_menu.id_pressed.connect(_on_pick)
+		add_child(_menu)
+		_menu.popup(Rect2i(Vector2i(global_position + Vector2(0.0, size.y)),
+				Vector2i(maxi(int(size.x), 220), 0)))
+
+
+	func _on_pick(index: int) -> void:
+		if index < 0 or index >= items.size():
+			return
+		selected_id = String((items[index] as Dictionary).get("id", ""))
+		_set_text()
+		selected.emit(selected_id)
 
 
 ## Abas de pasta com seleção programável: o host troca de aba sem reconstruir a
@@ -1111,6 +1265,12 @@ static func _build_block(block: Dictionary, ctx: Dictionary) -> Control:
 			var chip := _chip(_text(block, "text", ctx),
 					bool(block.get("active", false)))
 			return chip
+		"select_field":
+			var select := PaperSelect.new()
+			select.custom_minimum_size.x = float(block.get("width", 260.0))
+			select.placeholder = _text(block, "placeholder", ctx)
+			select._set_text()
+			return select
 		"search_field":
 			return _search(block, ctx)
 		"button":
@@ -2166,10 +2326,12 @@ static func _cell_label(cell: Dictionary, column: Dictionary) -> Control:
 	label.horizontal_alignment = _alignment(column)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	# Célula com chip de cor (culturas): quadrado chapado na cor da fonte antes
-	# do texto. Sem `chip`, o rótulo continua sendo a própria célula.
+	# Célula com ícone(s) de produto e/ou chip de cor (culturas): os glifos
+	# entram antes do texto, na mesma linha. Sem `icon`/`icons`/`chip`, o rótulo
+	# continua sendo a própria célula (caminho barato das tabelas grandes).
 	var chip := String(cell.get("chip", "")).strip_edges()
-	if chip.is_empty():
+	var icon_specs := _cell_icons(cell)
+	if icon_specs.is_empty() and chip.is_empty():
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.size_flags_stretch_ratio = float(column.get("weight", 1.0))
 		return label
@@ -2183,17 +2345,46 @@ static func _cell_label(cell: Dictionary, column: Dictionary) -> Control:
 			if _alignment(column) == HORIZONTAL_ALIGNMENT_RIGHT \
 			else BoxContainer.ALIGNMENT_BEGIN
 
-	var swatch := PanelContainer.new()
-	swatch.custom_minimum_size = Vector2(9.0, 9.0)
-	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	swatch.add_theme_stylebox_override("panel",
-			_flat(Color.from_string(chip, UiKit.TINTA_SUAVE), UiKit.TINTA_SUAVE))
-	box.add_child(swatch)
+	for spec in icon_specs:
+		var icon_id := String((spec as Dictionary).get("id", ""))
+		if icon_id.is_empty():
+			continue
+		var icon_size := float((spec as Dictionary).get("size",
+				cell.get("icon_size", 18.0)))
+		var icon_color := Color.from_string(String((spec as Dictionary).get("color",
+				cell.get("icon_color", ""))), UiKit.TINTA)
+		var icon := ProductIcons.make(icon_id, icon_color, icon_size,
+				UiKit.PAPEL_CLARO)
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		box.add_child(icon)
+
+	if not chip.is_empty():
+		var swatch := PanelContainer.new()
+		swatch.custom_minimum_size = Vector2(9.0, 9.0)
+		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		swatch.add_theme_stylebox_override("panel",
+				_flat(Color.from_string(chip, UiKit.TINTA_SUAVE), UiKit.TINTA_SUAVE))
+		box.add_child(swatch)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(label)
 	return box
+
+
+## Lista normalizada de ícones de uma célula: `icon` (um) ou `icons` (vários).
+static func _cell_icons(cell: Dictionary) -> Array:
+	var out: Array = []
+	if cell.has("icons"):
+		for item in cell.get("icons", []):
+			if item is Dictionary:
+				out.append(item)
+			elif item is String and not String(item).is_empty():
+				out.append({"id": String(item)})
+	var single := String(cell.get("icon", "")).strip_edges()
+	if not single.is_empty():
+		out.append({"id": single})
+	return out
 
 
 static func _compare_cells(left: String, right: String) -> int:

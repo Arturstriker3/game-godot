@@ -55,6 +55,29 @@ func _run() -> void:
 		_failures.append("aba Cadeia sem cidades produtoras")
 	else:
 		print("cadeia=%d primeira=%s" % [chain.rows.size(), _cell(chain, 0, 0)])
+		if not bool(chain.get("fill_height")):
+			_failures.append("tabela da cadeia não preenche a altura disponível")
+
+	var recipes: Variant = screen.get("_slots").get("chain.recipes")
+	if recipes == null or recipes.rows.is_empty():
+		_failures.append("aba Cadeia sem linha de receita/extração")
+	elif recipes.rows[0].size() < 6:
+		_failures.append("linha da cadeia sem coluna de origem/consumidores")
+	else:
+		var origin: Dictionary = recipes.rows[0][4]
+		var consumers: Dictionary = recipes.rows[0][5]
+		var icons: Array = consumers.get("icons", [])
+		print("origem=%s consumidores=%s ícones=%d" % [
+				String(origin.get("text", "")),
+				String(consumers.get("text", "")), icons.size()])
+		if String(origin.get("text", "")).strip_edges() in ["", "—"]:
+			_failures.append("bem extraído sem origem (jazida/fazenda)")
+		if icons.is_empty():
+			_failures.append("quem consome sem ícones dos consumidores")
+		for icon in icons:
+			if ProductIcons.texture(String((icon as Dictionary).get("id", ""))) == null:
+				_failures.append("ícone de consumidor sem textura")
+				break
 
 	screen.call("_set_tab", "cities")
 	await _frames(3)
