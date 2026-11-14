@@ -162,7 +162,7 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			if _buildings_of_type(city, product, bindex) > 0:
 				continue
 			var mineral_market: Dictionary = city["markets"][product]
-			var margin: float = (float(mineral_market["price"])
+			var margin: float = (Templates.anchor_price(city, product)
 				- Templates.variable_cost_mined(resource, city))
 			if margin <= 0.0 or float(mineral_market.get("surplus", 0.0)) > 0.0:
 				continue
@@ -245,7 +245,7 @@ func _best_food_crop(city: Dictionary) -> Dictionary:
 		var product := int(template["output"])
 		if product >= suitability.size() or float(suitability[product]) <= 0.0:
 			continue
-		var price := float(city["markets"][product].get("price", 0.0))
+		var price := Templates.anchor_price(city, product)
 		# Viabilidade (bacia por província): uma fazenda cujo preço × aptidão não
 		# paga o próprio custo variável (jobs·wage + opex) faliria em 60 dias e
 		# não alimenta ninguém — o governo não deve construí-la. É o churn de

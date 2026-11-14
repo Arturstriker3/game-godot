@@ -256,6 +256,16 @@ static func recipes_for(resource: String) -> Array:
 	return _recipes_by_output.get(resource, [])
 
 
+## Preço público é local; custos são âncora (F5): converte o preço de mercado
+## (moeda local) para a âncora XGS multiplicando pelo fx_rate (âncora/unidade local).
+static func anchor_price(city: Dictionary, product: int) -> float:
+	var markets: Array = city.get("markets", [])
+	if product < 0 or product >= markets.size():
+		return 0.0
+	return float((markets[product] as Dictionary).get("price", 0.0)) \
+		* float(city.get("fx_rate", 1.0))
+
+
 ## Alternativa de menor custo corrente na cidade (preço dos insumos / yield).
 ## Devolve {} quando nenhuma receita tem insumo disponível.
 static func best_recipe(resource: String, city: Dictionary) -> Dictionary:
@@ -270,7 +280,7 @@ static func best_recipe(resource: String, city: Dictionary) -> Dictionary:
 			if product < 0 or product >= markets.size():
 				available = false
 				break
-			var price := float((markets[product] as Dictionary).get("price", 0.0))
+			var price := anchor_price(city, product)
 			if price <= 0.0:
 				price = 1.0
 			cost += float(item["qty"]) * price / float(recipe["yield"])
@@ -379,12 +389,12 @@ static func variable_cost(resource: String, city: Dictionary) -> float:
 		for item: Dictionary in inputs:
 			var product := int(item["product"])
 			unit += (float(item["qty"]) / float(recipe["yield"])
-				* float((city["markets"][product] as Dictionary).get("price", 0.0)))
+				* anchor_price(city, product))
 		return unit
 	var input_product := int(template["input"])
 	if input_product >= 0:
 		unit += (float(template["input_ratio"])
-			* float(city["markets"][input_product].get("price", 0.0)))
+			* anchor_price(city, input_product))
 	return unit
 
 

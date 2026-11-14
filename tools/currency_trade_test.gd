@@ -1,0 +1,370 @@
+extends SceneTree
+
+## F5 — moedas, câmbio, tarifa e preço entregue.
+##
+## Cenário mínimo determinístico (3 cidades, 3 nações, mesmas distâncias):
+##   SELL_A (NA, moeda XA) — trigo a 40 na moeda local
+##   SELL_B (NB, moeda XB) — trigo a 41 na moeda local
+##   BUY    (NC, moeda XC) — sem produção, importa a cesta
+## SELL_A e SELL_B ficam equidistantes de BUY, então o frete é o mesmo e a
+## única variável é o preço entregue (origem convertida + frete + tarifa).
+##
+## Valida o contrato F5:
+##   - conversão: delivered_price = (origem × taxa vendedor + frete + tarifa)
+##     ÷ taxa comprador, e é isso que ordena a oferta;
+##   - o menor preço entregue escolhe o vendedor certo (B com taxa menor vence);
+##   - tarifa ad valorem muda a escolha e vira receita do governo comprador;
+##   - déficit comercial persistente desvaloriza a moeda do comprador dentro da
+##     banda documentada (±10%) e valoriza a do exportador;
+##   - save/load preserva moedas (taxa/regime/base) e tarifas declaradas;
+##   - dinheiro conservado na âncora (`money_total`) em todos os testes.
+##
+##   godot --headless --path . --script res://tools/currency_trade_test.gd
+
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
+
+const NATION_A := "NA"
+const NATION_B := "NB"
+const NATION_C := "NC"
+const CITY_A := "SELL_A"
+const CITY_B := "SELL_B"
+const CITY_BUY := "BUY"
+const PRODUCT := "wheat"
+const PRICE_A := 40.0
+const PRICE_B := 41.0
+## Taxa em âncora de 1 unidade local. A âncora vale 1,0; SELL_B recebe 0,5.
+const RATE_A := 1.0
+const RATE_B := 0.5
+## Meia-distância em unidades de mapa (~8 km cada) entre cada vendedor e BUY.
+const OFFSET := 100.0
+
+var _failures: Array[String] = []
+
+
+func _init() -> void:
+	var goods := _load_array(GOODS_PATH)
+	if goods.is_empty():
+		_fail("goods.json vazio")
+		_finish()
+		return
+
+	var sim = EconomySim.new()
+	sim.demo_set_goods(goods)
+	# Moedas ANTES do mundo: o preço local nasce na moeda da nação.
+	sim.demo_set_currencies(_currencies(1.0, 1.0, 1.0, "peg"))
+	if not sim.has_method("demo_get_currency"):
+		_fail("binário sem a API F5 (demo_get_currency)")
+		_finish()
+		return
+	sim.initialize_demo_world(_cities(), [], [])
+
+	# Aquecimento: a necessidade diária (fase 5) alimenta a lacuna de importação.
+	for _day in 2:
+		sim.tick_demo()
+
+	_test_conversion(sim)
+	_test_rate_inversion(sim)
+	_test_tariff(sim)
+	_test_save_load(sim, goods)
+	_test_devaluation(sim)
+
+	_finish()
+
+
+## 1. Conversão e escolha pelo menor preço entregue (taxas iguais).
+func _test_conversion(sim) -> void:
+	_prepare_markets(sim)
+	var status: Dictionary = sim.tick_demo()
+	var order := _first_order(status, PRODUCT)
+	if order.is_empty():
+		_fail("conversão: nenhum pedido de trigo no dia")
+		return
+	var from_city := String(order.get("from_city", ""))
+	if from_city != CITY_A:
+		_fail("conversão: vendedor escolhido %s (esperado %s — 40 < 41 na mesma distância)" % [
+			from_city, CITY_A])
+	var origin := float(order.get("origin_price", 0.0))
+	var origin_anchor := float(order.get("origin_price_anchor", 0.0))
+	var delivered := float(order.get("delivered_price", 0.0))
+	var buyer_fx := float(order.get("fx_rate", 0.0))
+	var seller_fx := float(order.get("seller_fx_rate", 0.0))
+	var amount := float(order.get("amount", 0.0))
+	var freight := float(order.get("freight_cost", 0.0))
+	var unit_freight := freight / amount if amount > 0.0 else 0.0
+	print("[fx] conversão: %s -> %s origem=%.2f âncora=%.2f frete/t=%.2f entregue=%.2f (%s) taxa=%.3f" % [
+		from_city, CITY_BUY, origin, origin_anchor, unit_freight, delivered,
+		String(order.get("buyer_currency", "?")), buyer_fx])
+	if absf(origin - PRICE_A) > 1e-6:
+		_fail("conversão: origem %.4f (esperado %.2f na moeda local)" % [origin, PRICE_A])
+	if absf(seller_fx - 1.0) > 1e-9 or absf(buyer_fx - 1.0) > 1e-9:
+		_fail("conversão: taxas deveriam ser 1,0 (vendedor=%.3f comprador=%.3f)" % [
+			seller_fx, buyer_fx])
+	if absf(origin_anchor - origin * seller_fx) > 1e-6:
+		_fail("conversão: origem em âncora %.4f != origem × taxa %.4f" % [
+			origin_anchor, origin * seller_fx])
+	var expected_delivered := (origin_anchor + unit_freight) / maxf(1e-9, buyer_fx)
+	if absf(delivered - expected_delivered) > 1e-6:
+		_fail("conversão: entregue %.6f != (origem+frete)/taxa %.6f" % [
+			delivered, expected_delivered])
+	if String(order.get("buyer_currency", "")) != "XC":
+		_fail("conversão: moeda do comprador '%s' (esperado XC)" % [
+			String(order.get("buyer_currency", ""))])
+	if String(order.get("seller_currency", "")) != "XA":
+		_fail("conversão: moeda do vendedor '%s' (esperado XA)" % [
+			String(order.get("seller_currency", ""))])
+	var currencies: Array = status.get("currencies", [])
+	if currencies.size() != 3:
+		_fail("status: %d moedas publicadas (esperado 3)" % currencies.size())
+	_check_money(status, "conversão")
+
+
+## 2. Mudar a taxa inverte o vendedor escolhido.
+func _test_rate_inversion(sim) -> void:
+	sim.demo_set_currency_rate("XB", RATE_B, false)
+	_prepare_markets(sim)
+	var status: Dictionary = sim.tick_demo()
+	var order := _first_order(status, PRODUCT)
+	if order.is_empty():
+		_fail("câmbio: nenhum pedido de trigo no dia")
+		return
+	var from_city := String(order.get("from_city", ""))
+	var origin_anchor := float(order.get("origin_price_anchor", 0.0))
+	print("[fx] inversão: vendedor=%s origem_âncora=%.2f (XGS %.1f × %.2f) entregue=%.2f" % [
+		from_city, origin_anchor, PRICE_B, RATE_B,
+		float(order.get("delivered_price", 0.0))])
+	if from_city != CITY_B:
+		_fail("câmbio: vendedor %s (esperado %s — origem 41 × 0,5 = 20,5 < 40)" % [
+			from_city, CITY_B])
+	if absf(origin_anchor - PRICE_B * RATE_B) > 1e-6:
+		_fail("câmbio: origem em âncora %.4f (esperado %.4f)" % [
+			origin_anchor, PRICE_B * RATE_B])
+	_check_money(status, "câmbio")
+
+
+## 3. Tarifa ad valorem muda a escolha e é receita do governo comprador.
+func _test_tariff(sim) -> void:
+	sim.demo_set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
+	var effective := float(sim.demo_get_tariff(NATION_C, NATION_B, PRODUCT))
+	if absf(effective - 1.0) > 1e-9:
+		_fail("tarifa: efetiva %.3f (esperado 1.0)" % effective)
+	_prepare_markets(sim)
+	var status: Dictionary = sim.tick_demo()
+	var order := _first_order(status, PRODUCT)
+	if order.is_empty():
+		_fail("tarifa: nenhum pedido de trigo no dia")
+		return
+	var from_city := String(order.get("from_city", ""))
+	print("[fx] tarifa: vendedor=%s (B com 100%% de tarifa entrega %.1f)" % [
+		from_city, PRICE_B * RATE_B * 2.0])
+	if from_city != CITY_A:
+		_fail("tarifa: vendedor %s (esperado %s — a tarifa de 100%% em B encarece a entrega)" % [
+			from_city, CITY_A])
+	# A passa a pagar 50% também: a escolha continua A, mas agora o comprador
+	# arrecada tarifa no próprio orçamento (dinheiro conservado).
+	sim.demo_set_tariff(NATION_C, NATION_A, PRODUCT, 0.5)
+	_prepare_markets(sim)
+	status = sim.tick_demo()
+	order = _first_order(status, PRODUCT)
+	if order.is_empty():
+		_fail("tarifa: nenhum pedido de trigo no dia (com tarifa em A)")
+		return
+	var tariff_revenue := _city_value(status, CITY_BUY, "tariff_revenue")
+	var tariff_paid := float(order.get("tariff", 0.0))
+	print("[fx] tarifa paga: vendedor=%s tarifa=%.2f receita_governo=%.2f" % [
+		String(order.get("from_city", "")), tariff_paid, tariff_revenue])
+	if tariff_paid <= 0.0:
+		_fail("tarifa: pedido sem tarifa paga (%.3f)" % tariff_paid)
+	if tariff_revenue <= 0.0:
+		_fail("tarifa: receita do governo comprador não publicada (%.3f)" % tariff_revenue)
+	var tariffs: Array = status.get("tariffs", [])
+	if tariffs.is_empty():
+		_fail("status: nenhuma tarifa publicada")
+	_check_money(status, "tarifa")
+
+
+## 4. Save/load preserva moedas e tarifas (e o mundo segue conservado).
+func _test_save_load(sim, goods: Array) -> void:
+	# Tarifa coringa: confere que a lista declarada (e não só a efetiva) volta.
+	sim.demo_set_tariff(NATION_C, "*", "*", 0.25)
+	sim.demo_set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
+	var tariffs_before: Array = sim.demo_get_tariffs()
+	var saved: Dictionary = sim.demo_to_dict()
+	var rate_b_before := float(sim.demo_get_currency(NATION_B).get("rate", 0.0))
+
+	var loaded = EconomySim.new()
+	loaded.demo_set_goods(goods)
+	loaded.demo_from_dict(saved)
+	var currency_b: Dictionary = loaded.demo_get_currency(NATION_B)
+	var currency_c: Dictionary = loaded.demo_get_currency(NATION_C)
+	var tariffs_after: Array = loaded.demo_get_tariffs()
+	print("[fx] save/load: taxas A=%.4f B=%.4f C=%.4f tarifas=%d" % [
+		float(loaded.demo_get_currency(NATION_A).get("rate", 0.0)),
+		float(currency_b.get("rate", 0.0)), float(currency_c.get("rate", 0.0)),
+		tariffs_after.size()])
+	if String(currency_b.get("code", "")) != "XB":
+		_fail("save/load: moeda de %s = '%s' (esperado XB)" % [
+			NATION_B, String(currency_b.get("code", ""))])
+	if absf(float(currency_b.get("rate", 0.0)) - rate_b_before) > 1e-9:
+		_fail("save/load: taxa de XB %.6f != %.6f" % [
+			float(currency_b.get("rate", 0.0)), rate_b_before])
+	if bool(currency_b.get("floating", true)):
+		_fail("save/load: regime de XB perdido (deveria continuar fixo)")
+	if tariffs_after.size() != tariffs_before.size():
+		_fail("save/load: %d tarifas (esperado %d)" % [
+			tariffs_after.size(), tariffs_before.size()])
+	else:
+		for index in tariffs_before.size():
+			var before: Dictionary = tariffs_before[index]
+			var after: Dictionary = tariffs_after[index]
+			for key in ["buyer", "seller", "product"]:
+				if String(after.get(key, "")) != String(before.get(key, "")):
+					_fail("save/load: tarifa %d campo %s '%s' != '%s'" % [
+						index, key, String(after.get(key, "")), String(before.get(key, ""))])
+			if absf(float(after.get("rate", 0.0)) - float(before.get("rate", 0.0))) > 1e-12:
+				_fail("save/load: tarifa %d taxa %.4f != %.4f" % [
+					index, float(after.get("rate", 0.0)), float(before.get("rate", 0.0))])
+	# O lookup é reconstruído com os coringas: a tarifa específica prevalece.
+	if absf(float(loaded.demo_get_tariff(NATION_C, NATION_B, PRODUCT)) - 1.0) > 1e-9:
+		_fail("save/load: tarifa efetiva NC->NB em trigo %.3f (esperado 1.0)" % [
+			float(loaded.demo_get_tariff(NATION_C, NATION_B, PRODUCT))])
+	# O mundo carregado roda um dia sem violar invariante nem criar dinheiro.
+	loaded.demo_set_market_stock(CITY_BUY, PRODUCT, 0.0)
+	var status: Dictionary = loaded.tick_demo()
+	var violations: Array = status.get("invariant_violations", [])
+	if not violations.is_empty():
+		_fail("save/load: invariante violado após carregar: %s" % String(violations[0]))
+	var money_saved := float(saved.get("money_total", 0.0))
+	var money_loaded := float(status.get("money_total", 0.0))
+	if money_saved > 0.0 and absf(money_loaded - money_saved) > maxf(1e-3, money_saved * 1e-9):
+		_fail("save/load: dinheiro %.2f -> %.2f (a âncora não foi conservada)" % [
+			money_saved, money_loaded])
+
+
+## 5. Déficit persistente desvaloriza a moeda do comprador (banda ±10%).
+func _test_devaluation(sim) -> void:
+	# Tarifa zerada e moedas flutuantes de novo: só a balança move a taxa.
+	sim.demo_set_tariff(NATION_C, "*", "*", 0.0)
+	sim.demo_set_currency_rate("XA", 1.0, true)
+	sim.demo_set_currency_rate("XB", 1.0, true)
+	sim.demo_set_currency_rate("XC", 1.0, true)
+	_prepare_markets(sim)
+	var buyer_rate := 1.0
+	var seller_rate := 1.0
+	for _day in 40:
+		var status: Dictionary = sim.tick_demo()
+		var violations: Array = status.get("invariant_violations", [])
+		if not violations.is_empty():
+			_fail("desvalorização: invariante violado: %s" % String(violations[0]))
+			break
+		buyer_rate = float(sim.demo_get_currency(NATION_C).get("rate", 1.0))
+		seller_rate = float(sim.demo_get_currency(NATION_A).get("rate", 1.0))
+	print("[fx] balança: comprador (déficit) taxa=%.4f, exportador (superávit) taxa=%.4f" % [
+		buyer_rate, seller_rate])
+	if buyer_rate >= 0.999:
+		_fail("desvalorização: moeda do comprador não caiu (%.4f)" % buyer_rate)
+	if buyer_rate < 0.895:
+		_fail("desvalorização: moeda do comprador furou a banda (%.4f < 0.90)" % buyer_rate)
+	if seller_rate <= 1.001:
+		_fail("valorização: moeda do exportador não subiu (%.4f)" % seller_rate)
+	if seller_rate > 1.105:
+		_fail("valorização: moeda do exportador furou a banda (%.4f > 1.10)" % seller_rate)
+
+
+# ---------------------------------------------------------------------------
+# Cenário e utilitários
+# ---------------------------------------------------------------------------
+
+func _cities() -> Array:
+	return [
+		{
+			"id": CITY_A, "name": "Sell A", "nation": NATION_A,
+			"population": 100000.0,
+			"x": 2000.0 - OFFSET, "y": 1250.0,
+		},
+		{
+			"id": CITY_B, "name": "Sell B", "nation": NATION_B,
+			"population": 100000.0,
+			"x": 2000.0 + OFFSET, "y": 1250.0,
+		},
+		{
+			"id": CITY_BUY, "name": "Buy", "nation": NATION_C,
+			"population": 100000.0,
+			"x": 2000.0, "y": 1250.0,
+		},
+	]
+
+
+func _currencies(rate_a: float, rate_b: float, rate_c: float, regime: String) -> Dictionary:
+	return {
+		"version": 1,
+		"anchor": "XGS",
+		"regime": regime,
+		"currencies": [
+			{"code": "XA", "nations": [NATION_A], "rate_per_anchor": rate_a,
+				"source": "test"},
+			{"code": "XB", "nations": [NATION_B], "rate_per_anchor": rate_b,
+				"source": "test"},
+			{"code": "XC", "nations": [NATION_C], "rate_per_anchor": rate_c,
+				"source": "test"},
+		],
+	}
+
+
+## Repõe o estado do dia: vendedores com excedente e preço local conhecido,
+## comprador zerado (sem estoque, portanto com lacuna de importação).
+func _prepare_markets(sim) -> void:
+	sim.demo_set_market_stock(CITY_A, PRODUCT, 5000.0)
+	sim.demo_set_market_stock(CITY_B, PRODUCT, 5000.0)
+	sim.demo_set_market_stock(CITY_BUY, PRODUCT, 0.0)
+	sim.demo_set_market_price(CITY_A, PRODUCT, PRICE_A)
+	sim.demo_set_market_price(CITY_B, PRODUCT, PRICE_B)
+
+
+func _first_order(status: Dictionary, product: String) -> Dictionary:
+	for order: Variant in Array(status.get("trade_orders", [])):
+		if typeof(order) != TYPE_DICTIONARY:
+			continue
+		if String((order as Dictionary).get("good", "")) == product:
+			return order as Dictionary
+	return {}
+
+
+func _city_value(status: Dictionary, city_id: String, key: String) -> float:
+	for city: Variant in Array(status.get("cities", [])):
+		if typeof(city) == TYPE_DICTIONARY and String((city as Dictionary)["id"]) == city_id:
+			return float((city as Dictionary).get(key, 0.0))
+	return 0.0
+
+
+func _check_money(status: Dictionary, label: String) -> void:
+	var violations: Array = status.get("invariant_violations", [])
+	if not violations.is_empty():
+		_fail("%s: invariante violado: %s" % [label, String(violations[0])])
+
+
+func _load_array(path: String) -> Array:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_fail("nao abriu " + path)
+		return []
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_ARRAY:
+		_fail(path + " nao e um array JSON")
+		return []
+	return data
+
+
+func _fail(message: String) -> void:
+	_failures.append(message)
+
+
+func _finish() -> void:
+	if _failures.is_empty():
+		print("[fx] OK: conversão, escolha por preço entregue, tarifa, câmbio e save/load validados.")
+		quit(0)
+	else:
+		print("[fx] FALHAS (%d):" % _failures.size())
+		for failure in _failures:
+			print(" - " + failure)
+		quit(1)

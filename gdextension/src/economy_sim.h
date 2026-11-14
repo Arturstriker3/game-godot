@@ -250,6 +250,56 @@ public:
 		double stock);
 
 	/**
+	 * Hook de teste/administracao: define o preco local (moeda da nacao) de um
+	 * produto no mercado de uma cidade. O valor e o preco LOCAL; a conversao
+	 * para a ancora acontece nas transacoes.
+	 */
+	void demo_set_market_price(const String& city_id, const String& product,
+		double price);
+
+	/**
+	 * F5: carrega as moedas (currencies.json). Cada item traz `code`,
+	 * `nations[]`, `rate_per_anchor` (valor em XGS de 1 unidade local) e
+	 * `source`; `rate_per_anchor` nulo/<=0 e uma moeda `unknown:no_gdp` e usa
+	 * o fallback documentado (mediana das taxas conhecidas, source
+	 * `fallback:median`). `regime` "peg" congela a taxa; ausente/"float" deixa
+	 * o cambio dinamico por balanca comercial. Pode ser chamado antes ou depois
+	 * do mundo: depois, os precos locais sao reescalados para preservar o valor
+	 * na ancora.
+	 */
+	void demo_set_currencies(const Variant& currencies);
+
+	/** F5: taxa de cambio da moeda de uma nacao (ancora por unidade local). */
+	Dictionary demo_get_currency(const String& nation) const;
+
+	/** F5: todas as moedas carregadas (status/UI e testes). */
+	Array demo_get_currencies() const;
+
+	/**
+	 * F5: hook de teste/administracao para a taxa de uma moeda (por code).
+	 * Tambem fixa a base da banda. `floating` controla o drift diario.
+	 */
+	void demo_set_currency_rate(const String& code, double rate,
+		bool floating = true);
+
+	/**
+	 * F5: tarifa ad valorem (0..1) cobrada do comprador `buyer_nation` sobre o
+	 * valor CIF (origem convertida + frete) do bem `product` importado de
+	 * `seller_nation`. `seller_nation = "*"` vale para qualquer origem.
+	 * `product = "*"` vale para todos os bens. A tarifa e receita do governo
+	 * do comprador (dinheiro conservado).
+	 */
+	void demo_set_tariff(const String& buyer_nation, const String& seller_nation,
+		const String& product, double rate);
+
+	/** F5: tarifa efetiva (buyer, seller, product) apos os coringas. */
+	double demo_get_tariff(const String& buyer_nation,
+		const String& seller_nation, const String& product) const;
+
+	/** F5: tarifas declaradas (status/UI). */
+	Array demo_get_tariffs() const;
+
+	/**
 	 * Cria um mundo sintético determinístico para benchmark.
 	 * @param city_count Número de cidades.
 	 * @param buildings_per_city Construções por cidade (mínimo 3).
@@ -377,6 +427,17 @@ private:
 		double amount = 0.0;
 		double transit_hours = 0.0;
 		double freight_cost = 0.0;
+		// F5: decomposição do preço entregue, por tonelada. `origin_price` está
+		// na moeda do vendedor; os demais valores em âncora. `delivered_price`
+		// está na moeda do comprador.
+		double origin_price = 0.0;
+		double origin_price_anchor = 0.0;
+		double tariff = 0.0;
+		double delivered_price = 0.0;
+		double fx_rate = 1.0;          // âncora por unidade da moeda compradora
+		double seller_fx_rate = 1.0;   // âncora por unidade da moeda vendedora
+		std::string buyer_currency;
+		std::string seller_currency;
 		std::vector<Leg> legs;
 	};
 
@@ -590,6 +651,34 @@ private:
 		bool derived = true;
 	};
 
+	// F5: moeda de uma nação. `rate` = valor em âncora (XGS) de 1 unidade
+	// local. `balance_ema` é a balança comercial (exportações - importações,
+	// em âncora) suavizada em 30 dias; `gross_ema` é o volume (export+import)
+	// suavizado, usado para normalizar a pressão cambial. `peg` congela a taxa,
+	// `float` (padrão quando o dado não declara regime) aplica o drift dentro
+	// da banda [kDemoFxBandLow, kDemoFxBandHigh] × taxa inicial.
+	struct DemoCurrency {
+		std::string code;
+		std::vector<std::string> nations;
+		double rate = 1.0;
+		double base_rate = 1.0;
+		bool floating = true;
+		bool fallback = false;
+		std::string source = "default";
+		double balance_ema = 0.0;
+		double gross_ema = 0.0;
+	};
+
+	// F5: tarifa declarada (buyer, seller, product, ad valorem). O lookup usa
+	// uma chave textual buyer|seller|product; a ordem do vetor é determinística
+	// para o status.
+	struct DemoTariff {
+		std::string buyer;
+		std::string seller;
+		std::string product;
+		double rate = 0.0;
+	};
+
 	// Necessidade de transporte de um pedido (por trecho): veículos e fuel.
 	struct DemoTransportDemand {
 		double trucks = 0.0;
@@ -638,6 +727,11 @@ private:
 		double gdp = 0.0;
 		// F3: compra institucional do Estado no dia (paper/computer).
 		double government_goods_spend = 0.0;
+		// F5: última cotação de importação (preço entregue na moeda local) por
+		// produto; forma o preço local em cidade sem produtor (§2.7).
+		double import_price[kDemoMaxProducts] = {};
+		// F5: tarifa arrecadada no dia (receita do governo do comprador).
+		double tariff_revenue = 0.0;
 		double revenue_by_product[kDemoMaxProducts] = {};
 		// Fluxos comerciais do dia, por produto.
 		double imported[kDemoMaxProducts] = {};
@@ -663,7 +757,7 @@ private:
 		kDemoPhaseArrival = 0, kDemoPhaseReset, kDemoPhaseLabor,
 		kDemoPhaseProduction, kDemoPhaseRaw, kDemoPhaseIncome, kDemoPhaseTrade,
 		kDemoPhaseAccounting, kDemoPhasePrices, kDemoPhaseClamp,
-		kDemoPhaseFiscal, kDemoPhaseInvariants, kDemoPhaseStatus,
+		kDemoPhaseFiscal, kDemoPhaseFx, kDemoPhaseInvariants, kDemoPhaseStatus,
 		kDemoPhaseCount
 	};
 
@@ -687,6 +781,7 @@ private:
 		std::vector<DemoBuilding> buildings;
 		std::vector<DemoShipment> transit;
 		std::unordered_map<std::string, DemoFleet> fleets;
+		std::vector<DemoCurrency> currencies;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;
@@ -709,11 +804,11 @@ private:
 	struct DemoStatusCitySlot {
 		// Quantidade de escalares publicados em demo_fill_city_status; o
 		// espelho abaixo é indexado por ordem de chamada de sync_scalar.
-		static constexpr int kDemoStatusScalarCount = 26;
+		static constexpr int kDemoStatusScalarCount = 28;
 		Dictionary dict;
 		// Strings estáveis: evitam realocar String a cada dia.
-		std::string id_src, name_src, nation_src, home_src, landmass_src;
-		String id, name, nation, home_nation, landmass;
+		std::string id_src, name_src, nation_src, home_src, landmass_src, currency_src;
+		String id, name, nation, home_nation, landmass, currency;
 		Array center;
 		Array suitability;
 		Array external_demand;
@@ -795,7 +890,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
 		DemoStatusKeys();
 	};
 
@@ -807,6 +902,8 @@ private:
 		Array products;
 		Array violations;
 		Array nations;
+		Array currencies;
+		Array tariffs;
 		Array tot_produced, tot_consumed, tot_produced_today, tot_consumed_today;
 		// Totais do sistema por produto (soma dos mercados das cidades). A IA
 		// lia 858 cidades × 21 mercados em GDScript no frame da virada (~13 ms);
@@ -1070,6 +1167,26 @@ private:
 	static double demo_extraction_efficiency(const DemoDeposit& deposit);
 	static double demo_depth_opex_factor(const DemoDeposit& deposit);
 	double demo_base_price(int product) const;
+	// F5: câmbio, preço entregue e tarifa.
+	const DemoCurrency* demo_currency_for(const std::string& nation) const;
+	DemoCurrency* demo_currency_for(const std::string& nation);
+	double demo_fx_rate(const std::string& nation) const;
+	const char* demo_currency_code(const std::string& nation) const;
+	// Preço local do produto convertido para a âncora (liquidação).
+	double demo_price_anchor(const DemoCity& city, int product) const;
+	// Preço-base na moeda local da nação (goods.json está em âncora).
+	double demo_local_base_price(const std::string& nation, int product) const;
+	// Tarifa ad valorem efetiva (coringas "*").
+	double demo_tariff_rate(const std::string& buyer_nation,
+		const std::string& seller_nation, int product) const;
+	// Refaz os índices code->moeda e nação->moeda depois de carregar a lista
+	// (demo_set_currencies, demo_from_dict).
+	void demo_rebuild_currency_indexes();
+	// Refaz a tabela `buyer|seller|product` -> taxa (demo_set_tariff,
+	// demo_from_dict).
+	void demo_rebuild_tariff_lookup();
+	// Atualiza as taxas pela balança comercial do dia (moedas float).
+	void demo_tick_fx();
 	/**
 	 * Define os bens e preços-base a partir de dados externos (goods.json).
 	 * Cada item deve ter "id" (wheat/iron/...), "base_price" e, opcionalmente,
@@ -1217,6 +1334,12 @@ private:
 	int demo_fleet_product_ship_ = -1;
 	int demo_fleet_product_plane_ = -1;
 	int demo_fleet_product_parts_ = -1;
+	// F5: moedas por code/nacao, ordem determinística e tarifas declaradas.
+	std::vector<DemoCurrency> demo_currencies_;
+	std::unordered_map<std::string, int> demo_currency_by_code_;
+	std::unordered_map<std::string, int> demo_nation_currency_;
+	std::vector<DemoTariff> demo_tariffs_;
+	std::unordered_map<std::string, double> demo_tariff_lookup_;
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
 	double demo_base_prices_[kDemoMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,

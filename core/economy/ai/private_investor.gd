@@ -340,7 +340,7 @@ func _try_food(day: int, city: Dictionary, status: Dictionary, food_deficit: flo
 		var product := int(template["output"])
 		if product >= suitability.size() or float(suitability[product]) < min_suitability:
 			continue
-		var price := float(city["markets"][product].get("price", 0.0))
+		var price := Templates.anchor_price(city, product)
 		# Prefere expandir uma cultura JÁ estabelecida na cidade (fix do churn de
 		# milho redundante, B4): quem já é autossuficiente em um alimento não deve
 		# introduzir um segundo em paralelo só por aptidão×preço marginalmente
@@ -406,7 +406,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 			"insumo indisponível", 0.0, 0.0, 0.0)
 		return false
 
-	var price := float(market["price"])
+	var price := Templates.anchor_price(city, product)
 	var observed: float = Templates.observed_cost(city, product)
 	var is_mineral := Templates.MINERAL_RESOURCES.has(resource_name) and not is_recipe
 	# Margem "honesta" para minas: inclui o fator de profundidade da jazida

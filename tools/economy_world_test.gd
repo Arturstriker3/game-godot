@@ -11,7 +11,12 @@ extends SceneTree
 ## binário antigo (sem demo_set_recipes), o teste roda o caminho de 21 bens.
 ##
 ##   godot --headless --path . --script res://tools/economy_world_test.gd
-##     [--days=60] [--out=path.json] [--baseline=path.json]
+##     [--days=60] [--out=path.json] [--baseline=path.json] [--ai=1]
+##     [--currencies=1|0] [--fx=real|neutral]
+##
+## `--currencies=0` roda sem moedas (tudo em XGS, comportamento anterior à F5) e
+## `--fx=neutral` carrega currencies.json com todas as taxas em 1,0 e regime
+## `peg` — isola o efeito de "preço local ≠ âncora" de cada mecanismo da F5.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
@@ -22,6 +27,7 @@ const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 
 const DEFAULT_DAYS := 60
 ## Queda máxima tolerada de satisfação por nação vs. baseline (p.p. / 100).
@@ -37,6 +43,12 @@ var _baseline_path := ""
 ## `--ai=1` roda o mesmo pipeline do jogo (geografia real + EconomicAI) por
 ## dia. O padrão (0) mede só o núcleo e preserva o comparativo de comida da F2.
 var _ai_enabled := false
+## F5: moedas carregadas? (`--currencies=0` reproduz o mundo em XGS pré-F5.)
+var _currencies_enabled := true
+## `real` usa as taxas de currencies.json; `neutral` zera o efeito cambial
+## (todas as taxas = 1,0, regime `peg`) mantendo o resto do caminho da F5;
+## `half` usa 0,5 exato em binário e `peg` — isola arredondamento de câmbio.
+var _fx_mode := "real"
 
 var _failures: Array[String] = []
 
@@ -51,6 +63,10 @@ func _init() -> void:
 			_baseline_path = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--ai="):
 			_ai_enabled = arg.split("=", true, 1)[1] == "1"
+		elif arg.begins_with("--currencies="):
+			_currencies_enabled = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--fx="):
+			_fx_mode = arg.split("=", true, 1)[1]
 	_test_world()
 	if _failures.is_empty():
 		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % _days)
@@ -112,6 +128,11 @@ func _test_world() -> void:
 	if has_chains:
 		sim.demo_set_recipes(_load_array(RECIPES_PATH))
 		sim.demo_set_needs(_load_dict(NEEDS_PATH))
+	# F5: moedas antes de criar o mundo — o preço local de cada cidade nasce na
+	# moeda da nação e o câmbio inicial entra no preço entregue. Binário antigo
+	# (sem a API) roda em XGS, como antes.
+	if _currencies_enabled and sim.has_method("demo_set_currencies"):
+		sim.demo_set_currencies(_load_currencies())
 	# Pipeline do jogo ao vivo (opcional): geografia real + IA econômica. Sem
 	# isso, o teste mede só o núcleo (comparativo de comida da F2). Com `--ai=1`
 	# a demanda final da F3 passa a ser vista pelo investidor. A fazenda inicial
@@ -295,6 +316,23 @@ func _test_world() -> void:
 			float(city["stockpile"]),
 			float(city["firm_cash"]),
 		])
+
+
+## Carrega currencies.json e aplica o modo de câmbio do teste (`--fx=neutral`
+## troca todas as taxas por 1,0 e o regime por `peg`, anulando o efeito cambial).
+func _load_currencies() -> Dictionary:
+	var data := _load_dict(CURRENCIES_PATH)
+	if _fx_mode == "real":
+		return data
+	var rate := 1.0 if _fx_mode == "neutral" else 0.5
+	var neutral := data.duplicate(true)
+	for entry: Variant in Array(neutral.get("currencies", [])):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		(entry as Dictionary)["rate_per_anchor"] = rate
+		(entry as Dictionary)["regime"] = "peg"
+	neutral["regime"] = "peg"
+	return neutral
 
 
 ## Cidades no formato que o GeographyService.apply_to_sim espera.
