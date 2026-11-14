@@ -52,22 +52,48 @@
                           "type": "paper_card",
                           "pad": 16,
                           "gap": 8,
-                          "title": "@city.chain.title",
+                          "title": "@chain.title",
                           "title_size": 18,
                           "blocks": [
                             {
-                              "type": "tag_row",
-                              "tags": [
-                                {"text": "@city.chain.modeled", "tone": "positive"},
-                                {"text": "@resource.wheat", "tone": "suave"}
-                              ]
+                              "type": "select_field",
+                              "slot": "chain.good",
+                              "placeholder": "@chain.select",
+                              "width": 340
                             },
                             {
                               "type": "label",
-                              "text": "@city.chain.note",
+                              "text": "@chain.note",
                               "font": "typed",
-                              "size": 13,
+                              "size": 12,
                               "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 660
+                            },
+                            {
+                              "type": "data_table",
+                              "slot": "chain.recipes",
+                              "page_size": 3,
+                              "sort_col": -1,
+                              "footer_left": "@chain.recipes.footer",
+                              "columns": [
+                                {"label": "@chain.col.recipe", "weight": 1.0, "align": "left"},
+                                {"label": "@chain.col.inputs", "weight": 2.0, "align": "left"},
+                                {"label": "@chain.col.yield", "weight": 0.6, "align": "right"},
+                                {"label": "@chain.col.byproducts", "weight": 0.9, "align": "left"},
+                                {"label": "@chain.col.origin", "weight": 1.4, "align": "left"},
+                                {"label": "@chain.col.consumers", "weight": 1.9, "align": "left"}
+                              ],
+                              "rows": []
+                            },
+                            {
+                              "type": "label",
+                              "text": "@chain.recipes.empty",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "slot": "chain.recipes.empty",
+                              "hidden": true,
                               "wrap": true,
                               "wrap_width": 620
                             }
@@ -93,8 +119,9 @@
                           "type": "data_table",
                           "slot": "chain.table",
                           "grow": true,
+                          "fill_height": true,
                           "selected": 0,
-                          "page_size": 8,
+                          "page_size": 5,
                           "page": 1,
                           "sort_col": 2,
                           "descending": true,
@@ -268,6 +295,7 @@
                           "type": "data_table",
                           "slot": "cities.table",
                           "grow": true,
+                          "fill_height": true,
                           "selected": 0,
                           "page_size": 10,
                           "page": 1,

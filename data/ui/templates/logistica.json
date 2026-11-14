@@ -1,0 +1,796 @@
+{
+  "id": "logistica",
+  "title": "@logistics.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [
+      0.86,
+      0.84
+    ],
+    "min": [
+      960,
+      560
+    ],
+    "max": [
+      1800,
+      1000
+    ],
+    "pauses_game": false
+  },
+  "data": {
+    "crumb": "@logistics.crumb",
+    "title": "@logistics.title"
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "$crumb",
+      "title": "$title",
+      "title_slot": "nav.title",
+      "footer": [
+        {
+          "text": "@tpl.footer.tabs_switch"
+        },
+        {
+          "text": "@tpl.footer.table"
+        },
+        {
+          "spacer": true
+        },
+        {
+          "seal": "ESC"
+        },
+        {
+          "text": "@tpl.footer.close"
+        }
+      ],
+      "body": [
+        {
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
+            {
+              "label": "@logistics.tab.fleet",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.15,
+                      "blocks": [
+                        {
+                          "type": "search_field",
+                          "slot": "fleet.search",
+                          "placeholder": "@logistics.search.nation",
+                          "width": 300
+                        },
+                        {
+                          "type": "label",
+                          "text": "@tpl.common.result",
+                          "params": {
+                            "n": "0"
+                          },
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "fleet.count"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "fleet.nations",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": 0,
+                          "page_size": 8,
+                          "sort_col": -1,
+                          "descending": true,
+                          "activate": "single",
+                          "footer_left": "@logistics.select.nation",
+                          "columns": [
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 1.8,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@fleet.trucks",
+                              "weight": 0.9,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fleet.ships",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fleet.planes",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fleet.fuel",
+                              "weight": 0.9,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fleet.queue",
+                              "weight": 0.9,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.0,
+                      "blocks": [
+                        {
+                          "type": "paper_card",
+                          "title": "@fleet.card.title",
+                          "title_size": 18,
+                          "pad": 16,
+                          "gap": 8,
+                          "grow": true,
+                          "blocks": [
+                            {
+                              "type": "select_field",
+                              "slot": "fleet.nation",
+                              "placeholder": "@logistics.select.nation",
+                              "width": 300
+                            },
+                            {
+                              "type": "meter_row",
+                              "label": "@fleet.trucks",
+                              "value": 0,
+                              "text": "—",
+                              "label_width": 90,
+                              "meter_slot": "fleet.trucks.meter",
+                              "value_slot": "fleet.trucks.text",
+                              "value_width": 190,
+                              "height": 10,
+                              "label_size": 15,
+                              "value_size": 13
+                            },
+                            {
+                              "type": "meter_row",
+                              "label": "@fleet.ships",
+                              "value": 0,
+                              "text": "—",
+                              "label_width": 90,
+                              "meter_slot": "fleet.ships.meter",
+                              "value_slot": "fleet.ships.text",
+                              "value_width": 190,
+                              "height": 10,
+                              "label_size": 15,
+                              "value_size": 13
+                            },
+                            {
+                              "type": "meter_row",
+                              "label": "@fleet.planes",
+                              "value": 0,
+                              "text": "—",
+                              "label_width": 90,
+                              "meter_slot": "fleet.planes.meter",
+                              "value_slot": "fleet.planes.text",
+                              "value_width": 190,
+                              "height": 10,
+                              "label_size": 15,
+                              "value_size": 13
+                            },
+                            {
+                              "type": "rule"
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.fuel",
+                              "value": "—",
+                              "value_slot": "fleet.fuel",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.parts",
+                              "value": "—",
+                              "value_slot": "fleet.parts",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.queue",
+                              "value": "—",
+                              "value_slot": "fleet.queue",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.missed_fleet",
+                              "value": "—",
+                              "value_slot": "fleet.missed_fleet",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.missed_fuel",
+                              "value": "—",
+                              "value_slot": "fleet.missed_fuel",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fleet.source",
+                              "value": "—",
+                              "value_slot": "fleet.source",
+                              "size": 15
+                            },
+                            {
+                              "type": "label",
+                              "text": "@fleet.note",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 520
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@logistics.tab.fx",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.0,
+                      "blocks": [
+                        {
+                          "type": "paper_card",
+                          "title": "@fx.card.title",
+                          "title_size": 18,
+                          "pad": 16,
+                          "gap": 8,
+                          "blocks": [
+                            {
+                              "type": "select_field",
+                              "slot": "fx.nation",
+                              "placeholder": "@logistics.select.nation",
+                              "width": 300
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.code",
+                              "value": "—",
+                              "value_slot": "fx.code",
+                              "size": 16
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.rate",
+                              "value": "—",
+                              "value_slot": "fx.rate",
+                              "size": 16
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.regime",
+                              "value": "—",
+                              "value_slot": "fx.regime",
+                              "size": 16
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.base",
+                              "value": "—",
+                              "value_slot": "fx.base",
+                              "size": 16
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.balance",
+                              "value": "—",
+                              "value_slot": "fx.balance",
+                              "size": 16
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.tariff_revenue",
+                              "value": "—",
+                              "value_slot": "fx.tariff_revenue",
+                              "size": 16
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@fx.source",
+                              "value": "—",
+                              "value_slot": "fx.source",
+                              "size": 15
+                            },
+                            {
+                              "type": "label",
+                              "text": "@fx.note",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 420
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.75,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "fx.search",
+                              "placeholder": "@fx.search",
+                              "width": 300
+                            },
+                            {
+                              "type": "spacer",
+                              "w": 1
+                            },
+                            {
+                              "type": "label",
+                              "text": "@tpl.common.result",
+                              "params": {
+                                "n": "0"
+                              },
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "slot": "fx.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "fx.table",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": -1,
+                          "page_size": 8,
+                          "sort_col": 1,
+                          "descending": true,
+                          "activate": "single",
+                          "footer_left": "@fx.footer",
+                          "columns": [
+                            {
+                              "label": "@fx.code",
+                              "weight": 0.8,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@fx.anchor_rate",
+                              "weight": 1.1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fx.regime",
+                              "weight": 0.9,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@fx.balance",
+                              "weight": 1.1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@fx.source",
+                              "weight": 1.5,
+                              "align": "left"
+                            }
+                          ],
+                          "rows": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@logistics.tab.tariff",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 12,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 8,
+                      "w": 1.0,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tariff.buyer",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "select_field",
+                          "slot": "tariff.nation",
+                          "placeholder": "@tariff.buyer",
+                          "width": 280
+                        },
+                        {
+                          "type": "label",
+                          "text": "@tariff.partner",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "select_field",
+                          "slot": "tariff.partner",
+                          "placeholder": "@tariff.partner",
+                          "width": 280
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 8,
+                      "w": 1.5,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@tariff.good",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "uppercase": true
+                        },
+                        {
+                          "type": "select_field",
+                          "slot": "tariff.good",
+                          "placeholder": "@tariff.good",
+                          "width": 360
+                        },
+                        {
+                          "type": "row",
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "chip_filter",
+                              "text": "@tariff.rate.0",
+                              "slot": "tariff.rate.0",
+                              "active": true
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@tariff.rate.5",
+                              "slot": "tariff.rate.5"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@tariff.rate.10",
+                              "slot": "tariff.rate.10"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@tariff.rate.25",
+                              "slot": "tariff.rate.25"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@tariff.rate.50",
+                              "slot": "tariff.rate.50"
+                            },
+                            {
+                              "type": "button",
+                              "text": "@tariff.apply",
+                              "id": "tariff_apply",
+                              "variant": "primary"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "label",
+                  "text": "@tariff.hint",
+                  "font": "typed",
+                  "size": 13,
+                  "tone": "suave",
+                  "slot": "tariff.result"
+                },
+                {
+                  "type": "data_table",
+                  "slot": "tariff.table",
+                  "grow": true,
+                  "fill_height": true,
+                  "selected": -1,
+                  "page_size": 5,
+                  "sort_col": 0,
+                  "descending": false,
+                  "activate": "single",
+                  "footer_left": "@tariff.footer",
+                  "columns": [
+                    {
+                      "label": "@tariff.buyer",
+                      "weight": 1.2,
+                      "align": "left"
+                    },
+                    {
+                      "label": "@tariff.partner",
+                      "weight": 1.2,
+                      "align": "left"
+                    },
+                    {
+                      "label": "@tariff.good",
+                      "weight": 1.8,
+                      "align": "left"
+                    },
+                    {
+                      "label": "@tariff.rate",
+                      "weight": 0.8,
+                      "align": "right"
+                    }
+                  ],
+                  "rows": []
+                },
+                {
+                  "type": "note_card",
+                  "slot": "tariff.empty",
+                  "hidden": true,
+                  "title": "@tariff.empty.title",
+                  "body": "@tariff.empty.body",
+                  "width": 560
+                }
+              ]
+            },
+            {
+              "label": "@logistics.tab.ports",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.7,
+                      "blocks": [
+                        {
+                          "type": "search_field",
+                          "slot": "port.search",
+                          "placeholder": "@port.search",
+                          "width": 320
+                        },
+                        {
+                          "type": "label",
+                          "text": "@tpl.common.result",
+                          "params": {
+                            "n": "0"
+                          },
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "port.count"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "port.table",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": 0,
+                          "page_size": 8,
+                          "sort_col": -1,
+                          "descending": true,
+                          "activate": "single",
+                          "footer_left": "@port.footer",
+                          "columns": [
+                            {
+                              "label": "@port.col.name",
+                              "weight": 1.8,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 1.1,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@port.col.level",
+                              "weight": 0.7,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@port.col.capacity",
+                              "weight": 1.1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@port.col.throughput",
+                              "weight": 1.1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@port.col.queue",
+                              "weight": 0.9,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.0,
+                      "blocks": [
+                        {
+                          "type": "paper_card",
+                          "title": "@port.card.title",
+                          "title_size": 18,
+                          "pad": 16,
+                          "gap": 8,
+                          "grow": true,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@port.select",
+                              "font": "display",
+                              "size": 24,
+                              "slot": "port.name"
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@port.col.host",
+                              "value": "—",
+                              "value_slot": "port.host",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@port.col.level",
+                              "value": "—",
+                              "value_slot": "port.level",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@port.col.capacity",
+                              "value": "—",
+                              "value_slot": "port.capacity",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@port.col.throughput",
+                              "value": "—",
+                              "value_slot": "port.throughput",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@port.col.queue",
+                              "value": "—",
+                              "value_slot": "port.queue",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@port.col.delay",
+                              "value": "—",
+                              "value_slot": "port.delay",
+                              "size": 15
+                            },
+                            {
+                              "type": "meter_row",
+                              "label": "@port.occupancy",
+                              "value": 0,
+                              "text": "—",
+                              "label_width": 110,
+                              "meter_slot": "port.occupancy.meter",
+                              "value_slot": "port.occupancy.text",
+                              "value_width": 80,
+                              "height": 10,
+                              "label_size": 15,
+                              "value_size": 13
+                            },
+                            {
+                              "type": "rule"
+                            },
+                            {
+                              "type": "label",
+                              "text": "@port.expand.title",
+                              "font": "typed",
+                              "size": 13,
+                              "tone": "tinta"
+                            },
+                            {
+                              "type": "row",
+                              "gap": 6,
+                              "blocks": [
+                                {
+                                  "type": "chip_filter",
+                                  "text": "@port.expand.10",
+                                  "slot": "port.expand.10",
+                                  "active": false
+                                },
+                                {
+                                  "type": "chip_filter",
+                                  "text": "@port.expand.25",
+                                  "slot": "port.expand.25",
+                                  "active": true
+                                },
+                                {
+                                  "type": "chip_filter",
+                                  "text": "@port.expand.50",
+                                  "slot": "port.expand.50",
+                                  "active": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "label",
+                              "text": "@port.expand.none",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "slot": "port.cost"
+                            },
+                            {
+                              "type": "button",
+                              "text": "@port.expand.button",
+                              "id": "port_expand",
+                              "variant": "primary"
+                            },
+                            {
+                              "type": "label",
+                              "text": "",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 420,
+                              "slot": "port.result"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

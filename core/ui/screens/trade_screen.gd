@@ -255,6 +255,18 @@ func _refresh_legs() -> void:
 			UiKit.number(float(order.get("transit_hours", 0.0)), 1) + " h")
 	_set_text("trade.legs.freight",
 			UiKit.number(float(order.get("freight_cost", 0.0))))
+	var good := String(order.get("good", ""))
+	var good_key := "product." + good
+	var good_name := I18n.t(good_key)
+	if good_name == good_key:
+		good_name = good
+	_set_text("trade.legs.product", good_name)
+	var currency := String(order.get("buyer_currency", ""))
+	var delivered := float(order.get("delivered_price", 0.0))
+	_set_text("trade.legs.delivered", UiKit.number(delivered, 1) \
+			if delivered > 0.0 else I18n.t("common.na"))
+	_set_text("trade.legs.currency", currency if not currency.is_empty() \
+			else I18n.t("common.na"))
 
 	var legs: Array = order.get("legs", [])
 	var cells: Array = []

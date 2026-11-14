@@ -9,6 +9,8 @@ extends CanvasLayer
 ## O HUD não simula nada: lê `Economy` e desenha. Todo texto vem do `I18n`.
 
 const ECONOMY_SCREEN: Script = preload("res://core/ui/screens/economy_screen.gd")
+const MARKET_SCREEN: Script = preload("res://core/ui/screens/market_screen.gd")
+const LOGISTICS_SCREEN: Script = preload("res://core/ui/screens/logistics_screen.gd")
 const TRADE_SCREEN: Script = preload("res://core/ui/screens/trade_screen.gd")
 const PRODUCTION_SCREEN: Script = preload("res://core/ui/screens/production_screen.gd")
 const POPULATION_SCREEN: Script = preload("res://core/ui/screens/population_screen.gd")
@@ -65,19 +67,21 @@ const BAR_DATE_SIZE := 17
 const BAR_CAPTION_SIZE := 16
 const BAR_VALUE_SIZE := 23
 
-const SCREEN_ORDER := ["economy", "trade", "production", "population", "politics",
-		"statistics"]
+const SCREEN_ORDER := ["economy", "market", "trade", "production", "population",
+		"politics", "statistics", "logistics"]
 const MAX_ORDER_LOG := 240
 ## Mesmo limiar de `CityWorld.INDUSTRY_ICON_THRESHOLD` (tooltip coerente com o
 ## glifo de fábrica desenhado no mapa).
 const INDUSTRY_ICON_THRESHOLD := 0.35
 const SCREEN_LABELS := {
 	"economy": "dock.economy",
+	"market": "dock.market",
 	"trade": "dock.trade",
 	"production": "dock.production",
 	"population": "dock.population",
 	"politics": "dock.politics",
 	"statistics": "dock.statistics",
+	"logistics": "dock.logistics",
 	"alerts": "hud.alerts",
 }
 ## Ícones da barra lateral esquerda (silhueta branca, tingível). Reaproveita a
@@ -85,11 +89,13 @@ const SCREEN_LABELS := {
 ## (`assets/icons/stats.svg`, mesmo traço de population/deficit/bell).
 const SCREEN_ICONS := {
 	"economy": preload("res://assets/icons/products/coin.svg"),
+	"market": preload("res://assets/icons/products/crate.svg"),
 	"trade": preload("res://assets/icons/products/truck.svg"),
 	"production": preload("res://assets/icons/products/factory.svg"),
 	"population": preload("res://assets/icons/population.svg"),
 	"politics": preload("res://assets/icons/products/sword.svg"),
 	"statistics": preload("res://assets/icons/stats.svg"),
+	"logistics": preload("res://assets/icons/products/ship.svg"),
 }
 ## Modos de camada do mapa. As abas ficam junto ao minimapa (canto inferior
 ## direito); população/economia/indústria continuam no mapa, mas sem botão por
@@ -365,7 +371,13 @@ func open_city(city_id: String, tab: String = "overview") -> void:
 
 
 func open_port(port_name: String) -> void:
-	if _root != null and not port_name.is_empty():
+	if _root == null or port_name.is_empty():
+		return
+	_open_screen("logistics")
+	var screen: Node = _screens.get("logistics")
+	if screen != null and screen.has_method("select_port_by_name"):
+		screen.call("select_port_by_name", port_name)
+	else:
 		UiKit.toast(_root, "Porto: " + port_name, "neutral")
 
 
@@ -2255,6 +2267,8 @@ func _instantiate_screens() -> void:
 
 	_screens["economy"].city_requested.connect(_on_city_requested)
 	_screens["economy"].close_requested.connect(_close_screen)
+	_screens["market"].city_requested.connect(_on_city_market)
+	_screens["market"].close_requested.connect(_close_screen)
 	_screens["trade"].city_requested.connect(_on_city_market)
 	_screens["trade"].close_requested.connect(_close_screen)
 	_screens["production"].city_requested.connect(_on_city_production)
@@ -2265,6 +2279,7 @@ func _instantiate_screens() -> void:
 	_screens["politics"].economy_requested.connect(_on_politics_economy)
 	_screens["politics"].map_requested.connect(_on_politics_map)
 	_screens["statistics"].close_requested.connect(_close_screen)
+	_screens["logistics"].close_requested.connect(_close_screen)
 	if _screens["statistics"].has_method("set_history_service"):
 		_screens["statistics"].set_history_service(_history)
 
@@ -2567,6 +2582,10 @@ func _new_screen(id: String) -> Node:
 	match id:
 		"economy":
 			return ECONOMY_SCREEN.new()
+		"market":
+			return MARKET_SCREEN.new()
+		"logistics":
+			return LOGISTICS_SCREEN.new()
 		"trade":
 			return TRADE_SCREEN.new()
 		"production":

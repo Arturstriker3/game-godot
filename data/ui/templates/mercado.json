@@ -1,0 +1,552 @@
+{
+  "id": "mercado",
+  "title": "@market.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [
+      0.86,
+      0.84
+    ],
+    "min": [
+      960,
+      560
+    ],
+    "max": [
+      1800,
+      1000
+    ],
+    "pauses_game": false
+  },
+  "data": {
+    "crumb": "@market.crumb",
+    "title": "@market.title"
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "$crumb",
+      "title": "$title",
+      "title_slot": "nav.title",
+      "footer": [
+        {
+          "text": "@tpl.footer.tabs_switch"
+        },
+        {
+          "text": "@tpl.footer.table"
+        },
+        {
+          "spacer": true
+        },
+        {
+          "seal": "ESC"
+        },
+        {
+          "text": "@tpl.footer.close"
+        }
+      ],
+      "body": [
+        {
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
+            {
+              "label": "@market.tab.market",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 0.95,
+                      "blocks": [
+                        {
+                          "type": "search_field",
+                          "slot": "market.city_search",
+                          "placeholder": "@market.search.city",
+                          "width": 300
+                        },
+                        {
+                          "type": "label",
+                          "text": "@market.cities.count",
+                          "params": {
+                            "shown": "0",
+                            "total": "0"
+                          },
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "market.cities.count"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "market.cities",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": 0,
+                          "page_size": 7,
+                          "sort_col": -1,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@market.select.city",
+                          "columns": [
+                            {
+                              "label": "@econ.col.city",
+                              "weight": 1.7,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 1.2,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.population",
+                              "weight": 0.9,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "title": "@market.nation.title",
+                          "title_size": 16,
+                          "fill": "claro",
+                          "pad": 14,
+                          "gap": 4,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@market.nation.none",
+                              "font": "display",
+                              "size": 18,
+                              "slot": "market.nation.name"
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.cities",
+                              "value": "—",
+                              "value_slot": "market.nation.cities",
+                              "size": 14
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.production",
+                              "value": "—",
+                              "value_slot": "market.nation.production",
+                              "size": 14
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.need",
+                              "value": "—",
+                              "value_slot": "market.nation.demand",
+                              "size": 14
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.stock",
+                              "value": "—",
+                              "value_slot": "market.nation.stock",
+                              "size": 14
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 2.05,
+                      "blocks": [
+                        {
+                          "type": "row",
+                          "gap": 10,
+                          "blocks": [
+                            {
+                              "type": "search_field",
+                              "slot": "market.goods_search",
+                              "placeholder": "@market.search.good",
+                              "width": 320
+                            },
+                            {
+                              "type": "spacer",
+                              "w": 1
+                            },
+                            {
+                              "type": "label",
+                              "text": "@econ.pill.count",
+                              "params": {
+                                "shown": "0",
+                                "total": "0"
+                              },
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "slot": "market.goods.count"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "row",
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.all",
+                              "slot": "market.sector.all",
+                              "active": true
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.food",
+                              "slot": "market.sector.food"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.agro",
+                              "slot": "market.sector.agro"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.mining",
+                              "slot": "market.sector.mining"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.energy",
+                              "slot": "market.sector.energy"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.metal",
+                              "slot": "market.sector.metal"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.chemical",
+                              "slot": "market.sector.chemical"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.machinery",
+                              "slot": "market.sector.machinery"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "row",
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.construction",
+                              "slot": "market.sector.construction"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.wood",
+                              "slot": "market.sector.wood"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.packaging",
+                              "slot": "market.sector.packaging"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.textile",
+                              "slot": "market.sector.textile"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.transport",
+                              "slot": "market.sector.transport"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.electronics",
+                              "slot": "market.sector.electronics"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.military",
+                              "slot": "market.sector.military"
+                            },
+                            {
+                              "type": "chip_filter",
+                              "text": "@market.sector.luxury",
+                              "slot": "market.sector.luxury"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "market.goods",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": 0,
+                          "page_size": 6,
+                          "sort_col": -1,
+                          "descending": false,
+                          "activate": "double",
+                          "footer_left": "@market.select.good",
+                          "columns": [
+                            {
+                              "label": "@market.col.good",
+                              "weight": 2.4,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@market.col.price",
+                              "weight": 1.0,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@econ.col.stock",
+                              "weight": 0.9,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@econ.col.production",
+                              "weight": 1.0,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@econ.col.need",
+                              "weight": 0.9,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@trade.col.imports",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@trade.col.exports",
+                              "weight": 0.8,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@market.tab.offers",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.0,
+                      "blocks": [
+                        {
+                          "type": "paper_card",
+                          "title": "@market.detail.title",
+                          "title_size": 18,
+                          "pad": 16,
+                          "gap": 6,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@market.select.good",
+                              "font": "display",
+                              "size": 24,
+                              "slot": "market.detail.name"
+                            },
+                            {
+                              "type": "row",
+                              "gap": 8,
+                              "blocks": [
+                                {
+                                  "type": "tag",
+                                  "text": "@market.tag.sector",
+                                  "tone": "suave",
+                                  "slot": "market.detail.sector"
+                                },
+                                {
+                                  "type": "tag",
+                                  "text": "@market.tag.kind",
+                                  "tone": "neutral",
+                                  "slot": "market.detail.kind"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "rule"
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@market.col.price",
+                              "value": "—",
+                              "value_slot": "market.detail.price",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@market.detail.import",
+                              "value": "—",
+                              "value_slot": "market.detail.import",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.stock",
+                              "value": "—",
+                              "value_slot": "market.detail.stock",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@econ.col.need",
+                              "value": "—",
+                              "value_slot": "market.detail.demand",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@market.detail.currency",
+                              "value": "—",
+                              "value_slot": "market.detail.currency",
+                              "size": 15
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@market.detail.fx",
+                              "value": "—",
+                              "value_slot": "market.detail.fx",
+                              "size": 15
+                            },
+                            {
+                              "type": "label",
+                              "text": "@market.detail.note",
+                              "font": "typed",
+                              "size": 12,
+                              "tone": "suave",
+                              "wrap": true,
+                              "wrap_width": 420
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.9,
+                      "blocks": [
+                        {
+                          "type": "paper_card",
+                          "title": "@market.offers.title",
+                          "title_size": 18,
+                          "pad": 16,
+                          "gap": 8,
+                          "grow": true,
+                          "blocks": [
+                            {
+                              "type": "row",
+                              "gap": 10,
+                              "blocks": [
+                                {
+                                  "type": "label",
+                                  "text": "@market.offers.count",
+                                  "params": {
+                                    "n": "0"
+                                  },
+                                  "font": "typed",
+                                  "size": 13,
+                                  "tone": "suave",
+                                  "slot": "market.offers.count"
+                                },
+                                {
+                                  "type": "spacer",
+                                  "w": 1
+                                },
+                                {
+                                  "type": "label",
+                                  "text": "@market.offers.hint",
+                                  "font": "typed",
+                                  "size": 12,
+                                  "tone": "suave"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "data_table",
+                              "slot": "market.offers",
+                              "grow": true,
+                              "fill_height": true,
+                              "page_size": 9,
+                              "sort_col": 5,
+                              "descending": false,
+                              "footer_left": "@market.offers.footer",
+                              "columns": [
+                                {
+                                  "label": "@trade.col.from",
+                                  "weight": 1.7,
+                                  "align": "left"
+                                },
+                                {
+                                  "label": "@market.col.origin",
+                                  "weight": 1.1,
+                                  "align": "right"
+                                },
+                                {
+                                  "label": "@trade.col.freight",
+                                  "weight": 0.9,
+                                  "align": "right"
+                                },
+                                {
+                                  "label": "@market.col.tariff",
+                                  "weight": 0.9,
+                                  "align": "right"
+                                },
+                                {
+                                  "label": "@market.col.delivered",
+                                  "weight": 1.2,
+                                  "align": "right"
+                                },
+                                {
+                                  "label": "@trade.col.scope",
+                                  "weight": 0.8,
+                                  "align": "left"
+                                }
+                              ],
+                              "rows": []
+                            },
+                            {
+                              "type": "note_card",
+                              "slot": "market.offers.empty",
+                              "hidden": true,
+                              "title": "@market.offers.empty.title",
+                              "body": "@market.offers.empty.body",
+                              "width": 520
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -538,6 +538,77 @@
                   ]
                 },
                 {
+                  "type": "paper_card",
+                  "title": "@pop.needs.title",
+                  "title_size": 18,
+                  "pad": 14,
+                  "gap": 6,
+                  "blocks": [
+                    {
+                      "type": "meter_row",
+                      "label": "@pop.needs.basic",
+                      "value": 0,
+                      "text": "—",
+                      "label_width": 110,
+                      "value_width": 60,
+                      "meter_slot": "city.needs.basic.meter",
+                      "value_slot": "city.needs.basic.text",
+                      "height": 10,
+                      "label_size": 14,
+                      "value_size": 13
+                    },
+                    {
+                      "type": "meter_row",
+                      "label": "@pop.needs.life",
+                      "value": 0,
+                      "text": "—",
+                      "label_width": 110,
+                      "value_width": 60,
+                      "meter_slot": "city.needs.life.meter",
+                      "value_slot": "city.needs.life.text",
+                      "height": 10,
+                      "label_size": 14,
+                      "value_size": 13
+                    },
+                    {
+                      "type": "meter_row",
+                      "label": "@pop.needs.luxury",
+                      "value": 0,
+                      "text": "—",
+                      "label_width": 110,
+                      "value_width": 60,
+                      "meter_slot": "city.needs.luxury.meter",
+                      "value_slot": "city.needs.luxury.text",
+                      "height": 10,
+                      "label_size": 14,
+                      "value_size": 13
+                    },
+                    {
+                      "type": "kv_row",
+                      "key": "@pop.needs.durable",
+                      "value": "—",
+                      "value_slot": "city.needs.durable",
+                      "size": 15
+                    },
+                    {
+                      "type": "kv_row",
+                      "key": "@pop.needs.satisfaction",
+                      "value": "—",
+                      "value_slot": "city.needs.satisfaction",
+                      "size": 15
+                    },
+                    {
+                      "type": "label",
+                      "text": "@pop.needs.note",
+                      "font": "typed",
+                      "size": 12,
+                      "tone": "suave",
+                      "wrap": true,
+                      "wrap_width": 700
+                    }
+                  ]
+                },
+                {
                   "type": "row",
                   "gap": 12,
                   "blocks": [
@@ -980,6 +1051,45 @@
                           "slot": "mkt.chart.empty.body"
                         }
                       ]
+                    }
+                  ]
+                },
+                {
+                  "type": "paper_card",
+                  "title": "@fx.card.title",
+                  "title_size": 18,
+                  "pad": 14,
+                  "gap": 6,
+                  "blocks": [
+                    {
+                      "type": "kv_row",
+                      "key": "@fx.code",
+                      "value": "—",
+                      "value_slot": "mkt.currency",
+                      "size": 15
+                    },
+                    {
+                      "type": "kv_row",
+                      "key": "@fx.rate",
+                      "value": "—",
+                      "value_slot": "mkt.fx",
+                      "size": 15
+                    },
+                    {
+                      "type": "kv_row",
+                      "key": "@fx.tariff_revenue",
+                      "value": "—",
+                      "value_slot": "mkt.tariff_revenue",
+                      "size": 15
+                    },
+                    {
+                      "type": "label",
+                      "text": "@fx.note",
+                      "font": "typed",
+                      "size": 12,
+                      "tone": "suave",
+                      "wrap": true,
+                      "wrap_width": 700
                     }
                   ]
                 },

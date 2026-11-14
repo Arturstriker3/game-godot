@@ -14,7 +14,10 @@ signal city_requested(city_id: String)
 signal close_requested
 
 const SPEC_ID := "populacao"
-const TAB_IDS := ["nations", "cities"]
+const TAB_IDS := ["nations", "cities", "needs"]
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+
+static var _needs_cache: Dictionary = {}
 
 var _summary: Dictionary = {}
 var _tab_index := 0
@@ -27,10 +30,12 @@ var _slots := {}
 var _tables := {}
 var _tabs: UiTemplateBuilder.FolderTabs
 var _search: LineEdit
+var _needs_search: LineEdit
 var _structure_key := ""
 
 ## Cidades visíveis na tabela (busca aplicada); o índice da linha aponta aqui.
 var _shown_cities: Array = []
+var _shown_needs: Array = []
 ## Nações visíveis na tabela; a linha selecionada alimenta o cartão da direita.
 var _shown_nations: Array = []
 var _nation_cultures: CultureMixView
@@ -40,6 +45,7 @@ var _city_cultures: CultureMixView
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_ensure_needs()
 
 
 func uses_window_shell() -> bool:
@@ -56,9 +62,14 @@ func refresh(summary: Dictionary) -> void:
 	_refresh()
 
 
-## Aceita o índice da aba (captura) ou "nations"/"cities".
+## Aceita o índice da aba (captura) ou "nations"/"cities"/"needs".
 func _set_tab(id: Variant) -> void:
-	var index := 1 if (str(id) == "cities" or (id is int and int(id) == 1)) else 0
+	var index := 0
+	if id is int:
+		index = clampi(int(id), 0, TAB_IDS.size() - 1)
+	else:
+		var found := TAB_IDS.find(str(id))
+		index = found if found >= 0 else 0
 	_tab_index = index
 	if _tabs != null:
 		_tabs.select(index)
@@ -88,6 +99,7 @@ func _rebuild() -> void:
 	_tables.clear()
 	_tabs = null
 	_search = null
+	_needs_search = null
 	_nation_cultures = null
 	_city_cultures = null
 
@@ -131,6 +143,11 @@ func _index_slots() -> void:
 		_search.text = _query
 		_search.text_changed.connect(_on_search_changed)
 
+	_needs_search = _line_edit("needs.search")
+	if _needs_search != null:
+		_needs_search.text = _query
+		_needs_search.text_changed.connect(_on_search_changed)
+
 	var nation_search := _line_edit("nations.search")
 	if nation_search != null:
 		nation_search.text = _query
@@ -173,7 +190,7 @@ func _on_tab_changed(index: int) -> void:
 
 func _on_search_changed(text: String) -> void:
 	_query = text.strip_edges()
-	for slot in ["nations.search", "cities.search"]:
+	for slot in ["nations.search", "cities.search", "needs.search"]:
 		var field := _line_edit(slot)
 		if field != null and field.text != text:
 			field.text = text
@@ -192,6 +209,10 @@ func _on_row_activated(index: int, tab: String) -> void:
 		_set_tab("cities")
 		_on_search_changed(_query)
 		return
+	if tab == "needs":
+		_on_row_selected(index, tab)
+		_open_selected()
+		return
 	_on_row_selected(index, tab)
 	_open_selected()
 
@@ -202,6 +223,12 @@ func _on_row_selected(index: int, tab: String) -> void:
 			return
 		_selected_nation = String(_shown_nations[index].get("tag", ""))
 		_update_nation_card(_shown_nations[index])
+		return
+	if tab == "needs":
+		if index < 0 or index >= _shown_needs.size():
+			return
+		_selected_city = String(_shown_needs[index].get("id", ""))
+		_update_needs_card(_shown_needs[index])
 		return
 	if tab != "cities" or index < 0 or index >= _shown_cities.size():
 		return
@@ -227,6 +254,7 @@ func _refresh() -> void:
 	_refresh_totals()
 	_refresh_nations()
 	_refresh_cities()
+	_refresh_needs()
 
 
 func _refresh_totals() -> void:
@@ -349,7 +377,165 @@ func _update_city_card(city: Dictionary) -> void:
 				I18n.t("pop.culture.empty"), false)
 
 
-# --- Dados -------------------------------------------------------------------
+func _refresh_needs() -> void:
+	var table := _tables.get("needs") as UiTemplateBuilder.DataTableView
+	if table == null:
+		return
+	var all := _city_rows()
+	_shown_needs = _filtered_cities(all)
+	_shown_needs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var left := int((_needs_state(a) as Dictionary).get("level", 0))
+		var right := int((_needs_state(b) as Dictionary).get("level", 0))
+		if left != right:
+			return left < right
+		return float(a.get("population", 0.0)) > float(b.get("population", 0.0)))
+	var cells: Array = []
+	for city in _shown_needs:
+		var needs := _needs_state(city)
+		var level := int(needs.get("level", 0))
+		var level_sat: Array = needs.get("level_satisfaction", [])
+		var basic := _level_value(needs, 0)
+		var life := _level_value(needs, 1)
+		var luxury := _level_value(needs, 2)
+		cells.append([
+			I18n.city_name(String(city.get("id", "")), String(city.get("name", ""))),
+			I18n.nation_name(String(city.get("nation", ""))),
+			{"text": _level_name(level), "tone": "suave"},
+			{"text": _percent_text(basic), "tone": _attendance_tone(basic)},
+			{"text": _percent_text(life), "tone": _attendance_tone(life)},
+			{"text": _percent_text(luxury), "tone": _attendance_tone(luxury)},
+			{"text": UiKit.number(float(needs.get("durable_stock", 0.0))) + " t",
+					"tone": "suave"},
+		])
+	var index := _index_of(_shown_needs, _selected_city)
+	table.update_rows(cells, index)
+	if index >= 0:
+		_selected_city = String(_shown_needs[index].get("id", ""))
+	_set_text("needs.count", I18n.t("tpl.common.result",
+			{"n": _count_text(_shown_needs.size(), all.size())}))
+	_set_hidden("needs.table", _shown_needs.is_empty())
+	_set_hidden("needs.card", _shown_needs.is_empty())
+	_update_needs_card(_shown_needs[index] if index >= 0 else {})
+	var categories := _slots.get("needs.categories") \
+			as UiTemplateBuilder.DataTableView
+	if categories != null and categories.rows.is_empty():
+		categories.update_rows(_needs_categories())
+
+
+func _update_needs_card(city: Dictionary) -> void:
+	if city.is_empty():
+		return
+	var needs := _needs_state(city)
+	var level := int(needs.get("level", 0))
+	_set_text("needs.card.name", I18n.city_name(String(city.get("id", "")),
+			String(city.get("name", ""))))
+	_set_text("needs.card.nation", I18n.nation_name(String(city.get("nation", ""))))
+	_set_text("needs.card.level", _level_name(level))
+	_set_text("needs.card.satisfaction",
+			_percent_text(float(needs.get("satisfaction", 0.0))))
+	_set_text("needs.card.durable",
+			UiKit.number(float(needs.get("durable_stock", 0.0))) + " t")
+	for slot_data in [["basic", 0], ["life", 1], ["luxury", 2]]:
+		var id := String(slot_data[0])
+		var ratio := _level_value(needs, int(slot_data[1]))
+		var meter := _slots.get("needs.%s.meter" % id) \
+				as UiTemplateBuilder.MeterBar
+		if meter != null:
+			meter.ratio = clampf(ratio, 0.0, 1.0)
+			meter.fill = _attendance_color(ratio)
+			meter.queue_redraw()
+		_set_text("needs.%s.text" % id, _percent_text(ratio))
+	var categories := _slots.get("needs.categories") \
+			as UiTemplateBuilder.DataTableView
+	if categories != null and categories.rows.is_empty():
+		categories.update_rows(_needs_categories())
+
+
+## Necessidades declaradas em needs.json: a simulação publica a satisfação por
+## nível; a quebra por categoria não é publicada, então a coluna de dado mostra
+## "—" em vez de um número inventado.
+func _needs_categories() -> Array:
+	var rows: Array = []
+	for level_id in ["basic", "life", "luxury"]:
+		var level: Dictionary = _needs_cache.get("levels", {}).get(level_id, {})
+		var categories: Dictionary = level.get("categories", {})
+		for category_id in categories:
+			var category: Dictionary = categories[category_id]
+			var substitutes: Array = []
+			for good in category.get("substitutes", []):
+				substitutes.append(_good_name(String(good)))
+			var shown: Array = substitutes.slice(0, 3)
+			var extra := substitutes.size() - shown.size()
+			var text := ", ".join(shown)
+			if extra > 0:
+				text += " (+%d)" % extra
+			rows.append([
+				I18n.t("chain.need.%s" % category_id),
+				I18n.t("chain.level.%s" % level_id),
+				{"text": text, "tone": "suave", "size": 13},
+				{"text": I18n.t("common.na"), "tone": "suave"},
+			])
+	if rows.is_empty():
+		rows.append([
+			I18n.t("pop.needs.empty"),
+			"—",
+			{"text": I18n.t("pop.needs.empty.body"), "tone": "suave"},
+			{"text": I18n.t("common.na"), "tone": "suave"},
+		])
+	return rows
+
+
+func _needs_state(city: Dictionary) -> Dictionary:
+	var pop: Dictionary = city.get("pop", {})
+	if pop.has("needs"):
+		return pop.get("needs", {})
+	return {
+		"level": int(pop.get("needs_level", 0)),
+		"satisfaction": float(pop.get("needs_satisfaction", 0.0)),
+		"level_satisfaction": [
+			float(pop.get("basic_satisfaction", 0.0)),
+			float(pop.get("life_satisfaction", 0.0)),
+			float(pop.get("luxury_satisfaction", 0.0)),
+		],
+		"durable_stock": float(pop.get("durable_stock", 0.0)),
+		"spend": float(pop.get("needs_spend", 0.0)),
+	}
+
+
+func _level_value(needs: Dictionary, index: int) -> float:
+	var values: Array = needs.get("level_satisfaction", [])
+	if index >= values.size():
+		return 0.0
+	return clampf(float(values[index]), 0.0, 1.0)
+
+
+func _level_name(level: int) -> String:
+	if level <= 0:
+		return I18n.t("pop.needs.level.0")
+	return I18n.t("pop.needs.level.%d" % mini(level, 3))
+
+
+static func _percent_text(value: float) -> String:
+	return UiKit.number(value * 100.0) + "%"
+
+
+func _good_name(id: String) -> String:
+	var key := "product." + id
+	var translated := I18n.t(key)
+	return translated if translated != key else id
+
+
+static func _ensure_needs() -> void:
+	if not _needs_cache.is_empty():
+		return
+	var file := FileAccess.open(NEEDS_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) == TYPE_DICTIONARY:
+		_needs_cache = data
+
 
 ## Proporção da demanda de trigo efetivamente consumida.
 func _attendance(city: Dictionary) -> float:

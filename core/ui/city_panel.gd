@@ -340,6 +340,27 @@ func _refresh_population() -> void:
 	_update_history_empty("pop.chart.income", income_series.size())
 
 	_refresh_cultures(String(city.get("id", "")))
+	_refresh_city_needs(city)
+
+
+## Consumo por nível (F3): o status publica a satisfação de básico/vida/luxo e
+## o estoque total de duráveis; a quebra por categoria não é publicada.
+func _refresh_city_needs(city: Dictionary) -> void:
+	var pop: Dictionary = city.get("pop", {})
+	var levels := [
+		float(pop.get("basic_satisfaction", 0.0)),
+		float(pop.get("life_satisfaction", 0.0)),
+		float(pop.get("luxury_satisfaction", 0.0)),
+	]
+	for index in levels.size():
+		var key: String = ["basic", "life", "luxury"][index]
+		var ratio := clampf(float(levels[index]), 0.0, 1.0)
+		_set_meter("city.needs.%s.meter" % key, ratio, _level_color(ratio))
+		_set_text("city.needs.%s.text" % key, _percent(ratio))
+	_set_text("city.needs.durable",
+			_tons(float(pop.get("durable_stock", 0.0))))
+	_set_text("city.needs.satisfaction",
+			_percent(float(pop.get("needs_satisfaction", 0.0))))
 
 
 ## Composição cultural da cidade: mesma lista da tela de População, sem
@@ -424,6 +445,14 @@ func _refresh_market() -> void:
 			UiKit.number(float(order["freight_cost"])),
 		])
 	_set_table("mkt.orders", rows, "mkt.orders.empty", rows.is_empty())
+	var currency := String(city.get("currency", ""))
+	var fx := float(city.get("fx_rate", 0.0))
+	_set_text("mkt.currency", currency if not currency.is_empty() \
+			else I18n.t("common.na"))
+	_set_text("mkt.fx", UiKit.number(fx, 4) if fx > 0.0 else I18n.t("common.na"))
+	var revenue := UiKit.number(float(city.get("tariff_revenue", 0.0)), 1)
+	_set_text("mkt.tariff_revenue", revenue + (" " + currency \
+			if not currency.is_empty() else ""))
 
 
 func _refresh_resources() -> void:

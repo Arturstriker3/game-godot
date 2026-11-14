@@ -17,7 +17,10 @@
       "to": "Rotterdam",
       "amount": "1.290 t",
       "hours": "18,0 h",
-      "freight": "38"
+      "freight": "38",
+      "product": "—",
+      "delivered": "—",
+      "currency": "—"
     }
   },
   "blocks": [
@@ -156,6 +159,27 @@
                           "key": "@trade.col.freight",
                           "value": "$orders.freight",
                           "value_slot": "trade.legs.freight"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@trade.col.product",
+                          "value": "$orders.product",
+                          "value_slot": "trade.legs.product",
+                          "size": 15
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@trade.col.delivered",
+                          "value": "$orders.delivered",
+                          "value_slot": "trade.legs.delivered",
+                          "size": 15
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@trade.col.currency",
+                          "value": "$orders.currency",
+                          "value_slot": "trade.legs.currency",
+                          "size": 15
                         },
                         {
                           "type": "data_table",

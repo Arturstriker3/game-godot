@@ -44,11 +44,11 @@ func _run() -> void:
 		_failures.append("população não declara moldura própria (T2)")
 
 	var tabs: Variant = screen.get("_tabs")
-	if tabs == null or tabs.pages.size() != 2:
-		_failures.append("população sem as duas abas de pasta")
+	if tabs == null or tabs.pages.size() != 3:
+		_failures.append("população sem as três abas de pasta")
 	else:
-		print("abas=%d (%s/%s)" % [tabs.pages.size(), tabs.buttons[0].text,
-				tabs.buttons[1].text])
+		print("abas=%d (%s/%s/%s)" % [tabs.pages.size(), tabs.buttons[0].text,
+				tabs.buttons[1].text, tabs.buttons[2].text])
 
 	var nations: Variant = screen.get("_tables").get("nations")
 	if nations == null or nations.rows.is_empty():
@@ -107,6 +107,22 @@ func _run() -> void:
 		search.text = ""
 		search.text_changed.emit("")
 		await _frames(3)
+
+	# Aba Consumo: satisfação por nível e estado honesto da quebra por necessidade.
+	screen.call("_set_tab", 2)
+	await _frames(3)
+	var needs: Variant = screen.get("_tables").get("needs")
+	if needs == null or needs.rows.is_empty():
+		_failures.append("aba Consumo sem cidades")
+	else:
+		print("consumo=%d primeira=%s nível=%s básico=%s"
+				% [needs.rows.size(), _cell(needs, 0, 0), _cell(needs, 0, 2),
+				_cell(needs, 0, 3)])
+	var categories: Variant = _slot_node(screen.get("_root"), "needs.categories")
+	if categories == null:
+		_failures.append("aba Consumo sem a tabela de necessidades")
+	screen.call("_set_tab", 1)
+	await _frames(2)
 
 	# Duplo clique na primeira nação filtra as cidades dela.
 	screen.call("_set_tab", 0)

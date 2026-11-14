@@ -3,16 +3,37 @@
   "title": "@pop.title",
   "shell": {
     "kind": "window",
-    "ratio": [0.86, 0.84],
-    "min": [960, 560],
-    "max": [1800, 1000],
+    "ratio": [
+      0.86,
+      0.84
+    ],
+    "min": [
+      960,
+      560
+    ],
+    "max": [
+      1800,
+      1000
+    ],
     "pauses_game": false
   },
   "data": {
-    "nations": {"population": "-", "jobs": "-", "income": "-",
-      "consumption": "-", "attendance": "-"},
-    "cities": {"name": "-", "nation": "-", "population": "-", "jobs": "-",
-      "income": "-", "consumed": "-", "attendance": "-"}
+    "nations": {
+      "population": "-",
+      "jobs": "-",
+      "income": "-",
+      "consumption": "-",
+      "attendance": "-"
+    },
+    "cities": {
+      "name": "-",
+      "nation": "-",
+      "population": "-",
+      "jobs": "-",
+      "income": "-",
+      "consumed": "-",
+      "attendance": "-"
+    }
   },
   "blocks": [
     {
@@ -21,11 +42,21 @@
       "title": "@pop.title",
       "title_slot": "nav.title",
       "footer": [
-        {"text": "@tpl.footer.tabs_switch"},
-        {"text": "@tpl.footer.table"},
-        {"spacer": true},
-        {"seal": "ESC"},
-        {"text": "@tpl.footer.close"}
+        {
+          "text": "@tpl.footer.tabs_switch"
+        },
+        {
+          "text": "@tpl.footer.table"
+        },
+        {
+          "spacer": true
+        },
+        {
+          "seal": "ESC"
+        },
+        {
+          "text": "@tpl.footer.close"
+        }
       ],
       "body": [
         {
@@ -57,11 +88,16 @@
                               "placeholder": "@tpl.registro.search.nation",
                               "width": 340
                             },
-                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "spacer",
+                              "w": 1
+                            },
                             {
                               "type": "label",
                               "text": "@tpl.common.result",
-                              "params": {"n": "0"},
+                              "params": {
+                                "n": "0"
+                              },
                               "font": "typed",
                               "size": 13,
                               "tone": "suave",
@@ -81,13 +117,41 @@
                           "activate": "double",
                           "footer_left": "@pop.nation.hint",
                           "columns": [
-                            {"label": "@econ.col.nation", "weight": 2, "align": "left"},
-                            {"label": "@pop.culture.primary", "weight": 1.6, "align": "left"},
-                            {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
-                            {"label": "@econ.col.cities", "weight": 1, "align": "right"},
-                            {"label": "@pop.jobs", "weight": 1.1, "align": "right"},
-                            {"label": "@pop.col.income", "weight": 1, "align": "right"},
-                            {"label": "@pop.attendance", "weight": 1, "align": "right"}
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 2,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@pop.culture.primary",
+                              "weight": 1.6,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.population",
+                              "weight": 1.2,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@econ.col.cities",
+                              "weight": 1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.jobs",
+                              "weight": 1.1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.col.income",
+                              "weight": 1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.attendance",
+                              "weight": 1,
+                              "align": "right"
+                            }
                           ],
                           "rows": []
                         },
@@ -132,7 +196,11 @@
                           "font": "display",
                           "size": 22
                         },
-                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "rule",
+                          "thickness": 1,
+                          "color": "tinta"
+                        },
                         {
                           "type": "kv_row",
                           "key": "@pop.total",
@@ -224,7 +292,10 @@
                             }
                           ]
                         },
-                        {"type": "spacer", "grow": true}
+                        {
+                          "type": "spacer",
+                          "grow": true
+                        }
                       ]
                     }
                   ]
@@ -254,11 +325,16 @@
                               "placeholder": "@tpl.registro.search",
                               "width": 340
                             },
-                            {"type": "spacer", "w": 1},
+                            {
+                              "type": "spacer",
+                              "w": 1
+                            },
                             {
                               "type": "label",
                               "text": "@tpl.common.result",
-                              "params": {"n": "0"},
+                              "params": {
+                                "n": "0"
+                              },
                               "font": "typed",
                               "size": 13,
                               "tone": "suave",
@@ -278,14 +354,46 @@
                           "activate": "double",
                           "footer_left": "@tpl.registro.footer.select",
                           "columns": [
-                            {"label": "@econ.col.city", "weight": 2, "align": "left"},
-                            {"label": "@econ.col.nation", "weight": 1.3, "align": "left"},
-                            {"label": "@pop.culture", "weight": 1.4, "align": "left"},
-                            {"label": "@econ.col.population", "weight": 1.2, "align": "right"},
-                            {"label": "@pop.jobs", "weight": 1, "align": "right"},
-                            {"label": "@pop.col.income", "weight": 0.9, "align": "right"},
-                            {"label": "@pop.consumption", "weight": 1, "align": "right"},
-                            {"label": "@pop.attendance", "weight": 1, "align": "right"}
+                            {
+                              "label": "@econ.col.city",
+                              "weight": 2,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 1.3,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@pop.culture",
+                              "weight": 1.4,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.population",
+                              "weight": 1.2,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.jobs",
+                              "weight": 1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.col.income",
+                              "weight": 0.9,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.consumption",
+                              "weight": 1,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.attendance",
+                              "weight": 1,
+                              "align": "right"
+                            }
                           ],
                           "rows": []
                         },
@@ -339,7 +447,11 @@
                           "size": 24,
                           "slot": "cities.card.name"
                         },
-                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "rule",
+                          "thickness": 1,
+                          "color": "tinta"
+                        },
                         {
                           "type": "kv_row",
                           "key": "@econ.col.nation",
@@ -376,7 +488,11 @@
                           "value": "$cities.attendance",
                           "value_slot": "cities.card.kv.attendance"
                         },
-                        {"type": "rule", "thickness": 1, "color": "tinta"},
+                        {
+                          "type": "rule",
+                          "thickness": 1,
+                          "color": "tinta"
+                        },
                         {
                           "type": "ruled_heading",
                           "text": "@pop.culture.title",
@@ -406,12 +522,225 @@
                             }
                           ]
                         },
-                        {"type": "spacer", "grow": true},
+                        {
+                          "type": "spacer",
+                          "grow": true
+                        },
                         {
                           "type": "button",
                           "text": "@tpl.registro.open_sheet",
                           "variant": "primary",
                           "id": "open"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@pop.tab.needs",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1,
+                      "blocks": [
+                        {
+                          "type": "search_field",
+                          "slot": "needs.search",
+                          "placeholder": "@pop.needs.search",
+                          "width": 320
+                        },
+                        {
+                          "type": "label",
+                          "text": "@tpl.common.result",
+                          "params": {
+                            "n": "0"
+                          },
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "needs.count"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "needs.table",
+                          "grow": true,
+                          "selected": 0,
+                          "page_size": 11,
+                          "sort_col": -1,
+                          "descending": false,
+                          "activate": "single",
+                          "footer_left": "@pop.needs.footer",
+                          "columns": [
+                            {
+                              "label": "@econ.col.city",
+                              "weight": 1.8,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 1.1,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@pop.needs.level",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.needs.basic",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.needs.life",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.needs.luxury",
+                              "weight": 0.8,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@pop.needs.durable",
+                              "weight": 1.0,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paper_card",
+                      "slot": "needs.card",
+                      "pad": 16,
+                      "gap": 8,
+                      "width": 420,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@pop.needs.select",
+                          "font": "display",
+                          "size": 22,
+                          "slot": "needs.card.name"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@econ.col.nation",
+                          "value": "—",
+                          "value_slot": "needs.card.nation",
+                          "size": 15
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.needs.level",
+                          "value": "—",
+                          "value_slot": "needs.card.level",
+                          "size": 15
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.needs.satisfaction",
+                          "value": "—",
+                          "value_slot": "needs.card.satisfaction",
+                          "size": 15
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@pop.needs.durable",
+                          "value": "—",
+                          "value_slot": "needs.card.durable",
+                          "size": 15
+                        },
+                        {
+                          "type": "rule"
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@pop.needs.basic",
+                          "value": 0,
+                          "text": "—",
+                          "label_width": 80,
+                          "meter_slot": "needs.basic.meter",
+                          "value_slot": "needs.basic.text",
+                          "value_width": 60,
+                          "height": 10,
+                          "label_size": 14,
+                          "value_size": 13
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@pop.needs.life",
+                          "value": 0,
+                          "text": "—",
+                          "label_width": 80,
+                          "meter_slot": "needs.life.meter",
+                          "value_slot": "needs.life.text",
+                          "value_width": 60,
+                          "height": 10,
+                          "label_size": 14,
+                          "value_size": 13
+                        },
+                        {
+                          "type": "meter_row",
+                          "label": "@pop.needs.luxury",
+                          "value": 0,
+                          "text": "—",
+                          "label_width": 80,
+                          "meter_slot": "needs.luxury.meter",
+                          "value_slot": "needs.luxury.text",
+                          "value_width": 60,
+                          "height": 10,
+                          "label_size": 14,
+                          "value_size": 13
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "needs.categories",
+                          "page_size": 4,
+                          "sort_col": -1,
+                          "footer_left": "@pop.needs.categories.footer",
+                          "columns": [
+                            {
+                              "label": "@pop.needs.need",
+                              "weight": 1.3,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@pop.needs.level",
+                              "weight": 0.8,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@pop.needs.substitutes",
+                              "weight": 2.0,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@pop.needs.data",
+                              "weight": 0.7,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "label",
+                          "text": "@pop.needs.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 380
                         }
                       ]
                     }

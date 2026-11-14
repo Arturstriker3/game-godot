@@ -231,6 +231,20 @@ func _capture_resolution(size_text: String) -> void:
 			func() -> void: _statistics_group(1))
 	await _capture_state(directory, width, height, "23_politics_other",
 			func() -> void: _politics_nation("FRA"))
+	await _capture_state(directory, width, height, "24_market_goods",
+			func() -> void: _market_tab(0))
+	await _capture_state(directory, width, height, "25_market_offers",
+			func() -> void: _market_tab(1))
+	await _capture_state(directory, width, height, "26_logistics_fleet",
+			func() -> void: _logistics_tab(0))
+	await _capture_state(directory, width, height, "27_logistics_fx",
+			func() -> void: _logistics_tab(1))
+	await _capture_state(directory, width, height, "28_logistics_tariff",
+			func() -> void: _logistics_tab(2))
+	await _capture_state(directory, width, height, "29_logistics_ports",
+			func() -> void: _logistics_tab(3))
+	await _capture_state(directory, width, height, "30_population_needs",
+			func() -> void: _population_tab(2))
 	_reset_ui()
 
 
@@ -426,6 +440,67 @@ func _population_tab(index: int) -> void:
 	_show_screen("population")
 	var screen: Node = _hud.get("_screens")["population"]
 	screen.call("_set_tab", index)
+
+
+func _market_tab(index: int) -> void:
+	_show_screen("market")
+	var screen: Node = _hud.get("_screens")["market"]
+	if screen != null and index == 1:
+		_ensure_trade_orders()
+	if screen != null and screen.has_method("_set_tab"):
+		screen.call("_set_tab", index)
+	if screen != null and index == 1 and screen.has_method("select_good"):
+		# Oferta real: bem e cidade de destino do primeiro pedido publicado.
+		var order := _first_order()
+		if not order.is_empty():
+			screen.call("select_good", String(order.get("good", "wheat")))
+			screen.call("select_city", String(order.get("to_city", "")))
+		else:
+			screen.call("select_good", "wheat")
+
+
+## Sem pedido publicado no dia 1, a aba Ofertas não tem o que fotografar: avança
+## os dias de forma síncrona (máx. 3) até o comércio existir. Não inventa dado —
+## só espera o núcleo publicar o primeiro dia com pedidos.
+func _ensure_trade_orders() -> void:
+	var economy := get_node_or_null("/root/Economy")
+	if economy == null:
+		return
+	var summary: Dictionary = economy.get("last_summary")
+	if not (summary.get("trade_orders", []) as Array).is_empty():
+		return
+	var previous := int(economy.get("speed"))
+	economy.set_speed(0)
+	for _day in 3:
+		economy.call("_run_day")
+		summary = economy.get("last_summary")
+		if not (summary.get("trade_orders", []) as Array).is_empty():
+			break
+	economy.set_speed(previous)
+
+
+func _first_order() -> Dictionary:
+	var orders: Array = Economy.last_summary.get("trade_orders", [])
+	for order in orders:
+		if not String((order as Dictionary).get("to_city", "")).is_empty():
+			return order
+	return {}
+
+
+## Cidade de destino do primeiro pedido publicado do bem (captura com oferta real).
+func _first_order_city(good: String) -> String:
+	var orders: Array = Economy.last_summary.get("trade_orders", [])
+	for order in orders:
+		if String(order.get("good", "")) == good:
+			return String(order.get("to_city", ""))
+	return ""
+
+
+func _logistics_tab(index: int) -> void:
+	_show_screen("logistics")
+	var screen: Node = _hud.get("_screens")["logistics"]
+	if screen != null and screen.has_method("_set_tab"):
+		screen.call("_set_tab", index)
 
 
 func _statistics_group(index: int) -> void:
