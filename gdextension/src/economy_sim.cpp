@@ -248,12 +248,20 @@ const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
 	// contador de capacidade. A soma (combustível + frota) fica em 3–6% do
 	// frete: o bastante para o preço refletir o veículo, sem deslocar a
 	// segurança alimentar dos importadores (medido em economy_world_test).
+	// Tempo de calendário (2026-11): caminhão a 62 km/h mas só 10 h/dia de
+	// jornada (~600 km/dia com o desvio de estrada); navio 33 km/h 24 h
+	// (~790 km/dia); avião 800 km/h com ~3 h de solo. Sem a jornada do
+	// caminhão, um trecho de 700 km "chegava" em 11 h e o veículo parecia um
+	// trem no mapa.
 	static const ModeSpec kTruck{
-		TransportMode::Truck, "truck", 65.0, 25.0, 0.10, 6.0, 0.00004, 0.002};
+		TransportMode::Truck, "truck", 62.0, 25.0, 0.10, 6.0, 0.00004, 0.002,
+		10.0, 1.35};
 	static const ModeSpec kShip{
-		TransportMode::Ship, "ship", 35.0, 2000.0, 0.02, 24.0, 0.000003, 0.001};
+		TransportMode::Ship, "ship", 33.0, 2000.0, 0.02, 24.0, 0.000003, 0.001,
+		24.0, 1.15};
 	static const ModeSpec kPlane{
-		TransportMode::Plane, "plane", 750.0, 20.0, 0.80, 24.0, 0.0002, 0.015};
+		TransportMode::Plane, "plane", 800.0, 20.0, 0.80, 3.0, 0.0002, 0.015,
+		24.0, 1.0};
 
 	switch (mode) {
 		case TransportMode::Ship:
@@ -591,7 +599,13 @@ EconomySim::Leg EconomySim::make_leg(TransportMode mode, const std::string& from
 	// parte em comboio: o prazo é o do veículo mais o embarque dos lotes, não
 	// `tempo × nº de veículos`. O transbordo soma a sobrecarga de carga/descarga.
 	const int trips = std::max(1, static_cast<int>(std::ceil(load_tons / mode_spec.batch_capacity_tons)));
-	const double hours = distance / mode_spec.speed_kmh + mode_spec.turnaround_hours
+	// Velocidade de calendário: a velocidade de cruzeiro vale só durante a
+	// jornada diária (caminhão 10 h; navio/avião 24 h). O `route_factor` cobre
+	// o desvio da rota real em relação à linha reta.
+	const double effective_speed =
+		mode_spec.speed_kmh * mode_spec.duty_hours_per_day / kHoursPerDay;
+	const double routed_distance = distance * mode_spec.route_factor;
+	const double hours = routed_distance / effective_speed + mode_spec.turnaround_hours
 	                     + static_cast<double>(trips) * kDemoLoadHoursPerBatch;
 
 	Leg leg;

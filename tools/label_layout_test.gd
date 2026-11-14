@@ -398,6 +398,27 @@ func _check_nation_labels(tag: String, city_report: Array, nation_report: Array,
 				_failures.append("%s: nome de nação %s sobre a capital %s" % [
 					tag, nation.get("tag", "?"), capital.get("tag", "?")])
 
+	# Marcador de capital (estrela + bandeira) é intocável: o nome do país
+	# desliza ao longo do próprio eixo para outra posição livre ou simplesmente
+	# não aparece — nunca cobre o símbolo do lugar.
+	for entry: Dictionary in city_report:
+		if String(entry.get("kind", "")) != "city" \
+				or not bool(entry.get("capital", false)) \
+				or not bool(entry.get("marker_visible", false)):
+			continue
+		var icon_rect: Rect2 = entry.get("icon_rect", Rect2())
+		var flag_rect: Rect2 = entry.get("flag_rect", Rect2())
+		for nation: Dictionary in nations:
+			var nr: Rect2 = nation["rect"]
+			if icon_rect.size.x > 0.0 \
+					and icon_rect.grow(LABEL_YIELD_PAD_PX).intersects(nr):
+				_failures.append("%s: nome de nação %s sobre o marcador da capital %s" % [
+					tag, nation.get("tag", "?"), entry.get("id", "?")])
+			elif flag_rect.size.x > 0.0 \
+					and flag_rect.grow(LABEL_YIELD_PAD_PX).intersects(nr):
+				_failures.append("%s: nome de nação %s sobre a bandeira de %s" % [
+					tag, nation.get("tag", "?"), entry.get("id", "?")])
+
 	# O hover de cidade/porto reordena só o layout de cidade: se ele invalidasse
 	# os nomes de nação, mexer o mouse faria os nomes dos países piscarem.
 	var before := _visible_nation_tags(nation_report)

@@ -342,6 +342,14 @@ private:
 		// (caminhão com retorno vazio, navio a 20 kn, avião cargueiro).
 		double fuel_per_ton_km;
 		double fleet_cost_per_ton_km;
+		// Jornada real: o caminhão roda só ~10 h/dia (motorista/descanso), navio
+		// e avião operam 24 h. A velocidade do trecho é `speed_kmh` durante a
+		// jornada; o tempo de calendário usa a média `speed * duty / 24`.
+		double duty_hours_per_day;
+		// Desvio entre a rota real e a distância em linha reta (grande círculo):
+		// estrada contorna relevo/fronteira, navio contorna continente/canal.
+		// O avião voa praticamente em linha reta.
+		double route_factor;
 	};
 
 	// Coordenadas no grid do mapa (5000x2500), na projeção equiretangular.

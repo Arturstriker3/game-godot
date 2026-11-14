@@ -15,8 +15,8 @@ extends Node3D
 const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 
 const DAYS := 20
-## Acelera só o tween (o relógio da economia fica congelado): 45 s de trecho
-## viram ~0,19 s. A visibilidade é checada a cada frame, como no jogo.
+## Acelera só o tween (o relógio da economia fica congelado): 1 dia de trecho
+## vira ~0,25 s. A visibilidade é checada a cada frame, como no jogo.
 const TWEEN_RATE := 240.0
 const MAX_FRAMES_PER_DAY := 4000
 const MAP_LAYER_Y := 0.13

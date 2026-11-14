@@ -986,12 +986,40 @@ func _model_from_component(comp: PackedInt32Array, gw: int, gh: int) -> Dictiona
 		cov_yy += dy * dy
 		cov_xy += dx * dy
 	var angle := 0.5 * atan2(2.0 * cov_xy, cov_xx - cov_yy)
-	# PCA é um eixo não orientado: normaliza para (-90°, 90°] e limita a ±35°.
+	# PCA é um eixo não orientado: normaliza para (-90°, 90°].
 	if angle > PI * 0.5:
 		angle -= PI
 	elif angle <= -PI * 0.5:
 		angle += PI
-	angle = clampf(angle, deg_to_rad(-35.0), deg_to_rad(35.0))
+	# Eixo natural (sem limite) fica disponível como segunda tentativa de
+	# inclinação quando o rótulo reto não cabe (Itália, Chile, Noruega).
+	var natural_angle := angle
+
+	# Primeiro mede o país no eixo natural (sem limite), para decidir se vale
+	# inclinar o nome. O mapa de grand strategy lê melhor um rótulo reto: só
+	# inclina quando o território é claramente alongado E o eixo é raso. Foi o
+	# clamp cego a ±35° que deixava o "EGYPT" atravessado no deserto (o eixo
+	# real do Egito é quase N-S, então o texto saía num arco torto).
+	var natural_axis := Vector2(cos(angle), sin(angle))
+	var natural_perp := Vector2(-natural_axis.y, natural_axis.x)
+	var natural_min_axis := INF
+	var natural_max_axis := -INF
+	var natural_min_perp := INF
+	var natural_max_perp := -INF
+	for index in count:
+		var dx := float(xs[index]) + 0.5 - mean_x
+		var dy := float(ys[index]) + 0.5 - mean_y
+		var a := dx * natural_axis.x + dy * natural_axis.y
+		var p := dx * natural_perp.x + dy * natural_perp.y
+		natural_min_axis = minf(natural_min_axis, a)
+		natural_max_axis = maxf(natural_max_axis, a)
+		natural_min_perp = minf(natural_min_perp, p)
+		natural_max_perp = maxf(natural_max_perp, p)
+	var natural_axis_span := natural_max_axis - natural_min_axis
+	var natural_perp_span := natural_max_perp - natural_min_perp
+	var max_tilt := deg_to_rad(22.0)
+	if absf(angle) > max_tilt or natural_axis_span < natural_perp_span * 1.6:
+		angle = 0.0
 
 	var axis := Vector2(cos(angle), sin(angle))
 	var perp := Vector2(-axis.y, axis.x)
@@ -1085,8 +1113,12 @@ func _model_from_component(comp: PackedInt32Array, gw: int, gh: int) -> Dictiona
 		"anchor_px": Vector2((float(pole_x) + 0.5) * cell_w,
 				(float(pole_y) + 0.5) * cell_h),
 		"angle": angle,
+		"natural_angle": natural_angle,
 		"width_px": width_px,
 		"height_px": height_px,
+		"axis_px": width_px,
+		"perp_px": height_px,
+		"tilted": absf(angle) > 0.001,
 		"radius_px": pole_dist * minf(cell_w, cell_h),
 		"area_px": area_px,
 		"extent_px": sqrt(area_px),

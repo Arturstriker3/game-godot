@@ -248,22 +248,41 @@ const FLAG_ATLAS_COLS := 16
 ## TAMANHO NA TELA (px) com histerese e fade de 150 ms. O layout de cidade
 ## (capitais/bandeiras) tem prioridade: o nome cede quando colide.
 const NATION_LABEL_COLOR := Color(0.07, 0.08, 0.09, 0.68)
-const NATION_LABEL_MIN_SCREEN_PX := 40.0
-const NATION_LABEL_FADE_SCREEN_PX := 14.0
+## O nome do país é dimensionado pela TELA (altura legível ~14–22 px), não por
+## um tamanho fixo no mundo: no zoom próximo ele encolhe para não virar mancha
+## e no zoom distante cresce até o limite que ainda cabe no território. O
+## tamanho-alvo cresce um pouco com a extensão do país (teto/piso).
+const NATION_LABEL_SCREEN_TARGET_MIN := 14.0
+const NATION_LABEL_SCREEN_TARGET_MAX := 22.0
+const NATION_LABEL_SCREEN_TARGET_EXTENT := 300.0
+const NATION_LABEL_SCREEN_MIN_PX := 10.0
+const NATION_LABEL_SCREEN_FADE_PX := 4.0
 const NATION_LABEL_SCREEN_PAD := 64.0
 const NATION_LABEL_CITY_PAD := 3.0
 ## Tamanho mínimo/máximo de `pixel_size` do Label3D (unidades de mundo por px da
-## fonte). O máximo mantém a carta discreta; o mínimo descarta nomes ilegíveis.
+## fonte). O máximo é uma trava de segurança para o zoom distante; no PERTO a
+## escala de tela manda. O mínimo descarta nomes ilegíveis.
 const NATION_LABEL_PIXEL_MIN := 0.006
-const NATION_LABEL_PIXEL_MAX := 0.055
+const NATION_LABEL_PIXEL_MAX := 0.16
+const NATION_LABEL_WIDTH_FRACTION := 0.62
+const NATION_LABEL_HEIGHT_FRACTION := 0.55
+## Encaixe mínimo no próprio território (amostragem 5×5). Abaixo disso o nome
+## não é desenhado — melhor sem nome do que um nome cortado/cruzando a fronteira.
+const NATION_LABEL_INSIDE_MIN := 0.97
+## Posições candidatas ao longo do eixo principal e no sentido perpendicular,
+## em fração das dimensões do país. O layout tenta a mais central e, quando uma
+## cidade/capital ocupa a área, desliza o nome para uma posição livre DENTRO do
+## território em vez de sobrepor o marcador (prioridade de colisão do mapa de
+## grand strategy).
+const NATION_LABEL_AXIS_PLACEMENTS := [0.0, -0.16, 0.16, -0.32, 0.32, -0.46, 0.46]
+const NATION_LABEL_PERP_PLACEMENTS := [0.0, -0.18, 0.18, -0.34, 0.34]
 ## Fade de 150 ms e margens de histerese (entra em 1,1×, sai em 0,9×).
 const NATION_LABEL_FADE_TIME := 0.15
 const NATION_LABEL_HYST_IN := 1.10
 const NATION_LABEL_HYST_OUT := 0.90
-## No LONGE, nomes no chão só para países grandes; os pequenos mostram o nome
-## em caixa alta Barlow sob a estrela da capital.
-const NATION_LABEL_FAR_FLOOR_MIN_PX := 90.0
-const NATION_LABEL_FAR_CAPITAL_MIN_PX := 96.0
+## No LONGE, nomes no chão só para países cuja altura na tela passa do piso;
+## os demais mostram o nome em caixa alta Barlow sob a estrela da capital.
+const NATION_LABEL_FAR_FLOOR_MIN_PX := 12.0
 const NATION_CAPITAL_LABEL_SIZE := 16
 const NATION_CAPITAL_LABEL_SCALE := 0.62
 
@@ -1428,7 +1447,8 @@ func _on_locale_changed(_locale: String) -> void:
 
 
 ## Testa um texto do rótulo contra o modelo territorial. Devolve métricas e se
-## ele cabe (≥95% do retângulo de amostragem dentro do dono, com tamanho útil).
+## ele cabe (≥NATION_LABEL_INSIDE_MIN do retângulo de amostragem dentro do dono,
+## com tamanho útil e no máximo ~62% do eixo do território).
 func _fit_nation_text(label: Label3D, model: Dictionary, text: String) -> Dictionary:
 	var width_px := float(model.get("width_px", float(model.get("extent_px", 40.0))))
 	var height_px := float(model.get("height_px", width_px * 0.6))
@@ -1437,8 +1457,8 @@ func _fit_nation_text(label: Label3D, model: Dictionary, text: String) -> Dictio
 	var text_px := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT,
 			-1, font_size).x
 	var font_h := font.get_height(font_size)
-	var avail_w := width_px * PIXEL_TO_WORLD * 0.85
-	var avail_h := height_px * PIXEL_TO_WORLD * 0.80
+	var avail_w := width_px * PIXEL_TO_WORLD * NATION_LABEL_WIDTH_FRACTION
+	var avail_h := height_px * PIXEL_TO_WORLD * NATION_LABEL_HEIGHT_FRACTION
 	var pixel_size := minf(avail_w / maxf(text_px, 1.0),
 			avail_h / maxf(font_h, 1.0))
 	pixel_size = minf(pixel_size, NATION_LABEL_PIXEL_MAX)
@@ -1447,20 +1467,21 @@ func _fit_nation_text(label: Label3D, model: Dictionary, text: String) -> Dictio
 	var inside := 1.0
 	if _territory != null:
 		# O polo é o centro do maior círculo inscrito, mas um texto comprido
-		# pode passar das bordas. Encolhe até 95% do retângulo caber (ou até o
-		# piso legível); se nem o piso couber, o nome não é mostrado.
-		for _attempt in 10:
+		# pode passar das bordas. Encolhe até NATION_LABEL_INSIDE_MIN do
+		# retângulo caber (ou até o piso legível); se nem o piso couber, o nome
+		# não é mostrado.
+		for _attempt in 12:
 			var tw := text_px * pixel_size
 			var th := font_h * pixel_size
 			inside = _nation_inside_ratio(String(label.get_meta("tag")), center_px,
 					angle, tw / PIXEL_TO_WORLD * 0.5,
 					th / PIXEL_TO_WORLD * 0.5)
-			if inside >= 0.95:
+			if inside >= NATION_LABEL_INSIDE_MIN:
 				break
 			pixel_size *= 0.85
 			if pixel_size < NATION_LABEL_PIXEL_MIN:
 				break
-	var fits := pixel_size >= NATION_LABEL_PIXEL_MIN and inside >= 0.95
+	var fits := pixel_size >= NATION_LABEL_PIXEL_MIN and inside >= NATION_LABEL_INSIDE_MIN
 	var text_world := text_px * pixel_size
 	var height_world := font_h * pixel_size
 	return {
@@ -1468,6 +1489,8 @@ func _fit_nation_text(label: Label3D, model: Dictionary, text: String) -> Dictio
 		"fits": fits,
 		"inside": inside,
 		"pixel_size": pixel_size,
+		"text_px": text_px,
+		"font_h": font_h,
 		"text_width_world": text_world,
 		"text_height_world": height_world,
 		"short": false,
@@ -1475,7 +1498,8 @@ func _fit_nation_text(label: Label3D, model: Dictionary, text: String) -> Dictio
 
 
 ## Fração de pontos do retângulo do rótulo (5×5) que caem no território da
-## própria nação, no raster de dono. >5% fora reprova o encaixe.
+## própria nação, no raster de dono. Abaixo de NATION_LABEL_INSIDE_MIN o nome
+## não é desenhado (nada de rótulo atravessando a fronteira).
 func _nation_inside_ratio(tag: String, center_px: Vector2, angle: float,
 		half_w_px: float, half_h_px: float) -> float:
 	if _territory == null:
@@ -1500,8 +1524,10 @@ func _nation_inside_ratio(tag: String, center_px: Vector2, angle: float,
 
 
 ## Posiciona/redimensiona um rótulo de nação no polo de inacessibilidade do
-## maior pedaço contíguo, alinhado ao eixo principal (±35°). Sem território,
-## esconde (meta "has_territory" = false).
+## maior pedaço contíguo, alinhado ao eixo principal (reto quando o eixo é
+## íngreme ou o país é compacto). Calcula as posições candidatas sobre o eixo
+## para o layout desviar de cidades/capitais. Sem território, esconde
+## (meta "has_territory" = false).
 func _place_nation_label(label: Label3D) -> void:
 	var tag := String(label.get_meta("tag"))
 	var model: Dictionary = {}
@@ -1526,24 +1552,120 @@ func _place_nation_label(label: Label3D) -> void:
 
 	label.set_meta("has_territory", true)
 	label.set_meta("model", model)
-	var center := Vector2(float(model.get("x", 0.0)), float(model.get("y", 0.0)))
-	label.position = pixel_to_world(center) + Vector3(0.0, 0.2, 0.0)
+	# Tenta primeiro o eixo reto (ou levemente inclinado) e, se o nome não
+	# couber, acompanha o eixo natural do país (até ±65°): é o que salva
+	# Itália/Chile/Noruega de virar "TALY" ou sumir.
+	var preferred := float(model.get("angle", 0.0))
+	var natural := clampf(float(model.get("natural_angle", preferred)),
+			deg_to_rad(-65.0), deg_to_rad(65.0))
+	var angles: Array[float] = [preferred]
+	if absf(natural - preferred) > 0.001:
+		angles.append(natural)
+	var chosen_model: Dictionary = {}
+	for candidate_angle: float in angles:
+		var candidate_model := model.duplicate()
+		candidate_model["angle"] = candidate_angle
+		label.rotation_degrees = Vector3(-90.0,
+				-rad_to_deg(candidate_angle), 0.0)
+		var fit := _configure_nation_label(label, candidate_model)
+		if bool(fit.get("fits", false)):
+			chosen_model = candidate_model
+			break
+	if chosen_model.is_empty():
+		chosen_model = model.duplicate()
+		chosen_model["angle"] = preferred
+		label.rotation_degrees = Vector3(-90.0, -rad_to_deg(preferred), 0.0)
+		_configure_nation_label(label, chosen_model)
+	label.set_meta("model", chosen_model)
+	label.set_meta("angle", float(chosen_model.get("angle", preferred)))
+	var placements := _nation_label_placements(label, chosen_model)
+	label.set_meta("placements", placements)
+	label.set_meta("placements_pixel", float(label.pixel_size))
+	label.set_meta("placement", 0)
+	_apply_nation_placement(label, placements[0])
+
+
+## Candidatos de centro do rótulo numa pequena grade sobre o eixo principal e a
+## perpendicular. Só entram os que mantêm NATION_LABEL_INSIDE_MIN do texto
+## dentro da própria nação; a ordem é da posição mais central para fora.
+func _nation_label_placements(label: Label3D, model: Dictionary) -> Array[Vector2]:
+	var tag := String(label.get_meta("tag"))
 	var angle := float(model.get("angle", 0.0))
-	label.rotation_degrees = Vector3(-90.0, -rad_to_deg(angle), 0.0)
-	_configure_nation_label(label, model)
+	var axis := Vector2(cos(angle), sin(angle))
+	var perp := Vector2(-axis.y, axis.x)
+	var center := Vector2(float(model.get("x", 0.0)), float(model.get("y", 0.0)))
+	var width_px := float(model.get("width_px", float(model.get("extent_px", 40.0))))
+	var height_px := float(model.get("height_px", width_px * 0.6))
+	var half_w := float(label.get_meta("text_width", 0.0)) / PIXEL_TO_WORLD * 0.5
+	var half_h := float(label.get_meta("text_height", 0.0)) / PIXEL_TO_WORLD * 0.5
+	var candidates: Array[Vector2] = []
+	for axis_fraction: float in NATION_LABEL_AXIS_PLACEMENTS:
+		for perp_fraction: float in NATION_LABEL_PERP_PLACEMENTS:
+			var candidate := center + axis * (axis_fraction * width_px) \
+					+ perp * (perp_fraction * height_px)
+			if candidate.x < 0.0 or candidate.x > MAP_SIZE_PX.x \
+					or candidate.y < 0.0 or candidate.y > MAP_SIZE_PX.y:
+				continue
+			if _territory != null and _nation_inside_ratio(tag, candidate, angle,
+					half_w, half_h) < NATION_LABEL_INSIDE_MIN:
+				continue
+			candidates.append(candidate)
+	candidates.sort_custom(func(a: Vector2, b: Vector2) -> bool:
+		return a.distance_squared_to(center) < b.distance_squared_to(center))
+	if candidates.is_empty():
+		candidates.append(center)
+	return candidates
+
+
+## Recalcula as posições candidatas no TAMANHO ATUAL de tela. O encaixe máximo
+## (país inteiro) dava pouquíssimas posições: o rótulo grande ocupava o país e
+## qualquer marcador bloqueava todas — era o que deixava a Europa sem nome no
+## PERTO. No tamanho de leitura (~14–22 px) o texto é bem menor que o país, há
+## muitas posições livres e o nome desliza para longe da capital/marcadores.
+## Só recalcula quando o `pixel_size` mudou >10% (troca de nível de zoom), não a
+## cada pan: são ~35 candidatos × 25 amostras de território por rótulo.
+func _refresh_nation_placements(label: Label3D) -> void:
+	if not bool(label.get_meta("fits", false)):
+		return
+	var model: Dictionary = label.get_meta("model", {})
+	if model.is_empty():
+		return
+	var pixel := float(label.pixel_size)
+	var previous := float(label.get_meta("placements_pixel", 0.0))
+	if previous > 0.0 and absf(pixel / previous - 1.0) <= 0.10:
+		return
+	var old_anchor: Vector2 = label.get_meta("anchor_px", Vector2.ZERO)
+	var placements := _nation_label_placements(label, model)
+	label.set_meta("placements", placements)
+	label.set_meta("placements_pixel", pixel)
+	var keep := 0
+	for index in placements.size():
+		if placements[index].distance_to(old_anchor) <= 1.0:
+			keep = index
+			break
+	label.set_meta("placement", keep)
+	_apply_nation_placement(label, placements[keep])
+
+
+## Move o rótulo (e o retângulo de tela que o layout usa) para um candidato.
+func _apply_nation_placement(label: Label3D, center_px: Vector2) -> void:
+	label.position = pixel_to_world(center_px) + Vector3(0.0, 0.2, 0.0)
+	label.set_meta("anchor_px", center_px)
 
 
 ## Monta fonte (letter-spacing proporcional ao país), tenta nome completo,
 ## depois o curto (i18n nation.short.* ou ISO3) e guarda o resultado no meta do
-## Label3D para o layout de visibilidade.
-func _configure_nation_label(label: Label3D, model: Dictionary) -> void:
+## Label3D para o layout de visibilidade. Devolve o encaixe escolhido.
+func _configure_nation_label(label: Label3D, model: Dictionary) -> Dictionary:
 	var tag := String(label.get_meta("tag"))
 	var width_px := float(model.get("width_px", float(model.get("extent_px", 40.0))))
 	var font := FontVariation.new()
 	font.base_font = NATION_LABEL_FONT
 	font.variation_opentype = {"wght": 600}
-	# Países grandes ganham mais espaço entre letras (carta à Paradox).
-	font.spacing_glyph = clampi(roundi(width_px / 45.0), 2, 14)
+	# Países grandes ganham um pouco mais de espaço entre letras (carta à
+	# Paradox), mas o espaçamento é moderado: 14 px por letra fazia "E G Y P T"
+	# atravessar o deserto.
+	font.spacing_glyph = clampi(roundi(width_px / 90.0), 1, 6)
 	label.font = font
 
 	var full := I18n.nation_name(tag).to_upper()
@@ -1562,9 +1684,17 @@ func _configure_nation_label(label: Label3D, model: Dictionary) -> void:
 	label.set_meta("short", bool(fit.get("short", false)))
 	label.set_meta("text_width", float(fit["text_width_world"]))
 	label.set_meta("text_height", float(fit["text_height_world"]))
+	label.set_meta("text_px", float(fit["text_px"]))
+	label.set_meta("font_h", float(fit["font_h"]))
+	label.set_meta("pixel_size_max", float(fit["pixel_size"]))
+	label.set_meta("screen_height_target", clampf(
+			NATION_LABEL_SCREEN_TARGET_MIN + 8.0
+					* clampf(width_px / NATION_LABEL_SCREEN_TARGET_EXTENT, 0.0, 1.0),
+			NATION_LABEL_SCREEN_TARGET_MIN, NATION_LABEL_SCREEN_TARGET_MAX))
 	label.set_meta("area_px", float(model.get("area_px", 0.0)))
 	label.set_meta("angle", float(model.get("angle", 0.0)))
 	label.set_meta("extent", width_px * PIXEL_TO_WORLD)
+	return fit
 
 
 ## Reaplica âncora/extensão em todas as cópias laterais (wrap cilíndrico).
@@ -1751,6 +1881,13 @@ func _update_nation_labels(camera: Camera3D) -> void:
 					continue
 				var tag := String(label.get_meta("tag"))
 				floor_by_tag[tag] = label
+				# Cada nível de zoom reaproveita a concessão de tamanho do
+				# nível anterior só se ainda for o mesmo nível.
+				if int(label.get_meta("shrink_level", -1)) != _zoom_level:
+					label.set_meta("shrink", 1.0)
+					label.set_meta("shrink_level", _zoom_level)
+				_rescale_nation_label(camera, label)
+				_refresh_nation_placements(label)
 				var rect := _nation_label_screen_rect(camera, label)
 				label.set_meta("screen_rect", rect)
 				if not bool(label.get_meta("fits", false)) \
@@ -1764,16 +1901,16 @@ func _update_nation_labels(camera: Camera3D) -> void:
 				if rect.size.x > max_text or rect.size.y > max_text:
 					_set_nation_label_visible(label, false)
 					continue
-				var screen_w := _nation_label_screen_width(camera, label)
+				var screen_h := _nation_label_screen_height(camera, label)
 				var was_on := bool(label.get_meta("floor_on", false))
-				var min_px := NATION_LABEL_MIN_SCREEN_PX \
+				var min_px := NATION_LABEL_SCREEN_MIN_PX \
 						* (NATION_LABEL_HYST_OUT if was_on else NATION_LABEL_HYST_IN)
-				var alpha := clampf((screen_w - min_px) \
-						/ NATION_LABEL_FADE_SCREEN_PX, 0.0, 1.0)
+				var alpha := clampf((screen_h - min_px) \
+						/ NATION_LABEL_SCREEN_FADE_PX, 0.0, 1.0)
 				var far := _zoom_level == ZoomLevel.FAR
 				var far_min := NATION_LABEL_FAR_FLOOR_MIN_PX \
 						* (NATION_LABEL_HYST_OUT if was_on else NATION_LABEL_HYST_IN)
-				if alpha <= 0.01 or (far and screen_w < far_min):
+				if alpha <= 0.01 or (far and screen_h < far_min):
 					label.set_meta("floor_on", false)
 					_set_nation_label_visible(label, false)
 					continue
@@ -1782,7 +1919,7 @@ func _update_nation_labels(camera: Camera3D) -> void:
 					"tag": tag,
 					"rect": rect,
 					"alpha": alpha,
-					"screen_w": screen_w,
+					"screen_w": screen_h,
 					"weight": float(label.get_meta("area_px", 0.0)),
 				})
 
@@ -1817,25 +1954,54 @@ func _update_nation_labels(camera: Camera3D) -> void:
 		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 			return float(a["weight"]) > float(b["weight"]))
 		var accepted: Dictionary = {}
-		var deferred: Array[Dictionary] = []
+		var max_text := maxf(screen.size.x, screen.size.y)
 		for candidate in candidates:
-			var rect: Rect2 = candidate["rect"]
-			# Block de capital/bandeira (estratégico) e outro nome de país
-			# bloqueiam; o TEXTO de uma cidade não - o nome do país é tinta de
-			# fundo (render_priority 2, alfa 0.68) e, como no mapa antigo, o nome
-			# da cidade fica por cima. Sem essa folga a Europa ficava sem nome
-			# nenhum no PERTO/MÉDIO, porque a grade de cidades cobre o mapa.
-			if _label_text_hits(rect, NATION_LABEL_CITY_PAD) \
-					or _grid_hits(grid, rect, NATION_LABEL_CITY_PAD):
-				deferred.append(candidate)
+			var label: Label3D = candidate["label"]
+			var alpha := float(candidate["alpha"])
+			var reasons := {"screen": 0, "size": 0, "text": 0, "marker": 0, "grid": 0}
+			# Tenta a posição atual primeiro (sem piscar) e só então desliza o
+			# nome ao longo do eixo do país. O nome NUNCA entra por cima de
+			# capital, marcador de cidade/porto, outro país ou texto de cidade:
+			# sem área livre, tenta uma vez um tamanho menor (ainda reto, dentro
+			# do território e legível) e só então some.
+			var result := _choose_nation_placement(camera, label, grid, screen,
+					max_text, reasons)
+			var shrink := float(label.get_meta("shrink", 1.0))
+			if result.is_empty() and shrink > 0.61:
+				label.set_meta("shrink", maxf(shrink * 0.75, 0.6))
+				_rescale_nation_label(camera, label)
+				var compact_h := _nation_label_screen_height(camera, label)
+				if compact_h >= NATION_LABEL_SCREEN_MIN_PX * 1.05:
+					_refresh_nation_placements(label)
+					result = _choose_nation_placement(camera, label, grid,
+							screen, max_text, reasons)
+					if not result.is_empty():
+						var min_now := NATION_LABEL_SCREEN_MIN_PX \
+								* (NATION_LABEL_HYST_OUT \
+								if bool(label.get_meta("floor_on", false)) \
+								else NATION_LABEL_HYST_IN)
+						alpha = clampf((compact_h - min_now)
+								/ NATION_LABEL_SCREEN_FADE_PX, 0.0, 1.0)
+			label.set_meta("block_reasons", reasons)
+			if result.is_empty():
+				var placements: Array = label.get_meta("placements", [])
+				if not placements.is_empty():
+					var current := clampi(int(label.get_meta("placement", 0)),
+							0, placements.size() - 1)
+					_apply_nation_placement(label, placements[current])
+				label.set_meta("screen_rect",
+						_nation_label_screen_rect(camera, label))
+				label.set_meta("floor_on", false)
+				_set_nation_label_visible(label, false)
 				continue
-			_accept_nation_candidate(candidate, grid, accepted)
-		# Segunda passada: onde não há folga, o nome entra assim mesmo (atrás do
-		# nome de cidade), mas nunca sobre capital/bandeira ou outro país.
-		for candidate in deferred:
-			if _grid_hits(grid, candidate["rect"], NATION_LABEL_CITY_PAD):
-				continue
-			_accept_nation_candidate(candidate, grid, accepted)
+			var chosen := int(result["index"])
+			var chosen_rect: Rect2 = result["rect"]
+			label.set_meta("placement", chosen)
+			label.set_meta("screen_rect", chosen_rect)
+			_grid_insert(grid, chosen_rect)
+			accepted[String(candidate["tag"])] = true
+			label.set_meta("floor_on", true)
+			_set_nation_label_visible(label, true, alpha)
 
 		# LONGE: nomes de país pequenos junto da estrela da capital.
 		if capitals != null:
@@ -1851,9 +2017,9 @@ func _update_nation_labels(camera: Camera3D) -> void:
 				var floor_label: Label3D = floor_by_tag.get(tag)
 				var floor_fits := floor_label != null \
 						and bool(floor_label.get_meta("fits", false))
-				var floor_w := _nation_label_screen_width(camera, floor_label) \
+				var floor_h := _nation_label_screen_height(camera, floor_label) \
 						if floor_label != null else 0.0
-				if floor_fits and floor_w >= NATION_LABEL_FAR_FLOOR_MIN_PX \
+				if floor_fits and floor_h >= NATION_LABEL_FAR_FLOOR_MIN_PX \
 						* NATION_LABEL_HYST_OUT:
 					# País grande: o nome no chão é o correto; se ele colidiu,
 					# não troque por um rótulo de capital.
@@ -1891,6 +2057,11 @@ func _update_nation_labels(camera: Camera3D) -> void:
 					"fits": bool(label.get_meta("fits", false)),
 					"short": bool(label.get_meta("short", false)),
 					"area_px": float(label.get_meta("area_px", 0.0)),
+					"anchor_px": label.get_meta("anchor_px", Vector2.ZERO),
+					"placement": int(label.get_meta("placement", 0)),
+					"angle": float(label.get_meta("angle", 0.0)),
+					"candidates": (label.get_meta("placements", []) as Array).size(),
+					"block": label.get_meta("block_reasons", {}),
 				})
 		if capitals != null:
 			for child in capitals.get_children():
@@ -1910,30 +2081,61 @@ func _update_nation_labels(camera: Camera3D) -> void:
 		return
 
 
-## Aceita o candidato: ocupa a grade (para o nome de outro país não repetir a
-## área) e liga o alvo de alfa.
-func _accept_nation_candidate(candidate: Dictionary, grid: Dictionary,
-		accepted: Dictionary) -> void:
-	var label: Label3D = candidate["label"]
-	_grid_insert(grid, candidate["rect"])
-	accepted[String(candidate["tag"])] = true
-	label.set_meta("floor_on", true)
-	_set_nation_label_visible(label, true, float(candidate["alpha"]))
+## Escolhe a primeira posição candidata livre do nome de país (posição atual
+## primeiro, depois as demais em ordem de centralidade). Marca em `reasons` por
+## que cada candidata caiu — o relatório do teste lê esse dicionário.
+func _choose_nation_placement(camera: Camera3D, label: Label3D,
+		grid: Dictionary, screen: Rect2, max_text: float,
+		reasons: Dictionary) -> Dictionary:
+	var placements: Array = label.get_meta("placements", [])
+	if placements.is_empty():
+		placements = [label.get_meta("anchor_px", Vector2.ZERO)]
+		label.set_meta("placements", placements)
+	var current := clampi(int(label.get_meta("placement", 0)),
+			0, placements.size() - 1)
+	var order: Array[int] = [current]
+	for index in placements.size():
+		if index != current:
+			order.append(index)
+	for index in order:
+		_apply_nation_placement(label, placements[index])
+		var rect := _nation_label_screen_rect(camera, label)
+		if rect.size.x <= 0.0 or not screen.intersects(rect):
+			reasons["screen"] += 1
+			continue
+		if rect.size.x > max_text or rect.size.y > max_text:
+			reasons["size"] += 1
+			continue
+		# O TEXTO de uma cidade NÃO bloqueia o nome do país: o nome do país é
+		# tinta de fundo (render_priority 2) e o nome da cidade fica por cima.
+		# Bloquear aqui deixava a Europa sem nome nenhum no PERTO/MÉDIO.
+		if _marker_hits(rect, NATION_LABEL_CITY_PAD):
+			reasons["marker"] += 1
+			continue
+		if _grid_hits(grid, rect, NATION_LABEL_CITY_PAD):
+			reasons["grid"] += 1
+			continue
+		return {"index": index, "rect": rect}
+	return {}
 
 
-## Colisão com o TEXTO de uma cidade (não com o bloco ícone+bandeira). Usado
-## para dar ao nome de país uma posição limpa quando existe folga; a colisão
-## com o ícone/bandeira continua vindo da grade de ocupação.
-func _label_text_hits(rect: Rect2, pad: float) -> bool:
+## Colisão com o MARCADOR (ícone/estrela/bandeira) de cidade ou porto. O nome
+## do país é tinta de fundo, mas nunca cobre o símbolo de um lugar. O TEXTO de
+## uma cidade não bloqueia: ele fica por cima do nome do país (render_priority).
+func _marker_hits(rect: Rect2, pad: float) -> bool:
 	for entry: Dictionary in _label_rects:
-		if String(entry.get("kind", "")) != "city":
+		var kind := String(entry.get("kind", ""))
+		if kind != "city" and kind != "port":
 			continue
-		if not bool(entry.get("text_visible", false)):
+		if not bool(entry.get("marker_visible", false)):
 			continue
-		var text_rect: Rect2 = entry.get("text_rect", Rect2())
-		if text_rect.size.x <= 0.0 or text_rect.size.y <= 0.0:
-			continue
-		if text_rect.grow(pad).intersects(rect):
+		var icon_rect: Rect2 = entry.get("icon_rect", Rect2())
+		if icon_rect.size.x > 0.0 and icon_rect.size.y > 0.0 \
+				and icon_rect.grow(pad).intersects(rect):
+			return true
+		var flag_rect: Rect2 = entry.get("flag_rect", Rect2())
+		if flag_rect.size.x > 0.0 and flag_rect.size.y > 0.0 \
+				and flag_rect.grow(pad).intersects(rect):
 			return true
 	return false
 
@@ -1993,6 +2195,59 @@ func _nation_label_screen_width(camera: Camera3D, label: Label3D) -> float:
 	if camera.is_position_behind(a) or camera.is_position_behind(b):
 		return 0.0
 	return camera.unproject_position(a).distance_to(camera.unproject_position(b))
+
+
+## Altura (px) que o texto deitado ocupa na tela AGORA, na profundidade do
+## rótulo. É a medida que o layout usa para decidir se o nome é legível (piso
+## `NATION_LABEL_SCREEN_MIN_PX`) — não a extensão do país.
+func _nation_label_screen_height(camera: Camera3D, label: Label3D) -> float:
+	if camera == null or label == null:
+		return 0.0
+	var text_h := float(label.get_meta("text_height", 0.0))
+	if text_h <= 0.0:
+		return 0.0
+	var angle := float(label.get_meta("angle", 0.0))
+	# Perpendicular ao eixo do texto no plano do chão (a "altura" da linha).
+	var perp := Vector3(-sin(angle), 0.0, cos(angle))
+	var center := label.global_position
+	var a := center - perp * (text_h * 0.5)
+	var b := center + perp * (text_h * 0.5)
+	if camera.is_position_behind(a) or camera.is_position_behind(b):
+		return 0.0
+	return camera.unproject_position(a).distance_to(camera.unproject_position(b))
+
+
+## Reajusta o `pixel_size` do nome de país para a altura-alvo NA TELA (14–22 px,
+## maior para países grandes). O teto é o `pixel_size` do encaixe no território
+## (`pixel_size_max`): o nome cresce até caber, nunca é cortado nem sai da
+## fronteira. No zoom distante o país grande fica legível; no zoom próximo o
+## nome encolhe em vez de virar mancha.
+func _rescale_nation_label(camera: Camera3D, label: Label3D) -> void:
+	if camera == null or label == null:
+		return
+	if not bool(label.get_meta("fits", false)):
+		return
+	var target := float(label.get_meta("screen_height_target",
+			NATION_LABEL_SCREEN_TARGET_MIN))
+	# `shrink` (0,6–1) é a concessão de legibilidade quando o tamanho-alvo não
+	# deixa nenhuma posição livre: o nome fica um pouco menor, ainda reto e
+	# dentro do território, em vez de desaparecer.
+	target *= clampf(float(label.get_meta("shrink", 1.0)), 0.6, 1.0)
+	var current_h := _nation_label_screen_height(camera, label)
+	var max_pixel := minf(float(label.get_meta("pixel_size_max",
+			NATION_LABEL_PIXEL_MAX)), NATION_LABEL_PIXEL_MAX)
+	var pixel_size := float(label.pixel_size)
+	if current_h > 0.01:
+		pixel_size *= target / current_h
+	pixel_size = clampf(pixel_size, NATION_LABEL_PIXEL_MIN, max_pixel)
+	if absf(pixel_size - label.pixel_size) < 0.00005:
+		return
+	label.pixel_size = pixel_size
+	# As metas de largura/altura estão em unidades de mundo: acompanham a escala
+	# para o retângulo de tela e o corte por fronteira continuarem corretos.
+	label.set_meta("text_width", float(label.get_meta("text_px", 0.0)) * pixel_size)
+	label.set_meta("text_height",
+			float(label.get_meta("font_h", 0.0)) * pixel_size)
 
 
 ## Posiciona o nome do país sob a estrela da capital, com tamanho de tela

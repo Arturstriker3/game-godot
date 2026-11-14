@@ -39,15 +39,16 @@ const PAIR_HEIGHT := 0.17  # altura do conjunto em unidades de mundo
 # Duração visual de cada trecho: acompanha o tempo de trânsito simulado e o
 # ritmo do relógio (1 dia = 60 s). Veículos deixam de "teleportar".
 const SECONDS_PER_DAY := 60.0
-## Piso de duração por modo. O avião é rápido demais para o olho (transit_hours
-## mínimo), então ganha um piso maior; caminhão e navio já ficam legíveis.
-const MIN_SEGMENT_BY_MODE := {"truck": 2.0, "ship": 4.5, "plane": 10.0}
-const MAX_SEGMENT_SECONDS := 45.0
-## Teto de velocidade visual por modo (unidades de mundo por segundo). O teto
-## de 45 s vale para trechos curtos, mas numa travessia longa (Atlântico) ele
-## faria o navio cruzar o oceano num piscar; abaixo disso o trecho ganha mais
-## tempo. O avião mantém um teto maior para continuar visivelmente mais rápido.
-const MAX_VISUAL_SPEED_BY_MODE := {"truck": 1.2, "ship": 0.7, "plane": 1.8}
+## Piso só para trecho sem `transit_hours` (dado ausente) e para o tween não
+## nascer com duração zero. NUNCA encurta um trecho conhecido: se a animação
+## chegasse antes do núcleo, o navio apareceria no porto com a carga ainda em
+## trânsito.
+const MIN_SEGMENT_SECONDS := 0.35
+## Velocidade média de calendário por modo (km/h), usada apenas no fallback sem
+## `transit_hours`. Espelha o `ModeSpec` do núcleo: caminhão 62 km/h × 10 h/dia,
+## navio 33 km/h 24 h, avião 800 km/h. Não existe teto/piso de duração: um
+## trecho de 2 dias dura 120 s em 1x e 30 s em 3x.
+const EFFECTIVE_KMH_BY_MODE := {"truck": 25.8, "ship": 33.0, "plane": 800.0}
 ## Teto de comboios VISÍVEIS ao mesmo tempo (LOD): os pedidos além disso não
 ## viram veículo, mas a economia não muda — o comércio é simulado no núcleo
 ## C++ (`demo_in_transit_`/shipments) antes de existir pedido; o comboio é só
@@ -1595,23 +1596,21 @@ func _append_leg(tween: Tween, convoy: Node3D, leg: Dictionary,
 		tween.tween_method(_move_vehicle.bind(convoy, start, end), 0.0, 1.0, step_seconds)
 
 
-## Duração visual do trecho: acompanha o tempo simulado, mas nunca deixa o
-## veículo ultrapassar MAX_VISUAL_SPEED_BY_MODE — o teto fixo de 45 s comprimia
-## rotas oceânicas longas (ex.: Guiana–Europa) a uma velocidade absurda.
+## Duração visual do trecho: o MESMO tempo de calendário que o núcleo usa para
+## a chegada (`transit_hours`), convertido para segundos de jogo (1 dia = 60 s
+## em 1x). Sem teto: comprimir uma travessia de 10 dias em 45 s era o que fazia
+## o navio cruzar o oceano num piscar e o caminhão parecer um trem. A posição é
+## interpolada ao longo do caminho real (A*), trecho a trecho, pela distância
+## percorrida — o veículo nunca chega antes do núcleo.
 static func _segment_seconds(mode: String, transit_hours: float,
-		distance_km: float, total_px: float) -> float:
-	var min_seconds: float = float(MIN_SEGMENT_BY_MODE.get(mode, 2.0))
-	var duration: float
+		distance_km: float, _total_px: float) -> float:
 	if transit_hours > 0.0:
-		duration = clampf(transit_hours / 24.0 * SECONDS_PER_DAY,
-				min_seconds, MAX_SEGMENT_SECONDS)
-	else:
-		# Fallback: ~2 h por 200 km de caminhão.
-		duration = clampf(distance_km / 200.0 * 8.0,
-				min_seconds, MAX_SEGMENT_SECONDS)
-	var length_world := total_px * PIXEL_TO_WORLD
-	var max_speed: float = float(MAX_VISUAL_SPEED_BY_MODE.get(mode, 1.0))
-	return maxf(duration, length_world / max_speed)
+		return maxf(transit_hours / 24.0 * SECONDS_PER_DAY, MIN_SEGMENT_SECONDS)
+	# Fallback (carga antiga sem `transit_hours`): distância pelo ritmo médio de
+	# calendário do modo, em segundos de jogo.
+	var kmh: float = float(EFFECTIVE_KMH_BY_MODE.get(mode, 25.8))
+	var hours := distance_km / maxf(kmh, 1.0)
+	return maxf(hours / 24.0 * SECONDS_PER_DAY, MIN_SEGMENT_SECONDS)
 
 
 ## Bandeirinha da nação de destino presa ao comboio (billboard: sempre virada
