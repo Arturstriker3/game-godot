@@ -1,128 +1,2018 @@
 [
   {
+    "order": 0,
     "id": "wheat",
     "name": "Trigo",
+    "sector": "food",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 40.0,
-    "food": true
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#D9B45A",
+    "food": true,
+    "use": []
   },
   {
+    "order": 1,
     "id": "iron",
     "name": "Ferro",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 60.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#7C8894",
+    "food": false,
+    "use": []
   },
   {
+    "order": 2,
     "id": "rice",
     "name": "Arroz",
+    "sector": "food",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 55.0,
-    "food": true
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#6FA8DC",
+    "food": true,
+    "use": []
   },
   {
+    "order": 3,
     "id": "maize",
     "name": "Milho",
+    "sector": "food",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 42.0,
-    "food": true
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#E2B33C",
+    "food": true,
+    "use": []
   },
   {
+    "order": 4,
     "id": "bauxite",
     "name": "Bauxita",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 15.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#B5523B",
+    "food": false,
+    "use": []
   },
   {
+    "order": 5,
     "id": "lead",
     "name": "Chumbo",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 25.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#6B7480",
+    "food": false,
+    "use": []
   },
   {
+    "order": 6,
     "id": "gold",
     "name": "Ouro",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 3000.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#D4A017",
+    "food": false,
+    "use": []
   },
   {
+    "order": 7,
     "id": "phosphate",
     "name": "Fosfato",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 10.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#C9B6E4",
+    "food": false,
+    "use": []
   },
   {
+    "order": 8,
     "id": "tungsten",
     "name": "Tungstênio",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 200.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#2F4E6E",
+    "food": false,
+    "use": []
   },
   {
+    "order": 9,
     "id": "rare_earths",
     "name": "Terras raras",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 400.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#3FA38A",
+    "food": false,
+    "use": []
   },
   {
+    "order": 10,
     "id": "sulfur",
     "name": "Enxofre",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 15.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#E8D94A",
+    "food": false,
+    "use": []
   },
   {
+    "order": 11,
     "id": "diamond",
     "name": "Diamante",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 5000.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#A9D8E6",
+    "food": false,
+    "use": []
   },
   {
+    "order": 12,
     "id": "coal",
     "name": "Carvão",
+    "sector": "energy",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 6.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#3E3B38",
+    "food": false,
+    "use": []
   },
   {
+    "order": 13,
     "id": "copper",
     "name": "Cobre",
+    "sector": "mining",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 60.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#C06A3C",
+    "food": false,
+    "use": []
   },
   {
+    "order": 14,
     "id": "gas",
     "name": "Gás",
+    "sector": "energy",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 30.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#4E9FB0",
+    "food": false,
+    "use": []
   },
   {
+    "order": 15,
     "id": "oil",
     "name": "Petróleo",
+    "sector": "energy",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 45.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#5B4A2E",
+    "food": false,
+    "use": []
   },
   {
+    "order": 16,
     "id": "potato",
     "name": "Batata",
+    "sector": "food",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 35.0,
-    "food": true
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#A48A6A",
+    "food": true,
+    "use": []
   },
   {
+    "order": 17,
     "id": "soy",
     "name": "Soja",
+    "sector": "food",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 45.0,
-    "food": true
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#8DB060",
+    "food": true,
+    "use": []
   },
   {
+    "order": 18,
     "id": "cotton",
     "name": "Algodão",
+    "sector": "textile",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 70.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#EDE6D6",
+    "food": false,
+    "use": []
   },
   {
+    "order": 19,
     "id": "wood",
     "name": "Madeira",
+    "sector": "wood",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 25.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#5E8A50",
+    "food": false,
+    "use": []
   },
   {
+    "order": 20,
     "id": "uranium",
     "name": "Urânio",
+    "sector": "energy",
+    "kind": "raw",
+    "tier": "raw",
+    "durable": false,
     "base_price": 500.0,
-    "food": false
+    "base_price_source": "calibrated:legacy",
+    "price_source": "calibrated",
+    "icon_color": "#9DB33A",
+    "food": false,
+    "use": [],
+    "consumer_note": "pendente: eletricidade/reator (spec.pending 'urânio')"
+  },
+  {
+    "order": 21,
+    "id": "flour",
+    "name": "Farinha",
+    "sector": "food",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 50.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#E0CBA8",
+    "food": false,
+    "use": [
+      "bread"
+    ]
+  },
+  {
+    "order": 22,
+    "id": "bran",
+    "name": "Farelo",
+    "sector": "food",
+    "kind": "byproduct",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 5.0,
+    "base_price_source": "derived:byproduct_of:flour:v1",
+    "price_source": "derived",
+    "icon_color": "#B99A6B",
+    "food": false,
+    "use": [
+      "feed",
+      "organic_fertilizer"
+    ],
+    "note": "sobra do moinho (farinha)"
+  },
+  {
+    "order": 23,
+    "id": "bread",
+    "name": "Pão",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 72.5,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C98A3C",
+    "food": false,
+    "use": [
+      "pop_basic"
+    ],
+    "note": "comida de topo; rende ~1.6x grão cru"
+  },
+  {
+    "order": 24,
+    "id": "bagged_rice",
+    "name": "Arroz ensacado",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 91.47,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#E8E2CE",
+    "food": false,
+    "use": [
+      "pop_basic"
+    ]
+  },
+  {
+    "order": 25,
+    "id": "feed",
+    "name": "Ração",
+    "sector": "food",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 7.81,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A8B36A",
+    "food": false,
+    "use": [
+      "meat"
+    ]
+  },
+  {
+    "order": 26,
+    "id": "meat",
+    "name": "Carne",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 11.32,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B0574F",
+    "food": false,
+    "use": [
+      "pop_basic",
+      "pop_life",
+      "canned_food",
+      "combat_ration"
+    ],
+    "note": "feita na Fazenda de criação; comida de topo"
+  },
+  {
+    "order": 27,
+    "id": "canned_food",
+    "name": "Comida enlatada",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 31.06,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8FA6A0",
+    "food": false,
+    "use": [
+      "pop_basic",
+      "pop_life",
+      "combat_ration",
+      "army"
+    ],
+    "note": "comida de topo"
+  },
+  {
+    "order": 28,
+    "id": "combat_ration",
+    "name": "Ração de combate",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 143.01,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7A7F4A",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 29,
+    "id": "alcohol",
+    "name": "Bebida alcoólica",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 65.39,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#9C6B3F",
+    "food": false,
+    "use": [
+      "pop_life",
+      "premium_spirits"
+    ]
+  },
+  {
+    "order": 30,
+    "id": "premium_spirits",
+    "name": "Destilado premium",
+    "sector": "food",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 140.13,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C9A24A",
+    "food": false,
+    "use": [
+      "pop_luxury"
+    ]
+  },
+  {
+    "order": 31,
+    "id": "ethanol",
+    "name": "Etanol",
+    "sector": "food",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 52.5,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8FA34A",
+    "food": false,
+    "use": [
+      "fuel"
+    ]
+  },
+  {
+    "order": 32,
+    "id": "fertilizer",
+    "name": "Fertilizante",
+    "sector": "agro",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 58.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6E9E5A",
+    "food": false,
+    "use": [
+      "farm"
+    ]
+  },
+  {
+    "order": 33,
+    "id": "organic_fertilizer",
+    "name": "Adubo orgânico",
+    "sector": "agro",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 24.17,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#4F7F46",
+    "food": false,
+    "use": [
+      "farm"
+    ],
+    "note": "substituto fraco do fertilizante"
+  },
+  {
+    "order": 34,
+    "id": "fabric",
+    "name": "Tecido",
+    "sector": "textile",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 87.5,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C48A9A",
+    "food": false,
+    "use": [
+      "clothes",
+      "uniforms",
+      "shoes",
+      "luxury_furniture",
+      "body_armor",
+      "infantry_gear"
+    ]
+  },
+  {
+    "order": 35,
+    "id": "synthetic_fabric",
+    "name": "Tecido sintético",
+    "sector": "textile",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 117.19,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8E7FB8",
+    "food": false,
+    "use": [
+      "clothes",
+      "uniforms",
+      "body_armor",
+      "tires"
+    ],
+    "note": "substitui tecido, mais caro"
+  },
+  {
+    "order": 36,
+    "id": "clothes",
+    "name": "Roupas",
+    "sector": "textile",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 126.88,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C2705F",
+    "food": false,
+    "use": [
+      "pop_basic"
+    ]
+  },
+  {
+    "order": 37,
+    "id": "uniforms",
+    "name": "Uniformes",
+    "sector": "textile",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 126.88,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6B7A4F",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 38,
+    "id": "shoes",
+    "name": "Calçados",
+    "sector": "textile",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 208.44,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6A4A3A",
+    "food": false,
+    "use": [
+      "pop_life"
+    ]
+  },
+  {
+    "order": 39,
+    "id": "planks",
+    "name": "Tábuas",
+    "sector": "wood",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 31.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B98A55",
+    "food": false,
+    "use": [
+      "furniture",
+      "luxury_furniture",
+      "pallets",
+      "tools",
+      "construction_material",
+      "premium_spirits",
+      "containers"
+    ]
+  },
+  {
+    "order": 40,
+    "id": "sawdust",
+    "name": "Serragem",
+    "sector": "wood",
+    "kind": "byproduct",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 3.12,
+    "base_price_source": "derived:byproduct_of:planks:v1",
+    "price_source": "derived",
+    "icon_color": "#C9A97A",
+    "food": false,
+    "use": [
+      "cellulose",
+      "pallets"
+    ],
+    "note": "sobra das tábuas"
+  },
+  {
+    "order": 41,
+    "id": "furniture",
+    "name": "Móveis",
+    "sector": "wood",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 56.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A5A3B",
+    "food": false,
+    "use": [
+      "pop_life"
+    ]
+  },
+  {
+    "order": 42,
+    "id": "luxury_furniture",
+    "name": "Móveis de luxo",
+    "sector": "wood",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 213.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6E3F2A",
+    "food": false,
+    "use": [
+      "pop_luxury"
+    ]
+  },
+  {
+    "order": 43,
+    "id": "cellulose",
+    "name": "Celulose",
+    "sector": "wood",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 5.57,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#D8CBAE",
+    "food": false,
+    "use": [
+      "paper"
+    ]
+  },
+  {
+    "order": 44,
+    "id": "paper",
+    "name": "Papel",
+    "sector": "wood",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 8.08,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#E6E0D0",
+    "food": false,
+    "use": [
+      "government",
+      "bagged_rice",
+      "containers"
+    ]
+  },
+  {
+    "order": 45,
+    "id": "pallets",
+    "name": "Pallets",
+    "sector": "wood",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 6.46,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A9834E",
+    "food": false,
+    "use": [
+      "port"
+    ],
+    "note": "porto consome por tonelada embarcada"
+  },
+  {
+    "order": 46,
+    "id": "charcoal",
+    "name": "Carvão vegetal",
+    "sector": "wood",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 6.0,
+    "base_price_source": "alias:coal",
+    "price_source": "derived",
+    "icon_color": "#4A4440",
+    "food": false,
+    "use": [],
+    "alias_of": "coal",
+    "note": "produz o MESMO item coal"
+  },
+  {
+    "order": 47,
+    "id": "fuel",
+    "name": "Combustível",
+    "sector": "chemical",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 43.5,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C4552F",
+    "food": false,
+    "use": [
+      "vehicle_fleet",
+      "army",
+      "pop_life"
+    ]
+  },
+  {
+    "order": 48,
+    "id": "plastic",
+    "name": "Plástico",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 56.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#4E8FB8",
+    "food": false,
+    "use": [
+      "many"
+    ]
+  },
+  {
+    "order": 49,
+    "id": "chemicals",
+    "name": "Químicos",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 37.5,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7FB0C9",
+    "food": false,
+    "use": [
+      "many"
+    ]
+  },
+  {
+    "order": 50,
+    "id": "rubber",
+    "name": "Borracha",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 79.69,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3F3F42",
+    "food": false,
+    "use": [
+      "tires"
+    ]
+  },
+  {
+    "order": 51,
+    "id": "refined_sulfur",
+    "name": "Enxofre refinado",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 18.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#E8D94A",
+    "food": false,
+    "use": [
+      "chemicals",
+      "rubber",
+      "gunpowder"
+    ]
+  },
+  {
+    "order": 52,
+    "id": "gunpowder",
+    "name": "Pólvora",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 30.94,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5E5A52",
+    "food": false,
+    "use": [
+      "ammunition",
+      "explosives"
+    ]
+  },
+  {
+    "order": 53,
+    "id": "explosives",
+    "name": "Explosivos",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 85.55,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B23A2E",
+    "food": false,
+    "use": [
+      "artillery_ammo",
+      "mine"
+    ]
+  },
+  {
+    "order": 54,
+    "id": "carbon_fiber",
+    "name": "Fibra de carbono",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 124.69,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3A3E45",
+    "food": false,
+    "use": [
+      "fuselage",
+      "military_drone"
+    ]
+  },
+  {
+    "order": 55,
+    "id": "medicine",
+    "name": "Remédios",
+    "sector": "chemical",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 135.94,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#D06A6A",
+    "food": false,
+    "use": [
+      "pop_life",
+      "vaccines"
+    ]
+  },
+  {
+    "order": 56,
+    "id": "antibiotics",
+    "name": "Antibióticos",
+    "sector": "chemical",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 54.38,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7FA86A",
+    "food": false,
+    "use": [
+      "pop_life"
+    ]
+  },
+  {
+    "order": 57,
+    "id": "vaccines",
+    "name": "Vacinas",
+    "sector": "chemical",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 251.49,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6FA0C9",
+    "food": false,
+    "use": [
+      "pop_life"
+    ]
+  },
+  {
+    "order": 58,
+    "id": "plastic_parts",
+    "name": "Peças plásticas",
+    "sector": "chemical",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 70.31,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6FA3C4",
+    "food": false,
+    "use": [
+      "car",
+      "appliances",
+      "computer",
+      "phone",
+      "drone"
+    ]
+  },
+  {
+    "order": 59,
+    "id": "iron_ingot",
+    "name": "Lingote de ferro",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 75.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7C8894",
+    "food": false,
+    "use": [
+      "steel",
+      "cast_parts",
+      "mechanical_parts",
+      "hardware",
+      "tools"
+    ]
+  },
+  {
+    "order": 60,
+    "id": "steel",
+    "name": "Aço",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 101.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5F6C78",
+    "food": false,
+    "use": [
+      "many"
+    ]
+  },
+  {
+    "order": 61,
+    "id": "steel_sheet",
+    "name": "Chapas de aço",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 126.56,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8D9AA6",
+    "food": false,
+    "use": [
+      "chassis",
+      "appliances",
+      "car"
+    ]
+  },
+  {
+    "order": 62,
+    "id": "special_alloy",
+    "name": "Liga especial",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 439.06,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7A6FA0",
+    "food": false,
+    "use": [
+      "fuselage",
+      "artillery",
+      "body_armor"
+    ]
+  },
+  {
+    "order": 63,
+    "id": "cast_parts",
+    "name": "Peças fundidas",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 101.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6E7A85",
+    "food": false,
+    "use": [
+      "engine",
+      "industrial_machinery",
+      "artillery"
+    ]
+  },
+  {
+    "order": 64,
+    "id": "mechanical_parts",
+    "name": "Peças mecânicas",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 93.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A9499",
+    "food": false,
+    "use": [
+      "engine",
+      "chassis",
+      "robots",
+      "industrial_machinery",
+      "spare_parts"
+    ]
+  },
+  {
+    "order": 65,
+    "id": "hardware",
+    "name": "Ferragens",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 93.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#9AA4AE",
+    "food": false,
+    "use": [
+      "construction_material",
+      "steel_structure",
+      "small_arms",
+      "infantry_gear"
+    ]
+  },
+  {
+    "order": 66,
+    "id": "copper_ingot",
+    "name": "Lingote de cobre",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 75.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C06A3C",
+    "food": false,
+    "use": [
+      "wires",
+      "casing",
+      "electronic_components",
+      "circuit_board"
+    ]
+  },
+  {
+    "order": 67,
+    "id": "wires",
+    "name": "Fios e cabos",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 33.48,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B0763F",
+    "food": false,
+    "use": [
+      "engine",
+      "micromotor",
+      "electrical_material"
+    ]
+  },
+  {
+    "order": 68,
+    "id": "aluminum_ingot",
+    "name": "Lingote de alumínio",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 18.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C6CED6",
+    "food": false,
+    "use": [
+      "containers",
+      "fuselage",
+      "engine",
+      "wires"
+    ]
+  },
+  {
+    "order": 69,
+    "id": "lead_ingot",
+    "name": "Lingote de chumbo",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 31.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6B7480",
+    "food": false,
+    "use": [
+      "projectile",
+      "batteries"
+    ]
+  },
+  {
+    "order": 70,
+    "id": "tungsten_ingot",
+    "name": "Lingote de tungstênio",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 250.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#2F4E6E",
+    "food": false,
+    "use": [
+      "industrial_tools",
+      "special_alloy"
+    ]
+  },
+  {
+    "order": 71,
+    "id": "gold_bar",
+    "name": "Barra de ouro",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 3750.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#D4A017",
+    "food": false,
+    "use": [
+      "jewelry",
+      "electronic_components",
+      "treasury"
+    ]
+  },
+  {
+    "order": 72,
+    "id": "processed_rare_earths",
+    "name": "Terras raras processadas",
+    "sector": "metal",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 500.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3FA38A",
+    "food": false,
+    "use": [
+      "chips",
+      "sensors",
+      "micromotor"
+    ]
+  },
+  {
+    "order": 73,
+    "id": "tools",
+    "name": "Ferramentas",
+    "sector": "machinery",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 154.06,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A0703F",
+    "food": false,
+    "use": [
+      "farm",
+      "workshop",
+      "construction"
+    ]
+  },
+  {
+    "order": 74,
+    "id": "industrial_tools",
+    "name": "Ferramentas industriais",
+    "sector": "machinery",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 439.06,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A7A5A",
+    "food": false,
+    "use": [
+      "precision_tools",
+      "mining_machine",
+      "artillery",
+      "industrial_machinery"
+    ]
+  },
+  {
+    "order": 75,
+    "id": "precision_tools",
+    "name": "Ferramentas de precisão",
+    "sector": "machinery",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 6798.83,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#9AA6B0",
+    "food": false,
+    "use": [
+      "chips"
+    ]
+  },
+  {
+    "order": 76,
+    "id": "engine",
+    "name": "Motor",
+    "sector": "machinery",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 257.53,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7A7F86",
+    "food": false,
+    "use": [
+      "truck",
+      "tractor",
+      "car",
+      "cargo_ship",
+      "cargo_plane",
+      "mining_machine"
+    ]
+  },
+  {
+    "order": 77,
+    "id": "micromotor",
+    "name": "Micromotor e bobinas",
+    "sector": "machinery",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 666.85,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B08A4A",
+    "food": false,
+    "use": [
+      "appliances",
+      "drone",
+      "robots",
+      "industrial_machinery"
+    ]
+  },
+  {
+    "order": 78,
+    "id": "tires",
+    "name": "Pneus",
+    "sector": "machinery",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 246.1,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3A3A3C",
+    "food": false,
+    "use": [
+      "truck",
+      "tractor",
+      "car",
+      "spare_parts"
+    ]
+  },
+  {
+    "order": 79,
+    "id": "chassis",
+    "name": "Chassi",
+    "sector": "machinery",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 275.39,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7F8890",
+    "food": false,
+    "use": [
+      "truck",
+      "tractor",
+      "car"
+    ]
+  },
+  {
+    "order": 80,
+    "id": "tractor",
+    "name": "Trator",
+    "sector": "machinery",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 1402.24,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B85A2E",
+    "food": false,
+    "use": [
+      "farm"
+    ]
+  },
+  {
+    "order": 81,
+    "id": "mining_machine",
+    "name": "Máquina de mineração",
+    "sector": "machinery",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 1436.11,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C9A227",
+    "food": false,
+    "use": [
+      "mine"
+    ]
+  },
+  {
+    "order": 82,
+    "id": "robots",
+    "name": "Robôs industriais",
+    "sector": "machinery",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 75313.17,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8FA6B8",
+    "food": false,
+    "use": [
+      "factory"
+    ]
+  },
+  {
+    "order": 83,
+    "id": "industrial_machinery",
+    "name": "Maquinário industrial",
+    "sector": "machinery",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 13459.54,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7B8B9A",
+    "food": false,
+    "use": [
+      "factory"
+    ]
+  },
+  {
+    "order": 84,
+    "id": "spare_parts",
+    "name": "Peças de reposição",
+    "sector": "machinery",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 492.78,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#9A8A6A",
+    "food": false,
+    "use": [
+      "vehicle_fleet",
+      "machines"
+    ],
+    "note": "consumidas todo mês"
+  },
+  {
+    "order": 85,
+    "id": "construction_material",
+    "name": "Material de construção",
+    "sector": "construction",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 181.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B06A45",
+    "food": false,
+    "use": [
+      "building"
+    ]
+  },
+  {
+    "order": 86,
+    "id": "steel_structure",
+    "name": "Estrutura metálica",
+    "sector": "construction",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 243.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7C8A96",
+    "food": false,
+    "use": [
+      "building",
+      "naval_hull"
+    ]
+  },
+  {
+    "order": 87,
+    "id": "electrical_material",
+    "name": "Material elétrico",
+    "sector": "construction",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 6176.61,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#E0B23C",
+    "food": false,
+    "use": [
+      "building",
+      "robots",
+      "industrial_machinery",
+      "cargo_ship",
+      "cargo_plane"
+    ]
+  },
+  {
+    "order": 88,
+    "id": "truck",
+    "name": "Caminhão",
+    "sector": "transport",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 1556.93,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B8743A",
+    "food": false,
+    "use": [
+      "vehicle_fleet"
+    ]
+  },
+  {
+    "order": 89,
+    "id": "car",
+    "name": "Automóvel",
+    "sector": "transport",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 1911.29,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#4E7FB0",
+    "food": false,
+    "use": [
+      "pop_luxury"
+    ]
+  },
+  {
+    "order": 90,
+    "id": "naval_hull",
+    "name": "Casco naval",
+    "sector": "transport",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 431.25,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6A7F8A",
+    "food": false,
+    "use": [
+      "cargo_ship"
+    ]
+  },
+  {
+    "order": 91,
+    "id": "cargo_ship",
+    "name": "Navio de carga",
+    "sector": "transport",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 56493.95,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3F6E8A",
+    "food": false,
+    "use": [
+      "vehicle_fleet"
+    ]
+  },
+  {
+    "order": 92,
+    "id": "fuselage",
+    "name": "Fuselagem",
+    "sector": "transport",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 728.12,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A9B4BE",
+    "food": false,
+    "use": [
+      "cargo_plane"
+    ]
+  },
+  {
+    "order": 93,
+    "id": "cargo_plane",
+    "name": "Avião de carga",
+    "sector": "transport",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 57028.32,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5F86A8",
+    "food": false,
+    "use": [
+      "vehicle_fleet"
+    ]
+  },
+  {
+    "order": 94,
+    "id": "electronic_components",
+    "name": "Componentes eletrônicos",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 4851.56,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6FA07A",
+    "food": false,
+    "use": [
+      "many"
+    ]
+  },
+  {
+    "order": 95,
+    "id": "circuit_board",
+    "name": "Placa de circuito",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 6228.51,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3E7A5A",
+    "food": false,
+    "use": [
+      "computer",
+      "phone"
+    ]
+  },
+  {
+    "order": 96,
+    "id": "chips",
+    "name": "Chips",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 15234.86,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A7FB0",
+    "food": false,
+    "use": [
+      "sensors",
+      "robots",
+      "computer",
+      "phone",
+      "drone"
+    ]
+  },
+  {
+    "order": 97,
+    "id": "sensors",
+    "name": "Sensores e óptica",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 19668.58,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#4F8FA0",
+    "food": false,
+    "use": [
+      "drone",
+      "robots",
+      "artillery",
+      "cargo_ship",
+      "cargo_plane"
+    ]
+  },
+  {
+    "order": 98,
+    "id": "batteries",
+    "name": "Baterias",
+    "sector": "electronics",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 85.94,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C9B03C",
+    "food": false,
+    "use": [
+      "phone",
+      "car",
+      "truck",
+      "drone",
+      "infantry_gear"
+    ]
+  },
+  {
+    "order": 99,
+    "id": "appliances",
+    "name": "Eletrodomésticos",
+    "sector": "electronics",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 10287.5,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#C6CDD4",
+    "food": false,
+    "use": [
+      "pop_life"
+    ]
+  },
+  {
+    "order": 100,
+    "id": "computer",
+    "name": "Computador",
+    "sector": "electronics",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 38760.62,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5A6B7A",
+    "food": false,
+    "use": [
+      "pop_luxury",
+      "government"
+    ]
+  },
+  {
+    "order": 101,
+    "id": "phone",
+    "name": "Celular",
+    "sector": "electronics",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 38915.32,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#3F5F7F",
+    "food": false,
+    "use": [
+      "pop_life"
+    ]
+  },
+  {
+    "order": 102,
+    "id": "drone",
+    "name": "Drone",
+    "sector": "electronics",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 64307.77,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#7A8FA0",
+    "food": false,
+    "use": [
+      "pop_luxury",
+      "military_drone"
+    ]
+  },
+  {
+    "order": 103,
+    "id": "containers",
+    "name": "Recipientes",
+    "sector": "packaging",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 10.1,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A8794A",
+    "food": false,
+    "use": [
+      "alcohol",
+      "canned_food"
+    ]
+  },
+  {
+    "order": 104,
+    "id": "jewelry",
+    "name": "Joias",
+    "sector": "luxury",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 15750.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B03A6E",
+    "food": false,
+    "use": [
+      "pop_luxury"
+    ]
+  },
+  {
+    "order": 105,
+    "id": "casing",
+    "name": "Estojo",
+    "sector": "military",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 93.75,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#B0763F",
+    "food": false,
+    "use": [
+      "ammunition",
+      "artillery_ammo"
+    ]
+  },
+  {
+    "order": 106,
+    "id": "projectile",
+    "name": "Projétil",
+    "sector": "military",
+    "kind": "intermediate",
+    "tier": "semi",
+    "durable": false,
+    "base_price": 39.06,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#8A7A5A",
+    "food": false,
+    "use": [
+      "ammunition"
+    ]
+  },
+  {
+    "order": 107,
+    "id": "ammunition",
+    "name": "Munição",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 237.44,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#A8843C",
+    "food": false,
+    "use": [
+      "army",
+      "military_drone"
+    ]
+  },
+  {
+    "order": 108,
+    "id": "artillery_ammo",
+    "name": "Munição de artilharia",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 406.8,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#9A5A2E",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 109,
+    "id": "small_arms",
+    "name": "Armas leves",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 351.0,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#4A4F57",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 110,
+    "id": "artillery",
+    "name": "Artilharia",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": true,
+    "base_price": 37348.56,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5A5F4A",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 111,
+    "id": "military_drone",
+    "name": "Drone militar",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 93771.35,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#5F6F5A",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 112,
+    "id": "body_armor",
+    "name": "Colete de infantaria",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 763.51,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6B7A5A",
+    "food": false,
+    "use": [
+      "army"
+    ]
+  },
+  {
+    "order": 113,
+    "id": "infantry_gear",
+    "name": "Equipamento de infantaria",
+    "sector": "military",
+    "kind": "final",
+    "tier": "final",
+    "durable": false,
+    "base_price": 7422.19,
+    "base_price_source": "derived:v1",
+    "price_source": "derived",
+    "icon_color": "#6A7A52",
+    "food": false,
+    "use": [
+      "army"
+    ]
   }
 ]

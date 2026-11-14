@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "note": "Necessidades das POPs. Só basic/food tem âncora física no núcleo (kDemoNeedPerCapita); as demais categorias são ESTIMATIVA declarada (anchor: estimated) e devem ser calibradas no laboratório na F3.",
+  "source": "docs/economy/production_chains_spec.json#pop_needs + plano §4.3",
+  "levels": {
+    "basic": {
+      "priority": 1,
+      "satisfaction_weight": 0.6,
+      "categories": {
+        "food": {
+          "substitutes": [
+            "bread",
+            "meat",
+            "canned_food",
+            "bagged_rice",
+            "wheat",
+            "rice",
+            "maize",
+            "potato",
+            "soy"
+          ],
+          "per_capita_t_month": 0.009,
+          "anchor": "existing_food_need",
+          "anchor_rule": "kDemoNeedPerCapita (0,0003 t-eq/dia) × 30 dias",
+          "equivalence_key": "calories"
+        },
+        "clothing": {
+          "substitutes": [
+            "clothes"
+          ],
+          "per_capita_t_month": 0.0004,
+          "anchor": "estimated",
+          "anchor_rule": "exemplo do plano §4.3; calibrar no laboratório"
+        }
+      }
+    },
+    "life": {
+      "priority": 2,
+      "satisfaction_weight": 0.3,
+      "categories": {
+        "protein": {
+          "substitutes": [
+            "meat",
+            "canned_food"
+          ],
+          "per_capita_t_month": 0.00045,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.2 da cesta do nível",
+          "equivalence_key": "protein"
+        },
+        "footwear": {
+          "substitutes": [
+            "shoes"
+          ],
+          "per_capita_t_month": 0.000225,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.1 da cesta do nível"
+        },
+        "health": {
+          "substitutes": [
+            "medicine",
+            "antibiotics",
+            "vaccines"
+          ],
+          "per_capita_t_month": 0.000337,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.15 da cesta do nível"
+        },
+        "home": {
+          "substitutes": [
+            "furniture",
+            "appliances"
+          ],
+          "per_capita_t_month": 0.00045,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.2 da cesta do nível"
+        },
+        "communication": {
+          "substitutes": [
+            "phone"
+          ],
+          "per_capita_t_month": 0.000225,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.1 da cesta do nível"
+        },
+        "leisure": {
+          "substitutes": [
+            "alcohol"
+          ],
+          "per_capita_t_month": 0.000225,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.1 da cesta do nível"
+        },
+        "transport": {
+          "substitutes": [
+            "fuel"
+          ],
+          "per_capita_t_month": 0.000337,
+          "anchor": "estimated",
+          "anchor_rule": "0.25 × âncora de alimento × 0.15 da cesta do nível"
+        }
+      }
+    },
+    "luxury": {
+      "priority": 3,
+      "satisfaction_weight": 0.1,
+      "categories": {
+        "status": {
+          "substitutes": [
+            "jewelry",
+            "luxury_furniture",
+            "premium_spirits"
+          ],
+          "per_capita_t_month": 0.00018,
+          "anchor": "estimated",
+          "anchor_rule": "0.05 × âncora de alimento × 0.4 da cesta do nível"
+        },
+        "tech": {
+          "substitutes": [
+            "computer",
+            "drone"
+          ],
+          "per_capita_t_month": 0.000157,
+          "anchor": "estimated",
+          "anchor_rule": "0.05 × âncora de alimento × 0.35 da cesta do nível"
+        },
+        "transport": {
+          "substitutes": [
+            "car"
+          ],
+          "per_capita_t_month": 0.000112,
+          "anchor": "estimated",
+          "anchor_rule": "0.05 × âncora de alimento × 0.25 da cesta do nível"
+        }
+      }
+    }
+  },
+  "durable_replacement_per_year": 0.1,
+  "equivalence": {
+    "calories": {
+      "wheat": 1.0,
+      "rice": 1.0,
+      "maize": 1.0,
+      "potato": 0.25,
+      "soy": 1.3,
+      "bread": 1.6,
+      "bagged_rice": 1.0,
+      "meat": 1.0,
+      "canned_food": 0.8
+    },
+    "protein": {
+      "meat": 1.0,
+      "canned_food": 0.8
+    }
+  },
+  "equivalence_note": "Fatores de calories vêm de kDemoCaloricFactor (batata 0,25; soja 1,3); pão 1,6 vem da nota da spec. protein e as categorias não alimentares são estimativa.",
+  "institutional": {
+    "pop_basic": [
+      "bagged_rice",
+      "bread",
+      "canned_food",
+      "clothes",
+      "meat"
+    ],
+    "pop_life": [
+      "alcohol",
+      "antibiotics",
+      "appliances",
+      "canned_food",
+      "fuel",
+      "furniture",
+      "meat",
+      "medicine",
+      "phone",
+      "shoes",
+      "vaccines"
+    ],
+    "army": [
+      "ammunition",
+      "artillery",
+      "artillery_ammo",
+      "body_armor",
+      "canned_food",
+      "combat_ration",
+      "fuel",
+      "infantry_gear",
+      "military_drone",
+      "small_arms",
+      "uniforms"
+    ],
+    "pop_luxury": [
+      "car",
+      "computer",
+      "drone",
+      "jewelry",
+      "luxury_furniture",
+      "premium_spirits"
+    ],
+    "farm": [
+      "fertilizer",
+      "organic_fertilizer",
+      "tools",
+      "tractor"
+    ],
+    "government": [
+      "computer",
+      "paper"
+    ],
+    "port": [
+      "pallets"
+    ],
+    "vehicle_fleet": [
+      "cargo_plane",
+      "cargo_ship",
+      "fuel",
+      "spare_parts",
+      "truck"
+    ],
+    "mine": [
+      "explosives",
+      "mining_machine"
+    ],
+    "treasury": [
+      "gold_bar"
+    ],
+    "workshop": [
+      "tools"
+    ],
+    "construction": [
+      "tools"
+    ],
+    "factory": [
+      "industrial_machinery",
+      "robots"
+    ],
+    "machines": [
+      "spare_parts"
+    ],
+    "building": [
+      "construction_material",
+      "electrical_material",
+      "steel_structure"
+    ]
+  },
+  "consumption_rules": [
+    "construir prédio consome construction_material ou steel_structure + electrical_material",
+    "porto consome pallets por tonelada embarcada",
+    "minas consomem explosives para render mais",
+    "governo e empresas consomem paper e computer",
+    "veículos e máquinas consomem spare_parts por mês; fazendas/oficinas consomem tools",
+    "army consome uniforms, ammunition, combat_ration, fuel etc."
+  ],
+  "pending": [
+    "eletricidade",
+    "aquecimento das POPs",
+    "urânio",
+    "projétil perfurante",
+    "blindado",
+    "preferências culturais"
+  ]
+}

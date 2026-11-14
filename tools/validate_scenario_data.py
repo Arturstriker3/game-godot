@@ -50,6 +50,7 @@ DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 SCENARIO_DIR = Path("data/definitions/scenario")
 ECONOMY_DIR = Path("data/definitions/economy")
 GOODS_FILE = ECONOMY_DIR / "goods.json"
+PRODUCTION_SPEC_FILE = Path("docs/economy/production_chains_spec.json")
 I18N_FILE = Path("data/definitions/i18n/i18n.csv")
 CULTURE_DIR = Path("data/definitions/culture")
 CULTURE_FILES = (
@@ -113,7 +114,9 @@ PLAN_SIZE = (5000.0, 2500.0)
 
 GOODS_FIELDS = ["id", "name", "base_price", "food"]
 # Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp), na
-# mesma ordem de data/definitions/economy/goods.json.
+# mesma ordem de data/definitions/economy/goods.json. Os demais bens do arquivo
+# (F1 das cadeias de produção) são validados contra a spec abaixo: o núcleo
+# ignora id desconhecido em demo_set_goods, então o dado pode entrar antes do C++.
 GOODS_ALLOWED_IDS = (
     "wheat",
     "iron",
@@ -559,10 +562,23 @@ def validate_buildings(
     return ids
 
 
-def validate_goods(sec: Section, rows: list) -> set:
+def production_chain_ids(root: Path) -> set:
+    """Ids dos bens das cadeias de produção (F1), lidos da spec de planejamento."""
+    path = root / PRODUCTION_SPEC_FILE
+    if not path.is_file():
+        return set()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {as_text(item.get("id")) for item in data.get("goods", []) if item.get("id")}
+
+
+def validate_goods(sec: Section, rows: list, extended_ids: Optional[set] = None) -> set:
     """Valida os bens da economia (id, nome, preço-base e flag de comida)."""
     ids: set = set()
     seen: dict = {}
+    extended_ids = extended_ids or set()
     allowed = ", ".join(GOODS_ALLOWED_IDS)
     for row in rows:
         data = row.data
@@ -572,9 +588,10 @@ def validate_goods(sec: Section, rows: list) -> set:
         check_id(sec, row, good_id, seen, "bem")
         if good_id:
             ids.add(good_id)
-            if good_id not in GOODS_ALLOWED_IDS:
+            if good_id not in GOODS_ALLOWED_IDS and good_id not in extended_ids:
                 sec.errors.append(
                     f"{row.label}: id '{good_id}' não é conhecido pelo núcleo C++ "
+                    f"nem consta na spec das cadeias de produção "
                     f"(permitidos: {allowed})"
                 )
 
@@ -1134,7 +1151,7 @@ def build_report(root: Path) -> Report:
     goods = load_json_file(report, root, goods_path)
     if goods is not None:
         sec, rows = goods
-        validate_goods(sec, rows)
+        validate_goods(sec, rows, production_chain_ids(root))
 
     city_ids = {}
     for fmt in ("csv", "json"):

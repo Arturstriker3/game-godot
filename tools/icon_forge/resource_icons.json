@@ -15,7 +15,8 @@
      "d": "M7 9.5l2-3 3 1 1.5-2.5",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "copper": {
    "label": "Cobre",
@@ -39,7 +40,8 @@
      "d": "M5 10.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6M5 14c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "gas": {
    "label": "Gás",
@@ -55,7 +57,8 @@
      "d": "M12 13c1.2 1.3 2.5 2.4 2.5 4a2.5 2.5 0 0 1-5 0c0-1.6 1.3-2.7 2.5-4z",
      "mode": "cutfill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "iron": {
    "label": "Ferro",
@@ -66,7 +69,8 @@
      "d": "M3 7h13c0 2.5 2 4 5 4v2c-3 0-4.5 0-6 1.5V16h-2l1 3h-7l1-3H6v-2.5C4 12.5 3 10.5 3 7z",
      "mode": "fill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "oil": {
    "label": "Petróleo",
@@ -83,7 +87,8 @@
      "mode": "cut",
      "w": 1.6
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "bauxite": {
    "label": "Bauxita",
@@ -99,7 +104,8 @@
      "d": "M5 13.5c4 1 9 .5 15 1M6.5 10c3 .8 7 .6 11.5 0",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "lead": {
    "label": "Chumbo",
@@ -115,7 +121,8 @@
      "d": "M9.5 9V7a2.5 2.5 0 0 1 5 0v2",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "gold": {
    "label": "Ouro",
@@ -136,7 +143,8 @@
      "d": "M7 14l1.6-4.5h6.8L17 14z",
      "mode": "fill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "phosphate": {
    "label": "Fosfato",
@@ -152,7 +160,8 @@
      "d": "M6.5 4.5c2 1 4 1 5.5 0s3.5-1 5.5 0",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "tungsten": {
    "label": "Tungstênio",
@@ -168,7 +177,8 @@
      "d": "M10 12l1-2 1 2 1-2 1 2",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "rare_earths": {
    "label": "Terras raras",
@@ -196,7 +206,8 @@
      "height": 3,
      "mode": "fill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "sulfur": {
    "label": "Enxofre",
@@ -217,7 +228,8 @@
      "d": "M11 21l1-3 1.5 3z",
      "mode": "fill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "diamond": {
    "label": "Diamante",
@@ -233,7 +245,8 @@
      "d": "M3 9.5h18M9 4l-2 5.5L12 21l5-11.5L15 4M7 9.5l5-5.5 5 5.5",
      "mode": "cut"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "uranium": {
    "label": "Urânio",
@@ -256,7 +269,8 @@
       240
      ]
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "wheat": {
    "label": "Trigo",
@@ -272,7 +286,8 @@
      "d": "M12 9c-2.2-.6-3.4-2.4-3.4-4.6 2.2.6 3.6 2.3 3.4 4.6zM12 9c2.2-.6 3.4-2.4 3.4-4.6-2.2.6-3.6 2.3-3.4 4.6zM12 13.5c-2.4-.6-3.8-2.5-3.8-5 2.4.6 4 2.6 3.8 5zM12 13.5c2.4-.6 3.8-2.5 3.8-5-2.4.6-4 2.6-3.8 5zM12 18c-2.6-.7-4.1-2.8-4.1-5.4 2.6.7 4.3 2.8 4.1 5.4zM12 18c2.6-.7 4.1-2.8 4.1-5.4-2.6.7-4.3 2.8-4.1 5.4z",
      "mode": "fill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "rice": {
    "label": "Arroz",
@@ -327,7 +342,8 @@
      "mode": "fill",
      "transform": "rotate(15 14 5.5)"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "maize": {
    "label": "Milho",
@@ -349,7 +365,8 @@
      "d": "M12 21.5c-2-1-4.5-3.5-5.5-8M12 21.5c2-1 4.5-3.5 5.5-8",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "potato": {
    "label": "Batata",
@@ -388,7 +405,8 @@
      "r": 0.9,
      "mode": "cutfill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "soy": {
    "label": "Soja",
@@ -420,7 +438,8 @@
      "r": 1.9,
      "mode": "cutfill"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "cotton": {
    "label": "Algodão",
@@ -459,7 +478,8 @@
      "d": "M6 16.5l6 4 6-4M12 20.5V22.5",
      "mode": "stroke"
     }
-   ]
+   ],
+   "tier": "raw"
   },
   "wood": {
    "label": "Madeira",
@@ -495,6 +515,2651 @@
      "ry": 1.8,
      "mode": "cut",
      "w": 1.1
+    }
+   ],
+   "tier": "raw"
+  },
+  "flour": {
+   "label": "Farinha",
+   "color": "#E0CBA8",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M7.5 8h9l2.2 11.2a1.8 1.8 0 0 1-1.8 2.1H7.1a1.8 1.8 0 0 1-1.8-2.1z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 8V5.5h5V8",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 13.5h5",
+     "mode": "cut"
+    }
+   ]
+  },
+  "bran": {
+   "label": "Farelo",
+   "color": "#B99A6B",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 13h17l-1.8 6.2a2 2 0 0 1-1.9 1.4H7.2a2 2 0 0 1-1.9-1.4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6 13c1.2-4 4-6 6-6s4.8 2 6 6z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 9.5,
+     "cy": 15.5,
+     "r": 1.1,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 13.6,
+     "cy": 16.4,
+     "r": 1.0,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "bread": {
+   "label": "Pão",
+   "color": "#C98A3C",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 15.5c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7v3.2H4.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8.2 11.2l1.4 2.4M12 10.4l1.4 2.8M15.8 11.2l1.4 2.4",
+     "mode": "cut"
+    }
+   ]
+  },
+  "bagged_rice": {
+   "label": "Arroz ensacado",
+   "color": "#E8E2CE",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M5.5 9.5h13l1.6 9.1a1.8 1.8 0 0 1-1.8 2.1H5.7a1.8 1.8 0 0 1-1.8-2.1z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7.8 9.5V6.8h8.4v2.7",
+     "mode": "stroke"
+    },
+    {
+     "el": "circle",
+     "cx": 10,
+     "cy": 14.2,
+     "r": 1.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 14,
+     "cy": 15.6,
+     "r": 1.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 11.4,
+     "cy": 18,
+     "r": 1.0,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "feed": {
+   "label": "Ração",
+   "color": "#A8B36A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3 12.5h18l-2 6.3a2 2 0 0 1-1.9 1.4H6.9a2 2 0 0 1-1.9-1.4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6 12.5c1.4-4.4 4.2-6.5 6-6.5s4.6 2.1 6 6.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 16h8",
+     "mode": "cut"
+    }
+   ]
+  },
+  "meat": {
+   "label": "Carne",
+   "color": "#B0574F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "circle",
+     "cx": 9.2,
+     "cy": 9.6,
+     "r": 4.6,
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M11.6 11.6l6.2 6.2",
+     "mode": "stroke",
+     "w": 2.4
+    },
+    {
+     "el": "path",
+     "d": "M16.4 19.4l1.8-1.8",
+     "mode": "stroke",
+     "w": 2.0
+    }
+   ]
+  },
+  "canned_food": {
+   "label": "Comida enlatada",
+   "color": "#8FA6A0",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M7.5 7.5h9v12.5a1.5 1.5 0 0 1-1.5 1.5H9a1.5 1.5 0 0 1-1.5-1.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "ellipse",
+     "cx": 12,
+     "cy": 7.5,
+     "rx": 4.5,
+     "ry": 1.5,
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M7.5 11.5h9",
+     "mode": "cut"
+    }
+   ]
+  },
+  "combat_ration": {
+   "label": "Ração de combate",
+   "color": "#7A7F4A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 4.5,
+     "y": 7.5,
+     "width": 15,
+     "height": 13,
+     "mode": "fill",
+     "rx": 1.6
+    },
+    {
+     "el": "path",
+     "d": "M9.5 7.5V5.2h5v2.3",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 12.5h15",
+     "mode": "cut"
+    }
+   ]
+  },
+  "alcohol": {
+   "label": "Bebida alcoólica",
+   "color": "#9C6B3F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M10 4h4v4.2l2.2 3.1V20a1.5 1.5 0 0 1-1.5 1.5H9.3A1.5 1.5 0 0 1 7.8 20v-8.7L10 8.2z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8.4 13.4h7.2",
+     "mode": "cut"
+    }
+   ]
+  },
+  "premium_spirits": {
+   "label": "Destilado premium",
+   "color": "#C9A24A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M12 2.5l2 2v3l1.8 2.4V20a1.6 1.6 0 0 1-1.6 1.6H9.8A1.6 1.6 0 0 1 8.2 20v-10.1L10 7.5v-3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M12 13.5l1.6 2.2-1.6 2.2-1.6-2.2z",
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "ethanol": {
+   "label": "Etanol",
+   "color": "#8FA34A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 5.5,
+     "y": 7.5,
+     "width": 11,
+     "height": 14,
+     "mode": "fill",
+     "rx": 1.5
+    },
+    {
+     "el": "path",
+     "d": "M16.5 10.5h2.6v4.2h-2.6",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M9 13c2.6 0 4-1.4 4-4 1.4 2.8.4 5.6-4 5.6z",
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "fertilizer": {
+   "label": "Fertilizante",
+   "color": "#6E9E5A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M7 8h10l1.6 11.6a1.6 1.6 0 0 1-1.6 1.8H7a1.6 1.6 0 0 1-1.6-1.8z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9 8V6h6v2",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M12 13.2c2.6 0 4.2-1.6 4.2-4.4-2.8.2-4.4 1.8-4.2 4.4z",
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 9,
+     "cy": 17,
+     "r": 0.9,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "organic_fertilizer": {
+   "label": "Adubo orgânico",
+   "color": "#4F7F46",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 19c1.6-4.8 4.6-7.2 8.5-7.2s6.9 2.4 8.5 7.2z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M12 11.8c0-3.2 1.4-5.4 4.6-6.4-.2 3.4-1.8 5.4-4.6 6.4z",
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "fabric": {
+   "label": "Tecido",
+   "color": "#C48A9A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M5 8.5h12v7H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "ellipse",
+     "cx": 17,
+     "cy": 12,
+     "rx": 3,
+     "ry": 3.5,
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 11h7M8 13h7",
+     "mode": "cut"
+    }
+   ]
+  },
+  "synthetic_fabric": {
+   "label": "Tecido sintético",
+   "color": "#8E7FB8",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 11.5l7.5-4 7.5 4-7.5 4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 15.5l7.5-4 7.5 4-7.5 4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 12.2l8-2.4",
+     "mode": "cut"
+    }
+   ]
+  },
+  "clothes": {
+   "label": "Roupas",
+   "color": "#C2705F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M8 5.5l4 1.6 4-1.6 4 3-2.4 3-1.2-.8V20H7.6v-8.3l-1.2.8-2.4-3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10 6.5c.6 1.6 3.4 1.6 4 0",
+     "mode": "cut"
+    }
+   ]
+  },
+  "uniforms": {
+   "label": "Uniformes",
+   "color": "#6B7A4F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M8 5.5l4 1.6 4-1.6 4 3-2.4 3-1.2-.8V20H7.6v-8.3l-1.2.8-2.4-3z",
+     "mode": "fill"
+    },
+    {
+     "el": "rect",
+     "x": 4.6,
+     "y": 5.2,
+     "width": 2.8,
+     "height": 1.8,
+     "mode": "fill",
+     "rx": 0.5
+    },
+    {
+     "el": "rect",
+     "x": 16.6,
+     "y": 5.2,
+     "width": 2.8,
+     "height": 1.8,
+     "mode": "fill",
+     "rx": 0.5
+    },
+    {
+     "el": "path",
+     "d": "M10 6.5c.6 1.6 3.4 1.6 4 0",
+     "mode": "cut"
+    },
+    {
+     "el": "path",
+     "d": "M12 11v6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "shoes": {
+   "label": "Calçados",
+   "color": "#6A4A3A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6 4.5h5v9.5h6.5c2.6 0 3.5 1.6 3.5 3.6V21H6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7.5 18h13.5",
+     "mode": "cut"
+    }
+   ]
+  },
+  "planks": {
+   "label": "Tábuas",
+   "color": "#B98A55",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 3,
+     "y": 6,
+     "width": 18,
+     "height": 3.2,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "rect",
+     "x": 3,
+     "y": 10.8,
+     "width": 18,
+     "height": 3.2,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "rect",
+     "x": 3,
+     "y": 15.6,
+     "width": 18,
+     "height": 3.2,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "path",
+     "d": "M6 7.6h12M6 12.4h12M6 17.2h12",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "sawdust": {
+   "label": "Serragem",
+   "color": "#C9A97A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 19.8c1.8-5 4.6-7.6 8.5-7.6s6.7 2.6 8.5 7.6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 8.5h13.5l2 4.5H4.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 10.2v2.8M10 10.2v2.8M13 10.2v2.8M16 10.2v2.8",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "furniture": {
+   "label": "Móveis",
+   "color": "#8A5A3B",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M7 3.5h2.8v9h7v2.8H7z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 12.5h2.8v7.5H7zM14.2 12.5H17v7.5h-2.8z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.8 16h4.2",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "luxury_furniture": {
+   "label": "Móveis de luxo",
+   "color": "#6E3F2A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6 8.5a2 2 0 0 1 4 0v4h4v-4a2 2 0 0 1 4 0v7H6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M5 15.5h14v3.5H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6 19h2.5v2H6zM15.5 19H18v2h-2.5z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "cellulose": {
+   "label": "Celulose",
+   "color": "#D8CBAE",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M12 4.5a7 7 0 1 1-7 7",
+     "mode": "stroke",
+     "w": 2.2
+    },
+    {
+     "el": "path",
+     "d": "M12 8a3.5 3.5 0 1 1-3.5 3.5",
+     "mode": "stroke",
+     "w": 2.0
+    },
+    {
+     "el": "rect",
+     "x": 4,
+     "y": 17,
+     "width": 16,
+     "height": 3.5,
+     "mode": "fill",
+     "rx": 1.0
+    }
+   ]
+  },
+  "paper": {
+   "label": "Papel",
+   "color": "#E6E0D0",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 4.5,
+     "y": 7.5,
+     "width": 15,
+     "height": 10.5,
+     "mode": "fill",
+     "rx": 1.0
+    },
+    {
+     "el": "path",
+     "d": "M7.5 5h9.5",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M5 10.5h14M5 14h14",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "pallets": {
+   "label": "Pallets",
+   "color": "#A9834E",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 8,
+     "width": 17,
+     "height": 3,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 13,
+     "width": 17,
+     "height": 3,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 16.5,
+     "width": 5,
+     "height": 3.5,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "rect",
+     "x": 9.5,
+     "y": 16.5,
+     "width": 5,
+     "height": 3.5,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "rect",
+     "x": 15.5,
+     "y": 16.5,
+     "width": 5,
+     "height": 3.5,
+     "mode": "fill",
+     "rx": 0.6
+    }
+   ]
+  },
+  "charcoal": {
+   "label": "Carvão vegetal",
+   "color": "#4A4440",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 14.5l3.5-5 4 1.6 2-2.6 4.5 3.4 1.5 4.1-2.5 3H6.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 12.5l1.5 2.5M13.5 11l1 3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "fuel": {
+   "label": "Combustível",
+   "color": "#C4552F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 6,
+     "width": 9,
+     "height": 15,
+     "mode": "fill",
+     "rx": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M15 9h3.5v5.5a2.5 2.5 0 0 1-2.5 2.5",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M8.5 10h4M8.5 13h4",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "plastic": {
+   "label": "Plástico",
+   "color": "#4E8FB8",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6.5 5.5h11l1 13.5a1.5 1.5 0 0 1-1.5 1.6H7a1.5 1.5 0 0 1-1.5-1.6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6.9 9.5h10.2M6.9 14.5h10.2",
+     "mode": "cut",
+     "w": 1.1
+    }
+   ]
+  },
+  "chemicals": {
+   "label": "Químicos",
+   "color": "#7FB0C9",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M10.5 3.5h3V9l4.5 9.5a1.6 1.6 0 0 1-1.5 2.3H7.5a1.6 1.6 0 0 1-1.5-2.3L10.5 9z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 16,
+     "r": 1.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 9.5,
+     "cy": 18.4,
+     "r": 0.9,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "rubber": {
+   "label": "Borracha",
+   "color": "#3F3F42",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 7.5c3-2 5 1.5 8 0s5-2 8 0v9c-3 2-5-1.5-8 0s-5 2-8 0z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 11.5h3M13 13.5h3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "refined_sulfur": {
+   "label": "Enxofre refinado",
+   "color": "#E8D94A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 14h17l-2.2 5.5a2 2 0 0 1-1.9 1.3H7.6a2 2 0 0 1-1.9-1.3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6 14c1.5-4.5 4.3-6.6 6-6.6s4.5 2.1 6 6.6z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 9.5,
+     "cy": 16.8,
+     "r": 0.9,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 13.5,
+     "cy": 17.4,
+     "r": 0.9,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "gunpowder": {
+   "label": "Pólvora",
+   "color": "#5E5A52",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6.5 8h11v10.5a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2z",
+     "mode": "fill"
+    },
+    {
+     "el": "ellipse",
+     "cx": 12,
+     "cy": 8,
+     "rx": 5.5,
+     "ry": 1.4,
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 11.5h5M9.5 14.5h5",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "explosives": {
+   "label": "Explosivos",
+   "color": "#B23A2E",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "circle",
+     "cx": 10.5,
+     "cy": 14.5,
+     "r": 6,
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M14 10.5l2.6-3.6 1.6 1.2-2.6 3.6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M17.6 6.6l1.6-2.6",
+     "mode": "stroke",
+     "w": 1.6
+    },
+    {
+     "el": "path",
+     "d": "M8.2 12.5c1.4-1 3-.8 4 0",
+     "mode": "cut",
+     "w": 1.2
+    }
+   ]
+  },
+  "carbon_fiber": {
+   "label": "Fibra de carbono",
+   "color": "#3A3E45",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 4,
+     "y": 4,
+     "width": 16,
+     "height": 16,
+     "mode": "fill",
+     "rx": 2
+    },
+    {
+     "el": "path",
+     "d": "M4 4l16 16M20 4L4 20M4 12h16",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "medicine": {
+   "label": "Remédios",
+   "color": "#D06A6A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6.5,
+     "y": 8,
+     "width": 11,
+     "height": 12.5,
+     "mode": "fill",
+     "rx": 2
+    },
+    {
+     "el": "path",
+     "d": "M9.5 8V5h5v3",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M12 11v6M9 14h6",
+     "mode": "cut",
+     "w": 1.6
+    }
+   ]
+  },
+  "antibiotics": {
+   "label": "Antibióticos",
+   "color": "#7FA86A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M7 6.5a4.2 4.2 0 0 1 6 0l4.5 4.5a4.2 4.2 0 0 1-6 6L7 12.5a4.2 4.2 0 0 1 0-6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10 9.5l4.5 4.5",
+     "mode": "cut",
+     "w": 1.4
+    }
+   ]
+  },
+  "vaccines": {
+   "label": "Vacinas",
+   "color": "#6FA0C9",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 8.5,
+     "y": 6.5,
+     "width": 4,
+     "height": 9,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "path",
+     "d": "M6.5 6.5h8",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M10.5 16v4",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M10.5 3.5v3",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M9 10h3M9 12.5h3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "plastic_parts": {
+   "label": "Peças plásticas",
+   "color": "#6FA3C4",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6 5.5h12v4h-5v5h5v4H6z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 8.5,
+     "cy": 7.5,
+     "r": 1.1,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 8.5,
+     "cy": 16.5,
+     "r": 1.1,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "iron_ingot": {
+   "label": "Lingote de ferro",
+   "color": "#7C8894",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 16.5l2.5-7h10l2.5 7z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 16.5h15v2.5h-15z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9 11.5h6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "steel": {
+   "label": "Aço",
+   "color": "#5F6C78",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 13l2-5h9l2 5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4 13h13v2.4H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 18.5l1.6-4.4h8.8l1.6 4.4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 18.5h12v2.4H8z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "steel_sheet": {
+   "label": "Chapas de aço",
+   "color": "#8D9AA6",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 9c3-2 6 2 9 0s6-2 8 0v3.2c-2-2-5 2-8 0s-6-2-9 0z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M3.5 14.5c3-2 6 2 9 0s6-2 8 0v3.2c-2-2-5 2-8 0s-6-2-9 0z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "special_alloy": {
+   "label": "Liga especial",
+   "color": "#7A6FA0",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 17l2.5-6.5h10L19.5 17z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 17h15v2.5h-15z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M12 7.5l2.2 1.3v2.6L12 12.7l-2.2-1.3V8.8z",
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "cast_parts": {
+   "label": "Peças fundidas",
+   "color": "#6E7A85",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M5 7h9l5 4v5l-5 4H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 9.5,
+     "cy": 12,
+     "r": 2.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M14 8.5v7",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "mechanical_parts": {
+   "label": "Peças mecânicas",
+   "color": "#8A9499",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 10.6,
+     "y": 2.2,
+     "width": 2.8,
+     "height": 4,
+     "mode": "fill",
+     "rx": 0.6,
+     "rot": [
+      0,
+      45,
+      90,
+      135
+     ]
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 5.6,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 2.4,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "hardware": {
+   "label": "Ferragens",
+   "color": "#9AA4AE",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 8,
+     "y": 4.5,
+     "width": 4,
+     "height": 3,
+     "mode": "fill",
+     "rx": 0.4
+    },
+    {
+     "el": "rect",
+     "x": 9,
+     "y": 7.5,
+     "width": 2,
+     "height": 12,
+     "mode": "fill",
+     "rx": 0.3
+    },
+    {
+     "el": "path",
+     "d": "M5.5 15.5h9v4.5h-9z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 10,
+     "cy": 17.7,
+     "r": 1.3,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "copper_ingot": {
+   "label": "Lingote de cobre",
+   "color": "#C06A3C",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 17.5v-7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v7z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 17.5h15v2.5h-15z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 11.5h8",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "wires": {
+   "label": "Fios e cabos",
+   "color": "#B0763F",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 4.5,
+     "width": 12,
+     "height": 2.2,
+     "mode": "fill",
+     "rx": 0.5
+    },
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 17.3,
+     "width": 12,
+     "height": 2.2,
+     "mode": "fill",
+     "rx": 0.5
+    },
+    {
+     "el": "rect",
+     "x": 7.5,
+     "y": 6.5,
+     "width": 9,
+     "height": 10.8,
+     "mode": "fill",
+     "rx": 0.4
+    },
+    {
+     "el": "path",
+     "d": "M9 9.5h6M9 12h6M9 14.5h6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "aluminum_ingot": {
+   "label": "Lingote de alumínio",
+   "color": "#C6CED6",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 16.5l2-6h11l2 6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 16.5h15v2.5h-15z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8.6 12.5l1.5 2h-3zM14 12.5l1.5 2h-3z",
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "lead_ingot": {
+   "label": "Lingote de chumbo",
+   "color": "#6B7480",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 15h16l-1 5H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9 15l.8-4h4.4l.8 4z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 7.5,
+     "r": 2,
+     "mode": "stroke"
+    }
+   ]
+  },
+  "tungsten_ingot": {
+   "label": "Lingote de tungstênio",
+   "color": "#2F4E6E",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6.5 5h11v14.5h-11z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9 8v8.5M15 8v8.5",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "gold_bar": {
+   "label": "Barra de ouro",
+   "color": "#D4A017",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4.5 16l2.5-7h10l2.5 7z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 16h15v3h-15z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 12.5h3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "processed_rare_earths": {
+   "label": "Terras raras processadas",
+   "color": "#3FA38A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M8 4.5l3.2 5.5-3.2 9.5-3.2-9.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M15.6 6l3 5-3 8.5-3-8.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M12 11l2 3.5-2 5-2-5z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "tools": {
+   "label": "Ferramentas",
+   "color": "#A0703F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 4.5,
+     "y": 5.5,
+     "width": 6.5,
+     "height": 4,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "path",
+     "d": "M7.6 9.5h2.4v11H7.6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M20.5 5.5a3.2 3.2 0 0 1-4.4 4.4l-8.4 8.4 2.2 2.2 8.4-8.4a3.2 3.2 0 0 0 4.4-4.4l-2 2-2.2-2.2z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "industrial_tools": {
+   "label": "Ferramentas industriais",
+   "color": "#8A7A5A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M19.5 4.5a3.4 3.4 0 0 1-4.6 4.6l-7.6 7.6 2.2 2.2 7.6-7.6a3.4 3.4 0 0 0 4.6-4.6l-2 2-1.8-1.8z",
+     "mode": "fill"
+    },
+    {
+     "el": "rect",
+     "x": 5.4,
+     "y": 5.4,
+     "width": 2.2,
+     "height": 3.4,
+     "mode": "fill",
+     "rx": 0.5,
+     "rot": [
+      0,
+      90
+     ]
+    },
+    {
+     "el": "circle",
+     "cx": 6.5,
+     "cy": 7,
+     "r": 3.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 6.5,
+     "cy": 7,
+     "r": 1.4,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "precision_tools": {
+   "label": "Ferramentas de precisão",
+   "color": "#9AA6B0",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 7h16v2.5H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M5.5 9.5h2.5v8H5.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M14 9.5h2.5v8H14z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M17.5 9.5h2.5v4.5h-2.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 12.5h6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "engine": {
+   "label": "Motor",
+   "color": "#7A7F86",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 8,
+     "width": 9,
+     "height": 9,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "rect",
+     "x": 9,
+     "y": 5.5,
+     "width": 3,
+     "height": 2.5,
+     "mode": "fill",
+     "rx": 0.4
+    },
+    {
+     "el": "rect",
+     "x": 15,
+     "y": 10,
+     "width": 3.5,
+     "height": 5,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "circle",
+     "cx": 10.5,
+     "cy": 12.5,
+     "r": 2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M6 20h12",
+     "mode": "stroke",
+     "w": 1.8
+    }
+   ]
+  },
+  "micromotor": {
+   "label": "Micromotor e bobinas",
+   "color": "#B08A4A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 6.5,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 3,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M12 2.5v3M12 18.5v3",
+     "mode": "cut",
+     "w": 1.4
+    }
+   ]
+  },
+  "tires": {
+   "label": "Pneus",
+   "color": "#3A3A3C",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 8.5,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 4.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3",
+     "mode": "cut",
+     "w": 1.2
+    }
+   ]
+  },
+  "chassis": {
+   "label": "Chassi",
+   "color": "#7F8890",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 9.5h16v3H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4 14.5h4v5H4zM16 14.5h4v5h-4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10 14.5h4v3h-4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 10.9h10",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "tractor": {
+   "label": "Trator",
+   "color": "#B85A2E",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 15h3.5V9.5h8l2.5 5.5h2.5V18H3.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 7,
+     "cy": 18.5,
+     "r": 3.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 17,
+     "cy": 18.5,
+     "r": 2.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 7,
+     "cy": 18.5,
+     "r": 1.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 17,
+     "cy": 18.5,
+     "r": 0.8,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "mining_machine": {
+   "label": "Máquina de mineração",
+   "color": "#C9A227",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 17h9v3.2h-9z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M5 12h5v5H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 12l7-5 1.5 2.5-6 4.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M16 7l3 2-2 4-2.5-1.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 6.2,
+     "cy": 10.5,
+     "r": 0.9,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "robots": {
+   "label": "Robôs industriais",
+   "color": "#8FA6B8",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 19.5h9v2.5H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 12h3v7.5H7z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 12l8-5 1.5 2.5-7.5 5z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 16.5,
+     "cy": 7.5,
+     "r": 2.4,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 16.5,
+     "cy": 7.5,
+     "r": 1.0,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M15.5 9.5l3 2-1.5 2-2-2z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "industrial_machinery": {
+   "label": "Maquinário industrial",
+   "color": "#7B8B9A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 4.5h16v4H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6.5 8.5h3v7h-3zM14.5 8.5h3v7h-3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 15.5h15v4h-15z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 11.5h8",
+     "mode": "cut",
+     "w": 1.2
+    }
+   ]
+  },
+  "spare_parts": {
+   "label": "Peças de reposição",
+   "color": "#9A8A6A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "circle",
+     "cx": 9.5,
+     "cy": 9.5,
+     "r": 5.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 9.5,
+     "cy": 9.5,
+     "r": 2.2,
+     "mode": "cutfill"
+    },
+    {
+     "el": "rect",
+     "x": 15.6,
+     "y": 13.6,
+     "width": 2.6,
+     "height": 7,
+     "mode": "fill",
+     "rx": 1.2
+    },
+    {
+     "el": "rect",
+     "x": 14.2,
+     "y": 12.4,
+     "width": 5.4,
+     "height": 2.2,
+     "mode": "fill",
+     "rx": 1.0
+    }
+   ]
+  },
+  "construction_material": {
+   "label": "Material de construção",
+   "color": "#B06A45",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 6.5,
+     "width": 17,
+     "height": 4.5,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 12,
+     "width": 8,
+     "height": 4.5,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "rect",
+     "x": 12.5,
+     "y": 12,
+     "width": 8,
+     "height": 4.5,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 17.5,
+     "width": 17,
+     "height": 4.5,
+     "mode": "fill",
+     "rx": 0.6
+    }
+   ]
+  },
+  "steel_structure": {
+   "label": "Estrutura metálica",
+   "color": "#7C8A96",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M5 4.5h14v3H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 7.5h5v9h-5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M5 16.5h14v3H5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M11 10h2",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "electrical_material": {
+   "label": "Material elétrico",
+   "color": "#E0B23C",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M7 7.5h10v6.5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 5v2.5M14.5 5v2.5",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M12 16v4",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M9 10.5h6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "truck": {
+   "label": "Caminhão",
+   "color": "#B8743A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 7.5h10v9h-10z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M13.5 10h4l3 4v2.5h-7z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 7,
+     "cy": 18,
+     "r": 2.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 16.5,
+     "cy": 18,
+     "r": 2.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 7,
+     "cy": 18,
+     "r": 0.9,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 16.5,
+     "cy": 18,
+     "r": 0.9,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "car": {
+   "label": "Automóvel",
+   "color": "#4E7FB0",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 14l2-4.5h13l2 4.5v4h-17z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 7.5,
+     "cy": 18,
+     "r": 2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 16.5,
+     "cy": 18,
+     "r": 2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 7.5,
+     "cy": 18,
+     "r": 0.8,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 16.5,
+     "cy": 18,
+     "r": 0.8,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M7 13h10",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "naval_hull": {
+   "label": "Casco naval",
+   "color": "#6A7F8A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 9h17l-3 8.5a2 2 0 0 1-1.9 1.3H8.4a2 2 0 0 1-1.9-1.3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M6 6.5h12v2.5H6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9 13h6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "cargo_ship": {
+   "label": "Navio de carga",
+   "color": "#3F6E8A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 15h17l-3 5.5H6.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 10.5,
+     "width": 4,
+     "height": 4,
+     "mode": "fill",
+     "rx": 0.4
+    },
+    {
+     "el": "rect",
+     "x": 10.5,
+     "y": 10.5,
+     "width": 4,
+     "height": 4,
+     "mode": "fill",
+     "rx": 0.4
+    },
+    {
+     "el": "rect",
+     "x": 15,
+     "y": 10.5,
+     "width": 4,
+     "height": 4,
+     "mode": "fill",
+     "rx": 0.4
+    },
+    {
+     "el": "path",
+     "d": "M8 7.5h2v3H8zM13 7.5h2v3h-2z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "fuselage": {
+   "label": "Fuselagem",
+   "color": "#A9B4BE",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 11a3 3 0 0 1 3-3h10a4 4 0 0 1 4 4 4 4 0 0 1-4 4H7a3 3 0 0 1-3-3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M17 8v8",
+     "mode": "cut",
+     "w": 1.0
+    },
+    {
+     "el": "path",
+     "d": "M9 9v6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "cargo_plane": {
+   "label": "Avião de carga",
+   "color": "#5F86A8",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M12 2.5l2 6.5 7 3v2l-7-1v5l2.5 2v1.5L12 20.5l-4.5 1V20l2.5-2v-5l-7 1v-2l7-3z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10 9.5h4",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "electronic_components": {
+   "label": "Componentes eletrônicos",
+   "color": "#6FA07A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 8,
+     "y": 8,
+     "width": 8,
+     "height": 8,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "path",
+     "d": "M10 8V5M14 8V5M10 16v3M14 16v3M8 10H5M8 14H5M16 10h3M16 14h3",
+     "mode": "stroke",
+     "w": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M10.5 11h3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "circuit_board": {
+   "label": "Placa de circuito",
+   "color": "#3E7A5A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 5,
+     "width": 17,
+     "height": 14,
+     "mode": "fill",
+     "rx": 1.2
+    },
+    {
+     "el": "circle",
+     "cx": 8,
+     "cy": 9.5,
+     "r": 1.6,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 15.5,
+     "cy": 14.5,
+     "r": 1.6,
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 9.5h4.5v3h1.5v1",
+     "mode": "cut",
+     "w": 1.1
+    }
+   ]
+  },
+  "chips": {
+   "label": "Chips",
+   "color": "#8A7FB0",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 6,
+     "width": 12,
+     "height": 12,
+     "mode": "fill",
+     "rx": 1.6
+    },
+    {
+     "el": "path",
+     "d": "M9 6V3.5M12 6V3.5M15 6V3.5M9 18v2.5M12 18v2.5M15 18v2.5M6 9H3.5M6 12H3.5M6 15H3.5M18 9h2.5M18 12h2.5M18 15h2.5",
+     "mode": "stroke",
+     "w": 1.3
+    },
+    {
+     "el": "rect",
+     "x": 9.5,
+     "y": 9.5,
+     "width": 5,
+     "height": 5,
+     "mode": "fill",
+     "rx": 0.8
+    }
+   ]
+  },
+  "sensors": {
+   "label": "Sensores e óptica",
+   "color": "#4F8FA0",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 7,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 4,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 12,
+     "r": 1.8,
+     "mode": "fill"
+    }
+   ]
+  },
+  "batteries": {
+   "label": "Baterias",
+   "color": "#C9B03C",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 7,
+     "y": 7,
+     "width": 10,
+     "height": 13.5,
+     "mode": "fill",
+     "rx": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M10 7V4.5h4V7",
+     "mode": "stroke"
+    },
+    {
+     "el": "path",
+     "d": "M10 11h4M12 9.5v3",
+     "mode": "cut",
+     "w": 1.2
+    },
+    {
+     "el": "path",
+     "d": "M9 17h6",
+     "mode": "cut",
+     "w": 1.2
+    }
+   ]
+  },
+  "appliances": {
+   "label": "Eletrodomésticos",
+   "color": "#C6CDD4",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 7,
+     "y": 4,
+     "width": 10,
+     "height": 17,
+     "mode": "fill",
+     "rx": 1.4
+    },
+    {
+     "el": "path",
+     "d": "M7 10h10",
+     "mode": "cut",
+     "w": 1.2
+    },
+    {
+     "el": "path",
+     "d": "M9 6.5h1.5M9 12.5h1.5",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "computer": {
+   "label": "Computador",
+   "color": "#5A6B7A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 4,
+     "y": 5.5,
+     "width": 16,
+     "height": 10.5,
+     "mode": "fill",
+     "rx": 1.2
+    },
+    {
+     "el": "path",
+     "d": "M9 19.5h6v2H9z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M12 16v3.5",
+     "mode": "stroke",
+     "w": 1.6
+    },
+    {
+     "el": "path",
+     "d": "M7 8.5h10",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "phone": {
+   "label": "Celular",
+   "color": "#3F5F7F",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 7,
+     "y": 3.5,
+     "width": 10,
+     "height": 17,
+     "mode": "fill",
+     "rx": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M10.5 6h3",
+     "mode": "cut",
+     "w": 1.0
+    },
+    {
+     "el": "circle",
+     "cx": 12,
+     "cy": 18.2,
+     "r": 0.9,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "drone": {
+   "label": "Drone",
+   "color": "#7A8FA0",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M9 11h6v4H9z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9 12L5 8M15 12l4-4M9 14l-4 4M15 14l4 4",
+     "mode": "stroke",
+     "w": 1.6
+    },
+    {
+     "el": "circle",
+     "cx": 4.5,
+     "cy": 7.5,
+     "r": 2.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 19.5,
+     "cy": 7.5,
+     "r": 2.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 4.5,
+     "cy": 16.5,
+     "r": 2.2,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 19.5,
+     "cy": 16.5,
+     "r": 2.2,
+     "mode": "fill"
+    }
+   ]
+  },
+  "containers": {
+   "label": "Recipientes",
+   "color": "#A8794A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 3.5,
+     "y": 8,
+     "width": 17,
+     "height": 10,
+     "mode": "fill",
+     "rx": 0.8
+    },
+    {
+     "el": "path",
+     "d": "M7 8v10M11 8v10M15 8v10M19 8v10",
+     "mode": "cut",
+     "w": 1.0
+    },
+    {
+     "el": "path",
+     "d": "M3.5 11h17M3.5 15h17",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "jewelry": {
+   "label": "Joias",
+   "color": "#B03A6E",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6 6.5a8 8 0 0 0 12 0",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "path",
+     "d": "M12 12l2.6 2.8-1.3 3.4h-2.6l-1.3-3.4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 7.5l2.5 3.5 2.5-3.5",
+     "mode": "stroke",
+     "w": 1.2
+    }
+   ]
+  },
+  "casing": {
+   "label": "Estojo",
+   "color": "#B0763F",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M9 4.5h6v4l1.2 2v11.5H7.8V10.5L9 8.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 12h5",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "projectile": {
+   "label": "Projétil",
+   "color": "#8A7A5A",
+   "tier": "semi",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M12 3.5l3.2 6v10.5H8.8V9.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8.8 17.5h6.4v2.5H8.8z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10.5 12h3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "ammunition": {
+   "label": "Munição",
+   "color": "#A8843C",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6 6l2.2 4v11H3.8V10z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M12 4.5l2.4 4.5v12H9.6V9z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M18 6l2.2 4v11h-4.4V10z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M4.5 14h2.5M10.5 14h3M17 14h2.5",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "artillery_ammo": {
+   "label": "Munição de artilharia",
+   "color": "#9A5A2E",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M12 3l2.5 4.5v13.5h-5V7.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M9.5 14h5",
+     "mode": "cut",
+     "w": 1.0
+    },
+    {
+     "el": "path",
+     "d": "M8.5 19h7v2.5h-7z",
+     "mode": "fill"
+    }
+   ]
+  },
+  "small_arms": {
+   "label": "Armas leves",
+   "color": "#4A4F57",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 7.5h12v3h-5v2.5l-2.5 6H5l2-6.5H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M14 10.5h6v2.5h-6z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M7 12h3",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "artillery": {
+   "label": "Artilharia",
+   "color": "#5A5F4A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M4 13h9v3H4z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M8 9l12-2 1 3-12 2z",
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 6.5,
+     "cy": 18,
+     "r": 2.6,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 15.5,
+     "cy": 18,
+     "r": 2.6,
+     "mode": "fill"
+    },
+    {
+     "el": "circle",
+     "cx": 6.5,
+     "cy": 18,
+     "r": 1.1,
+     "mode": "cutfill"
+    },
+    {
+     "el": "circle",
+     "cx": 15.5,
+     "cy": 18,
+     "r": 1.1,
+     "mode": "cutfill"
+    }
+   ]
+  },
+  "military_drone": {
+   "label": "Drone militar",
+   "color": "#5F6F5A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M3.5 11h17l-3 3H6.5z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10 13.5h4v3h-4z",
+     "mode": "fill"
+    },
+    {
+     "el": "rect",
+     "x": 4.5,
+     "y": 14.5,
+     "width": 4,
+     "height": 2,
+     "mode": "fill",
+     "rx": 1
+    },
+    {
+     "el": "path",
+     "d": "M6 9.5l4 1.5M18 9.5l-4 1.5",
+     "mode": "stroke",
+     "w": 1.4
+    }
+   ]
+  },
+  "body_armor": {
+   "label": "Colete de infantaria",
+   "color": "#6B7A5A",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "path",
+     "d": "M6 4.5l4 1.5 2 1 2-1 4-1.5 1.5 6.5-1.5 2.5L16 12.5V20H8V12.5l-2 1.5L4.5 11z",
+     "mode": "fill"
+    },
+    {
+     "el": "path",
+     "d": "M10 9.5h4v4h-4z",
+     "mode": "cutfill"
+    },
+    {
+     "el": "path",
+     "d": "M9 15h6",
+     "mode": "cut",
+     "w": 1.0
+    }
+   ]
+  },
+  "infantry_gear": {
+   "label": "Equipamento de infantaria",
+   "color": "#6A7A52",
+   "tier": "final",
+   "layers": [
+    {
+     "el": "rect",
+     "x": 6,
+     "y": 8,
+     "width": 12,
+     "height": 12,
+     "mode": "fill",
+     "rx": 2
+    },
+    {
+     "el": "path",
+     "d": "M9 8V5.5a3 3 0 0 1 6 0V8",
+     "mode": "stroke",
+     "w": 1.8
+    },
+    {
+     "el": "rect",
+     "x": 9,
+     "y": 12,
+     "width": 6,
+     "height": 3,
+     "mode": "fill",
+     "rx": 0.6
+    },
+    {
+     "el": "path",
+     "d": "M6 10.5H4M18 10.5h2",
+     "mode": "cut",
+     "w": 1.2
     }
    ]
   }

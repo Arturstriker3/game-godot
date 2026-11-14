@@ -1,0 +1,2789 @@
+[
+  {
+    "id": "flour",
+    "building": "factory",
+    "sector": "food",
+    "output": "flour",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wheat",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [
+      {
+        "good": "bran",
+        "qty": 1.0
+      }
+    ],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "byproduct_coef_source": "default_unit",
+    "note": "subproduto com coeficiente unitário padrão (spec sem qty)"
+  },
+  {
+    "id": "bread",
+    "building": "factory",
+    "sector": "food",
+    "output": "bread",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "flour",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "comida de topo; rende ~1.6x grão cru"
+  },
+  {
+    "id": "bagged_rice_a",
+    "building": "factory",
+    "sector": "food",
+    "output": "bagged_rice",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "rice",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "bagged_rice_b",
+    "building": "factory",
+    "sector": "food",
+    "output": "bagged_rice",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "rice",
+        "qty": 1.0
+      },
+      {
+        "good": "paper",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "feed_a",
+    "building": "factory",
+    "sector": "food",
+    "output": "feed",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "maize",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "feed_b",
+    "building": "factory",
+    "sector": "food",
+    "output": "feed",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "soy",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "feed_c",
+    "building": "factory",
+    "sector": "food",
+    "output": "feed",
+    "yield": 0.8,
+    "inputs": [
+      {
+        "good": "bran",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "feed_d",
+    "building": "factory",
+    "sector": "food",
+    "output": "feed",
+    "yield": 0.7,
+    "inputs": [
+      {
+        "good": "rice",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "feed_e",
+    "building": "factory",
+    "sector": "food",
+    "output": "feed",
+    "yield": 0.5,
+    "inputs": [
+      {
+        "good": "potato",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "feed_f",
+    "building": "factory",
+    "sector": "food",
+    "output": "feed",
+    "yield": 0.6,
+    "inputs": [
+      {
+        "good": "wheat",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "meat",
+    "building": "factory",
+    "sector": "food",
+    "output": "meat",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "feed",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "feita na Fazenda de criação; comida de topo"
+  },
+  {
+    "id": "canned_food",
+    "building": "factory",
+    "sector": "food",
+    "output": "canned_food",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "meat",
+        "qty": 1.0
+      },
+      {
+        "good": "containers",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "comida de topo"
+  },
+  {
+    "id": "combat_ration",
+    "building": "factory",
+    "sector": "food",
+    "output": "combat_ration",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "canned_food",
+        "qty": 1.0
+      },
+      {
+        "good": "meat",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "alcohol_a",
+    "building": "factory",
+    "sector": "food",
+    "output": "alcohol",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wheat",
+        "qty": 1.0
+      },
+      {
+        "good": "containers",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "alcohol_b",
+    "building": "factory",
+    "sector": "food",
+    "output": "alcohol",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "rice",
+        "qty": 1.0
+      },
+      {
+        "good": "containers",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "alcohol_c",
+    "building": "factory",
+    "sector": "food",
+    "output": "alcohol",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "maize",
+        "qty": 1.0
+      },
+      {
+        "good": "containers",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "alcohol_d",
+    "building": "factory",
+    "sector": "food",
+    "output": "alcohol",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "potato",
+        "qty": 1.0
+      },
+      {
+        "good": "containers",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "premium_spirits",
+    "building": "factory",
+    "sector": "food",
+    "output": "premium_spirits",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "alcohol",
+        "qty": 1.0
+      },
+      {
+        "good": "planks",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "ethanol",
+    "building": "factory",
+    "sector": "food",
+    "output": "ethanol",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "maize",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "fertilizer",
+    "building": "factory",
+    "sector": "agro",
+    "output": "fertilizer",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "gas",
+        "qty": 1.0
+      },
+      {
+        "good": "phosphate",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 7.0,
+    "capital_per_capacity": 5000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "organic_fertilizer",
+    "building": "factory",
+    "sector": "agro",
+    "output": "organic_fertilizer",
+    "yield": 0.3,
+    "inputs": [
+      {
+        "good": "bran",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.8,
+    "opex_per_ton": 7.0,
+    "capital_per_capacity": 5000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "substituto fraco do fertilizante"
+  },
+  {
+    "id": "fabric",
+    "building": "factory",
+    "sector": "textile",
+    "output": "fabric",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "cotton",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "synthetic_fabric",
+    "building": "factory",
+    "sector": "textile",
+    "output": "synthetic_fabric",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "plastic",
+        "qty": 1.0
+      },
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "substitui tecido, mais caro"
+  },
+  {
+    "id": "clothes_a",
+    "building": "factory",
+    "sector": "textile",
+    "output": "clothes",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "clothes_b",
+    "building": "factory",
+    "sector": "textile",
+    "output": "clothes",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "synthetic_fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "uniforms_a",
+    "building": "factory",
+    "sector": "textile",
+    "output": "uniforms",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "uniforms_b",
+    "building": "factory",
+    "sector": "textile",
+    "output": "uniforms",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "synthetic_fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "shoes",
+    "building": "factory",
+    "sector": "textile",
+    "output": "shoes",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "fabric",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 8.0,
+    "wage": 1.6,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "planks",
+    "building": "factory",
+    "sector": "wood",
+    "output": "planks",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wood",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [
+      {
+        "good": "sawdust",
+        "qty": 1.0
+      }
+    ],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "byproduct_coef_source": "default_unit",
+    "note": "subproduto com coeficiente unitário padrão (spec sem qty)"
+  },
+  {
+    "id": "furniture",
+    "building": "factory",
+    "sector": "wood",
+    "output": "furniture",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "planks",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "luxury_furniture",
+    "building": "factory",
+    "sector": "wood",
+    "output": "luxury_furniture",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "planks",
+        "qty": 1.0
+      },
+      {
+        "good": "fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "cellulose_a",
+    "building": "factory",
+    "sector": "wood",
+    "output": "cellulose",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wood",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "cellulose_b",
+    "building": "factory",
+    "sector": "wood",
+    "output": "cellulose",
+    "yield": 0.7,
+    "inputs": [
+      {
+        "good": "sawdust",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "paper",
+    "building": "factory",
+    "sector": "wood",
+    "output": "paper",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "cellulose",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "pallets_a",
+    "building": "factory",
+    "sector": "wood",
+    "output": "pallets",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "planks",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "porto consome por tonelada embarcada"
+  },
+  {
+    "id": "pallets_b",
+    "building": "factory",
+    "sector": "wood",
+    "output": "pallets",
+    "yield": 0.7,
+    "inputs": [
+      {
+        "good": "sawdust",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "porto consome por tonelada embarcada"
+  },
+  {
+    "id": "charcoal",
+    "building": "factory",
+    "sector": "wood",
+    "output": "coal",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wood",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 4.0,
+    "capital_per_capacity": 3500.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "produz o MESMO item coal"
+  },
+  {
+    "id": "fuel_a",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "fuel",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "oil",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "fuel_b",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "fuel",
+    "yield": 0.8,
+    "inputs": [
+      {
+        "good": "ethanol",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "fuel_c",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "fuel",
+    "yield": 0.4,
+    "inputs": [
+      {
+        "good": "gas",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "fuel_d",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "fuel",
+    "yield": 0.2,
+    "inputs": [
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "plastic_a",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "plastic",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "oil",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "plastic_b",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "plastic",
+    "yield": 0.5,
+    "inputs": [
+      {
+        "good": "gas",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "chemicals_a",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "chemicals",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "oil",
+        "qty": 1.0
+      },
+      {
+        "good": "refined_sulfur",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "chemicals_b",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "chemicals",
+    "yield": 0.5,
+    "inputs": [
+      {
+        "good": "gas",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "chemicals_c",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "chemicals",
+    "yield": 0.2,
+    "inputs": [
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "rubber",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "rubber",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "oil",
+        "qty": 1.0
+      },
+      {
+        "good": "refined_sulfur",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "refined_sulfur",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "refined_sulfur",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "sulfur",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "gunpowder",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "gunpowder",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "refined_sulfur",
+        "qty": 1.0
+      },
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "explosives",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "explosives",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "gunpowder",
+        "qty": 1.0
+      },
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "carbon_fiber",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "carbon_fiber",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "plastic",
+        "qty": 1.0
+      },
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      },
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "medicine",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "medicine",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "antibiotics",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "antibiotics",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "vaccines",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "vaccines",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "medicine",
+        "qty": 1.0
+      },
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "plastic_parts",
+    "building": "factory",
+    "sector": "chemical",
+    "output": "plastic_parts",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "iron_ingot",
+    "building": "factory",
+    "sector": "metal",
+    "output": "iron_ingot",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "iron",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "steel",
+    "building": "factory",
+    "sector": "metal",
+    "output": "steel",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "iron_ingot",
+        "qty": 1.0
+      },
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "steel_sheet",
+    "building": "factory",
+    "sector": "metal",
+    "output": "steel_sheet",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "special_alloy",
+    "building": "factory",
+    "sector": "metal",
+    "output": "special_alloy",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "tungsten_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "cast_parts",
+    "building": "factory",
+    "sector": "metal",
+    "output": "cast_parts",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "iron_ingot",
+        "qty": 1.0
+      },
+      {
+        "good": "coal",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "mechanical_parts",
+    "building": "factory",
+    "sector": "metal",
+    "output": "mechanical_parts",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "iron_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "hardware",
+    "building": "factory",
+    "sector": "metal",
+    "output": "hardware",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "iron_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "copper_ingot",
+    "building": "factory",
+    "sector": "metal",
+    "output": "copper_ingot",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "copper",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "wires_a",
+    "building": "factory",
+    "sector": "metal",
+    "output": "wires",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "copper_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "wires_b",
+    "building": "factory",
+    "sector": "metal",
+    "output": "wires",
+    "yield": 0.7,
+    "inputs": [
+      {
+        "good": "aluminum_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "aluminum_ingot",
+    "building": "factory",
+    "sector": "metal",
+    "output": "aluminum_ingot",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "bauxite",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "lead_ingot",
+    "building": "factory",
+    "sector": "metal",
+    "output": "lead_ingot",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "lead",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "tungsten_ingot",
+    "building": "factory",
+    "sector": "metal",
+    "output": "tungsten_ingot",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "tungsten",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "gold_bar",
+    "building": "factory",
+    "sector": "metal",
+    "output": "gold_bar",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "gold",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "processed_rare_earths",
+    "building": "factory",
+    "sector": "metal",
+    "output": "processed_rare_earths",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "rare_earths",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 10000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "tools",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "tools",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "planks",
+        "qty": 1.0
+      },
+      {
+        "good": "iron_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "industrial_tools",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "industrial_tools",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "tungsten_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "precision_tools",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "precision_tools",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "industrial_tools",
+        "qty": 1.0
+      },
+      {
+        "good": "diamond",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "engine_a",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "engine",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "mechanical_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "wires",
+        "qty": 1.0
+      },
+      {
+        "good": "cast_parts",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "engine_b",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "engine",
+    "yield": 1.2,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "mechanical_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "wires",
+        "qty": 1.0
+      },
+      {
+        "good": "aluminum_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "micromotor",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "micromotor",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wires",
+        "qty": 1.0
+      },
+      {
+        "good": "processed_rare_earths",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "tires",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "tires",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "rubber",
+        "qty": 1.0
+      },
+      {
+        "good": "synthetic_fabric",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "chassis",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "chassis",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel_sheet",
+        "qty": 1.0
+      },
+      {
+        "good": "mechanical_parts",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "tractor",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "tractor",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chassis",
+        "qty": 1.0
+      },
+      {
+        "good": "engine",
+        "qty": 1.0
+      },
+      {
+        "good": "tires",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "mining_machine",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "mining_machine",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "engine",
+        "qty": 1.0
+      },
+      {
+        "good": "industrial_tools",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "robots",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "robots",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "mechanical_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "micromotor",
+        "qty": 1.0
+      },
+      {
+        "good": "sensors",
+        "qty": 1.0
+      },
+      {
+        "good": "electrical_material",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "industrial_machinery",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "industrial_machinery",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "mechanical_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "industrial_tools",
+        "qty": 1.0
+      },
+      {
+        "good": "micromotor",
+        "qty": 1.0
+      },
+      {
+        "good": "cast_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "electrical_material",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "spare_parts",
+    "building": "factory",
+    "sector": "machinery",
+    "output": "spare_parts",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "mechanical_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "tires",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 1.8,
+    "opex_per_ton": 12.0,
+    "capital_per_capacity": 6000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude",
+    "note": "consumidas todo mês"
+  },
+  {
+    "id": "construction_material",
+    "building": "factory",
+    "sector": "construction",
+    "output": "construction_material",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "planks",
+        "qty": 1.0
+      },
+      {
+        "good": "hardware",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "steel_structure",
+    "building": "factory",
+    "sector": "construction",
+    "output": "steel_structure",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "hardware",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "electrical_material",
+    "building": "factory",
+    "sector": "construction",
+    "output": "electrical_material",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "wires",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 1.8,
+    "opex_per_ton": 6.0,
+    "capital_per_capacity": 4000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "truck",
+    "building": "factory",
+    "sector": "transport",
+    "output": "truck",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chassis",
+        "qty": 1.0
+      },
+      {
+        "good": "engine",
+        "qty": 1.0
+      },
+      {
+        "good": "tires",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.5,
+    "wage": 2.0,
+    "opex_per_ton": 14.0,
+    "capital_per_capacity": 9000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "car",
+    "building": "factory",
+    "sector": "transport",
+    "output": "car",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chassis",
+        "qty": 1.0
+      },
+      {
+        "good": "steel_sheet",
+        "qty": 1.0
+      },
+      {
+        "good": "engine",
+        "qty": 1.0
+      },
+      {
+        "good": "tires",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.5,
+    "wage": 2.0,
+    "opex_per_ton": 14.0,
+    "capital_per_capacity": 9000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "naval_hull",
+    "building": "factory",
+    "sector": "transport",
+    "output": "naval_hull",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel_structure",
+        "qty": 1.0
+      },
+      {
+        "good": "steel",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.5,
+    "wage": 2.0,
+    "opex_per_ton": 14.0,
+    "capital_per_capacity": 9000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "cargo_ship",
+    "building": "factory",
+    "sector": "transport",
+    "output": "cargo_ship",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "naval_hull",
+        "qty": 1.0
+      },
+      {
+        "good": "engine",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "electrical_material",
+        "qty": 1.0
+      },
+      {
+        "good": "sensors",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.5,
+    "wage": 2.0,
+    "opex_per_ton": 14.0,
+    "capital_per_capacity": 9000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "fuselage",
+    "building": "factory",
+    "sector": "transport",
+    "output": "fuselage",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "aluminum_ingot",
+        "qty": 1.0
+      },
+      {
+        "good": "special_alloy",
+        "qty": 1.0
+      },
+      {
+        "good": "carbon_fiber",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.5,
+    "wage": 2.0,
+    "opex_per_ton": 14.0,
+    "capital_per_capacity": 9000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "cargo_plane",
+    "building": "factory",
+    "sector": "transport",
+    "output": "cargo_plane",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "fuselage",
+        "qty": 1.0
+      },
+      {
+        "good": "engine",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "electrical_material",
+        "qty": 1.0
+      },
+      {
+        "good": "sensors",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 3.5,
+    "wage": 2.0,
+    "opex_per_ton": 14.0,
+    "capital_per_capacity": 9000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "electronic_components",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "electronic_components",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "copper_ingot",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      },
+      {
+        "good": "gold_bar",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "circuit_board",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "circuit_board",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "copper_ingot",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "chips",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "chips",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "processed_rare_earths",
+        "qty": 1.0
+      },
+      {
+        "good": "precision_tools",
+        "qty": 1.0
+      },
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "sensors",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "sensors",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "processed_rare_earths",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "batteries",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "batteries",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "lead_ingot",
+        "qty": 1.0
+      },
+      {
+        "good": "chemicals",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "appliances",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "appliances",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel_sheet",
+        "qty": 1.0
+      },
+      {
+        "good": "micromotor",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic_parts",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "computer",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "computer",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "circuit_board",
+        "qty": 1.0
+      },
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic_parts",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "phone",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "phone",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "circuit_board",
+        "qty": 1.0
+      },
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "plastic_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "drone",
+    "building": "factory",
+    "sector": "electronics",
+    "output": "drone",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "plastic_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "micromotor",
+        "qty": 1.0
+      },
+      {
+        "good": "chips",
+        "qty": 1.0
+      },
+      {
+        "good": "sensors",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 5.0,
+    "wage": 2.2,
+    "opex_per_ton": 18.0,
+    "capital_per_capacity": 15000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "containers_a",
+    "building": "factory",
+    "sector": "packaging",
+    "output": "containers",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "aluminum_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 5.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "containers_b",
+    "building": "factory",
+    "sector": "packaging",
+    "output": "containers",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "plastic",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 5.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "containers_c",
+    "building": "factory",
+    "sector": "packaging",
+    "output": "containers",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "planks",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 5.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "containers_d",
+    "building": "factory",
+    "sector": "packaging",
+    "output": "containers",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "paper",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 6.0,
+    "wage": 1.7,
+    "opex_per_ton": 5.0,
+    "capital_per_capacity": 3000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "jewelry",
+    "building": "factory",
+    "sector": "luxury",
+    "output": "jewelry",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "gold_bar",
+        "qty": 1.0
+      },
+      {
+        "good": "diamond",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 9.0,
+    "wage": 2.0,
+    "opex_per_ton": 10.0,
+    "capital_per_capacity": 5000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "casing",
+    "building": "factory",
+    "sector": "military",
+    "output": "casing",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "copper_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "projectile",
+    "building": "factory",
+    "sector": "military",
+    "output": "projectile",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "lead_ingot",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "spec",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "ammunition",
+    "building": "factory",
+    "sector": "military",
+    "output": "ammunition",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "casing",
+        "qty": 1.0
+      },
+      {
+        "good": "projectile",
+        "qty": 1.0
+      },
+      {
+        "good": "gunpowder",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "artillery_ammo",
+    "building": "factory",
+    "sector": "military",
+    "output": "artillery_ammo",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "casing",
+        "qty": 1.0
+      },
+      {
+        "good": "explosives",
+        "qty": 1.0
+      },
+      {
+        "good": "steel",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "small_arms",
+    "building": "factory",
+    "sector": "military",
+    "output": "small_arms",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "hardware",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "artillery",
+    "building": "factory",
+    "sector": "military",
+    "output": "artillery",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "steel",
+        "qty": 1.0
+      },
+      {
+        "good": "special_alloy",
+        "qty": 1.0
+      },
+      {
+        "good": "industrial_tools",
+        "qty": 1.0
+      },
+      {
+        "good": "cast_parts",
+        "qty": 1.0
+      },
+      {
+        "good": "sensors",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "military_drone",
+    "building": "factory",
+    "sector": "military",
+    "output": "military_drone",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "drone",
+        "qty": 1.0
+      },
+      {
+        "good": "ammunition",
+        "qty": 1.0
+      },
+      {
+        "good": "carbon_fiber",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "body_armor_a",
+    "building": "factory",
+    "sector": "military",
+    "output": "body_armor",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "fabric",
+        "qty": 1.0
+      },
+      {
+        "good": "special_alloy",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "body_armor_b",
+    "building": "factory",
+    "sector": "military",
+    "output": "body_armor",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "synthetic_fabric",
+        "qty": 1.0
+      },
+      {
+        "good": "special_alloy",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  },
+  {
+    "id": "infantry_gear",
+    "building": "factory",
+    "sector": "military",
+    "output": "infantry_gear",
+    "yield": 1.0,
+    "inputs": [
+      {
+        "good": "fabric",
+        "qty": 1.0
+      },
+      {
+        "good": "hardware",
+        "qty": 1.0
+      },
+      {
+        "good": "electronic_components",
+        "qty": 1.0
+      },
+      {
+        "good": "batteries",
+        "qty": 1.0
+      }
+    ],
+    "byproducts": [],
+    "jobs_per_ton": 4.0,
+    "wage": 2.0,
+    "opex_per_ton": 16.0,
+    "capital_per_capacity": 12000.0,
+    "coef_source": "default_unit",
+    "params_source": "estimated:order_of_magnitude"
+  }
+]

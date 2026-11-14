@@ -1,0 +1,1170 @@
+{
+  "version": 1,
+  "anchor": "XGS",
+  "anchor_note": "XGS é a unidade-âncora interna (1,0). Os caixas continuam na âncora (plano §5.6); a moeda só entra na decisão de compra.",
+  "reference": "USA",
+  "formula": "rate_per_anchor(moeda) = mediana(gdp_ppp_bn × 1e9 / population das nações da moeda) / (mesmo valor dos EUA). Proxy de nível de preços; é ESTIMATIVA derivada, não taxa de mercado.",
+  "rate_note": "rate_per_anchor = valor em âncora de 1 unidade da moeda local. Moeda sem PIB PPP publicado fica com rate null e source unknown:no_gdp — a F5 decide o que fazer sem inventar número.",
+  "regime": null,
+  "regime_note": "Sem fonte para regime cambial (peg/float); declarar na F5.",
+  "currencies": [
+    {
+      "code": "AED",
+      "nations": [
+        "ARE"
+      ],
+      "rate_per_anchor": 0.841013,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "AFN",
+      "nations": [
+        "AFG"
+      ],
+      "rate_per_anchor": 0.024169,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ALL",
+      "nations": [
+        "ALB"
+      ],
+      "rate_per_anchor": 0.313439,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "AMD",
+      "nations": [
+        "ARM"
+      ],
+      "rate_per_anchor": 0.274934,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "AOA",
+      "nations": [
+        "AGO"
+      ],
+      "rate_per_anchor": 0.113867,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ARS",
+      "nations": [
+        "ARG"
+      ],
+      "rate_per_anchor": 0.361957,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "AUD",
+      "nations": [
+        "AUS"
+      ],
+      "rate_per_anchor": 0.799025,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "AZN",
+      "nations": [
+        "AZE"
+      ],
+      "rate_per_anchor": 0.290081,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BAM",
+      "nations": [
+        "BIH"
+      ],
+      "rate_per_anchor": 0.286885,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BBD",
+      "nations": [
+        "BRB"
+      ],
+      "rate_per_anchor": 0.286909,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BDT",
+      "nations": [
+        "BGD"
+      ],
+      "rate_per_anchor": 0.112787,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BGN",
+      "nations": [
+        "BGR"
+      ],
+      "rate_per_anchor": 0.493812,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BHD",
+      "nations": [
+        "BHR"
+      ],
+      "rate_per_anchor": 0.788476,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BIF",
+      "nations": [
+        "BDI"
+      ],
+      "rate_per_anchor": 0.013894,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BND",
+      "nations": [
+        "BRN"
+      ],
+      "rate_per_anchor": 1.026629,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BOB",
+      "nations": [
+        "BOL"
+      ],
+      "rate_per_anchor": 0.143021,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BRL",
+      "nations": [
+        "BRA"
+      ],
+      "rate_per_anchor": 0.260293,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BSD",
+      "nations": [
+        "BHS"
+      ],
+      "rate_per_anchor": 0.457506,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BTN",
+      "nations": [
+        "BTN"
+      ],
+      "rate_per_anchor": 0.217505,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BWP",
+      "nations": [
+        "BWA"
+      ],
+      "rate_per_anchor": 0.229777,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BYN",
+      "nations": [
+        "BLR"
+      ],
+      "rate_per_anchor": 0.385584,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "BZD",
+      "nations": [
+        "BLZ"
+      ],
+      "rate_per_anchor": 0.165466,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CAD",
+      "nations": [
+        "CAN"
+      ],
+      "rate_per_anchor": 0.741409,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CDF",
+      "nations": [
+        "COD"
+      ],
+      "rate_per_anchor": 0.021323,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CHF",
+      "nations": [
+        "CHE"
+      ],
+      "rate_per_anchor": 1.138707,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CLP",
+      "nations": [
+        "CHL"
+      ],
+      "rate_per_anchor": 0.419594,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CNY",
+      "nations": [
+        "CHN"
+      ],
+      "rate_per_anchor": 0.32583,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "COP",
+      "nations": [
+        "COL"
+      ],
+      "rate_per_anchor": 0.251491,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CRC",
+      "nations": [
+        "CRI"
+      ],
+      "rate_per_anchor": 0.37551,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "CUP",
+      "nations": [
+        "CUB"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "CUB"
+      ]
+    },
+    {
+      "code": "CZK",
+      "nations": [
+        "CZE"
+      ],
+      "rate_per_anchor": 0.671865,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "DJF",
+      "nations": [
+        "DJI"
+      ],
+      "rate_per_anchor": 0.09381,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "DKK",
+      "nations": [
+        "DNK"
+      ],
+      "rate_per_anchor": 0.924426,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "DOP",
+      "nations": [
+        "DOM"
+      ],
+      "rate_per_anchor": 0.319048,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "DZD",
+      "nations": [
+        "DZA"
+      ],
+      "rate_per_anchor": 0.206443,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "EGP",
+      "nations": [
+        "EGY"
+      ],
+      "rate_per_anchor": 0.224426,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ERN",
+      "nations": [
+        "ERI"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "ERI"
+      ]
+    },
+    {
+      "code": "ETB",
+      "nations": [
+        "ETH"
+      ],
+      "rate_per_anchor": 0.040226,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "EUR",
+      "nations": [
+        "AUT",
+        "BEL",
+        "CYP",
+        "DEU",
+        "ESP",
+        "EST",
+        "FIN",
+        "FRA",
+        "GRC",
+        "HRV",
+        "IRL",
+        "ITA",
+        "LTU",
+        "LUX",
+        "LVA",
+        "MLT",
+        "MNE",
+        "NED",
+        "PRT",
+        "SVK",
+        "SVN",
+        "XKX"
+      ],
+      "rate_per_anchor": 0.661414,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "FJD",
+      "nations": [
+        "FJI"
+      ],
+      "rate_per_anchor": 0.180934,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GBP",
+      "nations": [
+        "GBR"
+      ],
+      "rate_per_anchor": 0.717637,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GEL",
+      "nations": [
+        "GEO"
+      ],
+      "rate_per_anchor": 0.32682,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GHS",
+      "nations": [
+        "GHA"
+      ],
+      "rate_per_anchor": 0.095637,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GMD",
+      "nations": [
+        "GMB"
+      ],
+      "rate_per_anchor": 0.041328,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GNF",
+      "nations": [
+        "GIN"
+      ],
+      "rate_per_anchor": 0.054805,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GTQ",
+      "nations": [
+        "GTM"
+      ],
+      "rate_per_anchor": 0.168806,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "GYD",
+      "nations": [
+        "GUY"
+      ],
+      "rate_per_anchor": 1.086886,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "HNL",
+      "nations": [
+        "HND"
+      ],
+      "rate_per_anchor": 0.087403,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "HTG",
+      "nations": [
+        "HTI"
+      ],
+      "rate_per_anchor": 0.034799,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "HUF",
+      "nations": [
+        "HUN"
+      ],
+      "rate_per_anchor": 0.553626,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "IDR",
+      "nations": [
+        "IDN"
+      ],
+      "rate_per_anchor": 0.196163,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ILS",
+      "nations": [
+        "ISR",
+        "PSX"
+      ],
+      "rate_per_anchor": 0.359464,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "INR",
+      "nations": [
+        "IND"
+      ],
+      "rate_per_anchor": 0.130494,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "IQD",
+      "nations": [
+        "IRQ"
+      ],
+      "rate_per_anchor": 0.158465,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "IRR",
+      "nations": [
+        "IRN"
+      ],
+      "rate_per_anchor": 0.218821,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ISK",
+      "nations": [
+        "ISL"
+      ],
+      "rate_per_anchor": 0.925644,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "JMD",
+      "nations": [
+        "JAM"
+      ],
+      "rate_per_anchor": 0.147605,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "JOD",
+      "nations": [
+        "JOR"
+      ],
+      "rate_per_anchor": 0.140286,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "JPY",
+      "nations": [
+        "JPN"
+      ],
+      "rate_per_anchor": 0.615616,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "KES",
+      "nations": [
+        "KEN"
+      ],
+      "rate_per_anchor": 0.077923,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "KGS",
+      "nations": [
+        "KGZ"
+      ],
+      "rate_per_anchor": 0.10241,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "KHR",
+      "nations": [
+        "KHM"
+      ],
+      "rate_per_anchor": 0.09491,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "KPW",
+      "nations": [
+        "PRK"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "PRK"
+      ]
+    },
+    {
+      "code": "KRW",
+      "nations": [
+        "KOR"
+      ],
+      "rate_per_anchor": 0.701185,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "KWD",
+      "nations": [
+        "KWT"
+      ],
+      "rate_per_anchor": 0.627161,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "KZT",
+      "nations": [
+        "KAZ"
+      ],
+      "rate_per_anchor": 0.491982,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "LAK",
+      "nations": [
+        "LAO"
+      ],
+      "rate_per_anchor": 0.115268,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "LBP",
+      "nations": [
+        "LBN"
+      ],
+      "rate_per_anchor": 0.131408,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "LKR",
+      "nations": [
+        "LKA"
+      ],
+      "rate_per_anchor": 0.189573,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "LRD",
+      "nations": [
+        "LBR"
+      ],
+      "rate_per_anchor": 0.022095,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "LSL",
+      "nations": [
+        "LSO"
+      ],
+      "rate_per_anchor": 0.035251,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "LYD",
+      "nations": [
+        "LBY"
+      ],
+      "rate_per_anchor": 0.183479,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MAD",
+      "nations": [
+        "MAR",
+        "SAH"
+      ],
+      "rate_per_anchor": 0.125354,
+      "source": "derived:gdp_ppp",
+      "nations_without_gdp": [
+        "SAH"
+      ]
+    },
+    {
+      "code": "MDL",
+      "nations": [
+        "MDA"
+      ],
+      "rate_per_anchor": 0.222107,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MGA",
+      "nations": [
+        "MDG"
+      ],
+      "rate_per_anchor": 0.021679,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MKD",
+      "nations": [
+        "MKD"
+      ],
+      "rate_per_anchor": 0.311108,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MMK",
+      "nations": [
+        "MMR"
+      ],
+      "rate_per_anchor": 0.066768,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MNT",
+      "nations": [
+        "MNG"
+      ],
+      "rate_per_anchor": 0.230935,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MRU",
+      "nations": [
+        "MRT"
+      ],
+      "rate_per_anchor": 0.085267,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MWK",
+      "nations": [
+        "MWI"
+      ],
+      "rate_per_anchor": 0.0211,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MXN",
+      "nations": [
+        "MEX"
+      ],
+      "rate_per_anchor": 0.287346,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MYR",
+      "nations": [
+        "MYS"
+      ],
+      "rate_per_anchor": 0.460951,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "MZN",
+      "nations": [
+        "MOZ"
+      ],
+      "rate_per_anchor": 0.01886,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "NAD",
+      "nations": [
+        "NAM"
+      ],
+      "rate_per_anchor": 0.133245,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "NGN",
+      "nations": [
+        "NGA"
+      ],
+      "rate_per_anchor": 0.105875,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "NIO",
+      "nations": [
+        "NIC"
+      ],
+      "rate_per_anchor": 0.103192,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "NOK",
+      "nations": [
+        "NOR"
+      ],
+      "rate_per_anchor": 1.155749,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "NPR",
+      "nations": [
+        "NPL"
+      ],
+      "rate_per_anchor": 0.068594,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "NZD",
+      "nations": [
+        "NZL"
+      ],
+      "rate_per_anchor": 0.637094,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "OMR",
+      "nations": [
+        "OMN"
+      ],
+      "rate_per_anchor": 0.46981,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PAB",
+      "nations": [
+        "PAN"
+      ],
+      "rate_per_anchor": 0.487694,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PEN",
+      "nations": [
+        "PER"
+      ],
+      "rate_per_anchor": 0.209007,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PGK",
+      "nations": [
+        "PNG"
+      ],
+      "rate_per_anchor": 0.057898,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PHP",
+      "nations": [
+        "PHL"
+      ],
+      "rate_per_anchor": 0.1397,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PKR",
+      "nations": [
+        "PAK"
+      ],
+      "rate_per_anchor": 0.073018,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PLN",
+      "nations": [
+        "POL"
+      ],
+      "rate_per_anchor": 0.602739,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "PYG",
+      "nations": [
+        "PRY"
+      ],
+      "rate_per_anchor": 0.224118,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "QAR",
+      "nations": [
+        "QAT"
+      ],
+      "rate_per_anchor": 1.431731,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "RON",
+      "nations": [
+        "ROU"
+      ],
+      "rate_per_anchor": 0.565312,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "RSD",
+      "nations": [
+        "SRB"
+      ],
+      "rate_per_anchor": 0.376698,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "RUB",
+      "nations": [
+        "RUS"
+      ],
+      "rate_per_anchor": 0.560031,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "RWF",
+      "nations": [
+        "RWA"
+      ],
+      "rate_per_anchor": 0.046278,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SAR",
+      "nations": [
+        "SAU"
+      ],
+      "rate_per_anchor": 0.819564,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SBD",
+      "nations": [
+        "SLB"
+      ],
+      "rate_per_anchor": 0.030463,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SDG",
+      "nations": [
+        "SDN"
+      ],
+      "rate_per_anchor": 0.024361,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SEK",
+      "nations": [
+        "SWE"
+      ],
+      "rate_per_anchor": 0.80568,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SGD",
+      "nations": [
+        "SGP"
+      ],
+      "rate_per_anchor": 1.814537,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SLE",
+      "nations": [
+        "SLE"
+      ],
+      "rate_per_anchor": 0.041309,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SLS",
+      "nations": [
+        "SOL"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "SOL"
+      ]
+    },
+    {
+      "code": "SOS",
+      "nations": [
+        "SOM"
+      ],
+      "rate_per_anchor": 0.018254,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SRD",
+      "nations": [
+        "SUR"
+      ],
+      "rate_per_anchor": 0.251721,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SSP",
+      "nations": [
+        "SSD"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "SSD"
+      ]
+    },
+    {
+      "code": "SYP",
+      "nations": [
+        "SYR"
+      ],
+      "rate_per_anchor": 0.047778,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "SZL",
+      "nations": [
+        "SWZ"
+      ],
+      "rate_per_anchor": 0.138829,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "THB",
+      "nations": [
+        "THA"
+      ],
+      "rate_per_anchor": 0.291577,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "TJS",
+      "nations": [
+        "TJK"
+      ],
+      "rate_per_anchor": 0.065802,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "TMT",
+      "nations": [
+        "TKM"
+      ],
+      "rate_per_anchor": 0.251058,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "TND",
+      "nations": [
+        "TUN"
+      ],
+      "rate_per_anchor": 0.1692,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "TRY",
+      "nations": [
+        "TUR"
+      ],
+      "rate_per_anchor": 0.503056,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "TTD",
+      "nations": [
+        "TTO"
+      ],
+      "rate_per_anchor": 0.412555,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "TWD",
+      "nations": [
+        "TWN"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "TWN"
+      ]
+    },
+    {
+      "code": "TZS",
+      "nations": [
+        "TZA"
+      ],
+      "rate_per_anchor": 0.048118,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "UAH",
+      "nations": [
+        "UKR"
+      ],
+      "rate_per_anchor": 0.196736,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "UGX",
+      "nations": [
+        "UGA"
+      ],
+      "rate_per_anchor": 0.038738,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "USD",
+      "nations": [
+        "ECU",
+        "SLV",
+        "TLS",
+        "USA"
+      ],
+      "rate_per_anchor": 1.0,
+      "source": "anchor"
+    },
+    {
+      "code": "UYU",
+      "nations": [
+        "URY"
+      ],
+      "rate_per_anchor": 0.425648,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "UZS",
+      "nations": [
+        "UZB"
+      ],
+      "rate_per_anchor": 0.151089,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "VES",
+      "nations": [
+        "VEN"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "VEN"
+      ]
+    },
+    {
+      "code": "VND",
+      "nations": [
+        "VNM"
+      ],
+      "rate_per_anchor": 0.200928,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "XAF",
+      "nations": [
+        "CAF",
+        "CMR",
+        "COG",
+        "GAB",
+        "GNQ",
+        "TCD"
+      ],
+      "rate_per_anchor": 0.072394,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "XCD",
+      "nations": [
+        "ATG",
+        "DMA",
+        "GRD",
+        "KNA",
+        "LCA",
+        "VCT"
+      ],
+      "rate_per_anchor": 0.288151,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "XOF",
+      "nations": [
+        "BEN",
+        "BFA",
+        "CIV",
+        "GNB",
+        "MLI",
+        "NER",
+        "SEN",
+        "TGO"
+      ],
+      "rate_per_anchor": 0.042087,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "YER",
+      "nations": [
+        "YEM"
+      ],
+      "rate_per_anchor": null,
+      "source": "unknown:no_gdp",
+      "nations_without_gdp": [
+        "YEM"
+      ]
+    },
+    {
+      "code": "ZAR",
+      "nations": [
+        "ZAF"
+      ],
+      "rate_per_anchor": 0.176686,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ZMW",
+      "nations": [
+        "ZMB"
+      ],
+      "rate_per_anchor": 0.048661,
+      "source": "derived:gdp_ppp"
+    },
+    {
+      "code": "ZWG",
+      "nations": [
+        "ZWE"
+      ],
+      "rate_per_anchor": 0.071886,
+      "source": "derived:gdp_ppp"
+    }
+  ]
+}
