@@ -269,13 +269,18 @@ func _check_investment(sim) -> void:
 
 func _check_save_load(sim) -> void:
 	var snapshot: Dictionary = sim.demo_to_dict()
-	# F8 subiu o schema para 10 (negócios de serviço); o teste ficou em 9 e
-	# falhava desde então. O contrato atual é 10.
-	if int(snapshot.get("version", 0)) != 10:
-		_fail("save: versão do schema deveria ser 10 (é %s)" % str(snapshot.get("version")))
+	# F9 subiu o schema para 11 (grupos, IDE, incentivos e confiança).
+	if int(snapshot.get("version", 0)) != 11:
+		_fail("save: versão do schema deveria ser 11 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")
+	# F9 (v11): grupos e propriedade, fluxos de dividendo/repatriação,
+	# política de IDE, incentivos setoriais e confiança do anfitrião.
+	for key: String in ["groups", "group_flows", "fdi_policies",
+			"sector_incentives", "confidence"]:
+		if not snapshot.has(key):
+			_fail("save: bloco '%s' da F9 ausente" % key)
 	# F4: a frota/combustível por nação faz parte do save (v5) e precisa
 	# sobreviver ao round-trip; sem o bloco, o load rederivaria a frota.
 	if not snapshot.has("fleets") or Array(snapshot.get("fleets", [])).is_empty():

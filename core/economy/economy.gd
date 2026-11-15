@@ -116,10 +116,32 @@ func _ready() -> void:
 	# 17 ms num dia quente, com 858 cidades). Aqui é custo de carga, não de tick.
 	sim.demo_warm_status()
 	_setup_ai(geo)
+	# F9: nomes dos grupos pela cultura de origem; a maior cidade da nacao e o
+	# {place} dos padroes. Sem cultura mapeada, o fallback do GroupInvestor
+	# (setor + nacao) mantem o nome unico.
+	if _ai != null and _ai.group_investor != null:
+		_ai.group_investor.name_groups(_capital_names())
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia
 	# roda direto na thread do pool; o primeiro status sai no _process.
 	_start_day.call_deferred()
+
+
+## F9: nome da maior cidade de cada nacao (usado como {place} no nome dos
+## grupos). Le as cidades do cenario; nao inventa nome onde nao ha dado.
+func _capital_names() -> Dictionary:
+	var tallest: Dictionary = {}
+	for city in _load_cities():
+		var tag := String(city.get("nation", ""))
+		var population := float(city.get("population", 0.0))
+		if tag.is_empty():
+			continue
+		if not tallest.has(tag) or population > float(tallest[tag]["population"]):
+			tallest[tag] = {"population": population, "name": String(city.get("name", ""))}
+	var names: Dictionary = {}
+	for tag in tallest:
+		names[tag] = String(tallest[tag]["name"])
+	return names
 
 
 ## Lista de cidades no formato que o GeographyService.apply_to_sim espera.

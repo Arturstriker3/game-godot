@@ -79,6 +79,11 @@ var _totals_status: Dictionary = {}
 ## quanto custou a última medição (ms).
 var totals_builds := 0
 var last_prepare_ms := 0.0
+## F9: grupos nacionais por (nacao|setor), medidos uma vez por dia. O privado
+## agregado deixa de ser o dono novo quando ha um grupo com caixa: o ativo
+## nasce com identidade (nacional:<grupo>) e o caixa gasto e o dele.
+var _groups_by_key: Dictionary = {}
+var _good_sector: Dictionary = {}
 
 
 func setup(sim: Object, geo: Object) -> void:
@@ -107,6 +112,7 @@ func prepare_totals(status: Dictionary) -> void:
 	_totals_status = status
 	var cities: Array = status.get("cities", [])
 	_measure_food_balance(cities)
+	_refresh_groups()
 	var totals: Dictionary = status.get("market_totals", {})
 	if not totals.is_empty():
 		_sum_surplus = totals.get("surplus", PackedFloat64Array())
@@ -499,13 +505,22 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 			jobs_per_ton = float(recipe["jobs_per_ton"])
 			wage = float(recipe["wage"])
 			opex_per_ton = float(recipe["opex_per_ton"])
-		target = "AI-%s-%d" % [resource_name.to_upper(), _id_counter]
-		_id_counter += 1
-		result = _sim.demo_build(city_id, target, resource_name,
-			input_product, product, capacity,
-			capacity * jobs_per_ton, wage,
-			capacity * opex_per_ton,
-			input_ratio, "private", cost, recipe_id)
+		var group := _pick_group(String(city.get("nation", "")), resource_name, cost)
+		if not group.is_empty():
+			target = "AI-GRP-%d-%s" % [_id_counter, resource_name.to_upper()]
+			_id_counter += 1
+			result = _sim.demo_group_invest(String(group["id"]), city_id, target,
+				resource_name, product, capacity, recipe_id, "")
+			if bool(result.get("created", false)):
+				action = "build_group"
+		else:
+			target = "AI-%s-%d" % [resource_name.to_upper(), _id_counter]
+			_id_counter += 1
+			result = _sim.demo_build(city_id, target, resource_name,
+				input_product, product, capacity,
+				capacity * jobs_per_ton, wage,
+				capacity * opex_per_ton,
+				input_ratio, "private", cost, recipe_id)
 
 	var error := String(result.get("error", ""))
 	if error != "":
@@ -516,6 +531,48 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 			shortage, margin, adjusted_payback, risk],
 		cost, daily_profit, risk, target)
 	return true
+
+
+## F9: recarrega o mapa de grupos por (nacao|setor) uma vez por dia.
+func _refresh_groups() -> void:
+	_groups_by_key.clear()
+	if _sim == null or not _sim.has_method("demo_get_groups"):
+		return
+	for group: Dictionary in _sim.demo_get_groups():
+		if bool(group.get("state_owned", false)):
+			continue
+		var key := "%s|%s" % [String(group.get("origin_nation", "")),
+			String(group.get("sector", ""))]
+		if not _groups_by_key.has(key):
+			_groups_by_key[key] = []
+		(_groups_by_key[key] as Array).append(group)
+
+
+## Grupo nacional com caixa para o custo, no setor do bem. Atualiza o caixa
+## local depois de um build para a proxima decisao do mesmo dia.
+func _pick_group(nation: String, resource_name: String, cost: float) -> Dictionary:
+	if nation.is_empty():
+		return {}
+	var sector := "primary"
+	if _good_sector.is_empty():
+		var file := FileAccess.open("res://data/definitions/economy/goods.json",
+			FileAccess.READ)
+		if file != null:
+			var data: Variant = JSON.parse_string(file.get_as_text())
+			file.close()
+			if typeof(data) == TYPE_ARRAY:
+				for entry: Variant in data:
+					if typeof(entry) == TYPE_DICTIONARY:
+						_good_sector[String(entry.get("id", ""))] = String(
+							entry.get("sector", ""))
+	if _good_sector.has(resource_name):
+		sector = String(_good_sector[resource_name])
+	var key := "%s|%s" % [nation, sector]
+	for group: Dictionary in _groups_by_key.get(key, []):
+		if float(group.get("cash", 0.0)) + 1e-9 >= cost:
+			group["cash"] = float(group.get("cash", 0.0)) - cost
+			return group
+	return {}
 
 
 func _resource_available(city: Dictionary, resource_name: String, template: Dictionary) -> bool:

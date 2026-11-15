@@ -20,12 +20,15 @@ class_name EconomicAI
 
 const PrivateInvestorScript := preload("res://core/economy/ai/private_investor.gd")
 const GovernmentAIScript := preload("res://core/economy/ai/government_ai.gd")
+const GroupInvestorScript := preload("res://core/economy/ai/group_investor.gd")
 const Templates := preload("res://core/economy/ai/industry_templates.gd")
 
 var sim: Object
 var geo: Object
 var private_investor: Object
 var government: Object
+## F9: investidores com identidade (grupos/empresas), cadencia baixa propria.
+var group_investor: Object
 var decisions: Array[Dictionary] = []
 var interval_days := 7
 
@@ -46,6 +49,9 @@ func setup(sim_node: Object, geography: Object) -> bool:
 	private_investor.setup(sim, geo)
 	government = GovernmentAIScript.new()
 	government.setup(sim, geo)
+	group_investor = GroupInvestorScript.new()
+	group_investor.setup(sim, geo)
+	group_investor.name_groups()
 	# Pré-aquece o cache de templates (goods.json + recipes.json) fora do laço
 	# do tick: o primeiro all_templates() do dia 1 pagava o parse dos JSON
 	# (~6 ms medidos) dentro do trabalho fatiado da IA.
@@ -86,6 +92,13 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 	private_investor.prepare_totals(status)
 	var cities: Array = status.get("cities", [])
 	_city_count = cities.size()
+	# F9: decisao dos grupos (cadencia baixa, escalonada). Roda no plano, antes
+	# do fatimento por cidade; o custo diario e de poucos grupos.
+	if group_investor != null:
+		group_investor.run_day(day, status)
+		for group_decision: Variant in group_investor.get_decisions():
+			decisions.append(group_decision)
+		group_investor.clear_decisions()
 	_pending_day = day
 	_pending_status = status
 	for index in cities.size():

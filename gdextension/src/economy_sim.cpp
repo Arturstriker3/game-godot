@@ -12,6 +12,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <map>
+#include <set>
 #include <utility>
 
 namespace godot {
@@ -95,11 +97,16 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // estudantes e nível de renda), `minimum_wages` por nação e `wage_rigidity`.
 // Save v8 e anteriores não têm o bloco: o perfil é derivado do índice de renda
 // já gravado (migração documentada em demo_from_dict).
-// v10: serviços (F8) — `services` por cidade (mercados dos 20 setores, receita
+// v10: serviços (F8) - `services` por cidade (mercados dos 20 setores, receita
 // de exportação/governo, custo de insumos e cobertura de saúde/educação) e
 // `service_businesses` (catálogo global de negócios). Save v9 e anteriores não
 // têm as chaves: o mundo é semeado de negócios no load (migração).
-constexpr int kDemoSaveVersion = 10;
+// v11: investimento e propriedade (F9) - `groups` (id, nome, origem, setor,
+// caixa, acumulados), `group_flows` (repatriação/dividendos/impostos por
+// nação), `fdi_policies`, `sector_incentives` e `confidence`. Save v10 e
+// anteriores não têm as chaves: os grupos são semeados a partir dos ativos
+// privados no load (regra determinística de demo_seed_groups).
+constexpr int kDemoSaveVersion = 11;
 
 // F8: serviços. Preço reage a demanda financiada/oferta, dentro da banda da
 // âncora; prejuízo persistente fecha o negócio (contado à parte das falências
@@ -276,6 +283,36 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_get_tariff);
 	ClassDB::bind_method(D_METHOD("demo_get_tariffs"),
 	                     &EconomySim::demo_get_tariffs);
+	ClassDB::bind_method(D_METHOD("demo_seed_groups"), &EconomySim::demo_seed_groups);
+	ClassDB::bind_method(D_METHOD("demo_set_group_names", "names"),
+	                     &EconomySim::demo_set_group_names);
+	ClassDB::bind_method(D_METHOD("demo_get_groups"), &EconomySim::demo_get_groups);
+	ClassDB::bind_method(D_METHOD("demo_get_group", "group_id"),
+	                     &EconomySim::demo_get_group);
+	ClassDB::bind_method(D_METHOD("demo_fund_group", "group_id", "amount"),
+	                     &EconomySim::demo_fund_group);
+	ClassDB::bind_method(D_METHOD("demo_group_invest", "group_id", "city_id",
+	                     "building_id", "resource", "output_product", "capacity",
+	                     "recipe_id", "partner_group"),
+	                     &EconomySim::demo_group_invest, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("demo_set_fdi_policy", "nation", "sector", "mode",
+	                     "min_local"),
+	                     &EconomySim::demo_set_fdi_policy, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("demo_set_sector_incentive", "nation", "sector",
+	                     "tax_holiday", "subsidy"),
+	                     &EconomySim::demo_set_sector_incentive);
+	ClassDB::bind_method(D_METHOD("demo_create_state_company", "nation", "name",
+	                     "capital"),
+	                     &EconomySim::demo_create_state_company);
+	ClassDB::bind_method(D_METHOD("demo_privatize", "city_id", "building_id",
+	                     "buyer_group"),
+	                     &EconomySim::demo_privatize);
+	ClassDB::bind_method(D_METHOD("demo_nationalize", "city_id", "building_id"),
+	                     &EconomySim::demo_nationalize);
+	ClassDB::bind_method(D_METHOD("demo_get_investment_status"),
+	                     &EconomySim::demo_get_investment_status);
+	ClassDB::bind_method(D_METHOD("demo_groups_seeded"),
+	                     &EconomySim::demo_groups_seeded);
 	ClassDB::bind_method(D_METHOD("initialize_benchmark", "city_count",
 	                     "buildings_per_city", "seed"),
 	                     &EconomySim::initialize_benchmark);
@@ -959,6 +996,19 @@ constexpr double kDemoServiceSpendShare = 0.45;
 constexpr double kDemoTaxRate = 0.15;
 constexpr double kDemoTransferShare = 1.0;
 constexpr double kDemoCapitalDistribution = 1.0;
+// F9 — investimento e propriedade.
+// Imposto corporativo sobre o lucro do ativo do grupo, pago ao orçamento do
+// anfitrião. Retenção: fração do lucro líquido que fica no caixa do grupo
+// (investimento seguinte); o resto é dividendo ao estrato dono no fim do dia.
+constexpr double kDemoCorporateTaxRate = 0.10;
+constexpr double kDemoGroupDividendShare = 0.80;
+// Lote de ativos por grupo na semeadura (nação × setor). Mantém "algumas
+// centenas" de grupos no mundo real em vez de um grupo por cidade.
+constexpr int kDemoGroupChunkAssets = 12;
+// Nacionalização: confiança cai a 35% e só se recupera depois de 180 dias.
+constexpr int kDemoNationalizationDays = 180;
+constexpr double kDemoNationalizationConfidence = 0.35;
+constexpr double kDemoNationalizationCompensation = 0.5;
 constexpr double kDemoFreightPerTonKm = 0.10;
 // Frete marítimo (entre massas de terra), espelhando a taxa de navio do
 // mercado legado: 5x mais barato que o caminhão por tonelada-km.
@@ -1679,6 +1729,8 @@ void EconomySim::demo_set_goods(const Array& goods) {
 	std::vector<std::string> names = demo_product_names_;
 	std::vector<double> prices(kDemoMaxProducts, 0.0);
 	std::vector<char> durable(kDemoMaxProducts, 0);
+	std::vector<std::string> sectors = demo_product_sectors_;
+	sectors.resize(kDemoMaxProducts);
 	for (int index = 0; index < previous_products; ++index) {
 		if (index < static_cast<int>(names.size())) {
 			prices[static_cast<std::size_t>(index)] = demo_base_prices_[index];
@@ -1705,6 +1757,9 @@ void EconomySim::demo_set_goods(const Array& goods) {
 		}
 		durable[static_cast<std::size_t>(order)] =
 			bool(entry.get("durable", false)) ? 1 : 0;
+		const String sector = String(entry.get("sector", ""));
+		sectors[static_cast<std::size_t>(order)] =
+			sector.is_empty() ? std::string() : std::string(sector.utf8().get_data());
 	}
 	int product_count = 21;
 	for (int index = 0; index < static_cast<int>(names.size()); ++index) {
@@ -1727,6 +1782,8 @@ void EconomySim::demo_set_goods(const Array& goods) {
 	}
 	demo_products_ = product_count;
 	demo_product_durable_ = std::move(durable);
+	demo_product_sectors_ = std::move(sectors);
+	demo_product_sectors_.resize(static_cast<std::size_t>(product_count));
 
 	// Mundo já inicializado: os produtos novos entram com o preço-base e sem
 	// estoque. Os índices existentes (0..previous_products-1) não mudam.
@@ -1874,6 +1931,8 @@ void EconomySim::initialize_demo() {
 	demo_init_fleets();
 	// F8: negócios de serviço iniciais (só quando os dados foram carregados).
 	demo_seed_services();
+	// F9: grupos a partir dos ativos privados (id determinístico).
+	demo_seed_groups();
 }
 
 void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
@@ -1901,6 +1960,17 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_foreign_cash_ = 0.0;
 	demo_construction_cash_ = 0.0;
 	demo_industry_seeded_ = false;
+	// F9: mundo novo, grupos/política novos (a semeadura roda no fim).
+	demo_groups_.clear();
+	demo_group_lookup_.clear();
+	demo_groups_seeded_ = false;
+	demo_fdi_policies_.clear();
+	demo_fdi_lookup_.clear();
+	demo_incentives_.clear();
+	demo_incentive_lookup_.clear();
+	demo_confidence_.clear();
+	demo_confidence_penalty_day_.clear();
+	demo_group_flows_.clear();
 	for (int index = 0; index < kDemoMaxProducts; ++index) {
 		demo_produced_[index] = 0.0;
 		demo_consumed_total_[index] = 0.0;
@@ -2013,6 +2083,8 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	// F8: serviços — catálogo já carregado pelo autoload/teste; os negócios
 	// iniciais saem da poupança da POP dona (capital entra em service_cash).
 	demo_seed_services();
+	// F9: grupos/empresas a partir dos ativos privados existentes.
+	demo_seed_groups();
 }
 
 EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) {
@@ -2074,6 +2146,11 @@ double EconomySim::demo_money_total() const {
 		total += city.pop.savings + city.firm_cash + city.service_cash
 		       + city.government_budget + city.capital_income_next;
 	}
+	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
+	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
+	for (const DemoGroup& group : demo_groups_) {
+		total += group.cash;
+	}
 	return total;
 }
 
@@ -2085,6 +2162,9 @@ void EconomySim::demo_snapshot(DemoSnapshot& out) const {
 	out.service_bankruptcies = demo_service_bankruptcies_;
 	out.transit = demo_in_transit_;
 	out.fleets = demo_fleets_;
+	out.groups = demo_groups_;
+	out.confidence = demo_confidence_;
+	out.group_flows = demo_group_flows_;
 	out.currencies = demo_currencies_;
 	out.transport_cash = demo_transport_cash_;
 	out.foreign_cash = demo_foreign_cash_;
@@ -2106,6 +2186,9 @@ void EconomySim::demo_restore(const DemoSnapshot& in) {
 	demo_service_bankruptcies_ = in.service_bankruptcies;
 	demo_in_transit_ = in.transit;
 	demo_fleets_ = in.fleets;
+	demo_groups_ = in.groups;
+	demo_confidence_ = in.confidence;
+	demo_group_flows_ = in.group_flows;
 	// F5: o drift cambial roda antes do invariante; desfazer um tick
 	// corrompido também desfaz a taxa do dia.
 	demo_currencies_ = in.currencies;
@@ -2122,6 +2205,11 @@ void EconomySim::demo_restore(const DemoSnapshot& in) {
 	day_ = in.day;
 	demo_rebuild_indexes();
 	demo_rebuild_service_indexes();
+	// F9: o índice de grupos acompanha o vetor restaurado.
+	demo_group_lookup_.clear();
+	for (std::size_t index = 0; index < demo_groups_.size(); ++index) {
+		demo_group_lookup_[demo_groups_[index].id] = static_cast<int>(index);
+	}
 }
 
 std::vector<std::string> EconomySim::demo_check_invariants(double money_before) const {
@@ -2183,6 +2271,13 @@ std::vector<std::string> EconomySim::demo_check_invariants(double money_before) 
 	};
 	check_global("transport", demo_transport_cash_);
 	check_global("construction", demo_construction_cash_);
+	// F9: caixa de grupo é dinheiro do mundo; não pode ser negativo nem NaN.
+	for (const DemoGroup& group : demo_groups_) {
+		if (!std::isfinite(group.cash) || group.cash < -1e-6) {
+			violations.push_back("caixa de grupo inválido (" + group.id + "): "
+				+ std::to_string(group.cash));
+		}
+	}
 
 	return violations;
 }
@@ -5292,13 +5387,49 @@ void EconomySim::demo_tick_core() {
 		double private_profit = 0.0;
 		double state_profit = 0.0;
 		double value_added = 0.0;
+		// F9: lucro e faturamento por grupo presente na cidade. O JV divide a
+		// linha do ativo entre o grupo estrangeiro e o parceiro nacional.
+		std::vector<std::array<double, 3>> group_rows;  // índice, lucro, receita
+		auto add_group_row = [&group_rows](int group_index, double profit,
+				double revenue) {
+			for (std::array<double, 3>& row : group_rows) {
+				if (static_cast<int>(row[0]) == group_index) {
+					row[1] += profit;
+					row[2] += revenue;
+					return;
+				}
+			}
+			group_rows.push_back({static_cast<double>(group_index), profit, revenue});
+		};
 		for (const int bi : local_buildings) {
 			const DemoBuilding& building =
 				demo_buildings_[static_cast<std::size_t>(bi)];
 			if (building.owner == "state") {
 				state_profit += building.profit;
 			} else {
-				private_profit += building.profit;
+				std::string group_id;
+				std::string origin;
+				const int owner_kind = demo_owner_kind(building.owner, &group_id,
+					&origin);
+				const int group_index = owner_kind == 1 || owner_kind == 2
+					? demo_group_index(group_id) : -1;
+				if (group_index >= 0) {
+					const double local_share = std::clamp(building.local_share, 0.0, 1.0);
+					const int partner_index = building.partner_group.empty()
+						? -1 : demo_group_index(building.partner_group);
+					if (local_share > 0.0 && partner_index >= 0) {
+						add_group_row(group_index, building.profit * (1.0 - local_share),
+							building.revenue * (1.0 - local_share));
+						add_group_row(partner_index, building.profit * local_share,
+							building.revenue * local_share);
+					} else {
+						add_group_row(group_index, building.profit, building.revenue);
+					}
+				} else {
+					// Dono de grupo desconhecido (save antigo/editado): cai no
+					// privado agregado, sem criar dinheiro.
+					private_profit += building.profit;
+				}
 			}
 			value_added += building.revenue - building.input_value;
 		}
@@ -5307,7 +5438,16 @@ void EconomySim::demo_tick_core() {
 		// estatais vão para o orçamento público; privados, para as famílias.
 		const double firm_target =
 			city.simulation_population * kDemoFirmCashPerCapita;
-		const double firm_surplus = std::max(0.0, city.firm_cash - firm_target);
+		double firm_surplus = std::max(0.0, city.firm_cash - firm_target);
+		// F9: o lucro dos ativos de grupo sai da firma para o grupo (imposto
+		// corporativo fica no anfitrião; o resto vira caixa do grupo e, no
+		// fechamento do dia, dividendo ao estrato dono). A retenção é o que
+		// financia o investimento seguinte; nada é criado ou destruído.
+		for (const std::array<double, 3>& row : group_rows) {
+			demo_route_group_profit(static_cast<int>(row[0]), city.nation,
+				row[1], row[2], city, firm_surplus);
+		}
+		firm_surplus = std::max(0.0, city.firm_cash - firm_target);
 		const double positive_total = std::max(0.0, private_profit)
 			+ std::max(0.0, state_profit);
 		const double distributable = std::min(
@@ -5572,6 +5712,11 @@ void EconomySim::demo_tick_core() {
 	// 9b. Redistribuição fiscal nacional (federalismo fiscal).
 	demo_national_fiscal_transfer();
 
+	// 9b2. F9: dividendos/repatriação dos grupos. Roda depois da contabilidade
+	// das cidades (lucro já roteado) e antes da balança/câmbio, para o fluxo de
+	// repatriação do dia entrar no relatório na mesma data.
+	demo_settle_groups();
+
 	lap(kDemoPhaseFiscal);
 
 	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float
@@ -5822,7 +5967,12 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		seller_currency("seller_currency"),
 		buyer_currency("buyer_currency"),
 		seller_fx_rate("seller_fx_rate"),
-		tariff_revenue("tariff_revenue")
+		tariff_revenue("tariff_revenue"),
+		owner_kind("owner_kind"),
+		owner_group("owner_group"),
+		owner_nation("owner_nation"),
+		local_share("local_share"),
+		groups("groups")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -6507,8 +6657,10 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		Dictionary& entry = slot.building_entry[index];
 		DemoStatusCitySlot::BuildingCache& cached = slot.building_cache[index];
 		const bool identity_changed = !cached.filled || cached.id_src != building.id;
+		// F9: privatização/nacionalização muda o dono sem mudar a identidade.
+		const bool owner_changed = cached.owner_src != building.owner;
 		// Bloco estático: só quando a construção nasce (ou muda de identidade).
-		if (identity_changed) {
+		if (identity_changed || owner_changed) {
 			cached.id_src = building.id;
 			cached.id = String(building.id.c_str());
 			entry[k.id] = cached.id;
@@ -6519,6 +6671,18 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			cached.owner_src = building.owner;
 			cached.owner = String(building.owner.c_str());
 			entry[k.owner] = cached.owner;
+			// F9: decomposição do dono para a UI/status (sem parse no cliente).
+			std::string group_id;
+			std::string origin_nation;
+			const int owner_kind = demo_owner_kind(building.owner, &group_id,
+				&origin_nation);
+			entry[k.owner_kind] = owner_kind == 0 ? String("state")
+				: owner_kind == 1 ? String("national")
+				: owner_kind == 2 ? String("foreign") : String("private");
+			entry[k.owner_group] = String(group_id.c_str());
+			entry[k.owner_nation] = origin_nation.empty()
+				? String() : String(origin_nation.c_str());
+			entry[k.local_share] = building.local_share;
 			entry[k.input_product] = building.input_product;
 			entry[k.output_product] = building.output_product;
 			entry[k.capital_per_capacity] = building.capital_per_capacity;
@@ -10374,6 +10538,1067 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	return result;
 }
 
+// =====================================================================
+// F9 — investimento e propriedade
+// =====================================================================
+
+namespace {
+// Token seguro para id determinístico (letras/números; o resto vira '-').
+std::string demo_sane_token(const std::string& text) {
+	std::string out;
+	out.reserve(text.size());
+	for (const char c : text) {
+		const unsigned char u = static_cast<unsigned char>(c);
+		const bool ok = (u >= 'A' && u <= 'Z') || (u >= 'a' && u <= 'z')
+			|| (u >= '0' && u <= '9');
+		out.push_back(ok ? c : '-');
+	}
+	while (!out.empty() && out.back() == '-') {
+		out.pop_back();
+	}
+	return out.empty() ? std::string("X") : out;
+}
+}  // namespace
+
+int EconomySim::demo_owner_kind(const std::string& owner, std::string* group_id,
+		std::string* origin_nation) const {
+	if (group_id != nullptr) {
+		group_id->clear();
+	}
+	if (origin_nation != nullptr) {
+		origin_nation->clear();
+	}
+	if (owner == "state") {
+		return 0;
+	}
+	const std::string national_prefix = "national:";
+	if (owner.rfind(national_prefix, 0) == 0) {
+		if (group_id != nullptr) {
+			*group_id = owner.substr(national_prefix.size());
+		}
+		return 1;
+	}
+	const std::string foreign_prefix = "foreign:";
+	if (owner.rfind(foreign_prefix, 0) == 0) {
+		const std::string rest = owner.substr(foreign_prefix.size());
+		const std::size_t at = rest.find('@');
+		if (group_id != nullptr) {
+			*group_id = at == std::string::npos ? rest : rest.substr(0, at);
+		}
+		if (origin_nation != nullptr) {
+			*origin_nation = at == std::string::npos
+				? std::string() : rest.substr(at + 1);
+		}
+		return 2;
+	}
+	return 3;  // "private" e qualquer dono desconhecido
+}
+
+int EconomySim::demo_group_index(const std::string& id) const {
+	const auto found = demo_group_lookup_.find(id);
+	return found == demo_group_lookup_.end() ? -1 : found->second;
+}
+
+EconomySim::DemoGroup* EconomySim::find_demo_group(const std::string& id) {
+	const int index = demo_group_index(id);
+	return index < 0 ? nullptr : &demo_groups_[static_cast<std::size_t>(index)];
+}
+
+const EconomySim::DemoGroup* EconomySim::find_demo_group(
+		const std::string& id) const {
+	const int index = demo_group_index(id);
+	return index < 0 ? nullptr : &demo_groups_[static_cast<std::size_t>(index)];
+}
+
+int EconomySim::demo_fdi_mode(const std::string& nation,
+		const std::string& sector) const {
+	const auto found = demo_fdi_lookup_.find(nation + "|" + sector);
+	return found == demo_fdi_lookup_.end()
+		? 0 : demo_fdi_policies_[static_cast<std::size_t>(found->second)].mode;
+}
+
+double EconomySim::demo_sector_tax_holiday(const std::string& nation,
+		const std::string& sector) const {
+	const auto found = demo_incentive_lookup_.find(nation + "|" + sector);
+	if (found == demo_incentive_lookup_.end()) {
+		return 0.0;
+	}
+	return std::clamp(
+		demo_incentives_[static_cast<std::size_t>(found->second)].tax_holiday,
+		0.0, 1.0);
+}
+
+double EconomySim::demo_sector_subsidy(const std::string& nation,
+		const std::string& sector) const {
+	const auto found = demo_incentive_lookup_.find(nation + "|" + sector);
+	if (found == demo_incentive_lookup_.end()) {
+		return 0.0;
+	}
+	return std::max(0.0,
+		demo_incentives_[static_cast<std::size_t>(found->second)].subsidy);
+}
+
+double EconomySim::demo_nation_confidence(const std::string& nation) const {
+	const auto found = demo_confidence_.find(nation);
+	return found == demo_confidence_.end() ? 1.0
+		: std::clamp(found->second, 0.0, 1.0);
+}
+
+void EconomySim::demo_seed_groups() {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	if (demo_groups_seeded_ || !demo_groups_.empty()) {
+		return;
+	}
+	// Agrupa por (nação, setor do produto) — a regra documentada no
+	// GAME_STATE/docs. `std::map` mantém a ordem determinística.
+	std::map<std::string, std::vector<int>> buckets;
+	for (std::size_t index = 0; index < demo_buildings_.size(); ++index) {
+		const DemoBuilding& building = demo_buildings_[index];
+		if (building.owner != "private") {
+			continue;
+		}
+		const DemoCity* city = find_demo_city(building.city);
+		if (city == nullptr) {
+			continue;
+		}
+		std::string sector;
+		if (building.output_product >= 0
+				&& building.output_product < static_cast<int>(demo_product_sectors_.size())) {
+			sector = demo_product_sectors_[static_cast<std::size_t>(building.output_product)];
+		}
+		if (sector.empty()) {
+			sector = (building.recipe >= 0 || building.input_product >= 0)
+				? "industry" : "primary";
+		}
+		buckets[city->nation + "|" + sector].push_back(static_cast<int>(index));
+	}
+	int chunk_serial = 0;
+	for (auto& entry : buckets) {
+		std::vector<int>& indices = entry.second;
+		const std::size_t separator = entry.first.find('|');
+		const std::string nation = entry.first.substr(0, separator);
+		const std::string sector = separator == std::string::npos
+			? std::string("primary") : entry.first.substr(separator + 1);
+		std::sort(indices.begin(), indices.end(), [this](int a, int b) {
+			return demo_buildings_[static_cast<std::size_t>(a)].id
+				< demo_buildings_[static_cast<std::size_t>(b)].id;
+		});
+		for (std::size_t start = 0; start < indices.size();
+				start += static_cast<std::size_t>(kDemoGroupChunkAssets)) {
+			DemoGroup group;
+			group.id = "G-" + demo_sane_token(nation) + "-"
+				+ demo_sane_token(sector) + "-" + std::to_string(chunk_serial);
+			group.origin_nation = nation;
+			group.sector = sector;
+			const int group_index = static_cast<int>(demo_groups_.size());
+			demo_group_lookup_[group.id] = group_index;
+			demo_groups_.push_back(group);
+			const std::size_t end = std::min(indices.size(),
+				start + static_cast<std::size_t>(kDemoGroupChunkAssets));
+			for (std::size_t i = start; i < end; ++i) {
+				DemoBuilding& building =
+					demo_buildings_[static_cast<std::size_t>(indices[i])];
+				building.owner = "national:" + group.id;
+			}
+			++chunk_serial;
+		}
+	}
+	demo_groups_seeded_ = true;
+	++demo_status_static_version_;
+	demo_status_invalidate();
+}
+
+int EconomySim::demo_set_group_names(const Dictionary& names) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	int applied = 0;
+	for (const Variant& key : names.keys()) {
+		const std::string id(String(key).utf8().get_data());
+		DemoGroup* group = find_demo_group(id);
+		if (group == nullptr) {
+			continue;
+		}
+		const String value = names[key];
+		if (value.is_empty()) {
+			continue;
+		}
+		group->name = std::string(value.utf8().get_data());
+		++applied;
+	}
+	if (applied > 0) {
+		demo_status_invalidate();
+	}
+	return applied;
+}
+
+Array EconomySim::demo_get_groups() const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	struct GroupStats {
+		int assets = 0;
+		double capacity = 0.0;
+		double employed = 0.0;
+		std::set<std::string> countries;
+	};
+	std::vector<GroupStats> stats(demo_groups_.size());
+	for (const DemoBuilding& building : demo_buildings_) {
+		std::string group_id;
+		std::string origin;
+		const int kind = demo_owner_kind(building.owner, &group_id, &origin);
+		if (kind != 1 && kind != 2) {
+			continue;
+		}
+		const int index = demo_group_index(group_id);
+		if (index < 0) {
+			continue;
+		}
+		GroupStats& row = stats[static_cast<std::size_t>(index)];
+		row.assets += 1;
+		row.capacity += building.capacity * building.output_scale;
+		row.employed += building.workers;
+		if (const DemoCity* city = find_demo_city(building.city)) {
+			row.countries.insert(city->nation);
+		}
+	}
+	std::vector<int> order(demo_groups_.size());
+	for (std::size_t index = 0; index < order.size(); ++index) {
+		order[index] = static_cast<int>(index);
+	}
+	std::sort(order.begin(), order.end(), [this](int a, int b) {
+		const DemoGroup& ga = demo_groups_[static_cast<std::size_t>(a)];
+		const DemoGroup& gb = demo_groups_[static_cast<std::size_t>(b)];
+		if (ga.revenue_total != gb.revenue_total) {
+			return ga.revenue_total > gb.revenue_total;
+		}
+		if (ga.cash != gb.cash) {
+			return ga.cash > gb.cash;
+		}
+		return ga.id < gb.id;
+	});
+	Array result;
+	for (const int index : order) {
+		const DemoGroup& group = demo_groups_[static_cast<std::size_t>(index)];
+		const GroupStats& row = stats[static_cast<std::size_t>(index)];
+		Dictionary entry;
+		entry["id"] = String(group.id.c_str());
+		entry["name"] = group.name.empty()
+			? String(group.id.c_str()) : String(group.name.c_str());
+		entry["origin_nation"] = String(group.origin_nation.c_str());
+		entry["sector"] = String(group.sector.c_str());
+		entry["state_owned"] = group.state_owned;
+		entry["cash"] = group.cash;
+		entry["distributable"] = group.distributable;
+		entry["revenue_total"] = group.revenue_total;
+		entry["profit_total"] = group.profit_total;
+		entry["dividends_total"] = group.dividends_total;
+		entry["taxes_total"] = group.taxes_total;
+		entry["capex_total"] = group.capex_total;
+		entry["assets"] = row.assets;
+		entry["capacity"] = row.capacity;
+		entry["employed"] = row.employed;
+		entry["countries"] = static_cast<int>(row.countries.size());
+		result.append(entry);
+	}
+	return result;
+}
+
+Dictionary EconomySim::demo_get_group(const String& group_id) const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::string id(group_id.utf8().get_data());
+	const int index = demo_group_index(id);
+	Dictionary entry;
+	if (index < 0) {
+		entry["error"] = "grupo desconhecido";
+		return entry;
+	}
+	const DemoGroup& group = demo_groups_[static_cast<std::size_t>(index)];
+	entry["id"] = String(group.id.c_str());
+	entry["name"] = group.name.empty()
+		? String(group.id.c_str()) : String(group.name.c_str());
+	entry["origin_nation"] = String(group.origin_nation.c_str());
+	entry["sector"] = String(group.sector.c_str());
+	entry["state_owned"] = group.state_owned;
+	entry["cash"] = group.cash;
+	entry["distributable"] = group.distributable;
+	entry["revenue_total"] = group.revenue_total;
+	entry["profit_total"] = group.profit_total;
+	entry["dividends_total"] = group.dividends_total;
+	entry["taxes_total"] = group.taxes_total;
+	entry["capex_total"] = group.capex_total;
+	Dictionary by_host;
+	for (const auto& row : group.profit_by_host) {
+		by_host[String(row.first.c_str())] = row.second;
+	}
+	entry["profit_by_host"] = by_host;
+	return entry;
+}
+
+Dictionary EconomySim::demo_fund_group(const String& group_id, double amount) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["funded"] = false;
+	result["moved"] = 0.0;
+	result["error"] = "";
+	DemoGroup* group = find_demo_group(std::string(group_id.utf8().get_data()));
+	if (group == nullptr) {
+		result["error"] = "grupo desconhecido";
+		return result;
+	}
+	if (amount <= 0.0) {
+		result["error"] = "valor inválido";
+		return result;
+	}
+	// Retira do orçamento das cidades da nação de origem, na ordem dos índices
+	// (determinística). Não cria dinheiro.
+	double remaining = amount;
+	for (DemoCity& city : demo_cities_) {
+		if (remaining <= 0.0) {
+			break;
+		}
+		if (city.nation != group->origin_nation) {
+			continue;
+		}
+		const double take = std::min(remaining, std::max(0.0, city.government_budget));
+		if (take <= 0.0) {
+			continue;
+		}
+		city.government_budget -= take;
+		group->cash += take;
+		remaining -= take;
+	}
+	const double moved = amount - remaining;
+	result["moved"] = moved;
+	result["funded"] = moved > 0.0;
+	if (moved <= 0.0) {
+		result["error"] = "sem orçamento na nação de origem";
+	}
+	demo_status_invalidate();
+	return result;
+}
+
+double EconomySim::demo_credit_nation_households(const std::string& nation,
+		double amount) {
+	if (amount <= 0.0) {
+		return 0.0;
+	}
+	// O dono do capital é aproximado pelo estrato de maior escolaridade (a
+	// proxy disponível no modelo para os proprietários); sem ele, população.
+	double weight_total = 0.0;
+	for (const DemoCity& city : demo_cities_) {
+		if (city.nation != nation) {
+			continue;
+		}
+		double weight = city.pop.class_population[kDemoEducationLevels - 1];
+		if (!(weight > 0.0)) {
+			weight = city.simulation_population;
+		}
+		weight_total += weight;
+	}
+	if (!(weight_total > 0.0)) {
+		return 0.0;
+	}
+	for (DemoCity& city : demo_cities_) {
+		if (city.nation != nation) {
+			continue;
+		}
+		double weight = city.pop.class_population[kDemoEducationLevels - 1];
+		if (!(weight > 0.0)) {
+			weight = city.simulation_population;
+		}
+		city.capital_income_next += amount * weight / weight_total;
+	}
+	return amount;
+}
+
+void EconomySim::demo_route_group_profit(int group_index,
+		const std::string& host_nation, double profit, double revenue,
+		DemoCity& city, double& firm_surplus) {
+	if (group_index < 0 || group_index >= static_cast<int>(demo_groups_.size())) {
+		return;
+	}
+	DemoGroup& group = demo_groups_[static_cast<std::size_t>(group_index)];
+	group.revenue_total += revenue;
+	group.profit_total += profit;
+	if (profit > 0.0) {
+		if (group.state_owned) {
+			// Lucro de estatal -> orçamento do anfitrião (dinheiro conservado).
+			const double moved = std::min(profit, firm_surplus);
+			city.firm_cash -= moved;
+			city.government_budget += moved;
+			firm_surplus -= moved;
+			return;
+		}
+		// Imposto corporativo: fica no anfitrião. A isenção do incentivo
+		// setorial reduz a alíquota.
+		const double holiday = demo_sector_tax_holiday(host_nation, group.sector);
+		const double tax_rate = std::clamp(
+			kDemoCorporateTaxRate * (1.0 - holiday), 0.0, 1.0);
+		const double tax = std::min(profit * tax_rate, firm_surplus);
+		city.firm_cash -= tax;
+		city.government_budget += tax;
+		firm_surplus -= tax;
+		group.taxes_total += tax;
+		demo_group_flows_[host_nation].taxes += tax;
+		const double net = profit - tax;
+		const double moved = std::min(net, firm_surplus);
+		city.firm_cash -= moved;
+		group.cash += moved;
+		group.distributable += moved;
+		firm_surplus -= moved;
+		group.profit_by_host[host_nation] += moved;
+		// Incentivo: subsídio ad valorem sobre a receita do ativo, pago pelo
+		// governo do anfitrião (política explícita; 0 por padrão).
+		const double subsidy_rate = demo_sector_subsidy(host_nation, group.sector);
+		if (subsidy_rate > 0.0 && revenue > 0.0) {
+			const double subsidy = std::min(
+				std::max(0.0, city.government_budget), revenue * subsidy_rate);
+			if (subsidy > 0.0) {
+				city.government_budget -= subsidy;
+				group.cash += subsidy;
+				group.distributable += subsidy;
+				demo_group_flows_[host_nation].subsidy += subsidy;
+			}
+		}
+	} else if (profit < 0.0) {
+		// O grupo recapitaliza o ativo até o limite do caixa; o resto da perda
+		// continua na firma (pode levar a falência, como antes).
+		const double inject = std::min(-profit, group.cash);
+		if (inject > 0.0) {
+			group.cash -= inject;
+			city.firm_cash += inject;
+		}
+	}
+}
+
+void EconomySim::demo_settle_groups() {
+	if (demo_groups_.empty()) {
+		return;
+	}
+	// Recuperação lenta da confiança depois do prazo da nacionalização.
+	for (auto it = demo_confidence_penalty_day_.begin();
+			it != demo_confidence_penalty_day_.end();) {
+		if (day_ >= it->second) {
+			auto confidence = demo_confidence_.find(it->first);
+			if (confidence != demo_confidence_.end()) {
+				confidence->second = std::min(1.0, confidence->second + 0.005);
+			}
+			if (confidence == demo_confidence_.end()
+					|| confidence->second >= 1.0) {
+				it = demo_confidence_penalty_day_.erase(it);
+				continue;
+			}
+		}
+		++it;
+	}
+	for (std::size_t index = 0; index < demo_groups_.size(); ++index) {
+		DemoGroup& group = demo_groups_[index];
+		if (group.state_owned || group.distributable <= 1e-9) {
+			continue;
+		}
+		// Dividendo ao estrato dono: fração do lucro acumulado. O que sobra
+		// fica como capital para o próximo investimento.
+		double payable = group.distributable * kDemoGroupDividendShare;
+		payable = std::min(payable, group.cash);
+		if (payable <= 1e-9) {
+			continue;
+		}
+		double host_total = 0.0;
+		for (const auto& row : group.profit_by_host) {
+			host_total += std::max(0.0, row.second);
+		}
+		if (host_total <= 1e-9) {
+			const double credited = demo_credit_nation_households(
+				group.origin_nation, payable);
+			if (credited > 0.0) {
+				group.cash -= credited;
+				group.distributable = std::max(0.0, group.distributable - credited);
+				group.dividends_total += credited;
+				demo_group_flows_[group.origin_nation].dividends += credited;
+			}
+			continue;
+		}
+		double credited_total = 0.0;
+		std::vector<std::string> exhausted;
+		for (auto& row : group.profit_by_host) {
+			const double share = payable * std::max(0.0, row.second) / host_total;
+			if (share <= 1e-9) {
+				continue;
+			}
+			const bool domestic = row.first == group.origin_nation;
+			const double credited = demo_credit_nation_households(
+				group.origin_nation, share);
+			if (credited <= 0.0) {
+				continue;
+			}
+			credited_total += credited;
+			if (domestic) {
+				demo_group_flows_[row.first].dividends += credited;
+			} else {
+				// Repatriação: sai do anfitrião, entra na origem.
+				demo_group_flows_[row.first].repatriated_out += credited;
+				demo_group_flows_[group.origin_nation].repatriated_in += credited;
+			}
+			row.second -= share;
+			if (row.second <= 1e-9) {
+				exhausted.push_back(row.first);
+			}
+		}
+		for (const std::string& host : exhausted) {
+			group.profit_by_host.erase(host);
+		}
+		if (credited_total > 0.0) {
+			group.cash -= credited_total;
+			group.distributable = std::max(0.0,
+				group.distributable - credited_total);
+			group.dividends_total += credited_total;
+		}
+	}
+}
+
+Dictionary EconomySim::demo_group_invest(const String& group_id,
+		const String& city_id, const String& building_id, const String& resource,
+		int output_product, double capacity, const String& recipe_id,
+		const String& partner_group) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["created"] = false;
+	result["cost"] = 0.0;
+	result["error"] = "";
+	const std::string gid(group_id.utf8().get_data());
+	DemoGroup* group = find_demo_group(gid);
+	if (group == nullptr) {
+		result["error"] = "grupo desconhecido";
+		return result;
+	}
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		result["error"] = "cidade desconhecida";
+		return result;
+	}
+	const std::string id(building_id.utf8().get_data());
+	if (id.empty()) {
+		result["error"] = "identificador vazio";
+		return result;
+	}
+	if (find_demo_building(city->id, id) != nullptr) {
+		result["error"] = "construção já existe";
+		return result;
+	}
+	if (output_product < 0 || output_product >= demo_products_) {
+		result["error"] = "produto inválido";
+		return result;
+	}
+	if (capacity <= 0.0) {
+		result["error"] = "capacidade inválida";
+		return result;
+	}
+	const std::string sector = output_product < static_cast<int>(demo_product_sectors_.size())
+		? demo_product_sectors_[static_cast<std::size_t>(output_product)]
+		: std::string();
+	int recipe = -1;
+	double capital_per_capacity = kDemoCapitalPerCapacity;
+	double jobs = 0.0;
+	double wage = 0.0;
+	double opex = 0.0;
+	double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+	if (!recipe_id.is_empty()) {
+		recipe = demo_recipe_index(recipe_id);
+		if (recipe < 0) {
+			result["error"] = "receita desconhecida";
+			return result;
+		}
+		const DemoRecipe& chosen = demo_recipes_[static_cast<std::size_t>(recipe)];
+		if (chosen.output != output_product) {
+			result["error"] = "receita não produz o bem";
+			return result;
+		}
+		capital_per_capacity = std::max(1.0, chosen.capital_per_capacity);
+		jobs = capacity * chosen.jobs_per_ton;
+		wage = chosen.wage;
+		opex = capacity * chosen.opex_per_ton;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			education_mix[level] = chosen.education_mix[level];
+		}
+	} else if (city->suitability[output_product] <= 0.0) {
+		result["error"] = "sem aptidão territorial";
+		return result;
+	} else {
+		// Produção primária por grupo: mesmos coeficientes da fazenda inicial
+		// (estimativa declarada; o núcleo não tem tabela por produto). Sem
+		// folha/opex o lucro ficaria inflado e o emprego zerado.
+		jobs = capacity * kDemoJobsPerTon;
+		wage = kDemoFarmWage;
+		opex = capacity * kDemoOpexPerTon;
+	}
+	const bool foreign = group->origin_nation != city->nation;
+	double local_share = 0.0;
+	std::string partner_id;
+	DemoGroup* partner = nullptr;
+	if (foreign) {
+		const int mode = demo_fdi_mode(city->nation, sector);
+		if (mode == 3) {
+			result["error"] = "setor fechado ao capital estrangeiro";
+			return result;
+		}
+		if (demo_nation_confidence(city->nation) < 0.5) {
+			result["error"] = "confiança baixa após nacionalização";
+			return result;
+		}
+		if (mode == 2) {
+			partner_id = std::string(partner_group.utf8().get_data());
+			if (partner_id.empty()) {
+				result["error"] = "joint venture exige parceiro local";
+				return result;
+			}
+			partner = find_demo_group(partner_id);
+			if (partner == nullptr || partner->origin_nation != city->nation
+					|| partner->state_owned) {
+				result["error"] = "parceiro local inválido";
+				return result;
+			}
+			const auto policy = demo_fdi_lookup_.find(city->nation + "|" + sector);
+			local_share = policy == demo_fdi_lookup_.end()
+				? 0.30 : std::clamp(
+					demo_fdi_policies_[static_cast<std::size_t>(policy->second)].min_local,
+					0.0, 1.0);
+			if (local_share <= 0.0) {
+				local_share = 0.30;
+			}
+		} else if (mode == 1) {
+			// Restrito: só quem já opera no setor do anfitrião.
+			bool incumbent = false;
+			for (const DemoBuilding& building : demo_buildings_) {
+				if (building.owner.rfind("foreign:", 0) != 0
+						|| building.output_product != output_product) {
+					continue;
+				}
+				std::string owner_group;
+				std::string origin;
+				demo_owner_kind(building.owner, &owner_group, &origin);
+				const DemoCity* host = find_demo_city(building.city);
+				if (host != nullptr && host->nation == city->nation
+						&& owner_group == gid) {
+					incumbent = true;
+					break;
+				}
+			}
+			if (!incumbent) {
+				result["error"] = "setor restrito a incumbentes";
+				return result;
+			}
+		}
+		if (recipe < 0) {
+			const DemoDeposit& deposit = city->deposits[output_product];
+			if (deposit.tracked && deposit.remaining_kt <= 0.0) {
+				result["error"] = "reserva esgotada";
+				return result;
+			}
+		}
+	}
+	const double cost = capacity * capital_per_capacity;
+	const double partner_cost = cost * local_share;
+	const double owner_cost = cost - partner_cost;
+	if (group->cash + 1e-9 < owner_cost) {
+		result["error"] = "capital insuficiente";
+		result["cash"] = group->cash;
+		result["cost"] = cost;
+		return result;
+	}
+	if (partner != nullptr && partner->cash + 1e-9 < partner_cost) {
+		result["error"] = "capital insuficiente do parceiro local";
+		result["cost"] = cost;
+		return result;
+	}
+	group->cash -= owner_cost;
+	group->capex_total += owner_cost;
+	if (partner != nullptr && partner_cost > 0.0) {
+		partner->cash -= partner_cost;
+		partner->capex_total += partner_cost;
+	}
+
+	DemoBuilding building;
+	building.id = id;
+	building.city = city->id;
+	building.kind = 0;
+	building.resource = std::string(resource.utf8().get_data());
+	building.owner = foreign
+		? "foreign:" + gid + "@" + group->origin_nation
+		: "national:" + gid;
+	building.input_product = recipe >= 0
+		? demo_recipes_[static_cast<std::size_t>(recipe)].inputs[0] : -1;
+	building.output_product = output_product;
+	building.recipe = recipe;
+	building.capacity = capacity;
+	building.input_per_output = recipe >= 0
+		? demo_recipes_[static_cast<std::size_t>(recipe)].input_qty[0]
+			/ std::max(1e-9,
+				demo_recipes_[static_cast<std::size_t>(recipe)].yield)
+		: 0.0;
+	building.capital_per_capacity = capital_per_capacity;
+	building.jobs = jobs;
+	building.wage = wage;
+	building.opex = opex;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		building.education_mix[level] = education_mix[level];
+	}
+	building.local_share = local_share;
+	building.partner_group = partner != nullptr ? partner->id : std::string();
+	if (recipe >= 0) {
+		building.output_scale = 0.25;
+		building.last_utilization = 0.25;
+	}
+	demo_buildings_.push_back(building);
+	const std::size_t city_index =
+		static_cast<std::size_t>(city - demo_cities_.data());
+	if (city_index < demo_buildings_by_city_.size()) {
+		demo_buildings_by_city_[city_index].push_back(
+			static_cast<int>(demo_buildings_.size() - 1));
+	} else {
+		demo_rebuild_indexes();
+	}
+	city->service_cash += cost;
+	city->construction_revenue_pending += cost;
+	result["created"] = true;
+	result["cost"] = cost;
+	result["owner"] = String(building.owner.c_str());
+	result["local_share"] = local_share;
+	demo_status_invalidate();
+	return result;
+}
+
+Dictionary EconomySim::demo_set_fdi_policy(const String& nation,
+		const String& sector, const String& mode, double min_local) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["ok"] = false;
+	result["error"] = "";
+	const std::string tag(nation.utf8().get_data());
+	const std::string sector_id(sector.utf8().get_data());
+	const String mode_name = mode.to_lower();
+	int mode_value = -1;
+	if (mode_name == "open" || mode_name == "aberto") {
+		mode_value = 0;
+	} else if (mode_name == "restricted" || mode_name == "restrito") {
+		mode_value = 1;
+	} else if (mode_name == "joint_venture" || mode_name == "joint") {
+		mode_value = 2;
+	} else if (mode_name == "closed" || mode_name == "fechado") {
+		mode_value = 3;
+	}
+	if (mode_value < 0) {
+		result["error"] = "modo inválido";
+		return result;
+	}
+	const std::string key = tag + "|" + sector_id;
+	const auto found = demo_fdi_lookup_.find(key);
+	DemoFdiPolicy policy;
+	policy.nation = tag;
+	policy.sector = sector_id;
+	policy.mode = mode_value;
+	policy.min_local = std::clamp(min_local, 0.0, 1.0);
+	if (found == demo_fdi_lookup_.end()) {
+		demo_fdi_lookup_[key] = static_cast<int>(demo_fdi_policies_.size());
+		demo_fdi_policies_.push_back(policy);
+	} else {
+		demo_fdi_policies_[static_cast<std::size_t>(found->second)] = policy;
+	}
+	result["ok"] = true;
+	result["nation"] = String(tag.c_str());
+	result["sector"] = String(sector_id.c_str());
+	result["mode"] = mode_name;
+	result["min_local"] = policy.min_local;
+	return result;
+}
+
+Dictionary EconomySim::demo_set_sector_incentive(const String& nation,
+		const String& sector, double tax_holiday, double subsidy) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["ok"] = true;
+	const std::string tag(nation.utf8().get_data());
+	const std::string sector_id(sector.utf8().get_data());
+	const std::string key = tag + "|" + sector_id;
+	DemoSectorIncentive incentive;
+	incentive.nation = tag;
+	incentive.sector = sector_id;
+	incentive.tax_holiday = std::clamp(tax_holiday, 0.0, 1.0);
+	incentive.subsidy = std::max(0.0, subsidy);
+	const auto found = demo_incentive_lookup_.find(key);
+	if (found == demo_incentive_lookup_.end()) {
+		demo_incentive_lookup_[key] = static_cast<int>(demo_incentives_.size());
+		demo_incentives_.push_back(incentive);
+	} else {
+		demo_incentives_[static_cast<std::size_t>(found->second)] = incentive;
+	}
+	result["nation"] = String(tag.c_str());
+	result["sector"] = String(sector_id.c_str());
+	result["tax_holiday"] = incentive.tax_holiday;
+	result["subsidy"] = incentive.subsidy;
+	return result;
+}
+
+Dictionary EconomySim::demo_create_state_company(const String& nation,
+		const String& name, double capital) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["created"] = false;
+	result["error"] = "";
+	const std::string tag(nation.utf8().get_data());
+	if (tag.empty()) {
+		result["error"] = "nação vazia";
+		return result;
+	}
+	DemoGroup group;
+	group.state_owned = true;
+	group.origin_nation = tag;
+	group.sector = "state";
+	const String company_name = name.strip_edges();
+	group.name = company_name.is_empty()
+		? std::string() : std::string(company_name.utf8().get_data());
+	int serial = 0;
+	do {
+		group.id = "S-" + demo_sane_token(tag) + "-" + std::to_string(serial);
+		++serial;
+	} while (demo_group_lookup_.find(group.id) != demo_group_lookup_.end());
+	demo_group_lookup_[group.id] = static_cast<int>(demo_groups_.size());
+	demo_groups_.push_back(group);
+	DemoGroup* created = &demo_groups_.back();
+	double remaining = std::max(0.0, capital);
+	for (DemoCity& city : demo_cities_) {
+		if (remaining <= 0.0) {
+			break;
+		}
+		if (city.nation != tag) {
+			continue;
+		}
+		const double take = std::min(remaining, std::max(0.0, city.government_budget));
+		city.government_budget -= take;
+		created->cash += take;
+		remaining -= take;
+	}
+	result["created"] = true;
+	result["id"] = String(created->id.c_str());
+	result["capital"] = created->cash;
+	if (created->cash <= 0.0) {
+		result["warning"] = "nenhum orçamento disponível na nação";
+	}
+	demo_status_invalidate();
+	return result;
+}
+
+Dictionary EconomySim::demo_privatize(const String& city_id,
+		const String& building_id, const String& buyer_group) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["ok"] = false;
+	result["error"] = "";
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		result["error"] = "cidade desconhecida";
+		return result;
+	}
+	DemoBuilding* building = find_demo_building(city->id,
+		std::string(building_id.utf8().get_data()));
+	if (building == nullptr) {
+		result["error"] = "ativo desconhecido";
+		return result;
+	}
+	if (building->owner != "state") {
+		result["error"] = "ativo não é estatal";
+		return result;
+	}
+	DemoGroup* buyer = find_demo_group(std::string(buyer_group.utf8().get_data()));
+	if (buyer == nullptr) {
+		result["error"] = "comprador desconhecido";
+		return result;
+	}
+	const bool foreign = buyer->origin_nation != city->nation;
+	if (foreign) {
+		const std::string sector = building->output_product >= 0
+			&& building->output_product < static_cast<int>(demo_product_sectors_.size())
+			? demo_product_sectors_[static_cast<std::size_t>(building->output_product)]
+			: std::string();
+		if (demo_fdi_mode(city->nation, sector) == 3) {
+			result["error"] = "setor fechado ao capital estrangeiro";
+			return result;
+		}
+	}
+	const double price = building->capacity * building->capital_per_capacity;
+	if (buyer->cash + 1e-9 < price) {
+		result["error"] = "caixa insuficiente do comprador";
+		return result;
+	}
+	buyer->cash -= price;
+	buyer->capex_total += price;
+	city->government_budget += price;
+	building->owner = foreign
+		? "foreign:" + buyer->id + "@" + buyer->origin_nation
+		: "national:" + buyer->id;
+	building->local_share = 0.0;
+	building->partner_group.clear();
+	result["ok"] = true;
+	result["price"] = price;
+	result["owner"] = String(building->owner.c_str());
+	demo_status_invalidate();
+	return result;
+}
+
+Dictionary EconomySim::demo_nationalize(const String& city_id,
+		const String& building_id) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	result["ok"] = false;
+	result["error"] = "";
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		result["error"] = "cidade desconhecida";
+		return result;
+	}
+	DemoBuilding* building = find_demo_building(city->id,
+		std::string(building_id.utf8().get_data()));
+	if (building == nullptr) {
+		result["error"] = "ativo desconhecido";
+		return result;
+	}
+	std::string group_id;
+	std::string origin;
+	const int kind = demo_owner_kind(building->owner, &group_id, &origin);
+	if (kind == 0) {
+		result["error"] = "ativo já é estatal";
+		return result;
+	}
+	const double book = building->capacity * building->capital_per_capacity;
+	const std::string previous_owner = building->owner;
+	const double compensation = std::min(book * kDemoNationalizationCompensation,
+		std::max(0.0, city->government_budget));
+	if (compensation > 0.0) {
+		city->government_budget -= compensation;
+		if (DemoGroup* owner = find_demo_group(group_id)) {
+			owner->cash += compensation;
+		} else {
+			city->firm_cash += compensation;
+		}
+	}
+	building->owner = "state";
+	building->local_share = 0.0;
+	building->partner_group.clear();
+	// Derruba a confiança do anfitrião por um período: o IDE novo fica
+	// bloqueado enquanto a confiança estiver abaixo de 0,5.
+	demo_confidence_[city->nation] = kDemoNationalizationConfidence;
+	demo_confidence_penalty_day_[city->nation] = day_ + kDemoNationalizationDays;
+	result["ok"] = true;
+	result["compensation"] = compensation;
+	result["confidence"] = demo_nation_confidence(city->nation);
+	result["previous_owner"] = String(previous_owner.c_str());
+	demo_status_invalidate();
+	return result;
+}
+
+Dictionary EconomySim::demo_get_investment_status() const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary out;
+	out["groups"] = demo_get_groups();
+	struct NationOwnership {
+		double production[3] = {};
+		double employment[3] = {};
+		double capacity[3] = {};
+		int assets[3] = {};
+	};
+	std::map<std::string, NationOwnership> nations;
+	for (const DemoBuilding& building : demo_buildings_) {
+		const DemoCity* city = find_demo_city(building.city);
+		if (city == nullptr) {
+			continue;
+		}
+		std::string group_id;
+		std::string origin;
+		const int kind = demo_owner_kind(building.owner, &group_id, &origin);
+		const int slot = kind == 0 ? 0 : (kind == 2 ? 2 : 1);
+		NationOwnership& row = nations[city->nation];
+		row.production[slot] += building.revenue;
+		row.employment[slot] += building.workers;
+		row.capacity[slot] += building.capacity * building.output_scale;
+		row.assets[slot] += 1;
+	}
+	Dictionary ownership;
+	for (const auto& entry : nations) {
+		const NationOwnership& row = entry.second;
+		double production_total = 0.0;
+		double employment_total = 0.0;
+		double capacity_total = 0.0;
+		int assets_total = 0;
+		for (int slot = 0; slot < 3; ++slot) {
+			production_total += row.production[slot];
+			employment_total += row.employment[slot];
+			capacity_total += row.capacity[slot];
+			assets_total += row.assets[slot];
+		}
+		Dictionary record;
+		Array production;
+		Array employment;
+		Array capacity;
+		Array assets;
+		for (int slot = 0; slot < 3; ++slot) {
+			production.append(production_total > 0.0
+				? row.production[slot] / production_total : 0.0);
+			employment.append(employment_total > 0.0
+				? row.employment[slot] / employment_total : 0.0);
+			capacity.append(capacity_total > 0.0
+				? row.capacity[slot] / capacity_total : 0.0);
+			assets.append(row.assets[slot]);
+		}
+		record["production_share"] = production;   // [state, national, foreign]
+		record["employment_share"] = employment;
+		record["capacity_share"] = capacity;
+		record["assets"] = assets;
+		record["production_total"] = production_total;
+		record["employment_total"] = employment_total;
+		record["assets_total"] = assets_total;
+		record["confidence"] = demo_nation_confidence(entry.first);
+		ownership[String(entry.first.c_str())] = record;
+	}
+	out["nations"] = ownership;
+
+	Array flows;
+	std::set<std::string> flow_nations;
+	for (const auto& entry : demo_group_flows_) {
+		flow_nations.insert(entry.first);
+	}
+	for (const std::string& nation : flow_nations) {
+		const DemoGroupFlow flow = demo_group_flows_.at(nation);
+		Dictionary record;
+		record["nation"] = String(nation.c_str());
+		record["repatriated_out"] = flow.repatriated_out;
+		record["repatriated_in"] = flow.repatriated_in;
+		record["dividends"] = flow.dividends;
+		record["taxes"] = flow.taxes;
+		record["subsidy"] = flow.subsidy;
+		flows.append(record);
+	}
+	out["flows"] = flows;
+
+	Array policies;
+	for (const DemoFdiPolicy& policy : demo_fdi_policies_) {
+		Dictionary record;
+		record["nation"] = String(policy.nation.c_str());
+		record["sector"] = String(policy.sector.c_str());
+		record["mode"] = policy.mode;
+		record["min_local"] = policy.min_local;
+		policies.append(record);
+	}
+	out["fdi_policies"] = policies;
+	Array incentives;
+	for (const DemoSectorIncentive& incentive : demo_incentives_) {
+		Dictionary record;
+		record["nation"] = String(incentive.nation.c_str());
+		record["sector"] = String(incentive.sector.c_str());
+		record["tax_holiday"] = incentive.tax_holiday;
+		record["subsidy"] = incentive.subsidy;
+		incentives.append(record);
+	}
+	out["sector_incentives"] = incentives;
+	out["group_count"] = static_cast<int>(demo_groups_.size());
+	return out;
+}
+
 bool EconomySim::demo_spend_government(const String& city_id, double amount) {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
@@ -10659,6 +11884,8 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["kind"] = building.kind;
 		entry["resource"] = String(building.resource.c_str());
 		entry["owner"] = String(building.owner.c_str());
+		entry["local_share"] = building.local_share;
+		entry["partner_group"] = String(building.partner_group.c_str());
 		entry["input_product"] = building.input_product;
 		entry["output_product"] = building.output_product;
 		entry["recipe"] = building.recipe >= 0
@@ -10788,6 +12015,76 @@ Dictionary EconomySim::demo_to_dict() const {
 		tariffs.append(entry);
 	}
 	data["tariffs"] = tariffs;
+	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
+	Array groups;
+	for (const DemoGroup& group : demo_groups_) {
+		Dictionary entry;
+		entry["id"] = String(group.id.c_str());
+		entry["name"] = String(group.name.c_str());
+		entry["origin_nation"] = String(group.origin_nation.c_str());
+		entry["sector"] = String(group.sector.c_str());
+		entry["cash"] = group.cash;
+		entry["distributable"] = group.distributable;
+		entry["revenue_total"] = group.revenue_total;
+		entry["profit_total"] = group.profit_total;
+		entry["dividends_total"] = group.dividends_total;
+		entry["taxes_total"] = group.taxes_total;
+		entry["capex_total"] = group.capex_total;
+		entry["state_owned"] = group.state_owned;
+		Array by_host;
+		for (const auto& row : group.profit_by_host) {
+			Dictionary host;
+			host["nation"] = String(row.first.c_str());
+			host["profit"] = row.second;
+			by_host.append(host);
+		}
+		entry["profit_by_host"] = by_host;
+		groups.append(entry);
+	}
+	data["groups"] = groups;
+	Array group_flows;
+	for (const auto& row : demo_group_flows_) {
+		Dictionary entry;
+		entry["nation"] = String(row.first.c_str());
+		entry["repatriated_out"] = row.second.repatriated_out;
+		entry["repatriated_in"] = row.second.repatriated_in;
+		entry["dividends"] = row.second.dividends;
+		entry["taxes"] = row.second.taxes;
+		entry["subsidy"] = row.second.subsidy;
+		group_flows.append(entry);
+	}
+	data["group_flows"] = group_flows;
+	Array fdi_policies;
+	for (const DemoFdiPolicy& policy : demo_fdi_policies_) {
+		Dictionary entry;
+		entry["nation"] = String(policy.nation.c_str());
+		entry["sector"] = String(policy.sector.c_str());
+		entry["mode"] = policy.mode;
+		entry["min_local"] = policy.min_local;
+		fdi_policies.append(entry);
+	}
+	data["fdi_policies"] = fdi_policies;
+	Array incentives;
+	for (const DemoSectorIncentive& incentive : demo_incentives_) {
+		Dictionary entry;
+		entry["nation"] = String(incentive.nation.c_str());
+		entry["sector"] = String(incentive.sector.c_str());
+		entry["tax_holiday"] = incentive.tax_holiday;
+		entry["subsidy"] = incentive.subsidy;
+		incentives.append(entry);
+	}
+	data["sector_incentives"] = incentives;
+	Array confidence;
+	for (const auto& row : demo_confidence_) {
+		Dictionary entry;
+		entry["nation"] = String(row.first.c_str());
+		entry["value"] = row.second;
+		const auto penalty = demo_confidence_penalty_day_.find(row.first);
+		entry["penalty_day"] = penalty == demo_confidence_penalty_day_.end()
+			? 0 : penalty->second;
+		confidence.append(entry);
+	}
+	data["confidence"] = confidence;
 	// F7: política salarial (save v9). `minimum_wages` por nação (ausente/0 =
 	// piso desligado) e a rigidez diária configurável.
 	Array minimum_wages;
@@ -10962,6 +12259,121 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			demo_tariffs_.push_back(std::move(tariff));
 		}
 		demo_rebuild_tariff_lookup();
+	}
+	// F9 (save v11): grupos e política. Save v10 e anteriores não têm as
+	// chaves: os grupos são semeados a partir dos ativos privados no fim do
+	// load (regra determinística de demo_seed_groups).
+	demo_groups_.clear();
+	demo_group_lookup_.clear();
+	const Array saved_groups = data.get("groups", Array());
+	for (int index = 0; index < saved_groups.size(); ++index) {
+		const Dictionary entry = saved_groups[index];
+		DemoGroup group;
+		group.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		if (group.id.empty()) {
+			continue;
+		}
+		group.name = std::string(String(entry.get("name", "")).utf8().get_data());
+		group.origin_nation = std::string(
+			String(entry.get("origin_nation", "")).utf8().get_data());
+		group.sector = std::string(String(entry.get("sector", "")).utf8().get_data());
+		group.cash = std::max(0.0, double(entry.get("cash", 0.0)));
+		group.distributable = std::max(0.0,
+			double(entry.get("distributable", 0.0)));
+		group.revenue_total = std::max(0.0,
+			double(entry.get("revenue_total", 0.0)));
+		group.profit_total = double(entry.get("profit_total", 0.0));
+		group.dividends_total = std::max(0.0,
+			double(entry.get("dividends_total", 0.0)));
+		group.taxes_total = std::max(0.0, double(entry.get("taxes_total", 0.0)));
+		group.capex_total = std::max(0.0, double(entry.get("capex_total", 0.0)));
+		group.state_owned = bool(entry.get("state_owned", false));
+		const Array by_host = entry.get("profit_by_host", Array());
+		for (int host_index = 0; host_index < by_host.size(); ++host_index) {
+			const Dictionary host = by_host[host_index];
+			const std::string nation = std::string(
+				String(host.get("nation", "")).utf8().get_data());
+			if (!nation.empty()) {
+				group.profit_by_host[nation] = double(host.get("profit", 0.0));
+			}
+		}
+		demo_group_lookup_[group.id] = static_cast<int>(demo_groups_.size());
+		demo_groups_.push_back(std::move(group));
+	}
+	demo_fdi_policies_.clear();
+	demo_fdi_lookup_.clear();
+	const Array saved_policies = data.get("fdi_policies", Array());
+	for (int index = 0; index < saved_policies.size(); ++index) {
+		const Dictionary entry = saved_policies[index];
+		DemoFdiPolicy policy;
+		policy.nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		policy.sector = std::string(
+			String(entry.get("sector", "")).utf8().get_data());
+		policy.mode = std::clamp(int(entry.get("mode", 0)), 0, 3);
+		policy.min_local = std::clamp(double(entry.get("min_local", 0.0)), 0.0, 1.0);
+		if (policy.nation.empty()) {
+			continue;
+		}
+		demo_fdi_lookup_[policy.nation + "|" + policy.sector] =
+			static_cast<int>(demo_fdi_policies_.size());
+		demo_fdi_policies_.push_back(std::move(policy));
+	}
+	demo_incentives_.clear();
+	demo_incentive_lookup_.clear();
+	const Array saved_incentives = data.get("sector_incentives", Array());
+	for (int index = 0; index < saved_incentives.size(); ++index) {
+		const Dictionary entry = saved_incentives[index];
+		DemoSectorIncentive incentive;
+		incentive.nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		incentive.sector = std::string(
+			String(entry.get("sector", "")).utf8().get_data());
+		incentive.tax_holiday = std::clamp(
+			double(entry.get("tax_holiday", 0.0)), 0.0, 1.0);
+		incentive.subsidy = std::max(0.0, double(entry.get("subsidy", 0.0)));
+		if (incentive.nation.empty()) {
+			continue;
+		}
+		demo_incentive_lookup_[incentive.nation + "|" + incentive.sector] =
+			static_cast<int>(demo_incentives_.size());
+		demo_incentives_.push_back(std::move(incentive));
+	}
+	demo_confidence_.clear();
+	demo_confidence_penalty_day_.clear();
+	const Array saved_confidence = data.get("confidence", Array());
+	for (int index = 0; index < saved_confidence.size(); ++index) {
+		const Dictionary entry = saved_confidence[index];
+		const std::string nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		if (nation.empty()) {
+			continue;
+		}
+		demo_confidence_[nation] = std::clamp(
+			double(entry.get("value", 1.0)), 0.0, 1.0);
+		const int penalty = int(entry.get("penalty_day", 0));
+		if (penalty > 0) {
+			demo_confidence_penalty_day_[nation] = penalty;
+		}
+	}
+	demo_group_flows_.clear();
+	const Array saved_flows = data.get("group_flows", Array());
+	for (int index = 0; index < saved_flows.size(); ++index) {
+		const Dictionary entry = saved_flows[index];
+		const std::string nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		if (nation.empty()) {
+			continue;
+		}
+		DemoGroupFlow flow;
+		flow.repatriated_out = std::max(0.0,
+			double(entry.get("repatriated_out", 0.0)));
+		flow.repatriated_in = std::max(0.0,
+			double(entry.get("repatriated_in", 0.0)));
+		flow.dividends = std::max(0.0, double(entry.get("dividends", 0.0)));
+		flow.taxes = std::max(0.0, double(entry.get("taxes", 0.0)));
+		flow.subsidy = std::max(0.0, double(entry.get("subsidy", 0.0)));
+		demo_group_flows_[nation] = flow;
 	}
 	// F7: política salarial. Save v8 e anteriores não têm as chaves: piso
 	// desligado e rigidez padrão (1%/dia).
@@ -11354,6 +12766,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			std::string(String(entry.get("resource", "")).utf8().get_data());
 		building.owner =
 			std::string(String(entry.get("owner", "private")).utf8().get_data());
+		building.local_share = std::clamp(
+			double(entry.get("local_share", 0.0)), 0.0, 1.0);
+		building.partner_group = std::string(
+			String(entry.get("partner_group", "")).utf8().get_data());
 		building.input_product = int(entry.get("input_product", -1));
 		building.output_product = int(entry.get("output_product", 0));
 		if (has_saved_products || needs_legacy_migration) {
@@ -11587,6 +13003,15 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		demo_seed_services();
 	} else {
 		demo_rebuild_service_indexes();
+	}
+	// F9: save v10 e anteriores não têm grupos. Semeia a partir dos ativos
+	// privados (id determinístico); os nomes entram pelo cliente no próximo
+	// boot, como no mundo recém-criado.
+	if (demo_groups_.empty()) {
+		demo_groups_seeded_ = false;
+		demo_seed_groups();
+	} else {
+		demo_groups_seeded_ = true;
 	}
 }
 

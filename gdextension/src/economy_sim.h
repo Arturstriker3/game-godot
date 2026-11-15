@@ -6,7 +6,9 @@
 #include <godot_cpp/variant/packed_float64_array.hpp>
 
 #include <cstddef>
+#include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -392,6 +394,107 @@ public:
 	/** F5: tarifas declaradas (status/UI). */
 	Array demo_get_tariffs() const;
 
+	// ------------------------------------------------------------------
+	// F9 — investimento e propriedade (produção_chains_impl_plan §14).
+	//
+	// Grupos/empresas com identidade: id determinístico, nome gerado no
+	// cliente (core/culture/business_name_generator.gd) e entregue por
+	// demo_set_group_names, nação de origem, setor principal, caixa e
+	// carteira de ativos em qualquer país. O núcleo guarda o dinheiro e a
+	// propriedade; a decisão de investir é de cadência baixa e roda no
+	// GDScript (core/economy/ai/group_investor.gd), nunca por tick.
+	//
+	// Propriedade de uma construção (`DemoBuilding::owner`):
+	//   "state"                 estatal (lucro -> orçamento do anfitrião)
+	//   "private"               privado agregado legado (sem grupo)
+	//   "national:<grupo>"      grupo privado nacional
+	//   "foreign:<grupo>@<nação>" grupo estrangeiro (repatria o lucro)
+	// ------------------------------------------------------------------
+
+	/**
+	 * Semeia os grupos a partir dos ativos privados existentes, agrupando por
+	 * (nação, setor) em lotes de até 12 ativos. Determinístico e idempotente:
+	 * com grupos já criados, não faz nada. O caixa nasce em 0 (nenhum dinheiro
+	 * é criado); os grupos se capitalizam com o lucro retido.
+	 */
+	void demo_seed_groups();
+
+	/** Nomes gerados pelo cliente (id -> nome). Devolve quantos aplicou. */
+	int demo_set_group_names(const Dictionary& names);
+
+	/** Ranking de grupos (ativos, faturamento, países, caixa, setor). */
+	Array demo_get_groups() const;
+
+	/** Fotografia de um grupo (ou {} se não existe). */
+	Dictionary demo_get_group(const String& group_id) const;
+
+	/**
+	 * Move `amount` do orçamento das cidades da nação de origem do grupo para
+	 * o caixa dele (capitalização explícita; dinheiro conservado). Usado por
+	 * testes e pela administração. Devolve {funded, moved, error}.
+	 */
+	Dictionary demo_fund_group(const String& group_id, double amount);
+
+	/**
+	 * Investimento de um grupo (FDI ou doméstico), com a política de abertura
+	 * do setor aplicada:
+	 *  - `closed`: recusa investimento estrangeiro;
+	 *  - `joint_venture`: exige `partner_group` nacional com participação
+	 *    local >= min_local (o parceiro paga a fatia dele);
+	 *  - `restricted`: estrangeiro só mantém posição já existente no setor;
+	 *  - `open`: liberado.
+	 * O custo sai do caixa do grupo (e do parceiro, no JV) e é pago ao setor
+	 * de construção do anfitrião. Devolve {created, cost, error, ...}.
+	 */
+	Dictionary demo_group_invest(const String& group_id, const String& city_id,
+		const String& building_id, const String& resource, int output_product,
+		double capacity, const String& recipe_id,
+		const String& partner_group = "");
+
+	/**
+	 * F9: abertura ao capital estrangeiro por (nação, setor).
+	 * `mode`: `open` (padrão), `restricted`, `joint_venture`, `closed`.
+	 * `min_local`: fração mínima do parceiro local em joint venture (0..1).
+	 */
+	Dictionary demo_set_fdi_policy(const String& nation, const String& sector,
+		const String& mode, double min_local = 0.0);
+
+	/** F9: incentivo setorial (isenção de imposto e subsídio por unidade). */
+	Dictionary demo_set_sector_incentive(const String& nation,
+		const String& sector, double tax_holiday, double subsidy);
+
+	/**
+	 * Cria uma empresa estatal (grupo `state_owned`) capitalizada com
+	 * `capital` retirado do orçamento das cidades da nação (conserva o
+	 * dinheiro). Devolve {created, id, error}.
+	 */
+	Dictionary demo_create_state_company(const String& nation,
+		const String& name, double capital);
+
+	/**
+	 * Privatiza um ativo estatal: o comprador paga o valor contábil
+	 * (capacidade × capital por capacidade) ao governo do anfitrião.
+	 */
+	Dictionary demo_privatize(const String& city_id, const String& building_id,
+		const String& buyer_group);
+
+	/**
+	 * Nacionaliza um ativo privado/estrangeiro: vira estatal, o anfitrião paga
+	 * compensação de 50% do valor contábil (se houver orçamento) e a confiança
+	 * da nação cai por `kDemoNationalizationDays` dias — o que encarece o IDE.
+	 */
+	Dictionary demo_nationalize(const String& city_id, const String& building_id);
+
+	/**
+	 * Status de investimento (sob demanda, fora do tick): ranking de grupos,
+	 * participação estatal/nacional/estrangeira na produção e no emprego de
+	 * cada nação, fluxo de lucro repatriado e políticas/incentivos.
+	 */
+	Dictionary demo_get_investment_status() const;
+
+	/** F9: confirmação de que os grupos foram semeados neste mundo. */
+	bool demo_groups_seeded() const { return demo_groups_seeded_; }
+
 	/**
 	 * Cria um mundo sintético determinístico para benchmark.
 	 * @param city_count Número de cidades.
@@ -682,6 +785,11 @@ private:
 		// não fecha por insolvência enquanto não há demanda final (F3); o
 		// governo cobre o prejuízo. Marcada explicitamente para o save/status.
 		bool strategic = false;
+		// F9: participação do parceiro local em joint venture. `owner` guarda
+		// o grupo estrangeiro; `partner_group` o grupo nacional que divide o
+		// lucro na fração `local_share`. Fora de JV, local_share = 0.
+		double local_share = 0.0;
+		std::string partner_group;
 		double revenue = 0.0;
 		double input_value = 0.0;
 		double costs = 0.0;
@@ -978,6 +1086,54 @@ private:
 		double rate = 0.0;
 	};
 
+	// F9: grupo/empresa com identidade. O nome vem do cliente (cultura de
+	// origem); o núcleo guarda só o que precisa para conservar dinheiro e
+	// publicar o status. `profit_by_host` acumula o lucro ainda não distribuído
+	// por nação anfitriã — é o que permite separar repatriação (IDE) de
+	// dividendo doméstico sem varrer as construções a cada pagamento.
+	struct DemoGroup {
+		std::string id;
+		std::string name;
+		std::string origin_nation;
+		std::string sector;
+		double cash = 0.0;
+		// Lucro acumulado ainda não distribuído. Separado do caixa para que uma
+		// capitalização (demo_fund_group) não vire dividendo no dia seguinte.
+		double distributable = 0.0;
+		double revenue_total = 0.0;
+		double profit_total = 0.0;
+		double dividends_total = 0.0;
+		double taxes_total = 0.0;
+		double capex_total = 0.0;
+		bool state_owned = false;
+		std::map<std::string, double> profit_by_host;
+	};
+
+	// F9: abertura ao capital estrangeiro por (nação, setor).
+	struct DemoFdiPolicy {
+		std::string nation;
+		std::string sector;
+		int mode = 0;  // 0 open, 1 restricted, 2 joint_venture, 3 closed
+		double min_local = 0.0;
+	};
+
+	// F9: incentivo setorial (isenção/subsídio).
+	struct DemoSectorIncentive {
+		std::string nation;
+		std::string sector;
+		double tax_holiday = 0.0;
+		double subsidy = 0.0;
+	};
+
+	// F9: fluxo acumulado de lucro por nação (balança/câmbio futuros).
+	struct DemoGroupFlow {
+		double repatriated_out = 0.0;  // lucro de estrangeiro que saiu do anfitrião
+		double repatriated_in = 0.0;   // lucro recebido pela origem
+		double dividends = 0.0;        // dividendos pagos aos donos nacionais
+		double taxes = 0.0;            // imposto corporativo recebido
+		double subsidy = 0.0;          // incentivo pago ao grupo
+	};
+
 	// Necessidade de transporte de um pedido (por trecho): veículos e fuel.
 	struct DemoTransportDemand {
 		double trucks = 0.0;
@@ -1128,6 +1284,12 @@ private:
 		int service_bankruptcies = 0;
 		std::vector<DemoShipment> transit;
 		std::unordered_map<std::string, DemoFleet> fleets;
+		// F9: estado dos grupos (caixa + lucro por anfitrião), confiança das
+		// nações e fluxos acumulados — desfazer um tick corrompido também
+		// desfaz a distribuição de lucro e a repatriação.
+		std::vector<DemoGroup> groups;
+		std::unordered_map<std::string, double> confidence;
+		std::unordered_map<std::string, DemoGroupFlow> group_flows;
 		std::vector<DemoCurrency> currencies;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
@@ -1289,7 +1451,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
 		DemoStatusKeys();
 	};
 
@@ -1746,6 +1908,31 @@ private:
 	void demo_seed_industry();
 	DemoBuilding* find_demo_building(const std::string& city_id, const std::string& id);
 
+	// F9: propriedade e grupos.
+	int demo_group_index(const std::string& id) const;
+	DemoGroup* find_demo_group(const std::string& id);
+	const DemoGroup* find_demo_group(const std::string& id) const;
+	// Decompõe o dono de uma construção: kind 0 state, 1 national, 2 foreign,
+	// 3 private (legado). Preenche grupo e nação de origem.
+	int demo_owner_kind(const std::string& owner, std::string* group_id,
+		std::string* origin_nation) const;
+	int demo_fdi_mode(const std::string& nation, const std::string& sector) const;
+	double demo_sector_tax_holiday(const std::string& nation,
+		const std::string& sector) const;
+	double demo_sector_subsidy(const std::string& nation,
+		const std::string& sector) const;
+	double demo_nation_confidence(const std::string& nation) const;
+	// Credita `amount` no capital das famílias da nação, ponderado pelo estrato
+	// dono (topo), e devolve o total efetivamente creditado.
+	double demo_credit_nation_households(const std::string& nation, double amount);
+	// Paga dividendos e registra repatriação. Roda uma vez por tick (depois da
+	// contabilidade das cidades), com cadência escalonada por grupo.
+	void demo_settle_groups();
+	// Imposto corporativo + retenção: move o lucro do grupo da cidade para o
+	// caixa dele (ou para o orçamento, se estatal). Chamado na contabilidade.
+	void demo_route_group_profit(int group_index, const std::string& host_nation,
+		double profit, double revenue, DemoCity& city, double& firm_surplus);
+
 	void tick_benchmark_internal();
 	void benchmark_reset();
 	void benchmark_labor();
@@ -1898,6 +2085,19 @@ private:
 	std::unordered_map<std::string, int> demo_nation_currency_;
 	std::vector<DemoTariff> demo_tariffs_;
 	std::unordered_map<std::string, double> demo_tariff_lookup_;
+	// F9: grupos/empresas, política de IDE, incentivos, confiança e fluxos.
+	std::vector<DemoGroup> demo_groups_;
+	std::unordered_map<std::string, int> demo_group_lookup_;
+	bool demo_groups_seeded_ = false;
+	std::vector<DemoFdiPolicy> demo_fdi_policies_;
+	std::unordered_map<std::string, int> demo_fdi_lookup_;
+	std::vector<DemoSectorIncentive> demo_incentives_;
+	std::unordered_map<std::string, int> demo_incentive_lookup_;
+	std::unordered_map<std::string, double> demo_confidence_;
+	std::unordered_map<std::string, int> demo_confidence_penalty_day_;
+	std::unordered_map<std::string, DemoGroupFlow> demo_group_flows_;
+	// Setor de cada produto (goods.json → sector). Vazio = "primary".
+	std::vector<std::string> demo_product_sectors_;
 	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
 	double demo_base_prices_[kDemoMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
