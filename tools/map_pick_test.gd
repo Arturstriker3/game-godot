@@ -284,15 +284,21 @@ func _test_port_toggle() -> void:
 		_failures.append("clique não selecionou o porto %s" % port)
 		return
 	# F7: clicar no porto abre a Logística (antes o clique só selecionava e o
-	# painel de portos ficava inalcançável pelo mapa).
-	if not _hud.is_overlay_open():
-		_failures.append("porto não abriu o painel de Logística")
-	elif String(_hud._active) != "logistics":
-		_failures.append("porto abriu '%s' em vez de Logística"
-				% String(_hud._active))
-	_hud.close_window()
-	if not _world.selected_place_id().is_empty():
-		_failures.append("fechar Logística não desselecionou o porto %s" % port)
+	# painel de portos ficava inalcançável pelo mapa). Com as telas de dados
+	# desligadas (`main_game.SHOW_DATA_SCREENS = false`) o clique só seleciona.
+	if _hud.data_screens_enabled:
+		if not _hud.is_overlay_open():
+			_failures.append("porto não abriu o painel de Logística")
+		elif String(_hud._active) != "logistics":
+			_failures.append("porto abriu '%s' em vez de Logística"
+					% String(_hud._active))
+		_hud.close_window()
+		if not _world.selected_place_id().is_empty():
+			_failures.append("fechar Logística não desselecionou o porto %s" % port)
+	else:
+		if _hud.is_overlay_open():
+			_failures.append("telas de dados ocultas: o porto abriu sobreposição")
+		_world.clear_selection()
 	# Clicar em área vazia também desseleciona o porto.
 	_game._handle_map_click(center)
 	var empty_point := _find_empty_screen_point()
@@ -324,11 +330,17 @@ func _test_city_toggle() -> void:
 	if _world.selected_place_id() != city:
 		_failures.append("clique não selecionou a cidade %s" % city)
 		return
-	if not _hud.is_window_open():
-		_failures.append("painel da cidade não abriu com o clique")
-	_hud.close_window()
-	if not _world.selected_place_id().is_empty():
-		_failures.append("fechar o painel não desselecionou a cidade %s" % city)
+	if _hud.data_screens_enabled:
+		if not _hud.is_window_open():
+			_failures.append("painel da cidade não abriu com o clique")
+		_hud.close_window()
+		if not _world.selected_place_id().is_empty():
+			_failures.append("fechar o painel não desselecionou a cidade %s" % city)
+	else:
+		# Ficha T3 desligada: o clique deixa só o realce/anel do mapa.
+		if _hud.is_window_open():
+			_failures.append("telas de dados ocultas: a cidade abriu a ficha T3")
+		_world.clear_selection()
 	if _hud.is_overlay_open():
 		_failures.append("fechar o painel deixou overlay aberto")
 	# Clique repetido: seleciona de novo e clica no mesmo ponto.
@@ -426,7 +438,8 @@ func _test_empty_and_escape() -> void:
 		_close_overlay()
 
 	# Esc com o painel da cidade aberto: fecha o painel, não abre o menu.
-	if not city.is_empty():
+	# (Só existe com as telas de dados ligadas.)
+	if not city.is_empty() and _hud.data_screens_enabled:
 		await _focus(_world.city_world_position(city))
 		var city_center := _camera.unproject_position(_world.city_world_position(city))
 		_game._handle_map_click(city_center)
@@ -694,9 +707,12 @@ func _test_mode_switch_clears_selection() -> void:
 	if _world.selected_place_id() != city:
 		_failures.append("TROCA DE MODO: clique no modo recursos não selecionou %s"
 				% city)
-	if _hud._legend_state != "city":
-		_failures.append("TROCA DE MODO: legenda não foi ao estado Cidade (%s)"
-				% _hud._legend_state)
+	# A legenda da cidade (dados de acesso a recursos) só existe com as telas de
+	# dados ligadas; desligada, o clique mantém apenas o realce do mapa.
+	var expected_legend := "city" if _hud.data_screens_enabled else "filters"
+	if _hud._legend_state != expected_legend:
+		_failures.append("TROCA DE MODO: legenda no estado %s (esperado %s)"
+				% [_hud._legend_state, expected_legend])
 
 	_hud.set_map_mode("political")
 	await process_frame
@@ -714,13 +730,21 @@ func _test_mode_switch_clears_selection() -> void:
 	_game._handle_map_click(center)
 	if _world.selected_place_id() != city:
 		_failures.append("TROCA DE MODO: 1º clique não selecionou %s" % city)
-	if not _hud.is_window_open():
-		_failures.append("TROCA DE MODO: 1º clique não abriu a ficha T3")
-	_hud.close_window()
-	_world.clear_selection()
-	_hud.show_general_legend()
-	print("TROCA DE MODO: %s selecionada em recursos → político abre a ficha no 1º clique"
-			% city)
+	if _hud.data_screens_enabled:
+		if not _hud.is_window_open():
+			_failures.append("TROCA DE MODO: 1º clique não abriu a ficha T3")
+		_hud.close_window()
+		_world.clear_selection()
+		_hud.show_general_legend()
+		print("TROCA DE MODO: %s selecionada em recursos → político abre a ficha no 1º clique"
+				% city)
+	else:
+		if _hud.is_window_open():
+			_failures.append("TROCA DE MODO: telas ocultas e a ficha T3 abriu")
+		_world.clear_selection()
+		_hud.show_general_legend()
+		print("TROCA DE MODO: %s selecionada em recursos → político só realça (telas de dados ocultas)"
+				% city)
 
 
 ## No MÉDIO, toda cidade na lista visível é capital ou pertence ao jogador.

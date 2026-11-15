@@ -11,6 +11,20 @@ const HudScript: Script = preload("res://core/ui/hud.gd")
 const CAMERA_PITCH_DEG := -56.0
 const CAMERA_DISTANCE := 52.0
 
+## PONTO ÚNICO DE CONFIGURAÇÃO das telas de dados (decisão do dono do jogo,
+## 2026-11): desligadas, o jogo abre só a interface principal — mapa, modos de
+## mapa, minimapa, barra superior, menu Esc e cursor. Ficam ocultas a barra
+## lateral (Economia, Mercado, Comércio, Produção, População, Política,
+## Estatísticas, Logística, Serviços) e os atalhos 1–9, a ficha de cidade e o
+## tooltip de cidade, o dossiê/estatísticas/quadro comparativo/registro, a lista
+## de cidades à direita e o sino de alertas.
+##
+## O código e os templates NÃO foram apagados: eles serão reaproveitados no
+## redesenho. Para trazê-los de volta, basta `true` aqui — nenhuma outra linha
+## do jogo precisa mudar (os testes de template instanciam o HUD direto e
+## continuam com as telas ligadas).
+const SHOW_DATA_SCREENS := false
+
 ## Limite do centro da câmera na folha (latitudes). Em X o mundo dá a volta e
 ## as cópias laterais garantem que não há vazio; em Z o centro fica entre estas
 ## latitudes. Além delas há uma folga elástica: dá para empurrar até
@@ -142,6 +156,8 @@ func _setup_camera() -> void:
 
 func _build_hud() -> void:
 	hud = HudScript.new()
+	# Antes do `add_child`: o `_ready` do HUD já decide o que instanciar.
+	hud.data_screens_enabled = SHOW_DATA_SCREENS
 	add_child(hud)
 	hud.city_focused.connect(_on_city_focused)
 	hud.map_mode_requested.connect(_on_map_mode_requested)
@@ -353,7 +369,9 @@ func _handle_map_click(mouse: Vector2) -> bool:
 		else:
 			city_world.set_deposit_selected(-1)
 			city_world.select_port(port_id)
-			hud.open_port(city_world.port_name(port_id))
+			# A Logística é tela de dados: desligada, o clique só seleciona.
+			if hud.data_screens_enabled:
+				hud.open_port(city_world.port_name(port_id))
 		return true
 	var city_id: String = city_world.pick_city(mouse, camera)
 	if city_id.is_empty():
@@ -365,6 +383,11 @@ func _handle_map_click(mouse: Vector2) -> bool:
 		hud.close_window()
 		return true
 	city_world.set_deposit_selected(-1)
+	# Telas de dados desligadas: a cidade só ganha o realce/anel do mapa, sem
+	# ficha T3 e sem a legenda de dados da cidade.
+	if not hud.data_screens_enabled:
+		city_world.select_city(city_id)
+		return true
 	if hud.map_mode() == "resources":
 		# No mapa de recursos a legenda mostra o que a cidade acessa.
 		city_world.select_city(city_id)
@@ -506,7 +529,11 @@ func _update_tooltip() -> void:
 	hud.clear_flow_tooltip()
 	# Cidade: o mapa só informa QUAL cidade está em hover e ONDE ela está na
 	# tela. O atraso de ~250 ms, o conteúdo e a decisão de esconder com
-	# sobreposição aberta ficam no HUD (camada de apresentação).
+	# sobreposição aberta ficam no HUD (camada de apresentação). A ficha de
+	# cidade é tela de dados: desligada, o hover não alimenta nada.
+	if not hud.data_screens_enabled:
+		hud.clear_city_tooltip()
+		return
 	if _last_hover.is_empty() or city_world.place_kind(_last_hover) != "city":
 		hud.clear_city_tooltip()
 		return

@@ -35,6 +35,8 @@ var _map_mode := ""
 var _legend_demo := ""
 var _locale := ""
 var _set := "full"
+## `game` (padrão) = espelha `main_game.SHOW_DATA_SCREENS`; `on`/`off` forçam.
+var _screens := "game"
 var _hud
 var _report := {"shots": [], "audits": [], "skipped": [], "phase": ""}
 
@@ -75,6 +77,13 @@ func _ready() -> void:
 			{"kind": "wheat", "value": 0.62},
 		])
 	await _wait_for_data()
+
+	if _set == "minimal":
+		for size in _sizes:
+			await _capture_minimal(size)
+		_write_report()
+		get_tree().quit()
+		return
 
 	if _set == "culturas":
 		for size in _sizes:
@@ -120,6 +129,8 @@ func _parse_args() -> void:
 				_locale = value
 			"--set":
 				_set = value
+			"--screens":
+				_screens = value
 
 
 ## Fundo neutro: textura real do mapa escurecida, ou cor chapada com --plain.
@@ -150,7 +161,23 @@ func _build_background() -> void:
 
 func _build_hud() -> void:
 	_hud = HudScript.new()
+	# A captura espelha o jogo por padrão: a flag única de `game/main_game.gd`
+	# (`SHOW_DATA_SCREENS`) decide se a barra lateral, a lista de cidades e as
+	# telas de dados existem. `--screens=on` reproduz o roteiro antigo.
+	_hud.data_screens_enabled = _data_screens_enabled()
 	add_child(_hud)
+
+
+func _data_screens_enabled() -> bool:
+	match _screens:
+		"on", "true", "1":
+			return true
+		"off", "false", "0":
+			return false
+	var script := load("res://game/main_game.gd") as Script
+	if script == null:
+		return true
+	return bool(script.get_script_constant_map().get("SHOW_DATA_SCREENS", true))
 
 
 ## O primeiro tick da economia é adiado; espera o resumo existir.
@@ -263,6 +290,45 @@ func _capture_resolution(size_text: String) -> void:
 	await _capture_state(directory, width, height, "35_city_services",
 			_city_services)
 	_reset_ui()
+
+
+## Roteiro mínimo (--set=minimal): a interface principal como o jogo abre hoje,
+## com as telas de dados ocultas por `SHOW_DATA_SCREENS = false`. Mostra o mapa
+## com os três modos, o menu Esc e as configurações — nada de barra lateral,
+## ficha de cidade, dossiê, estatísticas, alertas ou lista de cidades.
+## A captura de 1920×1080 sai sem sufixo; as demais levam `_<L>x<A>`.
+func _capture_minimal(size_text: String) -> void:
+	var parts := size_text.split("x")
+	var width := int(parts[0])
+	var height := int(parts[1]) if parts.size() > 1 else int(float(width) * 0.5625)
+
+	get_window().size = Vector2i(width, height)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_reset_ui()
+
+	var directory := _out_root
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
+	var suffix := "" if width == 1920 else "_%dx%d" % [width, height]
+
+	_hud.set_map_mode("political")
+	await _capture_state(directory, width, height, "interface_limpa" + suffix,
+			Callable())
+	await _capture_state(directory, width, height, "mapa_recursos" + suffix,
+			_show_resource_legend)
+	await _capture_state(directory, width, height, "mapa_rotas" + suffix,
+			func() -> void: _hud.set_map_mode("routes"))
+	# Volta ao modo político antes dos menus: a captura do menu Esc não deve
+	# herdar a legenda de rotas do estado anterior.
+	_hud.set_map_mode("political")
+	await get_tree().process_frame
+	await _capture_state(directory, width, height, "menu_pausa" + suffix,
+			_open_menu)
+	await _capture_state(directory, width, height, "menu_configuracoes" + suffix,
+			func() -> void: _open_menu_sheet("settings"))
+	_reset_ui()
+	_hud.set_map_mode("political")
+	await get_tree().process_frame
 
 
 ## Roteiro enxuto das culturas (--set=culturas): três telas nomeadas. A captura
@@ -780,7 +846,7 @@ func _check_scroll(scroll: ScrollContainer, data: Dictionary) -> void:
 
 
 func _write_report() -> void:
-	var path := _out_root + "/layout_report.json" if _set == "culturas" \
+	var path := _out_root + "/layout_report.json" if _set in ["culturas", "minimal"] \
 			else "%s/%s/%s/layout_report.json" % [_out_root, _phase, _run]
 	DirAccess.make_dir_recursive_absolute(
 			ProjectSettings.globalize_path(path.get_base_dir()))

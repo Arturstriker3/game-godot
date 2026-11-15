@@ -184,6 +184,19 @@ const DEPOSIT_TYPE_SUFFIXES := [
 	["offshore", "map.legend.type.offshore"],
 ]
 
+## Telas de dados ligadas/desligadas (decisão do dono do jogo, 2026-11).
+##
+## Desligadas, o HUD monta só o que serve ao mapa: barra superior, legenda de
+## modos de mapa, minimapa, cursor e menu Esc. A barra lateral, as telas de
+## papel (T1–T5), a ficha de cidade (T3), os alertas, a lista de cidades e o
+## tooltip de cidade NÃO são instanciados, e os atalhos 1–9 ficam mudos. O
+## código e as specs continuam aqui para o redesenho.
+##
+## O ponto único de configuração no jogo é `game/main_game.gd` →
+## `SHOW_DATA_SCREENS`; os testes de template instanciam o HUD direto e
+## mantêm o padrão `true`, então continuam abrindo as telas isoladamente.
+var data_screens_enabled := true
+
 var _summary: Dictionary = {}
 var _order_log: Array = []
 var _last_logged_day := -1
@@ -285,16 +298,21 @@ func _ready() -> void:
 	# `_sync_map_overlays`).
 	_build_root()
 	_build_top_bar()
-	_build_screen_layer()
+	# Com as telas de dados desligadas nada de tela/painel é instanciado: só o
+	# que o mapa precisa (legenda, minimapa, menu Esc, ajustes). A camada do
+	# tooltip nasce sempre porque hospeda também a ficha das setas de comércio.
+	if data_screens_enabled:
+		_build_screen_layer()
 	_build_legend()
 	_build_minimap()
-	_build_city_list()
-	_build_alerts_layer()
-	_build_city_layer()
-	# A barra lateral nasce depois das camadas de tela/ficha para ficar POR CIMA
-	# delas: nenhuma folha de papel cobre a navegação. O menu (T6) e as
-	# sub-fichas continuam acima, como modais.
-	_build_dock()
+	if data_screens_enabled:
+		_build_city_list()
+		_build_alerts_layer()
+		_build_city_layer()
+		# A barra lateral nasce depois das camadas de tela/ficha para ficar POR
+		# CIMA delas: nenhuma folha de papel cobre a navegação. O menu (T6) e as
+		# sub-fichas continuam acima, como modais.
+		_build_dock()
 	_build_menu()
 	_build_settings()
 	_build_city_tooltip()
@@ -327,11 +345,21 @@ func _input(event: InputEvent) -> void:
 		_close_settings()
 	elif _menu_layer.visible:
 		_close_menu()
-	elif _window_layer.visible or _city_layer.visible:
+	elif _window_layer_visible() or _city_layer_visible():
 		_close_screen()
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+## As camadas de tela só existem com as telas de dados ligadas: os guardas
+## abaixo valem para o Esc e para o menu, que continuam ativos.
+func _window_layer_visible() -> bool:
+	return _window_layer != null and _window_layer.visible
+
+
+func _city_layer_visible() -> bool:
+	return _city_layer != null and _city_layer.visible
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -340,7 +368,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close_settings()
 		elif _menu_layer.visible:
 			_close_menu()
-		elif _window_layer.visible or _city_layer.visible:
+		elif _window_layer_visible() or _city_layer_visible():
 			_close_screen()
 		else:
 			_open_menu()
@@ -355,6 +383,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if is_window_open() or _menu_layer.visible:
 		return
+	if not data_screens_enabled:
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key := (event as InputEventKey).keycode
 		var index := key - KEY_1
@@ -366,15 +396,19 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- API pública (também usada pelos testes de UI) ---------------------------
 
 func open_screen(screen_id: String) -> void:
+	if not data_screens_enabled:
+		return
 	_open_screen(screen_id)
 
 
 func open_city(city_id: String, tab: String = "overview") -> void:
+	if not data_screens_enabled:
+		return
 	_on_city_navigate(city_id, tab)
 
 
 func open_port(port_name: String) -> void:
-	if _root == null or port_name.is_empty():
+	if not data_screens_enabled or _root == null or port_name.is_empty():
 		return
 	_open_screen("logistics")
 	var screen: Node = _screens.get("logistics")
@@ -528,9 +562,11 @@ func _fit_legend_now() -> void:
 
 
 ## Margem esquerda da etiqueta: sempre à direita da barra lateral de painéis,
-## para a legenda e os modos de mapa não se sobreporem.
+## para a legenda e os modos de mapa não se sobreporem. Sem a barra (telas de
+## dados desligadas) a etiqueta encosta na margem normal da tela.
 func _legend_left() -> float:
-	return RAIL_WIDTH + UiKit.SPACE_LG
+	var rail := RAIL_WIDTH if data_screens_enabled else 0.0
+	return rail + UiKit.SPACE_LG
 
 
 ## Ajusta a largura da etiqueta para que o título caiba inteiro em uma linha,
@@ -1752,9 +1788,12 @@ func _render_top_bar() -> void:
 
 	row.add_child(_speed_block())
 
-	_alerts_button = _bell_button()
-	_alerts_button.pressed.connect(func() -> void: _open_screen("alerts"))
-	row.add_child(_alerts_button)
+	# O sino abre a janela de alertas (tela de dados): sem ela, o botão não nasce
+	# e `_update_top_bar` nem deriva a lista de alertas.
+	if data_screens_enabled:
+		_alerts_button = _bell_button()
+		_alerts_button.pressed.connect(func() -> void: _open_screen("alerts"))
+		row.add_child(_alerts_button)
 
 	var menu := _bar_button("≡", I18n.t("hud.menu"))
 	menu.pressed.connect(_open_menu)
@@ -2349,7 +2388,8 @@ func _build_city_tooltip() -> void:
 ## o conteúdo na hora.
 func hover_city_tooltip(city_id: String, screen_point: Vector2,
 		mode: String = "") -> void:
-	if _city_tooltip == null or city_id.is_empty() or is_overlay_open():
+	if not data_screens_enabled or _city_tooltip == null or city_id.is_empty() \
+			or is_overlay_open():
 		clear_city_tooltip()
 		return
 	_tooltip_point = screen_point
@@ -2618,12 +2658,16 @@ func _toggle_screen(id: String) -> void:
 
 ## Pilha de contexto: raiz = painel; cidades e cadeias são empilhadas por cima.
 func _open_screen(id: String) -> void:
+	if not data_screens_enabled:
+		return
 	_stack.clear()
 	_stack.append({"kind": "screen", "id": id})
 	_show_top()
 
 
 func _open_city(city_id: String, tab: String) -> void:
+	if not data_screens_enabled:
+		return
 	if not _stack.is_empty() and String(_stack.back()["kind"]) == "city" \
 			and String(_stack.back()["id"]) == city_id:
 		_stack.back()["tab"] = tab
@@ -2634,6 +2678,8 @@ func _open_city(city_id: String, tab: String) -> void:
 
 
 func _show_top() -> void:
+	if not data_screens_enabled:
+		return
 	if _stack.is_empty():
 		_close_screen()
 		return
@@ -2725,11 +2771,14 @@ func _close_screen() -> void:
 		UiSfx.play(UiSfx.Sound.MINIMIZE)
 	_active = ""
 	_stack.clear()
-	_window_layer.visible = false
-	_city_layer.visible = false
+	if _window_layer != null:
+		_window_layer.visible = false
+	if _city_layer != null:
+		_city_layer.visible = false
 	if _alerts_layer != null:
 		_alerts_layer.visible = false
-	_city_screen.visible = false
+	if _city_screen != null:
+		_city_screen.visible = false
 	_refresh_dock_state()
 	_sync_map_overlays()
 	if was_visible:
@@ -3057,16 +3106,19 @@ func history_service() -> RefCounted:
 
 func _on_status(summary: Dictionary) -> void:
 	_summary = summary
-	_sample_history(summary)
-	_log_orders(summary)
+	# Com as telas de dados desligadas nada consome histórico nem log de pedidos:
+	# o HUD não mantém dado para UI que não existe.
+	if data_screens_enabled:
+		_sample_history(summary)
+		_log_orders(summary)
 	_update_top_bar()
 	_refresh_city_list()
 
-	if _window_layer.visible and not _stack.is_empty():
+	if _window_layer_visible() and not _stack.is_empty():
 		var entry: Dictionary = _stack.back()
 		if String(entry["kind"]) == "screen":
 			_screens[String(entry["id"])].refresh(_summary)
-	elif _city_layer.visible:
+	elif _city_layer_visible():
 		_city_screen.refresh(summary)
 
 

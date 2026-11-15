@@ -302,6 +302,13 @@ substituir as cinco cidades atuais.
 
 ## Composição
 
+> **Estado atual (2026-11):** as telas de dados — barra lateral, ficha de
+> cidade, dossiê, estatísticas, alertas e lista de cidades — estão **ocultas no
+> jogo** por decisão do dono (`game/main_game.gd::SHOW_DATA_SCREENS = false`),
+> à espera do redesenho. O mapa, a barra superior, o minimapa e o menu Esc
+> seguem ativos. Esta seção descreve o desenho completo, que volta inteiro ao
+> ligar a flag; ver `docs/ui/README.md` § *Interface mínima*.
+
 - Barra superior fixa de **64 px** (estilo HOI3): nação (nome +
   "Sua nação"), data e progresso do dia, quatro indicadores (população, estoque,
   déficit, trânsito), velocidade, idioma e menu. Os indicadores têm tooltip
@@ -368,6 +375,10 @@ substituir as cinco cidades atuais.
   cabeçalho ficam fixos.
 
 ## Navegação
+
+> Com `SHOW_DATA_SCREENS = false` (2026-11) só o item do `Esc` vale: o mapa
+> desseleciona no primeiro Esc e o menu de pausa abre no seguinte. Atalhos
+> `1`–`9`, alertas e barra lateral não respondem.
 
 - `1`–`6` abrem as seis telas; `Esc` fecha o menu, depois a tela (ou a ficha de
   cidade), depois abre o menu. Clicar de novo no botão ativo da barra lateral

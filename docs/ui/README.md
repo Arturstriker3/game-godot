@@ -36,6 +36,11 @@ necessária.
 
 ## Como reproduzir
 
+> **Desde 2026-11 as telas de dados estão ocultas no jogo** (decisão do dono;
+> ver § *Interface mínima* no fim deste arquivo). O `ui_capture` espelha a flag
+> `SHOW_DATA_SCREENS` por padrão, então os roteiros abaixo só reproduzem as
+> capturas históricas com as telas ligadas se receberem `--screens=on`.
+
 ```powershell
 $godot = "C:\caminho\Godot_v4.7.2-stable_win64.exe"
 & $godot --path . res://tools/ui_capture.tscn -- `
@@ -594,3 +599,77 @@ mais longo (`Bombaim · … empregados em serviços · … negócios`) não elid
 PASS com 20 setores, ícones do conjunto de serviços, nomes por cultura e o
 cabeçalho da cidade (`Mumbai · 1,384,784 service workers · 17 businesses`, sem
 chave de i18n crua).
+
+## Interface mínima — telas de dados ocultas (2026-11, decisão do dono)
+
+**Antes:** o jogo abria com a barra lateral de nove painéis (Economia, Mercado,
+Comércio, Produção, População, Política, Estatísticas, Logística, Serviços) e
+atalhos 1–9, o sino de alertas na barra superior, a lista de cidades da nação à
+direita, tooltip/ficha de cidade (T3) com cinco abas, dossiê de nação (T1),
+Estatísticas/quadro comparativo (T5), registro e cadeia (T2).
+
+**Depois:** o jogo abre só com a **interface principal**, porque o dono vai
+redesenhar as telas e decidir depois o que fica. Nada foi apagado — o código e
+as specs continuam no repositório —, só desligado por um único ponto de
+configuração:
+
+```gdscript
+# game/main_game.gd
+const SHOW_DATA_SCREENS := false   # true reativa tudo
+```
+
+| O que sai da tela | O que permanece |
+|---|---|
+| barra lateral inteira e atalhos 1–9 | mapa 3D (político, recursos, rotas) |
+| ficha/tooltip de cidade (clique só realça o marcador) | minimapa com abas de modo e retângulo da câmera |
+| dossiê de nação, Estatísticas, registro, cadeia | barra superior: bandeira/nação, data, indicadores, velocidade, menu ≡ |
+| sino e janela de alertas | menu Esc: retomar, salvar, carregar, configurações, atalhos, créditos, sair |
+| lista de cidades à direita (`nation_city_list`) | legendas dos modos de mapa, tooltip das setas, cursor |
+
+Com a flag desligada o HUD **não instancia** as telas, não amostra o histórico de
+12 meses nem guarda o log de pedidos, então nada roda para janela oculta. Os
+testes de template continuam instanciando o HUD direto (`data_screens_enabled`
+padrão `true`) e abrem as telas isoladamente; `map_pick_test` e
+`trade_flow_tooltip_test` foram condicionados à flag.
+
+**Capturas (janela real; `--headless` trava em `RenderingServer.frame_post_draw`):**
+
+```powershell
+& $godot --path . res://tools/ui_capture.tscn -- --set=minimal `
+    --out=res://docs/ui/captures/minimal_hud --sizes=1920x1080 --locale=pt_BR
+```
+
+| Arquivo (`docs/ui/captures/minimal_hud/`) | O que mostra |
+|---|---|
+| `interface_limpa.png` | 1920×1080: barra superior, mapa e minimapa — sem barra lateral, alertas nem lista de cidades |
+| `mapa_recursos.png` | modo recursos com a legenda de 21 recursos (contagem por recurso) |
+| `mapa_rotas.png` | modo rotas com filtro por modal, escala de espessura e estado vazio honesto |
+| `menu_pausa.png` | menu Esc sobre o mapa limpo |
+| `menu_configuracoes.png` | sub-ficha de configurações (idioma e tela cheia) |
+| `layout_report.json` | auditoria das 5 capturas |
+
+Resultado: **5 capturas, 0** `offscreen`, `text_overflow`, `text_elided`,
+`focus_hidden` ou `i18n_key`.
+
+**Nota sobre os roteiros antigos:** `ui_capture` passou a espelhar a flag do jogo
+por padrão (`--screens=game`). Para fotografar o roteiro de 39 estados com as
+telas de dados ligadas (evidências históricas das frentes F4–F8), repita o
+comando com `--screens=on`.
+
+Testes headless (todos PASS, com a flag no valor do jogo):
+
+```powershell
+& $godot --headless --path . res://tools/menu_smoke_test.tscn
+& $godot --headless --path . --script res://tools/map_pick_test.gd
+& $godot --headless --path . --script res://tools/trade_flow_tooltip_test.gd
+& $godot --headless --path . --script res://tools/market_template_test.gd
+& $godot --headless --path . --script res://tools/production_template_test.gd
+& $godot --headless --path . --script res://tools/trade_template_test.gd
+& $godot --headless --path . --script res://tools/population_template_test.gd
+& $godot --headless --path . --script res://tools/logistics_template_test.gd
+& $godot --headless --path . --script res://tools/services_template_test.gd
+```
+
+`map_pick_test` imprime `TROCA DE MODO: … político só realça (telas de dados
+ocultas)` e valida que o clique no porto não abre sobreposição; com
+`SHOW_DATA_SCREENS = true` ele volta a exigir Logística T2 e ficha T3.

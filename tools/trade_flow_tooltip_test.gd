@@ -109,9 +109,13 @@ func _run() -> void:
 	if _hud.call("city_tooltip_visible"):
 		_failures.append("tooltip continuou visível fora da seta")
 
-	# 5. A ficha de cidade continua funcionando no mesmo dono.
+	# 5. A ficha de cidade continua funcionando no mesmo dono. Com as telas de
+	# dados desligadas (`main_game.SHOW_DATA_SCREENS = false`) o hover de cidade
+	# não monta ficha — o teste do fluxo continua válido sozinho.
 	var city := await _find_city_point()
-	if city.is_empty():
+	if not _hud.data_screens_enabled:
+		print("telas de dados ocultas: hover de cidade sem ficha (esperado)")
+	elif city.is_empty():
 		print("aviso: nenhuma cidade sob o mouse; ficha de cidade não conferida")
 	else:
 		var city_point: Vector2 = city["point"]
