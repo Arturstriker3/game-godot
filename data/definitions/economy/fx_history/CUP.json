@@ -62,10 +62,19 @@
   "dual_market"
  ],
  "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
- "breaks": [],
+ "breaks": [
+  {
+   "year": 1990,
+   "log_change": 1.94591014906,
+   "definitional": true,
+   "note": "mudanca de base/fonte (oficial->mercado ou reforma monetaria): variacao excluida das estatisticas do perfil"
+  }
+ ],
  "notes": [
-  "1975-2003 nao reconstruido: nao ha serie anual documentada da taxa oficial (o IFS encerra em 0,822 CUP/USD em 1974 por causa do peg ao rublo) e preencher com 1,0 criaria descontinuidade artificial.",
-  "O mercado informal nao entra na serie: 125 CUP/USD em 1993, ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
+  "1975-1989: paridade oficial de 1 CUP = 1 USD (mantida ate 2005, segundo Ruiz Cruz 2009 e CEPAL). A taxa comercial de 0,74 CUP/USD era uma paridade separada para o comercio estatal (CEPAL Review 57, 1995), nao a taxa da populacao.",
+  "1990-2003: media anual do cambio extraoficial da CEPAL (7,0 em 1990; pico de 95,0 em 1994; 19,2 em 1996; 21,0 em 2000; 26,0 em 2001-2003). A paridade oficial de 1,0 continuou apenas para empresas e estatistica.",
+  "2004 usa 25 CUP/USD (fato anterior da Wikipedia); a CEPAL registra 26 CUP/USD como media de 2004 e a CADECA vendia CUC a 26 CUP ate o Acordo 13/2005 (Gonzalez-Corzo 2006).",
+  "O mercado informal nao entra na serie apos 2004: ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
  ],
  "missing_source_area": [],
  "no_data": false,
@@ -417,6 +426,238 @@
    "source": "imf_ifs"
   },
   {
+   "year": 1975,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1976,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1977,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1978,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1979,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1980,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1981,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1982,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1983,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1984,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1985,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1986,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1987,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1988,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1989,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_parity",
+   "ref": "ruiz_2009",
+   "basis": "official"
+  },
+  {
+   "year": 1990,
+   "rate": 7.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1991,
+   "rate": 20.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1992,
+   "rate": 35.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1993,
+   "rate": 78.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1994,
+   "rate": 95.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1995,
+   "rate": 32.1,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1996,
+   "rate": 19.2,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1997,
+   "rate": 23.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1998,
+   "rate": 21.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_1999",
+   "basis": "parallel"
+  },
+  {
+   "year": 1999,
+   "rate": 20.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_anuario_2005",
+   "basis": "parallel"
+  },
+  {
+   "year": 2000,
+   "rate": 21.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_anuario_2005",
+   "basis": "parallel"
+  },
+  {
+   "year": 2001,
+   "rate": 26.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_anuario_2005",
+   "basis": "parallel"
+  },
+  {
+   "year": 2002,
+   "rate": 26.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_anuario_2005",
+   "basis": "parallel"
+  },
+  {
+   "year": 2003,
+   "rate": 26.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "cepal_anuario_2005",
+   "basis": "parallel"
+  },
+  {
    "year": 2004,
    "rate": 25.0,
    "source": "historical_reconstruction",
@@ -622,20 +863,39 @@
  ],
  "reconstruction": {
   "source": "historical_reconstruction",
-  "unit_note": "CUP por USD. A serie estatistica (IFS) cobre 1957-1974 na taxa oficial do Estado; a reconstrucao usa paridade oficial ate 1956 e a taxa de caixa ao publico a partir de 2004.",
-  "basis_note": "Cuba teve cambio multiplo: 1 CUP/USD nas contas do Estado (ate 2020), 25 CUP/USD nas Cadecas (2004-2020) e 24 CUP/USD apos a unificacao de 2021. A serie reconstruida usa a taxa de caixa ao publico a partir de 2004, que e a que representa a economia das familias.",
+  "unit_note": "CUP por USD. A serie estatistica (IFS) cobre 1957-1974 na taxa oficial do Estado (0,822 em 1974); 1975-1989 usa a paridade oficial de 1 CUP = 1 USD mantida ate 2005; 1990-2003 usa a media anual do cambio paralelo/extraoficial publicado pela CEPAL; 2004+ usa a taxa de caixa ao publico (CADECA).",
+  "basis_note": "Cuba teve cambio multiplo: 1 CUP/USD nas contas do Estado (ate 2020), 0,74 CUP/USD para o comercio estatal nos anos 1980 e 25/24 CUP/USD nas Cadecas (2004+). A serie usa a paridade oficial ate 1989 e, a partir de 1990, a taxa paralela/extraoficial (a que organiza o consumo das familias), que e a mesma base adotada pela CADECA em out/1995. A passagem oficial->paralela em 1990 esta em stat_breaks.",
   "notes": [
-   "1975-2003 nao reconstruido: nao ha serie anual documentada da taxa oficial (o IFS encerra em 0,822 CUP/USD em 1974 por causa do peg ao rublo) e preencher com 1,0 criaria descontinuidade artificial.",
-   "O mercado informal nao entra na serie: 125 CUP/USD em 1993, ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
+   "1975-1989: paridade oficial de 1 CUP = 1 USD (mantida ate 2005, segundo Ruiz Cruz 2009 e CEPAL). A taxa comercial de 0,74 CUP/USD era uma paridade separada para o comercio estatal (CEPAL Review 57, 1995), nao a taxa da populacao.",
+   "1990-2003: media anual do cambio extraoficial da CEPAL (7,0 em 1990; pico de 95,0 em 1994; 19,2 em 1996; 21,0 em 2000; 26,0 em 2001-2003). A paridade oficial de 1,0 continuou apenas para empresas e estatistica.",
+   "2004 usa 25 CUP/USD (fato anterior da Wikipedia); a CEPAL registra 26 CUP/USD como media de 2004 e a CADECA vendia CUC a 26 CUP ate o Acordo 13/2005 (Gonzalez-Corzo 2006).",
+   "O mercado informal nao entra na serie apos 2004: ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
   ],
   "refs": {
    "wiki_cup": {
     "title": "Cuban peso",
     "url": "https://en.wikipedia.org/wiki/Cuban_peso",
     "year": 2026
+   },
+   "ruiz_2009": {
+    "title": "Evolucion historica del sistema monetario cubano (Observatorio de la Economia Latinoamericana n. 117)",
+    "url": "http://eumed.net/cursecon/ecolat/cu/2009/rcmt2.htm",
+    "year": 2009
+   },
+   "cepal_1999": {
+    "title": "Cuba: evolucion economica durante 1998 (CEPAL LC/MEX/L.392), cuadro 27 - evolucion del tipo de cambio nominal",
+    "url": "https://repositorio.cepal.org/server/api/core/bitstreams/e79ce0df-f1c4-403a-a3c4-75408afd536b/content",
+    "year": 1999
+   },
+   "cepal_anuario_2005": {
+    "title": "CEPAL - Anuario estadistico de America Latina y el Caribe 2005, Cuba: tipo de cambio extraoficial promedio 1996-2004",
+    "url": "https://repositorio.cepal.org/server/api/core/bitstreams/129e1754-432a-4064-b670-d43fee14fe07/content",
+    "year": 2005
    }
   },
-  "stat_breaks": [],
+  "stat_breaks": [
+   1990
+  ],
   "interpolated_years": [],
   "regimes": [
    {

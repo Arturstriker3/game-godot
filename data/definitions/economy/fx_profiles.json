@@ -85,8 +85,8 @@
  "coverage": {
   "currencies": 136,
   "at_least_50_years": 113,
-  "at_least_75_years": 82,
-  "at_least_100_years": 10,
+  "at_least_75_years": 84,
+  "at_least_100_years": 11,
   "complete": 91,
   "partial": 22,
   "estimated": 23,
@@ -100,9 +100,9 @@
   ],
   "historical_reconstruction": {
    "currencies": 7,
-   "years": 167,
-   "interpolated_years": 46,
-   "downgraded": 2
+   "years": 220,
+   "interpolated_years": 41,
+   "downgraded": 4
   }
  },
  "currencies": {
@@ -145,18 +145,18 @@
    "nations": [
     "AFG"
    ],
-   "years_with_data": 75,
+   "years_with_data": 76,
    "first_year": 1950,
-   "last_year": 2024,
+   "last_year": 2025,
    "coverage_1950_2024": 1.0,
-   "volatility_annual_log": 0.101662493482,
-   "volatility_documented_only_log": 0.100915908041,
+   "volatility_annual_log": 0.103369368985,
+   "volatility_documented_only_log": 0.101025912665,
    "median_annual_log_change": 0.0,
-   "p95_abs_annual_log_change": 0.114163468158,
+   "p95_abs_annual_log_change": 0.127575912538,
    "max_1y_depreciation_log": 0.71376646776,
-   "crisis_frequency": 0.027027027027,
+   "crisis_frequency": 0.0266666666667,
    "crisis_threshold_log": 0.223143551314,
-   "mean_reversion_half_life_years": 1.14798199201,
+   "mean_reversion_half_life_years": 1.11408865515,
    "regime_recent": "peg",
    "regime_window": [
     2007,
@@ -164,21 +164,21 @@
    ],
    "regime_latest": "band",
    "regime_distribution": {
-    "band": 4,
+    "band": 5,
     "dual_market": 47,
     "float": 4,
     "peg": 15
    },
-   "reconstructed_years": 9,
-   "reconstructed_fraction": 0.12,
+   "reconstructed_years": 10,
+   "reconstructed_fraction": 0.131578947368,
    "reconstructed_fraction_1950_2024": 0.12,
-   "interpolated_years": 7,
+   "interpolated_years": 4,
    "stat_break_years": [],
    "confidence_base": "complete",
    "confidence": "partial",
    "flags": [
-    "reconstructed:9y",
-    "interpolated:7y"
+    "reconstructed:10y",
+    "interpolated:4y"
    ]
   },
   "ALL": {
@@ -1174,18 +1174,18 @@
    "nations": [
     "CUB"
    ],
-   "years_with_data": 72,
+   "years_with_data": 101,
    "first_year": 1925,
    "last_year": 2025,
-   "coverage_1950_2024": 0.613333333333,
-   "volatility_annual_log": 0.0205076842393,
-   "volatility_documented_only_log": 0.0205076842393,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.193872135955,
+   "volatility_documented_only_log": 0.193872135955,
    "median_annual_log_change": 0.0,
-   "p95_abs_annual_log_change": 0.0606984701601,
-   "max_1y_depreciation_log": 0.0769610411382,
-   "crisis_frequency": 0.0,
+   "p95_abs_annual_log_change": 0.243611265378,
+   "max_1y_depreciation_log": 1.0498221245,
+   "crisis_frequency": 0.030303030303,
    "crisis_threshold_log": 0.223143551314,
-   "mean_reversion_half_life_years": 2.33836933451,
+   "mean_reversion_half_life_years": 2.21730991763,
    "regime_recent": null,
    "regime_window": [
     2007,
@@ -1195,16 +1195,19 @@
    "regime_distribution": {
     "dual_market": 9
    },
-   "reconstructed_years": 54,
-   "reconstructed_fraction": 0.75,
-   "reconstructed_fraction_1950_2024": 0.373333333333,
+   "reconstructed_years": 83,
+   "reconstructed_fraction": 0.821782178218,
+   "reconstructed_fraction_1950_2024": 0.76,
    "interpolated_years": 0,
-   "stat_break_years": [],
-   "confidence_base": "partial",
+   "stat_break_years": [
+    1990
+   ],
+   "confidence_base": "complete",
    "confidence": "estimated",
    "flags": [
     "extended_pre1950:jst_r6",
-    "reconstructed:54y"
+    "structural_breaks",
+    "reconstructed:83y"
    ]
   },
   "CZK": {
@@ -2413,18 +2416,18 @@
    "nations": [
     "PRK"
    ],
-   "years_with_data": 37,
+   "years_with_data": 48,
    "first_year": 1978,
-   "last_year": 2024,
-   "coverage_1950_2024": 0.493333333333,
-   "volatility_annual_log": 0.127497005069,
-   "volatility_documented_only_log": 0.0,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.626666666667,
+   "volatility_annual_log": 0.632180051823,
+   "volatility_documented_only_log": 0.736920308734,
    "median_annual_log_change": 0.0,
-   "p95_abs_annual_log_change": 0.426977948487,
-   "max_1y_depreciation_log": 0.426977948488,
-   "crisis_frequency": 0.0857142857143,
+   "p95_abs_annual_log_change": 0.712620674606,
+   "max_1y_depreciation_log": 4.07024701064,
+   "crisis_frequency": 0.217391304348,
    "crisis_threshold_log": 0.223143551314,
-   "mean_reversion_half_life_years": 2.23891749055,
+   "mean_reversion_half_life_years": 1.13347519095,
    "regime_recent": null,
    "regime_window": [
     2007,
@@ -2432,18 +2435,21 @@
    ],
    "regime_latest": "dual_market",
    "regime_distribution": {
-    "dual_market": 8
+    "dual_market": 9
    },
-   "reconstructed_years": 37,
+   "reconstructed_years": 48,
    "reconstructed_fraction": 1.0,
-   "reconstructed_fraction_1950_2024": 0.493333333333,
-   "interpolated_years": 10,
-   "stat_break_years": [],
-   "confidence_base": "estimated",
+   "reconstructed_fraction_1950_2024": 0.626666666667,
+   "interpolated_years": 9,
+   "stat_break_years": [
+    2002
+   ],
+   "confidence_base": "partial",
    "confidence": "estimated",
    "flags": [
-    "reconstructed:37y",
-    "interpolated:10y"
+    "structural_breaks",
+    "reconstructed:48y",
+    "interpolated:9y"
    ]
   },
   "KRW": {
@@ -4147,18 +4153,18 @@
    "nations": [
     "SOM"
    ],
-   "years_with_data": 64,
+   "years_with_data": 76,
    "first_year": 1950,
    "last_year": 2025,
-   "coverage_1950_2024": 0.84,
-   "volatility_annual_log": 0.242873213547,
-   "volatility_documented_only_log": 0.253816735703,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.242041392977,
+   "volatility_documented_only_log": 0.255197580438,
    "median_annual_log_change": 0.0,
-   "p95_abs_annual_log_change": 0.551007413399,
+   "p95_abs_annual_log_change": 0.576346913346,
    "max_1y_depreciation_log": 1.05732420162,
-   "crisis_frequency": 0.196721311475,
+   "crisis_frequency": 0.175675675676,
    "crisis_threshold_log": 0.223143551314,
-   "mean_reversion_half_life_years": 2.26568029328,
+   "mean_reversion_half_life_years": 1.29449205391,
    "regime_recent": "free_fall",
    "regime_window": [
     2007,
@@ -4172,19 +4178,19 @@
     "peg": 19,
     "union": 1
    },
-   "reconstructed_years": 15,
-   "reconstructed_fraction": 0.234375,
-   "reconstructed_fraction_1950_2024": 0.186666666667,
-   "interpolated_years": 8,
+   "reconstructed_years": 27,
+   "reconstructed_fraction": 0.355263157895,
+   "reconstructed_fraction_1950_2024": 0.346666666667,
+   "interpolated_years": 7,
    "stat_break_years": [
     1990
    ],
-   "confidence_base": "partial",
+   "confidence_base": "complete",
    "confidence": "partial",
    "flags": [
     "structural_breaks",
-    "reconstructed:15y",
-    "interpolated:8y"
+    "reconstructed:27y",
+    "interpolated:7y"
    ]
   },
   "SRD": {

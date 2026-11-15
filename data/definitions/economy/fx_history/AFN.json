@@ -6,7 +6,7 @@
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
  "first_year": 1950,
- "last_year": 2024,
+ "last_year": 2025,
  "sources": [
   "historical_reconstruction",
   "imf_ifs"
@@ -64,8 +64,9 @@
  "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
  "notes": [
-  "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020).",
-  "2025 fica ausente: a unica referencia publica e 'cerca de 65 AFN/USD' sem data de fechamento de ano."
+  "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020). 2021-2025 usa as medias anuais do DAB/Banco Mundial e da serie de medias anuais do IRS.",
+  "2024 usa 70,6 AFN/USD (IRS; o World Bank registra 70,3 em dez/2024); o valor anterior de 65,0 nao tinha data de fechamento e divergia da serie mensal do DAB.",
+  "2025 usa 69,6 AFN/USD, media das medias mensais do DAB/World Bank (74,84 em jan a 66,2 em dez; IRS: 69,637); o DAB fechou 31/12/2025 em 66,07 (compra/venda)."
  ],
  "missing_source_area": [],
  "no_data": false,
@@ -598,58 +599,54 @@
   },
   {
    "year": 2021,
-   "rate": 73.6727123582,
+   "rate": 84.5,
    "source": "historical_reconstruction",
-   "method": "interpolated_between_documented_facts",
-   "ref": "wiki_afn_table",
-   "basis": "interpolated",
-   "interpolated": true,
-   "anchor": [
-    2020,
-    2024
-   ],
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "wb_afm_jan2023",
+   "basis": "market",
    "regime": "band",
    "regime_source": "historical_reconstruction",
    "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
   },
   {
    "year": 2022,
-   "rate": 70.660313248,
+   "rate": 89.9,
    "source": "historical_reconstruction",
-   "method": "interpolated_between_documented_facts",
-   "ref": "wiki_afn_table",
-   "basis": "interpolated",
-   "interpolated": true,
-   "anchor": [
-    2020,
-    2024
-   ],
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "wb_afm_jan2023",
+   "basis": "market",
    "regime": "band",
    "regime_source": "historical_reconstruction",
    "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
   },
   {
    "year": 2023,
-   "rate": 67.7710879441,
+   "rate": 82.635,
    "source": "historical_reconstruction",
-   "method": "interpolated_between_documented_facts",
-   "ref": "wiki_afn_table",
-   "basis": "interpolated",
-   "interpolated": true,
-   "anchor": [
-    2020,
-    2024
-   ],
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "irs_2026",
+   "basis": "market",
    "regime": "band",
    "regime_source": "historical_reconstruction",
    "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
   },
   {
    "year": 2024,
-   "rate": 65.0,
+   "rate": 70.649,
    "source": "historical_reconstruction",
-   "method": "documented_market_rate",
-   "ref": "wiki_afn_table",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "irs_2026",
+   "basis": "market",
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
+  },
+  {
+   "year": 2025,
+   "rate": 69.6,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "wb_afm_dec2025",
    "basis": "market",
    "regime": "band",
    "regime_source": "historical_reconstruction",
@@ -661,14 +658,30 @@
   "unit_note": "AFN (afegani novo, desde out/2002) por USD. A tabela documentada de 1950 traz o afegani antigo; 1950-1954 e usado apenas como nivel oficial da epoca, sem encadear a reforma de 1.000:1 (o IFS ja encadeia a partir de 1955).",
   "basis_note": "1950 usa a taxa oficial (25,5 AFN/USD; mercado livre 39,0). 2024 usa a taxa de mercado/oficial unificada (65 AFN/USD).",
   "notes": [
-   "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020).",
-   "2025 fica ausente: a unica referencia publica e 'cerca de 65 AFN/USD' sem data de fechamento de ano."
+   "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020). 2021-2025 usa as medias anuais do DAB/Banco Mundial e da serie de medias anuais do IRS.",
+   "2024 usa 70,6 AFN/USD (IRS; o World Bank registra 70,3 em dez/2024); o valor anterior de 65,0 nao tinha data de fechamento e divergia da serie mensal do DAB.",
+   "2025 usa 69,6 AFN/USD, media das medias mensais do DAB/World Bank (74,84 em jan a 66,2 em dez; IRS: 69,637); o DAB fechou 31/12/2025 em 66,07 (compra/venda)."
   ],
   "refs": {
    "wiki_afn_table": {
     "title": "Afghan afghani - Exchange rate (tabela desde 1950; fontes Fry 1976 e World Development Indicators)",
     "url": "https://en.wikipedia.org/wiki/Afghan_afghani",
     "year": 2026
+   },
+   "wb_afm_jan2023": {
+    "title": "Afghanistan Economic Monitor - January 2023 (World Bank): media anual de 89,9 em 2022 e 84,5 em 2021",
+    "url": "https://thedocs.worldbank.org/en/doc/a9d913b062442a27cdad9e9c54b45b41-0310012023/original/Afghanistan-Economic-Monitor-25-January-2023.pdf",
+    "year": 2023
+   },
+   "irs_2026": {
+    "title": "Yearly average currency exchange rates (IRS) - Afghanistan 2021-2025",
+    "url": "https://www.irs.gov/individuals/international-taxpayers/yearly-average-currency-exchange-rates",
+    "year": 2026
+   },
+   "wb_afm_dec2025": {
+    "title": "Afghanistan Economic Monitor - December 2025 (World Bank): medias mensais AFN/USD set-dez/2025",
+    "url": "https://thedocs.worldbank.org/en/doc/84116346a00db27c63e041f86892ba01-0310012026/original/Afghanistan-Economic-Monitor-December-2025.pdf",
+    "year": 2025
    }
   },
   "stat_breaks": [],
@@ -676,10 +689,7 @@
    1951,
    1952,
    1953,
-   1954,
-   2021,
-   2022,
-   2023
+   1954
   ],
   "regimes": [
    {

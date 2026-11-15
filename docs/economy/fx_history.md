@@ -18,8 +18,8 @@ Saída:
 | `data/definitions/economy/fx_history/<CODE>.json` | série anual `ano → taxa (LCU por USD)`, fonte por ano e regime de fato quando classificado |
 | `data/definitions/economy/fx_profiles.json` | um perfil derivado por moeda (volatilidade, p95, crise, meia-vida, regime, confiança) + resumo de cobertura |
 
-**9 268 pontos anuais** em 136 moedas (8 721 do IFS, 215 do JST, 92 do World Bank, 73 derivados do
-encadeamento do euro e **167 da reconstrução histórica documentada**). Fora da camada de reconstrução
+**9 321 pontos anuais** em 136 moedas (8 721 do IFS, 215 do JST, 92 do World Bank, 73 derivados do
+encadeamento do euro e **220 da reconstrução histórica documentada**). Fora da camada de reconstrução
 nada é interpolado: ano sem dado não existe no JSON. A reconstrução só preenche anos ausentes, marca
 cada linha com `source: historical_reconstruction` + `method` + `ref` e **nunca** sobrescreve fonte
 estatística (ver §7).
@@ -37,19 +37,21 @@ estatística (ver §7).
 
 Notas de acesso (2026-11-15):
 
-- O banco da PWT (Penn World Table) **não foi usado**: o site responde com certificado inválido
-  para o cliente HTTP local e o `xr` é redundante com IFS/World Bank (mesma definição, 1950+).
-  Lacuna registrada, sem prejuízo da série.
+- O banco da PWT (Penn World Table) não entra como fonte primária (o site responde com certificado
+  inválido e o `xr` é redundante com IFS/World Bank na maior parte dos países). Ele é usado **apenas
+  como fato documentado da Somália em 1994–2005**, via a série `FXRATESOA618NUPN` do FRED (§7), onde
+  IFS e World Bank não publicam.
 - A página `carmenreinhart.com/exchange-rate/` publica a classificação (`236_data.xlsx`,
   `238_data.xlsx`) e **não** publica níveis de taxa; os níveis vêm do IFS.
-- FRED/ALFRED só duplicaria IFS para os países grandes (e o acesso por CSV expirou no teste);
-  não foi incluído para não criar uma quarta fonte concorrente no mesmo ano.
+- FRED/ALFRED só duplicaria IFS para os países grandes; a exceção declarada é a Somália
+  (`FXRATESOA618NUPN`, PWT 7.1), cuja lacuna 1994–2005 nenhuma fonte primária cobre.
 
 ## 3. Cobertura
 
-Resumo (`fx_profiles.json:coverage`): **113 moedas com ≥50 anos, 82 com ≥75 anos, 10 com ≥100
-anos** (AUD, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK, USD). Confiança: **91 `complete`, 22
-`partial`, 23 `estimated`**, das quais **2 foram rebaixadas pela fração reconstruída** (CUP e AFN).
+Resumo (`fx_profiles.json:coverage`): **113 moedas com ≥50 anos, 84 com ≥75 anos, 11 com ≥100
+anos** (AUD, CAD, CHF, CUP, DKK, EUR, GBP, JPY, NOK, SEK, USD). Confiança: **91 `complete`, 22
+`partial`, 23 `estimated`**, das quais **4 foram rebaixadas pela fração reconstruída** (CUP, KPW, SOS
+e AFN).
 
 Regra de confiança (sem interpolação fora da reconstrução):
 
@@ -309,27 +311,31 @@ Regras aplicadas (todas conferidas por `tools/validate_fx_history.py`):
 
 | Moeda | Anos na série | Reconstruídos | Interpolados | O que a série passa a representar | Referências |
 |---|---|---|---|---|---|
-| CUP | 72 (1925–2025) | 54 | 0 | paridade 1 CUP/USD (1925–1956) e taxa de caixa ao público (2004+: 25 → 23,15 em 2005–2011 → 24 desde 2021) | Cuban peso (Wikipedia) |
-| KPW | 37 (1978–2024) | 37 | 10 | peg oficial de 2,16 won (1978–2001, convertido pela reforma 100:1) e won de **mercado** em 2012/2021/2024 | North Korean won (Wikipedia) |
+| CUP | 101 (1925–2025) | 83 | 0 | paridade 1 CUP/USD (1925–1956 e 1975–1989), câmbio extraoficial anual da CEPAL (1990–2003: 7,0 → 95,0 em 1994 → 26,0 em 2003) e caixa ao público (2004+: 25 → 23,15 em 2005–2011 → 24 desde 2021) | Cuban peso (Wikipedia), Ruiz Cruz 2009, CEPAL 1999/2005, Mesa-Lago 2001, González-Corzo 2006 |
+| KPW | 48 (1978–2025) | 48 | 9 | peg de 2,16 won (1978–2001) e won de **mercado** 2002–2025 (4,5 em 2002 → 2.050 em 2010 → ~8.000 em 2013–2020 → 31.300 em 2025) | CIA Factbook archive, NK Economy Watch, Liganda, Ministério da Unificação (Yonhap), BTI 2022, Daily NK, Asia Press, KDI |
 | SLS | 26 (2000–2025) | 26 | 20 | taxa oficial do Banco da Somalilândia e taxa de mercado (2000–2025) | Somaliland shilling (Wikipedia) |
-| SOS | 64 (1950–2025) | 15 | 8 | mercado livre do xelim somali (1990–1993, 2006–2015, 2018–2025) | Somali shilling (Wikipedia), World Bank |
+| SOS | 76 (1950–2025) | 27 | 7 | mercado livre do xelim somali (1990–1993, 1994–2005 pelo Penn World Table 7.1, 2006–2015, 2018–2025) | Somali shilling (Wikipedia), World Bank, Penn World Table 7.1/FRED, UNDP Somalia 2001 |
 | TMT | 32 (1994–2025) | 24 | 0 | paridade 5.200 TMM/USD e desvalorização para 14.250 (2008); 2,85 e 3,50 TMT × 5.000 (2009–2025) | RFE/RL 2008, IMF F&D 2013, export.gov 2015, CIA Factbook archive |
-| AFN | 75 (1950–2024) | 9 | 7 | taxa oficial de 1950 e taxa de 65 AFN/USD em 2024 | Afghan afghani (Wikipedia: tabela Fry 1976 + WDI) |
+| AFN | 76 (1950–2025) | 10 | 4 | oficial de 1950, IFS 1955–2020 e médias anuais do DAB/Banco Mundial/IRS em 2021–2025 (84,5 → 89,9 → 82,6 → 70,6 → 69,6) | Afghan afghani (Wikipedia), World Bank AFM (jan/2023 e dez/2025), DAB, IRS |
 | YER | 36 (1990–2025) | 2 | 1 | mercado de Aden em jan/2025 (2.150 YER/USD) | Yemeni rial (Wikipedia) |
 | ARS, TRY, EGP, NGN, LBP, RUB | inalterados | 0 | 0 | só o **regime de fato 2017–2025** (nenhum nível de taxa) | Reuters/BCRA 2025, IMF, bancos centrais, Wikipedia |
 
-Total: **167 anos reconstruídos** (46 deles interpolados entre fatos) em 7 moedas; `KPW` e `SLS`
-deixam de ser `no_data`.
+Total: **220 anos reconstruídos** (41 deles interpolados entre fatos) em 7 moedas; `KPW` e `SLS`
+deixam de ser `no_data`. Interpolações declaradas nesta rodada (2026-11-15) respeitam o limite de
+**5 anos entre dois fatos documentados**; as lacunas antigas do arquivo seguem o limite de 10 anos.
 
 ### 7.2 Notas por moeda
 
 - **KPW (Coreia do Norte).** Peg oficial de ₩2,16/USD de 1978 a 2001 (a data é o aniversário de Kim
   Jong Il) e abandono do peg em 2001. A reforma de nov/2009 (100 won antigos = 1 novo) obriga a
-  encadear: 2,16 ÷ 100 = 0,0216 na unidade corrente. A partir de 2012 a série usa o **won de
-  mercado** ("untied", ~8.000/USD) e não o "tied" oficial (~104/USD), que é uma unidade contábil
-  restrita. `stat_breaks: [2012]` marca a troca de base. Ficam ausentes 1950–1977 e 2002–2011 (sem
-  taxa anual documentada no período da reforma) e 2025 (as fontes se contradizem: 8.900 em abr/2025
-  contra 18.000 em nov/2024).
+  encadear: 2,16 ÷ 100 = 0,0216 na unidade corrente. De 2002 a 2025 a série usa o **won de mercado**
+  ("untied"), não o "tied" oficial (~104/USD em 2012 e ~100/USD em 2025): 4,5 em 2002 (300–600 won
+  antigos), 22,5 em 2005, 27,5 em 2006, 32,0 em 2008, 35 em dez/2009, 2.050 em 2010, 3.800 em 2011,
+  8.000 em 2012–2013 e ~8.000 estável até 2020 (8.136 em fev/2019). `stat_breaks: [2002]` marca a
+  passagem do peg oficial para o mercado. Em 2024 o won desaba (8.300 em jan → 18.000 em nov) e em
+  2025 a média das cotações reportadas é ~31.300 (21.000 em jan–mai, 43.400 em ago, 35.300 em nov);
+  os valores 8.900 (taxa oficial fixada em abr/2024) e 18.000 (nov/2024) são níveis pontuais e não a
+  média do ano. 2014–2018 e 2022 são interpolações curtas (≤5 anos) entre fatos documentados.
 - **SLS (Somalilândia).** Moeda criada em 18/10/1994 a 1 SLS = 100 xelins somalis, mas sem nível em
   USD documentado antes de nov/2000. Âncoras: 4.550 (2000), 7.500 (2008), 6.000 (2015), 8.500
   (2019), 8.530 (2022), 10.000 (2025). O "peg" de 580/12 citado na fonte não tem referência e foi
@@ -338,18 +344,25 @@ deixam de ser `no_data`.
   reconstrução é expressa em **manat antigo** para não criar salto artificial: 2002–2007 a 5.200;
   2008 a 14.250; 2009–2014 a 14.250 (= 2,85 TMT × 5.000); 2015–2025 a 17.500 (= 3,50 × 5.000). O
   mercado paralelo (40–41 TMT/USD em 2021, ~57× a taxa oficial) é ilegal e não entra.
-- **CUP (Cuba).** Paridade com o dólar de 1915 a 1959-60 (1925–1956 reconstruídos). A partir de 2004
-  a série usa a taxa de **caixa ao público** (25 CUP/USD, com 23,15 em 2005–2011 quando o CUC valia
-  1,08 USD) e, depois da unificação de 01/01/2021, 24 CUP/USD. 1975–2003 fica vazio de propósito: o
-  IFS encerra em 0,822 CUP/USD (1974, peg ao rublo) e preencher com 1,0 criaria descontinuidade; o
-  mercado informal (125 em 1993, 100–400 em 2022–2025) não é série anual documentada.
-- **AFN (Afeganistão).** 1950 = 25,5 (taxa oficial; mercado livre 39,0) e 2024 = 65 AFN/USD. O
-  período 1955–2020 vem do IFS e 2021–2023 é interpolado entre o último ano do IFS e 2024, porque
-  nem o IMF nem o World Bank publicam 2021+ para o país. 2025 fica ausente.
+- **CUP (Cuba).** Paridade com o dólar de 1915 a 1959-60 (1925–1956) e de novo 1 CUP/USD de 1975 a
+  1989 (a paridade oficial sobreviveu até 2005; a taxa comercial do Estado era 0,74 e a de remessas
+  chegou a 1,35). Em 1990 o país entra no câmbio paralelo: a série usa a **média anual extraoficial**
+  da CEPAL (7,0 em 1990; 78,0 em 1993; 95,0 em 1994; 19,2 em 1996; 21,0 em 2000; 26,0 em 2001–2003),
+  que é a mesma cotação adotada pela CADECA em out/1995. `stat_breaks: [1990]` marca oficial→paralelo.
+  A partir de 2004 usa a taxa de **caixa ao público** (25 CUP/USD, com 23,15 em 2005–2011 quando o CUC
+  valia 1,08 USD) e, depois da unificação de 01/01/2021, 24 CUP/USD. O mercado informal posterior a
+  2004 (100–400 CUP/USD em 2022–2025) não entra: não há série anual, só cotações pontuais.
+- **AFN (Afeganistão).** 1950 = 25,5 (taxa oficial; mercado livre 39,0), 1955–2020 vem do IFS e
+  2021–2025 usa as **médias anuais** do DAB/Banco Mundial e da série do IRS: 84,5 (2021), 89,9 (2022),
+  82,6 (2023), 70,6 (2024) e 69,6 (2025). O valor anterior de 65 AFN/USD para 2024 não tinha data de
+  fechamento e divergia da série mensal do DAB (dez/2024: 70,3); foi corrigido. O DAB fechou
+  31/12/2025 em 66,07 AFN/USD (compra/venda).
 - **SOS (Somália).** Sem autoridade monetária efetiva desde 1991: a série usa mercado livre
   (3.470 no fim de 1990, 2.000 em jun/1991, 5.000 em jun/1993, 13.400 em 2006 … 23.000 em 2015,
-  26.000 em 2025). `stat_breaks: [1990]` marca oficial→mercado. 1994–2005 fica vazio (lacuna de 12
-  anos, acima do limite de interpolação).
+  26.000 em 2025). `stat_breaks: [1990]` marca oficial→mercado. A lacuna de 1994–2005 é preenchida
+  com a **média anual do Penn World Table 7.1** (via FRED): 4.338 (1994), 9.572 (2000), 20.025
+  (2002, pico) e 15.251 (2005); as observações pontuais de 1991 e 1993 foram mantidas e a divergência
+  com a média anual do PWT está declarada nas `notes`.
 - **YER (Iémen).** Moeda só existe desde a unificação de 1990 — nada é reconstruído antes disso. O
   nível de 2025 (2.150 em Aden) e o de 2024 (interpolado) representam o mercado do governo
   reconhecido; o norte houthi negocia a ~530 YER/USD (câmbio duplo, documentado no regime).
@@ -382,7 +395,7 @@ limitada pela fração reconstruída; resumo de cobertura; o próprio arquivo de
 | Situação | Moedas | O que o dado diz |
 |---|---|---|
 | Sem série anual em nenhuma fonte | `SSP` (2011–2024 apenas), `ZWG` (buracos 2009–2019) | série curta; o jogo deve exibir ausência fora do intervalo |
-| Lacunas que a reconstrução **não** cobriu | `KPW` 1950–1977 e 2002–2011; `SLS` 1950–1999; `TMT` 1950–1993; `CUP` 1975–2003; `SOS` 1994–2005; `YER` 1950–1989; `AFN` 2025 | não há fato documentado (ou a lacuna passa de 10 anos): o ano fica ausente |
+| Lacunas que a reconstrução **não** cobriu | `KPW` 1950–1977; `SLS` 1950–1999; `TMT` 1950–1993; `YER` 1950–1989 | não há fato documentado (moeda/peg ainda não existia ou não há nível em USD): o ano fica ausente |
 | Fim de série recente | `ERG`, `SYR`, `PRK` etc. | último ano publicado aparece em `last_year` |
 | Sem classificação de regime | `TWD`, `XKX`, `SSP`… | `regime_recent: null`; 2017–2025 só existe para as 13 moedas do arquivo de fatos |
 | Unidade do último ponto | `ZWG` | o IFS encerra `ZW` em 2024 ainda em unidade ZWL; a introdução do ZiG (2024-04) não está encadeada na fonte — usar o último ano com cautela |

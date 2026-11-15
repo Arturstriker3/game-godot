@@ -6,6 +6,8 @@
   "never_overwrite_statistical_data": true,
   "interpolation": "somente entre dois fatos documentados; anos gerados recebem source=historical_reconstruction, method=interpolated_between_documented_facts e interpolated=true",
   "interpolation_max_gap_years": 10,
+  "new_interpolation_max_gap_years": 5,
+  "interpolation_note": "lacunas declaradas antes de 2026-11-15 seguem o limite de 10 anos; toda interpolacao nova (2026-11-15) tem no maximo 5 anos entre dois fatos documentados",
   "unit": "LCU por USD, na unidade monetaria corrente da fonte estatistica da moeda (ver unit_note de cada moeda)",
   "stat_breaks": "anos listados em stat_breaks marcam mudanca de base (oficial -> mercado, ou redenominacao): a variacao daquele ano nao entra em volatilidade/crise",
   "confidence_cap": "fracao reconstruida >= 0,5 -> estimated; >= 0,1 -> no maximo partial"
@@ -13,51 +15,100 @@
  "refs_catalog_note": "As refs sao declaradas por moeda; o mesmo id pode se repetir com o mesmo conteudo.",
  "currencies": {
   "CUP": {
-   "unit_note": "CUP por USD. A serie estatistica (IFS) cobre 1957-1974 na taxa oficial do Estado; a reconstrucao usa paridade oficial ate 1956 e a taxa de caixa ao publico a partir de 2004.",
-   "basis_note": "Cuba teve cambio multiplo: 1 CUP/USD nas contas do Estado (ate 2020), 25 CUP/USD nas Cadecas (2004-2020) e 24 CUP/USD apos a unificacao de 2021. A serie reconstruida usa a taxa de caixa ao publico a partir de 2004, que e a que representa a economia das familias.",
+   "unit_note": "CUP por USD. A serie estatistica (IFS) cobre 1957-1974 na taxa oficial do Estado (0,822 em 1974); 1975-1989 usa a paridade oficial de 1 CUP = 1 USD mantida ate 2005; 1990-2003 usa a media anual do cambio paralelo/extraoficial publicado pela CEPAL; 2004+ usa a taxa de caixa ao publico (CADECA).",
+   "basis_note": "Cuba teve cambio multiplo: 1 CUP/USD nas contas do Estado (ate 2020), 0,74 CUP/USD para o comercio estatal nos anos 1980 e 25/24 CUP/USD nas Cadecas (2004+). A serie usa a paridade oficial ate 1989 e, a partir de 1990, a taxa paralela/extraoficial (a que organiza o consumo das familias), que e a mesma base adotada pela CADECA em out/1995. A passagem oficial->paralela em 1990 esta em stat_breaks.",
    "notes": [
-    "1975-2003 nao reconstruido: nao ha serie anual documentada da taxa oficial (o IFS encerra em 0,822 CUP/USD em 1974 por causa do peg ao rublo) e preencher com 1,0 criaria descontinuidade artificial.",
-    "O mercado informal nao entra na serie: 125 CUP/USD em 1993, ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
+    "1975-1989: paridade oficial de 1 CUP = 1 USD (mantida ate 2005, segundo Ruiz Cruz 2009 e CEPAL). A taxa comercial de 0,74 CUP/USD era uma paridade separada para o comercio estatal (CEPAL Review 57, 1995), nao a taxa da populacao.",
+    "1990-2003: media anual do cambio extraoficial da CEPAL (7,0 em 1990; pico de 95,0 em 1994; 19,2 em 1996; 21,0 em 2000; 26,0 em 2001-2003). A paridade oficial de 1,0 continuou apenas para empresas e estatistica.",
+    "2004 usa 25 CUP/USD (fato anterior da Wikipedia); a CEPAL registra 26 CUP/USD como media de 2004 e a CADECA vendia CUC a 26 CUP ate o Acordo 13/2005 (Gonzalez-Corzo 2006).",
+    "O mercado informal nao entra na serie apos 2004: ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
    ],
    "refs": {
-    "wiki_cup": {"title": "Cuban peso", "url": "https://en.wikipedia.org/wiki/Cuban_peso", "year": 2026}
+    "wiki_cup": {"title": "Cuban peso", "url": "https://en.wikipedia.org/wiki/Cuban_peso", "year": 2026},
+    "ruiz_2009": {"title": "Evolucion historica del sistema monetario cubano (Observatorio de la Economia Latinoamericana n. 117)", "url": "http://eumed.net/cursecon/ecolat/cu/2009/rcmt2.htm", "year": 2009},
+    "ritter_1995": {"title": "The Dual Currency Bifurcation of Cuba's Economy in the 1990s: Causes, Consequences and Cures (CEPAL Review 57)", "url": "https://repositorio.cepal.org/server/api/core/bitstreams/3fd92fbc-0f5d-4e90-8cd3-9800d28b12ba/content", "year": 1995},
+    "cepal_1999": {"title": "Cuba: evolucion economica durante 1998 (CEPAL LC/MEX/L.392), cuadro 27 - evolucion del tipo de cambio nominal", "url": "https://repositorio.cepal.org/server/api/core/bitstreams/e79ce0df-f1c4-403a-a3c4-75408afd536b/content", "year": 1999},
+    "cepal_anuario_2005": {"title": "CEPAL - Anuario estadistico de America Latina y el Caribe 2005, Cuba: tipo de cambio extraoficial promedio 1996-2004", "url": "https://repositorio.cepal.org/server/api/core/bitstreams/129e1754-432a-4064-b670-d43fee14fe07/content", "year": 2005},
+    "mesa_lago_2001": {"title": "The Cuban Economy in 1999-2001: Evaluation of Performance and Debate on the Future (ASCE, Cuba in Transition vol. 11), table 3", "url": "https://www.ascecubadatabase.org/wp-content/uploads/2014/09/v11-mesa-lago.pdf", "year": 2001},
+    "gonzalez_corzo_2006": {"title": "Cuba's De-Dollarization Program: Principal Characteristics and Possible Motivations (ASCE, Cuba in Transition vol. 16)", "url": "https://ascecubadatabase.org/asce_proceedings/cubas-de-dollarization-program-principal-characteristics-and-possible-motivations/", "year": 2006}
    },
    "points": [
     {"year": 1925, "to_year": 1949, "rate": 1.0, "basis": "official", "method": "documented_parity_with_usd", "ref": "wiki_cup", "note": "CUP em paridade com o USD de 1915 a 1959-60."},
     {"year": 1950, "to_year": 1956, "rate": 1.0, "basis": "official", "method": "documented_parity_with_usd", "ref": "wiki_cup", "note": "Paridade mantida ate 1959-60; o IFS comeca em 1957 com 1,0."},
+    {"year": 1975, "to_year": 1989, "rate": 1.0, "basis": "official", "method": "documented_official_parity", "ref": "ruiz_2009", "note": "Paridade oficial de 1 CUP = 1 USD mantida ate 2005; o IFS encerra em 0,822 em 1974. A taxa comercial estatal era 0,74 (CEPAL Review 57)."},
+    {"year": 1990, "rate": 7.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual do cambio extraoficial em 1990 (fim do ano: 7,0), com o colapso do campo socialista."},
+    {"year": 1991, "rate": 20.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1991 (fim do ano: 20,0)."},
+    {"year": 1992, "rate": 35.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1992 (meio do ano 35,0; fim do ano 45,0)."},
+    {"year": 1993, "rate": 78.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1993 (fim do ano 100,0); o dolar foi legalizado em 1993."},
+    {"year": 1994, "rate": 95.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1994 (pico de 130,0 em meados do ano; fim do ano 60,0) apos as medidas de saneamento financeiro."},
+    {"year": 1995, "rate": 32.1, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1995; a CADECA (out/1995) passou a usar a cotacao paralela como referencia."},
+    {"year": 1996, "rate": 19.2, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1996 (minimo de 19,0 no fim do ano), segundo a CEPAL e Mesa-Lago (2001)."},
+    {"year": 1997, "rate": 23.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1997."},
+    {"year": 1998, "rate": 21.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_1999", "note": "Media anual de 1998."},
+    {"year": 1999, "rate": 20.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_anuario_2005", "note": "Media anual de 1999 (CEPAL; Mesa-Lago 2001 registra 20)."},
+    {"year": 2000, "rate": 21.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_anuario_2005", "note": "Media anual de 2000."},
+    {"year": 2001, "rate": 26.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_anuario_2005", "note": "Media anual de 2001 (meio do ano 22,0; fim do ano 28,0)."},
+    {"year": 2002, "rate": 26.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_anuario_2005", "note": "Media anual de 2002; a CADECA vendia o CUC a 26 CUP e comprava a 27."},
+    {"year": 2003, "rate": 26.0, "basis": "parallel", "method": "annual_average_of_reported_market_quotes", "ref": "cepal_anuario_2005", "note": "Media anual de 2003."},
     {"year": 2004, "rate": 25.0, "basis": "household_cash", "method": "documented_public_cash_rate", "ref": "wiki_cup", "note": "Taxa fixa de 25 CUP por USD nas Cadecas (CUC = 1 USD)."},
     {"year": 2005, "to_year": 2011, "rate": 23.148148148148, "basis": "household_cash", "method": "derived_from_cuc_peg", "ref": "wiki_cup", "note": "25 CUP/CUC dividido por 1,08 USD/CUC (premio de 10% na compra de CUC vigente em 2005-2011)."},
     {"year": 2012, "to_year": 2020, "rate": 25.0, "basis": "household_cash", "method": "documented_public_cash_rate", "ref": "wiki_cup", "note": "Volta a 25 CUP/USD nas Cadecas (1 CUC = 1 USD)."},
     {"year": 2021, "to_year": 2025, "rate": 24.0, "basis": "official", "method": "documented_official_rate_after_unification", "ref": "wiki_cup", "note": "Unificacao monetaria de 01/01/2021: 24 CUP = 1 CUC = 1 USD. Em 18/12/2025 o BC passou a publicar flutuacao administrada iniciando em 410 CUP/USD, sem media anual de 2025 nessa taxa."}
    ],
    "interpolate": [],
-   "stat_breaks": [],
+   "stat_breaks": [1990],
    "regimes": [
     {"from": 2017, "to": 2020, "regime": "dual_market", "note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo.", "ref": "wiki_cup"},
     {"from": 2021, "to": 2025, "regime": "dual_market", "note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD.", "ref": "wiki_cup"}
    ]
   },
   "KPW": {
-   "unit_note": "KPW (3o won, em vigor desde nov/2009) por USD. O peg de 2,16 won/USD de 1978-2001 era do 2o won e foi convertido pela reforma de 100:1 (2,16 / 100 = 0,0216).",
-   "basis_note": "A serie usa a taxa que representa a economia: o won de mercado ('untied'), nao o won oficial de uso restrito ('tied', ~104 KPW/USD em 2012).",
+   "unit_note": "KPW (3o won, em vigor desde nov/2009) por USD. O peg de 2,16 won/USD de 1978-2001 era do 2o won e foi convertido pela reforma de 100:1 (2,16 / 100 = 0,0216). As taxas de mercado de 2002-2008 estao no 2o won e foram divididas por 100 para ficar na unidade corrente.",
+   "basis_note": "A serie usa a taxa que representa a economia: o won de mercado ('untied'), nao o won oficial de uso restrito ('tied', ~104 KPW/USD em 2012 e ~100 em 2025). A passagem do peg oficial (0,0216) para o mercado (4,5) em 2002 e uma mudanca de base marcada em stat_breaks.",
    "notes": [
-    "2002-2011 nao reconstruido: o mercado passou pela reforma de 100:1 de nov/2009 e nao ha taxa anual documentada desse periodo.",
-    "O valor de 2025 e contraditorio nas fontes consultadas (8.900 em abr/2025 contra 18.000 em nov/2024); o ano fica ausente em vez de escolher um dos dois."
+    "2002-2011 reconstruido com observacoes de mercado: 300-600 won antigos/USD em dez/2002 (CIA), 2.200-2.300 em 2005, 2.500-3.000 em dez/2006, ~3.200 em 2008, 35 won novos/USD em dez/2009 (Ministerio da Unificacao), 2.050 no fim de 2010 e 3.800 em nov/2011. As taxas de 2002-2008 foram divididas por 100 (reforma de 100:1 de nov/2009).",
+    "2013-2020: o BTI (2022) documenta o cambio de mercado estavel em torno de 8.000 KPW/USD de 2013 a 2020; Daily NK mede 8.136 em fev/2019 e Asia Press 8.050 em mai/2020.",
+    "2025: a serie usa a media das cotacoes de mercado reportadas no ano (21.000 em jan-mai; 27.500 em jun; 43.400 em ago; 35.300 em nov), ~31.300 KPW/USD. Os valores 8.900 (taxa oficial fixada em abr/2024) e 18.000 (nov/2024) sao niveis pontuais, nao a media de 2025."
    ],
    "refs": {
-    "wiki_kpw": {"title": "North Korean won", "url": "https://en.wikipedia.org/wiki/North_Korean_won", "year": 2026}
+    "wiki_kpw": {"title": "North Korean won", "url": "https://en.wikipedia.org/wiki/North_Korean_won", "year": 2026},
+    "cia_kpw": {"title": "Exchange rates - Korea, North (CIA World Factbook archive)", "url": "https://worldfactbookarchive.org/archive/field/KP/Exchange%20rates", "year": 2015},
+    "nkeconwatch_2006": {"title": "Dollarization of NK Economy (North Korean Economy Watch)", "url": "https://www.nkeconwatch.com/2006/09/25/dollarization-of-nk-economy", "year": 2006},
+    "nkeconwatch_2009": {"title": "2008 DPRK won exchange rate (North Korean Economy Watch, citando Open Radio for North Korea)", "url": "https://www.nkeconwatch.com/2009/02/07/2008-dprk-won-exchange-rate", "year": 2009},
+    "mou_2011": {"title": "Two years after the DPRK's currency revaluation (IFES/Yonhap, via North Korean Economy Watch)", "url": "https://www.nkeconwatch.com/2011/12/13/two-years-after-the-dprk%E2%80%99s-currency-revaluation", "year": 2011},
+    "liganda_kpw": {"title": "Monetary History - North Korea (Liganda)", "url": "https://www.liganda.ch/ligmohi/KP_ccyunit.html", "year": 2002},
+    "bti_2022": {"title": "BTI 2022 Country Report - North Korea", "url": "https://bti-project.org/fileadmin/api/content/en/downloads/reports/country_report_2022_PRK.pdf", "year": 2022},
+    "dailynk_2019": {"title": "USD - North Korean Won exchange rate spikes in North Korea (Daily NK)", "url": "https://www.dailynk.com/english/usd-north-korean-won-exchange-rate-spikes-in-north-korea/", "year": 2019},
+    "asiapress_2020": {"title": "Cash Grab: Dictator Orders Crackdown to Confiscate Foreign Currency During Coronavirus Trade Crash (Asia Press)", "url": "https://www.asiapress.org/rimjin-gang/2020/05/recommendations/confiscation", "year": 2020},
+    "koreadaily_2025": {"title": "North Korean market prices double in a year amid rising exchange rates (Korea Daily/Daily NK)", "url": "https://en.koreadaily.com/north-korean-market-prices-double-in-a-year-amid-rising-exchange-rates/", "year": 2025},
+    "dailynk_2025": {"title": "N. Korean rice prices plunge 30% as foreign exchange rates stabilize after October spike (Daily NK)", "url": "https://www.dailynk.com/english/n-korean-rice-prices-plunge-30-as-foreign-exchange-rates-stabilize-after-october-spike", "year": 2025},
+    "kdi_2026": {"title": "Assessment and Outlook for North Korea's Market Exchange Rates and Prices in 2025 (KDI, The DPRK Economic Outlook)", "url": "https://www.kdi.re.kr/eng/research/dprkView?art_no=3796", "year": 2026}
    },
    "points": [
     {"year": 1978, "to_year": 2001, "rate": 0.0216, "basis": "official", "method": "documented_constant_peg_chained", "ref": "wiki_kpw", "note": "Peg oficial de 2,16 won por USD mantido de 1978 a 2001 (2o won), convertido ao 3o won pela reforma de 100:1 de nov/2009."},
-    {"year": 2012, "rate": 8000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "~8.000 KPW/USD no mercado ('untied'); taxa oficial 'tied' ~104 KPW/USD no mesmo ano."},
-    {"year": 2021, "rate": 5000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "Apreciacao durante a pandemia (fronteiras fechadas): ~5.000 KPW/USD."},
-    {"year": 2024, "rate": 18000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "Inicio de 2024 ~16.100 e nov/2024 ~18.000 KPW/USD."}
+    {"year": 2002, "rate": 4.5, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "cia_kpw", "note": "Dez/2002: 300-600 won antigos por USD (ponto medio 450), dividido por 100 pela reforma de 100:1 = 4,5."},
+    {"year": 2005, "rate": 22.5, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "nkeconwatch_2006", "note": "2005: 2.200-2.300 won antigos por USD; media 2.250 / 100 = 22,5."},
+    {"year": 2006, "rate": 27.5, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "cia_kpw", "note": "Dez/2006: 2.500-3.000 won antigos por USD; media 2.750 / 100 = 27,5."},
+    {"year": 2008, "rate": 32.0, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "nkeconwatch_2009", "note": "2008: ~3.200 won antigos por USD (Open Radio for North Korea); dez/2008: 3.630 = 36,3. Usada a media do ano (32,0)."},
+    {"year": 2009, "rate": 35.0, "basis": "market", "method": "documented_market_rate", "ref": "mou_2011", "note": "Dez/2009, logo apos a redenominacao de 100:1: 35 won novos por USD (Ministerio da Unificacao); Liganda registra 38,43."},
+    {"year": 2010, "rate": 2050.0, "basis": "market", "method": "documented_market_rate", "ref": "liganda_kpw", "note": "Fim de 2010: 2.050 won novos por USD (Liganda); o Ministerio da Unificacao cita ~2.000."},
+    {"year": 2011, "rate": 3800.0, "basis": "market", "method": "documented_market_rate", "ref": "mou_2011", "note": "Nov/2011: 3.800 won novos por USD (Ministerio da Unificacao/Yonhap)."},
+    {"year": 2012, "rate": 8000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "~8.000 KPW/USD no mercado ('untied') durante a hiperinflacao pos-reforma; taxa oficial 'tied' ~104 KPW/USD no mesmo ano."},
+    {"year": 2013, "rate": 8000.0, "basis": "market", "method": "documented_market_rate", "ref": "bti_2022", "note": "Cambio de mercado estavel em torno de 8.000 desde o inicio de 2013 (BTI 2022)."},
+    {"year": 2019, "rate": 8140.0, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "dailynk_2019", "note": "Media das cotacoes Daily NK (8.136 em fev/2019; 7.850 em ago/2019); NK Pro 8.250 em ago/2019."},
+    {"year": 2020, "rate": 8050.0, "basis": "market", "method": "documented_market_rate", "ref": "asiapress_2020", "note": "Mai/2020: 8.050 KPW/USD em Hyesan (Asia Press)."},
+    {"year": 2021, "rate": 5000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "Apreciacao durante a pandemia (fronteiras fechadas): ~5.000 KPW/USD; o BTI cita 6.100 em jan/2021."},
+    {"year": 2023, "rate": 8300.0, "basis": "market", "method": "documented_market_rate", "ref": "koreadaily_2025", "note": "Jan/2023: 8.300 KPW/USD em Pyongyang (Daily NK)."},
+    {"year": 2024, "rate": 18000.0, "basis": "market", "method": "documented_market_rate", "ref": "koreadaily_2025", "note": "Nov/2024: 18.000 KPW/USD (Daily NK); jan/2024: 8.300 e dez/2024: 20.000."},
+    {"year": 2025, "rate": 31300.0, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "dailynk_2025", "note": "Media das cotacoes de mercado de 2025: 22.100 (jan), 21.000 (mar-mai), 27.500 (jun), 43.400 (ago), 35.300 (nov); o KDI registra ~40.000 no pico e o dobro em um ano."}
    ],
    "interpolate": [
-    {"from_year": 2012, "to_year": 2021, "ref": "wiki_kpw", "note": "Interpolacao geometrica entre dois fatos de mercado documentados."},
-    {"from_year": 2021, "to_year": 2024, "ref": "wiki_kpw", "note": "Interpolacao geometrica entre dois fatos de mercado documentados."}
+    {"from_year": 2002, "to_year": 2005, "ref": "cia_kpw", "note": "Interpolacao geometrica entre duas observacoes de mercado documentadas (2003-2004)."},
+    {"from_year": 2006, "to_year": 2008, "ref": "nkeconwatch_2009", "note": "Interpolacao geometrica entre duas observacoes de mercado documentadas (2007)."},
+    {"from_year": 2013, "to_year": 2019, "ref": "bti_2022", "note": "Interpolacao geometrica entre a estabilidade documentada de 2013 (~8.000) e a media de 2019 (8.140); 2014-2018."},
+    {"from_year": 2021, "to_year": 2023, "ref": "koreadaily_2025", "note": "Interpolacao geometrica entre duas observacoes de mercado documentadas (2022)."}
    ],
-   "stat_breaks": [2012],
+   "stat_breaks": [2002],
    "regimes": [
     {"from": 2017, "to": 2025, "regime": "dual_market", "note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY.", "ref": "wiki_kpw"}
    ]
@@ -96,17 +147,33 @@
    "unit_note": "SOS (xelim somali) por USD, taxa de mercado livre.",
    "basis_note": "Taxas de mercado livre (o pais nao tem autoridade monetaria efetiva desde 1991); a serie estatistica ate 1989 e de taxas oficiais, entao a passagem 1989->1990 e uma mudanca de base.",
    "notes": [
-    "1994-2005 nao reconstruido: a lacuna entre 1993 e 2006 tem 12 anos, acima do limite de interpolacao declarado (10).",
-    "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil."
+    "1994-2005 reconstruido com a media anual do Penn World Table 7.1 (via FRED, serie FXRATESOA618NUPN): 4.338 em 1994, 9.572 em 2000, 20.025 em 2002 (pico) e 15.251 em 2005. E a unica serie anual continua encontrada para o periodo; nao substitui as observacoes pontuais ja citadas.",
+    "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil.",
+    "As observacoes pontuais de 1991 (2.000 em jun/1991) e 1993 (5.000 em jun/1993) divergem da media anual do PWT (3.800 e 3.983); ambas foram mantidas porque sao fatos datados e citados."
    ],
    "refs": {
     "wiki_sos": {"title": "Somali shilling", "url": "https://en.wikipedia.org/wiki/Somali_shilling", "year": 2026},
-    "wb_sos": {"title": "World Bank Open Data - Official exchange rate (PA.NUS.FCRF) Somalia", "url": "https://data.worldbank.org/indicator/PA.NUS.FCRF?locations=SO", "year": 2025}
+    "wb_sos": {"title": "World Bank Open Data - Official exchange rate (PA.NUS.FCRF) Somalia", "url": "https://data.worldbank.org/indicator/PA.NUS.FCRF?locations=SO", "year": 2025},
+    "pwt_sos": {"title": "Exchange Rate to U.S. Dollar for Somalia (Penn World Table 7.1, via FRED series FXRATESOA618NUPN)", "url": "https://fred.stlouisfed.org/series/FXRATESOA618NUPN", "year": 2012},
+    "undp_somalia_2001": {"title": "Somalia Human Development Report 2001 (UNDP), figure 1.14 - depreciacao do xelim somali 1995-2001", "url": "https://hdr.undp.org/system/files/documents/somalia2001en.pdf", "year": 2001}
    },
    "points": [
     {"year": 1990, "rate": 3470.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Fim de 1990, com o colapso do Estado."},
     {"year": 1991, "rate": 2000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Jun/1991."},
+    {"year": 1992, "rate": 4400.0, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; o CIA Factbook registra 4.200 em dez/1992."},
     {"year": 1993, "rate": 5000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Jun/1993."},
+    {"year": 1994, "rate": 4337.903226, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1."},
+    {"year": 1995, "rate": 5725.0, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; ~5.000 em 01/01/1995 (CIA) e 6.300-8.200 entre 1995 e fev/1999 (USAID/BASIS)."},
+    {"year": 1996, "rate": 6882.5, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; ~7.000 em jan/1996 (CIA)."},
+    {"year": 1997, "rate": 7608.333333, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 7.500 em nov/1997 (CIA)."},
+    {"year": 1998, "rate": 7318.0, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 7.500-8.500 em jun/1998 (FAO/GIEWS)."},
+    {"year": 1999, "rate": 8736.611111, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 12.550 em jun/1999 (FAO/GIEWS) apos a injecao de dinheiro das faccoes."},
+    {"year": 2000, "rate": 9571.5, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 9.500 em 2000 (UNDP Somalia HDR 2001)."},
+    {"year": 2001, "rate": 16810.91667, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 22.500 em ago/2001 (UNDP Somalia HDR 2001), apos nova injecao de notas."},
+    {"year": 2002, "rate": 20025.33333, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; pico nominal da serie."},
+    {"year": 2003, "rate": 17706.08333, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1."},
+    {"year": 2004, "rate": 14886.16667, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 14.500-15.600 desde out/2004 (World Bank, Somali JNA 2006)."},
+    {"year": 2005, "rate": 15251.25, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "pwt_sos", "note": "Media anual do PWT 7.1; 14.500-15.600 em 2005 (World Bank, Somali JNA 2006)."},
     {"year": 2006, "rate": 13400.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mar/2006 (14.406 em ago/2006)."},
     {"year": 2007, "rate": 15000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Fev/2007."},
     {"year": 2008, "rate": 25000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mar/2008 (35.000 em jul/2008)."},
@@ -156,19 +223,30 @@
    "unit_note": "AFN (afegani novo, desde out/2002) por USD. A tabela documentada de 1950 traz o afegani antigo; 1950-1954 e usado apenas como nivel oficial da epoca, sem encadear a reforma de 1.000:1 (o IFS ja encadeia a partir de 1955).",
    "basis_note": "1950 usa a taxa oficial (25,5 AFN/USD; mercado livre 39,0). 2024 usa a taxa de mercado/oficial unificada (65 AFN/USD).",
    "notes": [
-    "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020).",
-    "2025 fica ausente: a unica referencia publica e 'cerca de 65 AFN/USD' sem data de fechamento de ano."
+    "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020). 2021-2025 usa as medias anuais do DAB/Banco Mundial e da serie de medias anuais do IRS.",
+    "2024 usa 70,6 AFN/USD (IRS; o World Bank registra 70,3 em dez/2024); o valor anterior de 65,0 nao tinha data de fechamento e divergia da serie mensal do DAB.",
+    "2025 usa 69,6 AFN/USD, media das medias mensais do DAB/World Bank (74,84 em jan a 66,2 em dez; IRS: 69,637); o DAB fechou 31/12/2025 em 66,07 (compra/venda)."
    ],
    "refs": {
-    "wiki_afn_table": {"title": "Afghan afghani - Exchange rate (tabela desde 1950; fontes Fry 1976 e World Development Indicators)", "url": "https://en.wikipedia.org/wiki/Afghan_afghani", "year": 2026}
+    "wiki_afn_table": {"title": "Afghan afghani - Exchange rate (tabela desde 1950; fontes Fry 1976 e World Development Indicators)", "url": "https://en.wikipedia.org/wiki/Afghan_afghani", "year": 2026},
+    "wb_afm_mar2025": {"title": "Afghanistan Economic Monitor - March 2025 (World Bank): media de 70,9 AFN/USD no ano fiscal 2024", "url": "https://thedocs.worldbank.org/en/doc/358fc299302d5754861667abba94b508-0310012025/original/Afghanistan-Economic-Monitor-March-2025.pdf", "year": 2025},
+    "wb_afm_jan2023": {"title": "Afghanistan Economic Monitor - January 2023 (World Bank): media anual de 89,9 em 2022 e 84,5 em 2021", "url": "https://thedocs.worldbank.org/en/doc/a9d913b062442a27cdad9e9c54b45b41-0310012023/original/Afghanistan-Economic-Monitor-25-January-2023.pdf", "year": 2023},
+    "irs_2026": {"title": "Yearly average currency exchange rates (IRS) - Afghanistan 2021-2025", "url": "https://www.irs.gov/individuals/international-taxpayers/yearly-average-currency-exchange-rates", "year": 2026},
+    "wb_afm_apr2025": {"title": "Afghanistan Economic Monitor - April 2025 (World Bank): medias mensais AFN/USD jan-abr/2025", "url": "https://thedocs.worldbank.org/en/doc/87f2e826e5f4b93d6bf0557f06cb7d09-0310012025/original/Afghanistan-Economic-Monitor-April-2025.pdf", "year": 2025},
+    "wb_afm_aug2025": {"title": "Afghanistan Economic Monitor - August 2025 (World Bank): medias mensais AFN/USD mai-ago/2025", "url": "https://thedocs.worldbank.org/en/doc/621059a91c6bacf1736cbbd8c24e755c-0310012025/original/Afghanistan-Economic-Monitor-August-2025.pdf", "year": 2025},
+    "wb_afm_dec2025": {"title": "Afghanistan Economic Monitor - December 2025 (World Bank): medias mensais AFN/USD set-dez/2025", "url": "https://thedocs.worldbank.org/en/doc/84116346a00db27c63e041f86892ba01-0310012026/original/Afghanistan-Economic-Monitor-December-2025.pdf", "year": 2025},
+    "dab_2025": {"title": "Da Afghanistan Bank - Exchange Rates (31/12/2025: USD compra 65,9713 / venda 66,1713)", "url": "https://dab.gov.af/exchange-rates?field_date_value=12%2F31%2F2025", "year": 2025}
    },
    "points": [
     {"year": 1950, "rate": 25.5, "basis": "official", "method": "documented_official_rate", "ref": "wiki_afn_table", "note": "Taxa oficial em 1950 (mercado livre 39,0)."},
-    {"year": 2024, "rate": 65.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_afn_table", "note": "65 AFN/USD em 2024 (TOLOnews/Ariana News); o afegani foi a moeda de melhor desempenho no 3o tri/2023."}
+    {"year": 2021, "rate": 84.5, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "wb_afm_jan2023", "note": "Media anual de 2021 (DAB/World Bank), apos a tomada de Cabul em ago/2021."},
+    {"year": 2022, "rate": 89.9, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "wb_afm_jan2023", "note": "Media anual de 2022 (DAB/World Bank); pico de depreciacao do periodo."},
+    {"year": 2023, "rate": 82.635, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "irs_2026", "note": "Media anual de 2023 (IRS); o Bundesbank registra 81,18 e o World Bank, 77,3 no ano fiscal."},
+    {"year": 2024, "rate": 70.649, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "irs_2026", "note": "Media anual de 2024 (IRS); dez/2024: 70,3 (DAB/World Bank)."},
+    {"year": 2025, "rate": 69.6, "basis": "market", "method": "annual_average_of_reported_market_quotes", "ref": "wb_afm_dec2025", "note": "Media das medias mensais do DAB/World Bank em 2025 (74,84 em jan a 66,2 em dez); IRS: 69,637; fechamento de 31/12/2025: 66,07."}
    ],
    "interpolate": [
-    {"from_year": 1950, "to_year": 1955, "ref": "wiki_afn_table", "note": "Interpolacao geometrica entre a taxa oficial de 1950 e o primeiro ano do IFS."},
-    {"from_year": 2020, "to_year": 2024, "ref": "wiki_afn_table", "note": "Interpolacao geometrica entre o ultimo ano do IFS e a taxa documentada de 2024."}
+    {"from_year": 1950, "to_year": 1955, "ref": "wiki_afn_table", "note": "Interpolacao geometrica entre a taxa oficial de 1950 e o primeiro ano do IFS."}
    ],
    "stat_breaks": [],
    "regimes": [

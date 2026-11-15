@@ -71,8 +71,9 @@
   }
  ],
  "notes": [
-  "1994-2005 nao reconstruido: a lacuna entre 1993 e 2006 tem 12 anos, acima do limite de interpolacao declarado (10).",
-  "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil."
+  "1994-2005 reconstruido com a media anual do Penn World Table 7.1 (via FRED, serie FXRATESOA618NUPN): 4.338 em 1994, 9.572 em 2000, 20.025 em 2002 (pico) e 15.251 em 2005. E a unica serie anual continua encontrada para o periodo; nao substitui as observacoes pontuais ja citadas.",
+  "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil.",
+  "As observacoes pontuais de 1991 (2.000 em jun/1991) e 1993 (5.000 em jun/1993) divergem da media anual do PWT (3.800 e 3.983); ambas foram mantidas porque sao fatos datados e citados."
  ],
  "missing_source_area": [],
  "no_data": false,
@@ -375,16 +376,11 @@
   },
   {
    "year": 1992,
-   "rate": 3162.27766017,
+   "rate": 4400.0,
    "source": "historical_reconstruction",
-   "method": "interpolated_between_documented_facts",
-   "ref": "wiki_sos",
-   "basis": "interpolated",
-   "interpolated": true,
-   "anchor": [
-    1991,
-    1993
-   ]
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
   },
   {
    "year": 1993,
@@ -392,6 +388,102 @@
    "source": "historical_reconstruction",
    "method": "documented_market_rate",
    "ref": "wiki_sos",
+   "basis": "market"
+  },
+  {
+   "year": 1994,
+   "rate": 4337.903226,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 1995,
+   "rate": 5725.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 1996,
+   "rate": 6882.5,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 1997,
+   "rate": 7608.333333,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 1998,
+   "rate": 7318.0,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 1999,
+   "rate": 8736.611111,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 2000,
+   "rate": 9571.5,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 2001,
+   "rate": 16810.91667,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 2002,
+   "rate": 20025.33333,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 2003,
+   "rate": 17706.08333,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 2004,
+   "rate": 14886.16667,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
+   "basis": "market"
+  },
+  {
+   "year": 2005,
+   "rate": 15251.25,
+   "source": "historical_reconstruction",
+   "method": "annual_average_of_reported_market_quotes",
+   "ref": "pwt_sos",
    "basis": "market"
   },
   {
@@ -596,21 +688,26 @@
   "unit_note": "SOS (xelim somali) por USD, taxa de mercado livre.",
   "basis_note": "Taxas de mercado livre (o pais nao tem autoridade monetaria efetiva desde 1991); a serie estatistica ate 1989 e de taxas oficiais, entao a passagem 1989->1990 e uma mudanca de base.",
   "notes": [
-   "1994-2005 nao reconstruido: a lacuna entre 1993 e 2006 tem 12 anos, acima do limite de interpolacao declarado (10).",
-   "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil."
+   "1994-2005 reconstruido com a media anual do Penn World Table 7.1 (via FRED, serie FXRATESOA618NUPN): 4.338 em 1994, 9.572 em 2000, 20.025 em 2002 (pico) e 15.251 em 2005. E a unica serie anual continua encontrada para o periodo; nao substitui as observacoes pontuais ja citadas.",
+   "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil.",
+   "As observacoes pontuais de 1991 (2.000 em jun/1991) e 1993 (5.000 em jun/1993) divergem da media anual do PWT (3.800 e 3.983); ambas foram mantidas porque sao fatos datados e citados."
   ],
   "refs": {
    "wiki_sos": {
     "title": "Somali shilling",
     "url": "https://en.wikipedia.org/wiki/Somali_shilling",
     "year": 2026
+   },
+   "pwt_sos": {
+    "title": "Exchange Rate to U.S. Dollar for Somalia (Penn World Table 7.1, via FRED series FXRATESOA618NUPN)",
+    "url": "https://fred.stlouisfed.org/series/FXRATESOA618NUPN",
+    "year": 2012
    }
   },
   "stat_breaks": [
    1990
   ],
   "interpolated_years": [
-   1992,
    2018,
    2019,
    2020,
