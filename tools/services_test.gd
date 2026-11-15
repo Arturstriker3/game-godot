@@ -11,7 +11,7 @@ extends Node
 ##   4. nome único por cultura do dono (BusinessNameGenerator);
 ##   5. exportação de serviço exportável (finanças/TI/turismo/logística);
 ##   6. educação privada acelera a qualificação (F7);
-##   7. dinheiro conservado no tick e save v10 com migração de v9.
+##   7. dinheiro conservado no tick e save v11 com migração de v9.
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
@@ -186,7 +186,7 @@ func _test_education() -> void:
 			float(private_edu["higher"]), float(baseline_edu["higher"])])
 
 
-# --- 7 (save v10) ----------------------------------------------------------
+# --- 7 (save v11) ----------------------------------------------------------
 
 func _test_save() -> void:
 	var sim = _make_world(false)
@@ -195,7 +195,7 @@ func _test_save() -> void:
 	_set_income(sim)
 	_run(sim, 5)
 	var data: Dictionary = sim.demo_to_dict()
-	_check(int(data.get("version", 0)) == 10, "save deve ser v10 (é %d)" % int(
+	_check(int(data.get("version", 0)) == 11, "save deve ser v11 (é %d)" % int(
 		data.get("version", 0)))
 	var loaded = _load_save(data)
 	if loaded == null:

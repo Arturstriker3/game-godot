@@ -7,8 +7,9 @@ extends SceneTree
 ##      escasso e consumo exatamente igual à saída (coeficiente 1:1);
 ##   3. alternativa de receita escolhida pelo MENOR CUSTO corrente
 ##      (fábrica de ração: trigo -> milho com choque de preço);
-##   4. trabalho primário (fazenda) com prioridade: uma fábrica nova não
-##      reduz a folha da fazenda (§5.3).
+##   4. trabalho: uma fábrica nova não reduz a folha da fazenda, a fábrica
+##      contrata sem passar da própria folha e o emprego nunca excede a
+##      força de trabalho (mercado de trabalho por escolaridade, F7).
 ##
 ## Cenário: AGRIA/PORTUS (initialize_demo), o mesmo dos testes de população e
 ## de porto. Estoque/caixa de partida são um FIXTURE explícito do teste (não
@@ -281,9 +282,12 @@ func _test_recipe_alternative() -> void:
 	print("[chain] racao: alternativa trocada por menor custo corrente (%s)" % chosen)
 
 
-## 4. §5.3: o trabalho primário tem prioridade. Cidade pequena (2000 hab.):
-## 1100 na força de trabalho, 600 em serviços, 450 nas fazendas e a sobra (50)
-## para a fábrica de 80 empregos — a fazenda continua com 150/150.
+## 4. F7 substituiu o racionamento por classe (§5.3 do F2) pelo mercado de
+## trabalho por escolaridade: não há mais prioridade explícita de fazenda
+## sobre fábrica — a fazenda continua cheia porque as vagas de nível básico
+## preenchem primeiro, e o emprego total é limitado pela força de trabalho.
+## Cidade pequena (2000 hab., força de trabalho ~1100): a fazenda mantém a
+## folha e a fábrica contrata (sem exceder a própria folha).
 func _test_labor_priority() -> void:
 	var sim = _new_sim()
 	_fixture(sim, {}, 2000.0)
@@ -313,8 +317,11 @@ func _test_labor_priority() -> void:
 	var factory_workers := float(factory.get("workers", 0.0))
 	if factory_jobs <= 0.0:
 		_fail("trabalho: fabrica sem empregos declarados")
-	elif factory_workers >= factory_jobs:
-		_fail("trabalho: fabrica ocupou toda a folha (%.1f/%.1f), sem racionar" % [
+	elif factory_workers <= 0.0:
+		_fail("trabalho: fabrica nao contratou (%.1f/%.1f)" % [
+			factory_workers, factory_jobs])
+	elif factory_workers > factory_jobs + 0.01:
+		_fail("trabalho: fabrica contratou acima da folha (%.1f/%.1f)" % [
 			factory_workers, factory_jobs])
 	var pop: Dictionary = agria.get("pop", {})
 	if float(pop.get("employed", 0.0)) > float(pop.get("labor_force", 0.0)) + 0.01:
