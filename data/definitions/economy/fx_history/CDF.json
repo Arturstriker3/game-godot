@@ -1,0 +1,607 @@
+{
+ "version": 1,
+ "code": "CDF",
+ "nations": [
+  "COD"
+ ],
+ "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
+ "first_year": 1950,
+ "last_year": 2023,
+ "sources": [
+  "imf_ifs"
+ ],
+ "source_refs": {
+  "imf_ifs": {
+   "name": "IMF International Financial Statistics (via DBnomics)",
+   "indicator": "ENDA_XDC_USD_RATE",
+   "description": "Exchange rate, domestic currency per US dollar, period average, annual.",
+   "url": "https://api.db.nomics.world/v22/series/IMF/IFS",
+   "homepage": "https://data.imf.org/",
+   "coverage": "1950-2024 (varia por pais)"
+  },
+  "worldbank": {
+   "name": "World Bank Open Data",
+   "indicator": "PA.NUS.FCRF",
+   "description": "Official exchange rate (LCU per US$, period average).",
+   "url": "https://api.worldbank.org/v2/indicator/PA.NUS.FCRF",
+   "homepage": "https://data.worldbank.org/indicator/PA.NUS.FCRF",
+   "coverage": "1960-2025 (varia por pais)"
+  },
+  "jst_r6": {
+   "name": "Jorda-Schularick-Taylor Macrohistory Database, release 6",
+   "indicator": "xrusd",
+   "description": "Exchange rate, national currency per USD, annual.",
+   "url": "https://www.macrohistory.net/database/",
+   "homepage": "https://www.macrohistory.net/database/",
+   "coverage": "1870-2020, 18 paises"
+  },
+  "irr": {
+   "name": "Ilzetzki, Reinhart & Rogoff - Exchange Rate Arrangements (de facto)",
+   "indicator": "fine/coarse classification",
+   "description": "De facto exchange rate arrangement classification by country and year.",
+   "url": "https://carmenreinhart.com/exchange-rate/",
+   "homepage": "https://carmenreinhart.com/exchange-rate/",
+   "coverage": "1940-2016"
+  }
+ },
+ "regime_enum": [
+  "peg",
+  "band",
+  "float",
+  "free_fall",
+  "union",
+  "dual_market"
+ ],
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "breaks": [
+  {
+   "year": 1991,
+   "log_change": 3.07692068461,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 1992,
+   "log_change": 3.72365785905,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 1993,
+   "log_change": 2.45852457656,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 1994,
+   "log_change": 6.16312319999,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 1995,
+   "log_change": 1.77199119023,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 1996,
+   "log_change": 1.96631452855,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 2000,
+   "log_change": 1.691883372,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 2001,
+   "log_change": 2.24811866288,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  }
+ ],
+ "notes": [],
+ "missing_source_area": [],
+ "no_data": false,
+ "series": [
+  {
+   "year": 1950,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1951,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1952,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1953,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1954,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1955,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1956,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1957,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1958,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1959,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1960,
+   "rate": 1.7e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1961,
+   "rate": 1.75e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1962,
+   "rate": 2.1e-13,
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_fine": 15
+  },
+  {
+   "year": 1963,
+   "rate": 2.525e-13,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1964,
+   "rate": 5.5e-13,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1965,
+   "rate": 5.5e-13,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1966,
+   "rate": 5.5e-13,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1967,
+   "rate": 1.15666666667e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1968,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1969,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1970,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1971,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 12
+  },
+  {
+   "year": 1972,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 1973,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 1974,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 1975,
+   "rate": 1.67e-12,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1976,
+   "rate": 2.64083333333e-12,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1977,
+   "rate": 2.855e-12,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1978,
+   "rate": 2.78666666667e-12,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1979,
+   "rate": 5.76083333333e-12,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1980,
+   "rate": 9.33083333333e-12,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1981,
+   "rate": 1.46083333333e-11,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1982,
+   "rate": 1.91625e-11,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1983,
+   "rate": 4.2955e-11,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1984,
+   "rate": 1.20404166667e-10,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1985,
+   "rate": 1.662075e-10,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1986,
+   "rate": 1.98705833333e-10,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1987,
+   "rate": 3.74595e-10,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1988,
+   "rate": 6.2343e-10,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1989,
+   "rate": 1.27120833333e-09,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1990,
+   "rate": 2.39474833333e-09,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1991,
+   "rate": 5.19456941667e-08,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1992,
+   "rate": 2.1513626025e-06,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1993,
+   "rate": 2.514416814e-05,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1994,
+   "rate": 0.0119411916667,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1995,
+   "rate": 0.0702447166667,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1996,
+   "rate": 0.501849175,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1997,
+   "rate": 1.3134476,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1998,
+   "rate": 1.60665988307,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1999,
+   "rate": 4.01833333223,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 2000,
+   "rate": 21.8183333274,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 2001,
+   "rate": 206.617499943,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 2002,
+   "rate": 346.484999905,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 2003,
+   "rate": 405.178183231,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 2004,
+   "rate": 399.475791667,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 2005,
+   "rate": 473.908008333,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 2006,
+   "rate": 468.278825,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 2007,
+   "rate": 516.749891667,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 2008,
+   "rate": 559.292508333,
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_fine": 10
+  },
+  {
+   "year": 2009,
+   "rate": 809.785833333,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 2010,
+   "rate": 905.913458333,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 4
+  },
+  {
+   "year": 2011,
+   "rate": 919.4913,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 4
+  },
+  {
+   "year": 2012,
+   "rate": 919.755016667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 4
+  },
+  {
+   "year": 2013,
+   "rate": 919.565907355,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 4
+  },
+  {
+   "year": 2014,
+   "rate": 925.226282532,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 4
+  },
+  {
+   "year": 2015,
+   "rate": 925.98496128,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 4
+  },
+  {
+   "year": 2016,
+   "rate": 1010.30275717,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2017,
+   "rate": 1464.41793164,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2018,
+   "rate": 1622.52350162,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2019,
+   "rate": 1647.76012728,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2020,
+   "rate": 1851.12216183,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2021,
+   "rate": 1989.39147123,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2022,
+   "rate": 2006.70821944,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2023,
+   "rate": 2340.03570436,
+   "source": "imf_ifs"
+  }
+ ]
+}

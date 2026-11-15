@@ -1,0 +1,301 @@
+{
+ "version": 1,
+ "code": "MNT",
+ "nations": [
+  "MNG"
+ ],
+ "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
+ "first_year": 1991,
+ "last_year": 2025,
+ "sources": [
+  "imf_ifs",
+  "worldbank"
+ ],
+ "source_refs": {
+  "imf_ifs": {
+   "name": "IMF International Financial Statistics (via DBnomics)",
+   "indicator": "ENDA_XDC_USD_RATE",
+   "description": "Exchange rate, domestic currency per US dollar, period average, annual.",
+   "url": "https://api.db.nomics.world/v22/series/IMF/IFS",
+   "homepage": "https://data.imf.org/",
+   "coverage": "1950-2024 (varia por pais)"
+  },
+  "worldbank": {
+   "name": "World Bank Open Data",
+   "indicator": "PA.NUS.FCRF",
+   "description": "Official exchange rate (LCU per US$, period average).",
+   "url": "https://api.worldbank.org/v2/indicator/PA.NUS.FCRF",
+   "homepage": "https://data.worldbank.org/indicator/PA.NUS.FCRF",
+   "coverage": "1960-2025 (varia por pais)"
+  },
+  "jst_r6": {
+   "name": "Jorda-Schularick-Taylor Macrohistory Database, release 6",
+   "indicator": "xrusd",
+   "description": "Exchange rate, national currency per USD, annual.",
+   "url": "https://www.macrohistory.net/database/",
+   "homepage": "https://www.macrohistory.net/database/",
+   "coverage": "1870-2020, 18 paises"
+  },
+  "irr": {
+   "name": "Ilzetzki, Reinhart & Rogoff - Exchange Rate Arrangements (de facto)",
+   "indicator": "fine/coarse classification",
+   "description": "De facto exchange rate arrangement classification by country and year.",
+   "url": "https://carmenreinhart.com/exchange-rate/",
+   "homepage": "https://carmenreinhart.com/exchange-rate/",
+   "coverage": "1940-2016"
+  }
+ },
+ "regime_enum": [
+  "peg",
+  "band",
+  "float",
+  "free_fall",
+  "union",
+  "dual_market"
+ ],
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "breaks": [
+  {
+   "year": 1992,
+   "log_change": 1.49797974622,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  },
+  {
+   "year": 1993,
+   "log_change": 2.10813247759,
+   "note": "salto >3x entre anos consecutivos na mesma fonte"
+  }
+ ],
+ "notes": [],
+ "missing_source_area": [],
+ "no_data": false,
+ "series": [
+  {
+   "year": 1991,
+   "rate": 8.01166666667,
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_fine": 13
+  },
+  {
+   "year": 1992,
+   "rate": 35.8333333333,
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_fine": 13
+  },
+  {
+   "year": 1993,
+   "rate": 295.010525833,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1994,
+   "rate": 412.721416667,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1995,
+   "rate": 448.612633333,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1996,
+   "rate": 548.403333333,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1997,
+   "rate": 789.9925,
+   "source": "imf_ifs",
+   "regime": "free_fall",
+   "regime_fine": 14
+  },
+  {
+   "year": 1998,
+   "rate": 840.828333333,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 1999,
+   "rate": 1021.8675,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2000,
+   "rate": 1076.66666667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2001,
+   "rate": 1097.6975,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2002,
+   "rate": 1110.31,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2003,
+   "rate": 1146.5425,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2004,
+   "rate": 1185.2975,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2005,
+   "rate": 1205.24666667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2006,
+   "rate": 1179.69916667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2007,
+   "rate": 1170.40083333,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2008,
+   "rate": 1165.80416667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 7
+  },
+  {
+   "year": 2009,
+   "rate": 1437.795,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2010,
+   "rate": 1357.06416667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2011,
+   "rate": 1265.51583333,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2012,
+   "rate": 1357.58,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2013,
+   "rate": 1523.9275,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2014,
+   "rate": 1817.93870833,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2015,
+   "rate": 1970.30916667,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2016,
+   "rate": 2140.29086406,
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_fine": 8
+  },
+  {
+   "year": 2017,
+   "rate": 2439.77720111,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2018,
+   "rate": 2472.48405114,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2019,
+   "rate": 2663.5413982,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2020,
+   "rate": 2813.28983533,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2021,
+   "rate": 2849.28861454,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2022,
+   "rate": 3140.67788365,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2023,
+   "rate": 3465.73653626,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2024,
+   "rate": 3389.98152022,
+   "source": "imf_ifs"
+  },
+  {
+   "year": 2025,
+   "rate": 3545.14356555,
+   "source": "worldbank"
+  }
+ ]
+}

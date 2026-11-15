@@ -1,0 +1,4008 @@
+{
+ "version": 1,
+ "generated_by": "tools/build_fx_history.py",
+ "unit": "LCU per USD",
+ "method": {
+  "volatility_annual_log": "desvio-padrao amostral de ln(taxa_t / taxa_{t-1})",
+  "max_1y_depreciation_log": "maior ln(taxa_t / taxa_{t-1}) (positivo = depreciacao)",
+  "crisis_frequency": "fracao dos anos com depreciacao > 25%",
+  "mean_reversion_half_life_years": "AR(1) no log do nivel nominal; None se phi fora de (0,1)",
+  "regime_recent": "moda do regime de fato 2007-2016 (IRR)",
+  "confidence": "complete = >=60 anos e >=95% de 1950-2024; partial = >=20 anos e >=50%; estimated = fora disso (sem interpolacao)"
+ },
+ "sources": {
+  "imf_ifs": {
+   "name": "IMF International Financial Statistics (via DBnomics)",
+   "indicator": "ENDA_XDC_USD_RATE",
+   "description": "Exchange rate, domestic currency per US dollar, period average, annual.",
+   "url": "https://api.db.nomics.world/v22/series/IMF/IFS",
+   "homepage": "https://data.imf.org/",
+   "coverage": "1950-2024 (varia por pais)"
+  },
+  "worldbank": {
+   "name": "World Bank Open Data",
+   "indicator": "PA.NUS.FCRF",
+   "description": "Official exchange rate (LCU per US$, period average).",
+   "url": "https://api.worldbank.org/v2/indicator/PA.NUS.FCRF",
+   "homepage": "https://data.worldbank.org/indicator/PA.NUS.FCRF",
+   "coverage": "1960-2025 (varia por pais)"
+  },
+  "jst_r6": {
+   "name": "Jorda-Schularick-Taylor Macrohistory Database, release 6",
+   "indicator": "xrusd",
+   "description": "Exchange rate, national currency per USD, annual.",
+   "url": "https://www.macrohistory.net/database/",
+   "homepage": "https://www.macrohistory.net/database/",
+   "coverage": "1870-2020, 18 paises"
+  },
+  "irr": {
+   "name": "Ilzetzki, Reinhart & Rogoff - Exchange Rate Arrangements (de facto)",
+   "indicator": "fine/coarse classification",
+   "description": "De facto exchange rate arrangement classification by country and year.",
+   "url": "https://carmenreinhart.com/exchange-rate/",
+   "homepage": "https://carmenreinhart.com/exchange-rate/",
+   "coverage": "1940-2016"
+  }
+ },
+ "irr_fine_codes": {
+  "1": "No separate legal tender or currency union",
+  "2": "Pre-announced peg or currency board",
+  "3": "Pre-announced horizontal band <= +/-2%",
+  "4": "De facto peg",
+  "5": "Pre-announced crawling peg",
+  "6": "Pre-announced crawling band <= +/-2%",
+  "7": "De facto crawling peg",
+  "8": "De facto crawling band <= +/-2%",
+  "9": "Pre-announced crawling band >= +/-2%",
+  "10": "De facto crawling band <= +/-5%",
+  "11": "Moving band <= +/-2%",
+  "12": "De facto moving band +/-5% / managed floating",
+  "13": "Freely floating",
+  "14": "Freely falling",
+  "15": "Dual market (parallel data missing)"
+ },
+ "coverage": {
+  "currencies": 136,
+  "at_least_50_years": 111,
+  "at_least_75_years": 81,
+  "at_least_100_years": 10,
+  "complete": 91,
+  "partial": 22,
+  "estimated": 23,
+  "target_window": [
+   1925,
+   2025
+  ],
+  "primary_window": [
+   1950,
+   2024
+  ]
+ },
+ "currencies": {
+  "AED": {
+   "nations": [
+    "ARE"
+   ],
+   "years_with_data": 59,
+   "first_year": 1966,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.786666666667,
+   "volatility_annual_log": 0.016356173765,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0166015669975,
+   "max_1y_depreciation_log": 0.000565593437639,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.11298156922,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 44,
+    "union": 7
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "AFN": {
+   "nations": [
+    "AFG"
+   ],
+   "years_with_data": 66,
+   "first_year": 1955,
+   "last_year": 2020,
+   "coverage_1950_2024": 0.88,
+   "volatility_annual_log": 0.100915908041,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.112934818826,
+   "max_1y_depreciation_log": 0.71376646776,
+   "crisis_frequency": 0.0307692307692,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.22453307536,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 47,
+    "peg": 15
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "ALL": {
+   "nations": [
+    "ALB"
+   ],
+   "years_with_data": 33,
+   "first_year": 1992,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.44,
+   "volatility_annual_log": 0.115655263366,
+   "median_annual_log_change": -0.0192063460655,
+   "p95_abs_annual_log_change": 0.236049754482,
+   "max_1y_depreciation_log": 0.354319276325,
+   "crisis_frequency": 0.0625,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.46066387368,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "float": 2,
+    "free_fall": 4,
+    "peg": 19
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "AMD": {
+   "nations": [
+    "ARM"
+   ],
+   "years_with_data": 32,
+   "first_year": 1993,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.426666666667,
+   "volatility_annual_log": 0.627706649583,
+   "median_annual_log_change": 0.015248491081,
+   "p95_abs_annual_log_change": 0.268324919772,
+   "max_1y_depreciation_log": 3.45639405532,
+   "crisis_frequency": 0.0645161290323,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 3.57727286204,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 3,
+    "peg": 21
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "AOA": {
+   "nations": [
+    "AGO"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.811089757251,
+   "median_annual_log_change": 0.00227471105858,
+   "p95_abs_annual_log_change": 2.10010954043,
+   "max_1y_depreciation_log": 3.84057370951,
+   "crisis_frequency": 0.256756756757,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 4.16418971198,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 27,
+    "free_fall": 15,
+    "peg": 25
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "ARS": {
+   "nations": [
+    "ARG"
+   ],
+   "years_with_data": 62,
+   "first_year": 1963,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.826666666667,
+   "volatility_annual_log": 0.758132007682,
+   "median_annual_log_change": 0.185078690233,
+   "p95_abs_annual_log_change": 1.98992703466,
+   "max_1y_depreciation_log": 3.87882343837,
+   "crisis_frequency": 0.459016393443,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.21855959289,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "free_fall": 19,
+    "peg": 34
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "AUD": {
+   "nations": [
+    "AUS"
+   ],
+   "years_with_data": 100,
+   "first_year": 1925,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0862803361794,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.182923810429,
+   "max_1y_depreciation_log": 0.364146943762,
+   "crisis_frequency": 0.030303030303,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.38330112879,
+   "regime_recent": "float",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "float": 33,
+    "peg": 43
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "AZN": {
+   "nations": [
+    "AZE"
+   ],
+   "years_with_data": 33,
+   "first_year": 1992,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.44,
+   "volatility_annual_log": 0.52466002129,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.801788015661,
+   "max_1y_depreciation_log": 2.75405404544,
+   "crisis_frequency": 0.15625,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.463226376544,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "free_fall": 4,
+    "peg": 19,
+    "union": 1
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "BAM": {
+   "nations": [
+    "BIH"
+   ],
+   "years_with_data": 28,
+   "first_year": 1997,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.373333333333,
+   "volatility_annual_log": 0.0757469779285,
+   "median_annual_log_change": -0.00154707903251,
+   "p95_abs_annual_log_change": 0.169026666202,
+   "max_1y_depreciation_log": 0.179201166145,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.15358371025,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 20
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "BBD": {
+   "nations": [
+    "BRB"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.017918204243,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0178150709684,
+   "max_1y_depreciation_log": 0.140355097582,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.969962838376,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 43,
+    "union": 24
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "BDT": {
+   "nations": [
+    "BGD"
+   ],
+   "years_with_data": 54,
+   "first_year": 1971,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.72,
+   "volatility_annual_log": 0.0720731699256,
+   "median_annual_log_change": 0.0350603564506,
+   "p95_abs_annual_log_change": 0.173758032794,
+   "max_1y_depreciation_log": 0.393002383538,
+   "crisis_frequency": 0.0377358490566,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.39917234508,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 45,
+    "union": 1
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "BGN": {
+   "nations": [
+    "BGR"
+   ],
+   "years_with_data": 56,
+   "first_year": 1953,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.746666666667,
+   "volatility_annual_log": 0.347518930201,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.412447878452,
+   "max_1y_depreciation_log": 2.24650911243,
+   "crisis_frequency": 0.0740740740741,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.11799247548,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 22,
+    "free_fall": 6,
+    "peg": 20
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "BHD": {
+   "nations": [
+    "BHR"
+   ],
+   "years_with_data": 59,
+   "first_year": 1966,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.786666666667,
+   "volatility_annual_log": 0.0162067889021,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0160403064437,
+   "max_1y_depreciation_log": 0.00192346688662,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.16200413852,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 51
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "BIF": {
+   "nations": [
+    "BDI"
+   ],
+   "years_with_data": 74,
+   "first_year": 1950,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.986666666667,
+   "volatility_annual_log": 0.0936745778644,
+   "median_annual_log_change": 0.0167439978402,
+   "p95_abs_annual_log_change": 0.237052918671,
+   "max_1y_depreciation_log": 0.523248143734,
+   "crisis_frequency": 0.0821917808219,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.55173792728,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 18,
+    "free_fall": 1,
+    "peg": 48
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "BND": {
+   "nations": [
+    "BRN"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0374038969824,
+   "median_annual_log_change": -0.000164979566345,
+   "p95_abs_annual_log_change": 0.0797597399293,
+   "max_1y_depreciation_log": 0.119693979008,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.21220967688,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 50,
+    "union": 17
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "BOB": {
+   "nations": [
+    "BOL"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.801033708158,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 1.3513311048,
+   "max_1y_depreciation_log": 4.94392151541,
+   "crisis_frequency": 0.108108108108,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.25263127024,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 9,
+    "free_fall": 16,
+    "peg": 42
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "BRL": {
+   "nations": [
+    "BRA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.741974605699,
+   "median_annual_log_change": 0.179712166874,
+   "p95_abs_annual_log_change": 2.38778443335,
+   "max_1y_depreciation_log": 3.18225686316,
+   "crisis_frequency": 0.44,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 4.35092048523,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 36,
+    "free_fall": 27,
+    "peg": 4
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "BSD": {
+   "nations": [
+    "BHS"
+   ],
+   "years_with_data": 85,
+   "first_year": 1940,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.00220449247987,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0,
+   "max_1y_depreciation_log": 0.0,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.0,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 70,
+    "union": 7
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "BTN": {
+   "nations": [
+    "BTN"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0655951121932,
+   "median_annual_log_change": 0.0272148531875,
+   "p95_abs_annual_log_change": 0.156651561475,
+   "max_1y_depreciation_log": 0.28924404106,
+   "crisis_frequency": 0.027027027027,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.78554621149,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 43,
+    "union": 24
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "BWP": {
+   "nations": [
+    "BWA"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0852817043878,
+   "median_annual_log_change": 0.00631189364848,
+   "p95_abs_annual_log_change": 0.173144951381,
+   "max_1y_depreciation_log": 0.382091653031,
+   "crisis_frequency": 0.0135135135135,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.3006986655,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "peg": 39,
+    "union": 27
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "BYN": {
+   "nations": [
+    "BLR"
+   ],
+   "years_with_data": 31,
+   "first_year": 1994,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.413333333333,
+   "volatility_annual_log": 0.416474172063,
+   "median_annual_log_change": 0.137020509386,
+   "p95_abs_annual_log_change": 1.21001668259,
+   "max_1y_depreciation_log": 1.68722635165,
+   "crisis_frequency": 0.366666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.75604422872,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 12,
+    "peg": 11
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "BZD": {
+   "nations": [
+    "BLZ"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0329912211199,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0497501138754,
+   "max_1y_depreciation_log": 0.207813966345,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.827978733866,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "CAD": {
+   "nations": [
+    "CAN"
+   ],
+   "years_with_data": 100,
+   "first_year": 1925,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0487354121918,
+   "median_annual_log_change": 0.000227123671833,
+   "p95_abs_annual_log_change": 0.103845091093,
+   "max_1y_depreciation_log": 0.18883566074,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.54876433597,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 15,
+    "dual_market": 7,
+    "peg": 55
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "CDF": {
+   "nations": [
+    "COD"
+   ],
+   "years_with_data": 74,
+   "first_year": 1950,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.986666666667,
+   "volatility_annual_log": 0.999253142288,
+   "median_annual_log_change": 0.112173971464,
+   "p95_abs_annual_log_change": 2.33228102835,
+   "max_1y_depreciation_log": 6.16312319999,
+   "crisis_frequency": 0.383561643836,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.76270137684,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 17,
+    "dual_market": 13,
+    "free_fall": 30,
+    "peg": 7
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "CHF": {
+   "nations": [
+    "CHE"
+   ],
+   "years_with_data": 100,
+   "first_year": 1925,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0893045462736,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.193832283429,
+   "max_1y_depreciation_log": 0.274677118721,
+   "crisis_frequency": 0.010101010101,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.5175358954,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 46,
+    "peg": 31
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "CLP": {
+   "nations": [
+    "CHL"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.393294168069,
+   "median_annual_log_change": 0.118229978294,
+   "p95_abs_annual_log_change": 0.816396633145,
+   "max_1y_depreciation_log": 2.1142127046,
+   "crisis_frequency": 0.310810810811,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 3.44829492506,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 45,
+    "free_fall": 16,
+    "peg": 6
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "CNY": {
+   "nations": [
+    "CHN"
+   ],
+   "years_with_data": 68,
+   "first_year": 1957,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.906666666667,
+   "volatility_annual_log": 0.0815558755653,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.161540048317,
+   "max_1y_depreciation_log": 0.402661806351,
+   "crisis_frequency": 0.044776119403,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.53602860393,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 29,
+    "peg": 31
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "COP": {
+   "nations": [
+    "COL"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.121558417213,
+   "median_annual_log_change": 0.0930017689736,
+   "p95_abs_annual_log_change": 0.312486423779,
+   "max_1y_depreciation_log": 0.521955034878,
+   "crisis_frequency": 0.148648648649,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.02625870726,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 54,
+    "free_fall": 1,
+    "peg": 12
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "CRC": {
+   "nations": [
+    "CRI"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.135455395573,
+   "median_annual_log_change": 0.0180891335291,
+   "p95_abs_annual_log_change": 0.180745099785,
+   "max_1y_depreciation_log": 0.93195886399,
+   "crisis_frequency": 0.0405405405405,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.50999824769,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 10,
+    "free_fall": 3,
+    "peg": 54
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "CUP": {
+   "nations": [
+    "CUB"
+   ],
+   "years_with_data": 18,
+   "first_year": 1957,
+   "last_year": 1974,
+   "coverage_1950_2024": 0.24,
+   "volatility_annual_log": 0.0296308074717,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0850430528314,
+   "max_1y_depreciation_log": 0.0,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {},
+   "confidence": "estimated",
+   "flags": []
+  },
+  "CZK": {
+   "nations": [
+    "CZE"
+   ],
+   "years_with_data": 33,
+   "first_year": 1993,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.426666666667,
+   "volatility_annual_log": 0.0877115076059,
+   "median_annual_log_change": -0.00958634868664,
+   "p95_abs_annual_log_change": 0.161696914804,
+   "max_1y_depreciation_log": 0.169788001485,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.84548692432,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "peg": 23
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "DJF": {
+   "nations": [
+    "DJI"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0140605333599,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.000859354034454,
+   "max_1y_depreciation_log": 0.0,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.23080686819,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "DKK": {
+   "nations": [
+    "DNK"
+   ],
+   "years_with_data": 101,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.103223608805,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.216901279272,
+   "max_1y_depreciation_log": 0.528712898361,
+   "crisis_frequency": 0.03,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.47842725816,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "peg": 76
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "DOP": {
+   "nations": [
+    "DOM"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.170760782752,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.365848405587,
+   "max_1y_depreciation_log": 1.13546106749,
+   "crisis_frequency": 0.0933333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.941523230206,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 9,
+    "free_fall": 6,
+    "peg": 52
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "DZD": {
+   "nations": [
+    "DZA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.118408968194,
+   "median_annual_log_change": 0.0151379723462,
+   "p95_abs_annual_log_change": 0.231522212294,
+   "max_1y_depreciation_log": 0.723811339406,
+   "crisis_frequency": 0.0533333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.93050518146,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 30,
+    "free_fall": 1,
+    "peg": 36
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "EGP": {
+   "nations": [
+    "EGY"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.160210900928,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.500239002575,
+   "max_1y_depreciation_log": 0.705333378994,
+   "crisis_frequency": 0.106666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.09441239442,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 42,
+    "peg": 25
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "ERN": {
+   "nations": [
+    "ERI"
+   ],
+   "years_with_data": 68,
+   "first_year": 1958,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.893333333333,
+   "volatility_annual_log": 0.0911408992642,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.164598516742,
+   "max_1y_depreciation_log": 0.578926036467,
+   "crisis_frequency": 0.0298507462687,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.8981336776,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 19,
+    "union": 40
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "ETB": {
+   "nations": [
+    "ETH"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.102340814208,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.21160063428,
+   "max_1y_depreciation_log": 0.57892603647,
+   "crisis_frequency": 0.0540540540541,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.58709853343,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 11,
+    "free_fall": 1,
+    "peg": 55
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "EUR": {
+   "nations": [
+    "AUT",
+    "BEL",
+    "CYP",
+    "DEU",
+    "ESP",
+    "EST",
+    "FIN",
+    "FRA",
+    "GRC",
+    "HRV",
+    "IRL",
+    "ITA",
+    "LTU",
+    "LUX",
+    "LVA",
+    "MLT",
+    "MNE",
+    "NED",
+    "PRT",
+    "SVK",
+    "SVN",
+    "XKX"
+   ],
+   "years_with_data": 100,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.156193317637,
+   "median_annual_log_change": -0.000199845959704,
+   "p95_abs_annual_log_change": 0.229359439181,
+   "max_1y_depreciation_log": 0.29479954022,
+   "crisis_frequency": 0.0102040816327,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.28647602525,
+   "regime_recent": "union",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 3,
+    "free_fall": 4,
+    "peg": 46,
+    "union": 23
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6",
+    "chained:legacy_currency",
+    "structural_breaks"
+   ]
+  },
+  "FJD": {
+   "nations": [
+    "FJI"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0624524765207,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.115836837133,
+   "max_1y_depreciation_log": 0.31934174703,
+   "crisis_frequency": 0.0133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.48237175018,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "GBP": {
+   "nations": [
+    "GBR"
+   ],
+   "years_with_data": 101,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0884162054944,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.189504533721,
+   "max_1y_depreciation_log": 0.295311099615,
+   "crisis_frequency": 0.03,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.1082419775,
+   "regime_recent": "float",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 46,
+    "float": 8,
+    "peg": 23
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "GEL": {
+   "nations": [
+    "GEO"
+   ],
+   "years_with_data": 30,
+   "first_year": 1996,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.386666666667,
+   "volatility_annual_log": 0.104003274597,
+   "median_annual_log_change": 0.0271078583562,
+   "p95_abs_annual_log_change": 0.196101142714,
+   "max_1y_depreciation_log": 0.376159144981,
+   "crisis_frequency": 0.0689655172414,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.20508060394,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 3,
+    "dual_market": 2,
+    "free_fall": 1,
+    "peg": 15
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "GHS": {
+   "nations": [
+    "GHA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 1.11113660575,
+   "median_annual_log_change": 0.0700071302618,
+   "p95_abs_annual_log_change": 0.595422295086,
+   "max_1y_depreciation_log": 1.40498311671,
+   "crisis_frequency": 0.306666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.09422737495,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 14,
+    "float": 4,
+    "free_fall": 17,
+    "peg": 23,
+    "union": 9
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "GMD": {
+   "nations": [
+    "GMB"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.108177666484,
+   "median_annual_log_change": 0.0261534909823,
+   "p95_abs_annual_log_change": 0.217101563362,
+   "max_1y_depreciation_log": 0.575729378353,
+   "crisis_frequency": 0.0533333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.9924940743,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 7,
+    "dual_market": 5,
+    "float": 5,
+    "free_fall": 1,
+    "peg": 35,
+    "union": 14
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "GNF": {
+   "nations": [
+    "GIN"
+   ],
+   "years_with_data": 71,
+   "first_year": 1950,
+   "last_year": 2020,
+   "coverage_1950_2024": 0.946666666667,
+   "volatility_annual_log": 0.322618636235,
+   "median_annual_log_change": 0.015138910744,
+   "p95_abs_annual_log_change": 0.241486412771,
+   "max_1y_depreciation_log": 2.6176629129,
+   "crisis_frequency": 0.0714285714286,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.10073373985,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 11,
+    "dual_market": 3,
+    "peg": 43,
+    "union": 10
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "GTQ": {
+   "nations": [
+    "GTM"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0978564609632,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.12322419874,
+   "max_1y_depreciation_log": 0.628608659422,
+   "crisis_frequency": 0.04,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.51340861468,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "free_fall": 4,
+    "peg": 62
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "GYD": {
+   "nations": [
+    "GUY"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.193464911785,
+   "median_annual_log_change": 0.00166921440652,
+   "p95_abs_annual_log_change": 0.283897427134,
+   "max_1y_depreciation_log": 1.03966276675,
+   "crisis_frequency": 0.0666666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.89497832829,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 4,
+    "peg": 47,
+    "union": 16
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "HNL": {
+   "nations": [
+    "HND"
+   ],
+   "years_with_data": 66,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.866666666667,
+   "volatility_annual_log": 0.0173571625685,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0453364502412,
+   "max_1y_depreciation_log": 0.0601946963541,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.57370749538,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 5,
+    "peg": 52
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "HTG": {
+   "nations": [
+    "HTI"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.101146526984,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.26142959308,
+   "max_1y_depreciation_log": 0.485114677631,
+   "crisis_frequency": 0.0666666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.98006911501,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 12,
+    "free_fall": 4,
+    "peg": 51
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "HUF": {
+   "nations": [
+    "HUN"
+   ],
+   "years_with_data": 58,
+   "first_year": 1968,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.76,
+   "volatility_annual_log": 0.0968222696577,
+   "median_annual_log_change": 0.0245348222334,
+   "p95_abs_annual_log_change": 0.185335448522,
+   "max_1y_depreciation_log": 0.20629678142,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.25152365489,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 36,
+    "peg": 13
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "IDR": {
+   "nations": [
+    "IDN"
+   ],
+   "years_with_data": 59,
+   "first_year": 1967,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.773333333333,
+   "volatility_annual_log": 0.198635017744,
+   "median_annual_log_change": 0.0405504191653,
+   "p95_abs_annual_log_change": 0.321992736516,
+   "max_1y_depreciation_log": 1.23600641591,
+   "crisis_frequency": 0.0862068965517,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.947194306775,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 18,
+    "free_fall": 3,
+    "peg": 29
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "ILS": {
+   "nations": [
+    "ISR",
+    "PSX"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.326506870415,
+   "median_annual_log_change": 0.0309856794046,
+   "p95_abs_annual_log_change": 0.813626789101,
+   "max_1y_depreciation_log": 1.65171335652,
+   "crisis_frequency": 0.2,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.50208524215,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 30,
+    "dual_market": 10,
+    "free_fall": 13,
+    "peg": 14
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "INR": {
+   "nations": [
+    "IND"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.065150855655,
+   "median_annual_log_change": 0.0274271920671,
+   "p95_abs_annual_log_change": 0.156196620759,
+   "max_1y_depreciation_log": 0.28924404106,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.78024887831,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 4,
+    "peg": 63
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "IQD": {
+   "nations": [
+    "IRQ"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.986666666667,
+   "volatility_annual_log": 0.925946722588,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.1224630317,
+   "max_1y_depreciation_log": 7.87082611615,
+   "crisis_frequency": 0.027397260274,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.17594801092,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 23,
+    "free_fall": 1,
+    "peg": 42
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "IRR": {
+   "nations": [
+    "IRN"
+   ],
+   "years_with_data": 74,
+   "first_year": 1950,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.986666666667,
+   "volatility_annual_log": 0.389844973191,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.371111237642,
+   "max_1y_depreciation_log": 2.96217289624,
+   "crisis_frequency": 0.0958904109589,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.22516923669,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 23,
+    "dual_market": 4,
+    "free_fall": 4,
+    "peg": 36
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "ISK": {
+   "nations": [
+    "ISL"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.181346323997,
+   "median_annual_log_change": 0.0192193109647,
+   "p95_abs_annual_log_change": 0.415601816506,
+   "max_1y_depreciation_log": 0.798508540492,
+   "crisis_frequency": 0.2,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.71351953667,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 20,
+    "free_fall": 10,
+    "peg": 37
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "JMD": {
+   "nations": [
+    "JAM"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.14317018801,
+   "median_annual_log_change": 0.0168408755329,
+   "p95_abs_annual_log_change": 0.372775343991,
+   "max_1y_depreciation_log": 0.713223880948,
+   "crisis_frequency": 0.0933333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.4396124258,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "free_fall": 3,
+    "peg": 63
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "JOD": {
+   "nations": [
+    "JOR"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0592327990345,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.101513691789,
+   "max_1y_depreciation_log": 0.42859451011,
+   "crisis_frequency": 0.0133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.60286646199,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 4,
+    "peg": 63
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "JPY": {
+   "nations": [
+    "JPN"
+   ],
+   "years_with_data": 101,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.355107445978,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.353854524677,
+   "max_1y_depreciation_log": 3.26143543929,
+   "crisis_frequency": 0.06,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.44197486025,
+   "regime_recent": "float",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 11,
+    "float": 39,
+    "free_fall": 2,
+    "peg": 25
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6",
+    "structural_breaks"
+   ]
+  },
+  "KES": {
+   "nations": [
+    "KEN"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0931488446105,
+   "median_annual_log_change": 1.7360002323e-10,
+   "p95_abs_annual_log_change": 0.184379512573,
+   "max_1y_depreciation_log": 0.58797690851,
+   "crisis_frequency": 0.0133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.40339525836,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 7,
+    "free_fall": 2,
+    "peg": 41,
+    "union": 17
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "KGS": {
+   "nations": [
+    "KGZ"
+   ],
+   "years_with_data": 32,
+   "first_year": 1994,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.413333333333,
+   "volatility_annual_log": 0.137282245726,
+   "median_annual_log_change": 0.01403254561,
+   "p95_abs_annual_log_change": 0.252686216029,
+   "max_1y_depreciation_log": 0.627002469637,
+   "crisis_frequency": 0.0645161290323,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.91049188335,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 2,
+    "free_fall": 6,
+    "peg": 15
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "KHR": {
+   "nations": [
+    "KHM"
+   ],
+   "years_with_data": 56,
+   "first_year": 1954,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.733333333333,
+   "volatility_annual_log": 0.187922808288,
+   "median_annual_log_change": 0.000476682263093,
+   "p95_abs_annual_log_change": 0.537740588464,
+   "max_1y_depreciation_log": 0.760754263861,
+   "crisis_frequency": 0.148148148148,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.12051671771,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 1,
+    "dual_market": 20,
+    "free_fall": 4,
+    "peg": 22
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "KPW": {
+   "nations": [
+    "PRK"
+   ],
+   "years_with_data": 0,
+   "first_year": null,
+   "last_year": null,
+   "coverage_1950_2024": 0.0,
+   "volatility_annual_log": null,
+   "median_annual_log_change": null,
+   "p95_abs_annual_log_change": null,
+   "max_1y_depreciation_log": null,
+   "crisis_frequency": null,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {},
+   "confidence": "estimated",
+   "flags": [
+    "no_data"
+   ]
+  },
+  "KRW": {
+   "nations": [
+    "KOR"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.227499475684,
+   "median_annual_log_change": 0.0166205176629,
+   "p95_abs_annual_log_change": 0.552865995576,
+   "max_1y_depreciation_log": 1.09861228867,
+   "crisis_frequency": 0.106666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.914819402028,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 28,
+    "free_fall": 5,
+    "peg": 34
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "KWD": {
+   "nations": [
+    "KWT"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0247205200868,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.055650774142,
+   "max_1y_depreciation_log": 0.0681419875715,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.24788055371,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 8,
+    "peg": 50,
+    "union": 9
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "KZT": {
+   "nations": [
+    "KAZ"
+   ],
+   "years_with_data": 32,
+   "first_year": 1994,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.413333333333,
+   "volatility_annual_log": 0.147443300292,
+   "median_annual_log_change": 0.0372856745394,
+   "p95_abs_annual_log_change": 0.428373496032,
+   "max_1y_depreciation_log": 0.539441929818,
+   "crisis_frequency": 0.0967741935484,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.73153668886,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 3,
+    "peg": 20
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "LAK": {
+   "nations": [
+    "LAO"
+   ],
+   "years_with_data": 69,
+   "first_year": 1957,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.906666666667,
+   "volatility_annual_log": 0.549231813406,
+   "median_annual_log_change": 0.0167614032409,
+   "p95_abs_annual_log_change": 0.771010359844,
+   "max_1y_depreciation_log": 1.09861228867,
+   "crisis_frequency": 0.25,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.998364669138,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 25,
+    "dual_market": 2,
+    "free_fall": 4,
+    "peg": 29
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "LBP": {
+   "nations": [
+    "LBN"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.419826030845,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.871711910402,
+   "max_1y_depreciation_log": 2.21968105404,
+   "crisis_frequency": 0.146666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 4.20235194805,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 9,
+    "free_fall": 8,
+    "peg": 50
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "LKR": {
+   "nations": [
+    "LKA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0936816679079,
+   "median_annual_log_change": 0.0375939315169,
+   "p95_abs_annual_log_change": 0.161110079919,
+   "max_1y_depreciation_log": 0.564960267193,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.23996384975,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 6,
+    "peg": 61
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "LRD": {
+   "nations": [
+    "LBR"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.379204720732,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.241701577391,
+   "max_1y_depreciation_log": 3.166291762,
+   "crisis_frequency": 0.0675675675676,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.37415386971,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 10,
+    "float": 7,
+    "free_fall": 1,
+    "peg": 11,
+    "union": 38
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "LSL": {
+   "nations": [
+    "LSO"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.107002283405,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.213709632401,
+   "max_1y_depreciation_log": 0.412561130699,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.32355078869,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 37,
+    "union": 30
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "LYD": {
+   "nations": [
+    "LBY"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.16438710887,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.14450257559,
+   "max_1y_depreciation_log": 1.17893375923,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.34254148025,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 34,
+    "peg": 31,
+    "union": 2
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "MAD": {
+   "nations": [
+    "MAR",
+    "SAH"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0753592867444,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.153711297842,
+   "max_1y_depreciation_log": 0.272987608953,
+   "crisis_frequency": 0.0133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.95678745114,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 28,
+    "peg": 39
+   },
+   "confidence": "complete",
+   "flags": [
+    "missing_source_area:SAH"
+   ]
+  },
+  "MDL": {
+   "nations": [
+    "MDA"
+   ],
+   "years_with_data": 31,
+   "first_year": 1995,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.4,
+   "volatility_annual_log": 0.148643287881,
+   "median_annual_log_change": 0.0292405484581,
+   "p95_abs_annual_log_change": 0.236689584439,
+   "max_1y_depreciation_log": 0.67192142666,
+   "crisis_frequency": 0.0666666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.58736420293,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 1,
+    "free_fall": 2,
+    "peg": 19
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "MGA": {
+   "nations": [
+    "MDG"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.125941183341,
+   "median_annual_log_change": 0.0277722068355,
+   "p95_abs_annual_log_change": 0.303609546281,
+   "max_1y_depreciation_log": 0.471727727896,
+   "crisis_frequency": 0.12,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.16885575959,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 29,
+    "dual_market": 2,
+    "free_fall": 2,
+    "peg": 34
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "MKD": {
+   "nations": [
+    "MKD"
+   ],
+   "years_with_data": 32,
+   "first_year": 1994,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.413333333333,
+   "volatility_annual_log": 0.086420487802,
+   "median_annual_log_change": -0.0025584242047,
+   "p95_abs_annual_log_change": 0.174175541291,
+   "max_1y_depreciation_log": 0.223687785753,
+   "crisis_frequency": 0.0322580645161,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.55332314054,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 1,
+    "peg": 22
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "MMK": {
+   "nations": [
+    "MMR"
+   ],
+   "years_with_data": 71,
+   "first_year": 1950,
+   "last_year": 2020,
+   "coverage_1950_2024": 0.946666666667,
+   "volatility_annual_log": 0.573143528359,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.156831900209,
+   "max_1y_depreciation_log": 4.76795463489,
+   "crisis_frequency": 0.0428571428571,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.13538906935,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 18,
+    "dual_market": 2,
+    "free_fall": 8,
+    "peg": 39
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "MNT": {
+   "nations": [
+    "MNG"
+   ],
+   "years_with_data": 35,
+   "first_year": 1991,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.453333333333,
+   "volatility_annual_log": 0.429956178322,
+   "median_annual_log_change": 0.0662939779092,
+   "p95_abs_annual_log_change": 0.761550987939,
+   "max_1y_depreciation_log": 2.10813247759,
+   "crisis_frequency": 0.117647058824,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.321155736535,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "float": 2,
+    "free_fall": 5,
+    "peg": 19
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "MRU": {
+   "nations": [
+    "MRT"
+   ],
+   "years_with_data": 73,
+   "first_year": 1950,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.973333333333,
+   "volatility_annual_log": 0.0698128198097,
+   "median_annual_log_change": 0.0136002609726,
+   "p95_abs_annual_log_change": 0.157117418125,
+   "max_1y_depreciation_log": 0.327969030856,
+   "crisis_frequency": 0.0140845070423,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.76561809102,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 9,
+    "peg": 57
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "MWK": {
+   "nations": [
+    "MWI"
+   ],
+   "years_with_data": 74,
+   "first_year": 1950,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.986666666667,
+   "volatility_annual_log": 0.155211035055,
+   "median_annual_log_change": 0.0269098742995,
+   "p95_abs_annual_log_change": 0.414121796471,
+   "max_1y_depreciation_log": 0.685262996775,
+   "crisis_frequency": 0.13698630137,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.80632247884,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 18,
+    "float": 10,
+    "free_fall": 4,
+    "peg": 20,
+    "union": 15
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "MXN": {
+   "nations": [
+    "MEX"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.214956273656,
+   "median_annual_log_change": 0.00636525243297,
+   "p95_abs_annual_log_change": 0.676760660762,
+   "max_1y_depreciation_log": 0.867784333324,
+   "crisis_frequency": 0.133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.40761834107,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 22,
+    "free_fall": 8,
+    "peg": 37
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "MYR": {
+   "nations": [
+    "MYS"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0586223514924,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0965160415441,
+   "max_1y_depreciation_log": 0.332887439663,
+   "crisis_frequency": 0.0133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.50946695382,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 11,
+    "float": 1,
+    "peg": 55
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "MZN": {
+   "nations": [
+    "MOZ"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.270017573271,
+   "median_annual_log_change": 0.00577543993958,
+   "p95_abs_annual_log_change": 0.44793904188,
+   "max_1y_depreciation_log": 1.97285401292,
+   "crisis_frequency": 0.162162162162,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.32049921504,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 8,
+    "free_fall": 12,
+    "peg": 47
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "NAD": {
+   "nations": [
+    "NAM"
+   ],
+   "years_with_data": 64,
+   "first_year": 1962,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.84,
+   "volatility_annual_log": 0.115328934299,
+   "median_annual_log_change": 0.0323229632599,
+   "p95_abs_annual_log_change": 0.215288919677,
+   "max_1y_depreciation_log": 0.412561130699,
+   "crisis_frequency": 0.031746031746,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.31731906689,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 23,
+    "union": 32
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "NGN": {
+   "nations": [
+    "NGA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.241492577711,
+   "median_annual_log_change": 7.42509648683e-05,
+   "p95_abs_annual_log_change": 0.592335463313,
+   "max_1y_depreciation_log": 1.43960967774,
+   "crisis_frequency": 0.133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.44538751628,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 22,
+    "float": 3,
+    "free_fall": 9,
+    "peg": 33
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "NIO": {
+   "nations": [
+    "NIC"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 1.15810872952,
+   "median_annual_log_change": 0.0361826275351,
+   "p95_abs_annual_log_change": 1.70215855114,
+   "max_1y_depreciation_log": 7.87388962287,
+   "crisis_frequency": 0.0933333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.82624540728,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 12,
+    "float": 4,
+    "free_fall": 8,
+    "peg": 43
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "NOK": {
+   "nations": [
+    "NOR"
+   ],
+   "years_with_data": 101,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.101318873901,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.219272287841,
+   "max_1y_depreciation_log": 0.394538485403,
+   "crisis_frequency": 0.03,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.39124461013,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 56,
+    "peg": 21
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "NPR": {
+   "nations": [
+    "NPL"
+   ],
+   "years_with_data": 74,
+   "first_year": 1952,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.973333333333,
+   "volatility_annual_log": 0.0702735866644,
+   "median_annual_log_change": 0.0395063261643,
+   "p95_abs_annual_log_change": 0.156116400755,
+   "max_1y_depreciation_log": 0.23784079282,
+   "crisis_frequency": 0.027397260274,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.13306177372,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 14,
+    "peg": 51
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "NZD": {
+   "nations": [
+    "NZL"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0865734326768,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.178056994436,
+   "max_1y_depreciation_log": 0.211290149827,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.58242609089,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 43,
+    "peg": 24
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "OMR": {
+   "nations": [
+    "OMN"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0245665271093,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0344035273547,
+   "max_1y_depreciation_log": 0.140357719782,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.71958554194,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 47,
+    "union": 20
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "PAB": {
+   "nations": [
+    "PAN"
+   ],
+   "years_with_data": 86,
+   "first_year": 1940,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0,
+   "max_1y_depreciation_log": 0.0,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": "union",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "union": 77
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "PEN": {
+   "nations": [
+    "PER"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.669764879994,
+   "median_annual_log_change": 0.0240906054433,
+   "p95_abs_annual_log_change": 1.23079663785,
+   "max_1y_depreciation_log": 4.25518360673,
+   "crisis_frequency": 0.266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.92974482641,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 22,
+    "dual_market": 4,
+    "free_fall": 18,
+    "peg": 23
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "PGK": {
+   "nations": [
+    "PNG"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0836511232852,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.178544100194,
+   "max_1y_depreciation_log": 0.366048652578,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.28279460247,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 15,
+    "peg": 27,
+    "union": 25
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "PHP": {
+   "nations": [
+    "PHL"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.112246851827,
+   "median_annual_log_change": 0.00888781150624,
+   "p95_abs_annual_log_change": 0.282599859189,
+   "max_1y_depreciation_log": 0.612735569728,
+   "crisis_frequency": 0.0666666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.46324564464,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 41,
+    "free_fall": 1,
+    "peg": 25
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "PKR": {
+   "nations": [
+    "PAK"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0950041227526,
+   "median_annual_log_change": 0.0134033226568,
+   "p95_abs_annual_log_change": 0.199732635422,
+   "max_1y_depreciation_log": 0.600534050726,
+   "crisis_frequency": 0.04,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.93856318374,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 9,
+    "dual_market": 13,
+    "peg": 45
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "PLN": {
+   "nations": [
+    "POL"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.342518186326,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.521923119969,
+   "max_1y_depreciation_log": 1.88721539649,
+   "crisis_frequency": 0.173333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.92926197861,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 17,
+    "dual_market": 40,
+    "free_fall": 5,
+    "peg": 5
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "PYG": {
+   "nations": [
+    "PRY"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.179531319787,
+   "median_annual_log_change": 0.030327384955,
+   "p95_abs_annual_log_change": 0.471944095648,
+   "max_1y_depreciation_log": 0.881431485782,
+   "crisis_frequency": 0.16,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.55548079413,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 39,
+    "free_fall": 3,
+    "peg": 25
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "QAR": {
+   "nations": [
+    "QAT"
+   ],
+   "years_with_data": 60,
+   "first_year": 1966,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.786666666667,
+   "volatility_annual_log": 0.0166848894033,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0275036157848,
+   "max_1y_depreciation_log": 0.00828888581705,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.06767779477,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 51
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "RON": {
+   "nations": [
+    "ROU"
+   ],
+   "years_with_data": 69,
+   "first_year": 1957,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.906666666667,
+   "volatility_annual_log": 0.327411712643,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.882396366503,
+   "max_1y_depreciation_log": 1.39413245891,
+   "crisis_frequency": 0.161764705882,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.59538894642,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 6,
+    "dual_market": 33,
+    "free_fall": 11,
+    "peg": 10
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "RSD": {
+   "nations": [
+    "SRB"
+   ],
+   "years_with_data": 29,
+   "first_year": 1997,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.373333333333,
+   "volatility_annual_log": 0.338051440396,
+   "median_annual_log_change": 0.0100416341036,
+   "p95_abs_annual_log_change": 0.416296043821,
+   "max_1y_depreciation_log": 1.68947178099,
+   "crisis_frequency": 0.0714285714286,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.767267110415,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 4,
+    "peg": 14,
+    "union": 2
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "RUB": {
+   "nations": [
+    "RUS"
+   ],
+   "years_with_data": 31,
+   "first_year": 1993,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.4,
+   "volatility_annual_log": 0.219325125887,
+   "median_annual_log_change": 0.0362832192504,
+   "p95_abs_annual_log_change": 0.495390726228,
+   "max_1y_depreciation_log": 0.930905255787,
+   "crisis_frequency": 0.137931034483,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.66467199194,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 6,
+    "dual_market": 2,
+    "free_fall": 5,
+    "peg": 9
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "RWF": {
+   "nations": [
+    "RWA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.115300210078,
+   "median_annual_log_change": 0.0230351096108,
+   "p95_abs_annual_log_change": 0.155246682321,
+   "max_1y_depreciation_log": 0.62238261426,
+   "crisis_frequency": 0.04,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.36863849738,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 9,
+    "free_fall": 1,
+    "peg": 57
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "SAR": {
+   "nations": [
+    "SAU"
+   ],
+   "years_with_data": 74,
+   "first_year": 1952,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.973333333333,
+   "volatility_annual_log": 0.0283488093741,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0390172061707,
+   "max_1y_depreciation_log": 0.182321556838,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.56474228459,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 65
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "SBD": {
+   "nations": [
+    "SLB"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.065192224848,
+   "median_annual_log_change": 0.00488364556943,
+   "p95_abs_annual_log_change": 0.163879436876,
+   "max_1y_depreciation_log": 0.258969660368,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.62041091759,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 39,
+    "union": 28
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "SDG": {
+   "nations": [
+    "SDN"
+   ],
+   "years_with_data": 73,
+   "first_year": 1950,
+   "last_year": 2022,
+   "coverage_1950_2024": 0.973333333333,
+   "volatility_annual_log": 0.713079211153,
+   "median_annual_log_change": 0.00403192557575,
+   "p95_abs_annual_log_change": 1.00326923192,
+   "max_1y_depreciation_log": 2.6395981967,
+   "crisis_frequency": 0.263888888889,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.29055999285,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 19,
+    "free_fall": 8,
+    "peg": 33,
+    "union": 7
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "SEK": {
+   "nations": [
+    "SWE"
+   ],
+   "years_with_data": 101,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0989699785297,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.216109047659,
+   "max_1y_depreciation_log": 0.364117380588,
+   "crisis_frequency": 0.02,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.17808539087,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 19,
+    "dual_market": 7,
+    "peg": 51
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "SGD": {
+   "nations": [
+    "SGP"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0371843320439,
+   "median_annual_log_change": -0.000449860699848,
+   "p95_abs_annual_log_change": 0.080890591111,
+   "max_1y_depreciation_log": 0.119693979008,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.20997505786,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 44,
+    "peg": 23
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "SLE": {
+   "nations": [
+    "SLE"
+   ],
+   "years_with_data": 74,
+   "first_year": 1950,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.986666666667,
+   "volatility_annual_log": 0.238627099387,
+   "median_annual_log_change": 0.0552130176296,
+   "p95_abs_annual_log_change": 0.683880968177,
+   "max_1y_depreciation_log": 1.15023526341,
+   "crisis_frequency": 0.178082191781,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.37335638867,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 20,
+    "free_fall": 11,
+    "peg": 21,
+    "union": 15
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "SLS": {
+   "nations": [
+    "SOL"
+   ],
+   "years_with_data": 0,
+   "first_year": null,
+   "last_year": null,
+   "coverage_1950_2024": 0.0,
+   "volatility_annual_log": null,
+   "median_annual_log_change": null,
+   "p95_abs_annual_log_change": null,
+   "max_1y_depreciation_log": null,
+   "crisis_frequency": null,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {},
+   "confidence": "estimated",
+   "flags": [
+    "no_data",
+    "missing_source_area:SOL"
+   ]
+  },
+  "SOS": {
+   "nations": [
+    "SOM"
+   ],
+   "years_with_data": 49,
+   "first_year": 1950,
+   "last_year": 2017,
+   "coverage_1950_2024": 0.653333333333,
+   "volatility_annual_log": 0.238325722504,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.581038512697,
+   "max_1y_depreciation_log": 1.05732420162,
+   "crisis_frequency": 0.170212765957,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 22.9292137205,
+   "regime_recent": "free_fall",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 10,
+    "free_fall": 12,
+    "peg": 19,
+    "union": 1
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "SRD": {
+   "nations": [
+    "SUR"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.577529565664,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.62209480765,
+   "max_1y_depreciation_log": 4.82533230043,
+   "crisis_frequency": 0.12,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.12193164712,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 16,
+    "free_fall": 11,
+    "peg": 40
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "SSP": {
+   "nations": [
+    "SSD"
+   ],
+   "years_with_data": 14,
+   "first_year": 2011,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.186666666667,
+   "volatility_annual_log": 0.696893084287,
+   "median_annual_log_change": 0.218391007154,
+   "p95_abs_annual_log_change": 1.55815099346,
+   "max_1y_depreciation_log": 2.56227794002,
+   "crisis_frequency": 0.461538461538,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {},
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "SYP": {
+   "nations": [
+    "SYR"
+   ],
+   "years_with_data": 73,
+   "first_year": 1950,
+   "last_year": 2022,
+   "coverage_1950_2024": 0.973333333333,
+   "volatility_annual_log": 0.265607351877,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.675798166806,
+   "max_1y_depreciation_log": 1.46004698326,
+   "crisis_frequency": 0.152777777778,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.36958036808,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 41,
+    "dual_market": 20,
+    "free_fall": 1,
+    "peg": 4
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "SZL": {
+   "nations": [
+    "SWZ"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.107013526058,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.213709632401,
+   "max_1y_depreciation_log": 0.412561130699,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.32277021882,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 42,
+    "union": 25
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "THB": {
+   "nations": [
+    "THA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0602410611479,
+   "median_annual_log_change": -8.17307332957e-11,
+   "p95_abs_annual_log_change": 0.134645464111,
+   "max_1y_depreciation_log": 0.276628019148,
+   "crisis_frequency": 0.0133333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.3914601478,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 25,
+    "peg": 42
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "TJS": {
+   "nations": [
+    "TJK"
+   ],
+   "years_with_data": 34,
+   "first_year": 1992,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.44,
+   "volatility_annual_log": 0.407909859068,
+   "median_annual_log_change": 0.0797886964367,
+   "p95_abs_annual_log_change": 1.10021384342,
+   "max_1y_depreciation_log": 1.61259253779,
+   "crisis_frequency": 0.272727272727,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.34186329231,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 10,
+    "peg": 15
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "TMT": {
+   "nations": [
+    "TKM"
+   ],
+   "years_with_data": 8,
+   "first_year": 1994,
+   "last_year": 2001,
+   "coverage_1950_2024": 0.106666666667,
+   "volatility_annual_log": 1.2978961712,
+   "median_annual_log_change": 0.165705656786,
+   "p95_abs_annual_log_change": 2.89217782181,
+   "max_1y_depreciation_log": 3.37998730306,
+   "crisis_frequency": 0.428571428571,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 4,
+    "free_fall": 4
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "TND": {
+   "nations": [
+    "TUN"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0691623982445,
+   "median_annual_log_change": 0.00041307129715,
+   "p95_abs_annual_log_change": 0.148462065797,
+   "max_1y_depreciation_log": 0.198365123306,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.72379882952,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "TRY": {
+   "nations": [
+    "TUR"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 1.31076065521,
+   "median_annual_log_change": 0.174694858864,
+   "p95_abs_annual_log_change": 0.739577489,
+   "max_1y_depreciation_log": 0.991570549615,
+   "crisis_frequency": 0.413333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.37649844709,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 46,
+    "free_fall": 20,
+    "peg": 1
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "TTD": {
+   "nations": [
+    "TTO"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0576368075658,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.105997780898,
+   "max_1y_depreciation_log": 0.384845820905,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.06809828937,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "peg": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "TWD": {
+   "nations": [
+    "TWN"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0944195591116,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.160739022045,
+   "max_1y_depreciation_log": 0.541655369644,
+   "crisis_frequency": 0.027027027027,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.09115010114,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {},
+   "confidence": "complete",
+   "flags": []
+  },
+  "TZS": {
+   "nations": [
+    "TZA"
+   ],
+   "years_with_data": 75,
+   "first_year": 1950,
+   "last_year": 2024,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.138734153191,
+   "median_annual_log_change": 0.0161793608854,
+   "p95_abs_annual_log_change": 0.334353968852,
+   "max_1y_depreciation_log": 0.675628376636,
+   "crisis_frequency": 0.121621621622,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 3.62669266254,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 22,
+    "free_fall": 4,
+    "peg": 25,
+    "union": 16
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "UAH": {
+   "nations": [
+    "UKR"
+   ],
+   "years_with_data": 33,
+   "first_year": 1993,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.426666666667,
+   "volatility_annual_log": 0.438416606552,
+   "median_annual_log_change": 0.0388294072444,
+   "p95_abs_annual_log_change": 1.01130704145,
+   "max_1y_depreciation_log": 1.9776725545,
+   "crisis_frequency": 0.25,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 0.66383137645,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 2,
+    "dual_market": 2,
+    "free_fall": 6,
+    "peg": 14
+   },
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "UGX": {
+   "nations": [
+    "UGA"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.332264563909,
+   "median_annual_log_change": 0.00382627276483,
+   "p95_abs_annual_log_change": 0.774769316545,
+   "max_1y_depreciation_log": 1.90929446209,
+   "crisis_frequency": 0.16,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.41311484802,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 33,
+    "float": 1,
+    "free_fall": 8,
+    "peg": 25
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "USD": {
+   "nations": [
+    "ECU",
+    "SLV",
+    "TLS",
+    "USA"
+   ],
+   "years_with_data": 101,
+   "first_year": 1925,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0,
+   "max_1y_depreciation_log": 0.0,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": "union",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 11,
+    "dual_market": 2,
+    "free_fall": 11,
+    "peg": 36,
+    "union": 17
+   },
+   "confidence": "complete",
+   "flags": [
+    "extended_pre1950:jst_r6"
+   ]
+  },
+  "UYU": {
+   "nations": [
+    "URY"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.818709457366,
+   "median_annual_log_change": 0.147920130143,
+   "p95_abs_annual_log_change": 0.694940666526,
+   "max_1y_depreciation_log": 6.99826928652,
+   "crisis_frequency": 0.44,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.23872209231,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 25,
+    "free_fall": 28,
+    "peg": 14
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "UZS": {
+   "nations": [
+    "UZB"
+   ],
+   "years_with_data": 19,
+   "first_year": 1995,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.24,
+   "volatility_annual_log": 0.201752804268,
+   "median_annual_log_change": 0.129073152365,
+   "p95_abs_annual_log_change": 0.564215932306,
+   "max_1y_depreciation_log": 0.64109694383,
+   "crisis_frequency": 0.411764705882,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": null,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "free_fall": 5,
+    "peg": 5
+   },
+   "confidence": "estimated",
+   "flags": []
+  },
+  "VES": {
+   "nations": [
+    "VEN"
+   ],
+   "years_with_data": 68,
+   "first_year": 1950,
+   "last_year": 2017,
+   "coverage_1950_2024": 0.906666666667,
+   "volatility_annual_log": 0.205505326447,
+   "median_annual_log_change": 7.46333636583e-05,
+   "p95_abs_annual_log_change": 0.50217710222,
+   "max_1y_depreciation_log": 0.872350854987,
+   "crisis_frequency": 0.194029850746,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.09925164433,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 7,
+    "free_fall": 11,
+    "peg": 49
+   },
+   "confidence": "partial",
+   "flags": []
+  },
+  "VND": {
+   "nations": [
+    "VNM"
+   ],
+   "years_with_data": 40,
+   "first_year": 1983,
+   "last_year": 2024,
+   "coverage_1950_2024": 0.533333333333,
+   "volatility_annual_log": 0.488260678553,
+   "median_annual_log_change": 0.0178071775338,
+   "p95_abs_annual_log_change": 1.35010770358,
+   "max_1y_depreciation_log": 2.04729708835,
+   "crisis_frequency": 0.131578947368,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.31209289286,
+   "regime_recent": "peg",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "dual_market": 3,
+    "free_fall": 4,
+    "peg": 25
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "XAF": {
+   "nations": [
+    "CAF",
+    "CMR",
+    "COG",
+    "GAB",
+    "GNQ",
+    "TCD"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.116391655053,
+   "median_annual_log_change": 2.85742856503e-05,
+   "p95_abs_annual_log_change": 0.183104784984,
+   "max_1y_depreciation_log": 0.673315648195,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.34865161442,
+   "regime_recent": "union",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "union": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "XCD": {
+   "nations": [
+    "ATG",
+    "DMA",
+    "GRD",
+    "KNA",
+    "LCA",
+    "VCT"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.0276134772946,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.0365402792995,
+   "max_1y_depreciation_log": 0.186505136405,
+   "crisis_frequency": 0.0,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.68605817903,
+   "regime_recent": "union",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "union": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "XOF": {
+   "nations": [
+    "BEN",
+    "BFA",
+    "CIV",
+    "GNB",
+    "MLI",
+    "NER",
+    "SEN",
+    "TGO"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.116391655053,
+   "median_annual_log_change": 2.85742856503e-05,
+   "p95_abs_annual_log_change": 0.183104784984,
+   "max_1y_depreciation_log": 0.673315648195,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.34865161442,
+   "regime_recent": "union",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "union": 67
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "YER": {
+   "nations": [
+    "YEM"
+   ],
+   "years_with_data": 34,
+   "first_year": 1990,
+   "last_year": 2023,
+   "coverage_1950_2024": 0.453333333333,
+   "volatility_annual_log": 0.294553268403,
+   "median_annual_log_change": 0.0378073191272,
+   "p95_abs_annual_log_change": 0.824678497525,
+   "max_1y_depreciation_log": 1.22390194019,
+   "crisis_frequency": 0.181818181818,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 2.34237662796,
+   "regime_recent": null,
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {},
+   "confidence": "estimated",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "ZAR": {
+   "nations": [
+    "ZAF"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.107002283405,
+   "median_annual_log_change": 0.0,
+   "p95_abs_annual_log_change": 0.213709632401,
+   "max_1y_depreciation_log": 0.412561130699,
+   "crisis_frequency": 0.0266666666667,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.32355078869,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 35,
+    "dual_market": 9,
+    "peg": 23
+   },
+   "confidence": "complete",
+   "flags": []
+  },
+  "ZMW": {
+   "nations": [
+    "ZMB"
+   ],
+   "years_with_data": 76,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 1.0,
+   "volatility_annual_log": 0.851507360305,
+   "median_annual_log_change": 0.0137563437983,
+   "p95_abs_annual_log_change": 0.822149270371,
+   "max_1y_depreciation_log": 0.979907729342,
+   "crisis_frequency": 0.253333333333,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 1.10035406339,
+   "regime_recent": "band",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 27,
+    "free_fall": 18,
+    "peg": 22
+   },
+   "confidence": "complete",
+   "flags": [
+    "structural_breaks"
+   ]
+  },
+  "ZWG": {
+   "nations": [
+    "ZWE"
+   ],
+   "years_with_data": 65,
+   "first_year": 1950,
+   "last_year": 2025,
+   "coverage_1950_2024": 0.853333333333,
+   "volatility_annual_log": 1.93670064699,
+   "median_annual_log_change": 0.00837164948134,
+   "p95_abs_annual_log_change": 2.50910204229,
+   "max_1y_depreciation_log": 13.4502915776,
+   "crisis_frequency": 0.269841269841,
+   "crisis_threshold_log": 0.223143551314,
+   "mean_reversion_half_life_years": 12.9307712722,
+   "regime_recent": "free_fall",
+   "regime_window": [
+    2007,
+    2016
+   ],
+   "regime_distribution": {
+    "band": 10,
+    "free_fall": 15,
+    "peg": 34
+   },
+   "confidence": "partial",
+   "flags": [
+    "structural_breaks"
+   ]
+  }
+ }
+}

@@ -426,6 +426,11 @@ Honestidade de dados, explicitada no arquivo:
   decisão aberta (§10).
 - Regime cambial (fixo/flutuante) é dado, não código: `regime: "peg" | "float"`, com o núcleo
   aplicando drift só se `float`.
+- **Histórico e perfis (só dados, 2026-11-15):** `data/definitions/economy/fx_history/<CODE>.json`
+  (136 moedas, 9 101 pontos anuais, 1925–2025) e `data/definitions/economy/fx_profiles.json`
+  (volatilidade, p95, crise >25%/ano, meia-vida, regime de fato IRR 1940–2016 e `confidence`).
+  `currencies.json` continua com `regime: null` — nenhum código foi alterado. Detalhes em
+  `docs/economy/fx_history.md`.
 
 ### 4.5 i18n
 
@@ -573,6 +578,15 @@ Decisão de arquitetura com impacto no invariante de dinheiro (`demo_check_invar
 - Camadas `local` (mesma cidade) / `regional` (mesma nação ou raio `kRegionalRadiusKm = 500`,
   `cpp:84`) / `global` passam a ser escopo real no comércio demo, com `order.scope` refletindo
   o que aconteceu (hoje é sempre `International`, `cpp:1838`).
+- **Passo cambial (fase futura):** a taxa deixa de ser fixa quando a nação declarar regime
+  `float`/`band`. O tamanho do passo e a chance de crise **não são inventados**: vêm de
+  `data/definitions/economy/fx_profiles.json` (histórico 1925–2025 em
+  `data/definitions/economy/fx_history/`, ver `docs/economy/fx_history.md`):
+  `volatility_annual_log/√365` ≈ passo diário típico, `crisis_frequency` (ex.: BRL 0,45;
+  ARS 0,46; CHF 0,01) = chance anual de evento extremo, `max_1y_depreciation_log` = teto do
+  evento e `mean_reversion_half_life_years` = velocidade de retorno (hoje `currencies.json` não
+  declara regime, então o mundo real segue com taxa fixa e bit-idêntico ao XGS).
+  Moeda com perfil `estimated`/`no_data` (`KPW`, `SLS`) não pode receber passo próprio.
 
 ---
 
