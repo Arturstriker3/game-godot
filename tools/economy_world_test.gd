@@ -294,6 +294,7 @@ func _test_world() -> void:
 			needs_sum / float(needs_count), str(level_cities)])
 	else:
 		print("[world] necessidades: sem dado (binario sem F3)")
+	_print_labor(status)
 	if ai != null:
 		var builds: Dictionary = {}
 		var build_count := 0
@@ -386,6 +387,76 @@ func _cities_with_center(cities: Array) -> Array:
 	return result
 
 
+## F7 — relatório do mercado de trabalho: salário e desemprego por nível
+## (mediana/mín/máx entre cidades) e o agregado das nações de referência.
+func _print_labor(status: Dictionary) -> void:
+	var wages: Array = [[], [], []]
+	var unemployment: Array = [[], [], []]
+	for city in status.get("cities", []):
+		var pop: Dictionary = city.get("pop", {})
+		if not pop.has("wage_by_level"):
+			return
+		for level in 3:
+			wages[level].append(float(pop["wage_by_level"][level]))
+			unemployment[level].append(float(pop["unemployment_by_level"][level]))
+	var income_cities: Dictionary = {}
+	for city in status.get("cities", []):
+		var pop2: Dictionary = city.get("pop", {})
+		if not pop2.has("wage_by_level"):
+			return
+		var lvl := int(pop2.get("income_level", 0))
+		income_cities[lvl] = int(income_cities.get(lvl, 0)) + 1
+	print("[labor] nivel de renda (cidades): %s" % str(income_cities))
+	var names := ["basico", "intermediario", "superior"]
+	for level in 3:
+		(wages[level] as Array).sort()
+		(unemployment[level] as Array).sort()
+		var wage_row: Array = wages[level]
+		var unemployment_row: Array = unemployment[level]
+		if wage_row.is_empty():
+			continue
+		print("[labor] %-13s salario mediana=%.4f min=%.4f max=%.4f | desemprego mediana=%.3f min=%.3f max=%.3f" % [
+			names[level],
+			float(wage_row[int(wage_row.size() / 2)]),
+			float(wage_row[0]), float(wage_row[wage_row.size() - 1]),
+			float(unemployment_row[int(unemployment_row.size() / 2)]),
+			float(unemployment_row[0]),
+			float(unemployment_row[unemployment_row.size() - 1])])
+	for city in status.get("cities", []):
+		if String(city.get("id", "")) in ["BRA-SAO", "USA-NEW", "IND-DEL"]:
+			var pop: Dictionary = city.get("pop", {})
+			print("[labor] amostra %s pop=%.0f sim=%.0f trab=%.0f emp=%.0f renda=%.3f capital=%.3f externa=%.3f disp=%.5f disp_pc=%.5f servicos_vagas=%.0f sal_serv=%.4f receita_serv=%.0f consumo_nivel=%d renda_nivel=%d" % [
+				String(city.get("id", "")), float(city.get("population", 0.0)),
+				float(city.get("simulation_population", 0.0)),
+				float(pop.get("labor_force", 0.0)), float(pop.get("employed", 0.0)),
+				float(pop.get("wage_income", 0.0)), float(pop.get("capital_income", 0.0)),
+				float(pop.get("external_income", 0.0)), float(pop.get("disposable", 0.0)),
+				float(pop.get("disposable", 0.0)) / maxf(1.0, float(city.get("simulation_population", 1.0))),
+				float(city.get("service_jobs", 0.0)), float(city.get("service_wage", 0.0)),
+				float(city.get("service_revenue", 0.0)),
+				int(pop.get("needs_level", 0)), int(pop.get("income_level", 0))])
+			print("[labor]   salarios=%s forca_nivel=%s vagas=%s educacao=%s" % [
+				str(pop.get("wage_by_level", [])),
+				str(pop.get("labor_force_by_level", [])),
+				str(pop.get("vacancies_by_level", [])),
+				str(pop.get("education", []))])
+	var focus := ["USA", "BRA", "IND", "NGA", "DEU"]
+	for nation in status.get("nations", []):
+		var tag := String(nation.get("tag", ""))
+		if tag not in focus or not nation.has("labor"):
+			continue
+		var labor: Dictionary = nation["labor"]
+		var force := float(labor.get("labor_force", 0.0))
+		var out := float(labor.get("unemployed", 0.0))
+		var nation_wages: Array = labor.get("wage_by_level", [])
+		var rate := 0.0
+		if force > 0.0:
+			rate = out / force
+		print("[labor] %s forca=%.0f desemp=%.0f (%.1f%%) salarios=%s estudantes=%.0f" % [
+			tag, force, out, rate * 100.0, str(nation_wages),
+			float(labor.get("students", 0.0))])
+
+
 ## Agrega comida e industrialização por nação (cons=Σconsumido, need=Σnecessidade).
 func _nation_food(status: Dictionary) -> Dictionary:
 	var nations: Dictionary = {}
@@ -454,10 +525,36 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool) ->
 			"bankruptcies": int(status.get("bankruptcies", 0)),
 		},
 		"nations": _strip(nations),
+		"labor": _labor_nations(status),
 	}
 	file.store_string(JSON.stringify(report, "  "))
 	file.close()
 	print("[world] escrito %s" % _out)
+
+
+## F7: bloco de trabalho por nação para o relatório (sem dicionários aninhados
+## gigantes — só os agregados que o sweep e a auditoria leem).
+func _labor_nations(status: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for nation in status.get("nations", []):
+		if not nation.has("labor"):
+			continue
+		var labor: Dictionary = nation["labor"]
+		out[String(nation.get("tag", ""))] = {
+			"working_age": float(labor.get("working_age", 0.0)),
+			"labor_force": float(labor.get("labor_force", 0.0)),
+			"employed": float(labor.get("employed", 0.0)),
+			"unemployed": float(labor.get("unemployed", 0.0)),
+			"students": float(labor.get("students", 0.0)),
+			"recruit_reserve": float(labor.get("recruit_reserve", 0.0)),
+			"education": labor.get("education", []),
+			"labor_force_by_level": labor.get("labor_force_by_level", []),
+			"unemployed_by_level": labor.get("unemployed_by_level", []),
+			"unemployment_by_level": labor.get("unemployment_by_level", []),
+			"vacancies_by_level": labor.get("vacancies_by_level", []),
+			"wage_by_level": labor.get("wage_by_level", []),
+		}
+	return out
 
 
 ## Só os campos agregados vão para o JSON (o dict interno tem floats crus).

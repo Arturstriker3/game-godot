@@ -147,6 +147,29 @@ public:
 	void demo_set_external_income_index(const String& city_id, double index);
 
 	/**
+	 * F7: sobrescreve o perfil de trabalho/educação de uma cidade (hook de
+	 * teste/administração e migração). Chaves aceitas (todas opcionais):
+	 * `working_age_share` (0..1), `retiree_share` (0..1), `participation`
+	 * (array de 3 frações, ou número único) e `education` (array de 3 frações
+	 * que somam 1, básico/intermediário/superior). Sem chave, o valor derivado
+	 * do índice de renda é mantido. Recalcula a força de trabalho por nível e
+	 * reinicializa os salários no âncora do país; não move a população.
+	 */
+	void demo_set_labor_profile(const String& city_id, const Dictionary& profile);
+
+	/**
+	 * F7: salário mínimo por nação (piso diário, em XGS). `value <= 0` desliga
+	 * o piso (padrão do jogo). Gancho de política: a UI/governo pode definir.
+	 */
+	void demo_set_minimum_wage(const String& nation, double value);
+
+	/**
+	 * F7: rigidez salarial (fração máxima de ajuste por dia, 0..0,25).
+	 * Padrão 0,01 (1%/dia). Gancho de política/sindicatos.
+	 */
+	void demo_set_wage_rigidity(double value);
+
+	/**
 	 * Define o teto de demanda externa (t/dia) de um produto para uma cidade.
 	 * É a demanda LIMITADA do resto do mundo para bens brutos (minerais, soja,
 	 * algodão e madeira): a fase 4d compra no máximo este teto por dia, e a
@@ -468,6 +491,9 @@ private:
 	static constexpr int kDemoMaxRecipeInputs = 6;
 	// F3: níveis de necessidade (basic/life/luxury, needs.json).
 	static constexpr int kDemoMaxNeedsLevels = 3;
+	// F7: níveis de educação (básico, intermediário, superior). Não é dado de
+	// catálogo: são três faixas de escolaridade da população em idade ativa.
+	static constexpr int kDemoEducationLevels = 3;
 	// Cesta alimentar (B3/B4) agora data-driven (demo_set_needs), derivada de
 	// needs.json (basic/food/substitutes + equivalence.calories). O padrão
 	// preserva a cesta validada de 5 culturas até o autoload carregar o dado.
@@ -529,6 +555,11 @@ private:
 		double jobs_per_ton = 7.5;
 		double wage = 2.0;
 		double opex_per_ton = 2.5;
+		// F7: mistura de escolaridade das vagas da receita (básico,
+		// intermediário, superior), soma 1. Lida de `education_mix` no
+		// recipes.json quando declarada; senão derivada do `sector` (tabela
+		// documentada em demo_set_recipes).
+		double education_mix[kDemoEducationLevels] = {0.60, 0.30, 0.10};
 	};
 
 	struct DemoBuilding {
@@ -567,6 +598,9 @@ private:
 		// quando o caixa da empresa não cobre a folha e o opex).
 		double paid_wages = 0.0;
 		double paid_opex = 0.0;
+		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
+		// e extração quase só básico; indústria segue a receita/setor.
+		double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
 	};
 
 	struct DemoPop {
@@ -606,6 +640,43 @@ private:
 		double durable_spend = 0.0;         // compras de duráveis no dia
 		double needs_satisfaction = 0.0;
 		int needs_level = 0;
+		// ------------------------------------------------------------------
+		// F7 — população ativa, educação e mercado de trabalho.
+		//
+		// A POP é dividida em: idade ativa (15–64), força de trabalho (idade
+		// ativa × participação, menos quem estuda), empregados/desempregados por
+		// nível de educação, e fora da força (crianças, aposentados, estudantes).
+		// `education` guarda a escolaridade da população em idade ativa; quem
+		// estuda continua contado no nível de ORIGEM até concluir e migrar.
+		// `population` continua sendo a unidade de simulação (cidade), e
+		// `dependents = population - labor_force` preserva o contrato anterior.
+		// ------------------------------------------------------------------
+		double working_age = 0.0;      // 15–64 anos
+		double retirees = 0.0;         // 65+ (fora da força por idade)
+		double students = 0.0;         // em formação (fora da força)
+		double recruit_reserve = 0.0;  // 18–49 (só número; exército futuro)
+		double education[kDemoEducationLevels] = {};
+		double participation[kDemoEducationLevels] = {};
+		double labor_force_by_level[kDemoEducationLevels] = {};
+		double employed_by_level[kDemoEducationLevels] = {};
+		double unemployed_by_level[kDemoEducationLevels] = {};
+		double vacancies_by_level[kDemoEducationLevels] = {};
+		// Vagas que sobraram SEM candidato após a alocação em cascata (nem
+		// sobrequalificados). É a escassez real do nível; o desemprego do mesmo
+		// nível é a sobra. juntos, definem o aperto que move o salário.
+		double unfilled_by_level[kDemoEducationLevels] = {};
+		double wage_by_level[kDemoEducationLevels] = {};
+		double wage_income_by_level[kDemoEducationLevels] = {};
+		// Em formação para o nível 1 (intermediário) e 2 (superior). A
+		// conclusão é gradual (coorte exponencial com duração em dias).
+		double studying[kDemoEducationLevels - 1] = {};
+		// Nível de consumo alcançável pela RENDA corrente (0 = nenhum,
+		// 1 = basic, 2 = life, 3 = luxury). O gasto sequencial da F3 continua
+		// sendo o que compra; este nível é o teto que a renda permite.
+		int income_level = 0;
+		// Gasto do dia por nível de necessidade (para estimar o custo unitário
+		// da cesta que a renda consegue pagar amanhã).
+		std::vector<double> level_spend;
 	};
 
 	// Reserva mineral do território da cidade para um produto. Compartilhada
@@ -811,7 +882,7 @@ private:
 	struct DemoStatusCitySlot {
 		// Quantidade de escalares publicados em demo_fill_city_status; o
 		// espelho abaixo é indexado por ordem de chamada de sync_scalar.
-		static constexpr int kDemoStatusScalarCount = 28;
+		static constexpr int kDemoStatusScalarCount = 29;
 		Dictionary dict;
 		// Strings estáveis: evitam realocar String a cada dia.
 		std::string id_src, name_src, nation_src, home_src, landmass_src, currency_src;
@@ -838,9 +909,24 @@ private:
 		Dictionary pop;
 		// Espelhos do que já foi escrito em `pop`: só reescreve o que mudou
 		// (cada escrita é uma chamada à ponte GDExtension com hash da chave).
-		double pop_written[26] = {};
+		// 26 campos da F3 + 7 da F7 (idade ativa, aposentados, estudantes,
+		// reserva recrutável, nível de renda, salário mínimo, rigidez).
+		double pop_written[33] = {};
 		bool pop_written_filled = false;
 		bool pop_published = false;
+		// F7: vetores de educação/trabalho reutilizados (3 posições cada). São
+		// mutados em lugar e compartilhados com o Dictionary publicado; só são
+		// reinseridos quando o bloco é criado.
+		Array education;
+		Array education_share;
+		Array labor_force_by_level;
+		Array employed_by_level;
+		Array unemployed_by_level;
+		Array unemployment_by_level;
+		Array vacancies_by_level;
+		Array wage_by_level;
+		Array wage_income_by_level;
+		Array studying;
 		// Espelho dos 25 escalares publicados por cidade (população, PIB,
 		// caixas, indicadores derivados): escrita só quando o double muda.
 		double scalar_written[kDemoStatusScalarCount] = {};
@@ -901,7 +987,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, efficiency, employed, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor_force, landmass, legs, living_standard, loss_days, market_totals, markets, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, product, production, products, profit, quality, remaining_kt, resource, revenue, satisfaction, savings, scope, service_cash, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, utilization, wage, wage_income, workers, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
 		DemoStatusKeys();
 	};
 
@@ -1224,6 +1310,41 @@ private:
 	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
 	void demo_init_pop_needs(DemoPop& pop) const;
 	/**
+	 * F7: deriva e (re)inicializa o perfil de trabalho/educação de uma cidade a
+	 * partir do índice de renda externa (PIB PPP per capita já normalizado).
+	 * É a única fonte de dado por país disponível no cenário; a tabela de
+	 * faixas é uma ESTIMATIVA declarada (ordem de grandeza ILO/World Bank,
+	 * Barro-Lee/UNDP) e está documentada em economy_sim.cpp. Não mexe em
+	 * população nem em caixa.
+	 */
+	void demo_apply_labor_profile(DemoCity& city);
+	/**
+	 * F7: escolaridade das vagas por setor industrial (fallback quando a receita
+	 * não declara `education_mix`). Tabela documentada; escreve 3 frações.
+	 */
+	static void demo_education_mix_for_sector(const std::string& sector,
+		double* mix);
+	/**
+	 * F7: fecha o dia do mercado de trabalho de uma cidade — qualificação
+	 * (estudantes entram/saem da força), emprego por nível, folha de pagamento e
+	 * salários dinâmicos. Devolve a receita de salários efetivamente paga.
+	 */
+	double demo_labor_day(DemoCity& city);
+
+	/**
+	 * F7 — custo diário da cesta completa de um nível de necessidade aos preços
+	 * que a cidade pratica, por substituto não-durável mais barato (preço /
+	 * equivalência). Duráveis ficam fora: são comprados com poupança e sua
+	 * intensidade é a reposição anual, não um fluxo diário de renda.
+	 */
+	double demo_level_basket_cost(const DemoCity& city, int level_index) const;
+	/**
+	 * F7: atualiza os salários por nível depois do lucro do dia (mercado
+	 * apertado/folgado, margem das firmas, âncora de renda do país, piso de
+	 * salário mínimo e rigidez). Chamado na fase de contabilidade.
+	 */
+	void demo_update_wages(DemoCity& city, double building_margin);
+	/**
 	 * Consome uma categoria de necessidade da POP. `want_ge` é a cesta do dia em
 	 * toneladas-equivalentes; devolve o consumido em t-eq e debita o orçamento.
 	 * Percorre os substitutos na ordem declarada (do melhor ao último caso),
@@ -1278,6 +1399,10 @@ private:
 	double demo_natural_unemployment_ = 0.04;
 	double demo_service_wage_adjust_ = 0.10;
 	double demo_service_wage_max_ = 1.0;
+	// F7: rigidez salarial (fração máxima de ajuste por dia) e piso de salário
+	// mínimo por nação (0 = desligado). Ganchos de política.
+	double demo_wage_rigidity_ = 0.01;
+	std::unordered_map<std::string, double> demo_minimum_wages_;
 	double demo_inventory_cover_days_ = 3.0;
 	double demo_inventory_recovery_ = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K

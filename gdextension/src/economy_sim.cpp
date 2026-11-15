@@ -89,7 +89,12 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // v8: `body_armor` removido da cadeia (decisão do dono). Saves v7 com 114
 // produtos são remapeados por id (`products`) e o índice 112 passa a ser
 // `infantry_gear`.
-constexpr int kDemoSaveVersion = 8;
+// v9: trabalho, educação e renda (F7) — bloco `pop.labor` (idade ativa,
+// educação por nível, força de trabalho/emprego/desemprego, vagas, salários,
+// estudantes e nível de renda), `minimum_wages` por nação e `wage_rigidity`.
+// Save v8 e anteriores não têm o bloco: o perfil é derivado do índice de renda
+// já gravado (migração documentada em demo_from_dict).
+constexpr int kDemoSaveVersion = 9;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -171,6 +176,12 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_external_demand);
 	ClassDB::bind_method(D_METHOD("demo_set_external_income_index", "city_id", "index"),
 	                     &EconomySim::demo_set_external_income_index);
+	ClassDB::bind_method(D_METHOD("demo_set_labor_profile", "city_id", "profile"),
+	                     &EconomySim::demo_set_labor_profile);
+	ClassDB::bind_method(D_METHOD("demo_set_minimum_wage", "nation", "value"),
+	                     &EconomySim::demo_set_minimum_wage);
+	ClassDB::bind_method(D_METHOD("demo_set_wage_rigidity", "value"),
+	                     &EconomySim::demo_set_wage_rigidity);
 	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
 	                     &EconomySim::demo_set_goods);
 	ClassDB::bind_method(D_METHOD("demo_set_recipes", "recipes"),
@@ -847,6 +858,11 @@ constexpr double kDemoNeedPerCapita = 0.0003;
 // poupança que financia a importação de alimento (EGY tinha poupança acima de
 // um ano e ainda perdia comida em 365 d).
 constexpr double kDemoFoodReserveDays = 3650.0;
+// F7: margem de poupança do gate de renda → consumo. A cidade só declara o
+// nível de consumo life/luxury quando a renda corrente cobre a cesta acumulada
+// dos níveis com esta folga. Regra prudencial declarada (não é dado observado):
+// 15% deixa espaço para o colchão alimentar e para a reposição de duráveis.
+constexpr double kDemoIncomeBasketMargin = 1.15;
 // F3: teto do gasto institucional (paper/computer) como fração do valor da
 // cesta alimentar diária da cidade. A compra do Estado não pode competir com a
 // importação de comida (EGY caía a 0,708 em 365 d quando o computer drenava o
@@ -1774,6 +1790,8 @@ void EconomySim::initialize_demo() {
 		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
 		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
 		demo_init_pop_needs(city.pop);
+		// F7: cenário de validação também tem mercado de trabalho (índice 1,0).
+		demo_apply_labor_profile(city);
 	}
 	demo_rebuild_indexes();
 	// F4: o cenário mínimo também tem frota (nação DEMO).
@@ -1839,6 +1857,9 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		city.pop.desired_by_category.assign(demo_food_products_.size(), 0.0);
 		city.pop.consumed_by_category.assign(demo_food_products_.size(), 0.0);
 		demo_init_pop_needs(city.pop);
+		// F7: perfil inicial de trabalho/educação a partir do índice de renda
+		// (1,0 por padrão; o GeographyService reaplica quando tem o PIB real).
+		demo_apply_labor_profile(city);
 		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
 		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
 		// o dado real em tempo de execução.
@@ -4334,91 +4355,39 @@ void EconomySim::demo_tick_core() {
 		DemoCity& city = demo_cities_[city_index];
 		const std::vector<int>& local_buildings =
 			demo_buildings_by_city_[city_index];
-		double primary_jobs = 0.0;
-		double secondary_jobs = 0.0;
-		for (const int bi : local_buildings) {
-			const DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
-			// Primária = extração/fazenda (sem receita industrial). Fábricas
-			// (receita ou insumo legado) são secundárias.
-			if (building.recipe < 0 && building.input_product < 0) {
-				primary_jobs += building.jobs;
-			} else {
-				secondary_jobs += building.jobs;
-			}
-		}
-		// O emprego de serviços é persistente: cresce ou recua conforme a
-		// receita do setor, em vez de ser recalculado a cada dia.
-		const double labor_force = city.simulation_population * kDemoLaborShare;
-		city.pop.labor_force = labor_force;
-
-		// §5.3 — alocação de trabalho em duas classes. A fazenda/extaração
-		// (necessidade básica) tem prioridade; a fábrica só usa a mão de obra
-		// que sobra. Antes um `fill` único diluía as fazendas a cada fábrica
-		// nova e a comida caía junto com a industrialização.
-		const double available = std::max(0.0, labor_force - city.service_jobs);
-		double primary_fill = 1.0;
-		double secondary_fill = 0.0;
-		if (primary_jobs > 0.0) {
-			primary_fill = std::clamp(available / primary_jobs, 0.0, 1.0);
-			secondary_fill = available > primary_jobs && secondary_jobs > 0.0
-				? std::clamp((available - primary_jobs) / secondary_jobs, 0.0, 1.0)
-				: 0.0;
-		} else if (secondary_jobs > 0.0) {
-			secondary_fill = std::clamp(available / secondary_jobs, 0.0, 1.0);
-		}
-
-		double modeled_wages = 0.0;
+		// F7: o dia do mercado de trabalho resolve qualificação, força de
+		// trabalho por nível, vagas, emprego e folha. O opex continua sendo o
+		// custo de operação das plantas (pago em seguida, também limitado ao
+		// caixa da firma).
 		double opex_total = 0.0;
 		for (const int bi : local_buildings) {
 			DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
 			const bool secondary = building.recipe >= 0 || building.input_product >= 0;
-			const double fill = secondary ? secondary_fill : primary_fill;
-			building.workers = building.jobs * fill;
-			// Planta secundária ociosa não paga a folha/opex cheios: os custos
-			// acompanham a operação do dia anterior (piso de 5% de stand-by).
+			// Planta secundária ociosa não paga o opex cheio: o custo acompanha
+			// a operação do dia anterior (piso de 5% de stand-by).
 			const double operating = secondary
 				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
-			modeled_wages += building.workers * building.wage * operating;
 			opex_total += building.opex * opex_factor(city, building) * operating;
 		}
-
-		// Restrição de liquidez: a empresa não paga folha nem opex com dinheiro
-		// que não tem. Sem isso, cenários deficitários acumulavam caixa negativo
-		// para sempre e a contabilidade de renda deixava de ter lastro.
-		const double firm_available = std::max(0.0, city.firm_cash);
-		const double committed = modeled_wages + opex_total;
-		const double pay_scale = committed > firm_available && committed > 0.0
-			? firm_available / committed : 1.0;
-		modeled_wages *= pay_scale;
-		opex_total *= pay_scale;
+		demo_labor_day(city);
+		// Opex é comprado de serviços domésticos (manutenção, energia), não é
+		// uma importação: mantém o dinheiro dentro da economia. A liquidez do
+		// opex é a que sobrou do caixa depois da folha.
+		const double opex_available = std::max(0.0, city.firm_cash);
+		const double opex_scale = opex_total > opex_available
+			? (opex_total > 0.0 ? opex_available / opex_total : 1.0) : 1.0;
 		for (const int bi : local_buildings) {
 			DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
 			const bool secondary = building.recipe >= 0 || building.input_product >= 0;
 			const double operating = secondary
 				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
-			building.paid_wages = building.workers * building.wage * operating * pay_scale;
 			building.paid_opex = building.opex * opex_factor(city, building)
-				* operating * pay_scale;
+				* operating * opex_scale;
 		}
-
-		city.service_wage_bill = city.service_jobs * city.service_wage;
-		// O setor de serviços não paga folha sem caixa: a folha é limitada ao
-		// saldo disponível no início do dia, sem crédito implícito.
-		city.service_wage_bill = std::min(city.service_wage_bill,
-				std::max(0.0, city.service_cash));
-		city.pop.employed = city.service_jobs
-			+ primary_jobs * primary_fill + secondary_jobs * secondary_fill;
-		city.pop.unemployed = std::max(0.0, labor_force - city.pop.employed);
-		city.pop.dependents =
-			std::max(0.0, city.simulation_population - labor_force);
-		city.pop.wage_income = modeled_wages + city.service_wage_bill;
-
-		city.firm_cash -= modeled_wages + opex_total;
-		city.service_cash -= city.service_wage_bill;
-		// Opex é comprado de serviços domésticos (manutenção, energia),
-		// não é uma importação: mantém o dinheiro dentro da economia.
-		city.service_cash += opex_total;
-		city.opex_revenue = opex_total;
+		const double paid_opex = opex_total * opex_scale;
+		city.firm_cash -= paid_opex;
+		city.service_cash += paid_opex;
+		city.opex_revenue = paid_opex;
 	}
 
 	lap(kDemoPhaseLabor);
@@ -4817,13 +4786,27 @@ void EconomySim::demo_tick_core() {
 			double needs_spent = 0.0;
 			double weighted = 0.0;
 			double weight_sum = 0.0;
+			for (double& level_spend : pop.level_spend) {
+				level_spend = 0.0;
+			}
 			for (int level_index = 0;
 					level_index < static_cast<int>(demo_needs_levels_.size())
 					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
 				const DemoNeedsLevel& level =
 					demo_needs_levels_[static_cast<std::size_t>(level_index)];
+				// F7: a renda define o nível de consumo. O básico é sempre
+				// prioridade; life/luxury só são comprados se a renda corrente
+				// (disposable) cobre a cesta acumulada do dia anterior. Sem
+				// renda, o desejo fica registrado e a satisfação cai — não se
+				// inventa consumo com poupança.
+				const bool affordable = level_index == 0
+					|| level_index + 1 <= pop.income_level;
 				double level_want = 0.0;
 				double level_got = 0.0;
+				const double spend_before = needs_spent;
+				if (level_index == 0) {
+					pop.level_spend[0] += food_spend;
+				}
 				for (const DemoNeedsCategory& category : level.categories) {
 					// A cesta alimentar básica tem laço próprio (validado) e já
 					// foi consumida acima; reaproveita `pop.need/consumed` para
@@ -4837,9 +4820,13 @@ void EconomySim::demo_tick_core() {
 					const double want_ge = category.per_capita_day
 						* city.simulation_population;
 					level_want += want_ge;
+					if (!affordable) {
+						continue;
+					}
 					level_got += demo_consume_category(
 						city, category, want_ge, needs_budget, needs_spent);
 				}
+				pop.level_spend[level_index] += needs_spent - spend_before;
 				pop.level_want[level_index] = level_want;
 				pop.level_consumed[level_index] = level_got;
 				const double satisfaction = level_want > 0.0
@@ -4866,6 +4853,29 @@ void EconomySim::demo_tick_core() {
 			}
 			pop.needs_spend = needs_spent;
 			budget -= needs_spent;
+			// F7: teto de consumo pela RENDA REAL — quanto da cesta completa de
+			// cada nível a renda corrente (disposable) cobre, aos PREÇOS DE
+			// MERCADO de hoje. O nível vale a partir do dia seguinte; é ele que
+			// libera life/luxury no orçamento. Antes o custo vinha do gasto
+			// observado, que é zero quando o nível já estava bloqueado: a cidade
+			// nunca saía do nível 1 (auto-bloqueio). Preço de mercado existe
+			// mesmo sem compra e quebra o laço.
+			double cumulative_cost = 0.0;
+			int income_level = 0;
+			for (int level_index = 0;
+					level_index < static_cast<int>(demo_needs_levels_.size())
+					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
+				cumulative_cost += demo_level_basket_cost(city, level_index);
+				// Margem de poupança: cobrir a cesta com folga é o que define
+				// "pode sustentar o nível", não gastar até o último centavo.
+				if (pop.disposable + 1e-9
+						>= cumulative_cost * kDemoIncomeBasketMargin) {
+					income_level = level_index + 1;
+				} else {
+					break;
+				}
+			}
+			pop.income_level = income_level;
 		} else {
 			// Sem needs.json (AGRIA/PORTUS e saves antigos): um único nível,
 			// exatamente o comportamento validado.
@@ -5010,6 +5020,21 @@ void EconomySim::demo_tick_core() {
 			}
 		}
 
+		// F7: salários por nível reagem ao fechamento do dia — aperto do
+		// mercado (vagas × trabalhadores), margem das firmas e âncora de renda
+		// do país, com rigidez. O prêmio por educação emerge da escassez.
+		double building_revenue = 0.0;
+		double building_profit = 0.0;
+		for (const int bi : local_buildings) {
+			const DemoBuilding& building =
+				demo_buildings_[static_cast<std::size_t>(bi)];
+			building_revenue += building.revenue;
+			building_profit += building.profit;
+		}
+		const double firm_margin = building_revenue > 1e-9
+			? std::clamp(building_profit / building_revenue, -0.25, 0.25) : 0.0;
+		demo_update_wages(city, firm_margin);
+
 		// O salário de serviços se ajusta ao mercado de trabalho residual e o
 		// emprego segue a receita do setor ao novo salário. Se a receita não
 		// sustenta nem o salário de subsistência, sobra desemprego de verdade —
@@ -5036,16 +5061,15 @@ void EconomySim::demo_tick_core() {
 			city.pop.labor_force - modeled_jobs_total);
 		const double service_supply = residual_labor
 			* (1.0 - demo_natural_unemployment_);
-		if (service_supply > 0.0) {
-			const double wage_target = city.service_revenue / service_supply;
-			const double bounded_wage = std::clamp(
-				std::max(wage_target, subsistence_wage),
-				0.0, demo_service_wage_max_);
-			city.service_wage += (bounded_wage - city.service_wage)
-				* demo_service_wage_adjust_;
-		}
-		if (city.service_wage > 0.0) {
-			const double affordable_jobs = city.service_revenue / city.service_wage;
+		// F7: quem define o salário do setor de serviços é o MERCADO DE TRABALHO
+		// (demo_labor_day grava aqui a média ponderada por nível/mistura). A
+		// antiga regra de "receita ÷ força residual" brigava com ela e travava o
+		// mundo em ~15% de desemprego. A receita continua limitando as VAGAS: se
+		// ela não paga nem o salário de subsistência, sobra desemprego de
+		// verdade — não um piso artificial de vagas.
+		const double service_cost = std::max(city.service_wage, subsistence_wage);
+		if (service_cost > 0.0) {
+			const double affordable_jobs = city.service_revenue / service_cost;
 			const double bounded = std::min(service_supply, affordable_jobs);
 			city.service_jobs += (bounded - city.service_jobs) * kDemoServiceAdjust;
 		}
@@ -5246,8 +5270,11 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		desired_by_category("desired_by_category"),
 		disposable("disposable"),
 		disposable_per_capita("disposable_per_capita"),
+		education("education"),
+		education_share("education_share"),
 		efficiency("efficiency"),
 		employed("employed"),
+		employed_by_level("employed_by_level"),
 		export_value("export_value"),
 		exported("exported"),
 		external_demand("external_demand"),
@@ -5271,6 +5298,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		imported("imported"),
 		in_transit("in_transit"),
 		income("income"),
+		income_level("income_level"),
 		industrialization("industrialization"),
 		initial_kt("initial_kt"),
 		input_product("input_product"),
@@ -5278,13 +5306,16 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		invariant_violations("invariant_violations"),
 		jobs("jobs"),
 		kind("kind"),
+		labor("labor"),
 		labor_force("labor_force"),
+		labor_force_by_level("labor_force_by_level"),
 		landmass("landmass"),
 		legs("legs"),
 		living_standard("living_standard"),
 		loss_days("loss_days"),
 		market_totals("market_totals"),
 		markets("markets"),
+		minimum_wage("minimum_wage"),
 		mode("mode"),
 		money_total("money_total"),
 		name("name"),
@@ -5309,13 +5340,16 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		products("products"),
 		profit("profit"),
 		quality("quality"),
+		recruit_reserve("recruit_reserve"),
 		remaining_kt("remaining_kt"),
 		resource("resource"),
+		retirees("retirees"),
 		revenue("revenue"),
 		satisfaction("satisfaction"),
 		savings("savings"),
 		scope("scope"),
 		service_cash("service_cash"),
+		service_jobs("service_jobs"),
 		service_profit("service_profit"),
 		service_revenue("service_revenue"),
 		service_spend("service_spend"),
@@ -5326,6 +5360,8 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		sold("sold"),
 		stock("stock"),
 		stockpile("stockpile"),
+		students("students"),
+		studying("studying"),
 		suitability("suitability"),
 		supply("supply"),
 		surplus("surplus"),
@@ -5338,10 +5374,17 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		transit_hours("transit_hours"),
 		transport_cash("transport_cash"),
 		unemployed("unemployed"),
+		unemployed_by_level("unemployed_by_level"),
+		unemployment_by_level("unemployment_by_level"),
 		utilization("utilization"),
+		vacancies_by_level("vacancies_by_level"),
 		wage("wage"),
+		wage_by_level("wage_by_level"),
 		wage_income("wage_income"),
+		wage_income_by_level("wage_income_by_level"),
+		wage_rigidity("wage_rigidity"),
 		workers("workers"),
+		working_age("working_age"),
 		x("x"),
 		y("y"),
 		host_city("host_city"),
@@ -5490,6 +5533,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.government_budget, city.government_budget);
 	sync_scalar(k.government_goods_spend, city.government_goods_spend);
 	sync_scalar(k.service_revenue, city.service_revenue);
+	sync_scalar(k.service_jobs, city.service_jobs);
 	sync_scalar(k.service_profit, city.service_profit);
 	sync_scalar(k.opex_revenue, city.opex_revenue);
 	sync_scalar(k.freight_revenue, city.freight_revenue);
@@ -5674,6 +5718,62 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			durable_total += tons;
 		}
 		sync_pop(k.durable_stock, durable_total);
+		// F7: população ativa, fora da força e mercado de trabalho.
+		sync_pop(k.working_age, city.pop.working_age);
+		sync_pop(k.retirees, city.pop.retirees);
+		sync_pop(k.students, city.pop.students);
+		sync_pop(k.recruit_reserve, city.pop.recruit_reserve);
+		sync_pop(k.income_level, double(city.pop.income_level));
+		const auto minimum_wage = demo_minimum_wages_.find(city.nation);
+		sync_pop(k.minimum_wage, minimum_wage != demo_minimum_wages_.end()
+			? std::max(0.0, minimum_wage->second) : 0.0);
+		sync_pop(k.wage_rigidity, demo_wage_rigidity_);
+		if (!filled) {
+			slot.education.resize(kDemoEducationLevels);
+			slot.education_share.resize(kDemoEducationLevels);
+			slot.labor_force_by_level.resize(kDemoEducationLevels);
+			slot.employed_by_level.resize(kDemoEducationLevels);
+			slot.unemployed_by_level.resize(kDemoEducationLevels);
+			slot.unemployment_by_level.resize(kDemoEducationLevels);
+			slot.vacancies_by_level.resize(kDemoEducationLevels);
+			slot.wage_by_level.resize(kDemoEducationLevels);
+			slot.wage_income_by_level.resize(kDemoEducationLevels);
+			slot.studying.resize(kDemoEducationLevels - 1);
+		}
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			slot.education[level] = city.pop.education[level];
+			slot.education_share[level] = city.pop.working_age > 1e-9
+				? city.pop.education[level] / city.pop.working_age : 0.0;
+			slot.labor_force_by_level[level] =
+				city.pop.labor_force_by_level[level];
+			slot.employed_by_level[level] = city.pop.employed_by_level[level];
+			slot.unemployed_by_level[level] =
+				city.pop.unemployed_by_level[level];
+			slot.unemployment_by_level[level] =
+				city.pop.labor_force_by_level[level] > 1e-9
+				? city.pop.unemployed_by_level[level]
+					/ city.pop.labor_force_by_level[level] : 0.0;
+			slot.vacancies_by_level[level] =
+				city.pop.vacancies_by_level[level];
+			slot.wage_by_level[level] = city.pop.wage_by_level[level];
+			slot.wage_income_by_level[level] =
+				city.pop.wage_income_by_level[level];
+		}
+		for (int track = 0; track < kDemoEducationLevels - 1; ++track) {
+			slot.studying[track] = city.pop.studying[track];
+		}
+		if (!filled) {
+			pop[k.education] = slot.education;
+			pop[k.education_share] = slot.education_share;
+			pop[k.labor_force_by_level] = slot.labor_force_by_level;
+			pop[k.employed_by_level] = slot.employed_by_level;
+			pop[k.unemployed_by_level] = slot.unemployed_by_level;
+			pop[k.unemployment_by_level] = slot.unemployment_by_level;
+			pop[k.vacancies_by_level] = slot.vacancies_by_level;
+			pop[k.wage_by_level] = slot.wage_by_level;
+			pop[k.wage_income_by_level] = slot.wage_income_by_level;
+			pop[k.studying] = slot.studying;
+		}
 		if (!filled) {
 			slot.desired_by_category.resize(demo_food_products_.size());
 			slot.consumed_by_category.resize(demo_food_products_.size());
@@ -6167,6 +6267,20 @@ Dictionary EconomySim::get_demo_status() {
 		double deficit = 0.0;
 		double in_transit = 0.0;
 		int city_count = 0;
+		// F7: mercado de trabalho agregado (soma das cidades da nação).
+		double working_age = 0.0;
+		double labor_force = 0.0;
+		double employed = 0.0;
+		double unemployed = 0.0;
+		double students = 0.0;
+		double recruit_reserve = 0.0;
+		double education[kDemoEducationLevels] = {};
+		double labor_force_by_level[kDemoEducationLevels] = {};
+		double employed_by_level[kDemoEducationLevels] = {};
+		double unemployed_by_level[kDemoEducationLevels] = {};
+		double vacancies_by_level[kDemoEducationLevels] = {};
+		double wage_weighted[kDemoEducationLevels] = {};
+		double wage_weight[kDemoEducationLevels] = {};
 	};
 	std::vector<std::string> nation_order;
 	std::vector<NationTotals> nation_totals;
@@ -6187,6 +6301,25 @@ Dictionary EconomySim::get_demo_status() {
 		totals.stockpile += city.markets[0].stock;
 		totals.need += city.pop.need;
 		totals.deficit += std::max(0.0, city.pop.need - city.pop.consumed);
+		totals.working_age += city.pop.working_age;
+		totals.labor_force += city.pop.labor_force;
+		totals.employed += city.pop.employed;
+		totals.unemployed += city.pop.unemployed;
+		totals.students += city.pop.students;
+		totals.recruit_reserve += city.pop.recruit_reserve;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			totals.education[level] += city.pop.education[level];
+			totals.labor_force_by_level[level] +=
+				city.pop.labor_force_by_level[level];
+			totals.employed_by_level[level] += city.pop.employed_by_level[level];
+			totals.unemployed_by_level[level] +=
+				city.pop.unemployed_by_level[level];
+			totals.vacancies_by_level[level] +=
+				city.pop.vacancies_by_level[level];
+			totals.wage_weighted[level] += city.pop.wage_by_level[level]
+				* city.pop.labor_force_by_level[level];
+			totals.wage_weight[level] += city.pop.labor_force_by_level[level];
+		}
 		for (const int bi : demo_buildings_by_city_[city_index]) {
 			const DemoBuilding& building =
 				demo_buildings_[static_cast<std::size_t>(bi)];
@@ -6250,6 +6383,46 @@ Dictionary EconomySim::get_demo_status() {
 			fleet_dict[k.source] = fleet.derived ? "derived" : "declared";
 			nation[k.fleet] = fleet_dict;
 		}
+		// F7: mercado de trabalho da nação (telas de política/trabalho).
+		Dictionary labor;
+		labor[k.working_age] = totals.working_age;
+		labor[k.labor_force] = totals.labor_force;
+		labor[k.employed] = totals.employed;
+		labor[k.unemployed] = totals.unemployed;
+		labor[k.students] = totals.students;
+		labor[k.recruit_reserve] = totals.recruit_reserve;
+		labor[k.education] = Array{
+			totals.education[0], totals.education[1], totals.education[2]};
+		labor[k.labor_force_by_level] = Array{
+			totals.labor_force_by_level[0], totals.labor_force_by_level[1],
+			totals.labor_force_by_level[2]};
+		labor[k.employed_by_level] = Array{
+			totals.employed_by_level[0], totals.employed_by_level[1],
+			totals.employed_by_level[2]};
+		labor[k.unemployed_by_level] = Array{
+			totals.unemployed_by_level[0], totals.unemployed_by_level[1],
+			totals.unemployed_by_level[2]};
+		labor[k.vacancies_by_level] = Array{
+			totals.vacancies_by_level[0], totals.vacancies_by_level[1],
+			totals.vacancies_by_level[2]};
+		Array unemployment_by_level;
+		Array wage_by_level;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			unemployment_by_level.append(totals.labor_force_by_level[level] > 1e-9
+				? totals.unemployed_by_level[level]
+					/ totals.labor_force_by_level[level] : 0.0);
+			wage_by_level.append(totals.wage_weight[level] > 1e-9
+				? totals.wage_weighted[level] / totals.wage_weight[level]
+				: (demo_minimum_wages_.find(tag) != demo_minimum_wages_.end()
+					? std::max(0.0, demo_minimum_wages_.at(tag)) : 0.0));
+		}
+		labor[k.unemployment_by_level] = unemployment_by_level;
+		labor[k.wage_by_level] = wage_by_level;
+		const auto minimum = demo_minimum_wages_.find(tag);
+		labor[k.minimum_wage] = minimum != demo_minimum_wages_.end()
+			? std::max(0.0, minimum->second) : 0.0;
+		labor[k.wage_rigidity] = demo_wage_rigidity_;
+		nation[k.labor] = labor;
 		cache.nations[index] = nation;
 	}
 
@@ -6407,6 +6580,40 @@ void EconomySim::demo_set_recipes(const Array& recipes) {
 		recipe.wage = safe_nonneg(static_cast<double>(entry.get("wage", 2.0)));
 		recipe.opex_per_ton = safe_nonneg(
 			static_cast<double>(entry.get("opex_per_ton", 2.5)));
+		// F7: escolaridade das vagas. `education_mix` explícito vence a tabela
+		// por setor (dado do Game Systems Designer); sem ele, o setor decide.
+		const std::string sector(
+			String(entry.get("sector", "")).utf8().get_data());
+		demo_education_mix_for_sector(sector, recipe.education_mix);
+		if (entry.has("education_mix")) {
+			double mix[3] = {-1.0, -1.0, -1.0};
+			const Variant mix_value = entry["education_mix"];
+			if (mix_value.get_type() == Variant::ARRAY) {
+				const Array values = mix_value;
+				for (int level = 0;
+						level < kDemoEducationLevels && level < values.size();
+						++level) {
+					mix[level] = std::max(0.0, double(values[level]));
+				}
+			} else if (mix_value.get_type() == Variant::DICTIONARY) {
+				const Dictionary values = mix_value;
+				static const char* kNames[3] = {
+					"basic", "intermediate", "higher"};
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					if (values.has(kNames[level])) {
+						mix[level] = std::max(0.0,
+							double(values[kNames[level]]));
+					}
+				}
+			}
+			const double total = std::max(0.0, mix[0]) + std::max(0.0, mix[1])
+				+ std::max(0.0, mix[2]);
+			if (total > 1e-9) {
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					recipe.education_mix[level] = std::max(0.0, mix[level]) / total;
+				}
+			}
+		}
 		Array inputs = entry.get("inputs", Array());
 		for (int slot = 0; slot < inputs.size() && slot < kDemoMaxRecipeInputs; ++slot) {
 			const Dictionary input = inputs[slot];
@@ -6862,6 +7069,68 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 	demo_status_invalidate();
 }
 
+double EconomySim::demo_level_basket_cost(const DemoCity& city,
+		int level_index) const {
+	if (level_index < 0
+			|| level_index >= static_cast<int>(demo_needs_levels_.size())) {
+		return 0.0;
+	}
+	const DemoNeedsLevel& level =
+		demo_needs_levels_[static_cast<std::size_t>(level_index)];
+	const double population = std::max(0.0, city.simulation_population);
+	double cost = 0.0;
+	for (const DemoNeedsCategory& category : level.categories) {
+		double want = category.per_capita_day * population;
+		if (want <= 0.0) {
+			continue;
+		}
+		// Duráveis comprados com poupança: a quantidade declarada é a posse e o
+		// fluxo diário de renda precisa cobrir apenas a REPOSIÇÃO anual
+		// (`durable_replacement_per_year`), não uma compra por mês. Sem isso o
+		// telefone (0,000225 t/mês) custava ~1/3 de toda a renda diária e
+		// travava life/luxury em qualquer nação.
+		const double replacement = std::clamp(demo_durable_decay_ * 365.0, 0.0, 0.99);
+		double cheapest = 0.0;  // preço por tonelada-equivalente
+		bool has_durable = false;
+		double cheapest_durable = 0.0;
+		for (std::size_t slot = 0; slot < category.substitutes.size(); ++slot) {
+			const int product = category.substitutes[slot];
+			if (product < 0 || product >= demo_products_) {
+				continue;
+			}
+			const double factor = category.equivalence[slot];
+			if (factor <= 0.0) {
+				continue;
+			}
+			const double price = city.markets[product].price;
+			if (price <= 0.0) {
+				continue;
+			}
+			const double per_ge = price / factor;
+			const bool durable =
+				product < static_cast<int>(demo_product_durable_.size())
+				&& demo_product_durable_[static_cast<std::size_t>(product)] != 0;
+			if (durable) {
+				if (!has_durable || per_ge < cheapest_durable) {
+					has_durable = true;
+					cheapest_durable = per_ge;
+				}
+				continue;
+			}
+			if (cheapest <= 0.0 || per_ge < cheapest) {
+				cheapest = per_ge;
+			}
+		}
+		if (cheapest > 0.0) {
+			cost += want * cheapest;
+		} else if (has_durable) {
+			// Só há substituto durável: cobra a reposição, não a posse inteira.
+			cost += want * (replacement / 12.0) * cheapest_durable;
+		}
+	}
+	return cost;
+}
+
 double EconomySim::demo_consume_category(DemoCity& city,
 		const DemoNeedsCategory& category, double want_ge, double& budget,
 		double& spend) {
@@ -6887,7 +7156,15 @@ double EconomySim::demo_consume_category(DemoCity& city,
 		}
 		// Demanda desejada registrada mesmo sem estoque: é o sinal de escassez
 		// que a IA lê (`market.shortage`) para abrir a fábrica do bem final.
-		double desired_tons = remaining / factor;
+		// Durável: a posse declarada custa um fluxo de REPOSIÇÃO anual, não uma
+		// compra por mês (um telefone por pessoa/mês drenava toda a renda).
+		const bool durable =
+			product < static_cast<int>(demo_product_durable_.size())
+			&& demo_product_durable_[static_cast<std::size_t>(product)] != 0;
+		const double durable_scale = durable
+			? std::clamp(demo_durable_decay_ * 365.0 / 12.0, 0.0, 1.0) : 1.0;
+		double desired_tons = durable_scale > 0.0
+			? remaining / factor * durable_scale : 0.0;
 		if (desired_tons * price > budget) {
 			desired_tons = std::max(0.0, budget) / price;
 		}
@@ -6910,11 +7187,10 @@ double EconomySim::demo_consume_category(DemoCity& city,
 		city.firm_cash += paid;
 		demo_consumed_total_[product] += quantity;
 		demo_consumed_today_[product] += quantity;
-		const double got_ge = quantity * factor;
+		const double got_ge = durable_scale > 0.0
+			? quantity * factor / durable_scale : 0.0;
 		consumed_ge += got_ge;
 		remaining = std::max(0.0, remaining - got_ge);
-		const bool durable = product < static_cast<int>(demo_product_durable_.size())
-			&& demo_product_durable_[static_cast<std::size_t>(product)] != 0;
 		if (durable) {
 			if (product < static_cast<int>(city.pop.durable_stock.size())) {
 				city.pop.durable_stock[static_cast<std::size_t>(product)] += quantity;
@@ -7009,6 +7285,10 @@ void EconomySim::demo_init_pop_needs(DemoPop& pop) const {
 	}
 	if (pop.level_satisfaction.size() != kDemoMaxNeedsLevels) {
 		pop.level_satisfaction.assign(kDemoMaxNeedsLevels, 0.0);
+	}
+	// F7: gasto por nível (custo unitário da cesta para o teto de renda).
+	if (pop.level_spend.size() != kDemoMaxNeedsLevels) {
+		pop.level_spend.assign(kDemoMaxNeedsLevels, 0.0);
 	}
 	// `resize` preserva o prefixo: um bem novo não zera o estoque durável.
 	if (pop.durable_stock.size() != static_cast<std::size_t>(std::max(0, demo_products_))) {
@@ -7118,8 +7398,571 @@ void EconomySim::demo_set_external_income_index(const String& city_id, double in
 	// razão PIB PPP per capita do cenário (Singapura ≈ 6,3× a média mundial) e
 	// corta dados corrompidos sem virar um teto econômico silencioso.
 	city->external_income_index = std::clamp(index, 0.0, 8.0);
+	// F7: a estrutura etária, a escolaridade e a participação derivam do mesmo
+	// índice de renda real (único dado por país do cenário). Reaplica o perfil
+	// quando o índice chega do GeographyService, logo após criar o mundo.
+	demo_apply_labor_profile(*city);
 	++demo_status_static_version_;
 	demo_status_invalidate();
+}
+
+// ---------------------------------------------------------------------------
+// F7 — trabalho, educação e renda.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Perfil derivado do índice de renda externa (PIB PPP per capita normalizado
+// para a média mundial = 1,0). O cenário NÃO traz estrutura etária nem
+// escolaridade por nação: estes são parâmetros declarados, na ordem de
+// grandeza de ILO/World Bank (participação e idade ativa) e Barro-Lee/UNDP
+// (escolaridade). São calibráveis no laboratório; não são dados observados.
+constexpr double kLaborIncomeSaturation = 3.0;
+constexpr double kLaborWorkingAgeLow = 0.57;
+constexpr double kLaborWorkingAgeHigh = 0.66;
+constexpr double kLaborRetireeLow = 0.04;
+constexpr double kLaborRetireeHigh = 0.17;
+constexpr double kLaborBasicEduLow = 0.80;
+constexpr double kLaborBasicEduHigh = 0.25;
+constexpr double kLaborHigherEduLow = 0.03;
+constexpr double kLaborHigherEduHigh = 0.30;
+constexpr double kLaborParticipationLow = 0.74;
+constexpr double kLaborParticipationHigh = 0.65;
+constexpr double kLaborParticipationByLevel[3] = {0.70, 0.80, 0.88};
+constexpr double kLaborStudentShareLow = 0.02;
+constexpr double kLaborStudentShareHigh = 0.11;
+constexpr double kLaborRecruitShare = 0.55;
+// Salário-âncora por nível (XGS/dia) antes do fator de renda do país. A escala
+// é a da economia do modelo (a cesta alimentar custa ~0,012/pessoa/dia, e o
+// salário de equilíbrio do setor residual ficava em ~0,03/dia). O prêmio por
+// educação NÃO é fixo: os âncoras são próximos e o prêmio emerge do aperto de
+// cada nível (vagas ÷ trabalhadores). Calibrado em economy_world_test.
+constexpr double kLaborWageAnchor[3] = {0.030, 0.044, 0.060};
+// Mistura de escolaridade das vagas de serviços urbanos (varejo, reparos,
+// transporte local): maioria básico, minoria com superior.
+constexpr double kLaborServiceMix[3] = {0.62, 0.30, 0.08};
+// Qualificação: duração média da formação (3 e 4 anos), taxa anual de matrícula
+// em função do prêmio salarial, fração jovem do nível de origem e teto de
+// retirada do desemprego do nível (a escola não pode esvaziar a produção).
+constexpr double kLaborStudyDurationDays[2] = {1095.0, 1460.0};
+constexpr double kLaborStudyPremiumThreshold = 1.15;
+constexpr double kLaborStudyElasticity = 0.12;
+constexpr double kLaborStudyMaxAnnual = 0.08;
+constexpr double kLaborStudyYouthShare = 0.10;
+constexpr double kLaborStudyJoblessShare = 0.25;
+constexpr double kLaborStudyMaxDailyShare = 0.002;
+// Ajuste salarial gradual: sensibilidade ao aperto e à margem das firmas.
+constexpr double kLaborWageTightnessGain = 1.20;
+constexpr double kLaborWageMarginGain = 0.60;
+constexpr double kLaborIncomeElasticity = 0.30;
+
+double labor_income_factor(double income_index) {
+	// Riqueza do país: PIB per capita elevado paga salários maiores na âncora.
+	// Expoente 0,30 (renda não é repassada 1:1, pois o nível de preços do modelo
+	// é comum) entre 0,55 e 1,9 — Nigéria ~0,66; EUA ~1,46.
+	const double income = std::clamp(income_index, 0.0, 8.0);
+	return std::clamp(std::pow(std::max(income, 1e-6), kLaborIncomeElasticity),
+		0.55, 1.9);
+}
+
+}  // namespace
+
+void EconomySim::demo_education_mix_for_sector(const std::string& sector,
+		double* mix) {
+	// Escolaridade das vagas por setor (recipes.json `sector`). Semicondutores/
+	// eletrônicos e máquinas pedem mais superior; alimentos, têxteis, madeira e
+	// embalagem são intensivos em básico. Tabela de engenharia do modelo.
+	struct Row {
+		const char* sector;
+		double mix[3];
+	};
+	static const Row kRows[] = {
+		{"electronics", {0.22, 0.40, 0.38}},
+		{"machinery", {0.30, 0.45, 0.25}},
+		{"chemical", {0.40, 0.42, 0.18}},
+		{"military", {0.35, 0.45, 0.20}},
+		{"luxury", {0.45, 0.38, 0.17}},
+		{"metal", {0.50, 0.38, 0.12}},
+		{"transport", {0.55, 0.35, 0.10}},
+		{"construction", {0.65, 0.30, 0.05}},
+		{"food", {0.70, 0.25, 0.05}},
+		{"packaging", {0.70, 0.25, 0.05}},
+		{"textile", {0.72, 0.24, 0.04}},
+		{"wood", {0.72, 0.24, 0.04}},
+		{"agro", {0.88, 0.10, 0.02}},
+	};
+	for (const Row& row : kRows) {
+		if (sector == row.sector) {
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				mix[level] = row.mix[level];
+			}
+			return;
+		}
+	}
+	const double fallback[3] = {0.60, 0.30, 0.10};
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		mix[level] = fallback[level];
+	}
+}
+
+void EconomySim::demo_apply_labor_profile(DemoCity& city) {
+	DemoPop& pop = city.pop;
+	const double population = std::max(0.0, city.simulation_population);
+	pop.population = population;
+	const double t = std::clamp(
+		std::clamp(city.external_income_index, 0.0, 8.0) / kLaborIncomeSaturation,
+		0.0, 1.0);
+	pop.working_age = population * (kLaborWorkingAgeLow
+		+ (kLaborWorkingAgeHigh - kLaborWorkingAgeLow) * t);
+	pop.retirees = population * (kLaborRetireeLow
+		+ (kLaborRetireeHigh - kLaborRetireeLow) * t);
+	pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
+	const double basic = kLaborBasicEduLow
+		+ (kLaborBasicEduHigh - kLaborBasicEduLow) * t;
+	double higher = kLaborHigherEduLow
+		+ (kLaborHigherEduHigh - kLaborHigherEduLow) * t;
+	higher = std::min(higher, std::max(0.0, 1.0 - basic - 0.02));
+	const double intermediate = std::max(0.0, 1.0 - basic - higher);
+	pop.education[0] = pop.working_age * basic;
+	pop.education[1] = pop.working_age * intermediate;
+	pop.education[2] = pop.working_age * higher;
+	const double country_participation = kLaborParticipationLow
+		+ (kLaborParticipationHigh - kLaborParticipationLow) * t;
+	const double scale = country_participation / kLaborParticipationByLevel[0];
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		pop.participation[level] = std::clamp(
+			kLaborParticipationByLevel[level] * scale, 0.35, 0.92);
+	}
+	const double student_share = kLaborStudentShareLow
+		+ (kLaborStudentShareHigh - kLaborStudentShareLow) * t;
+	const double students = pop.working_age * student_share;
+	pop.studying[0] = students * 0.60;
+	pop.studying[1] = students * 0.40;
+	pop.students = pop.studying[0] + pop.studying[1];
+	const double factor = labor_income_factor(city.external_income_index);
+	const auto minimum = demo_minimum_wages_.find(city.nation);
+	const double floor = minimum != demo_minimum_wages_.end()
+		? std::max(0.0, minimum->second) : 0.0;
+	pop.labor_force = 0.0;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		const double studying = level < kDemoEducationLevels - 1
+			? pop.studying[level] : 0.0;
+		pop.labor_force_by_level[level] = std::max(0.0,
+			pop.education[level] * pop.participation[level] - studying);
+		pop.employed_by_level[level] = 0.0;
+		pop.unemployed_by_level[level] = pop.labor_force_by_level[level];
+		pop.vacancies_by_level[level] = 0.0;
+		pop.unfilled_by_level[level] = 0.0;
+		pop.wage_income_by_level[level] = 0.0;
+		pop.wage_by_level[level] = std::max(floor,
+			kLaborWageAnchor[level] * factor);
+		pop.labor_force += pop.labor_force_by_level[level];
+	}
+	pop.employed = 0.0;
+	pop.unemployed = pop.labor_force;
+	pop.dependents = std::max(0.0, population - pop.labor_force);
+	pop.wage_income = 0.0;
+	// A renda básica é sempre permitida; life/luxury dependem da renda real
+	// (income_level calculado no fim da fase de renda).
+	pop.income_level = 1;
+	if (pop.level_spend.size() != demo_needs_levels_.size()) {
+		pop.level_spend.assign(demo_needs_levels_.size(), 0.0);
+	}
+}
+
+void EconomySim::demo_set_labor_profile(const String& city_id,
+		const Dictionary& profile) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	demo_apply_labor_profile(*city);
+	DemoPop& pop = city->pop;
+	const double population = std::max(0.0, city->simulation_population);
+	if (profile.has("working_age_share")) {
+		const double share = std::clamp(
+			double(profile["working_age_share"]), 0.0, 1.0);
+		pop.working_age = population * share;
+		pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
+	}
+	if (profile.has("retiree_share")) {
+		pop.retirees = population * std::clamp(
+			double(profile["retiree_share"]), 0.0, 1.0);
+	}
+	if (profile.has("education")) {
+		const Variant value = profile["education"];
+		if (value.get_type() == Variant::ARRAY) {
+			const Array shares = value;
+			if (shares.size() >= kDemoEducationLevels) {
+				double basic = std::max(0.0, double(shares[0]));
+				double intermediate = std::max(0.0, double(shares[1]));
+				double higher = std::max(0.0, double(shares[2]));
+				const double sum = basic + intermediate + higher;
+				if (sum > 0.0) {
+					basic /= sum;
+					intermediate /= sum;
+					higher /= sum;
+					pop.education[0] = pop.working_age * basic;
+					pop.education[1] = pop.working_age * intermediate;
+					pop.education[2] = pop.working_age * higher;
+					// Perfil explícito substitui a estrutura etária: as coortes
+					// em formação do perfil derivado da renda não podem vazar
+					// para a nova distribuição (senão "todo mundo básico" ainda
+					// formava superiores todos os dias).
+					pop.studying[0] = 0.0;
+					pop.studying[1] = 0.0;
+				}
+			}
+		}
+	}
+	if (profile.has("participation")) {
+		const Variant value = profile["participation"];
+		if (value.get_type() == Variant::ARRAY) {
+			const Array rates = value;
+			for (int level = 0;
+					level < kDemoEducationLevels && level < rates.size(); ++level) {
+				pop.participation[level] = std::clamp(
+					double(rates[level]), 0.0, 1.0);
+			}
+		} else {
+			const double rate = std::clamp(double(value), 0.0, 1.0);
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				pop.participation[level] = rate;
+			}
+		}
+	}
+	if (profile.has("wage_by_level")) {
+		const Variant value = profile["wage_by_level"];
+		if (value.get_type() == Variant::ARRAY) {
+			const Array wages = value;
+			for (int level = 0;
+					level < kDemoEducationLevels && level < wages.size(); ++level) {
+				pop.wage_by_level[level] = std::max(0.0, double(wages[level]));
+			}
+		}
+	}
+	pop.labor_force = 0.0;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		const double studying = level < kDemoEducationLevels - 1
+			? pop.studying[level] : 0.0;
+		pop.labor_force_by_level[level] = std::max(0.0,
+			pop.education[level] * pop.participation[level] - studying);
+		pop.unemployed_by_level[level] = pop.labor_force_by_level[level];
+		pop.employed_by_level[level] = 0.0;
+		pop.unfilled_by_level[level] = 0.0;
+		pop.labor_force += pop.labor_force_by_level[level];
+	}
+	pop.unemployed = pop.labor_force;
+	pop.employed = 0.0;
+	pop.students = pop.studying[0] + pop.studying[1];
+	pop.dependents = std::max(0.0, population - pop.labor_force);
+	demo_status_invalidate();
+}
+
+void EconomySim::demo_set_minimum_wage(const String& nation, double value) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::string tag(nation.utf8().get_data());
+	if (tag.empty()) {
+		return;
+	}
+	if (value <= 0.0) {
+		demo_minimum_wages_.erase(tag);
+	} else {
+		demo_minimum_wages_[tag] = std::min(value, 100.0);
+	}
+	// O piso vale a partir do próximo ajuste salarial; cidades sem histórico de
+	// salário recebem o âncora com o piso imediatamente.
+	const double floor = value > 0.0 ? std::min(value, 100.0) : 0.0;
+	if (floor > 0.0) {
+		for (DemoCity& city : demo_cities_) {
+			if (city.nation != tag) {
+				continue;
+			}
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				city.pop.wage_by_level[level] = std::max(
+					city.pop.wage_by_level[level], floor);
+			}
+		}
+	}
+	demo_status_invalidate();
+}
+
+void EconomySim::demo_set_wage_rigidity(double value) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	demo_wage_rigidity_ = std::clamp(value, 0.0, 0.25);
+	demo_status_invalidate();
+}
+
+double EconomySim::demo_labor_day(DemoCity& city) {
+	DemoPop& pop = city.pop;
+	// 1. QUALIFICAÇÃO — conclusão. A coorte em formação conclui a uma taxa
+	// constante (coorte exponencial com duração média de 3/4 anos): quem
+	// conclui muda de nível de escolaridade e passa a disputar as vagas do
+	// nível acima. A população não muda; só a distribuição de educação.
+	for (int dst = 1; dst < kDemoEducationLevels; ++dst) {
+		double& cohort = pop.studying[dst - 1];
+		const double duration = kLaborStudyDurationDays[dst - 1];
+		if (cohort <= 0.0 || duration <= 0.0) {
+			continue;
+		}
+		const double completed = cohort / duration;
+		const int src = dst - 1;
+		const double moved = std::min(completed, pop.education[src]);
+		cohort = std::max(0.0, cohort - moved);
+		pop.education[src] = std::max(0.0, pop.education[src] - moved);
+		pop.education[dst] += moved;
+	}
+	// 2. QUALIFICAÇÃO — matrícula. O prêmio salarial do nível acima (que
+	// EMERGE do aperto de cada mercado) atrai jovens do nível de origem. Sem
+	// vagas no destino (desemprego alto), a escola não cresce: não se forma
+	// gente para ficar desempregada. Não há custo de escola nesta fase.
+	for (int dst = 1; dst < kDemoEducationLevels; ++dst) {
+		const int src = dst - 1;
+		const double premium = pop.wage_by_level[dst]
+			/ std::max(pop.wage_by_level[src], 1e-9);
+		if (premium <= kLaborStudyPremiumThreshold) {
+			continue;
+		}
+		const double target_supply = pop.labor_force_by_level[dst];
+		const double target_unemployment = target_supply > 0.0
+			? pop.unemployed_by_level[dst] / target_supply : 0.0;
+		const double scarcity = std::clamp(
+			1.0 - target_unemployment / 0.08, 0.0, 1.0);
+		const double annual = std::clamp(
+			(premium - kLaborStudyPremiumThreshold) * kLaborStudyElasticity,
+			0.0, kLaborStudyMaxAnnual) * scarcity;
+		double& cohort = pop.studying[dst - 1];
+		double flow = pop.education[src] * kLaborStudyYouthShare * annual / 365.0;
+		flow = std::min(flow,
+			std::max(0.0, pop.unemployed_by_level[src])
+				* kLaborStudyJoblessShare);
+		flow = std::min(flow,
+			std::max(0.0, pop.education[src] - cohort)
+				* kLaborStudyMaxDailyShare);
+		if (flow > 0.0) {
+			cohort += flow;
+		}
+	}
+	// 3. FORÇA DE TRABALHO por nível (estudantes ficam fora; educação de
+	// origem permanece até a conclusão).
+	pop.labor_force = 0.0;
+	pop.students = 0.0;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		const double studying = level < kDemoEducationLevels - 1
+			? pop.studying[level] : 0.0;
+		pop.students += studying;
+		pop.labor_force_by_level[level] = std::max(0.0,
+			pop.education[level] * pop.participation[level] - studying);
+		pop.labor_force += pop.labor_force_by_level[level];
+	}
+	// 4. VAGAS por nível: serviços urbanos + cada construção (a mistura da
+	// receita/setor). É a DEMANDA que o mercado de trabalho precisa preencher.
+	double vacancy[kDemoEducationLevels] = {};
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		vacancy[level] += city.service_jobs * kLaborServiceMix[level];
+	}
+	const std::size_t city_index =
+		static_cast<std::size_t>(&city - demo_cities_.data());
+	if (city_index < demo_buildings_by_city_.size()) {
+		for (const int bi : demo_buildings_by_city_[city_index]) {
+			const DemoBuilding& building =
+				demo_buildings_[static_cast<std::size_t>(bi)];
+			if (building.jobs <= 0.0) {
+				continue;
+			}
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				vacancy[level] += building.jobs * building.education_mix[level];
+			}
+		}
+	}
+	// 5. ALOCAÇÃO: cada trabalhador procura a vaga do SEU nível e, se não
+	// houver, aceita uma vaga ABAIXO (sobrequalificado); nunca o contrário.
+	// `remaining` guarda as vagas não preenchidas por nível (escassez).
+	double remaining[kDemoEducationLevels];
+	double assigned[kDemoEducationLevels][kDemoEducationLevels] = {};
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		remaining[level] = vacancy[level];
+		pop.vacancies_by_level[level] = vacancy[level];
+		pop.unfilled_by_level[level] = 0.0;
+	}
+	for (int edu = kDemoEducationLevels - 1; edu >= 0; --edu) {
+		double supply = pop.labor_force_by_level[edu];
+		for (int slot = edu; slot >= 0 && supply > 1e-12; --slot) {
+			const double take = std::min(supply, remaining[slot]);
+			if (take <= 0.0) {
+				continue;
+			}
+			assigned[edu][slot] += take;
+			remaining[slot] -= take;
+			supply -= take;
+		}
+		pop.employed_by_level[edu] = 0.0;
+		for (int slot = 0; slot < kDemoEducationLevels; ++slot) {
+			pop.employed_by_level[edu] += assigned[edu][slot];
+		}
+		pop.unemployed_by_level[edu] =
+			std::max(0.0, pop.labor_force_by_level[edu]
+				- pop.employed_by_level[edu]);
+	}
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		pop.unfilled_by_level[level] = std::max(0.0, remaining[level]);
+	}
+	double fill[kDemoEducationLevels];
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		fill[level] = vacancy[level] > 1e-12
+			? std::clamp((vacancy[level] - remaining[level]) / vacancy[level],
+				0.0, 1.0)
+			: 1.0;
+	}
+	// 6. FOLHA: cada construção emprega `jobs × Σ(mix × preenchimento)` e paga
+	// o salário do NÍVEL DA VAGA. Vaga qualificada sem trabalhador qualificado
+	// reduz o emprego (e a produção, via `workers/jobs`) proporcionalmente.
+	double buildings_payroll = 0.0;
+	if (city_index < demo_buildings_by_city_.size()) {
+		for (const int bi : demo_buildings_by_city_[city_index]) {
+			DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
+			double workers_fraction = 0.0;
+			double contract_wage = 0.0;
+			double plant_payroll = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				workers_fraction += building.education_mix[level] * fill[level];
+				contract_wage += building.education_mix[level]
+					* pop.wage_by_level[level];
+				plant_payroll += building.education_mix[level] * fill[level]
+					* pop.wage_by_level[level];
+			}
+			building.workers = building.jobs * workers_fraction;
+			building.wage = contract_wage;
+			const bool secondary =
+				building.recipe >= 0 || building.input_product >= 0;
+			const double operating = secondary
+				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			buildings_payroll += building.jobs * plant_payroll * operating;
+		}
+	}
+	double service_fraction = 0.0;
+	double service_contract_wage = 0.0;
+	double service_payroll_per_job = 0.0;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		service_fraction += kLaborServiceMix[level] * fill[level];
+		service_contract_wage += kLaborServiceMix[level]
+			* pop.wage_by_level[level];
+		service_payroll_per_job += kLaborServiceMix[level] * fill[level]
+			* pop.wage_by_level[level];
+	}
+	pop.employed = 0.0;
+	pop.unemployed = 0.0;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		pop.employed += pop.employed_by_level[level];
+		pop.unemployed += pop.unemployed_by_level[level];
+		pop.wage_income_by_level[level] = 0.0;
+		for (int slot = 0; slot < kDemoEducationLevels; ++slot) {
+			pop.wage_income_by_level[level] += assigned[level][slot]
+				* pop.wage_by_level[slot];
+		}
+	}
+	pop.dependents = std::max(0.0, pop.population - pop.labor_force);
+	// 7. Caixa da firma e do setor de serviços: a folha total é paga só até o
+	// caixa disponível (restrição de liquidez do modelo, preservada). O setor de
+	// serviços também só paga até o próprio caixa.
+	const double buildings_full_payroll = buildings_payroll;
+	const double firm_available = std::max(0.0, city.firm_cash);
+	const double committed = buildings_full_payroll;
+	const double pay_scale = committed > firm_available
+		? firm_available / committed : 1.0;
+	if (city_index < demo_buildings_by_city_.size()) {
+		for (const int bi : demo_buildings_by_city_[city_index]) {
+			DemoBuilding& building = demo_buildings_[static_cast<std::size_t>(bi)];
+			const bool secondary =
+				building.recipe >= 0 || building.input_product >= 0;
+			const double operating = secondary
+				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			double plant_payroll = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				plant_payroll += building.education_mix[level] * fill[level]
+					* pop.wage_by_level[level];
+			}
+			building.paid_wages =
+				building.jobs * plant_payroll * operating * pay_scale;
+		}
+	}
+	const double full_service_bill = city.service_jobs * service_payroll_per_job;
+	const double paid_service_bill = std::min(full_service_bill,
+		std::max(0.0, city.service_cash));
+	// Ganchos do laboratório mantidos: `service_wage_adjust` é a velocidade com
+	// que o salário pago do setor converge para a média do mercado de trabalho
+	// e `service_wage_max` limita o valor (parâmetros de balanceamento, não
+	// política). Com os padrões (0,10 e 1,0) o salário acompanha o mercado.
+	const double market_service_wage = service_fraction > 1e-12
+		? service_contract_wage / std::max(service_fraction, 1e-12) : 0.0;
+	if (market_service_wage > 0.0) {
+		city.service_wage += (market_service_wage - city.service_wage)
+			* std::clamp(demo_service_wage_adjust_, 0.0, 1.0);
+	}
+	city.service_wage = std::min(
+		std::max(0.0, city.service_wage), demo_service_wage_max_);
+	city.service_wage_bill = paid_service_bill;
+	const double paid_total = buildings_full_payroll * pay_scale
+		+ paid_service_bill;
+	// A renda por nível é a folha CHEIA por nível, escalada pela mesma fração
+	// efetivamente paga (liquidez + teto do caixa de serviços).
+	const double full_level_total = pop.wage_income_by_level[0]
+		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
+	const double paid_ratio = full_level_total > 1e-12
+		? std::clamp(paid_total / full_level_total, 0.0, 1.0) : 0.0;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		pop.wage_income_by_level[level] *= paid_ratio;
+	}
+	pop.wage_income = pop.wage_income_by_level[0]
+		+ pop.wage_income_by_level[1] + pop.wage_income_by_level[2];
+	city.firm_cash -= buildings_payroll * pay_scale;
+	city.service_cash -= paid_service_bill;
+	return pop.wage_income;
+}
+
+void EconomySim::demo_update_wages(DemoCity& city, double building_margin) {
+	DemoPop& pop = city.pop;
+	const double factor = labor_income_factor(city.external_income_index);
+	const auto minimum = demo_minimum_wages_.find(city.nation);
+	const double floor = minimum != demo_minimum_wages_.end()
+		? std::max(0.0, minimum->second) : 0.0;
+	const double margin = std::clamp(building_margin, -0.25, 0.25);
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		const double supply = std::max(pop.labor_force_by_level[level], 1e-9);
+		const double demand = std::max(0.0, pop.vacancies_by_level[level]);
+		// Aperto = (vagas SEM candidato − trabalhadores sem vaga) / escala do
+		// nível, em [-1, 1]. Comparar vagas com a força bruta dava aperto
+		// positivo no básico mesmo com milhões de básicos desempregados: as
+		// vagas básicas eram preenchidas por sobrequalificados, e o salário
+		// básico SUBIA no país com mais desemprego (EUA 30%, salário 2,9×).
+		// A escassez que paga prêmio é a vaga que ninguém conseguiu preencher.
+		const double unfilled = std::max(0.0, pop.unfilled_by_level[level]);
+		const double jobless = std::max(0.0, pop.unemployed_by_level[level]);
+		const double scale = std::max(std::max(demand, supply), 1e-9);
+		const double tightness = std::clamp(
+			(unfilled - jobless) / scale, -1.0, 1.0);
+		// A margem das firmas só puxa o salário para CIMA quando o mercado
+		// está apertado (produtividade escassa); com desemprego, o excesso de
+		// oferta domina e o salário cai. Margem negativa reduz o alvo em
+		// qualquer caso.
+		double margin_factor = 1.0;
+		if (margin > 0.0 && tightness > 0.0) {
+			margin_factor = 1.0 + kLaborWageMarginGain * margin;
+		} else if (margin < 0.0) {
+			margin_factor = std::clamp(
+				1.0 + kLaborWageMarginGain * margin, 0.85, 1.0);
+		}
+		// Alvo: âncora de produtividade do nível × riqueza do país × aperto do
+		// mercado × margem das firmas. O prêmio por educação emerge daqui.
+		const double target = std::max(floor,
+			kLaborWageAnchor[level] * factor
+				* (1.0 + kLaborWageTightnessGain * tightness) * margin_factor);
+		const double current = pop.wage_by_level[level];
+		const double step = std::max(current, target) * demo_wage_rigidity_;
+		const double next = current + std::clamp(target - current, -step, step);
+		pop.wage_by_level[level] = std::clamp(next, floor, 100.0);
+	}
 }
 
 Dictionary EconomySim::demo_invest(const String& city_id, const String& building_id,
@@ -7236,6 +8079,18 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 			opex = capacity * chosen.opex_per_ton;
 		}
 	}
+	double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+	if (recipe >= 0) {
+		const DemoRecipe& chosen = demo_recipes_[static_cast<std::size_t>(recipe)];
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			education_mix[level] = chosen.education_mix[level];
+		}
+	} else if (input_product >= 0) {
+		// Fábrica legada (sem receita): mistura industrial padrão.
+		education_mix[0] = 0.60;
+		education_mix[1] = 0.30;
+		education_mix[2] = 0.10;
+	}
 	if (capacity <= 0.0 || jobs < 0.0 || wage < 0.0 || opex < 0.0 || cost < 0.0) {
 		result["error"] = "parâmetros inválidos";
 		return result;
@@ -7278,6 +8133,9 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	building.recipe = recipe;
 	building.capacity = capacity;
 	building.input_per_output = input_per_output;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		building.education_mix[level] = education_mix[level];
+	}
 	building.capital_per_capacity = capacity > 0.0
 		? std::max(1.0, cost / capacity) : kDemoCapitalPerCapacity;
 	building.jobs = jobs;
@@ -7487,6 +8345,44 @@ Dictionary EconomySim::demo_to_dict() const {
 		}
 		needs_state["durable_stock"] = durable_stock;
 		pop["needs"] = needs_state;
+		// F7: mercado de trabalho e educação (save v9). Bloco aditivo: os campos
+		// de compatibilidade acima continuam iguais.
+		Dictionary labor;
+		labor["working_age"] = city.pop.working_age;
+		labor["retirees"] = city.pop.retirees;
+		labor["students"] = city.pop.students;
+		labor["recruit_reserve"] = city.pop.recruit_reserve;
+		labor["education"] = Array{city.pop.education[0],
+			city.pop.education[1], city.pop.education[2]};
+		labor["participation"] = Array{city.pop.participation[0],
+			city.pop.participation[1], city.pop.participation[2]};
+		labor["labor_force_by_level"] = Array{
+			city.pop.labor_force_by_level[0],
+			city.pop.labor_force_by_level[1],
+			city.pop.labor_force_by_level[2]};
+		labor["employed_by_level"] = Array{city.pop.employed_by_level[0],
+			city.pop.employed_by_level[1], city.pop.employed_by_level[2]};
+		labor["unemployed_by_level"] = Array{
+			city.pop.unemployed_by_level[0],
+			city.pop.unemployed_by_level[1],
+			city.pop.unemployed_by_level[2]};
+		labor["vacancies_by_level"] = Array{
+			city.pop.vacancies_by_level[0],
+			city.pop.vacancies_by_level[1],
+			city.pop.vacancies_by_level[2]};
+		labor["unfilled_by_level"] = Array{
+			city.pop.unfilled_by_level[0],
+			city.pop.unfilled_by_level[1],
+			city.pop.unfilled_by_level[2]};
+		labor["wage_by_level"] = Array{city.pop.wage_by_level[0],
+			city.pop.wage_by_level[1], city.pop.wage_by_level[2]};
+		labor["wage_income_by_level"] = Array{
+			city.pop.wage_income_by_level[0],
+			city.pop.wage_income_by_level[1],
+			city.pop.wage_income_by_level[2]};
+		labor["studying"] = Array{city.pop.studying[0], city.pop.studying[1]};
+		labor["income_level"] = city.pop.income_level;
+		pop["labor"] = labor;
 		entry["pop"] = pop;
 		entry["government_goods_spend"] = city.government_goods_spend;
 
@@ -7529,6 +8425,9 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["jobs"] = building.jobs;
 		entry["wage"] = building.wage;
 		entry["opex"] = building.opex;
+		// F7: mistura de escolaridade das vagas (save v9).
+		entry["education_mix"] = Array{building.education_mix[0],
+			building.education_mix[1], building.education_mix[2]};
 		entry["output_scale"] = building.output_scale;
 		entry["last_utilization"] = building.last_utilization;
 		entry["strategic"] = building.strategic;
@@ -7613,6 +8512,20 @@ Dictionary EconomySim::demo_to_dict() const {
 		tariffs.append(entry);
 	}
 	data["tariffs"] = tariffs;
+	// F7: política salarial (save v9). `minimum_wages` por nação (ausente/0 =
+	// piso desligado) e a rigidez diária configurável.
+	Array minimum_wages;
+	for (const auto& [nation_tag, value] : demo_minimum_wages_) {
+		if (value <= 0.0) {
+			continue;
+		}
+		Dictionary entry;
+		entry["nation"] = String(nation_tag.c_str());
+		entry["value"] = value;
+		minimum_wages.append(entry);
+	}
+	data["minimum_wages"] = minimum_wages;
+	data["wage_rigidity"] = demo_wage_rigidity_;
 
 	// Portos: identidade + capacidade/fila/obra. Campos aditivos (v3 continua
 	// válido; save anterior não tem a chave e o loader mantém os portos do
@@ -7774,6 +8687,21 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		}
 		demo_rebuild_tariff_lookup();
 	}
+	// F7: política salarial. Save v8 e anteriores não têm as chaves: piso
+	// desligado e rigidez padrão (1%/dia).
+	demo_minimum_wages_.clear();
+	Array saved_minimum_wages = data.get("minimum_wages", Array());
+	for (int index = 0; index < saved_minimum_wages.size(); ++index) {
+		const Dictionary entry = saved_minimum_wages[index];
+		const String tag = String(entry.get("nation", ""));
+		const double value = std::clamp(double(entry.get("value", 0.0)),
+			0.0, 100.0);
+		if (!tag.is_empty() && value > 0.0) {
+			demo_minimum_wages_[std::string(tag.utf8().get_data())] = value;
+		}
+	}
+	demo_wage_rigidity_ = std::clamp(
+		double(data.get("wage_rigidity", demo_wage_rigidity_)), 0.0, 0.25);
 
 	Array produced = migrate_array(data.get("produced_total", Array()));
 	Array consumed = migrate_array(data.get("consumed_total", Array()));
@@ -7928,6 +8856,71 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 					std::max(0.0, double(saved_durable[key]));
 			}
 		}
+		// F7: mercado de trabalho e educação (save v9). Save v8 e anteriores não
+		// têm o bloco: o perfil é derivado do índice de renda já gravado. A
+		// força de trabalho, o emprego e os salários são recalculados pelo
+		// mesmo modelo do primeiro dia (migração documentada).
+		Dictionary saved_labor = pop.get("labor", Dictionary());
+		const bool has_labor = version >= 9 && !saved_labor.is_empty();
+		if (!has_labor) {
+			demo_apply_labor_profile(city);
+		} else {
+			DemoPop& labor_pop = city.pop;
+			labor_pop.working_age = std::max(0.0,
+				double(saved_labor.get("working_age", labor_pop.working_age)));
+			labor_pop.retirees = std::max(0.0,
+				double(saved_labor.get("retirees", 0.0)));
+			labor_pop.students = std::max(0.0,
+				double(saved_labor.get("students", 0.0)));
+			labor_pop.recruit_reserve = std::max(0.0,
+				double(saved_labor.get("recruit_reserve", 0.0)));
+			const auto read_levels = [&saved_labor](const char* key,
+					double* out, int count) {
+				const Array values = saved_labor.get(key, Array());
+				for (int level = 0; level < count; ++level) {
+					out[level] = level < values.size()
+						? std::max(0.0, double(values[level])) : out[level];
+				}
+			};
+			read_levels("education", labor_pop.education,
+				kDemoEducationLevels);
+			read_levels("participation", labor_pop.participation,
+				kDemoEducationLevels);
+			read_levels("labor_force_by_level", labor_pop.labor_force_by_level,
+				kDemoEducationLevels);
+			read_levels("employed_by_level", labor_pop.employed_by_level,
+				kDemoEducationLevels);
+			read_levels("unemployed_by_level", labor_pop.unemployed_by_level,
+				kDemoEducationLevels);
+			read_levels("vacancies_by_level", labor_pop.vacancies_by_level,
+				kDemoEducationLevels);
+			read_levels("wage_by_level", labor_pop.wage_by_level,
+				kDemoEducationLevels);
+			read_levels("wage_income_by_level",
+				labor_pop.wage_income_by_level, kDemoEducationLevels);
+			read_levels("studying", labor_pop.studying,
+				kDemoEducationLevels - 1);
+			labor_pop.students = labor_pop.studying[0] + labor_pop.studying[1];
+			labor_pop.income_level = std::clamp(
+				int(saved_labor.get("income_level", 1)), 0, 3);
+			labor_pop.labor_force = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				labor_pop.labor_force +=
+					labor_pop.labor_force_by_level[level];
+			}
+			labor_pop.employed = 0.0;
+			labor_pop.unemployed = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				labor_pop.employed += labor_pop.employed_by_level[level];
+				labor_pop.unemployed += labor_pop.unemployed_by_level[level];
+			}
+			labor_pop.wage_income = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				labor_pop.wage_income += labor_pop.wage_income_by_level[level];
+			}
+			labor_pop.dependents = std::max(0.0,
+				city.pop.population - labor_pop.labor_force);
+		}
 		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));
 		Array desired_by_category = pop.get("desired_by_category", Array());
 		Array consumed_by_category = pop.get("consumed_by_category", Array());
@@ -8025,6 +9018,29 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		building.jobs = double(entry.get("jobs", 0.0));
 		building.wage = double(entry.get("wage", 0.0));
 		building.opex = double(entry.get("opex", 0.0));
+		// F7: mistura de escolaridade. Save v8 sem a chave: usa a da receita
+		// resolvida; primária segue o padrão do struct (quase só básico).
+		if (entry.has("education_mix")) {
+			const Array mix = entry.get("education_mix", Array());
+			double total = 0.0;
+			for (int level = 0;
+					level < kDemoEducationLevels && level < mix.size(); ++level) {
+				building.education_mix[level] = std::max(0.0, double(mix[level]));
+				total += building.education_mix[level];
+			}
+			if (total > 1e-9) {
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					building.education_mix[level] /= total;
+				}
+			}
+		} else if (building.recipe >= 0
+				&& building.recipe < static_cast<int>(demo_recipes_.size())) {
+			const DemoRecipe& recipe =
+				demo_recipes_[static_cast<std::size_t>(building.recipe)];
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				building.education_mix[level] = recipe.education_mix[level];
+			}
+		}
 		building.output_scale = double(entry.get("output_scale", 1.0));
 		building.last_utilization = double(entry.get("last_utilization", 1.0));
 		building.strategic = bool(entry.get("strategic", false));

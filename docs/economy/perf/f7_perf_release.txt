@@ -1,0 +1,65 @@
+F7 — perfil release com trabalho, educação, salário dinâmico e renda (2026-11-15)
+==============================================================================
+
+Commit base: 79ba83f (F6). Medição no caminho real do jogo (autoload Economy
++ IA + comboios reais), com a DLL release
+(gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll,
+1.276.928 bytes) copiada sobre o nome debug para o binário do editor usá-la;
+a debug real (11.900.416 bytes) foi restaurada ao final.
+
+Comando (3 execuções seguidas):
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Godot 4.7.2 stable, 834 cidades, 30 dias, `map-mode` padrão (none).
+
+Resumo das 3 medições (ms; média / p95 / máx)
+--------------------------------------------
+
+| execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia | memória |
+|---|---|---|---|---|---|---|
+| 1 (máquina com editor/MCP abertos) | 45,43 / **55,33** / 56,05 | 23,00 / **28,04** / 28,62 | 17,12 / 21,05 / 22,49 | 23,61 / 48,21 / 64,48 | 16,49 / 21,50 / 23,63 | 527,3 MB |
+| 2 | 40,73 / **46,72** / 53,05 | 22,88 / **26,21** / 31,81 | 17,04 / 22,29 / 25,17 | 11,31 / 15,48 / 17,08 | 15,00 / 21,47 / 22,92 | 527 MB |
+| 3 | 37,90 / **42,04** / 42,40 | 22,04 / **25,18** / 27,11 | 16,55 / 20,15 / 22,65 | 10,82 / 11,75 / 12,42 | 14,17 / 16,28 / 16,90 | 527 MB |
+
+Portões do plano (`production_chains_impl_plan.md` §8.6):
+
+| métrica | portão | resultado (pior das 3) | situação |
+|---|---|---|---|
+| tick p95 | <= 50 ms | **55,33** (execução 1); 46,72 / 42,04 nas 2–3 | **falha na execução 1** (contenção: editor + MCP abertos); passa nas execuções 2 e 3 |
+| `status` p95 | <= 30 ms | **28,04** | passa |
+| frame de pico p95 | <= 12 ms | **48,21** (execução 1); 15,48 / 11,75 nas 2–3 | falha na 1 e na 2; passa na 3 |
+| memória estática | <= 750 MB | **527,3 MB** | passa |
+| IA fatiada/dia p95 | <= 30 ms | **21,50** | passa |
+
+Fases do tick na execução 3 (média / p95 / máx, ms):
+
+| fase | média | p95 | máx |
+|---|---|---|---|
+| status | 22,04 | 25,18 | 27,11 |
+| status_cities | 16,55 | 20,15 | 22,65 |
+| status_orders | 3,37 | 3,67 | 3,93 |
+| status_nations | ~2,2 | ~2,6 | ~2,8 |
+| invariants | ~0,2 | ~0,3 | ~0,3 |
+| trade | 7,6 | — | — |
+| arrival | 3,3 | — | — |
+| produção / renda / preços | 0,4 / 0,4 / 0,3 | — | — |
+
+Observações honestas
+--------------------
+
+- A execução 1 é um outlier: o editor Godot e o servidor MCP estavam abertos e
+  o frame de pico saltou para 48 ms (contra 11,75 ms na execução 3). As
+  execuções 2 e 3, com a mesma DLL e o mesmo comando, ficam em 46,72 e 42,04 ms
+  de tick p95 (dentro do portão). Não se descartou a execução 1 do registro: o
+  portão do pior caso é o que vale.
+- O status total (22–23 ms de média) é a maior fase; o F7 acrescentou ao
+  status por cidade o bloco de trabalho (idade ativa, educação/participação/
+  força/emprego/vagas/salários/renda por nível, `income_level`), medido em
+  `status_cities` (16,5–17,1 ms de média, 20–22 ms de p95).
+- O tick C++ propriamente dito não tem fase própria de trabalho no relatório
+  (> 0,1 ms aparece só agregado): a alocação por nível roda dentro de `labor`,
+  abaixo do corte de exibição. O custo visível do F7 está no status publicado.
+- A máquina não estava isolada nas 3 execuções (editor aberto); números de F5
+  foram medidos sem outro Godot aberto. Repetir em máquina limpa antes de
+  fechar o portão definitivo.
