@@ -282,9 +282,39 @@ func _refresh_overview() -> void:
 	_set_text("ov.flow.transit", _tons(float(city.get("in_transit", 0.0))))
 	_set_text("ov.flow.dispatched", _tons(float(city.get("dispatched", 0.0))))
 
+	_refresh_services(city)
+
 	_set_chart("ov.chart", _coverage_series(), _coverage_tones())
 	_set_text("ov.chart.range", _coverage_range())
 	_update_history_empty("ov.chart", _coverage_series().size())
+
+
+## Bloco curto de serviços (F8) na visão geral: só o que o status publica por
+## cidade. Sem `service_jobs` (binário anterior à F8) o cartão mostra "—" em vez
+## de zero — ausência de dado não é zero.
+func _refresh_services(city: Dictionary) -> void:
+	var dash := I18n.t("common.na")
+	if not city.has("service_jobs"):
+		for slot in ["ov.services.jobs", "ov.services.workers", "ov.services.share",
+				"ov.services.wage", "ov.services.revenue", "ov.services.profit"]:
+			_set_text(slot, dash)
+		return
+	var jobs := float(city.get("service_jobs", 0.0))
+	var workers := float(city.get("service_workers", 0.0))
+	var pop: Dictionary = city.get("pop", {})
+	var employed := float(pop.get("employed", 0.0))
+	var wage := float(city.get("service_wage", 0.0))
+	var revenue := float(city.get("service_revenue", 0.0))
+	var profit := float(city.get("service_profit", 0.0))
+	_set_text("ov.services.jobs", UiKit.number(jobs))
+	_set_text("ov.services.workers", UiKit.number(workers))
+	_set_text("ov.services.share",
+			UiKit.number(workers / employed * 100.0, 1) + "%" if employed > 0.0 \
+			else dash)
+	_set_text("ov.services.wage", UiKit.number(wage, 3))
+	_set_text("ov.services.revenue", UiKit.number(revenue, 1))
+	_set_text("ov.services.profit", UiKit.number(profit, 1),
+			UiKit.CARIMBO if profit < 0.0 else UiKit.POSITIVO)
 
 
 func _refresh_population() -> void:

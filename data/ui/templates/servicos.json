@@ -1,0 +1,501 @@
+{
+  "id": "servicos",
+  "title": "@services.title",
+  "shell": {
+    "kind": "window",
+    "ratio": [
+      0.86,
+      0.84
+    ],
+    "min": [
+      960,
+      560
+    ],
+    "max": [
+      1800,
+      1000
+    ],
+    "pauses_game": false
+  },
+  "data": {
+    "crumb": "@services.crumb",
+    "title": "@services.title"
+  },
+  "blocks": [
+    {
+      "type": "window_frame",
+      "crumb": "$crumb",
+      "title": "$title",
+      "title_slot": "nav.title",
+      "footer": [
+        {
+          "text": "@tpl.footer.tabs_switch"
+        },
+        {
+          "text": "@tpl.footer.table"
+        },
+        {
+          "spacer": true
+        },
+        {
+          "seal": "ESC"
+        },
+        {
+          "text": "@tpl.footer.close"
+        }
+      ],
+      "body": [
+        {
+          "type": "folder_tabs",
+          "slot": "tabs",
+          "gap": 14,
+          "active": 0,
+          "tabs": [
+            {
+              "label": "@services.tab.sectors",
+              "blocks": [
+                {
+                  "type": "row",
+                  "gap": 16,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 1.0,
+                      "blocks": [
+                        {
+                          "type": "search_field",
+                          "slot": "services.city_search",
+                          "placeholder": "@services.search.city",
+                          "width": 300
+                        },
+                        {
+                          "type": "label",
+                          "text": "@services.cities.count",
+                          "params": {
+                            "shown": "0",
+                            "total": "0"
+                          },
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "services.cities.count"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "services.cities",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": 0,
+                          "page_size": 7,
+                          "sort_col": -1,
+                          "descending": true,
+                          "activate": "double",
+                          "footer_left": "@services.cities.footer",
+                          "columns": [
+                            {
+                              "label": "@econ.col.city",
+                              "weight": 1.9,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.nation",
+                              "weight": 1.2,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@econ.col.population",
+                              "weight": 0.9,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "paper_card",
+                          "title": "@services.nation.title",
+                          "title_size": 16,
+                          "fill": "claro",
+                          "pad": 14,
+                          "gap": 4,
+                          "blocks": [
+                            {
+                              "type": "label",
+                              "text": "@services.nation.none",
+                              "font": "display",
+                              "size": 18,
+                              "slot": "services.nation.name"
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@services.nation.workers",
+                              "value": "—",
+                              "value_slot": "services.nation.workers",
+                              "size": 14
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@services.nation.wage",
+                              "value": "—",
+                              "value_slot": "services.nation.wage",
+                              "size": 14
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@services.nation.revenue",
+                              "value": "—",
+                              "value_slot": "services.nation.revenue",
+                              "size": 14
+                            },
+                            {
+                              "type": "kv_row",
+                              "key": "@services.nation.profit",
+                              "value": "—",
+                              "value_slot": "services.nation.profit",
+                              "size": 14
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "column",
+                      "gap": 10,
+                      "w": 2.0,
+                      "blocks": [
+                        {
+                          "type": "label",
+                          "text": "@services.nation.none",
+                          "font": "display",
+                          "size": 16,
+                          "slot": "services.sectors.city"
+                        },
+                        {
+                          "type": "label",
+                          "text": "@services.sectors.hint",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "services.sectors.hint"
+                        },
+                        {
+                          "type": "data_table",
+                          "slot": "services.sectors",
+                          "grow": true,
+                          "fill_height": true,
+                          "selected": 0,
+                          "page_size": 8,
+                          "sort_col": 1,
+                          "descending": true,
+                          "footer_left": "@services.sectors.footer",
+                          "columns": [
+                            {
+                              "label": "@services.col.sector",
+                              "weight": 3.6,
+                              "align": "left"
+                            },
+                            {
+                              "label": "@services.col.demand",
+                              "weight": 1.0,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@services.col.supply",
+                              "weight": 1.0,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@services.col.price",
+                              "weight": 0.85,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@services.col.firms",
+                              "weight": 0.75,
+                              "align": "right"
+                            },
+                            {
+                              "label": "@services.col.exports",
+                              "weight": 0.85,
+                              "align": "right"
+                            }
+                          ],
+                          "rows": []
+                        },
+                        {
+                          "type": "note_card",
+                          "slot": "services.sectors.empty",
+                          "hidden": true,
+                          "title": "@services.sectors.empty.title",
+                          "body": "@services.sectors.empty.body",
+                          "width": 520
+                        },
+                        {
+                          "type": "label",
+                          "text": "@services.sectors.note",
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "wrap": true,
+                          "wrap_width": 560,
+                          "slot": "services.sectors.note"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "@services.tab.businesses",
+              "blocks": [
+                {
+                  "type": "column",
+                  "gap": 10,
+                  "w": 1.0,
+                  "grow": true,
+                  "blocks": [
+                    {
+                      "type": "row",
+                      "gap": 10,
+                      "blocks": [
+                        {
+                          "type": "search_field",
+                          "slot": "services.business_search",
+                          "placeholder": "@services.search.business",
+                          "width": 340
+                        },
+                        {
+                          "type": "label",
+                          "text": "@services.nation.none",
+                          "font": "typed",
+                          "size": 13,
+                          "tone": "tinta",
+                          "slot": "services.businesses.scope"
+                        },
+                        {
+                          "type": "spacer",
+                          "w": 1
+                        },
+                        {
+                          "type": "label",
+                          "text": "@services.businesses.count",
+                          "params": {
+                            "shown": "0",
+                            "total": "0"
+                          },
+                          "font": "typed",
+                          "size": 12,
+                          "tone": "suave",
+                          "slot": "services.businesses.count"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "row",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.filter.all",
+                          "slot": "services.filter.all",
+                          "active": true
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.retail",
+                          "slot": "services.filter.retail"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.wholesale",
+                          "slot": "services.filter.wholesale"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.food_service",
+                          "slot": "services.filter.food_service"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.hospitality_tourism",
+                          "slot": "services.filter.hospitality_tourism"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.freight_logistics",
+                          "slot": "services.filter.freight_logistics"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "row",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.passenger_transport",
+                          "slot": "services.filter.passenger_transport"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.finance",
+                          "slot": "services.filter.finance"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.insurance_pension",
+                          "slot": "services.filter.insurance_pension"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.health",
+                          "slot": "services.filter.health"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.education",
+                          "slot": "services.filter.education"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "row",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.telecom",
+                          "slot": "services.filter.telecom"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.it",
+                          "slot": "services.filter.it"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.media_advertising",
+                          "slot": "services.filter.media_advertising"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.professional_services",
+                          "slot": "services.filter.professional_services"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.real_estate",
+                          "slot": "services.filter.real_estate"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "row",
+                      "gap": 6,
+                      "blocks": [
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.construction",
+                          "slot": "services.filter.construction"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.maintenance_repair",
+                          "slot": "services.filter.maintenance_repair"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.personal_services",
+                          "slot": "services.filter.personal_services"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.leisure_culture",
+                          "slot": "services.filter.leisure_culture"
+                        },
+                        {
+                          "type": "chip_filter",
+                          "text": "@services.sector.cleaning_security_waste",
+                          "slot": "services.filter.cleaning_security_waste"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "data_table",
+                      "slot": "services.businesses",
+                      "grow": true,
+                      "fill_height": true,
+                      "selected": 0,
+                      "page_size": 8,
+                      "sort_col": 5,
+                      "descending": true,
+                      "footer_left": "@services.businesses.footer",
+                      "columns": [
+                        {
+                          "label": "@services.col.business",
+                          "weight": 2.9,
+                          "align": "left"
+                        },
+                        {
+                          "label": "@services.col.sector",
+                          "weight": 0.95,
+                          "align": "left"
+                        },
+                        {
+                          "label": "@services.col.city",
+                          "weight": 1.3,
+                          "align": "left"
+                        },
+                        {
+                          "label": "@services.col.culture",
+                          "weight": 0.95,
+                          "align": "left"
+                        },
+                        {
+                          "label": "@services.col.employees",
+                          "weight": 0.8,
+                          "align": "right"
+                        },
+                        {
+                          "label": "@services.col.profit",
+                          "weight": 0.95,
+                          "align": "right"
+                        },
+                        {
+                          "label": "@services.col.status",
+                          "weight": 0.85,
+                          "align": "left"
+                        }
+                      ],
+                      "rows": []
+                    },
+                    {
+                      "type": "note_card",
+                      "slot": "services.businesses.empty",
+                      "hidden": true,
+                      "title": "@services.businesses.empty.title",
+                      "body": "@services.businesses.empty.body",
+                      "width": 560
+                    },
+                    {
+                      "type": "label",
+                      "text": "@services.businesses.hint",
+                      "font": "typed",
+                      "size": 12,
+                      "tone": "suave",
+                      "wrap": true,
+                      "wrap_width": 700,
+                      "slot": "services.businesses.hint"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

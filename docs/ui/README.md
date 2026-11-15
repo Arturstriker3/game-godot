@@ -521,3 +521,76 @@ com os glifos de navegação (caixa, moeda, fábrica, espada, navio, avião).
 **Teste:** `market_template_test` verifica, em cada linha, textura não nula,
 caminho dentro de `assets/icons/resources/` (conjunto único), setor com cor e
 contraste do glifo de tinta sobre o fundo do selo ≥ 3:1.
+
+## Fechamento da UI de Serviços (F8, 2026-11)
+
+**Antes:** a tabela dos 20 setores tinha a coluna "Emprego" lendo
+`demo_get_services_detail(city_id).sectors[].jobs`. Medido em `IND-MUM` (Mumbai),
+esse campo devolvia **237.230,6 em 15 dos 20 setores**, com 0 nos quatro setores
+sem negócio. Pelo próprio núcleo (`economy_sim.cpp`, passo 7 do dia de serviços)
+o valor é o emprego de serviços **da cidade** rateado pela capacidade
+(`business.jobs`) das empresas abertas, não o emprego do setor: como os negócios
+semeados têm a mesma capacidade, o mesmo número se repete. O binário em uso
+devolveu soma de 3.807.550,8 nos 20 setores contra `service_jobs` = 3.944.032,3.
+O emprego real por negócio existe no payload (`businesses[].workers`, 40 em cada
+um dos 16 negócios da amostra), mas somá-lo por setor daria 640 empregados onde
+o cabeçalho publica 1.384.784: são universos diferentes (empresas abertas vs.
+emprego agregado de serviços). O núcleo não foi alterado — outro agente está no
+`gdextension/`.
+
+**Depois:**
+
+- A coluna "Emprego" por setor saiu da tabela. Sobram ícone + setor, demanda,
+  oferta, preço local, negócios e exportação, e a coluna do setor ficou mais
+  larga (peso 3,6) para os nomes longos em pt-BR/es.
+- O cabeçalho da cidade, acima da tabela, publica o dado que o núcleo realmente
+  abre: `Mumbai · 1,384,784 service workers · 17 businesses` na captura (que
+  roda em `en`) e `Mumbai · 1.384.784 empregados em serviços · 17 negócios` em
+  pt-BR — `service_workers` + `service_businesses` do resumo/detalhe; "sem
+  serviços publicados neste dia" quando a cidade não publica setor no dia.
+- A nota do rodapé diz onde o emprego aparece; os empregados de cada negócio
+  continuam na aba Negócios, sem duplicar um total rateado.
+- i18n: `services.col.jobs` saiu e entraram `services.sectors.city.workers`,
+  `.city.businesses` e `.city.none` em pt-BR, en e es; a nota
+  `services.sectors.note` foi reescrita nos três idiomas.
+
+**Contrato esperado do núcleo (para reabrir a coluna):** `sectors[].jobs` só
+volta a virar coluna quando representar o emprego **do setor**:
+
+1. `jobs >= 0` por setor e `sum(sectors[].jobs) == city.service_jobs` no mesmo
+   dia (tolerância 1e-6).
+2. Setores com emprego real distinto publicam valores distintos — nada de
+   ratear o total da cidade pela capacidade das empresas.
+3. O mesmo número para o mesmo dia em `get_demo_status().cities[]` e em
+   `demo_get_services_detail(city_id)`.
+4. Se a UI for mostrar vagas e empregados, `sectors[].workers` (preenchidos)
+   vem separado de `sectors[].jobs` (vagas), ambos por setor.
+
+Enquanto o contrato não existir, a UI não mostra emprego por setor — nenhum
+número é inventado e o total da cidade fica no cabeçalho.
+
+**Captura (janela real, sem `--headless`; `captures/` é ignorado pelo git):**
+
+```powershell
+& $godot --path . res://tools/ui_capture.tscn -- `
+    --phase=f8 --run=final --sizes=1920x1080,1600x900,1366x768,2560x1440
+```
+
+**156 capturas** (39 estados × 4 resoluções) sem erro, em
+`captures/f8/final/`; o `layout_report.json` sai com **0** `offscreen`,
+`text_overflow`, `text_elided`, `focus_hidden`, `scroll_needed` e `i18n_key` —
+o cabeçalho novo não empurra a tabela de 8 linhas para fora da janela em
+nenhuma das quatro resoluções (a viewport lógica segue 1920×1080 nas quatro).
+Uma rodada extra em pt-BR (`--run=lang_pt --locale=pt_BR --sizes=1366x768`,
+39 estados em `captures/f8/lang_pt/`) também fechou com **0** achados: o texto
+mais longo (`Bombaim · … empregados em serviços · … negócios`) não elide.
+
+**Teste:**
+
+```powershell
+& $godot --headless --path . --script res://tools/services_template_test.gd
+```
+
+PASS com 20 setores, ícones do conjunto de serviços, nomes por cultura e o
+cabeçalho da cidade (`Mumbai · 1,384,784 service workers · 17 businesses`, sem
+chave de i18n crua).

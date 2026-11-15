@@ -3,7 +3,7 @@ extends CanvasLayer
 ## HUD principal do WarEconomy — "Industrial Strategy, Premium Dark".
 ##
 ## Estrutura: barra superior com nação, calendário, indicadores e velocidade;
-## barra lateral esquerda com as seis telas (T7, opção A); telas de papel
+## barra lateral esquerda com as telas (T7, opção A); telas de papel
 ## (templates T1–T5) sobre o mapa;
 ## ficha de cidade (T3) na lateral; menu de pausa (T6) no Esc.
 ## O HUD não simula nada: lê `Economy` e desenha. Todo texto vem do `I18n`.
@@ -17,6 +17,7 @@ const POPULATION_SCREEN: Script = preload("res://core/ui/screens/population_scre
 const POLITICS_SCREEN: Script = preload("res://core/ui/screens/politics_screen.gd")
 const STATISTICS_SCREEN: Script = preload("res://core/ui/screens/statistics_screen.gd")
 const ALERTS_SCREEN: Script = preload("res://core/ui/screens/alerts_screen.gd")
+const SERVICES_SCREEN: Script = preload("res://core/ui/screens/services_screen.gd")
 const ALERTS_MODEL: Script = preload("res://core/ui/alerts.gd")
 const CITY_PANEL: Script = preload("res://core/ui/city_panel.gd")
 const CITY_TOOLTIP: Script = preload("res://core/ui/city_tooltip.gd")
@@ -68,7 +69,7 @@ const BAR_CAPTION_SIZE := 16
 const BAR_VALUE_SIZE := 23
 
 const SCREEN_ORDER := ["economy", "market", "trade", "production", "population",
-		"politics", "statistics", "logistics"]
+		"politics", "statistics", "logistics", "services"]
 const MAX_ORDER_LOG := 240
 ## Mesmo limiar de `CityWorld.INDUSTRY_ICON_THRESHOLD` (tooltip coerente com o
 ## glifo de fábrica desenhado no mapa).
@@ -82,6 +83,7 @@ const SCREEN_LABELS := {
 	"politics": "dock.politics",
 	"statistics": "dock.statistics",
 	"logistics": "dock.logistics",
+	"services": "dock.services",
 	"alerts": "hud.alerts",
 }
 ## Ícones da barra lateral esquerda (silhueta branca, tingível). Reaproveita a
@@ -96,6 +98,7 @@ const SCREEN_ICONS := {
 	"politics": preload("res://assets/icons/products/sword.svg"),
 	"statistics": preload("res://assets/icons/stats.svg"),
 	"logistics": preload("res://assets/icons/products/ship.svg"),
+	"services": preload("res://assets/icons/services/retail.svg"),
 }
 ## Modos de camada do mapa. As abas ficam junto ao minimapa (canto inferior
 ## direito); população/economia/indústria continuam no mapa, mas sem botão por
@@ -2058,7 +2061,7 @@ func _set_metric(key: String, text: String, color: Color = UiKit.TEXT) -> void:
 # --- Barra lateral de painéis (esquerda) -------------------------------------
 
 ## Barra vertical colada à topbar (T7 opção A): fundo BARRA_FUNDO, filete duplo
-## de latão na borda direita e os seis painéis — selo redondo com o ícone,
+## de latão na borda direita e os painéis — selo redondo com o ícone,
 ## rótulo em caixa alta e o número do atalho à direita.
 func _build_dock() -> void:
 	_dock_holder = Control.new()
@@ -2280,6 +2283,10 @@ func _instantiate_screens() -> void:
 	_screens["politics"].map_requested.connect(_on_politics_map)
 	_screens["statistics"].close_requested.connect(_close_screen)
 	_screens["logistics"].close_requested.connect(_close_screen)
+	# Serviços abre a ficha da cidade na visão geral (onde mora o bloco curto de
+	# serviços); a tela não tem aba própria na ficha.
+	_screens["services"].city_requested.connect(_on_city_requested)
+	_screens["services"].close_requested.connect(_close_screen)
 	if _screens["statistics"].has_method("set_history_service"):
 		_screens["statistics"].set_history_service(_history)
 
@@ -2594,6 +2601,8 @@ func _new_screen(id: String) -> Node:
 			return POPULATION_SCREEN.new()
 		"statistics":
 			return STATISTICS_SCREEN.new()
+		"services":
+			return SERVICES_SCREEN.new()
 		"alerts":
 			return ALERTS_SCREEN.new()
 		_:

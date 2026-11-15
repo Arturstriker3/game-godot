@@ -425,6 +425,58 @@
                   ]
                 }
                   ]
+                },
+                {
+                  "type": "paper_card",
+                  "title": "@city.services.title",
+                  "title_size": 18,
+                  "pad": 14,
+                  "gap": 8,
+                  "blocks": [
+                    {
+                      "type": "grid",
+                      "columns": 3,
+                      "gap": 12,
+                      "blocks": [
+                        {
+                          "type": "kv_row",
+                          "key": "@city.services.jobs",
+                          "value": "—",
+                          "value_slot": "ov.services.jobs"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.services.workers",
+                          "value": "—",
+                          "value_slot": "ov.services.workers"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.services.share",
+                          "value": "—",
+                          "value_slot": "ov.services.share"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.services.wage",
+                          "value": "—",
+                          "value_slot": "ov.services.wage"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.services.revenue",
+                          "value": "—",
+                          "value_slot": "ov.services.revenue"
+                        },
+                        {
+                          "type": "kv_row",
+                          "key": "@city.services.profit",
+                          "value": "—",
+                          "value_slot": "ov.services.profit"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }

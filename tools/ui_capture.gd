@@ -24,7 +24,7 @@ const DEFAULT_SIZES := ["1920x1080", "1600x900", "1366x768", "2560x1440"]
 ## deles seguido de ponto é uma chave que vazou para a interface.
 const I18N_PREFIXES := ["alerts", "city", "climate", "common", "deposit", "dock",
 		"econ", "hud", "map", "mode", "month", "pol", "pop", "prod", "product",
-		"relief", "resource", "scope", "stats", "trade", "tpl"]
+		"relief", "resource", "scope", "services", "stats", "trade", "tpl"]
 
 var _phase := "after"
 var _out_root := "res://docs/ui/captures"
@@ -252,6 +252,16 @@ func _capture_resolution(size_text: String) -> void:
 			func() -> void: _logistics_tab(3))
 	await _capture_state(directory, width, height, "30_population_needs",
 			func() -> void: _population_tab(2))
+	await _capture_state(directory, width, height, "31_services_sectors",
+			func() -> void: _services_tab(0))
+	await _capture_state(directory, width, height, "32_services_businesses",
+			func() -> void: _services_tab(1))
+	await _capture_state(directory, width, height, "33_services_sector_retail",
+			func() -> void: _services_sector("retail"))
+	await _capture_state(directory, width, height, "34_services_empty",
+			_services_empty)
+	await _capture_state(directory, width, height, "35_city_services",
+			_city_services)
 	_reset_ui()
 
 
@@ -482,6 +492,56 @@ func _population_tab(index: int) -> void:
 	_show_screen("population")
 	var screen: Node = _hud.get("_screens")["population"]
 	screen.call("_set_tab", index)
+
+
+## Tela de Serviços (F8): aba 0 = setores da cidade, 1 = negócios da nação.
+## Reabre no estado neutro (sem filtro nem busca herdados da resolução anterior).
+func _services_tab(index: int) -> void:
+	_show_screen("services")
+	var screen: Node = _hud.get("_screens")["services"]
+	if screen == null:
+		_report["skipped"].append("services: HUD sem tela de serviços")
+		return
+	if screen.has_method("_set_sector"):
+		screen.call("_set_sector", "all")
+	if screen.has_method("_on_business_search"):
+		screen.call("_on_business_search", "")
+	if screen.has_method("_set_tab"):
+		screen.call("_set_tab", index)
+
+
+## Aba Negócios filtrada por um setor (mesmo caminho do duplo clique).
+func _services_sector(sector: String) -> void:
+	_services_tab(1)
+	var screen: Node = _hud.get("_screens")["services"]
+	if screen != null and screen.has_method("_set_sector"):
+		screen.call("_set_sector", sector)
+
+
+## Estado vazio honesto: busca sem resultado na aba Negócios.
+func _services_empty() -> void:
+	_services_tab(1)
+	var screen: Node = _hud.get("_screens")["services"]
+	if screen != null and screen.has_method("_on_business_search"):
+		screen.call("_on_business_search", "zzzz")
+
+
+## Ficha da cidade rolada até o bloco de serviços (visão geral).
+func _city_services() -> void:
+	_city_tab("overview")
+	var panel: Node = _hud.get("_city_screen")
+	if panel == null:
+		return
+	_scroll_bottom(panel)
+
+
+func _scroll_bottom(root: Node) -> void:
+	var pending: Array[Node] = [root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		if node is ScrollContainer and node.visible:
+			(node as ScrollContainer).scroll_vertical = 1_000_000
+		pending.append_array(node.get_children())
 
 
 func _market_tab(index: int) -> void:

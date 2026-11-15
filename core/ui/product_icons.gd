@@ -15,9 +15,15 @@ class_name ProductIcons
 ## `assets/icons/products/` guarda só glifos de NAVEGAÇÃO que não são bens
 ## (caixa, moeda, fábrica, espada, navio, avião). Um id de bem nunca resolve
 ## para lá, mesmo quando o nome coincide (ex.: `truck`).
+##
+## `assets/icons/services/` é o terceiro conjunto: os 20 glifos dos setores de
+## serviço (F8), gerados pelo MESMO Icon Forge a partir de
+## `tools/icon_forge/service_icons.json`. Ids de serviço não colidem com ids de
+## bem nem com os glifos de navegação, e continuam entrando no mesmo selo.
 
 const GOODS_DIR := "res://assets/icons/resources/"
 const UI_DIR := "res://assets/icons/products/"
+const SERVICES_DIR := "res://assets/icons/services/"
 
 ## As 21 matérias-primas do Icon Forge. Contrato da legenda de recursos do HUD;
 ## os demais bens também vêm do Icon Forge pelo id de `goods.json`.
@@ -64,6 +70,27 @@ const SECTOR_TINTS := {
 	"electronics": Color("#45618a"),
 	"military": Color("#5d5a34"),
 	"luxury": Color("#7d5a6a"),
+	# F8: os 20 setores de serviço. Mesma paleta de papelaria; `construction`
+	# já existia como setor de bem e vale para os dois (mesma família).
+	"retail": Color("#a8792f"),
+	"wholesale": Color("#8a6a3a"),
+	"food_service": Color("#b5622e"),
+	"hospitality_tourism": Color("#47707a"),
+	"freight_logistics": Color("#5b6b73"),
+	"passenger_transport": Color("#3f6b7d"),
+	"finance": Color("#6b6257"),
+	"insurance_pension": Color("#5f6b52"),
+	"health": Color("#8a4a52"),
+	"education": Color("#5a5f7a"),
+	"telecom": Color("#4f6b6b"),
+	"it": Color("#4a5a86"),
+	"media_advertising": Color("#8a6a4f"),
+	"professional_services": Color("#4f5a52"),
+	"real_estate": Color("#6f5a3f"),
+	"maintenance_repair": Color("#5d5a4a"),
+	"personal_services": Color("#7a5470"),
+	"leisure_culture": Color("#7d5a6a"),
+	"cleaning_security_waste": Color("#5a6b5f"),
 }
 ## Setor desconhecido/ausente: tinta suave, sem inventar cor.
 const SECTOR_FALLBACK := Color("#5a4a2c")
@@ -72,7 +99,8 @@ static var _cache: Dictionary = {}
 
 
 ## Caminho do SVG do id (vazio se não existir). Bens primeiro: o Icon Forge é o
-## único conjunto de bens; `products/` só responde a glifos de interface.
+## único conjunto de bens; `products/` só responde a glifos de interface;
+## `services/` só aos 20 setores de serviço.
 static func icon_path(id: String) -> String:
 	var good := GOODS_DIR + id + ".svg"
 	if ResourceLoader.exists(good):
@@ -80,6 +108,9 @@ static func icon_path(id: String) -> String:
 	var file: String = FILES.get(id, "")
 	if not file.is_empty():
 		return UI_DIR + file
+	var service := SERVICES_DIR + id + ".svg"
+	if ResourceLoader.exists(service):
+		return service
 	return ""
 
 
