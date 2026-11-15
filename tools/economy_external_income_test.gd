@@ -3,15 +3,17 @@ extends SceneTree
 ## Renda externa por PIB PPP per capita (balance_review §20).
 ##
 ## O antigo subsídio UNIFORME de 0,012/pessoa/dia era o resto do mundo pagando
-## o mesmo a Noruega e ao Burundi. Agora a renda de serviços/exportações não
+## o mesmo à Noruega e ao Burundi. Agora a renda de serviços/exportações não
 ## modelados é proporcional ao PIB PPP per capita REAL da nação, normalizada
 ## para a média mundial ponderada por população continuar na escala de 0,012.
 ## Verifica:
 ## 1. perfil: índice = PIB PPP per capita / média mundial, com piso e
 ##    renormalização (média ponderada por população = 1,0 ± 1e-6);
 ## 2. nação sem PIB declarado usa a MEDIANA DA REGIÃO e é marcada `estimated`;
-## 3. núcleo: external_income = população × 0,012 × índice, pago por
-##    foreign_cash (money_total conservado);
+## 3. núcleo: external_income = população × 0,012 × min(índice, 1,0), pago por
+##    foreign_cash (money_total conservado). O índice acima da média NÃO é pago:
+##    a renda externa é PISO DE SUBSISTÊNCIA (F7 calibração), não repasse de
+##    riqueza — o excedente tem de vir do valor adicionado medido na cidade;
 ## 4. save/load preserva o índice (nenhuma nação volta à média por acidente);
 ## 5. índice fora do intervalo é limitado a [0, 8] em vez de virar renda infinita.
 ##
@@ -22,6 +24,9 @@ const GeoScript := preload("res://core/economy/geography_service.gd")
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Espelha kDemoExternalIncomePerCapita em gdextension/src/economy_sim.cpp.
 const BASE_PER_CAPITA := 0.012
+## Espelha kDemoExternalIncomeIndexCap: acima da média mundial a renda externa
+## é piso de subsistência e não cresce (F7 calibração).
+const SUBSISTENCE_CAP := 1.0
 const EPSILON := 1e-6
 
 var _failures: Array[String] = []
@@ -84,7 +89,7 @@ func _test_profile() -> void:
 	if absf(mean - 1.0) > 1e-6:
 		_fail("perfil: média ponderada %.9f != 1,0" % mean)
 
-	# Riches sem terra importam; pobres no piso.
+	# Ricas sem terra importam; pobres no piso.
 	var sau := float(by_nation.get("SAU", {}).get("index", 0.0))
 	var qat := float(by_nation.get("QAT", {}).get("index", 0.0))
 	var isl := float(by_nation.get("ISL", {}).get("index", 0.0))
@@ -98,7 +103,7 @@ func _test_profile() -> void:
 		_fail("perfil: renda de SAU (%.4f/pessoa/dia) não é 10× a de BDI (%.4f)" % [
 			sau * BASE_PER_CAPITA, bdi * BASE_PER_CAPITA])
 
-	# Nação sem PIB -> mediana regional + marcação `estimated`.
+	# Nações sem PIB -> mediana regional + marcação `estimated`.
 	var estimated: Array = meta.get("estimated_nations", [])
 	if estimated.is_empty():
 		_fail("perfil: nenhuma nação marcada como estimada (esperado sem PIB)")
@@ -150,8 +155,12 @@ func _test_core_payment() -> void:
 	var status: Dictionary = sim.tick_demo()
 
 	var paid := 0.0
-	var expected_sau := 7_000_000.0 * BASE_PER_CAPITA * sau_index
-	var expected_bdi := 1_000_000.0 * BASE_PER_CAPITA * bdi_index
+	# F7: a renda externa é piso de subsistência — o índice acima da média é
+	# publicado no status, mas NÃO é pago (min(índice, SUBSISTENCE_CAP)).
+	var expected_sau := 7_000_000.0 * BASE_PER_CAPITA \
+			* minf(sau_index, SUBSISTENCE_CAP)
+	var expected_bdi := 1_000_000.0 * BASE_PER_CAPITA \
+			* minf(bdi_index, SUBSISTENCE_CAP)
 	for city in status.get("cities", []):
 		var city_id := String(city.get("id", ""))
 		var pop: Dictionary = city.get("pop", {})
@@ -166,6 +175,15 @@ func _test_core_payment() -> void:
 		if absf(float(city.get("external_income_index", -1.0))
 				- (sau_index if city_id == "SAU-RUH" else bdi_index)) > EPSILON:
 			_fail("%s: status não expõe o índice aplicado" % city_id)
+
+	# A renda paga por pessoa nunca passa do piso de subsistência (0,012).
+	var sau_pc := 0.0
+	for city in status.get("cities", []):
+		if String(city.get("id", "")) == "SAU-RUH":
+			sau_pc = float(city.get("pop", {}).get("external_income", 0.0)) / 7_000_000.0
+	if sau_pc > BASE_PER_CAPITA * SUBSISTENCE_CAP + EPSILON:
+		_fail("piso: SAU recebeu %.6f/pessoa/dia acima do teto %.6f" % [
+			sau_pc, BASE_PER_CAPITA * SUBSISTENCE_CAP])
 
 	# Conservação: o dinheiro saiu do setor externo, não foi criado.
 	var money_after := float(status.get("money_total", 0.0))
