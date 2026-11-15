@@ -1,0 +1,60 @@
+F8 — serviços: perf release (2026-11-15)
+========================================
+
+Base: 72c2fba (fechamento da F7) + a F8 (20 setores de serviço, negócios,
+demanda POP/B2B/governo, exportação, save v10) e as correções do sweep
+(sweep F8, commit seguinte).
+
+DLLs compiladas do mesmo fonte em 15/11/2026 (cmake 4.x, ninja, clang++):
+debug 12.499.456 bytes (`template_debug`), release 1.385.472 bytes
+(`template_release`). O release da F7 tinha 1.296.896 bytes.
+
+Condição de medição: máquina do usuário com o **editor Godot aberto**
+(PID 15104) e o servidor `godot-editor-mcp` (PID 14552) rodando — a mesma
+condição das medições da F7. 834 cidades, 30 dias, `--tick-mode=worker`,
+`--profile=1`, `map-mode` padrão (none).
+
+Comando:
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Para a medição o release foi copiado sobre o nome `template_debug` (é o
+binário que o executável carrega) e a debug real (12.499.456 bytes) foi
+restaurada ao final — conferida por hash
+(`FBC33B8C…C5D295A`, igual antes e depois). Logs: `f8_release_run1..3.txt`
+(UTF-8 sem BOM).
+
+1. Tabela: F7 otimizada × F8
+----------------------------
+
+Mesma condição. "mediana" = mediana das 3 execuções; "pior" = pior das 3.
+`F7 otimizada` = números de `f7_perf_release.txt` (commit 72c2fba + otimização
+do status). `F8` = esta medição.
+
+| medição | F7 mediana | F7 pior | F8 mediana | F8 pior |
+|---|---|---|---|---|
+| tick C++ média (ms) | 45,76 | — | **42,01** | — |
+| tick C++ p95 (ms) | 54,76 | 55,86 | **48,56** | **48,66** |
+| tick C++ máx (ms) | 58,34 | 63,99 | 48,67 | 48,77 |
+| `status` média (ms) | 23,28 | — | **23,01** | — |
+| `status` p95 (ms) | 27,80 | 27,89 | **25,07** | **25,09** |
+| `status` máx (ms) | 29,11 | 29,11 | 27,10 | 27,49 |
+| `status_cities` média (ms) | 17,46 | — | 17,69 | — |
+| `status_cities` p95 (ms) | — | — | 19,26 | 19,09 |
+| VIRADA frame da main p95 (ms) | — | — | 11,06 | 12,02 |
+
+Critério da fase: `status` p95 ≤ 30 ms — **atendido** (25,09 ms no pior caso).
+
+2. Leitura
+----------
+
+- O tick C++ ficou ~8% mais rápido que a F7 otimizada apesar de simular 20
+  setores de serviço por cidade (o custo novo é pequeno porque as fases são
+  por cidade e os mercados de serviço são arrays fixos).
+- O `status` continua barato: `service_workers`, `service_jobs` e os escalares
+  por setor são reescritos no lugar (cache por slot), e `service_sectors` é
+  publicado uma vez por mundo.
+- As três execuções ficaram dentro de ~0,7 ms entre si no p95 do tick — a
+  variância da F7 (~1,5 ms) caiu.
+- Memória estática com 834 cidades: **531,6 MB** (F7: 528,5 MB; +3,1 MB
+  pelos mercados/negócios de serviço).
