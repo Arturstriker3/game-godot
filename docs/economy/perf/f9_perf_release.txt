@@ -1,0 +1,69 @@
+F9 — emprego setorial: perf release (2026-11-15)
+================================================
+
+Base: b971ff2 (UI de Serviços / F8) + a F9 (emprego setorial, piso de
+subsistência agrícola em espécie, espelho de escalares do status em 33).
+
+DLLs compiladas do mesmo fonte em 15/11/2026 (cmake 4.x + ninja + clang++,
+`-static -static-libgcc -static-libstdc++`): debug **12.648.448 bytes**
+(`template_debug`, hash SHA-256 `36A175CC…2129F30`), release **1.401.344
+bytes** (`template_release`; o release da F8 tinha 1.385.472).
+
+Condição de medição: máquina do usuário com o **editor Godot aberto**
+(PID 15104) e o servidor `godot-editor-mcp` rodando — a mesma condição das
+medições da F7/F8. 834 cidades, 30 dias, `--tick-mode=worker`, `--profile=1`,
+`map-mode` padrão (none).
+
+Comando:
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+Para a medição o release foi copiado sobre o nome `template_debug` (é o binário
+que o executável carrega) e a debug real (12.648.448 bytes) foi restaurada ao
+final — conferida por hash (`36A175CC…2129F30`, igual antes e depois). Logs:
+`f9_release_run1..3.txt` (UTF-8 sem BOM).
+
+1. Resultado
+------------
+
+| medição | run 1 | run 2 | run 3 | pior |
+|---|---|---|---|---|
+| tick C++ parede do worker — média (ms) | 42,65 | 42,63 | 42,88 | 42,88 |
+| tick C++ parede do worker — p95 (ms) | **48,84** | **48,74** | **48,59** | **48,84** |
+| tick C++ parede do worker — máx (ms) | 48,91 | 48,77 | 48,84 | 48,91 |
+| `status` — média (ms) | 23,73 | 23,69 | 24,27 | 24,27 |
+| `status` — p95 (ms) | 25,31 | 25,40 | **27,18** | **27,18** |
+| `status` — máx (ms) | 27,81 | 27,93 | 27,89 | 27,93 |
+| `status_cities` — p95 (ms) | 19,89 | 19,71 | 21,12 | 21,12 |
+| VIRADA frame da main — p95 (ms) | 11,77 | 11,94 | 11,37 | 11,94 |
+| memória estática com 834 cidades (MB) | 532,5 | 532,4 | 532,5 | 532,5 |
+
+Critério da fase: `status` p95 **≤ 30 ms** — **atendido** (pior 27,18 ms).
+Tick p95 medido em **48,84 ms** (portão histórico 50 ms; F8: 48,66).
+
+2. Leitura
+----------
+
+- O emprego setorial é **derivado** no fim do dia de trabalho (`demo_update_sector_employment`):
+  uma varredura das construções da cidade (produção agrícola) mais três
+  interpolações por âncora. Não tem fase própria no `--profile=1` — entra em
+  `labor`, que mediu 0,22 / 0,31 / 0,34 ms (média/p95/máx) na execução 1 — e o
+  tick ficou dentro do ruído da F8 (42,6–42,9 ms de média).
+- O status ganhou dois vetores de 4 doubles por cidade (`sector_workers`,
+  `sector_share`) e dois escalares (`service_jobs_filled`, `in_kind_food`),
+  publicados por espelho (`sector_written[8]`) e só reescritos quando mudam —
+  o `status` p95 ficou em 25,3–27,2 ms (F8: 25,09).
+- **Correção de contrato (F9):** o espelho de escalares por cidade tinha
+  `kDemoStatusScalarCount = 30` com **31 escritas** desde a F7 (escrita fora do
+  limite). O número passou a 33 e acompanha exatamente as chamadas de
+  `sync_scalar`.
+- Memória estática estável em ~532,5 MB (F8: 531,6 MB; +0,9 MB).
+
+3. Comparação com as fases anteriores (p95, mesma condição)
+-----------------------------------------------------------
+
+| fase | tick p95 (ms) | `status` p95 (ms) | memória (MB) |
+|---|---|---|---|
+| F7 otimizada (72c2fba) | 54,76 | 27,80 | 528,5 |
+| F8 (b971ff2) | 48,56 | 25,07 | 531,6 |
+| **F9** | **48,84** | **27,18** | **532,5** |
