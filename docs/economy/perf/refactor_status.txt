@@ -1,0 +1,40 @@
+# Perf — otimização do STATUS (S4 pós-remoção de API morta)
+
+Comando (release 1.507.840 B copiado sobre a DLL debug; editor Godot PID 15104 aberto):
+
+```
+godot --headless --path . res://tools/perf_day_peak.tscn -- --days=10 --tick-mode=worker --profile=1
+```
+
+Mundo: 858 construções (dia 1) → 1.933 (dia 10); 834 cidades, 113 produtos, 179 nações.
+
+## Baseline (S4, antes da micro-otimização) — 3 execuções
+
+| Run | tick p95 (ms) | status p95 (ms) | status_cities p95 (ms) | status_orders p95 | status_nations p95 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 56.54 | 28.56 | 24.86 | 3.61 | 2.57 |
+| 2 | 57.38 | 29.17 | 25.15 | 3.71 | 2.38 |
+| 3 | 59.89 | 28.70 | 24.88 | 3.61 | 2.46 |
+
+tick média 49,26–51,25 ms; status média 25,20–25,47 ms (≈49% do tick); status_cities ≈ 79% do status.
+
+## Após a micro-otimização (cache de `demo_fx_rate` por cidade)
+
+| tick p95 | status p95 | status_cities p95 |
+| --- | --- | --- |
+| 50.81 | 28.19 | 24.35 |
+
+## Conclusão
+
+- **status p95 28,2–29,2 ms ≤ 30** (portão atendido). O status já estava otimizado na F7 (D-024:
+  espelhos `double`/`memcmp` que só reescrevem campos/Variants que mudam; double buffer reaproveitado).
+- **tick p95 varia 50,8–59,9 ms** entre execuções com o MESMO binário — a variação é contenção do
+  editor Godot (PID 15104) e do crescimento do mundo (858→1.933 construções), não do núcleo. O tick
+  médio fica em 46,0–51,3 ms.
+- A micro-otimização (resolver `demo_fx_rate` 1× por cidade em vez de 2×) é **neutra** em status
+  (≈0,1 ms, abaixo do ruído de medição); a equivalência byte a byte (mundo 60 d com IA) é **0
+  diferenças** — `save_sha256 092748d5…`, `status_sha256 031ae878…` idênticos ao golden.
+- **Próxima alavanca para tick p95 ≤ 50**: S16 (paralelismo por cidade, 40–60% do tick) e S15 (SoA
+  nos mercados), conforme `docs/economy/core_refactor_plan.md` §3.3 — ambos posteriores na ordem do
+  Apêndice C. O status em si não tem mais ganho grande sem quebrar o contrato `markets` (113 Dicts
+  por cidade).

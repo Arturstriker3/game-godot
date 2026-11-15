@@ -5472,6 +5472,9 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	const DemoCity& city = demo_cities_[city_index];
 	const DemoStatusKeys& k = demo_status_keys_;
 	Dictionary& dict = slot.dict;
+	// Taxa de câmbio da nação, resolvida UMA vez por cidade (antes eram 2
+	// lookups de moeda por cidade: aqui e no bloco de mercados).
+	const double fx_rate = demo_fx_rate(city.nation);
 
 	// Strings estáveis: comparam a origem (memcmp) antes de realocar a String.
 	// `nation`/`home_nation` entram aqui porque o território pode mudar com a
@@ -5603,7 +5606,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.deficit, std::max(0.0, city.pop.need - city.pop.consumed));
 	sync_scalar(k.consumed, city.pop.consumed);
 	sync_scalar(k.in_transit, in_transit);
-	sync_scalar(k.fx_rate, demo_fx_rate(city.nation));
+	sync_scalar(k.fx_rate, fx_rate);
 	sync_scalar(k.tariff_revenue, city.tariff_revenue);
 	sync_scalar(k.productivity_index, demo_effective_productivity(city));
 	slot.scalar_written_filled = true;
@@ -5973,7 +5976,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	}
 	// Preço local é EXIBIÇÃO: âncora ÷ taxa da moeda da nação (F5, opção c).
 	// Não volta para a simulação; o valor na âncora é a fonte de verdade.
-	const double local_rate = std::max(1e-9, demo_fx_rate(city.nation));
+	const double local_rate = std::max(1e-9, fx_rate);
 	bool markets_dirty = false;
 	for (int product = 0; product < demo_products_; ++product) {
 		const DemoMarket& source = city.markets[product];
