@@ -27,6 +27,7 @@ const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 
 const DEFAULT_DAYS := 60
@@ -43,6 +44,19 @@ const FOOD_TOLERANCE := 0.025
 ## fixa são bit-idênticas ao XGS; a tolerância cobre diferenças de chegada.
 ## O critério robusto aceita baseline + 2 (26 → 28 em f4_world_ai_365).
 const BANKRUPTCY_TOLERANCE := 2
+## F8 — parcela do emprego em SERVIÇOS por nação. O setor de serviços é o
+## empregador residual do modelo (F7): quem não está numa construção nem
+## desempregado trabalha em serviços. A referência real (OIT/Banco Mundial,
+## ~2023, emprego em serviços / emprego total) serve para COMPARAR a estrutura
+## produzida, não para forçar o número: o modelo não tem emprego agrícola nem
+## informal separado, então Índia e Nigéria são o teste honesto dessa lacuna.
+const SERVICE_SHARE_REFERENCE := {
+	"USA": 0.79,
+	"DEU": 0.72,
+	"BRA": 0.70,
+	"IND": 0.32,
+	"NGA": 0.50,
+}
 
 var _days := DEFAULT_DAYS
 var _out := ""
@@ -144,6 +158,9 @@ func _test_world() -> void:
 	if has_chains:
 		sim.demo_set_recipes(_load_array(RECIPES_PATH))
 		sim.demo_set_needs(_load_dict(NEEDS_PATH))
+		# F8: serviços (catálogo). Binário anterior à F8 não tem o método.
+		if sim.has_method("demo_set_services"):
+			sim.demo_set_services(_load_dict(SERVICES_PATH))
 	# F5: moedas antes de criar o mundo — o preço local de cada cidade nasce na
 	# moeda da nação e o câmbio inicial entra no preço entregue. Binário antigo
 	# (sem a API) roda em XGS, como antes.
@@ -295,6 +312,8 @@ func _test_world() -> void:
 	else:
 		print("[world] necessidades: sem dado (binario sem F3)")
 	_print_labor(status)
+	var services := _service_employment(status)
+	_print_service_employment(services)
 	if ai != null:
 		var builds: Dictionary = {}
 		var build_count := 0
@@ -319,7 +338,7 @@ func _test_world() -> void:
 		_compare_baseline(nations)
 
 	if _out != "":
-		_write_report(nations, status, has_chains)
+		_write_report(nations, status, has_chains, services)
 
 	print("[world] resumo final:")
 	for city in status["cities"]:
@@ -522,7 +541,8 @@ func _compare_baseline(nations: Dictionary) -> void:
 		_baseline_path, rows.size(), worse])
 
 
-func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool) -> void:
+func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
+		services: Dictionary) -> void:
 	var dir := _out.get_base_dir()
 	if dir != "" and not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
@@ -537,9 +557,12 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool) ->
 			"products": Array(status.get("products", [])).size(),
 			"money_total": float(status.get("money_total", 0.0)),
 			"bankruptcies": int(status.get("bankruptcies", 0)),
+			"service_businesses": int(status.get("service_businesses", 0)),
+			"service_bankruptcies": int(status.get("service_bankruptcies", 0)),
 		},
 		"nations": _strip(nations),
 		"labor": _labor_nations(status),
+		"services": _strip_services(services),
 	}
 	file.store_string(JSON.stringify(report, "  "))
 	file.close()
@@ -569,6 +592,82 @@ func _labor_nations(status: Dictionary) -> Dictionary:
 			"wage_by_level": labor.get("wage_by_level", []),
 			"income_level_share": labor.get("income_level_share", []),
 			"productivity_index": float(labor.get("productivity_index", 1.0)),
+		}
+	return out
+
+
+## F8: emprego em serviços por nação. `service_jobs` é a meta de vagas do setor
+## (F7: empregador residual) e `service_workers` as vagas efetivamente
+## preenchidas; `pop.employed` já inclui essas vagas. A razão mede a ESTRUTURA
+## do emprego, não a ocupação exata de cada vaga.
+func _service_employment(status: Dictionary) -> Dictionary:
+	var rows: Dictionary = {}
+	for city in status.get("cities", []):
+		if not city.has("service_jobs"):
+			continue
+		var tag := String(city.get("nation", ""))
+		var row: Dictionary = rows.get(tag, {
+			"cities": 0, "jobs": 0.0, "workers": 0.0, "employed": 0.0,
+			"labor_force": 0.0,
+		})
+		var pop: Dictionary = city.get("pop", {})
+		row["cities"] = int(row["cities"]) + 1
+		row["jobs"] = float(row["jobs"]) + float(city["service_jobs"])
+		row["workers"] = float(row["workers"]) + float(
+			city.get("service_workers", city["service_jobs"]))
+		row["employed"] = float(row["employed"]) + float(pop.get("employed", 0.0))
+		row["labor_force"] = float(row["labor_force"]) + float(
+			pop.get("labor_force", 0.0))
+		rows[tag] = row
+	for tag in rows:
+		var row: Dictionary = rows[tag]
+		var employed := float(row["employed"])
+		var share := 0.0
+		if employed > 0.0:
+			share = float(row["workers"]) / employed
+		row["share"] = share
+		row["reference"] = float(SERVICE_SHARE_REFERENCE.get(tag, -1.0))
+	return rows
+
+
+func _print_service_employment(services: Dictionary) -> void:
+	if services.is_empty():
+		print("[world] emprego em servicos: sem dado (binario anterior a F8)")
+		return
+	var total_jobs := 0.0
+	var total_employed := 0.0
+	for tag in services:
+		total_jobs += float(services[tag]["workers"])
+		total_employed += float(services[tag]["employed"])
+	var global_share := 0.0
+	if total_employed > 0.0:
+		global_share = total_jobs / total_employed
+	print("[world] emprego em servicos (vagas ocupadas / empregados): mundo %.1f%% | %d nacoes" % [
+		global_share * 100.0, services.size()])
+	for tag in SERVICE_SHARE_REFERENCE:
+		if not services.has(tag):
+			continue
+		var row: Dictionary = services[tag]
+		var reference := float(row["reference"])
+		var share := float(row["share"])
+		print("  %-4s cidades=%3d vagas=%9.0f ocupadas=%9.0f empregados=%9.0f parcela=%5.1f%% ref=%5.1f%% dif=%5.1f p.p." % [
+			String(tag), int(row["cities"]), float(row["jobs"]),
+			float(row["workers"]), float(row["employed"]), share * 100.0,
+			reference * 100.0, (share - reference) * 100.0])
+
+
+func _strip_services(services: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for tag in services:
+		var row: Dictionary = services[tag]
+		out[tag] = {
+			"cities": int(row["cities"]),
+			"jobs": float(row["jobs"]),
+			"workers": float(row["workers"]),
+			"employed": float(row["employed"]),
+			"labor_force": float(row["labor_force"]),
+			"share": float(row["share"]),
+			"reference": float(row["reference"]),
 		}
 	return out
 

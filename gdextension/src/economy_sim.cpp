@@ -5640,6 +5640,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		service_revenue("service_revenue"),
 		service_spend("service_spend"),
 		service_wage("service_wage"),
+		service_workers("service_workers"),
 		shortage("shortage"),
 		simulation_population("simulation_population"),
 		site_suitability("site_suitability"),
@@ -5820,6 +5821,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.government_goods_spend, city.government_goods_spend);
 	sync_scalar(k.service_revenue, city.service_revenue);
 	sync_scalar(k.service_jobs, city.service_jobs);
+	sync_scalar(k.service_workers, city.service_workers);
 	sync_scalar(k.service_profit, city.service_profit);
 	sync_scalar(k.opex_revenue, city.opex_revenue);
 	sync_scalar(k.freight_revenue, city.freight_revenue);
@@ -8641,6 +8643,9 @@ double EconomySim::demo_labor_day(DemoCity& city) {
 		service_payroll_per_job += kLaborServiceMix[level] * fill[level]
 			* pop.wage_by_level[level];
 	}
+	// F8: vagas de serviço efetivamente preenchidas (peso da mistura de
+	// escolaridade × preenchimento). É o emprego real do setor, não a meta.
+	city.service_workers = city.service_jobs * service_fraction;
 	pop.employed = 0.0;
 	pop.unemployed = 0.0;
 	for (int level = 0; level < kDemoEducationLevels; ++level) {
