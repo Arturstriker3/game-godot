@@ -27,8 +27,8 @@ Cada gerente escreve na sua seção. Mensagens para outro gerente vão em `@gere
 
 | ID | Objetivo | Critério de aceite | Subtarefas | Status | Bloqueios |
 | --- | --- | --- | --- | --- | --- |
-| D-001 | Gini real por nação (WB SI.POV.GINI + quintis/decis + fallback) em `inequality.json` | 179/179 nações cobertas; todo valor tem `source`, `refs` (title/url/year) e `confidence`; `tools/validate_inequality.py` retorna 0 | 1. executor-flash: `build_inequality.py` + JSON; 2. verificador-flash: conferir amostra vs WB; 3. gerente: consolidar | em execução | — |
-| D-002 | Propriedade inicial (estoque IDE in/out FMI DIP + origens + peso estatal) em `ownership_baseline.json` | 179/179 nações; IDE em USD com ano/fonte; lacunas com `no_data` + motivo; refs obrigatórias; `tools/validate_ownership_baseline.py` retorna 0 | 1. executor-flash: `build_ownership_baseline.py` + JSON; 2. verificador-flash: conferir amostra vs FMI/OCDE; 3. gerente: consolidar | em execução | API FMI DIP (sdmx-csv) |
+| D-001 | Gini real por nação (WB SI.POV.GINI + quintis/decis + fallback) em `inequality.json` | 179/179 nações cobertas; todo valor tem `source`, `refs` (title/url/year) e `confidence`; `tools/validate_inequality.py` retorna 0 | 1. executor-flash: `build_inequality.py` + JSON; 2. verificador-flash: conferir amostra vs WB; 3. gerente: consolidar | aprovada | — |
+| D-002 | Propriedade inicial (estoque IDE in/out FMI DIP + origens + peso estatal) em `ownership_baseline.json` | 179/179 nações; IDE em USD com ano/fonte; lacunas com `no_data` + motivo; refs obrigatórias; `tools/validate_ownership_baseline.py` retorna 0 | 1. executor-flash: `build_ownership_baseline.py` + JSON; 2. verificador-flash: conferir amostra vs FMI/OCDE; 3. gerente: consolidar | aprovada | — |
 
 ### Decisões
 
