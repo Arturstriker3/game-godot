@@ -45,6 +45,11 @@ const FOOD_TOLERANCE := 0.025
 ## fixa são bit-idênticas ao XGS; a tolerância cobre diferenças de chegada.
 ## O critério robusto aceita baseline + 2 (26 → 28 em f4_world_ai_365).
 const BANKRUPTCY_TOLERANCE := 2
+## F9 — nações âncora da auditoria de propriedade (estatal / nacional / estrangeiro).
+const OWNERSHIP_TAGS := ["USA", "DEU", "BRA", "IND", "NGA", "CHN"]
+## Tolerância absoluta do drift de dinheiro no fim da corrida (R$). O núcleo
+## reverte qualquer tick que viole o invariante, então o esperado é 0.
+const MONEY_DRIFT_TOLERANCE := 0.01
 
 var _days := DEFAULT_DAYS
 var _out := ""
@@ -243,6 +248,11 @@ func _test_world() -> void:
 	var money_final := float(status["money_total"])
 	print("[world] dinheiro inicial=%.2f final=%.2f drift=%.4f" % [
 		money_initial, money_final, money_final - money_initial])
+	# F9: conservação explícita no fim da corrida (os invariantes por tick já
+	# revertem violações; este guarda pega drift acumulado silencioso).
+	if absf(money_final - money_initial) > MONEY_DRIFT_TOLERANCE:
+		_fail("dinheiro não conservado em %d dias: %.2f -> %.2f" % [
+			_days, money_initial, money_final])
 	# Falências: o cenário sem IA exige zero. Com baseline (F2), o teto é o
 	# número medido no baseline — a coorte da IA pode falir firmas que o F2 já
 	# falia, mas não pode piorar o total. Sem baseline, o guarda antigo (0).
@@ -317,6 +327,10 @@ func _test_world() -> void:
 	_print_labor(status)
 	var sectors := _sector_employment(status)
 	_print_sector_employment(sectors)
+	# F9: participação estatal / privada nacional / estrangeira nas nações
+	# âncora (receita e emprego dos ativos), direto do núcleo.
+	var ownership := _ownership_summary(sim, OWNERSHIP_TAGS)
+	_print_ownership(ownership)
 	if ai != null:
 		var builds: Dictionary = {}
 		var build_count := 0
@@ -341,7 +355,7 @@ func _test_world() -> void:
 		_compare_baseline(nations)
 
 	if _out != "":
-		_write_report(nations, status, has_chains, sectors)
+		_write_report(nations, status, has_chains, sectors, ownership)
 
 	print("[world] resumo final:")
 	for city in status["cities"]:
@@ -545,7 +559,7 @@ func _compare_baseline(nations: Dictionary) -> void:
 
 
 func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
-		sectors: Dictionary) -> void:
+		sectors: Dictionary, ownership: Dictionary) -> void:
 	var dir := _out.get_base_dir()
 	if dir != "" and not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
@@ -566,6 +580,7 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 		"nations": _strip(nations),
 		"labor": _labor_nations(status),
 		"sectors": _strip_sectors(sectors),
+		"ownership": ownership,
 	}
 	file.store_string(JSON.stringify(report, "  "))
 	file.close()
@@ -708,6 +723,94 @@ func _print_sector_employment(sectors: Dictionary) -> void:
 
 func _share(value: Variant, total: float) -> float:
 	return float(value) / total if total > 0.0 else 0.0
+
+
+## F9 — participação por tipo de dono. O núcleo agrega, por nação do ativo,
+## receita e emprego em três fatias: [estatal, privado nacional, estrangeiro].
+## `privado nacional` inclui os grupos nacionais e o privado agregado legado
+## (dono sem grupo) — o núcleo não distingue os dois no status.
+func _ownership_summary(sim: Object, tags: Array) -> Dictionary:
+	if not sim.has_method("demo_get_investment_status"):
+		_fail("propriedade: binário sem demo_get_investment_status")
+		return {}
+	var investment: Dictionary = sim.demo_get_investment_status()
+	var nations: Dictionary = investment.get("nations", {})
+	var out: Dictionary = {}
+	for tag: String in tags:
+		if not nations.has(tag):
+			_fail("propriedade: %s não aparece no status de investimento" % tag)
+			continue
+		var row: Dictionary = nations[tag]
+		var production: Array = row.get("production_share", [])
+		var employment: Array = row.get("employment_share", [])
+		var assets: Array = row.get("assets", [])
+		if production.size() != 3 or employment.size() != 3 or assets.size() != 3:
+			_fail("propriedade: %s com fatias incompletas" % tag)
+			continue
+		var production_total := float(row.get("production_total", 0.0))
+		var employment_total := float(row.get("employment_total", 0.0))
+		var assets_total := int(row.get("assets_total", 0))
+		if not is_finite(production_total) or not is_finite(employment_total):
+			_fail("propriedade: %s com total não finito" % tag)
+			continue
+		if assets_total <= 0:
+			_fail("propriedade: %s sem ativos no status" % tag)
+		for slot in 3:
+			var value := float(production[slot])
+			if not is_finite(value) or value < 0.0 or value > 1.000001:
+				_fail("propriedade: %s produção fora de [0,1] no slot %d (%.6f)" % [
+					tag, slot, value])
+			var jobs := float(employment[slot])
+			if not is_finite(jobs) or jobs < 0.0 or jobs > 1.000001:
+				_fail("propriedade: %s emprego fora de [0,1] no slot %d (%.6f)" % [
+					tag, slot, jobs])
+		# As três fatias de cada métrica fecham em 100% (tolerância de arredondamento)
+		# quando há base; sem base (total 0) todas são 0 por definição do núcleo.
+		if production_total > 0.0:
+			var production_sum := float(production[0]) + float(production[1]) \
+				+ float(production[2])
+			if absf(production_sum - 1.0) > 1e-6:
+				_fail("propriedade: %s produção soma %.6f (esperado 1)" % [
+					tag, production_sum])
+		if employment_total > 0.0:
+			var employment_sum := float(employment[0]) + float(employment[1]) \
+				+ float(employment[2])
+			if absf(employment_sum - 1.0) > 1e-6:
+				_fail("propriedade: %s emprego soma %.6f (esperado 1)" % [
+					tag, employment_sum])
+		out[tag] = {
+			"production_total": production_total,
+			"employment_total": employment_total,
+			"assets_total": assets_total,
+			"confidence": float(row.get("confidence", 1.0)),
+			"production_share": [
+				float(production[0]), float(production[1]), float(production[2])],
+			"employment_share": [
+				float(employment[0]), float(employment[1]), float(employment[2])],
+			"assets": [int(assets[0]), int(assets[1]), int(assets[2])],
+		}
+	return out
+
+
+func _print_ownership(ownership: Dictionary) -> void:
+	if ownership.is_empty():
+		return
+	print("[world] propriedade (estatal / privado nacional / estrangeiro):")
+	for tag: String in OWNERSHIP_TAGS:
+		if not ownership.has(tag):
+			continue
+		var row: Dictionary = ownership[tag]
+		var production: Array = row["production_share"]
+		var employment: Array = row["employment_share"]
+		var assets: Array = row["assets"]
+		print("  %-4s receita=%12.0f empregos=%9.0f confianca=%.2f | producao est=%5.1f%% nac=%5.1f%% estr=%5.1f%% | emprego est=%5.1f%% nac=%5.1f%% estr=%5.1f%% | ativos %d/%d/%d" % [
+			tag, float(row["production_total"]), float(row["employment_total"]),
+			float(row["confidence"]),
+			float(production[0]) * 100.0, float(production[1]) * 100.0,
+			float(production[2]) * 100.0,
+			float(employment[0]) * 100.0, float(employment[1]) * 100.0,
+			float(employment[2]) * 100.0,
+			int(assets[0]), int(assets[1]), int(assets[2])])
 
 
 func _strip_sectors(sectors: Dictionary) -> Dictionary:
