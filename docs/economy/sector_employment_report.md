@@ -70,8 +70,9 @@ mundo fecha o dia 60 com comida 1,000 nas cinco nações de referência, então 
 piso não tem déficit para cobrir. Dinheiro conservado (drift 0,0000), 0
 falências de construção, 0 violações de invariante.
 
-Diferença máxima vs. referência: **1,2 p.p.** (IND agro 42,2 vs 43,0; BRA agro
-8,4 vs 9,0). A estrutura agora é comparável à realidade, diferente da F8 (§5).
+Diferença máxima vs. referência: **0,8 p.p.** (IND agro 42,2 vs 43,0 e IND
+serviços 32,8 vs 32,0; BRA agro 8,4 vs 9,0). A estrutura agora é comparável à
+realidade, diferente da F8 (§5).
 
 **Nota de honestidade sobre a comida:** EGY 0,508 (pior nação no dia 60) e DJI
 0,965 já eram exatamente esses na F8 (`f8_world_ai_60.json`); o JSON de 60 d da
@@ -102,21 +103,23 @@ O residual **não é novo**: MRT e UZB já estavam fora da tolerância na F8
 0,905) e deixa MRT praticamente igual (0,954 → 0,951). A **regressão nova é
 DJI** (0,413 → 0,343), que na F8 estava *acima* do baseline.
 
-**Diagnóstico (medido + hipótese declarada, sem número inventado):**
-o piso é a **única** mudança funcional da F9 (o espelho de escalares não altera
-valores — ver §3). Ele age só em cidade com déficit e retira estoque do mercado
-**depois** da compra local, ou seja, consome o excedente que iria para a
-exportação. O modelo não tem solidariedade nacional nem tesouro que financie
-importação sustentável (resíduo "zero-sum" registrado no §15 desde a F3): quem
-importa comida — MRT, DJI, UZB — paga o custo. DJI é importador líquido sem
-produção agrícola própria; por isso ele (e não o exportador que passou a
-autoconsumir) cai.
+**A/B medido (365 d, `own_consumption_share` = 0,0 × 0,5):** desligar o piso no
+dado devolve **exatamente** os números da F8 — MRT 0,954, UZB 0,896, DJI 0,413,
+SOL 0,600 e 11 falências (`docs/economy/perf/f9_world_inkind0_365.json`). Isso
+prova que o piso é a **única** mudança funcional da F9 (o espelho de escalares
+não altera valor nenhum — §3) e mede o trade-off: **UZB +0,9 p.p., MRT −0,3 p.p.
+e DJI −7,0 p.p.** O piso age só em cidade com déficit e retira estoque do mercado
+**depois** da compra local — consome o excedente que iria para a exportação. O
+modelo não tem solidariedade nacional nem tesouro que financie importação
+sustentável (resíduo "zero-sum" registrado no §15 desde a F3): quem importa
+comida paga o custo. DJI é importador líquido sem produção agrícola própria, por
+isso cai; UZB, que tem produção, melhora.
 
-**Próximo passo sugerido (não executado nesta rodada):** medir `in_kind` por
-nação no sweep de 365 d (`sector_employment.json` → `own_consumption_share`) e
-testar `own_consumption_share` menor (0,25/0,0) num A/B de 365 d para separar
-"piso ajuda o exportador faminto" de "piso tira comida do importador". O knob é
-**dado**, não constante compilada.
+**Conclusão:** nenhum valor do knob fecha o critério — com 0,0 restam MRT e UZB
+(residual da F8, estrutural); com 0,5 eles continuam e DJI entra. O fechamento
+exige o item de modelo (renda/tesouro de importação, §15·F3), não calibração. O
+dado ficou em **0,5** (calibração da F9 preservada) e o A/B fica registrado para
+a decisão.
 
 ## 5. Histórico — F8 (serviços como empregador residual)
 
