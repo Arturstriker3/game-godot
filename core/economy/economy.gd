@@ -54,6 +54,8 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 ## Moedas e taxas de câmbio por nação (F5; âncora XGS, regime peg/float).
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+## F9: estrutura de emprego por setor (âncoras ILO + coeficientes agrícolas).
+const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 ## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Bandeiras por código ISO-2 (moddável: adicione assets/flags/<código>.png).
@@ -94,6 +96,11 @@ func _ready() -> void:
 	# F5: moedas ANTES do mundo, para o preço local de cada cidade nascer na
 	# moeda da nação (goods.json está em âncora XGS).
 	sim.demo_set_currencies(_load_json_dict(CURRENCIES_PATH))
+	# F9: emprego setorial (âncoras ILO por nível de renda + coeficientes da
+	# agricultura). Binário anterior à F9 não tem o método: mantém o espelho
+	# compilado das mesmas âncoras.
+	if sim.has_method("demo_set_sector_employment"):
+		sim.demo_set_sector_employment(_load_json_dict(SECTOR_EMPLOYMENT_PATH))
 	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
 	# aptidão × caloria da nação (antes de criar os prédios no núcleo). Sem dados,
 	# mantém trigo.

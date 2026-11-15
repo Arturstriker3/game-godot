@@ -215,6 +215,15 @@ public:
 	 */
 	void demo_set_services(const Variant& services);
 
+	/**
+	 * F9: carrega a estrutura de emprego setorial (sector_employment.json).
+	 * Determinística: a mesma entrada gera a mesma fração por cidade. Chame
+	 * antes (ou depois) de criar o mundo — os valores são recalculados todo dia
+	 * em demo_update_sector_employment. Sem chamada, vale o espelho compilado
+	 * das cinco âncoras (testes/benchmark).
+	 */
+	void demo_set_sector_employment(const Variant& data);
+
 	/** F8: catálogo carregado (id, nomes, ícone, educaçao, exportável). */
 	Array demo_get_service_sectors() const;
 
@@ -1018,6 +1027,23 @@ private:
 		double service_jobs = 0.0;
 		// F8: vagas de serviço efetivamente preenchidas (ver demo_labor_day).
 		double service_workers = 0.0;
+		// F9: vagas de serviço PAGAS (preenchidas pelo setor simulado). O
+		// emprego estrutural de serviços vai em `sector_workers[2]` e
+		// `service_workers`; o salário do setor continua saindo daqui.
+		double service_jobs_filled = 0.0;
+		// F9 — emprego setorial (docs/economy/sector_employment_report.md).
+		// `sector_workers`: 0 agropecuária, 1 indústria/mineração, 2 serviços
+		// (residual), 3 informal (SOBREPOSIÇÃO: parte dos três primeiros; não
+		// soma com eles). `sector_share` é a fração do emprego (0..1).
+		// Derivado todo dia em demo_update_sector_employment; não é campo de
+		// save (recalculado no primeiro tick após carregar).
+		double sector_workers[4] = {};
+		double sector_share[4] = {};
+		// Produção agrícola declarada no dia (t/dia de alimentos primários) e
+		// autoconsumo em espécie das famílias agrícolas (t-eq/dia) — ver o
+		// piso de subsistência em demo_tick_core.
+		double agri_output_tons = 0.0;
+		double in_kind_food = 0.0;
 		double service_wage = 0.0;
 		double service_wage_bill = 0.0;
 		double service_revenue = 0.0;
@@ -1125,7 +1151,9 @@ private:
 	struct DemoStatusCitySlot {
 		// Quantidade de escalares publicados em demo_fill_city_status; o
 		// espelho abaixo é indexado por ordem de chamada de sync_scalar.
-		static constexpr int kDemoStatusScalarCount = 30;
+		// F9: eram 31 chamadas com espelho de 30 (escrita fora do limite desde a
+		// F7); agora 33 (service_jobs_filled e in_kind_food entraram).
+		static constexpr int kDemoStatusScalarCount = 33;
 		Dictionary dict;
 		// Strings estáveis: evitam realocar String a cada dia.
 		std::string id_src, name_src, nation_src, home_src, landmass_src, currency_src;
@@ -1203,6 +1231,14 @@ private:
 		PackedFloat64Array services;
 		PackedFloat64Array services_written;
 		bool services_filled = false;
+		// F9: emprego setorial (4 posições: agro, indústria, serviços,
+		// informal) e a fração do emprego. Espelho de 8 doubles evita
+		// reescrever o PackedFloat64Array quando nada mudou.
+		PackedFloat64Array sector_workers;
+		PackedFloat64Array sector_share;
+		double sector_written[8] = {};
+		bool sector_written_filled = false;
+		bool sector_published = false;
 		Array buildings;
 		std::vector<Dictionary> building_entry;  // cresce com a cidade
 		// `buildings` é Array (referência): o dicionário publicado enxerga os
@@ -1253,7 +1289,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
 		DemoStatusKeys();
 	};
 
@@ -1606,6 +1642,17 @@ private:
 	 */
 	double demo_labor_day(DemoCity& city);
 
+	/**
+	 * F9 — emprego setorial: decompõe o emprego do dia em agropecuária,
+	 * indústria/mineração e serviços (residual), com a informalidade como
+	 * sobreposição. A agricultura vem da produção local (t/dia) e da TFP; a
+	 * indústria da âncora de renda (ILO) e do valor adicionado simulado.
+	 * Roda no fim de demo_labor_day (emprego já conhecido).
+	 */
+	void demo_update_sector_employment(DemoCity& city);
+	/** F9: âncoras ILO interpoladas no log do índice de renda. */
+	void demo_sector_anchor_values(double income, double* out) const;
+
 	// F8: índices cidade→negócios e setor→negócios (como os de construção).
 	void demo_rebuild_service_indexes();
 	// F8: semeia os negócios iniciais de cada cidade (capital da poupança da
@@ -1763,6 +1810,28 @@ private:
 	// e por setor são reconstruídos quando o conjunto muda).
 	bool demo_services_loaded_ = false;
 	double demo_service_government_share_ = 0.002;
+	// F9 — emprego setorial. Âncoras (renda, agro, indústria, informalidade)
+	// ordenadas por renda; interpoladas no log da renda. Ver
+	// data/definitions/economy/sector_employment.json (fonte ILO/ILOSTAT).
+	struct DemoSectorAnchor {
+		double income = 1.0;
+		double agriculture = 0.0;
+		double industry = 0.0;
+		double informal = 0.0;
+	};
+	bool demo_sector_loaded_ = false;
+	std::vector<DemoSectorAnchor> demo_sector_anchors_;
+	// Demanda de trabalho agrícola: t/dia × base / TFP^expoente.
+	double demo_agri_labor_per_ton_ = 55.0;
+	double demo_agri_labor_exponent_ = 1.4486;
+	double demo_agri_production_band_min_ = 0.9;
+	double demo_agri_production_band_max_ = 1.1;
+	// Autoconsumo máximo das famílias agrícolas, como fração da produção
+	// local disponível — o resto da produção vai ao mercado.
+	double demo_agri_own_consumption_share_ = 0.5;
+	// Indústria: trabalhadores por unidade de valor adicionado (XGS/dia).
+	double demo_industry_labor_per_va_ = 3.0;
+	double demo_industry_labor_exponent_ = 1.4486;
 	std::vector<DemoServiceSector> demo_service_sectors_;
 	std::vector<DemoServiceBusiness> demo_service_businesses_;
 	std::vector<std::vector<int>> demo_service_by_city_;

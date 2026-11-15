@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "note": "Estrutura de emprego por setor ancorada em dados observados. As cinco nações de referência usam a parcela OBSERVADA de emprego (share of total employment) do ano mais recente disponível; as demais nações são ESTIMATIVA por interpolação linear no log do índice de renda do cenário (PIB PPP per capita / média mundial, o mesmo índice da TFP da F7). A agricultura é modulada pela produção local (t/dia) e pela TFP; a indústria e a informalidade vêm da âncora de renda.",
+  "source": "ILOSTAT — share of total employment by sector (modelled estimates, 2023): agriculture/industry. ILO — informality (share of total employment, 2023). Índice de renda: data/definitions/economy/cities.json (PIB PPP per capita, derived:gdp_ppp).",
+  "estimated": true,
+  "anchors": [
+    {"tag": "NGA", "income_index": 0.371, "agriculture": 0.35, "industry": 0.12, "informal": 0.92},
+    {"tag": "IND", "income_index": 0.457, "agriculture": 0.43, "industry": 0.25, "informal": 0.90},
+    {"tag": "BRA", "income_index": 0.912, "agriculture": 0.09, "industry": 0.20, "informal": 0.37},
+    {"tag": "DEU", "income_index": 2.935, "agriculture": 0.013, "industry": 0.27, "informal": 0.08},
+    {"tag": "USA", "income_index": 3.503, "agriculture": 0.015, "industry": 0.19, "informal": 0.06}
+  ],
+  "agriculture": {
+    "labor_per_ton_base": 55.0,
+    "productivity_exponent": 1.4486,
+    "production_band_min": 0.9,
+    "production_band_max": 1.1,
+    "own_consumption_share": 0.5,
+    "note": "Demanda de trabalho agrícola = produção de alimentos (t/dia) × labor_per_ton_base / TFP^productivity_exponent. O ajuste por mínimos quadrados em log sobre as cinco nações de referência (produção medida no cenário no dia 60, dia=60, F9) dá 55,0 e 1,4486. A parcela publicada é a âncora ILO × fator de produção limitado a [production_band_min, production_band_max]: a capacidade de fazenda do cenário (1 construção por cidade) não é uma função de produção calibrada, então a produção modula a estrutura observada em vez de substituí-la. own_consumption_share limita o autoconsumo das famílias agrícolas (fração da produção local disponível em estoque) que cobre a falta da cesta."
+  },
+  "industry": {
+    "note": "Parcela de indústria/mineração/construção por nível de renda (âncora ILO). O emprego industrial simulado (valor adicionado × 1/TFP) é um piso adicional: quando a indústria simulada cresce além da âncora, ela passa a determinar o emprego. labor_per_value_added é ordem de grandeza ancorada no salário da F7 (~0,3 XGS por trabalhador/dia); não cria renda, só conta emprego.",
+    "labor_per_value_added": 3.0,
+    "productivity_exponent": 1.4486
+  }
+}

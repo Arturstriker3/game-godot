@@ -213,6 +213,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_needs);
 	ClassDB::bind_method(D_METHOD("demo_set_services", "services"),
 	                     &EconomySim::demo_set_services);
+	ClassDB::bind_method(D_METHOD("demo_set_sector_employment", "data"),
+	                     &EconomySim::demo_set_sector_employment);
 	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
 	                     &EconomySim::demo_get_service_sectors);
 	ClassDB::bind_method(D_METHOD("demo_get_services_detail", "city_id"),
@@ -4917,6 +4919,49 @@ void EconomySim::demo_tick_core() {
 			demo_consumed_today_[product] += quantity;
 			remaining_need -= quantity * factor;
 		}
+		// F9 — PISO DE SUBSISTÊNCIA AGRÍCOLA (autoconsumo em espécie). Só age
+		// quando a cidade NÃO conseguiu cobrir a cesta com o que comprou: as
+		// famílias agrícolas comem da própria produção (agricultura familiar),
+		// limitado pela necessidade dessas famílias e por uma fração da produção
+		// local. O alimento sai do ESTOQUE (conservação): não é comprado, então
+		// não há pagamento nem criação de comida. Sem déficit, não faz nada.
+		double in_kind = 0.0;
+		if (remaining_need > 1e-9 && city.agri_output_tons > 0.0
+				&& city.sector_workers[0] > 0.0) {
+			const double farm_household_size = std::clamp(
+				city.simulation_population
+					/ std::max(city.pop.labor_force, 1e-9), 1.0, 6.0);
+			const double household_need = city.sector_workers[0]
+				* farm_household_size * kDemoNeedPerCapita;
+			const double own_production = city.agri_output_tons
+				* demo_agri_own_consumption_share_;
+			in_kind = std::min(
+				std::min(remaining_need, household_need), own_production);
+			double left = in_kind;
+			for (int slot = 0; slot < static_cast<int>(demo_food_products_.size())
+					&& left > 1e-12; ++slot) {
+				const int product = demo_food_product(slot);
+				const double factor = demo_food_calories(product);
+				if (factor <= 0.0) {
+					continue;
+				}
+				DemoMarket& market = city.markets[product];
+				const double available = std::max(0.0, market.stock * factor);
+				const double take = std::min(left, available);
+				if (take <= 1e-12) {
+					continue;
+				}
+				const double tons = take / factor;
+				market.stock = std::max(0.0, market.stock - tons);
+				pop.consumed_by_category[slot] += tons;
+				demo_consumed_total_[product] += tons;
+				demo_consumed_today_[product] += tons;
+				consumed += take;
+				left -= take;
+			}
+			in_kind -= left;
+		}
+		city.in_kind_food = in_kind;
 		pop.consumed = consumed;
 		pop.food_spend = food_spend;
 		pop.satisfaction = pop.need > 0.0
@@ -5674,6 +5719,10 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		service_spend("service_spend"),
 		service_wage("service_wage"),
 		service_workers("service_workers"),
+		service_jobs_filled("service_jobs_filled"),
+		sector_workers("sector_workers"),
+		sector_share("sector_share"),
+		in_kind_food("in_kind_food"),
 		shortage("shortage"),
 		simulation_population("simulation_population"),
 		site_suitability("site_suitability"),
@@ -5855,6 +5904,8 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.service_revenue, city.service_revenue);
 	sync_scalar(k.service_jobs, city.service_jobs);
 	sync_scalar(k.service_workers, city.service_workers);
+	sync_scalar(k.service_jobs_filled, city.service_jobs_filled);
+	sync_scalar(k.in_kind_food, city.in_kind_food);
 	sync_scalar(k.service_profit, city.service_profit);
 	sync_scalar(k.opex_revenue, city.opex_revenue);
 	sync_scalar(k.freight_revenue, city.freight_revenue);
@@ -5914,6 +5965,36 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.tariff_revenue, city.tariff_revenue);
 	sync_scalar(k.productivity_index, demo_effective_productivity(city));
 	slot.scalar_written_filled = true;
+
+	// F9: emprego setorial (4 posições). Espelho de 8 doubles: só reescreve o
+	// PackedFloat64Array quando algum valor muda (o custo por escrita é a
+	// ponte GDExtension, não o cálculo).
+	{
+		bool changed = !slot.sector_written_filled
+			|| slot.sector_workers.size() != 4;
+		if (!changed) {
+			for (int i = 0; i < 4; ++i) {
+				if (slot.sector_written[i] != city.sector_workers[i]
+						|| slot.sector_written[4 + i] != city.sector_share[i]) {
+					changed = true;
+					break;
+				}
+			}
+		}
+		if (changed) {
+			slot.sector_workers.resize(4);
+			slot.sector_share.resize(4);
+			for (int i = 0; i < 4; ++i) {
+				slot.sector_workers[i] = city.sector_workers[i];
+				slot.sector_share[i] = city.sector_share[i];
+				slot.sector_written[i] = city.sector_workers[i];
+				slot.sector_written[4 + i] = city.sector_share[i];
+			}
+			dict[k.sector_workers] = slot.sector_workers;
+			dict[k.sector_share] = slot.sector_share;
+			slot.sector_written_filled = true;
+		}
+	}
 
 	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
 	// da chave = sem dado, não "zero"). O bloco ESTÁTICO (reserva inicial,
@@ -8515,6 +8596,251 @@ void EconomySim::demo_set_wage_rigidity(double value) {
 	demo_status_invalidate();
 }
 
+// ---------------------------------------------------------------------------
+// F9 — EMPREGO SETORIAL (docs/economy/sector_employment_report.md)
+//
+// O mercado de trabalho da F7 continua fechando emprego/desemprego como antes
+// (o setor de serviços é o empregador residual). A F9 decompõe esse emprego em
+// setores com estrutura ancorada em dados observados:
+//   0 agropecuária — da produção local de alimentos (t/dia) e da TFP;
+//   1 indústria/mineração/construção — da âncora ILO por renda e do valor
+//     adicionado simulado (quando ele passa da âncora);
+//   2 serviços — residual (formal + informal de serviços);
+//   3 informal — SOBREPOSIÇÃO (fração do emprego total), não soma com 0..2.
+// Não cria nem destrói dinheiro: a renda domiciliar continua agregada por
+// cidade. O único fluxo novo é o autoconsumo agrícola em espécie (ver o piso de
+// subsistência no consumo), que vem da produção local e é conservado no estoque.
+// ---------------------------------------------------------------------------
+
+namespace {
+// Espelho compilado de data/definitions/economy/sector_employment.json. A fonte
+// de verdade é o JSON (carregado por demo_set_sector_employment); este espelho
+// existe para testes/benchmark rodarem sem o arquivo.
+constexpr int kDemoSectorAnchorCount = 5;
+struct DemoSectorAnchorDefault {
+	double income;
+	double agriculture;
+	double industry;
+	double informal;
+};
+constexpr DemoSectorAnchorDefault kDemoSectorAnchorDefaults[kDemoSectorAnchorCount] = {
+	{0.371, 0.35, 0.12, 0.92},   // NGA
+	{0.457, 0.43, 0.25, 0.90},   // IND
+	{0.912, 0.09, 0.20, 0.37},   // BRA
+	{2.935, 0.013, 0.27, 0.08},  // DEU
+	{3.503, 0.015, 0.19, 0.06},  // USA
+};
+}  // namespace
+
+void EconomySim::demo_set_sector_employment(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	if (data.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary root = data;
+	const Array anchors = root.get("anchors", Array());
+	std::vector<DemoSectorAnchor> parsed;
+	parsed.reserve(anchors.size());
+	for (int index = 0; index < anchors.size(); ++index) {
+		if (anchors[index].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = anchors[index];
+		DemoSectorAnchor anchor;
+		anchor.income = std::clamp(
+			static_cast<double>(entry.get("income_index", 1.0)), 0.05, 8.0);
+		anchor.agriculture = std::clamp(
+			static_cast<double>(entry.get("agriculture", 0.0)), 0.0, 0.85);
+		anchor.industry = std::clamp(
+			static_cast<double>(entry.get("industry", 0.0)), 0.0, 0.70);
+		anchor.informal = std::clamp(
+			static_cast<double>(entry.get("informal", 0.0)), 0.0, 1.0);
+		parsed.push_back(anchor);
+	}
+	if (parsed.size() < 2) {
+		return;
+	}
+	std::sort(parsed.begin(), parsed.end(),
+		[](const DemoSectorAnchor& a, const DemoSectorAnchor& b) {
+			return a.income < b.income;
+		});
+	const Dictionary agri = root.get("agriculture", Dictionary());
+	if (!agri.is_empty()) {
+		demo_agri_labor_per_ton_ = std::clamp(
+			static_cast<double>(agri.get("labor_per_ton_base",
+				demo_agri_labor_per_ton_)), 0.1, 5000.0);
+		demo_agri_labor_exponent_ = std::clamp(
+			static_cast<double>(agri.get("productivity_exponent",
+				demo_agri_labor_exponent_)), 0.0, 4.0);
+		demo_agri_production_band_min_ = std::clamp(
+			static_cast<double>(agri.get("production_band_min",
+				demo_agri_production_band_min_)), 0.05, 1.0);
+		demo_agri_production_band_max_ = std::clamp(
+			static_cast<double>(agri.get("production_band_max",
+				demo_agri_production_band_max_)), 1.0, 4.0);
+		demo_agri_own_consumption_share_ = std::clamp(
+			static_cast<double>(agri.get("own_consumption_share",
+				demo_agri_own_consumption_share_)), 0.0, 1.0);
+	}
+	const Dictionary industry = root.get("industry", Dictionary());
+	if (!industry.is_empty()) {
+		demo_industry_labor_per_va_ = std::clamp(
+			static_cast<double>(industry.get("labor_per_value_added",
+				demo_industry_labor_per_va_)), 0.0, 1000.0);
+		demo_industry_labor_exponent_ = std::clamp(
+			static_cast<double>(industry.get("productivity_exponent",
+				demo_industry_labor_exponent_)), 0.0, 4.0);
+	}
+	demo_sector_anchors_ = std::move(parsed);
+	demo_sector_loaded_ = true;
+	demo_status_invalidate();
+}
+
+void EconomySim::demo_sector_anchor_values(double income, double* out) const {
+	// Interpolação linear no log da renda entre as âncoras observadas (ILO).
+	// Fora da faixa, vale o extremo (nação mais pobre/rica do conjunto).
+	double incomes[kDemoSectorAnchorCount];
+	double agri[kDemoSectorAnchorCount];
+	double industry[kDemoSectorAnchorCount];
+	double informal[kDemoSectorAnchorCount];
+	int count = 0;
+	if (!demo_sector_anchors_.empty()) {
+		for (const DemoSectorAnchor& anchor : demo_sector_anchors_) {
+			incomes[count] = anchor.income;
+			agri[count] = anchor.agriculture;
+			industry[count] = anchor.industry;
+			informal[count] = anchor.informal;
+			++count;
+		}
+	} else {
+		for (int i = 0; i < kDemoSectorAnchorCount; ++i) {
+			incomes[i] = kDemoSectorAnchorDefaults[i].income;
+			agri[i] = kDemoSectorAnchorDefaults[i].agriculture;
+			industry[i] = kDemoSectorAnchorDefaults[i].industry;
+			informal[i] = kDemoSectorAnchorDefaults[i].informal;
+		}
+		count = kDemoSectorAnchorCount;
+	}
+	const double x = std::log(std::clamp(income, 0.02, 10.0));
+	if (x <= std::log(incomes[0])) {
+		out[0] = agri[0];
+		out[1] = industry[0];
+		out[2] = informal[0];
+		return;
+	}
+	if (x >= std::log(incomes[count - 1])) {
+		out[0] = agri[count - 1];
+		out[1] = industry[count - 1];
+		out[2] = informal[count - 1];
+		return;
+	}
+	for (int i = 1; i < count; ++i) {
+		const double x0 = std::log(incomes[i - 1]);
+		const double x1 = std::log(incomes[i]);
+		if (x > x1) {
+			continue;
+		}
+		const double t = x1 > x0 ? std::clamp((x - x0) / (x1 - x0), 0.0, 1.0) : 0.0;
+		out[0] = agri[i - 1] + (agri[i] - agri[i - 1]) * t;
+		out[1] = industry[i - 1] + (industry[i] - industry[i - 1]) * t;
+		out[2] = informal[i - 1] + (informal[i] - informal[i - 1]) * t;
+		return;
+	}
+	out[0] = agri[count - 1];
+	out[1] = industry[count - 1];
+	out[2] = informal[count - 1];
+}
+
+void EconomySim::demo_update_sector_employment(DemoCity& city) {
+	DemoPop& pop = city.pop;
+	const double tfp = std::clamp(demo_effective_productivity(city), 0.25, 4.0);
+	double anchors[3] = {0.0, 0.0, 0.0};
+	demo_sector_anchor_values(tfp, anchors);
+	// 1. Produção agrícola local (t/dia): construções PRIMÁRIAS cujo produto
+	// está na cesta alimentar. É a capacidade declarada — a mesma que o status
+	// publica em `production` —, não o vendido do dia (preço/caixa não muda a
+	// necessidade de mão de obra da lavoura).
+	city.agri_output_tons = 0.0;
+	double industry_va = 0.0;
+	const std::size_t city_index =
+		static_cast<std::size_t>(&city - demo_cities_.data());
+	if (city_index < demo_buildings_by_city_.size()) {
+		for (const int bi : demo_buildings_by_city_[city_index]) {
+			const DemoBuilding& building =
+				demo_buildings_[static_cast<std::size_t>(bi)];
+			if (building.output_product < 0) {
+				continue;
+			}
+			if (building.input_product >= 0 || building.recipe >= 0) {
+				// Valor adicionado do dia da planta secundária (receita menos
+				// insumos, como no PIB da cidade).
+				industry_va += std::max(0.0,
+					building.revenue - building.input_value);
+				continue;
+			}
+			for (const int food : demo_food_products_) {
+				if (food == building.output_product) {
+					city.agri_output_tons +=
+						std::max(0.0, building.capacity * building.output_scale);
+					break;
+				}
+			}
+		}
+	}
+	const double employed = std::max(0.0, pop.employed);
+	if (employed <= 0.0) {
+		for (int i = 0; i < 4; ++i) {
+			city.sector_workers[i] = 0.0;
+			city.sector_share[i] = 0.0;
+		}
+		return;
+	}
+	const double labor_force = std::max(pop.labor_force, 1e-9);
+	// 2. Demanda de trabalho agrícola: t/dia × base / TFP^expoente. A âncora
+	// ILO dá a ESTRUTURA (share of total employment); a produção local modula
+	// em [band_min, band_max] — a capacidade de fazenda do cenário (1 por
+	// cidade) não é uma função de produção calibrada, então ela não pode
+	// substituir a estrutura observada (ver o relatório F9).
+	const double production_share = city.agri_output_tons
+		* demo_agri_labor_per_ton_ / std::pow(tfp, demo_agri_labor_exponent_)
+		/ labor_force;
+	const double production_factor = anchors[0] > 1e-9
+		? std::clamp(production_share / anchors[0],
+			demo_agri_production_band_min_, demo_agri_production_band_max_)
+		: 1.0;
+	double agri = std::clamp(anchors[0] * production_factor, 0.0, 0.65)
+		* employed;
+	// 3. Indústria/mineração: âncora de renda (ILO) e, como piso adicional, o
+	// valor adicionado simulado por trabalhador (1/TFP). No cenário atual a
+	// indústria é um esqueleto (poucas plantas), então a âncora domina.
+	const double va_jobs = demo_industry_labor_per_va_ > 0.0
+		? industry_va * demo_industry_labor_per_va_
+			/ std::pow(tfp, demo_industry_labor_exponent_)
+		: 0.0;
+	double industry = std::clamp(
+		std::max(anchors[1] * employed, va_jobs), 0.0, 0.60 * employed);
+	// 4. Serviços é o residual. A soma nunca passa do emprego; a informalidade
+	// é uma sobreposição (parte dos três setores), não um quarto setor.
+	if (agri + industry > employed) {
+		const double scale = employed / std::max(agri + industry, 1e-9);
+		agri *= scale;
+		industry *= scale;
+	}
+	const double services = std::max(0.0, employed - agri - industry);
+	city.sector_workers[0] = agri;
+	city.sector_workers[1] = industry;
+	city.sector_workers[2] = services;
+	city.sector_workers[3] = std::clamp(anchors[2], 0.0, 1.0) * employed;
+	for (int i = 0; i < 4; ++i) {
+		city.sector_share[i] = employed > 1e-9
+			? city.sector_workers[i] / employed : 0.0;
+	}
+	// F8 → F9: `service_workers` publica o EMPREGO do setor de serviços (a
+	// fatia estrutural), não mais as vagas pagas pelo setor. As vagas pagas
+	// continuam em `service_jobs_filled` — salário e folha seguem por elas.
+	city.service_workers = services;
+}
+
 double EconomySim::demo_labor_day(DemoCity& city) {
 	DemoPop& pop = city.pop;
 	// 1. QUALIFICAÇÃO — conclusão. A coorte em formação conclui a uma taxa
@@ -8678,7 +9004,8 @@ double EconomySim::demo_labor_day(DemoCity& city) {
 	}
 	// F8: vagas de serviço efetivamente preenchidas (peso da mistura de
 	// escolaridade × preenchimento). É o emprego real do setor, não a meta.
-	city.service_workers = city.service_jobs * service_fraction;
+	city.service_jobs_filled = city.service_jobs * service_fraction;
+	city.service_workers = city.service_jobs_filled;
 	pop.employed = 0.0;
 	pop.unemployed = 0.0;
 	for (int level = 0; level < kDemoEducationLevels; ++level) {
@@ -8691,6 +9018,8 @@ double EconomySim::demo_labor_day(DemoCity& city) {
 		}
 	}
 	pop.dependents = std::max(0.0, pop.population - pop.labor_force);
+	// F9: decompõe o emprego do dia em agro/indústria/serviços + informalidade.
+	demo_update_sector_employment(city);
 	// F7 calibração: estratos de renda = escolaridade/ocupação (ver
 	// demo_refresh_strata). A população do estrato inclui os dependentes.
 	demo_refresh_strata(pop);
