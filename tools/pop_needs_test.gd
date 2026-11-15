@@ -93,6 +93,10 @@ func _new_sim() -> Object:
 	sim.demo_set_goods(_goods)
 	sim.demo_set_recipes(_recipes)
 	sim.demo_set_needs(_needs)
+	# O teste mede a REGRA do nível de consumo, não a calibração da folga de
+	# custo de vida do jogo: com folga 1,0 a renda injetada define o nível
+	# diretamente (a folga calibrada vive em demo_income_basket_margin_).
+	sim.demo_set_balance({"income_basket_margin": 1.0})
 	var city := {
 		"id": CITY_ID,
 		"name": "Need City",
@@ -109,8 +113,16 @@ func _new_sim() -> Object:
 
 
 ## Aplica um estado controlado via save/load e devolve o sim pronto.
+##
+## F7 (contrato novo): o nível de consumo da POP é definido pela RENDA CORRENTE
+## do estrato, não pela poupança — "consumo efetivo respeita renda". Por isso o
+## teste que mede renda alta injeta renda de verdade: vagas no setor de serviços
+## (`service_share`) pagas por `service_cash` e salários por nível
+## (`wage_levels`). A poupança continua sendo injetada para o orçamento de compra
+## (o dinheiro é conservado), mas sozinha não eleva o nível.
 func _inject(sim: Object, stocks: Dictionary, savings: float,
-		government: float, durable: Dictionary = {}) -> void:
+		government: float, durable: Dictionary = {},
+		service_share: float = 0.0, wage_levels: Array = []) -> void:
 	var save: Dictionary = sim.demo_to_dict()
 	var city: Dictionary = save["cities"][0]
 	city["external_income_index"] = 0.0
@@ -124,6 +136,13 @@ func _inject(sim: Object, stocks: Dictionary, savings: float,
 	city["pop"]["savings"] = savings
 	city["pop"]["wage_income"] = 0.0
 	city["pop"]["capital_income"] = 0.0
+	if service_share > 0.0:
+		# Renda corrente real: o setor de serviços emprega e paga os salários
+		# do mercado de trabalho (mesma regra do jogo, sem atalho de caixa).
+		city["service_jobs"] = POPULATION * service_share
+		city["service_cash"] = 100000000.0
+		if not wage_levels.is_empty() and city["pop"].has("labor"):
+			city["pop"]["labor"]["wage_by_level"] = wage_levels.duplicate()
 	for id in stocks:
 		var product := _product(String(id))
 		if product < 0:
@@ -203,6 +222,10 @@ func _test_levels_by_income() -> void:
 	# Governo cobre só a cesta alimentar (o alimento mais barato por caloria
 	# declarado nos dados é a carne): a POP não tem orçamento para life.
 	_inject(low, {"meat": 1000.0}, 0.0, 1000000.0)
+	# O nível de renda calculado no dia vale para o dia SEGUINTE (contrato do
+	# núcleo), então o teste roda dois dias: o primeiro ancora a renda, o
+	# segundo consome conforme ela.
+	low.tick_demo()
 	var low_status: Dictionary = low.tick_demo()
 	var low_pop := _pop(low_status)
 	if int(low_pop["needs_level"]) != 1:
@@ -213,7 +236,9 @@ func _test_levels_by_income() -> void:
 			low_pop["life_satisfaction"]))
 
 	var high := _new_sim()
-	_inject(high, stocks, 100000000.0, 1000000.0)
+	_inject(high, stocks, 100000000.0, 1000000.0, {}, 0.30,
+		[0.30, 0.35, 0.40])
+	high.tick_demo()
 	var high_status: Dictionary = high.tick_demo()
 	var high_pop := _pop(high_status)
 	if int(high_pop["needs_level"]) < 2:

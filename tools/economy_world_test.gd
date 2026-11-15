@@ -423,7 +423,7 @@ func _print_labor(status: Dictionary) -> void:
 			float(unemployment_row[0]),
 			float(unemployment_row[unemployment_row.size() - 1])])
 	for city in status.get("cities", []):
-		if String(city.get("id", "")) in ["BRA-SAO", "USA-NEW", "IND-DEL"]:
+		if String(city.get("id", "")) in ["BRA-SAO", "USA-NEW", "IND-DEL", "DEU-BER", "NGA-LAG"]:
 			var pop: Dictionary = city.get("pop", {})
 			print("[labor] amostra %s pop=%.0f sim=%.0f trab=%.0f emp=%.0f renda=%.3f capital=%.3f externa=%.3f disp=%.5f disp_pc=%.5f servicos_vagas=%.0f sal_serv=%.4f receita_serv=%.0f consumo_nivel=%d renda_nivel=%d" % [
 				String(city.get("id", "")), float(city.get("population", 0.0)),
@@ -440,6 +440,14 @@ func _print_labor(status: Dictionary) -> void:
 				str(pop.get("labor_force_by_level", [])),
 				str(pop.get("vacancies_by_level", [])),
 				str(pop.get("education", []))])
+			print("[labor]   caixas firma=%.0f servico=%.0f governo=%.0f gdp=%.0f poupanca=%.0f" % [
+				float(city.get("firm_cash", 0.0)), float(city.get("service_cash", 0.0)),
+				float(city.get("government_budget", 0.0)), float(city.get("gdp", 0.0)),
+				float(pop.get("savings", 0.0))])
+			print("[labor]   estratos=%s disp_estrato=%s fatias=%s" % [
+				str(pop.get("income_level_by_stratum", [])),
+				str(pop.get("stratum_disposable", [])),
+				str(pop.get("income_level_share", []))])
 	var focus := ["USA", "BRA", "IND", "NGA", "DEU"]
 	for nation in status.get("nations", []):
 		var tag := String(nation.get("tag", ""))
@@ -455,6 +463,12 @@ func _print_labor(status: Dictionary) -> void:
 		print("[labor] %s forca=%.0f desemp=%.0f (%.1f%%) salarios=%s estudantes=%.0f" % [
 			tag, force, out, rate * 100.0, str(nation_wages),
 			float(labor.get("students", 0.0))])
+		var shares: Array = labor.get("income_level_share", [])
+		if shares.size() >= 4:
+			print("[labor] %s fatias basic/life/luxury=%.1f%%/%.1f%%/%.1f%% produtividade=%.3f" % [
+				tag, float(shares[1]) * 100.0, float(shares[2]) * 100.0,
+				float(shares[3]) * 100.0,
+				float(labor.get("productivity_index", 1.0))])
 
 
 ## Agrega comida e industrialização por nação (cons=Σconsumido, need=Σnecessidade).
@@ -553,6 +567,8 @@ func _labor_nations(status: Dictionary) -> Dictionary:
 			"unemployment_by_level": labor.get("unemployment_by_level", []),
 			"vacancies_by_level": labor.get("vacancies_by_level", []),
 			"wage_by_level": labor.get("wage_by_level", []),
+			"income_level_share": labor.get("income_level_share", []),
+			"productivity_index": float(labor.get("productivity_index", 1.0)),
 		}
 	return out
 

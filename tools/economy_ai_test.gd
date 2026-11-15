@@ -84,6 +84,11 @@ func _scenario_wheat_glut() -> Array:
 	# estoque de 3 dias absorve 500 t em ~8 dias; por isso a janela do teste é
 	# curta, para observar a decisão de cautela enquanto o excesso existe.
 	_inject_stock(sim, "PORTUS", 0, 500.0)
+	# O cenário demo é estruturalmente ~5% curto em produção diária (85,5 t de
+	# capacidade para 90 t de necessidade); o estoque de 500 t cobre o consumo,
+	# mas não é produção do dia. A IA pode, corretamente, expandir comida na
+	# cidade deficitária (AGRIA). O contrato deste teste é o GLUT LOCAL: a
+	# cidade com o excesso (PORTUS) não investe no setor.
 	_run(world, 7)
 
 	var decisions: Array = ai.get_decisions()
@@ -97,8 +102,10 @@ func _scenario_wheat_glut() -> Array:
 	for decision in decisions:
 		if String(decision.get("resource", "")) != "wheat":
 			continue
+		if String(decision.get("city", "")) != "PORTUS":
+			continue
 		if String(decision.get("action", "")) in ["build", "expand"]:
-			_fail("trigo: IA investiu mesmo com excesso de oferta")
+			_fail("trigo: IA investiu em PORTUS mesmo com excesso de oferta")
 	print("[ai] trigo: excesso %.1f t, decisões de cautela registradas" % [
 		float(wheat.get("surplus", 0.0))])
 	return decisions

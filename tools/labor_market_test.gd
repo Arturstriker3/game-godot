@@ -135,26 +135,44 @@ func _test_vacancy_requires_level() -> void:
 		str(vacancies), str(employed), str(unemployed)])
 
 
-## 2) Sem trabalhadores superiores/intermediários, o salário desses níveis sobe
-##    (escassez); com sobra de básicos, o salário básico cai. O passo é diário e
-##    limitado pela rigidez — nada de salto num dia.
+## 2) O PRÊMIO por nível vem do aperto: com toda a força no básico e vagas
+##    qualificadas sem candidato, o salário do superior sobe em relação ao do
+##    básico; com sobra de básicos, o básico cai em relação ao superior. O
+##    NÍVEL da folha vem da parcela do trabalho no valor adicionado (novo
+##    contrato da calibração): a folha paga converge para uma fração estável da
+##    receita da cidade e o passo diário é limitado pela rigidez.
 func _test_tightness_moves_wages() -> void:
 	var sim = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
-	var wages_initial := _wages(sim.get_demo_status())
+	var initial := _wages(sim.get_demo_status())
 	for day in 20:
 		sim.tick_demo()
 	var wages_final := _wages(sim.get_demo_status())
-	if wages_initial.size() < 3 or wages_final.size() < 3:
+	if initial.size() < 3 or wages_final.size() < 3:
 		_fail("salario dinamico: status sem wage_by_level")
 		return
-	if float(wages_final[2]) <= float(wages_initial[2]):
-		_fail("escassez nao subiu salario superior (%.5f -> %.5f)" % [
-			float(wages_initial[2]), float(wages_final[2])])
-	if float(wages_final[0]) >= float(wages_initial[0]):
-		_fail("sobra nao derrubou salario basico (%.5f -> %.5f)" % [
-			float(wages_initial[0]), float(wages_final[0])])
-	# Rigidez: em 1 dia a variação fica pequena (passo = salário × rigidez).
+	var premium_initial := float(initial[2]) / maxf(float(initial[0]), 1e-9)
+	var premium_final := float(wages_final[2]) / maxf(float(wages_final[0]), 1e-9)
+	if premium_final <= premium_initial:
+		_fail("aperto nao abriu premio: superior/basico %.3f -> %.3f" % [
+			premium_initial, premium_final])
+	# Folha = parcela do valor adicionado: com uma construção de 4000 t/dia, a
+	# folha paga não pode passar da receita do dia nem ficar perto de zero.
+	var status: Dictionary = sim.get_demo_status()
+	var city: Dictionary = status["cities"][0]
+	# Valor adicionado do dia (construções + serviços) é a base da folha.
+	var value_added := float(city.get("gdp", 0.0))
+	var pop: Dictionary = city["pop"]
+	var wage_bill := float(pop.get("wage_income", 0.0))
+	if value_added <= 0.0:
+		_fail("salario ancorado: cidade sem valor adicionado no dia")
+	elif wage_bill <= 0.0:
+		_fail("salario ancorado: folha zero com valor adicionado")
+	elif wage_bill > value_added * 1.30:
+		_fail("salario ancorado: folha %.2f > 130%% do valor adicionado %.2f" % [
+			wage_bill, value_added])
+	# Rigidez: depois do primeiro ajuste, o passo diário é pequeno.
 	var sim_day = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
+	sim_day.tick_demo()
 	var before := _wages(sim_day.get_demo_status())
 	sim_day.tick_demo()
 	var after := _wages(sim_day.get_demo_status())
@@ -165,9 +183,10 @@ func _test_tightness_moves_wages() -> void:
 	if daily_move > float(before[2]) * 0.25:
 		_fail("ajuste diario grande demais (%.5f de %.5f)" % [
 			daily_move, float(before[2])])
-	print("[labor] salario dinamico: basico %.5f -> %.5f | superior %.5f -> %.5f" % [
-		float(wages_initial[0]), float(wages_final[0]),
-		float(wages_initial[2]), float(wages_final[2])])
+	print("[labor] salario dinamico: basico %.5f -> %.5f | superior %.5f -> %.5f | premio %.3f -> %.3f | folha/VA %.2f" % [
+		float(initial[0]), float(wages_final[0]),
+		float(initial[2]), float(wages_final[2]),
+		premium_initial, premium_final, wage_bill / maxf(value_added, 1e-9)])
 
 
 ## 3) O piso de salário mínimo é soberano: nenhum nível fica abaixo dele.
@@ -214,24 +233,40 @@ func _test_qualification_is_gradual() -> void:
 		float(studying[0]), advanced, share])
 
 
-## 5) A renda define o nível de consumo: cidade rica alcança life/luxury, cidade
-##    sem renda fica sem acesso. Sem construção (só renda externa + serviços), o
-##    contraste é o da RENDA, não o do estoque produzido.
+## 5) A renda define o nível de consumo POR ESTRATO: a cidade com produção e
+##    salário ancorado no valor adicionado alcança life/luxury, a cidade sem
+##    produção nem renda fica no basic (ou sem nível). O lucro é do estrato
+##    superior: o nível do topo não pode ser menor que o da base.
 func _test_income_defines_consumption() -> void:
 	var poor = _new_world(0.0, _profile([0.9, 0.09, 0.01], [0.020, 0.030, 0.040]), false)
-	var rich = _new_world(5.0, _profile([0.9, 0.09, 0.01], [0.020, 0.030, 0.040]), false)
+	var rich = _new_world(1.0, _profile([0.9, 0.09, 0.01], [0.020, 0.030, 0.040]), true)
 	for day in 12:
 		poor.tick_demo()
 		rich.tick_demo()
-	var poor_level := int(_pop(poor.get_demo_status()).get("income_level", 0))
-	var rich_level := int(_pop(rich.get_demo_status()).get("income_level", 0))
+	var poor_pop := _pop(poor.get_demo_status())
+	var rich_pop := _pop(rich.get_demo_status())
+	var poor_level := int(poor_pop.get("income_level", 0))
+	var rich_level := int(rich_pop.get("income_level", 0))
 	if rich_level <= poor_level:
-		_fail("renda nao separou consumo: pobre=%d rico=%d" % [poor_level, rich_level])
+		_fail("renda nao separou consumo: sem producao=%d com producao=%d" % [
+			poor_level, rich_level])
 	if rich_level < 2:
-		_fail("cidade rica nao alcancou life (nivel %d)" % rich_level)
+		_fail("cidade com producao nao alcancou life (nivel %d)" % rich_level)
 	if poor_level > 1:
 		_fail("cidade sem renda passou do basic (nivel %d)" % poor_level)
-	print("[labor] nivel de consumo: sem renda=%d rica=%d" % [poor_level, rich_level])
+	var strata: Array = rich_pop.get("income_level_by_stratum", [])
+	if strata.size() < 3:
+		_fail("renda por estrato: status sem income_level_by_stratum")
+		return
+	if int(strata[2]) < int(strata[0]):
+		_fail("estrato superior (%d) abaixo do basico (%d) com lucro dos donos" % [
+			int(strata[2]), int(strata[0])])
+	var share: Array = rich_pop.get("income_level_share", [])
+	if share.size() < 4:
+		_fail("renda por estrato: status sem income_level_share")
+		return
+	print("[labor] nivel de consumo: sem renda=%d com producao=%d | estratos=%s fatias=%s" % [
+		poor_level, rich_level, str(strata), str(share)])
 
 
 func _fail(message: String) -> void:
