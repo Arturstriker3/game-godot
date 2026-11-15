@@ -1,0 +1,84 @@
+F9 — investimento e propriedade: perf release (2026-11-15)
+=========================================================
+
+Base: 26e63e5 (sweep 365 d do investimento) sobre 56113de (F9 núcleo + IA +
+testes). DLLs compiladas do mesmo fonte (cmake 4.x + ninja + clang++,
+`-static -static-libgcc -static-libstdc++`):
+
+  debug   14.144.000 bytes  SHA-256 FBEFD3F57150899E7A3EDFDB352A48731BC013AFA4EF48F6AA90FF16F02CDCF2
+  release  1.569.280 bytes  SHA-256 3FD2C59B918A03F1D3F5F5658C4FCB5798CCD0E52B5AA0C5B3154CEE5BE78670
+
+Condição de medição: máquina do usuário com o **editor Godot aberto**
+(PID 15104, o mesmo das medições da F7/F8/F9-emprego) e o servidor
+`godot-editor-mcp` rodando. 834 cidades, 30 dias, `--tick-mode=worker`,
+`--profile=1`, mapa padrão (none).
+
+Comando:
+
+  & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
+
+O release foi copiado sobre o nome `template_debug` (é o binário que o
+executável carrega) e a debug real foi restaurada ao final — conferida por hash
+(`FBEFD3F5…F02CDCF2`, igual antes e depois). Logs: `f9_invest_release_run1..3.txt`
+(UTF-8 sem BOM).
+
+1. Resultado
+------------
+
+| medição | run 1 | run 2 | run 3 | pior |
+|---|---|---|---|---|
+| tick C++ parede do worker — média (ms) | 52,08 | 51,70 | 51,92 | 52,08 |
+| tick C++ parede do worker — p95 (ms) | **60,52** | **59,33** | **59,20** | **60,52** |
+| tick C++ parede do worker — máx (ms) | 62,54 | 59,39 | 60,99 | 62,54 |
+| `status` — média (ms) | 24,64 | 24,72 | 24,86 | 24,86 |
+| `status` — p95 (ms) | **25,59** | **26,21** | **26,08** | **26,21** |
+| `status` — máx (ms) | 27,99 | 28,27 | 28,03 | 28,27 |
+| `status_cities` — p95 (ms) | 19,96 | 20,20 | 20,08 | 20,20 |
+| IA trabalho fatiado/dia — p95 (ms) | 15,09 | 15,08 | 15,46 | 15,46 |
+| VIRADA (frame da main) — p95 (ms) | 270,76 | 262,14 | 265,14 | 270,76 |
+| memória estática com 834 cidades (MB) | 543,1 | 542,9 | 543,2 | 543,2 |
+
+Critério da fase: `status` p95 **≤ 30 ms** — **atendido** (pior 26,21 ms).
+Tick p95 medido em **60,52 ms** (portão histórico 50 ms: **falha**).
+
+2. Leitura — duas regressões abertas (core/economia, fora do escopo deste agente)
+---------------------------------------------------------------------------------
+
+A camada de investimento por grupo não mexeu no `status` (p95 25,6-26,2 ms;
+F9-emprego: 25,3-27,2; F8: 25,09), mas **piorou o tick e a virada do dia**. O
+mundo tem **834 construções → 198 grupos** (lotes de 12 por nação×setor).
+
+- **Virada do dia p95 262-271 ms** (F9-emprego: 11,8-11,9 ms; ~22× pior). A
+  causa medida está no plano da IA, na thread principal: `EconomicAI.plan()`
+  chama `group_investor.run_day(day, status)` de forma **síncrona** antes do
+  fatimento por cidade. No log diário o `plano IA` sai de **4,7 ms** (F9-emprego)
+  para **46 ms até nos dias sem investimento** e **168-331 ms** nos dias com
+  decisão — `run_day` refaz o ranking todo dia (`demo_get_groups()` = varredura
+  de todas as construções + ordenação) e cada decisão percorre as 834 cidades ×
+  4 alimentos; a confiança/política ainda pede `demo_get_investment_status()`
+  (varredura de ativos por nação) uma vez por dia. O trabalho fatiado
+  (`run_slice`) continua em 15 ms p95: o que falta é **fatiar as decisões de
+  grupo** e **cachear o ranking** pela versão do status, não recalcular por dia.
+- **Tick +9,5 ms** (média 52,1 vs 42,6; p95 60,5 vs 48,8). As fases medidas
+  explicam ~4,2 ms: `fiscal` 0,05 → 1,09 (é onde roda `demo_settle_groups`;
+  para cada grupo com lucro a distribuir, `demo_credit_nation_households` varre
+  as 834 cidades duas vezes — conservação do dividendo), `arrival` 4,32 → 5,38,
+  `status` 23,73 → 24,64 e `trade` 5,98 → 6,45. Os outros ~5 ms ficam fora das
+  fases (snapshot/restore dos invariantes e overhead do worker) e precisam de
+  perfil dedicado do dono do núcleo.
+
+Recomendação (dono do núcleo/IA econômica): (a) C++ — índice `nation → cidades`
+para o crédito de dividendos e para o status de investimento; (b) GDScript —
+`GroupInvestor.run_slice(budget_us)` chamado pelo `pump` da IA e ranking
+recalculado só quando a versão do status muda. Gate de comida e de falências do
+sweep não depende disso.
+
+3. Notas
+--------
+
+- `status_orders` p95 3,68-3,70 ms e `status_nations` p95 2,37-2,49 ms — estáveis.
+- Memória estática 543,2 MB (F9-emprego: 532,5 MB; +10,7 MB): os 198 grupos
+  (id/nome/nação/setor/caixa/profit_by_host) e os fluxos por nação entram no
+  estado do mundo e no save v11.
+- Os logs por variação e os testes de aceite desta fase estão em
+  `docs/economy/perf/f9_invest_world_sweep.*` e `tools/investment_test.gd`.
