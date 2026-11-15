@@ -12,11 +12,13 @@ Cada gerente escreve na sua seção. Mensagens para outro gerente vão em `@gere
 
 | ID | Objetivo | Critério de aceite | Subtarefas | Status | Bloqueios |
 | --- | --- | --- | --- | --- | --- |
-| S-001 | Refatoração do núcleo C++ conforme `docs/economy/core_refactor_plan.md` (ordem Apêndice C) | Por passo: build debug+release verde; bateria verde; equivalência byte a byte (status/save 60 d com IA) = 0 diffs; commit por passo verde; DLL debug real no fim | 1. S0 harness+goldens (gerente) · 2. S4 remover API morta+benchmark (executor-flash) · 3. otimização STATUS (tick p95≤50, status≤30) · 4. S5+ módulos sim/ + edge/ (um por vez) | em execução | — |
+| S-001 | Refatoração do núcleo C++ conforme `docs/economy/core_refactor_plan.md` (ordem Apêndice C) | Por passo: build debug+release verde; bateria verde; equivalência byte a byte (status/save 60 d com IA) = 0 diffs; commit por passo verde; DLL debug real no fim | 1. ✅ S0 harness+goldens (e3b28cd) · 2. ✅ S4 remover API morta+benchmark · 3. **otimização STATUS** (tick p95≤50, status≤30) · 4. S5+ módulos sim/ + edge/ (um por vez) | em execução | — |
 
 ### Decisões
 
 - **2026-11-15 · S-001/S0:** equivalência byte a byte = hash SHA-256 de `JSON.stringify(...,"",true,true)` sobre `demo_to_dict()` e `get_demo_status()`; `demo_get_profile()` é registrado no golden como meta informativa (é dado de tempo, não determinístico) — o contrato estrito é status/save. Ordem Apêndice C: S0 → S4 → status → S5…S14 → S16 → S15/S17 → S18.
+- **2026-11-15 · S-001/S4 (feito, ver D-029 no GAME_STATE):** remoção da API morta + benchmark com equivalência 0 diffs. Nota: o plano §1.4 listou `Port`/`TradeOrder`/`MarketScope` como "legado", mas são **compartilhados** (o demo usa `demo_ports_`, `demo_last_orders_`, `scope_name`) — mantidos. `production_chain_test` (folha não racionada) e `services_test` (save v10 esperado, atual v11) falham **pré-existentes** (reproduzidos na DLL pré-S4), fora do escopo.
+- **Próximo passo (exato):** otimização do STATUS — `demo_fill_city_status`/`get_demo_status` consomem 40–50% do tick. Medir `status` p95 com `perf_day_peak --days=10 --tick-mode=worker --profile=1` (release, 3×), identificar a fase quente (`status_cities` 17,9–24,6 ms), otimizar o caminho de escrita de `Variant`/`String`, manter `demo_get_profile()` com as mesmas 15 fases + 4 sub-fases e revalidar equivalência 0 diffs.
 
 ---
 
