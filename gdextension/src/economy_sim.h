@@ -907,18 +907,25 @@ private:
 
 	// F8: índices cidade→negócios e setor→negócios (como os de construção).
 	void demo_rebuild_service_indexes();
-	// F8: semeia os negócios iniciais de cada cidade (capital da poupança da
-	// POP dona). Roda no boot do mundo e ao carregar save anterior ao v10.
+	// F8: semeia os negócios iniciais de cada cidade (capital do caixa do
+	// próprio setor + poupança das famílias acima da reserva de comida).
+	// Roda no boot do mundo e ao carregar save anterior ao v10.
 	void demo_seed_services();
 	// F8: fecha o dia dos serviços de uma cidade — demanda das classes, B2B,
 	// governo, exportação, produção dos negócios, preço, entrada e saída.
 	void demo_services_day(DemoCity& city);
-	// F8: abre um negócio do setor com a capacidade pedida. `capital` sai da
-	// poupança da POP e entra em service_cash (conservação).
+	// F8: abre um negócio do setor com a capacidade pedida. O capital vem do
+	// caixa do próprio setor (service_cash) e, se faltar, da poupança das
+	// famílias ACIMA da reserva de comida (a parcela de poupança move
+	// savings→service_cash e é devolvida no fechamento — conservação).
 	bool demo_service_open(DemoCity& city, int sector, double capacity,
 		double capital);
-	// F8: fecha um negócio insolvente, devolvendo o capital residual à POP.
+	// F8: fecha um negócio insolvente, devolvendo à POP só o capital que ela
+	// aportou (a parcela financiada pelo setor fica no setor).
 	void demo_service_close(DemoServiceBusiness& business);
+	// F8 v2: reserva de alimento (XGS) que a poupança deve preservar antes de
+	// financiar abertura de negócio — need × kDemoFoodReserveDays × custo/GE.
+	double demo_city_food_reserve(const DemoCity& city) const;
 	int demo_service_sector_index(const std::string& sector) const;
 
 	/**

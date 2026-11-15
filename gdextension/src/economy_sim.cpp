@@ -429,6 +429,25 @@ constexpr double kDemoLaborShareLow = 0.50;
 constexpr double kDemoLaborShareHigh = 0.65;
 constexpr double kDemoServiceShare = 0.30;
 constexpr double kDemoServiceWage = 0.15;
+// F8 v2 — ÂNCORA DE PREÇO DE SERVIÇO LIGADA AO SALÁRIO DO PAÍS. O preço-âncora
+// por setor (`definition.price`) escala com o salário de serviço local relativo
+// ao salário-âncora da F7 (0,15 XGS/posto/dia): price/jobs_per_unit ≈ 0,22 na
+// âncora, então a receita por posto passa a ser ≈ 1,47× o salário LOCAL — a
+// margem bruta (~32% antes de insumos) fica estável em país rico e pobre, sem o
+// teto `preço÷jobs_per_unit×0,68` que mascarava o preço sub-calibrado (Q-004).
+// Os limites evitam preço zero/explosivo quando o salário foge da faixa típica.
+// O piso de 0,10 cobre salários de subsistência (~0,015 XGS/posto/dia) sem
+// travar a escala em país muito pobre — era o piso de 0,50 que deixava a
+// margem de nações pobres disparar (a receita por posto ficava 3× acima do
+// salário real).
+constexpr double kDemoServiceAnchorScaleMin = 0.10;
+constexpr double kDemoServiceAnchorScaleMax = 4.0;
+// F8 v2 — MARGEM-ALVO: reduz a receita por posto de ~1,47× para ~1,25× o
+// salário local (margem bruta ~20% antes de insumos). Combinado com a banda
+// apertada [0,70; 1,40], a margem líquida mediana cai para ~5–20% conforme o
+// setor (varejo baixo, finanças/TI mais alto), sem o prejuízo estrutural do
+// preço sub-calibrado que o teto 0,68 mascarava (Q-004).
+constexpr double kDemoServiceMarginCalibration = 0.85;
 constexpr double kDemoServiceSpendShare = 0.45;
 constexpr double kDemoTaxRate = 0.15;
 constexpr double kDemoTransferShare = 1.0;
@@ -1518,7 +1537,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	// existem e os índices são atualizados quando os bens chegam.
 	demo_init_fleets();
 	// F8: serviços — catálogo já carregado pelo autoload/teste; os negócios
-	// iniciais saem da poupança da POP dona (capital entra em service_cash).
+	// iniciais saem do caixa do próprio setor (capital fica em service_cash).
 	demo_seed_services();
 	// F9: grupos/empresas a partir dos ativos privados existentes.
 	demo_seed_groups();
@@ -8883,6 +8902,20 @@ void EconomySim::demo_rebuild_service_indexes() {
 	}
 }
 
+double EconomySim::demo_city_food_reserve(const DemoCity& city) const {
+	// F8 v2: reserva alimentar robusta (XGS) que a poupança deve preservar antes
+	// de financiar abertura de negócio. Usa a MESMA regra prudencial da F3
+	// (kDemoFoodReserveDays de cesta) — a poupança que importa comida em nação
+	// sem terra fica intocada; só o excedente financia serviço.
+	const double need = std::max(0.0,
+		city.simulation_population * kDemoNeedPerCapita);
+	double local = 0.0;
+	double import = 0.0;
+	double per_ge = 0.0;
+	demo_food_basket_cost(city, need, local, import, per_ge);
+	return need * kDemoFoodReserveDays * per_ge;
+}
+
 bool EconomySim::demo_service_open(DemoCity& city, int sector, double capacity,
 		double capital) {
 	if (sector < 0 || sector >= static_cast<int>(demo_service_sectors_.size())) {
@@ -8895,10 +8928,25 @@ bool EconomySim::demo_service_open(DemoCity& city, int sector, double capacity,
 	if (capacity <= 0.0) {
 		return false;
 	}
-	const double available = std::max(0.0, city.pop.savings);
-	const double paid = std::min(capital, available);
-	city.pop.savings -= paid;
-	city.service_cash += paid;
+	// F8 v2: o capital de abertura NÃO pode sair da poupança que paga comida
+	// (F3 soma savings + renda para importar alimento — DJI regredia 0,472→0,355
+	// quando o capital drenava essa poupança, Q-004). Ordem de financiamento:
+	//   1º caixa do PRÓPRIO SETOR (lucros retidos em service_cash) — já está no
+	//      setor, vira equity do negócio sem movimento de dinheiro;
+	//   2º poupança das famílias ACIMA da reserva alimentar robusta — move
+	//      savings→service_cash (e é devolvida no fechamento).
+	// Se nem a soma cobre o capital sem tocar a reserva de comida, não abre.
+	const double food_reserve = demo_city_food_reserve(city);
+	const double savings_surplus = std::max(0.0, city.pop.savings - food_reserve);
+	const double from_sector = std::min(capital, std::max(0.0, city.service_cash));
+	const double from_savings = std::min(capital - from_sector, savings_surplus);
+	if (from_sector + from_savings < capital) {
+		return false;
+	}
+	if (from_savings > 0.0) {
+		city.pop.savings -= from_savings;
+		city.service_cash += from_savings;
+	}
 	DemoServiceBusiness business;
 	business.id = demo_next_service_business_id_++;
 	business.sector = sector;
@@ -8907,8 +8955,10 @@ bool EconomySim::demo_service_open(DemoCity& city, int sector, double capacity,
 	business.capacity = capacity;
 	business.jobs = capacity * definition.jobs_per_unit;
 	business.workers = business.jobs;
-	business.capital = paid;
-	business.capital_left = paid;
+	// `capital` guarda só a parcela da POP (devolvida no fechamento); a equity
+	// total (capital_left) soma a parcela do setor.
+	business.capital = from_savings;
+	business.capital_left = from_sector + from_savings;
 	business.opened_day = day_;
 	unsigned long long seed = 1469598103934665603ULL;
 	auto mix = [&seed](const std::string& text) {
@@ -8947,18 +8997,18 @@ void EconomySim::demo_service_close(DemoServiceBusiness& business) {
 	business.bankrupt = true;
 	DemoCity* city = find_demo_city(business.city);
 	if (city != nullptr) {
-		// F8 fix: devolve no máximo o capital APORTADO (o lucro é distribuído no
-		// agregado do setor — service_profit). `capital_left` pode exceder o
-		// aporte quando o negócio lucra; devolvê-lo drenaria o caixa de serviços.
+		// F8 v2: devolve à POP no máximo a parcela que ELA aportou
+		// (`business.capital` = from_savings); a parcela financiada pelo setor
+		// fica no setor. `capital_left` pode exceder o aporte quando o negócio
+		// lucra — o lucro já foi distribuído no agregado do setor, então só o
+		// aporte da POP volta (o teto pelo service_cash evita drenar o giro).
 		const double returned = std::min(
-			std::min(std::max(0.0, business.capital_left),
-				std::max(0.0, business.capital)),
-			std::max(0.0, city->service_cash));
-		city->service_cash -= returned;
-		city->pop.savings += returned;
+			std::max(0.0, business.capital_left),
+			std::max(0.0, business.capital));
+		const double paid_back = std::min(returned, std::max(0.0, city->service_cash));
+		city->service_cash -= paid_back;
+		city->pop.savings += paid_back;
 		city->service_business_count = std::max(0, city->service_business_count - 1);
-	} else {
-		business.capital_left = 0.0;
 	}
 	business.capital_left = 0.0;
 	demo_service_bankruptcies_ += 1;
@@ -9012,14 +9062,10 @@ void EconomySim::demo_seed_services() {
 			// não-letivo, então superdimensionar não é mais fatal.
 			const double capacity = definition.min_capacity;
 			const double capital = capacity * definition.capital_per_unit;
-			// Mesma reserva da abertura por demanda: a poupança é o orçamento
-			// de comida da POP (F3 soma savings + renda), então o capital do
-			// negócio não pode consumir a última reserva. Cidade pequena/pobre
-			// simplesmente semeia menos negócios e abre os demais quando a
-			// renda permitir.
-			if (city.pop.savings < capital * kDemoServiceCapitalReserve) {
-				continue;
-			}
+			// F8 v2: o capital de abertura vem do caixa do próprio setor e, se
+			// faltar, da poupança das famílias ACIMA da reserva de comida — o
+			// gate interno de demo_service_open decide. Cidade pequena/pobre
+			// semeia menos negócios e abre os demais quando houver caixa.
 			demo_service_open(city, sector, capacity, capital);
 		}
 		if (city.external_income_index > 1.2) {
@@ -9043,9 +9089,7 @@ void EconomySim::demo_seed_services() {
 				}
 				const double capacity = definition.min_capacity;
 				const double capital = capacity * definition.capital_per_unit;
-				if (city.pop.savings >= capital * kDemoServiceCapitalReserve) {
-					demo_service_open(city, sector, capacity, capital);
-				}
+				demo_service_open(city, sector, capacity, capital);
 			}
 		}
 	}
@@ -9065,18 +9109,17 @@ void EconomySim::demo_services_day(DemoCity& city) {
 	}
 	const DemoPop& pop = city.pop;
 	const double wage = std::max(0.0, city.service_wage);
-	// F8 fix (preço/margem coerentes): o custo de trabalho do negócio é
-	// limitado ao que o serviço gera por posto (preço ÷ jobs_per_unit). Em país
-	// rico o salário de mercado do empregador residual excede o valor gerado por
-	// posto e o negócio formal ficaria estruturalmente no prejuízo — o teto
-	// preserva a calibração (salário ~68% da receita por posto, §employment_note
-	// de services.json). Em país pobre o salário de mercado fica abaixo do teto
-	// e vale integralmente.
-	const auto business_wage = [&wage](const DemoServiceSector& definition) {
-		const double breakeven = definition.jobs_per_unit > 1e-9
-			? definition.price / definition.jobs_per_unit : 0.0;
-		return std::min(wage, breakeven * 0.68);
-	};
+	// F8 v2 (calibração, Q-004): o custo de trabalho do negócio é o salário de
+	// mercado INTEGRAL — sem o teto `preço÷jobs_per_unit×0,68`, que era a muleta
+	// que mascarava o preço sub-calibrado. A margem realista vem da ÂNCORA DE
+	// PREÇO escalada pelo salário local (passo 8): price/jobs_per_unit acompanha
+	// o salário, então o negócio não fica estruturalmente no prejuízo em país
+	// rico — o teto contábil deixa de ser necessário.
+	// Reserva alimentar robusta (calculada UMA vez por cidade/dia): a poupança
+	// acima dela é o que pode financiar a entrada de negócio, sem tocar a
+	// poupança que importa comida (DJI, Q-004).
+	const double food_reserve = demo_city_food_reserve(city);
+	const double savings_surplus = std::max(0.0, city.pop.savings - food_reserve);
 
 	// 1. Pesos da demanda das famílias por classe de consumo (basic/life/
 	// luxury). Com Gini, `class_population` é a repartição real; sem Gini,
@@ -9347,7 +9390,7 @@ void EconomySim::demo_services_day(DemoCity& city) {
 		// negócio ocioso não paga a folha cheia — o custo acompanha a
 		// utilização. A folha agregada do setor (demo_labor_day) continua sendo
 		// a do empregador residual da F7; aqui só se atribui o custo marginal.
-		business.wages = business.workers * business_wage(definition);
+		business.wages = business.workers * wage;
 		business.profit = business.revenue - business.wages
 			- business.input_cost - business.service_cost;
 		business.capital_left = std::max(0.0,
@@ -9428,9 +9471,18 @@ void EconomySim::demo_services_day(DemoCity& city) {
 		DemoServiceMarket& market = city.service_markets[sector];
 		const DemoServiceSector& definition =
 			demo_service_sectors_[static_cast<std::size_t>(sector)];
-		if (market.base_price <= 0.0) {
-			market.base_price = definition.price;
-		}
+		// F8 v2 — ÂNCORA LIGADA AO SALÁRIO DO PAÍS: o preço-âncora do setor
+		// escala com o salário de serviço local (kDemoServiceWage = 0,15, a
+		// âncora salarial da F7). Sem isso price/jobs_per_unit ficava fixo em
+		// ~0,22 e, em país rico, abaixo do salário — o negócio formal ficava no
+		// prejuízo estrutural (o teto 0,68 mascarava). Com a âncora escalando, a
+		// receita por posto passa a ≈ 1,47× o salário local, então a margem fica
+		// estável em país rico e pobre; os limites evitam preço zero/explosivo.
+		const double anchor_scale = std::clamp(
+			wage / kDemoServiceWage, kDemoServiceAnchorScaleMin,
+			kDemoServiceAnchorScaleMax);
+		market.base_price = definition.price * anchor_scale
+			* kDemoServiceMarginCalibration;
 		const double ratio = market.supply > 1e-9
 			? std::max(0.0, market.demand) / market.supply
 			: (market.demand > 1e-9 ? 4.0 : 1.0);
@@ -9443,9 +9495,10 @@ void EconomySim::demo_services_day(DemoCity& city) {
 			market.base_price * kDemoServicePriceBandHigh);
 	}
 
-	// 9. Entrada e saída. Entrada só com demanda não atendida, margem
-	// esperada acima do limiar e poupança da POP dona acima do capital + 4×
-	// reserva. Uma abertura por cidade/dia no máximo.
+	// 9. Entrada e saída. Entrada só com demanda não atendida, margem esperada
+	// acima do limiar e capital financiável pelo caixa do setor + poupança acima
+	// da reserva de comida. Até kDemoServiceOpensPerDay aberturas por cidade/dia
+	// (teto, não alvo: sem demanda não atendida, não abre nada).
 	int opens = 0;
 	for (int sector = 0; sector < kDemoMaxServiceSectors && opens < kDemoServiceOpensPerDay; ++sector) {
 		DemoServiceMarket& market = city.service_markets[sector];
@@ -9465,22 +9518,21 @@ void EconomySim::demo_services_day(DemoCity& city) {
 		if (existing >= kDemoServiceMaxPerSector) {
 			continue;
 		}
-		// F8 fix: capacidade pela DEMANDA não atendida (sem o teto de 40 postos),
-		// com folga de 25% para a oferta se manter à frente do crescimento da
-		// renda. Limitada ao que a poupança da POP financia, preservando a
-		// reserva de comida (capital × kDemoServiceCapitalReserve fica intocada):
-		// o negócio cresce conforme a renda acumula.
-		const double affordable = city.pop.savings > 0.0
-			? std::max(0.0, city.pop.savings
-				/ (definition.capital_per_unit * kDemoServiceCapitalReserve)) : 0.0;
+		// F8 v2: capacidade pela DEMANDA não atendida, com folga de 25% para a
+		// oferta se manter à frente do crescimento da renda. Financiada pelo
+		// caixa do setor + poupança das famílias ACIMA da reserva de comida
+		// (nunca pela poupança que paga comida — DJI, Q-004).
+		const double finance_base = std::max(0.0, city.service_cash) + savings_surplus;
+		const double affordable = finance_base > 0.0
+			? finance_base
+				/ (definition.capital_per_unit * kDemoServiceCapitalReserve) : 0.0;
 		if (affordable < definition.min_capacity) {
 			continue;
 		}
 		const double capacity = std::max(definition.min_capacity,
 			std::min(market.unmet * 1.25, affordable));
 		const double revenue = capacity * market.price;
-		double expected_cost = capacity * definition.jobs_per_unit
-			* business_wage(definition);
+		double expected_cost = capacity * definition.jobs_per_unit * wage;
 		for (const DemoServiceSector::Input& input : definition.inputs) {
 			if (input.product >= 0 && input.product < demo_products_) {
 				expected_cost += capacity * input.qty * city.markets[input.product].price;
@@ -9495,11 +9547,10 @@ void EconomySim::demo_services_day(DemoCity& city) {
 		}
 		const double margin = revenue > 1e-9
 			? (revenue - expected_cost) / revenue : -1.0;
-		const double capital = capacity * definition.capital_per_unit;
-		if (margin < kDemoServiceEntryMargin
-				|| city.pop.savings < capital * kDemoServiceCapitalReserve) {
+		if (margin < kDemoServiceEntryMargin) {
 			continue;
 		}
+		const double capital = capacity * definition.capital_per_unit;
 		if (demo_service_open(city, sector, capacity, capital)) {
 			++opens;
 		}

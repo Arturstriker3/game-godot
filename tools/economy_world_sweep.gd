@@ -67,9 +67,21 @@ func _sweep() -> void:
 		print("[sweep] baseline ilegivel: " + _baseline_path)
 		quit(2)
 		return
-	var baseline_nations: Dictionary = (baseline as Dictionary).get("nations", {})
-	var baseline_bankruptcies := int((baseline as Dictionary).get("meta", {}).get(
-		"bankruptcies", 0))
+	var baseline_nations: Dictionary = _normalize_nations(
+		(baseline as Dictionary).get("nations", {}))
+	# F9 (`f9_invest_world_sweep.json`) grava `meta.bankruptcies` como DICIONÁRIO
+	# por variação e `meta.bankruptcy_limit`; f4 grava como int. Normaliza para
+	# manter o teto de falências de construções correto (28 no caso da F9).
+	var meta: Dictionary = (baseline as Dictionary).get("meta", {})
+	var baseline_bankruptcies := 0
+	if typeof(meta.get("bankruptcy_limit", 0)) == TYPE_INT:
+		baseline_bankruptcies = int(meta["bankruptcy_limit"]) - BANKRUPTCY_TOLERANCE
+	elif typeof(meta.get("bankruptcies", 0)) == TYPE_INT:
+		baseline_bankruptcies = int(meta["bankruptcies"])
+	elif typeof(meta.get("bankruptcies", 0)) == TYPE_DICTIONARY:
+		var per_variant: Dictionary = meta["bankruptcies"]
+		for key in per_variant:
+			baseline_bankruptcies = maxi(baseline_bankruptcies, int(per_variant[key]))
 	var limit := baseline_bankruptcies + BANKRUPTCY_TOLERANCE
 	var project := ProjectSettings.globalize_path("res://").trim_suffix("/").trim_suffix("\\")
 	var godot := OS.get_executable_path()
@@ -177,6 +189,27 @@ func _load_json(path: String) -> Variant:
 	var data: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
 	return data
+
+
+## Baseline de comida: aceita o formato `f4` (dicionário `{tag: {food: x}}`) e o
+## formato `f9_invest_world_sweep` (array de `{tag, baseline, delta, worst_food}`).
+func _normalize_nations(raw: Variant) -> Dictionary:
+	var out: Dictionary = {}
+	if typeof(raw) == TYPE_DICTIONARY:
+		for tag in raw:
+			var row: Dictionary = raw[tag] as Dictionary
+			if row.has("food"):
+				out[String(tag)] = {"food": float(row["food"])}
+		return out
+	if typeof(raw) == TYPE_ARRAY:
+		for entry in raw:
+			var row: Dictionary = entry as Dictionary
+			var tag := String(row.get("tag", ""))
+			if tag == "":
+				continue
+			out[tag] = {"food": float(row.get("worst_food", 1.0))}
+		return out
+	return out
 
 
 func _write_report(rows: Array, bankruptcies: Dictionary, service: Dictionary,

@@ -49,12 +49,20 @@ constexpr int kDemoSaveVersion = 11;
 // F8: serviços. Preço reage a demanda financiada/oferta, dentro da banda da
 // âncora; prejuízo persistente fecha o negócio (contado à parte das falências
 // industriais). A entrada só acontece com demanda não atendida e margem.
+//
+// F8 v2 (calibração, Q-004): a banda foi APERTADA de [0,55; 2,20] para
+// [0,70; 1,40] — o teto de 2,20× deixava a margem disparar (a oferta
+// insuficiente empurrava o preço ao teto, ~69% de margem bruta). Com a âncora
+// ligada ao salário local e a banda mais realista, a margem líquida cai para a
+// faixa de 5–20%. A reserva de capital caiu de 4× para 1×: o multiplicador de
+// 4× era prudência de POUPANÇA de família; o caixa do setor já mantém o capital
+// de giro (8 dias) separado, então 1× basta como gate de liquidez.
 constexpr int kDemoServiceLossDays = 60;
 constexpr double kDemoServicePriceSmooth = 0.12;
-constexpr double kDemoServicePriceBandLow = 0.55;
-constexpr double kDemoServicePriceBandHigh = 2.20;
+constexpr double kDemoServicePriceBandLow = 0.70;
+constexpr double kDemoServicePriceBandHigh = 1.40;
 constexpr double kDemoServiceEntryMargin = 0.08;
-constexpr double kDemoServiceCapitalReserve = 4.0;
+constexpr double kDemoServiceCapitalReserve = 1.0;
 constexpr double kDemoServiceHealthNeedPerCapita = 0.00002;  // unidades/dia
 constexpr double kDemoServiceEducationNeedPerCapita = 0.000015;
 constexpr double kDemoServiceHealthSatisfactionBonus = 0.03;

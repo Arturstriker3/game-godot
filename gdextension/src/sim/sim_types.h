@@ -393,8 +393,9 @@
 	// `pop.service_spend`, as empresas com `opex_revenue`, o governo com o
 	// orçamento e o resto do mundo com `foreign_cash`; a receita dos negócios é
 	// uma ALOCAÇÃO do `city.service_cash` que já recebeu esses fluxos. Entrada
-	// de negócio transfere capital da poupança da POP dona para `service_cash`
-	// e a saída devolve o residual — `demo_money_total` continua conservado.
+	// de negócio financia o capital com o CAIXA DO PRÓPRIO SETOR (service_cash,
+	// lucros retidos) — a poupança que paga comida não é tocada — e a saída
+	// baixa a equity residual; `demo_money_total` continua conservado.
 	// ------------------------------------------------------------------
 	struct DemoServiceSector {
 		std::string id;

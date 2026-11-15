@@ -542,7 +542,16 @@ func _compare_baseline(nations: Dictionary) -> void:
 	if typeof(baseline) != TYPE_DICTIONARY:
 		_fail("baseline ilegivel: " + _baseline_path)
 		return
-	var rows: Dictionary = (baseline as Dictionary).get("nations", {})
+	var raw: Variant = (baseline as Dictionary).get("nations", {})
+	var rows: Dictionary = {}
+	if typeof(raw) == TYPE_DICTIONARY:
+		rows = raw
+	elif typeof(raw) == TYPE_ARRAY:
+		for entry in raw:
+			var row: Dictionary = entry as Dictionary
+			var tag := String(row.get("tag", ""))
+			if tag != "":
+				rows[tag] = {"food": float(row.get("worst_food", 1.0))}
 	var worse := 0
 	for tag in nations:
 		if not rows.has(tag):
