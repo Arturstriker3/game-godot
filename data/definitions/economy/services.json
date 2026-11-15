@@ -42,7 +42,7 @@
         0.03
       ],
       "jobs_per_unit": 4.5,
-      "capital_per_unit": 120.0,
+      "capital_per_unit": 12,
       "min_capacity": 8.0,
       "exportable": false,
       "export_share": 0.0,
@@ -86,7 +86,7 @@
         0.03
       ],
       "jobs_per_unit": 2.7,
-      "capital_per_unit": 72.0,
+      "capital_per_unit": 7.2,
       "min_capacity": 8.0,
       "exportable": false,
       "export_share": 0.0,
@@ -134,7 +134,7 @@
         0.03
       ],
       "jobs_per_unit": 11.0,
-      "capital_per_unit": 300.0,
+      "capital_per_unit": 30,
       "min_capacity": 3.0,
       "exportable": false,
       "export_share": 0.0,
@@ -182,7 +182,7 @@
         0.08
       ],
       "jobs_per_unit": 27.0,
-      "capital_per_unit": 720.0,
+      "capital_per_unit": 72,
       "min_capacity": 1.0,
       "exportable": true,
       "export_share": 0.02,
@@ -226,7 +226,7 @@
         0.05
       ],
       "jobs_per_unit": 3.6,
-      "capital_per_unit": 96.0,
+      "capital_per_unit": 9.6,
       "min_capacity": 8.0,
       "exportable": true,
       "export_share": 0.04,
@@ -270,7 +270,7 @@
         0.02
       ],
       "jobs_per_unit": 7.0,
-      "capital_per_unit": 180.0,
+      "capital_per_unit": 18,
       "min_capacity": 6.0,
       "exportable": false,
       "export_share": 0.0,
@@ -318,7 +318,7 @@
         0.4
       ],
       "jobs_per_unit": 23.0,
-      "capital_per_unit": 600.0,
+      "capital_per_unit": 60,
       "min_capacity": 1.0,
       "exportable": true,
       "export_share": 0.03,
@@ -358,7 +358,7 @@
         0.25
       ],
       "jobs_per_unit": 14.0,
-      "capital_per_unit": 360.0,
+      "capital_per_unit": 36,
       "min_capacity": 2.0,
       "exportable": false,
       "export_share": 0.0,
@@ -406,7 +406,7 @@
         0.5
       ],
       "jobs_per_unit": 18.0,
-      "capital_per_unit": 480.0,
+      "capital_per_unit": 48,
       "min_capacity": 2.0,
       "exportable": false,
       "export_share": 0.0,
@@ -450,7 +450,7 @@
         0.6
       ],
       "jobs_per_unit": 14.0,
-      "capital_per_unit": 360.0,
+      "capital_per_unit": 36,
       "min_capacity": 2.0,
       "exportable": false,
       "export_share": 0.0,
@@ -494,7 +494,7 @@
         0.18
       ],
       "jobs_per_unit": 5.5,
-      "capital_per_unit": 144.0,
+      "capital_per_unit": 14.4,
       "min_capacity": 6.0,
       "exportable": false,
       "export_share": 0.0,
@@ -538,7 +538,7 @@
         0.6
       ],
       "jobs_per_unit": 23.0,
-      "capital_per_unit": 600.0,
+      "capital_per_unit": 60,
       "min_capacity": 1.0,
       "exportable": true,
       "export_share": 0.06,
@@ -582,7 +582,7 @@
         0.4
       ],
       "jobs_per_unit": 9.0,
-      "capital_per_unit": 240.0,
+      "capital_per_unit": 24,
       "min_capacity": 2.0,
       "exportable": false,
       "export_share": 0.0,
@@ -626,7 +626,7 @@
         0.65
       ],
       "jobs_per_unit": 23.0,
-      "capital_per_unit": 600.0,
+      "capital_per_unit": 60,
       "min_capacity": 1.0,
       "exportable": false,
       "export_share": 0.0,
@@ -670,7 +670,7 @@
         0.25
       ],
       "jobs_per_unit": 36.0,
-      "capital_per_unit": 960.0,
+      "capital_per_unit": 96,
       "min_capacity": 1.0,
       "exportable": false,
       "export_share": 0.0,
@@ -714,7 +714,7 @@
         0.03
       ],
       "jobs_per_unit": 90.0,
-      "capital_per_unit": 2400.0,
+      "capital_per_unit": 240,
       "min_capacity": 0.5,
       "exportable": false,
       "export_share": 0.0,
@@ -758,7 +758,7 @@
         0.03
       ],
       "jobs_per_unit": 7.0,
-      "capital_per_unit": 180.0,
+      "capital_per_unit": 18,
       "min_capacity": 5.0,
       "exportable": false,
       "export_share": 0.0,
@@ -802,7 +802,7 @@
         0.02
       ],
       "jobs_per_unit": 5.5,
-      "capital_per_unit": 144.0,
+      "capital_per_unit": 14.4,
       "min_capacity": 5.0,
       "exportable": false,
       "export_share": 0.0,
@@ -846,7 +846,7 @@
         0.13
       ],
       "jobs_per_unit": 11.0,
-      "capital_per_unit": 300.0,
+      "capital_per_unit": 30,
       "min_capacity": 2.0,
       "exportable": false,
       "export_share": 0.0,
@@ -890,7 +890,7 @@
         0.01
       ],
       "jobs_per_unit": 3.6,
-      "capital_per_unit": 96.0,
+      "capital_per_unit": 9.6,
       "min_capacity": 8.0,
       "exportable": false,
       "export_share": 0.0,

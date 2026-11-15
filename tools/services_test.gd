@@ -143,14 +143,18 @@ func _test_demand_and_business() -> void:
 				still_there = true
 		_check(not still_there, "negócio fechado não deve aparecer na lista")
 
-	# Entrada: zera a oferta de um setor e verifica a abertura no dia seguinte.
-	sim.demo_set_service_capacity("T-DEU", "retail", 0.0)
-	var deu_before := _city_businesses(sim, "T-DEU")
-	sim.tick_demo()
-	var deu_after := _city_businesses(sim, "T-DEU")
-	_check(deu_after > deu_before,
-		"demanda não atendida deve abrir negócio (%d -> %d)" % [
-			deu_before, deu_after])
+	# Entrada: num mundo novo (antes de o mercado saturar com as 4 vagas por
+	# setor), zera a oferta de um setor e verifica a abertura no dia seguinte.
+	var entry_sim: Object = _make_world(false)
+	if entry_sim != null:
+		_set_income(entry_sim)
+		entry_sim.demo_set_service_capacity("T-DEU", "retail", 0.0)
+		var deu_before := _city_businesses(entry_sim, "T-DEU")
+		entry_sim.tick_demo()
+		var deu_after := _city_businesses(entry_sim, "T-DEU")
+		_check(deu_after > deu_before,
+			"demanda não atendida deve abrir negócio (%d -> %d)" % [
+				deu_before, deu_after])
 
 	# Nome único por cultura do dono, para todos os negócios do mundo.
 	_check(_names_unique(sim), "nomes gerados devem ser únicos")

@@ -145,7 +145,7 @@
 	static constexpr int kDemoServiceFields = 12;
 	// Limite de negócios por cidade/setor e de aberturas por cidade/dia.
 	static constexpr int kDemoServiceMaxPerSector = 4;
-	static constexpr int kDemoServiceOpensPerDay = 1;
+	static constexpr int kDemoServiceOpensPerDay = 5;
 	// Cesta alimentar (B3/B4) agora data-driven (demo_set_needs), derivada de
 	// needs.json (basic/food/substitutes + equivalence.calories). O padrão
 	// preserva a cesta validada de 5 culturas até o autoload carregar o dado.
