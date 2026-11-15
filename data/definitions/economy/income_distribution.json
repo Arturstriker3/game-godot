@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "note": "Gini de renda (0..1) usado para repartir a POP em classes de consumo (basic/life/luxury) no núcleo econômico. ESTIMATIVA POR REGIÃO: nenhuma nação do cenário traz Gini observado, então cada valor é a faixa típica da região na base World Bank PIP / OECD IDD, arredondada — não é medição da nação. O campo `estimated` é true em todo o arquivo e o núcleo recebe o valor via demo_set_income_gini. A média da distribuição é ancorada no PIB PPP per capita real (nations.json) e os limiares de classe são 1× (pobreza) e 7× (luxo) a cesta básica.",
+  "source": "estimativa regional (World Bank PIP / OECD IDD, faixa típica; sem dado por nação no projeto)",
+  "estimated": true,
+  "default_gini": 0.45,
+  "gini_anchor": "renda média = 2,0 cestas básicas × índice PIB PPP per capita (média mundial = 1,0)",
+  "class_thresholds_baskets": {
+    "basic": 1.0,
+    "luxury": 7.0
+  },
+  "regions": {
+    "africa": 0.43,
+    "asia": 0.38,
+    "europe": 0.33,
+    "middle_east": 0.39,
+    "north_america": 0.42,
+    "oceania": 0.36,
+    "south_america": 0.47
+  }
+}

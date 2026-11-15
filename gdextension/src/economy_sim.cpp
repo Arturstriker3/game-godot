@@ -178,6 +178,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_external_income_index);
 	ClassDB::bind_method(D_METHOD("demo_set_productivity_index", "city_id", "index"),
 	                     &EconomySim::demo_set_productivity_index);
+	ClassDB::bind_method(D_METHOD("demo_set_income_gini", "city_id", "gini"),
+	                     &EconomySim::demo_set_income_gini);
 	ClassDB::bind_method(D_METHOD("demo_set_labor_profile", "city_id", "profile"),
 	                     &EconomySim::demo_set_labor_profile);
 	ClassDB::bind_method(D_METHOD("demo_set_minimum_wage", "nation", "value"),
@@ -898,6 +900,19 @@ constexpr double kDemoGovernmentGoodsFoodShare = 0.05;
 // proporcional ao PIB real.
 constexpr double kDemoExternalIncomePerCapita = 0.012;
 constexpr double kDemoExternalIncomeIndexCap = 1.0;
+// F7 calibração — ANCORAGEM DA DISTRIBUIÇÃO DE RENDA (head, F7 final).
+//
+// A renda média por pessoa de cada nação é ancorada no PIB PPP per capita real
+// (índice normalizado, média mundial = 1,0): a média da distribuição é
+// `kIncomeAnchorWorldMean` cestas básicas × índice. A cesta básica (`basic`)
+// custa 1×, a `life` acumulada deve custar 2,5–3× e a `luxury` acumulada 6–10×
+// (limiares de classe no núcleo, multiplicadores abaixo). O sigma da lognormal
+// vem do Gini da nação (GeographyService; `estimated` quando regional).
+//
+// Calibração verificada em 60 d com IA (economy_income_distribution_test):
+// EUA/DEU basic ≤ 15% e maioria life; BRA basic ~41%; IND ~68%; NGA ~78%.
+constexpr double kIncomeAnchorWorldMean = 2.0;   // cestas básicas/pessoa/dia
+constexpr double kIncomeLuxuryMultiple = 7.0;    // luxo = 7× cesta básica
 constexpr double kDemoLaborShare = 0.55;
 constexpr double kDemoLaborShareLow = 0.50;
 constexpr double kDemoLaborShareHigh = 0.65;
@@ -4694,6 +4709,11 @@ void EconomySim::demo_tick_core() {
 		pop.stratum_disposable[kDemoEducationLevels - 1] +=
 			std::max(0.0, pop.capital_income);
 
+		// F7 calibração — classes de consumo do dia (Gini declarado) ou espelho
+		// dos estratos de escolaridade (legado). O teto de consumo de hoje usa
+		// a classe; no caminho legado, o nível do estrato veio de ontem.
+		demo_refresh_income_classes(city);
+
 		double budget = pop.savings + pop.disposable - pop.service_spend;
 		// Necessidade alimentar em toneladas-equivalentes de grão (B3).
 		pop.need = city.simulation_population * kDemoNeedPerCapita;
@@ -4843,11 +4863,14 @@ void EconomySim::demo_tick_core() {
 			for (double& level_spend : pop.level_spend) {
 				level_spend = 0.0;
 			}
-			// População por estrato (soma = população da cidade); usada para
-			// registrar o desejo e comprar proporcionalmente ao estrato.
-			double stratum_total = 0.0;
-			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
-				stratum_total += std::max(0.0, pop.stratum_population[stratum]);
+			// População por CLASSE de consumo (basic/life/luxury; soma =
+			// população da cidade). Com Gini declarado a classe vem da
+			// distribuição de renda; sem Gini, espelha o estrato de
+			// escolaridade (legado). É ela que define o desejo e o teto de
+			// compra de cada nível.
+			double class_total = 0.0;
+			for (int cls = 0; cls < kDemoEducationLevels; ++cls) {
+				class_total += std::max(0.0, pop.class_population[cls]);
 			}
 			for (int level_index = 0;
 					level_index < static_cast<int>(demo_needs_levels_.size())
@@ -4865,29 +4888,29 @@ void EconomySim::demo_tick_core() {
 				if (level_index == 0) {
 					pop.level_spend[0] += food_spend;
 				}
-				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
-					const double stratum_pop =
-						std::max(0.0, pop.stratum_population[stratum]);
-					if (stratum_pop <= 1e-9) {
+				for (int cls = 0; cls < kDemoEducationLevels; ++cls) {
+					const double class_pop =
+						std::max(0.0, pop.class_population[cls]);
+					if (class_pop <= 1e-9) {
 						continue;
 					}
-					const double stratum_share = stratum_total > 1e-9
-						? stratum_pop / stratum_total
+					const double class_share = class_total > 1e-9
+						? class_pop / class_total
 						: 1.0 / double(kDemoEducationLevels);
 					const bool affordable = level_index == 0
-						|| level_index + 1 <= pop.stratum_income_level[stratum];
+						|| level_index + 1 <= pop.class_income_level[cls];
 					for (const DemoNeedsCategory& category : level.categories) {
 						// A cesta alimentar básica tem laço próprio (validado) e
 						// já foi consumida acima; reaproveita `pop.need/consumed`
 						// para não cobrar duas vezes a mesma refeição.
 						if (level_index == demo_needs_food_level_
 								&& category.id == std::string("food")) {
-							level_want += pop.need * stratum_share;
-							level_got += pop.consumed * stratum_share;
+							level_want += pop.need * class_share;
+							level_got += pop.consumed * class_share;
 							continue;
 						}
 						const double want_ge = category.per_capita_day
-							* stratum_pop;
+							* class_pop;
 						level_want += want_ge;
 						if (!affordable) {
 							// Renda insuficiente: não compra (o consumo efetivo
@@ -4934,36 +4957,49 @@ void EconomySim::demo_tick_core() {
 			// Antes o custo vinha do gasto observado, que é zero quando o nível
 			// já estava bloqueado: a cidade nunca saía do nível 1 (auto-bloqueio).
 			// Preço de mercado existe mesmo sem compra e quebra o laço.
-			double cumulative_cost[kDemoMaxNeedsLevels] = {};
-			double running_cost = 0.0;
-			// `demo_level_basket_cost` devolve o custo da CIDADE INTEIRA; o gate
-			// de renda compara com a renda PER CAPITA do estrato, então o custo
-			// é normalizado pela população.
-			const double basket_population = std::max(1e-9, city.simulation_population);
-			for (int level_index = 0;
-					level_index < static_cast<int>(demo_needs_levels_.size())
-					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
-				running_cost += demo_level_basket_cost(city, level_index);
-				cumulative_cost[level_index] = running_cost / basket_population;
-			}
-			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
-				const double stratum_pop =
-					std::max(0.0, pop.stratum_population[stratum]);
-				const double per_capita = stratum_pop > 1e-9
-					? std::max(0.0, pop.stratum_disposable[stratum]) / stratum_pop
-					: 0.0;
-				int income_level = 0;
+			// F7 calibração — GATE LEGADO por estrato. Continua sendo calculado
+			// sempre (o campo `income_level_by_stratum` é lido pela UI/painel);
+			// com Gini declarado ele NÃO define o consumo — a classe ancorada no
+			// PIB PPP define (`demo_refresh_income_classes`).
+			{
+				double cumulative_cost[kDemoMaxNeedsLevels] = {};
+				double running_cost = 0.0;
+				// `demo_level_basket_cost` devolve o custo da CIDADE INTEIRA; o gate
+				// de renda compara com a renda PER CAPITA do estrato, então o custo
+				// é normalizado pela população.
+				const double basket_population =
+					std::max(1e-9, city.simulation_population);
 				for (int level_index = 0;
 						level_index < static_cast<int>(demo_needs_levels_.size())
 						&& level_index < kDemoMaxNeedsLevels; ++level_index) {
-					if (per_capita + 1e-12
-							>= cumulative_cost[level_index] * demo_income_basket_margin_) {
-						income_level = level_index + 1;
-					} else {
-						break;
-					}
+					running_cost += demo_level_basket_cost(city, level_index);
+					cumulative_cost[level_index] = running_cost / basket_population;
 				}
-				pop.stratum_income_level[stratum] = income_level;
+				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+					const double stratum_pop =
+						std::max(0.0, pop.stratum_population[stratum]);
+					const double per_capita = stratum_pop > 1e-9
+						? std::max(0.0, pop.stratum_disposable[stratum]) / stratum_pop
+						: 0.0;
+					int income_level = 0;
+					for (int level_index = 0;
+							level_index < static_cast<int>(demo_needs_levels_.size())
+							&& level_index < kDemoMaxNeedsLevels; ++level_index) {
+						if (per_capita + 1e-12
+								>= cumulative_cost[level_index]
+									* demo_income_basket_margin_) {
+							income_level = level_index + 1;
+						} else {
+							break;
+						}
+					}
+					pop.stratum_income_level[stratum] = income_level;
+				}
+				// Sem Gini (legado), o gate de amanhã é o cap de classe; com
+				// Gini, os caps vêm da distribuição e não são sobrescritos.
+				if (city.income_gini <= 0.0) {
+					demo_refresh_income_classes(city);
+				}
 			}
 			// Agregado da cidade: o nível mediano (a maior parte da POP) — é o
 			// que o mapa/UI e os testes legados leem — mais a fatia da POP em
@@ -4976,11 +5012,11 @@ void EconomySim::demo_tick_core() {
 					++level_index) {
 				pop.income_level_share[level_index] = 0.0;
 			}
-			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
-				const int reached = pop.stratum_income_level[stratum];
+			for (int cls = 0; cls < kDemoEducationLevels; ++cls) {
+				const int reached = pop.class_income_level[cls];
 				if (reached >= 0 && reached < kDemoIncomeLevels) {
 					pop.income_level_share[reached] +=
-						std::max(0.0, pop.stratum_population[stratum]);
+						std::max(0.0, pop.class_population[cls]);
 				}
 			}
 			for (int level_index = 0; level_index < kDemoIncomeLevels;
@@ -7689,13 +7725,35 @@ double EconomySim::demo_effective_productivity(const DemoCity& city) const {
 	// F7 calibração — TFP nacional. O cenário não traz valor adicionado por
 	// trabalhador; o índice de renda real (PIB PPP per capita / média mundial,
 	// `derived:gdp_ppp`) é a única medida de nível de produtividade já carregada
-	// e é usada sem piso: EUA ~3,6, DEU ~3,0, BRA ~0,9, IND ~0,47, NGA ~0,38.
-	// O limite [0,25, 4,0] contém os extremos de nações ricas e pequenas (QAT
-	// ~5,1) sem inverter a ordem entre as nações jogáveis.
+	// e entra como FATOR COMPLETO, normalizado para a média mundial = 1,0:
+	// EUA ~3,5, DEU ~2,9, BRA ~0,9, IND ~0,46, NGA ~0,37. Aplicar só um prêmio
+	// `max(1, índice)` deixava a Nigéria produzindo como a média mundial e
+	// invertia a distribuição (menos gente no basic do que a renda real
+	// permite). O limite [0,25, 4,0] contém os extremos reais (QAT ~5,0) sem
+	// inverter a ordem entre as nações jogáveis; o piso de subsistência da
+	// âncora salarial (ver demo_update_wages) impede que o fator < 1 derrube o
+	// trabalhador abaixo da cesta alimentar.
 	if (city.productivity_index > 0.0) {
-		return std::clamp(city.productivity_index, 0.05, 8.0);
+		return std::clamp(city.productivity_index, 0.25, 4.0);
 	}
 	return std::clamp(city.external_income_index, 0.25, 4.0);
+}
+
+void EconomySim::demo_set_income_gini(const String& city_id, double gini) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	// [0, 1]: 0 desliga (legado por escolaridade); dados corrompidos não viram
+	// sigma negativo. A faixa real estimada por região fica em 0,33–0,47.
+	city->income_gini = std::clamp(gini, 0.0, 1.0);
+	// Recalcula as classes na hora: o status lido antes do primeiro tick já
+	// publica a repartição ancorada (se o mundo ainda não tem preços, cai no
+	// espelho dos estratos, sem inventar Gini).
+	demo_refresh_income_classes(*city);
+	++demo_status_static_version_;
+	demo_status_invalidate();
 }
 
 // ---------------------------------------------------------------------------
@@ -7766,6 +7824,60 @@ constexpr double kLaborWageTightnessGain = 1.20;
 constexpr double kLaborWageMarginGain = 0.60;
 constexpr double kLaborIncomeElasticity = 0.30;
 
+// ---------------------------------------------------------------------------
+// F7 calibração — distribuição de renda por Gini.
+//
+// A repartição da POP em classes usa uma lognormal: para um Gini G, o sigma é
+// `sqrt(2) * Φ⁻¹((1+G)/2)` e a média é ancorada no PIB PPP per capita. As
+// funções abaixo são as aproximações padrão (Acklam para Φ⁻¹ e erf para Φ);
+// nenhum número de nação é inventado aqui — Gini e índice vêm dos dados.
+// ---------------------------------------------------------------------------
+double normal_cdf(double z) {
+	return 0.5 * (1.0 + std::erf(z / std::sqrt(2.0)));
+}
+
+// Φ⁻¹(x) — Peter Acklam, erro absoluto < 1,15e-9 (domínio (0,1)).
+double normal_quantile(double p) {
+	if (p <= 1e-12) {
+		return -8.0;
+	}
+	if (p >= 1.0 - 1e-12) {
+		return 8.0;
+	}
+	static const double a[6] = {
+		-3.969683028665376e+01, 2.209460984245205e+02,
+		-2.759285104469687e+02, 1.383577518672690e+02,
+		-3.066479806614716e+01, 2.506628277459239e+00};
+	static const double b[5] = {
+		-5.447609879822406e+01, 1.615858368580409e+02,
+		-1.556989798598866e+02, 6.680131188771972e+01,
+		-1.328068155288572e+01};
+	static const double c[6] = {
+		-7.784894002430293e-03, -3.223964580411365e-01,
+		-2.400758277161838e+00, -2.549732539343734e+00,
+		4.374664141464968e+00, 2.938163982698783e+00};
+	static const double d[4] = {
+		7.784695709041462e-03, 3.224671290700398e-01,
+		2.445134137142996e+00, 3.754408661907416e+00};
+	const double low = 0.02425;
+	const double high = 1.0 - low;
+	if (p < low) {
+		const double q = std::sqrt(-2.0 * std::log(p));
+		return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q
+			+ c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
+	}
+	if (p > high) {
+		const double q = std::sqrt(-2.0 * std::log(1.0 - p));
+		return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q
+			+ c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
+	}
+	const double q = p - 0.5;
+	const double r = q * q;
+	return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r
+		+ a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r
+		+ b[4]) * r + 1.0);
+}
+
 double labor_income_factor(double income_index) {
 	// Riqueza do país: PIB per capita elevado paga salários maiores na âncora.
 	// Expoente 0,30 (renda não é repassada 1:1, pois o nível de preços do modelo
@@ -7790,6 +7902,48 @@ void EconomySim::demo_refresh_strata(DemoPop& pop) const {
 			? pop.population * std::max(0.0, pop.education[level]) / education_total
 			: pop.population / double(kDemoEducationLevels);
 	}
+}
+
+void EconomySim::demo_refresh_income_classes(DemoCity& city) const {
+	DemoPop& pop = city.pop;
+	const double population = std::max(0.0, city.simulation_population);
+	const double gini = std::clamp(city.income_gini, 0.0, 1.0);
+	double basic_cost = 0.0;
+	if (population > 1e-9) {
+		basic_cost = demo_level_basket_cost(city, 0) / population;
+	}
+	// Sem Gini declarado (cidade sintética/save antigo) ou sem preço de cesta
+	// (mundo sem needs.json): espelha os estratos de escolaridade. É o
+	// comportamento anterior, preservado fora do cenário real.
+	if (gini <= 0.0 || basic_cost <= 1e-12) {
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			pop.class_population[level] = std::max(0.0, pop.stratum_population[level]);
+			pop.class_income_level[level] = pop.stratum_income_level[level];
+		}
+		return;
+	}
+	// Log-normal: sigma do Gini (2Φ(σ/√2)-1 = G) e média ancorada no PIB PPP
+	// per capita real, em cestas básicas (média mundial = kIncomeAnchorWorldMean).
+	double sigma = std::sqrt(2.0) * normal_quantile(0.5 * (1.0 + gini));
+	sigma = std::clamp(sigma, 0.15, 1.50);
+	const double index = std::clamp(city.external_income_index, 0.01, 8.0);
+	const double mean_units = kIncomeAnchorWorldMean * index;
+	const double mu = std::log(mean_units) - 0.5 * sigma * sigma;
+	// Limiares de classe em cestas básicas: pobreza = 1×; luxo = 7×.
+	const double basic_share = std::clamp(
+		normal_cdf((0.0 - mu) / sigma), 0.0, 1.0);
+	const double luxury_share = std::clamp(
+		1.0 - normal_cdf((std::log(kIncomeLuxuryMultiple) - mu) / sigma),
+		0.0, 1.0);
+	const double life_share = std::max(
+		0.0, 1.0 - basic_share - luxury_share);
+	pop.class_population[0] = population * basic_share;
+	pop.class_population[1] = population * life_share;
+	pop.class_population[2] = population * luxury_share;
+	// basic compra só o nível 0; life, 0-1; luxury, todos (caps em 1-based).
+	pop.class_income_level[0] = 1;
+	pop.class_income_level[1] = 2;
+	pop.class_income_level[2] = kDemoMaxNeedsLevels;
 }
 
 void EconomySim::demo_education_mix_for_sector(const std::string& sector,
@@ -7894,6 +8048,7 @@ void EconomySim::demo_apply_labor_profile(DemoCity& city) {
 		pop.level_spend.assign(demo_needs_levels_.size(), 0.0);
 	}
 	demo_refresh_strata(pop);
+	demo_refresh_income_classes(city);
 }
 
 void EconomySim::demo_set_labor_profile(const String& city_id,
@@ -8257,7 +8412,7 @@ double EconomySim::demo_labor_day(DemoCity& city) {
 void EconomySim::demo_update_wages(DemoCity& city, double building_margin) {
 	DemoPop& pop = city.pop;
 	const auto minimum = demo_minimum_wages_.find(city.nation);
-	const double floor = minimum != demo_minimum_wages_.end()
+	double floor = minimum != demo_minimum_wages_.end()
 		? std::max(0.0, minimum->second) : 0.0;
 	const double margin = std::clamp(building_margin, -0.25, 0.25);
 	// 1. Parcela do trabalho no valor adicionado do dia. `city.gdp` é o valor
@@ -8273,6 +8428,33 @@ void EconomySim::demo_update_wages(DemoCity& city, double building_margin) {
 	double filled_total = 0.0;
 	for (int level = 0; level < kDemoEducationLevels; ++level) {
 		filled_total += std::max(0.0, pop.filled_by_slot[level]);
+	}
+	// F7 calibração — PISO DE SUBSISTÊNCIA. Com a TFP como FATOR COMPLETO
+	// (nível do país, não prêmio), um país de PIB PPP per capita 0,37 teria
+	// alvo salarial abaixo da cesta alimentar. O piso garante que um emprego
+	// pague a comida de um trabalhador e seus dependentes (população ÷ vagas
+	// preenchidas) pelo alimento mais barato por caloria. Não cria dinheiro: o
+	// pagamento continua limitado ao caixa da firma (pay_scale).
+	if (filled_total > 1e-9 && city.simulation_population > 0.0) {
+		double cheapest_food = 0.0;
+		for (int slot = 0;
+				slot < static_cast<int>(demo_food_products_.size()); ++slot) {
+			const int product = demo_food_product(slot);
+			const double factor = demo_food_calories(product);
+			if (factor <= 0.0) {
+				continue;
+			}
+			const double per_calorie = city.markets[product].price / factor;
+			if (per_calorie > 0.0
+					&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
+				cheapest_food = per_calorie;
+			}
+		}
+		if (cheapest_food > 0.0) {
+			floor = std::max(floor,
+				cheapest_food * kDemoNeedPerCapita
+					* city.simulation_population / filled_total);
+		}
 	}
 	const double productivity = demo_effective_productivity(city);
 	const double value_added = std::max(0.0, city.gdp) * productivity;
@@ -8620,6 +8802,8 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["external_income_index"] = city.external_income_index;
 		// TFP: 0 = derivada do índice de renda (não duplica o dado no save).
 		entry["productivity_index"] = city.productivity_index;
+		// Gini: 0 = não declarado (legado por escolaridade).
+		entry["income_gini"] = city.income_gini;
 
 		Array suitability;
 		Array revenue;
@@ -9134,6 +9318,10 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		// (o mesmo `derived:gdp_ppp`), sem inventar produtividade.
 		city.productivity_index = std::clamp(
 			double(entry.get("productivity_index", 0.0)), 0.0, 8.0);
+		// F7 calibração: save anterior à distribuição por Gini não tem o campo;
+		// 0 mantém o gate legado por estrato até o GeographyService declarar.
+		city.income_gini = std::clamp(
+			double(entry.get("income_gini", 0.0)), 0.0, 1.0);
 		city.service_jobs = double(entry.get("service_jobs", 0.0));
 		city.service_wage = double(entry.get("service_wage", 0.0));
 		city.service_wage_bill = double(entry.get("service_wage_bill", 0.0));

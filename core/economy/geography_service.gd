@@ -37,6 +37,9 @@ const MAP_H := 2500.0
 ## mais uma tabela fixa de 8 tags — qualquer nação de `nations.json` participa
 ## da geografia (províncias, bacia e minérios).
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
+## Gini de renda por região (estimado; ver o próprio arquivo para a fonte e a
+## marca `estimated`). Aplicado ao núcleo como classe de consumo.
+const INCOME_DISTRIBUTION_PATH := "res://data/definitions/economy/income_distribution.json"
 
 ## Tag do jogo -> código ISO-3 do Natural Earth (adm0_a3). A identidade cobre
 ## quase todas; só NED (NLD), XKX (KOS) e SSD (SDS) divergem. As províncias do
@@ -66,6 +69,12 @@ static var _nation_rows_cache: Dictionary = {}
 static var _nation_income_cache: Dictionary = {}
 static var _nation_income_meta: Dictionary = {}
 static var _nation_income_ready := false
+## Gini de renda por região (estimado; `income_distribution.json`). 0 = sem
+## dado -> o núcleo mantém a repartição legada por escolaridade.
+static var _gini_by_region: Dictionary = {}
+static var _gini_default := 0.0
+static var _gini_meta: Dictionary = {}
+static var _gini_ready := false
 
 ## Renda externa: piso do índice (fração da média mundial). Sem piso, países
 ## pobres ficariam com ~0,04 da média e a cidade sem terra não importaria nada —
@@ -387,6 +396,60 @@ func external_income_index(tag: String) -> float:
 	_build_nation_income()
 	var entry: Dictionary = _nation_income_cache.get(tag, {})
 	return float(entry.get("index", 1.0))
+
+
+## Carrega `income_distribution.json` uma vez. Sem o arquivo, não inventa Gini:
+## `available = false` e o núcleo mantém a repartição legada por escolaridade.
+static func _load_income_distribution() -> void:
+	if _gini_ready:
+		return
+	_gini_ready = true
+	var file := FileAccess.open(INCOME_DISTRIBUTION_PATH, FileAccess.READ)
+	if file == null:
+		_gini_meta = {"available": false, "estimated": true,
+			"reason": "income_distribution.json ausente"}
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		_gini_meta = {"available": false, "estimated": true,
+			"reason": "income_distribution.json inválido"}
+		return
+	var regions: Dictionary = (data as Dictionary).get("regions", {})
+	for region: String in regions:
+		_gini_by_region[region] = clampf(float(regions[region]), 0.0, 1.0)
+	_gini_default = clampf(float((data as Dictionary).get("default_gini", 0.0)), 0.0, 1.0)
+	_gini_meta = {
+		"available": not _gini_by_region.is_empty(),
+		"estimated": bool((data as Dictionary).get("estimated", true)),
+		"source": String((data as Dictionary).get("source", "")),
+		"default_gini": _gini_default,
+		"regions": _gini_by_region.duplicate(true),
+	}
+
+
+## Gini de renda da nação pela região (estimado). `available = false` quando
+## não há região no arquivo; o chamador (`apply_to_sim`) então NÃO declara Gini.
+func nation_gini(tag: String) -> Dictionary:
+	_load_income_distribution()
+	_load_registry()
+	var region := String((_nation_rows_cache.get(tag, {}) as Dictionary).get(
+		"region", ""))
+	if not _gini_by_region.has(region):
+		return {"gini": 0.0, "region": region, "estimated": true,
+			"available": false}
+	return {"gini": float(_gini_by_region[region]), "region": region,
+		"estimated": true, "available": true}
+
+
+## Perfil do Gini por região (auditoria e testes). Todo valor é `estimated`.
+func gini_profile() -> Dictionary:
+	_load_income_distribution()
+	return {
+		"meta": _gini_meta.duplicate(true),
+		"by_region": _gini_by_region.duplicate(true),
+		"default_gini": _gini_default,
+	}
 
 
 ## Carrega os JSON naturais. Idempotente.
@@ -1357,6 +1420,13 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		# como reserva. O valor sai por `external_income_index`/perfil.
 		var income_index := external_income_index(String(city.get("nation", "")))
 		sim.demo_set_external_income_index(city_id, income_index)
+		# F7 calibração — Gini de renda da nação (estimado por região). Divide a
+		# POP em classes basic/life/luxury no núcleo. Sem o dado, não declara
+		# nada e o núcleo mantém a repartição legada por escolaridade.
+		var gini_entry := nation_gini(String(city.get("nation", "")))
+		var gini := float(gini_entry.get("gini", 0.0))
+		if gini > 0.0 and sim.has_method("demo_set_income_gini"):
+			sim.demo_set_income_gini(city_id, gini)
 		for crop in crops:
 			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
 			# Marselha planta como o seu entorno, não como a Beauce. Cidade sem

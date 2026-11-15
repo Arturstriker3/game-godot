@@ -733,6 +733,22 @@ private:
 		double stratum_capital_income[kDemoEducationLevels] = {};
 		double stratum_disposable[kDemoEducationLevels] = {};
 		int stratum_income_level[kDemoEducationLevels] = {};
+		// ------------------------------------------------------------------
+		// F7 calibração — CLASSES DE CONSUMO ANCORADAS NO GINI.
+		//
+		// Quando a nação tem Gini declarado (`income_gini > 0`), a repartição
+		// da POP em basic/life/luxury NÃO vem da escolaridade: vem de uma
+		// distribuição lognormal com média no PIB PPP per capita real
+		// (índice × kIncomeAnchorWorldMean cestas básicas) e sigma derivado do
+		// Gini. Classe 0 = abaixo da cesta básica; 1 = acima da básica e abaixo
+		// do luxo; 2 = acima de kIncomeLuxuryMultiple cestas básicas. Os estratos
+		// de escolaridade continuam existindo para o mercado de trabalho; a
+		// classe é quem define o teto de consumo (e o que o status publica).
+		// Sem Gini (`income_gini == 0`, cidades sintéticas/save antigo), as
+		// classes espelham os estratos e o comportamento anterior é preservado.
+		// ------------------------------------------------------------------
+		double class_population[kDemoEducationLevels] = {};
+		int class_income_level[kDemoEducationLevels] = {};
 		// Fração da POP por nível de consumo alcançado (índice 0 = nenhum,
 		// 1 = basic, 2 = life, 3 = luxury). É o que o status/report publica.
 		double income_level_share[kDemoIncomeLevels] = {};
@@ -855,6 +871,13 @@ private:
 		// trabalhador na âncora salarial (demo_update_wages); não move preços
 		// nem cria dinheiro (o pagamento segue limitado ao caixa da firma).
 		double productivity_index = 0.0;
+		// F7 calibração: Gini de renda da nação (0..1). 0 = NÃO DECLARADO
+		// (cidade sintética/save antigo) -> a repartição de consumo usa os
+		// estratos de escolaridade (comportamento anterior). Quando declarado
+		// (GeographyService, `estimated` quando vem da mediana regional da
+		// distribuição), a POP é dividida em classes por uma lognormal de média
+		// ancorada no PIB PPP per capita e sigma derivado do Gini.
+		double income_gini = 0.0;
 		double service_jobs = 0.0;
 		double service_wage = 0.0;
 		double service_wage_bill = 0.0;
@@ -1426,10 +1449,26 @@ private:
 	void demo_update_wages(DemoCity& city, double building_margin);
 	/**
 	 * F7 calibração: TFP efetiva da cidade — o fator explícito do laboratório
-	 * quando declarado (> 0) ou a derivação do índice de renda real
-	 * (`clamp(external_income_index, 0,25, 4,0)`, `derived:gdp_ppp`).
+	 * quando declarado (> 0) ou o FATOR COMPLETO derivado do PIB PPP per capita
+	 * real (`clamp(external_income_index, 0,25, 4,0)`, `derived:gdp_ppp`,
+	 * normalizado para a média mundial = 1,0). É o nível de produtividade do
+	 * país, não um prêmio: países abaixo da média recebem fator < 1. O piso de
+	 * subsistência da âncora salarial (demo_update_wages) impede que o fator
+	 * < 1 derrube o trabalhador abaixo da cesta alimentar.
+	 * EUA ~3,5, DEU ~2,9, BRA ~0,9, IND ~0,46, NGA ~0,37.
 	 */
 	double demo_effective_productivity(const DemoCity& city) const;
+	/**
+	 * F7 calibração — declara o Gini de renda da nação (0..1). 0 desliga a
+	 * divisão por classes e mantém os estratos de escolaridade.
+	 */
+	void demo_set_income_gini(const String& city_id, double gini);
+	/**
+	 * F7 calibração — recalcula as classes de consumo (população e teto) a
+	 * partir do Gini declarado e do custo da cesta básica do dia. Sem Gini,
+	 * espelha os estratos de escolaridade (`stratum_*`).
+	 */
+	void demo_refresh_income_classes(DemoCity& city) const;
 	/**
 	 * Consome uma categoria de necessidade da POP. `want_ge` é a cesta do dia em
 	 * toneladas-equivalentes; devolve o consumido em t-eq e debita o orçamento.

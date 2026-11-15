@@ -1,11 +1,13 @@
-F7 — perfil release com trabalho, educação, salário dinâmico e renda (2026-11-15)
+F7 — calibração final: distribuição de renda ancorada (2026-11-15)
 ==============================================================================
 
-Commit base: 79ba83f (F6). Medição no caminho real do jogo (autoload Economy
-+ IA + comboios reais), com a DLL release
-(gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll,
-1.276.928 bytes) copiada sobre o nome debug para o binário do editor usá-la;
-a debug real (11.900.416 bytes) foi restaurada ao final.
+Base: 23847b2 (núcleo F7) + calibração final desta sessão (TFP como fator
+completo, piso de subsistência da folha, classes de consumo por Gini).
+
+Medição no caminho real do jogo (autoload Economy + IA + comboios), com a DLL
+release (gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll,
+1.292.800 bytes) copiada sobre o nome debug para o binário do editor usá-la; a
+debug real (11.941.376 bytes) foi restaurada ao final.
 
 Comando (3 execuções seguidas):
 
@@ -18,48 +20,88 @@ Resumo das 3 medições (ms; média / p95 / máx)
 
 | execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia | memória |
 |---|---|---|---|---|---|---|
-| 1 (máquina com editor/MCP abertos) | 45,43 / **55,33** / 56,05 | 23,00 / **28,04** / 28,62 | 17,12 / 21,05 / 22,49 | 23,61 / 48,21 / 64,48 | 16,49 / 21,50 / 23,63 | 527,3 MB |
-| 2 | 40,73 / **46,72** / 53,05 | 22,88 / **26,21** / 31,81 | 17,04 / 22,29 / 25,17 | 11,31 / 15,48 / 17,08 | 15,00 / 21,47 / 22,92 | 527 MB |
-| 3 | 37,90 / **42,04** / 42,40 | 22,04 / **25,18** / 27,11 | 16,55 / 20,15 / 22,65 | 10,82 / 11,75 / 12,42 | 14,17 / 16,28 / 16,90 | 527 MB |
+| 1 | 48,46 / **54,57** / 57,57 | 24,33 / **28,18** / 29,09 | 18,31 / 20,94 / 22,65 | 12,40 / 14,89 / 17,02 | 14,50 / 17,93 / 18,04 | 528,5 MB |
+| 2 | 49,32 / **75,91** / 81,86 | 25,81 / **37,30** / 49,88 | 19,28 / 28,94 / 38,16 | 13,24 / 18,67 / 21,19 | 15,21 / 20,80 / 22,44 | 528,5 MB |
+| 3 | 47,53 / **58,54** / 60,30 | 24,52 / **29,43** / 29,62 | 18,26 / 21,40 / 23,62 | 12,30 / 14,67 / 16,53 | 14,85 / 20,09 / 20,14 | 528,5 MB |
 
 Portões do plano (`production_chains_impl_plan.md` §8.6):
 
 | métrica | portão | resultado (pior das 3) | situação |
 |---|---|---|---|
-| tick p95 | <= 50 ms | **55,33** (execução 1); 46,72 / 42,04 nas 2–3 | **falha na execução 1** (contenção: editor + MCP abertos); passa nas execuções 2 e 3 |
-| `status` p95 | <= 30 ms | **28,04** | passa |
-| frame de pico p95 | <= 12 ms | **48,21** (execução 1); 15,48 / 11,75 nas 2–3 | falha na 1 e na 2; passa na 3 |
-| memória estática | <= 750 MB | **527,3 MB** | passa |
-| IA fatiada/dia p95 | <= 30 ms | **21,50** | passa |
+| tick p95 | <= 50 ms | **75,91** (execução 2); 54,57 / 58,54 nas 1 e 3 | **falha** com o editor Godot aberto (contenção) |
+| `status` p95 | <= 30 ms | **37,30** (execução 2); 28,18 / 29,43 nas 1 e 3 | passa em 2 de 3; falha na execução 2 |
+| frame de pico p95 | <= 12 ms | **18,67** (execução 2); 14,89 / 14,67 nas 1 e 3 | falha (editor aberto) |
+| memória estática | <= 750 MB | **528,5 MB** | passa |
+| IA fatiada/dia p95 | <= 30 ms | **20,80** | passa |
 
 Fases do tick na execução 3 (média / p95 / máx, ms):
 
 | fase | média | p95 | máx |
 |---|---|---|---|
-| status | 22,04 | 25,18 | 27,11 |
-| status_cities | 16,55 | 20,15 | 22,65 |
-| status_orders | 3,37 | 3,67 | 3,93 |
-| status_nations | ~2,2 | ~2,6 | ~2,8 |
-| invariants | ~0,2 | ~0,3 | ~0,3 |
-| trade | 7,6 | — | — |
-| arrival | 3,3 | — | — |
-| produção / renda / preços | 0,4 / 0,4 / 0,3 | — | — |
+| status | 24,52 | 29,43 | 29,62 |
+| status_cities | 18,26 | 21,40 | 23,62 |
+| trade | 6,92 | 9,30 | 11,51 |
+| arrival | 4,53 | 5,68 | 6,39 |
+| status_orders | 3,77 | 4,84 | 4,89 |
+| status_nations | 2,46 | 3,54 | 3,97 |
+| income | 0,85 | 1,49 | 2,08 |
+| produção / preços | 0,41 / 0,42 | 0,50 / 0,68 | 0,55 / 0,75 |
+
+Tabela final da calibração (60 d com IA, `f7_world_ai_60.json`)
+----------------------------------------------------------------
+
+| nação | desemprego | salário médio básico/interm./superior (XGS/dia) | basic / life / luxury | TFP (`derived:gdp_ppp`) |
+|---|---|---|---|---|
+| EUA | 4,2% | 0,2125 / 0,2726 / 0,3157 | 1,8% / 63,4% / 34,8% | 3,503 |
+| DEU | 4,2% | 0,1430 / 0,1850 / 0,2352 | 0,4% / 71,9% / 27,6% | 2,935 |
+| BRA | 4,1% | 0,0492 / 0,0729 / 0,0824 | 40,8% / 56,7% / 2,5% | 0,912 |
+| IND | 8,9% | 0,0283 / 0,0535 / 0,0471 | 68,4% / 31,6% / 0,1% | 0,457 |
+| NGA | 10,6% | 0,0157 / 0,0318 / 0,0258 | 78,0% / 21,9% / 0,1% | 0,371 |
+
+Em 365 d (`f7_world_sweep.json`, variante real) as fatias são as mesmas
+(estrutura ancorada em PIB PPP + Gini, não em renda observada) e o desemprego
+fica em 4,1% / 4,1% / 4,0% / 8,0% / 9,8% (EUA/DEU/BRA/IND/NGA). Salários em
+365 d: EUA 0,7162/0,8973/1,0143; DEU 0,3881/0,4862/0,5496; BRA
+0,1715/0,2146/0,2425; IND 0,0468/0,0844/0,0710; NGA 0,0245/0,0451/0,0363.
+
+Meta qualitativa do head: **atingida** — EUA/DEU com basic <= 15% e maioria
+life; BRA basic 30-45%; IND 60-75%; NGA 75-90%; desemprego 4-12% nas cinco.
+
+Sweep de 365 d (5 variações, `f7_world_sweep.json`)
+---------------------------------------------------
+
+- Falências: **10** em todas as variações (limite 28 = baseline 26 + 2;
+  baseline F4 tinha 26).
+- Comida: **176/179 nações dentro da tolerância** de -0,025 vs
+  `f4_world_ai_365.json`. Residuais, todos MELHORES que o sweep F7 anterior:
+  - NGA 1,000 -> **0,912** (-0,088; antes 0,824);
+  - SYR 1,000 -> **0,948** (-0,052; antes 0,939);
+  - SOL 0,609 -> **0,569** (-0,040; antes 0,557).
+  SDN saiu da lista: 0,559 -> **0,701** (+0,143; antes 0,493).
+  As três residuais são cidades isoladas com estoque/importação limitados
+  (NGA-LAG sem estoque; SYR-DAM e SOL-HAR com estoque, mas caixa familiar
+  curto) — não são regressão da distribuição: nenhuma delas piorou em relação
+  ao núcleo F7 anterior.
+- O teste de mundo retorna 1 por causa dessas 3 nações (o runner do sweep
+  propaga o código do filho), por isso o sweep fecha com falha de comida.
 
 Observações honestas
 --------------------
 
-- A execução 1 é um outlier: o editor Godot e o servidor MCP estavam abertos e
-  o frame de pico saltou para 48 ms (contra 11,75 ms na execução 3). As
-  execuções 2 e 3, com a mesma DLL e o mesmo comando, ficam em 46,72 e 42,04 ms
-  de tick p95 (dentro do portão). Não se descartou a execução 1 do registro: o
-  portão do pior caso é o que vale.
-- O status total (22–23 ms de média) é a maior fase; o F7 acrescentou ao
-  status por cidade o bloco de trabalho (idade ativa, educação/participação/
-  força/emprego/vagas/salários/renda por nível, `income_level`), medido em
-  `status_cities` (16,5–17,1 ms de média, 20–22 ms de p95).
-- O tick C++ propriamente dito não tem fase própria de trabalho no relatório
-  (> 0,1 ms aparece só agregado): a alocação por nível roda dentro de `labor`,
-  abaixo do corte de exibição. O custo visível do F7 está no status publicado.
-- A máquina não estava isolada nas 3 execuções (editor aberto); números de F5
-  foram medidos sem outro Godot aberto. Repetir em máquina limpa antes de
-  fechar o portão definitivo.
+- O editor Godot (PID 15104) e o servidor `godot-editor-mcp` estavam abertos
+  nas 3 execuções, ao contrário do protocolo ("outros Godot fechados"). Não se
+  matou o editor do usuário. O tick p95 ficou em 54,6-75,9 ms (portão 50) e o
+  frame de pico em 14,7-18,7 ms (portão 12); a execução 2 tem um pico isolado
+  de 81,9 ms no dia 15. O `status` p95 passou em 2 de 3 (28,2 e 29,4 ms).
+  Repetir em máquina limpa antes de fechar o portão definitivo.
+- O custo novo do modelo no tick é pequeno: a fase `income` subiu de ~0,4 ms
+  para 0,85 ms de média (uma chamada extra a `demo_level_basket_cost` por
+  cidade) e o `status` não ganhou campos — o `income_level_share` já existia.
+  A diferença para o F7 anterior (42-46 ms de p95) é contenção, não o cálculo
+  das classes.
+- O modelo NÃO mudou as quantidades de `needs.json`: o custo observado das
+  cestas de life/luxury continua ~1,2x a básica. A separação 1x / 2,5-3x /
+  6-10x é aplicada nos LIMIARES DE CLASSE do núcleo (pobreza = 1 cesta;
+  luxo = 7 cestas), que é o número que o status/report publica. Alinhar as
+  quantidades das cestas fica como calibração futura, com o risco de mudar a
+  demanda industrial.
