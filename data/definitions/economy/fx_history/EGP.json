@@ -43,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -53,9 +61,11 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
- "notes": [],
+ "notes": [
+  "Em 2023 a taxa oficial (~30,9 EGP/USD) conviveu com paralelo de 60-70 EGP/USD antes da unificacao de 06/03/2024."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -531,47 +541,126 @@
   {
    "year": 2017,
    "rate": 17.7825335151,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI)."
   },
   {
    "year": 2018,
    "rate": 17.7672904218,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI)."
   },
   {
    "year": 2019,
    "rate": 16.7705818429,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI)."
   },
   {
    "year": 2020,
    "rate": 15.7591729167,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI)."
   },
   {
    "year": 2021,
    "rate": 15.6445272777,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI)."
   },
   {
    "year": 2022,
    "rate": 19.1604397412,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Desvalorizacoes de mar/2022 e flutuacao administrada com deslizamento gradual."
   },
   {
    "year": 2023,
    "rate": 30.626413698,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Racionamento de divisas: oficial ~30,9 e paralelo 60-70 EGP/USD."
   },
   {
    "year": 2024,
    "rate": 45.29926,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao em 06/03/2024 com programa de US$ 8 bi do FMI."
   },
   {
    "year": 2025,
    "rate": 49.2277558333,
-   "source": "worldbank"
+   "source": "worldbank",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao em 06/03/2024 com programa de US$ 8 bi do FMI."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "",
+  "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+  "notes": [
+   "Em 2023 a taxa oficial (~30,9 EGP/USD) conviveu com paralelo de 60-70 EGP/USD antes da unificacao de 06/03/2024."
+  ],
+  "refs": {
+   "wiki_egp": {
+    "title": "Egyptian pound",
+    "url": "https://en.wikipedia.org/wiki/Egyptian_pound",
+    "year": 2026
+   },
+   "imf_egy": {
+    "title": "IMF - Arab Republic of Egypt country page",
+    "url": "https://www.imf.org/en/Countries/EGY",
+    "year": 2025
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2021,
+    "regime": "float",
+    "note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI).",
+    "ref": "wiki_egp"
+   },
+   {
+    "from": 2022,
+    "to": 2022,
+    "regime": "band",
+    "note": "Desvalorizacoes de mar/2022 e flutuacao administrada com deslizamento gradual.",
+    "ref": "imf_egy"
+   },
+   {
+    "from": 2023,
+    "to": 2023,
+    "regime": "dual_market",
+    "note": "Racionamento de divisas: oficial ~30,9 e paralelo 60-70 EGP/USD.",
+    "ref": "wiki_egp"
+   },
+   {
+    "from": 2024,
+    "to": 2025,
+    "regime": "float",
+    "note": "Unificacao em 06/03/2024 com programa de US$ 8 bi do FMI.",
+    "ref": "imf_egy"
+   }
+  ]
+ }
 }

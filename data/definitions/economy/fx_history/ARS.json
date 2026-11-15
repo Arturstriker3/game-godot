@@ -42,6 +42,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -52,7 +60,7 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [
   {
    "year": 1975,
@@ -110,7 +118,9 @@
    "note": "salto >3x entre anos consecutivos na mesma fonte"
   }
  ],
- "notes": [],
+ "notes": [
+  "Classificacao de regime por fatos documentados; o enum segue o mapa fine->coarse do IRR."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -495,42 +505,130 @@
   {
    "year": 2017,
    "rate": 16.5627069251,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Meta de inflacao; flutuacao desde dez/2015."
   },
   {
    "year": 2018,
    "rate": 28.0949916667,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Programa com o FMI (jun/2018) e banda de flutuacao (out/2018)."
   },
   {
    "year": 2019,
    "rate": 48.1478916667,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'."
   },
   {
    "year": 2020,
    "rate": 70.5391666667,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'."
   },
   {
    "year": 2021,
    "rate": 94.9907416667,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'."
   },
   {
    "year": 2022,
    "rate": 130.61655,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'."
   },
   {
    "year": 2023,
    "rate": 296.258041667,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'."
   },
   {
    "year": 2024,
    "rate": 914.694883333,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Crawling peg de 2%/mes desde dez/2023, reduzido a 1%/mes em 2025."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "",
+  "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido (a serie do IFS cobre 1963-2024).",
+  "notes": [
+   "Classificacao de regime por fatos documentados; o enum segue o mapa fine->coarse do IRR."
+  ],
+  "refs": {
+   "wiki_ars": {
+    "title": "Argentine peso",
+    "url": "https://en.wikipedia.org/wiki/Argentine_peso",
+    "year": 2026
+   },
+   "reuters_ars_2025": {
+    "title": "Argentina's peso: where's the currency headed after FX regime overhaul",
+    "url": "https://www.reuters.com/markets/currencies/argentinas-peso-wheres-currency-headed-after-fx-regime-overhaul-2025-04-14/",
+    "year": 2025
+   },
+   "bcra_band": {
+    "title": "Exchange rate band regime",
+    "url": "https://www.bcra.gob.ar/en/exchange-rate-band-regime/",
+    "year": 2025
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2017,
+    "regime": "float",
+    "note": "Meta de inflacao; flutuacao desde dez/2015.",
+    "ref": "wiki_ars"
+   },
+   {
+    "from": 2018,
+    "to": 2018,
+    "regime": "band",
+    "note": "Programa com o FMI (jun/2018) e banda de flutuacao (out/2018).",
+    "ref": "wiki_ars"
+   },
+   {
+    "from": 2019,
+    "to": 2023,
+    "regime": "dual_market",
+    "note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'.",
+    "ref": "wiki_ars"
+   },
+   {
+    "from": 2024,
+    "to": 2024,
+    "regime": "peg",
+    "note": "Crawling peg de 2%/mes desde dez/2023, reduzido a 1%/mes em 2025.",
+    "ref": "reuters_ars_2025"
+   },
+   {
+    "from": 2025,
+    "to": 2025,
+    "regime": "band",
+    "note": "Banda movel de 1.000-1.400 ARS/USD desde 11/04/2025, com piso -1%/mes e teto +1%/mes.",
+    "ref": "bcra_band"
+   }
+  ]
+ }
 }

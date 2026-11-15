@@ -5,9 +5,11 @@
   "PRK"
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
- "first_year": null,
- "last_year": null,
- "sources": [],
+ "first_year": 1978,
+ "last_year": 2024,
+ "sources": [
+  "historical_reconstruction"
+ ],
  "source_refs": {
   "imf_ifs": {
    "name": "IMF International Financial Statistics (via DBnomics)",
@@ -40,6 +42,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -50,10 +60,424 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
- "notes": [],
+ "notes": [
+  "2002-2011 nao reconstruido: o mercado passou pela reforma de 100:1 de nov/2009 e nao ha taxa anual documentada desse periodo.",
+  "O valor de 2025 e contraditorio nas fontes consultadas (8.900 em abr/2025 contra 18.000 em nov/2024); o ano fica ausente em vez de escolher um dos dois."
+ ],
  "missing_source_area": [],
- "no_data": true,
- "series": []
+ "no_data": false,
+ "series": [
+  {
+   "year": 1978,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1979,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1980,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1981,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1982,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1983,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1984,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1985,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1986,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1987,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1988,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1989,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1990,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1991,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1992,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1993,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1994,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1995,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1996,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1997,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1998,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 1999,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 2000,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 2001,
+   "rate": 0.0216,
+   "source": "historical_reconstruction",
+   "method": "documented_constant_peg_chained",
+   "ref": "wiki_kpw",
+   "basis": "official"
+  },
+  {
+   "year": 2012,
+   "rate": 8000.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_kpw",
+   "basis": "market"
+  },
+  {
+   "year": 2013,
+   "rate": 7592.94036464,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ]
+  },
+  {
+   "year": 2014,
+   "rate": 7206.59292262,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ]
+  },
+  {
+   "year": 2015,
+   "rate": 6839.90378671,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ]
+  },
+  {
+   "year": 2016,
+   "rate": 6491.87269404,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ]
+  },
+  {
+   "year": 2017,
+   "rate": 6161.55027758,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2018,
+   "rate": 5848.03547643,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2019,
+   "rate": 5550.47307785,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2020,
+   "rate": 5268.05138445,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2012,
+    2021
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2021,
+   "rate": 5000.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_kpw",
+   "basis": "market",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2022,
+   "rate": 7663.09432394,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2021,
+    2024
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2023,
+   "rate": 11744.6029235,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_kpw",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2021,
+    2024
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  },
+  {
+   "year": 2024,
+   "rate": 18000.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_kpw",
+   "basis": "market",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY."
+  }
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "KPW (3o won, em vigor desde nov/2009) por USD. O peg de 2,16 won/USD de 1978-2001 era do 2o won e foi convertido pela reforma de 100:1 (2,16 / 100 = 0,0216).",
+  "basis_note": "A serie usa a taxa que representa a economia: o won de mercado ('untied'), nao o won oficial de uso restrito ('tied', ~104 KPW/USD em 2012).",
+  "notes": [
+   "2002-2011 nao reconstruido: o mercado passou pela reforma de 100:1 de nov/2009 e nao ha taxa anual documentada desse periodo.",
+   "O valor de 2025 e contraditorio nas fontes consultadas (8.900 em abr/2025 contra 18.000 em nov/2024); o ano fica ausente em vez de escolher um dos dois."
+  ],
+  "refs": {
+   "wiki_kpw": {
+    "title": "North Korean won",
+    "url": "https://en.wikipedia.org/wiki/North_Korean_won",
+    "year": 2026
+   }
+  },
+  "stat_breaks": [
+   2012
+  ],
+  "interpolated_years": [
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2022,
+   2023
+  ],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2025,
+    "regime": "dual_market",
+    "note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY.",
+    "ref": "wiki_kpw"
+   }
+  ]
+ }
 }

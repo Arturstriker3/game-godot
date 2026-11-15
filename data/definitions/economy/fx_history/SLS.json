@@ -5,9 +5,11 @@
   "SOL"
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
- "first_year": null,
- "last_year": null,
- "sources": [],
+ "first_year": 2000,
+ "last_year": 2025,
+ "sources": [
+  "historical_reconstruction"
+ ],
  "source_refs": {
   "imf_ifs": {
    "name": "IMF International Financial Statistics (via DBnomics)",
@@ -40,6 +42,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -50,12 +60,450 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
- "notes": [],
+ "notes": [
+  "1994-1999 nao reconstruido: a introducao foi a 1 SLS = 100 xelins somalis, mas nao ha taxa SLS/USD anual documentada antes de nov/2000.",
+  "O texto da fonte cita um 'peg' de 580/12 SLS por USD sem referencia; nao foi usado."
+ ],
  "missing_source_area": [
   "SOL"
  ],
- "no_data": true,
- "series": []
+ "no_data": false,
+ "series": [
+  {
+   "year": 2000,
+   "rate": 4550.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate",
+   "ref": "wiki_sls",
+   "basis": "official",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2001,
+   "rate": 4843.31404478,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2002,
+   "rate": 5155.53646953,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2003,
+   "rate": 5487.88619587,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2004,
+   "rate": 5841.66072277,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2005,
+   "rate": 6218.24119197,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2006,
+   "rate": 6619.09777997,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2007,
+   "rate": 7045.79543769,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2000,
+    2008
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2008,
+   "rate": 7500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate",
+   "ref": "wiki_sls",
+   "basis": "official",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2009,
+   "rate": 7264.68814445,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2008,
+    2015
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2010,
+   "rate": 7036.75917815,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2008,
+    2015
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2011,
+   "rate": 6815.98146359,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2008,
+    2015
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2012,
+   "rate": 6602.13063084,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2008,
+    2015
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2013,
+   "rate": 6394.9893496,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2008,
+    2015
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2014,
+   "rate": 6194.34710826,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2008,
+    2015
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2015,
+   "rate": 6000.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_sls",
+   "basis": "market",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2016,
+   "rate": 6545.88195519,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2015,
+    2019
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2017,
+   "rate": 7141.42842854,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2015,
+    2019
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2018,
+   "rate": 7791.15791411,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2015,
+    2019
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2019,
+   "rate": 8500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_sls",
+   "basis": "market",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2020,
+   "rate": 8509.98825831,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2019,
+    2022
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2021,
+   "rate": 8519.98825371,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2019,
+    2022
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2022,
+   "rate": 8530.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate",
+   "ref": "wiki_sls",
+   "basis": "official",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2023,
+   "rate": 8994.27207548,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2022,
+    2025
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2024,
+   "rate": 9483.81361873,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_sls",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2022,
+    2025
+   ],
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  },
+  {
+   "year": 2025,
+   "rate": 10000.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_sls",
+   "basis": "market",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado."
+  }
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "SLS (xelim da Somalilandia) por USD. Moeda introduzida em 18/10/1994; nao ha nivel documentado em USD para 1994-1999.",
+  "basis_note": "Taxas do Banco da Somalilandia (oficiais) e taxas 'geralmente reconhecidas' do mercado de casas de cambio/hawala; a diferenca entre elas e pequena e ambas descrevem a mesma economia.",
+  "notes": [
+   "1994-1999 nao reconstruido: a introducao foi a 1 SLS = 100 xelins somalis, mas nao ha taxa SLS/USD anual documentada antes de nov/2000.",
+   "O texto da fonte cita um 'peg' de 580/12 SLS por USD sem referencia; nao foi usado."
+  ],
+  "refs": {
+   "wiki_sls": {
+    "title": "Somaliland shilling",
+    "url": "https://en.wikipedia.org/wiki/Somaliland_shilling",
+    "year": 2026
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [
+   2001,
+   2002,
+   2003,
+   2004,
+   2005,
+   2006,
+   2007,
+   2009,
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2016,
+   2017,
+   2018,
+   2020,
+   2021,
+   2023,
+   2024
+  ],
+  "regimes": [
+   {
+    "from": 2000,
+    "to": 2025,
+    "regime": "float",
+    "note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado.",
+    "ref": "wiki_sls"
+   }
+  ]
+ }
 }

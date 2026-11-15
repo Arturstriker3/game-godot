@@ -1,0 +1,307 @@
+{
+ "version": 1,
+ "source": "historical_reconstruction",
+ "description": "Fatos cambiais documentados, usados como ULTIMO RECURSO para preencher lacunas das fontes estatisticas (IMF IFS, World Bank, JST, IRR). Cada ponto traz 'ref' que resolve em 'refs' (title/url/year). Nenhum dado estatistico e sobrescrito: a camada so preenche anos ausentes.",
+ "rules": {
+  "never_overwrite_statistical_data": true,
+  "interpolation": "somente entre dois fatos documentados; anos gerados recebem source=historical_reconstruction, method=interpolated_between_documented_facts e interpolated=true",
+  "interpolation_max_gap_years": 10,
+  "unit": "LCU por USD, na unidade monetaria corrente da fonte estatistica da moeda (ver unit_note de cada moeda)",
+  "stat_breaks": "anos listados em stat_breaks marcam mudanca de base (oficial -> mercado, ou redenominacao): a variacao daquele ano nao entra em volatilidade/crise",
+  "confidence_cap": "fracao reconstruida >= 0,5 -> estimated; >= 0,1 -> no maximo partial"
+ },
+ "refs_catalog_note": "As refs sao declaradas por moeda; o mesmo id pode se repetir com o mesmo conteudo.",
+ "currencies": {
+  "CUP": {
+   "unit_note": "CUP por USD. A serie estatistica (IFS) cobre 1957-1974 na taxa oficial do Estado; a reconstrucao usa paridade oficial ate 1956 e a taxa de caixa ao publico a partir de 2004.",
+   "basis_note": "Cuba teve cambio multiplo: 1 CUP/USD nas contas do Estado (ate 2020), 25 CUP/USD nas Cadecas (2004-2020) e 24 CUP/USD apos a unificacao de 2021. A serie reconstruida usa a taxa de caixa ao publico a partir de 2004, que e a que representa a economia das familias.",
+   "notes": [
+    "1975-2003 nao reconstruido: nao ha serie anual documentada da taxa oficial (o IFS encerra em 0,822 CUP/USD em 1974 por causa do peg ao rublo) e preencher com 1,0 criaria descontinuidade artificial.",
+    "O mercado informal nao entra na serie: 125 CUP/USD em 1993, ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
+   ],
+   "refs": {
+    "wiki_cup": {"title": "Cuban peso", "url": "https://en.wikipedia.org/wiki/Cuban_peso", "year": 2026}
+   },
+   "points": [
+    {"year": 1925, "to_year": 1949, "rate": 1.0, "basis": "official", "method": "documented_parity_with_usd", "ref": "wiki_cup", "note": "CUP em paridade com o USD de 1915 a 1959-60."},
+    {"year": 1950, "to_year": 1956, "rate": 1.0, "basis": "official", "method": "documented_parity_with_usd", "ref": "wiki_cup", "note": "Paridade mantida ate 1959-60; o IFS comeca em 1957 com 1,0."},
+    {"year": 2004, "rate": 25.0, "basis": "household_cash", "method": "documented_public_cash_rate", "ref": "wiki_cup", "note": "Taxa fixa de 25 CUP por USD nas Cadecas (CUC = 1 USD)."},
+    {"year": 2005, "to_year": 2011, "rate": 23.148148148148, "basis": "household_cash", "method": "derived_from_cuc_peg", "ref": "wiki_cup", "note": "25 CUP/CUC dividido por 1,08 USD/CUC (premio de 10% na compra de CUC vigente em 2005-2011)."},
+    {"year": 2012, "to_year": 2020, "rate": 25.0, "basis": "household_cash", "method": "documented_public_cash_rate", "ref": "wiki_cup", "note": "Volta a 25 CUP/USD nas Cadecas (1 CUC = 1 USD)."},
+    {"year": 2021, "to_year": 2025, "rate": 24.0, "basis": "official", "method": "documented_official_rate_after_unification", "ref": "wiki_cup", "note": "Unificacao monetaria de 01/01/2021: 24 CUP = 1 CUC = 1 USD. Em 18/12/2025 o BC passou a publicar flutuacao administrada iniciando em 410 CUP/USD, sem media anual de 2025 nessa taxa."}
+   ],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2020, "regime": "dual_market", "note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo.", "ref": "wiki_cup"},
+    {"from": 2021, "to": 2025, "regime": "dual_market", "note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD.", "ref": "wiki_cup"}
+   ]
+  },
+  "KPW": {
+   "unit_note": "KPW (3o won, em vigor desde nov/2009) por USD. O peg de 2,16 won/USD de 1978-2001 era do 2o won e foi convertido pela reforma de 100:1 (2,16 / 100 = 0,0216).",
+   "basis_note": "A serie usa a taxa que representa a economia: o won de mercado ('untied'), nao o won oficial de uso restrito ('tied', ~104 KPW/USD em 2012).",
+   "notes": [
+    "2002-2011 nao reconstruido: o mercado passou pela reforma de 100:1 de nov/2009 e nao ha taxa anual documentada desse periodo.",
+    "O valor de 2025 e contraditorio nas fontes consultadas (8.900 em abr/2025 contra 18.000 em nov/2024); o ano fica ausente em vez de escolher um dos dois."
+   ],
+   "refs": {
+    "wiki_kpw": {"title": "North Korean won", "url": "https://en.wikipedia.org/wiki/North_Korean_won", "year": 2026}
+   },
+   "points": [
+    {"year": 1978, "to_year": 2001, "rate": 0.0216, "basis": "official", "method": "documented_constant_peg_chained", "ref": "wiki_kpw", "note": "Peg oficial de 2,16 won por USD mantido de 1978 a 2001 (2o won), convertido ao 3o won pela reforma de 100:1 de nov/2009."},
+    {"year": 2012, "rate": 8000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "~8.000 KPW/USD no mercado ('untied'); taxa oficial 'tied' ~104 KPW/USD no mesmo ano."},
+    {"year": 2021, "rate": 5000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "Apreciacao durante a pandemia (fronteiras fechadas): ~5.000 KPW/USD."},
+    {"year": 2024, "rate": 18000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_kpw", "note": "Inicio de 2024 ~16.100 e nov/2024 ~18.000 KPW/USD."}
+   ],
+   "interpolate": [
+    {"from_year": 2012, "to_year": 2021, "ref": "wiki_kpw", "note": "Interpolacao geometrica entre dois fatos de mercado documentados."},
+    {"from_year": 2021, "to_year": 2024, "ref": "wiki_kpw", "note": "Interpolacao geometrica entre dois fatos de mercado documentados."}
+   ],
+   "stat_breaks": [2012],
+   "regimes": [
+    {"from": 2017, "to": 2025, "regime": "dual_market", "note": "Won oficial ('tied') e won de mercado ('untied'); lojas aceitam USD, EUR e CNY.", "ref": "wiki_kpw"}
+   ]
+  },
+  "SLS": {
+   "unit_note": "SLS (xelim da Somalilandia) por USD. Moeda introduzida em 18/10/1994; nao ha nivel documentado em USD para 1994-1999.",
+   "basis_note": "Taxas do Banco da Somalilandia (oficiais) e taxas 'geralmente reconhecidas' do mercado de casas de cambio/hawala; a diferenca entre elas e pequena e ambas descrevem a mesma economia.",
+   "notes": [
+    "1994-1999 nao reconstruido: a introducao foi a 1 SLS = 100 xelins somalis, mas nao ha taxa SLS/USD anual documentada antes de nov/2000.",
+    "O texto da fonte cita um 'peg' de 580/12 SLS por USD sem referencia; nao foi usado."
+   ],
+   "refs": {
+    "wiki_sls": {"title": "Somaliland shilling", "url": "https://en.wikipedia.org/wiki/Somaliland_shilling", "year": 2026}
+   },
+   "points": [
+    {"year": 2000, "rate": 4550.0, "basis": "official", "method": "documented_official_rate", "ref": "wiki_sls", "note": "Nov/2000: taxa oficial do Banco da Somalilandia 4.550; paralelo 4.000-5.000."},
+    {"year": 2008, "rate": 7500.0, "basis": "official", "method": "documented_official_rate", "ref": "wiki_sls", "note": "Dez/2008."},
+    {"year": 2015, "rate": 6000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sls", "note": "Dez/2015: taxa geralmente reconhecida."},
+    {"year": 2019, "rate": 8500.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sls", "note": "Jul/2019."},
+    {"year": 2022, "rate": 8530.0, "basis": "official", "method": "documented_official_rate", "ref": "wiki_sls", "note": "Dez/2022: taxa oficial do Banco da Somalilandia."},
+    {"year": 2025, "rate": 10000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sls", "note": "Set/2025."}
+   ],
+   "interpolate": [
+    {"from_year": 2000, "to_year": 2008, "ref": "wiki_sls", "note": "Interpolacao geometrica entre duas taxas documentadas."},
+    {"from_year": 2008, "to_year": 2015, "ref": "wiki_sls", "note": "Interpolacao geometrica entre duas taxas documentadas."},
+    {"from_year": 2015, "to_year": 2019, "ref": "wiki_sls", "note": "Interpolacao geometrica entre duas taxas documentadas."},
+    {"from_year": 2019, "to_year": 2022, "ref": "wiki_sls", "note": "Interpolacao geometrica entre duas taxas documentadas."},
+    {"from_year": 2022, "to_year": 2025, "ref": "wiki_sls", "note": "Interpolacao geometrica entre duas taxas documentadas."}
+   ],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2000, "to": 2025, "regime": "float", "note": "Sem politica monetaria ativa: taxa formada por casas de cambio e hawala; o banco central publica taxa oficial proxima da de mercado.", "ref": "wiki_sls"}
+   ]
+  },
+  "SOS": {
+   "unit_note": "SOS (xelim somali) por USD, taxa de mercado livre.",
+   "basis_note": "Taxas de mercado livre (o pais nao tem autoridade monetaria efetiva desde 1991); a serie estatistica ate 1989 e de taxas oficiais, entao a passagem 1989->1990 e uma mudanca de base.",
+   "notes": [
+    "1994-2005 nao reconstruido: a lacuna entre 1993 e 2006 tem 12 anos, acima do limite de interpolacao declarado (10).",
+    "1990 usa 3.470 (fim de 1990); a mesma fonte cita 924 em dez/1989, o que mostra a dispersao das estimativas de guerra civil."
+   ],
+   "refs": {
+    "wiki_sos": {"title": "Somali shilling", "url": "https://en.wikipedia.org/wiki/Somali_shilling", "year": 2026},
+    "wb_sos": {"title": "World Bank Open Data - Official exchange rate (PA.NUS.FCRF) Somalia", "url": "https://data.worldbank.org/indicator/PA.NUS.FCRF?locations=SO", "year": 2025}
+   },
+   "points": [
+    {"year": 1990, "rate": 3470.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Fim de 1990, com o colapso do Estado."},
+    {"year": 1991, "rate": 2000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Jun/1991."},
+    {"year": 1993, "rate": 5000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Jun/1993."},
+    {"year": 2006, "rate": 13400.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mar/2006 (14.406 em ago/2006)."},
+    {"year": 2007, "rate": 15000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Fev/2007."},
+    {"year": 2008, "rate": 25000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mar/2008 (35.000 em jul/2008)."},
+    {"year": 2009, "rate": 28250.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mar/2009."},
+    {"year": 2010, "rate": 33300.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Fev/2010."},
+    {"year": 2011, "rate": 27000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Out/2011."},
+    {"year": 2012, "rate": 19000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Dez/2012."},
+    {"year": 2013, "rate": 15000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mai/2013."},
+    {"year": 2014, "rate": 22000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mar/2014 (22.000 em dez/2014)."},
+    {"year": 2015, "rate": 23000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Abr/2015."},
+    {"year": 2025, "rate": 26000.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_sos", "note": "Mai/2025."}
+   ],
+   "interpolate": [
+    {"from_year": 1991, "to_year": 1993, "ref": "wiki_sos", "note": "Interpolacao geometrica entre dois fatos documentados."},
+    {"from_year": 2015, "to_year": 2025, "ref": "wiki_sos", "note": "Interpolacao geometrica entre dois fatos documentados (2016-2017 ja vem do World Bank)."}
+   ],
+   "stat_breaks": [1990],
+   "regimes": [
+    {"from": 2018, "to": 2025, "regime": "float", "note": "Sem banco central efetivo; dolarizacao parcial e taxa de mercado.", "ref": "wiki_sos"}
+   ]
+  },
+  "TMT": {
+   "unit_note": "TMM por USD (manat antigo, em vigor ate 2009). O manat novo (TMT) vale 5.000 TMM, entao as taxas de 2009+ foram multiplicadas por 5.000 para ficar na mesma unidade dos dados estatisticos de 1994-2001 (ex.: 2,85 TMT = 14.250 TMM).",
+   "basis_note": "Cambio oficial fixo (o mercado paralelo e ilegal); a taxa oficial e a que organiza precos e orcamento.",
+   "notes": [
+    "2002-2007 reconstruido com a paridade oficial de ~5.200 TMM/USD vigente ate 2008; 2008 com a desvalorizacao para 14.250 TMM/USD (abril).",
+    "Mercado paralelo documentado (2021): 40-41 TMT/USD, ou ~200.000 TMM/USD, ~57x a taxa oficial; nao entra na serie."
+   ],
+   "refs": {
+    "rferl_tmt_2008": {"title": "Turkmenistan Redenominates Currency, Further Dismantles Niyazov Personality Cult", "url": "https://www.rferl.org/a/Turkmenistan_Redenominates_Currency_Further_Dismantles_Niyazov_Personality_Cult/1365812.html", "year": 2008},
+    "imf_fd_2013": {"title": "New Money - Finance & Development, December 2013", "url": "https://www.imf.org/external/pubs/ft/fandd/2013/12/lonnberg.htm", "year": 2013},
+    "export_gov_tmt": {"title": "Turkmenistan - Foreign Exchange Controls", "url": "https://legacy.export.gov/article?id=Turkmenistan-Foreign-Exchange-Controls", "year": 2015},
+    "factbook_tmt": {"title": "Exchange rates - Turkmenistan (CIA World Factbook archive)", "url": "https://worldfactbookarchive.org/archive/field/TM/Exchange%20rates", "year": 2014}
+   },
+   "points": [
+    {"year": 2002, "to_year": 2007, "rate": 5200.0, "basis": "official", "method": "documented_official_peg", "ref": "rferl_tmt_2008", "note": "Paridade oficial fixa em ~5.200 TMM/USD."},    {"year": 2008, "rate": 14250.0, "basis": "official", "method": "documented_official_devaluation", "ref": "factbook_tmt", "note": "Desvalorizacao oficial para 14.250 TMM/USD (2008), confirmada pelo IMF F&D 2013."},
+    {"year": 2009, "to_year": 2014, "rate": 14250.0, "basis": "official", "method": "documented_official_peg_chained", "ref": "imf_fd_2013", "note": "Redenominacao de 5.000:1 em jan/2009: 2,85 TMT x 5.000 = 14.250 TMM por USD."},
+    {"year": 2015, "to_year": 2025, "rate": 17500.0, "basis": "official", "method": "documented_official_peg_chained", "ref": "export_gov_tmt", "note": "Desvalorizacao de 01/01/2015: 3,50 TMT x 5.000 = 17.500 TMM por USD, mantida desde entao."}
+   ],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2009, "to": 2025, "regime": "peg", "note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal.", "ref": "export_gov_tmt"}
+   ]
+  },
+  "AFN": {
+   "unit_note": "AFN (afegani novo, desde out/2002) por USD. A tabela documentada de 1950 traz o afegani antigo; 1950-1954 e usado apenas como nivel oficial da epoca, sem encadear a reforma de 1.000:1 (o IFS ja encadeia a partir de 1955).",
+   "basis_note": "1950 usa a taxa oficial (25,5 AFN/USD; mercado livre 39,0). 2024 usa a taxa de mercado/oficial unificada (65 AFN/USD).",
+   "notes": [
+    "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020).",
+    "2025 fica ausente: a unica referencia publica e 'cerca de 65 AFN/USD' sem data de fechamento de ano."
+   ],
+   "refs": {
+    "wiki_afn_table": {"title": "Afghan afghani - Exchange rate (tabela desde 1950; fontes Fry 1976 e World Development Indicators)", "url": "https://en.wikipedia.org/wiki/Afghan_afghani", "year": 2026}
+   },
+   "points": [
+    {"year": 1950, "rate": 25.5, "basis": "official", "method": "documented_official_rate", "ref": "wiki_afn_table", "note": "Taxa oficial em 1950 (mercado livre 39,0)."},
+    {"year": 2024, "rate": 65.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_afn_table", "note": "65 AFN/USD em 2024 (TOLOnews/Ariana News); o afegani foi a moeda de melhor desempenho no 3o tri/2023."}
+   ],
+   "interpolate": [
+    {"from_year": 1950, "to_year": 1955, "ref": "wiki_afn_table", "note": "Interpolacao geometrica entre a taxa oficial de 1950 e o primeiro ano do IFS."},
+    {"from_year": 2020, "to_year": 2024, "ref": "wiki_afn_table", "note": "Interpolacao geometrica entre o ultimo ano do IFS e a taxa documentada de 2024."}
+   ],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2020, "regime": "float", "note": "Flutuacao desde 2002 (Da Afghanistan Bank).", "ref": "wiki_afn_table"},
+    {"from": 2021, "to": 2025, "regime": "band", "note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas.", "ref": "wiki_afn_table"}
+   ]
+  },
+  "YER": {
+   "unit_note": "YER por USD. A moeda so existe desde a unificacao de 1990 (antes: rial do Iemen do Norte e dinar do Sul).",
+   "basis_note": "A serie representa o mercado de Aden (Conselho de Lideranca Presidencial), que e o lado que publica a taxa oficial; o norte controlado pelos houthis tem mercado separado.",
+   "notes": [
+    "Nenhum ano anterior a 1990 e reconstruido: o YER nao existia (proibido estender moeda a pais inexistente).",
+    "2024 interpolado entre o IFS 2023 e a taxa documentada de jan/2025 (2.150 YER/USD em Aden; ~530 em Sanaa)."
+   ],
+   "refs": {
+    "wiki_yer": {"title": "Yemeni rial", "url": "https://en.wikipedia.org/wiki/Yemeni_rial", "year": 2026}
+   },
+   "points": [
+    {"year": 2025, "rate": 2150.0, "basis": "market", "method": "documented_market_rate", "ref": "wiki_yer", "note": "Jan/2025, areas do governo reconhecido (Aden); ~530 YER/USD nas areas houthis."}
+   ],
+   "interpolate": [
+    {"from_year": 2023, "to_year": 2025, "ref": "wiki_yer", "note": "Interpolacao geometrica entre o ultimo ano do IFS e a taxa documentada de jan/2025."}
+   ],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2024, "to": 2025, "regime": "dual_market", "note": "Dois mercados: Aden (2.150 YER/USD) e Sanaa (~530); notas impressas apos 2017 nao valem no norte.", "ref": "wiki_yer"}
+   ]
+  },
+  "ARS": {
+   "unit_note": "",
+   "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido (a serie do IFS cobre 1963-2024).",
+   "notes": ["Classificacao de regime por fatos documentados; o enum segue o mapa fine->coarse do IRR."],
+   "refs": {
+    "reuters_ars_2025": {"title": "Argentina's peso: where's the currency headed after FX regime overhaul", "url": "https://www.reuters.com/markets/currencies/argentinas-peso-wheres-currency-headed-after-fx-regime-overhaul-2025-04-14/", "year": 2025},
+    "bcra_band": {"title": "Exchange rate band regime", "url": "https://www.bcra.gob.ar/en/exchange-rate-band-regime/", "year": 2025},
+    "wiki_ars": {"title": "Argentine peso", "url": "https://en.wikipedia.org/wiki/Argentine_peso", "year": 2026}
+   },
+   "points": [],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2017, "regime": "float", "note": "Meta de inflacao; flutuacao desde dez/2015.", "ref": "wiki_ars"},
+    {"from": 2018, "to": 2018, "regime": "band", "note": "Programa com o FMI (jun/2018) e banda de flutuacao (out/2018).", "ref": "wiki_ars"},
+    {"from": 2019, "to": 2023, "regime": "dual_market", "note": "Controles de cambio ('cepo') desde set/2019: oficial, solidario e 'blue'.", "ref": "wiki_ars"},
+    {"from": 2024, "to": 2024, "regime": "peg", "note": "Crawling peg de 2%/mes desde dez/2023, reduzido a 1%/mes em 2025.", "ref": "reuters_ars_2025"},
+    {"from": 2025, "to": 2025, "regime": "band", "note": "Banda movel de 1.000-1.400 ARS/USD desde 11/04/2025, com piso -1%/mes e teto +1%/mes.", "ref": "bcra_band"}
+   ]
+  },
+  "TRY": {
+   "unit_note": "",
+   "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+   "notes": ["A lira ficou praticamente fixa em ~13-19 TRY/USD entre set/2021 e mai/2023 por intervencao e depositos protegidos, o que o enum chama de 'peg'."],
+   "refs": {
+    "wiki_try": {"title": "Turkish lira", "url": "https://en.wikipedia.org/wiki/Turkish_lira", "year": 2026},
+    "imf_tur": {"title": "IMF - Turkey country page (programas e Article IV)", "url": "https://www.imf.org/en/Countries/TUR", "year": 2025}
+   },
+   "points": [],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2020, "regime": "float", "note": "Flutuacao administrada com intervencoes indiretas (backdoor) via bancos estatais.", "ref": "wiki_try"},
+    {"from": 2021, "to": 2021, "regime": "band", "note": "Cortes de juros e vendas de reservas estabilizaram a lira no 2o semestre.", "ref": "wiki_try"},
+    {"from": 2022, "to": 2022, "regime": "peg", "note": "Depositos protegidos contra o cambio (KKM) e regras microprudenciais mantiveram o USD/TRY quase constante por meses.", "ref": "wiki_try"},
+    {"from": 2023, "to": 2025, "regime": "float", "note": "Desde jun/2023 (novo governo) a lira volta a flutuar, com depreciacao administrada e reconstrucao de reservas.", "ref": "imf_tur"}
+   ]
+  },
+  "EGP": {
+   "unit_note": "",
+   "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+   "notes": ["Em 2023 a taxa oficial (~30,9 EGP/USD) conviveu com paralelo de 60-70 EGP/USD antes da unificacao de 06/03/2024."],
+   "refs": {
+    "wiki_egp": {"title": "Egyptian pound", "url": "https://en.wikipedia.org/wiki/Egyptian_pound", "year": 2026},
+    "imf_egy": {"title": "IMF - Arab Republic of Egypt country page", "url": "https://www.imf.org/en/Countries/EGY", "year": 2025}
+   },
+   "points": [],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2021, "regime": "float", "note": "Unificacao e flutuacao apos a desvalorizacao de nov/2016 (programa FMI).", "ref": "wiki_egp"},
+    {"from": 2022, "to": 2022, "regime": "band", "note": "Desvalorizacoes de mar/2022 e flutuacao administrada com deslizamento gradual.", "ref": "imf_egy"},
+    {"from": 2023, "to": 2023, "regime": "dual_market", "note": "Racionamento de divisas: oficial ~30,9 e paralelo 60-70 EGP/USD.", "ref": "wiki_egp"},
+    {"from": 2024, "to": 2025, "regime": "float", "note": "Unificacao em 06/03/2024 com programa de US$ 8 bi do FMI.", "ref": "imf_egy"}
+   ]
+  },
+  "NGN": {
+   "unit_note": "",
+   "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+   "notes": ["Ate 2022 havia varias janelas (oficial do CBN, I&E, BDC); a unificacao veio em 12/06/2023."],
+   "refs": {
+    "wiki_ngn": {"title": "Nigerian naira", "url": "https://en.wikipedia.org/wiki/Nigerian_naira", "year": 2026},
+    "imf_nga": {"title": "IMF - Nigeria country page", "url": "https://www.imf.org/en/Countries/NGA", "year": 2025}
+   },
+   "points": [],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2022, "regime": "dual_market", "note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo.", "ref": "wiki_ngn"},
+    {"from": 2023, "to": 2025, "regime": "float", "note": "Unificacao e flutuacao em 12/06/2023; a naira passa de ~460 para ~1.500 NGN/USD.", "ref": "imf_nga"}
+   ]
+  },
+  "LBP": {
+   "unit_note": "",
+   "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+   "notes": ["A serie do IFS mantem 1.507,5 LBP/USD ate 2022 (taxa oficial congelada) e salta para 13.875,6 em 2023 e 89.500 em 2024, quando a taxa oficial se aproxima do mercado."],
+   "refs": {
+    "wiki_lbp": {"title": "Lebanese pound", "url": "https://en.wikipedia.org/wiki/Lebanese_pound", "year": 2026},
+    "imf_lbn": {"title": "IMF - Lebanon country page", "url": "https://www.imf.org/en/Countries/LBN", "year": 2025}
+   },
+   "points": [],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2019, "regime": "peg", "note": "1.507,5 LBP/USD desde 1997.", "ref": "wiki_lbp"},
+    {"from": 2020, "to": 2023, "regime": "dual_market", "note": "Colapso: oficial 1.507,5 contra paralelo de 15.000 a 100.000; plataforma Sayrafa; oficial passa a 15.000 em fev/2023.", "ref": "wiki_lbp"},
+    {"from": 2024, "to": 2025, "regime": "float", "note": "Oficial ~89.500 LBP/USD (fev/2024), proximo do mercado.", "ref": "imf_lbn"}
+   ]
+  },
+  "RUB": {
+   "unit_note": "",
+   "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+   "notes": ["Em 2022 a taxa oficial do Banco da Russia conviveu com o cambio em dinheiro (120-150 RUB/USD em marco) e controles de capital."],
+   "refs": {
+    "wiki_rub": {"title": "Russian ruble", "url": "https://en.wikipedia.org/wiki/Russian_ruble", "year": 2026},
+    "cbr": {"title": "Bank of Russia - official exchange rates", "url": "https://www.cbr.ru/eng/", "year": 2025}
+   },
+   "points": [],
+   "interpolate": [],
+   "stat_breaks": [],
+   "regimes": [
+    {"from": 2017, "to": 2021, "regime": "float", "note": "Flutuacao livre com meta de inflacao.", "ref": "wiki_rub"},
+    {"from": 2022, "to": 2022, "regime": "dual_market", "note": "Sanções e controles de capital desde 28/02/2022: taxa oficial do BC contra cambio em dinheiro.", "ref": "cbr"},
+    {"from": 2023, "to": 2025, "regime": "float", "note": "Flutuacao administrada com controles de capital remanescentes (liquidacao obrigatoria de receita externa).", "ref": "cbr"}
+   ]
+  }
+ }
+}

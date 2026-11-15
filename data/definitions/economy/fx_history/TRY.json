@@ -43,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -53,7 +61,7 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [
   {
    "year": 1957,
@@ -66,7 +74,9 @@
    "note": "salto >3x entre anos consecutivos na mesma fonte"
   }
  ],
- "notes": [],
+ "notes": [
+  "A lira ficou praticamente fixa em ~13-19 TRY/USD entre set/2021 e mai/2023 por intervencao e depositos protegidos, o que o enum chama de 'peg'."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -542,47 +552,126 @@
   {
    "year": 2017,
    "rate": 3.64813263537,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com intervencoes indiretas (backdoor) via bancos estatais."
   },
   {
    "year": 2018,
    "rate": 4.82837014721,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com intervencoes indiretas (backdoor) via bancos estatais."
   },
   {
    "year": 2019,
    "rate": 5.67381930844,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com intervencoes indiretas (backdoor) via bancos estatais."
   },
   {
    "year": 2020,
    "rate": 7.00860541559,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com intervencoes indiretas (backdoor) via bancos estatais."
   },
   {
    "year": 2021,
    "rate": 8.85040754928,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cortes de juros e vendas de reservas estabilizaram a lira no 2o semestre."
   },
   {
    "year": 2022,
    "rate": 16.5488604173,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Depositos protegidos contra o cambio (KKM) e regras microprudenciais mantiveram o USD/TRY quase constante por meses."
   },
   {
    "year": 2023,
    "rate": 23.738566122,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Desde jun/2023 (novo governo) a lira volta a flutuar, com depreciacao administrada e reconstrucao de reservas."
   },
   {
    "year": 2024,
    "rate": 32.8058614433,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Desde jun/2023 (novo governo) a lira volta a flutuar, com depreciacao administrada e reconstrucao de reservas."
   },
   {
    "year": 2025,
    "rate": 39.4548130978,
-   "source": "worldbank"
+   "source": "worldbank",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Desde jun/2023 (novo governo) a lira volta a flutuar, com depreciacao administrada e reconstrucao de reservas."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "",
+  "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+  "notes": [
+   "A lira ficou praticamente fixa em ~13-19 TRY/USD entre set/2021 e mai/2023 por intervencao e depositos protegidos, o que o enum chama de 'peg'."
+  ],
+  "refs": {
+   "wiki_try": {
+    "title": "Turkish lira",
+    "url": "https://en.wikipedia.org/wiki/Turkish_lira",
+    "year": 2026
+   },
+   "imf_tur": {
+    "title": "IMF - Turkey country page (programas e Article IV)",
+    "url": "https://www.imf.org/en/Countries/TUR",
+    "year": 2025
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2020,
+    "regime": "float",
+    "note": "Flutuacao administrada com intervencoes indiretas (backdoor) via bancos estatais.",
+    "ref": "wiki_try"
+   },
+   {
+    "from": 2021,
+    "to": 2021,
+    "regime": "band",
+    "note": "Cortes de juros e vendas de reservas estabilizaram a lira no 2o semestre.",
+    "ref": "wiki_try"
+   },
+   {
+    "from": 2022,
+    "to": 2022,
+    "regime": "peg",
+    "note": "Depositos protegidos contra o cambio (KKM) e regras microprudenciais mantiveram o USD/TRY quase constante por meses.",
+    "ref": "wiki_try"
+   },
+   {
+    "from": 2023,
+    "to": 2025,
+    "regime": "float",
+    "note": "Desde jun/2023 (novo governo) a lira volta a flutuar, com depreciacao administrada e reconstrucao de reservas.",
+    "ref": "imf_tur"
+   }
+  ]
+ }
 }

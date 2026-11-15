@@ -43,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -53,7 +61,7 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [
   {
    "year": 1987,
@@ -71,7 +79,9 @@
    "note": "salto >3x entre anos consecutivos na mesma fonte"
   }
  ],
- "notes": [],
+ "notes": [
+  "A serie do IFS mantem 1.507,5 LBP/USD ate 2022 (taxa oficial congelada) e salta para 13.875,6 em 2023 e 89.500 em 2024, quando a taxa oficial se aproxima do mercado."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -547,47 +557,119 @@
   {
    "year": 2017,
    "rate": 1507.5,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "1.507,5 LBP/USD desde 1997."
   },
   {
    "year": 2018,
    "rate": 1507.5,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "1.507,5 LBP/USD desde 1997."
   },
   {
    "year": 2019,
    "rate": 1507.5,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "1.507,5 LBP/USD desde 1997."
   },
   {
    "year": 2020,
    "rate": 1507.5,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Colapso: oficial 1.507,5 contra paralelo de 15.000 a 100.000; plataforma Sayrafa; oficial passa a 15.000 em fev/2023."
   },
   {
    "year": 2021,
    "rate": 1507.5,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Colapso: oficial 1.507,5 contra paralelo de 15.000 a 100.000; plataforma Sayrafa; oficial passa a 15.000 em fev/2023."
   },
   {
    "year": 2022,
    "rate": 1507.5,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Colapso: oficial 1.507,5 contra paralelo de 15.000 a 100.000; plataforma Sayrafa; oficial passa a 15.000 em fev/2023."
   },
   {
    "year": 2023,
    "rate": 13875.625,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Colapso: oficial 1.507,5 contra paralelo de 15.000 a 100.000; plataforma Sayrafa; oficial passa a 15.000 em fev/2023."
   },
   {
    "year": 2024,
    "rate": 89500.0,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Oficial ~89.500 LBP/USD (fev/2024), proximo do mercado."
   },
   {
    "year": 2025,
    "rate": 89500.0,
-   "source": "worldbank"
+   "source": "worldbank",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Oficial ~89.500 LBP/USD (fev/2024), proximo do mercado."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "",
+  "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+  "notes": [
+   "A serie do IFS mantem 1.507,5 LBP/USD ate 2022 (taxa oficial congelada) e salta para 13.875,6 em 2023 e 89.500 em 2024, quando a taxa oficial se aproxima do mercado."
+  ],
+  "refs": {
+   "wiki_lbp": {
+    "title": "Lebanese pound",
+    "url": "https://en.wikipedia.org/wiki/Lebanese_pound",
+    "year": 2026
+   },
+   "imf_lbn": {
+    "title": "IMF - Lebanon country page",
+    "url": "https://www.imf.org/en/Countries/LBN",
+    "year": 2025
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2019,
+    "regime": "peg",
+    "note": "1.507,5 LBP/USD desde 1997.",
+    "ref": "wiki_lbp"
+   },
+   {
+    "from": 2020,
+    "to": 2023,
+    "regime": "dual_market",
+    "note": "Colapso: oficial 1.507,5 contra paralelo de 15.000 a 100.000; plataforma Sayrafa; oficial passa a 15.000 em fev/2023.",
+    "ref": "wiki_lbp"
+   },
+   {
+    "from": 2024,
+    "to": 2025,
+    "regime": "float",
+    "note": "Oficial ~89.500 LBP/USD (fev/2024), proximo do mercado.",
+    "ref": "imf_lbn"
+   }
+  ]
+ }
 }

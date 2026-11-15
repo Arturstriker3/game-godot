@@ -5,9 +5,10 @@
   "AFG"
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
- "first_year": 1955,
- "last_year": 2020,
+ "first_year": 1950,
+ "last_year": 2024,
  "sources": [
+  "historical_reconstruction",
   "imf_ifs"
  ],
  "source_refs": {
@@ -42,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -52,12 +61,75 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
- "notes": [],
+ "notes": [
+  "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020).",
+  "2025 fica ausente: a unica referencia publica e 'cerca de 65 AFN/USD' sem data de fechamento de ano."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
+  {
+   "year": 1950,
+   "rate": 25.5,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate",
+   "ref": "wiki_afn_table",
+   "basis": "official"
+  },
+  {
+   "year": 1951,
+   "rate": 22.7602129392,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    1950,
+    1955
+   ]
+  },
+  {
+   "year": 1952,
+   "rate": 20.3147958054,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    1950,
+    1955
+   ]
+  },
+  {
+   "year": 1953,
+   "rate": 18.1321207195,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    1950,
+    1955
+   ]
+  },
+  {
+   "year": 1954,
+   "rate": 16.1839579849,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    1950,
+    1955
+   ]
+  },
   {
    "year": 1955,
    "rate": 14.4451109778,
@@ -495,22 +567,135 @@
   {
    "year": 2017,
    "rate": 68.0269040822,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao desde 2002 (Da Afghanistan Bank)."
   },
   {
    "year": 2018,
    "rate": 72.0832471773,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao desde 2002 (Da Afghanistan Bank)."
   },
   {
    "year": 2019,
    "rate": 77.7379491783,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao desde 2002 (Da Afghanistan Bank)."
   },
   {
    "year": 2020,
    "rate": 76.8135364355,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao desde 2002 (Da Afghanistan Bank)."
+  },
+  {
+   "year": 2021,
+   "rate": 73.6727123582,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2020,
+    2024
+   ],
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
+  },
+  {
+   "year": 2022,
+   "rate": 70.660313248,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2020,
+    2024
+   ],
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
+  },
+  {
+   "year": 2023,
+   "rate": 67.7710879441,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_afn_table",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2020,
+    2024
+   ],
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
+  },
+  {
+   "year": 2024,
+   "rate": 65.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_afn_table",
+   "basis": "market",
+   "regime": "band",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "AFN (afegani novo, desde out/2002) por USD. A tabela documentada de 1950 traz o afegani antigo; 1950-1954 e usado apenas como nivel oficial da epoca, sem encadear a reforma de 1.000:1 (o IFS ja encadeia a partir de 1955).",
+  "basis_note": "1950 usa a taxa oficial (25,5 AFN/USD; mercado livre 39,0). 2024 usa a taxa de mercado/oficial unificada (65 AFN/USD).",
+  "notes": [
+   "1955-2020 vem do IFS; nao ha serie anual oficial publicada para 2021-2025 (o World Bank tambem para em 2020).",
+   "2025 fica ausente: a unica referencia publica e 'cerca de 65 AFN/USD' sem data de fechamento de ano."
+  ],
+  "refs": {
+   "wiki_afn_table": {
+    "title": "Afghan afghani - Exchange rate (tabela desde 1950; fontes Fry 1976 e World Development Indicators)",
+    "url": "https://en.wikipedia.org/wiki/Afghan_afghani",
+    "year": 2026
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [
+   1951,
+   1952,
+   1953,
+   1954,
+   2021,
+   2022,
+   2023
+  ],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2020,
+    "regime": "float",
+    "note": "Flutuacao desde 2002 (Da Afghanistan Bank).",
+    "ref": "wiki_afn_table"
+   },
+   {
+    "from": 2021,
+    "to": 2025,
+    "regime": "band",
+    "note": "Emirado Islamico: uso domestico de moeda estrangeira proibido e taxa gerida pelo DAB, com leiloes de divisas.",
+    "ref": "wiki_afn_table"
+   }
+  ]
+ }
 }

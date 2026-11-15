@@ -9,15 +9,19 @@ Fontes (citadas no JSON de saída e em docs/economy/fx_history.md):
   JST Macrohistory R6   xrusd                        1870..2020  (extensão 1925..1949, 18 países)
   Ilzetzki-Reinhart-Rogoff (238_data.xlsx, "Fine"/"Coarse")
                         regime de fato por país/ano   1940..2016
+  Facts (curadoria)     tools/data/fx_historical_facts.json    últimos recursos, 1925..2025
 
 Regras:
-  * Nada é interpolado. Ano sem dado simplesmente não existe na série.
+  * Nada é interpolado, exceto entre dois fatos documentados da camada de reconstrução
+    (marcados `source: historical_reconstruction` + `interpolated: true`).
   * Mesmo ano em fontes diferentes: imf_ifs > worldbank > jst_r6 (a primeira vence);
     divergência > 2% vira entrada em `notes`.
   * Pré-1950 do JST só entra se a razão com o primeiro ano do IFS ficar em [0.5, 2.0]
     (proteção contra mudança de unidade não encadeada).
   * IFS e World Bank já vêm encadeados na unidade monetária corrente (BRL/ARS/TRY/ZWL
     conferidos); a calibração usa log-variações, robustas a escala de nível.
+  * Reconstrução histórica preenche APENAS anos ausentes e nunca sobrescreve dado
+    estatístico; cada ponto carrega `ref` que resolve em `reconstruction.refs`.
 
 Uso:
     python tools/build_fx_history.py            # usa cache; baixa o que faltar
@@ -43,12 +47,15 @@ CURRENCIES = os.path.join(ROOT, "data", "definitions", "economy", "currencies.js
 OUT_DIR = os.path.join(ROOT, "data", "definitions", "economy", "fx_history")
 OUT_PROFILES = os.path.join(ROOT, "data", "definitions", "economy", "fx_profiles.json")
 CACHE = os.path.join(ROOT, "tools", "data", "fx_cache")
+FACTS = os.path.join(ROOT, "tools", "data", "fx_historical_facts.json")
 
 TARGET_START, TARGET_END = 1925, 2025
 PRIMARY_START, PRIMARY_END = 1950, 2024
 CRISIS_THRESHOLD = 0.25
 SPLICE_MIN, SPLICE_MAX = 0.5, 2.0
 CONFLICT_TOL = 0.02
+RECON_SOURCE = "historical_reconstruction"
+MAX_INTERP_GAP = 10  # anos ausentes máximos cobertos por interpolação entre dois fatos
 
 SOURCES = {
     "imf_ifs": {
@@ -83,6 +90,15 @@ SOURCES = {
         "homepage": "https://carmenreinhart.com/exchange-rate/",
         "coverage": "1940-2016",
     },
+    RECON_SOURCE: {
+        "name": "Reconstrucao historica documentada (curadoria do projeto)",
+        "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+        "description": ("Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year "
+                        "ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico."),
+        "url": "tools/data/fx_historical_facts.json",
+        "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+        "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025",
+    },
 }
 
 IRR_FINE = {
@@ -107,6 +123,8 @@ FINE_TO_COARSE = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, 1
                   13: 4, 14: 5, 15: 6}
 
 COARSE_TO_REGIME = {1: "peg", 2: "peg", 3: "band", 4: "float", 5: "free_fall", 6: "dual_market"}
+
+REGIME_ENUM = ["peg", "band", "float", "free_fall", "union", "dual_market"]
 
 NATION_ALIASES = {"NED": "NLD"}
 
@@ -369,6 +387,118 @@ def rnd(value: float) -> float:
     return float(f"{value:.12g}")
 
 
+# ------------------------------------------------------- reconstrução histórica
+
+
+def load_facts(path: str = FACTS) -> Dict[str, dict]:
+    """Fatos documentados por moeda (tools/data/fx_historical_facts.json)."""
+    if not os.path.exists(path):
+        log(f"aviso: {path} ausente; reconstrucao historica desativada")
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        doc = json.load(fh)
+    if doc.get("source") != RECON_SOURCE:
+        raise RuntimeError(f"{path}: campo source deve ser '{RECON_SOURCE}'")
+    return doc.get("currencies") or {}
+
+
+def reconstruct_currency(code: str, facts: dict, merged: Dict[int, Tuple[float, str]]) -> Tuple[Dict[int, dict], dict]:
+    """Expande os fatos documentados em anos ausentes de `merged`.
+
+    Regras: (a) ano que já existe na fonte estatística nunca é tocado; (b) interpolação só
+    entre dois anos com fato documentado, marcada com `interpolated`; (c) lacuna maior que
+    MAX_INTERP_GAP anos não é interpolada (fica ausente, e o motivo vai para `notes`).
+    """
+    refs = facts.get("refs") or {}
+    used_refs: Dict[str, dict] = {}
+    notes: list = []
+
+    def ref_of(ref_id: Optional[str], where: str) -> str:
+        if not ref_id or ref_id not in refs:
+            raise ValueError(f"{code}: ref {ref_id!r} usada em {where} nao existe em refs")
+        used_refs[ref_id] = refs[ref_id]
+        return ref_id
+
+    rows: Dict[int, dict] = {}
+    for point in facts.get("points") or []:
+        where = f"points/{point.get('year')}"
+        ref = ref_of(point.get("ref"), where)
+        first = int(point["year"])
+        last = int(point.get("to_year", first))
+        rate = float(point["rate"])
+        if rate <= 0:
+            raise ValueError(f"{code}: taxa nao positiva em {where}")
+        for year in range(first, last + 1):
+            if year in merged or year in rows:
+                continue  # dado estatístico (ou fato anterior) vence
+            rows[year] = {
+                "rate": rate,
+                "method": point["method"],
+                "ref": ref,
+                "basis": point.get("basis", "documented"),
+                "note": point.get("note", ""),
+            }
+
+    def rate_at(year: int) -> Optional[float]:
+        if year in merged:
+            return merged[year][0]
+        if year in rows:
+            return rows[year]["rate"]
+        return None
+
+    interpolated_years = []
+    for spec in facts.get("interpolate") or []:
+        a, b = int(spec["from_year"]), int(spec["to_year"])
+        ref = ref_of(spec.get("ref"), f"interpolate/{a}-{b}")
+        va, vb = rate_at(a), rate_at(b)
+        if va is None or vb is None or va <= 0 or vb <= 0:
+            notes.append(f"interpolacao {a}-{b} descartada (falta fato em uma das pontas)")
+            continue
+        missing = [y for y in range(a + 1, b) if y not in merged and y not in rows]
+        if not missing:
+            continue
+        if len(missing) > MAX_INTERP_GAP:
+            notes.append(f"interpolacao {a}-{b} descartada ({len(missing)} anos > limite {MAX_INTERP_GAP})")
+            continue
+        la, lb = math.log(va), math.log(vb)
+        for year in missing:
+            t = (year - a) / float(b - a)
+            rows[year] = {
+                "rate": rnd(math.exp(la + t * (lb - la))),
+                "method": "interpolated_between_documented_facts",
+                "ref": ref,
+                "basis": "interpolated",
+                "note": spec.get("note", ""),
+                "interpolated": True,
+                "anchor": [a, b],
+            }
+            interpolated_years.append(year)
+
+    regimes = []
+    for spec in facts.get("regimes") or []:
+        if spec.get("regime") not in REGIME_ENUM:
+            raise ValueError(f"{code}: regime invalido {spec.get('regime')!r}")
+        regimes.append({
+            "from": int(spec["from"]),
+            "to": int(spec["to"]),
+            "regime": spec["regime"],
+            "note": spec.get("note", ""),
+            "ref": ref_of(spec.get("ref"), f"regimes/{spec['from']}"),
+        })
+
+    meta = {
+        "source": RECON_SOURCE,
+        "unit_note": facts.get("unit_note", ""),
+        "basis_note": facts.get("basis_note", ""),
+        "notes": list(facts.get("notes") or []) + notes,
+        "refs": used_refs,
+        "stat_breaks": sorted({int(y) for y in facts.get("stat_breaks") or []}),
+        "interpolated_years": sorted(interpolated_years),
+        "regimes": regimes,
+    }
+    return rows, meta
+
+
 def nation_series(nation: str, ctx: dict) -> Tuple[Dict[int, Tuple[float, str]], list]:
     notes = []
     info = ctx["wb_countries"].get(nation)
@@ -462,21 +592,53 @@ def build_currency(code: str, entry: dict, ctx: dict) -> Tuple[dict, dict]:
             if fine:
                 coarse = FINE_TO_COARSE[fine]
                 regime = "union" if fine == 1 else COARSE_TO_REGIME[coarse]
-                regime_by_year[year] = {"regime": regime, "fine": fine, "coarse": coarse}
+                regime_by_year[year] = {"regime": regime, "fine": fine, "coarse": coarse,
+                                        "source": "irr"}
                 break
 
+    recon_rows, recon_meta = {}, None
+    facts = ctx.get("facts", {}).get(code)
+    if facts:
+        recon_rows, recon_meta = reconstruct_currency(code, facts, merged)
+        notes.extend(recon_meta["notes"])
+        for spec in recon_meta["regimes"]:
+            for year in range(spec["from"], spec["to"] + 1):
+                if year in regime_by_year:
+                    continue  # IRR (estatístico) vence
+                regime_by_year[year] = {"regime": spec["regime"], "fine": None,
+                                        "note": spec["note"], "source": RECON_SOURCE}
+
+    stat_break_years = set(recon_meta["stat_breaks"]) if recon_meta else set()
     series_out, breaks, prev = [], [], None
-    for year in sorted(merged):
-        rate, src = merged[year]
-        row = {"year": year, "rate": rnd(rate), "source": src}
+    for year in sorted(set(merged) | set(recon_rows)):
+        if year in merged:
+            rate, src = merged[year]
+            row = {"year": year, "rate": rnd(rate), "source": src}
+        else:
+            spec = recon_rows[year]
+            rate, src = spec["rate"], RECON_SOURCE
+            row = {"year": year, "rate": rnd(rate), "source": RECON_SOURCE,
+                   "method": spec["method"], "ref": spec["ref"], "basis": spec["basis"]}
+            if spec.get("interpolated"):
+                row["interpolated"] = True
+                row["anchor"] = spec["anchor"]
         regime = regime_by_year.get(year)
         if regime:
             row["regime"] = regime["regime"]
-            row["regime_fine"] = regime["fine"]
+            if regime.get("fine"):
+                row["regime_fine"] = regime["fine"]
+            if regime.get("source") and regime["source"] != "irr":
+                row["regime_source"] = regime["source"]
+            if regime.get("note"):
+                row["regime_note"] = regime["note"]
         series_out.append(row)
-        if prev and prev[0] == year - 1 and src == prev[2] and prev[1] > 0:
+        if prev and prev[0] == year - 1 and prev[1] > 0:
             change = math.log(rate / prev[1])
-            if abs(change) > math.log(3):
+            if year in stat_break_years:
+                breaks.append({"year": year, "log_change": rnd(change), "definitional": True,
+                               "note": ("mudanca de base/fonte (oficial->mercado ou reforma monetaria): "
+                                        "variacao excluida das estatisticas do perfil")})
+            elif src == prev[2] and abs(change) > math.log(3):
                 breaks.append({"year": year, "log_change": rnd(change),
                                "note": "salto >3x entre anos consecutivos na mesma fonte"})
         prev = (year, rate, src)
@@ -490,15 +652,18 @@ def build_currency(code: str, entry: dict, ctx: dict) -> Tuple[dict, dict]:
         "last_year": series_out[-1]["year"] if series_out else None,
         "sources": sorted({row["source"] for row in series_out}),
         "source_refs": SOURCES,
-        "regime_enum": ["peg", "band", "float", "free_fall", "union", "dual_market"],
+        "regime_enum": REGIME_ENUM,
         "regime_note": ("Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. "
-                        "Sem classificacao publicada depois de 2016."),
+                        "2017-2025: regime de fato documentado (historical_reconstruction), "
+                        "ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao."),
         "breaks": breaks,
         "notes": notes[:40],
         "missing_source_area": missing_area,
         "no_data": not series_out,
         "series": series_out,
     }
+    if recon_meta:
+        history["reconstruction"] = recon_meta
     return history, {"merged": merged, "regime": regime_by_year}
 
 
@@ -506,9 +671,12 @@ def compute_profile(code: str, entry: dict, history: dict) -> dict:
     series = history["series"]
     years = [row["year"] for row in series]
     values = {row["year"]: row["rate"] for row in series}
+    stat_breaks = {b["year"] for b in history.get("breaks") or [] if b.get("definitional")}
 
-    changes = [math.log(values[y] / values[y - 1])
-               for y in years if y - 1 in values and values[y] > 0 and values[y - 1] > 0]
+    change_rows = [(y, math.log(values[y] / values[y - 1])) for y in years
+                   if y - 1 in values and y not in stat_breaks
+                   and values[y] > 0 and values[y - 1] > 0]
+    changes = [c for _y, c in change_rows]
 
     def stdev(xs: Iterable[float]) -> Optional[float]:
         xs = list(xs)
@@ -557,11 +725,24 @@ def compute_profile(code: str, entry: dict, history: dict) -> dict:
     span = PRIMARY_END - PRIMARY_START + 1
     coverage = sum(1 for y in range(PRIMARY_START, PRIMARY_END + 1) if y in values) / span
     if len(years) >= 60 and coverage >= 0.95:
-        conf = "complete"
+        conf_base = "complete"
     elif len(years) >= 20 and coverage >= 0.5:
+        conf_base = "partial"
+    else:
+        conf_base = "estimated"
+
+    recon_years = [row["year"] for row in series if row["source"] == RECON_SOURCE]
+    interp_years = [row["year"] for row in series if row.get("interpolated")]
+    recon_fraction = (len(recon_years) / len(series)) if series else 0.0
+    recon_fraction_window = (sum(1 for y in recon_years if PRIMARY_START <= y <= PRIMARY_END) / span)
+
+    # a confiança nunca sobe por reconstrução: fração reconstruída limita o teto
+    if recon_fraction >= 0.5:
+        conf = "estimated"
+    elif recon_fraction >= 0.1 and conf_base == "complete":
         conf = "partial"
     else:
-        conf = "estimated"
+        conf = conf_base
 
     flags = []
     if not series:
@@ -574,8 +755,22 @@ def compute_profile(code: str, entry: dict, history: dict) -> dict:
         flags.append("missing_source_area:" + ",".join(history["missing_source_area"]))
     if history["breaks"]:
         flags.append("structural_breaks")
+    if recon_years:
+        flags.append(f"reconstructed:{len(recon_years)}y")
+    if interp_years:
+        flags.append(f"interpolated:{len(interp_years)}y")
+
+    regime_latest = None
+    for row in reversed(series):
+        if "regime" in row:
+            regime_latest = row["regime"]
+            break
 
     vol = stdev(changes)
+    # volatilidade só com anos documentados (estatística ou fato): isola o efeito da interpolação
+    documented = {row["year"] for row in series if not row.get("interpolated")}
+    doc_changes = [c for y, c in change_rows if y in documented and (y - 1) in documented]
+    vol_doc = stdev(doc_changes)
     median = quantile(changes, 0.5)
     p95 = quantile([abs(c) for c in changes], 0.95)
     return {
@@ -585,6 +780,7 @@ def compute_profile(code: str, entry: dict, history: dict) -> dict:
         "last_year": history["last_year"],
         "coverage_1950_2024": rnd(coverage),
         "volatility_annual_log": rnd(vol) if vol is not None else None,
+        "volatility_documented_only_log": rnd(vol_doc) if vol_doc is not None else None,
         "median_annual_log_change": rnd(median) if median is not None else None,
         "p95_abs_annual_log_change": rnd(p95) if p95 is not None else None,
         "max_1y_depreciation_log": rnd(max(changes)) if changes else None,
@@ -594,7 +790,14 @@ def compute_profile(code: str, entry: dict, history: dict) -> dict:
         "mean_reversion_half_life_years": rnd(half_life) if half_life else None,
         "regime_recent": regime_recent,
         "regime_window": [2007, 2016],
+        "regime_latest": regime_latest,
         "regime_distribution": dict(sorted(regime_dist.items())),
+        "reconstructed_years": len(recon_years),
+        "reconstructed_fraction": rnd(recon_fraction),
+        "reconstructed_fraction_1950_2024": rnd(recon_fraction_window),
+        "interpolated_years": len(interp_years),
+        "stat_break_years": sorted(stat_breaks),
+        "confidence_base": conf_base,
         "confidence": conf,
         "flags": flags,
     }
@@ -629,7 +832,9 @@ def main(argv: Optional[list] = None) -> int:
     irr = load_irr(args.refresh)
     log(f"IRR classificacao: {len(irr)} paises")
 
-    ctx = {"wb_countries": wb_countries, "ifs": ifs, "wb": wb, "jst": jst, "irr": irr, "legacy": {}}
+    ctx = {"wb_countries": wb_countries, "ifs": ifs, "wb": wb, "jst": jst, "irr": irr, "legacy": {},
+           "facts": load_facts()}
+    log(f"fatos de reconstrucao historica: {len(ctx['facts'])} moedas")
     for shared in SHARED_SERIES.values():
         ctx["legacy"][shared["legacy_from"]], _n = nation_series(shared["legacy_nation"], ctx)
 
@@ -655,6 +860,12 @@ def main(argv: Optional[list] = None) -> int:
         "estimated": sum(1 for p in profiles.values() if p["confidence"] == "estimated"),
         "target_window": [TARGET_START, TARGET_END],
         "primary_window": [PRIMARY_START, PRIMARY_END],
+        "historical_reconstruction": {
+            "currencies": sum(1 for p in profiles.values() if p["reconstructed_years"]),
+            "years": sum(p["reconstructed_years"] for p in profiles.values()),
+            "interpolated_years": sum(p["interpolated_years"] for p in profiles.values()),
+            "downgraded": sum(1 for p in profiles.values() if p["confidence"] != p["confidence_base"]),
+        },
     }
     log("cobertura: " + json.dumps(summary, ensure_ascii=False))
 
@@ -673,12 +884,27 @@ def main(argv: Optional[list] = None) -> int:
         "unit": "LCU per USD",
         "method": {
             "volatility_annual_log": "desvio-padrao amostral de ln(taxa_t / taxa_{t-1})",
+            "volatility_documented_only_log": ("o mesmo desvio-padrao, excluindo anos interpolados "
+                                               "(isola o efeito da interpolacao; None se sobrar <2 variacoes)"),
             "max_1y_depreciation_log": "maior ln(taxa_t / taxa_{t-1}) (positivo = depreciacao)",
             "crisis_frequency": "fracao dos anos com depreciacao > 25%",
             "mean_reversion_half_life_years": "AR(1) no log do nivel nominal; None se phi fora de (0,1)",
             "regime_recent": "moda do regime de fato 2007-2016 (IRR)",
-            "confidence": ("complete = >=60 anos e >=95% de 1950-2024; "
-                           "partial = >=20 anos e >=50%; estimated = fora disso (sem interpolacao)"),
+            "regime_latest": "regime do ultimo ano com classificacao (IRR ate 2016; fatos documentados em 2017-2025)",
+            "confidence": ("base: complete = >=60 anos e >=95% de 1950-2024; partial = >=20 anos e >=50%; "
+                           "estimated = fora disso. Teto por reconstrucao: fracao reconstruida >= 0,5 -> "
+                           "estimated; >= 0,1 -> no maximo partial (confianca nunca sobe por reconstrucao)"),
+            "reconstructed_fraction": "anos com source=historical_reconstruction / years_with_data",
+            "stat_break_years": "anos cuja variacao e mudanca de base/fonte e fica fora de volatilidade/crise",
+        },
+        "reconstruction": {
+            "facts_file": "tools/data/fx_historical_facts.json",
+            "source": RECON_SOURCE,
+            "rules": {
+                "never_overwrite_statistical_data": True,
+                "interpolation_max_gap_years": MAX_INTERP_GAP,
+                "interpolation": "somente entre dois fatos documentados, marcada com interpolated=true",
+            },
         },
         "sources": SOURCES,
         "irr_fine_codes": {str(k): v for k, v in IRR_FINE.items()},

@@ -6,8 +6,9 @@
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
  "first_year": 1990,
- "last_year": 2023,
+ "last_year": 2025,
  "sources": [
+  "historical_reconstruction",
   "imf_ifs"
  ],
  "source_refs": {
@@ -42,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -52,7 +61,7 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [
   {
    "year": 1995,
@@ -60,7 +69,10 @@
    "note": "salto >3x entre anos consecutivos na mesma fonte"
   }
  ],
- "notes": [],
+ "notes": [
+  "Nenhum ano anterior a 1990 e reconstruido: o YER nao existia (proibido estender moeda a pais inexistente).",
+  "2024 interpolado entre o IFS 2023 e a taxa documentada de jan/2025 (2.150 YER/USD em Aden; ~530 em Sanaa)."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -233,6 +245,62 @@
    "year": 2023,
    "rate": 1355.11637865,
    "source": "imf_ifs"
+  },
+  {
+   "year": 2024,
+   "rate": 1706.89783353,
+   "source": "historical_reconstruction",
+   "method": "interpolated_between_documented_facts",
+   "ref": "wiki_yer",
+   "basis": "interpolated",
+   "interpolated": true,
+   "anchor": [
+    2023,
+    2025
+   ],
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Dois mercados: Aden (2.150 YER/USD) e Sanaa (~530); notas impressas apos 2017 nao valem no norte."
+  },
+  {
+   "year": 2025,
+   "rate": 2150.0,
+   "source": "historical_reconstruction",
+   "method": "documented_market_rate",
+   "ref": "wiki_yer",
+   "basis": "market",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Dois mercados: Aden (2.150 YER/USD) e Sanaa (~530); notas impressas apos 2017 nao valem no norte."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "YER por USD. A moeda so existe desde a unificacao de 1990 (antes: rial do Iemen do Norte e dinar do Sul).",
+  "basis_note": "A serie representa o mercado de Aden (Conselho de Lideranca Presidencial), que e o lado que publica a taxa oficial; o norte controlado pelos houthis tem mercado separado.",
+  "notes": [
+   "Nenhum ano anterior a 1990 e reconstruido: o YER nao existia (proibido estender moeda a pais inexistente).",
+   "2024 interpolado entre o IFS 2023 e a taxa documentada de jan/2025 (2.150 YER/USD em Aden; ~530 em Sanaa)."
+  ],
+  "refs": {
+   "wiki_yer": {
+    "title": "Yemeni rial",
+    "url": "https://en.wikipedia.org/wiki/Yemeni_rial",
+    "year": 2026
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [
+   2024
+  ],
+  "regimes": [
+   {
+    "from": 2024,
+    "to": 2025,
+    "regime": "dual_market",
+    "note": "Dois mercados: Aden (2.150 YER/USD) e Sanaa (~530); notas impressas apos 2017 nao valem no norte.",
+    "ref": "wiki_yer"
+   }
+  ]
+ }
 }

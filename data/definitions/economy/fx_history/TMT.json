@@ -6,8 +6,9 @@
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
  "first_year": 1994,
- "last_year": 2001,
+ "last_year": 2025,
  "sources": [
+  "historical_reconstruction",
   "imf_ifs"
  ],
  "source_refs": {
@@ -42,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -52,7 +61,7 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [
   {
    "year": 1995,
@@ -65,7 +74,10 @@
    "note": "salto >3x entre anos consecutivos na mesma fonte"
   }
  ],
- "notes": [],
+ "notes": [
+  "2002-2007 reconstruido com a paridade oficial de ~5.200 TMM/USD vigente ate 2008; 2008 com a desvalorizacao para 14.250 TMM/USD (abril).",
+  "Mercado paralelo documentado (2021): 40-41 TMT/USD, ou ~200.000 TMM/USD, ~57x a taxa oficial; nao entra na serie."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -124,6 +136,291 @@
    "source": "imf_ifs",
    "regime": "dual_market",
    "regime_fine": 15
+  },
+  {
+   "year": 2002,
+   "rate": 5200.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg",
+   "ref": "rferl_tmt_2008",
+   "basis": "official"
+  },
+  {
+   "year": 2003,
+   "rate": 5200.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg",
+   "ref": "rferl_tmt_2008",
+   "basis": "official"
+  },
+  {
+   "year": 2004,
+   "rate": 5200.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg",
+   "ref": "rferl_tmt_2008",
+   "basis": "official"
+  },
+  {
+   "year": 2005,
+   "rate": 5200.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg",
+   "ref": "rferl_tmt_2008",
+   "basis": "official"
+  },
+  {
+   "year": 2006,
+   "rate": 5200.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg",
+   "ref": "rferl_tmt_2008",
+   "basis": "official"
+  },
+  {
+   "year": 2007,
+   "rate": 5200.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg",
+   "ref": "rferl_tmt_2008",
+   "basis": "official"
+  },
+  {
+   "year": 2008,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_devaluation",
+   "ref": "factbook_tmt",
+   "basis": "official"
+  },
+  {
+   "year": 2009,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "imf_fd_2013",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2010,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "imf_fd_2013",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2011,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "imf_fd_2013",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2012,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "imf_fd_2013",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2013,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "imf_fd_2013",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2014,
+   "rate": 14250.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "imf_fd_2013",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2015,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2016,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2017,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2018,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2019,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2020,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2021,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2022,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2023,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2024,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
+  },
+  {
+   "year": 2025,
+   "rate": 17500.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_peg_chained",
+   "ref": "export_gov_tmt",
+   "basis": "official",
+   "regime": "peg",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "TMM por USD (manat antigo, em vigor ate 2009). O manat novo (TMT) vale 5.000 TMM, entao as taxas de 2009+ foram multiplicadas por 5.000 para ficar na mesma unidade dos dados estatisticos de 1994-2001 (ex.: 2,85 TMT = 14.250 TMM).",
+  "basis_note": "Cambio oficial fixo (o mercado paralelo e ilegal); a taxa oficial e a que organiza precos e orcamento.",
+  "notes": [
+   "2002-2007 reconstruido com a paridade oficial de ~5.200 TMM/USD vigente ate 2008; 2008 com a desvalorizacao para 14.250 TMM/USD (abril).",
+   "Mercado paralelo documentado (2021): 40-41 TMT/USD, ou ~200.000 TMM/USD, ~57x a taxa oficial; nao entra na serie."
+  ],
+  "refs": {
+   "rferl_tmt_2008": {
+    "title": "Turkmenistan Redenominates Currency, Further Dismantles Niyazov Personality Cult",
+    "url": "https://www.rferl.org/a/Turkmenistan_Redenominates_Currency_Further_Dismantles_Niyazov_Personality_Cult/1365812.html",
+    "year": 2008
+   },
+   "factbook_tmt": {
+    "title": "Exchange rates - Turkmenistan (CIA World Factbook archive)",
+    "url": "https://worldfactbookarchive.org/archive/field/TM/Exchange%20rates",
+    "year": 2014
+   },
+   "imf_fd_2013": {
+    "title": "New Money - Finance & Development, December 2013",
+    "url": "https://www.imf.org/external/pubs/ft/fandd/2013/12/lonnberg.htm",
+    "year": 2013
+   },
+   "export_gov_tmt": {
+    "title": "Turkmenistan - Foreign Exchange Controls",
+    "url": "https://legacy.export.gov/article?id=Turkmenistan-Foreign-Exchange-Controls",
+    "year": 2015
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2009,
+    "to": 2025,
+    "regime": "peg",
+    "note": "Cambio oficial fixo (2,85 TMT/USD ate 2014; 3,50 desde 2015) com mercado paralelo ilegal.",
+    "ref": "export_gov_tmt"
+   }
+  ]
+ }
 }

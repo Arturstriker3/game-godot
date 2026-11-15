@@ -43,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -53,9 +61,11 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
- "notes": [],
+ "notes": [
+  "Em 2022 a taxa oficial do Banco da Russia conviveu com o cambio em dinheiro (120-150 RUB/USD em marco) e controles de capital."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -216,47 +226,119 @@
   {
    "year": 2017,
    "rate": 58.3428011852,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao livre com meta de inflacao."
   },
   {
    "year": 2018,
    "rate": 62.6681333333,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao livre com meta de inflacao."
   },
   {
    "year": 2019,
    "rate": 64.7376583333,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao livre com meta de inflacao."
   },
   {
    "year": 2020,
    "rate": 72.1049083333,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao livre com meta de inflacao."
   },
   {
    "year": 2021,
    "rate": 73.65435,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao livre com meta de inflacao."
   },
   {
    "year": 2022,
    "rate": 68.4849416667,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Sanções e controles de capital desde 28/02/2022: taxa oficial do BC contra cambio em dinheiro."
   },
   {
    "year": 2023,
    "rate": 85.1620083333,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com controles de capital remanescentes (liquidacao obrigatoria de receita externa)."
   },
   {
    "year": 2024,
    "rate": 92.5524,
-   "source": "worldbank"
+   "source": "worldbank",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com controles de capital remanescentes (liquidacao obrigatoria de receita externa)."
   },
   {
    "year": 2025,
    "rate": 83.6525,
-   "source": "worldbank"
+   "source": "worldbank",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Flutuacao administrada com controles de capital remanescentes (liquidacao obrigatoria de receita externa)."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "",
+  "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+  "notes": [
+   "Em 2022 a taxa oficial do Banco da Russia conviveu com o cambio em dinheiro (120-150 RUB/USD em marco) e controles de capital."
+  ],
+  "refs": {
+   "wiki_rub": {
+    "title": "Russian ruble",
+    "url": "https://en.wikipedia.org/wiki/Russian_ruble",
+    "year": 2026
+   },
+   "cbr": {
+    "title": "Bank of Russia - official exchange rates",
+    "url": "https://www.cbr.ru/eng/",
+    "year": 2025
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2021,
+    "regime": "float",
+    "note": "Flutuacao livre com meta de inflacao.",
+    "ref": "wiki_rub"
+   },
+   {
+    "from": 2022,
+    "to": 2022,
+    "regime": "dual_market",
+    "note": "Sanções e controles de capital desde 28/02/2022: taxa oficial do BC contra cambio em dinheiro.",
+    "ref": "cbr"
+   },
+   {
+    "from": 2023,
+    "to": 2025,
+    "regime": "float",
+    "note": "Flutuacao administrada com controles de capital remanescentes (liquidacao obrigatoria de receita externa).",
+    "ref": "cbr"
+   }
+  ]
+ }
 }

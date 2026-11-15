@@ -5,9 +5,10 @@
   "CUB"
  ],
  "unit": "LCU per USD (annual average, unidade monetaria corrente da fonte)",
- "first_year": 1957,
- "last_year": 1974,
+ "first_year": 1925,
+ "last_year": 2025,
  "sources": [
+  "historical_reconstruction",
   "imf_ifs"
  ],
  "source_refs": {
@@ -42,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -52,12 +61,271 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [],
- "notes": [],
+ "notes": [
+  "1975-2003 nao reconstruido: nao ha serie anual documentada da taxa oficial (o IFS encerra em 0,822 CUP/USD em 1974 por causa do peg ao rublo) e preencher com 1,0 criaria descontinuidade artificial.",
+  "O mercado informal nao entra na serie: 125 CUP/USD em 1993, ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
+  {
+   "year": 1925,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1926,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1927,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1928,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1929,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1930,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1931,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1932,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1933,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1934,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1935,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1936,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1937,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1938,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1939,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1940,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1941,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1942,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1943,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1944,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1945,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1946,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1947,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1948,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1949,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1950,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1951,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1952,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1953,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1954,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1955,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
+  {
+   "year": 1956,
+   "rate": 1.0,
+   "source": "historical_reconstruction",
+   "method": "documented_parity_with_usd",
+   "ref": "wiki_cup",
+   "basis": "official"
+  },
   {
    "year": 1957,
    "rate": 0.999999999,
@@ -147,6 +415,243 @@
    "year": 1974,
    "rate": 0.821999999,
    "source": "imf_ifs"
+  },
+  {
+   "year": 2004,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2005,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2006,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2007,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2008,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2009,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2010,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2011,
+   "rate": 23.1481481481,
+   "source": "historical_reconstruction",
+   "method": "derived_from_cuc_peg",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2012,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2013,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2014,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2015,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2016,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash"
+  },
+  {
+   "year": 2017,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo."
+  },
+  {
+   "year": 2018,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo."
+  },
+  {
+   "year": 2019,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo."
+  },
+  {
+   "year": 2020,
+   "rate": 25.0,
+   "source": "historical_reconstruction",
+   "method": "documented_public_cash_rate",
+   "ref": "wiki_cup",
+   "basis": "household_cash",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo."
+  },
+  {
+   "year": 2021,
+   "rate": 24.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate_after_unification",
+   "ref": "wiki_cup",
+   "basis": "official",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD."
+  },
+  {
+   "year": 2022,
+   "rate": 24.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate_after_unification",
+   "ref": "wiki_cup",
+   "basis": "official",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD."
+  },
+  {
+   "year": 2023,
+   "rate": 24.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate_after_unification",
+   "ref": "wiki_cup",
+   "basis": "official",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD."
+  },
+  {
+   "year": 2024,
+   "rate": 24.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate_after_unification",
+   "ref": "wiki_cup",
+   "basis": "official",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD."
+  },
+  {
+   "year": 2025,
+   "rate": 24.0,
+   "source": "historical_reconstruction",
+   "method": "documented_official_rate_after_unification",
+   "ref": "wiki_cup",
+   "basis": "official",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "CUP por USD. A serie estatistica (IFS) cobre 1957-1974 na taxa oficial do Estado; a reconstrucao usa paridade oficial ate 1956 e a taxa de caixa ao publico a partir de 2004.",
+  "basis_note": "Cuba teve cambio multiplo: 1 CUP/USD nas contas do Estado (ate 2020), 25 CUP/USD nas Cadecas (2004-2020) e 24 CUP/USD apos a unificacao de 2021. A serie reconstruida usa a taxa de caixa ao publico a partir de 2004, que e a que representa a economia das familias.",
+  "notes": [
+   "1975-2003 nao reconstruido: nao ha serie anual documentada da taxa oficial (o IFS encerra em 0,822 CUP/USD em 1974 por causa do peg ao rublo) e preencher com 1,0 criaria descontinuidade artificial.",
+   "O mercado informal nao entra na serie: 125 CUP/USD em 1993, ~100 em jan/2022, 200 em out/2022, 300 em fev/2024, 400 em ago/2025."
+  ],
+  "refs": {
+   "wiki_cup": {
+    "title": "Cuban peso",
+    "url": "https://en.wikipedia.org/wiki/Cuban_peso",
+    "year": 2026
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2020,
+    "regime": "dual_market",
+    "note": "CUP (familias) e CUC (conversivel, 1:1 com o USD) circulando em paralelo.",
+    "ref": "wiki_cup"
+   },
+   {
+    "from": 2021,
+    "to": 2025,
+    "regime": "dual_market",
+    "note": "Taxa oficial unica de 24 CUP/USD sem disponibilidade de divisas; mercado informal de 100 a 400 CUP/USD.",
+    "ref": "wiki_cup"
+   }
+  ]
+ }
 }

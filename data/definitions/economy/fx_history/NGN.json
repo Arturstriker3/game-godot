@@ -43,6 +43,14 @@
    "url": "https://carmenreinhart.com/exchange-rate/",
    "homepage": "https://carmenreinhart.com/exchange-rate/",
    "coverage": "1940-2016"
+  },
+  "historical_reconstruction": {
+   "name": "Reconstrucao historica documentada (curadoria do projeto)",
+   "indicator": "pontos anuais documentados (paridades, desvalorizacoes, reformas, taxas de mercado)",
+   "description": "Ultimo recurso para lacunas: cada ponto tem method + ref; refs com title/url/year ficam em fx_history/<CODE>.json:reconstruction.refs. Nunca sobrescreve dado estatistico.",
+   "url": "tools/data/fx_historical_facts.json",
+   "homepage": "docs/economy/fx_history.md#reconstrucao-historica",
+   "coverage": "1925-2025 (9 moedas com lacuna) + regime de fato 2017-2025"
   }
  },
  "regime_enum": [
@@ -53,7 +61,7 @@
   "union",
   "dual_market"
  ],
- "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. Sem classificacao publicada depois de 2016.",
+ "regime_note": "Ilzetzki-Reinhart-Rogoff (fine -> coarse); 'union' quando fine=1. 2017-2025: regime de fato documentado (historical_reconstruction), ver `reconstruction.regimes`; linha sem `regime` fica sem classificacao.",
  "breaks": [
   {
    "year": 1999,
@@ -61,7 +69,9 @@
    "note": "salto >3x entre anos consecutivos na mesma fonte"
   }
  ],
- "notes": [],
+ "notes": [
+  "Ate 2022 havia varias janelas (oficial do CBN, I&E, BDC); a unificacao veio em 12/06/2023."
+ ],
  "missing_source_area": [],
  "no_data": false,
  "series": [
@@ -537,47 +547,112 @@
   {
    "year": 2017,
    "rate": 305.79010916,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo."
   },
   {
    "year": 2018,
    "rate": 306.083688245,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo."
   },
   {
    "year": 2019,
    "rate": 306.920951495,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo."
   },
   {
    "year": 2020,
    "rate": 358.810797258,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo."
   },
   {
    "year": 2021,
    "rate": 401.152029221,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo."
   },
   {
    "year": 2022,
    "rate": 425.979158067,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "dual_market",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo."
   },
   {
    "year": 2023,
    "rate": 645.194067883,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao em 12/06/2023; a naira passa de ~460 para ~1.500 NGN/USD."
   },
   {
    "year": 2024,
    "rate": 1478.9651974,
-   "source": "imf_ifs"
+   "source": "imf_ifs",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao em 12/06/2023; a naira passa de ~460 para ~1.500 NGN/USD."
   },
   {
    "year": 2025,
    "rate": 1518.38094813,
-   "source": "worldbank"
+   "source": "worldbank",
+   "regime": "float",
+   "regime_source": "historical_reconstruction",
+   "regime_note": "Unificacao e flutuacao em 12/06/2023; a naira passa de ~460 para ~1.500 NGN/USD."
   }
- ]
+ ],
+ "reconstruction": {
+  "source": "historical_reconstruction",
+  "unit_note": "",
+  "basis_note": "Somente regime de fato 2017-2025; nenhum nivel de taxa e reconstruido.",
+  "notes": [
+   "Ate 2022 havia varias janelas (oficial do CBN, I&E, BDC); a unificacao veio em 12/06/2023."
+  ],
+  "refs": {
+   "wiki_ngn": {
+    "title": "Nigerian naira",
+    "url": "https://en.wikipedia.org/wiki/Nigerian_naira",
+    "year": 2026
+   },
+   "imf_nga": {
+    "title": "IMF - Nigeria country page",
+    "url": "https://www.imf.org/en/Countries/NGA",
+    "year": 2025
+   }
+  },
+  "stat_breaks": [],
+  "interpolated_years": [],
+  "regimes": [
+   {
+    "from": 2017,
+    "to": 2022,
+    "regime": "dual_market",
+    "note": "Multiplas janelas: oficial do CBN (~305-460), I&E e BDC, com premio no paralelo.",
+    "ref": "wiki_ngn"
+   },
+   {
+    "from": 2023,
+    "to": 2025,
+    "regime": "float",
+    "note": "Unificacao e flutuacao em 12/06/2023; a naira passa de ~460 para ~1.500 NGN/USD.",
+    "ref": "imf_nga"
+   }
+  ]
+ }
 }
