@@ -5,6 +5,14 @@
   // ele decompõe, delega e valida.
   "default_agent": "orchestrator",
 
+  // Hierarquia de equipe: cabeça (fora do OpenCode) → gerentes DeepSeek Pro →
+  // executores/verificadores DeepSeek Flash. O padrão (1) bloqueia o gerente
+  // de delegar quando ele mesmo foi chamado como subagente; 2 libera
+  // gerente → executor/verificador sem permitir aninhamento infinito.
+  "experimental": {
+    "subagent_depth": 2
+  },
+
   // MCPs locais. Os comandos reutilizam as instalações já existentes no TRAE.
   // Segredos nunca ficam neste arquivo.
   "mcp": {
