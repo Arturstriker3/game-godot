@@ -4671,10 +4671,29 @@ void EconomySim::demo_tick_core() {
 			* std::min(city.external_income_index, kDemoExternalIncomeIndexCap);
 		pop.disposable += pop.external_income;
 		demo_foreign_cash_ -= pop.external_income;
+
+		// Necessidade alimentar do dia em toneladas-equivalentes de grão (B3) e
+		// custo EFETIVO da cesta: os preços dos alimentos que a cidade REALMENTE
+		// tem em estoque (na proporção de disponibilidade usada na compra) mais
+		// o resíduo importado ao CIF conhecido. Antes, o subsídio usava o
+		// alimento mais barato do MUNDO — pão/processado sem estoque local — e
+		// subestimava em 3-4× o custo do grão da prateleira; a cidade comprava
+		// só uma fração da necessidade mesmo gastando todo o orçamento
+		// (NGA-LAG, SYR-DAM, SOL-HAR em 365 d).
+		pop.need = city.simulation_population * kDemoNeedPerCapita;
+		double food_local_cost = 0.0;
+		double food_import_cost = 0.0;
+		double food_unit_cost = 0.0;
+		demo_food_basket_cost(city, pop.need, food_local_cost, food_import_cost,
+			food_unit_cost);
+
 		// A renda externa é renda de subsistência: o gasto discricionário em
 		// serviços incide só sobre a renda DOMÉSTICA. Sem isso a cidade sem
 		// terra gastava 45% da renda externa em serviços e sobrava menos que a
-		// cesta (TKM ficava em 64% em 730 d, §20).
+		// cesta (TKM ficava em 64% em 730 d, §20). A comida tem prioridade de
+		// ORDENAÇÃO (é comprada antes de life/luxury e o governo cobre o que
+		// faltar); o setor de serviços continua sendo a fonte de renda dos
+		// empregos residuais, por isso não é zerado pela cesta.
 		pop.service_spend = std::max(0.0,
 			pop.disposable - pop.external_income) * kDemoServiceSpendShare;
 		city.service_cash += pop.service_spend;
@@ -4715,35 +4734,34 @@ void EconomySim::demo_tick_core() {
 		demo_refresh_income_classes(city);
 
 		double budget = pop.savings + pop.disposable - pop.service_spend;
-		// Necessidade alimentar em toneladas-equivalentes de grão (B3).
-		pop.need = city.simulation_population * kDemoNeedPerCapita;
 		// Subsídio de subsistência: o governo garante a cesta alimentar mínima
 		// quando o orçamento de comida não cobre (ex.: cidade sem produção nem
-		// renda própria). A cesta usa o alimento mais barato por caloria
-		// (preço / fator calórico); com os preços-base, o trigo segue o mais
-		// barato. Sai do orçamento público — conserva o dinheiro.
-		double cheapest_food = 0.0;
-		for (int slot = 0; slot < static_cast<int>(demo_food_products_.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			const double factor = demo_food_calories(product);
-			if (factor <= 0.0) {
-				continue;
-			}
-			const double per_calorie = city.markets[product].price / factor;
-			if (per_calorie > 0.0
-					&& (cheapest_food <= 0.0 || per_calorie < cheapest_food)) {
-				cheapest_food = per_calorie;
+		// renda própria). Primeiro a parcela que está na prateleira (estoque
+		// local); depois o resíduo que terá de ser importado, para que a fase 6
+		// (comércio) encontre caixa. Sai do orçamento público — conserva o
+		// dinheiro.
+		double food_topup_local = 0.0;
+		if (food_local_cost > 0.0 && budget < food_local_cost) {
+			food_topup_local = std::min(food_local_cost - budget,
+				std::max(0.0, city.government_budget));
+			if (food_topup_local > 0.0) {
+				budget += food_topup_local;
+				city.government_budget -= food_topup_local;
+				pop.transfers += food_topup_local;
 			}
 		}
-		const double food_cost = pop.need * cheapest_food;
-		double food_topup = 0.0;
-		if (cheapest_food > 0.0 && budget < food_cost) {
-			food_topup = std::min(food_cost - budget,
+		double food_topup_import = 0.0;
+		if (food_import_cost > 0.0) {
+			const double own_left = std::max(0.0, budget - food_local_cost);
+			const double shortfall = std::max(0.0, food_import_cost - own_left);
+			food_topup_import = std::min(shortfall,
 				std::max(0.0, city.government_budget));
-			if (food_topup > 0.0) {
-				budget += food_topup;
-				city.government_budget -= food_topup;
-				pop.transfers += food_topup;
+			if (food_topup_import > 0.0) {
+				// Fica com as famílias: a importação é paga na fase 6 com
+				// `pop.savings` quando firma e governo não cobrem.
+				budget += food_topup_import;
+				city.government_budget -= food_topup_import;
+				pop.transfers += food_topup_import;
 			}
 		}
 
@@ -4812,12 +4830,13 @@ void EconomySim::demo_tick_core() {
 		pop.satisfaction = pop.need > 0.0
 			? std::clamp(consumed / pop.need, 0.0, 1.0) : 1.0;
 
-		// Subsídio de subsistência não gasto volta ao governo: sem isso, a
+		// Subsídio de subsistência LOCAL não gasto volta ao governo: sem isso, a
 		// cidade sem estoque de alimento convertia o subsídio em poupança e ele
 		// acabava financiando life/luxury (dinheiro conservado, mas fora do
-		// destino). Devolver mantém o piso alimentar e a prioridade basic.
-		if (food_topup > 0.0) {
-			const double unused = std::min(food_topup, std::max(0.0, budget));
+		// destino). A parcela de IMPORTAÇÃO não volta: ela precisa continuar com
+		// as famílias até a fase 6 pagar a carga.
+		if (food_topup_local > 0.0) {
+			const double unused = std::min(food_topup_local, std::max(0.0, budget));
 			if (unused > 0.0) {
 				budget -= unused;
 				city.government_budget += unused;
@@ -4849,8 +4868,8 @@ void EconomySim::demo_tick_core() {
 			// de importar comida em nações sem terra (o alimento continua sendo
 			// a primeira prioridade do orçamento).
 			double needs_budget = budget;
-			if (cheapest_food > 0.0) {
-				const double reserve = pop.need * kDemoFoodReserveDays * cheapest_food;
+			if (food_unit_cost > 0.0) {
+				const double reserve = pop.need * kDemoFoodReserveDays * food_unit_cost;
 				// Protege no máximo a poupança existente: se ela já é menor que
 				// o colchão, a renda corrente do dia continua disponível.
 				const double protected_savings =
@@ -7359,6 +7378,85 @@ double EconomySim::demo_level_basket_cost(const DemoCity& city,
 		}
 	}
 	return cost;
+}
+
+void EconomySim::demo_food_basket_cost(const DemoCity& city, double need,
+		double& local_cost, double& import_cost, double& per_ge) const {
+	local_cost = 0.0;
+	import_cost = 0.0;
+	per_ge = 0.0;
+	const int slots = static_cast<int>(demo_food_products_.size());
+	if (slots <= 0) {
+		return;
+	}
+	// 1ª passada: disponibilidade local e preço por tonelada-equivalente (preço
+	// de mercado e, para o resíduo, o CIF da última importação da cidade).
+	double total_avail = 0.0;
+	double cheapest = 0.0;
+	double cheapest_import = 0.0;
+	for (int slot = 0; slot < slots; ++slot) {
+		const int product = demo_food_product(slot);
+		const double factor = demo_food_calories(product);
+		if (factor <= 0.0) {
+			continue;
+		}
+		total_avail += std::max(0.0, city.markets[product].stock) * factor;
+		const double price = city.markets[product].price;
+		if (price > 0.0) {
+			const double unit = price / factor;
+			if (cheapest <= 0.0 || unit < cheapest) {
+				cheapest = unit;
+			}
+		}
+		// CIF conhecido: origem efetiva + tarifa (sem o frete, que é serviço
+		// doméstico do comprador). É o preço que o importador realmente paga.
+		const double cif = city.import_price[product];
+		if (cif > 0.0) {
+			const double unit = cif / factor;
+			if (cheapest_import <= 0.0 || unit < cheapest_import) {
+				cheapest_import = unit;
+			}
+		}
+	}
+	if (cheapest_import <= 0.0) {
+		cheapest_import = cheapest;
+	}
+	if (cheapest <= 0.0) {
+		cheapest = cheapest_import;
+	}
+	if (cheapest <= 0.0) {
+		return;
+	}
+	if (total_avail <= 0.0 || need <= 0.0) {
+		import_cost = std::max(0.0, need) * cheapest_import;
+		per_ge = cheapest_import;
+		return;
+	}
+	// 2ª passada: mesma proporção de disponibilidade usada na compra (B3). O
+	// custo é o da cesta que a cidade consegue montar hoje; o que faltar para a
+	// necessidade é importado ao CIF conhecido.
+	double covered = 0.0;
+	for (int slot = 0; slot < slots; ++slot) {
+		const int product = demo_food_product(slot);
+		const double factor = demo_food_calories(product);
+		if (factor <= 0.0) {
+			continue;
+		}
+		const double stock_ge = std::max(0.0, city.markets[product].stock) * factor;
+		if (stock_ge <= 0.0) {
+			continue;
+		}
+		const double price = city.markets[product].price;
+		if (price <= 0.0) {
+			continue;
+		}
+		const double want = std::min(need, need * (stock_ge / total_avail));
+		local_cost += want * (price / factor);
+		covered += want;
+	}
+	const double residual = std::max(0.0, need - covered);
+	import_cost = residual * cheapest_import;
+	per_ge = (local_cost + import_cost) / need;
 }
 
 bool EconomySim::demo_category_top_market(DemoCity& city,

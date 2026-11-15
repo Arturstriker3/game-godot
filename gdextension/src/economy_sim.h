@@ -1442,6 +1442,21 @@ private:
 	 */
 	double demo_level_basket_cost(const DemoCity& city, int level_index) const;
 	/**
+	 * F7 comida — custo EFETIVO da necessidade alimentar do dia: os preços dos
+	 * alimentos que a cidade REALMENTE tem em estoque (na mesma proporção de
+	 * disponibilidade usada na compra) mais o resíduo importado ao CIF
+	 * conhecido (`import_price`) ou, sem ele, ao preço local. O preço do
+	 * alimento mais barato do mundo (pão processado sem estoque local)
+	 * subestimava o subsídio de subsistência das POPs.
+	 *
+	 * `local_cost` = custo da parcela coberta pelo estoque local;
+	 * `import_cost` = custo do que falta e terá de ser importado;
+	 * `per_ge` = (local_cost + import_cost) / need, ou o preço mais barato por
+	 * caloria quando não há necessidade. Sem alocação: uma passada por produto.
+	 */
+	void demo_food_basket_cost(const DemoCity& city, double need,
+		double& local_cost, double& import_cost, double& per_ge) const;
+	/**
 	 * F7: atualiza os salários por nível depois do lucro do dia (mercado
 	 * apertado/folgado, margem das firmas, âncora de renda do país, piso de
 	 * salário mínimo e rigidez). Chamado na fase de contabilidade.
