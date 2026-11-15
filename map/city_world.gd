@@ -242,6 +242,14 @@ const FAR_CAPITAL_ICON_SCALE := 1.2
 const FLAG_CELL := Vector2i(40, 27)
 const FLAG_ATLAS_COLS := 16
 
+## Rótulos de NAÇÃO (nome do país desenhado sobre o território) DESLIGADOS a
+## pedido do dono do jogo: oscilavam com o zoom in/out e não ficaram bons. Com
+## `false` nenhum Label3D de país é criado, nenhum cálculo de encaixe/colisão
+## roda por frame e o relatório sai vazio. O código fica atrás da constante para
+## eventual retorno; nomes de cidade, capitais, bandeiras e regiões/mares são
+## sistemas independentes e continuam ativos.
+const SHOW_NATION_LABELS := false
+
 ## Nomes de nação gravados no mapa. A posição vem do polo de inacessibilidade do
 ## maior pedaço contíguo (TerritoryMap) e o tamanho das dimensões úteis do
 ## território; o encaixe é validado contra o raster de dono. A visibilidade é por
@@ -563,9 +571,14 @@ func build(cities: Array, ports: Array) -> void:
 	_build_city_labels()
 	_build_flag_renderer()
 	_init_territory(cities)
-	# Os nomes de nação precisam do território já atribuído (âncora/extensão de
-	# TODAS as nações, não só a lista legada de nations.json).
-	_build_nation_labels()
+	# O sinal de idioma também atualiza os nomes de cidade; conecta mesmo com os
+	# rótulos de nação desligados.
+	if not I18n.locale_changed.is_connected(_on_locale_changed):
+		I18n.locale_changed.connect(_on_locale_changed)
+	# Nomes de nação: desligados por decisão do dono (`SHOW_NATION_LABELS`).
+	# Sem nós e sem o modelo territorial no build.
+	if SHOW_NATION_LABELS:
+		_build_nation_labels()
 	_build_region_labels()
 	_build_lod_grid()
 	set_mode(_mode)
@@ -663,9 +676,10 @@ func set_mode(mode: String) -> void:
 		# calor e a rotas, que continuam sobre a carta branca com fronteiras
 		# discretas.
 		_set_child_visible(root, "PoliticalLayer", show_overlay)
-		var labels := root.get_node_or_null("NationLabels")
-		if labels != null:
-			labels.visible = is_atlas
+		if SHOW_NATION_LABELS:
+			var labels := root.get_node_or_null("NationLabels")
+			if labels != null:
+				labels.visible = is_atlas
 	if _political_material != null:
 		_political_material.set_shader_parameter("atlas_mode", false)
 		_political_material.set_shader_parameter("fill_opacity", 0.028)
@@ -1329,8 +1343,10 @@ func _build_political_layer() -> void:
 ## A posição/tamanho vêm do modelo territorial (maior pedaço contíguo + polo de
 ## inacessibilidade + PCA), com nome completo → curto → oculto.
 func _build_nation_labels() -> void:
+	if not SHOW_NATION_LABELS:
+		return
 	# Conecta antes de qualquer retorno: os rótulos de cidade também dependem
-	# deste sinal para acompanhar o idioma.
+	# deste sinal para acompanhar o idioma (o build já conecta).
 	if not I18n.locale_changed.is_connected(_on_locale_changed):
 		I18n.locale_changed.connect(_on_locale_changed)
 	_nation_anchors.clear()
@@ -1407,6 +1423,8 @@ func _nation_ink(tag: String) -> Color:
 ## Rótulo pequeno Barlow caixa alta sob a estrela da capital. Só aparece no
 ## LONGE, para nações cujo nome no chão não cabe (Bálcãs, Caribe, Luxemburgo).
 func _build_nation_capital_labels() -> void:
+	if not SHOW_NATION_LABELS:
+		return
 	_capital_city_by_nation.clear()
 	for record: Dictionary in _city_nodes:
 		if not bool(record.get("capital", false)):
@@ -1447,18 +1465,19 @@ func _build_nation_capital_labels() -> void:
 
 
 func _on_locale_changed(_locale: String) -> void:
-	for root in _content_roots():
-		var holder := root.get_node_or_null("NationLabels")
-		if holder != null:
-			for child in holder.get_children():
-				_place_nation_label(child as Label3D)
-		var capitals := root.get_node_or_null("NationCapitalLabels")
-		if capitals != null:
-			for child in capitals.get_children():
-				var label := child as Label3D
-				if label != null:
-					label.text = I18n.nation_name(
-							String(label.get_meta("tag"))).to_upper()
+	if SHOW_NATION_LABELS:
+		for root in _content_roots():
+			var holder := root.get_node_or_null("NationLabels")
+			if holder != null:
+				for child in holder.get_children():
+					_place_nation_label(child as Label3D)
+			var capitals := root.get_node_or_null("NationCapitalLabels")
+			if capitals != null:
+				for child in capitals.get_children():
+					var label := child as Label3D
+					if label != null:
+						label.text = I18n.nation_name(
+								String(label.get_meta("tag"))).to_upper()
 	for record in _region_records:
 		var region_label: Label3D = record.get("label")
 		if region_label != null:
@@ -1747,6 +1766,8 @@ func _configure_nation_label(label: Label3D, model: Dictionary) -> Dictionary:
 
 ## Reaplica âncora/extensão em todas as cópias laterais (wrap cilíndrico).
 func _reposition_nation_labels() -> void:
+	if not SHOW_NATION_LABELS:
+		return
 	for root in _content_roots():
 		var holder := root.get_node_or_null("NationLabels") as Node3D
 		if holder == null:
@@ -1896,6 +1917,8 @@ func debug_clear_territory_overrides() -> void:
 ## entre dois nomes que colidem. Histerese + fade de 150 ms evitam o pisca.
 func _update_nation_labels(camera: Camera3D) -> void:
 	_nation_label_report_cache.clear()
+	if not SHOW_NATION_LABELS:
+		return
 	if camera == null or (_mode != "political" and _mode != "routes"):
 		_hide_nation_labels()
 		return
@@ -2466,9 +2489,12 @@ func _advance_nation_label_fades(delta: float) -> void:
 
 
 ## Relatório do último layout de nomes de nação (teste de encaixe/declutter).
+## Desligado por decisão do dono: devolve vazio, sem ler nós nem recalcular.
 ## O alfa é lido do Label3D na hora: o cache guarda o estado do frame do layout,
 ## mas o fade de 150 ms continua animando depois dele.
 func nation_label_report() -> Array[Dictionary]:
+	if not SHOW_NATION_LABELS:
+		return []
 	var out: Array[Dictionary] = []
 	for entry in _nation_label_report_cache:
 		var copy := entry.duplicate(true)
@@ -3404,7 +3430,8 @@ func _process(delta: float) -> void:
 	if moved:
 		_nation_labels_dirty = true
 	var fading := _advance_level_fade(delta)
-	_advance_nation_label_fades(delta)
+	if SHOW_NATION_LABELS:
+		_advance_nation_label_fades(delta)
 	_last_camera_local = camera_local
 
 	# Buffers de ícone/bandeira ANTES da varredura: usam a lista visível do
@@ -3426,8 +3453,10 @@ func _process(delta: float) -> void:
 	# mais que o resto do frame. Com o layout de cidade em fatias, a grade está
 	# pela metade: esperar o commit evita o nome de país sobre um nome de cidade
 	# que ainda não foi aceito.
+	# Nomes de nação: desligados (`SHOW_NATION_LABELS=false`), sem custo no
+	# frame. O mesmo gatilho continua atualizando os nomes de região/mares.
 	if not moved and _nation_labels_dirty and not _layout_job_active:
-		if _mode == "political" or _mode == "routes":
+		if SHOW_NATION_LABELS and (_mode == "political" or _mode == "routes"):
 			_update_nation_labels(camera)
 		_update_region_labels(camera)
 		_nation_labels_dirty = false
@@ -3512,7 +3541,8 @@ func _wrap_offset(x: float) -> float:
 
 ## Força um layout no próximo frame (hover, seleção, idioma, filtro, modo).
 ## `nation_labels = false` para mudanças puramente de estilo (hover): os nomes
-## de nação não devem ser reavaliados por causa do mouse.
+## de nação não devem ser reavaliados por causa do mouse. Com os rótulos de país
+## desligados, a flag ainda agenda o próximo assentamento dos nomes de região.
 func _invalidate_layout(nation_labels: bool = true) -> void:
 	_layout_dirty = true
 	if nation_labels:
@@ -4067,6 +4097,7 @@ func _layout_accept_city(entry: Dictionary) -> void:
 		"kind": "city",
 		"rect": block,
 		"text_rect": text_rect,
+		"text": _city_text(record),
 		"icon_rect": icon_rect,
 		"flag_rect": flag_rect,
 		"text_visible": text_allowed,

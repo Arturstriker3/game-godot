@@ -1,0 +1,287 @@
+{
+  "bench": {},
+  "city_count": 834,
+  "distances": [
+    52.0
+  ],
+  "engine": "4.7.2-stable (official)",
+  "focus": "FRA-PAR",
+  "locale": "pt_BR",
+  "mode": "political",
+  "nation_labels": [],
+  "region_labels": [
+    {
+      "key": "siberia",
+      "kind": "land",
+      "text": "SIBÉRIA",
+      "visible": false
+    },
+    {
+      "key": "sahara",
+      "kind": "land",
+      "text": "SAARA",
+      "visible": false
+    },
+    {
+      "key": "amazon",
+      "kind": "land",
+      "text": "AMAZÔNIA",
+      "visible": false
+    },
+    {
+      "key": "sahel",
+      "kind": "land",
+      "text": "SAHEL",
+      "visible": false
+    },
+    {
+      "key": "patagonia",
+      "kind": "land",
+      "text": "PATAGÔNIA",
+      "visible": false
+    },
+    {
+      "key": "great_plains",
+      "kind": "land",
+      "text": "GRANDES PLANÍCIES",
+      "visible": false
+    },
+    {
+      "key": "scandinavia",
+      "kind": "land",
+      "text": "ESCANDINÁVIA",
+      "visible": false
+    },
+    {
+      "key": "balkans",
+      "kind": "land",
+      "text": "BÁLCÃS",
+      "visible": false
+    },
+    {
+      "key": "caucasus",
+      "kind": "land",
+      "text": "CÁUCASO",
+      "visible": false
+    },
+    {
+      "key": "central_asia",
+      "kind": "land",
+      "text": "ÁSIA CENTRAL",
+      "visible": false
+    },
+    {
+      "key": "tibet",
+      "kind": "land",
+      "text": "TIBETE",
+      "visible": false
+    },
+    {
+      "key": "gobi",
+      "kind": "land",
+      "text": "DESERTO DE GOBI",
+      "visible": false
+    },
+    {
+      "key": "arabia",
+      "kind": "land",
+      "text": "ARÁBIA",
+      "visible": false
+    },
+    {
+      "key": "indochina",
+      "kind": "land",
+      "text": "INDOCHINA",
+      "visible": false
+    },
+    {
+      "key": "outback",
+      "kind": "land",
+      "text": "OUTBACK",
+      "visible": false
+    },
+    {
+      "key": "pampas",
+      "kind": "land",
+      "text": "PAMPA",
+      "visible": false
+    },
+    {
+      "key": "andes",
+      "kind": "land",
+      "text": "ANDES",
+      "visible": false
+    },
+    {
+      "key": "himalaya",
+      "kind": "land",
+      "text": "HIMALAIA",
+      "visible": false
+    },
+    {
+      "key": "anatolia",
+      "kind": "land",
+      "text": "ANATÓLIA",
+      "visible": false
+    },
+    {
+      "key": "iberia",
+      "kind": "land",
+      "text": "PENÍNSULA IBÉRICA",
+      "visible": false
+    },
+    {
+      "key": "atlantic",
+      "kind": "sea",
+      "text": "OCEANO ATLÂNTICO",
+      "visible": false
+    },
+    {
+      "key": "pacific",
+      "kind": "sea",
+      "text": "OCEANO PACÍFICO",
+      "visible": false
+    },
+    {
+      "key": "indian_ocean",
+      "kind": "sea",
+      "text": "OCEANO ÍNDICO",
+      "visible": false
+    },
+    {
+      "key": "mediterranean",
+      "kind": "sea",
+      "text": "MAR MEDITERRÂNEO",
+      "visible": false
+    },
+    {
+      "key": "black_sea",
+      "kind": "sea",
+      "text": "MAR NEGRO",
+      "visible": false
+    },
+    {
+      "key": "caspian",
+      "kind": "sea",
+      "text": "MAR CÁSPIO",
+      "visible": false
+    },
+    {
+      "key": "red_sea",
+      "kind": "sea",
+      "text": "MAR VERMELHO",
+      "visible": false
+    },
+    {
+      "key": "persian_gulf",
+      "kind": "sea",
+      "text": "GOLFO PÉRSICO",
+      "visible": false
+    },
+    {
+      "key": "south_china_sea",
+      "kind": "sea",
+      "text": "MAR DA CHINA MERIDIONAL",
+      "visible": false
+    },
+    {
+      "key": "caribbean",
+      "kind": "sea",
+      "text": "CARIBE",
+      "visible": false
+    },
+    {
+      "key": "gulf_mexico",
+      "kind": "sea",
+      "text": "GOLFO DO MÉXICO",
+      "visible": false
+    },
+    {
+      "key": "baltic",
+      "kind": "sea",
+      "text": "MAR BÁLTICO",
+      "visible": false
+    },
+    {
+      "key": "north_sea",
+      "kind": "sea",
+      "text": "MAR DO NORTE",
+      "visible": false
+    },
+    {
+      "key": "bering",
+      "kind": "sea",
+      "text": "MAR DE BERING",
+      "visible": false
+    },
+    {
+      "key": "okhotsk",
+      "kind": "sea",
+      "text": "MAR DE OKHOTSK",
+      "visible": false
+    },
+    {
+      "key": "japan_sea",
+      "kind": "sea",
+      "text": "MAR DO JAPÃO",
+      "visible": false
+    },
+    {
+      "key": "bengal",
+      "kind": "sea",
+      "text": "GOLFO DE BENGALA",
+      "visible": false
+    },
+    {
+      "key": "arabian_sea",
+      "kind": "sea",
+      "text": "MAR DA ARÁBIA",
+      "visible": false
+    },
+    {
+      "key": "coral_sea",
+      "kind": "sea",
+      "text": "MAR DE CORAL",
+      "visible": false
+    },
+    {
+      "key": "arctic",
+      "kind": "sea",
+      "text": "OCEANO ÁRTICO",
+      "visible": false
+    },
+    {
+      "key": "southern_ocean",
+      "kind": "sea",
+      "text": "OCEANO ANTÁRTICO",
+      "visible": false
+    }
+  ],
+  "renderer": "forward_plus",
+  "resolution": [
+    1600,
+    900
+  ],
+  "set": "map3d",
+  "shots": {
+    "map3d_political_d052.png": {
+      "distance": 52.0,
+      "fov": 75.0,
+      "kind": "perspective",
+      "mode": "political",
+      "path": "res://docs/map_visual/no_nation_labels/europe/map3d_political_d052.png",
+      "pitch_deg": -56.0,
+      "resolution": [
+        1600,
+        900
+      ],
+      "saved": true,
+      "urban_cities": 95,
+      "zoom_distance": 52.0,
+      "zoom_level": 2
+    }
+  },
+  "tag": "no_nation_labels",
+  "timestamp": "2026-11-14T23:53:38",
+  "warnings": []
+}

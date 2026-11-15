@@ -821,6 +821,8 @@ func nation_anchor(tag: String) -> Dictionary:
 ## Modelo de TODOS os rótulos de nação (tag -> dicionário). Calculado uma vez por
 ## conjunto de donos: amostra o raster de províncias numa grade 512×256, separa
 ## o maior componente contíguo de cada nação e deriva polo, eixo e dimensões.
+## O MAPA não desenha mais nomes de nação (`CityWorld.SHOW_NATION_LABELS=false`):
+## este modelo é lazy e permanece exposto para `nation_anchor` (minimapa) e testes.
 func nation_label_models() -> Dictionary:
 	if not _nation_models_ready:
 		_build_nation_label_models()
