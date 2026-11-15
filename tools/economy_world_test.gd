@@ -29,6 +29,7 @@ const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 
 const DEFAULT_DAYS := 60
 ## Queda máxima tolerada de satisfação por nação vs. baseline (p.p. / 100).
@@ -44,19 +45,6 @@ const FOOD_TOLERANCE := 0.025
 ## fixa são bit-idênticas ao XGS; a tolerância cobre diferenças de chegada.
 ## O critério robusto aceita baseline + 2 (26 → 28 em f4_world_ai_365).
 const BANKRUPTCY_TOLERANCE := 2
-## F8 — parcela do emprego em SERVIÇOS por nação. O setor de serviços é o
-## empregador residual do modelo (F7): quem não está numa construção nem
-## desempregado trabalha em serviços. A referência real (OIT/Banco Mundial,
-## ~2023, emprego em serviços / emprego total) serve para COMPARAR a estrutura
-## produzida, não para forçar o número: o modelo não tem emprego agrícola nem
-## informal separado, então Índia e Nigéria são o teste honesto dessa lacuna.
-const SERVICE_SHARE_REFERENCE := {
-	"USA": 0.79,
-	"DEU": 0.72,
-	"BRA": 0.70,
-	"IND": 0.32,
-	"NGA": 0.50,
-}
 
 var _days := DEFAULT_DAYS
 var _out := ""
@@ -80,6 +68,10 @@ var _seed := 0
 ## F8: `--services=0` roda o mundo sem o catálogo de serviços (comportamento
 ## F7). Serve para isolar o efeito da F8 num A/B do mesmo binário.
 var _services_enabled := true
+## F9: âncoras de emprego por setor (sector_employment.json), a fonte das
+## referências comparadas no relatório. Sem o arquivo, o teste imprime "sem
+## dado" — nenhum alvo é inventado aqui.
+var _sector_data: Dictionary = {}
 
 var _failures: Array[String] = []
 
@@ -171,6 +163,12 @@ func _test_world() -> void:
 	# (sem a API) roda em XGS, como antes.
 	if _currencies_enabled and sim.has_method("demo_set_currencies"):
 		sim.demo_set_currencies(_load_currencies())
+	# F9: estrutura de emprego por setor (âncoras ILO + coeficientes agrícolas).
+	# Assim como as moedas, entra ANTES de criar o mundo; binário anterior à F9
+	# não tem o setter e mantém o espelho compilado das mesmas âncoras.
+	_sector_data = _load_dict(SECTOR_EMPLOYMENT_PATH)
+	if sim.has_method("demo_set_sector_employment") and not _sector_data.is_empty():
+		sim.demo_set_sector_employment(_sector_data)
 	# Pipeline do jogo ao vivo (opcional): geografia real + IA econômica. Sem
 	# isso, o teste mede só o núcleo (comparativo de comida da F2). Com `--ai=1`
 	# a demanda final da F3 passa a ser vista pelo investidor. A fazenda inicial
@@ -317,8 +315,8 @@ func _test_world() -> void:
 	else:
 		print("[world] necessidades: sem dado (binario sem F3)")
 	_print_labor(status)
-	var services := _service_employment(status)
-	_print_service_employment(services)
+	var sectors := _sector_employment(status)
+	_print_sector_employment(sectors)
 	if ai != null:
 		var builds: Dictionary = {}
 		var build_count := 0
@@ -343,7 +341,7 @@ func _test_world() -> void:
 		_compare_baseline(nations)
 
 	if _out != "":
-		_write_report(nations, status, has_chains, services)
+		_write_report(nations, status, has_chains, sectors)
 
 	print("[world] resumo final:")
 	for city in status["cities"]:
@@ -547,7 +545,7 @@ func _compare_baseline(nations: Dictionary) -> void:
 
 
 func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
-		services: Dictionary) -> void:
+		sectors: Dictionary) -> void:
 	var dir := _out.get_base_dir()
 	if dir != "" and not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
@@ -567,7 +565,7 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 		},
 		"nations": _strip(nations),
 		"labor": _labor_nations(status),
-		"services": _strip_services(services),
+		"sectors": _strip_sectors(sectors),
 	}
 	file.store_string(JSON.stringify(report, "  "))
 	file.close()
@@ -601,78 +599,135 @@ func _labor_nations(status: Dictionary) -> Dictionary:
 	return out
 
 
-## F8: emprego em serviços por nação. `service_jobs` é a meta de vagas do setor
-## (F7: empregador residual) e `service_workers` as vagas efetivamente
-## preenchidas; `pop.employed` já inclui essas vagas. A razão mede a ESTRUTURA
-## do emprego, não a ocupação exata de cada vaga.
-func _service_employment(status: Dictionary) -> Dictionary:
+## F9: estrutura do emprego por nação. `sector_workers` (status) traz o emprego
+## decomposto em agropecuária (0), indústria/mineração (1) e serviços residuais
+## (2); a informalidade (3) é SOBREPOSIÇÃO — parte dos três primeiros, não um
+## quarto setor — e por isso não soma com eles. A parcela é
+## `sector_workers[i] / pop.employed`; `in_kind_food` é o autoconsumo em espécie
+## do dia (t-eq), a comida que não passou por mercado.
+func _sector_employment(status: Dictionary) -> Dictionary:
 	var rows: Dictionary = {}
 	for city in status.get("cities", []):
-		if not city.has("service_jobs"):
+		var workers: Array = city.get("sector_workers", [])
+		if workers.size() != 4:
 			continue
 		var tag := String(city.get("nation", ""))
-		var row: Dictionary = rows.get(tag, {
-			"cities": 0, "jobs": 0.0, "workers": 0.0, "employed": 0.0,
-			"labor_force": 0.0,
-		})
 		var pop: Dictionary = city.get("pop", {})
+		var row: Dictionary = rows.get(tag, {
+			"cities": 0, "agri": 0.0, "industry": 0.0, "services": 0.0,
+			"informal": 0.0, "employed": 0.0, "labor_force": 0.0, "in_kind": 0.0,
+		})
 		row["cities"] = int(row["cities"]) + 1
-		row["jobs"] = float(row["jobs"]) + float(city["service_jobs"])
-		row["workers"] = float(row["workers"]) + float(
-			city.get("service_workers", city["service_jobs"]))
+		row["agri"] = float(row["agri"]) + float(workers[0])
+		row["industry"] = float(row["industry"]) + float(workers[1])
+		row["services"] = float(row["services"]) + float(workers[2])
+		row["informal"] = float(row["informal"]) + float(workers[3])
 		row["employed"] = float(row["employed"]) + float(pop.get("employed", 0.0))
 		row["labor_force"] = float(row["labor_force"]) + float(
 			pop.get("labor_force", 0.0))
+		row["in_kind"] = float(row["in_kind"]) + float(
+			city.get("in_kind_food", 0.0))
 		rows[tag] = row
 	for tag in rows:
 		var row: Dictionary = rows[tag]
 		var employed := float(row["employed"])
-		var share := 0.0
-		if employed > 0.0:
-			share = float(row["workers"]) / employed
-		row["share"] = share
-		row["reference"] = float(SERVICE_SHARE_REFERENCE.get(tag, -1.0))
+		for key in ["agri", "industry", "services", "informal"]:
+			row["share_" + key] = float(row[key]) / employed if employed > 0.0 else 0.0
 	return rows
 
 
-func _print_service_employment(services: Dictionary) -> void:
-	if services.is_empty():
-		print("[world] emprego em servicos: sem dado (binario anterior a F8)")
-		return
-	var total_jobs := 0.0
-	var total_employed := 0.0
-	for tag in services:
-		total_jobs += float(services[tag]["workers"])
-		total_employed += float(services[tag]["employed"])
-	var global_share := 0.0
-	if total_employed > 0.0:
-		global_share = total_jobs / total_employed
-	print("[world] emprego em servicos (vagas ocupadas / empregados): mundo %.1f%% | %d nacoes" % [
-		global_share * 100.0, services.size()])
-	for tag in SERVICE_SHARE_REFERENCE:
-		if not services.has(tag):
+## Referência OIT de uma nação-âncora: só existe para as nações do
+## `sector_employment.json`. Serviços não é âncora observada — é o resíduo
+## `1 - agricultura - indústria` da MESMA fonte, e é assim que aparece aqui.
+func _sector_reference(tag: String) -> Dictionary:
+	var anchors: Array = _sector_data.get("anchors", [])
+	for entry: Variant in anchors:
+		if typeof(entry) != TYPE_DICTIONARY:
 			continue
-		var row: Dictionary = services[tag]
-		var reference := float(row["reference"])
-		var share := float(row["share"])
-		print("  %-4s cidades=%3d vagas=%9.0f ocupadas=%9.0f empregados=%9.0f parcela=%5.1f%% ref=%5.1f%% dif=%5.1f p.p." % [
-			String(tag), int(row["cities"]), float(row["jobs"]),
-			float(row["workers"]), float(row["employed"]), share * 100.0,
-			reference * 100.0, (share - reference) * 100.0])
+		var anchor: Dictionary = entry
+		if String(anchor.get("tag", "")) != tag:
+			continue
+		var agri := float(anchor.get("agriculture", 0.0))
+		var industry := float(anchor.get("industry", 0.0))
+		return {
+			"agri": agri,
+			"industry": industry,
+			"services": maxf(0.0, 1.0 - agri - industry),
+			"informal": float(anchor.get("informal", 0.0)),
+			"income_index": float(anchor.get("income_index", 0.0)),
+		}
+	return {}
 
 
-func _strip_services(services: Dictionary) -> Dictionary:
+func _sector_anchor_tags() -> Array:
+	var tags: Array = []
+	for entry: Variant in _sector_data.get("anchors", []):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var tag := String((entry as Dictionary).get("tag", ""))
+		if tag != "" and tag not in tags:
+			tags.append(tag)
+	return tags
+
+
+func _print_sector_employment(sectors: Dictionary) -> void:
+	if sectors.is_empty():
+		print("[world] emprego setorial: sem dado (binario anterior a F9)")
+		return
+	var total := {
+		"agri": 0.0, "industry": 0.0, "services": 0.0, "informal": 0.0,
+		"employed": 0.0, "in_kind": 0.0,
+	}
+	for tag in sectors:
+		var row: Dictionary = sectors[tag]
+		for key in total:
+			total[key] = float(total[key]) + float(row[key])
+	var employed := float(total["employed"])
+	print("[world] emprego setorial (sector_workers/empregados): %d nacoes | agro %.1f%% industria %.1f%% servicos %.1f%% informal %.1f%% (sobreposicao) | autoconsumo %.0f t-eq/dia" % [
+		sectors.size(), _share(total["agri"], employed) * 100.0,
+		_share(total["industry"], employed) * 100.0,
+		_share(total["services"], employed) * 100.0,
+		_share(total["informal"], employed) * 100.0,
+		float(total["in_kind"])])
+	for tag in _sector_anchor_tags():
+		if not sectors.has(tag):
+			continue
+		var row: Dictionary = sectors[tag]
+		var reference := _sector_reference(tag)
+		print("  %-4s cidades=%3d empregados=%9.0f agro=%5.1f%% (ref %5.1f) industria=%5.1f%% (ref %5.1f) servicos=%5.1f%% (ref %5.1f) informal=%5.1f%% (ref %5.1f) autoconsumo=%7.1f t-eq" % [
+			String(tag), int(row["cities"]), float(row["employed"]),
+			float(row["share_agri"]) * 100.0, float(reference.get("agri", 0.0)) * 100.0,
+			float(row["share_industry"]) * 100.0,
+			float(reference.get("industry", 0.0)) * 100.0,
+			float(row["share_services"]) * 100.0,
+			float(reference.get("services", 0.0)) * 100.0,
+			float(row["share_informal"]) * 100.0,
+			float(reference.get("informal", 0.0)) * 100.0,
+			float(row["in_kind"])])
+
+
+func _share(value: Variant, total: float) -> float:
+	return float(value) / total if total > 0.0 else 0.0
+
+
+func _strip_sectors(sectors: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
-	for tag in services:
-		var row: Dictionary = services[tag]
+	for tag in sectors:
+		var row: Dictionary = sectors[tag]
 		out[tag] = {
 			"cities": int(row["cities"]),
-			"jobs": float(row["jobs"]),
-			"workers": float(row["workers"]),
+			"agri": float(row["agri"]),
+			"industry": float(row["industry"]),
+			"services": float(row["services"]),
+			"informal": float(row["informal"]),
 			"employed": float(row["employed"]),
 			"labor_force": float(row["labor_force"]),
-			"share": float(row["share"]),
-			"reference": float(row["reference"]),
+			"in_kind": float(row["in_kind"]),
+			"share_agri": float(row["share_agri"]),
+			"share_industry": float(row["share_industry"]),
+			"share_services": float(row["share_services"]),
+			"share_informal": float(row["share_informal"]),
+			"reference": _sector_reference(String(tag)),
 		}
 	return out
 
