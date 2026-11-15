@@ -425,6 +425,14 @@ public:
 	/** Ranking de grupos (ativos, faturamento, países, caixa, setor). */
 	Array demo_get_groups() const;
 
+	/**
+	 * Ranking LEVE para a IA: mesma ordem de `demo_get_groups` (faturamento,
+	 * caixa, id), mas sem varrer construções nem montar conjuntos por grupo.
+	 * Devolve só os campos de decisão (id, origem, setor, caixa, regime,
+	 * faturamento, distribuível). Custo O(grupos log grupos), nunca O(ativos).
+	 */
+	Array demo_get_group_ranking() const;
+
 	/** Fotografia de um grupo (ou {} se não existe). */
 	Dictionary demo_get_group(const String& group_id) const;
 
@@ -491,6 +499,14 @@ public:
 	 * cada nação, fluxo de lucro repatriado e políticas/incentivos.
 	 */
 	Dictionary demo_get_investment_status() const;
+
+	/**
+	 * Sinais de investimento BARATOS para a IA (sem varredura de ativos nem
+	 * ranking): confiança por nação, políticas de IDE e incentivos setoriais.
+	 * É o que a decisão de grupo consome — o status completo (participação por
+	 * dono) fica para a UI e os relatórios.
+	 */
+	Dictionary demo_get_investment_signals() const;
 
 	/** F9: confirmação de que os grupos foram semeados neste mundo. */
 	bool demo_groups_seeded() const { return demo_groups_seeded_; }

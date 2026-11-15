@@ -78,6 +78,10 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 
 	_pending.clear()
 	_pending_pos = 0
+	# F9-perf: agenda as decisões de grupo do dia (barato: só marca a vez). O
+	# trabalho real é fatiado pelo `pump()` nos frames seguintes, fora da virada.
+	if group_investor != null:
+		group_investor.queue_day(day, summary)
 	var phase := day % interval_days
 	if _city_count > 0 and phase >= mini(_city_count, interval_days):
 		return
@@ -92,13 +96,6 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 	private_investor.prepare_totals(status)
 	var cities: Array = status.get("cities", [])
 	_city_count = cities.size()
-	# F9: decisao dos grupos (cadencia baixa, escalonada). Roda no plano, antes
-	# do fatimento por cidade; o custo diario e de poucos grupos.
-	if group_investor != null:
-		group_investor.run_day(day, status)
-		for group_decision: Variant in group_investor.get_decisions():
-			decisions.append(group_decision)
-		group_investor.clear_decisions()
 	_pending_day = day
 	_pending_status = status
 	for index in cities.size():
@@ -106,18 +103,25 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 			_pending.append(cities[index])
 
 
-## Continua o planejamento do dia até gastar `frame_budget_us` (~1,5 ms). O
-## trabalho é por cidade inteira (privado + governo), então o orçamento é um
-## teto suave: uma cidade pode terminar acima dele, mas nunca a fila inteira.
+## Continua o planejamento do dia até gastar `frame_budget_us` (~1,5 ms). As
+## decisões de grupo vêm primeiro (são o custo alto: base por recurso + score)
+## e as cidades depois, com o que sobrou do orçamento. O trabalho é por cidade
+## inteira (privado + governo), então o orçamento é um teto suave: uma cidade
+## pode terminar acima dele, mas nunca a fila inteira.
 func pump(frame_budget_us: int) -> Array:
+	var start := Time.get_ticks_usec()
+	# F9-perf: decisões de grupo fatiadas (nunca no frame da virada).
+	if group_investor != null and group_investor.is_busy():
+		group_investor.run_slice(frame_budget_us)
+		decisions.append_array(group_investor.take_decisions())
 	if _pending_pos >= _pending.size():
 		return decisions
-	var start := Time.get_ticks_usec()
-	while _pending_pos < _pending.size():
-		_run_city(_pending[_pending_pos])
-		_pending_pos += 1
-		if Time.get_ticks_usec() - start >= frame_budget_us:
-			break
+	if Time.get_ticks_usec() - start < frame_budget_us:
+		while _pending_pos < _pending.size():
+			_run_city(_pending[_pending_pos])
+			_pending_pos += 1
+			if Time.get_ticks_usec() - start >= frame_budget_us:
+				break
 	if _pending_pos >= _pending.size():
 		_pending.clear()
 		_pending_status = {}
@@ -126,7 +130,8 @@ func pump(frame_budget_us: int) -> Array:
 
 
 func is_busy() -> bool:
-	return _pending_pos < _pending.size()
+	return _pending_pos < _pending.size() \
+		or (group_investor != null and group_investor.is_busy())
 
 
 func get_decisions() -> Array:
@@ -163,6 +168,10 @@ func _run_city(city: Dictionary) -> void:
 
 
 func _drain_all() -> void:
+	# F9-perf: o caminho síncrono (`run()`) também precisa terminar os grupos.
+	if group_investor != null and group_investor.is_busy():
+		group_investor.drain()
+		decisions.append_array(group_investor.take_decisions())
 	while _pending_pos < _pending.size():
 		_run_city(_pending[_pending_pos])
 		_pending_pos += 1

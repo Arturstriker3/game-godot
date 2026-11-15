@@ -43,9 +43,9 @@ const AI_BUDGET_US := 1500
 const MAX_ORDER_LOG := 240
 ## Fases do tick C++, na ordem em que o núcleo as reporta.
 const PHASES := [
-	"arrival", "reset", "labor", "production", "raw", "income", "trade",
-	"accounting", "prices", "clamp", "fiscal", "invariants", "status",
-	"status_cities", "status_orders", "status_nations", "status_misc",
+	"arrival", "reset", "labor", "production", "raw", "income", "services",
+	"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
+	"status", "status_cities", "status_orders", "status_nations", "status_misc",
 ]
 
 var _days := 30
@@ -58,6 +58,8 @@ var _phase_us: Dictionary = {}
 ## Estado do log de pedidos do HUD (espelho de `_log_orders`).
 var _order_log: Array = []
 var _last_logged_day := -1
+## Cursor do log de decisões da IA (quantas já foram resumidas por dia).
+var _decisions_seen := 0
 ## Consumidor fictício das métricas do HUD (evita que o medidor seja dobrado).
 var _hud_sink := 0.0
 
@@ -128,6 +130,7 @@ func _ready() -> void:
 	var pump_ms: Array[float] = []
 	var pump_frames: Array[float] = []
 	var peak_ms: Array[float] = []
+	var building_series: Array[float] = []
 	var orders_total := 0
 	var max_orders := 0
 	var active_total := 0
@@ -232,6 +235,12 @@ func _ready() -> void:
 		# Só faz sentido contar depois do pump: é ele quem cria os veículos.
 		var active: int = convoys._active_convoys
 		active_total += active
+		# Tamanho do mundo no dia (fora das janelas cronometradas): o tick cresce
+		# com o número de construções — o investimento da IA e dos grupos abre
+		# ativos no meio do run.
+		var buildings := _count_buildings(summary)
+		building_series.append(float(buildings))
+		var agents_text := _agent_summary(ai)
 
 		# A "virada" é o frame da main: no sync inclui o tick (histórico); no
 		# worker inclui só o poll + publicação — o tick só soma no parede.
@@ -250,10 +259,10 @@ func _ready() -> void:
 		pump_frames.append(float(frames))
 		peak_ms.append(maxf(frame_cost, pump_peak))
 
-		print("[perf] dia %3d: tick %6.1f  fila %5.2f  plano IA %5.2f  mapa %5.2f  virada %6.1f | pump %6.2f ms em %3d frames (pico %5.2f, IA %5.2f)  [%d pedidos, %d comboios, %d entregues]" % [
+		print("[perf] dia %3d: tick %6.1f  fila %5.2f  plano IA %5.2f  mapa %5.2f  virada %6.1f | pump %6.2f ms em %3d frames (pico %5.2f, IA %5.2f)  [%d pedidos, %d comboios, %d entregues, %d construções]%s" % [
 			day, tick_cost, enqueue_ms[-1], ai_ms[-1], map_cost, frame_cost,
 			pump_total, frames, pump_peak, ai_pump_total,
-			orders.size(), active, delivered])
+			orders.size(), active, delivered, buildings, agents_text])
 		if _profile:
 			var profile: Dictionary = sim.demo_get_profile()
 			print("[perf]          fases: status %5.1f (cidades %5.1f, pedidos %4.1f, nações %4.1f)  trade %5.1f  arrival %5.1f  produção %4.1f  renda %4.1f  preços %4.1f" % [
@@ -276,6 +285,12 @@ func _ready() -> void:
 	print("[perf] pedidos/dia: média %.1f, máximo %d; comboios ativos/dia (pós-pump): %.1f; entregues/dia: %.1f" % [
 		float(orders_total) / float(_days), max_orders,
 		float(active_total) / float(_days), float(delivered_total) / float(_days)])
+	if not building_series.is_empty():
+		var max_buildings := 0.0
+		for value in building_series:
+			max_buildings = maxf(max_buildings, value)
+		print("[perf] construções no mundo: dia 1 %.0f → dia %d %.0f (máx %.0f) — o tick cresce com elas" % [
+			building_series[0], _days, building_series[-1], max_buildings])
 	print("[perf] %-32s %8s %8s %8s" % ["etapa", "média", "p95", "máx"])
 	_report("1. tick C++ (%s)" % ("parede do worker" if worker else "síncrono"), tick_ms)
 	if _days > 2:
@@ -314,6 +329,37 @@ func _ready() -> void:
 		float(OS.get_static_memory_usage()) / (1024.0 * 1024.0)])
 
 	get_tree().quit(0)
+
+
+## Construções somadas no status do dia (tamanho do mundo que o tick percorre).
+func _count_buildings(summary: Dictionary) -> int:
+	var total := 0
+	for city: Dictionary in summary.get("cities", []):
+		total += (city.get("buildings", []) as Array).size()
+	return total
+
+
+## Decisões e construções do dia por agente (privado/governo/grupo). É o que
+## explica o crescimento do mundo: o tick percorre mais construções no dia
+## seguinte. Lê só a cauda nova do log de decisões, fora das janelas medidas.
+func _agent_summary(ai) -> String:
+	var decisions: Array = ai.decisions
+	var counts := {"private": 0, "government": 0, "group": 0}
+	var builds := {"private": 0, "government": 0, "group": 0}
+	for index in range(_decisions_seen, decisions.size()):
+		var entry: Variant = decisions[index]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var agent := String((entry as Dictionary).get("agent", ""))
+		if not counts.has(agent):
+			continue
+		counts[agent] = int(counts[agent]) + 1
+		if String((entry as Dictionary).get("action", "")).begins_with("build"):
+			builds[agent] = int(builds[agent]) + 1
+	_decisions_seen = decisions.size()
+	return "  IA: privado %d dec/%d obras, governo %d/%d, grupo %d/%d" % [
+		counts["private"], builds["private"], counts["government"],
+		builds["government"], counts["group"], builds["group"]]
 
 
 ## Um frame de IA (orçado). Devolve o custo em ms.

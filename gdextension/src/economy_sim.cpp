@@ -287,6 +287,8 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_set_group_names", "names"),
 	                     &EconomySim::demo_set_group_names);
 	ClassDB::bind_method(D_METHOD("demo_get_groups"), &EconomySim::demo_get_groups);
+	ClassDB::bind_method(D_METHOD("demo_get_group_ranking"),
+	                     &EconomySim::demo_get_group_ranking);
 	ClassDB::bind_method(D_METHOD("demo_get_group", "group_id"),
 	                     &EconomySim::demo_get_group);
 	ClassDB::bind_method(D_METHOD("demo_fund_group", "group_id", "amount"),
@@ -311,6 +313,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_nationalize);
 	ClassDB::bind_method(D_METHOD("demo_get_investment_status"),
 	                     &EconomySim::demo_get_investment_status);
+	ClassDB::bind_method(D_METHOD("demo_get_investment_signals"),
+	                     &EconomySim::demo_get_investment_signals);
 	ClassDB::bind_method(D_METHOD("demo_groups_seeded"),
 	                     &EconomySim::demo_groups_seeded);
 	ClassDB::bind_method(D_METHOD("initialize_benchmark", "city_count",
@@ -10800,6 +10804,45 @@ Array EconomySim::demo_get_groups() const {
 	return result;
 }
 
+Array EconomySim::demo_get_group_ranking() const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	// Ordem idêntica à de demo_get_groups (faturamento, caixa, id), sem a
+	// varredura de construções: a IA precisa do caixa do dia e da vez de cada
+	// grupo, não dos ativos/países. Evita 1 std::set + 1 entrada de ranking por
+	// grupo a cada dia de decisão.
+	std::vector<int> order(demo_groups_.size());
+	for (std::size_t index = 0; index < order.size(); ++index) {
+		order[index] = static_cast<int>(index);
+	}
+	std::sort(order.begin(), order.end(), [this](int a, int b) {
+		const DemoGroup& ga = demo_groups_[static_cast<std::size_t>(a)];
+		const DemoGroup& gb = demo_groups_[static_cast<std::size_t>(b)];
+		if (ga.revenue_total != gb.revenue_total) {
+			return ga.revenue_total > gb.revenue_total;
+		}
+		if (ga.cash != gb.cash) {
+			return ga.cash > gb.cash;
+		}
+		return ga.id < gb.id;
+	});
+	Array result;
+	result.resize(static_cast<int>(order.size()));
+	int slot = 0;
+	for (const int index : order) {
+		const DemoGroup& group = demo_groups_[static_cast<std::size_t>(index)];
+		Dictionary entry;
+		entry["id"] = String(group.id.c_str());
+		entry["origin_nation"] = String(group.origin_nation.c_str());
+		entry["sector"] = String(group.sector.c_str());
+		entry["state_owned"] = group.state_owned;
+		entry["cash"] = group.cash;
+		entry["distributable"] = group.distributable;
+		entry["revenue_total"] = group.revenue_total;
+		result[slot++] = entry;
+	}
+	return result;
+}
+
 Dictionary EconomySim::demo_get_group(const String& group_id) const {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	const std::string id(group_id.utf8().get_data());
@@ -10879,13 +10922,19 @@ double EconomySim::demo_credit_nation_households(const std::string& nation,
 	if (amount <= 0.0) {
 		return 0.0;
 	}
+	// F9-perf: só as cidades da nação (índice demo_cities_by_nation_), não o
+	// mundo. Antes eram duas varreduras de 834 cidades por grupo com dividendo
+	// a pagar — a fase `fiscal` do tick pagava isso todo dia.
+	const auto found = demo_cities_by_nation_.find(nation);
+	if (found == demo_cities_by_nation_.end() || found->second.empty()) {
+		return 0.0;
+	}
+	const std::vector<int>& indices = found->second;
 	// O dono do capital é aproximado pelo estrato de maior escolaridade (a
 	// proxy disponível no modelo para os proprietários); sem ele, população.
 	double weight_total = 0.0;
-	for (const DemoCity& city : demo_cities_) {
-		if (city.nation != nation) {
-			continue;
-		}
+	for (const int index : indices) {
+		const DemoCity& city = demo_cities_[static_cast<std::size_t>(index)];
 		double weight = city.pop.class_population[kDemoEducationLevels - 1];
 		if (!(weight > 0.0)) {
 			weight = city.simulation_population;
@@ -10895,10 +10944,8 @@ double EconomySim::demo_credit_nation_households(const std::string& nation,
 	if (!(weight_total > 0.0)) {
 		return 0.0;
 	}
-	for (DemoCity& city : demo_cities_) {
-		if (city.nation != nation) {
-			continue;
-		}
+	for (const int index : indices) {
+		DemoCity& city = demo_cities_[static_cast<std::size_t>(index)];
 		double weight = city.pop.class_population[kDemoEducationLevels - 1];
 		if (!(weight > 0.0)) {
 			weight = city.simulation_population;
@@ -11596,6 +11643,45 @@ Dictionary EconomySim::demo_get_investment_status() const {
 	}
 	out["sector_incentives"] = incentives;
 	out["group_count"] = static_cast<int>(demo_groups_.size());
+	return out;
+}
+
+Dictionary EconomySim::demo_get_investment_signals() const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary out;
+	// Confiança: só as nações com penalidade registrada; as demais valem 1,0
+	// (o consumidor usa o default). Sem varredura de construções.
+	Dictionary nations;
+	for (const auto& row : demo_confidence_) {
+		Dictionary entry;
+		entry["confidence"] = row.second;
+		nations[String(row.first.c_str())] = entry;
+	}
+	out["nations"] = nations;
+	Array policies;
+	policies.resize(static_cast<int>(demo_fdi_policies_.size()));
+	int slot = 0;
+	for (const DemoFdiPolicy& policy : demo_fdi_policies_) {
+		Dictionary record;
+		record["nation"] = String(policy.nation.c_str());
+		record["sector"] = String(policy.sector.c_str());
+		record["mode"] = policy.mode;
+		record["min_local"] = policy.min_local;
+		policies[slot++] = record;
+	}
+	out["fdi_policies"] = policies;
+	Array incentives;
+	incentives.resize(static_cast<int>(demo_incentives_.size()));
+	slot = 0;
+	for (const DemoSectorIncentive& incentive : demo_incentives_) {
+		Dictionary record;
+		record["nation"] = String(incentive.nation.c_str());
+		record["sector"] = String(incentive.sector.c_str());
+		record["tax_holiday"] = incentive.tax_holiday;
+		record["subsidy"] = incentive.subsidy;
+		incentives[slot++] = record;
+	}
+	out["sector_incentives"] = incentives;
 	return out;
 }
 
