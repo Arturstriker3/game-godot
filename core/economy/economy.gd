@@ -50,6 +50,8 @@ const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 ## Necessidades das POPs (cesta básica data-driven; níveis completos em F3).
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+## Serviços (F8): 20 setores, compradores, insumos e mistura de escolaridade.
+const SERVICES_PATH := "res://data/definitions/economy/services.json"
 ## Moedas e taxas de câmbio por nação (F5; âncora XGS, regime peg/float).
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 ## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
@@ -86,6 +88,9 @@ func _ready() -> void:
 	sim.demo_set_goods(_load_goods())
 	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
 	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
+	# F8: serviços (catálogo). Antes do mundo: os negócios iniciais e o preço-âncora
+	# dos 20 setores dependem dele.
+	sim.demo_set_services(_load_json_dict(SERVICES_PATH))
 	# F5: moedas ANTES do mundo, para o preço local de cada cidade nascer na
 	# moeda da nação (goods.json está em âncora XGS).
 	sim.demo_set_currencies(_load_json_dict(CURRENCIES_PATH))

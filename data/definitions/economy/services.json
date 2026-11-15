@@ -1,0 +1,901 @@
+{
+  "version": 1,
+  "source": "estimated:structure",
+  "note": "Estrutura de servicos da F8. Pesos de demanda, precos-ancora e coeficientes sao ESTIMATIVAS de estrutura (participacao tipica do orcamento de servicos e insumos), nao dados observados. Editar aqui nao exige recompilar o nucleo; o jogo carrega no boot.",
+  "employment_note": "jobs_per_unit = postos por unidade de servico/dia. Calibrado para receita por posto ~0,22 XGS/dia (salario de servico ~0,15 + insumos), coerente com a ancora salarial da F7.",
+  "government_spend_share": 0.002,
+  "sectors": [
+    {
+      "id": "retail",
+      "name_pt": "Varejo",
+      "name_en": "Retail",
+      "name_es": "Comercio minorista",
+      "icon": "retail",
+      "price": 1.0,
+      "pop_share": {
+        "basic": 0.22,
+        "life": 0.18,
+        "luxury": 0.1
+      },
+      "business_share": 0.0,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "containers",
+          "per_unit": 0.003
+        },
+        {
+          "good": "paper",
+          "per_unit": 0.001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "wholesale",
+          "per_unit": 0.5
+        }
+      ],
+      "education_mix": [
+        0.78,
+        0.19,
+        0.03
+      ],
+      "jobs_per_unit": 4.5,
+      "capital_per_unit": 120.0,
+      "min_capacity": 8.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "wholesale",
+      "name_pt": "Atacado",
+      "name_en": "Wholesale",
+      "name_es": "Comercio mayorista",
+      "icon": "wholesale",
+      "price": 0.6,
+      "pop_share": {
+        "basic": 0.0,
+        "life": 0.0,
+        "luxury": 0.0
+      },
+      "business_share": 0.1,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "containers",
+          "per_unit": 0.004
+        },
+        {
+          "good": "pallets",
+          "per_unit": 0.002
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "freight_logistics",
+          "per_unit": 0.15
+        }
+      ],
+      "education_mix": [
+        0.8,
+        0.17,
+        0.03
+      ],
+      "jobs_per_unit": 2.7,
+      "capital_per_unit": 72.0,
+      "min_capacity": 8.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "food_service",
+      "name_pt": "Alimentação fora de casa",
+      "name_en": "Food service",
+      "name_es": "Restauracion",
+      "icon": "food_service",
+      "price": 2.5,
+      "pop_share": {
+        "basic": 0.1,
+        "life": 0.14,
+        "luxury": 0.12
+      },
+      "business_share": 0.0,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "bread",
+          "per_unit": 0.0015
+        },
+        {
+          "good": "meat",
+          "per_unit": 0.0015
+        },
+        {
+          "good": "alcohol",
+          "per_unit": 0.0005
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "wholesale",
+          "per_unit": 0.2
+        }
+      ],
+      "education_mix": [
+        0.82,
+        0.15,
+        0.03
+      ],
+      "jobs_per_unit": 11.0,
+      "capital_per_unit": 300.0,
+      "min_capacity": 3.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "hospitality_tourism",
+      "name_pt": "Hospedagem e turismo",
+      "name_en": "Hospitality and tourism",
+      "name_es": "Hosteleria y turismo",
+      "icon": "hospitality",
+      "price": 6.0,
+      "pop_share": {
+        "basic": 0.01,
+        "life": 0.06,
+        "luxury": 0.12
+      },
+      "business_share": 0.02,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "bread",
+          "per_unit": 0.001
+        },
+        {
+          "good": "alcohol",
+          "per_unit": 0.001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "food_service",
+          "per_unit": 0.1
+        },
+        {
+          "sector": "cleaning_security_waste",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.62,
+        0.3,
+        0.08
+      ],
+      "jobs_per_unit": 27.0,
+      "capital_per_unit": 720.0,
+      "min_capacity": 1.0,
+      "exportable": true,
+      "export_share": 0.02,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "freight_logistics",
+      "name_pt": "Logística de carga",
+      "name_en": "Freight logistics",
+      "name_es": "Logistica de carga",
+      "icon": "freight",
+      "price": 0.8,
+      "pop_share": {
+        "basic": 0.0,
+        "life": 0.0,
+        "luxury": 0.0
+      },
+      "business_share": 0.0,
+      "freight_share": 1.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "fuel",
+          "per_unit": 0.002
+        },
+        {
+          "good": "spare_parts",
+          "per_unit": 0.0001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "maintenance_repair",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.72,
+        0.23,
+        0.05
+      ],
+      "jobs_per_unit": 3.6,
+      "capital_per_unit": 96.0,
+      "min_capacity": 8.0,
+      "exportable": true,
+      "export_share": 0.04,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "passenger_transport",
+      "name_pt": "Transporte de passageiros",
+      "name_en": "Passenger transport",
+      "name_es": "Transporte de pasajeros",
+      "icon": "passenger",
+      "price": 1.5,
+      "pop_share": {
+        "basic": 0.08,
+        "life": 0.07,
+        "luxury": 0.04
+      },
+      "business_share": 0.0,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "fuel",
+          "per_unit": 0.0006
+        },
+        {
+          "good": "spare_parts",
+          "per_unit": 0.0001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "maintenance_repair",
+          "per_unit": 0.08
+        }
+      ],
+      "education_mix": [
+        0.8,
+        0.18,
+        0.02
+      ],
+      "jobs_per_unit": 7.0,
+      "capital_per_unit": 180.0,
+      "min_capacity": 6.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "finance",
+      "name_pt": "Finanças",
+      "name_en": "Finance",
+      "name_es": "Finanzas",
+      "icon": "finance",
+      "price": 5.0,
+      "pop_share": {
+        "basic": 0.02,
+        "life": 0.05,
+        "luxury": 0.1
+      },
+      "business_share": 0.15,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "paper",
+          "per_unit": 0.001
+        },
+        {
+          "good": "computer",
+          "per_unit": 1e-06
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "it",
+          "per_unit": 0.05
+        },
+        {
+          "sector": "professional_services",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.22,
+        0.38,
+        0.4
+      ],
+      "jobs_per_unit": 23.0,
+      "capital_per_unit": 600.0,
+      "min_capacity": 1.0,
+      "exportable": true,
+      "export_share": 0.03,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "insurance_pension",
+      "name_pt": "Seguros e previdência",
+      "name_en": "Insurance and pensions",
+      "name_es": "Seguros y pensiones",
+      "icon": "insurance",
+      "price": 3.0,
+      "pop_share": {
+        "basic": 0.04,
+        "life": 0.06,
+        "luxury": 0.05
+      },
+      "business_share": 0.05,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "paper",
+          "per_unit": 0.001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "finance",
+          "per_unit": 0.1
+        }
+      ],
+      "education_mix": [
+        0.35,
+        0.4,
+        0.25
+      ],
+      "jobs_per_unit": 14.0,
+      "capital_per_unit": 360.0,
+      "min_capacity": 2.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "health",
+      "name_pt": "Saúde privada",
+      "name_en": "Private health",
+      "name_es": "Salud privada",
+      "icon": "health",
+      "price": 4.0,
+      "pop_share": {
+        "basic": 0.02,
+        "life": 0.1,
+        "luxury": 0.12
+      },
+      "business_share": 0.0,
+      "freight_share": 0.0,
+      "government_share": 0.1,
+      "input_goods": [
+        {
+          "good": "medicine",
+          "per_unit": 0.001
+        },
+        {
+          "good": "antibiotics",
+          "per_unit": 0.0005
+        },
+        {
+          "good": "vaccines",
+          "per_unit": 0.0002
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "professional_services",
+          "per_unit": 0.03
+        }
+      ],
+      "education_mix": [
+        0.18,
+        0.32,
+        0.5
+      ],
+      "jobs_per_unit": 18.0,
+      "capital_per_unit": 480.0,
+      "min_capacity": 2.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": true,
+      "education": false
+    },
+    {
+      "id": "education",
+      "name_pt": "Educação privada",
+      "name_en": "Private education",
+      "name_es": "Educacion privada",
+      "icon": "education",
+      "price": 3.0,
+      "pop_share": {
+        "basic": 0.01,
+        "life": 0.09,
+        "luxury": 0.14
+      },
+      "business_share": 0.0,
+      "freight_share": 0.0,
+      "government_share": 0.1,
+      "input_goods": [
+        {
+          "good": "paper",
+          "per_unit": 0.002
+        },
+        {
+          "good": "computer",
+          "per_unit": 1e-06
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "it",
+          "per_unit": 0.02
+        }
+      ],
+      "education_mix": [
+        0.1,
+        0.3,
+        0.6
+      ],
+      "jobs_per_unit": 14.0,
+      "capital_per_unit": 360.0,
+      "min_capacity": 2.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": true
+    },
+    {
+      "id": "telecom",
+      "name_pt": "Telecomunicações",
+      "name_en": "Telecom",
+      "name_es": "Telecomunicaciones",
+      "icon": "telecom",
+      "price": 1.2,
+      "pop_share": {
+        "basic": 0.06,
+        "life": 0.05,
+        "luxury": 0.03
+      },
+      "business_share": 0.15,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "electronic_components",
+          "per_unit": 2e-05
+        },
+        {
+          "good": "wires",
+          "per_unit": 5e-05
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "it",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.4,
+        0.42,
+        0.18
+      ],
+      "jobs_per_unit": 5.5,
+      "capital_per_unit": 144.0,
+      "min_capacity": 6.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "it",
+      "name_pt": "Tecnologia da informação",
+      "name_en": "Information technology",
+      "name_es": "Tecnologia de la informacion",
+      "icon": "it",
+      "price": 5.0,
+      "pop_share": {
+        "basic": 0.01,
+        "life": 0.03,
+        "luxury": 0.06
+      },
+      "business_share": 0.15,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "computer",
+          "per_unit": 2e-06
+        },
+        {
+          "good": "chips",
+          "per_unit": 1e-06
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "professional_services",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.1,
+        0.3,
+        0.6
+      ],
+      "jobs_per_unit": 23.0,
+      "capital_per_unit": 600.0,
+      "min_capacity": 1.0,
+      "exportable": true,
+      "export_share": 0.06,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "media_advertising",
+      "name_pt": "Mídia e publicidade",
+      "name_en": "Media and advertising",
+      "name_es": "Medios y publicidad",
+      "icon": "media",
+      "price": 2.0,
+      "pop_share": {
+        "basic": 0.02,
+        "life": 0.03,
+        "luxury": 0.04
+      },
+      "business_share": 0.05,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "paper",
+          "per_unit": 0.001
+        },
+        {
+          "good": "computer",
+          "per_unit": 5e-07
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "professional_services",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.2,
+        0.4,
+        0.4
+      ],
+      "jobs_per_unit": 9.0,
+      "capital_per_unit": 240.0,
+      "min_capacity": 2.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "professional_services",
+      "name_pt": "Serviços profissionais",
+      "name_en": "Professional services",
+      "name_es": "Servicios profesionales",
+      "icon": "professional",
+      "price": 5.0,
+      "pop_share": {
+        "basic": 0.01,
+        "life": 0.04,
+        "luxury": 0.08
+      },
+      "business_share": 0.2,
+      "freight_share": 0.0,
+      "government_share": 0.15,
+      "input_goods": [
+        {
+          "good": "paper",
+          "per_unit": 0.001
+        },
+        {
+          "good": "computer",
+          "per_unit": 1e-06
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "it",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.08,
+        0.27,
+        0.65
+      ],
+      "jobs_per_unit": 23.0,
+      "capital_per_unit": 600.0,
+      "min_capacity": 1.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "real_estate",
+      "name_pt": "Imobiliário",
+      "name_en": "Real estate",
+      "name_es": "Inmobiliario",
+      "icon": "real_estate",
+      "price": 8.0,
+      "pop_share": {
+        "basic": 0.1,
+        "life": 0.13,
+        "luxury": 0.14
+      },
+      "business_share": 0.02,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "construction_material",
+          "per_unit": 0.001
+        },
+        {
+          "good": "electrical_material",
+          "per_unit": 1e-05
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "maintenance_repair",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.35,
+        0.4,
+        0.25
+      ],
+      "jobs_per_unit": 36.0,
+      "capital_per_unit": 960.0,
+      "min_capacity": 1.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "construction",
+      "name_pt": "Construção",
+      "name_en": "Construction",
+      "name_es": "Construccion",
+      "icon": "construction",
+      "price": 20.0,
+      "pop_share": {
+        "basic": 0.0,
+        "life": 0.0,
+        "luxury": 0.0
+      },
+      "business_share": 0.08,
+      "freight_share": 0.0,
+      "government_share": 0.25,
+      "input_goods": [
+        {
+          "good": "construction_material",
+          "per_unit": 0.05
+        },
+        {
+          "good": "steel_structure",
+          "per_unit": 0.004
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "professional_services",
+          "per_unit": 0.02
+        }
+      ],
+      "education_mix": [
+        0.82,
+        0.15,
+        0.03
+      ],
+      "jobs_per_unit": 90.0,
+      "capital_per_unit": 2400.0,
+      "min_capacity": 0.5,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "maintenance_repair",
+      "name_pt": "Manutenção e reparos",
+      "name_en": "Maintenance and repair",
+      "name_es": "Mantenimiento y reparaciones",
+      "icon": "maintenance",
+      "price": 1.5,
+      "pop_share": {
+        "basic": 0.03,
+        "life": 0.04,
+        "luxury": 0.03
+      },
+      "business_share": 0.15,
+      "freight_share": 0.0,
+      "government_share": 0.1,
+      "input_goods": [
+        {
+          "good": "spare_parts",
+          "per_unit": 0.0005
+        },
+        {
+          "good": "tools",
+          "per_unit": 0.0002
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "wholesale",
+          "per_unit": 0.1
+        }
+      ],
+      "education_mix": [
+        0.75,
+        0.22,
+        0.03
+      ],
+      "jobs_per_unit": 7.0,
+      "capital_per_unit": 180.0,
+      "min_capacity": 5.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "personal_services",
+      "name_pt": "Serviços pessoais",
+      "name_en": "Personal services",
+      "name_es": "Servicios personales",
+      "icon": "personal",
+      "price": 1.2,
+      "pop_share": {
+        "basic": 0.05,
+        "life": 0.05,
+        "luxury": 0.05
+      },
+      "business_share": 0.0,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "paper",
+          "per_unit": 0.0005
+        },
+        {
+          "good": "chemicals",
+          "per_unit": 0.0002
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "retail",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.85,
+        0.13,
+        0.02
+      ],
+      "jobs_per_unit": 5.5,
+      "capital_per_unit": 144.0,
+      "min_capacity": 5.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "leisure_culture",
+      "name_pt": "Lazer e cultura",
+      "name_en": "Leisure and culture",
+      "name_es": "Ocio y cultura",
+      "icon": "leisure",
+      "price": 2.5,
+      "pop_share": {
+        "basic": 0.02,
+        "life": 0.07,
+        "luxury": 0.12
+      },
+      "business_share": 0.02,
+      "freight_share": 0.0,
+      "government_share": 0.0,
+      "input_goods": [
+        {
+          "good": "alcohol",
+          "per_unit": 0.001
+        },
+        {
+          "good": "paper",
+          "per_unit": 0.001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "media_advertising",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.55,
+        0.32,
+        0.13
+      ],
+      "jobs_per_unit": 11.0,
+      "capital_per_unit": 300.0,
+      "min_capacity": 2.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    },
+    {
+      "id": "cleaning_security_waste",
+      "name_pt": "Limpeza, segurança e resíduos",
+      "name_en": "Cleaning, security and waste",
+      "name_es": "Limpieza, seguridad y residuos",
+      "icon": "cleaning",
+      "price": 0.8,
+      "pop_share": {
+        "basic": 0.02,
+        "life": 0.02,
+        "luxury": 0.02
+      },
+      "business_share": 0.1,
+      "freight_share": 0.0,
+      "government_share": 0.3,
+      "input_goods": [
+        {
+          "good": "chemicals",
+          "per_unit": 0.0002
+        },
+        {
+          "good": "containers",
+          "per_unit": 0.001
+        }
+      ],
+      "input_services": [
+        {
+          "sector": "maintenance_repair",
+          "per_unit": 0.05
+        }
+      ],
+      "education_mix": [
+        0.9,
+        0.09,
+        0.01
+      ],
+      "jobs_per_unit": 3.6,
+      "capital_per_unit": 96.0,
+      "min_capacity": 8.0,
+      "exportable": false,
+      "export_share": 0.0,
+      "health": false,
+      "education": false
+    }
+  ]
+}

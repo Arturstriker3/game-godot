@@ -207,6 +207,45 @@ public:
 		double ceiling_t_per_day);
 
 	/**
+	 * F8: carrega os setores de serviço (services.json → `sectors`). Pode ser
+	 * chamado antes ou depois do mundo: as definições são só catálogo; os
+	 * mercados por cidade existem sempre (preço-base default até o dado chegar).
+	 * Um arquivo com contagem diferente de kDemoMaxServiceSectors é recusado
+	 * (a publicação é indexada por posição).
+	 */
+	void demo_set_services(const Variant& services);
+
+	/** F8: catálogo carregado (id, nomes, ícone, educaçao, exportável). */
+	Array demo_get_service_sectors() const;
+
+	/**
+	 * F8: detalhe de uma cidade para a tela de Serviços — mercados dos 20
+	 * setores + negócios (dono, capacidade, emprego, lucro, semente do nome).
+	 * Fora do status diário de propósito: a lista completa de negócios não é
+	 * republicada a cada tick.
+	 */
+	Dictionary demo_get_services_detail(const String& city_id) const;
+
+	/**
+	 * F8: hook de teste/administração — fixa a capacidade AGREGADA de um setor
+	 * numa cidade, redistribuindo entre os negócios existentes (ou criando um
+	 * se não houver). Serve para medir o efeito da educação/saúde privadas sem
+	 * depender da entrada endógena.
+	 */
+	void demo_set_service_capacity(const String& city_id, const String& sector,
+		double units_per_day);
+
+	/** F8: hook de teste — força lucro/dias de prejuízo de um negócio. */
+	void demo_set_service_business_state(int business_id, int loss_days,
+		double profit);
+
+	/** F8: número de negócios de serviço ativos (não falidos). */
+	int demo_get_service_business_count() const;
+
+	/** F8: falências de negócios de serviço acumuladas. */
+	int demo_get_service_bankruptcies() const;
+
+	/**
 	 * Investe capital da empresa na expansão de uma construção existente.
 	 * O valor sai do caixa da empresa e é pago ao setor de construção.
 	 * @param city_id Cidade da construção.
@@ -521,6 +560,18 @@ private:
 	// F7: níveis de educação (básico, intermediário, superior). Não é dado de
 	// catálogo: são três faixas de escolaridade da população em idade ativa.
 	static constexpr int kDemoEducationLevels = 3;
+	// F8: setores de serviço (services.json). O teto é fixo para o estado por
+	// cidade caber em arrays planos; os dados declaram 20 e o loader recusa
+	// arquivo com contagem diferente (a publicação/UI indexa por posição).
+	static constexpr int kDemoMaxServiceSectors = 20;
+	// Campos publicados por setor na cidade (ver demo_service_publish_fields em
+	// economy_sim.cpp): demanda, oferta, preço, receita, emprego, negócios,
+	// demanda não atendida, exportação (unidades), exportação (receita),
+	// cobertura privada, custo de insumos e custo de serviços.
+	static constexpr int kDemoServiceFields = 12;
+	// Limite de negócios por cidade/setor e de aberturas por cidade/dia.
+	static constexpr int kDemoServiceMaxPerSector = 4;
+	static constexpr int kDemoServiceOpensPerDay = 1;
 	// Cesta alimentar (B3/B4) agora data-driven (demo_set_needs), derivada de
 	// needs.json (basic/food/substitutes + equivalence.calories). O padrão
 	// preserva a cesta validada de 5 culturas até o autoload carregar o dado.
@@ -754,6 +805,92 @@ private:
 		double income_level_share[kDemoIncomeLevels] = {};
 	};
 
+	// ------------------------------------------------------------------
+	// F8 — SERVIÇOS. 20 setores data-driven (services.json). O núcleo guarda
+	// definições carregadas uma vez e, por cidade/setor, um mercado de
+	// unidades/dia (preço na âncora XGS) + os negócios que ofertam.
+	//
+	// O dinheiro NÃO nasce em lugar novo: as famílias pagam com
+	// `pop.service_spend`, as empresas com `opex_revenue`, o governo com o
+	// orçamento e o resto do mundo com `foreign_cash`; a receita dos negócios é
+	// uma ALOCAÇÃO do `city.service_cash` que já recebeu esses fluxos. Entrada
+	// de negócio transfere capital da poupança da POP dona para `service_cash`
+	// e a saída devolve o residual — `demo_money_total` continua conservado.
+	// ------------------------------------------------------------------
+	struct DemoServiceSector {
+		std::string id;
+		std::string name_pt;
+		std::string name_en;
+		std::string name_es;
+		std::string icon;
+		double price = 1.0;
+		double pop_share[kDemoMaxNeedsLevels] = {};
+		double business_share = 0.0;
+		double freight_share = 0.0;
+		double government_share = 0.0;
+		struct Input {
+			int product = -1;
+			double qty = 0.0;
+		};
+		std::vector<Input> inputs;
+		std::vector<int> service_inputs;
+		std::vector<double> service_input_qty;
+		double education_mix[kDemoEducationLevels] = {0.70, 0.25, 0.05};
+		double jobs_per_unit = 3.0;
+		double capital_per_unit = 96.0;
+		double min_capacity = 5.0;
+		bool exportable = false;
+		double export_share = 0.0;
+		bool health = false;
+		bool education = false;
+		std::string source = "estimated:structure";
+	};
+
+	// Estado diário de um setor numa cidade. `revenue` é dinheiro do pool de
+	// serviços (famílias + B2B + governo + exportação), não unidades.
+	struct DemoServiceMarket {
+		double demand = 0.0;       // unidades desejadas e financiadas
+		double supply = 0.0;       // unidades ofertadas pelos negócios
+		double unmet = 0.0;        // demanda financiada sem oferta
+		double price = 1.0;        // âncora XGS por unidade
+		double base_price = 1.0;
+		double revenue = 0.0;
+		double input_cost = 0.0;   // bens comprados no mercado da cidade
+		double service_cost = 0.0; // serviços intermediários comprados
+		double jobs = 0.0;         // fatia de city.service_jobs
+		double businesses = 0.0;
+		double exports = 0.0;      // unidades exportadas
+		double export_revenue = 0.0;
+		double coverage = 0.0;     // saúde/educação privadas: 0..1
+		// F8: demanda das famílias por nível de consumo (unidades/dia), o que
+		// permite testar/auditar a separação basic/life/luxury.
+		double pop_demand[kDemoMaxNeedsLevels] = {};
+	};
+
+	struct DemoServiceBusiness {
+		int id = 0;
+		int sector = -1;
+		std::string city;
+		int owner_stratum = kDemoEducationLevels - 1;
+		double capacity = 0.0;
+		double jobs = 0.0;
+		double workers = 0.0;
+		double capital = 0.0;
+		double capital_left = 0.0;
+		double utilization = 0.0;
+		double revenue = 0.0;
+		double wages = 0.0;
+		double input_cost = 0.0;
+		double service_cost = 0.0;
+		double profit = 0.0;
+		int loss_days = 0;
+		bool bankrupt = false;
+		int opened_day = 0;
+		// Semente estável do nome: o rótulo é gerado no GDScript por cultura do
+		// dono (`BusinessNameGenerator`); o núcleo guarda só o número.
+		unsigned long long name_seed = 0;
+	};
+
 	// Reserva mineral do território da cidade para um produto. Compartilhada
 	// pelas minas da cidade: cada tonelada extraída reduz remaining_kt. Sem
 	// tracked, o produto não tem reserva declarada e a extração é ilimitada
@@ -917,12 +1054,24 @@ private:
 		DemoDeposit deposits[kDemoMaxProducts];
 		DemoPop pop;
 		DemoMarket markets[kDemoMaxProducts];
+		// F8: mercados de serviço por setor (ordem de services.json).
+		DemoServiceMarket service_markets[kDemoMaxServiceSectors];
+		double service_export_revenue = 0.0;
+		double service_government_revenue = 0.0;
+		double service_input_cost = 0.0;
+		double service_business_profit = 0.0;
+		int service_business_count = 0;
+		double private_health_cover = 0.0;
+		double private_education_cover = 0.0;
+		// Tonelagem movimentada no dia anterior (base do B2B de logística).
+		double service_tonnage_prev = 0.0;
 	};
 
 	// Fases medidas por demo_set_profiling (ordem = ordem do tick).
 	enum DemoPhase {
 		kDemoPhaseArrival = 0, kDemoPhaseReset, kDemoPhaseLabor,
-		kDemoPhaseProduction, kDemoPhaseRaw, kDemoPhaseIncome, kDemoPhaseTrade,
+		kDemoPhaseProduction, kDemoPhaseRaw, kDemoPhaseIncome,
+		kDemoPhaseServices, kDemoPhaseTrade,
 		kDemoPhaseAccounting, kDemoPhasePrices, kDemoPhaseClamp,
 		kDemoPhaseFiscal, kDemoPhaseFx, kDemoPhaseInvariants, kDemoPhaseStatus,
 		kDemoPhaseCount
@@ -946,6 +1095,9 @@ private:
 	struct DemoSnapshot {
 		std::vector<DemoCity> cities;
 		std::vector<DemoBuilding> buildings;
+		std::vector<DemoServiceBusiness> service_businesses;
+		int next_service_business_id = 1;
+		int service_bankruptcies = 0;
 		std::vector<DemoShipment> transit;
 		std::unordered_map<std::string, DemoFleet> fleets;
 		std::vector<DemoCurrency> currencies;
@@ -1043,6 +1195,12 @@ private:
 		Array consumed_by_category;
 		Array markets;
 		std::vector<Dictionary> market_entry;  // 1 por produto
+		// F8: bloco plano de serviços (20 setores × kDemoServiceFields). Array
+		// de doubles em vez de 20 dicionários por cidade: a publicação custa uma
+		// escrita só e a UI indexa pela ordem de `service_sectors`.
+		PackedFloat64Array services;
+		PackedFloat64Array services_written;
+		bool services_filled = false;
 		Array buildings;
 		std::vector<Dictionary> building_entry;  // cresce com a cidade
 		// `buildings` é Array (referência): o dicionário publicado enxerga os
@@ -1093,7 +1251,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue;
 		DemoStatusKeys();
 	};
 
@@ -1107,6 +1265,8 @@ private:
 		Array nations;
 		Array currencies;
 		Array tariffs;
+		Array service_sectors;
+		bool service_sectors_filled = false;
 		Array tot_produced, tot_consumed, tot_produced_today, tot_consumed_today;
 		// Totais do sistema por produto (soma dos mercados das cidades). A IA
 		// lia 858 cidades × 21 mercados em GDScript no frame da virada (~13 ms);
@@ -1444,6 +1604,22 @@ private:
 	 */
 	double demo_labor_day(DemoCity& city);
 
+	// F8: índices cidade→negócios e setor→negócios (como os de construção).
+	void demo_rebuild_service_indexes();
+	// F8: semeia os negócios iniciais de cada cidade (capital da poupança da
+	// POP dona). Roda no boot do mundo e ao carregar save anterior ao v10.
+	void demo_seed_services();
+	// F8: fecha o dia dos serviços de uma cidade — demanda das classes, B2B,
+	// governo, exportação, produção dos negócios, preço, entrada e saída.
+	void demo_services_day(DemoCity& city);
+	// F8: abre um negócio do setor com a capacidade pedida. `capital` sai da
+	// poupança da POP e entra em service_cash (conservação).
+	bool demo_service_open(DemoCity& city, int sector, double capacity,
+		double capital);
+	// F8: fecha um negócio insolvente, devolvendo o capital residual à POP.
+	void demo_service_close(DemoServiceBusiness& business);
+	int demo_service_sector_index(const std::string& sector) const;
+
 	/**
 	 * F7 — custo diário da cesta completa de um nível de necessidade aos preços
 	 * que a cidade pratica, por substituto não-durável mais barato (preço /
@@ -1581,6 +1757,16 @@ private:
 	double demo_status_sub_us_[4] = {};
 	std::vector<DemoCity> demo_cities_;
 	std::vector<DemoBuilding> demo_buildings_;
+	// F8: catálogo de serviços e negócios (um vetor global; índices por cidade
+	// e por setor são reconstruídos quando o conjunto muda).
+	bool demo_services_loaded_ = false;
+	double demo_service_government_share_ = 0.002;
+	std::vector<DemoServiceSector> demo_service_sectors_;
+	std::vector<DemoServiceBusiness> demo_service_businesses_;
+	std::vector<std::vector<int>> demo_service_by_city_;
+	std::vector<std::vector<int>> demo_service_by_sector_;
+	int demo_next_service_business_id_ = 1;
+	int demo_service_bankruptcies_ = 0;
 	// Índices derivados do mundo demo (ver demo_rebuild_indexes).
 	std::unordered_map<std::string, int> demo_city_lookup_;
 	std::vector<std::vector<int>> demo_buildings_by_city_;

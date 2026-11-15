@@ -2,6 +2,7 @@
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/packed_float64_array.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/vector2.hpp>
@@ -94,7 +95,25 @@ constexpr std::size_t kMaxOrdersPerDay = 24;
 // estudantes e nível de renda), `minimum_wages` por nação e `wage_rigidity`.
 // Save v8 e anteriores não têm o bloco: o perfil é derivado do índice de renda
 // já gravado (migração documentada em demo_from_dict).
-constexpr int kDemoSaveVersion = 9;
+// v10: serviços (F8) — `services` por cidade (mercados dos 20 setores, receita
+// de exportação/governo, custo de insumos e cobertura de saúde/educação) e
+// `service_businesses` (catálogo global de negócios). Save v9 e anteriores não
+// têm as chaves: o mundo é semeado de negócios no load (migração).
+constexpr int kDemoSaveVersion = 10;
+
+// F8: serviços. Preço reage a demanda financiada/oferta, dentro da banda da
+// âncora; prejuízo persistente fecha o negócio (contado à parte das falências
+// industriais). A entrada só acontece com demanda não atendida e margem.
+constexpr int kDemoServiceLossDays = 60;
+constexpr double kDemoServicePriceSmooth = 0.12;
+constexpr double kDemoServicePriceBandLow = 0.55;
+constexpr double kDemoServicePriceBandHigh = 2.20;
+constexpr double kDemoServiceEntryMargin = 0.08;
+constexpr double kDemoServiceCapitalReserve = 4.0;
+constexpr double kDemoServiceHealthNeedPerCapita = 0.00002;  // unidades/dia
+constexpr double kDemoServiceEducationNeedPerCapita = 0.000015;
+constexpr double kDemoServiceHealthSatisfactionBonus = 0.03;
+constexpr double kDemoServiceEducationRateBonus = 0.60;
 
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
@@ -192,6 +211,22 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_recipes);
 	ClassDB::bind_method(D_METHOD("demo_set_needs", "needs"),
 	                     &EconomySim::demo_set_needs);
+	ClassDB::bind_method(D_METHOD("demo_set_services", "services"),
+	                     &EconomySim::demo_set_services);
+	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
+	                     &EconomySim::demo_get_service_sectors);
+	ClassDB::bind_method(D_METHOD("demo_get_services_detail", "city_id"),
+	                     &EconomySim::demo_get_services_detail);
+	ClassDB::bind_method(D_METHOD("demo_set_service_capacity", "city_id", "sector",
+	                     "units_per_day"),
+	                     &EconomySim::demo_set_service_capacity);
+	ClassDB::bind_method(D_METHOD("demo_set_service_business_state", "business_id",
+	                     "loss_days", "profit"),
+	                     &EconomySim::demo_set_service_business_state);
+	ClassDB::bind_method(D_METHOD("demo_get_service_business_count"),
+	                     &EconomySim::demo_get_service_business_count);
+	ClassDB::bind_method(D_METHOD("demo_get_service_bankruptcies"),
+	                     &EconomySim::demo_get_service_bankruptcies);
 	ClassDB::bind_method(D_METHOD("demo_seed_industry"),
 	                     &EconomySim::demo_seed_industry);
 	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
@@ -1828,6 +1863,8 @@ void EconomySim::initialize_demo() {
 	demo_rebuild_indexes();
 	// F4: o cenário mínimo também tem frota (nação DEMO).
 	demo_init_fleets();
+	// F8: negócios de serviço iniciais (só quando os dados foram carregados).
+	demo_seed_services();
 }
 
 void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
@@ -1964,6 +2001,9 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	// frota só resolvem depois de demo_set_goods; aqui as contagens/estoques já
 	// existem e os índices são atualizados quando os bens chegam.
 	demo_init_fleets();
+	// F8: serviços — catálogo já carregado pelo autoload/teste; os negócios
+	// iniciais saem da poupança da POP dona (capital entra em service_cash).
+	demo_seed_services();
 }
 
 EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) {
@@ -2031,6 +2071,9 @@ double EconomySim::demo_money_total() const {
 void EconomySim::demo_snapshot(DemoSnapshot& out) const {
 	out.cities = demo_cities_;
 	out.buildings = demo_buildings_;
+	out.service_businesses = demo_service_businesses_;
+	out.next_service_business_id = demo_next_service_business_id_;
+	out.service_bankruptcies = demo_service_bankruptcies_;
 	out.transit = demo_in_transit_;
 	out.fleets = demo_fleets_;
 	out.currencies = demo_currencies_;
@@ -2049,6 +2092,9 @@ void EconomySim::demo_snapshot(DemoSnapshot& out) const {
 void EconomySim::demo_restore(const DemoSnapshot& in) {
 	demo_cities_ = in.cities;
 	demo_buildings_ = in.buildings;
+	demo_service_businesses_ = in.service_businesses;
+	demo_next_service_business_id_ = in.next_service_business_id;
+	demo_service_bankruptcies_ = in.service_bankruptcies;
 	demo_in_transit_ = in.transit;
 	demo_fleets_ = in.fleets;
 	// F5: o drift cambial roda antes do invariante; desfazer um tick
@@ -2066,6 +2112,7 @@ void EconomySim::demo_restore(const DemoSnapshot& in) {
 	}
 	day_ = in.day;
 	demo_rebuild_indexes();
+	demo_rebuild_service_indexes();
 }
 
 std::vector<std::string> EconomySim::demo_check_invariants(double money_before) const {
@@ -4166,8 +4213,9 @@ void EconomySim::demo_set_profiling(bool enabled) {
 
 Dictionary EconomySim::demo_get_profile() const {
 	static const char* kNames[kDemoPhaseCount] = {
-		"arrival", "reset", "labor", "production", "raw", "income", "trade",
-		"accounting", "prices", "clamp", "fiscal", "fx", "invariants", "status",
+		"arrival", "reset", "labor", "production", "raw", "income", "services",
+		"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
+		"status",
 	};
 	Dictionary profile;
 	if (!demo_profile_) {
@@ -4333,6 +4381,28 @@ void EconomySim::demo_tick_core() {
 		city.construction_revenue = city.construction_revenue_pending;
 		city.construction_revenue_pending = 0.0;
 		city.gdp = 0.0;
+		// F8: fluxos do dia dos serviços (preço/base persistidos).
+		city.service_export_revenue = 0.0;
+		city.service_government_revenue = 0.0;
+		city.service_input_cost = 0.0;
+		city.service_business_profit = 0.0;
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			DemoServiceMarket& service = city.service_markets[sector];
+			service.demand = 0.0;
+			service.supply = 0.0;
+			service.unmet = 0.0;
+			service.revenue = 0.0;
+			service.input_cost = 0.0;
+			service.service_cost = 0.0;
+			service.jobs = 0.0;
+			service.businesses = 0.0;
+			service.exports = 0.0;
+			service.export_revenue = 0.0;
+			service.coverage = 0.0;
+			for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+				service.pop_demand[level] = 0.0;
+			}
+		}
 		for (int product = 0; product < demo_products_; ++product) {
 			city.markets[product].demand = 0.0;
 			city.markets[product].supply = 0.0;
@@ -4955,6 +5025,11 @@ void EconomySim::demo_tick_core() {
 			}
 			pop.needs_satisfaction = weight_sum > 0.0
 				? std::clamp(weighted / weight_sum, 0.0, 1.0) : 0.0;
+			// F8: gancho de saúde privada. A cobertura (0..1) soma um pequeno
+			// bônus de satisfação; o serviço público fica para a F9.
+			pop.needs_satisfaction = std::clamp(pop.needs_satisfaction
+				+ kDemoServiceHealthSatisfactionBonus * city.private_health_cover,
+				0.0, 1.0);
 			// Nível alcançado = maior nível com pelo menos metade da cesta,
 			// exigindo os níveis anteriores (basic → life → luxury).
 			pop.needs_level = 0;
@@ -5074,6 +5149,16 @@ void EconomySim::demo_tick_core() {
 
 	lap(kDemoPhaseIncome);
 
+	// F8: serviços. Roda DEPOIS do orçamento das famílias (a poupança do dia já
+	// está fechada) e ANTES do comércio: a demanda das classes, o B2B e a
+	// exportação de serviços não dependem do frete do dia. Entrada/saída de
+	// negócios move capital dentro de `service_cash`/`pop.savings`.
+	for (DemoCity& city : demo_cities_) {
+		demo_services_day(city);
+	}
+
+	lap(kDemoPhaseServices);
+
 	// 6. Comércio de alimento (cesta de calorias) entre cidades: cidades com
 	// déficit compram das que têm excedente, mais barato por caloria. Cobre tanto
 	// o cenário de validação (AGRIA/PORTUS) quanto o mundo real.
@@ -5127,10 +5212,15 @@ void EconomySim::demo_tick_core() {
 		}
 
 		// A receita de serviços inclui consumo das famílias, opex empresarial,
-		// frete e construção: são serviços domésticos, não importações.
+		// frete e construção: são serviços domésticos, não importações. F8 soma
+		// a exportação de serviços (paga pelo setor externo) e a compra do
+		// governo (transferência do orçamento); os insumos comprados pelos
+		// negócios reduzem o lucro do setor (o dinheiro foi para as firmas).
 		city.service_revenue = city.pop.service_spend + city.opex_revenue
-			+ city.freight_revenue + city.construction_revenue;
-		city.service_profit = city.service_revenue - city.service_wage_bill;
+			+ city.freight_revenue + city.construction_revenue
+			+ city.service_export_revenue + city.service_government_revenue;
+		city.service_profit = city.service_revenue - city.service_wage_bill
+			- city.service_input_cost;
 
 		double private_profit = 0.0;
 		double state_profit = 0.0;
@@ -6206,6 +6296,45 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		dict[k.markets] = slot.markets;
 	}
 
+	// F8: bloco plano de serviços (20 × 12). Só reescreve quando algum valor
+	// muda; o Array publicado é reutilizado pela UI (ordem de service_sectors).
+	if (demo_services_loaded_) {
+		PackedFloat64Array& services = slot.services;
+		services.resize(kDemoMaxServiceSectors * kDemoServiceFields);
+		double* out = services.ptrw();
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			const DemoServiceMarket& market = city.service_markets[sector];
+			double* base = out + sector * kDemoServiceFields;
+			base[0] = market.demand;
+			base[1] = market.supply;
+			base[2] = market.price;
+			base[3] = market.revenue;
+			base[4] = market.jobs;
+			base[5] = market.businesses;
+			base[6] = market.unmet;
+			base[7] = market.exports;
+			base[8] = market.export_revenue;
+			base[9] = market.coverage;
+			base[10] = market.input_cost;
+			base[11] = market.service_cost;
+		}
+		bool dirty = !slot.services_filled;
+		if (!dirty) {
+			const double* previous = slot.services_written.ptr();
+			for (int index = 0; index < services.size(); ++index) {
+				if (previous[index] != out[index]) {
+					dirty = true;
+					break;
+				}
+			}
+		}
+		if (dirty) {
+			slot.services_written = services;
+			dict[k.services] = services;
+			slot.services_filled = true;
+		}
+	}
+
 	// `Array` é tipo por referência no Godot 4 (validado em teste): mutar
 	// `slot.imported` já aparece no dicionário publicado. Redimensionar para o
 	// mesmo tamanho era uma chamada à ponte por array/cidade/dia sem efeito.
@@ -6390,6 +6519,14 @@ Dictionary EconomySim::get_demo_status() {
 	root[k.construction_cash] = demo_construction_cash_;
 	root[k.bankruptcies] = demo_bankruptcies_;
 	root[k.depleted_mines] = demo_depleted_mines_;
+	// F8: catálogo de serviços (uma vez) + contadores de negócios do dia.
+	if (demo_services_loaded_ && !cache.service_sectors_filled) {
+		cache.service_sectors = demo_get_service_sectors();
+		root[k.service_sectors] = cache.service_sectors;
+		cache.service_sectors_filled = true;
+	}
+	root[k.service_businesses] = demo_get_service_business_count();
+	root[k.service_bankruptcies] = demo_service_bankruptcies_;
 
 	// Cabeçalho: os contêineres são pendurados no dicionário UMA vez; a partir
 	// daí só são redimensionados/reescritos no lugar.
@@ -8355,7 +8492,8 @@ double EconomySim::demo_labor_day(DemoCity& city) {
 		if (cohort <= 0.0 || duration <= 0.0) {
 			continue;
 		}
-		const double completed = cohort / duration;
+		const double completed = cohort / duration
+			* (1.0 + kDemoServiceEducationRateBonus * city.private_education_cover);
 		const int src = dst - 1;
 		const double moved = std::min(completed, pop.education[src]);
 		cohort = std::max(0.0, cohort - moved);
@@ -8575,6 +8713,972 @@ double EconomySim::demo_labor_day(DemoCity& city) {
 	city.service_cash -= paid_service_bill;
 	return pop.wage_income;
 }
+
+// ---------------------------------------------------------------------------
+// F8 — SERVIÇOS
+// ---------------------------------------------------------------------------
+
+int EconomySim::demo_service_sector_index(const std::string& sector) const {
+	for (std::size_t index = 0; index < demo_service_sectors_.size(); ++index) {
+		if (demo_service_sectors_[index].id == sector) {
+			return static_cast<int>(index);
+		}
+	}
+	return -1;
+}
+
+void EconomySim::demo_set_services(const Variant& services) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Array sectors;
+	if (services.get_type() == Variant::DICTIONARY) {
+		const Dictionary data = services;
+		sectors = data.get("sectors", Array());
+		demo_service_government_share_ = std::clamp(
+			safe_nonneg(static_cast<double>(data.get("government_spend_share",
+				demo_service_government_share_))), 0.0, 0.05);
+	} else if (services.get_type() == Variant::ARRAY) {
+		sectors = services;
+	}
+	if (sectors.size() != kDemoMaxServiceSectors) {
+		return;
+	}
+	std::vector<DemoServiceSector> parsed;
+	std::vector<std::vector<std::string>> service_ids;
+	parsed.reserve(kDemoMaxServiceSectors);
+	service_ids.reserve(kDemoMaxServiceSectors);
+	for (int index = 0; index < sectors.size(); ++index) {
+		if (sectors[index].get_type() != Variant::DICTIONARY) {
+			return;
+		}
+		const Dictionary d = sectors[index];
+		DemoServiceSector sector;
+		sector.id = std::string(String(d.get("id", "")).utf8().get_data());
+		if (sector.id.empty()) {
+			return;
+		}
+		sector.name_pt = std::string(String(d.get("name_pt", sector.id.c_str())).utf8().get_data());
+		sector.name_en = std::string(String(d.get("name_en", sector.id.c_str())).utf8().get_data());
+		sector.name_es = std::string(String(d.get("name_es", sector.id.c_str())).utf8().get_data());
+		sector.icon = std::string(String(d.get("icon", sector.id.c_str())).utf8().get_data());
+		sector.price = std::clamp(
+			safe_nonneg(static_cast<double>(d.get("price", 1.0))), 0.01, 100000.0);
+		const Dictionary pop_share = d.get("pop_share", Dictionary());
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			static const char* const kLevelKeys[3] = {"basic", "life", "luxury"};
+			sector.pop_share[level] = std::max(0.0,
+				static_cast<double>(pop_share.get(kLevelKeys[level], 0.0)));
+		}
+		sector.business_share = std::max(0.0,
+			static_cast<double>(d.get("business_share", 0.0)));
+		sector.freight_share = std::max(0.0,
+			static_cast<double>(d.get("freight_share", 0.0)));
+		sector.government_share = std::max(0.0,
+			static_cast<double>(d.get("government_share", 0.0)));
+		const Array inputs = d.get("input_goods", Array());
+		for (int slot = 0; slot < inputs.size(); ++slot) {
+			const Dictionary input = inputs[slot];
+			const int product = demo_product_index(
+				String(input.get("good", "")));
+			const double qty = safe_nonneg(
+				static_cast<double>(input.get("per_unit", 0.0)));
+			if (product < 0 || qty <= 0.0) {
+				continue;
+			}
+			sector.inputs.push_back({product, qty});
+		}
+		std::vector<std::string> names;
+		const Array service_inputs = d.get("input_services", Array());
+		for (int slot = 0; slot < service_inputs.size() && slot < 2; ++slot) {
+			const Dictionary input = service_inputs[slot];
+			const std::string id = std::string(
+				String(input.get("sector", "")).utf8().get_data());
+			const double qty = safe_nonneg(
+				static_cast<double>(input.get("per_unit", 0.0)));
+			if (id.empty() || qty <= 0.0) {
+				continue;
+			}
+			names.push_back(id);
+			sector.service_input_qty.push_back(qty);
+		}
+		const Array mix = d.get("education_mix", Array());
+		double mix_sum = 0.0;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			sector.education_mix[level] = level < mix.size()
+				? std::max(0.0, static_cast<double>(mix[level])) : 0.0;
+			mix_sum += sector.education_mix[level];
+		}
+		if (mix_sum <= 1e-9) {
+			sector.education_mix[0] = 1.0;
+		} else {
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				sector.education_mix[level] /= mix_sum;
+			}
+		}
+		sector.jobs_per_unit = std::clamp(
+			safe_nonneg(static_cast<double>(d.get("jobs_per_unit", 3.0))), 0.001, 1000.0);
+		sector.capital_per_unit = std::clamp(
+			safe_nonneg(static_cast<double>(d.get("capital_per_unit", 96.0))), 0.01, 1.0e7);
+		sector.min_capacity = std::clamp(
+			safe_nonneg(static_cast<double>(d.get("min_capacity", 5.0))), 0.01, 1.0e7);
+		sector.exportable = bool(d.get("exportable", false));
+		sector.export_share = std::clamp(
+			safe_nonneg(static_cast<double>(d.get("export_share", 0.0))), 0.0, 0.5);
+		sector.health = bool(d.get("health", false));
+		sector.education = bool(d.get("education", false));
+		sector.source = std::string(
+			String(d.get("source", "estimated:structure")).utf8().get_data());
+		parsed.push_back(std::move(sector));
+		service_ids.push_back(std::move(names));
+	}
+	// Resolve os serviços intermediários depois de todos os ids existirem.
+	for (std::size_t index = 0; index < parsed.size(); ++index) {
+		for (const std::string& id : service_ids[index]) {
+			int found = -1;
+			for (std::size_t other = 0; other < parsed.size(); ++other) {
+				if (parsed[other].id == id) {
+					found = static_cast<int>(other);
+					break;
+				}
+			}
+			if (found >= 0 && found != static_cast<int>(index)) {
+				parsed[index].service_inputs.push_back(found);
+			} else if (found == static_cast<int>(index)) {
+				parsed[index].service_input_qty.pop_back();
+			}
+		}
+		if (parsed[index].service_inputs.size() != parsed[index].service_input_qty.size()) {
+			parsed[index].service_inputs.clear();
+			parsed[index].service_input_qty.clear();
+		}
+	}
+	demo_service_sectors_ = std::move(parsed);
+	demo_services_loaded_ = true;
+	for (DemoCity& city : demo_cities_) {
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			DemoServiceMarket& market = city.service_markets[sector];
+			market.base_price = demo_service_sectors_[static_cast<std::size_t>(sector)].price;
+			if (market.price <= 0.0 || !std::isfinite(market.price)) {
+				market.price = market.base_price;
+			}
+		}
+	}
+	if (!demo_cities_.empty() && demo_service_businesses_.empty()) {
+		demo_seed_services();
+	}
+}
+
+Array EconomySim::demo_get_service_sectors() const {
+	Array out;
+	for (const DemoServiceSector& sector : demo_service_sectors_) {
+		Dictionary entry;
+		entry["id"] = String(sector.id.c_str());
+		entry["name_pt"] = String(sector.name_pt.c_str());
+		entry["name_en"] = String(sector.name_en.c_str());
+		entry["name_es"] = String(sector.name_es.c_str());
+		entry["icon"] = String(sector.icon.c_str());
+		entry["price"] = sector.price;
+		entry["exportable"] = sector.exportable;
+		entry["health"] = sector.health;
+		entry["education"] = sector.education;
+		entry["jobs_per_unit"] = sector.jobs_per_unit;
+		Array mix;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			mix.append(sector.education_mix[level]);
+		}
+		entry["education_mix"] = mix;
+		entry["source"] = String(sector.source.c_str());
+		out.append(entry);
+	}
+	return out;
+}
+
+void EconomySim::demo_rebuild_service_indexes() {
+	demo_service_by_city_.assign(demo_cities_.size(), {});
+	demo_service_by_sector_.assign(demo_service_sectors_.size(), {});
+	for (int index = 0; index < static_cast<int>(demo_service_businesses_.size()); ++index) {
+		const DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt) {
+			continue;
+		}
+		const auto found = demo_city_lookup_.find(business.city);
+		if (found != demo_city_lookup_.end()) {
+			demo_service_by_city_[static_cast<std::size_t>(found->second)].push_back(index);
+		}
+		if (business.sector >= 0
+				&& business.sector < static_cast<int>(demo_service_by_sector_.size())) {
+			demo_service_by_sector_[static_cast<std::size_t>(business.sector)].push_back(index);
+		}
+	}
+}
+
+bool EconomySim::demo_service_open(DemoCity& city, int sector, double capacity,
+		double capital) {
+	if (sector < 0 || sector >= static_cast<int>(demo_service_sectors_.size())) {
+		return false;
+	}
+	const DemoServiceSector& definition =
+		demo_service_sectors_[static_cast<std::size_t>(sector)];
+	capacity = std::max(0.0, capacity);
+	capital = std::max(0.0, capital);
+	if (capacity <= 0.0) {
+		return false;
+	}
+	const double available = std::max(0.0, city.pop.savings);
+	const double paid = std::min(capital, available);
+	city.pop.savings -= paid;
+	city.service_cash += paid;
+	DemoServiceBusiness business;
+	business.id = demo_next_service_business_id_++;
+	business.sector = sector;
+	business.city = city.id;
+	business.owner_stratum = kDemoEducationLevels - 1;
+	business.capacity = capacity;
+	business.jobs = capacity * definition.jobs_per_unit;
+	business.workers = business.jobs;
+	business.capital = paid;
+	business.capital_left = paid;
+	business.opened_day = day_;
+	unsigned long long seed = 1469598103934665603ULL;
+	auto mix = [&seed](const std::string& text) {
+		for (const char c : text) {
+			seed ^= static_cast<unsigned char>(c);
+			seed *= 1099511628211ULL;
+		}
+		seed ^= 0xffULL;
+		seed *= 1099511628211ULL;
+	};
+	mix(city.id);
+	mix(definition.id);
+	mix(std::to_string(business.id));
+	business.name_seed = seed;
+	const int index = static_cast<int>(demo_service_businesses_.size());
+	demo_service_businesses_.push_back(std::move(business));
+	const auto found = demo_city_lookup_.find(city.id);
+	if (found != demo_city_lookup_.end()) {
+		if (demo_service_by_city_.size() != demo_cities_.size()) {
+			demo_service_by_city_.assign(demo_cities_.size(), {});
+		}
+		demo_service_by_city_[static_cast<std::size_t>(found->second)].push_back(index);
+	}
+	if (demo_service_by_sector_.size() != demo_service_sectors_.size()) {
+		demo_service_by_sector_.assign(demo_service_sectors_.size(), {});
+	}
+	demo_service_by_sector_[static_cast<std::size_t>(sector)].push_back(index);
+	city.service_business_count += 1;
+	return true;
+}
+
+void EconomySim::demo_service_close(DemoServiceBusiness& business) {
+	if (business.bankrupt) {
+		return;
+	}
+	business.bankrupt = true;
+	DemoCity* city = find_demo_city(business.city);
+	if (city != nullptr) {
+		const double returned = std::min(std::max(0.0, business.capital_left),
+			std::max(0.0, city->service_cash));
+		city->service_cash -= returned;
+		city->pop.savings += returned;
+		city->service_business_count = std::max(0, city->service_business_count - 1);
+	} else {
+		business.capital_left = 0.0;
+	}
+	business.capital_left = 0.0;
+	demo_service_bankruptcies_ += 1;
+}
+
+void EconomySim::demo_seed_services() {
+	demo_service_businesses_.clear();
+	demo_service_businesses_.shrink_to_fit();
+	demo_service_bankruptcies_ = 0;
+	demo_next_service_business_id_ = 1;
+	demo_service_by_city_.assign(demo_cities_.size(), {});
+	demo_service_by_sector_.assign(demo_service_sectors_.size(), {});
+	if (!demo_services_loaded_ || demo_service_sectors_.empty()) {
+		return;
+	}
+	for (DemoCity& city : demo_cities_) {
+		city.service_business_count = 0;
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			DemoServiceMarket& market = city.service_markets[sector];
+			market.base_price =
+				demo_service_sectors_[static_cast<std::size_t>(sector)].price;
+			if (market.price <= 0.0 || !std::isfinite(market.price)) {
+				market.price = market.base_price;
+			}
+		}
+		const double population = std::max(1.0, city.simulation_population);
+		int count = static_cast<int>(std::clamp(
+			4.0 + std::log10(std::max(1000.0, population)) * 2.0, 4.0, 16.0));
+		// Escolhe os setores com maior peso de consumo das famílias; setores
+		// exportáveis entram quando o país tem renda acima da média.
+		std::vector<int> order(demo_service_sectors_.size());
+		std::vector<double> weight(demo_service_sectors_.size(), 0.0);
+		for (std::size_t sector = 0; sector < demo_service_sectors_.size(); ++sector) {
+			order[sector] = static_cast<int>(sector);
+			const DemoServiceSector& definition = demo_service_sectors_[sector];
+			weight[sector] = definition.pop_share[0] + definition.pop_share[1] * 1.4
+				+ definition.pop_share[2] * 1.8 + definition.business_share
+				+ definition.government_share * 0.5;
+		}
+		std::stable_sort(order.begin(), order.end(), [&weight](int a, int b) {
+			return weight[static_cast<std::size_t>(a)]
+				> weight[static_cast<std::size_t>(b)];
+		});
+		for (int slot = 0; slot < count && slot < static_cast<int>(order.size()); ++slot) {
+			const int sector = order[static_cast<std::size_t>(slot)];
+			const DemoServiceSector& definition =
+				demo_service_sectors_[static_cast<std::size_t>(sector)];
+			const double capacity = std::max(definition.min_capacity,
+				std::min(40.0 / definition.jobs_per_unit, definition.min_capacity * 6.0));
+			const double capital = capacity * definition.capital_per_unit;
+			if (city.pop.savings < capital * 0.5) {
+				continue;
+			}
+			demo_service_open(city, sector, capacity, capital);
+		}
+		if (city.external_income_index > 1.2) {
+			for (int sector = 0; sector < static_cast<int>(demo_service_sectors_.size()); ++sector) {
+				const DemoServiceSector& definition =
+					demo_service_sectors_[static_cast<std::size_t>(sector)];
+				if (!definition.exportable) {
+					continue;
+				}
+				bool present = false;
+				for (const int index : demo_service_by_city_[static_cast<std::size_t>(
+						&city - demo_cities_.data())]) {
+					if (demo_service_businesses_[static_cast<std::size_t>(index)].sector
+							== sector) {
+						present = true;
+						break;
+					}
+				}
+				if (present) {
+					continue;
+				}
+				const double capacity = definition.min_capacity;
+				const double capital = capacity * definition.capital_per_unit;
+				if (city.pop.savings >= capital) {
+					demo_service_open(city, sector, capacity, capital);
+				}
+			}
+		}
+	}
+}
+
+void EconomySim::demo_services_day(DemoCity& city) {
+	if (!demo_services_loaded_ || demo_service_sectors_.empty()) {
+		return;
+	}
+	const std::size_t city_index =
+		static_cast<std::size_t>(&city - demo_cities_.data());
+	if (city_index >= demo_service_by_city_.size()) {
+		demo_service_by_city_.assign(demo_cities_.size(), {});
+	}
+	if (demo_service_by_sector_.size() != demo_service_sectors_.size()) {
+		demo_service_by_sector_.assign(demo_service_sectors_.size(), {});
+	}
+	const DemoPop& pop = city.pop;
+	const double wage = std::max(0.0, city.service_wage);
+
+	// 1. Pesos da demanda das famílias por classe de consumo (basic/life/
+	// luxury). Com Gini, `class_population` é a repartição real; sem Gini,
+	// espelha os estratos (mesma regra da F7). O dinheiro é o
+	// `pop.service_spend` já debitado das famílias; aqui ele é DISTRIBUÍDO.
+	double class_pop[kDemoEducationLevels] = {
+		std::max(0.0, pop.class_population[0]),
+		std::max(0.0, pop.class_population[1]),
+		std::max(0.0, pop.class_population[2])};
+	if (class_pop[0] + class_pop[1] + class_pop[2] <= 1e-9) {
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			class_pop[level] = std::max(0.0, pop.stratum_population[level]);
+		}
+	}
+	double weight[kDemoMaxServiceSectors] = {};
+	double weight_total = 0.0;
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(sector)];
+		double value = 0.0;
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			value += class_pop[level] * definition.pop_share[level];
+		}
+		weight[sector] = value;
+		weight_total += value;
+	}
+	const double household_pool = std::max(0.0, pop.service_spend);
+
+	// 2. B2B: o opex pago pelas empresas é receita de serviços. Finanças,
+	// profissionais, TI, telecom, manutenção e limpeza entram por participação
+	// declarada; logística entra pela TONELAGEM movimentada ontem (sold_prev da
+	// cesta + insumos), como pede o plano.
+	double tonnage = 0.0;
+	for (int product = 0; product < demo_products_; ++product) {
+		tonnage += std::max(0.0, city.markets[product].sold_prev);
+	}
+	city.service_tonnage_prev = tonnage;
+	const double b2b_pool = std::max(0.0, city.opex_revenue);
+	double b2b_weight[kDemoMaxServiceSectors] = {};
+	double b2b_total = 0.0;
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(sector)];
+		double value = definition.business_share;
+		if (definition.freight_share > 0.0) {
+			value += definition.freight_share
+				* std::clamp(tonnage / 2000.0, 0.05, 4.0);
+		}
+		b2b_weight[sector] = value;
+		b2b_total += value;
+	}
+
+	// 3. Governo: compra uma fração pequena do orçamento em serviços
+	// (limpeza/segurança/resíduos, construção, profissionais, saúde/educação).
+	// É transferência explícita governo → service_cash (dinheiro conservado).
+	double government_pool = 0.0;
+	double gov_weight[kDemoMaxServiceSectors] = {};
+	double gov_total = 0.0;
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		gov_weight[sector] =
+			demo_service_sectors_[static_cast<std::size_t>(sector)].government_share;
+		gov_total += gov_weight[sector];
+	}
+	if (gov_total > 0.0) {
+		government_pool = std::min(
+			std::max(0.0, city.government_budget) * demo_service_government_share_,
+			std::max(0.0, city.government_budget));
+		city.government_budget -= government_pool;
+		city.service_cash += government_pool;
+		city.service_government_revenue += government_pool;
+	}
+
+	// 4. Capacidade e exportação. A exportação é atendida primeiro; o resto da
+	// oferta fica para o mercado doméstico. O preço de exportação usa a
+	// competitividade cambial da F5 (a tarifa declarada para "services" reduz a
+	// competitividade, sem criar/destruir dinheiro).
+	const double competitiveness = std::clamp(
+		demo_competitiveness(city.nation), 0.5, 1.5);
+	const int service_tariff_product = demo_product_index(String("services"));
+	const double service_tariff = service_tariff_product >= 0
+		? demo_tariff_rate(city.nation, "*", service_tariff_product) : 0.0;
+	const double export_factor = competitiveness * (1.0 - std::clamp(service_tariff, 0.0, 1.0));
+	double sector_supply[kDemoMaxServiceSectors] = {};
+	double sector_exports[kDemoMaxServiceSectors] = {};
+	double sector_export_revenue[kDemoMaxServiceSectors] = {};
+	for (const int index : demo_service_by_city_[city_index]) {
+		DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt || business.sector < 0
+				|| business.sector >= kDemoMaxServiceSectors) {
+			continue;
+		}
+		const double capacity = std::max(0.0,
+			business.capacity * std::clamp(business.utilization > 0.0
+				? business.utilization : 1.0, 0.05, 1.0));
+		sector_supply[business.sector] += capacity;
+	}
+	const double external_factor = std::clamp(city.external_income_index, 0.2, 3.0);
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(sector)];
+		if (!definition.exportable || definition.export_share <= 0.0) {
+			continue;
+		}
+		const double units = sector_supply[sector] * definition.export_share
+			* external_factor;
+		if (units <= 0.0) {
+			continue;
+		}
+		const double revenue = units
+			* city.service_markets[sector].price * export_factor;
+		sector_exports[sector] = units;
+		sector_export_revenue[sector] = revenue;
+		city.service_export_revenue += revenue;
+		city.service_cash += revenue;
+		demo_foreign_cash_ -= revenue;
+	}
+
+	// 5. Mercados: demanda em unidades = dinheiro / preço. A receita só é
+	// realizada na proporção atendida (demanda sem oferta não vira dinheiro).
+	double active_businesses_total = 0.0;
+	for (const int index : demo_service_by_city_[city_index]) {
+		const DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (!business.bankrupt) {
+			active_businesses_total += 1.0;
+		}
+	}
+	double total_business_jobs = 0.0;
+	for (const int index : demo_service_by_city_[city_index]) {
+		const DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (!business.bankrupt) {
+			total_business_jobs += business.jobs;
+		}
+	}
+	double total_units_served = 0.0;
+	double total_service_cost = 0.0;
+	double total_input_cost = 0.0;
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		DemoServiceMarket& market = city.service_markets[sector];
+		market.demand = 0.0;
+		market.supply = sector_supply[sector];
+		market.unmet = 0.0;
+		market.revenue = 0.0;
+		market.input_cost = 0.0;
+		market.service_cost = 0.0;
+		market.jobs = 0.0;
+		market.businesses = 0.0;
+		market.exports = sector_exports[sector];
+		market.export_revenue = sector_export_revenue[sector];
+		market.coverage = 0.0;
+		double money = 0.0;
+		if (weight_total > 0.0) {
+			money += household_pool * weight[sector] / weight_total;
+		}
+		if (b2b_total > 0.0) {
+			money += b2b_pool * b2b_weight[sector] / b2b_total;
+		}
+		if (gov_total > 0.0) {
+			money += government_pool * gov_weight[sector] / gov_total;
+		}
+		if (market.price <= 0.0) {
+			market.price = std::max(0.01,
+				demo_service_sectors_[static_cast<std::size_t>(sector)].price);
+		}
+		const double domestic_demand = money / market.price;
+		const double total_demand = domestic_demand + market.exports;
+		market.demand = total_demand;
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			market.pop_demand[level] = weight_total > 0.0 && market.price > 1e-12
+				? household_pool * class_pop[level]
+					* demo_service_sectors_[static_cast<std::size_t>(sector)].pop_share[level]
+					/ weight_total / market.price
+				: 0.0;
+		}
+		const double served = std::min(market.supply, total_demand);
+		const double domestic_served = std::max(0.0,
+			std::min(domestic_demand, served - market.exports));
+		const double export_served = std::min(market.exports, served);
+		// Dinheiro realizado: fração doméstica atendida do pool + exportação
+		// efetivamente entregue. O pool não gasto fica em service_cash.
+		const double realized = domestic_demand > 1e-12
+			? money * domestic_served / domestic_demand : 0.0;
+		market.revenue = realized + export_served * market.price * export_factor;
+		if (market.demand > 0.0) {
+			market.unmet = std::max(0.0, market.demand - served);
+		}
+		total_units_served += served;
+		// Cobertura privada de saúde/educação: oferta por habitante contra a
+		// necessidade de referência (gancho documentado, não serviço público).
+		if (demo_service_sectors_[static_cast<std::size_t>(sector)].health) {
+			const double need = std::max(1e-9,
+				city.simulation_population * kDemoServiceHealthNeedPerCapita);
+			market.coverage = std::clamp(market.supply / need, 0.0, 1.0);
+			city.private_health_cover = market.coverage;
+		}
+		if (demo_service_sectors_[static_cast<std::size_t>(sector)].education) {
+			const double need = std::max(1e-9,
+				city.simulation_population * kDemoServiceEducationNeedPerCapita);
+			market.coverage = std::clamp(market.supply / need, 0.0, 1.0);
+			city.private_education_cover = market.coverage;
+		}
+	}
+
+	// 6. Negócios: produzem a sua fatia da oferta, compram insumos (bens e
+	// serviços) e pagam a folha (fatia de city.service_wage_bill). O lucro é
+	// informativo para entrada/saída; a distribuição aos donos continua no
+	// agregado do setor de serviços (service_profit).
+	std::vector<double> sector_revenue_gain(kDemoMaxServiceSectors, 0.0);
+	for (const int index : demo_service_by_city_[city_index]) {
+		DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt || business.sector < 0
+				|| business.sector >= kDemoMaxServiceSectors) {
+			continue;
+		}
+		DemoServiceMarket& market = city.service_markets[business.sector];
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(business.sector)];
+		market.businesses += 1.0;
+		const double capacity = std::max(0.0, business.capacity);
+		double units = 0.0;
+		if (market.supply > 1e-12) {
+			units = std::min(capacity, market.supply > 0.0
+				? std::max(0.0, market.demand) * capacity / market.supply : 0.0);
+			units = std::min(units, capacity);
+		}
+		business.utilization = capacity > 1e-12 ? units / capacity : 0.0;
+		business.workers = business.jobs * std::clamp(business.utilization, 0.05, 1.0);
+		const double share = market.supply > 1e-12 ? capacity / market.supply : 0.0;
+		business.revenue = market.revenue * share;
+		// Insumos de bens: compra no mercado da cidade ao preço corrente, até o
+		// estoque disponível. O dinheiro sai de service_cash e entra em
+		// firm_cash (produtor), conservando o total.
+		double input_cost = 0.0;
+		for (const DemoServiceSector::Input& input : definition.inputs) {
+			if (input.product < 0 || input.product >= demo_products_) {
+				continue;
+			}
+			DemoMarket& goods = city.markets[input.product];
+			const double needed = input.qty * units;
+			const double bought = std::min(needed, std::max(0.0, goods.stock));
+			if (bought <= 0.0) {
+				continue;
+			}
+			const double paid = bought * goods.price;
+			goods.stock -= bought;
+			goods.demand += bought;
+			goods.sold += bought;
+			goods.desired += needed;
+			city.revenue_by_product[input.product] += paid;
+			input_cost += paid;
+		}
+		business.input_cost = input_cost;
+		// Insumos de serviço: transferência entre pools setoriais (não sai do
+		// service_cash; o lucro do fornecedor sobe e o do comprador cai).
+		double service_cost = 0.0;
+		for (std::size_t slot = 0; slot < definition.service_inputs.size(); ++slot) {
+			const int supplier = definition.service_inputs[slot];
+			if (supplier < 0 || supplier >= kDemoMaxServiceSectors) {
+				continue;
+			}
+			const double qty = definition.service_input_qty[slot] * units;
+			const double price = city.service_markets[supplier].price;
+			const double paid = qty * price;
+			service_cost += paid;
+			sector_revenue_gain[static_cast<std::size_t>(supplier)] += paid;
+		}
+		business.service_cost = service_cost;
+		// Folha: fatia da folha agregada do setor de serviços pelo emprego do
+		// negócio. A folha agregada já foi paga em demo_labor_day.
+		business.wages = total_business_jobs > 1e-12
+			? city.service_wage_bill * business.jobs / total_business_jobs : 0.0;
+		business.profit = business.revenue - business.wages
+			- business.input_cost - business.service_cost;
+		business.capital_left = std::max(0.0,
+			business.capital_left + business.profit);
+		if (business.profit < 0.0 && business.utilization > 1e-9) {
+			++business.loss_days;
+		} else if (business.profit > 0.0) {
+			business.loss_days = 0;
+		}
+		total_input_cost += business.input_cost;
+		total_service_cost += business.service_cost;
+	}
+	// Receita dos fornecedores de serviços: aumenta o pool publicado do setor.
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		if (sector_revenue_gain[static_cast<std::size_t>(sector)] > 0.0) {
+			city.service_markets[sector].revenue +=
+				sector_revenue_gain[static_cast<std::size_t>(sector)];
+		}
+	}
+	// E chega aos negócios fornecedores (mesma proporção de capacidade): o
+	// lucro do comprador já pagou o serviço, então o efeito agregado é nulo.
+	for (const int index : demo_service_by_city_[city_index]) {
+		DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt || business.sector < 0
+				|| business.sector >= kDemoMaxServiceSectors) {
+			continue;
+		}
+		const double gain = sector_revenue_gain[static_cast<std::size_t>(business.sector)];
+		if (gain <= 0.0) {
+			continue;
+		}
+		const double supply = city.service_markets[business.sector].supply;
+		const double share = supply > 1e-12 ? business.capacity / supply : 0.0;
+		business.revenue += gain * share;
+		business.profit += gain * share;
+		business.capital_left += gain * share;
+	}
+	// Paga os insumos de bens: service_cash → firm_cash.
+	const double paid_inputs = std::min(total_input_cost,
+		std::max(0.0, city.service_cash));
+	if (paid_inputs > 0.0) {
+		city.service_cash -= paid_inputs;
+		city.firm_cash += paid_inputs;
+	}
+	city.service_input_cost = total_input_cost;
+
+	// 7. Emprego por setor: divide o emprego AGREGADO de serviços da F7 (o
+	// empregador residual) pela participação dos negócios de cada setor. Sem
+	// negócios, a divisão segue os pesos de demanda — a soma continua igual a
+	// city.service_jobs (nenhum emprego é criado ou perdido aqui).
+	double jobs_weight[kDemoMaxServiceSectors] = {};
+	double jobs_total = 0.0;
+	for (const int index : demo_service_by_city_[city_index]) {
+		const DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt || business.sector < 0
+				|| business.sector >= kDemoMaxServiceSectors) {
+			continue;
+		}
+		jobs_weight[business.sector] += std::max(0.0, business.jobs);
+		jobs_total += std::max(0.0, business.jobs);
+	}
+	if (jobs_total <= 1e-12) {
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			jobs_weight[sector] = weight[sector];
+			jobs_total += weight[sector];
+		}
+	}
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		city.service_markets[sector].jobs = jobs_total > 1e-12
+			? city.service_jobs * jobs_weight[sector] / jobs_total : 0.0;
+	}
+
+	// 8. Preço: reage à razão demanda financiada/oferta, com suavização e
+	// banda em torno da âncora. Oferta zero com demanda > 0 sobe ao teto.
+	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		DemoServiceMarket& market = city.service_markets[sector];
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(sector)];
+		if (market.base_price <= 0.0) {
+			market.base_price = definition.price;
+		}
+		const double ratio = market.supply > 1e-9
+			? std::max(0.0, market.demand) / market.supply
+			: (market.demand > 1e-9 ? 4.0 : 1.0);
+		const double target = market.base_price * std::clamp(
+			std::pow(ratio, 0.35), kDemoServicePriceBandLow,
+			kDemoServicePriceBandHigh);
+		market.price += (target - market.price) * kDemoServicePriceSmooth;
+		market.price = std::clamp(market.price,
+			market.base_price * kDemoServicePriceBandLow,
+			market.base_price * kDemoServicePriceBandHigh);
+	}
+
+	// 9. Entrada e saída. Entrada só com demanda não atendida, margem
+	// esperada acima do limiar e poupança da POP dona acima do capital + 4×
+	// reserva. Uma abertura por cidade/dia no máximo.
+	int opens = 0;
+	for (int sector = 0; sector < kDemoMaxServiceSectors && opens < kDemoServiceOpensPerDay; ++sector) {
+		DemoServiceMarket& market = city.service_markets[sector];
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(sector)];
+		if (market.unmet < definition.min_capacity * 0.5) {
+			continue;
+		}
+		int existing = 0;
+		for (const int index : demo_service_by_city_[city_index]) {
+			const DemoServiceBusiness& business =
+				demo_service_businesses_[static_cast<std::size_t>(index)];
+			if (!business.bankrupt && business.sector == sector) {
+				++existing;
+			}
+		}
+		if (existing >= kDemoServiceMaxPerSector) {
+			continue;
+		}
+		const double capacity = std::max(definition.min_capacity,
+			std::min(market.unmet, 40.0 / definition.jobs_per_unit));
+		const double revenue = capacity * market.price;
+		double expected_cost = capacity * definition.jobs_per_unit * wage;
+		for (const DemoServiceSector::Input& input : definition.inputs) {
+			if (input.product >= 0 && input.product < demo_products_) {
+				expected_cost += capacity * input.qty * city.markets[input.product].price;
+			}
+		}
+		for (std::size_t slot = 0; slot < definition.service_inputs.size(); ++slot) {
+			const int supplier = definition.service_inputs[slot];
+			if (supplier >= 0 && supplier < kDemoMaxServiceSectors) {
+				expected_cost += capacity * definition.service_input_qty[slot]
+					* city.service_markets[supplier].price;
+			}
+		}
+		const double margin = revenue > 1e-9
+			? (revenue - expected_cost) / revenue : -1.0;
+		const double capital = capacity * definition.capital_per_unit;
+		if (margin < kDemoServiceEntryMargin
+				|| city.pop.savings < capital * kDemoServiceCapitalReserve) {
+			continue;
+		}
+		if (demo_service_open(city, sector, capacity, capital)) {
+			++opens;
+		}
+	}
+	for (const int index : demo_service_by_city_[city_index]) {
+		DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt) {
+			continue;
+		}
+		if (business.loss_days >= kDemoServiceLossDays) {
+			demo_service_close(business);
+		}
+	}
+	city.service_business_count = 0;
+	for (const int index : demo_service_by_city_[city_index]) {
+		if (!demo_service_businesses_[static_cast<std::size_t>(index)].bankrupt) {
+			++city.service_business_count;
+		}
+	}
+	(void)active_businesses_total;
+	(void)total_units_served;
+	(void)total_service_cost;
+}
+
+Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
+	Dictionary out;
+	const std::string id = std::string(city_id.utf8().get_data());
+	const auto found = demo_city_lookup_.find(id);
+	if (found == demo_city_lookup_.end()) {
+		out["error"] = "cidade inexistente";
+		return out;
+	}
+	const DemoCity& city = demo_cities_[static_cast<std::size_t>(found->second)];
+	out["city"] = city_id;
+	out["nation"] = String(city.nation.c_str());
+	out["name"] = String(city.name.c_str());
+	Array sectors;
+	for (int sector = 0; sector < static_cast<int>(demo_service_sectors_.size()); ++sector) {
+		const DemoServiceSector& definition =
+			demo_service_sectors_[static_cast<std::size_t>(sector)];
+		const DemoServiceMarket& market = city.service_markets[sector];
+		Dictionary entry;
+		entry["id"] = String(definition.id.c_str());
+		entry["name_pt"] = String(definition.name_pt.c_str());
+		entry["name_en"] = String(definition.name_en.c_str());
+		entry["name_es"] = String(definition.name_es.c_str());
+		entry["icon"] = String(definition.icon.c_str());
+		entry["demand"] = market.demand;
+		entry["supply"] = market.supply;
+		entry["unmet"] = market.unmet;
+		entry["price"] = market.price;
+		entry["revenue"] = market.revenue;
+		entry["jobs"] = market.jobs;
+		entry["businesses"] = market.businesses;
+		entry["exports"] = market.exports;
+		entry["export_revenue"] = market.export_revenue;
+		entry["coverage"] = market.coverage;
+		entry["input_cost"] = market.input_cost;
+		entry["service_cost"] = market.service_cost;
+		Array pop_demand;
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			pop_demand.append(market.pop_demand[level]);
+		}
+		entry["pop_demand"] = pop_demand;
+		sectors.append(entry);
+	}
+	out["sectors"] = sectors;
+	Array businesses;
+	for (const int index : demo_service_by_city_[static_cast<std::size_t>(found->second)]) {
+		const DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		if (business.bankrupt) {
+			continue;
+		}
+		Dictionary entry;
+		entry["id"] = business.id;
+		entry["sector"] = String(
+			demo_service_sectors_[static_cast<std::size_t>(business.sector)].id.c_str());
+		entry["owner_stratum"] = business.owner_stratum;
+		entry["capacity"] = business.capacity;
+		entry["jobs"] = business.jobs;
+		entry["workers"] = business.workers;
+		entry["capital"] = business.capital;
+		entry["capital_left"] = business.capital_left;
+		entry["revenue"] = business.revenue;
+		entry["wages"] = business.wages;
+		entry["input_cost"] = business.input_cost;
+		entry["service_cost"] = business.service_cost;
+		entry["profit"] = business.profit;
+		entry["loss_days"] = business.loss_days;
+		entry["opened_day"] = business.opened_day;
+		entry["name_seed"] = static_cast<double>(
+			business.name_seed % 9007199254740991ULL);
+		businesses.append(entry);
+	}
+	out["businesses"] = businesses;
+	out["private_health_cover"] = city.private_health_cover;
+	out["private_education_cover"] = city.private_education_cover;
+	out["service_jobs"] = city.service_jobs;
+	out["service_businesses"] = city.service_business_count;
+	Array class_population;
+	Array income_level_share;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		class_population.append(city.pop.class_population[level]);
+	}
+	for (int level = 0; level < kDemoIncomeLevels; ++level) {
+		income_level_share.append(city.pop.income_level_share[level]);
+	}
+	out["class_population"] = class_population;
+	out["income_level_share"] = income_level_share;
+	out["service_tonnage_prev"] = city.service_tonnage_prev;
+	out["service_export_revenue"] = city.service_export_revenue;
+	out["service_government_revenue"] = city.service_government_revenue;
+	out["service_input_cost"] = city.service_input_cost;
+	return out;
+}
+
+void EconomySim::demo_set_service_capacity(const String& city_id,
+		const String& sector, double units_per_day) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	const int sector_index = demo_service_sector_index(
+		std::string(sector.utf8().get_data()));
+	if (city == nullptr || sector_index < 0) {
+		return;
+	}
+	units_per_day = std::max(0.0, units_per_day);
+	std::vector<int> local;
+	for (int index = 0; index < static_cast<int>(demo_service_businesses_.size()); ++index) {
+		if (demo_service_businesses_[static_cast<std::size_t>(index)].city == city->id
+				&& demo_service_businesses_[static_cast<std::size_t>(index)].sector == sector_index
+				&& !demo_service_businesses_[static_cast<std::size_t>(index)].bankrupt) {
+			local.push_back(index);
+		}
+	}
+	if (local.empty()) {
+		if (units_per_day > 0.0) {
+			const DemoServiceSector& definition =
+				demo_service_sectors_[static_cast<std::size_t>(sector_index)];
+			demo_service_open(*city, sector_index, units_per_day,
+				units_per_day * definition.capital_per_unit);
+		}
+		return;
+	}
+	const double each = units_per_day / static_cast<double>(local.size());
+	for (const int index : local) {
+		DemoServiceBusiness& business =
+			demo_service_businesses_[static_cast<std::size_t>(index)];
+		business.capacity = each;
+		business.jobs = each
+			* demo_service_sectors_[static_cast<std::size_t>(sector_index)].jobs_per_unit;
+		business.workers = business.jobs;
+		business.loss_days = 0;
+	}
+}
+
+void EconomySim::demo_set_service_business_state(int business_id, int loss_days,
+		double profit) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	for (DemoServiceBusiness& business : demo_service_businesses_) {
+		if (business.id != business_id) {
+			continue;
+		}
+		business.loss_days = std::max(0, loss_days);
+		business.profit = profit;
+		return;
+	}
+}
+
+int EconomySim::demo_get_service_business_count() const {
+	int count = 0;
+	for (const DemoServiceBusiness& business : demo_service_businesses_) {
+		if (!business.bankrupt) {
+			++count;
+		}
+	}
+	return count;
+}
+
+int EconomySim::demo_get_service_bankruptcies() const {
+	return demo_service_bankruptcies_;
+}
+
 
 void EconomySim::demo_update_wages(DemoCity& city, double building_margin) {
 	DemoPop& pop = city.pop;
@@ -8971,6 +10075,36 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["productivity_index"] = city.productivity_index;
 		// Gini: 0 = não declarado (legado por escolaridade).
 		entry["income_gini"] = city.income_gini;
+		// F8: serviços (save v10). Mercados dos 20 setores em arrays de 12
+		// campos (ordem fixa) + fluxos/caixa do dia e cobertura privada.
+		entry["service_export_revenue"] = city.service_export_revenue;
+		entry["service_government_revenue"] = city.service_government_revenue;
+		entry["service_input_cost"] = city.service_input_cost;
+		entry["service_business_profit"] = city.service_business_profit;
+		entry["service_business_count"] = city.service_business_count;
+		entry["private_health_cover"] = city.private_health_cover;
+		entry["private_education_cover"] = city.private_education_cover;
+		entry["service_tonnage_prev"] = city.service_tonnage_prev;
+		Array service_markets;
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			const DemoServiceMarket& market = city.service_markets[sector];
+			Array fields;
+			fields.append(market.demand);
+			fields.append(market.supply);
+			fields.append(market.unmet);
+			fields.append(market.price);
+			fields.append(market.base_price);
+			fields.append(market.revenue);
+			fields.append(market.input_cost);
+			fields.append(market.service_cost);
+			fields.append(market.jobs);
+			fields.append(market.businesses);
+			fields.append(market.exports);
+			fields.append(market.export_revenue);
+			fields.append(market.coverage);
+			service_markets.append(fields);
+		}
+		entry["services"] = service_markets;
 
 		Array suitability;
 		Array revenue;
@@ -9171,6 +10305,36 @@ Dictionary EconomySim::demo_to_dict() const {
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
+
+	// F8: negócios de serviço (catálogo global). O nome NÃO é gravado: é
+	// derivado da semente + cultura do dono no GDScript (rótulo), então o save
+	// guarda só `name_seed` e o vínculo cidade/setor.
+	Array service_businesses;
+	for (const DemoServiceBusiness& business : demo_service_businesses_) {
+		Dictionary entry;
+		entry["id"] = business.id;
+		entry["sector"] = business.sector;
+		entry["city"] = String(business.city.c_str());
+		entry["owner_stratum"] = business.owner_stratum;
+		entry["capacity"] = business.capacity;
+		entry["jobs"] = business.jobs;
+		entry["workers"] = business.workers;
+		entry["capital"] = business.capital;
+		entry["capital_left"] = business.capital_left;
+		entry["utilization"] = business.utilization;
+		entry["revenue"] = business.revenue;
+		entry["wages"] = business.wages;
+		entry["input_cost"] = business.input_cost;
+		entry["service_cost"] = business.service_cost;
+		entry["profit"] = business.profit;
+		entry["loss_days"] = business.loss_days;
+		entry["bankrupt"] = business.bankrupt;
+		entry["opened_day"] = business.opened_day;
+		entry["name_seed"] = static_cast<double>(business.name_seed % 9007199254740991ULL);
+		service_businesses.append(entry);
+	}
+	data["service_businesses"] = service_businesses;
+	data["service_bankruptcies"] = demo_service_bankruptcies_;
 
 	Array transit;
 	for (const DemoShipment& shipment : demo_in_transit_) {
@@ -9501,6 +10665,54 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 			double(entry.get("construction_revenue_pending", 0.0));
 		city.capital_income_next = double(entry.get("capital_income_next", 0.0));
 		city.gdp = double(entry.get("gdp", 0.0));
+		// F8: serviços (save v10). Sem o bloco (v9 e anteriores), os mercados
+		// ficam no preço-âncora do catálogo e os negócios são semeados no fim
+		// do load (`demo_seed_services`).
+		city.service_export_revenue = double(entry.get("service_export_revenue", 0.0));
+		city.service_government_revenue =
+			double(entry.get("service_government_revenue", 0.0));
+		city.service_input_cost = double(entry.get("service_input_cost", 0.0));
+		city.service_business_profit =
+			double(entry.get("service_business_profit", 0.0));
+		city.service_business_count =
+			int(entry.get("service_business_count", 0));
+		city.private_health_cover = std::clamp(
+			double(entry.get("private_health_cover", 0.0)), 0.0, 1.0);
+		city.private_education_cover = std::clamp(
+			double(entry.get("private_education_cover", 0.0)), 0.0, 1.0);
+		city.service_tonnage_prev = double(entry.get("service_tonnage_prev", 0.0));
+		const Array saved_services = entry.get("services", Array());
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			DemoServiceMarket& market = city.service_markets[sector];
+			if (sector < static_cast<int>(demo_service_sectors_.size())) {
+				market.base_price =
+					demo_service_sectors_[static_cast<std::size_t>(sector)].price;
+			}
+			market.price = market.base_price;
+			if (sector >= saved_services.size()
+					|| saved_services[sector].get_type() != Variant::ARRAY) {
+				continue;
+			}
+			const Array fields = saved_services[sector];
+			if (fields.size() < 13) {
+				continue;
+			}
+			market.demand = double(fields[0]);
+			market.supply = double(fields[1]);
+			market.unmet = double(fields[2]);
+			market.price = double(fields[3]) > 0.0
+				? double(fields[3]) : market.base_price;
+			market.base_price = double(fields[4]) > 0.0
+				? double(fields[4]) : market.base_price;
+			market.revenue = double(fields[5]);
+			market.input_cost = double(fields[6]);
+			market.service_cost = double(fields[7]);
+			market.jobs = double(fields[8]);
+			market.businesses = double(fields[9]);
+			market.exports = double(fields[10]);
+			market.export_revenue = double(fields[11]);
+			market.coverage = std::clamp(double(fields[12]), 0.0, 1.0);
+		}
 
 		Array suitability = entry.get("suitability", Array());
 		Array revenue = entry.get("revenue_by_product", Array());
@@ -9944,6 +11156,61 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		demo_fleet_product_ship_ = demo_product_index(String("cargo_ship"));
 		demo_fleet_product_plane_ = demo_product_index(String("cargo_plane"));
 		demo_fleet_product_parts_ = demo_product_index(String("spare_parts"));
+	}
+
+	// F8: negócios de serviço (save v10). Save v9 e anteriores não têm o bloco:
+	// semeia os negócios como num mundo novo (migração declarada).
+	demo_service_businesses_.clear();
+	demo_next_service_business_id_ = 1;
+	demo_service_bankruptcies_ = int(data.get("service_bankruptcies", 0));
+	const Array saved_businesses = data.get("service_businesses", Array());
+	for (int index = 0; index < saved_businesses.size(); ++index) {
+		if (saved_businesses[index].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = saved_businesses[index];
+		DemoServiceBusiness business;
+		business.id = int(entry.get("id", 0));
+		business.sector = int(entry.get("sector", -1));
+		business.city = std::string(
+			String(entry.get("city", "")).utf8().get_data());
+		business.owner_stratum = std::clamp(
+			int(entry.get("owner_stratum", kDemoEducationLevels - 1)),
+			0, kDemoEducationLevels - 1);
+		business.capacity = safe_nonneg(double(entry.get("capacity", 0.0)));
+		business.jobs = safe_nonneg(double(entry.get("jobs", 0.0)));
+		business.workers = safe_nonneg(double(entry.get("workers", 0.0)));
+		business.capital = safe_nonneg(double(entry.get("capital", 0.0)));
+		business.capital_left = safe_nonneg(double(entry.get("capital_left", 0.0)));
+		business.utilization = std::clamp(
+			double(entry.get("utilization", 0.0)), 0.0, 1.0);
+		business.revenue = double(entry.get("revenue", 0.0));
+		business.wages = safe_nonneg(double(entry.get("wages", 0.0)));
+		business.input_cost = safe_nonneg(double(entry.get("input_cost", 0.0)));
+		business.service_cost = safe_nonneg(double(entry.get("service_cost", 0.0)));
+		business.profit = double(entry.get("profit", 0.0));
+		business.loss_days = std::max(0, int(entry.get("loss_days", 0)));
+		business.bankrupt = bool(entry.get("bankrupt", false));
+		business.opened_day = int(entry.get("opened_day", 0));
+		const double seed = double(entry.get("name_seed", 0.0));
+		business.name_seed = seed > 0.0
+			? static_cast<unsigned long long>(seed) : 0ULL;
+		if (business.name_seed == 0ULL) {
+			unsigned long long hash = 1469598103934665603ULL;
+			for (const char c : business.city + "|" + std::to_string(business.id)) {
+				hash ^= static_cast<unsigned char>(c);
+				hash *= 1099511628211ULL;
+			}
+			business.name_seed = hash;
+		}
+		demo_next_service_business_id_ = std::max(
+			demo_next_service_business_id_, business.id + 1);
+		demo_service_businesses_.push_back(std::move(business));
+	}
+	if (demo_service_businesses_.empty() && demo_services_loaded_) {
+		demo_seed_services();
+	} else {
+		demo_rebuild_service_indexes();
 	}
 }
 
