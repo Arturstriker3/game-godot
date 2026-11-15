@@ -1023,6 +1023,16 @@ private:
 		Array stratum_disposable;
 		Array stratum_population;
 		Array stratum_wage_income;
+		// F7 perf: espelhos dos vetores acima. Eles são mutados em lugar (e
+		// compartilhados com o `pop` publicado), então cada elemento escrito é
+		// uma chamada Variant. Educação/estratos mudam em escala de semanas:
+		// só reescreve o grupo quando o conteúdo muda de fato.
+		double labor_rare_written[16] = {};   // education, força, estudo, fatias, níveis
+		bool labor_rare_filled = false;
+		double labor_daily_written[24] = {};  // folha/emprego/vagas por nível
+		bool labor_daily_filled = false;
+		double stratum_written[12] = {};      // renda/população/folha por estrato
+		bool stratum_written_filled = false;
 		// Espelho dos 25 escalares publicados por cidade (população, PIB,
 		// caixas, indicadores derivados): escrita só quando o double muda.
 		double scalar_written[kDemoStatusScalarCount] = {};

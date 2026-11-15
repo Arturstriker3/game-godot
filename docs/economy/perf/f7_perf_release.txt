@@ -1,54 +1,177 @@
-F7 — calibração final: distribuição de renda ancorada (2026-11-15)
-==============================================================================
+F7 — fechamento: calibração de renda, otimização do status e perf release (2026-11-15)
+======================================================================================
 
-Base: 23847b2 (núcleo F7) + calibração final desta sessão (TFP como fator
-completo, piso de subsistência da folha, classes de consumo por Gini).
+Base: 7c68c32 (`economia: subsídio de comida dimensionado pela cesta disponível`,
+F7) + a otimização não commitada do status (cache por grupo dos vetores de
+trabalho/estratos, só reescreve quando o conteúdo muda) e a
+`demo_food_basket_cost` em passada única.
 
-Medição no caminho real do jogo (autoload Economy + IA + comboios), com a DLL
-release (gdextension/bin/economy_gdextension.windows.template_release.x86_64.dll,
-1.292.800 bytes) copiada sobre o nome debug para o binário do editor usá-la; a
-debug real (11.941.376 bytes) foi restaurada ao final.
+DLLs usadas (compiladas do mesmo fonte, debug em 03:48:49 e release em 03:49:00):
+debug 11.947.520 bytes (`template_debug`), release 1.296.896 bytes
+(`template_release`). O release antigo da medição F7 tinha 1.292.800 bytes.
 
-Comando (3 execuções seguidas):
+Condição de medição: máquina do usuário com o **editor Godot aberto**
+(PID 15104) e o servidor `godot-editor-mcp` (PID 12412) rodando — igual às
+medições anteriores da F7. Não se fechou o editor. 834 cidades, 30 dias,
+`--tick-mode=worker`, `--profile=1`, `map-mode` padrão (none).
+
+Comando:
 
   & $godot --headless --path . res://tools/perf_day_peak.tscn -- --days=30 --tick-mode=worker --profile=1
 
-Godot 4.7.2 stable, 834 cidades, 30 dias, `map-mode` padrão (none).
+Para a medição o release foi copiado sobre o nome `template_debug` (é o binário
+que o executável do editor carrega) e a debug real (11.947.520 bytes) foi
+restaurada ao final — conferida por hash. Logs: `f7opt_release_run1..3.txt`
+(UTF-8 sem BOM).
 
-Resumo das 3 medições (ms; média / p95 / máx)
---------------------------------------------
+1. Equivalência funcional da otimização
+---------------------------------------
 
-| execução | tick C++ (worker) | status | status_cities | frame de pico | IA fatiada/dia | memória |
+Antes do perf, a otimização passou os testes de correção:
+
+| teste | resultado |
+|---|---|
+| `tools/labor_market_test.gd` | OK (vaga por nível, salário dinâmico, piso, qualificação, renda) |
+| `tools/pop_needs_test.gd` | OK (substituição, níveis, duráveis, governo) |
+| `tools/economy_integration_test.gd` | OK (geografia, cadeia, investimento, save/load) |
+| `tools/economy_world_test.gd` 60 d `--ai=1` | OK, sem violação de invariantes |
+
+`economy_world_test` 60 d com IA: o JSON novo (`f7opt_world_ai_60.json`) é
+**idêntico campo a campo** ao pré-otimização (`f7_world_ai_60.json`) — 6.091
+campos, 0 diferenças, `money_total` = 2.200.539.587,40 e 0 falências nos dois.
+A otimização do `demo_food_basket_cost` também não muda nada porque a
+quantidade de slots de comida é menor que `kDemoMaxFoodProducts`.
+
+2. Tabela: baseline d8fb81c × F7 × F7 otimizada
+-----------------------------------------------
+
+Todas as linhas usam a mesma condição (editor aberto, mesmos 30 dias,
+`tick-mode=worker`, `profile=1`, DLL release copiada sobre a debug). A coluna
+"mediana" é a mediana das 3 execuções; a coluna "pior" é a pior das 3 — as
+duas estão explicitadas porque a variância entre execuções é grande.
+
+`baseline d8fb81c` = logs `f7_release_run1..3.txt` no commit d8fb81c (núcleo F7
+de trabalho/educação, antes da TFP/Gini). `F7` = 7c68c32 (logs no HEAD).
+`F7 otimizada` = worktree desta sessão.
+
+| medição | base mediana | base pior | F7 mediana | F7 pior | otim. mediana | otim. pior |
 |---|---|---|---|---|---|---|
-| 1 | 48,46 / **54,57** / 57,57 | 24,33 / **28,18** / 29,09 | 18,31 / 20,94 / 22,65 | 12,40 / 14,89 / 17,02 | 14,50 / 17,93 / 18,04 | 528,5 MB |
-| 2 | 49,32 / **75,91** / 81,86 | 25,81 / **37,30** / 49,88 | 19,28 / 28,94 / 38,16 | 13,24 / 18,67 / 21,19 | 15,21 / 20,80 / 22,44 | 528,5 MB |
-| 3 | 47,53 / **58,54** / 60,30 | 24,52 / **29,43** / 29,62 | 18,26 / 21,40 / 23,62 | 12,30 / 14,67 / 16,53 | 14,85 / 20,09 / 20,14 | 528,5 MB |
+| tick C++ média (ms) | 40,73 | — | 48,46 | — | **45,76** | — |
+| tick C++ p95 (ms) | 46,72 | 55,33 | 58,54 | 75,91 | **54,76** | **55,86** |
+| tick C++ máx (ms) | 53,05 | 56,05 | 60,30 | 81,86 | **58,34** | **63,99** |
+| `status` média (ms) | 22,88 | — | 24,52 | — | **23,28** | — |
+| `status` p95 (ms) | 26,21 | 28,04 | 29,43 | 37,30 | **27,80** | **27,89** |
+| `status` máx (ms) | 28,62 | 31,81 | 29,62 | 49,88 | **29,11** | **29,11** |
+| `status_cities` média (ms) | 17,04 | — | 18,31 | — | **17,46** | — |
+| `status_cities` p95 (ms) | 21,05 | 22,29 | 21,40 | 28,94 | **21,54** | **21,55** |
+| IA fatiada/dia p95 (ms) | 21,47 | 23,63 | 20,09 | 20,80 | **19,29** | **21,39** |
+| frame de pico p95 (ms) | 15,48 | 48,21 | 14,89 | 18,67 | **14,34** | **14,97** |
+| memória estática | 527,3 MB | 527,3 MB | 528,5 MB | 528,5 MB | 528,5 MB | 528,6 MB |
 
-Portões do plano (`production_chains_impl_plan.md` §8.6):
+Por execução (média / p95 / máx, ms):
 
-| métrica | portão | resultado (pior das 3) | situação |
+| execução | tick C++ | `status` | `status_cities` | IA/dia | frame de pico |
+|---|---|---|---|---|---|
+| base 1 | 45,43 / 55,33 / 56,05 | 23,00 / 28,04 / 28,62 | 17,12 / 21,05 / 22,49 | 16,49 / 21,50 / 23,63 | 23,61 / 48,21 / 64,48 |
+| base 2 | 40,73 / 46,72 / 53,05 | 22,88 / 26,21 / 31,81 | 17,04 / 22,29 / 25,17 | 15,00 / 21,47 / 22,92 | 11,31 / 15,48 / 17,08 |
+| base 3 | 37,90 / 42,04 / 42,40 | 22,04 / 25,18 / 27,11 | 16,55 / 20,15 / 22,65 | 14,17 / 16,28 / 16,90 | 10,82 / 11,75 / 12,42 |
+| F7 1 | 48,46 / 54,57 / 57,57 | 24,33 / 28,18 / 29,09 | 18,31 / 20,94 / 22,65 | 14,50 / 17,93 / 18,04 | 12,40 / 14,89 / 17,02 |
+| F7 2 | 49,32 / 75,91 / 81,86 | 25,81 / 37,30 / 49,88 | 19,28 / 28,94 / 38,16 | 15,21 / 20,80 / 22,44 | 13,24 / 18,67 / 21,19 |
+| F7 3 | 47,53 / 58,54 / 60,30 | 24,52 / 29,43 / 29,62 | 18,26 / 21,40 / 23,62 | 14,85 / 20,09 / 20,14 | 12,30 / 14,67 / 16,53 |
+| opt 1 | 45,22 / 55,86 / 57,29 | 23,81 / 27,89 / 28,72 | 17,67 / 21,55 / 22,20 | 14,39 / 21,39 / 21,53 | 11,12 / 14,34 / 15,83 |
+| opt 2 | 45,92 / 54,76 / 63,99 | 23,27 / 27,80 / 29,11 | 17,45 / 21,54 / 22,62 | 14,04 / 19,29 / 19,85 | 11,12 / 14,97 / 16,59 |
+| opt 3 | 45,76 / 54,69 / 58,34 | 23,28 / 27,53 / 27,53 | 17,46 / 20,22 / 22,20 | 13,93 / 18,31 / 21,83 | 11,10 / 12,08 / 14,90 |
+
+Leitura: a otimização elimina o pior caso da F7 — o p95 do `status` cai de
+37,30 para 27,89 e o `status_cities` de 28,94 para 21,55 (pior das 3), e o
+máximo do tick de 81,86 para 63,99. No mediano, a média do `status` cai 1,2 ms
+(24,52 -> 23,28) e a do `status_cities` 0,9 ms (18,31 -> 17,46), voltando ao
+patamar do baseline d8fb81c (22,88 / 17,04). O tick total continua ~5 ms acima
+do d8fb81c porque a F7 acrescenta a fase `labor` e o `income` com a cesta por
+cidade; a otimização recupera ~2,7 ms na média (48,46 -> 45,76) e ~3,8 ms no
+p95 mediano (58,54 -> 54,76). Memória: +0,1 MB no run 2 (528,6 contra 528,5).
+
+3. Portões do plano (`production_chains_impl_plan.md` §8.6)
+-----------------------------------------------------------
+
+| métrica | portão | pior das 3 (otimizada) | situação |
 |---|---|---|---|
-| tick p95 | <= 50 ms | **75,91** (execução 2); 54,57 / 58,54 nas 1 e 3 | **falha** com o editor Godot aberto (contenção) |
-| `status` p95 | <= 30 ms | **37,30** (execução 2); 28,18 / 29,43 nas 1 e 3 | passa em 2 de 3; falha na execução 2 |
-| frame de pico p95 | <= 12 ms | **18,67** (execução 2); 14,89 / 14,67 nas 1 e 3 | falha (editor aberto) |
-| memória estática | <= 750 MB | **528,5 MB** | passa |
-| IA fatiada/dia p95 | <= 30 ms | **20,80** | passa |
+| tick p95 | <= 50 ms | **55,86** | falha (editor aberto) |
+| `status` p95 | <= 30 ms | **27,89** | **passa** |
+| frame de pico p95 | <= 12 ms | **14,97** | falha (editor aberto) |
+| memória estática | <= 750 MB | **528,6 MB** | passa |
+| IA fatiada/dia p95 | <= 30 ms | **21,39** | passa |
 
-Fases do tick na execução 3 (média / p95 / máx, ms):
+O tick e o frame de pico seguem acima do portão por contenção do editor
+(aberto em todas as medições do dia, inclusive nas do baseline). Repetir em
+máquina limpa antes de fechar o portão definitivo.
+
+Fases do tick na execução 3 otimizada (média / p95 / máx, ms):
 
 | fase | média | p95 | máx |
 |---|---|---|---|
-| status | 24,52 | 29,43 | 29,62 |
-| status_cities | 18,26 | 21,40 | 23,62 |
-| trade | 6,92 | 9,30 | 11,51 |
-| arrival | 4,53 | 5,68 | 6,39 |
-| status_orders | 3,77 | 4,84 | 4,89 |
-| status_nations | 2,46 | 3,54 | 3,97 |
-| income | 0,85 | 1,49 | 2,08 |
-| produção / preços | 0,41 / 0,42 | 0,50 / 0,68 | 0,55 / 0,75 |
+| status | 23,28 | 27,53 | 27,53 |
+| status_cities | 17,46 | 20,22 | 22,20 |
+| trade | 6,85 | 9,98 | 10,77 |
+| status_orders | 3,50 | 4,33 | 4,63 |
+| arrival | 3,53 | 4,00 | 4,18 |
+| status_nations | 2,29 | 3,15 | 3,20 |
+| income | 0,86 | 1,27 | 1,35 |
+| reset | 0,56 | 0,82 | 0,89 |
+| raw | 0,44 | 0,71 | 0,71 |
+| production | 0,40 | 0,49 | 0,52 |
+| prices | 0,36 | 0,50 | 0,54 |
+| invariants | 0,21 | 0,34 | 0,34 |
+| clamp | 0,21 | 0,32 | 0,32 |
+| labor | 0,14 | 0,21 | 0,26 |
+| accounting | 0,11 | 0,16 | 0,20 |
+| fiscal | 0,06 | 0,08 | 0,08 |
+| status_misc | 0,02 | 0,03 | 0,04 |
 
-Tabela final da calibração (60 d com IA, `f7_world_ai_60.json`)
-----------------------------------------------------------------
+4. Sweep de 365 d: 5 variações (`f7opt_world_sweep.json`)
+--------------------------------------------------------
+
+  & $godot --headless --path . --script res://tools/economy_world_sweep.gd --
+    --days=365 --out=res://docs/economy/perf/f7opt_world_sweep.json
+
+Baseline `f4_world_ai_365.json` (26 falências, 114 produtos). Resultado:
+**5/5 variações verdes**, sem nenhuma nação acima da tolerância de comida de
+0,025 e falências **11** em todas elas (limite 28).
+
+| variação | falências | nações acima da tolerância |
+|---|---|---|
+| real (taxas reais) | 11 | 0 |
+| real + semente 1 | 11 | 0 |
+| real + semente 2 | 11 | 0 |
+| half (0,5 exato) | 11 | 0 |
+| xgs (--currencies=0) | 11 | 0 |
+
+Pior caso por nação (delta de comida vs. baseline; só os relevantes):
+
+| nação | baseline | pior comida | delta |
+|---|---|---|---|
+| DJI | 0,391 | 0,379 | -0,011 |
+| SOL | 0,609 | 0,616 | +0,007 |
+| MNG | 0,991 | 1,000 | +0,009 |
+| NER | 0,982 | 1,000 | +0,018 |
+| PAK | 0,453 | 0,476 | +0,023 |
+| UZB | 0,948 | 1,000 | +0,052 |
+| LBY | 0,947 | 1,000 | +0,053 |
+| SDN | 0,559 | 0,709 | +0,150 |
+
+As demais 171 nações ficam entre -1e-12 e +1e-12 (diferença de ponto flutuante
+da DLL release contra a debug do baseline, não comportamento). NGA, SYR e SOL
+— que falhavam no sweep do núcleo F7 anterior (0,824 / 0,939 / 0,557) — agora
+ficam em 1,000 / 1,000 / 0,616. A mudança é devida ao commit 7c68c32 (subsídio
+dimensionado pela cesta disponível); o sweep documentado antes dele
+(`f7_world_sweep.json`, 02:57) media o código de f0ac38c.
+
+A otimização não entra nessa comparação porque o teste de 60 d com IA é
+idêntico campo a campo e o núcleo é determinístico; a diferença residual de
+1e-12 vem do build release.
+
+5. Calibração final (60 d com IA, `f7_world_ai_60.json` — inalterada)
+---------------------------------------------------------------------
 
 | nação | desemprego | salário médio básico/interm./superior (XGS/dia) | basic / life / luxury | TFP (`derived:gdp_ppp`) |
 |---|---|---|---|---|
@@ -58,50 +181,30 @@ Tabela final da calibração (60 d com IA, `f7_world_ai_60.json`)
 | IND | 8,9% | 0,0283 / 0,0535 / 0,0471 | 68,4% / 31,6% / 0,1% | 0,457 |
 | NGA | 10,6% | 0,0157 / 0,0318 / 0,0258 | 78,0% / 21,9% / 0,1% | 0,371 |
 
-Em 365 d (`f7_world_sweep.json`, variante real) as fatias são as mesmas
-(estrutura ancorada em PIB PPP + Gini, não em renda observada) e o desemprego
-fica em 4,1% / 4,1% / 4,0% / 8,0% / 9,8% (EUA/DEU/BRA/IND/NGA). Salários em
-365 d: EUA 0,7162/0,8973/1,0143; DEU 0,3881/0,4862/0,5496; BRA
+Em 365 d as fatias são as mesmas (estrutura ancorada em PIB PPP + Gini) e o
+desemprego fica em 4,1% / 4,1% / 4,0% / 8,0% / 9,8% (EUA/DEU/BRA/IND/NGA).
+Salários em 365 d: EUA 0,7162/0,8973/1,0143; DEU 0,3881/0,4862/0,5496; BRA
 0,1715/0,2146/0,2425; IND 0,0468/0,0844/0,0710; NGA 0,0245/0,0451/0,0363.
 
 Meta qualitativa do head: **atingida** — EUA/DEU com basic <= 15% e maioria
 life; BRA basic 30-45%; IND 60-75%; NGA 75-90%; desemprego 4-12% nas cinco.
 
-Sweep de 365 d (5 variações, `f7_world_sweep.json`)
----------------------------------------------------
+6. Observações honestas
+-----------------------
 
-- Falências: **10** em todas as variações (limite 28 = baseline 26 + 2;
-  baseline F4 tinha 26).
-- Comida: **176/179 nações dentro da tolerância** de -0,025 vs
-  `f4_world_ai_365.json`. Residuais, todos MELHORES que o sweep F7 anterior:
-  - NGA 1,000 -> **0,912** (-0,088; antes 0,824);
-  - SYR 1,000 -> **0,948** (-0,052; antes 0,939);
-  - SOL 0,609 -> **0,569** (-0,040; antes 0,557).
-  SDN saiu da lista: 0,559 -> **0,701** (+0,143; antes 0,493).
-  As três residuais são cidades isoladas com estoque/importação limitados
-  (NGA-LAG sem estoque; SYR-DAM e SOL-HAR com estoque, mas caixa familiar
-  curto) — não são regressão da distribuição: nenhuma delas piorou em relação
-  ao núcleo F7 anterior.
-- O teste de mundo retorna 1 por causa dessas 3 nações (o runner do sweep
-  propaga o código do filho), por isso o sweep fecha com falha de comida.
-
-Observações honestas
---------------------
-
-- O editor Godot (PID 15104) e o servidor `godot-editor-mcp` estavam abertos
-  nas 3 execuções, ao contrário do protocolo ("outros Godot fechados"). Não se
-  matou o editor do usuário. O tick p95 ficou em 54,6-75,9 ms (portão 50) e o
-  frame de pico em 14,7-18,7 ms (portão 12); a execução 2 tem um pico isolado
-  de 81,9 ms no dia 15. O `status` p95 passou em 2 de 3 (28,2 e 29,4 ms).
-  Repetir em máquina limpa antes de fechar o portão definitivo.
-- O custo novo do modelo no tick é pequeno: a fase `income` subiu de ~0,4 ms
-  para 0,85 ms de média (uma chamada extra a `demo_level_basket_cost` por
-  cidade) e o `status` não ganhou campos — o `income_level_share` já existia.
-  A diferença para o F7 anterior (42-46 ms de p95) é contenção, não o cálculo
-  das classes.
+- O editor Godot (PID 15104) e o servidor `godot-editor-mcp` (PID 12412)
+  estavam abertos nas 9 medições. Os logs do d8fb81c não registram o estado do
+  editor: foram gerados na mesma máquina e no mesmo dia, então a comparação é
+  indicativa (todos com a mesma ordem de contenção), não certificada. O tick
+  p95 (55,86) e o frame de pico (14,97) continuam acima do portão por isso.
+- O `status` p95 passa em todas as 3 execuções (27,53 / 27,80 / 27,89) e o
+  pior caso da F7 (37,30) sumiu — é o efeito medido da otimização.
+- O sweep de 365 d fechou verde pela primeira vez na F7: 11 falências (limite
+  28) e nenhuma nação acima da tolerância, contra 176/179 e 10 falências no
+  núcleo F7 anterior. O número de falências subiu 1, dentro da tolerância.
 - O modelo NÃO mudou as quantidades de `needs.json`: o custo observado das
   cestas de life/luxury continua ~1,2x a básica. A separação 1x / 2,5-3x /
-  6-10x é aplicada nos LIMIARES DE CLASSE do núcleo (pobreza = 1 cesta;
-  luxo = 7 cestas), que é o número que o status/report publica. Alinhar as
-  quantidades das cestas fica como calibração futura, com o risco de mudar a
-  demanda industrial.
+  6-10x é aplicada nos LIMIARES DE CLASSE do núcleo (pobreza = 1 cesta; luxo =
+  7 cestas), que é o número que o status/report publica. Alinhar as quantidades
+  das cestas fica como calibração futura, com o risco de mudar a demanda
+  industrial.

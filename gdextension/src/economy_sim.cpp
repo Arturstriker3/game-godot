@@ -5942,20 +5942,117 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			slot.stratum_population.resize(kDemoEducationLevels);
 			slot.stratum_wage_income.resize(kDemoEducationLevels);
 		}
-		for (int level_index = 0; level_index < kDemoIncomeLevels;
-				++level_index) {
-			slot.income_level_share[level_index] =
-				city.pop.income_level_share[level_index];
+		// Grupo "raro": educação, força por nível, estudo, fatias de renda e o
+		// nível de consumo de cada estrato. Compara com o último publicado e só
+		// toca nos Arrays quando algo muda (mudam em escala de semanas).
+		{
+			double rare[16];
+			int ri = 0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				rare[ri++] = city.pop.education[level];
+			}
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				rare[ri++] = city.pop.labor_force_by_level[level];
+			}
+			for (int track = 0; track < kDemoEducationLevels - 1; ++track) {
+				rare[ri++] = city.pop.studying[track];
+			}
+			for (int level = 0; level < kDemoIncomeLevels; ++level) {
+				rare[ri++] = city.pop.income_level_share[level];
+			}
+			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				rare[ri++] = double(city.pop.stratum_income_level[stratum]);
+			}
+			if (!slot.labor_rare_filled
+					|| std::memcmp(rare, slot.labor_rare_written,
+						sizeof(double) * static_cast<std::size_t>(ri)) != 0) {
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					slot.education[level] = city.pop.education[level];
+					slot.labor_force_by_level[level] =
+						city.pop.labor_force_by_level[level];
+				}
+				for (int track = 0; track < kDemoEducationLevels - 1; ++track) {
+					slot.studying[track] = city.pop.studying[track];
+				}
+				for (int level = 0; level < kDemoIncomeLevels; ++level) {
+					slot.income_level_share[level] =
+						city.pop.income_level_share[level];
+				}
+				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+					slot.income_level_by_stratum[stratum] =
+						city.pop.stratum_income_level[stratum];
+				}
+				std::memcpy(slot.labor_rare_written, rare,
+					sizeof(double) * static_cast<std::size_t>(ri));
+				slot.labor_rare_filled = true;
+			}
 		}
-		for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
-			slot.income_level_by_stratum[stratum] =
-				city.pop.stratum_income_level[stratum];
-			slot.stratum_disposable[stratum] =
-				city.pop.stratum_disposable[stratum];
-			slot.stratum_population[stratum] =
-				city.pop.stratum_population[stratum];
-			slot.stratum_wage_income[stratum] =
-				city.pop.stratum_wage_income[stratum];
+		// Grupo "diário": salários, emprego, vagas e folha por escolaridade.
+		{
+			double daily[24];
+			int di = 0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				daily[di++] = city.pop.working_age > 1e-9
+					? city.pop.education[level] / city.pop.working_age : 0.0;
+				daily[di++] = city.pop.employed_by_level[level];
+				daily[di++] = city.pop.unemployed_by_level[level];
+				daily[di++] = city.pop.labor_force_by_level[level] > 1e-9
+					? city.pop.unemployed_by_level[level]
+						/ city.pop.labor_force_by_level[level] : 0.0;
+				daily[di++] = city.pop.vacancies_by_level[level];
+				daily[di++] = city.pop.wage_by_level[level];
+				daily[di++] = city.pop.wage_income_by_level[level];
+			}
+			if (!slot.labor_daily_filled
+					|| std::memcmp(daily, slot.labor_daily_written,
+						sizeof(double) * static_cast<std::size_t>(di)) != 0) {
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					slot.education_share[level] = city.pop.working_age > 1e-9
+						? city.pop.education[level] / city.pop.working_age : 0.0;
+					slot.employed_by_level[level] =
+						city.pop.employed_by_level[level];
+					slot.unemployed_by_level[level] =
+						city.pop.unemployed_by_level[level];
+					slot.unemployment_by_level[level] =
+						city.pop.labor_force_by_level[level] > 1e-9
+						? city.pop.unemployed_by_level[level]
+							/ city.pop.labor_force_by_level[level] : 0.0;
+					slot.vacancies_by_level[level] =
+						city.pop.vacancies_by_level[level];
+					slot.wage_by_level[level] = city.pop.wage_by_level[level];
+					slot.wage_income_by_level[level] =
+						city.pop.wage_income_by_level[level];
+				}
+				std::memcpy(slot.labor_daily_written, daily,
+					sizeof(double) * static_cast<std::size_t>(di));
+				slot.labor_daily_filled = true;
+			}
+		}
+		// Renda por estrato: o memcmp evita reescrever os três vetores quando
+		// os valores não mudaram (população e folha do estrato variam devagar).
+		{
+			double strata[12];
+			int si = 0;
+			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				strata[si++] = city.pop.stratum_disposable[stratum];
+				strata[si++] = city.pop.stratum_population[stratum];
+				strata[si++] = city.pop.stratum_wage_income[stratum];
+			}
+			if (!slot.stratum_written_filled
+					|| std::memcmp(strata, slot.stratum_written,
+						sizeof(double) * static_cast<std::size_t>(si)) != 0) {
+				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+					slot.stratum_disposable[stratum] =
+						city.pop.stratum_disposable[stratum];
+					slot.stratum_population[stratum] =
+						city.pop.stratum_population[stratum];
+					slot.stratum_wage_income[stratum] =
+						city.pop.stratum_wage_income[stratum];
+				}
+				std::memcpy(slot.stratum_written, strata,
+					sizeof(double) * static_cast<std::size_t>(si));
+				slot.stratum_written_filled = true;
+			}
 		}
 		if (!filled) {
 			pop[k.income_level_share] = slot.income_level_share;
@@ -5963,30 +6060,6 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			pop[k.stratum_disposable] = slot.stratum_disposable;
 			pop[k.stratum_population] = slot.stratum_population;
 			pop[k.stratum_wage_income] = slot.stratum_wage_income;
-		}
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
-			slot.education[level] = city.pop.education[level];
-			slot.education_share[level] = city.pop.working_age > 1e-9
-				? city.pop.education[level] / city.pop.working_age : 0.0;
-			slot.labor_force_by_level[level] =
-				city.pop.labor_force_by_level[level];
-			slot.employed_by_level[level] = city.pop.employed_by_level[level];
-			slot.unemployed_by_level[level] =
-				city.pop.unemployed_by_level[level];
-			slot.unemployment_by_level[level] =
-				city.pop.labor_force_by_level[level] > 1e-9
-				? city.pop.unemployed_by_level[level]
-					/ city.pop.labor_force_by_level[level] : 0.0;
-			slot.vacancies_by_level[level] =
-				city.pop.vacancies_by_level[level];
-			slot.wage_by_level[level] = city.pop.wage_by_level[level];
-			slot.wage_income_by_level[level] =
-				city.pop.wage_income_by_level[level];
-		}
-		for (int track = 0; track < kDemoEducationLevels - 1; ++track) {
-			slot.studying[track] = city.pop.studying[track];
-		}
-		if (!filled) {
 			pop[k.education] = slot.education;
 			pop[k.education_share] = slot.education_share;
 			pop[k.labor_force_by_level] = slot.labor_force_by_level;
@@ -7385,27 +7458,33 @@ void EconomySim::demo_food_basket_cost(const DemoCity& city, double need,
 	local_cost = 0.0;
 	import_cost = 0.0;
 	per_ge = 0.0;
-	const int slots = static_cast<int>(demo_food_products_.size());
+	const int slots = std::min(
+		static_cast<int>(demo_food_products_.size()), kDemoMaxFoodProducts);
 	if (slots <= 0) {
 		return;
 	}
-	// 1ª passada: disponibilidade local e preço por tonelada-equivalente (preço
-	// de mercado e, para o resíduo, o CIF da última importação da cidade).
+	// Uma passada: guarda a disponibilidade e o preço por tonelada-equivalente
+	// de cada slot (evita repetir a busca de fator calórico, que é O(slots)).
+	double stock_ge[kDemoMaxFoodProducts];
+	double unit_price[kDemoMaxFoodProducts];
 	double total_avail = 0.0;
 	double cheapest = 0.0;
 	double cheapest_import = 0.0;
 	for (int slot = 0; slot < slots; ++slot) {
 		const int product = demo_food_product(slot);
 		const double factor = demo_food_calories(product);
+		stock_ge[slot] = 0.0;
+		unit_price[slot] = 0.0;
 		if (factor <= 0.0) {
 			continue;
 		}
-		total_avail += std::max(0.0, city.markets[product].stock) * factor;
+		stock_ge[slot] = std::max(0.0, city.markets[product].stock) * factor;
+		total_avail += stock_ge[slot];
 		const double price = city.markets[product].price;
 		if (price > 0.0) {
-			const double unit = price / factor;
-			if (cheapest <= 0.0 || unit < cheapest) {
-				cheapest = unit;
+			unit_price[slot] = price / factor;
+			if (cheapest <= 0.0 || unit_price[slot] < cheapest) {
+				cheapest = unit_price[slot];
 			}
 		}
 		// CIF conhecido: origem efetiva + tarifa (sem o frete, que é serviço
@@ -7432,26 +7511,16 @@ void EconomySim::demo_food_basket_cost(const DemoCity& city, double need,
 		per_ge = cheapest_import;
 		return;
 	}
-	// 2ª passada: mesma proporção de disponibilidade usada na compra (B3). O
-	// custo é o da cesta que a cidade consegue montar hoje; o que faltar para a
-	// necessidade é importado ao CIF conhecido.
+	// Mesma proporção de disponibilidade usada na compra (B3). O custo é o da
+	// cesta que a cidade consegue montar hoje; o que faltar para a necessidade
+	// é importado ao CIF conhecido.
 	double covered = 0.0;
 	for (int slot = 0; slot < slots; ++slot) {
-		const int product = demo_food_product(slot);
-		const double factor = demo_food_calories(product);
-		if (factor <= 0.0) {
+		if (stock_ge[slot] <= 0.0 || unit_price[slot] <= 0.0) {
 			continue;
 		}
-		const double stock_ge = std::max(0.0, city.markets[product].stock) * factor;
-		if (stock_ge <= 0.0) {
-			continue;
-		}
-		const double price = city.markets[product].price;
-		if (price <= 0.0) {
-			continue;
-		}
-		const double want = std::min(need, need * (stock_ge / total_avail));
-		local_cost += want * (price / factor);
+		const double want = std::min(need, need * (stock_ge[slot] / total_avail));
+		local_cost += want * unit_price[slot];
 		covered += want;
 	}
 	const double residual = std::max(0.0, need - covered);

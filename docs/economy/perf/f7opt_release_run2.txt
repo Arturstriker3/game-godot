@@ -1,0 +1,99 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+economia: bootstrap industrial (estimativa) â 24 plantas de referÃªncia semeadas
+[perf] dia   1: tick   44.3  fila  1.06  plano IA  4.89  mapa  0.00  virada    8.4 | pump 2118.71 ms em 1353 frames (pico  4.15, IA 15.65)  [223 pedidos, 24 comboios, 0 entregues]
+[perf]          fases: status  26.9 (cidades  22.6, pedidos  1.9, nações  2.4)  trade   2.8  arrival   3.0  produção  0.3  renda  0.7  preços  0.3
+[perf] dia   2: tick   38.4  fila  1.71  plano IA  4.72  mapa  0.00  virada    9.5 | pump 1243.77 ms em 791 frames (pico  3.44, IA 19.25)  [356 pedidos, 23 comboios, 24 entregues]
+[perf]          fases: status  19.6 (cidades  14.5, pedidos  2.6, nações  2.4)  trade   3.1  arrival   3.7  produção  0.3  renda  0.8  preços  0.3
+[perf] dia   3: tick   45.4  fila  2.15  plano IA  5.01  mapa  0.00  virada   11.0 | pump 1490.52 ms em 946 frames (pico  4.64, IA 14.17)  [464 pedidos, 23 comboios, 23 entregues]
+[perf]          fases: status  22.1 (cidades  15.7, pedidos  3.3, nações  3.1)  trade   3.3  arrival   3.4  produção  0.3  renda  0.8  preços  0.3
+[perf] dia   4: tick   41.2  fila  2.28  plano IA  5.01  mapa  0.00  virada   11.5 | pump 1393.82 ms em 905 frames (pico  3.52, IA 14.38)  [512 pedidos, 20 comboios, 23 entregues]
+[perf]          fases: status  21.8 (cidades  16.3, pedidos  3.4, nações  2.0)  trade   4.8  arrival   3.6  produção  0.5  renda  1.2  preços  0.3
+[perf] dia   5: tick   43.5  fila  1.95  plano IA  4.83  mapa  0.00  virada   10.9 | pump 320.58 ms em 204 frames (pico  4.25, IA 14.04)  [514 pedidos, 24 comboios, 20 entregues]
+[perf]          fases: status  22.6 (cidades  16.9, pedidos  3.6, nações  2.1)  trade   4.8  arrival   3.8  produção  0.4  renda  0.8  preços  0.3
+[perf] dia   6: tick   46.6  fila  2.43  plano IA  4.87  mapa  0.00  virada   11.3 | pump 2122.65 ms em 1373 frames (pico  4.19, IA 14.97)  [514 pedidos, 19 comboios, 24 entregues]
+[perf]          fases: status  22.9 (cidades  17.2, pedidos  3.6, nações  2.0)  trade   4.9  arrival   3.6  produção  0.4  renda  0.7  preços  0.3
+[perf] dia   7: tick   50.0  fila  2.30  plano IA  5.05  mapa  0.00  virada   11.4 | pump 754.55 ms em 483 frames (pico  4.56, IA 15.19)  [514 pedidos, 23 comboios, 19 entregues]
+[perf]          fases: status  24.0 (cidades  17.9, pedidos  3.6, nações  2.4)  trade   5.3  arrival   3.9  produção  0.4  renda  0.9  preços  0.4
+[perf] dia   8: tick   53.1  fila  3.42  plano IA  7.19  mapa  0.00  virada   16.6 | pump 380.07 ms em 242 frames (pico  5.22, IA 19.85)  [514 pedidos, 24 comboios, 23 entregues]
+[perf]          fases: status  29.1 (cidades  21.5, pedidos  4.6, nações  2.9)  trade   5.6  arrival   4.2  produção  0.5  renda  0.9  preços  0.3
+[perf] dia   9: tick   54.8  fila  2.12  plano IA  5.03  mapa  0.00  virada   11.0 | pump  55.47 ms em  34 frames (pico  4.48, IA 14.83)  [514 pedidos, 22 comboios, 24 entregues]
+[perf]          fases: status  24.3 (cidades  18.8, pedidos  3.5, nações  2.0)  trade   9.1  arrival   4.0  produção  0.5  renda  1.3  preços  0.4
+[perf] dia  10: tick   43.0  fila  2.34  plano IA  4.81  mapa  0.00  virada   11.1 | pump 585.48 ms em 384 frames (pico  3.40, IA 12.78)  [514 pedidos, 21 comboios, 22 entregues]
+[perf]          fases: status  22.3 (cidades  16.8, pedidos  3.3, nações  2.1)  trade   7.0  arrival   3.1  produção  0.5  renda  0.7  preços  0.3
+[perf] dia  11: tick   49.8  fila  2.15  plano IA  4.88  mapa  0.00  virada   10.6 | pump  10.93 ms em   8 frames (pico  5.51, IA 12.72)  [514 pedidos, 24 comboios, 21 entregues]
+[perf]          fases: status  22.7 (cidades  16.9, pedidos  3.5, nações  2.3)  trade   7.0  arrival   3.9  produção  0.5  renda  1.0  preços  0.5
+[perf] dia  12: tick   40.7  fila  2.31  plano IA  4.85  mapa  0.00  virada   10.8 | pump 850.27 ms em 545 frames (pico  3.18, IA 12.38)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  21.8 (cidades  16.6, pedidos  3.2, nações  2.0)  trade   7.7  arrival   3.0  produção  0.4  renda  0.7  preços  0.3
+[perf] dia  13: tick   52.4  fila  2.21  plano IA  4.89  mapa  0.00  virada   11.0 | pump 733.94 ms em 469 frames (pico  3.29, IA 13.43)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.4 (cidades  16.8, pedidos  3.5, nações  2.1)  trade   6.9  arrival   3.9  produção  0.4  renda  0.9  preços  0.3
+[perf] dia  14: tick   37.7  fila  1.98  plano IA  4.74  mapa  0.00  virada   10.6 | pump 1223.54 ms em 788 frames (pico  3.15, IA 13.27)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.3 (cidades  16.8, pedidos  3.4, nações  2.1)  trade   8.2  arrival   3.7  produção  0.4  renda  0.9  preços  0.3
+[perf] dia  15: tick   40.8  fila  2.04  plano IA  4.92  mapa  0.00  virada   10.8 | pump 448.65 ms em 287 frames (pico  4.58, IA 13.43)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.4 (cidades  16.8, pedidos  3.5, nações  2.1)  trade   6.7  arrival   3.8  produção  0.5  renda  1.1  preços  0.4
+[perf] dia  16: tick   44.7  fila  2.21  plano IA  5.14  mapa  0.00  virada   11.3 | pump 763.77 ms em 487 frames (pico  3.31, IA 15.27)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  27.2 (cidades  19.9, pedidos  4.3, nações  3.0)  trade   6.7  arrival   3.5  produção  0.4  renda  1.0  preços  0.4
+[perf] dia  17: tick   41.2  fila  2.16  plano IA  4.88  mapa  0.00  virada   11.0 | pump 498.47 ms em 320 frames (pico  3.48, IA 12.23)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.5 (cidades  16.9, pedidos  3.4, nações  2.2)  trade   7.9  arrival   4.1  produção  0.5  renda  1.3  preços  0.3
+[perf] dia  18: tick   43.3  fila  2.04  plano IA  5.04  mapa  0.00  virada   10.8 | pump  21.03 ms em  12 frames (pico  4.01, IA 13.77)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.5 (cidades  16.9, pedidos  3.4, nações  2.1)  trade   7.7  arrival   3.5  produção  0.3  renda  0.7  preços  0.3
+[perf] dia  19: tick   47.7  fila  2.00  plano IA  4.96  mapa  0.00  virada   10.8 | pump 564.35 ms em 358 frames (pico  4.49, IA 12.00)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.3 (cidades  16.7, pedidos  3.6, nações  2.1)  trade   6.4  arrival   3.2  produção  0.4  renda  0.8  preços  0.3
+[perf] dia  20: tick   38.6  fila  2.41  plano IA  4.81  mapa  0.00  virada   10.9 | pump 783.32 ms em 503 frames (pico  4.13, IA 12.89)  [514 pedidos, 23 comboios, 24 entregues]
+[perf]          fases: status  22.1 (cidades  16.6, pedidos  3.3, nações  2.1)  trade   6.8  arrival   3.6  produção  0.4  renda  0.8  preços  0.3
+[perf] dia  21: tick   41.5  fila  2.13  plano IA  4.82  mapa  0.00  virada   10.8 | pump  62.30 ms em  39 frames (pico  4.30, IA 13.40)  [514 pedidos, 24 comboios, 23 entregues]
+[perf]          fases: status  22.0 (cidades  16.5, pedidos  3.3, nações  2.1)  trade   7.3  arrival   3.8  produção  0.4  renda  0.8  preços  0.3
+[perf] dia  22: tick   38.4  fila  2.39  plano IA  4.81  mapa  0.00  virada   10.8 | pump 493.30 ms em 313 frames (pico  3.74, IA 12.44)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.2 (cidades  16.7, pedidos  3.5, nações  2.0)  trade   7.9  arrival   3.1  produção  0.4  renda  0.7  preços  0.3
+[perf] dia  23: tick   48.4  fila  2.04  plano IA  5.12  mapa  0.00  virada   10.8 | pump 192.41 ms em 127 frames (pico  3.33, IA 13.14)  [514 pedidos, 22 comboios, 24 entregues]
+[perf]          fases: status  22.6 (cidades  17.0, pedidos  3.4, nações  2.2)  trade   7.4  arrival   3.7  produção  0.4  renda  1.0  preços  0.3
+[perf] dia  24: tick   51.5  fila  2.34  plano IA  4.70  mapa  0.00  virada   10.7 | pump 295.23 ms em 192 frames (pico  3.55, IA 12.08)  [514 pedidos, 23 comboios, 22 entregues]
+[perf]          fases: status  22.1 (cidades  16.6, pedidos  3.4, nações  2.2)  trade   7.5  arrival   3.4  produção  0.5  renda  0.7  preços  0.3
+[perf] dia  25: tick   43.4  fila  1.89  plano IA  4.79  mapa  0.00  virada   10.5 | pump  96.38 ms em  61 frames (pico  3.51, IA 16.03)  [514 pedidos, 24 comboios, 23 entregues]
+[perf]          fases: status  22.2 (cidades  16.8, pedidos  3.3, nações  2.2)  trade   7.4  arrival   3.5  produção  0.4  renda  0.8  preços  0.3
+[perf] dia  26: tick   48.0  fila  2.29  plano IA  4.97  mapa  0.00  virada   11.1 | pump 1540.24 ms em 978 frames (pico  3.68, IA 12.76)  [514 pedidos, 22 comboios, 24 entregues]
+[perf]          fases: status  22.6 (cidades  16.9, pedidos  3.5, nações  2.2)  trade   7.7  arrival   3.4  produção  0.4  renda  0.8  preços  0.3
+[perf] dia  27: tick   54.5  fila  2.10  plano IA  4.81  mapa  0.00  virada   10.7 | pump  13.02 ms em   7 frames (pico  4.15, IA 11.14)  [514 pedidos, 24 comboios, 22 entregues]
+[perf]          fases: status  27.7 (cidades  20.1, pedidos  4.4, nações  3.1)  trade  10.5  arrival   4.2  produção  0.5  renda  1.3  preços  0.4
+[perf] dia  28: tick   41.8  fila  2.33  plano IA  5.01  mapa  0.00  virada   11.1 | pump 208.55 ms em 134 frames (pico  3.96, IA 13.36)  [514 pedidos, 23 comboios, 24 entregues]
+[perf]          fases: status  22.6 (cidades  16.8, pedidos  3.5, nações  2.3)  trade   8.2  arrival   2.9  produção  0.4  renda  0.7  preços  0.3
+[perf] dia  29: tick   64.0  fila  2.29  plano IA  7.25  mapa  0.00  virada   15.0 | pump 167.21 ms em 107 frames (pico  4.68, IA 19.29)  [514 pedidos, 24 comboios, 23 entregues]
+[perf]          fases: status  27.8 (cidades  20.3, pedidos  4.3, nações  3.2)  trade  11.3  arrival   4.1  produção  0.6  renda  1.5  preços  0.7
+[perf] dia  30: tick   49.0  fila  2.26  plano IA  4.84  mapa  0.00  virada   10.9 | pump   2.71 ms em   7 frames (pico  4.31, IA 11.01)  [514 pedidos, 24 comboios, 24 entregues]
+[perf]          fases: status  22.3 (cidades  16.8, pedidos  3.4, nações  2.0)  trade   7.8  arrival   3.3  produção  0.4  renda  0.7  preços  0.3
+
+[perf] virada do dia — 30 dias, tick=worker, sob demanda (pump por frame)
+[perf] grade de navegação/prontidão dos comboios: 187.9 ms (uma vez)
+[perf] pedidos/dia: média 497.3, máximo 514; comboios ativos/dia (pós-pump): 23.2; entregues/dia: 22.4
+[perf] etapa                               média      p95      máx
+[perf] 1. tick C++ (parede do worker)    45.92    54.76    63.99  ms
+[perf]    tick em regime (dia > 2)    46.25    54.76    63.99  ms
+[perf] 1b. poll da main (dia pronto)     0.01     0.01     0.01  ms
+[perf] 2. enfileirar pedidos          2.18     2.43     3.42  ms
+[perf] 3. IA planejar (agenda do dia)     5.05     7.19     7.25  ms
+[perf] 3b. log de pedidos (HUD)       3.88     5.41     5.97  ms
+[perf]    IA trabalho fatiado/dia    14.04    19.29    19.85  ms
+[perf]    VIRADA (frame da main)     11.12    14.97    16.59  ms
+[perf]    PUMP comboios/dia         647.84  2118.71  2122.65  ms
+[perf]    PUMP por frame              1.56     1.66     4.49  ms
+[perf]    FRAME DE PICO (virada|frames)    11.12    14.97    16.59  ms
+[perf] fase do tick C++            média      p95      máx
+[perf] status                      23.27    27.80    29.11
+[perf] status_cities               17.45    21.54    22.62
+[perf] trade                        6.85    10.49    11.27
+[perf] arrival                      3.60     4.19     4.19
+[perf] status_orders                3.48     4.41     4.60
+[perf] status_nations               2.30     3.13     3.24
+[perf] income                       0.90     1.29     1.54
+[perf] reset                        0.57     0.87     0.97
+[perf] raw                          0.47     0.70     0.77
+[perf] production                   0.43     0.55     0.60
+[perf] prices                       0.35     0.54     0.66
+[perf] invariants                   0.21     0.33     0.34
+[perf] clamp                        0.20     0.30     0.31
+[perf] labor                        0.15     0.26     0.51
+[perf] accounting                   0.11     0.16     0.16
+[perf] fiscal                       0.06     0.08     0.08
+[perf] status_misc                  0.02     0.04     0.05
+[perf] pump: 415.2 frames/dia em média; orçamento 1500 µs/frame
+[perf] memória estática com 834 cidades: 528.6 MB
