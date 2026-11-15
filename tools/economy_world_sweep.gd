@@ -80,6 +80,10 @@ func _sweep() -> void:
 	var worst: Dictionary = {}
 	var reports: Dictionary = {}
 	var bankruptcies_by_variant: Dictionary = {}
+	## F8: falências e contagem de negócios de SERVIÇO são reportadas à parte —
+	## o limite de falências acima é o das CONSTRUÇÕES (baseline f4). Negócio de
+	## serviço abre e fecha por desenho (F8), então não entra no mesmo teto.
+	var service_by_variant: Dictionary = {}
 	var failed_variants: Dictionary = {}
 	for variant: Dictionary in VARIANTS:
 		var name := String(variant["name"])
@@ -97,6 +101,10 @@ func _sweep() -> void:
 		reports[name] = report
 		var data: Dictionary = report
 		bankruptcies_by_variant[name] = int(data.get("meta", {}).get("bankruptcies", 0))
+		service_by_variant[name] = {
+			"bankruptcies": int(data.get("meta", {}).get("service_bankruptcies", 0)),
+			"businesses": int(data.get("meta", {}).get("service_businesses", 0)),
+		}
 		if code != 0:
 			failed_variants[name] = code
 		_accumulate(name, data.get("nations", {}), baseline_nations, worst)
@@ -130,13 +138,17 @@ func _sweep() -> void:
 		if count > limit:
 			_failures.append("%s: %d falencias > %d (baseline + %d)" % [
 				name, count, limit, BANKRUPTCY_TOLERANCE])
+	for name in service_by_variant:
+		var row: Dictionary = service_by_variant[name]
+		print("[sweep] %-10s negocios_servico=%d falencias_servico=%d (informativo)" % [
+			name, int(row["businesses"]), int(row["bankruptcies"])])
 	for name in failed_variants:
 		if not reports.has(name):
 			continue
 		_failures.append("%s: teste de mundo retornou %d" % [name, int(failed_variants[name])])
 
 	if _out != "":
-		_write_report(rows, bankruptcies_by_variant, limit)
+		_write_report(rows, bankruptcies_by_variant, service_by_variant, limit)
 
 
 func _accumulate(variant: String, nations: Dictionary, baseline_nations: Dictionary,
@@ -167,7 +179,8 @@ func _load_json(path: String) -> Variant:
 	return data
 
 
-func _write_report(rows: Array, bankruptcies: Dictionary, limit: int) -> void:
+func _write_report(rows: Array, bankruptcies: Dictionary, service: Dictionary,
+		limit: int) -> void:
 	var dir := _out.get_base_dir()
 	if dir != "" and not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
@@ -182,6 +195,7 @@ func _write_report(rows: Array, bankruptcies: Dictionary, limit: int) -> void:
 			"food_tolerance": FOOD_TOLERANCE,
 			"bankruptcy_limit": limit,
 			"bankruptcies": bankruptcies,
+			"service_businesses": service,
 			"variants": VARIANTS,
 		},
 		"nations": rows,

@@ -122,12 +122,17 @@ func _test_demand_and_business() -> void:
 	_check(int(sim.demo_get_service_bankruptcies()) == 0,
 		"nenhuma falência de serviço nos primeiros 12 dias")
 
-	# Fechamento por prejuízo persistente: força 60 dias no vermelho.
+	# Fechamento por prejuízo persistente: força 60 dias no vermelho. Zera a
+	# capacidade do setor antes, senão o lucro do dia (recalculado no tick)
+	# pode ser positivo e zerar o contador — o caso testado é o negócio que
+	# não vende e acumula prejuízo.
 	var businesses: Array = detail.get("businesses", [])
 	_check(not businesses.is_empty(), "detalhe deve listar negócios")
 	if not businesses.is_empty():
 		var doomed := int(businesses[0]["id"])
+		var doomed_sector := String(businesses[0]["sector"])
 		var bankruptcies_before := int(sim.demo_get_service_bankruptcies())
+		sim.demo_set_service_capacity("T-USA", doomed_sector, 0.0)
 		sim.demo_set_service_business_state(doomed, 60, -1000.0)
 		sim.tick_demo()
 		_check(int(sim.demo_get_service_bankruptcies()) == bankruptcies_before + 1,

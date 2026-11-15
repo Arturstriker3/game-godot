@@ -1091,6 +1091,13 @@ constexpr int kDemoLossDaysBeforeClose = 60;
 // salários antes de distribuir lucros.
 constexpr double kDemoFirmCashPerCapita = 0.10;
 constexpr double kDemoServiceCashPerCapita = 0.05;
+// F8: caixa do setor de serviços = capital de giro em dias de folha + insumos.
+// O excedente do lucro é renda da POP dona (ver demo_tick / distribuição).
+constexpr double kDemoServiceCashBufferDays = 8.0;
+// F8: a fração de serviços respeita a cesta do dia — em cidade que importa
+// comida o serviço não pode consumir o que compra o alimento. 0 desliga o
+// guarda (comportamento F7: 45% da renda doméstica, cesta depois).
+constexpr double kDemoServiceFoodGuardDays = 1.0;
 // Serviços ajustam o emprego para cobrir a folha com a própria receita.
 constexpr double kDemoServiceAdjust = 0.10;
 // Limites usados pelo benchmark sintético (o cenário demo usa o equilíbrio
@@ -4764,8 +4771,23 @@ void EconomySim::demo_tick_core() {
 		// ORDENAÇÃO (é comprada antes de life/luxury e o governo cobre o que
 		// faltar); o setor de serviços continua sendo a fonte de renda dos
 		// empregos residuais, por isso não é zerado pela cesta.
-		pop.service_spend = std::max(0.0,
-			pop.disposable - pop.external_income) * kDemoServiceSpendShare;
+		// F8 — FREIO DE FOME: quando a cidade não consegue cobrir a cesta nem
+		// com a poupança mais a renda doméstica do dia, o gasto em serviços só
+		// consome o que passar da cesta; sem essa situação, vale a fração de 45%
+		// da renda doméstica (comportamento F7), que financia o setor cuja folha
+		// e lucro voltam para a POP. A condição é de AFORDABILIDADE, não a
+		// satisfação de ontem: cidade nova (sem comida comprada ainda) não pode
+		// cair num laço de "sem serviço → sem renda → sem comida".
+		const double basket_cost = pop.need * food_unit_cost
+			* kDemoServiceFoodGuardDays;
+		const double domestic_income =
+			std::max(0.0, pop.disposable - pop.external_income);
+		double service_base = domestic_income;
+		if (basket_cost > 0.0 && domestic_income + std::max(0.0, pop.savings)
+				< basket_cost) {
+			service_base = std::max(0.0, domestic_income - basket_cost);
+		}
+		pop.service_spend = service_base * kDemoServiceSpendShare;
 		city.service_cash += pop.service_spend;
 		city.government_budget += pop.taxes - pop.transfers;
 
@@ -5250,9 +5272,16 @@ void EconomySim::demo_tick_core() {
 		const double modeled_distribution = distributable * private_share;
 		const double state_distribution = distributable - modeled_distribution;
 		const double service_target =
-			city.simulation_population * kDemoServiceCashPerCapita;
+			(city.service_wage_bill + city.service_input_cost)
+			* kDemoServiceCashBufferDays;
 		const double service_surplus = std::max(0.0,
 			city.service_cash - service_target);
+		// F8: o lucro do setor é renda da POP dona (plano §13). O caixa guarda
+		// só o capital de giro (dias de folha + insumos); o resto do lucro é
+		// distribuído no dia seguinte. O alvo antigo por habitante (0,05/pessoa)
+		// quase nunca era alcançado e retinha o lucro para sempre: a cidade
+		// pagava serviços sem receber o lucro de volta e esgotava a poupança
+		// que compra comida (SDN-KHA, SOL-HAR em 365 d, F8).
 		const double service_distribution = std::min(
 			std::max(0.0, city.service_profit * kDemoCapitalDistribution),
 			service_surplus);
@@ -5636,6 +5665,10 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		scope("scope"),
 		service_cash("service_cash"),
 		service_jobs("service_jobs"),
+		service_sectors("service_sectors"),
+		service_businesses("service_businesses"),
+		service_bankruptcies("service_bankruptcies"),
+		service_exports("service_exports"),
 		service_profit("service_profit"),
 		service_revenue("service_revenue"),
 		service_spend("service_spend"),
@@ -9038,7 +9071,12 @@ void EconomySim::demo_seed_services() {
 			const double capacity = std::max(definition.min_capacity,
 				std::min(40.0 / definition.jobs_per_unit, definition.min_capacity * 6.0));
 			const double capital = capacity * definition.capital_per_unit;
-			if (city.pop.savings < capital * 0.5) {
+			// Mesma reserva da abertura por demanda: a poupança é o orçamento
+			// de comida da POP (F3 soma savings + renda), então o capital do
+			// negócio não pode consumir a última reserva. Cidade pequena/pobre
+			// simplesmente semeia menos negócios e abre os demais quando a
+			// renda permitir.
+			if (city.pop.savings < capital * kDemoServiceCapitalReserve) {
 				continue;
 			}
 			demo_service_open(city, sector, capacity, capital);
@@ -9064,7 +9102,7 @@ void EconomySim::demo_seed_services() {
 				}
 				const double capacity = definition.min_capacity;
 				const double capital = capacity * definition.capital_per_unit;
-				if (city.pop.savings >= capital) {
+				if (city.pop.savings >= capital * kDemoServiceCapitalReserve) {
 					demo_service_open(city, sector, capacity, capital);
 				}
 			}
@@ -9150,8 +9188,12 @@ void EconomySim::demo_services_day(DemoCity& city) {
 		gov_total += gov_weight[sector];
 	}
 	if (gov_total > 0.0) {
-		government_pool = std::min(
-			std::max(0.0, city.government_budget) * demo_service_government_share_,
+		// A fração é da ARRECADAÇÃO DO DIA (fluxo), não do caixa acumulado:
+		// cobrar a fração sobre o estoque todo dia drenava o tesouro que
+		// financia a importação de comida (AFG-KAN/KAB em 365 d, F8). O caixa
+		// do dia continua sendo o teto.
+		const double daily_flow = std::max(0.0, pop.taxes);
+		government_pool = std::min(daily_flow * demo_service_government_share_,
 			std::max(0.0, city.government_budget));
 		city.government_budget -= government_pool;
 		city.service_cash += government_pool;

@@ -77,6 +77,9 @@ var _fx_mode := "real"
 ## para a simulação. O sweep (`economy_world_sweep.gd`) roda duas sementes além
 ## das três variações de câmbio.
 var _seed := 0
+## F8: `--services=0` roda o mundo sem o catálogo de serviços (comportamento
+## F7). Serve para isolar o efeito da F8 num A/B do mesmo binário.
+var _services_enabled := true
 
 var _failures: Array[String] = []
 
@@ -97,6 +100,8 @@ func _init() -> void:
 			_fx_mode = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--seed="):
 			_seed = int(arg.split("=", true, 1)[1])
+		elif arg.begins_with("--services="):
+			_services_enabled = arg.split("=", true, 1)[1] != "0"
 	_test_world()
 	if _failures.is_empty():
 		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % _days)
@@ -159,7 +164,7 @@ func _test_world() -> void:
 		sim.demo_set_recipes(_load_array(RECIPES_PATH))
 		sim.demo_set_needs(_load_dict(NEEDS_PATH))
 		# F8: serviços (catálogo). Binário anterior à F8 não tem o método.
-		if sim.has_method("demo_set_services"):
+		if _services_enabled and sim.has_method("demo_set_services"):
 			sim.demo_set_services(_load_dict(SERVICES_PATH))
 	# F5: moedas antes de criar o mundo — o preço local de cada cidade nasce na
 	# moeda da nação e o câmbio inicial entra no preço entregue. Binário antigo
