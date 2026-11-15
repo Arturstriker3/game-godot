@@ -347,6 +347,9 @@ func _handle_map_click(mouse: Vector2) -> bool:
 		GameCursor.set_city_hover(false)
 		if city_world.selected_place_id() == port_id:
 			city_world.clear_selection()
+			# Mesmo contrato da cidade: reclicar no item selecionado fecha o
+			# painel. A Logística aberta pelo mapa não pode ficar órfã.
+			hud.close_window()
 		else:
 			city_world.set_deposit_selected(-1)
 			city_world.select_port(port_id)

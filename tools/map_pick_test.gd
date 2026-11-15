@@ -283,10 +283,18 @@ func _test_port_toggle() -> void:
 	if _world.selected_place_id() != port:
 		_failures.append("clique não selecionou o porto %s" % port)
 		return
-	if _hud.is_overlay_open():
-		_failures.append("porto abriu overlay indevido")
-		_close_overlay()
+	# F7: clicar no porto abre a Logística (antes o clique só selecionava e o
+	# painel de portos ficava inalcançável pelo mapa).
+	if not _hud.is_overlay_open():
+		_failures.append("porto não abriu o painel de Logística")
+	elif String(_hud._active) != "logistics":
+		_failures.append("porto abriu '%s' em vez de Logística"
+				% String(_hud._active))
+	_hud.close_window()
+	if not _world.selected_place_id().is_empty():
+		_failures.append("fechar Logística não desselecionou o porto %s" % port)
 	# Clicar em área vazia também desseleciona o porto.
+	_game._handle_map_click(center)
 	var empty_point := _find_empty_screen_point()
 	if empty_point == Vector2.INF:
 		_failures.append("não achei ponto vazio para desselecionar o porto")
@@ -294,11 +302,14 @@ func _test_port_toggle() -> void:
 		_game._handle_map_click(empty_point)
 		if _world.has_selection():
 			_failures.append("clique vazio não desselecionou o porto %s" % port)
-	# Clique repetido no mesmo porto.
+	_hud.close_window()
+	# Clique repetido no mesmo porto: seleciona (Logística) e desseleciona.
 	_game._handle_map_click(center)
 	_game._handle_map_click(center)
 	if not _world.selected_place_id().is_empty():
 		_failures.append("clique repetido não desselecionou o porto %s" % port)
+	if _hud.is_overlay_open():
+		_failures.append("clique repetido no porto deixou Logística aberta")
 	_close_overlay()
 
 
