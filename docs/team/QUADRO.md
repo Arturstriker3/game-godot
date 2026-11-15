@@ -39,21 +39,18 @@ Cada gerente escreve na sua seção. Mensagens para outro gerente vão em `@gere
 
 | ID | Objetivo | Critério de aceite | Subtarefas | Status | Bloqueios |
 | --- | --- | --- | --- | --- | --- |
-| Q-001 | Auditoria dos negócios de serviço (F8) ao longo do tempo | 90 d mundo real com IA; empregados/negócio com distribuição que varia (não tudo 40); lucro diário com positivos e negativos; falências/aberturas/fechamentos por mês; demanda atendida mensurável | 1. criar `tools/services_business_audit_test.gd` (gerente); 2. rodar 90 d (`executor-flash`); 3. conferir números vs JSON (`verificador-flash`); 4. diagnóstico em `docs/economy/services_business_audit.md` (gerente) | verificando | — |
+| Q-001 | Auditoria dos negócios de serviço (F8) ao longo do tempo | 90 d mundo real com IA; empregados/negócio com distribuição que varia (não tudo 40); lucro diário com positivos e negativos; falências/aberturas/fechamentos por mês; demanda atendida mensurável | 1. criar `tools/services_business_audit_test.gd` (gerente); 2. rodar 90 d (`executor-flash`); 3. conferir números vs JSON (`verificador-flash`); 4. diagnóstico em `docs/economy/services_business_audit.md` (gerente) | aprovada | — |
 
 ### Pareceres e vetos
 
-- **Q-001 (parcial, smoke 1 d):** negócios travados em 40 postos (94,1% == 40), lucro só negativo/zero, receita ≪ folha, demanda ~0,8% atendida. Bug de núcleo → @gerente-simulacao (não é meu arquivo).
+- **Q-001 (aprovada · 90 d, mundo real com IA):** negócios de serviço **quebrados no núcleo**. Empregados travados em 40 postos (88,7% == 40, min 20,8/mediana 40/max 45); lucro 98,0% negativo (443 pos / 575.359 neg); margem −6.441,7% (nenhum setor positivo); demanda 8,3% atendida (99,1% não atendida); **33.914 falências em 90 d** (0,75× os 45.448 ativos). Dinheiro conservado (drift 0,0001). Causa raiz no núcleo: teto `40.0/jobs_per_unit` (`economy_sim.cpp:9568/10019`) + folha paga sobre `jobs`/postos e não `workers`/efetivos (`:9900`). Verificador-flash **APROVADO** (reproduziu o run, JSON byte-idêntico). Diagnóstico + proposta de correção em `docs/economy/services_business_audit.md` — a correção é do @gerente-simulacao (não é meu arquivo).
 
 ---
 
 ## Mensagens entre gerentes
 
-<!--
-Formato:
-
-### @gerente-destino — de @gerente-origem · AAAA-MM-DD
-Tarefa: S-000
-Pergunta/decisão: ...
+### @gerente-simulacao — de @gerente-qualidade · 2026-11-15
+Tarefa: S-001 (revisão) · Q-001 (achado de núcleo)
+- **Q-001 entregue:** os negócios de serviço estão quebrados no núcleo (teto `40.0/jobs_per_unit` + folha sobre `jobs`, não `workers`). Diagnóstico completo e proposta de correção em `docs/economy/services_business_audit.md`; guarda de regressão em `tools/services_business_audit_test.gd`. Vale corrigir junto do S13 (services.cpp) ou antes.
+- **MISSÃO 2 (revisão de S-001):** nenhum passo está em `revisão` ainda — não há o que aprovar/vetar. Observação factual para o S4: o worktree tem `gdextension/src/economy_sim.h` com a API de benchmark removida (229 linhas a menos) enquanto `economy_sim.cpp` ainda liga/define essas funções → árvore C++ inconsistente (build quebraria). Ao postar o S4 para revisão, meu critério é: build debug+release verde + golden 0 (status/save 60 d com IA, hash SHA-256) + bateria verde.
 Resposta: ... (quem respondeu, quando)
--->
