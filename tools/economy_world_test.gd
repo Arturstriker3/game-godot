@@ -260,8 +260,19 @@ func _test_world() -> void:
 	if _baseline_path != "":
 		var baseline_data: Variant = _load_json(_baseline_path)
 		if typeof(baseline_data) == TYPE_DICTIONARY:
-			bankruptcy_limit = int((baseline_data as Dictionary).get("meta", {}).get(
-				"bankruptcies", 0)) + BANKRUPTCY_TOLERANCE
+			# F9 grava meta.bankruptcies como DICIONÁRIO por variação e
+			# meta.bankruptcy_limit; f4 grava como int. Normaliza para o teto
+			# de falências de construções (28 no caso da F9), como o sweep.
+			var meta: Dictionary = (baseline_data as Dictionary).get("meta", {})
+			var baseline_bk: int = 0
+			if typeof(meta.get("bankruptcy_limit", 0)) == TYPE_INT:
+				baseline_bk = int(meta["bankruptcy_limit"]) - BANKRUPTCY_TOLERANCE
+			elif typeof(meta.get("bankruptcies", 0)) == TYPE_INT:
+				baseline_bk = int(meta["bankruptcies"])
+			elif typeof(meta.get("bankruptcies", 0)) == TYPE_DICTIONARY:
+				for key in meta["bankruptcies"]:
+					baseline_bk = maxi(baseline_bk, int(meta["bankruptcies"][key]))
+			bankruptcy_limit = baseline_bk + BANKRUPTCY_TOLERANCE
 	var bankruptcies := int(status.get("bankruptcies", 0))
 	if bankruptcies > bankruptcy_limit:
 		_fail("construções do mundo real faliram (%d > %d do baseline + %d) — balanço quebrado" % [
