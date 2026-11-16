@@ -9194,6 +9194,12 @@ void EconomySim::demo_services_day(DemoCity& city) {
 	double sector_supply[kDemoMaxServiceSectors] = {};
 	double sector_exports[kDemoMaxServiceSectors] = {};
 	double sector_export_revenue[kDemoMaxServiceSectors] = {};
+	// Contagem de negócios ativos por setor, na MESMA passada que soma a oferta:
+	// o laço de entrada (passo 9) usa este vetor em vez de varrer os negócios
+	// da cidade para cada setor (era O(setores × negócios)). Nenhum negócio
+	// abre/fecha entre aqui e o passo 9 (abertura/fechamento acontecem no próprio
+	// passo 9), então a contagem é idêntica à varredura antiga — resultado igual.
+	int active_by_sector[kDemoMaxServiceSectors] = {};
 	for (const int index : demo_service_by_city_[city_index]) {
 		DemoServiceBusiness& business =
 			demo_service_businesses_[static_cast<std::size_t>(index)];
@@ -9205,6 +9211,7 @@ void EconomySim::demo_services_day(DemoCity& city) {
 			business.capacity * std::clamp(business.utilization > 0.0
 				? business.utilization : 1.0, 0.05, 1.0));
 		sector_supply[business.sector] += capacity;
+		++active_by_sector[business.sector];
 	}
 	const double external_factor = std::clamp(city.external_income_index, 0.2, 3.0);
 	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
@@ -9229,14 +9236,6 @@ void EconomySim::demo_services_day(DemoCity& city) {
 
 	// 5. Mercados: demanda em unidades = dinheiro / preço. A receita só é
 	// realizada na proporção atendida (demanda sem oferta não vira dinheiro).
-	double active_businesses_total = 0.0;
-	for (const int index : demo_service_by_city_[city_index]) {
-		const DemoServiceBusiness& business =
-			demo_service_businesses_[static_cast<std::size_t>(index)];
-		if (!business.bankrupt) {
-			active_businesses_total += 1.0;
-		}
-	}
 	double total_units_served = 0.0;
 	double total_service_cost = 0.0;
 	double total_input_cost = 0.0;
@@ -9492,15 +9491,7 @@ void EconomySim::demo_services_day(DemoCity& city) {
 		if (market.unmet < definition.min_capacity * 0.5) {
 			continue;
 		}
-		int existing = 0;
-		for (const int index : demo_service_by_city_[city_index]) {
-			const DemoServiceBusiness& business =
-				demo_service_businesses_[static_cast<std::size_t>(index)];
-			if (!business.bankrupt && business.sector == sector) {
-				++existing;
-			}
-		}
-		if (existing >= kDemoServiceMaxPerSector) {
+		if (active_by_sector[sector] >= kDemoServiceMaxPerSector) {
 			continue;
 		}
 		// F8 v2: capacidade pela DEMANDA não atendida, com folga de 25% para a
@@ -9556,7 +9547,6 @@ void EconomySim::demo_services_day(DemoCity& city) {
 			++city.service_business_count;
 		}
 	}
-	(void)active_businesses_total;
 	(void)total_units_served;
 	(void)total_service_cost;
 }
