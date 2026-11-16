@@ -100,7 +100,7 @@ func plan(day: int, summary: Dictionary = {}) -> void:
 	_pending_status = status
 	for index in cities.size():
 		if index % interval_days == phase:
-			_pending.append(cities[index])
+			_pending.append(index)
 
 
 ## Continua o planejamento do dia até gastar `frame_budget_us` (~1,5 ms). As
@@ -160,9 +160,10 @@ func write_log(path: String) -> void:
 
 
 ## Uma cidade: investidor privado + governo compartilham o mesmo status do dia.
-func _run_city(city: Dictionary) -> void:
-	private_investor.run_city(_pending_day, city, _pending_status)
-	government.run_city(_pending_day, city, _pending_status)
+func _run_city(city_index: int) -> void:
+	var city: Dictionary = _pending_status.get("cities", [])[city_index]
+	private_investor.run_city(_pending_day, city_index, city, _pending_status)
+	government.run_city(_pending_day, city_index, city, _pending_status)
 	decisions.append_array(private_investor.drain())
 	decisions.append_array(government.drain())
 

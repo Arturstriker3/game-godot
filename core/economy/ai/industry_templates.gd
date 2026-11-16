@@ -120,6 +120,229 @@ static var _resource_by_product: Dictionary = {}
 static var _non_food_templates: Array = []
 
 
+# --- S7-c fatia 3: contexto leve por cidade ---------------------------------
+# Os caminhos por cidade da IA (private/government run_city) chamam
+# `bind_light` antes de consultar mercados/construções/jazidas e `unbind_light`
+# ao terminar. As funções abaixo leem as tabelas planas do bloco `light` quando
+# o contexto está ligado; sem contexto (status montado à mão em teste/
+# ferramenta) voltam a ler o dicionário pesado. Os valores são os MESMOS doubles
+# (bit a bit — guarda `tools/economy_light_signals_test.gd`).
+static var _light: Dictionary = {}
+static var _light_city := -1
+static var _light_products := 0
+
+static var _FIELD_HEAVY := {
+	"m_price": "price", "m_stock": "stock", "m_supply": "supply",
+	"m_surplus": "surplus", "m_sold": "sold", "m_shortage": "shortage",
+	"m_desired": "desired",
+}
+
+
+static func bind_light(light: Dictionary, city_index: int) -> void:
+	_light = light
+	_light_city = city_index
+	_light_products = int(light.get("product_count", 0))
+
+
+static func unbind_light() -> void:
+	_light = {}
+	_light_city = -1
+	_light_products = 0
+
+
+## Valor de um campo de mercado (chave LEVE, ex.: "m_supply") do produto, na
+## cidade corrente (light) ou no dicionário (fallback quando sem contexto).
+static func market_field(city: Dictionary, product: int, field: String) -> float:
+	if _light_products > 0 and _light_city >= 0:
+		var values: PackedFloat64Array = _light.get(field, PackedFloat64Array())
+		var at := _light_city * _light_products + product
+		if at >= 0 and at < values.size():
+			return values[at]
+		return 0.0
+	var markets: Array = city.get("markets", [])
+	if product < 0 or product >= markets.size():
+		return 0.0
+	return float((markets[product] as Dictionary).get(
+		String(_FIELD_HEAVY.get(field, field)), 0.0))
+
+
+## Faixa [início, fim) da cidade corrente na tabela plana de construções.
+static func _building_range() -> Array:
+	var b_offset: PackedInt32Array = _light.get("b_offset", PackedInt32Array())
+	if _light_city < 0 or _light_city + 1 >= b_offset.size():
+		return [-1, -1]
+	return [int(b_offset[_light_city]), int(b_offset[_light_city + 1])]
+
+
+## Índice absoluto na tabela plana de jazidas do recurso na cidade corrente
+## (-1 quando ausente ou sem contexto).
+static func _deposit_index(resource: String) -> int:
+	var d_offset: PackedInt32Array = _light.get("d_offset", PackedInt32Array())
+	if _light_city < 0 or _light_city + 1 >= d_offset.size():
+		return -1
+	var d_resource: PackedStringArray = _light.get("d_resource", PackedStringArray())
+	for index in range(int(d_offset[_light_city]), int(d_offset[_light_city + 1])):
+		if String(d_resource[index]) == resource:
+			return index
+	return -1
+
+
+## Reserva restante (kt) da jazida do recurso na cidade corrente (0 quando
+## ausente). Equivale ao `deposits[resource].remaining_kt` do bloco pesado.
+static func deposit_remaining(city: Dictionary, resource: String) -> float:
+	if _light_products > 0 and _light_city >= 0:
+		var di := _deposit_index(resource)
+		if di < 0:
+			return 0.0
+		var d_remaining: PackedFloat64Array = _light.get(
+			"d_remaining_kt", PackedFloat64Array())
+		return float(d_remaining[di])
+	var deposits: Dictionary = city.get("deposits", {})
+	if not deposits.has(resource):
+		return 0.0
+	return float(deposits[resource].get("remaining_kt", 0.0))
+
+
+## true se a cidade corrente tem jazida rastreada do recurso com reserva > 0.
+static func has_deposit(city: Dictionary, resource: String) -> bool:
+	return deposit_remaining(city, resource) > 0.0
+
+
+## true se a cidade corrente tem ao menos uma jazida rastreada (qualquer recurso).
+static func has_any_deposit(city: Dictionary) -> bool:
+	if _light_products > 0 and _light_city >= 0:
+		var d_offset: PackedInt32Array = _light.get("d_offset", PackedInt32Array())
+		if _light_city + 1 >= d_offset.size():
+			return false
+		return int(d_offset[_light_city + 1]) > int(d_offset[_light_city])
+	return not (city.get("deposits", {}) as Dictionary).is_empty()
+
+
+## Id da primeira construção não-estatal que produz `product` ("" quando não há).
+## Equivale ao `_find_producer` do investidor privado (o chamador só usa o id).
+static func producer_id(city: Dictionary, product: int) -> String:
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		var b_owner: PackedStringArray = _light.get("b_owner", PackedStringArray())
+		var b_id: PackedStringArray = _light.get("b_id", PackedStringArray())
+		for index in range(int(rng[0]), int(rng[1])):
+			if int(b_output[index]) == product and String(b_owner[index]) != "state":
+				return String(b_id[index])
+		return ""
+	for building in city.get("buildings", []):
+		if (int(building.get("output_product", -1)) == product
+				and String(building.get("owner", "private")) != "state"):
+			return String(building.get("id", ""))
+	return ""
+
+
+## Índice O(1) das construções locais por produto: {"counts": product→n,
+## "util_sum": product→Σ util. efetiva, "util_n": product→n}. Construído 1× por
+## cidade; _buildings_of_type/_avg_utilization o consultam em vez de varrer as
+## construções a cada mineral (custo medido no laço quente). Lê a tabela plana
+## quando o contexto leve está ligado.
+static func building_index(city: Dictionary) -> Dictionary:
+	var counts: Dictionary = {}
+	var util_sum: Dictionary = {}
+	var util_n: Dictionary = {}
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		var b_utilization: PackedFloat64Array = _light.get(
+			"b_utilization", PackedFloat64Array())
+		var b_site: PackedFloat64Array = _light.get(
+			"b_site_suitability", PackedFloat64Array())
+		for index in range(int(rng[0]), int(rng[1])):
+			var product := int(b_output[index])
+			if product < 0:
+				continue
+			counts[product] = int(counts.get(product, 0)) + 1
+			var effective := clampf(float(b_utilization[index])
+				/ maxf(float(b_site[index]), 0.01), 0.0, 1.0)
+			util_sum[product] = float(util_sum.get(product, 0.0)) + effective
+			util_n[product] = int(util_n.get(product, 0)) + 1
+		return {"counts": counts, "util_sum": util_sum, "util_n": util_n}
+	for building in city.get("buildings", []):
+		var product := int(building.get("output_product", -1))
+		if product < 0:
+			continue
+		counts[product] = int(counts.get(product, 0)) + 1
+		var utilization := float(building.get("utilization", 0.0))
+		var suitability := float(building.get("site_suitability", 1.0))
+		var effective := clampf(utilization / maxf(suitability, 0.01), 0.0, 1.0)
+		util_sum[product] = float(util_sum.get(product, 0.0)) + effective
+		util_n[product] = int(util_n.get(product, 0)) + 1
+	return {"counts": counts, "util_sum": util_sum, "util_n": util_n}
+
+
+## Número de construções locais que produzem `product`.
+static func buildings_of_type(city: Dictionary, product: int,
+		bindex: Dictionary = {}) -> int:
+	if not bindex.is_empty():
+		return int((bindex["counts"] as Dictionary).get(product, 0))
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		var count := 0
+		for index in range(int(rng[0]), int(rng[1])):
+			if int(b_output[index]) == product:
+				count += 1
+		return count
+	var count := 0
+	for building in city.get("buildings", []):
+		if int(building.get("output_product", -1)) == product:
+			count += 1
+	return count
+
+
+## Utilização média efetiva das construções que produzem `product` (normalizada
+## pela aptidão do terreno).
+static func avg_utilization(city: Dictionary, product: int,
+		bindex: Dictionary = {}) -> float:
+	if not bindex.is_empty():
+		var util_sum: Dictionary = bindex["util_sum"]
+		var util_n: Dictionary = bindex["util_n"]
+		var n: int = int(util_n.get(product, 0))
+		if n == 0:
+			return 1.0
+		return float(util_sum.get(product, 0.0)) / float(n)
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		var b_utilization: PackedFloat64Array = _light.get(
+			"b_utilization", PackedFloat64Array())
+		var b_site: PackedFloat64Array = _light.get(
+			"b_site_suitability", PackedFloat64Array())
+		var total := 0.0
+		var count := 0
+		for index in range(int(rng[0]), int(rng[1])):
+			if int(b_output[index]) != product:
+				continue
+			total += clampf(float(b_utilization[index])
+				/ maxf(float(b_site[index]), 0.01), 0.0, 1.0)
+			count += 1
+		if count == 0:
+			return 1.0
+		return total / float(count)
+	var total := 0.0
+	var count := 0
+	for building in city.get("buildings", []):
+		if int(building.get("output_product", -1)) != product:
+			continue
+		var utilization := float(building.get("utilization", 0.0))
+		var suitability := float(building.get("site_suitability", 1.0))
+		total += clampf(utilization / maxf(suitability, 0.01), 0.0, 1.0)
+		count += 1
+	if count == 0:
+		return 1.0
+	return total / float(count)
+
+
 static func _ensure_loaded() -> void:
 	if _loaded:
 		return
@@ -260,6 +483,8 @@ static func recipes_for(resource: String) -> Array:
 ## `import_price` são âncora); a moeda local só existe na exibição
 ## (`price_local = preço ÷ taxa`). A IA compara direto, sem converter.
 static func anchor_price(city: Dictionary, product: int) -> float:
+	if _light_products > 0 and _light_city >= 0:
+		return market_field(city, product, "m_price")
 	var markets: Array = city.get("markets", [])
 	if product < 0 or product >= markets.size():
 		return 0.0
@@ -276,10 +501,15 @@ static func best_recipe(resource: String, city: Dictionary) -> Dictionary:
 		var available := true
 		for item: Dictionary in recipe["inputs"]:
 			var product := int(item["product"])
-			var markets: Array = city.get("markets", [])
-			if product < 0 or product >= markets.size():
-				available = false
-				break
+			if _light_products > 0 and _light_city >= 0:
+				if product < 0 or product >= _light_products:
+					available = false
+					break
+			else:
+				var markets: Array = city.get("markets", [])
+				if product < 0 or product >= markets.size():
+					available = false
+					break
 			var price := anchor_price(city, product)
 			if price <= 0.0:
 				price = 1.0
@@ -317,6 +547,15 @@ static func caloric_factor(resource: String) -> float:
 ## receita × insumo × construção × template por cidade).
 static func local_products(city: Dictionary) -> Dictionary:
 	var products: Dictionary = {}
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		for index in range(int(rng[0]), int(rng[1])):
+			var product := int(b_output[index])
+			if product >= 0:
+				products[product] = true
+		return products
 	for building in city.get("buildings", []):
 		var product := int(building.get("output_product", -1))
 		if product >= 0:
@@ -329,6 +568,14 @@ static func local_products(city: Dictionary) -> Dictionary:
 ## uma cultura/bem novo redundante (fix do churn de milho, B4).
 static func has_producer(city: Dictionary, resource: String) -> bool:
 	var product := output_of(resource)
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		for index in range(int(rng[0]), int(rng[1])):
+			if int(b_output[index]) == product:
+				return true
+		return false
 	for building in city.get("buildings", []):
 		if int(building.get("output_product", -1)) == product:
 			return true
@@ -341,6 +588,16 @@ static func has_producer(city: Dictionary, resource: String) -> bool:
 ## por área cultivável (terra limitada, geography_service).
 static func existing_capacity(city: Dictionary, product: int) -> float:
 	var total := 0.0
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		var b_capacity: PackedFloat64Array = _light.get(
+			"b_capacity", PackedFloat64Array())
+		for index in range(int(rng[0]), int(rng[1])):
+			if int(b_output[index]) == product:
+				total += float(b_capacity[index])
+		return total
 	for building in city.get("buildings", []):
 		if int(building.get("output_product", -1)) == product:
 			total += float(building.get("capacity", 0.0))
@@ -355,7 +612,7 @@ static func local_food_supply(city: Dictionary) -> float:
 	for resource in FOOD_RESOURCES:
 		var template: Dictionary = TEMPLATES[resource]
 		var product := int(template["output"])
-		var supply := float(city["markets"][product].get("supply", 0.0))
+		var supply := market_field(city, product, "m_supply")
 		total += supply * float(template.get("caloric_factor", 1.0))
 	return total
 
@@ -363,7 +620,26 @@ static func local_food_supply(city: Dictionary) -> float:
 ## Necessidade alimentar da cidade em t-eq de grão (mesma unidade de
 ## `pop.need` e de `local_food_supply`). 0 quando o status não a declara.
 static func food_need(city: Dictionary) -> float:
+	if _light_products > 0 and _light_city >= 0:
+		var p_need: PackedFloat64Array = _light.get("p_need", PackedFloat64Array())
+		if _light_city >= 0 and _light_city < p_need.size():
+			return maxf(0.0, float(p_need[_light_city]))
 	return maxf(0.0, float(city.get("pop", {}).get("need", 0.0)))
+
+
+## Escalar da POP da cidade corrente (chave LEVE: p_need/p_consumed/
+## p_satisfaction/p_labor_force/p_unemployed), com fallback ao dicionário pesado.
+static func pop_field(city: Dictionary, field: String) -> float:
+	if _light_products > 0 and _light_city >= 0:
+		var values: PackedFloat64Array = _light.get(field, PackedFloat64Array())
+		if _light_city >= 0 and _light_city < values.size():
+			return values[_light_city]
+		return 0.0
+	var heavy := {
+		"p_need": "need", "p_consumed": "consumed", "p_satisfaction": "satisfaction",
+		"p_labor_force": "labor_force", "p_unemployed": "unemployed",
+	}
+	return float(city.get("pop", {}).get(String(heavy.get(field, field)), 0.0))
 
 
 ## Nome do recurso/template que produz um produto do núcleo ("" quando o
@@ -406,9 +682,16 @@ static func variable_cost(resource: String, city: Dictionary) -> float:
 static func variable_cost_mined(resource: String, city: Dictionary) -> float:
 	var template: Dictionary = all_templates()[resource]
 	var opex_factor := 1.0
-	var deposits: Dictionary = city.get("deposits", {})
-	if deposits.has(resource):
-		opex_factor = float(deposits[resource].get("opex_factor", 1.0))
+	if _light_products > 0 and _light_city >= 0:
+		var di := _deposit_index(resource)
+		if di >= 0:
+			var d_opex: PackedFloat64Array = _light.get(
+				"d_opex_factor", PackedFloat64Array())
+			opex_factor = float(d_opex[di])
+	else:
+		var deposits: Dictionary = city.get("deposits", {})
+		if deposits.has(resource):
+			opex_factor = float(deposits[resource].get("opex_factor", 1.0))
 	return (float(template["jobs_per_ton"]) * float(template["wage"])
 		+ float(template["opex_per_ton"]) * opex_factor)
 
@@ -427,6 +710,25 @@ static func external_demand_of(city: Dictionary, product: int) -> float:
 static func observed_cost(city: Dictionary, product: int) -> float:
 	var total_cost := 0.0
 	var total_output := 0.0
+	if _light_products > 0 and _light_city >= 0:
+		var rng: Array = _building_range()
+		var b_output: PackedInt32Array = _light.get(
+			"b_output_product", PackedInt32Array())
+		var b_capacity: PackedFloat64Array = _light.get(
+			"b_capacity", PackedFloat64Array())
+		var b_utilization: PackedFloat64Array = _light.get(
+			"b_utilization", PackedFloat64Array())
+		var b_costs: PackedFloat64Array = _light.get(
+			"b_costs", PackedFloat64Array())
+		for index in range(int(rng[0]), int(rng[1])):
+			if int(b_output[index]) != product:
+				continue
+			var output := float(b_capacity[index]) * float(b_utilization[index])
+			if output <= 0.0:
+				continue
+			total_cost += float(b_costs[index])
+			total_output += output
+		return total_cost / total_output if total_output > 0.0 else -1.0
 	for building in city.get("buildings", []):
 		if int(building.get("output_product", -1)) != product:
 			continue

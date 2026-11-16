@@ -690,7 +690,7 @@ private:
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
 			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,
-		b_offset, b_output_product, b_owner, b_capacity, b_utilization,
+		b_offset, b_id, b_output_product, b_owner, b_capacity, b_utilization,
 		b_costs, b_site_suitability, d_offset, d_resource, d_product,
 		d_initial_kt, d_remaining_kt, d_quality, d_depth_m, d_efficiency,
 		d_opex_factor, d_extracted_kt, d_depleted;
@@ -771,7 +771,7 @@ private:
 		// são os offsets por cidade (tamanho cidades+1, padrão CSR).
 		PackedInt32Array light_b_offset, light_d_offset;
 		PackedInt32Array light_b_output_product;
-		PackedStringArray light_b_owner;
+		PackedStringArray light_b_id, light_b_owner;
 		PackedFloat64Array light_b_capacity, light_b_utilization, light_b_costs,
 			light_b_site_suitability;
 		PackedInt32Array light_d_product, light_d_depleted;

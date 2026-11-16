@@ -179,6 +179,7 @@ func _run() -> void:
 
 	# Construções (CSR): reconstrói do bloco pesado e compara com a tabela plana.
 	var b_offset: PackedInt32Array = light.get("b_offset", PackedInt32Array())
+	var b_id: PackedStringArray = light.get("b_id", PackedStringArray())
 	var b_output_product: PackedInt32Array = light.get("b_output_product", PackedInt32Array())
 	var b_owner: PackedStringArray = light.get("b_owner", PackedStringArray())
 	var b_capacity: PackedFloat64Array = light.get("b_capacity", PackedFloat64Array())
@@ -200,6 +201,10 @@ func _run() -> void:
 			return
 		for index in range(bstart, bend):
 			var b: Dictionary = buildings[index - bstart]
+			if b_id[index] != String(b.get("id", "")):
+				_fail("cidade %d construção %d: b_id light=%s heavy=%s" % [
+					city_index, index - bstart, b_id[index], String(b.get("id", ""))])
+				return
 			if b_output_product[index] != int(b.get("output_product", -1)):
 				_fail("cidade %d construção %d: b_output_product light=%d heavy=%d" % [
 					city_index, index - bstart, b_output_product[index],

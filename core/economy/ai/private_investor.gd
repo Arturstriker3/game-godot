@@ -93,8 +93,9 @@ func setup(sim: Object, geo: Object) -> void:
 
 func run(day: int, status: Dictionary) -> void:
 	prepare_totals(status)
-	for city in status.get("cities", []):
-		run_city(day, city, status)
+	var cities: Array = status.get("cities", [])
+	for index in cities.size():
+		run_city(day, index, cities[index], status)
 
 
 ## Mede os totais do sistema uma única vez por status (uma passada pelas
@@ -254,9 +255,10 @@ func nation_summary(nation: String) -> Dictionary:
 
 ## Planeja UMA cidade. O orquestrador escalona as cidades ao longo do ciclo de
 ## 7 dias e fatia o trabalho entre frames; a cadência por cidade segue 7 dias.
-func run_city(day: int, city: Dictionary, status: Dictionary) -> void:
+func run_city(day: int, city_index: int, city: Dictionary, status: Dictionary) -> void:
 	if not is_same(_totals_status, status):
 		prepare_totals(status)
+	Templates.bind_light(status.get("light", {}), city_index)
 	_run_city(day, city, status)
 
 
@@ -269,12 +271,10 @@ func drain() -> Array:
 func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	var city_id := String(city["id"])
 	var firm_cash := float(city["firm_cash"])
-	var markets: Array = city["markets"]
 	var capital_cost := float(status.get("capital_cost_per_capacity", 2000.0))
 	var available := firm_cash * CAPITAL_SHARE
 	if available < capital_cost * MIN_CAPACITY:
 		return
-	var pop: Dictionary = city["pop"]
 	var food_need := Templates.food_need(city)
 	var food_supply := Templates.local_food_supply(city)
 	var food_deficit := maxf(0.0, food_need - food_supply)
@@ -303,9 +303,8 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 	else:
 		for resource_name in Templates.FOOD_RESOURCES:
 			var product := int(Templates.TEMPLATES[resource_name]["output"])
-			var market: Dictionary = markets[product]
-			var surplus := float(market.get("surplus", 0.0))
-			var sold := float(market.get("sold", 0.0))
+			var surplus := Templates.market_field(city, product, "m_surplus")
+			var sold := Templates.market_field(city, product, "m_sold")
 			if surplus > maxf(1.0, sold * 0.20):
 				_log(day, city_id, "avoid", resource_name,
 					"excesso de oferta local (%.1f t)" % surplus, 0.0, 0.0, 0.0)
@@ -321,9 +320,9 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 		var template: Dictionary = entry["template"]
 		var resource_name := String(entry["resource"])
 		var product := int(entry["output"])
-		if product < 0 or product >= markets.size():
+		if product < 0:
 			continue
-		var shortage := float((markets[product] as Dictionary).get("shortage", 0.0))
+		var shortage := Templates.market_field(city, product, "m_shortage")
 		# Gate barato ANTES do trabalho pesado (custo medido): com escassez
 		# abaixo do piso o _try_template retorna sem decidir — e sem pagar
 		# _system_demand/_input_available (varre receitas × construções). Corta
@@ -397,9 +396,8 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		return false
 	var is_recipe := template.has("recipes")
 	var product := int(template["output"])
-	var market: Dictionary = city["markets"][product]
-	var sold := float(market.get("sold", 0.0))
-	var surplus := float(market.get("surplus", 0.0))
+	var sold := Templates.market_field(city, product, "m_sold")
+	var surplus := Templates.market_field(city, product, "m_surplus")
 
 	# F3 — oferta mundial curta: para a cesta alimentar, o excedente LOCAL não
 	# bloqueia a expansão em região excedente; o que importa é a necessidade
@@ -612,10 +610,7 @@ func _resource_available(city: Dictionary, resource_name: String, template: Dict
 
 
 func _has_deposit(city: Dictionary, resource: String) -> bool:
-	var deposits: Dictionary = city.get("deposits", {})
-	if not deposits.has(resource):
-		return false
-	return float(deposits[resource].get("remaining_kt", 0.0)) > 0.0
+	return Templates.has_deposit(city, resource)
 
 
 func _input_available(city: Dictionary, template: Dictionary, local_products: Dictionary = {}) -> bool:
@@ -632,9 +627,8 @@ func _input_available(city: Dictionary, template: Dictionary, local_products: Di
 			var viable := true
 			for item: Dictionary in recipe["inputs"]:
 				var product := int(item["product"])
-				var market: Dictionary = city["markets"][product]
-				var has_stock := float(market.get("stock", 0.0)) \
-					+ float(market.get("supply", 0.0)) > 0.1
+				var has_stock := Templates.market_field(city, product, "m_stock") \
+					+ Templates.market_field(city, product, "m_supply") > 0.1
 				if has_stock:
 					continue
 				if not local_products.has(product):
@@ -647,9 +641,8 @@ func _input_available(city: Dictionary, template: Dictionary, local_products: Di
 	var input_product := int(template["input"])
 	if input_product < 0:
 		return true
-	var market: Dictionary = city["markets"][input_product]
-	if float(market.get("stock", 0.0)) \
-			+ float(market.get("supply", 0.0)) > 0.1:
+	if Templates.market_field(city, input_product, "m_stock") \
+			+ Templates.market_field(city, input_product, "m_supply") > 0.1:
 		return true
 	return local_products.has(input_product)
 
@@ -681,11 +674,10 @@ func _chain_inputs_producible(city: Dictionary, template: Dictionary,
 
 
 func _find_producer(city: Dictionary, product: int) -> Dictionary:
-	for building in city.get("buildings", []):
-		if (int(building.get("output_product", -1)) == product
-				and String(building.get("owner", "private")) != "state"):
-			return building
-	return {}
+	var id := Templates.producer_id(city, product)
+	if id == "":
+		return {}
+	return {"id": id}
 
 
 func _system_demand(status: Dictionary, product: int) -> float:

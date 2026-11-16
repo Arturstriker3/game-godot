@@ -1426,6 +1426,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		i_resource("i_resource"),
 		i_owner_group("i_owner_group"),
 		b_offset("b_offset"),
+		b_id("b_id"),
 		b_output_product("b_output_product"),
 		b_owner("b_owner"),
 		b_capacity("b_capacity"),
@@ -2323,6 +2324,7 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	// do bloco pesado (demo_fill_city_status), na ordem cidade → construção
 	// (buildings_by_city). `site_suitability` = suitability do produto de saída.
 	cache.light_b_offset.clear();
+	cache.light_b_id.clear();
 	cache.light_b_output_product.clear();
 	cache.light_b_owner.clear();
 	cache.light_b_capacity.clear();
@@ -2335,6 +2337,7 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
 			const DemoBuilding& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
+			cache.light_b_id.push_back(String(building.id.c_str()));
 			cache.light_b_output_product.push_back(building.output_product);
 			cache.light_b_owner.push_back(String(building.owner.c_str()));
 			cache.light_b_capacity.push_back(building.capacity);
@@ -2410,6 +2413,7 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	light[k.i_resource] = cache.light_i_resource;
 	light[k.i_owner_group] = cache.light_i_owner_group;
 	light[k.b_offset] = cache.light_b_offset;
+	light[k.b_id] = cache.light_b_id;
 	light[k.b_output_product] = cache.light_b_output_product;
 	light[k.b_owner] = cache.light_b_owner;
 	light[k.b_capacity] = cache.light_b_capacity;
