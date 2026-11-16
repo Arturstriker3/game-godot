@@ -1001,3 +1001,4 @@ Ordem: (1) terminar o que está em curso (serviços/DJI, refatoração S2…S18)
 ## 18. Decisão do dono (2026-11-15) — importadores sem agricultura
 - Regressão de comida do commit b95c7f3 em importadores sem agricultura ACEITA (revisão Q-005: SOL na verdade 0,986, sem regressão; DJI 0,472→0,395). O baseline de comida passa a ser o sweep v2 regenerado com a DLL final (`docs/economy/perf/services_fix_world_sweep_v2.json`).
 - Futuro: renda externa para países pobres/importadores, como ajuda humanitária (ONU/PMA), programas do FMI e bancos de desenvolvimento, remessas e serviços portuários/de trânsito (DJI→Etiópia), com dados reais. Entra depois da refatoração e das POPs por grupo, junto de crédito/juros.
+- Imóveis (2026-11-16): o modelo de imóveis nas cidades (estoque, donos/inquilinos, aluguel, preço) será DECIDIDO COM O DONO depois da revisão da refatoração; não implementar antes.
