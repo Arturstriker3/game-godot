@@ -213,6 +213,30 @@ void SimCore::demo_trade_food() {
 
 	const int k_neighbors = std::max(1, ws_.trade_neighbors);
 	const int k_external = std::max(0, ws_.trade_external);
+
+	// Pré-calcula por cidade (uma vez por dia) os valores puros de nação usados
+	// no laço quente de ofertas: competitividade e câmbio. Eram lookups de hash
+	// por string DENTRO do laço por oferta (custo dominante em debug). São
+	// funções puras do estado, que não muda durante o comércio (o câmbio roda
+	// na fase fx, depois) — bit-idêntico.
+	std::vector<double> city_competitive(city_count, 1.0);
+	std::vector<double> city_fx(city_count, 1.0);
+	for (std::size_t ci = 0; ci < city_count; ++ci) {
+		const std::string& nation = ws_.cities[ci].nation;
+		city_competitive[ci] = demo_competitiveness(nation);
+		city_fx[ci] = demo_fx_rate(nation);
+	}
+	// Distância cidade → próprio porto (pré-calculada uma vez por dia): remove
+	// 2 dos 3 haversines por candidato na travessia marítima do laço quente.
+	std::vector<double> city_to_port_dist(city_count, 0.0);
+	for (std::size_t ci = 0; ci < city_count; ++ci) {
+		if (city_port[ci] >= 0) {
+			city_to_port_dist[ci] = distance_km(
+				ws_.cities[ci].center,
+				ws_.ports[static_cast<std::size_t>(city_port[ci])].center);
+		}
+	}
+
 	// Nunca vale a pena procurar mais vizinhos do que existem vendedores no mundo:
 	// quando há menos ofertas que K, o anel para de expandir assim que todas
 	// foram vistas (antes ele varria a grade inteira para provar isso, o que
@@ -408,11 +432,11 @@ void SimCore::demo_trade_food() {
 				const Port& bp = ws_.ports[static_cast<std::size_t>(buyer_port)];
 				unit_freight =
 					demo_leg_unit_freight_food(TransportMode::Truck,
-						distance_km(seller.center, sp.center))
+						city_to_port_dist[static_cast<std::size_t>(si)])
 					+ demo_leg_unit_freight_food(TransportMode::Ship,
 						distance_km(sp.center, bp.center))
 					+ demo_leg_unit_freight_food(TransportMode::Truck,
-						distance_km(bp.center, buyer.city->center));
+						city_to_port_dist[static_cast<std::size_t>(buyer.index)]);
 			}
 			for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
 				const int product = demo_food_product(slot);
@@ -433,7 +457,7 @@ void SimCore::demo_trade_food() {
 					continue;
 				}
 				const double origin_anchor =
-					price * demo_competitiveness(seller.nation);
+					price * city_competitive[static_cast<std::size_t>(si)];
 				const double tariff_rate = demo_tariff_rate(
 					buyer.city->nation, seller.nation, product);
 				const double unit_tariff =
@@ -443,7 +467,7 @@ void SimCore::demo_trade_food() {
 				// exibição — é fator comum, não muda a ordem.
 				const double delivered_anchor =
 					origin_anchor + unit_freight + unit_tariff;
-				const double buyer_fx = demo_fx_rate(buyer.city->nation);
+				const double buyer_fx = city_fx[static_cast<std::size_t>(buyer.index)];
 				const double delivered =
 					delivered_anchor / std::max(1e-9, buyer_fx);
 				const double unit_cost_per_ge = delivered_anchor / factor;
@@ -685,9 +709,9 @@ void SimCore::demo_trade_food() {
 			const int arrival_day =
 				ws_.day + 1 + static_cast<int>(std::ceil(port_delay_days));
 			// F4: reserva os veículos até a chegada e debita o combustível.
-			transport = demo_route_demand(*seller, *buyer.city,
-				fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
-				fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
+			// `transport` já é o embarque do lote final (recalculado acima quando
+			// a frota limitou a carga; senão, o cálculo inicial) — a 3ª chamada
+			// era idêntica e só repetia o haversine. Bit-idêntico.
 			demo_fleet_reserve(seller->nation, transport);
 			DemoShipment shipment;
 			shipment.to_city = buyer.city->id;
@@ -1187,11 +1211,9 @@ void SimCore::demo_trade_goods() {
 				const int arrival_day =
 					ws_.day + 1 + static_cast<int>(std::ceil(port_delay_days));
 				// F4: reserva os veículos até a chegada e debita o combustível.
-				transport = demo_route_demand(seller, buyer_city,
-					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
-						offer.seller_index)],
-					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
-						buyer.city_index)], amount);
+				// `transport` já é o embarque do lote final (recalculado acima
+				// quando a frota limitou a carga; senão, o cálculo inicial) — a
+				// 3ª chamada era idêntica e só repetia o haversine. Bit-idêntico.
 				demo_fleet_reserve(seller.nation, transport);
 				DemoShipment shipment;
 				shipment.to_city = buyer_city.id;
