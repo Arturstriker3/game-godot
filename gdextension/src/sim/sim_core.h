@@ -172,7 +172,6 @@ public:
 		double capital);
 	void demo_service_close(DemoServiceBusiness& business);
 	void demo_seed_services();
-	void demo_services_day(DemoCity& city);
 
 	// ------------------------------------------------------------------
 	// S6b — helpers de load/setup movidos da fachada.
@@ -282,6 +281,16 @@ private:
 	int effective_threads() const;
 	// Devolve o pool atual, recriando-o se o número de threads mudou.
 	ThreadPool& pool();
+	// S16: simula o dia de serviços de uma cidade (passos 1-8, sem abrir/fechar
+	// negócios); grava a saída de divisas da exportação em foreign_slots[sector]
+	// e a poupança acima da reserva de comida (calculada NO TOPO do dia) em
+	// savings_surplus_out para a 2ª passada.
+	void demo_services_day(DemoCity& city, double* foreign_slots,
+		double& savings_surplus_out);
+	// S16: abertura/fechamento de negócios em 2ª passada serial (ordem fixa
+	// cidade -> setor), usando o savings_surplus do TOPO do dia (o serial lia a
+	// reserva de comida antes de o passo 6 reduzir estoques — bit-idêntico).
+	void demo_services_open_close(DemoCity& city, double savings_surplus);
 	// Preço de abertura por cidade/produto, capturado no prólogo e usado pela
 	// fase de clamp (limite diário único). Reaproveitado entre dias.
 	std::vector<std::vector<double>> open_prices_;

@@ -13,8 +13,49 @@
 
 namespace ogs {
 void SimCore::phase_services() {
-	for (DemoCity& city : ws_.cities) {
-		demo_services_day(city);
+	// Prepara os índices por cidade/setor UMA vez (o serial fazia isso dentro
+	// de cada cidade; a re-assign é idempotente e não pode rodar em paralelo).
+	if (ws_.service_by_city.size() != ws_.cities.size()) {
+		ws_.service_by_city.assign(ws_.cities.size(), {});
+	}
+	if (ws_.service_by_sector.size() != ws_.service_sectors.size()) {
+		ws_.service_by_sector.assign(ws_.service_sectors.size(), {});
+	}
+	// S16: a simulação de serviços é independente por cidade (escreve só na
+	// própria cidade e nas suas construções; lê só dados globais imutáveis no
+	// dia). A única saída global é a exportação de divisas (ws_.foreign_cash,
+	// subtração) — vai para um scratch por cidade×setor e é reduzida em ordem
+	// crescente de cidade E setor (a MESMA ordem do loop serial).
+	std::vector<double> foreign_scratch(
+		ws_.cities.size() * kDemoMaxServiceSectors, 0.0);
+	// O savings_surplus do TOPO do dia (antes de o passo 6 reduzir estoques de
+	// comida) é o que o serial usava no `finance_base` da abertura; guardamos
+	// por cidade para a 2ª passada reproduzir exatamente o mesmo valor.
+	std::vector<double> savings_surplus_scratch(ws_.cities.size(), 0.0);
+	auto process_city = [this, &foreign_scratch, &savings_surplus_scratch](
+			std::size_t begin, std::size_t end) {
+		for (std::size_t city_index = begin; city_index < end; ++city_index) {
+			demo_services_day(ws_.cities[city_index],
+				&foreign_scratch[city_index * kDemoMaxServiceSectors],
+				savings_surplus_scratch[city_index]);
+		}
+	};
+	pool().parallel_for(ws_.cities.size(), process_city);
+
+	// Redução serial: ordem crescente de cidade E de setor.
+	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			ws_.foreign_cash -= foreign_scratch[
+				city_index * kDemoMaxServiceSectors
+				+ static_cast<std::size_t>(sector)];
+		}
+	}
+
+	// 2ª passada serial: abertura/fechamento em ordem fixa (cidade -> setor),
+	// com o savings_surplus do TOPO do dia (mesmo valor do serial).
+	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
+		demo_services_open_close(ws_.cities[city_index],
+			savings_surplus_scratch[city_index]);
 	}
 
 	OGS_SIM_PHASE_LAP(kDemoPhaseServices);
@@ -240,18 +281,13 @@ void SimCore::demo_seed_services() {
 		}
 	}
 }
-void SimCore::demo_services_day(DemoCity& city) {
+void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
+		double& savings_surplus_out) {
 	if (!ws_.services_loaded || ws_.service_sectors.empty()) {
 		return;
 	}
 	const std::size_t city_index =
 		static_cast<std::size_t>(&city - ws_.cities.data());
-	if (city_index >= ws_.service_by_city.size()) {
-		ws_.service_by_city.assign(ws_.cities.size(), {});
-	}
-	if (ws_.service_by_sector.size() != ws_.service_sectors.size()) {
-		ws_.service_by_sector.assign(ws_.service_sectors.size(), {});
-	}
 	const DemoPop& pop = city.pop;
 	const double wage = std::max(0.0, city.service_wage);
 	// F8 v2 (calibração, Q-004): o custo de trabalho do negócio é o salário de
@@ -265,6 +301,7 @@ void SimCore::demo_services_day(DemoCity& city) {
 	// poupança que importa comida (DJI, Q-004).
 	const double food_reserve = demo_city_food_reserve(city);
 	const double savings_surplus = std::max(0.0, city.pop.savings - food_reserve);
+	savings_surplus_out = savings_surplus;
 
 	// 1. Pesos da demanda das famílias por classe de consumo (basic/life/
 	// luxury). Com Gini, `class_population` é a repartição real; sem Gini,
@@ -391,7 +428,7 @@ void SimCore::demo_services_day(DemoCity& city) {
 		sector_export_revenue[sector] = revenue;
 		city.service_export_revenue += revenue;
 		city.service_cash += revenue;
-		ws_.foreign_cash -= revenue;
+		foreign_slots[sector] += revenue;
 	}
 
 	// 5. Mercados: demanda em unidades = dinheiro / preço. A receita só é
@@ -639,6 +676,34 @@ void SimCore::demo_services_day(DemoCity& city) {
 			market.base_price * kDemoServicePriceBandHigh);
 	}
 
+	(void)total_units_served;
+	(void)total_service_cost;
+}
+
+// S16: 2ª passada serial de serviços — abertura e fechamento de negócios em
+// ordem fixa (cidade -> setor), depois que todas as cidades simularam o dia.
+// A ordem importa: a abertura consome o caixa do setor (service_cash) e a
+// poupança das famílias, e o fechamento reduz a contagem de negócios ativos.
+void SimCore::demo_services_open_close(DemoCity& city, double savings_surplus) {
+	if (!ws_.services_loaded || ws_.service_sectors.empty()) {
+		return;
+	}
+	const std::size_t city_index =
+		static_cast<std::size_t>(&city - ws_.cities.data());
+	const double wage = std::max(0.0, city.service_wage);
+	// Recomputa a contagem de negócios ativos por setor (mesma passada do
+	// passo 4): nada abriu/fechou entre a fase paralela e esta 2ª passada.
+	int active_by_sector[kDemoMaxServiceSectors] = {};
+	for (const int index : ws_.service_by_city[city_index]) {
+		const DemoServiceBusiness& business =
+			ws_.service_businesses[static_cast<std::size_t>(index)];
+		if (business.bankrupt || business.sector < 0
+				|| business.sector >= kDemoMaxServiceSectors) {
+			continue;
+		}
+		++active_by_sector[business.sector];
+	}
+
 	// 9. Entrada e saída. Entrada só com demanda não atendida, margem esperada
 	// acima do limiar e capital financiável pelo caixa do setor + poupança acima
 	// da reserva de comida. Até kDemoServiceOpensPerDay aberturas por cidade/dia
@@ -707,7 +772,5 @@ void SimCore::demo_services_day(DemoCity& city) {
 			++city.service_business_count;
 		}
 	}
-	(void)total_units_served;
-	(void)total_service_cost;
 }
 } // namespace ogs
