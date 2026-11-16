@@ -272,10 +272,11 @@ public:
 private:
 	WorldState& ws_;
 	double money_before_ = 0.0;
-	// S16: número de threads configurado (1 = serial) e o pool persistente,
+	// S16: número de threads configurado. 0 = automático (default,
+	// min(núcleos-2, 8)); > 0 = esse número (1 = serial). O pool persistente é
 	// criado sob demanda com o número efetivo de threads. Nunca usado fora do
 	// tick (o writer já segura o mutex da fachada).
-	int sim_threads_ = 1;
+	int sim_threads_ = 0;
 	std::unique_ptr<ThreadPool> pool_;
 	// Número efetivo de threads (resolve o modo automático).
 	int effective_threads() const;

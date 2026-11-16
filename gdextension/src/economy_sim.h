@@ -80,9 +80,10 @@ public:
 	void demo_set_profiling(bool enabled);
 
 	/**
-	 * S16: define o número de threads das fases por cidade do tick (1 = serial,
-	 * default; <= 0 = automático = min(núcleos - 2, 8); > 1 = esse número).
-	 * As fases globais seguem seriais. Determinístico: o resultado não muda.
+	 * S16: define o número de threads das fases por cidade do tick (<= 0 =
+	 * automático = min(núcleos - 2, 8), o DEFAULT; > 0 = esse número; 1 =
+	 * serial). As fases globais seguem seriais. Determinístico: o resultado
+	 * não muda.
 	 */
 	void demo_set_sim_threads(int threads);
 

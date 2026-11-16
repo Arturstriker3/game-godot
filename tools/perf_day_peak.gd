@@ -53,6 +53,7 @@ var _map_mode := "none"
 var _map_territory := true
 var _tick_mode := "sync"
 var _profile := false
+var _threads := 0
 var _pump_samples: Array[float] = []
 var _phase_us: Dictionary = {}
 ## Estado do log de pedidos do HUD (espelho de `_log_orders`).
@@ -76,6 +77,8 @@ func _ready() -> void:
 			_tick_mode = String(arg.split("=")[1])
 		elif arg.begins_with("--profile="):
 			_profile = bool(int(arg.split("=")[1]))
+		elif arg.begins_with("--threads="):
+			_threads = int(arg.split("=")[1])
 
 	# Congela o relógio: quem dirige os dias é este laço.
 	Economy.set_speed(0)
@@ -92,6 +95,10 @@ func _ready() -> void:
 		print("[perf] autoload Economy sem sim/IA")
 		get_tree().quit(1)
 		return
+	if _threads != 0 and sim.has_method("demo_set_sim_threads"):
+		# S16: A/B do paralelismo (threads=1 serial vs threads=N). Default 0
+		# deixa o núcleo no automático (min(núcleos-2, 8)).
+		sim.demo_set_sim_threads(_threads)
 
 	var convoys = ConvoysScript.new()
 	var build_start := Time.get_ticks_usec()
