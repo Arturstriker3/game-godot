@@ -13,9 +13,12 @@ extends SceneTree
 ## goldens S0 (`real_60_ai`). Aqui o que se isola é o round-trip do núcleo.
 ##
 ##   godot --headless --path . --script res://tools/economy_save_load_roundtrip_test.gd \
-##     [--days=60] [--save-at=30]
+##     [--days=60] [--save-at=30] [--mode=world|demo]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+
+const AGRIA_CENTER := Vector2(2532.6, 571.4)
+const PORTUS_CENTER := Vector2(2560.4, 543.8)
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -29,6 +32,7 @@ const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employmen
 
 var _days := 60
 var _save_at := 30
+var _mode := "world"
 var _failures: Array[String] = []
 
 
@@ -38,6 +42,8 @@ func _init() -> void:
 			_days = maxi(1, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--save-at="):
 			_save_at = clampi(int(arg.split("=", true, 1)[1]), 1, _days - 1)
+		elif arg.begins_with("--mode="):
+			_mode = String(arg.split("=", true, 1)[1])
 	_run()
 	if _failures.is_empty():
 		quit(0)
@@ -99,11 +105,19 @@ func _load_chains(sim) -> void:
 			sim.demo_set_sector_employment(sector)
 
 
-## Cria o mundo real (cities/ports/buildings.json), sem IA — mesmo caminho do
-## golden `real_60_noai`. Devolve o `EconomySim` pronto para o tick.
+## Cria o mundo real (cities/ports/buildings.json) sem IA, ou o cenário demo
+## AGRIA/PORTUS (initialize_demo + geografia). Devolve o `EconomySim` pronto.
 func _make_world() -> Object:
 	var sim = EconomySim.new()
 	_load_chains(sim)
+	if _mode == "demo":
+		sim.initialize_demo()
+		var geo = GeographyServiceScript.new()
+		geo.apply_to_sim(sim, [
+			{"id": "AGRIA", "center": AGRIA_CENTER},
+			{"id": "PORTUS", "center": PORTUS_CENTER},
+		])
+		return sim
 	var cities := _load_array(CITIES_PATH)
 	var ports := _load_array(PORTS_PATH)
 	var buildings := _load_array(BUILDINGS_PATH)
