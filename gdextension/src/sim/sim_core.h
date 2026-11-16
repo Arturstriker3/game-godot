@@ -30,6 +30,9 @@ public:
 	void phase_arrival();
 	// 2. Zera os fluxos do dia.
 	void phase_reset();
+	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia. Roda
+	// antes do comércio para combustível/veículos comprados já valerem hoje.
+	void phase_fleet();
 	// 3. Mercado de trabalho e salários.
 	void phase_labor();
 	// 4. Produção: cada construção declara insumo e produto.
@@ -124,6 +127,53 @@ public:
 	void demo_service_close(DemoServiceBusiness& business);
 	void demo_seed_services();
 	void demo_services_day(DemoCity& city);
+
+	// ------------------------------------------------------------------
+	// Geometria do mapa e frete (S5b).
+	// ------------------------------------------------------------------
+	// Capacidade/custo/tempo de cada modal (calibragem do porto).
+	static const ModeSpec& spec(TransportMode mode);
+	static const char* scope_name(MarketScope scope);
+	/** Cria um trecho e calcula viagens, tempo e custo. */
+	Leg make_leg(TransportMode mode, const std::string& from, const std::string& to,
+		const MapPoint& from_point, const MapPoint& to_point, double load_tons) const;
+	double distance_km(const MapPoint& a, const MapPoint& b) const;
+
+	// ------------------------------------------------------------------
+	// Porto (S5b): capacidade, fila e cobrança.
+	// ------------------------------------------------------------------
+	const Port* demo_nearest_port(const std::string& nation,
+		const std::string& landmass, const MapPoint& from) const;
+	Port* find_demo_port(const std::string& id);
+	int demo_city_index_near(const std::string& nation,
+		const std::string& landmass, const MapPoint& from) const;
+	void demo_init_port_capacities();
+	void demo_reset_port_usage();
+	double demo_port_charge(Port& port, double tons, double& demurrage_out);
+
+	// ------------------------------------------------------------------
+	// Frota nacional (F4 / S5b).
+	// ------------------------------------------------------------------
+	void demo_init_fleets();
+	double demo_nation_sim_population(const std::string& nation) const;
+	double demo_nation_income_index(const std::string& nation) const;
+	bool demo_nation_food_secure(const std::string& nation) const;
+	DemoTransportDemand demo_route_demand(const DemoCity& seller,
+		const DemoCity& buyer, int seller_port, int buyer_port, double tons) const;
+	double demo_fleet_capacity_scale(const std::string& nation,
+		const DemoTransportDemand& demand, bool& fuel_limited) const;
+	void demo_fleet_reserve(const std::string& nation,
+		const DemoTransportDemand& demand);
+	double demo_fleet_fuel_price() const;
+	double demo_leg_unit_freight(TransportMode mode,
+		double distance_km_value) const;
+	double demo_leg_unit_freight_food(TransportMode mode,
+		double distance_km_value) const;
+	// Compra de frota: a fachada faz o parse de String e as validações de erro;
+	// o núcleo compra no mercado interno da nação e credita a frota.
+	double demo_fleet_buy_core(const std::string& nation, int product_index,
+		double amount, double budget_share, double& spent_out,
+		double& unfilled_out);
 
 	// F7: atualiza os salários por nível depois do lucro do dia (mercado
 	// apertado/folgado, margem das firmas, âncora de renda do país, piso de
