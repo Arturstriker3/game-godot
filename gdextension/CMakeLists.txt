@@ -28,6 +28,7 @@ add_library(economy_gdextension SHARED
     src/register_types.cpp
     src/economy_sim.cpp
     src/sim/profiling.cpp
+    src/sim/sim_core.cpp
 )
 
 target_link_libraries(economy_gdextension PRIVATE godot-cpp)

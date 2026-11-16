@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "sim/sim_types.h"
+#include "sim/sim_core.h"
 #include "sim/world_state.h"
 
 namespace godot {
@@ -712,15 +713,17 @@ private:
 	/** Preenche um Dictionary de perna para o status, reutilizando as chaves. */
 	void demo_fill_leg_status(Dictionary& dict, const Leg& leg) const;
 
-	DemoCity* find_demo_city(const std::string& id);
-	const DemoCity* find_demo_city(const std::string& id) const;
+	// S5b: os helpers do núcleo migraram para ogs::SimCore; estes wrappers
+	// preservam as chamadas da fachada sem renomear nenhuma referência.
+	DemoCity* find_demo_city(const std::string& id) { return sim_core_.find_demo_city(id); }
+	const DemoCity* find_demo_city(const std::string& id) const { return sim_core_.find_demo_city(id); }
 	/**
 	 * Refaz os índices derivados do mundo (id da cidade -> posição e
 	 * construções por cidade). Chamado ao inicializar, ao carregar um save e no
 	 * início de cada tick: sem eles, as fases varrem TODAS as construções para
 	 * cada cidade (O(cidades × construções), que não escala para 650 cidades).
 	 */
-	void demo_rebuild_indexes();
+	void demo_rebuild_indexes() { sim_core_.demo_rebuild_indexes(); }
 	/**
 	 * Preenche o slot de status de uma cidade (reaproveitando dicionários).
 	 * @param city_index Posição em ws_.cities.
@@ -729,9 +732,8 @@ private:
 	 */
 	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
 		double in_transit) const;
-	double demo_money_total() const;
+	double demo_money_total() const { return sim_core_.demo_money_total(); }
 	std::vector<std::string> demo_check_invariants(double money_before) const;
-	void demo_snapshot(DemoSnapshot& out) const;
 	void demo_restore(const DemoSnapshot& in);
 	void demo_trade_food();
 	void demo_trade_goods();
@@ -769,9 +771,6 @@ private:
 	/** Reserva veículos/fuel para um pedido que está embarcando. */
 	void demo_fleet_reserve(const std::string& nation,
 		const DemoTransportDemand& demand);
-	/** Libera os veículos de um pedido que chegou. */
-	void demo_fleet_release(const std::string& nation,
-		const DemoTransportDemand& demand);
 	/** Custo unitário do frete (tarifa + combustível + uso da frota), por t·km. */
 	double demo_leg_unit_freight(TransportMode mode, double distance_km) const;
 	/**
@@ -802,8 +801,6 @@ private:
 	void demo_init_port_capacities();
 	/** Zera o uso do dia e as métricas de fila de todos os portos. */
 	void demo_reset_port_usage();
-	/** Aplica obras de expansão de porto cujo prazo venceu neste dia. */
-	void demo_tick_port_expansion();
 	/**
 	 * Compromete `tons` de carga num porto e devolve o atraso em dias (fila).
 	 * Acumula `used_today_t`, `queue_t`, `delay_hours` e `demurrage`;
@@ -870,7 +867,7 @@ private:
 	void demo_set_needs(const Dictionary& needs);
 	// F3: zera/redimensiona o estado de necessidades de uma POP (duráveis por
 	// produto, vetores dos 3 níveis) sem apagar estoque já acumulado.
-	void demo_init_pop_needs(DemoPop& pop) const;
+	void demo_init_pop_needs(DemoPop& pop) const { sim_core_.demo_init_pop_needs(pop); }
 	/**
 	 * F7: deriva e (re)inicializa o perfil de trabalho/educação de uma cidade a
 	 * partir do índice de renda externa (PIB PPP per capita já normalizado).
@@ -1047,6 +1044,10 @@ private:
 	// moedas, ...). S5a-2: movido para ogs::WorldState (sim/world_state.h);
 	// a fachada guarda um único `ws_` e converte Godot <-> sim.
 	ogs::WorldState ws_;
+
+	// Núcleo da simulação (S5b): executa a ordem do dia sobre `ws_`. A fachada
+	// converte Godot <-> sim e loga os invariantes; o núcleo não emite erro Godot.
+	ogs::SimCore sim_core_{ws_};
 
 	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA
