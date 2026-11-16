@@ -34,6 +34,7 @@ add_library(economy_gdextension SHARED
     src/sim/trade.cpp
     src/sim/production.cpp
     src/sim/prices.cpp
+    src/sim/consumption.cpp
     src/edge/save_load.cpp
 )
 
