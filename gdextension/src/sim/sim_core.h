@@ -35,6 +35,18 @@ inline std::string demo_sane_token(const std::string& text) {
 	return out.empty() ? std::string("X") : out;
 }
 
+// S16 — buffer de redução por cidade para as fases de renda/consumo. As
+// contribuições de cada cidade aos acumuladores globais (`foreign_cash`,
+// `consumed_total`, `consumed_today`) são gravadas em slots disjuntos
+// (índice da cidade × produto) e reduzidas em ordem crescente de cidade numa
+// passada serial — reproduz a ordem de soma do loop serial original.
+struct CityAccumScratch {
+	std::vector<double> foreign;          // por cidade (saídas p/ o exterior)
+	std::vector<double> consumed_total;   // cidade × produto
+	std::vector<double> consumed_today;   // cidade × produto
+	std::size_t n_products = 0;
+};
+
 class SimCore {
 public:
 	explicit SimCore(WorldState& ws);
@@ -129,10 +141,14 @@ public:
 	void demo_register_category_demand(DemoCity& city,
 		const DemoNeedsCategory& category, double want_ge);
 	// F3: consome uma categoria de necessidade e debita o orçamento do dia.
+	// S16: grava as compras no scratch de redução por cidade (não no acumulador
+	// global) para a fase de renda rodar paralela e determinística.
 	double demo_consume_category(DemoCity& city, const DemoNeedsCategory& category,
-		double want_ge, double& budget, double& spend);
+		double want_ge, double& budget, double& spend,
+		CityAccumScratch& scratch, std::size_t city_index);
 	// F3: compra institucional do governo (paper/computer) no dia.
-	void demo_consume_government(DemoCity& city);
+	void demo_consume_government(DemoCity& city,
+		CityAccumScratch& scratch, std::size_t city_index);
 	// F7 calibração: classes de consumo a partir do Gini e da cesta básica.
 	void demo_refresh_income_classes(DemoCity& city) const;
 	// F5: câmbio/tarifas consultados pela fase de serviços.

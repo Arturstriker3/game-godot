@@ -39,7 +39,22 @@ void SimCore::demo_init_pop_needs(DemoPop& pop) const {
 
 void SimCore::phase_income() {
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
-	for (DemoCity& city : ws_.cities) {
+	// S16: a renda/consumo é independente por cidade (escreve só na própria
+	// cidade e nos seus mercados; lê só dados globais imutáveis no dia). Os
+	// acumuladores (`foreign_cash` = subtração; `consumed_total`/`consumed_today`
+	// = somas) vão para um scratch por cidade e são reduzidos em ordem crescente
+	// de cidade numa passada serial — a MESMA ordem do loop serial.
+	CityAccumScratch scratch;
+	scratch.foreign.assign(ws_.cities.size(), 0.0);
+	const std::size_t n_products = static_cast<std::size_t>(ws_.products);
+	scratch.consumed_total.assign(ws_.cities.size() * n_products, 0.0);
+	scratch.consumed_today.assign(ws_.cities.size() * n_products, 0.0);
+	scratch.n_products = n_products;
+
+	auto process_city = [this, &scratch, n_products](
+			std::size_t begin, std::size_t end) {
+		for (std::size_t city_index = begin; city_index < end; ++city_index) {
+			DemoCity& city = ws_.cities[city_index];
 		DemoPop& pop = city.pop;
 		pop.capital_income = city.capital_income_next;
 		city.capital_income_next = 0.0;
@@ -66,7 +81,7 @@ void SimCore::phase_income() {
 			* kDemoExternalIncomePerCapita
 			* std::min(city.external_income_index, kDemoExternalIncomeIndexCap);
 		pop.disposable += pop.external_income;
-		ws_.foreign_cash -= pop.external_income;
+		scratch.foreign[city_index] += pop.external_income;
 
 		// Necessidade alimentar do dia em toneladas-equivalentes de grão (B3) e
 		// custo EFETIVO da cesta: os preços dos alimentos que a cidade REALMENTE
@@ -232,8 +247,10 @@ void SimCore::phase_income() {
 			pop.consumed_by_category[slot] += quantity;
 			city.revenue_by_product[product] += paid;
 			city.firm_cash += paid;
-			ws_.consumed_total[product] += quantity;
-			ws_.consumed_today[product] += quantity;
+			scratch.consumed_total[city_index * n_products
+				+ static_cast<std::size_t>(product)] += quantity;
+			scratch.consumed_today[city_index * n_products
+				+ static_cast<std::size_t>(product)] += quantity;
 			remaining_need -= quantity * factor;
 		}
 		// F9 — PISO DE SUBSISTÊNCIA AGRÍCOLA (autoconsumo em espécie). Só age
@@ -271,8 +288,10 @@ void SimCore::phase_income() {
 				const double tons = take / factor;
 				market.stock = std::max(0.0, market.stock - tons);
 				pop.consumed_by_category[slot] += tons;
-				ws_.consumed_total[product] += tons;
-				ws_.consumed_today[product] += tons;
+				scratch.consumed_total[city_index * n_products
+					+ static_cast<std::size_t>(product)] += tons;
+				scratch.consumed_today[city_index * n_products
+					+ static_cast<std::size_t>(product)] += tons;
 				consumed += take;
 				left -= take;
 			}
@@ -393,7 +412,8 @@ void SimCore::phase_income() {
 							continue;
 						}
 						level_got += demo_consume_category(
-							city, category, want_ge, needs_budget, needs_spent);
+							city, category, want_ge, needs_budget, needs_spent,
+							scratch, city_index);
 					}
 				}
 				pop.level_spend[level_index] += needs_spent - spend_before;
@@ -527,8 +547,21 @@ void SimCore::phase_income() {
 			pop.income_level_share[pop.income_level] = 1.0;
 		}
 		// Consumo institucional do Estado (paper/computer) — decisão §12.10.
-		demo_consume_government(city);
+		demo_consume_government(city, scratch, city_index);
 		pop.savings = budget;
+		}
+	};
+	pool().parallel_for(ws_.cities.size(), process_city);
+
+	// Redução serial em ordem crescente de cidade (a ordem do loop serial).
+	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
+		ws_.foreign_cash -= scratch.foreign[city_index];
+		for (int product = 0; product < ws_.products; ++product) {
+			ws_.consumed_total[product] += scratch.consumed_total[
+				city_index * n_products + static_cast<std::size_t>(product)];
+			ws_.consumed_today[product] += scratch.consumed_today[
+				city_index * n_products + static_cast<std::size_t>(product)];
+		}
 	}
 
 	OGS_SIM_PHASE_LAP(kDemoPhaseIncome);
@@ -720,7 +753,7 @@ void SimCore::demo_register_category_demand(DemoCity& city,
 }
 double SimCore::demo_consume_category(DemoCity& city,
 		const DemoNeedsCategory& category, double want_ge, double& budget,
-		double& spend) {
+		double& spend, CityAccumScratch& scratch, std::size_t city_index) {
 	if (want_ge <= 0.0 || category.substitutes.empty()) {
 		return 0.0;
 	}
@@ -784,8 +817,10 @@ double SimCore::demo_consume_category(DemoCity& city,
 		spend += paid;
 		city.revenue_by_product[product] += paid;
 		city.firm_cash += paid;
-		ws_.consumed_total[product] += quantity;
-		ws_.consumed_today[product] += quantity;
+		scratch.consumed_total[city_index * scratch.n_products
+			+ static_cast<std::size_t>(product)] += quantity;
+		scratch.consumed_today[city_index * scratch.n_products
+			+ static_cast<std::size_t>(product)] += quantity;
 		const double got_ge = durable_scale > 0.0
 			? quantity * factor / durable_scale : 0.0;
 		consumed_ge += got_ge;
@@ -799,7 +834,8 @@ double SimCore::demo_consume_category(DemoCity& city,
 	}
 	return consumed_ge;
 }
-void SimCore::demo_consume_government(DemoCity& city) {
+void SimCore::demo_consume_government(DemoCity& city,
+		CityAccumScratch& scratch, std::size_t city_index) {
 	if (!ws_.needs_loaded || ws_.government_products.empty()) {
 		return;
 	}
@@ -869,8 +905,10 @@ void SimCore::demo_consume_government(DemoCity& city) {
 		city.government_goods_spend += paid;
 		city.firm_cash += paid;
 		city.revenue_by_product[product] += paid;
-		ws_.consumed_total[product] += quantity;
-		ws_.consumed_today[product] += quantity;
+		scratch.consumed_total[city_index * scratch.n_products
+			+ static_cast<std::size_t>(product)] += quantity;
+		scratch.consumed_today[city_index * scratch.n_products
+			+ static_cast<std::size_t>(product)] += quantity;
 	}
 }
 } // namespace ogs
