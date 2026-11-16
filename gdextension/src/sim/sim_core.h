@@ -16,6 +16,22 @@
 
 namespace ogs {
 
+// Token seguro para id determinístico (letras/números; o resto vira '-').
+inline std::string demo_sane_token(const std::string& text) {
+	std::string out;
+	out.reserve(text.size());
+	for (const char c : text) {
+		const unsigned char u = static_cast<unsigned char>(c);
+		const bool ok = (u >= 'A' && u <= 'Z') || (u >= 'a' && u <= 'z')
+			|| (u >= '0' && u <= '9');
+		out.push_back(ok ? c : '-');
+	}
+	while (!out.empty() && out.back() == '-') {
+		out.pop_back();
+	}
+	return out.empty() ? std::string("X") : out;
+}
+
 class SimCore {
 public:
 	explicit SimCore(WorldState& ws);
@@ -129,6 +145,18 @@ public:
 	void demo_service_close(DemoServiceBusiness& business);
 	void demo_seed_services();
 	void demo_services_day(DemoCity& city);
+
+	// ------------------------------------------------------------------
+	// S6b — helpers de load/setup movidos da fachada.
+	// ------------------------------------------------------------------
+	// Refaz a tabela `buyer|seller|product` -> taxa (demo_set_tariff, save).
+	void demo_rebuild_tariff_lookup();
+	// F7: preenche população, escolaridade, participação e salários iniciais.
+	void demo_apply_labor_profile(DemoCity& city);
+	// F9: semeia os grupos a partir dos ativos privados (idempotente).
+	void demo_seed_groups();
+	// Id de receita -> índice no `recipe_lookup` (-1 se não existir).
+	int demo_recipe_index(const std::string& recipe_id) const;
 
 	// ------------------------------------------------------------------
 	// Geometria do mapa e frete (S5b).

@@ -334,12 +334,7 @@ double EconomySim::demo_competitiveness(const std::string& nation) const {
 }
 
 void EconomySim::demo_rebuild_tariff_lookup() {
-	ws_.tariff_lookup.clear();
-	ws_.tariff_lookup.reserve(ws_.tariffs.size() * 2);
-	for (const DemoTariff& tariff : ws_.tariffs) {
-		ws_.tariff_lookup[tariff.buyer + '|' + tariff.seller + '|'
-			+ tariff.product] = std::clamp(tariff.rate, 0.0, 1.0);
-	}
+	sim_core_.demo_rebuild_tariff_lookup();
 }
 
 double EconomySim::demo_tariff_rate(const std::string& buyer_nation,
@@ -2829,11 +2824,7 @@ const char* EconomySim::demo_product_name(int product) const {
 }
 
 int EconomySim::demo_recipe_index(const String& recipe_id) const {
-	const auto found = ws_.recipe_lookup.find(std::string(recipe_id.utf8().get_data()));
-	if (found == ws_.recipe_lookup.end()) {
-		return -1;
-	}
-	return found->second;
+	return sim_core_.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
 }
 
 void EconomySim::demo_set_recipes(const Array& recipes) {
@@ -3501,71 +3492,7 @@ void EconomySim::demo_set_income_gini(const String& city_id, double gini) {
 // F7 — trabalho, educação e renda.
 // ---------------------------------------------------------------------------
 void EconomySim::demo_apply_labor_profile(DemoCity& city) {
-	DemoPop& pop = city.pop;
-	const double population = std::max(0.0, city.simulation_population);
-	pop.population = population;
-	const double t = std::clamp(
-		std::clamp(city.external_income_index, 0.0, 8.0) / kLaborIncomeSaturation,
-		0.0, 1.0);
-	pop.working_age = population * (kLaborWorkingAgeLow
-		+ (kLaborWorkingAgeHigh - kLaborWorkingAgeLow) * t);
-	pop.retirees = population * (kLaborRetireeLow
-		+ (kLaborRetireeHigh - kLaborRetireeLow) * t);
-	pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
-	const double basic = kLaborBasicEduLow
-		+ (kLaborBasicEduHigh - kLaborBasicEduLow) * t;
-	double higher = kLaborHigherEduLow
-		+ (kLaborHigherEduHigh - kLaborHigherEduLow) * t;
-	higher = std::min(higher, std::max(0.0, 1.0 - basic - 0.02));
-	const double intermediate = std::max(0.0, 1.0 - basic - higher);
-	pop.education[0] = pop.working_age * basic;
-	pop.education[1] = pop.working_age * intermediate;
-	pop.education[2] = pop.working_age * higher;
-	const double country_participation = kLaborParticipationLow
-		+ (kLaborParticipationHigh - kLaborParticipationLow) * t;
-	const double scale = country_participation / kLaborParticipationByLevel[0];
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		pop.participation[level] = std::clamp(
-			kLaborParticipationByLevel[level] * scale, 0.35, 0.92);
-	}
-	const double student_share = kLaborStudentShareLow
-		+ (kLaborStudentShareHigh - kLaborStudentShareLow) * t;
-	const double students = pop.working_age * student_share;
-	pop.studying[0] = students * 0.60;
-	pop.studying[1] = students * 0.40;
-	pop.students = pop.studying[0] + pop.studying[1];
-	const double factor = labor_income_factor(city.external_income_index);
-	const auto minimum = ws_.minimum_wages.find(city.nation);
-	const double floor = minimum != ws_.minimum_wages.end()
-		? std::max(0.0, minimum->second) : 0.0;
-	pop.labor_force = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		const double studying = level < kDemoEducationLevels - 1
-			? pop.studying[level] : 0.0;
-		pop.labor_force_by_level[level] = std::max(0.0,
-			pop.education[level] * pop.participation[level] - studying);
-		pop.employed_by_level[level] = 0.0;
-		pop.unemployed_by_level[level] = pop.labor_force_by_level[level];
-		pop.vacancies_by_level[level] = 0.0;
-		pop.unfilled_by_level[level] = 0.0;
-		pop.wage_income_by_level[level] = 0.0;
-		pop.wage_by_level[level] = std::max(floor,
-			kLaborWageInitial * kLaborWageRatio[level] * factor);
-		pop.labor_force += pop.labor_force_by_level[level];
-	}
-	pop.wage_anchored = false;
-	pop.employed = 0.0;
-	pop.unemployed = pop.labor_force;
-	pop.dependents = std::max(0.0, population - pop.labor_force);
-	pop.wage_income = 0.0;
-	// A renda básica é sempre permitida; life/luxury dependem da renda real
-	// (income_level calculado no fim da fase de renda).
-	pop.income_level = 1;
-	if (pop.level_spend.size() != ws_.needs_levels.size()) {
-		pop.level_spend.assign(ws_.needs_levels.size(), 0.0);
-	}
-	demo_refresh_strata(pop);
-	demo_refresh_income_classes(city);
+	sim_core_.demo_apply_labor_profile(city);
 }
 
 void EconomySim::demo_set_labor_profile(const String& city_id,
@@ -4310,84 +4237,9 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 // F9 — investimento e propriedade
 // =====================================================================
 
-namespace {
-// Token seguro para id determinístico (letras/números; o resto vira '-').
-std::string demo_sane_token(const std::string& text) {
-	std::string out;
-	out.reserve(text.size());
-	for (const char c : text) {
-		const unsigned char u = static_cast<unsigned char>(c);
-		const bool ok = (u >= 'A' && u <= 'Z') || (u >= 'a' && u <= 'z')
-			|| (u >= '0' && u <= '9');
-		out.push_back(ok ? c : '-');
-	}
-	while (!out.empty() && out.back() == '-') {
-		out.pop_back();
-	}
-	return out.empty() ? std::string("X") : out;
-}
-}  // namespace
-
 void EconomySim::demo_seed_groups() {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	if (ws_.groups_seeded || !ws_.groups.empty()) {
-		return;
-	}
-	// Agrupa por (nação, setor do produto) — a regra documentada no
-	// GAME_STATE/docs. `std::map` mantém a ordem determinística.
-	std::map<std::string, std::vector<int>> buckets;
-	for (std::size_t index = 0; index < ws_.buildings.size(); ++index) {
-		const DemoBuilding& building = ws_.buildings[index];
-		if (building.owner != "private") {
-			continue;
-		}
-		const DemoCity* city = find_demo_city(building.city);
-		if (city == nullptr) {
-			continue;
-		}
-		std::string sector;
-		if (building.output_product >= 0
-				&& building.output_product < static_cast<int>(ws_.product_sectors.size())) {
-			sector = ws_.product_sectors[static_cast<std::size_t>(building.output_product)];
-		}
-		if (sector.empty()) {
-			sector = (building.recipe >= 0 || building.input_product >= 0)
-				? "industry" : "primary";
-		}
-		buckets[city->nation + "|" + sector].push_back(static_cast<int>(index));
-	}
-	int chunk_serial = 0;
-	for (auto& entry : buckets) {
-		std::vector<int>& indices = entry.second;
-		const std::size_t separator = entry.first.find('|');
-		const std::string nation = entry.first.substr(0, separator);
-		const std::string sector = separator == std::string::npos
-			? std::string("primary") : entry.first.substr(separator + 1);
-		std::sort(indices.begin(), indices.end(), [this](int a, int b) {
-			return ws_.buildings[static_cast<std::size_t>(a)].id
-				< ws_.buildings[static_cast<std::size_t>(b)].id;
-		});
-		for (std::size_t start = 0; start < indices.size();
-				start += static_cast<std::size_t>(kDemoGroupChunkAssets)) {
-			DemoGroup group;
-			group.id = "G-" + demo_sane_token(nation) + "-"
-				+ demo_sane_token(sector) + "-" + std::to_string(chunk_serial);
-			group.origin_nation = nation;
-			group.sector = sector;
-			const int group_index = static_cast<int>(ws_.groups.size());
-			ws_.group_lookup[group.id] = group_index;
-			ws_.groups.push_back(group);
-			const std::size_t end = std::min(indices.size(),
-				start + static_cast<std::size_t>(kDemoGroupChunkAssets));
-			for (std::size_t i = start; i < end; ++i) {
-				DemoBuilding& building =
-					ws_.buildings[static_cast<std::size_t>(indices[i])];
-				building.owner = "national:" + group.id;
-			}
-			++chunk_serial;
-		}
-	}
-	ws_.groups_seeded = true;
+	sim_core_.demo_seed_groups();
 	++demo_status_static_version_;
 	demo_status_invalidate();
 }
