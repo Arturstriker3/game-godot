@@ -677,6 +677,28 @@ private:
 		DemoStatusKeys();
 	};
 
+	// Slot de status por nação: reaproveita o dicionário da nação, os
+	// sub-dicionários `fleet`/`labor` e os Arrays de níveis (educação, força de
+	// trabalho, salários, fatias de renda). Antes o bloco `nations` alocava um
+	// Dictionary + ~10 Arrays novos por nação a cada tick (~2 mil alocações/dia
+	// em 179 nações). Os contêineres são reutilizados e os valores reescritos em
+	// lugar — byte-idêntico ao código anterior.
+	struct DemoStatusNationSlot {
+		Dictionary dict;
+		Dictionary fleet;
+		Dictionary labor;
+		Array education;
+		Array labor_force_by_level;
+		Array employed_by_level;
+		Array unemployed_by_level;
+		Array vacancies_by_level;
+		Array unemployment_by_level;
+		Array wage_by_level;
+		Array income_share;
+		Array fleet_health;
+		bool fleet_built = false;
+		bool labor_built = false;
+	};
 	struct DemoStatusCache {
 		Dictionary root;
 		Array cities;
@@ -702,7 +724,7 @@ private:
 		// Dicionários de perna reaproveitados (1 por perna de pedido): antes
 		// cada pedido alocava um Dictionary novo por perna a cada dia.
 		std::vector<std::vector<Dictionary>> order_leg_entry;
-		std::vector<Dictionary> nation_slots;
+		std::vector<DemoStatusNationSlot> nation_slots;
 		// Caminho total em trânsito por cidade (evita varredura O(cidades ×
 		// cargas) dentro do laço de cidades).
 		std::vector<double> in_transit_by_city;

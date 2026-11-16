@@ -2504,7 +2504,8 @@ Dictionary EconomySim::get_demo_status() {
 	for (std::size_t index = 0; index < nation_order.size(); ++index) {
 		const std::string& tag = nation_order[index];
 		const NationTotals& totals = nation_totals[index];
-		Dictionary& nation = cache.nation_slots[index];
+		DemoStatusNationSlot& slot = cache.nation_slots[index];
+		Dictionary& nation = slot.dict;
 		nation[k.tag] = String(tag.c_str());
 		const char* display = tag.c_str();
 		for (const auto& [code, name] : kNames) {
@@ -2521,18 +2522,26 @@ Dictionary EconomySim::get_demo_status() {
 		nation[k.deficit] = totals.deficit;
 		nation[k.in_transit] = totals.in_transit;
 		// F4: frota/combustível da nação (a UI e a IA leem daqui; a fila do dia
-		// é o sinal de compra de veículos/combustível).
+		// é o sinal de compra de veículos/combustível). O sub-dicionário e o
+		// Array de saúde são reaproveitados entre ticks (byte-idêntico: mesmos
+		// valores, só sem realocar os contêineres).
 		const auto fleet_found = ws_.fleets.find(tag);
 		if (fleet_found != ws_.fleets.end()) {
 			const DemoFleet& fleet = fleet_found->second;
-			Dictionary fleet_dict;
+			Dictionary& fleet_dict = slot.fleet;
 			fleet_dict[k.trucks] = fleet.trucks;
 			fleet_dict[k.ships] = fleet.ships;
 			fleet_dict[k.planes] = fleet.planes;
 			fleet_dict[k.fuel] = fleet.fuel;
 			fleet_dict[k.spare_parts] = fleet.spare_parts;
-			fleet_dict[k.health] = Array{fleet.health[0], fleet.health[1],
-				fleet.health[2]};
+			if (!slot.fleet_built) {
+				slot.fleet_health.resize(3);
+				fleet_dict[k.health] = slot.fleet_health;
+				slot.fleet_built = true;
+			}
+			slot.fleet_health[0] = fleet.health[0];
+			slot.fleet_health[1] = fleet.health[1];
+			slot.fleet_health[2] = fleet.health[2];
 			fleet_dict[k.fuel_used] = fleet.fuel_used_today;
 			fleet_dict[k.queue] = fleet.queue_today;
 			fleet_dict[k.missed_no_fleet] = fleet.missed_no_fleet;
@@ -2540,52 +2549,68 @@ Dictionary EconomySim::get_demo_status() {
 			fleet_dict[k.source] = fleet.derived ? "derived" : "declared";
 			nation[k.fleet] = fleet_dict;
 		}
-		// F7: mercado de trabalho da nação (telas de política/trabalho).
-		Dictionary labor;
+		// F7: mercado de trabalho da nação (telas de política/trabalho). O
+		// sub-dicionário e os Arrays de níveis são reaproveitados entre ticks.
+		Dictionary& labor = slot.labor;
 		labor[k.working_age] = totals.working_age;
 		labor[k.labor_force] = totals.labor_force;
 		labor[k.employed] = totals.employed;
 		labor[k.unemployed] = totals.unemployed;
 		labor[k.students] = totals.students;
 		labor[k.recruit_reserve] = totals.recruit_reserve;
-		labor[k.education] = Array{
-			totals.education[0], totals.education[1], totals.education[2]};
-		labor[k.labor_force_by_level] = Array{
-			totals.labor_force_by_level[0], totals.labor_force_by_level[1],
-			totals.labor_force_by_level[2]};
-		labor[k.employed_by_level] = Array{
-			totals.employed_by_level[0], totals.employed_by_level[1],
-			totals.employed_by_level[2]};
-		labor[k.unemployed_by_level] = Array{
-			totals.unemployed_by_level[0], totals.unemployed_by_level[1],
-			totals.unemployed_by_level[2]};
-		labor[k.vacancies_by_level] = Array{
-			totals.vacancies_by_level[0], totals.vacancies_by_level[1],
-			totals.vacancies_by_level[2]};
-		Array unemployment_by_level;
-		Array wage_by_level;
+		if (!slot.labor_built) {
+			slot.education.resize(3);
+			slot.labor_force_by_level.resize(3);
+			slot.employed_by_level.resize(3);
+			slot.unemployed_by_level.resize(3);
+			slot.vacancies_by_level.resize(3);
+			slot.unemployment_by_level.resize(kDemoEducationLevels);
+			slot.wage_by_level.resize(kDemoEducationLevels);
+			slot.income_share.resize(kDemoIncomeLevels);
+			labor[k.education] = slot.education;
+			labor[k.labor_force_by_level] = slot.labor_force_by_level;
+			labor[k.employed_by_level] = slot.employed_by_level;
+			labor[k.unemployed_by_level] = slot.unemployed_by_level;
+			labor[k.vacancies_by_level] = slot.vacancies_by_level;
+			labor[k.unemployment_by_level] = slot.unemployment_by_level;
+			labor[k.wage_by_level] = slot.wage_by_level;
+			labor[k.income_level_share] = slot.income_share;
+			slot.labor_built = true;
+		}
+		slot.education[0] = totals.education[0];
+		slot.education[1] = totals.education[1];
+		slot.education[2] = totals.education[2];
+		slot.labor_force_by_level[0] = totals.labor_force_by_level[0];
+		slot.labor_force_by_level[1] = totals.labor_force_by_level[1];
+		slot.labor_force_by_level[2] = totals.labor_force_by_level[2];
+		slot.employed_by_level[0] = totals.employed_by_level[0];
+		slot.employed_by_level[1] = totals.employed_by_level[1];
+		slot.employed_by_level[2] = totals.employed_by_level[2];
+		slot.unemployed_by_level[0] = totals.unemployed_by_level[0];
+		slot.unemployed_by_level[1] = totals.unemployed_by_level[1];
+		slot.unemployed_by_level[2] = totals.unemployed_by_level[2];
+		slot.vacancies_by_level[0] = totals.vacancies_by_level[0];
+		slot.vacancies_by_level[1] = totals.vacancies_by_level[1];
+		slot.vacancies_by_level[2] = totals.vacancies_by_level[2];
 		for (int level = 0; level < kDemoEducationLevels; ++level) {
-			unemployment_by_level.append(totals.labor_force_by_level[level] > 1e-9
+			slot.unemployment_by_level[level] =
+				totals.labor_force_by_level[level] > 1e-9
 				? totals.unemployed_by_level[level]
-					/ totals.labor_force_by_level[level] : 0.0);
-			wage_by_level.append(totals.wage_weight[level] > 1e-9
+					/ totals.labor_force_by_level[level] : 0.0;
+			slot.wage_by_level[level] = totals.wage_weight[level] > 1e-9
 				? totals.wage_weighted[level] / totals.wage_weight[level]
 				: (ws_.minimum_wages.find(tag) != ws_.minimum_wages.end()
-					? std::max(0.0, ws_.minimum_wages.at(tag)) : 0.0));
+					? std::max(0.0, ws_.minimum_wages.at(tag)) : 0.0);
 		}
-		labor[k.unemployment_by_level] = unemployment_by_level;
-		labor[k.wage_by_level] = wage_by_level;
 		const auto minimum = ws_.minimum_wages.find(tag);
 		labor[k.minimum_wage] = minimum != ws_.minimum_wages.end()
 			? std::max(0.0, minimum->second) : 0.0;
 		labor[k.wage_rigidity] = ws_.wage_rigidity;
 		// F7 calibração: fatia da POP por nível de consumo (a soma é 1).
-		Array income_share;
 		for (int level_index = 0; level_index < kDemoIncomeLevels; ++level_index) {
-			income_share.append(totals.income_population > 1e-9
-				? totals.income_share[level_index] / totals.income_population : 0.0);
+			slot.income_share[level_index] = totals.income_population > 1e-9
+				? totals.income_share[level_index] / totals.income_population : 0.0;
 		}
-		labor[k.income_level_share] = income_share;
 		// F7 calibração: fator de produtividade nacional (`derived:gdp_ppp`,
 		// 1,0 = média mundial), ponderado pela população de simulação.
 		labor[k.productivity_index] = totals.income_population > 1e-9
