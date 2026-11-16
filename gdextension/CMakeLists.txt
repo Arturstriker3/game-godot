@@ -31,6 +31,7 @@ add_library(economy_gdextension SHARED
     src/sim/sim_core.cpp
     src/sim/freight.cpp
     src/sim/logistics.cpp
+    src/sim/trade.cpp
     src/edge/save_load.cpp
 )
 
