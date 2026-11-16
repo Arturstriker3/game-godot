@@ -29,6 +29,7 @@ add_library(economy_gdextension SHARED
     src/economy_sim.cpp
     src/sim/profiling.cpp
     src/sim/sim_core.cpp
+    src/edge/save_load.cpp
 )
 
 target_link_libraries(economy_gdextension PRIVATE godot-cpp)
