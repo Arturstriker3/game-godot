@@ -95,6 +95,8 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_tick_and_publish"), &EconomySim::demo_tick_and_publish);
 	ClassDB::bind_method(D_METHOD("demo_set_profiling", "enabled"),
 	                     &EconomySim::demo_set_profiling);
+	ClassDB::bind_method(D_METHOD("demo_set_sim_threads", "threads"),
+	                     &EconomySim::demo_set_sim_threads);
 	ClassDB::bind_method(D_METHOD("demo_get_profile"), &EconomySim::demo_get_profile);
 	ClassDB::bind_method(D_METHOD("demo_warm_status"), &EconomySim::demo_warm_status);
 	ClassDB::bind_method(D_METHOD("get_demo_status"), &EconomySim::get_demo_status);
@@ -1043,6 +1045,11 @@ void EconomySim::demo_set_profiling(bool enabled) {
 			value = 0.0;
 		}
 	}
+}
+
+void EconomySim::demo_set_sim_threads(int threads) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	sim_core_.demo_set_sim_threads(threads);
 }
 
 Dictionary EconomySim::demo_get_profile() const {

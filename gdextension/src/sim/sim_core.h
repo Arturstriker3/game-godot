@@ -12,7 +12,10 @@
 // cá. As fases que ainda não migraram continuam inline no `demo_tick_core`.
 
 #include "sim_labor.h"
+#include "thread_pool.h"
 #include "world_state.h"
+
+#include <memory>
 
 namespace ogs {
 
@@ -35,6 +38,15 @@ inline std::string demo_sane_token(const std::string& text) {
 class SimCore {
 public:
 	explicit SimCore(WorldState& ws);
+
+	// ------------------------------------------------------------------
+	// S16 — paralelismo determinístico por cidade.
+	// ------------------------------------------------------------------
+	// Define o número de threads das fases por cidade: 1 = serial (default);
+	// <= 0 = automático (min(núcleos - 2, 8)); > 1 = esse número. As fases
+	// globais (trade, fiscal, câmbio, invariantes) seguem seriais.
+	void demo_set_sim_threads(int threads);
+	int demo_sim_threads() const { return sim_threads_; }
 
 	// ------------------------------------------------------------------
 	// Fases da ordem do dia (crescem a cada fatia de S5b).
@@ -245,6 +257,15 @@ public:
 private:
 	WorldState& ws_;
 	double money_before_ = 0.0;
+	// S16: número de threads configurado (1 = serial) e o pool persistente,
+	// criado sob demanda com o número efetivo de threads. Nunca usado fora do
+	// tick (o writer já segura o mutex da fachada).
+	int sim_threads_ = 1;
+	std::unique_ptr<ThreadPool> pool_;
+	// Número efetivo de threads (resolve o modo automático).
+	int effective_threads() const;
+	// Devolve o pool atual, recriando-o se o número de threads mudou.
+	ThreadPool& pool();
 	// Preço de abertura por cidade/produto, capturado no prólogo e usado pela
 	// fase de clamp (limite diário único). Reaproveitado entre dias.
 	std::vector<std::vector<double>> open_prices_;

@@ -22,44 +22,51 @@ void SimCore::phase_labor() {
 		}
 		return demo_depth_opex_factor(owner_city.deposits[building.output_product]);
 	};
-	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		DemoCity& city = ws_.cities[city_index];
-		const std::vector<int>& local_buildings =
-			ws_.buildings_by_city[city_index];
-		// F7: o dia do mercado de trabalho resolve qualificação, força de
-		// trabalho por nível, vagas, emprego e folha. O opex continua sendo o
-		// custo de operação das plantas (pago em seguida, também limitado ao
-		// caixa da firma).
-		double opex_total = 0.0;
-		for (const int bi : local_buildings) {
-			DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
-			const bool secondary = building.recipe >= 0 || building.input_product >= 0;
-			// Planta secundária ociosa não paga o opex cheio: o custo acompanha
-			// a operação do dia anterior (piso de 5% de stand-by).
-			const double operating = secondary
-				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
-			opex_total += building.opex * opex_factor(city, building) * operating;
+	// S16: o trabalho é independente por cidade (escreve só na própria cidade e
+	// nas suas construções; lê só dados globais imutáveis no dia) — paralelizável
+	// com resultado bit-idêntico ao serial. A redução não é necessária (não há
+	// acumulador global nesta fase).
+	auto process_city = [this, &opex_factor](std::size_t begin, std::size_t end) {
+		for (std::size_t city_index = begin; city_index < end; ++city_index) {
+			DemoCity& city = ws_.cities[city_index];
+			const std::vector<int>& local_buildings =
+				ws_.buildings_by_city[city_index];
+			// F7: o dia do mercado de trabalho resolve qualificação, força de
+			// trabalho por nível, vagas, emprego e folha. O opex continua sendo o
+			// custo de operação das plantas (pago em seguida, também limitado ao
+			// caixa da firma).
+			double opex_total = 0.0;
+			for (const int bi : local_buildings) {
+				DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
+				const bool secondary = building.recipe >= 0 || building.input_product >= 0;
+				// Planta secundária ociosa não paga o opex cheio: o custo acompanha
+				// a operação do dia anterior (piso de 5% de stand-by).
+				const double operating = secondary
+					? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+				opex_total += building.opex * opex_factor(city, building) * operating;
+			}
+			demo_labor_day(city);
+			// Opex é comprado de serviços domésticos (manutenção, energia), não é
+			// uma importação: mantém o dinheiro dentro da economia. A liquidez do
+			// opex é a que sobrou do caixa depois da folha.
+			const double opex_available = std::max(0.0, city.firm_cash);
+			const double opex_scale = opex_total > opex_available
+				? (opex_total > 0.0 ? opex_available / opex_total : 1.0) : 1.0;
+			for (const int bi : local_buildings) {
+				DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
+				const bool secondary = building.recipe >= 0 || building.input_product >= 0;
+				const double operating = secondary
+					? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+				building.paid_opex = building.opex * opex_factor(city, building)
+					* operating * opex_scale;
+			}
+			const double paid_opex = opex_total * opex_scale;
+			city.firm_cash -= paid_opex;
+			city.service_cash += paid_opex;
+			city.opex_revenue = paid_opex;
 		}
-		demo_labor_day(city);
-		// Opex é comprado de serviços domésticos (manutenção, energia), não é
-		// uma importação: mantém o dinheiro dentro da economia. A liquidez do
-		// opex é a que sobrou do caixa depois da folha.
-		const double opex_available = std::max(0.0, city.firm_cash);
-		const double opex_scale = opex_total > opex_available
-			? (opex_total > 0.0 ? opex_available / opex_total : 1.0) : 1.0;
-		for (const int bi : local_buildings) {
-			DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
-			const bool secondary = building.recipe >= 0 || building.input_product >= 0;
-			const double operating = secondary
-				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
-			building.paid_opex = building.opex * opex_factor(city, building)
-				* operating * opex_scale;
-		}
-		const double paid_opex = opex_total * opex_scale;
-		city.firm_cash -= paid_opex;
-		city.service_cash += paid_opex;
-		city.opex_revenue = paid_opex;
-	}
+	};
+	pool().parallel_for(ws_.cities.size(), process_city);
 
 	OGS_SIM_PHASE_LAP(kDemoPhaseLabor);
 }

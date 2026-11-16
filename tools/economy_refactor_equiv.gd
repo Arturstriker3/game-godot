@@ -35,6 +35,7 @@ var _mode := "world"
 var _days := 60
 var _ai := true
 var _profile := false
+var _threads := 1
 var _out := ""
 var _baseline := ""
 
@@ -51,6 +52,8 @@ func _init() -> void:
 			_ai = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--profile="):
 			_profile = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--threads="):
+			_threads = maxi(1, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--out="):
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--baseline="):
@@ -127,6 +130,8 @@ func _run() -> void:
 			sim.demo_set_sector_employment(sector)
 	if sim.has_method("demo_set_profiling"):
 		sim.demo_set_profiling(_profile)
+	if sim.has_method("demo_set_sim_threads"):
+		sim.demo_set_sim_threads(_threads)
 
 	var geo: Object = null
 	var ai: Object = null

@@ -80,6 +80,13 @@ public:
 	void demo_set_profiling(bool enabled);
 
 	/**
+	 * S16: define o número de threads das fases por cidade do tick (1 = serial,
+	 * default; <= 0 = automático = min(núcleos - 2, 8); > 1 = esse número).
+	 * As fases globais seguem seriais. Determinístico: o resultado não muda.
+	 */
+	void demo_set_sim_threads(int threads);
+
+	/**
 	 * Marca o status publicado como desatualizado. Qualquer método que muda o
 	 * estado fora do tick (investir, construir, choque de preço, aptidão) tem de
 	 * chamar isto: senão get_demo_status() devolve o snapshot do início do dia e

@@ -13,6 +13,31 @@ namespace ogs {
 SimCore::SimCore(WorldState& ws) : ws_(ws) {}
 
 // ------------------------------------------------------------------
+// S16 — paralelismo determinístico por cidade.
+// ------------------------------------------------------------------
+
+int SimCore::effective_threads() const {
+	if (sim_threads_ <= 0) {
+		const int hw = static_cast<int>(std::thread::hardware_concurrency());
+		return std::clamp(hw - 2, 1, 8);
+	}
+	return sim_threads_;
+}
+
+ThreadPool& SimCore::pool() {
+	const int n = effective_threads();
+	if (!pool_ || pool_->thread_count() != n) {
+		pool_.reset(new ThreadPool(n));
+	}
+	return *pool_;
+}
+
+void SimCore::demo_set_sim_threads(int threads) {
+	// Guarda o valor; o pool é (re)criado sob demanda na próxima fase paralela.
+	sim_threads_ = std::max(0, threads);
+}
+
+// ------------------------------------------------------------------
 // Helpers compartilhados.
 // ------------------------------------------------------------------
 
