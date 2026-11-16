@@ -112,6 +112,19 @@ public:
 	 */
 	Dictionary get_demo_status();
 
+	/**
+	 * Detalhe completo de UMA cidade sob demanda (mesmo formato do bloco por
+	 * cidade publicado pelo `get_demo_status()`): id, nome, nação, escalares,
+	 * `markets`, `pop`, `services`, `buildings`, `deposits`, fluxos de comércio
+	 * e emprego setorial. Devolve `{}` quando a cidade não existe.
+	 *
+	 * Converte direto do `WorldState` num slot próprio (não reusa o cache do
+	 * status diário): é a porta de acesso do detalhe pesado quando o status
+	 * diário fica leve (S7-c). Barato por contrato — chamado sob demanda por
+	 * cidade, nunca no laço de todas as cidades.
+	 */
+	Dictionary get_city_status(const String& city_id);
+
 	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
 	void demo_price_shock(const String& product, double multiplier);
 

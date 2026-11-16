@@ -100,6 +100,8 @@ void EconomySim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("demo_get_profile"), &EconomySim::demo_get_profile);
 	ClassDB::bind_method(D_METHOD("demo_warm_status"), &EconomySim::demo_warm_status);
 	ClassDB::bind_method(D_METHOD("get_demo_status"), &EconomySim::get_demo_status);
+	ClassDB::bind_method(D_METHOD("get_city_status", "city_id"),
+	                     &EconomySim::get_city_status);
 	ClassDB::bind_method(D_METHOD("demo_price_shock", "product", "multiplier"),
 	                     &EconomySim::demo_price_shock);
 	ClassDB::bind_method(D_METHOD("demo_set_suitability", "city_id", "product", "value"),
@@ -2655,6 +2657,32 @@ Dictionary EconomySim::get_demo_status() {
 	return root;
 }
 
+
+Dictionary EconomySim::get_city_status(const String& city_id) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary result;
+	const std::string id = std::string(city_id.utf8().get_data());
+	const auto found = ws_.city_lookup.find(id);
+	if (found == ws_.city_lookup.end()) {
+		return result;
+	}
+	const std::size_t city_index = static_cast<std::size_t>(found->second);
+
+	// Carga em trânsito PARA esta cidade (o status diário calcula a mesma soma
+	// numa passada única; aqui é só uma cidade, então varre as cargas do mundo).
+	double in_transit = 0.0;
+	for (const DemoShipment& shipment : ws_.in_transit) {
+		if (shipment.to_city == id) {
+			in_transit += shipment.amount;
+		}
+	}
+
+	// Slot frio (nada preenchido): `demo_fill_city_status` escreve todos os
+	// campos — mesmo conteúdo que o bloco por cidade do status diário.
+	DemoStatusCitySlot slot;
+	demo_fill_city_status(city_index, slot, in_transit);
+	return slot.dict;
+}
 
 
 void EconomySim::demo_price_shock(const String& product, double multiplier) {
