@@ -449,24 +449,35 @@ double SimCore::demo_fleet_buy_core(const std::string& nation, int product_index
 	return bought;
 }
 void SimCore::phase_arrival() {
-	// 1. Chegada das cargas pedidas no dia anterior.
-	for (auto shipment = ws_.in_transit.begin(); shipment != ws_.in_transit.end();) {
-		if (shipment->arrival_day <= ws_.day) {
-			if (DemoCity* city = find_demo_city(shipment->to_city)) {
-				city->markets[shipment->product].stock += shipment->amount;
+	// 1. Chegada das cargas pedidas no dia anterior. Compacção in-place: os
+	// pedidos que ainda não venceram são copiados para a frente do vetor (na
+	// mesma ordem) e a cauda é descartada. É o mesmo resultado do `erase`
+	// serial, mas O(n) em vez de O(n²): cada sobrevivente move-se no máximo uma
+	// vez. Bit-idêntico — a ordem de chegada (read 0..n-1) e os efeitos
+	// colaterais (estoque + liberação de frota) são os mesmos do laço original.
+	const std::size_t count = ws_.in_transit.size();
+	std::size_t write = 0;
+	for (std::size_t read = 0; read < count; ++read) {
+		DemoShipment& shipment = ws_.in_transit[read];
+		if (shipment.arrival_day <= ws_.day) {
+			if (DemoCity* city = find_demo_city(shipment.to_city)) {
+				city->markets[shipment.product].stock += shipment.amount;
 			}
 			// F4: libera os veículos reservados pelo pedido (o combustível já
 			// foi consumido no embarque).
 			DemoTransportDemand done;
-			done.trucks = shipment->fleet_trucks;
-			done.ships = shipment->fleet_ships;
-			done.planes = shipment->fleet_planes;
-			demo_fleet_release(shipment->fleet_nation, done);
-			shipment = ws_.in_transit.erase(shipment);
+			done.trucks = shipment.fleet_trucks;
+			done.ships = shipment.fleet_ships;
+			done.planes = shipment.fleet_planes;
+			demo_fleet_release(shipment.fleet_nation, done);
 			continue;
 		}
-		++shipment;
+		if (write != read) {
+			ws_.in_transit[write] = std::move(ws_.in_transit[read]);
+		}
+		++write;
 	}
+	ws_.in_transit.resize(write);
 
 	OGS_SIM_PHASE_LAP(kDemoPhaseArrival);
 }
