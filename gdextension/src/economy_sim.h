@@ -689,7 +689,11 @@ private:
 		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
-			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group;
+			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,
+		b_offset, b_output_product, b_owner, b_capacity, b_utilization,
+		b_costs, b_site_suitability, d_offset, d_resource, d_product,
+		d_initial_kt, d_remaining_kt, d_quality, d_depth_m, d_efficiency,
+		d_opex_factor, d_extracted_kt, d_depleted;
 		DemoStatusKeys();
 	};
 
@@ -759,6 +763,22 @@ private:
 			light_p_labor_force, light_p_unemployed;
 		PackedInt32Array light_i_city;
 		PackedStringArray light_i_resource, light_i_owner_group;
+		// S7-c fatia 3: tabelas planas CSR de construções e jazidas — o que a
+		// IA por cidade lê (produto de saída, dono, capacidade, utilização,
+		// custos, aptidão do sítio; e recurso/reserva/fator de profundidade da
+		// jazida). Mesmos valores do bloco pesado, na mesma ordem
+		// (cidade → construção; cidade → produto rastreado). `b_offset`/`d_offset`
+		// são os offsets por cidade (tamanho cidades+1, padrão CSR).
+		PackedInt32Array light_b_offset, light_d_offset;
+		PackedInt32Array light_b_output_product;
+		PackedStringArray light_b_owner;
+		PackedFloat64Array light_b_capacity, light_b_utilization, light_b_costs,
+			light_b_site_suitability;
+		PackedInt32Array light_d_product, light_d_depleted;
+		PackedStringArray light_d_resource;
+		PackedFloat64Array light_d_initial_kt, light_d_remaining_kt,
+			light_d_quality, light_d_depth_m, light_d_efficiency,
+			light_d_opex_factor, light_d_extracted_kt;
 	};
 
 	static const ModeSpec& spec(TransportMode mode) { return ogs::SimCore::spec(mode); }

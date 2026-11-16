@@ -1424,7 +1424,25 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		p_unemployed("p_unemployed"),
 		i_city("i_city"),
 		i_resource("i_resource"),
-		i_owner_group("i_owner_group")
+		i_owner_group("i_owner_group"),
+		b_offset("b_offset"),
+		b_output_product("b_output_product"),
+		b_owner("b_owner"),
+		b_capacity("b_capacity"),
+		b_utilization("b_utilization"),
+		b_costs("b_costs"),
+		b_site_suitability("b_site_suitability"),
+		d_offset("d_offset"),
+		d_resource("d_resource"),
+		d_product("d_product"),
+		d_initial_kt("d_initial_kt"),
+		d_remaining_kt("d_remaining_kt"),
+		d_quality("d_quality"),
+		d_depth_m("d_depth_m"),
+		d_efficiency("d_efficiency"),
+		d_opex_factor("d_opex_factor"),
+		d_extracted_kt("d_extracted_kt"),
+		d_depleted("d_depleted")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -2300,6 +2318,73 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 		}
 	}
 
+	// Construções (CSR): o que a IA por cidade lê — produto de saída, dono,
+	// capacidade, utilização, custos e aptidão do sítio. São os MESMOS valores
+	// do bloco pesado (demo_fill_city_status), na ordem cidade → construção
+	// (buildings_by_city). `site_suitability` = suitability do produto de saída.
+	cache.light_b_offset.clear();
+	cache.light_b_output_product.clear();
+	cache.light_b_owner.clear();
+	cache.light_b_capacity.clear();
+	cache.light_b_utilization.clear();
+	cache.light_b_costs.clear();
+	cache.light_b_site_suitability.clear();
+	cache.light_b_offset.push_back(0);
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
+		const DemoCity& bcity = ws_.cities[city_index];
+		for (const int bi : ws_.buildings_by_city[city_index]) {
+			const DemoBuilding& building =
+				ws_.buildings[static_cast<std::size_t>(bi)];
+			cache.light_b_output_product.push_back(building.output_product);
+			cache.light_b_owner.push_back(String(building.owner.c_str()));
+			cache.light_b_capacity.push_back(building.capacity);
+			cache.light_b_utilization.push_back(building.utilization);
+			cache.light_b_costs.push_back(building.costs);
+			cache.light_b_site_suitability.push_back(
+				bcity.suitability[building.output_product]);
+		}
+		cache.light_b_offset.push_back(
+			static_cast<int32_t>(cache.light_b_output_product.size()));
+	}
+
+	// Jazidas (CSR): o que a IA por cidade lê — recurso (nome do produto),
+	// reserva restante e fator de profundidade, mais o bloco estático completo
+	// para a tabela ser um substituto do dicionário pesado. Mesmas jazidas
+	// rastreadas do bloco pesado (deposit.tracked), ordem de produto.
+	cache.light_d_offset.clear();
+	cache.light_d_product.clear();
+	cache.light_d_resource.clear();
+	cache.light_d_initial_kt.clear();
+	cache.light_d_remaining_kt.clear();
+	cache.light_d_quality.clear();
+	cache.light_d_depth_m.clear();
+	cache.light_d_efficiency.clear();
+	cache.light_d_opex_factor.clear();
+	cache.light_d_extracted_kt.clear();
+	cache.light_d_depleted.clear();
+	cache.light_d_offset.push_back(0);
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
+		const DemoCity& dcity = ws_.cities[city_index];
+		for (int product = 0; product < ws_.products; ++product) {
+			const DemoDeposit& deposit = dcity.deposits[product];
+			if (!deposit.tracked) {
+				continue;
+			}
+			cache.light_d_product.push_back(product);
+			cache.light_d_resource.push_back(String(demo_product_name(product)));
+			cache.light_d_initial_kt.push_back(deposit.initial_kt);
+			cache.light_d_remaining_kt.push_back(deposit.remaining_kt);
+			cache.light_d_quality.push_back(deposit.quality);
+			cache.light_d_depth_m.push_back(deposit.depth_m);
+			cache.light_d_efficiency.push_back(demo_extraction_efficiency(deposit));
+			cache.light_d_opex_factor.push_back(demo_depth_opex_factor(deposit));
+			cache.light_d_extracted_kt.push_back(deposit.extracted_kt);
+			cache.light_d_depleted.push_back(deposit.remaining_kt <= 0.0 ? 1 : 0);
+		}
+		cache.light_d_offset.push_back(
+			static_cast<int32_t>(cache.light_d_product.size()));
+	}
+
 	// Dictionary é por referência: pendura os arrays (o `ptrw` desanexa o
 	// buffer por copy-on-write, então reassocia a cada dia) e só cria as
 	// chaves escalares uma vez.
@@ -2324,6 +2409,24 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	light[k.i_city] = cache.light_i_city;
 	light[k.i_resource] = cache.light_i_resource;
 	light[k.i_owner_group] = cache.light_i_owner_group;
+	light[k.b_offset] = cache.light_b_offset;
+	light[k.b_output_product] = cache.light_b_output_product;
+	light[k.b_owner] = cache.light_b_owner;
+	light[k.b_capacity] = cache.light_b_capacity;
+	light[k.b_utilization] = cache.light_b_utilization;
+	light[k.b_costs] = cache.light_b_costs;
+	light[k.b_site_suitability] = cache.light_b_site_suitability;
+	light[k.d_offset] = cache.light_d_offset;
+	light[k.d_product] = cache.light_d_product;
+	light[k.d_resource] = cache.light_d_resource;
+	light[k.d_initial_kt] = cache.light_d_initial_kt;
+	light[k.d_remaining_kt] = cache.light_d_remaining_kt;
+	light[k.d_quality] = cache.light_d_quality;
+	light[k.d_depth_m] = cache.light_d_depth_m;
+	light[k.d_efficiency] = cache.light_d_efficiency;
+	light[k.d_opex_factor] = cache.light_d_opex_factor;
+	light[k.d_extracted_kt] = cache.light_d_extracted_kt;
+	light[k.d_depleted] = cache.light_d_depleted;
 }
 
 Dictionary EconomySim::get_demo_status() {

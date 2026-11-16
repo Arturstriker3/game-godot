@@ -177,5 +177,132 @@ func _run() -> void:
 				expected_city[index], expected_resource[index], expected_group[index]])
 			return
 
-	print("[light_signals] %d mercados × %d cidades e %d incumbentes conferidos." % [
-		checked_markets, cities.size(), expected_city.size()])
+	# Construções (CSR): reconstrói do bloco pesado e compara com a tabela plana.
+	var b_offset: PackedInt32Array = light.get("b_offset", PackedInt32Array())
+	var b_output_product: PackedInt32Array = light.get("b_output_product", PackedInt32Array())
+	var b_owner: PackedStringArray = light.get("b_owner", PackedStringArray())
+	var b_capacity: PackedFloat64Array = light.get("b_capacity", PackedFloat64Array())
+	var b_utilization: PackedFloat64Array = light.get("b_utilization", PackedFloat64Array())
+	var b_costs: PackedFloat64Array = light.get("b_costs", PackedFloat64Array())
+	var b_site: PackedFloat64Array = light.get("b_site_suitability", PackedFloat64Array())
+	if b_offset.size() != city_count + 1:
+		_fail("light.b_offset tamanho %d != %d" % [b_offset.size(), city_count + 1])
+		return
+	var checked_buildings := 0
+	for city_index in cities.size():
+		var city: Dictionary = cities[city_index]
+		var buildings: Array = city.get("buildings", [])
+		var bstart: int = int(b_offset[city_index])
+		var bend: int = int(b_offset[city_index + 1])
+		if bend - bstart != buildings.size():
+			_fail("cidade %d: b_offset span %d != buildings %d" % [
+				city_index, bend - bstart, buildings.size()])
+			return
+		for index in range(bstart, bend):
+			var b: Dictionary = buildings[index - bstart]
+			if b_output_product[index] != int(b.get("output_product", -1)):
+				_fail("cidade %d construção %d: b_output_product light=%d heavy=%d" % [
+					city_index, index - bstart, b_output_product[index],
+					int(b.get("output_product", -1))])
+				return
+			if b_owner[index] != String(b.get("owner", "")):
+				_fail("cidade %d construção %d: b_owner light=%s heavy=%s" % [
+					city_index, index - bstart, b_owner[index], String(b.get("owner", ""))])
+				return
+			if b_capacity[index] != float(b.get("capacity", 0.0)):
+				_fail("cidade %d construção %d: b_capacity light=%.17g heavy=%.17g" % [
+					city_index, index - bstart, b_capacity[index],
+					float(b.get("capacity", 0.0))])
+				return
+			if b_utilization[index] != float(b.get("utilization", 0.0)):
+				_fail("cidade %d construção %d: b_utilization light=%.17g heavy=%.17g" % [
+					city_index, index - bstart, b_utilization[index],
+					float(b.get("utilization", 0.0))])
+				return
+			if b_costs[index] != float(b.get("costs", 0.0)):
+				_fail("cidade %d construção %d: b_costs light=%.17g heavy=%.17g" % [
+					city_index, index - bstart, b_costs[index],
+					float(b.get("costs", 0.0))])
+				return
+			if b_site[index] != float(b.get("site_suitability", 1.0)):
+				_fail("cidade %d construção %d: b_site_suitability light=%.17g heavy=%.17g" % [
+					city_index, index - bstart, b_site[index],
+					float(b.get("site_suitability", 1.0))])
+				return
+			checked_buildings += 1
+
+	# Jazidas (CSR): reconstrói do bloco pesado e compara com a tabela plana.
+	var d_offset: PackedInt32Array = light.get("d_offset", PackedInt32Array())
+	var d_resource: PackedStringArray = light.get("d_resource", PackedStringArray())
+	var d_initial: PackedFloat64Array = light.get("d_initial_kt", PackedFloat64Array())
+	var d_remaining: PackedFloat64Array = light.get("d_remaining_kt", PackedFloat64Array())
+	var d_quality: PackedFloat64Array = light.get("d_quality", PackedFloat64Array())
+	var d_depth: PackedFloat64Array = light.get("d_depth_m", PackedFloat64Array())
+	var d_efficiency: PackedFloat64Array = light.get("d_efficiency", PackedFloat64Array())
+	var d_opex: PackedFloat64Array = light.get("d_opex_factor", PackedFloat64Array())
+	var d_extracted: PackedFloat64Array = light.get("d_extracted_kt", PackedFloat64Array())
+	var d_depleted: PackedInt32Array = light.get("d_depleted", PackedInt32Array())
+	if d_offset.size() != city_count + 1:
+		_fail("light.d_offset tamanho %d != %d" % [d_offset.size(), city_count + 1])
+		return
+	var checked_deposits := 0
+	for city_index in cities.size():
+		var city: Dictionary = cities[city_index]
+		var deposits: Dictionary = city.get("deposits", {})
+		var dstart: int = int(d_offset[city_index])
+		var dend: int = int(d_offset[city_index + 1])
+		if dend - dstart != deposits.size():
+			_fail("cidade %d: d_offset span %d != deposits %d" % [
+				city_index, dend - dstart, deposits.size()])
+			return
+		for index in range(dstart, dend):
+			var resource := String(d_resource[index])
+			if not deposits.has(resource):
+				_fail("cidade %d: jazida light %s sem bloco pesado" % [city_index, resource])
+				return
+			var entry: Dictionary = deposits[resource]
+			if d_initial[index] != float(entry.get("initial_kt", 0.0)):
+				_fail("cidade %d %s: d_initial_kt light=%.17g heavy=%.17g" % [
+					city_index, resource, d_initial[index],
+					float(entry.get("initial_kt", 0.0))])
+				return
+			if d_remaining[index] != float(entry.get("remaining_kt", 0.0)):
+				_fail("cidade %d %s: d_remaining_kt light=%.17g heavy=%.17g" % [
+					city_index, resource, d_remaining[index],
+					float(entry.get("remaining_kt", 0.0))])
+				return
+			if d_quality[index] != float(entry.get("quality", 0.0)):
+				_fail("cidade %d %s: d_quality light=%.17g heavy=%.17g" % [
+					city_index, resource, d_quality[index],
+					float(entry.get("quality", 0.0))])
+				return
+			if d_depth[index] != float(entry.get("depth_m", 0.0)):
+				_fail("cidade %d %s: d_depth_m light=%.17g heavy=%.17g" % [
+					city_index, resource, d_depth[index],
+					float(entry.get("depth_m", 0.0))])
+				return
+			if d_efficiency[index] != float(entry.get("efficiency", 0.0)):
+				_fail("cidade %d %s: d_efficiency light=%.17g heavy=%.17g" % [
+					city_index, resource, d_efficiency[index],
+					float(entry.get("efficiency", 0.0))])
+				return
+			if d_opex[index] != float(entry.get("opex_factor", 0.0)):
+				_fail("cidade %d %s: d_opex_factor light=%.17g heavy=%.17g" % [
+					city_index, resource, d_opex[index],
+					float(entry.get("opex_factor", 0.0))])
+				return
+			if d_extracted[index] != float(entry.get("extracted_kt", 0.0)):
+				_fail("cidade %d %s: d_extracted_kt light=%.17g heavy=%.17g" % [
+					city_index, resource, d_extracted[index],
+					float(entry.get("extracted_kt", 0.0))])
+				return
+			if d_depleted[index] != (1 if bool(entry.get("depleted", false)) else 0):
+				_fail("cidade %d %s: d_depleted light=%d heavy=%d" % [
+					city_index, resource, d_depleted[index],
+					1 if bool(entry.get("depleted", false)) else 0])
+				return
+			checked_deposits += 1
+
+	print("[light_signals] %d mercados × %d cidades, %d incumbentes, %d construções e %d jazidas conferidos." % [
+		checked_markets, cities.size(), expected_city.size(), checked_buildings,
+		checked_deposits])
