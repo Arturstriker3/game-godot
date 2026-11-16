@@ -36,6 +36,8 @@ public:
 	void phase_production();
 	// 4c. Recursos brutos (minerais, soja, algodão e madeira): exportação.
 	void phase_raw();
+	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
+	void phase_income();
 
 	// ------------------------------------------------------------------
 	// Helpers compartilhados com a fachada (públicos).
@@ -65,6 +67,26 @@ public:
 	void demo_refresh_strata(DemoPop& pop) const;
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double demo_labor_day(DemoCity& city);
+	// F7 — custo diário da cesta completa de um nível de necessidade aos preços
+	// que a cidade pratica, por substituto não-durável mais barato.
+	double demo_level_basket_cost(const DemoCity& city, int level_index) const;
+	// F7 comida — custo efetivo da necessidade alimentar do dia: estoque local
+	// na proporção da compra mais o resíduo ao CIF conhecido.
+	void demo_food_basket_cost(const DemoCity& city, double need,
+		double& local_cost, double& import_cost, double& per_ge) const;
+	// F3/F7: substituto preferido da categoria (sinal de desejo no mercado).
+	bool demo_category_top_market(DemoCity& city, const DemoNeedsCategory& category,
+		DemoMarket*& market, double& factor, double& durable_scale);
+	// F3: registra o desejo da categoria sem comprar (sinal de escassez).
+	void demo_register_category_demand(DemoCity& city,
+		const DemoNeedsCategory& category, double want_ge);
+	// F3: consome uma categoria de necessidade e debita o orçamento do dia.
+	double demo_consume_category(DemoCity& city, const DemoNeedsCategory& category,
+		double want_ge, double& budget, double& spend);
+	// F3: compra institucional do governo (paper/computer) no dia.
+	void demo_consume_government(DemoCity& city);
+	// F7 calibração: classes de consumo a partir do Gini e da cesta básica.
+	void demo_refresh_income_classes(DemoCity& city) const;
 
 	// Dinheiro antes do tick (para a fase de invariantes, ainda na fachada).
 	double money_before() const { return money_before_; }

@@ -85,4 +85,308 @@ constexpr double kDemoDepthOpexMaxFactor = 3.0;
 // madeira).
 constexpr int kDemoFirstRawProduct = 1;
 
+constexpr double kDemoNeedPerCapita = 0.0003;
+// F3: reserva de alimento (dias) que a POP mantém em poupança antes de gastar
+// em life/luxury. Sem ela, a compra de conforto drenava a poupança usada para
+// importar comida em nações sem terra (EGY/SAH em 365 d). É uma regra
+// prudencial declarada, não um número observado: o colchão cobre uma década de
+// cesta, então o conforto é pago essencialmente pela renda corrente, não pela
+// poupança que financia a importação de alimento (EGY tinha poupança acima de
+// um ano e ainda perdia comida em 365 d).
+constexpr double kDemoFoodReserveDays = 3650.0;
+// F7: margem de poupança do gate de renda → consumo. A cidade só declara o
+// nível de consumo life/luxury quando a renda corrente cobre a cesta acumulada
+// dos níveis com esta folga. Regra prudencial declarada (não é dado observado):
+// a cesta de `needs.json` cobre os bens comerciáveis do modelo; moradia,
+// energia, transporte urbano e serviços não têm preço próprio no núcleo (o
+// setor de serviços é um salário médio, não uma cesta). A folga representa esse
+// custo de vida não modelado — sem ela, qualquer renda acima da cesta de bens
+// liberava luxury em todo o mundo (F7: 832/834 cidades no nível 3). O valor
+// mora em ws_.income_basket_margin (calibrado no economy_world_test; ver
+// balance_review §23).
+// F3: teto do gasto institucional (paper/computer) como fração do valor da
+// cesta alimentar diária da cidade. A compra do Estado não pode competir com a
+// importação de comida (EGY caía a 0,708 em 365 d quando o computer drenava o
+// orçamento). Estimativa declarada, calibrável no laboratório.
+constexpr double kDemoGovernmentGoodsFoodShare = 0.05;
+// Renda externa das famílias: serviços urbanos, pesca e turismo vendidos ao
+// resto do mundo. Dimensão derivada da própria cesta de subsistência — a
+// necessidade alimentar per capita (0,0003 t/dia) paga ao preço-base do trigo
+// (40/t) = 0,012 por pessoa/dia. É o que uma cidade SEM terra produtiva
+// (deserto, gelo, ilha de coral) precisa ganhar para importar o alimento que
+// não planta; sem isso o caixa zera, a IA não investe e a nação passa fome
+// mesmo com dinheiro parado no resto do mundo (§20). Sai do setor externo
+// (foreign_cash), então `money_total` continua conservado.
+//
+// A renda NÃO é uniforme: é proporcional ao PIB PPP per capita REAL da nação
+// (índice por cidade, ver demo_set_external_income_index), normalizado para que
+// a média mundial ponderada por população continue nesta base.
+//
+// F7 calibração: acima da média mundial (índice > 1) a transferência NÃO cresce
+// mais. Ela é um PISO DE SUBSISTÊNCIA — o alimento que uma cidade sem terra
+// produtiva precisa importar —, não uma transferência de riqueza: escalada até
+// o topo, ela sozinha pagava 3× a cesta completa das famílias dos EUA/DEU e
+// levava o mundo inteiro ao nível luxury, independentemente de salário/lucro.
+// A renda acima da subsistência tem de vir do valor adicionado (salário +
+// lucro), que é medido. Países pobres continuam abaixo de 1,0 e mantêm o piso
+// proporcional ao PIB real.
+constexpr double kDemoExternalIncomePerCapita = 0.012;
+constexpr double kDemoExternalIncomeIndexCap = 1.0;
+// F7 calibração — ANCORAGEM DA DISTRIBUIÇÃO DE RENDA (head, F7 final).
+//
+// A renda média por pessoa de cada nação é ancorada no PIB PPP per capita real
+// (índice normalizado, média mundial = 1,0): a média da distribuição é
+// `kIncomeAnchorWorldMean` cestas básicas × índice. A cesta básica (`basic`)
+// custa 1×, a `life` acumulada deve custar 2,5–3× e a `luxury` acumulada 6–10×
+// (limiares de classe no núcleo, multiplicadores abaixo). O sigma da lognormal
+// vem do Gini da nação (GeographyService; `estimated` quando regional).
+//
+// Calibração verificada em 60 d com IA (economy_income_distribution_test):
+// EUA/DEU basic ≤ 15% e maioria life; BRA basic ~41%; IND ~68%; NGA ~78%.
+constexpr double kIncomeAnchorWorldMean = 2.0;   // cestas básicas/pessoa/dia
+constexpr double kIncomeLuxuryMultiple = 7.0;    // luxo = 7× cesta básica
+constexpr double kDemoLaborShare = 0.55;
+constexpr double kDemoLaborShareLow = 0.50;
+constexpr double kDemoLaborShareHigh = 0.65;
+constexpr double kDemoServiceShare = 0.30;
+constexpr double kDemoServiceWage = 0.15;
+// F8 v2 — ÂNCORA DE PREÇO DE SERVIÇO LIGADA AO SALÁRIO DO PAÍS. O preço-âncora
+// por setor (`definition.price`) escala com o salário de serviço local relativo
+// ao salário-âncora da F7 (0,15 XGS/posto/dia): price/jobs_per_unit ≈ 0,22 na
+// âncora, então a receita por posto passa a ser ≈ 1,47× o salário LOCAL — a
+// margem bruta (~32% antes de insumos) fica estável em país rico e pobre, sem o
+// teto `preço÷jobs_per_unit×0,68` que mascarava o preço sub-calibrado (Q-004).
+// Os limites evitam preço zero/explosivo quando o salário foge da faixa típica.
+// O piso de 0,10 cobre salários de subsistência (~0,015 XGS/posto/dia) sem
+// travar a escala em país muito pobre — era o piso de 0,50 que deixava a
+// margem de nações pobres disparar (a receita por posto ficava 3× acima do
+// salário real).
+constexpr double kDemoServiceAnchorScaleMin = 0.10;
+constexpr double kDemoServiceAnchorScaleMax = 4.0;
+// F8 v2 — MARGEM-ALVO: reduz a receita por posto de ~1,47× para ~1,25× o
+// salário local (margem bruta ~20% antes de insumos). Combinado com a banda
+// apertada [0,70; 1,40], a margem líquida mediana cai para ~5–20% conforme o
+// setor (varejo baixo, finanças/TI mais alto), sem o prejuízo estrutural do
+// preço sub-calibrado que o teto 0,68 mascarava (Q-004).
+constexpr double kDemoServiceMarginCalibration = 0.85;
+constexpr double kDemoServiceSpendShare = 0.45;
+constexpr double kDemoTaxRate = 0.15;
+constexpr double kDemoTransferShare = 1.0;
+constexpr double kDemoCapitalDistribution = 1.0;
+// F9 — investimento e propriedade.
+// Imposto corporativo sobre o lucro do ativo do grupo, pago ao orçamento do
+// anfitrião. Retenção: fração do lucro líquido que fica no caixa do grupo
+// (investimento seguinte); o resto é dividendo ao estrato dono no fim do dia.
+constexpr double kDemoCorporateTaxRate = 0.10;
+constexpr double kDemoGroupDividendShare = 0.80;
+// Lote de ativos por grupo na semeadura (nação × setor). Mantém "algumas
+// centenas" de grupos no mundo real em vez de um grupo por cidade.
+constexpr int kDemoGroupChunkAssets = 12;
+// Nacionalização: confiança cai a 35% e só se recupera depois de 180 dias.
+constexpr int kDemoNationalizationDays = 180;
+constexpr double kDemoNationalizationConfidence = 0.35;
+constexpr double kDemoNationalizationCompensation = 0.5;
+constexpr double kDemoFreightPerTonKm = 0.10;
+// Frete marítimo (entre massas de terra), espelhando a taxa de navio do
+// mercado legado: 5x mais barato que o caminhão por tonelada-km.
+constexpr double kDemoFreightShipPerTonKm = 0.02;
+
+// ---------------------------------------------------------------------------
+// F4 — frota e combustível.
+//
+// A frota inicial é DERIVADA de população/PIB (não é um número mágico):
+// caminhão por 12,5 mil habitantes de simulação, navio por 250 mil, avião por
+// 2,5 milhões, multiplicados por um fator de renda (PIB PPP) de 0,6 a 2,0.
+// Cobertura calibrada no cenário real para ~6× o uso diário medido (~500
+// pedidos/dia), de modo que a frota NÃO seja um gargalo no mundo baseline: ela
+// existe, ocupa veículos e consome combustível, e passa a limitar quando há
+// choque/expansão de comércio (a fila aciona a reposição do governo).
+// Calibração F4 (economy_world_test --ai=1): a frota derivada original (1/2
+// desta) fazia EGY cair de 1,000 (F3, 60 d) para 0,846 — os pequenos
+// exportadores marítimos ficavam presos na coleta do cais e a comida estagnava
+// em quem já estava abastecido. Com 2× e os pisos abaixo, 60 d e 365 d com IA
+// ficam dentro do baseline F3 (365 d: 0 nações pioradas, 26 falências = base).
+// Estoque estratégico inicial de combustível: 400 dias de uso estimado pela
+// frota derivada (reserva declarada, `source: derived`). A reserva é o
+// endowment de transição da F4: a reposição mensal do governo compra fuel no
+// mercado interno (a compra entra em `desired` mesmo sem estoque) e a produção
+// das fábricas de fuel da F2 substitui a reserva com o tempo. O teto global de
+// 512 embarques/dia limita a variação do consumo, então 400 dias cobrem 1 ano
+// de operação no cenário real sem transformar combustível em gargalo imediato —
+// o portão "sem fuel não embarca" é real e testado em cenário controlado.
+//
+// Pisos de 16 caminhões / 4 navios: o piso antigo (8/2) deixava nações
+// pequenas sem frota para a coleta no cais; com 2× na razão per capita o
+// mundo fica dentro do baseline F3 em 365 d (0 nações pioradas, 26 falências =
+// base) e o resíduo de 60 d é 0,021 em EGY — oscilação de chegada de comida,
+// não regressão de balanço (ver GAME_STATE §10).
+constexpr double kDemoFleetTrucksPerCapita = 1.0 / 12500.0;
+constexpr double kDemoFleetShipsPerCapita = 1.0 / 250000.0;
+constexpr double kDemoFleetPlanesPerCapita = 1.0 / 2500000.0;
+constexpr double kDemoFleetMinTrucks = 16.0;
+constexpr double kDemoFleetMinShips = 4.0;
+constexpr double kDemoFleetFuelDays = 400.0;
+// Reserva estratégica mínima por habitante de simulação (t/capita). Ordem de
+// grandeza de um estoque nacional de combustível (não é medição): cobre a
+// expansão industrial que a IA cria em 60–365 d, quando o volume de carga
+// cresce ~7× sobre a estimativa da frota. O piso de 400 dias da frota continua
+// valendo para nações pequenas.
+constexpr double kDemoFleetFuelPerCapita = 0.01;
+// Consumo diário estimado por veículo (t/dia), usado para dimensionar o
+// estoque-alvo de combustível. Derivado do uso medido (~0,09 t/caminhão/dia;
+// navio e avião têm tanques/passagens maiores).
+constexpr double kDemoFleetFuelPerTruckDay = 0.12;
+constexpr double kDemoFleetFuelPerShipDay = 0.80;
+constexpr double kDemoFleetFuelPerPlaneDay = 1.50;
+// Manutenção mensal: peças por veículo/mês (t). Um caminhão ~20 kg de
+// componentes por mês; navio/avião uma ordem de grandeza acima.
+constexpr double kDemoFleetPartsPerTruckMonth = 0.02;
+constexpr double kDemoFleetPartsPerShipMonth = 0.40;
+constexpr double kDemoFleetPartsPerPlaneMonth = 0.15;
+// Reserva inicial de peças, em meses de manutenção. Transição da F4: o mundo
+// começa sem fábricas de `spare_parts`; 18 meses cobrem o horizonte de 365 d
+// com folga (como os 400 dias de fuel) e evitam que a saúde da frota caia ao
+// piso de 0,5 no meio do ano — o que recriava o gargalo de comida da F3.
+// A reposição mensal continua mirando 3 meses, não a reserva cheia.
+constexpr double kDemoFleetPartsReserveMonths = 18.0;
+constexpr double kDemoFleetPartsTargetMonths = 3.0;
+// Atrito mensal (acidentes/obsolescência) e saúde da frota.
+constexpr double kDemoFleetAttritionMonth = 0.002;
+constexpr double kDemoFleetHealthFloor = 0.50;
+constexpr double kDemoFleetHealthLossMonth = 0.10;
+constexpr double kDemoFleetHealthRecoveryMonth = 0.05;
+// Fração do orçamento da cidade-sede que o governo pode gastar por compra.
+constexpr double kDemoFleetBudgetShare = 0.10;
+// Cobertura de comida (dias de necessidade) exigida para o governo investir
+// em frota. A comida tem prioridade no orçamento público: sem esta folga, o
+// procurement mensal competia com a importação de alimento (AFG/LBY caíam em
+// 365 d de IA). Abaixo do limiar, só há compra de emergência de fuel/peças.
+constexpr double kDemoFleetFoodSecureDays = 3.0;
+
+// ---------------------------------------------------------------------------
+// F5 — câmbio, tarifa e preço entregue.
+//
+// `rate` = valor em XGS de 1 unidade local. O preço de mercado fica na ÂNCORA
+// XGS (fonte de verdade do núcleo e da IA); a moeda local é só EXIBIÇÃO
+// (`price_local = price_anchor ÷ taxa`, calculado ao publicar o status) e nunca
+// volta para a simulação. Isso remove o round-trip `(base ÷ taxa) × taxa` que
+// desviava 1 ulp nas decisões discretas (§15, F5).
+//
+// Drift diário máximo de 0,05% e banda de ±10% em torno da taxa inicial. A
+// regra é conservadora de propósito: a calibração da F4 é sensível à chegada
+// de comida e uma desvalorização forte realimentaria a fome. A balança é
+// suavizada em 30 dias (EMA) e normalizada pelo volume do comércio; déficit
+// persistente desvaloriza, superávit valoriza (§4.4/§5.6).
+constexpr double kDemoFxDailyStep = 0.0005;
+constexpr double kDemoFxBandLow = 0.90;
+constexpr double kDemoFxBandHigh = 1.10;
+constexpr double kDemoFxBalanceEmaDays = 30.0;
+constexpr double kDemoFxBalanceScale = 0.10;
+
+// ---------------------------------------------------------------------------
+// Portos (ver docs/economy/port_design.md).
+//
+// Capacidade de nível 1 pela população de simulação da cidade-sede: piso de
+// 1.000 t/dia (~0,4 Mt/ano, porto pequeno) e teto de 50.000 t/dia (~18 Mt/ano,
+// calado de metrópole). O nível multiplica a base (1..N).
+// ---------------------------------------------------------------------------
+constexpr double kDemoPortBaseTons = 1000.0;
+constexpr double kDemoPortTonsPerCapita = 0.002;  // 2 kg/habitante/dia
+constexpr double kDemoPortMaxTons = 50000.0;
+// Capital público por t/dia de capacidade nova e prazo da obra.
+constexpr double kDemoPortCapitalPerTonCapacity = 500.0;
+constexpr int kDemoPortBuildDays = 30;
+// Tempo de transbordo (carga/descarga) por operação no cais.
+constexpr double kDemoPortHandlingHours = 8.0;
+// Fila: custo de demurrage por tonelada e por dia de atraso fracionário.
+constexpr double kDemoPortDemurragePerTonDay = 0.5;
+constexpr double kDemoPriceSmoothing = 0.20;
+
+// Produção segue as vendas do dia anterior, com pequena folga de estoque.
+constexpr double kDemoProductionBuffer = 1.10;
+// Estoque-alvo em dias de venda. A produção repõe metade da diferença por dia:
+// sem estoque-alvo, produzir sempre 10% acima das vendas faria o estoque
+// crescer para sempre (minas e fazendas com demanda externa fixa).
+// Prejuízo persistente reduz a produção; lucro com demanda alta pode expandir.
+constexpr int kDemoLossDaysBeforeCut = 10;
+constexpr double kDemoLossCut = 0.95;
+constexpr double kDemoMinOutputScale = 0.20;
+// Dias seguidos de prejuízo até a firma fechar a construção (falência). Depois
+// de kDemoLossDaysBeforeCut a produção já foi cortada ao piso; se o prejuízo
+// persistir até aqui, a firma encerra a atividade em vez de ficar no vermelho
+// para sempre.
+constexpr int kDemoLossDaysBeforeClose = 60;
+// Capital de giro: as empresas retêm caixa suficiente para importar e pagar
+// salários antes de distribuir lucros.
+constexpr double kDemoFirmCashPerCapita = 0.10;
+constexpr double kDemoServiceCashPerCapita = 0.05;
+// F8: caixa do setor de serviços = capital de giro em dias de folha + insumos.
+// O excedente do lucro é renda da POP dona (ver demo_tick / distribuição).
+constexpr double kDemoServiceCashBufferDays = 8.0;
+// F8: a fração de serviços respeita a cesta do dia — em cidade que importa
+// comida o serviço não pode consumir o que compra o alimento. 0 desliga o
+// guarda (comportamento F7: 45% da renda doméstica, cesta depois).
+constexpr double kDemoServiceFoodGuardDays = 1.0;
+// Serviços ajustam o emprego para cobrir a folha com a própria receita.
+constexpr double kDemoServiceAdjust = 0.10;
+// Limites usados pelo benchmark sintético (o cenário demo usa o equilíbrio
+// do mercado de trabalho residual).
+constexpr double kDemoServiceMinShare = 0.05;
+constexpr double kDemoServiceMaxShare = 0.30;
+// O salário de serviços busca o equilíbrio do mercado de trabalho residual,
+// com piso no custo de subsistência (uma cesta alimentar por pessoa). Sem
+// isso o salário fixo de 0,15/dia (3x o PIB per capita) só financiava ~10%
+// da população e o desemprego aparecia em 80-90% por construção.
+// Desemprego friccional: parte da força de trabalho residual está sempre
+// procurando vaga. Sem isso o mercado de trabalho perfeitamente flexível
+// produziria 0,0% de desemprego, o que também não é plausível.
+// Demanda externa de ferro (fora do consumo alimentar): o ferro flui pelo
+// mesmo mecanismo de teto data-driven dos demais bens brutos (fase 4d,
+// external_demand declarado pelo GeographyService), não por um caso especial.
+// Primeiro produto "bruto" (sem consumo local) na ordem de goods.json: 1=ferro
+// (ver sim/sim_constants.h — kDemoFirstRawProduct e as constantes de extração
+// mineral mudaram para lá na S5b).
+
+
+// Aptidão de referência do território de AGRIA (trigo, dado real de
+// agriculture.json). Mantém a produção validada de 20 t/dia e serve de valor
+// inicial até o GeographyService carregar o dado em tempo de execução.
+constexpr double kDemoReferenceWheatSuitability = 0.702;
+constexpr double kDemoFarmCapacityTons = 20.0;
+// Capital necessário para adicionar 1 t/dia de capacidade produtiva.
+constexpr double kDemoCapitalPerCapacity = 2000.0;
+
+// Inicialização do mundo real (initialize_demo_world). Valores derivados do
+// cenário de validação AGRIA/PORTUS (fazenda de 20 t/dia, 150 empregos,
+// salário 2.0 e opex 50), escalados para a população/construções reais.
+constexpr double kDemoSavingsPerCapita = 0.50;
+constexpr double kDemoGovernmentPerCapita = 1.0;
+constexpr double kDemoJobsPerTon = 7.5;   // 150 empregos / 20 t
+constexpr double kDemoFarmWage = 2.0;     // igual à fazenda demo
+constexpr double kDemoOpexPerTon = 2.5;   // 50 opex / 20 t
+// Fração da necessidade diária mantida como estoque antes de exportar. O
+// vendedor já consumiu a própria necessidade na fase 5; a produção da fase 4
+// repõe no dia seguinte. Buffer alto aqui espreme as cidades pequenas (a oferta
+// vendável fica menor que a demanda e a última compradora — ex.: Cayenne — não
+// recebe nada).
+constexpr double kDemoTradeBufferDays = 0.0;
+// Teto de cargas de comércio por dia (proteção contra loop). Com 40 cidades,
+// 64 bastava; com 252 e 66 nações, 64 embarques/dia deixavam as cidades de
+// índice alto (SAU, CHN...) permanentemente fora da fila — todas as
+// compradoras com estoque zero empatam em cobertura relativa 3,0 e as 64
+// primeiras do índice consumiam o teto todos os dias (§19). 512 cobre o pico
+// de reabastecimento mundial e cai sozinho quando os estoques enchem.
+constexpr std::size_t kDemoMaxShipmentsPerDay = 512;
+// Capacidade de transporte diária de uma cidade, por habitante (t/dia). 1 kg
+// por habitante/dia (~3x a necessidade alimentar de 0,3 kg) — um teto físico
+// para o comércio não mover carga "infinita" num único dia, sem apertar o fluxo
+// normal de comida.
+constexpr double kDemoTradeCapacityPerCapita = 0.001;
+
+constexpr std::size_t kDemoTradeExhaustiveLimit = 24;
+// Célula do índice espacial do comércio, em unidades do mapa (~8 km cada):
+// 32 unidades ≈ 250 km. O comprador varre a grade em anéis até juntar K
+// vendedores, então a célula só afeta a constante do custo de busca.
+constexpr double kDemoTradeCellMapUnits = 32.0;
+
 } // namespace ogs

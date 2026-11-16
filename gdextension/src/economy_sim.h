@@ -915,13 +915,6 @@ private:
 	int demo_service_sector_index(const std::string& sector) const;
 
 	/**
-	 * F7 — custo diário da cesta completa de um nível de necessidade aos preços
-	 * que a cidade pratica, por substituto não-durável mais barato (preço /
-	 * equivalência). Duráveis ficam fora: são comprados com poupança e sua
-	 * intensidade é a reposição anual, não um fluxo diário de renda.
-	 */
-	double demo_level_basket_cost(const DemoCity& city, int level_index) const;
-	/**
 	 * F7 comida — custo EFETIVO da necessidade alimentar do dia: os preços dos
 	 * alimentos que a cidade REALMENTE tem em estoque (na mesma proporção de
 	 * disponibilidade usada na compra) mais o resíduo importado ao CIF
@@ -935,7 +928,10 @@ private:
 	 * caloria quando não há necessidade. Sem alocação: uma passada por produto.
 	 */
 	void demo_food_basket_cost(const DemoCity& city, double need,
-		double& local_cost, double& import_cost, double& per_ge) const;
+		double& local_cost, double& import_cost, double& per_ge) const {
+		sim_core_.demo_food_basket_cost(city, need, local_cost, import_cost,
+			per_ge);
+	}
 	/**
 	 * F7: atualiza os salários por nível depois do lucro do dia (mercado
 	 * apertado/folgado, margem das firmas, âncora de renda do país, piso de
@@ -965,25 +961,9 @@ private:
 	 * partir do Gini declarado e do custo da cesta básica do dia. Sem Gini,
 	 * espelha os estratos de escolaridade (`stratum_*`).
 	 */
-	void demo_refresh_income_classes(DemoCity& city) const;
-	/**
-	 * Consome uma categoria de necessidade da POP. `want_ge` é a cesta do dia em
-	 * toneladas-equivalentes; devolve o consumido em t-eq e debita o orçamento.
-	 * Percorre os substitutos na ordem declarada (do melhor ao último caso),
-	 * registrando a demanda mesmo quando não há estoque (sinal para a IA).
-	 * A cesta alimentar básica mantém o laço próprio validado (proporcional à
-	 * disponibilidade) e não passa por aqui.
-	 */
-	double demo_consume_category(DemoCity& city, const DemoNeedsCategory& category,
-		double want_ge, double& budget, double& spend);
-	// F3/F7: substituto preferido de uma categoria (primeiro com preço), usado
-	// para registrar o desejo de mercado; e o registro do desejo em si.
-	bool demo_category_top_market(DemoCity& city, const DemoNeedsCategory& category,
-		DemoMarket*& market, double& factor, double& durable_scale);
-	void demo_register_category_demand(DemoCity& city,
-		const DemoNeedsCategory& category, double want_ge);
-	// F3: compra institucional do governo (paper/computer) no dia.
-	void demo_consume_government(DemoCity& city);
+	void demo_refresh_income_classes(DemoCity& city) const {
+		sim_core_.demo_refresh_income_classes(city);
+	}
 	/**
 	 * Bootstrap industrial (§12.3): no cenário real, semeia uma planta
 	 * estratégica de referência (moinho + padaria) em poucas capitais quando o
