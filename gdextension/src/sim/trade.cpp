@@ -21,6 +21,7 @@ void SimCore::demo_trade_food() {
 	// Porto (docs/economy/port_design.md): a travessia entre massas de terra
 	// passa obrigatoriamente por um porto da nação em cada ponta; a capacidade
 	// diária do cais é consumida aqui e o excesso vira fila (atraso + demurrage).
+	OGS_SIM_ZONE(kDemoPhaseTradeFood);
 	demo_reset_port_usage();
 
 	struct Buyer {
@@ -239,7 +240,9 @@ void SimCore::demo_trade_food() {
 		}
 	}
 	std::size_t shipments = 0;
-	for (Buyer& buyer : buyers) {
+	{
+		OGS_SIM_ZONE(kDemoPhaseTradeFoodBuyers);
+		for (Buyer& buyer : buyers) {
 		if (sellers_left <= 0) {
 			break;  // todo o excedente do dia já foi vendido
 		}
@@ -712,6 +715,7 @@ void SimCore::demo_trade_food() {
 			remaining -= ge;
 			++shipments;
 		}
+		}
 	}
 }
 void SimCore::demo_trade_goods() {
@@ -724,6 +728,7 @@ void SimCore::demo_trade_goods() {
 	if (ws_.cities.empty() || ws_.products <= 0) {
 		return;
 	}
+	OGS_SIM_ZONE(kDemoPhaseTradeGoods);
 	const std::size_t city_count = ws_.cities.size();
 	// Necessidade diária de insumo por cidade/produto (capacidade nominal,
 	// não a produção do dia: o estoque-alvo é o que mantém a fábrica operando).
@@ -819,9 +824,11 @@ void SimCore::demo_trade_goods() {
 	const int k_neighbors = std::max(1, ws_.trade_neighbors);
 	const int k_external = std::max(0, ws_.trade_external);
 	std::size_t shipments = 0;
-	// Itera só os produtos com demanda E oferta no dia (nunca 114 × cidades).
-	for (int product = 0; product < ws_.products && shipments < kDemoMaxShipmentsPerDay;
-			++product) {
+	{
+		OGS_SIM_ZONE(kDemoPhaseTradeGoodsLoop);
+		// Itera só os produtos com demanda E oferta no dia (nunca 114 × cidades).
+		for (int product = 0; product < ws_.products && shipments < kDemoMaxShipmentsPerDay;
+				++product) {
 		if (demo_food_calories(product) > 0.0) {
 			continue;  // cesta alimentar: demo_trade_food
 		}
@@ -1203,6 +1210,7 @@ void SimCore::demo_trade_goods() {
 				remaining -= amount;
 				++shipments;
 			}
+		}
 		}
 	}
 }

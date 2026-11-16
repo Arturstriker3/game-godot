@@ -18,6 +18,7 @@ const PHASES := [
 	"arrival", "reset", "labor", "production", "raw", "income", "trade",
 	"accounting", "prices", "clamp", "fiscal", "invariants", "status",
 	"status_cities", "status_orders", "status_nations", "status_misc",
+	"trade_food", "trade_food_buyers", "trade_goods", "trade_goods_loop",
 ]
 
 var _days := 5

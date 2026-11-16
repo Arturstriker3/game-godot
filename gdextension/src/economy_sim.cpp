@@ -1057,6 +1057,8 @@ Dictionary EconomySim::demo_get_profile() const {
 		"arrival", "reset", "labor", "production", "raw", "income", "services",
 		"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
 		"status",
+		"trade_food", "trade_food_buyers",
+		"trade_goods", "trade_goods_loop",
 	};
 	Dictionary profile;
 	if (!demo_profile_) {

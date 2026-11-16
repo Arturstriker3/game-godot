@@ -734,6 +734,11 @@ namespace ogs {
 		kDemoPhaseServices, kDemoPhaseTrade,
 		kDemoPhaseAccounting, kDemoPhasePrices, kDemoPhaseClamp,
 		kDemoPhaseFiscal, kDemoPhaseFx, kDemoPhaseInvariants, kDemoPhaseStatus,
+		// Sub-fases do comércio (perfil fino do tick). Medem só dentro da fase
+		// `trade`: o custo total de comida/bens e o laço quente (compradores /
+		// produto×comprador). O "prep" (índices/grade) sai por subtração.
+		kDemoPhaseTradeFood, kDemoPhaseTradeFoodBuyers,
+		kDemoPhaseTradeGoods, kDemoPhaseTradeGoodsLoop,
 		kDemoPhaseCount
 	};
 
