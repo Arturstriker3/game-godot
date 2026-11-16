@@ -71,4 +71,18 @@ constexpr double kDemoServiceEducationRateBonus = 0.60;
 // Até esta distância, o vendedor do mesmo país é considerado mercado regional.
 constexpr double kRegionalRadiusKm = 500.0;
 
+// Extração mineral. 1 kt = 1000 t.
+constexpr double kDemoTonsPerKiloton = 1000.0;
+// Qualidade -> eficiência da extração: a produção efetiva é multiplicada por
+// piso + (1 - piso) × qualidade (minério pobre rende menos por dia de operação).
+constexpr double kDemoQualityEfficiencyFloor = 0.5;
+// Profundidade -> custo: opex × (1 + profundidade / escala), com teto.
+constexpr double kDemoDepthOpexScaleM = 2000.0;
+constexpr double kDemoDepthOpexMaxFactor = 3.0;
+// Primeiro produto "bruto" (sem consumo local) na ordem de goods.json: 1=ferro.
+// A fase de matérias-primas pula os alimentos da cesta (B3) via demo_food_calories,
+// então este valor só delimita onde começa a venda externa (minerais, algodão,
+// madeira).
+constexpr int kDemoFirstRawProduct = 1;
+
 } // namespace ogs

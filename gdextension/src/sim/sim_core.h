@@ -29,6 +29,10 @@ public:
 	void phase_arrival();
 	// 2. Zera os fluxos do dia.
 	void phase_reset();
+	// 4. Produção: cada construção declara insumo e produto.
+	void phase_production();
+	// 4c. Recursos brutos (minerais, soja, algodão e madeira): exportação.
+	void phase_raw();
 
 	// ------------------------------------------------------------------
 	// Helpers compartilhados com a fachada (públicos).
@@ -38,6 +42,10 @@ public:
 	void demo_rebuild_indexes();
 	double demo_money_total() const;
 	void demo_init_pop_needs(DemoPop& pop) const;
+	static double demo_extraction_efficiency(const DemoDeposit& deposit);
+	double demo_base_price(int product) const;
+	int demo_food_product(int slot) const;
+	double demo_food_calories(int product) const;
 
 	// Dinheiro antes do tick (para a fase de invariantes, ainda na fachada).
 	double money_before() const { return money_before_; }
@@ -58,6 +66,8 @@ private:
 	// Libera os veículos de um pedido que chegou.
 	void demo_fleet_release(const std::string& nation,
 		const DemoTransportDemand& demand);
+	// Escolhe a receita de menor custo unitário corrente para um produto.
+	int demo_pick_recipe(const DemoCity& city, int output_product) const;
 };
 
 } // namespace ogs

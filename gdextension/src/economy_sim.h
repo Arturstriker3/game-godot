@@ -809,20 +809,16 @@ private:
 	double demo_port_charge(Port& port, double tons, double& demurrage_out);
 	int demo_product_index(const String& product) const;
 	// Slot da cesta alimentar (0..ws_.food_products.size()-1) -> id de produto.
-	int demo_food_product(int slot) const;
+	int demo_food_product(int slot) const { return sim_core_.demo_food_product(slot); }
 	// Id de produto -> fator calórico (0.0 se não for alimento da cesta).
-	double demo_food_calories(int product) const;
+	double demo_food_calories(int product) const { return sim_core_.demo_food_calories(product); }
 	const char* demo_product_name(int product) const;
 	int demo_recipe_index(const String& recipe_id) const;
-	/**
-	 * Escolhe a receita de menor custo unitário corrente entre as alternativas
-	 * do produto cujos insumos existem na cidade (empate: primeira declarada).
-	 * Devolve -1 quando o produto não tem receita ou nenhum insumo disponível.
-	 */
-	int demo_pick_recipe(const DemoCity& city, int output_product) const;
-	static double demo_extraction_efficiency(const DemoDeposit& deposit);
+	static double demo_extraction_efficiency(const DemoDeposit& deposit) {
+		return ogs::SimCore::demo_extraction_efficiency(deposit);
+	}
 	static double demo_depth_opex_factor(const DemoDeposit& deposit);
-	double demo_base_price(int product) const;
+	double demo_base_price(int product) const { return sim_core_.demo_base_price(product); }
 	// F5: câmbio, preço entregue e tarifa.
 	const DemoCurrency* demo_currency_for(const std::string& nation) const;
 	DemoCurrency* demo_currency_for(const std::string& nation);
