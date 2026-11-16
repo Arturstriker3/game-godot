@@ -706,16 +706,6 @@ private:
 		return ogs::SimCore::scope_name(scope);
 	}
 
-	/** Cria um trecho e calcula viagens, tempo e custo. */
-	Leg make_leg(TransportMode mode, const std::string& from, const std::string& to,
-	             const MapPoint& from_point, const MapPoint& to_point, double load_tons) const {
-		return sim_core_.make_leg(mode, from, to, from_point, to_point, load_tons);
-	}
-
-	double distance_km(const MapPoint& a, const MapPoint& b) const {
-		return sim_core_.distance_km(a, b);
-	}
-
 	/** Preenche um Dictionary de perna para o status, reutilizando as chaves. */
 	void demo_fill_leg_status(Dictionary& dict, const Leg& leg) const;
 
@@ -739,49 +729,10 @@ private:
 	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
 		double in_transit) const;
 	double demo_money_total() const { return sim_core_.demo_money_total(); }
-	void demo_trade_food();
-	void demo_trade_goods();
 	// Deriva a frota inicial de população/PIB (source: derived): veículos,
 	// estoque de combustível e de peças. Chamado ao inicializar e ao carregar
 	// um save sem o bloco `fleets`.
 	void demo_init_fleets() { sim_core_.demo_init_fleets(); }
-	/**
-	 * Frota/combustível necessários para um pedido. Na mesma massa de terra o
-	 * trecho é caminhão; entre massas é caminhão → navio → caminhão (os dois
-	 * cais). Veículos = ceil(tons / capacidade do ModeSpec) por trecho.
-	 */
-	DemoTransportDemand demo_route_demand(const DemoCity& seller,
-		const DemoCity& buyer, int seller_port, int buyer_port, double tons) const {
-		return sim_core_.demo_route_demand(seller, buyer, seller_port, buyer_port, tons);
-	}
-	/**
-	 * Fração (0..1) do pedido que a frota livre + combustível da nação
-	 * comportam hoje. `fuel_limited` indica qual insumo foi o gargalo (para a
-	 * fila e o motivo no log/status).
-	 */
-	double demo_fleet_capacity_scale(const std::string& nation,
-		const DemoTransportDemand& demand, bool& fuel_limited) const {
-		return sim_core_.demo_fleet_capacity_scale(nation, demand, fuel_limited);
-	}
-	/** Reserva veículos/fuel para um pedido que está embarcando. */
-	void demo_fleet_reserve(const std::string& nation,
-		const DemoTransportDemand& demand) {
-		sim_core_.demo_fleet_reserve(nation, demand);
-	}
-	/** Custo unitário do frete (tarifa + combustível + uso da frota), por t·km. */
-	double demo_leg_unit_freight(TransportMode mode, double distance_km_value) const {
-		return sim_core_.demo_leg_unit_freight(mode, distance_km_value);
-	}
-	/**
-	 * F4: custo unitário do frete só com a tarifa, por t·km. Alimentos usam
-	 * esta base: a segurança alimentar tem prioridade e o custo de
-	 * combustível/frota da logística de comida não é repassado ao comprador
-	 * (o consumo físico de fuel continua valendo em `demo_route_demand`).
-	 */
-	double demo_leg_unit_freight_food(TransportMode mode,
-		double distance_km_value) const {
-		return sim_core_.demo_leg_unit_freight_food(mode, distance_km_value);
-	}
 	Port* find_demo_port(const std::string& id) {
 		return sim_core_.find_demo_port(id);
 	}
@@ -801,16 +752,6 @@ private:
 	 * initialize_demo_world e de demo_from_dict (save sem portos).
 	 */
 	void demo_init_port_capacities() { sim_core_.demo_init_port_capacities(); }
-	/** Zera o uso do dia e as métricas de fila de todos os portos. */
-	void demo_reset_port_usage() { sim_core_.demo_reset_port_usage(); }
-	/**
-	 * Compromete `tons` de carga num porto e devolve o atraso em dias (fila).
-	 * Acumula `used_today_t`, `queue_t`, `delay_hours` e `demurrage`;
-	 * `demurrage_out` recebe o custo de fila a cobrar do comprador.
-	 */
-	double demo_port_charge(Port& port, double tons, double& demurrage_out) {
-		return sim_core_.demo_port_charge(port, tons, demurrage_out);
-	}
 	int demo_product_index(const String& product) const;
 	// Slot da cesta alimentar (0..ws_.food_products.size()-1) -> id de produto.
 	int demo_food_product(int slot) const { return sim_core_.demo_food_product(slot); }

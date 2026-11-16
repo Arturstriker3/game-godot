@@ -44,6 +44,8 @@ public:
 	// F8. Serviços: demanda das classes, B2B, governo, exportação, produção dos
 	// negócios, preço, entrada e saída — uma cidade por vez.
 	void phase_services();
+	// 6. Comércio de alimento (cesta de calorias) e dos demais bens.
+	void phase_trade();
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	void phase_accounting();
 	// 8. Preços reagem a estoque, oferta, demanda e custo de produção.
@@ -228,6 +230,10 @@ private:
 		const DemoTransportDemand& demand);
 	// Escolhe a receita de menor custo unitário corrente para um produto.
 	int demo_pick_recipe(const DemoCity& city, int output_product) const;
+	// 6. Comércio de alimento (cesta de calorias) entre cidades.
+	void demo_trade_food();
+	// 6b. Comércio dos demais bens (insumos industriais), pela mesma malha.
+	void demo_trade_goods();
 };
 
 } // namespace ogs
