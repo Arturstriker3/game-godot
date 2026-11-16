@@ -98,6 +98,17 @@ void counter(const char *name, double value) noexcept {
 
 const std::vector<CounterSample> &counter_samples() noexcept { return t_counters; }
 
+namespace {
+// Guarda de regressão (Q-006): duas `OGS_SIM_ZONE` no mesmo escopo precisam de
+// identificadores distintos. A macro usa a indireção `OGS_CAT` para expandir
+// `__LINE__` antes da colagem; sem ela (`##__LINE__` cola o literal), as duas
+// declarações abaixo colidem e o build debug falha aqui.
+[[maybe_unused]] void zone_same_scope_compile_guard(int phase_a, int phase_b) noexcept {
+	OGS_SIM_ZONE(phase_a);
+	OGS_SIM_ZONE(phase_b);
+}
+}  // namespace
+
 }  // namespace profile
 }  // namespace ogs
 

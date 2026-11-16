@@ -95,7 +95,9 @@ const std::vector<CounterSample> &counter_samples() noexcept;
 }  // namespace profile
 }  // namespace ogs
 
-#define OGS_SIM_ZONE(phase) ::ogs::profile::Zone _ogs_zone_##__LINE__(phase)
+#define OGS_CAT_INNER(a, b) a##b
+#define OGS_CAT(a, b) OGS_CAT_INNER(a, b)
+#define OGS_SIM_ZONE(phase) ::ogs::profile::Zone OGS_CAT(_ogs_zone_, __LINE__)(phase)
 #define OGS_SIM_PHASE_LAP(phase) ::ogs::profile::lap(phase)
 #define OGS_SIM_COUNTER(name, value) ::ogs::profile::counter((name), (value))
 
