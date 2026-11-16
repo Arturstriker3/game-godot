@@ -817,7 +817,9 @@ private:
 	static double demo_extraction_efficiency(const DemoDeposit& deposit) {
 		return ogs::SimCore::demo_extraction_efficiency(deposit);
 	}
-	static double demo_depth_opex_factor(const DemoDeposit& deposit);
+	static double demo_depth_opex_factor(const DemoDeposit& deposit) {
+		return ogs::SimCore::demo_depth_opex_factor(deposit);
+	}
 	double demo_base_price(int product) const { return sim_core_.demo_base_price(product); }
 	// F5: câmbio, preço entregue e tarifa.
 	const DemoCurrency* demo_currency_for(const std::string& nation) const;
@@ -879,30 +881,15 @@ private:
 	 * dependentes: a escolaridade é medida na idade ativa, mas a renda do
 	 * estrato sustenta toda a sua população.
 	 */
-	void demo_refresh_strata(DemoPop& pop) const;
+	void demo_refresh_strata(DemoPop& pop) const { sim_core_.demo_refresh_strata(pop); }
 	/**
 	 * F7: escolaridade das vagas por setor industrial (fallback quando a receita
 	 * não declara `education_mix`). Tabela documentada; escreve 3 frações.
 	 */
 	static void demo_education_mix_for_sector(const std::string& sector,
-		double* mix);
-	/**
-	 * F7: fecha o dia do mercado de trabalho de uma cidade — qualificação
-	 * (estudantes entram/saem da força), emprego por nível, folha de pagamento e
-	 * salários dinâmicos. Devolve a receita de salários efetivamente paga.
-	 */
-	double demo_labor_day(DemoCity& city);
-
-	/**
-	 * F9 — emprego setorial: decompõe o emprego do dia em agropecuária,
-	 * indústria/mineração e serviços (residual), com a informalidade como
-	 * sobreposição. A agricultura vem da produção local (t/dia) e da TFP; a
-	 * indústria da âncora de renda (ILO) e do valor adicionado simulado.
-	 * Roda no fim de demo_labor_day (emprego já conhecido).
-	 */
-	void demo_update_sector_employment(DemoCity& city);
-	/** F9: âncoras ILO interpoladas no log do índice de renda. */
-	void demo_sector_anchor_values(double income, double* out) const;
+		double* mix) {
+		ogs::SimCore::demo_education_mix_for_sector(sector, mix);
+	}
 
 	// F8: índices cidade→negócios e setor→negócios (como os de construção).
 	void demo_rebuild_service_indexes();
@@ -965,7 +952,9 @@ private:
 	 * < 1 derrube o trabalhador abaixo da cesta alimentar.
 	 * EUA ~3,5, DEU ~2,9, BRA ~0,9, IND ~0,46, NGA ~0,37.
 	 */
-	double demo_effective_productivity(const DemoCity& city) const;
+	double demo_effective_productivity(const DemoCity& city) const {
+		return sim_core_.demo_effective_productivity(city);
+	}
 	/**
 	 * F7 calibração — declara o Gini de renda da nação (0..1). 0 desliga a
 	 * divisão por classes e mantém os estratos de escolaridade.

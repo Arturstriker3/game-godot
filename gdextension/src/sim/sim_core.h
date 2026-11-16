@@ -11,6 +11,7 @@
 // S5b é fatiado: a cada commit um grupo de fases migra de `EconomySim` para
 // cá. As fases que ainda não migraram continuam inline no `demo_tick_core`.
 
+#include "sim_labor.h"
 #include "world_state.h"
 
 namespace ogs {
@@ -29,6 +30,8 @@ public:
 	void phase_arrival();
 	// 2. Zera os fluxos do dia.
 	void phase_reset();
+	// 3. Mercado de trabalho e salários.
+	void phase_labor();
 	// 4. Produção: cada construção declara insumo e produto.
 	void phase_production();
 	// 4c. Recursos brutos (minerais, soja, algodão e madeira): exportação.
@@ -46,6 +49,22 @@ public:
 	double demo_base_price(int product) const;
 	int demo_food_product(int slot) const;
 	double demo_food_calories(int product) const;
+	// Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
+	static double demo_depth_opex_factor(const DemoDeposit& deposit);
+	// F7 calibração: TFP efetiva da cidade (fator explícito ou derivado do
+	// PIB PPP per capita real).
+	double demo_effective_productivity(const DemoCity& city) const;
+	// F7: escolaridade das vagas por setor industrial (fallback da receita).
+	static void demo_education_mix_for_sector(const std::string& sector,
+		double* mix);
+	// F9: âncoras ILO interpoladas no log do índice de renda.
+	void demo_sector_anchor_values(double income, double* out) const;
+	// F9: decompõe o emprego do dia em agro/indústria/serviços + informalidade.
+	void demo_update_sector_employment(DemoCity& city);
+	// F7 calibração: recalcula os estratos de renda a partir da escolaridade.
+	void demo_refresh_strata(DemoPop& pop) const;
+	// F7: fecha o dia do mercado de trabalho de uma cidade.
+	double demo_labor_day(DemoCity& city);
 
 	// Dinheiro antes do tick (para a fase de invariantes, ainda na fachada).
 	double money_before() const { return money_before_; }
