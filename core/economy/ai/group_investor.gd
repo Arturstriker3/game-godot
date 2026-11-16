@@ -89,6 +89,12 @@ var _tariff_cache: Dictionary = {}
 var _incumbents: Dictionary = {}
 var _incumbents_ready := false
 
+## Sinais leves por cidade (S7-c): arrays planos de mercados/POP/incumbentes do
+## bloco `status["light"]`, indexados pela posição da cidade em `status["cities"]`.
+## A varredura diária de TODAS as cidades lê daqui (não dos dicionários pesados).
+var _light: Dictionary = {}
+var _light_product_count := 0
+
 ## Base por recurso (independente do grupo), válida para o dia corrente:
 ## `_base[r]` = candidatos já aceitos, `_base_cursor[r]` = cidade corrente,
 ## `_base_done[r]` = base completa, `_base_context[r]` = template pré-lido.
@@ -277,8 +283,8 @@ func best_opportunity(group: Dictionary, cities: Array, status: Dictionary,
 		if context.is_empty():
 			continue
 		var base: Array = []
-		for city: Dictionary in cities:
-			_append_candidate(base, city, resource, context)
+		for city_index in cities.size():
+			_append_candidate(base, city_index, cities[city_index], resource, context)
 		for entry: Dictionary in base:
 			var candidate := _score_candidate(group, entry)
 			if candidate.is_empty():
@@ -424,7 +430,7 @@ func _build_base_slice(resource: String, deadline_us: int) -> void:
 	var index: int = int(_base_cursor.get(resource, 0))
 	var ticks := 0
 	while index < cities.size():
-		_append_candidate(out, cities[index], resource, context)
+		_append_candidate(out, index, cities[index], resource, context)
 		index += 1
 		ticks += 1
 		if ticks % YIELD_EVERY == 0 and Time.get_ticks_usec() >= deadline_us:
@@ -460,23 +466,59 @@ func _resource_context(resource: String) -> Dictionary:
 	}
 
 
+## Leitura de um campo de mercado dos sinais leves (S7-c): o MESMO double que o
+## bloco pesado publicava em `city["markets"][product][field]`. Indexado por
+## posição da cidade × produto. Devolve 0.0 quando o status não tem o bloco
+## `light` (status montado à mão em teste/ferramenta).
+func _light_market(city_index: int, product: int, field: String) -> float:
+	if _light_product_count <= 0:
+		return 0.0
+	var values: PackedFloat64Array = _light.get(field, PackedFloat64Array())
+	var at := city_index * _light_product_count + product
+	if at < 0 or at >= values.size():
+		return 0.0
+	return values[at]
+
+
+## Alternativa de menor custo corrente na cidade a partir dos sinais leves —
+## replica `Templates.best_recipe` (que lê `anchor_price` = preço de mercado)
+## sem tocar em `city["markets"]`.
+func _light_best_recipe(resource: String, city_index: int) -> Dictionary:
+	var best: Dictionary = {}
+	var best_cost := INF
+	for recipe: Dictionary in Templates.recipes_for(resource):
+		var cost := 0.0
+		var available := true
+		for item: Dictionary in recipe["inputs"]:
+			var product := int(item["product"])
+			if product < 0 or product >= _light_product_count:
+				available = false
+				break
+			var price := _light_market(city_index, product, "m_price")
+			if price <= 0.0:
+				price = 1.0
+			cost += float(item["qty"]) * price / float(recipe["yield"])
+		if available and (best.is_empty() or cost < best_cost):
+			best_cost = cost
+			best = recipe
+	return best
+
+
 ## Filtros EXATOS do laço antigo (sinal de mercado, template conhecido, receita
 ## disponível, margem > 0) e custo por capacidade. O corte por custo base é
 ## necessário, nunca suficiente: o insumo só encarece — filtrar por ele não
 ## muda quem ganha.
-func _append_candidate(out: Array, city: Dictionary, resource: String,
+func _append_candidate(out: Array, city_index: int, city: Dictionary, resource: String,
 		context: Dictionary) -> void:
 	var product := int(context.get("product", -1))
-	var markets: Array = city.get("markets", [])
-	if product < 0 or product >= markets.size():
+	if product < 0 or product >= _light_product_count:
 		return
-	var market: Dictionary = markets[product]
-	var price := float(market.get("price", 0.0))
+	var price := _light_market(city_index, product, "m_price")
 	if price <= 0.0:
 		return
-	var shortage := float(market.get("shortage", 0.0))
-	var sold := float(market.get("sold", 0.0))
-	var desired := float(market.get("desired", 0.0))
+	var shortage := _light_market(city_index, product, "m_shortage")
+	var sold := _light_market(city_index, product, "m_sold")
+	var desired := _light_market(city_index, product, "m_desired")
 	var is_food := bool(context.get("is_food", false))
 	if is_food:
 		# Comida: só onde há escassez local (nunca em excesso).
@@ -487,7 +529,7 @@ func _append_candidate(out: Array, city: Dictionary, resource: String,
 	var base_unit := float(context.get("base_unit", 0.0))
 	if price <= base_unit:
 		return
-	var recipe: Dictionary = Templates.best_recipe(resource, city)
+	var recipe: Dictionary = _light_best_recipe(resource, city_index)
 	if bool(context.get("has_recipes", false)) and recipe.is_empty():
 		return
 	var capital_per_capacity := float(
@@ -501,12 +543,12 @@ func _append_candidate(out: Array, city: Dictionary, resource: String,
 		for item: Dictionary in inputs:
 			unit_cost += float(item.get("qty", 0.0)) \
 				/ float(recipe.get("yield", 1.0)) \
-				* Templates.anchor_price(city, int(item.get("product", -1)))
+				* _light_market(city_index, int(item.get("product", -1)), "m_price")
 	else:
 		var input_product := int(context.get("input_product", -1))
 		if input_product >= 0:
 			unit_cost += float(context.get("input_ratio", 0.0)) \
-				* Templates.anchor_price(city, input_product)
+				* _light_market(city_index, input_product, "m_price")
 	if capital_per_capacity <= 0.0:
 		return
 	var margin := price - unit_cost
@@ -649,6 +691,8 @@ func _load_signals(status: Dictionary) -> void:
 		_signals = {}
 	_policy_cache.clear()
 	_tariff_cache.clear()
+	_light = status.get("light", {})
+	_light_product_count = int(_light.get("product_count", 0))
 
 
 func _policy(nation: String, sector: String) -> Dictionary:
@@ -687,19 +731,21 @@ func _is_incumbent(group: Dictionary, nation: String, resource: String) -> bool:
 	if not _incumbents_ready:
 		_incumbents_ready = true
 		var cities: Array = _status.get("cities", [])
-		for city: Dictionary in cities:
-			var city_nation := String(city.get("nation", ""))
-			for building: Dictionary in city.get("buildings", []):
-				var owner_group := String(building.get("owner_group", ""))
-				if owner_group.is_empty():
-					continue
-				var building_resource := String(building.get("resource", ""))
-				if building_resource.is_empty():
-					continue
-				var key := city_nation + "|" + building_resource
-				if not _incumbents.has(key):
-					_incumbents[key] = {}
-				(_incumbents[key] as Dictionary)[owner_group] = true
+		var light: Dictionary = _light
+		var i_city: PackedInt32Array = light.get("i_city", PackedInt32Array())
+		var i_resource: PackedStringArray = light.get("i_resource", PackedStringArray())
+		var i_group: PackedStringArray = light.get("i_owner_group", PackedStringArray())
+		for index in i_city.size():
+			var city_index := int(i_city[index])
+			var city_nation := ""
+			if city_index >= 0 and city_index < cities.size():
+				city_nation = String((cities[city_index] as Dictionary).get("nation", ""))
+			var building_resource := String(i_resource[index])
+			var owner_group := String(i_group[index])
+			var key := city_nation + "|" + building_resource
+			if not _incumbents.has(key):
+				_incumbents[key] = {}
+			(_incumbents[key] as Dictionary)[owner_group] = true
 	var key := nation + "|" + resource
 	var owners: Dictionary = _incumbents.get(key, {})
 	return owners.has(String(group.get("id", "")))
@@ -719,13 +765,14 @@ func _partner_for(group: Dictionary, nation: String, required: float) -> String:
 
 
 func _compute_food_secure(status: Dictionary) -> bool:
+	var light: Dictionary = status.get("light", {})
+	var satisfaction: PackedFloat64Array = light.get(
+		"p_satisfaction", PackedFloat64Array())
 	var total := 0.0
 	var count := 0
-	for city: Dictionary in status.get("cities", []):
-		var pop: Dictionary = city.get("pop", {})
-		if pop.has("satisfaction"):
-			total += float(pop.get("satisfaction", 1.0))
-			count += 1
+	for value in satisfaction:
+		total += float(value)
+		count += 1
 	if count == 0:
 		return true
 	return total / float(count) >= FOOD_SECURE_SATISFACTION

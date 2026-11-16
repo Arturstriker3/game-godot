@@ -174,16 +174,37 @@ func _measure_food_balance(cities: Array) -> void:
 	var supply := 0.0
 	var region_need: Dictionary = {}
 	var region_supply: Dictionary = {}
-	for city in cities:
+	# S7-c: lê necessidade alimentar e oferta de comida dos sinais leves
+	# (arrays planos indexados por cidade), em vez de varrer markets/pop de
+	# todas as cidades. Mesmos doubles, mesma ordem de soma (ordem das cidades).
+	var light: Dictionary = _totals_status.get("light", {})
+	var product_count := int(light.get("product_count", 0))
+	var m_supply: PackedFloat64Array = light.get("m_supply", PackedFloat64Array())
+	var p_need: PackedFloat64Array = light.get("p_need", PackedFloat64Array())
+	var has_light := product_count > 0 \
+		and m_supply.size() >= cities.size() * product_count \
+		and p_need.size() >= cities.size()
+	for city_index in cities.size():
+		var city: Dictionary = cities[city_index]
 		var city_need := Templates.food_need(city)
+		if has_light:
+			city_need = maxf(0.0, float(p_need[city_index]))
 		var city_supply := 0.0
-		var markets: Array = city.get("markets", [])
-		for resource in Templates.FOOD_RESOURCES:
-			var template: Dictionary = Templates.TEMPLATES[resource]
-			var product := int(template["output"])
-			if product < markets.size():
-				city_supply += float((markets[product] as Dictionary).get("supply", 0.0)) \
-					* float(template.get("caloric_factor", 1.0))
+		if has_light:
+			for resource in Templates.FOOD_RESOURCES:
+				var template: Dictionary = Templates.TEMPLATES[resource]
+				var product := int(template["output"])
+				if product < product_count:
+					city_supply += float(m_supply[city_index * product_count + product]) \
+						* float(template.get("caloric_factor", 1.0))
+		else:
+			var markets: Array = city.get("markets", [])
+			for resource in Templates.FOOD_RESOURCES:
+				var template: Dictionary = Templates.TEMPLATES[resource]
+				var product := int(template["output"])
+				if product < markets.size():
+					city_supply += float((markets[product] as Dictionary).get("supply", 0.0)) \
+						* float(template.get("caloric_factor", 1.0))
 		need += city_need
 		supply += city_supply
 		var region := String(city.get("landmass", ""))
