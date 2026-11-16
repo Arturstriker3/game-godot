@@ -733,8 +733,6 @@ private:
 	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
 		double in_transit) const;
 	double demo_money_total() const { return sim_core_.demo_money_total(); }
-	std::vector<std::string> demo_check_invariants(double money_before) const;
-	void demo_restore(const DemoSnapshot& in);
 	void demo_trade_food();
 	void demo_trade_goods();
 	// F4: manutenção mensal (peças/atrito) e compra de combustível, peças e
@@ -824,7 +822,9 @@ private:
 	// F5: câmbio, preço entregue e tarifa.
 	const DemoCurrency* demo_currency_for(const std::string& nation) const;
 	DemoCurrency* demo_currency_for(const std::string& nation);
-	double demo_fx_rate(const std::string& nation) const;
+	double demo_fx_rate(const std::string& nation) const {
+		return sim_core_.demo_fx_rate(nation);
+	}
 	/**
 	 * F5: fator de competitividade da âncora (`1` com câmbio fixo; `taxa ÷
 	 * taxa-base` no regime float, dentro da banda ±10%). Aplicado ao valor de
@@ -832,18 +832,20 @@ private:
 	 * moeda local, sem alterar o preço interno (âncora).
 	 */
 	double demo_competitiveness(const std::string& nation) const;
-	const char* demo_currency_code(const std::string& nation) const;
+	const char* demo_currency_code(const std::string& nation) const {
+		return sim_core_.demo_currency_code(nation);
+	}
 	// Tarifa ad valorem efetiva (coringas "*").
 	double demo_tariff_rate(const std::string& buyer_nation,
 		const std::string& seller_nation, int product) const;
 	// Refaz os índices code->moeda e nação->moeda depois de carregar a lista
 	// (demo_set_currencies, demo_from_dict).
-	void demo_rebuild_currency_indexes();
+	void demo_rebuild_currency_indexes() {
+		sim_core_.demo_rebuild_currency_indexes();
+	}
 	// Refaz a tabela `buyer|seller|product` -> taxa (demo_set_tariff,
 	// demo_from_dict).
 	void demo_rebuild_tariff_lookup();
-	// Atualiza as taxas pela balança comercial do dia (moedas float).
-	void demo_tick_fx();
 	/**
 	 * Define os bens e preços-base a partir de dados externos (goods.json).
 	 * Cada item deve ter "id" (wheat/iron/...), "base_price" e, opcionalmente,

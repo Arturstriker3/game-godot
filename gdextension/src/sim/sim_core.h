@@ -43,6 +43,14 @@ public:
 	void phase_services();
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	void phase_accounting();
+	// 8. Preços reagem a estoque, oferta, demanda e custo de produção.
+	void phase_prices();
+	// 9. Limite diário único por mercado (depois de todas as regras de preço).
+	void phase_clamp();
+	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float.
+	void phase_fx();
+	// 10. Invariantes: se o tick corrompeu o estado, reverte o retrato.
+	void phase_invariants();
 
 	// ------------------------------------------------------------------
 	// Helpers compartilhados com a fachada (públicos).
@@ -95,6 +103,12 @@ public:
 	// F5: câmbio/tarifas consultados pela fase de serviços.
 	const DemoCurrency* demo_currency_for(const std::string& nation) const;
 	double demo_competitiveness(const std::string& nation) const;
+	double demo_fx_rate(const std::string& nation) const;
+	const char* demo_currency_code(const std::string& nation) const;
+	// Refaz os índices code->moeda e nação->moeda depois de carregar a lista.
+	void demo_rebuild_currency_indexes();
+	// Atualiza as taxas pela balança comercial do dia (moedas float).
+	void demo_tick_fx();
 	double demo_tariff_rate(const std::string& buyer_nation,
 		const std::string& seller_nation, int product) const;
 	int demo_product_index(const std::string& product) const;
@@ -139,6 +153,12 @@ public:
 	double money_before() const { return money_before_; }
 	// Preços de abertura (para a fase de clamp, ainda na fachada).
 	const std::vector<std::vector<double>>& open_prices() const { return open_prices_; }
+
+	// Invariantes rígidos do tick: devolve a lista de violações (vazia se o
+	// estado está sadio). A fachada é quem loga (`push_error`).
+	std::vector<std::string> demo_check_invariants(double money_before) const;
+	// Aplica um retrato salvo, revertendo o tick corrompido.
+	void demo_restore(const DemoSnapshot& in);
 
 private:
 	WorldState& ws_;
