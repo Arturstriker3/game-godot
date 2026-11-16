@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "sim/sim_types.h"
+#include "sim/world_state.h"
 
 namespace godot {
 
@@ -507,7 +508,7 @@ public:
 	Dictionary demo_get_investment_signals() const;
 
 	/** F9: confirmação de que os grupos foram semeados neste mundo. */
-	bool demo_groups_seeded() const { return demo_groups_seeded_; }
+	bool demo_groups_seeded() const { return ws_.groups_seeded; }
 
 protected:
 	static void _bind_methods();
@@ -722,7 +723,7 @@ private:
 	void demo_rebuild_indexes();
 	/**
 	 * Preenche o slot de status de uma cidade (reaproveitando dicionários).
-	 * @param city_index Posição em demo_cities_.
+	 * @param city_index Posição em ws_.cities.
 	 * @param slot Cache da cidade (mesma posição em demo_status_cache_).
 	 * @param in_transit Carga em trânsito até a cidade (já somada em passada única).
 	 */
@@ -810,7 +811,7 @@ private:
 	 */
 	double demo_port_charge(Port& port, double tons, double& demurrage_out);
 	int demo_product_index(const String& product) const;
-	// Slot da cesta alimentar (0..demo_food_products_.size()-1) -> id de produto.
+	// Slot da cesta alimentar (0..ws_.food_products.size()-1) -> id de produto.
 	int demo_food_product(int slot) const;
 	// Id de produto -> fator calórico (0.0 se não for alimento da cesta).
 	double demo_food_calories(int product) const;
@@ -1035,155 +1036,18 @@ private:
 	void demo_route_group_profit(int group_index, const std::string& host_nation,
 		double profit, double revenue, DemoCity& city, double& firm_surplus);
 
-	int day_ = 0;
-
-	// Estado do cenário de validação de duas cidades.
-	bool demo_active_ = false;
-	// true quando o demo foi inicializado a partir do mundo real
-	// (initialize_demo_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
-	// genérico entre cidades no lugar dos blocos específicos de validação.
-	bool demo_world_mode_ = false;
-	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
-	// laboratório; os padrões preservam o comportamento do jogo).
-	double demo_natural_unemployment_ = 0.04;
-	double demo_service_wage_adjust_ = 0.10;
-	double demo_service_wage_max_ = 1.0;
-	// F7: rigidez salarial (fração máxima de ajuste por dia) e piso de salário
-	// mínimo por nação (0 = desligado). Ganchos de política.
-	double demo_wage_rigidity_ = 0.01;
-	// F7 calibração: folga de custo de vida não modelado no gate de renda →
-	// nível de consumo. A cesta de needs.json cobre só os bens comerciáveis;
-	// moradia/energia/serviços não têm preço no núcleo, então o nível exige uma
-	// folga. Sem ela qualquer renda acima da cesta liberava luxury no mundo
-	// inteiro (832/834 cidades). Calibrada no economy_world_test.
-	double demo_income_basket_margin_ = 2.30;
-	std::unordered_map<std::string, double> demo_minimum_wages_;
-	double demo_inventory_cover_days_ = 3.0;
-	double demo_inventory_recovery_ = 0.5;
-	// Índice espacial do comércio de alimento: por comprador, só os K
-	// vendedores mais próximos entram na disputa, além de M ofertas
-	// representativas do mercado externo (as mais baratas por caloria no globo).
-	// Mundos pequenos (<= kDemoTradeExhaustiveLimit) mantêm a varredura completa
-	// para preservar exatamente o comportamento validado no cenário real.
-	int demo_trade_neighbors_ = 12;
-	int demo_trade_external_ = 8;
 	// Medição por fase do tick (benchmark oficial; desligada no jogo). A
 	// infraestrutura vive em sim/profiling.h (OGS_PROFILING, só no build debug).
 	bool demo_profile_ = false;
 	double demo_profile_us_[kDemoPhaseCount] = {};
 	// Subdivisão da fase `status` (benchmark): cidades, pedidos, nações, resto.
 	double demo_status_sub_us_[4] = {};
-	std::vector<DemoCity> demo_cities_;
-	std::vector<DemoBuilding> demo_buildings_;
-	// F8: catálogo de serviços e negócios (um vetor global; índices por cidade
-	// e por setor são reconstruídos quando o conjunto muda).
-	bool demo_services_loaded_ = false;
-	double demo_service_government_share_ = 0.002;
-	// F9 — emprego setorial. Âncoras (renda, agro, indústria, informalidade)
-	// ordenadas por renda; interpoladas no log da renda. Ver
-	// data/definitions/economy/sector_employment.json (fonte ILO/ILOSTAT).
-	struct DemoSectorAnchor {
-		double income = 1.0;
-		double agriculture = 0.0;
-		double industry = 0.0;
-		double informal = 0.0;
-	};
-	bool demo_sector_loaded_ = false;
-	std::vector<DemoSectorAnchor> demo_sector_anchors_;
-	// Demanda de trabalho agrícola: t/dia × base / TFP^expoente.
-	double demo_agri_labor_per_ton_ = 55.0;
-	double demo_agri_labor_exponent_ = 1.4486;
-	double demo_agri_production_band_min_ = 0.9;
-	double demo_agri_production_band_max_ = 1.1;
-	// Autoconsumo máximo das famílias agrícolas, como fração da produção
-	// local disponível — o resto da produção vai ao mercado.
-	double demo_agri_own_consumption_share_ = 0.5;
-	// Indústria: trabalhadores por unidade de valor adicionado (XGS/dia).
-	double demo_industry_labor_per_va_ = 3.0;
-	double demo_industry_labor_exponent_ = 1.4486;
-	std::vector<DemoServiceSector> demo_service_sectors_;
-	std::vector<DemoServiceBusiness> demo_service_businesses_;
-	std::vector<std::vector<int>> demo_service_by_city_;
-	std::vector<std::vector<int>> demo_service_by_sector_;
-	int demo_next_service_business_id_ = 1;
-	int demo_service_bankruptcies_ = 0;
-	// Índices derivados do mundo demo (ver demo_rebuild_indexes).
-	std::unordered_map<std::string, int> demo_city_lookup_;
-	std::vector<std::vector<int>> demo_buildings_by_city_;
-	// F4: cidades por nação (ordem de índice) para a frota/compra do governo.
-	std::unordered_map<std::string, std::vector<int>> demo_cities_by_nation_;
-	std::vector<DemoShipment> demo_in_transit_;
-	std::vector<std::string> demo_invariant_violations_;
-	// Portos do cenário real (modo mundo) e pedidos de comércio do último tick,
-	// para a camada visual (minimapa e comboios 3D).
-	std::vector<Port> demo_ports_;
-	std::vector<TradeOrder> demo_last_orders_;
-	int demo_bankruptcies_ = 0;
-	int demo_depleted_mines_ = 0;
-	double demo_transport_cash_ = 0.0;
-	double demo_foreign_cash_ = 0.0;
-	// Setor de construção: recebe o capital investido em expansão.
-	double demo_construction_cash_ = 0.0;
-	double demo_produced_[kDemoMaxProducts] = {};
-	double demo_consumed_total_[kDemoMaxProducts] = {};
-	double demo_produced_today_[kDemoMaxProducts] = {};
-	double demo_consumed_today_[kDemoMaxProducts] = {};
-	// Produtos ativos (demo_set_goods). 21 por padrão (cenário de validação).
-	int demo_products_ = 21;
-	std::vector<std::string> demo_product_names_;
-	std::unordered_map<std::string, int> demo_product_lookup_;
-	// Receitas industriais e índice por id (recipes.json).
-	std::vector<DemoRecipe> demo_recipes_;
-	std::unordered_map<std::string, int> demo_recipe_lookup_;
-	// Cesta alimentar data-driven (needs.json); default = 5 culturas validadas.
-	std::vector<int> demo_food_products_;
-	std::vector<double> demo_food_factors_;
-	// F3: tabela de necessidades por nível (needs.json), substitutos,
-	// equivalência e consumo institucional do governo. `demo_needs_loaded_`
-	// falso = comportamento de 1 nível (cenário AGRIA/PORTUS e saves antigos).
-	std::vector<DemoNeedsLevel> demo_needs_levels_;
-	bool demo_needs_loaded_ = false;
-	int demo_needs_food_level_ = -1;
-	// Decaimento diário que perde exatamente durable_replacement_per_year em
-	// 365 dias: 1 - (1 - r)^(1/365).
-	double demo_durable_decay_ = 0.0;
-	std::vector<char> demo_product_durable_;  // por produto (goods.json durable)
-	std::vector<int> demo_government_products_;
-	std::vector<double> demo_government_per_capita_day_;
-	// Bootstrap industrial já executado neste mundo.
-	bool demo_industry_seeded_ = false;
-	// F4: frota por nação (ordem determinística em demo_fleet_order_) e índices
-	// dos bens da frota (fuel/truck/cargo_ship/cargo_plane/spare_parts).
-	std::unordered_map<std::string, DemoFleet> demo_fleets_;
-	std::vector<std::string> demo_fleet_order_;
-	int demo_fleet_product_fuel_ = -1;
-	int demo_fleet_product_truck_ = -1;
-	int demo_fleet_product_ship_ = -1;
-	int demo_fleet_product_plane_ = -1;
-	int demo_fleet_product_parts_ = -1;
-	// F5: moedas por code/nacao, ordem determinística e tarifas declaradas.
-	std::vector<DemoCurrency> demo_currencies_;
-	std::unordered_map<std::string, int> demo_currency_by_code_;
-	std::unordered_map<std::string, int> demo_nation_currency_;
-	std::vector<DemoTariff> demo_tariffs_;
-	std::unordered_map<std::string, double> demo_tariff_lookup_;
-	// F9: grupos/empresas, política de IDE, incentivos, confiança e fluxos.
-	std::vector<DemoGroup> demo_groups_;
-	std::unordered_map<std::string, int> demo_group_lookup_;
-	bool demo_groups_seeded_ = false;
-	std::vector<DemoFdiPolicy> demo_fdi_policies_;
-	std::unordered_map<std::string, int> demo_fdi_lookup_;
-	std::vector<DemoSectorIncentive> demo_incentives_;
-	std::unordered_map<std::string, int> demo_incentive_lookup_;
-	std::unordered_map<std::string, double> demo_confidence_;
-	std::unordered_map<std::string, int> demo_confidence_penalty_day_;
-	std::unordered_map<std::string, DemoGroupFlow> demo_group_flows_;
-	// Setor de cada produto (goods.json → sector). Vazio = "primary".
-	std::vector<std::string> demo_product_sectors_;
-	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
-	double demo_base_prices_[kDemoMaxProducts] = {
-		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
-		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0, 35.0, 45.0, 70.0, 25.0, 500.0};
+
+	// Estado da simulação (cidades, construções, mercados, grupos, frota,
+	// moedas, ...). S5a-2: movido para ogs::WorldState (sim/world_state.h);
+	// a fachada guarda um único `ws_` e converte Godot <-> sim.
+	ogs::WorldState ws_;
+
 	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA
 	// continuam lendo o último status COMPLETO (double buffer).
@@ -1200,8 +1064,6 @@ private:
 	// da versão estática para uma descoberta não forçar a reescrita de
 	// aptidão/demanda externa de todas as cidades (~190 mil escritas/dia).
 	int demo_status_deposit_version_ = 0;
-	// Retrato do tick reaproveitado entre dias (ver demo_tick_core).
-	DemoSnapshot demo_snapshot_buffer_;
 	// Serializa o acesso ao estado demo entre a thread do tick e a main thread
 	// (UI, IA, ferramentas). O `sim` tem UM escritor por convenção
 	// (tick_scheduler); o mutex é a rede de segurança para quem chamar

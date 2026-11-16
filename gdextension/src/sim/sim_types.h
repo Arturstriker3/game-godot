@@ -610,6 +610,16 @@ namespace ogs {
 		double distance_ship_km = 0.0;
 	};
 
+	// F9 — emprego setorial. Âncoras (renda, agro, indústria, informalidade)
+	// ordenadas por renda; interpoladas no log da renda. Ver
+	// data/definitions/economy/sector_employment.json (fonte ILO/ILOSTAT).
+	struct DemoSectorAnchor {
+		double income = 1.0;
+		double agriculture = 0.0;
+		double industry = 0.0;
+		double informal = 0.0;
+	};
+
 
 	struct DemoCity {
 		std::string id;
