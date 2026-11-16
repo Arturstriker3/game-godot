@@ -102,140 +102,176 @@ void SimCore::phase_production() {
 			[building.output_product] += building.capacity * building.output_scale;
 	}
 
-	for (DemoBuilding& building : ws_.buildings) {
-		DemoCity* city = find_demo_city(building.city);
-		if (city == nullptr || building.output_product < 0
-				|| building.output_product >= ws_.products) {
-			continue;
-		}
+	// S16: a produção é independente por cidade (cada construção escreve só na
+	// própria cidade e em si mesma; lê só dados globais imutáveis no dia). Os
+	// acumuladores `produced`/`produced_today` são somas de double por produto:
+	// para o resultado ser bit-idêntico ao serial (que soma na ordem do vetor
+	// global `ws_.buildings`), cada construção grava a própria contribuição num
+	// scratch indexado pelo seu índice global, e uma passada serial reduz em
+	// ordem crescente de índice de construção — a MESMA ordem do loop serial.
+	const std::size_t n_buildings = ws_.buildings.size();
+	const std::size_t n_products = static_cast<std::size_t>(ws_.products);
+	std::vector<double> produced_scratch(n_buildings * n_products, 0.0);
+	std::vector<double> produced_today_scratch(n_buildings * n_products, 0.0);
 
-		const std::size_t city_slot =
-			static_cast<std::size_t>(city - ws_.cities.data());
-		const double city_capacity =
-			capacity_by_city_product[city_slot][building.output_product];
-		const double capacity_share = city_capacity > 0.0
-			? building.capacity * building.output_scale / city_capacity : 0.0;
-		const double sold_prev = city->markets[building.output_product].sold_prev;
-		const double labor = building.jobs > 0.0
-			? building.workers / building.jobs : 1.0;
-		const bool primary = building.recipe < 0 && building.input_product < 0;
-		// Extração: aptidão territorial × eficiência pela qualidade do minério
-		// (1.0 quando não há jazida declarada).
-		DemoDeposit& deposit = city->deposits[building.output_product];
-		const double suitability = primary
-			? std::clamp(city->suitability[building.output_product], 0.0, 1.0)
-				* demo_extraction_efficiency(deposit)
-			: 1.0;
-
-		// Capacidade e vendas na mesma unidade (toneladas efetivas).
-		const double effective_capacity = city_capacity * suitability;
-		// Estoque disponível antes da produção de hoje (stock já inclui o que
-		// foi produzido nesta passagem; supply é exatamente essa produção).
-		const double stock_before = std::max(0.0,
-			city->markets[building.output_product].stock
-			- city->markets[building.output_product].supply);
-		// Repõe metade da distância até o estoque-alvo, para cima ou para baixo.
-		// Isso evita tanto a produção infinita (excedente acumulado) quanto a
-		// parada brusca quando o estoque está acima do necessário.
-		double target = sold_prev;
-		if (sold_prev <= 0.0) {
-			// Produtor novo (ou sem vendas) enche o mercado com a capacidade
-			// EFETIVA (output_scale), o que dá ao produto a primeira oferta
-			// observável — é o que permite o comércio/consumo começar.
-			target = effective_capacity;
-		} else {
-			const double desired_stock = sold_prev * ws_.inventory_cover_days;
-			target = sold_prev
-				+ (desired_stock - stock_before) * ws_.inventory_recovery;
-		}
-		target = std::clamp(target, 0.0, effective_capacity);
-		const double desired_output = target * capacity_share * labor;
-		double input_used = 0.0;
-		double output = desired_output;
-		if (building.recipe >= 0) {
-			// Receita industrial (1..6 insumos, yield e subprodutos). A
-			// alternativa de menor custo corrente entre as disponíveis na
-			// cidade é escolhida a cada dia (determinístico; empate = primeira).
-			const int chosen = demo_pick_recipe(*city, building.output_product);
-			if (chosen >= 0) {
-				building.recipe = chosen;
-			}
-			const DemoRecipe& recipe =
-				ws_.recipes[static_cast<std::size_t>(building.recipe)];
-			const double batch = recipe.yield > 0.0
-				? desired_output / recipe.yield : 0.0;
-			double scale = 1.0;
-			for (int slot = 0; slot < recipe.input_count; ++slot) {
-				const int input = recipe.inputs[slot];
-				const double needed = recipe.input_qty[slot] * batch;
-				DemoMarket& input_market = city->markets[input];
-				input_market.desired += needed;
-				if (needed > 1e-12) {
-					scale = std::min(scale, input_market.stock / needed);
-				}
-			}
-			scale = std::clamp(scale, 0.0, 1.0);
-			for (int slot = 0; slot < recipe.input_count; ++slot) {
-				const int input = recipe.inputs[slot];
-				const double used = recipe.input_qty[slot] * batch * scale;
-				DemoMarket& input_market = city->markets[input];
-				input_market.stock = std::max(0.0, input_market.stock - used);
-				input_market.demand += used;
-				input_market.sold += used;
-				city->revenue_by_product[input] += used * input_market.price;
-				building.input_value += used * input_market.price;
-				input_used += used;
-			}
-			output = batch * scale * recipe.yield;
-			for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
-				const int product = recipe.byproducts[slot];
-				const double amount = recipe.byproduct_qty[slot] * batch * scale;
-				if (amount <= 0.0) {
+	auto process_city = [this, &capacity_by_city_product, &produced_scratch,
+			&produced_today_scratch, n_products](
+			std::size_t begin, std::size_t end) {
+		for (std::size_t city_index = begin; city_index < end; ++city_index) {
+			DemoCity& city = ws_.cities[city_index];
+			const std::vector<int>& local_buildings =
+				ws_.buildings_by_city[city_index];
+			for (const int bi : local_buildings) {
+				DemoBuilding& building =
+					ws_.buildings[static_cast<std::size_t>(bi)];
+				if (building.output_product < 0
+						|| building.output_product >= ws_.products) {
 					continue;
 				}
-				city->markets[product].stock += amount;
-				city->markets[product].supply += amount;
-				ws_.produced[product] += amount;
-				ws_.produced_today[product] += amount;
-			}
-		} else if (building.input_product >= 0) {
-			const double needed_input = desired_output * building.input_per_output;
-			DemoMarket& input_market = city->markets[building.input_product];
-			input_market.desired += needed_input;
-			input_used = std::min(needed_input, input_market.stock);
-			output = building.input_per_output > 0.0
-				? input_used / building.input_per_output : 0.0;
 
-			input_market.stock -= input_used;
-			input_market.demand += input_used;
-			input_market.sold += input_used;
-			// A receita do setor fornecedor inclui a transferência interna entre
-			// construções (quando houver cadeia de refino), senão o valor
-			// adicionado do fornecedor ficaria negativo.
-			city->revenue_by_product[building.input_product] += input_used
-				* input_market.price;
-			building.input_value = input_used * input_market.price;
-		} else if (deposit.tracked) {
-			// Esgotamento: a mina só extrai o que resta da reserva da jazida
-			// (compartilhada pelas minas da cidade) e a debita na mesma medida.
-			const double available_tons = deposit.remaining_kt * kDemoTonsPerKiloton;
-			output = std::clamp(output, 0.0, available_tons);
-			const double extracted_kt = output / kDemoTonsPerKiloton;
-			deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
-			deposit.extracted_kt += extracted_kt;
-			// Reserva zerada: a mina encerra no próximo dia SEM virar falência.
-			if (deposit.remaining_kt <= 1e-9) {
-				building.depleted = true;
+				const double city_capacity =
+					capacity_by_city_product[city_index][building.output_product];
+				const double capacity_share = city_capacity > 0.0
+					? building.capacity * building.output_scale / city_capacity : 0.0;
+				const double sold_prev = city.markets[building.output_product].sold_prev;
+				const double labor = building.jobs > 0.0
+					? building.workers / building.jobs : 1.0;
+				const bool primary = building.recipe < 0 && building.input_product < 0;
+				// Extração: aptidão territorial × eficiência pela qualidade do minério
+				// (1.0 quando não há jazida declarada).
+				DemoDeposit& deposit = city.deposits[building.output_product];
+				const double suitability = primary
+					? std::clamp(city.suitability[building.output_product], 0.0, 1.0)
+						* demo_extraction_efficiency(deposit)
+					: 1.0;
+
+				// Capacidade e vendas na mesma unidade (toneladas efetivas).
+				const double effective_capacity = city_capacity * suitability;
+				// Estoque disponível antes da produção de hoje (stock já inclui o que
+				// foi produzido nesta passagem; supply é exatamente essa produção).
+				const double stock_before = std::max(0.0,
+					city.markets[building.output_product].stock
+					- city.markets[building.output_product].supply);
+				// Repõe metade da distância até o estoque-alvo, para cima ou para baixo.
+				// Isso evita tanto a produção infinita (excedente acumulado) quanto a
+				// parada brusca quando o estoque está acima do necessário.
+				double target = sold_prev;
+				if (sold_prev <= 0.0) {
+					// Produtor novo (ou sem vendas) enche o mercado com a capacidade
+					// EFETIVA (output_scale), o que dá ao produto a primeira oferta
+					// observável — é o que permite o comércio/consumo começar.
+					target = effective_capacity;
+				} else {
+					const double desired_stock = sold_prev * ws_.inventory_cover_days;
+					target = sold_prev
+						+ (desired_stock - stock_before) * ws_.inventory_recovery;
+				}
+				target = std::clamp(target, 0.0, effective_capacity);
+				const double desired_output = target * capacity_share * labor;
+				double input_used = 0.0;
+				double output = desired_output;
+				if (building.recipe >= 0) {
+					// Receita industrial (1..6 insumos, yield e subprodutos). A
+					// alternativa de menor custo corrente entre as disponíveis na
+					// cidade é escolhida a cada dia (determinístico; empate = primeira).
+					const int chosen = demo_pick_recipe(city, building.output_product);
+					if (chosen >= 0) {
+						building.recipe = chosen;
+					}
+					const DemoRecipe& recipe =
+						ws_.recipes[static_cast<std::size_t>(building.recipe)];
+					const double batch = recipe.yield > 0.0
+						? desired_output / recipe.yield : 0.0;
+					double scale = 1.0;
+					for (int slot = 0; slot < recipe.input_count; ++slot) {
+						const int input = recipe.inputs[slot];
+						const double needed = recipe.input_qty[slot] * batch;
+						DemoMarket& input_market = city.markets[input];
+						input_market.desired += needed;
+						if (needed > 1e-12) {
+							scale = std::min(scale, input_market.stock / needed);
+						}
+					}
+					scale = std::clamp(scale, 0.0, 1.0);
+					for (int slot = 0; slot < recipe.input_count; ++slot) {
+						const int input = recipe.inputs[slot];
+						const double used = recipe.input_qty[slot] * batch * scale;
+						DemoMarket& input_market = city.markets[input];
+						input_market.stock = std::max(0.0, input_market.stock - used);
+						input_market.demand += used;
+						input_market.sold += used;
+						city.revenue_by_product[input] += used * input_market.price;
+						building.input_value += used * input_market.price;
+						input_used += used;
+					}
+					output = batch * scale * recipe.yield;
+					for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
+						const int product = recipe.byproducts[slot];
+						const double amount = recipe.byproduct_qty[slot] * batch * scale;
+						if (amount <= 0.0) {
+							continue;
+						}
+						city.markets[product].stock += amount;
+						city.markets[product].supply += amount;
+						produced_scratch[static_cast<std::size_t>(bi) * n_products
+							+ static_cast<std::size_t>(product)] += amount;
+						produced_today_scratch[static_cast<std::size_t>(bi) * n_products
+							+ static_cast<std::size_t>(product)] += amount;
+					}
+				} else if (building.input_product >= 0) {
+					const double needed_input = desired_output * building.input_per_output;
+					DemoMarket& input_market = city.markets[building.input_product];
+					input_market.desired += needed_input;
+					input_used = std::min(needed_input, input_market.stock);
+					output = building.input_per_output > 0.0
+						? input_used / building.input_per_output : 0.0;
+
+					input_market.stock -= input_used;
+					input_market.demand += input_used;
+					input_market.sold += input_used;
+					// A receita do setor fornecedor inclui a transferência interna entre
+					// construções (quando houver cadeia de refino), senão o valor
+					// adicionado do fornecedor ficaria negativo.
+					city.revenue_by_product[building.input_product] += input_used
+						* input_market.price;
+					building.input_value = input_used * input_market.price;
+				} else if (deposit.tracked) {
+					// Esgotamento: a mina só extrai o que resta da reserva da jazida
+					// (compartilhada pelas minas da cidade) e a debita na mesma medida.
+					const double available_tons = deposit.remaining_kt * kDemoTonsPerKiloton;
+					output = std::clamp(output, 0.0, available_tons);
+					const double extracted_kt = output / kDemoTonsPerKiloton;
+					deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
+					deposit.extracted_kt += extracted_kt;
+					// Reserva zerada: a mina encerra no próximo dia SEM virar falência.
+					if (deposit.remaining_kt <= 1e-9) {
+						building.depleted = true;
+					}
+				}
+
+				city.markets[building.output_product].stock += output;
+				city.markets[building.output_product].supply += output;
+				building.utilization = building.capacity > 0.0
+					? output / building.capacity : 0.0;
+				building.last_utilization = building.utilization;
+				produced_scratch[static_cast<std::size_t>(bi) * n_products
+					+ static_cast<std::size_t>(building.output_product)] += output;
+				produced_today_scratch[static_cast<std::size_t>(bi) * n_products
+					+ static_cast<std::size_t>(building.output_product)] += output;
 			}
 		}
+	};
+	pool().parallel_for(ws_.cities.size(), process_city);
 
-		city->markets[building.output_product].stock += output;
-		city->markets[building.output_product].supply += output;
-		building.utilization = building.capacity > 0.0
-			? output / building.capacity : 0.0;
-		building.last_utilization = building.utilization;
-		ws_.produced[building.output_product] += output;
-		ws_.produced_today[building.output_product] += output;
+	// Redução serial em ordem crescente de índice de construção (a ordem do
+	// loop serial original): soma as contribuições de hoje aos totais.
+	for (std::size_t bi = 0; bi < n_buildings; ++bi) {
+		for (int product = 0; product < ws_.products; ++product) {
+			ws_.produced[product] += produced_scratch[bi * n_products
+				+ static_cast<std::size_t>(product)];
+			ws_.produced_today[product] += produced_today_scratch[bi * n_products
+				+ static_cast<std::size_t>(product)];
+		}
 	}
 
 	OGS_SIM_PHASE_LAP(kDemoPhaseProduction);
@@ -263,35 +299,68 @@ void SimCore::phase_raw() {
 			product_is_input[static_cast<std::size_t>(building.input_product)] = 1;
 		}
 	}
-	for (DemoCity& city : ws_.cities) {
-		for (int product = kDemoFirstRawProduct; product < ws_.products; ++product) {
-			if (demo_food_calories(product) > 0.0) {
-				continue;
+
+	// S16: a exportação bruta é independente por cidade. Os acumuladores
+	// (`foreign_cash` = subtração; `consumed_total`/`consumed_today` = somas) são
+	// reduzidos em ordem crescente de cidade E produto — a MESMA ordem do loop
+	// serial original (que já percorria as cidades em ordem).
+	const std::size_t n_cities = ws_.cities.size();
+	const std::size_t n_products = static_cast<std::size_t>(ws_.products);
+	std::vector<double> foreign_scratch(n_cities * n_products, 0.0);
+	std::vector<double> consumed_total_scratch(n_cities * n_products, 0.0);
+	std::vector<double> consumed_today_scratch(n_cities * n_products, 0.0);
+
+	auto process_city = [this, &product_is_input, &foreign_scratch,
+			&consumed_total_scratch, &consumed_today_scratch, n_products](
+			std::size_t begin, std::size_t end) {
+		for (std::size_t city_index = begin; city_index < end; ++city_index) {
+			DemoCity& city = ws_.cities[city_index];
+			for (int product = kDemoFirstRawProduct; product < ws_.products; ++product) {
+				if (demo_food_calories(product) > 0.0) {
+					continue;
+				}
+				if (product_is_input[static_cast<std::size_t>(product)] != 0) {
+					continue;  // insumo de cadeia ativa: fica no mercado interno
+				}
+				const double ceiling = city.external_demand[product];
+				if (ceiling <= 0.0) {
+					continue;  // sem demanda externa declarada (sem depósito/aptidão)
+				}
+				DemoMarket& market = city.markets[product];
+				market.desired += ceiling;
+				const double sold = std::min(market.stock, ceiling);
+				if (sold <= 0.0) {
+					continue;
+				}
+				const double revenue = sold * market.price;
+				market.stock -= sold;
+				market.demand += sold;
+				market.sold += sold;
+				city.firm_cash += revenue;
+				city.revenue_by_product[product] += revenue;
+				city.exported[product] += sold;
+				city.export_value[product] += revenue;
+				foreign_scratch[city_index * n_products
+					+ static_cast<std::size_t>(product)] += revenue;
+				consumed_total_scratch[city_index * n_products
+					+ static_cast<std::size_t>(product)] += sold;
+				consumed_today_scratch[city_index * n_products
+					+ static_cast<std::size_t>(product)] += sold;
 			}
-			if (product_is_input[static_cast<std::size_t>(product)] != 0) {
-				continue;  // insumo de cadeia ativa: fica no mercado interno
-			}
-			const double ceiling = city.external_demand[product];
-			if (ceiling <= 0.0) {
-				continue;  // sem demanda externa declarada (sem depósito/aptidão)
-			}
-			DemoMarket& market = city.markets[product];
-			market.desired += ceiling;
-			const double sold = std::min(market.stock, ceiling);
-			if (sold <= 0.0) {
-				continue;
-			}
-			const double revenue = sold * market.price;
-			market.stock -= sold;
-			market.demand += sold;
-			market.sold += sold;
-			city.firm_cash += revenue;
-			city.revenue_by_product[product] += revenue;
-			city.exported[product] += sold;
-			city.export_value[product] += revenue;
-			ws_.foreign_cash -= revenue;
-			ws_.consumed_total[product] += sold;
-			ws_.consumed_today[product] += sold;
+		}
+	};
+	pool().parallel_for(ws_.cities.size(), process_city);
+
+	// Redução serial em ordem crescente de cidade e de produto (a ordem do
+	// loop serial original).
+	for (std::size_t city_index = 0; city_index < n_cities; ++city_index) {
+		for (int product = 0; product < ws_.products; ++product) {
+			ws_.foreign_cash -= foreign_scratch[city_index * n_products
+				+ static_cast<std::size_t>(product)];
+			ws_.consumed_total[product] += consumed_total_scratch[city_index * n_products
+				+ static_cast<std::size_t>(product)];
+			ws_.consumed_today[product] += consumed_today_scratch[city_index * n_products
+				+ static_cast<std::size_t>(product)];
 		}
 	}
 
