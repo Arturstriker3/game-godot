@@ -14,5 +14,9 @@ namespace edge {
 // Serializa todo o estado do cenário (save). Sem lock: a fachada segura o mutex.
 godot::Dictionary to_dict(const WorldState& ws, const SimCore& core);
 
+// Restaura o estado do cenário a partir de to_dict() (load + migrações).
+// Sem lock: a fachada segura o mutex e invalida o cache de status.
+void from_dict(WorldState& ws, SimCore& core, const godot::Dictionary& data);
+
 } // namespace edge
 } // namespace ogs

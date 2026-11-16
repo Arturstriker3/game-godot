@@ -7,7 +7,9 @@
 #include <godot_cpp/variant/variant.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace godot;
@@ -20,6 +22,83 @@ namespace {
 // -> CÃÂ³rdoba...). `String::utf8` faz a leitura correta dos bytes UTF-8.
 inline String sim_str(const char* utf8) {
 	return String::utf8(utf8);
+}
+
+inline double safe_nonneg(double v) {
+	return std::isfinite(v) ? std::max(0.0, v) : 0.0;
+}
+
+// População de SIMULAÇÃO da cidade. Desde a calibração de 2026, `population`
+// no cenário é a população real exibida (nação inteira rateada) e a aglomeração
+// da fonte viaja em `sim_population`. Sem o campo (save antigo, cenário
+// sintético), a população histórica É a unidade de simulação — comportamento
+// anterior preservado.
+inline double read_sim_population(const Dictionary& data, double population) {
+	if (!data.has("sim_population")) {
+		return population;
+	}
+	const double value = safe_nonneg(static_cast<double>(data["sim_population"]));
+	return value > 0.0 ? value : population;
+}
+
+// ---------------------------------------------------------------------------
+// Migração de índice de produto (save v1/v2 -> v3).
+//
+// Saves antigos tinham farinha=1 e pão=2 (entre trigo e ferro). Ao removê-los,
+// o enum deslocou -2 a partir do ferro (iron 3->1, rice 4->2, ...). A migração
+// reverte esse deslocamento: trigo (0) fica, farinha/pão (1/2) são descartados
+// e os demais (>=3) deslocam -2.
+// ---------------------------------------------------------------------------
+
+// Índice antigo -> novo. Retorna -1 para farinha/pão (produto removido).
+static int demo_migrate_product_index(int old_index) {
+	if (old_index < 0) {
+		return -1;  // sem produto/insumo
+	}
+	if (old_index == 0) {
+		return 0;  // trigo inalterado
+	}
+	if (old_index == 1 || old_index == 2) {
+		return -1;  // farinha/pão removidos
+	}
+	return old_index - 2;
+}
+
+// Remapeia um array por-produto do layout antigo (com farinha/pão) para o
+// atual (products posições). new_index 0 <- old_index 0; new_index >= 1 <-
+// old_index (new_index + 2). Posições sem correspondência ficam 0.0.
+static Array demo_migrate_product_array(const Array& old, int products) {
+	Array out;
+	out.resize(products);
+	for (int new_index = 0; new_index < products; ++new_index) {
+		const int old_index = (new_index == 0) ? 0 : (new_index + 2);
+		if (old_index >= 0 && old_index < old.size()) {
+			out[new_index] = old[old_index];
+		} else {
+			out[new_index] = 0.0;
+		}
+	}
+	return out;
+}
+
+// Remapeia um array por-produto usando o vetor old_index -> new_index (-1
+// descarta o produto). Posições sem correspondência ficam 0.0.
+static Array demo_remap_product_array(const Array& old,
+		const std::vector<int>& remap, int products) {
+	Array out;
+	out.resize(products);
+	for (int index = 0; index < products; ++index) {
+		out[index] = 0.0;
+	}
+	const int limit = static_cast<int>(
+		std::min<std::size_t>(static_cast<std::size_t>(old.size()), remap.size()));
+	for (int old_index = 0; old_index < limit; ++old_index) {
+		const int new_index = remap[static_cast<std::size_t>(old_index)];
+		if (new_index >= 0 && new_index < products) {
+			out[new_index] = old[old_index];
+		}
+	}
+	return out;
 }
 
 } // namespace
@@ -565,6 +644,895 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 	}
 	data["ports"] = ports;
 	return data;
+}
+
+// Restaura o estado do cenário a partir de to_dict() (load + migrações).
+void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
+	// Recusa save de versão futura (maior que a que este binário conhece).
+	const int version = int(data.get("version", 0));
+	if (version > kDemoSaveVersion) {
+		ws.active = false;
+		return;
+	}
+	// Saves v1/v2 (antes da remoção de farinha/pão) trazem índices de produto
+	// no layout antigo (farinha=1, pão=2, ferro=3...): remapeia para o layout
+	// atual (ferro=1, arroz=2...), descartando farinha/pão.
+	//
+	// Saves v7 trazem a lista `products` com 114 ids (inclui `body_armor`).
+	// Quando ela existe, a migração é POR ID (o nome do produto vence o
+	// índice), então remoções futuras não deslocam estoques, mercados,
+	// construções ou cargas em trânsito.
+	const Array saved_products = data.get("products", Array());
+	const bool has_saved_products = saved_products.size() > 0;
+	const bool needs_legacy_migration = !has_saved_products && version < 3;
+	std::vector<int> product_remap;
+	if (has_saved_products) {
+		product_remap.resize(
+			static_cast<std::size_t>(saved_products.size()), -1);
+		for (int index = 0; index < saved_products.size(); ++index) {
+			product_remap[static_cast<std::size_t>(index)] =
+				core.demo_product_index(std::string(String(saved_products[index]).utf8().get_data()));
+		}
+	}
+	const auto migrate_array = [&](const Array& old) -> Array {
+		if (has_saved_products) {
+			return demo_remap_product_array(old, product_remap, ws.products);
+		}
+		if (needs_legacy_migration) {
+			return demo_migrate_product_array(old, ws.products);
+		}
+		return old;
+	};
+	const auto migrate_index = [&](int old_index) -> int {
+		if (has_saved_products) {
+			if (old_index < 0
+					|| old_index >= static_cast<int>(product_remap.size())) {
+				return -1;
+			}
+			return product_remap[static_cast<std::size_t>(old_index)];
+		}
+		if (needs_legacy_migration) {
+			return demo_migrate_product_index(old_index);
+		}
+		return old_index;
+	};
+	ws.active = bool(data.get("active", true));
+	ws.world_mode = bool(data.get("world_mode", false));
+	ws.day = int(data.get("day", 0));
+	ws.transport_cash = double(data.get("transport_cash", 0.0));
+	ws.foreign_cash = double(data.get("foreign_cash", 0.0));
+	ws.construction_cash = double(data.get("construction_cash", 0.0));
+	ws.bankruptcies = int(data.get("bankruptcies", 0));
+	ws.depleted_mines = int(data.get("depleted_mines", 0));
+	ws.industry_seeded = bool(data.get("industry_seeded", false));
+
+	// F5: moedas e tarifas (save v6). Carregadas ANTES das cidades porque o
+	// preço-base local (moeda da nação) depende da taxa. Save v5 sem as chaves
+	// mantém o que já está carregado pelo autoload (mundo em XGS se não houver).
+	if (data.has("currencies")) {
+		const Array saved_currencies = data.get("currencies", Array());
+		ws.currencies.clear();
+		ws.currencies.reserve(static_cast<std::size_t>(saved_currencies.size()));
+		for (int index = 0; index < saved_currencies.size(); ++index) {
+			const Dictionary entry = saved_currencies[index];
+			const String code = String(entry.get("code", ""));
+			if (code.is_empty()) {
+				continue;
+			}
+			DemoCurrency currency;
+			currency.code = std::string(code.utf8().get_data());
+			currency.rate = double(entry.get("rate_per_anchor", 1.0));
+			if (!std::isfinite(currency.rate) || currency.rate <= 0.0) {
+				currency.rate = 1.0;
+			}
+			currency.base_rate = double(entry.get("base_rate", currency.rate));
+			if (!std::isfinite(currency.base_rate) || currency.base_rate <= 0.0) {
+				currency.base_rate = currency.rate;
+			}
+			currency.floating = bool(entry.get("floating", true));
+			currency.fallback = bool(entry.get("fallback", false));
+			currency.source = std::string(
+				String(entry.get("source", "default")).utf8().get_data());
+			currency.balance_ema = double(entry.get("balance_ema", 0.0));
+			currency.gross_ema = double(entry.get("gross_ema", 0.0));
+			const Variant nations_variant = entry.get("nations", Array());
+			if (nations_variant.get_type() == Variant::ARRAY) {
+				const Array nations = nations_variant;
+				for (int n = 0; n < nations.size(); ++n) {
+					const std::string nation(
+						nations[n].operator String().utf8().get_data());
+					if (!nation.empty()) {
+						currency.nations.push_back(nation);
+					}
+				}
+			}
+			ws.currencies.push_back(std::move(currency));
+		}
+		core.demo_rebuild_currency_indexes();
+	}
+	if (data.has("tariffs")) {
+		const Array saved_tariffs = data.get("tariffs", Array());
+		ws.tariffs.clear();
+		ws.tariffs.reserve(static_cast<std::size_t>(saved_tariffs.size()));
+		for (int index = 0; index < saved_tariffs.size(); ++index) {
+			const Dictionary entry = saved_tariffs[index];
+			DemoTariff tariff;
+			tariff.buyer = std::string(
+				String(entry.get("buyer", "")).utf8().get_data());
+			if (tariff.buyer.empty()) {
+				continue;
+			}
+			tariff.seller = std::string(
+				String(entry.get("seller", "*")).utf8().get_data());
+			tariff.product = std::string(
+				String(entry.get("product", "*")).utf8().get_data());
+			if (tariff.seller.empty()) {
+				tariff.seller = "*";
+			}
+			if (tariff.product.empty()) {
+				tariff.product = "*";
+			}
+			tariff.rate = std::clamp(
+				double(entry.get("rate", 0.0)), 0.0, 1.0);
+			ws.tariffs.push_back(std::move(tariff));
+		}
+		core.demo_rebuild_tariff_lookup();
+	}
+	// F9 (save v11): grupos e política. Save v10 e anteriores não têm as
+	// chaves: os grupos são semeados a partir dos ativos privados no fim do
+	// load (regra determinística de demo_seed_groups).
+	ws.groups.clear();
+	ws.group_lookup.clear();
+	const Array saved_groups = data.get("groups", Array());
+	for (int index = 0; index < saved_groups.size(); ++index) {
+		const Dictionary entry = saved_groups[index];
+		DemoGroup group;
+		group.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		if (group.id.empty()) {
+			continue;
+		}
+		group.name = std::string(String(entry.get("name", "")).utf8().get_data());
+		group.origin_nation = std::string(
+			String(entry.get("origin_nation", "")).utf8().get_data());
+		group.sector = std::string(String(entry.get("sector", "")).utf8().get_data());
+		group.cash = std::max(0.0, double(entry.get("cash", 0.0)));
+		group.distributable = std::max(0.0,
+			double(entry.get("distributable", 0.0)));
+		group.revenue_total = std::max(0.0,
+			double(entry.get("revenue_total", 0.0)));
+		group.profit_total = double(entry.get("profit_total", 0.0));
+		group.dividends_total = std::max(0.0,
+			double(entry.get("dividends_total", 0.0)));
+		group.taxes_total = std::max(0.0, double(entry.get("taxes_total", 0.0)));
+		group.capex_total = std::max(0.0, double(entry.get("capex_total", 0.0)));
+		group.state_owned = bool(entry.get("state_owned", false));
+		const Array by_host = entry.get("profit_by_host", Array());
+		for (int host_index = 0; host_index < by_host.size(); ++host_index) {
+			const Dictionary host = by_host[host_index];
+			const std::string nation = std::string(
+				String(host.get("nation", "")).utf8().get_data());
+			if (!nation.empty()) {
+				group.profit_by_host[nation] = double(host.get("profit", 0.0));
+			}
+		}
+		ws.group_lookup[group.id] = static_cast<int>(ws.groups.size());
+		ws.groups.push_back(std::move(group));
+	}
+	ws.fdi_policies.clear();
+	ws.fdi_lookup.clear();
+	const Array saved_policies = data.get("fdi_policies", Array());
+	for (int index = 0; index < saved_policies.size(); ++index) {
+		const Dictionary entry = saved_policies[index];
+		DemoFdiPolicy policy;
+		policy.nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		policy.sector = std::string(
+			String(entry.get("sector", "")).utf8().get_data());
+		policy.mode = std::clamp(int(entry.get("mode", 0)), 0, 3);
+		policy.min_local = std::clamp(double(entry.get("min_local", 0.0)), 0.0, 1.0);
+		if (policy.nation.empty()) {
+			continue;
+		}
+		ws.fdi_lookup[policy.nation + "|" + policy.sector] =
+			static_cast<int>(ws.fdi_policies.size());
+		ws.fdi_policies.push_back(std::move(policy));
+	}
+	ws.incentives.clear();
+	ws.incentive_lookup.clear();
+	const Array saved_incentives = data.get("sector_incentives", Array());
+	for (int index = 0; index < saved_incentives.size(); ++index) {
+		const Dictionary entry = saved_incentives[index];
+		DemoSectorIncentive incentive;
+		incentive.nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		incentive.sector = std::string(
+			String(entry.get("sector", "")).utf8().get_data());
+		incentive.tax_holiday = std::clamp(
+			double(entry.get("tax_holiday", 0.0)), 0.0, 1.0);
+		incentive.subsidy = std::max(0.0, double(entry.get("subsidy", 0.0)));
+		if (incentive.nation.empty()) {
+			continue;
+		}
+		ws.incentive_lookup[incentive.nation + "|" + incentive.sector] =
+			static_cast<int>(ws.incentives.size());
+		ws.incentives.push_back(std::move(incentive));
+	}
+	ws.confidence.clear();
+	ws.confidence_penalty_day.clear();
+	const Array saved_confidence = data.get("confidence", Array());
+	for (int index = 0; index < saved_confidence.size(); ++index) {
+		const Dictionary entry = saved_confidence[index];
+		const std::string nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		if (nation.empty()) {
+			continue;
+		}
+		ws.confidence[nation] = std::clamp(
+			double(entry.get("value", 1.0)), 0.0, 1.0);
+		const int penalty = int(entry.get("penalty_day", 0));
+		if (penalty > 0) {
+			ws.confidence_penalty_day[nation] = penalty;
+		}
+	}
+	ws.group_flows.clear();
+	const Array saved_flows = data.get("group_flows", Array());
+	for (int index = 0; index < saved_flows.size(); ++index) {
+		const Dictionary entry = saved_flows[index];
+		const std::string nation = std::string(
+			String(entry.get("nation", "")).utf8().get_data());
+		if (nation.empty()) {
+			continue;
+		}
+		DemoGroupFlow flow;
+		flow.repatriated_out = std::max(0.0,
+			double(entry.get("repatriated_out", 0.0)));
+		flow.repatriated_in = std::max(0.0,
+			double(entry.get("repatriated_in", 0.0)));
+		flow.dividends = std::max(0.0, double(entry.get("dividends", 0.0)));
+		flow.taxes = std::max(0.0, double(entry.get("taxes", 0.0)));
+		flow.subsidy = std::max(0.0, double(entry.get("subsidy", 0.0)));
+		ws.group_flows[nation] = flow;
+	}
+	// F7: política salarial. Save v8 e anteriores não têm as chaves: piso
+	// desligado e rigidez padrão (1%/dia).
+	ws.minimum_wages.clear();
+	Array saved_minimum_wages = data.get("minimum_wages", Array());
+	for (int index = 0; index < saved_minimum_wages.size(); ++index) {
+		const Dictionary entry = saved_minimum_wages[index];
+		const String tag = String(entry.get("nation", ""));
+		const double value = std::clamp(double(entry.get("value", 0.0)),
+			0.0, 100.0);
+		if (!tag.is_empty() && value > 0.0) {
+			ws.minimum_wages[std::string(tag.utf8().get_data())] = value;
+		}
+	}
+	ws.wage_rigidity = std::clamp(
+		double(data.get("wage_rigidity", ws.wage_rigidity)), 0.0, 0.25);
+
+	Array produced = migrate_array(data.get("produced_total", Array()));
+	Array consumed = migrate_array(data.get("consumed_total", Array()));
+	for (int index = 0; index < ws.products; ++index) {
+		ws.produced[index] = index < produced.size() ? double(produced[index]) : 0.0;
+		ws.consumed_total[index] =
+			index < consumed.size() ? double(consumed[index]) : 0.0;
+		ws.produced_today[index] = 0.0;
+		ws.consumed_today[index] = 0.0;
+	}
+
+	ws.cities.clear();
+	Array cities = data.get("cities", Array());
+	for (int index = 0; index < cities.size(); ++index) {
+		Dictionary entry = cities[index];
+		DemoCity city;
+		city.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		city.name = std::string(String(entry.get("name", "")).utf8().get_data());
+		city.nation = std::string(String(entry.get("nation", "")).utf8().get_data());
+		// F5 v7: preço de mercado passou a ficar na ÂNCORA. Saves v6 e
+		// anteriores guardavam preço local; converte uma vez pela taxa da nação
+		// (as moedas foram carregadas antes das cidades).
+		const double save_fx = version >= 7
+			? 1.0 : std::max(1e-9, core.demo_fx_rate(city.nation));
+		city.home_nation = std::string(
+			String(entry.get("home_nation", String(city.nation.c_str()))).utf8().get_data());
+		city.landmass =
+			std::string(String(entry.get("landmass", "")).utf8().get_data());
+		Array center = entry.get("center", Array());
+		if (center.size() >= 2) {
+			city.center = {double(center[0]), double(center[1])};
+		}
+		city.population = double(entry.get("population", 0.0));
+		// Save antigo (ou cenário sintético) sem o campo: a população real
+		// exibida é a própria unidade de simulação (comportamento anterior).
+		city.simulation_population = read_sim_population(entry, city.population);
+		city.firm_cash = double(entry.get("firm_cash", 0.0));
+		city.service_cash = double(entry.get("service_cash", 0.0));
+		city.government_budget = double(entry.get("government_budget", 0.0));
+		// Save antigo não tem o índice: mantém a média mundial (1,0).
+		city.external_income_index = std::clamp(
+			double(entry.get("external_income_index", 1.0)), 0.0, 8.0);
+		// F7 calibração: TFP derivada do PIB PPP per capita. Save v9 e
+		// anteriores não têm o campo: 0 = DERIVAR do índice de renda já gravado
+		// (o mesmo `derived:gdp_ppp`), sem inventar produtividade.
+		city.productivity_index = std::clamp(
+			double(entry.get("productivity_index", 0.0)), 0.0, 8.0);
+		// F7 calibração: save anterior à distribuição por Gini não tem o campo;
+		// 0 mantém o gate legado por estrato até o GeographyService declarar.
+		city.income_gini = std::clamp(
+			double(entry.get("income_gini", 0.0)), 0.0, 1.0);
+		city.service_jobs = double(entry.get("service_jobs", 0.0));
+		city.service_wage = double(entry.get("service_wage", 0.0));
+		city.service_wage_bill = double(entry.get("service_wage_bill", 0.0));
+		city.service_revenue = double(entry.get("service_revenue", 0.0));
+		city.service_profit = double(entry.get("service_profit", 0.0));
+		city.opex_revenue = double(entry.get("opex_revenue", 0.0));
+		city.freight_revenue = double(entry.get("freight_revenue", 0.0));
+		city.construction_revenue = double(entry.get("construction_revenue", 0.0));
+		city.construction_revenue_pending =
+			double(entry.get("construction_revenue_pending", 0.0));
+		city.capital_income_next = double(entry.get("capital_income_next", 0.0));
+		city.gdp = double(entry.get("gdp", 0.0));
+		// F8: serviços (save v10). Sem o bloco (v9 e anteriores), os mercados
+		// ficam no preço-âncora do catálogo e os negócios são semeados no fim
+		// do load (`demo_seed_services`).
+		city.service_export_revenue = double(entry.get("service_export_revenue", 0.0));
+		city.service_government_revenue =
+			double(entry.get("service_government_revenue", 0.0));
+		city.service_input_cost = double(entry.get("service_input_cost", 0.0));
+		city.service_business_profit =
+			double(entry.get("service_business_profit", 0.0));
+		city.service_business_count =
+			int(entry.get("service_business_count", 0));
+		city.private_health_cover = std::clamp(
+			double(entry.get("private_health_cover", 0.0)), 0.0, 1.0);
+		city.private_education_cover = std::clamp(
+			double(entry.get("private_education_cover", 0.0)), 0.0, 1.0);
+		city.service_tonnage_prev = double(entry.get("service_tonnage_prev", 0.0));
+		const Array saved_services = entry.get("services", Array());
+		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+			DemoServiceMarket& market = city.service_markets[sector];
+			if (sector < static_cast<int>(ws.service_sectors.size())) {
+				market.base_price =
+					ws.service_sectors[static_cast<std::size_t>(sector)].price;
+			}
+			market.price = market.base_price;
+			if (sector >= saved_services.size()
+					|| saved_services[sector].get_type() != Variant::ARRAY) {
+				continue;
+			}
+			const Array fields = saved_services[sector];
+			if (fields.size() < 13) {
+				continue;
+			}
+			market.demand = double(fields[0]);
+			market.supply = double(fields[1]);
+			market.unmet = double(fields[2]);
+			market.price = double(fields[3]) > 0.0
+				? double(fields[3]) : market.base_price;
+			market.base_price = double(fields[4]) > 0.0
+				? double(fields[4]) : market.base_price;
+			market.revenue = double(fields[5]);
+			market.input_cost = double(fields[6]);
+			market.service_cost = double(fields[7]);
+			market.jobs = double(fields[8]);
+			market.businesses = double(fields[9]);
+			market.exports = double(fields[10]);
+			market.export_revenue = double(fields[11]);
+			market.coverage = std::clamp(double(fields[12]), 0.0, 1.0);
+		}
+
+		Array suitability = entry.get("suitability", Array());
+		Array revenue = entry.get("revenue_by_product", Array());
+		Array imported = entry.get("imported", Array());
+		Array exported = entry.get("exported", Array());
+		Array import_value = entry.get("import_value", Array());
+		Array export_value = entry.get("export_value", Array());
+		Array external_demand = entry.get("external_demand", Array());
+		Array import_price = entry.get("import_price", Array());
+		suitability = migrate_array(suitability);
+		revenue = migrate_array(revenue);
+		imported = migrate_array(imported);
+		exported = migrate_array(exported);
+		import_value = migrate_array(import_value);
+		export_value = migrate_array(export_value);
+		external_demand = migrate_array(external_demand);
+		import_price = migrate_array(import_price);
+		for (int product = 0; product < ws.products; ++product) {
+			city.suitability[product] = product < suitability.size()
+				? double(suitability[product]) : (product >= 1 ? 0.0 : 1.0);
+			city.revenue_by_product[product] = product < revenue.size()
+				? double(revenue[product]) : 0.0;
+			city.imported[product] = product < imported.size()
+				? double(imported[product]) : 0.0;
+			city.exported[product] = product < exported.size()
+				? double(exported[product]) : 0.0;
+			city.import_value[product] = product < import_value.size()
+				? double(import_value[product]) : 0.0;
+			city.export_value[product] = product < export_value.size()
+				? double(export_value[product]) : 0.0;
+			city.external_demand[product] = product < external_demand.size()
+				? double(external_demand[product]) : 0.0;
+			// F5: cotação de importação (na âncora desde o v7). Save anterior à
+			// F5 não tem o array: sem cotação até a primeira compra externa.
+			city.import_price[product] = product < import_price.size()
+				? safe_nonneg(double(import_price[product])) * save_fx : 0.0;
+		}
+
+		Dictionary saved_deposits = entry.get("deposits", Dictionary());
+		for (int product = 0; product < ws.products; ++product) {
+			const String key = String(core.demo_product_name(product));
+			if (!saved_deposits.has(key)) {
+				continue;
+			}
+			Dictionary deposit_entry = saved_deposits[key];
+			DemoDeposit& deposit = city.deposits[product];
+			deposit.tracked = true;
+			deposit.initial_kt = double(deposit_entry.get("initial_kt", 0.0));
+			deposit.remaining_kt = double(deposit_entry.get("remaining_kt", 0.0));
+			deposit.extracted_kt = double(deposit_entry.get("extracted_kt", 0.0));
+			deposit.quality = double(deposit_entry.get("quality", 1.0));
+			deposit.depth_m = double(deposit_entry.get("depth_m", 0.0));
+		}
+
+		Dictionary pop = entry.get("pop", Dictionary());
+		city.pop.population = double(pop.get("population", city.simulation_population));
+		city.pop.labor_force = double(pop.get("labor_force", 0.0));
+		city.pop.employed = double(pop.get("employed", 0.0));
+		city.pop.unemployed = double(pop.get("unemployed", 0.0));
+		city.pop.dependents = double(pop.get("dependents", 0.0));
+		city.pop.wage_income = double(pop.get("wage_income", 0.0));
+		city.pop.capital_income = double(pop.get("capital_income", 0.0));
+		city.pop.transfers = double(pop.get("transfers", 0.0));
+		city.pop.taxes = double(pop.get("taxes", 0.0));
+		city.pop.service_spend = double(pop.get("service_spend", 0.0));
+		city.pop.disposable = double(pop.get("disposable", 0.0));
+		city.pop.external_income = double(pop.get("external_income", 0.0));
+		city.pop.food_spend = double(pop.get("food_spend", 0.0));
+		city.pop.consumed = double(pop.get("consumed", 0.0));
+		city.pop.need = double(pop.get("need", 0.0));
+		city.pop.satisfaction = double(pop.get("satisfaction", 0.0));
+		city.pop.savings = double(pop.get("savings", 0.0));
+		// F3: estado das necessidades (aditivo; save anterior = zero).
+		core.demo_init_pop_needs(city.pop);
+		Dictionary needs_state = pop.get("needs", Dictionary());
+		city.pop.needs_level = int(needs_state.get("level", 0));
+		city.pop.needs_satisfaction = double(needs_state.get("satisfaction",
+			city.pop.satisfaction));
+		city.pop.needs_spend = double(needs_state.get("spend", 0.0));
+		city.pop.durable_spend = double(needs_state.get("durable_spend", 0.0));
+		Array saved_level_sat = needs_state.get("level_satisfaction", Array());
+		Array saved_level_want = needs_state.get("level_want", Array());
+		Array saved_level_cons = needs_state.get("level_consumed", Array());
+		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			city.pop.level_satisfaction[level] = level < saved_level_sat.size()
+				? double(saved_level_sat[level]) : 0.0;
+			city.pop.level_want[level] = level < saved_level_want.size()
+				? double(saved_level_want[level]) : 0.0;
+			city.pop.level_consumed[level] = level < saved_level_cons.size()
+				? double(saved_level_cons[level]) : 0.0;
+		}
+		Dictionary saved_durable = needs_state.get("durable_stock", Dictionary());
+		for (int product = 0; product < ws.products
+				&& product < static_cast<int>(city.pop.durable_stock.size()); ++product) {
+			const String key = String(core.demo_product_name(product));
+			if (saved_durable.has(key)) {
+				city.pop.durable_stock[static_cast<std::size_t>(product)] =
+					std::max(0.0, double(saved_durable[key]));
+			}
+		}
+		// F7: mercado de trabalho e educação (save v9). Save v8 e anteriores não
+		// têm o bloco: o perfil é derivado do índice de renda já gravado. A
+		// força de trabalho, o emprego e os salários são recalculados pelo
+		// mesmo modelo do primeiro dia (migração documentada).
+		Dictionary saved_labor = pop.get("labor", Dictionary());
+		const bool has_labor = version >= 9 && !saved_labor.is_empty();
+		if (!has_labor) {
+			core.demo_apply_labor_profile(city);
+		} else {
+			DemoPop& labor_pop = city.pop;
+			labor_pop.working_age = std::max(0.0,
+				double(saved_labor.get("working_age", labor_pop.working_age)));
+			labor_pop.retirees = std::max(0.0,
+				double(saved_labor.get("retirees", 0.0)));
+			labor_pop.students = std::max(0.0,
+				double(saved_labor.get("students", 0.0)));
+			labor_pop.recruit_reserve = std::max(0.0,
+				double(saved_labor.get("recruit_reserve", 0.0)));
+			const auto read_levels = [&saved_labor](const char* key,
+					double* out, int count) {
+				const Array values = saved_labor.get(key, Array());
+				for (int level = 0; level < count; ++level) {
+					out[level] = level < values.size()
+						? std::max(0.0, double(values[level])) : out[level];
+				}
+			};
+			read_levels("education", labor_pop.education,
+				kDemoEducationLevels);
+			read_levels("participation", labor_pop.participation,
+				kDemoEducationLevels);
+			read_levels("labor_force_by_level", labor_pop.labor_force_by_level,
+				kDemoEducationLevels);
+			read_levels("employed_by_level", labor_pop.employed_by_level,
+				kDemoEducationLevels);
+			read_levels("unemployed_by_level", labor_pop.unemployed_by_level,
+				kDemoEducationLevels);
+			read_levels("vacancies_by_level", labor_pop.vacancies_by_level,
+				kDemoEducationLevels);
+			read_levels("wage_by_level", labor_pop.wage_by_level,
+				kDemoEducationLevels);
+			read_levels("wage_income_by_level",
+				labor_pop.wage_income_by_level, kDemoEducationLevels);
+			read_levels("studying", labor_pop.studying,
+				kDemoEducationLevels - 1);
+			labor_pop.students = labor_pop.studying[0] + labor_pop.studying[1];
+			labor_pop.income_level = std::clamp(
+				int(saved_labor.get("income_level", 1)), 0, 3);
+			// F7 calibração: blocos aditivos. Save anterior ao calibração (v9
+			// sem eles) cai no nível único e mantém o salário carregado como
+			// histórico (wage_anchored = true, com inércia).
+			const bool has_strata = saved_labor.has("income_level_by_stratum");
+			if (has_strata) {
+				const Array strata = saved_labor.get("income_level_by_stratum", Array());
+				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+					labor_pop.stratum_income_level[stratum] = stratum < strata.size()
+						? std::clamp(int(strata[stratum]), 0, 3)
+						: labor_pop.income_level;
+				}
+			} else {
+				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+					labor_pop.stratum_income_level[stratum] = labor_pop.income_level;
+				}
+			}
+			const Array share = saved_labor.get("income_level_share", Array());
+			for (int level_index = 0; level_index < kDemoIncomeLevels; ++level_index) {
+				labor_pop.income_level_share[level_index] = level_index < share.size()
+					? std::clamp(double(share[level_index]), 0.0, 1.0) : 0.0;
+			}
+			if (share.is_empty()) {
+				labor_pop.income_level_share[labor_pop.income_level] = 1.0;
+			}
+			labor_pop.wage_anchored = bool(saved_labor.get("wage_anchored", true));
+			labor_pop.labor_force = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				labor_pop.labor_force +=
+					labor_pop.labor_force_by_level[level];
+			}
+			labor_pop.employed = 0.0;
+			labor_pop.unemployed = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				labor_pop.employed += labor_pop.employed_by_level[level];
+				labor_pop.unemployed += labor_pop.unemployed_by_level[level];
+			}
+			labor_pop.wage_income = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				labor_pop.wage_income += labor_pop.wage_income_by_level[level];
+			}
+			labor_pop.dependents = std::max(0.0,
+				city.pop.population - labor_pop.labor_force);
+		}
+		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));
+		Array desired_by_category = pop.get("desired_by_category", Array());
+		Array consumed_by_category = pop.get("consumed_by_category", Array());
+		city.pop.desired_by_category.assign(ws.food_products.size(), 0.0);
+		city.pop.consumed_by_category.assign(ws.food_products.size(), 0.0);
+		for (int product = 0; product < static_cast<int>(ws.food_products.size()); ++product) {
+			city.pop.desired_by_category[product] =
+				product < desired_by_category.size()
+					? double(desired_by_category[product]) : 0.0;
+			city.pop.consumed_by_category[product] =
+				product < consumed_by_category.size()
+					? double(consumed_by_category[product]) : 0.0;
+		}
+
+		Array markets = entry.get("markets", Array());
+		if (has_saved_products || needs_legacy_migration) {
+			// Remapeia os mercados antigos por id (save v7 com 114 produtos,
+			// descartando `body_armor`) ou pelo deslocamento -2 (save v1/v2 com
+			// farinha/pão). Mercado sem correspondência recebe o preço-base.
+			Array remapped;
+			remapped.resize(ws.products);
+			for (int new_index = 0; new_index < ws.products; ++new_index) {
+				Dictionary m;
+				m["stock"] = 0.0;
+				m["price"] = core.demo_base_price(new_index);
+				m["demand"] = 0.0;
+				m["supply"] = 0.0;
+				m["desired"] = 0.0;
+				m["sold"] = 0.0;
+				m["sold_prev"] = 0.0;
+				m["shortage"] = 0.0;
+				m["surplus"] = 0.0;
+				remapped[new_index] = m;
+			}
+			for (int old_index = 0; old_index < markets.size(); ++old_index) {
+				const int new_index = migrate_index(old_index);
+				if (new_index >= 0 && new_index < ws.products) {
+					remapped[new_index] = markets[old_index];
+				}
+			}
+			markets = remapped;
+		}
+		// Saves antigos (4 produtos) não trazem mercados dos novos bens: preço-base.
+		for (int product = markets.size(); product < ws.products; ++product) {
+			if (product >= 0) {
+				city.markets[product].price = core.demo_base_price(product);
+			}
+		}
+		for (int product = 0; product < ws.products && product < markets.size(); ++product) {
+			Dictionary market = markets[product];
+			city.markets[product].stock = double(market.get("stock", 0.0));
+			city.markets[product].price = double(market.get("price", 1.0)) * save_fx;
+			city.markets[product].demand = double(market.get("demand", 0.0));
+			city.markets[product].supply = double(market.get("supply", 0.0));
+			city.markets[product].desired = double(market.get("desired", 0.0));
+			city.markets[product].sold = double(market.get("sold", 0.0));
+			city.markets[product].sold_prev = double(market.get("sold_prev", 0.0));
+			city.markets[product].shortage = double(market.get("shortage", 0.0));
+			city.markets[product].surplus = double(market.get("surplus", 0.0));
+		}
+		ws.cities.push_back(city);
+	}
+
+	ws.buildings.clear();
+	Array buildings = data.get("buildings", Array());
+	for (int index = 0; index < buildings.size(); ++index) {
+		Dictionary entry = buildings[index];
+		DemoBuilding building;
+		building.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		building.city = std::string(String(entry.get("city", "")).utf8().get_data());
+		building.kind = int(entry.get("kind", 0));
+		building.resource =
+			std::string(String(entry.get("resource", "")).utf8().get_data());
+		building.owner =
+			std::string(String(entry.get("owner", "private")).utf8().get_data());
+		building.local_share = std::clamp(
+			double(entry.get("local_share", 0.0)), 0.0, 1.0);
+		building.partner_group = std::string(
+			String(entry.get("partner_group", "")).utf8().get_data());
+		building.input_product = int(entry.get("input_product", -1));
+		building.output_product = int(entry.get("output_product", 0));
+		if (has_saved_products || needs_legacy_migration) {
+			building.input_product = migrate_index(building.input_product);
+			building.output_product = migrate_index(building.output_product);
+			if (building.output_product < 0) {
+				// Produto removido da cadeia (farinha/pão ou body_armor):
+				// construção descartada.
+				continue;
+			}
+		}
+		building.capacity = double(entry.get("capacity", 0.0));
+		building.input_per_output = double(entry.get("input_per_output", 0.0));
+		// Receita industrial: o id é resolvido na tabela carregada por
+		// demo_set_recipes (v4). Save v3 não tem a chave -> produtor legado.
+		const String recipe_id = String(entry.get("recipe", ""));
+		building.recipe = recipe_id.is_empty() ? -1 : core.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
+		building.capital_per_capacity = std::max(1.0, safe_nonneg(
+			double(entry.get("capital_per_capacity", kDemoCapitalPerCapacity))));
+		building.jobs = double(entry.get("jobs", 0.0));
+		building.wage = double(entry.get("wage", 0.0));
+		building.opex = double(entry.get("opex", 0.0));
+		// F7: mistura de escolaridade. Save v8 sem a chave: usa a da receita
+		// resolvida; primária segue o padrão do struct (quase só básico).
+		if (entry.has("education_mix")) {
+			const Array mix = entry.get("education_mix", Array());
+			double total = 0.0;
+			for (int level = 0;
+					level < kDemoEducationLevels && level < mix.size(); ++level) {
+				building.education_mix[level] = std::max(0.0, double(mix[level]));
+				total += building.education_mix[level];
+			}
+			if (total > 1e-9) {
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					building.education_mix[level] /= total;
+				}
+			}
+		} else if (building.recipe >= 0
+				&& building.recipe < static_cast<int>(ws.recipes.size())) {
+			const DemoRecipe& recipe =
+				ws.recipes[static_cast<std::size_t>(building.recipe)];
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				building.education_mix[level] = recipe.education_mix[level];
+			}
+		}
+		building.output_scale = double(entry.get("output_scale", 1.0));
+		building.last_utilization = double(entry.get("last_utilization", 1.0));
+		building.strategic = bool(entry.get("strategic", false));
+		building.loss_days = int(entry.get("loss_days", 0));
+		building.bankrupt = bool(entry.get("bankrupt", false));
+		building.depleted = bool(entry.get("depleted", false));
+		ws.buildings.push_back(building);
+	}
+
+	ws.in_transit.clear();
+	Array transit = data.get("in_transit", Array());
+	for (int index = 0; index < transit.size(); ++index) {
+		Dictionary entry = transit[index];
+		DemoShipment shipment;
+		shipment.to_city =
+			std::string(String(entry.get("to_city", "")).utf8().get_data());
+		shipment.product = int(entry.get("product", 0));
+		if (has_saved_products || needs_legacy_migration) {
+			const int migrated = migrate_index(shipment.product);
+			if (migrated < 0) {
+				// Produto removido da cadeia em trânsito (farinha/pão ou
+				// body_armor): carga descartada.
+				continue;
+			}
+			shipment.product = migrated;
+		}
+		shipment.amount = double(entry.get("amount", 0.0));
+		shipment.arrival_day = int(entry.get("arrival_day", 0));
+		// F4: reserva da frota (save v5). Save anterior: frota livre ao carregar.
+		shipment.fleet_nation =
+			std::string(String(entry.get("fleet_nation", "")).utf8().get_data());
+		shipment.fleet_trucks = double(entry.get("fleet_trucks", 0.0));
+		shipment.fleet_ships = double(entry.get("fleet_ships", 0.0));
+		shipment.fleet_planes = double(entry.get("fleet_planes", 0.0));
+		shipment.fuel = double(entry.get("fuel", 0.0));
+		ws.in_transit.push_back(shipment);
+	}
+
+	// Portos (campo aditivo, ausente em saves anteriores ao porto): o save
+	// preserva capacidade, expansão em obra e fila do dia. Sem "ports", mantém
+	// os portos do mundo já carregado e recalcula a capacidade pela população
+	// que veio no save (save antigo é compatível: comportamento anterior).
+	const bool has_saved_ports = data.has("ports");
+	if (has_saved_ports) {
+		ws.ports.clear();
+		Array ports = data.get("ports", Array());
+		for (int index = 0; index < ports.size(); ++index) {
+			Dictionary entry = ports[index];
+			Port port;
+			port.id = std::string(String(entry.get("id", "")).utf8().get_data());
+			port.name = std::string(String(entry.get("name", "")).utf8().get_data());
+			port.nation = std::string(String(entry.get("nation", "")).utf8().get_data());
+			port.landmass =
+				std::string(String(entry.get("landmass", "")).utf8().get_data());
+			port.host_city =
+				std::string(String(entry.get("host_city", "")).utf8().get_data());
+			port.center = {double(entry.get("x", 0.0)), double(entry.get("y", 0.0))};
+			port.base_capacity_t_per_day =
+				safe_nonneg(double(entry.get("base_capacity_t_per_day", 0.0)));
+			port.capacity_t_per_day =
+				safe_nonneg(double(entry.get("capacity_t_per_day",
+					port.base_capacity_t_per_day)));
+			port.pending_capacity_t_per_day =
+				safe_nonneg(double(entry.get("pending_capacity_t_per_day", 0.0)));
+			port.pending_days = std::max(0, int(entry.get("pending_days", 0)));
+			ws.ports.push_back(std::move(port));
+		}
+	}
+
+	core.demo_rebuild_indexes();
+	if (!has_saved_ports && !ws.ports.empty()) {
+		core.demo_init_port_capacities();
+	}
+	// F4: frota (save v5). Save anterior não tem o bloco: deriva de
+	// população/PIB, documentado como `source: derived`.
+	ws.fleets.clear();
+	ws.fleet_order.clear();
+	const Array saved_fleets = data.get("fleets", Array());
+	for (int index = 0; index < saved_fleets.size(); ++index) {
+		Dictionary entry = saved_fleets[index];
+		const std::string nation =
+			std::string(String(entry.get("nation", "")).utf8().get_data());
+		if (nation.empty()) {
+			continue;
+		}
+		DemoFleet fleet;
+		fleet.trucks = safe_nonneg(double(entry.get("trucks", 0.0)));
+		fleet.ships = safe_nonneg(double(entry.get("ships", 0.0)));
+		fleet.planes = safe_nonneg(double(entry.get("planes", 0.0)));
+		fleet.target_trucks = safe_nonneg(double(entry.get("target_trucks", 0.0)));
+		fleet.target_ships = safe_nonneg(double(entry.get("target_ships", 0.0)));
+		fleet.target_planes = safe_nonneg(double(entry.get("target_planes", 0.0)));
+		fleet.fuel = safe_nonneg(double(entry.get("fuel", 0.0)));
+		fleet.fuel_target = safe_nonneg(double(entry.get("fuel_target", 0.0)));
+		fleet.spare_parts = safe_nonneg(double(entry.get("spare_parts", 0.0)));
+		Array health = entry.get("health", Array());
+		for (int mode = 0; mode < 3; ++mode) {
+			fleet.health[mode] = mode < health.size()
+				? std::clamp(double(health[mode]), kDemoFleetHealthFloor, 1.0) : 1.0;
+		}
+		fleet.fuel_used_total = double(entry.get("fuel_used_total", 0.0));
+		fleet.fuel_bought_total = double(entry.get("fuel_bought_total", 0.0));
+		fleet.parts_used_total = double(entry.get("parts_used_total", 0.0));
+		fleet.vehicles_bought_total =
+			double(entry.get("vehicles_bought_total", 0.0));
+		fleet.derived = bool(entry.get("derived", false));
+		ws.fleets.emplace(nation, fleet);
+		ws.fleet_order.push_back(nation);
+	}
+	// Reserva das cargas em trânsito: reconstrói os veículos ocupados.
+	for (const DemoShipment& shipment : ws.in_transit) {
+		if (shipment.fleet_nation.empty()) {
+			continue;
+		}
+		DemoTransportDemand busy;
+		busy.trucks = shipment.fleet_trucks;
+		busy.ships = shipment.fleet_ships;
+		busy.planes = shipment.fleet_planes;
+		const auto found = ws.fleets.find(shipment.fleet_nation);
+		if (found == ws.fleets.end()) {
+			continue;
+		}
+		found->second.trucks_busy += busy.trucks;
+		found->second.ships_busy += busy.ships;
+		found->second.planes_busy += busy.planes;
+	}
+	if (ws.fleets.empty()) {
+		core.demo_init_fleets();
+	} else {
+		// Índices dos bens da frota (products já carregados antes do load).
+		ws.fleet_product_fuel = core.demo_product_index(std::string(String("fuel").utf8().get_data()));
+		ws.fleet_product_truck = core.demo_product_index(std::string(String("truck").utf8().get_data()));
+		ws.fleet_product_ship = core.demo_product_index(std::string(String("cargo_ship").utf8().get_data()));
+		ws.fleet_product_plane = core.demo_product_index(std::string(String("cargo_plane").utf8().get_data()));
+		ws.fleet_product_parts = core.demo_product_index(std::string(String("spare_parts").utf8().get_data()));
+	}
+
+	// F8: negócios de serviço (save v10). Save v9 e anteriores não têm o bloco:
+	// semeia os negócios como num mundo novo (migração declarada).
+	ws.service_businesses.clear();
+	ws.next_service_business_id = 1;
+	ws.service_bankruptcies = int(data.get("service_bankruptcies", 0));
+	const Array saved_businesses = data.get("service_businesses", Array());
+	for (int index = 0; index < saved_businesses.size(); ++index) {
+		if (saved_businesses[index].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = saved_businesses[index];
+		DemoServiceBusiness business;
+		business.id = int(entry.get("id", 0));
+		business.sector = int(entry.get("sector", -1));
+		business.city = std::string(
+			String(entry.get("city", "")).utf8().get_data());
+		business.owner_stratum = std::clamp(
+			int(entry.get("owner_stratum", kDemoEducationLevels - 1)),
+			0, kDemoEducationLevels - 1);
+		business.capacity = safe_nonneg(double(entry.get("capacity", 0.0)));
+		business.jobs = safe_nonneg(double(entry.get("jobs", 0.0)));
+		business.workers = safe_nonneg(double(entry.get("workers", 0.0)));
+		business.capital = safe_nonneg(double(entry.get("capital", 0.0)));
+		business.capital_left = safe_nonneg(double(entry.get("capital_left", 0.0)));
+		business.utilization = std::clamp(
+			double(entry.get("utilization", 0.0)), 0.0, 1.0);
+		business.revenue = double(entry.get("revenue", 0.0));
+		business.wages = safe_nonneg(double(entry.get("wages", 0.0)));
+		business.input_cost = safe_nonneg(double(entry.get("input_cost", 0.0)));
+		business.service_cost = safe_nonneg(double(entry.get("service_cost", 0.0)));
+		business.profit = double(entry.get("profit", 0.0));
+		business.loss_days = std::max(0, int(entry.get("loss_days", 0)));
+		business.bankrupt = bool(entry.get("bankrupt", false));
+		business.opened_day = int(entry.get("opened_day", 0));
+		const double seed = double(entry.get("name_seed", 0.0));
+		business.name_seed = seed > 0.0
+			? static_cast<unsigned long long>(seed) : 0ULL;
+		if (business.name_seed == 0ULL) {
+			unsigned long long hash = 1469598103934665603ULL;
+			for (const char c : business.city + "|" + std::to_string(business.id)) {
+				hash ^= static_cast<unsigned char>(c);
+				hash *= 1099511628211ULL;
+			}
+			business.name_seed = hash;
+		}
+		ws.next_service_business_id = std::max(
+			ws.next_service_business_id, business.id + 1);
+		ws.service_businesses.push_back(std::move(business));
+	}
+	if (ws.service_businesses.empty() && ws.services_loaded) {
+		core.demo_seed_services();
+	} else {
+		core.demo_rebuild_service_indexes();
+	}
+	// F9: save v10 e anteriores não têm grupos. Semeia a partir dos ativos
+	// privados (id determinístico); os nomes entram pelo cliente no próximo
+	// boot, como no mundo recém-criado.
+	if (ws.groups.empty()) {
+		ws.groups_seeded = false;
+		core.demo_seed_groups();
+	} else {
+		ws.groups_seeded = true;
+	}
 }
 
 } // namespace edge
