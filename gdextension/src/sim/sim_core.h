@@ -38,6 +38,9 @@ public:
 	void phase_raw();
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
 	void phase_income();
+	// F8. Serviços: demanda das classes, B2B, governo, exportação, produção dos
+	// negócios, preço, entrada e saída — uma cidade por vez.
+	void phase_services();
 
 	// ------------------------------------------------------------------
 	// Helpers compartilhados com a fachada (públicos).
@@ -87,6 +90,22 @@ public:
 	void demo_consume_government(DemoCity& city);
 	// F7 calibração: classes de consumo a partir do Gini e da cesta básica.
 	void demo_refresh_income_classes(DemoCity& city) const;
+	// F5: câmbio/tarifas consultados pela fase de serviços.
+	const DemoCurrency* demo_currency_for(const std::string& nation) const;
+	double demo_competitiveness(const std::string& nation) const;
+	double demo_tariff_rate(const std::string& buyer_nation,
+		const std::string& seller_nation, int product) const;
+	int demo_product_index(const std::string& product) const;
+	const char* demo_product_name(int product) const;
+	// F8: serviços.
+	int demo_service_sector_index(const std::string& sector) const;
+	void demo_rebuild_service_indexes();
+	double demo_city_food_reserve(const DemoCity& city) const;
+	bool demo_service_open(DemoCity& city, int sector, double capacity,
+		double capital);
+	void demo_service_close(DemoServiceBusiness& business);
+	void demo_seed_services();
+	void demo_services_day(DemoCity& city);
 
 	// Dinheiro antes do tick (para a fase de invariantes, ainda na fachada).
 	double money_before() const { return money_before_; }
