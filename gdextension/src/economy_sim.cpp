@@ -34,6 +34,14 @@ inline double safe_unit(double v) {
 	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
 }
 
+// Constrói um String Godot a partir de UTF-8. O construtor `String(const char*)`
+// desta godot-cpp interpreta os bytes como Latin-1, então `String(x.c_str())`
+// corrompia os nomes não-ASCII a cada round-trip save/load (Córdoba -> CÃ³rdoba
+// -> CÃÂ³rdoba...). `String::utf8` faz a leitura correta dos bytes UTF-8.
+inline String sim_str(const char* utf8) {
+	return String::utf8(utf8);
+}
+
 // População de SIMULAÇÃO da cidade. Desde a calibração de 2026, `population`
 // no cenário é a população real exibida (nação inteira rateada) e a aglomeração
 // da fonte viaja em `sim_population`. Sem o campo (save antigo, cenário
@@ -5207,6 +5215,13 @@ Dictionary EconomySim::demo_to_dict() const {
 	data["transport_cash"] = ws_.transport_cash;
 	data["foreign_cash"] = ws_.foreign_cash;
 	data["construction_cash"] = ws_.construction_cash;
+	// Contadores de encerramento de construções (falidas/esgotadas) e a marca de
+	// bootstrap industrial. São ESTADO VERDADEIRO (não cache): sem eles, o load
+	// re-semeava a indústria (24 plantas extras) e perdia o histórico de
+	// falências/jazidas esgotadas, divergindo do caminho direto já no 1º tick.
+	data["bankruptcies"] = ws_.bankruptcies;
+	data["depleted_mines"] = ws_.depleted_mines;
+	data["industry_seeded"] = ws_.industry_seeded;
 
 	// Lista canônica de produtos (id na posição do índice). O contrato é por
 	// `order`; os 21 primeiros são os mesmos do save v3.
@@ -5228,11 +5243,11 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array cities;
 	for (const DemoCity& city : ws_.cities) {
 		Dictionary entry;
-		entry["id"] = String(city.id.c_str());
-		entry["name"] = String(city.name.c_str());
-		entry["nation"] = String(city.nation.c_str());
-		entry["home_nation"] = String(city.home_nation.c_str());
-		entry["landmass"] = String(city.landmass.c_str());
+		entry["id"] = sim_str(city.id.c_str());
+		entry["name"] = sim_str(city.name.c_str());
+		entry["nation"] = sim_str(city.nation.c_str());
+		entry["home_nation"] = sim_str(city.home_nation.c_str());
+		entry["landmass"] = sim_str(city.landmass.c_str());
 		Array center;
 		center.append(city.center.x);
 		center.append(city.center.y);
@@ -5461,18 +5476,18 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array buildings;
 	for (const DemoBuilding& building : ws_.buildings) {
 		Dictionary entry;
-		entry["id"] = String(building.id.c_str());
-		entry["city"] = String(building.city.c_str());
+		entry["id"] = sim_str(building.id.c_str());
+		entry["city"] = sim_str(building.city.c_str());
 		entry["kind"] = building.kind;
-		entry["resource"] = String(building.resource.c_str());
-		entry["owner"] = String(building.owner.c_str());
+		entry["resource"] = sim_str(building.resource.c_str());
+		entry["owner"] = sim_str(building.owner.c_str());
 		entry["local_share"] = building.local_share;
-		entry["partner_group"] = String(building.partner_group.c_str());
+		entry["partner_group"] = sim_str(building.partner_group.c_str());
 		entry["input_product"] = building.input_product;
 		entry["output_product"] = building.output_product;
 		entry["recipe"] = building.recipe >= 0
 			&& building.recipe < static_cast<int>(ws_.recipes.size())
-			? String(ws_.recipes[static_cast<std::size_t>(building.recipe)].id.c_str())
+			? sim_str(ws_.recipes[static_cast<std::size_t>(building.recipe)].id.c_str())
 			: String("");
 		entry["capacity"] = building.capacity;
 		entry["input_per_output"] = building.input_per_output;
@@ -5487,6 +5502,11 @@ Dictionary EconomySim::demo_to_dict() const {
 		entry["last_utilization"] = building.last_utilization;
 		entry["strategic"] = building.strategic;
 		entry["loss_days"] = building.loss_days;
+		// Estado de encerramento da construção: falida por insolvência ou mina
+		// com jazida esgotada. A remoção acontece no prólogo do tick seguinte;
+		// sem persistir a marca, o load "ressuscita" a construção por um dia.
+		entry["bankrupt"] = building.bankrupt;
+		entry["depleted"] = building.depleted;
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
@@ -5499,7 +5519,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		Dictionary entry;
 		entry["id"] = business.id;
 		entry["sector"] = business.sector;
-		entry["city"] = String(business.city.c_str());
+		entry["city"] = sim_str(business.city.c_str());
 		entry["owner_stratum"] = business.owner_stratum;
 		entry["capacity"] = business.capacity;
 		entry["jobs"] = business.jobs;
@@ -5524,12 +5544,12 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array transit;
 	for (const DemoShipment& shipment : ws_.in_transit) {
 		Dictionary entry;
-		entry["to_city"] = String(shipment.to_city.c_str());
+		entry["to_city"] = sim_str(shipment.to_city.c_str());
 		entry["product"] = shipment.product;
 		entry["amount"] = shipment.amount;
 		entry["arrival_day"] = shipment.arrival_day;
 		// F4: reserva de frota do pedido (liberada na chegada).
-		entry["fleet_nation"] = String(shipment.fleet_nation.c_str());
+		entry["fleet_nation"] = sim_str(shipment.fleet_nation.c_str());
 		entry["fleet_trucks"] = shipment.fleet_trucks;
 		entry["fleet_ships"] = shipment.fleet_ships;
 		entry["fleet_planes"] = shipment.fleet_planes;
@@ -5547,7 +5567,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		}
 		const DemoFleet& fleet = found->second;
 		Dictionary entry;
-		entry["nation"] = String(nation.c_str());
+		entry["nation"] = sim_str(nation.c_str());
 		entry["trucks"] = fleet.trucks;
 		entry["ships"] = fleet.ships;
 		entry["planes"] = fleet.planes;
@@ -5571,17 +5591,17 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array currencies;
 	for (const DemoCurrency& currency : ws_.currencies) {
 		Dictionary entry;
-		entry["code"] = String(currency.code.c_str());
+		entry["code"] = sim_str(currency.code.c_str());
 		entry["rate_per_anchor"] = currency.rate;
 		entry["base_rate"] = currency.base_rate;
 		entry["floating"] = currency.floating;
 		entry["fallback"] = currency.fallback;
-		entry["source"] = String(currency.source.c_str());
+		entry["source"] = sim_str(currency.source.c_str());
 		entry["balance_ema"] = currency.balance_ema;
 		entry["gross_ema"] = currency.gross_ema;
 		Array nations;
 		for (const std::string& nation : currency.nations) {
-			nations.append(String(nation.c_str()));
+			nations.append(sim_str(nation.c_str()));
 		}
 		entry["nations"] = nations;
 		currencies.append(entry);
@@ -5590,9 +5610,9 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array tariffs;
 	for (const DemoTariff& tariff : ws_.tariffs) {
 		Dictionary entry;
-		entry["buyer"] = String(tariff.buyer.c_str());
-		entry["seller"] = String(tariff.seller.c_str());
-		entry["product"] = String(tariff.product.c_str());
+		entry["buyer"] = sim_str(tariff.buyer.c_str());
+		entry["seller"] = sim_str(tariff.seller.c_str());
+		entry["product"] = sim_str(tariff.product.c_str());
 		entry["rate"] = tariff.rate;
 		tariffs.append(entry);
 	}
@@ -5601,10 +5621,10 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array groups;
 	for (const DemoGroup& group : ws_.groups) {
 		Dictionary entry;
-		entry["id"] = String(group.id.c_str());
-		entry["name"] = String(group.name.c_str());
-		entry["origin_nation"] = String(group.origin_nation.c_str());
-		entry["sector"] = String(group.sector.c_str());
+		entry["id"] = sim_str(group.id.c_str());
+		entry["name"] = sim_str(group.name.c_str());
+		entry["origin_nation"] = sim_str(group.origin_nation.c_str());
+		entry["sector"] = sim_str(group.sector.c_str());
 		entry["cash"] = group.cash;
 		entry["distributable"] = group.distributable;
 		entry["revenue_total"] = group.revenue_total;
@@ -5616,7 +5636,7 @@ Dictionary EconomySim::demo_to_dict() const {
 		Array by_host;
 		for (const auto& row : group.profit_by_host) {
 			Dictionary host;
-			host["nation"] = String(row.first.c_str());
+			host["nation"] = sim_str(row.first.c_str());
 			host["profit"] = row.second;
 			by_host.append(host);
 		}
@@ -5624,23 +5644,32 @@ Dictionary EconomySim::demo_to_dict() const {
 		groups.append(entry);
 	}
 	data["groups"] = groups;
+	// Ordem determinística por nação (o mapa é unordered; iterar direto mudaria
+	// a ordem do array a cada load e quebraria o round-trip byte a byte).
 	Array group_flows;
+	std::vector<std::string> group_flow_keys;
+	group_flow_keys.reserve(ws_.group_flows.size());
 	for (const auto& row : ws_.group_flows) {
+		group_flow_keys.push_back(row.first);
+	}
+	std::sort(group_flow_keys.begin(), group_flow_keys.end());
+	for (const std::string& nation : group_flow_keys) {
+		const DemoGroupFlow& flow = ws_.group_flows.at(nation);
 		Dictionary entry;
-		entry["nation"] = String(row.first.c_str());
-		entry["repatriated_out"] = row.second.repatriated_out;
-		entry["repatriated_in"] = row.second.repatriated_in;
-		entry["dividends"] = row.second.dividends;
-		entry["taxes"] = row.second.taxes;
-		entry["subsidy"] = row.second.subsidy;
+		entry["nation"] = sim_str(nation.c_str());
+		entry["repatriated_out"] = flow.repatriated_out;
+		entry["repatriated_in"] = flow.repatriated_in;
+		entry["dividends"] = flow.dividends;
+		entry["taxes"] = flow.taxes;
+		entry["subsidy"] = flow.subsidy;
 		group_flows.append(entry);
 	}
 	data["group_flows"] = group_flows;
 	Array fdi_policies;
 	for (const DemoFdiPolicy& policy : ws_.fdi_policies) {
 		Dictionary entry;
-		entry["nation"] = String(policy.nation.c_str());
-		entry["sector"] = String(policy.sector.c_str());
+		entry["nation"] = sim_str(policy.nation.c_str());
+		entry["sector"] = sim_str(policy.sector.c_str());
 		entry["mode"] = policy.mode;
 		entry["min_local"] = policy.min_local;
 		fdi_policies.append(entry);
@@ -5649,34 +5678,46 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array incentives;
 	for (const DemoSectorIncentive& incentive : ws_.incentives) {
 		Dictionary entry;
-		entry["nation"] = String(incentive.nation.c_str());
-		entry["sector"] = String(incentive.sector.c_str());
+		entry["nation"] = sim_str(incentive.nation.c_str());
+		entry["sector"] = sim_str(incentive.sector.c_str());
 		entry["tax_holiday"] = incentive.tax_holiday;
 		entry["subsidy"] = incentive.subsidy;
 		incentives.append(entry);
 	}
 	data["sector_incentives"] = incentives;
+	// Ordem determinística por nação (unordered_map -> array estável).
 	Array confidence;
+	std::vector<std::string> confidence_keys;
+	confidence_keys.reserve(ws_.confidence.size());
 	for (const auto& row : ws_.confidence) {
+		confidence_keys.push_back(row.first);
+	}
+	std::sort(confidence_keys.begin(), confidence_keys.end());
+	for (const std::string& nation : confidence_keys) {
 		Dictionary entry;
-		entry["nation"] = String(row.first.c_str());
-		entry["value"] = row.second;
-		const auto penalty = ws_.confidence_penalty_day.find(row.first);
+		entry["nation"] = sim_str(nation.c_str());
+		entry["value"] = ws_.confidence.at(nation);
+		const auto penalty = ws_.confidence_penalty_day.find(nation);
 		entry["penalty_day"] = penalty == ws_.confidence_penalty_day.end()
 			? 0 : penalty->second;
 		confidence.append(entry);
 	}
 	data["confidence"] = confidence;
 	// F7: política salarial (save v9). `minimum_wages` por nação (ausente/0 =
-	// piso desligado) e a rigidez diária configurável.
+	// piso desligado) e a rigidez diária configurável. Ordem por nação.
 	Array minimum_wages;
-	for (const auto& [nation_tag, value] : ws_.minimum_wages) {
-		if (value <= 0.0) {
-			continue;
+	std::vector<std::string> wage_keys;
+	wage_keys.reserve(ws_.minimum_wages.size());
+	for (const auto& row : ws_.minimum_wages) {
+		if (row.second > 0.0) {
+			wage_keys.push_back(row.first);
 		}
+	}
+	std::sort(wage_keys.begin(), wage_keys.end());
+	for (const std::string& nation_tag : wage_keys) {
 		Dictionary entry;
-		entry["nation"] = String(nation_tag.c_str());
-		entry["value"] = value;
+		entry["nation"] = sim_str(nation_tag.c_str());
+		entry["value"] = ws_.minimum_wages.at(nation_tag);
 		minimum_wages.append(entry);
 	}
 	data["minimum_wages"] = minimum_wages;
@@ -5688,11 +5729,11 @@ Dictionary EconomySim::demo_to_dict() const {
 	Array ports;
 	for (const Port& port : ws_.ports) {
 		Dictionary entry;
-		entry["id"] = String(port.id.c_str());
-		entry["name"] = String(port.name.c_str());
-		entry["nation"] = String(port.nation.c_str());
-		entry["landmass"] = String(port.landmass.c_str());
-		entry["host_city"] = String(port.host_city.c_str());
+		entry["id"] = sim_str(port.id.c_str());
+		entry["name"] = sim_str(port.name.c_str());
+		entry["nation"] = sim_str(port.nation.c_str());
+		entry["landmass"] = sim_str(port.landmass.c_str());
+		entry["host_city"] = sim_str(port.host_city.c_str());
 		entry["x"] = port.center.x;
 		entry["y"] = port.center.y;
 		entry["base_capacity_t_per_day"] = port.base_capacity_t_per_day;
@@ -5769,6 +5810,9 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 	ws_.transport_cash = double(data.get("transport_cash", 0.0));
 	ws_.foreign_cash = double(data.get("foreign_cash", 0.0));
 	ws_.construction_cash = double(data.get("construction_cash", 0.0));
+	ws_.bankruptcies = int(data.get("bankruptcies", 0));
+	ws_.depleted_mines = int(data.get("depleted_mines", 0));
+	ws_.industry_seeded = bool(data.get("industry_seeded", false));
 
 	// F5: moedas e tarifas (save v6). Carregadas ANTES das cidades porque o
 	// preço-base local (moeda da nação) depende da taxa. Save v5 sem as chaves
@@ -6401,6 +6445,8 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 		building.last_utilization = double(entry.get("last_utilization", 1.0));
 		building.strategic = bool(entry.get("strategic", false));
 		building.loss_days = int(entry.get("loss_days", 0));
+		building.bankrupt = bool(entry.get("bankrupt", false));
+		building.depleted = bool(entry.get("depleted", false));
 		ws_.buildings.push_back(building);
 	}
 
