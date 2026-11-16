@@ -1,8 +1,9 @@
 #pragma once
-// Fragmento de tipos POD + enums + constantes do núcleo econômico (S1 do
+// Tipos POD + enums + constantes do núcleo econômico (S1 do
 // docs/economy/core_refactor_plan.md). Sem dependência do engine Godot: só STL.
-// É incluído DENTRO da classe EconomySim (economy_sim.h), no bloco private — os
-// tipos continuam aninhados (EconomySim::DemoCity etc.), nada de namespace novo.
+// S5a: os tipos deixam de ser aninhados em EconomySim e passam a viver no
+// namespace `ogs` (STL puro), para o WorldState/SimCore os usarem sem godot_cpp.
+// economy_sim.* passa a ser fachada (conversão Godot <-> sim). Nada de godot_cpp.
 
 #include <cstddef>
 #include <map>
@@ -10,6 +11,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace ogs {
 
 // ==== BLOCO DE TIPOS (extraído de economy_sim.h) ====
 	enum class TransportMode { Truck, Ship, Plane };
@@ -763,3 +766,5 @@
 		double consumed_today[kDemoMaxProducts] = {};
 		int day = 0;
 	};
+
+} // namespace ogs

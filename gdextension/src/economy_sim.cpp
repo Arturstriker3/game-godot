@@ -237,7 +237,7 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_groups_seeded);
 }
 
-const EconomySim::ModeSpec& EconomySim::spec(TransportMode mode) {
+const ogs::ModeSpec& EconomySim::spec(TransportMode mode) {
 	// capacidade de lote = carga útil de uma composição/frota padrão.
 	// custo em unidades monetárias por tonelada-quilômetro.
 	// Calibragem do porto (port_design.md §3): um caminhão leva 25 t, um navio
@@ -288,7 +288,7 @@ const char* EconomySim::scope_name(MarketScope scope) {
 	}
 }
 
-EconomySim::Leg EconomySim::make_leg(TransportMode mode, const std::string& from, const std::string& to,
+ogs::Leg EconomySim::make_leg(TransportMode mode, const std::string& from, const std::string& to,
                                      const MapPoint& from_point, const MapPoint& to_point,
                                      double load_tons) const {
 	const ModeSpec& mode_spec = spec(mode);
@@ -770,7 +770,7 @@ double EconomySim::demo_base_price(int product) const {
 	return 40.0;
 }
 
-const EconomySim::DemoCurrency* EconomySim::demo_currency_for(
+const ogs::DemoCurrency* EconomySim::demo_currency_for(
 		const std::string& nation) const {
 	const auto found = demo_nation_currency_.find(nation);
 	if (found == demo_nation_currency_.end()
@@ -781,7 +781,7 @@ const EconomySim::DemoCurrency* EconomySim::demo_currency_for(
 	return &demo_currencies_[static_cast<std::size_t>(found->second)];
 }
 
-EconomySim::DemoCurrency* EconomySim::demo_currency_for(
+ogs::DemoCurrency* EconomySim::demo_currency_for(
 		const std::string& nation) {
 	const auto found = demo_nation_currency_.find(nation);
 	if (found == demo_nation_currency_.end()
@@ -1543,7 +1543,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	demo_seed_groups();
 }
 
-EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) {
+ogs::DemoCity* EconomySim::find_demo_city(const std::string& id) {
 	const auto found = demo_city_lookup_.find(id);
 	if (found == demo_city_lookup_.end()) {
 		return nullptr;
@@ -1551,7 +1551,7 @@ EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) {
 	return &demo_cities_[static_cast<std::size_t>(found->second)];
 }
 
-const EconomySim::DemoCity* EconomySim::find_demo_city(const std::string& id) const {
+const ogs::DemoCity* EconomySim::find_demo_city(const std::string& id) const {
 	const auto found = demo_city_lookup_.find(id);
 	if (found == demo_city_lookup_.end()) {
 		return nullptr;
@@ -3056,7 +3056,7 @@ void EconomySim::demo_init_fleets() {	demo_fleet_product_fuel_ = demo_product_in
 	demo_fleet_order_ = nations;
 }
 
-EconomySim::DemoTransportDemand EconomySim::demo_route_demand(const DemoCity& seller,
+ogs::DemoTransportDemand EconomySim::demo_route_demand(const DemoCity& seller,
 		const DemoCity& buyer, int seller_port, int buyer_port, double tons) const {
 	DemoTransportDemand demand;
 	if (tons <= 1e-9) {
@@ -3556,7 +3556,7 @@ void EconomySim::demo_national_fiscal_transfer() {	// Equalização fiscal per c
 	}
 }
 
-const EconomySim::Port* EconomySim::demo_nearest_port(const std::string& nation,
+const ogs::Port* EconomySim::demo_nearest_port(const std::string& nation,
 		const std::string& landmass, const MapPoint& from) const {
 	// Porto mais próximo da mesma nação e da mesma massa de terra. Dinâmico:
 	// adicionar um porto em ports.json já o torna disponível para o roteamento.
@@ -3575,7 +3575,7 @@ const EconomySim::Port* EconomySim::demo_nearest_port(const std::string& nation,
 	return best;
 }
 
-EconomySim::Port* EconomySim::find_demo_port(const std::string& id) {
+ogs::Port* EconomySim::find_demo_port(const std::string& id) {
 	for (Port& port : demo_ports_) {
 		if (port.id == id) {
 			return &port;
@@ -7618,7 +7618,7 @@ void EconomySim::demo_init_pop_needs(DemoPop& pop) const {
 	}
 }
 
-EconomySim::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
+ogs::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
 		const std::string& id) {
 	for (DemoBuilding& building : demo_buildings_) {
 		if (building.city == city_id && building.id == id) {
@@ -10090,12 +10090,12 @@ int EconomySim::demo_group_index(const std::string& id) const {
 	return found == demo_group_lookup_.end() ? -1 : found->second;
 }
 
-EconomySim::DemoGroup* EconomySim::find_demo_group(const std::string& id) {
+ogs::DemoGroup* EconomySim::find_demo_group(const std::string& id) {
 	const int index = demo_group_index(id);
 	return index < 0 ? nullptr : &demo_groups_[static_cast<std::size_t>(index)];
 }
 
-const EconomySim::DemoGroup* EconomySim::find_demo_group(
+const ogs::DemoGroup* EconomySim::find_demo_group(
 		const std::string& id) const {
 	const int index = demo_group_index(id);
 	return index < 0 ? nullptr : &demo_groups_[static_cast<std::size_t>(index)];

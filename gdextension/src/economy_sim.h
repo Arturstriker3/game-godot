@@ -13,7 +13,14 @@
 #include <unordered_map>
 #include <vector>
 
+#include "sim/sim_types.h"
+
 namespace godot {
+
+// S5a: os tipos POD (DemoCity, DemoBuilding, ...) agora vivem em `ogs`
+// (sim/sim_types.h); este using os traz para o escopo da fachada sem renomear
+// nenhuma referência existente.
+using namespace ogs;
 
 /**
  * Núcleo econômico do jogo, exposto ao Godot via GDExtension.
@@ -506,8 +513,6 @@ protected:
 	static void _bind_methods();
 
 private:
-	#include "sim/sim_types.h"
-
 	// ------------------------------------------------------------------
 	// Cache do status: os mesmos Dictionary/Array são reescritos a cada dia.
 	//
