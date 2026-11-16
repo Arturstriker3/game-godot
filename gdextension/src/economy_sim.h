@@ -687,6 +687,9 @@ private:
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct DemoStatusKeys {
 		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
+		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
+			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
+			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group;
 		DemoStatusKeys();
 	};
 
@@ -742,6 +745,20 @@ private:
 		// cargas) dentro do laço de cidades).
 		std::vector<double> in_transit_by_city;
 		bool header_filled = false;
+		// S7-c: sinais leves por cidade (os campos que a IA varre em TODAS as
+		// cidades todo dia), em arrays planos indexados por cidade — um
+		// PackedFloat64Array por campo em vez de ~113 dicionários de mercado +
+		// POP por cidade (o custo de ponte que dominava status_cities). O bloco
+		// pesado (markets/pop/buildings/deposits) sai do status diário na
+		// próxima fatia e fica sob demanda em get_city_status(id).
+		Dictionary light;
+		bool light_filled = false;
+		PackedFloat64Array light_m_price, light_m_stock, light_m_supply,
+			light_m_surplus, light_m_sold, light_m_shortage, light_m_desired;
+		PackedFloat64Array light_p_need, light_p_consumed, light_p_satisfaction,
+			light_p_labor_force, light_p_unemployed;
+		PackedInt32Array light_i_city;
+		PackedStringArray light_i_resource, light_i_owner_group;
 	};
 
 	static const ModeSpec& spec(TransportMode mode) { return ogs::SimCore::spec(mode); }
@@ -771,6 +788,14 @@ private:
 	 */
 	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
 		double in_transit) const;
+	/**
+	 * Preenche os sinais leves por cidade (S7-c): mercados (7 campos), POP
+	 * (5 escalares) e incumbentes por grupo, em arrays planos indexados por
+	 * cidade. São os MESMOS doubles do bloco pesado por cidade (bit a bit),
+	 * para a varredura diária da IA não precisar de `markets`/`pop`/`buildings`
+	 * completos.
+	 */
+	void demo_fill_light_signals(DemoStatusCache& cache) const;
 	double demo_money_total() const { return sim_core_.demo_money_total(); }
 	// Deriva a frota inicial de população/PIB (source: derived): veículos,
 	// estoque de combustível e de peças. Chamado ao inicializar e ao carregar

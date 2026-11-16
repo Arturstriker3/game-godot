@@ -1407,7 +1407,24 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		owner_group("owner_group"),
 		owner_nation("owner_nation"),
 		local_share("local_share"),
-		groups("groups")
+		groups("groups"),
+		light("light"),
+		product_count("product_count"),
+		m_price("m_price"),
+		m_stock("m_stock"),
+		m_supply("m_supply"),
+		m_surplus("m_surplus"),
+		m_sold("m_sold"),
+		m_shortage("m_shortage"),
+		m_desired("m_desired"),
+		p_need("p_need"),
+		p_consumed("p_consumed"),
+		p_satisfaction("p_satisfaction"),
+		p_labor_force("p_labor_force"),
+		p_unemployed("p_unemployed"),
+		i_city("i_city"),
+		i_resource("i_resource"),
+		i_owner_group("i_owner_group")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -2202,6 +2219,113 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	slot.buildings_bound = true;
 }
 
+void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
+	const DemoStatusKeys& k = demo_status_keys_;
+	const std::size_t cities = ws_.cities.size();
+	const std::size_t products = static_cast<std::size_t>(ws_.products);
+	const std::size_t market_len = cities * products;
+
+	// Mercados: 7 campos que a IA lê (preço âncora, estoque, oferta, excedente,
+	// vendido, escassez, desejado). São os MESMOS doubles do bloco pesado por
+	// cidade (`source.price` etc. em demo_fill_city_status) — bit a bit.
+	cache.light_m_price.resize(static_cast<int>(market_len));
+	cache.light_m_stock.resize(static_cast<int>(market_len));
+	cache.light_m_supply.resize(static_cast<int>(market_len));
+	cache.light_m_surplus.resize(static_cast<int>(market_len));
+	cache.light_m_sold.resize(static_cast<int>(market_len));
+	cache.light_m_shortage.resize(static_cast<int>(market_len));
+	cache.light_m_desired.resize(static_cast<int>(market_len));
+	double* lm_price = cache.light_m_price.ptrw();
+	double* lm_stock = cache.light_m_stock.ptrw();
+	double* lm_supply = cache.light_m_supply.ptrw();
+	double* lm_surplus = cache.light_m_surplus.ptrw();
+	double* lm_sold = cache.light_m_sold.ptrw();
+	double* lm_shortage = cache.light_m_shortage.ptrw();
+	double* lm_desired = cache.light_m_desired.ptrw();
+
+	// POP: 5 escalares que a IA lê por cidade (necessidade alimentar, consumo,
+	// satisfação alimentar, força de trabalho e desemprego).
+	cache.light_p_need.resize(static_cast<int>(cities));
+	cache.light_p_consumed.resize(static_cast<int>(cities));
+	cache.light_p_satisfaction.resize(static_cast<int>(cities));
+	cache.light_p_labor_force.resize(static_cast<int>(cities));
+	cache.light_p_unemployed.resize(static_cast<int>(cities));
+	double* lp_need = cache.light_p_need.ptrw();
+	double* lp_consumed = cache.light_p_consumed.ptrw();
+	double* lp_satisfaction = cache.light_p_satisfaction.ptrw();
+	double* lp_labor_force = cache.light_p_labor_force.ptrw();
+	double* lp_unemployed = cache.light_p_unemployed.ptrw();
+
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
+		const DemoCity& city = ws_.cities[city_index];
+		const std::size_t base = city_index * products;
+		for (int product = 0; product < ws_.products; ++product) {
+			const DemoMarket& market = city.markets[product];
+			const std::size_t at = base + static_cast<std::size_t>(product);
+			lm_price[at] = market.price;
+			lm_stock[at] = market.stock;
+			lm_supply[at] = market.supply;
+			lm_surplus[at] = market.surplus;
+			lm_sold[at] = market.sold;
+			lm_shortage[at] = market.shortage;
+			lm_desired[at] = market.desired;
+		}
+		lp_need[city_index] = city.pop.need;
+		lp_consumed[city_index] = city.pop.consumed;
+		lp_satisfaction[city_index] = city.pop.satisfaction;
+		lp_labor_force[city_index] = city.pop.labor_force;
+		lp_unemployed[city_index] = city.pop.unemployed;
+	}
+
+	// Incumbentes (F9): pares (cidade, recurso) com dono-grupo — o que o
+	// group_investor montava varrendo city["buildings"] de TODAS as cidades.
+	// Mesmo filtro do GDScript: owner_group e resource não-vazios. Ordem:
+	// cidade → construção (buildings_by_city), idêntica ao Array do bloco pesado.
+	cache.light_i_city.clear();
+	cache.light_i_resource.clear();
+	cache.light_i_owner_group.clear();
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
+		for (const int bi : ws_.buildings_by_city[city_index]) {
+			const DemoBuilding& building =
+				ws_.buildings[static_cast<std::size_t>(bi)];
+			std::string group_id;
+			std::string origin_nation;
+			demo_owner_kind(building.owner, &group_id, &origin_nation);
+			if (group_id.empty() || building.resource.empty()) {
+				continue;
+			}
+			cache.light_i_city.push_back(static_cast<int32_t>(city_index));
+			cache.light_i_resource.push_back(String(building.resource.c_str()));
+			cache.light_i_owner_group.push_back(String(group_id.c_str()));
+		}
+	}
+
+	// Dictionary é por referência: pendura os arrays (o `ptrw` desanexa o
+	// buffer por copy-on-write, então reassocia a cada dia) e só cria as
+	// chaves escalares uma vez.
+	Dictionary& light = cache.light;
+	if (!cache.light_filled) {
+		light[k.product_count] = static_cast<int>(products);
+		light[k.city_count] = static_cast<int>(cities);
+		cache.light_filled = true;
+	}
+	light[k.m_price] = cache.light_m_price;
+	light[k.m_stock] = cache.light_m_stock;
+	light[k.m_supply] = cache.light_m_supply;
+	light[k.m_surplus] = cache.light_m_surplus;
+	light[k.m_sold] = cache.light_m_sold;
+	light[k.m_shortage] = cache.light_m_shortage;
+	light[k.m_desired] = cache.light_m_desired;
+	light[k.p_need] = cache.light_p_need;
+	light[k.p_consumed] = cache.light_p_consumed;
+	light[k.p_satisfaction] = cache.light_p_satisfaction;
+	light[k.p_labor_force] = cache.light_p_labor_force;
+	light[k.p_unemployed] = cache.light_p_unemployed;
+	light[k.i_city] = cache.light_i_city;
+	light[k.i_resource] = cache.light_i_resource;
+	light[k.i_owner_group] = cache.light_i_owner_group;
+}
+
 Dictionary EconomySim::get_demo_status() {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	// Snapshot do dia já publicado: devolve o mesmo dicionário (a UI lê o dia
@@ -2264,6 +2388,7 @@ Dictionary EconomySim::get_demo_status() {
 		root[k.consumed_total] = cache.tot_consumed;
 		root[k.produced_today] = cache.tot_produced_today;
 		root[k.consumed_today] = cache.tot_consumed_today;
+		root[k.light] = cache.light;
 		cache.header_filled = true;
 	}
 
@@ -2320,6 +2445,11 @@ Dictionary EconomySim::get_demo_status() {
 	cache.market_totals[k.surplus] = cache.tot_surplus;
 	cache.market_totals[k.sold] = cache.tot_sold;
 	cache.market_totals[k.demand] = cache.tot_demand;
+
+	// Sinais leves por cidade (S7-c): arrays planos para a varredura diária da
+	// IA (mercados, POP e incumbentes) — o detalhe pesado por cidade fica sob
+	// demanda em get_city_status(id) na próxima fatia.
+	demo_fill_light_signals(cache);
 
 	cache.cities.resize(ws_.cities.size());
 	cache.city_slots.resize(ws_.cities.size());
