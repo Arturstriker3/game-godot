@@ -937,7 +937,9 @@ private:
 	 * apertado/folgado, margem das firmas, âncora de renda do país, piso de
 	 * salário mínimo e rigidez). Chamado na fase de contabilidade.
 	 */
-	void demo_update_wages(DemoCity& city, double building_margin);
+	void demo_update_wages(DemoCity& city, double building_margin) {
+		sim_core_.demo_update_wages(city, building_margin);
+	}
 	/**
 	 * F7 calibração: TFP efetiva da cidade — o fator explícito do laboratório
 	 * quando declarado (> 0) ou o FATOR COMPLETO derivado do PIB PPP per capita
@@ -974,29 +976,51 @@ private:
 	DemoBuilding* find_demo_building(const std::string& city_id, const std::string& id);
 
 	// F9: propriedade e grupos.
-	int demo_group_index(const std::string& id) const;
-	DemoGroup* find_demo_group(const std::string& id);
-	const DemoGroup* find_demo_group(const std::string& id) const;
+	int demo_group_index(const std::string& id) const {
+		return sim_core_.demo_group_index(id);
+	}
+	DemoGroup* find_demo_group(const std::string& id) {
+		return sim_core_.find_demo_group(id);
+	}
+	const DemoGroup* find_demo_group(const std::string& id) const {
+		return sim_core_.find_demo_group(id);
+	}
 	// Decompõe o dono de uma construção: kind 0 state, 1 national, 2 foreign,
 	// 3 private (legado). Preenche grupo e nação de origem.
 	int demo_owner_kind(const std::string& owner, std::string* group_id,
-		std::string* origin_nation) const;
-	int demo_fdi_mode(const std::string& nation, const std::string& sector) const;
+		std::string* origin_nation) const {
+		return sim_core_.demo_owner_kind(owner, group_id, origin_nation);
+	}
+	int demo_fdi_mode(const std::string& nation, const std::string& sector) const {
+		return sim_core_.demo_fdi_mode(nation, sector);
+	}
 	double demo_sector_tax_holiday(const std::string& nation,
-		const std::string& sector) const;
+		const std::string& sector) const {
+		return sim_core_.demo_sector_tax_holiday(nation, sector);
+	}
 	double demo_sector_subsidy(const std::string& nation,
-		const std::string& sector) const;
-	double demo_nation_confidence(const std::string& nation) const;
+		const std::string& sector) const {
+		return sim_core_.demo_sector_subsidy(nation, sector);
+	}
+	double demo_nation_confidence(const std::string& nation) const {
+		return sim_core_.demo_nation_confidence(nation);
+	}
 	// Credita `amount` no capital das famílias da nação, ponderado pelo estrato
 	// dono (topo), e devolve o total efetivamente creditado.
-	double demo_credit_nation_households(const std::string& nation, double amount);
+	double demo_credit_nation_households(const std::string& nation,
+		double amount) {
+		return sim_core_.demo_credit_nation_households(nation, amount);
+	}
 	// Paga dividendos e registra repatriação. Roda uma vez por tick (depois da
 	// contabilidade das cidades), com cadência escalonada por grupo.
 	void demo_settle_groups();
 	// Imposto corporativo + retenção: move o lucro do grupo da cidade para o
 	// caixa dele (ou para o orçamento, se estatal). Chamado na contabilidade.
 	void demo_route_group_profit(int group_index, const std::string& host_nation,
-		double profit, double revenue, DemoCity& city, double& firm_surplus);
+		double profit, double revenue, DemoCity& city, double& firm_surplus) {
+		sim_core_.demo_route_group_profit(group_index, host_nation, profit,
+			revenue, city, firm_surplus);
+	}
 
 	// Medição por fase do tick (benchmark oficial; desligada no jogo). A
 	// infraestrutura vive em sim/profiling.h (OGS_PROFILING, só no build debug).

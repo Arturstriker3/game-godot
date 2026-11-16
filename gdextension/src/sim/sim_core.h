@@ -41,6 +41,8 @@ public:
 	// F8. Serviços: demanda das classes, B2B, governo, exportação, produção dos
 	// negócios, preço, entrada e saída — uma cidade por vez.
 	void phase_services();
+	// 7. Receita por construção, lucro, distribuição de capital e PIB.
+	void phase_accounting();
 
 	// ------------------------------------------------------------------
 	// Helpers compartilhados com a fachada (públicos).
@@ -106,6 +108,32 @@ public:
 	void demo_service_close(DemoServiceBusiness& business);
 	void demo_seed_services();
 	void demo_services_day(DemoCity& city);
+
+	// F7: atualiza os salários por nível depois do lucro do dia (mercado
+	// apertado/folgado, margem das firmas, âncora de renda do país, piso de
+	// salário mínimo e rigidez). Chamado na fase de contabilidade.
+	void demo_update_wages(DemoCity& city, double building_margin);
+	// F9: propriedade e grupos.
+	int demo_group_index(const std::string& id) const;
+	DemoGroup* find_demo_group(const std::string& id);
+	const DemoGroup* find_demo_group(const std::string& id) const;
+	// Decompõe o dono de uma construção: kind 0 state, 1 national, 2 foreign,
+	// 3 private (legado). Preenche grupo e nação de origem.
+	int demo_owner_kind(const std::string& owner, std::string* group_id,
+		std::string* origin_nation) const;
+	int demo_fdi_mode(const std::string& nation, const std::string& sector) const;
+	double demo_sector_tax_holiday(const std::string& nation,
+		const std::string& sector) const;
+	double demo_sector_subsidy(const std::string& nation,
+		const std::string& sector) const;
+	double demo_nation_confidence(const std::string& nation) const;
+	// Credita `amount` no capital das famílias da nação, ponderado pelo estrato
+	// dono (topo), e devolve o total efetivamente creditado.
+	double demo_credit_nation_households(const std::string& nation, double amount);
+	// Imposto corporativo + retenção: move o lucro do grupo da cidade para o
+	// caixa dele (ou para o orçamento, se estatal). Chamado na contabilidade.
+	void demo_route_group_profit(int group_index, const std::string& host_nation,
+		double profit, double revenue, DemoCity& city, double& firm_surplus);
 
 	// Dinheiro antes do tick (para a fase de invariantes, ainda na fachada).
 	double money_before() const { return money_before_; }
