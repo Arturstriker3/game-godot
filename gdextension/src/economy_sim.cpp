@@ -1,4 +1,5 @@
 #include "economy_sim.h"
+#include "sim/profiling.h"
 #include "sim/sim_constants.h"
 
 #include <godot_cpp/core/class_db.hpp>
@@ -10,7 +11,6 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <map>
@@ -3746,14 +3746,17 @@ Dictionary EconomySim::tick_demo() {
 
 void EconomySim::demo_tick_and_publish() {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+#if defined(OGS_PROFILING)
+	// Sink das fases do tick: os 15 slots de `demo_profile_us_`, com o toggle
+	// `demo_profile_` como interruptor (desligado, nenhum relógio é lido).
+	ogs::profile::Sink phase_sink{demo_profile_us_, kDemoPhaseCount, &demo_profile_};
+	const ogs::profile::SinkScope phase_scope(&phase_sink);
+#endif
 	demo_tick_core();
-	using Clock = std::chrono::steady_clock;
-	const Clock::time_point start = demo_profile_ ? Clock::now() : Clock::time_point{};
-	get_demo_status();
-	if (demo_profile_) {
-		const Clock::time_point end = Clock::now();
-		demo_profile_us_[kDemoPhaseStatus] =
-			std::chrono::duration<double, std::micro>(end - start).count();
+	{
+		// Fase `status` (RAII): fecha ao sair do bloco, depois do tick.
+		OGS_SIM_ZONE(kDemoPhaseStatus);
+		get_demo_status();
 	}
 }
 
@@ -3815,17 +3818,6 @@ void EconomySim::demo_warm_status() {
 
 void EconomySim::demo_tick_core() {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	using Clock = std::chrono::steady_clock;
-	Clock::time_point lap_mark = demo_profile_ ? Clock::now() : Clock::time_point{};
-	auto lap = [this, &lap_mark](int phase) {
-		if (!demo_profile_) {
-			return;
-		}
-		const Clock::time_point now = Clock::now();
-		demo_profile_us_[phase] =
-			std::chrono::duration<double, std::micro>(now - lap_mark).count();
-		lap_mark = now;
-	};
 
 	if (!demo_active_) {
 		initialize_demo();
@@ -3901,7 +3893,7 @@ void EconomySim::demo_tick_core() {
 		++shipment;
 	}
 
-	lap(kDemoPhaseArrival);
+	OGS_SIM_PHASE_LAP(kDemoPhaseArrival);
 
 	// 2. Zera os fluxos do dia.
 	for (int index = 0; index < demo_products_; ++index) {
@@ -3998,7 +3990,7 @@ void EconomySim::demo_tick_core() {
 		building.paid_opex = 0.0;
 	}
 
-	lap(kDemoPhaseReset);
+	OGS_SIM_PHASE_LAP(kDemoPhaseReset);
 
 	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia. Roda
 	// antes do comércio para combustível/veículos comprados já valerem hoje.
@@ -4053,7 +4045,7 @@ void EconomySim::demo_tick_core() {
 		city.opex_revenue = paid_opex;
 	}
 
-	lap(kDemoPhaseLabor);
+	OGS_SIM_PHASE_LAP(kDemoPhaseLabor);
 
 	// 4. Produção: cada construção declara insumo e produto. A produção segue
 	// as vendas do dia anterior (com folga de estoque), limitada pela
@@ -4214,7 +4206,7 @@ void EconomySim::demo_tick_core() {
 		demo_produced_today_[building.output_product] += output;
 	}
 
-	lap(kDemoPhaseProduction);
+	OGS_SIM_PHASE_LAP(kDemoPhaseProduction);
 
 	// 4c. Recursos brutos (minerais, soja, algodão e madeira): o resto do mundo
 	// compra ao preço do mercado até um TETO de demanda externa por cidade
@@ -4270,7 +4262,7 @@ void EconomySim::demo_tick_core() {
 		}
 	}
 
-	lap(kDemoPhaseRaw);
+	OGS_SIM_PHASE_LAP(kDemoPhaseRaw);
 
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
 	for (DemoCity& city : demo_cities_) {
@@ -4765,7 +4757,7 @@ void EconomySim::demo_tick_core() {
 		pop.savings = budget;
 	}
 
-	lap(kDemoPhaseIncome);
+	OGS_SIM_PHASE_LAP(kDemoPhaseIncome);
 
 	// F8: serviços. Roda DEPOIS do orçamento das famílias (a poupança do dia já
 	// está fechada) e ANTES do comércio: a demanda das classes, o B2B e a
@@ -4775,7 +4767,7 @@ void EconomySim::demo_tick_core() {
 		demo_services_day(city);
 	}
 
-	lap(kDemoPhaseServices);
+	OGS_SIM_PHASE_LAP(kDemoPhaseServices);
 
 	// 6. Comércio de alimento (cesta de calorias) entre cidades: cidades com
 	// déficit compram das que têm excedente, mais barato por caloria. Cobre tanto
@@ -4784,7 +4776,7 @@ void EconomySim::demo_tick_core() {
 	// 6b. Comércio dos demais bens (insumos industriais), pela mesma malha.
 	demo_trade_goods();
 
-	lap(kDemoPhaseTrade);
+	OGS_SIM_PHASE_LAP(kDemoPhaseTrade);
 
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
@@ -5021,7 +5013,7 @@ void EconomySim::demo_tick_core() {
 			* kDemoServiceAdjust;
 	}
 
-	lap(kDemoPhaseAccounting);
+	OGS_SIM_PHASE_LAP(kDemoPhaseAccounting);
 
 	// 8. Preços reagem a estoque, oferta, demanda e custo de produção.
 	for (std::size_t city_index = 0; city_index < demo_cities_.size(); ++city_index) {
@@ -5140,7 +5132,7 @@ void EconomySim::demo_tick_core() {
 		}
 	}
 
-	lap(kDemoPhasePrices);
+	OGS_SIM_PHASE_LAP(kDemoPhasePrices);
 
 	// 9. Limite diário único por mercado, aplicado depois de todas as regras
 	// de preço (importação, custo e escassez). O piso e o teto continuam
@@ -5163,7 +5155,7 @@ void EconomySim::demo_tick_core() {
 		}
 	}
 
-	lap(kDemoPhaseClamp);
+	OGS_SIM_PHASE_LAP(kDemoPhaseClamp);
 
 	// 9b. Redistribuição fiscal nacional (federalismo fiscal).
 	demo_national_fiscal_transfer();
@@ -5173,14 +5165,14 @@ void EconomySim::demo_tick_core() {
 	// repatriação do dia entrar no relatório na mesma data.
 	demo_settle_groups();
 
-	lap(kDemoPhaseFiscal);
+	OGS_SIM_PHASE_LAP(kDemoPhaseFiscal);
 
 	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float
 	// dentro da banda (déficit desvaloriza, superávit valoriza). Não cria nem
 	// destrói dinheiro: só muda a taxa usada na próxima decisão de compra.
 	demo_tick_fx();
 
-	lap(kDemoPhaseFx);
+	OGS_SIM_PHASE_LAP(kDemoPhaseFx);
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
@@ -5192,7 +5184,7 @@ void EconomySim::demo_tick_core() {
 		}
 		demo_restore(before);
 	}
-	lap(kDemoPhaseInvariants);
+	OGS_SIM_PHASE_LAP(kDemoPhaseInvariants);
 }
 
 EconomySim::DemoStatusKeys::DemoStatusKeys() :
@@ -6235,19 +6227,12 @@ Dictionary EconomySim::get_demo_status() {
 	const DemoStatusKeys& k = demo_status_keys_;
 	Dictionary& root = cache.root;
 
-	// Subdivisao da fase status no benchmark (sem custo no jogo).
-	using StatusClock = std::chrono::steady_clock;
-	StatusClock::time_point status_mark =
-		demo_profile_ ? StatusClock::now() : StatusClock::time_point{};
-	auto status_lap = [this, &status_mark](int part) {
-		if (!demo_profile_) {
-			return;
-		}
-		const StatusClock::time_point now = StatusClock::now();
-		demo_status_sub_us_[part] =
-			std::chrono::duration<double, std::micro>(now - status_mark).count();
-		status_mark = now;
-	};
+	// Subdivisao da fase status no benchmark (sem custo no jogo): as 4 marcas
+	// `OGS_SIM_PHASE_LAP(part)` abaixo gravam em `demo_status_sub_us_`.
+#if defined(OGS_PROFILING)
+	ogs::profile::Sink status_sink{demo_status_sub_us_, 4, &demo_profile_};
+	const ogs::profile::SinkScope status_scope(&status_sink);
+#endif
 
 	root[k.mode] = "demo";
 	root[k.day] = day_;
@@ -6310,7 +6295,7 @@ Dictionary EconomySim::get_demo_status() {
 				+= shipment.amount;
 		}
 	}
-	status_lap(3);
+	OGS_SIM_PHASE_LAP(3);
 
 	// Totais do sistema por produto — a mesma soma que a IA fazia em GDScript
 	// sobre `cities[]` (858 cidades × 21 mercados, ~13 ms no frame da virada).
@@ -6357,7 +6342,7 @@ Dictionary EconomySim::get_demo_status() {
 			cache.in_transit_by_city[city_index]);
 		cache.cities[city_index] = slot.dict;
 	}
-	status_lap(0);
+	OGS_SIM_PHASE_LAP(0);
 
 	// Portos (modo mundo) para o minimapa e o mundo 3D.
 	cache.ports.resize(demo_ports_.size());
@@ -6428,7 +6413,7 @@ Dictionary EconomySim::get_demo_status() {
 		dict[k.legs] = legs;
 		cache.orders[index] = dict;
 	}
-	status_lap(1);
+	OGS_SIM_PHASE_LAP(1);
 
 	// Nações agregadas (telas de política/economia), na ordem de aparição.
 	// Uma única passada sobre as cidades (antes: nação × cidade × construção).
@@ -6654,7 +6639,7 @@ Dictionary EconomySim::get_demo_status() {
 		entry[k.rate] = tariff.rate;
 		cache.tariffs[static_cast<int>(index)] = entry;
 	}
-	status_lap(2);
+	OGS_SIM_PHASE_LAP(2);
 	demo_status_live_ = slot_index;
 	demo_status_built_day_ = day_;
 	return root;

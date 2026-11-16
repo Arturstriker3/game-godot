@@ -27,9 +27,17 @@ add_subdirectory(
 add_library(economy_gdextension SHARED
     src/register_types.cpp
     src/economy_sim.cpp
+    src/sim/profiling.cpp
 )
 
 target_link_libraries(economy_gdextension PRIVATE godot-cpp)
+
+# Perfil por fase do tick (src/sim/profiling.h): só no build de desenvolvimento.
+# Em release OGS_PROFILING não é definido e as macros OGS_SIM_* expandem para
+# `((void)0)` — custo zero, nenhum steady_clock::now(), nenhum símbolo.
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(economy_gdextension PRIVATE OGS_PROFILING)
+endif()
 
 get_target_property(WE_GODOTCPP_PLATFORM godot-cpp GODOTCPP_PLATFORM)
 get_target_property(WE_GODOTCPP_TARGET godot-cpp GODOTCPP_TARGET)

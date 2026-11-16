@@ -1062,7 +1062,8 @@ private:
 	// para preservar exatamente o comportamento validado no cenário real.
 	int demo_trade_neighbors_ = 12;
 	int demo_trade_external_ = 8;
-	// Medição por fase do tick (benchmark oficial; desligada no jogo).
+	// Medição por fase do tick (benchmark oficial; desligada no jogo). A
+	// infraestrutura vive em sim/profiling.h (OGS_PROFILING, só no build debug).
 	bool demo_profile_ = false;
 	double demo_profile_us_[kDemoPhaseCount] = {};
 	// Subdivisão da fase `status` (benchmark): cidades, pedidos, nações, resto.
