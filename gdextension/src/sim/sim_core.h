@@ -47,6 +47,8 @@ public:
 	void phase_prices();
 	// 9. Limite diário único por mercado (depois de todas as regras de preço).
 	void phase_clamp();
+	// 9b. Redistribuição fiscal nacional + dividendos/repatriação dos grupos.
+	void phase_fiscal();
 	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float.
 	void phase_fx();
 	// 10. Invariantes: se o tick corrompeu o estado, reverte o retrato.

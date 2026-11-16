@@ -779,7 +779,6 @@ private:
 	 */
 	double demo_leg_unit_freight_food(TransportMode mode, double distance_km) const;
 	double demo_fleet_fuel_price() const;
-	void demo_national_fiscal_transfer();
 	const Port* demo_nearest_port(const std::string& nation, const std::string& landmass,
 	                              const MapPoint& from) const;
 	Port* find_demo_port(const std::string& id);
@@ -1013,9 +1012,6 @@ private:
 		double amount) {
 		return sim_core_.demo_credit_nation_households(nation, amount);
 	}
-	// Paga dividendos e registra repatriação. Roda uma vez por tick (depois da
-	// contabilidade das cidades), com cadência escalonada por grupo.
-	void demo_settle_groups();
 	// Imposto corporativo + retenção: move o lucro do grupo da cidade para o
 	// caixa dele (ou para o orçamento, se estatal). Chamado na contabilidade.
 	void demo_route_group_profit(int group_index, const std::string& host_nation,
