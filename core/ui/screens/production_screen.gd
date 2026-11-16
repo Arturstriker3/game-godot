@@ -295,11 +295,13 @@ func _good_producers() -> Array:
 	if index < 0:
 		return []
 	var rows: Array = []
-	for city in _summary.get("cities", []):
-		var markets: Array = city.get("markets", [])
-		if index >= markets.size():
+	var light: Dictionary = _summary.get("light", {})
+	var cities: Array = _summary.get("cities", [])
+	for city_index in cities.size():
+		var city: Dictionary = cities[city_index]
+		var market := _light_market(light, city_index, index)
+		if market.is_empty():
 			continue
-		var market: Dictionary = markets[index]
 		var supply := float(market.get("supply", 0.0))
 		var stock := float(market.get("stock", 0.0))
 		if supply <= 0.0 and stock <= 0.0:
@@ -401,17 +403,15 @@ func _origin_sites(good_id: String) -> Array:
 	if index < 0:
 		return []
 	var sites: Array = []
-	for city in _summary.get("cities", []):
-		var markets: Array = city.get("markets", [])
-		if index >= markets.size():
-			continue
-		var supply := float((markets[index] as Dictionary).get("supply", 0.0))
+	var light: Dictionary = _summary.get("light", {})
+	var cities: Array = _summary.get("cities", [])
+	for city_index in cities.size():
+		var city: Dictionary = cities[city_index]
+		var supply := float(_light_market(light, city_index, index).get("supply", 0.0))
 		if supply <= 0.0:
 			continue
 		var kind := "factory"
-		var deposits: Dictionary = city.get("deposits", {})
-		if deposits.has(good_id) \
-				and float((deposits[good_id] as Dictionary).get("remaining_kt", 0.0)) > 0.0:
+		if _light_remaining(light, city_index, index) > 0.0:
 			kind = "deposit"
 		elif _at(city.get("suitability", []), index) > 0.0:
 			kind = "farm"
@@ -506,6 +506,43 @@ static func _qty_text(value: float) -> String:
 
 static func _at(values: Array, index: int) -> float:
 	return float(values[index]) if index >= 0 and index < values.size() else 0.0
+
+
+## Mercado do dia (oferta, estoque, demanda) do produto na cidade, lido do
+## bloco leve `light` — arrays planos cidade × produto. Vazio quando o status
+## não publicou a combinação (a cidade não entra na lista, como antes).
+static func _light_market(light: Dictionary, city_index: int, product: int) -> Dictionary:
+	var products := int(light.get("product_count", 0))
+	if products <= 0 or city_index < 0 or product < 0 or product >= products:
+		return {}
+	var at := city_index * products + product
+	var supply: PackedFloat64Array = light.get("m_supply", PackedFloat64Array())
+	if at >= supply.size():
+		return {}
+	var stock: PackedFloat64Array = light.get("m_stock", PackedFloat64Array())
+	var desired: PackedFloat64Array = light.get("m_desired", PackedFloat64Array())
+	return {
+		"supply": supply[at],
+		"stock": stock[at] if at < stock.size() else 0.0,
+		"desired": desired[at] if at < desired.size() else 0.0,
+	}
+
+
+## Reserva restante da cidade para o produto, da tabela CSR de jazidas do bloco
+## leve (`d_offset`/`d_product`/`d_remaining_kt`). 0 quando não há jazida.
+static func _light_remaining(light: Dictionary, city_index: int,
+		product: int) -> float:
+	var offset: PackedInt32Array = light.get("d_offset", PackedInt32Array())
+	if city_index < 0 or city_index + 1 >= offset.size():
+		return 0.0
+	var ids: PackedInt32Array = light.get("d_product", PackedInt32Array())
+	var remaining: PackedFloat64Array = light.get("d_remaining_kt",
+			PackedFloat64Array())
+	var end := mini(offset[city_index + 1], remaining.size())
+	for at in range(offset[city_index], end):
+		if at < ids.size() and ids[at] == product:
+			return remaining[at]
+	return 0.0
 
 
 static func _ensure_chain_data() -> void:

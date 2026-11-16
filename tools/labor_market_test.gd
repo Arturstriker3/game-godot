@@ -90,17 +90,18 @@ func _profile(education: Array, wages: Array) -> Dictionary:
 	}
 
 
-func _pop(status: Dictionary) -> Dictionary:
+func _pop(sim: Object, status: Dictionary) -> Dictionary:
 	for city in status.get("cities", []):
 		if String(city.get("id", "")) == CITY_ID:
-			# O status vem do cache compartilhado do nó: copiar evita que uma
-			# leitura "antes" mude depois de um tick.
-			return (city.get("pop", {}) as Dictionary).duplicate(true)
+			# O status diário publica só os escalares leves: o bloco POP
+			# (educação, salários e estratos) vem sob demanda. Copiar evita que
+			# uma leitura "antes" mude depois de um tick.
+			return (sim.get_city_status(CITY_ID).get("pop", {}) as Dictionary).duplicate(true)
 	return {}
 
 
-func _wages(status: Dictionary) -> Array:
-	var pop := _pop(status)
+func _wages(sim: Object, status: Dictionary) -> Array:
+	var pop := _pop(sim, status)
 	var wages: Array = (pop.get("wage_by_level", []) as Array).duplicate()
 	if wages.size() < 3:
 		var labor: Dictionary = pop.get("labor", {})
@@ -115,7 +116,7 @@ func _wages(status: Dictionary) -> Array:
 func _test_vacancy_requires_level() -> void:
 	var sim = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
 	var status: Dictionary = sim.tick_demo()
-	var pop := _pop(status)
+	var pop := _pop(sim, status)
 	var vacancies: Array = pop.get("vacancies_by_level", [])
 	var employed: Array = pop.get("employed_by_level", [])
 	var unemployed: Array = pop.get("unemployed_by_level", [])
@@ -143,10 +144,10 @@ func _test_vacancy_requires_level() -> void:
 ##    receita da cidade e o passo diário é limitado pela rigidez.
 func _test_tightness_moves_wages() -> void:
 	var sim = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
-	var initial := _wages(sim.get_demo_status())
+	var initial := _wages(sim, sim.get_demo_status())
 	for day in 20:
 		sim.tick_demo()
-	var wages_final := _wages(sim.get_demo_status())
+	var wages_final := _wages(sim, sim.get_demo_status())
 	if initial.size() < 3 or wages_final.size() < 3:
 		_fail("salario dinamico: status sem wage_by_level")
 		return
@@ -161,7 +162,7 @@ func _test_tightness_moves_wages() -> void:
 	var city: Dictionary = status["cities"][0]
 	# Valor adicionado do dia (construções + serviços) é a base da folha.
 	var value_added := float(city.get("gdp", 0.0))
-	var pop: Dictionary = city["pop"]
+	var pop: Dictionary = sim.get_city_status(CITY_ID).get("pop", {})
 	var wage_bill := float(pop.get("wage_income", 0.0))
 	if value_added <= 0.0:
 		_fail("salario ancorado: cidade sem valor adicionado no dia")
@@ -173,9 +174,9 @@ func _test_tightness_moves_wages() -> void:
 	# Rigidez: depois do primeiro ajuste, o passo diário é pequeno.
 	var sim_day = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
 	sim_day.tick_demo()
-	var before := _wages(sim_day.get_demo_status())
+	var before := _wages(sim_day, sim_day.get_demo_status())
 	sim_day.tick_demo()
-	var after := _wages(sim_day.get_demo_status())
+	var after := _wages(sim_day, sim_day.get_demo_status())
 	if before.size() < 3 or after.size() < 3:
 		_fail("salario dinamico: status sem wage_by_level no passo diario")
 		return
@@ -195,7 +196,7 @@ func _test_minimum_wage_floor() -> void:
 	sim.demo_set_minimum_wage(CITY_NATION, 0.050)
 	for day in 10:
 		sim.tick_demo()
-	var wages := _wages(sim.get_demo_status())
+	var wages := _wages(sim, sim.get_demo_status())
 	if wages.size() < 3:
 		_fail("piso salarial: status sem wage_by_level")
 		return
@@ -210,14 +211,14 @@ func _test_minimum_wage_floor() -> void:
 func _test_qualification_is_gradual() -> void:
 	var sim = _new_world(1.0, _profile([0.95, 0.05, 0.0], [0.020, 0.040, 0.060]))
 	var status: Dictionary = sim.get_demo_status()
-	var pop := _pop(status)
+	var pop := _pop(sim, status)
 	var education_before: Array = pop.get("education", [])
 	if education_before.size() < 3:
 		_fail("qualificacao: status sem education")
 		return
 	for day in 30:
 		status = sim.tick_demo()
-	pop = _pop(status)
+	pop = _pop(sim, status)
 	var studying: Array = pop.get("studying", [])
 	var education_after: Array = pop.get("education", [])
 	if studying.size() < 1 or float(studying[0]) <= 0.0:
@@ -243,8 +244,8 @@ func _test_income_defines_consumption() -> void:
 	for day in 12:
 		poor.tick_demo()
 		rich.tick_demo()
-	var poor_pop := _pop(poor.get_demo_status())
-	var rich_pop := _pop(rich.get_demo_status())
+	var poor_pop := _pop(poor, poor.get_demo_status())
+	var rich_pop := _pop(rich, rich.get_demo_status())
 	var poor_level := int(poor_pop.get("income_level", 0))
 	var rich_level := int(rich_pop.get("income_level", 0))
 	if rich_level <= poor_level:

@@ -1,9 +1,11 @@
 extends SceneTree
 
-## Teste do `get_city_status(city_id)` (S7-c, fatia aditiva): confere que o
-## detalhe de uma cidade sob demanda é campo a campo idêntico ao bloco por
-## cidade do `get_demo_status()` — mesma simulação, mesma cidade. Roda headless
-## e falha com código diferente de zero.
+## Teste do `get_city_status(city_id)` (S7-c, fatia final): o bloco por cidade
+## do `get_demo_status()` agora é LEVE (sem markets/pop/services/buildings/
+## deposits) e o detalhe pesado vive em `get_city_status(id)`. Este guarda
+## confere que (1) o detalhe sob demanda tem as chaves pesadas, (2) o bloco
+## diário NÃO as tem, e (3) os escalares leves coincidem entre os dois. Roda
+## headless e falha com código diferente de zero.
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
@@ -16,7 +18,7 @@ var _failures: Array[String] = []
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[city_status] OK: get_city_status == bloco por cidade do status.")
+		print("[city_status] OK: detalhe sob demanda completo; bloco diario leve.")
 		quit(0)
 	else:
 		print("[city_status] FALHAS (%d):" % _failures.size())
@@ -85,14 +87,27 @@ func _run() -> void:
 		if on_demand.is_empty():
 			_fail("get_city_status(%s) devolveu vazio" % city_id)
 			continue
-		# Compara a serialização canônica (chaves ordenadas) dos dois dicionários.
-		var a: String = JSON.stringify(city, "", true, true)
-		var b: String = JSON.stringify(on_demand, "", true, true)
-		if a != b:
-			_fail("get_city_status(%s) difere do bloco do status diário" % city_id)
-		# Chave pesada presente (mercados) como amostra do detalhe completo.
-		if not on_demand.has("markets") or not on_demand.has("pop"):
-			_fail("get_city_status(%s) sem markets/pop" % city_id)
+		# (1) Detalhe sob demanda tem o bloco pesado completo (markets/pop/
+		# buildings/deposits sempre; `services` só quando o catálogo F8 carrega).
+		for key in ["markets", "pop", "buildings", "deposits"]:
+			if not on_demand.has(key):
+				_fail("get_city_status(%s) sem bloco pesado '%s'" % [city_id, key])
+		if status.has("service_sectors") and not on_demand.has("services"):
+			_fail("get_city_status(%s) sem bloco pesado 'services'" % city_id)
+		# (2) O bloco diário é leve: NÃO publica os blocos pesados.
+		for key in ["markets", "pop", "services", "buildings", "deposits"]:
+			if city.has(key):
+				_fail("bloco diário de %s ainda publica '%s' (deveria ser leve)" % [city_id, key])
+		# (3) Escalares leves coincidem entre o bloco diário e o sob demanda.
+		for key in ["id", "name", "nation", "population", "simulation_population",
+				"gdp", "gdp_per_capita", "firm_cash", "service_cash",
+				"government_budget", "production", "jobs", "income",
+				"industrialization", "stockpile", "need", "deficit", "consumed",
+				"in_transit", "fx_rate", "tariff_revenue", "productivity_index",
+				"living_standard", "disposable_per_capita"]:
+			if str(city.get(key, "")) != str(on_demand.get(key, "")):
+				_fail("get_city_status(%s) difere do bloco diário em '%s' (%s vs %s)" % [
+					city_id, key, str(city.get(key, "")), str(on_demand.get(key, ""))])
 
 	# Cidade inexistente devolve dicionário vazio (ausência declarada, não erro).
 	if not sim.get_city_status("NAO_EXISTE").is_empty():

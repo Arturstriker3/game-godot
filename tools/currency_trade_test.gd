@@ -121,7 +121,7 @@ func _test_conversion(sim) -> void:
 	if currencies.size() != 3:
 		_fail("status: %d moedas publicadas (esperado 3)" % currencies.size())
 	# O mercado publica o preço na âncora e a exibição local.
-	var market := _city_market(status, CITY_A, PRODUCT)
+	var market := _city_market(sim, CITY_A, PRODUCT)
 	var market_price := float(market.get("price", 0.0))
 	var price_local := float(market.get("price_local", 0.0))
 	var city_fx := _city_value(status, CITY_A, "fx_rate")
@@ -318,8 +318,8 @@ func _test_save_load(sim, goods: Array) -> void:
 	migrated.demo_set_goods(goods)
 	migrated.demo_from_dict(legacy)
 	var migrated_status: Dictionary = migrated.get_demo_status()
-	var anchor_before := float(_city_market(status, CITY_A, PRODUCT).get("price", 0.0))
-	var anchor_after := float(_city_market(migrated_status, CITY_A, PRODUCT).get("price", 0.0))
+	var anchor_before := float(_city_market(loaded, CITY_A, PRODUCT).get("price", 0.0))
+	var anchor_after := float(_city_market(migrated, CITY_A, PRODUCT).get("price", 0.0))
 	print("[fx] migração v6 -> v7: preço âncora %.4f (antes %.4f)" % [
 		float(anchor_after), float(anchor_before)])
 	if absf(float(anchor_after) - float(anchor_before)) > 1e-6:
@@ -423,16 +423,16 @@ func _city_value(status: Dictionary, city_id: String, key: String) -> float:
 	return 0.0
 
 
-func _city_market(status: Dictionary, city_id: String, product: String) -> Dictionary:
-	for city: Variant in Array(status.get("cities", [])):
-		if typeof(city) != TYPE_DICTIONARY or String((city as Dictionary)["id"]) != city_id:
-			continue
-		for market: Variant in Array((city as Dictionary).get("markets", [])):
-			if typeof(market) == TYPE_DICTIONARY \
-					and int((market as Dictionary).get("product", -1)) >= 0:
-				# As chaves de mercado são indexadas por produto; o teste usa o
-				# primeiro produto (trigo) do cenário sintético.
-				return market as Dictionary
+## Mercado do produto na cidade. O status diário publica só o bloco leve, então
+## o detalhe (com `product`, `price` e `price_local`) vem de get_city_status.
+func _city_market(sim: Object, city_id: String, product: String) -> Dictionary:
+	var heavy: Dictionary = sim.get_city_status(city_id)
+	for market: Variant in Array(heavy.get("markets", [])):
+		if typeof(market) == TYPE_DICTIONARY \
+				and int((market as Dictionary).get("product", -1)) >= 0:
+			# As chaves de mercado são indexadas por produto; o teste usa o
+			# primeiro produto (trigo) do cenário sintético.
+			return market as Dictionary
 	return {}
 
 

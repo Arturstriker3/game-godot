@@ -393,20 +393,25 @@ func _refresh_needs() -> void:
 	for city in _shown_needs:
 		var needs := _needs_state(city)
 		var level := int(needs.get("level", 0))
-		var level_sat: Array = needs.get("level_satisfaction", [])
-		var basic := _level_value(needs, 0)
-		var life := _level_value(needs, 1)
-		var luxury := _level_value(needs, 2)
-		cells.append([
+		var known := bool(needs.get("known", true))
+		var row: Array = [
 			I18n.city_name(String(city.get("id", "")), String(city.get("name", ""))),
 			I18n.nation_name(String(city.get("nation", ""))),
-			{"text": _level_name(level), "tone": "suave"},
-			{"text": _percent_text(basic), "tone": _attendance_tone(basic)},
-			{"text": _percent_text(life), "tone": _attendance_tone(life)},
-			{"text": _percent_text(luxury), "tone": _attendance_tone(luxury)},
-			{"text": UiKit.number(float(needs.get("durable_stock", 0.0))) + " t",
+			{"text": _level_name(level) if known else I18n.t("common.na"),
 					"tone": "suave"},
-		])
+		]
+		for level_index in 3:
+			var ratio := _level_value(needs, level_index)
+			row.append({
+				"text": _level_text(needs, level_index),
+				"tone": "suave" if ratio < 0.0 else _attendance_tone(ratio),
+			})
+		row.append({
+			"text": UiKit.number(float(needs.get("durable_stock", 0.0))) + " t" \
+					if known else I18n.t("common.na"),
+			"tone": "suave",
+		})
+		cells.append(row)
 	var index := _index_of(_shown_needs, _selected_city)
 	table.update_rows(cells, index)
 	if index >= 0:
@@ -427,24 +432,29 @@ func _update_needs_card(city: Dictionary) -> void:
 		return
 	var needs := _needs_state(city)
 	var level := int(needs.get("level", 0))
+	var known := bool(needs.get("known", true))
 	_set_text("needs.card.name", I18n.city_name(String(city.get("id", "")),
 			String(city.get("name", ""))))
 	_set_text("needs.card.nation", I18n.nation_name(String(city.get("nation", ""))))
-	_set_text("needs.card.level", _level_name(level))
+	_set_text("needs.card.level",
+			_level_name(level) if known else I18n.t("common.na"))
 	_set_text("needs.card.satisfaction",
-			_percent_text(float(needs.get("satisfaction", 0.0))))
+			_percent_text(float(needs.get("satisfaction", 0.0))) if known \
+			else I18n.t("common.na"))
 	_set_text("needs.card.durable",
-			UiKit.number(float(needs.get("durable_stock", 0.0))) + " t")
+			UiKit.number(float(needs.get("durable_stock", 0.0))) + " t" if known \
+			else I18n.t("common.na"))
 	for slot_data in [["basic", 0], ["life", 1], ["luxury", 2]]:
 		var id := String(slot_data[0])
 		var ratio := _level_value(needs, int(slot_data[1]))
 		var meter := _slots.get("needs.%s.meter" % id) \
 				as UiTemplateBuilder.MeterBar
 		if meter != null:
-			meter.ratio = clampf(ratio, 0.0, 1.0)
-			meter.fill = _attendance_color(ratio)
+			meter.ratio = clampf(maxf(ratio, 0.0), 0.0, 1.0)
+			meter.fill = UiKit.TINTA_SUAVE if ratio < 0.0 \
+					else _attendance_color(ratio)
 			meter.queue_redraw()
-		_set_text("needs.%s.text" % id, _percent_text(ratio))
+		_set_text("needs.%s.text" % id, _level_text(needs, int(slot_data[1])))
 	var categories := _slots.get("needs.categories") \
 			as UiTemplateBuilder.DataTableView
 	if categories != null and categories.rows.is_empty():
@@ -485,28 +495,66 @@ func _needs_categories() -> Array:
 	return rows
 
 
+## Necessidades da cidade. O status diário publica só o bloco leve (`p_*`): a
+## satisfação geral vem de `p_satisfaction`, mas a quebra por nível e o estoque
+## de duráveis não são publicados — a tela mostra "—", nunca um zero inventado.
+## Cidade que já traz `pop` (fixture montada à mão) continua lendo o pesado.
 func _needs_state(city: Dictionary) -> Dictionary:
-	var pop: Dictionary = city.get("pop", {})
-	if pop.has("needs"):
-		return pop.get("needs", {})
-	return {
-		"level": int(pop.get("needs_level", 0)),
-		"satisfaction": float(pop.get("needs_satisfaction", 0.0)),
-		"level_satisfaction": [
-			float(pop.get("basic_satisfaction", 0.0)),
-			float(pop.get("life_satisfaction", 0.0)),
-			float(pop.get("luxury_satisfaction", 0.0)),
-		],
-		"durable_stock": float(pop.get("durable_stock", 0.0)),
-		"spend": float(pop.get("needs_spend", 0.0)),
+	if city.has("pop"):
+		var pop: Dictionary = city["pop"]
+		if pop.has("needs"):
+			return pop.get("needs", {})
+		return {
+			"level": int(pop.get("needs_level", 0)),
+			"satisfaction": float(pop.get("needs_satisfaction", 0.0)),
+			"level_satisfaction": [
+				float(pop.get("basic_satisfaction", 0.0)),
+				float(pop.get("life_satisfaction", 0.0)),
+				float(pop.get("luxury_satisfaction", 0.0)),
+			],
+			"durable_stock": float(pop.get("durable_stock", 0.0)),
+			"spend": float(pop.get("needs_spend", 0.0)),
+		}
+	var light: Dictionary = _summary.get("light", {})
+	var index := _light_index(city)
+	var state := {
+		"level": 0, "satisfaction": 0.0, "level_satisfaction": [],
+		"durable_stock": 0.0, "spend": 0.0, "known": false,
 	}
+	if index < 0:
+		return state
+	var satisfaction: PackedFloat64Array = light.get("p_satisfaction",
+			PackedFloat64Array())
+	if index >= satisfaction.size():
+		return state
+	state["satisfaction"] = satisfaction[index]
+	state["known"] = true
+	return state
 
 
+## Posição da cidade nas tabelas planas do bloco `light` (mesma ordem de
+## `summary["cities"]`).
+func _light_index(city: Dictionary) -> int:
+	var id := String(city.get("id", ""))
+	var cities: Array = _summary.get("cities", [])
+	for index in cities.size():
+		if String((cities[index] as Dictionary).get("id", "")) == id:
+			return index
+	return -1
+
+
+## Satisfação de um nível (0..1) ou -1 quando o status não publicou a quebra.
 func _level_value(needs: Dictionary, index: int) -> float:
 	var values: Array = needs.get("level_satisfaction", [])
 	if index >= values.size():
-		return 0.0
+		return -1.0
 	return clampf(float(values[index]), 0.0, 1.0)
+
+
+## Texto do nível: percentual publicado ou "—" quando não há dado.
+func _level_text(needs: Dictionary, index: int) -> String:
+	var ratio := _level_value(needs, index)
+	return I18n.t("common.na") if ratio < 0.0 else _percent_text(ratio)
 
 
 func _level_name(level: int) -> String:

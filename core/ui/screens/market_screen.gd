@@ -328,7 +328,9 @@ func _refresh_goods() -> void:
 		UiTemplateBuilder.set_chip_active(_chips[id], id == _sector)
 	var city := _city()
 	var products: Array = _summary.get("products", [])
-	var markets: Array = city.get("markets", [])
+	var light: Dictionary = _summary.get("light", {})
+	var city_index := _city_index()
+	var fx := _market_fx(city)
 	var imported: Array = city.get("imported", [])
 	var exported: Array = city.get("exported", [])
 	var currency := String(city.get("currency", ""))
@@ -350,7 +352,7 @@ func _refresh_goods() -> void:
 				_good_name(_good(String(products[b])))) < 0)
 	for index in indices:
 		var good := _good(String(products[index]))
-		var market: Dictionary = markets[index] if index < markets.size() else {}
+		var market := _market_row(light, city_index, index, fx)
 		var price := float(market.get("price_local", 0.0))
 		var stock := float(market.get("stock", 0.0))
 		var supply := float(market.get("supply", 0.0))
@@ -395,13 +397,11 @@ func _refresh_detail() -> void:
 		_set_text("market.detail.name", I18n.t("market.select.good"))
 		return
 	var index := _good_index(String(good.get("id", "")))
-	var market: Dictionary = {}
-	var markets: Array = city.get("markets", [])
-	if index >= 0 and index < markets.size():
-		market = markets[index]
+	var fx := _market_fx(city)
+	var market := _market_row(_summary.get("light", {}), _city_index(), index,
+			fx)
 	var import_array: Array = city.get("import_price", [])
 	var import_anchor := _at(import_array, index)
-	var fx := maxf(float(city.get("fx_rate", 1.0)), 1e-9)
 	var currency := String(city.get("currency", ""))
 	_set_text("market.detail.name", _good_name(good))
 	_set_text_in("market.detail.sector", _sector_name(good))
@@ -540,6 +540,45 @@ func _city() -> Dictionary:
 		if String(city.get("id", "")) == _selected_city:
 			return city
 	return {}
+
+
+## Posição da cidade selecionada no status: as tabelas planas do bloco `light`
+## são cidade × produto, na mesma ordem de `summary["cities"]`.
+func _city_index() -> int:
+	var cities: Array = _summary.get("cities", [])
+	for index in cities.size():
+		if String((cities[index] as Dictionary).get("id", "")) == _selected_city:
+			return index
+	return -1
+
+
+## Taxa de câmbio da cidade: o preço publicado no bloco leve é a âncora e o
+## preço local é exibição (âncora ÷ taxa), como no detalhe pesado.
+func _market_fx(city: Dictionary) -> float:
+	return maxf(float(city.get("fx_rate", 1.0)), 1e-9)
+
+
+## Mercado do dia (preço local, estoque, oferta, demanda) do produto na cidade
+## já localizada. Vazio quando o status não publicou a combinação — a tabela
+## mostra ausência, não um zero inventado.
+func _market_row(light: Dictionary, city_index: int, product: int,
+		fx: float) -> Dictionary:
+	var products := int(light.get("product_count", 0))
+	if products <= 0 or city_index < 0 or product < 0 or product >= products:
+		return {}
+	var at := city_index * products + product
+	var price: PackedFloat64Array = light.get("m_price", PackedFloat64Array())
+	if at < 0 or at >= price.size():
+		return {}
+	var stock: PackedFloat64Array = light.get("m_stock", PackedFloat64Array())
+	var supply: PackedFloat64Array = light.get("m_supply", PackedFloat64Array())
+	var desired: PackedFloat64Array = light.get("m_desired", PackedFloat64Array())
+	return {
+		"price_local": price[at] / fx,
+		"stock": stock[at] if at < stock.size() else 0.0,
+		"supply": supply[at] if at < supply.size() else 0.0,
+		"desired": desired[at] if at < desired.size() else 0.0,
+	}
 
 
 func _orders() -> Array:

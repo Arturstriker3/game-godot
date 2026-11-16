@@ -246,7 +246,7 @@ func _ready() -> void:
 		# Tamanho do mundo no dia (fora das janelas cronometradas): o tick cresce
 		# com o número de construções — o investimento da IA e dos grupos abre
 		# ativos no meio do run.
-		var buildings := _count_buildings(summary)
+		var buildings := _count_buildings(sim, summary)
 		building_series.append(float(buildings))
 		var agents_text := _agent_summary(ai)
 
@@ -339,11 +339,13 @@ func _ready() -> void:
 	get_tree().quit(0)
 
 
-## Construções somadas no status do dia (tamanho do mundo que o tick percorre).
-func _count_buildings(summary: Dictionary) -> int:
+## Construções somadas no mundo (tamanho do mundo que o tick percorre). O status
+## diário publica só o bloco leve: as construções vêm sob demanda por cidade.
+func _count_buildings(sim: Object, summary: Dictionary) -> int:
 	var total := 0
 	for city: Dictionary in summary.get("cities", []):
-		total += (city.get("buildings", []) as Array).size()
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+		total += (heavy.get("buildings", []) as Array).size()
 	return total
 
 

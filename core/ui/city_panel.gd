@@ -208,7 +208,13 @@ func _sample_history() -> void:
 	var city := _city()
 	if city.is_empty():
 		return
-	_history.sample(int(_summary.get("day", 0)), city)
+	# O histórico guarda o detalhe (pop e mercados), que o status diário não
+	# publica mais: vem de get_city_status(id). Sem o pesado (fixture sem
+	# núcleo), a amostra sai do bloco leve e os campos só do pesado caem no
+	# default de `_build_entry` — ausência explícita, não número inventado.
+	var heavy := _heavy()
+	_history.sample(int(_summary.get("day", 0)),
+			city if heavy.is_empty() else heavy)
 
 
 func _refresh() -> void:
@@ -301,7 +307,7 @@ func _refresh_services(city: Dictionary) -> void:
 		return
 	var jobs := float(city.get("service_jobs", 0.0))
 	var workers := float(city.get("service_workers", 0.0))
-	var pop: Dictionary = city.get("pop", {})
+	var pop: Dictionary = _pop(city)
 	var employed := float(pop.get("employed", 0.0))
 	var wage := float(city.get("service_wage", 0.0))
 	var revenue := float(city.get("service_revenue", 0.0))
@@ -376,7 +382,7 @@ func _refresh_population() -> void:
 ## Consumo por nível (F3): o status publica a satisfação de básico/vida/luxo e
 ## o estoque total de duráveis; a quebra por categoria não é publicada.
 func _refresh_city_needs(city: Dictionary) -> void:
-	var pop: Dictionary = city.get("pop", {})
+	var pop: Dictionary = _pop(city)
 	var levels := [
 		float(pop.get("basic_satisfaction", 0.0)),
 		float(pop.get("life_satisfaction", 0.0)),
@@ -703,6 +709,28 @@ func _city() -> Dictionary:
 		if String(city["id"]) == _city_id:
 			return city
 	return {}
+
+
+## Detalhe pesado da cidade focada (markets/pop/services/buildings/deposits):
+## o status diário publica só o bloco leve, então o `pop` vem sob demanda do
+## núcleo. Sem núcleo (ou com binário anterior a `get_city_status`) devolve
+## vazio e os campos caem no default — ausência de dado não é zero inventado.
+func _heavy() -> Dictionary:
+	if _city_id.is_empty() or Economy.sim == null \
+			or not Economy.sim.has_method("get_city_status"):
+		return {}
+	var heavy: Dictionary = Economy.sim.get_city_status(_city_id)
+	return heavy
+
+
+## `pop` da cidade: usa o bloco pesado e, quando a cidade já traz `pop`
+## (fixture montada à mão), respeita o que veio.
+func _pop(city: Dictionary) -> Dictionary:
+	if city.has("pop"):
+		var inline_pop: Dictionary = city["pop"]
+		return inline_pop
+	var heavy := _heavy()
+	return heavy.get("pop", {})
 
 
 func _producers() -> Array:

@@ -1,10 +1,11 @@
 extends SceneTree
 
-## Teste dos sinais leves por cidade (S7-c, fatia 1): confere que os arrays
-## planos de `status["light"]` são bit a bit idênticos aos campos do bloco
-## pesado por cidade (markets/pop/buildings). É a guarda de equivalência que
-## a migração da IA (fatia 2) usa para garantir as MESMAS decisões. Roda
-## headless e falha com código diferente de zero.
+## Teste dos sinais leves por cidade (S7-c): confere que os arrays planos de
+## `status["light"]` são bit a bit idênticos aos campos do bloco pesado por
+## cidade (markets/pop/buildings/deposits) — que, desde a fatia final, só são
+## obtidos sob demanda por `get_city_status(id)`. É a guarda de equivalência que
+## a IA usa para garantir as MESMAS decisões. Roda headless e falha com código
+## diferente de zero.
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
@@ -118,7 +119,7 @@ func _run() -> void:
 
 	var checked_markets := 0
 	for city_index in cities.size():
-		var city: Dictionary = cities[city_index]
+		var city: Dictionary = sim.get_city_status(String(cities[city_index].get("id", "")))
 		var markets: Array = city.get("markets", [])
 		var pop: Dictionary = city.get("pop", {})
 		for product in products:
@@ -147,7 +148,7 @@ func _run() -> void:
 	var expected_resource: Array[String] = []
 	var expected_group: Array[String] = []
 	for city_index in cities.size():
-		var city: Dictionary = cities[city_index]
+		var city: Dictionary = sim.get_city_status(String(cities[city_index].get("id", "")))
 		for building: Dictionary in city.get("buildings", []):
 			var owner_group := String(building.get("owner_group", ""))
 			if owner_group.is_empty():
@@ -191,7 +192,7 @@ func _run() -> void:
 		return
 	var checked_buildings := 0
 	for city_index in cities.size():
-		var city: Dictionary = cities[city_index]
+		var city: Dictionary = sim.get_city_status(String(cities[city_index].get("id", "")))
 		var buildings: Array = city.get("buildings", [])
 		var bstart: int = int(b_offset[city_index])
 		var bend: int = int(b_offset[city_index + 1])
@@ -252,7 +253,7 @@ func _run() -> void:
 		return
 	var checked_deposits := 0
 	for city_index in cities.size():
-		var city: Dictionary = cities[city_index]
+		var city: Dictionary = sim.get_city_status(String(cities[city_index].get("id", "")))
 		var deposits: Dictionary = city.get("deposits", {})
 		var dstart: int = int(d_offset[city_index])
 		var dend: int = int(d_offset[city_index + 1])

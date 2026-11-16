@@ -123,11 +123,10 @@ func _fixture(sim, stocks: Dictionary, population: float = -1.0) -> void:
 	sim.demo_from_dict(snapshot)
 
 
-func _city(status: Dictionary, id: String) -> Dictionary:
-	for city: Dictionary in status.get("cities", []):
-		if String(city.get("id", "")) == id:
-			return city
-	return {}
+## O status diário publica só os escalares leves; o bloco pesado da cidade
+## (mercados, construções, POP) vem sob demanda pelo id.
+func _city(sim: Object, id: String) -> Dictionary:
+	return sim.get_city_status(id)
 
 
 func _building(city: Dictionary, id: String) -> Dictionary:
@@ -172,17 +171,17 @@ func _test_flour_bread_chain() -> void:
 
 	var wheat_before := 0.0
 	var status: Dictionary = sim.get_demo_status()
-	wheat_before = _stock(_city(status, "AGRIA"), "wheat")
+	wheat_before = _stock(_city(sim, "AGRIA"), "wheat")
 	for day in 4:
 		status = sim.tick_demo()
-		var agria := _city(status, "AGRIA")
+		var agria := _city(sim, "AGRIA")
 		for good in ["wheat", "flour", "bran", "bread"]:
 			if _stock(agria, good) < -EPSILON:
 				_fail("cadeia: estoque negativo de %s no dia %d" % [good, day + 1])
 		if float(agria.get("pop", {}).get("satisfaction", 0.0)) <= 0.0:
 			_fail("cadeia: POPs sem comida no dia %d" % (day + 1))
 
-	var agria := _city(status, "AGRIA")
+	var agria := _city(sim, "AGRIA")
 	var mill_status := _building(agria, "T-MILL")
 	var bakery_status := _building(agria, "T-BAKERY")
 	if String(mill_status.get("recipe", "")) != "flour":
@@ -230,15 +229,15 @@ func _test_multi_input_recipe() -> void:
 	var before: Dictionary = {}
 	var status: Dictionary = sim.get_demo_status()
 	for good in inputs:
-		before[good] = _stock(_city(status, "AGRIA"), good)
+		before[good] = _stock(_city(sim, "AGRIA"), good)
 	for day in 2:
 		status = sim.tick_demo()
-		var agria := _city(status, "AGRIA")
+		var agria := _city(sim, "AGRIA")
 		for good in inputs:
 			if _stock(agria, good) < -EPSILON:
 				_fail("multi: estoque negativo de %s no dia %d" % [good, day + 1])
 
-	var agria := _city(status, "AGRIA")
+	var agria := _city(sim, "AGRIA")
 	var produced := _produced(status, "engine")
 	if produced <= 0.0:
 		_fail("multi: motor nao produzido")
@@ -271,12 +270,12 @@ func _test_recipe_alternative() -> void:
 			"error", "")))
 		return
 	var status: Dictionary = sim.tick_demo()
-	var chosen := String(_building(_city(status, "AGRIA"), "T-FEED").get("recipe", ""))
+	var chosen := String(_building(_city(sim, "AGRIA"), "T-FEED").get("recipe", ""))
 	if chosen != "feed_a":
 		_fail("alternativa: com milho 42 e trigo 66,7, esperado feed_a (obtido %s)" % chosen)
 	sim.demo_price_shock("maize", 2.0)
 	status = sim.tick_demo()
-	chosen = String(_building(_city(status, "AGRIA"), "T-FEED").get("recipe", ""))
+	chosen = String(_building(_city(sim, "AGRIA"), "T-FEED").get("recipe", ""))
 	if chosen != "feed_f":
 		_fail("alternativa: com milho a 84, esperado feed_f (obtido %s)" % chosen)
 	print("[chain] racao: alternativa trocada por menor custo corrente (%s)" % chosen)
@@ -292,7 +291,7 @@ func _test_labor_priority() -> void:
 	var sim = _new_sim()
 	_fixture(sim, {}, 2000.0)
 	var status: Dictionary = sim.get_demo_status()
-	var agria := _city(status, "AGRIA")
+	var agria := _city(sim, "AGRIA")
 	var farm_before := _building(agria, "FARM-A-1")
 	if farm_before.is_empty():
 		_fail("trabalho: fazenda de AGRIA ausente")
@@ -307,7 +306,7 @@ func _test_labor_priority() -> void:
 		return
 
 	status = sim.tick_demo()
-	agria = _city(status, "AGRIA")
+	agria = _city(sim, "AGRIA")
 	var farm := _building(agria, "FARM-A-1")
 	var factory := _building(agria, "T-ENGINE-LABOR")
 	var workers := float(farm.get("workers", 0.0))

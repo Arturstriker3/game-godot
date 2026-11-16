@@ -103,14 +103,14 @@ func _run() -> void:
 		ai = EconomicAIScript.new()
 		ai.setup(sim, geo)
 	var status: Dictionary = sim.get_demo_status()
-	_emit(0, status, ai)
+	_emit(sim, 0, status, ai)
 	for day in _days:
 		status = sim.tick_demo()
 		if ai != null:
 			ai.run(int(status.get("day", day + 1)), status)
 		var current := int(status.get("day", day + 1))
 		if current % _every == 0 or day + 1 == _days:
-			_emit(current, status, ai)
+			_emit(sim, current, status, ai)
 	_flush()
 	# Diagnóstico de falências: construções que a IA abriu e não existem no
 	# status final (falidas/removidas). Ajuda a separar falha de fazenda nova
@@ -144,14 +144,21 @@ func _cities_with_center(cities: Array) -> Array:
 	return result
 
 
-func _emit(day: int, status: Dictionary, ai: Object) -> void:
+## Detalhe pesado da cidade (markets/pop/buildings): o status diário publica
+## só o bloco leve, então o diagnóstico vem sob demanda de get_city_status(id).
+static func _heavy(sim: Object, city: Dictionary) -> Dictionary:
+	var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+	return heavy
+
+
+func _emit(sim: Object, day: int, status: Dictionary, ai: Object) -> void:
 	var global := {
 		"production": 0.0, "consumed": 0.0, "imported": 0.0, "stock": 0.0,
 		"desired": 0.0, "price": 0.0, "n": 0,
 	}
 	for city in status.get("cities", []):
 		var imported: Array = city.get("imported", [])
-		var markets: Array = city.get("markets", [])
+		var markets: Array = _heavy(sim, city).get("markets", [])
 		for product in _food_products:
 			if product < imported.size():
 				global["imported"] = float(global["imported"]) + float(imported[product])
@@ -175,7 +182,8 @@ func _emit(day: int, status: Dictionary, ai: Object) -> void:
 		if not totals.has(tag):
 			continue
 		var row: Dictionary = totals[tag]
-		var pop: Dictionary = city.get("pop", {})
+		var heavy := _heavy(sim, city)
+		var pop: Dictionary = heavy.get("pop", {})
 		row["cities"] = int(row["cities"]) + 1
 		row["need"] = float(row["need"]) + float(pop.get("need", 0.0))
 		row["consumed"] = float(row["consumed"]) + float(pop.get("consumed", 0.0))
@@ -186,7 +194,7 @@ func _emit(day: int, status: Dictionary, ai: Object) -> void:
 		row["budget"] = float(row["budget"]) + float(city.get("government_budget", 0.0))
 		row["firm_cash"] = float(row["firm_cash"]) + float(city.get("firm_cash", 0.0))
 		var imported: Array = city.get("imported", [])
-		var markets: Array = city.get("markets", [])
+		var markets: Array = heavy.get("markets", [])
 		for product in _food_products:
 			if product < markets.size():
 				row["production"] = float(row["production"]) \
@@ -198,7 +206,7 @@ func _emit(day: int, status: Dictionary, ai: Object) -> void:
 				row["stock"] = float(row["stock"]) + float(market.get("stock", 0.0))
 				row["price"] = float(row["price"]) + float(market.get("price", 0.0))
 				row["price_n"] = int(row["price_n"]) + 1
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			if String(building.get("recipe", "")) != "":
 				row["plant"] = float(row["plant"]) + float(building.get("capacity", 0.0))
 			elif String(building.get("resource", "")) in FOOD_IDS:
@@ -226,7 +234,7 @@ func _emit(day: int, status: Dictionary, ai: Object) -> void:
 		var tag := String(city.get("nation", ""))
 		if not totals.has(tag):
 			continue
-		var pop: Dictionary = city.get("pop", {})
+		var pop: Dictionary = _heavy(sim, city).get("pop", {})
 		var satisfaction := float(pop.get("satisfaction", 0.0))
 		if not worst.has(tag) or satisfaction < float(worst[tag].get("satisfaction", 2.0)):
 			worst[tag] = {"id": String(city.get("id", "")), "satisfaction": satisfaction,
@@ -246,7 +254,7 @@ func _emit(day: int, status: Dictionary, ai: Object) -> void:
 			if String(city.get("id", "")) != String(city_row["id"]):
 				continue
 			var imported: Array = city.get("imported", [])
-			var markets: Array = city.get("markets", [])
+			var markets: Array = _heavy(sim, city).get("markets", [])
 			for product in _food_products:
 				if product < imported.size():
 					city_row["imported"] = float(city_row["imported"]) + float(imported[product])

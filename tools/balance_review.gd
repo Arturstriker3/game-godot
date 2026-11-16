@@ -119,6 +119,9 @@ func _snapshot(sim: Object) -> Dictionary:
 	var nations := {}
 	var city_nation := {}
 	for city in status.get("cities", []):
+		# O status diário publica só o bloco leve: pop/markets/deposits vêm
+		# sob demanda de get_city_status(id).
+		var heavy := _heavy(sim, city)
 		var tag := String(city.get("nation", ""))
 		city_nation[String(city.get("id", ""))] = tag
 		if not nations.has(tag):
@@ -131,12 +134,12 @@ func _snapshot(sim: Object) -> Dictionary:
 			}
 		nations[tag]["population"] += float(city.get("population", 0.0))
 		nations[tag]["cities"].append(String(city.get("id", "")))
-		var pop: Dictionary = city.get("pop", {})
+		var pop: Dictionary = heavy.get("pop", {})
 		nations[tag]["food"]["consumed"] += float(pop.get("consumed", 0.0))
 		nations[tag]["food"]["need"] += float(pop.get("need", 0.0))
 		for product_index in products.size():
 			var name := String(products[product_index])
-			var market: Dictionary = city.get("markets", [])[product_index]
+			var market: Dictionary = heavy.get("markets", [])[product_index]
 			if not nations[tag]["goods"].has(name):
 				nations[tag]["goods"][name] = {
 					"prod_t_day": 0.0, "cons_t_day": 0.0, "stock_t": 0.0,
@@ -151,8 +154,8 @@ func _snapshot(sim: Object) -> Dictionary:
 				nations[tag]["goods"][name]["export_t_day"] += float(exported[product_index])
 			if product_index < export_value.size():
 				nations[tag]["goods"][name]["export_value"] += float(export_value[product_index])
-		for product_name in city.get("deposits", {}):
-			var entry: Dictionary = city.get("deposits", {})[product_name]
+		for product_name in heavy.get("deposits", {}):
+			var entry: Dictionary = heavy.get("deposits", {})[product_name]
 			if not nations[tag]["reserves_kt"].has(product_name):
 				nations[tag]["reserves_kt"][product_name] = 0.0
 			nations[tag]["reserves_kt"][product_name] += float(entry.get("remaining_kt", 0.0))
@@ -172,18 +175,19 @@ func _snapshot(sim: Object) -> Dictionary:
 		global["reserves_kt"][name] = null
 		global["buildings_by_output"][name] = 0
 	for city in status.get("cities", []):
+		var heavy := _heavy(sim, city)
 		for product_index in products.size():
 			var name := String(products[product_index])
-			var market: Dictionary = city.get("markets", [])[product_index]
+			var market: Dictionary = heavy.get("markets", [])[product_index]
 			global["produced_t_day"][name] += float(market.get("supply", 0.0))
 			global["consumed_t_day"][name] += float(market.get("demand", 0.0))
 			global["stock_t"][name] += float(market.get("stock", 0.0))
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			var output := int(building.get("output_product", -1))
 			if output >= 0 and output < products.size():
 				var name := String(products[output])
 				global["buildings_by_output"][name] += 1
-		var deposits: Dictionary = city.get("deposits", {})
+		var deposits: Dictionary = heavy.get("deposits", {})
 		for product_name in deposits:
 			var entry: Dictionary = deposits[product_name]
 			if global["reserves_kt"].has(product_name):
@@ -194,7 +198,7 @@ func _snapshot(sim: Object) -> Dictionary:
 	# Lista de construções ativas no fim (para explicar o que foi produzido).
 	var buildings_summary := []
 	for city in status.get("cities", []):
-		for building in city.get("buildings", []):
+		for building in _heavy(sim, city).get("buildings", []):
 			buildings_summary.append({
 				"city": String(city.get("id", "")),
 				"id": String(building.get("id", "")),
@@ -208,17 +212,25 @@ func _snapshot(sim: Object) -> Dictionary:
 			})
 
 	return {"nations": nations, "global": global, "buildings": buildings_summary,
-		"deposits": _deposits_snapshot(status)}
+		"deposits": _deposits_snapshot(sim, status)}
 
 
-func _deposits_snapshot(status: Dictionary) -> Dictionary:
+## Detalhe pesado de uma cidade: pop/markets/deposits/buildings deixaram de
+## sair no status diário e vêm sob demanda do núcleo.
+static func _heavy(sim: Object, city: Dictionary) -> Dictionary:
+	var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+	return heavy
+
+
+func _deposits_snapshot(sim: Object, status: Dictionary) -> Dictionary:
 	var out := {}
 	for city in status.get("cities", []):
+		var heavy := _heavy(sim, city)
 		var tag := String(city.get("nation", ""))
 		if not out.has(tag):
 			out[tag] = {}
-		for product_name in city.get("deposits", {}):
-			var entry: Dictionary = city.get("deposits", {})[product_name]
+		for product_name in heavy.get("deposits", {}):
+			var entry: Dictionary = heavy.get("deposits", {})[product_name]
 			out[tag][product_name] = {
 				"remaining_kt": float(entry.get("remaining_kt", 0.0)),
 				"quality": float(entry.get("quality", 0.0)),
@@ -335,9 +347,10 @@ func _trace_point(day: int, sim: Object) -> Dictionary:
 	var nations := {}
 	var iron_mine_count := 0
 	for city in status.get("cities", []):
+		var heavy := _heavy(sim, city)
 		var tag := String(city.get("nation", ""))
-		var pop: Dictionary = city.get("pop", {})
-		var wheat: Dictionary = city.get("markets", [])[0]
+		var pop: Dictionary = heavy.get("pop", {})
+		var wheat: Dictionary = heavy.get("markets", [])[0]
 		if not nations.has(tag):
 			nations[tag] = {}
 		nations[tag] = {
@@ -348,7 +361,7 @@ func _trace_point(day: int, sim: Object) -> Dictionary:
 			"wheat_stock": float(wheat.get("stock", 0.0)),
 			"wheat_price": float(wheat.get("price", 0.0)),
 		}
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			var output := int(building.get("output_product", -1))
 			if output == 1:
 				iron_mine_count += 1

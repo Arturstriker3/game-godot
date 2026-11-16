@@ -163,7 +163,8 @@ func _test_core_payment() -> void:
 			* minf(bdi_index, SUBSISTENCE_CAP)
 	for city in status.get("cities", []):
 		var city_id := String(city.get("id", ""))
-		var pop: Dictionary = city.get("pop", {})
+		var heavy: Dictionary = sim.get_city_status(city_id)
+		var pop: Dictionary = heavy.get("pop", {})
 		var income := float(pop.get("external_income", -1.0))
 		var expected := expected_sau if city_id == "SAU-RUH" else expected_bdi
 		if income < 0.0:
@@ -180,7 +181,9 @@ func _test_core_payment() -> void:
 	var sau_pc := 0.0
 	for city in status.get("cities", []):
 		if String(city.get("id", "")) == "SAU-RUH":
-			sau_pc = float(city.get("pop", {}).get("external_income", 0.0)) / 7_000_000.0
+			var heavy: Dictionary = sim.get_city_status("SAU-RUH")
+			sau_pc = float((heavy.get("pop", {}) as Dictionary).get(
+					"external_income", 0.0)) / 7_000_000.0
 	if sau_pc > BASE_PER_CAPITA * SUBSISTENCE_CAP + EPSILON:
 		_fail("piso: SAU recebeu %.6f/pessoa/dia acima do teto %.6f" % [
 			sau_pc, BASE_PER_CAPITA * SUBSISTENCE_CAP])

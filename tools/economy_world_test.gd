@@ -205,7 +205,7 @@ func _test_world() -> void:
 				_fail("%s: falta campo de compatibilidade '%s'" % [cid, key])
 		if not is_finite(float(city["population"])):
 			_fail("%s: populacao nao finita" % cid)
-		var markets: Array = city.get("markets", [])
+		var markets: Array = sim.get_city_status(cid).get("markets", [])
 		if markets.size() != expected_products:
 			_fail("%s: mercados com %d posicoes (esperado %d)" % [
 				cid, markets.size(), expected_products])
@@ -222,16 +222,29 @@ func _test_world() -> void:
 		if violations.size() > 0:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
 			break
-		for city in status["cities"]:
+		# O status diário publica só os escalares leves por cidade: o consumo da
+		# POP e os preços de mercado vêm do bloco `light` (arrays planos
+		# cidade×produto, os MESMOS doubles do bloco pesado), sem remontar um
+		# dicionário por cidade a cada dia do laço.
+		var light: Dictionary = status.get("light", {})
+		var prices: PackedFloat64Array = light.get("m_price", PackedFloat64Array())
+		var consumed_by_city: PackedFloat64Array = light.get(
+			"p_consumed", PackedFloat64Array())
+		var products_per_city := int(light.get("product_count", 0))
+		for slot in status["cities"].size():
+			var city: Dictionary = status["cities"][slot]
 			var cid := String(city["id"])
-			if cid == "FRA-CAY" and float(city["pop"]["consumed"]) > 0.0:
+			if cid == "FRA-CAY" and slot < consumed_by_city.size() \
+					and float(consumed_by_city[slot]) > 0.0:
 				cayenne_fed = true
 			for key in ["firm_cash", "service_cash", "government_budget"]:
 				if not is_finite(float(city[key])):
 					_fail("%s: %s NaN no dia %d" % [cid, key, day + 1])
-			for market in city.get("markets", []):
-				if not is_finite(float(market["price"])):
+			for offset in products_per_city:
+				var at: int = int(slot) * products_per_city + int(offset)
+				if at < prices.size() and not is_finite(float(prices[at])):
 					_fail("%s: preco NaN no dia %d" % [cid, day + 1])
+					break
 		if _failures.size() > 0:
 			break
 
@@ -241,7 +254,8 @@ func _test_world() -> void:
 		_fail("Cayenne não foi alimentada em nenhum dia (subsídio não alcançou)")
 	for city in status["cities"]:
 		if String(city["id"]) == "FRA-CAY":
-			var satisfaction := float(city["pop"]["satisfaction"])
+			var satisfaction := float(sim.get_city_status("FRA-CAY").get(
+				"pop", {}).get("satisfaction", 0.0))
 			if satisfaction < 0.9:
 				_fail("Cayenne não sustentada no fim (satisfação %.2f)" % satisfaction)
 
@@ -289,7 +303,9 @@ func _test_world() -> void:
 		max_industrialization = maxf(max_industrialization, value)
 		if value > 0.0:
 			industrial_cities += 1
-		for building in city.get("buildings", []):
+		# Construções são detalhe pesado: vêm sob demanda pelo id da cidade.
+		for building in sim.get_city_status(String(city.get("id", ""))).get(
+				"buildings", []):
 			if String(building.get("recipe", "")) != "":
 				industrial_capacity += float(building.get("capacity", 0.0))
 	print("[world] industrializacao: %d cidades > 0 | max %.4f | capacidade %s %.1f t/dia" % [
@@ -302,7 +318,7 @@ func _test_world() -> void:
 
 	# Comida por nação (consumido / necessidade) — mesma métrica da Aceitação
 	# F2: nenhuma nação pode piorar vs. o baseline (c5abccb).
-	var nations := _nation_food(status)
+	var nations := _nation_food(sim, status)
 	print("[world] comida por nacao (consumido/necessidade):")
 	for tag in nations:
 		var row: Dictionary = nations[tag]
@@ -324,7 +340,8 @@ func _test_world() -> void:
 	var needs_count := 0
 	var level_cities := {0: 0, 1: 0, 2: 0, 3: 0}
 	for city in status["cities"]:
-		var pop: Dictionary = city.get("pop", {})
+		var pop: Dictionary = sim.get_city_status(String(city.get("id", ""))).get(
+			"pop", {})
 		if pop.has("needs_satisfaction"):
 			needs_sum += float(pop["needs_satisfaction"])
 			needs_count += 1
@@ -335,8 +352,8 @@ func _test_world() -> void:
 			needs_sum / float(needs_count), str(level_cities)])
 	else:
 		print("[world] necessidades: sem dado (binario sem F3)")
-	_print_labor(status)
-	var sectors := _sector_employment(status)
+	_print_labor(sim, status)
+	var sectors := _sector_employment(sim, status)
 	_print_sector_employment(sectors)
 	# F9: participação estatal / privada nacional / estrangeira nas nações
 	# âncora (receita e emprego dos ativos), direto do núcleo.
@@ -370,7 +387,8 @@ func _test_world() -> void:
 
 	print("[world] resumo final:")
 	for city in status["cities"]:
-		var pop: Dictionary = city["pop"]
+		# POP é detalhe pesado: vem sob demanda pelo id da cidade.
+		var pop: Dictionary = sim.get_city_status(String(city["id"])).get("pop", {})
 		print("  %-8s pop=%.0f cons=%.0f/%.0f (%.0f%%) trigo_estoque=%.1f firm=%.0f" % [
 			String(city["id"]),
 			float(city["population"]),
@@ -436,11 +454,13 @@ func _cities_with_center(cities: Array) -> Array:
 
 ## F7 — relatório do mercado de trabalho: salário e desemprego por nível
 ## (mediana/mín/máx entre cidades) e o agregado das nações de referência.
-func _print_labor(status: Dictionary) -> void:
+func _print_labor(sim: Object, status: Dictionary) -> void:
 	var wages: Array = [[], [], []]
 	var unemployment: Array = [[], [], []]
+	# POP é detalhe pesado: vem sob demanda pelo id da cidade.
 	for city in status.get("cities", []):
-		var pop: Dictionary = city.get("pop", {})
+		var pop: Dictionary = sim.get_city_status(String(city.get("id", ""))).get(
+			"pop", {})
 		if not pop.has("wage_by_level"):
 			return
 		for level in 3:
@@ -448,7 +468,8 @@ func _print_labor(status: Dictionary) -> void:
 			unemployment[level].append(float(pop["unemployment_by_level"][level]))
 	var income_cities: Dictionary = {}
 	for city in status.get("cities", []):
-		var pop2: Dictionary = city.get("pop", {})
+		var pop2: Dictionary = sim.get_city_status(String(city.get("id", ""))).get(
+			"pop", {})
 		if not pop2.has("wage_by_level"):
 			return
 		var lvl := int(pop2.get("income_level", 0))
@@ -471,7 +492,8 @@ func _print_labor(status: Dictionary) -> void:
 			float(unemployment_row[unemployment_row.size() - 1])])
 	for city in status.get("cities", []):
 		if String(city.get("id", "")) in ["BRA-SAO", "USA-NEW", "IND-DEL", "DEU-BER", "NGA-LAG"]:
-			var pop: Dictionary = city.get("pop", {})
+			var pop: Dictionary = sim.get_city_status(String(city.get("id", ""))).get(
+				"pop", {})
 			print("[labor] amostra %s pop=%.0f sim=%.0f trab=%.0f emp=%.0f renda=%.3f capital=%.3f externa=%.3f disp=%.5f disp_pc=%.5f servicos_vagas=%.0f sal_serv=%.4f receita_serv=%.0f consumo_nivel=%d renda_nivel=%d" % [
 				String(city.get("id", "")), float(city.get("population", 0.0)),
 				float(city.get("simulation_population", 0.0)),
@@ -519,7 +541,7 @@ func _print_labor(status: Dictionary) -> void:
 
 
 ## Agrega comida e industrialização por nação (cons=Σconsumido, need=Σnecessidade).
-func _nation_food(status: Dictionary) -> Dictionary:
+func _nation_food(sim: Object, status: Dictionary) -> Dictionary:
 	var nations: Dictionary = {}
 	for city in status.get("cities", []):
 		var tag := String(city.get("nation", ""))
@@ -529,7 +551,9 @@ func _nation_food(status: Dictionary) -> Dictionary:
 				"worst": 1.0, "worst_city": "", "industrialization": 0.0,
 			}
 		var row: Dictionary = nations[tag]
-		var pop: Dictionary = city.get("pop", {})
+		# POP é detalhe pesado: vem sob demanda pelo id da cidade.
+		var pop: Dictionary = sim.get_city_status(String(city.get("id", ""))).get(
+			"pop", {})
 		row["cities"] = int(row["cities"]) + 1
 		row["consumed"] = float(row["consumed"]) + float(pop.get("consumed", 0.0))
 		row["need"] = float(row["need"]) + float(pop.get("need", 0.0))
@@ -640,14 +664,16 @@ func _labor_nations(status: Dictionary) -> Dictionary:
 ## quarto setor — e por isso não soma com eles. A parcela é
 ## `sector_workers[i] / pop.employed`; `in_kind_food` é o autoconsumo em espécie
 ## do dia (t-eq), a comida que não passou por mercado.
-func _sector_employment(status: Dictionary) -> Dictionary:
+func _sector_employment(sim: Object, status: Dictionary) -> Dictionary:
 	var rows: Dictionary = {}
 	for city in status.get("cities", []):
 		var workers: Array = city.get("sector_workers", [])
 		if workers.size() != 4:
 			continue
 		var tag := String(city.get("nation", ""))
-		var pop: Dictionary = city.get("pop", {})
+		# POP é detalhe pesado: vem sob demanda pelo id da cidade.
+		var pop: Dictionary = sim.get_city_status(String(city.get("id", ""))).get(
+			"pop", {})
 		var row: Dictionary = rows.get(tag, {
 			"cities": 0, "agri": 0.0, "industry": 0.0, "services": 0.0,
 			"informal": 0.0, "employed": 0.0, "labor_force": 0.0, "in_kind": 0.0,

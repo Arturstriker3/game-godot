@@ -261,8 +261,9 @@ func _check_extractors(geo, city_list: Array, cities_raw: Array) -> void:
 	var mines := 0
 	for city in status.get("cities", []):
 		var city_id := String(city.get("id", ""))
+		var heavy: Dictionary = sim.get_city_status(city_id)
 		var own: Dictionary = geo.city_mineral_reserves(city_id)
-		var declared: Dictionary = city.get("deposits", {})
+		var declared: Dictionary = heavy.get("deposits", {})
 		# O núcleo recebeu exatamente as jazidas da cidade (nem mais, nem menos).
 		for resource in declared:
 			if not own.has(resource):
@@ -271,7 +272,7 @@ func _check_extractors(geo, city_list: Array, cities_raw: Array) -> void:
 		for resource in own:
 			if not declared.has(resource):
 				_fail("%s: jazida própria de %s não chegou ao núcleo" % [city_id, resource])
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			var resource := String(building.get("resource", ""))
 			if not Templates.MINERAL_RESOURCES.has(resource):
 				continue

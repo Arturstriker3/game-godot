@@ -147,9 +147,14 @@ func _first_city_with(want_port: bool) -> Dictionary:
 
 
 func _city_with_deposits() -> Dictionary:
+	# O status diário é leve: as jazidas vêm sob demanda em get_city_status(id).
 	for city in _summary().get("cities", []):
-		if not (city.get("deposits", {}) as Dictionary).is_empty():
-			return city
+		var sim: Object = _economy.get("sim")
+		if sim == null or not sim.has_method("get_city_status"):
+			break
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+		if not (heavy.get("deposits", {}) as Dictionary).is_empty():
+			return heavy
 	return {}
 
 
@@ -157,7 +162,8 @@ func _main_resource_label(city: Dictionary) -> String:
 	var best := -1.0
 	var resource := ""
 	for key in city.get("deposits", {}):
-		var remaining := float(city["deposits"][key].get("remaining_kt", 0.0))
+		var entry: Dictionary = (city.get("deposits", {}) as Dictionary)[key]
+		var remaining := float(entry.get("remaining_kt", 0.0))
 		if remaining > best:
 			best = remaining
 			resource = String(key)

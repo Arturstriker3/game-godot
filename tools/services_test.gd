@@ -294,7 +294,10 @@ func _education_share(sim: Object) -> Dictionary:
 	var higher := 0.0
 	var cover := 0.0
 	for city in (sim.get_demo_status().get("cities", []) as Array):
-		var pop: Dictionary = city.get("pop", {})
+		# POP é detalhe pesado: o status diário publica só os escalares leves,
+		# então a educação vem sob demanda pelo id da cidade.
+		var pop: Dictionary = (sim.get_city_status(String(city.get("id", ""))).get(
+			"pop", {}) as Dictionary)
 		var education: Array = pop.get("education", [])
 		for index in education.size():
 			total += float(education[index])

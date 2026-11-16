@@ -111,20 +111,20 @@ func _test_economy() -> void:
 
 	var status: Dictionary = sim.get_demo_status()
 	_check_status_contract(status)
-	_check_building_resources(status)
+	_check_building_resources(sim, status)
 
 	var money_initial := float(status["money_total"])
 	var population_initial := _population(status)
 
 	for day in DAYS:
 		status = sim.tick_demo()
-		_check_conservation(status, money_initial, population_initial, day + 1)
+		_check_conservation(sim, status, money_initial, population_initial, day + 1)
 		if int(status["calendar_day"]) != day + 1:
 			_fail("calendário: dia %d != %d" % [status["calendar_day"], day + 1])
 
 	_check_chain(status)
-	_check_wages_and_demand(status)
-	_check_gdp(status)
+	_check_wages_and_demand(sim, status)
+	_check_gdp(sim, status)
 	_check_investment(sim)
 	_check_save_load(sim)
 	_check_save_migration()
@@ -150,12 +150,15 @@ func _check_status_contract(status: Dictionary) -> void:
 				_fail("%s: %s ausente no status" % [city.get("id", "?"), field])
 
 
-func _check_building_resources(status: Dictionary) -> void:
+func _check_building_resources(sim, status: Dictionary) -> void:
 	var links := {"wheat": 0}
 	var found := {"wheat": false}
 	for city in status.get("cities", []):
+		var city_id := String(city.get("id", ""))
 		var expected_suitability := float(Array(city.get("suitability", [1.0]))[0])
-		for building in city.get("buildings", []):
+		# O status diário publica só os escalares leves; o detalhe pesado
+		# (construções, mercados, POP, serviços) vem sob demanda por cidade.
+		for building in sim.get_city_status(city_id).get("buildings", []):
 			var resource := String(building.get("resource", ""))
 			if not links.has(resource):
 				_fail("%s: construção sem recurso declarado" % building.get("id", "?"))
@@ -172,7 +175,7 @@ func _check_building_resources(status: Dictionary) -> void:
 			_fail("cadeia: nenhuma construção produz %s" % resource)
 
 
-func _check_conservation(status: Dictionary, money_initial: float,
+func _check_conservation(sim, status: Dictionary, money_initial: float,
 		population_initial: float, day: int) -> void:
 	if absf(float(status["money_total"]) - money_initial) > MONEY_EPSILON:
 		_fail("dia %d: dinheiro %.4f != %.4f" % [
@@ -181,17 +184,18 @@ func _check_conservation(status: Dictionary, money_initial: float,
 		_fail("dia %d: população %.3f != %.3f" % [
 			day, _population(status), population_initial])
 	for city in status.get("cities", []):
-		for market in city.get("markets", []):
+		var city_id := String(city.get("id", ""))
+		for market in sim.get_city_status(city_id).get("markets", []):
 			if float(market["stock"]) < -EPSILON:
 				_fail("dia %d: estoque negativo em %s (%.4f)" % [
-					day, city["id"], market["stock"]])
+					day, city_id, market["stock"]])
 			if float(market["desired"]) + EPSILON < float(market["demand"]):
 				_fail("dia %d: %s comprou mais que a demanda desejada" % [
-					day, city["id"]])
+					day, city_id])
 			if float(market["shortage"]) < -EPSILON:
-				_fail("dia %d: %s escassez negativa" % [day, city["id"]])
+				_fail("dia %d: %s escassez negativa" % [day, city_id])
 			if float(market["surplus"]) < -EPSILON:
-				_fail("dia %d: %s excesso negativo" % [day, city["id"]])
+				_fail("dia %d: %s excesso negativo" % [day, city_id])
 
 
 func _check_chain(status: Dictionary) -> void:
@@ -205,9 +209,11 @@ func _check_chain(status: Dictionary) -> void:
 		produced[0], consumed[0]])
 
 
-func _check_wages_and_demand(status: Dictionary) -> void:
+func _check_wages_and_demand(sim, status: Dictionary) -> void:
 	for city in status.get("cities", []):
-		var pop: Dictionary = city["pop"]
+		# POP e construções são detalhe pesado: vêm sob demanda pelo id da cidade.
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+		var pop: Dictionary = heavy.get("pop", {})
 		if float(pop["wage_income"]) <= 0.0:
 			_fail("%s: POPs sem salários" % city["id"])
 		if float(pop["food_spend"]) <= 0.0:
@@ -221,16 +227,16 @@ func _check_wages_and_demand(status: Dictionary) -> void:
 			_fail("%s: satisfação alimentar baixa (%.2f)" % [
 				city["id"], pop["satisfaction"]])
 		var profit := 0.0
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			profit += float(building["profit"])
 		if profit <= 0.0:
 			_fail("%s: lucro privado não positivo (%.2f)" % [city["id"], profit])
 
 
-func _check_gdp(status: Dictionary) -> void:
+func _check_gdp(sim, status: Dictionary) -> void:
 	for city in status.get("cities", []):
 		var expected := float(city.get("service_revenue", 0.0))
-		for building in city.get("buildings", []):
+		for building in sim.get_city_status(String(city.get("id", ""))).get("buildings", []):
 			expected += float(building["revenue"]) - float(building["input_value"])
 		var gdp := float(city["gdp"])
 		if absf(gdp - expected) > 0.01:
@@ -243,7 +249,9 @@ func _check_gdp(status: Dictionary) -> void:
 func _check_investment(sim) -> void:
 	var before: Dictionary = sim.get_demo_status()
 	var city: Dictionary = before["cities"][0]
-	var building: Dictionary = city["buildings"][0]
+	var city_id := String(city["id"])
+	# Construções vêm do detalhe pesado sob demanda (não do status diário).
+	var building: Dictionary = sim.get_city_status(city_id).get("buildings", [])[0]
 	var cash_before := float(city["firm_cash"])
 	var capacity_before := float(building["capacity"])
 	var money_before := float(before["money_total"])
@@ -254,7 +262,8 @@ func _check_investment(sim) -> void:
 
 	var after: Dictionary = sim.get_demo_status()
 	var cash_after := float(after["cities"][0]["firm_cash"])
-	var capacity_after := float(after["cities"][0]["buildings"][0]["capacity"])
+	var capacity_after := float(
+		sim.get_city_status(city_id).get("buildings", [])[0]["capacity"])
 	if absf((cash_before - cash_after) - 1000.0) > 0.01:
 		_fail("investimento: caixa debitado incorretamente")
 	if capacity_after <= capacity_before + EPSILON:

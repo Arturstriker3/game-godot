@@ -270,7 +270,8 @@ func _check_france_wheat_cap(cities: Array, geo: Object) -> void:
 	var produced := 0.0
 	for city in status.get("cities", []):
 		if String(city.get("nation", "")) == "FRA":
-			produced += float(city.get("markets", [])[wheat_index].get("supply", 0.0))
+			var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+			produced += float(heavy.get("markets", [])[wheat_index].get("supply", 0.0))
 
 	print("[catchment] (f) trigo FRA produzido %.1f t/dia vs capacidade %.1f t/dia" % [
 		produced, wheat_capacity])

@@ -131,8 +131,9 @@ func _city_status(status: Dictionary, city_id: String) -> Dictionary:
 
 
 func _buildings(sim: Object, city_id: String) -> Array:
-	var city := _city_status(sim.get_demo_status(), city_id)
-	return city.get("buildings", [])
+	# Construções são detalhe pesado: o status diário publica só os escalares
+	# leves, então o bloco completo vem sob demanda pelo id da cidade.
+	return sim.get_city_status(city_id).get("buildings", [])
 
 
 func _money(sim: Object) -> float:

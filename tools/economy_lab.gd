@@ -116,7 +116,7 @@ func _run_scenario(scenario: Dictionary, horizon: int) -> Dictionary:
 	var initial: Dictionary = sim.get_demo_status()
 	var money_initial := float(initial["money_total"])
 	var expected_population := _population_by_city(initial)
-	var previous_prices := _price_snapshot(initial)
+	var previous_prices := _price_snapshot(sim, initial)
 	var rows: Array[Dictionary] = []
 	var violations: Array[String] = []
 	var kinds := {}
@@ -153,7 +153,7 @@ func _run_scenario(scenario: Dictionary, horizon: int) -> Dictionary:
 
 		final_status = sim.tick_demo()
 
-		var day_violations := _check(final_status, current, money_initial,
+		var day_violations := _check(sim, final_status, current, money_initial,
 				expected_population, previous_prices)
 		for message in day_violations:
 			var kind := _kind_of(message)
@@ -161,7 +161,7 @@ func _run_scenario(scenario: Dictionary, horizon: int) -> Dictionary:
 				violations.append(message)
 			kinds[kind] = int(kinds.get(kind, 0)) + 1
 
-		var day_alerts := _alerts(final_status, current)
+		var day_alerts := _alerts(sim, final_status, current)
 		if not day_alerts.is_empty():
 			alert_days += 1
 		for message in day_alerts:
@@ -170,19 +170,19 @@ func _run_scenario(scenario: Dictionary, horizon: int) -> Dictionary:
 				alerts.append(message)
 			alert_kinds[kind] = int(alert_kinds.get(kind, 0)) + 1
 
-		previous_prices = _price_snapshot(final_status)
-		max_unemployment = maxf(max_unemployment, _max_unemployment(final_status))
-		min_satisfaction = minf(min_satisfaction, _min_satisfaction(final_status))
-		max_price_ratio = maxf(max_price_ratio, _max_price_ratio(final_status))
-		max_stock_days = maxf(max_stock_days, _max_stock_days(final_status))
+		previous_prices = _price_snapshot(sim, final_status)
+		max_unemployment = maxf(max_unemployment, _max_unemployment(sim, final_status))
+		min_satisfaction = minf(min_satisfaction, _min_satisfaction(sim, final_status))
+		max_price_ratio = maxf(max_price_ratio, _max_price_ratio(sim, final_status))
+		max_stock_days = maxf(max_stock_days, _max_stock_days(sim, final_status))
 
 		if intervened or (current - 1) % sample_every == 0 or current == horizon:
-			for row in _rows_for(final_status):
+			for row in _rows_for(sim, final_status):
 				row["day"] = current
 				rows.append(row)
 
 	var csv_path := _write_city_csv(scenario_id, horizon, rows)
-	return _summary(scenario, horizon, final_status, money_initial,
+	return _summary(scenario, sim, horizon, final_status, money_initial,
 			max_unemployment, min_satisfaction, max_price_ratio, max_stock_days,
 			invest_total, violations, kinds, alerts, alert_kinds, alert_days, csv_path)
 
@@ -298,7 +298,7 @@ func _apply_build(sim, event: Dictionary) -> void:
 
 # --- Violações ---------------------------------------------------------------
 
-func _check(status: Dictionary, day: int, money_initial: float,
+func _check(sim: Object, status: Dictionary, day: int, money_initial: float,
 		expected_population: Dictionary, previous_prices: Dictionary) -> Array[String]:
 	var messages: Array[String] = []
 	var money_epsilon := float(_thresholds.get("money_epsilon", 0.5))
@@ -312,6 +312,7 @@ func _check(status: Dictionary, day: int, money_initial: float,
 
 	for city in status.get("cities", []):
 		var id := String(city["id"])
+		var heavy := _heavy(sim, city)
 		if expected_population.has(id) \
 				and absf(float(city["population"]) - float(expected_population[id])) > 0.01:
 			messages.append("dia %d: %s população %.2f != %.2f" % [
@@ -320,7 +321,7 @@ func _check(status: Dictionary, day: int, money_initial: float,
 			if float(city[key]) < -value_epsilon:
 				messages.append("dia %d: %s %s negativo (%.2f)" % [
 					day, id, key, city[key]])
-		var pop: Dictionary = city["pop"]
+		var pop: Dictionary = heavy["pop"]
 		if float(pop["savings"]) < -value_epsilon:
 			messages.append("dia %d: %s poupança negativa (%.2f)" % [
 				day, id, pop["savings"]])
@@ -340,7 +341,7 @@ func _check(status: Dictionary, day: int, money_initial: float,
 				day, id, pop["satisfaction"]])
 		var produced := 0.0
 		var capacity_unscaled := 0.0
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			produced += float(building["utilization"]) * float(building["capacity"])
 			capacity_unscaled += float(building["capacity"])
 			if not is_finite(float(building["profit"])):
@@ -355,14 +356,14 @@ func _check(status: Dictionary, day: int, money_initial: float,
 		if not is_finite(produced):
 			messages.append("dia %d: %s produção não finita" % [day, id])
 		var expected_gdp := float(city.get("service_revenue", 0.0))
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			expected_gdp += float(building["revenue"]) - float(building["input_value"])
 		if absf(float(city["gdp"]) - expected_gdp) > value_epsilon:
 			messages.append("dia %d: %s PIB != valor adicionado" % [day, id])
 		if not is_finite(float(city["gdp"])):
 			messages.append("dia %d: %s PIB não finito" % [day, id])
 
-		var markets: Array = city["markets"]
+		var markets: Array = heavy["markets"]
 		for index in markets.size():
 			var market: Dictionary = markets[index]
 			if not is_finite(float(market["stock"])):
@@ -395,7 +396,7 @@ func _check(status: Dictionary, day: int, money_initial: float,
 	return messages
 
 
-func _alerts(status: Dictionary, day: int) -> Array[String]:
+func _alerts(sim: Object, status: Dictionary, day: int) -> Array[String]:
 	# Avisos econômicos: não são erros contábeis, mas estados implausíveis que
 	# o relatório precisa explicar (desemprego alto, fome, estoque parado).
 	var messages: Array[String] = []
@@ -403,7 +404,8 @@ func _alerts(status: Dictionary, day: int) -> Array[String]:
 	var satisfaction_alert := float(_thresholds.get("satisfaction_alert", 0.8))
 	for city in status.get("cities", []):
 		var id := String(city["id"])
-		var pop: Dictionary = city["pop"]
+		var heavy := _heavy(sim, city)
+		var pop: Dictionary = heavy["pop"]
 		var labor := maxf(float(pop["labor_force"]), 1.0)
 		var unemployment := float(pop["unemployed"]) / labor
 		if unemployment > unemployment_alert + 0.001:
@@ -412,7 +414,7 @@ func _alerts(status: Dictionary, day: int) -> Array[String]:
 		if float(pop["satisfaction"]) < satisfaction_alert - 0.001:
 			messages.append("[satisfacao] dia %d: %s satisfação alimentar %.2f" % [
 				day, id, pop["satisfaction"]])
-		var markets: Array = city["markets"]
+		var markets: Array = heavy["markets"]
 		for index in markets.size():
 			var market: Dictionary = markets[index]
 			var sold := maxf(float(market["sold"]), 0.001)
@@ -426,10 +428,17 @@ func _alerts(status: Dictionary, day: int) -> Array[String]:
 	return messages
 
 
-func _max_stock_days(status: Dictionary) -> float:
+## Detalhe pesado da cidade (pop/markets/buildings): o status diário publica
+## só o bloco leve, então os checks vêm sob demanda de get_city_status(id).
+static func _heavy(sim: Object, city: Dictionary) -> Dictionary:
+	var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+	return heavy
+
+
+func _max_stock_days(sim: Object, status: Dictionary) -> float:
 	var worst := 0.0
 	for city in status.get("cities", []):
-		for market in city["markets"]:
+		for market in _heavy(sim, city)["markets"]:
 			# Piso de 1 t/dia evita que vendas residuais de 0,001 t transformem
 			# qualquer estoque em "milhares de dias" e distorçam o indicador.
 			var sold := maxf(float(market["sold"]), 1.0)
@@ -461,17 +470,18 @@ func _sum_counts(counts: Dictionary) -> int:
 
 # --- Amostragem --------------------------------------------------------------
 
-func _rows_for(status: Dictionary) -> Array[Dictionary]:
+func _rows_for(sim: Object, status: Dictionary) -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for city in status.get("cities", []):
-		var pop: Dictionary = city["pop"]
-		var markets: Array = city["markets"]
+		var heavy := _heavy(sim, city)
+		var pop: Dictionary = heavy["pop"]
+		var markets: Array = heavy["markets"]
 		var profit := 0.0
 		var capacity := 0.0
 		var production := 0.0
 		var food_production := 0.0
 		var iron_production := 0.0
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			profit += float(building["profit"])
 			capacity += float(building["capacity"]) * float(building["output_scale"])
 			var building_output := float(building["utilization"]) * float(building["capacity"])
@@ -538,35 +548,35 @@ func _population_by_city(status: Dictionary) -> Dictionary:
 	return result
 
 
-func _price_snapshot(status: Dictionary) -> Dictionary:
+func _price_snapshot(sim: Object, status: Dictionary) -> Dictionary:
 	var result := {}
 	for city in status.get("cities", []):
-		var markets: Array = city["markets"]
+		var markets: Array = _heavy(sim, city)["markets"]
 		for index in markets.size():
 			result["%s|%d" % [city["id"], index]] = float(markets[index]["price"])
 	return result
 
 
-func _max_unemployment(status: Dictionary) -> float:
+func _max_unemployment(sim: Object, status: Dictionary) -> float:
 	var worst := 0.0
 	for city in status.get("cities", []):
-		var pop: Dictionary = city["pop"]
+		var pop: Dictionary = _heavy(sim, city)["pop"]
 		worst = maxf(worst, float(pop["unemployed"])
 				/ maxf(float(pop["labor_force"]), 1.0))
 	return worst
 
 
-func _min_satisfaction(status: Dictionary) -> float:
+func _min_satisfaction(sim: Object, status: Dictionary) -> float:
 	var worst := 1.0
 	for city in status.get("cities", []):
-		worst = minf(worst, float(city["pop"]["satisfaction"]))
+		worst = minf(worst, float(_heavy(sim, city)["pop"]["satisfaction"]))
 	return worst
 
 
-func _max_price_ratio(status: Dictionary) -> float:
+func _max_price_ratio(sim: Object, status: Dictionary) -> float:
 	var worst := 0.0
 	for city in status.get("cities", []):
-		var markets: Array = city["markets"]
+		var markets: Array = _heavy(sim, city)["markets"]
 		for index in markets.size():
 			var ratio := float(markets[index]["price"]) / _base_prices[index]
 			worst = maxf(worst, ratio)
@@ -575,7 +585,8 @@ func _max_price_ratio(status: Dictionary) -> float:
 
 # --- Saída -------------------------------------------------------------------
 
-func _summary(scenario: Dictionary, horizon: int, final_status: Dictionary,
+func _summary(scenario: Dictionary, sim: Object, horizon: int,
+		final_status: Dictionary,
 		money_initial: float, max_unemployment: float, min_satisfaction: float,
 		max_price_ratio: float, max_stock_days: float, invest_total: float,
 		violations: Array[String], kinds: Dictionary, alerts: Array[String],
@@ -599,20 +610,21 @@ func _summary(scenario: Dictionary, horizon: int, final_status: Dictionary,
 	var trade_balance := 0.0
 	var construction := 0.0
 	for city in cities:
+		var heavy := _heavy(sim, city)
 		population += float(city["population"])
 		gdp += float(city["gdp"])
-		employed += float(city["pop"]["employed"])
-		unemployed += float(city["pop"]["unemployed"])
-		labor += float(city["pop"]["labor_force"])
-		savings += float(city["pop"]["savings"])
+		employed += float(heavy["pop"]["employed"])
+		unemployed += float(heavy["pop"]["unemployed"])
+		labor += float(heavy["pop"]["labor_force"])
+		savings += float(heavy["pop"]["savings"])
 		firm_cash += float(city["firm_cash"])
 		service_cash += float(city["service_cash"])
 		government += float(city["government_budget"])
 		living_min = minf(living_min, float(city["living_standard"]))
-		consumed += float(city["pop"]["consumed"])
-		need += float(city["pop"]["need"])
+		consumed += float(heavy["pop"]["consumed"])
+		need += float(heavy["pop"]["need"])
 		construction += float(city.get("construction_revenue", 0.0))
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			profit += float(building["profit"])
 			capacity += float(building["capacity"]) * float(building["output_scale"])
 			production += float(building["utilization"]) * float(building["capacity"])
@@ -634,11 +646,11 @@ func _summary(scenario: Dictionary, horizon: int, final_status: Dictionary,
 		"unemployment_end": unemployed / maxf(labor, 1.0),
 		"unemployment_max": max_unemployment,
 		"satisfaction_min": min_satisfaction,
-		"satisfaction_end": _min_satisfaction(final_status),
+		"satisfaction_end": _min_satisfaction(sim, final_status),
 		"price_ratio_max": max_price_ratio,
-		"price_ratio_end": _max_price_ratio(final_status),
+		"price_ratio_end": _max_price_ratio(sim, final_status),
 		"stock_days_max": max_stock_days,
-		"stock_days_end": _max_stock_days(final_status),
+		"stock_days_end": _max_stock_days(sim, final_status),
 		"living_standard_min": living_min if living_min < 1.0e29 else 0.0,
 		"consumed_end": consumed,
 		"need_end": need,

@@ -95,7 +95,7 @@ func _init() -> void:
 	if float(after_buy.get("capacity_tons", 0.0)) <= float(before_buy.get("capacity_tons", 0.0)):
 		_fail("compra de truck não aumentou a capacidade")
 	var demand_status: Dictionary = sim.get_demo_status()
-	if _market_demand(demand_status, "truck") <= 0.0:
+	if _market_demand(sim, demand_status, "truck") <= 0.0:
 		_fail("compra de truck não apareceu como demanda no mercado")
 
 	# 5. Desgaste: um mês sem peças reduz a saúde/capacidade efetiva.
@@ -121,14 +121,15 @@ func _order_count(status: Dictionary) -> int:
 	return Array(status.get("trade_orders", [])).size()
 
 
-func _market_demand(status: Dictionary, product: String) -> float:
+func _market_demand(sim: Object, status: Dictionary, product: String) -> float:
 	var products: Array = status.get("products", [])
 	var index := products.find(product)
 	if index < 0:
 		return 0.0
 	var total := 0.0
 	for city in status.get("cities", []):
-		var markets: Array = city.get("markets", [])
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+		var markets: Array = heavy.get("markets", [])
 		if index < markets.size():
 			total += float(markets[index].get("desired", 0.0))
 	return total

@@ -59,14 +59,16 @@ func _run(sim: Object) -> void:
 	var cities: Array = status.get("cities", [])
 	print("[real_tick] autoload Economy carregado em %d ms (cenário + geografia + pré-aquecimento do status)" % [
 		Time.get_ticks_msec()])
-	# Tamanho do que a fase `status` reescreve: construções e jazidas por cidade.
+	# Tamanho do que a fase `status` reescreve: construções e jazidas por cidade
+	# (detalhe pesado, publicado sob demanda em get_city_status).
 	var buildings := 0
 	var deposits := 0
 	var markets := 0
 	for city in cities:
-		buildings += (city.get("buildings", []) as Array).size()
-		deposits += (city.get("deposits", {}) as Dictionary).size()
-		markets += (city.get("markets", []) as Array).size()
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+		buildings += (heavy.get("buildings", []) as Array).size()
+		deposits += (heavy.get("deposits", {}) as Dictionary).size()
+		markets += (heavy.get("markets", []) as Array).size()
 	print("[real_tick] cenário real: %d cidades (%d construções, %d jazidas, %d mercados), %d pedidos, dia %s" % [
 		cities.size(), buildings, deposits, markets,
 		(status.get("trade_orders", []) as Array).size(), str(status.get("day", 0))])

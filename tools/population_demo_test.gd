@@ -35,34 +35,34 @@ func _init() -> void:
 
 	for day in DAYS:
 		var status: Dictionary = sim.tick_demo()
-		_check_conservation(status, money_initial, population_initial, day + 1)
+		_check_conservation(sim, status, money_initial, population_initial, day + 1)
 		if day >= DAYS - 10:
 			wheat_baseline += float(status["consumed_today"][0])
-			food_spend_baseline += _food_spend(status)
+			food_spend_baseline += _food_spend(sim)
 			wheat_samples += 1
 
 	var before_shock: Dictionary = sim.get_demo_status()
-	var savings_before := _savings(before_shock)
+	var savings_before := _savings(sim)
 	sim.demo_price_shock("wheat", 100.0)
 	var wheat_after := 0.0
 	var food_spend_after := 0.0
 	var after_samples := 0
 	for day in SHOCK_DAYS:
 		var status: Dictionary = sim.tick_demo()
-		_check_conservation(status, money_initial, population_initial, DAYS + day + 1)
+		_check_conservation(sim, status, money_initial, population_initial, DAYS + day + 1)
 		wheat_after += float(status["consumed_today"][0])
-		food_spend_after += _food_spend(status)
+		food_spend_after += _food_spend(sim)
 		after_samples += 1
 
 	var average_before := wheat_baseline / maxf(1.0, float(wheat_samples))
 	var average_after := wheat_after / maxf(1.0, float(after_samples))
 	var spend_before := food_spend_baseline / maxf(1.0, float(wheat_samples))
 	var spend_after := food_spend_after / maxf(1.0, float(after_samples))
-	var savings_after := _savings(sim.get_demo_status())
+	var savings_after := _savings(sim)
 
-	_report(before_shock, average_before, average_after, spend_before, spend_after,
+	_report(sim, before_shock, average_before, average_after, spend_before, spend_after,
 			savings_before, savings_after)
-	_check_economy(before_shock, spend_before, spend_after, savings_before, savings_after)
+	_check_economy(sim, before_shock, spend_before, spend_after, savings_before, savings_after)
 
 	if _failures.is_empty():
 		print("[population] OK: conservação e ciclo econômico validados.")
@@ -74,7 +74,7 @@ func _init() -> void:
 		quit(1)
 
 
-func _check_conservation(status: Dictionary, money_initial: float,
+func _check_conservation(sim, status: Dictionary, money_initial: float,
 		population_initial: float, day: int) -> void:
 	if absf(float(status["money_total"]) - money_initial) > MONEY_EPSILON:
 		_failures.append("dia %d: dinheiro %.4f != %.4f" % [
@@ -83,13 +83,15 @@ func _check_conservation(status: Dictionary, money_initial: float,
 		_failures.append("dia %d: população %.3f != %.3f" % [
 			day, _population(status), population_initial])
 	for city in status["cities"]:
-		for market in city["markets"]:
+		var city_id := String(city["id"])
+		# Mercados são detalhe pesado: vêm sob demanda pelo id da cidade.
+		for market in sim.get_city_status(city_id).get("markets", []):
 			if float(market["stock"]) < -STOCK_EPSILON:
 				_failures.append("dia %d: estoque negativo em %s (%.4f)" % [
-					day, city["id"], market["stock"]])
+					day, city_id, market["stock"]])
 
 
-func _check_economy(status: Dictionary, spend_before: float, spend_after: float,
+func _check_economy(sim, status: Dictionary, spend_before: float, spend_after: float,
 		savings_before: float, savings_after: float) -> void:
 	var produced: Array = status["produced_total"]
 	var consumed: Array = status["consumed_total"]
@@ -99,15 +101,18 @@ func _check_economy(status: Dictionary, spend_before: float, spend_after: float,
 		_failures.append("sem consumo de trigo")
 
 	for city in status["cities"]:
+		var city_id := String(city["id"])
+		# Construções e POP são detalhe pesado: vêm sob demanda por cidade.
+		var heavy: Dictionary = sim.get_city_status(city_id)
 		if float(city["gdp"]) <= 0.0:
-			_failures.append("%s: PIB não positivo" % city["id"])
+			_failures.append("%s: PIB não positivo" % city_id)
 		var building_profit := 0.0
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			building_profit += float(building["profit"])
 		if building_profit <= 0.0:
 			_failures.append("%s: lucro privado não positivo (%.2f)" % [
-				city["id"], building_profit])
-		var pop: Dictionary = city["pop"]
+				city_id, building_profit])
+		var pop: Dictionary = heavy.get("pop", {})
 		if float(pop["satisfaction"]) < 0.5:
 			_failures.append("%s: satisfação alimentar baixa (%.2f)" % [
 				city["id"], pop["satisfaction"]])
@@ -125,8 +130,8 @@ func _check_economy(status: Dictionary, spend_before: float, spend_after: float,
 	if savings_after >= savings_before:
 		_failures.append("choque de preço não reduziu a poupança (%.2f -> %.2f)" % [
 			savings_before, savings_after])
-	if _external_income(status) > 0.001:
-		_failures.append("renda externa não isolada no teste (%.3f)" % _external_income(status))
+	if _external_income(sim) > 0.001:
+		_failures.append("renda externa não isolada no teste (%.3f)" % _external_income(sim))
 
 
 func _population(status: Dictionary) -> float:
@@ -136,28 +141,33 @@ func _population(status: Dictionary) -> float:
 	return total
 
 
-func _savings(status: Dictionary) -> float:
+## POP é detalhe pesado: o status diário publica só os escalares leves, então
+## cada cidade é lida sob demanda pelo id.
+func _savings(sim) -> float:
 	var total := 0.0
-	for city in status["cities"]:
-		total += float(city["pop"]["savings"])
+	for city in sim.get_demo_status().get("cities", []):
+		total += float(sim.get_city_status(String(city["id"])).get("pop", {}).get(
+			"savings", 0.0))
 	return total
 
 
-func _food_spend(status: Dictionary) -> float:
+func _food_spend(sim) -> float:
 	var total := 0.0
-	for city in status["cities"]:
-		total += float(city["pop"]["food_spend"])
+	for city in sim.get_demo_status().get("cities", []):
+		total += float(sim.get_city_status(String(city["id"])).get("pop", {}).get(
+			"food_spend", 0.0))
 	return total
 
 
-func _external_income(status: Dictionary) -> float:
+func _external_income(sim) -> float:
 	var total := 0.0
-	for city in status["cities"]:
-		total += float(city["pop"]["external_income"])
+	for city in sim.get_demo_status().get("cities", []):
+		total += float(sim.get_city_status(String(city["id"])).get("pop", {}).get(
+			"external_income", 0.0))
 	return total
 
 
-func _report(status: Dictionary, wheat_before: float, wheat_after: float,
+func _report(sim, status: Dictionary, wheat_before: float, wheat_after: float,
 		spend_before: float, spend_after: float,
 		savings_before: float, savings_after: float) -> void:
 	var produced: Array = status["produced_total"]
@@ -168,7 +178,8 @@ func _report(status: Dictionary, wheat_before: float, wheat_after: float,
 		spend_before, spend_after, savings_before, savings_after])
 	print("  produzido(trigo)=%.1f consumido(trigo)=%.1f" % [produced[0], consumed[0]])
 	for city in status["cities"]:
-		var pop: Dictionary = city["pop"]
+		var heavy: Dictionary = sim.get_city_status(String(city["id"]))
+		var pop: Dictionary = heavy.get("pop", {})
 		var income := float(pop["disposable"]) + float(pop["service_spend"])
 		print(("  %-6s pop=%.0f PIB=%.1f PIBpc=%.5f emprego=%.0f desemprego=%.0f "
 				+ "salario=%.1f renda=%.1f disp=%.1f consumo=%.2f sav=%.1f sat=%.2f") % [
@@ -176,8 +187,9 @@ func _report(status: Dictionary, wheat_before: float, wheat_after: float,
 			pop["employed"], pop["unemployed"], pop["wage_income"],
 			income, pop["disposable"], pop["consumed"], pop["savings"],
 			pop["satisfaction"]])
+		var markets: Array = heavy.get("markets", [])
 		var prices := PackedStringArray()
-		for market in city["markets"]:
+		for market in markets:
 			prices.append("%.1f" % market["price"])
 		print("         preços(trigo)=%s estoque(trigo)=%.1f" % [
-			" / ".join(prices), city["markets"][0]["stock"]])
+			" / ".join(prices), float(Array(markets)[0]["stock"])])

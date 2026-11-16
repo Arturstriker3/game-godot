@@ -2564,7 +2564,16 @@ func _city_tooltip_content(city: Dictionary, mode: String) -> Dictionary:
 	var total := 0
 	var main_resource := ""
 	var main_remaining := -1.0
-	var deposits: Dictionary = city.get("deposits", {})
+	# O status diário publica só o bloco leve: as jazidas vêm sob demanda em
+	# get_city_status(id). Cidade montada à mão (teste/fallback) traz "deposits"
+	# e continua sendo lida daqui.
+	var deposits: Dictionary = {}
+	if city.has("deposits"):
+		deposits = city["deposits"]
+	elif not id.is_empty() and Economy.sim != null \
+			and Economy.sim.has_method("get_city_status"):
+		var heavy: Dictionary = Economy.sim.get_city_status(id)
+		deposits = heavy.get("deposits", {})
 	for resource in deposits:
 		var entry: Dictionary = deposits[resource]
 		total += 1

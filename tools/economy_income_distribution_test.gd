@@ -146,7 +146,8 @@ func _new_world() -> Object:
 func _shares_by_nation(sim: Object) -> Dictionary:
 	var out := {}
 	for city in sim.get_demo_status().get("cities", []):
-		var pop: Dictionary = city.get("pop", {})
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+		var pop: Dictionary = heavy.get("pop", {})
 		var shares: Array = pop.get("income_level_share", [])
 		if shares.size() < 4:
 			_fail("%s: status sem income_level_share[4]" % String(city.get("id", "")))

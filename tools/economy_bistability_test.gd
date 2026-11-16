@@ -97,7 +97,8 @@ func _run() -> void:
 		_failures.append("GBR-LDN não encontrada no status final")
 		return
 
-	var satisfaction := float(london["pop"]["satisfaction"])
+	var london_heavy: Dictionary = sim.get_city_status("GBR-LDN")
+	var satisfaction := float(london_heavy.get("pop", {}).get("satisfaction", 0.0))
 	print("[bistability] GBR satisfação final = %.1f%% (meta >= %.0f%%)" % [
 		satisfaction * 100.0, GBR_TARGET * 100.0])
 
@@ -124,7 +125,8 @@ func _trace_london(day: int, sim: Object) -> void:
 	var workers := 0.0
 	var util_sum := 0.0
 	var cap_sum := 0.0
-	for building in london.get("buildings", []):
+	var heavy: Dictionary = sim.get_city_status(String(london.get("id", "")))
+	for building in heavy.get("buildings", []):
 		var output := int(building.get("output_product", -1))
 		var resource := String(building.get("resource", ""))
 		if output < 0:
@@ -140,7 +142,7 @@ func _trace_london(day: int, sim: Object) -> void:
 	print("%d\t%.0f\t%.2f\t%.0f\t%.3f" % [
 		day, workers, util,
 		float(london.get("government_budget", 0.0)),
-		float(london["pop"]["satisfaction"]),
+		float((heavy.get("pop", {}) as Dictionary).get("satisfaction", 0.0)),
 	])
 
 

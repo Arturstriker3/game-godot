@@ -64,7 +64,7 @@ func _run() -> void:
 		var current := {}
 		for city in status.get("cities", []):
 			var cid := String(city.get("id", ""))
-			for building in city.get("buildings", []):
+			for building in _heavy(sim, city).get("buildings", []):
 				var bid := "%s|%s" % [cid, String(building.get("id", ""))]
 				current[bid] = {
 					"city": cid, "nation": String(city.get("nation", "")),
@@ -89,7 +89,7 @@ func _run() -> void:
 					closures.append(gone)
 		previous = current
 	var status: Dictionary = sim.get_demo_status()
-	var final := _snapshot_by_nation(status)
+	var final := _snapshot_by_nation(sim, status)
 	var summary := _summarize(closures, final)
 	_write_json(OUT_PATH, {"meta": {"days": _days,
 		"bankruptcies": int(status.get("bankruptcies", 0)),
@@ -113,15 +113,23 @@ func _cities_with_center(cities: Array) -> Array:
 	return result
 
 
-func _snapshot_by_nation(status: Dictionary) -> Dictionary:
+## Detalhe pesado da cidade (pop/deposits/buildings): o status diário publica
+## só o bloco leve, então o diagnóstico vem sob demanda de get_city_status(id).
+static func _heavy(sim: Object, city: Dictionary) -> Dictionary:
+	var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+	return heavy
+
+
+func _snapshot_by_nation(sim: Object, status: Dictionary) -> Dictionary:
 	var nations := {}
 	var products: Array = status.get("products", [])
 	for city in status.get("cities", []):
+		var heavy := _heavy(sim, city)
 		var tag := String(city.get("nation", ""))
 		if not nations.has(tag):
 			nations[tag] = {"need": 0.0, "consumed": 0.0, "pop": 0.0, "cities": []}
 		var n: Dictionary = nations[tag]
-		var pop: Dictionary = city.get("pop", {})
+		var pop: Dictionary = heavy.get("pop", {})
 		n["need"] += float(pop.get("need", 0.0))
 		n["consumed"] += float(pop.get("consumed", 0.0))
 		n["pop"] += float(city.get("population", 0.0))
@@ -143,8 +151,8 @@ func _snapshot_by_nation(status: Dictionary) -> Dictionary:
 			"disposable": float(pop.get("disposable", 0.0)),
 			"gdp": float(city.get("gdp", 0.0)),
 			"external_demand": city.get("external_demand", []),
-			"deposits": city.get("deposits", {}),
-			"buildings": city.get("buildings", [])})
+			"deposits": heavy.get("deposits", {}),
+			"buildings": heavy.get("buildings", [])})
 	for tag in nations:
 		var n: Dictionary = nations[tag]
 		n["sat"] = n["consumed"] / n["need"] if n["need"] > 0.0 else 1.0

@@ -92,9 +92,13 @@ func _scenario_wheat_glut() -> Array:
 	_run(world, 7)
 
 	var decisions: Array = ai.get_decisions()
-	var status: Dictionary = sim.get_demo_status()
-	var portus := _city(status, "PORTUS")
-	var wheat: Dictionary = portus["markets"][0]
+	# Mercado é detalhe pesado: vem sob demanda pelo id da cidade.
+	var portus: Dictionary = sim.get_city_status("PORTUS")
+	var portus_markets: Array = portus.get("markets", [])
+	if portus_markets.is_empty():
+		_fail("trigo: PORTUS sem mercados no status da cidade")
+		return decisions
+	var wheat: Dictionary = portus_markets[0]
 	if float(wheat.get("surplus", 0.0)) <= 0.0:
 		_fail("trigo: excesso de oferta não registrado")
 	if not _has(decisions, "private", "avoid", "wheat"):
@@ -125,7 +129,7 @@ func _scenario_iron_discovery() -> Array:
 
 	var decisions: Array = ai.get_decisions()
 	var status: Dictionary = sim.get_demo_status()
-	var mines := _buildings_with_resource(status, "iron")
+	var mines := _buildings_with_resource(sim, status, "iron")
 	if mines.is_empty():
 		_fail("ferro: nenhuma mina foi criada após a descoberta")
 		return decisions
@@ -172,7 +176,8 @@ func _scenario_no_build_loop() -> Array:
 		var city_id := String(city.get("id", ""))
 		var idle := 0
 		var total := 0
-		for building in city.get("buildings", []):
+		# Construções vêm do detalhe pesado sob demanda (não do status diário).
+		for building in sim.get_city_status(city_id).get("buildings", []):
 			total += 1
 			if float(building.get("utilization", 0.0)) < 0.10:
 				idle += 1
@@ -224,10 +229,8 @@ func _inject_stock(sim, city_id: String, product: int, amount: float) -> void:
 
 
 func _food_capacity(sim, city_id: String) -> float:
-	var status: Dictionary = sim.get_demo_status()
-	var city := _city(status, city_id)
 	var total := 0.0
-	for building in city.get("buildings", []):
+	for building in sim.get_city_status(city_id).get("buildings", []):
 		if int(building.get("output_product", -1)) in FOOD_PRODUCTS:
 			total += float(building.get("capacity", 0.0))
 	return total
@@ -237,10 +240,11 @@ func _government_budget(sim, city_id: String) -> float:
 	return float(_city(sim.get_demo_status(), city_id).get("government_budget", 0.0))
 
 
-func _buildings_with_resource(status: Dictionary, resource: String) -> Array:
+func _buildings_with_resource(sim, status: Dictionary, resource: String) -> Array:
 	var found: Array = []
 	for city in status.get("cities", []):
-		for building in city.get("buildings", []):
+		var city_id := String(city.get("id", ""))
+		for building in sim.get_city_status(city_id).get("buildings", []):
 			if String(building.get("resource", "")) == resource:
 				found.append(building)
 	return found

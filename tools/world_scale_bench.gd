@@ -251,8 +251,8 @@ func _measure_determinism(world: Dictionary) -> Dictionary:
 	var async_status: Dictionary = async_sim.get_demo_status()
 	var sync_orders: Array = sync_status.get("trade_orders", [])
 	var async_orders: Array = async_status.get("trade_orders", [])
-	var a := _digest(sync_status, sync_orders)
-	var b := _digest(async_status, async_orders)
+	var a := _digest(sync_sim, sync_status, sync_orders)
+	var b := _digest(async_sim, async_status, async_orders)
 	return {
 		"days": _determinism,
 		"identical": a == b,
@@ -563,7 +563,9 @@ func _label_stats(report: Array) -> Dictionary:
 	}
 
 
-func _digest(status: Dictionary, orders: Array) -> String:
+## Hash do mundo: o status diário publica só o bloco leve, então estoques e
+## preços (o que fecha a equivalência sync×async) vêm de get_city_status.
+func _digest(sim: Object, status: Dictionary, orders: Array) -> String:
 	# Resumo compacto e estável: dia, caixas, estoques e pedidos do dia.
 	var parts: Array[String] = [str(status.get("day", 0))]
 	parts.append("%.6f" % float(status.get("money_total", 0.0)))
@@ -571,10 +573,11 @@ func _digest(status: Dictionary, orders: Array) -> String:
 	parts.append(str(status.get("bankruptcies", 0)))
 	var cities: Array = status.get("cities", [])
 	for city in cities:
+		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
 		parts.append("%.6f" % float(city.get("population", 0.0)))
 		parts.append("%.6f" % float(city.get("firm_cash", 0.0)))
 		parts.append("%.6f" % float(city.get("government_budget", 0.0)))
-		for market in city.get("markets", []):
+		for market in heavy.get("markets", []):
 			parts.append("%.6f" % float(market.get("stock", 0.0)))
 			parts.append("%.6f" % float(market.get("price", 0.0)))
 	for order in orders:

@@ -105,8 +105,11 @@ func city_daily_count(city_id: String) -> int:
 # --- Agregação --------------------------------------------------------------
 
 func _nation_values(summary: Dictionary) -> Dictionary:
+	var light: Dictionary = summary.get("light", {})
+	var cities: Array = summary.get("cities", [])
 	var totals := {}
-	for city in summary.get("cities", []):
+	for index in cities.size():
+		var city: Dictionary = cities[index]
 		var tag := String(city.get("nation", ""))
 		if tag.is_empty():
 			continue
@@ -120,10 +123,8 @@ func _nation_values(summary: Dictionary) -> Dictionary:
 		entry["production"] = float(entry["production"]) \
 				+ float(city.get("production", 0.0))
 		entry["need"] = float(entry["need"]) + float(city.get("need", 0.0))
-		var deposits: Dictionary = city.get("deposits", {})
-		for resource in deposits:
-			entry["reserves"] = float(entry["reserves"]) \
-					+ float(deposits[resource].get("remaining_kt", 0.0))
+		entry["reserves"] = float(entry["reserves"]) \
+				+ _city_reserves(city, light, index)
 		totals[tag] = entry
 
 	var values := {}
@@ -137,6 +138,26 @@ func _nation_values(summary: Dictionary) -> Dictionary:
 			"reserves": float(entry["reserves"]),
 		}
 	return values
+
+
+## Reservas de uma cidade. O status diário publica só o bloco leve, com as
+## jazidas em tabela CSR indexada por cidade (`d_offset`/`d_remaining_kt`);
+## sem `light` (binário antigo ou fixture), cai no dicionário pesado da cidade.
+static func _city_reserves(city: Dictionary, light: Dictionary,
+		index: int) -> float:
+	var offset: PackedInt32Array = light.get("d_offset", PackedInt32Array())
+	if index >= 0 and index + 1 < offset.size():
+		var remaining: PackedFloat64Array = light.get("d_remaining_kt",
+				PackedFloat64Array())
+		var total := 0.0
+		for at in range(offset[index], mini(offset[index + 1], remaining.size())):
+			total += remaining[at]
+		return total
+	var deposits: Dictionary = city.get("deposits", {})
+	var total := 0.0
+	for resource in deposits:
+		total += float(deposits[resource].get("remaining_kt", 0.0))
+	return total
 
 
 func _city_values(summary: Dictionary) -> Dictionary:

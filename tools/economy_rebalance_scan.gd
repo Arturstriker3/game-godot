@@ -60,6 +60,13 @@ func _load_dict(path: String) -> Dictionary:
 	return data if typeof(data) == TYPE_DICTIONARY else {}
 
 
+## Detalhe pesado da cidade (pop/deposits): o status diário publica só o bloco
+## leve, então o scan vem sob demanda de get_city_status(id).
+static func _heavy(sim: Object, city: Dictionary) -> Dictionary:
+	var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+	return heavy
+
+
 func _cities_with_center(cities: Array) -> Array:
 	var result: Array = []
 	for city in cities:
@@ -122,15 +129,16 @@ func _run() -> void:
 	for city in status.get("cities", []):
 		var cid := String(city.get("id", ""))
 		var tag := String(city.get("nation", ""))
+		var heavy := _heavy(sim, city)
 		if not nation_cities.has(tag):
 			nation_cities[tag] = []
 		nation_cities[tag].append(cid)
-		var pop: Dictionary = city.get("pop", {})
+		var pop: Dictionary = heavy.get("pop", {})
 		var deposit_count := 0
 		var deposit_types := {}
 		var reserve_total := 0.0
-		for resource in city.get("deposits", {}):
-			var entry: Dictionary = city.get("deposits", {})[resource]
+		for resource in heavy.get("deposits", {}):
+			var entry: Dictionary = heavy.get("deposits", {})[resource]
 			deposit_count += 1
 			deposit_types[String(resource)] = int(deposit_types.get(String(resource), 0)) + 1
 			var remaining := float(entry.get("remaining_kt", 0.0))

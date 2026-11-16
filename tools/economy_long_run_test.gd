@@ -38,10 +38,10 @@ func _init() -> void:
 
 	for day in DAYS:
 		var status: Dictionary = sim.tick_demo()
-		_check_invariants(status, day + 1)
-		_record(status, day + 1)
+		_check_invariants(sim, status, day + 1)
+		_record(sim, status, day + 1)
 		if (day + 1) % 30 == 0:
-			_print_month(status)
+			_print_month(sim, status)
 
 	_write_csv()
 	_print_summary()
@@ -55,7 +55,7 @@ func _init() -> void:
 		quit(1)
 
 
-func _check_invariants(status: Dictionary, day: int) -> void:
+func _check_invariants(sim: Object, status: Dictionary, day: int) -> void:
 	if absf(float(status["money_total"]) - _money_initial) > MONEY_EPSILON:
 		_fail("dia %d: dinheiro %.4f != %.4f" % [
 			day, status["money_total"], _money_initial])
@@ -64,11 +64,12 @@ func _check_invariants(status: Dictionary, day: int) -> void:
 
 	for city in status.get("cities", []):
 		var id := String(city["id"])
+		var heavy: Dictionary = sim.get_city_status(id)
 		for cash_key in ["firm_cash", "service_cash", "government_budget"]:
 			if float(city[cash_key]) < -VALUE_EPSILON:
 				_fail("dia %d: %s com %s negativo (%.2f)" % [
 					day, id, cash_key, city[cash_key]])
-		var pop: Dictionary = city["pop"]
+		var pop: Dictionary = heavy["pop"]
 		if float(pop["savings"]) < -VALUE_EPSILON:
 			_fail("dia %d: %s com poupança negativa (%.2f)" % [
 				day, id, pop["savings"]])
@@ -76,22 +77,23 @@ func _check_invariants(status: Dictionary, day: int) -> void:
 				- float(pop["labor_force"])) > 0.01:
 			_fail("dia %d: %s emprego inconsistente" % [day, id])
 		var expected_gdp := float(city.get("service_revenue", 0.0))
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			expected_gdp += float(building["revenue"]) - float(building["input_value"])
 		if absf(float(city["gdp"]) - expected_gdp) > VALUE_EPSILON:
 			_fail("dia %d: %s PIB != valor adicionado" % [day, id])
-		for product in city.get("markets", []):
+		for product in heavy.get("markets", []):
 			if float(product["stock"]) < -STOCK_EPSILON:
 				_fail("dia %d: %s estoque negativo" % [day, id])
 
 
-func _record(status: Dictionary, day: int) -> void:
+func _record(sim: Object, status: Dictionary, day: int) -> void:
 	for city in status.get("cities", []):
-		var pop: Dictionary = city["pop"]
-		var markets: Array = city["markets"]
+		var heavy: Dictionary = sim.get_city_status(String(city["id"]))
+		var pop: Dictionary = heavy["pop"]
+		var markets: Array = heavy["markets"]
 		var profit := 0.0
 		var produced := {"wheat": 0.0}
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			profit += float(building["profit"])
 			produced[String(building["resource"])] += float(building["revenue"])
 		var wage_bill := float(pop["wage_income"])
@@ -126,12 +128,13 @@ func _record(status: Dictionary, day: int) -> void:
 		})
 
 
-func _print_month(status: Dictionary) -> void:
+func _print_month(sim: Object, status: Dictionary) -> void:
 	for city in status.get("cities", []):
-		var pop: Dictionary = city["pop"]
-		var markets: Array = city["markets"]
+		var heavy: Dictionary = sim.get_city_status(String(city["id"]))
+		var pop: Dictionary = heavy["pop"]
+		var markets: Array = heavy["markets"]
 		var profit := 0.0
-		for building in city.get("buildings", []):
+		for building in heavy.get("buildings", []):
 			profit += float(building["profit"])
 		print(("dia %3d %-6s preço_trigo=%.1f estoque_trigo=%.0f "
 				+ "PIBpc=%.5f renda_pc=%.5f salário=%.2f desemp=%.1f%% sat=%.2f "

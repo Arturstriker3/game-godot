@@ -156,16 +156,22 @@ func _inject(sim: Object, stocks: Dictionary, savings: float,
 	sim.demo_from_dict(save)
 
 
-func _market(status: Dictionary, id: String) -> Dictionary:
+## Mercado e POP são detalhe pesado: o status diário publica só os escalares
+## leves, então o bloco completo vem sob demanda pelo id da cidade.
+func _city_heavy(sim: Object) -> Dictionary:
+	return sim.get_city_status(CITY_ID)
+
+
+func _market(sim: Object, id: String) -> Dictionary:
 	var product := _product(id)
-	var markets: Array = status["cities"][0]["markets"]
+	var markets: Array = _city_heavy(sim).get("markets", [])
 	if product < 0 or product >= markets.size():
 		return {}
 	return markets[product]
 
 
-func _pop(status: Dictionary) -> Dictionary:
-	return (status["cities"][0] as Dictionary)["pop"]
+func _pop(sim: Object) -> Dictionary:
+	return _city_heavy(sim).get("pop", {})
 
 
 func _consumed_today(status: Dictionary, id: String) -> float:
@@ -174,11 +180,12 @@ func _consumed_today(status: Dictionary, id: String) -> float:
 	return float(values[product]) if product >= 0 and product < values.size() else 0.0
 
 
-func _check_conservation(status: Dictionary, money_initial: float, label: String) -> void:
+func _check_conservation(sim: Object, status: Dictionary, money_initial: float,
+		label: String) -> void:
 	var money := float(status.get("money_total", 0.0))
 	if absf(money - money_initial) > MONEY_EPSILON:
 		_fail("%s: dinheiro %.2f != %.2f" % [label, money, money_initial])
-	for market in status["cities"][0]["markets"]:
+	for market in _city_heavy(sim).get("markets", []):
 		if float(market["stock"]) < -1e-9:
 			_fail("%s: estoque negativo (%.4f)" % [label, float(market["stock"])])
 			break
@@ -193,8 +200,8 @@ func _test_substitution(only: String) -> void:
 	var before: Dictionary = sim.get_demo_status()
 	var money := float(before["money_total"])
 	var status: Dictionary = sim.tick_demo()
-	_check_conservation(status, money, "substituição " + only)
-	var pop := _pop(status)
+	_check_conservation(sim, status, money, "substituição " + only)
+	var pop := _pop(sim)
 	var need := float(pop["need"])
 	var consumed := float(pop["consumed"])
 	if need <= 0.0 or consumed < need * 0.95:
@@ -227,7 +234,7 @@ func _test_levels_by_income() -> void:
 	# segundo consome conforme ela.
 	low.tick_demo()
 	var low_status: Dictionary = low.tick_demo()
-	var low_pop := _pop(low_status)
+	var low_pop := _pop(low)
 	if int(low_pop["needs_level"]) != 1:
 		_fail("renda baixa: nível %d (esperado 1 — só basic)" % int(
 			low_pop["needs_level"]))
@@ -240,7 +247,7 @@ func _test_levels_by_income() -> void:
 		[0.30, 0.35, 0.40])
 	high.tick_demo()
 	var high_status: Dictionary = high.tick_demo()
-	var high_pop := _pop(high_status)
+	var high_pop := _pop(high)
 	if int(high_pop["needs_level"]) < 2:
 		_fail("renda alta: nível %d (esperado >= 2)" % int(
 			high_pop["needs_level"]))
@@ -267,16 +274,16 @@ func _test_durable_decay() -> void:
 	_inject(sim, {}, 0.0, 0.0, durable)
 	var before: Dictionary = sim.get_demo_status()
 	var money := float(before["money_total"])
-	var initial := float(_pop(before)["durable_stock"])
+	var initial := float(_pop(sim)["durable_stock"])
 	if absf(initial - 100.0) > 0.01:
 		_fail("duráveis: estoque inicial %.3f (esperado 100)" % initial)
 	for day in 365:
 		var status: Dictionary = sim.tick_demo()
 		if day % 90 == 0:
-			_check_conservation(status, money, "duráveis dia %d" % (day + 1))
+			_check_conservation(sim, status, money, "duráveis dia %d" % (day + 1))
 	var after: Dictionary = sim.get_demo_status()
-	_check_conservation(after, money, "duráveis 365 d")
-	var remaining := float(_pop(after)["durable_stock"])
+	_check_conservation(sim, after, money, "duráveis 365 d")
+	var remaining := float(_pop(sim)["durable_stock"])
 	if absf(remaining - 90.0) > 0.01:
 		_fail("duráveis: 365 d deixaram %.4f t (esperado 90, perda de 10%%)" % remaining)
 	print("[pop_needs] duráveis: %.1f t -> %.3f t em 365 d (perda %.2f%%)" % [
@@ -292,7 +299,7 @@ func _test_government_consumption() -> void:
 	var gov_before := float((before["cities"][0] as Dictionary)["government_budget"])
 	var firm_before := float((before["cities"][0] as Dictionary)["firm_cash"])
 	var status: Dictionary = sim.tick_demo()
-	_check_conservation(status, money, "governo")
+	_check_conservation(sim, status, money, "governo")
 	var city: Dictionary = status["cities"][0]
 	var gov_spend := float(city.get("government_goods_spend", 0.0))
 	if gov_spend <= 0.0:
@@ -306,7 +313,7 @@ func _test_government_consumption() -> void:
 			gov_before, float(city["government_budget"])])
 	if float(city["firm_cash"]) <= firm_before:
 		_fail("governo: firma não recebeu o pagamento")
-	var computer_market := _market(status, "computer")
+	var computer_market := _market(sim, "computer")
 	print("[pop_needs] governo: gasto %.2f | paper %.3f t | computer %.3f t (sold %.3f, desired %.3f)" % [
 		gov_spend, _consumed_today(status, "paper"), _consumed_today(status, "computer"),
 		float(computer_market.get("sold", 0.0)), float(computer_market.get("desired", 0.0))])
@@ -320,11 +327,11 @@ func _test_demand_signal() -> void:
 	_inject(sim, {"bread": 1000.0}, 100000000.0, 1000000.0)
 	var status: Dictionary = sim.tick_demo()
 	for id in ["clothes", "medicine", "phone", "car"]:
-		var market := _market(status, id)
+		var market := _market(sim, id)
 		if float(market.get("desired", 0.0)) <= 0.0:
 			_fail("demanda: %s sem demanda desejada (IA não veria escassez)" % id)
 		if float(market.get("shortage", 0.0)) <= 0.0:
 			_fail("demanda: %s sem shortage com estoque zero" % id)
 	print("[pop_needs] demanda: clothes desired=%.2f shortage=%.2f" % [
-		float(_market(status, "clothes").get("desired", 0.0)),
-		float(_market(status, "clothes").get("shortage", 0.0))])
+		float(_market(sim, "clothes").get("desired", 0.0)),
+		float(_market(sim, "clothes").get("shortage", 0.0))])
