@@ -805,9 +805,14 @@ private:
 	 * @param city_index Posição em ws_.cities.
 	 * @param slot Cache da cidade (mesma posição em demo_status_cache_).
 	 * @param in_transit Carga em trânsito até a cidade (já somada em passada única).
+	 * @param heavy Publica o detalhe pesado (markets/pop/services/buildings/
+	 *   deposits). O status diário passa `false` (S7-c): esses blocos ficam sob
+	 *   demanda em `get_city_status(id)`, que passa `true`. Os escalares leves
+	 *   (população, PIB, indicadores, emprego setorial, fluxos de comércio) e o
+	 *   bloco `light` são publicados sempre.
 	 */
 	void demo_fill_city_status(std::size_t city_index, DemoStatusCitySlot& slot,
-		double in_transit) const;
+		double in_transit, bool heavy) const;
 	/**
 	 * Preenche os sinais leves por cidade (S7-c): mercados (7 campos), POP
 	 * (5 escalares) e incumbentes por grupo, em arrays planos indexados por

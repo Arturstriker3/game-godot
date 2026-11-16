@@ -1290,6 +1290,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		scope("scope"),
 		service_cash("service_cash"),
 		service_jobs("service_jobs"),
+		services("services"),
 		service_sectors("service_sectors"),
 		service_businesses("service_businesses"),
 		service_bankruptcies("service_bankruptcies"),
@@ -1447,7 +1448,7 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
-		DemoStatusCitySlot& slot, double in_transit) const {
+		DemoStatusCitySlot& slot, double in_transit, bool heavy) const {
 	const DemoCity& city = ws_.cities[city_index];
 	const DemoStatusKeys& k = demo_status_keys_;
 	Dictionary& dict = slot.dict;
@@ -1620,6 +1621,10 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		}
 	}
 
+	// S7-c: o detalhe pesado (deposits/pop/markets/services) só é publicado
+	// quando `heavy` — isto é, em get_city_status(id). O status diário publica
+	// apenas os escalares leves e o bloco `light`.
+	if (heavy) {
 	// Reservas minerais declaradas (só produtos com jazida conhecida; ausência
 	// da chave = sem dado, não "zero"). O bloco ESTÁTICO (reserva inicial,
 	// qualidade, profundidade, eficiência, opex) é escrito uma vez; por dia só
@@ -2074,10 +2079,15 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			slot.services_filled = true;
 		}
 	}
+	}  // fim do bloco pesado (deposits/pop/markets/services)
 
 	// `Array` é tipo por referência no Godot 4 (validado em teste): mutar
 	// `slot.imported` já aparece no dicionário publicado. Redimensionar para o
 	// mesmo tamanho era uma chamada à ponte por array/cidade/dia sem efeito.
+	if (slot.io_written.size() < static_cast<std::size_t>(4 * ws_.products)) {
+		slot.io_written.assign(static_cast<std::size_t>(4 * ws_.products), 0.0);
+		slot.io_filled.assign(4, 0);
+	}
 	if (slot.imported.size() != ws_.products) {
 		slot.imported.resize(ws_.products);
 		slot.exported.resize(ws_.products);
@@ -2117,6 +2127,8 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		}
 	}
 
+	// S7-c: construções também são detalhe pesado sob demanda.
+	if (heavy) {
 	if (slot.buildings.size() != local_buildings.size()) {
 		slot.buildings.resize(local_buildings.size());
 		slot.buildings_bound = false;
@@ -2236,6 +2248,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.buildings_published = true;
 	}
 	slot.buildings_bound = true;
+	}  // fim do bloco pesado (buildings)
 }
 
 void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
@@ -2563,7 +2576,7 @@ Dictionary EconomySim::get_demo_status() {
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
 		DemoStatusCitySlot& slot = cache.city_slots[city_index];
 		demo_fill_city_status(city_index, slot,
-			cache.in_transit_by_city[city_index]);
+			cache.in_transit_by_city[city_index], false);
 		cache.cities[city_index] = slot.dict;
 	}
 	OGS_SIM_PHASE_LAP(0);
@@ -2915,9 +2928,10 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 	}
 
 	// Slot frio (nada preenchido): `demo_fill_city_status` escreve todos os
-	// campos — mesmo conteúdo que o bloco por cidade do status diário.
+	// campos — mesmo conteúdo que o bloco por cidade do status diário, mais o
+	// detalhe pesado (markets/pop/services/buildings/deposits) sob demanda.
 	DemoStatusCitySlot slot;
-	demo_fill_city_status(city_index, slot, in_transit);
+	demo_fill_city_status(city_index, slot, in_transit, true);
 	return slot.dict;
 }
 
