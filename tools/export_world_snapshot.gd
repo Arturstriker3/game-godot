@@ -1,0 +1,190 @@
+extends SceneTree
+
+## Materializa o snapshot do mundo de partida (A1 — núcleo C++ fora do Godot).
+##
+## Monta o mundo real exatamente como `tools/world_equivalence.gd` monta, mas SEM
+## IA (nada de `GeographyService`, `EconomicAI` nem `resolve_initial_farms`) e,
+## ao final, grava `demo_to_snapshot()` — o par `{"definitions": ..., "save": ...}`
+## que carrega o mundo inteiro, sem depender dos JSON de `data/definitions/`.
+##
+##   godot --headless --path . --script res://tools/export_world_snapshot.gd \
+##     -- --out=snapshot.json [--urban=1]
+##
+## - `--out` é obrigatório.
+## - `--urban=1` (padrão) aplica solo, moradia e prefeitura por cidade com os
+##   MESMOS quatro arquivos do autoload do jogo; `--urban=0` exporta sem a
+##   camada urbana.
+## - `demo_seed_industry()` entra depois do mundo: o bootstrap industrial do
+##   jogo roda no primeiro tick, então sem ele o snapshot não é o estado de
+##   partida real (o executável C++ recusa o arquivo).
+## - Serialização: `demo_to_snapshot_file()`, que grava `{"definitions": ...,
+##   "save": ...}` pelo serializador da BIBLIOTECA (`ogs::save::dump_json`,
+##   nlohmann). NÃO se usa `JSON.stringify`: o JSON do Godot não é
+##   round-trip IEEE-exato para |x| < 1, e o snapshot tem de chegar ao CLI
+##   bit a bit igual ao que sai do núcleo.
+## - Saída: 0 ok, 1 falha. Toda falha vira linha `[snapshot] FALHA: ...`.
+
+const CITIES_PATH := "res://data/definitions/scenario/cities.json"
+const PORTS_PATH := "res://data/definitions/scenario/ports.json"
+const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
+const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
+const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+const SERVICES_PATH := "res://data/definitions/economy/services.json"
+const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
+const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
+const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
+const HOUSING_PATH := "res://data/definitions/economy/housing.json"
+const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
+
+var _out := ""
+var _urban := true
+
+var _failures: Array[String] = []
+
+
+func _init() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--out="):
+			_out = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--urban="):
+			_urban = arg.split("=", true, 1)[1] != "0"
+
+	if _out == "":
+		print("[snapshot] FALHA: --out=<arquivo.json> e obrigatorio")
+		quit(1)
+		return
+
+	_run()
+	if _failures.is_empty():
+		quit(0)
+	else:
+		for failure in _failures:
+			print("[snapshot] FALHA: " + failure)
+		quit(1)
+
+
+func _fail(msg: String) -> void:
+	_failures.append(msg)
+
+
+func _load_json(path: String) -> Variant:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_fail("nao abriu " + path)
+		return null
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if data == null:
+		_fail(path + " nao e JSON valido")
+	return data
+
+
+func _load_array(path: String) -> Array:
+	var data: Variant = _load_json(path)
+	if typeof(data) != TYPE_ARRAY:
+		_fail(path + " nao e um array JSON")
+		return []
+	return data
+
+
+func _load_dict(path: String) -> Dictionary:
+	var data: Variant = _load_json(path)
+	if typeof(data) != TYPE_DICTIONARY:
+		_fail(path + " nao e um objeto JSON")
+		return {}
+	return data
+
+
+func _run() -> void:
+	var sim = EconomySim.new()
+
+	# Mesma ordem do jogo ao vivo: definições ANTES de criar o mundo.
+	sim.demo_set_goods(_load_array(GOODS_PATH))
+	sim.demo_set_recipes(_load_array(RECIPES_PATH))
+	sim.demo_set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("demo_set_services"):
+		sim.demo_set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("demo_set_currencies"):
+		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("demo_set_sector_employment"):
+		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
+		if not sector.is_empty():
+			sim.demo_set_sector_employment(sector)
+	if not _failures.is_empty():
+		return
+
+	var cities := _load_array(CITIES_PATH)
+	var ports := _load_array(PORTS_PATH)
+	var buildings := _load_array(BUILDINGS_PATH)
+	if cities.is_empty() or buildings.is_empty():
+		_fail("cenario vazio (cidades=%d, construcoes=%d)" % [
+			cities.size(), buildings.size()])
+		return
+
+	# Sem IA: `resolve_initial_farms` não roda, o cenário entra como está.
+	sim.initialize_demo_world(cities, ports, buildings)
+
+	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
+	if _urban:
+		if not sim.has_method("demo_set_urban"):
+			_fail("binario sem demo_set_urban (rode o build)")
+			return
+		sim.demo_set_urban(_load_dict(URBAN_LAND_PATH),
+			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
+			_load_dict(MUNICIPAL_FINANCE_PATH))
+		if not _failures.is_empty():
+			return
+
+	# O bootstrap industrial (§12.3) roda no PRIMEIRO tick do jogo, não na
+	# criação do mundo: sem ele a foto do dia 0 não é o estado de partida.
+	if not sim.has_method("demo_seed_industry"):
+		_fail("binario sem demo_seed_industry (rode o build)")
+		return
+	sim.demo_seed_industry()
+
+	if not sim.has_method("demo_to_snapshot_file"):
+		_fail("binario sem demo_to_snapshot_file (rode o build)")
+		return
+
+	# O arquivo é escrito pelo serializador da BIBLIOTECA (`ogs::save::dump_json`),
+	# não por `JSON.stringify`: só esse caminho é round-trip IEEE-exato e é o
+	# mesmo do CLI headless — é o que deixa replay e CLI comparáveis campo a campo.
+	var dir := _out.get_base_dir()
+	if dir != "" and not DirAccess.dir_exists_absolute(dir):
+		DirAccess.make_dir_recursive_absolute(dir)
+	if not sim.demo_to_snapshot_file(_out):
+		_fail("demo_to_snapshot_file nao gravou " + _out)
+		return
+
+	# Contagens SÓ para a mensagem: `demo_to_snapshot()` (Dictionary) passa pelo
+	# JSON do Godot e não é gravado em lugar nenhum.
+	if not sim.has_method("demo_to_snapshot"):
+		_fail("binario sem demo_to_snapshot (rode o build)")
+		return
+
+	var snapshot: Dictionary = sim.demo_to_snapshot()
+	var save: Dictionary = snapshot.get("save", {})
+	if save.is_empty() or not snapshot.has("definitions"):
+		_fail("demo_to_snapshot devolveu snapshot incompleto")
+		return
+
+	print("[snapshot] day=%d cidades=%d construcoes=%d obras=%d produtos=%d industry_seeded=%s" % [
+		int(save.get("day", 0)),
+		Array(save.get("cities", [])).size(),
+		Array(save.get("buildings", [])).size(),
+		Array(save.get("construction_projects", [])).size(),
+		Array(save.get("products", [])).size(),
+		str(bool(save.get("industry_seeded", false)))])
+	print("[snapshot] escrito %s (%d bytes)" % [_out, _file_size(_out)])
+
+
+func _file_size(path: String) -> int:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return 0
+	var size := file.get_length()
+	file.close()
+	return size

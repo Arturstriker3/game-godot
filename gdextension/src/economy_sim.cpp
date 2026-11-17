@@ -1,8 +1,12 @@
 #include "economy_sim.h"
 #include "edge/save_load.h"
+#include "edge/value_bridge.h"
 #include "sim/profiling.h"
+#include "sim/save_definitions.h"
+#include "sim/save_state.h"
 #include "sim/sim_constants.h"
 #include "sim/scenario_fixture.h"
+#include "sim/sim_day.h"
 #include "sim/urban_land.h"
 #include "sim/housing.h"
 
@@ -17,6 +21,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <fstream>
 #include <map>
 #include <set>
 #include <utility>
@@ -218,6 +223,16 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_port_capacity);
 	ClassDB::bind_method(D_METHOD("demo_to_dict"), &EconomySim::demo_to_dict);
 	ClassDB::bind_method(D_METHOD("demo_from_dict", "data"), &EconomySim::demo_from_dict);
+	ClassDB::bind_method(D_METHOD("demo_to_snapshot"),
+	                     &EconomySim::demo_to_snapshot);
+	ClassDB::bind_method(D_METHOD("demo_from_snapshot", "snapshot"),
+	                     &EconomySim::demo_from_snapshot);
+	// A1: as mesmas fotos, mas pelo serializador da biblioteca (round-trip
+	// IEEE-exato) — o snapshot não atravessa o JSON do Godot.
+	ClassDB::bind_method(D_METHOD("demo_to_snapshot_file", "path"),
+	                     &EconomySim::demo_to_snapshot_file);
+	ClassDB::bind_method(D_METHOD("demo_from_snapshot_file", "path"),
+	                     &EconomySim::demo_from_snapshot_file);
 	ClassDB::bind_method(D_METHOD("demo_set_balance", "values"),
 	                     &EconomySim::demo_set_balance);
 	ClassDB::bind_method(D_METHOD("demo_set_fleet", "nation", "trucks", "ships",
@@ -1197,71 +1212,10 @@ void EconomySim::demo_tick_core() {
 	// referência (moinho + padaria) antes de contar dinheiro/invariantes.
 	demo_seed_industry();
 
-	// S5b: retrato, dinheiro antes, avanço do dia, obras de porto, remoção de
-	// falidos/esgotados, índices e preços de abertura migraram para ogs::SimCore.
-	sim_core_.prologue();
-
-	// §19 (W1): preço da terra por ocupação/renda e decadência do sinal de
-	// demanda de zona (fechamento mensal; não move dinheiro).
-	urban_land::phase_month(ws_);
-
-	// 1. Chegada das cargas pedidas no dia anterior.
-	sim_core_.phase_arrival();
-
-	// 2. Zera os fluxos do dia.
-	sim_core_.phase_reset();
-
-	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia. Roda
-	// antes do comércio para combustível/veículos comprados já valerem hoje
-	// (migrou p/ SimCore).
-	sim_core_.phase_fleet();
-
-	// 3. Mercado de trabalho e salários.
-	sim_core_.phase_labor();
-
-	// 4. Produção: cada construção declara insumo e produto (migrou p/ SimCore).
-	sim_core_.phase_production();
-
-	// 4c. Recursos brutos (minerais, soja, algodão e madeira) (migrou p/ SimCore).
-	sim_core_.phase_raw();
-
-	// 5. Renda das famílias, impostos, transferências e consumo alimentar
-	// (migrou p/ SimCore).
-	sim_core_.phase_income();
-
-	// 5b. §19 W3: mercado de moradia (aluguel, construção, aperto).
-	sim_core_.phase_housing();
-
-	// F8: serviços (migrou p/ SimCore).
-	sim_core_.phase_services();
-
-	// 6. Comércio de alimento e dos demais bens (migrou p/ SimCore).
-	sim_core_.phase_trade();
-
-	// 7. Receita por construção, lucro, distribuição de capital e PIB
-	// (migrou p/ SimCore).
-	sim_core_.phase_accounting();
-
-	// 8. Preços reagem a estoque, oferta, demanda e custo de produção
-	// (migrou p/ SimCore).
-	sim_core_.phase_prices();
-
-	// 9. Limite diário único por mercado, aplicado depois de todas as regras
-	// de preço (migrou p/ SimCore).
-	sim_core_.phase_clamp();
-
-	// 9b-9b2. Redistribuição fiscal nacional + dividendos/repatriação dos grupos
-	// (migrou p/ SimCore).
-	sim_core_.phase_fiscal();
-
-	// 9c. Câmbio dinâmico: a balança comercial do dia move as moedas float
-	// (migrou p/ SimCore).
-	sim_core_.phase_fx();
-
-	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
-	// caixa/estoque negativo ou preço fora da banda), registra e reverte
-	// (migrou p/ SimCore; o log dos invariantes fica na fachada).
-	sim_core_.phase_invariants();
+	// A ordem do dia (prólogo + fases) é da biblioteca (sim/sim_day.cpp): a
+	// mesma sequência roda sem o Godot. Aqui ficam só a inicialização acima e o
+	// log dos invariantes abaixo.
+	ogs::demo_tick_day(ws_, sim_core_);
 	if (!ws_.invariant_violations.empty()) {
 		for (const std::string& violation : ws_.invariant_violations) {
 			UtilityFunctions::push_error(
@@ -6085,6 +6039,122 @@ void EconomySim::demo_from_dict(const Dictionary& data) {
 	++demo_status_static_version_;
 	++demo_status_deposit_version_;
 	ogs::edge::from_dict(ws_, sim_core_, data);
+}
+
+Dictionary EconomySim::demo_to_snapshot() const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	// Mesmo lock de demo_to_dict: o snapshot tem de ver mundo + definições do
+	// MESMO dia (nenhum tick no meio).
+	Dictionary snapshot;
+	snapshot["definitions"] =
+		ogs::edge::to_godot(ogs::save::definitions_to(ws_));
+	snapshot["save"] = ogs::edge::to_dict(ws_, sim_core_);
+	return snapshot;
+}
+
+void EconomySim::demo_from_snapshot(const Dictionary& snapshot) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const Variant definitions = snapshot.get("definitions", Variant());
+	const Variant save_block = snapshot.get("save", Variant());
+	if (definitions.get_type() != Variant::DICTIONARY) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: bloco 'definitions' ausente ou inválido.");
+		return;
+	}
+	if (save_block.get_type() != Variant::DICTIONARY) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: bloco 'save' ausente ou inválido.");
+		return;
+	}
+	// O snapshot substitui o mundo inteiro: o cache de status (dicionários
+	// reaproveitados) não pode sobreviver a ele (mesmo caminho de
+	// demo_from_dict).
+	demo_status_slots_[0] = DemoStatusCache{};
+	demo_status_slots_[1] = DemoStatusCache{};
+	demo_status_live_ = -1;
+	demo_status_built_day_ = -1;
+	++demo_status_static_version_;
+	++demo_status_deposit_version_;
+	// Definições primeiro: o save assume produtos/receitas/necessidades já
+	// carregados (índices incluídos).
+	ogs::save::definitions_from(ws_, ogs::edge::from_godot(definitions));
+	ogs::edge::from_dict(ws_, sim_core_,
+		static_cast<Dictionary>(save_block));
+}
+
+bool EconomySim::demo_to_snapshot_file(const String& path) const {
+	// Mesmo lock recursivo de demo_to_snapshot: o snapshot tem de ver mundo +
+	// definições do MESMO dia (nenhum tick no meio).
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	ogs::save::Value snapshot = ogs::save::Value::make_object();
+	snapshot["definitions"] = ogs::save::definitions_to(ws_);
+	snapshot["save"] = ogs::save::to_value(ws_, sim_core_);
+	// A serialização é a da BIBLIOTECA (nlohmann via dump_json), não a do
+	// Godot: é o único caminho com round-trip IEEE-exato para |x| < 1.
+	const std::string text = ogs::save::dump_json(snapshot, 2);
+	const std::string file_path(path.utf8().get_data());
+	// Binário e truncado: UTF-8 cru, sem BOM e sem tradução de fim de linha.
+	std::ofstream file(file_path, std::ios::binary | std::ios::trunc);
+	if (!file) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: não foi possível abrir para escrita: "
+			+ String(file_path.c_str()));
+		return false;
+	}
+	file.write(text.data(), static_cast<std::streamsize>(text.size()));
+	file.flush();
+	if (!file) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: falha ao gravar o arquivo: "
+			+ String(file_path.c_str()));
+		return false;
+	}
+	return true;
+}
+
+bool EconomySim::demo_from_snapshot_file(const String& path) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::string file_path(path.utf8().get_data());
+	ogs::save::Value snapshot;
+	std::string error;
+	if (!ogs::save::parse_json_file(file_path, snapshot, error)) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: snapshot ilegível (" + String(file_path.c_str())
+			+ "): " + String(error.c_str()));
+		return false;
+	}
+	if (snapshot.get_type() != ogs::save::Value::DICTIONARY) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: o snapshot não é um objeto JSON: "
+			+ String(file_path.c_str()));
+		return false;
+	}
+	const ogs::save::Value& definitions = snapshot["definitions"];
+	const ogs::save::Value& save_block = snapshot["save"];
+	if (definitions.get_type() != ogs::save::Value::DICTIONARY) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: bloco 'definitions' ausente ou inválido.");
+		return false;
+	}
+	if (save_block.get_type() != ogs::save::Value::DICTIONARY) {
+		UtilityFunctions::push_error(
+			"economia.snapshot: bloco 'save' ausente ou inválido.");
+		return false;
+	}
+	// O snapshot substitui o mundo inteiro: o cache de status não sobrevive
+	// (mesmo caminho de demo_from_snapshot).
+	demo_status_slots_[0] = DemoStatusCache{};
+	demo_status_slots_[1] = DemoStatusCache{};
+	demo_status_live_ = -1;
+	demo_status_built_day_ = -1;
+	++demo_status_static_version_;
+	++demo_status_deposit_version_;
+	// Definições primeiro: o save assume produtos/receitas/necessidades já
+	// carregados (índices incluídos). `save::from_value` é exatamente o que
+	// `edge::from_dict` chama: nada de Variant no meio do caminho.
+	ogs::save::definitions_from(ws_, definitions);
+	ogs::save::from_value(ws_, sim_core_, save_block);
+	return true;
 }
 
 } // namespace godot

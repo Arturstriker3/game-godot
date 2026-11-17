@@ -382,6 +382,51 @@ public:
 	void demo_from_dict(const Dictionary& data);
 
 	/**
+	 * Superfície de ferramenta/teste (A1a): snapshot ATÔMICO do mundo no formato
+	 * que o CLI headless consome — {"definitions": bloco estático das
+	 * definições, "save": o mesmo dicionário de demo_to_dict()}. Serve para
+	 * exportar o mundo do jogo e rodá-lo na biblioteca sem o Godot.
+	 */
+	Dictionary demo_to_snapshot() const;
+
+	/**
+	 * Superfície de ferramenta/teste (A1a): restaura um snapshot de
+	 * demo_to_snapshot(). Aplica `definitions` e depois `save` (o save depende
+	 * do bloco estático) e invalida o cache de status. Sem a chave
+	 * `definitions` ou `save`, registra erro e não toca no mundo.
+	 */
+	void demo_from_snapshot(const Dictionary& snapshot);
+
+	/**
+	 * Superfície de ferramenta/teste (A1): a MESMA fotografia de
+	 * demo_to_snapshot(), gravada em arquivo pelo serializador da BIBLIOTECA
+	 * (`ogs::save::dump_json`), sem passar pelo JSON do Godot.
+	 *
+	 * Motivo: o par `JSON.stringify`/`JSON.parse_string` do Godot NÃO é
+	 * round-trip IEEE-exato para |x| < 1 (0.0002886172890222971 sai como
+	 * 0.00028861728902229); o nlohmann da biblioteca, por onde já passa o CLI
+	 * headless, é exato. Um snapshot que atravessa o JSON do engine perde bits
+	 * e deixa de ser comparável campo a campo com o CLI.
+	 *
+	 * Grava UTF-8 sem BOM em modo binário (`std::ofstream`), com o mesmo
+	 * formato de `gdextension/bin/opengs_sim_cli.exe --snapshot=...`.
+	 * @returns false (com push_error) quando o arquivo não abre ou a escrita
+	 *          falha.
+	 */
+	bool demo_to_snapshot_file(const String& path) const;
+
+	/**
+	 * Superfície de ferramenta/teste (A1): restaura um snapshot gravado por
+	 * demo_to_snapshot_file(), lido com `ogs::save::parse_json_file` (exato,
+	 * sem o JSON do Godot). Exige as chaves `definitions` e `save`, invalida o
+	 * cache de status exatamente como demo_from_snapshot e aplica as definições
+	 * ANTES do save.
+	 * @returns false (com push_error) em arquivo ilegível, JSON inválido ou
+	 *          chave ausente/inválida — nesse caso o mundo NÃO é tocado.
+	 */
+	bool demo_from_snapshot_file(const String& path);
+
+	/**
 	 * Ajusta parâmetros de balanceamento usados pelo laboratório.
 	 * Chaves aceitas: natural_unemployment, service_wage_adjust,
 	 * service_wage_max, inventory_cover_days, inventory_recovery.
