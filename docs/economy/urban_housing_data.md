@@ -41,13 +41,16 @@ Campos principais: `built_up_km2` (área urbana construída), `density_hab_km2`,
   densidade_proxy por faixa de renda`, `estimated=true`).
 - **Densidade** — nas 117 observadas é a densidade do próprio Atlas; nas 717 derivadas é o
   proxy da faixa. Teto de plausibilidade 60.000 hab/km² (máximo real: Daca 55.200).
-- **População da aglomeração** — `agglomeration_population` de
-  `tools/agglomerations_2026.csv` (citypopulation.de 2026): **379/834 casadas**; as demais
-  usam a população de cenário (`population` de cities.csv, sinalizado).
-- **Gabarito (`height_class`)** — regra de limiar populacional **sobre a população real da
-  aglomeração quando disponível, senão a de cenário** (`height_class_population` registra
-  qual foi usada): `≥ 5 M` → high; `≥ 1 M` ou capital → mid; senão low. Fecha a ressalva 1
-  do Q-013 (Washington 8,8 M → high; Portland 2,5 M → mid; Berlim 4,7 M → mid).
+- **População urbana** — `urban_population` (cities.csv): `agglomeration_population` de
+  `tools/agglomerations_2026.csv` (citypopulation.de 2026) quando casada — **380/834**, com a
+  aglomeração limitada à população da nação (`agglomeration_capped`; único caso: Singapura, cuja
+  aglomeração inclui Johor Bahru/Malásia) — senão a cidade própria da fonte (`sim_population`,
+  **454/834**). `urban_population_source` registra qual foi usada. É ela que dimensiona a área
+  derivada e o gabarito; `population` é a **população regional** (rateio nacional) e não entra.
+- **Gabarito (`height_class`)** — regra de limiar populacional **sobre a população urbana**
+  (`height_class_population` registra qual foi usada): `≥ 5 M` → high; `≥ 1 M` ou capital → mid;
+  senão low. Fecha a ressalva 1 do Q-013 (Washington 8,8 M → high; Portland 2,5 M → mid; Berlim
+  4,7 M → mid).
 - **Reserva expansível** — sempre derivada: `built_up × 0,60` × 0,55 se costeira × 0,40 se
   ilha × `(1 − relief_non_buildable_fraction)`, teto 3×. `reserve_method` =
   `derived:coast+landmass+relief` quando o relevo é aplicado.
@@ -85,10 +88,12 @@ Complemento **por cidade** do `housing.json` (por nação). Tudo é proxy/deriva
   A renda é a da **nação** (a mesma para todas as cidades — sem dado subnacional de renda
   no projeto). **808/834** cidades têm aluguel/preço; as 26 das 9 nações sem PIB PPP ficam
   `null` (`price_source="no_data"`).
-- **(b) Estoque habitacional absoluto** — `housing_stock_total = população ÷ tamanho do
+- **(b) Estoque habitacional absoluto** — `housing_stock_total = urban_population ÷ tamanho do
   domicílio` (UN DESA), dividido em `housing_stock_by_tier` (popular/médio/alto) pela
-  `housing_stock_split` da nação (derivada do Gini de `inequality.json`). População = a de
-  cenário (cities.csv), coerente com o que o núcleo consome.
+  `housing_stock_split` da nação (derivada do Gini de `inequality.json`). População = a
+  **urbana** (aglomeração, senão cidade própria); a **regional** (`population` de cities.csv)
+  fica no JSON só para exibição. Antes de D-004 o estoque usava a regional, o que inflava a
+  ocupação do solo (Mumbai: 1,96 → 0,24; ver `docs/economy/city_population_audit.md`).
 - **(c) Posse por estrato de renda** — `tenure_by_tier` = {popular, medium, high} ×
   {own, rent, informal} (frações, soma 1 por estrato), derivado de: taxa nacional de casa
   própria (OECD HM1.3) com gradiente de renda (±0,15, spread documentado via HM1.3.A3) e

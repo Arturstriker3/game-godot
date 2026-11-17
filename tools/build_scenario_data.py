@@ -48,6 +48,11 @@ def main() -> None:
             # Unidade de simulação: aglomeração da fonte. O núcleo C++ consome
             # este campo; `population` é a população nacional real rateada.
             "sim_population": float(row.get("sim_population") or row["population"]),
+            "agglomeration_population": (int(float(row["agglomeration_population"])) if (row.get("agglomeration_population") or "").strip() else None),
+            # População URBANA do nó e a fonte da regra (gravadas por
+            # tools/build_world_cities.py; fonte única: cities.csv).
+            "urban_population": int(float(row["urban_population"])),
+            "urban_population_source": row["urban_population_source"].strip(),
             "production": 0.0,  # preenchido pelas construções
             "x": float(row["x"]),
             "y": float(row["y"]),

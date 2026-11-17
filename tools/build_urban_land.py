@@ -21,15 +21,20 @@ O que é observado e o que é derivado (sem inventar número apresentado como me
   * DENSIDADE DERIVADA: para as cidades sem Atlas a densidade é o próprio
     DENSITY_PROXY da faixa de renda (a área construída é population / proxy), gravada com
     density_source="derived_density_proxy" e estimated=true.
-  * POPULAÇÃO: population continua sendo o valor de cities.csv (população de cenário
-    rateada entre as cidades da nação). A aglomeração real vem de
-    tools/agglomerations_2026.csv (citypopulation.de, 2026-01-01) e entra em
-    agglomeration_population apenas como REFERÊNCIA de população: ela alimenta a
-    população usada na área DERIVADA, mas nunca a densidade das cidades observadas.
+  * POPULAÇÃO: population continua sendo o valor de cities.csv — a população REGIONAL
+    (população nacional real rateada entre as cidades da nação). A aglomeração real vem
+    de tools/agglomerations_2026.csv (citypopulation.de, 2026-01-01) e entra em
+    agglomeration_population como REFERÊNCIA de população. A população URBANA
+    (urban_population) vem PRONTA de cities.csv (regra única de
+    tools/build_world_cities.py): agglomeration_population quando existe — limitada à
+    população da nação se a aglomeração é transfronteiriça, ex. Cingapura incl. Johor
+    Bahru (urban_population_source="agglomeration_capped") —, senão sim_population
+    (cidade própria da fonte); ela alimenta a área DERIVADA e o gabarito, nunca a
+    densidade das cidades observadas.
   * expandable_reserve_km2: SEMPRE derivado (costa + landmass + relevo).
   * zoning_split: proporção típica por faixa de renda (proxy, não observação).
-  * height_class: limiar populacional sobre a população REAL da aglomeração quando
-    disponível (senão a de cenário) — regra do projeto.
+  * height_class: limiar populacional sobre a população URBANA (urban_population do
+    cities.csv) — regra do projeto.
   * relief_non_buildable_fraction: fração não edificável por declividade (WorldClim/SRTM).
 
 Uso:
@@ -142,12 +147,22 @@ NOTE_TEMPLATE = (
     "{derived} cidades DERIVADAS a densidade é o próprio DENSITY_PROXY da faixa de renda "
     "(a área construída é população / proxy), density_source='derived_density_proxy', "
     "estimativa e não medição. O campo agglomeration_population (população real da "
-    "aglomeração, citypopulation.de referência 2026-01-01, {agg} cidades) fica apenas como "
-    "REFERÊNCIA de população: ele alimenta a população usada na área DERIVADA, mas não a "
-    "densidade das observadas. As {rateada} cidades sem aglomeração na fonte usam o campo "
-    "population de cities.csv — que é a população de CENÁRIO rateada entre as cidades da "
-    "nação (a soma das cidades de cada nação é exatamente a população da nação em "
-    "nations.csv). O campo population continua sendo sempre o valor de cities.csv. "
+    "aglomeração, citypopulation.de referência 2026-01-01, {agg} cidades) fica como "
+    "REFERÊNCIA de população. A área DERIVADA e o gabarito usam a população URBANA "
+    "(campo urban_population), valor HERDADO de cities.csv (regra de "
+    "tools/build_world_cities.py; não é recalculado aqui): agglomeration_population "
+    "quando ela existe "
+    "(urban_population_source='agglomeration'), senão a população de simulação "
+    "(sim_population — cidade própria da fonte, urban_population_source='sim_population'); "
+    "as {rateada} cidades sem aglomeração na fonte caem nesse segundo caso. A "
+    "aglomeração da fonte pode ser TRANSFRONTEIRIÇA (ex.: a de Cingapura inclui Johor "
+    "Bahru, na Malásia): nesse caso urban_population vem CORTADA na população da nação "
+    "(urban_population_source='agglomeration_capped'), porque a população urbana do nó "
+    "não pode exceder a população da nação. O campo "
+    "population continua sendo sempre o valor de cities.csv — a população REGIONAL "
+    "(população nacional real rateada entre as cidades da nação; a soma das cidades de "
+    "cada nação é exatamente a população da nação em "
+    "nations.csv) — e não entra na área nem no gabarito. "
     "Casamento cidade->aglomeração: nome "
     "normalizado (sem acentos, sem pontuação e sem o sufixo 'City' quando necessário) mais "
     "código ISO3 da nação, com alias NED/NLD, PSX/PSE, SOL/SOM (Somalilândia, nunca SLB), "
@@ -163,9 +178,9 @@ NOTE_TEMPLATE = (
     "não está disponível no ambiente de geração, relief_non_buildable_fraction = 0, "
     "relief_source='no_data' e a reserva usa apenas costa e landmass. zoning_split é "
     "proporção típica por faixa de renda (proxy inspirado no Atlas/OECD), não observação "
-    "por cidade. height_class é regra de limiar populacional sobre a população REAL da "
-    "aglomeração quando disponível (senão a de cenário) — ver method.height_class e o "
-    "campo height_class_population. coastal = a cidade aparece "
+    "por cidade. height_class é regra de limiar populacional sobre a população URBANA "
+    "(agglomeration_population quando existe, senão sim_population) — ver "
+    "method.height_class e o campo height_class_population. coastal = a cidade aparece "
     "como port_of em ports.csv (aproximação documentada: cidade com porto é costeira). "
     "Nenhum valor observado foi estimado ou arredondado para caber em faixa. Cidades "
     "grandes que NÃO estão na amostra de 200 centros do Atlas (ex.: Bengaluru, Jakarta, "
@@ -188,8 +203,13 @@ METHOD = {
         "nations.csv não têm gdp_ppp_bn (CUB, ERI, PRK, SAH, SOL, SSD, TWN, VEN, YEM); "
         "para elas não há faixa calculável e aplica-se a faixa intermediária lower_mid "
         "como fallback declarado (valor central do método, não estimativa de renda). "
-        "A população usada é a da aglomeração quando ela existe (agglomeration_population); "
-        "senão o campo population de cities.csv (rateado)."
+        "A população usada é a URBANA (campo urban_population), herdada de cities.csv "
+        "(regra única de tools/build_world_cities.py, não recalculada aqui): a da "
+        "aglomeração quando ela existe (agglomeration_population), limitada à população da "
+        "nação quando a aglomeração é transfronteiriça "
+        "(urban_population_source='agglomeration_capped'); senão a população de simulação "
+        "(sim_population — cidade própria da fonte). A população REGIONAL de cities.csv "
+        "(campo population, rateio da população nacional) não entra na área derivada."
     ),
     "density": (
         "Duas origens distintas, sem misturar perímetros. (1) Cidades OBSERVADAS "
@@ -203,12 +223,14 @@ METHOD = {
         "faixa de renda (low 15000, lower_mid 11000, upper_mid 8500, high 6000 hab/km2), "
         "density_source='derived_density_proxy', estimativa e não medição. "
         "aglomeration_population (população real da aglomeração 2026, citypopulation.de) "
-        "NÃO é usada para densidade: fica só como referência de população (e como "
-        "população usada na área das cidades derivadas). Motivo: a aglomeração 2026 cobre "
+        "NÃO é usada para densidade: fica como referência de população (e, herdada em "
+        "urban_population, como a população usada na área das cidades derivadas). "
+        "Motivo: a aglomeração 2026 cobre "
         "um perímetro maior que o 'urban extent' do Atlas 2014, e dividi-la pela área do "
         "Atlas inflava a densidade (Mumbai saía 52.879 em vez dos 36.900 do Atlas; Pokhara "
         "452.100 em vez de 16.700). O campo population continua sendo sempre o valor de "
-        "cities.csv. Nenhuma densidade acima de 60.000 hab/km2 é aceita: o máximo do Atlas "
+        "cities.csv (população REGIONAL rateada), que não entra na área derivada. "
+        "Nenhuma densidade acima de 60.000 hab/km2 é aceita: o máximo do Atlas "
         "na amostra é Dhaka com 552 persons/ha = 55.200 hab/km2 e o proxy chega a 15.000, "
         "então o gerador e o validador tratam >60.000 como ERRO."
     ),
@@ -246,10 +268,14 @@ METHOD = {
     ),
     "height_class": (
         "Regra de limiar populacional (height_class_source='population_threshold'). "
-        "Usa a população REAL da aglomeração quando disponível "
-        "(agglomeration_population, citypopulation.de 2026) — não a população de cenário "
-        "(population rateada de cities.csv): isso faz o gabarito acompanhar a metrópole "
-        "real, não a densidade simulada. height_class_population registra qual população "
+        "Usa a população URBANA (campo urban_population), herdada de cities.csv: a população "
+        "REAL da aglomeração quando disponível (agglomeration_population, citypopulation.de "
+        "2026), limitada à população da nação quando a aglomeração é transfronteiriça "
+        "(urban_population_source='agglomeration_capped'); senão a "
+        "população de simulação (sim_population — cidade própria da fonte), nunca a "
+        "população REGIONAL de cities.csv (population, rateio nacional): isso faz o "
+        "gabarito acompanhar a metrópole real, não a densidade simulada. "
+        "height_class_population registra qual população "
         "foi usada no limiar. limiar: >= 5.000.000 => high; >= 1.000.000 ou capital => "
         "mid; senão low. Nenhuma exceção 'observada' foi aplicada nesta versão."
     ),
@@ -348,6 +374,7 @@ ISO3_ALIASES = {
 # não altera o nome exibido.
 CITY_EXONYMS = {
     "Ho Chi Minh City": "Saigon",
+    "New Delhi": "Delhi",
 }
 
 # palavras que não identificam país ao validar o campo `country` da tabela
@@ -816,14 +843,38 @@ def build_city(city: dict, band: str, coastal: bool,
                atlas_records: Optional[Dict[Tuple[str, str], dict]] = None) -> dict:
     city_id = city["id"]
     population = int(city["population"])
+    sim_population = int(city["sim_population"])
     capital = city["capital"].strip() == "1"
     landmass = city["landmass"].strip().lower()
 
+    # agglomeration_population vem do cities.csv (casada em build_scenario_data); o
+    # casamento por nome abaixo continua servindo para a ref da fonte.
     agglomeration_population = (int(agglomeration["population"])
                                 if agglomeration is not None else None)
+    scenario_agg = (city.get("agglomeration_population") or "").strip()
+    if scenario_agg.isdigit():
+        agglomeration_population = int(scenario_agg)
+    # população URBANA: valor GRAVADO em cities.csv — a regra única de
+    # tools/build_world_cities.assign_urban_population (aglomeração da fonte
+    # limitada à população da nação quando a aglomeração é transfronteiriça).
+    # Aqui só se HERDA o valor; o min NÃO é recalculado neste script.
+    # É ela que alimenta a área construída derivada e o gabarito — nunca a regional.
+    # Fallback (coluna ausente em cities.csv antigo): agg→sim.
+    scenario_urban = (city.get("urban_population") or "").strip()
+    scenario_urban_source = (city.get("urban_population_source") or "").strip()
+    if scenario_urban.isdigit() and int(scenario_urban) > 0:
+        urban_population = int(scenario_urban)
+        urban_population_source = (scenario_urban_source
+                                   or ("agglomeration" if agglomeration_population is not None
+                                       else "sim_population"))
+    elif agglomeration_population is not None:
+        urban_population = agglomeration_population
+        urban_population_source = "agglomeration"
+    else:
+        urban_population = sim_population
+        urban_population_source = "sim_population"
     # população usada SÓ na área construída derivada (nunca na densidade observada)
-    density_population = (agglomeration_population
-                          if agglomeration_population is not None else population)
+    density_population = urban_population
 
     observed = OBSERVED_AREAS.get(city_id)
     if observed is not None:
@@ -916,10 +967,9 @@ def build_city(city: dict, band: str, coastal: bool,
         factor *= (1.0 - relief_fraction)
     reserve = round(min(built_up_km2 * factor, built_up_km2 * RESERVE_CAP_MULTIPLE), 1)
 
-    # Gabarito pela população REAL da aglomeração quando disponível (ressalva Q-013);
-    # senão pela população de cenário. height_class_population registra qual foi usada.
-    height_population = (agglomeration_population
-                         if agglomeration_population is not None else population)
+    # Gabarito pela população URBANA (aglomeração quando disponível, senão sim_population);
+    # height_class_population registra qual foi usada.
+    height_population = urban_population
     if height_population >= 5_000_000:
         height_class = "high"
     elif height_population >= 1_000_000 or capital:
@@ -932,6 +982,8 @@ def build_city(city: dict, band: str, coastal: bool,
         "nation": city["nation"],
         "population": population,
         "agglomeration_population": agglomeration_population,
+        "urban_population": urban_population,
+        "urban_population_source": urban_population_source,
         "built_up_km2": built_up_km2,
         "built_up_source": source,
         "built_up_year": built_up_year,
@@ -1000,7 +1052,8 @@ def main(argv=None) -> int:
     coastal = sum(1 for entry in entries.values() if entry["coastal"])
     with_agglomeration = sum(1 for entry in entries.values()
                              if entry["agglomeration_population"] is not None)
-    scenario_rateada = len(entries) - with_agglomeration
+    with_urban_from_sim = sum(1 for entry in entries.values()
+                              if entry["urban_population_source"] == "sim_population")
     with_relief = sum(1 for entry in entries.values()
                       if isinstance(entry.get("relief_non_buildable_fraction"), (int, float))
                       and entry["relief_non_buildable_fraction"] > 0.0)
@@ -1029,13 +1082,14 @@ def main(argv=None) -> int:
     payload = {
         "version": 1,
         "note": NOTE_TEMPLATE.format(observed=observed, derived=derived, total=len(entries),
-                                     agg=with_agglomeration, rateada=scenario_rateada),
+                                     agg=with_agglomeration, rateada=with_urban_from_sim),
         "units": {"area": "km2", "density": "hab/km2"},
         "coverage": {
             "cities_total": len(entries),
             "cities_with_observed_area": observed,
             "cities_with_derived_area": derived,
             "cities_with_agglomeration_population": with_agglomeration,
+            "cities_with_urban_population_from_sim": with_urban_from_sim,
             "cities_with_relief_non_buildable": with_relief,
             "cities_relief_no_data": relief_no_data,
         },
@@ -1046,8 +1100,8 @@ def main(argv=None) -> int:
 
     print("cidades: %d | área observada: %d | área derivada: %d | costeiras: %d"
           % (len(entries), observed, derived, coastal))
-    print("população real da aglomeração (referência): %d cidades | rateada de cenário: %d"
-          % (with_agglomeration, scenario_rateada))
+    print("população da aglomeração (referência): %d cidades | população urbana de "
+          "simulação (sim_population): %d" % (with_agglomeration, with_urban_from_sim))
     print("relevo: %d cidades com fração não edificável > 0 | %d sem dado"
           % (with_relief, relief_no_data))
     print("faixas de renda: %s"

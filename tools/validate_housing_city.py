@@ -5,7 +5,11 @@ housing.json.
 
 Checa (recalculando de forma independente, como os demais validadores):
   1. o JSON cobre exatamente as cidades do cities.csv (nem uma a mais, nem a menos);
-  2. housing_stock_total = round(população / household_size da nação); a divisão
+  2. housing_stock_total = round(população URBANA / household_size da nação), com a
+     população urbana vinda da coluna urban_population do cities.csv (fonte única da
+     regra: aglomeração limitada à população da nação quando transfronteiriça, senão
+     sim_population); population (REGIONAL) e urban_population/
+     urban_population_source conferidos contra o cities.csv; a divisão
      housing_stock_by_tier (popular/medium/high) soma o total exato e popular/high batem
      com housing_stock_split da nação (tolerância de 1 unidade; medium fecha);
   3. tenure_by_tier: cada estrato soma 1,0 (tol. 0,01); o informal total reconstitui
@@ -52,6 +56,7 @@ OWNERSHIP_SPREAD = 0.15
 TIERS = ("popular", "medium", "high")
 TENURE_KEYS = ("own", "rent", "informal")
 CONFIDENCE = {"estimated", "partial"}
+URBAN_SOURCES = {"agglomeration", "agglomeration_capped", "sim_population"}
 STOCK_TOL = 1.5          # unidades de domicílio (arredondamento)
 TENURE_SUM_TOL = 0.01
 INFORMAL_TOL = 0.005
@@ -113,6 +118,23 @@ def expected_stock(population: int, household_size: float) -> int:
     if household_size <= 0:
         return 0
     return max(1, int(round(population / household_size)))
+
+
+def urban_population_of(city: dict) -> tuple:
+    """(população urbana, fonte) lidos do cities.csv.
+
+    A regra (min da aglomeração com a população da nação) é do gerador
+    (tools/build_world_cities.py); aqui só se confere a coluna. Fallback para um
+    cities.csv antigo sem a coluna: aglomeração quando existe, senão sim_population.
+    """
+    raw = (city.get("urban_population") or "").strip()
+    source = (city.get("urban_population_source") or "").strip()
+    if raw.isdigit():
+        return int(raw), source
+    agg = (city.get("agglomeration_population") or "").strip()
+    if agg.isdigit() and int(agg) > 0:
+        return int(agg), "agglomeration"
+    return int(city["sim_population"]), "sim_population"
 
 
 def expected_tiers(total: int, split: Dict[str, float]) -> Dict[str, int]:
@@ -212,6 +234,7 @@ def check_entry(entry: dict, city: dict, nation: dict, housing: dict,
                         % (code, entry.get("nation"), city["nation"]))
 
     population = int(city["population"])
+    urban_population, urban_population_source = urban_population_of(city)
     household_size = float(housing.get("household_size") or 0.0)
     own_rate = float(housing.get("homeownership_rate") or 0.0)
     rent_ratio = housing.get("rent_to_income_ratio")
@@ -219,11 +242,27 @@ def check_entry(entry: dict, city: dict, nation: dict, housing: dict,
     split = housing.get("housing_stock_split") or {"popular": 0.0, "medium": 1.0, "high": 0.0}
     informal = (float(slum) / 100.0) if is_number(slum) else 0.0
 
+    # population (REGIONAL) e população URBANA usada no estoque.
+    if not is_number(entry.get("population")) or int(entry["population"]) != population:
+        problems.append("%s: population %r != cities.csv %r"
+                        % (code, entry.get("population"), city["population"]))
+    if not is_number(entry.get("urban_population")) \
+            or int(entry["urban_population"]) != urban_population:
+        problems.append("%s: urban_population %r != esperado %r"
+                        % (code, entry.get("urban_population"), urban_population))
+    if entry.get("urban_population_source") not in URBAN_SOURCES:
+        problems.append("%s: urban_population_source desconhecida: %r"
+                        % (code, entry.get("urban_population_source")))
+    if entry.get("urban_population_source") != urban_population_source:
+        problems.append("%s: urban_population_source %r != esperado %r"
+                        % (code, entry.get("urban_population_source"), urban_population_source))
+
     # (b) estoque
     total = entry.get("housing_stock_total")
-    if not is_number(total) or int(total) != expected_stock(population, household_size):
-        problems.append("%s: housing_stock_total %r != esperado %d"
-                        % (code, total, expected_stock(population, household_size)))
+    if not is_number(total) or int(total) != expected_stock(urban_population, household_size):
+        problems.append("%s: housing_stock_total %r != esperado %d (população urbana %d)"
+                        % (code, total, expected_stock(urban_population, household_size),
+                           urban_population))
     tiers = entry.get("housing_stock_by_tier")
     if not isinstance(tiers, dict) or set(tiers) != set(TIERS):
         problems.append("%s: housing_stock_by_tier inválido" % code)
@@ -398,8 +437,9 @@ def main() -> int:
     print("amostra:")
     for code in SAMPLES:
         entry = entries.get(code) or {}
-        print("  %-9s %-16s stock=%-9s price=%-8s rent=%-6s conf=%-8s"
+        print("  %-9s %-16s stock=%-9s urban=%-10s (%s) price=%-8s rent=%-6s conf=%-8s"
               % (code, entry.get("name"), entry.get("housing_stock_total"),
+                 entry.get("urban_population"), entry.get("urban_population_source"),
                  entry.get("price_per_m2_usd"), entry.get("rent_per_m2_usd"),
                  entry.get("confidence")))
 

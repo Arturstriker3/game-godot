@@ -12,8 +12,13 @@ e (c) do pedido do gerente-dados:
       Property Guide é parcialmente pago); por isso o campo é explicitamente um proxy.
 
   (b) estoque habitacional absoluto por cidade
-      housing_stock_total = população da cidade (cities.csv) / tamanho médio do
-      domicílio (housing.json, UN DESA); dividido por padrão popular/médio/alto pela
+      housing_stock_total = população URBANA da cidade / tamanho médio do domicílio
+      (housing.json, UN DESA); a população URBANA vem PRONTA de cities.csv
+      (urban_population, regra única de tools/build_world_cities.py: aglomeração
+      da fonte limitada à população da nação quando ela é transfronteiriça, senão
+      cidade própria da fonte) — a population do
+      cities.csv é a REGIONAL (rateio nacional) e fica no campo `population` só para
+      exibição. O estoque é dividido por padrão popular/médio/alto pela
       housing_stock_split da nação (derivada do Gini de inequality.json).
 
   (c) posse (casa própria / aluguel / informal) por estrato de renda
@@ -147,11 +152,16 @@ METHOD = {
         "Nações sem gdp_ppp_bn ficam com rent/price null (source='no_data')."
     ),
     "housing_stock": (
-        "housing_stock_total = round(população da cidade / household_size da nação). "
-        "housing_stock_by_tier = housing_stock_total x housing_stock_split da nação "
-        "(housing.json, derivado do Gini de inequality.json); popular/medium/high em "
-        "unidades de domicílio, medium ajustado para fechar a soma exata. A população "
-        "é a de CENÁRIO (cities.csv), coerente com o que o núcleo consome."
+        "housing_stock_total = round(população URBANA / household_size da nação). A "
+        "população urbana é o campo urban_population do cities.csv (regra única de "
+        "tools/build_world_cities.py): a aglomeração real limitada à população da nação "
+        "quando ela é transfronteiriça (urban_population_source='agglomeration_capped'), "
+        "senão a cidade própria da fonte (sim_population); a population do "
+        "cities.csv é a REGIONAL (população nacional real rateada entre as cidades da "
+        "nação) e fica no campo `population` apenas para exibição — ela NÃO entra no "
+        "estoque. housing_stock_by_tier = housing_stock_total x housing_stock_split da "
+        "nação (housing.json, derivado do Gini de inequality.json); popular/medium/high "
+        "em unidades de domicílio, medium ajustado para fechar a soma exata."
     ),
     "tenure_by_tier": (
         "Posse (own/rent/informal) por estrato de renda (popular/medium/high), "
@@ -173,8 +183,12 @@ NOTE = (
     "`estimated` = true em todo o arquivo): (a) aluguel e preço do m² residencial "
     "(proxy de renda documentado: rent burden OECD AHD HC1.2 x renda PIB PPP per "
     "capita / área de moradia per capita HC2.1; preço = aluguel x 20 anos de "
-    "price-to-rent); (b) estoque habitacional absoluto (população / domicílio, "
-    "dividido por popular/médio/alto pela split derivada do Gini de inequality.json); "
+    "price-to-rent); (b) estoque habitacional absoluto = round(população URBANA / "
+    "household_size da nação), com a população URBANA lida de urban_population no "
+    "cities.csv (aglomeração da fonte limitada à população da nação quando ela é "
+    "transfronteiriça; senão a cidade própria da fonte), dividido em popular/médio/alto "
+    "pela split derivada do Gini de inequality.json; a population regional de cities.csv "
+    "fica só para exibição e NÃO entra no estoque; "
     "(c) posse por estrato de renda (casa própria OECD HM1.3 com gradiente de renda, "
     "informal = favela SDG 11.1.1, aluguel = resto). Não há fonte gratuita estável de "
     "preço por m² por cidade (Numbeo é scraping/ToS; Global Property Guide é "
@@ -295,6 +309,23 @@ def build_city(city: dict, nation: dict, housing: dict, band: str) -> dict:
     name = city["name"]
     nation_code = city["nation"]
     population = int(city["population"])
+    # população URBANA herdada de cities.csv (regra única de
+    # tools/build_world_cities.py): aglomeração da fonte limitada à população da
+    # nação quando ela é transfronteiriça. Fallback (coluna ausente): agg→sim.
+    urban_raw = (city.get("urban_population") or "").strip()
+    urban_source = (city.get("urban_population_source") or "").strip()
+    agg_raw = (city.get("agglomeration_population") or "").strip()
+    agg_ok = agg_raw.isdigit() and int(agg_raw) > 0
+    if urban_raw.isdigit() and int(urban_raw) > 0:
+        urban_population = int(urban_raw)
+        urban_population_source = (
+            urban_source or ("agglomeration" if agg_ok else "sim_population"))
+    elif agg_ok:
+        urban_population = int(agg_raw)
+        urban_population_source = "agglomeration"
+    else:
+        urban_population = int(city["sim_population"])
+        urban_population_source = "sim_population"
 
     hh = housing or {}
     household_size = float(hh.get("household_size") or 0.0)
@@ -305,7 +336,7 @@ def build_city(city: dict, nation: dict, housing: dict, band: str) -> dict:
 
     informal = (float(slum) / 100.0) if isinstance(slum, (int, float)) else 0.0
 
-    total = stock_total(population, household_size)
+    total = stock_total(urban_population, household_size)
     tiers = stock_by_tier(total, split)
     tenure = tenure_by_tier(own_rate, informal, split)
 
@@ -358,6 +389,8 @@ def build_city(city: dict, nation: dict, housing: dict, band: str) -> dict:
         "name": name,
         "nation": nation_code,
         "population": population,
+        "urban_population": urban_population,
+        "urban_population_source": urban_population_source,
         "household_size": household_size,
         "household_size_source": hh.get("household_size_source", "no_data"),
         "housing_stock_total": total,
@@ -380,7 +413,7 @@ def build_city(city: dict, nation: dict, housing: dict, band: str) -> dict:
     }
     if confidence == "partial":
         entry["method"] = (
-            "Estoque e posse derivados (população/domicílio, Gini e taxa nacional de "
+            "Estoque e posse derivados (população URBANA/domicílio, Gini e taxa nacional de "
             "casa própria + favela); aluguel/preço null: nação sem gdp_ppp_bn no "
             "nations.csv (renda indeterminada para o proxy de renda)."
         )
@@ -388,7 +421,7 @@ def build_city(city: dict, nation: dict, housing: dict, band: str) -> dict:
         entry["method"] = (
             "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 "
             "x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = "
-            "população/domicílio dividido pela split do Gini; posse = taxa nacional de "
+            "população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de "
             "casa própria com gradiente de renda + informal (favela)."
         )
     return entry

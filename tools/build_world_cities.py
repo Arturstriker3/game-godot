@@ -297,6 +297,65 @@ def game_graph(graph):
     return {name: sorted(neighbors) for name, neighbors in sorted(out.items())}
 
 
+def city_agglomeration_population(cities_out, nation_names):
+    """População da aglomeração real 2026 de cada cidade ("" quando não casa).
+
+    Fonte: `tools/agglomerations_2026.csv` (citypopulation.de 2026). O
+    casamento NÃO é reimplementado aqui: usamos `load_agglomerations` e
+    `match_agglomeration` de `tools/build_urban_land.py` (import lazy, dentro
+    da função) para a tabela de aglomerações ter uma fonte única — o mapa
+    urbano e o rateio da população nacional seguem o mesmo critério.
+    Devolve {id: int(população da aglomeração)} e "" para quem não casar.
+    """
+    import build_urban_land
+
+    by_name, by_compact = build_urban_land.load_agglomerations()
+    agglomeration = {}
+    for city in cities_out:
+        row = build_urban_land.match_agglomeration(
+            {"name": city["name"], "nation": city["nation"]},
+            {"name": nation_names.get(city["nation"], "")},
+            by_name, by_compact)
+        agglomeration[city["id"]] = (
+            int(float(row["population"])) if row is not None else "")
+    return agglomeration
+
+
+def assign_urban_population(cities_out, nations_out):
+    """Grava a população URBANA do nó e a sua fonte (regra única do projeto).
+
+    Contrato (2026-11):
+      * `urban_population` = min(`agglomeration_population`, população da nação)
+        quando há aglomeração; senão `sim_population`. A aglomeração da fonte é
+        TRANSFRONTEIRIÇA (ex.: SGP inclui Johor Bahru, Malásia), então o valor
+        bruto pode exceder a nação; a população URBANA do nó não pode;
+      * `urban_population_source` ∈ {agglomeration, agglomeration_capped,
+        sim_population}; `agglomeration_capped` só quando o min corta (motivo da
+        fonte, não erro de dado);
+      * `agglomeration_population` continua sendo o valor BRUTO da fonte
+        (referência, pode ser transfronteiriço).
+    Derivados (rateio nacional, área urbana, gabarito, estoque habitacional) leem
+    `urban_population` de cities.csv — a fonte única da regra.
+    """
+    nation_pop = {row["id"]: int(float(row["population"] or 0))
+                  for row in nations_out}
+    for city in cities_out:
+        raw = str(city.get("agglomeration_population") or "").strip()
+        sim = int(city.get("sim_population", 0) or 0)
+        national = nation_pop.get(city["nation"], 0)
+        if raw.isdigit() and int(raw) > 0:
+            value = int(raw)
+            if national > 0 and value > national:
+                city["urban_population"] = national
+                city["urban_population_source"] = "agglomeration_capped"
+            else:
+                city["urban_population"] = value
+                city["urban_population_source"] = "agglomeration"
+        else:
+            city["urban_population"] = sim
+            city["urban_population_source"] = "sim_population"
+
+
 def distribute_national_population(nations_out, cities_out):
     """Divide a população NACIONAL real entre as cidades da nação.
 
@@ -304,11 +363,15 @@ def distribute_national_population(nations_out, cities_out):
       * `sim_population` = aglomeração da fonte (GeoNames, city proper) — a
         UNIDADE DE SIMULAÇÃO. O núcleo econômico continua consumindo este
         número, então o balanço (comida, caixa, empregos, preços) não muda;
-      * `population` = população real 2026 da nação (nations.csv), distribuída
-        entre as cidades proporcionalmente à aglomeração. O fator por nação
-        (P / Σ aglomerações) aplica a mesma parcela rural do catchment a todas
-        as cidades, que é o rateio proporcional pedido: quem tem mais peso
-        urbano administra mais população rural.
+      * `population` = população REGIONAL rateada da nação (urbano + hinterland
+        rural/periurbano) — a população real 2026 de nations.csv dividida entre
+        as cidades pelo peso urbano;
+      * peso = `urban_population` (ver `assign_urban_population`): a aglomeração
+        real (`agglomeration_population`, de tools/agglomerations_2026.csv)
+        quando casa — limitada à população da nação quando a fonte é
+        transfronteiriça (`agglomeration_capped`) —, senão `sim_population`
+        (cidade própria da fonte). Unidades misturadas (cidade própria x
+        aglomeração) eram o bug B4/Q-015;
       * a soma por nação é EXATA (o resto do arredondamento vai para as maiores
         frações, com desempate por id — determinístico).
 
@@ -322,7 +385,7 @@ def distribute_national_population(nations_out, cities_out):
 
     for group in by_nation.values():
         total = nation_pop.get(group[0]["nation"], 0)
-        weights = [max(0, int(city.get("sim_population", 0))) for city in group]
+        weights = [max(0, int(city["urban_population"])) for city in group]
         weight_sum = sum(weights)
         if total <= 0:
             continue
@@ -485,6 +548,9 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
             "id": final, "nation": row["nation"], "home_nation": row["home_nation"],
             "name": row["name"], "population": row["population"],
             "sim_population": row.get("sim_population", row["population"]),
+            "agglomeration_population": row.get("agglomeration_population", ""),
+            "urban_population": row.get("urban_population", ""),
+            "urban_population_source": row.get("urban_population_source", ""),
             "x": row["x"],
             "y": row["y"], "landmass": row["landmass"], "capital": row["capital"],
         })
@@ -550,7 +616,9 @@ def promote_scenario(nations_out, cities_out, ports_out, buildings_out, i18n_out
                        "government", "ai_profile", "region", "population",
                        "gdp_ppp_bn"]
     city_fields = ["id", "nation", "home_nation", "name", "population",
-                   "sim_population", "x", "y", "landmass", "capital"]
+                   "sim_population", "agglomeration_population",
+                   "urban_population", "urban_population_source",
+                   "x", "y", "landmass", "capital"]
     port_fields = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
     building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
     i18n_fields = ["key", "pt_BR", "en", "es"]
@@ -782,6 +850,16 @@ def main():
             i18n_out.append({"key": f"city.name.{city['id']}", "pt_BR": city["name_pt"],
                              "en": city["name_en"], "es": city["name_es"]})
 
+    # População URBANA de referência (aglomeração real 2026): é o peso do rateio
+    # nacional abaixo; "" quando a cidade não casa com a tabela de aglomerações.
+    nation_names = {r["iso3"]: r["name_en"] for r in nations_src}
+    urban_population = city_agglomeration_population(cities_out, nation_names)
+    for city in cities_out:
+        city["agglomeration_population"] = urban_population.get(city["id"], "")
+    # `urban_population` (e a fonte) é a regra única gravada em cities.csv: rateio,
+    # área urbana, gabarito e estoque habitacional leem este campo.
+    assign_urban_population(cities_out, nations_out)
+
     # População: real (nations.csv) nas cidades, aglomeração em sim_population.
     # Ver `distribute_national_population`.
     problems.extend(distribute_national_population(nations_out, cities_out))
@@ -839,7 +917,9 @@ def main():
     nation_fields = ["id", "name", "flag", "color", "capital", "currency", "government",
                      "ai_profile", "region", "population", "gdp_ppp_bn"]
     city_fields = ["id", "nation", "home_nation", "name", "population",
-                   "sim_population", "x", "y", "landmass", "capital"]
+                   "sim_population", "agglomeration_population",
+                   "urban_population", "urban_population_source",
+                   "x", "y", "landmass", "capital"]
     port_fields = ["id", "name", "nation", "x", "y", "landmass", "port_of"]
     building_fields = ["city_id", "building_id", "name", "output_tons_per_day"]
     i18n_fields = ["key", "pt_BR", "en", "es"]
@@ -876,6 +956,12 @@ def main():
             "port_city_coast_km": 25,
             "port_point_km": 15,
             "legacy": "40 cidades do cenário preservadas, exceto VEN-PAY (trocada por VEN-CBL)",
+            "city_population": "population = populacao nacional 2026 rateada por populacao "
+                               "URBANA (urban_population = aglomeracao de "
+                               "tools/agglomerations_2026.csv quando casada - limitada a "
+                               "populacao da nacao quando a aglomeracao e transfronteirica, "
+                               "urban_population_source=agglomeration_capped - senao "
+                               "sim_population); sim_population = cidade propria da fonte",
             "curation": {
                 "source": "tools/world_city_curation.py",
                 "excluded": {cid: reason for cid, reason in EXCLUDED_CITIES.items()},

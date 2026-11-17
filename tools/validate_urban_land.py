@@ -10,16 +10,21 @@ Checa:
      1 hab/km2, contra a coluna 'Built-up Area Density (persons/ha)' da Tabela 1
      (cache tools/data/urban_land_cache/atlas_aue2016_table1_density.tsv, x100);
   4. a densidade DERIVADA é o DENSITY_PROXY da faixa de renda e built_up_km2 bate com
-     população usada / densidade;
+     população URBANA usada / densidade;
   5. zoning_split tem as três chaves, cada valor em [0,1] e soma 1.0 (tolerância 0.01);
   6. height_class em {low, mid, high}; coastal é booleano; reserve_method conhecido e
-     expandable_reserve_km2 dentro de (0, 3 x built_up_km2];
+     expandable_reserve_km2 dentro de [0, 3 x built_up_km2] (0,0 é aceito quando o valor
+     derivado arredonda para 0,0 km2);
   7. cidade OBSERVADA (built_up_source != derived_density_proxy): estimated=false,
      built_up_year inteiro, confidence complete (ano >= 2015) ou partial (ano < 2015),
      refs não-vazio com title/url http/year;
   8. cidade DERIVADA (derived_density_proxy): estimated=true, built_up_year null,
      confidence "estimated";
-  9. population e name batem com cities.csv;
+  9. population (REGIONAL) e name batem com cities.csv; urban_population e
+     urban_population_source batem com as colunas de cities.csv (fonte única da
+     regra: aglomeração limitada à população da nação quando transfronteiriça,
+     senão sim_population) e a fonte ∈ {agglomeration, agglomeration_capped,
+     sim_population};
  10. o bloco coverage bate com a contagem recalculada.
 
 Uso:
@@ -56,6 +61,7 @@ HEIGHT_CLASSES = {"low", "mid", "high"}
 ZONING_KEYS = {"residential", "commercial", "industrial"}
 RESERVE_METHODS = {"derived:coast+landmass", "derived:coast+landmass+relief"}
 DENSITY_SOURCES = {"atlas_density", DERIVED_SOURCE}
+URBAN_SOURCES = {"agglomeration", "agglomeration_capped", "sim_population"}
 DENSITY_PROXY_VALUES = {15000.0, 11000.0, 8500.0, 6000.0}
 DENSITY_TOLERANCE = 1.0
 BUILT_UP_TOLERANCE = 0.1  # built_up_km2 é arredondado a 0,1 km2
@@ -112,6 +118,32 @@ def load_cities() -> Dict[str, dict]:
 def load_payload() -> dict:
     with open(URBAN_LAND, "r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def expected_agglomeration(city: dict) -> Optional[int]:
+    """agglomeration_population do cities.csv como inteiro > 0, ou None."""
+    raw = (city.get("agglomeration_population") or "").strip()
+    if not raw.isdigit():
+        return None
+    value = int(raw)
+    return value if value > 0 else None
+
+
+def expected_urban_population(city: dict) -> Tuple[int, str]:
+    """(urban_population, urban_population_source) lidos do cities.csv.
+
+    A regra (min da aglomeração com a população da nação) é do gerador
+    (tools/build_world_cities.py); aqui só se confere a coluna. Fallback para um
+    cities.csv antigo sem a coluna: aglomeração quando existe, senão sim_population.
+    """
+    raw = (city.get("urban_population") or "").strip()
+    source = (city.get("urban_population_source") or "").strip()
+    if raw.isdigit():
+        return int(raw), source
+    agglomeration = expected_agglomeration(city)
+    if agglomeration is not None:
+        return agglomeration, "agglomeration"
+    return int(city["sim_population"]), "sim_population"
 
 
 def check_top_level(payload: dict, problems: List[str]) -> None:
@@ -214,8 +246,22 @@ def check_entry(entry: dict, city: dict, problems: List[str], current_year: int,
         if isinstance(agglomeration, bool) or not isinstance(agglomeration, int) \
                 or agglomeration <= 0:
             problems.append("%s: agglomeration_population inválida: %r" % (code, agglomeration))
-    density_population = (agglomeration if isinstance(agglomeration, int) and agglomeration > 0
-                          else population)
+    # População URBANA esperada: a coluna urban_population do cities.csv (fonte única da
+    # regra — aglomeração limitada à população da nação quando transfronteiriça).
+    # A population do cities.csv é REGIONAL (rateio nacional) e não serve para área/gabarito.
+    expected_urban, expected_urban_source = expected_urban_population(city)
+    urban_population = entry.get("urban_population")
+    if isinstance(urban_population, bool) or not isinstance(urban_population, int) \
+            or urban_population != expected_urban:
+        problems.append("%s: urban_population %r != esperado %r"
+                        % (code, urban_population, expected_urban))
+    if entry.get("urban_population_source") not in URBAN_SOURCES:
+        problems.append("%s: urban_population_source desconhecida: %r"
+                        % (code, entry.get("urban_population_source")))
+    if entry.get("urban_population_source") != expected_urban_source:
+        problems.append("%s: urban_population_source %r != esperado %r"
+                        % (code, entry.get("urban_population_source"), expected_urban_source))
+    density_population = expected_urban
     density_source = entry.get("density_source")
     if density_source not in DENSITY_SOURCES:
         problems.append("%s: density_source inválida: %r" % (code, density_source))
@@ -255,7 +301,10 @@ def check_entry(entry: dict, city: dict, problems: List[str], current_year: int,
             relief = float(relief)
 
     reserve = entry.get("expandable_reserve_km2")
-    if not isinstance(reserve, (int, float)) or float(reserve) <= 0.0:
+    # 0,0 é legítimo quando o valor derivado arredonda para 0,0 km2 (cidade minúscula,
+    # ex.: GUM-HAG com built_up 0,2 km2); a conferência exata abaixo garante o resto.
+    if not isinstance(reserve, (int, float)) or isinstance(reserve, bool) \
+            or float(reserve) < 0.0:
         problems.append("%s: expandable_reserve_km2 inválido: %r" % (code, reserve))
     elif float(reserve) > built_up * RESERVE_CAP_MULTIPLE + 0.1:
         problems.append("%s: expandable_reserve_km2 %.2f > 3x built_up (%.2f)"
@@ -283,10 +332,9 @@ def check_entry(entry: dict, city: dict, problems: List[str], current_year: int,
         problems.append("%s: height_class inválido: %r" % (code, entry.get("height_class")))
     if not entry.get("height_class_source"):
         problems.append("%s: height_class_source ausente" % code)
-    # Gabarito pela população REAL da aglomeração quando disponível, senão cenário.
+    # Gabarito pela população URBANA (mesma regra de urban_population).
     hc_pop = entry.get("height_class_population")
-    expected_hc_pop = (agglomeration if isinstance(agglomeration, int) and agglomeration > 0
-                       else population)
+    expected_hc_pop = expected_urban
     if not isinstance(hc_pop, int) or hc_pop != expected_hc_pop:
         problems.append("%s: height_class_population %r != esperado %r"
                         % (code, hc_pop, expected_hc_pop))
@@ -405,6 +453,7 @@ def main() -> int:
     counts = {"observed": 0, "derived": 0, "invalid": 0}
     coastal = 0
     with_agglomeration = 0
+    with_urban_from_sim = 0
     with_relief = 0
     relief_no_data = 0
     sources_used: Dict[str, int] = {}
@@ -433,6 +482,8 @@ def main() -> int:
             coastal += 1
         if isinstance(entry.get("agglomeration_population"), int):
             with_agglomeration += 1
+        if entry.get("urban_population_source") == "sim_population":
+            with_urban_from_sim += 1
         relief = entry.get("relief_non_buildable_fraction")
         if isinstance(relief, (int, float)) and not isinstance(relief, bool) and relief > 0.0:
             with_relief += 1
@@ -452,6 +503,7 @@ def main() -> int:
         "cities_with_observed_area": counts["observed"],
         "cities_with_derived_area": counts["derived"],
         "cities_with_agglomeration_population": with_agglomeration,
+        "cities_with_urban_population_from_sim": with_urban_from_sim,
         "cities_with_relief_non_buildable": with_relief,
         "cities_relief_no_data": relief_no_data,
     }
@@ -463,8 +515,8 @@ def main() -> int:
     print("cidades no cities.csv: %d | entradas no JSON: %d" % (len(cities), len(entries)))
     print("observadas: %d | derivadas: %d | costeiras: %d"
           % (counts["observed"], counts["derived"], coastal))
-    print("população real da aglomeração: %d | rateada de cenário: %d"
-          % (with_agglomeration, len(cities) - with_agglomeration))
+    print("população da aglomeração (referência): %d | população urbana de simulação "
+          "(sim_population): %d" % (with_agglomeration, with_urban_from_sim))
     print("density_source: %s" % ", ".join(
         "%s=%d" % (name, density_sources[name]) for name in sorted(density_sources, key=str)))
     print("densidade máxima: %.0f hab/km2 (teto %g = erro)" % (max_density, MAX_DENSITY))
@@ -473,9 +525,10 @@ def main() -> int:
     print("amostra:")
     for code in SAMPLES:
         entry = entries.get(code) or {}
-        print("  %-8s %-18s pop=%-11s agg=%-10s built_up=%-9s dens=%-9s %s"
+        print("  %-8s %-18s pop=%-11s agg=%-10s urban=%-10s (%s) built_up=%-9s dens=%-9s %s"
               % (code, entry.get("name"), entry.get("population"),
-                 entry.get("agglomeration_population"), entry.get("built_up_km2"),
+                 entry.get("agglomeration_population"), entry.get("urban_population"),
+                 entry.get("urban_population_source"), entry.get("built_up_km2"),
                  entry.get("density_hab_km2"), entry.get("density_source")))
 
     if problems:
