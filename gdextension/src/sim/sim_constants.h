@@ -44,7 +44,45 @@ constexpr double kDemoLoadHoursPerBatch = 0.5;
 // nação), `fdi_policies`, `sector_incentives` e `confidence`. Save v10 e
 // anteriores não têm as chaves: os grupos são semeados a partir dos ativos
 // privados no load (regra determinística de demo_seed_groups).
-constexpr int kDemoSaveVersion = 11;
+// v12: construção como projeto físico (§15) - `construction_projects` (obras em
+// andamento). Save v11 e anteriores não têm a chave: não há projeto em voo, o
+// mundo carrega com a lista vazia (migração trivial, sem estado a reconstruir).
+constexpr int kDemoSaveVersion = 12;
+
+// §15 — construção como projeto físico. Obras são cronogramas de materiais +
+// mão de obra do setor de construção; o pagamento sai do dono conforme avança.
+// ---------------------------------------------------------------------------
+// Fração do custo da obra que é MATERIAL (o resto é mão de obra/serviço). Os
+// materiais são comprados do mercado local pelo preço corrente; a quantidade
+// contratada é dimensionada pelo PREÇO-BASE (contrato de obra declarado).
+constexpr double kDemoConstructionMaterialShare = 0.15;
+// Prazo de obra por tipo (dias). Fazenda/mina é primária e rápida; fábrica
+// (receita) é mais pesada. É uma ESTIMATIVA de ordem de grandeza ("meses pelo
+// tamanho", §15) — não é dado observado de cronograma de obra.
+constexpr int kDemoConstructionPrimaryDays = 30;
+constexpr int kDemoConstructionFactoryDays = 60;
+// Valor de obra (XGS) que cada trabalhador do setor de construção avança por
+// dia. Ordem de grandeza ancorada na produtividade de serviços (capital/jobs
+// da F8); limita o surto de obras mas não bloqueia a segurança alimentar.
+constexpr double kDemoConstructionValuePerWorkerDay = 20.0;
+// Piso de trabalhadores de construção por cidade (setor indústria/construção)
+// para a obra nunca travar em cidade sem indústria declarada (sector_workers
+// vira 0 no primeiro dia, em cidades só-agrícolas e logo após um load). 100
+// trabalhadores × 20 XGS/dia = 2.000 XGS/dia de obra: uma obra típica avança;
+// obras grandes (fábrica pesada) ou muitas obras simultâneas dividem o teto.
+constexpr double kDemoConstructionWorkerFloor = 100.0;
+// Estoque inicial de materiais de construção por cidade (derivado da população
+// de simulação). É a "obra em estoque" pré-existente da economia; declara-se
+// como `derived:initial_stock` — não é dado observado de estoque de materiais.
+// Generoso o bastante para a construção do cenário (365 d) não travar: no mundo
+// real ainda não há produtor de materiais de obra, então o estoque é o único
+// suprimento até a indústria pesada entrar (direção futura do §15).
+constexpr double kDemoConstructionMaterialStockPerCapita = 0.002;
+constexpr double kDemoSteelStructureStockPerCapita = 0.001;
+constexpr double kDemoElectricalMaterialStockPerCapita = 0.0002;
+// Maquinário industrial (fábricas): caro (base_price alto), então a quantidade
+// por habitante é pequena — cobre a obra inicial de fábrica sem sobra.
+constexpr double kDemoIndustrialMachineryStockPerCapita = 0.0001;
 
 // F8: serviços. Preço reage a demanda financiada/oferta, dentro da banda da
 // âncora; prejuízo persistente fecha o negócio (contado à parte das falências

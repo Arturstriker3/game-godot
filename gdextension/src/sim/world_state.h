@@ -43,6 +43,9 @@ struct WorldState {
 	int trade_external = 8;
 	std::vector<DemoCity> cities;
 	std::vector<DemoBuilding> buildings;
+	// §15: obras de construção em andamento (projeto físico). Avançam no prólogo
+	// do tick conforme materiais + capacidade do setor de construção.
+	std::vector<DemoConstructionProject> construction_projects;
 	// F8: catálogo de serviços e negócios (um vetor global; índices por cidade
 	// e por setor são reconstruídos quando o conjunto muda).
 	bool services_loaded = false;

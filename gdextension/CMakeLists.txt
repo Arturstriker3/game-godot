@@ -40,6 +40,7 @@ add_library(economy_gdextension SHARED
     src/sim/fiscal.cpp
     src/sim/fx.cpp
     src/sim/investment.cpp
+    src/sim/construction.cpp
     src/sim/scenario_fixture.cpp
     src/edge/save_load.cpp
 )

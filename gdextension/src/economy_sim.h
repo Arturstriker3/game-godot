@@ -324,6 +324,15 @@ public:
 	 */
 	void demo_set_port_capacity(const String& port_id, double t_per_day);
 
+	/**
+	 * Hook de teste: liga/desliga a construção instantânea (§15). Desligado por
+	 * padrão, todo `demo_build`/`demo_group_invest`/`demo_invest` vira um
+	 * PROJETO físico (materiais + prazo + pagamento incremental). Ligado
+	 * restaura o comportamento antigo (prédio pronto na hora, custo integral na
+	 * criação) — usado pelos testes que não medem cronograma de obra.
+	 */
+	void demo_set_instant_construction(bool instant);
+
 	/** Serializa todo o estado do cenário (save). */
 	Dictionary demo_to_dict() const;
 
@@ -1081,6 +1090,10 @@ private:
 	// Núcleo da simulação (S5b): executa a ordem do dia sobre `ws_`. A fachada
 	// converte Godot <-> sim e loga os invariantes; o núcleo não emite erro Godot.
 	ogs::SimCore sim_core_{ws_};
+
+	// §15: modo de construção instantânea (hook de teste). false = obra vira
+	// projeto físico (padrão); true = comportamento antigo (prédio na hora).
+	bool instant_construction_ = false;
 
 	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA

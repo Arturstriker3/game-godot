@@ -36,6 +36,26 @@ inline double safe_unit(double v) {
 	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
 }
 
+// §15: custo ainda não pago das obras de uma cidade para um dono ("state",
+// "private" ou o id de um grupo). Base do limite de comprometimento: o dono não
+// inicia obra nova cujo custo, somado ao já comprometido, estoura o caixa atual.
+inline double demo_committed_construction(const WorldState& ws,
+		const std::string& city_id, const std::string& owner) {
+	double committed = 0.0;
+	for (const DemoConstructionProject& project : ws.construction_projects) {
+		if (project.city != city_id) {
+			continue;
+		}
+		const bool match = owner == "state" ? project.owner == "state"
+			: owner == "private" ? project.owner == "private"
+			: !project.group_id.empty() && project.group_id == owner;
+		if (match) {
+			committed += std::max(0.0, project.total_cost - project.paid);
+		}
+	}
+	return committed;
+}
+
 // População de SIMULAÇÃO da cidade. Desde a calibração de 2026, `population`
 // no cenário é a população real exibida (nação inteira rateada) e a aglomeração
 // da fonte viaja em `sim_population`. Sem o campo (save antigo, cenário
@@ -134,6 +154,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_services);
 	ClassDB::bind_method(D_METHOD("demo_set_sector_employment", "data"),
 	                     &EconomySim::demo_set_sector_employment);
+	ClassDB::bind_method(D_METHOD("demo_set_instant_construction", "instant"),
+	                     &EconomySim::demo_set_instant_construction);
 	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
 	                     &EconomySim::demo_get_service_sectors);
 	ClassDB::bind_method(D_METHOD("demo_get_services_detail", "city_id"),
@@ -654,6 +676,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	ws_.day = 0;
 	ws_.cities.clear();
 	ws_.buildings.clear();
+	ws_.construction_projects.clear();
 	ws_.in_transit.clear();
 	ws_.invariant_violations.clear();
 	ws_.ports.clear();
@@ -719,6 +742,30 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		for (int product = 0; product < ws_.products; ++product) {
 			city.markets[product] = {0.0, demo_base_price(product),
 				0.0, 0.0};
+		}
+		// §15: estoque inicial de materiais de construção por cidade (a "obra em
+		// estoque" pré-existente, derivada da população de simulação). Sem ele a
+		// construção real (sem produtor de materiais no mundo inicial) travaria
+		// no primeiro dia. `derived:initial_stock` — não é dado observado.
+		const int cmat = demo_product_index(String("construction_material"));
+		const int csteel = demo_product_index(String("steel_structure"));
+		const int celec = demo_product_index(String("electrical_material"));
+		const int cmach = demo_product_index(String("industrial_machinery"));
+		if (cmat >= 0) {
+			city.markets[cmat].stock =
+				city.simulation_population * kDemoConstructionMaterialStockPerCapita;
+		}
+		if (csteel >= 0) {
+			city.markets[csteel].stock =
+				city.simulation_population * kDemoSteelStructureStockPerCapita;
+		}
+		if (celec >= 0) {
+			city.markets[celec].stock =
+				city.simulation_population * kDemoElectricalMaterialStockPerCapita;
+		}
+		if (cmach >= 0) {
+			city.markets[cmach].stock =
+				city.simulation_population * kDemoIndustrialMachineryStockPerCapita;
 		}
 		ws_.cities.push_back(std::move(city));
 	}
@@ -1011,6 +1058,11 @@ void EconomySim::demo_set_port_capacity(const String& port_id, double t_per_day)
 	port->base_capacity_t_per_day = safe_nonneg(t_per_day);
 	port->capacity_t_per_day = port->base_capacity_t_per_day;
 	demo_status_invalidate();
+}
+
+void EconomySim::demo_set_instant_construction(bool instant) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	instant_construction_ = instant;
 }
 
 Dictionary EconomySim::tick_demo() {
@@ -3128,6 +3180,8 @@ void EconomySim::demo_seed_industry() {
 				std::string(mill_id.utf8().get_data()))) {
 			built->strategic = true;
 		}
+		sim_core_.demo_mark_project_strategic(
+			std::string(mill_id.utf8().get_data()));
 		++created;
 		if (bread_recipe >= 0) {
 			const DemoRecipe& bread =
@@ -3143,6 +3197,8 @@ void EconomySim::demo_seed_industry() {
 						std::string(bakery_id.utf8().get_data()))) {
 					built->strategic = true;
 				}
+				sim_core_.demo_mark_project_strategic(
+					std::string(bakery_id.utf8().get_data()));
 				++created;
 			}
 		}
@@ -3209,6 +3265,8 @@ void EconomySim::demo_seed_industry() {
 					std::string(mid_building_id.utf8().get_data()))) {
 				node->strategic = true;
 			}
+			sim_core_.demo_mark_project_strategic(
+				std::string(mid_building_id.utf8().get_data()));
 			++built;
 		}
 		const String final_building_id(("SEED-" + std::string(final_id) + "-" + city.id).c_str());
@@ -3222,6 +3280,8 @@ void EconomySim::demo_seed_industry() {
 					std::string(final_building_id.utf8().get_data()))) {
 				node->strategic = true;
 			}
+			sim_core_.demo_mark_project_strategic(
+				std::string(final_building_id.utf8().get_data()));
 			++built;
 		}
 		return built;
@@ -4219,15 +4279,63 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 	}
 
 	const double capacity_added = amount / std::max(1.0, building->capital_per_capacity);
-	city->firm_cash -= amount;
-	// A expansão é construída por serviços domésticos: o dinheiro vira
-	// receita de construção (contada no PIB do próximo tick) e não desaparece
-	// em um caixa inerte.
-	city->service_cash += amount;
-	city->construction_revenue_pending += amount;
-	building->capacity += capacity_added;
+
+	if (instant_construction_) {
+		city->firm_cash -= amount;
+		// A expansão é construída por serviços domésticos: o dinheiro vira
+		// receita de construção (contada no PIB do próximo tick) e não
+		// desaparece em um caixa inerte.
+		city->service_cash += amount;
+		city->construction_revenue_pending += amount;
+		building->capacity += capacity_added;
+		result["invested"] = amount;
+		result["capacity_added"] = capacity_added;
+		demo_status_invalidate();
+		return result;
+	}
+
+	// §15: expansão vira projeto físico (mesma regra de obra nova). O dono
+	// compromete o custo (limite do surto) e paga conforme a obra avança; a
+	// capacidade entra ao concluir. Anti-duplicação: uma expansão em andamento
+	// por prédio (a IA expandiria o mesmo prédio todo dia durante a obra).
+	for (const DemoConstructionProject& in_flight : ws_.construction_projects) {
+		if (in_flight.expand_existing
+				&& in_flight.building_id == building->id
+				&& in_flight.city == city->id) {
+			result["error"] = "obra em andamento";
+			return result;
+		}
+	}
+	const double committed =
+		demo_committed_construction(ws_, city->id, "private");
+	if (committed + amount > city->firm_cash) {
+		result["error"] = "capital insuficiente";
+		return result;
+	}
+
+	DemoConstructionProject project;
+	project.id = building->id + "-EXP";
+	project.building_id = building->id;
+	project.city = city->id;
+	project.owner = "private";
+	project.resource = building->resource;
+	project.input_product = building->input_product;
+	project.output_product = building->output_product;
+	project.recipe = building->recipe;
+	project.capacity = capacity_added;
+	project.input_per_output = building->input_per_output;
+	for (int level = 0; level < kDemoEducationLevels; ++level) {
+		project.education_mix[level] = building->education_mix[level];
+	}
+	project.jobs = building->jobs * (capacity_added / std::max(1e-9, building->capacity));
+	project.wage = building->wage;
+	project.opex = building->opex * (capacity_added / std::max(1e-9, building->capacity));
+	project.expand_existing = true;
+	project.total_cost = amount;
+	sim_core_.demo_add_construction_project(project);
 	result["invested"] = amount;
 	result["capacity_added"] = capacity_added;
+	result["project_id"] = String(project.id.c_str());
 	demo_status_invalidate();
 	return result;
 }
@@ -4321,64 +4429,117 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		}
 	}
 	const bool state_owned = owner_name == "state";
-	if (state_owned) {
-		if (city->government_budget < cost) {
-			result["error"] = "orçamento insuficiente";
-			return result;
+
+	if (instant_construction_) {
+		// Hook de teste (construção instantânea): comportamento anterior —
+		// prédio pronto na hora e custo integral debitado do dono.
+		if (state_owned) {
+			if (city->government_budget < cost) {
+				result["error"] = "orçamento insuficiente";
+				return result;
+			}
+			city->government_budget -= cost;
+		} else {
+			if (city->firm_cash < cost) {
+				result["error"] = "capital insuficiente";
+				return result;
+			}
+			city->firm_cash -= cost;
 		}
-		city->government_budget -= cost;
-	} else {
-		if (city->firm_cash < cost) {
-			result["error"] = "capital insuficiente";
-			return result;
+
+		DemoBuilding building;
+		building.id = id;
+		building.city = city->id;
+		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
+		building.resource = std::string(resource.utf8().get_data());
+		building.owner = state_owned ? "state" : "private";
+		building.input_product = input_product;
+		building.output_product = output_product;
+		building.recipe = recipe;
+		building.capacity = capacity;
+		building.input_per_output = input_per_output;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			building.education_mix[level] = education_mix[level];
 		}
-		city->firm_cash -= cost;
+		building.capital_per_capacity = capacity > 0.0
+			? std::max(1.0, cost / capacity) : kDemoCapitalPerCapacity;
+		building.jobs = jobs;
+		building.wage = wage;
+		building.opex = opex;
+		// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
+		// produção/oferta no primeiro dia e deixa a curva de preço reagir.
+		if (recipe >= 0 || input_product >= 0) {
+			building.output_scale = 0.25;
+			building.last_utilization = 0.25;
+		}
+		ws_.buildings.push_back(building);
+		// Índice por cidade: insere SÓ a construção nova. O tick reconstrói o
+		// índice no início, após remover falidas.
+		const std::size_t city_index =
+			static_cast<std::size_t>(city - ws_.cities.data());
+		if (city_index < ws_.buildings_by_city.size()) {
+			ws_.buildings_by_city[city_index].push_back(
+				static_cast<int>(ws_.buildings.size() - 1));
+		} else {
+			demo_rebuild_indexes();
+		}
+
+		// O investimento é pago ao setor de construção doméstico e entra no PIB
+		// do próximo tick como receita de construção.
+		city->service_cash += cost;
+		city->construction_revenue_pending += cost;
+		result["created"] = true;
+		result["cost"] = cost;
+		demo_status_invalidate();
+		return result;
 	}
 
-	DemoBuilding building;
-	building.id = id;
-	building.city = city->id;
-	building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
-	building.resource = std::string(resource.utf8().get_data());
-	building.owner = state_owned ? "state" : "private";
-	building.input_product = input_product;
-	building.output_product = output_product;
-	building.recipe = recipe;
-	building.capacity = capacity;
-	building.input_per_output = input_per_output;
+	// §15: obra vira PROJETO físico. O dono COMPROMETE o custo (limite do surto
+	// de obras: o total comprometido não pode estourar o caixa atual), mas paga
+	// conforme a obra avança; sem material/sem dinheiro a obra PARA (não falha).
+	// Anti-duplicação: não abre obra nova do MESMO produto enquanto outra está
+	// em andamento na cidade (a IA não enxerga obra em voo no status — sem o
+	// guarda ela empilhava uma mina/fazenda por dia e, ao concluírem, a
+	// sobreoferta falia a coorte inteira).
+	for (const DemoConstructionProject& in_flight : ws_.construction_projects) {
+		if (!in_flight.expand_existing && in_flight.city == city->id
+				&& in_flight.output_product == output_product) {
+			result["error"] = "obra em andamento";
+			return result;
+		}
+	}
+	const std::string commit_owner = state_owned ? "state" : "private";
+	const double committed = demo_committed_construction(ws_, city->id, commit_owner);
+	const double commit_budget = state_owned ? city->government_budget
+		: city->firm_cash;
+	if (committed + cost > commit_budget) {
+		result["error"] = state_owned ? "orçamento insuficiente"
+			: "capital insuficiente";
+		return result;
+	}
+
+	DemoConstructionProject project;
+	project.id = id;
+	project.building_id = id;
+	project.city = city->id;
+	project.owner = state_owned ? "state" : "private";
+	project.resource = std::string(resource.utf8().get_data());
+	project.input_product = input_product;
+	project.output_product = output_product;
+	project.recipe = recipe;
+	project.capacity = capacity;
+	project.input_per_output = input_per_output;
 	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		building.education_mix[level] = education_mix[level];
+		project.education_mix[level] = education_mix[level];
 	}
-	building.capital_per_capacity = capacity > 0.0
-		? std::max(1.0, cost / capacity) : kDemoCapitalPerCapacity;
-	building.jobs = jobs;
-	building.wage = wage;
-	building.opex = opex;
-	// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
-	// produção/oferta no primeiro dia e deixa a curva de preço reagir.
-	if (recipe >= 0 || input_product >= 0) {
-		building.output_scale = 0.25;
-		building.last_utilization = 0.25;
-	}
-	ws_.buildings.push_back(building);
-	// Índice por cidade: insere SÓ a construção nova. Reconstruir o índice
-	// inteiro (834 cidades) a cada build custava ~0,1 ms; a IA faz ~160
-	// builds/dia, o que somava ~15 ms/dia no trabalho fatiado (medido).
-	// O tick já reconstrói o índice no início, após remover falidas.
-	const std::size_t city_index = static_cast<std::size_t>(city - ws_.cities.data());
-	if (city_index < ws_.buildings_by_city.size()) {
-		ws_.buildings_by_city[city_index].push_back(
-			static_cast<int>(ws_.buildings.size() - 1));
-	} else {
-		demo_rebuild_indexes();
-	}
-
-	// O investimento é pago ao setor de construção doméstico e entra no PIB
-	// do próximo tick como receita de construção.
-	city->service_cash += cost;
-	city->construction_revenue_pending += cost;
+	project.jobs = jobs;
+	project.wage = wage;
+	project.opex = opex;
+	project.total_cost = cost;
+	sim_core_.demo_add_construction_project(project);
 	result["created"] = true;
 	result["cost"] = cost;
+	result["project_id"] = String(id.c_str());
 	demo_status_invalidate();
 	return result;
 }
@@ -4742,70 +4903,145 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	const double cost = capacity * capital_per_capacity;
 	const double partner_cost = cost * local_share;
 	const double owner_cost = cost - partner_cost;
-	if (group->cash + 1e-9 < owner_cost) {
+
+	if (instant_construction_) {
+		if (group->cash + 1e-9 < owner_cost) {
+			result["error"] = "capital insuficiente";
+			result["cash"] = group->cash;
+			result["cost"] = cost;
+			return result;
+		}
+		if (partner != nullptr && partner->cash + 1e-9 < partner_cost) {
+			result["error"] = "capital insuficiente do parceiro local";
+			result["cost"] = cost;
+			return result;
+		}
+		group->cash -= owner_cost;
+		group->capex_total += owner_cost;
+		if (partner != nullptr && partner_cost > 0.0) {
+			partner->cash -= partner_cost;
+			partner->capex_total += partner_cost;
+		}
+
+		DemoBuilding building;
+		building.id = id;
+		building.city = city->id;
+		building.kind = 0;
+		building.resource = std::string(resource.utf8().get_data());
+		building.owner = foreign
+			? "foreign:" + gid + "@" + group->origin_nation
+			: "national:" + gid;
+		building.input_product = recipe >= 0
+			? ws_.recipes[static_cast<std::size_t>(recipe)].inputs[0] : -1;
+		building.output_product = output_product;
+		building.recipe = recipe;
+		building.capacity = capacity;
+		building.input_per_output = recipe >= 0
+			? ws_.recipes[static_cast<std::size_t>(recipe)].input_qty[0]
+				/ std::max(1e-9,
+					ws_.recipes[static_cast<std::size_t>(recipe)].yield)
+			: 0.0;
+		building.capital_per_capacity = capital_per_capacity;
+		building.jobs = jobs;
+		building.wage = wage;
+		building.opex = opex;
+		for (int level = 0; level < kDemoEducationLevels; ++level) {
+			building.education_mix[level] = education_mix[level];
+		}
+		building.local_share = local_share;
+		building.partner_group = partner != nullptr ? partner->id : std::string();
+		if (recipe >= 0) {
+			building.output_scale = 0.25;
+			building.last_utilization = 0.25;
+		}
+		ws_.buildings.push_back(building);
+		const std::size_t city_index =
+			static_cast<std::size_t>(city - ws_.cities.data());
+		if (city_index < ws_.buildings_by_city.size()) {
+			ws_.buildings_by_city[city_index].push_back(
+				static_cast<int>(ws_.buildings.size() - 1));
+		} else {
+			demo_rebuild_indexes();
+		}
+		city->service_cash += cost;
+		city->construction_revenue_pending += cost;
+		result["created"] = true;
+		result["cost"] = cost;
+		result["owner"] = String(building.owner.c_str());
+		result["local_share"] = local_share;
+		demo_status_invalidate();
+		return result;
+	}
+
+	// §15: obra vira projeto físico. O grupo financia a sua fatia conforme a
+	// obra avança; o parceiro de JV paga a fatia local na hora (contribuição
+	// adiantada ao serviço de construção). Sem material/sem dinheiro, a obra
+	// PARA.
+	// Anti-duplicação: não abre obra nova do MESMO produto enquanto outra está
+	// em andamento na cidade (mesma regra do build do governo).
+	for (const DemoConstructionProject& in_flight : ws_.construction_projects) {
+		if (!in_flight.expand_existing && in_flight.city == city->id
+				&& in_flight.output_product == output_product) {
+			result["error"] = "obra em andamento";
+			return result;
+		}
+	}
+	const double committed = demo_committed_construction(ws_, city->id, gid);
+	if (committed + owner_cost > group->cash) {
 		result["error"] = "capital insuficiente";
 		result["cash"] = group->cash;
 		result["cost"] = cost;
 		return result;
 	}
-	if (partner != nullptr && partner->cash + 1e-9 < partner_cost) {
-		result["error"] = "capital insuficiente do parceiro local";
-		result["cost"] = cost;
-		return result;
-	}
-	group->cash -= owner_cost;
-	group->capex_total += owner_cost;
-	if (partner != nullptr && partner_cost > 0.0) {
+	if (partner != nullptr) {
+		const double pcommitted =
+			demo_committed_construction(ws_, city->id, partner->id);
+		if (pcommitted + partner_cost > partner->cash) {
+			result["error"] = "capital insuficiente do parceiro local";
+			result["cost"] = cost;
+			return result;
+		}
 		partner->cash -= partner_cost;
 		partner->capex_total += partner_cost;
+		city->service_cash += partner_cost;
+		city->construction_revenue_pending += partner_cost;
 	}
+	group->capex_total += owner_cost;
 
-	DemoBuilding building;
-	building.id = id;
-	building.city = city->id;
-	building.kind = 0;
-	building.resource = std::string(resource.utf8().get_data());
-	building.owner = foreign
+	DemoConstructionProject project;
+	project.id = id;
+	project.building_id = id;
+	project.city = city->id;
+	project.owner = foreign
 		? "foreign:" + gid + "@" + group->origin_nation
 		: "national:" + gid;
-	building.input_product = recipe >= 0
+	project.group_id = gid;
+	project.resource = std::string(resource.utf8().get_data());
+	project.input_product = recipe >= 0
 		? ws_.recipes[static_cast<std::size_t>(recipe)].inputs[0] : -1;
-	building.output_product = output_product;
-	building.recipe = recipe;
-	building.capacity = capacity;
-	building.input_per_output = recipe >= 0
+	project.output_product = output_product;
+	project.recipe = recipe;
+	project.capacity = capacity;
+	project.input_per_output = recipe >= 0
 		? ws_.recipes[static_cast<std::size_t>(recipe)].input_qty[0]
 			/ std::max(1e-9,
 				ws_.recipes[static_cast<std::size_t>(recipe)].yield)
 		: 0.0;
-	building.capital_per_capacity = capital_per_capacity;
-	building.jobs = jobs;
-	building.wage = wage;
-	building.opex = opex;
+	project.jobs = jobs;
+	project.wage = wage;
+	project.opex = opex;
 	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		building.education_mix[level] = education_mix[level];
+		project.education_mix[level] = education_mix[level];
 	}
-	building.local_share = local_share;
-	building.partner_group = partner != nullptr ? partner->id : std::string();
-	if (recipe >= 0) {
-		building.output_scale = 0.25;
-		building.last_utilization = 0.25;
-	}
-	ws_.buildings.push_back(building);
-	const std::size_t city_index =
-		static_cast<std::size_t>(city - ws_.cities.data());
-	if (city_index < ws_.buildings_by_city.size()) {
-		ws_.buildings_by_city[city_index].push_back(
-			static_cast<int>(ws_.buildings.size() - 1));
-	} else {
-		demo_rebuild_indexes();
-	}
-	city->service_cash += cost;
-	city->construction_revenue_pending += cost;
+	project.local_share = local_share;
+	project.partner_group = partner != nullptr ? partner->id : std::string();
+	project.total_cost = owner_cost;
+	sim_core_.demo_add_construction_project(project);
 	result["created"] = true;
 	result["cost"] = cost;
-	result["owner"] = String(building.owner.c_str());
+	result["owner"] = String(project.owner.c_str());
 	result["local_share"] = local_share;
+	result["project_id"] = String(id.c_str());
 	demo_status_invalidate();
 	return result;
 }

@@ -111,6 +111,7 @@ double SimCore::demo_money_total() const {
 void SimCore::demo_snapshot(DemoSnapshot& out) const {
 	out.cities = ws_.cities;
 	out.buildings = ws_.buildings;
+	out.construction_projects = ws_.construction_projects;
 	out.service_businesses = ws_.service_businesses;
 	out.next_service_business_id = ws_.next_service_business_id;
 	out.service_bankruptcies = ws_.service_bankruptcies;
@@ -148,6 +149,9 @@ void SimCore::prologue() {
 	ws_.last_orders.clear();
 	// Obras de porto com prazo vencido entram em operação neste dia.
 	demo_tick_port_expansion();
+	// §15: obras de construção (projeto físico) avançam por materiais +
+	// capacidade do setor de construção; as concluídas entram em operação.
+	demo_tick_construction();
 
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
@@ -537,6 +541,7 @@ void SimCore::phase_invariants() {
 void SimCore::demo_restore(const DemoSnapshot& in) {
 	ws_.cities = in.cities;
 	ws_.buildings = in.buildings;
+	ws_.construction_projects = in.construction_projects;
 	ws_.service_businesses = in.service_businesses;
 	ws_.next_service_business_id = in.next_service_business_id;
 	ws_.service_bankruptcies = in.service_bankruptcies;

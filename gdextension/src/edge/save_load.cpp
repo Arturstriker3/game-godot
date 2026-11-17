@@ -353,6 +353,14 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		pop["labor"] = labor;
 		entry["pop"] = pop;
 		entry["government_goods_spend"] = city.government_goods_spend;
+		// §15 (save v12): emprego setorial (agro/indústria/serviços + informal).
+		// É estado DERIVADO, mas o prólogo usa `sector_workers[1]` como base da
+		// capacidade de construção do dia — sem persistir, o load zera o vetor e
+		// a capacidade cai para o piso no primeiro tick (divergência de round-trip).
+		entry["sector_workers"] = Array{city.sector_workers[0],
+			city.sector_workers[1], city.sector_workers[2], city.sector_workers[3]};
+		entry["sector_share"] = Array{city.sector_share[0],
+			city.sector_share[1], city.sector_share[2], city.sector_share[3]};
 
 		Array markets;
 		for (int product = 0; product < ws.products; ++product) {
@@ -410,6 +418,58 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
+
+	// §15 (save v12): obras de construção em andamento. Save v11 e anteriores
+	// não têm a chave: não há projeto em voo (migração trivial).
+	Array construction_projects;
+	for (const DemoConstructionProject& project : ws.construction_projects) {
+		Dictionary entry;
+		entry["id"] = sim_str(project.id.c_str());
+		entry["building_id"] = sim_str(project.building_id.c_str());
+		entry["city"] = sim_str(project.city.c_str());
+		entry["owner"] = sim_str(project.owner.c_str());
+		entry["group_id"] = sim_str(project.group_id.c_str());
+		entry["resource"] = sim_str(project.resource.c_str());
+		entry["output_product"] = project.output_product;
+		entry["recipe"] = project.recipe >= 0
+			&& project.recipe < static_cast<int>(ws.recipes.size())
+			? sim_str(ws.recipes[static_cast<std::size_t>(project.recipe)].id.c_str())
+			: String("");
+		entry["input_product"] = project.input_product;
+		entry["capacity"] = project.capacity;
+		entry["jobs"] = project.jobs;
+		entry["wage"] = project.wage;
+		entry["opex"] = project.opex;
+		entry["input_per_output"] = project.input_per_output;
+		entry["education_mix"] = Array{project.education_mix[0],
+			project.education_mix[1], project.education_mix[2]};
+		entry["local_share"] = project.local_share;
+		entry["partner_group"] = sim_str(project.partner_group.c_str());
+		entry["strategic"] = project.strategic;
+		entry["expand_existing"] = project.expand_existing;
+		entry["total_cost"] = project.total_cost;
+		entry["labor_cost_total"] = project.labor_cost_total;
+		entry["paid"] = project.paid;
+		entry["labor_paid"] = project.labor_paid;
+		entry["duration_days"] = project.duration_days;
+		entry["days_elapsed"] = project.days_elapsed;
+		entry["paused"] = project.paused;
+		entry["pause_reason"] = sim_str(project.pause_reason.c_str());
+		entry["created_day"] = project.created_day;
+		Array materials;
+		Array material_qty;
+		Array material_delivered;
+		for (int m = 0; m < project.material_count; ++m) {
+			materials.append(project.materials[m]);
+			material_qty.append(project.material_qty[m]);
+			material_delivered.append(project.material_delivered[m]);
+		}
+		entry["materials"] = materials;
+		entry["material_qty"] = material_qty;
+		entry["material_delivered"] = material_delivered;
+		construction_projects.append(entry);
+	}
+	data["construction_projects"] = construction_projects;
 
 	// F8: negócios de serviço (catálogo global). O nome NÃO é gravado: é
 	// derivado da semente + cultura do dono no GDScript (rótulo), então o save
@@ -1210,6 +1270,17 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				city.pop.population - labor_pop.labor_force);
 		}
 		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));
+		// §15 (save v12): emprego setorial — base da capacidade de construção do
+		// prólogo (ver to_dict). Save v11 não tem a chave: zeros, recalculado no
+		// primeiro tick (comportamento anterior, só que agora o piso da obra cobre).
+		const Array saved_sector_workers = entry.get("sector_workers", Array());
+		const Array saved_sector_share = entry.get("sector_share", Array());
+		for (int slot = 0; slot < 4; ++slot) {
+			city.sector_workers[slot] = slot < saved_sector_workers.size()
+				? std::max(0.0, double(saved_sector_workers[slot])) : 0.0;
+			city.sector_share[slot] = slot < saved_sector_share.size()
+				? std::clamp(double(saved_sector_share[slot]), 0.0, 1.0) : 0.0;
+		}
 		Array desired_by_category = pop.get("desired_by_category", Array());
 		Array consumed_by_category = pop.get("consumed_by_category", Array());
 		city.pop.desired_by_category.assign(ws.food_products.size(), 0.0);
@@ -1340,6 +1411,97 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.bankrupt = bool(entry.get("bankrupt", false));
 		building.depleted = bool(entry.get("depleted", false));
 		ws.buildings.push_back(building);
+	}
+
+	// §15 (save v12): obras em andamento. Save v11 e anteriores não têm a chave:
+	// lista vazia (nenhum projeto em voo no mundo antigo — migração trivial).
+	ws.construction_projects.clear();
+	const Array saved_projects = data.get("construction_projects", Array());
+	for (int index = 0; index < saved_projects.size(); ++index) {
+		if (saved_projects[index].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = saved_projects[index];
+		DemoConstructionProject project;
+		project.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		if (project.id.empty()) {
+			continue;
+		}
+		project.building_id = std::string(
+			String(entry.get("building_id", "")).utf8().get_data());
+		project.city = std::string(String(entry.get("city", "")).utf8().get_data());
+		project.owner = std::string(
+			String(entry.get("owner", "private")).utf8().get_data());
+		project.group_id = std::string(
+			String(entry.get("group_id", "")).utf8().get_data());
+		project.resource = std::string(
+			String(entry.get("resource", "")).utf8().get_data());
+		project.output_product = int(entry.get("output_product", -1));
+		if (has_saved_products || needs_legacy_migration) {
+			project.output_product = migrate_index(project.output_product);
+			if (project.output_product < 0) {
+				continue;  // produto removido: obra descartada
+			}
+		}
+		const String recipe_id = String(entry.get("recipe", ""));
+		project.recipe = recipe_id.is_empty()
+			? -1 : core.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
+		project.input_product = int(entry.get("input_product", -1));
+		if (has_saved_products || needs_legacy_migration) {
+			project.input_product = migrate_index(project.input_product);
+		}
+		project.capacity = std::max(0.0, double(entry.get("capacity", 0.0)));
+		project.jobs = std::max(0.0, double(entry.get("jobs", 0.0)));
+		project.wage = std::max(0.0, double(entry.get("wage", 0.0)));
+		project.opex = std::max(0.0, double(entry.get("opex", 0.0)));
+		project.input_per_output = double(entry.get("input_per_output", 0.0));
+		const Array mix = entry.get("education_mix", Array());
+		if (mix.size() >= kDemoEducationLevels) {
+			double total = 0.0;
+			for (int level = 0; level < kDemoEducationLevels; ++level) {
+				project.education_mix[level] = std::max(0.0, double(mix[level]));
+				total += project.education_mix[level];
+			}
+			if (total > 1e-9) {
+				for (int level = 0; level < kDemoEducationLevels; ++level) {
+					project.education_mix[level] /= total;
+				}
+			}
+		}
+		project.local_share = std::clamp(
+			double(entry.get("local_share", 0.0)), 0.0, 1.0);
+		project.partner_group = std::string(
+			String(entry.get("partner_group", "")).utf8().get_data());
+		project.strategic = bool(entry.get("strategic", false));
+		project.expand_existing = bool(entry.get("expand_existing", false));
+		project.total_cost = std::max(0.0, double(entry.get("total_cost", 0.0)));
+		project.labor_cost_total = std::max(0.0,
+			double(entry.get("labor_cost_total", 0.0)));
+		project.paid = std::max(0.0, double(entry.get("paid", 0.0)));
+		project.labor_paid = std::max(0.0, double(entry.get("labor_paid", 0.0)));
+		project.duration_days = std::max(1, int(entry.get("duration_days", 30)));
+		project.days_elapsed = std::max(0, int(entry.get("days_elapsed", 0)));
+		project.paused = bool(entry.get("paused", false));
+		project.pause_reason = std::string(
+			String(entry.get("pause_reason", "")).utf8().get_data());
+		project.created_day = int(entry.get("created_day", 0));
+		const Array materials = entry.get("materials", Array());
+		const Array material_qty = entry.get("material_qty", Array());
+		const Array material_delivered = entry.get("material_delivered", Array());
+		project.material_count = std::min(
+			static_cast<int>(materials.size()), kDemoMaxConstructionMaterials);
+		for (int m = 0; m < project.material_count; ++m) {
+			int product = int(materials[m]);
+			if (has_saved_products || needs_legacy_migration) {
+				product = migrate_index(product);
+			}
+			project.materials[m] = product;
+			project.material_qty[m] = m < material_qty.size()
+				? std::max(0.0, double(material_qty[m])) : 0.0;
+			project.material_delivered[m] = m < material_delivered.size()
+				? std::max(0.0, double(material_delivered[m])) : 0.0;
+		}
+		ws.construction_projects.push_back(std::move(project));
 	}
 
 	ws.in_transit.clear();

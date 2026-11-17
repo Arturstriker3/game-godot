@@ -10,6 +10,7 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	ws.day = 0;
 	ws.cities.clear();
 	ws.buildings.clear();
+	ws.construction_projects.clear();
 	ws.in_transit.clear();
 	ws.ports.clear();
 	ws.last_orders.clear();

@@ -186,6 +186,21 @@ public:
 	int demo_recipe_index(const std::string& recipe_id) const;
 
 	// ------------------------------------------------------------------
+	// §15 — construção como projeto físico (sim/construction.cpp).
+	// ------------------------------------------------------------------
+	// Calcula materiais/prazo e empilha a obra. Chamado pela fachada (build,
+	// grupo e expansão). `expand_existing` soma capacidade a um prédio existente
+	// em vez de criar um novo.
+	void demo_add_construction_project(DemoConstructionProject& project);
+	// Avança as obras do dia: materiais comprados do mercado, capacidade do
+	// setor de construção, pagamento incremental do dono e conclusão.
+	void demo_tick_construction();
+	// Índice de uma obra em andamento pelo id do prédio final (-1 se não há).
+	int demo_project_index(const std::string& building_id) const;
+	// Marca a obra `strategic` (bootstrap industrial) pelo id do prédio final.
+	void demo_mark_project_strategic(const std::string& building_id);
+
+	// ------------------------------------------------------------------
 	// Geometria do mapa e frete (S5b).
 	// ------------------------------------------------------------------
 	// Capacidade/custo/tempo de cada modal (calibragem do porto).

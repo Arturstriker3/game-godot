@@ -128,6 +128,9 @@ namespace ogs {
 	// segurança do vetor.
 	static constexpr int kDemoMaxProducts = 160;
 	static constexpr int kDemoMaxRecipeInputs = 6;
+	// §15: materiais de uma obra (construction_material, steel_structure,
+	// electrical_material; fábricas acrescentam industrial_machinery).
+	static constexpr int kDemoMaxConstructionMaterials = 4;
 	// F3: níveis de necessidade (basic/life/luxury, needs.json).
 	static constexpr int kDemoMaxNeedsLevels = 3;
 	// F7 calibração: níveis de consumo alcançáveis pela renda de um estrato
@@ -266,6 +269,55 @@ namespace ogs {
 		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
 		// e extração quase só básico; indústria segue a receita/setor.
 		double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+	};
+
+	// ------------------------------------------------------------------
+	// §15 (construction as physical project, 2026-11-16). Toda construção ou
+	// expansão vira um PROJETO que avança por dia: materiais entregues pelo
+	// mercado, mão de obra/capacidade do setor de construção, prazo e dono
+	// (state/private/grupo F9). O pagamento sai do dono conforme avança; sem
+	// material ele PARA (não falha). Ao concluir, o prédio entra em operação
+	// (ou a expansão soma capacidade). Ver sim/construction.{h,cpp}.
+	// ------------------------------------------------------------------
+	struct DemoConstructionProject {
+		std::string id;          // id do projeto (== building_id em obra nova)
+		std::string city;
+		std::string owner;       // "state" | "private" | "national:<g>" | "foreign:<g>@<n>"
+		std::string group_id;    // grupo financiador (vazio p/ state/private)
+		std::string resource;    // bem produzido (id de goods.json)
+		int output_product = -1;
+		int recipe = -1;
+		int input_product = -1;
+		double capacity = 0.0;   // capacidade nova (obra) ou adicionada (expansão)
+		double jobs = 0.0;
+		double wage = 0.0;
+		double opex = 0.0;
+		double input_per_output = 0.0;
+		double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+		double local_share = 0.0;
+		std::string partner_group;
+		bool strategic = false;      // planta estratégica (bootstrap industrial)
+		bool expand_existing = false; // true = soma capacidade a building_id
+		std::string building_id;     // prédio final (obra) ou alvo (expansão)
+		// Economia do projeto: `total_cost` é o orçamento estimado; o dono paga
+		// conforme a obra avança (não tudo no início).
+		double total_cost = 0.0;
+		double labor_cost_total = 0.0; // parcela de mão de obra (1 - material_share)
+		double paid = 0.0;             // total pago pelo dono até agora
+		double labor_paid = 0.0;       // mão de obra paga até agora
+		// Materiais da receita de obra (construction_material, steel_structure,
+		// electrical_material; fábricas também industrial_machinery).
+		int material_count = 0;
+		int materials[kDemoMaxConstructionMaterials] = {};
+		double material_qty[kDemoMaxConstructionMaterials] = {};      // t totais
+		double material_delivered[kDemoMaxConstructionMaterials] = {}; // t entregues
+		// Cronograma. Sem material/sem dinheiro, `days_elapsed` não avança e o
+		// projeto para (pausa declarada em pause_reason).
+		int duration_days = 30;
+		int days_elapsed = 0;
+		bool paused = false;
+		std::string pause_reason;
+		int created_day = 0;
 	};
 
 	struct DemoPop {
@@ -760,6 +812,7 @@ namespace ogs {
 	struct DemoSnapshot {
 		std::vector<DemoCity> cities;
 		std::vector<DemoBuilding> buildings;
+		std::vector<DemoConstructionProject> construction_projects;
 		std::vector<DemoServiceBusiness> service_businesses;
 		int next_service_business_id = 1;
 		int service_bankruptcies = 0;
