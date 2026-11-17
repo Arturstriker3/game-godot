@@ -116,14 +116,23 @@ Objetivo: sair de "1 POP por cidade" para **coortes**, sem simular indivíduos.
     de infraestrutura rural (luz, água, estrada). O §19 (solo, aluguel, prefeitura) vale só para o urbano.
   - **Consumo:** autoconsumo de comida fora do mercado e sem frete; o resto no mercado da cidade, com
     custo de acesso que cai com a estrada. Acesso menor a saúde/educação.
-- **Interior dividido em dois blocos (decisão do dono, 2026-11-17):** as 834 aglomerações cobrem ~26% da
-  população mundial, mas ~57% é urbana. O interior de cada cidade se divide em **cidades pequenas**
-  (urbanização real da nação, ONU WUP, menos a fatia das aglomerações) e **rural** (o resto).
-  Cidades pequenas: indústria leve e serviços, moradia simples (sem mercado de solo do §19).
-  Rural: fazendas, minas, madeira, agricultura familiar. Dado de base: data/definitions/population/
-  hinterland_2026.json (WorldPop 2026 por província → cidade dona). Ressalva: regiões enormes
-  (ex.: Patna 226 M) refletem a regra província→cidade; 7 aglomerações maiores que a região ficam
-  com interior 0 (Mumbai, Osaka, Kuwait, Busan, Brisbane, Portland, Juárez).
+- **Cidade + Região (decisão final do dono, 2026-11-17; substitui "interior dividido" e "três segmentos"):**
+  2 blocos por cidade. A **Região** é um bloco só (cidades pequenas + campo, toda a população fora da
+  aglomeração; dado em data/definitions/population/hinterland_2026.json), SEM mercado de solo/moradia e
+  SEM prefeitura própria — a simulação urbana completa existe só na cidade. A urbanização real da nação
+  (~57% vs ~26% coberto pelas aglomerações) define apenas o MIX de empregos da Região (agro/mineração/
+  madeira × indústria leve/serviços locais). Ressalvas de dado: regiões enormes (ex.: Patna 226 M);
+  7 aglomerações maiores que a região ficam com Região 0.
+- **Região = ESTADOS INTEIROS (decisão do dono, opção 1):** a região de cada cidade passa a ser um ou mais
+  estados (admin-1) completos, seguindo a divisa real, em vez de "província → cidade mais próxima". A cidade
+  é a principal do estado; estado sem cidade no roster se junta ao estado vizinho com cidade (mesma nação).
+  Sem cidades novas, sem custo de perf. Regiões com nome real (São Paulo, Bihar, Texas). Opção 3 APROVADA
+  junto da B3: capitais extras só para estados grandes sem cidade (Índia/China sobretudo; ex.: Kolkata 242 M,
+  Guangzhou 238 M).
+- **Papel de gameplay da Região:** é a camada de TERRITÓRIO da cidade — onde ficam terra, jazidas, usinas
+  (Parte E), malha de transporte (Parte F), cobertura de luz/água (E7), base de recrutamento e, no futuro,
+  o território ocupado na guerra. Alavancas do jogador por região: estrada/ferrovia, eletrificação e
+  água, programas agrícolas, concessões de mineração, usinas. Modo de mapa por região.
 - Rótulo do mapa continua mostrando a aglomeração; a ficha mostra também o total da região.
 - **Recalibração grande** (~6,5× consumidores): fase própria, sweep dedicado, goldens refeitos.
 - Aceite: população nacional simulada = dado real; fatia de emprego agrícola cai com a renda do país;
@@ -137,6 +146,17 @@ Objetivo: sair de "1 POP por cidade" para **coortes**, sem simular indivíduos.
 - Aceite: taxa de urbanização por nação perto do dado; `housing_stress` responde à entrada.
 
 Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos = ~42 mil coortes leves — cabe com a Parte A.
+
+---
+
+### B5 — Gameplay da Região/Estado (aprovado pelo dono, 2026-11-17)
+- **Logo após a B3:** (1) infraestrutura do estado — estrada, luz, água (custo de acesso, produtividade,
+  êxodo); (2) concessões de mineração e terra pelo sistema de grupos F9 (privatizar/estatizar/estrangeiro).
+- **Planos futuros aprovados:** (3) desigualdade regional + transferência do governo central a estados
+  pobres; (4) êxodo para a capital com efeito em favela/aluguel; (5) eventos por estado com dado real
+  (seca/quebra de safra, esgotamento de mina, boom de commodity); (6) instabilidade por estado (com
+  política) e ocupação de estados na guerra.
+- **Evitar:** prédio a prédio no estado, preço separado por estado, mercado imobiliário no campo.
 
 ---
 
