@@ -112,7 +112,8 @@ double SimCore::demo_money_total() const {
 	for (const DemoConstructionProject& project : ws_.construction_projects) {
 		total += project.reserved;
 	}
-	// §19 W2: caixa da prefeitura e fundo das obras urbanas ainda não pagos.
+	// §19 W2/W3: caixa da prefeitura (inclui aluguel pago a dono público) e
+	// fundo das obras urbanas ainda não pagos — dinheiro do mundo.
 	total += city_gov::money_total(ws_);
 	return total;
 }
@@ -443,7 +444,11 @@ void SimCore::phase_accounting() {
 		city.firm_cash -= modeled_distribution + state_distribution;
 		city.service_cash -= service_distribution;
 		city.government_budget += state_distribution;
-		city.capital_income_next = modeled_distribution + service_distribution;
+		// §19 W3: a renda de capital do dia SOMA ao crédito pendente em vez de
+		// substituí-lo — o aluguel pago às famílias donas (fase 5b) já está
+		// aqui. Sem o "+", o aluguel à família era anulado na contabilidade
+		// (dinheiro não conservado).
+		city.capital_income_next += modeled_distribution + service_distribution;
 		city.gdp = value_added + city.service_revenue;
 
 		// Comportamento das empresas: prejuízo persistente reduz a produção;

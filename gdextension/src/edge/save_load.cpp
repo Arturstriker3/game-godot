@@ -602,6 +602,56 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		city_gov_save.append(entry);
 	}
 	data["city_gov"] = city_gov_save;
+	// §19 W3 — estado do MERCADO DE MORADIA por cidade (bloco próprio, para
+	// não conflitar com o bloco `urban` do W0/W1/W2). Guarda a base de
+	// domicílios, o sinal de aperto, os fluxos do mês e as obras em andamento.
+	Array housing_state;
+	const std::size_t housing_count = std::min(
+		ws.housing.size(), ws.cities.size());
+	for (std::size_t index = 0; index < housing_count; ++index) {
+		const CityHousing& house = ws.housing[index];
+		Dictionary entry;
+		entry["city"] = sim_str(ws.cities[index].id.c_str());
+		entry["households"] = house.households;
+		Array households_by_tier;
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			households_by_tier.append(house.households_by_tier[tier]);
+		}
+		entry["households_by_tier"] = households_by_tier;
+		entry["pop_anchor"] = house.pop_anchor;
+		entry["rent_anchored"] = house.rent_anchored;
+		Array rent_cap_ratio;
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			rent_cap_ratio.append(house.rent_cap_ratio[tier]);
+		}
+		entry["rent_cap_ratio"] = rent_cap_ratio;
+		entry["housing_stress"] = house.housing_stress;
+		entry["stress_days"] = house.stress_days;
+		entry["rent_paid_month"] = house.rent_paid_month;
+		entry["rent_households_month"] = house.rent_households_month;
+		entry["rent_firms_month"] = house.rent_firms_month;
+		entry["rent_government_month"] = house.rent_government_month;
+		entry["rent_burden"] = house.rent_burden;
+		entry["units_built_month"] = house.units_built_month;
+		entry["month_marker"] = house.month_marker;
+		Array projects;
+		for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
+			const HousingProject& project = house.projects[slot];
+			if (project.state == HOUSING_PROJECT_IDLE) {
+				continue;
+			}
+			Dictionary p;
+			p["state"] = project.state;
+			p["density"] = project.density;
+			p["tier"] = project.tier;
+			p["units"] = project.units;
+			p["days_left"] = project.days_left;
+			projects.append(p);
+		}
+		entry["projects"] = projects;
+		housing_state.append(entry);
+	}
+	data["housing"] = housing_state;
 
 	// F8: negócios de serviço (catálogo global). O nome NÃO é gravado: é
 	// derivado da semente + cultura do dono no GDScript (rótulo), então o save
@@ -2012,6 +2062,84 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 					continue;
 				}
 				++gov.project_count;
+			}
+		}
+	}
+
+	// §19 W3 — estado do mercado de moradia (bloco `housing`, aditivo). Save
+	// anterior ao W3 não tem a chave: os campos ficam no padrão (0 = mercado
+	// ainda não rodou) e a fase deriva a base de domicílios do estoque.
+	if (data.has("housing")) {
+		const Array saved_housing = data.get("housing", Array());
+		for (int index = 0; index < saved_housing.size(); ++index) {
+			if (saved_housing[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary entry = saved_housing[index];
+			const std::string city_id = std::string(
+				String(entry.get("city", "")).utf8().get_data());
+			const auto found = ws.city_lookup.find(city_id);
+			if (found == ws.city_lookup.end() || found->second < 0
+					|| static_cast<std::size_t>(found->second)
+						>= ws.housing.size()) {
+				continue;
+			}
+			CityHousing& house = ws.housing[
+				static_cast<std::size_t>(found->second)];
+			house.households = safe_nonneg(
+				double(entry.get("households", 0.0)));
+			const Array hh_tier = entry.get("households_by_tier", Array());
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				house.households_by_tier[tier] = tier < hh_tier.size()
+					? safe_nonneg(double(hh_tier[tier])) : 0.0;
+			}
+			house.pop_anchor = safe_nonneg(
+				double(entry.get("pop_anchor", 0.0)));
+			house.rent_anchored = bool(entry.get("rent_anchored", false));
+			const Array cap_ratio = entry.get("rent_cap_ratio", Array());
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				house.rent_cap_ratio[tier] = tier < cap_ratio.size()
+					? std::clamp(double(cap_ratio[tier]), 1.0, 2.5) : 1.0;
+			}
+			house.housing_stress = safe_unit(
+				double(entry.get("housing_stress", 0.0)));
+			house.stress_days = std::max(
+				0, int(entry.get("stress_days", 0)));
+			house.rent_paid_month = safe_nonneg(
+				double(entry.get("rent_paid_month", 0.0)));
+			house.rent_households_month = safe_nonneg(
+				double(entry.get("rent_households_month", 0.0)));
+			house.rent_firms_month = safe_nonneg(
+				double(entry.get("rent_firms_month", 0.0)));
+			house.rent_government_month = safe_nonneg(
+				double(entry.get("rent_government_month", 0.0)));
+			house.rent_burden = safe_unit(
+				double(entry.get("rent_burden", 0.0)));
+			house.units_built_month = safe_nonneg(
+				double(entry.get("units_built_month", 0.0)));
+			house.month_marker = std::max(
+				0, int(entry.get("month_marker", 0)));
+			for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
+				house.projects[slot] = HousingProject{};
+			}
+			const Array projects = entry.get("projects", Array());
+			for (int slot = 0;
+					slot < projects.size() && slot < kDemoHousingMaxProjects;
+					++slot) {
+				if (projects[slot].get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary p = projects[slot];
+				HousingProject& project = house.projects[slot];
+				project.state = std::clamp(
+					int(p.get("state", 0)), 0,
+					static_cast<int>(HOUSING_PROJECT_SELF));
+				project.density = std::clamp(
+					int(p.get("density", 0)), 0, DENSITY_COUNT - 1);
+				project.tier = std::clamp(
+					int(p.get("tier", 0)), 0, TIER_COUNT - 1);
+				project.units = safe_nonneg(double(p.get("units", 0.0)));
+				project.days_left = std::max(0, int(p.get("days_left", 0)));
 			}
 		}
 	}

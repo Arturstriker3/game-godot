@@ -5,6 +5,8 @@
 // paralelos a `cities` (mesmo índice). O W0 só define e carrega os dados;
 // nenhuma fase diária os muta ainda (W1/W2/W3).
 
+#include "housing.h"
+
 namespace ogs {
 
 // Uso do solo. A ordem é a do save e dos arrays por zona — não reordene.
@@ -94,6 +96,48 @@ struct CityHousing {
 	double vacancy[TIER_COUNT] = {};
 	// Unidades informais (subconjunto do estoque, pela tenure informal).
 	double informal_units = 0.0;
+
+	// ------------------------------------------------------------------
+	// §19 W3 — mercado de moradia (ver sim/housing.h para o modelo).
+	// Bloco aditivo: save v13 grava estas chaves na entrada `housing`; save
+	// anterior ao W3 carrega com os padrões (0 = mercado ainda não rodou, a
+	// fase deriva a base do estoque no primeiro tick).
+	// ------------------------------------------------------------------
+	// Domicílios da cidade (base da demanda por padrão). A fonte define o
+	// estoque como população ÷ tamanho do domicílio, então a fase o inicializa
+	// com o estoque carregado — equilíbrio inicial explícito, sem inventar
+	// tamanho de domicílio que a fonte já embutiu.
+	double households = 0.0;
+	// Domicílios por padrão (repartição do estoque da fonte, que É a
+	// distribuição de renda) e população no carregamento — a demanda de cada
+	// padrão escala com a população da cidade.
+	double households_by_tier[TIER_COUNT] = {};
+	double pop_anchor = 0.0;
+	// O nível de aluguel da fonte (USD/m²) é reancorado UMA vez na renda
+	// medida do núcleo; depois disso o mercado manda. `rent_cap_ratio` guarda o
+	// gradiente de aluguel por padrão da fonte (médio/alto ÷ popular), usado
+	// como teto de ônus de cada padrão.
+	bool rent_anchored = false;
+	double rent_cap_ratio[TIER_COUNT] = {1.0, 1.0, 1.0};
+	// Sinal 0..1 de aperto habitacional (falta popular + ônus de aluguel acima
+	// do teto). Insumo do W4 (migração) e da UI.
+	double housing_stress = 0.0;
+	// Dias consecutivos em aperto popular (a favela é o último caso).
+	int stress_days = 0;
+	// Aluguel efetivamente pago no dia (XGS) e acumulados do mês por dono.
+	double rent_paid_today = 0.0;
+	double rent_paid_month = 0.0;
+	double rent_households_month = 0.0;
+	double rent_firms_month = 0.0;
+	double rent_government_month = 0.0;
+	// Ônus do aluguel no mês (aluguel pago ÷ renda disponível do período).
+	double rent_burden = 0.0;
+	// Unidades entregues no mês corrente (auditoria/teste).
+	double units_built_month = 0.0;
+	// Dia do último fechamento mensal processado (ajuste de aluguel/obras).
+	int month_marker = 0;
+	// Obras de moradia em andamento (projeto §15 tipo "moradia").
+	HousingProject projects[kDemoHousingMaxProjects];
 };
 
 // §19 (W2) — obra urbana pedida pela prefeitura. O W2 DECIDE, financia

@@ -515,4 +515,47 @@ constexpr double kDemoUrbanKm2ToConstructionUnits = 20.0;
 // da demanda de zona.
 constexpr int kDemoUrbanMonthDays = 30;
 
+// §19 W3 — MERCADO DE MORADIA (sim/housing.cpp). Parâmetros de MODELO, não
+// dados observados; o ônus de aluguel e a cap rate vêm da fonte (OECD AHD
+// HC1.2 e §19.6).
+// ---------------------------------------------------------------------------
+// Ônus de aluguel: a fonte publica a mediana dos inquilinos (0,28). O nível
+// inicial do aluguel é REANCORADO na renda medida do núcleo nessa fração
+// (housing_city.json publica USD/m² — escala ~2,7 ordens de grandeza acima da
+// renda simulada em XGS; o valor absoluto da fonte não é transportável).
+constexpr double kDemoHousingInitialBurden = 0.28;
+// Teto de ônus de aluguel do inquilino: o aluguel de um domicílio não passa
+// desta fração da renda mensal do domicílio (trava de longo prazo).
+constexpr double kDemoHousingRentBurdenCap = 0.40;
+// Reserva de comida (dias de cesta) que o aluguel NUNCA toca: comida tem
+// prioridade sobre moradia (spec §19/W3).
+constexpr double kDemoHousingFoodReserveDays = 30.0;
+// Ajuste mensal do aluguel: passo máximo (±2%/mês) e elasticidade ao
+// desequilíbrio demanda × oferta.
+constexpr double kDemoHousingRentStepMax = 0.02;
+constexpr double kDemoHousingRentElasticity = 0.50;
+// Custo de construção de uma unidade em ANOS DE ALUGUEL do padrão (parâmetro
+// adimensional, independente da escala monetária do mundo) — a terra entra
+// separada pelo land_price da zona residencial (W1). Uma unidade vale 20 anos
+// de aluguel (§19.6); construir custa ~14.
+constexpr double kDemoHousingBuildCostYears = 14.0;
+constexpr double kDemoHousingDeveloperMargin = 0.20;
+// Parcela MATERIAL da obra de moradia (o resto é mão de obra/serviço).
+constexpr double kDemoHousingMaterialShare = 0.40;
+// Prazo de obra de moradia (dias) e tamanho do lote de unidades por mês.
+constexpr int kDemoHousingBuildDays = 90;
+constexpr double kDemoHousingBatchShare = 0.005;     // 0,5% da demanda do padrão
+constexpr double kDemoHousingSelfBuildShare = 0.002; // autoconsntrução popular
+// Manutenção paga pelos donos (fração do aluguel) ao setor de serviços.
+constexpr double kDemoHousingMaintenanceShare = 0.10;
+// Favela (ÚLTIMO caso): falta popular mínima, vacância total máxima, dias
+// consecutivos de aperto, fatia de domicílios por mês e penalidade de
+// satisfação por fatia informal (limitada a 5 p.p. pela própria fração).
+constexpr double kDemoHousingSlumShortage = 0.05;
+constexpr double kDemoHousingSlumVacancyMax = 0.01;
+constexpr int kDemoHousingSlumDays = 30;
+constexpr double kDemoHousingSlumShare = 0.01;
+constexpr double kDemoHousingSlumSatisfaction = 0.05;
+
+
 } // namespace ogs
