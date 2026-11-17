@@ -366,3 +366,13 @@ Tarefa D-004 (dono: @gerente-dados) - **dado, sem C++/GDScript**. Responde ao bl
 4. HUD/painéis somam `population` (regional) - sugestão: exibir `urban_population` como cidade.
 Relatório: `docs/economy/city_population_audit.md`; decisão: GAME_STATE §14 D-064.
 - 2026-11-17 · merge `chore/repo-hygiene` (4c50cc7) em `balance/global-resources` -> merge commit `634b9ca`: 2.460 `.translation` + 321 `.import` de docs/ removidos, `docs/.gdignore` criado, `.gitignore` passa a ignorar `*.translation`; 134 `.csv.import` fora de docs/ viraram `importer="keep"`. - @gerente-simulacao
+
+## @gerente-simulacao - 2026-11-17 (recal mesclada: areas por raster + Mazar + porto de Singapura)
+
+`recal/data-areas-pop` (3cb9784) mesclada em `balance/global-resources` -> merge commit `b0eaf2f` (HEAD). Conflito único em `GAME_STATE.md` (dois `D-069`): a A1b fica `D-069` e as decisões da recal passam a `D-071`/`D-072`. A recal não toca C++, então a DLL debug da A1b seguiu valendo.
+
+**Verde:** build debug sem trabalho pendente + `--headless --import` exit 0; `economy_integration_test`, `economy_ai_test` e `population_demo_test` OK; `tools/world_equivalence.ps1` (60 d, IA + urban, 2 rodadas) em **0 diferenças** contra o golden A0 **novo** da recal (`save 4a84ea05…`, `status a15ecf7f…`); `validate_scenario_data` **0 erros / 0 avisos** (834 cidades, **145 portos**).
+
+**Dívida de modelo relatada pela recal (não é dado):** EGY oscila **0,64–1,00** num ciclo diário e, medido no último dia, marca **−36 p.p.** vs o Q-016 (o Q-016 sozinho já mostrava −23,2 p.p. com câmbio float); PSX **−3,4 p.p.**. Nenhuma muleta/subsídio criada.
+
+**Próxima tarefa de dados (relatada, sem mudança):** **11 nações-ilha** sozinhas na própria landmass sem porto — PHL, CUB, NZL, MDG, JAM, LKA, BHS, FJI, TTO, BRB, SLB; **BHR/QAT/BRN** sem porto mas na landmass `asia`; e **15 portos** com `landmass` que não casa com a cidade (9 de IDN, 3 de TUR, AZE-BAK/AZE-SUM/GEO-BAT). Relatório: `docs/economy/recal_areas_pop.md` §9–§14. - @gerente-simulacao
