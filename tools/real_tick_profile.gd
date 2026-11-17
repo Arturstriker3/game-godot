@@ -3,7 +3,7 @@ extends SceneTree
 ## Perfil do tick C++ no cenário REAL do jogo (858 cidades), sem mapa.
 ##
 ## Usa o autoload `Economy` — mesmo cenário, geografia e núcleo do jogo — e roda
-## o dia de forma SÍNCRONA na main thread com `demo_set_profiling`, para separar
+## o dia de forma SÍNCRONA na main thread com `set_profiling`, para separar
 ## o custo de cada fase do núcleo. Serve para comparar com o benchmark sintético
 ## (`world_scale_bench --cities=650`, ~27 ms/tick) sem carregar o mapa 3D.
 ##
@@ -55,7 +55,7 @@ func _run(sim: Object) -> void:
 		if arg.begins_with("--days="):
 			_days = int(arg.split("=")[1])
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var cities: Array = status.get("cities", [])
 	print("[real_tick] autoload Economy carregado em %d ms (cenário + geografia + pré-aquecimento do status)" % [
 		Time.get_ticks_msec()])
@@ -72,14 +72,14 @@ func _run(sim: Object) -> void:
 	print("[real_tick] cenário real: %d cidades (%d construções, %d jazidas, %d mercados), %d pedidos, dia %s" % [
 		cities.size(), buildings, deposits, markets,
 		(status.get("trade_orders", []) as Array).size(), str(status.get("day", 0))])
-	sim.demo_set_profiling(true)
+	sim.set_profiling(true)
 
 	var tick_ms: Array[float] = []
 	for day in range(_days):
 		var start := Time.get_ticks_usec()
-		sim.tick_demo()
+		sim.tick_day()
 		tick_ms.append(float(Time.get_ticks_usec() - start) / 1000.0)
-		var profile: Dictionary = sim.demo_get_profile()
+		var profile: Dictionary = sim.get_profile()
 		for phase in PHASES:
 			if not _values.has(phase):
 				_values[phase] = [] as Array[float]
@@ -87,7 +87,7 @@ func _run(sim: Object) -> void:
 				float(profile.get(phase, 0.0)) / 1000.0)
 		print("[real_tick] dia %d: %.1f ms (tick completo)" % [day + 1, tick_ms[-1]])
 
-	sim.demo_set_profiling(false)
+	sim.set_profiling(false)
 	var total := 0.0
 	for value in tick_ms:
 		total += value

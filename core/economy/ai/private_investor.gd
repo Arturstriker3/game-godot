@@ -107,7 +107,7 @@ func run(day: int, status: Dictionary) -> void:
 ## cidades). O escalonador chama isto no `plan()`; `run_city` só recalcula se
 ## receber um status diferente (chamada síncrona de ferramentas/testes).
 ##
-## Quando o status vem do `tick_demo()`/`get_demo_status()` do núcleo, ele já
+## Quando o status vem do `tick_day()`/`get_status()` do núcleo, ele já
 ## traz `market_totals` (soma por produto calculada em C++ na thread do tick):
 ## ler 3 PackedFloat64Array custa ~0,02 ms. O laço em GDScript abaixo fica só
 ## como retaguarda para status construídos à mão (testes/ferramentas) — com
@@ -567,7 +567,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	if not existing.is_empty():
 		target = String(existing["id"])
 		action = "expand"
-		result = _sim.demo_invest(city_id, target, cost)
+		result = _sim.invest(city_id, target, cost)
 	else:
 		var input_product := int(template["input"])
 		var input_ratio := float(template.get("input_ratio", 0.0))
@@ -590,14 +590,14 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		if not group.is_empty():
 			target = "AI-GRP-%d-%s" % [_id_counter, resource_name.to_upper()]
 			_id_counter += 1
-			result = _sim.demo_group_invest(String(group["id"]), city_id, target,
+			result = _sim.group_invest(String(group["id"]), city_id, target,
 				resource_name, product, capacity, recipe_id, "")
 			if bool(result.get("created", false)):
 				action = "build_group"
 		else:
 			target = "AI-%s-%d" % [resource_name.to_upper(), _id_counter]
 			_id_counter += 1
-			result = _sim.demo_build(city_id, target, resource_name,
+			result = _sim.build(city_id, target, resource_name,
 				input_product, product, capacity,
 				capacity * jobs_per_ton, wage,
 				capacity * opex_per_ton,
@@ -617,9 +617,9 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 ## F9: recarrega o mapa de grupos por (nacao|setor) uma vez por dia.
 func _refresh_groups() -> void:
 	_groups_by_key.clear()
-	if _sim == null or not _sim.has_method("demo_get_groups"):
+	if _sim == null or not _sim.has_method("get_groups"):
 		return
-	for group: Dictionary in _sim.demo_get_groups():
+	for group: Dictionary in _sim.get_groups():
 		if bool(group.get("state_owned", false)):
 			continue
 		var key := "%s|%s" % [String(group.get("origin_nation", "")),

@@ -62,7 +62,7 @@ func _ready() -> void:
 		Economy._ticker.wait()
 
 	for day in range(1, DAYS + 1):
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		ai.run(day)
 		var orders: Array = summary.get("trade_orders", [])
 		var trips_before := _trips

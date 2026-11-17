@@ -53,9 +53,9 @@ func _init() -> void:
 func _new_world(income_index: float, profile: Dictionary,
 		with_building: bool = true) -> Object:
 	var sim = EconomySim.new()
-	sim.demo_set_goods(_load_json_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
+	sim.set_goods(_load_json_array(GOODS_PATH))
+	sim.set_recipes(_load_json_array(RECIPES_PATH))
+	sim.set_needs(_load_json_dict(NEEDS_PATH))
 	var buildings: Array = []
 	if with_building:
 		buildings = [{
@@ -65,7 +65,7 @@ func _new_world(income_index: float, profile: Dictionary,
 			"output_tons_per_day": BUILDING_CAPACITY,
 			"aptitude": 1.0,
 		}]
-	sim.initialize_demo_world(
+	sim.initialize_world(
 		[{
 			"id": CITY_ID,
 			"name": "Teste",
@@ -76,8 +76,8 @@ func _new_world(income_index: float, profile: Dictionary,
 		}],
 		[],
 		buildings)
-	sim.demo_set_external_income_index(CITY_ID, income_index)
-	sim.demo_set_labor_profile(CITY_ID, profile)
+	sim.set_external_income_index(CITY_ID, income_index)
+	sim.set_labor_profile(CITY_ID, profile)
 	return sim
 
 
@@ -115,7 +115,7 @@ func _wages(sim: Object, status: Dictionary) -> Array:
 ##    desempregados ao mesmo tempo.
 func _test_vacancy_requires_level() -> void:
 	var sim = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	var pop := _pop(sim, status)
 	var vacancies: Array = pop.get("vacancies_by_level", [])
 	var employed: Array = pop.get("employed_by_level", [])
@@ -144,10 +144,10 @@ func _test_vacancy_requires_level() -> void:
 ##    receita da cidade e o passo diário é limitado pela rigidez.
 func _test_tightness_moves_wages() -> void:
 	var sim = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
-	var initial := _wages(sim, sim.get_demo_status())
+	var initial := _wages(sim, sim.get_status())
 	for day in 20:
-		sim.tick_demo()
-	var wages_final := _wages(sim, sim.get_demo_status())
+		sim.tick_day()
+	var wages_final := _wages(sim, sim.get_status())
 	if initial.size() < 3 or wages_final.size() < 3:
 		_fail("salario dinamico: status sem wage_by_level")
 		return
@@ -158,7 +158,7 @@ func _test_tightness_moves_wages() -> void:
 			premium_initial, premium_final])
 	# Folha = parcela do valor adicionado: com uma construção de 4000 t/dia, a
 	# folha paga não pode passar da receita do dia nem ficar perto de zero.
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var city: Dictionary = status["cities"][0]
 	# Valor adicionado do dia (construções + serviços) é a base da folha.
 	var value_added := float(city.get("gdp", 0.0))
@@ -173,10 +173,10 @@ func _test_tightness_moves_wages() -> void:
 			wage_bill, value_added])
 	# Rigidez: depois do primeiro ajuste, o passo diário é pequeno.
 	var sim_day = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.030, 0.040, 0.050]))
-	sim_day.tick_demo()
-	var before := _wages(sim_day, sim_day.get_demo_status())
-	sim_day.tick_demo()
-	var after := _wages(sim_day, sim_day.get_demo_status())
+	sim_day.tick_day()
+	var before := _wages(sim_day, sim_day.get_status())
+	sim_day.tick_day()
+	var after := _wages(sim_day, sim_day.get_status())
 	if before.size() < 3 or after.size() < 3:
 		_fail("salario dinamico: status sem wage_by_level no passo diario")
 		return
@@ -193,10 +193,10 @@ func _test_tightness_moves_wages() -> void:
 ## 3) O piso de salário mínimo é soberano: nenhum nível fica abaixo dele.
 func _test_minimum_wage_floor() -> void:
 	var sim = _new_world(1.0, _profile([1.0, 0.0, 0.0], [0.010, 0.012, 0.014]))
-	sim.demo_set_minimum_wage(CITY_NATION, 0.050)
+	sim.set_minimum_wage(CITY_NATION, 0.050)
 	for day in 10:
-		sim.tick_demo()
-	var wages := _wages(sim, sim.get_demo_status())
+		sim.tick_day()
+	var wages := _wages(sim, sim.get_status())
 	if wages.size() < 3:
 		_fail("piso salarial: status sem wage_by_level")
 		return
@@ -210,14 +210,14 @@ func _test_minimum_wage_floor() -> void:
 ##    seguinte (coorte de 3 anos) e a escola não esvazia a produção.
 func _test_qualification_is_gradual() -> void:
 	var sim = _new_world(1.0, _profile([0.95, 0.05, 0.0], [0.020, 0.040, 0.060]))
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var pop := _pop(sim, status)
 	var education_before: Array = pop.get("education", [])
 	if education_before.size() < 3:
 		_fail("qualificacao: status sem education")
 		return
 	for day in 30:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 	pop = _pop(sim, status)
 	var studying: Array = pop.get("studying", [])
 	var education_after: Array = pop.get("education", [])
@@ -242,10 +242,10 @@ func _test_income_defines_consumption() -> void:
 	var poor = _new_world(0.0, _profile([0.9, 0.09, 0.01], [0.020, 0.030, 0.040]), false)
 	var rich = _new_world(1.0, _profile([0.9, 0.09, 0.01], [0.020, 0.030, 0.040]), true)
 	for day in 12:
-		poor.tick_demo()
-		rich.tick_demo()
-	var poor_pop := _pop(poor, poor.get_demo_status())
-	var rich_pop := _pop(rich, rich.get_demo_status())
+		poor.tick_day()
+		rich.tick_day()
+	var poor_pop := _pop(poor, poor.get_status())
+	var rich_pop := _pop(rich, rich.get_status())
 	var poor_level := int(poor_pop.get("income_level", 0))
 	var rich_level := int(rich_pop.get("income_level", 0))
 	if rich_level <= poor_level:

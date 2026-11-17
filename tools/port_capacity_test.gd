@@ -28,17 +28,17 @@ var _money_initial := 0.0
 
 func _init() -> void:
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(_cities(), _ports(), _buildings())
+	sim.initialize_world(_cities(), _ports(), _buildings())
 
-	var initial: Dictionary = sim.get_demo_status()
+	var initial: Dictionary = sim.get_status()
 	_money_initial = float(initial["money_total"])
 	_check_initial_ports(initial)
 
 	# Capacidade artificial antes do 1º dia: a carga de 2 700 t do comprador
 	# AAA-C (3 dias de cobertura para 900 t/dia) excede o cais de 2 000 t/dia.
-	sim.demo_set_port_capacity("AAA-P1", SATURATED_CAPACITY)
+	sim.set_port_capacity("AAA-P1", SATURATED_CAPACITY)
 
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	_check_conservation(status, 1)
 	_check_no_port_no_sea(status)
 	var order := _find_order(status, "AAA-B", "AAA-C")
@@ -65,11 +65,11 @@ func _init() -> void:
 	_check_delayed_arrival(sim, 1)
 
 	# Expansão: obra paga pela sede e concluída em 30 dias.
-	var before_expansion: Dictionary = sim.get_demo_status()
+	var before_expansion: Dictionary = sim.get_status()
 	var host_budget := _city_budget(before_expansion, "AAA-A")
 	var money_before := float(before_expansion["money_total"])
 	var capacity_before := float(_find_port(before_expansion, "AAA-P1")["capacity_t_per_day"])
-	var result: Dictionary = sim.demo_expand_port("AAA-P1", EXPANSION_TONS)
+	var result: Dictionary = sim.expand_port("AAA-P1", EXPANSION_TONS)
 	if not bool(result.get("expanded", false)):
 		_fail("expansão: recusada (%s)" % String(result.get("error", "?")))
 	if absf(float(result.get("cost", 0.0)) - EXPANSION_COST) > 0.01:
@@ -78,14 +78,14 @@ func _init() -> void:
 	if int(result.get("days", 0)) != BUILD_DAYS:
 		_fail("expansão: prazo %d != %d dias" % [
 			int(result.get("days", 0)), BUILD_DAYS])
-	var after_payment: Dictionary = sim.get_demo_status()
+	var after_payment: Dictionary = sim.get_status()
 	if absf(host_budget - _city_budget(after_payment, "AAA-A") - EXPANSION_COST) > 0.01:
 		_fail("expansão: orçamento da sede não debitado")
 	if absf(float(after_payment["money_total"]) - money_before) > MONEY_EPSILON:
 		_fail("expansão: dinheiro não conservado")
 
 	for day in range(2, 2 + BUILD_DAYS):
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		_check_conservation(status, day)
 	var capacity_after := float(_find_port(status, "AAA-P1")["capacity_t_per_day"])
 	if absf(capacity_after - (capacity_before + EXPANSION_TONS)) > 0.01:
@@ -100,7 +100,7 @@ func _init() -> void:
 		capacity_before, capacity_after,
 		int(_find_port(status, "AAA-P1")["level"]), throughput])
 
-	status = sim.tick_demo()
+	status = sim.tick_day()
 	_check_conservation(status, 2 + BUILD_DAYS)
 	var expanded_port: Dictionary = _find_port(status, "AAA-P1")
 	if float(expanded_port["queue"]) > 0.01:
@@ -231,7 +231,7 @@ func _check_host_not_exclusive(status: Dictionary) -> void:
 
 
 func _check_delayed_arrival(sim, day: int) -> void:
-	var data: Dictionary = sim.demo_to_dict()
+	var data: Dictionary = sim.to_dict()
 	var delayed := 0
 	for shipment in data.get("in_transit", []):
 		if int(shipment.get("arrival_day", 0)) > day + 1:

@@ -49,7 +49,7 @@ func _scenario_food_scarcity() -> Array:
 	# Reduz a aptidão de trigo de Agria: a oferta de trigo cai. Mas a cesta
 	# alimentar (B3) ainda tem milho/batata com aptidão alta, então a IA deve
 	# investir na melhor cultura (aptidão × preço), não obrigatoriamente trigo.
-	sim.demo_set_suitability("AGRIA", "wheat", 0.30)
+	sim.set_suitability("AGRIA", "wheat", 0.30)
 	# Zera o estoque inicial de trigo de Agria para que a escassez se manifeste
 	# de imediato (sem o colchão de 100 t mascará-la enquanto a IA prefere ferro).
 	_inject_stock(sim, "AGRIA", 0, 0.0)
@@ -122,13 +122,13 @@ func _scenario_iron_discovery() -> Array:
 	_boost_cash(sim, "AGRIA", 20000.0, 200000.0)
 	# Depósito de ferro no território de Agria (conhecido desde o início, sem
 	# prospecção: aptidão + reserva declaradas direto no núcleo).
-	sim.demo_set_suitability("AGRIA", "iron", 1.0)
-	sim.demo_set_deposit("AGRIA", "iron", 5000.0, 0.80, 200.0)
+	sim.set_suitability("AGRIA", "iron", 1.0)
+	sim.set_deposit("AGRIA", "iron", 5000.0, 0.80, 200.0)
 	var budget_before := _government_budget(sim, "AGRIA")
 	_run(world, 42)
 
 	var decisions: Array = ai.get_decisions()
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var mines := _buildings_with_resource(sim, status, "iron")
 	if mines.is_empty():
 		_fail("ferro: nenhuma mina foi criada após a descoberta")
@@ -162,15 +162,15 @@ func _scenario_no_build_loop() -> Array:
 	var sim = world["sim"]
 	var ai = world["ai"]
 	# Aptidão baixa + estoque zerado → escassez crônica em ambas as cidades.
-	sim.demo_set_suitability("AGRIA", "wheat", 0.30)
-	sim.demo_set_suitability("PORTUS", "wheat", 0.30)
+	sim.set_suitability("AGRIA", "wheat", 0.30)
+	sim.set_suitability("PORTUS", "wheat", 0.30)
 	_inject_stock(sim, "AGRIA", 0, 0.0)
 	_inject_stock(sim, "PORTUS", 0, 0.0)
 	_boost_cash(sim, "AGRIA", 500000.0, 500000.0)
 	_boost_cash(sim, "PORTUS", 500000.0, 500000.0)
 	_run(world, 730)
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var worst_idle := 0
 	for city in status.get("cities", []):
 		var city_id := String(city.get("id", ""))
@@ -195,8 +195,8 @@ func _make_world() -> Dictionary:
 	var sim = EconomySim.new()
 	# §15: o teste mede a DECISÃO da IA, não o cronograma de obra — construção
 	# instantânea para a mina estatal nascer e produzir dentro do horizonte.
-	sim.demo_set_instant_construction(true)
-	sim.initialize_demo()
+	sim.set_instant_construction(true)
+	sim.initialize_scenario()
 	var geo = GeoScript.new()
 	geo.apply_to_sim(sim, [
 		{"id": "AGRIA", "center": AGRIA_CENTER},
@@ -210,25 +210,25 @@ func _make_world() -> Dictionary:
 
 func _run(world: Dictionary, days: int) -> void:
 	for index in days:
-		var status: Dictionary = world["sim"].tick_demo()
+		var status: Dictionary = world["sim"].tick_day()
 		world["ai"].run(int(status["calendar_day"]))
 
 
 func _boost_cash(sim, city_id: String, firm: float, government: float) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city in snapshot["cities"]:
 		if String(city["id"]) == city_id:
 			city["firm_cash"] = firm
 			city["government_budget"] = government
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 func _inject_stock(sim, city_id: String, product: int, amount: float) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for city in snapshot["cities"]:
 		if String(city["id"]) == city_id:
 			city["markets"][product]["stock"] = amount
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 func _food_capacity(sim, city_id: String) -> float:
@@ -240,7 +240,7 @@ func _food_capacity(sim, city_id: String) -> float:
 
 
 func _government_budget(sim, city_id: String) -> float:
-	return float(_city(sim.get_demo_status(), city_id).get("government_budget", 0.0))
+	return float(_city(sim.get_status(), city_id).get("government_budget", 0.0))
 
 
 func _buildings_with_resource(sim, status: Dictionary, resource: String) -> Array:

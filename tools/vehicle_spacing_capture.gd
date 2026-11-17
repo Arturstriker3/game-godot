@@ -111,7 +111,7 @@ func _run_capture() -> void:
 		_manifest["warnings"].append("autoload Economy sem sim/IA")
 		return
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var cities: Array = status.get("cities", [])
 	var ports: Array = status.get("ports", [])
 	if cities.is_empty():
@@ -139,7 +139,7 @@ func _run_capture() -> void:
 
 	var day := 0
 	for next_day in range(1, _days + 1):
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		ai.run(next_day)
 		day = next_day
 		_convoys.spawn_orders(summary.get("trade_orders", []))

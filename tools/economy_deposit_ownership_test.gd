@@ -245,19 +245,19 @@ func _check_conservation(geo, city_list: Array) -> void:
 
 func _check_extractors(geo, city_list: Array, cities_raw: Array) -> void:
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(cities_raw, _read_json_array(PORTS_PATH),
+	sim.initialize_world(cities_raw, _read_json_array(PORTS_PATH),
 			geo.resolve_initial_farms(_read_json_array(BUILDINGS_PATH), cities_raw))
-	sim.demo_set_goods(_read_json_array(GOODS_PATH))
+	sim.set_goods(_read_json_array(GOODS_PATH))
 	geo.apply_to_sim(sim, city_list)
 	var ai = AIScript.new()
 	if not ai.setup(sim, geo):
 		_fail("IA: geografia não carregou")
 		return
 	for _day in DAYS:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		ai.run(int(status["calendar_day"]))
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var mines := 0
 	for city in status.get("cities", []):
 		var city_id := String(city.get("id", ""))

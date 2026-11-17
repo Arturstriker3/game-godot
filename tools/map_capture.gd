@@ -168,7 +168,7 @@ func _capture_map3d() -> void:
 			if not Economy.last_summary.is_empty():
 				route_history.append(Economy.last_summary.duplicate(true))
 	var status: Dictionary = Economy.last_summary if not Economy.last_summary.is_empty() \
-			else Economy.sim.get_demo_status()
+			else Economy.sim.get_status()
 	var cities: Array = status.get("cities", [])
 	var ports: Array = status.get("ports", [])
 	if cities.is_empty():

@@ -95,22 +95,22 @@ func _run() -> void:
 	var buildings := _load_array(BUILDINGS_PATH)
 	_goods = _load_array(GOODS_PATH)
 	var sim = EconomySim.new()
-	var has_chains: bool = sim.has_method("demo_set_recipes") \
-		and sim.has_method("demo_set_needs")
-	sim.demo_set_goods(_goods)
-	if _instant and sim.has_method("demo_set_instant_construction"):
-		sim.demo_set_instant_construction(true)
+	var has_chains: bool = sim.has_method("set_recipes") \
+		and sim.has_method("set_needs")
+	sim.set_goods(_goods)
+	if _instant and sim.has_method("set_instant_construction"):
+		sim.set_instant_construction(true)
 	if has_chains:
-		sim.demo_set_recipes(_load_array(RECIPES_PATH))
+		sim.set_recipes(_load_array(RECIPES_PATH))
 		if _use_needs:
-			sim.demo_set_needs(_load_dict(NEEDS_PATH))
-		if sim.has_method("demo_set_services"):
-			sim.demo_set_services(_load_dict(SERVICES_PATH))
-		if sim.has_method("demo_set_currencies"):
-			sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
+			sim.set_needs(_load_dict(NEEDS_PATH))
+		if sim.has_method("set_services"):
+			sim.set_services(_load_dict(SERVICES_PATH))
+		if sim.has_method("set_currencies"):
+			sim.set_currencies(_load_dict(CURRENCIES_PATH))
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
-		if sim.has_method("demo_set_sector_employment") and not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
+		if sim.has_method("set_sector_employment") and not sector.is_empty():
+			sim.set_sector_employment(sector)
 	for index in _goods.size():
 		var id := String((_goods[index] as Dictionary).get("id", ""))
 		if FOOD_IDS.has(id):
@@ -120,16 +120,16 @@ func _run() -> void:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 	var ai: Object = null
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
 		ai = EconomicAIScript.new()
 		ai.setup(sim, geo)
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	_emit(sim, 0, status, ai)
 	for day in _days:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		if ai != null:
 			ai.run(int(status.get("day", day + 1)), status)
 		var current := int(status.get("day", day + 1))

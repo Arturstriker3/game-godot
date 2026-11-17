@@ -72,10 +72,10 @@ var _expected_products := 21
 
 func _load_chains(sim) -> void:
 	var goods := _load_json_array(GOODS_PATH)
-	sim.demo_set_goods(goods)
+	sim.set_goods(goods)
 	_expected_products = maxi(21, goods.size())
-	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
+	sim.set_recipes(_load_json_array(RECIPES_PATH))
+	sim.set_needs(_load_json_dict(NEEDS_PATH))
 
 
 func _load_json_array(path: String) -> Array:
@@ -102,10 +102,10 @@ func _test_economy() -> void:
 	var sim = EconomySim.new()
 	_load_chains(sim)
 	# §15: o teste de integração mede conservação/cadeia, não cronograma de obra
-	# — liga a construção instantânea para o `demo_invest`/`demo_build` do teste
+	# — liga a construção instantânea para o `invest`/`build` do teste
 	# materializar o prédio na hora (comportamento anterior).
-	sim.demo_set_instant_construction(true)
-	sim.initialize_demo()
+	sim.set_instant_construction(true)
+	sim.initialize_scenario()
 
 	var geo = GeographyServiceScript.new()
 	geo.apply_to_sim(sim, [
@@ -113,7 +113,7 @@ func _test_economy() -> void:
 		{"id": "PORTUS", "center": PORTUS_CENTER},
 	])
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	_check_status_contract(status)
 	_check_building_resources(sim, status)
 
@@ -121,7 +121,7 @@ func _test_economy() -> void:
 	var population_initial := _population(status)
 
 	for day in DAYS:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		_check_conservation(sim, status, money_initial, population_initial, day + 1)
 		if int(status["calendar_day"]) != day + 1:
 			_fail("calendário: dia %d != %d" % [status["calendar_day"], day + 1])
@@ -251,7 +251,7 @@ func _check_gdp(sim, status: Dictionary) -> void:
 
 
 func _check_investment(sim) -> void:
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var city: Dictionary = before["cities"][0]
 	var city_id := String(city["id"])
 	# Construções vêm do detalhe pesado sob demanda (não do status diário).
@@ -260,11 +260,11 @@ func _check_investment(sim) -> void:
 	var capacity_before := float(building["capacity"])
 	var money_before := float(before["money_total"])
 
-	var result: Dictionary = sim.demo_invest(city["id"], building["id"], 1000.0)
+	var result: Dictionary = sim.invest(city["id"], building["id"], 1000.0)
 	if absf(float(result["invested"]) - 1000.0) > EPSILON:
 		_fail("investimento: capital não aplicado (%s)" % result["error"])
 
-	var after: Dictionary = sim.get_demo_status()
+	var after: Dictionary = sim.get_status()
 	var cash_after := float(after["cities"][0]["firm_cash"])
 	var capacity_after := float(
 		sim.get_city_status(city_id).get("buildings", [])[0]["capacity"])
@@ -275,13 +275,13 @@ func _check_investment(sim) -> void:
 	if absf(float(after["money_total"]) - money_before) > MONEY_EPSILON:
 		_fail("investimento: dinheiro não conservado")
 
-	var rejected: Dictionary = sim.demo_invest(city["id"], building["id"], 1.0e12)
+	var rejected: Dictionary = sim.invest(city["id"], building["id"], 1.0e12)
 	if String(rejected["error"]) == "":
 		_fail("investimento: aceitou capital inexistente")
 
 
 func _check_save_load(sim) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	# F9 subiu o schema para 11 (grupos, IDE, incentivos e confiança);
 	# §15 subiu para 12 (obras como projeto físico); §19 W0 para 13 (solo
 	# urbano, moradia e prefeitura por cidade); v14 unifica as obras de
@@ -309,15 +309,15 @@ func _check_save_load(sim) -> void:
 		_fail("save: lista de produtos incompleta")
 	var restored = EconomySim.new()
 	# O load resolve a receita de cada construção por id: as tabelas precisam
-	# estar carregadas antes de demo_from_dict.
+	# estar carregadas antes de from_dict.
 	_load_chains(restored)
-	restored.demo_from_dict(snapshot)
+	restored.from_dict(snapshot)
 
-	if JSON.stringify(restored.demo_to_dict()) != JSON.stringify(snapshot):
+	if JSON.stringify(restored.to_dict()) != JSON.stringify(snapshot):
 		_fail("save/load: round-trip não preserva o estado")
 
-	var original_next: Dictionary = sim.tick_demo()
-	var restored_next: Dictionary = restored.tick_demo()
+	var original_next: Dictionary = sim.tick_day()
+	var restored_next: Dictionary = restored.tick_day()
 	if JSON.stringify(original_next) != JSON.stringify(restored_next):
 		_fail("save/load: próximo tick diverge após carregar")
 
@@ -356,8 +356,8 @@ func _check_save_migration() -> void:
 	}
 	var migrated := EconomySim.new()
 	_load_chains(migrated)
-	migrated.demo_from_dict(v1)
-	var after: Dictionary = migrated.demo_to_dict()
+	migrated.from_dict(v1)
+	var after: Dictionary = migrated.to_dict()
 
 	var cities: Array = after.get("cities", [])
 	if cities.is_empty():
@@ -394,9 +394,9 @@ func _check_save_migration() -> void:
 func _check_save_migration_v7() -> void:
 	var sim := EconomySim.new()
 	_load_chains(sim)
-	sim.initialize_demo()
-	sim.tick_demo()
-	var current: Dictionary = sim.demo_to_dict()
+	sim.initialize_scenario()
+	sim.tick_day()
+	var current: Dictionary = sim.to_dict()
 	var products: Array = current.get("products", [])
 	if products.size() != _expected_products or String(products[112]) != "infantry_gear":
 		_fail("migração v7: layout atual inesperado (%d produtos, último=%s)" % [
@@ -439,8 +439,8 @@ func _check_save_migration_v7() -> void:
 
 	var migrated := EconomySim.new()
 	_load_chains(migrated)
-	migrated.demo_from_dict(old)
-	var after: Dictionary = migrated.demo_to_dict()
+	migrated.from_dict(old)
+	var after: Dictionary = migrated.to_dict()
 
 	var after_products: Array = after.get("products", [])
 	if after_products.size() != _expected_products or after_products.has("body_armor") \
@@ -479,8 +479,8 @@ func _check_save_migration_v7() -> void:
 	# Round-trip do save já migrado: carregar de novo tem de reproduzir o dict.
 	var restored := EconomySim.new()
 	_load_chains(restored)
-	restored.demo_from_dict(after)
-	if JSON.stringify(restored.demo_to_dict()) != JSON.stringify(after):
+	restored.from_dict(after)
+	if JSON.stringify(restored.to_dict()) != JSON.stringify(after):
 		_fail("migração v7: round-trip do save migrado divergiu")
 	else:
 		print("[integration] migração v7->v8: body_armor descartado por id e round-trip estável.")
@@ -496,13 +496,13 @@ func _v1_market(stock: float, price: float) -> Dictionary:
 
 func _check_suitability_gate() -> void:
 	var gate = EconomySim.new()
-	gate.initialize_demo()
-	gate.demo_set_suitability("AGRIA", "wheat", 0.0)
-	gate.demo_set_suitability("PORTUS", "wheat", 0.0)
-	var status: Dictionary = gate.tick_demo()
+	gate.initialize_scenario()
+	gate.set_suitability("AGRIA", "wheat", 0.0)
+	gate.set_suitability("PORTUS", "wheat", 0.0)
+	var status: Dictionary = gate.tick_day()
 	if float(status["produced_today"][0]) > EPSILON:
 		_fail("geografia: aptidão zero ainda produz trigo")
-	var blocked: Dictionary = gate.demo_invest("AGRIA", "FARM-A-1", 100.0)
+	var blocked: Dictionary = gate.invest("AGRIA", "FARM-A-1", 100.0)
 	if String(blocked["error"]) == "":
 		_fail("geografia: investimento sem aptidão foi aceito")
 

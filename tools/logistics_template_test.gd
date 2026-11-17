@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Logística no T2: Frota, Câmbio, Tarifas e Portos com dados reais, aplicação
-## de tarifa (demo_set_tariff) e expansão de porto (demo_expand_port).
+## de tarifa (set_tariff) e expansão de porto (expand_port).
 ##
 ##   godot --headless --path . --script res://tools/logistics_template_test.gd
 

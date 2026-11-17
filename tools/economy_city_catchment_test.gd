@@ -251,17 +251,17 @@ func _check_france_wheat_cap(cities: Array, geo: Object) -> void:
 				* float(geo.city_crop_suitability(city_id, "wheat"))
 
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
-	sim.demo_set_goods(goods)
+	sim.initialize_world(cities, ports, geo.resolve_initial_farms(buildings, cities))
+	sim.set_goods(goods)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
 	var ai = EconomicAIScript.new()
 	ai.setup(sim, geo)
 
 	for day in DAYS:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		ai.run(int(status.get("day", 0)))
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var products: Array = status.get("products", [])
 	var wheat_index := int(products.find("wheat"))
 	if wheat_index < 0:

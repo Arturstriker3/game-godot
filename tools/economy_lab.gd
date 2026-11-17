@@ -105,15 +105,15 @@ func _horizons() -> Array[int]:
 func _run_scenario(scenario: Dictionary, horizon: int) -> Dictionary:
 	var scenario_id := String(scenario["id"])
 	var sim = EconomySim.new()
-	sim.initialize_demo()
+	sim.initialize_scenario()
 	if _config.has("model"):
-		sim.demo_set_balance(_config["model"])
+		sim.set_balance(_config["model"])
 
-	var state: Dictionary = sim.demo_to_dict()
+	var state: Dictionary = sim.to_dict()
 	_apply_scenario(state, scenario)
-	sim.demo_from_dict(state)
+	sim.from_dict(state)
 
-	var initial: Dictionary = sim.get_demo_status()
+	var initial: Dictionary = sim.get_status()
 	var money_initial := float(initial["money_total"])
 	var expected_population := _population_by_city(initial)
 	var previous_prices := _price_snapshot(sim, initial)
@@ -151,7 +151,7 @@ func _run_scenario(scenario: Dictionary, horizon: int) -> Dictionary:
 			if int(event.get("day", 0)) == current:
 				_apply_build(sim, event)
 
-		final_status = sim.tick_demo()
+		final_status = sim.tick_day()
 
 		var day_violations := _check(sim, final_status, current, money_initial,
 				expected_population, previous_prices)
@@ -255,7 +255,7 @@ func _apply_market_values(city: Dictionary, field: String, values: Array) -> voi
 
 
 func _grow_population(sim, growth: float, expected_population: Dictionary) -> void:
-	var state: Dictionary = sim.demo_to_dict()
+	var state: Dictionary = sim.to_dict()
 	var factor := 1.0 + growth
 	for city in state["cities"]:
 		var population := float(city["population"]) * factor
@@ -263,20 +263,20 @@ func _grow_population(sim, growth: float, expected_population: Dictionary) -> vo
 		var pop: Dictionary = city["pop"]
 		pop["population"] = population
 		expected_population[String(city["id"])] = population
-	sim.demo_from_dict(state)
+	sim.from_dict(state)
 
 
 func _apply_invest(sim, invest: Dictionary) -> float:
 	var city_id := String(invest.get("city", ""))
 	var building_id := String(invest.get("building", ""))
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	for city in status.get("cities", []):
 		if String(city["id"]) != city_id:
 			continue
 		var amount := float(city["firm_cash"]) * float(invest.get("share", 0.0))
 		if amount <= 0.0:
 			return 0.0
-		var result: Dictionary = sim.demo_invest(city_id, building_id, amount)
+		var result: Dictionary = sim.invest(city_id, building_id, amount)
 		if String(result.get("error", "")).is_empty():
 			return float(result.get("invested", 0.0))
 		return 0.0
@@ -284,7 +284,7 @@ func _apply_invest(sim, invest: Dictionary) -> float:
 
 
 func _apply_build(sim, event: Dictionary) -> void:
-	var result: Dictionary = sim.demo_build(
+	var result: Dictionary = sim.build(
 			String(event.get("city", "")), String(event.get("id", "")),
 			String(event.get("resource", "")), int(event.get("input_product", -1)),
 			int(event.get("output_product", 0)), float(event.get("capacity", 0.0)),

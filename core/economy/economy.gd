@@ -92,31 +92,31 @@ func _ready() -> void:
 	sim = EconomySim.new()
 	# Dados das cadeias ANTES de inicializar o mundo: o núcleo resolve os ids
 	# dos produtos/insumos e as receitas no momento em que cria as construções.
-	sim.demo_set_goods(_load_goods())
-	sim.demo_set_recipes(_load_json_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_json_dict(NEEDS_PATH))
+	sim.set_goods(_load_goods())
+	sim.set_recipes(_load_json_array(RECIPES_PATH))
+	sim.set_needs(_load_json_dict(NEEDS_PATH))
 	# F8: serviços (catálogo). Antes do mundo: os negócios iniciais e o preço-âncora
 	# dos 20 setores dependem dele.
-	sim.demo_set_services(_load_json_dict(SERVICES_PATH))
+	sim.set_services(_load_json_dict(SERVICES_PATH))
 	# F5: moedas ANTES do mundo, para o preço local de cada cidade nascer na
 	# moeda da nação (goods.json está em âncora XGS).
-	sim.demo_set_currencies(_load_json_dict(CURRENCIES_PATH))
+	sim.set_currencies(_load_json_dict(CURRENCIES_PATH))
 	# F9: emprego setorial (âncoras ILO por nível de renda + coeficientes da
 	# agricultura). Binário anterior à F9 não tem o método: mantém o espelho
 	# compilado das mesmas âncoras.
-	if sim.has_method("demo_set_sector_employment"):
-		sim.demo_set_sector_employment(_load_json_dict(SECTOR_EMPLOYMENT_PATH))
+	if sim.has_method("set_sector_employment"):
+		sim.set_sector_employment(_load_json_dict(SECTOR_EMPLOYMENT_PATH))
 	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
 	# aptidão × caloria da nação (antes de criar os prédios no núcleo). Sem dados,
 	# mantém trigo.
 	var geo := GeographyService.new()
 	var cities := _load_cities()
-	sim.initialize_demo_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
+	sim.initialize_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
 	# §19 (W0): solo, moradia e prefeitura por cidade. DEPOIS do mundo: os JSON
 	# casam pelo id da cidade. Binário anterior à §19 não tem o método (mantém o
 	# estado sem dado urbano, como antes).
-	if sim.has_method("demo_set_urban"):
-		sim.demo_set_urban(
+	if sim.has_method("set_urban"):
+		sim.set_urban(
 			_load_json_dict(URBAN_LAND_PATH),
 			_load_json_dict(HOUSING_CITY_PATH),
 			_load_json_dict(HOUSING_PATH),
@@ -128,7 +128,7 @@ func _ready() -> void:
 	# Pré-aquece o cache do status (os dois slots): o primeiro dia publicado em
 	# um slot frio pagaria a criação de ~20 mil dicionários (medido: 60 ms contra
 	# 17 ms num dia quente, com 858 cidades). Aqui é custo de carga, não de tick.
-	sim.demo_warm_status()
+	sim.warm_status()
 	_setup_ai(geo)
 	# F9: nomes dos grupos pela cultura de origem; a maior cidade da nacao e o
 	# {place} dos padroes. Sem cultura mapeada, o fallback do GroupInvestor
@@ -324,7 +324,7 @@ func _publish(summary: Dictionary) -> void:
 	# A camada de decisão roda depois do tick: as escolhas (investir, construir,
 	# revelar depósito) valem a partir do próximo dia. Escalonada por cidade e
 	# fatiada nos frames seguintes — o status do tick é reusado, sem um segundo
-	# `get_demo_status()` (~6–9 ms).
+	# `get_status()` (~6–9 ms).
 	if _ai != null:
 		_ai.plan(int(last_summary.get("day", 0)), last_summary)
 

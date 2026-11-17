@@ -113,10 +113,10 @@ KM_PER_REGION_TEXEL = 40075.0 / 360.0 * (REGION_BOUNDS[2] - REGION_BOUNDS[0]) / 
 PLAN_SIZE = (5000.0, 2500.0)
 
 GOODS_FIELDS = ["id", "name", "base_price", "food"]
-# Bens conhecidos pelo núcleo C++ (demo_product_index em economy_sim.cpp), na
+# Bens conhecidos pelo núcleo C++ (product_index em economy_sim.cpp), na
 # mesma ordem de data/definitions/economy/goods.json. Os demais bens do arquivo
 # (F1 das cadeias de produção) são validados contra a spec abaixo: o núcleo
-# ignora id desconhecido em demo_set_goods, então o dado pode entrar antes do C++.
+# ignora id desconhecido em set_goods, então o dado pode entrar antes do C++.
 GOODS_ALLOWED_IDS = (
     "wheat",
     "iron",

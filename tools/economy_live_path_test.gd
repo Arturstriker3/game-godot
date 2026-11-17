@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Teste do caminho real do jogo ao vivo.
 ##
-## O autoload `Economy._ready()` faz `initialize_demo_world` + `demo_set_goods`
+## O autoload `Economy._ready()` faz `initialize_world` + `set_goods`
 ## + `GeographyService.apply_to_sim` SEM chamar `load_data()` antes — as funções
 ## de acesso por nação (`crop_suitability_nation`/`forest_cover_nation`/
 ## `deposits_for_nation`) também não carregavam os dados. Resultado (bug crítico,
@@ -73,8 +73,8 @@ func _run() -> void:
 
 	# 2. Mesmo pipeline do jogo ao vivo, SEM load_data() prévio.
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(cities, ports, buildings)
-	sim.demo_set_goods(goods)
+	sim.initialize_world(cities, ports, buildings)
+	sim.set_goods(goods)
 	var applied: Dictionary = geo.apply_to_sim(sim, _cities_with_center(cities))
 
 	if applied.is_empty():

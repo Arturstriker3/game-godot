@@ -4,7 +4,7 @@ extends SceneTree
 ##
 ## Monta o mundo real exatamente como `tools/world_equivalence.gd` monta, mas SEM
 ## IA (nada de `GeographyService`, `EconomicAI` nem `resolve_initial_farms`) e,
-## ao final, grava `demo_to_snapshot()` — o par `{"definitions": ..., "save": ...}`
+## ao final, grava `to_snapshot()` — o par `{"definitions": ..., "save": ...}`
 ## que carrega o mundo inteiro, sem depender dos JSON de `data/definitions/`.
 ##
 ##   godot --headless --path . --script res://tools/export_world_snapshot.gd \
@@ -14,10 +14,10 @@ extends SceneTree
 ## - `--urban=1` (padrão) aplica solo, moradia e prefeitura por cidade com os
 ##   MESMOS quatro arquivos do autoload do jogo; `--urban=0` exporta sem a
 ##   camada urbana.
-## - `demo_seed_industry()` entra depois do mundo: o bootstrap industrial do
+## - `seed_industry()` entra depois do mundo: o bootstrap industrial do
 ##   jogo roda no primeiro tick, então sem ele o snapshot não é o estado de
 ##   partida real (o executável C++ recusa o arquivo).
-## - Serialização: `demo_to_snapshot_file()`, que grava `{"definitions": ...,
+## - Serialização: `to_snapshot_file()`, que grava `{"definitions": ...,
 ##   "save": ...}` pelo serializador da BIBLIOTECA (`ogs::save::dump_json`,
 ##   nlohmann). NÃO se usa `JSON.stringify`: o JSON do Godot não é
 ##   round-trip IEEE-exato para |x| < 1, e o snapshot tem de chegar ao CLI
@@ -102,17 +102,17 @@ func _run() -> void:
 	var sim = EconomySim.new()
 
 	# Mesma ordem do jogo ao vivo: definições ANTES de criar o mundo.
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
+			sim.set_sector_employment(sector)
 	if not _failures.is_empty():
 		return
 
@@ -125,14 +125,14 @@ func _run() -> void:
 		return
 
 	# Sem IA: `resolve_initial_farms` não roda, o cenário entra como está.
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:
-		if not sim.has_method("demo_set_urban"):
-			_fail("binario sem demo_set_urban (rode o build)")
+		if not sim.has_method("set_urban"):
+			_fail("binario sem set_urban (rode o build)")
 			return
-		sim.demo_set_urban(_load_dict(URBAN_LAND_PATH),
+		sim.set_urban(_load_dict(URBAN_LAND_PATH),
 			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
 			_load_dict(MUNICIPAL_FINANCE_PATH))
 		if not _failures.is_empty():
@@ -140,13 +140,13 @@ func _run() -> void:
 
 	# O bootstrap industrial (§12.3) roda no PRIMEIRO tick do jogo, não na
 	# criação do mundo: sem ele a foto do dia 0 não é o estado de partida.
-	if not sim.has_method("demo_seed_industry"):
-		_fail("binario sem demo_seed_industry (rode o build)")
+	if not sim.has_method("seed_industry"):
+		_fail("binario sem seed_industry (rode o build)")
 		return
-	sim.demo_seed_industry()
+	sim.seed_industry()
 
-	if not sim.has_method("demo_to_snapshot_file"):
-		_fail("binario sem demo_to_snapshot_file (rode o build)")
+	if not sim.has_method("to_snapshot_file"):
+		_fail("binario sem to_snapshot_file (rode o build)")
 		return
 
 	# O arquivo é escrito pelo serializador da BIBLIOTECA (`ogs::save::dump_json`),
@@ -155,20 +155,20 @@ func _run() -> void:
 	var dir := _out.get_base_dir()
 	if dir != "" and not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
-	if not sim.demo_to_snapshot_file(_out):
-		_fail("demo_to_snapshot_file nao gravou " + _out)
+	if not sim.to_snapshot_file(_out):
+		_fail("to_snapshot_file nao gravou " + _out)
 		return
 
-	# Contagens SÓ para a mensagem: `demo_to_snapshot()` (Dictionary) passa pelo
+	# Contagens SÓ para a mensagem: `to_snapshot()` (Dictionary) passa pelo
 	# JSON do Godot e não é gravado em lugar nenhum.
-	if not sim.has_method("demo_to_snapshot"):
-		_fail("binario sem demo_to_snapshot (rode o build)")
+	if not sim.has_method("to_snapshot"):
+		_fail("binario sem to_snapshot (rode o build)")
 		return
 
-	var snapshot: Dictionary = sim.demo_to_snapshot()
+	var snapshot: Dictionary = sim.to_snapshot()
 	var save: Dictionary = snapshot.get("save", {})
 	if save.is_empty() or not snapshot.has("definitions"):
-		_fail("demo_to_snapshot devolveu snapshot incompleto")
+		_fail("to_snapshot devolveu snapshot incompleto")
 		return
 
 	print("[snapshot] day=%d cidades=%d construcoes=%d obras=%d produtos=%d industry_seeded=%s" % [

@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Agenda `sim.demo_tick_and_publish()` na WorkerThreadPool, um dia por vez.
+## Agenda `sim.tick_and_publish()` na WorkerThreadPool, um dia por vez.
 ##
 ## Por que assim: o tick C++ de um mundo grande custa dezenas de milissegundos
 ## e não cabe no frame da virada. O trabalho roda numa thread do pool e a main
@@ -13,9 +13,9 @@ extends RefCounted
 ##   não chama nada do núcleo (nem a IA, nem o relógio). Quem orquestra é
 ##   `core/economy/economy.gd`.
 ## - NENHUM Variant/Dictionary do Godot é criado, escrito ou destruído pela
-##   thread: ela só chama `demo_tick_and_publish()`, que roda inteiro em C++ e
+##   thread: ela só chama `tick_and_publish()`, que roda inteiro em C++ e
 ##   deixa o status publicado no double buffer do núcleo. O `poll()` da main
-##   thread recebe o slot já pronto em O(1) (`get_demo_status()`).
+##   thread recebe o slot já pronto em O(1) (`get_status()`).
 ## - `wait()`/`cancel()` só retornam com a tarefa CONCLUÍDA: nenhum chamador
 ##   solta o `sim` com o dia em andamento (era a causa do 0xC0000005 no
 ##   encerramento: a thread seguia viva quando o sim/cena eram liberados).
@@ -78,7 +78,7 @@ func _collect() -> Dictionary:
 	var sim := _join()
 	if sim == null:
 		return {}
-	return sim.get_demo_status()
+	return sim.get_status()
 
 
 ## `wait_for_task_completion` libera o ID no pool: consultar `is_task_completed`
@@ -93,4 +93,4 @@ func _join() -> Object:
 
 func _tick_worker(sim: Object) -> void:
 	# Nada de Variant/Dictionary aqui: o status nasce e é publicado no C++.
-	sim.demo_tick_and_publish()
+	sim.tick_and_publish()

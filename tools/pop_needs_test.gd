@@ -7,7 +7,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/pop_needs_test.gd
 ##
 ## Cenário controlado: uma cidade sem construções. Os estoques de mercado e a
-## poupança/governo são injetados por `demo_to_dict()`/`demo_from_dict()` (o save
+## poupança/governo são injetados por `to_dict()`/`from_dict()` (o save
 ## é o contrato público do estado), então o teste mede exatamente a regra da
 ## fase 5 — sem depender de produção, frete ou IA.
 
@@ -90,13 +90,13 @@ func _product(id: String) -> int:
 ## Cria um mundo de uma cidade com os dados reais das cadeias/necessidades.
 func _new_sim() -> Object:
 	var sim := EconomySim.new()
-	sim.demo_set_goods(_goods)
-	sim.demo_set_recipes(_recipes)
-	sim.demo_set_needs(_needs)
+	sim.set_goods(_goods)
+	sim.set_recipes(_recipes)
+	sim.set_needs(_needs)
 	# O teste mede a REGRA do nível de consumo, não a calibração da folga de
 	# custo de vida do jogo: com folga 1,0 a renda injetada define o nível
-	# diretamente (a folga calibrada vive em demo_income_basket_margin_).
-	sim.demo_set_balance({"income_basket_margin": 1.0})
+	# diretamente (a folga calibrada vive em income_basket_margin_).
+	sim.set_balance({"income_basket_margin": 1.0})
 	var city := {
 		"id": CITY_ID,
 		"name": "Need City",
@@ -108,7 +108,7 @@ func _new_sim() -> Object:
 		"x": 100.0,
 		"y": 100.0,
 	}
-	sim.initialize_demo_world([city], [], [])
+	sim.initialize_world([city], [], [])
 	return sim
 
 
@@ -123,7 +123,7 @@ func _new_sim() -> Object:
 func _inject(sim: Object, stocks: Dictionary, savings: float,
 		government: float, durable: Dictionary = {},
 		service_share: float = 0.0, wage_levels: Array = []) -> void:
-	var save: Dictionary = sim.demo_to_dict()
+	var save: Dictionary = sim.to_dict()
 	var city: Dictionary = save["cities"][0]
 	city["external_income_index"] = 0.0
 	city["government_budget"] = government
@@ -153,7 +153,7 @@ func _inject(sim: Object, stocks: Dictionary, savings: float,
 	if not city["pop"].has("needs"):
 		city["pop"]["needs"] = {}
 	city["pop"]["needs"]["durable_stock"] = durable.duplicate(true)
-	sim.demo_from_dict(save)
+	sim.from_dict(save)
 
 
 ## Mercado e POP são detalhe pesado: o status diário publica só os escalares
@@ -197,9 +197,9 @@ func _test_substitution(only: String) -> void:
 	var stocks := {only: 1000.0}
 	# Orçamento próprio folgado: o teste mede substituição, não renda.
 	_inject(sim, stocks, 100000.0, 1000000.0)
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money := float(before["money_total"])
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	_check_conservation(sim, status, money, "substituição " + only)
 	var pop := _pop(sim)
 	var need := float(pop["need"])
@@ -232,8 +232,8 @@ func _test_levels_by_income() -> void:
 	# O nível de renda calculado no dia vale para o dia SEGUINTE (contrato do
 	# núcleo), então o teste roda dois dias: o primeiro ancora a renda, o
 	# segundo consome conforme ela.
-	low.tick_demo()
-	var low_status: Dictionary = low.tick_demo()
+	low.tick_day()
+	var low_status: Dictionary = low.tick_day()
 	var low_pop := _pop(low)
 	if int(low_pop["needs_level"]) != 1:
 		_fail("renda baixa: nível %d (esperado 1 — só basic)" % int(
@@ -245,8 +245,8 @@ func _test_levels_by_income() -> void:
 	var high := _new_sim()
 	_inject(high, stocks, 100000000.0, 1000000.0, {}, 0.30,
 		[0.30, 0.35, 0.40])
-	high.tick_demo()
-	var high_status: Dictionary = high.tick_demo()
+	high.tick_day()
+	var high_status: Dictionary = high.tick_day()
 	var high_pop := _pop(high)
 	if int(high_pop["needs_level"]) < 2:
 		_fail("renda alta: nível %d (esperado >= 2)" % int(
@@ -272,16 +272,16 @@ func _test_durable_decay() -> void:
 	var sim := _new_sim()
 	var durable := {"furniture": 100.0}
 	_inject(sim, {}, 0.0, 0.0, durable)
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money := float(before["money_total"])
 	var initial := float(_pop(sim)["durable_stock"])
 	if absf(initial - 100.0) > 0.01:
 		_fail("duráveis: estoque inicial %.3f (esperado 100)" % initial)
 	for day in 365:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		if day % 90 == 0:
 			_check_conservation(sim, status, money, "duráveis dia %d" % (day + 1))
-	var after: Dictionary = sim.get_demo_status()
+	var after: Dictionary = sim.get_status()
 	_check_conservation(sim, after, money, "duráveis 365 d")
 	var remaining := float(_pop(sim)["durable_stock"])
 	if absf(remaining - 90.0) > 0.01:
@@ -294,11 +294,11 @@ func _test_durable_decay() -> void:
 func _test_government_consumption() -> void:
 	var sim := _new_sim()
 	_inject(sim, {"paper": 1000.0, "computer": 1000.0}, 0.0, 1000000.0)
-	var before: Dictionary = sim.get_demo_status()
+	var before: Dictionary = sim.get_status()
 	var money := float(before["money_total"])
 	var gov_before := float((before["cities"][0] as Dictionary)["government_budget"])
 	var firm_before := float((before["cities"][0] as Dictionary)["firm_cash"])
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	_check_conservation(sim, status, money, "governo")
 	var city: Dictionary = status["cities"][0]
 	var gov_spend := float(city.get("government_goods_spend", 0.0))
@@ -325,7 +325,7 @@ func _test_demand_signal() -> void:
 	# Poupança acima do colchão alimentar (10 anos de cesta) para a POP ter
 	# orçamento discricionário e registrar a demanda desejada.
 	_inject(sim, {"bread": 1000.0}, 100000000.0, 1000000.0)
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	for id in ["clothes", "medicine", "phone", "car"]:
 		var market := _market(sim, id)
 		if float(market.get("desired", 0.0)) <= 0.0:

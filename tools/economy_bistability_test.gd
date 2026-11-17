@@ -77,8 +77,8 @@ func _run() -> void:
 	var sim = EconomySim.new()
 	var geo = GeographyServiceScript.new()
 	# Perturbação: troca total (DEU → milho, trópicos → arroz), SEM a mitigação.
-	sim.initialize_demo_world(cities, ports, _full_swap_farms(geo, buildings, cities))
-	sim.demo_set_goods(goods)
+	sim.initialize_world(cities, ports, _full_swap_farms(geo, buildings, cities))
+	sim.set_goods(goods)
 	geo.apply_to_sim(sim, _cities_with_center(cities))
 
 	var ai = EconomicAIScript.new()
@@ -86,12 +86,12 @@ func _run() -> void:
 
 	print("day\tGBR_farm_workers\tGBR_farm_util\tGBR_budget\tGBR_sat")
 	for day in DAYS:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		ai.run(int(status.get("day", 0)))
 		if (day + 1) % 30 == 0:
 			_trace_london(day + 1, sim)
 
-	var final: Dictionary = sim.get_demo_status()
+	var final: Dictionary = sim.get_status()
 	var london := _city(final, "GBR-LDN")
 	if london.is_empty():
 		_failures.append("GBR-LDN não encontrada no status final")
@@ -118,7 +118,7 @@ func _city(status: Dictionary, city_id: String) -> Dictionary:
 
 
 func _trace_london(day: int, sim: Object) -> void:
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	var london := _city(status, "GBR-LDN")
 	if london.is_empty():
 		return

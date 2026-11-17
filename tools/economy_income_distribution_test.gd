@@ -5,7 +5,7 @@ extends SceneTree
 ## Verifica o contrato novo:
 ##  1. `income_distribution.json` cobre as 7 regiões do cenário e é TODO
 ##     `estimated` (nenhuma nação tem Gini observado no projeto);
-##  2. o núcleo recebe o Gini por cidade (`demo_set_income_gini`) e o publica no
+##  2. o núcleo recebe o Gini por cidade (`set_income_gini`) e o publica no
 ##     save (save/load preserva);
 ##  3. a fatia da POP em basic/life/luxury segue a meta qualitativa do head em
 ##     60 d com IA (aqui basta 1 tick: a classe é ancorada no PIB PPP e no Gini,
@@ -129,23 +129,23 @@ func _new_world() -> Object:
 			"y": 100.0,
 		})
 	var sim = EconomySim.new()
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	sim.initialize_demo_world(cities, [], [])
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	sim.initialize_world(cities, [], [])
 	for city in cities:
 		var tag := String(city["nation"])
-		sim.demo_set_external_income_index(String(city["id"]),
+		sim.set_external_income_index(String(city["id"]),
 			geo.external_income_index(tag))
 		var gini: Dictionary = geo.nation_gini(tag)
-		sim.demo_set_income_gini(String(city["id"]), float(gini.get("gini", 0.0)))
-	sim.tick_demo()
+		sim.set_income_gini(String(city["id"]), float(gini.get("gini", 0.0)))
+	sim.tick_day()
 	return sim
 
 
 func _shares_by_nation(sim: Object) -> Dictionary:
 	var out := {}
-	for city in sim.get_demo_status().get("cities", []):
+	for city in sim.get_status().get("cities", []):
 		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
 		var pop: Dictionary = heavy.get("pop", {})
 		var shares: Array = pop.get("income_level_share", [])
@@ -204,7 +204,7 @@ func _test_shares() -> void:
 
 func _test_save_load() -> void:
 	var sim = _new_world()
-	var save: Dictionary = sim.demo_to_dict()
+	var save: Dictionary = sim.to_dict()
 	var geo = GeoScript.new()
 	for city in save.get("cities", []):
 		var tag := String(city.get("nation", ""))
@@ -213,20 +213,20 @@ func _test_save_load() -> void:
 			_fail("save: %s não gravou o Gini %.3f (%.3f)" % [
 				tag, expected, float(city.get("income_gini", -1.0))])
 	var loaded = EconomySim.new()
-	loaded.demo_set_goods(_load_array(GOODS_PATH))
-	loaded.demo_set_recipes(_load_array(RECIPES_PATH))
-	loaded.demo_set_needs(_load_dict(NEEDS_PATH))
-	loaded.demo_from_dict(save)
+	loaded.set_goods(_load_array(GOODS_PATH))
+	loaded.set_recipes(_load_array(RECIPES_PATH))
+	loaded.set_needs(_load_dict(NEEDS_PATH))
+	loaded.from_dict(save)
 	# Save antigo (sem o campo) mantém a repartição legada (Gini 0), nunca 1,0.
 	var legacy := save.duplicate(true)
 	for city in legacy.get("cities", []):
 		city.erase("income_gini")
 	var restored = EconomySim.new()
-	restored.demo_set_goods(_load_array(GOODS_PATH))
-	restored.demo_set_recipes(_load_array(RECIPES_PATH))
-	restored.demo_set_needs(_load_dict(NEEDS_PATH))
-	restored.demo_from_dict(legacy)
-	for city in restored.demo_to_dict().get("cities", []):
+	restored.set_goods(_load_array(GOODS_PATH))
+	restored.set_recipes(_load_array(RECIPES_PATH))
+	restored.set_needs(_load_dict(NEEDS_PATH))
+	restored.from_dict(legacy)
+	for city in restored.to_dict().get("cities", []):
 		if absf(float(city.get("income_gini", -1.0))) > 1e-9:
 			_fail("save antigo: %s ganhou Gini %.3f do nada" % [
 				String(city.get("nation", "")), float(city.get("income_gini", -1.0))])
@@ -237,7 +237,7 @@ func _test_save_load() -> void:
 func _test_productivity_order() -> void:
 	var sim = _new_world()
 	var values := {}
-	for city in sim.get_demo_status().get("cities", []):
+	for city in sim.get_status().get("cities", []):
 		values[String(city.get("nation", ""))] = float(
 			city.get("productivity_index", 0.0))
 	var expected := {

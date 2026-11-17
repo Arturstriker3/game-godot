@@ -121,17 +121,17 @@ func _urban_data() -> Dictionary:
 
 
 func _load_chains(sim) -> void:
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
+			sim.set_sector_employment(sector)
 
 
 ## Mundo real (cities/ports/buildings.json) com o estado urbano do W0 e o
@@ -139,15 +139,15 @@ func _load_chains(sim) -> void:
 func _make_world(threads: int, urban: Dictionary) -> Object:
 	var sim = EconomySim.new()
 	_load_chains(sim)
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(threads)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(threads)
 	var cities := _load_array(CITIES_PATH)
-	sim.initialize_demo_world(cities, _load_array(PORTS_PATH),
+	sim.initialize_world(cities, _load_array(PORTS_PATH),
 		_load_array(BUILDINGS_PATH))
-	if not sim.has_method("demo_set_urban"):
-		_fail("o binario GDExtension nao tem demo_set_urban (rode o build)")
+	if not sim.has_method("set_urban"):
+		_fail("o binario GDExtension nao tem set_urban (rode o build)")
 		return sim
-	sim.demo_set_urban(urban["land"], _load_dict(HOUSING_CITY_PATH),
+	sim.set_urban(urban["land"], _load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH), urban["finance"])
 	_force_busy_zone(sim)
 	return sim
@@ -164,7 +164,7 @@ const BUSY_OCCUPANCY := 0.95
 
 
 func _force_busy_zone(sim) -> void:
-	var data: Dictionary = sim.demo_to_dict()
+	var data: Dictionary = sim.to_dict()
 	for entry: Variant in Array(data.get("urban", [])):
 		var row: Dictionary = entry
 		if String(row.get("city", "")) != TEST_CITY:
@@ -173,7 +173,7 @@ func _force_busy_zone(sim) -> void:
 		# 0,85 (alvo da faixa) / 0,95 (ocupação de cidade cheia).
 		fill[0] = float(fill[0]) * 0.85 / BUSY_OCCUPANCY
 		row["zone_fill"] = fill
-		sim.demo_from_dict(data)
+		sim.from_dict(data)
 		var occupancy := float(Array(_gov(sim, TEST_CITY).get(
 			"zone_occupancy", [0.0]))[0])
 		if occupancy < 0.90:
@@ -184,7 +184,7 @@ func _force_busy_zone(sim) -> void:
 
 
 func _gov(sim, city_id: String) -> Dictionary:
-	var urban: Dictionary = sim.demo_get_urban_city(city_id)
+	var urban: Dictionary = sim.get_urban_city(city_id)
 	if urban.is_empty():
 		_fail("%s sem estado urbano" % city_id)
 		return {}
@@ -193,7 +193,7 @@ func _gov(sim, city_id: String) -> Dictionary:
 
 ## Tica um dia e exige invariantes limpos e caixa da prefeitura não negativo.
 func _tick(sim, label: String) -> void:
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	var violations: Array = status.get("invariant_violations", [])
 	if violations.size() > 0:
 		_fail("%s: invariante violado: %s" % [label, String(violations[0])])
@@ -220,7 +220,7 @@ func _paid_transfer(sim, cities: Array) -> float:
 
 func _nation_cities(sim, nation: String) -> Array:
 	var ids: Array = []
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 	for city in status.get("cities", []):
 		if String(city.get("nation", "")) == nation:
 			ids.append(String(city.get("id", "")))
@@ -328,15 +328,15 @@ func _run() -> void:
 	var failures_before_save := _failures.size()
 	for day in range(CHECK_DAY, SAVE_DAY):
 		_tick(sim, "A dia %d" % (day + 1))
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	if int(snapshot.get("version", 0)) != 14:
 		_fail("save version %s != 14" % str(snapshot.get("version")))
 	if not snapshot.has("city_gov"):
 		_fail("save sem o bloco city_gov da prefeitura")
 	var restored = EconomySim.new()
 	_load_chains(restored)
-	restored.demo_from_dict(snapshot)
-	var resaved: Dictionary = restored.demo_to_dict()
+	restored.from_dict(snapshot)
+	var resaved: Dictionary = restored.to_dict()
 	if _canonical(resaved) != _canonical(snapshot):
 		_fail("round-trip do save divergiu com obra em andamento")
 	var restored_gov: Dictionary = _gov(restored, TEST_CITY).get("gov", {})
@@ -350,7 +350,7 @@ func _run() -> void:
 	var other = _make_world(8, urban)
 	for day in range(1, SAVE_DAY + 1):
 		_tick(other, "B(t8) dia %d" % day)
-	if _canonical(other.demo_to_dict()) != _canonical(snapshot):
+	if _canonical(other.to_dict()) != _canonical(snapshot):
 		_fail("threads=8 divergiu do save de threads=1 no dia %d" % SAVE_DAY)
 	print("[city_gov] determinismo threads=1 vs 8 no dia %d: %s" % [
 		SAVE_DAY, "identico" if _failures.size() == failures_before_det
@@ -419,7 +419,7 @@ func _test_full_city_cash_gate(urban: Dictionary) -> void:
 	# Obra §15 ESTATAL (tesouro nacional) na mesma cidade: um lote de moradia do
 	# governo, que reserva o custo inteiro e fica em andamento.
 	_grant_gov_cash(sim, TEST_CITY, 3000000.0)
-	var social: Dictionary = sim.demo_urban_social_housing(TEST_CITY, 60000.0)
+	var social: Dictionary = sim.urban_social_housing(TEST_CITY, 60000.0)
 	if not bool(social.get("ok", false)):
 		_fail("cidade cheia: obra estatal de teste nao abriu (%s)" % String(
 			social.get("error", "")))
@@ -457,7 +457,7 @@ func _test_full_city_cash_gate(urban: Dictionary) -> void:
 	if infra_spent > 0.5 * cash_decision + 1.0:
 		_fail("cidade cheia: obra consumiu %.0f de um caixa de %.0f (maximo metade)" % [
 			infra_spent, cash_decision])
-	if _gov_housing_projects(sim.demo_to_dict()) != 1:
+	if _gov_housing_projects(sim.to_dict()) != 1:
 		_fail("cidade cheia: a obra estatal em voo desapareceu da fila")
 	# A obra conclui: solo e capacidade crescem; o caixa nunca fica negativo.
 	for day in range(MONTH_DAYS, MONTH_DAYS + 200):
@@ -502,15 +502,15 @@ func _test_social_housing(urban: Dictionary) -> void:
 	for row in before.get("units", []):
 		for value in row:
 			stock_before += float(value)
-	var social_before := _gov_housing_projects(sim.demo_to_dict())
-	var result: Dictionary = sim.demo_urban_social_housing(TEST_CITY, 40.0)
+	var social_before := _gov_housing_projects(sim.to_dict())
+	var result: Dictionary = sim.urban_social_housing(TEST_CITY, 40.0)
 	if not bool(result.get("ok", false)):
 		_fail("moradia social nao abriu")
 		return
 	# A obra do governo entra na FILA ÚNICA (§15) com kind 1 (moradia) e dono 3.
-	if _gov_housing_projects(sim.demo_to_dict()) != social_before + 1:
+	if _gov_housing_projects(sim.to_dict()) != social_before + 1:
 		_fail("moradia social: esperava %d obra(s) do governo na fila, veio %d" % [
-			social_before + 1, _gov_housing_projects(sim.demo_to_dict())])
+			social_before + 1, _gov_housing_projects(sim.to_dict())])
 	var cash_after_open := float(_gov(sim, TEST_CITY).get("gov", {}).get("cash", 0.0))
 	var paid := float(result.get("cost", 0.0))
 	if paid <= 0.0 or not _close(cash, cash_after_open + paid, 1.0e-6):
@@ -519,7 +519,7 @@ func _test_social_housing(urban: Dictionary) -> void:
 	for day in range(MONTH_DAYS + 1, MONTH_DAYS + 95):
 		_tick(sim, "S dia %d" % day)
 	var after: Dictionary = _gov(sim, TEST_CITY)
-	var snapshot_after: Dictionary = sim.demo_to_dict()
+	var snapshot_after: Dictionary = sim.to_dict()
 	if _gov_housing_projects(snapshot_after) != 0:
 		_fail("moradia social: obra do governo ainda em andamento depois do prazo")
 	var owner_after := float(Array(after.get("owner_share", []))[2])
@@ -538,13 +538,13 @@ func _test_social_housing(urban: Dictionary) -> void:
 ## Injeta caixa na prefeitura pelo bloco urbano do save (teste, sem gambiarra
 ## de estado interno): o save do W0/W2 carrega `gov.cash` por cidade.
 func _grant_gov_cash(sim, city_id: String, cash: float) -> void:
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 	for entry in snapshot.get("urban", []):
 		if String(entry.get("city", "")) == city_id:
 			var gov: Dictionary = entry.get("gov", {})
 			gov["cash"] = cash
 			entry["gov"] = gov
-	sim.demo_from_dict(snapshot)
+	sim.from_dict(snapshot)
 
 
 func _sum_area(urban: Dictionary) -> float:
@@ -558,7 +558,7 @@ func _sum_area(urban: Dictionary) -> float:
 ## `city_id` filtra (a prefeitura de TODA cidade cheia decide no mesmo mês).
 func _urban_projects(sim, city_id: String = "") -> Array:
 	var result: Array = []
-	for project in sim.demo_to_dict().get("construction_projects", []):
+	for project in sim.to_dict().get("construction_projects", []):
 		if int(project.get("urban_action", 0)) == 0:
 			continue
 		if city_id != "" and String(project.get("city", "")) != city_id:

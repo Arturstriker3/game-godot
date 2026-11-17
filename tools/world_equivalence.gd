@@ -3,8 +3,8 @@ extends SceneTree
 ## Equivalência funcional A1–A5 do plano `docs/plans/perf_pop_financas_plano.md`.
 ##
 ## Roda o mundo real (cenário + IA + camada urbana S19) por N dias com semente
-## fixa e grava um JSON canônico — `meta`, `save` (`demo_to_dict()`) e `status`
-## (`get_demo_status()`) — em chaves ordenadas e precisão total. O par de SHA-256
+## fixa e grava um JSON canônico — `meta`, `save` (`to_dict()`) e `status`
+## (`get_status()`) — em chaves ordenadas e precisão total. O par de SHA-256
 ## continua sendo a checagem grossa; o dump existe para o comparador
 ## `tools/world_equivalence_compare.py` apontar o PRIMEIRO caminho divergente.
 ##
@@ -18,7 +18,7 @@ extends SceneTree
 ##   `tools/world_equivalence.ps1 -Golden/-Baseline` comparar sem carregar o
 ##   dump de 110 MB. Não altera o dump principal nem os shas.
 ## - `--threads=0` deixa o núcleo decidir o caminho serial/paralelo (mesmo
-##   contrato de `demo_set_sim_threads`).
+##   contrato de `set_sim_threads`).
 ## - `--seed` entra em `meta` apenas: o núcleo não tem RNG, o mundo é
 ##   determinístico por construção. Nenhuma moeda é perturbada aqui — a
 ##   perturbação de câmbio (±1e-12) vive em `tools/economy_world_test.gd` e não
@@ -131,19 +131,19 @@ func _run() -> void:
 	var sim = EconomySim.new()
 
 	# Mesma ordem do jogo ao vivo: definições ANTES de criar o mundo.
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(_threads)
+			sim.set_sector_employment(sector)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(_threads)
 	if not _failures.is_empty():
 		return
 
@@ -162,14 +162,14 @@ func _run() -> void:
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
 
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:
-		if not sim.has_method("demo_set_urban"):
-			_fail("binario sem demo_set_urban (rode o build)")
+		if not sim.has_method("set_urban"):
+			_fail("binario sem set_urban (rode o build)")
 			return
-		sim.demo_set_urban(_load_dict(URBAN_LAND_PATH),
+		sim.set_urban(_load_dict(URBAN_LAND_PATH),
 			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
 			_load_dict(MUNICIPAL_FINANCE_PATH))
 		if not _failures.is_empty():
@@ -181,11 +181,11 @@ func _run() -> void:
 		ai.setup(sim, geo)
 
 	# Aquece os dois slots do status (custo de alocação fora do primeiro tick).
-	if sim.has_method("demo_warm_status"):
-		sim.demo_warm_status()
+	if sim.has_method("warm_status"):
+		sim.warm_status()
 
 	for day in _days:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		if ai != null:
 			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
@@ -193,8 +193,8 @@ func _run() -> void:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
 			return
 
-	var save_dict: Dictionary = sim.demo_to_dict()
-	var status_dict: Dictionary = sim.get_demo_status()
+	var save_dict: Dictionary = sim.to_dict()
+	var status_dict: Dictionary = sim.get_status()
 
 	# Chaves ordenadas + precisão total: o mesmo string serve de hash e de dump.
 	var save_json := JSON.stringify(save_dict, "  ", true, true)

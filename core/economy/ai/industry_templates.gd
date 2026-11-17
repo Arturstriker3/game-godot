@@ -26,7 +26,7 @@ const TEMPLATES := {
 	# (poucos empregos/t); metais profundos e metais de alto valor (cobre, chumbo,
 	# tungstênio, terras raras, urânio) têm mais opex; metais preciosos (ouro,
 	# diamante) têm alto opex/t mas preço muito superior. A profundidade da jazida
-	# ainda multiplica o opex no núcleo (demo_depth_opex_factor, até 3×).
+	# ainda multiplica o opex no núcleo (depth_opex_factor, até 3×).
 	"coal": {"output": 12, "input": -1, "jobs_per_ton": 1.5,
 		"wage": 1.0, "opex_per_ton": 2.5, "input_ratio": 0.0},
 	"copper": {"output": 13, "input": -1, "jobs_per_ton": 3.0,
@@ -74,7 +74,7 @@ const FOOD_RESOURCES: Array[String] = ["wheat", "rice", "maize", "potato", "soy"
 
 ## Minerais/energéticos (extração primária com jazida). A IA só constrói quando
 ## a cidade tem depósito com reserva restante (GeographyService declara via
-## demo_set_deposit).
+## set_deposit).
 const MINERAL_RESOURCES: Array[String] = [
 	"iron", "coal", "copper", "gas", "oil", "bauxite", "lead", "gold",
 	"phosphate", "tungsten", "rare_earths", "sulfur", "diamond", "uranium",

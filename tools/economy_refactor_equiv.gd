@@ -2,8 +2,8 @@ extends SceneTree
 
 ## Harness de equivalência byte a byte do núcleo econômico C++ (S0 do
 ## `docs/economy/core_refactor_plan.md`). Roda o cenário real (ou o AGRIA/PORTUS)
-## por N dias, captura `demo_to_dict()` (save integral), `get_demo_status()`
-## (status integral) e `demo_get_profile()` (meta informativa) e compara o
+## por N dias, captura `to_dict()` (save integral), `get_status()`
+## (status integral) e `get_profile()` (meta informativa) e compara o
 ## SHA-256 do JSON canônico (chaves ordenadas, precisão total) contra um golden.
 ##
 ##   godot --headless --path . --script res://tools/economy_refactor_equiv.gd \
@@ -117,28 +117,28 @@ func _run() -> void:
 
 	# F2/F3/F8/F9: bens, receitas, necessidades, serviços, moedas e emprego
 	# setorial entram ANTES de criar o mundo (mesma ordem do jogo ao vivo).
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
-	if sim.has_method("demo_set_profiling"):
-		sim.demo_set_profiling(_profile)
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(_threads)
+			sim.set_sector_employment(sector)
+	if sim.has_method("set_profiling"):
+		sim.set_profiling(_profile)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(_threads)
 
 	var geo: Object = null
 	var ai: Object = null
 
 	if _mode == "demo":
 		# AGRIA/PORTUS (2 cidades), sem IA — mesmo setup do economy_integration_test.
-		sim.initialize_demo()
+		sim.initialize_scenario()
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		geo.apply_to_sim(sim, [
@@ -157,7 +157,7 @@ func _run() -> void:
 			geo = GeographyServiceScript.new()
 			geo.load_data()
 			buildings = geo.resolve_initial_farms(buildings, cities)
-		sim.initialize_demo_world(cities, ports, buildings)
+		sim.initialize_world(cities, ports, buildings)
 		if geo != null:
 			geo.apply_to_sim(sim, _cities_with_center(cities))
 			ai = EconomicAIScript.new()
@@ -166,11 +166,11 @@ func _run() -> void:
 	# Dia 0 já publicado; aquece os dois slots do status (o custo de alocação
 	# não entra no primeiro tick) — indiferente para o hash, mas deixa o perfil
 	# comparável entre execuções.
-	if sim.has_method("demo_warm_status"):
-		sim.demo_warm_status()
+	if sim.has_method("warm_status"):
+		sim.warm_status()
 
 	for day in _days:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		if ai != null:
 			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
@@ -178,11 +178,11 @@ func _run() -> void:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
 			return
 
-	var save_dict: Dictionary = sim.demo_to_dict()
-	var status_dict: Dictionary = sim.get_demo_status()
+	var save_dict: Dictionary = sim.to_dict()
+	var status_dict: Dictionary = sim.get_status()
 	var profile_dict: Dictionary = {}
-	if sim.has_method("demo_get_profile"):
-		profile_dict = sim.demo_get_profile()
+	if sim.has_method("get_profile"):
+		profile_dict = sim.get_profile()
 
 	var save_sha := _sha(JSON.stringify(save_dict, "", true, true))
 	var status_sha := _sha(JSON.stringify(status_dict, "", true, true))

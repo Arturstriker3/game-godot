@@ -78,17 +78,17 @@ func _load_dict(path: String) -> Dictionary:
 
 
 func _load_chains(sim) -> void:
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
+			sim.set_sector_employment(sector)
 
 
 func _make_world() -> Object:
@@ -100,7 +100,7 @@ func _make_world() -> Object:
 	if cities.is_empty() or buildings.is_empty():
 		_fail("cenario vazio")
 		return sim
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 	return sim
 
 
@@ -143,22 +143,22 @@ func _check_city_names(save: Dictionary, expected: Dictionary, label: String) ->
 func _test_ascii_roundtrip() -> void:
 	var sim := _make_world()
 	for day in 2:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("ascii: dia %d: invariante violado" % [day + 1])
 			return
 
 	var expected := _original_city_names()
-	var first_save: Dictionary = sim.demo_to_dict()
+	var first_save: Dictionary = sim.to_dict()
 	_check_city_names(first_save, expected, "1º save")
 
 	# Round-trip: carrega num sim novo e re-serializa. A codificação não pode
 	# piorar (antes do fix, cada load duplicava o mojibake).
 	var restored = EconomySim.new()
 	_load_chains(restored)
-	restored.demo_from_dict(first_save)
-	var second_save: Dictionary = restored.demo_to_dict()
+	restored.from_dict(first_save)
+	var second_save: Dictionary = restored.to_dict()
 	_check_city_names(second_save, expected, "pós-load")
 
 
@@ -166,8 +166,8 @@ func _test_ascii_roundtrip() -> void:
 ## sem erro e com defaults sensatos. Simula-se removendo as chaves novas.
 func _test_v11_old_save_compat() -> void:
 	var sim := _make_world()
-	sim.tick_demo()
-	var full_save: Dictionary = sim.demo_to_dict()
+	sim.tick_day()
+	var full_save: Dictionary = sim.to_dict()
 
 	if int(full_save.get("version", 0)) != 12:
 		_fail("compat: esperava schema v12, veio %s" % str(full_save.get("version")))
@@ -198,9 +198,9 @@ func _test_v11_old_save_compat() -> void:
 
 	var restored = EconomySim.new()
 	_load_chains(restored)
-	restored.demo_from_dict(old_save)  # não pode falhar
+	restored.from_dict(old_save)  # não pode falhar
 
-	var round: Dictionary = restored.demo_to_dict()
+	var round: Dictionary = restored.to_dict()
 	# Defaults sensatos: os campos voltam com o valor default do load.
 	if int(round.get("bankruptcies", -1)) != 0:
 		_fail("compat: bankruptcies default deveria ser 0 (é %s)" % str(round.get("bankruptcies")))

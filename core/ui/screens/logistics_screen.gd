@@ -4,7 +4,7 @@ extends Control
 ##
 ## A tela só exibe o que o núcleo publica (frota/combustível por nação, moedas e
 ## tarifas, capacidade/fila dos portos) e usa as APIs de decisão do jogador
-## `demo_set_tariff` e `demo_expand_port`. Nenhum número é inventado: nação sem
+## `set_tariff` e `expand_port`. Nenhum número é inventado: nação sem
 ## frota mostra o estado vazio, e sem tarifa registrada a tabela fica vazia.
 
 signal close_requested
@@ -541,11 +541,11 @@ func _apply_tariff() -> void:
 	if _selected_nation.is_empty() or _selected_partner.is_empty() \
 			or _selected_good.is_empty():
 		return
-	if Economy.sim == null or not Economy.sim.has_method("demo_set_tariff"):
+	if Economy.sim == null or not Economy.sim.has_method("set_tariff"):
 		_tariff_result = I18n.t("tariff.unavailable")
 		_refresh_tariff_cost()
 		return
-	Economy.sim.demo_set_tariff(_selected_nation, _selected_partner,
+	Economy.sim.set_tariff(_selected_nation, _selected_partner,
 			_selected_good, _rate)
 	_tariff_result = I18n.t("tariff.applied", {
 		"buyer": I18n.nation_name(_selected_nation),
@@ -553,7 +553,7 @@ func _apply_tariff() -> void:
 		"good": _good_name_by_id(_selected_good),
 		"rate": UiKit.number(_rate * 100.0),
 	})
-	_live_tariffs = Economy.sim.demo_get_tariffs()
+	_live_tariffs = Economy.sim.get_tariffs()
 	_refresh_tariffs()
 	_refresh_tariff_cost()
 
@@ -645,12 +645,12 @@ func _refresh_port_cost() -> void:
 func _expand_port() -> void:
 	var port := _port()
 	if port.is_empty() or Economy.sim == null \
-			or not Economy.sim.has_method("demo_expand_port"):
+			or not Economy.sim.has_method("expand_port"):
 		_port_result = I18n.t("port.expand.unavailable")
 		_set_text("port.result", _port_result)
 		return
 	var amount := _expansion_amount(port)
-	var result: Dictionary = Economy.sim.demo_expand_port(_selected_port, amount)
+	var result: Dictionary = Economy.sim.expand_port(_selected_port, amount)
 	if bool(result.get("expanded", false)):
 		_port_result = I18n.t("port.expand.ok", {
 			"amount": UiKit.number(amount),
@@ -686,9 +686,9 @@ func _nation(tag: String) -> Dictionary:
 
 
 func _live_fleet(tag: String) -> Dictionary:
-	if Economy.sim == null or not Economy.sim.has_method("demo_get_fleet"):
+	if Economy.sim == null or not Economy.sim.has_method("get_fleet"):
 		return {}
-	var result: Dictionary = Economy.sim.demo_get_fleet(tag)
+	var result: Dictionary = Economy.sim.get_fleet(tag)
 	if result.has("error"):
 		return {}
 	return result

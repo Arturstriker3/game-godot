@@ -5,17 +5,17 @@ extends Node
 ## Usa o autoload `Economy` (mesmo cenário, geografia e IA do jogo) e um
 ## `TradeConvoys` real. Dois modos de tick:
 ##
-## - `--tick-mode=sync` (padrão histórico): chama `sim.tick_demo()` na main
+## - `--tick-mode=sync` (padrão histórico): chama `sim.tick_day()` na main
 ##   thread. O tick C++ aparece inteiro dentro do "frame da virada" — é o que
 ##   este harness sempre mediu, mas NÃO é o caminho do jogo.
-## - `--tick-mode=worker`: agenda `demo_tick_and_publish()` no
+## - `--tick-mode=worker`: agenda `tick_and_publish()` no
 ##   `WorkerThreadPool` exatamente como `Economy._process` faz (via
 ##   `core/economy/tick_scheduler.gd`) e mede, por frame, só o que a main
 ##   thread paga: `poll()` + publicação (fila de pedidos, IA, mapa, log do HUD).
 ##   É o caminho real do jogo; o tempo do tick vira "parede do worker".
 ##
 ## Para cada dia cronometra:
-##   1. tick C++            — `tick_demo()` (sync) ou parede do worker
+##   1. tick C++            — `tick_day()` (sync) ou parede do worker
 ##   1b. `poll()` da main   — consulta do dia concluído (worker)
 ##   2. `spawn_orders()`    — custo de enfileirar os pedidos do dia
 ##   3. `ai.plan(day)`      — agenda as cidades do dia (IA escalonada)
@@ -24,7 +24,7 @@ extends Node
 ##   6. mapa (--map-mode)   — `city_world.refresh_modes`: camada do modo +
 ##                            textura de território, no mesmo frame da virada.
 ##
-## `--profile=1` liga `demo_set_profiling` e reporta as fases do tick C++.
+## `--profile=1` liga `set_profiling` e reporta as fases do tick C++.
 ##
 ## Uso:
 ##   godot --headless --path . res://tools/perf_day_peak.tscn -- [--days=30] \
@@ -107,10 +107,10 @@ func _ready() -> void:
 		print("[perf] autoload Economy sem sim/IA")
 		get_tree().quit(1)
 		return
-	if _threads != 0 and sim.has_method("demo_set_sim_threads"):
+	if _threads != 0 and sim.has_method("set_sim_threads"):
 		# S16: A/B do paralelismo (threads=1 serial vs threads=N). Default 0
 		# deixa o núcleo no automático (min(núcleos-2, 8)).
-		sim.demo_set_sim_threads(_threads)
+		sim.set_sim_threads(_threads)
 
 	var convoys = ConvoysScript.new()
 	var build_start := Time.get_ticks_usec()
@@ -123,7 +123,7 @@ func _ready() -> void:
 	var territory = null
 	var map_build_ms := 0.0
 	if _map_mode != "none":
-		var map_cities: Array = sim.get_demo_status().get("cities", [])
+		var map_cities: Array = sim.get_status().get("cities", [])
 		var map_start := Time.get_ticks_usec()
 		mode_layer = ModeLayerScript.new()
 		add_child(mode_layer)
@@ -160,7 +160,7 @@ func _ready() -> void:
 	var worker := _tick_mode == "worker"
 	var scheduler = TickSchedulerScript.new() if worker else null
 	if _profile:
-		sim.demo_set_profiling(true)
+		sim.set_profiling(true)
 
 	for day in range(1, _days + 1):
 		# O dia anterior terminou: com os pools, os comboios do teste não rodam
@@ -190,11 +190,11 @@ func _ready() -> void:
 			tick_cost = _ms(w0)
 		else:
 			var d0 := Time.get_ticks_usec()
-			summary = sim.tick_demo()
+			summary = sim.tick_day()
 			tick_cost = _ms(d0)
 
 		if _profile:
-			var profile: Dictionary = sim.demo_get_profile()
+			var profile: Dictionary = sim.get_profile()
 			for phase in PHASES:
 				if not _phase_us.has(phase):
 					_phase_us[phase] = [] as Array[float]
@@ -288,7 +288,7 @@ func _ready() -> void:
 			pump_total, frames, pump_peak, ai_pump_total,
 			orders.size(), active, delivered, buildings, agents_text])
 		if _profile:
-			var profile: Dictionary = sim.demo_get_profile()
+			var profile: Dictionary = sim.get_profile()
 			print("[perf]          fases: status %5.1f (cidades %5.1f, pedidos %4.1f, nações %4.1f)  trade %5.1f  arrival %5.1f  produção %4.1f  renda %4.1f  preços %4.1f" % [
 				float(profile.get("status", 0.0)) / 1000.0,
 				float(profile.get("status_cities", 0.0)) / 1000.0,
@@ -348,7 +348,7 @@ func _ready() -> void:
 		frames_total / float(_days), convoys.FRAME_BUDGET_US])
 	# Memória do processo com o mundo REAL carregado (858 cidades): é o custo
 	# estático do cenário, sim, IA e comboios — sem o mapa 3D.
-	var live_status: Dictionary = Economy.sim.get_demo_status()
+	var live_status: Dictionary = Economy.sim.get_status()
 	var static_mb := float(OS.get_static_memory_usage()) / (1024.0 * 1024.0)
 	print("[perf] memória estática com %d cidades: %.1f MB" % [
 		(live_status.get("cities", []) as Array).size(), static_mb])

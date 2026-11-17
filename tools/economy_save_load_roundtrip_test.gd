@@ -4,8 +4,8 @@ extends SceneTree
 ##
 ## Verifica que "salvar no dia N, carregar e rodar até M" produz exatamente o
 ## mesmo estado que "rodar direto até M". É a guarda da migração do estado para
-## `ogs::WorldState` (S5a): se algum campo saiu do save (`demo_to_dict`/
-## `demo_from_dict`) ou algum estado transitório do `SimCore` fosse, por engano,
+## `ogs::WorldState` (S5a): se algum campo saiu do save (`to_dict`/
+## `from_dict`) ou algum estado transitório do `SimCore` fosse, por engano,
 ## necessário ao dia seguinte, o caminho "load + continua" divergiria do "direto".
 ##
 ## Roda SEM IA (núcleo determinístico): a IA vive em GDScript (EconomicAI) e o
@@ -93,29 +93,29 @@ func _sha(json_str: String) -> String:
 
 ## Carrega as tabelas externas (bens/receitas/necessidades/serviços/moedas/
 ## emprego) ANTES de inicializar o mundo — mesma ordem do jogo ao vivo. O load
-## (`demo_from_dict`) resolve a receita de cada construção por id, então as
+## (`from_dict`) resolve a receita de cada construção por id, então as
 ## tabelas precisam estar carregadas no destino também.
 func _load_chains(sim) -> void:
-	sim.demo_set_goods(_load_array(GOODS_PATH))
-	sim.demo_set_recipes(_load_array(RECIPES_PATH))
-	sim.demo_set_needs(_load_dict(NEEDS_PATH))
-	if sim.has_method("demo_set_services"):
-		sim.demo_set_services(_load_dict(SERVICES_PATH))
-	if sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
-	if sim.has_method("demo_set_sector_employment"):
+	sim.set_goods(_load_array(GOODS_PATH))
+	sim.set_recipes(_load_array(RECIPES_PATH))
+	sim.set_needs(_load_dict(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_load_dict(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_load_dict(CURRENCIES_PATH))
+	if sim.has_method("set_sector_employment"):
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
-			sim.demo_set_sector_employment(sector)
+			sim.set_sector_employment(sector)
 
 
 ## §19 (W0): carrega o estado urbano DEPOIS do mundo (casamento por id de
 ## cidade). Sem os arquivos, as cidades ficam sem dado urbano — o save/load
 ## continua coberto, com os vetores vazios.
 func _load_urban(sim) -> void:
-	if not sim.has_method("demo_set_urban"):
+	if not sim.has_method("set_urban"):
 		return
-	sim.demo_set_urban(
+	sim.set_urban(
 		_load_dict(URBAN_LAND_PATH),
 		_load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH),
@@ -123,12 +123,12 @@ func _load_urban(sim) -> void:
 
 
 ## Cria o mundo real (cities/ports/buildings.json) sem IA, ou o cenário demo
-## AGRIA/PORTUS (initialize_demo + geografia). Devolve o `EconomySim` pronto.
+## AGRIA/PORTUS (initialize_scenario + geografia). Devolve o `EconomySim` pronto.
 func _make_world() -> Object:
 	var sim = EconomySim.new()
 	_load_chains(sim)
 	if _mode == "demo":
-		sim.initialize_demo()
+		sim.initialize_scenario()
 		var geo = GeographyServiceScript.new()
 		geo.apply_to_sim(sim, [
 			{"id": "AGRIA", "center": AGRIA_CENTER},
@@ -143,7 +143,7 @@ func _make_world() -> Object:
 		_fail("cenario vazio (cidades=%d, construcoes=%d)" % [
 			cities.size(), buildings.size()])
 		return sim
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 	_load_urban(sim)
 	return sim
 
@@ -152,7 +152,7 @@ func _make_world() -> Object:
 func _run_straight(days: int) -> Dictionary:
 	var sim := _make_world()
 	for day in days:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("direto: dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
@@ -165,20 +165,20 @@ func _run_straight(days: int) -> Dictionary:
 func _run_split(save_at: int, days: int) -> Dictionary:
 	var sim := _make_world()
 	for day in save_at:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("split: dia %d: invariante violado antes do save: %s" % [
 				day + 1, String(violations[0])])
 			break
-	var snapshot: Dictionary = sim.demo_to_dict()
+	var snapshot: Dictionary = sim.to_dict()
 
 	var restored = EconomySim.new()
 	_load_chains(restored)
-	restored.demo_from_dict(snapshot)
+	restored.from_dict(snapshot)
 
 	for day in range(save_at, days):
-		var status: Dictionary = restored.tick_demo()
+		var status: Dictionary = restored.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("split: dia %d: invariante violado após carregar: %s" % [
@@ -188,8 +188,8 @@ func _run_split(save_at: int, days: int) -> Dictionary:
 
 
 func _final_hashes(sim) -> Dictionary:
-	var save_dict: Dictionary = sim.demo_to_dict()
-	var status_dict: Dictionary = sim.get_demo_status()
+	var save_dict: Dictionary = sim.to_dict()
+	var status_dict: Dictionary = sim.get_status()
 	return {
 		"save_sha256": _sha(JSON.stringify(save_dict, "", true, true)),
 		"status_sha256": _sha(JSON.stringify(status_dict, "", true, true)),

@@ -456,7 +456,7 @@ func _build_root() -> void:
 func _initial_summary() -> Dictionary:
 	if not Economy.last_summary.is_empty():
 		return Economy.last_summary
-	return Economy.sim.get_demo_status()
+	return Economy.sim.get_status()
 
 
 ## Configura o minimapa (título localizado + abas de tipo de mapa) e aplica o

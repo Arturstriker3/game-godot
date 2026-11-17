@@ -53,18 +53,18 @@ func _init() -> void:
 		return
 
 	var sim = EconomySim.new()
-	sim.demo_set_goods(goods)
+	sim.set_goods(goods)
 	# Moedas ANTES do mundo: o preço local nasce na moeda da nação.
-	sim.demo_set_currencies(_currencies(1.0, 1.0, 1.0, "peg"))
-	if not sim.has_method("demo_get_currency"):
-		_fail("binário sem a API F5 (demo_get_currency)")
+	sim.set_currencies(_currencies(1.0, 1.0, 1.0, "peg"))
+	if not sim.has_method("get_currency"):
+		_fail("binário sem a API F5 (get_currency)")
 		_finish()
 		return
-	sim.initialize_demo_world(_cities(), [], [])
+	sim.initialize_world(_cities(), [], [])
 
 	# Aquecimento: a necessidade diária (fase 5) alimenta a lacuna de importação.
 	for _day in 2:
-		sim.tick_demo()
+		sim.tick_day()
 
 	_test_conversion(sim)
 	_test_float_competitiveness(sim)
@@ -79,7 +79,7 @@ func _init() -> void:
 ## entregue (taxas iguais).
 func _test_conversion(sim) -> void:
 	_prepare_markets(sim)
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	var order := _first_order(status, PRODUCT)
 	if order.is_empty():
 		_fail("conversão: nenhum pedido de trigo no dia")
@@ -138,9 +138,9 @@ func _test_conversion(sim) -> void:
 func _test_float_competitiveness(sim) -> void:
 	# XB desvalorizada 10% dentro da banda: taxa 0,45 com base 0,50. O preço
 	# interno continua 41 na âncora; a oferta efetiva vira 41 × 0,9 = 36,9.
-	sim.demo_set_currency_rate("XB", 0.45, true, 0.5)
+	sim.set_currency_rate("XB", 0.45, true, 0.5)
 	_prepare_markets(sim)
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	var order := _first_order(status, PRODUCT)
 	if order.is_empty():
 		_fail("float: nenhum pedido de trigo no dia")
@@ -163,9 +163,9 @@ func _test_float_competitiveness(sim) -> void:
 
 	# Com a MESMA taxa-base (sem desvio) o fator é 1 e o preço fixo decide:
 	# B fica em 41 e A (40) vence. A taxa sozinha não reescreve o preço.
-	sim.demo_set_currency_rate("XB", 0.5, true, 0.5)
+	sim.set_currency_rate("XB", 0.5, true, 0.5)
 	_prepare_markets(sim)
-	status = sim.tick_demo()
+	status = sim.tick_day()
 	order = _first_order(status, PRODUCT)
 	if order.is_empty():
 		_fail("float neutro: nenhum pedido de trigo no dia")
@@ -177,9 +177,9 @@ func _test_float_competitiveness(sim) -> void:
 			from_city, CITY_A])
 
 	# Regime fixo: nem uma taxa nominal muito baixa muda o preço na âncora.
-	sim.demo_set_currency_rate("XB", 0.5, false)
+	sim.set_currency_rate("XB", 0.5, false)
 	_prepare_markets(sim)
-	status = sim.tick_demo()
+	status = sim.tick_day()
 	order = _first_order(status, PRODUCT)
 	if order.is_empty():
 		_fail("regime fixo: nenhum pedido de trigo no dia")
@@ -193,13 +193,13 @@ func _test_float_competitiveness(sim) -> void:
 ## 3. Tarifa ad valorem muda a escolha e é receita do governo comprador.
 func _test_tariff(sim) -> void:
 	# Base neutra: câmbio de XB fixo em 0,5 (fator de competitividade 1).
-	sim.demo_set_currency_rate("XB", 0.5, false)
-	sim.demo_set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
-	var effective := float(sim.demo_get_tariff(NATION_C, NATION_B, PRODUCT))
+	sim.set_currency_rate("XB", 0.5, false)
+	sim.set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
+	var effective := float(sim.get_tariff(NATION_C, NATION_B, PRODUCT))
 	if absf(effective - 1.0) > 1e-9:
 		_fail("tarifa: efetiva %.3f (esperado 1.0)" % effective)
 	_prepare_markets(sim)
-	var status: Dictionary = sim.tick_demo()
+	var status: Dictionary = sim.tick_day()
 	var order := _first_order(status, PRODUCT)
 	if order.is_empty():
 		_fail("tarifa: nenhum pedido de trigo no dia")
@@ -212,9 +212,9 @@ func _test_tariff(sim) -> void:
 			from_city, CITY_A])
 	# A passa a pagar 50% também: a escolha continua A, mas agora o comprador
 	# arrecada tarifa no próprio orçamento (dinheiro conservado).
-	sim.demo_set_tariff(NATION_C, NATION_A, PRODUCT, 0.5)
+	sim.set_tariff(NATION_C, NATION_A, PRODUCT, 0.5)
 	_prepare_markets(sim)
-	status = sim.tick_demo()
+	status = sim.tick_day()
 	order = _first_order(status, PRODUCT)
 	if order.is_empty():
 		_fail("tarifa: nenhum pedido de trigo no dia (com tarifa em A)")
@@ -236,20 +236,20 @@ func _test_tariff(sim) -> void:
 ## 4. Save/load preserva moedas e tarifas (e o mundo segue conservado).
 func _test_save_load(sim, goods: Array) -> void:
 	# Tarifa coringa: confere que a lista declarada (e não só a efetiva) volta.
-	sim.demo_set_tariff(NATION_C, "*", "*", 0.25)
-	sim.demo_set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
-	var tariffs_before: Array = sim.demo_get_tariffs()
-	var saved: Dictionary = sim.demo_to_dict()
-	var rate_b_before := float(sim.demo_get_currency(NATION_B).get("rate", 0.0))
+	sim.set_tariff(NATION_C, "*", "*", 0.25)
+	sim.set_tariff(NATION_C, NATION_B, PRODUCT, 1.0)
+	var tariffs_before: Array = sim.get_tariffs()
+	var saved: Dictionary = sim.to_dict()
+	var rate_b_before := float(sim.get_currency(NATION_B).get("rate", 0.0))
 
 	var loaded = EconomySim.new()
-	loaded.demo_set_goods(goods)
-	loaded.demo_from_dict(saved)
-	var currency_b: Dictionary = loaded.demo_get_currency(NATION_B)
-	var currency_c: Dictionary = loaded.demo_get_currency(NATION_C)
-	var tariffs_after: Array = loaded.demo_get_tariffs()
+	loaded.set_goods(goods)
+	loaded.from_dict(saved)
+	var currency_b: Dictionary = loaded.get_currency(NATION_B)
+	var currency_c: Dictionary = loaded.get_currency(NATION_C)
+	var tariffs_after: Array = loaded.get_tariffs()
 	print("[fx] save/load: taxas A=%.4f B=%.4f C=%.4f tarifas=%d" % [
-		float(loaded.demo_get_currency(NATION_A).get("rate", 0.0)),
+		float(loaded.get_currency(NATION_A).get("rate", 0.0)),
 		float(currency_b.get("rate", 0.0)), float(currency_c.get("rate", 0.0)),
 		tariffs_after.size()])
 	if String(currency_b.get("code", "")) != "XB":
@@ -275,12 +275,12 @@ func _test_save_load(sim, goods: Array) -> void:
 				_fail("save/load: tarifa %d taxa %.4f != %.4f" % [
 					index, float(after.get("rate", 0.0)), float(before.get("rate", 0.0))])
 	# O lookup é reconstruído com os coringas: a tarifa específica prevalece.
-	if absf(float(loaded.demo_get_tariff(NATION_C, NATION_B, PRODUCT)) - 1.0) > 1e-9:
+	if absf(float(loaded.get_tariff(NATION_C, NATION_B, PRODUCT)) - 1.0) > 1e-9:
 		_fail("save/load: tarifa efetiva NC->NB em trigo %.3f (esperado 1.0)" % [
-			float(loaded.demo_get_tariff(NATION_C, NATION_B, PRODUCT))])
+			float(loaded.get_tariff(NATION_C, NATION_B, PRODUCT))])
 	# O mundo carregado roda um dia sem violar invariante nem criar dinheiro.
-	loaded.demo_set_market_stock(CITY_BUY, PRODUCT, 0.0)
-	var status: Dictionary = loaded.tick_demo()
+	loaded.set_market_stock(CITY_BUY, PRODUCT, 0.0)
+	var status: Dictionary = loaded.tick_day()
 	var violations: Array = status.get("invariant_violations", [])
 	if not violations.is_empty():
 		_fail("save/load: invariante violado após carregar: %s" % String(violations[0]))
@@ -315,9 +315,9 @@ func _test_save_load(sim, goods: Array) -> void:
 		for index in import_prices.size():
 			import_prices[index] = float(import_prices[index]) / rate
 	var migrated = EconomySim.new()
-	migrated.demo_set_goods(goods)
-	migrated.demo_from_dict(legacy)
-	var migrated_status: Dictionary = migrated.get_demo_status()
+	migrated.set_goods(goods)
+	migrated.from_dict(legacy)
+	var migrated_status: Dictionary = migrated.get_status()
 	var anchor_before := float(_city_market(loaded, CITY_A, PRODUCT).get("price", 0.0))
 	var anchor_after := float(_city_market(migrated, CITY_A, PRODUCT).get("price", 0.0))
 	print("[fx] migração v6 -> v7: preço âncora %.4f (antes %.4f)" % [
@@ -330,21 +330,21 @@ func _test_save_load(sim, goods: Array) -> void:
 ## 5. Déficit persistente desvaloriza a moeda do comprador (banda ±10%).
 func _test_devaluation(sim) -> void:
 	# Tarifa zerada e moedas flutuantes de novo: só a balança move a taxa.
-	sim.demo_set_tariff(NATION_C, "*", "*", 0.0)
-	sim.demo_set_currency_rate("XA", 1.0, true)
-	sim.demo_set_currency_rate("XB", 1.0, true)
-	sim.demo_set_currency_rate("XC", 1.0, true)
+	sim.set_tariff(NATION_C, "*", "*", 0.0)
+	sim.set_currency_rate("XA", 1.0, true)
+	sim.set_currency_rate("XB", 1.0, true)
+	sim.set_currency_rate("XC", 1.0, true)
 	_prepare_markets(sim)
 	var buyer_rate := 1.0
 	var seller_rate := 1.0
 	for _day in 40:
-		var status: Dictionary = sim.tick_demo()
+		var status: Dictionary = sim.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if not violations.is_empty():
 			_fail("desvalorização: invariante violado: %s" % String(violations[0]))
 			break
-		buyer_rate = float(sim.demo_get_currency(NATION_C).get("rate", 1.0))
-		seller_rate = float(sim.demo_get_currency(NATION_A).get("rate", 1.0))
+		buyer_rate = float(sim.get_currency(NATION_C).get("rate", 1.0))
+		seller_rate = float(sim.get_currency(NATION_A).get("rate", 1.0))
 	print("[fx] balança: comprador (déficit) taxa=%.4f, exportador (superávit) taxa=%.4f" % [
 		buyer_rate, seller_rate])
 	if buyer_rate >= 0.999:
@@ -400,11 +400,11 @@ func _currencies(rate_a: float, rate_b: float, rate_c: float, regime: String) ->
 ## Repõe o estado do dia: vendedores com excedente e preço local conhecido,
 ## comprador zerado (sem estoque, portanto com lacuna de importação).
 func _prepare_markets(sim) -> void:
-	sim.demo_set_market_stock(CITY_A, PRODUCT, 5000.0)
-	sim.demo_set_market_stock(CITY_B, PRODUCT, 5000.0)
-	sim.demo_set_market_stock(CITY_BUY, PRODUCT, 0.0)
-	sim.demo_set_market_price(CITY_A, PRODUCT, PRICE_A)
-	sim.demo_set_market_price(CITY_B, PRODUCT, PRICE_B)
+	sim.set_market_stock(CITY_A, PRODUCT, 5000.0)
+	sim.set_market_stock(CITY_B, PRODUCT, 5000.0)
+	sim.set_market_stock(CITY_BUY, PRODUCT, 0.0)
+	sim.set_market_price(CITY_A, PRODUCT, PRICE_A)
+	sim.set_market_price(CITY_B, PRODUCT, PRICE_B)
 
 
 func _first_order(status: Dictionary, product: String) -> Dictionary:

@@ -3,15 +3,15 @@ extends SceneTree
 ## Replay headless de um snapshot do mundo (A1 — núcleo C++ fora do Godot).
 ##
 ## Carrega `{"definitions": ..., "save": ...}` de `tools/export_world_snapshot.gd`
-## com `demo_from_snapshot_file`, roda N dias sem IA e regrava o snapshot final
-## com `demo_to_snapshot_file`. Como o snapshot traz as próprias definições,
+## com `from_snapshot_file`, roda N dias sem IA e regrava o snapshot final
+## com `to_snapshot_file`. Como o snapshot traz as próprias definições,
 ## NADA de `data/definitions/` é lido aqui — o arquivo basta.
 ##
 ##   godot --headless --path . --script res://tools/snapshot_replay.gd \
 ##     -- --in=snapshot.json --days=60 --out=resultado.json [--threads=0]
 ##
 ## - `--in` e `--out` são obrigatórios; `--days` padrão 60; `--threads` padrão 0
-##   (mesmo contrato de `demo_set_sim_threads`: 0 deixa o núcleo decidir).
+##   (mesmo contrato de `set_sim_threads`: 0 deixa o núcleo decidir).
 ## - `invariant_violations` é conferido a CADA dia: a primeira violação aborta
 ##   na hora, sem gravar resultado.
 ## - Leitura e escrita do mundo passam pelo serializador da BIBLIOTECA
@@ -72,7 +72,7 @@ func _count(block: Dictionary, key: String) -> int:
 func _run() -> void:
 	# Contagem de cidades do arquivo, só para conferir que o mundo foi aplicado.
 	# O `JSON.parse_string` daqui NÃO alimenta o mundo (ele perde bits em
-	# |x| < 1): o mundo vem de `demo_from_snapshot_file`, que lê pelo
+	# |x| < 1): o mundo vem de `from_snapshot_file`, que lê pelo
 	# serializador exato da biblioteca.
 	var file := FileAccess.open(_in, FileAccess.READ)
 	if file == null:
@@ -94,29 +94,29 @@ func _run() -> void:
 	var file_cities := _count(save_block, "cities")
 
 	var sim = EconomySim.new()
-	if not sim.has_method("demo_from_snapshot_file"):
-		_fail("binario sem demo_from_snapshot_file (rode o build do gdextension)")
+	if not sim.has_method("from_snapshot_file"):
+		_fail("binario sem from_snapshot_file (rode o build do gdextension)")
 		return
-	if sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(_threads)
+	if sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(_threads)
 
-	# O snapshot traz as definições: nenhum `demo_set_*` aqui.
-	if not sim.demo_from_snapshot_file(_in):
-		_fail("demo_from_snapshot_file recusou " + _in)
+	# O snapshot traz as definições: nenhum `set_*` aqui.
+	if not sim.from_snapshot_file(_in):
+		_fail("from_snapshot_file recusou " + _in)
 		return
 
-	# `demo_from_snapshot_file` só emite erro no log quando o bloco é inválido;
+	# `from_snapshot_file` só emite erro no log quando o bloco é inválido;
 	# a conferência de cidades garante que o mundo foi mesmo aplicado.
-	var loaded: Dictionary = sim.demo_to_dict()
+	var loaded: Dictionary = sim.to_dict()
 	if _count(loaded, "cities") != file_cities:
-		_fail("demo_from_snapshot_file nao aplicou o mundo (cidades %d != %d)" % [
+		_fail("from_snapshot_file nao aplicou o mundo (cidades %d != %d)" % [
 			_count(loaded, "cities"), file_cities])
 		return
 
 	var started := Time.get_ticks_msec()
 	var status: Dictionary = {}
 	for day in _days:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("dia %d: invariante violado: %s" % [
@@ -128,12 +128,12 @@ func _run() -> void:
 	if dir != "" and not DirAccess.dir_exists_absolute(dir):
 		DirAccess.make_dir_recursive_absolute(dir)
 	# Escrita pelo serializador da biblioteca (mesmo caminho do CLI headless).
-	if not sim.demo_to_snapshot_file(_out):
-		_fail("demo_to_snapshot_file nao gravou " + _out)
+	if not sim.to_snapshot_file(_out):
+		_fail("to_snapshot_file nao gravou " + _out)
 		return
 
 	# Contagens SÓ para a mensagem (o arquivo já está gravado).
-	var result: Dictionary = sim.demo_to_snapshot()
+	var result: Dictionary = sim.to_snapshot()
 	var final_save: Dictionary = result.get("save", {})
 	print("[replay] dias=%d threads=%d day=%d cidades=%d inv_violations=0 ms=%d" % [
 		_days, _threads, int(final_save.get("day", 0)),

@@ -8,7 +8,7 @@ extends SceneTree
 ## F2 (cadeias de produção): carrega goods/recipes/needs ANTES de inicializar o
 ## mundo, mede industrialização e comida por nação no fim e escreve um JSON
 ## (`--out=...`) comparável entre o binário novo e o baseline (c5abccb). Com o
-## binário antigo (sem demo_set_recipes), o teste roda o caminho de 21 bens.
+## binário antigo (sem set_recipes), o teste roda o caminho de 21 bens.
 ##
 ##   godot --headless --path . --script res://tools/economy_world_test.gd
 ##     [--days=60] [--out=path.json] [--baseline=path.json] [--ai=1]
@@ -208,35 +208,35 @@ func _test_world() -> void:
 	var sim = EconomySim.new()
 	# Q-015: workers do núcleo antes de criar o mundo. Binário anterior à Q-015
 	# não tem o setter e roda serial (0 = automático, decidido pelo núcleo).
-	if _threads > 0 and sim.has_method("demo_set_sim_threads"):
-		sim.demo_set_sim_threads(_threads)
+	if _threads > 0 and sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(_threads)
 	print("[world] threads=%d" % _threads)
 	print("[world] urbano=%d" % int(_urban_enabled))
 	# F2: receitas e cesta alimentar antes de criar o mundo — os ids de insumo
 	# são resolvidos na carga e as construções semeiam com a receita correta.
 	# Binário anterior a F2 não tem os setters: cai no caminho de 21 bens.
-	var has_chains: bool = sim.has_method("demo_set_recipes") \
-		and sim.has_method("demo_set_needs")
-	sim.demo_set_goods(goods)
-	if _instant_construction and sim.has_method("demo_set_instant_construction"):
-		sim.demo_set_instant_construction(true)
+	var has_chains: bool = sim.has_method("set_recipes") \
+		and sim.has_method("set_needs")
+	sim.set_goods(goods)
+	if _instant_construction and sim.has_method("set_instant_construction"):
+		sim.set_instant_construction(true)
 	if has_chains:
-		sim.demo_set_recipes(_load_array(RECIPES_PATH))
-		sim.demo_set_needs(_load_dict(NEEDS_PATH))
+		sim.set_recipes(_load_array(RECIPES_PATH))
+		sim.set_needs(_load_dict(NEEDS_PATH))
 		# F8: serviços (catálogo). Binário anterior à F8 não tem o método.
-		if _services_enabled and sim.has_method("demo_set_services"):
-			sim.demo_set_services(_load_dict(SERVICES_PATH))
+		if _services_enabled and sim.has_method("set_services"):
+			sim.set_services(_load_dict(SERVICES_PATH))
 	# F5: moedas antes de criar o mundo — o preço local de cada cidade nasce na
 	# moeda da nação e o câmbio inicial entra no preço entregue. Binário antigo
 	# (sem a API) roda em XGS, como antes.
-	if _currencies_enabled and sim.has_method("demo_set_currencies"):
-		sim.demo_set_currencies(_load_currencies())
+	if _currencies_enabled and sim.has_method("set_currencies"):
+		sim.set_currencies(_load_currencies())
 	# F9: estrutura de emprego por setor (âncoras ILO + coeficientes agrícolas).
 	# Assim como as moedas, entra ANTES de criar o mundo; binário anterior à F9
 	# não tem o setter e mantém o espelho compilado das mesmas âncoras.
 	_sector_data = _load_dict(SECTOR_EMPLOYMENT_PATH)
-	if sim.has_method("demo_set_sector_employment") and not _sector_data.is_empty():
-		sim.demo_set_sector_employment(_sector_data)
+	if sim.has_method("set_sector_employment") and not _sector_data.is_empty():
+		sim.set_sector_employment(_sector_data)
 	# Pipeline do jogo ao vivo (opcional): geografia real + IA econômica. Sem
 	# isso, o teste mede só o núcleo (comparativo de comida da F2). Com `--ai=1`
 	# a demanda final da F3 passa a ser vista pelo investidor. A fazenda inicial
@@ -246,15 +246,15 @@ func _test_world() -> void:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
-	sim.initialize_demo_world(cities, ports, buildings)
+	sim.initialize_world(cities, ports, buildings)
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz
 	# (casamento por id da cidade). Fora deste bloco o runner mantém o mundo
 	# sem dado urbano, que é o caminho das baselines históricas.
 	if _urban_enabled:
-		if not sim.has_method("demo_set_urban"):
-			_fail("binario sem demo_set_urban (rode o build)")
+		if not sim.has_method("set_urban"):
+			_fail("binario sem set_urban (rode o build)")
 			return
-		sim.demo_set_urban(_load_dict(URBAN_LAND_PATH),
+		sim.set_urban(_load_dict(URBAN_LAND_PATH),
 			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
 			_load_dict(MUNICIPAL_FINANCE_PATH))
 	var expected_products := goods.size() if has_chains else 21
@@ -264,7 +264,7 @@ func _test_world() -> void:
 		ai = EconomicAIScript.new()
 		ai.setup(sim, geo)
 
-	var status: Dictionary = sim.get_demo_status()
+	var status: Dictionary = sim.get_status()
 
 	# Q-015: retrato urbano do início (só com `--urban-cities` e `--urban-out`).
 	var urban_ids := _urban_ids()
@@ -296,7 +296,7 @@ func _test_world() -> void:
 	var cayenne_fed := false
 
 	for day in _days:
-		status = sim.tick_demo()
+		status = sim.tick_day()
 		if ai != null:
 			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
@@ -805,11 +805,11 @@ func _urban_ids() -> Array[String]:
 ## existe no núcleo): a ausência é reportada, nunca preenchida com número.
 func _urban_snapshot(sim: Object, ids: Array[String]) -> Dictionary:
 	var out: Dictionary = {}
-	if not sim.has_method("demo_get_urban_city"):
-		_fail("urbano: binario sem demo_get_urban_city")
+	if not sim.has_method("get_urban_city"):
+		_fail("urbano: binario sem get_urban_city")
 		return out
 	for id in ids:
-		var data: Dictionary = sim.demo_get_urban_city(id)
+		var data: Dictionary = sim.get_urban_city(id)
 		if data.is_empty():
 			print("[urban] sem dado: " + id)
 			continue
@@ -999,10 +999,10 @@ func _share(value: Variant, total: float) -> float:
 ## `privado nacional` inclui os grupos nacionais e o privado agregado legado
 ## (dono sem grupo) — o núcleo não distingue os dois no status.
 func _ownership_summary(sim: Object, tags: Array) -> Dictionary:
-	if not sim.has_method("demo_get_investment_status"):
-		_fail("propriedade: binário sem demo_get_investment_status")
+	if not sim.has_method("get_investment_status"):
+		_fail("propriedade: binário sem get_investment_status")
 		return {}
-	var investment: Dictionary = sim.demo_get_investment_status()
+	var investment: Dictionary = sim.get_investment_status()
 	var nations: Dictionary = investment.get("nations", {})
 	var out: Dictionary = {}
 	for tag: String in tags:

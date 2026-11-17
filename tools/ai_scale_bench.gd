@@ -50,15 +50,15 @@ func _ready() -> void:
 func _run() -> void:
 	var world := _gen_world(mini(_nations, _cities), _cities, _ports)
 	var sim = EconomySim.new()
-	sim.initialize_demo_world(world["cities"], world["ports"], world["buildings"])
-	sim.demo_set_goods(_load_goods())
+	sim.initialize_world(world["cities"], world["ports"], world["buildings"])
+	sim.set_goods(_load_goods())
 
 	var ai = EconomicAIScript.new()
 	ai.interval_days = 7
 	ai.setup(sim, StubGeo.new())
 	var has_totals := "totals_builds" in ai.private_investor
 	for _pre in _pretick:
-		sim.tick_demo()
+		sim.tick_day()
 
 	var tick_ms: Array[float] = []
 	var plan_ms: Array[float] = []
@@ -71,7 +71,7 @@ func _run() -> void:
 	var calls: Array = []
 	for day in _days:
 		var t0 := Time.get_ticks_usec()
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		tick_ms.append(_ms(t0))
 		var p0 := Time.get_ticks_usec()
 		ai.plan(day, summary)
@@ -176,7 +176,7 @@ func _measure_convoys(sim, city_count: int) -> Dictionary:
 	var days := mini(5, _days)
 	for _day in days:
 		_release_convoys(convoys)
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		var orders: Array = summary.get("trade_orders", [])
 		orders_total += orders.size()
 		convoys.spawn_orders(orders)

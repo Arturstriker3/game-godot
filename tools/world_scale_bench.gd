@@ -4,9 +4,9 @@ extends Node3D
 ##
 ## Gera ~190 nações e N cidades (padrão 650) com portos e uma fazenda por
 ## cidade, e mede o caminho real do jogo:
-##   1. geração do mundo e carga no núcleo C++ (initialize_demo_world);
-##   2. tick_demo por dia, com o tempo de cada fase do C++;
-##   3. save/load (demo_to_dict + JSON);
+##   1. geração do mundo e carga no núcleo C++ (initialize_world);
+##   2. tick_day por dia, com o tempo de cada fase do C++;
+##   3. save/load (to_dict + JSON);
 ##   4. tick assíncrono (WorkerThreadPool) e determinismo contra o tick
 ##      síncrono — mesmo resultado depois de `--determinism` dias;
 ##   5. opcional: IA escalonada, comboios (pedidos + A*) e mapa/rótulos.
@@ -95,24 +95,24 @@ func _run() -> void:
 
 	var sim = EconomySim.new()
 	var load_start := Time.get_ticks_usec()
-	sim.initialize_demo_world(world["cities"], world["ports"], world["buildings"])
-	sim.demo_set_goods(_load_goods())
+	sim.initialize_world(world["cities"], world["ports"], world["buildings"])
+	sim.set_goods(_load_goods())
 	var init_ms := _ms(load_start)
 	var mem_loaded := OS.get_static_memory_usage()
 
 	# 1. Tick C++ síncrono, com o perfil por fase do núcleo.
-	sim.demo_set_profiling(true)
+	sim.set_profiling(true)
 	var tick_ms: Array[float] = []
 	var phase_us: Dictionary = {}
 	var orders_count: Array[int] = []
 	var in_transit: Array[int] = []
 	for day in _tick_days + _warmup:
 		var t0 := Time.get_ticks_usec()
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		var cost := _ms(t0)
 		if day >= _warmup:
 			tick_ms.append(cost)
-			var profile: Dictionary = sim.demo_get_profile()
+			var profile: Dictionary = sim.get_profile()
 			for phase in PHASES:
 				if not phase_us.has(phase):
 					phase_us[phase] = [] as Array[float]
@@ -122,7 +122,7 @@ func _run() -> void:
 			for city in summary.get("cities", []):
 				transit += float(city.get("in_transit", 0.0))
 			in_transit.append(int(transit))
-	sim.demo_set_profiling(false)
+	sim.set_profiling(false)
 
 	# 2. Determinismo: mesmo resultado do tick síncrono (mesmo mundo, outro sim).
 	var determinism := {}
@@ -132,14 +132,14 @@ func _run() -> void:
 	# 3. Memória/save/load.
 	var mem_before_save := OS.get_static_memory_usage()
 	var s0 := Time.get_ticks_usec()
-	var saved: Dictionary = sim.demo_to_dict()
+	var saved: Dictionary = sim.to_dict()
 	var save_ms := _ms(s0)
 	var j0 := Time.get_ticks_usec()
 	var json := JSON.stringify(saved)
 	var json_ms := _ms(j0)
 	var sim2 = EconomySim.new()
 	var l0 := Time.get_ticks_usec()
-	sim2.demo_from_dict(saved)
+	sim2.from_dict(saved)
 	var from_dict_ms := _ms(l0)
 	var mem_after_save := OS.get_static_memory_usage()
 
@@ -205,23 +205,23 @@ func _run() -> void:
 ## poll por frame). Ao fim, o estado tem de ser idêntico — inclusive o resumo.
 func _measure_determinism(world: Dictionary) -> Dictionary:
 	var sync_sim = EconomySim.new()
-	sync_sim.initialize_demo_world(world["cities"], world["ports"], world["buildings"])
-	sync_sim.demo_set_goods(_load_goods())
+	sync_sim.initialize_world(world["cities"], world["ports"], world["buildings"])
+	sync_sim.set_goods(_load_goods())
 	var async_sim = EconomySim.new()
-	async_sim.initialize_demo_world(world["cities"], world["ports"], world["buildings"])
-	async_sim.demo_set_goods(_load_goods())
+	async_sim.initialize_world(world["cities"], world["ports"], world["buildings"])
+	async_sim.set_goods(_load_goods())
 
 	var sync_start := Time.get_ticks_usec()
-	sync_sim.demo_set_profiling(true)
+	sync_sim.set_profiling(true)
 	var sync_days_ms: Array[float] = []
 	var sync_profile: Dictionary = {}
 	for _day in _determinism:
 		var s0 := Time.get_ticks_usec()
-		sync_sim.tick_demo()
+		sync_sim.tick_day()
 		sync_days_ms.append(_ms(s0))
-		sync_profile = sync_sim.demo_get_profile()
+		sync_profile = sync_sim.get_profile()
 	var sync_total_ms := _ms(sync_start)
-	sync_sim.demo_set_profiling(false)
+	sync_sim.set_profiling(false)
 	print("[scale] %s determinismo síncrono: %s ms/dia | último dia %s" % [
 		_label(), " ".join(sync_days_ms.map(func(v): return "%.1f" % v)),
 		sync_profile])
@@ -247,8 +247,8 @@ func _measure_determinism(world: Dictionary) -> Dictionary:
 				break
 	var wall_ms := _ms(wall_start)
 
-	var sync_status: Dictionary = sync_sim.get_demo_status()
-	var async_status: Dictionary = async_sim.get_demo_status()
+	var sync_status: Dictionary = sync_sim.get_status()
+	var async_status: Dictionary = async_sim.get_status()
 	var sync_orders: Array = sync_status.get("trade_orders", [])
 	var async_orders: Array = async_status.get("trade_orders", [])
 	var a := _digest(sync_sim, sync_status, sync_orders)
@@ -274,7 +274,7 @@ func _measure_ai(sim, days: int) -> Dictionary:
 	var frames: Array[int] = []
 	var peak_ms: Array[float] = []
 	for day in days:
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		var p0 := Time.get_ticks_usec()
 		ai.plan(day, summary)
 		plan_ms.append(_ms(p0))
@@ -315,7 +315,7 @@ func _measure_convoys(sim, days: int) -> Dictionary:
 	var active: Array[int] = []
 	for _day in days:
 		_release_convoys(convoys)
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		var day_orders: Array = summary.get("trade_orders", [])
 		orders.append(day_orders.size())
 		var e0 := Time.get_ticks_usec()

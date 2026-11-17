@@ -68,7 +68,7 @@ func _run() -> void:
 
 	for day in range(1, DAYS + 1):
 		var started := Time.get_ticks_msec()
-		var summary: Dictionary = sim.tick_demo()
+		var summary: Dictionary = sim.tick_day()
 		ai.run(day)
 		var orders_seen := 0
 		for order: Variant in summary.get("trade_orders", []):

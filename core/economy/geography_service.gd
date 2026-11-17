@@ -1370,7 +1370,7 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 
 ## Aplica a aptidão de cada cultura e os depósitos minerais de cada cidade ao
 ## núcleo econômico. As culturas renováveis entram como aptidão (0..1); os
-## minerais entram como reserva agregada (demo_set_deposit) + aptidão 1. O C++
+## minerais entram como reserva agregada (set_deposit) + aptidão 1. O C++
 ## ignora produtos que não conhece (ex.: carvão/cobre/gás/petróleo ficam só no
 ## mapa por enquanto).
 ##
@@ -1419,25 +1419,25 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		# mineral: reserva_kt} e os consumidores somam tudo que não é cultura
 		# como reserva. O valor sai por `external_income_index`/perfil.
 		var income_index := external_income_index(String(city.get("nation", "")))
-		sim.demo_set_external_income_index(city_id, income_index)
+		sim.set_external_income_index(city_id, income_index)
 		# F7 calibração — Gini de renda da nação (estimado por região). Divide a
 		# POP em classes basic/life/luxury no núcleo. Sem o dado, não declara
 		# nada e o núcleo mantém a repartição legada por escolaridade.
 		var gini_entry := nation_gini(String(city.get("nation", "")))
 		var gini := float(gini_entry.get("gini", 0.0))
-		if gini > 0.0 and sim.has_method("demo_set_income_gini"):
-			sim.demo_set_income_gini(city_id, gini)
+		if gini > 0.0 and sim.has_method("set_income_gini"):
+			sim.set_income_gini(city_id, gini)
 		for crop in crops:
 			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
 			# Marselha planta como o seu entorno, não como a Beauce. Cidade sem
 			# nação conhecida mantém o fallback legado do próprio território.
 			var suitability := city_crop_suitability(city_id, crop) if code != "" \
 					else crop_suitability(city_id, center, crop)
-			sim.demo_set_suitability(city_id, crop, suitability)
+			sim.set_suitability(city_id, crop, suitability)
 			city_applied[crop] = suitability
 		var wood := city_forest_cover(city_id) if code != "" \
 				else forest_cover(city_id, center)
-		sim.demo_set_suitability(city_id, "wood", wood)
+		sim.set_suitability(city_id, "wood", wood)
 		city_applied["wood"] = wood
 		# Renováveis não alimentares (soja/algodão/madeira): demanda externa
 		# limitada = base × aptidão (aptidão já declarada acima/agora).
@@ -1445,7 +1445,7 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 			var renewable_ceiling := RENEWABLE_EXPORT_BASE \
 					* float(city_applied.get(renewable, 0.0))
 			if renewable_ceiling > 0.0:
-				sim.demo_set_external_demand(city_id, renewable, renewable_ceiling)
+				sim.set_external_demand(city_id, renewable, renewable_ceiling)
 		# Depósitos atribuídos pela regra A1 (uma cidade por depósito, mesma nação
 		# e mesma massa de terra). Cidade sem nação conhecida usa o território
 		# próprio (fallback legado, sem agregação nacional).
@@ -1454,15 +1454,15 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		var minerals := _aggregate_deposits(deposits)
 		for resource in minerals:
 			var deposit: Dictionary = minerals[resource]
-			sim.demo_set_suitability(city_id, resource, 1.0)
-			sim.demo_set_deposit(city_id, resource,
+			sim.set_suitability(city_id, resource, 1.0)
+			sim.set_deposit(city_id, resource,
 					deposit["reserve_kt"], deposit["quality"], deposit["depth_m"])
 			city_applied[resource] = deposit["reserve_kt"]
 			# Teto de exportação = reserva esgotada em ~25 anos, com piso.
 			var ceiling := maxf(
 				float(deposit["reserve_kt"]) * 1000.0 / (DEPLETION_YEARS * 365.0),
 				MIN_EXTERNAL_DEMAND)
-			sim.demo_set_external_demand(city_id, resource, ceiling)
+			sim.set_external_demand(city_id, resource, ceiling)
 		applied[city_id] = city_applied
 	return applied
 
