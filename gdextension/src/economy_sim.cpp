@@ -197,6 +197,9 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::urban_social_housing);
 	ClassDB::bind_method(D_METHOD("set_instant_construction", "instant"),
 	                     &EconomySim::set_instant_construction);
+	// A5: fase da IA no fim do dia (desligada por padrão).
+	ClassDB::bind_method(D_METHOD("set_ai_enabled", "enabled"),
+	                     &EconomySim::set_ai_enabled);
 	ClassDB::bind_method(D_METHOD("get_service_sectors"),
 	                     &EconomySim::get_service_sectors);
 	ClassDB::bind_method(D_METHOD("get_services_detail", "city_id"),
@@ -711,6 +714,9 @@ void EconomySim::initialize_scenario() {
 	++status_deposit_version_;
 	// A3: a fila de comandos e o log também são do mundo anterior.
 	commands_.reset();
+	// A5: o estado da IA pertence ao mundo — contadores, janelas e templates
+	// de um cenário não valem no outro.
+	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	// S14: o cenário AGRIA/PORTUS vive em sim/scenario_fixture.cpp (C++ puro);
 	// aqui só o cache de status (estado Godot) é resetado.
@@ -729,6 +735,8 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	++status_deposit_version_;
 	// A3: a fila de comandos e o log também são do mundo anterior.
 	commands_.reset();
+	// A5: mundo novo, estado da IA novo (sem os ids/janelas do anterior).
+	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	ws_.active = true;
 	ws_.world_mode = true;
@@ -1124,10 +1132,20 @@ void EconomySim::set_instant_construction(bool instant) {
 	instant_construction_ = instant;
 }
 
+void EconomySim::set_ai_enabled(bool enabled) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// Só a flag: o estado entre dias da IA pertence ao MUNDO (resetado em
+	// initialize_*/from_snapshot*, preservado no load por from_dict).
+	ai_enabled_ = enabled;
+}
+
 Dictionary EconomySim::tick_day() {
 	tick_and_publish();
-	// Cache hit: tick_and_publish() já montou e publicou o dia em curso.
-	return get_status();
+	// Cache hit: tick_and_publish() já montou e publicou o dia em curso. O
+	// dicionário é o PRÉ-IA (a fase da IA roda depois de fechá-lo e só o
+	// próximo get_status() a enxerga) — mesmo contrato do GDScript, onde
+	// `ai.run` vem depois de `sim.tick_day()`.
+	return tick_day_status_;
 }
 
 void EconomySim::tick_and_publish() {
@@ -1158,7 +1176,19 @@ void EconomySim::tick_and_publish() {
 	{
 		// Fase `status` (RAII): fecha ao sair do bloco, depois do tick.
 		OGS_SIM_ZONE(kPhaseStatus);
-		get_status();
+		// A5: o status RETORNADO do dia é o PRÉ-IA (== GDScript: `tick_day()`
+		// devolve antes de `ai.run`). Guardar aqui é o que faz `tick_day()`
+		// custar um cache hit.
+		tick_day_status_ = get_status();
+	}
+	if (ai_enabled_) {
+		// A5: fase da IA no FIM do dia, já com o dia fechado (`ws_.day` é o dia
+		// que acabou de rodar). Os comandos emitidos são aplicados na hora pela
+		// própria fase (ai_emit_*), então o mundo muda aqui; a invalidação
+		// garante que o próximo `get_status()` reconstrua com os efeitos.
+		ai_phase_.run(ws_, sim_core_, commands_, instant_construction_,
+			bootstrap_construction_);
+		status_invalidate();
 	}
 	current_day_.store(ws_.day, std::memory_order_relaxed);
 }
@@ -5755,6 +5785,10 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	++status_deposit_version_;
 	// A3: snapshot carregado não herda a fila nem o log do mundo anterior.
 	commands_.reset();
+	// A5: o snapshot substitui o mundo inteiro — o estado da IA também não
+	// sobrevive (diferente de from_dict, que é load de save: ver o comentário
+	// de AiPhase::reset).
+	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
 	// carregados (índices incluídos). A conversão do Variant é feita UMA vez e
@@ -5837,6 +5871,8 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	++status_deposit_version_;
 	// A3: snapshot carregado não herda a fila nem o log do mundo anterior.
 	commands_.reset();
+	// A5: mesmo motivo de from_snapshot — snapshot é mundo inteiro novo.
+	ai_phase_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
 	// carregados (índices incluídos). `save::from_value` é exatamente o que

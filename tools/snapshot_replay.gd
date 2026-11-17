@@ -8,10 +8,12 @@ extends SceneTree
 ## NADA de `data/definitions/` é lido aqui — o arquivo basta.
 ##
 ##   godot --headless --path . --script res://tools/snapshot_replay.gd \
-##     -- --in=snapshot.json --days=60 --out=resultado.json [--threads=0]
+##     -- --in=snapshot.json --days=60 --out=resultado.json [--threads=0] [--ai=0|1]
 ##
 ## - `--in` e `--out` são obrigatórios; `--days` padrão 60; `--threads` padrão 0
 ##   (mesmo contrato de `set_sim_threads`: 0 deixa o núcleo decidir).
+## - `--ai=1` liga a IA econômica do núcleo no replay (`set_ai_enabled(true)`,
+##   A5), depois de `from_snapshot_file`; padrão 0 = replay sem IA.
 ## - `invariant_violations` é conferido a CADA dia: a primeira violação aborta
 ##   na hora, sem gravar resultado.
 ## - Leitura e escrita do mundo passam pelo serializador da BIBLIOTECA
@@ -28,6 +30,8 @@ var _in := ""
 var _out := ""
 var _days := 60
 var _threads := 0
+## `--ai=1` liga a IA econômica do núcleo (A5). Padrão: replay sem IA.
+var _ai := false
 
 var _failures: Array[String] = []
 
@@ -42,6 +46,8 @@ func _init() -> void:
 			_days = maxi(0, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--threads="):
 			_threads = maxi(0, int(arg.split("=", true, 1)[1]))
+		elif arg.begins_with("--ai="):
+			_ai = arg.split("=", true, 1)[1] != "0"
 
 	if _in == "":
 		print("[replay] FALHA: --in=<snapshot.json> e obrigatorio")
@@ -112,6 +118,10 @@ func _run() -> void:
 		_fail("from_snapshot_file nao aplicou o mundo (cidades %d != %d)" % [
 			_count(loaded, "cities"), file_cities])
 		return
+
+	# A5: a IA econômica vive no núcleo; ligada aqui, roda como fase de cada dia.
+	if _ai:
+		sim.set_ai_enabled(true)
 
 	var started := Time.get_ticks_msec()
 	var status: Dictionary = {}

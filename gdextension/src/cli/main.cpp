@@ -1,15 +1,20 @@
 // opengs_sim_cli — roda N dias SÓ do núcleo da simulação (A1).
 //
-// Sem Godot, sem IA, sem godot-cpp: o mundo vem de um snapshot JSON
+// Sem Godot, sem godot-cpp: o mundo vem de um snapshot JSON
 // (`{"definitions": ..., "save": ...}`, ver tools/export_world_snapshot.gd) e
 // sai no MESMO formato depois dos dias pedidos. É o lado C++ da comparação de
 // equivalência contra o replay do Godot
 // (tools/world_equivalence.gd + tools/world_equivalence_compare.py).
 //
-//   opengs_sim_cli --snapshot=<in.json> --days=<N> --out=<out.json> [--threads=<T>]
+//   opengs_sim_cli --snapshot=<in.json> --days=<N> --out=<out.json>
+//                  [--threads=<T>] [--ai=<0|1>]
 //
 // Contrato:
 //   * a ordem do dia é `ogs::tick_day` — este executável NÃO duplica tick;
+//   * A FASE DA IA C++ (`ogs::AiPhase`) roda no FIM de cada dia POR PADRÃO
+//     (`--ai=1`), aplicando à frente os MESMOS comandos que o `economic_ai.gd`
+//     emite depois de `tick_day()`. `--ai=0` reproduz o mundo SEM IA (é o modo
+//     da comparação de equivalência com o replay do Godot sem IA);
 //   * `definitions_from` ANTES de `from_value` (o save referencia os produtos,
 //     receitas e necessidades já carregados) e `apply_land_capacity` DEPOIS
 //     (o teto agrícola precisa das cidades que só o save traz);
@@ -21,6 +26,8 @@
 //
 // Códigos de saída: 0 ok, 1 violação de invariante, 2 erro de uso/entrada.
 
+#include "sim/ai/ai_phase.h"
+#include "sim/commands.h"
 #include "sim/save_definitions.h"
 #include "sim/save_state.h"
 #include "sim/save_value.h"
@@ -42,11 +49,14 @@ struct Options {
 	std::string out;
 	int days = -1;     // -1 = ausente
 	int threads = 0;   // mesmo padrão do replay do Godot: núcleo decide
+	// A5: a fase da IA C++ roda no fim do dia POR PADRÃO (`--ai=0` desliga e
+	// reproduz o mundo sem IA, que é o modo da comparação de equivalência).
+	int ai = 1;
 };
 
 void print_usage() {
 	std::cerr << "uso: opengs_sim_cli --snapshot=<in.json> --days=<N> "
-	             "--out=<out.json> [--threads=<T>]\n";
+	             "--out=<out.json> [--threads=<T>] [--ai=<0|1>]\n";
 }
 
 // Falha de uso/entrada: mensagem legível no stderr e exit 2.
@@ -99,6 +109,11 @@ Options parse_args(int argc, char** argv) {
 			options.days = parse_non_negative(flag, value);
 		} else if (flag == "--threads") {
 			options.threads = parse_non_negative(flag, value);
+		} else if (flag == "--ai") {
+			options.ai = parse_non_negative(flag, value);
+			if (options.ai > 1) {
+				fail_usage("--ai aceita 0 ou 1: " + value);
+			}
 		} else if (flag == "--help" || flag == "-h") {
 			print_usage();
 			std::exit(0);
@@ -207,6 +222,13 @@ int main(int argc, char** argv) {
 	}
 
 	// 5. N dias da ordem do dia do núcleo, parando na primeira violação.
+	//
+	// A5: a fase da IA roda DEPOIS de fechar o dia (e depois de checar os
+	// invariantes do tick), como o `economic_ai.gd` depois de `tick_day()`:
+	// mesmos comandos (invest/build/group_invest), aplicados à frente. A fila é
+	// a mesma que a fachada usa — a IA retira só o próprio comando.
+	ogs::CommandQueue queue;
+	ogs::AiPhase ai_phase;
 	for (int day = 0; day < options.days; ++day) {
 		ogs::tick_day(ws, core);
 		if (!ws.invariant_violations.empty()) {
@@ -216,6 +238,11 @@ int main(int argc, char** argv) {
 				std::cerr << "  - " << violation << "\n";
 			}
 			return 1;
+		}
+		if (options.ai != 0) {
+			// Sem construção instantânea e sem bootstrap: o CLI reproduz o
+			// caminho do jogo (obra física). O dia vem de `ws.day`.
+			ai_phase.run(ws, core, queue, false, false);
 		}
 	}
 
