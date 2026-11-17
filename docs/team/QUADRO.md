@@ -465,3 +465,26 @@ Parecer sobre o merge da A7 na linha com A5 + D-076 (núcleo C++ de comércio, c
 **Bench oficial (release de medição, N=3, 60 d, host 5700X3D, editor fechado; só a tarefa Python de dados em `opengs-wt-data-b3`, ≤2 núcleos):** dia = tick **39,42 ms** (p95 41,55–42,24; pior dia 42,08–47,25), memória 130,4 MB; **A0 155,51 ms → 3,94×**. Critério de 3% entre rodadas não fechou (4,55%); **meta ≤15 ms p95 não atingida** — resta trabalho diário por contrato: `ai` 11,05 (`ai_view` 8,25), `arrival` 5,86, `trade` 5,83, `prologue_snapshot` 4,81. JSON: `docs/economy/perf/partA_main_bench.json`.
 
 **Parte A fechada:** A0–A7 + TURBO mesclados, números finais em GAME_STATE §13.12. **Pendente:** parecer do `@gerente-qualidade` sobre o núcleo/save v15 da A6. - @gerente-simulacao
+
+---
+
+## @gerente-simulacao - 2026-11-17 (Q-017 registrado: APROVADO COM RESSALVA — dívida R1–R8)
+
+Parecer do `@gerente-qualidade` sobre o núcleo da Parte A fechada (A0–A7 + TURBO, save v15), mesclado `--no-ff` em `balance/global-resources` (`daa5662`, branch `review/q017`): **APROVADO COM RESSALVA**. As ressalvas são de higiene, medição e dívida de manutenção — nenhuma pede correção do núcleo agora. Doc: `docs/team/reviews/Q-017_parte_A_review.md`.
+
+Dívida aberta (8 itens; ID do parecer entre parênteses):
+
+| # | Dívida | ID | Severidade | Correção proposta |
+|---|---|---|---|---|
+| 1 | Manutenção da frota continua **global** no `dia % 30` (todas as nações) e **move dinheiro** (`fleet_buy_core`); a A6 §2.2 lista como higiene e diz que "não movem dinheiro" | R3 | MÉDIA-BAIXA | alinhar ao `CadenceState` na próxima fatia de perf; corrigir a nota |
+| 2 | `elapsed` limitado a `kMonthDays`, não ao período: com `monthly_period > 30` a fração subcobra | R1 | BAIXA | trocar o teto por `min(period, 30)` ou documentar o limite |
+| 3 | Ónus de moradia subestimado no 1º fechamento: `rent_burden` divide o acumulado parcial por renda mensal cheia (29 de 30 cidades) | R2 | BAIXA | escalar o denominador por `elapsed` no 1º fechamento |
+| 4 | `kServiceOpensPerDay` virou teto por **decisão semanal** (nome enganoso; a queda de −23% dos negócios é efeito aprovado) | R4 | BAIXA | renomear para `kServiceOpensPerDecision` |
+| 5 | `tools/s19_urban_report.py` imprime IPTU/alvo com numerador de janela 1..30 d e denominador de mês cheio — métrica dependente do dia e não comparável entre revisões | R5 | MÉDIA (ferramenta) | normalizar por `elapsed` ou ler no dia do fechamento |
+| 6 | `economy_sim.cpp` com 6.767 linhas | R7 | BAIXA-MÉDIA | fatiar por domínio na próxima passada de manutenção |
+| 7 | 2.736 linhas de IA GDScript duplicada | R7 | BAIXA-MÉDIA | remover junto com as 11 ferramentas legadas |
+| 8 | `--import` em worktree fria terminou com `0xC0000005` e deixou `~economy_…dll~RF*.TMP` em `gdextension/bin`, quebrando o import seguinte ("Error copying library") | R8 | BAIXA (ambiente) | documentar no onboarding; limpar o TMP no `bench_canonical`/scripts |
+
+Aceitos como transitórios (não viram dívida): **R3b** (`nations[].labor` semanal com literal 7 — publicação, não simulação) e **R6** (save v14 carregado no meio da janela desloca o 1º fechamento uma vez, sem criar dinheiro).
+
+Nenhum código mudou nesta entrada: a mescla traz só o parecer, e o B3 (`data/b3-hinterland-pop`) só dado/script/doc. - @gerente-simulacao
