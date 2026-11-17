@@ -42,6 +42,14 @@ VARIANTS = [
 ]
 FOOD_TOLERANCE = 0.025
 OWNER_BANKRUPTCY_LIMIT = 28
+# P4 (recal3, 2026-11-17): o portão de comida usa a MÉDIA DOS ÚLTIMOS 30 DIAS por
+# nação (`food_avg30` no relatório do runner), não a foto do último dia — EGY é
+# importador em levas e a foto do dia 365 cai no vale de um ciclo diário. As duas
+# medidas ficam no baseline; o portão é o delta da média30.
+GATE_METRIC = "avg30"
+FOOD_WINDOW_DAYS = 30
+# Isentos declarados pelo head: quedas de comida nestas nações não reprovam.
+FOOD_EXEMPT = ("SOL", "DJI", "SAH", "JOR", "YEM")
 # Q-016: sonde de sensibilidade do cambio. Nao e variante de aceite.
 PROBE = ("float_probe", ["--fx=float"])
 
@@ -52,15 +60,39 @@ def load(path):
 
 
 def baseline_food(baseline):
-    """Aceita `{tag: {food}}` (f4) e `[{tag, worst_food}]` (f9/Q-014)."""
+    """`{tag: {food, avg30}}` a partir de um relatório de corrida (dict `nations`)
+    ou de um baseline agregado por este script (lista de linhas).
+
+    `food` = último dia (compatibilidade), `avg30` = média de 30 dias (portão).
+    `None` em `avg30` quando aquele baseline é anterior à medida.
+    """
     nations = baseline.get("nations", {})
     out = {}
     if isinstance(nations, dict):
         for tag, row in nations.items():
-            out[tag] = float(row.get("food", 1.0))
+            out[tag] = {
+                "food": float(row.get("food", 1.0)),
+                "avg30": (float(row["food_avg30"]) if row.get("food_avg30")
+                          is not None else None),
+            }
     elif isinstance(nations, list):
         for row in nations:
-            out[str(row["tag"])] = float(row.get("worst_food", 1.0))
+            # `baseline_*` é o valor do baseline DAQUELA rodada; `worst_*` é o
+            # valor MEDIDO nela. Ao ler um arquivo agregado como baseline da
+            # rodada seguinte, a medida de referência é `worst_*` (quando o
+            # `baseline_*` não existe, o arquivo foi agregado contra um baseline
+            # antigo sem a métrica).
+            avg = row.get("food_avg30")
+            if avg is None:
+                avg = row.get("baseline_avg30")
+            if avg is None:
+                avg = row.get("worst_avg30")
+            out[str(row["tag"])] = {
+                "food": float(row.get("food",
+                                      row.get("baseline_last_day",
+                                              row.get("worst_food", 1.0)))),
+                "avg30": (float(avg) if avg is not None else None),
+            }
     return out
 
 
@@ -117,10 +149,27 @@ def main():
         for tag, row in report.get("nations", {}).items():
             if tag not in before:
                 continue
-            after = float(row.get("food", 1.0))
-            delta = after - before[tag]
-            if tag not in worst or delta < worst[tag]["delta"]:
-                worst[tag] = {"delta": delta, "food": after, "variant": name}
+            prev = before[tag]
+            last = float(row.get("food", 1.0))
+            avg = row.get("food_avg30")
+            avg = float(avg) if avg is not None else None
+            delta_last = last - prev["food"]
+            # Portão: média30 x média30 quando os dois lados têm a medida; sem
+            # ela no baseline, cai para último dia (registrado como "legacy").
+            if avg is not None and prev["avg30"] is not None:
+                gate_delta = avg - prev["avg30"]
+                metric = "avg30"
+            else:
+                gate_delta = delta_last
+                metric = "last_day"
+            entry = {
+                "delta": gate_delta, "metric": metric,
+                "food_avg30": avg, "baseline_avg30": prev["avg30"],
+                "food_last_day": last, "baseline_last_day": prev["food"],
+                "delta_last_day": delta_last, "variant": name,
+            }
+            if tag not in worst or gate_delta < worst[tag]["delta"]:
+                worst[tag] = entry
 
     # Q-016 — sonda: fora do gate de comida e do teto de falencias. So entra no
     # portao de sensibilidade e tem o pior delta de comida impresso.
@@ -144,9 +193,20 @@ def main():
         for tag, row in probe_report.get("nations", {}).items():
             if tag not in before:
                 continue
-            delta = float(row.get("food", 1.0)) - before[tag]
+            avg = row.get("food_avg30")
+            delta_last = float(row.get("food", 1.0)) - before[tag]["food"]
+            if avg is not None and before[tag]["avg30"] is not None:
+                delta = float(avg) - before[tag]["avg30"]
+                metric = "avg30"
+            else:
+                delta = delta_last
+                metric = "last_day"
             if probe_worst is None or delta < probe_worst["delta"]:
-                probe_worst = {"tag": tag, "delta": delta, "food": float(row["food"])}
+                probe_worst = {"tag": tag, "delta": delta, "metric": metric,
+                               "food": float(row["food"]),
+                               "food_avg30": (float(avg) if avg is not None
+                                              else None),
+                               "delta_last_day": delta_last}
     else:
         print("AVISO: sonda ausente (%s) — sensibilidade do cambio nao avaliada"
               % probe_path)
@@ -178,14 +238,29 @@ def main():
     for tag, entry in worst.items():
         rows.append({
             "tag": tag,
-            "baseline": before[tag],
-            "worst_food": entry["food"],
+            "metric": entry["metric"],
+            # compatibilidade: `baseline`/`worst_food` continuam sendo o ÚLTIMO dia
+            "baseline": entry["baseline_last_day"],
+            "worst_food": entry["food_last_day"],
+            "baseline_avg30": entry["baseline_avg30"],
+            "worst_avg30": entry["food_avg30"],
+            # aliases com o nome que o relatório do runner usa (`food`,
+            # `food_avg30`): um agregado também serve de baseline para o runner
+            "food": entry["food_last_day"],
+            "food_avg30": entry["food_avg30"],
             "delta": entry["delta"],
+            "delta_last_day": entry["delta_last_day"],
             "variant": entry["variant"],
         })
     rows.sort(key=lambda row: row["delta"])
 
-    failures = [row["tag"] for row in rows if row["delta"] < -FOOD_TOLERANCE]
+    failures = [row["tag"] for row in rows
+                if row["delta"] < -FOOD_TOLERANCE
+                and row["tag"] not in FOOD_EXEMPT]
+    exempt_hits = [row["tag"] for row in rows
+                   if row["delta"] < -FOOD_TOLERANCE
+                   and row["tag"] in FOOD_EXEMPT]
+    legacy_metric = [row["tag"] for row in rows if row["metric"] != GATE_METRIC]
     over = {name: value for name, value in bankruptcies.items()
             if value > OWNER_BANKRUPTCY_LIMIT}
 
@@ -194,6 +269,15 @@ def main():
             "days": 365,
             "baseline": "res://" + args.baseline.replace("\\", "/"),
             "food_tolerance": FOOD_TOLERANCE,
+            "food_metric": {
+                "gate": GATE_METRIC,
+                "window_days": FOOD_WINDOW_DAYS,
+                "last_day_field": "worst_food",
+                "avg30_field": "worst_avg30",
+                "exempt": list(FOOD_EXEMPT),
+                "nations_gated_on_avg30": len(rows) - len(legacy_metric),
+                "nations_gated_on_last_day": legacy_metric,
+            },
             "bankruptcy_limit": OWNER_BANKRUPTCY_LIMIT,
             "bankruptcies": bankruptcies,
             "service_businesses": service,
@@ -221,7 +305,13 @@ def main():
     print("escrito " + args.out)
     for name, value in bankruptcies.items():
         print("%-11s falencias=%d drift=%s" % (name, value, drift[name]))
-    print("nao fecham comida: %s" % (", ".join(failures) if failures else "nenhuma"))
+    print("nao fecham comida (%s): %s" % (
+        GATE_METRIC, ", ".join(failures) if failures else "nenhuma"))
+    if exempt_hits:
+        print("quedas isentas: " + ", ".join(exempt_hits))
+    if legacy_metric:
+        print("sem media30 no baseline (portao caiu para ultimo dia): %s"
+              % ", ".join(legacy_metric))
     print("acima do teto do dono (%d): %s" % (
         OWNER_BANKRUPTCY_LIMIT, ", ".join(over) if over else "nenhuma"))
     for name, _args in VARIANTS:

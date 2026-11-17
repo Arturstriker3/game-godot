@@ -27,7 +27,7 @@
     "city_id": "AFG-MAZ",
     "id": "afg_maz_wheat",
     "name": "Mazar-e Sharif — trigo",
-    "output_tons_per_day": 145.4
+    "output_tons_per_day": 145.3
   },
   {
     "city_id": "AGO-BEN",
@@ -987,7 +987,7 @@
     "city_id": "CHN-HAR",
     "id": "chn_har_wheat",
     "name": "Harbin — trigo",
-    "output_tons_per_day": 3003.0
+    "output_tons_per_day": 1680.0
   },
   {
     "city_id": "CHN-HEF",
@@ -1059,7 +1059,7 @@
     "city_id": "CHN-WEI",
     "id": "chn_wei_wheat",
     "name": "Weifang — trigo",
-    "output_tons_per_day": 2816.0
+    "output_tons_per_day": 1012.5
   },
   {
     "city_id": "CHN-WUH",
@@ -3471,7 +3471,7 @@
     "city_id": "PAK-PES",
     "id": "pak_pes_wheat",
     "name": "Pexauar — trigo",
-    "output_tons_per_day": 1427.6
+    "output_tons_per_day": 652.5
   },
   {
     "city_id": "PAK-QUE",
@@ -4467,7 +4467,7 @@
     "city_id": "TUR-DIY",
     "id": "tur_diy_wheat",
     "name": "Diyarbakır — trigo",
-    "output_tons_per_day": 550.1
+    "output_tons_per_day": 336.0
   },
   {
     "city_id": "TUR-GAZ",

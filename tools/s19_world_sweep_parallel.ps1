@@ -14,7 +14,13 @@
 param(
   [int]$Days = 365,
   [switch]$NoUrban,
-  [string]$OutPrefix = "s19_"
+  [string]$OutPrefix = "s19_",
+  # P4 (recal3): baseline do portão de comida/falências. O portão compara a
+  # MÉDIA DE 30 DIAS quando o baseline tem `food_avg30` (baseline agregado por
+  # tools/aggregate_s19_sweep.py depois do recal3); senão cai para o último dia.
+  [string]$Baseline = "res://docs/economy/perf/recal2_world_sweep.json",
+  # Isentos declarados pelo head (o runner registra a queda em vez de reprovar).
+  [string]$FoodExempt = "SOL,DJI,SAH,JOR,YEM"
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,8 +42,10 @@ New-Item -ItemType Directory -Force -Path $logdir | Out-Null
 # DEPOIS de `data/province-area-fix` + `data/q016-city-pop` (baseline
 # `recal_world_sweep.json`) e, na rodada 2, DEPOIS do porto `SGP-SIN`
 # (`recal2_world_sweep.json`). `q16_world_sweep.json` e
-# `construction_world_sweep.json` ficam historico.
-$baseline = "res://docs/economy/perf/recal2_world_sweep.json"
+# `construction_world_sweep.json` ficam historico. Na rodada 3 o baseline e
+# `recal3base_world_sweep.json` (recal2 remesclado com a media de 30 dias,
+# passado por -Baseline).
+$baseline = $Baseline
 
 $variants = @(
   @{ name = "real"; extra = @("--fx=real") },
@@ -62,7 +70,7 @@ foreach ($v in $variants) {
   $out = "user://world_sweep/$OutPrefix$($v.name)_$Days.json"
   $args = @("--headless", "--path", $project, "--script", "res://tools/economy_world_test.gd",
     "--", "--ai=1", "--days=$Days", $urban, "--threads=1",
-    "--baseline=$baseline", "--out=$out") + $v.extra
+    "--baseline=$baseline", "--out=$out", "--food-exempt=$FoodExempt") + $v.extra
   $log = Join-Path $logdir "$($v.name).log"
   $err = Join-Path $logdir "$($v.name).err.log"
   $p = Start-Process -FilePath $godot -ArgumentList $args -RedirectStandardOutput $log `

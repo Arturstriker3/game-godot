@@ -57,7 +57,7 @@ from collections import Counter, defaultdict
 import nation_colors
 from world_city_curation import (
     CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
-    FORCED_PORTS, LEGACY_EXCLUDED, PORT_OF_OVERRIDES,
+    FORCED_PORTS, LEGACY_EXCLUDED, PORT_OF_OVERRIDES, PORT_LANDMASS_FIX,
     EXCLUDED_PORTS, POPULATION_OVERRIDES,
 )
 from world_nation_curation import (
@@ -212,6 +212,12 @@ def apply_population_overrides(rows):
         row["population_year"] = str(spec.get("population_year", ""))
         row["source"] = spec["source"]
         row["note"] = spec["note"]
+        # recal3: a fazenda inicial segue a MESMA regra da fonte
+        # (POP_PER_TON = 0,0003 t/dia por habitante). Sem isso a cidade
+        # continuaria produzindo para a população ERRADA: Weifang ficava com
+        # 2.816 t/dia para uma necessidade de 1.012 (o `output_tons_per_day` do
+        # CSV é o TETO da fazenda em `resolve_initial_farms`, que nunca o baixa).
+        row["initial_farm_tons"] = f"{float(spec['population']) * 0.0003:.1f}"
         applied.append(row["id"])
     return applied
 
@@ -826,6 +832,7 @@ def main():
         spec["nation"]: spec["name_en"] for spec in FORCED_CITIES
         if CAPITAL_OVERRIDES.get(spec["nation"]) == spec["id"]}
     nations_out, cities_out, ports_out, buildings_out, i18n_out = [], [], [], [], []
+    ports_landmass_fixed = []
     for nation in sorted(nations_src, key=lambda r: r["iso3"]):
         iso3 = nation["iso3"]
         nations_out.append({
@@ -887,9 +894,16 @@ def main():
 
     for port in sorted(ports_src, key=lambda r: r["id"]):
         x, y = lonlat_to_xy(float(port["lon"]), float(port["lat"]))
+        # r10: porto legado com rótulo de landmass trocado (nunca é escolhido
+        # pelo `nearest_port` do sim). A correção vive na curadoria.
+        landmass = port["landmass"]
+        fix = PORT_LANDMASS_FIX.get(port["id"])
+        if fix:
+            landmass = fix[0]
+            ports_landmass_fixed.append(port["id"])
         ports_out.append({
             "id": port["id"], "name": port["name"], "nation": port["nation"],
-            "x": round(x, 1), "y": round(y, 1), "landmass": port["landmass"],
+            "x": round(x, 1), "y": round(y, 1), "landmass": landmass,
             "port_of": port.get("port_of", "").strip(),
         })
         i18n_out.append({"key": f"port.name.{port['id']}", "pt_BR": port["name"],
@@ -910,6 +924,9 @@ def main():
     print("curadoria: forçadas ->", ", ".join(spec["id"] for spec in FORCED_CITIES))
     if overrides_applied:
         print("curadoria: população corrigida ->", ", ".join(sorted(overrides_applied)))
+    if ports_landmass_fixed:
+        print("curadoria: landmass de porto corrigida ->",
+              ", ".join(sorted(ports_landmass_fixed)))
     removed_nations = [item for item in nation_report if item["action"] == "removed"]
     transferred = [item for item in nation_report if item["action"] != "removed"]
     print(f"nações curadas: {len(nation_report)} afetadas "

@@ -56,6 +56,14 @@ const DEFAULT_DAYS := 60
 ## aceite do sweep é o de 365 d; a corrida de 60/120 d só é comparável ao
 ## baseline de 365 d no fim.
 const FOOD_TOLERANCE := 0.025
+## P4 (recal3, 2026-11-17, decisão do head): o portão de comida passa a usar a
+## MÉDIA dos últimos FOOD_WINDOW_DAYS dias por nação, não a foto do último dia.
+## Motivo medido no `recal2`: EGY é importador integral e recebe comida em levas,
+## então a métrica `consumido ÷ necessidade` do dia 365 bate no VALE de um ciclo
+## diário (0,640 no dia 365 contra 0,72–1,00 nos dias anteriores e 1,000 em
+## 270–360). A média de 30 dias mede o patamar, não a fase do ciclo. As duas
+## medidas continuam no relatório (`food` = último dia, `food_avg30` = média).
+const FOOD_WINDOW_DAYS := 30
 ## F5 — tolerância de falências sobre o baseline. O comparativo de 365 d é um
 ## teste de CAOS: a trajetória do mundo é sensível por construção (uma oferta
 ## que muda de ordem muda a coorte de firmas). Com o preço na ÂNCORA não há
@@ -125,6 +133,10 @@ var _fx_meta: Dictionary = {
 
 var _failures: Array[String] = []
 
+## P4 (recal3): nações isentas declaradas pelo head — queda de comida nelas é
+## registrada, não reprova. `--food-exempt=SOL,DJI,SAH,JOR,YEM` (o sweep passa).
+var _food_exempt: Array[String] = []
+
 
 func _init() -> void:
 	for arg in OS.get_cmdline_user_args():
@@ -148,6 +160,11 @@ func _init() -> void:
 			_instant_construction = arg.split("=", true, 1)[1] == "1"
 		elif arg.begins_with("--urban="):
 			_urban_enabled = arg.split("=", true, 1)[1] == "1"
+		elif arg.begins_with("--food-exempt="):
+			for part in arg.split("=", true, 1)[1].split(",", false):
+				var tag := part.strip_edges()
+				if tag != "" and tag not in _food_exempt:
+					_food_exempt.append(tag)
 		elif arg.begins_with("--threads="):
 			_threads = maxi(0, int(arg.split("=", true, 1)[1]))
 		elif arg.begins_with("--urban-cities="):
@@ -294,6 +311,10 @@ func _test_world() -> void:
 
 	var money_initial := float(status["money_total"])
 	var cayenne_fed := false
+	## P4 (recal3): janela deslizante com a comida do DIA por nação (só os
+	## últimos FOOD_WINDOW_DAYS). Sai do bloco leve (`p_need`/`p_consumed`), sem
+	## chamar `get_city_status` a cada dia.
+	var food_history: Array[Dictionary] = []
 
 	for day in _days:
 		status = sim.tick_day()
@@ -328,6 +349,11 @@ func _test_world() -> void:
 					break
 		if _failures.size() > 0:
 			break
+		var day_food := _nation_food_day(status)
+		if not day_food.is_empty():
+			food_history.append(day_food)
+			if food_history.size() > FOOD_WINDOW_DAYS:
+				food_history.pop_front()
 
 	# Q-015: retrato urbano do fim, mesmo formato do início.
 	var urban_end: Dictionary = {}
@@ -405,7 +431,7 @@ func _test_world() -> void:
 
 	# Comida por nação (consumido / necessidade) — mesma métrica da Aceitação
 	# F2: nenhuma nação pode piorar vs. o baseline (c5abccb).
-	var nations := _nation_food(sim, status)
+	var nations := _nation_food(sim, status, food_history)
 	print("[world] comida por nacao (consumido/necessidade):")
 	for tag in nations:
 		var row: Dictionary = nations[tag]
@@ -420,6 +446,18 @@ func _test_world() -> void:
 			weakest = value
 			weakest_nation = String(tag)
 	print("[world] pior nacao: %s %.3f" % [weakest_nation, weakest])
+	var weakest_avg := 2.0
+	var weakest_avg_nation := ""
+	for tag in nations:
+		if not (nations[tag] as Dictionary).has("food_avg30"):
+			continue
+		var value_avg := float(nations[tag]["food_avg30"])
+		if value_avg < weakest_avg:
+			weakest_avg = value_avg
+			weakest_avg_nation = String(tag)
+	if weakest_avg_nation != "":
+		print("[world] pior nacao (media %dd): %s %.3f" % [
+			FOOD_WINDOW_DAYS, weakest_avg_nation, weakest_avg])
 
 	# F3: níveis de necessidade — média agregada e distribuição do nível
 	# alcançado. "sem dado" (binário anterior à F3) fica fora da média.
@@ -675,8 +713,39 @@ func _print_labor(sim: Object, status: Dictionary) -> void:
 				float(labor.get("productivity_index", 1.0))])
 
 
+## P4 (recal3): comida do dia por nação, do bloco LEVE do status (`p_need` e
+## `p_consumed` são por cidade). Vazio = binário sem os campos (nada inventado).
+func _nation_food_day(status: Dictionary) -> Dictionary:
+	var light: Dictionary = status.get("light", {})
+	var need_by_city: PackedFloat64Array = light.get(
+		"p_need", PackedFloat64Array())
+	var consumed_by_city: PackedFloat64Array = light.get(
+		"p_consumed", PackedFloat64Array())
+	var cities: Array = status.get("cities", [])
+	if cities.is_empty() or need_by_city.size() < cities.size() \
+			or consumed_by_city.size() < cities.size():
+		return {}
+	var need: Dictionary = {}
+	var consumed: Dictionary = {}
+	for slot in cities.size():
+		var tag := String((cities[slot] as Dictionary).get("nation", ""))
+		if tag == "":
+			continue
+		need[tag] = float(need.get(tag, 0.0)) + float(need_by_city[slot])
+		consumed[tag] = float(consumed.get(tag, 0.0)) \
+			+ float(consumed_by_city[slot])
+	var out: Dictionary = {}
+	for tag in need:
+		var total := float(need[tag])
+		out[tag] = float(consumed[tag]) / total if total > 0.0 else 1.0
+	return out
+
+
 ## Agrega comida e industrialização por nação (cons=Σconsumido, need=Σnecessidade).
-func _nation_food(sim: Object, status: Dictionary) -> Dictionary:
+## `food_history` (P4) é a janela dos últimos dias de `_nation_food_day`; a média
+## entra como `food_avg30` só quando há medida — sem janela, a chave não existe.
+func _nation_food(sim: Object, status: Dictionary,
+		food_history: Array = []) -> Dictionary:
 	var nations: Dictionary = {}
 	for city in status.get("cities", []):
 		var tag := String(city.get("nation", ""))
@@ -704,6 +773,25 @@ func _nation_food(sim: Object, status: Dictionary) -> Dictionary:
 		row["food"] = float(row["consumed"]) / need if need > 0.0 else 1.0
 		row["industrialization"] = float(row["industrialization"]) \
 			/ maxf(1.0, float(row["cities"]))
+		# P4 (recal3): média dos últimos FOOD_WINDOW_DAYS dias (métrica do portão).
+		var measured := 0
+		var total := 0.0
+		var lowest := 1.0
+		var highest := 0.0
+		for day_row in food_history:
+			var day_values: Dictionary = day_row as Dictionary
+			if not day_values.has(tag):
+				continue
+			var value := float(day_values[tag])
+			measured += 1
+			total += value
+			lowest = minf(lowest, value)
+			highest = maxf(highest, value)
+		if measured > 0:
+			row["food_avg30"] = total / float(measured)
+			row["food_avg30_days"] = measured
+			row["food_avg30_min"] = lowest
+			row["food_avg30_max"] = highest
 	return nations
 
 
@@ -720,18 +808,37 @@ func _compare_baseline(nations: Dictionary) -> void:
 		for entry in raw:
 			var row: Dictionary = entry as Dictionary
 			var tag := String(row.get("tag", ""))
-			if tag != "":
-				rows[tag] = {"food": float(row.get("worst_food", 1.0))}
+			if tag == "":
+				continue
+			# P4 (recal3): o baseline agregado por tools/aggregate_s19_sweep.py é
+			# uma lista; carrega as duas medidas (último dia e média30).
+			var base_entry := {"food": float(row.get("worst_food", 1.0))}
+			if row.has("food_avg30"):
+				base_entry["food_avg30"] = float(row["food_avg30"])
+			rows[tag] = base_entry
 	var worse := 0
 	for tag in nations:
 		if not rows.has(tag):
 			continue
-		var before := float((rows[tag] as Dictionary).get("food", 1.0))
+		var base_row: Dictionary = rows[tag]
+		var before := float(base_row.get("food", 1.0))
 		var after := float(nations[tag]["food"])
+		var metric := "ultimo dia"
+		# P4 (recal3): compara média30 x média30 quando o baseline tem a medida;
+		# sem ela, cai para último dia x último dia (nunca mistura as duas).
+		if base_row.has("food_avg30") and (nations[tag] as Dictionary).has(
+				"food_avg30"):
+			before = float(base_row["food_avg30"])
+			after = float(nations[tag]["food_avg30"])
+			metric = "media30"
 		var delta := after - before
 		if delta < -FOOD_TOLERANCE:
-			_fail("%s: comida piorou %.3f -> %.3f (limite -%.2f)" % [
-				tag, before, after, FOOD_TOLERANCE])
+			if tag in _food_exempt:
+				print("[world] isenta: %s caiu %.3f -> %.3f (%s) — fora do portao" % [
+					tag, before, after, metric])
+				continue
+			_fail("%s: comida piorou %.3f -> %.3f (%s, limite -%.2f)" % [
+				tag, before, after, metric, FOOD_TOLERANCE])
 			worse += 1
 	print("[world] baseline %s: %d nacoes comparadas, %d pioraram" % [
 		_baseline_path, rows.size(), worse])
@@ -762,7 +869,13 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 			"service_businesses": int(status.get("service_businesses", 0)),
 			"service_bankruptcies": int(status.get("service_bankruptcies", 0)),
 			"fx": _fx_meta,
-			"trajectory_hash": _trajectory_hash(payload),
+			"trajectory_hash": _trajectory_hash(_trajectory_payload(payload)),
+			"food_metric": {
+				"gate": "avg30",
+				"window_days": FOOD_WINDOW_DAYS,
+				"last_day_field": "food",
+				"avg30_field": "food_avg30",
+			},
 		},
 		"nations": payload["nations"],
 		"labor": payload["labor"],
@@ -782,6 +895,24 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 ## ownership, sem o `meta`). Duas corridas idênticas fecham o mesmo hash; se o
 ## caminho cambial é inerte, a sonda `--fx=float` fecha o hash das variantes
 ## `peg` e o sweep fica tautológico — é isso que o portão passa a detectar.
+## P4 (recal3): o hash da trajetória NÃO inclui as medidas derivadas de comida
+## (`food_avg30*`). Elas são uma LEITURA do mesmo estado diário; o hash existe
+## para comparar rodadas, e assim o `recal3` fecha o mesmo hash que o `recal2`
+## fechou quando a simulação é a mesma (prova de que a mudança é só de relatório).
+func _trajectory_payload(payload: Dictionary) -> Dictionary:
+	var nations: Dictionary = payload.get("nations", {})
+	var stripped: Dictionary = {}
+	for tag in nations:
+		var row: Dictionary = (nations[tag] as Dictionary).duplicate()
+		for key in ["food_avg30", "food_avg30_days", "food_avg30_min",
+				"food_avg30_max"]:
+			row.erase(key)
+		stripped[tag] = row
+	var out: Dictionary = payload.duplicate()
+	out["nations"] = stripped
+	return out
+
+
 func _trajectory_hash(payload: Dictionary) -> String:
 	var context := HashingContext.new()
 	if context.start(HashingContext.HASH_SHA256) != OK:
@@ -1116,4 +1247,9 @@ func _strip(nations: Dictionary) -> Dictionary:
 			"worst_city": String(row["worst_city"]),
 			"industrialization": float(row["industrialization"]),
 		}
+		if row.has("food_avg30"):
+			out[tag]["food_avg30"] = float(row["food_avg30"])
+			out[tag]["food_avg30_days"] = int(row["food_avg30_days"])
+			out[tag]["food_avg30_min"] = float(row["food_avg30_min"])
+			out[tag]["food_avg30_max"] = float(row["food_avg30_max"])
 	return out

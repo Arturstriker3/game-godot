@@ -32,6 +32,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORLD = os.path.join(ROOT, "data", "definitions", "world")
 SCENARIO = os.path.join(ROOT, "data", "definitions", "scenario")
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# r10 (recal3): portos legados com rótulo de landmass trocado (o `nearest_port`
+# do sim filtra por nation+landmass, então um porto com o rótulo errado nunca é
+# escolhido). A tabela e o motivo de cada linha vivem na curadoria.
+from world_city_curation import PORT_LANDMASS_FIX  # noqa: E402
+
 CANONICAL = {"europe": "continent"}
 
 # Ilhas/não-continentais que herdaram o rótulo do país de origem.
@@ -55,13 +61,18 @@ JSON_FILES = [
 ]
 
 
-def _target(row_id: str, landmass: str) -> str:
+def _target(row_id: str, landmass: str, table: dict = None) -> str:
+    if table is not None:
+        # Tabela por id: só os ids listados mudam, e para o valor tabelado.
+        fix = table.get(row_id)
+        return fix[0] if fix else landmass
     if row_id in ISLAND_BY_ID:
         return ISLAND_BY_ID[row_id]
     return CANONICAL.get(landmass, landmass)
 
 
-def fix_csv(path: str, id_field: str, landmass_field: str, check: bool) -> int:
+def fix_csv(path: str, id_field: str, landmass_field: str, check: bool,
+            table: dict = None) -> int:
     with open(path, encoding="utf-8", newline="") as fh:
         text = fh.read()
     newline = "\r\n" if "\r\n" in text else "\n"
@@ -76,7 +87,7 @@ def fix_csv(path: str, id_field: str, landmass_field: str, check: bool) -> int:
         fields = lines[i].split(",")
         if len(fields) <= max(id_idx, lm_idx):
             continue
-        target = _target(fields[id_idx], fields[lm_idx])
+        target = _target(fields[id_idx], fields[lm_idx], table)
         if target != fields[lm_idx]:
             fields[lm_idx] = target
             lines[i] = ",".join(fields)
@@ -87,7 +98,7 @@ def fix_csv(path: str, id_field: str, landmass_field: str, check: bool) -> int:
     return changes
 
 
-def fix_json(path: str, check: bool) -> int:
+def fix_json(path: str, check: bool, table: dict = None) -> int:
     """Substitui só as linhas `"landmass": ...` do bloco da cidade/porto."""
     with open(path, encoding="utf-8", newline="") as fh:
         text = fh.read()
@@ -102,7 +113,7 @@ def fix_json(path: str, check: bool) -> int:
             continue
         if stripped.startswith('"landmass": "'):
             value = stripped.split('"')[3]
-            target = _target(current_id, value)
+            target = _target(current_id, value, table)
             if target != value:
                 lines[i] = line.replace(f'"{value}"', f'"{target}"', 1)
                 changes += 1
@@ -123,6 +134,18 @@ def main() -> int:
         changes = fix_json(path, check)
         total += changes
         print(f"{os.path.relpath(path, ROOT)}: {changes} linha(s)")
+    # r10: passada por id (PORT_LANDMASS_FIX) nos arquivos de PORTO, depois da
+    # genérica (o rótulo tabelado vence o canônico).
+    for path, id_field, lm_field in (
+            (os.path.join(WORLD, "ports_source.csv"), "id", "landmass"),
+            (os.path.join(SCENARIO, "ports.csv"), "id", "landmass")):
+        changes = fix_csv(path, id_field, lm_field, check, PORT_LANDMASS_FIX)
+        total += changes
+        print(f"{os.path.relpath(path, ROOT)}: {changes} linha(s) [r10]")
+    changes = fix_json(os.path.join(SCENARIO, "ports.json"), check,
+                       PORT_LANDMASS_FIX)
+    total += changes
+    print(f"data/definitions/scenario/ports.json: {changes} linha(s) [r10]")
     # Sanidade: o JSON tem de continuar válido.
     for path in JSON_FILES:
         with open(path, encoding="utf-8") as fh:
