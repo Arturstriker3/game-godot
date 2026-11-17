@@ -246,6 +246,11 @@ namespace ogs {
 		double utilization = 0.0;
 		double last_utilization = 1.0; // operação do dia anterior (custos)
 		double output_scale = 1.0; // reduzido por prejuízos persistentes
+		// Rampa de operação de planta nova (construída via projeto físico):
+		// dias restantes de carência. Enquanto > 0, output_scale cresce
+		// linearmente de kDemoRampStart até 1,0 e a falência por prejuízo NÃO
+		// conta (empresa nova real). Planta madura/semeada = 0.
+		int ramp_days = 0;
 		int loss_days = 0;
 		bool bankrupt = false; // fechada por insolvência (prejuízo persistente)
 		bool depleted = false; // jazida esgotada: encerra sem contar falência
@@ -305,6 +310,14 @@ namespace ogs {
 		double labor_cost_total = 0.0; // parcela de mão de obra (1 - material_share)
 		double paid = 0.0;             // total pago pelo dono até agora
 		double labor_paid = 0.0;       // mão de obra paga até agora
+		// §15 calibração: o capital da obra é INVESTIMENTO, não caixa de giro.
+		// O dono reserva o custo total no início (`reserved`, debitado do caixa)
+		// e a obra paga material/serviço desse fundo ao avançar — NÃO compete
+		// com a folha/opex e não pausa por liquidez temporária (uma mina em
+		// cidade importadora pausava por "dono sem dinheiro" e nunca concluía,
+		// tirando a renda que paga a importação de comida — SOL/DJI/SAH). O
+		// `reserved` entra em `demo_money_total` para a conservação valer.
+		double reserved = 0.0;         // fundo de obra ainda não gasto
 		// Materiais da receita de obra (construction_material, steel_structure,
 		// electrical_material; fábricas também industrial_machinery).
 		int material_count = 0;

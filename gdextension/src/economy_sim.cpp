@@ -1496,7 +1496,11 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		d_efficiency("d_efficiency"),
 		d_opex_factor("d_opex_factor"),
 		d_extracted_kt("d_extracted_kt"),
-		d_depleted("d_depleted")
+		d_depleted("d_depleted"),
+		c_offset("c_offset"),
+		c_output_product("c_output_product"),
+		c_capacity("c_capacity"),
+		c_expand("c_expand")
 {}
 
 void EconomySim::demo_fill_city_status(std::size_t city_index,
@@ -2453,6 +2457,30 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 			static_cast<int32_t>(cache.light_d_product.size()));
 	}
 
+	// Obras em andamento (CSR, §15): o que a IA lê para não reconstruir a
+	// mesma lacuna enquanto uma obra está em voo (direção de calibração do
+	// D-060). Ordem cidade → obra (ordem de criação do vetor
+	// construction_projects), determinística. `c_expand` = 1 marca expansão de
+	// prédio existente (o produto JÁ existe na cidade); 0 é obra nova.
+	cache.light_c_offset.clear();
+	cache.light_c_output_product.clear();
+	cache.light_c_capacity.clear();
+	cache.light_c_expand.clear();
+	cache.light_c_offset.push_back(0);
+	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
+		const std::string& ocity = ws_.cities[city_index].id;
+		for (const DemoConstructionProject& project : ws_.construction_projects) {
+			if (project.city != ocity) {
+				continue;
+			}
+			cache.light_c_output_product.push_back(project.output_product);
+			cache.light_c_capacity.push_back(project.capacity);
+			cache.light_c_expand.push_back(project.expand_existing ? 1 : 0);
+		}
+		cache.light_c_offset.push_back(
+			static_cast<int32_t>(cache.light_c_output_product.size()));
+	}
+
 	// Dictionary é por referência: pendura os arrays (o `ptrw` desanexa o
 	// buffer por copy-on-write, então reassocia a cada dia) e só cria as
 	// chaves escalares uma vez.
@@ -2496,6 +2524,10 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	light[k.d_opex_factor] = cache.light_d_opex_factor;
 	light[k.d_extracted_kt] = cache.light_d_extracted_kt;
 	light[k.d_depleted] = cache.light_d_depleted;
+	light[k.c_offset] = cache.light_c_offset;
+	light[k.c_output_product] = cache.light_c_output_product;
+	light[k.c_capacity] = cache.light_c_capacity;
+	light[k.c_expand] = cache.light_c_expand;
 }
 
 Dictionary EconomySim::get_demo_status() {
@@ -4332,6 +4364,9 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 	project.opex = building->opex * (capacity_added / std::max(1e-9, building->capacity));
 	project.expand_existing = true;
 	project.total_cost = amount;
+	// §15 calibração: reserva o capital da obra no início (investimento).
+	project.reserved = amount;
+	city->firm_cash -= amount;
 	sim_core_.demo_add_construction_project(project);
 	result["invested"] = amount;
 	result["capacity_added"] = capacity_added;
@@ -4536,6 +4571,17 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	project.wage = wage;
 	project.opex = opex;
 	project.total_cost = cost;
+	// §15 calibração: reserva o capital da obra no início (investimento, não
+	// caixa de giro). O dono debita o custo total e a obra paga material/serviço
+	// do fundo reservado — não pausa por liquidez temporária (a folha/opex da
+	// fazenda deficitária não consome o capital já comprometido com a obra).
+	// O `reserved` entra em demo_money_total, então a conservação vale.
+	project.reserved = cost;
+	if (state_owned) {
+		city->government_budget -= cost;
+	} else {
+		city->firm_cash -= cost;
+	}
 	sim_core_.demo_add_construction_project(project);
 	result["created"] = true;
 	result["cost"] = cost;
@@ -5036,6 +5082,9 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	project.local_share = local_share;
 	project.partner_group = partner != nullptr ? partner->id : std::string();
 	project.total_cost = owner_cost;
+	// §15 calibração: reserva o capital da obra no início (investimento).
+	project.reserved = owner_cost;
+	group->cash -= owner_cost;
 	sim_core_.demo_add_construction_project(project);
 	result["created"] = true;
 	result["cost"] = cost;

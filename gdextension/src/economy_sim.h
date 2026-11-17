@@ -702,7 +702,8 @@ private:
 		b_offset, b_id, b_output_product, b_owner, b_capacity, b_utilization,
 		b_costs, b_site_suitability, d_offset, d_resource, d_product,
 		d_initial_kt, d_remaining_kt, d_quality, d_depth_m, d_efficiency,
-		d_opex_factor, d_extracted_kt, d_depleted;
+		d_opex_factor, d_extracted_kt, d_depleted,
+		c_offset, c_output_product, c_capacity, c_expand;
 		DemoStatusKeys();
 	};
 
@@ -793,6 +794,15 @@ private:
 		PackedFloat64Array light_d_initial_kt, light_d_remaining_kt,
 			light_d_quality, light_d_depth_m, light_d_efficiency,
 			light_d_opex_factor, light_d_extracted_kt;
+		// §15: tabela plana CSR de OBRAS em andamento — o que a IA lê para não
+		// reconstruir a mesma lacuna enquanto uma obra está em voo (direção de
+		// calibração do D-060). `c_offset` por cidade (cidades+1, padrão CSR);
+		// `c_capacity` é a capacidade futura (obra nova) ou adicionada
+		// (expansão); `c_expand` = 1 quando é expansão de prédio existente, 0
+		// quando é obra nova (o produto de saída ainda não existe na cidade).
+		PackedInt32Array light_c_offset;
+		PackedInt32Array light_c_output_product, light_c_expand;
+		PackedFloat64Array light_c_capacity;
 	};
 
 	static const ModeSpec& spec(TransportMode mode) { return ogs::SimCore::spec(mode); }

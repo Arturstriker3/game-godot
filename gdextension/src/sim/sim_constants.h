@@ -56,11 +56,31 @@ constexpr int kDemoSaveVersion = 12;
 // materiais são comprados do mercado local pelo preço corrente; a quantidade
 // contratada é dimensionada pelo PREÇO-BASE (contrato de obra declarado).
 constexpr double kDemoConstructionMaterialShare = 0.15;
-// Prazo de obra por tipo (dias). Fazenda/mina é primária e rápida; fábrica
-// (receita) é mais pesada. É uma ESTIMATIVA de ordem de grandeza ("meses pelo
-// tamanho", §15) — não é dado observado de cronograma de obra.
-constexpr int kDemoConstructionPrimaryDays = 30;
+// Prazo de obra por tipo (dias), estimativa de ordem de grandeza ("meses pelo
+// tamanho", §15) — não é dado observado de cronograma de obra. A comida
+// (fazenda da cesta) é RÁPIDA para não travar a oferta alimentar de nações que
+// dependem de importação (a IA de comida planeja com antecedência); mina é
+// média (obra de terraplenagem/galeria); fábrica (receita) é pesada.
+constexpr int kDemoConstructionFoodDays = 15;
+constexpr int kDemoConstructionMineDays = 45;
 constexpr int kDemoConstructionFactoryDays = 60;
+constexpr int kDemoConstructionPrimaryDays = 30;
+// Escala do prazo pelo TAMANHO da obra (capacidade em t/dia): obras maiores
+// levam mais tempo. fator = clamp(1 + log_scale × log2(cap/ref), min, max).
+// Estimativa declarada — não é dado observado de cronograma.
+constexpr double kDemoConstructionSizeReference = 10.0;
+constexpr double kDemoConstructionSizeLogScale = 0.5;
+constexpr double kDemoConstructionSizeScaleMin = 0.5;
+constexpr double kDemoConstructionSizeScaleMax = 2.5;
+// Rampa de operação de planta NOVA (construída via projeto físico): começa em
+// kDemoRampStart da capacidade e cresce LINEARMENTE até 100% ao longo de
+// kDemoRampDays dias de CARÊNCIA, durante os quais a falência por prejuízo NÃO
+// conta (empresa nova real: o capital da obra é investimento, não prejuízo
+// operacional; a planta precisa de tempo para formar carteira antes de ser
+// avaliada). O opex da planta em rampa acompanha o output_scale (custo fixo
+// reduzido), não o custo de 100%.
+constexpr double kDemoRampStart = 0.25;
+constexpr int kDemoRampDays = 90;
 // Valor de obra (XGS) que cada trabalhador do setor de construção avança por
 // dia. Ordem de grandeza ancorada na produtividade de serviços (capital/jobs
 // da F8); limita o surto de obras mas não bloqueia a segurança alimentar.

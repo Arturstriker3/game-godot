@@ -105,6 +105,12 @@ double SimCore::demo_money_total() const {
 	for (const DemoGroup& group : ws_.groups) {
 		total += group.cash;
 	}
+	// §15: o fundo reservado de cada obra (capital do investimento debitado no
+	// início) é dinheiro do mundo — soma para a conservação valer entre o débito
+	// (na decisão) e o pagamento incremental (no tick).
+	for (const DemoConstructionProject& project : ws_.construction_projects) {
+		total += project.reserved;
+	}
 	return total;
 }
 
@@ -441,6 +447,17 @@ void SimCore::phase_accounting() {
 		for (const int bi : local_buildings) {
 			DemoBuilding& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
+			// Carência de falência (planta nova, §15): a planta construída não é
+			// avaliada por prejuízo durante os primeiros kDemoRampDays de
+			// operação — o capital da obra é investimento, não prejuízo
+			// operacional; a planta precisa de tempo para formar carteira antes
+			// de ser avaliada. O output_scale segue o valor de entrada (100%
+			// para primária, 25% para fábrica) e as regras de corte abaixo.
+			if (building.ramp_days > 0) {
+				--building.ramp_days;
+				building.loss_days = 0;
+				continue;
+			}
 			// Planta secundária ociosa não é insolvente: sem operação no dia,
 			// não acumula dias de prejuízo (o custo de stand-by já é pequeno).
 			const bool operating = building.recipe < 0 && building.input_product < 0

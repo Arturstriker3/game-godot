@@ -408,6 +408,7 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 			building.education_mix[1], building.education_mix[2]};
 		entry["output_scale"] = building.output_scale;
 		entry["last_utilization"] = building.last_utilization;
+		entry["ramp_days"] = building.ramp_days;
 		entry["strategic"] = building.strategic;
 		entry["loss_days"] = building.loss_days;
 		// Estado de encerramento da construção: falida por insolvência ou mina
@@ -451,6 +452,7 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		entry["labor_cost_total"] = project.labor_cost_total;
 		entry["paid"] = project.paid;
 		entry["labor_paid"] = project.labor_paid;
+		entry["reserved"] = project.reserved;
 		entry["duration_days"] = project.duration_days;
 		entry["days_elapsed"] = project.days_elapsed;
 		entry["paused"] = project.paused;
@@ -1406,6 +1408,7 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		}
 		building.output_scale = double(entry.get("output_scale", 1.0));
 		building.last_utilization = double(entry.get("last_utilization", 1.0));
+		building.ramp_days = std::max(0, int(entry.get("ramp_days", 0)));
 		building.strategic = bool(entry.get("strategic", false));
 		building.loss_days = int(entry.get("loss_days", 0));
 		building.bankrupt = bool(entry.get("bankrupt", false));
@@ -1479,6 +1482,7 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 			double(entry.get("labor_cost_total", 0.0)));
 		project.paid = std::max(0.0, double(entry.get("paid", 0.0)));
 		project.labor_paid = std::max(0.0, double(entry.get("labor_paid", 0.0)));
+		project.reserved = std::max(0.0, double(entry.get("reserved", 0.0)));
 		project.duration_days = std::max(1, int(entry.get("duration_days", 30)));
 		project.days_elapsed = std::max(0, int(entry.get("days_elapsed", 0)));
 		project.paused = bool(entry.get("paused", false));

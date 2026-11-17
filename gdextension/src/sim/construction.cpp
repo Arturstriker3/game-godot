@@ -71,8 +71,28 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	}
 	project.labor_cost_total =
 		(1.0 - kDemoConstructionMaterialShare) * std::max(0.0, project.total_cost);
-	project.duration_days = factory
-		? kDemoConstructionFactoryDays : kDemoConstructionPrimaryDays;
+	// Duração por tipo + escala pelo tamanho (§15). Comida (fazenda da cesta) é
+	// rápida para não travar a oferta alimentar; mina (primária com jazida) é
+	// média; fábrica (receita) é pesada. O tamanho (capacidade em t/dia) escala
+	// o prazo com fator logarítmico limitado — estimativa declarada.
+	const bool is_food = project.recipe < 0 && project.input_product < 0
+		&& demo_food_calories(project.output_product) > 0.0;
+	DemoCity* project_city = find_demo_city(project.city);
+	const bool is_mine = !factory && !is_food && project_city != nullptr
+		&& project.output_product >= 0
+		&& project_city->deposits[project.output_product].tracked;
+	const double base_days = factory
+		? static_cast<double>(kDemoConstructionFactoryDays)
+		: is_food ? static_cast<double>(kDemoConstructionFoodDays)
+		: is_mine ? static_cast<double>(kDemoConstructionMineDays)
+		: static_cast<double>(kDemoConstructionPrimaryDays);
+	const double size_ratio = std::max(1.0, project.capacity)
+		/ kDemoConstructionSizeReference;
+	const double size_scale = std::clamp(
+		1.0 + kDemoConstructionSizeLogScale * std::log2(size_ratio),
+		kDemoConstructionSizeScaleMin, kDemoConstructionSizeScaleMax);
+	project.duration_days = std::max(1,
+		static_cast<int>(std::llround(base_days * size_scale)));
 	project.days_elapsed = 0;
 	project.paid = 0.0;
 	project.labor_paid = 0.0;
@@ -120,26 +140,17 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 	building.partner_group = p.partner_group;
 	building.strategic = p.strategic;
 	// Fábrica nova começa em rampa (25% da capacidade): evita o pico de
-	// produção/oferta no primeiro dia (mesma regra do build instantâneo).
+	// produção/oferta no primeiro dia (mesma regra do build instantâneo). Minas
+	// e fazendas entram em 100% (extração primária não tem curva de setup).
 	if (p.recipe >= 0 || p.input_product >= 0) {
 		building.output_scale = 0.25;
 		building.last_utilization = 0.25;
 	}
+	// Carência de falência (empresa nova real, §15): a planta construída não é
+	// avaliada por prejuízo durante os primeiros kDemoRampDays de operação — o
+	// capital da obra é investimento, não prejuízo operacional.
+	building.ramp_days = kDemoRampDays;
 	ws.buildings.push_back(building);
-}
-
-// Resolve o caixa do dono de uma obra (ponteiro; nullptr = dono desconhecido).
-double* demo_project_owner_cash(WorldState& ws, const DemoConstructionProject& p,
-		DemoCity& city) {
-	if (p.group_id.empty()) {
-		return p.owner == "state" ? &city.government_budget : &city.firm_cash;
-	}
-	for (DemoGroup& group : ws.groups) {
-		if (group.id == p.group_id) {
-			return &group.cash;
-		}
-	}
-	return nullptr;
 }
 } // namespace
 
@@ -216,18 +227,21 @@ void SimCore::demo_tick_construction() {
 			continue;
 		}
 
-		// Dinheiro do dono: paga só o que tem; sem dinheiro a obra para.
-		double* owner_cash = demo_project_owner_cash(ws_, project, *city);
-		if (owner_cash == nullptr || *owner_cash + 1e-9 < total_out) {
+		// O capital da obra já está RESERVADO no início (investimento, §15): a
+		// obra paga material/serviço do fundo reservado e NÃO pausa por
+		// liquidez temporária do dono (que já comprometeu o custo no limite de
+		// comprometimento). Sem material ela ainda para; sem reserva (save
+		// antigo/estado raro) cai no comportamento anterior (pausa).
+		if (project.reserved + 1e-9 < total_out) {
 			project.paused = true;
-			project.pause_reason = "dono sem dinheiro";
+			project.pause_reason = "reserva de obra esgotada";
 			continue;
 		}
 
-		// Avança: debita o dono, compra materiais do mercado e paga o serviço
-		// de construção. Dinheiro conservado: dono -total_out, firma
+		// Avança: debita o fundo reservado, compra materiais do mercado e paga
+		// o serviço de construção. Dinheiro conservado: fundo -total_out, firma
 		// +material, serviço +mão de obra.
-		*owner_cash -= total_out;
+		project.reserved -= total_out;
 		for (int m = 0; m < project.material_count; ++m) {
 			const int product = project.materials[m];
 			if (product < 0 || product >= ws_.products) {
