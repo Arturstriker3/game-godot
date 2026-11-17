@@ -367,12 +367,101 @@ func _run() -> void:
 	# --- Moradia social: obra do W3 com dono GOVERNMENT, paga pelo caixa. ---
 	_test_social_housing(urban)
 
+	# --- Q-015 B3: cidade cheia + caixa => obra paga do caixa municipal. ----
+	_test_full_city_cash_gate(urban)
+
+
+## Q-015 (B3) — a prefeitura de uma CIDADE CHEIA com caixa abre obra mesmo com
+## outra obra §15 com dono `state` em andamento na mesma cidade. O gate antigo
+## somava `committed_cost("state")` (o que ainda não foi pago dessa obra) ao custo
+## da obra nova e comparava com o caixa municipal — como essas obras já debitam o
+## custo inteiro na abertura (a moradia do governo sai do caixa municipal, o
+## prédio do Estado do orçamento público), o resíduo entrava duas vezes e barrava
+## a prefeitura. Verifica também que:
+##   - a obra é debitada do caixa municipal e o mês NÃO gasta o caixa inteiro;
+##   - a obra conclui e a capacidade da zona cresce;
+##   - o caixa nunca fica negativo.
+func _test_full_city_cash_gate(urban: Dictionary) -> void:
+	var sim = _make_world(1, urban)
+	for day in range(1, MONTH_DAYS):
+		_tick(sim, "F dia %d" % day)
+	# Obra §15 ESTATAL (tesouro nacional) na mesma cidade: um lote de moradia do
+	# governo, que reserva o custo inteiro e fica em andamento.
+	_grant_gov_cash(sim, TEST_CITY, 3000000.0)
+	var social: Dictionary = sim.demo_urban_social_housing(TEST_CITY, 60000.0)
+	if not bool(social.get("ok", false)):
+		_fail("cidade cheia: obra estatal de teste nao abriu (%s)" % String(
+			social.get("error", "")))
+		return
+	var state_cost := float(social.get("cost", 0.0))
+	if state_cost <= 0.0:
+		_fail("cidade cheia: obra estatal sem custo")
+		return
+	# Caixa municipal novo: o teste quer a decisão com caixa, não a reserva.
+	_grant_gov_cash(sim, TEST_CITY, 3000000.0)
+	var before: Dictionary = _gov(sim, TEST_CITY)
+	var area_before := _sum_area(before)
+	var reserve_before := float(before.get("reserve_km2", 0.0))
+	var capacity_before := float(Array(before.get("zone_capacity", []))[0])
+	_tick(sim, "F dia %d (fechamento)" % MONTH_DAYS)
+	var mid: Dictionary = _gov(sim, TEST_CITY)
+	var gov_mid: Dictionary = mid.get("gov", {})
+	var works: Array = _urban_projects(sim, TEST_CITY)
+	if works.is_empty():
+		_fail("cidade cheia com caixa e obra estatal em voo: prefeitura nao abriu obra")
+		return
+	var project: Dictionary = works[0]
+	if int(project.get("urban_action", -1)) != 1:  # URBAN_EXPAND
+		_fail("cidade cheia: obra decidida nao foi expansao (acao=%s)" % [
+			str(project.get("urban_action"))])
+	var infra_spent := float(gov_mid.get("month_expense_infrastructure", 0.0))
+	var social_spent := float(gov_mid.get("month_expense_social_housing", 0.0))
+	var cash_mid := float(gov_mid.get("cash", 0.0))
+	var cash_decision := cash_mid + infra_spent + social_spent
+	if not _close(infra_spent, float(project.get("total_cost", 0.0))):
+		_fail("cidade cheia: despesa de infraestrutura (%.3f) != custo da obra (%.3f)" % [
+			infra_spent, float(project.get("total_cost", 0.0))])
+	if cash_mid < -TOLERANCE:
+		_fail("cidade cheia: caixa negativo depois da obra (%.3f)" % cash_mid)
+	if infra_spent > 0.5 * cash_decision + 1.0:
+		_fail("cidade cheia: obra consumiu %.0f de um caixa de %.0f (maximo metade)" % [
+			infra_spent, cash_decision])
+	if _gov_housing_projects(sim.demo_to_dict()) != 1:
+		_fail("cidade cheia: a obra estatal em voo desapareceu da fila")
+	# A obra conclui: solo e capacidade crescem; o caixa nunca fica negativo.
+	for day in range(MONTH_DAYS, MONTH_DAYS + 200):
+		_tick(sim, "F dia %d" % (day + 1))
+		if _urban_projects(sim, TEST_CITY).is_empty():
+			break
+	if not _urban_projects(sim, TEST_CITY).is_empty():
+		_fail("cidade cheia: obra nao concluiu em 200 dias (motivo: %s)" % String(
+			Array(_urban_projects(sim, TEST_CITY))[0].get("pause_reason", "")))
+		return
+	var end: Dictionary = _gov(sim, TEST_CITY)
+	var area_end := _sum_area(end)
+	var capacity_end := float(Array(end.get("zone_capacity", []))[0])
+	if area_end <= area_before + 1.0e-6:
+		_fail("cidade cheia: area nao cresceu (%.4f -> %.4f)" % [area_before, area_end])
+	if float(end.get("reserve_km2", 0.0)) >= reserve_before - 1.0e-9:
+		_fail("cidade cheia: reserva de solo nao foi consumida (%.4f -> %.4f)" % [
+			reserve_before, float(end.get("reserve_km2", 0.0))])
+	if capacity_end <= capacity_before + 1.0e-6:
+		_fail("cidade cheia: capacidade RES nao cresceu (%.1f -> %.1f)" % [
+			capacity_before, capacity_end])
+	print("[city_gov] cidade cheia: obra %.4f km2, %.0f XGS do caixa municipal "
+		% [float(project.get("urban_km2", 0.0)), infra_spent]
+		+ "(obra estatal de %.0f em voo); area %.3f -> %.3f, cap RES %.0f -> %.0f" % [
+			state_cost, area_before, area_end, capacity_before, capacity_end])
+
 
 ## §19 (integração W2→W3): a prefeitura financia moradia social pelo projeto
 ## de moradia do W3; a entrega soma unidades e a posse vai para o governo.
 func _test_social_housing(urban: Dictionary) -> void:
 	var sim = _make_world(1, urban)
-	for day in range(1, MONTH_DAYS + 1):
+	# Um dia além do fechamento: a decisão automática do mês pode já ter aberto
+	# a frente de moradia da cidade lotada (a prefeitura toca uma frente de solo
+	# e uma de moradia); a chamada explícita usa outro dia e outro id.
+	for day in range(1, MONTH_DAYS + 2):
 		_tick(sim, "S dia %d" % day)
 	var cash := 5000000.0
 	_grant_gov_cash(sim, TEST_CITY, cash)
@@ -382,14 +471,15 @@ func _test_social_housing(urban: Dictionary) -> void:
 	for row in before.get("units", []):
 		for value in row:
 			stock_before += float(value)
+	var social_before := _gov_housing_projects(sim.demo_to_dict())
 	var result: Dictionary = sim.demo_urban_social_housing(TEST_CITY, 40.0)
 	if not bool(result.get("ok", false)):
 		_fail("moradia social nao abriu")
 		return
 	# A obra do governo entra na FILA ÚNICA (§15) com kind 1 (moradia) e dono 3.
-	if _gov_housing_projects(sim.demo_to_dict()) != 1:
-		_fail("moradia social: esperava 1 obra do governo na fila, veio %d" % [
-			_gov_housing_projects(sim.demo_to_dict())])
+	if _gov_housing_projects(sim.demo_to_dict()) != social_before + 1:
+		_fail("moradia social: esperava %d obra(s) do governo na fila, veio %d" % [
+			social_before + 1, _gov_housing_projects(sim.demo_to_dict())])
 	var cash_after_open := float(_gov(sim, TEST_CITY).get("gov", {}).get("cash", 0.0))
 	var paid := float(result.get("cost", 0.0))
 	if paid <= 0.0 or not _close(cash, cash_after_open + paid, 1.0e-6):

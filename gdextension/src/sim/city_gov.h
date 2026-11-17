@@ -49,6 +49,13 @@ constexpr double kTotalTaxPctOfGdp = 0.30;
 constexpr double kMaintenanceShareOfTarget = 0.45;
 // Ocupação de zona que dispara a decisão de adensar/expandir (spec §19 W2).
 constexpr double kBusyOccupancy = 0.90;
+// Fração do caixa da prefeitura que UMA frente (obra de solo ou lote de moradia
+// social) pode consumir no fechamento do mês. Não vem de fonte externa: é a
+// régua declarada do "sem explosão" — o município não zera o caixa numa obra,
+// e o que sobra fica de reserva para o mês seguinte (inclusive para juntar o
+// suficiente para uma obra maior). Sem essa fração a expansão comprava todo o
+// caixa disponível e o caixa fechava o mês em zero em toda cidade cheia.
+constexpr double kWorksCashShare = 0.5;
 // m² de piso por negócio (serviço ou fábrica urbana) na capacidade de zona.
 // SUBSTITUÍDO na integração: o W1 mede a zona por TRABALHADOR
 // (kDemoUrbanServiceM2PerWorker / kDemoUrbanFactoryM2PerWorker). A constante

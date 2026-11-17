@@ -512,17 +512,31 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 		}
 	}
 	const std::string commit_owner = owner == "private" ? "private" : "state";
-	const double committed = committed_cost(ws, city.id, commit_owner);
-	// Padrão: orçamento público da cidade (state) ou caixa da firma (private).
-	// INTEGRAÇÃO W2: a prefeitura paga do PRÓPRIO caixa (`payer`), então o
-	// compromisso conta contra o caixa municipal e não contra o orçamento
-	// público genérico (o dinheiro é o mesmo, a conta é outra).
+	// Gate do caixa: CADA CONTA responde só pelo que ela paga.
+	//
+	// INTEGRAÇÃO W2: a prefeitura paga do PRÓPRIO caixa (`payer`), e o custo
+	// inteiro é debitado no ato (abaixo). O caixa corrente já está líquido de
+	// todas as obras do município, então somar `committed_cost("state")` aqui
+	// misturava contas e cobrava a obra duas vezes:
+	//   1. as obras §15 de PRÉDIO do Estado saem de `city.government_budget`
+	//      (economy_sim.cpp, `demo_build`), nunca do caixa municipal — mesmo que
+	//      o campo se chame "state", é o tesouro nacional;
+	//   2. as obras que o município paga (a urbana aqui e a moradia do governo,
+	//      `housing::start_project`) já tiveram `total_cost` debitado do caixa
+	//      no ato, e `committed_cost` conta de novo o que ainda não foi pago.
+	// Esse duplo cômputo era o gate que barrava a prefeitura em cidade cheia
+	// com caixa (Q-015, B3). O orçamento público e o caixa da firma mantêm a
+	// regra anterior (`committed + cost`), porque lá o compromisso do dono é a
+	// régua declarada do §15 e mexer nela mudaria a economia privada.
+	double committed = 0.0;
 	double budget = 0.0;
 	if (payer != nullptr) {
 		budget = std::max(0.0, payer->cash);
 	} else if (commit_owner == "state") {
+		committed = committed_cost(ws, city.id, commit_owner);
 		budget = std::max(0.0, city.government_budget);
 	} else {
+		committed = committed_cost(ws, city.id, commit_owner);
 		budget = std::max(0.0, city.firm_cash);
 	}
 	if (committed + cost > budget) {
