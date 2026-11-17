@@ -58,38 +58,114 @@ const City* SimCore::find_city(const std::string& id) const {
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
 }
 
-void SimCore::rebuild_indexes() {
-	ws_.city_lookup.clear();
-	ws_.city_lookup.reserve(ws_.cities.size() * 2);
-	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
-		ws_.city_lookup.emplace(ws_.cities[index].id, static_cast<int>(index));
+void SimCore::rebuild_indexes(bool full) {
+	// Caminho barato (todo tick): SÓ o índice de construções por cidade, que é
+	// o único que muda dentro do jogo (falida removida no prólogo, obra
+	// concluída no tick). Cidades, nações, massas de terra e o lookup por id só
+	// mudam no carregamento — esses são refeitos com full=true (load, set_urban,
+	// cenário de validação e rollback de invariante).
+	if (full) {
+		// A2: tabelas de nomes (ordem lexicográfica: reproduz a ordem das somas
+		// que hoje itera std::map<std::string, ...>).
+		std::vector<std::string> nations;
+		std::vector<std::string> landmasses;
+		nations.reserve(ws_.cities.size() / 4 + 8);
+		landmasses.reserve(ws_.cities.size() / 8 + 8);
+		for (const City& city : ws_.cities) {
+			nations.push_back(city.nation);
+			landmasses.push_back(city.landmass);
+		}
+		for (const Port& port : ws_.ports) {
+			nations.push_back(port.nation);
+			landmasses.push_back(port.landmass);
+		}
+		for (const std::string& nation : ws_.fleet_order) {
+			nations.push_back(nation);
+		}
+		for (const Group& group : ws_.groups) {
+			nations.push_back(group.origin_nation);
+		}
+		for (const Currency& currency : ws_.currencies) {
+			for (const std::string& nation : currency.nations) {
+				nations.push_back(nation);
+			}
+		}
+		for (const Tariff& tariff : ws_.tariffs) {
+			if (tariff.buyer != "*") {
+				nations.push_back(tariff.buyer);
+			}
+			if (tariff.seller != "*") {
+				nations.push_back(tariff.seller);
+			}
+		}
+		for (const FdiPolicy& policy : ws_.fdi_policies) {
+			nations.push_back(policy.nation);
+		}
+		for (const SectorIncentive& incentive : ws_.incentives) {
+			nations.push_back(incentive.nation);
+		}
+		for (const auto& row : ws_.confidence) {
+			nations.push_back(row.first);
+		}
+		for (const auto& row : ws_.group_flows) {
+			nations.push_back(row.first);
+		}
+		for (const auto& row : ws_.minimum_wages) {
+			nations.push_back(row.first);
+		}
+		ws_.nation_table.build(nations);
+		ws_.landmass_table.build(landmasses);
+		for (City& city : ws_.cities) {
+			city.nation_index = ws_.nation_table.find(city.nation);
+			city.landmass_index = ws_.landmass_table.find(city.landmass);
+		}
+		ws_.city_lookup.clear();
+		ws_.city_lookup.reserve(ws_.cities.size() * 2);
+		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+			ws_.city_lookup.emplace(ws_.cities[index].id, static_cast<int>(index));
+		}
+		// F4: cidades por nação, na ordem estável dos índices de cidade. A frota
+		// é nacional (o governo compra combustível/peças/veículos no mercado
+		// interno), então a compra visita só as cidades da nação, nunca o mundo.
+		ws_.cities_by_nation.clear();
+		ws_.cities_by_nation.reserve(ws_.nation_table.size() + 8);
+		ws_.fleet_order.clear();
+		ws_.fleet_order.reserve(ws_.nation_table.size() + 8);
+		for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
+			const std::string& nation = ws_.cities[index].nation;
+			auto found = ws_.cities_by_nation.find(nation);
+			if (found == ws_.cities_by_nation.end()) {
+				found = ws_.cities_by_nation.emplace(nation, std::vector<int>{}).first;
+				ws_.fleet_order.push_back(nation);
+			}
+			found->second.push_back(static_cast<int>(index));
+		}
+		// A2: o índice de tarifas usa as tabelas de nação/produto; refaz aqui
+		// (o load chama rebuild_tariff_lookup antes das cidades existirem).
+		rebuild_tariff_lookup();
+		// Caminho quente abaixo: o índice por cidade e o de construções.
 	}
 	// Uma lista de construções por cidade: as fases do tick e o resumo passam a
 	// visitar só as construções locais, em vez de varrer o mundo inteiro.
-	ws_.buildings_by_city.assign(ws_.cities.size(), {});
+	if (ws_.buildings_by_city.size() != ws_.cities.size()) {
+		ws_.buildings_by_city.resize(ws_.cities.size());
+	}
+	for (std::vector<int>& list : ws_.buildings_by_city) {
+		list.clear();  // preserva a capacidade: nada de 834 realocações por dia
+	}
 	for (std::size_t index = 0; index < ws_.buildings.size(); ++index) {
-		const auto found = ws_.city_lookup.find(ws_.buildings[index].city);
-		if (found == ws_.city_lookup.end()) {
+		Building& building = ws_.buildings[index];
+		if (building.city_index < 0 && !building.city.empty()) {
+			const auto found = ws_.city_lookup.find(building.city);
+			building.city_index =
+				found == ws_.city_lookup.end() ? -1 : found->second;
+		}
+		if (building.city_index < 0
+				|| building.city_index >= static_cast<int>(ws_.buildings_by_city.size())) {
 			continue;
 		}
-		ws_.buildings_by_city[static_cast<std::size_t>(found->second)]
+		ws_.buildings_by_city[static_cast<std::size_t>(building.city_index)]
 			.push_back(static_cast<int>(index));
-	}
-	// F4: cidades por nação, na ordem estável dos índices de cidade. A frota é
-	// nacional (o governo compra combustível/peças/veículos no mercado interno),
-	// então a compra visita só as cidades da nação, nunca o mundo.
-	ws_.cities_by_nation.clear();
-	ws_.cities_by_nation.reserve(ws_.cities.size() / 4 + 8);
-	ws_.fleet_order.clear();
-	ws_.fleet_order.reserve(ws_.cities.size() / 4 + 8);
-	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
-		const std::string& nation = ws_.cities[index].nation;
-		auto found = ws_.cities_by_nation.find(nation);
-		if (found == ws_.cities_by_nation.end()) {
-			found = ws_.cities_by_nation.emplace(nation, std::vector<int>{}).first;
-			ws_.fleet_order.push_back(nation);
-		}
-		found->second.push_back(static_cast<int>(index));
 	}
 }
 
@@ -153,9 +229,17 @@ void SimCore::prologue() {
 	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
 	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).
 	Snapshot& before = ws_.snapshot_buffer;
-	snapshot_state(before);
+	{
+		OGS_SIM_ZONE(kPhasePrologueSnapshot);
+		snapshot_state(before);
+	}
 	money_before_ = money_total();
 
+	// O "resto do prólogo" cobre esta faixa inteira; o bloco de índices abaixo é
+	// uma zona ANINHADA (o tempo dele também aparece em `prologue_other`, porque
+	// `rebuild_indexes()` cai no meio da faixa).
+	{
+	OGS_SIM_ZONE(kPhasePrologueOther);
 	++ws_.day;
 	ws_.last_orders.clear();
 	// Obras de porto com prazo vencido entram em operação neste dia.
@@ -185,8 +269,13 @@ void SimCore::prologue() {
 		++it;
 	}
 	// O tick apaga construções falidas: os índices por cidade são refeitos
-	// antes de qualquer fase usá-los.
-	rebuild_indexes();
+	// antes de qualquer fase usá-los. A2: caminho barato — cidades, nações e
+	// tarifas só mudam no carregamento, então só o índice de construções por
+	// cidade é reconstruído aqui.
+	{
+		OGS_SIM_ZONE(kPhasePrologueIndexes);
+		rebuild_indexes(false);
+	}
 
 	// Preço de abertura do dia por cidade/produto. O limite de variação é
 	// aplicado UMA vez, no fim do tick: importação e reação de mercado não
@@ -198,6 +287,7 @@ void SimCore::prologue() {
 			open_prices_[city_index][product] =
 				ws_.cities[city_index].markets[product].price;
 		}
+	}
 	}
 }
 

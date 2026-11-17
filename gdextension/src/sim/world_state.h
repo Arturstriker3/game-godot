@@ -7,7 +7,63 @@
 #include "sim_types.h"
 #include "urban_types.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 namespace ogs {
+
+// A2 — tabela de nomes -> índice inteiro. Só a fronteira de I/O (save, status,
+// binding) vê strings; o caminho quente usa o índice.
+//
+// `names` fica em ORDEM LEXICOGRÁFICA: um mapa ordenado por índice tem, então,
+// exatamente a mesma ordem de iteração do antigo std::map<std::string, ...> —
+// somas em ponto flutuante dependem da ordem e não podem mudar.
+struct NameTable {
+	std::vector<std::string> names;               // índice -> nome
+	std::unordered_map<std::string, int> lookup;  // nome -> índice
+
+	void clear() {
+		names.clear();
+		lookup.clear();
+	}
+	int size() const { return static_cast<int>(names.size()); }
+	// -1 quando o nome não está na tabela (ausência explícita).
+	int find(const std::string& name) const {
+		const auto found = lookup.find(name);
+		return found == lookup.end() ? -1 : found->second;
+	}
+	const std::string& at(int index) const { return names[static_cast<std::size_t>(index)]; }
+	// Acrescenta sem ordenar — SÓ no carregamento, antes de build().
+	int intern(const std::string& name) {
+		const auto found = lookup.find(name);
+		if (found != lookup.end()) {
+			return found->second;
+		}
+		const int index = static_cast<int>(names.size());
+		names.push_back(name);
+		lookup.emplace(names.back(), index);
+		return index;
+	}
+	// Ordena e deduplica a partir do conjunto de nomes observado.
+	void build(const std::vector<std::string>& source) {
+		clear();
+		std::vector<std::string> unique;
+		unique.reserve(source.size());
+		for (const std::string& name : source) {
+			unique.push_back(name);
+		}
+		std::sort(unique.begin(), unique.end());
+		unique.erase(std::unique(unique.begin(), unique.end()), unique.end());
+		names = std::move(unique);
+		lookup.reserve(names.size() * 2 + 8);
+		for (std::size_t index = 0; index < names.size(); ++index) {
+			lookup.emplace(names[index], static_cast<int>(index));
+		}
+	}
+};
 
 struct WorldState {
 	int day = 0;
@@ -79,6 +135,15 @@ struct WorldState {
 	// Índices derivados do mundo demo (ver rebuild_indexes).
 	std::unordered_map<std::string, int> city_lookup;
 	std::vector<std::vector<int>> buildings_by_city;
+	// A2: tabelas de nomes -> índice (ver NameTable). Preenchidas no
+	// carregamento por rebuild_indexes(true); o tick não as reconstrói.
+	NameTable nation_table;
+	NameTable landmass_table;
+	// A2: tarifa resolvida por índices inteiros. Chave = (comprador+1)<<42 |
+	// (vendedor+1)<<21 | (produto+1); -1 codifica o curinga '*'. Preenchida em
+	// rebuild_tariff_lookup(); quando `size()` não bate com `tariff_lookup`
+	// (alguma linha não resolvível), tariff_rate cai no caminho textual.
+	std::unordered_map<std::uint64_t, double> tariff_by_index;
 	// F4: cidades por nação (ordem de índice) para a frota/compra do governo.
 	std::unordered_map<std::string, std::vector<int>> cities_by_nation;
 	std::vector<Shipment> in_transit;

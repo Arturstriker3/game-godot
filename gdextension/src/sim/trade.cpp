@@ -11,6 +11,19 @@
 #include <cmath>
 
 namespace ogs {
+
+namespace {
+// A2: mesma massa de terra comparando o ÍNDICE derivado (o laço de compradores
+// compara centenas de pares por dia). Se algum dos dois não tiver índice — só
+// possível em estado montado à mão — cai na comparação textual original.
+inline bool same_landmass_city(const City& left, const City& right) {
+	if (left.landmass_index >= 0 && right.landmass_index >= 0) {
+		return left.landmass_index == right.landmass_index;
+	}
+	return left.landmass == right.landmass;
+}
+}  // namespace
+
 void SimCore::trade_food() {
 	// Comércio genérico de alimento (cesta de calorias, B3) entre cidades do
 	// mundo real: cidades com déficit compram das que têm excedente, escolhendo
@@ -250,16 +263,25 @@ void SimCore::trade_food() {
 	// nunca descartam um comprador que ainda poderia comprar. Sem isso, um
 	// comprador sem rota possível varria a grade inteira (12 mil células) todos
 	// os dias atrás de vendedores que nunca poderiam servi-lo.
-	std::unordered_map<std::string, int> sellers_in_landmass;
-	std::unordered_map<std::string, int> port_sellers_in_landmass;
+	// A2: contagem por ÍNDICE de massa de terra (o laço de compradores roda uma
+	// vez por cidade/dia; o hash de string saiu do caminho). A tabela é
+	// construída a partir das próprias cidades, então todo índice é >= 0.
+	const std::size_t landmass_count =
+		static_cast<std::size_t>(ws_.landmass_table.size());
+	std::vector<int> sellers_in_landmass(landmass_count, 0);
+	std::vector<int> port_sellers_in_landmass(landmass_count, 0);
 	int port_sellers_total = 0;
 	for (std::size_t si = 0; si < city_count; ++si) {
 		if (sellable_ge[si] <= 1e-9) {
 			continue;
 		}
-		++sellers_in_landmass[ws_.cities[si].landmass];
+		const int landmass = ws_.cities[si].landmass_index;
+		if (landmass < 0) {
+			continue;
+		}
+		++sellers_in_landmass[static_cast<std::size_t>(landmass)];
 		if (city_port[si] >= 0) {
-			++port_sellers_in_landmass[ws_.cities[si].landmass];
+			++port_sellers_in_landmass[static_cast<std::size_t>(landmass)];
 			++port_sellers_total;
 		}
 	}
@@ -291,8 +313,11 @@ void SimCore::trade_food() {
 		// só com porto nas duas pontas. Comprador sem nenhum vendedor alcançável
 		// não gera oferta: sair aqui evita varrer a grade inteira por dia.
 		const int buyer_port = city_port[static_cast<std::size_t>(buyer.index)];
-		const int local_sellers = sellers_in_landmass[buyer.city->landmass];
-		const int local_port_sellers = port_sellers_in_landmass[buyer.city->landmass];
+		const int buyer_landmass = buyer.city->landmass_index;
+		const int local_sellers = buyer_landmass >= 0
+			? sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
+		const int local_port_sellers = buyer_landmass >= 0
+			? port_sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
 		const int reachable_sellers = local_sellers + (buyer_port >= 0
 			? port_sellers_total - local_port_sellers : 0);
 		if (reachable_sellers <= 0) {
@@ -353,8 +378,9 @@ void SimCore::trade_food() {
 					// Sem porto, a cidade só compra dentro da própria massa de
 					// terra: vendedores do outro lado do mar não são candidatos.
 					if (buyer_port < 0
-							&& ws_.cities[static_cast<std::size_t>(si)].landmass
-								!= buyer.city->landmass) {
+							&& !same_landmass_city(
+								ws_.cities[static_cast<std::size_t>(si)],
+								*buyer.city)) {
 						continue;
 					}
 					candidates.push_back(si);
@@ -413,9 +439,9 @@ void SimCore::trade_food() {
 			if (&seller == buyer.city || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
 				continue;
 			}
-			const bool same_landmass = seller.landmass == buyer.city->landmass;
+			const bool seller_same_landmass = same_landmass_city(seller, *buyer.city);
 			double unit_freight = 0.0;
-			if (same_landmass) {
+			if (seller_same_landmass) {
 				unit_freight = leg_unit_freight_food(TransportMode::Truck,
 					distance_km(seller.center, buyer.city->center));
 			} else {
@@ -458,8 +484,8 @@ void SimCore::trade_food() {
 				}
 				const double origin_anchor =
 					price * city_competitive[static_cast<std::size_t>(si)];
-				const double tariff_factor = tariff_rate(
-					buyer.city->nation, seller.nation, product);
+				const double tariff_factor =
+					tariff_rate_cities(*buyer.city, seller, product);
 				const double unit_tariff =
 					(origin_anchor + unit_freight) * tariff_factor;
 				// Valor entregue em âncora: é ele que ordena a oferta (sem
@@ -544,7 +570,7 @@ void SimCore::trade_food() {
 			// veículo); com frota parcial, sai proporcional. Portos/fila/
 			// transbordo continuam sendo os existentes.
 			const bool fleet_same_landmass =
-				seller->landmass == buyer.city->landmass;
+				same_landmass_city(*seller, *buyer.city);
 			TransportDemand transport = route_demand(*seller, *buyer.city,
 				fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
 				fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
@@ -604,7 +630,9 @@ void SimCore::trade_food() {
 			buyer.city->imported[product] += amount_tons;
 			buyer.city->import_value[product] += cost + freight;
 
-			const bool same_landmass = seller->landmass == buyer.city->landmass;
+			// A2: mesma expressão já calculada acima (`fleet_same_landmass`);
+			// os dois lados são puros no laço, então o valor é idêntico.
+			const bool same_landmass = fleet_same_landmass;
 
 			// Pedido de comércio para os comboios 3D e o HUD. Na mesma massa de
 			// terra vai de caminhão em linha reta; entre massas, o caminhão
@@ -623,12 +651,12 @@ void SimCore::trade_food() {
 			order.product = product;
 			order.amount = amount_tons;
 			order.origin_price = origin_anchor
-				/ std::max(1e-9, fx_rate(seller->nation));
+				/ std::max(1e-9, city_fx[static_cast<std::size_t>(si)]);
 			order.origin_price_anchor = origin_anchor;
 			order.tariff = tariff_paid;
 			order.delivered_price = offer.delivered;
-			order.fx_rate = fx_rate(buyer.city->nation);
-			order.seller_fx_rate = fx_rate(seller->nation);
+			order.fx_rate = city_fx[static_cast<std::size_t>(buyer.index)];
+			order.seller_fx_rate = city_fx[static_cast<std::size_t>(si)];
 			order.buyer_currency = currency_code(buyer.city->nation);
 			order.seller_currency = currency_code(seller->nation);
 			// Cotação que forma o preço interno na ÂNCORA: valor CIF do BEM
@@ -991,7 +1019,7 @@ void SimCore::trade_goods() {
 					continue;
 				}
 				double unit_freight = 0.0;
-				if (seller.landmass == buyer_city.landmass) {
+				if (same_landmass_city(seller, buyer_city)) {
 					unit_freight = leg_unit_freight(TransportMode::Truck,
 						distance_km(seller.center, buyer_city.center));
 				} else {
@@ -1012,8 +1040,8 @@ void SimCore::trade_goods() {
 				}
 				const double origin_anchor = seller.markets[product].price
 					* competitiveness(seller.nation);
-				const double tariff_factor = tariff_rate(
-					buyer_city.nation, seller.nation, product);
+				const double tariff_factor =
+					tariff_rate_cities(buyer_city, seller, product);
 				const double unit_tariff =
 					(origin_anchor + unit_freight) * tariff_factor;
 				const double delivered_anchor =
@@ -1070,7 +1098,7 @@ void SimCore::trade_goods() {
 				// ou sem fuel a carga não sai (a fila do dia alimenta a reposição
 				// do governo); com capacidade parcial, embarca proporcional.
 				const bool fleet_same_landmass =
-					seller.landmass == buyer_city.landmass;
+					same_landmass_city(seller, buyer_city);
 				TransportDemand transport = route_demand(seller, buyer_city,
 					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
 						offer.seller_index)],
@@ -1158,7 +1186,7 @@ void SimCore::trade_goods() {
 				double total_transit = 0.0;
 				double total_freight_cost = 0.0;
 				double port_delay_days = 0.0;
-				if (seller.landmass == buyer_city.landmass) {
+				if (same_landmass_city(seller, buyer_city)) {
 					Leg leg = make_leg(TransportMode::Truck, seller.id, buyer_city.id,
 						seller.center, buyer_city.center, amount);
 					total_transit = leg.transit_hours;

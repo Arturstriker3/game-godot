@@ -224,6 +224,9 @@ namespace ogs {
 	struct Building {
 		std::string id;
 		std::string city;
+		// A2: índice de cidade derivado (não serializado). Evita o hash de
+		// `city` a cada reconstrução do índice por cidade (todo tick).
+		int city_index = -1;
 		int kind = 0; // 0=fazenda (único tipo hoje; campo mantido por exibição)
 		std::string resource;  // recurso produzido (id de goods.json)
 		std::string owner = "private"; // private ou state
@@ -716,6 +719,12 @@ namespace ogs {
 		std::string nation;
 		std::string home_nation;  // região natural (território que controla)
 		std::string landmass;     // massa de terra contínua (rota terrestre)
+		// A2: índices derivados de `nation`/`landmass` na tabela de nomes do
+		// WorldState (índice = posição lexicográfica; ver NameTable). NÃO são
+		// serializados: rebuild_indexes(true) os preenche no carregamento. O
+		// caminho quente compara ints em vez de strings.
+		int nation_index = -1;
+		int landmass_index = -1;
 		MapPoint center{0.0, 0.0};
 		// `population` é a população REAL exibida (2026, nação inteira rateada
 		// entre as cidades). `simulation_population` é a aglomeração da fonte,
@@ -828,6 +837,12 @@ namespace ogs {
 		// produto×comprador). O "prep" (índices/grade) sai por subtração.
 		kPhaseTradeFood, kPhaseTradeFoodBuyers,
 		kPhaseTradeGoods, kPhaseTradeGoodsLoop,
+		// Zonas de perfil finas (A2): recortam trechos que hoje caem agregados
+		// numa fase só (prólogo, trânsito de chegada e fiscal). Só medição —
+		// nenhum efeito no jogo.
+		kPhasePrologueSnapshot, kPhasePrologueIndexes, kPhasePrologueOther,
+		kPhaseArrivalTransit,
+		kPhaseFiscalCityGov, kPhaseFiscalEqualize, kPhaseFiscalGroups,
 		kPhaseCount
 	};
 

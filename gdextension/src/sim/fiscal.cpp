@@ -16,12 +16,17 @@ namespace ogs {
 void SimCore::phase_fiscal() {
 	// §19 W2: prefeitura — IPTU, taxas locais, repasse do tesouro nacional,
 	// manutenção urbana, obras e decisão de adensar/expandir/moradia social.
-	city_gov::tick(ws_, ws_.day, this);
+	{
+		OGS_SIM_ZONE(kPhaseFiscalCityGov);
+		city_gov::tick(ws_, ws_.day, this);
+	}
 	// Equalização fiscal per capita dentro de cada nação: o orçamento público é
 	// repartido entre as cidades proporcionalmente à população. Uma cidade rica
 	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:
 	// Paris sustenta Cayenne). Conserva dinheiro — só move government_budget
 	// entre cidades da MESMA nação.
+	{
+	OGS_SIM_ZONE(kPhaseFiscalEqualize);
 	std::unordered_map<std::string, std::vector<City*>> by_nation;
 	by_nation.reserve(ws_.cities.size() / 4 + 8);
 	for (City& city : ws_.cities) {
@@ -44,6 +49,7 @@ void SimCore::phase_fiscal() {
 				total_budget * (city->simulation_population / total_population);
 		}
 	}
+	}
 	if (ws_.groups.empty()) {
 		// Sem grupos não há dividendo, mas a fase continua cronometrada.
 		OGS_SIM_PHASE_LAP(kPhaseFiscal);
@@ -65,6 +71,8 @@ void SimCore::phase_fiscal() {
 		}
 		++it;
 	}
+	{
+	OGS_SIM_ZONE(kPhaseFiscalGroups);
 	for (std::size_t index = 0; index < ws_.groups.size(); ++index) {
 		Group& group = ws_.groups[index];
 		if (group.state_owned || group.distributable <= 1e-9) {
@@ -127,6 +135,7 @@ void SimCore::phase_fiscal() {
 				group.distributable - credited_total);
 			group.dividends_total += credited_total;
 		}
+	}
 	}
 
 	OGS_SIM_PHASE_LAP(kPhaseFiscal);

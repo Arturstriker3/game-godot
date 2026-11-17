@@ -108,7 +108,9 @@ public:
 	// ------------------------------------------------------------------
 	City* find_city(const std::string& id);
 	const City* find_city(const std::string& id) const;
-	void rebuild_indexes();
+	// A2: `full=false` é o caminho de todo tick (só o índice por cidade;
+	// cidades/nações/tarifas só mudam no carregamento).
+	void rebuild_indexes(bool full = true);
 	double money_total() const;
 	void init_pop_needs(Pop& pop) const;
 	static double extraction_efficiency(const Deposit& deposit);
@@ -166,6 +168,17 @@ public:
 	void tick_fx();
 	double tariff_rate(const std::string& buyer_nation,
 		const std::string& seller_nation, int product) const;
+	// A2: mesma tarifa resolvida por índices de nação (caminho quente do
+	// comércio) e o caminho textual original (fallback quando alguma linha não
+	// é resolvível por índice).
+	double tariff_rate_at_nation(int buyer_nation, int seller_nation,
+		int product) const;
+	double tariff_rate_text(const std::string& buyer_nation,
+		const std::string& seller_nation, int product) const;
+	// A2: tarifa no laço quente — índices quando a tabela está completa, senão
+	// o caminho textual (mesmo resultado sempre).
+	double tariff_rate_cities(const City& buyer_city, const City& seller_city,
+		int product) const;
 	int product_index(const std::string& product) const;
 	const char* product_name(int product) const;
 	// F8: serviços.

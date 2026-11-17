@@ -53,6 +53,9 @@ const PHASES := [
 	"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
 	"status", "status_cities", "status_orders", "status_nations", "status_misc",
 	"trade_food", "trade_food_buyers", "trade_goods", "trade_goods_loop",
+	"prologue_snapshot", "prologue_indexes", "prologue_other",
+	"arrival_transit",
+	"fiscal_city_gov", "fiscal_equalize", "fiscal_groups",
 ]
 
 var _days := 30
