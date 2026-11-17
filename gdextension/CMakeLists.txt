@@ -51,6 +51,7 @@ add_library(opengs_sim STATIC
     src/sim/housing.cpp
     src/sim/scenario_fixture.cpp
     src/sim/commands.cpp
+    src/sim/actions.cpp
     src/sim/save_value.cpp
     src/sim/save_state.cpp
     src/sim/save_definitions.cpp
