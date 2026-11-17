@@ -64,6 +64,11 @@ var _id_counter := 1
 var _sum_surplus := PackedFloat64Array()
 var _sum_sold := PackedFloat64Array()
 var _sum_demand := PackedFloat64Array()
+## Capacidade futura em obras por produto (soma em TODAS as cidades), medida no
+## prepare_totals. A IA subtrai isso da escassez para não abrir mina/fazenda
+## concorrente enquanto o mundo já constrói capacidade para a mesma lacuna
+## (§15/D-060 — cascata de minas/algodão/madeira).
+var _sum_pending := PackedFloat64Array()
 ## Balanço alimentar mundial medido no mesmo `prepare_totals` (t-eq/dia):
 ## oferta local (supply × fator calórico) e necessidade das POPs. A IA usa esse
 ## sinal para expandir comida em regiões excedentes quando o mundo está curto.
@@ -113,6 +118,7 @@ func prepare_totals(status: Dictionary) -> void:
 	_totals_status = status
 	var cities: Array = status.get("cities", [])
 	_measure_food_balance(cities)
+	_measure_pending()
 	_refresh_groups()
 	var totals: Dictionary = status.get("market_totals", {})
 	if not totals.is_empty():
@@ -215,6 +221,27 @@ func _measure_food_balance(cities: Array) -> void:
 	_system_food_supply = supply
 	_food_need_by_region = region_need
 	_food_supply_by_region = region_supply
+
+
+## Capacidade futura em obras por produto (soma em TODAS as cidades), a partir
+## da tabela CSR `c_*` do bloco light (§15/D-060). Medida 1× por dia junto com os
+## totais; a IA subtrai isso da escassez efetiva para não abrir mina/fazenda
+## concorrente enquanto o mundo já constrói capacidade para a mesma lacuna.
+func _measure_pending() -> void:
+	_sum_pending = PackedFloat64Array()
+	var light: Dictionary = _totals_status.get("light", {})
+	var product_count := int(light.get("product_count", 0))
+	if product_count <= 0:
+		return
+	_sum_pending.resize(product_count)
+	var c_output: PackedInt32Array = light.get(
+		"c_output_product", PackedInt32Array())
+	var c_capacity: PackedFloat64Array = light.get(
+		"c_capacity", PackedFloat64Array())
+	for index in c_output.size():
+		var product := int(c_output[index])
+		if product >= 0 and product < product_count:
+			_sum_pending[product] += float(c_capacity[index])
 
 
 ## true enquanto a oferta de comida não cobre a necessidade com o buffer, no
@@ -345,8 +372,12 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			if not _input_available(city, template, local_products) \
 					and not _chain_inputs_producible(city, template, status):
 				continue
-		elif Templates.LAND_COMPETING_RESOURCES.has(resource_name) and not food_secure:
-			# Algodão/madeira disputam a mesma bacia/mão de obra da cesta.
+		elif Templates.LAND_COMPETING_RESOURCES.has(resource_name):
+			# §15/D-060: algodão/madeira são renováveis de exportação cuja demanda
+			# é "latente" (não financiada) — quando a fazenda entra, o preço cai
+			# ao piso e ela fale em cascata (a exportação não sustenta o preço).
+			# A IA não abre essas lavouras até a cadeia final (têxtil/madeireira)
+			# ter demanda real — pendência F3 (cadeias finais profundas).
 			continue
 		if _try_template(day, city, status, resource_name, shortage,
 				available, capital_cost, local_products):
@@ -398,6 +429,15 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	var product := int(template["output"])
 	var sold := Templates.market_field(city, product, "m_sold")
 	var surplus := Templates.market_field(city, product, "m_surplus")
+	# §15/D-060: a capacidade futura em obras conta na decisão — a lacuna já
+	# sendo atendida por uma obra em voo não dispara outra construção (cascata
+	# de minas/fazendas). A escassez efetiva desconta a obra em andamento na
+	# cidade E a capacidade futura global (outras cidades construindo o mesmo).
+	var effective_shortage := maxf(0.0, shortage
+		- Templates.pending_capacity(city, product))
+	if product < _sum_pending.size():
+		effective_shortage = maxf(0.0,
+			effective_shortage - float(_sum_pending[product]))
 
 	# F3 — oferta mundial curta: para a cesta alimentar, o excedente LOCAL não
 	# bloqueia a expansão em região excedente; o que importa é a necessidade
@@ -422,7 +462,7 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		_log(day, city_id, "avoid", resource_name,
 			"excesso de oferta no sistema (%.1f t)" % system_surplus, 0.0, 0.0, 0.0)
 		return false
-	if shortage < MIN_SHORTAGE_TONS:
+	if effective_shortage < MIN_SHORTAGE_TONS:
 		return false
 	if not _resource_available(city, resource_name, template):
 		_log(day, city_id, "avoid", resource_name,
@@ -446,6 +486,16 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		unit_cost = Templates.variable_cost_mined(resource_name, city)
 	else:
 		unit_cost = Templates.variable_cost(resource_name, city)
+		# §15/D-060: aptidão < 1.0 reduz a produção efetiva (capacidade × aptidão)
+		# — o custo por tonelada produzida sobe para custo ÷ aptidão. Sem isso a
+		# IA abre algodão/madeira que produzem fração da capacidade e falem (o
+		# mesmo gate de viabilidade do governo em `_best_food_crop`).
+		if not is_recipe:
+			var suitability: Array = city.get("suitability", [])
+			if product >= 0 and product < suitability.size():
+				var apt := float(suitability[product])
+				if apt > 0.0 and apt < 1.0:
+					unit_cost = unit_cost / apt
 	# Fábrica sem demanda madura: o preço de referência é o piso de custo
 	# (o núcleo garante cost_floor × 1,05 na fase de preços), não o preço
 	# corrente de um mercado que ainda não se formou.
@@ -459,13 +509,13 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 		return false
 
 	var unit_capital := float(template.get("capital_per_capacity", capital_cost))
-	var capacity := clampf(shortage, MIN_CAPACITY, MAX_CAPACITY)
+	var capacity := clampf(effective_shortage, MIN_CAPACITY, MAX_CAPACITY)
 	if is_mineral:
 		# Mesmo dimensionamento da mina estatal (B4): teto na demanda externa
 		# × 1.2, para o investidor privado também não superexpandir além do que
 		# o mercado externo absorve (evita o churn de minas superdimensionadas).
 		var external_demand := Templates.external_demand_of(city, product)
-		capacity = clampf(minf(shortage, external_demand * EXPORT_CAPACITY_FACTOR),
+		capacity = clampf(minf(effective_shortage, external_demand * EXPORT_CAPACITY_FACTOR),
 			MIN_CAPACITY, MAX_CAPACITY)
 	# Terra limitada: a capacidade de uma fazenda (alimento da cesta) não pode
 	# ultrapassar a capacidade física da área cultivável da cidade (regra nova).
@@ -603,6 +653,13 @@ func _resource_available(city: Dictionary, resource_name: String, template: Dict
 	var suitability: Array = city.get("suitability", [])
 	if product >= suitability.size() \
 			or float(suitability[product]) < MIN_SUITABILITY:
+		return false
+	# §15/D-060: lavouras industriais (algodão/madeira) competem por terra com a
+	# cesta e só são viáveis em terra boa — aptidão marginal (0,30) produz fração
+	# da capacidade e a fazenda fale quando o preço de escassez normaliza. O
+	# mesmo teto do investidor privado (MIN_SUITABILITY_EXPORT abaixo).
+	if Templates.LAND_COMPETING_RESOURCES.has(resource_name) \
+			and float(suitability[product]) < 0.50:
 		return false
 	if Templates.MINERAL_RESOURCES.has(resource_name):
 		return _has_deposit(city, resource_name)

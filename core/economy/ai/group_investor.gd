@@ -480,6 +480,48 @@ func _light_market(city_index: int, product: int, field: String) -> float:
 	return values[at]
 
 
+## Capacidade futura em obras (t/dia) na cidade `city_index` para `product`
+## (obra nova + expansão), do bloco `light` (§15/D-060). A IA subtrai isso da
+## escassez para não reconstruir a mesma lacuna enquanto uma obra está em voo.
+## 0 sem bloco light ou sem obra.
+func _pending_capacity(city_index: int, product: int) -> float:
+	if _light_product_count <= 0:
+		return 0.0
+	var c_offset: PackedInt32Array = _light.get("c_offset", PackedInt32Array())
+	if city_index < 0 or city_index + 1 >= c_offset.size():
+		return 0.0
+	var c_output: PackedInt32Array = _light.get(
+		"c_output_product", PackedInt32Array())
+	var c_capacity: PackedFloat64Array = _light.get(
+		"c_capacity", PackedFloat64Array())
+	var total := 0.0
+	for index in range(int(c_offset[city_index]), int(c_offset[city_index + 1])):
+		if int(c_output[index]) == product:
+			total += float(c_capacity[index])
+	return total
+
+
+## Capacidade futura em obras por produto (soma em TODAS as cidades), do bloco
+## light. Recalculada a cada `_load_signals` (1× por dia). A IA subtrai isso da
+## escassez de cada candidato para não abrir mina/fazenda concorrente à mesma
+## lacuna global em voo (§15/D-060).
+var _pending_global := PackedFloat64Array()
+
+func _measure_pending_global() -> void:
+	_pending_global = PackedFloat64Array()
+	if _light_product_count <= 0:
+		return
+	_pending_global.resize(_light_product_count)
+	var c_output: PackedInt32Array = _light.get(
+		"c_output_product", PackedInt32Array())
+	var c_capacity: PackedFloat64Array = _light.get(
+		"c_capacity", PackedFloat64Array())
+	for index in c_output.size():
+		var product := int(c_output[index])
+		if product >= 0 and product < _light_product_count:
+			_pending_global[product] += float(c_capacity[index])
+
+
 ## Alternativa de menor custo corrente na cidade a partir dos sinais leves —
 ## replica `Templates.best_recipe` (que lê `anchor_price` = preço de mercado)
 ## sem tocar em `city["markets"]`.
@@ -513,12 +555,24 @@ func _append_candidate(out: Array, city_index: int, city: Dictionary, resource: 
 	var product := int(context.get("product", -1))
 	if product < 0 or product >= _light_product_count:
 		return
+	# §15/D-060: algodão/madeira são renováveis de exportação cuja demanda é
+	# "latente" (não financiada) — a fazenda entra, o preço cai ao piso e ela
+	# fale em cascata. O grupo não abre essas lavouras até a cadeia final ter
+	# demanda real (pendência F3).
+	if Templates.LAND_COMPETING_RESOURCES.has(resource):
+		return
 	var price := _light_market(city_index, product, "m_price")
 	if price <= 0.0:
 		return
 	var shortage := _light_market(city_index, product, "m_shortage")
 	var sold := _light_market(city_index, product, "m_sold")
 	var desired := _light_market(city_index, product, "m_desired")
+	# §15/D-060: a escassez efetiva desconta a capacidade futura em obras — a
+	# lacuna já atendida por uma obra em voo (local ou global) não dispara outro
+	# candidato (cascata de minas/fazendas).
+	shortage = maxf(0.0, shortage - _pending_capacity(city_index, product))
+	if product >= 0 and product < _pending_global.size():
+		shortage = maxf(0.0, shortage - float(_pending_global[product]))
 	var is_food := bool(context.get("is_food", false))
 	if is_food:
 		# Comida: só onde há escassez local (nunca em excesso).
@@ -529,6 +583,13 @@ func _append_candidate(out: Array, city_index: int, city: Dictionary, resource: 
 	var base_unit := float(context.get("base_unit", 0.0))
 	if price <= base_unit:
 		return
+	# §15/D-060: lavouras industriais (algodão/madeira) competem por terra com a
+	# cesta e só são viáveis em terra boa — aptidão marginal produz fração da
+	# capacidade e a fazenda fale quando o preço normaliza.
+	if Templates.LAND_COMPETING_RESOURCES.has(resource):
+		var suitability: Array = city.get("suitability", [])
+		if product >= suitability.size() or float(suitability[product]) < 0.50:
+			return
 	var recipe: Dictionary = _light_best_recipe(resource, city_index)
 	if bool(context.get("has_recipes", false)) and recipe.is_empty():
 		return
@@ -549,6 +610,17 @@ func _append_candidate(out: Array, city_index: int, city: Dictionary, resource: 
 		if input_product >= 0:
 			unit_cost += float(context.get("input_ratio", 0.0)) \
 				* _light_market(city_index, input_product, "m_price")
+	# §15/D-060: aptidão < 1.0 reduz a produção (capacidade × aptidão) — o custo
+	# por tonelada produzida sobe para custo ÷ aptidão (mesmo gate de viabilidade
+	# do privado/governo). Sem isso o grupo abre algodão/madeira que produzem
+	# fração da capacidade e falem.
+	if not bool(context.get("has_recipes", false)) \
+			and not Templates.MINERAL_RESOURCES.has(resource):
+		var suitability: Array = city.get("suitability", [])
+		if product >= 0 and product < suitability.size():
+			var apt := float(suitability[product])
+			if apt > 0.0 and apt < 1.0:
+				unit_cost = unit_cost / apt
 	if capital_per_capacity <= 0.0:
 		return
 	var margin := price - unit_cost
@@ -693,6 +765,9 @@ func _load_signals(status: Dictionary) -> void:
 	_tariff_cache.clear()
 	_light = status.get("light", {})
 	_light_product_count = int(_light.get("product_count", 0))
+	# §15/D-060: capacidade futura em obras por produto (soma em todas as
+	# cidades), para não abrir candidato concorrente à mesma lacuna em voo.
+	_measure_pending_global()
 
 
 func _policy(nation: String, sector: String) -> Dictionary:

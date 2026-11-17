@@ -604,6 +604,47 @@ static func existing_capacity(city: Dictionary, product: int) -> float:
 	return total
 
 
+## Capacidade futura em obras (t/dia) na cidade corrente para `product`: soma da
+## capacidade das obras em andamento (obra nova + expansão), do bloco `light`
+## (§15/D-060). A IA subtrai isso da escassez observada para NÃO reconstruir a
+## mesma lacuna enquanto uma obra está em voo (cascata de minas/fazendas).
+## 0 quando sem contexto leve ou sem obra — ausência declarada, não estimada.
+static func pending_capacity(city: Dictionary, product: int) -> float:
+	if _light_products > 0 and _light_city >= 0:
+		var c_offset: PackedInt32Array = _light.get("c_offset", PackedInt32Array())
+		if _light_city + 1 >= c_offset.size():
+			return 0.0
+		var c_output: PackedInt32Array = _light.get(
+			"c_output_product", PackedInt32Array())
+		var c_capacity: PackedFloat64Array = _light.get(
+			"c_capacity", PackedFloat64Array())
+		var total := 0.0
+		for index in range(int(c_offset[_light_city]), int(c_offset[_light_city + 1])):
+			if int(c_output[index]) == product:
+				total += float(c_capacity[index])
+		return total
+	return 0.0
+
+
+## true se há uma obra NOVA (não expansão) em andamento para `product` na cidade
+## corrente: o produto ainda não tem prédio operante, mas já está em construção.
+## O governo/privado usam para não construir uma segunda planta estatal/privada
+## da mesma lacuna enquanto a primeira está em voo.
+static func has_pending_build(city: Dictionary, product: int) -> bool:
+	if _light_products > 0 and _light_city >= 0:
+		var c_offset: PackedInt32Array = _light.get("c_offset", PackedInt32Array())
+		if _light_city + 1 >= c_offset.size():
+			return false
+		var c_output: PackedInt32Array = _light.get(
+			"c_output_product", PackedInt32Array())
+		var c_expand: PackedInt32Array = _light.get("c_expand", PackedInt32Array())
+		for index in range(int(c_offset[_light_city]), int(c_offset[_light_city + 1])):
+			if int(c_output[index]) == product and int(c_expand[index]) == 0:
+				return true
+		return false
+	return false
+
+
 ## Produção local de alimento hoje, em toneladas-equivalentes de grão (soma do
 ## supply dos alimentos da cesta × fator calórico). É o contraponto do "need" do
 ## POP: a diferença indica o quanto a cidade depende de importação.

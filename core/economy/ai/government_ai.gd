@@ -163,6 +163,10 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 				continue
 			if _buildings_of_type(city, product, bindex) > 0:
 				continue
+			# §15/D-060: obra de mina em andamento conta como produtor futuro —
+			# não abrir uma segunda mina da mesma lacuna em voo.
+			if Templates.has_pending_build(city, product):
+				continue
 			var margin: float = (Templates.anchor_price(city, product)
 				- Templates.variable_cost_mined(resource, city))
 			if margin <= 0.0 \
@@ -228,6 +232,10 @@ func _input_available(city: Dictionary, input_product: int) -> bool:
 func _has_food_producer(city: Dictionary) -> bool:
 	for resource in Templates.FOOD_RESOURCES:
 		if Templates.has_producer(city, resource):
+			return true
+		# §15/D-060: obra de comida em andamento já é um produtor futuro — não
+		# abrir outra estatal da mesma lacuna enquanto a primeira está em voo.
+		if Templates.has_pending_build(city, Templates.output_of(resource)):
 			return true
 	return false
 

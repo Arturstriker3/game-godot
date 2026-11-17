@@ -1,8 +1,9 @@
 extends SceneTree
 
 ## §15 — construção como projeto físico. Guarda de regressão do cronograma de
-## obra: (1) sem material a obra ATRASA (não falha); (2) dono sem dinheiro a
-## obra PAUSA; (3) ao concluir o prédio ENTRA EM OPERAÇÃO (produz).
+## obra: (1) sem material a obra ATRASA (não falha); (2) o capital é RESERVADO
+## no início (não pausa por liquidez — o custo saiu do caixa na criação); (3) ao
+## concluir o prédio ENTRA EM OPERAÇÃO (produz).
 ##
 ##   godot --headless --path . --script res://tools/construction_project_test.gd
 
@@ -19,7 +20,7 @@ func _init() -> void:
 	_test_project_lifecycle()
 	_test_money_conservation()
 	if _failures.is_empty():
-		print("[construction] OK: material -> atrasa; dono sem dinheiro -> pausa; "
+		print("[construction] OK: material -> atrasa; capital reservado -> não pausa; "
 			+ "conclusao -> opera; dinheiro conservado.")
 		quit(0)
 	else:
@@ -108,17 +109,18 @@ func _test_project_lifecycle() -> void:
 	if bool(project.get("paused", false)):
 		_fail("material entregue: projeto ainda pausado")
 
-	# 4. dono sem dinheiro -> PAUSA (dias congelam).
+	# 4. caixa do dono zerado DEPOIS do início -> a obra NÃO pausa: o capital
+	# já foi reservado no início (investimento, não caixa de giro). O `reserved`
+	# cobre o avanço; dias continuam.
 	var elapsed_before := int(_project(sim).get("days_elapsed", -1))
 	_set_government_budget(sim, "AGRIA", 0.0)
 	sim.tick_demo()
 	project = _project(sim)
-	if int(project.get("days_elapsed", -1)) != elapsed_before:
-		_fail("dono sem dinheiro: projeto avançou (dias %d -> %d)" % [
+	if int(project.get("days_elapsed", -1)) <= elapsed_before:
+		_fail("capital reservado: projeto não avançou (dias %d -> %d)" % [
 			elapsed_before, int(project.get("days_elapsed", -1))])
-	if not bool(project.get("paused", false)) \
-			or String(project.get("pause_reason", "")) != "dono sem dinheiro":
-		_fail("dono sem dinheiro: projeto não pausou por dinheiro (%s)" % String(
+	if bool(project.get("paused", false)):
+		_fail("capital reservado: projeto pausou (%s)" % String(
 			project.get("pause_reason", "")))
 
 	# 5. devolve o dinheiro -> retoma e conclui.
