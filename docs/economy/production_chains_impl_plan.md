@@ -1002,3 +1002,21 @@ Ordem: (1) terminar o que está em curso (serviços/DJI, refatoração S2…S18)
 - Regressão de comida do commit b95c7f3 em importadores sem agricultura ACEITA (revisão Q-005: SOL na verdade 0,986, sem regressão; DJI 0,472→0,395). O baseline de comida passa a ser o sweep v2 regenerado com a DLL final (`docs/economy/perf/services_fix_world_sweep_v2.json`).
 - Futuro: renda externa para países pobres/importadores, como ajuda humanitária (ONU/PMA), programas do FMI e bancos de desenvolvimento, remessas e serviços portuários/de trânsito (DJI→Etiópia), com dados reais. Entra depois da refatoração e das POPs por grupo, junto de crédito/juros.
 - Imóveis (2026-11-16): o modelo de imóveis nas cidades (estoque, donos/inquilinos, aluguel, preço) será DECIDIDO COM O DONO depois da revisão da refatoração; não implementar antes.
+
+## 19. Solo urbano, zoneamento e imóveis — APROVADO pelo dono (2026-11-16)
+Respostas do dono: zoneamento por cidade com área que precisa ser expandida (metrópoles como São Paulo/Tóquio); quem constrói = POPs (casas/prédios), empresas, governo/cidade (expansão + moradia barata); donos = POPs, empresas/fundos e governo; preço/aluguel = mercado local; déficit = aluguel sobe, migração combinada com outros indicadores, e favela como último caso, sobretudo para POPs pobres.
+Proposta APROVADA, com as decisões finais:
+- Limite de zona vale para moradia, comércio/serviços e indústria.
+- PREFEITURA por cidade: cada cidade tem sua economia/orçamento dentro da economia nacional. Receita = imposto sobre imóveis (tipo IPTU) + taxas locais + repasse do governo nacional; despesa = infraestrutura/expansão, moradia social e manutenção urbana. A prefeitura decide expandir/adensar/zonear (IA).
+- Ordem: (a) dados reais (área urbana, casa própria, favela, aluguel/renda, finanças municipais) em paralelo; (b) construção como projeto físico §15; (c) solo/zonas + prefeitura + imóveis; (d) migração e favela.
+1. Solo: cada cidade tem área urbana real (km², base GHSL) dividida em zonas residencial, comercial/serviços e industrial, mais uma reserva expansível limitada pela geografia (costa, relevo, cidades vizinhas).
+2. Densidade (gabarito) por zona: baixa (casas), média (prédios) e alta (torres). Capacidade = área da zona × densidade permitida. Metrópoles começam com área grande e densidade alta.
+3. Estoque: unidades por zona × densidade × padrão (popular/médio/alto, ligado aos 3 estratos de renda). Depreciam e exigem manutenção. Agregado por cidade, sem agente por prédio.
+4. Construção: tudo passa pelo projeto físico do §15 (materiais + capacidade do setor de construção + prazo). Construtores: POPs (autoconstrução de casa; prédio pequeno se tiver poupança), incorporadoras (negócios/grupos F9 que constroem para vender/alugar) e governo (moradia popular).
+5. Cidade/governo: expandir a área urbana custa infraestrutura (estrada, energia, água) e tempo; adensar (subir o gabarito) é barato mas exige infraestrutura; também constrói moradia social. Até existir prefeitura, quem decide é o governo nacional, com orçamento por cidade.
+6. Terra: preço do terreno por zona sobe com a ocupação e a renda local; o custo da obra = materiais + trabalho + terreno. Com a cidade cheia, a terra encarece e força a expansão ou o adensamento.
+7. Posse: casa própria × aluguel por estrato, com a base real de taxa de propriedade por país; aluguel vira renda do dono (POP, empresa ou governo).
+8. Preço: aluguel pelo mercado local (oferta × demanda × renda); valor do imóvel = aluguel ÷ taxa de capitalização (fixa agora, a taxa do banco central depois).
+9. Déficit, nesta ordem: o aluguel sobe; depois migração ponderada por salário, emprego, serviços e custo de moradia; por último favela para POPs pobres (área informal na periferia, baixa qualidade, piora saúde/satisfação). Mais tarde o governo pode urbanizar/regularizar.
+10. Zonas comercial e industrial também limitam a abertura de negócios e fábricas (ligação com serviços e produção).
+11. Dados reais: área urbana (GHSL), taxa de casa própria (OECD/UN-Habitat), população em favela (ODS 11.1.1), aluguel/renda.
