@@ -2236,7 +2236,8 @@
   "dock.logistics": "Logística",
   "trade.col.product": "Bem",
   "trade.col.delivered": "Entregue",
-  "trade.col.currency": "Moeda"
+  "trade.col.currency": "Moeda",
+  "port.name.SGP-SIN": "Singapore"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -4475,7 +4476,8 @@
   "dock.logistics": "Logistics",
   "trade.col.product": "Good",
   "trade.col.delivered": "Delivered",
-  "trade.col.currency": "Currency"
+  "trade.col.currency": "Currency",
+  "port.name.SGP-SIN": "Singapore"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -6714,6 +6716,7 @@
   "dock.logistics": "Logística",
   "trade.col.product": "Bien",
   "trade.col.delivered": "Entregado",
-  "trade.col.currency": "Moneda"
+  "trade.col.currency": "Moneda",
+  "port.name.SGP-SIN": "Singapore"
  }
 }

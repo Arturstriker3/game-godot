@@ -12,6 +12,53 @@ alerts.subtitle,{count} alertas ativos,{count} active alerts,{count} alertas act
 alerts.tag.deficit,Déficit,Deficit,Déficit
 alerts.tag.low_stock,Estoque baixo,Low stock,Reserva baja
 alerts.tag.no_production,Sem produção,No production,Sin producción
+chain.col.byproducts,Subprodutos,Byproducts,Subproductos
+chain.col.consumers,Quem consome,Who consumes,Quién consume
+chain.col.inputs,Insumos,Inputs,Insumos
+chain.col.origin,Origem,Origin,Origen
+chain.col.recipe,Receita,Recipe,Receta
+chain.col.yield,Rendimento,Yield,Rendimiento
+chain.consumers.none,Sem consumo declarado,No declared consumer,Sin consumo declarado
+chain.institutional.army,Exército,Army,Ejército
+chain.institutional.building,Edifício,Building,Edificio
+chain.institutional.construction,Construção,Construction,Construcción
+chain.institutional.factory,Fábrica,Factory,Fábrica
+chain.institutional.farm,Fazenda,Farm,Granja
+chain.institutional.government,Governo,Government,Gobierno
+chain.institutional.machines,Máquinas,Machines,Máquinas
+chain.institutional.mine,Mina,Mine,Mina
+chain.institutional.pop_basic,Consumo básico das POPs,Basic POP consumption,Consumo básico de las POPs
+chain.institutional.pop_life,Consumo de vida das POPs,Life POP consumption,Consumo de vida de las POPs
+chain.institutional.pop_luxury,Consumo de luxo das POPs,Luxury POP consumption,Consumo de lujo de las POPs
+chain.institutional.port,Porto,Port,Puerto
+chain.institutional.treasury,Tesouro,Treasury,Tesoro
+chain.institutional.vehicle_fleet,Frota,Fleet,Flota
+chain.institutional.workshop,Oficina,Workshop,Taller
+chain.level.basic,Básico,Basic,Básico
+chain.level.life,Vida,Life,Vida
+chain.level.luxury,Luxo,Luxury,Lujo
+chain.need.clothing,Vestuário,Clothing,Vestimenta
+chain.need.communication,Comunicação,Communication,Comunicación
+chain.need.food,Alimentação,Food,Alimentación
+chain.need.footwear,Calçado,Footwear,Calzado
+chain.need.health,Saúde,Health,Salud
+chain.need.home,Casa,Home,Hogar
+chain.need.leisure,Lazer,Leisure,Ocio
+chain.need.protein,Proteína,Protein,Proteína
+chain.need.status,Status,Status,Estatus
+chain.need.tech,Tecnologia,Technology,Tecnología
+chain.need.transport,Transporte,Transport,Transporte
+chain.note,"Receitas alternativas do bem selecionado: insumos → produto → subprodutos → quem consome. Sem receita, o bem é extraído.","Alternative recipes for the selected good: inputs → product → byproducts → who consumes it. Without a recipe, the good is extracted.","Recetas alternativas del bien seleccionado: insumos → producto → subproductos → quién lo consume. Sin receta, el bien se extrae."
+chain.origin.deposit,Jazida,Deposit,Yacimiento
+chain.origin.factory,Fábrica,Factory,Fábrica
+chain.origin.farm,Fazenda,Farm,Granja
+chain.origin.none,—,—,—
+chain.recipe.extraction,Extração,Extraction,Extracción
+chain.recipe.none,Sem insumo industrial,No industrial input,Sin insumo industrial
+chain.recipes.empty,Nenhuma receita publicada para este bem.,No recipe published for this good.,Ninguna receta publicada para este bien.
+chain.recipes.footer,Receitas declaradas em recipes.json,Recipes declared in recipes.json,Recetas declaradas en recipes.json
+chain.select,Selecione um bem,Select a good,Seleccione un bien
+chain.title,Cadeia de produção,Production chain,Cadena de producción
 city.attendance,Atendimento da demanda,Demand met,Demanda atendida
 city.balance.title,Balanço do trigo,Wheat balance,Balance del trigo
 city.chain.modeled,Modelado,Modeled,Modelado
@@ -48,7 +95,7 @@ city.industry.title,Distrito industrial,Industrial district,Distrito industrial
 city.jobs,Empregos,Jobs,Empleos
 city.jobs.title,Trabalho e renda,Work and income,Trabajo e ingreso
 city.jobs_per_k,Empregos / mil hab.,Jobs / 1k people,Empleos / mil hab.
-city.market.unmodeled.body,"A ficha resume o trigo; a tela Mercado traz os 114 bens com preço na moeda local e o preço entregue das ofertas.","This sheet summarizes wheat; the Market screen carries all 114 goods with local-currency prices and delivered offer prices.","La ficha resume el trigo; la pantalla Mercado trae los 114 bienes con precio en moneda local y el precio entregado de las ofertas."
+city.market.unmodeled.body,A ficha resume o trigo; a tela Mercado traz os 114 bens com preço na moeda local e o preço entregue das ofertas.,This sheet summarizes wheat; the Market screen carries all 114 goods with local-currency prices and delivered offer prices.,La ficha resume el trigo; la pantalla Mercado trae los 114 bienes con precio en moneda local y el precio entregado de las ofertas.
 city.market.unmodeled.title,Mercado completo,Full market,Mercado completo
 city.name.ABW-ORA,Oranjestad,Oranjestad,Oranjestad
 city.name.AFG-HER,Herat,Herāt,Herat
@@ -971,6 +1018,8 @@ deposit.Plant,Planta,Plant,Planta
 deposit.Producer,Em produção,Producing,En producción
 deposit.Prospect,Prospecção,Prospect,Prospección
 dock.economy,Economia,Economy,Economía
+dock.logistics,Logística,Logistics,Logística
+dock.market,Mercado,Market,Mercado
 dock.politics,Política,Politics,Política
 dock.population,População,Population,Población
 dock.production,Produção,Production,Producción
@@ -998,6 +1047,37 @@ econ.summary,{cities} cidades · {deficit} em déficit · {transit} em trânsito
 econ.tab.cities,Cidades,Cities,Ciudades
 econ.tab.nations,Nações,Nations,Naciones
 econ.title,Economia do trigo,Wheat economy,Economía del trigo
+fleet.card.title,Frota da nação,National fleet,Flota de la nación
+fleet.count,{n} nações com frota,{n} nations with fleet,{n} naciones con flota
+fleet.fuel,Combustível,Fuel,Combustible
+fleet.missed_fleet,Sem frota,No fleet,Sin flota
+fleet.missed_fuel,Sem combustível,No fuel,Sin combustible
+fleet.note,"Veículos em uso, combustível e peças vêm do estoque nacional; sem frota ou combustível a carga não sai.","Vehicles in use, fuel and parts come from the national stock; without fleet or fuel, cargo does not leave.","Vehículos en uso, combustible y piezas vienen del stock nacional; sin flota o combustible, la carga no sale."
+fleet.parts,Peças,Parts,Piezas
+fleet.planes,Aviões,Planes,Aviones
+fleet.queue,Fila de carga,Cargo queue,Cola de carga
+fleet.ships,Navios,Ships,Barcos
+fleet.source,Origem da frota,Fleet source,Origen de la flota
+fleet.source.declared,Declarada,Declared,Declarada
+fleet.source.derived,Derivada de população/PIB,Derived from population/GDP,Derivada de población/PIB
+fleet.total_health,{total} veículos · saúde {health}%,{total} vehicles · {health}% health,{total} vehículos · salud {health}%
+fleet.trucks,Caminhões,Trucks,Camiones
+fleet.usage,{used} em uso · {free} livres · saúde {health}%,{used} in use · {free} free · {health}% health,{used} en uso · {free} libres · salud {health}%
+fx.anchor_rate,Taxa,Rate,Tasa
+fx.balance,Balança comercial,Trade balance,Balanza comercial
+fx.base,Taxa-base,Base rate,Tasa base
+fx.card.title,Moeda da nação,National currency,Moneda de la nación
+fx.code,Moeda,Currency,Moneda
+fx.count,{n} moedas,{n} currencies,{n} monedas
+fx.footer,Moedas publicadas pela simulação,Currencies published by the simulation,Monedas publicadas por la simulación
+fx.note,Taxa = unidades de âncora por unidade local (exibição). O caixa e o preço interno continuam na âncora XGS.,Rate = anchor units per local unit (display). Cash and internal prices stay in the XGS anchor.,Tasa = unidades de ancla por unidad local (exhibición). La caja y el precio interno siguen en el ancla XGS.
+fx.rate,Taxa vs âncora,Rate vs anchor,Tasa vs ancla
+fx.regime,Regime,Regime,Régimen
+fx.regime.float,Flutuante,Floating,Flotante
+fx.regime.peg,Fixo,Peg,Fijo
+fx.search,Buscar moeda ou fonte,Search currency or source,Buscar moneda o fuente
+fx.source,Fonte,Source,Fuente
+fx.tariff_revenue,Receita de tarifas,Tariff revenue,Ingresos de tarifas
 hud.alerts,Alertas,Alerts,Alertas
 hud.credits.body,"WarEconomy — simulação econômica. Imagens de satélite © Esri, Maxar, Earthstar Geographics.","WarEconomy — economic simulation. Satellite imagery © Esri, Maxar, Earthstar Geographics.","WarEconomy — simulación económica. Imágenes de satélite © Esri, Maxar, Earthstar Geographics."
 hud.day,Dia {day},Day {day},Día {day}
@@ -1027,6 +1107,14 @@ hud.transit,Em trânsito,In transit,En tránsito
 lang.en,Inglês,English,Inglés
 lang.es,Espanhol,Spanish,Español
 lang.pt_BR,Português (Brasil),Portuguese (Brazil),Portugués (Brasil)
+logistics.crumb,"Frota, câmbio, tarifas e portos","Fleet, exchange, tariffs and ports","Flota, cambio, tarifas y puertos"
+logistics.search.nation,Buscar nação,Search nation,Buscar nación
+logistics.select.nation,Selecione uma nação,Select a nation,Seleccione una nación
+logistics.tab.fleet,Frota,Fleet,Flota
+logistics.tab.fx,Câmbio,Exchange,Cambio
+logistics.tab.ports,Portos,Ports,Puertos
+logistics.tab.tariff,Tarifas,Tariffs,Tarifas
+logistics.title,Logística,Logistics,Logística
 map.economic,Economia,Economy,Economía
 map.geographic,Geográfico,Geographic,Geográfico
 map.hint,Camada de dados exibida sobre o mesmo mapa.,Data layer drawn over the same map.,Capa de datos sobre el mismo mapa.
@@ -1080,6 +1168,59 @@ map.minimap.title,Mundo,World,Mundo
 map.political,Político,Political,Político
 map.population,População,Population,Población
 map.resources,Recursos,Resources,Recursos
+market.cities.count,{shown} de {total},{shown} of {total},{shown} de {total}
+market.col.cif,CIF,CIF,CIF
+market.col.delivered,Entregue,Delivered,Entregado
+market.col.good,Bem,Good,Bien
+market.col.layer,Camada,Layer,Capa
+market.col.origin,Origem,Origin,Origen
+market.col.price,Preço local,Local price,Precio local
+market.col.tariff,Tarifa,Tariff,Tarifa
+market.col.total,Custo total,Total cost,Costo total
+market.crumb,Mercado por nação e cidade,Market by nation and city,Mercado por nación y ciudad
+market.detail.currency,Moeda,Currency,Moneda
+market.detail.fx,Taxa (âncora),Rate (anchor),Tasa (ancla)
+market.detail.import,Preço de importação,Import price,Precio de importación
+market.detail.note,"CIF = origem + tarifa. O frete é serviço doméstico do comprador: entra no custo total, fora do CIF. Sem pedido do dia, a oferta fica sem registro.","CIF = origin + tariff. Freight is a domestic buyer service: it adds to the total cost, outside CIF. Without an order today, the offer has no record.","CIF = origen + tarifa. El flete es un servicio doméstico del comprador: suma al costo total, fuera del CIF. Sin pedido del día, la oferta no tiene registro."
+market.detail.title,Bem selecionado,Selected good,Bien seleccionado
+market.goods.count,{shown} de {total},{shown} of {total},{shown} de {total}
+market.kind.byproduct,Subproduto,Byproduct,Subproducto
+market.kind.final,Final,Final,Final
+market.kind.intermediate,Intermediário,Intermediate,Intermedio
+market.kind.raw,Matéria-prima,Raw material,Materia prima
+market.nation.none,Nenhuma nação,No nation,Ninguna nación
+market.nation.title,Resumo da nação,Nation summary,Resumen de la nación
+market.offers.count,{n} pedidos,{n} orders,{n} pedidos
+market.offers.empty.body,Nenhum pedido deste bem chegou à cidade no dia publicado.,No order for this good reached the city on the published day.,Ningún pedido de este bien llegó a la ciudad en el día publicado.
+market.offers.empty.title,Sem comércio registrado,No trade recorded,Sin comercio registrado
+market.offers.footer,Origem + tarifa = CIF · CIF + frete = custo total/t,Origin + tariff = CIF · CIF + freight = total cost/t,Origen + tarifa = CIF · CIF + flete = costo total/t
+market.offers.hint,Por tonelada · moeda do comprador ({currency}),Per ton · buyer's currency ({currency}),Por tonelada · moneda del comprador ({currency})
+market.offers.title,Melhores ofertas,Best offers,Mejores ofertas
+market.search.city,Buscar cidade ou nação,Search city or nation,Buscar ciudad o nación
+market.search.good,Buscar bem,Search good,Buscar bien
+market.sector.agro,Agro,Agro,Agro
+market.sector.all,Todos,All,Todos
+market.sector.chemical,Química,Chemicals,Química
+market.sector.construction,Construção,Construction,Construcción
+market.sector.electronics,Eletrônicos,Electronics,Electrónica
+market.sector.energy,Energia,Energy,Energía
+market.sector.food,Alimentos,Food,Alimentos
+market.sector.luxury,Luxo,Luxury,Lujo
+market.sector.machinery,Máquinas,Machinery,Maquinaria
+market.sector.metal,Metais,Metals,Metales
+market.sector.military,Militar,Military,Militar
+market.sector.mining,Mineração,Mining,Minería
+market.sector.packaging,Embalagem,Packaging,Embalaje
+market.sector.textile,Têxtil,Textile,Textil
+market.sector.transport,Transporte,Transport,Transporte
+market.sector.wood,Madeira,Wood,Madera
+market.select.city,Selecione uma cidade,Select a city,Seleccione una ciudad
+market.select.good,Selecione um bem,Select a good,Seleccione un bien
+market.tab.market,Bens,Goods,Bienes
+market.tab.offers,Ofertas,Offers,Ofertas
+market.tag.kind,Tipo,Kind,Tipo
+market.tag.sector,Setor,Sector,Sector
+market.title,Mercado,Market,Mercado
 mode.plane,Avião,Plane,Avión
 mode.ship,Navio,Ship,Barco
 mode.truck,Caminhão,Truck,Camión
@@ -1476,9 +1617,51 @@ pop.empty.body,A simulação ainda não publicou dados de população para esta 
 pop.hint,"População, emprego e consumo das cidades.","Population, jobs and consumption across cities.","Población, empleo y consumo de las ciudades."
 pop.income,Renda média,Average income,Renta media
 pop.jobs,Empregos,Jobs,Empleos
+pop.needs.basic,Básico,Basic,Básico
+pop.needs.categories.footer,Satisfação por nível; quebra por necessidade não publicada,Satisfaction by level; per-need split not published,Satisfacción por nivel; desglose por necesidad no publicado
+pop.needs.data,Dado,Data,Dato
+pop.needs.durable,Duráveis,Durables,Durables
+pop.needs.empty,Sem necessidade declarada,No declared need,Sin necesidad declarada
+pop.needs.empty.body,needs.json não trouxe categorias para a simulação atual.,needs.json brought no categories for the current simulation.,needs.json no trajo categorías para la simulación actual.
+pop.needs.footer,Selecione uma cidade para o detalhe,Select a city for detail,Seleccione una ciudad para el detalle
+pop.needs.level,Nível,Level,Nivel
+pop.needs.level.0,Nenhuma,None,Ninguna
+pop.needs.level.1,Básico,Basic,Básico
+pop.needs.level.2,Vida,Life,Vida
+pop.needs.level.3,Luxo,Luxury,Lujo
+pop.needs.life,Vida,Life,Vida
+pop.needs.luxury,Luxo,Luxury,Lujo
+pop.needs.need,Necessidade,Need,Necesidad
+pop.needs.note,"O status publica a satisfação de básico, vida e luxo e o estoque total de duráveis. A quebra por necessidade ainda não é publicada — a coluna Dado fica vazia em vez de inventar número.","The status publishes basic, life and luxury satisfaction and total durable stock. The per-need split is not published yet — the Data column stays empty instead of inventing a number.","El estado publica la satisfacción de básico, vida y lujo y el stock total de durables. El desglose por necesidad aún no se publica — la columna Dato queda vacía en vez de inventar un número."
+pop.needs.satisfaction,Satisfação geral,Overall satisfaction,Satisfacción general
+pop.needs.search,Buscar cidade ou nação,Search city or nation,Buscar ciudad o nación
+pop.needs.select,Selecione uma cidade,Select a city,Seleccione una ciudad
+pop.needs.substitutes,Substitutos,Substitutes,Sustitutos
+pop.needs.title,Consumo das POPs,POP consumption,Consumo de las POPs
 pop.note,"A simulação atual modela o consumo de trigo por cidade. Desemprego, salários nominais, poupança e migração ainda não são simulados; a renda é um índice relativo (0–100%) derivado da produção e do déficit.","The current simulation models wheat consumption per city. Unemployment, nominal wages, savings and migration are not simulated yet; income is a relative index (0–100%) derived from production and deficit.","La simulación actual modela el consumo de trigo por ciudad. El desempleo, los salarios nominales, el ahorro y la migración aún no se simulan; la renta es un índice relativo (0–100%) derivado de la producción y del déficit."
+pop.tab.needs,Consumo,Consumption,Consumo
 pop.title,População e padrão de vida,Population and living standards,Población y nivel de vida
 pop.total,População total,Total population,Población total
+port.card.title,Porto selecionado,Selected port,Puerto seleccionado
+port.col.capacity,Capacidade,Capacity,Capacidad
+port.col.delay,Atraso,Delay,Retraso
+port.col.host,Sede,Host,Sede
+port.col.level,Nível,Level,Nivel
+port.col.name,Porto,Port,Puerto
+port.col.queue,Fila,Queue,Cola
+port.col.throughput,Vazão,Throughput,Caudal
+port.count,{n} portos,{n} ports,{n} puertos
+port.expand.10,+10%,+10%,+10%
+port.expand.25,+25%,+25%,+25%
+port.expand.50,+50%,+50%,+50%
+port.expand.button,Expandir,Expand,Expandir
+port.expand.cost,+{amount} t/dia · custo {cost} · 30 dias,+{amount} t/day · cost {cost} · 30 days,+{amount} t/día · coste {cost} · 30 días
+port.expand.error,Expansão recusada: {error},Expansion refused: {error},Expansión rechazada: {error}
+port.expand.none,Selecione um porto,Select a port,Seleccione un puerto
+port.expand.ok,Expansão contratada: +{amount} t/dia · custo {cost} · {days} dias,Expansion ordered: +{amount} t/day · cost {cost} · {days} days,Expansión contratada: +{amount} t/día · coste {cost} · {days} días
+port.expand.title,Expandir capacidade,Expand capacity,Expandir capacidad
+port.expand.unavailable,Simulação indisponível,Simulation unavailable,Simulación no disponible
+port.footer,Capacidade e fila publicadas pela simulação,Capacity and queue published by the simulation,Capacidad y cola publicadas por la simulación
 port.name.AGO-BEN,Benguela,Benguela,Benguela
 port.name.ALB-DUR,Durrës,Durrës,Durrës
 port.name.ALB-TIR,Tirana,Tirana,Tirana
@@ -1593,6 +1776,7 @@ port.name.RUS-SEV,Sevastopol,Sevastopol,Sevastopol
 port.name.RUS-YUZ,Yuzhno-Sakhalinsk,Yuzhno-Sakhalinsk,Yuzhno-Sakhalinsk
 port.name.SAU-DAM,Dammam,Dammam,Dammam
 port.name.SAU-JED,Jeddah,Jeddah,Jeddah
+port.name.SGP-SIN,Singapore,Singapore,Singapore
 port.name.SLV-SAN,San Salvador,San Salvador,San Salvador
 port.name.SMR-SAN,San Marino,San Marino,San Marino
 port.name.SOL-BER,Berbera,Berbera,Berbera
@@ -1623,6 +1807,9 @@ port.name.VEN-MAR,Maracaibo,Maracaibo,Maracaibo
 port.name.VEN-VLN,Valencia,Valencia,Valencia
 port.name.ZAF-CAP,Cape Town,Cape Town,Cape Town
 port.name.ZAF-DUR,Durban,Durban,Durban
+port.occupancy,Ocupação,Occupancy,Ocupación
+port.search,Buscar porto ou nação,Search port or nation,Buscar puerto o nación
+port.select,Selecione um porto,Select a port,Seleccione un puerto
 prod.hint,Clique numa cidade para ver a produção local.,Click a city to inspect its local production.,Haz clic en una ciudad para ver su producción local.
 prod.tab.chain,Cadeia,Chain,Cadena
 prod.tab.cities,Cidades,Cities,Ciudades
@@ -1864,7 +2051,26 @@ resource.wood,Madeira,Wood,Madera
 scope.internacional,Internacional,International,Internacional
 scope.nacional,Nacional,National,Nacional
 scope.regional,Regional,Regional,Regional
+tariff.any,Qualquer,Any,Cualquiera
+tariff.applied,Tarifa aplicada: {buyer} ← {partner} · {good} · {rate}%,Tariff applied: {buyer} ← {partner} · {good} · {rate}%,Tarifa aplicada: {buyer} ← {partner} · {good} · {rate}%
+tariff.apply,Aplicar tarifa,Apply tariff,Aplicar tarifa
+tariff.buyer,Comprador,Buyer,Comprador
+tariff.empty.body,Use os seletores acima e aplique uma taxa para este comprador.,Use the selectors above and apply a rate for this buyer.,Use los selectores de arriba y aplique una tasa para este comprador.
+tariff.empty.title,Nenhuma tarifa registrada,No tariff recorded,Ninguna tarifa registrada
+tariff.footer,Tarifas do comprador selecionado,Tariffs of the selected buyer,Tarifas del comprador seleccionado
+tariff.good,Bem,Good,Bien
+tariff.hint,Comprador {buyer} · parceiro {partner} · {good} · {rate}%,Buyer {buyer} · partner {partner} · {good} · {rate}%,Comprador {buyer} · socio {partner} · {good} · {rate}%
+tariff.partner,Parceiro,Partner,Socio
+tariff.rate,Tarifa,Tariff,Tarifa
+tariff.rate.0,0%,0%,0%
+tariff.rate.10,10%,10%,10%
+tariff.rate.25,25%,25%,25%
+tariff.rate.5,5%,5%,5%
+tariff.rate.50,50%,50%,50%
+tariff.unavailable,Simulação indisponível,Simulation unavailable,Simulación no disponible
 trade.col.amount,Carga,Load,Carga
+trade.col.currency,Moeda,Currency,Moneda
+trade.col.delivered,Entregue,Delivered,Entregado
 trade.col.distance,Distância,Distance,Distancia
 trade.col.exports,Exportações,Exports,Exportaciones
 trade.col.freight,Frete,Freight,Flete
@@ -1873,6 +2079,7 @@ trade.col.hours,Trânsito,Transit,Tránsito
 trade.col.imports,Importações,Imports,Importaciones
 trade.col.mode,Modo,Mode,Modo
 trade.col.offer,Oferta/dia,Supply/day,Oferta/día
+trade.col.product,Bem,Good,Bien
 trade.col.scope,Mercado,Market,Mercado
 trade.col.to,Destino,To,Destino
 trade.col.trips,Viagens,Trips,Viajes
@@ -1893,209 +2100,3 @@ trade.tab.orders,Pedidos,Orders,Pedidos
 trade.tab.routes,Rotas,Routes,Rutas
 trade.title,Comércio e logística,Trade and logistics,Comercio y logística
 trade.today,Pedidos do dia,Today's orders,Pedidos del día
-market.title,Mercado,Market,Mercado
-market.crumb,Mercado por nação e cidade,Market by nation and city,Mercado por nación y ciudad
-market.tab.market,Bens,Goods,Bienes
-market.tab.offers,Ofertas,Offers,Ofertas
-market.search.city,Buscar cidade ou nação,Search city or nation,Buscar ciudad o nación
-market.search.good,Buscar bem,Search good,Buscar bien
-market.cities.count,{shown} de {total},{shown} of {total},{shown} de {total}
-market.goods.count,{shown} de {total},{shown} of {total},{shown} de {total}
-market.select.city,Selecione uma cidade,Select a city,Seleccione una ciudad
-market.select.good,Selecione um bem,Select a good,Seleccione un bien
-market.nation.title,Resumo da nação,Nation summary,Resumen de la nación
-market.nation.none,Nenhuma nação,No nation,Ninguna nación
-market.col.good,Bem,Good,Bien
-market.col.price,Preço local,Local price,Precio local
-market.col.origin,Origem,Origin,Origen
-market.col.tariff,Tarifa,Tariff,Tarifa
-market.col.delivered,Entregue,Delivered,Entregado
-market.col.cif,CIF,CIF,CIF
-market.col.total,Custo total,Total cost,Costo total
-market.col.layer,Camada,Layer,Capa
-market.sector.all,Todos,All,Todos
-market.sector.food,Alimentos,Food,Alimentos
-market.sector.agro,Agro,Agro,Agro
-market.sector.mining,Mineração,Mining,Minería
-market.sector.energy,Energia,Energy,Energía
-market.sector.metal,Metais,Metals,Metales
-market.sector.chemical,Química,Chemicals,Química
-market.sector.machinery,Máquinas,Machinery,Maquinaria
-market.sector.construction,Construção,Construction,Construcción
-market.sector.wood,Madeira,Wood,Madera
-market.sector.packaging,Embalagem,Packaging,Embalaje
-market.sector.textile,Têxtil,Textile,Textil
-market.sector.transport,Transporte,Transport,Transporte
-market.sector.electronics,Eletrônicos,Electronics,Electrónica
-market.sector.military,Militar,Military,Militar
-market.sector.luxury,Luxo,Luxury,Lujo
-market.kind.raw,Matéria-prima,Raw material,Materia prima
-market.kind.intermediate,Intermediário,Intermediate,Intermedio
-market.kind.byproduct,Subproduto,Byproduct,Subproducto
-market.kind.final,Final,Final,Final
-market.detail.title,Bem selecionado,Selected good,Bien seleccionado
-market.detail.import,Preço de importação,Import price,Precio de importación
-market.detail.currency,Moeda,Currency,Moneda
-market.detail.fx,Taxa (âncora),Rate (anchor),Tasa (ancla)
-market.detail.note,"CIF = origem + tarifa. O frete é serviço doméstico do comprador: entra no custo total, fora do CIF. Sem pedido do dia, a oferta fica sem registro.","CIF = origin + tariff. Freight is a domestic buyer service: it adds to the total cost, outside CIF. Without an order today, the offer has no record.","CIF = origen + tarifa. El flete es un servicio doméstico del comprador: suma al costo total, fuera del CIF. Sin pedido del día, la oferta no tiene registro."
-market.tag.sector,Setor,Sector,Sector
-market.tag.kind,Tipo,Kind,Tipo
-market.offers.title,Melhores ofertas,Best offers,Mejores ofertas
-market.offers.count,{n} pedidos,{n} orders,{n} pedidos
-market.offers.hint,Por tonelada · moeda do comprador ({currency}),Per ton · buyer's currency ({currency}),Por tonelada · moneda del comprador ({currency})
-market.offers.footer,Origem + tarifa = CIF · CIF + frete = custo total/t,Origin + tariff = CIF · CIF + freight = total cost/t,Origen + tarifa = CIF · CIF + flete = costo total/t
-market.offers.empty.title,Sem comércio registrado,No trade recorded,Sin comercio registrado
-market.offers.empty.body,Nenhum pedido deste bem chegou à cidade no dia publicado.,No order for this good reached the city on the published day.,Ningún pedido de este bien llegó a la ciudad en el día publicado.
-logistics.title,Logística,Logistics,Logística
-logistics.crumb,"Frota, câmbio, tarifas e portos","Fleet, exchange, tariffs and ports","Flota, cambio, tarifas y puertos"
-logistics.tab.fleet,Frota,Fleet,Flota
-logistics.tab.fx,Câmbio,Exchange,Cambio
-logistics.tab.tariff,Tarifas,Tariffs,Tarifas
-logistics.tab.ports,Portos,Ports,Puertos
-logistics.search.nation,Buscar nação,Search nation,Buscar nación
-logistics.select.nation,Selecione uma nação,Select a nation,Seleccione una nación
-fleet.count,{n} nações com frota,{n} nations with fleet,{n} naciones con flota
-fleet.card.title,Frota da nação,National fleet,Flota de la nación
-fleet.trucks,Caminhões,Trucks,Camiones
-fleet.ships,Navios,Ships,Barcos
-fleet.planes,Aviões,Planes,Aviones
-fleet.fuel,Combustível,Fuel,Combustible
-fleet.parts,Peças,Parts,Piezas
-fleet.queue,Fila de carga,Cargo queue,Cola de carga
-fleet.missed_fleet,Sem frota,No fleet,Sin flota
-fleet.missed_fuel,Sem combustível,No fuel,Sin combustible
-fleet.source,Origem da frota,Fleet source,Origen de la flota
-fleet.source.derived,Derivada de população/PIB,Derived from population/GDP,Derivada de población/PIB
-fleet.source.declared,Declarada,Declared,Declarada
-fleet.usage,{used} em uso · {free} livres · saúde {health}%,{used} in use · {free} free · {health}% health,{used} en uso · {free} libres · salud {health}%
-fleet.total_health,{total} veículos · saúde {health}%,{total} vehicles · {health}% health,{total} vehículos · salud {health}%
-fleet.note,"Veículos em uso, combustível e peças vêm do estoque nacional; sem frota ou combustível a carga não sai.","Vehicles in use, fuel and parts come from the national stock; without fleet or fuel, cargo does not leave.","Vehículos en uso, combustible y piezas vienen del stock nacional; sin flota o combustible, la carga no sale."
-fx.card.title,Moeda da nação,National currency,Moneda de la nación
-fx.code,Moeda,Currency,Moneda
-fx.rate,Taxa vs âncora,Rate vs anchor,Tasa vs ancla
-fx.anchor_rate,Taxa,Rate,Tasa
-fx.regime,Regime,Regime,Régimen
-fx.regime.peg,Fixo,Peg,Fijo
-fx.regime.float,Flutuante,Floating,Flotante
-fx.base,Taxa-base,Base rate,Tasa base
-fx.balance,Balança comercial,Trade balance,Balanza comercial
-fx.tariff_revenue,Receita de tarifas,Tariff revenue,Ingresos de tarifas
-fx.source,Fonte,Source,Fuente
-fx.note,Taxa = unidades de âncora por unidade local (exibição). O caixa e o preço interno continuam na âncora XGS.,Rate = anchor units per local unit (display). Cash and internal prices stay in the XGS anchor.,Tasa = unidades de ancla por unidad local (exhibición). La caja y el precio interno siguen en el ancla XGS.
-fx.search,Buscar moeda ou fonte,Search currency or source,Buscar moneda o fuente
-fx.count,{n} moedas,{n} currencies,{n} monedas
-fx.footer,Moedas publicadas pela simulação,Currencies published by the simulation,Monedas publicadas por la simulación
-tariff.buyer,Comprador,Buyer,Comprador
-tariff.partner,Parceiro,Partner,Socio
-tariff.good,Bem,Good,Bien
-tariff.rate,Tarifa,Tariff,Tarifa
-tariff.rate.0,0%,0%,0%
-tariff.rate.5,5%,5%,5%
-tariff.rate.10,10%,10%,10%
-tariff.rate.25,25%,25%,25%
-tariff.rate.50,50%,50%,50%
-tariff.apply,Aplicar tarifa,Apply tariff,Aplicar tarifa
-tariff.hint,Comprador {buyer} · parceiro {partner} · {good} · {rate}%,Buyer {buyer} · partner {partner} · {good} · {rate}%,Comprador {buyer} · socio {partner} · {good} · {rate}%
-tariff.footer,Tarifas do comprador selecionado,Tariffs of the selected buyer,Tarifas del comprador seleccionado
-tariff.empty.title,Nenhuma tarifa registrada,No tariff recorded,Ninguna tarifa registrada
-tariff.empty.body,Use os seletores acima e aplique uma taxa para este comprador.,Use the selectors above and apply a rate for this buyer.,Use los selectores de arriba y aplique una tasa para este comprador.
-tariff.any,Qualquer,Any,Cualquiera
-tariff.applied,Tarifa aplicada: {buyer} ← {partner} · {good} · {rate}%,Tariff applied: {buyer} ← {partner} · {good} · {rate}%,Tarifa aplicada: {buyer} ← {partner} · {good} · {rate}%
-tariff.unavailable,Simulação indisponível,Simulation unavailable,Simulación no disponible
-port.search,Buscar porto ou nação,Search port or nation,Buscar puerto o nación
-port.count,{n} portos,{n} ports,{n} puertos
-port.footer,Capacidade e fila publicadas pela simulação,Capacity and queue published by the simulation,Capacidad y cola publicadas por la simulación
-port.col.name,Porto,Port,Puerto
-port.col.level,Nível,Level,Nivel
-port.col.capacity,Capacidade,Capacity,Capacidad
-port.col.throughput,Vazão,Throughput,Caudal
-port.col.queue,Fila,Queue,Cola
-port.col.host,Sede,Host,Sede
-port.col.delay,Atraso,Delay,Retraso
-port.card.title,Porto selecionado,Selected port,Puerto seleccionado
-port.select,Selecione um porto,Select a port,Seleccione un puerto
-port.occupancy,Ocupação,Occupancy,Ocupación
-port.expand.title,Expandir capacidade,Expand capacity,Expandir capacidad
-port.expand.10,+10%,+10%,+10%
-port.expand.25,+25%,+25%,+25%
-port.expand.50,+50%,+50%,+50%
-port.expand.none,Selecione um porto,Select a port,Seleccione un puerto
-port.expand.button,Expandir,Expand,Expandir
-port.expand.cost,+{amount} t/dia · custo {cost} · 30 dias,+{amount} t/day · cost {cost} · 30 days,+{amount} t/día · coste {cost} · 30 días
-port.expand.ok,Expansão contratada: +{amount} t/dia · custo {cost} · {days} dias,Expansion ordered: +{amount} t/day · cost {cost} · {days} days,Expansión contratada: +{amount} t/día · coste {cost} · {days} días
-port.expand.error,Expansão recusada: {error},Expansion refused: {error},Expansión rechazada: {error}
-port.expand.unavailable,Simulação indisponível,Simulation unavailable,Simulación no disponible
-chain.title,Cadeia de produção,Production chain,Cadena de producción
-chain.select,Selecione um bem,Select a good,Seleccione un bien
-chain.note,"Receitas alternativas do bem selecionado: insumos → produto → subprodutos → quem consome. Sem receita, o bem é extraído.","Alternative recipes for the selected good: inputs → product → byproducts → who consumes it. Without a recipe, the good is extracted.","Recetas alternativas del bien seleccionado: insumos → producto → subproductos → quién lo consume. Sin receta, el bien se extrae."
-chain.recipes.footer,Receitas declaradas em recipes.json,Recipes declared in recipes.json,Recetas declaradas en recipes.json
-chain.col.recipe,Receita,Recipe,Receta
-chain.col.inputs,Insumos,Inputs,Insumos
-chain.col.yield,Rendimento,Yield,Rendimiento
-chain.col.byproducts,Subprodutos,Byproducts,Subproductos
-chain.col.consumers,Quem consome,Who consumes,Quién consume
-chain.col.origin,Origem,Origin,Origen
-chain.origin.deposit,Jazida,Deposit,Yacimiento
-chain.origin.farm,Fazenda,Farm,Granja
-chain.origin.factory,Fábrica,Factory,Fábrica
-chain.origin.none,—,—,—
-chain.recipes.empty,Nenhuma receita publicada para este bem.,No recipe published for this good.,Ninguna receta publicada para este bien.
-chain.recipe.extraction,Extração,Extraction,Extracción
-chain.recipe.none,Sem insumo industrial,No industrial input,Sin insumo industrial
-chain.consumers.none,Sem consumo declarado,No declared consumer,Sin consumo declarado
-chain.need.food,Alimentação,Food,Alimentación
-chain.need.clothing,Vestuário,Clothing,Vestimenta
-chain.need.protein,Proteína,Protein,Proteína
-chain.need.footwear,Calçado,Footwear,Calzado
-chain.need.health,Saúde,Health,Salud
-chain.need.home,Casa,Home,Hogar
-chain.need.communication,Comunicação,Communication,Comunicación
-chain.need.leisure,Lazer,Leisure,Ocio
-chain.need.transport,Transporte,Transport,Transporte
-chain.need.status,Status,Status,Estatus
-chain.need.tech,Tecnologia,Technology,Tecnología
-chain.level.basic,Básico,Basic,Básico
-chain.level.life,Vida,Life,Vida
-chain.level.luxury,Luxo,Luxury,Lujo
-chain.institutional.pop_basic,Consumo básico das POPs,Basic POP consumption,Consumo básico de las POPs
-chain.institutional.pop_life,Consumo de vida das POPs,Life POP consumption,Consumo de vida de las POPs
-chain.institutional.pop_luxury,Consumo de luxo das POPs,Luxury POP consumption,Consumo de lujo de las POPs
-chain.institutional.army,Exército,Army,Ejército
-chain.institutional.farm,Fazenda,Farm,Granja
-chain.institutional.government,Governo,Government,Gobierno
-chain.institutional.port,Porto,Port,Puerto
-chain.institutional.vehicle_fleet,Frota,Fleet,Flota
-chain.institutional.mine,Mina,Mine,Mina
-chain.institutional.treasury,Tesouro,Treasury,Tesoro
-chain.institutional.workshop,Oficina,Workshop,Taller
-chain.institutional.construction,Construção,Construction,Construcción
-chain.institutional.factory,Fábrica,Factory,Fábrica
-chain.institutional.machines,Máquinas,Machines,Máquinas
-chain.institutional.building,Edifício,Building,Edificio
-pop.tab.needs,Consumo,Consumption,Consumo
-pop.needs.search,Buscar cidade ou nação,Search city or nation,Buscar ciudad o nación
-pop.needs.footer,Selecione uma cidade para o detalhe,Select a city for detail,Seleccione una ciudad para el detalle
-pop.needs.level,Nível,Level,Nivel
-pop.needs.basic,Básico,Basic,Básico
-pop.needs.life,Vida,Life,Vida
-pop.needs.luxury,Luxo,Luxury,Lujo
-pop.needs.durable,Duráveis,Durables,Durables
-pop.needs.select,Selecione uma cidade,Select a city,Seleccione una ciudad
-pop.needs.satisfaction,Satisfação geral,Overall satisfaction,Satisfacción general
-pop.needs.need,Necessidade,Need,Necesidad
-pop.needs.substitutes,Substitutos,Substitutes,Sustitutos
-pop.needs.data,Dado,Data,Dato
-pop.needs.categories.footer,Satisfação por nível; quebra por necessidade não publicada,Satisfaction by level; per-need split not published,Satisfacción por nivel; desglose por necesidad no publicado
-pop.needs.note,"O status publica a satisfação de básico, vida e luxo e o estoque total de duráveis. A quebra por necessidade ainda não é publicada — a coluna Dado fica vazia em vez de inventar número.","The status publishes basic, life and luxury satisfaction and total durable stock. The per-need split is not published yet — the Data column stays empty instead of inventing a number.","El estado publica la satisfacción de básico, vida y lujo y el stock total de durables. El desglose por necesidad aún no se publica — la columna Dato queda vacía en vez de inventar un número."
-pop.needs.empty,Sem necessidade declarada,No declared need,Sin necesidad declarada
-pop.needs.empty.body,needs.json não trouxe categorias para a simulação atual.,needs.json brought no categories for the current simulation.,needs.json no trajo categorías para la simulación actual.
-pop.needs.level.0,Nenhuma,None,Ninguna
-pop.needs.level.1,Básico,Basic,Básico
-pop.needs.level.2,Vida,Life,Vida
-pop.needs.level.3,Luxo,Luxury,Lujo
-pop.needs.title,Consumo das POPs,POP consumption,Consumo de las POPs
-dock.market,Mercado,Market,Mercado
-dock.logistics,Logística,Logistics,Logística
-trade.col.product,Bem,Good,Bien
-trade.col.delivered,Entregue,Delivered,Entregado
-trade.col.currency,Moeda,Currency,Moneda

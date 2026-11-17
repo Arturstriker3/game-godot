@@ -33,10 +33,11 @@ $logdir = Join-Path $env:TEMP "opengs_q015_sweep"
 New-Item -ItemType Directory -Force -Path $logdir | Out-Null
 # Q-016 (365 d, --urban=1, 5 processos) foi o baseline corrente ate a
 # recalibracao de areas/populacao (`recal/data-areas-pop`): re-mediu-se o mundo
-# DEPOIS de `data/province-area-fix` + `data/q016-city-pop` e o novo baseline e
-# `recal_world_sweep.json`. `q16_world_sweep.json` e
+# DEPOIS de `data/province-area-fix` + `data/q016-city-pop` (baseline
+# `recal_world_sweep.json`) e, na rodada 2, DEPOIS do porto `SGP-SIN`
+# (`recal2_world_sweep.json`). `q16_world_sweep.json` e
 # `construction_world_sweep.json` ficam historico.
-$baseline = "res://docs/economy/perf/recal_world_sweep.json"
+$baseline = "res://docs/economy/perf/recal2_world_sweep.json"
 
 $variants = @(
   @{ name = "real"; extra = @("--fx=real") },

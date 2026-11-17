@@ -5,6 +5,11 @@ base `balance/global-resources` @ `0a27150`) · **Escopo:** integrar dois commit
 (`6d253b0` Q-016 e `56a5797` áreas de província) e medir o efeito econômico no mundo de 365 d
 com IA e camada urbana (S19). **Nenhuma regra de simulação, constante ou subsídio foi criada.**
 
+> **Rodada 2 (recal2, mesmo dia).** O head decidiu **não reverter** a correção de área e tratar
+> Singapura como **erro de dado**: a cidade-estado não tinha porto no cenário. O porto `SGP-SIN`
+> entrou pelo pipeline de curadoria (`FORCED_PORTS`) e o mundo foi remedido (§9–§13). O veredito
+> anterior (§4–§6) fica como histórico do ANTES; os números correntes são os da rodada 2.
+
 ## 1. O que foi integrado
 
 | Merge | Origem | Conteúdo |
@@ -307,15 +312,227 @@ o sweep só funcionava se cada variante recebesse o caminho certo por fora.
 - **Decisão (D-069, GAME_STATE §14):** o dado real passa a ser área de província por raster do
   atlas (sem Antártida rateada) + população corrigida de Mazar-i-Sharif; baseline do sweep
   promovido para `recal_world_sweep.json`.
-- **Pendência 1 (head):** aprovar ou não a integração com o portão de comida **reprovando** em
-  SGP/LBY/EGY. Não há correção de dado limpa; as opções são (a) aceitar SGP como importador
-  estrutural, (b) abrir item de modelo para importador sem agricultura/acesso (renda/porto), ou
-  (c) reverter a correção de área — o que devolve terra antártica fictícia a AUS/CHL/NZL.
-- **Pendência 2 (dados):** `ports.json` não tem porto para SGP (nem para LBY/EGY); Singapura é
-  cidade-Estado com um dos maiores portos do mundo. Adicionar porto é decisão de dado, não desta
-  correção.
+- **Pendência 1 (head) — RESOLVIDA na rodada 2:** o head decidiu **não reverter** e tratar SGP
+  como erro de dado. O porto `SGP-SIN` entrou em `FORCED_PORTS` (§9) e o sweep `recal2` fechou
+  SGP em **1,000** (§11).
+- **Pendência 2 (dados) — RESOLVIDA para SGP, ABERTA para o resto:** `ports.json` passou a ter o
+  porto de Singapura. A mesma lacuna existe em outras ilhas/importadores (§13) e **não** foi
+  tocada nesta rodada.
 - **Pendência 3 (dados):** EGY continua com aptidão agrícola 0,0 em todas as cidades (importador
-  integral) — o vale de EGY já vinha registrado em D-067/R4.
+  integral) — o vale de EGY já vinha registrado em D-067/R4. A trajetória mensal da rodada 2
+  (§12) mostra que o número de 365 d é uma amostra de um dia em ciclo, não um colapso.
+- **Pendência 4 (ferramenta, nova):** `build_scenario_data.py` **regenera** `i18n.json` a partir
+  de `i18n.csv` e, com isso, **apaga** as chaves que só existem no JSON (137 hoje: `map.region.*`,
+  `map.legend.routes.*`, `city.services.*`, `dock.services`, `map.icon.industry`). Na rodada 2 o
+  JSON foi mesclado à mão (HEAD + `port.name.SGP-SIN`) em vez de regenerado; o conserto do
+  merge é do dono da ferramenta/i18n.
 - **Escopo respeitado:** nenhuma constante, subsídio, tarifa ou terra nova; nenhum arquivo de
   `core/` ou `gdextension/src/` alterado (a DLL desta worktree é o build `0a27150`, só dados
   mudaram).
+
+## 9. Decisão do head: Singapura é erro de dado — porto `SGP-SIN` (r9)
+
+O cenário tinha `SGP-SIN` e **nenhum porto com `nation = SGP`** (144 portos, 0 de SGP). No
+`sim/trade.cpp` a travessia entre massas de terra exige um porto da nação **em cada ponta**, e
+`SGP-SIN` é a única cidade da landmass `singapore`: sem porto, a nação não tinha rota marítima
+nenhuma. A "fazenda de 1.691 t/dia" era o teto por população (`output_tons_per_day = sim_pop ×
+0,0003`), **clampado em runtime** para 157,3 t/dia pela área real (~125 km², §6.1) — ou seja, a
+produção que sustentava SGP vinha da terra fictícia do Voronoi. Singapura é um dos maiores portos
+de contêineres do mundo (PSA): a ausência é erro de dado, não consequência da correção de área.
+
+Entrada em `tools/world_city_curation.py` (`FORCED_PORTS`, seção r9), no cais de **Tanjong Pagar**,
+costa sul voltada para o Estreito de Singapura:
+
+| Campo | Valor | Como foi conferido |
+|---|---|---|
+| `id` / `port_of` | `SGP-SIN` | mesmo id da cidade (convenção de Heraklion/Gdańsk) |
+| `lat` / `lon` | 1,2626 N / 103,8544 E | PSA Tanjong Pagar |
+| `landmass` | `singapore` | igual à cidade (o porto só serve a cidade da mesma massa) |
+| célula no `nav_mask` | (1971, 616), componente principal | água (`nav=0`), alcança o mar aberto pelo estreito |
+| distância à terra no atlas | 4,89 km | dentro dos 10 km de `COAST_TOLERANCE_KM` |
+| `source` | PSA Singapore, Tanjong Pagar Terminal | gravado no registro e no `i18n` |
+
+Efeito direto: a capacidade do cais de nível 1 é `1000 + 0,002 × sim_população` =
+**12.277 t/dia**, contra uma necessidade de 1.692 t/dia — folga suficiente para importar o que a
+fazenda real (157,3 t/dia) não cobre. No sweep, SGP fecha **1,000** (§11).
+
+## 10. Regeneração pelo pipeline e validação
+
+```powershell
+$py = "G:/tools/cpp-tools/Scripts/python.exe"
+& $py tools/build_world_cities.py --write-scenario   # curadoria + promoção (0 AVISO)
+& $py tools/build_scenario_data.py                   # scenario/*.json
+& $py tools/validate_scenario_data.py                # 0 erros, 0 avisos
+& $godot --headless --path . res://tools/nav_strait_test.tscn
+```
+
+- **Portos: 144 → 145**; `port_of` preenchido em **145/145**; cidades/construções/nações
+  inalteradas (834/834/179). `i18n.csv` ganhou só `port.name.SGP-SIN` (as demais linhas mudaram
+  apenas de posição: `merge_i18n` ordena as chaves; conferido chave a chave — 0 valor alterado,
+  0 chave removida).
+- `validate_scenario_data.py`: **0 erros, 0 avisos** em 11 arquivos (`ports.csv/json` com 145).
+- `build_world_cities.py --check` depois do build: **0 AVISO**, 145 portos.
+- `nav_strait_test.gd`: **PASS** com `SGP-SIN` na lista de portos — `comp=0` (= mar aberto),
+  `cais->agua 0,0 cel`. O teste ganhou a entrada para não regredir.
+- **Nenhum C++ mudou**; a DLL continua `22D800917FE84E2AF6E6083D01B3E27C9E4EE4C68EC9AEED97542B1149678C98`.
+
+### 10.1 Correção manual do `i18n.json`
+
+`build_scenario_data.py` reconstrói `i18n.json` **só** a partir de `i18n.csv`; o JSON versionado
+tem 137 chaves que não estão no CSV (`map.region.*`, `map.legend.routes.*`, `city.services.*`,
+`dock.services`, `map.icon.industry`). Regenerar apagaria essas chaves (UI cairia para a chave
+crua). O JSON entregue é o do HEAD **mais** `port.name.SGP-SIN` nos três idiomas — uma chave
+nova por locale. Fica registrado como pendência de ferramenta (§8, pendência 4).
+
+## 11. Sweep `recal2` — 365 d ×5 + sonda de câmbio
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/s19_world_sweep_parallel.ps1 -OutPrefix recal2_
+$py tools/aggregate_s19_sweep.py --baseline docs/economy/perf/q16_world_sweep.json `
+  --dir "<user>/world_sweep" --prefix recal2_ --suffix _365.json `
+  --out docs/economy/perf/recal2_world_sweep.json
+```
+
+Artefato: `docs/economy/perf/recal2_world_sweep.json`. 365 d, `--ai=1 --urban=1 --threads=1`,
+6 processos (5 variantes de aceite + `--fx=float`).
+
+### 11.1 Portões
+
+| Portão | Limite | Medido | Veredito |
+|---|---|---|---|
+| Falências de construção (pior variante) | ≤ 28 | **7** (7 nas 5) | OK |
+| Dinheiro conservado (drift) | ≤ 0,01 | **−0,0010** (sonda −0,0005) | OK |
+| Determinismo peg ×5 | hashes iguais | `e13f92a5…` nas 5 | OK |
+| Sonda `--fx=float` difere | hash diferente | `f37205f1…` | OK |
+| Pior nação (comida) | — | **SAH 0,183** (importador aceito) | informativo |
+
+### 11.2 Comida por nação — q16 (baseline) × recal (rodada 1) × recal2
+
+| Nação | q16 | recal | **recal2** | Δ vs q16 | Δ vs recal | Status |
+|---|---:|---:|---:|---:|---:|---|
+| **SGP** | 0,930 | 0,177 | **1,000** | **+7,04 p.p.** | +82,30 p.p. | resolvido |
+| **LBY** | 1,000 | 0,852 | **1,000** | 0,00 | +14,78 p.p. | resolvido |
+| **EGY** | 1,000 | 0,899 | **0,640** | **−35,96 p.p.** | −25,85 p.p. | REPROVA (§12) |
+| PSX | 0,224 | 0,290 | 0,190 | **−3,44 p.p.** | −10,01 p.p. | REPROVA (não é isento) |
+| YEM | 1,000 | 1,000 | 0,942 | −5,83 p.p. | −5,83 p.p. | isento |
+| SAH | 0,223 | 0,215 | 0,183 | −4,00 p.p. | −3,16 p.p. | isento |
+| ESP | 0,984 | 0,969 | 0,969 | −1,56 p.p. | 0,00 | dentro da tolerância |
+| SOM | 1,000 | 1,000 | 0,989 | −1,11 p.p. | −1,11 p.p. | dentro da tolerância |
+| DJI | 0,303 | 0,338 | 0,351 | +4,78 p.p. | +1,25 p.p. | melhora |
+| SOL | 0,556 | 0,663 | 0,614 | +5,81 p.p. | −4,96 p.p. | isento |
+
+**As outras 169 nações ficam dentro de ±1 p.p.** contra o q16. Aplicando o portão do head
+(> 2,5 p.p. de queda vs q16, exceto SOL/DJI/SAH/JOR/YEM), **reprovam EGY (−35,96) e PSX
+(−3,44)**; SAH e YEM caem mas são isentos. Contra a rodada 1, a lista é EGY, PSX, SOL, SAH e YEM.
+
+**Leitura:** o porto de SGP devolveu **+82,30 p.p.** a Singapura e **+14,78 p.p.** a LBY (que
+voltou a 1,000). O custo aparece em quem disputa o mesmo alimento: SGP passa a comprar
+~1.534 t/dia (necessidade 1.692 − fazenda 157), e EGY — importador integral, sem aptidão —
+perde 36 p.p. **na foto do dia 365**.
+
+## 12. Trajetória mensal de LBY e EGY (o que diverge)
+
+Séries medidas com o mesmo dado/binário (`--ai=1 --urban=1 --threads=1 --fx=real`), rodando
+`economy_world_test.gd` até 30, 60, …, 360 d (o sim é determinístico: o dia N de uma corrida de
+N dias é o mesmo dia N da corrida de 365 d).
+
+| Dia | SGP | LBY | **EGY** | PSX | SAH | YEM |
+|---:|---:|---:|---:|---:|---:|---:|
+| 30 | 1,000 | 1,000 | 0,718 | 1,000 | 1,000 | 1,000 |
+| 60 | 1,000 | 1,000 | 0,710 | 1,000 | 1,000 | 1,000 |
+| 90 | 1,000 | 1,000 | 1,000 | 1,000 | 1,000 | 1,000 |
+| 120 | 1,000 | 1,000 | 0,844 | 1,000 | 1,000 | 1,000 |
+| 150 | 1,000 | 1,000 | 0,810 | 1,000 | 1,000 | 1,000 |
+| 180 | 1,000 | 1,000 | 0,943 | 1,000 | 0,810 | 1,000 |
+| 210 | 1,000 | 1,000 | 0,895 | 0,757 | 0,334 | 0,936 |
+| 240 | 1,000 | 1,000 | 0,956 | 0,419 | 0,256 | 0,872 |
+| 270 | 1,000 | 1,000 | 1,000 | 0,419 | 0,203 | 0,869 |
+| 300 | 1,000 | 1,000 | 1,000 | 0,396 | 0,192 | 0,925 |
+| 330 | 1,000 | 1,000 | 1,000 | 0,275 | 0,244 | 1,000 |
+| 360 | 1,000 | 1,000 | 1,000 | 0,275 | 0,239 | 1,000 |
+| **365** | **1,000** | **1,000** | **0,640** | **0,190** | **0,183** | **0,942** |
+
+**LBY:** 1,000 em todos os meses — o valor 0,852 da rodada 1 era trajetória, não estrutura; com o
+porto de SGP o mundo reflui e LBY importa normalmente.
+
+**EGY:** a série **oscila entre 0,71 e 1,00** e passa os meses 270–360 em **1,000**; o 0,640 é a
+amostra do **dia 365**, não um patamar. A oscilação é diária, não mensal — medido no último
+trecho: dia 360 = 1,000, **361 = 0,720, 362 = 1,000, 363 = 0,763, 364 = 1,000, 365 = 0,640**.
+A métrica do sweep é `consumido ÷ necessidade` **do último dia**: para um importador que recebe
+comida em levas, ela bate no vale do ciclo. As cidades egípcias continuam com **aptidão 0,0**
+(nenhuma mudança de dado nesta rodada) e vivem de importação nos dois lados.
+
+**O Q-016 já mostrava a mesma fragilidade? Sim, e está medido no próprio baseline.** A sonda
+`--fx=float` do `q16_world_sweep.json` fecha **EGY 0,768 (Δ −23,2 p.p.)** — um único botão
+(regime de câmbio) mexia 23 p.p. na foto de EGY. Na rodada 2 a sonda dá **EGY 0,858**: o valor
+com câmbio flutuante é **21,8 p.p. acima** do peg (0,640), ou seja, o 0,640 é o fundo de um vale
+que o regime cambial atravessa. O comentário de `economy_world_test.gd` (FOOD_TOLERANCE) já
+registrava o mesmo transiente no Q-016: **EGY 0,857 em 60 d e 0,546 em 120 d, fechando 1,000 em
+365 d**. Nada disso é balanço: é limiar de importador sem agricultura.
+
+**PSX:** aqui a queda é estrutural e **anterior** — 1,000 até 180 d e depois 0,76 → 0,42 → 0,28,
+com o q16 já em 0,224. A rodada 2 só empurrou o mesmo declive 3,4 p.p. para baixo. Fica relatado
+como importador em colapso de longo prazo, não como efeito novo do porto.
+
+**Nenhuma muleta foi criada** para LBY/EGY/PSX: sem subsídio, sem tarifa, sem constante, sem
+terra nova, sem aptidão inventada.
+
+## 13. Auditoria da mesma lacuna (relatada, sem mudança)
+
+Porto só serve a cidade da **mesma nação e mesma landmass** (`sim/trade.cpp`); sem porto, uma
+nação sozinha na sua massa de terra não compra nem vende fora dela. Varredura do cenário:
+
+**Ilhas/nações sozinhas na landmass e SEM porto (mesma classe do SGP, 11):**
+
+| Nação | sim_pop | cidades | landmass | Observação |
+|---|---:|---:|---|---|
+| PHL | 7.448.460 | 6 | `philippines` | maior caso restante; arquipélago, nenhum porto |
+| CUB | 2.719.689 | 2 | `cuba` | nenhum porto |
+| NZL | 2.348.300 | 3 | `new_zealand` | exportador (comida 1,000), perde a exportação |
+| MDG | 1.897.713 | 3 | `madagascar` | nenhum porto |
+| JAM | 1.020.567 | 2 | `jamaica` | nenhum porto |
+| LKA | 817.136 | 2 | `sri_lanka` | nenhum porto |
+| BHS | 274.465 | 2 | `bahamas` | nenhum porto |
+| FJI | 129.866 | 2 | `fiji` | nenhum porto |
+| TTO | 105.411 | 2 | `trinidad` | nenhum porto |
+| BRB | 98.511 | 1 | `barbados` | nenhum porto |
+| SLB | 63.502 | 2 | `solomon` | nenhum porto |
+
+**Cidades-estado/importadoras do pedido:** `HKG`, `MDV` e `MUS` **não existem como nação** no
+cenário (MUS foi removida na r2; HKG e MDV nunca entraram no roster). `BHR` (Manama), `QAT`
+(Doha, Madinat ash Shamal) e `BRN` (Bandar Seri Begawan, Kuala Belait) têm cidade costeira e
+**nenhum porto**, mas estão na landmass `asia` com dezenas de nações — compram por terra da
+vizinhança, então não são o mesmo caso de isolamento. `MLT` já tem porto (`MLT-VAL`).
+
+**Achado extra — porto com landmass que não casa com a cidade (15 portos inutilizáveis):**
+`IDN` tem cidades em `indonesia` e **9 dos 10 portos** em `java` (só `IDN-MEDA` serve); `TUR`
+tem cidades em `asia` e os portos `TUR-IST`, `TUR-IZM`, `TUR-ADA` em `continent`; `AZE-BAK`,
+`AZE-SUM` e `GEO-BAT` também estão em `continent` com cidades em `asia`. É dado legado (a
+landmass "java" do Medan antigo já aparecia no docstring da r5) e **não foi tocado** aqui.
+
+## 14. Goldens e testes da rodada 2
+
+Goldens regenerados porque o dado mudou (porto), e revalidados com 2 rodadas → **0 diferenças**:
+
+| Golden | save_sha256 | status_sha256 |
+|---|---|---|
+| `A0_60_urban.json` (60 d, IA, `--urban=1`) | `4a84ea05c82eb521d7e9bd3b2d7746f3dc9eeefa513ded73b311cf1b6b2d3847` | `a15ecf7f8fd6827956d79a48bfca6548d8465b04edb1efc1ef59c067fbba5d43` |
+| `real_60_ai.json` | `7abd5095954eb28c863dbec3c63060ae6ddf89ce3b91338489aa22045302bc72` | `ce19827c036af02eb3a4f364e2fc093d04fc98000bdc897910c8ff54f10981d6` |
+| `real_60_noai.json` | `058abb029cc548407d306d6843c2286805673b37716c3c976fa2b142eac8f681` | `b87a498d26e5cdf4731021768088a5dd2a22b2f24386d5de804edfc6819a98af` |
+| `demo_365_noai.json` | `652b5f8b2f8e5cc7315c37d1ebce3249edbf4957b702dff45fc00e148074e2ab` | `65a414f0de49014f6dccce39bd89d5a99bc7cf792c0dbc26fe6407fd02b46268` |
+
+`demo_365_noai` **não mudou** (cenário sintético AGRIA/PORTUS, alheio ao dado do mundo).
+
+| Teste | Resultado |
+|---|---|
+| `economy_integration_test.gd` | **OK** |
+| `economy_ai_test.gd` | **OK** |
+| `population_demo_test.gd` | **OK** |
+| `economy_save_load_roundtrip_test.gd` | **OK — 0 diffs** |
+| `economy_refactor_equiv.gd` (3 goldens S0, contra o golden) | **0 diferenças** em cada |
+| `world_equivalence.ps1 -Baseline A0_60_urban.json -Rounds 2` | **PASS — 0 diferenças** |
+| `validate_scenario_data.py` | **0 erros, 0 avisos** |
+| `nav_strait_test.tscn` | **PASS** (com `SGP-SIN`) |
+
+**Baseline novo:** `docs/economy/perf/recal2_world_sweep.json`; `tools/s19_world_sweep_parallel.ps1`
+passa a apontar para ele.

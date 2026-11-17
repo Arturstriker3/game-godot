@@ -212,6 +212,27 @@ as cidades novas (`PORT_OF_OVERRIDES`). Os portos novos são George Town
 (Penang), Benguela, Antalya, Agadir, Málaga e Sevilha (`FORCED_PORTS`).
 Pádua é o caso do r3: o porto de Veneza ficava com Milão porque Pádua não
 estava no roster; agora a cidade existe e o porto passa a ela.
+
+Curadoria r9 (2026-11-17, recalibração de áreas)
+-----------------------------------------------
+Singapura (`SGP`) é ERRO DE DADO, não consequência da correção de área: a
+cidade-estado tem um dos maiores portos de contêineres do mundo (PSA) e o
+cenário não tinha nenhum porto com `nation = SGP`. No mundo de
+`sim/trade.cpp` a travessia entre massas de terra exige um porto nacional em
+CADA ponta; `SGP-SIN` é a única cidade da landmass `singapore`, então sem porto
+a nação não tinha rota marítima nenhuma e caía para a produção da própria
+fazenda (157,3 t/dia, com a área real de ~125 km²). ENTRA o porto `SGP-SIN`
+(`FORCED_PORTS`, `port_of = SGP-SIN`), no cais de Tanjong Pagar, costa sul da
+ilha voltada para o Estreito de Singapura (1,2626N 103,8544E): célula de ÁGUA
+do componente principal no `nav_mask` (o cais alcança o mar aberto pelo
+estreito) e 4,9 km da costa no `world_sdf.png` (dentro dos 10 km de tolerância
+do validador). Não entra cidade nova: `SGP-SIN` já existia.
+
+Auditoria da mesma lacuna (relatada, sem mudança nesta rodada): `HKG`, `MDV` e
+`MUS` não estão no roster do cenário (MUS foi removida na r2); `BHR`, `QAT` e
+`BRN` têm cidade costeira e NENHUM porto, mas não são ilhas isoladas — a cidade
+compartilha a landmass `asia` com os vizinhos, então a troca de massa de terra
+não é o que as isola. `MLT` já tem porto (`MLT-VAL`).
 """
 
 # id -> motivo (documentado no _meta.json e no relatório do importador)
@@ -1872,5 +1893,20 @@ FORCED_PORTS = [
         "port_of": "MAR-AGA",
         "source": ("Porto de Agadir, costa atlântica (30.420N 9.605W); "
                    "port_of = MAR-AGA"),
+    },
+    # ---------------------------------------------------------------- r9 (2026-11-17)
+    # Singapura: erro de dado (a nação não tinha porto nenhum). O ponto é o cais
+    # de Tanjong Pagar, na costa sul voltada para o Estreito de Singapura —
+    # água do componente principal no nav_mask, 4,9 km da costa no atlas.
+    {
+        "nation": "SGP",
+        "id": "SGP-SIN",
+        "name": "Singapore",
+        "lat": 1.2626,
+        "lon": 103.8544,
+        "landmass": "singapore",
+        "port_of": "SGP-SIN",
+        "source": ("PSA Singapore, Tanjong Pagar Terminal, Estreito de "
+                   "Singapura (1.2626N 103.8544E); port_of = SGP-SIN"),
     },
 ]

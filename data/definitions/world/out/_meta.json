@@ -132,7 +132,8 @@
         "MYS-GEO",
         "AGO-BEN",
         "TUR-ANT",
-        "MAR-AGA"
+        "MAR-AGA",
+        "SGP-SIN"
       ]
     },
     "nation_curation": {
@@ -1075,9 +1076,9 @@
   "counts": {
     "nations": 179,
     "cities": 834,
-    "ports": 144,
+    "ports": 145,
     "buildings": 834,
-    "i18n_keys": 1336,
+    "i18n_keys": 1337,
     "legacy_cities": 39,
     "legacy_ports": 18,
     "scenario_ports": 144,
