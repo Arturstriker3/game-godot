@@ -53,7 +53,14 @@ target_link_libraries(economy_gdextension PRIVATE godot-cpp)
 # Perfil por fase do tick (src/sim/profiling.h): só no build de desenvolvimento.
 # Em release OGS_PROFILING não é definido e as macros OGS_SIM_* expandem para
 # `((void)0)` — custo zero, nenhum steady_clock::now(), nenhum símbolo.
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+#
+# OGS_PROFILE_RELEASE=ON liga o mesmo perfil num build Release. É um build de
+# MEDIÇÃO (A0, docs/plans/perf_pop_financas_plano.md): o release publicado
+# continua sem perfil e o perfil adiciona só um relógio por fase por dia.
+# Use uma pasta própria (gdextension/build-profile-release) — ela escreve a DLL
+# no mesmo nome template_release do build normal.
+option(OGS_PROFILE_RELEASE "Liga o perfil por fase (OGS_PROFILING) no build Release" OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR OGS_PROFILE_RELEASE)
     target_compile_definitions(economy_gdextension PRIVATE OGS_PROFILING)
 endif()
 
