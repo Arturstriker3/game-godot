@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 // §19 (W3) — MERCADO DE MORADIA. C++ puro (só STL), nada de godot_cpp.
 //
 // A lógica roda UMA vez por tick em `sim/housing.cpp` (SimCore::phase_housing),
@@ -31,14 +32,17 @@
 
 namespace ogs {
 
+struct WorldState;
+
 // Obra de moradia em andamento (projeto §15 tipo "moradia"). O custo é pago
 // (reservado) na criação; as unidades entram no estoque ao fim do prazo. Lista
 // de tamanho fixo por cidade: o mercado abre no máximo
 // `kDemoHousingMaxProjects` obras por vez, o que mantém o save pequeno.
 enum HousingProjectState : int {
 	HOUSING_PROJECT_IDLE = 0,
-	HOUSING_PROJECT_PRIVATE = 1,  // incorporadora (capital privado)
-	HOUSING_PROJECT_SELF = 2,     // autoconsntrução da POP (poupança)
+	HOUSING_PROJECT_PRIVATE = 1,     // incorporadora (capital privado)
+	HOUSING_PROJECT_SELF = 2,        // autoconsntrução da POP (poupança)
+	HOUSING_PROJECT_GOVERNMENT = 3,  // moradia social (caixa da prefeitura, W2)
 };
 
 struct HousingProject {
@@ -50,5 +54,26 @@ struct HousingProject {
 };
 
 constexpr int kDemoHousingMaxProjects = 4;
+
+namespace housing {
+
+// §19 (integração) — obra de moradia da PREFEITURA (moradia social popular).
+// Segue o MESMO projeto de moradia do W3 (materiais comprados no mercado local,
+// prazo, entrega de unidades), com o caixa da prefeitura como dono e a posse
+// indo para OWNER_GOVERNMENT na entrega. Devolve false quando não há slot,
+// caixa ou material — nada é pago nesse caso. `units` é reduzido ao que o
+// caixa paga.
+bool start_social_housing(WorldState& ws, std::size_t city_index, double units);
+
+// Custo de construção de UMA unidade do padrão/densidade (anos de aluguel +
+// terra), a mesma régua da incorporadora e da autoconstrução. `city_index` sem
+// dado urbano devolve 0 (ausência explícita).
+double build_cost_unit(const WorldState& ws, std::size_t city_index,
+	int density, int tier);
+
+// Moradia social em andamento nesta cidade? (a prefeitura financia uma por vez)
+bool has_social_project(const WorldState& ws, std::size_t city_index);
+
+} // namespace housing
 
 } // namespace ogs

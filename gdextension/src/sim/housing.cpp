@@ -54,6 +54,39 @@ inline int density_for_tier(ogs::Density max_density, int tier) {
 	return low;
 }
 
+// Materiais da obra de moradia (§15) e seus pesos na receita de material.
+const char* const kHousingMaterials[3] = {
+	"construction_material", "steel_structure", "electrical_material"};
+const double kHousingMaterialWeight[3] = {0.50, 0.30, 0.20};
+
+// Índice do produto pelo nome, direto do WorldState (o módulo não depende da
+// fachada): -1 quando o bem não existe no catálogo.
+inline int material_product(const ogs::WorldState& ws, const char* name) {
+	const auto found = ws.product_lookup.find(name);
+	return found == ws.product_lookup.end() ? -1 : found->second;
+}
+
+// Soma das unidades do estoque (todas as densidades e padrões).
+inline double stock_units(const ogs::CityHousing& house) {
+	double total = 0.0;
+	for (int density = 0; density < ogs::DENSITY_COUNT; ++density) {
+		for (int tier = 0; tier < ogs::TIER_COUNT; ++tier) {
+			total += safe_nonneg(house.units[density][tier]);
+		}
+	}
+	return total;
+}
+
+// Unidades de um padrão somadas em todas as densidades.
+inline double tier_units(const ogs::CityHousing& house, int tier) {
+	const int t = std::clamp(tier, 0, ogs::TIER_COUNT - 1);
+	double total = 0.0;
+	for (int density = 0; density < ogs::DENSITY_COUNT; ++density) {
+		total += safe_nonneg(house.units[density][t]);
+	}
+	return total;
+}
+
 } // namespace
 
 namespace ogs {
@@ -107,8 +140,56 @@ void SimCore::phase_housing() {
 			const int density = std::clamp(project.density, 0, DENSITY_COUNT - 1);
 			const int tier = std::clamp(project.tier, 0, TIER_COUNT - 1);
 			const double units = safe_nonneg(project.units);
+			const bool government = project.state == HOUSING_PROJECT_GOVERNMENT;
 			house.units[density][tier] += units;
 			house.units_built_month += units;
+			if (government && units > 0.0) {
+				// Moradia social (INTEGRAÇÃO W2→W3): o estoque novo é do
+				// governo e a posse entra como aluguel subsidiado. A fração de
+				// dono é recomputada pelo estoque (os demais donos mantêm a
+				// proporção) e a de posse, pelo estoque do padrão.
+				const double total_before = std::max(0.0, stock_units(house) - units);
+				const double total_after = total_before + units;
+				double share_house = safe_unit(house.owner_share[OWNER_HOUSEHOLD]);
+				double share_firm = safe_unit(house.owner_share[OWNER_FIRM]);
+				const double gov_units = total_before
+					* safe_unit(house.owner_share[OWNER_GOVERNMENT]) + units;
+				const double gov_share = total_after > 1e-9
+					? std::clamp(gov_units / total_after, 0.0, 1.0) : 0.0;
+				const double other_sum = share_house + share_firm;
+				if (other_sum <= 1e-9) {
+					share_house = 1.0 - gov_share;
+					share_firm = 0.0;
+				} else {
+					const double scale = (1.0 - gov_share) / other_sum;
+					share_house *= scale;
+					share_firm *= scale;
+				}
+				house.owner_share[OWNER_HOUSEHOLD] = share_house;
+				house.owner_share[OWNER_FIRM] = share_firm;
+				house.owner_share[OWNER_GOVERNMENT] =
+					std::max(0.0, 1.0 - share_house - share_firm);
+				// Posse: as unidades novas são aluguel; a fração é recomputada
+				// em unidades e depois renormalizada para o estoque legal.
+				const double tier_after = std::max(1.0, tier_units(house, tier));
+				const double tier_before = std::max(1.0, tier_after - units);
+				const double informal = safe_unit(house.tenure[tier][TENURE_INFORMAL]);
+				const double legal = std::max(0.0, 1.0 - informal);
+				const double legal_before = tier_before * legal;
+				const double rent_units_before =
+					safe_unit(house.tenure[tier][TENURE_RENT]) * legal_before;
+				const double own_units_before =
+					safe_unit(house.tenure[tier][TENURE_OWN]) * legal_before;
+				const double legal_after =
+					std::max(1e-9, rent_units_before + units + own_units_before);
+				const double rent_frac =
+					(rent_units_before + units) / legal_after;
+				house.tenure[tier][TENURE_INFORMAL] = informal;
+				house.tenure[tier][TENURE_RENT] = std::clamp(
+					rent_frac * legal, 0.0, legal);
+				house.tenure[tier][TENURE_OWN] =
+					std::max(0.0, legal - house.tenure[tier][TENURE_RENT]);
+			}
 			project = HousingProject{};
 		}
 
@@ -495,5 +576,124 @@ void SimCore::phase_housing() {
 			popular_shortage + burden_excess * 2.0);
 	}
 }
+
+// ------------------------------------------------------------------
+// INTEGRAÇÃO W2→W3 — moradia social financiada pela prefeitura.
+// ------------------------------------------------------------------
+namespace housing {
+
+double build_cost_unit(const WorldState& ws, std::size_t city_index,
+		int density, int tier) {
+	if (city_index >= ws.housing.size() || city_index >= ws.land.size()) {
+		return 0.0;
+	}
+	const CityHousing& house = ws.housing[city_index];
+	const CityLand& land = ws.land[city_index];
+	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
+	const int t = std::clamp(tier, 0, TIER_COUNT - 1);
+	const double rent = std::max(0.0, house.rent[t]);
+	const double land_cost = kDemoUrbanUnitM2[d][t]
+		* std::max(0.0, land.land_price[ZONE_RES]);
+	if (rent <= 0.0 && land_cost <= 0.0) {
+		return 0.0;  // sem preço nem terra: ausência explícita
+	}
+	return rent * 12.0 * kDemoHousingBuildCostYears + land_cost;
+}
+
+bool has_social_project(const WorldState& ws, std::size_t city_index) {
+	if (city_index >= ws.housing.size()) {
+		return false;
+	}
+	for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
+		if (ws.housing[city_index].projects[slot].state
+				== HOUSING_PROJECT_GOVERNMENT) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool start_social_housing(WorldState& ws, std::size_t city_index, double units) {
+	if (city_index >= ws.housing.size() || city_index >= ws.land.size()
+			|| city_index >= ws.city_gov.size()) {
+		return false;
+	}
+	if (!std::isfinite(units) || units < 1.0) {
+		return false;
+	}
+	DemoCity& city = ws.cities[city_index];
+	CityHousing& house = ws.housing[city_index];
+	CityGov& gov = ws.city_gov[city_index];
+	int slot = -1;
+	for (int i = 0; i < kDemoHousingMaxProjects; ++i) {
+		if (house.projects[i].state == HOUSING_PROJECT_IDLE) {
+			slot = i;
+			break;
+		}
+	}
+	if (slot < 0) {
+		return false;
+	}
+	const double cost_unit = build_cost_unit(
+		ws, city_index, DENSITY_LOW, TIER_POPULAR);
+	if (cost_unit <= 0.0) {
+		return false;
+	}
+	// A prefeitura não contrata obra sem caixa: as unidades são reduzidas ao
+	// que o caixa paga (mesma regra do W2 para expansão/adensamento).
+	const double budget = std::max(0.0, gov.cash);
+	const double affordable = budget / cost_unit;
+	const double paid_units = std::min(units, affordable);
+	if (paid_units < 1.0) {
+		return false;
+	}
+	const double cost = paid_units * cost_unit;
+	const double material_budget = cost * kDemoHousingMaterialShare;
+	double bought_cost = 0.0;
+	double bought_qty[3] = {};
+	int products[3] = {-1, -1, -1};
+	for (int m = 0; m < 3; ++m) {
+		products[m] = material_product(ws, kHousingMaterials[m]);
+		if (products[m] < 0) {
+			continue;
+		}
+		DemoMarket& market = city.markets[products[m]];
+		const double price = std::max(1e-9, market.price);
+		const double qty = material_budget * kHousingMaterialWeight[m] / price;
+		if (market.stock + 1e-9 < qty) {
+			return false;  // sem material: nada é pago
+		}
+		bought_qty[m] = qty;
+		bought_cost += qty * price;
+	}
+	// Com material garantido: paga os materiais ao mercado e a mão de obra ao
+	// setor de construção (dinheiro conservado).
+	gov.cash = std::max(0.0, gov.cash) - cost;
+	for (int m = 0; m < 3; ++m) {
+		if (products[m] < 0 || bought_qty[m] <= 0.0) {
+			continue;
+		}
+		DemoMarket& market = city.markets[products[m]];
+		const double value = bought_qty[m] * std::max(1e-9, market.price);
+		market.stock -= bought_qty[m];
+		market.demand += bought_qty[m];
+		market.sold += bought_qty[m];
+		market.desired += bought_qty[m];
+		city.firm_cash += value;
+		city.revenue_by_product[products[m]] += value;
+	}
+	const double labor = std::max(0.0, cost - bought_cost);
+	city.service_cash += labor;
+	city.construction_revenue_pending += cost;
+	HousingProject& project = house.projects[slot];
+	project.state = HOUSING_PROJECT_GOVERNMENT;
+	project.density = DENSITY_LOW;
+	project.tier = TIER_POPULAR;
+	project.units = paid_units;
+	project.days_left = kDemoHousingBuildDays;
+	return true;
+}
+
+} // namespace housing
 
 } // namespace ogs

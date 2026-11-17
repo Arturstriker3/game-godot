@@ -16,7 +16,7 @@ namespace ogs {
 void SimCore::phase_fiscal() {
 	// §19 W2: prefeitura — IPTU, taxas locais, repasse do tesouro nacional,
 	// manutenção urbana, obras e decisão de adensar/expandir/moradia social.
-	city_gov::tick(ws_, ws_.day);
+	city_gov::tick(ws_, ws_.day, this);
 	// Equalização fiscal per capita dentro de cada nação: o orçamento público é
 	// repartido entre as cidades proporcionalmente à população. Uma cidade rica
 	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:

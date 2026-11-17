@@ -62,13 +62,14 @@ func _load(path: String) -> Variant:
 
 
 func _land_data() -> Dictionary:
-	# AGRIA: zona residencial cheia (180 unidades em 200 de capacidade) e
-	# COM/IND minúsculas (menos de um negócio/planta caberia).
+	# AGRIA: zona residencial cheia (180 unidades em 200 de capacidade) e COM
+	# minúscula (0,8 m²: nem um trabalhador de serviço cabe). A zona IND cabe
+	# 132 trabalhadores — menos do que a fábrica de teste (1.000 t/dia) exige.
 	# PORTUS: a mesma moradia numa cidade com área urbana grande (zona folgada).
 	return {"cities": {
 		"AGRIA": {
 			"built_up_km2": 0.04,
-			"zoning_split": {"residential": 0.5, "commercial": 0.002,
+			"zoning_split": {"residential": 0.5, "commercial": 0.00002,
 				"industrial": 0.498},
 			"height_class": "low",
 			"expandable_reserve_km2": 0.01,
@@ -141,10 +142,11 @@ func _test_land_price() -> void:
 		_fail("ocupacao RES AGRIA %.6f != 0.9 (180/200)" % occ_res)
 	var com_capacity := float(agria["zone_capacity"][ZONE_COM])
 	if com_capacity >= 1.0:
-		_fail("COM AGRIA deveria caber menos de 1 negocio (%.6f)" % com_capacity)
+		_fail("COM AGRIA deveria caber menos de 1 trabalhador (%.6f)" % com_capacity)
+	# IND medida em trabalhadores: 0,01992 km² × FAR 1 ÷ 150 m²/trabalhador.
 	var ind_capacity := float(agria["zone_capacity"][ZONE_IND])
-	if ind_capacity >= 1.0:
-		_fail("IND AGRIA deveria caber menos de 1 planta (%.6f)" % ind_capacity)
+	if absf(ind_capacity - 132.8) > 0.1:
+		_fail("IND AGRIA capacidade em trabalhadores %.3f != 132.8 (150 m2/trab)" % ind_capacity)
 	if float(agria["land_price"][ZONE_RES]) != 0.0:
 		_fail("preco da terra deveria comecar em 0 (ausencia explicita)")
 
@@ -214,8 +216,10 @@ func _test_service_zone_gate() -> void:
 func _test_factory_zone_gate() -> void:
 	var sim := _new_sim()
 	var before_demand := float(_urban(sim, "AGRIA")["zone_demand"][ZONE_IND])
+	# 1.000 empregos declarados contra 132 trabalhadores de capacidade na zona
+	# IND de AGRIA: a planta não entra (a zona é medida em trabalhadores).
 	var result: Dictionary = sim.demo_build("AGRIA", "T-FACTORY-W1", "bread",
-		21, 23, 1.0, 0.0, 0.0, 0.0, 1.0, "private", 100.0)
+		21, 23, 1.0, 1000.0, 0.0, 0.0, 1.0, "private", 100.0)
 	if bool(result.get("created", false)):
 		_fail("zona IND cheia: fabrica criada mesmo assim")
 	if not String(result.get("error", "")).contains("zona industrial"):
@@ -242,6 +246,7 @@ func _test_expand_and_densify() -> void:
 	var area_before := float(before["area_km2"][ZONE_IND])
 	var capacity_before := float(before["zone_capacity"][ZONE_IND])
 	var reserve_before := float(before["reserve_km2"])
+	var cost_km2_before := float(before["expansion_cost_per_km2"])
 	var expanded: Dictionary = sim.demo_urban_expand("AGRIA", ZONE_IND, 0.002)
 	if not bool(expanded.get("ok", false)):
 		_fail("expansao: nao abriu (%s)" % String(expanded.get("error", "")))
@@ -276,6 +281,12 @@ func _test_expand_and_densify() -> void:
 	if float(after["reserve_km2"]) >= reserve_before:
 		_fail("expansao: reserva nao foi consumida (%.4f -> %.4f)" % [
 			reserve_before, float(after["reserve_km2"])])
+	# Custo crescente (spec §19): a cidade maior e com menos reserva paga
+	# MAIS pelo próximo km² que pagava antes da obra.
+	var cost_km2_after := float(after.get("expansion_cost_per_km2", 0.0))
+	if cost_km2_after <= cost_km2_before:
+		_fail("custo crescente: km2 %.1f -> %.1f (esperado subir com raio/reserva)" % [
+			cost_km2_before, cost_km2_after])
 
 	# Adensamento: sobe LOW -> MID (custo menor que a expansão por km²) e a
 	# capacidade residencial cresce; no máximo o teto HIGH.
@@ -284,6 +295,7 @@ func _test_expand_and_densify() -> void:
 	if not bool(densified.get("ok", false)):
 		_fail("adensamento: nao abriu (%s)" % String(densified.get("error", "")))
 		return
+	var cost_low_mid := float(densified.get("cost", 0.0))
 	for day in 60:
 		sim.tick_demo()
 		if _projects(sim).is_empty():
@@ -302,6 +314,12 @@ func _test_expand_and_densify() -> void:
 		_fail("adensamento 2 (MID->HIGH): nao abriu (%s)" % String(
 			again.get("error", "")))
 		return
+	# Custo crescente por NÍVEL: MID→HIGH (aço/elevadores) custa mais que
+	# LOW→MID (reforço de redes) na mesma área.
+	var cost_mid_high := float(again.get("cost", 0.0))
+	if cost_low_mid <= 0.0 or cost_mid_high <= cost_low_mid:
+		_fail("adensamento por nivel: LOW->MID %.1f deveria ser menor que MID->HIGH %.1f" % [
+			cost_low_mid, cost_mid_high])
 	for day in 60:
 		sim.tick_demo()
 		if _projects(sim).is_empty():

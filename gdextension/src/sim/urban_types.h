@@ -73,6 +73,17 @@ struct CityLand {
 	// último fechamento de mês. É o sinal que a prefeitura (W2) lê para decidir
 	// expandir/adensar; decai à metade por mês (demanda velha não manda).
 	double zone_demand[ZONE_COUNT] = {};
+
+	// ------------------------------------------------------------------
+	// §19 (integração) — custo crescente do solo (spec, seção "Custo
+	// crescente"). Guardam o tamanho da cidade no CARREGAMENTO: o custo de
+	// cada km² novo sobe com o raio atual ÷ raio inicial (redes mais longas
+	// até o centro) e com a fração da reserva já consumida (o que sobra é o
+	// terreno pior — encosta, várzea). Preenchidos no loader e no save; 0 =
+	// cidade sem dado (os fatores ficam em 1, sem inventar aumento).
+	// ------------------------------------------------------------------
+	double initial_area_km2 = 0.0;
+	double initial_reserve_km2 = 0.0;
 };
 
 // Estoque de moradia de uma cidade, agregado por densidade × padrão.

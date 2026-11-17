@@ -26,6 +26,7 @@
 namespace ogs {
 
 class SimCore;
+struct CityGov;
 
 namespace urban_land {
 
@@ -36,14 +37,15 @@ enum UrbanAction : int {
 	URBAN_DENSIFY = 2, // sobe max_density da zona em um passo
 };
 
-// Capacidade física de uma zona em "slots": RES em unidades de moradia, COM em
-// negócios de serviço e IND em plantas industriais. Capacidade = área × FAR da
-// densidade permitida ÷ m² por unidade/negócio/planta.
+// Capacidade física de uma zona: RES em unidades de moradia, COM e IND em
+// TRABALHADORES (m² de piso por trabalhador). Capacidade = área × FAR da
+// densidade permitida ÷ m² por unidade/trabalhador.
 double zone_capacity(const CityLand& land, int zone);
 
-// Uso corrente da zona. RES: unidades de moradia carregadas; COM: negócios de
-// serviço ativos; IND: plantas industriais/mineiras urbanas em operação mais as
-// obras em andamento (para o limite não ser furado por várias decisões no
+// Uso corrente da zona, na mesma unidade da capacidade. RES: unidades de
+// moradia carregadas; COM: empregos dos negócios de serviço ativos; IND:
+// empregos das plantas industriais urbanas em operação mais as obras de
+// fábrica em andamento (para o limite não ser furado por várias decisões no
 // mesmo dia).
 double zone_usage(const WorldState& ws, std::size_t city_index, int zone);
 
@@ -62,13 +64,31 @@ void signal_zone_demand(CityLand& land, int zone);
 // decadência do sinal de demanda. Não move dinheiro; só lê o mundo.
 void phase_month(WorldState& ws);
 
+// ---------------------------------------------------------------------------
+// §19 (integração) — custo crescente do solo (spec, "Custo crescente").
+// ---------------------------------------------------------------------------
+// Custo de 1 km² de expansão HOJE nesta cidade (XGS/km²): base × fator de
+// distância (raio atual ÷ raio do carregamento) × fator de relevo (fração da
+// reserva já consumida — o que sobra é o terreno pior). Sem dado de solo
+// devolve 0 (ausência explícita).
+double expansion_cost_per_km2(const WorldState& ws, std::size_t city_index);
+
+// Custo de subir o gabarito da zona um nível (XGS): área da zona × custo do
+// km² × fator do nível (LOW→MID 0,35; MID→HIGH 0,85). Devolve 0 quando a zona
+// já está no máximo ou não há solo carregado.
+double densify_cost(const WorldState& ws, std::size_t city_index, int zone);
+
 // Abre obra §15 de expansão (`km2` > 0, exige reserve_km2) ou adensamento
-// (exige infraestrutura para a população e densidade abaixo do máximo). O dono
-// ("state" ou "private") reserva o custo no início, como qualquer obra §15.
-// Devolve false e preenche `error` quando a obra não pode começar.
+// (exige infraestrutura para a população e densidade abaixo do máximo).
+//
+// Dono: `owner` "state" ou "private". O capital é RESERVADO no início, como
+// qualquer obra §15 — de `city.government_budget`/`city.firm_cash`, ou do
+// CAIXA DA PREFEITURA quando `payer` não é nulo (integração W2: o dinheiro é
+// da prefeitura, não do orçamento público genérico). Devolve false e preenche
+// `error` quando a obra não pode começar.
 bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zone,
 	int action, double km2, const std::string& owner, std::string* error,
-	std::string* project_id);
+	std::string* project_id, CityGov* payer = nullptr);
 
 // Conclusão de uma obra §15 de infraestrutura urbana (chamada por
 // construction.cpp no lugar da materialização do prédio).

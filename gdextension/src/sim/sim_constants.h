@@ -470,9 +470,25 @@ constexpr double kDemoUrbanFar[3] = {1.0, 2.5, 6.0};
 constexpr double kDemoUrbanCapRate = 0.05;
 // Depreciação anual do estoque (fração do valor/condição) — §19.3.
 constexpr double kDemoUrbanDepreciationPerYear = 0.01;
-// Custo de infraestrutura por km² expandido (XGS): estrada, energia e água.
-// Parâmetro de projeto do §15/§19; calibrado no W2 junto da receita municipal.
-constexpr double kDemoUrbanInfraCostPerKm2 = 6000000.0;
+// Custo de infraestrutura por km² expandido (XGS). ESCALA: meses de receita
+// municipal alvo (municipal_finance.json × PIB do mês). A fonte não publica
+// custo de urbanização por cidade e a escala monetária do modelo não é a do
+// PIB real (o PIB simulado de São Paulo é ~4 ordens de grandeza menor que o
+// observado), então ancorar em US$/km² da literatura não transporta. O que se
+// reproduz é a RESTRIÇÃO OBSERVADA: com a manutenção consumindo 45% do alvo,
+// sobram 55% do ano para capital, e 2 meses de receita por km² fazem uma
+// metrópole abrir ~3 km²/ano — "alguns km²/ano" da spec — antes de o custo
+// crescente (raio e relevo) comer o orçamento.
+//   conta: 12 meses × 0,55 ÷ 2 meses/km² = 3,3 km²/ano no raio inicial.
+// Sem dado municipal (cenário sintético), usa o piso declarado abaixo.
+constexpr double kDemoUrbanInfraCostMonths = 2.0;
+constexpr double kDemoUrbanInfraFloorPerKm2 = 1000000.0;
+// Custo crescente do SOLO (spec §19, "Custo crescente"): o custo por km² sobe
+// com o raio da cidade (redes mais longas até o centro) e com a fração da
+// reserva já consumida (o que sobra é o terreno pior). Fatores lineares
+// declarados: +50% quando o raio dobra; +80% quando a reserva toda foi usada.
+constexpr double kDemoUrbanExpandDistanceK = 0.5;
+constexpr double kDemoUrbanExpandReliefK = 0.8;
 // Taxa local sobre o faturamento de serviços da cidade (fração) usada enquanto
 // o W2 não calibra a receita municipal contra o dado real.
 constexpr double kDemoUrbanMunicipalFeeRate = 0.02;
@@ -480,15 +496,19 @@ constexpr double kDemoUrbanMunicipalFeeRate = 0.02;
 // ---------------------------------------------------------------------------
 // §19 W1 — solo urbano e zoneamento.
 //
-// m² de piso por NEGÓCIO de serviço (zona comercial) e por PLANTA industrial
-// urbana (zona industrial). O jogo agrega um setor/planta num único negócio
-// (não é uma loja por prédio): o valor é o de um estabelecimento típico, e a
-// ocupação da zona é a razão entre os negócios/plantas instalados e quantos
-// caberiam na área × FAR. Numa metrópole com área observada grande a zona
-// quase nunca limita; ela limita em cidade pequena e depois do adensamento —
-// W2 lê `zone_demand` e decide expandir ou adensar.
-constexpr double kDemoUrbanBusinessM2 = 250.0;
-constexpr double kDemoUrbanFactoryM2 = 25000.0;
+// Capacidade das zonas COM e IND medida em TRABALHADORES, não em "negócios":
+// m² de piso por trabalhador. Referências de ordem de grandeza (declaradas,
+// não medições por cidade):
+//  - serviços/escritório: ~25 m² de área útil por trabalhador (faixa OECD de
+//    espaço de escritório 15–35 m²/pessoa; lojas e restaurantes ficam abaixo,
+//    escritórios acima — 25 é o meio);
+//  - indústria urbana: ~150 m² por trabalhador (faixa 100–200 m²/pessoa em
+//    parques industriais e galpões com pátio e logística).
+// Assim a zona limita pelo EMPREGO que cabe no gabarito, e não pelo número de
+// estabelecimentos agregados — metrópole cheia encosta na capacidade de
+// verdade quando o emprego de serviço/indústria enche o FAR permitido.
+constexpr double kDemoUrbanServiceM2PerWorker = 25.0;
+constexpr double kDemoUrbanFactoryM2PerWorker = 150.0;
 // Preço da terra = esta fração do valor do imóvel médio (XGS/m²). A fonte não
 // publica preço de terra por cidade; a parcela do terreno no imóvel é o proxy
 // declarado (W0 deixou o campo em 0 de propósito).
@@ -506,8 +526,18 @@ constexpr double kDemoUrbanLandIncomeGain = 0.5;
 constexpr double kDemoUrbanZoneDemandDecay = 0.5;
 // População que a infraestrutura passa a atender por km² expandido.
 constexpr double kDemoUrbanInfraPopPerKm2 = 5000.0;
-// Adensar custa esta fração da expansão de um km² (mesma obra, sem terra nova).
-constexpr double kDemoUrbanDensifyCostFactor = 0.35;
+// Adensar fica mais caro a cada nível (spec §19, "Custo crescente"):
+//  - LOW→MID exige reforço de água/esgoto/energia: 0,35 do km² de expansão;
+//  - MID→HIGH exige estrutura de aço, elevadores e redes pesadas: 0,85.
+// Os custos são uma fração do custo de infraestrutura por km² (mesma obra,
+// sem terra nova) e o nível alto ainda troca a receita de material para
+// steel_structure/electrical_material.
+constexpr double kDemoUrbanDensifyCostFactorLowMid = 0.35;
+constexpr double kDemoUrbanDensifyCostFactorMidHigh = 0.85;
+// Mistura de material do adensamento MID→HIGH: pesos relativos aplicados sobre
+// a receita de material do §15, que continua somando a mesma fração do custo.
+constexpr double kDemoUrbanDensifyHighSteelWeight = 1.8;
+constexpr double kDemoUrbanDensifyHighElectricalWeight = 1.6;
 // Régua da obra de infraestrutura: km² -> unidades de capacidade do §15 (só
 // escala o prazo; a obra urbana não cria prédio).
 constexpr double kDemoUrbanKm2ToConstructionUnits = 20.0;

@@ -4,6 +4,7 @@
 #include "sim/sim_constants.h"
 #include "sim/scenario_fixture.h"
 #include "sim/urban_land.h"
+#include "sim/housing.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -183,6 +184,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_urban_expand);
 	ClassDB::bind_method(D_METHOD("demo_urban_densify", "city_id", "zone"),
 	                     &EconomySim::demo_urban_densify);
+	ClassDB::bind_method(D_METHOD("demo_urban_social_housing", "city_id", "units"),
+	                     &EconomySim::demo_urban_social_housing);
 	ClassDB::bind_method(D_METHOD("demo_set_instant_construction", "instant"),
 	                     &EconomySim::demo_set_instant_construction);
 	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
@@ -4609,7 +4612,10 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	if (urban_factory && !ws_.land.empty() && ws_.land.size() == ws_.cities.size()) {
 		const std::size_t urban_index =
 			static_cast<std::size_t>(city - ws_.cities.data());
-		if (!urban_land::zone_has_room(ws_, urban_index, ZONE_IND, 1.0)) {
+		// A zona industrial é medida em TRABALHADORES (m² por trabalhador): a
+		// planta nova ocupa os empregos que ela vai criar.
+		if (!urban_land::zone_has_room(ws_, urban_index, ZONE_IND,
+				std::max(1.0, jobs))) {
 			urban_land::signal_zone_demand(ws_.land[urban_index], ZONE_IND);
 			result["zone_pending"] = true;
 			result["error"] = "sem espaço na zona industrial";
@@ -5632,6 +5638,11 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 		// Infraestrutura atual atende a população de simulação da cidade; sem
 		// dado de cobertura, é o ponto de partida honesto (expansão no W2).
 		land.infra_capacity = safe_nonneg(city.simulation_population);
+		// §19 (integração): base do custo crescente — raio e reserva no
+		// carregamento. Área inicial = área construída da fonte (sem a
+		// informal, que nasce dentro/fora da malha conforme a fonte).
+		land.initial_area_km2 = built_up;
+		land.initial_reserve_km2 = land.reserve_km2;
 
 		// --- Moradia (housing_city.json; housing.json como fallback) ---
 		CityHousing& house = parsed_housing[index];
@@ -5813,6 +5824,9 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 	out["city"] = city_id;
 	out["nation"] = String(city.nation.c_str());
 	out["population"] = city.simulation_population;
+	// §19 (integração): PIB diário e população, usados pela calibração do custo
+	// de infraestrutura contra a receita municipal (teste/UI).
+	out["gdp_day"] = city.gdp;
 	Array area;
 	Array max_density;
 	Array land_price;
@@ -5827,6 +5841,11 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 	out["reserve_km2"] = land.reserve_km2;
 	out["infra_capacity"] = land.infra_capacity;
 	out["informal_km2"] = land.informal_km2;
+	// §19 (integração): base do custo crescente e tamanho atual do solo, para
+	// a UI/teste conferirem o fator de distância/relevo.
+	out["initial_area_km2"] = land.initial_area_km2;
+	out["initial_reserve_km2"] = land.initial_reserve_km2;
+	out["expansion_cost_per_km2"] = urban_land::expansion_cost_per_km2(ws_, index);
 	Array units;
 	for (int density = 0; density < DENSITY_COUNT; ++density) {
 		Array row;
@@ -5981,6 +6000,47 @@ Dictionary EconomySim::demo_urban_densify(const String& city_id, int zone) {
 		demo_status_invalidate();
 	}
 	return urban_project_result(ok, error, project_id, cost);
+}
+
+Dictionary EconomySim::demo_urban_social_housing(const String& city_id,
+		double units) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary out;
+	out["ok"] = false;
+	out["units"] = 0.0;
+	out["cost"] = 0.0;
+	const std::string id(city_id.utf8().get_data());
+	const auto found = ws_.city_lookup.find(id);
+	if (found == ws_.city_lookup.end() || found->second < 0) {
+		return out;
+	}
+	const std::size_t index = static_cast<std::size_t>(found->second);
+	if (index >= ws_.city_gov.size() || index >= ws_.housing.size()) {
+		return out;
+	}
+	const double cash_before = ws_.city_gov[index].cash;
+	double units_before = 0.0;
+	for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
+		const HousingProject& project = ws_.housing[index].projects[slot];
+		if (project.state == HOUSING_PROJECT_GOVERNMENT) {
+			units_before += project.units;
+		}
+	}
+	if (!housing::start_social_housing(ws_, index, units)) {
+		return out;
+	}
+	double built_units = 0.0;
+	for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
+		const HousingProject& project = ws_.housing[index].projects[slot];
+		if (project.state == HOUSING_PROJECT_GOVERNMENT) {
+			built_units += project.units;
+		}
+	}
+	out["ok"] = true;
+	out["units"] = std::max(0.0, built_units - units_before);
+	out["cost"] = std::max(0.0, cash_before - ws_.city_gov[index].cash);
+	demo_status_invalidate();
+	return out;
 }
 
 void EconomySim::demo_from_dict(const Dictionary& data) {

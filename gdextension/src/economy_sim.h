@@ -282,6 +282,13 @@ public:
 	 */
 	Dictionary demo_urban_densify(const String& city_id, int zone);
 
+	/**
+	 * §19 (integração) — moradia social da prefeitura: abre o projeto de
+	 * moradia do W3 (dono GOVERNMENT) pagando do caixa municipal. Devolve
+	 * {ok, units, cost} com o que efetivamente foi contratado/pago.
+	 */
+	Dictionary demo_urban_social_housing(const String& city_id, double units);
+
 	/** F8: catálogo carregado (id, nomes, ícone, educaçao, exportável). */
 	Array demo_get_service_sectors() const;
 

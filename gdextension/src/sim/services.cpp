@@ -140,7 +140,10 @@ bool SimCore::demo_service_open(DemoCity& city, int sector, double capacity,
 	if (!ws_.land.empty() && ws_.land.size() == ws_.cities.size()) {
 		const std::size_t urban_index =
 			static_cast<std::size_t>(&city - ws_.cities.data());
-		if (!urban_land::zone_has_room(ws_, urban_index, ZONE_COM, 1.0)) {
+		// A zona comercial é medida em TRABALHADORES (m² por trabalhador): o
+		// negócio novo ocupa o emprego que ele declara criar.
+		const double jobs = std::max(1.0, capacity * definition.jobs_per_unit);
+		if (!urban_land::zone_has_room(ws_, urban_index, ZONE_COM, jobs)) {
 			urban_land::signal_zone_demand(ws_.land[urban_index], ZONE_COM);
 			return false;
 		}

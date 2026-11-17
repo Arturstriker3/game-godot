@@ -517,6 +517,11 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 			zone_demand.append(land.zone_demand[zone]);
 		}
 		entry["zone_demand"] = zone_demand;
+		// §19 (integração): base do custo crescente (raio e reserva no
+		// carregamento). Save anterior não tem a chave: cai no campo do loader
+		// (ausência explícita, fator 1 sem inventar aumento).
+		entry["initial_area_km2"] = land.initial_area_km2;
+		entry["initial_reserve_km2"] = land.initial_reserve_km2;
 		Array units;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
 			Array row;
@@ -628,6 +633,10 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		entry["housing_stress"] = house.housing_stress;
 		entry["stress_days"] = house.stress_days;
 		entry["rent_paid_month"] = house.rent_paid_month;
+		// §19 (integração): o aluguel pago NO DIA também é estado (o teste de
+		// round-trip do W1 compara o retrato urbano inteiro); sem a chave o
+		// load zerava o dia e o save divergia.
+		entry["rent_paid_today"] = house.rent_paid_today;
 		entry["rent_households_month"] = house.rent_households_month;
 		entry["rent_firms_month"] = house.rent_firms_month;
 		entry["rent_government_month"] = house.rent_government_month;
@@ -1945,6 +1954,24 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				land.zone_demand[zone] = zone < zone_demand.size()
 					? safe_nonneg(double(zone_demand[zone])) : 0.0;
 			}
+			// §19 (integração): base do custo crescente. Save anterior ao campo
+			// deriva do estado atual (área/reserva de hoje = base do próximo
+			// carregamento): o custo volta a subir a partir de agora em vez de
+			// inventar um raio original que ninguém mediu.
+			land.initial_area_km2 = safe_nonneg(
+				double(entry.get("initial_area_km2", 0.0)));
+			land.initial_reserve_km2 = safe_nonneg(
+				double(entry.get("initial_reserve_km2", 0.0)));
+			if (land.initial_area_km2 <= 0.0) {
+				double area_total = 0.0;
+				for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+					area_total += safe_nonneg(land.area_km2[zone]);
+				}
+				land.initial_area_km2 = area_total;
+			}
+			if (land.initial_reserve_km2 <= 0.0) {
+				land.initial_reserve_km2 = land.reserve_km2;
+			}
 			const Array units = entry.get("units", Array());
 			for (int density = 0; density < DENSITY_COUNT; ++density) {
 				if (density >= units.size()
@@ -2107,6 +2134,8 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				0, int(entry.get("stress_days", 0)));
 			house.rent_paid_month = safe_nonneg(
 				double(entry.get("rent_paid_month", 0.0)));
+			house.rent_paid_today = safe_nonneg(
+				double(entry.get("rent_paid_today", 0.0)));
 			house.rent_households_month = safe_nonneg(
 				double(entry.get("rent_households_month", 0.0)));
 			house.rent_firms_month = safe_nonneg(
@@ -2133,7 +2162,7 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				HousingProject& project = house.projects[slot];
 				project.state = std::clamp(
 					int(p.get("state", 0)), 0,
-					static_cast<int>(HOUSING_PROJECT_SELF));
+					static_cast<int>(HOUSING_PROJECT_GOVERNMENT));
 				project.density = std::clamp(
 					int(p.get("density", 0)), 0, DENSITY_COUNT - 1);
 				project.tier = std::clamp(

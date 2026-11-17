@@ -25,6 +25,9 @@
 #include "world_state.h"
 
 namespace ogs {
+
+class SimCore;
+
 namespace city_gov {
 
 // ---------------------------------------------------------------------------
@@ -46,12 +49,16 @@ constexpr double kTotalTaxPctOfGdp = 0.30;
 constexpr double kMaintenanceShareOfTarget = 0.45;
 // Ocupação de zona que dispara a decisão de adensar/expandir (spec §19 W2).
 constexpr double kBusyOccupancy = 0.90;
-// m² de piso por negócio (serviço ou fábrica urbana) na capacidade de zona. A
-// fonte não publica: parâmetro do modelo, que o W1 substitui pela regra de zona.
+// m² de piso por negócio (serviço ou fábrica urbana) na capacidade de zona.
+// SUBSTITUÍDO na integração: o W1 mede a zona por TRABALHADOR
+// (kDemoUrbanServiceM2PerWorker / kDemoUrbanFactoryM2PerWorker). A constante
+// fica só como registro do estado anterior do pacote W2.
 constexpr double kBusinessFloorM2 = 200.0;
 // Expansão padrão: km² abertos por obra (limitado pela reserva e pelo caixa).
 constexpr double kExpansionKm2 = 1.0;
 // Adensar custa esta fração do km² de infraestrutura (spec: custo menor).
+// SUBSTITUÍDO na integração pelo custo por NÍVEL do W1
+// (kDemoUrbanDensifyCostFactorLowMid/MidHigh) — registro do pacote W2.
 constexpr double kDensifyCostShare = 0.35;
 // Pessoas por domicílio, para estimar o déficit habitacional. O W3 mede a
 // demanda por estrato; até lá é o tamanho médio declarado do domicílio.
@@ -68,7 +75,9 @@ constexpr int kProjectDaysSocialHousing = 30;
 // financeiro da prefeitura e a decisão de obra. Serial e determinístico (a
 // ordem é o índice de cidade; o repasse é agregado por nação em ordem de
 // primeira aparição, nunca pela ordem de um unordered_map).
-void tick(WorldState& ws, int day);
+// `core` é necessário só para abrir a obra §15 de solo (integração W1/W2);
+// nulo = fluxo financeiro roda, decisão de obra não (sem estado para empilhar).
+void tick(WorldState& ws, int day, SimCore* core = nullptr);
 
 // Dinheiro do mundo guardado pela prefeitura: caixa + fundos de obra ainda não
 // pagos. Entra em `demo_money_total` para a conservação valer em qualquer ponto

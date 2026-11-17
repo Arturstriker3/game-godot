@@ -264,30 +264,37 @@ func _run() -> void:
 	if not _close(transfer, float(gov.get("month_revenue_transfer", 0.0))):
 		_fail("repasse da cidade de teste inconsistente")
 
-	# Decisão: zona lotada + gabarito alto (sem adensar) => expandir.
-	var projects: Array = gov.get("projects", [])
+	# Decisão (INTEGRADA): zona lotada + gabarito alto (sem adensar) => expandir.
+	# A obra agora é um projeto §15 (`construction_projects`) com marcador
+	# urbano, pago pelo caixa da prefeitura — o `gov.projects` local do W2 fica
+	# só para ler saves antigos.
+	var projects: Array = _urban_projects(sim, TEST_CITY)
 	if projects.is_empty():
 		_fail("prefeitura nao decidiu obra com a zona lotada")
 	else:
 		var project: Dictionary = projects[0]
-		if int(project.get("kind", -1)) != EXPAND_KIND:
-			_fail("obra decidida nao foi expansao (kind=%s)" % [
-				str(project.get("kind"))])
-		if float(project.get("area_km2", 0.0)) <= 0.0:
+		if String(project.get("city", "")) != TEST_CITY:
+			_fail("obra decidida em outra cidade (%s)" % String(
+				project.get("city", "")))
+		if int(project.get("urban_action", -1)) != 1:  # URBAN_EXPAND
+			_fail("obra decidida nao foi expansao (acao=%s)" % [
+				str(project.get("urban_action"))])
+		if float(project.get("urban_km2", 0.0)) <= 0.0:
 			_fail("expansao sem area")
-		if not _close(float(project.get("reserved", 0.0)),
-				float(project.get("cost", 0.0)), 1.0e-9):
-			_fail("fundo reservado (%.3f) != custo da obra (%.3f)" % [
-				float(project.get("reserved", 0.0)),
-				float(project.get("cost", 0.0))])
-		if not _close(infra, float(project.get("cost", 0.0))):
+		if float(project.get("total_cost", 0.0)) <= 0.0:
+			_fail("expansao sem custo")
+		if String(project.get("owner", "")) != "state":
+			_fail("obra urbana sem dono estatal (%s)" % String(
+				project.get("owner", "")))
+		if not _close(infra, float(project.get("total_cost", 0.0))):
 			_fail("despesa de infraestrutura (%.3f) != custo da obra (%.3f)" % [
-				infra, float(project.get("cost", 0.0))])
+				infra, float(project.get("total_cost", 0.0))])
 	print("[city_gov] mes %d: iptu=%.1f taxas=%.1f repasse=%.1f manutencao=%.1f "
 		% [CHECK_DAY, iptu, fees, transfer, maintenance]
 		+ "obra=%.1f alvo=%.1f caixa=%.1f" % [infra, target, cash_after])
 
 	# --- Save/load com obra em andamento: 0 diferenças ----------------------
+	var failures_before_save := _failures.size()
 	for day in range(CHECK_DAY, SAVE_DAY):
 		_tick(sim, "A dia %d" % (day + 1))
 	var snapshot: Dictionary = sim.demo_to_dict()
@@ -302,20 +309,21 @@ func _run() -> void:
 	if _canonical(resaved) != _canonical(snapshot):
 		_fail("round-trip do save divergiu com obra em andamento")
 	var restored_gov: Dictionary = _gov(restored, TEST_CITY).get("gov", {})
-	if Array(restored_gov.get("projects", [])).size() \
-			!= Array(gov.get("projects", [])).size():
+	if Array(_urban_projects(restored, TEST_CITY)).size() != projects.size():
 		_fail("obra nao voltou do save")
 	print("[city_gov] save/load com obra em andamento: %s" % (
-		"0 diffs" if _failures.is_empty() else "com falhas"))
+		"0 diffs" if _failures.size() == failures_before_save else "com falhas"))
 
 	# --- Determinismo: threads=1 e threads=8 -------------------------------
+	var failures_before_det := _failures.size()
 	var other = _make_world(8, urban)
 	for day in range(1, SAVE_DAY + 1):
 		_tick(other, "B(t8) dia %d" % day)
 	if _canonical(other.demo_to_dict()) != _canonical(snapshot):
 		_fail("threads=8 divergiu do save de threads=1 no dia %d" % SAVE_DAY)
 	print("[city_gov] determinismo threads=1 vs 8 no dia %d: %s" % [
-		SAVE_DAY, "identico" if _failures.is_empty() else "com falhas"])
+		SAVE_DAY, "identico" if _failures.size() == failures_before_det
+		else "com falhas"])
 
 	# --- Obra concluída: área e infraestrutura crescem ----------------------
 	var infra_before := float(urban_after.get("infra_capacity", 0.0))
@@ -344,9 +352,98 @@ func _run() -> void:
 		float(urban_end.get("infra_capacity", 0.0)),
 		float(gov_end.get("cash", 0.0))])
 
+	# --- Custo crescente: 1 km² = 2 meses de receita municipal (spec §19). ---
+	# No dia CHECK_DAY a cidade ainda tem o raio/reserva do carregamento, então
+	# os fatores de distância e relevo valem 1 e o custo por km² é exatamente
+	# kDemoUrbanInfraCostMonths × alvo do mês (conta documentada em
+	# sim_constants.h: 12 meses × 55% ÷ 2 = 3,3 km²/ano).
+	var cost_km2 := float(urban_after.get("expansion_cost_per_km2", 0.0))
+	if not _close(cost_km2, 2.0 * target, 1.0e-9):
+		_fail("custo/km² (%.1f) != 2 meses de receita alvo (%.1f)" % [
+			cost_km2, 2.0 * target])
+	print("[city_gov] custo de 1 km2 = %.0f XGS (2 meses do alvo %.0f)" % [
+		cost_km2, target])
+
+	# --- Moradia social: obra do W3 com dono GOVERNMENT, paga pelo caixa. ---
+	_test_social_housing(urban)
+
+
+## §19 (integração W2→W3): a prefeitura financia moradia social pelo projeto
+## de moradia do W3; a entrega soma unidades e a posse vai para o governo.
+func _test_social_housing(urban: Dictionary) -> void:
+	var sim = _make_world(1, urban)
+	for day in range(1, MONTH_DAYS + 1):
+		_tick(sim, "S dia %d" % day)
+	var cash := 5000000.0
+	_grant_gov_cash(sim, TEST_CITY, cash)
+	var before: Dictionary = _gov(sim, TEST_CITY)
+	var owner_before := float(Array(before.get("owner_share", []))[2])
+	var stock_before := 0.0
+	for row in before.get("units", []):
+		for value in row:
+			stock_before += float(value)
+	var result: Dictionary = sim.demo_urban_social_housing(TEST_CITY, 40.0)
+	if not bool(result.get("ok", false)):
+		_fail("moradia social nao abriu")
+		return
+	var cash_after_open := float(_gov(sim, TEST_CITY).get("gov", {}).get("cash", 0.0))
+	var paid := float(result.get("cost", 0.0))
+	if paid <= 0.0 or not _close(cash, cash_after_open + paid, 1.0e-6):
+		_fail("moradia social: caixa %.1f -> %.1f nao fecha com custo %.1f" % [
+			cash, cash_after_open, paid])
+	for day in range(MONTH_DAYS + 1, MONTH_DAYS + 95):
+		_tick(sim, "S dia %d" % day)
+	var after: Dictionary = _gov(sim, TEST_CITY)
+	var gov_project := false
+	var snapshot_after: Dictionary = sim.demo_to_dict()
+	for entry in snapshot_after.get("housing", []):
+		if String(entry.get("city", "")) != TEST_CITY:
+			continue
+		for project in entry.get("projects", []):
+			if int(project.get("state", 0)) == 3:
+				gov_project = true
+	if gov_project:
+		_fail("moradia social: obra do governo ainda em andamento depois do prazo")
+	var owner_after := float(Array(after.get("owner_share", []))[2])
+	# A posse do governo sobe pela proporção das unidades entregues no estoque
+	# (tolerância de 2× para a depreciação diária do período).
+	var expected_share := float(result.get("units", 0.0)) \
+		/ maxf(1.0, stock_before)
+	if owner_after - owner_before < 0.5 * expected_share:
+		_fail("moradia social: posse do governo subiu %.8f, esperado ~%.8f" % [
+			owner_after - owner_before, expected_share])
+	print("[city_gov] moradia social: %.1f unidades, %.0f XGS do caixa, posse do governo %.6f -> %.6f (esperado +%.6f)" % [
+		float(result.get("units", 0.0)), paid, owner_before, owner_after,
+		expected_share])
+
+
+## Injeta caixa na prefeitura pelo bloco urbano do save (teste, sem gambiarra
+## de estado interno): o save do W0/W2 carrega `gov.cash` por cidade.
+func _grant_gov_cash(sim, city_id: String, cash: float) -> void:
+	var snapshot: Dictionary = sim.demo_to_dict()
+	for entry in snapshot.get("urban", []):
+		if String(entry.get("city", "")) == city_id:
+			var gov: Dictionary = entry.get("gov", {})
+			gov["cash"] = cash
+			entry["gov"] = gov
+	sim.demo_from_dict(snapshot)
+
 
 func _sum_area(urban: Dictionary) -> float:
 	var total := 0.0
 	for value in urban.get("area_km2", []):
 		total += float(value)
 	return total
+
+
+## Obras urbanas em andamento = projetos §15 com marcador de infraestrutura.
+## `city_id` filtra (a prefeitura de TODA cidade cheia decide no mesmo mês).
+func _urban_projects(sim, city_id: String = "") -> Array:
+	var result: Array = []
+	for project in sim.demo_to_dict().get("construction_projects", []):
+		if int(project.get("urban_action", 0)) == 0:
+			continue
+		if city_id != "" and String(project.get("city", "")) != city_id:
+			continue
+		result.append(project)
+	return result

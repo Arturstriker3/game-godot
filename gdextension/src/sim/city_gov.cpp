@@ -1,13 +1,22 @@
 // §19 (W2) — prefeitura: fluxo mensal de caixa e obras urbanas.
 // C++ puro (STL via world_state.h/sim_constants.h), sem godot_cpp em sim/.
 //
-// Ordem: (1) avança as obras do dia; (2) no fechamento do mês cobra IPTU e
-// taxas, paga o repasse do tesouro nacional, paga a manutenção urbana e decide
-// a próxima obra. Tudo em série, na ordem de índice de cidade — determinístico
-// com qualquer número de threads (as fases paralelas são outras).
+// Ordem: (1) avança as obras legadas do W2 (saves anteriores à integração);
+// (2) no fechamento do mês cobra IPTU e taxas, paga o repasse do tesouro
+// nacional, paga a manutenção urbana e decide a próxima obra. Tudo em série, na
+// ordem de índice de cidade — determinístico com qualquer número de threads.
+//
+// INTEGRAÇÃO (spec §19, seção "Integração"): a prefeitura NÃO executa mais a
+// obra física. Expansão e adensamento chamam `urban_land::start_project` (obra
+// §15 tipo `infra_urbana`, com materiais/prazo do setor de construção) pagando
+// do CAIXA DA PREFEITURA; moradia social chama `housing::start_social_housing`
+// (projeto de moradia do W3, dono GOVERNMENT). Os `CityGovProject` locais ficam
+// apenas para LER saves escritos antes desta integração.
 #include "city_gov.h"
 
+#include "housing.h"
 #include "sim_constants.h"
+#include "urban_land.h"
 
 #include <algorithm>
 #include <cmath>
@@ -41,24 +50,14 @@ double housing_units(const CityHousing& house) {
 	return total;
 }
 
-// Capacidade física de uma zona em unidades: área × FAR do gabarito ÷ m² da
-// unidade. Derivação local do W2 — o W1 (urban_land.cpp) é o dono da regra de
-// ocupação e vai substituir estas duas funções.
-double zone_capacity_units(const CityLand& land, int zone) {
-	const int density = std::clamp(static_cast<int>(land.max_density[zone]),
-		0, DENSITY_COUNT - 1);
+// Habitantes que `km2` da zona passam a atender quando a infraestrutura chega,
+// no gabarito atual da zona.
+double infra_people_from_area(const CityLand& land, int zone, double km2) {
+	const int density = std::clamp(
+		static_cast<int>(land.max_density[zone]), 0, DENSITY_COUNT - 1);
 	const double unit_m2 = std::max(1.0, kDemoUrbanUnitM2[density][TIER_POPULAR]);
-	return safe_nonneg(land.area_km2[zone]) * 1.0e6
-		* kDemoUrbanFar[density] / unit_m2;
-}
-
-// Capacidade de uma zona em negócios (serviços/fábricas urbanas): área × FAR ÷
-// m² de piso por negócio (parâmetro declarado; o W1 refina por setor).
-double zone_capacity_businesses(const CityLand& land, int zone) {
-	const int density = std::clamp(static_cast<int>(land.max_density[zone]),
-		0, DENSITY_COUNT - 1);
-	return safe_nonneg(land.area_km2[zone]) * 1.0e6
-		* kDemoUrbanFar[density] / kBusinessFloorM2;
+	return 1.0e6 * kDemoUrbanFar[density] / unit_m2
+		* safe_nonneg(km2) * kPeoplePerDwelling;
 }
 
 // Unidades por km² que o gabarito permite (FAR ÷ m² da unidade popular).
@@ -66,13 +65,6 @@ double units_per_km2(int density) {
 	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
 	const double unit_m2 = std::max(1.0, kDemoUrbanUnitM2[d][TIER_POPULAR]);
 	return 1.0e6 * kDemoUrbanFar[d] / unit_m2;
-}
-
-// Habitantes que `km2` da zona passam a atender quando a infraestrutura chega,
-// no gabarito atual da zona.
-double infra_people_from_area(const CityLand& land, int zone, double km2) {
-	return units_per_km2(static_cast<int>(land.max_density[zone]))
-		* safe_nonneg(km2) * kPeoplePerDwelling;
 }
 
 // Fecha a obra: o fundo reservado vira pagamento ao setor de construção
@@ -241,41 +233,38 @@ void pay_transfers(WorldState& ws, std::size_t count,
 // zona acima de kBusyOccupancy -> adensar se a infraestrutura atende a
 // população, senão expandir se há reserva de solo; sem zona cheia e com déficit
 // popular -> moradia social. Respeita o caixa (sem dívida).
-void decide_works(WorldState& ws, std::size_t city_index, int day) {
+//
+// INTEGRAÇÃO: as obras de solo são projetos §15 do W1 (`urban_land::
+// start_project`), pagos pelo CAIXA da prefeitura; a moradia social é o projeto
+// de moradia do W3 (`housing::start_social_housing`) com dono GOVERNMENT.
+void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day) {
 	DemoCity& city = ws.cities[city_index];
 	CityGov& gov = ws.city_gov[city_index];
 	const CityLand& land = ws.land[city_index];
 	const CityHousing& house = ws.housing[city_index];
 
-	const double cap_res = zone_capacity_units(land, ZONE_RES);
-	const double occ_res = cap_res > 0.0 ? housing_units(house) / cap_res : 0.0;
-	double businesses = 0.0;
-	if (city_index < ws.service_by_city.size()) {
-		businesses += static_cast<double>(ws.service_by_city[city_index].size());
-	}
-	if (city_index < ws.buildings_by_city.size()) {
-		businesses += static_cast<double>(ws.buildings_by_city[city_index].size());
-	}
-	const double cap_com = zone_capacity_businesses(land, ZONE_COM);
-	const double cap_ind = zone_capacity_businesses(land, ZONE_IND);
-	const double occ_com = cap_com > 0.0 ? businesses / cap_com : 0.0;
-	const double occ_ind = cap_ind > 0.0 ? businesses / cap_ind : 0.0;
-
+	// Ocupação das zonas pela regra do W1 (capacidade por trabalhador/unidade).
+	// A prefeitura reage ao pior caso; sem solo carregado a fase nem roda.
 	int busy_zone = -1;
 	double worst = kBusyOccupancy;
-	if (occ_res > worst) {
-		busy_zone = ZONE_RES;
-		worst = occ_res;
-	}
-	if (occ_com > worst) {
-		busy_zone = ZONE_COM;
-		worst = occ_com;
-	}
-	if (occ_ind > worst) {
-		busy_zone = ZONE_IND;
-		worst = occ_ind;
+	for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+		const double occupancy = urban_land::zone_occupancy(ws, city_index, zone);
+		if (occupancy > worst) {
+			worst = occupancy;
+			busy_zone = zone;
+		}
 	}
 
+	bool project_active = false;
+	for (const DemoConstructionProject& project : ws.construction_projects) {
+		if (project.city == city.id && project.urban_action != urban_land::URBAN_NONE) {
+			project_active = true;
+			break;
+		}
+	}
+	if (project_active) {
+		return;  // obra de solo já em andamento nesta cidade
+	}
 	if (busy_zone >= 0) {
 		// Adensar: só se o gabarito permite e a infraestrutura já atende a
 		// população atual (densidade nova exige infra, spec W2).
@@ -283,48 +272,68 @@ void decide_works(WorldState& ws, std::size_t city_index, int day) {
 			static_cast<int>(land.max_density[busy_zone]) < DENSITY_COUNT - 1
 			&& land.infra_capacity + 1e-9 >= city.simulation_population;
 		if (can_densify) {
-			const double cost = safe_nonneg(land.area_km2[busy_zone])
-				* kDemoUrbanInfraCostPerKm2 * kDensifyCostShare;
-			if (start_densify(gov, busy_zone, cost, day)) {
-				gov.month_expense_infrastructure += gov.projects[
-					gov.project_count - 1].reserved;
-				return;
+			const double cost = urban_land::densify_cost(ws, city_index, busy_zone);
+			if (cost > 0.0 && safe_nonneg(gov.cash) + 1e-9 >= cost) {
+				std::string error;
+				std::string project_id;
+				if (urban_land::start_project(ws, core, city_index, busy_zone,
+						urban_land::URBAN_DENSIFY, 0.0, "state", &error,
+						&project_id, &gov)) {
+					gov.month_expense_infrastructure += cost;
+					return;
+				}
 			}
 		}
 		if (land.reserve_km2 > 1e-9) {
-			const double km2 = std::min(kExpansionKm2, land.reserve_km2);
-			const double cost = km2 * kDemoUrbanInfraCostPerKm2;
-			if (start_expansion(gov, land, busy_zone, km2, cost, day)) {
-				gov.month_expense_infrastructure += gov.projects[
-					gov.project_count - 1].reserved;
-				return;
+			const double per_km2 =
+				urban_land::expansion_cost_per_km2(ws, city_index);
+			const double km2_by_cash = per_km2 > 0.0
+				? safe_nonneg(gov.cash) / per_km2 : 0.0;
+			const double km2 = std::min({kExpansionKm2, land.reserve_km2,
+				km2_by_cash});
+			if (km2 > 1e-6) {
+				std::string error;
+				std::string project_id;
+				const double cost = km2 * per_km2;
+				if (urban_land::start_project(ws, core, city_index, busy_zone,
+						urban_land::URBAN_EXPAND, km2, "state", &error,
+						&project_id, &gov)) {
+					gov.month_expense_infrastructure += cost;
+					return;
+				}
 			}
 		}
 		return;
 	}
 
-	// Déficit popular -> moradia social. W3 mede a demanda por estrato e o
-	// aluguel subsidiado; até lá o déficit é o que falta de unidades para os
+	// Déficit popular -> moradia social pelo projeto de moradia do W3. A
+	// demanda por estrato do W3 é o déficit do padrão popular; sem o mercado
+	// rodado (save antigo) o déficit é o que falta de unidades para os
 	// domicílios estimados (população ÷ pessoas por domicílio).
-	const double households =
-		safe_nonneg(city.simulation_population) / kPeoplePerDwelling;
-	const double deficit = households - housing_units(house);
-	const double unit_price = safe_nonneg(house.price[TIER_POPULAR]);
-	if (deficit <= 1.0 || unit_price <= 1e-9) {
+	if (housing::has_social_project(ws, city_index)) {
 		return;
 	}
-	const double units = std::min(deficit, safe_nonneg(gov.cash) / unit_price);
-	if (units < 1.0) {
+	const double stock = housing_units(house);
+	const double households = house.households > 0.0
+		? safe_nonneg(house.households)
+		: safe_nonneg(city.simulation_population) / kPeoplePerDwelling;
+	const double deficit = households - stock;
+	const double cost_unit = housing::build_cost_unit(
+		ws, city_index, DENSITY_LOW, TIER_POPULAR);
+	if (deficit <= 1.0 || cost_unit <= 0.0) {
 		return;
 	}
-	if (start_social_housing(gov, units, units * unit_price, day)) {
-		gov.month_expense_social_housing += gov.projects[
-			gov.project_count - 1].reserved;
+	const double cash_before = safe_nonneg(gov.cash);
+	if (housing::start_social_housing(ws, city_index, deficit)) {
+		// O custo registrado é o que efetivamente saiu do caixa.
+		gov.month_expense_social_housing +=
+			std::max(0.0, cash_before - safe_nonneg(gov.cash));
 	}
 }
 
 // Fechamento mensal: receita, repasse, manutenção e decisão.
-void monthly_cash_flow(WorldState& ws, std::size_t count, int day) {
+void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
+		int day) {
 	std::vector<double> transfer_want(count, 0.0);
 	for (std::size_t city_index = 0; city_index < count; ++city_index) {
 		DemoCity& city = ws.cities[city_index];
@@ -408,7 +417,7 @@ void monthly_cash_flow(WorldState& ws, std::size_t count, int day) {
 			gov.month_expense_maintenance = maintenance_paid;
 		}
 		if (!has_project(gov)) {
-			decide_works(ws, city_index, day);
+			decide_works(ws, core, city_index, day);
 		}
 	}
 }
@@ -495,17 +504,17 @@ bool start_social_housing(CityGov& gov, double units, double cost, int day) {
 	return true;
 }
 
-void tick(WorldState& ws, int day) {
+void tick(WorldState& ws, int day, SimCore* core) {
 	const std::size_t count = std::min({ws.cities.size(), ws.land.size(),
 		ws.housing.size(), ws.city_gov.size()});
 	if (count == 0) {
 		return;  // cenário sintético/save antigo: sem estado urbano
 	}
 	advance_projects(ws, count);
-	if (day % kMonthDays != 0) {
+	if (day % kMonthDays != 0 || core == nullptr) {
 		return;
 	}
-	monthly_cash_flow(ws, count, day);
+	monthly_cash_flow(ws, *core, count, day);
 }
 
 double money_total(const WorldState& ws) {
