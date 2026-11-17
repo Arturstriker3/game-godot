@@ -1,12 +1,11 @@
 # A0 — Benchmark canônico e equivalência (como rodar)
 
 > Fase A0 de `docs/plans/perf_pop_financas_plano.md` (plano aprovado pelo dono
-> em 2026-11-17; ele vive no worktree principal, não neste branch). Esta pasta
-> receberá o baseline versionado `baseline_A0.json` — a medição de 60 d × 3
-> **ainda não foi rodada** (só o smoke de 5 d × 1 desta validação) — e guarda a
-> ferramenta de equivalência das fases A1–A5 e as medições históricas
-> (`f*_*.txt`). Nada aqui é número inventado: o que não foi medido aparece como
-> "não medido".
+> em 2026-11-17; ele vive no worktree principal, não neste branch). O baseline
+> versionado é `baseline_A0.json` — medição oficial de 60 d × 3 rodada em
+> 2026-11-17 sobre o Q-015 integrado (ver §6) — e esta pasta guarda a ferramenta
+> de equivalência das fases A1–A5 e as medições históricas (`f*_*.txt`). Nada
+> aqui é número inventado: o que não foi medido aparece como "não medido".
 
 ## 1. O que já existia (não duplicar)
 
@@ -177,4 +176,40 @@ total). O dump de cada rodada tem ~110 MB e fica em `%TEMP%`.
 O golden foi gerado com a release de medição. Comparação com outra build
 (debug × release) não foi medida: a regra é comparar **mesma build** dos dois
 lados; se precisar do caminho debug, regenere o golden com a DLL debug e
-registre o `sha` dela.
+registre o `sha` dela. **Atualização (2026-11-17, Q-015 integrado):** o golden
+foi regenerado com a **DLL debug real** do HEAD (ver §6) — os shas acima são
+históricos.
+
+## 6. Baseline oficial A0 (2026-11-17, Q-015 integrado)
+
+Medição oficial: `tools/bench_canonical.ps1` (60 d × 3 rodadas sequenciais,
+editor Godot fechado, CPU ociosa), saída em `docs/economy/perf/baseline_A0.json`.
+
+- **HEAD:** Q-015 integrado + plano do dono (branch `balance/global-resources`).
+- **DLL release de medição** (`OGS_PROFILE_RELEASE=ON`, rebuilt do HEAD):
+  `sha256 f825a7b4…9dbc851d`. Slot debug restaurado com `sha256 62f36398…209c59b`
+  (a mesma DLL do golden de equivalência).
+- **Host:** AMD Ryzen 7 5700X3D, 16 threads lógicos, Windows 11 Pro. Threads não
+  passadas (padrão do núcleo); memória estática 314,5 MB sem mapa 3D.
+
+| métrica (mediana entre rodadas) | ms | variação entre rodadas |
+|---|---:|---:|
+| tick de parede (worker) | 36,58 (p95 por rodada 41,75 / 42,07 / 42,15) | 1,96% |
+| dia completo (tick + IA) | 155,51 (p95 168,5 / 174,0 / 173,3) | 1,18% |
+| fase `status` | 15,86 (`status_cities` 11,17 + `status_orders` 3,50) | 1,13% |
+| `trade` | 6,27 (`trade_food` 5,47) | 1,04% |
+| `arrival` | 5,48 | 4,71% |
+| IA planejar (`ai_plan`) | 4,91 | 1,60% |
+| IA fatiada/dia (`ai_pump`) | 113,94 | 0,98% |
+| virada da main (`turn`) | 10,45 | 1,37% |
+| `pump` (total por dia) | 353,15 | 4,49% |
+
+**Critério A0:** variação ≤ 3% em `tick_wall_ms` e `day_total_ms` →
+**máx 1,96% — OK**. `frame_peak_ms` variou 7,54% (não é métrica-chefe: oscila em
+µs de frame) e as fases internas de µs abaixo de ~1 ms variam 5–11%.
+
+**Equivalência no mesmo HEAD:** golden `docs/economy/refactor/baseline/A0_60_urban.json`
+regenerado com a DLL debug (`save_sha256 3e3ebbbe…1a3d0b7`,
+`status_sha256 d79bfe32…c95ac9b`, money 2.200.539.587,40, 0 falências,
+54.554 negócios de serviço); 2 rodadas comparadas campo a campo → **0 diferenças**
+e 1 rodada contra o golden → shas iguais.
