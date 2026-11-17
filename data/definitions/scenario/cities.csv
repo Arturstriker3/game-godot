@@ -1,9 +1,9 @@
 id,nation,home_nation,name,population,sim_population,agglomeration_population,urban_population,urban_population_source,x,y,landmass,capital
 ABW-ORA,NED,NED,Oranjestad,77853,29998,,29998,sim_population,1527.4,1076.1,aruba,0
-AFG-HER,AFG,AFG,Herāt,3561028,574300,,574300,sim_population,3363.9,772.9,asia,0
-AFG-KAB,AFG,AFG,Kabul,33793493,4434550,5450000,5450000,agglomeration,3460.7,770.4,asia,1
-AFG-KAN,AFG,AFG,Kandahār,3244795,523300,,523300,sim_population,3412.6,810.9,asia,0
-AFG-MAZ,AFG,AFG,Mazār-e Sharīf,3244795,523300,,523300,sim_population,3432.1,740.2,asia,0
+AFG-HER,AFG,AFG,Herāt,3580676,574300,,574300,sim_population,3363.9,772.9,asia,0
+AFG-KAB,AFG,AFG,Kabul,33979950,4434550,5450000,5450000,agglomeration,3460.7,770.4,asia,1
+AFG-KAN,AFG,AFG,Kandahār,3262699,523300,,523300,sim_population,3412.6,810.9,asia,0
+AFG-MAZ,AFG,AFG,Mazār-e Sharīf,3020786,484500,,484500,sim_population,3432.1,740.2,asia,0
 AGO-BEN,AGO,AGO,Benguela,3997954,1370000,1370000,1370000,agglomeration,2686.3,1424.3,africa,0
 AGO-HUA,AGO,AGO,Huambo,1737225,595304,,595304,sim_population,2718.6,1427.4,africa,0
 AGO-LUA,AGO,AGO,Luanda,30349435,2776168,10400000,10400000,agglomeration,2683.8,1372.7,africa,1

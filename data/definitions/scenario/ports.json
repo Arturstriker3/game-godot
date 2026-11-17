@@ -1026,6 +1026,15 @@
     "port_of": "SAU-JED"
   },
   {
+    "id": "SGP-SIN",
+    "name": "Singapore",
+    "nation": "SGP",
+    "x": 3942.4,
+    "y": 1232.5,
+    "landmass": "singapore",
+    "port_of": "SGP-SIN"
+  },
+  {
     "id": "SLV-SAN",
     "name": "San Salvador",
     "nation": "SLV",

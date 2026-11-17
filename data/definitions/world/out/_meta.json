@@ -22,6 +22,7 @@
     "port_city_coast_km": 25,
     "port_point_km": 15,
     "legacy": "40 cidades do cenário preservadas, exceto VEN-PAY (trocada por VEN-CBL)",
+    "city_population": "population = populacao nacional 2026 rateada por populacao URBANA (urban_population = aglomeracao de tools/agglomerations_2026.csv quando casada - limitada a populacao da nacao quando a aglomeracao e transfronteirica, urban_population_source=agglomeration_capped - senao sim_population); sim_population = cidade propria da fonte",
     "curation": {
       "source": "tools/world_city_curation.py",
       "excluded": {
@@ -131,7 +132,8 @@
         "MYS-GEO",
         "AGO-BEN",
         "TUR-ANT",
-        "MAR-AGA"
+        "MAR-AGA",
+        "SGP-SIN"
       ]
     },
     "nation_curation": {
@@ -1074,12 +1076,12 @@
   "counts": {
     "nations": 179,
     "cities": 834,
-    "ports": 144,
+    "ports": 145,
     "buildings": 834,
-    "i18n_keys": 1336,
+    "i18n_keys": 1337,
     "legacy_cities": 39,
     "legacy_ports": 18,
-    "scenario_ports": 138,
+    "scenario_ports": 144,
     "cities_with_pt_exonym": 259,
     "cities_with_es_exonym": 262,
     "cities_pt_same_as_en": 552

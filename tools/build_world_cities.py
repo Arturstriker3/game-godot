@@ -58,7 +58,7 @@ import nation_colors
 from world_city_curation import (
     CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
     FORCED_PORTS, LEGACY_EXCLUDED, PORT_OF_OVERRIDES,
-    EXCLUDED_PORTS,
+    EXCLUDED_PORTS, POPULATION_OVERRIDES,
 )
 from world_nation_curation import (
     ATLAS_TAG_ALIASES, KEEP_AREA_KM2, KEEP_POP, NO_ISO2, STRATEGIC_KEEP,
@@ -194,6 +194,26 @@ def curate_cities(rows):
                               float(spec["lat"]), float(spec["lon"])) < 20.0)]
         kept.append(dict(spec))
     return kept, excluded_here
+
+
+def apply_population_overrides(rows):
+    """Aplica `POPULATION_OVERRIDES` (correção de fonte) à lista de cidades.
+
+    Idempotente: o valor e a citação vêm da curadoria (`world_city_curation.py`),
+    então uma regeneração do importador não desfaz a correção. Devolve os ids
+    corrigidos (só para o relatório do build).
+    """
+    applied = []
+    for row in rows:
+        spec = POPULATION_OVERRIDES.get(row["id"])
+        if not spec:
+            continue
+        row["population"] = str(spec["population"])
+        row["population_year"] = str(spec.get("population_year", ""))
+        row["source"] = spec["source"]
+        row["note"] = spec["note"]
+        applied.append(row["id"])
+    return applied
 
 
 def curate_ports(rows):
@@ -669,6 +689,7 @@ def main():
     problems = []
     problems.extend(nation_errors)
     cities_src, curated_out = curate_cities(cities_src)
+    overrides_applied = apply_population_overrides(cities_src)
     cities_src, ports_src, removed_ports = remap_nations(cities_src, ports_src)
     nations_by_id = {r["iso3"]: r for r in nations_src}
     if len(nations_by_id) != len(nations_src):
@@ -887,6 +908,8 @@ def main():
     if curated_out:
         print("curadoria: fora da fonte ->", ", ".join(sorted(curated_out)))
     print("curadoria: forçadas ->", ", ".join(spec["id"] for spec in FORCED_CITIES))
+    if overrides_applied:
+        print("curadoria: população corrigida ->", ", ".join(sorted(overrides_applied)))
     removed_nations = [item for item in nation_report if item["action"] == "removed"]
     transferred = [item for item in nation_report if item["action"] != "removed"]
     print(f"nações curadas: {len(nation_report)} afetadas "

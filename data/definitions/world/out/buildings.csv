@@ -2,7 +2,7 @@ city_id,building_id,name,output_tons_per_day
 AFG-KAB,afg_kab_wheat,Cabul — trigo,1330.4
 AFG-HER,afg_her_wheat,Herat — trigo,172.3
 AFG-KAN,afg_kan_wheat,Kandahar — trigo,157.0
-AFG-MAZ,afg_maz_wheat,Mazar-e Sharif — trigo,157.0
+AFG-MAZ,afg_maz_wheat,Mazar-e Sharif — trigo,145.4
 AGO-LUA,ago_lua_wheat,Luanda — trigo,832.9
 AGO-BEN,ago_ben_wheat,Benguela — trigo,411.0
 AGO-LUB,ago_lub_wheat,Lubango — trigo,180.2

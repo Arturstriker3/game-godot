@@ -40,6 +40,11 @@ const PORTS := [
 	# Algeciras (r7): o porto fica na Baía de Gibraltar, a ~1 km do centro; a
 	# semente é o mar aberto do Estreito, a sul da baía.
 	["ESP-ALG", Vector2(-5.441, 36.128), Vector2(-5.45, 35.95)],
+	# Singapura (r9, 2026-11-17): a cidade-estado não tinha porto no cenário e
+	# ficava sem rota marítima (única cidade da landmass `singapore`). O cais é
+	# Tanjong Pagar, na costa sul voltada para o Estreito de Singapura; a semente
+	# é o mar aberto a leste do estreito (mar da China Meridional).
+	["SGP-SIN", Vector2(103.8544, 1.2626), Vector2(105.0, 1.3)],
 ]
 ## Distância máxima (células finas) do cais até a água do componente principal:
 ## o porto tem de alcançar o mar, não uma lagoa/enseada isolada. Medido em
