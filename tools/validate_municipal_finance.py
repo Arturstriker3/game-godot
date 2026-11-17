@@ -211,6 +211,13 @@ def check_entry(entry: dict, code: str, problems: List[str], current_year: int) 
 
     check_refs(entry, code, problems)
 
+    method = entry.get("method")
+    if proxy_count > 0:
+        if not isinstance(method, str) or not method.strip():
+            problems.append("%s: %d campo(s) proxy sem method por entrada" % (code, proxy_count))
+    elif confidence == "complete" and method is not None:
+        problems.append("%s: entrada 100%% observada com method (%r)" % (code, method))
+
     if observed_count == len(FIELDS):
         expected = "complete"
     elif proxy_count == len(FIELDS):

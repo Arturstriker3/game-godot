@@ -345,7 +345,9 @@ NOTE = (
     "membros da OECD; o peso do imposto sobre imóveis cobre também países das séries Revenue "
     "Statistics LAC/África/Ásia-Pacífico/Global — por isso o bloco `coverage` conta observado/"
     "proxy/null por campo, além das entradas 100% observadas. IMF GFS não foi usada nesta versão. "
-    "Em campo proxy, refs[].year é o último ano de referência da série (2024), não uma medição."
+    "Em campo proxy, refs[].year é o último ano de referência da série (2024), não uma medição. "
+    "Toda entrada com ao menos um campo proxy traz um campo `method` descrevendo quais campos "
+    "são proxy e a faixa de renda + flag de federação usadas — alinhado com housing.json."
 )
 
 
@@ -581,6 +583,14 @@ def build_nation(nation: dict) -> dict:
         "confidence": confidence,
         "refs": refs,
     }
+    if proxy_count > 0:
+        entry["method"] = (
+            "Campos em proxy por faixa de renda PPC per capita %s (%s): %s. "
+            "Valores de faixa fixos (não são medição da nação): ver refs "
+            "'estimativa (não é medição)' e method do arquivo."
+            % (BAND_LABEL[band], "federação" if federal else "unitário",
+               ", ".join(proxied))
+        )
     if not has_value:
         entry["reason"] = (
             "gdp_ppp_bn ausente no nations.csv: faixa de renda indeterminada, então nenhum proxy "

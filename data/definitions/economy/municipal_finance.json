@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Finanças municipais por nação. Observados: OECD Subnational government finance (SNG dashboard) para receita subnacional (% do PIB) e transferências (% da receita subnacional); OECD Revenue Statistics, série 4100 sobre o total de tributos, para o peso do imposto sobre imóveis. Onde não há observação, aplica-se proxy por faixa de renda per capita PPC + flag de federação — nunca apresentado como medição: cada campo proxy leva `*_estimated=true` (subnational_estimated / property_tax_estimated / transfers_estimated) e cada campo observado leva `*_estimated=false`. A confiança da ENTRADA resume a mistura e não substitui as flags por campo: complete = os três campos observados; partial = misto (ao menos um observado e ao menos um proxy); estimated = os três campos proxy; no_data = os três campos null. `estimated` (entrada) é true SOMENTE quando os três campos são proxy. Valor 0,00 exato na série 4100 é tratado como dado ausente e cai para proxy. Nove nações sem gdp_ppp_bn no nations.csv (CUB, ERI, PRK, SAH, SOL, SSD, TWN, VEN, YEM) ficam com os três campos null, source=no_data e confidence=no_data: sem faixa de renda não se inventa proxy. A cobertura observada é desigual por construção: receita subnacional e transferências só existem para membros da OECD; o peso do imposto sobre imóveis cobre também países das séries Revenue Statistics LAC/África/Ásia-Pacífico/Global — por isso o bloco `coverage` conta observado/proxy/null por campo, além das entradas 100% observadas. IMF GFS não foi usada nesta versão. Em campo proxy, refs[].year é o último ano de referência da série (2024), não uma medição.",
+  "note": "Finanças municipais por nação. Observados: OECD Subnational government finance (SNG dashboard) para receita subnacional (% do PIB) e transferências (% da receita subnacional); OECD Revenue Statistics, série 4100 sobre o total de tributos, para o peso do imposto sobre imóveis. Onde não há observação, aplica-se proxy por faixa de renda per capita PPC + flag de federação — nunca apresentado como medição: cada campo proxy leva `*_estimated=true` (subnational_estimated / property_tax_estimated / transfers_estimated) e cada campo observado leva `*_estimated=false`. A confiança da ENTRADA resume a mistura e não substitui as flags por campo: complete = os três campos observados; partial = misto (ao menos um observado e ao menos um proxy); estimated = os três campos proxy; no_data = os três campos null. `estimated` (entrada) é true SOMENTE quando os três campos são proxy. Valor 0,00 exato na série 4100 é tratado como dado ausente e cai para proxy. Nove nações sem gdp_ppp_bn no nations.csv (CUB, ERI, PRK, SAH, SOL, SSD, TWN, VEN, YEM) ficam com os três campos null, source=no_data e confidence=no_data: sem faixa de renda não se inventa proxy. A cobertura observada é desigual por construção: receita subnacional e transferências só existem para membros da OECD; o peso do imposto sobre imóveis cobre também países das séries Revenue Statistics LAC/África/Ásia-Pacífico/Global — por isso o bloco `coverage` conta observado/proxy/null por campo, além das entradas 100% observadas. IMF GFS não foi usada nesta versão. Em campo proxy, refs[].year é o último ano de referência da série (2024), não uma medição. Toda entrada com ao menos um campo proxy traz um campo `method` descrevendo quais campos são proxy e a faixa de renda + flag de federação usadas — alinhado com housing.json.",
   "coverage": {
     "nations_total": 179,
     "nations_by_confidence": {
@@ -89,7 +89,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "AGO": {
       "name": "Angola",
@@ -123,7 +124,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ALB": {
       "name": "Albania",
@@ -157,7 +159,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ARE": {
       "name": "United Arab Emirates",
@@ -191,7 +194,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ARG": {
       "name": "Argentina",
@@ -230,7 +234,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (federação): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ARM": {
       "name": "Armenia",
@@ -264,7 +269,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ATG": {
       "name": "Antigua and Barbuda",
@@ -303,7 +309,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "AUS": {
       "name": "Australia",
@@ -420,7 +427,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BDI": {
       "name": "Burundi",
@@ -454,7 +462,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BEL": {
       "name": "Belgium",
@@ -527,7 +536,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BFA": {
       "name": "Burkina Faso",
@@ -566,7 +576,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BGD": {
       "name": "Bangladesh",
@@ -600,7 +611,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BGR": {
       "name": "Bulgaria",
@@ -639,7 +651,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BHR": {
       "name": "Bahrain",
@@ -673,7 +686,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BHS": {
       "name": "The Bahamas",
@@ -712,7 +726,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BIH": {
       "name": "Bosnia and Herzegovina",
@@ -746,7 +761,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BLR": {
       "name": "Belarus",
@@ -780,7 +796,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BLZ": {
       "name": "Belize",
@@ -819,7 +836,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BOL": {
       "name": "Bolivia",
@@ -853,7 +871,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BRA": {
       "name": "Brazil",
@@ -892,7 +911,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (federação): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BRB": {
       "name": "Barbados",
@@ -931,7 +951,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BRN": {
       "name": "Brunei",
@@ -965,7 +986,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BTN": {
       "name": "Bhutan",
@@ -1004,7 +1026,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "BWA": {
       "name": "Botswana",
@@ -1038,7 +1061,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "CAF": {
       "name": "Central African Republic",
@@ -1072,7 +1096,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "CAN": {
       "name": "Canada",
@@ -1228,7 +1253,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "CIV": {
       "name": "Ivory Coast",
@@ -1267,7 +1293,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "CMR": {
       "name": "Cameroon",
@@ -1306,7 +1333,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "COD": {
       "name": "Democratic Republic of the Congo",
@@ -1345,7 +1373,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "COG": {
       "name": "Republic of the Congo",
@@ -1379,7 +1408,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "COL": {
       "name": "Colombia",
@@ -1510,7 +1540,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "CZE": {
       "name": "Czech Republic",
@@ -1622,7 +1653,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "DMA": {
       "name": "Dominica",
@@ -1656,7 +1688,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "DNK": {
       "name": "Denmark",
@@ -1734,7 +1767,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "DZA": {
       "name": "Algeria",
@@ -1768,7 +1802,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ECU": {
       "name": "Ecuador",
@@ -1807,7 +1842,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "EGY": {
       "name": "Egypt",
@@ -1846,7 +1882,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ERI": {
       "name": "Eritrea",
@@ -1977,7 +2014,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "FIN": {
       "name": "Finland",
@@ -2050,7 +2088,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "FRA": {
       "name": "France",
@@ -2128,7 +2167,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GBR": {
       "name": "United Kingdom",
@@ -2206,7 +2246,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GHA": {
       "name": "Ghana",
@@ -2240,7 +2281,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GIN": {
       "name": "Guinea",
@@ -2279,7 +2321,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GMB": {
       "name": "The Gambia",
@@ -2313,7 +2356,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GNB": {
       "name": "Guinea Bissau",
@@ -2347,7 +2391,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GNQ": {
       "name": "Equatorial Guinea",
@@ -2381,7 +2426,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GRC": {
       "name": "Greece",
@@ -2459,7 +2505,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GTM": {
       "name": "Guatemala",
@@ -2498,7 +2545,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "GUY": {
       "name": "Guyana",
@@ -2537,7 +2585,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "HND": {
       "name": "Honduras",
@@ -2576,7 +2625,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "HRV": {
       "name": "Croatia",
@@ -2615,7 +2665,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "HTI": {
       "name": "Haiti",
@@ -2649,7 +2700,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "HUN": {
       "name": "Hungary",
@@ -2727,7 +2779,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "IND": {
       "name": "India",
@@ -2761,7 +2814,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "IRL": {
       "name": "Ireland",
@@ -2834,7 +2888,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "IRQ": {
       "name": "Iraq",
@@ -2868,7 +2923,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ISL": {
       "name": "Iceland",
@@ -3024,7 +3080,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "JOR": {
       "name": "Jordan",
@@ -3058,7 +3115,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "JPN": {
       "name": "Japan",
@@ -3136,7 +3194,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "KEN": {
       "name": "Kenya",
@@ -3175,7 +3234,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "KGZ": {
       "name": "Kyrgyzstan",
@@ -3214,7 +3274,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "KHM": {
       "name": "Cambodia",
@@ -3253,7 +3314,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "KNA": {
       "name": "Saint Kitts and Nevis",
@@ -3287,7 +3349,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "KOR": {
       "name": "South Korea",
@@ -3360,7 +3423,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LAO": {
       "name": "Laos",
@@ -3399,7 +3463,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LBN": {
       "name": "Lebanon",
@@ -3433,7 +3498,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LBR": {
       "name": "Liberia",
@@ -3472,7 +3538,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LBY": {
       "name": "Libya",
@@ -3506,7 +3573,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LCA": {
       "name": "Saint Lucia",
@@ -3545,7 +3613,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LKA": {
       "name": "Sri Lanka",
@@ -3579,7 +3648,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LSO": {
       "name": "Lesotho",
@@ -3613,7 +3683,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "LTU": {
       "name": "Lithuania",
@@ -3769,7 +3840,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MDA": {
       "name": "Moldova",
@@ -3803,7 +3875,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MDG": {
       "name": "Madagascar",
@@ -3837,7 +3910,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MEX": {
       "name": "Mexico",
@@ -3910,7 +3984,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MLI": {
       "name": "Mali",
@@ -3949,7 +4024,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MLT": {
       "name": "Malta",
@@ -3983,7 +4059,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MMR": {
       "name": "Myanmar",
@@ -4017,7 +4094,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MNE": {
       "name": "Montenegro",
@@ -4051,7 +4129,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MNG": {
       "name": "Mongolia",
@@ -4090,7 +4169,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MOZ": {
       "name": "Mozambique",
@@ -4129,7 +4209,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MRT": {
       "name": "Mauritania",
@@ -4168,7 +4249,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MWI": {
       "name": "Malawi",
@@ -4202,7 +4284,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "MYS": {
       "name": "Malaysia",
@@ -4236,7 +4319,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NAM": {
       "name": "Namibia",
@@ -4275,7 +4359,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NED": {
       "name": "Netherlands",
@@ -4314,7 +4399,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NER": {
       "name": "Niger",
@@ -4353,7 +4439,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NGA": {
       "name": "Nigeria",
@@ -4387,7 +4474,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NIC": {
       "name": "Nicaragua",
@@ -4426,7 +4514,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NOR": {
       "name": "Norway",
@@ -4499,7 +4588,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "NZL": {
       "name": "New Zealand",
@@ -4572,7 +4662,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "PAK": {
       "name": "Pakistan",
@@ -4606,7 +4697,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "PAN": {
       "name": "Panama",
@@ -4645,7 +4737,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "PER": {
       "name": "Peru",
@@ -4684,7 +4777,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "PHL": {
       "name": "Philippines",
@@ -4723,7 +4817,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "PNG": {
       "name": "Papua New Guinea",
@@ -4757,7 +4852,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "POL": {
       "name": "Poland",
@@ -4893,7 +4989,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "PSX": {
       "name": "Palestine",
@@ -4927,7 +5024,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "QAT": {
       "name": "Qatar",
@@ -4961,7 +5059,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ROU": {
       "name": "Romania",
@@ -4995,7 +5094,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "RUS": {
       "name": "Russia",
@@ -5029,7 +5129,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (federação): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "RWA": {
       "name": "Rwanda",
@@ -5068,7 +5169,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SAH": {
       "name": "Western Sahara",
@@ -5121,7 +5223,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SDN": {
       "name": "Sudan",
@@ -5155,7 +5258,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SEN": {
       "name": "Senegal",
@@ -5194,7 +5298,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SGP": {
       "name": "Singapore",
@@ -5233,7 +5338,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SLB": {
       "name": "Solomon Islands",
@@ -5267,7 +5373,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SLE": {
       "name": "Sierra Leone",
@@ -5301,7 +5408,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SLV": {
       "name": "El Salvador",
@@ -5340,7 +5448,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SOL": {
       "name": "Somaliland",
@@ -5393,7 +5502,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SRB": {
       "name": "Serbia",
@@ -5427,7 +5537,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SSD": {
       "name": "South Sudan",
@@ -5485,7 +5596,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SVK": {
       "name": "Slovakia",
@@ -5641,7 +5753,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "SYR": {
       "name": "Syria",
@@ -5675,7 +5788,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TCD": {
       "name": "Chad",
@@ -5709,7 +5823,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TGO": {
       "name": "Togo",
@@ -5748,7 +5863,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "THA": {
       "name": "Thailand",
@@ -5787,7 +5903,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TJK": {
       "name": "Tajikistan",
@@ -5821,7 +5938,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TKM": {
       "name": "Turkmenistan",
@@ -5855,7 +5973,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TLS": {
       "name": "East Timor",
@@ -5889,7 +6008,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TTO": {
       "name": "Trinidad and Tobago",
@@ -5928,7 +6048,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TUN": {
       "name": "Tunisia",
@@ -5967,7 +6088,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "TUR": {
       "name": "Turkey",
@@ -6059,7 +6181,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "UGA": {
       "name": "Uganda",
@@ -6093,7 +6216,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "UKR": {
       "name": "Ukraine",
@@ -6132,7 +6256,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "URY": {
       "name": "Uruguay",
@@ -6171,7 +6296,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda alta (>25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "USA": {
       "name": "United States of America",
@@ -6244,7 +6370,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "VCT": {
       "name": "Saint Vincent and the Grenadines",
@@ -6278,7 +6405,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "VEN": {
       "name": "Venezuela",
@@ -6336,7 +6464,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "XKX": {
       "name": "Kosovo",
@@ -6370,7 +6499,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "YEM": {
       "name": "Yemen",
@@ -6428,7 +6558,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-alta (12.000-25.000) (unitário): subnational, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ZMB": {
       "name": "Zambia",
@@ -6462,7 +6593,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda baixa (<5.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     },
     "ZWE": {
       "name": "Zimbabwe",
@@ -6496,7 +6628,8 @@
           "url": "https://www.oecd.org/en/topics/subnational-finance.html",
           "year": 2024
         }
-      ]
+      ],
+      "method": "Campos em proxy por faixa de renda PPC per capita renda média-baixa (5.000-12.000) (unitário): subnational, property, transfers. Valores de faixa fixos (não são medição da nação): ver refs 'estimativa (não é medição)' e method do arquivo."
     }
   }
 }

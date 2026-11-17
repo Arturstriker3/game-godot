@@ -54,13 +54,24 @@ OBSERVED_SOURCES = {"atlas_urban_expansion", "ghsl_ucdb", "oecd_fua"}
 KNOWN_SOURCES = OBSERVED_SOURCES | {DERIVED_SOURCE}
 HEIGHT_CLASSES = {"low", "mid", "high"}
 ZONING_KEYS = {"residential", "commercial", "industrial"}
-RESERVE_METHODS = {"derived:coast+landmass"}
+RESERVE_METHODS = {"derived:coast+landmass", "derived:coast+landmass+relief"}
 DENSITY_SOURCES = {"atlas_density", DERIVED_SOURCE}
 DENSITY_PROXY_VALUES = {15000.0, 11000.0, 8500.0, 6000.0}
 DENSITY_TOLERANCE = 1.0
 BUILT_UP_TOLERANCE = 0.1  # built_up_km2 é arredondado a 0,1 km2
 ZONING_TOLERANCE = 0.01
 RESERVE_CAP_MULTIPLE = 3.0
+RESERVE_BASE_FACTOR = 0.60
+RESERVE_COASTAL_FACTOR = 0.55
+RESERVE_ISLAND_FACTOR = 0.40
+MAINLAND_LANDMASSES = {
+    "continent", "asia", "africa", "europe",
+    "south_america", "north_america", "oceania",
+}
+RELIEF_SOURCES = {"worldclim_srtm", "no_data"}
+RELIEF_CONFIDENCES = {"low", "no_data"}
+RELIEF_MAX_FRACTION = 0.5
+RESERVE_TOLERANCE = 0.15  # km2 (reserva arredondada a 0,1 km2)
 # Teto de plausibilidade: ERRO. Atlas (máx. 55.200 hab/km2) e proxy (máx. 15.000).
 MAX_DENSITY = 60000.0
 
@@ -225,12 +236,44 @@ def check_entry(entry: dict, city: dict, problems: List[str], current_year: int,
             problems.append("%s: density_hab_km2 %.0f acima do teto de %g hab/km2"
                             % (code, density, MAX_DENSITY))
 
+    # Relevo: fração não edificável (0..0,5) + fonte/confiança coerentes.
+    relief = entry.get("relief_non_buildable_fraction")
+    relief_source = entry.get("relief_source")
+    relief_confidence = entry.get("relief_confidence")
+    if relief_source not in RELIEF_SOURCES:
+        problems.append("%s: relief_source desconhecida: %r" % (code, relief_source))
+    if relief_confidence not in RELIEF_CONFIDENCES:
+        problems.append("%s: relief_confidence desconhecida: %r" % (code, relief_confidence))
+    if relief_source == "no_data":
+        if relief is not None and float(relief) != 0.0:
+            problems.append("%s: relevo no_data com fração %r (esperado 0)" % (code, relief))
+    else:
+        if not isinstance(relief, (int, float)) or isinstance(relief, bool) \
+                or not (0.0 <= float(relief) <= RELIEF_MAX_FRACTION + 1e-9):
+            problems.append("%s: relief_non_buildable_fraction inválida: %r" % (code, relief))
+        else:
+            relief = float(relief)
+
     reserve = entry.get("expandable_reserve_km2")
     if not isinstance(reserve, (int, float)) or float(reserve) <= 0.0:
         problems.append("%s: expandable_reserve_km2 inválido: %r" % (code, reserve))
     elif float(reserve) > built_up * RESERVE_CAP_MULTIPLE + 0.1:
         problems.append("%s: expandable_reserve_km2 %.2f > 3x built_up (%.2f)"
                         % (code, float(reserve), built_up * RESERVE_CAP_MULTIPLE))
+    # Reserva = built_up x factor x (1 - relevo), com teto 3x. Conferência exata.
+    if isinstance(built_up, float):
+        landmass = (city.get("landmass") or "").strip().lower()
+        factor = RESERVE_BASE_FACTOR
+        if entry.get("coastal") is True:
+            factor *= RESERVE_COASTAL_FACTOR
+        if landmass not in MAINLAND_LANDMASSES:
+            factor *= RESERVE_ISLAND_FACTOR
+        if relief_source == "worldclim_srtm" and isinstance(relief, (int, float)):
+            factor *= (1.0 - float(relief))
+        expected_reserve = round(min(built_up * factor, built_up * RESERVE_CAP_MULTIPLE), 1)
+        if isinstance(reserve, (int, float)) and abs(float(reserve) - expected_reserve) > RESERVE_TOLERANCE:
+            problems.append("%s: expandable_reserve_km2 %.2f != esperado %.2f"
+                            % (code, float(reserve), expected_reserve))
     if entry.get("reserve_method") not in RESERVE_METHODS:
         problems.append("%s: reserve_method desconhecido: %r"
                         % (code, entry.get("reserve_method")))
@@ -240,6 +283,23 @@ def check_entry(entry: dict, city: dict, problems: List[str], current_year: int,
         problems.append("%s: height_class inválido: %r" % (code, entry.get("height_class")))
     if not entry.get("height_class_source"):
         problems.append("%s: height_class_source ausente" % code)
+    # Gabarito pela população REAL da aglomeração quando disponível, senão cenário.
+    hc_pop = entry.get("height_class_population")
+    expected_hc_pop = (agglomeration if isinstance(agglomeration, int) and agglomeration > 0
+                       else population)
+    if not isinstance(hc_pop, int) or hc_pop != expected_hc_pop:
+        problems.append("%s: height_class_population %r != esperado %r"
+                        % (code, hc_pop, expected_hc_pop))
+    capital_flag = (city.get("capital") or "").strip() == "1"
+    if expected_hc_pop >= 5_000_000:
+        expected_hc = "high"
+    elif expected_hc_pop >= 1_000_000 or capital_flag:
+        expected_hc = "mid"
+    else:
+        expected_hc = "low"
+    if entry.get("height_class") != expected_hc:
+        problems.append("%s: height_class %r != esperado %r (pop %r)"
+                        % (code, entry.get("height_class"), expected_hc, expected_hc_pop))
     if not entry.get("zoning_source"):
         problems.append("%s: zoning_source ausente" % code)
     check_zoning(entry, code, problems)
@@ -345,6 +405,8 @@ def main() -> int:
     counts = {"observed": 0, "derived": 0, "invalid": 0}
     coastal = 0
     with_agglomeration = 0
+    with_relief = 0
+    relief_no_data = 0
     sources_used: Dict[str, int] = {}
     density_sources: Dict[str, int] = {}
     max_density = 0.0
@@ -371,6 +433,11 @@ def main() -> int:
             coastal += 1
         if isinstance(entry.get("agglomeration_population"), int):
             with_agglomeration += 1
+        relief = entry.get("relief_non_buildable_fraction")
+        if isinstance(relief, (int, float)) and not isinstance(relief, bool) and relief > 0.0:
+            with_relief += 1
+        if entry.get("relief_source") == "no_data":
+            relief_no_data += 1
         source = entry.get("built_up_source")
         sources_used[source] = sources_used.get(source, 0) + 1
         density_source = entry.get("density_source")
@@ -385,6 +452,8 @@ def main() -> int:
         "cities_with_observed_area": counts["observed"],
         "cities_with_derived_area": counts["derived"],
         "cities_with_agglomeration_population": with_agglomeration,
+        "cities_with_relief_non_buildable": with_relief,
+        "cities_relief_no_data": relief_no_data,
     }
     for field, value in recomputed.items():
         declared = coverage.get(field)

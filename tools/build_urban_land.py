@@ -26,9 +26,11 @@ O que é observado e o que é derivado (sem inventar número apresentado como me
     tools/agglomerations_2026.csv (citypopulation.de, 2026-01-01) e entra em
     agglomeration_population apenas como REFERÊNCIA de população: ela alimenta a
     população usada na área DERIVADA, mas nunca a densidade das cidades observadas.
-  * expandable_reserve_km2: SEMPRE derivado (relevo não é modelado no projeto).
+  * expandable_reserve_km2: SEMPRE derivado (costa + landmass + relevo).
   * zoning_split: proporção típica por faixa de renda (proxy, não observação).
-  * height_class: limiar de população (regra do projeto).
+  * height_class: limiar populacional sobre a população REAL da aglomeração quando
+    disponível (senão a de cenário) — regra do projeto.
+  * relief_non_buildable_fraction: fração não edificável por declividade (WorldClim/SRTM).
 
 Uso:
     python tools/build_urban_land.py            # escreve o JSON
@@ -41,6 +43,7 @@ import argparse
 import csv
 import io
 import json
+import math
 import os
 import re
 import sys
@@ -111,6 +114,14 @@ SOURCES = {
         "url": AGGLOMERATION_URL,
         "unit": "habitantes da aglomeração (população real, não rateada)",
     },
+    "worldclim_srtm": {
+        "title": (
+            "WorldClim 2.1 — elevation (10 arc-min, derivado de SRTM), "
+            "tools/data/worldclim/wc2.1_10m_elev.tif (baixado por tools/fetch_worldclim.py)"
+        ),
+        "url": "https://www.worldclim.org/data/worldclim21.html",
+        "unit": "metros de elevação; declividade derivada (%) por célula",
+    },
 }
 
 NOTE_TEMPLATE = (
@@ -144,10 +155,17 @@ NOTE_TEMPLATE = (
     "aglomerações de 1 milhão de habitantes ou mais, o que explica as {rateada} cidades "
     "sem correspondência. "
     "expandable_reserve_km2 é sempre derivada (0,6 x built_up, x0,55 se costeira, x0,40 "
-    "se ilha, teto de 3x a área construída): relevo não é modelado no projeto (height.png "
-    "é um placeholder plano), então a reserva usa apenas costa e landmass. zoning_split é "
+    "se ilha, teto de 3x a área construída) e, a partir desta versão, também multiplicada "
+    "por (1 - relief_non_buildable_fraction) — a fração não edificável por declividade, "
+    "estimada do raster de elevação WorldClim 2.1 10 arc-min (derivado de SRTM; ver "
+    "method.relief). Limitação honesta: a resolução de 10 arc-min (~18,5 km/célula) só "
+    "captura relevo regional, nunca encostas urbanas — confiança 'low'. Quando o raster "
+    "não está disponível no ambiente de geração, relief_non_buildable_fraction = 0, "
+    "relief_source='no_data' e a reserva usa apenas costa e landmass. zoning_split é "
     "proporção típica por faixa de renda (proxy inspirado no Atlas/OECD), não observação "
-    "por cidade. height_class é regra de limiar populacional. coastal = a cidade aparece "
+    "por cidade. height_class é regra de limiar populacional sobre a população REAL da "
+    "aglomeração quando disponível (senão a de cenário) — ver method.height_class e o "
+    "campo height_class_population. coastal = a cidade aparece "
     "como port_of em ports.csv (aproximação documentada: cidade com porto é costeira). "
     "Nenhum valor observado foi estimado ou arredondado para caber em faixa. Cidades "
     "grandes que NÃO estão na amostra de 200 centros do Atlas (ex.: Bengaluru, Jakarta, "
@@ -198,8 +216,26 @@ METHOD = {
         "Sempre derivada: reserve = built_up_km2 * factor, factor = 0,60 (base); "
         "*0,55 se coastal; *0,40 se a landmass é ilha/micro (landmass fora de "
         "continent/asia/africa/europe/south_america/north_america/oceania); teto de "
-        "3,0 * built_up_km2. RELEVO NÃO É MODELADO (height.png é placeholder plano), "
-        "por isso a reserva considera só costa e landmass."
+        "3,0 * built_up_km2. A partir desta versão o relevo também limita a reserva: "
+        "reserve *= (1 - relief_non_buildable_fraction) — fração não edificável por "
+        "declividade (ver method.relief). Se o raster de elevação não estiver disponível "
+        "no ambiente de geração, relief_non_buildable_fraction = 0 e o método fica "
+        "'derived:coast+landmass' (relevo não aplicado), declarado no campo relief_source."
+    ),
+    "relief": (
+        "Fração NÃO edificável por relevo (relief_non_buildable_fraction, 0..1), "
+        "estimada a partir da declividade do raster de elevação WorldClim 2.1 10 arc-min "
+        "(wc2.1_10m_elev.tif, derivado de SRTM). Para cada cidade: converte x,y "
+        "(projeção equirretangular 5000x2500) para lon,lat; amostra a elevação num "
+        "buffer 5x5 células (raio 2) centrado na célula da cidade; calcula o gradiente "
+        "máximo (%) de cada célula contra as 8 vizinhas (1 célula ~ 18,5 km); "
+        "relief_non_buildable_fraction = min(0,5, fração de células válidas "
+        "(não-oceano) com gradiente > 3%). LIMITAÇÃO HONESTA: 10 arc-min (~18,5 "
+        "km/célula) NÃO resolve encostas urbanas (que exigiriam resolução de dezenas de "
+        "metros) — o limiar de 3% em escala de 18,5 km captura só o relevo REGIONAL "
+        "(ondulado/montanhoso vs plano), por isso a confiança é 'low' e o teto 0,5 evita "
+        "zerar a reserva de cidades de vale. Se o raster estiver ausente, "
+        "relief_source='no_data', fração = 0 e o relevo não entra na reserva."
     ),
     "zoning_split": (
         "Proporção típica por faixa de renda (proxy, zoning_source='income_group_proxy'): "
@@ -209,9 +245,13 @@ METHOD = {
         "solo; não é observação por cidade."
     ),
     "height_class": (
-        "Regra de limiar populacional (height_class_source='population_threshold'): "
-        "population >= 5.000.000 => high; population >= 1.000.000 ou capital => mid; "
-        "senão low. Nenhuma exceção 'observada' foi aplicada nesta versão."
+        "Regra de limiar populacional (height_class_source='population_threshold'). "
+        "Usa a população REAL da aglomeração quando disponível "
+        "(agglomeration_population, citypopulation.de 2026) — não a população de cenário "
+        "(population rateada de cities.csv): isso faz o gabarito acompanhar a metrópole "
+        "real, não a densidade simulada. height_class_population registra qual população "
+        "foi usada no limiar. limiar: >= 5.000.000 => high; >= 1.000.000 ou capital => "
+        "mid; senão low. Nenhuma exceção 'observada' foi aplicada nesta versão."
     ),
     "coastal": (
         "true se o ID da cidade aparece na coluna port_of de ports.csv (cidade com porto "
@@ -265,6 +305,21 @@ RESERVE_CAP_MULTIPLE = 3.0
 # na amostra é Dhaka, 552 persons/ha = 55.200 hab/km2; o proxy de renda chega a 15.000.
 # Acima de 60.000 a densidade é artefato de recorte/conversão, nunca medição.
 MAX_OBSERVED_DENSITY = 60000.0
+
+# ---------------------------------------------------------------------------
+# Relevo (item d do §19): fração não edificável por declividade, estimada do
+# raster WorldClim 2.1 10 arc-min (derivado de SRTM). Ver METHOD["relief"].
+# ---------------------------------------------------------------------------
+WC_ELEV_PATH = os.path.join(ROOT, "tools", "data", "worldclim", "wc2.1_10m_elev.tif")
+WC_ELEV_NODATA = -32768  # oceano no raster de elevação WorldClim
+WC_CELL_DEG = 1.0 / 6.0  # 10 arc-min por célula
+WC_CELL_M = 18500.0      # ~18,5 km por célula (aproximação equirretangular)
+RELIEF_BUFFER_RADIUS = 2        # células ao redor da cidade (janela 5x5)
+RELIEF_SLOPE_THRESHOLD_PCT = 3.0   # declividade regional acima disso = relevo acidentado
+RELIEF_MAX_FRACTION = 0.5          # teto: mesmo montanhosa, há vale edificável
+# Projeção do mapa do jogo (mesma de build_natural_geography.py).
+MAP_W = 5000.0
+MAP_H = 2500.0
 
 # Cache da Tabela 1 baixada da fonte viva: city|country|t3date|builtup_ha_t3|density_per_ha_t3
 # Sem a coluna de densidade o cache antigo era inútil para a densidade (população
@@ -654,6 +709,108 @@ def load_atlas_table() -> Tuple[Dict[Tuple[str, str], dict], str]:
     return records, "fonte viva"
 
 
+# ---------------------------------------------------------------------------
+# Relevo: fração não edificável por declividade (raster WorldClim/SRTM)
+# ---------------------------------------------------------------------------
+
+def pixel_to_lonlat(px: float, py: float) -> Tuple[float, float]:
+    """Projeção equirretangular 5000x2500 -> lon,lat (mesma de build_natural_geography.py)."""
+    return px / MAP_W * 360.0 - 180.0, 90.0 - py / MAP_H * 180.0
+
+
+_RELIEF_RASTER_CACHE = None  # carregado uma vez; evita reabrir o TIFF por cidade
+
+
+def _load_relief_raster():
+    """Carrega o raster de elevação (WorldClim/SRTM). Retorna None se indisponível.
+
+    Cacheado em módulo: o raster (2160x1080) é lido uma única vez para as 834 cidades.
+    """
+    global _RELIEF_RASTER_CACHE
+    if _RELIEF_RASTER_CACHE is not None:
+        return _RELIEF_RASTER_CACHE
+    if not os.path.exists(WC_ELEV_PATH):
+        return None
+    try:
+        import numpy as np
+        import tifffile
+    except ImportError:
+        return None
+    _RELIEF_RASTER_CACHE = np.asarray(tifffile.imread(WC_ELEV_PATH), dtype="float64")
+    return _RELIEF_RASTER_CACHE
+
+
+def _relief_fraction(raster, lon: float, lat: float) -> Optional[float]:
+    """Fração (0..1) de células com declividade > limiar num buffer 5x5 ao redor da cidade.
+
+    Declividade de cada célula = gradiente máximo (%) contra as 8 vizinhas, com 1 célula
+    ~ 18,5 km. Células oceano (nodata) são excluídas do denominador. Retorna None quando
+    a janela inteira é oceano (não há relevo estimável no ponto).
+    """
+    import numpy as np
+    height, width = raster.shape
+    col = int(round((lon + 180.0) / WC_CELL_DEG))
+    row = int(round((90.0 - lat) / WC_CELL_DEG))
+    col = max(0, min(width - 1, col))
+    row = max(0, min(height - 1, row))
+
+    r = RELIEF_BUFFER_RADIUS
+    row0, row1 = max(0, row - r), min(height, row + r + 1)
+    col0, col1 = max(0, col - r), min(width, col + r + 1)
+    window = raster[row0:row1, col0:col1]
+    valid = window[window > WC_ELEV_NODATA]
+    if valid.size == 0:
+        return None
+
+    padded = np.where(window > WC_ELEV_NODATA, window, np.nan)
+    # gradiente em %: diferença de elevação / distância entre centros de células.
+    total = 0
+    steep = 0
+    h, w = padded.shape
+    for r0 in range(h):
+        for c0 in range(w):
+            elevation = padded[r0, c0]
+            if not np.isfinite(elevation):
+                continue
+            total += 1
+            max_gradient = 0.0
+            for dr, dc in ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)):
+                rr, cc = r0 + dr, c0 + dc
+                if not (0 <= rr < h and 0 <= cc < w):
+                    continue
+                neighbor = padded[rr, cc]
+                if not np.isfinite(neighbor):
+                    continue
+                distance = WC_CELL_M * (math.sqrt(2.0) if dr != 0 and dc != 0 else 1.0)
+                gradient = abs(neighbor - elevation) / distance * 100.0
+                max_gradient = max(max_gradient, gradient)
+            if max_gradient > RELIEF_SLOPE_THRESHOLD_PCT:
+                steep += 1
+    return steep / total if total else 0.0
+
+
+def relief_for_city(city: dict) -> Tuple[Optional[float], str, str]:
+    """Fração não edificável por relevo para a cidade (px=x, py=y em cities.csv).
+
+    Retorna (fração, source, confidence). Fração None quando o raster não está
+    disponível ou a janela é toda oceano (sem relevo estimável).
+    """
+    raster = _load_relief_raster()
+    if raster is None:
+        return None, "no_data", "no_data"
+    try:
+        px = float(city["x"])
+        py = float(city["y"])
+    except (KeyError, ValueError):
+        return None, "no_data", "no_data"
+    lon, lat = pixel_to_lonlat(px, py)
+    fraction = _relief_fraction(raster, lon, lat)
+    if fraction is None:
+        return None, "no_data", "no_data"
+    fraction = min(RELIEF_MAX_FRACTION, fraction)
+    return round(float(fraction), 3), "worldclim_srtm", "low"
+
+
 def build_city(city: dict, band: str, coastal: bool,
                agglomeration: Optional[dict] = None,
                atlas_records: Optional[Dict[Tuple[str, str], dict]] = None) -> dict:
@@ -752,11 +909,20 @@ def build_city(city: dict, band: str, coastal: bool,
         factor *= RESERVE_COASTAL_FACTOR
     if landmass not in MAINLAND_LANDMASSES:
         factor *= RESERVE_ISLAND_FACTOR
+
+    relief_fraction, relief_source, relief_confidence = relief_for_city(city)
+    relief_applied = relief_fraction is not None
+    if relief_applied:
+        factor *= (1.0 - relief_fraction)
     reserve = round(min(built_up_km2 * factor, built_up_km2 * RESERVE_CAP_MULTIPLE), 1)
 
-    if population >= 5_000_000:
+    # Gabarito pela população REAL da aglomeração quando disponível (ressalva Q-013);
+    # senão pela população de cenário. height_class_population registra qual foi usada.
+    height_population = (agglomeration_population
+                         if agglomeration_population is not None else population)
+    if height_population >= 5_000_000:
         height_class = "high"
-    elif population >= 1_000_000 or capital:
+    elif height_population >= 1_000_000 or capital:
         height_class = "mid"
     else:
         height_class = "low"
@@ -772,12 +938,17 @@ def build_city(city: dict, band: str, coastal: bool,
         "density_hab_km2": density,
         "density_source": density_source,
         "expandable_reserve_km2": reserve,
-        "reserve_method": "derived:coast+landmass",
+        "reserve_method": ("derived:coast+landmass+relief" if relief_applied
+                           else "derived:coast+landmass"),
+        "relief_non_buildable_fraction": relief_fraction,
+        "relief_source": relief_source,
+        "relief_confidence": relief_confidence,
         "coastal": bool(coastal),
         "zoning_split": dict(ZONING_PROXY[band]),
         "zoning_source": "income_group_proxy",
         "height_class": height_class,
         "height_class_source": "population_threshold",
+        "height_class_population": height_population,
         "estimated": estimated,
         "confidence": confidence,
         "refs": refs,
@@ -830,6 +1001,11 @@ def main(argv=None) -> int:
     with_agglomeration = sum(1 for entry in entries.values()
                              if entry["agglomeration_population"] is not None)
     scenario_rateada = len(entries) - with_agglomeration
+    with_relief = sum(1 for entry in entries.values()
+                      if isinstance(entry.get("relief_non_buildable_fraction"), (int, float))
+                      and entry["relief_non_buildable_fraction"] > 0.0)
+    relief_no_data = sum(1 for entry in entries.values()
+                         if entry.get("relief_source") == "no_data")
     density_by_source: Dict[str, int] = {}
     for entry in entries.values():
         key = entry["density_source"]
@@ -860,6 +1036,8 @@ def main(argv=None) -> int:
             "cities_with_observed_area": observed,
             "cities_with_derived_area": derived,
             "cities_with_agglomeration_population": with_agglomeration,
+            "cities_with_relief_non_buildable": with_relief,
+            "cities_relief_no_data": relief_no_data,
         },
         "sources": SOURCES,
         "method": METHOD,
@@ -870,6 +1048,8 @@ def main(argv=None) -> int:
           % (len(entries), observed, derived, coastal))
     print("população real da aglomeração (referência): %d cidades | rateada de cenário: %d"
           % (with_agglomeration, scenario_rateada))
+    print("relevo: %d cidades com fração não edificável > 0 | %d sem dado"
+          % (with_relief, relief_no_data))
     print("faixas de renda: %s"
           % ", ".join("%s=%d" % (band, by_band[band]) for band in sorted(by_band)))
     print("nações sem PIB PPP (fallback %s): %d cidades"
