@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 namespace ogs {
 void SimCore::phase_fx() {
@@ -128,7 +129,69 @@ double SimCore::competitiveness(const std::string& nation) const {
 	return std::clamp(currency->rate / currency->base_rate,
 		kFxBandLow, kFxBandHigh);
 }
+namespace {
+// A2: chave inteira da tarifa — (comprador+1)<<42 | (vendedor+1)<<21 | (produto+1).
+// -1 codifica o curinga '*'. Os índices são < 2^21 (nações) e < 2^21 (produtos).
+inline std::uint64_t tariff_key(int buyer, int seller, int product) {
+	return (static_cast<std::uint64_t>(buyer + 1) << 42)
+		| (static_cast<std::uint64_t>(seller + 1) << 21)
+		| static_cast<std::uint64_t>(product + 1);
+}
+}  // namespace
+
 double SimCore::tariff_rate(const std::string& buyer_nation,
+		const std::string& seller_nation, int product) const {
+	if (ws_.tariff_lookup.empty() || product < 0 || product >= ws_.products) {
+		return 0.0;
+	}
+	const int buyer = ws_.nation_table.find(buyer_nation);
+	const int seller = ws_.nation_table.find(seller_nation);
+	// Tabela por índice incompleta (linha com nação/produto não resolvível) ou
+	// nação fora da tabela: o resultado do caminho textual é o contrato.
+	if (buyer < 0 || seller < 0
+			|| ws_.tariff_by_index.size() != ws_.tariff_lookup.size()) {
+		return tariff_rate_text(buyer_nation, seller_nation, product);
+	}
+	return tariff_rate_at_nation(buyer, seller, product);
+}
+
+double SimCore::tariff_rate_at_nation(int buyer_nation, int seller_nation,
+		int product) const {
+	if (ws_.tariff_lookup.empty() || product < 0 || product >= ws_.products
+			|| ws_.tariff_by_index.size() != ws_.tariff_lookup.size()) {
+		return 0.0;
+	}
+	// Mesma ordem de resolução do caminho textual: (b,s,p), (b,*,p), (b,s,*),
+	// (b,*,*). O primeiro que existir vence.
+	const std::uint64_t keys[4] = {
+		tariff_key(buyer_nation, seller_nation, product),
+		tariff_key(buyer_nation, -1, product),
+		tariff_key(buyer_nation, seller_nation, -1),
+		tariff_key(buyer_nation, -1, -1),
+	};
+	for (int index = 0; index < 4; ++index) {
+		const auto found = ws_.tariff_by_index.find(keys[index]);
+		if (found != ws_.tariff_by_index.end()) {
+			return std::clamp(found->second, 0.0, 1.0);
+		}
+	}
+	return 0.0;
+}
+
+// A2: tarifa no laço quente do comércio — índices inteiros quando a tabela por
+// índice está completa; senão o caminho textual (o resultado é o mesmo).
+double SimCore::tariff_rate_cities(const City& buyer_city,
+		const City& seller_city, int product) const {
+	if (!ws_.tariff_lookup.empty()
+			&& ws_.tariff_by_index.size() == ws_.tariff_lookup.size()
+			&& buyer_city.nation_index >= 0 && seller_city.nation_index >= 0) {
+		return tariff_rate_at_nation(buyer_city.nation_index,
+			seller_city.nation_index, product);
+	}
+	return tariff_rate(buyer_city.nation, seller_city.nation, product);
+}
+
+double SimCore::tariff_rate_text(const std::string& buyer_nation,
 		const std::string& seller_nation, int product) const {
 	if (ws_.tariff_lookup.empty() || product < 0 || product >= ws_.products) {
 		return 0.0;
@@ -165,9 +228,45 @@ const char* SimCore::product_name(int product) const {
 void SimCore::rebuild_tariff_lookup() {
 	ws_.tariff_lookup.clear();
 	ws_.tariff_lookup.reserve(ws_.tariffs.size() * 2);
+	// A2: índice inteiro na mesma passada. Uma linha só entra quando TODAS as
+	// suas chaves são resolvíveis (nação no NameTable, produto no product_lookup);
+	// se alguma não for, o mapa fica menor que tariff_lookup e tariff_rate usa o
+	// caminho textual — ausência explícita, nunca um resultado diferente.
+	ws_.tariff_by_index.clear();
+	ws_.tariff_by_index.reserve(ws_.tariffs.size() * 2);
 	for (const Tariff& tariff : ws_.tariffs) {
 		ws_.tariff_lookup[tariff.buyer + '|' + tariff.seller + '|'
 			+ tariff.product] = std::clamp(tariff.rate, 0.0, 1.0);
+	}
+	if (ws_.nation_table.size() == 0
+			|| ws_.product_lookup.size() < static_cast<std::size_t>(ws_.products)) {
+		return;
+	}
+	for (const Tariff& tariff : ws_.tariffs) {
+		int buyer = -1;
+		if (tariff.buyer != "*") {
+			buyer = ws_.nation_table.find(tariff.buyer);
+			if (buyer < 0) {
+				continue;  // nação fora da tabela: caminho textual
+			}
+		}
+		int seller = -1;
+		if (tariff.seller != "*") {
+			seller = ws_.nation_table.find(tariff.seller);
+			if (seller < 0) {
+				continue;
+			}
+		}
+		int product = -1;
+		if (tariff.product != "*") {
+			const auto found = ws_.product_lookup.find(tariff.product);
+			if (found == ws_.product_lookup.end()) {
+				continue;  // produto fora do catálogo: caminho textual
+			}
+			product = found->second;
+		}
+		ws_.tariff_by_index[tariff_key(buyer, seller, product)] =
+			std::clamp(tariff.rate, 0.0, 1.0);
 	}
 }
 } // namespace ogs

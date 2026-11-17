@@ -429,11 +429,16 @@ void EconomySim::apply_set_tariff(const String& buyer_nation,
 				&& existing.product == tariff.product) {
 			existing.rate = tariff.rate;
 			ws_.tariff_lookup[key] = tariff.rate;
+			// A2: o índice inteiro acompanha a mudança (a tabela de nações já
+			// existe neste ponto; o rebuild é da ordem de centenas de linhas).
+			// A3: a invalidação fica em `apply_pending_locked`, ponto único do lote.
+			sim_core_.rebuild_tariff_lookup();
 			return;
 		}
 	}
 	ws_.tariffs.push_back(tariff);
 	ws_.tariff_lookup[key] = tariff.rate;
+	sim_core_.rebuild_tariff_lookup();
 }
 
 Dictionary EconomySim::get_currency(const String& nation) const {
@@ -1411,6 +1416,9 @@ Dictionary EconomySim::get_profile() const {
 		"status",
 		"trade_food", "trade_food_buyers",
 		"trade_goods", "trade_goods_loop",
+		"prologue_snapshot", "prologue_indexes", "prologue_other",
+		"arrival_transit",
+		"fiscal_city_gov", "fiscal_equalize", "fiscal_groups",
 	};
 	Dictionary profile;
 	if (!profile_) {

@@ -455,6 +455,8 @@ void SimCore::phase_arrival() {
 	// serial, mas O(n) em vez de O(n²): cada sobrevivente move-se no máximo uma
 	// vez. Bit-idêntico — a ordem de chegada (read 0..n-1) e os efeitos
 	// colaterais (estoque + liberação de frota) são os mesmos do laço original.
+	{
+	OGS_SIM_ZONE(kPhaseArrivalTransit);
 	const std::size_t count = ws_.in_transit.size();
 	std::size_t write = 0;
 	for (std::size_t read = 0; read < count; ++read) {
@@ -478,6 +480,7 @@ void SimCore::phase_arrival() {
 		++write;
 	}
 	ws_.in_transit.resize(write);
+	}
 
 	OGS_SIM_PHASE_LAP(kPhaseArrival);
 }
