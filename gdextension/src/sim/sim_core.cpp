@@ -58,6 +58,18 @@ const City* SimCore::find_city(const std::string& id) const {
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
 }
 
+void SimCore::set_land_capacity(const std::string& city_id, int product,
+		double value) {
+	if (product < 0 || product >= ws_.products) {
+		return;
+	}
+	City* city = find_city(city_id);
+	if (city == nullptr) {
+		return;
+	}
+	city->land_capacity[product] = std::max(0.0, value);
+}
+
 void SimCore::rebuild_indexes(bool full) {
 	// Caminho barato (todo tick): SÓ o índice de construções por cidade, que é
 	// o único que muda dentro do jogo (falida removida no prólogo, obra

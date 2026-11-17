@@ -11,7 +11,8 @@
 // Contrato:
 //   * a ordem do dia é `ogs::tick_day` — este executável NÃO duplica tick;
 //   * `definitions_from` ANTES de `from_value` (o save referencia os produtos,
-//     receitas e necessidades já carregados);
+//     receitas e necessidades já carregados) e `apply_land_capacity` DEPOIS
+//     (o teto agrícola precisa das cidades que só o save traz);
 //   * nada de `seed_industry`: o bootstrap industrial vive na fachada
 //     Godot e o snapshot traz o mundo já semeado. Sem ele, o arquivo é recusado;
 //   * a saída tem EXATAMENTE duas chaves — `definitions` e `save` — porque o
@@ -188,9 +189,11 @@ int main(int argc, char** argv) {
 	core.set_sim_threads(options.threads);
 
 	// 3. Definições primeiro (o save referencia produtos/receitas/necessidades),
-	// depois o estado dinâmico.
+	// depois o estado dinâmico e, por último, o teto agrícola — que só faz
+	// sentido com as cidades do save já carregadas.
 	ogs::save::definitions_from(ws, snapshot["definitions"]);
 	ogs::save::from_value(ws, core, snapshot["save"]);
+	ogs::save::apply_land_capacity(ws, core, snapshot["definitions"]);
 
 	// 4. O snapshot tem de ser o estado de partida real do jogo: mundo ativo e
 	// bootstrap industrial já executado (ele vive na fachada Godot).

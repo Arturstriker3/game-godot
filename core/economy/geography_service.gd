@@ -1434,6 +1434,11 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 			var suitability := city_crop_suitability(city_id, crop) if code != "" \
 					else crop_suitability(city_id, center, crop)
 			sim.set_suitability(city_id, crop, suitability)
+			# Teto físico de capacidade agrícola (t/dia) da bacia: dado de
+			# geografia (área cultivável × produtividade FAO), não serializado
+			# no save. Só a IA o consome (limite de expansão da lavoura).
+			sim.set_land_capacity(city_id, crop,
+					city_land_capacity_t_day(city_id, crop))
 			city_applied[crop] = suitability
 		var wood := city_forest_cover(city_id) if code != "" \
 				else forest_cover(city_id, center)

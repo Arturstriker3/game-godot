@@ -154,6 +154,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::price_shock);
 	ClassDB::bind_method(D_METHOD("set_suitability", "city_id", "product", "value"),
 	                     &EconomySim::set_suitability);
+	ClassDB::bind_method(D_METHOD("set_land_capacity", "city_id", "product", "value"),
+	                     &EconomySim::set_land_capacity);
 	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
 	                     &EconomySim::set_deposit);
@@ -5755,10 +5757,15 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	commands_.reset();
 	current_day_.store(0, std::memory_order_relaxed);
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
-	// carregados (índices incluídos).
-	ogs::save::definitions_from(ws_, ogs::edge::from_godot(definitions));
+	// carregados (índices incluídos). A conversão do Variant é feita UMA vez e
+	// reaproveitada para o teto agrícola, que só entra depois do save.
+	const ogs::save::Value definition_data = ogs::edge::from_godot(definitions);
+	ogs::save::definitions_from(ws_, definition_data);
 	ogs::edge::from_dict(ws_, sim_core_,
 		static_cast<Dictionary>(save_block));
+	// `land_capacity` é dado de geografia e só pode entrar depois das cidades:
+	// `definitions_from` rodou com o mundo vazio e ignorou os itens.
+	ogs::save::apply_land_capacity(ws_, sim_core_, definition_data);
 }
 
 bool EconomySim::to_snapshot_file(const String& path) const {
@@ -5836,6 +5843,9 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	// `edge::from_dict` chama: nada de Variant no meio do caminho.
 	ogs::save::definitions_from(ws_, definitions);
 	ogs::save::from_value(ws_, sim_core_, save_block);
+	// Só agora as cidades existem: o teto agrícola do bloco estático entra no
+	// núcleo depois do estado dinâmico (mesmo motivo de from_snapshot).
+	ogs::save::apply_land_capacity(ws_, sim_core_, definitions);
 	return true;
 }
 
@@ -6029,6 +6039,19 @@ void EconomySim::set_suitability(const String& city_id, const String& product,
 	cmd.s[1] = to_std(product);
 	cmd.v[0] = value;
 	dispatch_command(cmd);
+}
+
+void EconomySim::set_land_capacity(const String& city_id, const String& product,
+		double value) {
+	// Dado de geografia que só a IA consome: entra direto no núcleo (sem fila
+	// de comandos) e NÃO invalida o status publicado — nada na UI muda.
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
+	if (index < 0) {
+		return;
+	}
+	sim_core_.set_land_capacity(std::string(city_id.utf8().get_data()), index,
+		value);
 }
 
 bool EconomySim::set_deposit(const String& city_id, const String& product,

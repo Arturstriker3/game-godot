@@ -177,6 +177,22 @@ public:
 	void set_suitability(const String& city_id, const String& product, double value);
 
 	/**
+	 * Teto físico de capacidade agrícola (t/dia) de uma cidade para um
+	 * produto, derivado da geografia (área cultivável × produtividade FAO).
+	 *
+	 * Igual à aptidão, é DADO DE GEOGRAFIA e não entra no save: é declarado
+	 * pelo `GeographyService` (e viaja no bloco `definitions` do snapshot). Só
+	 * alimenta a decisão da IA — não muda preço, produção nem o status, por
+	 * isso não invalida o cache publicado. Produto desconhecido, cidade
+	 * ausente ou valor negativo não são erro: a chamada é ignorada/limitada.
+	 * @param city_id Identificador da cidade.
+	 * @param product id de goods.json (ex.: "wheat").
+	 * @param value Capacidade em t/dia (limitada a >= 0).
+	 */
+	void set_land_capacity(const String& city_id, const String& product,
+		double value);
+
+	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
 	 * (extração com esgotamento). As minas da cidade que produzem o produto
 	 * consomem esta reserva compartilhada; reserva zerada para a produção.
