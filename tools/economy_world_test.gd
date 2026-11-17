@@ -12,12 +12,19 @@ extends SceneTree
 ##
 ##   godot --headless --path . --script res://tools/economy_world_test.gd
 ##     [--days=60] [--out=path.json] [--baseline=path.json] [--ai=1]
-##     [--currencies=1|0] [--fx=real|neutral] [--instant=1]
+##     [--currencies=1|0] [--fx=real|neutral|half|float] [--instant=1]
 ##     [--urban=1] [--threads=N] [--urban-cities=ID1,ID2] [--urban-out=path.json]
 ##
 ## `--currencies=0` roda sem moedas (tudo em XGS, comportamento anterior à F5) e
 ## `--fx=neutral` carrega currencies.json com todas as taxas em 1,0 e regime
 ## `peg` — isola o efeito de "preço local ≠ âncora" de cada mecanismo da F5.
+##
+## `--fx=float` é SONDA de sensibilidade do câmbio, não variante de aceite:
+## currencies.json não declara `regime` (todas as moedas ficam `peg` e o
+## caminho cambial fica inerte), então a sonda força `regime: float` no topo e
+## em cada moeda — as TAXAS continuam as declaradas. Se a trajetória não muda,
+## o câmbio não alcança a simulação. O relatório grava `meta.fx` (o modo usado)
+## e `meta.trajectory_hash` (sha256 de nations+labor+sectors+ownership).
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
@@ -40,15 +47,24 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 const DEFAULT_DAYS := 60
 ## Queda máxima tolerada de satisfação por nação vs. baseline (p.p. / 100).
 ## F4: a frota é um gargalo físico que a baseline F3 não tem (o frete nasce
-## com veículo/combustível), então a chegada de comida pode deslocar ~0,02 na
-## foto do dia 60. Em 365 d a F4 fecha 0 nações pioradas e 26 falências (=base);
-## o resíduo de 60 d é EGY 1,000→0,979 (oscilação de chegada, não balanço).
+## com veículo/combustível), então a chegada de comida pode deslocar a foto de
+## curto prazo. Medido (Q-016, 2026-11-17, `--ai=1 --urban=1 --threads=1`):
+## **EGY 1,000→0,857 em 60 d e →0,546 em 120 d** (EGY-CAI com estoque de trigo
+## e caixa das firmas zerados), fechando em **1,000 em 365 d** — é o transiente
+## de importação, não balanço, e o mesmo transiente existe SEM §19 (`--urban=0`:
+## EGY 0,694 em 60 d). A nota antiga (0,979) subestimava o vale. O critério de
+## aceite do sweep é o de 365 d; a corrida de 60/120 d só é comparável ao
+## baseline de 365 d no fim.
 const FOOD_TOLERANCE := 0.025
 ## F5 — tolerância de falências sobre o baseline. O comparativo de 365 d é um
 ## teste de CAOS: a trajetória do mundo é sensível por construção (uma oferta
 ## que muda de ordem muda a coorte de firmas). Com o preço na ÂNCORA não há
 ## round-trip de câmbio nas decisões (F5/opção c), então as variações de taxa
-## fixa são bit-idênticas ao XGS; a tolerância cobre diferenças de chegada.
+## fixa são bit-idênticas ao XGS — mas ATENÇÃO (Q-016): `currencies.json` não
+## declara `regime` (todas as moedas ficam `peg`), então essa igualdade é
+## estrutural e não cobre o caminho de competitividade float. Quem o mede é a
+## sonda `--fx=float` (trajetória TEM de diferir; ver o sweep paralelo). A
+## tolerância cobre diferenças de chegada.
 ## O critério robusto aceita baseline + 2 (26 → 28 em f4_world_ai_365).
 const BANKRUPTCY_TOLERANCE := 2
 ## F9 — nações âncora da auditoria de propriedade (estatal / nacional / estrangeiro).
@@ -67,7 +83,8 @@ var _ai_enabled := false
 var _currencies_enabled := true
 ## `real` usa as taxas de currencies.json; `neutral` zera o efeito cambial
 ## (todas as taxas = 1,0, regime `peg`) mantendo o resto do caminho da F5;
-## `half` usa 0,5 exato em binário e `peg` — isola arredondamento de câmbio.
+## `half` usa 0,5 exato em binário e `peg` — isola arredondamento de câmbio;
+## `float` é a SONDA de sensibilidade (regime `float` forçado, taxas do dado).
 var _fx_mode := "real"
 ## F5 — semente de perturbação (0 = mundo limpo). Cada semente aplica um jitter
 ## determinístico de ±1e-9 relativo nas taxas de câmbio declaradas. Com o preço
@@ -97,6 +114,14 @@ var _urban_out := ""
 ## §19: `--urban=1` carrega solo/moradia/prefeitura como o autoload do jogo. O
 ## padrão (0) preserva o mundo sem dado urbano das baselines históricas.
 var _urban_enabled := false
+
+## Q-016: metadados de câmbio que vão para `meta.fx` no relatório (`mode`,
+## `seed`, `enabled`, `currencies`, `floating`, `rate_sum`), preenchidos em
+## `_load_currencies()`. O padrão é o mundo sem moedas: `--currencies=0` não
+## chama o carregador e o relatório declara isso em vez de fingir câmbio.
+var _fx_meta: Dictionary = {
+	"mode": "off", "enabled": false, "currencies": 0, "floating": 0, "rate_sum": 0.0,
+}
 
 var _failures: Array[String] = []
 
@@ -468,11 +493,27 @@ func _test_world() -> void:
 
 ## Carrega currencies.json e aplica o modo de câmbio do teste (`--fx=neutral`
 ## troca todas as taxas por 1,0 e o regime por `peg`, anulando o efeito cambial).
+## `--fx=float` só troca o REGIME (`peg` → `float`) e mantém as taxas do dado.
+## Em todos os caminhos preenche `_fx_meta` para o relatório.
 func _load_currencies() -> Dictionary:
 	var data := _load_dict(CURRENCIES_PATH)
+	if _fx_mode == "float":
+		# SONDA (Q-016): currencies.json não traz fonte de regime cambial
+		# (`regime: null` nas 136 moedas), então o núcleo marca tudo como `peg`
+		# e a taxa só aparece em `price_local`. Forçar `float` no topo e em cada
+		# entrada exercita o caminho que hoje está inerte. Nenhuma taxa, cidade
+		# ou nação é inventada: só o regime muda.
+		var probe: Dictionary = data.duplicate(true)
+		probe["regime"] = "float"
+		for entry: Variant in Array(probe.get("currencies", [])):
+			if typeof(entry) == TYPE_DICTIONARY:
+				(entry as Dictionary)["regime"] = "float"
+		_fx_meta = _build_fx_meta(probe)
+		return probe
 	if _fx_mode == "real":
 		if _seed != 0:
 			_perturb_rates(data)
+		_fx_meta = _build_fx_meta(data)
 		return data
 	var rate := 1.0 if _fx_mode == "neutral" else 0.5
 	var neutral := data.duplicate(true)
@@ -482,7 +523,35 @@ func _load_currencies() -> Dictionary:
 		(entry as Dictionary)["rate_per_anchor"] = rate
 		(entry as Dictionary)["regime"] = "peg"
 	neutral["regime"] = "peg"
+	_fx_meta = _build_fx_meta(neutral)
 	return neutral
+
+
+## Q-016: resumo do câmbio efetivamente entregue ao núcleo. `floating` conta as
+## moedas que o núcleo vai tratar como flutuantes; `rate_sum` soma só as taxas
+## numéricas declaradas (moeda sem taxa não vira 1,0 nem 0 — fica fora).
+func _build_fx_meta(data: Dictionary) -> Dictionary:
+	var entries: Array = Array(data.get("currencies", []))
+	var floating := 0
+	var rate_sum := 0.0
+	for entry: Variant in entries:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var currency: Dictionary = entry
+		var regime: Variant = currency.get("regime", "")
+		if typeof(regime) == TYPE_STRING and String(regime) == "float":
+			floating += 1
+		var rate: Variant = currency.get("rate_per_anchor", null)
+		if typeof(rate) == TYPE_FLOAT or typeof(rate) == TYPE_INT:
+			rate_sum += float(rate)
+	return {
+		"mode": _fx_mode,
+		"seed": _seed,
+		"enabled": true,
+		"currencies": entries.size(),
+		"floating": floating,
+		"rate_sum": rate_sum,
+	}
 
 
 ## F5 — jitter determinístico das taxas reais por semente. ±1e-9 relativo:
@@ -677,6 +746,12 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 	if file == null:
 		_fail("nao abriu para escrita: " + _out)
 		return
+	var payload := {
+		"nations": _strip(nations),
+		"labor": _labor_nations(status),
+		"sectors": _strip_sectors(sectors),
+		"ownership": ownership,
+	}
 	var report := {
 		"meta": {
 			"days": _days,
@@ -686,15 +761,34 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 			"bankruptcies": int(status.get("bankruptcies", 0)),
 			"service_businesses": int(status.get("service_businesses", 0)),
 			"service_bankruptcies": int(status.get("service_bankruptcies", 0)),
+			"fx": _fx_meta,
+			"trajectory_hash": _trajectory_hash(payload),
 		},
-		"nations": _strip(nations),
-		"labor": _labor_nations(status),
-		"sectors": _strip_sectors(sectors),
-		"ownership": ownership,
+		"nations": payload["nations"],
+		"labor": payload["labor"],
+		"sectors": payload["sectors"],
+		"ownership": payload["ownership"],
 	}
 	file.store_string(JSON.stringify(report, "  "))
 	file.close()
+	print("[world] fx=%s floating=%d/%d sonda=%s" % [
+		String(_fx_meta.get("mode", "off")), int(_fx_meta.get("floating", 0)),
+		int(_fx_meta.get("currencies", 0)),
+		String(report["meta"]["trajectory_hash"])])
 	print("[world] escrito %s" % _out)
+
+
+## Q-016: hash estável do CONTEÚDO de trajetória (nations+labor+sectors+
+## ownership, sem o `meta`). Duas corridas idênticas fecham o mesmo hash; se o
+## caminho cambial é inerte, a sonda `--fx=float` fecha o hash das variantes
+## `peg` e o sweep fica tautológico — é isso que o portão passa a detectar.
+func _trajectory_hash(payload: Dictionary) -> String:
+	var context := HashingContext.new()
+	if context.start(HashingContext.HASH_SHA256) != OK:
+		_fail("trajectory_hash: sha256 indisponivel")
+		return ""
+	context.update(JSON.stringify(payload).to_utf8_buffer())
+	return context.finish().hex_encode()
 
 
 ## Q-015: ids do `--urban-cities` (CSV), sem vazios e sem repetição.

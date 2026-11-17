@@ -7,6 +7,17 @@ gravando o seu relatorio por variacao. Este script junta os 5 relatorios no
 mesmo formato de `construction_world_sweep.json` (meta + nations com o PIOR
 caso por nacao), sem inventar numero: nacao ausente do baseline fica fora.
 
+Q-016 — portao de sensibilidade do cambio. Todo relatorio grava
+`meta.trajectory_hash` (sha256 de nations+labor+sectors+ownership) e `meta.fx`.
+O script exige duas coisas e retorna 1 ("FALHA") quando qualquer uma quebra:
+  (i) as 5 variantes de aceite tem de fechar o MESMO `trajectory_hash`;
+  (ii) a SONDA `float_probe` (`--fx=float`, regime flutuante forçado no teste)
+       tem de fechar um hash DIFERENTE — se fechar o mesmo, o caminho cambial
+       esta inerte e o "×5" nao prova determinismo nenhum.
+A sonda NAO entra no gate de comida nem no teto de falencias: o delta de comida
+dela e so impresso como informacao. Um resultado em `meta.trajectory.fx` traz
+o `meta.fx` de cada variante (modo, semente, moedas, flutuantes, soma das taxas).
+
 Uso:
   python tools/aggregate_s19_sweep.py
     --baseline docs/economy/perf/construction_world_sweep.json
@@ -31,6 +42,8 @@ VARIANTS = [
 ]
 FOOD_TOLERANCE = 0.025
 OWNER_BANKRUPTCY_LIMIT = 28
+# Q-016: sonde de sensibilidade do cambio. Nao e variante de aceite.
+PROBE = ("float_probe", ["--fx=float"])
 
 
 def load(path):
@@ -80,6 +93,8 @@ def main():
     bankruptcies = {}
     service = {}
     drift = {}
+    trajectory_hashes = {}
+    fx = {}
 
     for name, _args in VARIANTS:
         path = os.path.join(args.dir, args.prefix + name + args.suffix)
@@ -93,6 +108,8 @@ def main():
             "bankruptcies": int(meta.get("service_bankruptcies", -1)),
             "businesses": int(meta.get("service_businesses", -1)),
         }
+        trajectory_hashes[name] = meta.get("trajectory_hash")
+        fx[name] = meta.get("fx", {})
         log_path = None
         if args.logdir:
             log_path = os.path.join(args.logdir, name + ".log")
@@ -104,6 +121,58 @@ def main():
             delta = after - before[tag]
             if tag not in worst or delta < worst[tag]["delta"]:
                 worst[tag] = {"delta": delta, "food": after, "variant": name}
+
+    # Q-016 — sonda: fora do gate de comida e do teto de falencias. So entra no
+    # portao de sensibilidade e tem o pior delta de comida impresso.
+    probe_name = PROBE[0]
+    probe_path = os.path.join(args.dir, args.prefix + probe_name + args.suffix)
+    probe_hash = None
+    probe_worst = None
+    probe_summary = None
+    if os.path.exists(probe_path):
+        probe_report = load(probe_path)
+        probe_meta = probe_report.get("meta", {})
+        probe_hash = probe_meta.get("trajectory_hash")
+        fx[probe_name] = probe_meta.get("fx", {})
+        # Evidencia da sonda: falencias e drift FICAM registrados no baseline;
+        # so nao entram no gate (a sonda nao e variante de aceite).
+        probe_summary = {
+            "bankruptcies": int(probe_meta.get("bankruptcies", -1)),
+            "money_drift": log_drift(os.path.join(args.logdir, probe_name + ".log"))
+            if args.logdir else None,
+        }
+        for tag, row in probe_report.get("nations", {}).items():
+            if tag not in before:
+                continue
+            delta = float(row.get("food", 1.0)) - before[tag]
+            if probe_worst is None or delta < probe_worst["delta"]:
+                probe_worst = {"tag": tag, "delta": delta, "food": float(row["food"])}
+    else:
+        print("AVISO: sonda ausente (%s) — sensibilidade do cambio nao avaliada"
+              % probe_path)
+
+    # (i) as 5 variantes de aceite tem de fechar o mesmo hash; (ii) a sonda tem
+    # de diferir. Hash ausente (relatorio antigo) nao conta como "igual".
+    known_peg = [h for h in (trajectory_hashes[name] for name, _ in VARIANTS) if h]
+    peg_identical = len(known_peg) == len(VARIANTS) and len(set(known_peg)) == 1
+    peg_hash = known_peg[0] if peg_identical else None
+    if peg_hash is not None and probe_hash is not None:
+        probe_differs = probe_hash != peg_hash
+    else:
+        probe_differs = None
+    trajectory = {
+        "peg_hash": peg_hash,
+        "peg_identical": peg_identical,
+        "float_probe_hash": probe_hash,
+        "float_probe_differs": probe_differs,
+        "fx": fx,
+    }
+    trajectory_failures = []
+    if not peg_identical:
+        trajectory_failures.append("as 5 variantes nao tem o mesmo trajectory_hash")
+    if probe_differs is False:
+        trajectory_failures.append(
+            "sonda --fx=float com o MESMO trajectory_hash (caminho cambial inerte)")
 
     rows = []
     for tag, entry in worst.items():
@@ -133,6 +202,14 @@ def main():
             "threads": 1,
             "parallel_processes": 5,
             "variants": [{"name": name, "args": args} for name, args in VARIANTS],
+            "trajectory": trajectory,
+            "probe": {
+                "name": probe_name,
+                "args": PROBE[1],
+                "trajectory_hash": probe_hash,
+                "worst_food": probe_worst,
+                **(probe_summary or {}),
+            },
         },
         "nations": rows,
     }
@@ -147,7 +224,16 @@ def main():
     print("nao fecham comida: %s" % (", ".join(failures) if failures else "nenhuma"))
     print("acima do teto do dono (%d): %s" % (
         OWNER_BANKRUPTCY_LIMIT, ", ".join(over) if over else "nenhuma"))
-    return 1 if (failures or over) else 0
+    for name, _args in VARIANTS:
+        print("hash %-11s %s" % (name, trajectory_hashes[name]))
+    print("hash %-11s %s" % (probe_name, probe_hash))
+    if probe_worst is not None:
+        print("sonda worst_food %s delta=%+.4f (so informacao, fora do gate)"
+              % (probe_worst["tag"], probe_worst["delta"]))
+    print("fronteira peg=%s sonda_difere=%s" % (peg_identical, probe_differs))
+    if trajectory_failures:
+        print("FALHA: " + "; ".join(trajectory_failures))
+    return 1 if (failures or over or trajectory_failures) else 0
 
 
 if __name__ == "__main__":

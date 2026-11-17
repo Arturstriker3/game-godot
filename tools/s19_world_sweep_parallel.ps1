@@ -38,7 +38,11 @@ $variants = @(
   @{ name = "real_seed1"; extra = @("--fx=real", "--seed=1") },
   @{ name = "real_seed2"; extra = @("--fx=real", "--seed=2") },
   @{ name = "half"; extra = @("--fx=half") },
-  @{ name = "xgs"; extra = @("--currencies=0") }
+  @{ name = "xgs"; extra = @("--currencies=0") },
+  # SONDA (Q-016), nao variante de aceite: forca `regime: float` para provar que
+  # o cambio ALCANCA a simulacao. As 5 primeiras TEM de fechar o mesmo hash; a
+  # trajetoria desta TEM de diferir (ver tools/aggregate_s19_sweep.py).
+  @{ name = "float_probe"; extra = @("--fx=float") }
 )
 if ($NoUrban) {
   $variants += @{ name = "real_nourban"; extra = @("--fx=real") }
