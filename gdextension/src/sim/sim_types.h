@@ -12,6 +12,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "urban_types.h"
+
 namespace ogs {
 
 // ==== BLOCO DE TIPOS (extraído de economy_sim.h) ====
@@ -845,6 +847,10 @@ namespace ogs {
 		std::unordered_map<std::string, double> confidence;
 		std::unordered_map<std::string, DemoGroupFlow> group_flows;
 		std::vector<DemoCurrency> currencies;
+		// §19 (W2): solo e prefeitura. A prefeitura move área/capacidade do solo
+		// (obra concluída) e o próprio caixa; desfazer o tick desfaz isso.
+		std::vector<CityLand> land;
+		std::vector<CityGov> city_gov;
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;
