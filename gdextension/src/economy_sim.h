@@ -267,6 +267,21 @@ public:
 	 */
 	Dictionary demo_get_urban_city(const String& city_id) const;
 
+	/**
+	 * §19 (W1): abre obra §15 de EXPANSÃO de uma zona urbana
+	 * (`km2` consome reserve_km2 e amplia a infraestrutura). Paga o orçamento
+	 * do governo da cidade; o W2 passa a financiar pela prefeitura. Devolve
+	 * {ok, error, project_id, cost}; a área/capacidade só muda na conclusão.
+	 */
+	Dictionary demo_urban_expand(const String& city_id, int zone, double km2);
+
+	/**
+	 * §19 (W1): abre obra §15 de ADENSAMENTO (sobe max_density da zona em um
+	 * passo). Exige infraestrutura que atenda a população da cidade. Devolve
+	 * {ok, error, project_id, cost}.
+	 */
+	Dictionary demo_urban_densify(const String& city_id, int zone);
+
 	/** F8: catálogo carregado (id, nomes, ícone, educaçao, exportável). */
 	Array demo_get_service_sectors() const;
 

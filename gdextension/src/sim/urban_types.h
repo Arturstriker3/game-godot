@@ -66,6 +66,11 @@ struct CityLand {
 	// Área informal (km²), derivada das unidades informais da fonte (W3 pode
 	// urbanizar/regularizar e reduzi-la).
 	double informal_km2 = 0.0;
+	// §19 (W1) — demanda de zona não atendida: quantas decisões (abrir negócio
+	// de serviço, instalar fábrica) foram barradas por falta de espaço desde o
+	// último fechamento de mês. É o sinal que a prefeitura (W2) lê para decidir
+	// expandir/adensar; decai à metade por mês (demanda velha não manda).
+	double zone_demand[ZONE_COUNT] = {};
 };
 
 // Estoque de moradia de uma cidade, agregado por densidade × padrão.

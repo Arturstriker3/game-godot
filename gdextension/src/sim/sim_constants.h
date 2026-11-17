@@ -477,4 +477,42 @@ constexpr double kDemoUrbanInfraCostPerKm2 = 6000000.0;
 // o W2 não calibra a receita municipal contra o dado real.
 constexpr double kDemoUrbanMunicipalFeeRate = 0.02;
 
+// ---------------------------------------------------------------------------
+// §19 W1 — solo urbano e zoneamento.
+//
+// m² de piso por NEGÓCIO de serviço (zona comercial) e por PLANTA industrial
+// urbana (zona industrial). O jogo agrega um setor/planta num único negócio
+// (não é uma loja por prédio): o valor é o de um estabelecimento típico, e a
+// ocupação da zona é a razão entre os negócios/plantas instalados e quantos
+// caberiam na área × FAR. Numa metrópole com área observada grande a zona
+// quase nunca limita; ela limita em cidade pequena e depois do adensamento —
+// W2 lê `zone_demand` e decide expandir ou adensar.
+constexpr double kDemoUrbanBusinessM2 = 250.0;
+constexpr double kDemoUrbanFactoryM2 = 25000.0;
+// Preço da terra = esta fração do valor do imóvel médio (XGS/m²). A fonte não
+// publica preço de terra por cidade; a parcela do terreno no imóvel é o proxy
+// declarado (W0 deixou o campo em 0 de propósito).
+constexpr double kDemoUrbanLandShareOfHousePrice = 0.30;
+// Curva de ocupação -> pressão de preço: convexa perto de 1 e com teto
+// declarado (evita preço explosivo quando a ocupação passa de 1).
+constexpr double kDemoUrbanLandMaxPressure = 8.0;
+// Atualização mensal do preço da terra: fração do caminho até o alvo por mês
+// (suave, não um salto).
+constexpr double kDemoUrbanLandPriceSmooth = 0.25;
+// Renda média local no alvo do preço: ganho linear em (índice de renda − 1),
+// limitado a ±0,5/1,0 do índice.
+constexpr double kDemoUrbanLandIncomeGain = 0.5;
+// Demanda de zona sinalizada decai à metade a cada mês.
+constexpr double kDemoUrbanZoneDemandDecay = 0.5;
+// População que a infraestrutura passa a atender por km² expandido.
+constexpr double kDemoUrbanInfraPopPerKm2 = 5000.0;
+// Adensar custa esta fração da expansão de um km² (mesma obra, sem terra nova).
+constexpr double kDemoUrbanDensifyCostFactor = 0.35;
+// Régua da obra de infraestrutura: km² -> unidades de capacidade do §15 (só
+// escala o prazo; a obra urbana não cria prédio).
+constexpr double kDemoUrbanKm2ToConstructionUnits = 20.0;
+// Fechamento do "mês" do calendário do jogo para preço da terra e decadência
+// da demanda de zona.
+constexpr int kDemoUrbanMonthDays = 30;
+
 } // namespace ogs
