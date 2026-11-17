@@ -1,5 +1,6 @@
 #include "sim_day.h"
 
+#include "profiling.h"
 #include "urban_land.h"
 
 namespace ogs {
@@ -11,7 +12,10 @@ void tick_day(WorldState& ws, SimCore& core) {
 
 	// §19 (W1): preço da terra por ocupação/renda e decadência do sinal de
 	// demanda de zona (fechamento mensal; não move dinheiro).
-	urban_land::phase_month(ws);
+	{
+		OGS_SIM_ZONE(kPhaseLandMonth);
+		urban_land::phase_month(ws);
+	}
 
 	// 1. Chegada das cargas pedidas no dia anterior.
 	core.phase_arrival();
@@ -21,7 +25,10 @@ void tick_day(WorldState& ws, SimCore& core) {
 
 	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia. Roda
 	// antes do comércio para combustível/veículos comprados já valerem hoje.
-	core.phase_fleet();
+	{
+		OGS_SIM_ZONE(kPhaseFleetDay);
+		core.phase_fleet();
+	}
 
 	// 3. Mercado de trabalho e salários.
 	core.phase_labor();

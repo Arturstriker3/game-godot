@@ -57,6 +57,7 @@ const PHASES := [
 	"fiscal_city_gov", "fiscal_equalize", "fiscal_groups",
 	"trade_food_prep", "trade_food_calc", "trade_food_settle",
 	"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
+	"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
 ]
 
 var _days := 30

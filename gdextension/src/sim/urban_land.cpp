@@ -338,19 +338,35 @@ void phase_month(WorldState& ws) {
 	if (ws.land.empty() || ws.cities.empty()) {
 		return;
 	}
-	if (kUrbanMonthDays <= 0 || ws.day % kUrbanMonthDays != 0) {
-		return;
-	}
 	const std::size_t count = std::min(
 		{ws.land.size(), ws.housing.size(), ws.cities.size()});
 	if (count == 0) {
 		return;
 	}
-	// Uso por cidade calculado numa passada (a fase roda uma vez por mês): as
-	// unidades de moradia, os negócios de serviço e as plantas industriais são
-	// acumulados por índice de cidade, na ordem estável dos vetores.
+	// A6: cada cidade fecha o mês no seu dia (`(dia - índice) % 30 == 0`), em
+	// vez de todas no dia múltiplo de 30. O trabalho por dia cai a ~1/30 e o
+	// resultado ao longo do mês é o mesmo.
+	const int period = ws.cadence.monthly_period;
+	bool any_due = false;
+	for (std::size_t index = 0; index < count && !any_due; ++index) {
+		any_due = cadence_due(ws.day, index, period);
+	}
+	if (!any_due) {
+		return;
+	}
+	// Uso por cidade — SÓ para as cidades do lote do dia (A6). Calcular as 834
+	// todo dia devolveria o custo ao caminho diário (o índice por cidade evita
+	// 42 mil buscas por id a cada tick). Os negócios vêm do índice
+	// `service_by_city` — a mesma fonte que `zone_usage` já usa.
+	std::vector<char> due_mask(count, 0);
+	for (std::size_t index = 0; index < count; ++index) {
+		due_mask[index] = cadence_due(ws.day, index, period) ? 1 : 0;
+	}
 	std::vector<double> usage(count * ZONE_COUNT, 0.0);
 	for (std::size_t index = 0; index < count; ++index) {
+		if (!due_mask[index]) {
+			continue;
+		}
 		const CityHousing& house = ws.housing[index];
 		double units = 0.0;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
@@ -360,14 +376,38 @@ void phase_month(WorldState& ws) {
 		}
 		usage[index * ZONE_COUNT + ZONE_RES] = units;
 	}
-	for (const ServiceBusiness& business : ws.service_businesses) {
-		if (business.bankrupt) {
+	const bool have_service_index = ws.service_by_city.size() >= count;
+	for (std::size_t index = 0; index < count; ++index) {
+		if (!due_mask[index]) {
 			continue;
 		}
-		const int index = city_index_of(ws, business.city);
-		if (index >= 0 && static_cast<std::size_t>(index) < count) {
-			usage[static_cast<std::size_t>(index) * ZONE_COUNT + ZONE_COM]
-				+= std::max(0.0, business.jobs);
+		if (have_service_index) {
+			for (const int business_index : ws.service_by_city[index]) {
+				if (business_index < 0 || static_cast<std::size_t>(business_index)
+						>= ws.service_businesses.size()) {
+					continue;
+				}
+				const ServiceBusiness& business =
+					ws.service_businesses[static_cast<std::size_t>(business_index)];
+				if (business.bankrupt) {
+					continue;
+				}
+				usage[index * ZONE_COUNT + ZONE_COM]
+					+= std::max(0.0, business.jobs);
+			}
+			continue;
+		}
+		// Índice indisponível (mundo recém-carregado sem o catálogo): varredura
+		// global, o caminho anterior — ausência explícita, sem inventar uso.
+		for (const ServiceBusiness& business : ws.service_businesses) {
+			if (business.bankrupt) {
+				continue;
+			}
+			const int found = city_index_of(ws, business.city);
+			if (found >= 0 && static_cast<std::size_t>(found) == index) {
+				usage[index * ZONE_COUNT + ZONE_COM]
+					+= std::max(0.0, business.jobs);
+			}
 		}
 	}
 	for (const Building& building : ws.buildings) {
@@ -375,7 +415,8 @@ void phase_month(WorldState& ws) {
 			continue;
 		}
 		const int index = city_index_of(ws, building.city);
-		if (index >= 0 && static_cast<std::size_t>(index) < count) {
+		if (index >= 0 && static_cast<std::size_t>(index) < count
+				&& due_mask[static_cast<std::size_t>(index)] != 0) {
 			usage[static_cast<std::size_t>(index) * ZONE_COUNT + ZONE_IND]
 				+= std::max(0.0, building.jobs);
 		}
@@ -385,13 +426,17 @@ void phase_month(WorldState& ws) {
 			continue;
 		}
 		const int index = city_index_of(ws, project.city);
-		if (index >= 0 && static_cast<std::size_t>(index) < count) {
+		if (index >= 0 && static_cast<std::size_t>(index) < count
+				&& due_mask[static_cast<std::size_t>(index)] != 0) {
 			usage[static_cast<std::size_t>(index) * ZONE_COUNT + ZONE_IND]
 				+= std::max(0.0, project.jobs);
 		}
 	}
 
 	for (std::size_t index = 0; index < count; ++index) {
+		if (!cadence_due(ws.day, index, period)) {
+			continue;  // cidade fora do lote do dia (A6)
+		}
 		CityLand& land = ws.land[index];
 		const City& city = ws.cities[index];
 		const CityHousing& house = ws.housing[index];

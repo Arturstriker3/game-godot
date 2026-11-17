@@ -1215,6 +1215,7 @@ void EconomySim::tick_and_publish() {
 		// a construí-lo DUAS vezes por dia (~20 ms), e a segunda construção
 		// lia o cache semanal do slot anterior — publicando `nations[].labor`
 		// com até 13 dias de atraso.
+		OGS_SIM_ZONE(kPhaseAi);
 		ai_phase_.run(ws_, sim_core_, commands_, instant_construction_,
 			bootstrap_construction_);
 	}
@@ -1484,6 +1485,7 @@ Dictionary EconomySim::get_profile() const {
 		"fiscal_city_gov", "fiscal_equalize", "fiscal_groups",
 		"trade_food_prep", "trade_food_calc", "trade_food_settle",
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
+		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
 	};
 	Dictionary profile;
 	if (!profile_) {

@@ -23,6 +23,8 @@
 #include "sim_core.h"
 
 #include "housing.h"
+
+#include "profiling.h"
 #include "sim_constants.h"
 
 #include <algorithm>
@@ -93,6 +95,7 @@ void SimCore::phase_housing() {
 			|| ws_.city_gov.size() < ws_.cities.size()) {
 		return;
 	}
+	OGS_SIM_ZONE(kPhaseHousing);
 
 	for (std::size_t city_index = 0; city_index < ws_.cities.size();
 			++city_index) {
@@ -238,7 +241,17 @@ void SimCore::phase_housing() {
 			house.rent_anchored = true;
 		}
 
-		const bool month_close = ws_.day - house.month_marker >= 30;
+		// A6: o fechamento do mês (nível de aluguel, incorporadora, favela) roda no
+		// dia da cidade (`(dia - índice) % 30 == 0`), não para todas no dia 30. A
+		// cobrança do aluguel e o sinal de aperto continuam DIÁRIOS: é o que
+		// conserva dinheiro todo dia e mantém a comida à frente do aluguel.
+		// `month_period <= 1` = todas as cidades todo dia (interruptor de teste,
+		// mesmo sentido dos outros sistemas). `month_marker` guarda a janela
+		// acumulada do ônus.
+		const int month_period = ws_.cadence.monthly_period;
+		const bool month_close = month_period <= 1
+			? true
+			: cadence_due(ws_.day, city_index, month_period);
 		// Favela (ÚLTIMO caso): só quando não há vaga em padrão algum E a falta
 		// é da própria POP pobre (> 5% dos domicílios populares) E os pobres
 		// estão sem renda para o aluguel (aluguel popular no teto de ônus) ou a

@@ -214,6 +214,12 @@ struct CityGov {
 	// Parte do repasse que ESTA cidade pagou do tesouro nacional (para o teste
 	// conferir que repasse recebido = repasse pago dentro da nação).
 	double month_transfer_paid = 0.0;
+	// A6: dia do último fechamento mensal DESTA cidade. O escalonamento roda a
+	// prefeitura no dia `(dia - índice) % 30 == 0`; o marcador mede a janela
+	// real (a primeira é curta: a cidade começa no dia `índice`) para
+	// IPTU/taxas/manutenção/repasse serem proporcionais, e não um mês cheio
+	// cobrado sobre poucos dias de PIB.
+	int month_marker = 0;
 	CityGovProject projects[kCityGovMaxProjects] = {};
 	int project_count = 0;
 };

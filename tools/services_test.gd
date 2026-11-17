@@ -19,6 +19,9 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 
+## A6: as decisões de serviço rodam no dia semanal da cidade.
+const WEEK_DAYS := 7
+
 const GeneratorScript: Script = preload("res://core/culture/business_name_generator.gd")
 const CultureDbScript: Script = preload("res://core/culture/culture_db.gd")
 
@@ -134,7 +137,12 @@ func _test_demand_and_business() -> void:
 		var bankruptcies_before := int(sim.get_service_bankruptcies())
 		sim.set_service_capacity("T-USA", doomed_sector, 0.0)
 		sim.set_service_business_state(doomed, 60, -1000.0)
-		sim.tick_day()
+		# A6: a decisão de fechamento roda no dia semanal da cidade
+		# (`(dia - índice) % 7 == 0`); a demanda/faturamento continuam diários.
+		# Ticka até esse dia (no máximo 7) em vez de um único tick.
+		var waited := _tick_to_weekly(sim, "T-USA")
+		print("[services] decisao semanal de fechamento: %d tick(s) ate o dia %d" % [
+			waited, int(sim.get_status().get("day", 0))])
 		_check(int(sim.get_service_bankruptcies()) == bankruptcies_before + 1,
 			"negócio com 60 dias de prejuízo deve fechar")
 		var still_there := false
@@ -199,7 +207,7 @@ func _test_save() -> void:
 	_set_income(sim)
 	_run(sim, 5)
 	var data: Dictionary = sim.to_dict()
-	_check(int(data.get("version", 0)) == 14, "save deve ser v14 (fila unica de obras; era %d)" % int(
+	_check(int(data.get("version", 0)) == 15, "save deve ser v15 (cadencia A6; era %d)" % int(
 		data.get("version", 0)))
 	var loaded = _load_save(data)
 	if loaded == null:
@@ -272,6 +280,30 @@ func _load_save(data: Dictionary) -> Object:
 func _run(sim: Object, days: int) -> void:
 	for index in days:
 		sim.tick_day()
+
+
+## A6: as decisões de abertura/fechamento de negócio rodam no dia semanal da
+## cidade (`(dia - índice) % 7 == 0`). Ticka até o próximo dia semanal da
+## cidade (no máximo 7) e devolve quantos ticks esperou.
+func _tick_to_weekly(sim: Object, city_id: String) -> int:
+	var offset := _city_index(sim, city_id) % WEEK_DAYS
+	for ticks in range(1, WEEK_DAYS + 1):
+		sim.tick_day()
+		var day := int(sim.get_status().get("day", 0))
+		if ((day - offset) % WEEK_DAYS + WEEK_DAYS) % WEEK_DAYS == 0:
+			return ticks
+	return WEEK_DAYS
+
+
+## Índice da cidade na ordem do vetor (`to_dict()["cities"]`), que é o `offset`
+## da cadência escalonada.
+func _city_index(sim: Object, city_id: String) -> int:
+	var cities: Array = sim.to_dict().get("cities", [])
+	for index in cities.size():
+		if String((cities[index] as Dictionary).get("id", "")) == city_id:
+			return index
+	_fail("%s ausente do save de cidades" % city_id)
+	return 0
 
 
 func _money_total(sim: Object) -> float:

@@ -34,7 +34,6 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 const TEST_CITY := "BRA-SAO"
 const TEST_NATION := "BRA"
 const MONTH_DAYS := 30
-const CHECK_DAY := 30
 const SAVE_DAY := 32
 const LAST_DAY := 82
 const TOLERANCE := 1.0e-6
@@ -246,13 +245,17 @@ func _run() -> void:
 	if float(gov_before.get("cash", 0.0)) != 0.0:
 		_fail("caixa da prefeitura deveria comecar em 0")
 
-	for day in range(1, CHECK_DAY):
+	# A6: cada prefeitura fecha o mês no dia do próprio índice na ordem das
+	# cidades (`(dia - índice) % 30 == 0`), não mais no dia 30 global. BRA-SAO
+	# tem índice 108 → primeiro fechamento no dia 18, com janela curta.
+	var close_day := _city_close_day(sim)
+	for day in range(1, close_day):
 		_tick(sim, "A dia %d" % day)
 	var cash_before: float = float(_gov(sim, TEST_CITY).get("gov", {}).get("cash", 0.0))
 	var area_before: float = _sum_area(_gov(sim, TEST_CITY))
 
-	# Fechamento do mês (dia CHECK_DAY).
-	_tick(sim, "A dia %d (fechamento)" % CHECK_DAY)
+	# Fechamento do mês (dia close_day).
+	_tick(sim, "A dia %d (fechamento)" % close_day)
 	var urban_after: Dictionary = _gov(sim, TEST_CITY)
 	var gov: Dictionary = urban_after.get("gov", {})
 	var cash_after := float(gov.get("cash", 0.0))
@@ -321,16 +324,16 @@ func _run() -> void:
 			_fail("despesa de infraestrutura (%.3f) != custo da obra (%.3f)" % [
 				infra, float(project.get("total_cost", 0.0))])
 	print("[city_gov] mes %d: iptu=%.1f taxas=%.1f repasse=%.1f manutencao=%.1f "
-		% [CHECK_DAY, iptu, fees, transfer, maintenance]
+		% [close_day, iptu, fees, transfer, maintenance]
 		+ "obra=%.1f alvo=%.1f caixa=%.1f" % [infra, target, cash_after])
 
 	# --- Save/load com obra em andamento: 0 diferenças ----------------------
 	var failures_before_save := _failures.size()
-	for day in range(CHECK_DAY, SAVE_DAY):
+	for day in range(close_day, SAVE_DAY):
 		_tick(sim, "A dia %d" % (day + 1))
 	var snapshot: Dictionary = sim.to_dict()
-	if int(snapshot.get("version", 0)) != 14:
-		_fail("save version %s != 14" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 15:
+		_fail("save version %s != 15" % str(snapshot.get("version")))
 	if not snapshot.has("city_gov"):
 		_fail("save sem o bloco city_gov da prefeitura")
 	var restored = EconomySim.new()
@@ -384,9 +387,9 @@ func _run() -> void:
 		float(gov_end.get("cash", 0.0))])
 
 	# --- Custo crescente: 1 km² = 2 meses de receita municipal (spec §19). ---
-	# No dia CHECK_DAY a cidade ainda tem o raio/reserva do carregamento, então
-	# os fatores de distância e relevo valem 1 e o custo por km² é exatamente
-	# kDemoUrbanInfraCostMonths × alvo do mês (conta documentada em
+	# No primeiro fechamento a cidade ainda tem o raio/reserva do carregamento,
+	# então os fatores de distância e relevo valem 1 e o custo por km² é
+	# exatamente kDemoUrbanInfraCostMonths × alvo do mês (conta documentada em
 	# sim_constants.h: 12 meses × 55% ÷ 2 = 3,3 km²/ano).
 	var cost_km2 := float(urban_after.get("expansion_cost_per_km2", 0.0))
 	if not _close(cost_km2, 2.0 * target, 1.0e-9):
@@ -428,13 +431,26 @@ func _test_full_city_cash_gate(urban: Dictionary) -> void:
 	if state_cost <= 0.0:
 		_fail("cidade cheia: obra estatal sem custo")
 		return
+	# A6: o fechamento da cidade (no dia do índice, não no dia 30 global) pode
+	# já ter aberto a frente AUTOMÁTICA de moradia do governo, então a fila pode
+	# ter mais de uma obra do governo. Guarda a contagem COM a obra explícita
+	# para provar que ela continua na fila depois do fechamento (a frente
+	# automática pode somar outra — o que não pode é a explícita desaparecer).
+	var housing_in_flight := _gov_housing_projects(sim.to_dict())
 	# Caixa municipal novo: o teste quer a decisão com caixa, não a reserva.
 	_grant_gov_cash(sim, TEST_CITY, 3000000.0)
 	var before: Dictionary = _gov(sim, TEST_CITY)
 	var area_before := _sum_area(before)
 	var reserve_before := float(before.get("reserve_km2", 0.0))
 	var capacity_before := float(Array(before.get("zone_capacity", []))[0])
-	_tick(sim, "F dia %d (fechamento)" % MONTH_DAYS)
+	# A6: o próximo fechamento REAL desta cidade. O dia 30 global deixou de ser
+	# fechamento (a cidade fecha em `índice % 30`); sem mirar nele o teste
+	# passaria lendo o estado do fechamento anterior.
+	var close_phase := _city_index(sim, TEST_CITY) % MONTH_DAYS
+	var close_day := MONTH_DAYS
+	while (close_day - close_phase) % MONTH_DAYS != 0:
+		close_day += 1
+	_tick(sim, "F dia %d (fechamento)" % close_day)
 	var mid: Dictionary = _gov(sim, TEST_CITY)
 	var gov_mid: Dictionary = mid.get("gov", {})
 	var works: Array = _urban_projects(sim, TEST_CITY)
@@ -457,11 +473,13 @@ func _test_full_city_cash_gate(urban: Dictionary) -> void:
 	if infra_spent > 0.5 * cash_decision + 1.0:
 		_fail("cidade cheia: obra consumiu %.0f de um caixa de %.0f (maximo metade)" % [
 			infra_spent, cash_decision])
-	if _gov_housing_projects(sim.to_dict()) != 1:
-		_fail("cidade cheia: a obra estatal em voo desapareceu da fila")
+	var housing_now := _gov_housing_projects(sim.to_dict())
+	if housing_now < housing_in_flight or housing_in_flight < 1:
+		_fail("cidade cheia: a obra estatal em voo desapareceu da fila (%d -> %d)" % [
+			housing_in_flight, housing_now])
 	# A obra conclui: solo e capacidade crescem; o caixa nunca fica negativo.
-	for day in range(MONTH_DAYS, MONTH_DAYS + 200):
-		_tick(sim, "F dia %d" % (day + 1))
+	for day in range(close_day + 1, close_day + 201):
+		_tick(sim, "F dia %d" % day)
 		if _urban_projects(sim, TEST_CITY).is_empty():
 			break
 	if not _urban_projects(sim, TEST_CITY).is_empty():
@@ -545,6 +563,24 @@ func _grant_gov_cash(sim, city_id: String, cash: float) -> void:
 			gov["cash"] = cash
 			entry["gov"] = gov
 	sim.from_dict(snapshot)
+
+
+## A6: a prefeitura fecha o mês no dia do índice da cidade na ordem do save
+## (`(dia - índice) % 30 == 0`); índice 0 fecha no dia 30, não no dia 0.
+func _city_close_day(sim) -> int:
+	var close := _city_index(sim, TEST_CITY) % MONTH_DAYS
+	return close if close > 0 else MONTH_DAYS
+
+
+## Índice da cidade na ordem do vetor (`to_dict()["cities"]` == ordem do
+## `ws_.cities`), que é o `offset` da cadência escalonada.
+func _city_index(sim, city_id: String) -> int:
+	var cities: Array = sim.to_dict().get("cities", [])
+	for index in cities.size():
+		if String((cities[index] as Dictionary).get("id", "")) == city_id:
+			return index
+	_fail("%s ausente do save de cidades" % city_id)
+	return 0
 
 
 func _sum_area(urban: Dictionary) -> float:

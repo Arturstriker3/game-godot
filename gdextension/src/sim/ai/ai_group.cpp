@@ -39,7 +39,6 @@ namespace ogs {
 namespace {
 
 // Constantes de `group_investor.gd` (mesmos valores, mesmo significado).
-constexpr int kIntervalDays = 30;
 constexpr double kMinCapital = 6000.0;
 constexpr double kMaxCapacity = 12.0;
 constexpr double kMinReturn = 0.0018;
@@ -180,11 +179,12 @@ struct GroupDay {
 void GroupDay::run() {
 	const AiView& view = ctx.view;
 	// `_prepare_slice` passo 0: fila da vez, na ordem do ranking (a view já é
-	// o `get_group_ranking` do dia).
+	// o `get_group_ranking` do dia). A6: período no estado do mundo (antes 30).
 	queue.clear();
-	const int phase = ctx.day % kIntervalDays;
+	const int interval = std::max(1, ctx.ws.cadence.monthly_period);
+	const int phase = ctx.day % interval;
 	for (int index = 0; index < static_cast<int>(view.groups.size()); ++index) {
-		if (index % kIntervalDays == phase) {
+		if (index % interval == phase) {
 			queue.push_back(index);
 		}
 	}

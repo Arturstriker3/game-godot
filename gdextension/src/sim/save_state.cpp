@@ -125,6 +125,14 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["active"] = ws.active;
 	data["world_mode"] = ws.world_mode;
 	data["day"] = ws.day;
+	// A6: cadência por sistema. Muda QUANDO cada cidade fecha o mês/semana, então
+	// é estado verdadeiro do mundo (não configuração de exibição).
+	{
+		Dictionary cadence = make_object();
+		cadence["weekly_period"] = ws.cadence.weekly_period;
+		cadence["monthly_period"] = ws.cadence.monthly_period;
+		data["cadence"] = cadence;
+	}
 	data["transport_cash"] = ws.transport_cash;
 	data["foreign_cash"] = ws.foreign_cash;
 	data["construction_cash"] = ws.construction_cash;
@@ -612,6 +620,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["revenue_pct_gdp"] = gov.revenue_pct_gdp;
 		entry["target_revenue_month"] = gov.target_revenue_month;
 		entry["month_transfer_paid"] = gov.month_transfer_paid;
+		// A6: janela do fechamento mensal desta cidade (escalonamento).
+		entry["month_marker"] = gov.month_marker;
 		Array projects = make_array();
 		for (int slot = 0; slot < gov.project_count; ++slot) {
 			const CityGovProject& project = gov.projects[slot];
@@ -961,6 +971,16 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	};
 	ws.active = bool(data.get("active", true));
 	ws.world_mode = bool(data.get("world_mode", false));
+	// A6: cadência por sistema. Save v14 e anteriores não têm o bloco: ficam com
+	// os padrões do `WorldState` (semana 7, mês 30) — sem migração de cursor.
+	ws.cadence = CadenceState{};
+	if (data.has("cadence")) {
+		const Dictionary cadence = data.get("cadence", Dictionary());
+		ws.cadence.weekly_period =
+			std::max(0, int(cadence.get("weekly_period", 7)));
+		ws.cadence.monthly_period =
+			std::max(0, int(cadence.get("monthly_period", 30)));
+	}
 	ws.day = int(data.get("day", 0));
 	ws.transport_cash = double(data.get("transport_cash", 0.0));
 	ws.foreign_cash = double(data.get("foreign_cash", 0.0));
@@ -2105,6 +2125,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(entry.get("target_revenue_month", 0.0)));
 			gov.month_transfer_paid = safe_nonneg(
 				double(entry.get("month_transfer_paid", 0.0)));
+			// A6: janela do fechamento mensal (save v14 não tem: 0 = primeira
+			// janela, que a fase escala pelos dias decorridos desde o dia 0).
+			gov.month_marker = std::max(
+				0, int(entry.get("month_marker", 0)));
 			const Array projects = entry.get("projects", Array());
 			gov.project_count = 0;
 			for (int slot = 0; slot < projects.size()
