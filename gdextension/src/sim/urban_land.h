@@ -39,8 +39,14 @@ enum UrbanAction : int {
 
 // Capacidade física de uma zona: RES em unidades de moradia, COM e IND em
 // TRABALHADORES (m² de piso por trabalhador). Capacidade = área × FAR da
-// densidade permitida ÷ m² por unidade/trabalhador.
+// densidade permitida ÷ m² por unidade/trabalhador × `zone_fill` (fração do
+// envelope construída à escala da cidade; 1,0 em save antigo/cenário).
 double zone_capacity(const CityLand& land, int zone);
+
+// Capacidade EFETIVA: a física, com piso no uso corrente (nenhuma cidade tem
+// ocupação acima de 100% — estoque maior que o envelope é inconsistência de
+// fonte, não cidade com 137% de ocupação). É a que a ocupação e o gate usam.
+double zone_capacity_for(const WorldState& ws, std::size_t city_index, int zone);
 
 // Uso corrente da zona, na mesma unidade da capacidade. RES: unidades de
 // moradia carregadas; COM: empregos dos negócios de serviço ativos; IND:

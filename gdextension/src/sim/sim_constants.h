@@ -472,9 +472,30 @@ constexpr double kDemoUrbanUnitM2[3][3] = {
 	{55.0, 85.0, 140.0},   // DENSITY_MID: prédio
 	{50.0, 75.0, 110.0},   // DENSITY_HIGH: torre
 };
-// FAR (área construída ÷ área do lote) por densidade. Capacidade da zona =
-// área × FAR ÷ m² por unidade (W1).
+// FAR (área construída ÷ área do lote) por densidade. É o ENVELOPE do lote —
+// o máximo que o gabarito permite —, não o FAR bruto realizado na escala da
+// cidade (esse é 5-15× menor: a maior parte do solo construído é rua, pátio,
+// uso misto e construção antiga; ver kDemoUrbanZoneFill abaixo). Capacidade
+// física da zona = área × FAR ÷ m² por unidade (W1).
 constexpr double kDemoUrbanFar[3] = {1.0, 2.5, 6.0};
+// Ocupação RES ALVO no dia 0, por FAIXA de população urbana (frente Q-015-C):
+// <300 mil, 300 mil–1 M, 1–5 M, >5 M. É CALIBRAÇÃO declarada, não dado
+// observado — a fonte não publica "quão cheia" cada cidade está. O alvo
+// reproduz a hierarquia real do mercado de solo: metrópole nasce quase cheia
+// (0,85), cidade média com folga moderada (0,70-0,72), cidade pequena com
+// folga (0,55), para o preço da terra subir com o crescimento e a prefeitura
+// só precisar de solo novo quando a cidade enche. O dado de base do estoque
+// vem de UN DESA (tamanho do domicílio), Atlas of Urban Expansion 2016 (área
+// construída e densidade) e World Bank SDG 11.1.1 (informalidade) — ver
+// docs/team/reviews/Q-015_fix_zonas.md para a distribuição medida antes/depois.
+constexpr double kDemoUrbanBandOccupancy[4] = {0.55, 0.70, 0.72, 0.85};
+// Teto de ocupação inicial/efetiva da moradia (fração do envelope). Um estoque
+// ACIMA do envelope calibrado (área do Atlas 2014 × população 2026, como
+// NPL-POK) não é cidade com 137% de ocupação: a capacidade efetiva tem piso
+// em estoque ÷ este teto. Cidade nesse teto está fisicamente cheia — moradia
+// nova ali exige expandir ou adensar (o envelope cresce), não empilhar mais
+// unidade no mesmo lote.
+constexpr double kDemoUrbanOccupancyCap = 0.95;
 // Taxa de capitalização fixa (aluguel anual ÷ valor do imóvel) — §19.6.
 constexpr double kDemoUrbanCapRate = 0.05;
 // Depreciação anual do estoque (fração do valor/condição) — §19.3.

@@ -5632,6 +5632,7 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 			String(u.get("height_class", "")));
 		for (int zone = 0; zone < ZONE_COUNT; ++zone) {
 			land.max_density[zone] = max_density;
+			land.zone_fill[zone] = 1.0;
 		}
 		land.reserve_km2 = safe_nonneg(
 			static_cast<double>(u.get("expandable_reserve_km2", 0.0)));
@@ -5766,6 +5767,31 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 		// uma unidade ocupa o m² de piso do padrão popular baixo.
 		land.informal_km2 = house.informal_units
 			* kDemoUrbanUnitM2[DENSITY_LOW][TIER_POPULAR] / 1.0e6;
+		// §19 W1 / Q-015-C: capacidade da MORADIA no dia 0. O envelope do
+		// lote (área × FAR ÷ m²) é 5-15× o estoque real: na escala da cidade
+		// a maior parte do solo é rua, pátio, uso misto e construção antiga.
+		// `zone_fill` guarda a fração do envelope que corresponde ao estoque
+		// FORMAL (a unidade informal mora em informal_km2, fora da zona) para
+		// a ocupação nascer no alvo da faixa de população urbana
+		// (kDemoUrbanBandOccupancy). Sem isso a cidade nasce com 5-15× de
+		// folga: o preço da terra não reage e a prefeitura nunca precisa de
+		// solo novo. COM/IND ficam em 1,0 (emprego modelado, outra escala).
+		land.zone_fill[ZONE_RES] = 1.0;
+		const double physical_res = urban_land::zone_capacity(land, ZONE_RES);
+		const double formal_units = std::max(0.0, stock_total - house.informal_units);
+		const double urban_population = safe_nonneg(
+			static_cast<double>(u.get("urban_population", 0.0)));
+		// Alvo por FAIXA de população urbana (a mesma que o relatório de
+		// auditoria agrupa): metrópole quase cheia, cidade média com folga
+		// moderada, pequena com folga.
+		const double target_occupancy = urban_population >= 5.0e6
+			? kDemoUrbanBandOccupancy[3]
+			: urban_population >= 1.0e6 ? kDemoUrbanBandOccupancy[2]
+			: urban_population >= 3.0e5 ? kDemoUrbanBandOccupancy[1]
+			: kDemoUrbanBandOccupancy[0];
+		if (physical_res > 0.0 && formal_units > 0.0 && target_occupancy > 0.0) {
+			land.zone_fill[ZONE_RES] = formal_units / (physical_res * target_occupancy);
+		}
 
 		// --- Prefeitura (municipal_finance.json) ---
 		CityGov& gov = parsed_gov[index];
@@ -5932,7 +5958,10 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 	Array zone_occupancy;
 	Array zone_demand;
 	for (int zone = 0; zone < ZONE_COUNT; ++zone) {
-		zone_capacity.append(urban_land::zone_capacity(land, zone));
+		// Capacidade EFETIVA (com piso no uso): é a que a ocupação usa, então
+		// `zone_usage/zone_capacity` nunca passa de 1 por inconsistência de
+		// fonte (Q-015-C).
+		zone_capacity.append(urban_land::zone_capacity_for(ws_, index, zone));
 		zone_usage.append(urban_land::zone_usage(ws_, index, zone));
 		zone_occupancy.append(urban_land::zone_occupancy(ws_, index, zone));
 		zone_demand.append(land.zone_demand[zone]);

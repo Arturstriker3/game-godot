@@ -199,7 +199,12 @@ double zone_capacity(const CityLand& land, int zone) {
 	if (per_unit_m2 <= 0.0) {
 		return 0.0;
 	}
-	return area_m2 * far / per_unit_m2;
+	// Q-015-C: o envelope (área × FAR ÷ m²) é o limite do LOTE. Na escala da
+	// cidade só uma fração dele está construída — `zone_fill` guarda essa
+	// fração (calibrada no dia 0 pela faixa de população urbana). Sem ela a
+	// cidade nasce com 5-15× de folga e o preço da terra nunca reage.
+	const double fill = std::max(0.0, land.zone_fill[zone]);
+	return area_m2 * far * fill / per_unit_m2;
 }
 
 double zone_usage(const WorldState& ws, std::size_t city_index, int zone) {
@@ -218,7 +223,12 @@ double zone_usage(const WorldState& ws, std::size_t city_index, int zone) {
 				usage += std::max(0.0, house.units[density][tier]);
 			}
 		}
-		return usage;
+		// Q-015-C (§19, objetivo 4): a unidade INFORMAL não ocupa a zona
+		// formal — ela mora em `informal_km2`, fora do envelope zoneado. O
+		// estoque carregado inclui as unidades de posse informal (subset de
+		// `units`), então elas saem do uso da zona para a ocupação medir só a
+		// moradia formal.
+		return std::max(0.0, usage - std::max(0.0, house.informal_units));
 	}
 	if (zone == ZONE_COM) {
 		// Empregos dos negócios de serviço ativos (cada negócio declara `jobs`).
@@ -277,12 +287,33 @@ double zone_occupancy(const WorldState& ws, std::size_t city_index, int zone) {
 	if (city_index >= ws.land.size() || zone < 0 || zone >= ZONE_COUNT) {
 		return 0.0;
 	}
-	const double capacity = zone_capacity(ws.land[city_index], zone);
+	const double capacity = zone_capacity_for(ws, city_index, zone);
 	const double usage = zone_usage(ws, city_index, zone);
 	if (capacity <= 0.0) {
 		return usage > 0.0 ? 1.0e9 : 0.0;
 	}
 	return usage / capacity;
+}
+
+double zone_capacity_for(const WorldState& ws, std::size_t city_index, int zone) {
+	if (city_index >= ws.land.size() || zone < 0 || zone >= ZONE_COUNT) {
+		return 0.0;
+	}
+	const double capacity = zone_capacity(ws.land[city_index], zone);
+	if (zone != ZONE_RES) {
+		// COM/IND: a capacidade é o piso que cabe no envelope. Uso acima dela
+		// é sinal legítimo de zona cheia (o gate fecha e a prefeitura expande)
+		// — não se aplica o piso do estoque.
+		return capacity;
+	}
+	// Q-015-C: a capacidade RES nunca fica abaixo do estoque JÁ existente
+	// dividido pelo teto de ocupação (0,95). Estoque acima do envelope
+	// calibrado é inconsistência de fonte (ex.: NPL-POK, área do Atlas 2014 ×
+	// população 2026), não cidade com 137% de ocupação: a capacidade efetiva
+	// tem piso em estoque ÷ teto, sem inventar área. Cidade no teto está cheia
+	// — moradia nova exige expandir/adensar (o envelope cresce).
+	const double usage = zone_usage(ws, city_index, zone);
+	return std::max(capacity, usage / kDemoUrbanOccupancyCap);
 }
 
 bool zone_has_room(const WorldState& ws, std::size_t city_index, int zone,
@@ -292,7 +323,7 @@ bool zone_has_room(const WorldState& ws, std::size_t city_index, int zone,
 		// antigo): ausência explícita, o comportamento anterior é preservado.
 		return true;
 	}
-	const double capacity = zone_capacity(ws.land[city_index], zone);
+	const double capacity = zone_capacity_for(ws, city_index, zone);
 	const double usage = zone_usage(ws, city_index, zone);
 	return usage + std::max(0.0, slots) <= capacity + 1e-9;
 }
