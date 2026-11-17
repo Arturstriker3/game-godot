@@ -387,3 +387,11 @@ Relatório: `docs/economy/city_population_audit.md`; decisão: GAME_STATE §14 D
 **Portão de comida passa a ser a MÉDIA DE 30 DIAS por nação** (em `tools/`, nada no núcleo; o hash de trajetória ignora `food_avg30*`). Nenhuma nação não isenta reprova (pior MRT −1,73 p.p.); EGY 0,906 -> 0,930.
 
 **Pendente:** **Haiphong (VNM-HAI)** e **Chongqing (CHN-CHO)** seguem com população de unidade administrativa — mesmo padrão dos quatro acima, mas sem fonte inequívoca. Relatório: `docs/economy/recal_ports_cities.md`; decisão: GAME_STATE §14 `D-074`. - @gerente-simulacao
+
+## @gerente-simulacao - 2026-11-17 (A7: comércio paralelo determinístico)
+
+`perf/a7-trade-parallel` (commit `3de3755`, saída de `fcfc107`). `trade_food` virou preparo -> **cálculo paralelo só-leitura** por comprador (planos por cidade, `pool().parallel_for`) -> **liquidação serial em ordem fixa** (o laço de hoje). Onde a liquidação decide o que o cálculo de outro comprador leria (`sellable_ge` esgotando vendedor, `sellers_left` encolhendo o anel), a liquidação repete a parada por fronteira de raio e **continua** a varredura de onde o plano parou — sem refazer o raio 0. `distance_km` calculada uma vez por entrada; ofertas já ordenadas por custo na fase paralela.
+
+**Verde:** golden A0 0 diffs (save `dcad384c…c06a`, status `46047575…b53d4`, run1=run2); threads 1/8/16 com os mesmos shas; CLI x Godot byte-idênticos; round-trip 0 diffs; bateria integration/ai/pop_demo/command_replay/convoy(cena)/port/fleet_fuel; verificador-flash **APROVADO**. **Perf** (60 d x 3): `trade` 6,25 ms -> **4,68 normalizado (−25%)** e `trade_food` 5,21 -> **3,90 (−29%)** pelo controle `arrival`/`status` (host ~1,34x mais lento que no A0; o critério de repetibilidade do harness estourou na rodada 3 por outro Godot headless no host).
+
+**Limites:** `trade_goods` segue serial (0,79 ms equivalente); caminho lento da liquidação em ~29% dos compradores (~0,4 ms/dia). Doc: `docs/economy/refactor/A7_trade_parallel.md`; decisão D-075. - @gerente-simulacao
