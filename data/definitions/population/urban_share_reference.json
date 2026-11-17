@@ -1,0 +1,19 @@
+{
+ "_source": "World Bank World Development Indicators, indicador SP.URB.TOTL.IN.ZS (população urbana, % do total), derivado do World Urbanization Prospects (UN DESA)",
+ "url": "https://api.worldbank.org/v2/country/{ISO3}/indicator/SP.URB.TOTL.IN.ZS?format=json&date=2025",
+ "retrieved": "2026-11-17",
+ "api_last_updated": "2026-11-11",
+ "note": "valor do ano mais recente publicado (2025); a validação compara com a urbanização resultante de 2026, então ~0,3 p.p. do desvio vêm só da diferença de ano",
+ "nations": {
+  "BGD": {"year": 2025, "urban_share": 0.332395847043975},
+  "BRA": {"year": 2025, "urban_share": 0.881772996487898},
+  "CHN": {"year": 2025, "urban_share": 0.663429910348272},
+  "ETH": {"year": 2025, "urban_share": 0.241096952088946},
+  "IDN": {"year": 2025, "urban_share": 0.593929063969984},
+  "IND": {"year": 2025, "urban_share": 0.35689155772396},
+  "NGA": {"year": 2025, "urban_share": 0.637754180467872},
+  "PAK": {"year": 2025, "urban_share": 0.395256010979606},
+  "RUS": {"year": 2025, "urban_share": 0.752506636608215},
+  "USA": {"year": 2025, "urban_share": 0.801921733027869}
+ }
+}
