@@ -1,0 +1,2575 @@
+{
+ "meta": {
+  "generated_by": "tools/build_energy_borders.py",
+  "plan": "docs/plans/perf_pop_financas_plano.md, PARTE E, E5",
+  "method": "4-vizinhança entre pixels de TERRA (world_sdf R>128) com províncias diferentes; km por passo de pixel com cosseno da latitude; pares abaixo de 30 km descartados",
+  "sources": {
+   "province_owner_raster": "map/map_data/atlas/world_province.png (id = R + G*256, 8192x4096)",
+   "land_mask": "map/map_data/atlas/world_sdf.png, canal R (128 + d*2, >128 = terra)",
+   "provinces": "map/map_data/atlas/provinces.json (nation/tag)"
+  },
+  "rules": {
+   "no_maritime": "fronteira marítima NÃO entra: exige os dois lados em terra",
+   "playable_only": "pares com nação fora de nations.json ficam de fora",
+   "min_border_km": 30.0
+  },
+  "license": "sem dado de terceiro além do Natural Earth (domínio público, via o pipeline do atlas); world_province/world_sdf e provinces.json são artefatos do próprio projeto",
+  "accuracy": "comprimento contado em arestas de pixel (4-vizinhança): fronteira diagonal é superestimada (CAN-USA 9.841 km vs ~8.900 oficial); a LISTA de pares é o dado, o km é aproximado (±20%)",
+  "counts": {
+   "borders": 299,
+   "nations": 152,
+   "province_pairs": 3868,
+   "excluded_non_playable": 115,
+   "excluded_below_minimum": 927
+  },
+  "usage": "E5: venda de energia só entre redes vizinhas com fronteira terrestre; recalcular quando o território muda (mesmo raster)."
+ },
+ "borders": [
+  {
+   "a": "AFG",
+   "b": "CHN",
+   "length_km": 106.9,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AFG",
+   "b": "IRN",
+   "length_km": 1032.7,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AFG",
+   "b": "PAK",
+   "length_km": 2789.0,
+   "province_pairs": 26,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AFG",
+   "b": "TJK",
+   "length_km": 1423.7,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AFG",
+   "b": "TKM",
+   "length_km": 809.0,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AFG",
+   "b": "UZB",
+   "length_km": 182.4,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AGO",
+   "b": "COD",
+   "length_km": 2643.7,
+   "province_pairs": 30,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AGO",
+   "b": "COG",
+   "length_km": 213.8,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AGO",
+   "b": "NAM",
+   "length_km": 1539.5,
+   "province_pairs": 17,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AGO",
+   "b": "ZMB",
+   "length_km": 1159.3,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ALB",
+   "b": "GRC",
+   "length_km": 234.7,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ALB",
+   "b": "MKD",
+   "length_km": 71.8,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ALB",
+   "b": "MNE",
+   "length_km": 113.3,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARE",
+   "b": "OMN",
+   "length_km": 599.0,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARE",
+   "b": "SAU",
+   "length_km": 526.0,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARG",
+   "b": "BOL",
+   "length_km": 828.0,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARG",
+   "b": "BRA",
+   "length_km": 1117.2,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARG",
+   "b": "CHL",
+   "length_km": 5840.4,
+   "province_pairs": 55,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARG",
+   "b": "PRY",
+   "length_km": 1950.7,
+   "province_pairs": 23,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARG",
+   "b": "URY",
+   "length_km": 379.5,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARM",
+   "b": "AZE",
+   "length_km": 721.0,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARM",
+   "b": "GEO",
+   "length_km": 220.2,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARM",
+   "b": "IRN",
+   "length_km": 50.2,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ARM",
+   "b": "TUR",
+   "length_km": 282.8,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "CHE",
+   "length_km": 161.3,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "CZE",
+   "length_km": 464.9,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "DEU",
+   "length_km": 806.2,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "HUN",
+   "length_km": 335.1,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "ITA",
+   "length_km": 415.8,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "SVK",
+   "length_km": 61.9,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AUT",
+   "b": "SVN",
+   "length_km": 37.1,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AZE",
+   "b": "GEO",
+   "length_km": 387.0,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AZE",
+   "b": "IRN",
+   "length_km": 645.5,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "AZE",
+   "b": "RUS",
+   "length_km": 297.4,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BDI",
+   "b": "COD",
+   "length_km": 175.0,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BDI",
+   "b": "RWA",
+   "length_km": 257.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BDI",
+   "b": "TZA",
+   "length_km": 500.6,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEL",
+   "b": "DEU",
+   "length_km": 137.0,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEL",
+   "b": "FRA",
+   "length_km": 550.8,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEL",
+   "b": "LUX",
+   "length_km": 79.6,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEL",
+   "b": "NED",
+   "length_km": 445.1,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEN",
+   "b": "BFA",
+   "length_km": 317.4,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEN",
+   "b": "NER",
+   "length_km": 238.9,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEN",
+   "b": "NGA",
+   "length_km": 887.5,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BEN",
+   "b": "TGO",
+   "length_km": 641.6,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BFA",
+   "b": "CIV",
+   "length_km": 520.0,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BFA",
+   "b": "GHA",
+   "length_km": 588.0,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BFA",
+   "b": "MLI",
+   "length_km": 1401.3,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BFA",
+   "b": "NER",
+   "length_km": 724.7,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BFA",
+   "b": "TGO",
+   "length_km": 131.2,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGD",
+   "b": "IND",
+   "length_km": 2779.1,
+   "province_pairs": 23,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGD",
+   "b": "MMR",
+   "length_km": 250.5,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGR",
+   "b": "GRC",
+   "length_km": 565.1,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGR",
+   "b": "MKD",
+   "length_km": 72.9,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGR",
+   "b": "ROU",
+   "length_km": 835.6,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGR",
+   "b": "SRB",
+   "length_km": 300.0,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BGR",
+   "b": "TUR",
+   "length_km": 267.2,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BIH",
+   "b": "HRV",
+   "length_km": 958.9,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BIH",
+   "b": "MNE",
+   "length_km": 183.5,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BIH",
+   "b": "SRB",
+   "length_km": 397.8,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLR",
+   "b": "LTU",
+   "length_km": 657.7,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLR",
+   "b": "LVA",
+   "length_km": 183.0,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLR",
+   "b": "POL",
+   "length_km": 395.7,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLR",
+   "b": "RUS",
+   "length_km": 1285.8,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLR",
+   "b": "UKR",
+   "length_km": 1181.3,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLZ",
+   "b": "GTM",
+   "length_km": 235.9,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BLZ",
+   "b": "MEX",
+   "length_km": 147.9,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BOL",
+   "b": "BRA",
+   "length_km": 3078.9,
+   "province_pairs": 31,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BOL",
+   "b": "CHL",
+   "length_km": 994.0,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BOL",
+   "b": "PER",
+   "length_km": 1174.1,
+   "province_pairs": 13,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BOL",
+   "b": "PRY",
+   "length_km": 878.3,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "COL",
+   "length_km": 1560.1,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "FRA",
+   "length_km": 617.2,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "GUY",
+   "length_km": 1302.5,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "PER",
+   "length_km": 1973.1,
+   "province_pairs": 20,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "PRY",
+   "length_km": 1247.5,
+   "province_pairs": 14,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "SUR",
+   "length_km": 417.9,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "URY",
+   "length_km": 998.2,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRA",
+   "b": "VEN",
+   "length_km": 1919.6,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BRN",
+   "b": "MYS",
+   "length_km": 500.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BTN",
+   "b": "CHN",
+   "length_km": 492.5,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BTN",
+   "b": "IND",
+   "length_km": 663.4,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BWA",
+   "b": "NAM",
+   "length_km": 1391.1,
+   "province_pairs": 17,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BWA",
+   "b": "ZAF",
+   "length_km": 1837.7,
+   "province_pairs": 20,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "BWA",
+   "b": "ZWE",
+   "length_km": 939.1,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CAF",
+   "b": "CMR",
+   "length_km": 996.3,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CAF",
+   "b": "COD",
+   "length_km": 1594.0,
+   "province_pairs": 19,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CAF",
+   "b": "COG",
+   "length_km": 510.3,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CAF",
+   "b": "SDN",
+   "length_km": 442.3,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CAF",
+   "b": "TCD",
+   "length_km": 1365.6,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CAN",
+   "b": "USA",
+   "length_km": 9840.5,
+   "province_pairs": 109,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHE",
+   "b": "DEU",
+   "length_km": 277.5,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHE",
+   "b": "FRA",
+   "length_km": 467.7,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHE",
+   "b": "ITA",
+   "length_km": 721.0,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHL",
+   "b": "PER",
+   "length_km": 190.8,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "IND",
+   "length_km": 2785.3,
+   "province_pairs": 27,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "KAZ",
+   "length_km": 1851.3,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "KGZ",
+   "length_km": 1089.8,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "LAO",
+   "length_km": 371.2,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "MMR",
+   "length_km": 1889.1,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "MNG",
+   "length_km": 5736.1,
+   "province_pairs": 62,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "NPL",
+   "length_km": 1304.6,
+   "province_pairs": 14,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "PAK",
+   "length_km": 419.4,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "PRK",
+   "length_km": 1164.2,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "RUS",
+   "length_km": 4493.0,
+   "province_pairs": 44,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "TJK",
+   "length_km": 462.5,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CHN",
+   "b": "VNM",
+   "length_km": 1250.5,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CIV",
+   "b": "GHA",
+   "length_km": 729.0,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CIV",
+   "b": "GIN",
+   "length_km": 607.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CIV",
+   "b": "LBR",
+   "length_km": 607.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CIV",
+   "b": "MLI",
+   "length_km": 529.7,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CMR",
+   "b": "COG",
+   "length_km": 471.4,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CMR",
+   "b": "GAB",
+   "length_km": 267.3,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CMR",
+   "b": "GNQ",
+   "length_km": 150.6,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CMR",
+   "b": "NGA",
+   "length_km": 1950.4,
+   "province_pairs": 19,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CMR",
+   "b": "TCD",
+   "length_km": 1255.5,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COD",
+   "b": "COG",
+   "length_km": 1720.5,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COD",
+   "b": "RWA",
+   "length_km": 199.3,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COD",
+   "b": "TZA",
+   "length_km": 588.1,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COD",
+   "b": "UGA",
+   "length_km": 748.5,
+   "province_pairs": 14,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COD",
+   "b": "ZMB",
+   "length_km": 2330.9,
+   "province_pairs": 20,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COG",
+   "b": "GAB",
+   "length_km": 1987.7,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COL",
+   "b": "ECU",
+   "length_km": 626.9,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COL",
+   "b": "PAN",
+   "length_km": 315.9,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COL",
+   "b": "PER",
+   "length_km": 1428.8,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "COL",
+   "b": "VEN",
+   "length_km": 2563.8,
+   "province_pairs": 23,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CRI",
+   "b": "NIC",
+   "length_km": 345.0,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CRI",
+   "b": "PAN",
+   "length_km": 291.6,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CZE",
+   "b": "DEU",
+   "length_km": 735.5,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CZE",
+   "b": "POL",
+   "length_km": 764.2,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "CZE",
+   "b": "SVK",
+   "length_km": 255.9,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DEU",
+   "b": "DNK",
+   "length_km": 108.2,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DEU",
+   "b": "FRA",
+   "length_km": 476.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DEU",
+   "b": "LUX",
+   "length_km": 98.6,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DEU",
+   "b": "NED",
+   "length_km": 579.1,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DEU",
+   "b": "POL",
+   "length_km": 447.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DJI",
+   "b": "ERI",
+   "length_km": 138.7,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DJI",
+   "b": "ETH",
+   "length_km": 369.2,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DJI",
+   "b": "SOL",
+   "length_km": 86.7,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DOM",
+   "b": "HTI",
+   "length_km": 242.4,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "LBY",
+   "length_km": 1111.6,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "MAR",
+   "length_km": 1810.1,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "MLI",
+   "length_km": 1598.0,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "MRT",
+   "length_km": 624.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "NER",
+   "length_km": 1247.1,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "SAH",
+   "length_km": 38.8,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "DZA",
+   "b": "TUN",
+   "length_km": 1101.3,
+   "province_pairs": 14,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ECU",
+   "b": "PER",
+   "length_km": 1564.9,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "EGY",
+   "b": "ISR",
+   "length_km": 245.7,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "EGY",
+   "b": "LBY",
+   "length_km": 965.5,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "EGY",
+   "b": "SDN",
+   "length_km": 1281.3,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ERI",
+   "b": "ETH",
+   "length_km": 1146.4,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ERI",
+   "b": "SDN",
+   "length_km": 701.7,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ESP",
+   "b": "FRA",
+   "length_km": 743.8,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ESP",
+   "b": "PRT",
+   "length_km": 1300.1,
+   "province_pairs": 13,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "EST",
+   "b": "LVA",
+   "length_km": 286.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "EST",
+   "b": "RUS",
+   "length_km": 310.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ETH",
+   "b": "KEN",
+   "length_km": 923.3,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ETH",
+   "b": "SDN",
+   "length_km": 862.5,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ETH",
+   "b": "SOL",
+   "length_km": 913.6,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ETH",
+   "b": "SOM",
+   "length_km": 1122.6,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "FIN",
+   "b": "NOR",
+   "length_km": 1200.3,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "FIN",
+   "b": "RUS",
+   "length_km": 1811.6,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "FIN",
+   "b": "SWE",
+   "length_km": 737.1,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "FRA",
+   "b": "ITA",
+   "length_km": 469.2,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "FRA",
+   "b": "LUX",
+   "length_km": 45.1,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "FRA",
+   "b": "SUR",
+   "length_km": 534.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GAB",
+   "b": "GNQ",
+   "length_km": 325.6,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GBR",
+   "b": "IRL",
+   "length_km": 432.7,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GEO",
+   "b": "RUS",
+   "length_km": 999.7,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GEO",
+   "b": "TUR",
+   "length_km": 295.3,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GHA",
+   "b": "TGO",
+   "length_km": 923.4,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GIN",
+   "b": "GNB",
+   "length_km": 435.2,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GIN",
+   "b": "LBR",
+   "length_km": 466.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GIN",
+   "b": "MLI",
+   "length_km": 954.2,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GIN",
+   "b": "SEN",
+   "length_km": 332.1,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GIN",
+   "b": "SLE",
+   "length_km": 729.0,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GMB",
+   "b": "SEN",
+   "length_km": 827.4,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GNB",
+   "b": "SEN",
+   "length_km": 338.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GRC",
+   "b": "MKD",
+   "length_km": 165.2,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GRC",
+   "b": "TUR",
+   "length_km": 204.5,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GTM",
+   "b": "HND",
+   "length_km": 257.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GTM",
+   "b": "MEX",
+   "length_km": 933.8,
+   "province_pairs": 10,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GTM",
+   "b": "SLV",
+   "length_km": 167.1,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GUY",
+   "b": "SUR",
+   "length_km": 816.5,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "GUY",
+   "b": "VEN",
+   "length_km": 792.2,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HND",
+   "b": "NIC",
+   "length_km": 836.5,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HND",
+   "b": "SLV",
+   "length_km": 320.0,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HRV",
+   "b": "HUN",
+   "length_km": 327.0,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HRV",
+   "b": "SRB",
+   "length_km": 264.1,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HRV",
+   "b": "SVN",
+   "length_km": 219.2,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HUN",
+   "b": "ROU",
+   "length_km": 427.9,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HUN",
+   "b": "SRB",
+   "length_km": 146.3,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HUN",
+   "b": "SVK",
+   "length_km": 628.0,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "HUN",
+   "b": "UKR",
+   "length_km": 113.6,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IDN",
+   "b": "MYS",
+   "length_km": 1725.2,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IDN",
+   "b": "PNG",
+   "length_km": 675.6,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IDN",
+   "b": "TLS",
+   "length_km": 233.3,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IND",
+   "b": "MMR",
+   "length_km": 1541.2,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IND",
+   "b": "NPL",
+   "length_km": 1839.6,
+   "province_pairs": 19,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IND",
+   "b": "PAK",
+   "length_km": 3245.2,
+   "province_pairs": 28,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRN",
+   "b": "IRQ",
+   "length_km": 1508.7,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRN",
+   "b": "PAK",
+   "length_km": 927.4,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRN",
+   "b": "TKM",
+   "length_km": 1145.9,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRN",
+   "b": "TUR",
+   "length_km": 508.4,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRQ",
+   "b": "JOR",
+   "length_km": 194.6,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRQ",
+   "b": "KWT",
+   "length_km": 263.7,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRQ",
+   "b": "SAU",
+   "length_km": 1045.5,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRQ",
+   "b": "SYR",
+   "length_km": 746.8,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "IRQ",
+   "b": "TUR",
+   "length_km": 380.5,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ISR",
+   "b": "JOR",
+   "length_km": 321.7,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ISR",
+   "b": "LBN",
+   "length_km": 92.2,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ISR",
+   "b": "PSX",
+   "length_km": 446.0,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ISR",
+   "b": "SYR",
+   "length_km": 49.6,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ITA",
+   "b": "SVN",
+   "length_km": 121.5,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "JOR",
+   "b": "PSX",
+   "length_km": 80.3,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "JOR",
+   "b": "SAU",
+   "length_km": 933.8,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "JOR",
+   "b": "SYR",
+   "length_km": 480.6,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KAZ",
+   "b": "KGZ",
+   "length_km": 1369.4,
+   "province_pairs": 13,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KAZ",
+   "b": "RUS",
+   "length_km": 8982.9,
+   "province_pairs": 69,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KAZ",
+   "b": "TKM",
+   "length_km": 539.8,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KAZ",
+   "b": "UZB",
+   "length_km": 2605.1,
+   "province_pairs": 27,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KEN",
+   "b": "SOM",
+   "length_km": 782.5,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KEN",
+   "b": "TZA",
+   "length_km": 942.8,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KEN",
+   "b": "UGA",
+   "length_km": 850.5,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KGZ",
+   "b": "TJK",
+   "length_km": 965.1,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KGZ",
+   "b": "UZB",
+   "length_km": 1132.9,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KHM",
+   "b": "LAO",
+   "length_km": 558.1,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KHM",
+   "b": "THA",
+   "length_km": 744.7,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KHM",
+   "b": "VNM",
+   "length_km": 1115.9,
+   "province_pairs": 13,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KOR",
+   "b": "PRK",
+   "length_km": 275.8,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "KWT",
+   "b": "SAU",
+   "length_km": 260.1,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LAO",
+   "b": "MMR",
+   "length_km": 276.3,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LAO",
+   "b": "THA",
+   "length_km": 1914.5,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LAO",
+   "b": "VNM",
+   "length_km": 2069.8,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LBN",
+   "b": "SYR",
+   "length_km": 322.1,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LBR",
+   "b": "SLE",
+   "length_km": 286.7,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LBY",
+   "b": "NER",
+   "length_km": 408.4,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LBY",
+   "b": "SDN",
+   "length_km": 335.9,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LBY",
+   "b": "TCD",
+   "length_km": 1366.2,
+   "province_pairs": 16,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LBY",
+   "b": "TUN",
+   "length_km": 561.3,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LSO",
+   "b": "ZAF",
+   "length_km": 899.0,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LTU",
+   "b": "LVA",
+   "length_km": 564.1,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LTU",
+   "b": "POL",
+   "length_km": 113.2,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LTU",
+   "b": "RUS",
+   "length_km": 289.5,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "LVA",
+   "b": "RUS",
+   "length_km": 232.1,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MAR",
+   "b": "SAH",
+   "length_km": 1587.5,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MDA",
+   "b": "ROU",
+   "length_km": 330.3,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MDA",
+   "b": "UKR",
+   "length_km": 1048.5,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MEX",
+   "b": "USA",
+   "length_km": 3217.9,
+   "province_pairs": 36,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MKD",
+   "b": "SRB",
+   "length_km": 37.8,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MLI",
+   "b": "MRT",
+   "length_km": 2273.6,
+   "province_pairs": 27,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MLI",
+   "b": "NER",
+   "length_km": 914.4,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MLI",
+   "b": "SEN",
+   "length_km": 422.5,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MMR",
+   "b": "THA",
+   "length_km": 2133.6,
+   "province_pairs": 20,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MNE",
+   "b": "SRB",
+   "length_km": 186.7,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MNG",
+   "b": "RUS",
+   "length_km": 4129.9,
+   "province_pairs": 43,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MOZ",
+   "b": "MWI",
+   "length_km": 1605.9,
+   "province_pairs": 19,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MOZ",
+   "b": "SWZ",
+   "length_km": 110.4,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MOZ",
+   "b": "TZA",
+   "length_km": 881.5,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MOZ",
+   "b": "ZAF",
+   "length_km": 539.5,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MOZ",
+   "b": "ZMB",
+   "length_km": 503.5,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MOZ",
+   "b": "ZWE",
+   "length_km": 1429.4,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MRT",
+   "b": "SAH",
+   "length_km": 1535.5,
+   "province_pairs": 17,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MRT",
+   "b": "SEN",
+   "length_km": 836.3,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MWI",
+   "b": "TZA",
+   "length_km": 523.6,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MWI",
+   "b": "ZMB",
+   "length_km": 925.3,
+   "province_pairs": 8,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "MYS",
+   "b": "THA",
+   "length_km": 534.6,
+   "province_pairs": 7,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NAM",
+   "b": "ZAF",
+   "length_km": 973.5,
+   "province_pairs": 13,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NAM",
+   "b": "ZMB",
+   "length_km": 265.0,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NER",
+   "b": "NGA",
+   "length_km": 1701.3,
+   "province_pairs": 20,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NER",
+   "b": "TCD",
+   "length_km": 1306.2,
+   "province_pairs": 15,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NGA",
+   "b": "TCD",
+   "length_km": 99.8,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NOR",
+   "b": "RUS",
+   "length_km": 290.1,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "NOR",
+   "b": "SWE",
+   "length_km": 2234.4,
+   "province_pairs": 17,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "OMN",
+   "b": "SAU",
+   "length_km": 780.8,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "OMN",
+   "b": "YEM",
+   "length_km": 355.2,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "POL",
+   "b": "RUS",
+   "length_km": 336.6,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "POL",
+   "b": "SVK",
+   "length_km": 566.6,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "POL",
+   "b": "UKR",
+   "length_km": 495.6,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "PRK",
+   "b": "RUS",
+   "length_km": 33.5,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "QAT",
+   "b": "SAU",
+   "length_km": 65.3,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ROU",
+   "b": "SRB",
+   "length_km": 586.5,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ROU",
+   "b": "UKR",
+   "length_km": 743.3,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "RUS",
+   "b": "UKR",
+   "length_km": 2083.0,
+   "province_pairs": 18,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "RWA",
+   "b": "TZA",
+   "length_km": 262.4,
+   "province_pairs": 2,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "RWA",
+   "b": "UGA",
+   "length_km": 145.8,
+   "province_pairs": 3,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "SAU",
+   "b": "YEM",
+   "length_km": 1445.8,
+   "province_pairs": 17,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "SDN",
+   "b": "TCD",
+   "length_km": 1404.6,
+   "province_pairs": 13,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "SOL",
+   "b": "SOM",
+   "length_km": 456.9,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "SVK",
+   "b": "UKR",
+   "length_km": 63.2,
+   "province_pairs": 1,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "SWZ",
+   "b": "ZAF",
+   "length_km": 556.0,
+   "province_pairs": 9,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "SYR",
+   "b": "TUR",
+   "length_km": 992.1,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "TJK",
+   "b": "UZB",
+   "length_km": 1323.4,
+   "province_pairs": 11,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "TKM",
+   "b": "UZB",
+   "length_km": 1992.1,
+   "province_pairs": 17,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "TZA",
+   "b": "UGA",
+   "length_km": 364.4,
+   "province_pairs": 6,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "TZA",
+   "b": "ZMB",
+   "length_km": 354.8,
+   "province_pairs": 5,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ZAF",
+   "b": "ZWE",
+   "length_km": 251.2,
+   "province_pairs": 4,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  },
+  {
+   "a": "ZMB",
+   "b": "ZWE",
+   "length_km": 871.8,
+   "province_pairs": 12,
+   "method": "atlas_province_owner_raster",
+   "confidence": "medium"
+  }
+ ],
+ "neighbors": {
+  "AFG": 6,
+  "AGO": 4,
+  "ALB": 3,
+  "ARE": 2,
+  "ARG": 5,
+  "ARM": 4,
+  "AUT": 7,
+  "AZE": 4,
+  "BDI": 3,
+  "BEL": 4,
+  "BEN": 4,
+  "BFA": 6,
+  "BGD": 2,
+  "BGR": 5,
+  "BIH": 3,
+  "BLR": 5,
+  "BLZ": 2,
+  "BOL": 5,
+  "BRA": 10,
+  "BRN": 1,
+  "BTN": 2,
+  "BWA": 3,
+  "CAF": 5,
+  "CAN": 1,
+  "CHE": 4,
+  "CHL": 3,
+  "CHN": 14,
+  "CIV": 5,
+  "CMR": 6,
+  "COD": 8,
+  "COG": 5,
+  "COL": 5,
+  "CRI": 2,
+  "CZE": 4,
+  "DEU": 9,
+  "DJI": 3,
+  "DNK": 1,
+  "DOM": 1,
+  "DZA": 7,
+  "ECU": 2,
+  "EGY": 3,
+  "ERI": 3,
+  "ESP": 2,
+  "EST": 2,
+  "ETH": 6,
+  "FIN": 3,
+  "FRA": 8,
+  "GAB": 3,
+  "GBR": 1,
+  "GEO": 4,
+  "GHA": 3,
+  "GIN": 6,
+  "GMB": 1,
+  "GNB": 2,
+  "GNQ": 2,
+  "GRC": 4,
+  "GTM": 4,
+  "GUY": 3,
+  "HND": 3,
+  "HRV": 4,
+  "HTI": 1,
+  "HUN": 6,
+  "IDN": 3,
+  "IND": 6,
+  "IRL": 1,
+  "IRN": 7,
+  "IRQ": 6,
+  "ISR": 5,
+  "ITA": 4,
+  "JOR": 5,
+  "KAZ": 5,
+  "KEN": 4,
+  "KGZ": 4,
+  "KHM": 3,
+  "KOR": 1,
+  "KWT": 2,
+  "LAO": 5,
+  "LBN": 2,
+  "LBR": 3,
+  "LBY": 6,
+  "LSO": 1,
+  "LTU": 4,
+  "LUX": 3,
+  "LVA": 4,
+  "MAR": 2,
+  "MDA": 2,
+  "MEX": 3,
+  "MKD": 4,
+  "MLI": 7,
+  "MMR": 5,
+  "MNE": 3,
+  "MNG": 2,
+  "MOZ": 6,
+  "MRT": 4,
+  "MWI": 3,
+  "MYS": 3,
+  "NAM": 4,
+  "NED": 2,
+  "NER": 7,
+  "NGA": 4,
+  "NIC": 2,
+  "NOR": 3,
+  "NPL": 2,
+  "OMN": 3,
+  "PAK": 4,
+  "PAN": 2,
+  "PER": 5,
+  "PNG": 1,
+  "POL": 7,
+  "PRK": 3,
+  "PRT": 1,
+  "PRY": 3,
+  "PSX": 2,
+  "QAT": 1,
+  "ROU": 5,
+  "RUS": 14,
+  "RWA": 4,
+  "SAH": 3,
+  "SAU": 7,
+  "SDN": 6,
+  "SEN": 5,
+  "SLE": 2,
+  "SLV": 2,
+  "SOL": 3,
+  "SOM": 3,
+  "SRB": 7,
+  "SUR": 3,
+  "SVK": 5,
+  "SVN": 3,
+  "SWE": 2,
+  "SWZ": 2,
+  "SYR": 5,
+  "TCD": 6,
+  "TGO": 3,
+  "THA": 4,
+  "TJK": 4,
+  "TKM": 4,
+  "TLS": 1,
+  "TUN": 2,
+  "TUR": 7,
+  "TZA": 8,
+  "UGA": 4,
+  "UKR": 7,
+  "URY": 2,
+  "USA": 2,
+  "UZB": 5,
+  "VEN": 3,
+  "VNM": 3,
+  "YEM": 2,
+  "ZAF": 6,
+  "ZMB": 7,
+  "ZWE": 4
+ }
+}
