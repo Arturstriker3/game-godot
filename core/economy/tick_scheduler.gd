@@ -5,8 +5,9 @@ extends RefCounted
 ##
 ## Por que assim: o tick C++ de um mundo grande custa dezenas de milissegundos
 ## e não cabe no frame da virada. O trabalho roda numa thread do pool e a main
-## thread só *consulta* (poll) até o dia terminar; o resumo é publicado de uma
-## vez, então a UI sempre lê o último status COMPLETO (double-buffer natural).
+## thread só *consulta* (poll) até o dia terminar; depois do join ela monta o
+## resumo leve do dia (A4) e a UI busca o resto por consulta sob demanda.
+## (Antes, um Dictionary do mundo inteiro era publicado todo dia em buffer duplo.)
 ##
 ## Regras de segurança:
 ## - um único tick por vez (`start()` recusa se já existe um em andamento);
@@ -16,7 +17,7 @@ extends RefCounted
 ## - NENHUM Variant/Dictionary do Godot é criado, escrito ou destruído pela
 ##   thread: ela só chama `tick_and_publish()`, que roda inteiro em C++ e
 ##   deixa o status publicado no double buffer do núcleo. O `poll()` da main
-##   thread recebe o slot já pronto em O(1) (`get_status()`).
+##   thread recebe o resumo leve do dia em O(1) (`get_day_summary()`).
 ## - `wait()`/`cancel()` só retornam com a tarefa CONCLUÍDA: nenhum chamador
 ##   solta o `sim` com o dia em andamento (era a causa do 0xC0000005 no
 ##   encerramento: a thread seguia viva quando o sim/cena eram liberados).
@@ -81,13 +82,15 @@ func cancel() -> void:
 	_join()
 
 
-## Junta a tarefa e devolve o status publicado. SÓ roda na main thread, e só
-## depois do join — o núcleo já montou o slot do dia na thread.
+## Junta a tarefa e devolve o resumo leve do dia (A4). SÓ roda na main thread, e
+## só depois do join: o dicionário é construído aqui, fora da worker, sem cruzar
+## Variant entre threads. O status completo (mundo inteiro) não é mais montado
+## no tick — é consulta sob demanda de tools/testes/goldens.
 func _collect() -> Dictionary:
 	var sim := _join()
 	if sim == null:
 		return {}
-	return sim.get_status()
+	return sim.get_day_summary()
 
 
 ## `wait_for_task_completion` libera o ID no pool: consultar `is_task_completed`

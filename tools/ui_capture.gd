@@ -507,7 +507,7 @@ func _search_economy(text: String) -> void:
 
 
 func _first_city_id() -> String:
-	var cities: Array = Economy.last_summary.get("cities", [])
+	var cities: Array = Economy.ui_snapshot().get("cities", [])
 	return cities[0]["id"] if not cities.is_empty() else ""
 
 
@@ -643,24 +643,23 @@ func _market_sector(sector: String) -> void:
 ## só espera o núcleo publicar o primeiro dia com pedidos.
 func _ensure_trade_orders() -> void:
 	var economy := get_node_or_null("/root/Economy")
-	if economy == null:
+	if economy == null or Economy.sim == null:
 		return
-	var summary: Dictionary = economy.get("last_summary")
-	if not (summary.get("trade_orders", []) as Array).is_empty():
+	if not Economy.sim.get_trade_orders().is_empty():
 		return
 	var previous := int(economy.get("speed"))
 	economy.set_speed(0)
 	for _day in 3:
 		economy.call("_run_day")
-		summary = economy.get("last_summary")
-		if not (summary.get("trade_orders", []) as Array).is_empty():
+		if not Economy.sim.get_trade_orders().is_empty():
 			break
 	economy.set_speed(previous)
 
 
 func _first_order() -> Dictionary:
-	var orders: Array = Economy.last_summary.get("trade_orders", [])
-	for order in orders:
+	if Economy.sim == null:
+		return {}
+	for order in Economy.sim.get_trade_orders():
 		if not String((order as Dictionary).get("to_city", "")).is_empty():
 			return order
 	return {}
@@ -668,8 +667,9 @@ func _first_order() -> Dictionary:
 
 ## Cidade de destino do primeiro pedido publicado do bem (captura com oferta real).
 func _first_order_city(good: String) -> String:
-	var orders: Array = Economy.last_summary.get("trade_orders", [])
-	for order in orders:
+	if Economy.sim == null:
+		return ""
+	for order in Economy.sim.get_trade_orders():
 		if String(order.get("good", "")) == good:
 			return String(order.get("to_city", ""))
 	return ""
@@ -714,11 +714,12 @@ func _open_city_culture(city_id: String) -> void:
 		panel.call("set_tab", "population")
 
 
-## Cidade com mistura real (censo): preferência por Londres, se estiver no resumo.
+## Cidade com mistura real (censo): preferência por Londres, se estiver no mundo.
 func _culture_city_id() -> String:
-	for city in Economy.last_summary.get("cities", []):
-		if String(city.get("id", "")) == "GBR-LDN":
-			return "GBR-LDN"
+	var ids: PackedStringArray = Economy.city_columns().get("id",
+			PackedStringArray())
+	if "GBR-LDN" in ids:
+		return "GBR-LDN"
 	return _first_city_id()
 
 

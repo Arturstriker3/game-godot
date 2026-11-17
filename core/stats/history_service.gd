@@ -43,12 +43,19 @@ func clear() -> void:
 
 ## Registra o dia. `month_key` vem do calendário do jogo ("2026-01") e define o
 ## balde mensal; o mesmo dia duas vezes não duplica a amostra.
-func sample(day: int, summary: Dictionary, month_key: String) -> void:
+##
+## A4: `source` são as COLUNAS por cidade (`Economy.city_columns()`), lidas
+## direto do estado do núcleo. Um resumo antigo com `cities` (fixtures/testes)
+## continua aceito e produz os mesmos agregados.
+func sample(day: int, source: Dictionary, month_key: String) -> void:
 	if day == _last_day:
 		return
 	_last_day = day
-	var nations := _nation_values(summary)
-	var cities := _city_values(summary)
+	var columns := source.has("id")
+	var nations := _nation_values_columns(source) if columns \
+			else _nation_values(source)
+	var cities := _city_values_columns(source) if columns \
+			else _city_values(source)
 	_push_daily(day, nations, cities)
 	if not month_key.is_empty():
 		_push_monthly(month_key, nations, cities)
@@ -172,6 +179,77 @@ func _city_values(summary: Dictionary) -> Dictionary:
 			"population": float(city.get("population", 0.0)),
 			"food": stock / need if need > 0.0 else NAN,
 			"income": float(city.get("income", 0.0)),
+		}
+	return values
+
+
+## A4: agregado nacional a partir das colunas por cidade (mesma soma, mesma
+## ordem das cidades do laço antigo sobre `cities[]`).
+func _nation_values_columns(columns: Dictionary) -> Dictionary:
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	var population: PackedFloat64Array = columns.get("population",
+			PackedFloat64Array())
+	var gdp: PackedFloat64Array = columns.get("gdp", PackedFloat64Array())
+	var production: PackedFloat64Array = columns.get("production",
+			PackedFloat64Array())
+	var need: PackedFloat64Array = columns.get("need", PackedFloat64Array())
+	var reserves: PackedFloat64Array = columns.get("deposit_remaining_kt",
+			PackedFloat64Array())
+	var totals := {}
+	for index in ids.size():
+		var tag := nations[index] if index < nations.size() else ""
+		if tag.is_empty():
+			continue
+		var entry: Dictionary = totals.get(tag, {
+			"population": 0.0, "gdp": 0.0, "production": 0.0, "need": 0.0,
+			"reserves": 0.0,
+		})
+		entry["population"] = float(entry["population"]) \
+				+ (population[index] if index < population.size() else 0.0)
+		entry["gdp"] = float(entry["gdp"]) \
+				+ (gdp[index] if index < gdp.size() else 0.0)
+		entry["production"] = float(entry["production"]) \
+				+ (production[index] if index < production.size() else 0.0)
+		entry["need"] = float(entry["need"]) \
+				+ (need[index] if index < need.size() else 0.0)
+		entry["reserves"] = float(entry["reserves"]) \
+				+ (reserves[index] if index < reserves.size() else 0.0)
+		totals[tag] = entry
+
+	var values := {}
+	for tag in totals:
+		var entry: Dictionary = totals[tag]
+		var tag_need := float(entry["need"])
+		values[tag] = {
+			"population": float(entry["population"]),
+			"gdp": float(entry["gdp"]),
+			"food": float(entry["production"]) / tag_need if tag_need > 0.0 else NAN,
+			"reserves": float(entry["reserves"]),
+		}
+	return values
+
+
+## A4: valores por cidade a partir das colunas (id/population/stockpile/need/income).
+func _city_values_columns(columns: Dictionary) -> Dictionary:
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var population: PackedFloat64Array = columns.get("population",
+			PackedFloat64Array())
+	var stockpile: PackedFloat64Array = columns.get("stockpile",
+			PackedFloat64Array())
+	var need: PackedFloat64Array = columns.get("need", PackedFloat64Array())
+	var income: PackedFloat64Array = columns.get("income", PackedFloat64Array())
+	var values := {}
+	for index in ids.size():
+		var id := ids[index]
+		if id.is_empty():
+			continue
+		var city_need := need[index] if index < need.size() else 0.0
+		var stock := stockpile[index] if index < stockpile.size() else 0.0
+		values[id] = {
+			"population": population[index] if index < population.size() else 0.0,
+			"food": stock / city_need if city_need > 0.0 else NAN,
+			"income": income[index] if index < income.size() else 0.0,
 		}
 	return values
 

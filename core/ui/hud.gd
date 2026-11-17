@@ -456,7 +456,9 @@ func _build_root() -> void:
 func _initial_summary() -> Dictionary:
 	if not Economy.last_summary.is_empty():
 		return Economy.last_summary
-	return Economy.sim.get_status()
+	if Economy.sim != null:
+		return Economy.sim.get_day_summary()
+	return {}
 
 
 ## Configura o minimapa (título localizado + abas de tipo de mapa) e aplica o
@@ -1700,25 +1702,36 @@ func _build_city_list() -> void:
 func _refresh_city_list() -> void:
 	if _city_list == null:
 		return
-	var cities: Array = []
-	for city in _summary.get("cities", []):
-		if String(city.get("nation", "")) == PLAYER_NATION:
-			cities.append(city)
-	cities.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return float(a.get("population", 0.0)) > float(b.get("population", 0.0)))
+	# A4: colunas por cidade (Packed arrays), sem Dictionary por cidade.
+	var columns := Economy.city_columns()
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var names: PackedStringArray = columns.get("name", PackedStringArray())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	var population: PackedFloat64Array = columns.get("population",
+			PackedFloat64Array())
+	var deficit: PackedFloat64Array = columns.get("deficit", PackedFloat64Array())
+	var picked: Array = []
+	for index in ids.size():
+		if nations[index] != PLAYER_NATION:
+			continue
+		picked.append({
+			"id": ids[index],
+			"name": I18n.city_name(ids[index], names[index]),
+			"population": _compact_population(population[index]),
+			"alert": deficit[index] > 0.0,
+			"population_raw": population[index],
+		})
+	picked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("population_raw", 0.0)) \
+				> float(b.get("population_raw", 0.0)))
 
 	var rows: Array = []
-	for city in cities:
-		rows.append({
-			"id": String(city.get("id", "")),
-			"name": I18n.city_name(String(city.get("id", "")),
-					String(city.get("name", ""))),
-			"population": _compact_population(float(city.get("population", 0.0))),
-			"alert": float(city.get("deficit", 0.0)) > 0.0,
-		})
+	for city in picked:
+		city.erase("population_raw")
+		rows.append(city)
 	_city_list.set_rows(I18n.t("hud.city_list.title", {
 		"nation": I18n.nation_name(PLAYER_NATION),
-		"n": UiKit.number(cities.size()),
+		"n": UiKit.number(rows.size()),
 	}), rows)
 
 
@@ -2042,16 +2055,12 @@ func _update_top_bar() -> void:
 		_day_label.text = I18n.t("hud.paused")
 	_day_label.add_theme_color_override("font_color",
 			UiKit.WARNING if paused else UiKit.BARRA_ROTULO)
-	var cities: Array = _summary.get("cities", [])
-	var population := 0.0
-	var stock := 0.0
-	var deficit := 0.0
-	var transit := 0.0
-	for city in cities:
-		population += float(city["population"])
-		stock += float(city["stockpile"])
-		deficit += float(city["deficit"])
-		transit += float(city["in_transit"])
+	# A4: totais do mundo vêm do resumo leve do dia (soma feita no núcleo, na
+	# ordem das cidades), sem varrer as cidades na UI.
+	var population := float(_summary.get("population", 0.0))
+	var stock := float(_summary.get("stockpile", 0.0))
+	var deficit := float(_summary.get("deficit", 0.0))
+	var transit := float(_summary.get("in_transit", 0.0))
 
 	_set_metric("population", UiKit.number(population / 1_000_000.0, 1) + " M")
 	_set_metric("stock", UiKit.number(stock) + " t")
@@ -2705,11 +2714,11 @@ func _show_top() -> void:
 
 	if kind == "screen":
 		_screens[id].visible = true
-		_screens[id].refresh(_summary)
+		_screens[id].refresh(_ui_snapshot())
 	else:
 		var city := _find_city(id)
 		_city_screen.visible = true
-		_city_screen.open_city(id, _summary)
+		_city_screen.open_city(id, _city_summary())
 		if not entry.has("tab") or String(entry["tab"]).is_empty():
 			entry["tab"] = _city_screen.current_tab()
 		_city_screen.set_tab(String(entry["tab"]))
@@ -2771,7 +2780,9 @@ func current_context() -> Array:
 
 
 func _alerts() -> Array:
-	return ALERTS_MODEL.derive(_summary)
+	# A4: os alertas leem as colunas por cidade (id/need/stockpile/deficit/
+	# production), sem varrer linhas de Dictionary.
+	return ALERTS_MODEL.derive(Economy.city_columns())
 
 
 func _close_screen() -> void:
@@ -2825,17 +2836,20 @@ func _on_politics_economy() -> void:
 ## "Ver no mapa" fecha o dossiê e centra a câmera na primeira cidade da nação.
 func _on_politics_map(tag: String) -> void:
 	_close_screen()
-	for city in _summary.get("cities", []):
-		if String(city.get("nation", "")) == tag:
-			city_focused.emit(String(city.get("id", "")))
+	var columns := Economy.city_columns()
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	for index in ids.size():
+		if nations[index] == tag:
+			city_focused.emit(ids[index])
 			return
 
 
 func _find_city(city_id: String) -> Dictionary:
-	for city in _summary.get("cities", []):
-		if city["id"] == city_id:
-			return city
-	return {}
+	# A4: ficha leve de UMA cidade, direto do estado (sem montar o mundo).
+	if Economy.sim == null or city_id.is_empty():
+		return {}
+	return Economy.sim.get_city_info(city_id)
 
 
 # --- Menu (Esc) ---------------------------------------------------------------
@@ -3083,29 +3097,53 @@ func _on_sheet_choice(id: String) -> void:
 # --- Eventos ------------------------------------------------------------------
 
 ## Guarda os pedidos de cada dia para a janela de Comércio não ficar vazia.
+## A4: os pedidos vêm da consulta sob demanda do núcleo (o resumo do dia não
+## carrega mais o Array inteiro).
 func _log_orders(summary: Dictionary) -> void:
 	var day := int(summary.get("day", 0))
 	if day > _last_logged_day:
-		for order in summary.get("trade_orders", []):
+		var orders: Array = []
+		if Economy.sim != null:
+			orders = Economy.sim.get_trade_orders()
+		for order in orders:
 			var entry: Dictionary = order.duplicate()
 			entry["day"] = day
 			_order_log.push_front(entry)
 		_last_logged_day = day
 		while _order_log.size() > MAX_ORDER_LOG:
 			_order_log.pop_back()
-	summary["trade_log"] = _order_log
 
 
-## Amostra o dia publicado no histórico de 12 meses. O balde mensal vem do
-## calendário do jogo; a amostragem roda uma vez por dia, sem varrer entidades
-## por frame (o status já chega agregado por cidade).
+## Amostra o dia no histórico de 12 meses, direto das colunas por cidade (A4).
+## O balde mensal vem do calendário do jogo; roda uma vez por dia, sem varrer
+## entidades por frame.
 func _sample_history(summary: Dictionary) -> void:
 	if _history == null:
 		return
 	var date: Dictionary = Economy.game_date()
 	var month_key := "%04d-%02d" % [int(date.get("year", 0)),
 			int(date.get("month", 1))]
-	_history.sample(int(summary.get("day", 0)), summary, month_key)
+	_history.sample(int(summary.get("day", 0)), Economy.city_columns(), month_key)
+
+
+## Retrato das telas de dados, montado sob demanda (A4) e anotado com o log de
+## pedidos de 7 dias que a própria HUD mantém. Uma vez por dia, só com tela aberta.
+func _ui_snapshot() -> Dictionary:
+	var snapshot := Economy.ui_snapshot()
+	if snapshot.is_empty():
+		return {}
+	if not _order_log.is_empty():
+		snapshot["trade_log"] = _order_log
+	return snapshot
+
+
+## Retrato da ficha de cidade: resumo leve + o log de pedidos de 7 dias da HUD
+## (a ficha lê a própria cidade e os pedidos por consulta — A4).
+func _city_summary() -> Dictionary:
+	var summary := _summary.duplicate()
+	if not _order_log.is_empty():
+		summary["trade_log"] = _order_log
+	return summary
 
 
 ## Serviço de histórico (T3/T5 e testes).
@@ -3123,12 +3161,17 @@ func _on_status(summary: Dictionary) -> void:
 	_update_top_bar()
 	_refresh_city_list()
 
-	if _window_layer_visible() and not _stack.is_empty():
+	# A4: o retrato pesado das telas só é montado quando alguma está ABERTA.
+	# Tela oculta não paga — o caminho diário do HUD é só colunas + resumo.
+	var window_open := _window_layer_visible() and not _stack.is_empty()
+	if window_open:
 		var entry: Dictionary = _stack.back()
 		if String(entry["kind"]) == "screen":
-			_screens[String(entry["id"])].refresh(_summary)
+			_screens[String(entry["id"])].refresh(_ui_snapshot())
 	elif _city_layer_visible():
-		_city_screen.refresh(summary)
+		# A ficha consulta a própria cidade e os pedidos sob demanda (A4);
+		# o resumo leve + o log de 7 dias da HUD bastam para o dia.
+		_city_screen.refresh(_city_summary())
 
 
 func _on_locale_changed(_locale: String) -> void:

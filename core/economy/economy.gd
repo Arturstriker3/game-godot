@@ -28,7 +28,8 @@ extends Node
 ## Emitido a cada tick com os pedidos de comércio do dia.
 signal trade_orders_ready(orders: Array)
 
-## Emitido a cada tick com o resumo completo (cidades, nações e pedidos).
+## Emitido a cada tick com o resumo leve do dia (totais/contadores/violações).
+## A4: cidades, nações e pedidos não vêm mais aqui — são consultados sob demanda.
 signal status_updated(summary: Dictionary)
 
 ## Emitido quando a velocidade muda (botão ou atalho espaço). Índice 0 = pausa.
@@ -86,6 +87,12 @@ var sim: RefCounted
 var last_summary: Dictionary = {}
 var speed: int = 1
 var _nations: Dictionary = {}  # tag -> {id, name, flag}
+
+## A4: retrato das telas de dados, montado sob demanda uma vez por dia
+## (Economy.ui_snapshot()). Vazio enquanto nenhuma tela precisou dele.
+var _ui_snapshot: Dictionary = {}
+var _ui_snapshot_day: int = -1
+var _ui_snapshot_version: int = -1
 
 ## Velocidade para a qual voltar ao sair da pausa (espaço).
 var _resume_speed: int = 1
@@ -162,10 +169,8 @@ func _ready() -> void:
 	# {place} dos padroes. Sem cultura mapeada, o fallback (setor + nacao)
 	# mantem o nome unico.
 	GroupNamerScript.name_groups(sim, _capital_names())
-	# Pré-aquece o cache do status (os dois slots): o primeiro dia publicado em
-	# um slot frio pagaria a criação de ~20 mil dicionários (medido: 60 ms contra
-	# 17 ms num dia quente, com 858 cidades). Aqui é custo de carga, não de tick.
-	sim.warm_status()
+	# A4: nada de pré-aquecer o status — o tick não monta mais o mundo inteiro.
+	# A primeira consulta pesada (tela de dados aberta) paga a própria alocação.
 
 	# Bench (ferramenta de teste): velocidade forçada, antes do primeiro dia.
 	# `bench_speed = 0` pausa o relógio normal — é escolha de quem roda o bench.
@@ -349,8 +354,10 @@ func _poll_tick() -> void:
 
 
 ## Publica um dia concluído: sinais para HUD/comboios. A IA já rodou dentro do
-## `tick_day()` do núcleo ANTES do status único (A5/D-076), então o resumo
-## publicado já traz as decisões da IA do dia.
+## `tick_and_publish()` do núcleo ANTES de fechar o dia (A5/D-076). A4: o sinal
+## carrega só o RESUMO LEVE do dia (totais, contadores, violações); cidades,
+## nações, portos e pedidos chegam por consulta sob demanda (`ui_snapshot`,
+## `city_columns`, `get_trade_orders`), nunca montando o mundo inteiro no tick.
 func _publish(summary: Dictionary) -> void:
 	if summary.is_empty():
 		return
@@ -370,8 +377,49 @@ func _publish(summary: Dictionary) -> void:
 			_bench_report(day)
 			return
 	last_summary = summary
+	_ui_snapshot_day = -1  # o retrato da UI é do dia; invalida sem alocar
+	_ui_snapshot_version = -1
 	status_updated.emit(last_summary)
-	trade_orders_ready.emit(last_summary.get("trade_orders", []))
+	trade_orders_ready.emit(
+			sim.get_trade_orders() if sim != null else [])
+
+
+## Retrato sob demanda das telas de dados (A4). Monta `cities`/`nations`/
+## `ports`/`currencies`/`tariffs`/`light`/`trade_orders` a partir das consultas
+## do núcleo, uma vez por dia. Só é chamado quando alguma tela/​ficha está
+## aberta — tela oculta não paga. Nunca é montado no tick.
+func ui_snapshot() -> Dictionary:
+	if sim == null or last_summary.is_empty():
+		return {}
+	var day := int(last_summary.get("day", 0))
+	# `get_data_version()` sobe a cada dia E a cada mutação (tarifa, obra,
+	# choque): um comando do jogador no mesmo dia não deixa a tela com o
+	# retrato velho.
+	var version := int(sim.get_data_version())
+	if day == _ui_snapshot_day and version == _ui_snapshot_version \
+			and not _ui_snapshot.is_empty():
+		return _ui_snapshot
+	var snapshot := last_summary.duplicate()
+	snapshot["cities"] = sim.get_city_rows()
+	snapshot["nations"] = sim.get_nation_rows()
+	snapshot["ports"] = sim.get_ports()
+	snapshot["currencies"] = sim.get_currency_rows()
+	snapshot["tariffs"] = sim.get_tariffs()
+	snapshot["service_sectors"] = sim.get_service_sectors()
+	snapshot["light"] = sim.get_light_columns()
+	snapshot["trade_orders"] = sim.get_trade_orders()
+	_ui_snapshot = snapshot
+	_ui_snapshot_day = day
+	_ui_snapshot_version = version
+	return _ui_snapshot
+
+
+## Colunas por cidade (A4): Packed arrays por campo, lidas direto do estado.
+## É o caminho barato do HUD/mapa/histórico — não constrói Dictionary por cidade.
+func city_columns() -> Dictionary:
+	if sim == null:
+		return {}
+	return sim.get_city_columns()
 
 
 ## Fecha o bench: uma linha no log, join da thread e saída com código 0.
@@ -410,6 +458,8 @@ func _shutdown() -> void:
 		_ticker.cancel()
 	sim = null
 	last_summary = {}
+	_ui_snapshot = {}
+	_ui_snapshot_day = -1
 
 
 func _exit_tree() -> void:

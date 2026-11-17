@@ -69,13 +69,13 @@ public:
 	void tick_core();
 
 	/**
-	 * Roda o dia E monta/publica o status, sem devolver nada.
+	 * Roda o dia (tick + IA). A4: NÃO monta/publica o Dictionary do mundo; no
+	 * fecho semanal captura o retrato de trabalho das nações (S17) e pronto.
+	 * O jogo chama `get_day_summary()` na main thread depois do join; o status
+	 * completo é consultado sob demanda (tools/testes/goldens).
 	 *
-	 * É o que a thread do WorkerThreadPool chama (ver tick_scheduler.gd): o
-	 * trabalho pesado e a montagem do status ficam fora da main thread e
-	 * NENHUM Variant cruza a fronteira da thread (nem o retorno). Depois do
-	 * join, a main thread chama get_status(), que devolve o slot já
-	 * publicado em O(1).
+	 * É o que a thread do WorkerThreadPool chama (ver tick_scheduler.gd): nenhum
+	 * Variant cruza a fronteira da thread (nem o retorno).
 	 */
 	void tick_and_publish();
 
@@ -138,18 +138,20 @@ public:
 
 	/** Microssegundos por fase do último tick (vazio quando desligado). */
 	Dictionary get_profile() const;
-	// Pré-aquece os dois slots do status: sem isso o primeiro dia que publica
-	// num slot frio paga a criação de todos os dicionários das cidades.
+	// Pré-aquece os DOIS slots do status (só tools/testes: o jogo não monta o
+	// status no tick desde a A4). O primeiro dia publicado em um slot frio paga
+	// a criação de TODOS os dicionários por cidade (medido no cenário real:
+	// 60 ms contra 17 ms num dia quente). Aqui isso vira custo de carga.
 	void warm_status();
 
 	/**
-	 * Estado do cenário de validação (cidades, POPs, mercados, PIB).
+	 * Estado do mundo inteiro (cidades, nações, portos, pedidos).
 	 *
-	 * O dicionário é REAPROVEITADO entre ticks (ver StatusCache): cada
-	 * chamada reescreve os valores nos mesmos contêineres, sem alocar 650 × 21
-	 * dicionários por dia. Contrato: o resultado é uma fotografia viva, válida
-	 * até a próxima chamada; quem precisa reter o valor entre dias deve copiar
-	 * (`duplicate(true)` no GDScript).
+	 * A4: consulta SOB DEMANDA — tools/testes/goldens. O tick não a monta mais.
+	 * O dicionário é REAPROVEITADO entre chamadas (ver StatusCache): cada
+	 * chamada reescreve os valores nos mesmos contêineres. Contrato: o
+	 * resultado é uma fotografia viva, válida até a próxima chamada; quem
+	 * precisa reter o valor entre dias deve copiar (`duplicate(true)`).
 	 */
 	Dictionary get_status();
 
@@ -165,6 +167,80 @@ public:
 	 * cidade, nunca no laço de todas as cidades.
 	 */
 	Dictionary get_city_status(const String& city_id);
+
+	// ------------------------------------------------------------------
+	// A4 - consultas sob demanda (docs/economy/refactor/A4_status_query.md).
+	//
+	// O tick não monta mais o Dictionary do mundo inteiro: ele publica um
+	// resumo leve (`get_day_summary`) e o resto chega por consulta, lida
+	// direto do `WorldState` no fecho do dia. `get_status()` continua
+	// existindo, mas só para tools/testes/goldens. Nenhuma consulta muda a
+	// simulação nem o save.
+	// ------------------------------------------------------------------
+
+	/**
+	 * Resumo leve do dia (sem cidades/nações/mercados):
+	 * day, calendar_day, money_total, caixas, contadores, violações de
+	 * invariante, catálogo de produtos e os TOTAIS do mundo (soma das
+	 * cidades, na ordem das cidades). É o que o jogo publica todo dia.
+	 */
+	Dictionary get_day_summary();
+
+	/**
+	 * Colunas por cidade (uma `PackedFloat64Array`/`PackedStringArray` por
+	 * campo, indexada pela posição em `ws_.cities`): id, nome, nação, moeda,
+	 * centro e os MESMOS doubles do bloco por cidade do `get_status()`.
+	 * Cacheada por dia; é a fonte dos modos de mapa, HUD e histórico.
+	 */
+	Dictionary get_city_columns();
+
+	/** Colunas por nação (179 posições), mesmos valores do `nations[]`. */
+	Dictionary get_nation_columns();
+
+	/**
+	 * Linhas leves de TODAS as cidades (Array de Dictionary, mesmo formato e
+	 * mesmos valores do bloco `cities[]` do status). Sob demanda: as telas de
+	 * dados usam quando estão abertas. Nunca no tick.
+	 */
+	Array get_city_rows();
+
+	/** Linhas agregadas de TODAS as nações (mesmo formato de `nations[]`). */
+	Array get_nation_rows();
+
+	/** Linha leve de UMA cidade (mesmo formato do `cities[]` do status). */
+	Dictionary get_city_info(const String& city_id);
+
+	/** Ficha de UMA nação (mesmo formato do bloco `nations[]` do status). */
+	Dictionary get_nation_status(const String& nation_tag);
+
+	/** Pedidos de comércio do último dia (mesmo formato de `trade_orders`). */
+	Array get_trade_orders();
+
+	/** Portos do mundo (mesmo formato de `ports` do status). */
+	Array get_ports();
+
+	/** Moedas carregadas, no MESMO formato de `currencies` do status. */
+	Array get_currency_rows();
+
+	/** Catálogo de produtos (mesmo Array de `products` do status). */
+	Array get_products();
+
+	/** Bloco `light` do status (tabelas planas usadas pelas telas). */
+	Dictionary get_light_columns();
+
+	/**
+	 * Ranking top-N de cidades por `field` (nome de coluna, ex.: "population",
+	 * "production", "gdp"). `count <= 0` devolve todas. Ordenado decrescente,
+	 * desempate por id; cada linha: {id, name, nation, value}.
+	 */
+	Array get_city_ranking(const String& field, int count);
+
+	/** Ranking top-N de nações por `field` (ex.: "population", "need"). */
+	Array get_nation_ranking(const String& field, int count);
+
+	/** Versão dos dados publicados (A4): sobe a cada dia e a cada mutação que
+	 * invalida o status. A UI usa para saber se o retrato em cache está velho. */
+	int get_data_version() const;
 
 	/** Choque de preço em um produto (id de goods.json, ex.: "wheat"). */
 	void price_shock(const String& product, double multiplier);
@@ -925,7 +1001,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct StatusKeys {
-		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
+		StringName amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups;
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
 			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,
@@ -994,6 +1070,9 @@ private:
 		// da IA — recomputado uma vez por semana (dia % 7 == 0), cacheado nos
 		// outros dias. A primeira publicação sempre computa.
 		bool labor_cadence_built = false;
+		// A4: dia a que se referem os valores de `labor` guardados neste slot
+		// (permite semear um slot que ficou parado várias semanas).
+		int labor_values_day = -1;
 		// S7-c: sinais leves por cidade (os campos que a IA varre em TODAS as
 		// cidades todo dia), em arrays planos indexados por cidade — um
 		// PackedFloat64Array por campo em vez de ~113 dicionários de mercado +
@@ -1075,6 +1154,85 @@ private:
 	 * completos.
 	 */
 	void fill_light_signals(StatusCache& cache) const;
+
+	// A4: escalares por cidade (os MESMOS do bloco leve do status), num POD
+	// para a ficha/colunas não duplicarem a conta. A ordem dos campos é a
+	// ordem de `sync_scalar` em `fill_city_status` — o status continua
+	// byte-idêntico.
+	struct CityScalars {
+		double population = 0.0, simulation_population = 0.0, gdp = 0.0,
+			gdp_per_capita = 0.0, external_income_index = 0.0, firm_cash = 0.0,
+			service_cash = 0.0, government_budget = 0.0,
+			government_goods_spend = 0.0, service_revenue = 0.0,
+			service_jobs = 0.0, service_workers = 0.0,
+			service_jobs_filled = 0.0, in_kind_food = 0.0,
+			service_profit = 0.0, opex_revenue = 0.0, freight_revenue = 0.0,
+			construction_revenue = 0.0, service_wage = 0.0,
+			disposable_per_capita = 0.0, living_standard = 0.0,
+			production = 0.0, jobs = 0.0, income = 0.0, industrialization = 0.0,
+			stockpile = 0.0, need = 0.0, deficit = 0.0, consumed = 0.0,
+			in_transit = 0.0, fx_rate = 0.0, tariff_revenue = 0.0,
+			productivity_index = 0.0;
+	};
+	CityScalars city_scalars(std::size_t city_index, double in_transit) const;
+
+	// A4: soma das cargas em trânsito por cidade (uma passada só).
+	void compute_in_transit(std::vector<double>& out) const;
+
+	// A4: pedaços do `get_status()` extraídos para as consultas reusarem o
+	// MESMO código (mesmos valores e mesma ordem de chaves).
+	void build_ports(StatusCache& cache);
+	void build_orders(StatusCache& cache);
+	void build_nations(StatusCache& cache,
+		const std::vector<double>& in_transit_by_city);
+	void build_currencies(StatusCache& cache);
+	void build_tariffs(StatusCache& cache);
+
+	/**
+	 * A4: retrato SEMANAL do agregado `nations[].labor` (S17), capturado no
+	 * fecho do dia `day % 7 == 0` como doubles puros. O status sob demanda lê
+	 * o retrato mais recente, então um `get_status()` no dia 60 publica os
+	 * mesmos valores que a publicação diária antiga (dia 56) — o golden não
+	 * muda. Antes do 1º tick o retrato nasce do estado corrente (como o
+	 * `warm_status()` fazia no dia 0).
+	 */
+	struct NationLaborSnapshot {
+		std::string tag;
+		double working_age = 0.0, labor_force = 0.0, employed = 0.0,
+			unemployed = 0.0, students = 0.0, recruit_reserve = 0.0,
+			income_population = 0.0, productivity_weighted = 0.0,
+			minimum_wage = 0.0, wage_rigidity = 0.0;
+		double education[kEducationLevels] = {};
+		double labor_force_by_level[kEducationLevels] = {};
+		double employed_by_level[kEducationLevels] = {};
+		double unemployed_by_level[kEducationLevels] = {};
+		double vacancies_by_level[kEducationLevels] = {};
+		double wage_weighted[kEducationLevels] = {};
+		double wage_weight[kEducationLevels] = {};
+		double income_share[kIncomeLevels] = {};
+	};
+	void capture_nation_labor();
+	const NationLaborSnapshot* find_labor_snapshot(const std::string& tag) const;
+	int labor_snapshot_day_ = -1;
+	std::vector<NationLaborSnapshot> labor_snapshot_;
+	// A4: no caminho `tick_day()` (tools/testes/goldens) o primeiro build de um
+	// slot calcula o trabalho do dia corrente, como sempre; no caminho do jogo
+	// (sem status diário) ele é semeado pelo retrato semanal.
+	bool status_seed_labor_from_snapshot_ = true;
+
+	// A4: cache das linhas/colunas sob demanda. Não participa do caminho
+	// diário; o resumo do dia é sempre construído do zero (imutável).
+	Dictionary columns_cache_;
+	int columns_day_ = -1;
+	int columns_static_version_ = -1;
+	std::vector<StatusCitySlot> query_city_slots_;
+	Array query_city_rows_;
+	int query_rows_day_ = -1;
+	int query_rows_static_version_ = -1;
+	Dictionary query_light_cache_;
+	int query_light_day_ = -1;
+	Array query_orders_cache_;
+	int query_orders_day_ = -1;
 	double money_total() const { return sim_core_.money_total(); }
 	// Deriva a frota inicial de população/PIB (source: derived): veículos,
 	// estoque de combustível e de peças. Chamado ao inicializar e ao carregar
@@ -1343,11 +1501,10 @@ private:
 	bool bootstrap_construction_ = false;
 
 	// A5: a fase da IA C++ (estado entre dias NÃO serializado) e o interruptor.
-	// LIGADO/DESLIGADO por `set_ai_enabled`; `tick_day_status_` guarda o único
-	// status do dia, construído DEPOIS da fase da IA (D-076).
+	// A4: `tick_day_status_` saiu — o tick só publica o resumo leve e o status
+	// completo é montado sob demanda (não há status do dia guardado aqui).
 	ogs::AiPhase ai_phase_;
 	bool ai_enabled_ = false;
-	Dictionary tick_day_status_;
 
 	// Status reaproveitado entre dias (ver StatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA
@@ -1365,6 +1522,9 @@ private:
 	// da versão estática para uma descoberta não forçar a reescrita de
 	// aptidão/demanda externa de todas as cidades (~190 mil escritas/dia).
 	int status_deposit_version_ = 0;
+	// A4: contador monotônico de dados publicados (dia novo ou mutação que
+	// invalidou o status). A UI compara para saber se o retrato em cache velho.
+	int data_version_ = 0;
 	// Serializa o acesso ao estado demo entre a thread do tick e a main thread
 	// (UI, IA, ferramentas). O `sim` tem UM escritor por convenção
 	// (tick_scheduler); o mutex é a rede de segurança para quem chamar
