@@ -13,6 +13,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/economy_world_test.gd
 ##     [--days=60] [--out=path.json] [--baseline=path.json] [--ai=1]
 ##     [--currencies=1|0] [--fx=real|neutral] [--instant=1]
+##     [--urban=1] [--threads=N] [--urban-cities=ID1,ID2] [--urban-out=path.json]
 ##
 ## `--currencies=0` roda sem moedas (tudo em XGS, comportamento anterior à F5) e
 ## `--fx=neutral` carrega currencies.json com todas as taxas em 1,0 e regime
@@ -30,6 +31,11 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
+const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
+const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
+const HOUSING_PATH := "res://data/definitions/economy/housing.json"
+const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
 const DEFAULT_DAYS := 60
 ## Queda máxima tolerada de satisfação por nação vs. baseline (p.p. / 100).
@@ -81,6 +87,16 @@ var _instant_construction := false
 ## referências comparadas no relatório. Sem o arquivo, o teste imprime "sem
 ## dado" — nenhum alvo é inventado aqui.
 var _sector_data: Dictionary = {}
+## Q-015: workers do núcleo (0 = automático, escolhido pelo núcleo). Só muda o
+## paralelismo; nenhuma regra de simulação depende disso.
+var _threads := 0
+## Q-015: retrato urbano para o A/B de threads. `--urban-cities` é CSV de ids e
+## `--urban-out` o JSON de saída; sem os dois, nada é coletado.
+var _urban_cities := ""
+var _urban_out := ""
+## §19: `--urban=1` carrega solo/moradia/prefeitura como o autoload do jogo. O
+## padrão (0) preserva o mundo sem dado urbano das baselines históricas.
+var _urban_enabled := false
 
 var _failures: Array[String] = []
 
@@ -105,6 +121,14 @@ func _init() -> void:
 			_services_enabled = arg.split("=", true, 1)[1] != "0"
 		elif arg.begins_with("--instant="):
 			_instant_construction = arg.split("=", true, 1)[1] == "1"
+		elif arg.begins_with("--urban="):
+			_urban_enabled = arg.split("=", true, 1)[1] == "1"
+		elif arg.begins_with("--threads="):
+			_threads = maxi(0, int(arg.split("=", true, 1)[1]))
+		elif arg.begins_with("--urban-cities="):
+			_urban_cities = arg.split("=", true, 1)[1]
+		elif arg.begins_with("--urban-out="):
+			_urban_out = arg.split("=", true, 1)[1]
 	_test_world()
 	if _failures.is_empty():
 		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % _days)
@@ -157,6 +181,12 @@ func _test_world() -> void:
 		return
 
 	var sim = EconomySim.new()
+	# Q-015: workers do núcleo antes de criar o mundo. Binário anterior à Q-015
+	# não tem o setter e roda serial (0 = automático, decidido pelo núcleo).
+	if _threads > 0 and sim.has_method("demo_set_sim_threads"):
+		sim.demo_set_sim_threads(_threads)
+	print("[world] threads=%d" % _threads)
+	print("[world] urbano=%d" % int(_urban_enabled))
 	# F2: receitas e cesta alimentar antes de criar o mundo — os ids de insumo
 	# são resolvidos na carga e as construções semeiam com a receita correta.
 	# Binário anterior a F2 não tem os setters: cai no caminho de 21 bens.
@@ -192,6 +222,16 @@ func _test_world() -> void:
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
 	sim.initialize_demo_world(cities, ports, buildings)
+	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz
+	# (casamento por id da cidade). Fora deste bloco o runner mantém o mundo
+	# sem dado urbano, que é o caminho das baselines históricas.
+	if _urban_enabled:
+		if not sim.has_method("demo_set_urban"):
+			_fail("binario sem demo_set_urban (rode o build)")
+			return
+		sim.demo_set_urban(_load_dict(URBAN_LAND_PATH),
+			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
+			_load_dict(MUNICIPAL_FINANCE_PATH))
 	var expected_products := goods.size() if has_chains else 21
 	var ai: Object = null
 	if geo != null:
@@ -200,6 +240,14 @@ func _test_world() -> void:
 		ai.setup(sim, geo)
 
 	var status: Dictionary = sim.get_demo_status()
+
+	# Q-015: retrato urbano do início (só com `--urban-cities` e `--urban-out`).
+	var urban_ids := _urban_ids()
+	var urban_enabled: bool = not urban_ids.is_empty() and _urban_out != ""
+	var urban_start: Dictionary = {}
+	var urban_start_day := int(status.get("day", _days))
+	if urban_enabled:
+		urban_start = _urban_snapshot(sim, urban_ids)
 
 	# Contrato de status: campos de compatibilidade com o formato legado.
 	if Array(status.get("products", [])).size() != expected_products:
@@ -255,6 +303,12 @@ func _test_world() -> void:
 					break
 		if _failures.size() > 0:
 			break
+
+	# Q-015: retrato urbano do fim, mesmo formato do início.
+	var urban_end: Dictionary = {}
+	var urban_end_day := int(status.get("day", _days))
+	if urban_enabled:
+		urban_end = _urban_snapshot(sim, urban_ids)
 
 	# A cidade sem produção (Cayenne) precisa continuar alimentada no fim — a
 	# equalização fiscal nacional (Paris sustenta Cayenne) a mantém sustentável.
@@ -392,6 +446,10 @@ func _test_world() -> void:
 
 	if _out != "":
 		_write_report(nations, status, has_chains, sectors, ownership)
+
+	if urban_enabled:
+		_write_urban_report(urban_ids, urban_start, urban_start_day, urban_end,
+			urban_end_day)
 
 	print("[world] resumo final:")
 	for city in status["cities"]:
@@ -637,6 +695,69 @@ func _write_report(nations: Dictionary, status: Dictionary, has_chains: bool,
 	file.store_string(JSON.stringify(report, "  "))
 	file.close()
 	print("[world] escrito %s" % _out)
+
+
+## Q-015: ids do `--urban-cities` (CSV), sem vazios e sem repetição.
+func _urban_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for part in _urban_cities.split(",", false):
+		var id := part.strip_edges()
+		if id != "" and id not in ids:
+			ids.append(id)
+	return ids
+
+
+## Q-015: retrato urbano de cada id. Dicionário vazio = sem dado (a cidade não
+## existe no núcleo): a ausência é reportada, nunca preenchida com número.
+func _urban_snapshot(sim: Object, ids: Array[String]) -> Dictionary:
+	var out: Dictionary = {}
+	if not sim.has_method("demo_get_urban_city"):
+		_fail("urbano: binario sem demo_get_urban_city")
+		return out
+	for id in ids:
+		var data: Dictionary = sim.demo_get_urban_city(id)
+		if data.is_empty():
+			print("[urban] sem dado: " + id)
+			continue
+		out[id] = data
+	return out
+
+
+## Q-015: JSON do retrato urbano (início × fim) — campos crus do núcleo.
+func _write_urban_report(ids: Array[String], start: Dictionary, start_day: int,
+		end: Dictionary, end_day: int) -> void:
+	var dir := _urban_out.get_base_dir()
+	var absolute_dir := dir
+	if dir.begins_with("res://") or dir.begins_with("user://"):
+		absolute_dir = ProjectSettings.globalize_path(dir)
+	if absolute_dir != "" and not DirAccess.dir_exists_absolute(absolute_dir):
+		DirAccess.make_dir_recursive_absolute(absolute_dir)
+	var file := FileAccess.open(_urban_out, FileAccess.WRITE)
+	if file == null:
+		_fail("nao abriu para escrita: " + _urban_out)
+		return
+	var report := {
+		"days": _days,
+		"threads": _threads,
+		"urban": _urban_enabled,
+		"cities": ids,
+		"start": {"day": start_day, "cities": start},
+		"end": {"day": end_day, "cities": end},
+	}
+	file.store_string(JSON.stringify(report, "  "))
+	file.close()
+	print("[world] urbano escrito %s" % _urban_out)
+	for id: String in ids:
+		if not end.has(id):
+			continue
+		var row: Dictionary = end[id]
+		var gov: Dictionary = row.get("gov", {})
+		var area_total := 0.0
+		for value: Variant in Array(row.get("area_km2", [])):
+			area_total += float(value)
+		print("[urban] %-8s cash=%.0f rent_burden=%.3f informal=%.0f km2=%.2f" % [
+			id, float(gov.get("cash", 0.0)), float(row.get("rent_burden", 0.0)),
+			float(row.get("informal_units", 0.0)), area_total])
 
 
 ## F7: bloco de trabalho por nação para o relatório (sem dicionários aninhados

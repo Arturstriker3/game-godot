@@ -1,0 +1,1547 @@
+{
+  "cities": [
+    "BRA-SAO",
+    "JPN-TOK",
+    "NGA-LAG",
+    "IND-MUM",
+    "USA-NEW",
+    "AUS-WEI"
+  ],
+  "days": 365,
+  "end": {
+    "cities": {
+      "AUS-WEI": {
+        "area_km2": [
+          0.33,
+          0.192,
+          0.078
+        ],
+        "city": "AUS-WEI",
+        "condition": 0.989999999999987,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 340.827216109028,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.0566,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 544.866594649659,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 186.344356260453,
+          "month_revenue_iptu": 173.925745522254,
+          "month_revenue_transfer": 184.596492866951,
+          "month_transfer_paid": 184.596492866951,
+          "projects": [],
+          "revenue_pct_gdp": 0.1679,
+          "target_revenue_month": 1719.79579936316,
+          "transfer_share": 0.3632
+        },
+        "housing_stress": 0.0382098059987854,
+        "informal_km2": 0.000035796,
+        "informal_units": 0.5966,
+        "infra_capacity": 2830.0,
+        "initial_area_km2": 0.6,
+        "initial_reserve_km2": 0.4,
+        "land_price": [
+          1.52898216476369,
+          1.11170608109692,
+          1.11164257359378
+        ],
+        "max_density": [
+          0,
+          0,
+          0
+        ],
+        "nation": "AUS",
+        "owner_share": [
+          0.6266,
+          0.3734,
+          0.0
+        ],
+        "population": 2830.0,
+        "price": [
+          175.721594225639,
+          255.112723454815,
+          382.669085182223
+        ],
+        "rent": [
+          0.732173309273495,
+          1.06296968106173,
+          1.5944545215926
+        ],
+        "rent_burden": 0.0161696343836445,
+        "rent_paid": 18.0158244241223,
+        "rent_paid_month": 108.102350781522,
+        "rent_to_firms": 36.3288760036381,
+        "rent_to_government": 0.0,
+        "rent_to_households": 60.9632396997313,
+        "reserve_km2": 0.4,
+        "tenure": [
+          [
+            0.4757,
+            0.5224,
+            0.0019
+          ],
+          [
+            0.6647,
+            0.3353,
+            0.0
+          ],
+          [
+            0.7766,
+            0.2234,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            313.369999693989,
+            1165.28849469127,
+            14.8507454718514
+          ],
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          3300.0,
+          7680.0,
+          520.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.452578557532457,
+          0.0,
+          0.0
+        ],
+        "zone_usage": [
+          1493.50923985711,
+          0.0,
+          0.0
+        ]
+      },
+      "BRA-SAO": {
+        "area_km2": [
+          1000.094,
+          465.561,
+          258.645
+        ],
+        "city": "BRA-SAO",
+        "condition": 0.989999999999987,
+        "expansion_cost_per_km2": 3059383.47352769,
+        "gdp_day": 637402.498476854,
+        "gov": {
+          "cash": 570049.420536239,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.0192,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 688361.28154373,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 173222.272550961,
+          "month_revenue_iptu": 109886.382713533,
+          "month_revenue_transfer": 688361.28154373,
+          "month_transfer_paid": 688361.28154373,
+          "projects": [],
+          "revenue_pct_gdp": 0.08,
+          "target_revenue_month": 1529691.73676384,
+          "transfer_share": 0.45
+        },
+        "housing_stress": 0.0186500843394483,
+        "informal_km2": 150.144168888,
+        "informal_units": 2502402.8148,
+        "infra_capacity": 12400232.0,
+        "initial_area_km2": 1724.3,
+        "initial_reserve_km2": 869.0,
+        "land_price": [
+          0.246184388985302,
+          0.233388405828959,
+          0.233352351886521
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "BRA",
+        "owner_share": [
+          0.658493353485527,
+          0.339223848765271,
+          0.00228279774920198
+        ],
+        "population": 12400232.0,
+        "price": [
+          44.7534403734832,
+          63.021480230014,
+          92.4315043373539
+        ],
+        "rent": [
+          0.186472668222847,
+          0.262589500958392,
+          0.385131268072308
+        ],
+        "rent_burden": 0.0344115302789701,
+        "rent_paid": 34310.6141228674,
+        "rent_paid_month": 205877.785891019,
+        "rent_to_firms": 62854.7894147016,
+        "rent_to_government": 422.979611618435,
+        "rent_to_households": 122012.238275597,
+        "reserve_km2": 869.0,
+        "tenure": [
+          [
+            0.317688945159208,
+            0.314111054840791,
+            0.3682
+          ],
+          [
+            0.7588,
+            0.2412,
+            0.0
+          ],
+          [
+            0.81,
+            0.19,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            746324.475736944,
+            976754.998129747,
+            65105.3555013232
+          ],
+          [
+            1770707.53264526,
+            2441887.49532437,
+            162763.388753308
+          ],
+          [
+            4249698.07834863,
+            5860529.98877849,
+            390632.133007939
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          80007520.0,
+          111734640.0,
+          10345800.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.208285464244186,
+          0.0123529638847805,
+          0.0
+        ],
+        "zone_usage": [
+          16664403.446226,
+          1380253.97259895,
+          0.0
+        ]
+      },
+      "IND-MUM": {
+        "area_km2": [
+          334.782,
+          116.908,
+          79.71
+        ],
+        "city": "IND-MUM",
+        "condition": 0.989999999999987,
+        "expansion_cost_per_km2": 1578625.79938356,
+        "gdp_day": 699526.128186695,
+        "gov": {
+          "cash": 2244542.88027457,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.015,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 355190.804861302,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 387361.193589424,
+          "month_revenue_iptu": 85262.3230446784,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.03,
+          "target_revenue_month": 789312.899691781,
+          "transfer_share": 0.6
+        },
+        "housing_stress": 0.0516555445536152,
+        "informal_km2": 186.191564526679,
+        "informal_units": 3103192.74211132,
+        "infra_capacity": 12691836.0,
+        "initial_area_km2": 531.4,
+        "initial_reserve_km2": 175.4,
+        "land_price": [
+          0.369645195044115,
+          0.0445382291436851,
+          0.041071688338235
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "IND",
+        "owner_share": [
+          0.72,
+          0.28,
+          0.0
+        ],
+        "population": 12691836.0,
+        "price": [
+          11.6444167384348,
+          14.1384162289426,
+          20.7363438024492
+        ],
+        "rent": [
+          0.0485184030768115,
+          0.0589100676205942,
+          0.0864014325102049
+        ],
+        "rent_burden": 0.0238810309050463,
+        "rent_paid": 26255.1362160617,
+        "rent_paid_month": 157539.242052655,
+        "rent_to_firms": 39699.8889972691,
+        "rent_to_government": 0.0,
+        "rent_to_households": 102085.42885012,
+        "reserve_km2": 175.4,
+        "tenure": [
+          [
+            0.128623630094256,
+            0.0970419352050411,
+            0.774334434700703
+          ],
+          [
+            0.7313,
+            0.2687,
+            0.0
+          ],
+          [
+            0.87,
+            0.13,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            695318.656064864,
+            5110067.2110288,
+            3301.76363536276
+          ],
+          [
+            974027.567535053,
+            12775168.027572,
+            8254.4090884069
+          ],
+          [
+            2337666.16208413,
+            30660403.2661728,
+            19810.5818121766
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          26782560.0,
+          28057920.0,
+          3188400.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          1.96336786494621,
+          0.251616272739235,
+          0.0
+        ],
+        "zone_usage": [
+          52584017.6449937,
+          7059829.25121563,
+          0.0
+        ]
+      },
+      "JPN-TOK": {
+        "area_km2": [
+          2469.115,
+          1436.576,
+          583.609
+        ],
+        "city": "JPN-TOK",
+        "condition": 0.989999999999987,
+        "expansion_cost_per_km2": 3547408.72762019,
+        "gdp_day": 465457.32330101,
+        "gov": {
+          "cash": 638712.059449903,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.0565,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 798166.963714543,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 109957.140789475,
+          "month_revenue_iptu": 191700.784333463,
+          "month_revenue_transfer": 811824.487315881,
+          "month_transfer_paid": 811824.487315881,
+          "projects": [],
+          "revenue_pct_gdp": 0.1564,
+          "target_revenue_month": 1773704.3638101,
+          "transfer_share": 0.4577
+        },
+        "housing_stress": 0.0289091354654053,
+        "informal_km2": 25.259939406,
+        "informal_units": 420998.9901,
+        "infra_capacity": 9733276.0,
+        "initial_area_km2": 4489.3,
+        "initial_reserve_km2": 592.6,
+        "land_price": [
+          0.282855600978186,
+          0.279352200693602,
+          0.279346426682492
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "JPN",
+        "owner_share": [
+          0.607333160154772,
+          0.389929828605116,
+          0.00273701124011183
+        ],
+        "population": 9733276.0,
+        "price": [
+          35.9943265816245,
+          48.0807608878856,
+          70.5184493022322
+        ],
+        "rent": [
+          0.149976360756769,
+          0.200336503699523,
+          0.293826872092634
+        ],
+        "rent_burden": 0.0385155818874061,
+        "rent_paid": 50188.0967975615,
+        "rent_paid_month": 301149.207349209,
+        "rent_to_firms": 105684.352925619,
+        "rent_to_government": 741.823888918998,
+        "rent_to_households": 164608.10979975,
+        "reserve_km2": 592.6,
+        "tenure": [
+          [
+            0.403075373829695,
+            0.491024626170305,
+            0.1059
+          ],
+          [
+            0.6428,
+            0.3572,
+            0.0
+          ],
+          [
+            0.759,
+            0.241,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            503312.925781856,
+            1762050.74651638,
+            16887.9551033162
+          ],
+          [
+            1035758.46891002,
+            4405126.86629096,
+            42219.8877582907
+          ],
+          [
+            2485820.32538405,
+            10572304.4790983,
+            101327.730619897
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          197529200.0,
+          344778240.0,
+          23344360.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.105932739997241,
+          0.00454166104108403,
+          0.0
+        ],
+        "zone_usage": [
+          20924809.385463,
+          1565865.90042152,
+          0.0
+        ]
+      },
+      "NGA-LAG": {
+        "area_km2": [
+          332.577,
+          116.138,
+          79.185
+        ],
+        "city": "NGA-LAG",
+        "condition": 0.989999999999987,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 489525.852909427,
+        "gov": {
+          "cash": 501908.320109606,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.015,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 160286.942992453,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 136073.498173376,
+          "month_revenue_iptu": 53231.3392250683,
+          "month_revenue_transfer": 213715.923989937,
+          "month_transfer_paid": 213715.923989937,
+          "projects": [],
+          "revenue_pct_gdp": 0.03,
+          "target_revenue_month": 356193.206649895,
+          "transfer_share": 0.6
+        },
+        "housing_stress": 0.0267820929789861,
+        "informal_km2": 579.714332906709,
+        "informal_units": 9661905.54844516,
+        "infra_capacity": 15388000.0,
+        "initial_area_km2": 527.9,
+        "initial_reserve_km2": 316.7,
+        "land_price": [
+          0.378689904943379,
+          0.120233321050839,
+          0.119251930933586
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "NGA",
+        "owner_share": [
+          0.717336612574623,
+          0.278964238223465,
+          0.00369914920191272
+        ],
+        "population": 15388000.0,
+        "price": [
+          30.2304845555194,
+          41.0509892303252,
+          60.2081175378103
+        ],
+        "rent": [
+          0.125960352314664,
+          0.171045788459688,
+          0.250867156407543
+        ],
+        "rent_burden": 0.0463000037207734,
+        "rent_paid": 13936.3036591024,
+        "rent_paid_month": 83623.5495688389,
+        "rent_to_firms": 20995.1818227119,
+        "rent_to_government": 278.402387983811,
+        "rent_to_households": 53987.6104012592,
+        "reserve_km2": 316.7,
+        "tenure": [
+          [
+            0.0,
+            0.0,
+            1.0
+          ],
+          [
+            0.490850914908509,
+            0.156384361563844,
+            0.352764723527647
+          ],
+          [
+            0.87,
+            0.13,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            516981.675886755,
+            1620219.45745171,
+            20553.7443803153
+          ],
+          [
+            1088416.34641987,
+            4050548.64362927,
+            51384.3609507883
+          ],
+          [
+            2612199.23140769,
+            9721316.74471028,
+            123322.466281892
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          26606160.0,
+          27873120.0,
+          3167400.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.744374335534274,
+          0.0866953805598012,
+          0.0
+        ],
+        "zone_usage": [
+          19804942.6711186,
+          2416470.74578901,
+          0.0
+        ]
+      },
+      "USA-NEW": {
+        "area_km2": [
+          4113.175,
+          2393.12,
+          972.205
+        ],
+        "city": "USA-NEW",
+        "condition": 0.989999999999987,
+        "expansion_cost_per_km2": 2994882.86273115,
+        "gdp_day": 323922.580268578,
+        "gov": {
+          "cash": 142976.918799217,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.1043,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 673848.644114509,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 89010.7216854347,
+          "month_revenue_iptu": 273217.15249924,
+          "month_revenue_transfer": 382446.541570768,
+          "month_transfer_paid": 382446.541570768,
+          "projects": [],
+          "revenue_pct_gdp": 0.1714,
+          "target_revenue_month": 1497441.43136558,
+          "transfer_share": 0.2554
+        },
+        "housing_stress": 0.0278486328163648,
+        "informal_km2": 1.32192284428443,
+        "informal_units": 22032.0474047405,
+        "infra_capacity": 8804190.0,
+        "initial_area_km2": 7478.5,
+        "initial_reserve_km2": 2467.9,
+        "land_price": [
+          0.239065744657385,
+          0.237645672594762,
+          0.237645234327303
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "USA",
+        "owner_share": [
+          0.652744248597241,
+          0.346711039409559,
+          0.000544711993200664
+        ],
+        "population": 8804190.0,
+        "price": [
+          30.0061619826712,
+          40.903203321887,
+          59.9913648721009
+        ],
+        "rent": [
+          0.125025674927796,
+          0.170430013841196,
+          0.24996402030042
+        ],
+        "rent_burden": 0.0524999481937361,
+        "rent_paid": 42778.8069233531,
+        "rent_paid_month": 256690.422995649,
+        "rent_to_firms": 80097.6630269707,
+        "rent_to_government": 125.840116750933,
+        "rent_to_households": 150797.877552363,
+        "reserve_km2": 2467.9,
+        "tenure": [
+          [
+            0.500759191095538,
+            0.496340518875459,
+            0.0029002900290029
+          ],
+          [
+            0.7171,
+            0.2829,
+            0.0
+          ],
+          [
+            0.8031,
+            0.1969,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            820072.930664865,
+            1719277.99416351,
+            58585.5134840285
+          ],
+          [
+            1979186.98728821,
+            4298194.98540876,
+            146463.783710071
+          ],
+          [
+            4750048.76949169,
+            10315667.9649811,
+            351513.080904171
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          329054000.0,
+          574348800.0,
+          38888200.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.0742705209786125,
+          0.00142251802032348,
+          0.0
+        ],
+        "zone_usage": [
+          24439012.0100964,
+          817021.517951168,
+          0.0
+        ]
+      }
+    },
+    "day": 365
+  },
+  "start": {
+    "cities": {
+      "AUS-WEI": {
+        "area_km2": [
+          0.33,
+          0.192,
+          0.078
+        ],
+        "city": "AUS-WEI",
+        "condition": 1.0,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 0.0,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.0566,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 0.0,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 0.0,
+          "month_revenue_iptu": 0.0,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.1679,
+          "target_revenue_month": 0.0,
+          "transfer_share": 0.3632
+        },
+        "housing_stress": 0.0,
+        "informal_km2": 0.000035796,
+        "informal_units": 0.5966,
+        "infra_capacity": 2830.0,
+        "initial_area_km2": 0.6,
+        "initial_reserve_km2": 0.4,
+        "land_price": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_density": [
+          0,
+          0,
+          0
+        ],
+        "nation": "AUS",
+        "owner_share": [
+          0.6266,
+          0.3734,
+          0.0
+        ],
+        "population": 2830.0,
+        "price": [
+          525456.0,
+          875760.0,
+          1576368.0
+        ],
+        "rent": [
+          2189.4,
+          3649.0,
+          6568.2
+        ],
+        "rent_burden": 0.0,
+        "rent_paid": 0.0,
+        "rent_paid_month": 0.0,
+        "rent_to_firms": 0.0,
+        "rent_to_government": 0.0,
+        "rent_to_households": 0.0,
+        "reserve_km2": 0.4,
+        "tenure": [
+          [
+            0.4757,
+            0.5224,
+            0.0019
+          ],
+          [
+            0.6647,
+            0.3353,
+            0.0
+          ],
+          [
+            0.7766,
+            0.2234,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            314.0,
+            1177.0,
+            15.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          3300.0,
+          7680.0,
+          520.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.456363636363636,
+          0.0397135416666667,
+          0.0
+        ],
+        "zone_usage": [
+          1506.0,
+          305.0,
+          0.0
+        ]
+      },
+      "BRA-SAO": {
+        "area_km2": [
+          1000.094,
+          465.561,
+          258.645
+        ],
+        "city": "BRA-SAO",
+        "condition": 1.0,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 0.0,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.0192,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 0.0,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 0.0,
+          "month_revenue_iptu": 0.0,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.08,
+          "target_revenue_month": 0.0,
+          "transfer_share": 0.45
+        },
+        "housing_stress": 0.0,
+        "informal_km2": 150.144168888,
+        "informal_units": 2502402.8148,
+        "infra_capacity": 12400232.0,
+        "initial_area_km2": 1724.3,
+        "initial_reserve_km2": 869.0,
+        "land_price": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "BRA",
+        "owner_share": [
+          0.66,
+          0.34,
+          0.0
+        ],
+        "population": 12400232.0,
+        "price": [
+          273360.0,
+          410040.0,
+          601392.0
+        ],
+        "rent": [
+          1139.0,
+          1708.5,
+          2505.8
+        ],
+        "rent_burden": 0.0,
+        "rent_paid": 0.0,
+        "rent_paid_month": 0.0,
+        "rent_to_firms": 0.0,
+        "rent_to_government": 0.0,
+        "rent_to_households": 0.0,
+        "reserve_km2": 869.0,
+        "tenure": [
+          [
+            0.3222,
+            0.3096,
+            0.3682
+          ],
+          [
+            0.7588,
+            0.2412,
+            0.0
+          ],
+          [
+            0.81,
+            0.19,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            715401.473684211,
+            986571.684210526,
+            65759.6842105263
+          ],
+          [
+            1788503.68421053,
+            2466429.21052632,
+            164399.210526316
+          ],
+          [
+            4292408.84210526,
+            5919430.10526316,
+            394558.105263158
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          80007520.0,
+          111734640.0,
+          10345800.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.209898544536814,
+          0.00000430752719120946,
+          0.0
+        ],
+        "zone_usage": [
+          16793462.0,
+          481.3,
+          0.0
+        ]
+      },
+      "IND-MUM": {
+        "area_km2": [
+          334.782,
+          116.908,
+          79.71
+        ],
+        "city": "IND-MUM",
+        "condition": 1.0,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 0.0,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.015,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 0.0,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 0.0,
+          "month_revenue_iptu": 0.0,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.03,
+          "target_revenue_month": 0.0,
+          "transfer_share": 0.6
+        },
+        "housing_stress": 0.0,
+        "informal_km2": 171.412595643564,
+        "informal_units": 2856876.59405941,
+        "infra_capacity": 12691836.0,
+        "initial_area_km2": 531.4,
+        "initial_reserve_km2": 175.4,
+        "land_price": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "IND",
+        "owner_share": [
+          0.72,
+          0.28,
+          0.0
+        ],
+        "population": 12691836.0,
+        "price": [
+          234960.0,
+          352440.0,
+          516912.0
+        ],
+        "rent": [
+          979.0,
+          1468.5,
+          2153.8
+        ],
+        "rent_burden": 0.0,
+        "rent_paid": 0.0,
+        "rent_paid_month": 0.0,
+        "rent_to_firms": 0.0,
+        "rent_to_government": 0.0,
+        "rent_to_households": 0.0,
+        "reserve_km2": 175.4,
+        "tenure": [
+          [
+            0.134413441344134,
+            0.101410141014101,
+            0.764176417641764
+          ],
+          [
+            0.7313,
+            0.2687,
+            0.0
+          ],
+          [
+            0.87,
+            0.13,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            393526.736842105,
+            5161424.94736842,
+            3334.94736842105
+          ],
+          [
+            983816.842105263,
+            12903562.3684211,
+            8337.36842105263
+          ],
+          [
+            2361160.42105263,
+            30968549.6842105,
+            20009.6842105263
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          26782560.0,
+          28057920.0,
+          3188400.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          1.9715711642203,
+          0.0000171538018498877,
+          0.0
+        ],
+        "zone_usage": [
+          52803723.0,
+          481.3,
+          0.0
+        ]
+      },
+      "JPN-TOK": {
+        "area_km2": [
+          2469.115,
+          1436.576,
+          583.609
+        ],
+        "city": "JPN-TOK",
+        "condition": 1.0,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 0.0,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.0565,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 0.0,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 0.0,
+          "month_revenue_iptu": 0.0,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.1564,
+          "target_revenue_month": 0.0,
+          "transfer_share": 0.4577
+        },
+        "housing_stress": 0.0,
+        "informal_km2": 25.259939406,
+        "informal_units": 420998.9901,
+        "infra_capacity": 9733276.0,
+        "initial_area_km2": 4489.3,
+        "initial_reserve_km2": 592.6,
+        "land_price": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "JPN",
+        "owner_share": [
+          0.609,
+          0.391,
+          0.0
+        ],
+        "population": 9733276.0,
+        "price": [
+          290640.0,
+          435960.0,
+          639408.0
+        ],
+        "rent": [
+          1211.0,
+          1816.5,
+          2664.2
+        ],
+        "rent_burden": 0.0,
+        "rent_paid": 0.0,
+        "rent_paid_month": 0.0,
+        "rent_to_firms": 0.0,
+        "rent_to_government": 0.0,
+        "rent_to_households": 0.0,
+        "reserve_km2": 592.6,
+        "tenure": [
+          [
+            0.4104,
+            0.4837,
+            0.1059
+          ],
+          [
+            0.6428,
+            0.3572,
+            0.0
+          ],
+          [
+            0.759,
+            0.241,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            418467.263157895,
+            1779759.89473684,
+            17057.6842105263
+          ],
+          [
+            1046168.15789474,
+            4449399.73684211,
+            42644.2105263158
+          ],
+          [
+            2510803.57894737,
+            10678559.3684211,
+            102346.105263158
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          197529200.0,
+          344778240.0,
+          23344360.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.106542252993481,
+          0.0000013959697688578,
+          0.0
+        ],
+        "zone_usage": [
+          21045206.0,
+          481.3,
+          0.0
+        ]
+      },
+      "NGA-LAG": {
+        "area_km2": [
+          332.577,
+          116.138,
+          79.185
+        ],
+        "city": "NGA-LAG",
+        "condition": 1.0,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 0.0,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.015,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 0.0,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 0.0,
+          "month_revenue_iptu": 0.0,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.03,
+          "target_revenue_month": 0.0,
+          "transfer_share": 0.6
+        },
+        "housing_stress": 0.0,
+        "informal_km2": 579.714332906709,
+        "informal_units": 9661905.54844516,
+        "infra_capacity": 15388000.0,
+        "initial_area_km2": 527.9,
+        "initial_reserve_km2": 316.7,
+        "land_price": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "NGA",
+        "owner_share": [
+          0.72,
+          0.28,
+          0.0
+        ],
+        "population": 15388000.0,
+        "price": [
+          190680.0,
+          286020.0,
+          419496.0
+        ],
+        "rent": [
+          794.5,
+          1191.75,
+          1747.9
+        ],
+        "rent_burden": 0.0,
+        "rent_paid": 0.0,
+        "rent_paid_month": 0.0,
+        "rent_to_firms": 0.0,
+        "rent_to_government": 0.0,
+        "rent_to_households": 0.0,
+        "reserve_km2": 316.7,
+        "tenure": [
+          [
+            0.0,
+            0.0,
+            1.0
+          ],
+          [
+            0.490850914908509,
+            0.156384361563844,
+            0.352764723527647
+          ],
+          [
+            0.87,
+            0.13,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            439742.105263158,
+            1636503.15789474,
+            20760.3157894737
+          ],
+          [
+            1099355.26315789,
+            4091257.89473684,
+            51900.7894736842
+          ],
+          [
+            2638452.63157895,
+            9819018.94736842,
+            124561.894736842
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          26606160.0,
+          27873120.0,
+          3167400.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.748757167513087,
+          0.000017267532303524,
+          0.0
+        ],
+        "zone_usage": [
+          19921553.0,
+          481.3,
+          0.0
+        ]
+      },
+      "USA-NEW": {
+        "area_km2": [
+          4113.175,
+          2393.12,
+          972.205
+        ],
+        "city": "USA-NEW",
+        "condition": 1.0,
+        "expansion_cost_per_km2": 1000000.0,
+        "gdp_day": 0.0,
+        "gov": {
+          "cash": 0.0,
+          "fee_rate": 0.02,
+          "iptu_rate": 0.1043,
+          "month_expense_infrastructure": 0.0,
+          "month_expense_maintenance": 0.0,
+          "month_expense_social_housing": 0.0,
+          "month_revenue_fees": 0.0,
+          "month_revenue_iptu": 0.0,
+          "month_revenue_transfer": 0.0,
+          "month_transfer_paid": 0.0,
+          "projects": [],
+          "revenue_pct_gdp": 0.1714,
+          "target_revenue_month": 0.0,
+          "transfer_share": 0.2554
+        },
+        "housing_stress": 0.0,
+        "informal_km2": 1.32192284428443,
+        "informal_units": 22032.0474047405,
+        "infra_capacity": 8804190.0,
+        "initial_area_km2": 7478.5,
+        "initial_reserve_km2": 2467.9,
+        "land_price": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_density": [
+          2,
+          2,
+          2
+        ],
+        "nation": "USA",
+        "owner_share": [
+          0.6531,
+          0.3469,
+          0.0
+        ],
+        "population": 8804190.0,
+        "price": [
+          577560.0,
+          866340.0,
+          1270632.0
+        ],
+        "rent": [
+          2406.5,
+          3609.75,
+          5294.3
+        ],
+        "rent_burden": 0.0,
+        "rent_paid": 0.0,
+        "rent_paid_month": 0.0,
+        "rent_to_firms": 0.0,
+        "rent_to_government": 0.0,
+        "rent_to_households": 0.0,
+        "reserve_km2": 2467.9,
+        "tenure": [
+          [
+            0.501650165016502,
+            0.495449544954495,
+            0.0029002900290029
+          ],
+          [
+            0.7171,
+            0.2829,
+            0.0
+          ],
+          [
+            0.8031,
+            0.1969,
+            0.0
+          ]
+        ],
+        "units": [
+          [
+            799631.368421053,
+            1736557.26315789,
+            59174.3157894737
+          ],
+          [
+            1999078.42105263,
+            4341393.15789474,
+            147935.789473684
+          ],
+          [
+            4797788.21052632,
+            10419343.5789474,
+            355045.894736842
+          ]
+        ],
+        "units_built_month": 0.0,
+        "vacancy": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_capacity": [
+          329054000.0,
+          574348800.0,
+          38888200.0
+        ],
+        "zone_demand": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "zone_occupancy": [
+          0.0749297926784054,
+          0.000000837992523010408,
+          0.0
+        ],
+        "zone_usage": [
+          24655948.0,
+          481.3,
+          0.0
+        ]
+      }
+    },
+    "day": 0
+  },
+  "threads": 1,
+  "urban": true
+}
