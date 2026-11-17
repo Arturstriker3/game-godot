@@ -79,6 +79,34 @@ Zone::~Zone() {
 	}
 }
 
+ZoneAdd::ZoneAdd(int phase) noexcept
+		: phase_(phase), sink_(sink_active(t_sink) ? t_sink : nullptr) {
+	if (sink_ != nullptr) {
+		start_ = std::chrono::steady_clock::now();
+	}
+}
+
+ZoneAdd::~ZoneAdd() {
+	if (sink_ == nullptr) {
+		return;
+	}
+	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	if (phase_ >= 0 && phase_ < sink_->slot_count) {
+		// Diferença da `Zone`: SOMA no slot (zonas dentro de laço).
+		sink_->slots[phase_] +=
+				std::chrono::duration<double, std::micro>(now - start_).count();
+	}
+}
+
+void reset_phase(int phase) noexcept {
+	if (!sink_active(t_sink)) {
+		return;
+	}
+	if (phase >= 0 && phase < t_sink->slot_count) {
+		t_sink->slots[phase] = 0.0;
+	}
+}
+
 void counter(const char *name, double value) noexcept {
 	if (name == nullptr) {
 		return;
@@ -103,9 +131,11 @@ namespace {
 // identificadores distintos. A macro usa a indireção `OGS_CAT` para expandir
 // `__LINE__` antes da colagem; sem ela (`##__LINE__` cola o literal), as duas
 // declarações abaixo colidem e o build debug falha aqui.
-[[maybe_unused]] void zone_same_scope_compile_guard(int phase_a, int phase_b) noexcept {
+[[maybe_unused]] void zone_same_scope_compile_guard(
+		int phase_a, int phase_b, int phase_c) noexcept {
 	OGS_SIM_ZONE(phase_a);
 	OGS_SIM_ZONE(phase_b);
+	OGS_SIM_ZONE_ADD(phase_c);
 }
 }  // namespace
 

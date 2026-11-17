@@ -843,6 +843,11 @@ namespace ogs {
 		kPhasePrologueSnapshot, kPhasePrologueIndexes, kPhasePrologueOther,
 		kPhaseArrivalTransit,
 		kPhaseFiscalCityGov, kPhaseFiscalEqualize, kPhaseFiscalGroups,
+		// Zonas finas do comércio (A7): preparo, cálculo (paralelo) e liquidação
+		// (serial) do comércio de alimento, mais candidatos/ofertas/liquidação
+		// dentro do laço de bens. Só medição — nenhum efeito no jogo.
+		kPhaseTradeFoodPrep, kPhaseTradeFoodCalc, kPhaseTradeFoodSettle,
+		kPhaseTradeGoodsCand, kPhaseTradeGoodsOffers, kPhaseTradeGoodsSettle,
 		kPhaseCount
 	};
 
