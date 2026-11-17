@@ -53,7 +53,7 @@ from scipy import ndimage
 
 from world_city_curation import (
     CAPITAL_OVERRIDES, EXCLUDED_CITIES, EXCLUDED_CITY_NAMES, FORCED_CITIES,
-    FORCED_PORTS,
+    FORCED_PORTS, POPULATION_OVERRIDES,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -1058,6 +1058,12 @@ class World:
                     name_en = c["name"]
                     lat, lon = c["lat"], c["lon"]
                     population_c = int(c["pop"])
+                    pop_override = POPULATION_OVERRIDES.get(cid)
+                    if pop_override:
+                        # Correção de fonte (Q-016): população oficial no lugar do
+                        # valor repetido do GeoNames. Recalcula também a usina de
+                        # trigo abaixo (`farm`), que segue a regra de POP_PER_TON.
+                        population_c = int(pop_override["population"])
                     capital = "1" if cap and c["id"] == cap["id"] else "0"
                     kind, point, coast_km = c.get("_port") or self.port_for(tag, c)
                     c["_port"] = (kind, point, coast_km)
@@ -1091,6 +1097,9 @@ class World:
                         name_es = c.get("forced_name_es") or name_es
                     if name_en in NAME_OVERRIDE:
                         name_en, name_pt, name_es = NAME_OVERRIDE[name_en]
+                    if pop_override:
+                        note = pop_override["note"]
+                        source = pop_override["source"]
                 used_ids.add(cid)
                 bkm = round(self.border_km(lat, lon), 1)
                 if bkm < (BORDER_SMALL_KM if info["area"] < SMALL_AREA_KM2 else BORDER_KM):
@@ -1101,7 +1110,9 @@ class World:
                     "name_es": name_es, "lat": lat, "lon": lon,
                     "population": population_c,
                     "population_year": (2026 if legacy
-                                        else c.get("forced_year", 2026)),
+                                        else (pop_override["population_year"]
+                                              if pop_override
+                                              else c.get("forced_year", 2026))),
                     "capital": capital, "port": port, "role": role,
                     "landmass": landmass,
                     "pop_src": "agglomeration" if legacy else "city_proper",

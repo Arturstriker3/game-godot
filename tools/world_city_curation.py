@@ -290,6 +290,25 @@ CAPITAL_OVERRIDES = {
     "SOL": "SOL-HAR",
 }
 
+# Correções de POPULAÇÃO da fonte (Q-016, 2026-11-17). O GeoNames repete o valor
+# de outra cidade em alguns registros; o valor correto e a fonte estão aqui. O
+# importador aplica em `cities_source.csv` e o build_world_cities reaplica na
+# projeção, para a correção sobreviver a uma regeneração da fonte.
+# `method`/`confidence` declaram como o número foi obtido, não são decoração.
+POPULATION_OVERRIDES = {
+    "AFG-MAZ": {
+        "population": 484500,
+        "population_year": 2020,
+        "method": "official_projection",
+        "confidence": "high",
+        "source": ("CSO Afghanistan, projeção 2020-09-21, via "
+                   "citypopulation.de/en/afghanistan/cities/ (acesso 2026-11-17); "
+                   "GeoNames trazia 523.300, o valor de Kandahar"),
+        "note": ("Q-016: GeoNames duplicava a população de Kandahar (523.300); "
+                 "CSO projeta 484.500 para Mazār-e Sharīf"),
+    },
+}
+
 # Cidades que entram sempre, mesmo fora da cota/da seleção automática.
 FORCED_CITIES = [
     {
