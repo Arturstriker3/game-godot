@@ -231,8 +231,14 @@ void pay_transfers(WorldState& ws, std::size_t count,
 
 // Decisão de obra do mês (regra simples e determinística da spec §19 W2):
 // zona acima de kBusyOccupancy -> adensar se a infraestrutura atende a
-// população, senão expandir se há reserva de solo; sem zona cheia e com déficit
-// popular -> moradia social. Respeita o caixa (sem dívida).
+// população, senão expandir se há reserva de solo; déficit popular -> moradia
+// social. Respeita o caixa (sem dívida) e não gasta o caixa inteiro de uma vez:
+// cada frente consome no máximo kWorksCashShare do que existe em caixa.
+//
+// As duas frentes são INDEPENDENTES (spec W2 e city_gov.h): uma obra de solo
+// por vez por cidade e uma de moradia. Antes, a cidade com zona cheia saía da
+// função mesmo quando a obra de solo era recusada e nunca avaliava o déficit
+// popular.
 //
 // INTEGRAÇÃO: as obras de solo são projetos §15 do W1 (`urban_land::
 // start_project`), pagos pelo CAIXA da prefeitura; a moradia social é o projeto
@@ -262,10 +268,11 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 			break;
 		}
 	}
-	if (project_active) {
-		return;  // obra de solo já em andamento nesta cidade
-	}
-	if (busy_zone >= 0) {
+	// Frente de solo: uma por vez e só em cidade acima do gatilho (nada de obra
+	// em cidade com folga). O que a obra pode gastar é uma fração do caixa.
+	bool soil_opened = false;
+	if (!project_active && busy_zone >= 0) {
+		const double spendable = safe_nonneg(gov.cash) * kWorksCashShare;
 		// Adensar: só se o gabarito permite e a infraestrutura já atende a
 		// população atual (densidade nova exige infra, spec W2).
 		const bool can_densify =
@@ -273,22 +280,21 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 			&& land.infra_capacity + 1e-9 >= city.simulation_population;
 		if (can_densify) {
 			const double cost = urban_land::densify_cost(ws, city_index, busy_zone);
-			if (cost > 0.0 && safe_nonneg(gov.cash) + 1e-9 >= cost) {
+			if (cost > 0.0 && spendable + 1e-9 >= cost) {
 				std::string error;
 				std::string project_id;
 				if (urban_land::start_project(ws, core, city_index, busy_zone,
 						urban_land::URBAN_DENSIFY, 0.0, "state", &error,
 						&project_id, &gov)) {
 					gov.month_expense_infrastructure += cost;
-					return;
+					soil_opened = true;
 				}
 			}
 		}
-		if (land.reserve_km2 > 1e-9) {
+		if (!soil_opened && land.reserve_km2 > 1e-9) {
 			const double per_km2 =
 				urban_land::expansion_cost_per_km2(ws, city_index);
-			const double km2_by_cash = per_km2 > 0.0
-				? safe_nonneg(gov.cash) / per_km2 : 0.0;
+			const double km2_by_cash = per_km2 > 0.0 ? spendable / per_km2 : 0.0;
 			const double km2 = std::min({kExpansionKm2, land.reserve_km2,
 				km2_by_cash});
 			if (km2 > 1e-6) {
@@ -299,11 +305,10 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 						urban_land::URBAN_EXPAND, km2, "state", &error,
 						&project_id, &gov)) {
 					gov.month_expense_infrastructure += cost;
-					return;
+					soil_opened = true;
 				}
 			}
 		}
-		return;
 	}
 
 	// Déficit popular -> moradia social pelo projeto de moradia do W3. A
@@ -323,8 +328,16 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 	if (deficit <= 1.0 || cost_unit <= 0.0) {
 		return;
 	}
+	// A moradia social também é uma fração do caixa (mesma régua da obra de
+	// solo): a prefeitura não zera o caixa numa única frente.
+	const double affordable = safe_nonneg(gov.cash) * kWorksCashShare
+		/ std::max(1e-9, cost_unit);
+	const double units = std::min(deficit, affordable);
+	if (units < 1.0) {
+		return;
+	}
 	const double cash_before = safe_nonneg(gov.cash);
-	if (housing::start_social_housing(ws, core, city_index, deficit)) {
+	if (housing::start_social_housing(ws, core, city_index, units)) {
 		// O custo registrado é o que efetivamente saiu do caixa.
 		gov.month_expense_social_housing +=
 			std::max(0.0, cash_before - safe_nonneg(gov.cash));
