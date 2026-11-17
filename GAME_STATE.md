@@ -586,7 +586,7 @@ A IA deixou de rodar tudo a cada 7 dias no mesmo frame: o dia só **agenda** as 
 ### 13.4 Escala mundial: tick em worker, status reaproveitado e comércio espacial (feito)
 
 - **O dia não roda no frame:** `core/economy/tick_scheduler.gd` agenda `sim.tick_and_publish()` no `WorkerThreadPool` (uma tarefa por dia) e `Economy._process` só consulta (`poll`) até o dia terminar. Regras: **um escritor** sobre o `sim` (com o dia em andamento, o relógio espera — teto de backlog de 1 dia — e a IA não roda). `poll()`/`wait()` juntam a tarefa e leem o slot que a thread **já publicou** — `get_status()` sai em O(1) depois do tick (0,02 ms de pico por poll em 650 cidades no `economy_tick_async_test`). Nenhum Variant/Dictionary do Godot nasce, muda ou morre na thread: ela só chama C++ puro. O pool libera o ID no `wait_for_task_completion`, então consultá-lo depois imprime "Invalid Task ID" (bug corrigido).
-- **Contrato do status:** `get_status()` devolve um **snapshot válido até o próximo dia**. O dicionário é **reaproveitado** (double buffer de 2 slots: o worker escreve no slot inativo enquanto a UI/IA leem o último status completo). Quem precisa reter o valor entre dias deve copiar (`duplicate(true)` no GDScript). Métodos que mudam estado **fora** do tick — `invest`, `build`, `spend_government`, `price_shock`, `set_suitability/deposit/external_demand` — chamam `status_invalidate()`, senão a UI mostraria o snapshot do início do dia (foi o que quebrou `economy_integration_test` na primeira versão).
+- **Contrato do status:** `get_status()` devolve um **snapshot válido até o próximo dia**. O dicionário é **reaproveitado** (double buffer de 2 slots: o worker escreve no slot inativo enquanto a UI/IA leem o último status completo). Quem precisa reter o valor entre dias deve copiar (`duplicate(true)` no GDScript). Métodos que mudam estado **fora** do tick — `invest`, `build`, `spend_government`, `price_shock`, `set_suitability/deposit/external_demand` — chamam `status_invalidate()`, senão a UI mostraria o snapshot do início do dia (foi o que quebrou `economy_integration_test` na primeira versão). Desde a A3 (§13.8) essas mutações entram numa **fila de comandos** e a invalidação é um único ponto, na barreira que aplica o lote.
 - **Memória:** o double buffer custa **~41 MB** com 650 cidades (dois status completos retidos; o delta total do bench inclui o mundo sintético e o save).
 - **Status barato:** cada slot guarda o último valor gravado por produto (`markets`, `imported/exported/import_value/export_value`) e só escreve em `Dictionary` o que mudou — a cidade típica movimenta 2–5 dos 21 produtos, então 16–19 mercados inertes custam comparação de `double`, não hash de `String`. Fase `status` (650): **45,2 → 10,8 ms**.
 - **Comércio espacial:** o comprador avalia K=12 vizinhos da grade (célula 32 u) + M=8 ofertas mais baratas por caloria do globo (vendedores reais). `sellers_left` cai quando um vendedor esgota no meio do dia e o anel para; o laço do anel tem raio máximo **útil** (Chebyshev até o canto mais distante), percorre só o **perímetro** (O(raio) por anel, não O(raio²)) e um teto de células por comprador. Sem isso o anel varria 5,2 M células por comprador quando havia menos de K vendedores.
@@ -926,6 +926,52 @@ violações) seguem verdes.
 
 ---
 
+### 13.8 A3 - fila de comandos: mutação fora do tick vira comando (feito)
+
+Toda ação do jogador/IA que muda o mundo **fora do tick** passou a ser um
+`ogs::Command` (tipo + parâmetros + dia + ordem de emissão) numa fila própria
+(`gdextension/src/sim/commands.{h,cpp}`), aplicada em ordem determinística. A
+assinatura pública do binding **não mudou**: os chamadores GDScript (IA, UI,
+testes) continuam iguais.
+
+- **Onde aplica:** `apply_commands()` é a primeira chamada de `tick_core()`,
+  antes do prólogo; e, entre dias, o próprio método aplica na hora porque
+  devolve resultado (`invest`/`build`/`group_invest` → IA e testes leem o
+  retorno). Com o dia rodando em **outra** thread (o `tick_scheduler`), a
+  mutação só enfileira — não toca o `ws_` nem disputa o mutex. Chamada da
+  **própria** thread do dia (ex.: `seed_industry → build`) aplica na hora; sem
+  essa distinção as plantas de referência do bootstrap ficavam na fila e o
+  golden divergia (pego na primeira versão).
+- **Inventário:** 31 métodos convertidos (`invest`, `build`, `group_invest`,
+  `fund_group`, política de IDE/incentivo, `create_state_company`,
+  `privatize`/`nationalize`, `spend_government`, `price_shock`,
+  `set_suitability/deposit/external_demand/external_income_index/productivity_index/
+  income_gini/minimum_wage/wage_rigidity`, `set_tariff`, `set_currency_rate`,
+  `expand_port`, `set_port_capacity`, `set_market_stock/price`, `fleet_buy`,
+  `urban_expand/densify/social_housing`, `set_service_capacity/
+  business_state`). Carga de mundo (`set_goods/recipes/needs/services/urban/
+  balance/fleet/currencies`, `initialize_*`, `from_*`, `seed_*`) continua
+  direta — não é ação de jogo.
+- **`status_invalidate()`:** de 40 chamadas espalhadas para **1** ponto na
+  barreira do lote (fora do tick). Os aplicadores não invalidam mais.
+- **Log e replay:** `get_command_log()` devolve `Array[Dictionary]`
+  (`type/day/seq/s/v/i/b`), serializável em JSON, com teto de 200 mil entradas
+  (`command_log_truncated()`); `replay_commands(log, day)` reproduz o mundo a
+  partir do mesmo snapshot. `tools/command_replay_test.gd` prova: mesmo
+  snapshot + mesmo log (via `JSON.stringify`/`parse_string`) = **0 diferenças**.
+- **Aceite:** `world_equivalence.ps1 -Baseline A0_60_urban.json` (60 d, IA +
+  urbano) **PASS** — run1 × run2 = 0 diferenças e os dois shas iguais ao golden
+  (`save=3e3ebb…`, `status=d79bfe…`); `economy_integration_test`,
+  `economy_ai_test`, `population_demo_test`, `economy_save_load_roundtrip_test`
+  (0 diffs), `investment_test`, `construction_project_test`,
+  `housing_market_test`, `city_gov_test`, `economy_tick_async_test` e
+  `command_replay_test` verdes; CLI × Godot sem IA byte-idênticos; threads 1 × 8
+  idênticos. `tools/convoy_lifecycle_test.gd` **já falhava na base** com
+  `--script` (`Identifier not found: Economy`) — não é regressão da A3.
+  Mecânica em `docs/economy/refactor/A3_commands.md`.
+
+---
+
 ## 14. Registro de decisões
 
 | ID | Decisão | Justificativa / consequência |
@@ -1005,6 +1051,8 @@ violações) seguem verdes.
 
 | D-068 | **Fase A1a — núcleo como biblioteca C++ pura (`opengs_sim`) + `opengs_sim_cli`** (branch `perf/a1-core-lib`, base `d71deb5` = HEAD do A0): `sim/*.cpp` viraram **lib estática C++20 sem godot-cpp**; o save/load **v14** foi portado mecanicamente para `sim/save_state.*` sobre um tipo de valor JSON próprio (`sim/save_value.*`, ordem de inserção preservada — o hash do save depende dela; `nlohmann/json` 3.11.3 vendorizado em `gdextension/third_party/` com a licença MIT), e a fachada Godot ficou reduzida a `edge/value_bridge.*` + `edge/save_load.*` (22 linhas). A ordem do dia saiu do `demo_tick_core` para `sim/sim_day.cpp` (`ogs::demo_tick_day`), que a fachada só chama. O bloco **estático** que o save não carrega (produtos/preços-base/setores, receitas, níveis de necessidade, setores de serviço, âncoras de emprego e parâmetros de balanceamento) ganhou serialização própria (`sim/save_definitions.*`) e viaja no snapshot `{definitions, save}` que o CLI lê. Superfície nova de ferramenta: `demo_to_snapshot(_file)` / `demo_from_snapshot(_file)`; ferramentas `tools/export_world_snapshot.gd` e `tools/snapshot_replay.gd`. **Achado:** `JSON.stringify`/`JSON.parse_string` do Godot **não são IEEE-exatos** em `|x|<1` (`0.0002886172890222971` vira `0.00028861728902229`), então o snapshot só trafega pelo serializador do núcleo — o save/load do jogo não é afetado (passa `Dictionary` em memória). | **Aceite medido (2026-11-17, host do A0):** (a) golden A0 **inalterado** — `save 3e3ebbbe…1a3d0b7`, `status d79bfe32…c95ac9b`, money 2.200.539.587,40, 0 falências; `economy_integration_test`/`economy_ai_test`/`population_demo_test`/`economy_save_load_roundtrip_test` (60 d, save no dia 30) verdes, 0 diffs; threads 1×8 com os mesmos shas (só `meta.threads` difere). (b) CLI 2×60 d → **mesmo SHA-256** `79c7897a…`. (c) replay do Godot e CLI em 60 d → arquivos **byte-idênticos** (`79c7897a…`) e comparador **0 diferenças com tolerância 0**, `definitions` incluído (834 cidades, 0 violações). (d) `bench_canonical.ps1` 60 d × 3: tick **35,98 ms** vs 36,58 (−1,63%), dia completo **153,82 ms** vs 155,51 (−1,09%), variação 1,58% (≤3%). Snapshot 52,3 MiB; carga ~9,8 s e ~47 ms/dia no CLI (pendência para a A2). **Limites:** sem IA (A5) e sem bootstrap no CLI (`demo_seed_industry` vive na fachada; snapshot sem `industry_seeded` é recusado); remover `legacy`/`benchmark` e renomear `demo_*` fica para a A1b. Doc: `docs/economy/refactor/A1_core_lib.md`. |
 | D-069 | **Fase A1b — limpeza dos modos legacy/benchmark e renomeação de `demo_*`** (branch `perf/a1b-cleanup`, base `0a27150` = HEAD do A1a): (1) **inventário antes de apagar** — o mundo legado (`initialize`/`tick`/`get_status`, trigo por cidade) e o benchmark sintético (`initialize_benchmark`/`run_benchmark`, tipos `Bench*`, `tools/economy_benchmark.gd`) já tinham saído na S4 (D-029); grep neste HEAD = **0** referências a qualquer um deles em C++, GDScript, cenas e tools. Nenhum teste/ferramenta existia só para eles. O cenário AGRIA/PORTUS (`initialize_scenario` → `sim/scenario_fixture.cpp`) **fica**: é fixture de 13 ferramentas de teste (incluindo 3 do aceite) e não é caminho do jogo — removê-lo exigiria reinventar números. (2) **Removido o resto morto**: `enum class DemoProduct` (21 índices fixos do mundo legado) e as constantes sem uso `kDemoServiceMinShare`/`MaxShare` (limites do bench sintético), `kDemoFreightPerTonKm`/`kDemoFreightShipPerTonKm` (frete do mercado legado), `kDemoLaborShare` e `kDemoProductionBuffer` (regras do legado); comentários que apontavam para o bench sintético corrigidos. (3) **Renomeação mecânica** em 3 commits separados (C++ 38 arquivos; chamadores 64 arquivos): `demo_*=*`, `tick_demo`→`tick_day`, `get_demo_status`→`get_status`, `initialize_demo(_world)`→`initialize_scenario`/`initialize_world`, `demo_snapshot/restore`→`snapshot_state/restore_state`, tipos `DemoX`→`X`, `find_demo_*`→`find_*`, `kDemo*`→`k*`. **Intocado**: chaves do save, chaves do status e o valor `status.mode = "demo"` — goldens e saves antigos seguem válidos. | **Aceite medido (2026-11-17, DLL debug do worktree):** golden A0 (60 d, IA, `--urban=1`) **0 diferenças** — `save 3e3ebbbe…1a3d0b7`, `status d79bfe32…c95ac9b`, money 2.200.539.587,40, 0 falências; threads **1×8** com os mesmos dois shas (só `meta.threads` difere); `economy_integration_test`, `economy_ai_test`, `population_demo_test`, `construction_project_test`, `housing_market_test` e `city_gov_test` verdes; `economy_save_load_roundtrip_test` (60 d, save no dia 30) **0 diffs**; `opengs_sim_cli` × replay do Godot sem IA **byte-idênticos** (`sha256 79c7897a…`) e comparador 0 diferenças com tolerância 0; build debug e release (`OGS_PROFILE_RELEASE=ON`, `template_release`) sem warning novo; bench canônico N=3 (editor fechado, release de medição) tick de parede **36,78 ms** vs 35,98 do A1a (**+2,2%**, limite 3%), dia completo 155,92 vs 153,82 (+1,4%), variação 1,46% (a 1ª tentativa foi descartada: outra frente rodava Godot headless de 365 d no host). Doc: `docs/economy/refactor/A1b_cleanup.md`. |
+
+| D-070 | **Fase A3 — mutação fora do tick vira `Command` numa fila determinística** (branch `perf/a3-commands`, base `85ca5b8`): os 31 métodos do binding que mudam o mundo por ação do jogador/IA (`invest`, `build`, `group_invest`, `fund_group`, política de IDE/incentivo, estatais/privatização/nacionalização, `spend_government`, `price_shock`, os `set_*` de geografia/mercado/câmbio/tarifa/trabalho/serviço, porto, frota e §19 urbano) só montam `ogs::Command` (tipo + slots `s[6]/v[6]/i[2]/b` + dia + `seq`) e enfileiram; a fila (`sim/commands.*`, trava própria simples, sem Godot) é aplicada em **ordem de emissão** por `apply_commands()`, a primeira chamada de `tick_core()`. A assinatura pública **não mudou** — e o retorno é preservado aplicando na hora quando o dia não está rodando (IA e testes leem `result`), o único caminho síncrono. Com o dia em **outra** thread, só enfileira (dispensa o mutex recursivo no caminho normal); chamada da **própria** thread do dia (ex. `seed_industry → build`) aplica na hora. `status_invalidate()` caiu de 40 pontos para **1** (barreira do lote). Log `Array[Dictionary]` (JSON) + `replay_commands()`; teto de 200 mil entradas. **Descartado:** adiar também os métodos com retorno (quebraria IA/testes) e mover os aplicadores para o núcleo (escopo da A5; o CLI não aplica comandos). | **Aceite medido:** golden A0 (60 d, IA, urbano) **PASS** — run1×run2 0 diferenças e `save 3e3ebbbe…`, `status d79bfe32…` iguais ao versionado; `economy_integration_test`, `economy_ai_test`, `population_demo_test`, `economy_save_load_roundtrip_test` (0 diffs), `investment_test`, `construction_project_test`, `housing_market_test`, `city_gov_test`, `economy_tick_async_test` verdes; `command_replay_test` (novo) = 0 diffs no replay via JSON; CLI × Godot sem IA byte-idênticos. Primeira versão divergia o golden porque `seed_industry` (dentro do tick) enfileirava os `build` do bootstrap — corrigido com o hash da thread do dia. |
 
 ---
 
