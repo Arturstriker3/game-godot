@@ -1,0 +1,625 @@
+{
+    "meta":  {
+                 "generated_utc":  "2026-11-17T17:50:54Z",
+                 "days":  60,
+                 "rounds":  1,
+                 "tick_mode":  "worker",
+                 "godot":  "C:\\Users\\artur\\OneDrive\\Área de Trabalho\\Godot_v4.7.2-stable_win64.exe",
+                 "release_dll":  "G:\\projetos\\opengs-wt-a6\\gdextension\\bin\\economy_gdextension.windows.template_release.x86_64.dll",
+                 "release_sha256":  "2a270cd1e0863c29819733fe3093ff77c29a68715594047c5be4abd87e6f50e3",
+                 "slot_sha256_before":  "1030258bccd5e5c3a9129476355ca337ced1c1b0e239f1b2120a0b30364e489e",
+                 "host":  {
+                              "cpu":  "AMD Ryzen 7 5700X3D 8-Core Processor",
+                              "logical_cores":  16,
+                              "os":  "Microsoft Windows 11 Pro"
+                          },
+                 "notes":  "Release de medição (OGS_PROFILE_RELEASE=ON) copiado temporariamente sobre o slot debug e restaurado ao final (sha conferido); editor fechado verificado antes de começar; threads não passadas (padrão do núcleo); memory_static_mb vem do meta de cada rodada (OS.get_static_memory_usage com o mundo carregado, sem o mapa 3D)."
+             },
+    "rounds":  [
+                   {
+                       "round":  1,
+                       "metrics":  {
+                                       "ai_plan_ms":  {
+                                                          "max":  0.0,
+                                                          "mean":  0.0,
+                                                          "n":  60,
+                                                          "p50":  0.0,
+                                                          "p95":  0.0
+                                                      },
+                                       "ai_pump_ms":  {
+                                                          "max":  0.0,
+                                                          "mean":  0.0,
+                                                          "n":  60,
+                                                          "p50":  0.0,
+                                                          "p95":  0.0
+                                                      },
+                                       "day_total_ms":  {
+                                                            "max":  94.517,
+                                                            "mean":  58.0934666666667,
+                                                            "n":  60,
+                                                            "p50":  56.43,
+                                                            "p95":  71.694
+                                                        },
+                                       "enqueue_orders_ms":  {
+                                                                 "max":  4.84,
+                                                                 "mean":  3.11278333333333,
+                                                                 "n":  60,
+                                                                 "p50":  3.033,
+                                                                 "p95":  4.027
+                                                             },
+                                       "frame_peak_ms":  {
+                                                             "max":  10.875,
+                                                             "mean":  8.46098333333333,
+                                                             "n":  60,
+                                                             "p50":  8.328,
+                                                             "p95":  10.424
+                                                         },
+                                       "hud_log_ms":  {
+                                                          "max":  7.207,
+                                                          "mean":  5.31243333333333,
+                                                          "n":  60,
+                                                          "p50":  5.274,
+                                                          "p95":  6.616
+                                                      },
+                                       "map_ms":  {
+                                                      "max":  0.0,
+                                                      "mean":  0.0,
+                                                      "n":  60,
+                                                      "p50":  0.0,
+                                                      "p95":  0.0
+                                                  },
+                                       "poll_ms":  {
+                                                       "max":  0.039,
+                                                       "mean":  0.0157,
+                                                       "n":  60,
+                                                       "p50":  0.014,
+                                                       "p95":  0.026
+                                                   },
+                                       "pump_ms":  {
+                                                       "max":  3039.76500000001,
+                                                       "mean":  633.282,
+                                                       "n":  60,
+                                                       "p50":  465.501,
+                                                       "p95":  2343.524
+                                                   },
+                                       "tick_wall_ms":  {
+                                                            "max":  94.517,
+                                                            "mean":  58.0934666666667,
+                                                            "n":  60,
+                                                            "p50":  56.43,
+                                                            "p95":  71.694
+                                                        },
+                                       "turn_ms":  {
+                                                       "max":  10.875,
+                                                       "mean":  8.44331666666666,
+                                                       "n":  60,
+                                                       "p50":  8.328,
+                                                       "p95":  10.424
+                                                   }
+                                   },
+                       "phases":  {
+                                      "accounting":  {
+                                                         "max":  0.6125,
+                                                         "mean":  0.412178333333333,
+                                                         "n":  60,
+                                                         "p50":  0.363,
+                                                         "p95":  0.5897
+                                                     },
+                                      "ai":  {
+                                                 "max":  14.6982,
+                                                 "mean":  9.62251,
+                                                 "n":  60,
+                                                 "p50":  9.2657,
+                                                 "p95":  13.6641
+                                             },
+                                      "ai_view":  {
+                                                      "max":  11.133,
+                                                      "mean":  6.832415,
+                                                      "n":  60,
+                                                      "p50":  6.8827,
+                                                      "p95":  9.7067
+                                                  },
+                                      "arrival":  {
+                                                      "max":  8.7741,
+                                                      "mean":  7.17935,
+                                                      "n":  60,
+                                                      "p50":  7.3028,
+                                                      "p95":  8.324
+                                                  },
+                                      "arrival_transit":  {
+                                                              "max":  0.0582,
+                                                              "mean":  0.0355816666666667,
+                                                              "n":  60,
+                                                              "p50":  0.0375,
+                                                              "p95":  0.0526
+                                                          },
+                                      "clamp":  {
+                                                    "max":  0.4273,
+                                                    "mean":  0.117811666666667,
+                                                    "n":  60,
+                                                    "p50":  0.1096,
+                                                    "p95":  0.1458
+                                                },
+                                      "fiscal":  {
+                                                     "max":  20.8313,
+                                                     "mean":  0.762098333333333,
+                                                     "n":  60,
+                                                     "p50":  0.1141,
+                                                     "p95":  0.1949
+                                                 },
+                                      "fiscal_city_gov":  {
+                                                              "max":  20.6807,
+                                                              "mean":  0.634273333333333,
+                                                              "n":  60,
+                                                              "p50":  0.0033,
+                                                              "p95":  0.0047
+                                                          },
+                                      "fiscal_equalize":  {
+                                                              "max":  0.761,
+                                                              "mean":  0.087855,
+                                                              "n":  60,
+                                                              "p50":  0.0724,
+                                                              "p95":  0.1218
+                                                          },
+                                      "fiscal_groups":  {
+                                                            "max":  0.0766,
+                                                            "mean":  0.0396166666666667,
+                                                            "n":  60,
+                                                            "p50":  0.0373,
+                                                            "p95":  0.0522
+                                                        },
+                                      "fleet_day":  {
+                                                        "max":  0.1442,
+                                                        "mean":  0.00779166666666667,
+                                                        "n":  60,
+                                                        "p50":  0.0023,
+                                                        "p95":  0.0103
+                                                    },
+                                      "fx":  {
+                                                 "max":  0.3488,
+                                                 "mean":  0.192271666666667,
+                                                 "n":  60,
+                                                 "p50":  0.1908,
+                                                 "p95":  0.2883
+                                             },
+                                      "housing":  {
+                                                      "max":  13.3275,
+                                                      "mean":  0.397615,
+                                                      "n":  60,
+                                                      "p50":  0.0696,
+                                                      "p95":  0.1575
+                                                  },
+                                      "income":  {
+                                                     "max":  1.4467,
+                                                     "mean":  0.74442,
+                                                     "n":  60,
+                                                     "p50":  0.7343,
+                                                     "p95":  1.0584
+                                                 },
+                                      "invariants":  {
+                                                         "max":  0.6738,
+                                                         "mean":  0.35924,
+                                                         "n":  60,
+                                                         "p50":  0.3287,
+                                                         "p95":  0.5406
+                                                     },
+                                      "labor":  {
+                                                    "max":  0.2863,
+                                                    "mean":  0.115226666666667,
+                                                    "n":  60,
+                                                    "p50":  0.1072,
+                                                    "p95":  0.1733
+                                                },
+                                      "land_month":  {
+                                                         "max":  1.447,
+                                                         "mean":  0.039835,
+                                                         "n":  60,
+                                                         "p50":  0.0002,
+                                                         "p95":  0.0008
+                                                     },
+                                      "prices":  {
+                                                     "max":  0.3966,
+                                                     "mean":  0.153945,
+                                                     "n":  60,
+                                                     "p50":  0.1486,
+                                                     "p95":  0.1876
+                                                 },
+                                      "production":  {
+                                                         "max":  1.0424,
+                                                         "mean":  0.819128333333333,
+                                                         "n":  60,
+                                                         "p50":  0.8255,
+                                                         "p95":  1.0136
+                                                     },
+                                      "prologue_indexes":  {
+                                                               "max":  0.0469,
+                                                               "mean":  0.0131633333333333,
+                                                               "n":  60,
+                                                               "p50":  0.0114,
+                                                               "p95":  0.0238
+                                                           },
+                                      "prologue_other":  {
+                                                             "max":  2.0367,
+                                                             "mean":  1.04273166666667,
+                                                             "n":  60,
+                                                             "p50":  1.0309,
+                                                             "p95":  1.7121
+                                                         },
+                                      "prologue_snapshot":  {
+                                                                "max":  7.1685,
+                                                                "mean":  6.03381,
+                                                                "n":  60,
+                                                                "p50":  6.1543,
+                                                                "p95":  6.9436
+                                                            },
+                                      "raw":  {
+                                                  "max":  1.2834,
+                                                  "mean":  0.808213333333333,
+                                                  "n":  60,
+                                                  "p50":  0.8027,
+                                                  "p95":  0.996
+                                              },
+                                      "reset":  {
+                                                    "max":  1.3779,
+                                                    "mean":  1.02987333333333,
+                                                    "n":  60,
+                                                    "p50":  1.0295,
+                                                    "p95":  1.344
+                                                },
+                                      "services":  {
+                                                       "max":  14.4066,
+                                                       "mean":  1.677875,
+                                                       "n":  60,
+                                                       "p50":  1.338,
+                                                       "p95":  2.2667
+                                                   },
+                                      "services_decisions":  {
+                                                                 "max":  2.3525,
+                                                                 "mean":  0.576151666666667,
+                                                                 "n":  60,
+                                                                 "p50":  0.4124,
+                                                                 "p95":  1.4334
+                                                             },
+                                      "status":  {
+                                                     "max":  24.7452,
+                                                     "mean":  19.94076,
+                                                     "n":  60,
+                                                     "p50":  19.2734,
+                                                     "p95":  24.4637
+                                                 },
+                                      "status_cities":  {
+                                                            "max":  18.8024,
+                                                            "mean":  13.98937,
+                                                            "n":  60,
+                                                            "p50":  13.6757,
+                                                            "p95":  17.8094
+                                                        },
+                                      "status_misc":  {
+                                                          "max":  0.3195,
+                                                          "mean":  0.129325,
+                                                          "n":  60,
+                                                          "p50":  0.1201,
+                                                          "p95":  0.2112
+                                                      },
+                                      "status_nations":  {
+                                                             "max":  2.0539,
+                                                             "mean":  1.35568,
+                                                             "n":  60,
+                                                             "p50":  1.314,
+                                                             "p95":  1.8628
+                                                         },
+                                      "status_orders":  {
+                                                            "max":  6.3999,
+                                                            "mean":  4.45998833333333,
+                                                            "n":  60,
+                                                            "p50":  4.3566,
+                                                            "p95":  5.3117
+                                                        },
+                                      "trade":  {
+                                                    "max":  7.831,
+                                                    "mean":  5.72302,
+                                                    "n":  60,
+                                                    "p50":  5.6519,
+                                                    "p95":  6.6709
+                                                },
+                                      "trade_food":  {
+                                                         "max":  6.7474,
+                                                         "mean":  4.82340666666667,
+                                                         "n":  60,
+                                                         "p50":  4.7575,
+                                                         "p95":  5.5038
+                                                     },
+                                      "trade_food_buyers":  {
+                                                                "max":  5.3812,
+                                                                "mean":  3.51746166666667,
+                                                                "n":  60,
+                                                                "p50":  3.4615,
+                                                                "p95":  4.5585
+                                                            },
+                                      "trade_food_calc":  {
+                                                              "max":  2.614,
+                                                              "mean":  1.50157333333333,
+                                                              "n":  60,
+                                                              "p50":  1.4805,
+                                                              "p95":  1.8315
+                                                          },
+                                      "trade_food_prep":  {
+                                                              "max":  1.8853,
+                                                              "mean":  1.27460666666667,
+                                                              "n":  60,
+                                                              "p50":  1.2209,
+                                                              "p95":  1.7617
+                                                          },
+                                      "trade_food_settle":  {
+                                                                "max":  3.8158,
+                                                                "mean":  2.01562166666667,
+                                                                "n":  60,
+                                                                "p50":  1.9031,
+                                                                "p95":  2.768
+                                                            },
+                                      "trade_goods":  {
+                                                          "max":  1.3971,
+                                                          "mean":  0.89481,
+                                                          "n":  60,
+                                                          "p50":  0.8859,
+                                                          "p95":  1.2222
+                                                      },
+                                      "trade_goods_cand":  {
+                                                               "max":  0.0435,
+                                                               "mean":  0.023655,
+                                                               "n":  60,
+                                                               "p50":  0.0214,
+                                                               "p95":  0.0355
+                                                           },
+                                      "trade_goods_loop":  {
+                                                               "max":  0.6832,
+                                                               "mean":  0.42644,
+                                                               "n":  60,
+                                                               "p50":  0.4003,
+                                                               "p95":  0.594
+                                                           },
+                                      "trade_goods_offers":  {
+                                                                 "max":  0.005,
+                                                                 "mean":  0.002255,
+                                                                 "n":  60,
+                                                                 "p50":  0.002,
+                                                                 "p95":  0.0037
+                                                             },
+                                      "trade_goods_settle":  {
+                                                                 "max":  0.1053,
+                                                                 "mean":  0.00676333333333333,
+                                                                 "n":  60,
+                                                                 "p50":  0.0044,
+                                                                 "p95":  0.0127
+                                                             }
+                                  },
+                       "memory_static_mb":  175.376341819763,
+                       "log":  "C:\\Users\\artur\\AppData\\Local\\Temp\\opengs_a0\\145d38d4e7184870af3b6b383c916cce\\round_1.log"
+                   }
+               ],
+    "aggregate":  {
+                      "ai_plan_ms":  {
+                                         "median_across_rounds":  0
+                                     },
+                      "ai_pump_ms":  {
+                                         "median_across_rounds":  0
+                                     },
+                      "day_total_ms":  {
+                                           "median_across_rounds":  58.0934666666667
+                                       },
+                      "enqueue_orders_ms":  {
+                                                "median_across_rounds":  3.11278333333333
+                                            },
+                      "frame_peak_ms":  {
+                                            "median_across_rounds":  8.46098333333333
+                                        },
+                      "hud_log_ms":  {
+                                         "median_across_rounds":  5.31243333333333
+                                     },
+                      "map_ms":  {
+                                     "median_across_rounds":  0
+                                 },
+                      "poll_ms":  {
+                                      "median_across_rounds":  0.0157
+                                  },
+                      "pump_ms":  {
+                                      "median_across_rounds":  633.282
+                                  },
+                      "tick_wall_ms":  {
+                                           "median_across_rounds":  58.0934666666667
+                                       },
+                      "turn_ms":  {
+                                      "median_across_rounds":  8.44331666666666
+                                  },
+                      "accounting":  {
+                                         "median_across_rounds":  0.412178333333333
+                                     },
+                      "ai":  {
+                                 "median_across_rounds":  9.62251
+                             },
+                      "ai_view":  {
+                                      "median_across_rounds":  6.832415
+                                  },
+                      "arrival":  {
+                                      "median_across_rounds":  7.17935
+                                  },
+                      "arrival_transit":  {
+                                              "median_across_rounds":  0.0355816666666667
+                                          },
+                      "clamp":  {
+                                    "median_across_rounds":  0.117811666666667
+                                },
+                      "fiscal":  {
+                                     "median_across_rounds":  0.762098333333333
+                                 },
+                      "fiscal_city_gov":  {
+                                              "median_across_rounds":  0.634273333333333
+                                          },
+                      "fiscal_equalize":  {
+                                              "median_across_rounds":  0.087855
+                                          },
+                      "fiscal_groups":  {
+                                            "median_across_rounds":  0.0396166666666667
+                                        },
+                      "fleet_day":  {
+                                        "median_across_rounds":  0.00779166666666667
+                                    },
+                      "fx":  {
+                                 "median_across_rounds":  0.192271666666667
+                             },
+                      "housing":  {
+                                      "median_across_rounds":  0.397615
+                                  },
+                      "income":  {
+                                     "median_across_rounds":  0.74442
+                                 },
+                      "invariants":  {
+                                         "median_across_rounds":  0.35924
+                                     },
+                      "labor":  {
+                                    "median_across_rounds":  0.115226666666667
+                                },
+                      "land_month":  {
+                                         "median_across_rounds":  0.039835
+                                     },
+                      "prices":  {
+                                     "median_across_rounds":  0.153945
+                                 },
+                      "production":  {
+                                         "median_across_rounds":  0.819128333333333
+                                     },
+                      "prologue_indexes":  {
+                                               "median_across_rounds":  0.0131633333333333
+                                           },
+                      "prologue_other":  {
+                                             "median_across_rounds":  1.04273166666667
+                                         },
+                      "prologue_snapshot":  {
+                                                "median_across_rounds":  6.03381
+                                            },
+                      "raw":  {
+                                  "median_across_rounds":  0.808213333333333
+                              },
+                      "reset":  {
+                                    "median_across_rounds":  1.02987333333333
+                                },
+                      "services":  {
+                                       "median_across_rounds":  1.677875
+                                   },
+                      "services_decisions":  {
+                                                 "median_across_rounds":  0.576151666666667
+                                             },
+                      "status":  {
+                                     "median_across_rounds":  19.94076
+                                 },
+                      "status_cities":  {
+                                            "median_across_rounds":  13.98937
+                                        },
+                      "status_misc":  {
+                                          "median_across_rounds":  0.129325
+                                      },
+                      "status_nations":  {
+                                             "median_across_rounds":  1.35568
+                                         },
+                      "status_orders":  {
+                                            "median_across_rounds":  4.45998833333333
+                                        },
+                      "trade":  {
+                                    "median_across_rounds":  5.72302
+                                },
+                      "trade_food":  {
+                                         "median_across_rounds":  4.82340666666667
+                                     },
+                      "trade_food_buyers":  {
+                                                "median_across_rounds":  3.51746166666667
+                                            },
+                      "trade_food_calc":  {
+                                              "median_across_rounds":  1.50157333333333
+                                          },
+                      "trade_food_prep":  {
+                                              "median_across_rounds":  1.27460666666667
+                                          },
+                      "trade_food_settle":  {
+                                                "median_across_rounds":  2.01562166666667
+                                            },
+                      "trade_goods":  {
+                                          "median_across_rounds":  0.89481
+                                      },
+                      "trade_goods_cand":  {
+                                               "median_across_rounds":  0.023655
+                                           },
+                      "trade_goods_loop":  {
+                                               "median_across_rounds":  0.42644
+                                           },
+                      "trade_goods_offers":  {
+                                                 "median_across_rounds":  0.002255
+                                             },
+                      "trade_goods_settle":  {
+                                                 "median_across_rounds":  0.00676333333333333
+                                             }
+                  },
+    "variation_pct":  {
+                          "ai_plan_ms":  0,
+                          "ai_pump_ms":  0,
+                          "day_total_ms":  0,
+                          "enqueue_orders_ms":  0,
+                          "frame_peak_ms":  0,
+                          "hud_log_ms":  0,
+                          "map_ms":  0,
+                          "poll_ms":  0,
+                          "pump_ms":  0,
+                          "tick_wall_ms":  0,
+                          "turn_ms":  0,
+                          "accounting":  0,
+                          "ai":  0,
+                          "ai_view":  0,
+                          "arrival":  0,
+                          "arrival_transit":  0,
+                          "clamp":  0,
+                          "fiscal":  0,
+                          "fiscal_city_gov":  0,
+                          "fiscal_equalize":  0,
+                          "fiscal_groups":  0,
+                          "fleet_day":  0,
+                          "fx":  0,
+                          "housing":  0,
+                          "income":  0,
+                          "invariants":  0,
+                          "labor":  0,
+                          "land_month":  0,
+                          "prices":  0,
+                          "production":  0,
+                          "prologue_indexes":  0,
+                          "prologue_other":  0,
+                          "prologue_snapshot":  0,
+                          "raw":  0,
+                          "reset":  0,
+                          "services":  0,
+                          "services_decisions":  0,
+                          "status":  0,
+                          "status_cities":  0,
+                          "status_misc":  0,
+                          "status_nations":  0,
+                          "status_orders":  0,
+                          "trade":  0,
+                          "trade_food":  0,
+                          "trade_food_buyers":  0,
+                          "trade_food_calc":  0,
+                          "trade_food_prep":  0,
+                          "trade_food_settle":  0,
+                          "trade_goods":  0,
+                          "trade_goods_cand":  0,
+                          "trade_goods_loop":  0,
+                          "trade_goods_offers":  0,
+                          "trade_goods_settle":  0
+                      },
+    "criterion":  {
+                      "scope":  [
+                                    "tick_wall_ms",
+                                    "day_total_ms"
+                                ],
+                      "limit_pct":  3,
+                      "max_variation_pct":  0,
+                      "ok":  true
+                  }
+}
