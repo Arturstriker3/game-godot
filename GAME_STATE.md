@@ -518,7 +518,7 @@ Arquivos: `gdextension/src/economy_sim.cpp` (regras), `core/economy/economy.gd` 
 
 - **F8 — serviços (2026-11-15, release 3×):** 834 cidades, 30 dias, `--tick-mode=worker --profile=1`, editor aberto (mesma condição da F7): tick C++ médio **42,01 ms** (F7 45,76), p95 **48,56** (F7 54,76); `status` p95 **25,07 ms** mediana / **25,09** pior (F7 27,80/27,89; critério ≤ 30); memória estática **531,6 MB** (+3,1 MB vs F7). O custo novo (20 setores × 834 cidades) é pequeno porque os mercados de serviço são arrays fixos e o `status` reescreve no lugar. Evidência: `docs/economy/perf/f8_perf_release.txt` + `f8_release_run1..3.txt`.
 - **Cidades:** `city_render_benchmark.gd` valida 5000 cidades com orçamento de 6000 nós (MultiMesh + `MAX_DETAILED_CITIES=40`).
-- **Tick:** benchmark sintético mede tempo por fase (`run_benchmark`).
+- **Tick:** o bench canônico mede o caminho real do jogo com o perfil por fase (`tools/bench_canonical.ps1` → `tools/perf_day_peak.tscn`, `--profile=1`); o benchmark sintético do núcleo foi removido na S4 (D-029).
 - **Memória/render:** Forward+, MSAA 2×, debanding, anisitrópico 3; LOD urbano por categoria 140–900 u.
 - **Benchmarks documentados:** `docs/map_visual/REPORT.md` (mapa 3D 42% mais escuro que o 2D; nitidez cai no zoom; rótulos ilegíveis a d≥52; sem MSAA/TAA).
 - **Tabelas de papel (F6):** `DataTableView.fill_height` mede a altura de uma linha e recalcula as linhas por página em `NOTIFICATION_RESIZED` (sem polling nem custo por frame). A captura F6 fecha 204 auditorias sem `offscreen`/`text_overflow`/`text_elided`/`focus_hidden`; o avanço síncrono de até 3 dias usado para a oferta real de `25_market_offers` roda só na captura, não no jogo.
