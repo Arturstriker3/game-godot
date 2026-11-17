@@ -91,9 +91,38 @@ struct CityHousing {
 	double informal_units = 0.0;
 };
 
+// §19 (W2) — obra urbana pedida pela prefeitura. O W2 DECIDE, financia
+// (reserva o caixa do projeto) e acompanha o prazo; a execução física por
+// materiais do §15 e a conclusão de solo são do W1 (sim/urban_land.cpp) e a
+// construção de moradia é do W3 (sim/housing.cpp). Ver o ponto de integração em
+// `city_gov.h` (`start_expansion`/`start_densify`/`start_social_housing`).
+enum UrbanProjectKind : int {
+	URBAN_PROJECT_EXPAND = 0,          // abrir `area_km2` de reserva numa zona
+	URBAN_PROJECT_DENSIFY = 1,         // subir o gabarito de uma zona
+	URBAN_PROJECT_SOCIAL_HOUSING = 2,  // unidades populares do governo
+	URBAN_PROJECT_COUNT = 3,
+};
+
+// Slots de obra simultânea por cidade (uma expansão e uma moradia social).
+constexpr int kCityGovMaxProjects = 2;
+
+struct CityGovProject {
+	UrbanProjectKind kind = URBAN_PROJECT_EXPAND;
+	int zone = ZONE_RES;
+	// Expansão: km² abertos. Moradia social: unidades populares entregues.
+	double area_km2 = 0.0;
+	double units = 0.0;
+	// Orçamento da obra (XGS): `reserved` é o que ainda não foi pago e entra no
+	// dinheiro do mundo (como o fundo das obras do §15).
+	double cost = 0.0;
+	double reserved = 0.0;
+	int days_left = 0;
+	int created_day = 0;
+};
+
 // Prefeitura de uma cidade. Receita = IPTU + taxas locais + repasse nacional;
-// despesa = manutenção, infraestrutura/expansão e moradia social. No W0 só os
-// parâmetros e o acumulador do mês existem (o fluxo é do W2).
+// despesa = manutenção, infraestrutura/expansão e moradia social. O W0 define
+// os parâmetros; o fluxo mensal e as obras são do W2 (sim/city_gov.cpp).
 struct CityGov {
 	double cash = 0.0;
 	// Taxa anual do IPTU sobre o valor do estoque (fração) e taxa local sobre
@@ -109,6 +138,17 @@ struct CityGov {
 	double month_expense_maintenance = 0.0;
 	double month_expense_infrastructure = 0.0;
 	double month_expense_social_housing = 0.0;
+	// §19 (W2) — calibração e obras. `revenue_pct_gdp` é a receita subnacional
+	// da fonte (municipal_finance.json, `subnational_revenue_pct_gdp`, fração do
+	// PIB) que define o alvo da receita municipal do mês; 0 = sem dado (não se
+	// inventa nível de receita: repasse e manutenção ficam em zero).
+	double revenue_pct_gdp = 0.0;
+	double target_revenue_month = 0.0;
+	// Parte do repasse que ESTA cidade pagou do tesouro nacional (para o teste
+	// conferir que repasse recebido = repasse pago dentro da nação).
+	double month_transfer_paid = 0.0;
+	CityGovProject projects[kCityGovMaxProjects] = {};
+	int project_count = 0;
 };
 
 } // namespace ogs

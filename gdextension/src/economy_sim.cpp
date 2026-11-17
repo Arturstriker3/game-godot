@@ -5712,6 +5712,12 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 			gov.transfer_share = safe_unit(
 				static_cast<double>(fin.get(
 					"central_transfers_pct_subnational", 0.0)) / 100.0);
+			// §19 W2: alvo da receita municipal do mês = receita subnacional
+			// observada/proxy da fonte (% do PIB) × PIB municipal do mês. Sem o
+			// campo (no_data), fica 0: a prefeitura não inventa nível de receita.
+			gov.revenue_pct_gdp = safe_unit(
+				static_cast<double>(fin.get(
+					"subnational_revenue_pct_gdp", 0.0)) / 100.0);
 		}
 		gov.fee_rate = kDemoUrbanMunicipalFeeRate;
 		gov.cash = 0.0;  // sem caixa municipal na fonte; o W2 acumula receita
@@ -5809,6 +5815,26 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 	gov_out["month_expense_maintenance"] = gov.month_expense_maintenance;
 	gov_out["month_expense_infrastructure"] = gov.month_expense_infrastructure;
 	gov_out["month_expense_social_housing"] = gov.month_expense_social_housing;
+	// §19 W2: calibração do repasse, repasse pago por esta cidade e a obra em
+	// andamento (o teste e a UI leem daqui).
+	gov_out["revenue_pct_gdp"] = gov.revenue_pct_gdp;
+	gov_out["target_revenue_month"] = gov.target_revenue_month;
+	gov_out["month_transfer_paid"] = gov.month_transfer_paid;
+	Array projects;
+	for (int slot = 0; slot < gov.project_count; ++slot) {
+		const CityGovProject& project = gov.projects[slot];
+		Dictionary row;
+		row["kind"] = static_cast<int>(project.kind);
+		row["zone"] = project.zone;
+		row["area_km2"] = project.area_km2;
+		row["units"] = project.units;
+		row["cost"] = project.cost;
+		row["reserved"] = project.reserved;
+		row["days_left"] = project.days_left;
+		row["created_day"] = project.created_day;
+		projects.append(row);
+	}
+	gov_out["projects"] = projects;
 	out["gov"] = gov_out;
 	return out;
 }

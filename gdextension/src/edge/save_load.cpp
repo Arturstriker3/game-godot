@@ -559,6 +559,38 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 	}
 	data["urban"] = urban;
 
+	// §19 (W2): prefeitura em operação — calibração do repasse e obra urbana
+	// (decisão, orçamento reservado e prazo). Bloco PRÓPRIO para não disputar o
+	// dicionário `gov` do bloco `urban` com os pacotes W1/W3.
+	Array city_gov_save;
+	const std::size_t city_gov_count =
+		std::min(ws.city_gov.size(), ws.cities.size());
+	for (std::size_t index = 0; index < city_gov_count; ++index) {
+		const CityGov& gov = ws.city_gov[index];
+		Dictionary entry;
+		entry["city"] = sim_str(ws.cities[index].id.c_str());
+		entry["revenue_pct_gdp"] = gov.revenue_pct_gdp;
+		entry["target_revenue_month"] = gov.target_revenue_month;
+		entry["month_transfer_paid"] = gov.month_transfer_paid;
+		Array projects;
+		for (int slot = 0; slot < gov.project_count; ++slot) {
+			const CityGovProject& project = gov.projects[slot];
+			Dictionary row;
+			row["kind"] = static_cast<int>(project.kind);
+			row["zone"] = project.zone;
+			row["area_km2"] = project.area_km2;
+			row["units"] = project.units;
+			row["cost"] = project.cost;
+			row["reserved"] = project.reserved;
+			row["days_left"] = project.days_left;
+			row["created_day"] = project.created_day;
+			projects.append(row);
+		}
+		entry["projects"] = projects;
+		city_gov_save.append(entry);
+	}
+	data["city_gov"] = city_gov_save;
+
 	// F8: negócios de serviço (catálogo global). O nome NÃO é gravado: é
 	// derivado da semente + cultura do dono no GDScript (rótulo), então o save
 	// guarda só `name_seed` e o vínculo cidade/setor.
@@ -1901,6 +1933,60 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(gov_entry.get("month_expense_infrastructure", 0.0)));
 			gov.month_expense_social_housing = safe_nonneg(
 				double(gov_entry.get("month_expense_social_housing", 0.0)));
+		}
+	}
+
+	// §19 (W2): prefeitura em operação (bloco próprio). Save v13 anterior ao W2
+	// não tem a chave: fica sem repasse calibrado e sem obra, que é o estado
+	// honesto (a próxima carga dos JSON preenche revenue_pct_gdp).
+	if (data.has("city_gov")) {
+		const Array saved_city_gov = data.get("city_gov", Array());
+		for (int index = 0; index < saved_city_gov.size(); ++index) {
+			if (saved_city_gov[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary entry = saved_city_gov[index];
+			const std::string city_id = std::string(
+				String(entry.get("city", "")).utf8().get_data());
+			const auto found = ws.city_lookup.find(city_id);
+			if (found == ws.city_lookup.end() || found->second < 0
+					|| static_cast<std::size_t>(found->second)
+						>= ws.city_gov.size()) {
+				continue;
+			}
+			CityGov& gov = ws.city_gov[static_cast<std::size_t>(found->second)];
+			gov.revenue_pct_gdp = safe_unit(
+				double(entry.get("revenue_pct_gdp", 0.0)));
+			gov.target_revenue_month = safe_nonneg(
+				double(entry.get("target_revenue_month", 0.0)));
+			gov.month_transfer_paid = safe_nonneg(
+				double(entry.get("month_transfer_paid", 0.0)));
+			const Array projects = entry.get("projects", Array());
+			gov.project_count = 0;
+			for (int slot = 0; slot < projects.size()
+					&& gov.project_count < kCityGovMaxProjects; ++slot) {
+				if (projects[slot].get_type() != Variant::DICTIONARY) {
+					continue;
+				}
+				const Dictionary row = projects[slot];
+				CityGovProject& project = gov.projects[gov.project_count];
+				project = CityGovProject{};
+				project.kind = static_cast<UrbanProjectKind>(std::clamp(
+					int(row.get("kind", 0)), 0, URBAN_PROJECT_COUNT - 1));
+				project.zone = std::clamp(int(row.get("zone", 0)), 0,
+					ZONE_COUNT - 1);
+				project.area_km2 = safe_nonneg(double(row.get("area_km2", 0.0)));
+				project.units = safe_nonneg(double(row.get("units", 0.0)));
+				project.cost = safe_nonneg(double(row.get("cost", 0.0)));
+				project.reserved = safe_nonneg(double(row.get("reserved", 0.0)));
+				project.days_left = std::max(0,
+					int(row.get("days_left", 0)));
+				project.created_day = int(row.get("created_day", 0));
+				if (project.days_left <= 0) {
+					continue;
+				}
+				++gov.project_count;
+			}
 		}
 	}
 }

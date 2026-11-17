@@ -1,5 +1,6 @@
 #include "sim_core.h"
 
+#include "city_gov.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
@@ -111,6 +112,8 @@ double SimCore::demo_money_total() const {
 	for (const DemoConstructionProject& project : ws_.construction_projects) {
 		total += project.reserved;
 	}
+	// §19 W2: caixa da prefeitura e fundo das obras urbanas ainda não pagos.
+	total += city_gov::money_total(ws_);
 	return total;
 }
 
@@ -127,6 +130,7 @@ void SimCore::demo_snapshot(DemoSnapshot& out) const {
 	out.confidence = ws_.confidence;
 	out.group_flows = ws_.group_flows;
 	out.currencies = ws_.currencies;
+	city_gov::snapshot(ws_, out);
 	out.transport_cash = ws_.transport_cash;
 	out.foreign_cash = ws_.foreign_cash;
 	out.construction_cash = ws_.construction_cash;
@@ -570,6 +574,7 @@ void SimCore::demo_restore(const DemoSnapshot& in) {
 	// F5: o drift cambial roda antes do invariante; desfazer um tick
 	// corrompido também desfaz a taxa do dia.
 	ws_.currencies = in.currencies;
+	city_gov::restore(ws_, in);
 	demo_rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
 	ws_.foreign_cash = in.foreign_cash;

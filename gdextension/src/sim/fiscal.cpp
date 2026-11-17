@@ -3,6 +3,7 @@
 // SimCore:: métodos movidos de sim_core.cpp — realocação byte-idêntica.
 #include "sim_core.h"
 
+#include "city_gov.h"
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
@@ -13,6 +14,9 @@
 
 namespace ogs {
 void SimCore::phase_fiscal() {
+	// §19 W2: prefeitura — IPTU, taxas locais, repasse do tesouro nacional,
+	// manutenção urbana, obras e decisão de adensar/expandir/moradia social.
+	city_gov::tick(ws_, ws_.day);
 	// Equalização fiscal per capita dentro de cada nação: o orçamento público é
 	// repartido entre as cidades proporcionalmente à população. Uma cidade rica
 	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:
