@@ -5,6 +5,7 @@
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 
+#include <atomic>
 #include <cstddef>
 #include <map>
 #include <mutex>
@@ -13,6 +14,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "sim/commands.h"
 #include "sim/sim_types.h"
 #include "sim/sim_core.h"
 #include "sim/world_state.h"
@@ -94,6 +96,44 @@ public:
 	 * a UI mostra caixa/capacidade antigos até o próximo tick.
 	 */
 	void status_invalidate();
+
+	// ------------------------------------------------------------------
+	// A3 - fila de comandos (docs/economy/refactor/A3_commands.md).
+	//
+	// Toda mutação do jogador/IA vira um `ogs::Command` e entra na fila. A fila
+	// é aplicada no INÍCIO do dia (`tick_core`, antes do prólogo) na ordem de
+	// emissão. Os métodos que devolvem um resultado (invest, build, ...)
+	// aplicam na hora quando o dia NÃO está em andamento - senão o chamador
+	// leria um retorno vazio e os testes/IA quebram; esse é o único caminho
+	// síncrono e está documentado. Com um dia em andamento (thread do tick), a
+	// ação só entra na fila: nada toca o `ws_` fora do escritor único.
+	// ------------------------------------------------------------------
+
+	/** Aplica a fila pendente agora (início do dia ou barreira de leitura). */
+	void apply_commands();
+
+	/** Nº de comandos ainda não aplicados. */
+	int pending_command_count() const;
+
+	/**
+	 * Log serializável (Array de Dictionary, pronto para JSON.stringify):
+	 * {type, day, apply_day, seq, s: [...], v: [...], i: [...], b} — as listas
+	 * `s`/`v`/`i` só aparecem quando têm algum slot não vazio. `day` é o dia da
+	 * emissão e `apply_day` o dia em que o comando foi aplicado (diferem em 1
+	 * quando o comando esperou na fila). Só o que já foi aplicado.
+	 */
+	Array get_command_log() const;
+	void clear_command_log();
+	/** true quando o log parou de crescer (teto de 200 mil comandos). */
+	bool command_log_truncated() const;
+
+	/**
+	 * Replay: aplica um log (no formato de get_command_log()) sobre o mundo
+	 * carregado, replicando o relógio - antes de cada comando avança até o dia
+	 * em que ele foi APLICADO (`apply_day`); no fim avança até `target_day`.
+	 * @returns true quando o log inteiro foi aplicado.
+	 */
+	bool replay_commands(const Array& entries, int target_day);
 
 	/** Microssegundos por fase do último tick (vazio quando desligado). */
 	Dictionary get_profile() const;
@@ -632,6 +672,81 @@ protected:
 	static void _bind_methods();
 
 private:
+	// ------------------------------------------------------------------
+	// A3: aplicação dos comandos. Cada `apply_*` é o corpo antigo do método
+	// público, SEM o mutex (quem aplica já é o escritor único) e SEM
+	// `status_invalidate()` (a barreira que aplicou invalida uma vez).
+	// O método público só monta o Command, enfileira e chama `dispatch_command`.
+	// ------------------------------------------------------------------
+	Dictionary dispatch_command(const ogs::Command& cmd);
+	Dictionary apply_one_locked(const ogs::Command& cmd);
+	// Aplica a fila pendente; quando `wanted_seq` != 0, devolve no retorno o
+	// resultado daquele comando (é o contrato de retorno dos métodos públicos).
+	Dictionary apply_pending_locked(uint64_t wanted_seq);
+
+	Dictionary apply_invest(const String& city_id, const String& building_id,
+		double amount);
+	Dictionary apply_build(const String& city_id, const String& building_id,
+		const String& resource, int input_product, int output_product,
+		double capacity, double jobs, double wage, double opex,
+		double input_per_output, const String& owner, double cost,
+		const String& recipe_id);
+	bool apply_spend_government(const String& city_id, double amount);
+	void apply_price_shock(const String& product, double multiplier);
+	void apply_set_suitability(const String& city_id, const String& product,
+		double value);
+	bool apply_set_deposit(const String& city_id, const String& product,
+		double reserve_kt, double quality, double depth_m);
+	void apply_set_external_demand(const String& city_id,
+		const String& product, double ceiling_t_per_day);
+	void apply_set_external_income_index(const String& city_id, double index);
+	void apply_set_productivity_index(const String& city_id, double index);
+	void apply_set_income_gini(const String& city_id, double gini);
+	void apply_set_minimum_wage(const String& nation, double value);
+	void apply_set_wage_rigidity(double value);
+	void apply_set_tariff(const String& buyer_nation, const String& seller_nation,
+		const String& product, double rate);
+	void apply_set_currency_rate(const String& code, double rate,
+		bool floating, double base_rate);
+	Dictionary apply_expand_port(const String& port_id, double t_per_day);
+	void apply_set_port_capacity(const String& port_id, double t_per_day);
+	void apply_set_market_stock(const String& city_id, const String& product,
+		double stock);
+	void apply_set_market_price(const String& city_id, const String& product,
+		double price);
+	Dictionary apply_fleet_buy(const String& nation, const String& product,
+		double amount, double budget_share);
+	Dictionary apply_fund_group(const String& group_id, double amount);
+	Dictionary apply_group_invest(const String& group_id, const String& city_id,
+		const String& building_id, const String& resource, int output_product,
+		double capacity, const String& recipe_id, const String& partner_group);
+	Dictionary apply_set_fdi_policy(const String& nation, const String& sector,
+		const String& mode, double min_local);
+	Dictionary apply_set_sector_incentive(const String& nation,
+		const String& sector, double tax_holiday, double subsidy);
+	Dictionary apply_create_state_company(const String& nation,
+		const String& name, double capital);
+	Dictionary apply_privatize(const String& city_id, const String& building_id,
+		const String& buyer_group);
+	Dictionary apply_nationalize(const String& city_id, const String& building_id);
+	Dictionary apply_urban_expand(const String& city_id, int zone, double km2);
+	Dictionary apply_urban_densify(const String& city_id, int zone);
+	Dictionary apply_urban_social_housing(const String& city_id, double units);
+	void apply_set_service_capacity(const String& city_id, const String& sector,
+		double units_per_day);
+	void apply_set_service_business_state(int business_id, int loss_days,
+		double profit);
+
+	// Fila de comandos (A3). `tick_in_progress_` diz se um dia está rodando em
+	// outra thread: nesse caso o método público só enfileira. `tick_thread_`
+	// (hash da thread do dia) separa "outra thread" de "a própria thread do
+	// dia": as mutações que o tick faz por dentro (seed_industry → build)
+	// precisam aplicar na hora, como sempre fizeram.
+	ogs::CommandQueue commands_;
+	std::atomic<bool> tick_in_progress_{false};
+	std::atomic<std::size_t> tick_thread_{0};
+	std::atomic<int> current_day_{0};
+
 	// ------------------------------------------------------------------
 	// Cache do status: os mesmos Dictionary/Array são reescritos a cada dia.
 	//
