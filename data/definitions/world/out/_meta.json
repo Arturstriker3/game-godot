@@ -133,7 +133,21 @@
         "AGO-BEN",
         "TUR-ANT",
         "MAR-AGA",
-        "SGP-SIN"
+        "SGP-SIN",
+        "PHL-MAN",
+        "CUB-HAV",
+        "NZL-AUC",
+        "MDG-TOA",
+        "JAM-KIN",
+        "LKA-COL",
+        "BHS-NAS",
+        "FJI-SUV",
+        "TTO-POR",
+        "BRB-BRI",
+        "SLB-HON",
+        "BHR-MAN",
+        "QAT-DOH",
+        "BRN-BAN"
       ]
     },
     "nation_curation": {
@@ -1076,12 +1090,12 @@
   "counts": {
     "nations": 179,
     "cities": 834,
-    "ports": 145,
+    "ports": 157,
     "buildings": 834,
-    "i18n_keys": 1337,
+    "i18n_keys": 1349,
     "legacy_cities": 39,
     "legacy_ports": 18,
-    "scenario_ports": 144,
+    "scenario_ports": 157,
     "cities_with_pt_exonym": 259,
     "cities_with_es_exonym": 262,
     "cities_pt_same_as_en": 552

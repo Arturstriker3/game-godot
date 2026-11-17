@@ -2237,7 +2237,21 @@
   "trade.col.product": "Bem",
   "trade.col.delivered": "Entregue",
   "trade.col.currency": "Moeda",
-  "port.name.SGP-SIN": "Singapore"
+  "port.name.SGP-SIN": "Singapore",
+  "port.name.BHR-MAN": "Khalifa Bin Salman",
+  "port.name.BHS-NAS": "Nassau",
+  "port.name.BRB-BRI": "Bridgetown",
+  "port.name.BRN-BAN": "Muara",
+  "port.name.CUB-HAV": "Havana",
+  "port.name.FJI-SUV": "Suva",
+  "port.name.JAM-KIN": "Kingston",
+  "port.name.LKA-COL": "Colombo",
+  "port.name.MDG-TOA": "Toamasina",
+  "port.name.NZL-AUC": "Auckland",
+  "port.name.PHL-MAN": "Manila",
+  "port.name.QAT-DOH": "Hamad Port",
+  "port.name.SLB-HON": "Honiara",
+  "port.name.TTO-POR": "Port of Spain"
  },
  "en": {
   "alerts.count": "{count} active",
@@ -4477,7 +4491,21 @@
   "trade.col.product": "Good",
   "trade.col.delivered": "Delivered",
   "trade.col.currency": "Currency",
-  "port.name.SGP-SIN": "Singapore"
+  "port.name.SGP-SIN": "Singapore",
+  "port.name.BHR-MAN": "Khalifa Bin Salman",
+  "port.name.BHS-NAS": "Nassau",
+  "port.name.BRB-BRI": "Bridgetown",
+  "port.name.BRN-BAN": "Muara",
+  "port.name.CUB-HAV": "Havana",
+  "port.name.FJI-SUV": "Suva",
+  "port.name.JAM-KIN": "Kingston",
+  "port.name.LKA-COL": "Colombo",
+  "port.name.MDG-TOA": "Toamasina",
+  "port.name.NZL-AUC": "Auckland",
+  "port.name.PHL-MAN": "Manila",
+  "port.name.QAT-DOH": "Hamad Port",
+  "port.name.SLB-HON": "Honiara",
+  "port.name.TTO-POR": "Port of Spain"
  },
  "es": {
   "alerts.count": "{count} activos",
@@ -6717,6 +6745,20 @@
   "trade.col.product": "Bien",
   "trade.col.delivered": "Entregado",
   "trade.col.currency": "Moneda",
-  "port.name.SGP-SIN": "Singapore"
+  "port.name.SGP-SIN": "Singapore",
+  "port.name.BHR-MAN": "Khalifa Bin Salman",
+  "port.name.BHS-NAS": "Nassau",
+  "port.name.BRB-BRI": "Bridgetown",
+  "port.name.BRN-BAN": "Muara",
+  "port.name.CUB-HAV": "Havana",
+  "port.name.FJI-SUV": "Suva",
+  "port.name.JAM-KIN": "Kingston",
+  "port.name.LKA-COL": "Colombo",
+  "port.name.MDG-TOA": "Toamasina",
+  "port.name.NZL-AUC": "Auckland",
+  "port.name.PHL-MAN": "Manila",
+  "port.name.QAT-DOH": "Hamad Port",
+  "port.name.SLB-HON": "Honiara",
+  "port.name.TTO-POR": "Port of Spain"
  }
 }

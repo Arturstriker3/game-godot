@@ -72,24 +72,6 @@
     "port_of": "AUS-SYD"
   },
   {
-    "id": "AZE-BAK",
-    "name": "Baku",
-    "nation": "AZE",
-    "x": 3193.1,
-    "y": 689.4,
-    "landmass": "continent",
-    "port_of": "AZE-BAK"
-  },
-  {
-    "id": "AZE-SUM",
-    "name": "Sumqayıt",
-    "nation": "AZE",
-    "x": 3190.0,
-    "y": 686.3,
-    "landmass": "continent",
-    "port_of": "AZE-BAK"
-  },
-  {
     "id": "BEL-ANT",
     "name": "Antwerp",
     "nation": "BEL",
@@ -106,6 +88,24 @@
     "y": 930.8,
     "landmass": "asia",
     "port_of": "BGD-RAM"
+  },
+  {
+    "id": "BHR-MAN",
+    "name": "Khalifa Bin Salman",
+    "nation": "BHR",
+    "x": 3203.1,
+    "y": 886.1,
+    "landmass": "asia",
+    "port_of": "BHR-MAN"
+  },
+  {
+    "id": "BHS-NAS",
+    "name": "Nassau",
+    "nation": "BHS",
+    "x": 1425.7,
+    "y": 901.7,
+    "landmass": "bahamas",
+    "port_of": "BHS-NAS"
   },
   {
     "id": "BRA-FOR",
@@ -151,6 +151,24 @@
     "y": 1430.4,
     "landmass": "south_america",
     "port_of": "BRA-SAL"
+  },
+  {
+    "id": "BRB-BRI",
+    "name": "Bridgetown",
+    "nation": "BRB",
+    "x": 1672.0,
+    "y": 1068.1,
+    "landmass": "barbados",
+    "port_of": "BRB-BRI"
+  },
+  {
+    "id": "BRN-BAN",
+    "name": "Muara",
+    "nation": "BRN",
+    "x": 4098.2,
+    "y": 1180.2,
+    "landmass": "asia",
+    "port_of": "BRN-BAN"
   },
   {
     "id": "CAN-MON",
@@ -205,6 +223,15 @@
     "y": 910.3,
     "landmass": "asia",
     "port_of": "CHN-XIA"
+  },
+  {
+    "id": "CUB-HAV",
+    "name": "Havana",
+    "nation": "CUB",
+    "x": 1356.0,
+    "y": 928.5,
+    "landmass": "cuba",
+    "port_of": "CUB-HAV"
   },
   {
     "id": "CYP-LIM",
@@ -315,6 +342,15 @@
     "port_of": "FIN-HEL"
   },
   {
+    "id": "FJI-SUV",
+    "name": "Suva",
+    "nation": "FJI",
+    "x": 4978.1,
+    "y": 1501.9,
+    "landmass": "fiji",
+    "port_of": "FJI-SUV"
+  },
+  {
     "id": "FRA-CAL",
     "name": "Calais",
     "nation": "FRA",
@@ -410,7 +446,7 @@
     "nation": "GEO",
     "x": 3078.3,
     "y": 671.7,
-    "landmass": "continent",
+    "landmass": "asia",
     "port_of": "GEO-BAT"
   },
   {
@@ -482,7 +518,7 @@
     "nation": "IDN",
     "x": 3962.1,
     "y": 1326.0,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-BAND"
   },
   {
@@ -491,7 +527,7 @@
     "nation": "IDN",
     "x": 3945.0,
     "y": 1234.4,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-PEK"
   },
   {
@@ -500,7 +536,7 @@
     "nation": "IDN",
     "x": 3984.1,
     "y": 1336.4,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-JAK"
   },
   {
@@ -509,7 +545,7 @@
     "nation": "IDN",
     "x": 4159.2,
     "y": 1321.7,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-MAK"
   },
   {
@@ -518,7 +554,7 @@
     "nation": "IDN",
     "x": 4064.0,
     "y": 1364.4,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-MAL"
   },
   {
@@ -536,7 +572,7 @@
     "nation": "IDN",
     "x": 3953.6,
     "y": 1289.4,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-PAL"
   },
   {
@@ -545,7 +581,7 @@
     "nation": "IDN",
     "x": 4034.1,
     "y": 1347.4,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-SEM"
   },
   {
@@ -554,7 +590,7 @@
     "nation": "IDN",
     "x": 4066.5,
     "y": 1351.0,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-SUR"
   },
   {
@@ -563,7 +599,7 @@
     "nation": "IDN",
     "x": 4032.3,
     "y": 1358.9,
-    "landmass": "java",
+    "landmass": "indonesia",
     "port_of": "IDN-SEM"
   },
   {
@@ -673,6 +709,15 @@
     "y": 669.2,
     "landmass": "continent",
     "port_of": "ITA-ROM"
+  },
+  {
+    "id": "JAM-KIN",
+    "name": "Kingston",
+    "nation": "JAM",
+    "x": 1433.3,
+    "y": 1000.7,
+    "landmass": "jamaica",
+    "port_of": "JAM-KIN"
   },
   {
     "id": "JPN-FUK",
@@ -801,6 +846,15 @@
     "port_of": "KOR-SEO"
   },
   {
+    "id": "LKA-COL",
+    "name": "Colombo",
+    "nation": "LKA",
+    "x": 3609.0,
+    "y": 1153.4,
+    "landmass": "sri_lanka",
+    "port_of": "LKA-COL"
+  },
+  {
     "id": "LVA-RIG",
     "name": "Riga",
     "nation": "LVA",
@@ -826,6 +880,15 @@
     "y": 643.0,
     "landmass": "continent",
     "port_of": "MCO-MONA"
+  },
+  {
+    "id": "MDG-TOA",
+    "name": "Toamasina",
+    "nation": "MDG",
+    "x": 3186.5,
+    "y": 1502.2,
+    "landmass": "madagascar",
+    "port_of": "MDG-TOA"
   },
   {
     "id": "MEX-TIJ",
@@ -936,6 +999,24 @@
     "port_of": "NOR-OSL"
   },
   {
+    "id": "NZL-AUC",
+    "name": "Auckland",
+    "nation": "NZL",
+    "x": 4927.5,
+    "y": 1761.7,
+    "landmass": "new_zealand",
+    "port_of": "NZL-AUC"
+  },
+  {
+    "id": "PHL-MAN",
+    "name": "Manila",
+    "nation": "PHL",
+    "x": 4180.0,
+    "y": 1047.4,
+    "landmass": "philippines",
+    "port_of": "PHL-MAN"
+  },
+  {
     "id": "POL-GDA",
     "name": "Gdańsk",
     "nation": "POL",
@@ -961,6 +1042,15 @@
     "y": 679.0,
     "landmass": "continent",
     "port_of": "PRT-POR"
+  },
+  {
+    "id": "QAT-DOH",
+    "name": "Hamad Port",
+    "nation": "QAT",
+    "x": 3216.7,
+    "y": 902.6,
+    "landmass": "asia",
+    "port_of": "QAT-DOH"
   },
   {
     "id": "RUS-KGD",
@@ -1035,6 +1125,15 @@
     "port_of": "SGP-SIN"
   },
   {
+    "id": "SLB-HON",
+    "name": "Honiara",
+    "nation": "SLB",
+    "x": 4721.6,
+    "y": 1381.0,
+    "landmass": "solomon",
+    "port_of": "SLB-HON"
+  },
+  {
     "id": "SLV-SAN",
     "name": "San Salvador",
     "nation": "SLV",
@@ -1098,12 +1197,21 @@
     "port_of": "THA-BAN"
   },
   {
+    "id": "TTO-POR",
+    "name": "Port of Spain",
+    "nation": "TTO",
+    "x": 1645.6,
+    "y": 1101.9,
+    "landmass": "trinidad",
+    "port_of": "TTO-POR"
+  },
+  {
     "id": "TUR-ADA",
     "name": "Adana",
     "nation": "TUR",
     "x": 2989.2,
     "y": 738.8,
-    "landmass": "continent",
+    "landmass": "asia",
     "port_of": "TUR-ADA"
   },
   {
@@ -1130,7 +1238,7 @@
     "nation": "TUR",
     "x": 2902.5,
     "y": 680.8,
-    "landmass": "continent",
+    "landmass": "asia",
     "port_of": "TUR-IST"
   },
   {
@@ -1139,7 +1247,7 @@
     "nation": "TUR",
     "x": 2877.5,
     "y": 716.9,
-    "landmass": "continent",
+    "landmass": "asia",
     "port_of": "TUR-IZM"
   },
   {

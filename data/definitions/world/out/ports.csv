@@ -7,21 +7,24 @@ ARG-BUE,Buenos Aires,ARG,1689.8,1731.3,south_america,
 AUS-BRI,Brisbane,AUS,4625.6,1631.8,oceania,
 AUS-MEL,Melbourne,AUS,4513.9,1775.2,oceania,
 AUS-SYD,Sydney,AUS,4600.5,1720.9,oceania,
-AZE-BAK,Baku,AZE,3193.1,689.4,continent,
-AZE-SUM,Sumqayıt,AZE,3190.0,686.3,continent,
 BEL-ANT,Antwerp,BEL,2544.4,537.1,continent,
 BGD-RAM,Rāmganj,BGD,3759.8,930.8,asia,BGD-RAM
+BHR-MAN,Khalifa Bin Salman,BHR,3203.1,886.1,asia,BHR-MAN
+BHS-NAS,Nassau,BHS,1425.7,901.7,bahamas,BHS-NAS
 BRA-FOR,Fortaleza,BRA,1965.0,1302.2,south_america,
 BRA-POR,Porto Alegre,BRA,1788.6,1667.2,south_america,
 BRA-REC,Recife,BRA,2015.7,1362.0,south_america,
 BRA-RIO,Rio de Janeiro,BRA,1900.3,1568.3,south_america,
 BRA-SAL,Salvador,BRA,1965.6,1430.4,south_america,
+BRB-BRI,Bridgetown,BRB,1672.0,1068.1,barbados,BRB-BRI
+BRN-BAN,Muara,BRN,4098.2,1180.2,asia,BRN-BAN
 CAN-MON,Montreal,CAN,1478.0,618.0,north_america,
 CAN-VAN,Vancouver,CAN,790.1,566.1,north_america,
 CHN-DON,Dongguan,CHN,4078.4,929.0,asia,CHN-DON
 CHN-GUAN,Guangzhou,CHN,4074.7,931.4,asia,CHN-GUAN
 CHN-SHAN,Shanghai,CHN,4188.2,814.8,asia,CHN-SHAN
 CHN-XIA,Xiamen,CHN,4140.3,910.3,asia,
+CUB-HAV,Havana,CUB,1356.0,928.5,cuba,CUB-HAV
 CYP-LIM,Limassol,CYP,2959.3,768.7,cyprus,
 CYP-NIC,Nicosia,CYP,2963.6,761.4,cyprus,
 DEU-HAM,Hamburg,DEU,2620.8,501.8,continent,
@@ -34,6 +37,7 @@ ESP-SEV,Seville,ESP,2411.7,739.2,continent,ESP-SEV
 ESP-VAL,Valencia,ESP,2494.8,702.2,continent,
 EST-TAL,Tallinn,EST,2843.9,424.5,continent,
 FIN-HEL,Helsinki,FIN,2846.4,414.7,continent,
+FJI-SUV,Suva,FJI,4978.1,1501.9,fiji,FJI-SUV
 FRA-CAL,Calais,FRA,2525.7,542.4,continent,
 FRA-CAY,Mana,FRA,1753.1,1171.1,guiana,
 FRA-LEH,Le Havre,FRA,2501.4,562.6,continent,
@@ -44,7 +48,7 @@ GBR-BRS,Bristol,GBR,2462.5,534.7,britain,
 GBR-DOV,Dover,GBR,2518.2,539.8,britain,
 GBR-GLA,Glasgow,GBR,2433.9,472.9,britain,
 GBR-NCL,Newcastle,GBR,2479.9,485.8,britain,
-GEO-BAT,Batumi,GEO,3078.3,671.7,continent,
+GEO-BAT,Batumi,GEO,3078.3,671.7,asia,
 GRC-ATH,Athens,GRC,2829.9,723.0,continent,
 GRC-HER,Heraklion,GRC,2849.1,759.1,europe,GRC-HER
 GRC-THE,Thessaloniki,GRC,2818.9,685.7,continent,
@@ -52,16 +56,16 @@ GUM-HAG,Hagåtña,USA,4509.1,1063.3,guam,GUM-HAG
 GUY-GEO,Georgetown,GUY,1692.3,1154.4,guiana,
 HND-SAN,San Pedro Sula,HND,1275.6,1032.1,north_america,HND-SAN
 HRV-SPL,Split,HRV,2728.6,646.1,continent,
-IDN-BAND,Bandar Lampung,IDN,3962.1,1326.0,java,
-IDN-BAT,Batam,IDN,3945.0,1234.4,java,
-IDN-JAK,Jakarta,IDN,3984.1,1336.4,java,
-IDN-MAK,Makassar,IDN,4159.2,1321.7,java,
-IDN-MAL,Malang,IDN,4064.0,1364.4,java,
+IDN-BAND,Bandar Lampung,IDN,3962.1,1326.0,indonesia,
+IDN-BAT,Batam,IDN,3945.0,1234.4,indonesia,
+IDN-JAK,Jakarta,IDN,3984.1,1336.4,indonesia,
+IDN-MAK,Makassar,IDN,4159.2,1321.7,indonesia,
+IDN-MAL,Malang,IDN,4064.0,1364.4,indonesia,
 IDN-MEDA,Medan,IDN,3872.1,1198.1,indonesia,IDN-MEDA
-IDN-PAL,Palembang,IDN,3953.6,1289.4,java,
-IDN-SEM,Semarang,IDN,4034.1,1347.4,java,
-IDN-SUR,Surabaya,IDN,4066.5,1351.0,java,
-IDN-YOG,Yogyakarta,IDN,4032.3,1358.9,java,
+IDN-PAL,Palembang,IDN,3953.6,1289.4,indonesia,
+IDN-SEM,Semarang,IDN,4034.1,1347.4,indonesia,
+IDN-SUR,Surabaya,IDN,4066.5,1351.0,indonesia,
+IDN-YOG,Yogyakarta,IDN,4032.3,1358.9,indonesia,
 IND-CHE,Chennai,IND,3615.4,1068.4,asia,
 IND-KOL,Kolkata,IND,3725.9,940.2,asia,
 IND-MUM,Mumbai,IND,3512.3,985.4,asia,
@@ -74,6 +78,7 @@ ITA-NAP,Naples,ITA,2698.7,682.7,continent,
 ITA-PAD,Padua,ITA,2666.9,619.8,continent,
 ITA-PAL,Palermo,ITA,2685.9,721.1,continent,
 ITA-ROM,Rome,ITA,2673.0,669.2,continent,
+JAM-KIN,Kingston,JAM,1433.3,1000.7,jamaica,JAM-KIN
 JPN-FUK,Fukuoka,JPN,4311.8,783.4,japan,
 JPN-HAM,Hamamatsu,JPN,4413.1,768.1,japan,
 JPN-HIR,Hiroshima,JPN,4339.9,772.4,japan,
@@ -88,9 +93,11 @@ JPN-TOK,Tokyo,JPN,4440.6,754.7,japan,
 KAZ-ATY,Atyrau,KAZ,3219.6,597.5,asia,KAZ-ATY
 KOR-BUS,Busan,KOR,4292.3,762.6,asia,
 KOR-SEO,Seoul,KOR,4261.8,728.5,asia,
+LKA-COL,Colombo,LKA,3609.0,1153.4,sri_lanka,LKA-COL
 LVA-RIG,Riga,LVA,2835.4,459.3,continent,
 MAR-AGA,Agadir,MAR,2366.6,827.5,africa,MAR-AGA
 MCO-MON,Monaco,FRA,2603.5,643.0,continent,
+MDG-TOA,Toamasina,MDG,3186.5,1502.2,madagascar,MDG-TOA
 MEX-TIJ,Tijuana,MEX,875.5,798.6,north_america,
 MLT-VAL,Valletta,MLT,2701.7,751.6,malta,
 MMR-YAN,Yangon,MMR,3836.7,1018.7,asia,MMR-YAN
@@ -103,9 +110,12 @@ NED-GRO,Groningen,NED,2588.5,508.4,continent,NED-GRO
 NED-RTM,Rotterdam,NED,2557.2,528.5,continent,
 NOR-BER,Bergen,NOR,2574.2,411.7,continent,
 NOR-OSL,Oslo,NOR,2649.8,418.4,continent,
+NZL-AUC,Auckland,NZL,4927.5,1761.7,new_zealand,NZL-AUC
+PHL-MAN,Manila,PHL,4180.0,1047.4,philippines,PHL-MAN
 POL-GDA,Gdańsk,POL,2759.2,494.4,continent,POL-GDA
 PRT-LIS,Lisbon,PRT,2373.4,712.6,continent,
 PRT-POR,Porto,PRT,2380.7,679.0,continent,
+QAT-DOH,Hamad Port,QAT,3216.7,902.6,asia,QAT-DOH
 RUS-KGD,Kaliningrad,RUS,2776.5,491.1,continent,RUS-KGD
 RUS-MAR,Mariupol,RUS,3021.5,596.0,continent,RUS-MAR
 RUS-SAI,Saint Petersburg,RUS,2921.4,417.8,continent,
@@ -114,6 +124,7 @@ RUS-YUZ,Yuzhno-Sakhalinsk,RUS,4481.8,600.6,continent,RUS-YUZ
 SAU-DAM,Dammam,SAU,3196.1,882.9,asia,
 SAU-JED,Jeddah,SAU,3044.7,951.8,asia,
 SGP-SIN,Singapore,SGP,3942.4,1232.5,singapore,SGP-SIN
+SLB-HON,Honiara,SLB,4721.6,1381.0,solomon,SLB-HON
 SLV-SAN,San Salvador,SLV,1260.4,1062.0,north_america,SLV-SAN
 SMR-SAN,San Marino,ITA,2673.6,640.0,continent,
 SOL-BER,Berbera,SOL,3125.1,1105.0,africa,SOL-BER
@@ -121,11 +132,12 @@ SUR-PBM,Paramaribo,SUR,1733.8,1168.0,guiana,
 SWE-GOT,Gothenburg,SWE,2666.3,448.9,continent,
 SWE-STO,Stockholm,SWE,2751.2,426.3,continent,
 THA-BAN,Bangkok,THA,3897.1,1061.4,asia,THA-BAN
-TUR-ADA,Adana,TUR,2989.2,738.8,continent,
+TTO-POR,Port of Spain,TTO,1645.6,1101.9,trinidad,TTO-POR
+TUR-ADA,Adana,TUR,2989.2,738.8,asia,
 TUR-ANT,Antalya,TUR,2926.5,737.7,asia,TUR-ANT
 TUR-BURS,Bursa,TUR,2902.2,689.7,asia,TUR-BURS
-TUR-IST,Istanbul,TUR,2902.5,680.8,continent,
-TUR-IZM,Izmir,TUR,2877.5,716.9,continent,
+TUR-IST,Istanbul,TUR,2902.5,680.8,asia,
+TUR-IZM,Izmir,TUR,2877.5,716.9,asia,
 TWN-KAO,Kaohsiung,TWN,4170.5,936.0,taiwan,TWN-KAO
 TWN-TAI,Taipei,TWN,4189.5,900.3,taiwan,TWN-TAI
 TWN-TAIC,Taichung,TWN,4173.6,913.1,taiwan,TWN-TAIC
