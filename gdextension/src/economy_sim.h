@@ -247,6 +247,26 @@ public:
 	 */
 	void demo_set_sector_employment(const Variant& data);
 
+	/**
+	 * §19 (W0): carrega solo urbano, moradia e finanças municipais dos quatro
+	 * JSON (`urban_land`, `housing_city`, `housing`, `municipal_finance`, já
+	 * parseados pelo GDScript). Chame DEPOIS de criar o mundo: o casamento é
+	 * pelo id da cidade. Nenhuma lógica diária roda ainda — é só o estado
+	 * inicial (área por zona, densidade, estoque, posse, aluguel/preço e taxas
+	 * da prefeitura). Cidade sem entrada fica com defaults neutros.
+	 */
+	void demo_set_urban(const Dictionary& urban_land,
+		const Dictionary& housing_city, const Dictionary& housing,
+		const Dictionary& municipal_finance);
+
+	/**
+	 * §19 (W0): leitura do estado urbano de uma cidade (teste/UI). Arrays na
+	 * ordem dos enums: zonas [res, com, ind]; densidades [low, mid, high];
+	 * padrões [popular, medio, alto]; posse [própria, aluguel, informal];
+	 * donos [família, empresa, governo]. Vazio se a cidade ou o dado não existe.
+	 */
+	Dictionary demo_get_urban_city(const String& city_id) const;
+
 	/** F8: catálogo carregado (id, nomes, ícone, educaçao, exportável). */
 	Array demo_get_service_sectors() const;
 

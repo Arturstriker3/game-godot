@@ -47,7 +47,12 @@ constexpr double kDemoLoadHoursPerBatch = 0.5;
 // v12: construção como projeto físico (§15) - `construction_projects` (obras em
 // andamento). Save v11 e anteriores não têm a chave: não há projeto em voo, o
 // mundo carrega com a lista vazia (migração trivial, sem estado a reconstruir).
-constexpr int kDemoSaveVersion = 12;
+// v13: solo urbano, moradia e prefeitura (§19, W0) - bloco `urban` por cidade
+// (área por zona, densidade permitida, reserva, unidades por densidade/padrão,
+// posse/aluguel/preço e contas da prefeitura). Save v12 e anteriores não têm a
+// chave: os vetores ficam como estão (vazios num load frio ou com os padrões
+// carregados pelo demo_set_urban), sem lógica diária a reconstruir.
+constexpr int kDemoSaveVersion = 13;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.
@@ -446,5 +451,30 @@ constexpr std::size_t kDemoTradeExhaustiveLimit = 24;
 // 32 unidades ≈ 250 km. O comprador varre a grade em anéis até juntar K
 // vendedores, então a célula só afeta a constante do custo de busca.
 constexpr double kDemoTradeCellMapUnits = 32.0;
+
+// ---------------------------------------------------------------------------
+// §19 — solo urbano, zoneamento e imóveis (W0).
+//
+// Estrutura do estoque: m² de piso por unidade para cada densidade × padrão
+// (casas são maiores que apartamentos; o padrão alto ocupa mais área). São
+// parâmetros de modelo — a fonte publica aluguel/preço por m², não por unidade.
+constexpr double kDemoUrbanUnitM2[3][3] = {
+	{60.0, 100.0, 180.0},  // DENSITY_LOW: casa
+	{55.0, 85.0, 140.0},   // DENSITY_MID: prédio
+	{50.0, 75.0, 110.0},   // DENSITY_HIGH: torre
+};
+// FAR (área construída ÷ área do lote) por densidade. Capacidade da zona =
+// área × FAR ÷ m² por unidade (W1).
+constexpr double kDemoUrbanFar[3] = {1.0, 2.5, 6.0};
+// Taxa de capitalização fixa (aluguel anual ÷ valor do imóvel) — §19.6.
+constexpr double kDemoUrbanCapRate = 0.05;
+// Depreciação anual do estoque (fração do valor/condição) — §19.3.
+constexpr double kDemoUrbanDepreciationPerYear = 0.01;
+// Custo de infraestrutura por km² expandido (XGS): estrada, energia e água.
+// Parâmetro de projeto do §15/§19; calibrado no W2 junto da receita municipal.
+constexpr double kDemoUrbanInfraCostPerKm2 = 6000000.0;
+// Taxa local sobre o faturamento de serviços da cidade (fração) usada enquanto
+// o W2 não calibra a receita municipal contra o dado real.
+constexpr double kDemoUrbanMunicipalFeeRate = 0.02;
 
 } // namespace ogs

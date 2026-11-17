@@ -11,6 +11,10 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	ws.cities.clear();
 	ws.buildings.clear();
 	ws.construction_projects.clear();
+	// §19: o cenário sintético não tem dado urbano (vetores vazios).
+	ws.land.clear();
+	ws.housing.clear();
+	ws.city_gov.clear();
 	ws.in_transit.clear();
 	ws.ports.clear();
 	ws.last_orders.clear();

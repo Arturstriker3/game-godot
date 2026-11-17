@@ -5,6 +5,7 @@
 // (economy_sim.*) guarda UM `WorldState ws_` e converte Godot <-> sim.
 
 #include "sim_types.h"
+#include "urban_types.h"
 
 namespace ogs {
 
@@ -46,6 +47,12 @@ struct WorldState {
 	// §15: obras de construção em andamento (projeto físico). Avançam no prólogo
 	// do tick conforme materiais + capacidade do setor de construção.
 	std::vector<DemoConstructionProject> construction_projects;
+	// §19 (W0): solo urbano, moradia e prefeitura por cidade. Vetores paralelos
+	// a `cities` (mesmo índice), carregados pelo demo_set_urban. Vazios em
+	// saves v12 e anteriores e no cenário sintético AGRIA/PORTUS.
+	std::vector<CityLand> land;
+	std::vector<CityHousing> housing;
+	std::vector<CityGov> city_gov;
 	// F8: catálogo de serviços e negócios (um vetor global; índices por cidade
 	// e por setor são reconstruídos quando o conjunto muda).
 	bool services_loaded = false;
