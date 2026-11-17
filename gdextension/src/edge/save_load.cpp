@@ -463,6 +463,11 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		entry["paused"] = project.paused;
 		entry["pause_reason"] = sim_str(project.pause_reason.c_str());
 		entry["created_day"] = project.created_day;
+		// §19 (W1): obra de infraestrutura urbana (expansão/adensamento de
+		// zona). Save anterior ao W1 não tem a chave: 0 = obra normal.
+		entry["urban_action"] = project.urban_action;
+		entry["urban_zone"] = project.urban_zone;
+		entry["urban_km2"] = project.urban_km2;
 		Array materials;
 		Array material_qty;
 		Array material_delivered;
@@ -505,6 +510,13 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		entry["reserve_km2"] = land.reserve_km2;
 		entry["infra_capacity"] = land.infra_capacity;
 		entry["informal_km2"] = land.informal_km2;
+		// §19 (W1): demanda de zona barrada por falta de espaço (sinal para a
+		// prefeitura). Save anterior ao W1 não tem a chave: zero.
+		Array zone_demand;
+		for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+			zone_demand.append(land.zone_demand[zone]);
+		}
+		entry["zone_demand"] = zone_demand;
 		Array units;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
 			Array row;
@@ -1516,6 +1528,15 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		if (project.id.empty()) {
 			continue;
 		}
+		// §19 (W1): obra de infraestrutura urbana. Ausente no save anterior ao
+		// W1 = 0 (obra econômica normal). A obra urbana não tem produto, então
+		// a migração de índice de produto abaixo não se aplica a ela.
+		project.urban_action = std::clamp(
+			int(entry.get("urban_action", 0)), 0, 2);
+		project.urban_zone = std::clamp(
+			int(entry.get("urban_zone", 0)), 0, ZONE_COUNT - 1);
+		project.urban_km2 = safe_nonneg(double(entry.get("urban_km2", 0.0)));
+		const bool urban_project = project.urban_action != 0;
 		project.building_id = std::string(
 			String(entry.get("building_id", "")).utf8().get_data());
 		project.city = std::string(String(entry.get("city", "")).utf8().get_data());
@@ -1526,7 +1547,7 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		project.resource = std::string(
 			String(entry.get("resource", "")).utf8().get_data());
 		project.output_product = int(entry.get("output_product", -1));
-		if (has_saved_products || needs_legacy_migration) {
+		if (!urban_project && (has_saved_products || needs_legacy_migration)) {
 			project.output_product = migrate_index(project.output_product);
 			if (project.output_product < 0) {
 				continue;  // produto removido: obra descartada
@@ -1536,7 +1557,7 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		project.recipe = recipe_id.is_empty()
 			? -1 : core.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
 		project.input_product = int(entry.get("input_product", -1));
-		if (has_saved_products || needs_legacy_migration) {
+		if (!urban_project && (has_saved_products || needs_legacy_migration)) {
 			project.input_product = migrate_index(project.input_product);
 		}
 		project.capacity = std::max(0.0, double(entry.get("capacity", 0.0)));
@@ -1837,6 +1858,11 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(entry.get("infra_capacity", 0.0)));
 			land.informal_km2 = safe_nonneg(
 				double(entry.get("informal_km2", 0.0)));
+			const Array zone_demand = entry.get("zone_demand", Array());
+			for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+				land.zone_demand[zone] = zone < zone_demand.size()
+					? safe_nonneg(double(zone_demand[zone])) : 0.0;
+			}
 			const Array units = entry.get("units", Array());
 			for (int density = 0; density < DENSITY_COUNT; ++density) {
 				if (density >= units.size()

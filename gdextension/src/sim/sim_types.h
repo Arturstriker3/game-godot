@@ -331,6 +331,13 @@ namespace ogs {
 		bool paused = false;
 		std::string pause_reason;
 		int created_day = 0;
+		// §19 (W1): obra de INFRAESTRUTURA URBANA (não cria prédio). 0 = obra
+		// econômica normal; 1 = expandir zona (soma area_km2 e infra_capacity);
+		// 2 = adensar zona (sobe max_density em um passo). `urban_zone` é o
+		// Zone alvo e `urban_km2` a área adicionada (só expansão).
+		int urban_action = 0;
+		int urban_zone = 0;
+		double urban_km2 = 0.0;
 	};
 
 	struct DemoPop {

@@ -3,6 +3,7 @@
 #include "sim/profiling.h"
 #include "sim/sim_constants.h"
 #include "sim/scenario_fixture.h"
+#include "sim/urban_land.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -178,6 +179,10 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_urban);
 	ClassDB::bind_method(D_METHOD("demo_get_urban_city", "city_id"),
 	                     &EconomySim::demo_get_urban_city);
+	ClassDB::bind_method(D_METHOD("demo_urban_expand", "city_id", "zone", "km2"),
+	                     &EconomySim::demo_urban_expand);
+	ClassDB::bind_method(D_METHOD("demo_urban_densify", "city_id", "zone"),
+	                     &EconomySim::demo_urban_densify);
 	ClassDB::bind_method(D_METHOD("demo_set_instant_construction", "instant"),
 	                     &EconomySim::demo_set_instant_construction);
 	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
@@ -1192,6 +1197,10 @@ void EconomySim::demo_tick_core() {
 	// S5b: retrato, dinheiro antes, avanço do dia, obras de porto, remoção de
 	// falidos/esgotados, índices e preços de abertura migraram para ogs::SimCore.
 	sim_core_.prologue();
+
+	// §19 (W1): preço da terra por ocupação/renda e decadência do sinal de
+	// demanda de zona (fechamento mensal; não move dinheiro).
+	urban_land::phase_month(ws_);
 
 	// 1. Chegada das cargas pedidas no dia anterior.
 	sim_core_.phase_arrival();
@@ -4558,6 +4567,23 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		return result;
 	}
 
+	// §19 (W1): nova fábrica/planta URBANA exige espaço na zona INDUSTRIAL.
+	// Minas e fazendas (extração primária) ficam fora da área urbana e não
+	// consomem zona. Sem espaço a decisão NÃO falha: fica pendente (a IA tenta
+	// de novo) e sinaliza demanda de zona à prefeitura (W2). O hook de
+	// construção instantânea acima é caminho de teste e não passa pelo limite.
+	const bool urban_factory = recipe >= 0 || input_product >= 0;
+	if (urban_factory && !ws_.land.empty() && ws_.land.size() == ws_.cities.size()) {
+		const std::size_t urban_index =
+			static_cast<std::size_t>(city - ws_.cities.data());
+		if (!urban_land::zone_has_room(ws_, urban_index, ZONE_IND, 1.0)) {
+			urban_land::signal_zone_demand(ws_.land[urban_index], ZONE_IND);
+			result["zone_pending"] = true;
+			result["error"] = "sem espaço na zona industrial";
+			return result;
+		}
+	}
+
 	// §15: obra vira PROJETO físico. O dono COMPROMETE o custo (limite do surto
 	// de obras: o total comprometido não pode estourar o caixa atual), mas paga
 	// conforme a obra avança; sem material/sem dinheiro a obra PARA (não falha).
@@ -5810,7 +5836,81 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 	gov_out["month_expense_infrastructure"] = gov.month_expense_infrastructure;
 	gov_out["month_expense_social_housing"] = gov.month_expense_social_housing;
 	out["gov"] = gov_out;
+	// §19 (W1): capacidade, uso e ocupação de cada zona [res, com, ind] e o
+	// sinal de demanda barrada (insumo da IA da prefeitura no W2).
+	Array zone_capacity;
+	Array zone_usage;
+	Array zone_occupancy;
+	Array zone_demand;
+	for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+		zone_capacity.append(urban_land::zone_capacity(land, zone));
+		zone_usage.append(urban_land::zone_usage(ws_, index, zone));
+		zone_occupancy.append(urban_land::zone_occupancy(ws_, index, zone));
+		zone_demand.append(land.zone_demand[zone]);
+	}
+	out["zone_capacity"] = zone_capacity;
+	out["zone_usage"] = zone_usage;
+	out["zone_occupancy"] = zone_occupancy;
+	out["zone_demand"] = zone_demand;
 	return out;
+}
+
+namespace {
+// Resultado de uma obra urbana para o GDScript (teste/UI/prefeitura).
+Dictionary urban_project_result(bool ok, const std::string& error,
+		const std::string& project_id, double cost) {
+	Dictionary out;
+	out["ok"] = ok;
+	out["error"] = String::utf8(error.c_str());
+	out["project_id"] = String::utf8(project_id.c_str());
+	out["cost"] = cost;
+	return out;
+}
+} // namespace
+
+Dictionary EconomySim::demo_urban_expand(const String& city_id, int zone,
+		double km2) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::string id(city_id.utf8().get_data());
+	const auto found = ws_.city_lookup.find(id);
+	if (found == ws_.city_lookup.end() || found->second < 0) {
+		return urban_project_result(false, "cidade desconhecida", "", 0.0);
+	}
+	std::string error;
+	std::string project_id;
+	const bool ok = urban_land::start_project(ws_, sim_core_,
+		static_cast<std::size_t>(found->second), zone, urban_land::URBAN_EXPAND,
+		km2, "state", &error, &project_id);
+	double cost = 0.0;
+	if (ok && !ws_.construction_projects.empty()) {
+		cost = ws_.construction_projects.back().total_cost;
+	}
+	if (ok) {
+		demo_status_invalidate();
+	}
+	return urban_project_result(ok, error, project_id, cost);
+}
+
+Dictionary EconomySim::demo_urban_densify(const String& city_id, int zone) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::string id(city_id.utf8().get_data());
+	const auto found = ws_.city_lookup.find(id);
+	if (found == ws_.city_lookup.end() || found->second < 0) {
+		return urban_project_result(false, "cidade desconhecida", "", 0.0);
+	}
+	std::string error;
+	std::string project_id;
+	const bool ok = urban_land::start_project(ws_, sim_core_,
+		static_cast<std::size_t>(found->second), zone, urban_land::URBAN_DENSIFY,
+		0.0, "state", &error, &project_id);
+	double cost = 0.0;
+	if (ok && !ws_.construction_projects.empty()) {
+		cost = ws_.construction_projects.back().total_cost;
+	}
+	if (ok) {
+		demo_status_invalidate();
+	}
+	return urban_project_result(ok, error, project_id, cost);
 }
 
 void EconomySim::demo_from_dict(const Dictionary& data) {

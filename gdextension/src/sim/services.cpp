@@ -6,6 +6,7 @@
 #include "profiling.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
+#include "urban_land.h"
 
 #include <algorithm>
 #include <array>
@@ -131,6 +132,18 @@ bool SimCore::demo_service_open(DemoCity& city, int sector, double capacity,
 	const double from_savings = std::min(capital - from_sector, savings_surplus);
 	if (from_sector + from_savings < capital) {
 		return false;
+	}
+	// §19 (W1): abrir negócio de serviço exige espaço na zona COMERCIAL. Sem
+	// espaço a decisão NÃO falha: fica pendente (a entrada tenta de novo no dia
+	// seguinte) e sinaliza demanda de zona para a prefeitura (W2 expandir/
+	// adensar). O limite só vale quando a cidade tem solo urbano carregado.
+	if (!ws_.land.empty() && ws_.land.size() == ws_.cities.size()) {
+		const std::size_t urban_index =
+			static_cast<std::size_t>(&city - ws_.cities.data());
+		if (!urban_land::zone_has_room(ws_, urban_index, ZONE_COM, 1.0)) {
+			urban_land::signal_zone_demand(ws_.land[urban_index], ZONE_COM);
+			return false;
+		}
 	}
 	if (from_savings > 0.0) {
 		city.pop.savings -= from_savings;

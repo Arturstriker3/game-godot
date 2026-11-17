@@ -9,6 +9,7 @@
 #include "construction.h"
 #include "profiling.h"
 #include "sim_constants.h"
+#include "urban_land.h"
 
 #include <algorithm>
 #include <cmath>
@@ -106,6 +107,12 @@ namespace {
 // Materializa o prédio de uma obra concluída (ou soma capacidade numa expansão).
 // O dinheiro já foi pago ao longo da obra; aqui só entra a operação.
 void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
+	// §19 W1: obra de infraestrutura urbana altera o solo (área/densidade/infra)
+	// em vez de materializar prédio.
+	if (p.urban_action != urban_land::URBAN_NONE) {
+		urban_land::apply_completed_project(ws, p);
+		return;
+	}
 	if (p.expand_existing) {
 		for (DemoBuilding& building : ws.buildings) {
 			if (building.id == p.building_id && building.city == p.city) {
