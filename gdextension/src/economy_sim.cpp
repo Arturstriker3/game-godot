@@ -2683,6 +2683,12 @@ Dictionary EconomySim::get_demo_status() {
 		// F7 calibração: TFP nacional ponderada pela população de simulação.
 		double productivity_weighted = 0.0;
 	};
+	// S17: cadência do agregado `labor` (semanal). Os campos diários
+	// (população, estoque, necessidade, déficit, produção, trânsito) seguem
+	// diários; o bloco `labor` (educação/força/emprego/fatias de renda) é
+	// recomputado uma vez por semana — é dado de exibição, não decisão da IA.
+	// A simulação (save) não muda: só a publicação do agregado é escalonada.
+	const bool labor_due = !cache.labor_cadence_built || (ws_.day % 7 == 0);
 	std::vector<std::string> nation_order;
 	std::vector<NationTotals> nation_totals;
 	std::unordered_map<std::string, int> nation_slot;
@@ -2702,6 +2708,7 @@ Dictionary EconomySim::get_demo_status() {
 		totals.stockpile += city.markets[0].stock;
 		totals.need += city.pop.need;
 		totals.deficit += std::max(0.0, city.pop.need - city.pop.consumed);
+		if (labor_due) {
 		totals.working_age += city.pop.working_age;
 		totals.labor_force += city.pop.labor_force;
 		totals.employed += city.pop.employed;
@@ -2728,6 +2735,7 @@ Dictionary EconomySim::get_demo_status() {
 			totals.wage_weighted[level] += city.pop.wage_by_level[level]
 				* city.pop.labor_force_by_level[level];
 			totals.wage_weight[level] += city.pop.labor_force_by_level[level];
+		}
 		}
 		for (const int bi : ws_.buildings_by_city[city_index]) {
 			const DemoBuilding& building =
@@ -2803,6 +2811,9 @@ Dictionary EconomySim::get_demo_status() {
 		}
 		// F7: mercado de trabalho da nação (telas de política/trabalho). O
 		// sub-dicionário e os Arrays de níveis são reaproveitados entre ticks.
+		// S17: cadência semanal — fora do dia `labor_due`, o bloco `labor` do
+		// dia anterior é mantido (agregado de exibição, não decisão da IA).
+		if (labor_due) {
 		Dictionary& labor = slot.labor;
 		labor[k.working_age] = totals.working_age;
 		labor[k.labor_force] = totals.labor_force;
@@ -2868,7 +2879,11 @@ Dictionary EconomySim::get_demo_status() {
 		labor[k.productivity_index] = totals.income_population > 1e-9
 			? totals.productivity_weighted / totals.income_population : 1.0;
 		nation[k.labor] = labor;
+		}
 		cache.nations[index] = nation;
+	}
+	if (labor_due) {
+		cache.labor_cadence_built = true;
 	}
 
 	for (int index = 0; index < ws_.products; ++index) {

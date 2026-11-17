@@ -1,0 +1,57 @@
+Perfil p/ S17 (cadência) + S15 (SoA) — RelWithDebInfo + OGS_PROFILING, threads=8
+=================================================================================
+
+Comando: godot --headless --path . res://tools/perf_day_peak.tscn -- \
+         --days=12 --tick-mode=worker --threads=8 --profile=1
+DLL: build RelWithDebInfo (clang++ -O2 -g) + OGS_PROFILING, no slot debug.
+Mundo: 834 cidades, 113 produtos, ~1.006 -> ~1.950 construções (cresce com a IA).
+
+Fases do tick C++ (média ms, p95 ms):
+  status                      11.58   12.86   <- publicação (writer, serial)
+    status_cities              7.22    8.37   <- sinais leves + escalares por cidade
+    status_orders              2.91    3.71   <- pedidos de comércio + legs (convoys)
+    status_nations             1.36    1.49   <- agregado nacional (labor/educação)
+  trade                        6.69    8.25   <- serial
+    trade_food                 5.60    7.00
+    trade_food_buyers          4.75    6.06   <- ofertas por comprador (hot loop)
+    trade_goods                1.08    1.36
+  arrival                      5.29    6.03   <- serial (compacção O(n) já aplicada)
+  services                     1.87    3.10   <- paralelo (S16)
+  reset                        1.16    1.33
+  production                   0.93    1.10
+  income                       0.86    1.12
+  raw                          0.81    1.06
+  accounting                   0.45    0.72
+  invariants                   0.30    0.37
+  fx                           0.23    0.27
+  prices                       0.17    0.22
+  labor                        0.11    0.15
+  clamp                        0.10    0.14
+  fiscal                       0.10    0.13
+
+Ranking (serial, não-paralelizável):
+  1. status  11.58 ms  (22% do tick) — status_cities 7.22 + orders 2.91 + nations 1.36
+  2. trade    6.69 ms  (13%)          — trade_food_buyers 4.75
+  3. arrival  5.29 ms  (10%)          — já O(n)
+  4. demais fases paralelas (S16) somam ~6 ms
+
+As 3 fases seriais = ~23.6 ms = ~77% do tick. As fases paralelas (S16) já estão
+em ~1 ms cada. Conclusão: fechar o tick ≤40 ms (release ~43 ms) exige atacar
+status (S17 cadência de publicação) e/ou trade/arrival (S15 SoA / algorítmico).
+
+S17 aplicado (fatia 1): agregado nacional `nations[].labor` (educação/força/
+emprego/fatias de renda/produtividade) passa a ser publicado SEMANALMENTE
+(dia % 7 == 0), cacheado nos outros dias. É dado de exibição (telas de política),
+não decisão da IA — save_sha256 inalterado. Ganho estimado ~0,4 ms/dia (parte do
+status_nations); o restante de status_nations (população/estoque/necessidade/
+déficit/produção) é lido pela IA e segue diário.
+
+Alvos seguintes (não feitos nesta fatia):
+  - S15 SoA de mercados (cidade×bem) só se o profiler mostrar ganho ≥15% da fase
+    E ≥1,5 ms/dia num laço product-major. trade_food_buyers acessa mercados de
+    forma ESPARSA (poucos alimentos por candidato) — o ganho de SoA é incerto;
+    o custo dominante ali parece algorítmico (demo_tariff_rate por oferta,
+    distance_km por candidato), não de layout.
+  - status_cities (7.22 ms): os sinais leves (7 arrays de mercado) são lidos pela
+    IA DIARIAMENTE e mudam todo dia — não há cadência segura sem tocar a IA.
+  - status_orders (2.91 ms): pedidos+legs são necessários diariamente (convoys).

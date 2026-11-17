@@ -749,6 +749,11 @@ private:
 		// cargas) dentro do laço de cidades).
 		std::vector<double> in_transit_by_city;
 		bool header_filled = false;
+		// S17: cadência do agregado nacional `labor` (educação/força/emprego/
+		// fatias de renda). É dado de exibição (telas de política), não decisão
+		// da IA — recomputado uma vez por semana (dia % 7 == 0), cacheado nos
+		// outros dias. A primeira publicação sempre computa.
+		bool labor_cadence_built = false;
 		// S7-c: sinais leves por cidade (os campos que a IA varre em TODAS as
 		// cidades todo dia), em arrays planos indexados por cidade — um
 		// PackedFloat64Array por campo em vez de ~113 dicionários de mercado +
