@@ -12,7 +12,7 @@ extends SceneTree
 ##
 ##   godot --headless --path . --script res://tools/economy_world_test.gd
 ##     [--days=60] [--out=path.json] [--baseline=path.json] [--ai=1]
-##     [--currencies=1|0] [--fx=real|neutral]
+##     [--currencies=1|0] [--fx=real|neutral] [--instant=1]
 ##
 ## `--currencies=0` roda sem moedas (tudo em XGS, comportamento anterior à F5) e
 ## `--fx=neutral` carrega currencies.json com todas as taxas em 1,0 e regime
@@ -73,6 +73,10 @@ var _seed := 0
 ## F8: `--services=0` roda o mundo sem o catálogo de serviços (comportamento
 ## F7). Serve para isolar o efeito da F8 num A/B do mesmo binário.
 var _services_enabled := true
+## Q-014/R3: `--instant=1` roda com construção instantânea (emula o mundo
+## PRÉ-§15) para isolar o efeito do cronograma de obra. Diagnóstico: o padrão
+## continua sendo obra física.
+var _instant_construction := false
 ## F9: âncoras de emprego por setor (sector_employment.json), a fonte das
 ## referências comparadas no relatório. Sem o arquivo, o teste imprime "sem
 ## dado" — nenhum alvo é inventado aqui.
@@ -99,6 +103,8 @@ func _init() -> void:
 			_seed = int(arg.split("=", true, 1)[1])
 		elif arg.begins_with("--services="):
 			_services_enabled = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--instant="):
+			_instant_construction = arg.split("=", true, 1)[1] == "1"
 	_test_world()
 	if _failures.is_empty():
 		print("[world] OK: modelo demo rodou %d dias no cenario real sem violacao." % _days)
@@ -157,6 +163,8 @@ func _test_world() -> void:
 	var has_chains: bool = sim.has_method("demo_set_recipes") \
 		and sim.has_method("demo_set_needs")
 	sim.demo_set_goods(goods)
+	if _instant_construction and sim.has_method("demo_set_instant_construction"):
+		sim.demo_set_instant_construction(true)
 	if has_chains:
 		sim.demo_set_recipes(_load_array(RECIPES_PATH))
 		sim.demo_set_needs(_load_dict(NEEDS_PATH))

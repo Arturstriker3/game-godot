@@ -10,6 +10,9 @@ extends SceneTree
 ##     --days=365 --ai=1 --every=30 --nations=EGY,SAH,UZB \
 ##     --out=res://docs/economy/perf/tmp_f3fix/diag.csv
 ##
+## Q-014/R3: `--instant=1` roda com construção instantânea (emula o mundo
+## PRÉ-§15) para isolar o efeito do cronograma de obra na comida.
+##
 ## Não é um teste: nunca falha por asserção.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
@@ -21,6 +24,12 @@ const BUILDINGS_PATH := "res://data/definitions/scenario/buildings.json"
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
 const RECIPES_PATH := "res://data/definitions/economy/recipes.json"
 const NEEDS_PATH := "res://data/definitions/economy/needs.json"
+## Q-014/R3: o diagnóstico precisa do MESMO pipeline do `economy_world_test`
+## (serviços, moedas e âncoras de emprego) — sem eles a série não é comparável
+## ao sweep/relatório do mundo.
+const SERVICES_PATH := "res://data/definitions/economy/services.json"
+const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
+const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 
 const FOOD_IDS := ["wheat", "rice", "maize", "potato", "soy"]
 
@@ -33,6 +42,10 @@ var _goods: Array = []
 var _food_products: Array[int] = []
 var _rows: Array[String] = []
 var _use_needs := true
+## A/B do Q-014/R3: construção instantânea emula o comportamento PRÉ-§15
+## (capacidade entra no dia da decisão). Sem a flag, o mundo roda com obra
+## física (padrão). Só diagnostica: não é critério.
+var _instant := false
 
 
 func _init() -> void:
@@ -51,6 +64,8 @@ func _init() -> void:
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--needs="):
 			_use_needs = arg.split("=", true, 1)[1] == "1"
+		elif arg.begins_with("--instant="):
+			_instant = arg.split("=", true, 1)[1] == "1"
 	_run()
 	quit(0)
 
@@ -83,10 +98,19 @@ func _run() -> void:
 	var has_chains: bool = sim.has_method("demo_set_recipes") \
 		and sim.has_method("demo_set_needs")
 	sim.demo_set_goods(_goods)
+	if _instant and sim.has_method("demo_set_instant_construction"):
+		sim.demo_set_instant_construction(true)
 	if has_chains:
 		sim.demo_set_recipes(_load_array(RECIPES_PATH))
 		if _use_needs:
 			sim.demo_set_needs(_load_dict(NEEDS_PATH))
+		if sim.has_method("demo_set_services"):
+			sim.demo_set_services(_load_dict(SERVICES_PATH))
+		if sim.has_method("demo_set_currencies"):
+			sim.demo_set_currencies(_load_dict(CURRENCIES_PATH))
+		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
+		if sim.has_method("demo_set_sector_employment") and not sector.is_empty():
+			sim.demo_set_sector_employment(sector)
 	for index in _goods.size():
 		var id := String((_goods[index] as Dictionary).get("id", ""))
 		if FOOD_IDS.has(id):
