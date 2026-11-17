@@ -68,6 +68,15 @@ struct CityLand {
 	// Área informal (km²), derivada das unidades informais da fonte (W3 pode
 	// urbanizar/regularizar e reduzi-la).
 	double informal_km2 = 0.0;
+	// §19 (W1 / Q-015-C) — fração do ENVELOPE construtivo (área × FAR ÷ m²)
+	// efetivamente construída nesta cidade. O FAR de sim_constants.h é o
+	// limite do lote; na escala da cidade só parte dele está construída
+	// (ruas, pátios, construção antiga). Preenchido no loader para a MORADIA
+	// de modo que a ocupação formal do dia 0 nasça no alvo da faixa de
+	// população urbana (kDemoUrbanBandOccupancy); COM/IND ficam em 1,0.
+	// 1,0 = sem calibração (save antigo, cenário sintético): comportamento
+	// anterior preservado.
+	double zone_fill[ZONE_COUNT] = {1.0, 1.0, 1.0};
 	// §19 (W1) — demanda de zona não atendida: quantas decisões (abrir negócio
 	// de serviço, instalar fábrica) foram barradas por falta de espaço desde o
 	// último fechamento de mês. É o sinal que a prefeitura (W2) lê para decidir

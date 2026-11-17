@@ -62,16 +62,18 @@ func _load(path: String) -> Variant:
 
 
 func _land_data() -> Dictionary:
-	# AGRIA: zona residencial cheia (180 unidades em 200 de capacidade) e COM
-	# minúscula (0,8 m²: nem um trabalhador de serviço cabe). A zona IND cabe
-	# 132 trabalhadores — menos do que a fábrica de teste (1.000 t/dia) exige.
-	# PORTUS: a mesma moradia numa cidade com área urbana grande (zona folgada).
+	# AGRIA: metrópole (faixa >5 M → ocupação alvo 0,85) com COM minúscula
+	# (0,8 m²: nem um trabalhador de serviço cabe). A zona IND cabe 132
+	# trabalhadores — menos do que a fábrica de teste (1.000 t/dia) exige.
+	# PORTUS: mesma moradia numa cidade pequena (faixa <300 mil → alvo 0,55)
+	# com área urbana grande (zona folgada).
 	return {"cities": {
 		"AGRIA": {
 			"built_up_km2": 0.04,
 			"zoning_split": {"residential": 0.5, "commercial": 0.00002,
 				"industrial": 0.498},
 			"height_class": "low",
+			"urban_population": 6000000,
 			"expandable_reserve_km2": 0.01,
 		},
 		"PORTUS": {
@@ -79,6 +81,7 @@ func _land_data() -> Dictionary:
 			"zoning_split": {"residential": 0.5, "commercial": 0.25,
 				"industrial": 0.25},
 			"height_class": "low",
+			"urban_population": 200000,
 			"expandable_reserve_km2": 10.0,
 		},
 	}}
@@ -138,8 +141,10 @@ func _test_land_price() -> void:
 	var sim := _new_sim()
 	var agria: Dictionary = _urban(sim, "AGRIA")
 	var occ_res := float(agria["zone_occupancy"][ZONE_RES])
-	if absf(occ_res - 0.9) > 1e-6:
-		_fail("ocupacao RES AGRIA %.6f != 0.9 (180/200)" % occ_res)
+	# Q-015-C: a capacidade RES é calibrada no carregamento para a ocupação
+	# nascer no alvo da faixa de população urbana (AGRIA declara 6 M → 0,85).
+	if absf(occ_res - 0.85) > 1e-6:
+		_fail("ocupacao RES AGRIA %.6f != 0.85 (alvo da faixa >5 mi)" % occ_res)
 	var com_capacity := float(agria["zone_capacity"][ZONE_COM])
 	if com_capacity >= 1.0:
 		_fail("COM AGRIA deveria caber menos de 1 trabalhador (%.6f)" % com_capacity)

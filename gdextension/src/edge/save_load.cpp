@@ -525,6 +525,13 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 			zone_demand.append(land.zone_demand[zone]);
 		}
 		entry["zone_demand"] = zone_demand;
+		// Q-015-C: fração do envelope construída na escala da cidade. Save
+		// anterior não tem a chave e volta ao comportamento antigo (1,0).
+		Array zone_fill;
+		for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+			zone_fill.append(land.zone_fill[zone]);
+		}
+		entry["zone_fill"] = zone_fill;
 		// §19 (integração): base do custo crescente (raio e reserva no
 		// carregamento). Save anterior não tem a chave: cai no campo do loader
 		// (ausência explícita, fator 1 sem inventar aumento).
@@ -1970,6 +1977,15 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 			for (int zone = 0; zone < ZONE_COUNT; ++zone) {
 				land.zone_demand[zone] = zone < zone_demand.size()
 					? safe_nonneg(double(zone_demand[zone])) : 0.0;
+			}
+			// Q-015-C: fração do envelope construída. Save anterior ao campo
+			// (ou cenário sintético) = 1,0: comportamento anterior, sem
+			// recalibrar capacidade de mundo já em andamento.
+			const Array zone_fill = entry.get("zone_fill", Array());
+			for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+				const double fill = zone < zone_fill.size()
+					? safe_nonneg(double(zone_fill[zone])) : 1.0;
+				land.zone_fill[zone] = fill > 0.0 ? fill : 1.0;
 			}
 			// §19 (integração): base do custo crescente. Save anterior ao campo
 			// deriva do estado atual (área/reserva de hoje = base do próximo
