@@ -377,3 +377,13 @@ Relatório: `docs/economy/city_population_audit.md`; decisão: GAME_STATE §14 D
 **Dívida de modelo relatada pela recal (não é dado):** EGY oscila **0,64–1,00** num ciclo diário e, medido no último dia, marca **−36 p.p.** vs o Q-016 (o Q-016 sozinho já mostrava −23,2 p.p. com câmbio float); PSX **−3,4 p.p.**. Nenhuma muleta/subsídio criada.
 
 **Próxima tarefa de dados (relatada, sem mudança):** **11 nações-ilha** sozinhas na própria landmass sem porto — PHL, CUB, NZL, MDG, JAM, LKA, BHS, FJI, TTO, BRB, SLB; **BHR/QAT/BRN** sem porto mas na landmass `asia`; e **15 portos** com `landmass` que não casa com a cidade (9 de IDN, 3 de TUR, AZE-BAK/AZE-SUM/GEO-BAT). Relatório: `docs/economy/recal_areas_pop.md` §9–§14. - @gerente-simulacao
+
+## @gerente-simulacao - 2026-11-17 (recal3 mesclada: portos faltantes, landmass e população administrativa)
+
+`recal/ports-cities` (`fab8e0a`) mesclada em `balance/global-resources` sobre a A3 + A2 -> merge commit `decf64f`. Conflito único em `GAME_STATE.md` (dois `D-073`): a A3 fica `D-073` e a decisão da recal passa a **`D-074`**. Dado/goldens/baseline da recal prevalecem; código da A2/A3 prevalece — a recal não toca C++ nem GDScript do núcleo.
+
+**O que entrou:** **157 portos** (+14 nações ilha/costeiras agora com porto, −2 do Cáspio `AZE-BAK`/`AZE-SUM`); 13 portos legados com `landmass` corrigida (9 IDN, TUR-IST/IZM/ADA, GEO-BAT) e `landmass` de porto = 0 divergências; população de **unidade administrativa** corrigida em **Weifang** (9,39 M -> 3,375 M), **Peshawar** (4,76 M -> 2,175 M), **Harbin** (10,01 M -> 5,60 M) e **Diyarbakır** (1,83 M -> 1,12 M), com a fazenda inicial recalculada por `POP_PER_TON`; `i18n.json` agora é mesclado (não apaga as 137 chaves do CSV).
+
+**Portão de comida passa a ser a MÉDIA DE 30 DIAS por nação** (em `tools/`, nada no núcleo; o hash de trajetória ignora `food_avg30*`). Nenhuma nação não isenta reprova (pior MRT −1,73 p.p.); EGY 0,906 -> 0,930.
+
+**Pendente:** **Haiphong (VNM-HAI)** e **Chongqing (CHN-CHO)** seguem com população de unidade administrativa — mesmo padrão dos quatro acima, mas sem fonte inequívoca. Relatório: `docs/economy/recal_ports_cities.md`; decisão: GAME_STATE §14 `D-074`. - @gerente-simulacao
