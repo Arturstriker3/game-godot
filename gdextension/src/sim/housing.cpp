@@ -2,15 +2,16 @@
 // freight/logistics/trade: C++ puro (STL via sim_core.h), sem godot_cpp.
 //
 // A fase roda depois de `phase_income` (comida e necessidades do dia já
-// compradas) e ANTES do consumo de luxo do dia seguinte — o aluguel só usa a
-// poupança que sobrou acima da reserva de comida, então a comida tem
-// prioridade. Por cidade, em ordem determinística:
+// compradas) e ANTES do consumo de life/luxury do dia seguinte: a fase de
+// renda reserva o aluguel do dia no orçamento discricionário (depois da
+// comida, antes de life/luxury) e esta fase executa a transferência para os
+// donos. Por cidade, em ordem determinística:
 //   1. depreciação do estoque;
 //   2. demanda por padrão (domicílios do estrato, com transbordo para baixo);
 //   3. reancoragem do nível de aluguel na renda medida (uma vez) e ajuste
 //      mensal por desequilíbrio (passo limitado, teto de ônus de aluguel);
-//   4. pagamento diário do aluguel (poupança acima da reserva de comida) e
-//      repasse aos donos por owner_share + manutenção;
+//   4. pagamento diário do aluguel (renda do dia; nunca abaixo da reserva de
+//      comida) e repasse aos donos por owner_share + manutenção;
 //   5. abertura de obra de moradia na FILA ÚNICA §15 (`start_project`); o
 //      avanço/entrega é o tick da construção (construction.cpp) e a conclusão
 //      entra por `apply_completed_project`;
@@ -176,6 +177,16 @@ void SimCore::phase_housing() {
 			demand[TIER_POPULAR] - supply[TIER_POPULAR]);
 		const double popular_shortage = popular_shortage_units
 			/ std::max(1.0, demand[TIER_POPULAR]);
+		// Falta PRÓPRIA do padrão popular (sem o transbordo dos padrões altos):
+		// é a única medida que pode abrir favela. Assim a depreciação de 1%/ano
+		// do estoque MÉDIO não fabrica falta popular e não gera favela num
+		// mercado que só perdeu unidade média (Q-015/B5).
+		const double poor_demand_units = std::max(1.0,
+			safe_nonneg(house.households_by_tier[TIER_POPULAR])
+				* population_scale);
+		const double poor_shortage_units = std::max(0.0,
+			poor_demand_units - supply[TIER_POPULAR]);
+		const double poor_shortage = poor_shortage_units / poor_demand_units;
 		double vacancy_units = 0.0;
 		for (int tier = 0; tier < TIER_COUNT; ++tier) {
 			house.vacancy[tier] = std::max(0.0, supply[tier] - demand[tier]);
@@ -199,8 +210,6 @@ void SimCore::phase_housing() {
 			tenant_units += supply[tier]
 				* safe_unit(house.tenure[tier][TENURE_RENT]);
 		}
-		const double tenant_income_day = income_per_household_month
-			* tenant_units / 30.0;
 
 		// --- 4. Reancoragem do nível e fechamento do mês --------------------
 		// A fonte publica aluguel/preço em USD/m²; o núcleo usa XGS numa escala
@@ -230,18 +239,55 @@ void SimCore::phase_housing() {
 		}
 
 		const bool month_close = ws_.day - house.month_marker >= 30;
-		const bool slum_conditions = popular_shortage
-				> kDemoHousingSlumShortage
-			&& vacancy_units <= households * kDemoHousingSlumVacancyMax;
+		// Favela (ÚLTIMO caso): só quando não há vaga em padrão algum E a falta
+		// é da própria POP pobre (> 5% dos domicílios populares) E os pobres
+		// estão sem renda para o aluguel (aluguel popular no teto de ônus) ou a
+		// falta é severa (≥ 20%: não é preço, é estoque). A depreciação do
+		// padrão médio não entra nesta conta (Q-015/B5).
+		const bool poor_priced_out = income_per_household_month > 1e-9
+			&& house.rent[TIER_POPULAR] >= income_per_household_month
+				* kDemoHousingRentBurdenCap;
+		const bool slum_conditions =
+			vacancy_units <= households * kDemoHousingSlumVacancyMax
+			&& poor_shortage > kDemoHousingSlumShortage
+			&& (poor_priced_out
+				|| poor_shortage >= kDemoHousingSlumSevereShortage);
 		house.stress_days = slum_conditions ? house.stress_days + 1 : 0;
 		if (month_close) {
+			// Fecha o mês: publica o ônus do mês QUE TERMINOU (acumulado cheio)
+			// antes de zerar os acumuladores. Ler `rent_paid_month` no meio do
+			// mês dava ~20% da fatura sempre (6 dias ÷ 30) — era o defeito de
+			// medição que o Q-015/B2 leu como "só 20% é pago" (Q-015 fix).
+			if (income_per_household_month > 0.0) {
+				const double tenant_income_month =
+					income_per_household_month * tenant_units;
+				house.rent_burden = tenant_income_month > 1e-9
+					? safe_unit(house.rent_paid_month / tenant_income_month)
+					: 0.0;
+			} else {
+				house.rent_burden = 0.0;
+			}
 			house.month_marker = ws_.day;
 			house.rent_paid_month = 0.0;
 			house.rent_households_month = 0.0;
 			house.rent_firms_month = 0.0;
 			house.rent_government_month = 0.0;
-			house.rent_burden = 0.0;
 			house.units_built_month = 0.0;
+
+			// Ônus de MERCADO do mês fechado: fatura mensal (unidades alugadas ×
+			// aluguel) ÷ renda mensal dos inquilinos. Usa o nível, não o pago,
+			// para o piso não depender de liquidez/fome do dia.
+			double bill_month = 0.0;
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				bill_month += tier_units(house, tier)
+					* safe_unit(house.tenure[tier][TENURE_RENT])
+					* safe_nonneg(house.rent[tier]);
+			}
+			const double tenant_income_month =
+				income_per_household_month * tenant_units;
+			const double market_burden =
+				tenant_income_month > 1e-9
+					? bill_month / tenant_income_month : 0.0;
 
 			for (int tier = 0; tier < TIER_COUNT; ++tier) {
 				// Desequilíbrio relativo no padrão (após a filtragem):
@@ -252,6 +298,17 @@ void SimCore::phase_housing() {
 					imbalance * kDemoHousingRentElasticity,
 					-kDemoHousingRentStepMax, kDemoHousingRentStepMax);
 				double rent = safe_nonneg(house.rent[tier]) * (1.0 + step);
+				// Piso da faixa de ônus: se o ônus de MERCADO do mês fechado
+				// (fatura ÷ renda dos inquilinos, independente do que foi pago)
+				// caiu abaixo do piso, o nível é reancorado na renda corrente.
+				// É a conversão do nível da fonte (renda de hoje), não um passo
+				// de mercado — o passo de mercado é o `step` acima.
+				if (market_burden > 0.0
+						&& market_burden < kDemoHousingBurdenFloor) {
+					const double floor_rent = income_per_household_month
+						* kDemoHousingBurdenFloor * house.rent_cap_ratio[tier];
+					rent = std::max(rent, floor_rent);
+				}
 				// Âncora de renda: o aluguel de um domicílio não passa de
 				// kDemoHousingRentBurdenCap da renda mensal do domicílio,
 				// ponderado pelo gradiente de padrão da fonte.
@@ -268,18 +325,14 @@ void SimCore::phase_housing() {
 		}
 
 		// --- 5. Pagamento do aluguel ---------------------------------------
-		// Inquilinos pagam o aluguel mensal ÷ 30. O pagamento é limitado pelo
-		// ônus que a renda dos INQUILINOS suporta e pela poupança acima da
-		// reserva de comida; o que não cabe fica como ônus (sinal de aperto),
-		// não vira dívida inventada.
-		double monthly_rent_bill = 0.0;
-		for (int tier = 0; tier < TIER_COUNT; ++tier) {
-			monthly_rent_bill += supply[tier]
-				* safe_unit(house.tenure[tier][TENURE_RENT]) * house.rent[tier];
-		}
-		double paid = std::min(monthly_rent_bill / 30.0,
-			std::min(tenant_income_day * kDemoHousingRentBurdenCap, spendable));
-		paid = safe_nonneg(paid);
+		// Aluguel cobrado da RENDA do dia: a fase de renda já reservou
+		// `daily_rent_obligation` no orçamento discricionário (depois da comida,
+		// antes de life/luxury). Aqui a obrigação é transferida aos donos; o
+		// pagamento nunca passa da poupança acima da reserva de comida (se a
+		// comida consumiu o orçamento, o aluguel do dia fica em falta — comida
+		// primeiro). O que falta não vira dívida inventada.
+		const double paid = safe_nonneg(std::min(
+			housing::daily_rent_obligation(ws_, city_index), spendable));
 		house.rent_paid_today = paid;
 		if (paid > 0.0) {
 			pop.savings -= paid;
@@ -318,14 +371,6 @@ void SimCore::phase_housing() {
 			house.rent_government_month += to_government;
 			house.rent_paid_month += paid;
 		}
-		if (income_per_household_month > 0.0) {
-			const double tenant_income_month = income_per_household_month
-				* tenant_units;
-			house.rent_burden = tenant_income_month > 1e-9
-				? safe_unit(house.rent_paid_month / tenant_income_month) : 0.0;
-		} else {
-			house.rent_burden = 0.0;
-		}
 
 		// --- 6. Construção de moradia (fila única §15, kind HOUSING) --------
 		if (month_close) {
@@ -353,9 +398,14 @@ void SimCore::phase_housing() {
 						< cost_unit * (1.0 + kDemoHousingDeveloperMargin)) {
 					continue;
 				}
-				const double units = std::min(shortage,
+				const double short_batch = std::min(shortage,
 					demand[tier] * kDemoHousingBatchShare);
-				if (units <= 0.0) {
+				// O caixa das firmas limita o lote: a incorporadora não abre
+				// obra que não pode pagar (sem isso a falta de caixa viraria
+				// um no-op silencioso em start_project). Mínimo de 1 unidade.
+				const double units = std::min(short_batch,
+					std::max(0.0, city.firm_cash) / cost_unit);
+				if (units < 1.0) {
 					continue;
 				}
 				// A obra entra na fila única; o tick do §15 compra material,
@@ -449,6 +499,46 @@ double build_cost_unit(const WorldState& ws, std::size_t city_index,
 		return 0.0;  // sem preço nem terra: ausência explícita
 	}
 	return rent * 12.0 * kDemoHousingBuildCostYears + land_cost;
+}
+
+double daily_rent_obligation(const WorldState& ws, std::size_t city_index) {
+	if (city_index >= ws.cities.size() || city_index >= ws.housing.size()) {
+		return 0.0;  // sem dado urbano: ausência explícita
+	}
+	const CityHousing& house = ws.housing[city_index];
+	const DemoCity& city = ws.cities[city_index];
+	const double stock_total = stock_units(house);
+	if (stock_total <= 0.0 || !house.rent_anchored) {
+		// Sem nível de aluguel em XGS (fonte ainda não reancorada) não há
+		// obrigação a reservar: o primeiro tick ancora o nível na renda.
+		return 0.0;
+	}
+	// Fatura mensal dos inquilinos e a renda deles. A fatura usa a posse de
+	// ALUGUEL de cada padrão e as unidades do estoque (mesma conta da fase).
+	double bill_month = 0.0;
+	double tenant_units = 0.0;
+	for (int tier = 0; tier < TIER_COUNT; ++tier) {
+		const double tenants = tier_units(house, tier)
+			* safe_unit(house.tenure[tier][TENURE_RENT]);
+		tenant_units += tenants;
+		bill_month += tenants * safe_nonneg(house.rent[tier]);
+	}
+	// Mesma base de domicílios da fase: o estoque é a base até o primeiro tick
+	// definir `households`.
+	const double households = house.households > 0.0
+		? safe_nonneg(house.households) : stock_total;
+	if (households <= 1e-9 || tenant_units <= 1e-9) {
+		return 0.0;
+	}
+	const double income_per_household_month =
+		safe_nonneg(city.pop.disposable) * 30.0 / households;
+	const double tenant_income_day =
+		income_per_household_month * tenant_units / 30.0;
+	// Aluguel do dia = menor entre a fatura ÷ 30 e o teto de ônus da renda
+	// dos inquilinos. É o valor que a fase de renda desconta do orçamento
+	// discricionário e que a fase de moradia transfere aos donos.
+	return safe_nonneg(std::min(bill_month / 30.0,
+		tenant_income_day * kDemoHousingRentBurdenCap));
 }
 
 int project_count(const WorldState& ws, std::size_t city_index) {

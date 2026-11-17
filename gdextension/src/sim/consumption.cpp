@@ -4,6 +4,7 @@
 #include "sim_core.h"
 
 #include "profiling.h"
+#include "housing.h"
 #include "sim_constants.h"
 #include "sim_labor.h"
 
@@ -349,6 +350,12 @@ void SimCore::phase_income() {
 					std::min(std::max(0.0, pop.savings), reserve);
 				needs_budget = std::max(0.0, budget - protected_savings);
 			}
+			// §19 W3 (Q-015/B2): o aluguel do dia é cobrado da RENDA — depois da
+			// comida (já paga acima) e ANTES de life/luxury. A reserva é o valor
+			// que a fase de moradia vai transferir aos donos; sem ela o
+			// orçamento discricionário consome tudo e só ~20% da fatura era pago.
+			needs_budget = std::max(0.0,
+				needs_budget - housing::daily_rent_obligation(ws_, city_index));
 			double needs_spent = 0.0;
 			double weighted = 0.0;
 			double weight_sum = 0.0;
