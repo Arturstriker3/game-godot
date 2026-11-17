@@ -18,6 +18,12 @@ extends Node
 ## A IA econômica (privado, governo e grupos) roda DENTRO dessa thread, como
 ## fase do `tick_day` do núcleo: aqui só se liga a flag (`set_ai_enabled`) e se
 ## nomeiam os grupos (cultura de origem).
+##
+## TURBO (ferramenta de teste/agente, NÃO feature do jogador): ligado só por
+## `--turbo...` na linha de comando ou `OGS_TURBO...` no ambiente
+## (core/economy/turbo_config.gd). Roda um lote de dias por tarefa e ignora o
+## relógio, para acelerar testes e medições. Sem a flag, o caminho é o de
+## sempre. Nada de UI/atalho/i18n publica este modo.
 
 ## Emitido a cada tick com os pedidos de comércio do dia.
 signal trade_orders_ready(orders: Array)
@@ -39,6 +45,11 @@ const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 ## Agenda o tick do dia na thread do pool (ver tick_scheduler.gd).
 const TickScheduler := preload("res://core/economy/tick_scheduler.gd")
+
+## Configuração do modo TURBO — FERRAMENTA DE TESTE/AGENTE, não feature do
+## jogador: só a linha de comando ou o ambiente ativam (ver turbo_config.gd).
+## Sem a flag o jogo se comporta exatamente como antes.
+const TurboConfigScript := preload("res://core/economy/turbo_config.gd")
 
 ## 1º de janeiro de 2026, 00:00 UTC.
 const START_UNIX := 1767225600
@@ -85,11 +96,29 @@ var _day_fraction := 0.0
 ## Agenda o dia na thread do pool; `is_running()` = dia em cálculo.
 var _ticker: RefCounted = TickScheduler.new()
 
+## Modo TURBO (ferramenta de teste) e bench: os args de usuário e o ambiente
+## são lidos aqui, no `_init` da config. Jogo normal: `enabled = false`,
+## `bench_days = 0`.
+var _turbo = TurboConfigScript.new(OS.get_cmdline_user_args())
+
+## Último dia publicado no turbo. -1 = nada publicado ainda (sempre publica).
+var _turbo_publish_day := -1
+
+## Bench: primeiro dia publicado e o relógio de parede no mesmo instante.
+var _bench_first_day := -1
+var _bench_t0_usec := 0
+
 ## Já juntamos a thread do dia? Ver `_shutdown()`.
 var _shutting_down := false
 
 
 func _ready() -> void:
+	# TURBO (ferramenta de teste): lote de dias por tarefa e uma linha no log.
+	# Sem a flag o lote é 1 — o tick de um dia de sempre (days_per_frame só vale
+	# com o turbo ligado).
+	_ticker.days_per_task = _turbo.days_per_frame if _turbo.enabled else 1
+	if _turbo.enabled:
+		print("[turbo] ON " + _turbo.describe())
 	sim = EconomySim.new()
 	# Dados das cadeias ANTES de inicializar o mundo: o núcleo resolve os ids
 	# dos produtos/insumos e as receitas no momento em que cria as construções.
@@ -137,6 +166,11 @@ func _ready() -> void:
 	# um slot frio pagaria a criação de ~20 mil dicionários (medido: 60 ms contra
 	# 17 ms num dia quente, com 858 cidades). Aqui é custo de carga, não de tick.
 	sim.warm_status()
+
+	# Bench (ferramenta de teste): velocidade forçada, antes do primeiro dia.
+	# `bench_speed = 0` pausa o relógio normal — é escolha de quem roda o bench.
+	if _turbo.bench_speed >= 0:
+		speed = _turbo.bench_speed
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia
 	# roda direto na thread do pool; o primeiro status sai no _process.
@@ -281,6 +315,15 @@ func _process(delta: float) -> void:
 		return
 	# 1. O dia que terminou na thread é publicado agora (sinais).
 	_poll_tick()
+	# O bench (ou um encerramento na publicação) pode ter fechado tudo acima.
+	if _shutting_down:
+		return
+	# 2. TURBO (ferramenta de teste): sem relógio. Um dia atrás do outro, sem
+	# intervalo; `speed` e `_day_fraction` são ignorados de propósito.
+	if _turbo.enabled:
+		if not _ticker.is_running():
+			_start_day()
+		return
 	if speed == 0:
 		return
 	_day_fraction += delta / SPEEDS[speed]
@@ -311,9 +354,38 @@ func _poll_tick() -> void:
 func _publish(summary: Dictionary) -> void:
 	if summary.is_empty():
 		return
+	var day := int(summary.get("day", 0))
+	# TURBO (teste): a menor granularidade de publicação é o lote. Sem a flag
+	# este bloco não roda e o caminho é o de sempre.
+	if _turbo.enabled:
+		if _turbo_publish_day >= 0 and day - _turbo_publish_day < _turbo.render_every:
+			return
+		_turbo_publish_day = day
+	# Bench (teste): mede a parede do primeiro dia publicado até `bench_days`.
+	if _turbo.bench_days > 0:
+		if _bench_first_day < 0:
+			_bench_first_day = day
+			_bench_t0_usec = Time.get_ticks_usec()
+		if day >= _turbo.bench_days:
+			_bench_report(day)
+			return
 	last_summary = summary
 	status_updated.emit(last_summary)
 	trade_orders_ready.emit(last_summary.get("trade_orders", []))
+
+
+## Fecha o bench: uma linha no log, join da thread e saída com código 0.
+## Roda com e sem turbo (`mode=normal` mede o relógio de sempre).
+func _bench_report(to_day: int) -> void:
+	var wall_s := float(Time.get_ticks_usec() - _bench_t0_usec) / 1_000_000.0
+	var days_per_s := 0.0
+	if wall_s > 0.0:
+		days_per_s = float(to_day - _bench_first_day) / wall_s
+	var mode := "turbo" if _turbo.enabled else "normal"
+	print("[bench] mode=%s from_day=%d to_day=%d wall_s=%.3f days_per_s=%.2f" % [
+		mode, _bench_first_day, to_day, wall_s, days_per_s])
+	_shutdown()
+	get_tree().quit(0)
 
 
 ## Avança um dia de forma síncrona (testes e ferramentas headless).
@@ -347,6 +419,16 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
 		_shutdown()
+
+
+## O modo TURBO (ferramenta de teste/agente) está ativo? Sem a CLI/ambiente: false.
+func is_turbo() -> bool:
+	return _turbo.enabled
+
+
+## Configuração do TURBO/bench já resolvida (ferramentas de teste leem daqui).
+func turbo_config() -> RefCounted:
+	return _turbo
 
 
 ## Troca a velocidade; 0 pausa o relógio. A fração do dia é preservada, então

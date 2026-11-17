@@ -1,6 +1,7 @@
 extends RefCounted
 
-## Agenda `sim.tick_and_publish()` na WorkerThreadPool, um dia por vez.
+## Agenda `sim.tick_and_publish()` na WorkerThreadPool, `days_per_task` dias por
+## vez (1 no jogo normal; N no lote do modo TURBO de teste).
 ##
 ## Por que assim: o tick C++ de um mundo grande custa dezenas de milissegundos
 ## e não cabe no frame da virada. O trabalho roda numa thread do pool e a main
@@ -23,6 +24,10 @@ extends RefCounted
 ##   idêntico ao do caminho síncrono (comprovado em tools/world_scale_bench.gd e
 ##   tools/economy_tick_async_test.gd).
 
+## Dias simulados por tarefa. 1 = relógio normal do jogo (um dia por tick);
+## N = lote do modo TURBO, que existe só como ferramenta de teste/agente.
+var days_per_task := 1
+
 var _task_id := -1
 
 ## Sim do dia em andamento. Segura a referência enquanto a tarefa existe, para
@@ -36,12 +41,16 @@ func is_running() -> bool:
 
 
 ## Agenda o tick de `sim`. Devolve false se já existe um dia em andamento.
+##
+## Roda `days_per_task` dias seguidos na MESMA tarefa (bind): 1 é o jogo normal,
+## N é o lote do TURBO. Continua havendo um único escritor e um único join por
+## tarefa — o lote só encurta o número de idas à thread.
 func start(sim: Object) -> bool:
 	if _task_id != -1:
 		return false
 	_sim = sim
 	_task_id = WorkerThreadPool.add_task(
-		_tick_worker.bind(sim), false, "economy day tick")
+		_tick_worker.bind(sim, days_per_task), false, "economy day tick")
 	return true
 
 
@@ -91,6 +100,7 @@ func _join() -> Object:
 	return sim
 
 
-func _tick_worker(sim: Object) -> void:
+func _tick_worker(sim: Object, days: int) -> void:
 	# Nada de Variant/Dictionary aqui: o status nasce e é publicado no C++.
-	sim.tick_and_publish()
+	for _day in maxi(1, days):
+		sim.tick_and_publish()
