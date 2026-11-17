@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <utility>
 
 namespace ogs {
 namespace {
@@ -84,6 +85,25 @@ std::vector<Command> CommandQueue::take_pending() {
 	std::stable_sort(taken.begin(), taken.end(),
 		[](const Command& a, const Command& b) { return a.seq < b.seq; });
 	return taken;
+}
+
+uint64_t CommandQueue::last_seq() const {
+	std::lock_guard<std::mutex> lock(mutex_);
+	return next_seq_;
+}
+
+bool CommandQueue::take_by_seq(uint64_t seq, Command& out) {
+	std::lock_guard<std::mutex> lock(mutex_);
+	for (std::vector<Command>::iterator it = pending_.begin();
+			it != pending_.end(); ++it) {
+		if (it->seq != seq) {
+			continue;
+		}
+		out = std::move(*it);
+		pending_.erase(it);
+		return true;
+	}
+	return false;
 }
 
 std::size_t CommandQueue::pending_size() const {
