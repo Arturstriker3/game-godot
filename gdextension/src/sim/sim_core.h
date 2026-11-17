@@ -81,6 +81,10 @@ public:
 	void phase_raw();
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
 	void phase_income();
+	// 5b. §19 W3: mercado de moradia (aluguel, construção e aperto). Roda
+	// depois da comida (a POP já comprou a cesta) e antes de serviços/comércio:
+	// o aluguel só usa a poupança acima da reserva de comida.
+	void phase_housing();
 	// F8. Serviços: demanda das classes, B2B, governo, exportação, produção dos
 	// negócios, preço, entrada e saída — uma cidade por vez.
 	void phase_services();

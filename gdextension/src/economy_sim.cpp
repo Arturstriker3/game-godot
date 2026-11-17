@@ -1217,6 +1217,9 @@ void EconomySim::demo_tick_core() {
 	// (migrou p/ SimCore).
 	sim_core_.phase_income();
 
+	// 5b. §19 W3: mercado de moradia (aluguel, construção, aperto).
+	sim_core_.phase_housing();
+
 	// F8: serviços (migrou p/ SimCore).
 	sim_core_.phase_services();
 
@@ -5798,6 +5801,17 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 	out["price"] = price;
 	out["vacancy"] = vacancy;
 	out["informal_units"] = house.informal_units;
+	// §19 W3: sinal de aperto por cidade (W4/UI) e fluxo do dia/mês.
+	out["housing_stress"] = house.housing_stress;
+	out["rent_paid"] = house.rent_paid_today;
+	out["rent_paid_month"] = house.rent_paid_month;
+	// Repasse do aluguel aos donos no mês (família → renda de capital; empresa
+	// → caixa das firmas; prefeitura → caixa municipal) e a manutenção.
+	out["rent_to_households"] = house.rent_households_month;
+	out["rent_to_firms"] = house.rent_firms_month;
+	out["rent_to_government"] = house.rent_government_month;
+	out["rent_burden"] = house.rent_burden;
+	out["units_built_month"] = house.units_built_month;
 	Dictionary gov_out;
 	gov_out["cash"] = gov.cash;
 	gov_out["iptu_rate"] = gov.iptu_rate;
