@@ -67,7 +67,7 @@ inline double read_sim_population(const Dictionary& data, double population) {
 // ---------------------------------------------------------------------------
 
 // Índice antigo -> novo. Retorna -1 para farinha/pão (produto removido).
-static int demo_migrate_product_index(int old_index) {
+static int migrate_product_index(int old_index) {
 	if (old_index < 0) {
 		return -1;  // sem produto/insumo
 	}
@@ -83,7 +83,7 @@ static int demo_migrate_product_index(int old_index) {
 // Remapeia um array por-produto do layout antigo (com farinha/pão) para o
 // atual (products posições). new_index 0 <- old_index 0; new_index >= 1 <-
 // old_index (new_index + 2). Posições sem correspondência ficam 0.0.
-static Array demo_migrate_product_array(const Array& old, int products) {
+static Array migrate_product_array(const Array& old, int products) {
 	Array out;
 	out.resize(products);
 	for (int new_index = 0; new_index < products; ++new_index) {
@@ -99,7 +99,7 @@ static Array demo_migrate_product_array(const Array& old, int products) {
 
 // Remapeia um array por-produto usando o vetor old_index -> new_index (-1
 // descarta o produto). Posições sem correspondência ficam 0.0.
-static Array demo_remap_product_array(const Array& old,
+static Array remap_product_array(const Array& old,
 		const std::vector<int>& remap, int products) {
 	Array out;
 	out.resize(products);
@@ -121,7 +121,7 @@ static Array demo_remap_product_array(const Array& old,
 
 Value to_value(const WorldState& ws, const SimCore& core) {
 	Dictionary data = make_object();
-	data["version"] = kDemoSaveVersion;
+	data["version"] = kSaveVersion;
 	data["active"] = ws.active;
 	data["world_mode"] = ws.world_mode;
 	data["day"] = ws.day;
@@ -140,7 +140,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	// `order`; os 21 primeiros são os mesmos do save v3.
 	Array product_names = make_array();
 	for (int index = 0; index < ws.products; ++index) {
-		product_names.append(String(core.demo_product_name(index)));
+		product_names.append(String(core.product_name(index)));
 	}
 	data["products"] = product_names;
 
@@ -154,7 +154,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["consumed_total"] = consumed;
 
 	Array cities = make_array();
-	for (const DemoCity& city : ws.cities) {
+	for (const City& city : ws.cities) {
 		Dictionary entry = make_object();
 		entry["id"] = sim_str(city.id.c_str());
 		entry["name"] = sim_str(city.name.c_str());
@@ -197,8 +197,8 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["private_education_cover"] = city.private_education_cover;
 		entry["service_tonnage_prev"] = city.service_tonnage_prev;
 		Array service_markets = make_array();
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-			const DemoServiceMarket& market = city.service_markets[sector];
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+			const ServiceMarket& market = city.service_markets[sector];
 			Array fields = make_array();
 			fields.append(market.demand);
 			fields.append(market.supply);
@@ -247,7 +247,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		// Reservas minerais (só jazidas declaradas): o saldo restante persiste.
 		Dictionary deposits = make_object();
 		for (int product = 0; product < ws.products; ++product) {
-			const DemoDeposit& deposit = city.deposits[product];
+			const Deposit& deposit = city.deposits[product];
 			if (!deposit.tracked) {
 				continue;
 			}
@@ -257,7 +257,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			deposit_entry["extracted_kt"] = deposit.extracted_kt;
 			deposit_entry["quality"] = deposit.quality;
 			deposit_entry["depth_m"] = deposit.depth_m;
-			deposits[String(core.demo_product_name(product))] = deposit_entry;
+			deposits[String(core.product_name(product))] = deposit_entry;
 		}
 		entry["deposits"] = deposits;
 
@@ -297,7 +297,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		Array level_satisfaction = make_array();
 		Array level_want = make_array();
 		Array level_consumed = make_array();
-		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			level_satisfaction.append(level < static_cast<int>(
 				city.pop.level_satisfaction.size()) ? city.pop.level_satisfaction[level] : 0.0);
 			level_want.append(level < static_cast<int>(
@@ -312,7 +312,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		for (int product = 0; product < ws.products
 				&& product < static_cast<int>(city.pop.durable_stock.size()); ++product) {
 			if (city.pop.durable_stock[static_cast<std::size_t>(product)] > 0.0) {
-				durable_stock[String(core.demo_product_name(product))] =
+				durable_stock[String(core.product_name(product))] =
 					city.pop.durable_stock[static_cast<std::size_t>(product)];
 			}
 		}
@@ -395,7 +395,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["cities"] = cities;
 
 	Array buildings = make_array();
-	for (const DemoBuilding& building : ws.buildings) {
+	for (const Building& building : ws.buildings) {
 		Dictionary entry = make_object();
 		entry["id"] = sim_str(building.id.c_str());
 		entry["city"] = sim_str(building.city.c_str());
@@ -436,7 +436,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	// §15 (save v12): obras de construção em andamento. Save v11 e anteriores
 	// não têm a chave: não há projeto em voo (migração trivial).
 	Array construction_projects = make_array();
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		Dictionary entry = make_object();
 		entry["id"] = sim_str(project.id.c_str());
 		entry["building_id"] = sim_str(project.building_id.c_str());
@@ -501,7 +501,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 
 	// §19 (save v13): solo urbano, moradia e prefeitura por cidade. Vetores
 	// paralelos a `cities`; arrays na ordem fixa dos enums (zonas, densidades,
-	// padrões, posse). Sem demo_set_urban (cenário sintético) a lista é vazia.
+	// padrões, posse). Sem set_urban (cenário sintético) a lista é vazia.
 	Array urban = make_array();
 	const std::size_t urban_count = std::min(
 		{ws.land.size(), ws.housing.size(), ws.city_gov.size(),
@@ -678,7 +678,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	// derivado da semente + cultura do dono no GDScript (rótulo), então o save
 	// guarda só `name_seed` e o vínculo cidade/setor.
 	Array service_businesses = make_array();
-	for (const DemoServiceBusiness& business : ws.service_businesses) {
+	for (const ServiceBusiness& business : ws.service_businesses) {
 		Dictionary entry = make_object();
 		entry["id"] = business.id;
 		entry["sector"] = business.sector;
@@ -705,7 +705,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["service_bankruptcies"] = ws.service_bankruptcies;
 
 	Array transit = make_array();
-	for (const DemoShipment& shipment : ws.in_transit) {
+	for (const Shipment& shipment : ws.in_transit) {
 		Dictionary entry = make_object();
 		entry["to_city"] = sim_str(shipment.to_city.c_str());
 		entry["product"] = shipment.product;
@@ -728,7 +728,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		if (found == ws.fleets.end()) {
 			continue;
 		}
-		const DemoFleet& fleet = found->second;
+		const Fleet& fleet = found->second;
 		Dictionary entry = make_object();
 		entry["nation"] = sim_str(nation.c_str());
 		entry["trucks"] = fleet.trucks;
@@ -752,7 +752,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 
 	// F5: moedas (taxa, base, regime, balança) e tarifas declaradas.
 	Array currencies = make_array();
-	for (const DemoCurrency& currency : ws.currencies) {
+	for (const Currency& currency : ws.currencies) {
 		Dictionary entry = make_object();
 		entry["code"] = sim_str(currency.code.c_str());
 		entry["rate_per_anchor"] = currency.rate;
@@ -771,7 +771,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	}
 	data["currencies"] = currencies;
 	Array tariffs = make_array();
-	for (const DemoTariff& tariff : ws.tariffs) {
+	for (const Tariff& tariff : ws.tariffs) {
 		Dictionary entry = make_object();
 		entry["buyer"] = sim_str(tariff.buyer.c_str());
 		entry["seller"] = sim_str(tariff.seller.c_str());
@@ -782,7 +782,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	data["tariffs"] = tariffs;
 	// F9 (save v11): grupos, fluxos, política de IDE, incentivos e confiança.
 	Array groups = make_array();
-	for (const DemoGroup& group : ws.groups) {
+	for (const Group& group : ws.groups) {
 		Dictionary entry = make_object();
 		entry["id"] = sim_str(group.id.c_str());
 		entry["name"] = sim_str(group.name.c_str());
@@ -817,7 +817,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	}
 	std::sort(group_flow_keys.begin(), group_flow_keys.end());
 	for (const std::string& nation : group_flow_keys) {
-		const DemoGroupFlow& flow = ws.group_flows.at(nation);
+		const GroupFlow& flow = ws.group_flows.at(nation);
 		Dictionary entry = make_object();
 		entry["nation"] = sim_str(nation.c_str());
 		entry["repatriated_out"] = flow.repatriated_out;
@@ -829,7 +829,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	}
 	data["group_flows"] = group_flows;
 	Array fdi_policies = make_array();
-	for (const DemoFdiPolicy& policy : ws.fdi_policies) {
+	for (const FdiPolicy& policy : ws.fdi_policies) {
 		Dictionary entry = make_object();
 		entry["nation"] = sim_str(policy.nation.c_str());
 		entry["sector"] = sim_str(policy.sector.c_str());
@@ -839,7 +839,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 	}
 	data["fdi_policies"] = fdi_policies;
 	Array incentives = make_array();
-	for (const DemoSectorIncentive& incentive : ws.incentives) {
+	for (const SectorIncentive& incentive : ws.incentives) {
 		Dictionary entry = make_object();
 		entry["nation"] = sim_str(incentive.nation.c_str());
 		entry["sector"] = sim_str(incentive.sector.c_str());
@@ -913,7 +913,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	// Recusa save de versão futura (maior que a que este binário conhece).
 	const int version = int(data.get("version", 0));
-	if (version > kDemoSaveVersion) {
+	if (version > kSaveVersion) {
 		ws.active = false;
 		return;
 	}
@@ -934,15 +934,15 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			static_cast<std::size_t>(saved_products.size()), -1);
 		for (int index = 0; index < saved_products.size(); ++index) {
 			product_remap[static_cast<std::size_t>(index)] =
-				core.demo_product_index(std::string(String(saved_products[index]).utf8().get_data()));
+				core.product_index(std::string(String(saved_products[index]).utf8().get_data()));
 		}
 	}
 	const auto migrate_array = [&](const Array& old) -> Array {
 		if (has_saved_products) {
-			return demo_remap_product_array(old, product_remap, ws.products);
+			return remap_product_array(old, product_remap, ws.products);
 		}
 		if (needs_legacy_migration) {
-			return demo_migrate_product_array(old, ws.products);
+			return migrate_product_array(old, ws.products);
 		}
 		return old;
 	};
@@ -955,7 +955,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			return product_remap[static_cast<std::size_t>(old_index)];
 		}
 		if (needs_legacy_migration) {
-			return demo_migrate_product_index(old_index);
+			return migrate_product_index(old_index);
 		}
 		return old_index;
 	};
@@ -982,7 +982,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			if (code.is_empty()) {
 				continue;
 			}
-			DemoCurrency currency;
+			Currency currency;
 			currency.code = std::string(code.utf8().get_data());
 			currency.rate = double(entry.get("rate_per_anchor", 1.0));
 			if (!std::isfinite(currency.rate) || currency.rate <= 0.0) {
@@ -1011,7 +1011,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			}
 			ws.currencies.push_back(std::move(currency));
 		}
-		core.demo_rebuild_currency_indexes();
+		core.rebuild_currency_indexes();
 	}
 	if (data.has("tariffs")) {
 		const Array saved_tariffs = data.get("tariffs", Array());
@@ -1019,7 +1019,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		ws.tariffs.reserve(static_cast<std::size_t>(saved_tariffs.size()));
 		for (int index = 0; index < saved_tariffs.size(); ++index) {
 			const Dictionary entry = saved_tariffs[index];
-			DemoTariff tariff;
+			Tariff tariff;
 			tariff.buyer = std::string(
 				String(entry.get("buyer", "")).utf8().get_data());
 			if (tariff.buyer.empty()) {
@@ -1039,17 +1039,17 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(entry.get("rate", 0.0)), 0.0, 1.0);
 			ws.tariffs.push_back(std::move(tariff));
 		}
-		core.demo_rebuild_tariff_lookup();
+		core.rebuild_tariff_lookup();
 	}
 	// F9 (save v11): grupos e política. Save v10 e anteriores não têm as
 	// chaves: os grupos são semeados a partir dos ativos privados no fim do
-	// load (regra determinística de demo_seed_groups).
+	// load (regra determinística de seed_groups).
 	ws.groups.clear();
 	ws.group_lookup.clear();
 	const Array saved_groups = data.get("groups", Array());
 	for (int index = 0; index < saved_groups.size(); ++index) {
 		const Dictionary entry = saved_groups[index];
-		DemoGroup group;
+		Group group;
 		group.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		if (group.id.empty()) {
 			continue;
@@ -1086,7 +1086,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	const Array saved_policies = data.get("fdi_policies", Array());
 	for (int index = 0; index < saved_policies.size(); ++index) {
 		const Dictionary entry = saved_policies[index];
-		DemoFdiPolicy policy;
+		FdiPolicy policy;
 		policy.nation = std::string(
 			String(entry.get("nation", "")).utf8().get_data());
 		policy.sector = std::string(
@@ -1105,7 +1105,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	const Array saved_incentives = data.get("sector_incentives", Array());
 	for (int index = 0; index < saved_incentives.size(); ++index) {
 		const Dictionary entry = saved_incentives[index];
-		DemoSectorIncentive incentive;
+		SectorIncentive incentive;
 		incentive.nation = std::string(
 			String(entry.get("nation", "")).utf8().get_data());
 		incentive.sector = std::string(
@@ -1146,7 +1146,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		if (nation.empty()) {
 			continue;
 		}
-		DemoGroupFlow flow;
+		GroupFlow flow;
 		flow.repatriated_out = std::max(0.0,
 			double(entry.get("repatriated_out", 0.0)));
 		flow.repatriated_in = std::max(0.0,
@@ -1186,7 +1186,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	Array cities = data.get("cities", Array());
 	for (int index = 0; index < cities.size(); ++index) {
 		Dictionary entry = cities[index];
-		DemoCity city;
+		City city;
 		city.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		city.name = std::string(String(entry.get("name", "")).utf8().get_data());
 		city.nation = std::string(String(entry.get("nation", "")).utf8().get_data());
@@ -1194,7 +1194,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		// anteriores guardavam preço local; converte uma vez pela taxa da nação
 		// (as moedas foram carregadas antes das cidades).
 		const double save_fx = version >= 7
-			? 1.0 : std::max(1e-9, core.demo_fx_rate(city.nation));
+			? 1.0 : std::max(1e-9, core.fx_rate(city.nation));
 		city.home_nation = std::string(
 			String(entry.get("home_nation", String(city.nation.c_str()))).utf8().get_data());
 		city.landmass =
@@ -1236,7 +1236,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.gdp = double(entry.get("gdp", 0.0));
 		// F8: serviços (save v10). Sem o bloco (v9 e anteriores), os mercados
 		// ficam no preço-âncora do catálogo e os negócios são semeados no fim
-		// do load (`demo_seed_services`).
+		// do load (`seed_services`).
 		city.service_export_revenue = double(entry.get("service_export_revenue", 0.0));
 		city.service_government_revenue =
 			double(entry.get("service_government_revenue", 0.0));
@@ -1251,8 +1251,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			double(entry.get("private_education_cover", 0.0)), 0.0, 1.0);
 		city.service_tonnage_prev = double(entry.get("service_tonnage_prev", 0.0));
 		const Array saved_services = entry.get("services", Array());
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-			DemoServiceMarket& market = city.service_markets[sector];
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+			ServiceMarket& market = city.service_markets[sector];
 			if (sector < static_cast<int>(ws.service_sectors.size())) {
 				market.base_price =
 					ws.service_sectors[static_cast<std::size_t>(sector)].price;
@@ -1322,12 +1322,12 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 
 		Dictionary saved_deposits = entry.get("deposits", Dictionary());
 		for (int product = 0; product < ws.products; ++product) {
-			const String key = String(core.demo_product_name(product));
+			const String key = String(core.product_name(product));
 			if (!saved_deposits.has(key)) {
 				continue;
 			}
 			Dictionary deposit_entry = saved_deposits[key];
-			DemoDeposit& deposit = city.deposits[product];
+			Deposit& deposit = city.deposits[product];
 			deposit.tracked = true;
 			deposit.initial_kt = double(deposit_entry.get("initial_kt", 0.0));
 			deposit.remaining_kt = double(deposit_entry.get("remaining_kt", 0.0));
@@ -1355,7 +1355,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		city.pop.satisfaction = double(pop.get("satisfaction", 0.0));
 		city.pop.savings = double(pop.get("savings", 0.0));
 		// F3: estado das necessidades (aditivo; save anterior = zero).
-		core.demo_init_pop_needs(city.pop);
+		core.init_pop_needs(city.pop);
 		Dictionary needs_state = pop.get("needs", Dictionary());
 		city.pop.needs_level = int(needs_state.get("level", 0));
 		city.pop.needs_satisfaction = double(needs_state.get("satisfaction",
@@ -1365,7 +1365,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		Array saved_level_sat = needs_state.get("level_satisfaction", Array());
 		Array saved_level_want = needs_state.get("level_want", Array());
 		Array saved_level_cons = needs_state.get("level_consumed", Array());
-		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			city.pop.level_satisfaction[level] = level < saved_level_sat.size()
 				? double(saved_level_sat[level]) : 0.0;
 			city.pop.level_want[level] = level < saved_level_want.size()
@@ -1376,7 +1376,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		Dictionary saved_durable = needs_state.get("durable_stock", Dictionary());
 		for (int product = 0; product < ws.products
 				&& product < static_cast<int>(city.pop.durable_stock.size()); ++product) {
-			const String key = String(core.demo_product_name(product));
+			const String key = String(core.product_name(product));
 			if (saved_durable.has(key)) {
 				city.pop.durable_stock[static_cast<std::size_t>(product)] =
 					std::max(0.0, double(saved_durable[key]));
@@ -1389,9 +1389,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		Dictionary saved_labor = pop.get("labor", Dictionary());
 		const bool has_labor = version >= 9 && !saved_labor.is_empty();
 		if (!has_labor) {
-			core.demo_apply_labor_profile(city);
+			core.apply_labor_profile(city);
 		} else {
-			DemoPop& labor_pop = city.pop;
+			Pop& labor_pop = city.pop;
 			labor_pop.working_age = std::max(0.0,
 				double(saved_labor.get("working_age", labor_pop.working_age)));
 			labor_pop.retirees = std::max(0.0,
@@ -1409,23 +1409,23 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				}
 			};
 			read_levels("education", labor_pop.education,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("participation", labor_pop.participation,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("labor_force_by_level", labor_pop.labor_force_by_level,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("employed_by_level", labor_pop.employed_by_level,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("unemployed_by_level", labor_pop.unemployed_by_level,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("vacancies_by_level", labor_pop.vacancies_by_level,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("wage_by_level", labor_pop.wage_by_level,
-				kDemoEducationLevels);
+				kEducationLevels);
 			read_levels("wage_income_by_level",
-				labor_pop.wage_income_by_level, kDemoEducationLevels);
+				labor_pop.wage_income_by_level, kEducationLevels);
 			read_levels("studying", labor_pop.studying,
-				kDemoEducationLevels - 1);
+				kEducationLevels - 1);
 			labor_pop.students = labor_pop.studying[0] + labor_pop.studying[1];
 			labor_pop.income_level = std::clamp(
 				int(saved_labor.get("income_level", 1)), 0, 3);
@@ -1435,18 +1435,18 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			const bool has_strata = saved_labor.has("income_level_by_stratum");
 			if (has_strata) {
 				const Array strata = saved_labor.get("income_level_by_stratum", Array());
-				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 					labor_pop.stratum_income_level[stratum] = stratum < strata.size()
 						? std::clamp(int(strata[stratum]), 0, 3)
 						: labor_pop.income_level;
 				}
 			} else {
-				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 					labor_pop.stratum_income_level[stratum] = labor_pop.income_level;
 				}
 			}
 			const Array share = saved_labor.get("income_level_share", Array());
-			for (int level_index = 0; level_index < kDemoIncomeLevels; ++level_index) {
+			for (int level_index = 0; level_index < kIncomeLevels; ++level_index) {
 				labor_pop.income_level_share[level_index] = level_index < share.size()
 					? std::clamp(double(share[level_index]), 0.0, 1.0) : 0.0;
 			}
@@ -1455,18 +1455,18 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			}
 			labor_pop.wage_anchored = bool(saved_labor.get("wage_anchored", true));
 			labor_pop.labor_force = 0.0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				labor_pop.labor_force +=
 					labor_pop.labor_force_by_level[level];
 			}
 			labor_pop.employed = 0.0;
 			labor_pop.unemployed = 0.0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				labor_pop.employed += labor_pop.employed_by_level[level];
 				labor_pop.unemployed += labor_pop.unemployed_by_level[level];
 			}
 			labor_pop.wage_income = 0.0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				labor_pop.wage_income += labor_pop.wage_income_by_level[level];
 			}
 			labor_pop.dependents = std::max(0.0,
@@ -1507,7 +1507,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			for (int new_index = 0; new_index < ws.products; ++new_index) {
 				Dictionary m;
 				m["stock"] = 0.0;
-				m["price"] = core.demo_base_price(new_index);
+				m["price"] = core.base_price(new_index);
 				m["demand"] = 0.0;
 				m["supply"] = 0.0;
 				m["desired"] = 0.0;
@@ -1528,7 +1528,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		// Saves antigos (4 produtos) não trazem mercados dos novos bens: preço-base.
 		for (int product = markets.size(); product < ws.products; ++product) {
 			if (product >= 0) {
-				city.markets[product].price = core.demo_base_price(product);
+				city.markets[product].price = core.base_price(product);
 			}
 		}
 		for (int product = 0; product < ws.products && product < markets.size(); ++product) {
@@ -1550,7 +1550,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	Array buildings = data.get("buildings", Array());
 	for (int index = 0; index < buildings.size(); ++index) {
 		Dictionary entry = buildings[index];
-		DemoBuilding building;
+		Building building;
 		building.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		building.city = std::string(String(entry.get("city", "")).utf8().get_data());
 		building.kind = int(entry.get("kind", 0));
@@ -1576,11 +1576,11 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		building.capacity = double(entry.get("capacity", 0.0));
 		building.input_per_output = double(entry.get("input_per_output", 0.0));
 		// Receita industrial: o id é resolvido na tabela carregada por
-		// demo_set_recipes (v4). Save v3 não tem a chave -> produtor legado.
+		// set_recipes (v4). Save v3 não tem a chave -> produtor legado.
 		const String recipe_id = String(entry.get("recipe", ""));
-		building.recipe = recipe_id.is_empty() ? -1 : core.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
+		building.recipe = recipe_id.is_empty() ? -1 : core.recipe_index(std::string(recipe_id.utf8().get_data()));
 		building.capital_per_capacity = std::max(1.0, safe_nonneg(
-			double(entry.get("capital_per_capacity", kDemoCapitalPerCapacity))));
+			double(entry.get("capital_per_capacity", kCapitalPerCapacity))));
 		building.jobs = double(entry.get("jobs", 0.0));
 		building.wage = double(entry.get("wage", 0.0));
 		building.opex = double(entry.get("opex", 0.0));
@@ -1590,20 +1590,20 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			const Array mix = entry.get("education_mix", Array());
 			double total = 0.0;
 			for (int level = 0;
-					level < kDemoEducationLevels && level < mix.size(); ++level) {
+					level < kEducationLevels && level < mix.size(); ++level) {
 				building.education_mix[level] = std::max(0.0, double(mix[level]));
 				total += building.education_mix[level];
 			}
 			if (total > 1e-9) {
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					building.education_mix[level] /= total;
 				}
 			}
 		} else if (building.recipe >= 0
 				&& building.recipe < static_cast<int>(ws.recipes.size())) {
-			const DemoRecipe& recipe =
+			const Recipe& recipe =
 				ws.recipes[static_cast<std::size_t>(building.recipe)];
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				building.education_mix[level] = recipe.education_mix[level];
 			}
 		}
@@ -1626,7 +1626,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			continue;
 		}
 		const Dictionary entry = saved_projects[index];
-		DemoConstructionProject project;
+		ConstructionProject project;
 		project.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		if (project.id.empty()) {
 			continue;
@@ -1678,7 +1678,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		}
 		const String recipe_id = String(entry.get("recipe", ""));
 		project.recipe = recipe_id.is_empty()
-			? -1 : core.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
+			? -1 : core.recipe_index(std::string(recipe_id.utf8().get_data()));
 		project.input_product = int(entry.get("input_product", -1));
 		if (!urban_project && (has_saved_products || needs_legacy_migration)) {
 			project.input_product = migrate_index(project.input_product);
@@ -1689,14 +1689,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		project.opex = std::max(0.0, double(entry.get("opex", 0.0)));
 		project.input_per_output = double(entry.get("input_per_output", 0.0));
 		const Array mix = entry.get("education_mix", Array());
-		if (mix.size() >= kDemoEducationLevels) {
+		if (mix.size() >= kEducationLevels) {
 			double total = 0.0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				project.education_mix[level] = std::max(0.0, double(mix[level]));
 				total += project.education_mix[level];
 			}
 			if (total > 1e-9) {
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					project.education_mix[level] /= total;
 				}
 			}
@@ -1723,7 +1723,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		const Array material_qty = entry.get("material_qty", Array());
 		const Array material_delivered = entry.get("material_delivered", Array());
 		project.material_count = std::min(
-			static_cast<int>(materials.size()), kDemoMaxConstructionMaterials);
+			static_cast<int>(materials.size()), kMaxConstructionMaterials);
 		for (int m = 0; m < project.material_count; ++m) {
 			int product = int(materials[m]);
 			if (has_saved_products || needs_legacy_migration) {
@@ -1742,7 +1742,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	Array transit = data.get("in_transit", Array());
 	for (int index = 0; index < transit.size(); ++index) {
 		Dictionary entry = transit[index];
-		DemoShipment shipment;
+		Shipment shipment;
 		shipment.to_city =
 			std::string(String(entry.get("to_city", "")).utf8().get_data());
 		shipment.product = int(entry.get("product", 0));
@@ -1798,9 +1798,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		}
 	}
 
-	core.demo_rebuild_indexes();
+	core.rebuild_indexes();
 	if (!has_saved_ports && !ws.ports.empty()) {
-		core.demo_init_port_capacities();
+		core.init_port_capacities();
 	}
 	// F4: frota (save v5). Save anterior não tem o bloco: deriva de
 	// população/PIB, documentado como `source: derived`.
@@ -1814,7 +1814,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		if (nation.empty()) {
 			continue;
 		}
-		DemoFleet fleet;
+		Fleet fleet;
 		fleet.trucks = safe_nonneg(double(entry.get("trucks", 0.0)));
 		fleet.ships = safe_nonneg(double(entry.get("ships", 0.0)));
 		fleet.planes = safe_nonneg(double(entry.get("planes", 0.0)));
@@ -1827,7 +1827,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		Array health = entry.get("health", Array());
 		for (int mode = 0; mode < 3; ++mode) {
 			fleet.health[mode] = mode < health.size()
-				? std::clamp(double(health[mode]), kDemoFleetHealthFloor, 1.0) : 1.0;
+				? std::clamp(double(health[mode]), kFleetHealthFloor, 1.0) : 1.0;
 		}
 		fleet.fuel_used_total = double(entry.get("fuel_used_total", 0.0));
 		fleet.fuel_bought_total = double(entry.get("fuel_bought_total", 0.0));
@@ -1839,11 +1839,11 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		ws.fleet_order.push_back(nation);
 	}
 	// Reserva das cargas em trânsito: reconstrói os veículos ocupados.
-	for (const DemoShipment& shipment : ws.in_transit) {
+	for (const Shipment& shipment : ws.in_transit) {
 		if (shipment.fleet_nation.empty()) {
 			continue;
 		}
-		DemoTransportDemand busy;
+		TransportDemand busy;
 		busy.trucks = shipment.fleet_trucks;
 		busy.ships = shipment.fleet_ships;
 		busy.planes = shipment.fleet_planes;
@@ -1856,14 +1856,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		found->second.planes_busy += busy.planes;
 	}
 	if (ws.fleets.empty()) {
-		core.demo_init_fleets();
+		core.init_fleets();
 	} else {
 		// Índices dos bens da frota (products já carregados antes do load).
-		ws.fleet_product_fuel = core.demo_product_index(std::string(String("fuel").utf8().get_data()));
-		ws.fleet_product_truck = core.demo_product_index(std::string(String("truck").utf8().get_data()));
-		ws.fleet_product_ship = core.demo_product_index(std::string(String("cargo_ship").utf8().get_data()));
-		ws.fleet_product_plane = core.demo_product_index(std::string(String("cargo_plane").utf8().get_data()));
-		ws.fleet_product_parts = core.demo_product_index(std::string(String("spare_parts").utf8().get_data()));
+		ws.fleet_product_fuel = core.product_index(std::string(String("fuel").utf8().get_data()));
+		ws.fleet_product_truck = core.product_index(std::string(String("truck").utf8().get_data()));
+		ws.fleet_product_ship = core.product_index(std::string(String("cargo_ship").utf8().get_data()));
+		ws.fleet_product_plane = core.product_index(std::string(String("cargo_plane").utf8().get_data()));
+		ws.fleet_product_parts = core.product_index(std::string(String("spare_parts").utf8().get_data()));
 	}
 
 	// F8: negócios de serviço (save v10). Save v9 e anteriores não têm o bloco:
@@ -1877,14 +1877,14 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			continue;
 		}
 		const Dictionary entry = saved_businesses[index];
-		DemoServiceBusiness business;
+		ServiceBusiness business;
 		business.id = int(entry.get("id", 0));
 		business.sector = int(entry.get("sector", -1));
 		business.city = std::string(
 			String(entry.get("city", "")).utf8().get_data());
 		business.owner_stratum = std::clamp(
-			int(entry.get("owner_stratum", kDemoEducationLevels - 1)),
-			0, kDemoEducationLevels - 1);
+			int(entry.get("owner_stratum", kEducationLevels - 1)),
+			0, kEducationLevels - 1);
 		business.capacity = safe_nonneg(double(entry.get("capacity", 0.0)));
 		business.jobs = safe_nonneg(double(entry.get("jobs", 0.0)));
 		business.workers = safe_nonneg(double(entry.get("workers", 0.0)));
@@ -1916,23 +1916,23 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		ws.service_businesses.push_back(std::move(business));
 	}
 	if (ws.service_businesses.empty() && ws.services_loaded) {
-		core.demo_seed_services();
+		core.seed_services();
 	} else {
-		core.demo_rebuild_service_indexes();
+		core.rebuild_service_indexes();
 	}
 	// F9: save v10 e anteriores não têm grupos. Semeia a partir dos ativos
 	// privados (id determinístico); os nomes entram pelo cliente no próximo
 	// boot, como no mundo recém-criado.
 	if (ws.groups.empty()) {
 		ws.groups_seeded = false;
-		core.demo_seed_groups();
+		core.seed_groups();
 	} else {
 		ws.groups_seeded = true;
 	}
 
 	// §19 (save v13): solo urbano, moradia e prefeitura por cidade. O save v12
 	// e anteriores não têm a chave: os vetores ficam como estão (vazios num load
-	// frio ou com os padrões carregados pelo demo_set_urban), sem lógica diária
+	// frio ou com os padrões carregados pelo set_urban), sem lógica diária
 	// a reconstruir. O casamento é por id, não por posição.
 	if (data.has("urban")) {
 		const Array saved_urban = data.get("urban", Array());
@@ -2199,7 +2199,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			if (version < 14) {
 				const Array projects = entry.get("projects", Array());
 				const int max_slots = std::min(
-					static_cast<int>(projects.size()), kDemoHousingMaxProjects);
+					static_cast<int>(projects.size()), kHousingMaxProjects);
 				for (int slot = 0; slot < max_slots; ++slot) {
 					if (projects[slot].get_type() != Variant::DICTIONARY) {
 						continue;
@@ -2211,7 +2211,7 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					if (state == HOUSING_PROJECT_IDLE) {
 						continue;  // slot vazio no save antigo
 					}
-					DemoConstructionProject project;
+					ConstructionProject project;
 					project.id = "HSG-V13-" + city_id + "-"
 						+ std::to_string(slot);
 					project.building_id = project.id;

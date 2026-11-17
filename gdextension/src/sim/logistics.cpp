@@ -19,7 +19,7 @@ inline double safe_nonneg(double v) {
 } // namespace
 
 namespace ogs {
-void SimCore::demo_tick_port_expansion() {
+void SimCore::tick_port_expansion() {
 	for (Port& port : ws_.ports) {
 		if (port.pending_capacity_t_per_day <= 1e-9) {
 			continue;
@@ -33,18 +33,18 @@ void SimCore::demo_tick_port_expansion() {
 		}
 	}
 }
-void SimCore::demo_fleet_release(const std::string& nation,
-		const DemoTransportDemand& demand) {
+void SimCore::fleet_release(const std::string& nation,
+		const TransportDemand& demand) {
 	const auto found = ws_.fleets.find(nation);
 	if (found == ws_.fleets.end()) {
 		return;
 	}
-	DemoFleet& fleet = found->second;
+	Fleet& fleet = found->second;
 	fleet.trucks_busy = std::max(0.0, fleet.trucks_busy - demand.trucks);
 	fleet.ships_busy = std::max(0.0, fleet.ships_busy - demand.ships);
 	fleet.planes_busy = std::max(0.0, fleet.planes_busy - demand.planes);
 }
-const Port* SimCore::demo_nearest_port(const std::string& nation,
+const Port* SimCore::nearest_port(const std::string& nation,
 		const std::string& landmass, const MapPoint& from) const {
 	// Porto mais próximo da mesma nação e da mesma massa de terra. Dinâmico:
 	// adicionar um porto em ports.json já o torna disponível para o roteamento.
@@ -62,7 +62,7 @@ const Port* SimCore::demo_nearest_port(const std::string& nation,
 	}
 	return best;
 }
-Port* SimCore::find_demo_port(const std::string& id) {
+Port* SimCore::find_port(const std::string& id) {
 	for (Port& port : ws_.ports) {
 		if (port.id == id) {
 			return &port;
@@ -70,12 +70,12 @@ Port* SimCore::find_demo_port(const std::string& id) {
 	}
 	return nullptr;
 }
-int SimCore::demo_city_index_near(const std::string& nation,
+int SimCore::city_index_near(const std::string& nation,
 		const std::string& landmass, const MapPoint& from) const {
 	int best = -1;
 	double best_distance = 0.0;
 	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
-		const DemoCity& city = ws_.cities[index];
+		const City& city = ws_.cities[index];
 		if (city.nation != nation || city.landmass != landmass) {
 			continue;
 		}
@@ -87,18 +87,18 @@ int SimCore::demo_city_index_near(const std::string& nation,
 	}
 	return best;
 }
-void SimCore::demo_init_port_capacities() {
+void SimCore::init_port_capacities() {
 	// Capacidade de nível 1 pela população de simulação da cidade-sede. Sem
 	// `port_of` válido (mundo sem dono declarado para o cais), usa a cidade da
 	// nação/massa mais próxima do cais; sem nenhuma, o piso de referência.
 	for (Port& port : ws_.ports) {
 		double population = 0.0;
-		const DemoCity* host = port.host_city.empty()
-			? nullptr : find_demo_city(port.host_city);
+		const City* host = port.host_city.empty()
+			? nullptr : find_city(port.host_city);
 		if (host != nullptr) {
 			population = host->simulation_population;
 		} else {
-			const int near = demo_city_index_near(port.nation, port.landmass, port.center);
+			const int near = city_index_near(port.nation, port.landmass, port.center);
 			if (near >= 0) {
 				port.host_city = ws_.cities[static_cast<std::size_t>(near)].id;
 				population =
@@ -106,8 +106,8 @@ void SimCore::demo_init_port_capacities() {
 			}
 		}
 		port.base_capacity_t_per_day = std::clamp(
-			kDemoPortBaseTons + kDemoPortTonsPerCapita * safe_nonneg(population),
-			kDemoPortBaseTons, kDemoPortMaxTons);
+			kPortBaseTons + kPortTonsPerCapita * safe_nonneg(population),
+			kPortBaseTons, kPortMaxTons);
 		port.capacity_t_per_day = port.base_capacity_t_per_day;
 		port.used_today_t = 0.0;
 		port.queue_t = 0.0;
@@ -117,7 +117,7 @@ void SimCore::demo_init_port_capacities() {
 		port.pending_days = 0;
 	}
 }
-void SimCore::demo_reset_port_usage() {
+void SimCore::reset_port_usage() {
 	for (Port& port : ws_.ports) {
 		port.used_today_t = 0.0;
 		port.queue_t = 0.0;
@@ -125,14 +125,14 @@ void SimCore::demo_reset_port_usage() {
 		port.demurrage = 0.0;
 	}
 }
-double SimCore::demo_port_charge(Port& port, double tons, double& demurrage_out) {
+double SimCore::port_charge(Port& port, double tons, double& demurrage_out) {
 	const double load = safe_nonneg(tons);
 	const double capacity = std::max(1.0, port.capacity_t_per_day);
 	const double overflow = std::max(0.0, port.used_today_t + load - capacity);
 	// Fila medida em dias de capacidade: 1.000 t acima de um cais de 1.000 t/dia
 	// custa um dia de atraso; um excesso pequeno atrasa só uma fração do dia.
 	const double delay_days = overflow / capacity;
-	const double demurrage = overflow * delay_days * kDemoPortDemurragePerTonDay;
+	const double demurrage = overflow * delay_days * kPortDemurragePerTonDay;
 	port.used_today_t += load;
 	port.queue_t = std::max(port.queue_t, overflow);
 	port.delay_hours += delay_days * kHoursPerDay;
@@ -140,7 +140,7 @@ double SimCore::demo_port_charge(Port& port, double tons, double& demurrage_out)
 	demurrage_out += demurrage;
 	return delay_days;
 }
-double SimCore::demo_nation_sim_population(const std::string& nation) const {
+double SimCore::nation_sim_population(const std::string& nation) const {
 	const auto found = ws_.cities_by_nation.find(nation);
 	if (found != ws_.cities_by_nation.end()) {
 		double total = 0.0;
@@ -150,19 +150,19 @@ double SimCore::demo_nation_sim_population(const std::string& nation) const {
 		return total;
 	}
 	double total = 0.0;
-	for (const DemoCity& city : ws_.cities) {
+	for (const City& city : ws_.cities) {
 		if (city.nation == nation) {
 			total += city.simulation_population;
 		}
 	}
 	return total;
 }
-double SimCore::demo_nation_income_index(const std::string& nation) const {
+double SimCore::nation_income_index(const std::string& nation) const {
 	// PIB PPP per capita já carregado por cidade (external_income_index),
 	// ponderado por população: nações ricas têm frota maior por habitante.
 	double weighted = 0.0;
 	double population = 0.0;
-	for (const DemoCity& city : ws_.cities) {
+	for (const City& city : ws_.cities) {
 		if (city.nation != nation || city.simulation_population <= 0.0) {
 			continue;
 		}
@@ -174,7 +174,7 @@ double SimCore::demo_nation_income_index(const std::string& nation) const {
 	}
 	return std::clamp(weighted / population, 0.10, 8.0);
 }
-bool SimCore::demo_nation_food_secure(const std::string& nation) const {
+bool SimCore::nation_food_secure(const std::string& nation) const {
 	const auto found = ws_.cities_by_nation.find(nation);
 	if (found == ws_.cities_by_nation.end()) {
 		return true;
@@ -182,13 +182,13 @@ bool SimCore::demo_nation_food_secure(const std::string& nation) const {
 	double stock_ge = 0.0;
 	double need = 0.0;
 	for (const int index : found->second) {
-		const DemoCity& city = ws_.cities[static_cast<std::size_t>(index)];
+		const City& city = ws_.cities[static_cast<std::size_t>(index)];
 		// `pop.need` é zerado no reset do dia antes deste tick; a fórmula
-		// abaixo é a mesma usada em demo_consume_population.
-		need += std::max(0.0, city.simulation_population * kDemoNeedPerCapita);
+		// abaixo é a mesma usada em consume_population.
+		need += std::max(0.0, city.simulation_population * kNeedPerCapita);
 		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			const double factor = demo_food_calories(product);
+			const int product = food_product(slot);
+			const double factor = food_calories(product);
 			if (product >= 0 && product < ws_.products && factor > 0.0) {
 				stock_ge += std::max(0.0, city.markets[product].stock) * factor;
 			}
@@ -197,14 +197,14 @@ bool SimCore::demo_nation_food_secure(const std::string& nation) const {
 	if (need <= 1e-9) {
 		return true;
 	}
-	return stock_ge >= need * kDemoFleetFoodSecureDays;
+	return stock_ge >= need * kFleetFoodSecureDays;
 }
-void SimCore::demo_init_fleets() {
-	ws_.fleet_product_fuel = demo_product_index(std::string("fuel"));
-	ws_.fleet_product_truck = demo_product_index(std::string("truck"));
-	ws_.fleet_product_ship = demo_product_index(std::string("cargo_ship"));
-	ws_.fleet_product_plane = demo_product_index(std::string("cargo_plane"));
-	ws_.fleet_product_parts = demo_product_index(std::string("spare_parts"));
+void SimCore::init_fleets() {
+	ws_.fleet_product_fuel = product_index(std::string("fuel"));
+	ws_.fleet_product_truck = product_index(std::string("truck"));
+	ws_.fleet_product_ship = product_index(std::string("cargo_ship"));
+	ws_.fleet_product_plane = product_index(std::string("cargo_plane"));
+	ws_.fleet_product_parts = product_index(std::string("spare_parts"));
 	ws_.fleets.clear();
 	if (ws_.cities.empty()) {
 		return;
@@ -213,41 +213,41 @@ void SimCore::demo_init_fleets() {
 	std::vector<std::string> nations;
 	std::unordered_map<std::string, char> seen;
 	seen.reserve(ws_.cities.size() * 2);
-	for (const DemoCity& city : ws_.cities) {
+	for (const City& city : ws_.cities) {
 		if (seen.emplace(city.nation, 1).second) {
 			nations.push_back(city.nation);
 		}
 	}
 	for (const std::string& nation : nations) {
-		const double population = demo_nation_sim_population(nation);
-		const double income = demo_nation_income_index(nation);
+		const double population = nation_sim_population(nation);
+		const double income = nation_income_index(nation);
 		const double factor = std::clamp(0.6 + 0.4 * income, 0.6, 2.0);
-		DemoFleet fleet;
-		fleet.trucks = std::max(kDemoFleetMinTrucks,
-			std::ceil(population * kDemoFleetTrucksPerCapita * factor));
-		fleet.ships = std::max(kDemoFleetMinShips,
-			std::ceil(population * kDemoFleetShipsPerCapita * factor));
-		fleet.planes = std::ceil(population * kDemoFleetPlanesPerCapita * factor);
+		Fleet fleet;
+		fleet.trucks = std::max(kFleetMinTrucks,
+			std::ceil(population * kFleetTrucksPerCapita * factor));
+		fleet.ships = std::max(kFleetMinShips,
+			std::ceil(population * kFleetShipsPerCapita * factor));
+		fleet.planes = std::ceil(population * kFleetPlanesPerCapita * factor);
 		fleet.target_trucks = fleet.trucks;
 		fleet.target_ships = fleet.ships;
 		fleet.target_planes = fleet.planes;
-		const double fuel_day = fleet.trucks * kDemoFleetFuelPerTruckDay
-			+ fleet.ships * kDemoFleetFuelPerShipDay
-			+ fleet.planes * kDemoFleetFuelPerPlaneDay;
-		fleet.fuel_target = std::max(fuel_day * kDemoFleetFuelDays,
-			population * kDemoFleetFuelPerCapita);
+		const double fuel_day = fleet.trucks * kFleetFuelPerTruckDay
+			+ fleet.ships * kFleetFuelPerShipDay
+			+ fleet.planes * kFleetFuelPerPlaneDay;
+		fleet.fuel_target = std::max(fuel_day * kFleetFuelDays,
+			population * kFleetFuelPerCapita);
 		fleet.fuel = fleet.fuel_target;
-		fleet.spare_parts = kDemoFleetPartsReserveMonths * (fleet.trucks * kDemoFleetPartsPerTruckMonth
-			+ fleet.ships * kDemoFleetPartsPerShipMonth
-			+ fleet.planes * kDemoFleetPartsPerPlaneMonth);
+		fleet.spare_parts = kFleetPartsReserveMonths * (fleet.trucks * kFleetPartsPerTruckMonth
+			+ fleet.ships * kFleetPartsPerShipMonth
+			+ fleet.planes * kFleetPartsPerPlaneMonth);
 		fleet.derived = true;
 		ws_.fleets.emplace(nation, fleet);
 	}
 	ws_.fleet_order = nations;
 }
-DemoTransportDemand SimCore::demo_route_demand(const DemoCity& seller,
-		const DemoCity& buyer, int seller_port, int buyer_port, double tons) const {
-	DemoTransportDemand demand;
+TransportDemand SimCore::route_demand(const City& seller,
+		const City& buyer, int seller_port, int buyer_port, double tons) const {
+	TransportDemand demand;
 	if (tons <= 1e-9) {
 		return demand;
 	}
@@ -293,8 +293,8 @@ DemoTransportDemand SimCore::demo_route_demand(const DemoCity& seller,
 		distance_km(buyer_city_port.center, buyer.center));
 	return demand;
 }
-double SimCore::demo_fleet_capacity_scale(const std::string& nation,
-		const DemoTransportDemand& demand, bool& fuel_limited) const {
+double SimCore::fleet_capacity_scale(const std::string& nation,
+		const TransportDemand& demand, bool& fuel_limited) const {
 	fuel_limited = false;
 	if (demand.trucks <= 1e-9 && demand.ships <= 1e-9
 			&& demand.planes <= 1e-9 && demand.fuel <= 1e-9) {
@@ -305,7 +305,7 @@ double SimCore::demo_fleet_capacity_scale(const std::string& nation,
 		// Mundo sem frota declarada (save anterior à F4): não bloqueia.
 		return 1.0;
 	}
-	const DemoFleet& fleet = found->second;
+	const Fleet& fleet = found->second;
 	double scale = 1.0;
 	auto apply = [&scale](double free_units, double need) {
 		if (need > 1e-9) {
@@ -325,13 +325,13 @@ double SimCore::demo_fleet_capacity_scale(const std::string& nation,
 	}
 	return std::clamp(scale, 0.0, 1.0);
 }
-void SimCore::demo_fleet_reserve(const std::string& nation,
-		const DemoTransportDemand& demand) {
+void SimCore::fleet_reserve(const std::string& nation,
+		const TransportDemand& demand) {
 	const auto found = ws_.fleets.find(nation);
 	if (found == ws_.fleets.end()) {
 		return;
 	}
-	DemoFleet& fleet = found->second;
+	Fleet& fleet = found->second;
 	fleet.trucks_busy += demand.trucks;
 	fleet.ships_busy += demand.ships;
 	fleet.planes_busy += demand.planes;
@@ -339,15 +339,15 @@ void SimCore::demo_fleet_reserve(const std::string& nation,
 	fleet.fuel_used_today += demand.fuel;
 	fleet.fuel_used_total += demand.fuel;
 }
-double SimCore::demo_fleet_fuel_price() const {
+double SimCore::fleet_fuel_price() const {
 	if (ws_.fleet_product_fuel >= 0
 			&& ws_.fleet_product_fuel < ws_.products) {
-		return demo_base_price(ws_.fleet_product_fuel);
+		return base_price(ws_.fleet_product_fuel);
 	}
-	// goods.json: base_price do fuel (fallback antes de demo_set_goods).
+	// goods.json: base_price do fuel (fallback antes de set_goods).
 	return 43.5;
 }
-double SimCore::demo_fleet_buy_core(const std::string& nation, int product_index,
+double SimCore::fleet_buy_core(const std::string& nation, int product_index,
 		double amount, double budget_share, double& spent_out,
 		double& unfilled_out) {
 	spent_out = 0.0;
@@ -371,8 +371,8 @@ double SimCore::demo_fleet_buy_core(const std::string& nation, int product_index
 			best_population = population;
 		}
 	}
-	DemoCity& hq_city = ws_.cities[static_cast<std::size_t>(hq)];
-	DemoFleet& fleet = fleet_found->second;
+	City& hq_city = ws_.cities[static_cast<std::size_t>(hq)];
+	Fleet& fleet = fleet_found->second;
 	// O pedido inteiro entra como demanda desejada da sede, mesmo sem estoque:
 	// é o sinal que a IA lê para produzir/importar (estado vazio honesto).
 	hq_city.markets[product_index].desired += amount;
@@ -389,11 +389,11 @@ double SimCore::demo_fleet_buy_core(const std::string& nation, int product_index
 	std::vector<Seller> sellers;
 	sellers.reserve(cities_found->second.size());
 	for (const int index : cities_found->second) {
-		const DemoCity& city = ws_.cities[static_cast<std::size_t>(index)];
-		const DemoMarket& market = city.markets[product_index];
+		const City& city = ws_.cities[static_cast<std::size_t>(index)];
+		const Market& market = city.markets[product_index];
 			if (market.stock > 1e-9 && market.price > 0.0) {
 				sellers.push_back({index, market.price
-					* demo_competitiveness(city.nation), market.stock});
+					* competitiveness(city.nation), market.stock});
 			}
 	}
 	std::stable_sort(sellers.begin(), sellers.end(),
@@ -409,8 +409,8 @@ double SimCore::demo_fleet_buy_core(const std::string& nation, int product_index
 		if (remaining <= 1e-9 || spent >= budget - 1e-9) {
 			break;
 		}
-		DemoCity& seller = ws_.cities[static_cast<std::size_t>(seller_entry.city)];
-		DemoMarket& market = seller.markets[product_index];
+		City& seller = ws_.cities[static_cast<std::size_t>(seller_entry.city)];
+		Market& market = seller.markets[product_index];
 		double quantity = std::min(remaining, market.stock);
 		if (quantity * seller_entry.price > budget - spent) {
 			quantity = (budget - spent) / seller_entry.price;
@@ -458,18 +458,18 @@ void SimCore::phase_arrival() {
 	const std::size_t count = ws_.in_transit.size();
 	std::size_t write = 0;
 	for (std::size_t read = 0; read < count; ++read) {
-		DemoShipment& shipment = ws_.in_transit[read];
+		Shipment& shipment = ws_.in_transit[read];
 		if (shipment.arrival_day <= ws_.day) {
-			if (DemoCity* city = find_demo_city(shipment.to_city)) {
+			if (City* city = find_city(shipment.to_city)) {
 				city->markets[shipment.product].stock += shipment.amount;
 			}
 			// F4: libera os veículos reservados pelo pedido (o combustível já
 			// foi consumido no embarque).
-			DemoTransportDemand done;
+			TransportDemand done;
 			done.trucks = shipment.fleet_trucks;
 			done.ships = shipment.fleet_ships;
 			done.planes = shipment.fleet_planes;
-			demo_fleet_release(shipment.fleet_nation, done);
+			fleet_release(shipment.fleet_nation, done);
 			continue;
 		}
 		if (write != read) {
@@ -479,12 +479,12 @@ void SimCore::phase_arrival() {
 	}
 	ws_.in_transit.resize(write);
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseArrival);
+	OGS_SIM_PHASE_LAP(kPhaseArrival);
 }
 void SimCore::phase_fleet() {
 	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia.
 	if (ws_.fleets.empty() && !ws_.cities.empty()) {
-		demo_init_fleets();
+		init_fleets();
 	}
 	if (ws_.fleets.empty()) {
 		return;
@@ -497,10 +497,10 @@ void SimCore::phase_fleet() {
 			if (found == ws_.fleets.end()) {
 				continue;
 			}
-			DemoFleet& fleet = found->second;
-			const double parts_need = fleet.trucks * kDemoFleetPartsPerTruckMonth
-				+ fleet.ships * kDemoFleetPartsPerShipMonth
-				+ fleet.planes * kDemoFleetPartsPerPlaneMonth;
+			Fleet& fleet = found->second;
+			const double parts_need = fleet.trucks * kFleetPartsPerTruckMonth
+				+ fleet.ships * kFleetPartsPerShipMonth
+				+ fleet.planes * kFleetPartsPerPlaneMonth;
 			if (parts_need > 1e-9) {
 				const double available = std::max(0.0, fleet.spare_parts);
 				const double used = std::min(available, parts_need);
@@ -510,16 +510,16 @@ void SimCore::phase_fleet() {
 				for (int mode = 0; mode < 3; ++mode) {
 					if (ratio >= 0.999) {
 						fleet.health[mode] = std::min(1.0,
-							fleet.health[mode] + kDemoFleetHealthRecoveryMonth);
+							fleet.health[mode] + kFleetHealthRecoveryMonth);
 					} else {
-						fleet.health[mode] = std::max(kDemoFleetHealthFloor,
+						fleet.health[mode] = std::max(kFleetHealthFloor,
 							fleet.health[mode]
-							- kDemoFleetHealthLossMonth * (1.0 - ratio));
+							- kFleetHealthLossMonth * (1.0 - ratio));
 					}
 				}
 			}
 			// Atrito: acidentes/obsolescência consomem 0,2% da frota por mês.
-			const double keep = 1.0 - kDemoFleetAttritionMonth;
+			const double keep = 1.0 - kFleetAttritionMonth;
 			fleet.trucks *= keep;
 			fleet.ships *= keep;
 			fleet.planes *= keep;
@@ -527,14 +527,14 @@ void SimCore::phase_fleet() {
 			// Reposição do governo: combustível, peças e veículos. A fila do mês
 			// acelera a reposição: +50% no alvo e os veículos necessários para
 			// escoar a carga barrada em ~10 dias.
-			const bool food_secure = demo_nation_food_secure(nation);
-			const double fuel_day = fleet.trucks * kDemoFleetFuelPerTruckDay
-				+ fleet.ships * kDemoFleetFuelPerShipDay
-				+ fleet.planes * kDemoFleetFuelPerPlaneDay;
+			const bool food_secure = nation_food_secure(nation);
+			const double fuel_day = fleet.trucks * kFleetFuelPerTruckDay
+				+ fleet.ships * kFleetFuelPerShipDay
+				+ fleet.planes * kFleetFuelPerPlaneDay;
 			fleet.fuel_target = std::max(fleet.fuel_target,
-				std::max(fuel_day * kDemoFleetFuelDays,
-					demo_nation_sim_population(nation) * kDemoFleetFuelPerCapita));
-			const double parts_target = kDemoFleetPartsTargetMonths * parts_need;
+				std::max(fuel_day * kFleetFuelDays,
+					nation_sim_population(nation) * kFleetFuelPerCapita));
+			const double parts_target = kFleetPartsTargetMonths * parts_need;
 			const double urgency = fleet.queue_today > 1e-9 ? 1.5 : 1.0;
 			const double queued_trucks = fleet.queue_today / (25.0 * 10.0);
 			const double queued_ships = fleet.queue_today / (2000.0 * 10.0);
@@ -547,14 +547,14 @@ void SimCore::phase_fleet() {
 			const bool parts_emergency = fleet.spare_parts < parts_need;
 			if (ws_.fleet_product_fuel >= 0 && fleet.fuel < fleet.fuel_target
 					&& (food_secure || fuel_emergency)) {
-				demo_fleet_buy_core(nation, ws_.fleet_product_fuel,
-					fleet.fuel_target - fleet.fuel, kDemoFleetBudgetShare,
+				fleet_buy_core(nation, ws_.fleet_product_fuel,
+					fleet.fuel_target - fleet.fuel, kFleetBudgetShare,
 					spent, unfilled);
 			}
 			if (ws_.fleet_product_parts >= 0 && fleet.spare_parts < parts_target
 					&& (food_secure || parts_emergency)) {
-				demo_fleet_buy_core(nation, ws_.fleet_product_parts,
-					parts_target - fleet.spare_parts, kDemoFleetBudgetShare,
+				fleet_buy_core(nation, ws_.fleet_product_parts,
+					parts_target - fleet.spare_parts, kFleetBudgetShare,
 					spent, unfilled);
 			}
 			if (!food_secure) {
@@ -564,30 +564,30 @@ void SimCore::phase_fleet() {
 				const double target = std::max(fleet.target_trucks, fleet.trucks)
 					* urgency + queued_trucks;
 				if (fleet.trucks < target) {
-					demo_fleet_buy_core(nation, ws_.fleet_product_truck,
-						target - fleet.trucks, kDemoFleetBudgetShare, spent, unfilled);
+					fleet_buy_core(nation, ws_.fleet_product_truck,
+						target - fleet.trucks, kFleetBudgetShare, spent, unfilled);
 				}
 			}
 			if (ws_.fleet_product_ship >= 0) {
 				const double target = std::max(fleet.target_ships, fleet.ships)
 					* urgency + queued_ships;
 				if (fleet.ships < target) {
-					demo_fleet_buy_core(nation, ws_.fleet_product_ship,
-						target - fleet.ships, kDemoFleetBudgetShare, spent, unfilled);
+					fleet_buy_core(nation, ws_.fleet_product_ship,
+						target - fleet.ships, kFleetBudgetShare, spent, unfilled);
 				}
 			}
 			if (ws_.fleet_product_plane >= 0) {
 				const double target = std::max(fleet.target_planes, fleet.planes) * urgency;
 				if (fleet.planes < target) {
-					demo_fleet_buy_core(nation, ws_.fleet_product_plane,
-						target - fleet.planes, kDemoFleetBudgetShare, spent, unfilled);
+					fleet_buy_core(nation, ws_.fleet_product_plane,
+						target - fleet.planes, kFleetBudgetShare, spent, unfilled);
 				}
 			}
 		}
 	}
 	// Métricas do dia: fila e combustível consumido são diários. Os caminhões
 	// de coleta/entrega do cais também são liberados aqui (ver
-	// demo_trade_food): eles voltam no mesmo dia, enquanto navios e aviões
+	// trade_food): eles voltam no mesmo dia, enquanto navios e aviões
 	// seguem reservados até a chegada.
 	for (auto& entry : ws_.fleets) {
 		entry.second.fuel_used_today = 0.0;

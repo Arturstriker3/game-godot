@@ -17,7 +17,7 @@ namespace ogs {
 // F9 — investimento e propriedade
 // ------------------------------------------------------------------
 
-int SimCore::demo_owner_kind(const std::string& owner, std::string* group_id,
+int SimCore::owner_kind(const std::string& owner, std::string* group_id,
 		std::string* origin_nation) const {
 	if (group_id != nullptr) {
 		group_id->clear();
@@ -50,26 +50,26 @@ int SimCore::demo_owner_kind(const std::string& owner, std::string* group_id,
 	}
 	return 3;  // "private" e qualquer dono desconhecido
 }
-int SimCore::demo_group_index(const std::string& id) const {
+int SimCore::group_index(const std::string& id) const {
 	const auto found = ws_.group_lookup.find(id);
 	return found == ws_.group_lookup.end() ? -1 : found->second;
 }
-DemoGroup* SimCore::find_demo_group(const std::string& id) {
-	const int index = demo_group_index(id);
+Group* SimCore::find_group(const std::string& id) {
+	const int index = group_index(id);
 	return index < 0 ? nullptr : &ws_.groups[static_cast<std::size_t>(index)];
 }
-const DemoGroup* SimCore::find_demo_group(
+const Group* SimCore::find_group(
 		const std::string& id) const {
-	const int index = demo_group_index(id);
+	const int index = group_index(id);
 	return index < 0 ? nullptr : &ws_.groups[static_cast<std::size_t>(index)];
 }
-int SimCore::demo_fdi_mode(const std::string& nation,
+int SimCore::fdi_mode(const std::string& nation,
 		const std::string& sector) const {
 	const auto found = ws_.fdi_lookup.find(nation + "|" + sector);
 	return found == ws_.fdi_lookup.end()
 		? 0 : ws_.fdi_policies[static_cast<std::size_t>(found->second)].mode;
 }
-double SimCore::demo_sector_tax_holiday(const std::string& nation,
+double SimCore::sector_tax_holiday(const std::string& nation,
 		const std::string& sector) const {
 	const auto found = ws_.incentive_lookup.find(nation + "|" + sector);
 	if (found == ws_.incentive_lookup.end()) {
@@ -79,7 +79,7 @@ double SimCore::demo_sector_tax_holiday(const std::string& nation,
 		ws_.incentives[static_cast<std::size_t>(found->second)].tax_holiday,
 		0.0, 1.0);
 }
-double SimCore::demo_sector_subsidy(const std::string& nation,
+double SimCore::sector_subsidy(const std::string& nation,
 		const std::string& sector) const {
 	const auto found = ws_.incentive_lookup.find(nation + "|" + sector);
 	if (found == ws_.incentive_lookup.end()) {
@@ -88,12 +88,12 @@ double SimCore::demo_sector_subsidy(const std::string& nation,
 	return std::max(0.0,
 		ws_.incentives[static_cast<std::size_t>(found->second)].subsidy);
 }
-double SimCore::demo_nation_confidence(const std::string& nation) const {
+double SimCore::nation_confidence(const std::string& nation) const {
 	const auto found = ws_.confidence.find(nation);
 	return found == ws_.confidence.end() ? 1.0
 		: std::clamp(found->second, 0.0, 1.0);
 }
-double SimCore::demo_credit_nation_households(const std::string& nation,
+double SimCore::credit_nation_households(const std::string& nation,
 		double amount) {
 	if (amount <= 0.0) {
 		return 0.0;
@@ -110,8 +110,8 @@ double SimCore::demo_credit_nation_households(const std::string& nation,
 	// proxy disponível no modelo para os proprietários); sem ele, população.
 	double weight_total = 0.0;
 	for (const int index : indices) {
-		const DemoCity& city = ws_.cities[static_cast<std::size_t>(index)];
-		double weight = city.pop.class_population[kDemoEducationLevels - 1];
+		const City& city = ws_.cities[static_cast<std::size_t>(index)];
+		double weight = city.pop.class_population[kEducationLevels - 1];
 		if (!(weight > 0.0)) {
 			weight = city.simulation_population;
 		}
@@ -121,8 +121,8 @@ double SimCore::demo_credit_nation_households(const std::string& nation,
 		return 0.0;
 	}
 	for (const int index : indices) {
-		DemoCity& city = ws_.cities[static_cast<std::size_t>(index)];
-		double weight = city.pop.class_population[kDemoEducationLevels - 1];
+		City& city = ws_.cities[static_cast<std::size_t>(index)];
+		double weight = city.pop.class_population[kEducationLevels - 1];
 		if (!(weight > 0.0)) {
 			weight = city.simulation_population;
 		}
@@ -130,13 +130,13 @@ double SimCore::demo_credit_nation_households(const std::string& nation,
 	}
 	return amount;
 }
-void SimCore::demo_route_group_profit(int group_index,
+void SimCore::route_group_profit(int group_index,
 		const std::string& host_nation, double profit, double revenue,
-		DemoCity& city, double& firm_surplus) {
+		City& city, double& firm_surplus) {
 	if (group_index < 0 || group_index >= static_cast<int>(ws_.groups.size())) {
 		return;
 	}
-	DemoGroup& group = ws_.groups[static_cast<std::size_t>(group_index)];
+	Group& group = ws_.groups[static_cast<std::size_t>(group_index)];
 	group.revenue_total += revenue;
 	group.profit_total += profit;
 	if (profit > 0.0) {
@@ -150,9 +150,9 @@ void SimCore::demo_route_group_profit(int group_index,
 		}
 		// Imposto corporativo: fica no anfitrião. A isenção do incentivo
 		// setorial reduz a alíquota.
-		const double holiday = demo_sector_tax_holiday(host_nation, group.sector);
+		const double holiday = sector_tax_holiday(host_nation, group.sector);
 		const double tax_rate = std::clamp(
-			kDemoCorporateTaxRate * (1.0 - holiday), 0.0, 1.0);
+			kCorporateTaxRate * (1.0 - holiday), 0.0, 1.0);
 		const double tax = std::min(profit * tax_rate, firm_surplus);
 		city.firm_cash -= tax;
 		city.government_budget += tax;
@@ -168,7 +168,7 @@ void SimCore::demo_route_group_profit(int group_index,
 		group.profit_by_host[host_nation] += moved;
 		// Incentivo: subsídio ad valorem sobre a receita do ativo, pago pelo
 		// governo do anfitrião (política explícita; 0 por padrão).
-		const double subsidy_rate = demo_sector_subsidy(host_nation, group.sector);
+		const double subsidy_rate = sector_subsidy(host_nation, group.sector);
 		if (subsidy_rate > 0.0 && revenue > 0.0) {
 			const double subsidy = std::min(
 				std::max(0.0, city.government_budget), revenue * subsidy_rate);
@@ -194,7 +194,7 @@ void SimCore::demo_route_group_profit(int group_index,
 // S6b — helpers de load/setup movidos da fachada (economy_sim.cpp).
 // ------------------------------------------------------------------
 
-void SimCore::demo_seed_groups() {
+void SimCore::seed_groups() {
 	if (ws_.groups_seeded || !ws_.groups.empty()) {
 		return;
 	}
@@ -202,11 +202,11 @@ void SimCore::demo_seed_groups() {
 	// GAME_STATE/docs. `std::map` mantém a ordem determinística.
 	std::map<std::string, std::vector<int>> buckets;
 	for (std::size_t index = 0; index < ws_.buildings.size(); ++index) {
-		const DemoBuilding& building = ws_.buildings[index];
+		const Building& building = ws_.buildings[index];
 		if (building.owner != "private") {
 			continue;
 		}
-		const DemoCity* city = find_demo_city(building.city);
+		const City* city = find_city(building.city);
 		if (city == nullptr) {
 			continue;
 		}
@@ -233,19 +233,19 @@ void SimCore::demo_seed_groups() {
 				< ws_.buildings[static_cast<std::size_t>(b)].id;
 		});
 		for (std::size_t start = 0; start < indices.size();
-				start += static_cast<std::size_t>(kDemoGroupChunkAssets)) {
-			DemoGroup group;
-			group.id = "G-" + demo_sane_token(nation) + "-"
-				+ demo_sane_token(sector) + "-" + std::to_string(chunk_serial);
+				start += static_cast<std::size_t>(kGroupChunkAssets)) {
+			Group group;
+			group.id = "G-" + sane_token(nation) + "-"
+				+ sane_token(sector) + "-" + std::to_string(chunk_serial);
 			group.origin_nation = nation;
 			group.sector = sector;
 			const int group_index = static_cast<int>(ws_.groups.size());
 			ws_.group_lookup[group.id] = group_index;
 			ws_.groups.push_back(group);
 			const std::size_t end = std::min(indices.size(),
-				start + static_cast<std::size_t>(kDemoGroupChunkAssets));
+				start + static_cast<std::size_t>(kGroupChunkAssets));
 			for (std::size_t i = start; i < end; ++i) {
-				DemoBuilding& building =
+				Building& building =
 					ws_.buildings[static_cast<std::size_t>(indices[i])];
 				building.owner = "national:" + group.id;
 			}
@@ -254,7 +254,7 @@ void SimCore::demo_seed_groups() {
 	}
 	ws_.groups_seeded = true;
 }
-int SimCore::demo_recipe_index(const std::string& recipe_id) const {
+int SimCore::recipe_index(const std::string& recipe_id) const {
 	const auto found = ws_.recipe_lookup.find(recipe_id);
 	if (found == ws_.recipe_lookup.end()) {
 		return -1;

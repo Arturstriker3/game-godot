@@ -11,7 +11,7 @@
 #include <cmath>
 
 namespace ogs {
-void SimCore::demo_trade_food() {
+void SimCore::trade_food() {
 	// Comércio genérico de alimento (cesta de calorias, B3) entre cidades do
 	// mundo real: cidades com déficit compram das que têm excedente, escolhendo
 	// o alimento que entregar a caloria mais barata (preço + frete por
@@ -21,12 +21,12 @@ void SimCore::demo_trade_food() {
 	// Porto (docs/economy/port_design.md): a travessia entre massas de terra
 	// passa obrigatoriamente por um porto da nação em cada ponta; a capacidade
 	// diária do cais é consumida aqui e o excesso vira fila (atraso + demurrage).
-	OGS_SIM_ZONE(kDemoPhaseTradeFood);
-	demo_reset_port_usage();
+	OGS_SIM_ZONE(kPhaseTradeFood);
+	reset_port_usage();
 
 	struct Buyer {
 		int index;
-		DemoCity* city;
+		City* city;
 		double gap;  // toneladas-equivalentes de grão
 	};
 	std::vector<Buyer> buyers;
@@ -35,11 +35,11 @@ void SimCore::demo_trade_food() {
 	// (estoque local + em trânsito) × fator calórico.
 	std::vector<double> food_ge(ws_.cities.size(), 0.0);
 	for (std::size_t i = 0; i < ws_.cities.size(); ++i) {
-		const DemoCity& city = ws_.cities[i];
+		const City& city = ws_.cities[i];
 		double ge = 0.0;
 		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			ge += city.markets[product].stock * demo_food_calories(product);
+			const int product = food_product(slot);
+			ge += city.markets[product].stock * food_calories(product);
 		}
 		food_ge[i] = ge;
 	}
@@ -47,13 +47,13 @@ void SimCore::demo_trade_food() {
 	// cidades. Antes, cada carga varria TODAS as cidades comparando strings
 	// (O(cargas × cidades) por dia, ~440 mil comparações com 512 cargas e 858
 	// cidades no cenário real).
-	for (const DemoShipment& shipment : ws_.in_transit) {
+	for (const Shipment& shipment : ws_.in_transit) {
 		const auto found = ws_.city_lookup.find(shipment.to_city);
 		if (found == ws_.city_lookup.end()) {
 			continue;
 		}
 		const std::size_t i = static_cast<std::size_t>(found->second);
-		food_ge[i] += shipment.amount * demo_food_calories(shipment.product);
+		food_ge[i] += shipment.amount * food_calories(shipment.product);
 	}
 
 	// Excedente vendável por cidade: o vendedor exporta o que sobra ACIMA da
@@ -132,7 +132,7 @@ void SimCore::demo_trade_food() {
 				.push_back(static_cast<int>(pi));
 		}
 		for (std::size_t ci = 0; ci < city_count; ++ci) {
-			const DemoCity& city = ws_.cities[ci];
+			const City& city = ws_.cities[ci];
 			const auto found =
 				ports_by_region.find(city.nation + '\n' + city.landmass);
 			if (found == ports_by_region.end()) {
@@ -151,8 +151,8 @@ void SimCore::demo_trade_food() {
 			city_port[ci] = best_port;
 		}
 	}
-	const bool exhaustive = city_count <= kDemoTradeExhaustiveLimit;
-	const double cell = kDemoTradeCellMapUnits;
+	const bool exhaustive = city_count <= kTradeExhaustiveLimit;
+	const double cell = kTradeCellMapUnits;
 	const int grid_w = std::max(1, static_cast<int>(std::ceil(kMapWidth / cell)));
 	const int grid_h = std::max(1, static_cast<int>(std::ceil(kMapHeight / cell)));
 	std::vector<std::vector<int>> grid(
@@ -184,13 +184,13 @@ void SimCore::demo_trade_food() {
 			continue;
 		}
 		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			const double factor = demo_food_calories(product);
+			const int product = food_product(slot);
+			const double factor = food_calories(product);
 			if (factor <= 0.0) {
 				continue;
 			}
 			const double price = ws_.cities[si].markets[product].price
-				* demo_competitiveness(ws_.cities[si].nation);
+				* competitiveness(ws_.cities[si].nation);
 			const double sellable_tons = std::min(
 				ws_.cities[si].markets[product].stock, sellable_ge[si] / factor);
 			if (sellable_tons > 1e-9 && price > 0.0) {
@@ -199,15 +199,15 @@ void SimCore::demo_trade_food() {
 		}
 	}
 	for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-		const int product = demo_food_product(slot);
+		const int product = food_product(slot);
 		std::vector<int>& list = offers_by_slot[slot];
 		// Dentro de um slot o fator calórico é o mesmo para todos: ordenar pelo
 		// preço equivale a ordenar pelo custo por caloria (sem frete).
 		std::stable_sort(list.begin(), list.end(), [this, product](int l, int r) {
 			return ws_.cities[static_cast<std::size_t>(l)].markets[product].price
-				* demo_competitiveness(ws_.cities[static_cast<std::size_t>(l)].nation)
+				* competitiveness(ws_.cities[static_cast<std::size_t>(l)].nation)
 				< ws_.cities[static_cast<std::size_t>(r)].markets[product].price
-				* demo_competitiveness(ws_.cities[static_cast<std::size_t>(r)].nation);
+				* competitiveness(ws_.cities[static_cast<std::size_t>(r)].nation);
 		});
 	}
 
@@ -223,8 +223,8 @@ void SimCore::demo_trade_food() {
 	std::vector<double> city_fx(city_count, 1.0);
 	for (std::size_t ci = 0; ci < city_count; ++ci) {
 		const std::string& nation = ws_.cities[ci].nation;
-		city_competitive[ci] = demo_competitiveness(nation);
-		city_fx[ci] = demo_fx_rate(nation);
+		city_competitive[ci] = competitiveness(nation);
+		city_fx[ci] = fx_rate(nation);
 	}
 	// Distância cidade → próprio porto (pré-calculada uma vez por dia): remove
 	// 2 dos 3 haversines por candidato na travessia marítima do laço quente.
@@ -265,7 +265,7 @@ void SimCore::demo_trade_food() {
 	}
 	std::size_t shipments = 0;
 	{
-		OGS_SIM_ZONE(kDemoPhaseTradeFoodBuyers);
+		OGS_SIM_ZONE(kPhaseTradeFoodBuyers);
 		for (Buyer& buyer : buyers) {
 		if (sellers_left <= 0) {
 			break;  // todo o excedente do dia já foi vendido
@@ -409,14 +409,14 @@ void SimCore::demo_trade_food() {
 		std::vector<Offer> offers;
 		offers.reserve(candidates.size() * ws_.food_products.size());
 		for (const int si : candidates) {
-			DemoCity& seller = ws_.cities[static_cast<std::size_t>(si)];
+			City& seller = ws_.cities[static_cast<std::size_t>(si)];
 			if (&seller == buyer.city || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
 				continue;
 			}
 			const bool same_landmass = seller.landmass == buyer.city->landmass;
 			double unit_freight = 0.0;
 			if (same_landmass) {
-				unit_freight = demo_leg_unit_freight_food(TransportMode::Truck,
+				unit_freight = leg_unit_freight_food(TransportMode::Truck,
 					distance_km(seller.center, buyer.city->center));
 			} else {
 				// Travessia marítima só entre nações COM porto na massa de terra
@@ -431,16 +431,16 @@ void SimCore::demo_trade_food() {
 				const Port& sp = ws_.ports[static_cast<std::size_t>(seller_port)];
 				const Port& bp = ws_.ports[static_cast<std::size_t>(buyer_port)];
 				unit_freight =
-					demo_leg_unit_freight_food(TransportMode::Truck,
+					leg_unit_freight_food(TransportMode::Truck,
 						city_to_port_dist[static_cast<std::size_t>(si)])
-					+ demo_leg_unit_freight_food(TransportMode::Ship,
+					+ leg_unit_freight_food(TransportMode::Ship,
 						distance_km(sp.center, bp.center))
-					+ demo_leg_unit_freight_food(TransportMode::Truck,
+					+ leg_unit_freight_food(TransportMode::Truck,
 						city_to_port_dist[static_cast<std::size_t>(buyer.index)]);
 			}
 			for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-				const int product = demo_food_product(slot);
-				const double factor = demo_food_calories(product);
+				const int product = food_product(slot);
+				const double factor = food_calories(product);
 				if (factor <= 0.0) {
 					continue;
 				}
@@ -458,10 +458,10 @@ void SimCore::demo_trade_food() {
 				}
 				const double origin_anchor =
 					price * city_competitive[static_cast<std::size_t>(si)];
-				const double tariff_rate = demo_tariff_rate(
+				const double tariff_factor = tariff_rate(
 					buyer.city->nation, seller.nation, product);
 				const double unit_tariff =
-					(origin_anchor + unit_freight) * tariff_rate;
+					(origin_anchor + unit_freight) * tariff_factor;
 				// Valor entregue em âncora: é ele que ordena a oferta (sem
 				// round-trip de câmbio). A moeda do comprador só divide para
 				// exibição — é fator comum, não muda a ordem.
@@ -481,11 +481,11 @@ void SimCore::demo_trade_food() {
 			});
 
 		for (const Offer& offer : offers) {
-			if (remaining <= 1e-9 || shipments >= kDemoMaxShipmentsPerDay) {
+			if (remaining <= 1e-9 || shipments >= kMaxShipmentsPerDay) {
 				break;
 			}
 			const int si = offer.seller_index;
-			DemoCity* seller = &ws_.cities[si];
+			City* seller = &ws_.cities[si];
 			const int product = offer.product;
 			const double factor = offer.factor;
 			const double origin_anchor = offer.origin_anchor;
@@ -501,11 +501,11 @@ void SimCore::demo_trade_food() {
 
 			// Teto de carga diária (capacidade de transporte), em ton-equiv.
 			const double capacity_ge =
-				buyer.city->simulation_population * kDemoTradeCapacityPerCapita;
+				buyer.city->simulation_population * kTradeCapacityPerCapita;
 			double imported_ge = 0.0;
 			for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-				const int p = demo_food_product(slot);
-				imported_ge += buyer.city->imported[p] * demo_food_calories(p);
+				const int p = food_product(slot);
+				imported_ge += buyer.city->imported[p] * food_calories(p);
 			}
 			const double room_ge = std::max(0.0, capacity_ge - imported_ge);
 			const double amount_wanted_ge = std::min(
@@ -545,11 +545,11 @@ void SimCore::demo_trade_food() {
 			// transbordo continuam sendo os existentes.
 			const bool fleet_same_landmass =
 				seller->landmass == buyer.city->landmass;
-			DemoTransportDemand transport = demo_route_demand(*seller, *buyer.city,
+			TransportDemand transport = route_demand(*seller, *buyer.city,
 				fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
 				fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
 			bool fuel_limited = false;
-			const double fleet_scale = demo_fleet_capacity_scale(
+			const double fleet_scale = fleet_capacity_scale(
 				seller->nation, transport, fuel_limited);
 			if (fleet_scale < 1.0) {
 				const double queued_tons = amount_tons * (1.0 - fleet_scale);
@@ -567,7 +567,7 @@ void SimCore::demo_trade_food() {
 				}
 				amount_tons *= fleet_scale;
 				ge = amount_tons * factor;
-				transport = demo_route_demand(*seller, *buyer.city,
+				transport = route_demand(*seller, *buyer.city,
 					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(si)],
 					fleet_same_landmass ? -1 : city_port[buyer.index], amount_tons);
 			}
@@ -623,14 +623,14 @@ void SimCore::demo_trade_food() {
 			order.product = product;
 			order.amount = amount_tons;
 			order.origin_price = origin_anchor
-				/ std::max(1e-9, demo_fx_rate(seller->nation));
+				/ std::max(1e-9, fx_rate(seller->nation));
 			order.origin_price_anchor = origin_anchor;
 			order.tariff = tariff_paid;
 			order.delivered_price = offer.delivered;
-			order.fx_rate = demo_fx_rate(buyer.city->nation);
-			order.seller_fx_rate = demo_fx_rate(seller->nation);
-			order.buyer_currency = demo_currency_code(buyer.city->nation);
-			order.seller_currency = demo_currency_code(seller->nation);
+			order.fx_rate = fx_rate(buyer.city->nation);
+			order.seller_fx_rate = fx_rate(seller->nation);
+			order.buyer_currency = currency_code(buyer.city->nation);
+			order.seller_currency = currency_code(seller->nation);
 			// Cotação que forma o preço interno na ÂNCORA: valor CIF do BEM
 			// (origem efetiva + tarifa), sem o frete-serviço. O frete fica de
 			// fora de propósito — ele é um serviço doméstico do comprador (pago
@@ -687,12 +687,12 @@ void SimCore::demo_trade_food() {
 					// atrasa a CHEGADA em dias inteiros; o demurrage é pago pelo
 					// orçamento público do comprador ao setor de frete dele
 					// (dinheiro conservado; sem verba, a fila só atrasa).
-					total_transit += 2.0 * kDemoPortHandlingHours;
+					total_transit += 2.0 * kPortHandlingHours;
 					double demurrage = 0.0;
 					port_delay_days +=
-						demo_port_charge(seller_port, amount_tons, demurrage);
+						port_charge(seller_port, amount_tons, demurrage);
 					port_delay_days +=
-						demo_port_charge(buyer_port, amount_tons, demurrage);
+						port_charge(buyer_port, amount_tons, demurrage);
 					const double demurrage_paid = std::min(
 						demurrage, std::max(0.0, buyer.city->government_budget));
 					buyer.city->government_budget -= demurrage_paid;
@@ -712,8 +712,8 @@ void SimCore::demo_trade_food() {
 			// `transport` já é o embarque do lote final (recalculado acima quando
 			// a frota limitou a carga; senão, o cálculo inicial) — a 3ª chamada
 			// era idêntica e só repetia o haversine. Bit-idêntico.
-			demo_fleet_reserve(seller->nation, transport);
-			DemoShipment shipment;
+			fleet_reserve(seller->nation, transport);
+			Shipment shipment;
 			shipment.to_city = buyer.city->id;
 			shipment.product = product;
 			shipment.amount = amount_tons;
@@ -742,9 +742,9 @@ void SimCore::demo_trade_food() {
 		}
 	}
 }
-void SimCore::demo_trade_goods() {
+void SimCore::trade_goods() {
 	// Comércio inter-cidades de TODOS os bens não alimentares (insumos e bens
-	// industriais). A cesta alimentar continua no demo_trade_food (validado);
+	// industriais). A cesta alimentar continua no trade_food (validado);
 	// aqui a demanda é a necessidade DIÁRIA das construções locais (receitas ou
 	// insumo legado). Reaproveita a mesma malha de rotas/frete/portos do
 	// comércio de alimento: caminhão na mesma massa de terra, navio entre
@@ -752,22 +752,22 @@ void SimCore::demo_trade_goods() {
 	if (ws_.cities.empty() || ws_.products <= 0) {
 		return;
 	}
-	OGS_SIM_ZONE(kDemoPhaseTradeGoods);
+	OGS_SIM_ZONE(kPhaseTradeGoods);
 	const std::size_t city_count = ws_.cities.size();
 	// Necessidade diária de insumo por cidade/produto (capacidade nominal,
 	// não a produção do dia: o estoque-alvo é o que mantém a fábrica operando).
 	std::vector<double> city_demand(city_count * static_cast<std::size_t>(ws_.products), 0.0);
 	for (std::size_t ci = 0; ci < city_count; ++ci) {
-		const DemoCity& city = ws_.cities[ci];
+		const City& city = ws_.cities[ci];
 		for (const int bi : ws_.buildings_by_city[ci]) {
-			const DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
+			const Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 			const double capacity = building.capacity * building.output_scale;
 			if (capacity <= 0.0) {
 				continue;
 			}
 			if (building.recipe >= 0
 					&& building.recipe < static_cast<int>(ws_.recipes.size())) {
-				const DemoRecipe& recipe =
+				const Recipe& recipe =
 					ws_.recipes[static_cast<std::size_t>(building.recipe)];
 				for (int slot = 0; slot < recipe.input_count; ++slot) {
 					const int product = recipe.inputs[slot];
@@ -789,7 +789,7 @@ void SimCore::demo_trade_goods() {
 	}
 	// Trânsito a caminho da cidade, por produto.
 	std::vector<double> in_transit(city_demand.size(), 0.0);
-	for (const DemoShipment& shipment : ws_.in_transit) {
+	for (const Shipment& shipment : ws_.in_transit) {
 		const auto found = ws_.city_lookup.find(shipment.to_city);
 		if (found == ws_.city_lookup.end()) {
 			continue;
@@ -813,7 +813,7 @@ void SimCore::demo_trade_goods() {
 				.push_back(static_cast<int>(pi));
 		}
 		for (std::size_t ci = 0; ci < city_count; ++ci) {
-			const DemoCity& city = ws_.cities[ci];
+			const City& city = ws_.cities[ci];
 			const auto found = ports_by_region.find(city.nation + '\n' + city.landmass);
 			if (found == ports_by_region.end()) {
 				continue;
@@ -832,7 +832,7 @@ void SimCore::demo_trade_goods() {
 		}
 	}
 	// Grade espacial (~250 km por célula) para os K vizinhos.
-	const double cell = kDemoTradeCellMapUnits;
+	const double cell = kTradeCellMapUnits;
 	const int grid_w = std::max(1, static_cast<int>(std::ceil(kMapWidth / cell)));
 	const int grid_h = std::max(1, static_cast<int>(std::ceil(kMapHeight / cell)));
 	std::vector<std::vector<int>> grid(static_cast<std::size_t>(grid_w * grid_h));
@@ -849,12 +849,12 @@ void SimCore::demo_trade_goods() {
 	const int k_external = std::max(0, ws_.trade_external);
 	std::size_t shipments = 0;
 	{
-		OGS_SIM_ZONE(kDemoPhaseTradeGoodsLoop);
+		OGS_SIM_ZONE(kPhaseTradeGoodsLoop);
 		// Itera só os produtos com demanda E oferta no dia (nunca 114 × cidades).
-		for (int product = 0; product < ws_.products && shipments < kDemoMaxShipmentsPerDay;
+		for (int product = 0; product < ws_.products && shipments < kMaxShipmentsPerDay;
 				++product) {
-		if (demo_food_calories(product) > 0.0) {
-			continue;  // cesta alimentar: demo_trade_food
+		if (food_calories(product) > 0.0) {
+			continue;  // cesta alimentar: trade_food
 		}
 		struct Buyer {
 			int city_index;
@@ -872,7 +872,7 @@ void SimCore::demo_trade_goods() {
 			const std::size_t offset = ci * static_cast<std::size_t>(ws_.products)
 				+ static_cast<std::size_t>(product);
 			const double daily = city_demand[offset];
-			const DemoMarket& market = ws_.cities[ci].markets[product];
+			const Market& market = ws_.cities[ci].markets[product];
 			const double stock = std::max(0.0, market.stock);
 			if (daily > 1e-9) {
 				const double target = daily * ws_.inventory_cover_days;
@@ -886,7 +886,7 @@ void SimCore::demo_trade_goods() {
 			const double sellable = stock - own_need;
 			if (sellable > 1e-9 && market.price > 0.0) {
 				sellers.push_back({static_cast<int>(ci), sellable,
-					market.price * demo_competitiveness(ws_.cities[ci].nation)});
+					market.price * competitiveness(ws_.cities[ci].nation)});
 			}
 		}
 		if (buyers.empty() || sellers.empty()) {
@@ -908,10 +908,10 @@ void SimCore::demo_trade_goods() {
 					< sellers[static_cast<std::size_t>(right)].price;
 			});
 		for (Buyer& buyer : buyers) {
-			if (shipments >= kDemoMaxShipmentsPerDay) {
+			if (shipments >= kMaxShipmentsPerDay) {
 				break;
 			}
-			DemoCity& buyer_city = ws_.cities[static_cast<std::size_t>(buyer.city_index)];
+			City& buyer_city = ws_.cities[static_cast<std::size_t>(buyer.city_index)];
 			const std::size_t buyer_offset =
 				static_cast<std::size_t>(buyer.city_index) * static_cast<std::size_t>(ws_.products)
 				+ static_cast<std::size_t>(product);
@@ -983,7 +983,7 @@ void SimCore::demo_trade_goods() {
 			std::vector<Offer> offers;
 			offers.reserve(candidates.size());
 			for (const int si : candidates) {
-				DemoCity& seller = ws_.cities[static_cast<std::size_t>(si)];
+				City& seller = ws_.cities[static_cast<std::size_t>(si)];
 				const std::size_t offset =
 					static_cast<std::size_t>(si) * static_cast<std::size_t>(ws_.products)
 					+ static_cast<std::size_t>(product);
@@ -992,7 +992,7 @@ void SimCore::demo_trade_goods() {
 				}
 				double unit_freight = 0.0;
 				if (seller.landmass == buyer_city.landmass) {
-					unit_freight = demo_leg_unit_freight(TransportMode::Truck,
+					unit_freight = leg_unit_freight(TransportMode::Truck,
 						distance_km(seller.center, buyer_city.center));
 				} else {
 					const int seller_port = city_port[static_cast<std::size_t>(si)];
@@ -1003,22 +1003,22 @@ void SimCore::demo_trade_goods() {
 					const Port& sp = ws_.ports[static_cast<std::size_t>(seller_port)];
 					const Port& bp = ws_.ports[static_cast<std::size_t>(buyer_port)];
 					unit_freight =
-						demo_leg_unit_freight(TransportMode::Truck,
+						leg_unit_freight(TransportMode::Truck,
 							distance_km(seller.center, sp.center))
-						+ demo_leg_unit_freight(TransportMode::Ship,
+						+ leg_unit_freight(TransportMode::Ship,
 							distance_km(sp.center, bp.center))
-						+ demo_leg_unit_freight(TransportMode::Truck,
+						+ leg_unit_freight(TransportMode::Truck,
 							distance_km(bp.center, buyer_city.center));
 				}
 				const double origin_anchor = seller.markets[product].price
-					* demo_competitiveness(seller.nation);
-				const double tariff_rate = demo_tariff_rate(
+					* competitiveness(seller.nation);
+				const double tariff_factor = tariff_rate(
 					buyer_city.nation, seller.nation, product);
 				const double unit_tariff =
-					(origin_anchor + unit_freight) * tariff_rate;
+					(origin_anchor + unit_freight) * tariff_factor;
 				const double delivered_anchor =
 					origin_anchor + unit_freight + unit_tariff;
-				const double buyer_fx = demo_fx_rate(buyer_city.nation);
+				const double buyer_fx = fx_rate(buyer_city.nation);
 				const double delivered =
 					delivered_anchor / std::max(1e-9, buyer_fx);
 				offers.push_back({si, delivered_anchor,
@@ -1030,10 +1030,10 @@ void SimCore::demo_trade_goods() {
 					return left.unit_cost < right.unit_cost;
 				});
 			for (const Offer& offer : offers) {
-				if (remaining <= 1e-9 || shipments >= kDemoMaxShipmentsPerDay) {
+				if (remaining <= 1e-9 || shipments >= kMaxShipmentsPerDay) {
 					break;
 				}
-				DemoCity& seller = ws_.cities[static_cast<std::size_t>(offer.seller_index)];
+				City& seller = ws_.cities[static_cast<std::size_t>(offer.seller_index)];
 				const std::size_t seller_offset =
 					static_cast<std::size_t>(offer.seller_index) * static_cast<std::size_t>(ws_.products)
 					+ static_cast<std::size_t>(product);
@@ -1048,7 +1048,7 @@ void SimCore::demo_trade_goods() {
 					imported_total += buyer_city.imported[p];
 				}
 				const double room = std::max(0.0,
-					buyer_city.simulation_population * kDemoTradeCapacityPerCapita
+					buyer_city.simulation_population * kTradeCapacityPerCapita
 					- imported_total);
 				double amount = std::min(remaining, std::min(sellable, room));
 				if (amount <= 1e-9) {
@@ -1071,13 +1071,13 @@ void SimCore::demo_trade_goods() {
 				// do governo); com capacidade parcial, embarca proporcional.
 				const bool fleet_same_landmass =
 					seller.landmass == buyer_city.landmass;
-				DemoTransportDemand transport = demo_route_demand(seller, buyer_city,
+				TransportDemand transport = route_demand(seller, buyer_city,
 					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
 						offer.seller_index)],
 					fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
 						buyer.city_index)], amount);
 				bool fuel_limited = false;
-				const double fleet_scale = demo_fleet_capacity_scale(
+				const double fleet_scale = fleet_capacity_scale(
 					seller.nation, transport, fuel_limited);
 				if (fleet_scale < 1.0) {
 					const double queued_tons = amount * (1.0 - fleet_scale);
@@ -1094,7 +1094,7 @@ void SimCore::demo_trade_goods() {
 						continue;
 					}
 					amount *= fleet_scale;
-					transport = demo_route_demand(seller, buyer_city,
+					transport = route_demand(seller, buyer_city,
 						fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
 							offer.seller_index)],
 						fleet_same_landmass ? -1 : city_port[static_cast<std::size_t>(
@@ -1142,14 +1142,14 @@ void SimCore::demo_trade_goods() {
 				order.product = product;
 				order.amount = amount;
 				order.origin_price = offer.origin_anchor
-					/ std::max(1e-9, demo_fx_rate(seller.nation));
+					/ std::max(1e-9, fx_rate(seller.nation));
 				order.origin_price_anchor = offer.origin_anchor;
 				order.tariff = tariff_paid;
 				order.delivered_price = offer.delivered;
-				order.fx_rate = demo_fx_rate(buyer_city.nation);
-				order.seller_fx_rate = demo_fx_rate(seller.nation);
-				order.buyer_currency = demo_currency_code(buyer_city.nation);
-				order.seller_currency = demo_currency_code(seller.nation);
+				order.fx_rate = fx_rate(buyer_city.nation);
+				order.seller_fx_rate = fx_rate(seller.nation);
+				order.buyer_currency = currency_code(buyer_city.nation);
+				order.seller_currency = currency_code(seller.nation);
 				// F5: a cotação que forma o preço interno é o CIF do bem na
 				// âncora (origem efetiva + tarifa), sem o frete-serviço — mesma
 				// regra do comércio de comida.
@@ -1192,10 +1192,10 @@ void SimCore::demo_trade_goods() {
 							total_freight_cost += leg.cost;
 							order.legs.push_back(std::move(leg));
 						}
-						total_transit += 2.0 * kDemoPortHandlingHours;
+						total_transit += 2.0 * kPortHandlingHours;
 						double demurrage = 0.0;
-						port_delay_days += demo_port_charge(sp, amount, demurrage);
-						port_delay_days += demo_port_charge(bp, amount, demurrage);
+						port_delay_days += port_charge(sp, amount, demurrage);
+						port_delay_days += port_charge(bp, amount, demurrage);
 						const double demurrage_paid = std::min(demurrage,
 							std::max(0.0, buyer_city.government_budget));
 						buyer_city.government_budget -= demurrage_paid;
@@ -1214,15 +1214,15 @@ void SimCore::demo_trade_goods() {
 				// `transport` já é o embarque do lote final (recalculado acima
 				// quando a frota limitou a carga; senão, o cálculo inicial) — a
 				// 3ª chamada era idêntica e só repetia o haversine. Bit-idêntico.
-				demo_fleet_reserve(seller.nation, transport);
-				DemoShipment shipment;
+				fleet_reserve(seller.nation, transport);
+				Shipment shipment;
 				shipment.to_city = buyer_city.id;
 				shipment.product = product;
 				shipment.amount = amount;
 				shipment.arrival_day = arrival_day;
 				shipment.fleet_nation = seller.nation;
 				// Caminhões de coleta/entrega voltam no mesmo dia (ver
-				// demo_trade_food); o navio fica reservado até a chegada.
+				// trade_food); o navio fica reservado até a chegada.
 				shipment.fleet_trucks = fleet_same_landmass ? transport.trucks : 0.0;
 				shipment.fleet_ships = transport.ships;
 				shipment.fleet_planes = transport.planes;
@@ -1237,9 +1237,9 @@ void SimCore::demo_trade_goods() {
 	}
 }
 void SimCore::phase_trade() {
-	demo_trade_food();
-	demo_trade_goods();
+	trade_food();
+	trade_goods();
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseTrade);
+	OGS_SIM_PHASE_LAP(kPhaseTrade);
 }
 } // namespace ogs

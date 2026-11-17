@@ -15,7 +15,7 @@ struct WorldState {
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;
 	// true quando o demo foi inicializado a partir do mundo real
-	// (initialize_demo_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
+	// (initialize_world), em vez do cenário AGRIA/PORTUS. Ativa o comércio
 	// genérico entre cidades no lugar dos blocos específicos de validação.
 	bool world_mode = false;
 	// Parâmetros de balanceamento do cenário demo (configuráveis pelo
@@ -38,17 +38,17 @@ struct WorldState {
 	// Índice espacial do comércio de alimento: por comprador, só os K
 	// vendedores mais próximos entram na disputa, além de M ofertas
 	// representativas do mercado externo (as mais baratas por caloria no globo).
-	// Mundos pequenos (<= kDemoTradeExhaustiveLimit) mantêm a varredura completa
+	// Mundos pequenos (<= kTradeExhaustiveLimit) mantêm a varredura completa
 	// para preservar exatamente o comportamento validado no cenário real.
 	int trade_neighbors = 12;
 	int trade_external = 8;
-	std::vector<DemoCity> cities;
-	std::vector<DemoBuilding> buildings;
+	std::vector<City> cities;
+	std::vector<Building> buildings;
 	// §15: obras de construção em andamento (projeto físico). Avançam no prólogo
 	// do tick conforme materiais + capacidade do setor de construção.
-	std::vector<DemoConstructionProject> construction_projects;
+	std::vector<ConstructionProject> construction_projects;
 	// §19 (W0): solo urbano, moradia e prefeitura por cidade. Vetores paralelos
-	// a `cities` (mesmo índice), carregados pelo demo_set_urban. Vazios em
+	// a `cities` (mesmo índice), carregados pelo set_urban. Vazios em
 	// saves v12 e anteriores e no cenário sintético AGRIA/PORTUS.
 	std::vector<CityLand> land;
 	std::vector<CityHousing> housing;
@@ -58,7 +58,7 @@ struct WorldState {
 	bool services_loaded = false;
 	double service_government_share = 0.002;
 	bool sector_loaded = false;
-	std::vector<DemoSectorAnchor> sector_anchors;
+	std::vector<SectorAnchor> sector_anchors;
 	// Demanda de trabalho agrícola: t/dia × base / TFP^expoente.
 	double agri_labor_per_ton = 55.0;
 	double agri_labor_exponent = 1.4486;
@@ -70,18 +70,18 @@ struct WorldState {
 	// Indústria: trabalhadores por unidade de valor adicionado (XGS/dia).
 	double industry_labor_per_va = 3.0;
 	double industry_labor_exponent = 1.4486;
-	std::vector<DemoServiceSector> service_sectors;
-	std::vector<DemoServiceBusiness> service_businesses;
+	std::vector<ServiceSector> service_sectors;
+	std::vector<ServiceBusiness> service_businesses;
 	std::vector<std::vector<int>> service_by_city;
 	std::vector<std::vector<int>> service_by_sector;
 	int next_service_business_id = 1;
 	int service_bankruptcies = 0;
-	// Índices derivados do mundo demo (ver demo_rebuild_indexes).
+	// Índices derivados do mundo demo (ver rebuild_indexes).
 	std::unordered_map<std::string, int> city_lookup;
 	std::vector<std::vector<int>> buildings_by_city;
 	// F4: cidades por nação (ordem de índice) para a frota/compra do governo.
 	std::unordered_map<std::string, std::vector<int>> cities_by_nation;
-	std::vector<DemoShipment> in_transit;
+	std::vector<Shipment> in_transit;
 	std::vector<std::string> invariant_violations;
 	// Portos do cenário real (modo mundo) e pedidos de comércio do último tick,
 	// para a camada visual (minimapa e comboios 3D).
@@ -93,16 +93,16 @@ struct WorldState {
 	double foreign_cash = 0.0;
 	// Setor de construção: recebe o capital investido em expansão.
 	double construction_cash = 0.0;
-	double produced[kDemoMaxProducts] = {};
-	double consumed_total[kDemoMaxProducts] = {};
-	double produced_today[kDemoMaxProducts] = {};
-	double consumed_today[kDemoMaxProducts] = {};
-	// Produtos ativos (demo_set_goods). 21 por padrão (cenário de validação).
+	double produced[kMaxProducts] = {};
+	double consumed_total[kMaxProducts] = {};
+	double produced_today[kMaxProducts] = {};
+	double consumed_today[kMaxProducts] = {};
+	// Produtos ativos (set_goods). 21 por padrão (cenário de validação).
 	int products = 21;
 	std::vector<std::string> product_names;
 	std::unordered_map<std::string, int> product_lookup;
 	// Receitas industriais e índice por id (recipes.json).
-	std::vector<DemoRecipe> recipes;
+	std::vector<Recipe> recipes;
 	std::unordered_map<std::string, int> recipe_lookup;
 	// Cesta alimentar data-driven (needs.json); default = 5 culturas validadas.
 	std::vector<int> food_products;
@@ -110,7 +110,7 @@ struct WorldState {
 	// F3: tabela de necessidades por nível (needs.json), substitutos,
 	// equivalência e consumo institucional do governo. `needs_loaded`
 	// falso = comportamento de 1 nível (cenário AGRIA/PORTUS e saves antigos).
-	std::vector<DemoNeedsLevel> needs_levels;
+	std::vector<NeedsLevel> needs_levels;
 	bool needs_loaded = false;
 	int needs_food_level = -1;
 	// Decaimento diário que perde exatamente durable_replacement_per_year em
@@ -123,7 +123,7 @@ struct WorldState {
 	bool industry_seeded = false;
 	// F4: frota por nação (ordem determinística em fleet_order) e índices
 	// dos bens da frota (fuel/truck/cargo_ship/cargo_plane/spare_parts).
-	std::unordered_map<std::string, DemoFleet> fleets;
+	std::unordered_map<std::string, Fleet> fleets;
 	std::vector<std::string> fleet_order;
 	int fleet_product_fuel = -1;
 	int fleet_product_truck = -1;
@@ -131,30 +131,30 @@ struct WorldState {
 	int fleet_product_plane = -1;
 	int fleet_product_parts = -1;
 	// F5: moedas por code/nacao, ordem determinística e tarifas declaradas.
-	std::vector<DemoCurrency> currencies;
+	std::vector<Currency> currencies;
 	std::unordered_map<std::string, int> currency_by_code;
 	std::unordered_map<std::string, int> nation_currency;
-	std::vector<DemoTariff> tariffs;
+	std::vector<Tariff> tariffs;
 	std::unordered_map<std::string, double> tariff_lookup;
 	// F9: grupos/empresas, política de IDE, incentivos, confiança e fluxos.
-	std::vector<DemoGroup> groups;
+	std::vector<Group> groups;
 	std::unordered_map<std::string, int> group_lookup;
 	bool groups_seeded = false;
-	std::vector<DemoFdiPolicy> fdi_policies;
+	std::vector<FdiPolicy> fdi_policies;
 	std::unordered_map<std::string, int> fdi_lookup;
-	std::vector<DemoSectorIncentive> incentives;
+	std::vector<SectorIncentive> incentives;
 	std::unordered_map<std::string, int> incentive_lookup;
 	std::unordered_map<std::string, double> confidence;
 	std::unordered_map<std::string, int> confidence_penalty_day;
-	std::unordered_map<std::string, DemoGroupFlow> group_flows;
+	std::unordered_map<std::string, GroupFlow> group_flows;
 	// Setor de cada produto (goods.json → sector). Vazio = "primary".
 	std::vector<std::string> product_sectors;
-	// Preços-base dos bens (data-driven: demo_set_goods/initialize_demo_world).
-	double base_prices[kDemoMaxProducts] = {
+	// Preços-base dos bens (data-driven: set_goods/initialize_world).
+	double base_prices[kMaxProducts] = {
 		40.0, 60.0, 55.0, 42.0, 15.0, 25.0, 3000.0, 10.0, 200.0, 400.0,
 		15.0, 5000.0, 6.0, 60.0, 30.0, 45.0, 35.0, 45.0, 70.0, 25.0, 500.0};
-	// Retrato do tick reaproveitado entre dias (ver demo_tick_core).
-	DemoSnapshot snapshot_buffer;
+	// Retrato do tick reaproveitado entre dias (ver tick_core).
+	Snapshot snapshot_buffer;
 };
 
 } // namespace ogs

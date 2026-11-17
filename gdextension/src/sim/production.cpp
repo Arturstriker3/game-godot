@@ -14,24 +14,24 @@
 namespace ogs {
 // Eficiência da extração (0.5..1). Sem reserva declarada não há qualidade
 // conhecida: eficiência 1 (comportamento legado).
-double SimCore::demo_extraction_efficiency(const DemoDeposit& deposit) {
+double SimCore::extraction_efficiency(const Deposit& deposit) {
 	if (!deposit.tracked) {
 		return 1.0;
 	}
-	return kDemoQualityEfficiencyFloor
-		+ (1.0 - kDemoQualityEfficiencyFloor) * std::clamp(deposit.quality, 0.0, 1.0);
+	return kQualityEfficiencyFloor
+		+ (1.0 - kQualityEfficiencyFloor) * std::clamp(deposit.quality, 0.0, 1.0);
 }
-double SimCore::demo_base_price(int product) const {
+double SimCore::base_price(int product) const {
 	if (product >= 0 && product < ws_.products) {
 		return ws_.base_prices[product];
 	}
 	return 40.0;
 }
-int SimCore::demo_food_product(int slot) const {
+int SimCore::food_product(int slot) const {
 	return (slot >= 0 && slot < static_cast<int>(ws_.food_products.size()))
 		? ws_.food_products[static_cast<std::size_t>(slot)] : -1;
 }
-double SimCore::demo_food_calories(int product) const {
+double SimCore::food_calories(int product) const {
 	for (std::size_t slot = 0; slot < ws_.food_products.size(); ++slot) {
 		if (ws_.food_products[slot] == product) {
 			return ws_.food_factors[slot];
@@ -39,11 +39,11 @@ double SimCore::demo_food_calories(int product) const {
 	}
 	return 0.0;
 }
-int SimCore::demo_pick_recipe(const DemoCity& city, int output_product) const {
+int SimCore::pick_recipe(const City& city, int output_product) const {
 	int best = -1;
 	double best_cost = 0.0;
 	for (std::size_t index = 0; index < ws_.recipes.size(); ++index) {
-		const DemoRecipe& recipe = ws_.recipes[index];
+		const Recipe& recipe = ws_.recipes[index];
 		if (recipe.output != output_product || recipe.input_count <= 0
 				|| recipe.yield <= 0.0) {
 			continue;
@@ -57,7 +57,7 @@ int SimCore::demo_pick_recipe(const DemoCity& city, int output_product) const {
 				available = false;
 				break;
 			}
-			const DemoMarket& market = city.markets[input];
+			const Market& market = city.markets[input];
 			// Insumo só conta como disponível quando há estoque físico: uma
 			// receita sem insumo produziria zero e venceria a comparação de custo.
 			if (market.stock <= 1e-9) {
@@ -65,7 +65,7 @@ int SimCore::demo_pick_recipe(const DemoCity& city, int output_product) const {
 				break;
 			}
 			const double unit_price = market.price > 0.0
-				? market.price : demo_base_price(input);
+				? market.price : base_price(input);
 			cost += qty * unit_price / recipe.yield;
 		}
 		if (!available) {
@@ -85,12 +85,12 @@ void SimCore::phase_production() {
 	// Capacidade por cidade/produto, calculada uma vez por dia. Antes, cada
 	// construção varria TODAS as construções do mundo para achar a capacidade
 	// local do seu produto — O(construções²), inviável em escala mundial.
-	std::vector<std::array<double, kDemoMaxProducts>> capacity_by_city_product(
+	std::vector<std::array<double, kMaxProducts>> capacity_by_city_product(
 		ws_.cities.size());
 	for (auto& slots : capacity_by_city_product) {
 		slots.fill(0.0);
 	}
-	for (const DemoBuilding& building : ws_.buildings) {
+	for (const Building& building : ws_.buildings) {
 		if (building.output_product < 0 || building.output_product >= ws_.products) {
 			continue;
 		}
@@ -118,11 +118,11 @@ void SimCore::phase_production() {
 			&produced_today_scratch, n_products](
 			std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
-			DemoCity& city = ws_.cities[city_index];
+			City& city = ws_.cities[city_index];
 			const std::vector<int>& local_buildings =
 				ws_.buildings_by_city[city_index];
 			for (const int bi : local_buildings) {
-				DemoBuilding& building =
+				Building& building =
 					ws_.buildings[static_cast<std::size_t>(bi)];
 				if (building.output_product < 0
 						|| building.output_product >= ws_.products) {
@@ -139,10 +139,10 @@ void SimCore::phase_production() {
 				const bool primary = building.recipe < 0 && building.input_product < 0;
 				// Extração: aptidão territorial × eficiência pela qualidade do minério
 				// (1.0 quando não há jazida declarada).
-				DemoDeposit& deposit = city.deposits[building.output_product];
+				Deposit& deposit = city.deposits[building.output_product];
 				const double suitability = primary
 					? std::clamp(city.suitability[building.output_product], 0.0, 1.0)
-						* demo_extraction_efficiency(deposit)
+						* extraction_efficiency(deposit)
 					: 1.0;
 
 				// Capacidade e vendas na mesma unidade (toneladas efetivas).
@@ -174,11 +174,11 @@ void SimCore::phase_production() {
 					// Receita industrial (1..6 insumos, yield e subprodutos). A
 					// alternativa de menor custo corrente entre as disponíveis na
 					// cidade é escolhida a cada dia (determinístico; empate = primeira).
-					const int chosen = demo_pick_recipe(city, building.output_product);
+					const int chosen = pick_recipe(city, building.output_product);
 					if (chosen >= 0) {
 						building.recipe = chosen;
 					}
-					const DemoRecipe& recipe =
+					const Recipe& recipe =
 						ws_.recipes[static_cast<std::size_t>(building.recipe)];
 					const double batch = recipe.yield > 0.0
 						? desired_output / recipe.yield : 0.0;
@@ -186,7 +186,7 @@ void SimCore::phase_production() {
 					for (int slot = 0; slot < recipe.input_count; ++slot) {
 						const int input = recipe.inputs[slot];
 						const double needed = recipe.input_qty[slot] * batch;
-						DemoMarket& input_market = city.markets[input];
+						Market& input_market = city.markets[input];
 						input_market.desired += needed;
 						if (needed > 1e-12) {
 							scale = std::min(scale, input_market.stock / needed);
@@ -196,7 +196,7 @@ void SimCore::phase_production() {
 					for (int slot = 0; slot < recipe.input_count; ++slot) {
 						const int input = recipe.inputs[slot];
 						const double used = recipe.input_qty[slot] * batch * scale;
-						DemoMarket& input_market = city.markets[input];
+						Market& input_market = city.markets[input];
 						input_market.stock = std::max(0.0, input_market.stock - used);
 						input_market.demand += used;
 						input_market.sold += used;
@@ -220,7 +220,7 @@ void SimCore::phase_production() {
 					}
 				} else if (building.input_product >= 0) {
 					const double needed_input = desired_output * building.input_per_output;
-					DemoMarket& input_market = city.markets[building.input_product];
+					Market& input_market = city.markets[building.input_product];
 					input_market.desired += needed_input;
 					input_used = std::min(needed_input, input_market.stock);
 					output = building.input_per_output > 0.0
@@ -238,9 +238,9 @@ void SimCore::phase_production() {
 				} else if (deposit.tracked) {
 					// Esgotamento: a mina só extrai o que resta da reserva da jazida
 					// (compartilhada pelas minas da cidade) e a debita na mesma medida.
-					const double available_tons = deposit.remaining_kt * kDemoTonsPerKiloton;
+					const double available_tons = deposit.remaining_kt * kTonsPerKiloton;
 					output = std::clamp(output, 0.0, available_tons);
-					const double extracted_kt = output / kDemoTonsPerKiloton;
+					const double extracted_kt = output / kTonsPerKiloton;
 					deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
 					deposit.extracted_kt += extracted_kt;
 					// Reserva zerada: a mina encerra no próximo dia SEM virar falência.
@@ -274,7 +274,7 @@ void SimCore::phase_production() {
 		}
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseProduction);
+	OGS_SIM_PHASE_LAP(kPhaseProduction);
 }
 void SimCore::phase_raw() {
 	// 4c. Recursos brutos (minerais, soja, algodão e madeira): o resto do mundo
@@ -286,10 +286,10 @@ void SimCore::phase_raw() {
 	// `external_demand > 0` que NÃO é insumo de nenhuma construção ativa no
 	// mundo (regra explícita, no lugar do antigo filtro "não é comida").
 	std::vector<char> product_is_input(static_cast<std::size_t>(ws_.products), 0);
-	for (const DemoBuilding& building : ws_.buildings) {
+	for (const Building& building : ws_.buildings) {
 		if (building.recipe >= 0
 				&& building.recipe < static_cast<int>(ws_.recipes.size())) {
-			const DemoRecipe& recipe = ws_.recipes[static_cast<std::size_t>(building.recipe)];
+			const Recipe& recipe = ws_.recipes[static_cast<std::size_t>(building.recipe)];
 			for (int slot = 0; slot < recipe.input_count; ++slot) {
 				if (recipe.inputs[slot] >= 0 && recipe.inputs[slot] < ws_.products) {
 					product_is_input[static_cast<std::size_t>(recipe.inputs[slot])] = 1;
@@ -314,9 +314,9 @@ void SimCore::phase_raw() {
 			&consumed_total_scratch, &consumed_today_scratch, n_products](
 			std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
-			DemoCity& city = ws_.cities[city_index];
-			for (int product = kDemoFirstRawProduct; product < ws_.products; ++product) {
-				if (demo_food_calories(product) > 0.0) {
+			City& city = ws_.cities[city_index];
+			for (int product = kFirstRawProduct; product < ws_.products; ++product) {
+				if (food_calories(product) > 0.0) {
 					continue;
 				}
 				if (product_is_input[static_cast<std::size_t>(product)] != 0) {
@@ -326,7 +326,7 @@ void SimCore::phase_raw() {
 				if (ceiling <= 0.0) {
 					continue;  // sem demanda externa declarada (sem depósito/aptidão)
 				}
-				DemoMarket& market = city.markets[product];
+				Market& market = city.markets[product];
 				market.desired += ceiling;
 				const double sold = std::min(market.stock, ceiling);
 				if (sold <= 0.0) {
@@ -364,18 +364,18 @@ void SimCore::phase_raw() {
 		}
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseRaw);
+	OGS_SIM_PHASE_LAP(kPhaseRaw);
 }
 
 // Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
-double SimCore::demo_depth_opex_factor(const DemoDeposit& deposit) {
+double SimCore::depth_opex_factor(const Deposit& deposit) {
 	if (!deposit.tracked) {
 		return 1.0;
 	}
-	return std::min(kDemoDepthOpexMaxFactor,
-		1.0 + std::max(0.0, deposit.depth_m) / kDemoDepthOpexScaleM);
+	return std::min(kDepthOpexMaxFactor,
+		1.0 + std::max(0.0, deposit.depth_m) / kDepthOpexScaleM);
 }
-double SimCore::demo_effective_productivity(const DemoCity& city) const {
+double SimCore::effective_productivity(const City& city) const {
 	// F7 calibração — TFP nacional. O cenário não traz valor adicionado por
 	// trabalhador; o índice de renda real (PIB PPP per capita / média mundial,
 	// `derived:gdp_ppp`) é a única medida de nível de produtividade já carregada
@@ -385,7 +385,7 @@ double SimCore::demo_effective_productivity(const DemoCity& city) const {
 	// invertia a distribuição (menos gente no basic do que a renda real
 	// permite). O limite [0,25, 4,0] contém os extremos reais (QAT ~5,0) sem
 	// inverter a ordem entre as nações jogáveis; o piso de subsistência da
-	// âncora salarial (ver demo_update_wages) impede que o fator < 1 derrube o
+	// âncora salarial (ver update_wages) impede que o fator < 1 derrube o
 	// trabalhador abaixo da cesta alimentar.
 	if (city.productivity_index > 0.0) {
 		return std::clamp(city.productivity_index, 0.25, 4.0);

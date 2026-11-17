@@ -19,12 +19,12 @@ void SimCore::phase_prices() {
 	// global, paralelizável sem redução e bit-idêntica ao serial.
 	auto process_city = [this](std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
-			DemoCity& city = ws_.cities[city_index];
+			City& city = ws_.cities[city_index];
 			const std::vector<int>& local_buildings =
 				ws_.buildings_by_city[city_index];
 			std::vector<char> has_producer(static_cast<std::size_t>(ws_.products), 0);
 			for (const int bi : local_buildings) {
-				const DemoBuilding& building =
+				const Building& building =
 					ws_.buildings[static_cast<std::size_t>(bi)];
 				if (building.output_product >= 0
 						&& building.output_product < ws_.products) {
@@ -32,8 +32,8 @@ void SimCore::phase_prices() {
 				}
 			}
 			for (int product = 0; product < ws_.products; ++product) {
-				const double base = demo_base_price(product);
-				DemoMarket& market = city.markets[product];
+				const double base = base_price(product);
+				Market& market = city.markets[product];
 				if (!has_producer[product]) {
 					// §2.7: cidade sem produtor tem o preço disciplinado pelo CIF da
 					// importação (na âncora), com a mesma suavização e o mesmo
@@ -55,7 +55,7 @@ void SimCore::phase_prices() {
 					const double capped = std::min(market.price, target);
 					const double max_step = base * 0.05;
 					double next_import = market.price
-						+ (capped - market.price) * kDemoPriceSmoothing;
+						+ (capped - market.price) * kPriceSmoothing;
 					next_import = std::clamp(next_import,
 						market.price - max_step, market.price + max_step);
 					market.price = std::clamp(next_import,
@@ -74,7 +74,7 @@ void SimCore::phase_prices() {
 				double kind_capacity = 0.0;
 				double kind_labor_opex = 0.0;
 				for (const int bi : local_buildings) {
-					const DemoBuilding& building =
+					const Building& building =
 						ws_.buildings[static_cast<std::size_t>(bi)];
 					if (building.output_product == product) {
 						kind_capacity += building.capacity;
@@ -90,14 +90,14 @@ void SimCore::phase_prices() {
 				// então não há conversão de moeda aqui.
 				double cost_floor = base;
 				for (const int bi : local_buildings) {
-					const DemoBuilding& building =
+					const Building& building =
 						ws_.buildings[static_cast<std::size_t>(bi)];
 					if (building.output_product != product) {
 						continue;
 					}
 					if (building.recipe >= 0
 							&& building.recipe < static_cast<int>(ws_.recipes.size())) {
-						const DemoRecipe& recipe =
+						const Recipe& recipe =
 							ws_.recipes[static_cast<std::size_t>(building.recipe)];
 						double input_cost = 0.0;
 						for (int slot = 0; slot < recipe.input_count; ++slot) {
@@ -119,7 +119,7 @@ void SimCore::phase_prices() {
 				// Limite de variação diária evita oscilações explosivas.
 				const double max_step = base * 0.05;
 				double next = market.price
-					+ (target - market.price) * kDemoPriceSmoothing;
+					+ (target - market.price) * kPriceSmoothing;
 				next = std::clamp(next, market.price - max_step,
 					market.price + max_step);
 				market.price = std::clamp(next, base * 0.5, base * 3.0);
@@ -127,7 +127,7 @@ void SimCore::phase_prices() {
 
 			// Registro de escassez e excesso para diagnóstico e visualização.
 			for (int product = 0; product < ws_.products; ++product) {
-				DemoMarket& market = city.markets[product];
+				Market& market = city.markets[product];
 				market.shortage = std::max(0.0, market.desired - market.demand);
 				market.surplus = std::max(0.0, market.stock
 					- std::max(market.desired, market.sold) * 3.0);
@@ -136,7 +136,7 @@ void SimCore::phase_prices() {
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);
 
-	OGS_SIM_PHASE_LAP(kDemoPhasePrices);
+	OGS_SIM_PHASE_LAP(kPhasePrices);
 }
 void SimCore::phase_clamp() {
 	// 9. Limite diário único por mercado, aplicado depois de todas as regras
@@ -148,13 +148,13 @@ void SimCore::phase_clamp() {
 	auto process_city = [this](std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
 			for (int product = 0; product < ws_.products; ++product) {
-				DemoMarket& market = ws_.cities[city_index].markets[product];
-				const double base = demo_base_price(product);
+				Market& market = ws_.cities[city_index].markets[product];
+				const double base = base_price(product);
 				const double step = base * 0.05;
 				const double floor = base * 0.5;
 				const double ceiling = base * 3.0;
 				// O preço de abertura pode ter saído da banda por um choque
-				// (demo_price_shock). Clampa primeiro para dentro da banda, senão
+				// (price_shock). Clampa primeiro para dentro da banda, senão
 				// `open - step` fica acima do teto e `lower > upper` desfaz o clamp
 				// da fase 8, prendendo o preço fora da faixa (bug de preço pós-choque).
 				const double open = std::clamp(
@@ -167,6 +167,6 @@ void SimCore::phase_clamp() {
 	};
 	pool().parallel_for(ws_.cities.size(), process_city);
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseClamp);
+	OGS_SIM_PHASE_LAP(kPhaseClamp);
 }
 } // namespace ogs

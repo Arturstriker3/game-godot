@@ -9,18 +9,18 @@
 //   as macros expandem para `((void)0)` — nenhum `steady_clock::now()`, nenhum
 //   branch, nenhum símbolo no .obj.
 // - Em DEBUG o hospedeiro instala um `Sink` (array de slots em µs) com
-//   `SinkScope`; o toggle em runtime (`demo_set_profiling`) via `Sink::enabled`
+//   `SinkScope`; o toggle em runtime (`set_profiling`) via `Sink::enabled`
 //   decide se a marca de relógio é paga — desligado, o custo é um load.
 //
 // Fase sequencial (padrão "marca", herdado do `lap()` original: o rótulo é a
 // fase que ACABOU de rodar):
 //
-//     OGS_SIM_PHASE_LAP(kDemoPhaseReset);
+//     OGS_SIM_PHASE_LAP(kPhaseReset);
 //
 // Escopo (RAII: mede o próprio bloco e grava no slot ao sair):
 //
 //     {
-//         OGS_SIM_ZONE(kDemoPhaseStatus);
+//         OGS_SIM_ZONE(kPhaseStatus);
 //         build_status();
 //     }
 //
@@ -38,7 +38,7 @@ namespace profile {
 
 // Destino das amostras: slots de microssegundos do hospedeiro.
 struct Sink {
-	// Array de slots (µs) — ex.: EconomySim::demo_profile_us_.
+	// Array de slots (µs) — ex.: EconomySim::profile_us_.
 	double *slots = nullptr;
 	int slot_count = 0;
 	// Toggle em runtime; nullptr = sempre ligado.

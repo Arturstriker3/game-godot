@@ -33,7 +33,7 @@ ThreadPool& SimCore::pool() {
 	return *pool_;
 }
 
-void SimCore::demo_set_sim_threads(int threads) {
+void SimCore::set_sim_threads(int threads) {
 	// Guarda o valor; o pool é (re)criado sob demanda na próxima fase paralela.
 	sim_threads_ = std::max(0, threads);
 }
@@ -42,7 +42,7 @@ void SimCore::demo_set_sim_threads(int threads) {
 // Helpers compartilhados.
 // ------------------------------------------------------------------
 
-DemoCity* SimCore::find_demo_city(const std::string& id) {
+City* SimCore::find_city(const std::string& id) {
 	const auto found = ws_.city_lookup.find(id);
 	if (found == ws_.city_lookup.end()) {
 		return nullptr;
@@ -50,7 +50,7 @@ DemoCity* SimCore::find_demo_city(const std::string& id) {
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
 }
 
-const DemoCity* SimCore::find_demo_city(const std::string& id) const {
+const City* SimCore::find_city(const std::string& id) const {
 	const auto found = ws_.city_lookup.find(id);
 	if (found == ws_.city_lookup.end()) {
 		return nullptr;
@@ -58,7 +58,7 @@ const DemoCity* SimCore::find_demo_city(const std::string& id) const {
 	return &ws_.cities[static_cast<std::size_t>(found->second)];
 }
 
-void SimCore::demo_rebuild_indexes() {
+void SimCore::rebuild_indexes() {
 	ws_.city_lookup.clear();
 	ws_.city_lookup.reserve(ws_.cities.size() * 2);
 	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
@@ -93,9 +93,9 @@ void SimCore::demo_rebuild_indexes() {
 	}
 }
 
-double SimCore::demo_money_total() const {
+double SimCore::money_total() const {
 	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash;
-	for (const DemoCity& city : ws_.cities) {
+	for (const City& city : ws_.cities) {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick.
 		total += city.pop.savings + city.firm_cash + city.service_cash
@@ -103,13 +103,13 @@ double SimCore::demo_money_total() const {
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
-	for (const DemoGroup& group : ws_.groups) {
+	for (const Group& group : ws_.groups) {
 		total += group.cash;
 	}
 	// §15: o fundo reservado de cada obra (capital do investimento debitado no
 	// início) é dinheiro do mundo — soma para a conservação valer entre o débito
 	// (na decisão) e o pagamento incremental (no tick).
-	for (const DemoConstructionProject& project : ws_.construction_projects) {
+	for (const ConstructionProject& project : ws_.construction_projects) {
 		total += project.reserved;
 	}
 	// §19 W2/W3: caixa da prefeitura (inclui aluguel pago a dono público) e
@@ -118,7 +118,7 @@ double SimCore::demo_money_total() const {
 	return total;
 }
 
-void SimCore::demo_snapshot(DemoSnapshot& out) const {
+void SimCore::snapshot_state(Snapshot& out) const {
 	out.cities = ws_.cities;
 	out.buildings = ws_.buildings;
 	out.construction_projects = ws_.construction_projects;
@@ -152,17 +152,17 @@ void SimCore::prologue() {
 	// Retrato para reverter o tick se um invariante rígido for violado.
 	// Buffer PERSISTENTE: os vetores são reutilizados entre dias (com 114 bens
 	// uma cidade custa ~27 KB; realocar 834 cópias por tick custava ~5 ms).
-	DemoSnapshot& before = ws_.snapshot_buffer;
-	demo_snapshot(before);
-	money_before_ = demo_money_total();
+	Snapshot& before = ws_.snapshot_buffer;
+	snapshot_state(before);
+	money_before_ = money_total();
 
 	++ws_.day;
 	ws_.last_orders.clear();
 	// Obras de porto com prazo vencido entram em operação neste dia.
-	demo_tick_port_expansion();
+	tick_port_expansion();
 	// §15: obras de construção (projeto físico) avançam por materiais +
 	// capacidade do setor de construção; as concluídas entram em operação.
-	demo_tick_construction();
+	tick_construction();
 
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
@@ -186,7 +186,7 @@ void SimCore::prologue() {
 	}
 	// O tick apaga construções falidas: os índices por cidade são refeitos
 	// antes de qualquer fase usá-los.
-	demo_rebuild_indexes();
+	rebuild_indexes();
 
 	// Preço de abertura do dia por cidade/produto. O limite de variação é
 	// aplicado UMA vez, no fim do tick: importação e reação de mercado não
@@ -207,7 +207,7 @@ void SimCore::phase_reset() {
 		ws_.produced_today[index] = 0.0;
 		ws_.consumed_today[index] = 0.0;
 	}
-	for (DemoCity& city : ws_.cities) {
+	for (City& city : ws_.cities) {
 		city.pop.wage_income = 0.0;
 		city.pop.capital_income = 0.0;
 		city.pop.transfers = 0.0;
@@ -224,8 +224,8 @@ void SimCore::phase_reset() {
 		city.pop.needs_satisfaction = 0.0;
 		city.pop.needs_level = 0;
 		// F3: níveis e duráveis (redimensiona só quando o mundo mudou).
-		demo_init_pop_needs(city.pop);
-		for (int need_level = 0; need_level < kDemoMaxNeedsLevels; ++need_level) {
+		init_pop_needs(city.pop);
+		for (int need_level = 0; need_level < kMaxNeedsLevels; ++need_level) {
 			city.pop.level_want[need_level] = 0.0;
 			city.pop.level_consumed[need_level] = 0.0;
 			city.pop.level_satisfaction[need_level] = 0.0;
@@ -245,8 +245,8 @@ void SimCore::phase_reset() {
 		city.service_government_revenue = 0.0;
 		city.service_input_cost = 0.0;
 		city.service_business_profit = 0.0;
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-			DemoServiceMarket& service = city.service_markets[sector];
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+			ServiceMarket& service = city.service_markets[sector];
 			service.demand = 0.0;
 			service.supply = 0.0;
 			service.unmet = 0.0;
@@ -258,7 +258,7 @@ void SimCore::phase_reset() {
 			service.exports = 0.0;
 			service.export_revenue = 0.0;
 			service.coverage = 0.0;
-			for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+			for (int level = 0; level < kMaxNeedsLevels; ++level) {
 				service.pop_demand[level] = 0.0;
 			}
 		}
@@ -286,7 +286,7 @@ void SimCore::phase_reset() {
 			city.pop.consumed_by_category[product] = 0.0;
 		}
 	}
-	for (DemoBuilding& building : ws_.buildings) {
+	for (Building& building : ws_.buildings) {
 		building.workers = 0.0;
 		building.utilization = 0.0;
 		building.revenue = 0.0;
@@ -297,24 +297,24 @@ void SimCore::phase_reset() {
 		building.paid_opex = 0.0;
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseReset);
+	OGS_SIM_PHASE_LAP(kPhaseReset);
 }
 
 void SimCore::phase_accounting() {
 	// 7. Receita por construção, lucro, distribuição de capital e PIB.
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		DemoCity& city = ws_.cities[city_index];
+		City& city = ws_.cities[city_index];
 		const std::vector<int>& local_buildings =
 			ws_.buildings_by_city[city_index];
-		std::array<double, kDemoMaxProducts> capacity_by_output{};
+		std::array<double, kMaxProducts> capacity_by_output{};
 		for (const int bi : local_buildings) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			capacity_by_output[building.output_product] +=
 				building.capacity * building.output_scale;
 		}
 		for (const int bi : local_buildings) {
-			DemoBuilding& building =
+			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			const double effective = building.capacity * building.output_scale;
 			const double share = capacity_by_output[building.output_product] > 0.0
@@ -330,7 +330,7 @@ void SimCore::phase_accounting() {
 		// governo -> firma: conserva o dinheiro e não maquia o resultado do
 		// setor (a perda continua visível em `profit` antes do subsídio).
 		for (const int bi : local_buildings) {
-			DemoBuilding& building =
+			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			if (!building.strategic || building.profit >= 0.0) {
 				continue;
@@ -373,28 +373,28 @@ void SimCore::phase_accounting() {
 			group_rows.push_back({static_cast<double>(group_index), profit, revenue});
 		};
 		for (const int bi : local_buildings) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			if (building.owner == "state") {
 				state_profit += building.profit;
 			} else {
 				std::string group_id;
 				std::string origin;
-				const int owner_kind = demo_owner_kind(building.owner, &group_id,
+				const int owner_code = owner_kind(building.owner, &group_id,
 					&origin);
-				const int group_index = owner_kind == 1 || owner_kind == 2
-					? demo_group_index(group_id) : -1;
-				if (group_index >= 0) {
+				const int group_slot = owner_code == 1 || owner_code == 2
+					? group_index(group_id) : -1;
+				if (group_slot >= 0) {
 					const double local_share = std::clamp(building.local_share, 0.0, 1.0);
 					const int partner_index = building.partner_group.empty()
-						? -1 : demo_group_index(building.partner_group);
+						? -1 : group_index(building.partner_group);
 					if (local_share > 0.0 && partner_index >= 0) {
-						add_group_row(group_index, building.profit * (1.0 - local_share),
+						add_group_row(group_slot, building.profit * (1.0 - local_share),
 							building.revenue * (1.0 - local_share));
 						add_group_row(partner_index, building.profit * local_share,
 							building.revenue * local_share);
 					} else {
-						add_group_row(group_index, building.profit, building.revenue);
+						add_group_row(group_slot, building.profit, building.revenue);
 					}
 				} else {
 					// Dono de grupo desconhecido (save antigo/editado): cai no
@@ -408,28 +408,28 @@ void SimCore::phase_accounting() {
 		// Dividendos só depois de reconstituir o capital de giro. Lucros de
 		// estatais vão para o orçamento público; privados, para as famílias.
 		const double firm_target =
-			city.simulation_population * kDemoFirmCashPerCapita;
+			city.simulation_population * kFirmCashPerCapita;
 		double firm_surplus = std::max(0.0, city.firm_cash - firm_target);
 		// F9: o lucro dos ativos de grupo sai da firma para o grupo (imposto
 		// corporativo fica no anfitrião; o resto vira caixa do grupo e, no
 		// fechamento do dia, dividendo ao estrato dono). A retenção é o que
 		// financia o investimento seguinte; nada é criado ou destruído.
 		for (const std::array<double, 3>& row : group_rows) {
-			demo_route_group_profit(static_cast<int>(row[0]), city.nation,
+			route_group_profit(static_cast<int>(row[0]), city.nation,
 				row[1], row[2], city, firm_surplus);
 		}
 		firm_surplus = std::max(0.0, city.firm_cash - firm_target);
 		const double positive_total = std::max(0.0, private_profit)
 			+ std::max(0.0, state_profit);
 		const double distributable = std::min(
-			positive_total * kDemoCapitalDistribution, firm_surplus);
+			positive_total * kCapitalDistribution, firm_surplus);
 		const double private_share = positive_total > 0.0
 			? std::max(0.0, private_profit) / positive_total : 0.0;
 		const double modeled_distribution = distributable * private_share;
 		const double state_distribution = distributable - modeled_distribution;
 		const double service_target =
 			(city.service_wage_bill + city.service_input_cost)
-			* kDemoServiceCashBufferDays;
+			* kServiceCashBufferDays;
 		const double service_surplus = std::max(0.0,
 			city.service_cash - service_target);
 		// F8: o lucro do setor é renda da POP dona (plano §13). O caixa guarda
@@ -439,7 +439,7 @@ void SimCore::phase_accounting() {
 		// pagava serviços sem receber o lucro de volta e esgotava a poupança
 		// que compra comida (SDN-KHA, SOL-HAR em 365 d, F8).
 		const double service_distribution = std::min(
-			std::max(0.0, city.service_profit * kDemoCapitalDistribution),
+			std::max(0.0, city.service_profit * kCapitalDistribution),
 			service_surplus);
 		city.firm_cash -= modeled_distribution + state_distribution;
 		city.service_cash -= service_distribution;
@@ -454,10 +454,10 @@ void SimCore::phase_accounting() {
 		// Comportamento das empresas: prejuízo persistente reduz a produção;
 		// demanda acima da capacidade com lucro permite expansão.
 		for (const int bi : local_buildings) {
-			DemoBuilding& building =
+			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			// Carência de falência (planta nova, §15): a planta construída não é
-			// avaliada por prejuízo durante os primeiros kDemoRampDays de
+			// avaliada por prejuízo durante os primeiros kRampDays de
 			// operação — o capital da obra é investimento, não prejuízo
 			// operacional; a planta precisa de tempo para formar carteira antes
 			// de ser avaliada. O output_scale segue o valor de entrada (100%
@@ -480,12 +480,12 @@ void SimCore::phase_accounting() {
 			// regra é explícita — a construção some (capacidade e empregos), em
 			// vez de ficar produzindo no piso no vermelho para sempre. Planta
 			// estratégica é mantida pelo governo (ver subsídio acima).
-			if (building.loss_days >= kDemoLossDaysBeforeClose && !building.strategic) {
+			if (building.loss_days >= kLossDaysBeforeClose && !building.strategic) {
 				building.bankrupt = true;
 			}
-			if (building.loss_days >= kDemoLossDaysBeforeCut) {
-				building.output_scale = std::max(kDemoMinOutputScale,
-					building.output_scale * kDemoLossCut);
+			if (building.loss_days >= kLossDaysBeforeCut) {
+				building.output_scale = std::max(kMinOutputScale,
+					building.output_scale * kLossCut);
 			} else if (building.profit > 0.0) {
 				// Recuperação gradual após um período de prejuízo.
 				building.output_scale = std::min(1.0, building.output_scale * 1.02);
@@ -498,14 +498,14 @@ void SimCore::phase_accounting() {
 		double building_revenue = 0.0;
 		double building_profit = 0.0;
 		for (const int bi : local_buildings) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			building_revenue += building.revenue;
 			building_profit += building.profit;
 		}
 		const double firm_margin = building_revenue > 1e-9
 			? std::clamp(building_profit / building_revenue, -0.25, 0.25) : 0.0;
-		demo_update_wages(city, firm_margin);
+		update_wages(city, firm_margin);
 
 		// O salário de serviços se ajusta ao mercado de trabalho residual e o
 		// emprego segue a receita do setor ao novo salário. Se a receita não
@@ -513,8 +513,8 @@ void SimCore::phase_accounting() {
 		// não um piso artificial de 5% de vagas.
 		double cheapest_food = 0.0;
 		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			const double factor = demo_food_calories(product);
+			const int product = food_product(slot);
+			const double factor = food_calories(product);
 			if (factor <= 0.0) {
 				continue;
 			}
@@ -524,7 +524,7 @@ void SimCore::phase_accounting() {
 				cheapest_food = per_calorie;
 			}
 		}
-		const double subsistence_wage = kDemoNeedPerCapita * cheapest_food;
+		const double subsistence_wage = kNeedPerCapita * cheapest_food;
 		double modeled_jobs_total = 0.0;
 		for (const int bi : local_buildings) {
 			modeled_jobs_total += ws_.buildings[static_cast<std::size_t>(bi)].jobs;
@@ -534,37 +534,37 @@ void SimCore::phase_accounting() {
 		const double service_supply = residual_labor
 			* (1.0 - ws_.natural_unemployment);
 		// F7: quem define o salário do setor de serviços é o MERCADO DE TRABALHO
-		// (demo_labor_day grava aqui a média ponderada por nível/mistura). A
+		// (labor_day grava aqui a média ponderada por nível/mistura). A
 		// antiga regra de "receita ÷ força residual" brigava com ela e travava o
 		// mundo em ~15% de desemprego. A receita continua limitando as VAGAS: se
 		// ela não paga nem o salário de subsistência, sobra desemprego de
 		// verdade — não um piso artificial de vagas.
 		// F7 calibração: o setor de serviços é o empregador RESIDUAL do modelo
 		// (serviços urbanos absorvem quem não está nas construções). Quem limita
-		// a FOLHA é o caixa do setor (liquidez, em demo_labor_day), não o número
+		// a FOLHA é o caixa do setor (liquidez, em labor_day), não o número
 		// de vagas: cortar vagas pela receita transformava um salário-alvo alto
 		// em desemprego em massa (1ª medição da calibração: EUA 41,8%, DEU
 		// 48,8%), porque a receita de serviços é uma fração da renda das
 		// famílias e não acompanha a parcela do trabalho no valor adicionado.
 		(void)subsistence_wage;
 		city.service_jobs += (service_supply - city.service_jobs)
-			* kDemoServiceAdjust;
+			* kServiceAdjust;
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseAccounting);
+	OGS_SIM_PHASE_LAP(kPhaseAccounting);
 }
 
 void SimCore::phase_invariants() {
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
 	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
-	ws_.invariant_violations = demo_check_invariants(money_before());
+	ws_.invariant_violations = check_invariants(money_before());
 	if (!ws_.invariant_violations.empty()) {
-		demo_restore(ws_.snapshot_buffer);
+		restore_state(ws_.snapshot_buffer);
 	}
-	OGS_SIM_PHASE_LAP(kDemoPhaseInvariants);
+	OGS_SIM_PHASE_LAP(kPhaseInvariants);
 }
 
-void SimCore::demo_restore(const DemoSnapshot& in) {
+void SimCore::restore_state(const Snapshot& in) {
 	ws_.cities = in.cities;
 	ws_.buildings = in.buildings;
 	ws_.construction_projects = in.construction_projects;
@@ -580,7 +580,7 @@ void SimCore::demo_restore(const DemoSnapshot& in) {
 	// corrompido também desfaz a taxa do dia.
 	ws_.currencies = in.currencies;
 	city_gov::restore(ws_, in);
-	demo_rebuild_currency_indexes();
+	rebuild_currency_indexes();
 	ws_.transport_cash = in.transport_cash;
 	ws_.foreign_cash = in.foreign_cash;
 	ws_.construction_cash = in.construction_cash;
@@ -591,8 +591,8 @@ void SimCore::demo_restore(const DemoSnapshot& in) {
 		ws_.consumed_today[index] = in.consumed_today[index];
 	}
 	ws_.day = in.day;
-	demo_rebuild_indexes();
-	demo_rebuild_service_indexes();
+	rebuild_indexes();
+	rebuild_service_indexes();
 	// F9: o índice de grupos acompanha o vetor restaurado.
 	ws_.group_lookup.clear();
 	for (std::size_t index = 0; index < ws_.groups.size(); ++index) {
@@ -600,13 +600,13 @@ void SimCore::demo_restore(const DemoSnapshot& in) {
 	}
 }
 
-std::vector<std::string> SimCore::demo_check_invariants(double money_before) const {
+std::vector<std::string> SimCore::check_invariants(double money_before) const {
 	std::vector<std::string> violations;
 
 	// 1. Conservação de dinheiro: toda transação move dinheiro entre caixas
 	// (firma, serviço, governo, poupança, transporte, exterior, construção).
 	// O resto do mundo (foreign_cash) pode ficar negativo por design.
-	const double money_after = demo_money_total();
+	const double money_after = money_total();
 	const double drift = std::abs(money_after - money_before);
 	const double tolerance = std::max(1e-3, std::abs(money_before) * 1e-12);
 	if (!std::isfinite(money_after) || drift > tolerance) {
@@ -615,7 +615,7 @@ std::vector<std::string> SimCore::demo_check_invariants(double money_before) con
 			+ std::to_string(money_after) + " drift=" + std::to_string(drift));
 	}
 
-	for (const DemoCity& city : ws_.cities) {
+	for (const City& city : ws_.cities) {
 		auto check_nonneg = [&violations, &city](const char* label, double value) {
 			if (!std::isfinite(value) || value < -1e-6) {
 				violations.push_back(std::string("caixa negativo (") + label + ") em "
@@ -631,22 +631,22 @@ std::vector<std::string> SimCore::demo_check_invariants(double money_before) con
 		// competitividade das ofertas float e a exibição local), então a banda
 		// pode ser comparada sem folga.
 		for (int product = 0; product < ws_.products; ++product) {
-			const DemoMarket& market = city.markets[product];
-			const double base = demo_base_price(product);
+			const Market& market = city.markets[product];
+			const double base = base_price(product);
 			const double floor_price = base * 0.5;
 			const double ceiling = base * 3.0;
 			if (!std::isfinite(market.price)
 					|| market.price < floor_price
 					|| market.price > ceiling) {
 				violations.push_back("preço fora da banda em " + city.id + " "
-					+ demo_product_name(product) + ": " + std::to_string(market.price)
+					+ product_name(product) + ": " + std::to_string(market.price)
 					+ " (base âncora " + std::to_string(base) + ", moeda "
-					+ demo_currency_code(city.nation) + " taxa "
-					+ std::to_string(demo_fx_rate(city.nation)) + ")");
+					+ currency_code(city.nation) + " taxa "
+					+ std::to_string(fx_rate(city.nation)) + ")");
 			}
 			if (!std::isfinite(market.stock) || market.stock < -1e-6) {
 				violations.push_back("estoque negativo em " + city.id + " "
-					+ demo_product_name(product) + ": " + std::to_string(market.stock));
+					+ product_name(product) + ": " + std::to_string(market.stock));
 			}
 		}
 	}
@@ -660,7 +660,7 @@ std::vector<std::string> SimCore::demo_check_invariants(double money_before) con
 	check_global("transport", ws_.transport_cash);
 	check_global("construction", ws_.construction_cash);
 	// F9: caixa de grupo é dinheiro do mundo; não pode ser negativo nem NaN.
-	for (const DemoGroup& group : ws_.groups) {
+	for (const Group& group : ws_.groups) {
 		if (!std::isfinite(group.cash) || group.cash < -1e-6) {
 			violations.push_back("caixa de grupo inválido (" + group.id + "): "
 				+ std::to_string(group.cash));

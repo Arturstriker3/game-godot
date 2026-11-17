@@ -83,7 +83,7 @@ namespace ogs {
 		double queue_t = 0.0;       // pico de carga acima da capacidade no dia
 		double delay_hours = 0.0;   // atraso acumulado do dia (fila)
 		double demurrage = 0.0;     // custo de fila do dia (pago ao frete)
-		// Obra de expansão em andamento (API demo_expand_port).
+		// Obra de expansão em andamento (API expand_port).
 		double pending_capacity_t_per_day = 0.0;
 		int pending_days = 0;
 	};
@@ -119,49 +119,49 @@ namespace ogs {
 	// data/definitions/economy/goods.json (não há enum de produtos).
 	// ------------------------------------------------------------------
 	// Mesma ordem de data/definitions/economy/goods.json. A contagem é variável
-	// (demo_set_goods): os 21 primários continuam nas posições 0..20 e os 92
-	// bens industriais entram em 21..112. kDemoMaxProducts é só o teto de
+	// (set_goods): os 21 primários continuam nas posições 0..20 e os 92
+	// bens industriais entram em 21..112. kMaxProducts é só o teto de
 	// segurança do vetor.
-	static constexpr int kDemoMaxProducts = 160;
-	static constexpr int kDemoMaxRecipeInputs = 6;
+	static constexpr int kMaxProducts = 160;
+	static constexpr int kMaxRecipeInputs = 6;
 	// §15: materiais de uma obra (construction_material, steel_structure,
 	// electrical_material; fábricas acrescentam industrial_machinery).
-	static constexpr int kDemoMaxConstructionMaterials = 4;
+	static constexpr int kMaxConstructionMaterials = 4;
 	// F3: níveis de necessidade (basic/life/luxury, needs.json).
-	static constexpr int kDemoMaxNeedsLevels = 3;
+	static constexpr int kMaxNeedsLevels = 3;
 	// F7 calibração: níveis de consumo alcançáveis pela renda de um estrato
 	// (0 = nenhum, 1 = basic, 2 = life, 3 = luxury). É a fatia da POP por nível
 	// publicada no status — por isso tem uma posição a mais que a cesta.
-	static constexpr int kDemoIncomeLevels = kDemoMaxNeedsLevels + 1;
+	static constexpr int kIncomeLevels = kMaxNeedsLevels + 1;
 	// F7: níveis de educação (básico, intermediário, superior). Não é dado de
 	// catálogo: são três faixas de escolaridade da população em idade ativa.
-	static constexpr int kDemoEducationLevels = 3;
+	static constexpr int kEducationLevels = 3;
 	// F8: setores de serviço (services.json). O teto é fixo para o estado por
 	// cidade caber em arrays planos; os dados declaram 20 e o loader recusa
 	// arquivo com contagem diferente (a publicação/UI indexa por posição).
-	static constexpr int kDemoMaxServiceSectors = 20;
-	// Campos publicados por setor na cidade (ver demo_service_publish_fields em
+	static constexpr int kMaxServiceSectors = 20;
+	// Campos publicados por setor na cidade (ver service_publish_fields em
 	// economy_sim.cpp): demanda, oferta, preço, receita, emprego, negócios,
 	// demanda não atendida, exportação (unidades), exportação (receita),
 	// cobertura privada, custo de insumos e custo de serviços.
-	static constexpr int kDemoServiceFields = 12;
+	static constexpr int kServiceFields = 12;
 	// Limite de negócios por cidade/setor e de aberturas por cidade/dia.
-	static constexpr int kDemoServiceMaxPerSector = 4;
-	static constexpr int kDemoServiceOpensPerDay = 5;
-	// Cesta alimentar (B3/B4) agora data-driven (demo_set_needs), derivada de
+	static constexpr int kServiceMaxPerSector = 4;
+	static constexpr int kServiceOpensPerDay = 5;
+	// Cesta alimentar (B3/B4) agora data-driven (set_needs), derivada de
 	// needs.json (basic/food/substitutes + equivalence.calories). O padrão
 	// preserva a cesta validada de 5 culturas até o autoload carregar o dado.
 	// A necessidade é medida em toneladas-equivalentes de grão: o fator calórico
 	// converte tonelada real em tonelada-equivalente (batata ~1/4 das calorias).
-	static constexpr int kDemoMaxFoodProducts = 16;
-	static constexpr int kDemoFoodProductIds[5] = {0, 2, 3, 16, 17};
-	static constexpr double kDemoCaloricFactor[5] = {1.0, 1.0, 1.0, 0.25, 1.3};
+	static constexpr int kMaxFoodProducts = 16;
+	static constexpr int kFoodProductIds[5] = {0, 2, 3, 16, 17};
+	static constexpr double kCaloricFactor[5] = {1.0, 1.0, 1.0, 0.25, 1.3};
 
 	// Os 8 campos PUBLICADOS no status ficam primeiro e em ordem fixa: o cache
 	// de publicação compara o bloco inteiro com um memcmp de 64 bytes (um
 	// único teste em vez de 8 comparações de double por produto/cidade).
 	// `sold_prev` é interno (muda todo dia) e fica no fim, fora da comparação.
-	struct DemoMarket {
+	struct Market {
 		double stock = 0.0;
 		double price = 1.0;
 		double demand = 0.0;   // compras realizadas (consumo, insumos e exportação)
@@ -177,14 +177,14 @@ namespace ogs {
 		// demanda financiada, não por desejo sem poder de compra.
 		double latent = 0.0;
 	};
-	static_assert(offsetof(DemoMarket, stock) == 0, "DemoMarket: stock primeiro");
-	static_assert(offsetof(DemoMarket, surplus) == 7 * sizeof(double),
-		"DemoMarket: os 8 campos publicados precisam ser contíguos");
+	static_assert(offsetof(Market, stock) == 0, "Market: stock primeiro");
+	static_assert(offsetof(Market, surplus) == 7 * sizeof(double),
+		"Market: os 8 campos publicados precisam ser contíguos");
 
 	// F3: uma categoria de necessidade (needs.json → levels.<nível>.categories).
 	// `substitutes` mantém a ordem declarada (do melhor ao último caso) e
 	// `equivalence` converte tonelada real em tonelada-equivalente da categoria.
-	struct DemoNeedsCategory {
+	struct NeedsCategory {
 		std::string id;
 		double per_capita_day = 0.0;  // per_capita_t_month / 30
 		std::vector<int> substitutes;
@@ -192,23 +192,23 @@ namespace ogs {
 	};
 
 	// F3: um nível (basic/life/luxury) com peso na satisfação agregada.
-	struct DemoNeedsLevel {
+	struct NeedsLevel {
 		std::string id;
 		int priority = 1;
 		double weight = 0.0;
-		std::vector<DemoNeedsCategory> categories;
+		std::vector<NeedsCategory> categories;
 	};
 
-	struct DemoRecipe {
+	struct Recipe {
 		std::string id;
 		int output = -1;
 		double yield = 1.0;
 		int input_count = 0;
-		int inputs[kDemoMaxRecipeInputs] = {};
-		double input_qty[kDemoMaxRecipeInputs] = {};
+		int inputs[kMaxRecipeInputs] = {};
+		double input_qty[kMaxRecipeInputs] = {};
 		int byproduct_count = 0;
-		int byproducts[kDemoMaxRecipeInputs] = {};
-		double byproduct_qty[kDemoMaxRecipeInputs] = {};
+		int byproducts[kMaxRecipeInputs] = {};
+		double byproduct_qty[kMaxRecipeInputs] = {};
 		// Engenharia do processo (data/definitions/economy/recipes.json).
 		double capital_per_capacity = 2000.0;
 		double jobs_per_ton = 7.5;
@@ -217,11 +217,11 @@ namespace ogs {
 		// F7: mistura de escolaridade das vagas da receita (básico,
 		// intermediário, superior), soma 1. Lida de `education_mix` no
 		// recipes.json quando declarada; senão derivada do `sector` (tabela
-		// documentada em demo_set_recipes).
-		double education_mix[kDemoEducationLevels] = {0.60, 0.30, 0.10};
+		// documentada em set_recipes).
+		double education_mix[kEducationLevels] = {0.60, 0.30, 0.10};
 	};
 
-	struct DemoBuilding {
+	struct Building {
 		std::string id;
 		std::string city;
 		int kind = 0; // 0=fazenda (único tipo hoje; campo mantido por exibição)
@@ -230,7 +230,7 @@ namespace ogs {
 		int input_product = -1; // -1 = extração primária (sem insumo)
 		int output_product = 0;
 		// Receita industrial (-1 = produtor primário com input_product/ratio).
-		// A receita completa (até 6 insumos + subprodutos) vive em demo_recipes_.
+		// A receita completa (até 6 insumos + subprodutos) vive em recipes_.
 		int recipe = -1;
 		double capacity = 0.0;
 		double input_per_output = 0.0;
@@ -244,7 +244,7 @@ namespace ogs {
 		double output_scale = 1.0; // reduzido por prejuízos persistentes
 		// Rampa de operação de planta nova (construída via projeto físico):
 		// dias restantes de carência. Enquanto > 0, output_scale cresce
-		// linearmente de kDemoRampStart até 1,0 e a falência por prejuízo NÃO
+		// linearmente de kRampStart até 1,0 e a falência por prejuízo NÃO
 		// conta (empresa nova real). Planta madura/semeada = 0.
 		int ramp_days = 0;
 		int loss_days = 0;
@@ -269,7 +269,7 @@ namespace ogs {
 		double paid_opex = 0.0;
 		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
 		// e extração quase só básico; indústria segue a receita/setor.
-		double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+		double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
 	};
 
 	// ------------------------------------------------------------------
@@ -290,7 +290,7 @@ namespace ogs {
 		CONSTRUCTION_URBAN_INFRA = 2,
 	};
 
-	struct DemoConstructionProject {
+	struct ConstructionProject {
 		std::string id;          // id do projeto (== building_id em obra nova)
 		std::string city;
 		std::string owner;       // "state" | "private" | "national:<g>" | "foreign:<g>@<n>"
@@ -304,7 +304,7 @@ namespace ogs {
 		double wage = 0.0;
 		double opex = 0.0;
 		double input_per_output = 0.0;
-		double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+		double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
 		double local_share = 0.0;
 		std::string partner_group;
 		bool strategic = false;      // planta estratégica (bootstrap industrial)
@@ -322,14 +322,14 @@ namespace ogs {
 		// com a folha/opex e não pausa por liquidez temporária (uma mina em
 		// cidade importadora pausava por "dono sem dinheiro" e nunca concluía,
 		// tirando a renda que paga a importação de comida — SOL/DJI/SAH). O
-		// `reserved` entra em `demo_money_total` para a conservação valer.
+		// `reserved` entra em `money_total` para a conservação valer.
 		double reserved = 0.0;         // fundo de obra ainda não gasto
 		// Materiais da receita de obra (construction_material, steel_structure,
 		// electrical_material; fábricas também industrial_machinery).
 		int material_count = 0;
-		int materials[kDemoMaxConstructionMaterials] = {};
-		double material_qty[kDemoMaxConstructionMaterials] = {};      // t totais
-		double material_delivered[kDemoMaxConstructionMaterials] = {}; // t entregues
+		int materials[kMaxConstructionMaterials] = {};
+		double material_qty[kMaxConstructionMaterials] = {};      // t totais
+		double material_delivered[kMaxConstructionMaterials] = {}; // t entregues
 		// Cronograma. Sem material/sem dinheiro, `days_elapsed` não avança e o
 		// projeto para (pausa declarada em pause_reason).
 		int duration_days = 30;
@@ -357,7 +357,7 @@ namespace ogs {
 		double land_cost = 0.0;
 	};
 
-	struct DemoPop {
+	struct Pop {
 		double population = 0.0;
 		double labor_force = 0.0;
 		double employed = 0.0;
@@ -381,7 +381,7 @@ namespace ogs {
 		// Consumo por categoria/slot da cesta alimentar (data-driven).
 		std::vector<double> desired_by_category;
 		std::vector<double> consumed_by_category;
-		// F3: necessidades em três níveis. `level_*` têm kDemoMaxNeedsLevels
+		// F3: necessidades em três níveis. `level_*` têm kMaxNeedsLevels
 		// posições (t-eq/dia). `needs_satisfaction` é a média ponderada dos
 		// níveis com dado; `needs_level` é o maior nível atendido (>= metade da
 		// cesta). `pop.satisfaction` continua sendo a satisfação ALIMENTAR
@@ -409,25 +409,25 @@ namespace ogs {
 		double retirees = 0.0;         // 65+ (fora da força por idade)
 		double students = 0.0;         // em formação (fora da força)
 		double recruit_reserve = 0.0;  // 18–49 (só número; exército futuro)
-		double education[kDemoEducationLevels] = {};
-		double participation[kDemoEducationLevels] = {};
-		double labor_force_by_level[kDemoEducationLevels] = {};
-		double employed_by_level[kDemoEducationLevels] = {};
-		double unemployed_by_level[kDemoEducationLevels] = {};
-		double vacancies_by_level[kDemoEducationLevels] = {};
+		double education[kEducationLevels] = {};
+		double participation[kEducationLevels] = {};
+		double labor_force_by_level[kEducationLevels] = {};
+		double employed_by_level[kEducationLevels] = {};
+		double unemployed_by_level[kEducationLevels] = {};
+		double vacancies_by_level[kEducationLevels] = {};
 		// Vagas que sobraram SEM candidato após a alocação em cascata (nem
 		// sobrequalificados). É a escassez real do nível; o desemprego do mesmo
 		// nível é a sobra. juntos, definem o aperto que move o salário.
-		double unfilled_by_level[kDemoEducationLevels] = {};
-		double wage_by_level[kDemoEducationLevels] = {};
-		double wage_income_by_level[kDemoEducationLevels] = {};
+		double unfilled_by_level[kEducationLevels] = {};
+		double wage_by_level[kEducationLevels] = {};
+		double wage_income_by_level[kEducationLevels] = {};
 		// `true` depois do primeiro ajuste ancorado no valor adicionado: a
 		// âncora inicial de criação do mundo é um palpite, não um salário
 		// histórico que precise de inércia.
 		bool wage_anchored = false;
 		// Em formação para o nível 1 (intermediário) e 2 (superior). A
 		// conclusão é gradual (coorte exponencial com duração em dias).
-		double studying[kDemoEducationLevels - 1] = {};
+		double studying[kEducationLevels - 1] = {};
 		// Nível de consumo alcançável pela RENDA corrente (0 = nenhum,
 		// 1 = basic, 2 = life, 3 = luxury). O gasto sequencial da F3 continua
 		// sendo o que compra; este nível é o teto que a renda permite.
@@ -439,7 +439,7 @@ namespace ogs {
 		// que ocupa a vaga de baixo). É o peso da folha: o salário-alvo de cada
 		// nível é normalizado por ele para que a folha total seja exatamente a
 		// parcela do trabalho no valor adicionado.
-		double filled_by_slot[kDemoEducationLevels] = {};
+		double filled_by_slot[kEducationLevels] = {};
 		// ------------------------------------------------------------------
 		// F7 calibração — RENDA POR ESTRATO. A POP é dividida em estratos de
 		// renda alinhados ao nível de educação/ocupação (básico, intermediário,
@@ -449,12 +449,12 @@ namespace ogs {
 		// (renda de capital) vai só para os DONOS — o estrato superior —, não
 		// é dividido igualmente entre toda a POP.
 		// ------------------------------------------------------------------
-		double stratum_population[kDemoEducationLevels] = {};
-		double stratum_wage_income[kDemoEducationLevels] = {};
-		double stratum_external_income[kDemoEducationLevels] = {};
-		double stratum_capital_income[kDemoEducationLevels] = {};
-		double stratum_disposable[kDemoEducationLevels] = {};
-		int stratum_income_level[kDemoEducationLevels] = {};
+		double stratum_population[kEducationLevels] = {};
+		double stratum_wage_income[kEducationLevels] = {};
+		double stratum_external_income[kEducationLevels] = {};
+		double stratum_capital_income[kEducationLevels] = {};
+		double stratum_disposable[kEducationLevels] = {};
+		int stratum_income_level[kEducationLevels] = {};
 		// ------------------------------------------------------------------
 		// F7 calibração — CLASSES DE CONSUMO ANCORADAS NO GINI.
 		//
@@ -469,11 +469,11 @@ namespace ogs {
 		// Sem Gini (`income_gini == 0`, cidades sintéticas/save antigo), as
 		// classes espelham os estratos e o comportamento anterior é preservado.
 		// ------------------------------------------------------------------
-		double class_population[kDemoEducationLevels] = {};
-		int class_income_level[kDemoEducationLevels] = {};
+		double class_population[kEducationLevels] = {};
+		int class_income_level[kEducationLevels] = {};
 		// Fração da POP por nível de consumo alcançado (índice 0 = nenhum,
 		// 1 = basic, 2 = life, 3 = luxury). É o que o status/report publica.
-		double income_level_share[kDemoIncomeLevels] = {};
+		double income_level_share[kIncomeLevels] = {};
 	};
 
 	// ------------------------------------------------------------------
@@ -487,16 +487,16 @@ namespace ogs {
 	// uma ALOCAÇÃO do `city.service_cash` que já recebeu esses fluxos. Entrada
 	// de negócio financia o capital com o CAIXA DO PRÓPRIO SETOR (service_cash,
 	// lucros retidos) — a poupança que paga comida não é tocada — e a saída
-	// baixa a equity residual; `demo_money_total` continua conservado.
+	// baixa a equity residual; `money_total` continua conservado.
 	// ------------------------------------------------------------------
-	struct DemoServiceSector {
+	struct ServiceSector {
 		std::string id;
 		std::string name_pt;
 		std::string name_en;
 		std::string name_es;
 		std::string icon;
 		double price = 1.0;
-		double pop_share[kDemoMaxNeedsLevels] = {};
+		double pop_share[kMaxNeedsLevels] = {};
 		double business_share = 0.0;
 		double freight_share = 0.0;
 		double government_share = 0.0;
@@ -507,7 +507,7 @@ namespace ogs {
 		std::vector<Input> inputs;
 		std::vector<int> service_inputs;
 		std::vector<double> service_input_qty;
-		double education_mix[kDemoEducationLevels] = {0.70, 0.25, 0.05};
+		double education_mix[kEducationLevels] = {0.70, 0.25, 0.05};
 		double jobs_per_unit = 3.0;
 		double capital_per_unit = 96.0;
 		double min_capacity = 5.0;
@@ -520,7 +520,7 @@ namespace ogs {
 
 	// Estado diário de um setor numa cidade. `revenue` é dinheiro do pool de
 	// serviços (famílias + B2B + governo + exportação), não unidades.
-	struct DemoServiceMarket {
+	struct ServiceMarket {
 		double demand = 0.0;       // unidades desejadas e financiadas
 		double supply = 0.0;       // unidades ofertadas pelos negócios
 		double unmet = 0.0;        // demanda financiada sem oferta
@@ -536,14 +536,14 @@ namespace ogs {
 		double coverage = 0.0;     // saúde/educação privadas: 0..1
 		// F8: demanda das famílias por nível de consumo (unidades/dia), o que
 		// permite testar/auditar a separação basic/life/luxury.
-		double pop_demand[kDemoMaxNeedsLevels] = {};
+		double pop_demand[kMaxNeedsLevels] = {};
 	};
 
-	struct DemoServiceBusiness {
+	struct ServiceBusiness {
 		int id = 0;
 		int sector = -1;
 		std::string city;
-		int owner_stratum = kDemoEducationLevels - 1;
+		int owner_stratum = kEducationLevels - 1;
 		double capacity = 0.0;
 		double jobs = 0.0;
 		double workers = 0.0;
@@ -567,7 +567,7 @@ namespace ogs {
 	// pelas minas da cidade: cada tonelada extraída reduz remaining_kt. Sem
 	// tracked, o produto não tem reserva declarada e a extração é ilimitada
 	// (comportamento legado, p.ex. ferro sem dados de depósito).
-	struct DemoDeposit {
+	struct Deposit {
 		bool tracked = false;
 		double initial_kt = 0.0;
 		double remaining_kt = 0.0;
@@ -581,7 +581,7 @@ namespace ogs {
 	// entra no estoque) e o combustível é consumido por t·km de cada trecho.
 	// `health` (0,5..1,0) reduz a capacidade quando faltam `spare_parts` na
 	// manutenção mensal.
-	struct DemoFleet {
+	struct Fleet {
 		double trucks = 0.0;
 		double ships = 0.0;
 		double planes = 0.0;
@@ -589,7 +589,7 @@ namespace ogs {
 		double trucks_busy = 0.0;
 		double ships_busy = 0.0;
 		double planes_busy = 0.0;
-		// Alvo derivado de população/PIB (demo_init_fleets), usado pela
+		// Alvo derivado de população/PIB (init_fleets), usado pela
 		// reposição mensal do governo.
 		double target_trucks = 0.0;
 		double target_ships = 0.0;
@@ -618,8 +618,8 @@ namespace ogs {
 	// em âncora) suavizada em 30 dias; `gross_ema` é o volume (export+import)
 	// suavizado, usado para normalizar a pressão cambial. `peg` congela a taxa,
 	// `float` (padrão quando o dado não declara regime) aplica o drift dentro
-	// da banda [kDemoFxBandLow, kDemoFxBandHigh] × taxa inicial.
-	struct DemoCurrency {
+	// da banda [kFxBandLow, kFxBandHigh] × taxa inicial.
+	struct Currency {
 		std::string code;
 		std::vector<std::string> nations;
 		double rate = 1.0;
@@ -634,7 +634,7 @@ namespace ogs {
 	// F5: tarifa declarada (buyer, seller, product, ad valorem). O lookup usa
 	// uma chave textual buyer|seller|product; a ordem do vetor é determinística
 	// para o status.
-	struct DemoTariff {
+	struct Tariff {
 		std::string buyer;
 		std::string seller;
 		std::string product;
@@ -646,14 +646,14 @@ namespace ogs {
 	// publicar o status. `profit_by_host` acumula o lucro ainda não distribuído
 	// por nação anfitriã — é o que permite separar repatriação (IDE) de
 	// dividendo doméstico sem varrer as construções a cada pagamento.
-	struct DemoGroup {
+	struct Group {
 		std::string id;
 		std::string name;
 		std::string origin_nation;
 		std::string sector;
 		double cash = 0.0;
 		// Lucro acumulado ainda não distribuído. Separado do caixa para que uma
-		// capitalização (demo_fund_group) não vire dividendo no dia seguinte.
+		// capitalização (fund_group) não vire dividendo no dia seguinte.
 		double distributable = 0.0;
 		double revenue_total = 0.0;
 		double profit_total = 0.0;
@@ -665,7 +665,7 @@ namespace ogs {
 	};
 
 	// F9: abertura ao capital estrangeiro por (nação, setor).
-	struct DemoFdiPolicy {
+	struct FdiPolicy {
 		std::string nation;
 		std::string sector;
 		int mode = 0;  // 0 open, 1 restricted, 2 joint_venture, 3 closed
@@ -673,7 +673,7 @@ namespace ogs {
 	};
 
 	// F9: incentivo setorial (isenção/subsídio).
-	struct DemoSectorIncentive {
+	struct SectorIncentive {
 		std::string nation;
 		std::string sector;
 		double tax_holiday = 0.0;
@@ -681,7 +681,7 @@ namespace ogs {
 	};
 
 	// F9: fluxo acumulado de lucro por nação (balança/câmbio futuros).
-	struct DemoGroupFlow {
+	struct GroupFlow {
 		double repatriated_out = 0.0;  // lucro de estrangeiro que saiu do anfitrião
 		double repatriated_in = 0.0;   // lucro recebido pela origem
 		double dividends = 0.0;        // dividendos pagos aos donos nacionais
@@ -690,7 +690,7 @@ namespace ogs {
 	};
 
 	// Necessidade de transporte de um pedido (por trecho): veículos e fuel.
-	struct DemoTransportDemand {
+	struct TransportDemand {
 		double trucks = 0.0;
 		double ships = 0.0;
 		double planes = 0.0;
@@ -702,7 +702,7 @@ namespace ogs {
 	// F9 — emprego setorial. Âncoras (renda, agro, indústria, informalidade)
 	// ordenadas por renda; interpoladas no log da renda. Ver
 	// data/definitions/economy/sector_employment.json (fonte ILO/ILOSTAT).
-	struct DemoSectorAnchor {
+	struct SectorAnchor {
 		double income = 1.0;
 		double agriculture = 0.0;
 		double industry = 0.0;
@@ -710,7 +710,7 @@ namespace ogs {
 	};
 
 
-	struct DemoCity {
+	struct City {
 		std::string id;
 		std::string name;
 		std::string nation;
@@ -729,13 +729,13 @@ namespace ogs {
 		double government_budget = 0.0;
 		// Multiplicador da renda externa (PIB PPP per capita da nação,
 		// normalizado pela média mundial ponderada = 1,0). Ver
-		// demo_set_external_income_index e §20 do balance_review.
+		// set_external_income_index e §20 do balance_review.
 		double external_income_index = 1.0;
 		// F7 calibração: produtividade nacional (TFP). 0 = DERIVAR do índice de
 		// renda real (`clamp(external_income_index, 0,25, 4,0)`, o PIB PPP per
 		// capita já carregado, `source: derived:gdp_ppp`); > 0 = fator
 		// explícito do laboratório. Multiplica o valor adicionado por
-		// trabalhador na âncora salarial (demo_update_wages); não move preços
+		// trabalhador na âncora salarial (update_wages); não move preços
 		// nem cria dinheiro (o pagamento segue limitado ao caixa da firma).
 		double productivity_index = 0.0;
 		// F7 calibração: Gini de renda da nação (0..1). 0 = NÃO DECLARADO
@@ -746,7 +746,7 @@ namespace ogs {
 		// ancorada no PIB PPP per capita e sigma derivado do Gini.
 		double income_gini = 0.0;
 		double service_jobs = 0.0;
-		// F8: vagas de serviço efetivamente preenchidas (ver demo_labor_day).
+		// F8: vagas de serviço efetivamente preenchidas (ver labor_day).
 		double service_workers = 0.0;
 		// F9: vagas de serviço PAGAS (preenchidas pelo setor simulado). O
 		// emprego estrutural de serviços vai em `sector_workers[2]` e
@@ -756,13 +756,13 @@ namespace ogs {
 		// `sector_workers`: 0 agropecuária, 1 indústria/mineração, 2 serviços
 		// (residual), 3 informal (SOBREPOSIÇÃO: parte dos três primeiros; não
 		// soma com eles). `sector_share` é a fração do emprego (0..1).
-		// Derivado todo dia em demo_update_sector_employment; não é campo de
+		// Derivado todo dia em update_sector_employment; não é campo de
 		// save (recalculado no primeiro tick após carregar).
 		double sector_workers[4] = {};
 		double sector_share[4] = {};
 		// Produção agrícola declarada no dia (t/dia de alimentos primários) e
 		// autoconsumo em espécie das famílias agrícolas (t-eq/dia) — ver o
-		// piso de subsistência em demo_tick_core.
+		// piso de subsistência em tick_core.
 		double agri_output_tons = 0.0;
 		double in_kind_food = 0.0;
 		double service_wage = 0.0;
@@ -782,29 +782,29 @@ namespace ogs {
 		double government_goods_spend = 0.0;
 		// F5: última cotação de importação (preço entregue na moeda local) por
 		// produto; forma o preço local em cidade sem produtor (§2.7).
-		double import_price[kDemoMaxProducts] = {};
+		double import_price[kMaxProducts] = {};
 		// F5: tarifa arrecadada no dia (receita do governo do comprador).
 		double tariff_revenue = 0.0;
-		double revenue_by_product[kDemoMaxProducts] = {};
+		double revenue_by_product[kMaxProducts] = {};
 		// Fluxos comerciais do dia, por produto.
-		double imported[kDemoMaxProducts] = {};
-		double exported[kDemoMaxProducts] = {};
-		double import_value[kDemoMaxProducts] = {};
-		double export_value[kDemoMaxProducts] = {};
+		double imported[kMaxProducts] = {};
+		double exported[kMaxProducts] = {};
+		double import_value[kMaxProducts] = {};
+		double export_value[kMaxProducts] = {};
 		// Aptidão territorial por produto (0..1). A produção primária é
 		// multiplicada por ela; o GeographyService sobrescreve com dados reais.
 		// Inicializador: trigo/ferro/arroz = 1.0, os demais = 0.0 (default).
-		double suitability[kDemoMaxProducts] = {1.0, 1.0, 1.0};
+		double suitability[kMaxProducts] = {1.0, 1.0, 1.0};
 		// Teto de demanda externa (t/dia) por produto, declarado pelo
 		// GeographyService (participação da nação no mercado mundial). 0 = sem
 		// exportação deste bem nesta cidade.
-		double external_demand[kDemoMaxProducts] = {};
+		double external_demand[kMaxProducts] = {};
 		// Reservas minerais por produto (extração com esgotamento).
-		DemoDeposit deposits[kDemoMaxProducts];
-		DemoPop pop;
-		DemoMarket markets[kDemoMaxProducts];
+		Deposit deposits[kMaxProducts];
+		Pop pop;
+		Market markets[kMaxProducts];
 		// F8: mercados de serviço por setor (ordem de services.json).
-		DemoServiceMarket service_markets[kDemoMaxServiceSectors];
+		ServiceMarket service_markets[kMaxServiceSectors];
 		double service_export_revenue = 0.0;
 		double service_government_revenue = 0.0;
 		double service_input_cost = 0.0;
@@ -816,22 +816,22 @@ namespace ogs {
 		double service_tonnage_prev = 0.0;
 	};
 
-	// Fases medidas por demo_set_profiling (ordem = ordem do tick).
-	enum DemoPhase {
-		kDemoPhaseArrival = 0, kDemoPhaseReset, kDemoPhaseLabor,
-		kDemoPhaseProduction, kDemoPhaseRaw, kDemoPhaseIncome,
-		kDemoPhaseServices, kDemoPhaseTrade,
-		kDemoPhaseAccounting, kDemoPhasePrices, kDemoPhaseClamp,
-		kDemoPhaseFiscal, kDemoPhaseFx, kDemoPhaseInvariants, kDemoPhaseStatus,
+	// Fases medidas por set_profiling (ordem = ordem do tick).
+	enum Phase {
+		kPhaseArrival = 0, kPhaseReset, kPhaseLabor,
+		kPhaseProduction, kPhaseRaw, kPhaseIncome,
+		kPhaseServices, kPhaseTrade,
+		kPhaseAccounting, kPhasePrices, kPhaseClamp,
+		kPhaseFiscal, kPhaseFx, kPhaseInvariants, kPhaseStatus,
 		// Sub-fases do comércio (perfil fino do tick). Medem só dentro da fase
 		// `trade`: o custo total de comida/bens e o laço quente (compradores /
 		// produto×comprador). O "prep" (índices/grade) sai por subtração.
-		kDemoPhaseTradeFood, kDemoPhaseTradeFoodBuyers,
-		kDemoPhaseTradeGoods, kDemoPhaseTradeGoodsLoop,
-		kDemoPhaseCount
+		kPhaseTradeFood, kPhaseTradeFoodBuyers,
+		kPhaseTradeGoods, kPhaseTradeGoodsLoop,
+		kPhaseCount
 	};
 
-	struct DemoShipment {
+	struct Shipment {
 		std::string to_city;
 		int product = 0;
 		double amount = 0.0;
@@ -846,22 +846,22 @@ namespace ogs {
 	};
 
 	// Retrato do estado demo para reverter um tick que viole um invariante.
-	struct DemoSnapshot {
-		std::vector<DemoCity> cities;
-		std::vector<DemoBuilding> buildings;
-		std::vector<DemoConstructionProject> construction_projects;
-		std::vector<DemoServiceBusiness> service_businesses;
+	struct Snapshot {
+		std::vector<City> cities;
+		std::vector<Building> buildings;
+		std::vector<ConstructionProject> construction_projects;
+		std::vector<ServiceBusiness> service_businesses;
 		int next_service_business_id = 1;
 		int service_bankruptcies = 0;
-		std::vector<DemoShipment> transit;
-		std::unordered_map<std::string, DemoFleet> fleets;
+		std::vector<Shipment> transit;
+		std::unordered_map<std::string, Fleet> fleets;
 		// F9: estado dos grupos (caixa + lucro por anfitrião), confiança das
 		// nações e fluxos acumulados — desfazer um tick corrompido também
 		// desfaz a distribuição de lucro e a repatriação.
-		std::vector<DemoGroup> groups;
+		std::vector<Group> groups;
 		std::unordered_map<std::string, double> confidence;
-		std::unordered_map<std::string, DemoGroupFlow> group_flows;
-		std::vector<DemoCurrency> currencies;
+		std::unordered_map<std::string, GroupFlow> group_flows;
+		std::vector<Currency> currencies;
 		// §19 (W2): solo e prefeitura. A prefeitura move área/capacidade do solo
 		// (obra concluída) e o próprio caixa; desfazer o tick desfaz isso.
 		std::vector<CityLand> land;
@@ -869,10 +869,10 @@ namespace ogs {
 		double transport_cash = 0.0;
 		double foreign_cash = 0.0;
 		double construction_cash = 0.0;
-		double produced[kDemoMaxProducts] = {};
-		double consumed_total[kDemoMaxProducts] = {};
-		double produced_today[kDemoMaxProducts] = {};
-		double consumed_today[kDemoMaxProducts] = {};
+		double produced[kMaxProducts] = {};
+		double consumed_total[kMaxProducts] = {};
+		double produced_today[kMaxProducts] = {};
+		double consumed_today[kMaxProducts] = {};
 		int day = 0;
 	};
 

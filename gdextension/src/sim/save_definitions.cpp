@@ -10,7 +10,7 @@
 //                     "government_products", "government_per_capita_day" },
 //     "services":   { "loaded", "government_share", "sectors" },
 //     "employment": { "loaded", "anchors", <campos agri_*/industry_*> },
-//     "balance":    { <parâmetros do demo_set_balance> }
+//     "balance":    { <parâmetros do set_balance> }
 //   }
 //
 // Regra de leitura: nenhuma chave é obrigatória. Chave ausente (ou de tipo
@@ -158,13 +158,13 @@ Value array_of(const double* values, int count) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Produtos (goods.json -> demo_set_goods)
+// 1. Produtos (goods.json -> set_goods)
 // ---------------------------------------------------------------------------
 
 Value products_to(const WorldState& ws) {
-	// `base_prices` é fixo em kDemoMaxProducts: só os `products` ativos têm
+	// `base_prices` é fixo em kMaxProducts: só os `products` ativos têm
 	// significado (o resto é cauda do teto de segurança).
-	const int count = std::clamp(ws.products, 0, kDemoMaxProducts);
+	const int count = std::clamp(ws.products, 0, kMaxProducts);
 	Value out;
 	out["count"] = Value(count);
 	out["names"] = array_of(ws.product_names);
@@ -185,14 +185,14 @@ Value products_to(const WorldState& ws) {
 void products_from(WorldState& ws, const Value& block) {
 	const int count = read_int(block, "count", -1);
 	if (count >= 0) {
-		ws.products = std::min(count, kDemoMaxProducts);
+		ws.products = std::min(count, kMaxProducts);
 	}
 	if (const Value* names = read_array(block, "names")) {
 		ws.product_names = read_string_vector(*names);
 	}
 	if (const Value* prices = read_array(block, "base_prices")) {
 		const int available = std::min(prices->size(),
-			std::clamp(ws.products, 0, kDemoMaxProducts));
+			std::clamp(ws.products, 0, kMaxProducts));
 		for (int index = 0; index < available; ++index) {
 			ws.base_prices[index] = read_scalar_double((*prices)[index],
 				ws.base_prices[index]);
@@ -201,19 +201,19 @@ void products_from(WorldState& ws, const Value& block) {
 	if (const Value* sectors = read_array(block, "sectors")) {
 		ws.product_sectors = read_string_vector(*sectors);
 		// O vetor paralelo aos produtos não passa do teto do modelo.
-		if (static_cast<int>(ws.product_sectors.size()) > kDemoMaxProducts) {
-			ws.product_sectors.resize(static_cast<std::size_t>(kDemoMaxProducts));
+		if (static_cast<int>(ws.product_sectors.size()) > kMaxProducts) {
+			ws.product_sectors.resize(static_cast<std::size_t>(kMaxProducts));
 		}
 	}
 	if (const Value* durable = read_array(block, "durable")) {
-		const int available = std::min(durable->size(), kDemoMaxProducts);
+		const int available = std::min(durable->size(), kMaxProducts);
 		ws.product_durable.assign(static_cast<std::size_t>(available), 0);
 		for (int index = 0; index < available; ++index) {
 			ws.product_durable[static_cast<std::size_t>(index)] =
 				read_scalar_bool((*durable)[index], false) ? 1 : 0;
 		}
 	}
-	// Índice derivado: mesmo critério de demo_set_goods (nome vazio não entra,
+	// Índice derivado: mesmo critério de set_goods (nome vazio não entra,
 	// só os `products` ativos).
 	ws.product_lookup.clear();
 	const int active = std::clamp(ws.products, 0,
@@ -227,18 +227,18 @@ void products_from(WorldState& ws, const Value& block) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Receitas (recipes.json -> demo_set_recipes)
+// 2. Receitas (recipes.json -> set_recipes)
 // ---------------------------------------------------------------------------
 
 Value recipes_to(const WorldState& ws) {
 	Value out = empty_array();
-	for (const DemoRecipe& recipe : ws.recipes) {
+	for (const Recipe& recipe : ws.recipes) {
 		Value entry;
 		entry["id"] = Value(recipe.id);
 		entry["output"] = Value(recipe.output);
 		entry["yield"] = Value(recipe.yield);
 		const int input_count = std::clamp(recipe.input_count, 0,
-			kDemoMaxRecipeInputs);
+			kMaxRecipeInputs);
 		entry["input_count"] = Value(input_count);
 		Value inputs = empty_array();
 		for (int slot = 0; slot < input_count; ++slot) {
@@ -249,7 +249,7 @@ Value recipes_to(const WorldState& ws) {
 		}
 		entry["inputs"] = inputs;
 		const int byproduct_count = std::clamp(recipe.byproduct_count, 0,
-			kDemoMaxRecipeInputs);
+			kMaxRecipeInputs);
 		entry["byproduct_count"] = Value(byproduct_count);
 		Value byproducts = empty_array();
 		for (int slot = 0; slot < byproduct_count; ++slot) {
@@ -264,7 +264,7 @@ Value recipes_to(const WorldState& ws) {
 		entry["wage"] = Value(recipe.wage);
 		entry["opex_per_ton"] = Value(recipe.opex_per_ton);
 		entry["education_mix"] = array_of(recipe.education_mix,
-			kDemoEducationLevels);
+			kEducationLevels);
 		out.append(entry);
 	}
 	return out;
@@ -279,7 +279,7 @@ void recipes_from(WorldState& ws, const Value& array) {
 			continue;
 		}
 		// Defaults do struct preservados no que o JSON não trouxer.
-		DemoRecipe recipe;
+		Recipe recipe;
 		recipe.id = read_string(entry, "id");
 		recipe.output = read_int(entry, "output", recipe.output);
 		recipe.yield = read_double(entry, "yield", recipe.yield);
@@ -291,7 +291,7 @@ void recipes_from(WorldState& ws, const Value& array) {
 		recipe.opex_per_ton = read_double(entry, "opex_per_ton",
 			recipe.opex_per_ton);
 		if (const Value* mix = read_array(entry, "education_mix")) {
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				recipe.education_mix[level] = read_scalar_double((*mix)[level],
 					recipe.education_mix[level]);
 			}
@@ -304,7 +304,7 @@ void recipes_from(WorldState& ws, const Value& array) {
 			const int available = inputs->size();
 			int input_count = declared_inputs >= 0
 				? std::min(declared_inputs, available) : available;
-			input_count = std::clamp(input_count, 0, kDemoMaxRecipeInputs);
+			input_count = std::clamp(input_count, 0, kMaxRecipeInputs);
 			recipe.input_count = input_count;
 			for (int slot = 0; slot < input_count; ++slot) {
 				const Value& item = (*inputs)[slot];
@@ -318,7 +318,7 @@ void recipes_from(WorldState& ws, const Value& array) {
 			int byproduct_count = declared_byproducts >= 0
 				? std::min(declared_byproducts, available) : available;
 			byproduct_count = std::clamp(byproduct_count, 0,
-				kDemoMaxRecipeInputs);
+				kMaxRecipeInputs);
 			recipe.byproduct_count = byproduct_count;
 			for (int slot = 0; slot < byproduct_count; ++slot) {
 				const Value& item = (*byproducts)[slot];
@@ -327,14 +327,14 @@ void recipes_from(WorldState& ws, const Value& array) {
 			}
 		}
 		ws.recipes.push_back(std::move(recipe));
-		// Índice derivado: mesmo esquema de demo_set_recipes (id -> posição).
-		const DemoRecipe& stored = ws.recipes.back();
+		// Índice derivado: mesmo esquema de set_recipes (id -> posição).
+		const Recipe& stored = ws.recipes.back();
 		ws.recipe_lookup[stored.id] = static_cast<int>(ws.recipes.size()) - 1;
 	}
 }
 
 // ---------------------------------------------------------------------------
-// 3. Necessidades (needs.json -> demo_set_needs)
+// 3. Necessidades (needs.json -> set_needs)
 // ---------------------------------------------------------------------------
 
 Value needs_to(const WorldState& ws) {
@@ -343,13 +343,13 @@ Value needs_to(const WorldState& ws) {
 	out["food_level"] = Value(ws.needs_food_level);
 	out["durable_decay"] = Value(ws.durable_decay);
 	Value levels = empty_array();
-	for (const DemoNeedsLevel& level : ws.needs_levels) {
+	for (const NeedsLevel& level : ws.needs_levels) {
 		Value entry;
 		entry["id"] = Value(level.id);
 		entry["priority"] = Value(level.priority);
 		entry["weight"] = Value(level.weight);
 		Value categories = empty_array();
-		for (const DemoNeedsCategory& category : level.categories) {
+		for (const NeedsCategory& category : level.categories) {
 			Value item;
 			item["id"] = Value(category.id);
 			item["per_capita_day"] = Value(category.per_capita_day);
@@ -385,15 +385,15 @@ void needs_from(WorldState& ws, const Value& block) {
 		ws.government_per_capita_day = read_double_vector(*array);
 	}
 	if (const Value* levels = read_array(block, "levels")) {
-		std::vector<DemoNeedsLevel> parsed;
-		const int available = std::min(levels->size(), kDemoMaxNeedsLevels);
+		std::vector<NeedsLevel> parsed;
+		const int available = std::min(levels->size(), kMaxNeedsLevels);
 		parsed.reserve(static_cast<std::size_t>(available));
 		for (int index = 0; index < available; ++index) {
 			const Value& entry = (*levels)[index];
 			if (entry.get_type() != Value::DICTIONARY) {
 				continue;
 			}
-			DemoNeedsLevel level;
+			NeedsLevel level;
 			level.id = read_string(entry, "id");
 			level.priority = read_int(entry, "priority", level.priority);
 			level.weight = read_double(entry, "weight", level.weight);
@@ -403,7 +403,7 @@ void needs_from(WorldState& ws, const Value& block) {
 					if (source.get_type() != Value::DICTIONARY) {
 						continue;
 					}
-					DemoNeedsCategory category;
+					NeedsCategory category;
 					category.id = read_string(source, "id");
 					category.per_capita_day = read_double(source,
 						"per_capita_day", category.per_capita_day);
@@ -425,7 +425,7 @@ void needs_from(WorldState& ws, const Value& block) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Serviços (services.json -> demo_set_services)
+// 4. Serviços (services.json -> set_services)
 // ---------------------------------------------------------------------------
 
 Value services_to(const WorldState& ws) {
@@ -433,7 +433,7 @@ Value services_to(const WorldState& ws) {
 	out["loaded"] = Value(ws.services_loaded);
 	out["government_share"] = Value(ws.service_government_share);
 	Value sectors = empty_array();
-	for (const DemoServiceSector& sector : ws.service_sectors) {
+	for (const ServiceSector& sector : ws.service_sectors) {
 		Value entry;
 		entry["id"] = Value(sector.id);
 		entry["name_pt"] = Value(sector.name_pt);
@@ -441,12 +441,12 @@ Value services_to(const WorldState& ws) {
 		entry["name_es"] = Value(sector.name_es);
 		entry["icon"] = Value(sector.icon);
 		entry["price"] = Value(sector.price);
-		entry["pop_share"] = array_of(sector.pop_share, kDemoMaxNeedsLevels);
+		entry["pop_share"] = array_of(sector.pop_share, kMaxNeedsLevels);
 		entry["business_share"] = Value(sector.business_share);
 		entry["freight_share"] = Value(sector.freight_share);
 		entry["government_share"] = Value(sector.government_share);
 		Value inputs = empty_array();
-		for (const DemoServiceSector::Input& input : sector.inputs) {
+		for (const ServiceSector::Input& input : sector.inputs) {
 			Value item;
 			item["product"] = Value(input.product);
 			item["qty"] = Value(input.qty);
@@ -458,7 +458,7 @@ Value services_to(const WorldState& ws) {
 		entry["service_inputs"] = array_of(sector.service_inputs);
 		entry["service_input_qty"] = array_of(sector.service_input_qty);
 		entry["education_mix"] = array_of(sector.education_mix,
-			kDemoEducationLevels);
+			kEducationLevels);
 		entry["jobs_per_unit"] = Value(sector.jobs_per_unit);
 		entry["capital_per_unit"] = Value(sector.capital_per_unit);
 		entry["min_capacity"] = Value(sector.min_capacity);
@@ -478,13 +478,13 @@ void services_from(WorldState& ws, const Value& block) {
 	ws.service_government_share = read_double(block, "government_share",
 		ws.service_government_share);
 	if (const Value* sectors = read_array(block, "sectors")) {
-		std::vector<DemoServiceSector> parsed;
+		std::vector<ServiceSector> parsed;
 		for (int index = 0; index < sectors->size(); ++index) {
 			const Value& entry = (*sectors)[index];
 			if (entry.get_type() != Value::DICTIONARY) {
 				continue;
 			}
-			DemoServiceSector sector;
+			ServiceSector sector;
 			sector.id = read_string(entry, "id");
 			sector.name_pt = read_string(entry, "name_pt");
 			sector.name_en = read_string(entry, "name_en");
@@ -492,7 +492,7 @@ void services_from(WorldState& ws, const Value& block) {
 			sector.icon = read_string(entry, "icon");
 			sector.price = read_double(entry, "price", sector.price);
 			if (const Value* shares = read_array(entry, "pop_share")) {
-				for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+				for (int level = 0; level < kMaxNeedsLevels; ++level) {
 					sector.pop_share[level] = read_scalar_double(
 						(*shares)[level], sector.pop_share[level]);
 				}
@@ -509,7 +509,7 @@ void services_from(WorldState& ws, const Value& block) {
 					if (item.get_type() != Value::DICTIONARY) {
 						continue;
 					}
-					DemoServiceSector::Input input;
+					ServiceSector::Input input;
 					input.product = read_int(item, "product", input.product);
 					input.qty = read_double(item, "qty", input.qty);
 					sector.inputs.push_back(input);
@@ -524,7 +524,7 @@ void services_from(WorldState& ws, const Value& block) {
 				sector.service_input_qty = read_double_vector(*service_qty);
 			}
 			if (const Value* mix = read_array(entry, "education_mix")) {
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					sector.education_mix[level] = read_scalar_double(
 						(*mix)[level], sector.education_mix[level]);
 				}
@@ -548,7 +548,7 @@ void services_from(WorldState& ws, const Value& block) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Emprego por setor (sector_employment.json -> demo_set_sector_employment)
+// 5. Emprego por setor (sector_employment.json -> set_sector_employment)
 //    + parâmetros agri/industry do WorldState
 // ---------------------------------------------------------------------------
 
@@ -556,7 +556,7 @@ Value employment_to(const WorldState& ws) {
 	Value out;
 	out["loaded"] = Value(ws.sector_loaded);
 	Value anchors = empty_array();
-	for (const DemoSectorAnchor& anchor : ws.sector_anchors) {
+	for (const SectorAnchor& anchor : ws.sector_anchors) {
 		Value entry;
 		entry["income"] = Value(anchor.income);
 		entry["agriculture"] = Value(anchor.agriculture);
@@ -592,14 +592,14 @@ void employment_from(WorldState& ws, const Value& block) {
 	ws.industry_labor_exponent = read_double(block, "industry_labor_exponent",
 		ws.industry_labor_exponent);
 	if (const Value* anchors = read_array(block, "anchors")) {
-		std::vector<DemoSectorAnchor> parsed;
+		std::vector<SectorAnchor> parsed;
 		parsed.reserve(static_cast<std::size_t>(anchors->size()));
 		for (int index = 0; index < anchors->size(); ++index) {
 			const Value& entry = (*anchors)[index];
 			if (entry.get_type() != Value::DICTIONARY) {
 				continue;
 			}
-			DemoSectorAnchor anchor;
+			SectorAnchor anchor;
 			anchor.income = read_double(entry, "income", anchor.income);
 			anchor.agriculture = read_double(entry, "agriculture",
 				anchor.agriculture);
@@ -612,7 +612,7 @@ void employment_from(WorldState& ws, const Value& block) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Parâmetros de balanceamento do WorldState (demo_set_balance)
+// 6. Parâmetros de balanceamento do WorldState (set_balance)
 // ---------------------------------------------------------------------------
 
 Value balance_to(const WorldState& ws) {

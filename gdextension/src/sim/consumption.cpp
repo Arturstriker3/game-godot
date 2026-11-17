@@ -13,19 +13,19 @@
 #include <cmath>
 
 namespace ogs {
-void SimCore::demo_init_pop_needs(DemoPop& pop) const {
-	if (pop.level_want.size() != kDemoMaxNeedsLevels) {
-		pop.level_want.assign(kDemoMaxNeedsLevels, 0.0);
+void SimCore::init_pop_needs(Pop& pop) const {
+	if (pop.level_want.size() != kMaxNeedsLevels) {
+		pop.level_want.assign(kMaxNeedsLevels, 0.0);
 	}
-	if (pop.level_consumed.size() != kDemoMaxNeedsLevels) {
-		pop.level_consumed.assign(kDemoMaxNeedsLevels, 0.0);
+	if (pop.level_consumed.size() != kMaxNeedsLevels) {
+		pop.level_consumed.assign(kMaxNeedsLevels, 0.0);
 	}
-	if (pop.level_satisfaction.size() != kDemoMaxNeedsLevels) {
-		pop.level_satisfaction.assign(kDemoMaxNeedsLevels, 0.0);
+	if (pop.level_satisfaction.size() != kMaxNeedsLevels) {
+		pop.level_satisfaction.assign(kMaxNeedsLevels, 0.0);
 	}
 	// F7: gasto por nível (custo unitário da cesta para o teto de renda).
-	if (pop.level_spend.size() != kDemoMaxNeedsLevels) {
-		pop.level_spend.assign(kDemoMaxNeedsLevels, 0.0);
+	if (pop.level_spend.size() != kMaxNeedsLevels) {
+		pop.level_spend.assign(kMaxNeedsLevels, 0.0);
 	}
 	// `resize` preserva o prefixo: um bem novo não zera o estoque durável.
 	if (pop.durable_stock.size() != static_cast<std::size_t>(std::max(0, ws_.products))) {
@@ -55,14 +55,14 @@ void SimCore::phase_income() {
 	auto process_city = [this, &scratch, n_products](
 			std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
-			DemoCity& city = ws_.cities[city_index];
-		DemoPop& pop = city.pop;
+			City& city = ws_.cities[city_index];
+		Pop& pop = city.pop;
 		pop.capital_income = city.capital_income_next;
 		city.capital_income_next = 0.0;
-		pop.taxes = (pop.wage_income + pop.capital_income) * kDemoTaxRate;
+		pop.taxes = (pop.wage_income + pop.capital_income) * kTaxRate;
 		// Orçamento público equilibrado: tudo o que é arrecadado volta como
 		// transferência. Sem isso, o governo acumula receita e drena demanda.
-		pop.transfers = pop.taxes * kDemoTransferShare;
+		pop.transfers = pop.taxes * kTransferShare;
 		pop.disposable = std::max(0.0,
 			pop.wage_income + pop.capital_income + pop.transfers - pop.taxes);
 		// Renda externa (serviços urbanos/pesca/turismo): o resto do mundo paga
@@ -74,13 +74,13 @@ void SimCore::phase_income() {
 		// declarado (cenário sintético, save antigo) mantém a média (1,0).
 		//
 		// F7 calibração: é um PISO DE SUBSISTÊNCIA, então o índice é limitado à
-		// média mundial (kDemoExternalIncomeIndexCap). Escalado até o topo, esse
+		// média mundial (kExternalIncomeIndexCap). Escalado até o topo, esse
 		// bloco sozinho pagava 3× a cesta completa das famílias dos EUA/DEU e
 		// punha o mundo inteiro no nível luxury. A renda acima da subsistência
 		// vem do valor adicionado (salário + lucro), medido na cidade.
 		pop.external_income = city.simulation_population
-			* kDemoExternalIncomePerCapita
-			* std::min(city.external_income_index, kDemoExternalIncomeIndexCap);
+			* kExternalIncomePerCapita
+			* std::min(city.external_income_index, kExternalIncomeIndexCap);
 		pop.disposable += pop.external_income;
 		scratch.foreign[city_index] += pop.external_income;
 
@@ -92,11 +92,11 @@ void SimCore::phase_income() {
 		// subestimava em 3-4× o custo do grão da prateleira; a cidade comprava
 		// só uma fração da necessidade mesmo gastando todo o orçamento
 		// (NGA-LAG, SYR-DAM, SOL-HAR em 365 d).
-		pop.need = city.simulation_population * kDemoNeedPerCapita;
+		pop.need = city.simulation_population * kNeedPerCapita;
 		double food_local_cost = 0.0;
 		double food_import_cost = 0.0;
 		double food_unit_cost = 0.0;
-		demo_food_basket_cost(city, pop.need, food_local_cost, food_import_cost,
+		food_basket_cost(city, pop.need, food_local_cost, food_import_cost,
 			food_unit_cost);
 
 		// A renda externa é renda de subsistência: o gasto discricionário em
@@ -114,7 +114,7 @@ void SimCore::phase_income() {
 		// satisfação de ontem: cidade nova (sem comida comprada ainda) não pode
 		// cair num laço de "sem serviço → sem renda → sem comida".
 		const double basket_cost = pop.need * food_unit_cost
-			* kDemoServiceFoodGuardDays;
+			* kServiceFoodGuardDays;
 		const double domestic_income =
 			std::max(0.0, pop.disposable - pop.external_income);
 		double service_base = domestic_income;
@@ -122,7 +122,7 @@ void SimCore::phase_income() {
 				< basket_cost) {
 			service_base = std::max(0.0, domestic_income - basket_cost);
 		}
-		pop.service_spend = service_base * kDemoServiceSpendShare;
+		pop.service_spend = service_base * kServiceSpendShare;
 		city.service_cash += pop.service_spend;
 		city.government_budget += pop.taxes - pop.transfers;
 
@@ -133,13 +133,13 @@ void SimCore::phase_income() {
 		// (o dinheiro é conservado); o que muda por estrato é QUEM pode comprar
 		// cada nível de cesta.
 		double stratum_pop_sum = 0.0;
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			stratum_pop_sum += std::max(0.0, pop.stratum_population[level]);
 		}
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			const double share = stratum_pop_sum > 1e-9
 				? std::max(0.0, pop.stratum_population[level]) / stratum_pop_sum
-				: 1.0 / double(kDemoEducationLevels);
+				: 1.0 / double(kEducationLevels);
 			pop.stratum_wage_income[level] = pop.wage_income_by_level[level];
 			pop.stratum_external_income[level] = pop.external_income * share;
 			pop.stratum_capital_income[level] = 0.0;
@@ -150,15 +150,15 @@ void SimCore::phase_income() {
 		// Lucro (renda de capital) só para os donos: o estrato de escolaridade
 		// superior. Dividi-lo igualmente entre toda a POP é o que fazia
 		// 832/834 cidades caírem no nível máximo de consumo.
-		pop.stratum_capital_income[kDemoEducationLevels - 1] =
+		pop.stratum_capital_income[kEducationLevels - 1] =
 			std::max(0.0, pop.capital_income);
-		pop.stratum_disposable[kDemoEducationLevels - 1] +=
+		pop.stratum_disposable[kEducationLevels - 1] +=
 			std::max(0.0, pop.capital_income);
 
 		// F7 calibração — classes de consumo do dia (Gini declarado) ou espelho
 		// dos estratos de escolaridade (legado). O teto de consumo de hoje usa
 		// a classe; no caminho legado, o nível do estrato veio de ontem.
-		demo_refresh_income_classes(city);
+		refresh_income_classes(city);
 
 		double budget = pop.savings + pop.disposable - pop.service_spend;
 		// Subsídio de subsistência: o governo garante a cesta alimentar mínima
@@ -202,18 +202,18 @@ void SimCore::phase_income() {
 		double total_avail = 0.0;
 		std::vector<double> avail_ge(ws_.food_products.size(), 0.0);
 		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-			const int product = demo_food_product(slot);
-			avail_ge[slot] = city.markets[product].stock * demo_food_calories(product);
+			const int product = food_product(slot);
+			avail_ge[slot] = city.markets[product].stock * food_calories(product);
 			total_avail += avail_ge[slot];
 		}
 		double remaining_need = pop.need;
 		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()) && remaining_need > 1e-12; ++slot) {
-			const int product = demo_food_product(slot);
-			const double factor = demo_food_calories(product);
+			const int product = food_product(slot);
+			const double factor = food_calories(product);
 			if (factor <= 0.0) {
 				continue;
 			}
-			DemoMarket& market = city.markets[product];
+			Market& market = city.markets[product];
 			const double price = market.price;
 			if (price <= 0.0) {
 				continue;
@@ -267,7 +267,7 @@ void SimCore::phase_income() {
 				city.simulation_population
 					/ std::max(city.pop.labor_force, 1e-9), 1.0, 6.0);
 			const double household_need = city.sector_workers[0]
-				* farm_household_size * kDemoNeedPerCapita;
+				* farm_household_size * kNeedPerCapita;
 			const double own_production = city.agri_output_tons
 				* ws_.agri_own_consumption_share;
 			in_kind = std::min(
@@ -275,12 +275,12 @@ void SimCore::phase_income() {
 			double left = in_kind;
 			for (int slot = 0; slot < static_cast<int>(ws_.food_products.size())
 					&& left > 1e-12; ++slot) {
-				const int product = demo_food_product(slot);
-				const double factor = demo_food_calories(product);
+				const int product = food_product(slot);
+				const double factor = food_calories(product);
 				if (factor <= 0.0) {
 					continue;
 				}
-				DemoMarket& market = city.markets[product];
+				Market& market = city.markets[product];
 				const double available = std::max(0.0, market.stock * factor);
 				const double take = std::min(left, available);
 				if (take <= 1e-12) {
@@ -338,12 +338,12 @@ void SimCore::phase_income() {
 				}
 			}
 			// Reserva de alimento: a POP só compra life/luxury com a poupança
-			// acima de kDemoFoodReserveDays de cesta. Isso preserva a capacidade
+			// acima de kFoodReserveDays de cesta. Isso preserva a capacidade
 			// de importar comida em nações sem terra (o alimento continua sendo
 			// a primeira prioridade do orçamento).
 			double needs_budget = budget;
 			if (food_unit_cost > 0.0) {
-				const double reserve = pop.need * kDemoFoodReserveDays * food_unit_cost;
+				const double reserve = pop.need * kFoodReserveDays * food_unit_cost;
 				// Protege no máximo a poupança existente: se ela já é menor que
 				// o colchão, a renda corrente do dia continua disponível.
 				const double protected_savings =
@@ -368,13 +368,13 @@ void SimCore::phase_income() {
 			// escolaridade (legado). É ela que define o desejo e o teto de
 			// compra de cada nível.
 			double class_total = 0.0;
-			for (int cls = 0; cls < kDemoEducationLevels; ++cls) {
+			for (int cls = 0; cls < kEducationLevels; ++cls) {
 				class_total += std::max(0.0, pop.class_population[cls]);
 			}
 			for (int level_index = 0;
 					level_index < static_cast<int>(ws_.needs_levels.size())
-					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
-				const DemoNeedsLevel& level =
+					&& level_index < kMaxNeedsLevels; ++level_index) {
+				const NeedsLevel& level =
 					ws_.needs_levels[static_cast<std::size_t>(level_index)];
 				// F7: a renda define o nível de consumo POR ESTRATO. O básico é
 				// sempre prioridade de todos; life/luxury só são comprados pelo
@@ -387,7 +387,7 @@ void SimCore::phase_income() {
 				if (level_index == 0) {
 					pop.level_spend[0] += food_spend;
 				}
-				for (int cls = 0; cls < kDemoEducationLevels; ++cls) {
+				for (int cls = 0; cls < kEducationLevels; ++cls) {
 					const double class_pop =
 						std::max(0.0, pop.class_population[cls]);
 					if (class_pop <= 1e-9) {
@@ -395,10 +395,10 @@ void SimCore::phase_income() {
 					}
 					const double class_share = class_total > 1e-9
 						? class_pop / class_total
-						: 1.0 / double(kDemoEducationLevels);
+						: 1.0 / double(kEducationLevels);
 					const bool affordable = level_index == 0
 						|| level_index + 1 <= pop.class_income_level[cls];
-					for (const DemoNeedsCategory& category : level.categories) {
+					for (const NeedsCategory& category : level.categories) {
 						// A cesta alimentar básica tem laço próprio (validado) e
 						// já foi consumida acima; reaproveita `pop.need/consumed`
 						// para não cobrar duas vezes a mesma refeição.
@@ -415,10 +415,10 @@ void SimCore::phase_income() {
 							// Renda insuficiente: não compra (o consumo efetivo
 							// respeita a renda), mas a NECESSIDADE entra no
 							// mercado como desejo — o sinal de escassez da IA.
-							demo_register_category_demand(city, category, want_ge);
+							register_category_demand(city, category, want_ge);
 							continue;
 						}
-						level_got += demo_consume_category(
+						level_got += consume_category(
 							city, category, want_ge, needs_budget, needs_spent,
 							scratch, city_index);
 					}
@@ -439,14 +439,14 @@ void SimCore::phase_income() {
 			// F8: gancho de saúde privada. A cobertura (0..1) soma um pequeno
 			// bônus de satisfação; o serviço público fica para a F9.
 			pop.needs_satisfaction = std::clamp(pop.needs_satisfaction
-				+ kDemoServiceHealthSatisfactionBonus * city.private_health_cover,
+				+ kServiceHealthSatisfactionBonus * city.private_health_cover,
 				0.0, 1.0);
 			// Nível alcançado = maior nível com pelo menos metade da cesta,
 			// exigindo os níveis anteriores (basic → life → luxury).
 			pop.needs_level = 0;
 			for (int level_index = 0;
 					level_index < static_cast<int>(ws_.needs_levels.size())
-					&& level_index < kDemoMaxNeedsLevels; ++level_index) {
+					&& level_index < kMaxNeedsLevels; ++level_index) {
 				if (pop.level_satisfaction[level_index] >= 0.5) {
 					pop.needs_level = level_index + 1;
 				} else {
@@ -465,22 +465,22 @@ void SimCore::phase_income() {
 			// F7 calibração — GATE LEGADO por estrato. Continua sendo calculado
 			// sempre (o campo `income_level_by_stratum` é lido pela UI/painel);
 			// com Gini declarado ele NÃO define o consumo — a classe ancorada no
-			// PIB PPP define (`demo_refresh_income_classes`).
+			// PIB PPP define (`refresh_income_classes`).
 			{
-				double cumulative_cost[kDemoMaxNeedsLevels] = {};
+				double cumulative_cost[kMaxNeedsLevels] = {};
 				double running_cost = 0.0;
-				// `demo_level_basket_cost` devolve o custo da CIDADE INTEIRA; o gate
+				// `level_basket_cost` devolve o custo da CIDADE INTEIRA; o gate
 				// de renda compara com a renda PER CAPITA do estrato, então o custo
 				// é normalizado pela população.
 				const double basket_population =
 					std::max(1e-9, city.simulation_population);
 				for (int level_index = 0;
 						level_index < static_cast<int>(ws_.needs_levels.size())
-						&& level_index < kDemoMaxNeedsLevels; ++level_index) {
-					running_cost += demo_level_basket_cost(city, level_index);
+						&& level_index < kMaxNeedsLevels; ++level_index) {
+					running_cost += level_basket_cost(city, level_index);
 					cumulative_cost[level_index] = running_cost / basket_population;
 				}
-				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 					const double stratum_pop =
 						std::max(0.0, pop.stratum_population[stratum]);
 					const double per_capita = stratum_pop > 1e-9
@@ -489,7 +489,7 @@ void SimCore::phase_income() {
 					int income_level = 0;
 					for (int level_index = 0;
 							level_index < static_cast<int>(ws_.needs_levels.size())
-							&& level_index < kDemoMaxNeedsLevels; ++level_index) {
+							&& level_index < kMaxNeedsLevels; ++level_index) {
 						if (per_capita + 1e-12
 								>= cumulative_cost[level_index]
 									* ws_.income_basket_margin) {
@@ -503,7 +503,7 @@ void SimCore::phase_income() {
 				// Sem Gini (legado), o gate de amanhã é o cap de classe; com
 				// Gini, os caps vêm da distribuição e não são sobrescritos.
 				if (city.income_gini <= 0.0) {
-					demo_refresh_income_classes(city);
+					refresh_income_classes(city);
 				}
 			}
 			// Agregado da cidade: o nível mediano (a maior parte da POP) — é o
@@ -513,18 +513,18 @@ void SimCore::phase_income() {
 			int median_level = 0;
 			bool median_found = false;
 			const double city_population = city.simulation_population;
-			for (int level_index = 0; level_index < kDemoIncomeLevels;
+			for (int level_index = 0; level_index < kIncomeLevels;
 					++level_index) {
 				pop.income_level_share[level_index] = 0.0;
 			}
-			for (int cls = 0; cls < kDemoEducationLevels; ++cls) {
+			for (int cls = 0; cls < kEducationLevels; ++cls) {
 				const int reached = pop.class_income_level[cls];
-				if (reached >= 0 && reached < kDemoIncomeLevels) {
+				if (reached >= 0 && reached < kIncomeLevels) {
 					pop.income_level_share[reached] +=
 						std::max(0.0, pop.class_population[cls]);
 				}
 			}
-			for (int level_index = 0; level_index < kDemoIncomeLevels;
+			for (int level_index = 0; level_index < kIncomeLevels;
 					++level_index) {
 				const double share = city_population > 1e-9
 					? pop.income_level_share[level_index] / city_population : 0.0;
@@ -547,14 +547,14 @@ void SimCore::phase_income() {
 			pop.level_consumed[0] = pop.consumed;
 			pop.level_satisfaction[0] = pop.satisfaction;
 			pop.needs_level = pop.satisfaction >= 0.5 ? 1 : 0;
-			for (int level_index = 0; level_index < kDemoIncomeLevels;
+			for (int level_index = 0; level_index < kIncomeLevels;
 					++level_index) {
 				pop.income_level_share[level_index] = 0.0;
 			}
 			pop.income_level_share[pop.income_level] = 1.0;
 		}
 		// Consumo institucional do Estado (paper/computer) — decisão §12.10.
-		demo_consume_government(city, scratch, city_index);
+		consume_government(city, scratch, city_index);
 		pop.savings = budget;
 		}
 	};
@@ -571,19 +571,19 @@ void SimCore::phase_income() {
 		}
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseIncome);
+	OGS_SIM_PHASE_LAP(kPhaseIncome);
 }
-double SimCore::demo_level_basket_cost(const DemoCity& city,
+double SimCore::level_basket_cost(const City& city,
 		int level_index) const {
 	if (level_index < 0
 			|| level_index >= static_cast<int>(ws_.needs_levels.size())) {
 		return 0.0;
 	}
-	const DemoNeedsLevel& level =
+	const NeedsLevel& level =
 		ws_.needs_levels[static_cast<std::size_t>(level_index)];
 	const double population = std::max(0.0, city.simulation_population);
 	double cost = 0.0;
-	for (const DemoNeedsCategory& category : level.categories) {
+	for (const NeedsCategory& category : level.categories) {
 		double want = category.per_capita_day * population;
 		if (want <= 0.0) {
 			continue;
@@ -634,26 +634,26 @@ double SimCore::demo_level_basket_cost(const DemoCity& city,
 	}
 	return cost;
 }
-void SimCore::demo_food_basket_cost(const DemoCity& city, double need,
+void SimCore::food_basket_cost(const City& city, double need,
 		double& local_cost, double& import_cost, double& per_ge) const {
 	local_cost = 0.0;
 	import_cost = 0.0;
 	per_ge = 0.0;
 	const int slots = std::min(
-		static_cast<int>(ws_.food_products.size()), kDemoMaxFoodProducts);
+		static_cast<int>(ws_.food_products.size()), kMaxFoodProducts);
 	if (slots <= 0) {
 		return;
 	}
 	// Uma passada: guarda a disponibilidade e o preço por tonelada-equivalente
 	// de cada slot (evita repetir a busca de fator calórico, que é O(slots)).
-	double stock_ge[kDemoMaxFoodProducts];
-	double unit_price[kDemoMaxFoodProducts];
+	double stock_ge[kMaxFoodProducts];
+	double unit_price[kMaxFoodProducts];
 	double total_avail = 0.0;
 	double cheapest = 0.0;
 	double cheapest_import = 0.0;
 	for (int slot = 0; slot < slots; ++slot) {
-		const int product = demo_food_product(slot);
-		const double factor = demo_food_calories(product);
+		const int product = food_product(slot);
+		const double factor = food_calories(product);
 		stock_ge[slot] = 0.0;
 		unit_price[slot] = 0.0;
 		if (factor <= 0.0) {
@@ -708,8 +708,8 @@ void SimCore::demo_food_basket_cost(const DemoCity& city, double need,
 	import_cost = residual * cheapest_import;
 	per_ge = (local_cost + import_cost) / need;
 }
-bool SimCore::demo_category_top_market(DemoCity& city,
-		const DemoNeedsCategory& category, DemoMarket*& market, double& factor,
+bool SimCore::category_top_market(City& city,
+		const NeedsCategory& category, Market*& market, double& factor,
 		double& durable_scale) {
 	// Substituto PREFERIDO da categoria: o primeiro com preço de mercado e
 	// equivalência válidas. É nele que o desejo da categoria é registrado como
@@ -734,15 +734,15 @@ bool SimCore::demo_category_top_market(DemoCity& city,
 	}
 	return false;
 }
-void SimCore::demo_register_category_demand(DemoCity& city,
-		const DemoNeedsCategory& category, double want_ge) {
+void SimCore::register_category_demand(City& city,
+		const NeedsCategory& category, double want_ge) {
 	if (want_ge <= 0.0) {
 		return;
 	}
-	DemoMarket* market = nullptr;
+	Market* market = nullptr;
 	double factor = 0.0;
 	double durable_scale = 1.0;
-	if (!demo_category_top_market(city, category, market, factor, durable_scale)) {
+	if (!category_top_market(city, category, market, factor, durable_scale)) {
 		return;
 	}
 	if (durable_scale <= 0.0) {
@@ -750,7 +750,7 @@ void SimCore::demo_register_category_demand(DemoCity& city,
 	}
 	// Desejo declarado do tamanho da NECESSIDADE, independentemente de renda
 	// ou estoque: é o sinal que a IA lê (`market.shortage`) para abrir a
-	// cadeia do bem final. A compra efetiva fica na demo_consume_category e
+	// cadeia do bem final. A compra efetiva fica na consume_category e
 	// respeita orçamento e estoque; nada é comprado aqui. Como não há renda
 	// por trás, o valor entra também em `latent`: a IA vê a escassez, mas o
 	// preço não sobe por desejo sem poder de compra.
@@ -758,8 +758,8 @@ void SimCore::demo_register_category_demand(DemoCity& city,
 	market->desired += desired_tons;
 	market->latent += desired_tons;
 }
-double SimCore::demo_consume_category(DemoCity& city,
-		const DemoNeedsCategory& category, double want_ge, double& budget,
+double SimCore::consume_category(City& city,
+		const NeedsCategory& category, double want_ge, double& budget,
 		double& spend, CityAccumScratch& scratch, std::size_t city_index) {
 	if (want_ge <= 0.0 || category.substitutes.empty()) {
 		return 0.0;
@@ -769,10 +769,10 @@ double SimCore::demo_consume_category(DemoCity& city,
 	// lê; a compra abaixo é que respeita caixa e estoque. A parcela que o
 	// orçamento do dia não cobre entra em `latent` e não pressiona o preço.
 	{
-		DemoMarket* signal_market = nullptr;
+		Market* signal_market = nullptr;
 		double signal_factor = 0.0;
 		double signal_scale = 1.0;
-		if (demo_category_top_market(city, category, signal_market,
+		if (category_top_market(city, category, signal_market,
 				signal_factor, signal_scale) && signal_scale > 0.0) {
 			const double full_tons = want_ge / signal_factor * signal_scale;
 			const double backed_tons = std::min(full_tons,
@@ -794,7 +794,7 @@ double SimCore::demo_consume_category(DemoCity& city,
 		if (factor <= 0.0) {
 			continue;
 		}
-		DemoMarket& market = city.markets[product];
+		Market& market = city.markets[product];
 		const double price = market.price;
 		if (price <= 0.0) {
 			continue;
@@ -841,7 +841,7 @@ double SimCore::demo_consume_category(DemoCity& city,
 	}
 	return consumed_ge;
 }
-void SimCore::demo_consume_government(DemoCity& city,
+void SimCore::consume_government(City& city,
 		CityAccumScratch& scratch, std::size_t city_index) {
 	if (!ws_.needs_loaded || ws_.government_products.empty()) {
 		return;
@@ -852,8 +852,8 @@ void SimCore::demo_consume_government(DemoCity& city,
 	// sem terra (EGY 1,000 → 0,708 em 365 d).
 	double cheapest_food = 0.0;
 	for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-		const int product = demo_food_product(slot);
-		const double factor = demo_food_calories(product);
+		const int product = food_product(slot);
+		const double factor = food_calories(product);
 		if (factor <= 0.0) {
 			continue;
 		}
@@ -866,9 +866,9 @@ void SimCore::demo_consume_government(DemoCity& city,
 	double budget = std::max(0.0, city.government_budget);
 	if (cheapest_food > 0.0) {
 		const double food_value = city.simulation_population
-			* kDemoNeedPerCapita * cheapest_food;
+			* kNeedPerCapita * cheapest_food;
 		budget = std::min(budget,
-			food_value * kDemoGovernmentGoodsFoodShare);
+			food_value * kGovernmentGoodsFoodShare);
 	} else {
 		budget = std::min(budget, budget * 0.01);
 	}
@@ -886,7 +886,7 @@ void SimCore::demo_consume_government(DemoCity& city,
 		if (want <= 1e-12) {
 			continue;
 		}
-		DemoMarket& market = city.markets[product];
+		Market& market = city.markets[product];
 		const double price = market.price;
 		if (price <= 0.0) {
 			continue;

@@ -65,10 +65,10 @@ inline Density density_from_height_class(const String& height_class) {
 // §15: custo ainda não pago das obras de uma cidade para um dono ("state",
 // "private" ou o id de um grupo). Base do limite de comprometimento: o dono não
 // inicia obra nova cujo custo, somado ao já comprometido, estoura o caixa atual.
-inline double demo_committed_construction(const WorldState& ws,
+inline double committed_construction(const WorldState& ws,
 		const std::string& city_id, const std::string& owner) {
 	double committed = 0.0;
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city != city_id) {
 			continue;
 		}
@@ -99,7 +99,7 @@ inline double read_sim_population(const Dictionary& data, double population) {
 
 EconomySim::EconomySim() {
 	// Produtos padrão (21 primários) e cesta alimentar validada. O autoload
-	// sobrescreve ambos com goods.json/needs.json via demo_set_goods/needs.
+	// sobrescreve ambos com goods.json/needs.json via set_goods/needs.
 	ws_.products = 21;
 	ws_.product_names.clear();
 	ws_.product_names.reserve(21);
@@ -117,11 +117,11 @@ EconomySim::EconomySim() {
 	ws_.food_products.clear();
 	ws_.food_factors.clear();
 	for (int index = 0; index < 5; ++index) {
-		ws_.food_products.push_back(kDemoFoodProductIds[index]);
-		ws_.food_factors.push_back(kDemoCaloricFactor[index]);
+		ws_.food_products.push_back(kFoodProductIds[index]);
+		ws_.food_factors.push_back(kCaloricFactor[index]);
 	}
 	// F3: sem goods.json carregado nenhum dos 21 primários é durável.
-	ws_.product_durable.assign(kDemoMaxProducts, 0);
+	ws_.product_durable.assign(kMaxProducts, 0);
 }
 
 EconomySim::~EconomySim() {
@@ -130,179 +130,179 @@ EconomySim::~EconomySim() {
 	// contêineres do status: destruí-los debaixo de quem os escreve era um
 	// access violation (0xC0000005) intermitente no fim do processo. O mutex é
 	// recursivo, então a mesma thread do tick não bloqueia aqui.
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 }
 
 void EconomySim::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("initialize_demo"), &EconomySim::initialize_demo);
-	ClassDB::bind_method(D_METHOD("initialize_demo_world", "cities", "ports", "buildings"),
-	                     &EconomySim::initialize_demo_world);
-	ClassDB::bind_method(D_METHOD("tick_demo"), &EconomySim::tick_demo);
-	ClassDB::bind_method(D_METHOD("demo_tick_and_publish"), &EconomySim::demo_tick_and_publish);
-	ClassDB::bind_method(D_METHOD("demo_set_profiling", "enabled"),
-	                     &EconomySim::demo_set_profiling);
-	ClassDB::bind_method(D_METHOD("demo_set_sim_threads", "threads"),
-	                     &EconomySim::demo_set_sim_threads);
-	ClassDB::bind_method(D_METHOD("demo_get_profile"), &EconomySim::demo_get_profile);
-	ClassDB::bind_method(D_METHOD("demo_warm_status"), &EconomySim::demo_warm_status);
-	ClassDB::bind_method(D_METHOD("get_demo_status"), &EconomySim::get_demo_status);
+	ClassDB::bind_method(D_METHOD("initialize_scenario"), &EconomySim::initialize_scenario);
+	ClassDB::bind_method(D_METHOD("initialize_world", "cities", "ports", "buildings"),
+	                     &EconomySim::initialize_world);
+	ClassDB::bind_method(D_METHOD("tick_day"), &EconomySim::tick_day);
+	ClassDB::bind_method(D_METHOD("tick_and_publish"), &EconomySim::tick_and_publish);
+	ClassDB::bind_method(D_METHOD("set_profiling", "enabled"),
+	                     &EconomySim::set_profiling);
+	ClassDB::bind_method(D_METHOD("set_sim_threads", "threads"),
+	                     &EconomySim::set_sim_threads);
+	ClassDB::bind_method(D_METHOD("get_profile"), &EconomySim::get_profile);
+	ClassDB::bind_method(D_METHOD("warm_status"), &EconomySim::warm_status);
+	ClassDB::bind_method(D_METHOD("get_status"), &EconomySim::get_status);
 	ClassDB::bind_method(D_METHOD("get_city_status", "city_id"),
 	                     &EconomySim::get_city_status);
-	ClassDB::bind_method(D_METHOD("demo_price_shock", "product", "multiplier"),
-	                     &EconomySim::demo_price_shock);
-	ClassDB::bind_method(D_METHOD("demo_set_suitability", "city_id", "product", "value"),
-	                     &EconomySim::demo_set_suitability);
-	ClassDB::bind_method(D_METHOD("demo_set_deposit", "city_id", "product", "reserve_kt",
+	ClassDB::bind_method(D_METHOD("price_shock", "product", "multiplier"),
+	                     &EconomySim::price_shock);
+	ClassDB::bind_method(D_METHOD("set_suitability", "city_id", "product", "value"),
+	                     &EconomySim::set_suitability);
+	ClassDB::bind_method(D_METHOD("set_deposit", "city_id", "product", "reserve_kt",
 	                     "quality", "depth_m"),
-	                     &EconomySim::demo_set_deposit);
-	ClassDB::bind_method(D_METHOD("demo_set_external_demand", "city_id", "product",
+	                     &EconomySim::set_deposit);
+	ClassDB::bind_method(D_METHOD("set_external_demand", "city_id", "product",
 	                     "ceiling_t_per_day"),
-	                     &EconomySim::demo_set_external_demand);
-	ClassDB::bind_method(D_METHOD("demo_set_external_income_index", "city_id", "index"),
-	                     &EconomySim::demo_set_external_income_index);
-	ClassDB::bind_method(D_METHOD("demo_set_productivity_index", "city_id", "index"),
-	                     &EconomySim::demo_set_productivity_index);
-	ClassDB::bind_method(D_METHOD("demo_set_income_gini", "city_id", "gini"),
-	                     &EconomySim::demo_set_income_gini);
-	ClassDB::bind_method(D_METHOD("demo_set_labor_profile", "city_id", "profile"),
-	                     &EconomySim::demo_set_labor_profile);
-	ClassDB::bind_method(D_METHOD("demo_set_minimum_wage", "nation", "value"),
-	                     &EconomySim::demo_set_minimum_wage);
-	ClassDB::bind_method(D_METHOD("demo_set_wage_rigidity", "value"),
-	                     &EconomySim::demo_set_wage_rigidity);
-	ClassDB::bind_method(D_METHOD("demo_set_goods", "goods"),
-	                     &EconomySim::demo_set_goods);
-	ClassDB::bind_method(D_METHOD("demo_set_recipes", "recipes"),
-	                     &EconomySim::demo_set_recipes);
-	ClassDB::bind_method(D_METHOD("demo_set_needs", "needs"),
-	                     &EconomySim::demo_set_needs);
-	ClassDB::bind_method(D_METHOD("demo_set_services", "services"),
-	                     &EconomySim::demo_set_services);
-	ClassDB::bind_method(D_METHOD("demo_set_sector_employment", "data"),
-	                     &EconomySim::demo_set_sector_employment);
-	ClassDB::bind_method(D_METHOD("demo_set_urban", "urban_land", "housing_city",
+	                     &EconomySim::set_external_demand);
+	ClassDB::bind_method(D_METHOD("set_external_income_index", "city_id", "index"),
+	                     &EconomySim::set_external_income_index);
+	ClassDB::bind_method(D_METHOD("set_productivity_index", "city_id", "index"),
+	                     &EconomySim::set_productivity_index);
+	ClassDB::bind_method(D_METHOD("set_income_gini", "city_id", "gini"),
+	                     &EconomySim::set_income_gini);
+	ClassDB::bind_method(D_METHOD("set_labor_profile", "city_id", "profile"),
+	                     &EconomySim::set_labor_profile);
+	ClassDB::bind_method(D_METHOD("set_minimum_wage", "nation", "value"),
+	                     &EconomySim::set_minimum_wage);
+	ClassDB::bind_method(D_METHOD("set_wage_rigidity", "value"),
+	                     &EconomySim::set_wage_rigidity);
+	ClassDB::bind_method(D_METHOD("set_goods", "goods"),
+	                     &EconomySim::set_goods);
+	ClassDB::bind_method(D_METHOD("set_recipes", "recipes"),
+	                     &EconomySim::set_recipes);
+	ClassDB::bind_method(D_METHOD("set_needs", "needs"),
+	                     &EconomySim::set_needs);
+	ClassDB::bind_method(D_METHOD("set_services", "services"),
+	                     &EconomySim::set_services);
+	ClassDB::bind_method(D_METHOD("set_sector_employment", "data"),
+	                     &EconomySim::set_sector_employment);
+	ClassDB::bind_method(D_METHOD("set_urban", "urban_land", "housing_city",
 	                     "housing", "municipal_finance"),
-	                     &EconomySim::demo_set_urban);
-	ClassDB::bind_method(D_METHOD("demo_get_urban_city", "city_id"),
-	                     &EconomySim::demo_get_urban_city);
-	ClassDB::bind_method(D_METHOD("demo_urban_expand", "city_id", "zone", "km2"),
-	                     &EconomySim::demo_urban_expand);
-	ClassDB::bind_method(D_METHOD("demo_urban_densify", "city_id", "zone"),
-	                     &EconomySim::demo_urban_densify);
-	ClassDB::bind_method(D_METHOD("demo_urban_social_housing", "city_id", "units"),
-	                     &EconomySim::demo_urban_social_housing);
-	ClassDB::bind_method(D_METHOD("demo_set_instant_construction", "instant"),
-	                     &EconomySim::demo_set_instant_construction);
-	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
-	                     &EconomySim::demo_get_service_sectors);
-	ClassDB::bind_method(D_METHOD("demo_get_services_detail", "city_id"),
-	                     &EconomySim::demo_get_services_detail);
-	ClassDB::bind_method(D_METHOD("demo_set_service_capacity", "city_id", "sector",
+	                     &EconomySim::set_urban);
+	ClassDB::bind_method(D_METHOD("get_urban_city", "city_id"),
+	                     &EconomySim::get_urban_city);
+	ClassDB::bind_method(D_METHOD("urban_expand", "city_id", "zone", "km2"),
+	                     &EconomySim::urban_expand);
+	ClassDB::bind_method(D_METHOD("urban_densify", "city_id", "zone"),
+	                     &EconomySim::urban_densify);
+	ClassDB::bind_method(D_METHOD("urban_social_housing", "city_id", "units"),
+	                     &EconomySim::urban_social_housing);
+	ClassDB::bind_method(D_METHOD("set_instant_construction", "instant"),
+	                     &EconomySim::set_instant_construction);
+	ClassDB::bind_method(D_METHOD("get_service_sectors"),
+	                     &EconomySim::get_service_sectors);
+	ClassDB::bind_method(D_METHOD("get_services_detail", "city_id"),
+	                     &EconomySim::get_services_detail);
+	ClassDB::bind_method(D_METHOD("set_service_capacity", "city_id", "sector",
 	                     "units_per_day"),
-	                     &EconomySim::demo_set_service_capacity);
-	ClassDB::bind_method(D_METHOD("demo_set_service_business_state", "business_id",
+	                     &EconomySim::set_service_capacity);
+	ClassDB::bind_method(D_METHOD("set_service_business_state", "business_id",
 	                     "loss_days", "profit"),
-	                     &EconomySim::demo_set_service_business_state);
-	ClassDB::bind_method(D_METHOD("demo_get_service_business_count"),
-	                     &EconomySim::demo_get_service_business_count);
-	ClassDB::bind_method(D_METHOD("demo_get_service_bankruptcies"),
-	                     &EconomySim::demo_get_service_bankruptcies);
-	ClassDB::bind_method(D_METHOD("demo_seed_industry"),
-	                     &EconomySim::demo_seed_industry);
-	ClassDB::bind_method(D_METHOD("demo_invest", "city_id", "building_id", "amount"),
-	                     &EconomySim::demo_invest);
-	ClassDB::bind_method(D_METHOD("demo_build", "city_id", "building_id", "resource",
+	                     &EconomySim::set_service_business_state);
+	ClassDB::bind_method(D_METHOD("get_service_business_count"),
+	                     &EconomySim::get_service_business_count);
+	ClassDB::bind_method(D_METHOD("get_service_bankruptcies"),
+	                     &EconomySim::get_service_bankruptcies);
+	ClassDB::bind_method(D_METHOD("seed_industry"),
+	                     &EconomySim::seed_industry);
+	ClassDB::bind_method(D_METHOD("invest", "city_id", "building_id", "amount"),
+	                     &EconomySim::invest);
+	ClassDB::bind_method(D_METHOD("build", "city_id", "building_id", "resource",
 	                     "input_product", "output_product", "capacity", "jobs", "wage",
 	                     "opex", "input_per_output", "owner", "cost", "recipe_id"),
-	                     &EconomySim::demo_build, DEFVAL(""));
-	ClassDB::bind_method(D_METHOD("demo_spend_government", "city_id", "amount"),
-	                     &EconomySim::demo_spend_government);
-	ClassDB::bind_method(D_METHOD("demo_expand_port", "port_id", "t_per_day"),
-	                     &EconomySim::demo_expand_port);
-	ClassDB::bind_method(D_METHOD("demo_set_port_capacity", "port_id", "t_per_day"),
-	                     &EconomySim::demo_set_port_capacity);
-	ClassDB::bind_method(D_METHOD("demo_to_dict"), &EconomySim::demo_to_dict);
-	ClassDB::bind_method(D_METHOD("demo_from_dict", "data"), &EconomySim::demo_from_dict);
-	ClassDB::bind_method(D_METHOD("demo_to_snapshot"),
-	                     &EconomySim::demo_to_snapshot);
-	ClassDB::bind_method(D_METHOD("demo_from_snapshot", "snapshot"),
-	                     &EconomySim::demo_from_snapshot);
+	                     &EconomySim::build, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("spend_government", "city_id", "amount"),
+	                     &EconomySim::spend_government);
+	ClassDB::bind_method(D_METHOD("expand_port", "port_id", "t_per_day"),
+	                     &EconomySim::expand_port);
+	ClassDB::bind_method(D_METHOD("set_port_capacity", "port_id", "t_per_day"),
+	                     &EconomySim::set_port_capacity);
+	ClassDB::bind_method(D_METHOD("to_dict"), &EconomySim::to_dict);
+	ClassDB::bind_method(D_METHOD("from_dict", "data"), &EconomySim::from_dict);
+	ClassDB::bind_method(D_METHOD("to_snapshot"),
+	                     &EconomySim::to_snapshot);
+	ClassDB::bind_method(D_METHOD("from_snapshot", "snapshot"),
+	                     &EconomySim::from_snapshot);
 	// A1: as mesmas fotos, mas pelo serializador da biblioteca (round-trip
 	// IEEE-exato) — o snapshot não atravessa o JSON do Godot.
-	ClassDB::bind_method(D_METHOD("demo_to_snapshot_file", "path"),
-	                     &EconomySim::demo_to_snapshot_file);
-	ClassDB::bind_method(D_METHOD("demo_from_snapshot_file", "path"),
-	                     &EconomySim::demo_from_snapshot_file);
-	ClassDB::bind_method(D_METHOD("demo_set_balance", "values"),
-	                     &EconomySim::demo_set_balance);
-	ClassDB::bind_method(D_METHOD("demo_set_fleet", "nation", "trucks", "ships",
+	ClassDB::bind_method(D_METHOD("to_snapshot_file", "path"),
+	                     &EconomySim::to_snapshot_file);
+	ClassDB::bind_method(D_METHOD("from_snapshot_file", "path"),
+	                     &EconomySim::from_snapshot_file);
+	ClassDB::bind_method(D_METHOD("set_balance", "values"),
+	                     &EconomySim::set_balance);
+	ClassDB::bind_method(D_METHOD("set_fleet", "nation", "trucks", "ships",
 	                     "planes", "fuel", "spare_parts"),
-	                     &EconomySim::demo_set_fleet);
-	ClassDB::bind_method(D_METHOD("demo_get_fleet", "nation"),
-	                     &EconomySim::demo_get_fleet);
-	ClassDB::bind_method(D_METHOD("demo_fleet_buy", "nation", "product", "amount",
+	                     &EconomySim::set_fleet);
+	ClassDB::bind_method(D_METHOD("get_fleet", "nation"),
+	                     &EconomySim::get_fleet);
+	ClassDB::bind_method(D_METHOD("fleet_buy", "nation", "product", "amount",
 	                     "budget_share"),
-	                     &EconomySim::demo_fleet_buy, DEFVAL(0.1));
-	ClassDB::bind_method(D_METHOD("demo_set_market_stock", "city_id", "product", "stock"),
-	                     &EconomySim::demo_set_market_stock);
-	ClassDB::bind_method(D_METHOD("demo_set_market_price", "city_id", "product", "price"),
-	                     &EconomySim::demo_set_market_price);
-	ClassDB::bind_method(D_METHOD("demo_set_currencies", "currencies"),
-	                     &EconomySim::demo_set_currencies);
-	ClassDB::bind_method(D_METHOD("demo_get_currency", "nation"),
-	                     &EconomySim::demo_get_currency);
-	ClassDB::bind_method(D_METHOD("demo_get_currencies"),
-	                     &EconomySim::demo_get_currencies);
-	ClassDB::bind_method(D_METHOD("demo_set_currency_rate", "code", "rate", "floating",
+	                     &EconomySim::fleet_buy, DEFVAL(0.1));
+	ClassDB::bind_method(D_METHOD("set_market_stock", "city_id", "product", "stock"),
+	                     &EconomySim::set_market_stock);
+	ClassDB::bind_method(D_METHOD("set_market_price", "city_id", "product", "price"),
+	                     &EconomySim::set_market_price);
+	ClassDB::bind_method(D_METHOD("set_currencies", "currencies"),
+	                     &EconomySim::set_currencies);
+	ClassDB::bind_method(D_METHOD("get_currency", "nation"),
+	                     &EconomySim::get_currency);
+	ClassDB::bind_method(D_METHOD("get_currencies"),
+	                     &EconomySim::get_currencies);
+	ClassDB::bind_method(D_METHOD("set_currency_rate", "code", "rate", "floating",
 	                     "base_rate"),
-	                     &EconomySim::demo_set_currency_rate, DEFVAL(true), DEFVAL(-1.0));
-	ClassDB::bind_method(D_METHOD("demo_set_tariff", "buyer_nation", "seller_nation",
+	                     &EconomySim::set_currency_rate, DEFVAL(true), DEFVAL(-1.0));
+	ClassDB::bind_method(D_METHOD("set_tariff", "buyer_nation", "seller_nation",
 	                     "product", "rate"),
-	                     &EconomySim::demo_set_tariff);
-	ClassDB::bind_method(D_METHOD("demo_get_tariff", "buyer_nation", "seller_nation",
+	                     &EconomySim::set_tariff);
+	ClassDB::bind_method(D_METHOD("get_tariff", "buyer_nation", "seller_nation",
 	                     "product"),
-	                     &EconomySim::demo_get_tariff);
-	ClassDB::bind_method(D_METHOD("demo_get_tariffs"),
-	                     &EconomySim::demo_get_tariffs);
-	ClassDB::bind_method(D_METHOD("demo_seed_groups"), &EconomySim::demo_seed_groups);
-	ClassDB::bind_method(D_METHOD("demo_set_group_names", "names"),
-	                     &EconomySim::demo_set_group_names);
-	ClassDB::bind_method(D_METHOD("demo_get_groups"), &EconomySim::demo_get_groups);
-	ClassDB::bind_method(D_METHOD("demo_get_group_ranking"),
-	                     &EconomySim::demo_get_group_ranking);
-	ClassDB::bind_method(D_METHOD("demo_get_group", "group_id"),
-	                     &EconomySim::demo_get_group);
-	ClassDB::bind_method(D_METHOD("demo_fund_group", "group_id", "amount"),
-	                     &EconomySim::demo_fund_group);
-	ClassDB::bind_method(D_METHOD("demo_group_invest", "group_id", "city_id",
+	                     &EconomySim::get_tariff);
+	ClassDB::bind_method(D_METHOD("get_tariffs"),
+	                     &EconomySim::get_tariffs);
+	ClassDB::bind_method(D_METHOD("seed_groups"), &EconomySim::seed_groups);
+	ClassDB::bind_method(D_METHOD("set_group_names", "names"),
+	                     &EconomySim::set_group_names);
+	ClassDB::bind_method(D_METHOD("get_groups"), &EconomySim::get_groups);
+	ClassDB::bind_method(D_METHOD("get_group_ranking"),
+	                     &EconomySim::get_group_ranking);
+	ClassDB::bind_method(D_METHOD("get_group", "group_id"),
+	                     &EconomySim::get_group);
+	ClassDB::bind_method(D_METHOD("fund_group", "group_id", "amount"),
+	                     &EconomySim::fund_group);
+	ClassDB::bind_method(D_METHOD("group_invest", "group_id", "city_id",
 	                     "building_id", "resource", "output_product", "capacity",
 	                     "recipe_id", "partner_group"),
-	                     &EconomySim::demo_group_invest, DEFVAL(""));
-	ClassDB::bind_method(D_METHOD("demo_set_fdi_policy", "nation", "sector", "mode",
+	                     &EconomySim::group_invest, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("set_fdi_policy", "nation", "sector", "mode",
 	                     "min_local"),
-	                     &EconomySim::demo_set_fdi_policy, DEFVAL(0.0));
-	ClassDB::bind_method(D_METHOD("demo_set_sector_incentive", "nation", "sector",
+	                     &EconomySim::set_fdi_policy, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("set_sector_incentive", "nation", "sector",
 	                     "tax_holiday", "subsidy"),
-	                     &EconomySim::demo_set_sector_incentive);
-	ClassDB::bind_method(D_METHOD("demo_create_state_company", "nation", "name",
+	                     &EconomySim::set_sector_incentive);
+	ClassDB::bind_method(D_METHOD("create_state_company", "nation", "name",
 	                     "capital"),
-	                     &EconomySim::demo_create_state_company);
-	ClassDB::bind_method(D_METHOD("demo_privatize", "city_id", "building_id",
+	                     &EconomySim::create_state_company);
+	ClassDB::bind_method(D_METHOD("privatize", "city_id", "building_id",
 	                     "buyer_group"),
-	                     &EconomySim::demo_privatize);
-	ClassDB::bind_method(D_METHOD("demo_nationalize", "city_id", "building_id"),
-	                     &EconomySim::demo_nationalize);
-	ClassDB::bind_method(D_METHOD("demo_get_investment_status"),
-	                     &EconomySim::demo_get_investment_status);
-	ClassDB::bind_method(D_METHOD("demo_get_investment_signals"),
-	                     &EconomySim::demo_get_investment_signals);
-	ClassDB::bind_method(D_METHOD("demo_groups_seeded"),
-	                     &EconomySim::demo_groups_seeded);
+	                     &EconomySim::privatize);
+	ClassDB::bind_method(D_METHOD("nationalize", "city_id", "building_id"),
+	                     &EconomySim::nationalize);
+	ClassDB::bind_method(D_METHOD("get_investment_status"),
+	                     &EconomySim::get_investment_status);
+	ClassDB::bind_method(D_METHOD("get_investment_signals"),
+	                     &EconomySim::get_investment_signals);
+	ClassDB::bind_method(D_METHOD("groups_seeded"),
+	                     &EconomySim::groups_seeded);
 }
 
-void EconomySim::demo_fill_leg_status(Dictionary& dict, const Leg& leg) const {
+void EconomySim::fill_leg_status(Dictionary& dict, const Leg& leg) const {
 	const ModeSpec& mode_spec = spec(leg.mode);
-	const DemoStatusKeys& k = demo_status_keys_;
+	const StatusKeys& k = status_keys_;
 	dict[k.mode] = String(mode_spec.name);
 	dict[k.from] = String(leg.from.c_str());
 	dict[k.to] = String(leg.to.c_str());
@@ -320,12 +320,12 @@ void EconomySim::demo_fill_leg_status(Dictionary& dict, const Leg& leg) const {
 // Cenário de validação: duas cidades, POPs agregados, trigo consumido direto.
 // ---------------------------------------------------------------------------
 
-const ogs::DemoCurrency* EconomySim::demo_currency_for(
+const ogs::Currency* EconomySim::currency_for(
 		const std::string& nation) const {
-	return sim_core_.demo_currency_for(nation);
+	return sim_core_.currency_for(nation);
 }
 
-ogs::DemoCurrency* EconomySim::demo_currency_for(
+ogs::Currency* EconomySim::currency_for(
 		const std::string& nation) {
 	const auto found = ws_.nation_currency.find(nation);
 	if (found == ws_.nation_currency.end()
@@ -336,25 +336,25 @@ ogs::DemoCurrency* EconomySim::demo_currency_for(
 	return &ws_.currencies[static_cast<std::size_t>(found->second)];
 }
 
-double EconomySim::demo_competitiveness(const std::string& nation) const {
-	return sim_core_.demo_competitiveness(nation);
+double EconomySim::competitiveness(const std::string& nation) const {
+	return sim_core_.competitiveness(nation);
 }
 
-void EconomySim::demo_rebuild_tariff_lookup() {
-	sim_core_.demo_rebuild_tariff_lookup();
+void EconomySim::rebuild_tariff_lookup() {
+	sim_core_.rebuild_tariff_lookup();
 }
 
-double EconomySim::demo_tariff_rate(const std::string& buyer_nation,
+double EconomySim::tariff_rate(const std::string& buyer_nation,
 		const std::string& seller_nation, int product) const {
-	return sim_core_.demo_tariff_rate(buyer_nation, seller_nation, product);
+	return sim_core_.tariff_rate(buyer_nation, seller_nation, product);
 }
 
-Array EconomySim::demo_get_tariffs() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Array EconomySim::get_tariffs() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Array out;
 	out.resize(static_cast<int>(ws_.tariffs.size()));
 	for (std::size_t index = 0; index < ws_.tariffs.size(); ++index) {
-		const DemoTariff& tariff = ws_.tariffs[index];
+		const Tariff& tariff = ws_.tariffs[index];
 		Dictionary entry;
 		entry["buyer"] = String(tariff.buyer.c_str());
 		entry["seller"] = String(tariff.seller.c_str());
@@ -365,10 +365,10 @@ Array EconomySim::demo_get_tariffs() const {
 	return out;
 }
 
-double EconomySim::demo_get_tariff(const String& buyer_nation,
+double EconomySim::get_tariff(const String& buyer_nation,
 		const String& seller_nation, const String& product) const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	const int index = product == "*" ? -1 : demo_product_index(product);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product == "*" ? -1 : product_index(product);
 	if (product != "*" && index < 0) {
 		return 0.0;
 	}
@@ -387,14 +387,14 @@ double EconomySim::demo_get_tariff(const String& buyer_nation,
 		}
 		return 0.0;
 	}
-	return demo_tariff_rate(std::string(buyer_nation.utf8().get_data()),
+	return tariff_rate(std::string(buyer_nation.utf8().get_data()),
 		std::string(seller_nation.utf8().get_data()), index);
 }
 
-void EconomySim::demo_set_tariff(const String& buyer_nation,
+void EconomySim::set_tariff(const String& buyer_nation,
 		const String& seller_nation, const String& product, double rate) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoTariff tariff;
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Tariff tariff;
 	tariff.buyer = std::string(buyer_nation.utf8().get_data());
 	tariff.seller = seller_nation.is_empty() ? "*"
 		: std::string(seller_nation.utf8().get_data());
@@ -403,25 +403,25 @@ void EconomySim::demo_set_tariff(const String& buyer_nation,
 	tariff.rate = std::clamp(std::isfinite(rate) ? rate : 0.0, 0.0, 1.0);
 	const std::string key = tariff.buyer + '|' + tariff.seller + '|'
 		+ tariff.product;
-	for (DemoTariff& existing : ws_.tariffs) {
+	for (Tariff& existing : ws_.tariffs) {
 		if (existing.buyer == tariff.buyer && existing.seller == tariff.seller
 				&& existing.product == tariff.product) {
 			existing.rate = tariff.rate;
 			ws_.tariff_lookup[key] = tariff.rate;
-			demo_status_invalidate();
+			status_invalidate();
 			return;
 		}
 	}
 	ws_.tariffs.push_back(tariff);
 	ws_.tariff_lookup[key] = tariff.rate;
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-Dictionary EconomySim::demo_get_currency(const String& nation) const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_currency(const String& nation) const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
 	const std::string tag(nation.utf8().get_data());
-	const DemoCurrency* currency = demo_currency_for(tag);
+	const Currency* currency = currency_for(tag);
 	if (currency == nullptr) {
 		out["nation"] = nation;
 		out["code"] = "XGS";
@@ -447,12 +447,12 @@ Dictionary EconomySim::demo_get_currency(const String& nation) const {
 	return out;
 }
 
-Array EconomySim::demo_get_currencies() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Array EconomySim::get_currencies() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Array out;
 	out.resize(static_cast<int>(ws_.currencies.size()));
 	for (std::size_t index = 0; index < ws_.currencies.size(); ++index) {
-		const DemoCurrency& currency = ws_.currencies[index];
+		const Currency& currency = ws_.currencies[index];
 		Dictionary entry;
 		entry["code"] = String(currency.code.c_str());
 		entry["rate"] = currency.rate;
@@ -473,25 +473,25 @@ Array EconomySim::demo_get_currencies() const {
 	return out;
 }
 
-void EconomySim::demo_set_currency_rate(const String& code, double rate,
+void EconomySim::set_currency_rate(const String& code, double rate,
 		bool floating, double base_rate) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const auto found = ws_.currency_by_code.find(std::string(code.utf8().get_data()));
 	if (found == ws_.currency_by_code.end() || !std::isfinite(rate) || rate <= 0.0) {
 		return;
 	}
-	DemoCurrency& currency = ws_.currencies[static_cast<std::size_t>(found->second)];
+	Currency& currency = ws_.currencies[static_cast<std::size_t>(found->second)];
 	currency.rate = rate;
 	// `base_rate` fixa a referência da banda e da competitividade float. Sem
 	// ele, a taxa informada vira a própria referência (comportamento anterior).
 	currency.base_rate = (std::isfinite(base_rate) && base_rate > 0.0)
 		? base_rate : rate;
 	currency.floating = floating;
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-void EconomySim::demo_set_currencies(const Variant& currencies) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_currencies(const Variant& currencies) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Array list;
 	// Sem `regime` declarado no dado a taxa fica FIXA (`peg`). O dado é do F1 e
 	// não traz a fonte do regime cambial (currencies.json: `regime: null`), então
@@ -548,7 +548,7 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 		fallback_rate = known_rates[known_rates.size() / 2];
 	}
 
-	std::vector<DemoCurrency> next;
+	std::vector<Currency> next;
 	next.reserve(static_cast<std::size_t>(list.size()));
 	for (int index = 0; index < list.size(); ++index) {
 		const Dictionary entry = list[index];
@@ -556,7 +556,7 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 		if (code.is_empty()) {
 			continue;
 		}
-		DemoCurrency currency;
+		Currency currency;
 		currency.code = std::string(code.utf8().get_data());
 		currency.source = std::string(String(entry.get("source", "default")).utf8().get_data());
 		const String regime = String(entry.get("regime", String(default_regime.c_str())));
@@ -594,28 +594,28 @@ void EconomySim::demo_set_currencies(const Variant& currencies) {
 		return;
 	}
 	ws_.currencies = std::move(next);
-	demo_rebuild_currency_indexes();
+	rebuild_currency_indexes();
 
 	// O preço interno está na âncora: carregar moedas NÃO reescala preços. A
 	// taxa só entra na exibição local e na competitividade float.
 	if (ws_.active && !ws_.cities.empty()) {
-		++demo_status_static_version_;
-		demo_status_invalidate();
+		++status_static_version_;
+		status_invalidate();
 	}
 }
 
 
-void EconomySim::demo_set_goods(const Array& goods) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_goods(const Array& goods) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	// Tabela de produtos: 21 primários nas posições 0..20 (ordem do goods.json
 	// legado) e os bens novos em `order` (21..112). O núcleo não lê arquivos:
-	// todo o conteúdo entra por aqui, no padrão do demo_set_goods antigo.
+	// todo o conteúdo entra por aqui, no padrão do set_goods antigo.
 	const int previous_products = ws_.products;
 	std::vector<std::string> names = ws_.product_names;
-	std::vector<double> prices(kDemoMaxProducts, 0.0);
-	std::vector<char> durable(kDemoMaxProducts, 0);
+	std::vector<double> prices(kMaxProducts, 0.0);
+	std::vector<char> durable(kMaxProducts, 0);
 	std::vector<std::string> sectors = ws_.product_sectors;
-	sectors.resize(kDemoMaxProducts);
+	sectors.resize(kMaxProducts);
 	for (int index = 0; index < previous_products; ++index) {
 		if (index < static_cast<int>(names.size())) {
 			prices[static_cast<std::size_t>(index)] = ws_.base_prices[index];
@@ -631,7 +631,7 @@ void EconomySim::demo_set_goods(const Array& goods) {
 			continue;
 		}
 		int order = entry.has("order") ? int(entry.get("order", index)) : index;
-		order = std::clamp(order, 0, kDemoMaxProducts - 1);
+		order = std::clamp(order, 0, kMaxProducts - 1);
 		if (static_cast<int>(names.size()) <= order) {
 			names.resize(static_cast<std::size_t>(order) + 1);
 		}
@@ -652,7 +652,7 @@ void EconomySim::demo_set_goods(const Array& goods) {
 			product_count = std::max(product_count, index + 1);
 		}
 	}
-	product_count = std::min(product_count, kDemoMaxProducts);
+	product_count = std::min(product_count, kMaxProducts);
 	names.resize(static_cast<std::size_t>(product_count));
 	ws_.product_names = std::move(names);
 	ws_.product_lookup.clear();
@@ -673,58 +673,58 @@ void EconomySim::demo_set_goods(const Array& goods) {
 	// Mundo já inicializado: os produtos novos entram com o preço-base e sem
 	// estoque. Os índices existentes (0..previous_products-1) não mudam.
 	if (ws_.active && product_count > previous_products) {
-		for (DemoCity& city : ws_.cities) {
+		for (City& city : ws_.cities) {
 			for (int product = previous_products; product < product_count; ++product) {
-				city.markets[product].price = demo_base_price(product);
+				city.markets[product].price = base_price(product);
 			}
 		}
-		++demo_status_static_version_;
-		++demo_status_deposit_version_;
-		demo_status_invalidate();
+		++status_static_version_;
+		++status_deposit_version_;
+		status_invalidate();
 	}
 	// F4: os índices dos bens da frota dependem dos ids carregados. Se o mundo
-	// já existe e ainda não tem frota (demo_set_goods chamado depois da
+	// já existe e ainda não tem frota (set_goods chamado depois da
 	// inicialização, como no autoload), deriva agora.
-	ws_.fleet_product_fuel = demo_product_index(String("fuel"));
-	ws_.fleet_product_truck = demo_product_index(String("truck"));
-	ws_.fleet_product_ship = demo_product_index(String("cargo_ship"));
-	ws_.fleet_product_plane = demo_product_index(String("cargo_plane"));
-	ws_.fleet_product_parts = demo_product_index(String("spare_parts"));
+	ws_.fleet_product_fuel = product_index(String("fuel"));
+	ws_.fleet_product_truck = product_index(String("truck"));
+	ws_.fleet_product_ship = product_index(String("cargo_ship"));
+	ws_.fleet_product_plane = product_index(String("cargo_plane"));
+	ws_.fleet_product_parts = product_index(String("spare_parts"));
 	if (ws_.active && ws_.fleets.empty()) {
-		demo_init_fleets();
+		init_fleets();
 	}
 }
 
-void EconomySim::initialize_demo() {
+void EconomySim::initialize_scenario() {
 	// Novo mundo: o cache de status pertence ao mundo anterior.
-	demo_status_slots_[0] = DemoStatusCache{};
-	demo_status_slots_[1] = DemoStatusCache{};
-	demo_status_live_ = -1;
-	demo_status_built_day_ = -1;
-	++demo_status_static_version_;
-	++demo_status_deposit_version_;
+	status_slots_[0] = StatusCache{};
+	status_slots_[1] = StatusCache{};
+	status_live_ = -1;
+	status_built_day_ = -1;
+	++status_static_version_;
+	++status_deposit_version_;
 	// S14: o cenário AGRIA/PORTUS vive em sim/scenario_fixture.cpp (C++ puro);
 	// aqui só o cache de status (estado Godot) é resetado.
-	initialize_demo_fixture(ws_, sim_core_);
+	initialize_scenario_fixture(ws_, sim_core_);
 }
 
-void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
+void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		const Array& buildings) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	// Novo mundo: o cache de status pertence ao mundo anterior.
-	demo_status_slots_[0] = DemoStatusCache{};
-	demo_status_slots_[1] = DemoStatusCache{};
-	demo_status_live_ = -1;
-	demo_status_built_day_ = -1;
-	++demo_status_static_version_;
-	++demo_status_deposit_version_;
+	status_slots_[0] = StatusCache{};
+	status_slots_[1] = StatusCache{};
+	status_live_ = -1;
+	status_built_day_ = -1;
+	++status_static_version_;
+	++status_deposit_version_;
 	ws_.active = true;
 	ws_.world_mode = true;
 	ws_.day = 0;
 	ws_.cities.clear();
 	ws_.buildings.clear();
 	ws_.construction_projects.clear();
-	// §19: mundo novo zera os vetores urbanos; o demo_set_urban os preenche
+	// §19: mundo novo zera os vetores urbanos; o set_urban os preenche
 	// depois (o casamento é pelo id da cidade criada aqui).
 	ws_.land.clear();
 	ws_.housing.clear();
@@ -750,7 +750,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	ws_.confidence.clear();
 	ws_.confidence_penalty_day.clear();
 	ws_.group_flows.clear();
-	for (int index = 0; index < kDemoMaxProducts; ++index) {
+	for (int index = 0; index < kMaxProducts; ++index) {
 		ws_.produced[index] = 0.0;
 		ws_.consumed_total[index] = 0.0;
 		ws_.produced_today[index] = 0.0;
@@ -760,7 +760,7 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	// Cidades reais do cenário: identidade geográfica + caixas iniciais.
 	for (int index = 0; index < cities.size(); ++index) {
 		const Dictionary d = cities[index];
-		DemoCity city;
+		City city;
 		city.id = std::string(String(d["id"]).utf8().get_data());
 		city.name = std::string(String(d["name"]).utf8().get_data());
 		city.nation = std::string(String(d["nation"]).utf8().get_data());
@@ -773,51 +773,51 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 
 		// Caixas iniciais por habitante (constantes do modelo demo). A escala é
 		// a população de SIMULAÇÃO: a população real exibida não muda o balanço.
-		city.firm_cash = city.simulation_population * kDemoFirmCashPerCapita;
-		city.service_cash = city.simulation_population * kDemoServiceCashPerCapita;
+		city.firm_cash = city.simulation_population * kFirmCashPerCapita;
+		city.service_cash = city.simulation_population * kServiceCashPerCapita;
 		city.government_budget =
-			city.simulation_population * kDemoGovernmentPerCapita;
-		city.service_jobs = city.simulation_population * kDemoServiceShare;
-		city.service_wage = kDemoServiceWage;
+			city.simulation_population * kGovernmentPerCapita;
+		city.service_jobs = city.simulation_population * kServiceShare;
+		city.service_wage = kServiceWage;
 		city.pop.population = city.simulation_population;
-		city.pop.savings = city.simulation_population * kDemoSavingsPerCapita;
+		city.pop.savings = city.simulation_population * kSavingsPerCapita;
 		city.pop.desired_by_category.assign(ws_.food_products.size(), 0.0);
 		city.pop.consumed_by_category.assign(ws_.food_products.size(), 0.0);
-		demo_init_pop_needs(city.pop);
+		init_pop_needs(city.pop);
 		// F7: perfil inicial de trabalho/educação a partir do índice de renda
 		// (1,0 por padrão; o GeographyService reaplica quando tem o PIB real).
-		demo_apply_labor_profile(city);
+		apply_labor_profile(city);
 		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
 		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
 		// o dado real em tempo de execução.
 		city.suitability[0] = 1.0;
 		for (int product = 0; product < ws_.products; ++product) {
-			city.markets[product] = {0.0, demo_base_price(product),
+			city.markets[product] = {0.0, base_price(product),
 				0.0, 0.0};
 		}
 		// §15: estoque inicial de materiais de construção por cidade (a "obra em
 		// estoque" pré-existente, derivada da população de simulação). Sem ele a
 		// construção real (sem produtor de materiais no mundo inicial) travaria
 		// no primeiro dia. `derived:initial_stock` — não é dado observado.
-		const int cmat = demo_product_index(String("construction_material"));
-		const int csteel = demo_product_index(String("steel_structure"));
-		const int celec = demo_product_index(String("electrical_material"));
-		const int cmach = demo_product_index(String("industrial_machinery"));
+		const int cmat = product_index(String("construction_material"));
+		const int csteel = product_index(String("steel_structure"));
+		const int celec = product_index(String("electrical_material"));
+		const int cmach = product_index(String("industrial_machinery"));
 		if (cmat >= 0) {
 			city.markets[cmat].stock =
-				city.simulation_population * kDemoConstructionMaterialStockPerCapita;
+				city.simulation_population * kConstructionMaterialStockPerCapita;
 		}
 		if (csteel >= 0) {
 			city.markets[csteel].stock =
-				city.simulation_population * kDemoSteelStructureStockPerCapita;
+				city.simulation_population * kSteelStructureStockPerCapita;
 		}
 		if (celec >= 0) {
 			city.markets[celec].stock =
-				city.simulation_population * kDemoElectricalMaterialStockPerCapita;
+				city.simulation_population * kElectricalMaterialStockPerCapita;
 		}
 		if (cmach >= 0) {
 			city.markets[cmach].stock =
-				city.simulation_population * kDemoIndustrialMachineryStockPerCapita;
+				city.simulation_population * kIndustrialMachineryStockPerCapita;
 		}
 		ws_.cities.push_back(std::move(city));
 	}
@@ -829,13 +829,13 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	// escolhido (fase 4b usa city.suitability[output_product]).
 	for (int index = 0; index < buildings.size(); ++index) {
 		const Dictionary d = buildings[index];
-		DemoBuilding building;
+		Building building;
 		building.id = std::string(
 			String(d.get("id", d.get("building_id", ""))).utf8().get_data());
 		building.city = std::string(String(d["city_id"]).utf8().get_data());
 		building.resource = std::string(
 			String(d.get("resource", "wheat")).utf8().get_data());
-		const int output_product = demo_product_index(
+		const int output_product = product_index(
 			String(building.resource.c_str()));
 		building.output_product = output_product >= 0 ? output_product : 0;
 		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
@@ -854,9 +854,9 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 			safe_nonneg(static_cast<double>(d.get("aptitude", 1.0))), 0.0, 1.0);
 		building.capacity = capacity;
 		building.input_per_output = 0.0;
-		building.jobs = capacity * aptitude * kDemoJobsPerTon;
-		building.wage = kDemoFarmWage;
-		building.opex = capacity * aptitude * kDemoOpexPerTon;
+		building.jobs = capacity * aptitude * kJobsPerTon;
+		building.wage = kFarmWage;
+		building.opex = capacity * aptitude * kOpexPerTon;
 		ws_.buildings.push_back(std::move(building));
 	}
 
@@ -875,19 +875,19 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 		ws_.ports.push_back(std::move(port));
 	}
 
-	demo_rebuild_indexes();
+	rebuild_indexes();
 	// Capacidade de nível 1 depende da população da cidade-sede: só depois do
 	// índice de cidades (e de os portos existirem).
-	demo_init_port_capacities();
+	init_port_capacities();
 	// F4: frota inicial derivada de população/PIB (source: derived). Os bens da
-	// frota só resolvem depois de demo_set_goods; aqui as contagens/estoques já
+	// frota só resolvem depois de set_goods; aqui as contagens/estoques já
 	// existem e os índices são atualizados quando os bens chegam.
-	demo_init_fleets();
+	init_fleets();
 	// F8: serviços — catálogo já carregado pelo autoload/teste; os negócios
 	// iniciais saem do caixa do próprio setor (capital fica em service_cash).
-	demo_seed_services();
+	seed_services();
 	// F9: grupos/empresas a partir dos ativos privados existentes.
-	demo_seed_groups();
+	seed_groups();
 }
 
 // ---------------------------------------------------------------------------
@@ -903,8 +903,8 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 // (truck/cargo_ship/cargo_plane).
 // ---------------------------------------------------------------------------
 
-Dictionary EconomySim::demo_get_fleet(const String& nation) const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_fleet(const String& nation) const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
 	const std::string tag(nation.utf8().get_data());
 	const auto found = ws_.fleets.find(tag);
@@ -912,7 +912,7 @@ Dictionary EconomySim::demo_get_fleet(const String& nation) const {
 		out["error"] = "nacao sem frota";
 		return out;
 	}
-	const DemoFleet& fleet = found->second;
+	const Fleet& fleet = found->second;
 	out["nation"] = nation;
 	out["trucks"] = fleet.trucks;
 	out["ships"] = fleet.ships;
@@ -943,11 +943,11 @@ Dictionary EconomySim::demo_get_fleet(const String& nation) const {
 	return out;
 }
 
-void EconomySim::demo_set_fleet(const String& nation, double trucks, double ships,
+void EconomySim::set_fleet(const String& nation, double trucks, double ships,
 		double planes, double fuel, double spare_parts) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string tag(nation.utf8().get_data());
-	DemoFleet fleet = DemoFleet{};
+	Fleet fleet = Fleet{};
 	fleet.trucks = std::max(0.0, trucks);
 	fleet.ships = std::max(0.0, ships);
 	fleet.planes = std::max(0.0, planes);
@@ -972,20 +972,20 @@ void EconomySim::demo_set_fleet(const String& nation, double trucks, double ship
 	if (!known) {
 		ws_.fleet_order.push_back(tag);
 	}
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-Dictionary EconomySim::demo_fleet_buy(const String& nation, const String& product,
+Dictionary EconomySim::fleet_buy(const String& nation, const String& product,
 		double amount, double budget_share) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["bought"] = 0.0;
 	result["spent"] = 0.0;
 	result["unfilled"] = 0.0;
 	result["error"] = "";
 	const std::string tag(nation.utf8().get_data());
-	const int product_index = demo_product_index(product);
-	if (product_index < 0) {
+	const int product_slot = product_index(product);
+	if (product_slot < 0) {
 		result["error"] = "produto desconhecido";
 		return result;
 	}
@@ -1005,50 +1005,50 @@ Dictionary EconomySim::demo_fleet_buy(const String& nation, const String& produc
 	}
 	double spent = 0.0;
 	double unfilled = 0.0;
-	const double bought = sim_core_.demo_fleet_buy_core(tag, product_index, amount,
+	const double bought = sim_core_.fleet_buy_core(tag, product_slot, amount,
 		budget_share, spent, unfilled);
 	result["bought"] = bought;
 	result["spent"] = spent;
 	result["unfilled"] = unfilled;
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-void EconomySim::demo_set_market_stock(const String& city_id, const String& product,
+void EconomySim::set_market_stock(const String& city_id, const String& product,
 		double stock) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
-	const int product_index = demo_product_index(product);
-	if (product_index < 0) {
+	const int product_slot = product_index(product);
+	if (product_slot < 0) {
 		return;
 	}
-	city->markets[product_index].stock = std::max(0.0, stock);
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	city->markets[product_slot].stock = std::max(0.0, stock);
+	++status_static_version_;
+	status_invalidate();
 }
 
-void EconomySim::demo_set_market_price(const String& city_id,
+void EconomySim::set_market_price(const String& city_id,
 		const String& product, double price) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr || !std::isfinite(price)) {
 		return;
 	}
-	const int product_index = demo_product_index(product);
-	if (product_index < 0) {
+	const int product_slot = product_index(product);
+	if (product_slot < 0) {
 		return;
 	}
-	const double base = demo_base_price(product_index);
-	city->markets[product_index].price = std::clamp(
+	const double base = base_price(product_slot);
+	city->markets[product_slot].price = std::clamp(
 		std::max(1e-6, price), base * 0.1, base * 10.0);
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-Dictionary EconomySim::demo_expand_port(const String& port_id, double t_per_day) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::expand_port(const String& port_id, double t_per_day) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["expanded"] = false;
 	result["cost"] = 0.0;
@@ -1056,7 +1056,7 @@ Dictionary EconomySim::demo_expand_port(const String& port_id, double t_per_day)
 	result["capacity"] = 0.0;
 	result["error"] = "";
 
-	Port* port = find_demo_port(std::string(port_id.utf8().get_data()));
+	Port* port = find_port(std::string(port_id.utf8().get_data()));
 	if (port == nullptr) {
 		result["error"] = "porto desconhecido";
 		return result;
@@ -1078,14 +1078,14 @@ Dictionary EconomySim::demo_expand_port(const String& port_id, double t_per_day)
 		}
 	}
 	if (payer_index < 0) {
-		payer_index = demo_city_index_near(port->nation, port->landmass, port->center);
+		payer_index = city_index_near(port->nation, port->landmass, port->center);
 	}
 	if (payer_index < 0) {
 		result["error"] = "cidade-sede ausente";
 		return result;
 	}
-	DemoCity& payer = ws_.cities[static_cast<std::size_t>(payer_index)];
-	const double cost = add * kDemoPortCapitalPerTonCapacity;
+	City& payer = ws_.cities[static_cast<std::size_t>(payer_index)];
+	const double cost = add * kPortCapitalPerTonCapacity;
 	if (payer.government_budget + 1e-9 < cost) {
 		result["error"] = "orcamento insuficiente";
 		return result;
@@ -1093,73 +1093,73 @@ Dictionary EconomySim::demo_expand_port(const String& port_id, double t_per_day)
 	payer.government_budget -= cost;
 	ws_.construction_cash += cost;
 	port->pending_capacity_t_per_day += add;
-	port->pending_days = std::max(port->pending_days, kDemoPortBuildDays);
-	demo_status_invalidate();
+	port->pending_days = std::max(port->pending_days, kPortBuildDays);
+	status_invalidate();
 	result["expanded"] = true;
 	result["cost"] = cost;
 	result["days"] = port->pending_days;
 	return result;
 }
 
-void EconomySim::demo_set_port_capacity(const String& port_id, double t_per_day) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	Port* port = find_demo_port(std::string(port_id.utf8().get_data()));
+void EconomySim::set_port_capacity(const String& port_id, double t_per_day) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Port* port = find_port(std::string(port_id.utf8().get_data()));
 	if (port == nullptr) {
 		return;
 	}
 	port->base_capacity_t_per_day = safe_nonneg(t_per_day);
 	port->capacity_t_per_day = port->base_capacity_t_per_day;
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-void EconomySim::demo_set_instant_construction(bool instant) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_instant_construction(bool instant) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	instant_construction_ = instant;
 }
 
-Dictionary EconomySim::tick_demo() {
-	demo_tick_and_publish();
-	// Cache hit: demo_tick_and_publish() já montou e publicou o dia em curso.
-	return get_demo_status();
+Dictionary EconomySim::tick_day() {
+	tick_and_publish();
+	// Cache hit: tick_and_publish() já montou e publicou o dia em curso.
+	return get_status();
 }
 
-void EconomySim::demo_tick_and_publish() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::tick_and_publish() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 #if defined(OGS_PROFILING)
-	// Sink das fases do tick: os 15 slots de `demo_profile_us_`, com o toggle
-	// `demo_profile_` como interruptor (desligado, nenhum relógio é lido).
-	ogs::profile::Sink phase_sink{demo_profile_us_, kDemoPhaseCount, &demo_profile_};
+	// Sink das fases do tick: os 15 slots de `profile_us_`, com o toggle
+	// `profile_` como interruptor (desligado, nenhum relógio é lido).
+	ogs::profile::Sink phase_sink{profile_us_, kPhaseCount, &profile_};
 	const ogs::profile::SinkScope phase_scope(&phase_sink);
 #endif
-	demo_tick_core();
+	tick_core();
 	{
 		// Fase `status` (RAII): fecha ao sair do bloco, depois do tick.
-		OGS_SIM_ZONE(kDemoPhaseStatus);
-		get_demo_status();
+		OGS_SIM_ZONE(kPhaseStatus);
+		get_status();
 	}
 }
 
-void EconomySim::demo_status_invalidate() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	demo_status_built_day_ = -1;
+void EconomySim::status_invalidate() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	status_built_day_ = -1;
 }
 
-void EconomySim::demo_set_profiling(bool enabled) {
-	demo_profile_ = enabled;
+void EconomySim::set_profiling(bool enabled) {
+	profile_ = enabled;
 	if (!enabled) {
-		for (double& value : demo_profile_us_) {
+		for (double& value : profile_us_) {
 			value = 0.0;
 		}
 	}
 }
 
-void EconomySim::demo_set_sim_threads(int threads) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	sim_core_.demo_set_sim_threads(threads);
+void EconomySim::set_sim_threads(int threads) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.set_sim_threads(threads);
 }
 
-Dictionary EconomySim::demo_get_profile() const {
-	static const char* kNames[kDemoPhaseCount] = {
+Dictionary EconomySim::get_profile() const {
+	static const char* kNames[kPhaseCount] = {
 		"arrival", "reset", "labor", "production", "raw", "income", "services",
 		"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
 		"status",
@@ -1167,17 +1167,17 @@ Dictionary EconomySim::demo_get_profile() const {
 		"trade_goods", "trade_goods_loop",
 	};
 	Dictionary profile;
-	if (!demo_profile_) {
+	if (!profile_) {
 		return profile;
 	}
-	for (int phase = 0; phase < kDemoPhaseCount; ++phase) {
-		profile[kNames[phase]] = demo_profile_us_[phase];
+	for (int phase = 0; phase < kPhaseCount; ++phase) {
+		profile[kNames[phase]] = profile_us_[phase];
 	}
 	static const char* kStatusNames[4] = {
 		"status_cities", "status_orders", "status_nations", "status_misc",
 	};
 	for (int part = 0; part < 4; ++part) {
-		profile[kStatusNames[part]] = demo_status_sub_us_[part];
+		profile[kStatusNames[part]] = status_sub_us_[part];
 	}
 	return profile;
 }
@@ -1188,34 +1188,34 @@ Dictionary EconomySim::demo_get_profile() const {
 // nenhum tick paga a alocação. Só roda com o mundo já preenchido (aptidão,
 // demanda externa e índice de renda aplicados), senão o bloco estático do
 // status sairia com os valores default.
-void EconomySim::demo_warm_status() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::warm_status() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (!ws_.active) {
 		return;
 	}
-	get_demo_status();  // preenche o slot corrente
-	if (demo_status_live_ < 0) {
+	get_status();  // preenche o slot corrente
+	if (status_live_ < 0) {
 		return;
 	}
 	// `built_day_ = -1` faz a próxima chamada construir no OUTRO slot.
-	demo_status_built_day_ = -1;
-	get_demo_status();
+	status_built_day_ = -1;
+	get_status();
 }
 
-void EconomySim::demo_tick_core() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::tick_core() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 
 	if (!ws_.active) {
-		initialize_demo();
+		initialize_scenario();
 	}
 	// §12.3: se o mundo real ainda não tem indústria, semeia poucas plantas de
 	// referência (moinho + padaria) antes de contar dinheiro/invariantes.
-	demo_seed_industry();
+	seed_industry();
 
 	// A ordem do dia (prólogo + fases) é da biblioteca (sim/sim_day.cpp): a
 	// mesma sequência roda sem o Godot. Aqui ficam só a inicialização acima e o
 	// log dos invariantes abaixo.
-	ogs::demo_tick_day(ws_, sim_core_);
+	ogs::tick_day(ws_, sim_core_);
 	if (!ws_.invariant_violations.empty()) {
 		for (const std::string& violation : ws_.invariant_violations) {
 			UtilityFunctions::push_error(
@@ -1224,7 +1224,7 @@ void EconomySim::demo_tick_core() {
 	}
 }
 
-EconomySim::DemoStatusKeys::DemoStatusKeys() :
+EconomySim::StatusKeys::StatusKeys() :
 		amount("amount"),
 		bankruptcies("bankruptcies"),
 		buildings("buildings"),
@@ -1501,14 +1501,14 @@ EconomySim::DemoStatusKeys::DemoStatusKeys() :
 		c_expand("c_expand")
 {}
 
-void EconomySim::demo_fill_city_status(std::size_t city_index,
-		DemoStatusCitySlot& slot, double in_transit, bool heavy) const {
-	const DemoCity& city = ws_.cities[city_index];
-	const DemoStatusKeys& k = demo_status_keys_;
+void EconomySim::fill_city_status(std::size_t city_index,
+		StatusCitySlot& slot, double in_transit, bool heavy) const {
+	const City& city = ws_.cities[city_index];
+	const StatusKeys& k = status_keys_;
 	Dictionary& dict = slot.dict;
 	// Taxa de câmbio da nação, resolvida UMA vez por cidade (antes eram 2
 	// lookups de moeda por cidade: aqui e no bloco de mercados).
-	const double fx_rate = demo_fx_rate(city.nation);
+	const double city_fx = fx_rate(city.nation);
 
 	// Strings estáveis: comparam a origem (memcmp) antes de realocar a String.
 	// `nation`/`home_nation` entram aqui porque o território pode mudar com a
@@ -1527,11 +1527,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_string(slot.home_src, slot.home_nation, city.home_nation, k.home_nation);
 	sync_string(slot.landmass_src, slot.landmass, city.landmass, k.landmass);
 	sync_string(slot.currency_src, slot.currency,
-		std::string(demo_currency_code(city.nation)), k.currency);
+		std::string(currency_code(city.nation)), k.currency);
 
 	// Campos que só mudam quando um dado do território muda (aptidão, demanda
 	// externa, posição): reescritos apenas quando a versão estática sobe.
-	if (!slot.static_filled || slot.static_version != demo_status_static_version_) {
+	if (!slot.static_filled || slot.static_version != status_static_version_) {
 		dict[k.x] = city.center.x;
 		dict[k.y] = city.center.y;
 		slot.center.resize(2);
@@ -1548,7 +1548,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		dict[k.suitability] = slot.suitability;
 		dict[k.external_demand] = slot.external_demand;
 		slot.static_filled = true;
-		slot.static_version = demo_status_static_version_;
+		slot.static_version = status_static_version_;
 	}
 
 	// `population` = populacao real exibida; `sim_population` = unidade de
@@ -1598,8 +1598,8 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	// por pessoa compra. Diferente do PIB per capita, usa renda das famílias.
 	double cheapest_price = 0.0;
 	for (int food = 0; food < static_cast<int>(ws_.food_products.size()); ++food) {
-		const int product = demo_food_product(food);
-		const double factor = demo_food_calories(product);
+		const int product = food_product(food);
+		const double factor = food_calories(product);
 		if (factor <= 0.0) {
 			continue;
 		}
@@ -1609,7 +1609,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			cheapest_price = per_calorie;
 		}
 	}
-	const double basket_cost = kDemoNeedPerCapita * cheapest_price;
+	const double basket_cost = kNeedPerCapita * cheapest_price;
 	const double living_standard = basket_cost > 0.0
 		? (city.pop.disposable / city.simulation_population) / basket_cost : 0.0;
 	sync_scalar(k.living_standard, living_standard);
@@ -1622,7 +1622,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	double total_capacity = 0.0;
 	const std::vector<int>& local_buildings = ws_.buildings_by_city[city_index];
 	for (const int bi : local_buildings) {
-		const DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
+		const Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 		total_capacity += building.capacity * building.output_scale;
 		if (building.input_product < 0) {
 			production += building.capacity * building.output_scale;
@@ -1640,9 +1640,9 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	sync_scalar(k.deficit, std::max(0.0, city.pop.need - city.pop.consumed));
 	sync_scalar(k.consumed, city.pop.consumed);
 	sync_scalar(k.in_transit, in_transit);
-	sync_scalar(k.fx_rate, fx_rate);
+	sync_scalar(k.fx_rate, city_fx);
 	sync_scalar(k.tariff_revenue, city.tariff_revenue);
-	sync_scalar(k.productivity_index, demo_effective_productivity(city));
+	sync_scalar(k.productivity_index, effective_productivity(city));
 	slot.scalar_written_filled = true;
 
 	// F9: emprego setorial (4 posições). Espelho de 8 doubles: só reescreve o
@@ -1690,24 +1690,24 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.deposit_present.assign(static_cast<std::size_t>(ws_.products), 0);
 		slot.deposit_depleted.assign(static_cast<std::size_t>(ws_.products), 0);
 		slot.deposit_written.assign(static_cast<std::size_t>(ws_.products),
-			DemoDeposit{});
+			Deposit{});
 		slot.deposit_key.clear();
 		slot.deposit_key.reserve(static_cast<std::size_t>(ws_.products));
 		for (int product = 0; product < ws_.products; ++product) {
-			slot.deposit_key.emplace_back(demo_product_name(product));
+			slot.deposit_key.emplace_back(product_name(product));
 		}
 	}
 	// Jazida descoberta depois do primeiro dia (a IA/geografia chama
-	// `demo_set_deposit`): a lista de jazidas rastreadas é recalculada uma vez e
+	// `set_deposit`): a lista de jazidas rastreadas é recalculada uma vez e
 	// só as novas entram no dicionário (as antigas mantêm o bloco estático).
-	if (slot.deposit_tracked_version != demo_status_deposit_version_) {
+	if (slot.deposit_tracked_version != status_deposit_version_) {
 		slot.deposit_tracked.clear();
 		for (int product = 0; product < ws_.products; ++product) {
 			if (city.deposits[product].tracked) {
 				slot.deposit_tracked.push_back(product);
 			}
 		}
-		slot.deposit_tracked_version = demo_status_deposit_version_;
+		slot.deposit_tracked_version = status_deposit_version_;
 	}
 	// `deposits` só é remontado quando a cidade tem jazida rastreada. Cidade
 	// sem jazida publica o dicionário vazio UMA vez (a chave sempre existe:
@@ -1720,16 +1720,16 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		}
 	} else {
 		for (const int product : slot.deposit_tracked) {
-			const DemoDeposit& deposit = city.deposits[product];
+			const Deposit& deposit = city.deposits[product];
 			Dictionary& entry = slot.deposit_entry[static_cast<std::size_t>(product)];
-			DemoDeposit& previous = slot.deposit_written[static_cast<std::size_t>(product)];
+			Deposit& previous = slot.deposit_written[static_cast<std::size_t>(product)];
 			const bool first = slot.deposit_present[static_cast<std::size_t>(product)] == 0;
 			if (first) {
 				entry[k.initial_kt] = deposit.initial_kt;
 				entry[k.quality] = deposit.quality;
 				entry[k.depth_m] = deposit.depth_m;
-				entry[k.efficiency] = demo_extraction_efficiency(deposit);
-				entry[k.opex_factor] = demo_depth_opex_factor(deposit);
+				entry[k.efficiency] = extraction_efficiency(deposit);
+				entry[k.opex_factor] = depth_opex_factor(deposit);
 				slot.deposits[slot.deposit_key[static_cast<std::size_t>(product)]] = entry;
 				slot.deposit_present[static_cast<std::size_t>(product)] = 1;
 			}
@@ -1815,21 +1815,21 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			? std::max(0.0, minimum_wage->second) : 0.0);
 		sync_pop(k.wage_rigidity, ws_.wage_rigidity);
 		if (!filled) {
-			slot.education.resize(kDemoEducationLevels);
-			slot.education_share.resize(kDemoEducationLevels);
-			slot.labor_force_by_level.resize(kDemoEducationLevels);
-			slot.employed_by_level.resize(kDemoEducationLevels);
-			slot.unemployed_by_level.resize(kDemoEducationLevels);
-			slot.unemployment_by_level.resize(kDemoEducationLevels);
-			slot.vacancies_by_level.resize(kDemoEducationLevels);
-			slot.wage_by_level.resize(kDemoEducationLevels);
-			slot.wage_income_by_level.resize(kDemoEducationLevels);
-			slot.studying.resize(kDemoEducationLevels - 1);
-			slot.income_level_share.resize(kDemoIncomeLevels);
-			slot.income_level_by_stratum.resize(kDemoEducationLevels);
-			slot.stratum_disposable.resize(kDemoEducationLevels);
-			slot.stratum_population.resize(kDemoEducationLevels);
-			slot.stratum_wage_income.resize(kDemoEducationLevels);
+			slot.education.resize(kEducationLevels);
+			slot.education_share.resize(kEducationLevels);
+			slot.labor_force_by_level.resize(kEducationLevels);
+			slot.employed_by_level.resize(kEducationLevels);
+			slot.unemployed_by_level.resize(kEducationLevels);
+			slot.unemployment_by_level.resize(kEducationLevels);
+			slot.vacancies_by_level.resize(kEducationLevels);
+			slot.wage_by_level.resize(kEducationLevels);
+			slot.wage_income_by_level.resize(kEducationLevels);
+			slot.studying.resize(kEducationLevels - 1);
+			slot.income_level_share.resize(kIncomeLevels);
+			slot.income_level_by_stratum.resize(kEducationLevels);
+			slot.stratum_disposable.resize(kEducationLevels);
+			slot.stratum_population.resize(kEducationLevels);
+			slot.stratum_wage_income.resize(kEducationLevels);
 		}
 		// Grupo "raro": educação, força por nível, estudo, fatias de renda e o
 		// nível de consumo de cada estrato. Compara com o último publicado e só
@@ -1837,37 +1837,37 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		{
 			double rare[16];
 			int ri = 0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				rare[ri++] = city.pop.education[level];
 			}
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				rare[ri++] = city.pop.labor_force_by_level[level];
 			}
-			for (int track = 0; track < kDemoEducationLevels - 1; ++track) {
+			for (int track = 0; track < kEducationLevels - 1; ++track) {
 				rare[ri++] = city.pop.studying[track];
 			}
-			for (int level = 0; level < kDemoIncomeLevels; ++level) {
+			for (int level = 0; level < kIncomeLevels; ++level) {
 				rare[ri++] = city.pop.income_level_share[level];
 			}
-			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+			for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 				rare[ri++] = double(city.pop.stratum_income_level[stratum]);
 			}
 			if (!slot.labor_rare_filled
 					|| std::memcmp(rare, slot.labor_rare_written,
 						sizeof(double) * static_cast<std::size_t>(ri)) != 0) {
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					slot.education[level] = city.pop.education[level];
 					slot.labor_force_by_level[level] =
 						city.pop.labor_force_by_level[level];
 				}
-				for (int track = 0; track < kDemoEducationLevels - 1; ++track) {
+				for (int track = 0; track < kEducationLevels - 1; ++track) {
 					slot.studying[track] = city.pop.studying[track];
 				}
-				for (int level = 0; level < kDemoIncomeLevels; ++level) {
+				for (int level = 0; level < kIncomeLevels; ++level) {
 					slot.income_level_share[level] =
 						city.pop.income_level_share[level];
 				}
-				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 					slot.income_level_by_stratum[stratum] =
 						city.pop.stratum_income_level[stratum];
 				}
@@ -1880,7 +1880,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		{
 			double daily[24];
 			int di = 0;
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				daily[di++] = city.pop.working_age > 1e-9
 					? city.pop.education[level] / city.pop.working_age : 0.0;
 				daily[di++] = city.pop.employed_by_level[level];
@@ -1895,7 +1895,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			if (!slot.labor_daily_filled
 					|| std::memcmp(daily, slot.labor_daily_written,
 						sizeof(double) * static_cast<std::size_t>(di)) != 0) {
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					slot.education_share[level] = city.pop.working_age > 1e-9
 						? city.pop.education[level] / city.pop.working_age : 0.0;
 					slot.employed_by_level[level] =
@@ -1922,7 +1922,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		{
 			double strata[12];
 			int si = 0;
-			for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+			for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 				strata[si++] = city.pop.stratum_disposable[stratum];
 				strata[si++] = city.pop.stratum_population[stratum];
 				strata[si++] = city.pop.stratum_wage_income[stratum];
@@ -1930,7 +1930,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			if (!slot.stratum_written_filled
 					|| std::memcmp(strata, slot.stratum_written,
 						sizeof(double) * static_cast<std::size_t>(si)) != 0) {
-				for (int stratum = 0; stratum < kDemoEducationLevels; ++stratum) {
+				for (int stratum = 0; stratum < kEducationLevels; ++stratum) {
 					slot.stratum_disposable[stratum] =
 						city.pop.stratum_disposable[stratum];
 					slot.stratum_population[stratum] =
@@ -2014,11 +2014,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	}
 	// Preço local é EXIBIÇÃO: âncora ÷ taxa da moeda da nação (F5, opção c).
 	// Não volta para a simulação; o valor na âncora é a fonte de verdade.
-	const double local_rate = std::max(1e-9, fx_rate);
+	const double local_rate = std::max(1e-9, city_fx);
 	bool markets_dirty = false;
 	for (int product = 0; product < ws_.products; ++product) {
-		const DemoMarket& source = city.markets[product];
-		DemoMarket& previous = slot.market_written[static_cast<std::size_t>(product)];
+		const Market& source = city.markets[product];
+		Market& previous = slot.market_written[static_cast<std::size_t>(product)];
 		const double local = source.price / local_rate;
 		if (slot.market_written_filled[static_cast<std::size_t>(product)] == 0) {
 			// Primeira gravação desta cidade: cria as chaves do mercado.
@@ -2042,7 +2042,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		}
 		// Caminho comum (mercado publicado igual ao dia anterior): NENHUM
 		// acesso ao Dictionary. A comparação cobre os 8 campos publicados, que
-		// são contíguos (ver DemoMarket): um memcmp de 64 bytes por produto.
+		// são contíguos (ver Market): um memcmp de 64 bytes por produto.
 		// `sold_prev` é interno e muda TODO dia (`sold_prev = sold` no reset);
 		// por isso fica no fim do struct, fora do bloco comparado.
 		const bool local_changed = slot.market_local_written[
@@ -2099,11 +2099,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	// muda; o Array publicado é reutilizado pela UI (ordem de service_sectors).
 	if (ws_.services_loaded) {
 		PackedFloat64Array& services = slot.services;
-		services.resize(kDemoMaxServiceSectors * kDemoServiceFields);
+		services.resize(kMaxServiceSectors * kServiceFields);
 		double* out = services.ptrw();
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-			const DemoServiceMarket& market = city.service_markets[sector];
-			double* base = out + sector * kDemoServiceFields;
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+			const ServiceMarket& market = city.service_markets[sector];
+			double* base = out + sector * kServiceFields;
 			base[0] = market.demand;
 			base[1] = market.supply;
 			base[2] = market.price;
@@ -2192,10 +2192,10 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 		slot.building_cache.resize(local_buildings.size());
 	}
 	for (std::size_t index = 0; index < local_buildings.size(); ++index) {
-		const DemoBuilding& building =
+		const Building& building =
 			ws_.buildings[static_cast<std::size_t>(local_buildings[index])];
 		Dictionary& entry = slot.building_entry[index];
-		DemoStatusCitySlot::BuildingCache& cached = slot.building_cache[index];
+		StatusCitySlot::BuildingCache& cached = slot.building_cache[index];
 		const bool identity_changed = !cached.filled || cached.id_src != building.id;
 		// F9: privatização/nacionalização muda o dono sem mudar a identidade.
 		const bool owner_changed = cached.owner_src != building.owner;
@@ -2214,11 +2214,11 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			// F9: decomposição do dono para a UI/status (sem parse no cliente).
 			std::string group_id;
 			std::string origin_nation;
-			const int owner_kind = demo_owner_kind(building.owner, &group_id,
+			const int owner_code = owner_kind(building.owner, &group_id,
 				&origin_nation);
-			entry[k.owner_kind] = owner_kind == 0 ? String("state")
-				: owner_kind == 1 ? String("national")
-				: owner_kind == 2 ? String("foreign") : String("private");
+			entry[k.owner_kind] = owner_code == 0 ? String("state")
+				: owner_code == 1 ? String("national")
+				: owner_code == 2 ? String("foreign") : String("private");
 			entry[k.owner_group] = String(group_id.c_str());
 			entry[k.owner_nation] = origin_nation.empty()
 				? String() : String(origin_nation.c_str());
@@ -2241,7 +2241,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 			cached.recipe = building.recipe;
 			if (building.recipe >= 0
 					&& building.recipe < static_cast<int>(ws_.recipes.size())) {
-				const DemoRecipe& recipe =
+				const Recipe& recipe =
 					ws_.recipes[static_cast<std::size_t>(building.recipe)];
 				entry[k.recipe] = String(recipe.id.c_str());
 				Array inputs;
@@ -2250,13 +2250,13 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 				byproducts.resize(recipe.byproduct_count);
 				for (int slot = 0; slot < recipe.input_count; ++slot) {
 					Dictionary input;
-					input[k.good] = String(demo_product_name(recipe.inputs[slot]));
+					input[k.good] = String(product_name(recipe.inputs[slot]));
 					input[k.qty] = recipe.input_qty[slot];
 					inputs[slot] = input;
 				}
 				for (int slot = 0; slot < recipe.byproduct_count; ++slot) {
 					Dictionary byproduct;
-					byproduct[k.good] = String(demo_product_name(recipe.byproducts[slot]));
+					byproduct[k.good] = String(product_name(recipe.byproducts[slot]));
 					byproduct[k.qty] = recipe.byproduct_qty[slot];
 					byproducts[slot] = byproduct;
 				}
@@ -2305,15 +2305,15 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	}  // fim do bloco pesado (buildings)
 }
 
-void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
-	const DemoStatusKeys& k = demo_status_keys_;
+void EconomySim::fill_light_signals(StatusCache& cache) const {
+	const StatusKeys& k = status_keys_;
 	const std::size_t cities = ws_.cities.size();
 	const std::size_t products = static_cast<std::size_t>(ws_.products);
 	const std::size_t market_len = cities * products;
 
 	// Mercados: 7 campos que a IA lê (preço âncora, estoque, oferta, excedente,
 	// vendido, escassez, desejado). São os MESMOS doubles do bloco pesado por
-	// cidade (`source.price` etc. em demo_fill_city_status) — bit a bit.
+	// cidade (`source.price` etc. em fill_city_status) — bit a bit.
 	cache.light_m_price.resize(static_cast<int>(market_len));
 	cache.light_m_stock.resize(static_cast<int>(market_len));
 	cache.light_m_supply.resize(static_cast<int>(market_len));
@@ -2343,10 +2343,10 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	double* lp_unemployed = cache.light_p_unemployed.ptrw();
 
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
-		const DemoCity& city = ws_.cities[city_index];
+		const City& city = ws_.cities[city_index];
 		const std::size_t base = city_index * products;
 		for (int product = 0; product < ws_.products; ++product) {
-			const DemoMarket& market = city.markets[product];
+			const Market& market = city.markets[product];
 			const std::size_t at = base + static_cast<std::size_t>(product);
 			lm_price[at] = market.price;
 			lm_stock[at] = market.stock;
@@ -2372,11 +2372,11 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	cache.light_i_owner_group.clear();
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			std::string group_id;
 			std::string origin_nation;
-			demo_owner_kind(building.owner, &group_id, &origin_nation);
+			owner_kind(building.owner, &group_id, &origin_nation);
 			if (group_id.empty() || building.resource.empty()) {
 				continue;
 			}
@@ -2388,7 +2388,7 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 
 	// Construções (CSR): o que a IA por cidade lê — produto de saída, dono,
 	// capacidade, utilização, custos e aptidão do sítio. São os MESMOS valores
-	// do bloco pesado (demo_fill_city_status), na ordem cidade → construção
+	// do bloco pesado (fill_city_status), na ordem cidade → construção
 	// (buildings_by_city). `site_suitability` = suitability do produto de saída.
 	cache.light_b_offset.clear();
 	cache.light_b_id.clear();
@@ -2400,9 +2400,9 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	cache.light_b_site_suitability.clear();
 	cache.light_b_offset.push_back(0);
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
-		const DemoCity& bcity = ws_.cities[city_index];
+		const City& bcity = ws_.cities[city_index];
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			cache.light_b_id.push_back(String(building.id.c_str()));
 			cache.light_b_output_product.push_back(building.output_product);
@@ -2434,20 +2434,20 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	cache.light_d_depleted.clear();
 	cache.light_d_offset.push_back(0);
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
-		const DemoCity& dcity = ws_.cities[city_index];
+		const City& dcity = ws_.cities[city_index];
 		for (int product = 0; product < ws_.products; ++product) {
-			const DemoDeposit& deposit = dcity.deposits[product];
+			const Deposit& deposit = dcity.deposits[product];
 			if (!deposit.tracked) {
 				continue;
 			}
 			cache.light_d_product.push_back(product);
-			cache.light_d_resource.push_back(String(demo_product_name(product)));
+			cache.light_d_resource.push_back(String(product_name(product)));
 			cache.light_d_initial_kt.push_back(deposit.initial_kt);
 			cache.light_d_remaining_kt.push_back(deposit.remaining_kt);
 			cache.light_d_quality.push_back(deposit.quality);
 			cache.light_d_depth_m.push_back(deposit.depth_m);
-			cache.light_d_efficiency.push_back(demo_extraction_efficiency(deposit));
-			cache.light_d_opex_factor.push_back(demo_depth_opex_factor(deposit));
+			cache.light_d_efficiency.push_back(extraction_efficiency(deposit));
+			cache.light_d_opex_factor.push_back(depth_opex_factor(deposit));
 			cache.light_d_extracted_kt.push_back(deposit.extracted_kt);
 			cache.light_d_depleted.push_back(deposit.remaining_kt <= 0.0 ? 1 : 0);
 		}
@@ -2467,7 +2467,7 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	cache.light_c_offset.push_back(0);
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		const std::string& ocity = ws_.cities[city_index].id;
-		for (const DemoConstructionProject& project : ws_.construction_projects) {
+		for (const ConstructionProject& project : ws_.construction_projects) {
 			if (project.city != ocity) {
 				continue;
 			}
@@ -2528,29 +2528,29 @@ void EconomySim::demo_fill_light_signals(DemoStatusCache& cache) const {
 	light[k.c_expand] = cache.light_c_expand;
 }
 
-Dictionary EconomySim::get_demo_status() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_status() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	// Snapshot do dia já publicado: devolve o mesmo dicionário (a UI lê o dia
 	// inteiro; mutações entre ticks só valem no próximo status).
-	if (demo_status_live_ >= 0 && demo_status_built_day_ == ws_.day) {
-		return demo_status_slots_[demo_status_live_].root;
+	if (status_live_ >= 0 && status_built_day_ == ws_.day) {
+		return status_slots_[status_live_].root;
 	}
-	const int slot_index = demo_status_live_ < 0 ? 0 : 1 - demo_status_live_;
-	DemoStatusCache& cache = demo_status_slots_[slot_index];
-	const DemoStatusKeys& k = demo_status_keys_;
+	const int slot_index = status_live_ < 0 ? 0 : 1 - status_live_;
+	StatusCache& cache = status_slots_[slot_index];
+	const StatusKeys& k = status_keys_;
 	Dictionary& root = cache.root;
 
 	// Subdivisao da fase status na medicao por fase (sem custo no jogo): as 4 marcas
-	// `OGS_SIM_PHASE_LAP(part)` abaixo gravam em `demo_status_sub_us_`.
+	// `OGS_SIM_PHASE_LAP(part)` abaixo gravam em `status_sub_us_`.
 #if defined(OGS_PROFILING)
-	ogs::profile::Sink status_sink{demo_status_sub_us_, 4, &demo_profile_};
+	ogs::profile::Sink status_sink{status_sub_us_, 4, &profile_};
 	const ogs::profile::SinkScope status_scope(&status_sink);
 #endif
 
 	root[k.mode] = "demo";
 	root[k.day] = ws_.day;
 	root[k.calendar_day] = ws_.day;
-	root[k.money_total] = demo_money_total();
+	root[k.money_total] = money_total();
 	root[k.transport_cash] = ws_.transport_cash;
 	root[k.foreign_cash] = ws_.foreign_cash;
 	root[k.construction_cash] = ws_.construction_cash;
@@ -2558,11 +2558,11 @@ Dictionary EconomySim::get_demo_status() {
 	root[k.depleted_mines] = ws_.depleted_mines;
 	// F8: catálogo de serviços (uma vez) + contadores de negócios do dia.
 	if (ws_.services_loaded && !cache.service_sectors_filled) {
-		cache.service_sectors = demo_get_service_sectors();
+		cache.service_sectors = get_service_sectors();
 		root[k.service_sectors] = cache.service_sectors;
 		cache.service_sectors_filled = true;
 	}
-	root[k.service_businesses] = demo_get_service_business_count();
+	root[k.service_businesses] = get_service_business_count();
 	root[k.service_bankruptcies] = ws_.service_bankruptcies;
 
 	// Cabeçalho: os contêineres são pendurados no dicionário UMA vez; a partir
@@ -2570,13 +2570,13 @@ Dictionary EconomySim::get_demo_status() {
 	if (!cache.header_filled) {
 		cache.products.resize(ws_.products);
 		for (int index = 0; index < ws_.products; ++index) {
-			cache.products[index] = String(demo_product_name(index));
+			cache.products[index] = String(product_name(index));
 		}
 		cache.tot_produced.resize(ws_.products);
 		cache.tot_consumed.resize(ws_.products);
 		cache.tot_produced_today.resize(ws_.products);
 		cache.tot_consumed_today.resize(ws_.products);
-		root[k.capital_cost_per_capacity] = kDemoCapitalPerCapacity;
+		root[k.capital_cost_per_capacity] = kCapitalPerCapacity;
 		root[k.products] = cache.products;
 		root[k.cities] = cache.cities;
 		root[k.ports] = cache.ports;
@@ -2602,7 +2602,7 @@ Dictionary EconomySim::get_demo_status() {
 	// Carga em trânsito por cidade numa passada única. Antes, cada cidade
 	// varria TODAS as cargas do mundo (O(cidades × cargas) por dia).
 	cache.in_transit_by_city.assign(ws_.cities.size(), 0.0);
-	for (const DemoShipment& shipment : ws_.in_transit) {
+	for (const Shipment& shipment : ws_.in_transit) {
 		const auto found = ws_.city_lookup.find(shipment.to_city);
 		if (found != ws_.city_lookup.end()) {
 			cache.in_transit_by_city[static_cast<std::size_t>(found->second)]
@@ -2624,9 +2624,9 @@ Dictionary EconomySim::get_demo_status() {
 	}
 	// Soma só os valores positivos, na ordem das cidades: idêntico (bit a bit)
 	// ao laço que o `PrivateInvestor.prepare_totals` fazia.
-	for (const DemoCity& city : ws_.cities) {
+	for (const City& city : ws_.cities) {
 		for (int product = 0; product < ws_.products; ++product) {
-			const DemoMarket& market = city.markets[product];
+			const Market& market = city.markets[product];
 			if (market.surplus > 0.0) {
 				cache.tot_surplus[product] += market.surplus;
 			}
@@ -2651,13 +2651,13 @@ Dictionary EconomySim::get_demo_status() {
 	// Sinais leves por cidade (S7-c): arrays planos para a varredura diária da
 	// IA (mercados, POP e incumbentes) — o detalhe pesado por cidade fica sob
 	// demanda em get_city_status(id) na próxima fatia.
-	demo_fill_light_signals(cache);
+	fill_light_signals(cache);
 
 	cache.cities.resize(ws_.cities.size());
 	cache.city_slots.resize(ws_.cities.size());
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		DemoStatusCitySlot& slot = cache.city_slots[city_index];
-		demo_fill_city_status(city_index, slot,
+		StatusCitySlot& slot = cache.city_slots[city_index];
+		fill_city_status(city_index, slot,
 			cache.in_transit_by_city[city_index], false);
 		cache.cities[city_index] = slot.dict;
 	}
@@ -2714,7 +2714,7 @@ Dictionary EconomySim::get_demo_status() {
 		dict[k.buyer_currency] = String(order.buyer_currency.c_str());
 		dict[k.seller_currency] = String(order.seller_currency.c_str());
 		dict[k.good] = order.product >= 0 && order.product < ws_.products
-			? String(demo_product_name(order.product)) : String("wheat");
+			? String(product_name(order.product)) : String("wheat");
 		dict[k.amount] = order.amount;
 		dict[k.transit_hours] = order.transit_hours;
 		dict[k.freight_cost] = order.freight_cost;
@@ -2726,7 +2726,7 @@ Dictionary EconomySim::get_demo_status() {
 		}
 		for (std::size_t leg_index = 0; leg_index < order.legs.size(); ++leg_index) {
 			Dictionary& leg_dict = leg_entries[leg_index];
-			demo_fill_leg_status(leg_dict, order.legs[leg_index]);
+			fill_leg_status(leg_dict, order.legs[leg_index]);
 			legs[leg_index] = leg_dict;
 		}
 		dict[k.legs] = legs;
@@ -2751,16 +2751,16 @@ Dictionary EconomySim::get_demo_status() {
 		double unemployed = 0.0;
 		double students = 0.0;
 		double recruit_reserve = 0.0;
-		double education[kDemoEducationLevels] = {};
-		double labor_force_by_level[kDemoEducationLevels] = {};
-		double employed_by_level[kDemoEducationLevels] = {};
-		double unemployed_by_level[kDemoEducationLevels] = {};
-		double vacancies_by_level[kDemoEducationLevels] = {};
-		double wage_weighted[kDemoEducationLevels] = {};
-		double wage_weight[kDemoEducationLevels] = {};
+		double education[kEducationLevels] = {};
+		double labor_force_by_level[kEducationLevels] = {};
+		double employed_by_level[kEducationLevels] = {};
+		double unemployed_by_level[kEducationLevels] = {};
+		double vacancies_by_level[kEducationLevels] = {};
+		double wage_weighted[kEducationLevels] = {};
+		double wage_weight[kEducationLevels] = {};
 		// F7 calibração: fatia da POP da nação por nível de consumo
 		// (0 = nenhum, 1 = basic, 2 = life, 3 = luxury).
-		double income_share[kDemoIncomeLevels] = {};
+		double income_share[kIncomeLevels] = {};
 		double income_population = 0.0;
 		// F7 calibração: TFP nacional ponderada pela população de simulação.
 		double productivity_weighted = 0.0;
@@ -2776,7 +2776,7 @@ Dictionary EconomySim::get_demo_status() {
 	std::unordered_map<std::string, int> nation_slot;
 	nation_slot.reserve(ws_.cities.size() * 2);
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		const DemoCity& city = ws_.cities[city_index];
+		const City& city = ws_.cities[city_index];
 		auto found = nation_slot.find(city.nation);
 		if (found == nation_slot.end()) {
 			found = nation_slot.emplace(city.nation,
@@ -2798,14 +2798,14 @@ Dictionary EconomySim::get_demo_status() {
 		totals.students += city.pop.students;
 		totals.recruit_reserve += city.pop.recruit_reserve;
 		totals.income_population += std::max(0.0, city.simulation_population);
-		totals.productivity_weighted += demo_effective_productivity(city)
+		totals.productivity_weighted += effective_productivity(city)
 			* std::max(0.0, city.simulation_population);
-		for (int level_index = 0; level_index < kDemoIncomeLevels; ++level_index) {
+		for (int level_index = 0; level_index < kIncomeLevels; ++level_index) {
 			totals.income_share[level_index] +=
 				city.pop.income_level_share[level_index]
 				* std::max(0.0, city.simulation_population);
 		}
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			totals.education[level] += city.pop.education[level];
 			totals.labor_force_by_level[level] +=
 				city.pop.labor_force_by_level[level];
@@ -2820,7 +2820,7 @@ Dictionary EconomySim::get_demo_status() {
 		}
 		}
 		for (const int bi : ws_.buildings_by_city[city_index]) {
-			const DemoBuilding& building =
+			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			if (building.input_product < 0) {
 				totals.production += building.capacity * building.output_scale;
@@ -2846,7 +2846,7 @@ Dictionary EconomySim::get_demo_status() {
 	for (std::size_t index = 0; index < nation_order.size(); ++index) {
 		const std::string& tag = nation_order[index];
 		const NationTotals& totals = nation_totals[index];
-		DemoStatusNationSlot& slot = cache.nation_slots[index];
+		StatusNationSlot& slot = cache.nation_slots[index];
 		Dictionary& nation = slot.dict;
 		nation[k.tag] = String(tag.c_str());
 		const char* display = tag.c_str();
@@ -2869,7 +2869,7 @@ Dictionary EconomySim::get_demo_status() {
 		// valores, só sem realocar os contêineres).
 		const auto fleet_found = ws_.fleets.find(tag);
 		if (fleet_found != ws_.fleets.end()) {
-			const DemoFleet& fleet = fleet_found->second;
+			const Fleet& fleet = fleet_found->second;
 			Dictionary& fleet_dict = slot.fleet;
 			fleet_dict[k.trucks] = fleet.trucks;
 			fleet_dict[k.ships] = fleet.ships;
@@ -2909,9 +2909,9 @@ Dictionary EconomySim::get_demo_status() {
 			slot.employed_by_level.resize(3);
 			slot.unemployed_by_level.resize(3);
 			slot.vacancies_by_level.resize(3);
-			slot.unemployment_by_level.resize(kDemoEducationLevels);
-			slot.wage_by_level.resize(kDemoEducationLevels);
-			slot.income_share.resize(kDemoIncomeLevels);
+			slot.unemployment_by_level.resize(kEducationLevels);
+			slot.wage_by_level.resize(kEducationLevels);
+			slot.income_share.resize(kIncomeLevels);
 			labor[k.education] = slot.education;
 			labor[k.labor_force_by_level] = slot.labor_force_by_level;
 			labor[k.employed_by_level] = slot.employed_by_level;
@@ -2937,7 +2937,7 @@ Dictionary EconomySim::get_demo_status() {
 		slot.vacancies_by_level[0] = totals.vacancies_by_level[0];
 		slot.vacancies_by_level[1] = totals.vacancies_by_level[1];
 		slot.vacancies_by_level[2] = totals.vacancies_by_level[2];
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			slot.unemployment_by_level[level] =
 				totals.labor_force_by_level[level] > 1e-9
 				? totals.unemployed_by_level[level]
@@ -2952,7 +2952,7 @@ Dictionary EconomySim::get_demo_status() {
 			? std::max(0.0, minimum->second) : 0.0;
 		labor[k.wage_rigidity] = ws_.wage_rigidity;
 		// F7 calibração: fatia da POP por nível de consumo (a soma é 1).
-		for (int level_index = 0; level_index < kDemoIncomeLevels; ++level_index) {
+		for (int level_index = 0; level_index < kIncomeLevels; ++level_index) {
 			slot.income_share[level_index] = totals.income_population > 1e-9
 				? totals.income_share[level_index] / totals.income_population : 0.0;
 		}
@@ -2978,7 +2978,7 @@ Dictionary EconomySim::get_demo_status() {
 	// referência): só cresce quando o conjunto muda.
 	cache.currencies.resize(static_cast<int>(ws_.currencies.size()));
 	for (std::size_t index = 0; index < ws_.currencies.size(); ++index) {
-		const DemoCurrency& currency = ws_.currencies[index];
+		const Currency& currency = ws_.currencies[index];
 		Dictionary entry;
 		entry[k.code] = String(currency.code.c_str());
 		entry[k.rate] = currency.rate;
@@ -2990,7 +2990,7 @@ Dictionary EconomySim::get_demo_status() {
 	}
 	cache.tariffs.resize(static_cast<int>(ws_.tariffs.size()));
 	for (std::size_t index = 0; index < ws_.tariffs.size(); ++index) {
-		const DemoTariff& tariff = ws_.tariffs[index];
+		const Tariff& tariff = ws_.tariffs[index];
 		Dictionary entry;
 		entry[k.buyer] = String(tariff.buyer.c_str());
 		entry[k.seller] = String(tariff.seller.c_str());
@@ -2999,14 +2999,14 @@ Dictionary EconomySim::get_demo_status() {
 		cache.tariffs[static_cast<int>(index)] = entry;
 	}
 	OGS_SIM_PHASE_LAP(2);
-	demo_status_live_ = slot_index;
-	demo_status_built_day_ = ws_.day;
+	status_live_ = slot_index;
+	status_built_day_ = ws_.day;
 	return root;
 }
 
 
 Dictionary EconomySim::get_city_status(const String& city_id) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	const std::string id = std::string(city_id.utf8().get_data());
 	const auto found = ws_.city_lookup.find(id);
@@ -3018,60 +3018,60 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 	// Carga em trânsito PARA esta cidade (o status diário calcula a mesma soma
 	// numa passada única; aqui é só uma cidade, então varre as cargas do mundo).
 	double in_transit = 0.0;
-	for (const DemoShipment& shipment : ws_.in_transit) {
+	for (const Shipment& shipment : ws_.in_transit) {
 		if (shipment.to_city == id) {
 			in_transit += shipment.amount;
 		}
 	}
 
-	// Slot frio (nada preenchido): `demo_fill_city_status` escreve todos os
+	// Slot frio (nada preenchido): `fill_city_status` escreve todos os
 	// campos — mesmo conteúdo que o bloco por cidade do status diário, mais o
 	// detalhe pesado (markets/pop/services/buildings/deposits) sob demanda.
-	DemoStatusCitySlot slot;
-	demo_fill_city_status(city_index, slot, in_transit, true);
+	StatusCitySlot slot;
+	fill_city_status(city_index, slot, in_transit, true);
 	return slot.dict;
 }
 
 
-void EconomySim::demo_price_shock(const String& product, double multiplier) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	int index = demo_product_index(product);
+void EconomySim::price_shock(const String& product, double multiplier) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	int index = product_index(product);
 	if (index < 0) {
 		return;
 	}
-	for (DemoCity& city : ws_.cities) {
-		const double base = demo_base_price(index);
+	for (City& city : ws_.cities) {
+		const double base = base_price(index);
 		city.markets[index].price = std::clamp(
 			city.markets[index].price * multiplier, base * 0.1, base * 10.0);
 	}
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-int EconomySim::demo_product_index(const String& product) const {
-	return sim_core_.demo_product_index(std::string(product.utf8().get_data()));
+int EconomySim::product_index(const String& product) const {
+	return sim_core_.product_index(std::string(product.utf8().get_data()));
 }
 
-const char* EconomySim::demo_product_name(int product) const {
-	return sim_core_.demo_product_name(product);
+const char* EconomySim::product_name(int product) const {
+	return sim_core_.product_name(product);
 }
 
-int EconomySim::demo_recipe_index(const String& recipe_id) const {
-	return sim_core_.demo_recipe_index(std::string(recipe_id.utf8().get_data()));
+int EconomySim::recipe_index(const String& recipe_id) const {
+	return sim_core_.recipe_index(std::string(recipe_id.utf8().get_data()));
 }
 
-void EconomySim::demo_set_recipes(const Array& recipes) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_recipes(const Array& recipes) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ws_.recipes.clear();
 	ws_.recipe_lookup.clear();
 	ws_.recipes.reserve(static_cast<std::size_t>(recipes.size()));
 	for (int index = 0; index < recipes.size(); ++index) {
 		const Dictionary entry = recipes[index];
 		const String output_id = String(entry.get("output", ""));
-		const int output = demo_product_index(output_id);
+		const int output = product_index(output_id);
 		if (output < 0) {
 			continue;  // receita de bem que não existe no goods.json carregado
 		}
-		DemoRecipe recipe;
+		Recipe recipe;
 		recipe.id = std::string(String(entry.get("id", "")).utf8().get_data());
 		recipe.output = output;
 		recipe.yield = std::max(1e-9, safe_nonneg(
@@ -3087,14 +3087,14 @@ void EconomySim::demo_set_recipes(const Array& recipes) {
 		// por setor (dado do Game Systems Designer); sem ele, o setor decide.
 		const std::string sector(
 			String(entry.get("sector", "")).utf8().get_data());
-		demo_education_mix_for_sector(sector, recipe.education_mix);
+		education_mix_for_sector(sector, recipe.education_mix);
 		if (entry.has("education_mix")) {
 			double mix[3] = {-1.0, -1.0, -1.0};
 			const Variant mix_value = entry["education_mix"];
 			if (mix_value.get_type() == Variant::ARRAY) {
 				const Array values = mix_value;
 				for (int level = 0;
-						level < kDemoEducationLevels && level < values.size();
+						level < kEducationLevels && level < values.size();
 						++level) {
 					mix[level] = std::max(0.0, double(values[level]));
 				}
@@ -3102,7 +3102,7 @@ void EconomySim::demo_set_recipes(const Array& recipes) {
 				const Dictionary values = mix_value;
 				static const char* kNames[3] = {
 					"basic", "intermediate", "higher"};
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					if (values.has(kNames[level])) {
 						mix[level] = std::max(0.0,
 							double(values[kNames[level]]));
@@ -3112,15 +3112,15 @@ void EconomySim::demo_set_recipes(const Array& recipes) {
 			const double total = std::max(0.0, mix[0]) + std::max(0.0, mix[1])
 				+ std::max(0.0, mix[2]);
 			if (total > 1e-9) {
-				for (int level = 0; level < kDemoEducationLevels; ++level) {
+				for (int level = 0; level < kEducationLevels; ++level) {
 					recipe.education_mix[level] = std::max(0.0, mix[level]) / total;
 				}
 			}
 		}
 		Array inputs = entry.get("inputs", Array());
-		for (int slot = 0; slot < inputs.size() && slot < kDemoMaxRecipeInputs; ++slot) {
+		for (int slot = 0; slot < inputs.size() && slot < kMaxRecipeInputs; ++slot) {
 			const Dictionary input = inputs[slot];
-			const int product = demo_product_index(String(input.get("good", "")));
+			const int product = product_index(String(input.get("good", "")));
 			const double qty = safe_nonneg(static_cast<double>(input.get("qty", 1.0)));
 			if (product < 0 || qty <= 0.0) {
 				continue;
@@ -3133,9 +3133,9 @@ void EconomySim::demo_set_recipes(const Array& recipes) {
 			continue;
 		}
 		Array byproducts = entry.get("byproducts", Array());
-		for (int slot = 0; slot < byproducts.size() && slot < kDemoMaxRecipeInputs; ++slot) {
+		for (int slot = 0; slot < byproducts.size() && slot < kMaxRecipeInputs; ++slot) {
 			const Dictionary item = byproducts[slot];
-			const int product = demo_product_index(String(item.get("good", "")));
+			const int product = product_index(String(item.get("good", "")));
 			const double qty = safe_nonneg(static_cast<double>(item.get("qty", 1.0)));
 			if (product < 0 || qty <= 0.0) {
 				continue;
@@ -3149,20 +3149,20 @@ void EconomySim::demo_set_recipes(const Array& recipes) {
 	}
 }
 
-void EconomySim::demo_seed_industry() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::seed_industry() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (!ws_.world_mode || ws_.industry_seeded || ws_.recipes.empty()
 			|| ws_.cities.empty()) {
 		return;
 	}
-	for (const DemoBuilding& building : ws_.buildings) {
+	for (const Building& building : ws_.buildings) {
 		if (building.recipe >= 0 || building.input_product >= 0) {
 			ws_.industry_seeded = true;  // o mundo já tem indústria
 			return;
 		}
 	}
-	const int flour_product = demo_product_index(String("flour"));
-	const int bread_product = demo_product_index(String("bread"));
+	const int flour_product = product_index(String("flour"));
+	const int bread_product = product_index(String("bread"));
 	int flour_recipe = -1;
 	int bread_recipe = -1;
 	for (std::size_t index = 0; index < ws_.recipes.size(); ++index) {
@@ -3193,46 +3193,46 @@ void EconomySim::demo_seed_industry() {
 	const bool previous_bootstrap = bootstrap_construction_;
 	bootstrap_construction_ = true;
 	for (int slot = 0; slot < seed_cities; ++slot) {
-		DemoCity& city = ws_.cities[static_cast<std::size_t>(order[slot])];
+		City& city = ws_.cities[static_cast<std::size_t>(order[slot])];
 		// Capacidade de referência = 5% da necessidade alimentar diária da
 		// cidade, em toneladas de farinha/pão. É uma ESTIMATIVA de transição
 		// (§12.3), não um dado observado; calibrada no laboratório em F3.
 		const double capacity = std::clamp(
-			city.simulation_population * kDemoNeedPerCapita * 0.05, 2.0, 20.0);
-		const DemoRecipe& flour = ws_.recipes[static_cast<std::size_t>(flour_recipe)];
+			city.simulation_population * kNeedPerCapita * 0.05, 2.0, 20.0);
+		const Recipe& flour = ws_.recipes[static_cast<std::size_t>(flour_recipe)];
 		const double cost = capacity * flour.capital_per_capacity;
 		if (city.firm_cash + city.government_budget < cost * 2.0) {
 			continue;
 		}
 		const String city_id(city.id.c_str());
 		const String mill_id(("SEED-FLOUR-" + city.id).c_str());
-		Dictionary mill = demo_build(city_id, mill_id, "flour", -1, flour_product,
+		Dictionary mill = build(city_id, mill_id, "flour", -1, flour_product,
 			capacity, 0.0, 0.0, 0.0, 1.0, "state", cost, String(flour.id.c_str()));
 		if (!bool(mill.get("created", false))) {
 			continue;
 		}
-		if (DemoBuilding* built = find_demo_building(city.id,
+		if (Building* built = find_building(city.id,
 				std::string(mill_id.utf8().get_data()))) {
 			built->strategic = true;
 		}
-		sim_core_.demo_mark_project_strategic(
+		sim_core_.mark_project_strategic(
 			std::string(mill_id.utf8().get_data()));
 		++created;
 		if (bread_recipe >= 0) {
-			const DemoRecipe& bread =
+			const Recipe& bread =
 				ws_.recipes[static_cast<std::size_t>(bread_recipe)];
 			const double bread_capacity = capacity * 0.8;
 			const double bread_cost = bread_capacity * bread.capital_per_capacity;
 			const String bakery_id(("SEED-BREAD-" + city.id).c_str());
-			Dictionary bakery = demo_build(city_id, bakery_id, "bread", -1,
+			Dictionary bakery = build(city_id, bakery_id, "bread", -1,
 				bread_product, bread_capacity, 0.0, 0.0, 0.0, 1.0, "state",
 				bread_cost, String(bread.id.c_str()));
 			if (bool(bakery.get("created", false))) {
-				if (DemoBuilding* built = find_demo_building(city.id,
+				if (Building* built = find_building(city.id,
 						std::string(bakery_id.utf8().get_data()))) {
 					built->strategic = true;
 				}
-				sim_core_.demo_mark_project_strategic(
+				sim_core_.mark_project_strategic(
 					std::string(bakery_id.utf8().get_data()));
 				++created;
 			}
@@ -3246,7 +3246,7 @@ void EconomySim::demo_seed_industry() {
 	// paper. É ESTIMATIVA de transição (§12.3), marcada `strategic`, não dado
 	// observado; as capacidades derivam da necessidade per capita do nível.
 	auto recipe_for = [this](const char* output_id) {
-		const int product = demo_product_index(String(output_id));
+		const int product = product_index(String(output_id));
 		for (std::size_t index = 0; index < ws_.recipes.size(); ++index) {
 			if (ws_.recipes[index].output == product) {
 				return static_cast<int>(index);
@@ -3254,10 +3254,10 @@ void EconomySim::demo_seed_industry() {
 		}
 		return -1;
 	};
-	auto seed_final_chain = [this, &recipe_for](DemoCity& city, const char* raw_id,
+	auto seed_final_chain = [this, &recipe_for](City& city, const char* raw_id,
 			const char* mid_id, const char* final_id, double per_capita_day,
 			double max_capacity) -> int {
-		const int raw_product = demo_product_index(String(raw_id));
+		const int raw_product = product_index(String(raw_id));
 		const int mid_recipe = recipe_for(mid_id);
 		const int final_recipe = recipe_for(final_id);
 		if (raw_product < 0 || mid_recipe < 0 || final_recipe < 0) {
@@ -3275,8 +3275,8 @@ void EconomySim::demo_seed_industry() {
 				return 0;  // já semeada
 			}
 		}
-		const DemoRecipe& mid = ws_.recipes[static_cast<std::size_t>(mid_recipe)];
-		const DemoRecipe& final = ws_.recipes[static_cast<std::size_t>(final_recipe)];
+		const Recipe& mid = ws_.recipes[static_cast<std::size_t>(mid_recipe)];
+		const Recipe& final = ws_.recipes[static_cast<std::size_t>(final_recipe)];
 		// R2/Q-014: a lavoura bruta (algodão/madeira) nasce JUNTO da fábrica que
 		// a consome — sem ela a matéria-prima não existe no mundo (a IA excluía
 		// essas lavouras, então fabric/cellulose/paper ficavam sem oferta desde o
@@ -3292,7 +3292,7 @@ void EconomySim::demo_seed_industry() {
 			return 0;
 		}
 		raw_capacity = std::max(2.0, raw_capacity);
-		const double raw_cost = raw_capacity * kDemoCapitalPerCapacity;
+		const double raw_cost = raw_capacity * kCapitalPerCapacity;
 		const double total_cost =
 			raw_cost
 			+ final_capacity * mid.capital_per_capacity
@@ -3303,43 +3303,43 @@ void EconomySim::demo_seed_industry() {
 		const String city_id(city.id.c_str());
 		int built = 0;
 		const String raw_building_id(("SEED-" + std::string(raw_id) + "-" + city.id).c_str());
-		Dictionary raw_build = demo_build(city_id, raw_building_id, String(raw_id),
+		Dictionary raw_build = build(city_id, raw_building_id, String(raw_id),
 			-1, raw_product, raw_capacity, 0.0, 0.0, 0.0, 1.0, "state",
 			raw_cost, String(""));
 		if (bool(raw_build.get("created", false))) {
-			if (DemoBuilding* node = find_demo_building(city.id,
+			if (Building* node = find_building(city.id,
 					std::string(raw_building_id.utf8().get_data()))) {
 				node->strategic = true;
 			}
 			++built;
 		}
 		const String mid_building_id(("SEED-" + std::string(mid_id) + "-" + city.id).c_str());
-		Dictionary mid_build = demo_build(city_id, mid_building_id, String(mid_id),
+		Dictionary mid_build = build(city_id, mid_building_id, String(mid_id),
 			-1, ws_.recipes[static_cast<std::size_t>(mid_recipe)].output,
 			final_capacity, 0.0, 0.0, 0.0, 1.0, "state",
 			final_capacity * mid.capital_per_capacity,
 			String(mid.id.c_str()));
 		if (bool(mid_build.get("created", false))) {
-			if (DemoBuilding* node = find_demo_building(city.id,
+			if (Building* node = find_building(city.id,
 					std::string(mid_building_id.utf8().get_data()))) {
 				node->strategic = true;
 			}
-			sim_core_.demo_mark_project_strategic(
+			sim_core_.mark_project_strategic(
 				std::string(mid_building_id.utf8().get_data()));
 			++built;
 		}
 		const String final_building_id(("SEED-" + std::string(final_id) + "-" + city.id).c_str());
-		Dictionary final_build = demo_build(city_id, final_building_id, String(final_id),
+		Dictionary final_build = build(city_id, final_building_id, String(final_id),
 			-1, ws_.recipes[static_cast<std::size_t>(final_recipe)].output,
 			final_capacity, 0.0, 0.0, 0.0, 1.0, "state",
 			final_capacity * final.capital_per_capacity,
 			String(final.id.c_str()));
 		if (bool(final_build.get("created", false))) {
-			if (DemoBuilding* node = find_demo_building(city.id,
+			if (Building* node = find_building(city.id,
 					std::string(final_building_id.utf8().get_data()))) {
 				node->strategic = true;
 			}
-			sim_core_.demo_mark_project_strategic(
+			sim_core_.mark_project_strategic(
 				std::string(final_building_id.utf8().get_data()));
 			++built;
 		}
@@ -3353,16 +3353,16 @@ void EconomySim::demo_seed_industry() {
 		const int scan = std::min<int>(24, static_cast<int>(order.size()));
 		for (int slot = 0; slot < scan && chains_seeded < 3; ++slot) {
 			const int city_index = order[static_cast<std::size_t>(slot)];
-			DemoCity& city = ws_.cities[static_cast<std::size_t>(city_index)];
+			City& city = ws_.cities[static_cast<std::size_t>(city_index)];
 			double food_capacity = 0.0;
 			for (const int bi : ws_.buildings_by_city[static_cast<std::size_t>(city_index)]) {
-				const DemoBuilding& building = ws_.buildings[static_cast<std::size_t>(bi)];
-				if (demo_food_calories(building.output_product) > 0.0) {
+				const Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
+				if (food_calories(building.output_product) > 0.0) {
 					food_capacity += building.capacity
 						* city.suitability[building.output_product];
 				}
 			}
-			const double food_need = city.simulation_population * kDemoNeedPerCapita;
+			const double food_need = city.simulation_population * kNeedPerCapita;
 			if (food_capacity < food_need * 1.10) {
 				continue;
 			}
@@ -3372,7 +3372,7 @@ void EconomySim::demo_seed_industry() {
 				0.0004 / 30.0, 20.0);
 			// institutional/government paper: 0,005 × âncora alimentar/dia.
 			built += seed_final_chain(city, "wood", "cellulose", "paper",
-				kDemoNeedPerCapita * 0.005, 10.0);
+				kNeedPerCapita * 0.005, 10.0);
 			if (built > 0) {
 				++chains_seeded;
 				created += built;
@@ -3387,10 +3387,10 @@ void EconomySim::demo_seed_industry() {
 	}
 }
 
-void EconomySim::demo_set_needs(const Dictionary& needs) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_needs(const Dictionary& needs) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	// Cesta alimentar a partir do nível básico de needs.json. Só a categoria
-	// `food` tem âncora física no núcleo hoje (kDemoNeedPerCapita); as demais
+	// `food` tem âncora física no núcleo hoje (kNeedPerCapita); as demais
 	// categorias ficam para F3.
 	const Dictionary levels = needs.get("levels", Dictionary());
 	const Dictionary basic = levels.get("basic", Dictionary());
@@ -3405,9 +3405,9 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 	std::vector<int> products;
 	std::vector<double> factors;
 	for (int index = 0; index < substitutes.size()
-			&& static_cast<int>(products.size()) < kDemoMaxFoodProducts; ++index) {
+			&& static_cast<int>(products.size()) < kMaxFoodProducts; ++index) {
 		const String id = String(substitutes[index]);
-		const int product = demo_product_index(id);
+		const int product = product_index(id);
 		if (product < 0) {
 			continue;
 		}
@@ -3433,7 +3433,7 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 	std::vector<int> ordered_products;
 	std::vector<double> ordered_factors;
 	for (const char* legacy : kLegacyFood) {
-		const int index = demo_product_index(String(legacy));
+		const int index = product_index(String(legacy));
 		for (std::size_t slot = 0; slot < products.size(); ++slot) {
 			if (products[slot] == index) {
 				ordered_products.push_back(products[slot]);
@@ -3493,10 +3493,10 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 			return left.priority < right.priority;
 		});
 	for (const ParsedLevel& parsed : parsed_levels) {
-		if (static_cast<int>(ws_.needs_levels.size()) >= kDemoMaxNeedsLevels) {
+		if (static_cast<int>(ws_.needs_levels.size()) >= kMaxNeedsLevels) {
 			break;
 		}
-		DemoNeedsLevel level;
+		NeedsLevel level;
 		level.id = std::string(parsed.name.utf8().get_data());
 		level.priority = parsed.priority;
 		level.weight = std::clamp(
@@ -3511,7 +3511,7 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 			if (substitutes.is_empty()) {
 				continue;
 			}
-			DemoNeedsCategory category;
+			NeedsCategory category;
 			category.id = std::string(category_name.utf8().get_data());
 			category.per_capita_day = std::max(0.0,
 				static_cast<double>(category_data.get("per_capita_t_month", 0.0)))
@@ -3525,7 +3525,7 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 			}
 			for (int si = 0; si < substitutes.size(); ++si) {
 				const String id = String(substitutes[si]);
-				const int product = demo_product_index(id);
+				const int product = product_index(id);
 				if (product < 0) {
 					continue;
 				}
@@ -3551,8 +3551,8 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 		ws_.needs_levels.push_back(std::move(level));
 	}
 	if (ws_.needs_levels.empty()) {
-		++demo_status_static_version_;
-		demo_status_invalidate();
+		++status_static_version_;
+		status_invalidate();
 		return;
 	}
 	ws_.needs_loaded = true;
@@ -3563,7 +3563,7 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 	// Consumo institucional (decisão §12.10): o Estado compra paper/computer.
 	// O dado de needs.json lista os BENS (`institutional.government`); a
 	// quantidade não existe na spec, então usa-se uma fração ESTIMADA da âncora
-	// alimentar (kDemoNeedPerCapita), declarada na tabela abaixo e registrada em
+	// alimentar (kNeedPerCapita), declarada na tabela abaixo e registrada em
 	// GAME_STATE/perf como estimativa — nunca como medição. Se um needs.json
 	// futuro trouxer `institutional_per_capita_t_month.government.<bem>`, ele
 	// vence a estimativa.
@@ -3574,14 +3574,14 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 	const Dictionary quantities = quantities_root.get("government", Dictionary());
 	static const struct {
 		const char* id;
-		double anchor_share;  // fração de kDemoNeedPerCapita por dia
+		double anchor_share;  // fração de kNeedPerCapita por dia
 	} kEstimatedGovernmentNeeds[] = {
 		{"paper", 0.005},
 		{"computer", 0.0001},
 	};
 	for (int index = 0; index < government.size(); ++index) {
 		const String id = String(government[index]);
-		const int product = demo_product_index(id);
+		const int product = product_index(id);
 		if (product < 0) {
 			continue;
 		}
@@ -3591,7 +3591,7 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 		} else {
 			for (const auto& estimate : kEstimatedGovernmentNeeds) {
 				if (id == String(estimate.id)) {
-					per_day = kDemoNeedPerCapita * estimate.anchor_share;
+					per_day = kNeedPerCapita * estimate.anchor_share;
 					break;
 				}
 			}
@@ -3603,16 +3603,16 @@ void EconomySim::demo_set_needs(const Dictionary& needs) {
 		ws_.government_per_capita_day.push_back(per_day);
 	}
 	// Necessidades carregadas depois do mundo: o estado por cidade acompanha.
-	for (DemoCity& city : ws_.cities) {
-		demo_init_pop_needs(city.pop);
+	for (City& city : ws_.cities) {
+		init_pop_needs(city.pop);
 	}
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	++status_static_version_;
+	status_invalidate();
 }
 
-ogs::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
+ogs::Building* EconomySim::find_building(const std::string& city_id,
 		const std::string& id) {
-	for (DemoBuilding& building : ws_.buildings) {
+	for (Building& building : ws_.buildings) {
 		if (building.city == city_id && building.id == id) {
 			return &building;
 		}
@@ -3620,8 +3620,8 @@ ogs::DemoBuilding* EconomySim::find_demo_building(const std::string& city_id,
 	return nullptr;
 }
 
-void EconomySim::demo_set_balance(const Dictionary& values) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_balance(const Dictionary& values) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	auto number = [&values](const char* key, double fallback) {
 		return values.has(key) ? double(values[key]) : fallback;
 	};
@@ -3641,41 +3641,41 @@ void EconomySim::demo_set_balance(const Dictionary& values) {
 	ws_.trade_external = std::clamp(
 		static_cast<int>(number("trade_external", ws_.trade_external)), 0, 256);
 	// F7 calibração: folga de custo de vida do gate de renda → nível de
-	// consumo. Padrão = kDemoIncomeBasketMargin; o laboratório pode isolá-la
+	// consumo. Padrão = kIncomeBasketMargin; o laboratório pode isolá-la
 	// (1.0 = sem folga) para testar a regra do nível sem depender da calibração.
 	ws_.income_basket_margin = std::clamp(
 		number("income_basket_margin", ws_.income_basket_margin), 1.0, 8.0);
 }
 
-void EconomySim::demo_set_suitability(const String& city_id, const String& product,
+void EconomySim::set_suitability(const String& city_id, const String& product,
 		double value) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	const int index = demo_product_index(product);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
 	if (index < 0) {
 		return;
 	}
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
 	city->suitability[index] = std::clamp(value, 0.0, 1.0);
 	// O status reuse arrays de aptidão: invalida só quando o dado muda.
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	++status_static_version_;
+	status_invalidate();
 }
 
-bool EconomySim::demo_set_deposit(const String& city_id, const String& product,
+bool EconomySim::set_deposit(const String& city_id, const String& product,
 		double reserve_kt, double quality, double depth_m) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	const int index = demo_product_index(product);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
 	if (index < 0) {
 		return false;
 	}
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return false;
 	}
-	DemoDeposit& deposit = city->deposits[index];
+	Deposit& deposit = city->deposits[index];
 	deposit.quality = std::clamp(safe_nonneg(quality), 0.0, 1.0);
 	deposit.depth_m = safe_nonneg(depth_m);
 	if (deposit.tracked) {
@@ -3686,30 +3686,30 @@ bool EconomySim::demo_set_deposit(const String& city_id, const String& product,
 	deposit.initial_kt = safe_nonneg(reserve_kt);
 	deposit.remaining_kt = deposit.initial_kt;
 	deposit.extracted_kt = 0.0;
-	++demo_status_deposit_version_;
-	demo_status_invalidate();
+	++status_deposit_version_;
+	status_invalidate();
 	return true;
 }
 
-void EconomySim::demo_set_external_demand(const String& city_id, const String& product,
+void EconomySim::set_external_demand(const String& city_id, const String& product,
 		double ceiling_t_per_day) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	const int index = demo_product_index(product);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const int index = product_index(product);
 	if (index < 0) {
 		return;
 	}
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
 	city->external_demand[index] = safe_nonneg(ceiling_t_per_day);
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	++status_static_version_;
+	status_invalidate();
 }
 
-void EconomySim::demo_set_external_income_index(const String& city_id, double index) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+void EconomySim::set_external_income_index(const String& city_id, double index) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
@@ -3720,30 +3720,30 @@ void EconomySim::demo_set_external_income_index(const String& city_id, double in
 	// F7: a estrutura etária, a escolaridade e a participação derivam do mesmo
 	// índice de renda real (único dado por país do cenário). Reaplica o perfil
 	// quando o índice chega do GeographyService, logo após criar o mundo.
-	demo_apply_labor_profile(*city);
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	apply_labor_profile(*city);
+	++status_static_version_;
+	status_invalidate();
 }
 
-void EconomySim::demo_set_productivity_index(const String& city_id, double index) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+void EconomySim::set_productivity_index(const String& city_id, double index) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
 	// 0 (ou negativo) = DERIVAR do índice de renda real: o dado do PIB PPP per
-	// capita chega por demo_set_external_income_index e a TFP acompanha. Um
+	// capita chega por set_external_income_index e a TFP acompanha. Um
 	// valor positivo é fator explícito do laboratório. Os limites só contêm
 	// dado corrompido: o cenário real fica em ~0,38 (NGA) a ~3,57 (USA).
 	city->productivity_index = index > 0.0
 		? std::clamp(index, 0.05, 8.0) : 0.0;
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	++status_static_version_;
+	status_invalidate();
 }
 
-void EconomySim::demo_set_income_gini(const String& city_id, double gini) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+void EconomySim::set_income_gini(const String& city_id, double gini) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
@@ -3753,27 +3753,27 @@ void EconomySim::demo_set_income_gini(const String& city_id, double gini) {
 	// Recalcula as classes na hora: o status lido antes do primeiro tick já
 	// publica a repartição ancorada (se o mundo ainda não tem preços, cai no
 	// espelho dos estratos, sem inventar Gini).
-	demo_refresh_income_classes(*city);
-	++demo_status_static_version_;
-	demo_status_invalidate();
+	refresh_income_classes(*city);
+	++status_static_version_;
+	status_invalidate();
 }
 
 // ---------------------------------------------------------------------------
 // F7 — trabalho, educação e renda.
 // ---------------------------------------------------------------------------
-void EconomySim::demo_apply_labor_profile(DemoCity& city) {
-	sim_core_.demo_apply_labor_profile(city);
+void EconomySim::apply_labor_profile(City& city) {
+	sim_core_.apply_labor_profile(city);
 }
 
-void EconomySim::demo_set_labor_profile(const String& city_id,
+void EconomySim::set_labor_profile(const String& city_id,
 		const Dictionary& profile) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		return;
 	}
-	demo_apply_labor_profile(*city);
-	DemoPop& pop = city->pop;
+	apply_labor_profile(*city);
+	Pop& pop = city->pop;
 	const double population = std::max(0.0, city->simulation_population);
 	if (profile.has("working_age_share")) {
 		const double share = std::clamp(
@@ -3789,7 +3789,7 @@ void EconomySim::demo_set_labor_profile(const String& city_id,
 		const Variant value = profile["education"];
 		if (value.get_type() == Variant::ARRAY) {
 			const Array shares = value;
-			if (shares.size() >= kDemoEducationLevels) {
+			if (shares.size() >= kEducationLevels) {
 				double basic = std::max(0.0, double(shares[0]));
 				double intermediate = std::max(0.0, double(shares[1]));
 				double higher = std::max(0.0, double(shares[2]));
@@ -3816,13 +3816,13 @@ void EconomySim::demo_set_labor_profile(const String& city_id,
 		if (value.get_type() == Variant::ARRAY) {
 			const Array rates = value;
 			for (int level = 0;
-					level < kDemoEducationLevels && level < rates.size(); ++level) {
+					level < kEducationLevels && level < rates.size(); ++level) {
 				pop.participation[level] = std::clamp(
 					double(rates[level]), 0.0, 1.0);
 			}
 		} else {
 			const double rate = std::clamp(double(value), 0.0, 1.0);
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				pop.participation[level] = rate;
 			}
 		}
@@ -3832,14 +3832,14 @@ void EconomySim::demo_set_labor_profile(const String& city_id,
 		if (value.get_type() == Variant::ARRAY) {
 			const Array wages = value;
 			for (int level = 0;
-					level < kDemoEducationLevels && level < wages.size(); ++level) {
+					level < kEducationLevels && level < wages.size(); ++level) {
 				pop.wage_by_level[level] = std::max(0.0, double(wages[level]));
 			}
 		}
 	}
 	pop.labor_force = 0.0;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
-		const double studying = level < kDemoEducationLevels - 1
+	for (int level = 0; level < kEducationLevels; ++level) {
+		const double studying = level < kEducationLevels - 1
 			? pop.studying[level] : 0.0;
 		pop.labor_force_by_level[level] = std::max(0.0,
 			pop.education[level] * pop.participation[level] - studying);
@@ -3852,12 +3852,12 @@ void EconomySim::demo_set_labor_profile(const String& city_id,
 	pop.employed = 0.0;
 	pop.students = pop.studying[0] + pop.studying[1];
 	pop.dependents = std::max(0.0, population - pop.labor_force);
-	demo_refresh_strata(pop);
-	demo_status_invalidate();
+	refresh_strata(pop);
+	status_invalidate();
 }
 
-void EconomySim::demo_set_minimum_wage(const String& nation, double value) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_minimum_wage(const String& nation, double value) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string tag(nation.utf8().get_data());
 	if (tag.empty()) {
 		return;
@@ -3871,23 +3871,23 @@ void EconomySim::demo_set_minimum_wage(const String& nation, double value) {
 	// salário recebem o âncora com o piso imediatamente.
 	const double floor = value > 0.0 ? std::min(value, 100.0) : 0.0;
 	if (floor > 0.0) {
-		for (DemoCity& city : ws_.cities) {
+		for (City& city : ws_.cities) {
 			if (city.nation != tag) {
 				continue;
 			}
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				city.pop.wage_by_level[level] = std::max(
 					city.pop.wage_by_level[level], floor);
 			}
 		}
 	}
-	demo_status_invalidate();
+	status_invalidate();
 }
 
-void EconomySim::demo_set_wage_rigidity(double value) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_wage_rigidity(double value) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ws_.wage_rigidity = std::clamp(value, 0.0, 0.25);
-	demo_status_invalidate();
+	status_invalidate();
 }
 
 // ---------------------------------------------------------------------------
@@ -3906,21 +3906,21 @@ void EconomySim::demo_set_wage_rigidity(double value) {
 // subsistência no consumo), que vem da produção local e é conservado no estoque.
 // ---------------------------------------------------------------------------
 
-void EconomySim::demo_set_sector_employment(const Variant& data) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_sector_employment(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (data.get_type() != Variant::DICTIONARY) {
 		return;
 	}
 	const Dictionary root = data;
 	const Array anchors = root.get("anchors", Array());
-	std::vector<DemoSectorAnchor> parsed;
+	std::vector<SectorAnchor> parsed;
 	parsed.reserve(anchors.size());
 	for (int index = 0; index < anchors.size(); ++index) {
 		if (anchors[index].get_type() != Variant::DICTIONARY) {
 			continue;
 		}
 		const Dictionary entry = anchors[index];
-		DemoSectorAnchor anchor;
+		SectorAnchor anchor;
 		anchor.income = std::clamp(
 			static_cast<double>(entry.get("income_index", 1.0)), 0.05, 8.0);
 		anchor.agriculture = std::clamp(
@@ -3935,7 +3935,7 @@ void EconomySim::demo_set_sector_employment(const Variant& data) {
 		return;
 	}
 	std::sort(parsed.begin(), parsed.end(),
-		[](const DemoSectorAnchor& a, const DemoSectorAnchor& b) {
+		[](const SectorAnchor& a, const SectorAnchor& b) {
 			return a.income < b.income;
 		});
 	const Dictionary agri = root.get("agriculture", Dictionary());
@@ -3967,15 +3967,15 @@ void EconomySim::demo_set_sector_employment(const Variant& data) {
 	}
 	ws_.sector_anchors = std::move(parsed);
 	ws_.sector_loaded = true;
-	demo_status_invalidate();
+	status_invalidate();
 }
 
 // ---------------------------------------------------------------------------
 // F8 — SERVIÇOS
 // ---------------------------------------------------------------------------
 
-void EconomySim::demo_set_services(const Variant& services) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::set_services(const Variant& services) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Array sectors;
 	if (services.get_type() == Variant::DICTIONARY) {
 		const Dictionary data = services;
@@ -3986,19 +3986,19 @@ void EconomySim::demo_set_services(const Variant& services) {
 	} else if (services.get_type() == Variant::ARRAY) {
 		sectors = services;
 	}
-	if (sectors.size() != kDemoMaxServiceSectors) {
+	if (sectors.size() != kMaxServiceSectors) {
 		return;
 	}
-	std::vector<DemoServiceSector> parsed;
+	std::vector<ServiceSector> parsed;
 	std::vector<std::vector<std::string>> service_ids;
-	parsed.reserve(kDemoMaxServiceSectors);
-	service_ids.reserve(kDemoMaxServiceSectors);
+	parsed.reserve(kMaxServiceSectors);
+	service_ids.reserve(kMaxServiceSectors);
 	for (int index = 0; index < sectors.size(); ++index) {
 		if (sectors[index].get_type() != Variant::DICTIONARY) {
 			return;
 		}
 		const Dictionary d = sectors[index];
-		DemoServiceSector sector;
+		ServiceSector sector;
 		sector.id = std::string(String(d.get("id", "")).utf8().get_data());
 		if (sector.id.empty()) {
 			return;
@@ -4010,7 +4010,7 @@ void EconomySim::demo_set_services(const Variant& services) {
 		sector.price = std::clamp(
 			safe_nonneg(static_cast<double>(d.get("price", 1.0))), 0.01, 100000.0);
 		const Dictionary pop_share = d.get("pop_share", Dictionary());
-		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			static const char* const kLevelKeys[3] = {"basic", "life", "luxury"};
 			sector.pop_share[level] = std::max(0.0,
 				static_cast<double>(pop_share.get(kLevelKeys[level], 0.0)));
@@ -4024,7 +4024,7 @@ void EconomySim::demo_set_services(const Variant& services) {
 		const Array inputs = d.get("input_goods", Array());
 		for (int slot = 0; slot < inputs.size(); ++slot) {
 			const Dictionary input = inputs[slot];
-			const int product = demo_product_index(
+			const int product = product_index(
 				String(input.get("good", "")));
 			const double qty = safe_nonneg(
 				static_cast<double>(input.get("per_unit", 0.0)));
@@ -4049,7 +4049,7 @@ void EconomySim::demo_set_services(const Variant& services) {
 		}
 		const Array mix = d.get("education_mix", Array());
 		double mix_sum = 0.0;
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			sector.education_mix[level] = level < mix.size()
 				? std::max(0.0, static_cast<double>(mix[level])) : 0.0;
 			mix_sum += sector.education_mix[level];
@@ -4057,7 +4057,7 @@ void EconomySim::demo_set_services(const Variant& services) {
 		if (mix_sum <= 1e-9) {
 			sector.education_mix[0] = 1.0;
 		} else {
-			for (int level = 0; level < kDemoEducationLevels; ++level) {
+			for (int level = 0; level < kEducationLevels; ++level) {
 				sector.education_mix[level] /= mix_sum;
 			}
 		}
@@ -4100,9 +4100,9 @@ void EconomySim::demo_set_services(const Variant& services) {
 	}
 	ws_.service_sectors = std::move(parsed);
 	ws_.services_loaded = true;
-	for (DemoCity& city : ws_.cities) {
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-			DemoServiceMarket& market = city.service_markets[sector];
+	for (City& city : ws_.cities) {
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+			ServiceMarket& market = city.service_markets[sector];
 			market.base_price = ws_.service_sectors[static_cast<std::size_t>(sector)].price;
 			if (market.price <= 0.0 || !std::isfinite(market.price)) {
 				market.price = market.base_price;
@@ -4110,13 +4110,13 @@ void EconomySim::demo_set_services(const Variant& services) {
 		}
 	}
 	if (!ws_.cities.empty() && ws_.service_businesses.empty()) {
-		demo_seed_services();
+		seed_services();
 	}
 }
 
-Array EconomySim::demo_get_service_sectors() const {
+Array EconomySim::get_service_sectors() const {
 	Array out;
-	for (const DemoServiceSector& sector : ws_.service_sectors) {
+	for (const ServiceSector& sector : ws_.service_sectors) {
 		Dictionary entry;
 		entry["id"] = String(sector.id.c_str());
 		entry["name_pt"] = String(sector.name_pt.c_str());
@@ -4129,7 +4129,7 @@ Array EconomySim::demo_get_service_sectors() const {
 		entry["education"] = sector.education;
 		entry["jobs_per_unit"] = sector.jobs_per_unit;
 		Array mix;
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			mix.append(sector.education_mix[level]);
 		}
 		entry["education_mix"] = mix;
@@ -4139,7 +4139,7 @@ Array EconomySim::demo_get_service_sectors() const {
 	return out;
 }
 
-Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
+Dictionary EconomySim::get_services_detail(const String& city_id) const {
 	Dictionary out;
 	const std::string id = std::string(city_id.utf8().get_data());
 	const auto found = ws_.city_lookup.find(id);
@@ -4147,15 +4147,15 @@ Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
 		out["error"] = "cidade inexistente";
 		return out;
 	}
-	const DemoCity& city = ws_.cities[static_cast<std::size_t>(found->second)];
+	const City& city = ws_.cities[static_cast<std::size_t>(found->second)];
 	out["city"] = city_id;
 	out["nation"] = String(city.nation.c_str());
 	out["name"] = String(city.name.c_str());
 	Array sectors;
 	for (int sector = 0; sector < static_cast<int>(ws_.service_sectors.size()); ++sector) {
-		const DemoServiceSector& definition =
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(sector)];
-		const DemoServiceMarket& market = city.service_markets[sector];
+		const ServiceMarket& market = city.service_markets[sector];
 		Dictionary entry;
 		entry["id"] = String(definition.id.c_str());
 		entry["name_pt"] = String(definition.name_pt.c_str());
@@ -4175,7 +4175,7 @@ Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
 		entry["input_cost"] = market.input_cost;
 		entry["service_cost"] = market.service_cost;
 		Array pop_demand;
-		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			pop_demand.append(market.pop_demand[level]);
 		}
 		entry["pop_demand"] = pop_demand;
@@ -4184,7 +4184,7 @@ Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
 	out["sectors"] = sectors;
 	Array businesses;
 	for (const int index : ws_.service_by_city[static_cast<std::size_t>(found->second)]) {
-		const DemoServiceBusiness& business =
+		const ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt) {
 			continue;
@@ -4217,10 +4217,10 @@ Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
 	out["service_businesses"] = city.service_business_count;
 	Array class_population;
 	Array income_level_share;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		class_population.append(city.pop.class_population[level]);
 	}
-	for (int level = 0; level < kDemoIncomeLevels; ++level) {
+	for (int level = 0; level < kIncomeLevels; ++level) {
 		income_level_share.append(city.pop.income_level_share[level]);
 	}
 	out["class_population"] = class_population;
@@ -4232,11 +4232,11 @@ Dictionary EconomySim::demo_get_services_detail(const String& city_id) const {
 	return out;
 }
 
-void EconomySim::demo_set_service_capacity(const String& city_id,
+void EconomySim::set_service_capacity(const String& city_id,
 		const String& sector, double units_per_day) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
-	const int sector_index = demo_service_sector_index(
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
+	const int sector_index = service_sector_index(
 		std::string(sector.utf8().get_data()));
 	if (city == nullptr || sector_index < 0) {
 		return;
@@ -4252,16 +4252,16 @@ void EconomySim::demo_set_service_capacity(const String& city_id,
 	}
 	if (local.empty()) {
 		if (units_per_day > 0.0) {
-			const DemoServiceSector& definition =
+			const ServiceSector& definition =
 				ws_.service_sectors[static_cast<std::size_t>(sector_index)];
-			demo_service_open(*city, sector_index, units_per_day,
+			service_open(*city, sector_index, units_per_day,
 				units_per_day * definition.capital_per_unit);
 		}
 		return;
 	}
 	const double each = units_per_day / static_cast<double>(local.size());
 	for (const int index : local) {
-		DemoServiceBusiness& business =
+		ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		business.capacity = each;
 		business.jobs = each
@@ -4271,10 +4271,10 @@ void EconomySim::demo_set_service_capacity(const String& city_id,
 	}
 }
 
-void EconomySim::demo_set_service_business_state(int business_id, int loss_days,
+void EconomySim::set_service_business_state(int business_id, int loss_days,
 		double profit) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	for (DemoServiceBusiness& business : ws_.service_businesses) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	for (ServiceBusiness& business : ws_.service_businesses) {
 		if (business.id != business_id) {
 			continue;
 		}
@@ -4284,9 +4284,9 @@ void EconomySim::demo_set_service_business_state(int business_id, int loss_days,
 	}
 }
 
-int EconomySim::demo_get_service_business_count() const {
+int EconomySim::get_service_business_count() const {
 	int count = 0;
-	for (const DemoServiceBusiness& business : ws_.service_businesses) {
+	for (const ServiceBusiness& business : ws_.service_businesses) {
 		if (!business.bankrupt) {
 			++count;
 		}
@@ -4294,24 +4294,24 @@ int EconomySim::demo_get_service_business_count() const {
 	return count;
 }
 
-int EconomySim::demo_get_service_bankruptcies() const {
+int EconomySim::get_service_bankruptcies() const {
 	return ws_.service_bankruptcies;
 }
 
-Dictionary EconomySim::demo_invest(const String& city_id, const String& building_id,
+Dictionary EconomySim::invest(const String& city_id, const String& building_id,
 		double amount) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["invested"] = 0.0;
 	result["capacity_added"] = 0.0;
 	result["error"] = "";
 
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		result["error"] = "cidade desconhecida";
 		return result;
 	}
-	DemoBuilding* building = find_demo_building(city->id,
+	Building* building = find_building(city->id,
 		std::string(building_id.utf8().get_data()));
 	if (building == nullptr) {
 		result["error"] = "construção desconhecida";
@@ -4331,7 +4331,7 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 		return result;
 	}
 	if (building->input_product < 0) {
-		const DemoDeposit& deposit = city->deposits[building->output_product];
+		const Deposit& deposit = city->deposits[building->output_product];
 		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
 			result["error"] = "reserva esgotada";
 			return result;
@@ -4350,7 +4350,7 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 		building->capacity += capacity_added;
 		result["invested"] = amount;
 		result["capacity_added"] = capacity_added;
-		demo_status_invalidate();
+		status_invalidate();
 		return result;
 	}
 
@@ -4358,7 +4358,7 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 	// compromete o custo (limite do surto) e paga conforme a obra avança; a
 	// capacidade entra ao concluir. Anti-duplicação: uma expansão em andamento
 	// por prédio (a IA expandiria o mesmo prédio todo dia durante a obra).
-	for (const DemoConstructionProject& in_flight : ws_.construction_projects) {
+	for (const ConstructionProject& in_flight : ws_.construction_projects) {
 		if (in_flight.expand_existing
 				&& in_flight.building_id == building->id
 				&& in_flight.city == city->id) {
@@ -4367,13 +4367,13 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 		}
 	}
 	const double committed =
-		demo_committed_construction(ws_, city->id, "private");
+		committed_construction(ws_, city->id, "private");
 	if (committed + amount > city->firm_cash) {
 		result["error"] = "capital insuficiente";
 		return result;
 	}
 
-	DemoConstructionProject project;
+	ConstructionProject project;
 	project.id = building->id + "-EXP";
 	project.building_id = building->id;
 	project.city = city->id;
@@ -4384,7 +4384,7 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 	project.recipe = building->recipe;
 	project.capacity = capacity_added;
 	project.input_per_output = building->input_per_output;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		project.education_mix[level] = building->education_mix[level];
 	}
 	project.jobs = building->jobs * (capacity_added / std::max(1e-9, building->capacity));
@@ -4395,26 +4395,26 @@ Dictionary EconomySim::demo_invest(const String& city_id, const String& building
 	// §15 calibração: reserva o capital da obra no início (investimento).
 	project.reserved = amount;
 	city->firm_cash -= amount;
-	sim_core_.demo_add_construction_project(project);
+	sim_core_.add_construction_project(project);
 	result["invested"] = amount;
 	result["capacity_added"] = capacity_added;
 	result["project_id"] = String(project.id.c_str());
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::demo_build(const String& city_id, const String& building_id,
+Dictionary EconomySim::build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
 		const String& recipe_id) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["created"] = false;
 	result["cost"] = 0.0;
 	result["error"] = "";
 
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		result["error"] = "cidade desconhecida";
 		return result;
@@ -4425,7 +4425,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		result["error"] = "identificador vazio";
 		return result;
 	}
-	if (find_demo_building(city->id, id) != nullptr) {
+	if (find_building(city->id, id) != nullptr) {
 		result["error"] = "construção já existe";
 		return result;
 	}
@@ -4439,12 +4439,12 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	}
 	int recipe = -1;
 	if (!recipe_id.is_empty()) {
-		recipe = demo_recipe_index(recipe_id);
+		recipe = recipe_index(recipe_id);
 		if (recipe < 0) {
 			result["error"] = "receita desconhecida";
 			return result;
 		}
-		const DemoRecipe& chosen = ws_.recipes[static_cast<std::size_t>(recipe)];
+		const Recipe& chosen = ws_.recipes[static_cast<std::size_t>(recipe)];
 		if (chosen.output != output_product) {
 			result["error"] = "receita não produz o bem";
 			return result;
@@ -4463,10 +4463,10 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 			opex = capacity * chosen.opex_per_ton;
 		}
 	}
-	double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+	double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
 	if (recipe >= 0) {
-		const DemoRecipe& chosen = ws_.recipes[static_cast<std::size_t>(recipe)];
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		const Recipe& chosen = ws_.recipes[static_cast<std::size_t>(recipe)];
+		for (int level = 0; level < kEducationLevels; ++level) {
 			education_mix[level] = chosen.education_mix[level];
 		}
 	} else if (input_product >= 0) {
@@ -4485,7 +4485,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		return result;
 	}
 	if (recipe < 0 && input_product < 0) {
-		const DemoDeposit& deposit = city->deposits[output_product];
+		const Deposit& deposit = city->deposits[output_product];
 		if (deposit.tracked && deposit.remaining_kt <= 0.0) {
 			result["error"] = "reserva esgotada";
 			return result;
@@ -4510,7 +4510,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 			city->firm_cash -= cost;
 		}
 
-		DemoBuilding building;
+		Building building;
 		building.id = id;
 		building.city = city->id;
 		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
@@ -4521,11 +4521,11 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		building.recipe = recipe;
 		building.capacity = capacity;
 		building.input_per_output = input_per_output;
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			building.education_mix[level] = education_mix[level];
 		}
 		building.capital_per_capacity = capacity > 0.0
-			? std::max(1.0, cost / capacity) : kDemoCapitalPerCapacity;
+			? std::max(1.0, cost / capacity) : kCapitalPerCapacity;
 		building.jobs = jobs;
 		building.wage = wage;
 		building.opex = opex;
@@ -4544,7 +4544,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 			ws_.buildings_by_city[city_index].push_back(
 				static_cast<int>(ws_.buildings.size() - 1));
 		} else {
-			demo_rebuild_indexes();
+			rebuild_indexes();
 		}
 
 		// O investimento é pago ao setor de construção doméstico e entra no PIB
@@ -4553,7 +4553,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		city->construction_revenue_pending += cost;
 		result["created"] = true;
 		result["cost"] = cost;
-		demo_status_invalidate();
+		status_invalidate();
 		return result;
 	}
 
@@ -4584,7 +4584,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	// em andamento na cidade (a IA não enxerga obra em voo no status — sem o
 	// guarda ela empilhava uma mina/fazenda por dia e, ao concluírem, a
 	// sobreoferta falia a coorte inteira).
-	for (const DemoConstructionProject& in_flight : ws_.construction_projects) {
+	for (const ConstructionProject& in_flight : ws_.construction_projects) {
 		if (!in_flight.expand_existing && in_flight.city == city->id
 				&& in_flight.output_product == output_product) {
 			result["error"] = "obra em andamento";
@@ -4592,7 +4592,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		}
 	}
 	const std::string commit_owner = state_owned ? "state" : "private";
-	const double committed = demo_committed_construction(ws_, city->id, commit_owner);
+	const double committed = committed_construction(ws_, city->id, commit_owner);
 	const double commit_budget = state_owned ? city->government_budget
 		: city->firm_cash;
 	if (committed + cost > commit_budget) {
@@ -4601,7 +4601,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 		return result;
 	}
 
-	DemoConstructionProject project;
+	ConstructionProject project;
 	project.id = id;
 	project.building_id = id;
 	project.city = city->id;
@@ -4612,7 +4612,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	project.recipe = recipe;
 	project.capacity = capacity;
 	project.input_per_output = input_per_output;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		project.education_mix[level] = education_mix[level];
 	}
 	project.jobs = jobs;
@@ -4623,18 +4623,18 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	// caixa de giro). O dono debita o custo total e a obra paga material/serviço
 	// do fundo reservado — não pausa por liquidez temporária (a folha/opex da
 	// fazenda deficitária não consome o capital já comprometido com a obra).
-	// O `reserved` entra em demo_money_total, então a conservação vale.
+	// O `reserved` entra em money_total, então a conservação vale.
 	project.reserved = cost;
 	if (state_owned) {
 		city->government_budget -= cost;
 	} else {
 		city->firm_cash -= cost;
 	}
-	sim_core_.demo_add_construction_project(project);
+	sim_core_.add_construction_project(project);
 	result["created"] = true;
 	result["cost"] = cost;
 	result["project_id"] = String(id.c_str());
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
@@ -4642,19 +4642,19 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 // F9 — investimento e propriedade
 // =====================================================================
 
-void EconomySim::demo_seed_groups() {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	sim_core_.demo_seed_groups();
-	++demo_status_static_version_;
-	demo_status_invalidate();
+void EconomySim::seed_groups() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	sim_core_.seed_groups();
+	++status_static_version_;
+	status_invalidate();
 }
 
-int EconomySim::demo_set_group_names(const Dictionary& names) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+int EconomySim::set_group_names(const Dictionary& names) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	int applied = 0;
 	for (const Variant& key : names.keys()) {
 		const std::string id(String(key).utf8().get_data());
-		DemoGroup* group = find_demo_group(id);
+		Group* group = find_group(id);
 		if (group == nullptr) {
 			continue;
 		}
@@ -4666,13 +4666,13 @@ int EconomySim::demo_set_group_names(const Dictionary& names) {
 		++applied;
 	}
 	if (applied > 0) {
-		demo_status_invalidate();
+		status_invalidate();
 	}
 	return applied;
 }
 
-Array EconomySim::demo_get_groups() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Array EconomySim::get_groups() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	struct GroupStats {
 		int assets = 0;
 		double capacity = 0.0;
@@ -4680,14 +4680,14 @@ Array EconomySim::demo_get_groups() const {
 		std::set<std::string> countries;
 	};
 	std::vector<GroupStats> stats(ws_.groups.size());
-	for (const DemoBuilding& building : ws_.buildings) {
+	for (const Building& building : ws_.buildings) {
 		std::string group_id;
 		std::string origin;
-		const int kind = demo_owner_kind(building.owner, &group_id, &origin);
+		const int kind = owner_kind(building.owner, &group_id, &origin);
 		if (kind != 1 && kind != 2) {
 			continue;
 		}
-		const int index = demo_group_index(group_id);
+		const int index = group_index(group_id);
 		if (index < 0) {
 			continue;
 		}
@@ -4695,7 +4695,7 @@ Array EconomySim::demo_get_groups() const {
 		row.assets += 1;
 		row.capacity += building.capacity * building.output_scale;
 		row.employed += building.workers;
-		if (const DemoCity* city = find_demo_city(building.city)) {
+		if (const City* city = find_city(building.city)) {
 			row.countries.insert(city->nation);
 		}
 	}
@@ -4704,8 +4704,8 @@ Array EconomySim::demo_get_groups() const {
 		order[index] = static_cast<int>(index);
 	}
 	std::sort(order.begin(), order.end(), [this](int a, int b) {
-		const DemoGroup& ga = ws_.groups[static_cast<std::size_t>(a)];
-		const DemoGroup& gb = ws_.groups[static_cast<std::size_t>(b)];
+		const Group& ga = ws_.groups[static_cast<std::size_t>(a)];
+		const Group& gb = ws_.groups[static_cast<std::size_t>(b)];
 		if (ga.revenue_total != gb.revenue_total) {
 			return ga.revenue_total > gb.revenue_total;
 		}
@@ -4716,7 +4716,7 @@ Array EconomySim::demo_get_groups() const {
 	});
 	Array result;
 	for (const int index : order) {
-		const DemoGroup& group = ws_.groups[static_cast<std::size_t>(index)];
+		const Group& group = ws_.groups[static_cast<std::size_t>(index)];
 		const GroupStats& row = stats[static_cast<std::size_t>(index)];
 		Dictionary entry;
 		entry["id"] = String(group.id.c_str());
@@ -4741,9 +4741,9 @@ Array EconomySim::demo_get_groups() const {
 	return result;
 }
 
-Array EconomySim::demo_get_group_ranking() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	// Ordem idêntica à de demo_get_groups (faturamento, caixa, id), sem a
+Array EconomySim::get_group_ranking() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// Ordem idêntica à de get_groups (faturamento, caixa, id), sem a
 	// varredura de construções: a IA precisa do caixa do dia e da vez de cada
 	// grupo, não dos ativos/países. Evita 1 std::set + 1 entrada de ranking por
 	// grupo a cada dia de decisão.
@@ -4752,8 +4752,8 @@ Array EconomySim::demo_get_group_ranking() const {
 		order[index] = static_cast<int>(index);
 	}
 	std::sort(order.begin(), order.end(), [this](int a, int b) {
-		const DemoGroup& ga = ws_.groups[static_cast<std::size_t>(a)];
-		const DemoGroup& gb = ws_.groups[static_cast<std::size_t>(b)];
+		const Group& ga = ws_.groups[static_cast<std::size_t>(a)];
+		const Group& gb = ws_.groups[static_cast<std::size_t>(b)];
 		if (ga.revenue_total != gb.revenue_total) {
 			return ga.revenue_total > gb.revenue_total;
 		}
@@ -4766,7 +4766,7 @@ Array EconomySim::demo_get_group_ranking() const {
 	result.resize(static_cast<int>(order.size()));
 	int slot = 0;
 	for (const int index : order) {
-		const DemoGroup& group = ws_.groups[static_cast<std::size_t>(index)];
+		const Group& group = ws_.groups[static_cast<std::size_t>(index)];
 		Dictionary entry;
 		entry["id"] = String(group.id.c_str());
 		entry["origin_nation"] = String(group.origin_nation.c_str());
@@ -4780,16 +4780,16 @@ Array EconomySim::demo_get_group_ranking() const {
 	return result;
 }
 
-Dictionary EconomySim::demo_get_group(const String& group_id) const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_group(const String& group_id) const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string id(group_id.utf8().get_data());
-	const int index = demo_group_index(id);
+	const int index = group_index(id);
 	Dictionary entry;
 	if (index < 0) {
 		entry["error"] = "grupo desconhecido";
 		return entry;
 	}
-	const DemoGroup& group = ws_.groups[static_cast<std::size_t>(index)];
+	const Group& group = ws_.groups[static_cast<std::size_t>(index)];
 	entry["id"] = String(group.id.c_str());
 	entry["name"] = group.name.empty()
 		? String(group.id.c_str()) : String(group.name.c_str());
@@ -4811,13 +4811,13 @@ Dictionary EconomySim::demo_get_group(const String& group_id) const {
 	return entry;
 }
 
-Dictionary EconomySim::demo_fund_group(const String& group_id, double amount) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::fund_group(const String& group_id, double amount) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["funded"] = false;
 	result["moved"] = 0.0;
 	result["error"] = "";
-	DemoGroup* group = find_demo_group(std::string(group_id.utf8().get_data()));
+	Group* group = find_group(std::string(group_id.utf8().get_data()));
 	if (group == nullptr) {
 		result["error"] = "grupo desconhecido";
 		return result;
@@ -4829,7 +4829,7 @@ Dictionary EconomySim::demo_fund_group(const String& group_id, double amount) {
 	// Retira do orçamento das cidades da nação de origem, na ordem dos índices
 	// (determinística). Não cria dinheiro.
 	double remaining = amount;
-	for (DemoCity& city : ws_.cities) {
+	for (City& city : ws_.cities) {
 		if (remaining <= 0.0) {
 			break;
 		}
@@ -4850,26 +4850,26 @@ Dictionary EconomySim::demo_fund_group(const String& group_id, double amount) {
 	if (moved <= 0.0) {
 		result["error"] = "sem orçamento na nação de origem";
 	}
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::demo_group_invest(const String& group_id,
+Dictionary EconomySim::group_invest(const String& group_id,
 		const String& city_id, const String& building_id, const String& resource,
 		int output_product, double capacity, const String& recipe_id,
 		const String& partner_group) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["created"] = false;
 	result["cost"] = 0.0;
 	result["error"] = "";
 	const std::string gid(group_id.utf8().get_data());
-	DemoGroup* group = find_demo_group(gid);
+	Group* group = find_group(gid);
 	if (group == nullptr) {
 		result["error"] = "grupo desconhecido";
 		return result;
 	}
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		result["error"] = "cidade desconhecida";
 		return result;
@@ -4879,7 +4879,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		result["error"] = "identificador vazio";
 		return result;
 	}
-	if (find_demo_building(city->id, id) != nullptr) {
+	if (find_building(city->id, id) != nullptr) {
 		result["error"] = "construção já existe";
 		return result;
 	}
@@ -4895,18 +4895,18 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		? ws_.product_sectors[static_cast<std::size_t>(output_product)]
 		: std::string();
 	int recipe = -1;
-	double capital_per_capacity = kDemoCapitalPerCapacity;
+	double capital_per_capacity = kCapitalPerCapacity;
 	double jobs = 0.0;
 	double wage = 0.0;
 	double opex = 0.0;
-	double education_mix[kDemoEducationLevels] = {0.90, 0.09, 0.01};
+	double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
 	if (!recipe_id.is_empty()) {
-		recipe = demo_recipe_index(recipe_id);
+		recipe = recipe_index(recipe_id);
 		if (recipe < 0) {
 			result["error"] = "receita desconhecida";
 			return result;
 		}
-		const DemoRecipe& chosen = ws_.recipes[static_cast<std::size_t>(recipe)];
+		const Recipe& chosen = ws_.recipes[static_cast<std::size_t>(recipe)];
 		if (chosen.output != output_product) {
 			result["error"] = "receita não produz o bem";
 			return result;
@@ -4915,7 +4915,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		jobs = capacity * chosen.jobs_per_ton;
 		wage = chosen.wage;
 		opex = capacity * chosen.opex_per_ton;
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			education_mix[level] = chosen.education_mix[level];
 		}
 	} else if (city->suitability[output_product] <= 0.0) {
@@ -4925,21 +4925,21 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		// Produção primária por grupo: mesmos coeficientes da fazenda inicial
 		// (estimativa declarada; o núcleo não tem tabela por produto). Sem
 		// folha/opex o lucro ficaria inflado e o emprego zerado.
-		jobs = capacity * kDemoJobsPerTon;
-		wage = kDemoFarmWage;
-		opex = capacity * kDemoOpexPerTon;
+		jobs = capacity * kJobsPerTon;
+		wage = kFarmWage;
+		opex = capacity * kOpexPerTon;
 	}
 	const bool foreign = group->origin_nation != city->nation;
 	double local_share = 0.0;
 	std::string partner_id;
-	DemoGroup* partner = nullptr;
+	Group* partner = nullptr;
 	if (foreign) {
-		const int mode = demo_fdi_mode(city->nation, sector);
+		const int mode = fdi_mode(city->nation, sector);
 		if (mode == 3) {
 			result["error"] = "setor fechado ao capital estrangeiro";
 			return result;
 		}
-		if (demo_nation_confidence(city->nation) < 0.5) {
+		if (nation_confidence(city->nation) < 0.5) {
 			result["error"] = "confiança baixa após nacionalização";
 			return result;
 		}
@@ -4949,7 +4949,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 				result["error"] = "joint venture exige parceiro local";
 				return result;
 			}
-			partner = find_demo_group(partner_id);
+			partner = find_group(partner_id);
 			if (partner == nullptr || partner->origin_nation != city->nation
 					|| partner->state_owned) {
 				result["error"] = "parceiro local inválido";
@@ -4966,15 +4966,15 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		} else if (mode == 1) {
 			// Restrito: só quem já opera no setor do anfitrião.
 			bool incumbent = false;
-			for (const DemoBuilding& building : ws_.buildings) {
+			for (const Building& building : ws_.buildings) {
 				if (building.owner.rfind("foreign:", 0) != 0
 						|| building.output_product != output_product) {
 					continue;
 				}
 				std::string owner_group;
 				std::string origin;
-				demo_owner_kind(building.owner, &owner_group, &origin);
-				const DemoCity* host = find_demo_city(building.city);
+				owner_kind(building.owner, &owner_group, &origin);
+				const City* host = find_city(building.city);
 				if (host != nullptr && host->nation == city->nation
 						&& owner_group == gid) {
 					incumbent = true;
@@ -4987,7 +4987,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 			}
 		}
 		if (recipe < 0) {
-			const DemoDeposit& deposit = city->deposits[output_product];
+			const Deposit& deposit = city->deposits[output_product];
 			if (deposit.tracked && deposit.remaining_kt <= 0.0) {
 				result["error"] = "reserva esgotada";
 				return result;
@@ -5017,7 +5017,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 			partner->capex_total += partner_cost;
 		}
 
-		DemoBuilding building;
+		Building building;
 		building.id = id;
 		building.city = city->id;
 		building.kind = 0;
@@ -5039,7 +5039,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		building.jobs = jobs;
 		building.wage = wage;
 		building.opex = opex;
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			building.education_mix[level] = education_mix[level];
 		}
 		building.local_share = local_share;
@@ -5055,7 +5055,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 			ws_.buildings_by_city[city_index].push_back(
 				static_cast<int>(ws_.buildings.size() - 1));
 		} else {
-			demo_rebuild_indexes();
+			rebuild_indexes();
 		}
 		city->service_cash += cost;
 		city->construction_revenue_pending += cost;
@@ -5063,7 +5063,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 		result["cost"] = cost;
 		result["owner"] = String(building.owner.c_str());
 		result["local_share"] = local_share;
-		demo_status_invalidate();
+		status_invalidate();
 		return result;
 	}
 
@@ -5073,14 +5073,14 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	// PARA.
 	// Anti-duplicação: não abre obra nova do MESMO produto enquanto outra está
 	// em andamento na cidade (mesma regra do build do governo).
-	for (const DemoConstructionProject& in_flight : ws_.construction_projects) {
+	for (const ConstructionProject& in_flight : ws_.construction_projects) {
 		if (!in_flight.expand_existing && in_flight.city == city->id
 				&& in_flight.output_product == output_product) {
 			result["error"] = "obra em andamento";
 			return result;
 		}
 	}
-	const double committed = demo_committed_construction(ws_, city->id, gid);
+	const double committed = committed_construction(ws_, city->id, gid);
 	if (committed + owner_cost > group->cash) {
 		result["error"] = "capital insuficiente";
 		result["cash"] = group->cash;
@@ -5089,7 +5089,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	}
 	if (partner != nullptr) {
 		const double pcommitted =
-			demo_committed_construction(ws_, city->id, partner->id);
+			committed_construction(ws_, city->id, partner->id);
 		if (pcommitted + partner_cost > partner->cash) {
 			result["error"] = "capital insuficiente do parceiro local";
 			result["cost"] = cost;
@@ -5102,7 +5102,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	}
 	group->capex_total += owner_cost;
 
-	DemoConstructionProject project;
+	ConstructionProject project;
 	project.id = id;
 	project.building_id = id;
 	project.city = city->id;
@@ -5124,7 +5124,7 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	project.jobs = jobs;
 	project.wage = wage;
 	project.opex = opex;
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		project.education_mix[level] = education_mix[level];
 	}
 	project.local_share = local_share;
@@ -5133,19 +5133,19 @@ Dictionary EconomySim::demo_group_invest(const String& group_id,
 	// §15 calibração: reserva o capital da obra no início (investimento).
 	project.reserved = owner_cost;
 	group->cash -= owner_cost;
-	sim_core_.demo_add_construction_project(project);
+	sim_core_.add_construction_project(project);
 	result["created"] = true;
 	result["cost"] = cost;
 	result["owner"] = String(project.owner.c_str());
 	result["local_share"] = local_share;
 	result["project_id"] = String(id.c_str());
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::demo_set_fdi_policy(const String& nation,
+Dictionary EconomySim::set_fdi_policy(const String& nation,
 		const String& sector, const String& mode, double min_local) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["ok"] = false;
 	result["error"] = "";
@@ -5168,7 +5168,7 @@ Dictionary EconomySim::demo_set_fdi_policy(const String& nation,
 	}
 	const std::string key = tag + "|" + sector_id;
 	const auto found = ws_.fdi_lookup.find(key);
-	DemoFdiPolicy policy;
+	FdiPolicy policy;
 	policy.nation = tag;
 	policy.sector = sector_id;
 	policy.mode = mode_value;
@@ -5187,15 +5187,15 @@ Dictionary EconomySim::demo_set_fdi_policy(const String& nation,
 	return result;
 }
 
-Dictionary EconomySim::demo_set_sector_incentive(const String& nation,
+Dictionary EconomySim::set_sector_incentive(const String& nation,
 		const String& sector, double tax_holiday, double subsidy) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["ok"] = true;
 	const std::string tag(nation.utf8().get_data());
 	const std::string sector_id(sector.utf8().get_data());
 	const std::string key = tag + "|" + sector_id;
-	DemoSectorIncentive incentive;
+	SectorIncentive incentive;
 	incentive.nation = tag;
 	incentive.sector = sector_id;
 	incentive.tax_holiday = std::clamp(tax_holiday, 0.0, 1.0);
@@ -5214,9 +5214,9 @@ Dictionary EconomySim::demo_set_sector_incentive(const String& nation,
 	return result;
 }
 
-Dictionary EconomySim::demo_create_state_company(const String& nation,
+Dictionary EconomySim::create_state_company(const String& nation,
 		const String& name, double capital) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["created"] = false;
 	result["error"] = "";
@@ -5225,7 +5225,7 @@ Dictionary EconomySim::demo_create_state_company(const String& nation,
 		result["error"] = "nação vazia";
 		return result;
 	}
-	DemoGroup group;
+	Group group;
 	group.state_owned = true;
 	group.origin_nation = tag;
 	group.sector = "state";
@@ -5234,14 +5234,14 @@ Dictionary EconomySim::demo_create_state_company(const String& nation,
 		? std::string() : std::string(company_name.utf8().get_data());
 	int serial = 0;
 	do {
-		group.id = "S-" + demo_sane_token(tag) + "-" + std::to_string(serial);
+		group.id = "S-" + sane_token(tag) + "-" + std::to_string(serial);
 		++serial;
 	} while (ws_.group_lookup.find(group.id) != ws_.group_lookup.end());
 	ws_.group_lookup[group.id] = static_cast<int>(ws_.groups.size());
 	ws_.groups.push_back(group);
-	DemoGroup* created = &ws_.groups.back();
+	Group* created = &ws_.groups.back();
 	double remaining = std::max(0.0, capital);
-	for (DemoCity& city : ws_.cities) {
+	for (City& city : ws_.cities) {
 		if (remaining <= 0.0) {
 			break;
 		}
@@ -5259,22 +5259,22 @@ Dictionary EconomySim::demo_create_state_company(const String& nation,
 	if (created->cash <= 0.0) {
 		result["warning"] = "nenhum orçamento disponível na nação";
 	}
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::demo_privatize(const String& city_id,
+Dictionary EconomySim::privatize(const String& city_id,
 		const String& building_id, const String& buyer_group) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["ok"] = false;
 	result["error"] = "";
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		result["error"] = "cidade desconhecida";
 		return result;
 	}
-	DemoBuilding* building = find_demo_building(city->id,
+	Building* building = find_building(city->id,
 		std::string(building_id.utf8().get_data()));
 	if (building == nullptr) {
 		result["error"] = "ativo desconhecido";
@@ -5284,7 +5284,7 @@ Dictionary EconomySim::demo_privatize(const String& city_id,
 		result["error"] = "ativo não é estatal";
 		return result;
 	}
-	DemoGroup* buyer = find_demo_group(std::string(buyer_group.utf8().get_data()));
+	Group* buyer = find_group(std::string(buyer_group.utf8().get_data()));
 	if (buyer == nullptr) {
 		result["error"] = "comprador desconhecido";
 		return result;
@@ -5295,7 +5295,7 @@ Dictionary EconomySim::demo_privatize(const String& city_id,
 			&& building->output_product < static_cast<int>(ws_.product_sectors.size())
 			? ws_.product_sectors[static_cast<std::size_t>(building->output_product)]
 			: std::string();
-		if (demo_fdi_mode(city->nation, sector) == 3) {
+		if (fdi_mode(city->nation, sector) == 3) {
 			result["error"] = "setor fechado ao capital estrangeiro";
 			return result;
 		}
@@ -5316,22 +5316,22 @@ Dictionary EconomySim::demo_privatize(const String& city_id,
 	result["ok"] = true;
 	result["price"] = price;
 	result["owner"] = String(building->owner.c_str());
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::demo_nationalize(const String& city_id,
+Dictionary EconomySim::nationalize(const String& city_id,
 		const String& building_id) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["ok"] = false;
 	result["error"] = "";
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
 		result["error"] = "cidade desconhecida";
 		return result;
 	}
-	DemoBuilding* building = find_demo_building(city->id,
+	Building* building = find_building(city->id,
 		std::string(building_id.utf8().get_data()));
 	if (building == nullptr) {
 		result["error"] = "ativo desconhecido";
@@ -5339,18 +5339,18 @@ Dictionary EconomySim::demo_nationalize(const String& city_id,
 	}
 	std::string group_id;
 	std::string origin;
-	const int kind = demo_owner_kind(building->owner, &group_id, &origin);
+	const int kind = owner_kind(building->owner, &group_id, &origin);
 	if (kind == 0) {
 		result["error"] = "ativo já é estatal";
 		return result;
 	}
 	const double book = building->capacity * building->capital_per_capacity;
 	const std::string previous_owner = building->owner;
-	const double compensation = std::min(book * kDemoNationalizationCompensation,
+	const double compensation = std::min(book * kNationalizationCompensation,
 		std::max(0.0, city->government_budget));
 	if (compensation > 0.0) {
 		city->government_budget -= compensation;
-		if (DemoGroup* owner = find_demo_group(group_id)) {
+		if (Group* owner = find_group(group_id)) {
 			owner->cash += compensation;
 		} else {
 			city->firm_cash += compensation;
@@ -5361,20 +5361,20 @@ Dictionary EconomySim::demo_nationalize(const String& city_id,
 	building->partner_group.clear();
 	// Derruba a confiança do anfitrião por um período: o IDE novo fica
 	// bloqueado enquanto a confiança estiver abaixo de 0,5.
-	ws_.confidence[city->nation] = kDemoNationalizationConfidence;
-	ws_.confidence_penalty_day[city->nation] = ws_.day + kDemoNationalizationDays;
+	ws_.confidence[city->nation] = kNationalizationConfidence;
+	ws_.confidence_penalty_day[city->nation] = ws_.day + kNationalizationDays;
 	result["ok"] = true;
 	result["compensation"] = compensation;
-	result["confidence"] = demo_nation_confidence(city->nation);
+	result["confidence"] = nation_confidence(city->nation);
 	result["previous_owner"] = String(previous_owner.c_str());
-	demo_status_invalidate();
+	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::demo_get_investment_status() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_investment_status() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
-	out["groups"] = demo_get_groups();
+	out["groups"] = get_groups();
 	struct NationOwnership {
 		double production[3] = {};
 		double employment[3] = {};
@@ -5382,14 +5382,14 @@ Dictionary EconomySim::demo_get_investment_status() const {
 		int assets[3] = {};
 	};
 	std::map<std::string, NationOwnership> nations;
-	for (const DemoBuilding& building : ws_.buildings) {
-		const DemoCity* city = find_demo_city(building.city);
+	for (const Building& building : ws_.buildings) {
+		const City* city = find_city(building.city);
 		if (city == nullptr) {
 			continue;
 		}
 		std::string group_id;
 		std::string origin;
-		const int kind = demo_owner_kind(building.owner, &group_id, &origin);
+		const int kind = owner_kind(building.owner, &group_id, &origin);
 		const int slot = kind == 0 ? 0 : (kind == 2 ? 2 : 1);
 		NationOwnership& row = nations[city->nation];
 		row.production[slot] += building.revenue;
@@ -5431,7 +5431,7 @@ Dictionary EconomySim::demo_get_investment_status() const {
 		record["production_total"] = production_total;
 		record["employment_total"] = employment_total;
 		record["assets_total"] = assets_total;
-		record["confidence"] = demo_nation_confidence(entry.first);
+		record["confidence"] = nation_confidence(entry.first);
 		ownership[String(entry.first.c_str())] = record;
 	}
 	out["nations"] = ownership;
@@ -5442,7 +5442,7 @@ Dictionary EconomySim::demo_get_investment_status() const {
 		flow_nations.insert(entry.first);
 	}
 	for (const std::string& nation : flow_nations) {
-		const DemoGroupFlow flow = ws_.group_flows.at(nation);
+		const GroupFlow flow = ws_.group_flows.at(nation);
 		Dictionary record;
 		record["nation"] = String(nation.c_str());
 		record["repatriated_out"] = flow.repatriated_out;
@@ -5455,7 +5455,7 @@ Dictionary EconomySim::demo_get_investment_status() const {
 	out["flows"] = flows;
 
 	Array policies;
-	for (const DemoFdiPolicy& policy : ws_.fdi_policies) {
+	for (const FdiPolicy& policy : ws_.fdi_policies) {
 		Dictionary record;
 		record["nation"] = String(policy.nation.c_str());
 		record["sector"] = String(policy.sector.c_str());
@@ -5465,7 +5465,7 @@ Dictionary EconomySim::demo_get_investment_status() const {
 	}
 	out["fdi_policies"] = policies;
 	Array incentives;
-	for (const DemoSectorIncentive& incentive : ws_.incentives) {
+	for (const SectorIncentive& incentive : ws_.incentives) {
 		Dictionary record;
 		record["nation"] = String(incentive.nation.c_str());
 		record["sector"] = String(incentive.sector.c_str());
@@ -5478,8 +5478,8 @@ Dictionary EconomySim::demo_get_investment_status() const {
 	return out;
 }
 
-Dictionary EconomySim::demo_get_investment_signals() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_investment_signals() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
 	// Confiança: só as nações com penalidade registrada; as demais valem 1,0
 	// (o consumidor usa o default). Sem varredura de construções.
@@ -5493,7 +5493,7 @@ Dictionary EconomySim::demo_get_investment_signals() const {
 	Array policies;
 	policies.resize(static_cast<int>(ws_.fdi_policies.size()));
 	int slot = 0;
-	for (const DemoFdiPolicy& policy : ws_.fdi_policies) {
+	for (const FdiPolicy& policy : ws_.fdi_policies) {
 		Dictionary record;
 		record["nation"] = String(policy.nation.c_str());
 		record["sector"] = String(policy.sector.c_str());
@@ -5505,7 +5505,7 @@ Dictionary EconomySim::demo_get_investment_signals() const {
 	Array incentives;
 	incentives.resize(static_cast<int>(ws_.incentives.size()));
 	slot = 0;
-	for (const DemoSectorIncentive& incentive : ws_.incentives) {
+	for (const SectorIncentive& incentive : ws_.incentives) {
 		Dictionary record;
 		record["nation"] = String(incentive.nation.c_str());
 		record["sector"] = String(incentive.sector.c_str());
@@ -5517,9 +5517,9 @@ Dictionary EconomySim::demo_get_investment_signals() const {
 	return out;
 }
 
-bool EconomySim::demo_spend_government(const String& city_id, double amount) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	DemoCity* city = find_demo_city(std::string(city_id.utf8().get_data()));
+bool EconomySim::spend_government(const String& city_id, double amount) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr || amount <= 0.0 || city->government_budget < amount) {
 		return false;
 	}
@@ -5529,19 +5529,19 @@ bool EconomySim::demo_spend_government(const String& city_id, double amount) {
 	city->service_revenue += amount;
 	city->service_profit += amount;
 	city->gdp += amount;
-	demo_status_invalidate();
+	status_invalidate();
 	return true;
 }
 
-Dictionary EconomySim::demo_to_dict() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::to_dict() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	return ogs::edge::to_dict(ws_, sim_core_);
 }
 
-void EconomySim::demo_set_urban(const Dictionary& urban_land,
+void EconomySim::set_urban(const Dictionary& urban_land,
 		const Dictionary& housing_city, const Dictionary& housing,
 		const Dictionary& municipal_finance) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (ws_.cities.empty()) {
 		return;  // mundo ainda não criado: sem id de cidade não há o que casar
 	}
@@ -5563,7 +5563,7 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 	static const char* const kTenureKeys[TENURE_COUNT] = {
 		"own", "rent", "informal"};
 	for (std::size_t index = 0; index < count; ++index) {
-		const DemoCity& city = ws_.cities[index];
+		const City& city = ws_.cities[index];
 		const String city_id(city.id.c_str());
 		const Dictionary u = dict_value(land_cities, city_id);
 		const Dictionary h = dict_value(housing_cities, city_id);
@@ -5634,7 +5634,7 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 		double weight_sum = 0.0;
 		for (int density = 0; density < DENSITY_COUNT; ++density) {
 			if (density <= static_cast<int>(max_density)) {
-				weights[density] = kDemoUrbanFar[density];
+				weights[density] = kUrbanFar[density];
 				weight_sum += weights[density];
 			}
 		}
@@ -5709,7 +5709,7 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 			static_cast<double>(h.get("price_per_m2_usd", 0.0)));
 		const int unit_density = static_cast<int>(max_density);
 		for (int tier = 0; tier < TIER_COUNT; ++tier) {
-			const double unit_m2 = kDemoUrbanUnitM2[unit_density][tier];
+			const double unit_m2 = kUrbanUnitM2[unit_density][tier];
 			house.rent[tier] = rent_m2 * unit_m2;
 			house.price[tier] = price_m2 * unit_m2;
 		}
@@ -5720,14 +5720,14 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 		// Área informal derivada das unidades informais: sem FAR para favela,
 		// uma unidade ocupa o m² de piso do padrão popular baixo.
 		land.informal_km2 = house.informal_units
-			* kDemoUrbanUnitM2[DENSITY_LOW][TIER_POPULAR] / 1.0e6;
+			* kUrbanUnitM2[DENSITY_LOW][TIER_POPULAR] / 1.0e6;
 		// §19 W1 / Q-015-C: capacidade da MORADIA no dia 0. O envelope do
 		// lote (área × FAR ÷ m²) é 5-15× o estoque real: na escala da cidade
 		// a maior parte do solo é rua, pátio, uso misto e construção antiga.
 		// `zone_fill` guarda a fração do envelope que corresponde ao estoque
 		// FORMAL (a unidade informal mora em informal_km2, fora da zona) para
 		// a ocupação nascer no alvo da faixa de população urbana
-		// (kDemoUrbanBandOccupancy). Sem isso a cidade nasce com 5-15× de
+		// (kUrbanBandOccupancy). Sem isso a cidade nasce com 5-15× de
 		// folga: o preço da terra não reage e a prefeitura nunca precisa de
 		// solo novo. COM/IND ficam em 1,0 (emprego modelado, outra escala).
 		land.zone_fill[ZONE_RES] = 1.0;
@@ -5739,10 +5739,10 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 		// auditoria agrupa): metrópole quase cheia, cidade média com folga
 		// moderada, pequena com folga.
 		const double target_occupancy = urban_population >= 5.0e6
-			? kDemoUrbanBandOccupancy[3]
-			: urban_population >= 1.0e6 ? kDemoUrbanBandOccupancy[2]
-			: urban_population >= 3.0e5 ? kDemoUrbanBandOccupancy[1]
-			: kDemoUrbanBandOccupancy[0];
+			? kUrbanBandOccupancy[3]
+			: urban_population >= 1.0e6 ? kUrbanBandOccupancy[2]
+			: urban_population >= 3.0e5 ? kUrbanBandOccupancy[1]
+			: kUrbanBandOccupancy[0];
 		if (physical_res > 0.0 && formal_units > 0.0 && target_occupancy > 0.0) {
 			land.zone_fill[ZONE_RES] = formal_units / (physical_res * target_occupancy);
 		}
@@ -5769,7 +5769,7 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 				static_cast<double>(fin.get(
 					"subnational_revenue_pct_gdp", 0.0)) / 100.0);
 		}
-		gov.fee_rate = kDemoUrbanMunicipalFeeRate;
+		gov.fee_rate = kUrbanMunicipalFeeRate;
 		gov.cash = 0.0;  // sem caixa municipal na fonte; o W2 acumula receita
 	}
 	if (matched) {
@@ -5783,8 +5783,8 @@ void EconomySim::demo_set_urban(const Dictionary& urban_land,
 	}
 }
 
-Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::get_urban_city(const String& city_id) const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
 	const std::string id(city_id.utf8().get_data());
 	const auto found = ws_.city_lookup.find(id);
@@ -5797,7 +5797,7 @@ Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
 			|| index >= ws_.city_gov.size()) {
 		return out;
 	}
-	const DemoCity& city = ws_.cities[index];
+	const City& city = ws_.cities[index];
 	const CityLand& land = ws_.land[index];
 	const CityHousing& house = ws_.housing[index];
 	const CityGov& gov = ws_.city_gov[index];
@@ -5940,9 +5940,9 @@ Dictionary urban_project_result(bool ok, const std::string& error,
 }
 } // namespace
 
-Dictionary EconomySim::demo_urban_expand(const String& city_id, int zone,
+Dictionary EconomySim::urban_expand(const String& city_id, int zone,
 		double km2) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string id(city_id.utf8().get_data());
 	const auto found = ws_.city_lookup.find(id);
 	if (found == ws_.city_lookup.end() || found->second < 0) {
@@ -5958,13 +5958,13 @@ Dictionary EconomySim::demo_urban_expand(const String& city_id, int zone,
 		cost = ws_.construction_projects.back().total_cost;
 	}
 	if (ok) {
-		demo_status_invalidate();
+		status_invalidate();
 	}
 	return urban_project_result(ok, error, project_id, cost);
 }
 
-Dictionary EconomySim::demo_urban_densify(const String& city_id, int zone) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+Dictionary EconomySim::urban_densify(const String& city_id, int zone) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string id(city_id.utf8().get_data());
 	const auto found = ws_.city_lookup.find(id);
 	if (found == ws_.city_lookup.end() || found->second < 0) {
@@ -5980,14 +5980,14 @@ Dictionary EconomySim::demo_urban_densify(const String& city_id, int zone) {
 		cost = ws_.construction_projects.back().total_cost;
 	}
 	if (ok) {
-		demo_status_invalidate();
+		status_invalidate();
 	}
 	return urban_project_result(ok, error, project_id, cost);
 }
 
-Dictionary EconomySim::demo_urban_social_housing(const String& city_id,
+Dictionary EconomySim::urban_social_housing(const String& city_id,
 		double units) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
 	out["ok"] = false;
 	out["units"] = 0.0;
@@ -6003,7 +6003,7 @@ Dictionary EconomySim::demo_urban_social_housing(const String& city_id,
 	}
 	const double cash_before = ws_.city_gov[index].cash;
 	double units_before = 0.0;
-	for (const DemoConstructionProject& project : ws_.construction_projects) {
+	for (const ConstructionProject& project : ws_.construction_projects) {
 		if (project.city == id && project.kind == CONSTRUCTION_HOUSING
 				&& project.housing_owner == HOUSING_PROJECT_GOVERNMENT) {
 			units_before += project.housing_units;
@@ -6013,7 +6013,7 @@ Dictionary EconomySim::demo_urban_social_housing(const String& city_id,
 		return out;
 	}
 	double built_units = 0.0;
-	for (const DemoConstructionProject& project : ws_.construction_projects) {
+	for (const ConstructionProject& project : ws_.construction_projects) {
 		if (project.city == id && project.kind == CONSTRUCTION_HOUSING
 				&& project.housing_owner == HOUSING_PROJECT_GOVERNMENT) {
 			built_units += project.housing_units;
@@ -6024,26 +6024,26 @@ Dictionary EconomySim::demo_urban_social_housing(const String& city_id,
 	// Custo LÍQUIDO: a parcela de TERRA voltou para o caixa da prefeitura no
 	// momento da abertura (o resto foi reservado na obra).
 	out["cost"] = std::max(0.0, cash_before - ws_.city_gov[index].cash);
-	demo_status_invalidate();
+	status_invalidate();
 	return out;
 }
 
-void EconomySim::demo_from_dict(const Dictionary& data) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::from_dict(const Dictionary& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	// O save substitui o mundo: o cache de status (dicionários reaproveitados)
 	// não pode sobreviver a ele.
-	demo_status_slots_[0] = DemoStatusCache{};
-	demo_status_slots_[1] = DemoStatusCache{};
-	demo_status_live_ = -1;
-	demo_status_built_day_ = -1;
-	++demo_status_static_version_;
-	++demo_status_deposit_version_;
+	status_slots_[0] = StatusCache{};
+	status_slots_[1] = StatusCache{};
+	status_live_ = -1;
+	status_built_day_ = -1;
+	++status_static_version_;
+	++status_deposit_version_;
 	ogs::edge::from_dict(ws_, sim_core_, data);
 }
 
-Dictionary EconomySim::demo_to_snapshot() const {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
-	// Mesmo lock de demo_to_dict: o snapshot tem de ver mundo + definições do
+Dictionary EconomySim::to_snapshot() const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// Mesmo lock de to_dict: o snapshot tem de ver mundo + definições do
 	// MESMO dia (nenhum tick no meio).
 	Dictionary snapshot;
 	snapshot["definitions"] =
@@ -6052,8 +6052,8 @@ Dictionary EconomySim::demo_to_snapshot() const {
 	return snapshot;
 }
 
-void EconomySim::demo_from_snapshot(const Dictionary& snapshot) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+void EconomySim::from_snapshot(const Dictionary& snapshot) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const Variant definitions = snapshot.get("definitions", Variant());
 	const Variant save_block = snapshot.get("save", Variant());
 	if (definitions.get_type() != Variant::DICTIONARY) {
@@ -6068,13 +6068,13 @@ void EconomySim::demo_from_snapshot(const Dictionary& snapshot) {
 	}
 	// O snapshot substitui o mundo inteiro: o cache de status (dicionários
 	// reaproveitados) não pode sobreviver a ele (mesmo caminho de
-	// demo_from_dict).
-	demo_status_slots_[0] = DemoStatusCache{};
-	demo_status_slots_[1] = DemoStatusCache{};
-	demo_status_live_ = -1;
-	demo_status_built_day_ = -1;
-	++demo_status_static_version_;
-	++demo_status_deposit_version_;
+	// from_dict).
+	status_slots_[0] = StatusCache{};
+	status_slots_[1] = StatusCache{};
+	status_live_ = -1;
+	status_built_day_ = -1;
+	++status_static_version_;
+	++status_deposit_version_;
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
 	// carregados (índices incluídos).
 	ogs::save::definitions_from(ws_, ogs::edge::from_godot(definitions));
@@ -6082,10 +6082,10 @@ void EconomySim::demo_from_snapshot(const Dictionary& snapshot) {
 		static_cast<Dictionary>(save_block));
 }
 
-bool EconomySim::demo_to_snapshot_file(const String& path) const {
-	// Mesmo lock recursivo de demo_to_snapshot: o snapshot tem de ver mundo +
+bool EconomySim::to_snapshot_file(const String& path) const {
+	// Mesmo lock recursivo de to_snapshot: o snapshot tem de ver mundo +
 	// definições do MESMO dia (nenhum tick no meio).
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ogs::save::Value snapshot = ogs::save::Value::make_object();
 	snapshot["definitions"] = ogs::save::definitions_to(ws_);
 	snapshot["save"] = ogs::save::to_value(ws_, sim_core_);
@@ -6112,8 +6112,8 @@ bool EconomySim::demo_to_snapshot_file(const String& path) const {
 	return true;
 }
 
-bool EconomySim::demo_from_snapshot_file(const String& path) {
-	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+bool EconomySim::from_snapshot_file(const String& path) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string file_path(path.utf8().get_data());
 	ogs::save::Value snapshot;
 	std::string error;
@@ -6142,13 +6142,13 @@ bool EconomySim::demo_from_snapshot_file(const String& path) {
 		return false;
 	}
 	// O snapshot substitui o mundo inteiro: o cache de status não sobrevive
-	// (mesmo caminho de demo_from_snapshot).
-	demo_status_slots_[0] = DemoStatusCache{};
-	demo_status_slots_[1] = DemoStatusCache{};
-	demo_status_live_ = -1;
-	demo_status_built_day_ = -1;
-	++demo_status_static_version_;
-	++demo_status_deposit_version_;
+	// (mesmo caminho de from_snapshot).
+	status_slots_[0] = StatusCache{};
+	status_slots_[1] = StatusCache{};
+	status_live_ = -1;
+	status_built_day_ = -1;
+	++status_static_version_;
+	++status_deposit_version_;
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
 	// carregados (índices incluídos). `save::from_value` é exatamente o que
 	// `edge::from_dict` chama: nada de Variant no meio do caminho.

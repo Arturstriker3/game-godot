@@ -22,31 +22,31 @@ void SimCore::phase_fiscal() {
 	// financia a segurança alimentar de uma cidade pobre da mesma nação (ex.:
 	// Paris sustenta Cayenne). Conserva dinheiro — só move government_budget
 	// entre cidades da MESMA nação.
-	std::unordered_map<std::string, std::vector<DemoCity*>> by_nation;
+	std::unordered_map<std::string, std::vector<City*>> by_nation;
 	by_nation.reserve(ws_.cities.size() / 4 + 8);
-	for (DemoCity& city : ws_.cities) {
+	for (City& city : ws_.cities) {
 		by_nation[city.nation].push_back(&city);
 	}
 	// Cada nação é independente: a ordem de varredura não muda o resultado.
 	for (auto& entry : by_nation) {
-		std::vector<DemoCity*>& cities = entry.second;
+		std::vector<City*>& cities = entry.second;
 		double total_budget = 0.0;
 		double total_population = 0.0;
-		for (DemoCity* city : cities) {
+		for (City* city : cities) {
 			total_budget += city->government_budget;
 			total_population += city->simulation_population;
 		}
 		if (cities.size() < 2 || total_population <= 0.0) {
 			continue;
 		}
-		for (DemoCity* city : cities) {
+		for (City* city : cities) {
 			city->government_budget =
 				total_budget * (city->simulation_population / total_population);
 		}
 	}
 	if (ws_.groups.empty()) {
 		// Sem grupos não há dividendo, mas a fase continua cronometrada.
-		OGS_SIM_PHASE_LAP(kDemoPhaseFiscal);
+		OGS_SIM_PHASE_LAP(kPhaseFiscal);
 		return;
 	}
 	// Recuperação lenta da confiança depois do prazo da nacionalização.
@@ -66,13 +66,13 @@ void SimCore::phase_fiscal() {
 		++it;
 	}
 	for (std::size_t index = 0; index < ws_.groups.size(); ++index) {
-		DemoGroup& group = ws_.groups[index];
+		Group& group = ws_.groups[index];
 		if (group.state_owned || group.distributable <= 1e-9) {
 			continue;
 		}
 		// Dividendo ao estrato dono: fração do lucro acumulado. O que sobra
 		// fica como capital para o próximo investimento.
-		double payable = group.distributable * kDemoGroupDividendShare;
+		double payable = group.distributable * kGroupDividendShare;
 		payable = std::min(payable, group.cash);
 		if (payable <= 1e-9) {
 			continue;
@@ -82,7 +82,7 @@ void SimCore::phase_fiscal() {
 			host_total += std::max(0.0, row.second);
 		}
 		if (host_total <= 1e-9) {
-			const double credited = demo_credit_nation_households(
+			const double credited = credit_nation_households(
 				group.origin_nation, payable);
 			if (credited > 0.0) {
 				group.cash -= credited;
@@ -100,7 +100,7 @@ void SimCore::phase_fiscal() {
 				continue;
 			}
 			const bool domestic = row.first == group.origin_nation;
-			const double credited = demo_credit_nation_households(
+			const double credited = credit_nation_households(
 				group.origin_nation, share);
 			if (credited <= 0.0) {
 				continue;
@@ -129,6 +129,6 @@ void SimCore::phase_fiscal() {
 		}
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseFiscal);
+	OGS_SIM_PHASE_LAP(kPhaseFiscal);
 }
 } // namespace ogs

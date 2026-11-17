@@ -4,7 +4,7 @@
 
 namespace ogs {
 
-void initialize_demo_fixture(WorldState& ws, SimCore& core) {
+void initialize_scenario_fixture(WorldState& ws, SimCore& core) {
 	ws.active = true;
 	ws.world_mode = false;
 	ws.day = 0;
@@ -24,14 +24,14 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	ws.foreign_cash = 0.0;
 	ws.construction_cash = 0.0;
 	ws.industry_seeded = false;
-	for (int index = 0; index < kDemoMaxProducts; ++index) {
+	for (int index = 0; index < kMaxProducts; ++index) {
 		ws.produced[index] = 0.0;
 		ws.consumed_total[index] = 0.0;
 		ws.produced_today[index] = 0.0;
 		ws.consumed_today[index] = 0.0;
 	}
 
-	DemoCity agria;
+	City agria;
 	agria.id = "AGRIA";
 	agria.name = "Agria";
 	agria.nation = "DEMO";
@@ -41,18 +41,18 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	agria.firm_cash = 50000.0;
 	agria.service_cash = 30000.0;
 	agria.government_budget = 100000.0;
-	agria.service_jobs = agria.simulation_population * kDemoServiceShare;
-	agria.service_wage = kDemoServiceWage;
+	agria.service_jobs = agria.simulation_population * kServiceShare;
+	agria.service_wage = kServiceWage;
 	agria.pop.population = agria.population;
 	agria.pop.savings = 50000.0;
-	agria.suitability[0] = kDemoReferenceWheatSuitability;
-	agria.markets[0] = {100.0, core.demo_base_price(0), 0.0, 0.0};
+	agria.suitability[0] = kReferenceWheatSuitability;
+	agria.markets[0] = {100.0, core.base_price(0), 0.0, 0.0};
 	for (int product = 1; product < ws.products; ++product) {
-		agria.markets[product].price = core.demo_base_price(product);
+		agria.markets[product].price = core.base_price(product);
 	}
 	ws.cities.push_back(agria);
 
-	DemoCity portus;
+	City portus;
 	portus.id = "PORTUS";
 	portus.name = "Portus";
 	portus.nation = "DEMO";
@@ -62,14 +62,14 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	portus.firm_cash = 80000.0;
 	portus.service_cash = 60000.0;
 	portus.government_budget = 150000.0;
-	portus.service_jobs = portus.simulation_population * kDemoServiceShare;
-	portus.service_wage = kDemoServiceWage;
+	portus.service_jobs = portus.simulation_population * kServiceShare;
+	portus.service_wage = kServiceWage;
 	portus.pop.population = portus.population;
 	portus.pop.savings = 100000.0;
 	portus.suitability[0] = 0.625;
-	portus.markets[0] = {0.0, core.demo_base_price(0), 0.0, 0.0};
+	portus.markets[0] = {0.0, core.base_price(0), 0.0, 0.0};
 	for (int product = 1; product < ws.products; ++product) {
-		portus.markets[product].price = core.demo_base_price(product);
+		portus.markets[product].price = core.base_price(product);
 	}
 	ws.cities.push_back(portus);
 
@@ -77,9 +77,9 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	// pela aptidão territorial (wheat). A comida é consumida direto do trigo —
 	// farinha/pão foram removidos da cadeia (subprodutos ficam para depois).
 	const double agria_farm_capacity =
-		kDemoFarmCapacityTons / kDemoReferenceWheatSuitability;
+		kFarmCapacityTons / kReferenceWheatSuitability;
 	for (int index = 0; index < 3; ++index) {
-		DemoBuilding farm;
+		Building farm;
 		farm.id = "FARM-A-" + std::to_string(index + 1);
 		farm.city = "AGRIA";
 		farm.kind = 0;
@@ -95,9 +95,9 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 	}
 
 	// Portus também produz trigo: reduz a dependência de importação.
-	const double portus_farm_capacity = kDemoFarmCapacityTons / 0.625;
+	const double portus_farm_capacity = kFarmCapacityTons / 0.625;
 	for (int index = 0; index < 2; ++index) {
-		DemoBuilding farm;
+		Building farm;
 		farm.id = "FARM-P-" + std::to_string(index + 1);
 		farm.city = "PORTUS";
 		farm.kind = 0;
@@ -111,20 +111,20 @@ void initialize_demo_fixture(WorldState& ws, SimCore& core) {
 		farm.opex = 50.0;
 		ws.buildings.push_back(farm);
 	}
-	for (DemoCity& city : ws.cities) {
+	for (City& city : ws.cities) {
 		city.pop.desired_by_category.assign(ws.food_products.size(), 0.0);
 		city.pop.consumed_by_category.assign(ws.food_products.size(), 0.0);
-		core.demo_init_pop_needs(city.pop);
+		core.init_pop_needs(city.pop);
 		// F7: cenário de validação também tem mercado de trabalho (índice 1,0).
-		core.demo_apply_labor_profile(city);
+		core.apply_labor_profile(city);
 	}
-	core.demo_rebuild_indexes();
+	core.rebuild_indexes();
 	// F4: o cenário mínimo também tem frota (nação DEMO).
-	core.demo_init_fleets();
+	core.init_fleets();
 	// F8: negócios de serviço iniciais (só quando os dados foram carregados).
-	core.demo_seed_services();
+	core.seed_services();
 	// F9: grupos a partir dos ativos privados (id determinístico).
-	core.demo_seed_groups();
+	core.seed_groups();
 }
 
 } // namespace ogs

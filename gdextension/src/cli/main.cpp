@@ -9,10 +9,10 @@
 //   opengs_sim_cli --snapshot=<in.json> --days=<N> --out=<out.json> [--threads=<T>]
 //
 // Contrato:
-//   * a ordem do dia é `ogs::demo_tick_day` — este executável NÃO duplica tick;
+//   * a ordem do dia é `ogs::tick_day` — este executável NÃO duplica tick;
 //   * `definitions_from` ANTES de `from_value` (o save referencia os produtos,
 //     receitas e necessidades já carregados);
-//   * nada de `demo_seed_industry`: o bootstrap industrial vive na fachada
+//   * nada de `seed_industry`: o bootstrap industrial vive na fachada
 //     Godot e o snapshot traz o mundo já semeado. Sem ele, o arquivo é recusado;
 //   * a saída tem EXATAMENTE duas chaves — `definitions` e `save` — porque o
 //     arquivo é comparado campo a campo contra o replay do Godot;
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
 	// 2. Mundo e núcleo.
 	ogs::WorldState ws;
 	ogs::SimCore core(ws);
-	core.demo_set_sim_threads(options.threads);
+	core.set_sim_threads(options.threads);
 
 	// 3. Definições primeiro (o save referencia produtos/receitas/necessidades),
 	// depois o estado dinâmico.
@@ -199,13 +199,13 @@ int main(int argc, char** argv) {
 			<< " (active=" << (ws.active ? "true" : "false")
 			<< ", industry_seeded=" << (ws.industry_seeded ? "true" : "false")
 			<< "). O bootstrap industrial roda na fachada Godot"
-			<< " (demo_seed_industry) e precisa estar no snapshot.\n";
+			<< " (seed_industry) e precisa estar no snapshot.\n";
 		return 2;
 	}
 
 	// 5. N dias da ordem do dia do núcleo, parando na primeira violação.
 	for (int day = 0; day < options.days; ++day) {
-		ogs::demo_tick_day(ws, core);
+		ogs::tick_day(ws, core);
 		if (!ws.invariant_violations.empty()) {
 			std::cerr << "[cli] invariante violado no dia " << ws.day << " ("
 				<< ws.invariant_violations.size() << " ocorrência(s)):\n";
@@ -232,12 +232,12 @@ int main(int argc, char** argv) {
 		? ms_total / static_cast<double>(options.days)
 		: 0.0;
 	std::cerr << "[cli] dias=" << options.days
-		<< " threads=" << core.demo_sim_threads()
+		<< " threads=" << core.sim_threads()
 		<< " day=" << ws.day
 		<< " cidades=" << ws.cities.size()
 		<< " ms_total=" << format_ms(ms_total)
 		<< " ms_dia=" << format_ms(ms_day)
-		<< " money_total=" << format_money(core.demo_money_total())
+		<< " money_total=" << format_money(core.money_total())
 		<< "\n";
 	return 0;
 }

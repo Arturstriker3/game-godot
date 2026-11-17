@@ -4,7 +4,7 @@
 
 namespace ogs {
 
-void demo_tick_day(WorldState& ws, SimCore& core) {
+void tick_day(WorldState& ws, SimCore& core) {
 	// S5b: retrato, dinheiro antes, avanço do dia, obras de porto, remoção de
 	// falidos/esgotados, índices e preços de abertura.
 	core.prologue();

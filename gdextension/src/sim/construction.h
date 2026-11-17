@@ -3,9 +3,9 @@
 // receita de materiais de uma obra e o cronograma. C++ puro (STL via
 // sim_types.h), nada de godot_cpp.
 //
-// A implementação dos métodos `SimCore::demo_add_construction_project` /
-// `demo_tick_construction` / `demo_project_index` /
-// `demo_city_committed_construction` vive em `construction.cpp` (módulo do
+// A implementação dos métodos `SimCore::add_construction_project` /
+// `tick_construction` / `project_index` /
+// `city_committed_construction` vive em `construction.cpp` (módulo do
 // `SimCore`, como freight/logistics/trade/...). Esta header expõe a TABELA DE
 // MATERIAIS (receita de obra) para o save/load e para os testes.
 
@@ -17,7 +17,7 @@ namespace construction {
 // Um material da receita de obra: bem (id de goods.json) e peso na divisão do
 // custo de materiais (a lista soma 1,0). A quantidade contratada é
 // `peso × material_share × total_cost / base_price` — contrato de obra no
-// preço-base (kDemoConstructionMaterialShare em sim_constants.h).
+// preço-base (kConstructionMaterialShare em sim_constants.h).
 struct MaterialSpec {
 	const char* good;
 	double weight;

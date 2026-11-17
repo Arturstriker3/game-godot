@@ -73,7 +73,7 @@ struct CityLand {
 	// limite do lote; na escala da cidade só parte dele está construída
 	// (ruas, pátios, construção antiga). Preenchido no loader para a MORADIA
 	// de modo que a ocupação formal do dia 0 nasça no alvo da faixa de
-	// população urbana (kDemoUrbanBandOccupancy); COM/IND ficam em 1,0.
+	// população urbana (kUrbanBandOccupancy); COM/IND ficam em 1,0.
 	// 1,0 = sem calibração (save antigo, cenário sintético): comportamento
 	// anterior preservado.
 	double zone_fill[ZONE_COUNT] = {1.0, 1.0, 1.0};

@@ -5,16 +5,16 @@
 //
 // Aqui viaja o que é carregado UMA vez a partir de data/definitions e fica
 // guardado no WorldState:
-//   * goods.json            -> demo_set_goods            (produtos, preços-base,
+//   * goods.json            -> set_goods            (produtos, preços-base,
 //                                                         setor, duráveis);
-//   * recipes.json          -> demo_set_recipes          (receitas + índices);
-//   * needs.json            -> demo_set_needs            (níveis, categorias,
+//   * recipes.json          -> set_recipes          (receitas + índices);
+//   * needs.json            -> set_needs            (níveis, categorias,
 //                                                         cesta alimentar,
 //                                                         governo, decaimento);
-//   * services.json         -> demo_set_services         (setores de serviço);
-//   * sector_employment.json-> demo_set_sector_employment (âncoras e demanda
+//   * services.json         -> set_services         (setores de serviço);
+//   * sector_employment.json-> set_sector_employment (âncoras e demanda
 //                                                         de trabalho);
-//   * demo_set_balance      -> parâmetros de balanceamento do demo.
+//   * set_balance      -> parâmetros de balanceamento do demo.
 //
 // Estado DINÂMICO (cidades, prédios, obras, serviços ofertados, grupos, moedas,
 // portos, mercado, caixas) NÃO mora aqui: é do save.
@@ -26,7 +26,7 @@
 //   * A saída é determinística: só `std::vector` é percorrido, em ordem de
 //     índice, e nenhum `unordered_map` é serializado. Os índices derivados
 //     (`product_lookup`, `recipe_lookup`) são reconstruídos na leitura, como
-//     fazem demo_set_goods/demo_set_recipes.
+//     fazem set_goods/set_recipes.
 
 #include "save_value.h"
 #include "world_state.h"

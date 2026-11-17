@@ -24,7 +24,7 @@ inline double safe_nonneg(double v) {
 
 namespace ogs {
 
-int SimCore::demo_project_index(const std::string& building_id) const {
+int SimCore::project_index(const std::string& building_id) const {
 	for (std::size_t index = 0; index < ws_.construction_projects.size(); ++index) {
 		if (ws_.construction_projects[index].building_id == building_id) {
 			return static_cast<int>(index);
@@ -33,8 +33,8 @@ int SimCore::demo_project_index(const std::string& building_id) const {
 	return -1;
 }
 
-void SimCore::demo_mark_project_strategic(const std::string& building_id) {
-	for (DemoConstructionProject& project : ws_.construction_projects) {
+void SimCore::mark_project_strategic(const std::string& building_id) {
+	for (ConstructionProject& project : ws_.construction_projects) {
 		if (project.building_id == building_id) {
 			project.strategic = true;
 			return;
@@ -46,15 +46,15 @@ void SimCore::demo_mark_project_strategic(const std::string& building_id) {
 // solo ocupado (land_price da zona × área). É uma FATIA do `total_cost`, não
 // um custo extra. Sem preço de terra na cidade/zona devolve 0 (ausência
 // explícita — não se inventa preço).
-double SimCore::demo_project_land_cost(
-		const DemoConstructionProject& project) const {
+double SimCore::project_land_cost(
+		const ConstructionProject& project) const {
 	// URBAN_INFRA: a obra É a abertura do solo (a prefeitura paga a
 	// infraestrutura, não o lote) — sem parcela de terra.
 	if (project.kind == CONSTRUCTION_URBAN_INFRA
 			|| project.urban_action != urban_land::URBAN_NONE) {
 		return 0.0;
 	}
-	const DemoCity* city = find_demo_city(project.city);
+	const City* city = find_city(project.city);
 	if (city == nullptr) {
 		return 0.0;
 	}
@@ -76,8 +76,8 @@ double SimCore::demo_project_land_cost(
 			project.housing_density, 0, DENSITY_COUNT - 1);
 		const int tier = std::clamp(project.housing_tier, 0, TIER_COUNT - 1);
 		area_m2 = std::max(0.0, project.housing_units)
-			* kDemoUrbanUnitM2[density][tier]
-			/ std::max(1.0, kDemoUrbanFar[density]);
+			* kUrbanUnitM2[density][tier]
+			/ std::max(1.0, kUrbanFar[density]);
 		price_per_m2 = std::max(0.0, land.land_price[ZONE_RES]);
 	} else {
 		// Prédio econômico URBANO (receita industrial ou fábrica legada com
@@ -89,7 +89,7 @@ double SimCore::demo_project_land_cost(
 		if (!urban_factory) {
 			return 0.0;
 		}
-		area_m2 = std::max(0.0, project.jobs) * kDemoUrbanFactoryM2PerWorker;
+		area_m2 = std::max(0.0, project.jobs) * kUrbanFactoryM2PerWorker;
 		price_per_m2 = std::max(0.0, land.land_price[ZONE_IND]);
 	}
 	if (area_m2 <= 0.0 || price_per_m2 <= 0.0) {
@@ -99,13 +99,13 @@ double SimCore::demo_project_land_cost(
 	if (project.kind == CONSTRUCTION_HOUSING) {
 		// Moradia (Q-015, integração): a parcela de terreno é a MESMA que entra
 		// no custo da unidade (`build_cost_unit`): lote = m² ÷ FAR, limitado a
-		// kDemoHousingLandShareMax do valor. As duas contas precisam bater, ou a
+		// kHousingLandShareMax do valor. As duas contas precisam bater, ou a
 		// terra creditada à prefeitura volta a comer o orçamento inteiro.
-		cost = std::min(cost, kDemoHousingLandShareMax * budget);
+		cost = std::min(cost, kHousingLandShareMax * budget);
 	} else {
 		// Prédio econômico: a terra fica limitada a uma fração do orçamento,
 		// para o material + mão de obra ficarem com o resto.
-		cost = std::min(cost, kDemoConstructionLandShareMax * budget);
+		cost = std::min(cost, kConstructionLandShareMax * budget);
 	}
 	// A terra é uma fatia: nunca mais que o orçamento do dono.
 	cost = std::min(cost, budget);
@@ -115,7 +115,7 @@ double SimCore::demo_project_land_cost(
 // Calcula materiais (receita de obra), prazo e parcela de mão de obra, e
 // empilha o projeto. A ordem dos materiais segue a tabela de
 // construction.h; bens ausentes do catálogo são pulados (não bloqueiam).
-void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
+void SimCore::add_construction_project(ConstructionProject& project) {
 	const bool factory = project.recipe >= 0;
 	const construction::MaterialSpec* specs = nullptr;
 	const int spec_count = factory ? construction::factory_materials(specs)
@@ -126,10 +126,10 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	// O dono já debitou o `total_cost` inteiro no ponto de criação; aqui a
 	// terra é creditada no caixa municipal e sai do fundo reservado. Dinheiro
 	// conservado (prefeitura + reserved).
-	project.land_cost = demo_project_land_cost(project);
+	project.land_cost = project_land_cost(project);
 	project.reserved = std::max(0.0, project.total_cost - project.land_cost);
 	{
-		DemoCity* land_city = find_demo_city(project.city);
+		City* land_city = find_city(project.city);
 		if (land_city != nullptr && project.land_cost > 0.0) {
 			const std::size_t land_index =
 				static_cast<std::size_t>(land_city - ws_.cities.data());
@@ -140,15 +140,15 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	}
 	const double build_cost = std::max(0.0, project.total_cost - project.land_cost);
 	// Parcela MATERIAL do orçamento: a moradia (§19 W3) consome mais material
-	// por unidade que um prédio econômico (kDemoHousingMaterialShare).
+	// por unidade que um prédio econômico (kHousingMaterialShare).
 	const double material_share = project.kind == CONSTRUCTION_HOUSING
-		? kDemoHousingMaterialShare : kDemoConstructionMaterialShare;
+		? kHousingMaterialShare : kConstructionMaterialShare;
 	for (int slot = 0; slot < spec_count; ++slot) {
-		const int product = demo_product_index(specs[slot].good);
+		const int product = product_index(specs[slot].good);
 		if (product < 0) {
 			continue;  // bem ausente do catálogo: a obra não exige
 		}
-		const double base = demo_base_price(product);
+		const double base = base_price(product);
 		if (base <= 1e-9) {
 			continue;
 		}
@@ -167,28 +167,28 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 	if (project.kind == CONSTRUCTION_HOUSING) {
 		// Moradia (§19 W3): prazo declarado, sem escala por tamanho (é a
 		// mesma obra de unidades do W3, agora na fila única).
-		project.duration_days = std::max(1, kDemoHousingBuildDays);
+		project.duration_days = std::max(1, kHousingBuildDays);
 	} else {
 		// Duração por tipo + escala pelo tamanho (§15). Comida (fazenda da cesta) é
 		// rápida para não travar a oferta alimentar; mina (primária com jazida) é
 		// média; fábrica (receita) é pesada. O tamanho (capacidade em t/dia) escala
 		// o prazo com fator logarítmico limitado — estimativa declarada.
 		const bool is_food = project.recipe < 0 && project.input_product < 0
-			&& demo_food_calories(project.output_product) > 0.0;
-		DemoCity* project_city = find_demo_city(project.city);
+			&& food_calories(project.output_product) > 0.0;
+		City* project_city = find_city(project.city);
 		const bool is_mine = !factory && !is_food && project_city != nullptr
 			&& project.output_product >= 0
 			&& project_city->deposits[project.output_product].tracked;
 		const double base_days = factory
-			? static_cast<double>(kDemoConstructionFactoryDays)
-			: is_food ? static_cast<double>(kDemoConstructionFoodDays)
-			: is_mine ? static_cast<double>(kDemoConstructionMineDays)
-			: static_cast<double>(kDemoConstructionPrimaryDays);
+			? static_cast<double>(kConstructionFactoryDays)
+			: is_food ? static_cast<double>(kConstructionFoodDays)
+			: is_mine ? static_cast<double>(kConstructionMineDays)
+			: static_cast<double>(kConstructionPrimaryDays);
 		const double size_ratio = std::max(1.0, project.capacity)
-			/ kDemoConstructionSizeReference;
+			/ kConstructionSizeReference;
 		const double size_scale = std::clamp(
-			1.0 + kDemoConstructionSizeLogScale * std::log2(size_ratio),
-			kDemoConstructionSizeScaleMin, kDemoConstructionSizeScaleMax);
+			1.0 + kConstructionSizeLogScale * std::log2(size_ratio),
+			kConstructionSizeScaleMin, kConstructionSizeScaleMax);
 		project.duration_days = std::max(1,
 			static_cast<int>(std::llround(base_days * size_scale)));
 	}
@@ -204,7 +204,7 @@ void SimCore::demo_add_construction_project(DemoConstructionProject& project) {
 namespace {
 // Materializa o prédio de uma obra concluída (ou soma capacidade numa expansão).
 // O dinheiro já foi pago ao longo da obra; aqui só entra a operação.
-void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
+void complete_project(WorldState& ws, const ConstructionProject& p) {
 	// HOUSING (§19 W3 / fatia A2): a obra entrega UNIDADES de moradia ao
 	// estoque da cidade e à posse do dono — não materializa prédio.
 	if (p.kind == CONSTRUCTION_HOUSING) {
@@ -219,7 +219,7 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 		return;
 	}
 	if (p.expand_existing) {
-		for (DemoBuilding& building : ws.buildings) {
+		for (Building& building : ws.buildings) {
 			if (building.id == p.building_id && building.city == p.city) {
 				building.capacity += std::max(0.0, p.capacity);
 				return;
@@ -229,7 +229,7 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 		// dinheiro já saiu do dono e foi pago a material/serviço — conservado.
 		return;
 	}
-	DemoBuilding building;
+	Building building;
 	building.id = p.building_id;
 	building.city = p.city;
 	building.kind = 0;
@@ -241,11 +241,11 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 	building.capacity = std::max(0.0, p.capacity);
 	building.input_per_output = p.input_per_output;
 	building.capital_per_capacity = p.capacity > 0.0
-		? std::max(1.0, p.total_cost / p.capacity) : kDemoCapitalPerCapacity;
+		? std::max(1.0, p.total_cost / p.capacity) : kCapitalPerCapacity;
 	building.jobs = std::max(0.0, p.jobs);
 	building.wage = std::max(0.0, p.wage);
 	building.opex = std::max(0.0, p.opex);
-	for (int level = 0; level < kDemoEducationLevels; ++level) {
+	for (int level = 0; level < kEducationLevels; ++level) {
 		building.education_mix[level] = p.education_mix[level];
 	}
 	building.local_share = std::clamp(p.local_share, 0.0, 1.0);
@@ -259,9 +259,9 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 		building.last_utilization = 0.25;
 	}
 	// Carência de falência (empresa nova real, §15): a planta construída não é
-	// avaliada por prejuízo durante os primeiros kDemoRampDays de operação — o
+	// avaliada por prejuízo durante os primeiros kRampDays de operação — o
 	// capital da obra é investimento, não prejuízo operacional.
-	building.ramp_days = kDemoRampDays;
+	building.ramp_days = kRampDays;
 	ws.buildings.push_back(building);
 }
 } // namespace
@@ -270,7 +270,7 @@ void demo_complete_project(WorldState& ws, const DemoConstructionProject& p) {
 // um orçamento diário de obra (trabalhadores do setor de construção ×
 // produtividade); cada projeto consome materiais do mercado local, paga o dono
 // conforme avança e conclui quando o prazo fecha.
-void SimCore::demo_tick_construction() {
+void SimCore::tick_construction() {
 	if (ws_.construction_projects.empty()) {
 		return;
 	}
@@ -281,18 +281,18 @@ void SimCore::demo_tick_construction() {
 	// (sector_workers ainda 0).
 	std::vector<double> capacity(ws_.cities.size(), 0.0);
 	for (std::size_t index = 0; index < ws_.cities.size(); ++index) {
-		const double workers = std::max(kDemoConstructionWorkerFloor,
+		const double workers = std::max(kConstructionWorkerFloor,
 			ws_.cities[index].sector_workers[1]);
-		capacity[index] = workers * kDemoConstructionValuePerWorkerDay;
+		capacity[index] = workers * kConstructionValuePerWorkerDay;
 	}
 
 	std::vector<std::size_t> completed;
 	for (std::size_t index = 0; index < ws_.construction_projects.size(); ++index) {
-		DemoConstructionProject& project = ws_.construction_projects[index];
+		ConstructionProject& project = ws_.construction_projects[index];
 		project.paused = false;
 		project.pause_reason.clear();
 
-		DemoCity* city = find_demo_city(project.city);
+		City* city = find_city(project.city);
 		if (city == nullptr) {
 			// Cidade sumiu (não deveria): descarta a obra sem pagar.
 			completed.push_back(index);
@@ -303,7 +303,7 @@ void SimCore::demo_tick_construction() {
 
 		// Necessidades diárias de material (taxa constante: completa no prazo).
 		double day_material_cost = 0.0;
-		double need[kDemoMaxConstructionMaterials] = {};
+		double need[kMaxConstructionMaterials] = {};
 		bool short_material = false;
 		for (int m = 0; m < project.material_count; ++m) {
 			const int product = project.materials[m];
@@ -312,11 +312,11 @@ void SimCore::demo_tick_construction() {
 			}
 			need[m] = project.material_qty[m]
 				/ std::max(1, project.duration_days);
-			DemoMarket& market = city->markets[product];
+			Market& market = city->markets[product];
 			if (market.stock + 1e-9 < need[m]) {
 				short_material = true;
 				project.pause_reason = std::string("sem material: ")
-					+ demo_product_name(product);
+					+ product_name(product);
 				break;
 			}
 			day_material_cost += need[m]
@@ -359,7 +359,7 @@ void SimCore::demo_tick_construction() {
 			if (product < 0 || product >= ws_.products) {
 				continue;
 			}
-			DemoMarket& market = city->markets[product];
+			Market& market = city->markets[product];
 			const double bought = need[m];
 			const double paid = bought * std::max(1e-9, market.price);
 			market.stock -= bought;
@@ -380,7 +380,7 @@ void SimCore::demo_tick_construction() {
 		}
 
 		if (project.days_elapsed >= project.duration_days) {
-			demo_complete_project(ws_, project);
+			complete_project(ws_, project);
 			completed.push_back(index);
 		}
 	}

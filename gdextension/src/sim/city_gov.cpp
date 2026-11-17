@@ -55,16 +55,16 @@ double housing_units(const CityHousing& house) {
 double infra_people_from_area(const CityLand& land, int zone, double km2) {
 	const int density = std::clamp(
 		static_cast<int>(land.max_density[zone]), 0, DENSITY_COUNT - 1);
-	const double unit_m2 = std::max(1.0, kDemoUrbanUnitM2[density][TIER_POPULAR]);
-	return 1.0e6 * kDemoUrbanFar[density] / unit_m2
+	const double unit_m2 = std::max(1.0, kUrbanUnitM2[density][TIER_POPULAR]);
+	return 1.0e6 * kUrbanFar[density] / unit_m2
 		* safe_nonneg(km2) * kPeoplePerDwelling;
 }
 
 // Unidades por km² que o gabarito permite (FAR ÷ m² da unidade popular).
 double units_per_km2(int density) {
 	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
-	const double unit_m2 = std::max(1.0, kDemoUrbanUnitM2[d][TIER_POPULAR]);
-	return 1.0e6 * kDemoUrbanFar[d] / unit_m2;
+	const double unit_m2 = std::max(1.0, kUrbanUnitM2[d][TIER_POPULAR]);
+	return 1.0e6 * kUrbanFar[d] / unit_m2;
 }
 
 // Fecha a obra: o fundo reservado vira pagamento ao setor de construção
@@ -214,7 +214,7 @@ void pay_transfers(WorldState& ws, std::size_t count,
 			if (take <= 1e-9) {
 				continue;
 			}
-			DemoCity& city = ws.cities[city_index];
+			City& city = ws.cities[city_index];
 			CityGov& gov = ws.city_gov[city_index];
 			const double paid = std::min(take,
 				safe_nonneg(city.government_budget));
@@ -244,7 +244,7 @@ void pay_transfers(WorldState& ws, std::size_t count,
 // start_project`), pagos pelo CAIXA da prefeitura; a moradia social é o projeto
 // de moradia do W3 (`housing::start_social_housing`) com dono GOVERNMENT.
 void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day) {
-	DemoCity& city = ws.cities[city_index];
+	City& city = ws.cities[city_index];
 	CityGov& gov = ws.city_gov[city_index];
 	const CityLand& land = ws.land[city_index];
 	const CityHousing& house = ws.housing[city_index];
@@ -262,7 +262,7 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 	}
 
 	bool project_active = false;
-	for (const DemoConstructionProject& project : ws.construction_projects) {
+	for (const ConstructionProject& project : ws.construction_projects) {
 		if (project.city == city.id && project.urban_action != urban_land::URBAN_NONE) {
 			project_active = true;
 			break;
@@ -349,7 +349,7 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 		int day) {
 	std::vector<double> transfer_want(count, 0.0);
 	for (std::size_t city_index = 0; city_index < count; ++city_index) {
-		DemoCity& city = ws.cities[city_index];
+		City& city = ws.cities[city_index];
 		CityGov& gov = ws.city_gov[city_index];
 		const CityHousing& house = ws.housing[city_index];
 		// O acumulado do mês anterior fica no save (a UI testemunha o último
@@ -416,7 +416,7 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 	}
 	pay_transfers(ws, count, transfer_want);
 	for (std::size_t city_index = 0; city_index < count; ++city_index) {
-		DemoCity& city = ws.cities[city_index];
+		City& city = ws.cities[city_index];
 		CityGov& gov = ws.city_gov[city_index];
 		// Manutenção urbana paga ao setor de serviços da cidade (o serviço é
 		// real; o lucro segue a distribuição normal do setor).
@@ -541,12 +541,12 @@ double money_total(const WorldState& ws) {
 	return total;
 }
 
-void snapshot(const WorldState& ws, DemoSnapshot& out) {
+void snapshot(const WorldState& ws, Snapshot& out) {
 	out.land = ws.land;
 	out.city_gov = ws.city_gov;
 }
 
-void restore(WorldState& ws, const DemoSnapshot& in) {
+void restore(WorldState& ws, const Snapshot& in) {
 	ws.land = in.land;
 	ws.city_gov = in.city_gov;
 }

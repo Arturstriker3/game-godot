@@ -92,7 +92,7 @@ Leg SimCore::make_leg(TransportMode mode, const std::string& from,
 		mode_spec.speed_kmh * mode_spec.duty_hours_per_day / kHoursPerDay;
 	const double routed_distance = distance * mode_spec.route_factor;
 	const double hours = routed_distance / effective_speed + mode_spec.turnaround_hours
-	                     + static_cast<double>(trips) * kDemoLoadHoursPerBatch;
+	                     + static_cast<double>(trips) * kLoadHoursPerBatch;
 
 	Leg leg;
 	leg.mode = mode;
@@ -127,17 +127,17 @@ double SimCore::distance_km(const MapPoint& a, const MapPoint& b) const {
 	const double h = s1 * s1 + std::cos(lat1) * std::cos(lat2) * s2 * s2;
 	return 2.0 * kEarthRadiusKm * std::asin(std::sqrt(h));
 }
-double SimCore::demo_leg_unit_freight(TransportMode mode,
+double SimCore::leg_unit_freight(TransportMode mode,
 		double distance_km_value) const {
 	const ModeSpec& mode_spec = spec(mode);
 	return distance_km_value * (mode_spec.cost_per_ton_km
-		+ mode_spec.fuel_per_ton_km * demo_fleet_fuel_price()
+		+ mode_spec.fuel_per_ton_km * fleet_fuel_price()
 		+ mode_spec.fleet_cost_per_ton_km);
 }
-double SimCore::demo_leg_unit_freight_food(TransportMode mode,
+double SimCore::leg_unit_freight_food(TransportMode mode,
 		double distance_km_value) const {
 	// Só a tarifa: comida não paga o sobrepreço de fuel/frota. O veículo e o
-	// combustível continuam exigidos no embarque (demo_route_demand), então a
+	// combustível continuam exigidos no embarque (route_demand), então a
 	// frota segue sendo um gargalo físico — o que muda é quem absorve o custo.
 	return distance_km_value * spec(mode).cost_per_ton_km;
 }

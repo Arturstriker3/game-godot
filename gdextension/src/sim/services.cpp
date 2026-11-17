@@ -28,7 +28,7 @@ void SimCore::phase_services() {
 	// subtração) — vai para um scratch por cidade×setor e é reduzida em ordem
 	// crescente de cidade E setor (a MESMA ordem do loop serial).
 	std::vector<double> foreign_scratch(
-		ws_.cities.size() * kDemoMaxServiceSectors, 0.0);
+		ws_.cities.size() * kMaxServiceSectors, 0.0);
 	// O savings_surplus do TOPO do dia (antes de o passo 6 reduzir estoques de
 	// comida) é o que o serial usava no `finance_base` da abertura; guardamos
 	// por cidade para a 2ª passada reproduzir exatamente o mesmo valor.
@@ -36,8 +36,8 @@ void SimCore::phase_services() {
 	auto process_city = [this, &foreign_scratch, &savings_surplus_scratch](
 			std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
-			demo_services_day(ws_.cities[city_index],
-				&foreign_scratch[city_index * kDemoMaxServiceSectors],
+			services_day(ws_.cities[city_index],
+				&foreign_scratch[city_index * kMaxServiceSectors],
 				savings_surplus_scratch[city_index]);
 		}
 	};
@@ -45,9 +45,9 @@ void SimCore::phase_services() {
 
 	// Redução serial: ordem crescente de cidade E de setor.
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
 			ws_.foreign_cash -= foreign_scratch[
-				city_index * kDemoMaxServiceSectors
+				city_index * kMaxServiceSectors
 				+ static_cast<std::size_t>(sector)];
 		}
 	}
@@ -55,18 +55,18 @@ void SimCore::phase_services() {
 	// 2ª passada serial: abertura/fechamento em ordem fixa (cidade -> setor),
 	// com o savings_surplus do TOPO do dia (mesmo valor do serial).
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		demo_services_open_close(ws_.cities[city_index],
+		services_open_close(ws_.cities[city_index],
 			savings_surplus_scratch[city_index]);
 	}
 
-	OGS_SIM_PHASE_LAP(kDemoPhaseServices);
+	OGS_SIM_PHASE_LAP(kPhaseServices);
 }
 
 // ------------------------------------------------------------------
 // F8 — serviços.
 // ------------------------------------------------------------------
 
-int SimCore::demo_service_sector_index(const std::string& sector) const {
+int SimCore::service_sector_index(const std::string& sector) const {
 	for (std::size_t index = 0; index < ws_.service_sectors.size(); ++index) {
 		if (ws_.service_sectors[index].id == sector) {
 			return static_cast<int>(index);
@@ -74,11 +74,11 @@ int SimCore::demo_service_sector_index(const std::string& sector) const {
 	}
 	return -1;
 }
-void SimCore::demo_rebuild_service_indexes() {
+void SimCore::rebuild_service_indexes() {
 	ws_.service_by_city.assign(ws_.cities.size(), {});
 	ws_.service_by_sector.assign(ws_.service_sectors.size(), {});
 	for (int index = 0; index < static_cast<int>(ws_.service_businesses.size()); ++index) {
-		const DemoServiceBusiness& business =
+		const ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt) {
 			continue;
@@ -93,25 +93,25 @@ void SimCore::demo_rebuild_service_indexes() {
 		}
 	}
 }
-double SimCore::demo_city_food_reserve(const DemoCity& city) const {
+double SimCore::city_food_reserve(const City& city) const {
 	// F8 v2: reserva alimentar robusta (XGS) que a poupança deve preservar antes
 	// de financiar abertura de negócio. Usa a MESMA regra prudencial da F3
-	// (kDemoFoodReserveDays de cesta) — a poupança que importa comida em nação
+	// (kFoodReserveDays de cesta) — a poupança que importa comida em nação
 	// sem terra fica intocada; só o excedente financia serviço.
 	const double need = std::max(0.0,
-		city.simulation_population * kDemoNeedPerCapita);
+		city.simulation_population * kNeedPerCapita);
 	double local = 0.0;
 	double import = 0.0;
 	double per_ge = 0.0;
-	demo_food_basket_cost(city, need, local, import, per_ge);
-	return need * kDemoFoodReserveDays * per_ge;
+	food_basket_cost(city, need, local, import, per_ge);
+	return need * kFoodReserveDays * per_ge;
 }
-bool SimCore::demo_service_open(DemoCity& city, int sector, double capacity,
+bool SimCore::service_open(City& city, int sector, double capacity,
 		double capital) {
 	if (sector < 0 || sector >= static_cast<int>(ws_.service_sectors.size())) {
 		return false;
 	}
-	const DemoServiceSector& definition =
+	const ServiceSector& definition =
 		ws_.service_sectors[static_cast<std::size_t>(sector)];
 	capacity = std::max(0.0, capacity);
 	capital = std::max(0.0, capital);
@@ -126,7 +126,7 @@ bool SimCore::demo_service_open(DemoCity& city, int sector, double capacity,
 	//   2º poupança das famílias ACIMA da reserva alimentar robusta — move
 	//      savings→service_cash (e é devolvida no fechamento).
 	// Se nem a soma cobre o capital sem tocar a reserva de comida, não abre.
-	const double food_reserve = demo_city_food_reserve(city);
+	const double food_reserve = city_food_reserve(city);
 	const double savings_surplus = std::max(0.0, city.pop.savings - food_reserve);
 	const double from_sector = std::min(capital, std::max(0.0, city.service_cash));
 	const double from_savings = std::min(capital - from_sector, savings_surplus);
@@ -152,11 +152,11 @@ bool SimCore::demo_service_open(DemoCity& city, int sector, double capacity,
 		city.pop.savings -= from_savings;
 		city.service_cash += from_savings;
 	}
-	DemoServiceBusiness business;
+	ServiceBusiness business;
 	business.id = ws_.next_service_business_id++;
 	business.sector = sector;
 	business.city = city.id;
-	business.owner_stratum = kDemoEducationLevels - 1;
+	business.owner_stratum = kEducationLevels - 1;
 	business.capacity = capacity;
 	business.jobs = capacity * definition.jobs_per_unit;
 	business.workers = business.jobs;
@@ -194,12 +194,12 @@ bool SimCore::demo_service_open(DemoCity& city, int sector, double capacity,
 	city.service_business_count += 1;
 	return true;
 }
-void SimCore::demo_service_close(DemoServiceBusiness& business) {
+void SimCore::service_close(ServiceBusiness& business) {
 	if (business.bankrupt) {
 		return;
 	}
 	business.bankrupt = true;
-	DemoCity* city = find_demo_city(business.city);
+	City* city = find_city(business.city);
 	if (city != nullptr) {
 		// F8 v2: devolve à POP no máximo a parcela que ELA aportou
 		// (`business.capital` = from_savings); a parcela financiada pelo setor
@@ -217,7 +217,7 @@ void SimCore::demo_service_close(DemoServiceBusiness& business) {
 	business.capital_left = 0.0;
 	ws_.service_bankruptcies += 1;
 }
-void SimCore::demo_seed_services() {
+void SimCore::seed_services() {
 	ws_.service_businesses.clear();
 	ws_.service_businesses.shrink_to_fit();
 	ws_.service_bankruptcies = 0;
@@ -227,10 +227,10 @@ void SimCore::demo_seed_services() {
 	if (!ws_.services_loaded || ws_.service_sectors.empty()) {
 		return;
 	}
-	for (DemoCity& city : ws_.cities) {
+	for (City& city : ws_.cities) {
 		city.service_business_count = 0;
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-			DemoServiceMarket& market = city.service_markets[sector];
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+			ServiceMarket& market = city.service_markets[sector];
 			market.base_price =
 				ws_.service_sectors[static_cast<std::size_t>(sector)].price;
 			if (market.price <= 0.0 || !std::isfinite(market.price)) {
@@ -246,7 +246,7 @@ void SimCore::demo_seed_services() {
 		std::vector<double> weight(ws_.service_sectors.size(), 0.0);
 		for (std::size_t sector = 0; sector < ws_.service_sectors.size(); ++sector) {
 			order[sector] = static_cast<int>(sector);
-			const DemoServiceSector& definition = ws_.service_sectors[sector];
+			const ServiceSector& definition = ws_.service_sectors[sector];
 			weight[sector] = definition.pop_share[0] + definition.pop_share[1] * 1.4
 				+ definition.pop_share[2] * 1.8 + definition.business_share
 				+ definition.government_share * 0.5;
@@ -257,7 +257,7 @@ void SimCore::demo_seed_services() {
 		});
 		for (int slot = 0; slot < count && slot < static_cast<int>(order.size()); ++slot) {
 			const int sector = order[static_cast<std::size_t>(slot)];
-			const DemoServiceSector& definition =
+			const ServiceSector& definition =
 				ws_.service_sectors[static_cast<std::size_t>(sector)];
 			// F8 fix: sem o teto arbitrário de 40 postos. A semente parte do
 			// mínimo viável do setor; a ENTRADA (passo 9) cresce a oferta até a
@@ -267,13 +267,13 @@ void SimCore::demo_seed_services() {
 			const double capital = capacity * definition.capital_per_unit;
 			// F8 v2: o capital de abertura vem do caixa do próprio setor e, se
 			// faltar, da poupança das famílias ACIMA da reserva de comida — o
-			// gate interno de demo_service_open decide. Cidade pequena/pobre
+			// gate interno de service_open decide. Cidade pequena/pobre
 			// semeia menos negócios e abre os demais quando houver caixa.
-			demo_service_open(city, sector, capacity, capital);
+			service_open(city, sector, capacity, capital);
 		}
 		if (city.external_income_index > 1.2) {
 			for (int sector = 0; sector < static_cast<int>(ws_.service_sectors.size()); ++sector) {
-				const DemoServiceSector& definition =
+				const ServiceSector& definition =
 					ws_.service_sectors[static_cast<std::size_t>(sector)];
 				if (!definition.exportable) {
 					continue;
@@ -292,19 +292,19 @@ void SimCore::demo_seed_services() {
 				}
 				const double capacity = definition.min_capacity;
 				const double capital = capacity * definition.capital_per_unit;
-				demo_service_open(city, sector, capacity, capital);
+				service_open(city, sector, capacity, capital);
 			}
 		}
 	}
 }
-void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
+void SimCore::services_day(City& city, double* foreign_slots,
 		double& savings_surplus_out) {
 	if (!ws_.services_loaded || ws_.service_sectors.empty()) {
 		return;
 	}
 	const std::size_t city_index =
 		static_cast<std::size_t>(&city - ws_.cities.data());
-	const DemoPop& pop = city.pop;
+	const Pop& pop = city.pop;
 	const double wage = std::max(0.0, city.service_wage);
 	// F8 v2 (calibração, Q-004): o custo de trabalho do negócio é o salário de
 	// mercado INTEGRAL — sem o teto `preço÷jobs_per_unit×0,68`, que era a muleta
@@ -315,7 +315,7 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// Reserva alimentar robusta (calculada UMA vez por cidade/dia): a poupança
 	// acima dela é o que pode financiar a entrada de negócio, sem tocar a
 	// poupança que importa comida (DJI, Q-004).
-	const double food_reserve = demo_city_food_reserve(city);
+	const double food_reserve = city_food_reserve(city);
 	const double savings_surplus = std::max(0.0, city.pop.savings - food_reserve);
 	savings_surplus_out = savings_surplus;
 
@@ -323,22 +323,22 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// luxury). Com Gini, `class_population` é a repartição real; sem Gini,
 	// espelha os estratos (mesma regra da F7). O dinheiro é o
 	// `pop.service_spend` já debitado das famílias; aqui ele é DISTRIBUÍDO.
-	double class_pop[kDemoEducationLevels] = {
+	double class_pop[kEducationLevels] = {
 		std::max(0.0, pop.class_population[0]),
 		std::max(0.0, pop.class_population[1]),
 		std::max(0.0, pop.class_population[2])};
 	if (class_pop[0] + class_pop[1] + class_pop[2] <= 1e-9) {
-		for (int level = 0; level < kDemoEducationLevels; ++level) {
+		for (int level = 0; level < kEducationLevels; ++level) {
 			class_pop[level] = std::max(0.0, pop.stratum_population[level]);
 		}
 	}
-	double weight[kDemoMaxServiceSectors] = {};
+	double weight[kMaxServiceSectors] = {};
 	double weight_total = 0.0;
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-		const DemoServiceSector& definition =
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(sector)];
 		double value = 0.0;
-		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			value += class_pop[level] * definition.pop_share[level];
 		}
 		weight[sector] = value;
@@ -356,10 +356,10 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	}
 	city.service_tonnage_prev = tonnage;
 	const double b2b_pool = std::max(0.0, city.opex_revenue);
-	double b2b_weight[kDemoMaxServiceSectors] = {};
+	double b2b_weight[kMaxServiceSectors] = {};
 	double b2b_total = 0.0;
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-		const DemoServiceSector& definition =
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(sector)];
 		double value = definition.business_share;
 		if (definition.freight_share > 0.0) {
@@ -374,9 +374,9 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// (limpeza/segurança/resíduos, construção, profissionais, saúde/educação).
 	// É transferência explícita governo → service_cash (dinheiro conservado).
 	double government_pool = 0.0;
-	double gov_weight[kDemoMaxServiceSectors] = {};
+	double gov_weight[kMaxServiceSectors] = {};
 	double gov_total = 0.0;
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
 		gov_weight[sector] =
 			ws_.service_sectors[static_cast<std::size_t>(sector)].government_share;
 		gov_total += gov_weight[sector];
@@ -398,26 +398,26 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// oferta fica para o mercado doméstico. O preço de exportação usa a
 	// competitividade cambial da F5 (a tarifa declarada para "services" reduz a
 	// competitividade, sem criar/destruir dinheiro).
-	const double competitiveness = std::clamp(
-		demo_competitiveness(city.nation), 0.5, 1.5);
-	const int service_tariff_product = demo_product_index(std::string("services"));
+	const double fx_competitiveness = std::clamp(
+		competitiveness(city.nation), 0.5, 1.5);
+	const int service_tariff_product = product_index(std::string("services"));
 	const double service_tariff = service_tariff_product >= 0
-		? demo_tariff_rate(city.nation, "*", service_tariff_product) : 0.0;
-	const double export_factor = competitiveness * (1.0 - std::clamp(service_tariff, 0.0, 1.0));
-	double sector_supply[kDemoMaxServiceSectors] = {};
-	double sector_exports[kDemoMaxServiceSectors] = {};
-	double sector_export_revenue[kDemoMaxServiceSectors] = {};
+		? tariff_rate(city.nation, "*", service_tariff_product) : 0.0;
+	const double export_factor = fx_competitiveness * (1.0 - std::clamp(service_tariff, 0.0, 1.0));
+	double sector_supply[kMaxServiceSectors] = {};
+	double sector_exports[kMaxServiceSectors] = {};
+	double sector_export_revenue[kMaxServiceSectors] = {};
 	// Contagem de negócios ativos por setor, na MESMA passada que soma a oferta:
 	// o laço de entrada (passo 9) usa este vetor em vez de varrer os negócios
 	// da cidade para cada setor (era O(setores × negócios)). Nenhum negócio
 	// abre/fecha entre aqui e o passo 9 (abertura/fechamento acontecem no próprio
 	// passo 9), então a contagem é idêntica à varredura antiga — resultado igual.
-	int active_by_sector[kDemoMaxServiceSectors] = {};
+	int active_by_sector[kMaxServiceSectors] = {};
 	for (const int index : ws_.service_by_city[city_index]) {
-		DemoServiceBusiness& business =
+		ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt || business.sector < 0
-				|| business.sector >= kDemoMaxServiceSectors) {
+				|| business.sector >= kMaxServiceSectors) {
 			continue;
 		}
 		const double capacity = std::max(0.0,
@@ -427,8 +427,8 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		++active_by_sector[business.sector];
 	}
 	const double external_factor = std::clamp(city.external_income_index, 0.2, 3.0);
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-		const DemoServiceSector& definition =
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(sector)];
 		if (!definition.exportable || definition.export_share <= 0.0) {
 			continue;
@@ -452,8 +452,8 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	double total_units_served = 0.0;
 	double total_service_cost = 0.0;
 	double total_input_cost = 0.0;
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-		DemoServiceMarket& market = city.service_markets[sector];
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+		ServiceMarket& market = city.service_markets[sector];
 		market.demand = 0.0;
 		market.supply = sector_supply[sector];
 		market.unmet = 0.0;
@@ -482,7 +482,7 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		const double domestic_demand = money / market.price;
 		const double total_demand = domestic_demand + market.exports;
 		market.demand = total_demand;
-		for (int level = 0; level < kDemoMaxNeedsLevels; ++level) {
+		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			market.pop_demand[level] = weight_total > 0.0 && market.price > 1e-12
 				? household_pool * class_pop[level]
 					* ws_.service_sectors[static_cast<std::size_t>(sector)].pop_share[level]
@@ -506,13 +506,13 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		// necessidade de referência (gancho documentado, não serviço público).
 		if (ws_.service_sectors[static_cast<std::size_t>(sector)].health) {
 			const double need = std::max(1e-9,
-				city.simulation_population * kDemoServiceHealthNeedPerCapita);
+				city.simulation_population * kServiceHealthNeedPerCapita);
 			market.coverage = std::clamp(market.supply / need, 0.0, 1.0);
 			city.private_health_cover = market.coverage;
 		}
 		if (ws_.service_sectors[static_cast<std::size_t>(sector)].education) {
 			const double need = std::max(1e-9,
-				city.simulation_population * kDemoServiceEducationNeedPerCapita);
+				city.simulation_population * kServiceEducationNeedPerCapita);
 			market.coverage = std::clamp(market.supply / need, 0.0, 1.0);
 			city.private_education_cover = market.coverage;
 		}
@@ -522,16 +522,16 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// serviços) e pagam a folha (fatia de city.service_wage_bill). O lucro é
 	// informativo para entrada/saída; a distribuição aos donos continua no
 	// agregado do setor de serviços (service_profit).
-	std::vector<double> sector_revenue_gain(kDemoMaxServiceSectors, 0.0);
+	std::vector<double> sector_revenue_gain(kMaxServiceSectors, 0.0);
 	for (const int index : ws_.service_by_city[city_index]) {
-		DemoServiceBusiness& business =
+		ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt || business.sector < 0
-				|| business.sector >= kDemoMaxServiceSectors) {
+				|| business.sector >= kMaxServiceSectors) {
 			continue;
 		}
-		DemoServiceMarket& market = city.service_markets[business.sector];
-		const DemoServiceSector& definition =
+		ServiceMarket& market = city.service_markets[business.sector];
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(business.sector)];
 		market.businesses += 1.0;
 		const double capacity = std::max(0.0, business.capacity);
@@ -549,11 +549,11 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		// estoque disponível. O dinheiro sai de service_cash e entra em
 		// firm_cash (produtor), conservando o total.
 		double input_cost = 0.0;
-		for (const DemoServiceSector::Input& input : definition.inputs) {
+		for (const ServiceSector::Input& input : definition.inputs) {
 			if (input.product < 0 || input.product >= ws_.products) {
 				continue;
 			}
-			DemoMarket& goods = city.markets[input.product];
+			Market& goods = city.markets[input.product];
 			const double needed = input.qty * units;
 			const double bought = std::min(needed, std::max(0.0, goods.stock));
 			if (bought <= 0.0) {
@@ -573,7 +573,7 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		double service_cost = 0.0;
 		for (std::size_t slot = 0; slot < definition.service_inputs.size(); ++slot) {
 			const int supplier = definition.service_inputs[slot];
-			if (supplier < 0 || supplier >= kDemoMaxServiceSectors) {
+			if (supplier < 0 || supplier >= kMaxServiceSectors) {
 				continue;
 			}
 			const double qty = definition.service_input_qty[slot] * units;
@@ -585,7 +585,7 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		business.service_cost = service_cost;
 		// F8 fix: folha sobre EFETIVOS (workers), não sobre POSTOS (jobs). O
 		// negócio ocioso não paga a folha cheia — o custo acompanha a
-		// utilização. A folha agregada do setor (demo_labor_day) continua sendo
+		// utilização. A folha agregada do setor (labor_day) continua sendo
 		// a do empregador residual da F7; aqui só se atribui o custo marginal.
 		business.wages = business.workers * wage;
 		business.profit = business.revenue - business.wages
@@ -601,7 +601,7 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 		total_service_cost += business.service_cost;
 	}
 	// Receita dos fornecedores de serviços: aumenta o pool publicado do setor.
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
 		if (sector_revenue_gain[static_cast<std::size_t>(sector)] > 0.0) {
 			city.service_markets[sector].revenue +=
 				sector_revenue_gain[static_cast<std::size_t>(sector)];
@@ -610,10 +610,10 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// E chega aos negócios fornecedores (mesma proporção de capacidade): o
 	// lucro do comprador já pagou o serviço, então o efeito agregado é nulo.
 	for (const int index : ws_.service_by_city[city_index]) {
-		DemoServiceBusiness& business =
+		ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt || business.sector < 0
-				|| business.sector >= kDemoMaxServiceSectors) {
+				|| business.sector >= kMaxServiceSectors) {
 			continue;
 		}
 		const double gain = sector_revenue_gain[static_cast<std::size_t>(business.sector)];
@@ -639,57 +639,57 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 	// empregador residual) pela participação dos negócios de cada setor. Sem
 	// negócios, a divisão segue os pesos de demanda — a soma continua igual a
 	// city.service_jobs (nenhum emprego é criado ou perdido aqui).
-	double jobs_weight[kDemoMaxServiceSectors] = {};
+	double jobs_weight[kMaxServiceSectors] = {};
 	double jobs_total = 0.0;
 	for (const int index : ws_.service_by_city[city_index]) {
-		const DemoServiceBusiness& business =
+		const ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt || business.sector < 0
-				|| business.sector >= kDemoMaxServiceSectors) {
+				|| business.sector >= kMaxServiceSectors) {
 			continue;
 		}
 		jobs_weight[business.sector] += std::max(0.0, business.jobs);
 		jobs_total += std::max(0.0, business.jobs);
 	}
 	if (jobs_total <= 1e-12) {
-		for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+		for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
 			jobs_weight[sector] = weight[sector];
 			jobs_total += weight[sector];
 		}
 	}
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
 		city.service_markets[sector].jobs = jobs_total > 1e-12
 			? city.service_jobs * jobs_weight[sector] / jobs_total : 0.0;
 	}
 
 	// 8. Preço: reage à razão demanda financiada/oferta, com suavização e
 	// banda em torno da âncora. Oferta zero com demanda > 0 sobe ao teto.
-	for (int sector = 0; sector < kDemoMaxServiceSectors; ++sector) {
-		DemoServiceMarket& market = city.service_markets[sector];
-		const DemoServiceSector& definition =
+	for (int sector = 0; sector < kMaxServiceSectors; ++sector) {
+		ServiceMarket& market = city.service_markets[sector];
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(sector)];
 		// F8 v2 — ÂNCORA LIGADA AO SALÁRIO DO PAÍS: o preço-âncora do setor
-		// escala com o salário de serviço local (kDemoServiceWage = 0,15, a
+		// escala com o salário de serviço local (kServiceWage = 0,15, a
 		// âncora salarial da F7). Sem isso price/jobs_per_unit ficava fixo em
 		// ~0,22 e, em país rico, abaixo do salário — o negócio formal ficava no
 		// prejuízo estrutural (o teto 0,68 mascarava). Com a âncora escalando, a
 		// receita por posto passa a ≈ 1,47× o salário local, então a margem fica
 		// estável em país rico e pobre; os limites evitam preço zero/explosivo.
 		const double anchor_scale = std::clamp(
-			wage / kDemoServiceWage, kDemoServiceAnchorScaleMin,
-			kDemoServiceAnchorScaleMax);
+			wage / kServiceWage, kServiceAnchorScaleMin,
+			kServiceAnchorScaleMax);
 		market.base_price = definition.price * anchor_scale
-			* kDemoServiceMarginCalibration;
+			* kServiceMarginCalibration;
 		const double ratio = market.supply > 1e-9
 			? std::max(0.0, market.demand) / market.supply
 			: (market.demand > 1e-9 ? 4.0 : 1.0);
 		const double target = market.base_price * std::clamp(
-			std::pow(ratio, 0.35), kDemoServicePriceBandLow,
-			kDemoServicePriceBandHigh);
-		market.price += (target - market.price) * kDemoServicePriceSmooth;
+			std::pow(ratio, 0.35), kServicePriceBandLow,
+			kServicePriceBandHigh);
+		market.price += (target - market.price) * kServicePriceSmooth;
 		market.price = std::clamp(market.price,
-			market.base_price * kDemoServicePriceBandLow,
-			market.base_price * kDemoServicePriceBandHigh);
+			market.base_price * kServicePriceBandLow,
+			market.base_price * kServicePriceBandHigh);
 	}
 
 	(void)total_units_served;
@@ -700,7 +700,7 @@ void SimCore::demo_services_day(DemoCity& city, double* foreign_slots,
 // ordem fixa (cidade -> setor), depois que todas as cidades simularam o dia.
 // A ordem importa: a abertura consome o caixa do setor (service_cash) e a
 // poupança das famílias, e o fechamento reduz a contagem de negócios ativos.
-void SimCore::demo_services_open_close(DemoCity& city, double savings_surplus) {
+void SimCore::services_open_close(City& city, double savings_surplus) {
 	if (!ws_.services_loaded || ws_.service_sectors.empty()) {
 		return;
 	}
@@ -709,12 +709,12 @@ void SimCore::demo_services_open_close(DemoCity& city, double savings_surplus) {
 	const double wage = std::max(0.0, city.service_wage);
 	// Recomputa a contagem de negócios ativos por setor (mesma passada do
 	// passo 4): nada abriu/fechou entre a fase paralela e esta 2ª passada.
-	int active_by_sector[kDemoMaxServiceSectors] = {};
+	int active_by_sector[kMaxServiceSectors] = {};
 	for (const int index : ws_.service_by_city[city_index]) {
-		const DemoServiceBusiness& business =
+		const ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt || business.sector < 0
-				|| business.sector >= kDemoMaxServiceSectors) {
+				|| business.sector >= kMaxServiceSectors) {
 			continue;
 		}
 		++active_by_sector[business.sector];
@@ -722,17 +722,17 @@ void SimCore::demo_services_open_close(DemoCity& city, double savings_surplus) {
 
 	// 9. Entrada e saída. Entrada só com demanda não atendida, margem esperada
 	// acima do limiar e capital financiável pelo caixa do setor + poupança acima
-	// da reserva de comida. Até kDemoServiceOpensPerDay aberturas por cidade/dia
+	// da reserva de comida. Até kServiceOpensPerDay aberturas por cidade/dia
 	// (teto, não alvo: sem demanda não atendida, não abre nada).
 	int opens = 0;
-	for (int sector = 0; sector < kDemoMaxServiceSectors && opens < kDemoServiceOpensPerDay; ++sector) {
-		DemoServiceMarket& market = city.service_markets[sector];
-		const DemoServiceSector& definition =
+	for (int sector = 0; sector < kMaxServiceSectors && opens < kServiceOpensPerDay; ++sector) {
+		ServiceMarket& market = city.service_markets[sector];
+		const ServiceSector& definition =
 			ws_.service_sectors[static_cast<std::size_t>(sector)];
 		if (market.unmet < definition.min_capacity * 0.5) {
 			continue;
 		}
-		if (active_by_sector[sector] >= kDemoServiceMaxPerSector) {
+		if (active_by_sector[sector] >= kServiceMaxPerSector) {
 			continue;
 		}
 		// F8 v2: capacidade pela DEMANDA não atendida, com folga de 25% para a
@@ -742,7 +742,7 @@ void SimCore::demo_services_open_close(DemoCity& city, double savings_surplus) {
 		const double finance_base = std::max(0.0, city.service_cash) + savings_surplus;
 		const double affordable = finance_base > 0.0
 			? finance_base
-				/ (definition.capital_per_unit * kDemoServiceCapitalReserve) : 0.0;
+				/ (definition.capital_per_unit * kServiceCapitalReserve) : 0.0;
 		if (affordable < definition.min_capacity) {
 			continue;
 		}
@@ -750,36 +750,36 @@ void SimCore::demo_services_open_close(DemoCity& city, double savings_surplus) {
 			std::min(market.unmet * 1.25, affordable));
 		const double revenue = capacity * market.price;
 		double expected_cost = capacity * definition.jobs_per_unit * wage;
-		for (const DemoServiceSector::Input& input : definition.inputs) {
+		for (const ServiceSector::Input& input : definition.inputs) {
 			if (input.product >= 0 && input.product < ws_.products) {
 				expected_cost += capacity * input.qty * city.markets[input.product].price;
 			}
 		}
 		for (std::size_t slot = 0; slot < definition.service_inputs.size(); ++slot) {
 			const int supplier = definition.service_inputs[slot];
-			if (supplier >= 0 && supplier < kDemoMaxServiceSectors) {
+			if (supplier >= 0 && supplier < kMaxServiceSectors) {
 				expected_cost += capacity * definition.service_input_qty[slot]
 					* city.service_markets[supplier].price;
 			}
 		}
 		const double margin = revenue > 1e-9
 			? (revenue - expected_cost) / revenue : -1.0;
-		if (margin < kDemoServiceEntryMargin) {
+		if (margin < kServiceEntryMargin) {
 			continue;
 		}
 		const double capital = capacity * definition.capital_per_unit;
-		if (demo_service_open(city, sector, capacity, capital)) {
+		if (service_open(city, sector, capacity, capital)) {
 			++opens;
 		}
 	}
 	for (const int index : ws_.service_by_city[city_index]) {
-		DemoServiceBusiness& business =
+		ServiceBusiness& business =
 			ws_.service_businesses[static_cast<std::size_t>(index)];
 		if (business.bankrupt) {
 			continue;
 		}
-		if (business.loss_days >= kDemoServiceLossDays) {
-			demo_service_close(business);
+		if (business.loss_days >= kServiceLossDays) {
+			service_close(business);
 		}
 	}
 	city.service_business_count = 0;

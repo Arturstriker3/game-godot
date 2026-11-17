@@ -49,7 +49,7 @@ constexpr double kLaborWageRatio[3] = {1.00, 1.15, 1.30};
 // Salário inicial de criação do mundo (XGS/dia por vaga): um palpite de ordem
 // de grandeza do valor adicionado por vaga pago ao trabalho — NÃO é o salário
 // de equilíbrio. O primeiro dia com valor adicionado conhecido ancora o salário
-// na parcela do trabalho (demo_update_wages) sem inércia.
+// na parcela do trabalho (update_wages) sem inércia.
 constexpr double kLaborWageInitial = 0.055;
 // Mistura de escolaridade das vagas de serviços urbanos (varejo, reparos,
 // transporte local): maioria básico, minoria com superior.
@@ -133,16 +133,16 @@ inline double labor_income_factor(double income_index) {
 }
 
 // Espelho compilado de data/definitions/economy/sector_employment.json. A fonte
-// de verdade é o JSON (carregado por demo_set_sector_employment); este espelho
+// de verdade é o JSON (carregado por set_sector_employment); este espelho
 // existe para os testes rodarem sem o arquivo.
-constexpr int kDemoSectorAnchorCount = 5;
-struct DemoSectorAnchorDefault {
+constexpr int kSectorAnchorCount = 5;
+struct SectorAnchorDefault {
 	double income;
 	double agriculture;
 	double industry;
 	double informal;
 };
-constexpr DemoSectorAnchorDefault kDemoSectorAnchorDefaults[kDemoSectorAnchorCount] = {
+constexpr SectorAnchorDefault kSectorAnchorDefaults[kSectorAnchorCount] = {
 	{0.371, 0.35, 0.12, 0.92},   // NGA
 	{0.457, 0.43, 0.25, 0.90},   // IND
 	{0.912, 0.09, 0.20, 0.37},   // BRA
