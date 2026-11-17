@@ -27,7 +27,7 @@ extends SceneTree
 ## e `meta.trajectory_hash` (sha256 de nations+labor+sectors+ownership).
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
+const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -84,7 +84,7 @@ const MONEY_DRIFT_TOLERANCE := 0.01
 var _days := DEFAULT_DAYS
 var _out := ""
 var _baseline_path := ""
-## `--ai=1` roda o mesmo pipeline do jogo (geografia real + EconomicAI) por
+## `--ai=1` roda o mesmo pipeline do jogo (geografia real + IA do núcleo) por
 ## dia. O padrão (0) mede só o núcleo e preserva o comparativo de comida da F2.
 var _ai_enabled := false
 ## F5: moedas carregadas? (`--currencies=0` reproduz o mundo em XGS pré-F5.)
@@ -275,11 +275,13 @@ func _test_world() -> void:
 			_load_dict(HOUSING_CITY_PATH), _load_dict(HOUSING_PATH),
 			_load_dict(MUNICIPAL_FINANCE_PATH))
 	var expected_products := goods.size() if has_chains else 21
-	var ai: Object = null
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
-		ai = EconomicAIScript.new()
-		ai.setup(sim, geo)
+		# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do
+		# dia (A5). Grupos nomeados sem `places`: este runner não carrega a
+		# cultura das cidades.
+		sim.set_ai_enabled(true)
+		GroupNamerScript.name_groups(sim)
 
 	var status: Dictionary = sim.get_status()
 
@@ -318,8 +320,6 @@ func _test_world() -> void:
 
 	for day in _days:
 		status = sim.tick_day()
-		if ai != null:
-			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
 			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
@@ -484,25 +484,23 @@ func _test_world() -> void:
 	# âncora (receita e emprego dos ativos), direto do núcleo.
 	var ownership := _ownership_summary(sim, OWNERSHIP_TAGS)
 	_print_ownership(ownership)
-	if ai != null:
+	if geo != null:
+		# A IA roda no núcleo: as decisões chegam como comandos aplicados (A3).
+		var command_log: Array = sim.get_command_log()
+		var by_type: Dictionary = {}
 		var builds: Dictionary = {}
 		var build_count := 0
-		var decisions: Array = ai.get_decisions()
-		for decision in decisions:
-			if String(decision.get("action", "")) == "build":
-				var resource := String(decision.get("resource", ""))
-				builds[resource] = int(builds.get(resource, 0)) + 1
-				build_count += 1
-		print("[world] IA: %d decisoes, %d builds %s" % [
-			decisions.size(), build_count, str(builds)])
-		var final_reasons: Dictionary = {}
-		for decision in decisions:
-			var resource := String(decision.get("resource", ""))
-			if resource not in ["clothes", "furniture", "paper", "medicine", "bread"]:
+		for entry: Dictionary in command_log:
+			var type := String(entry.get("type", ""))
+			by_type[type] = int(by_type.get(type, 0)) + 1
+			if type != "build":
 				continue
-			var key := "%s:%s" % [resource, String(decision.get("action", ""))]
-			final_reasons[key] = int(final_reasons.get(key, 0)) + 1
-		print("[world] IA bens finais: %s" % str(final_reasons))
+			var slots: Array = entry.get("s", [])
+			var resource := String(slots[2]) if slots.size() > 2 else ""
+			builds[resource] = int(builds.get(resource, 0)) + 1
+			build_count += 1
+		print("[world] IA: %d comandos %s, %d builds %s" % [
+			command_log.size(), str(by_type), build_count, str(builds)])
 
 	if _baseline_path != "":
 		_compare_baseline(nations)

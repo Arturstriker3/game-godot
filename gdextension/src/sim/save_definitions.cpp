@@ -10,7 +10,8 @@
 //                     "government_products", "government_per_capita_day" },
 //     "services":   { "loaded", "government_share", "sectors" },
 //     "employment": { "loaded", "anchors", <campos agri_*/industry_*> },
-//     "balance":    { <parâmetros do set_balance> }
+//     "balance":    { <parâmetros do set_balance> },
+//     "land_capacity": [ { "city", "product", "value" } ]
 //   }
 //
 // Regra de leitura: nenhuma chave é obrigatória. Chave ausente (ou de tipo
@@ -18,6 +19,8 @@
 // Nenhum laço percorre unordered_map: os índices derivados são reconstruídos.
 
 #include "save_definitions.h"
+
+#include "sim_core.h"
 
 #include <algorithm>
 #include <string>
@@ -647,6 +650,88 @@ void balance_from(WorldState& ws, const Value& block) {
 	ws.trade_external = read_int(block, "trade_external", ws.trade_external);
 }
 
+// ---------------------------------------------------------------------------
+// 7. Capacidade de terra por cidade (dado de GEOGRAFIA, fora do save)
+//
+// O teto físico da produção agrícola (t/dia) é derivado da geografia (área
+// cultivável × produtividade FAO), não do estado do jogo: não entra no save.
+// Viaja aqui só para o snapshot ser autossuficiente — quem chama
+// `set_land_capacity` no jogo é o GeographyService, que redeclara o valor
+// depois do load.
+// ---------------------------------------------------------------------------
+
+// `Array` plano de {city, product, value}, na ordem das cidades e do produto,
+// só com valores > 0 (0 = sem teto declarado, ausência explícita).
+Value land_capacity_to(const WorldState& ws) {
+	Value out = empty_array();
+	const int count = std::clamp(ws.products, 0,
+		static_cast<int>(ws.product_names.size()));
+	for (const City& city : ws.cities) {
+		for (int index = 0; index < count; ++index) {
+			const double value = city.land_capacity[index];
+			if (value <= 0.0) {
+				continue;
+			}
+			Value entry;
+			entry["city"] = Value(city.id);
+			entry["product"] = Value(
+				ws.product_names[static_cast<std::size_t>(index)]);
+			entry["value"] = Value(value);
+			out.append(entry);
+		}
+	}
+	return out;
+}
+
+// Item válido de `land_capacity`: cidade e produto já resolvidos no catálogo e
+// valor > 0. O filtro mora aqui para `definitions_from` e
+// `apply_land_capacity` verem exatamente os mesmos itens.
+struct LandCapacityLimit {
+	std::string city;
+	int product = -1;
+	double value = 0.0;
+};
+
+std::vector<LandCapacityLimit> read_land_capacity(const WorldState& ws,
+		const Value& array) {
+	std::vector<LandCapacityLimit> parsed;
+	parsed.reserve(static_cast<std::size_t>(array.size()));
+	for (int index = 0; index < array.size(); ++index) {
+		const Value& entry = array[index];
+		if (entry.get_type() != Value::DICTIONARY) {
+			continue;
+		}
+		LandCapacityLimit limit;
+		limit.city = read_string(entry, "city");
+		const std::string product = read_string(entry, "product");
+		limit.value = read_double(entry, "value", 0.0);
+		if (limit.city.empty() || product.empty() || limit.value <= 0.0) {
+			continue;
+		}
+		const auto found = ws.product_lookup.find(product);
+		if (found == ws.product_lookup.end()) {
+			continue;
+		}
+		limit.product = found->second;
+		parsed.push_back(std::move(limit));
+	}
+	return parsed;
+}
+
+// Chave ausente (ou que não é array) = sem efeito. Cada item é aplicado pelo
+// núcleo (`SimCore::set_land_capacity`), que ignora cidade ausente, produto
+// desconhecido e valor negativo. O bloco `definitions` é lido ANTES do estado
+// dinâmico (as cidades ainda não existem): nesse caso os itens são ignorados
+// sem erro — o GeographyService declara o valor no load do jogo, e
+// `apply_land_capacity` reaplica depois do save carregado.
+void land_capacity_from(WorldState& ws, const Value& array) {
+	const std::vector<LandCapacityLimit> limits = read_land_capacity(ws, array);
+	SimCore core(ws);
+	for (const LandCapacityLimit& limit : limits) {
+		core.set_land_capacity(limit.city, limit.product, limit.value);
+	}
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -662,6 +747,7 @@ Value definitions_to(const WorldState& ws) {
 	out["services"] = services_to(ws);
 	out["employment"] = employment_to(ws);
 	out["balance"] = balance_to(ws);
+	out["land_capacity"] = land_capacity_to(ws);
 	return out;
 }
 
@@ -687,6 +773,23 @@ void definitions_from(WorldState& ws, const Value& data) {
 	}
 	if (const Value* block = read_object(data, "balance")) {
 		balance_from(ws, *block);
+	}
+	if (const Value* array = read_array(data, "land_capacity")) {
+		land_capacity_from(ws, *array);
+	}
+}
+
+void apply_land_capacity(WorldState& ws, SimCore& core,
+		const Value& definitions) {
+	if (definitions.get_type() != Value::DICTIONARY) {
+		return;
+	}
+	const Value* array = read_array(definitions, "land_capacity");
+	if (array == nullptr) {
+		return;
+	}
+	for (const LandCapacityLimit& limit : read_land_capacity(ws, *array)) {
+		core.set_land_capacity(limit.city, limit.product, limit.value);
 	}
 }
 

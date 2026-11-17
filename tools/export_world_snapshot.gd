@@ -2,18 +2,24 @@ extends SceneTree
 
 ## Materializa o snapshot do mundo de partida (A1 — núcleo C++ fora do Godot).
 ##
-## Monta o mundo real exatamente como `tools/world_equivalence.gd` monta, mas SEM
-## IA (nada de `GeographyService`, `EconomicAI` nem `resolve_initial_farms`) e,
-## ao final, grava `to_snapshot()` — o par `{"definitions": ..., "save": ...}`
-## que carrega o mundo inteiro, sem depender dos JSON de `data/definitions/`.
+## Monta o mundo real exatamente como `tools/world_equivalence.gd` monta. Sem
+## `--ai=1` nada de `GeographyService`/`resolve_initial_farms` e, ao final,
+## grava `to_snapshot()` — o par `{"definitions": ..., "save": ...}` que carrega
+## o mundo inteiro, sem depender dos JSON de `data/definitions/`.
 ##
 ##   godot --headless --path . --script res://tools/export_world_snapshot.gd \
-##     -- --out=snapshot.json [--urban=1]
+##     -- --out=snapshot.json [--urban=1] [--ai=0|1]
 ##
 ## - `--out` é obrigatório.
 ## - `--urban=1` (padrão) aplica solo, moradia e prefeitura por cidade com os
 ##   MESMOS quatro arquivos do autoload do jogo; `--urban=0` exporta sem a
 ##   camada urbana.
+## - `--ai=1` (padrão 0) monta o mundo com a geografia real, como
+##   `tools/world_equivalence.gd` com `--ai=1`: `GeoService.load_data()` +
+##   `resolve_initial_farms` ANTES de `initialize_world`, `apply_to_sim` (e os
+##   nomes dos grupos) depois de `set_urban` e antes de `seed_industry`. O
+##   snapshot passa a carregar `definitions.land_capacity`. A IA NÃO é ligada
+##   aqui: o export tem 0 dias.
 ## - `seed_industry()` entra depois do mundo: o bootstrap industrial do
 ##   jogo roda no primeiro tick, então sem ele o snapshot não é o estado de
 ##   partida real (o executável C++ recusa o arquivo).
@@ -23,6 +29,9 @@ extends SceneTree
 ##   round-trip IEEE-exato para |x| < 1, e o snapshot tem de chegar ao CLI
 ##   bit a bit igual ao que sai do núcleo.
 ## - Saída: 0 ok, 1 falha. Toda falha vira linha `[snapshot] FALHA: ...`.
+
+const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -41,6 +50,9 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 
 var _out := ""
 var _urban := true
+## `--ai=1`: monta com geografia real (e nomes de grupo), como o harness de
+## equivalência. A IA em si NÃO é ligada — o export não roda dia nenhum.
+var _ai := false
 
 var _failures: Array[String] = []
 
@@ -51,6 +63,8 @@ func _init() -> void:
 			_out = arg.split("=", true, 1)[1]
 		elif arg.begins_with("--urban="):
 			_urban = arg.split("=", true, 1)[1] != "0"
+		elif arg.begins_with("--ai="):
+			_ai = arg.split("=", true, 1)[1] != "0"
 
 	if _out == "":
 		print("[snapshot] FALHA: --out=<arquivo.json> e obrigatorio")
@@ -98,6 +112,19 @@ func _load_dict(path: String) -> Dictionary:
 	return data
 
 
+## Cidades no formato que o GeographyService.apply_to_sim espera.
+func _cities_with_center(cities: Array) -> Array:
+	var result: Array = []
+	for city: Variant in cities:
+		var entry: Dictionary = city
+		result.append({
+			"id": String(entry.get("id", "")),
+			"nation": String(entry.get("nation", "")),
+			"center": Vector2(float(entry.get("x", 0.0)), float(entry.get("y", 0.0))),
+		})
+	return result
+
+
 func _run() -> void:
 	var sim = EconomySim.new()
 
@@ -124,7 +151,13 @@ func _run() -> void:
 			cities.size(), buildings.size()])
 		return
 
-	# Sem IA: `resolve_initial_farms` não roda, o cenário entra como está.
+	# Com `--ai=1` o mundo nasce com a geografia real, como o harness de
+	# equivalência: a fazenda inicial é resolvida ANTES de criar o mundo.
+	var geo: Object = null
+	if _ai:
+		geo = GeographyServiceScript.new()
+		geo.load_data()
+		buildings = geo.resolve_initial_farms(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
@@ -137,6 +170,12 @@ func _run() -> void:
 			_load_dict(MUNICIPAL_FINANCE_PATH))
 		if not _failures.is_empty():
 			return
+
+	# Geografia real (aptidão + depósitos) e nome dos grupos, como o harness com
+	# `--ai=1`: DEPOIS da camada urbana e ANTES do bootstrap industrial.
+	if geo != null:
+		geo.apply_to_sim(sim, _cities_with_center(cities))
+		GroupNamerScript.name_groups(sim)
 
 	# O bootstrap industrial (§12.3) roda no PRIMEIRO tick do jogo, não na
 	# criação do mundo: sem ele a foto do dia 0 não é o estado de partida.

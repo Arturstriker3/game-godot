@@ -15,6 +15,10 @@
 //   * sector_employment.json-> set_sector_employment (âncoras e demanda
 //                                                         de trabalho);
 //   * set_balance      -> parâmetros de balanceamento do demo.
+//   * land_capacity    -> teto físico agrícola por cidade/produto (dado de
+//                         GEOGRAFIA: chega pelo GeographyService e não entra
+//                         no save; viaja aqui só para o snapshot ser
+//                         autossuficiente).
 //
 // Estado DINÂMICO (cidades, prédios, obras, serviços ofertados, grupos, moedas,
 // portos, mercado, caixas) NÃO mora aqui: é do save.
@@ -32,6 +36,11 @@
 #include "world_state.h"
 
 namespace ogs {
+
+// Forward: `apply_land_capacity` aplica no núcleo, mas este header não precisa
+// da definição (o .cpp inclui sim_core.h).
+class SimCore;
+
 namespace save {
 
 // Bloco estático -> objeto JSON (chaves e ordem documentadas em .cpp).
@@ -40,6 +49,15 @@ Value definitions_to(const WorldState& ws);
 // Objeto JSON -> bloco estático, preservando o que já está no `ws` para as
 // chaves ausentes.
 void definitions_from(WorldState& ws, const Value& data);
+
+// `definitions["land_capacity"]` -> `core.set_land_capacity`, para ser chamado
+// DEPOIS do estado dinâmico ter sido carregado. O bloco `definitions` é lido
+// antes das cidades existirem, então `definitions_from` não consegue aplicar o
+// teto agrícola: aqui ele entra no núcleo com o mundo já povoado. Mesmo filtro
+// de `definitions_from`: item inválido é ignorado, nunca lança e chave ausente
+// não tem efeito.
+void apply_land_capacity(WorldState& ws, SimCore& core,
+		const Value& definitions);
 
 } // namespace save
 } // namespace ogs

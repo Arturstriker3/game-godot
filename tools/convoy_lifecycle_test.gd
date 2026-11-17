@@ -45,9 +45,8 @@ func _ready() -> void:
 	Engine.max_fps = 240
 	Economy.set_speed(0)
 	var sim: Object = Economy.sim
-	var ai: Object = Economy._ai
-	if sim == null or ai == null:
-		print("[convoy] autoload Economy sem sim/IA")
+	if sim == null:
+		print("[convoy] autoload Economy sem sim")
 		get_tree().quit(1)
 		return
 
@@ -63,7 +62,6 @@ func _ready() -> void:
 
 	for day in range(1, DAYS + 1):
 		var summary: Dictionary = sim.tick_day()
-		ai.run(day)
 		var orders: Array = summary.get("trade_orders", [])
 		var trips_before := _trips
 		var finished_before := _finished_total

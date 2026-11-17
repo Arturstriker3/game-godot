@@ -808,6 +808,11 @@ namespace ogs {
 		// GeographyService (participação da nação no mercado mundial). 0 = sem
 		// exportação deste bem nesta cidade.
 		double external_demand[kMaxProducts] = {};
+		// Teto físico de capacidade agrícola (t/dia) por produto, derivado da
+		// geografia (área cultivável × produtividade FAO). NÃO entra no save:
+		// chega por `set_land_capacity` (GeographyService) e viaja no bloco
+		// `definitions` do snapshot.
+		double land_capacity[kMaxProducts] = {};
 		// Reservas minerais por produto (extração com esgotamento).
 		Deposit deposits[kMaxProducts];
 		Pop pop;

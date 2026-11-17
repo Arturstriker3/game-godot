@@ -13,7 +13,11 @@ extends Node
 ## a main thread só *consulta* até o tick terminar, e o status completo é
 ## publicado de uma vez. Com 650 cidades o dia custa ~60 ms de trabalho, mas o
 ## frame não paga nada disso. Regra de segurança: existe UM escritor sobre o
-## `sim` por vez — enquanto a thread roda, ninguém (nem a IA) mexe no núcleo.
+## `sim` por vez — enquanto a thread roda, ninguém de fora mexe no núcleo.
+##
+## A IA econômica (privado, governo e grupos) roda DENTRO dessa thread, como
+## fase do `tick_day` do núcleo: aqui só se liga a flag (`set_ai_enabled`) e se
+## nomeiam os grupos (cultura de origem).
 
 ## Emitido a cada tick com os pedidos de comércio do dia.
 signal trade_orders_ready(orders: Array)
@@ -28,9 +32,10 @@ signal speed_changed(index: int)
 ## Ritmo normal: 30 dias em 30 minutos (1 dia = 60 s); 2x = 30 s; 3x = 15 s.
 const SPEEDS := [0.0, 60.0, 30.0, 15.0]
 const SPEED_COUNT := 4
-## Orçamento por frame do planejamento da IA (~1,5 ms). O dia só agenda; o
-## trabalho das cidades é fatiado nos frames seguintes, fora da virada.
-const AI_FRAME_BUDGET_US := 1500
+
+## Nomes dos grupos (cultura de origem) — a única parte da IA que segue em
+## GDScript; a decisão roda no núcleo (A5).
+const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 ## Agenda o tick do dia na thread do pool (ver tick_scheduler.gd).
 const TickScheduler := preload("res://core/economy/tick_scheduler.gd")
@@ -70,10 +75,6 @@ var sim: RefCounted
 var last_summary: Dictionary = {}
 var speed: int = 1
 var _nations: Dictionary = {}  # tag -> {id, name, flag}
-
-## Camada de decisão econômica (investidor privado + governo), rodando sobre o
-## estado do demo em intervalo fixo. Criada no _ready depois do sim.
-var _ai: Object = null
 
 ## Velocidade para a qual voltar ao sair da pausa (espaço).
 var _resume_speed: int = 1
@@ -125,16 +126,17 @@ func _ready() -> void:
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
 	geo.apply_to_sim(sim, _cities_with_center())
+	# A IA econômica (privado, governo, grupos) roda no núcleo, na virada do dia
+	# (A5). Ligada aqui: o primeiro `tick_day` já decide.
+	sim.set_ai_enabled(true)
+	# F9: nomes dos grupos pela cultura de origem; a maior cidade da nacao e o
+	# {place} dos padroes. Sem cultura mapeada, o fallback (setor + nacao)
+	# mantem o nome unico.
+	GroupNamerScript.name_groups(sim, _capital_names())
 	# Pré-aquece o cache do status (os dois slots): o primeiro dia publicado em
 	# um slot frio pagaria a criação de ~20 mil dicionários (medido: 60 ms contra
 	# 17 ms num dia quente, com 858 cidades). Aqui é custo de carga, não de tick.
 	sim.warm_status()
-	_setup_ai(geo)
-	# F9: nomes dos grupos pela cultura de origem; a maior cidade da nacao e o
-	# {place} dos padroes. Sem cultura mapeada, o fallback do GroupInvestor
-	# (setor + nacao) mantem o nome unico.
-	if _ai != null and _ai.group_investor != null:
-		_ai.group_investor.name_groups(_capital_names())
 
 	# Adia o primeiro dia: a cena principal conecta os sinais no _ready. O dia
 	# roda direto na thread do pool; o primeiro status sai no _process.
@@ -168,13 +170,6 @@ func _cities_with_center() -> Array:
 			"center": Vector2(float(city.get("x", 0.0)), float(city.get("y", 0.0))),
 		})
 	return result
-
-
-## Cria a camada de decisão (EconomicAI) sobre o estado do demo, com o serviço
-## de geografia para revelar depósitos e aptidão territorial.
-func _setup_ai(geo: GeographyService) -> void:
-	_ai = EconomicAI.new()
-	_ai.setup(sim, geo)
 
 
 ## Lê as cidades do cenário (JSON) e devolve o array para o núcleo C++.
@@ -284,12 +279,8 @@ func flag_texture(tag: String) -> Texture2D:
 func _process(delta: float) -> void:
 	if _shutting_down:
 		return
-	# 1. O dia que terminou na thread é publicado agora (sinais + IA).
+	# 1. O dia que terminou na thread é publicado agora (sinais).
 	_poll_tick()
-	# 2. Planejamento escalonado da IA: continua no frame seguinte, com
-	# orçamento. Nunca durante um tick — só existe um escritor sobre o `sim`.
-	if _ai != null and not _ticker.is_running() and _ai.is_busy():
-		_ai.pump(AI_FRAME_BUDGET_US)
 	if speed == 0:
 		return
 	_day_fraction += delta / SPEEDS[speed]
@@ -314,19 +305,15 @@ func _poll_tick() -> void:
 	_publish(_ticker.poll())
 
 
-## Publica um dia concluído: sinais para HUD/comboios e planejamento da IA.
+## Publica um dia concluído: sinais para HUD/comboios. A IA já rodou dentro do
+## `tick_day()` do núcleo (fase pós-status), então o resumo publicado é o do dia
+## ANTES das decisões da IA.
 func _publish(summary: Dictionary) -> void:
 	if summary.is_empty():
 		return
 	last_summary = summary
 	status_updated.emit(last_summary)
 	trade_orders_ready.emit(last_summary.get("trade_orders", []))
-	# A camada de decisão roda depois do tick: as escolhas (investir, construir,
-	# revelar depósito) valem a partir do próximo dia. Escalonada por cidade e
-	# fatiada nos frames seguintes — o status do tick é reusado, sem um segundo
-	# `get_status()` (~6–9 ms).
-	if _ai != null:
-		_ai.plan(int(last_summary.get("day", 0)), last_summary)
 
 
 ## Avança um dia de forma síncrona (testes e ferramentas headless).
@@ -349,7 +336,6 @@ func _shutdown() -> void:
 	speed = 0
 	if _ticker != null:
 		_ticker.cancel()
-	_ai = null
 	sim = null
 	last_summary = {}
 

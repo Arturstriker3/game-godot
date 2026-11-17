@@ -15,6 +15,10 @@
 //   * `take_pending()` devolve os pendentes em ordem de emissao e esvazia a
 //     fila: o aplicador e sempre um so (a thread do dia ou a main thread).
 //   * `log()` guarda o que ja foi aplicado; o log e o material do replay.
+//   * `last_seq()` + `take_by_seq()` sao o caminho da IA no C++: ela emite o
+//     proprio comando (e sabe o `seq` que recebeu), retira SO ele da fila e o
+//     aplica na ordem de emissao. Assim ela nunca aplica nem descarta um
+//     comando de terceiros (a UI) que chegou no meio.
 //   * Nada aqui muda o resultado numerico do dia: a aplicacao no inicio do dia
 //     seguinte e o MESMO estado que a aplicacao imediata entre dias (nenhum
 //     tick acontece no meio) - por isso a equivalencia com o golden e 0 diff.
@@ -94,6 +98,15 @@ public:
 	uint64_t push(Command cmd);
 	// Move os pendentes, ja em ordem de emissao, e esvazia a fila.
 	std::vector<Command> take_pending();
+	// Ultimo `seq` emitido (0 = nenhum desde o reset). Combinado com
+	// `take_by_seq`, e o caminho da IA: ela emite o proprio comando, retira SO
+	// ele e o aplica na ordem de emissao, sem roubar comandos de terceiros (a
+	// UI) que entraram na fila no meio.
+	uint64_t last_seq() const;
+	// Remove e devolve SO o comando com aquele `seq`, se ainda pendente;
+	// preserva os demais na ordem de emissao. false = ele nao estava (mais) na
+	// fila, e `out` fica intacto.
+	bool take_by_seq(uint64_t seq, Command& out);
 	std::size_t pending_size() const;
 	void clear_pending();
 	// Marca no log o comando que acabou de ser aplicado. O log para de crescer

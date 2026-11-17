@@ -57,9 +57,8 @@ func _load_array(path: String) -> Array:
 
 func _run() -> void:
 	var sim: Object = Economy.sim
-	var ai: Object = Economy._ai
-	if sim == null or ai == null:
-		print("[travel] autoload Economy sem sim/IA")
+	if sim == null:
+		print("[travel] autoload Economy sem sim")
 		get_tree().quit(1)
 		return
 	Economy.set_speed(0)
@@ -69,7 +68,6 @@ func _run() -> void:
 	for day in range(1, DAYS + 1):
 		var started := Time.get_ticks_msec()
 		var summary: Dictionary = sim.tick_day()
-		ai.run(day)
 		var orders_seen := 0
 		for order: Variant in summary.get("trade_orders", []):
 			if typeof(order) != TYPE_DICTIONARY:

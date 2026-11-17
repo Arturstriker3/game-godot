@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "sim/ai/ai_phase.h"
 #include "sim/commands.h"
 #include "sim/sim_types.h"
 #include "sim/sim_core.h"
@@ -175,6 +176,22 @@ public:
 	 * @param value Aptidão entre 0 e 1 (0 impede a produção primária).
 	 */
 	void set_suitability(const String& city_id, const String& product, double value);
+
+	/**
+	 * Teto físico de capacidade agrícola (t/dia) de uma cidade para um
+	 * produto, derivado da geografia (área cultivável × produtividade FAO).
+	 *
+	 * Igual à aptidão, é DADO DE GEOGRAFIA e não entra no save: é declarado
+	 * pelo `GeographyService` (e viaja no bloco `definitions` do snapshot). Só
+	 * alimenta a decisão da IA — não muda preço, produção nem o status, por
+	 * isso não invalida o cache publicado. Produto desconhecido, cidade
+	 * ausente ou valor negativo não são erro: a chamada é ignorada/limitada.
+	 * @param city_id Identificador da cidade.
+	 * @param product id de goods.json (ex.: "wheat").
+	 * @param value Capacidade em t/dia (limitada a >= 0).
+	 */
+	void set_land_capacity(const String& city_id, const String& product,
+		double value);
 
 	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
@@ -414,6 +431,17 @@ public:
 	 * criação) — usado pelos testes que não medem cronograma de obra.
 	 */
 	void set_instant_construction(bool instant);
+
+	/**
+	 * A5: liga/desliga a FASE DA IA C++ no fim do dia (`AiPhase::run`).
+	 * DESLIGADO por padrão: os testes e o caminho GDScript existentes não
+	 * mudam. Com a IA ligada, `tick_and_publish` roda a fase depois de fechar o
+	 * dia e invalida o cache do status; `tick_day()` continua devolvendo o
+	 * status PRÉ-IA (o mesmo contrato do GDScript, onde `ai.run` vem depois de
+	 * `tick_day()`). Só grava a flag: NÃO reseta o estado da IA (`reset` é do
+	 * mundo novo — initialize_scenario/initialize_world/from_snapshot*).
+	 */
+	void set_ai_enabled(bool enabled);
 
 	/** Serializa todo o estado do cenário (save). */
 	Dictionary to_dict() const;
@@ -1313,6 +1341,13 @@ private:
 	// obra física continua valendo para investimento/expansão da IA e do jogo.
 	// Ligado só dentro de seed_industry.
 	bool bootstrap_construction_ = false;
+
+	// A5: a fase da IA C++ (estado entre dias NÃO serializado) e o interruptor.
+	// LIGADO/DESLIGADO por `set_ai_enabled`; `tick_day_status_` guarda o status
+	// PRÉ-IA do dia (é o que `tick_day()` devolve, como no GDScript).
+	ogs::AiPhase ai_phase_;
+	bool ai_enabled_ = false;
+	Dictionary tick_day_status_;
 
 	// Status reaproveitado entre dias (ver StatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA

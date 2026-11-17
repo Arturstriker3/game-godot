@@ -108,6 +108,11 @@ public:
 	// ------------------------------------------------------------------
 	City* find_city(const std::string& id);
 	const City* find_city(const std::string& id) const;
+	// Teto físico de capacidade agrícola (t/dia) de uma cidade para um produto.
+	// Dado de GEOGRAFIA: não é serializado no save — chega do GeographyService
+	// e viaja no bloco `definitions` do snapshot. Produto fora de
+	// [0, ws_.products) ou cidade ausente é ignorado; valor é limitado a >= 0.
+	void set_land_capacity(const std::string& city_id, int product, double value);
 	// A2: `full=false` é o caminho de todo tick (só o índice por cidade;
 	// cidades/nações/tarifas só mudam no carregamento).
 	void rebuild_indexes(bool full = true);

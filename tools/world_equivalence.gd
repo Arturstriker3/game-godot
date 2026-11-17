@@ -26,7 +26,7 @@ extends SceneTree
 ## - Saída: 0 ok, 1 falha. Toda falha vira linha `[equiv] FALHA: ...`.
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
-const EconomicAIScript := preload("res://core/economy/ai/economic_ai.gd")
+const GroupNamerScript := preload("res://core/economy/group_namer.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -156,7 +156,6 @@ func _run() -> void:
 		return
 
 	var geo: Object = null
-	var ai: Object = null
 	if _ai:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
@@ -177,20 +176,23 @@ func _run() -> void:
 
 	if geo != null:
 		geo.apply_to_sim(sim, _cities_with_center(cities))
-		ai = EconomicAIScript.new()
-		ai.setup(sim, geo)
+		# A IA econômica roda no núcleo, como fase do dia (A5). Os grupos são
+		# nomeados SEM `places`: esta corrida não carrega a cultura das cidades.
+		sim.set_ai_enabled(true)
+		GroupNamerScript.name_groups(sim)
 
 	# Aquece os dois slots do status (custo de alocação fora do primeiro tick).
 	if sim.has_method("warm_status"):
 		sim.warm_status()
 
-	for day in _days:
+	for _day in _days:
+		# A IA já rodou dentro do `tick_day()` (fase pós-status): o retorno é o
+		# status do dia ANTES das decisões dela.
 		var status: Dictionary = sim.tick_day()
-		if ai != null:
-			ai.run(int(status.get("day", day + 1)), status)
 		var violations: Array = status.get("invariant_violations", [])
 		if violations.size() > 0:
-			_fail("dia %d: invariante violado: %s" % [day + 1, String(violations[0])])
+			_fail("dia %d: invariante violado: %s" % [
+				int(status.get("day", 0)), String(violations[0])])
 			return
 
 	var save_dict: Dictionary = sim.to_dict()
