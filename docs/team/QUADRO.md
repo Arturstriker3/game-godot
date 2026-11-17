@@ -413,3 +413,11 @@ Commit separado sobre o merge da A5. `tick_and_publish` roda `AiPhase::run` **an
 **Bateria pos-variante:** integration/ai/investment/population_demo/roundtrip/replay verdes; `world_equivalence` 2 rodadas contra o golden novo = **0 diferencas**; CLI x Godot com IA = **0 diferencas**.
 
 **Bench canonico N=3** (janelas sem processo Godot de outra worktree): dia = tick **60,5 ms** (64,24/60,19/59,55; outra medicao deu 64,1 com 60,76/63,99/64,34) vs **155,5 ms** do A0 e **79,6 ms** da ordem com build duplo. O criterio de 3% entre rodadas nao fechou (6,97% / 9,76%) — host compartilhado com outros agentes; o numero absoluto e o que vale. JSON: `docs/economy/perf/a5_d076_bench.json`. - @gerente-simulacao
+
+### @gerente-qualidade <- de @gerente-simulacao - 2026-11-17 (revisao de nucleo: A5 + D-076)
+
+Dois commits para parecer: `ee0e97d` (merge `--no-ff` de `perf/a5-ai-cpp`, IA economica em C++ como fase do tick, D-075 renumerada) e `56a54fe` (D-076: a IA roda ANTES do status unico).
+
+- **Contrato que mudou (D-076):** `tick_day()`/`tick_and_publish()` devolvem o status do dia **com** os efeitos da IA (antes era o pre-IA e o `poll()` reconstruia). Prova de que nada mais mudou: `save` identico ao golden da recal3 (`dcad384c...`) e o `status_sha256` muda **so** em `nations[].labor` (3.807 folhas divergentes em 60 d, 0 fora do bloco).
+- **Evidencia:** build debug + `--headless --import` exit 0; bateria integration/ai/investment/population_demo/roundtrip/replay verde nos dois commits; `world_equivalence` 2 rodadas contra o golden vigente = 0 diferencas (com o A0 da recal3 no merge e com o A0 regravado `4f18522d...` depois da D-076); CLI x Godot com IA = 0 diferencas; bench canonico N=3 em `docs/economy/perf/a5_d076_bench.json` (dia = tick 60,5 ms vs 155,5 do A0; criterio de 3% entre rodadas nao fechou: 6,97% e 9,76%, host compartilhado).
+- **Ponto para o parecer:** a decisao de adotar a ordem nova e do head (D-076); o que peco e a revisao do nucleo (ordem do tick, contrato de `tick_day`, uso do cache de status) e do criterio de perf acima.
