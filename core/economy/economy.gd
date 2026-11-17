@@ -306,8 +306,8 @@ func _poll_tick() -> void:
 
 
 ## Publica um dia concluído: sinais para HUD/comboios. A IA já rodou dentro do
-## `tick_day()` do núcleo (fase pós-status), então o resumo publicado é o do dia
-## ANTES das decisões da IA.
+## `tick_day()` do núcleo ANTES do status único (A5/D-076), então o resumo
+## publicado já traz as decisões da IA do dia.
 func _publish(summary: Dictionary) -> void:
 	if summary.is_empty():
 		return

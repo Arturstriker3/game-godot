@@ -435,11 +435,11 @@ public:
 	/**
 	 * A5: liga/desliga a FASE DA IA C++ no fim do dia (`AiPhase::run`).
 	 * DESLIGADO por padrão: os testes e o caminho GDScript existentes não
-	 * mudam. Com a IA ligada, `tick_and_publish` roda a fase depois de fechar o
-	 * dia e invalida o cache do status; `tick_day()` continua devolvendo o
-	 * status PRÉ-IA (o mesmo contrato do GDScript, onde `ai.run` vem depois de
-	 * `tick_day()`). Só grava a flag: NÃO reseta o estado da IA (`reset` é do
-	 * mundo novo — initialize_scenario/initialize_world/from_snapshot*).
+	 * mudam. Com a IA ligada, `tick_and_publish` roda a fase já com o dia
+	 * fechado e ANTES da publicação do status único (D-076): `tick_day()`
+	 * devolve o status do dia **com** os efeitos da IA. Só grava a flag: NÃO
+	 * reseta o estado da IA (`reset` é do mundo novo —
+	 * initialize_scenario/initialize_world/from_snapshot*).
 	 */
 	void set_ai_enabled(bool enabled);
 
@@ -1343,8 +1343,8 @@ private:
 	bool bootstrap_construction_ = false;
 
 	// A5: a fase da IA C++ (estado entre dias NÃO serializado) e o interruptor.
-	// LIGADO/DESLIGADO por `set_ai_enabled`; `tick_day_status_` guarda o status
-	// PRÉ-IA do dia (é o que `tick_day()` devolve, como no GDScript).
+	// LIGADO/DESLIGADO por `set_ai_enabled`; `tick_day_status_` guarda o único
+	// status do dia, construído DEPOIS da fase da IA (D-076).
 	ogs::AiPhase ai_phase_;
 	bool ai_enabled_ = false;
 	Dictionary tick_day_status_;

@@ -1141,10 +1141,8 @@ void EconomySim::set_ai_enabled(bool enabled) {
 
 Dictionary EconomySim::tick_day() {
 	tick_and_publish();
-	// Cache hit: tick_and_publish() já montou e publicou o dia em curso. O
-	// dicionário é o PRÉ-IA (a fase da IA roda depois de fechá-lo e só o
-	// próximo get_status() a enxerga) — mesmo contrato do GDScript, onde
-	// `ai.run` vem depois de `sim.tick_day()`.
+	// Cache hit: tick_and_publish() já montou e publicou o dia em curso — o
+	// ÚNICO status do dia, construído depois da fase da IA (A5/D-076).
 	return tick_day_status_;
 }
 
@@ -1173,22 +1171,26 @@ void EconomySim::tick_and_publish() {
 	const ogs::profile::SinkScope phase_scope(&phase_sink);
 #endif
 	tick_core();
-	{
-		// Fase `status` (RAII): fecha ao sair do bloco, depois do tick.
-		OGS_SIM_ZONE(kPhaseStatus);
-		// A5: o status RETORNADO do dia é o PRÉ-IA (== GDScript: `tick_day()`
-		// devolve antes de `ai.run`). Guardar aqui é o que faz `tick_day()`
-		// custar um cache hit.
-		tick_day_status_ = get_status();
-	}
 	if (ai_enabled_) {
-		// A5: fase da IA no FIM do dia, já com o dia fechado (`ws_.day` é o dia
-		// que acabou de rodar). Os comandos emitidos são aplicados na hora pela
-		// própria fase (ai_emit_*), então o mundo muda aqui; a invalidação
-		// garante que o próximo `get_status()` reconstrua com os efeitos.
+		// A5/D-076: fase da IA no FIM do dia, já com o dia fechado (`ws_.day` é
+		// o dia que acabou de rodar) e ANTES da publicação do status. A IA lê
+		// um retrato próprio (`AiView`), não o status, então a ordem não muda
+		// nenhuma decisão; e cada comando emitido é aplicado na hora pela
+		// própria fase (ai_emit_*), então o status abaixo já sai com os
+		// efeitos do dia. Rodar a IA depois do status obrigava a invalidá-lo e
+		// a construí-lo DUAS vezes por dia (~20 ms), e a segunda construção
+		// lia o cache semanal do slot anterior — publicando `nations[].labor`
+		// com até 13 dias de atraso.
 		ai_phase_.run(ws_, sim_core_, commands_, instant_construction_,
 			bootstrap_construction_);
-		status_invalidate();
+	}
+	{
+		// Fase `status` (RAII): fecha ao sair do bloco, depois do tick e da IA.
+		OGS_SIM_ZONE(kPhaseStatus);
+		// A5/D-076: UM status por dia, com os efeitos da IA. Guardar aqui é o
+		// que faz `tick_day()` custar um cache hit (e o `poll()` do
+		// `tick_scheduler`, outro).
+		tick_day_status_ = get_status();
 	}
 	current_day_.store(ws_.day, std::memory_order_relaxed);
 }

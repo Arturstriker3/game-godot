@@ -8,8 +8,9 @@ extends SceneTree
 ## 3. descoberta de ferro -> governo abre estatal de mineração.
 ## Mais o anti-loop (B5).
 ##
-## `sim.tick_day()` devolve o status do dia ANTES da fase da IA; o que a IA fez
-## chega por `sim.get_command_log()` (Array de Dictionary com `type`, `day`,
+## `sim.tick_day()` devolve o status do dia JÁ com a fase da IA (A5/D-076: a
+## IA roda antes do status único); o que a IA fez chega por
+## `sim.get_command_log()` (Array de Dictionary com `type`, `day`,
 ## `apply_day`, `s`, `v` e `i`) e o estado corrente por `get_city_status(id)`.
 ##
 ## Uso: godot --headless --script res://tools/economy_ai_test.gd
@@ -235,7 +236,7 @@ func _make_world() -> Dictionary:
 	return {"sim": sim, "geo": geo}
 
 
-## Um dia: `tick_day()` já roda a fase da IA depois de publicar o status.
+## Um dia: `tick_day()` roda a fase da IA e publica UM status já com ela.
 func _run(world: Dictionary, days: int) -> void:
 	var sim = world["sim"]
 	for _index in days:

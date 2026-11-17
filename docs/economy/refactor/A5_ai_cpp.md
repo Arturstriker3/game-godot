@@ -107,12 +107,14 @@ gdextension/src/
   do Godot). Os aplicadores saíram da fachada para `sim/actions` para que o
   mesmo código rode no Godot e no CLI; a fachada só converte o resultado em
   `Dictionary`.
-- **Quando roda:** `EconomySim::tick_and_publish` monta e publica o status do
-  dia (PRÉ-IA, como o GDScript publicava), guarda-o para `tick_day()`, roda
-  `AiPhase::run(ws, core, commands, instant, bootstrap)` e invalida o cache. O
-  `get_status()` seguinte (fim de um harness, UI sob demanda) reconstrói já com
-  os efeitos da IA. O status devolvido por `tick_day()` continua sendo o do
-  fecho do dia sem as decisões — é o que a IA lê.
+- **Quando roda (D-076):** `EconomySim::tick_and_publish` roda
+  `AiPhase::run(ws, core, commands, instant, bootstrap)` com o dia fechado e só
+  então monta o **único** status do dia, guardado para `tick_day()` — o status
+  já traz os efeitos das decisões. A IA não lê o status: lê o `AiView`, retrato
+  congelado montado no início da fase. Antes da D-076 a IA rodava depois do
+  status e o invalidava: o status era construído duas vezes por dia e a segunda
+  construção publicava `nations[].labor` do cache do slot anterior (até 13 dias
+  de atraso).
 - **Leitura:** `snapshot_ai_view` congela mercados, POP, construções, jazidas,
   obras, incumbentes, totais por produto e caixa dos grupos **no início da
   fase**. Comandos aplicados no meio da fase não vazam para as decisões
@@ -213,24 +215,30 @@ A IA deixou de ser um trabalho de ~114 ms por dia fora do tick. O custo dela
 agora está dentro do `tick_wall_ms`; as métricas `ai_plan_ms`/`ai_pump_ms` do
 `perf_day_peak` ficam em 0 e `day_total_ms` passa a ser o tick.
 
-- **Bench canônico A0** (release de medição, 60 d, host ocioso): `tick_wall` =
-  `day_total` com mediana **79,6 ms** (A0 sem IA: 155,5 ms) — **−49%**. A
-  variação entre as 3 rodadas foi 7,95% (> 3%): o host não ficou limpo o
-  bastante para o critério de repetibilidade, e o número absoluto é o que vale
-  aqui. Decomposição: ~48 ms são as fases do tick/status e ~30 ms a fase de IA
-  (snapshot + decisões + aplicação). `status` mediano 20,0 ms (status_cities
-  14,3 — o build duplo descrito abaixo).
-- **Custo residual identificado (decisão do head, D-075):** o `poll()` do
-  `tick_scheduler` chama `get_status()` e, como a IA roda depois do status e o
-  invalida, o status é construído **duas vezes** por dia (~20 ms). Rodar a IA
-  **antes** do status único mediu `tick_wall` = **57,9 ms** (−63% vs A0), mas
-  muda o `status_sha256` em um único bloco: `nations[].labor` (agregado
-  **semanal**) era publicado com o cache do slot anterior — até 13 dias
-  atrasado — por causa do build duplo; a ordem nova publica o agregado do dia
-  corrente (save idêntico). O golden `a15ecf7f…` congela o retrato antigo, e o
-  aceite exige 0 diffs, então **a ordem que bate o golden foi a mantida** e a
-  alternativa (57,9 ms) fica registrada para o head decidir junto com a
-  correção da cadência semanal (hoje dependente do slot do double buffer).
+- **Bench canônico A0, ordem com build duplo** (release de medição, 60 d):
+  `tick_wall` = `day_total` com mediana **79,6 ms** (A0 sem IA: 155,5 ms) —
+  **−49%**. A variação entre as 3 rodadas foi 7,95% (> 3%): o host não ficou
+  limpo o bastante para o critério de repetibilidade, e o número absoluto é o
+  que vale aqui. Decomposição: ~48 ms são as fases do tick/status e ~30 ms a
+  fase de IA (snapshot + decisões + aplicação). `status` mediano 20,0 ms
+  (status_cities 14,3 — o build duplo descrito abaixo).
+- **Custo residual resolvido (D-076, decisão do head em 2026-11-17):** o
+  `poll()` do `tick_scheduler` chama `get_status()` e, como a IA rodava depois
+  do status e o invalidava, o status era construído **duas vezes** por dia
+  (~20 ms). A ordem nova (IA antes do status único) foi adotada: `day_total` =
+  `tick_wall` mediano **60,5 ms** (rodadas 64,24 / 60,19 / 59,55; uma medição
+  anterior, também em janela sem Godot de outra worktree, deu 64,1 ms com
+  60,76 / 63,99 / 64,34) — **−61% vs A0** e **−24% vs a ordem com build duplo**.
+  `status` mediano 20,5 ms (uma construção por dia), `poll` 0,015 ms. O
+  critério de 3% entre rodadas **não fechou** nas duas tentativas (6,97% e
+  9,76%): o host é compartilhado com outros agentes e o número absoluto é o
+  que vale. Golden: `save` idêntico (`dcad384c…`) e o `status_sha256` muda em
+  **um** bloco — `nations[].labor` (agregado **semanal**, que com o build duplo
+  vinha do cache do slot anterior, até 13 dias atrasado). Verificado campo a
+  campo: 3.807 folhas divergentes, **0 fora de `nations[].labor`**. Por isso o
+  retrato novo é o correto; `A0_60_urban.json` foi regravado (`status
+  4f18522d…`) e os goldens S0 não mudam (não ligam a IA C++). JSON do bench:
+  `docs/economy/perf/a5_d076_bench.json`.
 
 ## 6. O que fica e o que sai
 
