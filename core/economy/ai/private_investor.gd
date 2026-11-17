@@ -357,7 +357,18 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 		# Podar aqui também remove o log "avoid" redundante de excesso de oferta
 		# para produtos sem escassez — os asserts de econom_ai_test não o leem.
 		if shortage < MIN_SHORTAGE_TONS:
-			continue
+			# R2/Q-014: lavouras industriais (algodão/madeira) não têm mercado
+			# próprio formado — a escassez que importa é a DEMANDA DERIVADA da
+			# cadeia a jusante (têxtil/celulose) já instalada na cidade, líquida
+			# da capacidade do próprio insumo. Sem cadeia a demanda é 0 e a
+			# lavoura não abre; com cadeia a fazenda é dimensionada pelo insumo
+			# que as fábricas consomem (não superexpande e não falece em cascata).
+			if not Templates.LAND_COMPETING_RESOURCES.has(resource_name):
+				continue
+			shortage = Templates.derived_input_demand(city, product) \
+				- Templates.existing_capacity(city, product)
+			if shortage < MIN_SHORTAGE_TONS:
+				continue
 		if bool(entry["is_recipe"]):
 			# Cadeia final só com folga alimentar (F3): a planta de conforto
 			# não pode nascer em cidade que ainda depende de importar comida.
@@ -372,13 +383,6 @@ func _run_city(day: int, city: Dictionary, status: Dictionary) -> void:
 			if not _input_available(city, template, local_products) \
 					and not _chain_inputs_producible(city, template, status):
 				continue
-		elif Templates.LAND_COMPETING_RESOURCES.has(resource_name):
-			# §15/D-060: algodão/madeira são renováveis de exportação cuja demanda
-			# é "latente" (não financiada) — quando a fazenda entra, o preço cai
-			# ao piso e ela fale em cascata (a exportação não sustenta o preço).
-			# A IA não abre essas lavouras até a cadeia final (têxtil/madeireira)
-			# ter demanda real — pendência F3 (cadeias finais profundas).
-			continue
 		if _try_template(day, city, status, resource_name, shortage,
 				available, capital_cost, local_products):
 			return
@@ -436,8 +440,16 @@ func _try_template(day: int, city: Dictionary, status: Dictionary, resource_name
 	var effective_shortage := maxf(0.0, shortage
 		- Templates.pending_capacity(city, product))
 	if product < _sum_pending.size():
-		effective_shortage = maxf(0.0,
-			effective_shortage - float(_sum_pending[product]))
+		# R3/Q-014: na CESTA ALIMENTAR o pending GLOBAL não desconta. A capacidade
+		# em obra em outra cidade não garante entrega nesta cidade (frete, preço,
+		# porto), e o déficit local é o sinal de segurança alimentar. Medido em
+		# SGP-SIN (importador sem agricultura): 148 t/d de lacuna de arroz eram
+		# zerados por 271–472 t/d de obra global → 0 fazendas novas e comida 0,912;
+		# com construção instantânea (sem pending) a cidade chegava a 38 fazendas e
+		# 1,000. A obra LOCAL continua descontando (anti-empilhamento na cidade).
+		if not Templates.FOOD_RESOURCES.has(resource_name):
+			effective_shortage = maxf(0.0,
+				effective_shortage - float(_sum_pending[product]))
 
 	# F3 — oferta mundial curta: para a cesta alimentar, o excedente LOCAL não
 	# bloqueia a expansão em região excedente; o que importa é a necessidade

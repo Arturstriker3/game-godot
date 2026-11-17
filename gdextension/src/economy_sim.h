@@ -1105,6 +1105,13 @@ private:
 	// projeto físico (padrão); true = comportamento antigo (prédio na hora).
 	bool instant_construction_ = false;
 
+	// R1/Q-014: as plantas de REFERÊNCIA do bootstrap (demo_seed_industry) são
+	// estoque industrial pré-existente do cenário, não obra nova — nascem
+	// concluídas (custo debitado na criação, sem DemoConstructionProject). A
+	// obra física continua valendo para investimento/expansão da IA e do jogo.
+	// Ligado só dentro de demo_seed_industry.
+	bool bootstrap_construction_ = false;
+
 	// Status reaproveitado entre dias (ver DemoStatusCache). Dois slots
 	// alternados: o worker do tick escreve no slot inativo enquanto a UI/IA
 	// continuam lendo o último status COMPLETO (double buffer).

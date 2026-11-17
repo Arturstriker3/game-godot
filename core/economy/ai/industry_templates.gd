@@ -604,6 +604,35 @@ static func existing_capacity(city: Dictionary, product: int) -> float:
 	return total
 
 
+## Demanda derivada (t/dia) de um insumo: quanto as fábricas a jusante que já
+## existem na cidade consomem dele (capacidade nominal × qty/yield da receita).
+## R2/Q-014: é o sinal que as lavouras industriais (algodão/madeira) usam no
+## lugar do `shortage` do próprio bem, que não tem mercado formado. Sem cadeia a
+## jusante a demanda é 0 e a lavoura não abre (a fazenda nasceria com o preço no
+## piso e faliria em cascata). A capacidade em obra do insumo é descontada pelo
+## chamador, via `pending_capacity`/`_pending_global`, como no resto da IA.
+static func derived_input_demand(city: Dictionary, product: int) -> float:
+	_ensure_loaded()
+	if product < 0:
+		return 0.0
+	var total := 0.0
+	for output: String in _recipe_templates:
+		var template: Dictionary = _recipe_templates[output]
+		# Uma receita alternativa por alternativa: o insumo entra pelo consumo
+		# da ALTERNATIVA que mais o usa (evita contar duas rotas do mesmo bem).
+		var ratio := 0.0
+		for recipe: Dictionary in template["recipes"]:
+			var used := 0.0
+			for item: Dictionary in recipe["inputs"]:
+				if int(item["product"]) == product:
+					used += float(item["qty"]) / float(recipe["yield"])
+			ratio = maxf(ratio, used)
+		if ratio <= 0.0:
+			continue
+		total += existing_capacity(city, int(template["output"])) * ratio
+	return total
+
+
 ## Capacidade futura em obras (t/dia) na cidade corrente para `product`: soma da
 ## capacidade das obras em andamento (obra nova + expansão), do bloco `light`
 ## (§15/D-060). A IA subtrai isso da escassez observada para NÃO reconstruir a

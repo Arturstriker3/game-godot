@@ -3189,6 +3189,11 @@ void EconomySim::demo_seed_industry() {
 	});
 	const int seed_cities = std::min<int>(6, static_cast<int>(order.size()));
 	int created = 0;
+	// R1/Q-014: as plantas de referência abaixo são o estoque industrial
+	// PRÉ-EXISTENTE do cenário (não obra nova): nascem concluídas. A obra física
+	// (§15) segue valendo para tudo o que a IA/o jogador investe depois.
+	const bool previous_bootstrap = bootstrap_construction_;
+	bootstrap_construction_ = true;
 	for (int slot = 0; slot < seed_cities; ++slot) {
 		DemoCity& city = ws_.cities[static_cast<std::size_t>(order[slot])];
 		// Capacidade de referência = 5% da necessidade alimentar diária da
@@ -3274,18 +3279,42 @@ void EconomySim::demo_seed_industry() {
 		}
 		const DemoRecipe& mid = ws_.recipes[static_cast<std::size_t>(mid_recipe)];
 		const DemoRecipe& final = ws_.recipes[static_cast<std::size_t>(final_recipe)];
-		// Só as fábricas são semeadas: a matéria-prima entra por comércio (o
-		// `demo_trade_goods` já trata o insumo da receita) e a IA constrói as
-		// fazendas de algodão/madeira quando o shortage aparece. Semear a
-		// fazenda aqui tirava mão de obra primária das fazendas de alimento.
+		// R2/Q-014: a lavoura bruta (algodão/madeira) nasce JUNTO da fábrica que
+		// a consome — sem ela a matéria-prima não existe no mundo (a IA excluía
+		// essas lavouras, então fabric/cellulose/paper ficavam sem oferta desde o
+		// dia 0). Capacidade = o insumo que a transformação consome; custo pelo
+		// capital padrão por capacidade das primárias (ESTIMATIVA §12.3).
+		double raw_capacity = 0.0;
+		for (int input = 0; input < mid.input_count; ++input) {
+			if (mid.inputs[input] == raw_product) {
+				raw_capacity += final_capacity * mid.input_qty[input] / mid.yield;
+			}
+		}
+		if (raw_capacity <= 0.0) {
+			return 0;
+		}
+		raw_capacity = std::max(2.0, raw_capacity);
+		const double raw_cost = raw_capacity * kDemoCapitalPerCapacity;
 		const double total_cost =
-			final_capacity * mid.capital_per_capacity
+			raw_cost
+			+ final_capacity * mid.capital_per_capacity
 			+ final_capacity * final.capital_per_capacity;
 		if (city.government_budget < total_cost) {
 			return 0;
 		}
 		const String city_id(city.id.c_str());
 		int built = 0;
+		const String raw_building_id(("SEED-" + std::string(raw_id) + "-" + city.id).c_str());
+		Dictionary raw_build = demo_build(city_id, raw_building_id, String(raw_id),
+			-1, raw_product, raw_capacity, 0.0, 0.0, 0.0, 1.0, "state",
+			raw_cost, String(""));
+		if (bool(raw_build.get("created", false))) {
+			if (DemoBuilding* node = find_demo_building(city.id,
+					std::string(raw_building_id.utf8().get_data()))) {
+				node->strategic = true;
+			}
+			++built;
+		}
 		const String mid_building_id(("SEED-" + std::string(mid_id) + "-" + city.id).c_str());
 		Dictionary mid_build = demo_build(city_id, mid_building_id, String(mid_id),
 			-1, ws_.recipes[static_cast<std::size_t>(mid_recipe)].output,
@@ -3352,6 +3381,7 @@ void EconomySim::demo_seed_industry() {
 			}
 		}
 	}
+	bootstrap_construction_ = previous_bootstrap;
 	ws_.industry_seeded = true;
 	if (created > 0) {
 		UtilityFunctions::print(String(("economia: bootstrap industrial (estimativa) — "
@@ -4465,7 +4495,7 @@ Dictionary EconomySim::demo_build(const String& city_id, const String& building_
 	}
 	const bool state_owned = owner_name == "state";
 
-	if (instant_construction_) {
+	if (instant_construction_ || bootstrap_construction_) {
 		// Hook de teste (construção instantânea): comportamento anterior —
 		// prédio pronto na hora e custo integral debitado do dono.
 		if (state_owned) {
