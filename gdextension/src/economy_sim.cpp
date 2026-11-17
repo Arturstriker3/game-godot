@@ -22,11 +22,23 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <map>
 #include <set>
+#include <thread>
 #include <utility>
 
 namespace godot {
+
+namespace {
+
+// Hash da thread corrente: separa "a thread do dia" de "outra thread" em
+// `dispatch_command` (A3). Barato e estável durante toda a sessão.
+std::size_t current_thread_hash() {
+	return std::hash<std::thread::id>{}(std::this_thread::get_id());
+}
+
+} // namespace
 
 using namespace ogs;
 
@@ -139,6 +151,15 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::initialize_world);
 	ClassDB::bind_method(D_METHOD("tick_day"), &EconomySim::tick_day);
 	ClassDB::bind_method(D_METHOD("tick_and_publish"), &EconomySim::tick_and_publish);
+	ClassDB::bind_method(D_METHOD("apply_commands"), &EconomySim::apply_commands);
+	ClassDB::bind_method(D_METHOD("pending_command_count"),
+	                     &EconomySim::pending_command_count);
+	ClassDB::bind_method(D_METHOD("get_command_log"), &EconomySim::get_command_log);
+	ClassDB::bind_method(D_METHOD("clear_command_log"), &EconomySim::clear_command_log);
+	ClassDB::bind_method(D_METHOD("command_log_truncated"),
+	                     &EconomySim::command_log_truncated);
+	ClassDB::bind_method(D_METHOD("replay_commands", "entries", "target_day"),
+	                     &EconomySim::replay_commands);
 	ClassDB::bind_method(D_METHOD("set_profiling", "enabled"),
 	                     &EconomySim::set_profiling);
 	ClassDB::bind_method(D_METHOD("set_sim_threads", "threads"),
@@ -391,7 +412,7 @@ double EconomySim::get_tariff(const String& buyer_nation,
 		std::string(seller_nation.utf8().get_data()), index);
 }
 
-void EconomySim::set_tariff(const String& buyer_nation,
+void EconomySim::apply_set_tariff(const String& buyer_nation,
 		const String& seller_nation, const String& product, double rate) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Tariff tariff;
@@ -408,13 +429,11 @@ void EconomySim::set_tariff(const String& buyer_nation,
 				&& existing.product == tariff.product) {
 			existing.rate = tariff.rate;
 			ws_.tariff_lookup[key] = tariff.rate;
-			status_invalidate();
 			return;
 		}
 	}
 	ws_.tariffs.push_back(tariff);
 	ws_.tariff_lookup[key] = tariff.rate;
-	status_invalidate();
 }
 
 Dictionary EconomySim::get_currency(const String& nation) const {
@@ -473,7 +492,7 @@ Array EconomySim::get_currencies() const {
 	return out;
 }
 
-void EconomySim::set_currency_rate(const String& code, double rate,
+void EconomySim::apply_set_currency_rate(const String& code, double rate,
 		bool floating, double base_rate) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const auto found = ws_.currency_by_code.find(std::string(code.utf8().get_data()));
@@ -487,7 +506,6 @@ void EconomySim::set_currency_rate(const String& code, double rate,
 	currency.base_rate = (std::isfinite(base_rate) && base_rate > 0.0)
 		? base_rate : rate;
 	currency.floating = floating;
-	status_invalidate();
 }
 
 void EconomySim::set_currencies(const Variant& currencies) {
@@ -703,6 +721,9 @@ void EconomySim::initialize_scenario() {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
+	// A3: a fila de comandos e o log também são do mundo anterior.
+	commands_.reset();
+	current_day_.store(0, std::memory_order_relaxed);
 	// S14: o cenário AGRIA/PORTUS vive em sim/scenario_fixture.cpp (C++ puro);
 	// aqui só o cache de status (estado Godot) é resetado.
 	initialize_scenario_fixture(ws_, sim_core_);
@@ -718,6 +739,9 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
+	// A3: a fila de comandos e o log também são do mundo anterior.
+	commands_.reset();
+	current_day_.store(0, std::memory_order_relaxed);
 	ws_.active = true;
 	ws_.world_mode = true;
 	ws_.day = 0;
@@ -975,7 +999,7 @@ void EconomySim::set_fleet(const String& nation, double trucks, double ships,
 	status_invalidate();
 }
 
-Dictionary EconomySim::fleet_buy(const String& nation, const String& product,
+Dictionary EconomySim::apply_fleet_buy(const String& nation, const String& product,
 		double amount, double budget_share) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -1010,11 +1034,10 @@ Dictionary EconomySim::fleet_buy(const String& nation, const String& product,
 	result["bought"] = bought;
 	result["spent"] = spent;
 	result["unfilled"] = unfilled;
-	status_invalidate();
 	return result;
 }
 
-void EconomySim::set_market_stock(const String& city_id, const String& product,
+void EconomySim::apply_set_market_stock(const String& city_id, const String& product,
 		double stock) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
@@ -1027,10 +1050,9 @@ void EconomySim::set_market_stock(const String& city_id, const String& product,
 	}
 	city->markets[product_slot].stock = std::max(0.0, stock);
 	++status_static_version_;
-	status_invalidate();
 }
 
-void EconomySim::set_market_price(const String& city_id,
+void EconomySim::apply_set_market_price(const String& city_id,
 		const String& product, double price) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
@@ -1044,10 +1066,9 @@ void EconomySim::set_market_price(const String& city_id,
 	const double base = base_price(product_slot);
 	city->markets[product_slot].price = std::clamp(
 		std::max(1e-6, price), base * 0.1, base * 10.0);
-	status_invalidate();
 }
 
-Dictionary EconomySim::expand_port(const String& port_id, double t_per_day) {
+Dictionary EconomySim::apply_expand_port(const String& port_id, double t_per_day) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["expanded"] = false;
@@ -1094,14 +1115,13 @@ Dictionary EconomySim::expand_port(const String& port_id, double t_per_day) {
 	ws_.construction_cash += cost;
 	port->pending_capacity_t_per_day += add;
 	port->pending_days = std::max(port->pending_days, kPortBuildDays);
-	status_invalidate();
 	result["expanded"] = true;
 	result["cost"] = cost;
 	result["days"] = port->pending_days;
 	return result;
 }
 
-void EconomySim::set_port_capacity(const String& port_id, double t_per_day) {
+void EconomySim::apply_set_port_capacity(const String& port_id, double t_per_day) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Port* port = find_port(std::string(port_id.utf8().get_data()));
 	if (port == nullptr) {
@@ -1109,7 +1129,6 @@ void EconomySim::set_port_capacity(const String& port_id, double t_per_day) {
 	}
 	port->base_capacity_t_per_day = safe_nonneg(t_per_day);
 	port->capacity_t_per_day = port->base_capacity_t_per_day;
-	status_invalidate();
 }
 
 void EconomySim::set_instant_construction(bool instant) {
@@ -1125,6 +1144,22 @@ Dictionary EconomySim::tick_day() {
 
 void EconomySim::tick_and_publish() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	// A3: enquanto o dia roda, quem muta o mundo só enfileira (dispatch_command
+	// vê a flag e não toca no `ws_`). A flag é limpa na saída, inclusive quando
+	// o dia sai por exceção.
+	struct TickGuard {
+		std::atomic<bool>& flag;
+		std::atomic<std::size_t>& thread;
+		TickGuard(std::atomic<bool>& value, std::atomic<std::size_t>& owner) :
+				flag(value), thread(owner) {
+			thread.store(current_thread_hash(), std::memory_order_release);
+			flag.store(true, std::memory_order_release);
+		}
+		~TickGuard() {
+			flag.store(false, std::memory_order_release);
+			thread.store(0, std::memory_order_release);
+		}
+	} tick_guard(tick_in_progress_, tick_thread_);
 #if defined(OGS_PROFILING)
 	// Sink das fases do tick: os 15 slots de `profile_us_`, com o toggle
 	// `profile_` como interruptor (desligado, nenhum relógio é lido).
@@ -1137,12 +1172,223 @@ void EconomySim::tick_and_publish() {
 		OGS_SIM_ZONE(kPhaseStatus);
 		get_status();
 	}
+	current_day_.store(ws_.day, std::memory_order_relaxed);
 }
 
 void EconomySim::status_invalidate() {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	status_built_day_ = -1;
 }
+
+// ---------------------------------------------------------------------------
+// A3 - fila de comandos (sim/commands.h; racional em
+// docs/economy/refactor/A3_commands.md).
+//
+// Cada método que muda o mundo (jogador ou IA) agora só monta um Command,
+// enfileira e pede a aplicação. A ordem de aplicação é a de emissão; a fila é
+// aplicada (a) no início do dia, antes do prólogo (tick_core), e (b) na hora,
+// quando o método precisa devolver o efeito (contrato de retorno de invest,
+// build, group_invest, ...) - esse é o único caminho síncrono.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Log/dict <-> Command. O log é a evidência do replay e sai em JSON pelo
+Dictionary command_to_dict(const ogs::Command& cmd) {
+	Dictionary entry;
+	const char* name = ogs::command_type_name(cmd.type);
+	entry["type"] = String(name != nullptr ? name : "");
+	entry["day"] = cmd.day;
+	entry["apply_day"] = cmd.apply_day;
+	entry["seq"] = static_cast<int64_t>(cmd.seq);
+	Array strings;
+	for (int slot = 0; slot < ogs::kCommandStrings; ++slot) {
+		if (cmd.s[slot].empty()) {
+			break;
+		}
+		strings.push_back(String(cmd.s[slot].c_str()));
+	}
+	if (!strings.is_empty()) {
+		entry["s"] = strings;
+	}
+	bool has_double = false;
+	for (int slot = 0; slot < ogs::kCommandDoubles; ++slot) {
+		if (cmd.v[slot] != 0.0) {
+			has_double = true;
+		}
+	}
+	if (has_double) {
+		Array doubles;
+		doubles.resize(ogs::kCommandDoubles);
+		for (int slot = 0; slot < ogs::kCommandDoubles; ++slot) {
+			doubles[slot] = cmd.v[slot];
+		}
+		entry["v"] = doubles;
+	}
+	bool has_int = false;
+	for (int slot = 0; slot < ogs::kCommandInts; ++slot) {
+		if (cmd.i[slot] != 0) {
+			has_int = true;
+		}
+	}
+	if (has_int) {
+		Array ints;
+		ints.resize(ogs::kCommandInts);
+		for (int slot = 0; slot < ogs::kCommandInts; ++slot) {
+			ints[slot] = cmd.i[slot];
+		}
+		entry["i"] = ints;
+	}
+	if (cmd.b) {
+		entry["b"] = true;
+	}
+	return entry;
+}
+
+bool command_from_dict(const Dictionary& entry, ogs::Command& out) {
+	ogs::CommandType type = ogs::CommandType::None;
+	const String type_name = entry.get("type", String());
+	if (!ogs::command_type_from_name(
+			std::string(type_name.utf8().get_data()), type)) {
+		return false;
+	}
+	out = ogs::Command();
+	out.type = type;
+	out.day = static_cast<int>(entry.get("day", 0));
+	out.apply_day = static_cast<int>(entry.get("apply_day", 0));
+	out.seq = static_cast<uint64_t>(static_cast<int64_t>(entry.get("seq", 0)));
+	if (entry.has("s")) {
+		const Array strings = entry.get("s", Array());
+		for (int slot = 0; slot < strings.size() && slot < ogs::kCommandStrings;
+				++slot) {
+			out.s[slot] = std::string(String(strings[slot]).utf8().get_data());
+		}
+	}
+	if (entry.has("v")) {
+		const Array doubles = entry.get("v", Array());
+		for (int slot = 0; slot < doubles.size() && slot < ogs::kCommandDoubles;
+				++slot) {
+			out.v[slot] = static_cast<double>(doubles[slot]);
+		}
+	}
+	if (entry.has("i")) {
+		const Array ints = entry.get("i", Array());
+		for (int slot = 0; slot < ints.size() && slot < ogs::kCommandInts; ++slot) {
+			out.i[slot] = static_cast<int>(ints[slot]);
+		}
+	}
+	out.b = static_cast<bool>(entry.get("b", false));
+	return true;
+}
+
+} // namespace
+
+Dictionary EconomySim::dispatch_command(const ogs::Command& cmd) {
+	// Dia em andamento em OUTRA thread (tick_scheduler): a ação só entra na
+	// fila. Nada do `ws_` é tocado aqui, então não há disputa com o escritor
+	// único - é o caminho que dispensa o mutex recursivo. O efeito chega no
+	// início do próximo dia (`apply_pending_locked` em tick_core).
+	//
+	// Na PRÓPRIA thread do dia (seed_industry chama build, por exemplo) a
+	// mutação aplica na hora: o tick é o escritor, já está sob o mutex e a
+	// ordem interna do dia é parte do resultado.
+	const bool in_tick_thread = tick_thread_.load(std::memory_order_acquire)
+		== current_thread_hash();
+	if (tick_in_progress_.load(std::memory_order_acquire) && !in_tick_thread) {
+		ogs::Command queued = cmd;
+		queued.day = current_day_.load(std::memory_order_relaxed);
+		const uint64_t seq = commands_.push(queued);
+		Dictionary deferred;
+		deferred["queued"] = true;
+		deferred["seq"] = static_cast<int64_t>(seq);
+		deferred["apply_day"] = queued.day + 1;
+		return deferred;
+	}
+	// Fora do dia: aplica agora, na ordem de emissão. Comandos anteriores na
+	// fila (se houver) saem antes - é o que garante a ordem determinística.
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	ogs::Command accepted = cmd;
+	accepted.day = ws_.day;
+	const uint64_t seq = commands_.push(accepted);
+	return apply_pending_locked(seq);
+}
+
+Dictionary EconomySim::apply_pending_locked(uint64_t wanted_seq) {
+	Dictionary receipt;
+	const std::vector<ogs::Command> pending = commands_.take_pending();
+	if (pending.empty()) {
+		return receipt;
+	}
+	for (const ogs::Command& pending_cmd : pending) {
+		// Cópia: o log grava o dia em que o comando FOI aplicado. Os emitidos
+		// entre dias aplicam no mesmo dia; os emitidos com o dia em andamento
+		// (outra thread) aplicam no início do dia seguinte - o replay usa
+		// `apply_day`, não `day`, para acertar os dois casos.
+		ogs::Command cmd = pending_cmd;
+		cmd.apply_day = ws_.day;
+		const Dictionary result = apply_one_locked(cmd);
+		commands_.log(cmd);
+		if (wanted_seq != 0 && cmd.seq == wanted_seq) {
+			receipt = result;
+		}
+	}
+	// Ponto ÚNICO de invalidação do lote (os aplicadores não invalidam mais).
+	if (!tick_in_progress_.load(std::memory_order_relaxed)) {
+		status_invalidate();
+	}
+	return receipt;
+}
+
+void EconomySim::apply_commands() {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	apply_pending_locked(0);
+}
+
+int EconomySim::pending_command_count() const {
+	return static_cast<int>(commands_.pending_size());
+}
+
+Array EconomySim::get_command_log() const {
+	Array out;
+	const std::vector<ogs::Command> entries = commands_.log_entries();
+	out.resize(static_cast<int>(entries.size()));
+	for (int index = 0; index < out.size(); ++index) {
+		out[index] = command_to_dict(entries[static_cast<std::size_t>(index)]);
+	}
+	return out;
+}
+
+void EconomySim::clear_command_log() {
+	commands_.clear_log();
+}
+
+bool EconomySim::command_log_truncated() const {
+	return commands_.truncated();
+}
+
+bool EconomySim::replay_commands(const Array& entries, int target_day) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	for (int index = 0; index < entries.size(); ++index) {
+		ogs::Command cmd;
+		if (!command_from_dict(entries[index], cmd)) {
+			return false;
+		}
+		// O relógio do replay é o dia em que o comando FOI aplicado (não o dia
+		// em que foi emitido): os dois coincidem para as ações entre dias e
+		// diferem em 1 para as que esperaram a fila (dia em andamento).
+		const int when = cmd.apply_day > 0 ? cmd.apply_day : cmd.day;
+		while (ws_.day < when) {
+			tick_core();
+		}
+		commands_.push(cmd);
+		apply_pending_locked(0);
+	}
+	while (ws_.day < target_day) {
+		tick_core();
+	}
+	return true;
+}
+
 
 void EconomySim::set_profiling(bool enabled) {
 	profile_ = enabled;
@@ -1208,6 +1454,12 @@ void EconomySim::tick_core() {
 	if (!ws_.active) {
 		initialize_scenario();
 	}
+	// A3: o dia começa aplicando a fila de comandos (ordem de emissão), antes
+	// do prólogo e de qualquer fase. Comandos emitidos com o dia em andamento
+	// (outra thread) chegam aqui; os emitidos entre dias já foram aplicados
+	// pelo dispatch e a fila está vazia.
+	apply_pending_locked(0);
+	current_day_.store(ws_.day, std::memory_order_relaxed);
 	// §12.3: se o mundo real ainda não tem indústria, semeia poucas plantas de
 	// referência (moinho + padaria) antes de contar dinheiro/invariantes.
 	seed_industry();
@@ -3033,7 +3285,7 @@ Dictionary EconomySim::get_city_status(const String& city_id) {
 }
 
 
-void EconomySim::price_shock(const String& product, double multiplier) {
+void EconomySim::apply_price_shock(const String& product, double multiplier) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	int index = product_index(product);
 	if (index < 0) {
@@ -3044,7 +3296,6 @@ void EconomySim::price_shock(const String& product, double multiplier) {
 		city.markets[index].price = std::clamp(
 			city.markets[index].price * multiplier, base * 0.1, base * 10.0);
 	}
-	status_invalidate();
 }
 
 int EconomySim::product_index(const String& product) const {
@@ -3647,7 +3898,7 @@ void EconomySim::set_balance(const Dictionary& values) {
 		number("income_basket_margin", ws_.income_basket_margin), 1.0, 8.0);
 }
 
-void EconomySim::set_suitability(const String& city_id, const String& product,
+void EconomySim::apply_set_suitability(const String& city_id, const String& product,
 		double value) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const int index = product_index(product);
@@ -3661,10 +3912,9 @@ void EconomySim::set_suitability(const String& city_id, const String& product,
 	city->suitability[index] = std::clamp(value, 0.0, 1.0);
 	// O status reuse arrays de aptidão: invalida só quando o dado muda.
 	++status_static_version_;
-	status_invalidate();
 }
 
-bool EconomySim::set_deposit(const String& city_id, const String& product,
+bool EconomySim::apply_set_deposit(const String& city_id, const String& product,
 		double reserve_kt, double quality, double depth_m) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const int index = product_index(product);
@@ -3687,11 +3937,10 @@ bool EconomySim::set_deposit(const String& city_id, const String& product,
 	deposit.remaining_kt = deposit.initial_kt;
 	deposit.extracted_kt = 0.0;
 	++status_deposit_version_;
-	status_invalidate();
 	return true;
 }
 
-void EconomySim::set_external_demand(const String& city_id, const String& product,
+void EconomySim::apply_set_external_demand(const String& city_id, const String& product,
 		double ceiling_t_per_day) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const int index = product_index(product);
@@ -3704,10 +3953,9 @@ void EconomySim::set_external_demand(const String& city_id, const String& produc
 	}
 	city->external_demand[index] = safe_nonneg(ceiling_t_per_day);
 	++status_static_version_;
-	status_invalidate();
 }
 
-void EconomySim::set_external_income_index(const String& city_id, double index) {
+void EconomySim::apply_set_external_income_index(const String& city_id, double index) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
@@ -3722,10 +3970,9 @@ void EconomySim::set_external_income_index(const String& city_id, double index) 
 	// quando o índice chega do GeographyService, logo após criar o mundo.
 	apply_labor_profile(*city);
 	++status_static_version_;
-	status_invalidate();
 }
 
-void EconomySim::set_productivity_index(const String& city_id, double index) {
+void EconomySim::apply_set_productivity_index(const String& city_id, double index) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
@@ -3738,10 +3985,9 @@ void EconomySim::set_productivity_index(const String& city_id, double index) {
 	city->productivity_index = index > 0.0
 		? std::clamp(index, 0.05, 8.0) : 0.0;
 	++status_static_version_;
-	status_invalidate();
 }
 
-void EconomySim::set_income_gini(const String& city_id, double gini) {
+void EconomySim::apply_set_income_gini(const String& city_id, double gini) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr) {
@@ -3755,7 +4001,6 @@ void EconomySim::set_income_gini(const String& city_id, double gini) {
 	// espelho dos estratos, sem inventar Gini).
 	refresh_income_classes(*city);
 	++status_static_version_;
-	status_invalidate();
 }
 
 // ---------------------------------------------------------------------------
@@ -3856,7 +4101,7 @@ void EconomySim::set_labor_profile(const String& city_id,
 	status_invalidate();
 }
 
-void EconomySim::set_minimum_wage(const String& nation, double value) {
+void EconomySim::apply_set_minimum_wage(const String& nation, double value) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string tag(nation.utf8().get_data());
 	if (tag.empty()) {
@@ -3881,13 +4126,11 @@ void EconomySim::set_minimum_wage(const String& nation, double value) {
 			}
 		}
 	}
-	status_invalidate();
 }
 
-void EconomySim::set_wage_rigidity(double value) {
+void EconomySim::apply_set_wage_rigidity(double value) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	ws_.wage_rigidity = std::clamp(value, 0.0, 0.25);
-	status_invalidate();
 }
 
 // ---------------------------------------------------------------------------
@@ -4232,7 +4475,7 @@ Dictionary EconomySim::get_services_detail(const String& city_id) const {
 	return out;
 }
 
-void EconomySim::set_service_capacity(const String& city_id,
+void EconomySim::apply_set_service_capacity(const String& city_id,
 		const String& sector, double units_per_day) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
@@ -4271,7 +4514,7 @@ void EconomySim::set_service_capacity(const String& city_id,
 	}
 }
 
-void EconomySim::set_service_business_state(int business_id, int loss_days,
+void EconomySim::apply_set_service_business_state(int business_id, int loss_days,
 		double profit) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	for (ServiceBusiness& business : ws_.service_businesses) {
@@ -4298,7 +4541,7 @@ int EconomySim::get_service_bankruptcies() const {
 	return ws_.service_bankruptcies;
 }
 
-Dictionary EconomySim::invest(const String& city_id, const String& building_id,
+Dictionary EconomySim::apply_invest(const String& city_id, const String& building_id,
 		double amount) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -4350,7 +4593,6 @@ Dictionary EconomySim::invest(const String& city_id, const String& building_id,
 		building->capacity += capacity_added;
 		result["invested"] = amount;
 		result["capacity_added"] = capacity_added;
-		status_invalidate();
 		return result;
 	}
 
@@ -4399,11 +4641,10 @@ Dictionary EconomySim::invest(const String& city_id, const String& building_id,
 	result["invested"] = amount;
 	result["capacity_added"] = capacity_added;
 	result["project_id"] = String(project.id.c_str());
-	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::build(const String& city_id, const String& building_id,
+Dictionary EconomySim::apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
 		double input_per_output, const String& owner, double cost,
@@ -4553,7 +4794,6 @@ Dictionary EconomySim::build(const String& city_id, const String& building_id,
 		city->construction_revenue_pending += cost;
 		result["created"] = true;
 		result["cost"] = cost;
-		status_invalidate();
 		return result;
 	}
 
@@ -4634,7 +4874,6 @@ Dictionary EconomySim::build(const String& city_id, const String& building_id,
 	result["created"] = true;
 	result["cost"] = cost;
 	result["project_id"] = String(id.c_str());
-	status_invalidate();
 	return result;
 }
 
@@ -4811,7 +5050,7 @@ Dictionary EconomySim::get_group(const String& group_id) const {
 	return entry;
 }
 
-Dictionary EconomySim::fund_group(const String& group_id, double amount) {
+Dictionary EconomySim::apply_fund_group(const String& group_id, double amount) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
 	result["funded"] = false;
@@ -4850,11 +5089,10 @@ Dictionary EconomySim::fund_group(const String& group_id, double amount) {
 	if (moved <= 0.0) {
 		result["error"] = "sem orçamento na nação de origem";
 	}
-	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::group_invest(const String& group_id,
+Dictionary EconomySim::apply_group_invest(const String& group_id,
 		const String& city_id, const String& building_id, const String& resource,
 		int output_product, double capacity, const String& recipe_id,
 		const String& partner_group) {
@@ -5063,7 +5301,6 @@ Dictionary EconomySim::group_invest(const String& group_id,
 		result["cost"] = cost;
 		result["owner"] = String(building.owner.c_str());
 		result["local_share"] = local_share;
-		status_invalidate();
 		return result;
 	}
 
@@ -5139,11 +5376,10 @@ Dictionary EconomySim::group_invest(const String& group_id,
 	result["owner"] = String(project.owner.c_str());
 	result["local_share"] = local_share;
 	result["project_id"] = String(id.c_str());
-	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::set_fdi_policy(const String& nation,
+Dictionary EconomySim::apply_set_fdi_policy(const String& nation,
 		const String& sector, const String& mode, double min_local) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -5187,7 +5423,7 @@ Dictionary EconomySim::set_fdi_policy(const String& nation,
 	return result;
 }
 
-Dictionary EconomySim::set_sector_incentive(const String& nation,
+Dictionary EconomySim::apply_set_sector_incentive(const String& nation,
 		const String& sector, double tax_holiday, double subsidy) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -5214,7 +5450,7 @@ Dictionary EconomySim::set_sector_incentive(const String& nation,
 	return result;
 }
 
-Dictionary EconomySim::create_state_company(const String& nation,
+Dictionary EconomySim::apply_create_state_company(const String& nation,
 		const String& name, double capital) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -5259,11 +5495,10 @@ Dictionary EconomySim::create_state_company(const String& nation,
 	if (created->cash <= 0.0) {
 		result["warning"] = "nenhum orçamento disponível na nação";
 	}
-	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::privatize(const String& city_id,
+Dictionary EconomySim::apply_privatize(const String& city_id,
 		const String& building_id, const String& buyer_group) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -5316,11 +5551,10 @@ Dictionary EconomySim::privatize(const String& city_id,
 	result["ok"] = true;
 	result["price"] = price;
 	result["owner"] = String(building->owner.c_str());
-	status_invalidate();
 	return result;
 }
 
-Dictionary EconomySim::nationalize(const String& city_id,
+Dictionary EconomySim::apply_nationalize(const String& city_id,
 		const String& building_id) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary result;
@@ -5367,7 +5601,6 @@ Dictionary EconomySim::nationalize(const String& city_id,
 	result["compensation"] = compensation;
 	result["confidence"] = nation_confidence(city->nation);
 	result["previous_owner"] = String(previous_owner.c_str());
-	status_invalidate();
 	return result;
 }
 
@@ -5517,7 +5750,7 @@ Dictionary EconomySim::get_investment_signals() const {
 	return out;
 }
 
-bool EconomySim::spend_government(const String& city_id, double amount) {
+bool EconomySim::apply_spend_government(const String& city_id, double amount) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
 	if (city == nullptr || amount <= 0.0 || city->government_budget < amount) {
@@ -5529,7 +5762,6 @@ bool EconomySim::spend_government(const String& city_id, double amount) {
 	city->service_revenue += amount;
 	city->service_profit += amount;
 	city->gdp += amount;
-	status_invalidate();
 	return true;
 }
 
@@ -5940,7 +6172,7 @@ Dictionary urban_project_result(bool ok, const std::string& error,
 }
 } // namespace
 
-Dictionary EconomySim::urban_expand(const String& city_id, int zone,
+Dictionary EconomySim::apply_urban_expand(const String& city_id, int zone,
 		double km2) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string id(city_id.utf8().get_data());
@@ -5958,12 +6190,11 @@ Dictionary EconomySim::urban_expand(const String& city_id, int zone,
 		cost = ws_.construction_projects.back().total_cost;
 	}
 	if (ok) {
-		status_invalidate();
 	}
 	return urban_project_result(ok, error, project_id, cost);
 }
 
-Dictionary EconomySim::urban_densify(const String& city_id, int zone) {
+Dictionary EconomySim::apply_urban_densify(const String& city_id, int zone) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const std::string id(city_id.utf8().get_data());
 	const auto found = ws_.city_lookup.find(id);
@@ -5980,12 +6211,11 @@ Dictionary EconomySim::urban_densify(const String& city_id, int zone) {
 		cost = ws_.construction_projects.back().total_cost;
 	}
 	if (ok) {
-		status_invalidate();
 	}
 	return urban_project_result(ok, error, project_id, cost);
 }
 
-Dictionary EconomySim::urban_social_housing(const String& city_id,
+Dictionary EconomySim::apply_urban_social_housing(const String& city_id,
 		double units) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	Dictionary out;
@@ -6024,7 +6254,6 @@ Dictionary EconomySim::urban_social_housing(const String& city_id,
 	// Custo LÍQUIDO: a parcela de TERRA voltou para o caixa da prefeitura no
 	// momento da abertura (o resto foi reservado na obra).
 	out["cost"] = std::max(0.0, cash_before - ws_.city_gov[index].cash);
-	status_invalidate();
 	return out;
 }
 
@@ -6038,6 +6267,9 @@ void EconomySim::from_dict(const Dictionary& data) {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
+	// A3: save carregado não herda a fila nem o log do mundo anterior.
+	commands_.reset();
+	current_day_.store(0, std::memory_order_relaxed);
 	ogs::edge::from_dict(ws_, sim_core_, data);
 }
 
@@ -6075,6 +6307,9 @@ void EconomySim::from_snapshot(const Dictionary& snapshot) {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
+	// A3: snapshot carregado não herda a fila nem o log do mundo anterior.
+	commands_.reset();
+	current_day_.store(0, std::memory_order_relaxed);
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
 	// carregados (índices incluídos).
 	ogs::save::definitions_from(ws_, ogs::edge::from_godot(definitions));
@@ -6149,12 +6384,462 @@ bool EconomySim::from_snapshot_file(const String& path) {
 	status_built_day_ = -1;
 	++status_static_version_;
 	++status_deposit_version_;
+	// A3: snapshot carregado não herda a fila nem o log do mundo anterior.
+	commands_.reset();
+	current_day_.store(0, std::memory_order_relaxed);
 	// Definições primeiro: o save assume produtos/receitas/necessidades já
 	// carregados (índices incluídos). `save::from_value` é exatamente o que
 	// `edge::from_dict` chama: nada de Variant no meio do caminho.
 	ogs::save::definitions_from(ws_, definitions);
 	ogs::save::from_value(ws_, sim_core_, save_block);
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// A3 - aplicação de um comando já tirado da fila. Roda sempre sob o mutex do
+// escritor; não enfileira nada (os `apply_*` são os corpos antigos).
+// ---------------------------------------------------------------------------
+
+namespace {
+
+std::string to_std(const String& value) {
+	return std::string(value.utf8().get_data());
+}
+
+} // namespace
+
+Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
+	Dictionary result;
+	switch (cmd.type) {
+		case ogs::CommandType::Invest:
+			return apply_invest(String(cmd.s[0].c_str()), String(cmd.s[1].c_str()),
+				cmd.v[0]);
+		case ogs::CommandType::Build:
+			return apply_build(String(cmd.s[0].c_str()), String(cmd.s[1].c_str()),
+				String(cmd.s[2].c_str()), cmd.i[0], cmd.i[1], cmd.v[0], cmd.v[1],
+				cmd.v[2], cmd.v[3], cmd.v[4], String(cmd.s[3].c_str()), cmd.v[5],
+				String(cmd.s[4].c_str()));
+		case ogs::CommandType::SpendGovernment:
+			result["ok"] = apply_spend_government(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::PriceShock:
+			apply_price_shock(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetSuitability:
+			apply_set_suitability(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetDeposit:
+			result["ok"] = apply_set_deposit(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0], cmd.v[1], cmd.v[2]);
+			return result;
+		case ogs::CommandType::SetExternalDemand:
+			apply_set_external_demand(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetExternalIncomeIndex:
+			apply_set_external_income_index(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetProductivityIndex:
+			apply_set_productivity_index(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetIncomeGini:
+			apply_set_income_gini(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetMinimumWage:
+			apply_set_minimum_wage(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetWageRigidity:
+			apply_set_wage_rigidity(cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetTariff:
+			apply_set_tariff(String(cmd.s[0].c_str()), String(cmd.s[1].c_str()),
+				String(cmd.s[2].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetCurrencyRate:
+			apply_set_currency_rate(String(cmd.s[0].c_str()), cmd.v[0], cmd.b,
+				cmd.v[1]);
+			return result;
+		case ogs::CommandType::ExpandPort:
+			return apply_expand_port(String(cmd.s[0].c_str()), cmd.v[0]);
+		case ogs::CommandType::SetPortCapacity:
+			apply_set_port_capacity(String(cmd.s[0].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetMarketStock:
+			apply_set_market_stock(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetMarketPrice:
+			apply_set_market_price(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::FleetBuy:
+			return apply_fleet_buy(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0], cmd.v[1]);
+		case ogs::CommandType::FundGroup:
+			return apply_fund_group(String(cmd.s[0].c_str()), cmd.v[0]);
+		case ogs::CommandType::GroupInvest:
+			return apply_group_invest(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()),
+				String(cmd.s[3].c_str()), cmd.i[0], cmd.v[0],
+				String(cmd.s[4].c_str()), String(cmd.s[5].c_str()));
+		case ogs::CommandType::SetFdiPolicy:
+			return apply_set_fdi_policy(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()), cmd.v[0]);
+		case ogs::CommandType::SetSectorIncentive:
+			return apply_set_sector_incentive(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0], cmd.v[1]);
+		case ogs::CommandType::CreateStateCompany:
+			return apply_create_state_company(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
+		case ogs::CommandType::Privatize:
+			return apply_privatize(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()));
+		case ogs::CommandType::Nationalize:
+			return apply_nationalize(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()));
+		case ogs::CommandType::UrbanExpand:
+			return apply_urban_expand(String(cmd.s[0].c_str()), cmd.i[0], cmd.v[0]);
+		case ogs::CommandType::UrbanDensify:
+			return apply_urban_densify(String(cmd.s[0].c_str()), cmd.i[0]);
+		case ogs::CommandType::UrbanSocialHousing:
+			return apply_urban_social_housing(String(cmd.s[0].c_str()), cmd.v[0]);
+		case ogs::CommandType::SetServiceCapacity:
+			apply_set_service_capacity(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), cmd.v[0]);
+			return result;
+		case ogs::CommandType::SetServiceBusinessState:
+			apply_set_service_business_state(cmd.i[0], cmd.i[1], cmd.v[0]);
+			return result;
+		case ogs::CommandType::None:
+			break;
+	}
+	return result;
+}
+
+// ---------------------------------------------------------------------------
+// A3 - superfície pública: MESMA assinatura de antes, agora enfileirando.
+// Slots por tipo (o log JSON usa estes mesmos nomes): ver A3_commands.md.
+// ---------------------------------------------------------------------------
+
+Dictionary EconomySim::invest(const String& city_id, const String& building_id,
+		double amount) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::Invest;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.v[0] = amount;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::build(const String& city_id, const String& building_id,
+		const String& resource, int input_product, int output_product,
+		double capacity, double jobs, double wage, double opex,
+		double input_per_output, const String& owner, double cost,
+		const String& recipe_id) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::Build;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.s[2] = to_std(resource);
+	cmd.s[3] = to_std(owner);
+	cmd.s[4] = to_std(recipe_id);
+	cmd.i[0] = input_product;
+	cmd.i[1] = output_product;
+	cmd.v[0] = capacity;
+	cmd.v[1] = jobs;
+	cmd.v[2] = wage;
+	cmd.v[3] = opex;
+	cmd.v[4] = input_per_output;
+	cmd.v[5] = cost;
+	return dispatch_command(cmd);
+}
+
+bool EconomySim::spend_government(const String& city_id, double amount) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SpendGovernment;
+	cmd.s[0] = to_std(city_id);
+	cmd.v[0] = amount;
+	const Dictionary result = dispatch_command(cmd);
+	if (result.has("queued")) {
+		// Comando aceito; o gasto acontece no início do próximo dia. Só
+		// acontece para quem chama com o dia em andamento (outra thread).
+		return true;
+	}
+	return static_cast<bool>(result.get("ok", false));
+}
+
+void EconomySim::price_shock(const String& product, double multiplier) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::PriceShock;
+	cmd.s[0] = to_std(product);
+	cmd.v[0] = multiplier;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_suitability(const String& city_id, const String& product,
+		double value) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetSuitability;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(product);
+	cmd.v[0] = value;
+	dispatch_command(cmd);
+}
+
+bool EconomySim::set_deposit(const String& city_id, const String& product,
+		double reserve_kt, double quality, double depth_m) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetDeposit;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(product);
+	cmd.v[0] = reserve_kt;
+	cmd.v[1] = quality;
+	cmd.v[2] = depth_m;
+	const Dictionary result = dispatch_command(cmd);
+	if (result.has("queued")) {
+		return true;
+	}
+	return static_cast<bool>(result.get("ok", false));
+}
+
+void EconomySim::set_external_demand(const String& city_id,
+		const String& product, double ceiling_t_per_day) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetExternalDemand;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(product);
+	cmd.v[0] = ceiling_t_per_day;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_external_income_index(const String& city_id, double index) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetExternalIncomeIndex;
+	cmd.s[0] = to_std(city_id);
+	cmd.v[0] = index;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_productivity_index(const String& city_id, double index) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetProductivityIndex;
+	cmd.s[0] = to_std(city_id);
+	cmd.v[0] = index;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_income_gini(const String& city_id, double gini) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetIncomeGini;
+	cmd.s[0] = to_std(city_id);
+	cmd.v[0] = gini;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_minimum_wage(const String& nation, double value) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetMinimumWage;
+	cmd.s[0] = to_std(nation);
+	cmd.v[0] = value;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_wage_rigidity(double value) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetWageRigidity;
+	cmd.v[0] = value;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_tariff(const String& buyer_nation,
+		const String& seller_nation, const String& product, double rate) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetTariff;
+	cmd.s[0] = to_std(buyer_nation);
+	cmd.s[1] = to_std(seller_nation);
+	cmd.s[2] = to_std(product);
+	cmd.v[0] = rate;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_currency_rate(const String& code, double rate,
+		bool floating, double base_rate) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetCurrencyRate;
+	cmd.s[0] = to_std(code);
+	cmd.v[0] = rate;
+	cmd.v[1] = base_rate;
+	cmd.b = floating;
+	dispatch_command(cmd);
+}
+
+Dictionary EconomySim::expand_port(const String& port_id, double t_per_day) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::ExpandPort;
+	cmd.s[0] = to_std(port_id);
+	cmd.v[0] = t_per_day;
+	return dispatch_command(cmd);
+}
+
+void EconomySim::set_port_capacity(const String& port_id, double t_per_day) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetPortCapacity;
+	cmd.s[0] = to_std(port_id);
+	cmd.v[0] = t_per_day;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_market_stock(const String& city_id,
+		const String& product, double stock) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetMarketStock;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(product);
+	cmd.v[0] = stock;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_market_price(const String& city_id,
+		const String& product, double price) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetMarketPrice;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(product);
+	cmd.v[0] = price;
+	dispatch_command(cmd);
+}
+
+Dictionary EconomySim::fleet_buy(const String& nation, const String& product,
+		double amount, double budget_share) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::FleetBuy;
+	cmd.s[0] = to_std(nation);
+	cmd.s[1] = to_std(product);
+	cmd.v[0] = amount;
+	cmd.v[1] = budget_share;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::fund_group(const String& group_id, double amount) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::FundGroup;
+	cmd.s[0] = to_std(group_id);
+	cmd.v[0] = amount;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::group_invest(const String& group_id,
+		const String& city_id, const String& building_id, const String& resource,
+		int output_product, double capacity, const String& recipe_id,
+		const String& partner_group) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::GroupInvest;
+	cmd.s[0] = to_std(group_id);
+	cmd.s[1] = to_std(city_id);
+	cmd.s[2] = to_std(building_id);
+	cmd.s[3] = to_std(resource);
+	cmd.s[4] = to_std(recipe_id);
+	cmd.s[5] = to_std(partner_group);
+	cmd.i[0] = output_product;
+	cmd.v[0] = capacity;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::set_fdi_policy(const String& nation,
+		const String& sector, const String& mode, double min_local) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetFdiPolicy;
+	cmd.s[0] = to_std(nation);
+	cmd.s[1] = to_std(sector);
+	cmd.s[2] = to_std(mode);
+	cmd.v[0] = min_local;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::set_sector_incentive(const String& nation,
+		const String& sector, double tax_holiday, double subsidy) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetSectorIncentive;
+	cmd.s[0] = to_std(nation);
+	cmd.s[1] = to_std(sector);
+	cmd.v[0] = tax_holiday;
+	cmd.v[1] = subsidy;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::create_state_company(const String& nation,
+		const String& name, double capital) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::CreateStateCompany;
+	cmd.s[0] = to_std(nation);
+	cmd.s[1] = to_std(name);
+	cmd.v[0] = capital;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::privatize(const String& city_id,
+		const String& building_id, const String& buyer_group) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::Privatize;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.s[2] = to_std(buyer_group);
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::nationalize(const String& city_id,
+		const String& building_id) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::Nationalize;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::urban_expand(const String& city_id, int zone, double km2) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::UrbanExpand;
+	cmd.s[0] = to_std(city_id);
+	cmd.i[0] = zone;
+	cmd.v[0] = km2;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::urban_densify(const String& city_id, int zone) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::UrbanDensify;
+	cmd.s[0] = to_std(city_id);
+	cmd.i[0] = zone;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::urban_social_housing(const String& city_id, double units) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::UrbanSocialHousing;
+	cmd.s[0] = to_std(city_id);
+	cmd.v[0] = units;
+	return dispatch_command(cmd);
+}
+
+void EconomySim::set_service_capacity(const String& city_id,
+		const String& sector, double units_per_day) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetServiceCapacity;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(sector);
+	cmd.v[0] = units_per_day;
+	dispatch_command(cmd);
+}
+
+void EconomySim::set_service_business_state(int business_id, int loss_days,
+		double profit) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::SetServiceBusinessState;
+	cmd.i[0] = business_id;
+	cmd.i[1] = loss_days;
+	cmd.v[0] = profit;
+	dispatch_command(cmd);
 }
 
 } // namespace godot
