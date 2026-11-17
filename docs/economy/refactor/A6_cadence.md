@@ -180,7 +180,7 @@ a variação entre rodadas foi **14,2%** e o critério de reprodutibilidade do A
 73,9 ms (−21,8%) e o p95 de 71,7 para 67,6 ms (−5,8%); o custo diário médio cai
 pouco (o trabalho mensal passou de "tudo no dia 30" para "~28 cidades por dia").
 Duas fases ficaram **ligeiramente mais caras por dia** — `fiscal_city_gov`
-0,63 → 0,73 e `housing` 0,40 → 0,45 (−0,10 ms somados): é o preço de fazer o
+0,63 → 0,73 e `housing` 0,40 → 0,45 (**+0,14 ms** somados: 0,635 → 0,729 e 0,398 → 0,445): é o preço de fazer o
 trabalho mensal de um lote por dia em vez de concentrá-lo num dia, e o ganho de
 pico é 10× essa diferença. A meta do plano (**dia ≤15 ms p95**) **não** é
 atingível por cadência: sobram ~47 ms de trabalho *diário por contrato* —
