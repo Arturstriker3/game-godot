@@ -361,3 +361,4 @@ Tarefa D-004 (dono: @gerente-dados) - **dado, sem C++/GDScript**. Responde ao bl
 3. `sim_population` continua cidade própria em 98/380 (Delhi 0,009x, Manila 0,059x): trocar isso mexe no balanço do núcleo.
 4. HUD/painéis somam `population` (regional) - sugestão: exibir `urban_population` como cidade.
 Relatório: `docs/economy/city_population_audit.md`; decisão: GAME_STATE §14 D-064.
+- 2026-11-17 · merge `chore/repo-hygiene` (4c50cc7) em `balance/global-resources` -> merge commit `634b9ca`: 2.460 `.translation` + 321 `.import` de docs/ removidos, `docs/.gdignore` criado, `.gitignore` passa a ignorar `*.translation`; 134 `.csv.import` fora de docs/ viraram `importer="keep"`. - @gerente-simulacao
