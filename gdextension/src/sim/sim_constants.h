@@ -543,6 +543,7 @@ constexpr double kDemoUrbanFactoryM2PerWorker = 150.0;
 // publica preço de terra por cidade; a parcela do terreno no imóvel é o proxy
 // declarado (W0 deixou o campo em 0 de propósito).
 constexpr double kDemoUrbanLandShareOfHousePrice = 0.30;
+constexpr double kDemoUrbanLandShareOfHousePriceCap = 0.45;
 // Curva de ocupação -> pressão de preço: convexa perto de 1 e com teto
 // declarado (evita preço explosivo quando a ocupação passa de 1).
 constexpr double kDemoUrbanLandMaxPressure = 8.0;
@@ -621,6 +622,16 @@ constexpr double kDemoHousingRentElasticity = 0.50;
 // metrópoles caras (estrutura ~25–40% do preço; o resto é terreno).
 constexpr double kDemoHousingBuildCostYears = 6.0;
 constexpr double kDemoHousingDeveloperMargin = 0.20;
+// Teto da participação do TERRENO no valor da unidade (Q-015, integração). A
+// terra entra por `m² construído ÷ FAR × preço do m² de solo` (o lote que
+// sustenta a unidade, não a área construída); em zona de FAR baixo e preço de
+// solo alto (curva de pressão saturada perto da ocupação 1) o terreno chegaria
+// a mais de 100% do valor — solo valendo mais que a construção que ele
+// sustenta. Faixa observada da participação do terreno no preço: 20-50% em
+// metrópoles (Tokyo/Mumbai no topo, Lagos/São Paulo abaixo). 0,45 é a
+// calibração declarada do teto e mantém a margem do incorporador (obra 30% +
+// terreno ≤45% = custo ≤75% do valor contra a exigência de ≤83,3%).
+constexpr double kDemoHousingLandShareMax = 0.45;
 // Parcela MATERIAL da obra de moradia = a MESMA receita do §15 (Q-015/§5): a
 // obra de moradia não é exceção da fila única; material é o que o §15 declara
 // (15% do orçamento, o resto é mão de obra/serviço). A antiga fração de 40%

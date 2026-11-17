@@ -493,8 +493,15 @@ double build_cost_unit(const WorldState& ws, std::size_t city_index,
 	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
 	const int t = std::clamp(tier, 0, TIER_COUNT - 1);
 	const double rent = std::max(0.0, house.rent[t]);
-	const double land_cost = kDemoUrbanUnitM2[d][t]
-		* std::max(0.0, land.land_price[ZONE_RES]);
+	// Q-015 (integração): a terra que sustenta a unidade é o LOTE
+	// (m² construído ÷ FAR da densidade), não a área construída. Sem o FAR o
+	// custo da terra em zona de torre (FAR 6) entrava 6× acima do lote real e
+	// o preço do solo calibrado (Q-015-C) re-quebrava o gate do incorporador.
+	const double far = std::max(1.0, kDemoUrbanFar[d]);
+	const double land_area_m2 = kDemoUrbanUnitM2[d][t] / far;
+	const double unit_value = rent * 12.0 / kDemoUrbanCapRate;
+	const double land_cost = std::min(land_area_m2 * std::max(0.0, land.land_price[ZONE_RES]),
+		kDemoHousingLandShareMax * unit_value);
 	if (rent <= 0.0 && land_cost <= 0.0) {
 		return 0.0;  // sem preço nem terra: ausência explícita
 	}

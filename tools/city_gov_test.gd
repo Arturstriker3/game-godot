@@ -149,7 +149,38 @@ func _make_world(threads: int, urban: Dictionary) -> Object:
 		return sim
 	sim.demo_set_urban(urban["land"], _load_dict(HOUSING_CITY_PATH),
 		_load_dict(HOUSING_PATH), urban["finance"])
+	_force_busy_zone(sim)
 	return sim
+
+
+## Q-015-C + Q-015-B3: a capacidade das zonas nasce CALIBRADA no alvo da faixa
+## de população (0,85 nas metrópoles), abaixo do gatilho de 0,90 — comprimir a
+## área no JSON não cria mais cidade cheia, porque o `zone_fill` é recalculado
+## para o alvo. Cidade cheia, no jogo, é o estado que chega depois de crescer
+## dentro do envelope. O fixture reproduz esse estado reduzindo a fração
+## construída (zone_fill) da zona RES até a ocupação chegar a 0,95, passando
+## pelo save (o mesmo caminho que um save de partida em andamento usa).
+const BUSY_OCCUPANCY := 0.95
+
+
+func _force_busy_zone(sim) -> void:
+	var data: Dictionary = sim.demo_to_dict()
+	for entry: Variant in Array(data.get("urban", [])):
+		var row: Dictionary = entry
+		if String(row.get("city", "")) != TEST_CITY:
+			continue
+		var fill: Array = Array(row.get("zone_fill", [1.0, 1.0, 1.0]))
+		# 0,85 (alvo da faixa) / 0,95 (ocupação de cidade cheia).
+		fill[0] = float(fill[0]) * 0.85 / BUSY_OCCUPANCY
+		row["zone_fill"] = fill
+		sim.demo_from_dict(data)
+		var occupancy := float(Array(_gov(sim, TEST_CITY).get(
+			"zone_occupancy", [0.0]))[0])
+		if occupancy < 0.90:
+			_fail("%s: fixture de cidade cheia nao chegou a 0,90 (%.3f)" % [
+				TEST_CITY, occupancy])
+		return
+	_fail("%s ausente do save urbano" % TEST_CITY)
 
 
 func _gov(sim, city_id: String) -> Dictionary:

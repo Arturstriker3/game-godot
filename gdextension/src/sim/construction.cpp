@@ -76,7 +76,8 @@ double SimCore::demo_project_land_cost(
 			project.housing_density, 0, DENSITY_COUNT - 1);
 		const int tier = std::clamp(project.housing_tier, 0, TIER_COUNT - 1);
 		area_m2 = std::max(0.0, project.housing_units)
-			* kDemoUrbanUnitM2[density][tier];
+			* kDemoUrbanUnitM2[density][tier]
+			/ std::max(1.0, kDemoUrbanFar[density]);
 		price_per_m2 = std::max(0.0, land.land_price[ZONE_RES]);
 	} else {
 		// Prédio econômico URBANO (receita industrial ou fábrica legada com
@@ -95,7 +96,13 @@ double SimCore::demo_project_land_cost(
 		return 0.0;
 	}
 	double cost = area_m2 * price_per_m2;
-	if (project.kind != CONSTRUCTION_HOUSING) {
+	if (project.kind == CONSTRUCTION_HOUSING) {
+		// Moradia (Q-015, integração): a parcela de terreno é a MESMA que entra
+		// no custo da unidade (`build_cost_unit`): lote = m² ÷ FAR, limitado a
+		// kDemoHousingLandShareMax do valor. As duas contas precisam bater, ou a
+		// terra creditada à prefeitura volta a comer o orçamento inteiro.
+		cost = std::min(cost, kDemoHousingLandShareMax * budget);
+	} else {
 		// Prédio econômico: a terra fica limitada a uma fração do orçamento,
 		// para o material + mão de obra ficarem com o resto.
 		cost = std::min(cost, kDemoConstructionLandShareMax * budget);
