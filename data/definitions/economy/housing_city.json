@@ -129,7 +129,7 @@
     "AFG-HER": {
       "name": "Herāt",
       "nation": "AFG",
-      "population": 3561028,
+      "population": 3580676,
       "urban_population": 574300,
       "urban_population_source": "sim_population",
       "household_size": 8.04,
@@ -197,7 +197,7 @@
     "AFG-KAB": {
       "name": "Kabul",
       "nation": "AFG",
-      "population": 33793493,
+      "population": 33979950,
       "urban_population": 5450000,
       "urban_population_source": "agglomeration",
       "household_size": 8.04,
@@ -265,7 +265,7 @@
     "AFG-KAN": {
       "name": "Kandahār",
       "nation": "AFG",
-      "population": 3244795,
+      "population": 3262699,
       "urban_population": 523300,
       "urban_population_source": "sim_population",
       "household_size": 8.04,
@@ -333,16 +333,16 @@
     "AFG-MAZ": {
       "name": "Mazār-e Sharīf",
       "nation": "AFG",
-      "population": 3244795,
-      "urban_population": 523300,
+      "population": 3020786,
+      "urban_population": 484500,
       "urban_population_source": "sim_population",
       "household_size": 8.04,
       "household_size_source": "un_desa",
-      "housing_stock_total": 65087,
+      "housing_stock_total": 60261,
       "housing_stock_by_tier": {
-        "popular": 17040,
-        "medium": 46986,
-        "high": 1061
+        "popular": 15776,
+        "medium": 43503,
+        "high": 982
       },
       "stock_split_source": "derived:lognormal_from_gini",
       "tenure_by_tier": {
