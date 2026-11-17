@@ -7,6 +7,8 @@ CLAUDE.md
 # GDExtension C++ build artifacts (economy engine)
 gdextension/build-debug/
 gdextension/build-release/
+# A0: release de medição com perfil por fase (-DOGS_PROFILE_RELEASE=ON)
+gdextension/build-profile-release/
 
 # Ferramentas locais de desenvolvimento (MCP / agentes)
 addons/godot_mcp/

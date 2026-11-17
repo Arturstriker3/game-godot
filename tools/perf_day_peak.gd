@@ -29,7 +29,13 @@ extends Node
 ## Uso:
 ##   godot --headless --path . res://tools/perf_day_peak.tscn -- [--days=30] \
 ##       [--tick-mode=sync|worker] [--profile=0|1] \
-##       [--map-mode=none|political|resources] [--map-territory=0|1]
+##       [--map-mode=none|political|resources] [--map-territory=0|1] \
+##       [--threads=N] [--json=<caminho>]
+##
+## `--json=<caminho>` grava ao final um JSON UTF-8 (chaves ordenadas) com
+## `meta`, `metrics` por etapa e, com `--profile=1`, `phases` do tick C++.
+## É o insumo de `tools/bench_canonical.ps1` (bench canônico A0 —
+## docs/plans/perf_pop_financas_plano.md). Sem `--json`, nada é gravado.
 
 const ConvoysScript: Script = preload("res://map/convoy_spacing.gd")
 const ModeLayerScript: Script = preload("res://map/map_mode_layer.gd")
@@ -55,6 +61,8 @@ var _map_territory := true
 var _tick_mode := "sync"
 var _profile := false
 var _threads := 0
+## Caminho do JSON de saída (`--json`); vazio = não grava nada.
+var _json_path := ""
 var _pump_samples: Array[float] = []
 var _phase_us: Dictionary = {}
 ## Estado do log de pedidos do HUD (espelho de `_log_orders`).
@@ -80,6 +88,9 @@ func _ready() -> void:
 			_profile = bool(int(arg.split("=")[1]))
 		elif arg.begins_with("--threads="):
 			_threads = int(arg.split("=")[1])
+		elif arg.begins_with("--json="):
+			# O caminho pode conter "=": corta só o prefixo.
+			_json_path = arg.substr("--json=".length())
 
 	# Congela o relógio: quem dirige os dias é este laço.
 	Economy.set_speed(0)
@@ -138,6 +149,8 @@ func _ready() -> void:
 	var pump_ms: Array[float] = []
 	var pump_frames: Array[float] = []
 	var peak_ms: Array[float] = []
+	# Custo total do dia (tick + plano da IA + IA fatiada), uma amostra por dia.
+	var day_total_ms: Array[float] = []
 	var building_series: Array[float] = []
 	var orders_total := 0
 	var max_orders := 0
@@ -266,6 +279,9 @@ func _ready() -> void:
 		pump_ms.append(pump_total)
 		pump_frames.append(float(frames))
 		peak_ms.append(maxf(frame_cost, pump_peak))
+		# Dia completo: tick (parede no worker) + planejamento da IA + a IA
+		# fatiada gasta no pump. É a métrica-alvo do plano A0 (<= 15 ms p95).
+		day_total_ms.append(tick_cost + ai_ms[-1] + ai_pump_total)
 
 		print("[perf] dia %3d: tick %6.1f  fila %5.2f  plano IA %5.2f  mapa %5.2f  virada %6.1f | pump %6.2f ms em %3d frames (pico %5.2f, IA %5.2f)  [%d pedidos, %d comboios, %d entregues, %d construções]%s" % [
 			day, tick_cost, enqueue_ms[-1], ai_ms[-1], map_cost, frame_cost,
@@ -299,7 +315,7 @@ func _ready() -> void:
 			max_buildings = maxf(max_buildings, value)
 		print("[perf] construções no mundo: dia 1 %.0f → dia %d %.0f (máx %.0f) — o tick cresce com elas" % [
 			building_series[0], _days, building_series[-1], max_buildings])
-	print("[perf] %-32s %8s %8s %8s" % ["etapa", "média", "p95", "máx"])
+	print("[perf] %-32s %8s %8s %8s %8s" % ["etapa", "média", "p50", "p95", "máx"])
 	_report("1. tick C++ (%s)" % ("parede do worker" if worker else "síncrono"), tick_ms)
 	if _days > 2:
 		# Os dois primeiros dias pagam a criação dos dois slots do status
@@ -322,6 +338,7 @@ func _ready() -> void:
 	_report("   PUMP comboios/dia", pump_ms)
 	_report("   PUMP por frame", _pump_samples)
 	_report("   FRAME DE PICO (virada|frames)", peak_ms)
+	_report("   DIA TOTAL (tick+plano+IA)", day_total_ms)
 	if _profile:
 		_report_phases()
 	var frames_total := 0.0
@@ -332,9 +349,27 @@ func _ready() -> void:
 	# Memória do processo com o mundo REAL carregado (858 cidades): é o custo
 	# estático do cenário, sim, IA e comboios — sem o mapa 3D.
 	var live_status: Dictionary = Economy.sim.get_demo_status()
+	var static_mb := float(OS.get_static_memory_usage()) / (1024.0 * 1024.0)
 	print("[perf] memória estática com %d cidades: %.1f MB" % [
-		(live_status.get("cities", []) as Array).size(),
-		float(OS.get_static_memory_usage()) / (1024.0 * 1024.0)])
+		(live_status.get("cities", []) as Array).size(), static_mb])
+
+	if not _json_path.is_empty():
+		var metrics: Dictionary = {
+			"tick_wall_ms": _stats(tick_ms),
+			"poll_ms": _stats(poll_ms),
+			"enqueue_orders_ms": _stats(enqueue_ms),
+			"ai_plan_ms": _stats(ai_ms),
+			"hud_log_ms": _stats(hud_log_ms),
+			"ai_pump_ms": _stats(ai_pump_ms),
+			"map_ms": _stats(map_ms),
+			"turn_ms": _stats(turn_ms),
+			"pump_ms": _stats(pump_ms),
+			"frame_peak_ms": _stats(peak_ms),
+			"day_total_ms": _stats(day_total_ms),
+		}
+		if not _write_json(metrics, static_mb):
+			get_tree().quit(1)
+			return
 
 	get_tree().quit(0)
 
@@ -411,25 +446,19 @@ func _log_orders(summary: Dictionary) -> void:
 			_order_log.pop_back()
 
 
-## Perfil por fase do núcleo (média/p95/máx em ms), ordenado por custo.
+## Perfil por fase do núcleo (média/p50/p95/máx em ms), ordenado por custo.
 func _report_phases() -> void:
-	print("[perf] %-24s %8s %8s %8s" % ["fase do tick C++", "média", "p95", "máx"])
+	print("[perf] %-24s %8s %8s %8s %8s" % ["fase do tick C++", "média", "p50", "p95", "máx"])
 	var ranked: Array = []
 	for phase in PHASES:
 		var values: Array[float] = _phase_us.get(phase, [] as Array[float])
 		if values.is_empty():
 			continue
-		var sorted := values.duplicate()
-		sorted.sort()
-		var total := 0.0
-		for value in values:
-			total += value
-		ranked.append([phase, total / float(values.size()),
-			sorted[clampi(int(ceil(float(sorted.size()) * 0.95)) - 1, 0, sorted.size() - 1)],
-			sorted[sorted.size() - 1]])
+		var stats := _stats(values)
+		ranked.append([phase, stats["mean"], stats["p50"], stats["p95"], stats["max"]])
 	ranked.sort_custom(func(a, b): return a[1] > b[1])
 	for row in ranked:
-		print("[perf] %-24s %8.2f %8.2f %8.2f" % [row[0], row[1], row[2], row[3]])
+		print("[perf] %-24s %8.2f %8.2f %8.2f %8.2f" % [row[0], row[1], row[2], row[3], row[4]])
 
 
 ## Um frame de pump (mede o custo e devolve o tempo gasto, ou -1 se a fila
@@ -466,11 +495,66 @@ func _ms(start_usec: int) -> float:
 func _report(label: String, values: Array[float]) -> void:
 	if values.is_empty():
 		return
+	var stats := _stats(values)
+	print("[perf] %-26s %8.2f %8.2f %8.2f %8.2f  ms" % [
+		label, stats["mean"], stats["p50"], stats["p95"], stats["max"]])
+
+
+## Estatísticas de uma série em ms: média, p50, p95 (posto, nearest-rank),
+## máximo e n. É a mesma conta da tabela impressa e do JSON.
+func _stats(values: Array[float]) -> Dictionary:
+	if values.is_empty():
+		return {"mean": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0, "n": 0}
 	var sorted := values.duplicate()
 	sorted.sort()
+	var count := sorted.size()
 	var total := 0.0
 	for value in values:
 		total += value
-	var mean := total / float(values.size())
-	var p95_index: int = clampi(int(ceil(float(sorted.size()) * 0.95)) - 1, 0, sorted.size() - 1)
-	print("[perf] %-26s %8.2f %8.2f %8.2f  ms" % [label, mean, sorted[p95_index], sorted[sorted.size() - 1]])
+	return {
+		"mean": total / float(count),
+		"p50": sorted[clampi(int(ceil(float(count) * 0.5)) - 1, 0, count - 1)],
+		"p95": sorted[clampi(int(ceil(float(count) * 0.95)) - 1, 0, count - 1)],
+		"max": sorted[count - 1],
+		"n": count,
+	}
+
+
+## Grava o resultado em JSON UTF-8 (chaves ordenadas): `meta`, `metrics` por
+## etapa e `phases` do tick C++ quando `--profile=1`. Floats crus (quem
+## arredonda é a tabela impressa). Devolve false se não conseguiu gravar.
+func _write_json(metrics: Dictionary, memory_static_mb: float) -> bool:
+	var data: Dictionary = {
+		"meta": {
+			"days": _days,
+			"tick_mode": _tick_mode,
+			"profile": _profile,
+			"threads_arg": _threads,
+			"godot_version": String(Engine.get_version_info().get("string", "")),
+			"generated_utc": "%sZ" % Time.get_datetime_string_from_system(true),
+			"memory_static_mb": memory_static_mb,
+		},
+		"metrics": metrics,
+	}
+	if _profile:
+		var phases: Dictionary = {}
+		for phase in PHASES:
+			var values: Array[float] = _phase_us.get(phase, [] as Array[float])
+			if values.is_empty():
+				continue
+			phases[phase] = _stats(values)
+		data["phases"] = phases
+
+	var base_dir := _json_path.get_base_dir()
+	if not base_dir.is_empty():
+		# Caminho absoluto do SO passa direto; `res://`/`user://` viram nativo.
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(base_dir))
+	var file := FileAccess.open(_json_path, FileAccess.WRITE)
+	if file == null:
+		print("[perf] falha ao gravar JSON em %s (erro %d)" % [
+			_json_path, FileAccess.get_open_error()])
+		return false
+	file.store_string(JSON.stringify(data, "  ", true, false))
+	file.close()
+	print("[perf] JSON gravado: %s" % _json_path)
+	return true
