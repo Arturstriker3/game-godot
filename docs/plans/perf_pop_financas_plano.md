@@ -116,6 +116,14 @@ Objetivo: sair de "1 POP por cidade" para **coortes**, sem simular indivíduos.
     de infraestrutura rural (luz, água, estrada). O §19 (solo, aluguel, prefeitura) vale só para o urbano.
   - **Consumo:** autoconsumo de comida fora do mercado e sem frete; o resto no mercado da cidade, com
     custo de acesso que cai com a estrada. Acesso menor a saúde/educação.
+- **Interior dividido em dois blocos (decisão do dono, 2026-11-17):** as 834 aglomerações cobrem ~26% da
+  população mundial, mas ~57% é urbana. O interior de cada cidade se divide em **cidades pequenas**
+  (urbanização real da nação, ONU WUP, menos a fatia das aglomerações) e **rural** (o resto).
+  Cidades pequenas: indústria leve e serviços, moradia simples (sem mercado de solo do §19).
+  Rural: fazendas, minas, madeira, agricultura familiar. Dado de base: data/definitions/population/
+  hinterland_2026.json (WorldPop 2026 por província → cidade dona). Ressalva: regiões enormes
+  (ex.: Patna 226 M) refletem a regra província→cidade; 7 aglomerações maiores que a região ficam
+  com interior 0 (Mumbai, Osaka, Kuwait, Busan, Brisbane, Portland, Juárez).
 - Rótulo do mapa continua mostrando a aglomeração; a ficha mostra também o total da região.
 - **Recalibração grande** (~6,5× consumidores): fase própria, sweep dedicado, goldens refeitos.
 - Aceite: população nacional simulada = dado real; fatia de emprego agrícola cai com a renda do país;
@@ -221,6 +229,8 @@ combustíveis (`coal`, `gas`, `oil`, `fuel`, `uranium`, `wood`, `charcoal`, `eth
   nacional; (2) **conexão parcial** — troca com a rede só até a capacidade da linha, o resto é local;
   (3) **isolada** — rede regional: só as usinas da própria cidade/interior abastecem a região, com preço
   e racionamento próprios. Dentro da região, a cobertura do interior é um nível separado.
+- **Perda nunca chega a zero (decisão do dono):** obras de rede reduzem a perda com retorno decrescente até
+  um piso técnico > 0 (referência: perdas T&D das redes mais eficientes, ~4–6%; `access_losses.json`).
 - **Infraestrutura elétrica reduz perdas**, com dois níveis por cidade: urbano e interior. Estado inicial
   por dado público (perdas de transmissão/distribuição % e acesso à eletricidade % por país).
 - **Venda entre nações só entre redes vizinhas com FRONTEIRA TERRESTRE** (sem cabo submarino — decisão
