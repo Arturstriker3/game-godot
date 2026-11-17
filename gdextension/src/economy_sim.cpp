@@ -6020,24 +6020,26 @@ Dictionary EconomySim::demo_urban_social_housing(const String& city_id,
 	}
 	const double cash_before = ws_.city_gov[index].cash;
 	double units_before = 0.0;
-	for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-		const HousingProject& project = ws_.housing[index].projects[slot];
-		if (project.state == HOUSING_PROJECT_GOVERNMENT) {
-			units_before += project.units;
+	for (const DemoConstructionProject& project : ws_.construction_projects) {
+		if (project.city == id && project.kind == CONSTRUCTION_HOUSING
+				&& project.housing_owner == HOUSING_PROJECT_GOVERNMENT) {
+			units_before += project.housing_units;
 		}
 	}
-	if (!housing::start_social_housing(ws_, index, units)) {
+	if (!housing::start_social_housing(ws_, sim_core_, index, units)) {
 		return out;
 	}
 	double built_units = 0.0;
-	for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-		const HousingProject& project = ws_.housing[index].projects[slot];
-		if (project.state == HOUSING_PROJECT_GOVERNMENT) {
-			built_units += project.units;
+	for (const DemoConstructionProject& project : ws_.construction_projects) {
+		if (project.city == id && project.kind == CONSTRUCTION_HOUSING
+				&& project.housing_owner == HOUSING_PROJECT_GOVERNMENT) {
+			built_units += project.housing_units;
 		}
 	}
 	out["ok"] = true;
 	out["units"] = std::max(0.0, built_units - units_before);
+	// Custo LÍQUIDO: a parcela de TERRA voltou para o caixa da prefeitura no
+	// momento da abertura (o resto foi reservado na obra).
 	out["cost"] = std::max(0.0, cash_before - ws_.city_gov[index].cash);
 	demo_status_invalidate();
 	return out;

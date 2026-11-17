@@ -147,8 +147,6 @@ struct CityHousing {
 	double units_built_month = 0.0;
 	// Dia do último fechamento mensal processado (ajuste de aluguel/obras).
 	int month_marker = 0;
-	// Obras de moradia em andamento (projeto §15 tipo "moradia").
-	HousingProject projects[kDemoHousingMaxProjects];
 };
 
 // §19 (W2) — obra urbana pedida pela prefeitura. O W2 DECIDE, financia

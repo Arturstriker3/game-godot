@@ -555,6 +555,7 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index, int zo
 	project.total_cost = cost;
 	project.reserved = cost;
 	project.urban_action = action;
+	project.kind = CONSTRUCTION_URBAN_INFRA;
 	project.urban_zone = zone;
 	project.urban_km2 = area_km2;
 	if (payer != nullptr) {

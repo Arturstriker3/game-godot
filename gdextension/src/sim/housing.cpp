@@ -5,13 +5,15 @@
 // compradas) e ANTES do consumo de luxo do dia seguinte — o aluguel só usa a
 // poupança que sobrou acima da reserva de comida, então a comida tem
 // prioridade. Por cidade, em ordem determinística:
-//   1. depreciação do estoque e avanço das obras de moradia;
+//   1. depreciação do estoque;
 //   2. demanda por padrão (domicílios do estrato, com transbordo para baixo);
 //   3. reancoragem do nível de aluguel na renda medida (uma vez) e ajuste
 //      mensal por desequilíbrio (passo limitado, teto de ônus de aluguel);
 //   4. pagamento diário do aluguel (poupança acima da reserva de comida) e
 //      repasse aos donos por owner_share + manutenção;
-//   5. construção de moradia (projeto §15 tipo "moradia");
+//   5. abertura de obra de moradia na FILA ÚNICA §15 (`start_project`); o
+//      avanço/entrega é o tick da construção (construction.cpp) e a conclusão
+//      entra por `apply_completed_project`;
 //   6. favela só no último caso (falta popular prolongada e nenhuma vaga);
 //   7. sinal `housing_stress` por cidade.
 //
@@ -54,18 +56,6 @@ inline int density_for_tier(ogs::Density max_density, int tier) {
 	return low;
 }
 
-// Materiais da obra de moradia (§15) e seus pesos na receita de material.
-const char* const kHousingMaterials[3] = {
-	"construction_material", "steel_structure", "electrical_material"};
-const double kHousingMaterialWeight[3] = {0.50, 0.30, 0.20};
-
-// Índice do produto pelo nome, direto do WorldState (o módulo não depende da
-// fachada): -1 quando o bem não existe no catálogo.
-inline int material_product(const ogs::WorldState& ws, const char* name) {
-	const auto found = ws.product_lookup.find(name);
-	return found == ws.product_lookup.end() ? -1 : found->second;
-}
-
 // Soma das unidades do estoque (todas as densidades e padrões).
 inline double stock_units(const ogs::CityHousing& house) {
 	double total = 0.0;
@@ -103,11 +93,6 @@ void SimCore::phase_housing() {
 		return;
 	}
 
-	// Materiais da obra de moradia (mesma tabela do §15) e seus pesos.
-	static const char* const kMaterials[3] = {
-		"construction_material", "steel_structure", "electrical_material"};
-	static const double kMaterialWeight[3] = {0.50, 0.30, 0.20};
-
 	for (std::size_t city_index = 0; city_index < ws_.cities.size();
 			++city_index) {
 		DemoCity& city = ws_.cities[city_index];
@@ -127,71 +112,11 @@ void SimCore::phase_housing() {
 		// A condição média acompanha a idade do estoque (0..1).
 		house.condition = safe_unit(house.condition - decay);
 
-		// --- 1b. Avanço das obras de moradia (§15, tipo "moradia") ----------
-		for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-			HousingProject& project = house.projects[slot];
-			if (project.state == HOUSING_PROJECT_IDLE) {
-				continue;
-			}
-			project.days_left -= 1;
-			if (project.days_left > 0) {
-				continue;
-			}
-			const int density = std::clamp(project.density, 0, DENSITY_COUNT - 1);
-			const int tier = std::clamp(project.tier, 0, TIER_COUNT - 1);
-			const double units = safe_nonneg(project.units);
-			const bool government = project.state == HOUSING_PROJECT_GOVERNMENT;
-			house.units[density][tier] += units;
-			house.units_built_month += units;
-			if (government && units > 0.0) {
-				// Moradia social (INTEGRAÇÃO W2→W3): o estoque novo é do
-				// governo e a posse entra como aluguel subsidiado. A fração de
-				// dono é recomputada pelo estoque (os demais donos mantêm a
-				// proporção) e a de posse, pelo estoque do padrão.
-				const double total_before = std::max(0.0, stock_units(house) - units);
-				const double total_after = total_before + units;
-				double share_house = safe_unit(house.owner_share[OWNER_HOUSEHOLD]);
-				double share_firm = safe_unit(house.owner_share[OWNER_FIRM]);
-				const double gov_units = total_before
-					* safe_unit(house.owner_share[OWNER_GOVERNMENT]) + units;
-				const double gov_share = total_after > 1e-9
-					? std::clamp(gov_units / total_after, 0.0, 1.0) : 0.0;
-				const double other_sum = share_house + share_firm;
-				if (other_sum <= 1e-9) {
-					share_house = 1.0 - gov_share;
-					share_firm = 0.0;
-				} else {
-					const double scale = (1.0 - gov_share) / other_sum;
-					share_house *= scale;
-					share_firm *= scale;
-				}
-				house.owner_share[OWNER_HOUSEHOLD] = share_house;
-				house.owner_share[OWNER_FIRM] = share_firm;
-				house.owner_share[OWNER_GOVERNMENT] =
-					std::max(0.0, 1.0 - share_house - share_firm);
-				// Posse: as unidades novas são aluguel; a fração é recomputada
-				// em unidades e depois renormalizada para o estoque legal.
-				const double tier_after = std::max(1.0, tier_units(house, tier));
-				const double tier_before = std::max(1.0, tier_after - units);
-				const double informal = safe_unit(house.tenure[tier][TENURE_INFORMAL]);
-				const double legal = std::max(0.0, 1.0 - informal);
-				const double legal_before = tier_before * legal;
-				const double rent_units_before =
-					safe_unit(house.tenure[tier][TENURE_RENT]) * legal_before;
-				const double own_units_before =
-					safe_unit(house.tenure[tier][TENURE_OWN]) * legal_before;
-				const double legal_after =
-					std::max(1e-9, rent_units_before + units + own_units_before);
-				const double rent_frac =
-					(rent_units_before + units) / legal_after;
-				house.tenure[tier][TENURE_INFORMAL] = informal;
-				house.tenure[tier][TENURE_RENT] = std::clamp(
-					rent_frac * legal, 0.0, legal);
-				house.tenure[tier][TENURE_OWN] =
-					std::max(0.0, legal - house.tenure[tier][TENURE_RENT]);
-			}
-			project = HousingProject{};
-		}
+		// --- 1b. Obras de moradia: sem avanço aqui --------------------------
+		// A obra de moradia vive na FILA ÚNICA da cidade
+		// (`ws_.construction_projects`, kind CONSTRUCTION_HOUSING). O avanço é o
+		// tick do §15 (SimCore::demo_tick_construction) e a entrega entra por
+		// housing::apply_completed_project — não há lista própria a percorrer.
 
 		// --- 2. Oferta, demanda e base de domicílios ------------------------
 		double supply[TIER_COUNT] = {};
@@ -402,91 +327,15 @@ void SimCore::phase_housing() {
 			house.rent_burden = 0.0;
 		}
 
-		// --- 6. Construção de moradia (projeto §15, tipo "moradia") --------
-		auto free_slot = [&house]() -> int {
-			for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-				if (house.projects[slot].state == HOUSING_PROJECT_IDLE) {
-					return slot;
-				}
-			}
-			return -1;
-		};
-		// Abre a obra: compra materiais no mercado local (§15), paga a mão de
-		// obra ao setor de construção e agenda a entrega. O custo sai do dono
-		// (firma ou POP) — nunca do nada. Sem material suficiente a obra não
-		// abre (fica para o mês seguinte).
-		auto open_project = [this, &city, &house](
-				int slot, int state, int density, int tier, double units,
-				double cost) -> bool {
-			if (slot < 0 || slot >= kDemoHousingMaxProjects || units <= 0.0
-					|| cost <= 0.0) {
-				return false;
-			}
-			const bool self_build = state == HOUSING_PROJECT_SELF;
-			if (self_build) {
-				if (safe_nonneg(city.pop.savings) + 1e-9 < cost) {
-					return false;
-				}
-			} else if (city.firm_cash + 1e-9 < cost) {
-				return false;
-			}
-			const double material_budget = cost * kDemoHousingMaterialShare;
-			double bought_cost = 0.0;
-			double bought_qty[3] = {};
-			int products[3] = {-1, -1, -1};
-			for (int m = 0; m < 3; ++m) {
-				products[m] = demo_product_index(kMaterials[m]);
-				if (products[m] < 0) {
-					continue;
-				}
-				DemoMarket& market = city.markets[products[m]];
-				const double price = std::max(1e-9, market.price);
-				const double qty = material_budget * kMaterialWeight[m] / price;
-				if (market.stock + 1e-9 < qty) {
-					return false;  // sem material: a obra não abre (nada pago)
-				}
-				bought_qty[m] = qty;
-				bought_cost += qty * price;
-			}
-			// Só depois de garantir o material o dono paga a obra.
-			if (self_build) {
-				city.pop.savings -= cost;
-			} else {
-				city.firm_cash -= cost;
-			}
-			for (int m = 0; m < 3; ++m) {
-				if (products[m] < 0 || bought_qty[m] <= 0.0) {
-					continue;
-				}
-				DemoMarket& market = city.markets[products[m]];
-				const double value = bought_qty[m] * std::max(1e-9, market.price);
-				market.stock -= bought_qty[m];
-				market.demand += bought_qty[m];
-				market.sold += bought_qty[m];
-				market.desired += bought_qty[m];
-				city.firm_cash += value;
-				city.revenue_by_product[products[m]] += value;
-			}
-			const double labor = std::max(0.0, cost - bought_cost);
-			city.service_cash += labor;
-			city.construction_revenue_pending += cost;
-			HousingProject& project = house.projects[slot];
-			project.state = state;
-			project.density = density;
-			project.tier = tier;
-			project.units = units;
-			project.days_left = kDemoHousingBuildDays;
-			return true;
-		};
-
+		// --- 6. Construção de moradia (fila única §15, kind HOUSING) --------
 		if (month_close) {
 			// Incorporadora: constrói MID/ALTO quando há falta E o preço cobre
 			// o custo com margem. O custo é expresso em ANOS DE ALUGUEL do
 			// padrão (parâmetro declarado, independente da escala monetária do
 			// mundo) mais a terra da zona residencial (W1 move o land_price).
 			for (int tier = TIER_MEDIO; tier <= TIER_ALTO; ++tier) {
-				const int slot = free_slot();
-				if (slot < 0) {
+				if (housing::project_count(ws_, city_index)
+						>= kDemoHousingMaxProjects) {
 					break;
 				}
 				const double shortage = std::max(0.0, demand[tier] - supply[tier]);
@@ -495,37 +344,39 @@ void SimCore::phase_housing() {
 				}
 				const int density = density_for_tier(
 					land.max_density[ZONE_RES], tier);
-				const double cost_unit = house.rent[tier] * 12.0
-					* kDemoHousingBuildCostYears
-					+ kDemoUrbanUnitM2[density][tier]
-						* safe_nonneg(land.land_price[ZONE_RES]);
+				const double cost_unit = housing::build_cost_unit(
+					ws_, city_index, density, tier);
+				if (cost_unit <= 0.0) {
+					continue;
+				}
 				if (house.price[tier]
 						< cost_unit * (1.0 + kDemoHousingDeveloperMargin)) {
 					continue;
 				}
 				const double units = std::min(shortage,
 					demand[tier] * kDemoHousingBatchShare);
-				open_project(slot, HOUSING_PROJECT_PRIVATE, density, tier,
-					units, units * cost_unit);
+				if (units <= 0.0) {
+					continue;
+				}
+				// A obra entra na fila única; o tick do §15 compra material,
+				// paga o setor e entrega as unidades ao fim do prazo.
+				housing::start_project(ws_, *this, city_index,
+					HOUSING_PROJECT_PRIVATE, density, tier, units);
 			}
 			// Autoconstrução da POP: só o padrão popular, só com falta e só com
 			// a poupança acima da reserva de comida (a comida vem primeiro).
-			if (popular_shortage > 0.02) {
-				const int slot = free_slot();
-				if (slot >= 0) {
-					const double cost_unit =
-						house.rent[TIER_POPULAR] * 12.0
-							* kDemoHousingBuildCostYears
-						+ kDemoUrbanUnitM2[DENSITY_LOW][TIER_POPULAR]
-							* safe_nonneg(land.land_price[ZONE_RES]);
-					const double units = std::min(popular_shortage_units,
-						supply[TIER_POPULAR] * kDemoHousingSelfBuildShare);
-					const double cost = units * cost_unit;
-					// Não compromete mais de um quarto da folga de poupança.
-					if (cost > 0.0 && cost * 4.0 <= spendable) {
-						open_project(slot, HOUSING_PROJECT_SELF, DENSITY_LOW,
-							TIER_POPULAR, units, cost);
-					}
+			if (popular_shortage > 0.02
+					&& housing::project_count(ws_, city_index)
+						< kDemoHousingMaxProjects) {
+				const double cost_unit = housing::build_cost_unit(
+					ws_, city_index, DENSITY_LOW, TIER_POPULAR);
+				const double units = std::min(popular_shortage_units,
+					supply[TIER_POPULAR] * kDemoHousingSelfBuildShare);
+				const double cost = units * cost_unit;
+				// Não compromete mais de um quarto da folga de poupança.
+				if (cost > 0.0 && cost * 4.0 <= spendable) {
+					housing::start_project(ws_, *this, city_index,
+						HOUSING_PROJECT_SELF, DENSITY_LOW, TIER_POPULAR, units);
 				}
 			}
 		}
@@ -578,7 +429,7 @@ void SimCore::phase_housing() {
 }
 
 // ------------------------------------------------------------------
-// INTEGRAÇÃO W2→W3 — moradia social financiada pela prefeitura.
+// Moradia na fila única §15 (kind CONSTRUCTION_HOUSING).
 // ------------------------------------------------------------------
 namespace housing {
 
@@ -600,38 +451,126 @@ double build_cost_unit(const WorldState& ws, std::size_t city_index,
 	return rent * 12.0 * kDemoHousingBuildCostYears + land_cost;
 }
 
-bool has_social_project(const WorldState& ws, std::size_t city_index) {
-	if (city_index >= ws.housing.size()) {
+int project_count(const WorldState& ws, std::size_t city_index) {
+	if (city_index >= ws.cities.size()) {
+		return 0;
+	}
+	const std::string& city_id = ws.cities[city_index].id;
+	int count = 0;
+	for (const DemoConstructionProject& project : ws.construction_projects) {
+		if (project.city == city_id && project.kind == CONSTRUCTION_HOUSING) {
+			++count;
+		}
+	}
+	return count;
+}
+
+bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
+		int owner_state, int density, int tier, double units) {
+	if (city_index >= ws.cities.size() || city_index >= ws.housing.size()
+			|| city_index >= ws.land.size() || city_index >= ws.city_gov.size()) {
 		return false;
 	}
-	for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-		if (ws.housing[city_index].projects[slot].state
-				== HOUSING_PROJECT_GOVERNMENT) {
+	if (!std::isfinite(units) || units <= 0.0) {
+		return false;
+	}
+	const int owner = std::clamp(owner_state, 0,
+		static_cast<int>(HOUSING_PROJECT_GOVERNMENT));
+	if (owner == HOUSING_PROJECT_IDLE) {
+		return false;  // obra sem dono não existe
+	}
+	// Limite de obras de moradia SIMULTÂNEAS da cidade na fila única.
+	if (project_count(ws, city_index) >= kDemoHousingMaxProjects) {
+		return false;
+	}
+	const int d = std::clamp(density, 0, DENSITY_COUNT - 1);
+	const int t = std::clamp(tier, 0, TIER_COUNT - 1);
+	const double cost_unit = build_cost_unit(ws, city_index, d, t);
+	if (cost_unit <= 0.0) {
+		return false;
+	}
+	DemoCity& city = ws.cities[city_index];
+	DemoConstructionProject project;
+	// Id determinístico por cidade/dono/padrão/densidade/dia: o mesmo dia não
+	// abre duas obras iguais (o id duplicado é recusado abaixo).
+	project.id = "HSG-" + city.id + "-" + std::to_string(owner) + "-"
+		+ std::to_string(t) + "-" + std::to_string(d) + "-"
+		+ std::to_string(ws.day);
+	for (const DemoConstructionProject& existing : ws.construction_projects) {
+		if (existing.id == project.id) {
+			return false;  // id duplicado: nada é pago
+		}
+	}
+	const double total_cost = units * cost_unit;
+	if (!std::isfinite(total_cost) || total_cost <= 0.0) {
+		return false;
+	}
+	// Caixa do dono: poupança da POP (autoconstrução), caixa das firmas
+	// (incorporadora) ou caixa da prefeitura (moradia social). Sem caixa, a
+	// obra não abre e NADA é pago.
+	double budget = 0.0;
+	if (owner == HOUSING_PROJECT_SELF) {
+		budget = safe_nonneg(city.pop.savings);
+	} else if (owner == HOUSING_PROJECT_GOVERNMENT) {
+		budget = safe_nonneg(ws.city_gov[city_index].cash);
+	} else {
+		budget = city.firm_cash;
+	}
+	if (budget + 1e-9 < total_cost) {
+		return false;
+	}
+	project.building_id = project.id;
+	project.city = city.id;
+	// Só a moradia social é do estado; incorporadora e autoconstrução são
+	// capital privado (firmas e famílias).
+	project.owner = owner == HOUSING_PROJECT_GOVERNMENT ? "state" : "private";
+	project.resource.clear();
+	project.output_product = -1;
+	project.recipe = -1;
+	project.input_product = -1;
+	project.kind = CONSTRUCTION_HOUSING;
+	project.capacity = units;
+	project.total_cost = total_cost;
+	project.reserved = total_cost;  // o add sobrescreve: total − terra
+	project.housing_owner = owner;
+	project.housing_density = d;
+	project.housing_tier = t;
+	project.housing_units = units;
+	// O dono paga o custo inteiro na abertura; o add credita a parcela de
+	// TERRA à prefeitura e reserva o resto (material + mão de obra).
+	if (owner == HOUSING_PROJECT_SELF) {
+		city.pop.savings = safe_nonneg(city.pop.savings) - total_cost;
+	} else if (owner == HOUSING_PROJECT_GOVERNMENT) {
+		ws.city_gov[city_index].cash =
+			safe_nonneg(ws.city_gov[city_index].cash) - total_cost;
+	} else {
+		city.firm_cash -= total_cost;
+	}
+	core.demo_add_construction_project(project);
+	return true;
+}
+
+bool has_social_project(const WorldState& ws, std::size_t city_index) {
+	if (city_index >= ws.cities.size()) {
+		return false;
+	}
+	const std::string& city_id = ws.cities[city_index].id;
+	for (const DemoConstructionProject& project : ws.construction_projects) {
+		if (project.city == city_id && project.kind == CONSTRUCTION_HOUSING
+				&& project.housing_owner == HOUSING_PROJECT_GOVERNMENT) {
 			return true;
 		}
 	}
 	return false;
 }
 
-bool start_social_housing(WorldState& ws, std::size_t city_index, double units) {
-	if (city_index >= ws.housing.size() || city_index >= ws.land.size()
-			|| city_index >= ws.city_gov.size()) {
+bool start_social_housing(WorldState& ws, SimCore& core,
+		std::size_t city_index, double units) {
+	if (city_index >= ws.cities.size() || city_index >= ws.housing.size()
+			|| city_index >= ws.land.size() || city_index >= ws.city_gov.size()) {
 		return false;
 	}
 	if (!std::isfinite(units) || units < 1.0) {
-		return false;
-	}
-	DemoCity& city = ws.cities[city_index];
-	CityHousing& house = ws.housing[city_index];
-	CityGov& gov = ws.city_gov[city_index];
-	int slot = -1;
-	for (int i = 0; i < kDemoHousingMaxProjects; ++i) {
-		if (house.projects[i].state == HOUSING_PROJECT_IDLE) {
-			slot = i;
-			break;
-		}
-	}
-	if (slot < 0) {
 		return false;
 	}
 	const double cost_unit = build_cost_unit(
@@ -641,57 +580,99 @@ bool start_social_housing(WorldState& ws, std::size_t city_index, double units) 
 	}
 	// A prefeitura não contrata obra sem caixa: as unidades são reduzidas ao
 	// que o caixa paga (mesma regra do W2 para expansão/adensamento).
-	const double budget = std::max(0.0, gov.cash);
+	const double budget = safe_nonneg(ws.city_gov[city_index].cash);
 	const double affordable = budget / cost_unit;
 	const double paid_units = std::min(units, affordable);
 	if (paid_units < 1.0) {
 		return false;
 	}
-	const double cost = paid_units * cost_unit;
-	const double material_budget = cost * kDemoHousingMaterialShare;
-	double bought_cost = 0.0;
-	double bought_qty[3] = {};
-	int products[3] = {-1, -1, -1};
-	for (int m = 0; m < 3; ++m) {
-		products[m] = material_product(ws, kHousingMaterials[m]);
-		if (products[m] < 0) {
-			continue;
-		}
-		DemoMarket& market = city.markets[products[m]];
-		const double price = std::max(1e-9, market.price);
-		const double qty = material_budget * kHousingMaterialWeight[m] / price;
-		if (market.stock + 1e-9 < qty) {
-			return false;  // sem material: nada é pago
-		}
-		bought_qty[m] = qty;
-		bought_cost += qty * price;
+	return start_project(ws, core, city_index, HOUSING_PROJECT_GOVERNMENT,
+		DENSITY_LOW, TIER_POPULAR, paid_units);
+}
+
+void apply_completed_project(WorldState& ws,
+		const DemoConstructionProject& project) {
+	const auto found = ws.city_lookup.find(project.city);
+	if (found == ws.city_lookup.end() || found->second < 0
+			|| static_cast<std::size_t>(found->second) >= ws.housing.size()) {
+		return;  // cidade sumiu: a obra se perde, o dinheiro já foi pago
 	}
-	// Com material garantido: paga os materiais ao mercado e a mão de obra ao
-	// setor de construção (dinheiro conservado).
-	gov.cash = std::max(0.0, gov.cash) - cost;
-	for (int m = 0; m < 3; ++m) {
-		if (products[m] < 0 || bought_qty[m] <= 0.0) {
-			continue;
-		}
-		DemoMarket& market = city.markets[products[m]];
-		const double value = bought_qty[m] * std::max(1e-9, market.price);
-		market.stock -= bought_qty[m];
-		market.demand += bought_qty[m];
-		market.sold += bought_qty[m];
-		market.desired += bought_qty[m];
-		city.firm_cash += value;
-		city.revenue_by_product[products[m]] += value;
+	CityHousing& house = ws.housing[static_cast<std::size_t>(found->second)];
+	const int density = std::clamp(project.housing_density, 0, DENSITY_COUNT - 1);
+	const int tier = std::clamp(project.housing_tier, 0, TIER_COUNT - 1);
+	const double units = safe_nonneg(project.housing_units);
+	const int owner_state = std::clamp(project.housing_owner, 0,
+		static_cast<int>(HOUSING_PROJECT_GOVERNMENT));
+	// Estoque ANTES da entrega: a posse é recomputada em unidades.
+	const double total_before = stock_units(house);
+	house.units[density][tier] =
+		safe_nonneg(house.units[density][tier] + units);
+	house.units_built_month = safe_nonneg(house.units_built_month + units);
+	if (units <= 0.0) {
+		return;
 	}
-	const double labor = std::max(0.0, cost - bought_cost);
-	city.service_cash += labor;
-	city.construction_revenue_pending += cost;
-	HousingProject& project = house.projects[slot];
-	project.state = HOUSING_PROJECT_GOVERNMENT;
-	project.density = DENSITY_LOW;
-	project.tier = TIER_POPULAR;
-	project.units = paid_units;
-	project.days_left = kDemoHousingBuildDays;
-	return true;
+	// Posse GENÉRICA pelo dono do projeto: família na autoconstrução, firma na
+	// incorporadora, prefeitura na moradia social. `owner_units` = unidades do
+	// dono antes + as novas; a fração dele sai daí e as dos demais mantêm a
+	// proporção (renormalizadas).
+	const int owner = owner_state == HOUSING_PROJECT_SELF ? OWNER_HOUSEHOLD
+		: owner_state == HOUSING_PROJECT_GOVERNMENT ? OWNER_GOVERNMENT
+		: OWNER_FIRM;
+	const double total_after = total_before + units;
+	double previous[OWNER_COUNT] = {};
+	for (int i = 0; i < OWNER_COUNT; ++i) {
+		previous[i] = safe_unit(house.owner_share[i]);
+	}
+	const double owner_units = total_before * previous[owner] + units;
+	const double owner_share = total_after > 1e-9
+		? std::clamp(owner_units / total_after, 0.0, 1.0) : 0.0;
+	double other_sum = 0.0;
+	for (int i = 0; i < OWNER_COUNT; ++i) {
+		if (i != owner) {
+			other_sum += previous[i];
+		}
+	}
+	for (int i = 0; i < OWNER_COUNT; ++i) {
+		house.owner_share[i] = i == owner ? owner_share : 0.0;
+	}
+	if (other_sum <= 1e-9) {
+		// Nenhum outro dono com fração: o resto vai para a família (fallback
+		// declarado, o mesmo do W3 para a moradia social), somando 1. Quando
+		// o próprio dono é a família, ela fica com tudo.
+		if (owner != OWNER_HOUSEHOLD) {
+			house.owner_share[OWNER_HOUSEHOLD] = std::max(
+				0.0, 1.0 - owner_share);
+		}
+	} else {
+		const double scale = std::max(0.0, 1.0 - owner_share) / other_sum;
+		for (int i = 0; i < OWNER_COUNT; ++i) {
+			if (i != owner) {
+				house.owner_share[i] = previous[i] * scale;
+			}
+		}
+	}
+	if (owner_state == HOUSING_PROJECT_GOVERNMENT) {
+		// Moradia social (W3): o estoque novo é do governo e a posse entra como
+		// ALUGUEL subsidiado. A fração é recomputada em unidades e depois
+		// renormalizada para o estoque legal do padrão.
+		const double tier_after = std::max(1.0, tier_units(house, tier));
+		const double tier_before = std::max(1.0, tier_after - units);
+		const double informal = safe_unit(house.tenure[tier][TENURE_INFORMAL]);
+		const double legal = std::max(0.0, 1.0 - informal);
+		const double legal_before = tier_before * legal;
+		const double rent_units_before =
+			safe_unit(house.tenure[tier][TENURE_RENT]) * legal_before;
+		const double own_units_before =
+			safe_unit(house.tenure[tier][TENURE_OWN]) * legal_before;
+		const double legal_after =
+			std::max(1e-9, rent_units_before + units + own_units_before);
+		const double rent_frac = (rent_units_before + units) / legal_after;
+		house.tenure[tier][TENURE_INFORMAL] = informal;
+		house.tenure[tier][TENURE_RENT] = std::clamp(
+			rent_frac * legal, 0.0, legal);
+		house.tenure[tier][TENURE_OWN] =
+			std::max(0.0, legal - house.tenure[tier][TENURE_RENT]);
+	}
 }
 
 } // namespace housing

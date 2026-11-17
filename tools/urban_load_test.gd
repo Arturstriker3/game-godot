@@ -204,13 +204,13 @@ func _run() -> void:
 	if total_area <= 0.0:
 		_fail("nenhuma area urbana carregada no mundo inteiro")
 
-	# Save v13: a ida-e-volta restaura exatamente o estado urbano da amostra.
+	# Save v14: a ida-e-volta restaura exatamente o estado urbano da amostra.
 	var before: Dictionary = {}
 	for city_id in SAMPLE_CITIES:
 		before[city_id] = JSON.stringify(sim.demo_get_urban_city(city_id), "", true, true)
 	var snapshot: Dictionary = sim.demo_to_dict()
-	if int(snapshot.get("version", 0)) != 13:
-		_fail("save version %s != 13" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 14:
+		_fail("save version %s != 14" % str(snapshot.get("version")))
 	var restored = EconomySim.new()
 	restored.demo_set_goods(_load_array(GOODS_PATH))
 	restored.demo_set_recipes(_load_array(RECIPES_PATH))
@@ -224,11 +224,11 @@ func _run() -> void:
 		var after: String = JSON.stringify(restored.demo_get_urban_city(city_id), "", true, true)
 		if after != String(before[city_id]):
 			_fail("%s: save/load urbano divergiu" % city_id)
-	print("[urban] save/load v13 da amostra: %s" % (
+	print("[urban] save/load v14 da amostra: %s" % (
 		"identico" if _failures.is_empty() else "com falhas"))
 
 	# Migração v12→v13: um save SEM o bloco `urban` carrega sem estado urbano
-	# (vetores vazios), não quebra o tick e o próximo save já sai como v13.
+	# (vetores vazios), não quebra o tick e o próximo save já sai como v14.
 	var v12: Dictionary = snapshot.duplicate(true)
 	v12.erase("urban")
 	v12["version"] = 12
@@ -242,8 +242,8 @@ func _run() -> void:
 		legacy.demo_set_currencies(_load_dict(CURRENCIES_PATH))
 	legacy.demo_from_dict(v12)
 	if not Dictionary(legacy.demo_get_urban_city("BRA-SAO")).is_empty():
-		_fail("v12->v13: save antigo nao deveria ter estado urbano")
-	if int(legacy.demo_to_dict().get("version", 0)) != 13:
-		_fail("v12->v13: save migrado nao saiu como v13")
-	print("[urban] migracao v12->v13: sem estado urbano, schema 13.")
+		_fail("v12->v14: save antigo nao deveria ter estado urbano")
+	if int(legacy.demo_to_dict().get("version", 0)) != 14:
+		_fail("v12->v14: save migrado nao saiu como v14")
+	print("[urban] migracao v12->v14: sem estado urbano, schema 14.")
 

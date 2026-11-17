@@ -298,8 +298,8 @@ func _run() -> void:
 	for day in range(CHECK_DAY, SAVE_DAY):
 		_tick(sim, "A dia %d" % (day + 1))
 	var snapshot: Dictionary = sim.demo_to_dict()
-	if int(snapshot.get("version", 0)) != 13:
-		_fail("save version %s != 13" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 14:
+		_fail("save version %s != 14" % str(snapshot.get("version")))
 	if not snapshot.has("city_gov"):
 		_fail("save sem o bloco city_gov da prefeitura")
 	var restored = EconomySim.new()
@@ -386,6 +386,10 @@ func _test_social_housing(urban: Dictionary) -> void:
 	if not bool(result.get("ok", false)):
 		_fail("moradia social nao abriu")
 		return
+	# A obra do governo entra na FILA ÚNICA (§15) com kind 1 (moradia) e dono 3.
+	if _gov_housing_projects(sim.demo_to_dict()) != 1:
+		_fail("moradia social: esperava 1 obra do governo na fila, veio %d" % [
+			_gov_housing_projects(sim.demo_to_dict())])
 	var cash_after_open := float(_gov(sim, TEST_CITY).get("gov", {}).get("cash", 0.0))
 	var paid := float(result.get("cost", 0.0))
 	if paid <= 0.0 or not _close(cash, cash_after_open + paid, 1.0e-6):
@@ -394,15 +398,8 @@ func _test_social_housing(urban: Dictionary) -> void:
 	for day in range(MONTH_DAYS + 1, MONTH_DAYS + 95):
 		_tick(sim, "S dia %d" % day)
 	var after: Dictionary = _gov(sim, TEST_CITY)
-	var gov_project := false
 	var snapshot_after: Dictionary = sim.demo_to_dict()
-	for entry in snapshot_after.get("housing", []):
-		if String(entry.get("city", "")) != TEST_CITY:
-			continue
-		for project in entry.get("projects", []):
-			if int(project.get("state", 0)) == 3:
-				gov_project = true
-	if gov_project:
+	if _gov_housing_projects(snapshot_after) != 0:
 		_fail("moradia social: obra do governo ainda em andamento depois do prazo")
 	var owner_after := float(Array(after.get("owner_share", []))[2])
 	# A posse do governo sobe pela proporção das unidades entregues no estoque
@@ -447,3 +444,16 @@ func _urban_projects(sim, city_id: String = "") -> Array:
 			continue
 		result.append(project)
 	return result
+
+
+## Obras de MORADIA do governo nesta cidade: kind 1 (HOUSING) na fila única §15
+## com `housing_owner` 3 (GOVERNMENT). Lê o snapshot já serializado.
+func _gov_housing_projects(snapshot: Dictionary) -> int:
+	var count := 0
+	for project in snapshot.get("construction_projects", []):
+		if String(project.get("city", "")) != TEST_CITY:
+			continue
+		if int(project.get("kind", 0)) == 1 \
+				and int(project.get("housing_owner", 0)) == 3:
+			count += 1
+	return count

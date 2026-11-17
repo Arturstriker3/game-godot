@@ -199,7 +199,7 @@ func _test_save() -> void:
 	_set_income(sim)
 	_run(sim, 5)
 	var data: Dictionary = sim.demo_to_dict()
-	_check(int(data.get("version", 0)) == 13, "save deve ser v13 (§19 urbano; era %d)" % int(
+	_check(int(data.get("version", 0)) == 14, "save deve ser v14 (fila unica de obras; era %d)" % int(
 		data.get("version", 0)))
 	var loaded = _load_save(data)
 	if loaded == null:

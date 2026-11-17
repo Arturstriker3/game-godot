@@ -468,6 +468,14 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		entry["urban_action"] = project.urban_action;
 		entry["urban_zone"] = project.urban_zone;
 		entry["urban_km2"] = project.urban_km2;
+		// Save v14: kind da obra na fila única (§15 unificado) + os campos da
+		// moradia (§19 W3) e a parcela de TERRA paga à prefeitura.
+		entry["kind"] = project.kind;
+		entry["housing_density"] = project.housing_density;
+		entry["housing_tier"] = project.housing_tier;
+		entry["housing_owner"] = project.housing_owner;
+		entry["housing_units"] = project.housing_units;
+		entry["land_cost"] = project.land_cost;
 		Array materials;
 		Array material_qty;
 		Array material_delivered;
@@ -609,7 +617,9 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 	data["city_gov"] = city_gov_save;
 	// §19 W3 — estado do MERCADO DE MORADIA por cidade (bloco próprio, para
 	// não conflitar com o bloco `urban` do W0/W1/W2). Guarda a base de
-	// domicílios, o sinal de aperto, os fluxos do mês e as obras em andamento.
+	// domicílios, o sinal de aperto e os fluxos do mês. Desde o save v14 as
+	// obras em andamento NÃO moram aqui: elas são `construction_projects` com
+	// kind CONSTRUCTION_HOUSING (fila única §15).
 	Array housing_state;
 	const std::size_t housing_count = std::min(
 		ws.housing.size(), ws.cities.size());
@@ -643,21 +653,8 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		entry["rent_burden"] = house.rent_burden;
 		entry["units_built_month"] = house.units_built_month;
 		entry["month_marker"] = house.month_marker;
-		Array projects;
-		for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-			const HousingProject& project = house.projects[slot];
-			if (project.state == HOUSING_PROJECT_IDLE) {
-				continue;
-			}
-			Dictionary p;
-			p["state"] = project.state;
-			p["density"] = project.density;
-			p["tier"] = project.tier;
-			p["units"] = project.units;
-			p["days_left"] = project.days_left;
-			projects.append(p);
-		}
-		entry["projects"] = projects;
+		// save v14: as obras de moradia vivem em `construction_projects`
+		// (kind CONSTRUCTION_HOUSING); não há mais lista própria aqui.
 		housing_state.append(entry);
 	}
 	data["housing"] = housing_state;
@@ -1627,7 +1624,27 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		project.urban_zone = std::clamp(
 			int(entry.get("urban_zone", 0)), 0, ZONE_COUNT - 1);
 		project.urban_km2 = safe_nonneg(double(entry.get("urban_km2", 0.0)));
-		const bool urban_project = project.urban_action != 0;
+		// Save v14: kind explícito na fila única (0 prédio, 1 moradia, 2 infra).
+		// Save v13 e anteriores não têm a chave: a derivação por `urban_action`
+		// mantém a obra urbana como infra (2) e o resto como prédio (0).
+		project.kind = std::clamp(
+			int(entry.get("kind", project.urban_action != 0 ? 2 : 0)), 0, 2);
+		// Moradia (§19 W3): densidade, padrão, dono e unidades da obra, mais a
+		// parcela de terra já paga à prefeitura na abertura.
+		project.housing_density = std::clamp(
+			int(entry.get("housing_density", 0)), 0, DENSITY_COUNT - 1);
+		project.housing_tier = std::clamp(
+			int(entry.get("housing_tier", 0)), 0, TIER_COUNT - 1);
+		project.housing_owner = std::clamp(
+			int(entry.get("housing_owner", 0)), 0,
+			static_cast<int>(HOUSING_PROJECT_GOVERNMENT));
+		project.housing_units = safe_nonneg(
+			double(entry.get("housing_units", 0.0)));
+		project.land_cost = safe_nonneg(double(entry.get("land_cost", 0.0)));
+		// Obra urbana e moradia não têm produto: a migração de índice de produto
+		// abaixo não se aplica a elas.
+		const bool urban_project = project.urban_action != 0
+			|| project.kind == CONSTRUCTION_HOUSING;
 		project.building_id = std::string(
 			String(entry.get("building_id", "")).utf8().get_data());
 		project.city = std::string(String(entry.get("city", "")).utf8().get_data());
@@ -2148,27 +2165,58 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 				double(entry.get("units_built_month", 0.0)));
 			house.month_marker = std::max(
 				0, int(entry.get("month_marker", 0)));
-			for (int slot = 0; slot < kDemoHousingMaxProjects; ++slot) {
-				house.projects[slot] = HousingProject{};
-			}
-			const Array projects = entry.get("projects", Array());
-			for (int slot = 0;
-					slot < projects.size() && slot < kDemoHousingMaxProjects;
-					++slot) {
-				if (projects[slot].get_type() != Variant::DICTIONARY) {
-					continue;
+			// save v14: a obra de moradia vive em `construction_projects`
+			// (kind CONSTRUCTION_HOUSING). Save v13 e anteriores guardavam a
+			// lista em `housing[].projects`: cada obra antiga é MIGRADA para a
+			// fila única com o prazo RESTANTE e custo 0 — o capital já foi pago
+			// na versão antiga, então a obra só cumpre o prazo, sem consumir
+			// caixa nem capacidade (total_out = 0). Ordem determinística: índice
+			// da entrada `housing` e depois o slot.
+			if (version < 14) {
+				const Array projects = entry.get("projects", Array());
+				const int max_slots = std::min(
+					static_cast<int>(projects.size()), kDemoHousingMaxProjects);
+				for (int slot = 0; slot < max_slots; ++slot) {
+					if (projects[slot].get_type() != Variant::DICTIONARY) {
+						continue;
+					}
+					const Dictionary p = projects[slot];
+					const int state = std::clamp(
+						int(p.get("state", 0)), 0,
+						static_cast<int>(HOUSING_PROJECT_GOVERNMENT));
+					if (state == HOUSING_PROJECT_IDLE) {
+						continue;  // slot vazio no save antigo
+					}
+					DemoConstructionProject project;
+					project.id = "HSG-V13-" + city_id + "-"
+						+ std::to_string(slot);
+					project.building_id = project.id;
+					project.city = city_id;
+					project.owner = state == HOUSING_PROJECT_GOVERNMENT
+						? "state" : "private";
+					project.output_product = -1;
+					project.recipe = -1;
+					project.input_product = -1;
+					project.kind = CONSTRUCTION_HOUSING;
+					project.housing_owner = state;
+					project.housing_density = std::clamp(
+						int(p.get("density", 0)), 0, DENSITY_COUNT - 1);
+					project.housing_tier = std::clamp(
+						int(p.get("tier", 0)), 0, TIER_COUNT - 1);
+					project.housing_units = safe_nonneg(
+						double(p.get("units", 0.0)));
+					project.capacity = project.housing_units;
+					project.total_cost = 0.0;
+					project.reserved = 0.0;
+					project.labor_cost_total = 0.0;
+					project.material_count = 0;
+					project.duration_days = std::max(
+						1, int(p.get("days_left", 0)));
+					project.days_elapsed = 0;
+					project.created_day = ws.day;
+					project.paused = false;
+					ws.construction_projects.push_back(std::move(project));
 				}
-				const Dictionary p = projects[slot];
-				HousingProject& project = house.projects[slot];
-				project.state = std::clamp(
-					int(p.get("state", 0)), 0,
-					static_cast<int>(HOUSING_PROJECT_GOVERNMENT));
-				project.density = std::clamp(
-					int(p.get("density", 0)), 0, DENSITY_COUNT - 1);
-				project.tier = std::clamp(
-					int(p.get("tier", 0)), 0, TIER_COUNT - 1);
-				project.units = safe_nonneg(double(p.get("units", 0.0)));
-				project.days_left = std::max(0, int(p.get("days_left", 0)));
 			}
 		}
 	}

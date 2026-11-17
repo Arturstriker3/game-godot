@@ -52,7 +52,12 @@ constexpr double kDemoLoadHoursPerBatch = 0.5;
 // posse/aluguel/preço e contas da prefeitura). Save v12 e anteriores não têm a
 // chave: os vetores ficam como estão (vazios num load frio ou com os padrões
 // carregados pelo demo_set_urban), sem lógica diária a reconstruir.
-constexpr int kDemoSaveVersion = 13;
+// v14: a obra de MORADIA sai da lista própria (`housing[].projects`) e entra na
+// fila única `construction_projects` com `kind = CONSTRUCTION_HOUSING` (+
+// housing_density/tier/owner/units e land_cost). Ao carregar v13, cada obra da
+// lista antiga é migrada para a fila com `duration_days = days_left` e custo 0
+// (o capital já foi pago/pausado na versão antiga).
+constexpr int kDemoSaveVersion = 14;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.
@@ -61,6 +66,10 @@ constexpr int kDemoSaveVersion = 13;
 // materiais são comprados do mercado local pelo preço corrente; a quantidade
 // contratada é dimensionada pelo PREÇO-BASE (contrato de obra declarado).
 constexpr double kDemoConstructionMaterialShare = 0.15;
+// §15 unificado: a terra é uma FATIA do orçamento do dono (não um custo
+// extra). Em prédio econômico ela é limitada a esta fração, para o
+// material+mão de obra ficarem com o resto do orçamento.
+constexpr double kDemoConstructionLandShareMax = 0.10;
 // Prazo de obra por tipo (dias), estimativa de ordem de grandeza ("meses pelo
 // tamanho", §15) — não é dado observado de cronograma de obra. A comida
 // (fazenda da cesta) é RÁPIDA para não travar a oferta alimentar de nações que

@@ -20,9 +20,12 @@
 //  - preço do imóvel = aluguel × 12 ÷ cap rate (§19.6, 0,05/ano);
 //  - construção (§15, tipo "moradia"): incorporadora constrói MID/HIGH quando
 //    o preço cobre o custo com margem E há falta; a POP autoconsntrói LOW
-//    POPULAR/MEDIO com a poupança acima da reserva de comida. A obra consome
-//    materiais do mercado local, paga o setor de construção e entra em
-//    operação depois do prazo — a reserva de capital é do próprio dono;
+//    POPULAR/MEDIO com a poupança acima da reserva de comida. A obra entra na
+//    FILA ÚNICA da cidade (`ws.construction_projects`, kind
+//    CONSTRUCTION_HOUSING) e avança no tick do §15: materiais do mercado
+//    local, mão de obra do setor de construção e entrega das unidades ao fim
+//    do prazo. O capital é reservado pelo próprio dono na abertura (a parcela
+//    de TERRA é creditada à prefeitura);
 //  - favela SÓ no último caso: falta popular prolongada, nenhuma vaga em
 //    padrão algum e aluguel popular acima do ônus suportável.
 //
@@ -33,11 +36,12 @@
 namespace ogs {
 
 struct WorldState;
+struct DemoConstructionProject;
+class SimCore;
 
-// Obra de moradia em andamento (projeto §15 tipo "moradia"). O custo é pago
-// (reservado) na criação; as unidades entram no estoque ao fim do prazo. Lista
-// de tamanho fixo por cidade: o mercado abre no máximo
-// `kDemoHousingMaxProjects` obras por vez, o que mantém o save pequeno.
+// Dono da obra de moradia — vai em `DemoConstructionProject::housing_owner`
+// (a obra mora na fila única §15, kind CONSTRUCTION_HOUSING). O máximo de
+// obras de moradia SIMULTÂNEAS por cidade na fila é kDemoHousingMaxProjects.
 enum HousingProjectState : int {
 	HOUSING_PROJECT_IDLE = 0,
 	HOUSING_PROJECT_PRIVATE = 1,     // incorporadora (capital privado)
@@ -45,34 +49,42 @@ enum HousingProjectState : int {
 	HOUSING_PROJECT_GOVERNMENT = 3,  // moradia social (caixa da prefeitura, W2)
 };
 
-struct HousingProject {
-	int state = HOUSING_PROJECT_IDLE;
-	int density = 1;  // DENSITY_MID
-	int tier = 0;     // TIER_POPULAR
-	double units = 0.0;
-	int days_left = 0;
-};
-
 constexpr int kDemoHousingMaxProjects = 4;
 
 namespace housing {
 
-// §19 (integração) — obra de moradia da PREFEITURA (moradia social popular).
-// Segue o MESMO projeto de moradia do W3 (materiais comprados no mercado local,
-// prazo, entrega de unidades), com o caixa da prefeitura como dono e a posse
-// indo para OWNER_GOVERNMENT na entrega. Devolve false quando não há slot,
-// caixa ou material — nada é pago nesse caso. `units` é reduzido ao que o
-// caixa paga.
-bool start_social_housing(WorldState& ws, std::size_t city_index, double units);
-
-// Custo de construção de UMA unidade do padrão/densidade (anos de aluguel +
-// terra), a mesma régua da incorporadora e da autoconstrução. `city_index` sem
-// dado urbano devolve 0 (ausência explícita).
+// Custo de UMA unidade (igual ao de antes): anos de aluguel + land_price × m².
+// `city_index` sem dado urbano devolve 0 (ausência explícita).
 double build_cost_unit(const WorldState& ws, std::size_t city_index,
 	int density, int tier);
 
+// Moradia na fila única: valida caixa do dono, cobra o `total_cost` do dono,
+// monta o DemoConstructionProject kind HOUSING e chama
+// core.demo_add_construction_project (que credita a terra à prefeitura e
+// reserva o resto). `owner_state` = HOUSING_PROJECT_PRIVATE (caixa das firmas)
+// | SELF (poupança da POP) | GOVERNMENT (caixa da prefeitura). false + nada
+// pago quando não cabe.
+bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
+	int owner_state, int density, int tier, double units);
+
+// Nº de obras de moradia em andamento nesta cidade (nunca maior que
+// kDemoHousingMaxProjects).
+int project_count(const WorldState& ws, std::size_t city_index);
+
 // Moradia social em andamento nesta cidade? (a prefeitura financia uma por vez)
 bool has_social_project(const WorldState& ws, std::size_t city_index);
+
+// Obra de moradia da PREFEITURA (moradia social popular). As unidades são
+// reduzidas ao que o caixa paga (mínimo 1); dono GOVERNMENT e posse indo para
+// OWNER_GOVERNMENT na entrega.
+bool start_social_housing(WorldState& ws, SimCore& core, std::size_t city_index,
+	double units);
+
+// Conclusão (chamada por construction.cpp): soma as unidades (densidade×padrão)
+// e a fração de POSSE do dono do projeto; tenure novo como aluguel só no caso
+// GOVERNMENT (comportamento atual do W3).
+void apply_completed_project(WorldState& ws,
+	const DemoConstructionProject& project);
 
 } // namespace housing
 

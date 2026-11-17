@@ -324,7 +324,7 @@ void decide_works(WorldState& ws, SimCore& core, std::size_t city_index, int day
 		return;
 	}
 	const double cash_before = safe_nonneg(gov.cash);
-	if (housing::start_social_housing(ws, city_index, deficit)) {
+	if (housing::start_social_housing(ws, core, city_index, deficit)) {
 		// O custo registrado é o que efetivamente saiu do caixa.
 		gov.month_expense_social_housing +=
 			std::max(0.0, cash_before - safe_nonneg(gov.cash));

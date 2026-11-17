@@ -196,6 +196,14 @@ public:
 	// grupo e expansão). `expand_existing` soma capacidade a um prédio existente
 	// em vez de criar um novo.
 	void demo_add_construction_project(DemoConstructionProject& project);
+	// Parcela de TERRA de um projeto (XGS): land_price da zona × área que a
+	// obra ocupa. HOUSING: unidades × m²/unidade do padrão (ZONE_RES);
+	// BUILDING urbano (receita/insumo declarado) e expansão: vagas ×
+	// kDemoUrbanFactoryM2PerWorker (ZONE_IND), limitada a
+	// kDemoConstructionLandShareMax do orçamento; fazenda/mina (solo rural,
+	// sem zona) e URBAN_INFRA (a obra É a abertura do solo) = 0. Sem preço de
+	// terra na cidade/zona devolve 0 (ausência explícita).
+	double demo_project_land_cost(const DemoConstructionProject& project) const;
 	// Avança as obras do dia: materiais comprados do mercado, capacidade do
 	// setor de construção, pagamento incremental do dono e conclusão.
 	void demo_tick_construction();

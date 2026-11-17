@@ -286,6 +286,16 @@ namespace ogs {
 	// material ele PARA (não falha). Ao concluir, o prédio entra em operação
 	// (ou a expansão soma capacidade). Ver sim/construction.{h,cpp}.
 	// ------------------------------------------------------------------
+	// Kind da obra na fila única da cidade (§15 unificado): prédio econômico,
+	// moradia (§19 W3) ou infraestrutura urbana (§19 W1). Capacidade de
+	// construção, materiais (mercado), terra (prefeitura) e dono são os MESMOS
+	// para todos; a conclusão despacha pelo kind.
+	enum ConstructionKind : int {
+		CONSTRUCTION_BUILDING = 0,
+		CONSTRUCTION_HOUSING = 1,
+		CONSTRUCTION_URBAN_INFRA = 2,
+	};
+
 	struct DemoConstructionProject {
 		std::string id;          // id do projeto (== building_id em obra nova)
 		std::string city;
@@ -340,6 +350,17 @@ namespace ogs {
 		int urban_action = 0;
 		int urban_zone = 0;
 		double urban_km2 = 0.0;
+		int kind = CONSTRUCTION_BUILDING;
+		// Moradia (kind HOUSING): densidade, padrão, unidades entregues e dono
+		// (HOUSING_PROJECT_PRIVATE/SELF/GOVERNMENT, ver housing.h).
+		int housing_density = 0;
+		int housing_tier = 0;
+		int housing_owner = 0;
+		double housing_units = 0.0;
+		// Parcela do `total_cost` paga à PREFEITURA pelo uso do solo
+		// (land_price da zona × área ocupada). Já saiu do caixa do dono na
+		// abertura; `reserved` é o resto (material + mão de obra).
+		double land_cost = 0.0;
 	};
 
 	struct DemoPop {
