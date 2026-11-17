@@ -566,6 +566,14 @@ constexpr double kDemoHousingInitialBurden = 0.28;
 // Teto de ônus de aluguel do inquilino: o aluguel de um domicílio não passa
 // desta fração da renda mensal do domicílio (trava de longo prazo).
 constexpr double kDemoHousingRentBurdenCap = 0.40;
+// Piso da faixa de ônus de aluguel (Q-015: 0,15–0,40). O nível é reancorado
+// na RENDA CORRENTE quando o ônus de MERCADO do mês fechado cai abaixo do piso:
+// a âncora de renda é a conversão do nível da fonte (renda de hoje, não a do
+// dia 1), e a renda nominal cresce com a industrialização. Sem o piso, o
+// aluguel ancorado no dia 1 fica congelado e o ônus medido cai para 0,08–0,14
+// (AUS-WEI/IND-MUM em 365 d). Não é movimento de mercado: o passo de ±2%/mês
+// por desequilíbrio continua sendo o único sinal de oferta/demanda.
+constexpr double kDemoHousingBurdenFloor = 0.15;
 // Reserva de comida (dias de cesta) que o aluguel NUNCA toca: comida tem
 // prioridade sobre moradia (spec §19/W3).
 constexpr double kDemoHousingFoodReserveDays = 30.0;
@@ -576,11 +584,27 @@ constexpr double kDemoHousingRentElasticity = 0.50;
 // Custo de construção de uma unidade em ANOS DE ALUGUEL do padrão (parâmetro
 // adimensional, independente da escala monetária do mundo) — a terra entra
 // separada pelo land_price da zona residencial (W1). Uma unidade vale 20 anos
-// de aluguel (§19.6); construir custa ~14.
-constexpr double kDemoHousingBuildCostYears = 14.0;
+// de aluguel (§19.6, price = aluguel × 12 ÷ 0,05); construir custa 6 (30% do
+// valor), o que deixa margem para a incorporadora em TODO o mercado, inclusive
+// no mais caro da amostra (Q-015/B1).
+//
+// Calibração documentada (não é dado observado; é o teto que o modelo admite):
+// com terra = 30% do valor do imóvel médio (kDemoUrbanLandShareOfHousePrice) e
+// margem declarada de 20%, a condição price ≥ 1,2 × (obra + terra) exige
+// B ≤ 0,5333 ÷ cap_rate = 10,67 anos no caso neutro; no mercado mais caro
+// (JPN-TOK, terra ainda × ~1,47 pelo índice de renda local) o teto medido é
+// B ≤ 6,66 anos. B = 14 (70% do valor) + terra (30–44%) somava 100–114% do
+// preço — a margem era matematicamente INALCANÇÁVEL e nenhuma unidade saía.
+// B = 6 fica 10% abaixo do teto de Tóquio e equivale a custo de obra ≈ 30% do
+// valor de mercado, dentro da faixa de custo de reposição observada em
+// metrópoles caras (estrutura ~25–40% do preço; o resto é terreno).
+constexpr double kDemoHousingBuildCostYears = 6.0;
 constexpr double kDemoHousingDeveloperMargin = 0.20;
-// Parcela MATERIAL da obra de moradia (o resto é mão de obra/serviço).
-constexpr double kDemoHousingMaterialShare = 0.40;
+// Parcela MATERIAL da obra de moradia = a MESMA receita do §15 (Q-015/§5): a
+// obra de moradia não é exceção da fila única; material é o que o §15 declara
+// (15% do orçamento, o resto é mão de obra/serviço). A antiga fração de 40%
+// fazia a mesma obra em XGS exigir 2,7× mais material sem decisão declarada.
+constexpr double kDemoHousingMaterialShare = kDemoConstructionMaterialShare;
 // Prazo de obra de moradia (dias) e tamanho do lote de unidades por mês.
 constexpr int kDemoHousingBuildDays = 90;
 constexpr double kDemoHousingBatchShare = 0.005;     // 0,5% da demanda do padrão
@@ -590,7 +614,15 @@ constexpr double kDemoHousingMaintenanceShare = 0.10;
 // Favela (ÚLTIMO caso): falta popular mínima, vacância total máxima, dias
 // consecutivos de aperto, fatia de domicílios por mês e penalidade de
 // satisfação por fatia informal (limitada a 5 p.p. pela própria fração).
+// A falta é medida na demanda PRÓPRIA do padrão popular (sem o transbordo dos
+// padrões altos): a depreciação do estoque médio não pode fabricar falta
+// popular (Q-015/B5).
 constexpr double kDemoHousingSlumShortage = 0.05;
+// Falta popular SEVERA: 1 em 5 domicílios pobres sem unidade formal. Nesse
+// ponto a falta deixou de ser de preço e é de estoque, então a área informal
+// abre mesmo com o aluguel abaixo do teto de ônus (calibração declarada; o
+// caso de preço — aluguel no teto de ônus — já abre pela própria trava).
+constexpr double kDemoHousingSlumSevereShortage = 0.20;
 constexpr double kDemoHousingSlumVacancyMax = 0.01;
 constexpr int kDemoHousingSlumDays = 30;
 constexpr double kDemoHousingSlumShare = 0.01;

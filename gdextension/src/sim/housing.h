@@ -4,10 +4,11 @@
 //
 // A lógica roda UMA vez por tick em `sim/housing.cpp` (SimCore::phase_housing),
 // logo DEPOIS da renda/consumo da POP (fase 5) e ANTES dos serviços/comércio:
-// a comida do dia já foi comprada e o aluguel só usa a poupança acima da
-// reserva de comida — comida tem prioridade. Nada é criado nem destruído: todo
-// fluxo é transferência entre contas que já existem (POP, firmas, prefeitura,
-// setor de serviços).
+// o aluguel é cobrado da RENDA do dia, depois da comida e ANTES do consumo de
+// life/luxury — a fase de renda reserva `daily_rent_obligation` no orçamento
+// discricionário e `phase_housing` executa a transferência. Nada é criado nem
+// destruído: todo fluxo é transferência entre contas que já existem (POP,
+// firmas, prefeitura, setor de serviços).
 //
 // Modelo (agregado por cidade, sem agente por prédio):
 //  - demanda por padrão = domicílios do estrato (classe de consumo da POP);
@@ -66,6 +67,14 @@ double build_cost_unit(const WorldState& ws, std::size_t city_index,
 // pago quando não cabe.
 bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 	int owner_state, int density, int tier, double units);
+
+// Aluguel que os inquilinos devem pagar HOJE (XGS/dia): fatura mensal ÷ 30,
+// limitada pelo teto de ônus (kDemoHousingRentBurdenCap) da renda dos
+// inquilinos. É a MESMA conta que phase_housing usa para pagar; a fase de
+// renda (consumption.cpp) a desconta do orçamento discricionário do dia, para
+// o aluguel sair da RENDA depois da comida e ANTES de life/luxury (Q-015/B2).
+// Nunca maior que a fatura nem que o teto de ônus; 0 sem dado urbano.
+double daily_rent_obligation(const WorldState& ws, std::size_t city_index);
 
 // Nº de obras de moradia em andamento nesta cidade (nunca maior que
 // kDemoHousingMaxProjects).
