@@ -93,6 +93,37 @@ valor `"demo"` publicado em `status.mode`, as chaves do status (`money_total`, `
 chaves de i18n `tpl.registro.demo.*`. Os goldens e saves antigos continuam válidos porque nenhuma
 chave mudou.
 
-## 4. Aceite (medido em 2026-11-17, host do A0)
+## 4. Aceite (medido em 2026-11-17, host do A0, worktree `opengs-wt-a1b`)
 
-Ver `GAME_STATE.md` §14 (D-069) para os números desta fatia.
+Todos com a **DLL debug** construída nesta worktree (`build-debug`, Godot 4.7.2 headless).
+
+a) **Golden A0 inalterado.** `tools/world_equivalence.ps1 -Rounds 1 -Baseline
+   docs/economy/refactor/baseline/A0_60_urban.json` → shas iguais: `save 3e3ebbbe…1a3d0b7`,
+   `status d79bfe32…c95ac9b`, money 2.200.539.587,40, 0 falências, 54.554 negócios de serviço.
+   **0 diferenças.**
+b) **Threads 1 × 8.** Mesmos dois shas nas duas execuções; só `meta.threads` difere.
+c) **Bateria.** `economy_integration_test`, `economy_ai_test`, `population_demo_test`,
+   `construction_project_test`, `housing_market_test` e `city_gov_test` → **exit 0**.
+   `economy_save_load_roundtrip_test --days=60 --save-at=30` → **0 diffs** (mesmo save e status
+   hash nos dois caminhos).
+d) **CLI = Godot sem IA.** Snapshot exportado (54.875.755 B, 834 cidades, 846 construções, 113
+   produtos), replay do Godot 60 d e `opengs_sim_cli --days=60` → arquivos **byte-idênticos**
+   (`sha256 79c7897a415c6c593230c64a2adda908bf97046d0dcfdccc50f253ccacbf8feb`, o mesmo do A1a) e
+   comparador `world_equivalence_compare.py` com tolerância 0 → **0 diferenças**.
+e) **Builds.** Debug (Ninja, clang do llvm-mingw) e release de medição
+   (`build-profile-release`, `-DCMAKE_BUILD_TYPE=Release -DOGS_PROFILE_RELEASE=ON
+   -DGODOTCPP_TARGET=template_release`) **sem warning novo**; as duas DLLs ficam em `bin/`
+   (`template_debug` e `template_release`) e o slot debug foi conferido depois do build release.
+f) **Bench canônico (`tools/bench_canonical.ps1`, N=3, editor fechado, release de medição).**
+   Tick de parede **36,78 ms** (mediana) contra **35,98 ms** do A1a — **+2,2%**, dentro do limite
+   de 3%; dia completo **155,92 ms** contra **153,82 ms** (**+1,4%**); variação entre rodadas
+   **1,46%** (tick) e 0,64% (dia total) ≤ 3%; `status` 15,67 ms. A primeira tentativa foi
+   descartada: outra frente rodava um `Godot --headless` de 365 d em paralelo
+   (`opengs-wt-recal-iso2`) e o próprio script avisa que a medição sai ruidosa (deu 38,07 ms /
+   4,64% de variação). A renomeação é **mecânica** (diff simétrico: 2.567+/2.567− no C++ e
+   949+/949− nos chamadores).
+
+`grep` final: `\bdemo_` em `gdextension/src` = **0**; em `.gd`/`.tscn` de `core|game|map|tools` =
+**0**; `run_benchmark|initialize_benchmark|BenchCity|get_benchmark_*` = **0**. Restam só
+`"DEMO"` (id da nação do cenário de validação), `status.mode == "demo"` e as chaves i18n
+`tpl.registro.demo.*` — todos dado, não identificador.

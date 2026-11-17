@@ -63,6 +63,12 @@ Custo por tipo:
 - Lento (rode só para mudanças de longo prazo): `economy_long_run_test.gd`.
 - Falhando por BOM pré-existente em `core/ui/city_economy_panel.gd`: `economy_panel_test.gd` — não rode sem necessidade.
 
+API do núcleo (A1b, D-069): `EconomySim` não tem mais o prefixo `demo_` — use
+`initialize_world`, `tick_day`, `get_status`, `set_goods`, `build`, `invest`, `to_dict`…
+O cenário AGRIA/PORTUS é fixture de teste (`initialize_scenario()`), não o jogo; por isso
+`population_demo_test.gd` mantém "demo" no nome do arquivo. Chaves do save/status e o valor
+`status.mode == "demo"` **não** mudaram. Detalhes em `docs/economy/refactor/A1b_cleanup.md`.
+
 Ao encerrar, registre quais testes rodou, ou "nenhum" e o motivo.
 
 ## Mapa de arquivos
