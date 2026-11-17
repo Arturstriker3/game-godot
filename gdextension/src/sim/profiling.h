@@ -83,6 +83,28 @@ private:
 	std::chrono::steady_clock::time_point start_{};
 };
 
+// Igual à `Zone`, mas SOMA no slot em vez de sobrescrever. É a variante para
+// zonas dentro de laço (uma por comprador/produto): cada iteração acumula no
+// mesmo slot, então o valor do tick é o custo do laço inteiro. O chamador tem
+// de zerar o slot no começo do tick (`reset_phase`), senão a soma atravessa os
+// dias.
+class ZoneAdd {
+public:
+	explicit ZoneAdd(int phase) noexcept;
+	~ZoneAdd();
+	ZoneAdd(const ZoneAdd &) = delete;
+	ZoneAdd &operator=(const ZoneAdd &) = delete;
+
+private:
+	int phase_ = -1;
+	Sink *sink_ = nullptr;
+	std::chrono::steady_clock::time_point start_{};
+};
+
+// Zera o slot `phase` do sink da thread atual (no-op sem coleta). Usado no topo
+// do tick pelas zonas acumuladoras.
+void reset_phase(int phase) noexcept;
+
 // Contador não-temporal: guarda o último valor de cada nome na thread.
 // `name` precisa ter vida longa (literal) — o texto é lido com strcmp.
 struct CounterSample {
@@ -98,13 +120,17 @@ const std::vector<CounterSample> &counter_samples() noexcept;
 #define OGS_CAT_INNER(a, b) a##b
 #define OGS_CAT(a, b) OGS_CAT_INNER(a, b)
 #define OGS_SIM_ZONE(phase) ::ogs::profile::Zone OGS_CAT(_ogs_zone_, __LINE__)(phase)
+#define OGS_SIM_ZONE_ADD(phase) ::ogs::profile::ZoneAdd OGS_CAT(_ogs_zone_add_, __LINE__)(phase)
 #define OGS_SIM_PHASE_LAP(phase) ::ogs::profile::lap(phase)
+#define OGS_SIM_PHASE_RESET(phase) ::ogs::profile::reset_phase(phase)
 #define OGS_SIM_COUNTER(name, value) ::ogs::profile::counter((name), (value))
 
 #else  // sem OGS_PROFILING: custo zero, nenhum símbolo
 
 #define OGS_SIM_ZONE(phase) ((void)0)
+#define OGS_SIM_ZONE_ADD(phase) ((void)0)
 #define OGS_SIM_PHASE_LAP(phase) ((void)0)
+#define OGS_SIM_PHASE_RESET(phase) ((void)0)
 #define OGS_SIM_COUNTER(name, value) ((void)0)
 
 #endif

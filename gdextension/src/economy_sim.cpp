@@ -1434,6 +1434,8 @@ Dictionary EconomySim::get_profile() const {
 		"prologue_snapshot", "prologue_indexes", "prologue_other",
 		"arrival_transit",
 		"fiscal_city_gov", "fiscal_equalize", "fiscal_groups",
+		"trade_food_prep", "trade_food_calc", "trade_food_settle",
+		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 	};
 	Dictionary profile;
 	if (!profile_) {

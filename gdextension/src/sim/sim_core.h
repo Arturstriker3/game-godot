@@ -350,6 +350,68 @@ private:
 		const TransportDemand& demand);
 	// Escolhe a receita de menor custo unitário corrente para um produto.
 	int pick_recipe(const City& city, int output_product) const;
+	// A7 — comércio de alimento paralelo determinístico. O laço de compradores
+	// foi partido em duas metades: (a) CÁLCULO paralelo e só-leitura, que grava
+	// um `FoodTradePlan` por comprador (anel de vizinhos + mercado externo +
+	// ofertas já ordenadas por custo) e (b) LIQUIDAÇÃO serial na ordem de
+	// sempre, que consome os planos e é a única que escreve em `ws_`. Os planos
+	// são um superconjunto do que o dia consome (`sellable_ge` só diminui), então
+	// o resultado é bit-idêntico ao serial com qualquer número de threads.
+	struct FoodRingEntry {
+		int seller = -1;
+		int radius = 0;          // anel em que a entrada foi vista
+		double distance_km = 0.0;  // calculada UMA vez, reusada no partial_sort
+	};
+	struct FoodOffer {
+		int seller_index = -1;
+		int product = 0;
+		double factor = 0.0;
+		double price = 0.0;          // preço na âncora XGS (mercado do vendedor)
+		double origin_anchor = 0.0;  // preço × competitividade float do vendedor
+		double unit_freight = 0.0;   // frete em âncora
+		double unit_tariff = 0.0;    // tarifa em âncora
+		double delivered = 0.0;      // entregue na moeda do comprador (exibição)
+		double unit_cost_per_ge = 0.0;  // âncora por tonelada-equivalente de grão
+	};
+	struct FoodBuyer {
+		int index = -1;
+		City* city = nullptr;
+		double gap = 0.0;  // toneladas-equivalentes de grão
+	};
+	struct FoodTradePlan {
+		bool active = false;      // false: comprador sem vendedor alcançável
+		bool exhaustive = false;  // mundo pequeno: todas as cidades vendedoras
+		bool ring_complete = true;  // false só se o anel foi cortado pelo teto
+		// Entradas do anel na ordem exata de varredura (topo do dia).
+		std::vector<FoodRingEntry> ring;
+		// Mercado externo na ordem de append (com repetidos) e ordenado/único.
+		std::vector<int> ext;
+		std::vector<int> ext_sorted;
+		// Ofertas do universo `únicos(ring ∪ ext)` JÁ na ordem de custo do dia
+		// (`stable_sort` por `unit_cost_per_ge` feito na fase paralela). Empate
+		// preserva a ordem de entrada: índice de vendedor crescente e, dentro
+		// dele, os slots da cesta — a ordem de candidato do `stable_sort` antigo.
+		std::vector<FoodOffer> offers;
+		// Scratch do plano: união ascendente do anel (índices quaisquer) com o
+		// mercado externo, usada só na fase de cálculo.
+		std::vector<int> universe;
+	};
+	// Planos por comprador do dia (índice = posição em `buyers`, que é
+	// reordenado a cada dia), reaproveitados entre dias. NÃO entram no save.
+	std::vector<FoodTradePlan> food_plans_;
+	// Scratch serial da liquidação (reaproveitado entre compradores/dias).
+	std::vector<FoodRingEntry> food_ring_live_;
+	std::vector<int> food_candidates_;
+	std::vector<int> food_candidates_union_;
+	// A7c: ofertas do dia em ordem de percorrimento, por PONTEIRO — o caminho
+	// normal aponta para `FoodTradePlan::offers` (já ordenado em paralelo, sem
+	// copiar blocos); o caminho lento aponta para `food_offers_settle_`.
+	std::vector<const FoodOffer*> food_offers_live_;
+	std::vector<FoodOffer> food_offers_settle_;
+	// A7c: marca O(1) de pertinência ao conjunto de candidatos do comprador do
+	// dia: `food_candidate_stamp_[vendedor] == bi + 1`. Zerada uma vez por dia
+	// (O(cidades)), nunca no laço de ofertas.
+	std::vector<int> food_candidate_stamp_;
 	// 6. Comércio de alimento (cesta de calorias) entre cidades.
 	void trade_food();
 	// 6b. Comércio dos demais bens (insumos industriais), pela mesma malha.

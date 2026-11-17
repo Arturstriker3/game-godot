@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iterator>
 
 namespace ogs {
 
@@ -22,6 +23,33 @@ inline bool same_landmass_city(const City& left, const City& right) {
 	}
 	return left.landmass == right.landmass;
 }
+
+// A7: folga de entradas do anel guardadas no plano do comprador, ALÉM de
+// `min(k_neighbors, reachable_sellers)`. O plano precisa ser um superconjunto do
+// que a liquidação consome — inclusive quando alguns dos vendedores mais
+// próximos se esgotam durante o dia e o `partial_sort` desce na lista. Cada
+// entrada a mais custa varredura de anel, um haversine e ofertas (vendedor ×
+// slots) na fase paralela; medido: 64 de folga davam 72 entradas por comprador
+// (3× o necessário) e dobravam o custo. 8 cobre a escuridão típica do dia.
+constexpr int kFoodPlanSlack = 8;
+
+// A7b — orçamento de células da varredura do anel, por comprador e por dia.
+// Limite de segurança: nenhum comprador visita mais células que a grade
+// inteira. Com oferta escassa (fim do dia, porto bloqueando rotas), o anel
+// tentava provar que não havia mais ninguém até o fim do mapa para cada
+// comprador; 1.024 células (raio ~16, ~4.000 km) já cobrem o alcance
+// econômico — além dele entra o mercado externo (M ofertas mais baratas do
+// globo), que é anexado sempre.
+constexpr int kFoodScanBudget = 1024;
+
+// A7b — fronteira de retomada da varredura do anel de UM comprador do dia:
+// onde o plano parou e quanto do orçamento de células sobrou. Fica aqui (e não
+// em `FoodTradePlan`) para manter esta fase dentro de `trade.cpp`; é scratch do
+// dia, não entra no save.
+struct FoodScanTail {
+	int radius = 0;  // primeiro raio NÃO varrido (fronteira de retomada)
+	int budget = 0;  // células que sobraram do orçamento da varredura
+};
 }  // namespace
 
 void SimCore::trade_food() {
@@ -37,12 +65,34 @@ void SimCore::trade_food() {
 	OGS_SIM_ZONE(kPhaseTradeFood);
 	reset_port_usage();
 
-	struct Buyer {
-		int index;
-		City* city;
-		double gap;  // toneladas-equivalentes de grão
-	};
-	std::vector<Buyer> buyers;
+	// A7: estado do dia compartilhado pelas três fases (preparo → cálculo
+	// paralelo → liquidação serial). `sellable_ge` e as tabelas abaixo são as do
+	// TOPO do dia: a fase de cálculo só as LÊ (nunca escreve em `ws_`), e a
+	// liquidação reaplica o filtro de `sellable_ge` como hoje.
+	std::vector<FoodBuyer> buyers;
+	std::vector<double> sellable_ge;
+	std::vector<int> city_port;
+	std::vector<std::vector<int>> grid;
+	std::vector<char> cell_has_seller;
+	std::vector<std::vector<int>> offers_by_slot;
+	std::vector<double> city_competitive;
+	std::vector<double> city_fx;
+	std::vector<double> city_to_port_dist;
+	std::vector<int> sellers_in_landmass;
+	std::vector<int> port_sellers_in_landmass;
+	int port_sellers_total = 0;
+	const std::size_t city_count = ws_.cities.size();
+	const double cell = kTradeCellMapUnits;
+	const int grid_w = std::max(1, static_cast<int>(std::ceil(kMapWidth / cell)));
+	const int grid_h = std::max(1, static_cast<int>(std::ceil(kMapHeight / cell)));
+	const bool exhaustive = city_count <= kTradeExhaustiveLimit;
+	const int k_neighbors = std::max(1, ws_.trade_neighbors);
+	const int k_external = std::max(0, ws_.trade_external);
+	int sellers_left = 0;
+	std::size_t shipments = 0;
+
+	{
+	OGS_SIM_ZONE(kPhaseTradeFoodPrep);
 
 	// Posição alimentar de cada cidade em toneladas-equivalentes de grão:
 	// (estoque local + em trânsito) × fator calórico.
@@ -76,7 +126,7 @@ void SimCore::trade_food() {
 	// estoque estaciona na cobertura e nada fica vendável (nenhuma cidade
 	// exporta, e as deficitárias morrem de fome). Manter 1 dia preserva o buffer
 	// mínimo e deixa o excedente fluir para quem tem déficit.
-	std::vector<double> sellable_ge(ws_.cities.size(), 0.0);
+	sellable_ge.assign(ws_.cities.size(), 0.0);
 	for (std::size_t i = 0; i < ws_.cities.size(); ++i) {
 		sellable_ge[i] = std::max(0.0, food_ge[i] - ws_.cities[i].pop.need);
 	}
@@ -114,7 +164,7 @@ void SimCore::trade_food() {
 	// Xangai, São Paulo) no fim da fila todos os dias; com a oferta mundial
 	// abaixo da necessidade, elas nunca eram alcançadas (§19).
 	std::stable_sort(buyers.begin(), buyers.end(),
-		[](const Buyer& left, const Buyer& right) {
+		[](const FoodBuyer& left, const FoodBuyer& right) {
 			const double left_need = std::max(1e-9, left.city->pop.need);
 			const double right_need = std::max(1e-9, right.city->pop.need);
 			return left.gap / left_need > right.gap / right_need;
@@ -128,11 +178,10 @@ void SimCore::trade_food() {
 	// M ofertas mais baratas por caloria do globo, que representam o mercado
 	// externo. São vendedores REAIS: o dinheiro continua indo para uma firma
 	// existente, sem mercado agregado artificial.
-	const std::size_t city_count = ws_.cities.size();
 	// Porto nacional de cada cidade (mesma nação e massa de terra), escolhido
 	// uma vez por dia: o mais próximo é o de menor frete terrestre. É o porto
 	// que a cidade usa para exportar/importar — `port_of` só aponta a sede.
-	std::vector<int> city_port(city_count, -1);
+	city_port.assign(city_count, -1);
 	if (!ws_.ports.empty()) {
 		// Baldes por (nação, massa de terra): a cidade só compara com os portos
 		// que pode usar (porto nacional na própria massa), não com os ~138 do
@@ -164,18 +213,13 @@ void SimCore::trade_food() {
 			city_port[ci] = best_port;
 		}
 	}
-	const bool exhaustive = city_count <= kTradeExhaustiveLimit;
-	const double cell = kTradeCellMapUnits;
-	const int grid_w = std::max(1, static_cast<int>(std::ceil(kMapWidth / cell)));
-	const int grid_h = std::max(1, static_cast<int>(std::ceil(kMapHeight / cell)));
-	std::vector<std::vector<int>> grid(
-		static_cast<std::size_t>(grid_w * grid_h));
+	grid.assign(static_cast<std::size_t>(grid_w * grid_h), std::vector<int>());
 	// Bitmask de células com pelo menos um vendedor: quando a oferta do dia é
 	// escassa (regra do porto deixa parte do mundo sem rota marítima), o anel
 	// varria a grade inteira por comprador. A máscara evita tocar nas ~12 mil
 	// listas vazias (cache miss por célula) sem mudar QUEM é candidato: o
 	// filtro de `sellable_ge` dentro de scan_cell continua valendo.
-	std::vector<char> cell_has_seller(static_cast<std::size_t>(grid_w * grid_h), 0);
+	cell_has_seller.assign(static_cast<std::size_t>(grid_w * grid_h), 0);
 	auto cell_index = [cell, grid_w, grid_h](const MapPoint& point) {
 		const int ix = std::clamp(static_cast<int>(point.x / cell), 0, grid_w - 1);
 		const int iy = std::clamp(static_cast<int>(point.y / cell), 0, grid_h - 1);
@@ -191,7 +235,7 @@ void SimCore::trade_food() {
 
 	// Ofertas por slot da cesta, ordenadas pelo custo por caloria do preço
 	// (preço/fator, sem frete): as M primeiras formam o mercado externo.
-	std::vector<std::vector<int>> offers_by_slot(ws_.food_products.size());
+	offers_by_slot.assign(ws_.food_products.size(), std::vector<int>());
 	for (std::size_t si = 0; si < city_count; ++si) {
 		if (sellable_ge[si] <= 1e-9) {
 			continue;
@@ -224,16 +268,13 @@ void SimCore::trade_food() {
 		});
 	}
 
-	const int k_neighbors = std::max(1, ws_.trade_neighbors);
-	const int k_external = std::max(0, ws_.trade_external);
-
 	// Pré-calcula por cidade (uma vez por dia) os valores puros de nação usados
 	// no laço quente de ofertas: competitividade e câmbio. Eram lookups de hash
 	// por string DENTRO do laço por oferta (custo dominante em debug). São
 	// funções puras do estado, que não muda durante o comércio (o câmbio roda
 	// na fase fx, depois) — bit-idêntico.
-	std::vector<double> city_competitive(city_count, 1.0);
-	std::vector<double> city_fx(city_count, 1.0);
+	city_competitive.assign(city_count, 1.0);
+	city_fx.assign(city_count, 1.0);
 	for (std::size_t ci = 0; ci < city_count; ++ci) {
 		const std::string& nation = ws_.cities[ci].nation;
 		city_competitive[ci] = competitiveness(nation);
@@ -241,7 +282,7 @@ void SimCore::trade_food() {
 	}
 	// Distância cidade → próprio porto (pré-calculada uma vez por dia): remove
 	// 2 dos 3 haversines por candidato na travessia marítima do laço quente.
-	std::vector<double> city_to_port_dist(city_count, 0.0);
+	city_to_port_dist.assign(city_count, 0.0);
 	for (std::size_t ci = 0; ci < city_count; ++ci) {
 		if (city_port[ci] >= 0) {
 			city_to_port_dist[ci] = distance_km(
@@ -255,7 +296,7 @@ void SimCore::trade_food() {
 	// foram vistas (antes ele varria a grade inteira para provar isso, o que
 	// custava ~1,4 s por dia com 650 cidades). `sellers_left` cai quando um
 	// vendedor se esgota no meio do dia.
-	int sellers_left = total_sellers;
+	sellers_left = total_sellers;
 
 	// Vendedores alcançáveis por um comprador (regra do porto): na mesma massa
 	// de terra sempre; entre massas, só se AS DUAS pontas têm porto. Contagens
@@ -268,9 +309,9 @@ void SimCore::trade_food() {
 	// construída a partir das próprias cidades, então todo índice é >= 0.
 	const std::size_t landmass_count =
 		static_cast<std::size_t>(ws_.landmass_table.size());
-	std::vector<int> sellers_in_landmass(landmass_count, 0);
-	std::vector<int> port_sellers_in_landmass(landmass_count, 0);
-	int port_sellers_total = 0;
+	sellers_in_landmass.assign(landmass_count, 0);
+	port_sellers_in_landmass.assign(landmass_count, 0);
+	port_sellers_total = 0;
 	for (std::size_t si = 0; si < city_count; ++si) {
 		if (sellable_ge[si] <= 1e-9) {
 			continue;
@@ -285,228 +326,494 @@ void SimCore::trade_food() {
 			++port_sellers_total;
 		}
 	}
-	std::size_t shipments = 0;
+	}  // fim do preparo
+
+	// A7 — oferta (vendedor × slot da cesta): frete (haversine + porto), tarifa,
+	// competitividade, câmbio e custo entregue por tonelada-equivalente. Só
+	// depende de valores ESTÁVEIS dentro de `phase_trade` (preço de mercado,
+	// frete, tarifa, competitividade, câmbio), então vale para qualquer instante
+	// do dia. A quantidade vendável NÃO entra aqui: ela é filtro, e o filtro de
+	// hoje (`sellable_tons <= 1e-9`) é reaplicado na liquidação.
+	const auto append_seller_offers = [&](const FoodBuyer& buyer, int si,
+			std::vector<FoodOffer>& out) {
+		if (si == buyer.index
+				|| sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
+			return;
+		}
+		City& seller = ws_.cities[static_cast<std::size_t>(si)];
+		double unit_freight = 0.0;
+		if (same_landmass_city(seller, *buyer.city)) {
+			unit_freight = leg_unit_freight_food(TransportMode::Truck,
+				distance_km(seller.center, buyer.city->center));
+		} else {
+			// Travessia marítima só entre nações COM porto na massa de terra de
+			// cada cidade: cidade→porto (caminhão) + porto→porto (navio) +
+			// porto→cidade (caminhão). Sem porto de um dos lados, não há oferta.
+			const int seller_port = city_port[static_cast<std::size_t>(si)];
+			const int buyer_port_index =
+				city_port[static_cast<std::size_t>(buyer.index)];
+			if (seller_port < 0 || buyer_port_index < 0) {
+				return;
+			}
+			const Port& sp = ws_.ports[static_cast<std::size_t>(seller_port)];
+			const Port& bp = ws_.ports[static_cast<std::size_t>(buyer_port_index)];
+			unit_freight =
+				leg_unit_freight_food(TransportMode::Truck,
+					city_to_port_dist[static_cast<std::size_t>(si)])
+				+ leg_unit_freight_food(TransportMode::Ship,
+					distance_km(sp.center, bp.center))
+				+ leg_unit_freight_food(TransportMode::Truck,
+					city_to_port_dist[static_cast<std::size_t>(buyer.index)]);
+		}
+		for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
+			const int product = food_product(slot);
+			const double factor = food_calories(product);
+			if (factor <= 0.0) {
+				continue;
+			}
+			// Vendável deste produto, limitado pelo excedente total da cidade
+			// (acima da cobertura) e pelo estoque físico.
+			const double sellable_tons = std::min(
+				seller.markets[product].stock,
+				sellable_ge[static_cast<std::size_t>(si)] / factor);
+			if (sellable_tons <= 1e-9) {
+				continue;
+			}
+			const double price = seller.markets[product].price;
+			if (price <= 0.0) {
+				continue;
+			}
+			const double origin_anchor =
+				price * city_competitive[static_cast<std::size_t>(si)];
+			const double tariff_factor =
+				tariff_rate_cities(*buyer.city, seller, product);
+			const double unit_tariff =
+				(origin_anchor + unit_freight) * tariff_factor;
+			// Valor entregue em âncora: é ele que ordena a oferta (sem
+			// round-trip de câmbio). A moeda do comprador só divide para
+			// exibição — é fator comum, não muda a ordem.
+			const double delivered_anchor =
+				origin_anchor + unit_freight + unit_tariff;
+			const double buyer_fx = city_fx[static_cast<std::size_t>(buyer.index)];
+			const double delivered =
+				delivered_anchor / std::max(1e-9, buyer_fx);
+			const double unit_cost_per_ge = delivered_anchor / factor;
+			out.push_back(FoodOffer{si, product, factor, price, origin_anchor,
+				unit_freight, unit_tariff, delivered, unit_cost_per_ge});
+		}
+	};
+
+	// A7 — varredura do anel. É função do DIA (posições, portos, massa de terra
+	// e `sellable_ge > 1e-9` no TOPO); a parada (`count >= wanted`,
+	// `cells_budget`, raios) é decisão do dia e roda na liquidação. Aqui
+	// `wanted_count` só diz quanto o chamador quer acumular.
+	// `overshoot_radii`: quantos raios varrer DEPOIS de atingir `wanted_count`.
+	// O plano usa 1 para a liquidação sempre ter uma fronteira de raio após o
+	// ponto em que os sobreviventes satisfazem `wanted`; a varredura de
+	// emergência da liquidação usa 0 (para de onde o laço de hoje pararia).
+	//
+	// `start_radius`/`start_cells_budget` deixam RETOMAR a passada numa
+	// fronteira de raio (A7b): o plano grava onde parou e com quanto orçamento,
+	// e a liquidação continua de lá em vez de refazer o anel desde o raio 0.
+	// `out` NÃO é limpo — as entradas já acumuladas contam no teste
+	// `out.size() >= wanted_count`, exatamente como na passada única de hoje.
+	// Devolve o orçamento de células que sobrou; grava em `next_radius` o
+	// primeiro raio não varrido e em `complete` se a varredura cobriu tudo.
+	const auto scan_ring = [&](const FoodBuyer& buyer, int wanted_count,
+			int overshoot_radii, int start_radius, int start_cells_budget,
+			int& next_radius, bool& complete, std::vector<FoodRingEntry>& out)
+			-> int {
+		const int buyer_port = city_port[static_cast<std::size_t>(buyer.index)];
+		const int bx = std::clamp(
+			static_cast<int>(buyer.city->center.x / cell), 0, grid_w - 1);
+		const int by = std::clamp(
+			static_cast<int>(buyer.city->center.y / cell), 0, grid_h - 1);
+		// Raio máximo ÚTIL: distância de Chebyshev até o canto mais distante
+		// da grade. Antes era max(grid_w, grid_h), ou seja, o anel continuava
+		// varrendo células vazias muito além do mapa: com grade 157×79 e
+		// menos de K vendedores no mundo, cada comprador percorria ~5,2 M
+		// células (O(raio³) acumulado) — a rodada ficava minutos parada.
+		//
+		// Teto ECONÔMICO (regra do porto): sem porto só há caminhão, cujo
+		// frete já supera o preço do alimento bem antes de 2.000 km (~8
+		// células de 250 km). Com porto, o navio é 5× mais barato e o anel
+		// cobre o globo. Sem esse teto, um comprador sem rota marítima
+		// varria a grade inteira todos os dias atrás de vendedores que nunca
+		// seriam competitivos.
+		const int ring_radius_limit = buyer_port >= 0 ? 48 : 8;
+		const int max_radius = std::min(std::max(
+			std::max(bx, grid_w - 1 - bx), std::max(by, grid_h - 1 - by)),
+			ring_radius_limit);
+		// Orçamento de células da passada (ver `kFoodScanBudget`): na
+		// retomada é o que sobrou do plano, nunca um orçamento novo.
+		int cells_budget = std::min(grid_w * grid_h, start_cells_budget);
+		auto scan_cell = [&](int ix, int iy, int radius) {
+			if (ix < 0 || ix >= grid_w || iy < 0 || iy >= grid_h || cells_budget <= 0) {
+				return;
+			}
+			--cells_budget;
+			const std::size_t cell_offset =
+				static_cast<std::size_t>(iy * grid_w + ix);
+			if (cell_has_seller[cell_offset] == 0) {
+				return;
+			}
+			for (const int si : grid[cell_offset]) {
+				if (si == buyer.index || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
+					continue;
+				}
+				// Sem porto, a cidade só compra dentro da própria massa de
+				// terra: vendedores do outro lado do mar não são candidatos.
+				if (buyer_port < 0
+						&& !same_landmass_city(
+							ws_.cities[static_cast<std::size_t>(si)],
+							*buyer.city)) {
+					continue;
+				}
+				// Distância calculada UMA vez por entrada do anel: o
+				// `partial_sort` da liquidação reusa este valor (mesmos
+				// números ⇒ mesma permutação).
+				out.push_back(FoodRingEntry{si, radius,
+					distance_km(ws_.cities[static_cast<std::size_t>(si)].center,
+						buyer.city->center)});
+			}
+		};
+		next_radius = start_radius;
+		for (int radius = start_radius; radius <= max_radius && cells_budget > 0;
+				++radius) {
+			if (static_cast<int>(out.size()) >= wanted_count) {
+				if (overshoot_radii <= 0) {
+					break;
+				}
+				--overshoot_radii;
+			}
+			// Só o PERÍMETRO do anel (4 lados, cantos uma vez só): O(raio)
+			// por anel em vez de O(raio²) com `continue` nas células internas.
+			for (int ix = bx - radius; ix <= bx + radius; ++ix) {
+				scan_cell(ix, by - radius, radius);
+				if (radius > 0) {
+					scan_cell(ix, by + radius, radius);
+				}
+			}
+			for (int iy = by - radius + 1; iy <= by + radius - 1; ++iy) {
+				scan_cell(bx - radius, iy, radius);
+				if (radius > 0) {
+					scan_cell(bx + radius, iy, radius);
+				}
+			}
+			if (cells_budget > 0) {
+				// Raio inteiro visitado dentro do orçamento: a retomada
+				// começa no próximo.
+				next_radius = radius + 1;
+			}
+		}
+		// `false` só quando o teto de entradas do plano cortou o anel.
+		complete = static_cast<int>(out.size()) < wanted_count;
+		return cells_budget;
+	};
+
+	// A7b — onde a varredura do plano de cada comprador parou (raio e orçamento
+	// restante), para a liquidação CONTINUAR a passada em vez de refazê-la.
+	std::vector<FoodScanTail> scan_tails;
+
 	{
-		OGS_SIM_ZONE(kPhaseTradeFoodBuyers);
-		for (Buyer& buyer : buyers) {
+	OGS_SIM_ZONE(kPhaseTradeFoodBuyers);
+	{
+	OGS_SIM_ZONE(kPhaseTradeFoodCalc);
+	// Um plano só-leitura por comprador do dia. Redimensiona quando o número de
+	// compradores muda; cada plano REUSA os vetores do dia anterior.
+	if (food_plans_.size() < buyers.size()) {
+		food_plans_.resize(buyers.size());
+	}
+	// Fronteira de retomada da varredura (A7b), por comprador do dia. É scratch
+	// local desta chamada — cada índice é escrito por um único worker.
+	scan_tails.resize(buyers.size());
+	// Partição estática por comprador: cada worker escreve só no seu plano, e o
+	// bloco de cálculo NÃO escreve em `ws_`. Mundos pequenos continuam seriais
+	// (`parallel_for` já trata `< kThreadPoolMinCities`).
+	pool().parallel_for(buyers.size(), [&](std::size_t begin, std::size_t end) {
+		for (std::size_t bi = begin; bi < end; ++bi) {
+			const FoodBuyer& buyer = buyers[bi];
+			FoodTradePlan& plan = food_plans_[bi];
+			FoodScanTail& tail = scan_tails[bi];
+			tail.radius = 0;
+			tail.budget = 0;
+			plan.active = false;
+			plan.exhaustive = exhaustive;
+			plan.ring_complete = true;
+			plan.ring.clear();
+			plan.ext.clear();
+			plan.ext_sorted.clear();
+			plan.offers.clear();
+			plan.universe.clear();
+
+			// Rota possível? Na mesma massa de terra, caminhão direto; entre
+			// massas, só com porto nas duas pontas. Comprador sem nenhum
+			// vendedor alcançável não gera oferta: sair aqui evita varrer a
+			// grade inteira por dia.
+			const int buyer_port = city_port[static_cast<std::size_t>(buyer.index)];
+			const int buyer_landmass = buyer.city->landmass_index;
+			const int local_sellers = buyer_landmass >= 0
+				? sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
+			const int local_port_sellers = buyer_landmass >= 0
+				? port_sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
+			const int reachable_sellers = local_sellers + (buyer_port >= 0
+				? port_sellers_total - local_port_sellers : 0);
+			if (reachable_sellers <= 0) {
+				continue;
+			}
+			plan.active = true;
+
+			if (exhaustive) {
+				// Mundo pequeno: todas as cidades vendedoras em ordem crescente,
+				// sem partial_sort e sem mercado externo (como hoje).
+				plan.ring.reserve(city_count);
+				for (std::size_t si = 0; si < city_count; ++si) {
+					if (static_cast<int>(si) != buyer.index && sellable_ge[si] > 1e-9) {
+						plan.ring.push_back(
+							FoodRingEntry{static_cast<int>(si), 0, 0.0});
+					}
+				}
+			} else {
+				// O plano guarda `min(k_neighbors, reachable)` entradas MAIS a
+				// folga: um superconjunto do que a liquidação consome, mesmo que
+				// parte dos vendedores se esgote durante o dia.
+				const int wanted_max = std::min(k_neighbors, reachable_sellers);
+				int next_radius = 0;
+				tail.budget = scan_ring(buyer, wanted_max + kFoodPlanSlack,
+					0 /* para na fronteira */, 0 /* desde o raio 0 */,
+					kFoodScanBudget, next_radius, plan.ring_complete, plan.ring);
+				tail.radius = next_radius;
+				// Mercado externo: as M ofertas mais baratas por caloria de cada
+				// alimento da cesta (o resto do mundo, do ponto de vista do
+				// comprador).
+				for (int slot = 0;
+						slot < static_cast<int>(ws_.food_products.size()); ++slot) {
+					const std::vector<int>& list =
+						offers_by_slot[static_cast<std::size_t>(slot)];
+					const int limit = std::min(k_external, static_cast<int>(list.size()));
+					for (int i = 0; i < limit; ++i) {
+						const int si = list[static_cast<std::size_t>(i)];
+						if (si != buyer.index) {
+							plan.ext.push_back(si);
+						}
+					}
+				}
+				plan.ext_sorted.assign(plan.ext.begin(), plan.ext.end());
+				std::sort(plan.ext_sorted.begin(), plan.ext_sorted.end());
+				plan.ext_sorted.erase(
+					std::unique(plan.ext_sorted.begin(), plan.ext_sorted.end()),
+					plan.ext_sorted.end());
+			}
+
+			// Universo do plano na MESMA ordem de entrada do laço de hoje:
+			// crescente por índice de vendedor e, dentro dele, slots da cesta.
+			plan.universe.reserve(plan.ring.size() + plan.ext_sorted.size());
+			for (const FoodRingEntry& entry : plan.ring) {
+				plan.universe.push_back(entry.seller);
+			}
+			plan.universe.insert(plan.universe.end(), plan.ext_sorted.begin(),
+				plan.ext_sorted.end());
+			std::sort(plan.universe.begin(), plan.universe.end());
+			plan.universe.erase(
+				std::unique(plan.universe.begin(), plan.universe.end()),
+				plan.universe.end());
+			for (const int si : plan.universe) {
+				append_seller_offers(buyer, si, plan.offers);
+			}
+			// A7c: o plano já guarda as ofertas na ORDEM DE CUSTO do dia. O
+			// `stable_sort` que a liquidação serial fazia por comprador roda aqui,
+			// uma vez, na fase PARALELA e só-leitura (a liquidação só percorre e
+			// filtra). É o mesmo `stable_sort` sobre a mesma entrada (vendedor
+			// crescente, depois slots da cesta), agora sobre o universo do plano —
+			// filtrar depois um prefixo de candidatos preserva a ordem relativa
+			// dos empates, que é tudo o que o `stable_sort` de hoje usa para
+			// desempatar (ver o comentário do caminho rápido da liquidação).
+			std::stable_sort(plan.offers.begin(), plan.offers.end(),
+				[](const FoodOffer& left, const FoodOffer& right) {
+					return left.unit_cost_per_ge < right.unit_cost_per_ge;
+				});
+		}
+	});
+	}
+
+	{
+	OGS_SIM_ZONE(kPhaseTradeFoodSettle);
+	// A7c: marcas de candidato do dia. Uma passada O(cidades) por dia; depois,
+	// `food_candidate_stamp_[vendedor] == bi + 1` responde O(1) "é candidato
+	// deste comprador?" sem `binary_search` por oferta.
+	if (food_candidate_stamp_.size() < city_count) {
+		food_candidate_stamp_.resize(city_count, 0);
+	}
+	std::fill_n(food_candidate_stamp_.begin(), city_count, 0);
+	for (std::size_t bi = 0; bi < buyers.size(); ++bi) {
 		if (sellers_left <= 0) {
 			break;  // todo o excedente do dia já foi vendido
 		}
-		double remaining = buyer.gap;  // toneladas-equivalentes de grão
-
-		// Ofertas: cada (vendedor, alimento) com excedente vendável, ordenadas
-		// pelo custo calórico entregue (preço + frete) / fator calórico.
-		struct Offer {
-			int seller_index;
-			int product;
-			double factor;
-			double price;          // preço na âncora XGS (mercado do vendedor)
-			double origin_anchor;  // preço × competitividade float do vendedor
-			double unit_freight;   // frete em âncora
-			double unit_tariff;    // tarifa em âncora
-			double delivered;      // preço entregue na moeda do comprador (exibição)
-			double unit_cost_per_ge;  // âncora por tonelada-equivalente de grão
-		};
-
-		// Candidatos do comprador: K vendedores mais próximos + mercado externo.
-		// Rota possível? Na mesma massa de terra, caminhão direto; entre massas,
-		// só com porto nas duas pontas. Comprador sem nenhum vendedor alcançável
-		// não gera oferta: sair aqui evita varrer a grade inteira por dia.
-		const int buyer_port = city_port[static_cast<std::size_t>(buyer.index)];
-		const int buyer_landmass = buyer.city->landmass_index;
-		const int local_sellers = buyer_landmass >= 0
-			? sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
-		const int local_port_sellers = buyer_landmass >= 0
-			? port_sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
-		const int reachable_sellers = local_sellers + (buyer_port >= 0
-			? port_sellers_total - local_port_sellers : 0);
-		if (reachable_sellers <= 0) {
+		const FoodBuyer& buyer = buyers[bi];
+		const FoodTradePlan& plan = food_plans_[bi];
+		if (!plan.active) {
 			continue;
 		}
-		std::vector<int> candidates;
-		if (exhaustive) {
-			candidates.reserve(city_count);
-			for (std::size_t si = 0; si < city_count; ++si) {
-				if (static_cast<int>(si) != buyer.index && sellable_ge[si] > 1e-9) {
-					candidates.push_back(static_cast<int>(si));
+		double remaining = buyer.gap;  // toneladas-equivalentes de grão
+
+		// 1-2. Replay do anel do plano: percorre as entradas na ordem exata de
+		// varredura, pula o vendedor já esgotado AGORA, conta os sobreviventes e
+		// repete o teste `count >= wanted` a cada fronteira de raio (o `wanted`
+		// do momento já embute `sellers_left`). Depois, o `partial_sort` pelas
+		// distâncias JÁ calculadas (mesma comparação, mesma permutação).
+		if (plan.exhaustive) {
+			food_candidates_.clear();
+			food_candidates_.reserve(plan.ring.size());
+			for (const FoodRingEntry& entry : plan.ring) {
+				if (sellable_ge[static_cast<std::size_t>(entry.seller)] > 1e-9) {
+					food_candidates_.push_back(entry.seller);
 				}
 			}
 		} else {
-			const int bx = std::clamp(
-				static_cast<int>(buyer.city->center.x / cell), 0, grid_w - 1);
-			const int by = std::clamp(
-				static_cast<int>(buyer.city->center.y / cell), 0, grid_h - 1);
-			// Raio máximo ÚTIL: distância de Chebyshev até o canto mais distante
-			// da grade. Antes era max(grid_w, grid_h), ou seja, o anel continuava
-			// varrendo células vazias muito além do mapa: com grade 157×79 e
-			// menos de K vendedores no mundo, cada comprador percorria ~5,2 M
-			// células (O(raio³) acumulado) — a rodada ficava minutos parada.
-			//
-			// Teto ECONÔMICO (regra do porto): sem porto só há caminhão, cujo
-			// frete já supera o preço do alimento bem antes de 2.000 km (~8
-			// células de 250 km). Com porto, o navio é 5× mais barato e o anel
-			// cobre o globo. Sem esse teto, um comprador sem rota marítima
-			// varria a grade inteira todos os dias atrás de vendedores que nunca
-			// seriam competitivos.
-			const int ring_radius_limit = buyer_port >= 0 ? 48 : 8;
-			const int max_radius = std::min(std::max(
-				std::max(bx, grid_w - 1 - bx), std::max(by, grid_h - 1 - by)),
-				ring_radius_limit);
+			const int buyer_port = city_port[static_cast<std::size_t>(buyer.index)];
+			const int buyer_landmass = buyer.city->landmass_index;
+			const int local_sellers = buyer_landmass >= 0
+				? sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
+			const int local_port_sellers = buyer_landmass >= 0
+				? port_sellers_in_landmass[static_cast<std::size_t>(buyer_landmass)] : 0;
+			const int reachable_sellers = local_sellers + (buyer_port >= 0
+				? port_sellers_total - local_port_sellers : 0);
 			const int wanted = std::min(k_neighbors,
 				std::min(sellers_left, reachable_sellers));
-			// Limite de segurança: nenhum comprador visita mais células que a
-			// grade inteira. Com oferta escassa (fim do dia, porto bloqueando
-			// rotas), o anel tentava provar que não havia mais ninguém até o
-			// fim do mapa para cada comprador; 1.024 células (raio ~16, ~4.000
-			// km) já cobrem o alcance econômico — além dele entra o mercado
-			// externo (M ofertas mais baratas do globo), que é anexado sempre.
-			int cells_budget = std::min(grid_w * grid_h, 1024);
-			auto scan_cell = [&](int ix, int iy) {
-				if (ix < 0 || ix >= grid_w || iy < 0 || iy >= grid_h || cells_budget <= 0) {
-					return;
-				}
-				--cells_budget;
-				const std::size_t cell_offset =
-					static_cast<std::size_t>(iy * grid_w + ix);
-				if (cell_has_seller[cell_offset] == 0) {
-					return;
-				}
-				for (const int si : grid[cell_offset]) {
-					if (si == buyer.index || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
-						continue;
+			food_ring_live_.clear();
+			int count = 0;
+			int current_radius = -1;
+			bool stopped = false;
+			for (const FoodRingEntry& entry : plan.ring) {
+				if (entry.radius != current_radius) {
+					// Fronteira de raio: é AQUI que o dia decide parar.
+					if (count >= wanted) {
+						stopped = true;
+						break;
 					}
-					// Sem porto, a cidade só compra dentro da própria massa de
-					// terra: vendedores do outro lado do mar não são candidatos.
-					if (buyer_port < 0
-							&& !same_landmass_city(
-								ws_.cities[static_cast<std::size_t>(si)],
-								*buyer.city)) {
-						continue;
-					}
-					candidates.push_back(si);
+					current_radius = entry.radius;
 				}
-			};
-			for (int radius = 0; radius <= max_radius && cells_budget > 0; ++radius) {
-				if (static_cast<int>(candidates.size()) >= wanted) {
-					break;
-				}
-				// Só o PERÍMETRO do anel (4 lados, cantos uma vez só): O(raio)
-				// por anel em vez de O(raio²) com `continue` nas células internas.
-				for (int ix = bx - radius; ix <= bx + radius; ++ix) {
-					scan_cell(ix, by - radius);
-					if (radius > 0) {
-						scan_cell(ix, by + radius);
-					}
-				}
-				for (int iy = by - radius + 1; iy <= by + radius - 1; ++iy) {
-					scan_cell(bx - radius, iy);
-					if (radius > 0) {
-						scan_cell(bx + radius, iy);
-					}
+				if (sellable_ge[static_cast<std::size_t>(entry.seller)] > 1e-9) {
+					food_ring_live_.push_back(entry);
+					++count;
 				}
 			}
-			if (static_cast<int>(candidates.size()) > k_neighbors) {
-				std::partial_sort(candidates.begin(),
-					candidates.begin() + k_neighbors, candidates.end(),
-					[this, &buyer](int l, int r) {
-						return distance_km(ws_.cities[static_cast<std::size_t>(l)].center,
-								buyer.city->center)
-							< distance_km(ws_.cities[static_cast<std::size_t>(r)].center,
-								buyer.city->center);
+			if (!stopped && !plan.ring_complete) {
+				// O plano foi cortado pelo teto na MESMA fronteira de raio em que
+				// a varredura dele parou, então o teste de hoje vale aqui também.
+				if (count >= wanted) {
+					stopped = true;
+				} else {
+					// O dia precisa de mais entradas do que o plano guardou:
+					// CONTINUA a passada única de hoje a partir da fronteira em
+					// que ela parou (A7b) — mesmas células, mesma ordem, mesmo
+					// `wanted` do momento e o orçamento de células que sobrou do
+					// plano. As entradas já acumuladas contam no teste
+					// `out.size() >= wanted` do topo do laço, e o raio 0 nunca é
+					// refeito. Candidato fora do universo do plano é detectado
+					// pelo `all_planned` abaixo.
+					const FoodScanTail& tail = scan_tails[bi];
+					int next_radius = tail.radius;  // saídas da varredura:
+					bool complete = true;           // não usadas aqui
+					scan_ring(buyer, wanted, 0 /* para onde o dia pararia */,
+						tail.radius, tail.budget, next_radius, complete,
+						food_ring_live_);
+				}
+			}
+			if (static_cast<int>(food_ring_live_.size()) > k_neighbors) {
+				std::partial_sort(food_ring_live_.begin(),
+					food_ring_live_.begin() + k_neighbors, food_ring_live_.end(),
+					[](const FoodRingEntry& left, const FoodRingEntry& right) {
+						return left.distance_km < right.distance_km;
 					});
-				candidates.resize(static_cast<std::size_t>(k_neighbors));
+				food_ring_live_.resize(static_cast<std::size_t>(k_neighbors));
 			}
-			// Mercado externo: as M ofertas mais baratas por caloria de cada
-			// alimento da cesta (o resto do mundo, do ponto de vista do comprador).
-			for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-				const std::vector<int>& list = offers_by_slot[slot];
-				const int limit = std::min(k_external, static_cast<int>(list.size()));
-				for (int i = 0; i < limit; ++i) {
-					if (list[static_cast<std::size_t>(i)] != buyer.index) {
-						candidates.push_back(list[static_cast<std::size_t>(i)]);
-					}
-				}
-			}
-			std::sort(candidates.begin(), candidates.end());
-			candidates.erase(std::unique(candidates.begin(), candidates.end()),
-				candidates.end());
-		}
-
-		std::vector<Offer> offers;
-		offers.reserve(candidates.size() * ws_.food_products.size());
-		for (const int si : candidates) {
-			City& seller = ws_.cities[static_cast<std::size_t>(si)];
-			if (&seller == buyer.city || sellable_ge[static_cast<std::size_t>(si)] <= 1e-9) {
-				continue;
-			}
-			const bool seller_same_landmass = same_landmass_city(seller, *buyer.city);
-			double unit_freight = 0.0;
-			if (seller_same_landmass) {
-				unit_freight = leg_unit_freight_food(TransportMode::Truck,
-					distance_km(seller.center, buyer.city->center));
-			} else {
-				// Travessia marítima só entre nações COM porto na massa de terra
-				// de cada cidade: cidade→porto (caminhão) + porto→porto (navio) +
-				// porto→cidade (caminhão). Sem porto de um dos lados, não há
-				// oferta: a nação só comercia por terra com vizinhos.
-				const int seller_port = city_port[static_cast<std::size_t>(si)];
-				const int buyer_port = city_port[buyer.index];
-				if (seller_port < 0 || buyer_port < 0) {
-					continue;
-				}
-				const Port& sp = ws_.ports[static_cast<std::size_t>(seller_port)];
-				const Port& bp = ws_.ports[static_cast<std::size_t>(buyer_port)];
-				unit_freight =
-					leg_unit_freight_food(TransportMode::Truck,
-						city_to_port_dist[static_cast<std::size_t>(si)])
-					+ leg_unit_freight_food(TransportMode::Ship,
-						distance_km(sp.center, bp.center))
-					+ leg_unit_freight_food(TransportMode::Truck,
-						city_to_port_dist[static_cast<std::size_t>(buyer.index)]);
-			}
-			for (int slot = 0; slot < static_cast<int>(ws_.food_products.size()); ++slot) {
-				const int product = food_product(slot);
-				const double factor = food_calories(product);
-				if (factor <= 0.0) {
-					continue;
-				}
-				// Vendável deste produto, limitado pelo excedente total da cidade
-				// (acima da cobertura) e pelo estoque físico.
-				const double sellable_tons = std::min(
-					seller.markets[product].stock,
-					sellable_ge[static_cast<std::size_t>(si)] / factor);
-				if (sellable_tons <= 1e-9) {
-					continue;
-				}
-				const double price = seller.markets[product].price;
-				if (price <= 0.0) {
-					continue;
-				}
-				const double origin_anchor =
-					price * city_competitive[static_cast<std::size_t>(si)];
-				const double tariff_factor =
-					tariff_rate_cities(*buyer.city, seller, product);
-				const double unit_tariff =
-					(origin_anchor + unit_freight) * tariff_factor;
-				// Valor entregue em âncora: é ele que ordena a oferta (sem
-				// round-trip de câmbio). A moeda do comprador só divide para
-				// exibição — é fator comum, não muda a ordem.
-				const double delivered_anchor =
-					origin_anchor + unit_freight + unit_tariff;
-				const double buyer_fx = city_fx[static_cast<std::size_t>(buyer.index)];
-				const double delivered =
-					delivered_anchor / std::max(1e-9, buyer_fx);
-				const double unit_cost_per_ge = delivered_anchor / factor;
-				offers.push_back({si, product, factor, price, origin_anchor,
-					unit_freight, unit_tariff, delivered, unit_cost_per_ge});
+			food_candidates_.clear();
+			food_candidates_.reserve(food_ring_live_.size());
+			for (const FoodRingEntry& entry : food_ring_live_) {
+				food_candidates_.push_back(entry.seller);
 			}
 		}
-		std::stable_sort(offers.begin(), offers.end(),
-			[](const Offer& left, const Offer& right) {
-				return left.unit_cost_per_ge < right.unit_cost_per_ge;
-			});
+		// 3. União ascendente e única com o mercado externo pré-ordenado.
+		std::sort(food_candidates_.begin(), food_candidates_.end());
+		food_candidates_union_.clear();
+		std::set_union(food_candidates_.begin(), food_candidates_.end(),
+			plan.ext_sorted.begin(), plan.ext_sorted.end(),
+			std::back_inserter(food_candidates_union_));
 
-		for (const Offer& offer : offers) {
+		// 4. Ofertas do dia, na ordem de custo — que o PLANO já tem.
+		// O plano cobre o universo do comprador? (vendedor sem oferta nenhuma
+		// simplesmente não tem oferta no plano — isso NÃO é plano cortado.) A
+		// retomada da varredura pode trazer vendedor fora do universo do plano;
+		// aí as ofertas são montadas pela MESMA função, na mesma ordem.
+		bool all_planned = true;
+		for (const int si : food_candidates_union_) {
+			if (!std::binary_search(plan.universe.begin(), plan.universe.end(), si)) {
+				all_planned = false;
+				break;
+			}
+		}
+		// `food_offers_live_` é a lista de ofertas do comprador na ordem em que o
+		// laço serial de hoje as percorre, por PONTEIRO: o corpo da liquidação
+		// (abaixo, byte a byte o de sempre) roda uma vez só, servindo aos dois
+		// caminhos.
+		food_offers_live_.clear();
+		if (all_planned) {
+			// Caminho normal (A7c): NÃO copia bloco nem ordena. `plan.offers` já
+			// está na ordem de custo do dia (o `stable_sort` foi pago na fase
+			// paralela); aqui é só percorrer e filtrar pela marca de candidato do
+			// comprador — O(1) por oferta, sem `binary_search`.
+			//
+			// Bit-exatidão: hoje o vetor é montado na ordem de candidato
+			// ascendente (vendedor crescente, slots da cesta) e ordenado por
+			// `stable_sort` pelo custo. O plano guarda as ofertas do UNIVERSO do
+			// comprador naquela mesma ordem ascendente de vendedor e recebeu o
+			// MESMO `stable_sort`; como o conjunto de candidatos é um subconjunto
+			// do universo e ambos estão em ordem ascendente de índice,
+			// `candidatos` é uma SUBSEQUÊNCIA de `universo`. `stable_sort` é
+			// estável e só compara custo: filtrar a lista já ordenada por custo
+			// pela pertinência ao subconjunto preserva a ordem relativa de TODOS
+			// os pares de ofertas (para custos diferentes a ordem vem do custo;
+			// para custos iguais vem da entrada, e a sub-sequência mantém a
+			// entrada). Logo o resultado é a mesma sequência que o `stable_sort`
+			// de hoje produz sobre os candidatos.
+			const int stamp = static_cast<int>(bi) + 1;
+			for (const int si : food_candidates_union_) {
+				food_candidate_stamp_[static_cast<std::size_t>(si)] = stamp;
+			}
+			food_offers_live_.reserve(plan.offers.size());
+			for (const FoodOffer& offer : plan.offers) {
+				if (food_candidate_stamp_[static_cast<std::size_t>(offer.seller_index)]
+						== stamp) {
+					food_offers_live_.push_back(&offer);
+				}
+			}
+		} else {
+			// Caminho lento (raro): monta as ofertas na ordem de candidato com a
+			// MESMA função (mesmos números) e faz o `stable_sort` do dia — como
+			// hoje. Nada de merge com o que o plano tinha em ordem de custo.
+			food_offers_settle_.clear();
+			food_offers_settle_.reserve(
+				food_candidates_union_.size() * ws_.food_products.size());
+			for (const int si : food_candidates_union_) {
+				append_seller_offers(buyer, si, food_offers_settle_);
+			}
+			// Ordem de custo do dia: o `stable_sort` do laço serial original. O
+			// empate preserva a ordem de entrada (vendedor crescente, depois slots
+			// da cesta), que é a ordem de montagem acima.
+			std::stable_sort(food_offers_settle_.begin(), food_offers_settle_.end(),
+				[](const FoodOffer& left, const FoodOffer& right) {
+					return left.unit_cost_per_ge < right.unit_cost_per_ge;
+				});
+			food_offers_live_.reserve(food_offers_settle_.size());
+			for (const FoodOffer& offer : food_offers_settle_) {
+				food_offers_live_.push_back(&offer);
+			}
+		}
+
+		// 5. Liquidação: o laço de sempre (orçamento, frota, porto, pedidos).
+		for (const FoodOffer* const offer_ptr : food_offers_live_) {
+			const FoodOffer& offer = *offer_ptr;
 			if (remaining <= 1e-9 || shipments >= kMaxShipmentsPerDay) {
 				break;
 			}
@@ -768,6 +1075,7 @@ void SimCore::trade_food() {
 			++shipments;
 		}
 		}
+		}
 	}
 }
 void SimCore::trade_goods() {
@@ -781,6 +1089,10 @@ void SimCore::trade_goods() {
 		return;
 	}
 	OGS_SIM_ZONE(kPhaseTradeGoods);
+	// Zonas acumuladoras por comprador (A7): zeram antes do laço do dia.
+	OGS_SIM_PHASE_RESET(kPhaseTradeGoodsCand);
+	OGS_SIM_PHASE_RESET(kPhaseTradeGoodsOffers);
+	OGS_SIM_PHASE_RESET(kPhaseTradeGoodsSettle);
 	const std::size_t city_count = ws_.cities.size();
 	// Necessidade diária de insumo por cidade/produto (capacidade nominal,
 	// não a produção do dia: o estoque-alvo é o que mantém a fábrica operando).
@@ -949,6 +1261,8 @@ void SimCore::trade_goods() {
 			}
 			// Candidatos: K vizinhos vendedores + M ofertas mais baratas.
 			std::vector<int> candidates;
+			{
+			OGS_SIM_ZONE_ADD(kPhaseTradeGoodsCand);
 			const int bx = std::clamp(
 				static_cast<int>(buyer_city.center.x / cell), 0, grid_w - 1);
 			const int by = std::clamp(
@@ -1000,6 +1314,7 @@ void SimCore::trade_goods() {
 			std::sort(candidates.begin(), candidates.end());
 			candidates.erase(std::unique(candidates.begin(), candidates.end()),
 				candidates.end());
+			}
 			struct Offer {
 				int seller_index;
 				double unit_cost;      // âncora: origem + frete + tarifa (ordena)
@@ -1009,6 +1324,8 @@ void SimCore::trade_goods() {
 				double delivered;      // moeda do comprador (exibição)
 			};
 			std::vector<Offer> offers;
+			{
+			OGS_SIM_ZONE_ADD(kPhaseTradeGoodsOffers);
 			offers.reserve(candidates.size());
 			for (const int si : candidates) {
 				City& seller = ws_.cities[static_cast<std::size_t>(si)];
@@ -1057,6 +1374,9 @@ void SimCore::trade_goods() {
 				[](const Offer& left, const Offer& right) {
 					return left.unit_cost < right.unit_cost;
 				});
+			}
+			{
+			OGS_SIM_ZONE_ADD(kPhaseTradeGoodsSettle);
 			for (const Offer& offer : offers) {
 				if (remaining <= 1e-9 || shipments >= kMaxShipmentsPerDay) {
 					break;
@@ -1259,6 +1579,7 @@ void SimCore::trade_goods() {
 				in_transit[buyer_offset] += amount;
 				remaining -= amount;
 				++shipments;
+			}
 			}
 		}
 		}
