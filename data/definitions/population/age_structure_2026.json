@@ -1,0 +1,3686 @@
+{
+  "version": 1,
+  "dataset": "population_age_structure_2026",
+  "source": "UN DESA Population Division, World Population Prospects 2024 (WPP2024), Standard Projections, Medium variant, ano 2026",
+  "url": "https://population.un.org/wpp/",
+  "retrieved": "2026-11-17",
+  "year": 2026,
+  "variant": "Medium",
+  "units": {
+    "bands": "fracao da populacao total (soma = 1)",
+    "frac_18_49": "fracao da populacao total com 18 a 49 anos",
+    "tfr_2026": "nascimentos por mulher",
+    "cbr_per_1000": "nascimentos por mil habitantes",
+    "cdr_per_1000": "obitos por mil habitantes",
+    "population_un_2026": "pessoas (WPP2024, 1 de julho)"
+  },
+  "bands": [
+    {
+      "key": "age_0_14",
+      "min_age": 0,
+      "max_age": 14
+    },
+    {
+      "key": "age_15_24",
+      "min_age": 15,
+      "max_age": 24
+    },
+    {
+      "key": "age_25_44",
+      "min_age": 25,
+      "max_age": 44
+    },
+    {
+      "key": "age_45_64",
+      "min_age": 45,
+      "max_age": 64
+    },
+    {
+      "key": "age_65_plus",
+      "min_age": 65,
+      "max_age": 200
+    }
+  ],
+  "files": [
+    {
+      "file": "WPP2024_PopulationByAge5GroupSex_Medium.csv.gz",
+      "role": "faixas de 5 anos por sexo, ambos os sexos usados (PopTotal)",
+      "url": "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_PopulationByAge5GroupSex_Medium.csv.gz",
+      "bytes": 29948947,
+      "sha256": "a04d7d1486a5eb2832cc812d599448f0a71e8ac9e1e7e6fa4066673d6a2487cd"
+    },
+    {
+      "file": "WPP2024_PopulationBySingleAgeSex_Medium_2024-2100.csv.gz",
+      "role": "idade simples 0..100+, usado so para a fracao 18-49",
+      "url": "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_PopulationBySingleAgeSex_Medium_2024-2100.csv.gz",
+      "bytes": 66954143,
+      "sha256": "31804a296b663716236cd26c46415271cc9386fb3b2be56aff6467ad32283dc8"
+    },
+    {
+      "file": "WPP2024_Demographic_Indicators_Medium.csv.gz",
+      "role": "TFR, CBR, CDR, populacao total de 1 de julho",
+      "url": "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz",
+      "bytes": 16557272,
+      "sha256": "286ac36bb1415e2e1ade03acfef0a29f0e4c087e2f78e38c48f50c5df89082bc"
+    }
+  ],
+  "sha256": {
+    "WPP2024_PopulationByAge5GroupSex_Medium.csv.gz": "a04d7d1486a5eb2832cc812d599448f0a71e8ac9e1e7e6fa4066673d6a2487cd",
+    "WPP2024_PopulationBySingleAgeSex_Medium_2024-2100.csv.gz": "31804a296b663716236cd26c46415271cc9386fb3b2be56aff6467ad32283dc8",
+    "WPP2024_Demographic_Indicators_Medium.csv.gz": "286ac36bb1415e2e1ade03acfef0a29f0e4c087e2f78e38c48f50c5df89082bc"
+  },
+  "coverage": {
+    "nations_total": 179,
+    "nations_with_data": 179,
+    "by_method": {
+      "direct": 175,
+      "iso_alias": 3,
+      "proxy_parent": 1
+    }
+  },
+  "code_resolution": {
+    "NED": {
+      "un_code": "NLD",
+      "method": "iso_alias"
+    },
+    "PSX": {
+      "un_code": "PSE",
+      "method": "iso_alias"
+    },
+    "SAH": {
+      "un_code": "ESH",
+      "method": "iso_alias"
+    },
+    "SOL": {
+      "un_code": "SOM",
+      "method": "proxy_parent"
+    }
+  },
+  "nations": {
+    "AFG": {
+      "bands": {
+        "age_0_14": 0.422165808,
+        "age_15_24": 0.209050596,
+        "age_25_44": 0.24823781,
+        "age_45_64": 0.096020327,
+        "age_65_plus": 0.02452546
+      },
+      "frac_18_49": 0.422486729,
+      "tfr_2026": 4.5622,
+      "cbr_per_1000": 33.759,
+      "cdr_per_1000": 5.517,
+      "population_un_2026": 45047068,
+      "un_code": "AFG",
+      "un_location": "Afghanistan",
+      "un_locid": "4",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "AGO": {
+      "bands": {
+        "age_0_14": 0.438242933,
+        "age_15_24": 0.195632773,
+        "age_25_44": 0.231225329,
+        "age_45_64": 0.105511802,
+        "age_65_plus": 0.029387162
+      },
+      "frac_18_49": 0.395250624,
+      "tfr_2026": 4.8889,
+      "cbr_per_1000": 36.331,
+      "cdr_per_1000": 6.687,
+      "population_un_2026": 40215180,
+      "un_code": "AGO",
+      "un_location": "Angola",
+      "un_locid": "24",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ALB": {
+      "bands": {
+        "age_0_14": 0.163327428,
+        "age_15_24": 0.119903265,
+        "age_25_44": 0.295539192,
+        "age_45_64": 0.237963218,
+        "age_65_plus": 0.183266898
+      },
+      "frac_18_49": 0.434901379,
+      "tfr_2026": 1.3228,
+      "cbr_per_1000": 9.671,
+      "cdr_per_1000": 8.812,
+      "population_un_2026": 2751025,
+      "un_code": "ALB",
+      "un_location": "Albania",
+      "un_locid": "8",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ARE": {
+      "bands": {
+        "age_0_14": 0.159149872,
+        "age_15_24": 0.12530246,
+        "age_25_44": 0.529214844,
+        "age_45_64": 0.168034264,
+        "age_65_plus": 0.01829856
+      },
+      "frac_18_49": 0.697450833,
+      "tfr_2026": 1.2079,
+      "cbr_per_1000": 10.309,
+      "cdr_per_1000": 0.96,
+      "population_un_2026": 11574682,
+      "un_code": "ARE",
+      "un_location": "United Arab Emirates",
+      "un_locid": "784",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ARG": {
+      "bands": {
+        "age_0_14": 0.204210754,
+        "age_15_24": 0.154389449,
+        "age_25_44": 0.293334826,
+        "age_45_64": 0.219564073,
+        "age_65_plus": 0.128500898
+      },
+      "frac_18_49": 0.466788847,
+      "tfr_2026": 1.5069,
+      "cbr_per_1000": 11.09,
+      "cdr_per_1000": 7.857,
+      "population_un_2026": 46003734,
+      "un_code": "ARG",
+      "un_location": "Argentina",
+      "un_locid": "32",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ARM": {
+      "bands": {
+        "age_0_14": 0.186953157,
+        "age_15_24": 0.124956157,
+        "age_25_44": 0.296178396,
+        "age_45_64": 0.240122201,
+        "age_65_plus": 0.151790089
+      },
+      "frac_18_49": 0.447555681,
+      "tfr_2026": 1.7117,
+      "cbr_per_1000": 11.496,
+      "cdr_per_1000": 9.496,
+      "population_un_2026": 2930915,
+      "un_code": "ARM",
+      "un_location": "Armenia",
+      "un_locid": "51",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ATG": {
+      "bands": {
+        "age_0_14": 0.172242888,
+        "age_15_24": 0.136270448,
+        "age_25_44": 0.297036818,
+        "age_45_64": 0.265566217,
+        "age_65_plus": 0.128883629
+      },
+      "frac_18_49": 0.458429317,
+      "tfr_2026": 1.5694,
+      "cbr_per_1000": 11.405,
+      "cdr_per_1000": 7.239,
+      "population_un_2026": 94626,
+      "un_code": "ATG",
+      "un_location": "Antigua and Barbuda",
+      "un_locid": "28",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "AUS": {
+      "bands": {
+        "age_0_14": 0.175189151,
+        "age_15_24": 0.122578621,
+        "age_25_44": 0.279267709,
+        "age_45_64": 0.238306236,
+        "age_65_plus": 0.184658284
+      },
+      "frac_18_49": 0.426958629,
+      "tfr_2026": 1.6394,
+      "cbr_per_1000": 11.141,
+      "cdr_per_1000": 6.869,
+      "population_un_2026": 27227096,
+      "un_code": "AUS",
+      "un_location": "Australia",
+      "un_locid": "36",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "AUT": {
+      "bands": {
+        "age_0_14": 0.140541174,
+        "age_15_24": 0.099998935,
+        "age_25_44": 0.26026348,
+        "age_45_64": 0.282913414,
+        "age_65_plus": 0.216282997
+      },
+      "frac_18_49": 0.395886867,
+      "tfr_2026": 1.3361,
+      "cbr_per_1000": 8.175,
+      "cdr_per_1000": 10.286,
+      "population_un_2026": 9107266,
+      "un_code": "AUT",
+      "un_location": "Austria",
+      "un_locid": "40",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "AZE": {
+      "bands": {
+        "age_0_14": 0.205882299,
+        "age_15_24": 0.144738182,
+        "age_25_44": 0.316508585,
+        "age_45_64": 0.235080595,
+        "age_65_plus": 0.097790338
+      },
+      "frac_18_49": 0.478812093,
+      "tfr_2026": 1.6617,
+      "cbr_per_1000": 11.442,
+      "cdr_per_1000": 6.862,
+      "population_un_2026": 10454855,
+      "un_code": "AZE",
+      "un_location": "Azerbaijan",
+      "un_locid": "31",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BDI": {
+      "bands": {
+        "age_0_14": 0.432233639,
+        "age_15_24": 0.21120527,
+        "age_25_44": 0.23463709,
+        "age_45_64": 0.096320842,
+        "age_65_plus": 0.025603159
+      },
+      "frac_18_49": 0.407871893,
+      "tfr_2026": 4.5659,
+      "cbr_per_1000": 32.02,
+      "cdr_per_1000": 6.577,
+      "population_un_2026": 14729157,
+      "un_code": "BDI",
+      "un_location": "Burundi",
+      "un_locid": "108",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BEL": {
+      "bands": {
+        "age_0_14": 0.154125777,
+        "age_15_24": 0.118452508,
+        "age_25_44": 0.251580706,
+        "age_45_64": 0.262096354,
+        "age_65_plus": 0.213744655
+      },
+      "frac_18_49": 0.398937582,
+      "tfr_2026": 1.3967,
+      "cbr_per_1000": 8.566,
+      "cdr_per_1000": 9.844,
+      "population_un_2026": 11774642,
+      "un_code": "BEL",
+      "un_location": "Belgium",
+      "un_locid": "56",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BEN": {
+      "bands": {
+        "age_0_14": 0.409417433,
+        "age_15_24": 0.197401206,
+        "age_25_44": 0.248993189,
+        "age_45_64": 0.11224568,
+        "age_65_plus": 0.031942493
+      },
+      "frac_18_49": 0.418645496,
+      "tfr_2026": 4.3394,
+      "cbr_per_1000": 32.576,
+      "cdr_per_1000": 8.555,
+      "population_un_2026": 15170420,
+      "un_code": "BEN",
+      "un_location": "Benin",
+      "un_locid": "204",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BFA": {
+      "bands": {
+        "age_0_14": 0.405190983,
+        "age_15_24": 0.212014129,
+        "age_25_44": 0.249234077,
+        "age_45_64": 0.106365698,
+        "age_65_plus": 0.027195113
+      },
+      "frac_18_49": 0.427626848,
+      "tfr_2026": 3.9146,
+      "cbr_per_1000": 30.401,
+      "cdr_per_1000": 7.773,
+      "population_un_2026": 24601700,
+      "un_code": "BFA",
+      "un_location": "Burkina Faso",
+      "un_locid": "854",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BGD": {
+      "bands": {
+        "age_0_14": 0.273277445,
+        "age_15_24": 0.187095448,
+        "age_25_44": 0.302968572,
+        "age_45_64": 0.168256763,
+        "age_65_plus": 0.068401771
+      },
+      "frac_18_49": 0.488084519,
+      "tfr_2026": 2.0899,
+      "cbr_per_1000": 19.165,
+      "cdr_per_1000": 5.137,
+      "population_un_2026": 177818044,
+      "un_code": "BGD",
+      "un_location": "Bangladesh",
+      "un_locid": "50",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BGR": {
+      "bands": {
+        "age_0_14": 0.14336516,
+        "age_15_24": 0.099845988,
+        "age_25_44": 0.242032174,
+        "age_45_64": 0.290134513,
+        "age_65_plus": 0.224622165
+      },
+      "frac_18_49": 0.386458794,
+      "tfr_2026": 1.7413,
+      "cbr_per_1000": 8.9,
+      "cdr_per_1000": 15.333,
+      "population_un_2026": 6667660,
+      "un_code": "BGR",
+      "un_location": "Bulgaria",
+      "un_locid": "100",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BHR": {
+      "bands": {
+        "age_0_14": 0.181613584,
+        "age_15_24": 0.124030332,
+        "age_25_44": 0.449349894,
+        "age_45_64": 0.203123825,
+        "age_65_plus": 0.041882364
+      },
+      "frac_18_49": 0.619780218,
+      "tfr_2026": 1.7679,
+      "cbr_per_1000": 11.856,
+      "cdr_per_1000": 2.233,
+      "population_un_2026": 1675572,
+      "un_code": "BHR",
+      "un_location": "Bahrain",
+      "un_locid": "48",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BHS": {
+      "bands": {
+        "age_0_14": 0.172414731,
+        "age_15_24": 0.142649192,
+        "age_25_44": 0.305165967,
+        "age_45_64": 0.255268406,
+        "age_65_plus": 0.124501704
+      },
+      "frac_18_49": 0.472360207,
+      "tfr_2026": 1.3568,
+      "cbr_per_1000": 10.547,
+      "cdr_per_1000": 8.993,
+      "population_un_2026": 404628,
+      "un_code": "BHS",
+      "un_location": "Bahamas",
+      "un_locid": "44",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BIH": {
+      "bands": {
+        "age_0_14": 0.127065953,
+        "age_15_24": 0.103937043,
+        "age_25_44": 0.234838601,
+        "age_45_64": 0.299148653,
+        "age_65_plus": 0.23500975
+      },
+      "frac_18_49": 0.389497686,
+      "tfr_2026": 1.5021,
+      "cbr_per_1000": 7.717,
+      "cdr_per_1000": 13.71,
+      "population_un_2026": 3114242,
+      "un_code": "BIH",
+      "un_location": "Bosnia and Herzegovina",
+      "un_locid": "70",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BLR": {
+      "bands": {
+        "age_0_14": 0.154574284,
+        "age_15_24": 0.106704284,
+        "age_25_44": 0.274391444,
+        "age_45_64": 0.275406548,
+        "age_65_plus": 0.188923441
+      },
+      "frac_18_49": 0.417874508,
+      "tfr_2026": 1.2345,
+      "cbr_per_1000": 6.857,
+      "cdr_per_1000": 13.32,
+      "population_un_2026": 8937018,
+      "un_code": "BLR",
+      "un_location": "Belarus",
+      "un_locid": "112",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BLZ": {
+      "bands": {
+        "age_0_14": 0.260122012,
+        "age_15_24": 0.177118595,
+        "age_25_44": 0.332050998,
+        "age_45_64": 0.176243745,
+        "age_65_plus": 0.05446465
+      },
+      "frac_18_49": 0.514819472,
+      "tfr_2026": 1.9922,
+      "cbr_per_1000": 17.429,
+      "cdr_per_1000": 5.074,
+      "population_un_2026": 428644,
+      "un_code": "BLZ",
+      "un_location": "Belize",
+      "un_locid": "84",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BOL": {
+      "bands": {
+        "age_0_14": 0.291025706,
+        "age_15_24": 0.182882141,
+        "age_25_44": 0.301917369,
+        "age_45_64": 0.165720876,
+        "age_65_plus": 0.058453908
+      },
+      "frac_18_49": 0.481715345,
+      "tfr_2026": 2.4693,
+      "cbr_per_1000": 20.511,
+      "cdr_per_1000": 7.179,
+      "population_un_2026": 12749291,
+      "un_code": "BOL",
+      "un_location": "Bolivia (Plurinational State of)",
+      "un_locid": "68",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BRA": {
+      "bands": {
+        "age_0_14": 0.191052847,
+        "age_15_24": 0.139381331,
+        "age_25_44": 0.305301794,
+        "age_45_64": 0.245076414,
+        "age_65_plus": 0.119187614
+      },
+      "frac_18_49": 0.476777238,
+      "tfr_2026": 1.5908,
+      "cbr_per_1000": 11.673,
+      "cdr_per_1000": 7.334,
+      "population_un_2026": 213562666,
+      "un_code": "BRA",
+      "un_location": "Brazil",
+      "un_locid": "76",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BRB": {
+      "bands": {
+        "age_0_14": 0.169285239,
+        "age_15_24": 0.127626236,
+        "age_25_44": 0.261817179,
+        "age_45_64": 0.265035865,
+        "age_65_plus": 0.176235481
+      },
+      "frac_18_49": 0.415293144,
+      "tfr_2026": 1.7049,
+      "cbr_per_1000": 10.991,
+      "cdr_per_1000": 10.388,
+      "population_un_2026": 282724,
+      "un_code": "BRB",
+      "un_location": "Barbados",
+      "un_locid": "52",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BRN": {
+      "bands": {
+        "age_0_14": 0.203933364,
+        "age_15_24": 0.141876128,
+        "age_25_44": 0.33862096,
+        "age_45_64": 0.239365144,
+        "age_65_plus": 0.076204404
+      },
+      "frac_18_49": 0.516262932,
+      "tfr_2026": 1.6954,
+      "cbr_per_1000": 12.716,
+      "cdr_per_1000": 5.564,
+      "population_un_2026": 469775,
+      "un_code": "BRN",
+      "un_location": "Brunei Darussalam",
+      "un_locid": "96",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BTN": {
+      "bands": {
+        "age_0_14": 0.198118958,
+        "age_15_24": 0.173798795,
+        "age_25_44": 0.368477279,
+        "age_45_64": 0.19190616,
+        "age_65_plus": 0.067698809
+      },
+      "frac_18_49": 0.561042558,
+      "tfr_2026": 1.4272,
+      "cbr_per_1000": 12.195,
+      "cdr_per_1000": 6.017,
+      "population_un_2026": 802214,
+      "un_code": "BTN",
+      "un_location": "Bhutan",
+      "un_locid": "64",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "BWA": {
+      "bands": {
+        "age_0_14": 0.31773649,
+        "age_15_24": 0.187200919,
+        "age_25_44": 0.319792655,
+        "age_45_64": 0.134178898,
+        "age_65_plus": 0.041091039
+      },
+      "frac_18_49": 0.495570778,
+      "tfr_2026": 2.6281,
+      "cbr_per_1000": 23.386,
+      "cdr_per_1000": 5.754,
+      "population_un_2026": 2603388,
+      "un_code": "BWA",
+      "un_location": "Botswana",
+      "un_locid": "72",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CAF": {
+      "bands": {
+        "age_0_14": 0.482254375,
+        "age_15_24": 0.225902451,
+        "age_25_44": 0.198859375,
+        "age_45_64": 0.070618051,
+        "age_65_plus": 0.022365749
+      },
+      "frac_18_49": 0.368012338,
+      "tfr_2026": 5.6868,
+      "cbr_per_1000": 44.707,
+      "cdr_per_1000": 9.136,
+      "population_un_2026": 5698984,
+      "un_code": "CAF",
+      "un_location": "Central African Republic",
+      "un_locid": "140",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CAN": {
+      "bands": {
+        "age_0_14": 0.148540825,
+        "age_15_24": 0.114627285,
+        "age_25_44": 0.279746554,
+        "age_45_64": 0.249743882,
+        "age_65_plus": 0.207341455
+      },
+      "frac_18_49": 0.425687646,
+      "tfr_2026": 1.3259,
+      "cbr_per_1000": 8.928,
+      "cdr_per_1000": 8.189,
+      "population_un_2026": 40467728,
+      "un_code": "CAN",
+      "un_location": "Canada",
+      "un_locid": "124",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CHE": {
+      "bands": {
+        "age_0_14": 0.14801442,
+        "age_15_24": 0.101601412,
+        "age_25_44": 0.261705025,
+        "age_45_64": 0.27985219,
+        "age_65_plus": 0.208826952
+      },
+      "frac_18_49": 0.40150574,
+      "tfr_2026": 1.4466,
+      "cbr_per_1000": 8.953,
+      "cdr_per_1000": 8.547,
+      "population_un_2026": 9007798,
+      "un_code": "CHE",
+      "un_location": "Switzerland",
+      "un_locid": "756",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CHL": {
+      "bands": {
+        "age_0_14": 0.161244887,
+        "age_15_24": 0.125400384,
+        "age_25_44": 0.312145716,
+        "age_45_64": 0.250667808,
+        "age_65_plus": 0.150541205
+      },
+      "frac_18_49": 0.468234746,
+      "tfr_2026": 1.1207,
+      "cbr_per_1000": 8.478,
+      "cdr_per_1000": 6.766,
+      "population_un_2026": 19945850,
+      "un_code": "CHL",
+      "un_location": "Chile",
+      "un_locid": "152",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CHN": {
+      "bands": {
+        "age_0_14": 0.148037222,
+        "age_15_24": 0.11640857,
+        "age_25_44": 0.284292762,
+        "age_45_64": 0.299958916,
+        "age_65_plus": 0.15130253
+      },
+      "frac_18_49": 0.428971652,
+      "tfr_2026": 1.0308,
+      "cbr_per_1000": 6.105,
+      "cdr_per_1000": 8.126,
+      "population_un_2026": 1412914089,
+      "un_code": "CHN",
+      "un_location": "China",
+      "un_locid": "156",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CIV": {
+      "bands": {
+        "age_0_14": 0.400458394,
+        "age_15_24": 0.200303717,
+        "age_25_44": 0.255359994,
+        "age_45_64": 0.11687898,
+        "age_65_plus": 0.026998915
+      },
+      "frac_18_49": 0.431966906,
+      "tfr_2026": 4.1037,
+      "cbr_per_1000": 30.72,
+      "cdr_per_1000": 7.513,
+      "population_un_2026": 33494346,
+      "un_code": "CIV",
+      "un_location": "Côte d'Ivoire",
+      "un_locid": "384",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CMR": {
+      "bands": {
+        "age_0_14": 0.407918399,
+        "age_15_24": 0.199895062,
+        "age_25_44": 0.253945611,
+        "age_45_64": 0.109807483,
+        "age_65_plus": 0.028433445
+      },
+      "frac_18_49": 0.426374187,
+      "tfr_2026": 4.1174,
+      "cbr_per_1000": 32.364,
+      "cdr_per_1000": 6.806,
+      "population_un_2026": 30640817,
+      "un_code": "CMR",
+      "un_location": "Cameroon",
+      "un_locid": "120",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "COD": {
+      "bands": {
+        "age_0_14": 0.458312547,
+        "age_15_24": 0.191523795,
+        "age_25_44": 0.222962138,
+        "age_45_64": 0.096265426,
+        "age_65_plus": 0.030936094
+      },
+      "frac_18_49": 0.379742928,
+      "tfr_2026": 5.8013,
+      "cbr_per_1000": 39.802,
+      "cdr_per_1000": 8.235,
+      "population_un_2026": 116452162,
+      "un_code": "COD",
+      "un_location": "Democratic Republic of the Congo",
+      "un_locid": "180",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "COG": {
+      "bands": {
+        "age_0_14": 0.394034848,
+        "age_15_24": 0.199565789,
+        "age_25_44": 0.242872699,
+        "age_45_64": 0.132098715,
+        "age_65_plus": 0.031427949
+      },
+      "frac_18_49": 0.417246441,
+      "tfr_2026": 3.9879,
+      "cbr_per_1000": 29.933,
+      "cdr_per_1000": 6.175,
+      "population_un_2026": 6637786,
+      "un_code": "COG",
+      "un_location": "Congo",
+      "un_locid": "178",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "COL": {
+      "bands": {
+        "age_0_14": 0.197442902,
+        "age_15_24": 0.149820012,
+        "age_25_44": 0.320217195,
+        "age_45_64": 0.226156109,
+        "age_65_plus": 0.106363782
+      },
+      "frac_18_49": 0.492400183,
+      "tfr_2026": 1.6048,
+      "cbr_per_1000": 12.696,
+      "cdr_per_1000": 5.649,
+      "population_un_2026": 53936226,
+      "un_code": "COL",
+      "un_location": "Colombia",
+      "un_locid": "170",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CRI": {
+      "bands": {
+        "age_0_14": 0.178332454,
+        "age_15_24": 0.139853984,
+        "age_25_44": 0.311425391,
+        "age_45_64": 0.237437848,
+        "age_65_plus": 0.132950323
+      },
+      "frac_18_49": 0.4769972,
+      "tfr_2026": 1.3067,
+      "cbr_per_1000": 9.701,
+      "cdr_per_1000": 5.778,
+      "population_un_2026": 5174789,
+      "un_code": "CRI",
+      "un_location": "Costa Rica",
+      "un_locid": "188",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CUB": {
+      "bands": {
+        "age_0_14": 0.14722526,
+        "age_15_24": 0.111072941,
+        "age_25_44": 0.259528295,
+        "age_45_64": 0.306130861,
+        "age_65_plus": 0.176042642
+      },
+      "frac_18_49": 0.393008172,
+      "tfr_2026": 1.4547,
+      "cbr_per_1000": 8.475,
+      "cdr_per_1000": 10.628,
+      "population_un_2026": 10892659,
+      "un_code": "CUB",
+      "un_location": "Cuba",
+      "un_locid": "192",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CYP": {
+      "bands": {
+        "age_0_14": 0.160462176,
+        "age_15_24": 0.104228217,
+        "age_25_44": 0.324827176,
+        "age_45_64": 0.257932971,
+        "age_65_plus": 0.15254946
+      },
+      "frac_18_49": 0.476795456,
+      "tfr_2026": 1.3663,
+      "cbr_per_1000": 9.902,
+      "cdr_per_1000": 7.08,
+      "population_un_2026": 1382334,
+      "un_code": "CYP",
+      "un_location": "Cyprus",
+      "un_locid": "196",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "CZE": {
+      "bands": {
+        "age_0_14": 0.148256665,
+        "age_15_24": 0.107421762,
+        "age_25_44": 0.240564419,
+        "age_45_64": 0.289284268,
+        "age_65_plus": 0.214472886
+      },
+      "frac_18_49": 0.395173856,
+      "tfr_2026": 1.4737,
+      "cbr_per_1000": 7.903,
+      "cdr_per_1000": 11.178,
+      "population_un_2026": 10527780,
+      "un_code": "CZE",
+      "un_location": "Czechia",
+      "un_locid": "203",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "DEU": {
+      "bands": {
+        "age_0_14": 0.138588699,
+        "age_15_24": 0.095228699,
+        "age_25_44": 0.244522843,
+        "age_45_64": 0.279240635,
+        "age_65_plus": 0.242419124
+      },
+      "frac_18_49": 0.374021825,
+      "tfr_2026": 1.4595,
+      "cbr_per_1000": 8.249,
+      "cdr_per_1000": 12.462,
+      "population_un_2026": 83644258,
+      "un_code": "DEU",
+      "un_location": "Germany",
+      "un_locid": "276",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "DJI": {
+      "bands": {
+        "age_0_14": 0.28457806,
+        "age_15_24": 0.193802211,
+        "age_25_44": 0.295667217,
+        "age_45_64": 0.174938722,
+        "age_65_plus": 0.05101379
+      },
+      "frac_18_49": 0.489504018,
+      "tfr_2026": 2.5425,
+      "cbr_per_1000": 20.421,
+      "cdr_per_1000": 7.527,
+      "population_un_2026": 1199459,
+      "un_code": "DJI",
+      "un_location": "Djibouti",
+      "un_locid": "262",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "DMA": {
+      "bands": {
+        "age_0_14": 0.173751774,
+        "age_15_24": 0.130706883,
+        "age_25_44": 0.305450827,
+        "age_45_64": 0.255476012,
+        "age_65_plus": 0.134614504
+      },
+      "frac_18_49": 0.456096444,
+      "tfr_2026": 1.4638,
+      "cbr_per_1000": 10.683,
+      "cdr_per_1000": 12.44,
+      "population_un_2026": 65511,
+      "un_code": "DMA",
+      "un_location": "Dominica",
+      "un_locid": "212",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "DNK": {
+      "bands": {
+        "age_0_14": 0.154670665,
+        "age_15_24": 0.120026144,
+        "age_25_44": 0.254955698,
+        "age_45_64": 0.256422946,
+        "age_65_plus": 0.213924547
+      },
+      "frac_18_49": 0.400015705,
+      "tfr_2026": 1.5236,
+      "cbr_per_1000": 9.897,
+      "cdr_per_1000": 9.814,
+      "population_un_2026": 6023520,
+      "un_code": "DNK",
+      "un_location": "Denmark",
+      "un_locid": "208",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "DOM": {
+      "bands": {
+        "age_0_14": 0.25812841,
+        "age_15_24": 0.167476248,
+        "age_25_44": 0.292729048,
+        "age_45_64": 0.19668785,
+        "age_65_plus": 0.084978445
+      },
+      "frac_18_49": 0.465927513,
+      "tfr_2026": 2.17,
+      "cbr_per_1000": 16.963,
+      "cdr_per_1000": 6.424,
+      "population_un_2026": 11609500,
+      "un_code": "DOM",
+      "un_location": "Dominican Republic",
+      "un_locid": "214",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "DZA": {
+      "bands": {
+        "age_0_14": 0.29444225,
+        "age_15_24": 0.148104176,
+        "age_25_44": 0.281542135,
+        "age_45_64": 0.205473019,
+        "age_65_plus": 0.070438419
+      },
+      "frac_18_49": 0.444098753,
+      "tfr_2026": 2.6226,
+      "cbr_per_1000": 17.327,
+      "cdr_per_1000": 4.683,
+      "population_un_2026": 48028334,
+      "un_code": "DZA",
+      "un_location": "Algeria",
+      "un_locid": "12",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ECU": {
+      "bands": {
+        "age_0_14": 0.233446901,
+        "age_15_24": 0.170648855,
+        "age_25_44": 0.309760895,
+        "age_45_64": 0.197584517,
+        "age_65_plus": 0.088558832
+      },
+      "frac_18_49": 0.488699317,
+      "tfr_2026": 1.7808,
+      "cbr_per_1000": 14.478,
+      "cdr_per_1000": 5.322,
+      "population_un_2026": 18444506,
+      "un_code": "ECU",
+      "un_location": "Ecuador",
+      "un_locid": "218",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "EGY": {
+      "bands": {
+        "age_0_14": 0.310968009,
+        "age_15_24": 0.177920725,
+        "age_25_44": 0.285751969,
+        "age_45_64": 0.171069777,
+        "age_65_plus": 0.054289519
+      },
+      "frac_18_49": 0.460454752,
+      "tfr_2026": 2.6829,
+      "cbr_per_1000": 20.477,
+      "cdr_per_1000": 5.599,
+      "population_un_2026": 120101175,
+      "un_code": "EGY",
+      "un_location": "Egypt",
+      "un_locid": "818",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ERI": {
+      "bands": {
+        "age_0_14": 0.370888885,
+        "age_15_24": 0.222964649,
+        "age_25_44": 0.242155621,
+        "age_45_64": 0.120859627,
+        "age_65_plus": 0.043131218
+      },
+      "frac_18_49": 0.430898857,
+      "tfr_2026": 3.5534,
+      "cbr_per_1000": 28.62,
+      "cdr_per_1000": 5.893,
+      "population_un_2026": 3682669,
+      "un_code": "ERI",
+      "un_location": "Eritrea",
+      "un_locid": "232",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ESP": {
+      "bands": {
+        "age_0_14": 0.123286554,
+        "age_15_24": 0.108407865,
+        "age_25_44": 0.232168957,
+        "age_45_64": 0.31451069,
+        "age_65_plus": 0.221625933
+      },
+      "frac_18_49": 0.389948605,
+      "tfr_2026": 1.2385,
+      "cbr_per_1000": 6.842,
+      "cdr_per_1000": 9.623,
+      "population_un_2026": 47850793,
+      "un_code": "ESP",
+      "un_location": "Spain",
+      "un_locid": "724",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "EST": {
+      "bands": {
+        "age_0_14": 0.148877139,
+        "age_15_24": 0.108850514,
+        "age_25_44": 0.253494948,
+        "age_45_64": 0.266067597,
+        "age_65_plus": 0.222709802
+      },
+      "frac_18_49": 0.396346081,
+      "tfr_2026": 1.3843,
+      "cbr_per_1000": 7.63,
+      "cdr_per_1000": 12.398,
+      "population_un_2026": 1331062,
+      "un_code": "EST",
+      "un_location": "Estonia",
+      "un_locid": "233",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ETH": {
+      "bands": {
+        "age_0_14": 0.385134277,
+        "age_15_24": 0.208741416,
+        "age_25_44": 0.260824902,
+        "age_45_64": 0.111646537,
+        "age_65_plus": 0.033652869
+      },
+      "frac_18_49": 0.441753792,
+      "tfr_2026": 3.7231,
+      "cbr_per_1000": 30.331,
+      "cdr_per_1000": 5.725,
+      "population_un_2026": 138902185,
+      "un_code": "ETH",
+      "un_location": "Ethiopia",
+      "un_locid": "231",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "FIN": {
+      "bands": {
+        "age_0_14": 0.140230452,
+        "age_15_24": 0.115802068,
+        "age_25_44": 0.252135327,
+        "age_45_64": 0.246542751,
+        "age_65_plus": 0.245289402
+      },
+      "frac_18_49": 0.396316688,
+      "tfr_2026": 1.3041,
+      "cbr_per_1000": 7.802,
+      "cdr_per_1000": 10.89,
+      "population_un_2026": 5621739,
+      "un_code": "FIN",
+      "un_location": "Finland",
+      "un_locid": "246",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "FJI": {
+      "bands": {
+        "age_0_14": 0.265698334,
+        "age_15_24": 0.169346226,
+        "age_25_44": 0.299139746,
+        "age_45_64": 0.19796091,
+        "age_65_plus": 0.067854784
+      },
+      "frac_18_49": 0.478326832,
+      "tfr_2026": 2.2305,
+      "cbr_per_1000": 17.434,
+      "cdr_per_1000": 9.563,
+      "population_un_2026": 937282,
+      "un_code": "FJI",
+      "un_location": "Fiji",
+      "un_locid": "242",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "FRA": {
+      "bands": {
+        "age_0_14": 0.159564104,
+        "age_15_24": 0.126005442,
+        "age_25_44": 0.23337373,
+        "age_45_64": 0.251772908,
+        "age_65_plus": 0.229283816
+      },
+      "frac_18_49": 0.384057908,
+      "tfr_2026": 1.6374,
+      "cbr_per_1000": 9.498,
+      "cdr_per_1000": 9.455,
+      "population_un_2026": 66746401,
+      "un_code": "FRA",
+      "un_location": "France",
+      "un_locid": "250",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GAB": {
+      "bands": {
+        "age_0_14": 0.359454046,
+        "age_15_24": 0.179854506,
+        "age_25_44": 0.275432774,
+        "age_45_64": 0.143415372,
+        "age_65_plus": 0.041843302
+      },
+      "frac_18_49": 0.446232908,
+      "tfr_2026": 3.4876,
+      "cbr_per_1000": 26.246,
+      "cdr_per_1000": 6.148,
+      "population_un_2026": 2647400,
+      "un_code": "GAB",
+      "un_location": "Gabon",
+      "un_locid": "266",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GBR": {
+      "bands": {
+        "age_0_14": 0.167210475,
+        "age_15_24": 0.120882773,
+        "age_25_44": 0.261577368,
+        "age_45_64": 0.250951516,
+        "age_65_plus": 0.199377869
+      },
+      "frac_18_49": 0.406893054,
+      "tfr_2026": 1.5317,
+      "cbr_per_1000": 9.695,
+      "cdr_per_1000": 9.691,
+      "population_un_2026": 69931528,
+      "un_code": "GBR",
+      "un_location": "United Kingdom",
+      "un_locid": "826",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GEO": {
+      "bands": {
+        "age_0_14": 0.201715747,
+        "age_15_24": 0.122448872,
+        "age_25_44": 0.269171257,
+        "age_45_64": 0.243049213,
+        "age_65_plus": 0.163614911
+      },
+      "frac_18_49": 0.413566946,
+      "tfr_2026": 1.7757,
+      "cbr_per_1000": 10.869,
+      "cdr_per_1000": 11.82,
+      "population_un_2026": 3804642,
+      "un_code": "GEO",
+      "un_location": "Georgia",
+      "un_locid": "268",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GHA": {
+      "bands": {
+        "age_0_14": 0.350114686,
+        "age_15_24": 0.192952235,
+        "age_25_44": 0.273984636,
+        "age_45_64": 0.143987152,
+        "age_65_plus": 0.03896129
+      },
+      "frac_18_49": 0.452909919,
+      "tfr_2026": 3.2574,
+      "cbr_per_1000": 25.316,
+      "cdr_per_1000": 6.969,
+      "population_un_2026": 35697557,
+      "un_code": "GHA",
+      "un_location": "Ghana",
+      "un_locid": "288",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GIN": {
+      "bands": {
+        "age_0_14": 0.401905557,
+        "age_15_24": 0.202329285,
+        "age_25_44": 0.257857358,
+        "age_45_64": 0.102961011,
+        "age_65_plus": 0.034946789
+      },
+      "frac_18_49": 0.426582723,
+      "tfr_2026": 3.9578,
+      "cbr_per_1000": 32.208,
+      "cdr_per_1000": 8.839,
+      "population_un_2026": 15441992,
+      "un_code": "GIN",
+      "un_location": "Guinea",
+      "un_locid": "324",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GMB": {
+      "bands": {
+        "age_0_14": 0.391561185,
+        "age_15_24": 0.2059126,
+        "age_25_44": 0.258414648,
+        "age_45_64": 0.111134997,
+        "age_65_plus": 0.03297657
+      },
+      "frac_18_49": 0.429436075,
+      "tfr_2026": 3.7015,
+      "cbr_per_1000": 28.652,
+      "cdr_per_1000": 6.176,
+      "population_un_2026": 2884079,
+      "un_code": "GMB",
+      "un_location": "Gambia",
+      "un_locid": "270",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GNB": {
+      "bands": {
+        "age_0_14": 0.378480603,
+        "age_15_24": 0.204290528,
+        "age_25_44": 0.266525111,
+        "age_45_64": 0.117911173,
+        "age_65_plus": 0.032792586
+      },
+      "frac_18_49": 0.445701919,
+      "tfr_2026": 3.6176,
+      "cbr_per_1000": 28.737,
+      "cdr_per_1000": 6.944,
+      "population_un_2026": 2297808,
+      "un_code": "GNB",
+      "un_location": "Guinea-Bissau",
+      "un_locid": "624",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GNQ": {
+      "bands": {
+        "age_0_14": 0.368544246,
+        "age_15_24": 0.18070064,
+        "age_25_44": 0.269633706,
+        "age_45_64": 0.142580639,
+        "age_65_plus": 0.038540769
+      },
+      "frac_18_49": 0.437529479,
+      "tfr_2026": 3.9547,
+      "cbr_per_1000": 29.174,
+      "cdr_per_1000": 7.753,
+      "population_un_2026": 1984468,
+      "un_code": "GNQ",
+      "un_location": "Equatorial Guinea",
+      "un_locid": "226",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GRC": {
+      "bands": {
+        "age_0_14": 0.125661999,
+        "age_15_24": 0.107753948,
+        "age_25_44": 0.219177451,
+        "age_45_64": 0.300152984,
+        "age_65_plus": 0.247253618
+      },
+      "frac_18_49": 0.370690426,
+      "tfr_2026": 1.3433,
+      "cbr_per_1000": 6.806,
+      "cdr_per_1000": 12.624,
+      "population_un_2026": 9897116,
+      "un_code": "GRC",
+      "un_location": "Greece",
+      "un_locid": "300",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GRD": {
+      "bands": {
+        "age_0_14": 0.185680325,
+        "age_15_24": 0.143051899,
+        "age_25_44": 0.328664059,
+        "age_45_64": 0.212349718,
+        "age_65_plus": 0.130253998
+      },
+      "frac_18_49": 0.484532218,
+      "tfr_2026": 1.4472,
+      "cbr_per_1000": 11.04,
+      "cdr_per_1000": 9.016,
+      "population_un_2026": 117362,
+      "un_code": "GRD",
+      "un_location": "Grenada",
+      "un_locid": "308",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GTM": {
+      "bands": {
+        "age_0_14": 0.304777663,
+        "age_15_24": 0.198821192,
+        "age_25_44": 0.308820793,
+        "age_45_64": 0.136820804,
+        "age_65_plus": 0.050759549
+      },
+      "frac_18_49": 0.494639361,
+      "tfr_2026": 2.2269,
+      "cbr_per_1000": 20.055,
+      "cdr_per_1000": 4.929,
+      "population_un_2026": 18967978,
+      "un_code": "GTM",
+      "un_location": "Guatemala",
+      "un_locid": "320",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "GUY": {
+      "bands": {
+        "age_0_14": 0.286839793,
+        "age_15_24": 0.169335859,
+        "age_25_44": 0.284443525,
+        "age_45_64": 0.187115809,
+        "age_65_plus": 0.072265014
+      },
+      "frac_18_49": 0.451881397,
+      "tfr_2026": 2.3489,
+      "cbr_per_1000": 19.171,
+      "cdr_per_1000": 7.631,
+      "population_un_2026": 840890,
+      "un_code": "GUY",
+      "un_location": "Guyana",
+      "un_locid": "328",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "HND": {
+      "bands": {
+        "age_0_14": 0.299204033,
+        "age_15_24": 0.189686787,
+        "age_25_44": 0.310415629,
+        "age_45_64": 0.154024865,
+        "age_65_plus": 0.046668685
+      },
+      "frac_18_49": 0.497446839,
+      "tfr_2026": 2.4232,
+      "cbr_per_1000": 20.939,
+      "cdr_per_1000": 4.599,
+      "population_un_2026": 11184760,
+      "un_code": "HND",
+      "un_location": "Honduras",
+      "un_locid": "340",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "HRV": {
+      "bands": {
+        "age_0_14": 0.135123037,
+        "age_15_24": 0.105289526,
+        "age_25_44": 0.237503617,
+        "age_45_64": 0.28187532,
+        "age_65_plus": 0.2402085
+      },
+      "frac_18_49": 0.381486919,
+      "tfr_2026": 1.472,
+      "cbr_per_1000": 8.008,
+      "cdr_per_1000": 13.979,
+      "population_un_2026": 3822345,
+      "un_code": "HRV",
+      "un_location": "Croatia",
+      "un_locid": "191",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "HTI": {
+      "bands": {
+        "age_0_14": 0.303748384,
+        "age_15_24": 0.190023831,
+        "age_25_44": 0.301885291,
+        "age_45_64": 0.155548666,
+        "age_65_plus": 0.048793828
+      },
+      "frac_18_49": 0.484133687,
+      "tfr_2026": 2.5516,
+      "cbr_per_1000": 21.329,
+      "cdr_per_1000": 7.835,
+      "population_un_2026": 12037506,
+      "un_code": "HTI",
+      "un_location": "Haiti",
+      "un_locid": "332",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "HUN": {
+      "bands": {
+        "age_0_14": 0.143385051,
+        "age_15_24": 0.105543001,
+        "age_25_44": 0.248887888,
+        "age_45_64": 0.289200045,
+        "age_65_plus": 0.212984015
+      },
+      "frac_18_49": 0.405491383,
+      "tfr_2026": 1.5002,
+      "cbr_per_1000": 8.66,
+      "cdr_per_1000": 13.391,
+      "population_un_2026": 9585818,
+      "un_code": "HUN",
+      "un_location": "Hungary",
+      "un_locid": "348",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "IDN": {
+      "bands": {
+        "age_0_14": 0.238666701,
+        "age_15_24": 0.159850164,
+        "age_25_44": 0.295058835,
+        "age_45_64": 0.228330825,
+        "age_65_plus": 0.078093475
+      },
+      "frac_18_49": 0.473231201,
+      "tfr_2026": 2.0798,
+      "cbr_per_1000": 15.353,
+      "cdr_per_1000": 7.807,
+      "population_un_2026": 287886782,
+      "un_code": "IDN",
+      "un_location": "Indonesia",
+      "un_locid": "360",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "IND": {
+      "bands": {
+        "age_0_14": 0.237850245,
+        "age_15_24": 0.172811398,
+        "age_25_44": 0.315734378,
+        "age_45_64": 0.197512743,
+        "age_65_plus": 0.076091236
+      },
+      "frac_18_49": 0.498587523,
+      "tfr_2026": 1.9293,
+      "cbr_per_1000": 15.568,
+      "cdr_per_1000": 6.697,
+      "population_un_2026": 1476625576,
+      "un_code": "IND",
+      "un_location": "India",
+      "un_locid": "356",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "IRL": {
+      "bands": {
+        "age_0_14": 0.176472993,
+        "age_15_24": 0.137811628,
+        "age_25_44": 0.255345299,
+        "age_45_64": 0.2649965,
+        "age_65_plus": 0.16537358
+      },
+      "frac_18_49": 0.428057063,
+      "tfr_2026": 1.5986,
+      "cbr_per_1000": 9.824,
+      "cdr_per_1000": 7.035,
+      "population_un_2026": 5356950,
+      "un_code": "IRL",
+      "un_location": "Ireland",
+      "un_locid": "372",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "IRN": {
+      "bands": {
+        "age_0_14": 0.215687952,
+        "age_15_24": 0.134914558,
+        "age_25_44": 0.330742858,
+        "age_45_64": 0.229213082,
+        "age_65_plus": 0.089441549
+      },
+      "frac_18_49": 0.498605564,
+      "tfr_2026": 1.6584,
+      "cbr_per_1000": 11.825,
+      "cdr_per_1000": 4.947,
+      "population_un_2026": 93168497,
+      "un_code": "IRN",
+      "un_location": "Iran (Islamic Republic of)",
+      "un_locid": "364",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "IRQ": {
+      "bands": {
+        "age_0_14": 0.3539331,
+        "age_15_24": 0.197978701,
+        "age_25_44": 0.273762021,
+        "age_45_64": 0.13930827,
+        "age_65_plus": 0.035017908
+      },
+      "frac_18_49": 0.451429721,
+      "tfr_2026": 3.1319,
+      "cbr_per_1000": 25.0,
+      "cdr_per_1000": 4.23,
+      "population_un_2026": 48007437,
+      "un_code": "IRQ",
+      "un_location": "Iraq",
+      "un_locid": "368",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ISL": {
+      "bands": {
+        "age_0_14": 0.173129884,
+        "age_15_24": 0.129568412,
+        "age_25_44": 0.301945179,
+        "age_45_64": 0.232437215,
+        "age_65_plus": 0.16291931
+      },
+      "frac_18_49": 0.457129932,
+      "tfr_2026": 1.4903,
+      "cbr_per_1000": 10.801,
+      "cdr_per_1000": 6.669,
+      "population_un_2026": 402329,
+      "un_code": "ISL",
+      "un_location": "Iceland",
+      "un_locid": "352",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ISR": {
+      "bands": {
+        "age_0_14": 0.269062419,
+        "age_15_24": 0.158290168,
+        "age_25_44": 0.252371164,
+        "age_45_64": 0.192121697,
+        "age_65_plus": 0.128154551
+      },
+      "frac_18_49": 0.416704249,
+      "tfr_2026": 2.7294,
+      "cbr_per_1000": 17.82,
+      "cdr_per_1000": 5.579,
+      "population_un_2026": 9647689,
+      "un_code": "ISR",
+      "un_location": "Israel",
+      "un_locid": "376",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ITA": {
+      "bands": {
+        "age_0_14": 0.114348405,
+        "age_15_24": 0.101454846,
+        "age_25_44": 0.222188412,
+        "age_45_64": 0.306016623,
+        "age_65_plus": 0.255991714
+      },
+      "frac_18_49": 0.362630414,
+      "tfr_2026": 1.2193,
+      "cbr_per_1000": 6.442,
+      "cdr_per_1000": 11.36,
+      "population_un_2026": 58926166,
+      "un_code": "ITA",
+      "un_location": "Italy",
+      "un_locid": "380",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "JAM": {
+      "bands": {
+        "age_0_14": 0.179033317,
+        "age_15_24": 0.154503423,
+        "age_25_44": 0.343637326,
+        "age_45_64": 0.233132632,
+        "age_65_plus": 0.089693301
+      },
+      "frac_18_49": 0.522717318,
+      "tfr_2026": 1.3337,
+      "cbr_per_1000": 11.054,
+      "cdr_per_1000": 8.501,
+      "population_un_2026": 2833404,
+      "un_code": "JAM",
+      "un_location": "Jamaica",
+      "un_locid": "388",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "JOR": {
+      "bands": {
+        "age_0_14": 0.296197957,
+        "age_15_24": 0.189467341,
+        "age_25_44": 0.290055518,
+        "age_45_64": 0.174334117,
+        "age_65_plus": 0.049945067
+      },
+      "frac_18_49": 0.471357961,
+      "tfr_2026": 2.5387,
+      "cbr_per_1000": 19.234,
+      "cdr_per_1000": 3.25,
+      "population_un_2026": 11589532,
+      "un_code": "JOR",
+      "un_location": "Jordan",
+      "un_locid": "400",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "JPN": {
+      "bands": {
+        "age_0_14": 0.110470689,
+        "age_15_24": 0.096338752,
+        "age_25_44": 0.209069068,
+        "age_45_64": 0.282155417,
+        "age_65_plus": 0.301966075
+      },
+      "frac_18_49": 0.344735225,
+      "tfr_2026": 1.2315,
+      "cbr_per_1000": 6.093,
+      "cdr_per_1000": 12.768,
+      "population_un_2026": 122427731,
+      "un_code": "JPN",
+      "un_location": "Japan",
+      "un_locid": "392",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KAZ": {
+      "bands": {
+        "age_0_14": 0.28852453,
+        "age_15_24": 0.14611107,
+        "age_25_44": 0.268714844,
+        "age_45_64": 0.203234121,
+        "age_65_plus": 0.093415435
+      },
+      "frac_18_49": 0.421044978,
+      "tfr_2026": 2.922,
+      "cbr_per_1000": 18.509,
+      "cdr_per_1000": 6.798,
+      "population_un_2026": 21083626,
+      "un_code": "KAZ",
+      "un_location": "Kazakhstan",
+      "un_locid": "398",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KEN": {
+      "bands": {
+        "age_0_14": 0.357269785,
+        "age_15_24": 0.215707325,
+        "age_25_44": 0.274728107,
+        "age_45_64": 0.121457734,
+        "age_65_plus": 0.030837049
+      },
+      "frac_18_49": 0.462556743,
+      "tfr_2026": 3.0744,
+      "cbr_per_1000": 26.576,
+      "cdr_per_1000": 7.126,
+      "population_un_2026": 58636412,
+      "un_code": "KEN",
+      "un_location": "Kenya",
+      "un_locid": "404",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KGZ": {
+      "bands": {
+        "age_0_14": 0.314378624,
+        "age_15_24": 0.164578712,
+        "age_25_44": 0.282363473,
+        "age_45_64": 0.176108528,
+        "age_65_plus": 0.062570663
+      },
+      "frac_18_49": 0.441305966,
+      "tfr_2026": 2.7225,
+      "cbr_per_1000": 20.089,
+      "cdr_per_1000": 6.09,
+      "population_un_2026": 7400464,
+      "un_code": "KGZ",
+      "un_location": "Kyrgyzstan",
+      "un_locid": "417",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KHM": {
+      "bands": {
+        "age_0_14": 0.292132538,
+        "age_15_24": 0.17311937,
+        "age_25_44": 0.29672918,
+        "age_45_64": 0.171993739,
+        "age_65_plus": 0.066025174
+      },
+      "frac_18_49": 0.471201282,
+      "tfr_2026": 2.487,
+      "cbr_per_1000": 19.525,
+      "cdr_per_1000": 6.568,
+      "population_un_2026": 18051219,
+      "un_code": "KHM",
+      "un_location": "Cambodia",
+      "un_locid": "116",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KNA": {
+      "bands": {
+        "age_0_14": 0.183973104,
+        "age_15_24": 0.124648906,
+        "age_25_44": 0.312154226,
+        "age_45_64": 0.257638948,
+        "age_65_plus": 0.121584816
+      },
+      "frac_18_49": 0.474913329,
+      "tfr_2026": 1.4997,
+      "cbr_per_1000": 11.234,
+      "cdr_per_1000": 10.065,
+      "population_un_2026": 46992,
+      "un_code": "KNA",
+      "un_location": "Saint Kitts and Nevis",
+      "un_locid": "659",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KOR": {
+      "bands": {
+        "age_0_14": 0.098175252,
+        "age_15_24": 0.095552345,
+        "age_25_44": 0.271245408,
+        "age_45_64": 0.320695153,
+        "age_65_plus": 0.214331842
+      },
+      "frac_18_49": 0.416314752,
+      "tfr_2026": 0.7617,
+      "cbr_per_1000": 4.836,
+      "cdr_per_1000": 7.468,
+      "population_un_2026": 51600388,
+      "un_code": "KOR",
+      "un_location": "Republic of Korea",
+      "un_locid": "410",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "KWT": {
+      "bands": {
+        "age_0_14": 0.177558324,
+        "age_15_24": 0.110008007,
+        "age_25_44": 0.437704864,
+        "age_45_64": 0.242129281,
+        "age_65_plus": 0.032599523
+      },
+      "frac_18_49": 0.606472129,
+      "tfr_2026": 1.4875,
+      "cbr_per_1000": 9.694,
+      "cdr_per_1000": 1.801,
+      "population_un_2026": 5102773,
+      "un_code": "KWT",
+      "un_location": "Kuwait",
+      "un_locid": "414",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LAO": {
+      "bands": {
+        "age_0_14": 0.294827452,
+        "age_15_24": 0.182214742,
+        "age_25_44": 0.312462848,
+        "age_45_64": 0.160904412,
+        "age_65_plus": 0.049590545
+      },
+      "frac_18_49": 0.491084866,
+      "tfr_2026": 2.3278,
+      "cbr_per_1000": 20.075,
+      "cdr_per_1000": 6.166,
+      "population_un_2026": 7974018,
+      "un_code": "LAO",
+      "un_location": "Lao People's Democratic Republic",
+      "un_locid": "418",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LBN": {
+      "bands": {
+        "age_0_14": 0.249645144,
+        "age_15_24": 0.174941717,
+        "age_25_44": 0.256707329,
+        "age_45_64": 0.211259173,
+        "age_65_plus": 0.107446638
+      },
+      "frac_18_49": 0.431392448,
+      "tfr_2026": 2.1876,
+      "cbr_per_1000": 15.714,
+      "cdr_per_1000": 6.183,
+      "population_un_2026": 5897467,
+      "un_code": "LBN",
+      "un_location": "Lebanon",
+      "un_locid": "422",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LBR": {
+      "bands": {
+        "age_0_14": 0.386333264,
+        "age_15_24": 0.210980413,
+        "age_25_44": 0.248564944,
+        "age_45_64": 0.120442757,
+        "age_65_plus": 0.033678621
+      },
+      "frac_18_49": 0.431753917,
+      "tfr_2026": 3.7139,
+      "cbr_per_1000": 29.889,
+      "cdr_per_1000": 7.92,
+      "population_un_2026": 5853949,
+      "un_code": "LBR",
+      "un_location": "Liberia",
+      "un_locid": "430",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LBY": {
+      "bands": {
+        "age_0_14": 0.262154944,
+        "age_15_24": 0.177078097,
+        "age_25_44": 0.285568129,
+        "age_45_64": 0.221055474,
+        "age_65_plus": 0.054143356
+      },
+      "frac_18_49": 0.47983388,
+      "tfr_2026": 2.2138,
+      "cbr_per_1000": 15.777,
+      "cdr_per_1000": 4.917,
+      "population_un_2026": 7539852,
+      "un_code": "LBY",
+      "un_location": "Libya",
+      "un_locid": "434",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LCA": {
+      "bands": {
+        "age_0_14": 0.170666977,
+        "age_15_24": 0.137944217,
+        "age_25_44": 0.332208592,
+        "age_45_64": 0.255759449,
+        "age_65_plus": 0.103420764
+      },
+      "frac_18_49": 0.500603885,
+      "tfr_2026": 1.3698,
+      "cbr_per_1000": 10.852,
+      "cdr_per_1000": 8.927,
+      "population_un_2026": 180488,
+      "un_code": "LCA",
+      "un_location": "Saint Lucia",
+      "un_locid": "662",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LKA": {
+      "bands": {
+        "age_0_14": 0.21387194,
+        "age_15_24": 0.151776319,
+        "age_25_44": 0.273185005,
+        "age_45_64": 0.232780544,
+        "age_65_plus": 0.128386192
+      },
+      "frac_18_49": 0.447573859,
+      "tfr_2026": 1.925,
+      "cbr_per_1000": 13.554,
+      "cdr_per_1000": 7.262,
+      "population_un_2026": 23348315,
+      "un_code": "LKA",
+      "un_location": "Sri Lanka",
+      "un_locid": "144",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LSO": {
+      "bands": {
+        "age_0_14": 0.336319238,
+        "age_15_24": 0.199519783,
+        "age_25_44": 0.312057278,
+        "age_45_64": 0.113089531,
+        "age_65_plus": 0.03901417
+      },
+      "frac_18_49": 0.491153418,
+      "tfr_2026": 2.6097,
+      "cbr_per_1000": 23.149,
+      "cdr_per_1000": 10.158,
+      "population_un_2026": 2389336,
+      "un_code": "LSO",
+      "un_location": "Lesotho",
+      "un_locid": "426",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LTU": {
+      "bands": {
+        "age_0_14": 0.142927414,
+        "age_15_24": 0.101450094,
+        "age_25_44": 0.272923238,
+        "age_45_64": 0.26947889,
+        "age_65_plus": 0.213220364
+      },
+      "frac_18_49": 0.405579161,
+      "tfr_2026": 1.2232,
+      "cbr_per_1000": 7.67,
+      "cdr_per_1000": 14.194,
+      "population_un_2026": 2797338,
+      "un_code": "LTU",
+      "un_location": "Lithuania",
+      "un_locid": "440",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LUX": {
+      "bands": {
+        "age_0_14": 0.157045603,
+        "age_15_24": 0.108288603,
+        "age_25_44": 0.29914321,
+        "age_45_64": 0.273635901,
+        "age_65_plus": 0.161886683
+      },
+      "frac_18_49": 0.448704838,
+      "tfr_2026": 1.4115,
+      "cbr_per_1000": 10.099,
+      "cdr_per_1000": 7.362,
+      "population_un_2026": 687448,
+      "un_code": "LUX",
+      "un_location": "Luxembourg",
+      "un_locid": "442",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "LVA": {
+      "bands": {
+        "age_0_14": 0.149939649,
+        "age_15_24": 0.105093762,
+        "age_25_44": 0.247128979,
+        "age_45_64": 0.2712802,
+        "age_65_plus": 0.226557411
+      },
+      "frac_18_49": 0.385710699,
+      "tfr_2026": 1.3539,
+      "cbr_per_1000": 7.259,
+      "cdr_per_1000": 14.84,
+      "population_un_2026": 1835935,
+      "un_code": "LVA",
+      "un_location": "Latvia",
+      "un_locid": "428",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MAR": {
+      "bands": {
+        "age_0_14": 0.247578216,
+        "age_15_24": 0.161872993,
+        "age_25_44": 0.292744072,
+        "age_45_64": 0.21010767,
+        "age_65_plus": 0.087697048
+      },
+      "frac_18_49": 0.465954687,
+      "tfr_2026": 2.1612,
+      "cbr_per_1000": 15.836,
+      "cdr_per_1000": 5.908,
+      "population_un_2026": 38762441,
+      "un_code": "MAR",
+      "un_location": "Morocco",
+      "un_locid": "504",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MDA": {
+      "bands": {
+        "age_0_14": 0.192343449,
+        "age_15_24": 0.1179017,
+        "age_25_44": 0.266766287,
+        "age_45_64": 0.248706714,
+        "age_65_plus": 0.17428185
+      },
+      "frac_18_49": 0.410932906,
+      "tfr_2026": 1.7243,
+      "cbr_per_1000": 10.118,
+      "cdr_per_1000": 14.232,
+      "population_un_2026": 2961253,
+      "un_code": "MDA",
+      "un_location": "Republic of Moldova",
+      "un_locid": "498",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MDG": {
+      "bands": {
+        "age_0_14": 0.386408225,
+        "age_15_24": 0.199860611,
+        "age_25_44": 0.259024201,
+        "age_45_64": 0.119331235,
+        "age_65_plus": 0.035375727
+      },
+      "frac_18_49": 0.434048837,
+      "tfr_2026": 3.7839,
+      "cbr_per_1000": 30.837,
+      "cdr_per_1000": 7.357,
+      "population_un_2026": 33522052,
+      "un_code": "MDG",
+      "un_location": "Madagascar",
+      "un_locid": "450",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MEX": {
+      "bands": {
+        "age_0_14": 0.236685506,
+        "age_15_24": 0.167254268,
+        "age_25_44": 0.299520635,
+        "age_45_64": 0.208484558,
+        "age_65_plus": 0.088055032
+      },
+      "frac_18_49": 0.477311868,
+      "tfr_2026": 1.8521,
+      "cbr_per_1000": 14.957,
+      "cdr_per_1000": 6.349,
+      "population_un_2026": 132997658,
+      "un_code": "MEX",
+      "un_location": "Mexico",
+      "un_locid": "484",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MKD": {
+      "bands": {
+        "age_0_14": 0.162427719,
+        "age_15_24": 0.114346276,
+        "age_25_44": 0.259891556,
+        "age_45_64": 0.273497503,
+        "age_65_plus": 0.189836946
+      },
+      "frac_18_49": 0.408738724,
+      "tfr_2026": 1.4696,
+      "cbr_per_1000": 8.884,
+      "cdr_per_1000": 11.26,
+      "population_un_2026": 1804062,
+      "un_code": "MKD",
+      "un_location": "North Macedonia",
+      "un_locid": "807",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MLI": {
+      "bands": {
+        "age_0_14": 0.454349724,
+        "age_15_24": 0.207475164,
+        "age_25_44": 0.222232527,
+        "age_45_64": 0.09249443,
+        "age_65_plus": 0.023448155
+      },
+      "frac_18_49": 0.392960464,
+      "tfr_2026": 5.3259,
+      "cbr_per_1000": 38.771,
+      "cdr_per_1000": 8.246,
+      "population_un_2026": 25932275,
+      "un_code": "MLI",
+      "un_location": "Mali",
+      "un_locid": "466",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MLT": {
+      "bands": {
+        "age_0_14": 0.127676161,
+        "age_15_24": 0.091347397,
+        "age_25_44": 0.322995406,
+        "age_45_64": 0.248915328,
+        "age_65_plus": 0.209065707
+      },
+      "frac_18_49": 0.463081931,
+      "tfr_2026": 1.1212,
+      "cbr_per_1000": 7.691,
+      "cdr_per_1000": 7.9,
+      "population_un_2026": 549011,
+      "un_code": "MLT",
+      "un_location": "Malta",
+      "un_locid": "470",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MMR": {
+      "bands": {
+        "age_0_14": 0.238599709,
+        "age_15_24": 0.159503936,
+        "age_25_44": 0.305837493,
+        "age_45_64": 0.21863257,
+        "age_65_plus": 0.077426292
+      },
+      "frac_18_49": 0.483609888,
+      "tfr_2026": 2.0599,
+      "cbr_per_1000": 15.966,
+      "cdr_per_1000": 9.313,
+      "population_un_2026": 55184819,
+      "un_code": "MMR",
+      "un_location": "Myanmar",
+      "un_locid": "104",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MNE": {
+      "bands": {
+        "age_0_14": 0.176549022,
+        "age_15_24": 0.123525711,
+        "age_25_44": 0.250952519,
+        "age_45_64": 0.261241006,
+        "age_65_plus": 0.187731742
+      },
+      "frac_18_49": 0.404789507,
+      "tfr_2026": 1.7937,
+      "cbr_per_1000": 10.689,
+      "cdr_per_1000": 11.613,
+      "population_un_2026": 626233,
+      "un_code": "MNE",
+      "un_location": "Montenegro",
+      "un_locid": "499",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MNG": {
+      "bands": {
+        "age_0_14": 0.308740354,
+        "age_15_24": 0.154567827,
+        "age_25_44": 0.282966351,
+        "age_45_64": 0.196323044,
+        "age_65_plus": 0.057402424
+      },
+      "frac_18_49": 0.440026361,
+      "tfr_2026": 2.5392,
+      "cbr_per_1000": 16.888,
+      "cdr_per_1000": 5.979,
+      "population_un_2026": 3556798,
+      "un_code": "MNG",
+      "un_location": "Mongolia",
+      "un_locid": "496",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MOZ": {
+      "bands": {
+        "age_0_14": 0.438501677,
+        "age_15_24": 0.202907392,
+        "age_25_44": 0.239201833,
+        "age_45_64": 0.092301298,
+        "age_65_plus": 0.0270878
+      },
+      "frac_18_49": 0.4053234,
+      "tfr_2026": 4.5421,
+      "cbr_per_1000": 36.129,
+      "cdr_per_1000": 6.741,
+      "population_un_2026": 36639850,
+      "un_code": "MOZ",
+      "un_location": "Mozambique",
+      "un_locid": "508",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MRT": {
+      "bands": {
+        "age_0_14": 0.420410952,
+        "age_15_24": 0.200636,
+        "age_25_44": 0.237591514,
+        "age_45_64": 0.108667259,
+        "age_65_plus": 0.032694276
+      },
+      "frac_18_49": 0.406141407,
+      "tfr_2026": 4.4848,
+      "cbr_per_1000": 33.199,
+      "cdr_per_1000": 5.228,
+      "population_un_2026": 5461319,
+      "un_code": "MRT",
+      "un_location": "Mauritania",
+      "un_locid": "478",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MWI": {
+      "bands": {
+        "age_0_14": 0.395780042,
+        "age_15_24": 0.218376659,
+        "age_25_44": 0.262013554,
+        "age_45_64": 0.097835403,
+        "age_65_plus": 0.025994342
+      },
+      "frac_18_49": 0.446762211,
+      "tfr_2026": 3.4491,
+      "cbr_per_1000": 30.381,
+      "cdr_per_1000": 5.184,
+      "population_un_2026": 22785535,
+      "un_code": "MWI",
+      "un_location": "Malawi",
+      "un_locid": "454",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "MYS": {
+      "bands": {
+        "age_0_14": 0.208487939,
+        "age_15_24": 0.16256487,
+        "age_25_44": 0.341425251,
+        "age_45_64": 0.204166418,
+        "age_65_plus": 0.083355522
+      },
+      "frac_18_49": 0.524420892,
+      "tfr_2026": 1.5195,
+      "cbr_per_1000": 12.104,
+      "cdr_per_1000": 5.451,
+      "population_un_2026": 36385115,
+      "un_code": "MYS",
+      "un_location": "Malaysia",
+      "un_locid": "458",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NAM": {
+      "bands": {
+        "age_0_14": 0.362762603,
+        "age_15_24": 0.176984718,
+        "age_25_44": 0.288536821,
+        "age_45_64": 0.132690017,
+        "age_65_plus": 0.039025841
+      },
+      "frac_18_49": 0.451745168,
+      "tfr_2026": 3.1296,
+      "cbr_per_1000": 25.03,
+      "cdr_per_1000": 6.197,
+      "population_un_2026": 3153246,
+      "un_code": "NAM",
+      "un_location": "Namibia",
+      "un_locid": "516",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NED": {
+      "bands": {
+        "age_0_14": 0.148635969,
+        "age_15_24": 0.117790999,
+        "age_25_44": 0.263148052,
+        "age_45_64": 0.257767154,
+        "age_65_plus": 0.212657825
+      },
+      "frac_18_49": 0.406732752,
+      "tfr_2026": 1.4435,
+      "cbr_per_1000": 9.543,
+      "cdr_per_1000": 9.286,
+      "population_un_2026": 18448775,
+      "un_code": "NLD",
+      "un_location": "Netherlands",
+      "un_locid": "528",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "iso_alias",
+      "confidence": "high"
+    },
+    "NER": {
+      "bands": {
+        "age_0_14": 0.458420858,
+        "age_15_24": 0.207503554,
+        "age_25_44": 0.21617397,
+        "age_45_64": 0.091481936,
+        "age_65_plus": 0.026419683
+      },
+      "frac_18_49": 0.383658977,
+      "tfr_2026": 5.6444,
+      "cbr_per_1000": 40.154,
+      "cdr_per_1000": 8.44,
+      "population_un_2026": 28814878,
+      "un_code": "NER",
+      "un_location": "Niger",
+      "un_locid": "562",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NGA": {
+      "bands": {
+        "age_0_14": 0.400154984,
+        "age_15_24": 0.211743598,
+        "age_25_44": 0.243201221,
+        "age_45_64": 0.113980648,
+        "age_65_plus": 0.03091955
+      },
+      "frac_18_49": 0.425034196,
+      "tfr_2026": 4.2046,
+      "cbr_per_1000": 31.81,
+      "cdr_per_1000": 11.47,
+      "population_un_2026": 242431832,
+      "un_code": "NGA",
+      "un_location": "Nigeria",
+      "un_locid": "566",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NIC": {
+      "bands": {
+        "age_0_14": 0.278711916,
+        "age_15_24": 0.181154411,
+        "age_25_44": 0.310012833,
+        "age_45_64": 0.171434843,
+        "age_65_plus": 0.058685996
+      },
+      "frac_18_49": 0.491680748,
+      "tfr_2026": 2.1577,
+      "cbr_per_1000": 18.487,
+      "cdr_per_1000": 4.742,
+      "population_un_2026": 7097329,
+      "un_code": "NIC",
+      "un_location": "Nicaragua",
+      "un_locid": "558",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NOR": {
+      "bands": {
+        "age_0_14": 0.156759454,
+        "age_15_24": 0.123441841,
+        "age_25_44": 0.270778665,
+        "age_45_64": 0.254885471,
+        "age_65_plus": 0.194134569
+      },
+      "frac_18_49": 0.420795413,
+      "tfr_2026": 1.4183,
+      "cbr_per_1000": 9.39,
+      "cdr_per_1000": 7.847,
+      "population_un_2026": 5652989,
+      "un_code": "NOR",
+      "un_location": "Norway",
+      "un_locid": "578",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NPL": {
+      "bands": {
+        "age_0_14": 0.276677319,
+        "age_15_24": 0.19224341,
+        "age_25_44": 0.295316164,
+        "age_45_64": 0.168332236,
+        "age_65_plus": 0.067430871
+      },
+      "frac_18_49": 0.482318613,
+      "tfr_2026": 1.9191,
+      "cbr_per_1000": 18.294,
+      "cdr_per_1000": 6.999,
+      "population_un_2026": 29629410,
+      "un_code": "NPL",
+      "un_location": "Nepal",
+      "un_locid": "524",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "NZL": {
+      "bands": {
+        "age_0_14": 0.176370752,
+        "age_15_24": 0.128698524,
+        "age_25_44": 0.27344363,
+        "age_45_64": 0.241078691,
+        "age_65_plus": 0.180408402
+      },
+      "frac_18_49": 0.422235356,
+      "tfr_2026": 1.6394,
+      "cbr_per_1000": 10.969,
+      "cdr_per_1000": 7.551,
+      "population_un_2026": 5287479,
+      "un_code": "NZL",
+      "un_location": "New Zealand",
+      "un_locid": "554",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "OMN": {
+      "bands": {
+        "age_0_14": 0.240470531,
+        "age_15_24": 0.137691529,
+        "age_25_44": 0.447389561,
+        "age_45_64": 0.147083291,
+        "age_65_plus": 0.027365088
+      },
+      "frac_18_49": 0.611948041,
+      "tfr_2026": 2.444,
+      "cbr_per_1000": 16.015,
+      "cdr_per_1000": 1.861,
+      "population_un_2026": 5671458,
+      "un_code": "OMN",
+      "un_location": "Oman",
+      "un_locid": "512",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PAK": {
+      "bands": {
+        "age_0_14": 0.35788227,
+        "age_15_24": 0.200453754,
+        "age_25_44": 0.266423571,
+        "age_45_64": 0.130802001,
+        "age_65_plus": 0.044438404
+      },
+      "frac_18_49": 0.442092352,
+      "tfr_2026": 3.4422,
+      "cbr_per_1000": 26.748,
+      "cdr_per_1000": 6.418,
+      "population_un_2026": 259299792,
+      "un_code": "PAK",
+      "un_location": "Pakistan",
+      "un_locid": "586",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PAN": {
+      "bands": {
+        "age_0_14": 0.241464188,
+        "age_15_24": 0.158717232,
+        "age_25_44": 0.287310054,
+        "age_45_64": 0.212728967,
+        "age_65_plus": 0.099779558
+      },
+      "frac_18_49": 0.457873369,
+      "tfr_2026": 2.0729,
+      "cbr_per_1000": 15.473,
+      "cdr_per_1000": 5.021,
+      "population_un_2026": 4625718,
+      "un_code": "PAN",
+      "un_location": "Panama",
+      "un_locid": "591",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PER": {
+      "bands": {
+        "age_0_14": 0.232693282,
+        "age_15_24": 0.163463002,
+        "age_25_44": 0.302959781,
+        "age_45_64": 0.203787957,
+        "age_65_plus": 0.097095978
+      },
+      "frac_18_49": 0.478916918,
+      "tfr_2026": 1.925,
+      "cbr_per_1000": 15.258,
+      "cdr_per_1000": 5.736,
+      "population_un_2026": 34922148,
+      "un_code": "PER",
+      "un_location": "Peru",
+      "un_locid": "604",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PHL": {
+      "bands": {
+        "age_0_14": 0.264118524,
+        "age_15_24": 0.18952009,
+        "age_25_44": 0.308409826,
+        "age_45_64": 0.178419161,
+        "age_65_plus": 0.059532398
+      },
+      "frac_18_49": 0.49432279,
+      "tfr_2026": 1.863,
+      "cbr_per_1000": 15.747,
+      "cdr_per_1000": 6.59,
+      "population_un_2026": 117724472,
+      "un_code": "PHL",
+      "un_location": "Philippines",
+      "un_locid": "608",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PNG": {
+      "bands": {
+        "age_0_14": 0.327992346,
+        "age_15_24": 0.189491361,
+        "age_25_44": 0.291324141,
+        "age_45_64": 0.154003663,
+        "age_65_plus": 0.037188489
+      },
+      "frac_18_49": 0.472265567,
+      "tfr_2026": 2.989,
+      "cbr_per_1000": 23.52,
+      "cdr_per_1000": 6.637,
+      "population_un_2026": 10947848,
+      "un_code": "PNG",
+      "un_location": "Papua New Guinea",
+      "un_locid": "598",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "POL": {
+      "bands": {
+        "age_0_14": 0.141267538,
+        "age_15_24": 0.101007637,
+        "age_25_44": 0.274343747,
+        "age_45_64": 0.270742201,
+        "age_65_plus": 0.212638877
+      },
+      "frac_18_49": 0.423709815,
+      "tfr_2026": 1.3122,
+      "cbr_per_1000": 7.491,
+      "cdr_per_1000": 11.084,
+      "population_un_2026": 37843188,
+      "un_code": "POL",
+      "un_location": "Poland",
+      "un_locid": "616",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PRK": {
+      "bands": {
+        "age_0_14": 0.188927933,
+        "age_15_24": 0.124780945,
+        "age_25_44": 0.282951255,
+        "age_45_64": 0.273242611,
+        "age_65_plus": 0.130097257
+      },
+      "frac_18_49": 0.431279341,
+      "tfr_2026": 1.7541,
+      "cbr_per_1000": 12.334,
+      "cdr_per_1000": 10.054,
+      "population_un_2026": 26633691,
+      "un_code": "PRK",
+      "un_location": "Dem. People's Republic of Korea",
+      "un_locid": "408",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PRT": {
+      "bands": {
+        "age_0_14": 0.126217358,
+        "age_15_24": 0.10384863,
+        "age_25_44": 0.224368831,
+        "age_45_64": 0.291821323,
+        "age_65_plus": 0.253743857
+      },
+      "frac_18_49": 0.371868292,
+      "tfr_2026": 1.523,
+      "cbr_per_1000": 8.202,
+      "cdr_per_1000": 11.445,
+      "population_un_2026": 10395362,
+      "un_code": "PRT",
+      "un_location": "Portugal",
+      "un_locid": "620",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PRY": {
+      "bands": {
+        "age_0_14": 0.281393485,
+        "age_15_24": 0.164579457,
+        "age_25_44": 0.310148524,
+        "age_45_64": 0.174750729,
+        "age_65_plus": 0.069127806
+      },
+      "frac_18_49": 0.477148874,
+      "tfr_2026": 2.3713,
+      "cbr_per_1000": 18.983,
+      "cdr_per_1000": 5.796,
+      "population_un_2026": 7095279,
+      "un_code": "PRY",
+      "un_location": "Paraguay",
+      "un_locid": "600",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "PSX": {
+      "bands": {
+        "age_0_14": 0.370364665,
+        "age_15_24": 0.194814776,
+        "age_25_44": 0.273611964,
+        "age_45_64": 0.121739737,
+        "age_65_plus": 0.039468858
+      },
+      "frac_18_49": 0.443398795,
+      "tfr_2026": 3.1278,
+      "cbr_per_1000": 25.377,
+      "cdr_per_1000": 2.883,
+      "population_un_2026": 5692790,
+      "un_code": "PSE",
+      "un_location": "State of Palestine",
+      "un_locid": "275",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "iso_alias",
+      "confidence": "high"
+    },
+    "QAT": {
+      "bands": {
+        "age_0_14": 0.149958186,
+        "age_15_24": 0.103662199,
+        "age_25_44": 0.545703907,
+        "age_45_64": 0.183453398,
+        "age_65_plus": 0.01722231
+      },
+      "frac_18_49": 0.708938016,
+      "tfr_2026": 1.6908,
+      "cbr_per_1000": 9.715,
+      "cdr_per_1000": 1.03,
+      "population_un_2026": 3173559,
+      "un_code": "QAT",
+      "un_location": "Qatar",
+      "un_locid": "634",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ROU": {
+      "bands": {
+        "age_0_14": 0.15437153,
+        "age_15_24": 0.111907309,
+        "age_25_44": 0.241336129,
+        "age_45_64": 0.290013289,
+        "age_65_plus": 0.202371743
+      },
+      "frac_18_49": 0.396390434,
+      "tfr_2026": 1.707,
+      "cbr_per_1000": 9.372,
+      "cdr_per_1000": 13.613,
+      "population_un_2026": 18800605,
+      "un_code": "ROU",
+      "un_location": "Romania",
+      "un_locid": "642",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "RUS": {
+      "bands": {
+        "age_0_14": 0.167307031,
+        "age_15_24": 0.112599045,
+        "age_25_44": 0.273933167,
+        "age_45_64": 0.262493457,
+        "age_65_plus": 0.1836673
+      },
+      "frac_18_49": 0.424694171,
+      "tfr_2026": 1.4699,
+      "cbr_per_1000": 8.462,
+      "cdr_per_1000": 13.03,
+      "population_un_2026": 143394458,
+      "un_code": "RUS",
+      "un_location": "Russian Federation",
+      "un_locid": "643",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "RWA": {
+      "bands": {
+        "age_0_14": 0.366956677,
+        "age_15_24": 0.206926938,
+        "age_25_44": 0.266861544,
+        "age_45_64": 0.118176363,
+        "age_65_plus": 0.041078477
+      },
+      "frac_18_49": 0.454074061,
+      "tfr_2026": 3.5374,
+      "cbr_per_1000": 27.487,
+      "cdr_per_1000": 5.821,
+      "population_un_2026": 14889693,
+      "un_code": "RWA",
+      "un_location": "Rwanda",
+      "un_locid": "646",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SAH": {
+      "bands": {
+        "age_0_14": 0.227332707,
+        "age_15_24": 0.141452226,
+        "age_25_44": 0.334082061,
+        "age_45_64": 0.22736545,
+        "age_65_plus": 0.069767556
+      },
+      "frac_18_49": 0.51330011,
+      "tfr_2026": 2.1322,
+      "cbr_per_1000": 14.747,
+      "cdr_per_1000": 6.598,
+      "population_un_2026": 610813,
+      "un_code": "ESH",
+      "un_location": "Western Sahara",
+      "un_locid": "732",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "iso_alias",
+      "confidence": "medium",
+      "note": "WPP ESH inclui campos de refugiados de Tindouf; territorio e menor"
+    },
+    "SAU": {
+      "bands": {
+        "age_0_14": 0.234336247,
+        "age_15_24": 0.151315018,
+        "age_25_44": 0.412883413,
+        "age_45_64": 0.169759962,
+        "age_65_plus": 0.03170536
+      },
+      "frac_18_49": 0.586955009,
+      "tfr_2026": 2.2698,
+      "cbr_per_1000": 16.149,
+      "cdr_per_1000": 2.325,
+      "population_un_2026": 35165787,
+      "un_code": "SAU",
+      "un_location": "Saudi Arabia",
+      "un_locid": "682",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SDN": {
+      "bands": {
+        "age_0_14": 0.39818447,
+        "age_15_24": 0.199315628,
+        "age_25_44": 0.25609867,
+        "age_45_64": 0.111708071,
+        "age_65_plus": 0.034693161
+      },
+      "frac_18_49": 0.42650235,
+      "tfr_2026": 4.132,
+      "cbr_per_1000": 31.793,
+      "cdr_per_1000": 6.203,
+      "population_un_2026": 53282719,
+      "un_code": "SDN",
+      "un_location": "Sudan",
+      "un_locid": "729",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SEN": {
+      "bands": {
+        "age_0_14": 0.37320137,
+        "age_15_24": 0.205336624,
+        "age_25_44": 0.266283308,
+        "age_45_64": 0.118401264,
+        "age_65_plus": 0.036777433
+      },
+      "frac_18_49": 0.444353388,
+      "tfr_2026": 3.6586,
+      "cbr_per_1000": 28.632,
+      "cdr_per_1000": 5.373,
+      "population_un_2026": 19366548,
+      "un_code": "SEN",
+      "un_location": "Senegal",
+      "un_locid": "686",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SGP": {
+      "bands": {
+        "age_0_14": 0.117489097,
+        "age_15_24": 0.128122805,
+        "age_25_44": 0.367521608,
+        "age_45_64": 0.239284846,
+        "age_65_plus": 0.147581644
+      },
+      "frac_18_49": 0.53838852,
+      "tfr_2026": 0.9719,
+      "cbr_per_1000": 8.562,
+      "cdr_per_1000": 5.218,
+      "population_un_2026": 5905748,
+      "un_code": "SGP",
+      "un_location": "Singapore",
+      "un_locid": "702",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SLB": {
+      "bands": {
+        "age_0_14": 0.361163476,
+        "age_15_24": 0.194740705,
+        "age_25_44": 0.266514814,
+        "age_45_64": 0.140438546,
+        "age_65_plus": 0.037142458
+      },
+      "frac_18_49": 0.445438795,
+      "tfr_2026": 3.4195,
+      "cbr_per_1000": 26.145,
+      "cdr_per_1000": 5.006,
+      "population_un_2026": 858288,
+      "un_code": "SLB",
+      "un_location": "Solomon Islands",
+      "un_locid": "90",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SLE": {
+      "bands": {
+        "age_0_14": 0.372068412,
+        "age_15_24": 0.205764284,
+        "age_25_44": 0.267201497,
+        "age_45_64": 0.121667767,
+        "age_65_plus": 0.033298039
+      },
+      "frac_18_49": 0.447493212,
+      "tfr_2026": 3.5318,
+      "cbr_per_1000": 29.047,
+      "cdr_per_1000": 8.054,
+      "population_un_2026": 8996744,
+      "un_code": "SLE",
+      "un_location": "Sierra Leone",
+      "un_locid": "694",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SLV": {
+      "bands": {
+        "age_0_14": 0.239570551,
+        "age_15_24": 0.174675764,
+        "age_25_44": 0.315413425,
+        "age_45_64": 0.185532477,
+        "age_65_plus": 0.084807783
+      },
+      "frac_18_49": 0.49343486,
+      "tfr_2026": 1.7404,
+      "cbr_per_1000": 15.165,
+      "cdr_per_1000": 7.526,
+      "population_un_2026": 6391254,
+      "un_code": "SLV",
+      "un_location": "El Salvador",
+      "un_locid": "222",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SOL": {
+      "bands": {
+        "age_0_14": 0.465241715,
+        "age_15_24": 0.193398945,
+        "age_25_44": 0.223848459,
+        "age_45_64": 0.091098319,
+        "age_65_plus": 0.026412561
+      },
+      "frac_18_49": 0.385654976,
+      "tfr_2026": 5.8046,
+      "cbr_per_1000": 41.191,
+      "cdr_per_1000": 9.553,
+      "population_un_2026": 4564971,
+      "un_code": "SOM",
+      "un_location": "Somalia",
+      "un_locid": "706",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "proxy_parent",
+      "confidence": "low",
+      "parent_share": 0.22481,
+      "population_parent_2026": 20305907,
+      "population_share_basis": "nations.json: pop(SOL) / (pop(SOL) + pop(SOM))",
+      "note": "Somalilandia nao e entidade WPP; estrutura e taxas da Somalia"
+    },
+    "SOM": {
+      "bands": {
+        "age_0_14": 0.465241715,
+        "age_15_24": 0.193398945,
+        "age_25_44": 0.223848459,
+        "age_45_64": 0.091098319,
+        "age_65_plus": 0.026412561
+      },
+      "frac_18_49": 0.385654976,
+      "tfr_2026": 5.8046,
+      "cbr_per_1000": 41.191,
+      "cdr_per_1000": 9.553,
+      "population_un_2026": 20305907,
+      "un_code": "SOM",
+      "un_location": "Somalia",
+      "un_locid": "706",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SRB": {
+      "bands": {
+        "age_0_14": 0.142023805,
+        "age_15_24": 0.101766435,
+        "age_25_44": 0.246900616,
+        "age_45_64": 0.275517603,
+        "age_65_plus": 0.233791541
+      },
+      "frac_18_49": 0.391349941,
+      "tfr_2026": 1.5051,
+      "cbr_per_1000": 8.605,
+      "cdr_per_1000": 14.348,
+      "population_un_2026": 6641964,
+      "un_code": "SRB",
+      "un_location": "Serbia",
+      "un_locid": "688",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SSD": {
+      "bands": {
+        "age_0_14": 0.370892372,
+        "age_15_24": 0.236828141,
+        "age_25_44": 0.220471647,
+        "age_45_64": 0.140201635,
+        "age_65_plus": 0.031606205
+      },
+      "frac_18_49": 0.426709915,
+      "tfr_2026": 3.6334,
+      "cbr_per_1000": 29.428,
+      "cdr_per_1000": 9.898,
+      "population_un_2026": 12436037,
+      "un_code": "SSD",
+      "un_location": "South Sudan",
+      "un_locid": "728",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SUR": {
+      "bands": {
+        "age_0_14": 0.250454083,
+        "age_15_24": 0.168240202,
+        "age_25_44": 0.287318522,
+        "age_45_64": 0.208927929,
+        "age_65_plus": 0.085059263
+      },
+      "frac_18_49": 0.461320543,
+      "tfr_2026": 2.1876,
+      "cbr_per_1000": 16.761,
+      "cdr_per_1000": 6.982,
+      "population_un_2026": 645256,
+      "un_code": "SUR",
+      "un_location": "Suriname",
+      "un_locid": "740",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SVK": {
+      "bands": {
+        "age_0_14": 0.153537634,
+        "age_15_24": 0.100295138,
+        "age_25_44": 0.266049583,
+        "age_45_64": 0.285041607,
+        "age_65_plus": 0.195076037
+      },
+      "frac_18_49": 0.416592755,
+      "tfr_2026": 1.5713,
+      "cbr_per_1000": 8.791,
+      "cdr_per_1000": 10.457,
+      "population_un_2026": 5451342,
+      "un_code": "SVK",
+      "un_location": "Slovakia",
+      "un_locid": "703",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SVN": {
+      "bands": {
+        "age_0_14": 0.142356806,
+        "age_15_24": 0.102154855,
+        "age_25_44": 0.239815679,
+        "age_45_64": 0.288939522,
+        "age_65_plus": 0.226733139
+      },
+      "frac_18_49": 0.385867501,
+      "tfr_2026": 1.58,
+      "cbr_per_1000": 7.991,
+      "cdr_per_1000": 10.549,
+      "population_un_2026": 2114574,
+      "un_code": "SVN",
+      "un_location": "Slovenia",
+      "un_locid": "705",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SWE": {
+      "bands": {
+        "age_0_14": 0.164281667,
+        "age_15_24": 0.11929355,
+        "age_25_44": 0.260725492,
+        "age_45_64": 0.244869101,
+        "age_65_plus": 0.210830192
+      },
+      "frac_18_49": 0.404024224,
+      "tfr_2026": 1.4445,
+      "cbr_per_1000": 8.999,
+      "cdr_per_1000": 9.126,
+      "population_un_2026": 10701046,
+      "un_code": "SWE",
+      "un_location": "Sweden",
+      "un_locid": "752",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SWZ": {
+      "bands": {
+        "age_0_14": 0.326164815,
+        "age_15_24": 0.197528385,
+        "age_25_44": 0.300469029,
+        "age_45_64": 0.131841513,
+        "age_65_plus": 0.043996258
+      },
+      "frac_18_49": 0.483436021,
+      "tfr_2026": 2.6433,
+      "cbr_per_1000": 22.886,
+      "cdr_per_1000": 7.786,
+      "population_un_2026": 1269859,
+      "un_code": "SWZ",
+      "un_location": "Eswatini",
+      "un_locid": "748",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "SYR": {
+      "bands": {
+        "age_0_14": 0.279035116,
+        "age_15_24": 0.225312453,
+        "age_25_44": 0.293156112,
+        "age_45_64": 0.152989654,
+        "age_65_plus": 0.049506665
+      },
+      "frac_18_49": 0.500157201,
+      "tfr_2026": 2.6176,
+      "cbr_per_1000": 23.614,
+      "cdr_per_1000": 4.755,
+      "population_un_2026": 26472497,
+      "un_code": "SYR",
+      "un_location": "Syrian Arab Republic",
+      "un_locid": "760",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TCD": {
+      "bands": {
+        "age_0_14": 0.460146043,
+        "age_15_24": 0.196417262,
+        "age_25_44": 0.228716366,
+        "age_45_64": 0.093399926,
+        "age_65_plus": 0.021320402
+      },
+      "frac_18_49": 0.390446303,
+      "tfr_2026": 5.8352,
+      "cbr_per_1000": 42.196,
+      "cdr_per_1000": 10.942,
+      "population_un_2026": 21560380,
+      "un_code": "TCD",
+      "un_location": "Chad",
+      "un_locid": "148",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TGO": {
+      "bands": {
+        "age_0_14": 0.387790557,
+        "age_15_24": 0.198031401,
+        "age_25_44": 0.252958638,
+        "age_45_64": 0.128053191,
+        "age_65_plus": 0.033166212
+      },
+      "frac_18_49": 0.427350897,
+      "tfr_2026": 4.0089,
+      "cbr_per_1000": 30.148,
+      "cdr_per_1000": 7.571,
+      "population_un_2026": 9930918,
+      "un_code": "TGO",
+      "un_location": "Togo",
+      "un_locid": "768",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "THA": {
+      "bands": {
+        "age_0_14": 0.140778401,
+        "age_15_24": 0.123887658,
+        "age_25_44": 0.279402974,
+        "age_45_64": 0.289106842,
+        "age_65_plus": 0.166824125
+      },
+      "frac_18_49": 0.442165849,
+      "tfr_2026": 1.1913,
+      "cbr_per_1000": 7.911,
+      "cdr_per_1000": 9.25,
+      "population_un_2026": 71559614,
+      "un_code": "THA",
+      "un_location": "Thailand",
+      "un_locid": "764",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TJK": {
+      "bands": {
+        "age_0_14": 0.354255525,
+        "age_15_24": 0.171346013,
+        "age_25_44": 0.287282675,
+        "age_45_64": 0.144206118,
+        "age_65_plus": 0.042909668
+      },
+      "frac_18_49": 0.442645065,
+      "tfr_2026": 2.9603,
+      "cbr_per_1000": 23.835,
+      "cdr_per_1000": 4.638,
+      "population_un_2026": 10978598,
+      "un_code": "TJK",
+      "un_location": "Tajikistan",
+      "un_locid": "762",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TKM": {
+      "bands": {
+        "age_0_14": 0.308095832,
+        "age_15_24": 0.142973916,
+        "age_25_44": 0.310953276,
+        "age_45_64": 0.187048633,
+        "age_65_plus": 0.050928343
+      },
+      "frac_18_49": 0.457349141,
+      "tfr_2026": 2.5967,
+      "cbr_per_1000": 19.216,
+      "cdr_per_1000": 5.943,
+      "population_un_2026": 7736632,
+      "un_code": "TKM",
+      "un_location": "Turkmenistan",
+      "un_locid": "795",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TLS": {
+      "bands": {
+        "age_0_14": 0.326058529,
+        "age_15_24": 0.213377474,
+        "age_25_44": 0.281552317,
+        "age_45_64": 0.127129985,
+        "age_65_plus": 0.051881694
+      },
+      "frac_18_49": 0.467476306,
+      "tfr_2026": 2.5004,
+      "cbr_per_1000": 21.416,
+      "cdr_per_1000": 7.101,
+      "population_un_2026": 1436923,
+      "un_code": "TLS",
+      "un_location": "Timor-Leste",
+      "un_locid": "626",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TTO": {
+      "bands": {
+        "age_0_14": 0.172133628,
+        "age_15_24": 0.124520906,
+        "age_25_44": 0.306812655,
+        "age_45_64": 0.261554433,
+        "age_65_plus": 0.134978378
+      },
+      "frac_18_49": 0.471263593,
+      "tfr_2026": 1.5176,
+      "cbr_per_1000": 10.078,
+      "cdr_per_1000": 9.172,
+      "population_un_2026": 1513268,
+      "un_code": "TTO",
+      "un_location": "Trinidad and Tobago",
+      "un_locid": "780",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TUN": {
+      "bands": {
+        "age_0_14": 0.230374787,
+        "age_15_24": 0.141319884,
+        "age_25_44": 0.288237611,
+        "age_45_64": 0.236746282,
+        "age_65_plus": 0.103321437
+      },
+      "frac_18_49": 0.451635313,
+      "tfr_2026": 1.7912,
+      "cbr_per_1000": 12.644,
+      "cdr_per_1000": 6.306,
+      "population_un_2026": 12415138,
+      "un_code": "TUN",
+      "un_location": "Tunisia",
+      "un_locid": "788",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TUR": {
+      "bands": {
+        "age_0_14": 0.205751724,
+        "age_15_24": 0.141490155,
+        "age_25_44": 0.30142809,
+        "age_45_64": 0.242293828,
+        "age_65_plus": 0.109036202
+      },
+      "frac_18_49": 0.473264276,
+      "tfr_2026": 1.6193,
+      "cbr_per_1000": 11.893,
+      "cdr_per_1000": 6.431,
+      "population_un_2026": 87926082,
+      "un_code": "TUR",
+      "un_location": "Türkiye",
+      "un_locid": "792",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TWN": {
+      "bands": {
+        "age_0_14": 0.112821648,
+        "age_15_24": 0.09255825,
+        "age_25_44": 0.27013984,
+        "age_45_64": 0.315114192,
+        "age_65_plus": 0.209366071
+      },
+      "frac_18_49": 0.423875895,
+      "tfr_2026": 0.8609,
+      "cbr_per_1000": 5.327,
+      "cdr_per_1000": 9.077,
+      "population_un_2026": 23011292,
+      "un_code": "TWN",
+      "un_location": "China, Taiwan Province of China",
+      "un_locid": "158",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "TZA": {
+      "bands": {
+        "age_0_14": 0.421483059,
+        "age_15_24": 0.20073629,
+        "age_25_44": 0.244779903,
+        "age_45_64": 0.102641745,
+        "age_65_plus": 0.030359003
+      },
+      "frac_18_49": 0.417116438,
+      "tfr_2026": 4.4062,
+      "cbr_per_1000": 33.895,
+      "cdr_per_1000": 5.594,
+      "population_un_2026": 72563780,
+      "un_code": "TZA",
+      "un_location": "United Republic of Tanzania",
+      "un_locid": "834",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "UGA": {
+      "bands": {
+        "age_0_14": 0.426691445,
+        "age_15_24": 0.213393816,
+        "age_25_44": 0.25079649,
+        "age_45_64": 0.086412038,
+        "age_65_plus": 0.022706211
+      },
+      "frac_18_49": 0.423346071,
+      "tfr_2026": 3.969,
+      "cbr_per_1000": 33.111,
+      "cdr_per_1000": 4.656,
+      "population_un_2026": 52761470,
+      "un_code": "UGA",
+      "un_location": "Uganda",
+      "un_locid": "800",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "UKR": {
+      "bands": {
+        "age_0_14": 0.134124507,
+        "age_15_24": 0.111439601,
+        "age_25_44": 0.290194188,
+        "age_45_64": 0.272895178,
+        "age_65_plus": 0.191346527
+      },
+      "frac_18_49": 0.440145719,
+      "tfr_2026": 1.0037,
+      "cbr_per_1000": 6.121,
+      "cdr_per_1000": 13.335,
+      "population_un_2026": 39535848,
+      "un_code": "UKR",
+      "un_location": "Ukraine",
+      "un_locid": "804",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "URY": {
+      "bands": {
+        "age_0_14": 0.175053813,
+        "age_15_24": 0.138783404,
+        "age_25_44": 0.280527308,
+        "age_45_64": 0.240294785,
+        "age_65_plus": 0.16534069
+      },
+      "frac_18_49": 0.443147884,
+      "tfr_2026": 1.3829,
+      "cbr_per_1000": 9.719,
+      "cdr_per_1000": 9.972,
+      "population_un_2026": 3382537,
+      "un_code": "URY",
+      "un_location": "Uruguay",
+      "un_locid": "858",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "USA": {
+      "bands": {
+        "age_0_14": 0.169050787,
+        "age_15_24": 0.132358106,
+        "age_25_44": 0.269285748,
+        "age_45_64": 0.24090984,
+        "age_65_plus": 0.188395519
+      },
+      "frac_18_49": 0.426545092,
+      "tfr_2026": 1.6247,
+      "cbr_per_1000": 10.524,
+      "cdr_per_1000": 8.985,
+      "population_un_2026": 349035494,
+      "un_code": "USA",
+      "un_location": "United States of America",
+      "un_locid": "840",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "UZB": {
+      "bands": {
+        "age_0_14": 0.314581032,
+        "age_15_24": 0.145000203,
+        "age_25_44": 0.297996887,
+        "age_45_64": 0.17950986,
+        "age_65_plus": 0.062912018
+      },
+      "frac_18_49": 0.449048035,
+      "tfr_2026": 3.4041,
+      "cbr_per_1000": 23.708,
+      "cdr_per_1000": 6.06,
+      "population_un_2026": 37724223,
+      "un_code": "UZB",
+      "un_location": "Uzbekistan",
+      "un_locid": "860",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "VCT": {
+      "bands": {
+        "age_0_14": 0.204465761,
+        "age_15_24": 0.145127161,
+        "age_25_44": 0.271270807,
+        "age_45_64": 0.252670187,
+        "age_65_plus": 0.126466084
+      },
+      "frac_18_49": 0.436093256,
+      "tfr_2026": 1.7306,
+      "cbr_per_1000": 11.661,
+      "cdr_per_1000": 11.617,
+      "population_un_2026": 99244,
+      "un_code": "VCT",
+      "un_location": "Saint Vincent and the Grenadines",
+      "un_locid": "670",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "VEN": {
+      "bands": {
+        "age_0_14": 0.243230497,
+        "age_15_24": 0.182561101,
+        "age_25_44": 0.251681514,
+        "age_45_64": 0.218996929,
+        "age_65_plus": 0.103529958
+      },
+      "frac_18_49": 0.43849383,
+      "tfr_2026": 2.042,
+      "cbr_per_1000": 15.35,
+      "cdr_per_1000": 7.91,
+      "population_un_2026": 28633711,
+      "un_code": "VEN",
+      "un_location": "Venezuela (Bolivarian Republic of)",
+      "un_locid": "862",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "VNM": {
+      "bands": {
+        "age_0_14": 0.22437294,
+        "age_15_24": 0.139339486,
+        "age_25_44": 0.303486524,
+        "age_45_64": 0.233726522,
+        "age_65_plus": 0.099074529
+      },
+      "frac_18_49": 0.464380433,
+      "tfr_2026": 1.8642,
+      "cbr_per_1000": 12.796,
+      "cdr_per_1000": 6.807,
+      "population_un_2026": 102177431,
+      "un_code": "VNM",
+      "un_location": "Viet Nam",
+      "un_locid": "704",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "XKX": {
+      "bands": {
+        "age_0_14": 0.19284161,
+        "age_15_24": 0.168098885,
+        "age_25_44": 0.292796319,
+        "age_45_64": 0.236766757,
+        "age_65_plus": 0.109496429
+      },
+      "frac_18_49": 0.474903899,
+      "tfr_2026": 1.5152,
+      "cbr_per_1000": 11.554,
+      "cdr_per_1000": 6.257,
+      "population_un_2026": 1666992,
+      "un_code": "XKX",
+      "un_location": "Kosovo (under UNSC res. 1244)",
+      "un_locid": "412",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "YEM": {
+      "bands": {
+        "age_0_14": 0.409211522,
+        "age_15_24": 0.19053555,
+        "age_25_44": 0.268406159,
+        "age_45_64": 0.106106697,
+        "age_65_plus": 0.025740072
+      },
+      "frac_18_49": 0.436233483,
+      "tfr_2026": 4.3267,
+      "cbr_per_1000": 32.745,
+      "cdr_per_1000": 4.625,
+      "population_un_2026": 42961653,
+      "un_code": "YEM",
+      "un_location": "Yemen",
+      "un_locid": "887",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ZAF": {
+      "bands": {
+        "age_0_14": 0.255779437,
+        "age_15_24": 0.163271191,
+        "age_25_44": 0.32876512,
+        "age_45_64": 0.18143359,
+        "age_65_plus": 0.070750662
+      },
+      "frac_18_49": 0.50253451,
+      "tfr_2026": 2.1662,
+      "cbr_per_1000": 17.842,
+      "cdr_per_1000": 9.314,
+      "population_un_2026": 65453084,
+      "un_code": "ZAF",
+      "un_location": "South Africa",
+      "un_locid": "710",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ZMB": {
+      "bands": {
+        "age_0_14": 0.4049897,
+        "age_15_24": 0.207937992,
+        "age_25_44": 0.259649135,
+        "age_45_64": 0.10684757,
+        "age_65_plus": 0.020575603
+      },
+      "frac_18_49": 0.438380948,
+      "tfr_2026": 3.9103,
+      "cbr_per_1000": 32.016,
+      "cdr_per_1000": 5.104,
+      "population_un_2026": 22521915,
+      "un_code": "ZMB",
+      "un_location": "Zambia",
+      "un_locid": "894",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    },
+    "ZWE": {
+      "bands": {
+        "age_0_14": 0.396432448,
+        "age_15_24": 0.216233623,
+        "age_25_44": 0.245230795,
+        "age_45_64": 0.107005722,
+        "age_65_plus": 0.035097413
+      },
+      "frac_18_49": 0.433106644,
+      "tfr_2026": 3.5687,
+      "cbr_per_1000": 29.253,
+      "cdr_per_1000": 7.294,
+      "population_un_2026": 17273580,
+      "un_code": "ZWE",
+      "un_location": "Zimbabwe",
+      "un_locid": "716",
+      "source": "UN WPP2024 (Medium, 2026)",
+      "method": "direct",
+      "confidence": "high"
+    }
+  }
+}
