@@ -1,28 +1,36 @@
-"""Q-015 — agrega as 5 variacoes do sweep 365 d (§19) num baseline unico.
+"""Q-015 — agrega as variacoes do sweep 365 d (§19) num baseline unico.
 
 O sweep padrao (`tools/economy_world_sweep.gd`) roda as variacoes em serie
-chamando `economy_world_test.gd`. Para a revisao Q-015 as 5 variacoes rodaram
-como 5 processos Godot simultaneos com `--threads=1 --urban=1`, cada um
-gravando o seu relatorio por variacao. Este script junta os 5 relatorios no
-mesmo formato de `construction_world_sweep.json` (meta + nations com o PIOR
-caso por nacao), sem inventar numero: nacao ausente do baseline fica fora.
+chamando `economy_world_test.gd`. Para a revisao Q-015 as variacoes rodaram
+como processos Godot simultaneos com `--threads=1 --urban=1`, cada um gravando
+o seu relatorio por variacao. Este script junta os relatorios no mesmo formato
+de `construction_world_sweep.json` (meta + nations com o PIOR caso por nacao),
+sem inventar numero: nacao ausente do baseline fica fora.
 
 Q-016 — portao de sensibilidade do cambio. Todo relatorio grava
 `meta.trajectory_hash` (sha256 de nations+labor+sectors+ownership) e `meta.fx`.
 O script exige duas coisas e retorna 1 ("FALHA") quando qualquer uma quebra:
-  (i) as 5 variantes de aceite tem de fechar o MESMO `trajectory_hash`;
-  (ii) a SONDA `float_probe` (`--fx=float`, regime flutuante forçado no teste)
-       tem de fechar um hash DIFERENTE — se fechar o mesmo, o caminho cambial
-       esta inerte e o "×5" nao prova determinismo nenhum.
+  (i) as variantes de aceite (`--variants`, tudo que nao comeca com `float`)
+      tem de fechar o MESMO `trajectory_hash`;
+  (ii) a SONDA (`float`, `--fx=float`, regime flutuante forçado no teste) tem
+       de fechar um hash DIFERENTE — se fechar o mesmo, o caminho cambial esta
+       inerte e a repeticao nao prova determinismo nenhum.
 A sonda NAO entra no gate de comida nem no teto de falencias: o delta de comida
 dela e so impresso como informacao. Um resultado em `meta.trajectory.fx` traz
 o `meta.fx` de cada variante (modo, semente, moedas, flutuantes, soma das taxas).
+
+Desde a A7 da linha principal (2026-11-17) o padrao e `real,float`: as 5
+variacoes peg antigas (real, real_seed1, real_seed2, half, xgs) fechavam o
+mesmo hash desde o Q-016, entao rodar todas era CPU a toa. As duas continuam
+sendo prova de determinismo (a peg repetida) e de sensibilidade (a sonda). Os
+nomes antigos seguem aceitos.
 
 Uso:
   python tools/aggregate_s19_sweep.py
     --baseline docs/economy/perf/construction_world_sweep.json
     --dir "%APPDATA%/Godot/app_userdata/Open Grand Strategy/world_sweep"
     --prefix s19_ --suffix _365.json
+    --variants real,real_seed1,real_seed2,half,xgs,float   (opcional)
     --logdir <pasta dos logs .log>            (opcional: le o drift de dinheiro)
     --out docs/economy/perf/s19_world_sweep.json
 """
@@ -33,13 +41,22 @@ import os
 import re
 import sys
 
-VARIANTS = [
-    ("real", ["--fx=real"]),
-    ("real_seed1", ["--fx=real", "--seed=1"]),
-    ("real_seed2", ["--fx=real", "--seed=2"]),
-    ("half", ["--fx=half"]),
-    ("xgs", ["--currencies=0"]),
-]
+VARIANTS_DEFAULT = "real,float"
+# Argumentos conhecidos por nome de variante (registro do `meta.variants`).
+KNOWN_ARGS = {
+    "real": ["--fx=real"],
+    "real_seed1": ["--fx=real", "--seed=1"],
+    "real_seed2": ["--fx=real", "--seed=2"],
+    "half": ["--fx=half"],
+    "xgs": ["--currencies=0"],
+    "real_nourban": ["--fx=real", "--urban=0"],
+    "float": ["--fx=float"],
+    "float_probe": ["--fx=float"],
+}
+# Nome de variante que comeca com isto e SONDA (fora do gate de aceite).
+PROBE_PREFIX = "float"
+# Nome com que a sonda foi gravada nos prefixos antigos (s19_/q16_/recal*_).
+PROBE_LEGACY = "float_probe"
 FOOD_TOLERANCE = 0.025
 OWNER_BANKRUPTCY_LIMIT = 28
 # P4 (recal3, 2026-11-17): o portão de comida usa a MÉDIA DOS ÚLTIMOS 30 DIAS por
@@ -50,8 +67,45 @@ GATE_METRIC = "avg30"
 FOOD_WINDOW_DAYS = 30
 # Isentos declarados pelo head: quedas de comida nestas nações não reprovam.
 FOOD_EXEMPT = ("SOL", "DJI", "SAH", "JOR", "YEM")
-# Q-016: sonde de sensibilidade do cambio. Nao e variante de aceite.
-PROBE = ("float_probe", ["--fx=float"])
+
+
+def split_variants(spec):
+    """`"real,float"` -> (peg=[...], sonda="float"|None).
+
+    A sonda e a variante cujo nome comeca com `float` (`--fx=float`); todas as
+    outras formam o conjunto de aceite (peg), que tem de fechar o mesmo hash.
+    """
+    names = [part.strip() for part in spec.split(",") if part.strip()]
+    peg, probe = [], None
+    for name in names:
+        if name.startswith(PROBE_PREFIX):
+            if probe is None:
+                probe = name
+        else:
+            peg.append(name)
+    return peg, probe
+
+
+def variant_file(directory, prefix, name, suffix):
+    """Relatorio de uma variacao; a sonda `float` cai no nome antigo se preciso."""
+    path = os.path.join(directory, prefix + name + suffix)
+    if not os.path.exists(path) and name.startswith(PROBE_PREFIX):
+        legacy = os.path.join(directory, prefix + PROBE_LEGACY + suffix)
+        if os.path.exists(legacy):
+            return legacy
+    return path
+
+
+def variant_log(logdir, name):
+    """Log da variacao (mesmo fallback de nome da sonda)."""
+    if not logdir:
+        return None
+    path = os.path.join(logdir, name + ".log")
+    if not os.path.exists(path) and name.startswith(PROBE_PREFIX):
+        legacy = os.path.join(logdir, PROBE_LEGACY + ".log")
+        if os.path.exists(legacy):
+            return legacy
+    return path
 
 
 def load(path):
@@ -117,7 +171,16 @@ def main():
     parser.add_argument("--suffix", default="_365.json")
     parser.add_argument("--logdir", default=None)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--variants", default=VARIANTS_DEFAULT,
+                        help="variantes separadas por virgula; nome comecando "
+                             "com `float` e a sonda (padrao: real,float)")
     args = parser.parse_args()
+
+    peg_variants, probe_name = split_variants(args.variants)
+    if not peg_variants:
+        print("FALHA: --variants precisa de ao menos uma variante de aceite "
+              "(ex.: real,float)")
+        return 2
 
     baseline = load(args.baseline)
     before = baseline_food(baseline)
@@ -128,8 +191,8 @@ def main():
     trajectory_hashes = {}
     fx = {}
 
-    for name, _args in VARIANTS:
-        path = os.path.join(args.dir, args.prefix + name + args.suffix)
+    for name in peg_variants:
+        path = variant_file(args.dir, args.prefix, name, args.suffix)
         if not os.path.exists(path):
             print("FALHA: relatorio ausente: " + path)
             return 2
@@ -142,9 +205,7 @@ def main():
         }
         trajectory_hashes[name] = meta.get("trajectory_hash")
         fx[name] = meta.get("fx", {})
-        log_path = None
-        if args.logdir:
-            log_path = os.path.join(args.logdir, name + ".log")
+        log_path = variant_log(args.logdir, name)
         drift[name] = log_drift(log_path)
         for tag, row in report.get("nations", {}).items():
             if tag not in before:
@@ -173,12 +234,12 @@ def main():
 
     # Q-016 — sonda: fora do gate de comida e do teto de falencias. So entra no
     # portao de sensibilidade e tem o pior delta de comida impresso.
-    probe_name = PROBE[0]
-    probe_path = os.path.join(args.dir, args.prefix + probe_name + args.suffix)
+    probe_path = (variant_file(args.dir, args.prefix, probe_name, args.suffix)
+                  if probe_name else None)
     probe_hash = None
     probe_worst = None
     probe_summary = None
-    if os.path.exists(probe_path):
+    if probe_path and os.path.exists(probe_path):
         probe_report = load(probe_path)
         probe_meta = probe_report.get("meta", {})
         probe_hash = probe_meta.get("trajectory_hash")
@@ -187,8 +248,7 @@ def main():
         # so nao entram no gate (a sonda nao e variante de aceite).
         probe_summary = {
             "bankruptcies": int(probe_meta.get("bankruptcies", -1)),
-            "money_drift": log_drift(os.path.join(args.logdir, probe_name + ".log"))
-            if args.logdir else None,
+            "money_drift": log_drift(variant_log(args.logdir, probe_name)),
         }
         for tag, row in probe_report.get("nations", {}).items():
             if tag not in before:
@@ -207,14 +267,14 @@ def main():
                                "food_avg30": (float(avg) if avg is not None
                                               else None),
                                "delta_last_day": delta_last}
-    else:
+    elif probe_name:
         print("AVISO: sonda ausente (%s) — sensibilidade do cambio nao avaliada"
               % probe_path)
 
-    # (i) as 5 variantes de aceite tem de fechar o mesmo hash; (ii) a sonda tem
+    # (i) as variantes de aceite tem de fechar o mesmo hash; (ii) a sonda tem
     # de diferir. Hash ausente (relatorio antigo) nao conta como "igual".
-    known_peg = [h for h in (trajectory_hashes[name] for name, _ in VARIANTS) if h]
-    peg_identical = len(known_peg) == len(VARIANTS) and len(set(known_peg)) == 1
+    known_peg = [h for h in (trajectory_hashes[name] for name in peg_variants) if h]
+    peg_identical = len(known_peg) == len(peg_variants) and len(set(known_peg)) == 1
     peg_hash = known_peg[0] if peg_identical else None
     if peg_hash is not None and probe_hash is not None:
         probe_differs = probe_hash != peg_hash
@@ -229,7 +289,9 @@ def main():
     }
     trajectory_failures = []
     if not peg_identical:
-        trajectory_failures.append("as 5 variantes nao tem o mesmo trajectory_hash")
+        trajectory_failures.append(
+            "as %d variantes de aceite nao tem o mesmo trajectory_hash"
+            % len(peg_variants))
     if probe_differs is False:
         trajectory_failures.append(
             "sonda --fx=float com o MESMO trajectory_hash (caminho cambial inerte)")
@@ -284,12 +346,13 @@ def main():
             "money_drift": drift,
             "urban": True,
             "threads": 1,
-            "parallel_processes": 5,
-            "variants": [{"name": name, "args": args} for name, args in VARIANTS],
+            "parallel_processes": len(peg_variants) + (1 if probe_name else 0),
+            "variants": [{"name": name, "args": KNOWN_ARGS.get(name, [])}
+                         for name in peg_variants],
             "trajectory": trajectory,
             "probe": {
                 "name": probe_name,
-                "args": PROBE[1],
+                "args": KNOWN_ARGS.get(probe_name, []) if probe_name else [],
                 "trajectory_hash": probe_hash,
                 "worst_food": probe_worst,
                 **(probe_summary or {}),
@@ -314,9 +377,10 @@ def main():
               % ", ".join(legacy_metric))
     print("acima do teto do dono (%d): %s" % (
         OWNER_BANKRUPTCY_LIMIT, ", ".join(over) if over else "nenhuma"))
-    for name, _args in VARIANTS:
+    for name in peg_variants:
         print("hash %-11s %s" % (name, trajectory_hashes[name]))
-    print("hash %-11s %s" % (probe_name, probe_hash))
+    if probe_name:
+        print("hash %-11s %s" % (probe_name, probe_hash))
     if probe_worst is not None:
         print("sonda worst_food %s delta=%+.4f (so informacao, fora do gate)"
               % (probe_worst["tag"], probe_worst["delta"]))

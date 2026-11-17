@@ -229,3 +229,40 @@ do tick e as outras fases (prólogo, `status`, `services`) dominam.
   replay, a filtragem das ofertas e a própria liquidação. O próximo alvo do
   plano é `arrival` (≈5,5 ms, não tocado) e a cadência por sistema (A6).
 - **Nada de save/migração**: nenhum campo novo serializado; schema inalterado.
+
+## 6. Merge na linha principal e revalidação (2026-11-17)
+
+`perf/a7-trade-parallel` (`1883d05`, base `fcfc107`) mesclada `--no-ff` em
+`balance/global-resources` sobre a A5 + D-076. Conflito apenas em documentação
+(`GAME_STATE.md`, `docs/team/QUADRO.md`), resolvido mantendo os dois lados; a
+decisão foi **renumerada de D-075 para D-077** (D-075 é a A5 e D-076 a ordem do
+dia da A5). O código auto-mergeou: `sim_core.h` junta o scratch do plano da A7
+ao que a A5 já tinha, e os arquivos de `src/sim/ai/` e `src/sim/actions.*`
+ficaram intactos.
+
+| Verificação | Resultado |
+| --- | --- |
+| build debug + `--headless --import` | exit 0 |
+| `economy_integration_test`, `economy_ai_test`, `investment_test`, `population_demo_test` | verde |
+| `economy_save_load_roundtrip_test` / `command_replay_test` | 0 diffs / 0 diffs |
+| `convoy_lifecycle_test` (cena) / `port_capacity_test` | verde |
+| `world_equivalence` 2 rodadas × golden A0 atual | **0 diferenças** (`save dcad384c…c06a`, `status 4f18522d…ea612`) |
+| threads 1 / 8 / 16 | os mesmos dois shas |
+| CLI × Godot com IA (60 d) | **0 diferenças** campo a campo, money 2.177.839.209,15 |
+| sweep 365 d, 2 variantes (`main_a7_world_sweep.json`) | peg `0817959a…` = recal3; sonda `8bf2ceda…` difere; 8 falências; drift −0,001; 179 nações com delta de comida 0,000 |
+
+O sweep deixou de rodar 5 variações peg: `real`, `real_seed1`, `real_seed2`,
+`half` e `xgs` fecham o MESMO `trajectory_hash` desde o Q-016, então
+`tools/s19_world_sweep_parallel.ps1` passou a aceitar `-Variants` (padrão
+`real,float`: a peg `real` e a sonda `--fx=float`) e
+`tools/aggregate_s19_sweep.py` passou a aceitar `--variants`, tratando qualquer
+nome começando com `float` como sonda — fora do gate de comida e do teto de
+falências, dentro do portão de sensibilidade do câmbio.
+
+Bench canônico N=3 na linha mesclada (`docs/economy/perf/a7_main_bench.json`):
+dia = tick **59,80 ms**, `status` 20,89, `trade` **6,44** (`trade_food` 5,24 =
+prep 1,41 + calc 1,58 + settle 2,21); as fases intocadas (`arrival` 7,83)
+confirmam o host mais lento que no A0. A IA custa ≈ **12,5 ms/dia** (A/B no CLI
+release: 45,2 ms/dia com IA × 32,7 sem). O critério de 3% entre rodadas não
+fechou (5,38%): outra worktree (`opengs-wt-turbo`) rodava Godot headless e um
+bench com janela no host durante as duas tentativas.

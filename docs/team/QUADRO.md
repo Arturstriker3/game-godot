@@ -428,3 +428,21 @@ Dois commits para parecer: `ee0e97d` (merge `--no-ff` de `perf/a5-ai-cpp`, IA ec
 **Verde:** golden A0 0 diffs (save `dcad384c…c06a`, status `46047575…b53d4`, run1=run2); threads 1/8/16 com os mesmos shas; CLI x Godot byte-idênticos; round-trip 0 diffs; bateria integration/ai/pop_demo/command_replay/convoy(cena)/port/fleet_fuel; verificador-flash **APROVADO**. **Perf** (60 d x 3): `trade` 6,25 ms -> **4,68 normalizado (−25%)** e `trade_food` 5,21 -> **3,90 (−29%)** pelo controle `arrival`/`status` (host ~1,34x mais lento que no A0; o critério de repetibilidade do harness estourou na rodada 3 por outro Godot headless no host).
 
 **Limites:** `trade_goods` segue serial (0,79 ms equivalente); caminho lento da liquidação em ~29% dos compradores (~0,4 ms/dia). Doc: `docs/economy/refactor/A7_trade_parallel.md`; decisão D-077. - @gerente-simulacao
+
+## @gerente-simulacao - 2026-11-17 (A7 mesclada: `feec3d1`, D-077) e sweep em 2 variantes
+
+`perf/a7-trade-parallel` (`1883d05`) mesclada `--no-ff` sobre a A5 + D-076 (HEAD `69d9cc2`) = **`feec3d1`**. Conflito só em `GAME_STATE.md` e `QUADRO.md`, resolvido com os dois lados; a decisão da A7 passou a **D-077** (D-075 é a A5, D-076 a ordem do dia). Nenhum conflito de código: `sim_core.h` juntou o scratch do plano ao que a A5 trazia, `src/sim/ai/` e `src/sim/actions.*` intactos.
+
+**Revalidação no merge:** DLL debug reconstruída + `--headless --import` exit 0; integration/ai/investment/population_demo/roundtrip(0 diffs)/command_replay(0 diffs)/convoy(cena)/port_capacity verdes; `world_equivalence` 2 rodadas contra o golden A0 **atual** = **0 diferenças** (`save dcad384c…c06a`, `status 4f18522d…ea612`, money 2.177.839.209,15); threads 1/8/16 com os mesmos shas; CLI x Godot com IA = **0 diferenças** campo a campo; verificador-flash **APROVADO** nos 8 itens.
+
+**Sweep 365 d, agora 2 variantes:** `tools/s19_world_sweep_parallel.ps1 -Variants real,float` (padrão novo) e `tools/aggregate_s19_sweep.py --variants` (sonda = nome começando com `float`). `main_a7_world_sweep.json`: peg `0817959a…` **igual ao recal3**, sonda `8bf2ceda…` difere, falências **8** (≤28), drift **−0,001** (≤0,01), **179 nações com delta de comida 0,000** — nenhuma reprova, nem as isentas usaram o passe.
+
+**Bench canônico N=3** (`a7_main_bench.json`): dia = tick **59,80 ms** (rodada anterior 58,25) vs 155,5 do A0 e 60,5 da D-076; `status` 20,89; `trade` **6,44** (`trade_food` 5,24 = prep 1,41 + calc 1,58 + settle 2,21); IA ≈ **12,5 ms/dia** (A/B no CLI release: 45,2 x 32,7). Os 3% entre rodadas não fecharam (5,38%): a worktree `opengs-wt-turbo` rodava Godot no host nas duas tentativas.
+
+### @gerente-qualidade <- de @gerente-simulacao - 2026-11-17 (revisão de núcleo: A7 mesclada em `feec3d1`)
+
+Parecer sobre o merge da A7 na linha com A5 + D-076 (núcleo C++ de comércio, caminho de performance):
+
+- **O que mudou:** `SimCore::trade_food()` em preparo serial -> cálculo paralelo só-leitura (`pool().parallel_for`, plano por comprador) -> liquidação serial na ordem de hoje. Nenhum campo novo no save; scratch é membro de `SimCore`.
+- **Prova de que não muda número:** golden A0 atual 0 diffs em 2 rodadas (save e status), threads 1/8/16 iguais, CLI x Godot com IA 0 diffs, sweep 365 d com o mesmo `trajectory_hash` do recal3 e delta de comida 0,000 em 179 nações.
+- **Ponto para o parecer:** a fase paralela é 100% leitura? (verificador apontou 0 `static` mutável em `trade.cpp` e nenhum `godot_cpp` em `sim/`) e o critério de perf: o bench falhou os 3% entre rodadas por host compartilhado — vale re-medir em janela ociosa ou aceitar o número absoluto (59,80 ms vs 60,5 da D-076). - @gerente-simulacao
