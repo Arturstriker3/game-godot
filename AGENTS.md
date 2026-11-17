@@ -69,6 +69,41 @@ O cenário AGRIA/PORTUS é fixture de teste (`initialize_scenario()`), não o jo
 `population_demo_test.gd` mantém "demo" no nome do arquivo. Chaves do save/status e o valor
 `status.mode == "demo"` **não** mudaram. Detalhes em `docs/economy/refactor/A1b_cleanup.md`.
 
+### Modo TURBO (só teste/agente, **não** é feature do jogador)
+
+Acelera o relógio da economia sem o passo de 15 s/dia do jogo: o worker roda um
+lote de dias por tarefa e o relógio é ignorado. Liga **só** por linha de comando
+ou ambiente — não há botão, tecla, atalho, HUD nem texto de jogo. Sem a flag o
+jogo roda exatamente como hoje.
+
+```powershell
+# 60 dias o mais rápido possível, saindo sozinho com a medição de dias/s
+& $godot --path . -- --turbo --bench-days=60
+
+# lote e cadência explícitos (8 dias por tarefa, publica a cada 8)
+& $godot --path . -- --turbo --turbo-days-per-frame=8 --turbo-render-every=8 --bench-days=200
+
+# equivalente por ambiente (para quem não controla os argumentos de usuário)
+$env:OGS_TURBO = "1"; $env:OGS_BENCH_DAYS = "60"
+```
+
+- `--turbo` / `OGS_TURBO=1` liga; `--turbo-days-per-frame=N` (padrão 4) é o lote
+  de dias por tarefa; `--turbo-render-every=N` é de quantos em quantos dias a
+  UI/mapa/status são publicados (nunca menor que o lote).
+- `--bench-days=N` mede a parede até o dia N e imprime
+  `[bench] mode=... from_day=... to_day=... wall_s=... days_per_s=...` antes de
+  sair — vale com e sem turbo (`--bench-speed=3` mede o normal na velocidade
+  máxima). `OGS_BENCH_DAYS`/`OGS_BENCH_SPEED` fazem o mesmo.
+- Provas de equivalência: `tools/turbo_equivalence_test.gd` (turbo × normal em
+  60 d: mesmo save, mesmo status, mesmo log de comandos) e
+  `tools/world_equivalence.ps1` (60 d, 2 rodadas).
+- Medição normal × turbo (cena real e headless): `tools/turbo_bench.ps1`.
+- Em turbo o relógio e a velocidade (inclusive a pausa) são ignorados e a UI só
+  é atualizada a cada lote: comboios e animações pulam dias. Comando da fila A3
+  emitido por um teste continua entrando no início do dia seguinte; para
+  intercalar comando **dia a dia**, use `--turbo-days-per-frame=1`.
+- Números, limites e decisão: `docs/economy/perf/turbo.md` (D-078 no `GAME_STATE.md`).
+
 Ao encerrar, registre quais testes rodou, ou "nenhum" e o motivo.
 
 ## Mapa de arquivos
