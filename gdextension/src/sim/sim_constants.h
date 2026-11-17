@@ -57,7 +57,11 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // housing_density/tier/owner/units e land_cost). Ao carregar v13, cada obra da
 // lista antiga é migrada para a fila com `duration_days = days_left` e custo 0
 // (o capital já foi pago/pausado na versão antiga).
-constexpr int kSaveVersion = 14;
+// v15 (A6): cadência por sistema escalonada. Bloco novo `cadence`
+// (`weekly_period` 7, `monthly_period` 30). Save v14 e anteriores carregam os
+// padrões — o escalonamento é derivado do dia e do índice da cidade, então não
+// há cursor a migrar.
+constexpr int kSaveVersion = 15;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.
@@ -562,7 +566,9 @@ constexpr double kUrbanDensifyHighElectricalWeight = 1.6;
 // escala o prazo; a obra urbana não cria prédio).
 constexpr double kUrbanKm2ToConstructionUnits = 20.0;
 // Fechamento do "mês" do calendário do jogo para preço da terra e decadência
-// da demanda de zona.
+// da demanda de zona. A6: o dia do fechamento virou `cadence.monthly_period`
+// (estado do mundo, escalonado por cidade); esta constante fica como registro
+// do calendário de 30 dias.
 constexpr int kUrbanMonthDays = 30;
 
 // §19 W3 — MERCADO DE MORADIA (sim/housing.cpp). Parâmetros de MODELO, não

@@ -853,6 +853,11 @@ namespace ogs {
 		// dentro do laço de bens. Só medição — nenhum efeito no jogo.
 		kPhaseTradeFoodPrep, kPhaseTradeFoodCalc, kPhaseTradeFoodSettle,
 		kPhaseTradeGoodsCand, kPhaseTradeGoodsOffers, kPhaseTradeGoodsSettle,
+		// Zonas de perfil da A6 (cadência): custo dos sistemas candidatos a sair
+		// do diário (moradia, solo, prefeitura, decisões de serviço) e do
+		// retrato/fase da IA. Só medição — nenhum efeito no jogo.
+		kPhaseHousing, kPhaseLandMonth, kPhaseFleetDay, kPhaseServicesDecisions,
+		kPhaseAi, kPhaseAiView,
 		kPhaseCount
 	};
 

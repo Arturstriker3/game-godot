@@ -68,6 +68,9 @@ void signal_zone_demand(CityLand& land, int zone);
 
 // Fase mensal (dia múltiplo de kUrbanMonthDays): preço da terra por zona e
 // decadência do sinal de demanda. Não move dinheiro; só lê o mundo.
+// A6: hoje a fase e ESCALONADA por cidade ((dia - indice) %
+// cadence.monthly_period == 0); a linha acima descreve o calendario antigo
+// (dia global), mantida como registro.
 void phase_month(WorldState& ws);
 
 // ---------------------------------------------------------------------------

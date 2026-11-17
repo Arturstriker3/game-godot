@@ -12,6 +12,7 @@
 #include "ai_phase.h"
 
 #include "../actions.h"
+#include "../profiling.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -21,9 +22,9 @@
 namespace ogs {
 namespace {
 
-// Cadência por cidade (== `interval_days` do economic_ai.gd): a cidade de
-// índice `i` planeja quando `dia % 7 == i % 7`.
-constexpr int kAiIntervalDays = 7;
+// Cadência por cidade (== `interval_days` do economic_ai.gd, agora no estado
+// `cadence` do mundo — A6): a cidade de índice `i` planeja quando
+// `dia % período == i % período`. Período 0/1 = todas as cidades todo dia.
 
 // Retira da fila SÓ o comando que a IA acabou de emitir. `false` = ele já não
 // estava pendente (outro aplicador o levou); nesse caso a ação NÃO é aplicada
@@ -157,7 +158,10 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	const int day = ws.day;
 
 	// 1. Retrato do dia. A partir daqui as regras só enxergam `view_`.
-	snapshot_ai_view(ws, core, view_);
+	{
+		OGS_SIM_ZONE(kPhaseAiView);
+		snapshot_ai_view(ws, core, view_);
+	}
 
 	// 2. Templates de engenharia: construídos uma vez, refeitos só quando o
 	// catálogo de produtos muda de tamanho.
@@ -189,14 +193,16 @@ void AiPhase::run(WorldState& ws, SimCore& core, CommandQueue& queue,
 	// ranking, como no `plan()` do `economic_ai.gd` (grupos → cidades).
 	group_investor_.run(ctx);
 
-	// 5. Agenda: `dia % 7` escolhe as cidades da vez. Cenário menor que um
+	// 5. Agenda: `dia % período` escolhe as cidades da vez (A6: período no
+	// estado `cadence` do mundo; antes era o literal 7). Cenário menor que um
 	// ciclo usa os dias 0..n-1 e não faz nada nos demais
 	// (== `phase >= mini(_city_count, interval_days)` do GDScript).
-	const int phase = day % kAiIntervalDays;
-	if (view_.cities > 0 && phase >= std::min(view_.cities, kAiIntervalDays)) {
+	const int interval = std::max(1, ws.cadence.weekly_period);
+	const int phase = day % interval;
+	if (view_.cities > 0 && phase >= std::min(view_.cities, interval)) {
 		return;
 	}
-	for (int index = phase; index < view_.cities; index += kAiIntervalDays) {
+	for (int index = phase; index < view_.cities; index += interval) {
 		// Ordem do dia por cidade: privado e depois governo (economic_ai.gd).
 		private_investor_.run_city(ctx, index);
 		government_.run_city(ctx, index);

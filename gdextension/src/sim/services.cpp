@@ -53,10 +53,20 @@ void SimCore::phase_services() {
 	}
 
 	// 2ª passada serial: abertura/fechamento em ordem fixa (cidade -> setor),
-	// com o savings_surplus do TOPO do dia (mesmo valor do serial).
-	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
-		services_open_close(ws_.cities[city_index],
-			savings_surplus_scratch[city_index]);
+	// com o savings_surplus do TOPO do dia (mesmo valor do serial). A6: decisão
+	// SEMANAL por cidade (`(dia - índice) % 7 == 0`); demanda e faturamento
+	// continuam diários na 1ª passada.
+	{
+		OGS_SIM_ZONE(kPhaseServicesDecisions);
+		const int period = ws_.cadence.weekly_period;
+		for (std::size_t city_index = 0; city_index < ws_.cities.size();
+				++city_index) {
+			if (!cadence_due(ws_.day, city_index, period)) {
+				continue;
+			}
+			services_open_close(ws_.cities[city_index],
+				savings_surplus_scratch[city_index]);
+		}
 	}
 
 	OGS_SIM_PHASE_LAP(kPhaseServices);

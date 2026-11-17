@@ -65,8 +65,34 @@ struct NameTable {
 	}
 };
 
+// A6 — cadência por sistema, escalonada. Cada sistema que sai do diário
+// declara um período em dias; a cidade `index` roda o sistema quando
+// `(dia - index) % período == 0`. É determinístico (dia + índice bastam, sem
+// cursor) e espalha o trabalho: em vez de as 834 cidades fecharem o mês no
+// mesmo dia, ~28 por dia. `period <= 1` faz TODAS as cidades rodarem todo dia
+// (interruptor de teste; não reproduz o calendário antigo).
+inline bool cadence_due(int day, std::size_t index, int period) {
+	if (period <= 1) {
+		return true;
+	}
+	const int offset = static_cast<int>(index % static_cast<std::size_t>(period));
+	return ((day - offset) % period + period) % period == 0;
+}
+
+// Períodos por classe de sistema (A6). Serializado no save (v15): mudar o
+// período muda QUANDO cada cidade fecha o mês/semana, então é estado do mundo.
+struct CadenceState {
+	// Semanal: decisões de abertura/fechamento dos negócios de serviço e a
+	// agenda da IA privada/governo.
+	int weekly_period = 7;
+	// Mensal: preço do solo/zona, fechamento do mês de moradia, fluxo mensal da
+	// prefeitura e agenda da IA de grupos.
+	int monthly_period = 30;
+};
+
 struct WorldState {
 	int day = 0;
+	CadenceState cadence;
 
 	// Estado do cenário de validação de duas cidades.
 	bool active = false;
