@@ -1,0 +1,1326 @@
+{
+  "meta": {
+    "bankruptcies": {
+      "half": 6,
+      "real": 6,
+      "real_seed1": 6,
+      "real_seed2": 6,
+      "xgs": 6
+    },
+    "bankruptcy_limit": 16,
+    "baseline": "res://docs/economy/perf/services_fix_world_sweep_v2.json",
+    "days": 365,
+    "food_tolerance": 0.025,
+    "service_businesses": {
+      "half": {
+        "bankruptcies": 6910,
+        "businesses": 52808
+      },
+      "real": {
+        "bankruptcies": 6910,
+        "businesses": 52808
+      },
+      "real_seed1": {
+        "bankruptcies": 6910,
+        "businesses": 52808
+      },
+      "real_seed2": {
+        "bankruptcies": 6910,
+        "businesses": 52808
+      },
+      "xgs": {
+        "bankruptcies": 6910,
+        "businesses": 52808
+      }
+    },
+    "variants": [
+      {
+        "args": [
+          "--fx=real"
+        ],
+        "name": "real"
+      },
+      {
+        "args": [
+          "--fx=real",
+          "--seed=1"
+        ],
+        "name": "real_seed1"
+      },
+      {
+        "args": [
+          "--fx=real",
+          "--seed=2"
+        ],
+        "name": "real_seed2"
+      },
+      {
+        "args": [
+          "--fx=half"
+        ],
+        "name": "half"
+      },
+      {
+        "args": [
+          "--currencies=0"
+        ],
+        "name": "xgs"
+      }
+    ]
+  },
+  "nations": [
+    {
+      "baseline": 0.986267218193767,
+      "delta": -0.433483288056366,
+      "tag": "SOL",
+      "variant": "real",
+      "worst_food": 0.552783930137401
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.229337540364067,
+      "tag": "JOR",
+      "variant": "real",
+      "worst_food": 0.770662459635933
+    },
+    {
+      "baseline": 0.999999999999997,
+      "delta": -0.090003831955722,
+      "tag": "YEM",
+      "variant": "real",
+      "worst_food": 0.909996168044275
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.086233591977453,
+      "tag": "SGP",
+      "variant": "real",
+      "worst_food": 0.913766408022547
+    },
+    {
+      "baseline": 0.394838716690075,
+      "delta": -0.086085643025812,
+      "tag": "DJI",
+      "variant": "real",
+      "worst_food": 0.308753073664263
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.0784396460523989,
+      "tag": "LBY",
+      "variant": "real",
+      "worst_food": 0.921560353947601
+    },
+    {
+      "baseline": 0.999999999999996,
+      "delta": -0.046832489760769,
+      "tag": "MRT",
+      "variant": "real",
+      "worst_food": 0.953167510239227
+    },
+    {
+      "baseline": 0.996469029457496,
+      "delta": -0.012055466086345,
+      "tag": "ESP",
+      "variant": "real",
+      "worst_food": 0.984413563371151
+    },
+    {
+      "baseline": 0.183245402606591,
+      "delta": -0.00400959328473499,
+      "tag": "PSX",
+      "variant": "real",
+      "worst_food": 0.179235809321856
+    },
+    {
+      "baseline": 0.220723431184531,
+      "delta": -0.00398684843573599,
+      "tag": "SAH",
+      "variant": "real",
+      "worst_food": 0.216736582748795
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.000101113024578048,
+      "tag": "GBR",
+      "variant": "real",
+      "worst_food": 0.999898886975422
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.0000000000000419664303308309,
+      "tag": "GUY",
+      "variant": "real",
+      "worst_food": 0.999999999999958
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.0000000000000219824158875781,
+      "tag": "BHR",
+      "variant": "real",
+      "worst_food": 0.999999999999978
+    },
+    {
+      "baseline": 0.999999999999995,
+      "delta": -0.00000000000000899280649946377,
+      "tag": "SSD",
+      "variant": "real",
+      "worst_food": 0.999999999999986
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.00000000000000399680288865056,
+      "tag": "SVK",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 0.999999999999987,
+      "delta": -0.00000000000000399680288865056,
+      "tag": "CYP",
+      "variant": "real",
+      "worst_food": 0.999999999999983
+    },
+    {
+      "baseline": 0.999999999999993,
+      "delta": -0.00000000000000299760216648792,
+      "tag": "NAM",
+      "variant": "real",
+      "worst_food": 0.99999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.00000000000000299760216648792,
+      "tag": "HTI",
+      "variant": "real",
+      "worst_food": 0.999999999999997
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.00000000000000299760216648792,
+      "tag": "NIC",
+      "variant": "real",
+      "worst_food": 0.999999999999997
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": -0.00000000000000199840144432528,
+      "tag": "RWA",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": -0.00000000000000199840144432528,
+      "tag": "MDG",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.00000000000000199840144432528,
+      "tag": "GRC",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.00000000000000199840144432528,
+      "tag": "MNG",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "MWI",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 0.999999999999996,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "GEO",
+      "variant": "real",
+      "worst_food": 0.999999999999995
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "NED",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 0.999999999999993,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "PAN",
+      "variant": "real",
+      "worst_food": 0.999999999999992
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "ERI",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "SWE",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "AFG",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 0.999999999999997,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "KGZ",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "AZE",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": -0.000000000000000999200722162641,
+      "tag": "TUR",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "NPL",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "KWT",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "LAO",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "NGA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "LBN",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "LBR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999819,
+      "delta": 0.0,
+      "tag": "LCA",
+      "variant": "real",
+      "worst_food": 0.999999999999819
+    },
+    {
+      "baseline": 0.999999999999995,
+      "delta": 0.0,
+      "tag": "LKA",
+      "variant": "real",
+      "worst_food": 0.999999999999995
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "LSO",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "LUX",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MAR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "MYS",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MDA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MEX",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MKD",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999997,
+      "delta": 0.0,
+      "tag": "MOZ",
+      "variant": "real",
+      "worst_food": 0.999999999999997
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MLI",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MLT",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MMR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "MNE",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TGO",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "THA",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TKM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TLS",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TTO",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TUN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TWN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999996,
+      "delta": 0.0,
+      "tag": "UGA",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "UKR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "USA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999864,
+      "delta": 0.0,
+      "tag": "VCT",
+      "variant": "real",
+      "worst_food": 0.999999999999864
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "VEN",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "VNM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "XKX",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ZAF",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ZMB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ZWE",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "NZL",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "PAK",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "PER",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "PHL",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "POL",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "PRT",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ROU",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SAU",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SDN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SEN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SLB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SLE",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999996,
+      "delta": 0.0,
+      "tag": "SLV",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SOM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SRB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "SWZ",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "SYR",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "TCD",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ETH",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BFA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "EST",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "EGY",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ECU",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "DZA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BGD",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "DOM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BGR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.986824625762723,
+      "delta": 0.0,
+      "tag": "DNK",
+      "variant": "real",
+      "worst_food": 0.986824625762723
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BHS",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999758,
+      "delta": 0.0,
+      "tag": "DMA",
+      "variant": "real",
+      "worst_food": 0.999999999999758
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BIH",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "DEU",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": 0.0,
+      "tag": "CZE",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "CUB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BRB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BRN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BTN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BRA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BWA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "BOL",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "CAF",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "CAN",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BLZ",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "CHL",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "CHN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "CIV",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "CMR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "COD",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "COG",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "COL",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.99999999999998,
+      "delta": 0.0,
+      "tag": "CRI",
+      "variant": "real",
+      "worst_food": 0.99999999999998
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "KOR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "KNA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "KEN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "KAZ",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ALB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "JAM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ISR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "ARG",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "ARM",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "ATG",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "IRQ",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.0,
+      "tag": "AUS",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "IRL",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "IND",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "AUT",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "HUN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BEN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "FJI",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "FRA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "BEL",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GAB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GHA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GIN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GMB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GNB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GNQ",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999427,
+      "delta": 0.0,
+      "tag": "GRD",
+      "variant": "real",
+      "worst_food": 0.999999999999427
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "GTM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "HND",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 1.0,
+      "delta": 0.0,
+      "tag": "HRV",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "ARE",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "BLR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "AGO",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "TZA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "JPN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "ITA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "IRN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "RUS",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "IDN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "PRY",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "PRK",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 0.999999999999999,
+      "delta": 0.000000000000000999200722162641,
+      "tag": "NER",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": 0.00000000000000199840144432528,
+      "tag": "KHM",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": 0.00000000000000199840144432528,
+      "tag": "UZB",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999998,
+      "delta": 0.00000000000000199840144432528,
+      "tag": "NOR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999997,
+      "delta": 0.00000000000000299760216648792,
+      "tag": "FIN",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999993,
+      "delta": 0.00000000000000299760216648792,
+      "tag": "URY",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 0.999999999999996,
+      "delta": 0.00000000000000299760216648792,
+      "tag": "TJK",
+      "variant": "real",
+      "worst_food": 0.999999999999999
+    },
+    {
+      "baseline": 0.999999999999997,
+      "delta": 0.00000000000000299760216648792,
+      "tag": "LVA",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999981,
+      "delta": 0.00000000000000299760216648792,
+      "tag": "ISL",
+      "variant": "real",
+      "worst_food": 0.999999999999984
+    },
+    {
+      "baseline": 0.999999999999994,
+      "delta": 0.00000000000000399680288865056,
+      "tag": "BDI",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 0.999999999999993,
+      "delta": 0.0000000000000049960036108132,
+      "tag": "OMN",
+      "variant": "real",
+      "worst_food": 0.999999999999998
+    },
+    {
+      "baseline": 0.999999999999991,
+      "delta": 0.0000000000000049960036108132,
+      "tag": "QAT",
+      "variant": "real",
+      "worst_food": 0.999999999999996
+    },
+    {
+      "baseline": 0.999999999999993,
+      "delta": 0.00000000000000699440505513849,
+      "tag": "PNG",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999993,
+      "delta": 0.00000000000000699440505513849,
+      "tag": "LTU",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999988,
+      "delta": 0.0000000000000119904086659517,
+      "tag": "CHE",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999987,
+      "delta": 0.0000000000000129896093881143,
+      "tag": "SUR",
+      "variant": "real",
+      "worst_food": 1.0
+    },
+    {
+      "baseline": 0.999999999999986,
+      "delta": 0.000000000000013988810110277,
+      "tag": "SVN",
+      "variant": "real",
+      "worst_food": 1.0
+    }
+  ]
+}
