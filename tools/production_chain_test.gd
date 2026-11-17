@@ -91,6 +91,9 @@ func _new_sim():
 	sim.demo_set_goods(_goods)
 	sim.demo_set_recipes(_recipes)
 	sim.demo_set_needs(_needs)
+	# §15: o teste mede a CADEIA de produção, não o cronograma de obra — liga a
+	# construção instantânea para `demo_build` materializar o prédio na hora.
+	sim.demo_set_instant_construction(true)
 	sim.initialize_demo()
 	return sim
 

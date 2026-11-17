@@ -169,8 +169,8 @@ func _test_v11_old_save_compat() -> void:
 	sim.tick_demo()
 	var full_save: Dictionary = sim.demo_to_dict()
 
-	if int(full_save.get("version", 0)) != 11:
-		_fail("compat: esperava schema v11, veio %s" % str(full_save.get("version")))
+	if int(full_save.get("version", 0)) != 12:
+		_fail("compat: esperava schema v12, veio %s" % str(full_save.get("version")))
 		return
 
 	# Garante que os campos novos EXISTEM no save atual (senão o teste de
@@ -178,11 +178,17 @@ func _test_v11_old_save_compat() -> void:
 	for key in NEW_ROOT_KEYS:
 		if not full_save.has(key):
 			_fail("compat: save atual não tem o campo novo '%s'" % key)
+	# §15 (v12): o save atual também publica as obras em andamento.
+	if not full_save.has("construction_projects"):
+		_fail("compat: save atual não tem o campo novo 'construction_projects'")
 
-	# Constrói o "save v11 antigo": sem as chaves novas.
+	# Constrói o "save v11 antigo": sem as chaves novas e sem as obras (v11 não
+	# tinha projeto em voo). Rebaixa a versão para 11 para exercitar a migração.
 	var old_save: Dictionary = full_save.duplicate(true)
 	for key in NEW_ROOT_KEYS:
 		old_save.erase(key)
+	old_save.erase("construction_projects")
+	old_save["version"] = 11
 	var buildings: Array = old_save.get("buildings", [])
 	for building in buildings:
 		for key in NEW_BUILDING_KEYS:

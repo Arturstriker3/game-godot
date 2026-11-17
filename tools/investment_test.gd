@@ -59,6 +59,9 @@ func _make_world() -> Dictionary:
 	sim.demo_set_goods(_load_json(GoodsPath))
 	sim.demo_set_recipes(_load_json(RecipesPath))
 	sim.demo_set_needs(_load_json(NeedsPath))
+	# §15: o teste mede propriedade/IDE, não cronograma de obra — construção
+	# instantânea para o ativo nascer na hora.
+	sim.demo_set_instant_construction(true)
 	var cities := [
 		{"id": "A1", "name": "Alfa", "nation": "AAA", "home_nation": "AAA",
 			"population": 900000.0, "sim_population": 500000.0, "x": 1200.0,

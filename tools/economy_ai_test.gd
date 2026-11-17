@@ -193,6 +193,9 @@ func _scenario_no_build_loop() -> Array:
 
 func _make_world() -> Dictionary:
 	var sim = EconomySim.new()
+	# §15: o teste mede a DECISÃO da IA, não o cronograma de obra — construção
+	# instantânea para a mina estatal nascer e produzir dentro do horizonte.
+	sim.demo_set_instant_construction(true)
 	sim.initialize_demo()
 	var geo = GeoScript.new()
 	geo.apply_to_sim(sim, [
