@@ -36,6 +36,25 @@ inline double safe_unit(double v) {
 	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
 }
 
+// §19: leitura defensiva de um sub-dicionário do JSON carregado pelo GDScript
+// (chave ausente ou de outro tipo vira dicionário vazio — ausência explícita).
+inline Dictionary dict_value(const Dictionary& parent, const String& key) {
+	const Variant value = parent.get(key, Variant());
+	return value.get_type() == Variant::DICTIONARY ? Dictionary(value) : Dictionary();
+}
+
+// §19: height_class do urban_land.json → gabarito do jogo. Valor ausente ou
+// desconhecido cai em baixa densidade (o save antigo não tem o campo).
+inline Density density_from_height_class(const String& height_class) {
+	if (height_class == "high") {
+		return DENSITY_HIGH;
+	}
+	if (height_class == "mid") {
+		return DENSITY_MID;
+	}
+	return DENSITY_LOW;
+}
+
 // §15: custo ainda não pago das obras de uma cidade para um dono ("state",
 // "private" ou o id de um grupo). Base do limite de comprometimento: o dono não
 // inicia obra nova cujo custo, somado ao já comprometido, estoura o caixa atual.
@@ -154,6 +173,11 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::demo_set_services);
 	ClassDB::bind_method(D_METHOD("demo_set_sector_employment", "data"),
 	                     &EconomySim::demo_set_sector_employment);
+	ClassDB::bind_method(D_METHOD("demo_set_urban", "urban_land", "housing_city",
+	                     "housing", "municipal_finance"),
+	                     &EconomySim::demo_set_urban);
+	ClassDB::bind_method(D_METHOD("demo_get_urban_city", "city_id"),
+	                     &EconomySim::demo_get_urban_city);
 	ClassDB::bind_method(D_METHOD("demo_set_instant_construction", "instant"),
 	                     &EconomySim::demo_set_instant_construction);
 	ClassDB::bind_method(D_METHOD("demo_get_service_sectors"),
@@ -677,6 +701,11 @@ void EconomySim::initialize_demo_world(const Array& cities, const Array& ports,
 	ws_.cities.clear();
 	ws_.buildings.clear();
 	ws_.construction_projects.clear();
+	// §19: mundo novo zera os vetores urbanos; o demo_set_urban os preenche
+	// depois (o casamento é pelo id da cidade criada aqui).
+	ws_.land.clear();
+	ws_.housing.clear();
+	ws_.city_gov.clear();
 	ws_.in_transit.clear();
 	ws_.invariant_violations.clear();
 	ws_.ports.clear();
@@ -5518,6 +5547,300 @@ bool EconomySim::demo_spend_government(const String& city_id, double amount) {
 Dictionary EconomySim::demo_to_dict() const {
 	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
 	return ogs::edge::to_dict(ws_, sim_core_);
+}
+
+void EconomySim::demo_set_urban(const Dictionary& urban_land,
+		const Dictionary& housing_city, const Dictionary& housing,
+		const Dictionary& municipal_finance) {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	if (ws_.cities.empty()) {
+		return;  // mundo ainda não criado: sem id de cidade não há o que casar
+	}
+	const Dictionary land_cities = dict_value(urban_land, "cities");
+	const Dictionary housing_cities = dict_value(housing_city, "cities");
+	const Dictionary nation_housing = dict_value(housing, "nations");
+	const Dictionary nation_finance = dict_value(
+		municipal_finance, "nations");
+	const std::size_t count = ws_.cities.size();
+	// Vetores temporários: só substituem o estado urbano se ALGUMA cidade casar
+	// com os dados. Cenário sintético (AGRIA/PORTUS) e load sem os JSON mantêm
+	// os vetores vazios — ausência explícita, sem linhas de zeros no save.
+	std::vector<CityLand> parsed_land(count);
+	std::vector<CityHousing> parsed_housing(count);
+	std::vector<CityGov> parsed_gov(count);
+	bool matched = false;
+	static const char* const kTierKeys[TIER_COUNT] = {
+		"popular", "medium", "high"};
+	static const char* const kTenureKeys[TENURE_COUNT] = {
+		"own", "rent", "informal"};
+	for (std::size_t index = 0; index < count; ++index) {
+		const DemoCity& city = ws_.cities[index];
+		const String city_id(city.id.c_str());
+		const Dictionary u = dict_value(land_cities, city_id);
+		const Dictionary h = dict_value(housing_cities, city_id);
+		if (u.is_empty() && h.is_empty()) {
+			continue;  // cidade sem dado urbano: defaults vazios/neutros
+		}
+		matched = true;
+		// --- Solo (urban_land.json) ---
+		CityLand& land = parsed_land[index];
+		const double built_up = safe_nonneg(
+			static_cast<double>(u.get("built_up_km2", 0.0)));
+		const Dictionary zoning = dict_value(u, "zoning_split");
+		land.area_km2[ZONE_RES] = built_up * safe_nonneg(
+			static_cast<double>(zoning.get("residential", 0.0)));
+		land.area_km2[ZONE_COM] = built_up * safe_nonneg(
+			static_cast<double>(zoning.get("commercial", 0.0)));
+		land.area_km2[ZONE_IND] = built_up * safe_nonneg(
+			static_cast<double>(zoning.get("industrial", 0.0)));
+		const Density max_density = density_from_height_class(
+			String(u.get("height_class", "")));
+		for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+			land.max_density[zone] = max_density;
+		}
+		land.reserve_km2 = safe_nonneg(
+			static_cast<double>(u.get("expandable_reserve_km2", 0.0)));
+		// Infraestrutura atual atende a população de simulação da cidade; sem
+		// dado de cobertura, é o ponto de partida honesto (expansão no W2).
+		land.infra_capacity = safe_nonneg(city.simulation_population);
+
+		// --- Moradia (housing_city.json; housing.json como fallback) ---
+		CityHousing& house = parsed_housing[index];
+		const Dictionary by_tier = dict_value(h, "housing_stock_by_tier");
+		double stock[TIER_COUNT] = {};
+		double stock_total = 0.0;
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			stock[tier] = safe_nonneg(static_cast<double>(
+				by_tier.get(kTierKeys[tier], 0.0)));
+			stock_total += stock[tier];
+		}
+		if (stock_total <= 0.0) {
+			const Dictionary nation_split = dict_value(
+				nation_housing, String(city.nation.c_str()));
+			const Dictionary split = dict_value(
+				nation_split, "housing_stock_split");
+			const double total = safe_nonneg(
+				static_cast<double>(h.get("housing_stock_total", 0.0)));
+			double split_sum = 0.0;
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				stock[tier] = total * safe_nonneg(
+					static_cast<double>(split.get(kTierKeys[tier], 0.0)));
+				split_sum += stock[tier];
+			}
+			if (split_sum > 0.0) {
+				stock_total = split_sum;
+			}
+		}
+		// A fonte divide o estoque por PADRÃO, não por densidade. A densidade
+		// inicial segue a capacidade física permitida (FAR) até o gabarito da
+		// cidade: um município baixo fica 100% em casas; um alto reparte entre
+		// casa/prédio/torre na proporção da capacidade. Derivado, não medido.
+		double weights[DENSITY_COUNT] = {};
+		double weight_sum = 0.0;
+		for (int density = 0; density < DENSITY_COUNT; ++density) {
+			if (density <= static_cast<int>(max_density)) {
+				weights[density] = kDemoUrbanFar[density];
+				weight_sum += weights[density];
+			}
+		}
+		if (weight_sum <= 0.0) {
+			weights[DENSITY_LOW] = 1.0;
+			weight_sum = 1.0;
+		}
+		for (int density = 0; density < DENSITY_COUNT; ++density) {
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				house.units[density][tier] =
+					stock[tier] * weights[density] / weight_sum;
+			}
+		}
+		// Posse por estrato: tenure_by_tier da cidade; sem a linha, o padrão
+		// nacional de housing.json (casa própria + favela; aluguel = resto).
+		const Dictionary tenure = dict_value(h, "tenure_by_tier");
+		const Dictionary nation = dict_value(
+			nation_housing, String(city.nation.c_str()));
+		const double nation_own = safe_unit(
+			static_cast<double>(nation.get("homeownership_rate", 0.0)));
+		const double nation_slum = safe_unit(
+			static_cast<double>(nation.get("slum_pct_urban", 0.0)) / 100.0);
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			const Dictionary row = dict_value(tenure, kTierKeys[tier]);
+			double row_sum = 0.0;
+			for (int kind = 0; kind < TENURE_COUNT; ++kind) {
+				house.tenure[tier][kind] = safe_nonneg(
+					static_cast<double>(row.get(kTenureKeys[kind], 0.0)));
+				row_sum += house.tenure[tier][kind];
+			}
+			if (row_sum <= 1e-9) {
+				const double informal = tier == TIER_POPULAR ? nation_slum : 0.0;
+				const double own = nation_own;
+				const double rent = std::max(0.0, 1.0 - own - informal);
+				house.tenure[tier][TENURE_OWN] = own;
+				house.tenure[tier][TENURE_RENT] = rent;
+				house.tenure[tier][TENURE_INFORMAL] = informal;
+				row_sum = own + rent + informal;
+			}
+			if (row_sum > 1e-9) {
+				for (int kind = 0; kind < TENURE_COUNT; ++kind) {
+					house.tenure[tier][kind] /= row_sum;
+				}
+			}
+		}
+		// Donos: casa própria da fonte = famílias; o restante do estoque é
+		// atribuído a empresas até W2/W3 criarem moradia social (governo).
+		bool has_ownership = false;
+		double ownership = 0.0;
+		if (h.has("homeownership_rate")) {
+			ownership = safe_unit(
+				static_cast<double>(h["homeownership_rate"]));
+			has_ownership = true;
+		} else if (nation.has("homeownership_rate")) {
+			ownership = nation_own;
+			has_ownership = true;
+		}
+		if (has_ownership) {
+			house.owner_share[OWNER_HOUSEHOLD] = ownership;
+			house.owner_share[OWNER_FIRM] = 1.0 - ownership;
+			house.owner_share[OWNER_GOVERNMENT] = 0.0;
+		}
+		// Aluguel/preço: a fonte publica USD/m². O câmbio do jogo é a âncora
+		// XGS, referenciada no dólar (currencies.json: USD = 1,0) e a fonte
+		// deriva o USD da renda PPP — o valor já está em âncora, 1 USD = 1 XGS.
+		// A taxa da nação entra na EXIBIÇÃO local (price_local = XGS ÷ taxa);
+		// multiplicar por ela aqui converteria o valor em moeda local e mudaria
+		// a magnitude em 5-10x (aluguel deixaria de bater com a renda).
+		const double rent_m2 = safe_nonneg(
+			static_cast<double>(h.get("rent_per_m2_usd", 0.0)));
+		const double price_m2 = safe_nonneg(
+			static_cast<double>(h.get("price_per_m2_usd", 0.0)));
+		const int unit_density = static_cast<int>(max_density);
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			const double unit_m2 = kDemoUrbanUnitM2[unit_density][tier];
+			house.rent[tier] = rent_m2 * unit_m2;
+			house.price[tier] = price_m2 * unit_m2;
+		}
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			house.informal_units +=
+				stock[tier] * house.tenure[tier][TENURE_INFORMAL];
+		}
+		// Área informal derivada das unidades informais: sem FAR para favela,
+		// uma unidade ocupa o m² de piso do padrão popular baixo.
+		land.informal_km2 = house.informal_units
+			* kDemoUrbanUnitM2[DENSITY_LOW][TIER_POPULAR] / 1.0e6;
+
+		// --- Prefeitura (municipal_finance.json) ---
+		CityGov& gov = parsed_gov[index];
+		const Dictionary fin = dict_value(
+			nation_finance, String(city.nation.c_str()));
+		if (!fin.is_empty()) {
+			// A fonte não publica a alíquota municipal: usa-se o peso do IPTU
+			// no total de tributos como proxy da taxa anual sobre o valor do
+			// estoque (calibração real fica para o W2).
+			gov.iptu_rate = std::clamp(
+				safe_nonneg(static_cast<double>(
+					fin.get("property_tax_pct_total_tax", 0.0))) / 100.0,
+				0.0, 0.20);
+			gov.transfer_share = safe_unit(
+				static_cast<double>(fin.get(
+					"central_transfers_pct_subnational", 0.0)) / 100.0);
+		}
+		gov.fee_rate = kDemoUrbanMunicipalFeeRate;
+		gov.cash = 0.0;  // sem caixa municipal na fonte; o W2 acumula receita
+	}
+	if (matched) {
+		ws_.land = std::move(parsed_land);
+		ws_.housing = std::move(parsed_housing);
+		ws_.city_gov = std::move(parsed_gov);
+	} else {
+		ws_.land.clear();
+		ws_.housing.clear();
+		ws_.city_gov.clear();
+	}
+}
+
+Dictionary EconomySim::demo_get_urban_city(const String& city_id) const {
+	const std::lock_guard<std::recursive_mutex> demo_lock(demo_mutex_);
+	Dictionary out;
+	const std::string id(city_id.utf8().get_data());
+	const auto found = ws_.city_lookup.find(id);
+	if (found == ws_.city_lookup.end() || found->second < 0) {
+		return out;
+	}
+	const std::size_t index = static_cast<std::size_t>(found->second);
+	if (index >= ws_.cities.size() || index >= ws_.land.size()
+			|| index >= ws_.housing.size()
+			|| index >= ws_.city_gov.size()) {
+		return out;
+	}
+	const DemoCity& city = ws_.cities[index];
+	const CityLand& land = ws_.land[index];
+	const CityHousing& house = ws_.housing[index];
+	const CityGov& gov = ws_.city_gov[index];
+	out["city"] = city_id;
+	out["nation"] = String(city.nation.c_str());
+	out["population"] = city.simulation_population;
+	Array area;
+	Array max_density;
+	Array land_price;
+	for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+		area.append(land.area_km2[zone]);
+		max_density.append(static_cast<int>(land.max_density[zone]));
+		land_price.append(land.land_price[zone]);
+	}
+	out["area_km2"] = area;
+	out["max_density"] = max_density;
+	out["land_price"] = land_price;
+	out["reserve_km2"] = land.reserve_km2;
+	out["infra_capacity"] = land.infra_capacity;
+	out["informal_km2"] = land.informal_km2;
+	Array units;
+	for (int density = 0; density < DENSITY_COUNT; ++density) {
+		Array row;
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			row.append(house.units[density][tier]);
+		}
+		units.append(row);
+	}
+	out["units"] = units;
+	out["condition"] = house.condition;
+	Array owner_share;
+	for (int owner = 0; owner < OWNER_COUNT; ++owner) {
+		owner_share.append(house.owner_share[owner]);
+	}
+	out["owner_share"] = owner_share;
+	Array tenure;
+	for (int tier = 0; tier < TIER_COUNT; ++tier) {
+		Array row;
+		for (int kind = 0; kind < TENURE_COUNT; ++kind) {
+			row.append(house.tenure[tier][kind]);
+		}
+		tenure.append(row);
+	}
+	out["tenure"] = tenure;
+	Array rent;
+	Array price;
+	Array vacancy;
+	for (int tier = 0; tier < TIER_COUNT; ++tier) {
+		rent.append(house.rent[tier]);
+		price.append(house.price[tier]);
+		vacancy.append(house.vacancy[tier]);
+	}
+	out["rent"] = rent;
+	out["price"] = price;
+	out["vacancy"] = vacancy;
+	out["informal_units"] = house.informal_units;
+	Dictionary gov_out;
+	gov_out["cash"] = gov.cash;
+	gov_out["iptu_rate"] = gov.iptu_rate;
+	gov_out["fee_rate"] = gov.fee_rate;
+	gov_out["transfer_share"] = gov.transfer_share;
+	gov_out["month_revenue_iptu"] = gov.month_revenue_iptu;
+	gov_out["month_revenue_fees"] = gov.month_revenue_fees;
+	gov_out["month_revenue_transfer"] = gov.month_revenue_transfer;
+	gov_out["month_expense_maintenance"] = gov.month_expense_maintenance;
+	gov_out["month_expense_infrastructure"] = gov.month_expense_infrastructure;
+	gov_out["month_expense_social_housing"] = gov.month_expense_social_housing;
+	out["gov"] = gov_out;
+	return out;
 }
 
 void EconomySim::demo_from_dict(const Dictionary& data) {

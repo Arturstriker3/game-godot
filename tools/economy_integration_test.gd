@@ -283,9 +283,10 @@ func _check_investment(sim) -> void:
 func _check_save_load(sim) -> void:
 	var snapshot: Dictionary = sim.demo_to_dict()
 	# F9 subiu o schema para 11 (grupos, IDE, incentivos e confiança);
-	# §15 subiu para 12 (obras como projeto físico).
-	if int(snapshot.get("version", 0)) != 12:
-		_fail("save: versão do schema deveria ser 12 (é %s)" % str(snapshot.get("version")))
+	# §15 subiu para 12 (obras como projeto físico); §19 W0 para 13 (solo
+	# urbano, moradia e prefeitura por cidade).
+	if int(snapshot.get("version", 0)) != 13:
+		_fail("save: versão do schema deveria ser 13 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")

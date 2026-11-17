@@ -28,6 +28,11 @@ inline double safe_nonneg(double v) {
 	return std::isfinite(v) ? std::max(0.0, v) : 0.0;
 }
 
+// Fração 0..1 (taxas da prefeitura e condição do estoque, save v13).
+inline double safe_unit(double v) {
+	return std::isfinite(v) ? std::clamp(v, 0.0, 1.0) : 0.0;
+}
+
 // População de SIMULAÇÃO da cidade. Desde a calibração de 2026, `population`
 // no cenário é a população real exibida (nação inteira rateada) e a aglomeração
 // da fonte viaja em `sim_population`. Sem o campo (save antigo, cenário
@@ -472,6 +477,87 @@ godot::Dictionary to_dict(const WorldState& ws, const SimCore& core) {
 		construction_projects.append(entry);
 	}
 	data["construction_projects"] = construction_projects;
+
+	// §19 (save v13): solo urbano, moradia e prefeitura por cidade. Vetores
+	// paralelos a `cities`; arrays na ordem fixa dos enums (zonas, densidades,
+	// padrões, posse). Sem demo_set_urban (cenário sintético) a lista é vazia.
+	Array urban;
+	const std::size_t urban_count = std::min(
+		{ws.land.size(), ws.housing.size(), ws.city_gov.size(),
+			ws.cities.size()});
+	for (std::size_t index = 0; index < urban_count; ++index) {
+		const CityLand& land = ws.land[index];
+		const CityHousing& house = ws.housing[index];
+		const CityGov& gov = ws.city_gov[index];
+		Dictionary entry;
+		entry["city"] = sim_str(ws.cities[index].id.c_str());
+		Array area;
+		Array max_density;
+		Array land_price;
+		for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+			area.append(land.area_km2[zone]);
+			max_density.append(static_cast<int>(land.max_density[zone]));
+			land_price.append(land.land_price[zone]);
+		}
+		entry["area_km2"] = area;
+		entry["max_density"] = max_density;
+		entry["land_price"] = land_price;
+		entry["reserve_km2"] = land.reserve_km2;
+		entry["infra_capacity"] = land.infra_capacity;
+		entry["informal_km2"] = land.informal_km2;
+		Array units;
+		for (int density = 0; density < DENSITY_COUNT; ++density) {
+			Array row;
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				row.append(house.units[density][tier]);
+			}
+			units.append(row);
+		}
+		entry["units"] = units;
+		entry["condition"] = house.condition;
+		Array owner_share;
+		for (int owner = 0; owner < OWNER_COUNT; ++owner) {
+			owner_share.append(house.owner_share[owner]);
+		}
+		entry["owner_share"] = owner_share;
+		Array tenure;
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			Array row;
+			for (int kind = 0; kind < TENURE_COUNT; ++kind) {
+				row.append(house.tenure[tier][kind]);
+			}
+			tenure.append(row);
+		}
+		entry["tenure"] = tenure;
+		Array rent;
+		Array price;
+		Array vacancy;
+		for (int tier = 0; tier < TIER_COUNT; ++tier) {
+			rent.append(house.rent[tier]);
+			price.append(house.price[tier]);
+			vacancy.append(house.vacancy[tier]);
+		}
+		entry["rent"] = rent;
+		entry["price"] = price;
+		entry["vacancy"] = vacancy;
+		entry["informal_units"] = house.informal_units;
+		Dictionary gov_entry;
+		gov_entry["cash"] = gov.cash;
+		gov_entry["iptu_rate"] = gov.iptu_rate;
+		gov_entry["fee_rate"] = gov.fee_rate;
+		gov_entry["transfer_share"] = gov.transfer_share;
+		gov_entry["month_revenue_iptu"] = gov.month_revenue_iptu;
+		gov_entry["month_revenue_fees"] = gov.month_revenue_fees;
+		gov_entry["month_revenue_transfer"] = gov.month_revenue_transfer;
+		gov_entry["month_expense_maintenance"] = gov.month_expense_maintenance;
+		gov_entry["month_expense_infrastructure"] =
+			gov.month_expense_infrastructure;
+		gov_entry["month_expense_social_housing"] =
+			gov.month_expense_social_housing;
+		entry["gov"] = gov_entry;
+		urban.append(entry);
+	}
+	data["urban"] = urban;
 
 	// F8: negócios de serviço (catálogo global). O nome NÃO é gravado: é
 	// derivado da semente + cultura do dono no GDScript (rótulo), então o save
@@ -1698,6 +1784,124 @@ void from_dict(WorldState& ws, SimCore& core, const Dictionary& data) {
 		core.demo_seed_groups();
 	} else {
 		ws.groups_seeded = true;
+	}
+
+	// §19 (save v13): solo urbano, moradia e prefeitura por cidade. O save v12
+	// e anteriores não têm a chave: os vetores ficam como estão (vazios num load
+	// frio ou com os padrões carregados pelo demo_set_urban), sem lógica diária
+	// a reconstruir. O casamento é por id, não por posição.
+	if (data.has("urban")) {
+		const Array saved_urban = data.get("urban", Array());
+		ws.land.clear();
+		ws.housing.clear();
+		ws.city_gov.clear();
+		if (!saved_urban.is_empty()) {
+			ws.land.assign(ws.cities.size(), CityLand{});
+			ws.housing.assign(ws.cities.size(), CityHousing{});
+			ws.city_gov.assign(ws.cities.size(), CityGov{});
+		}
+		for (int index = 0; index < saved_urban.size(); ++index) {
+			if (saved_urban[index].get_type() != Variant::DICTIONARY) {
+				continue;
+			}
+			const Dictionary entry = saved_urban[index];
+			const std::string city_id = std::string(
+				String(entry.get("city", "")).utf8().get_data());
+			const auto found = ws.city_lookup.find(city_id);
+			if (found == ws.city_lookup.end() || found->second < 0
+					|| static_cast<std::size_t>(found->second)
+						>= ws.cities.size()) {
+				continue;
+			}
+			const std::size_t city_index =
+				static_cast<std::size_t>(found->second);
+			CityLand& land = ws.land[city_index];
+			CityHousing& house = ws.housing[city_index];
+			CityGov& gov = ws.city_gov[city_index];
+			const Array area = entry.get("area_km2", Array());
+			const Array max_density = entry.get("max_density", Array());
+			const Array land_price = entry.get("land_price", Array());
+			for (int zone = 0; zone < ZONE_COUNT; ++zone) {
+				land.area_km2[zone] = zone < area.size()
+					? safe_nonneg(double(area[zone])) : 0.0;
+				land.max_density[zone] = zone < max_density.size()
+					? static_cast<Density>(std::clamp(
+						int(max_density[zone]), 0, DENSITY_COUNT - 1))
+					: DENSITY_LOW;
+				land.land_price[zone] = zone < land_price.size()
+					? safe_nonneg(double(land_price[zone])) : 0.0;
+			}
+			land.reserve_km2 = safe_nonneg(
+				double(entry.get("reserve_km2", 0.0)));
+			land.infra_capacity = safe_nonneg(
+				double(entry.get("infra_capacity", 0.0)));
+			land.informal_km2 = safe_nonneg(
+				double(entry.get("informal_km2", 0.0)));
+			const Array units = entry.get("units", Array());
+			for (int density = 0; density < DENSITY_COUNT; ++density) {
+				if (density >= units.size()
+						|| units[density].get_type() != Variant::ARRAY) {
+					continue;
+				}
+				const Array row = units[density];
+				for (int tier = 0; tier < TIER_COUNT; ++tier) {
+					house.units[density][tier] = tier < row.size()
+						? safe_nonneg(double(row[tier])) : 0.0;
+				}
+			}
+			house.condition = safe_unit(
+				double(entry.get("condition", 0.0)));
+			const Array owner_share = entry.get("owner_share", Array());
+			for (int owner = 0; owner < OWNER_COUNT; ++owner) {
+				house.owner_share[owner] = owner < owner_share.size()
+					? safe_nonneg(double(owner_share[owner])) : 0.0;
+			}
+			const Array tenure = entry.get("tenure", Array());
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				if (tier >= tenure.size()
+						|| tenure[tier].get_type() != Variant::ARRAY) {
+					continue;
+				}
+				const Array row = tenure[tier];
+				for (int kind = 0; kind < TENURE_COUNT; ++kind) {
+					house.tenure[tier][kind] = kind < row.size()
+						? safe_nonneg(double(row[kind])) : 0.0;
+				}
+			}
+			const Array rent = entry.get("rent", Array());
+			const Array price = entry.get("price", Array());
+			const Array vacancy = entry.get("vacancy", Array());
+			for (int tier = 0; tier < TIER_COUNT; ++tier) {
+				house.rent[tier] = tier < rent.size()
+					? safe_nonneg(double(rent[tier])) : 0.0;
+				house.price[tier] = tier < price.size()
+					? safe_nonneg(double(price[tier])) : 0.0;
+				house.vacancy[tier] = tier < vacancy.size()
+					? safe_nonneg(double(vacancy[tier])) : 0.0;
+			}
+			house.informal_units = safe_nonneg(
+				double(entry.get("informal_units", 0.0)));
+			const Dictionary gov_entry = entry.get("gov", Dictionary());
+			gov.cash = double(gov_entry.get("cash", 0.0));
+			gov.iptu_rate = safe_unit(
+				double(gov_entry.get("iptu_rate", 0.0)));
+			gov.fee_rate = safe_unit(
+				double(gov_entry.get("fee_rate", 0.0)));
+			gov.transfer_share = safe_unit(
+				double(gov_entry.get("transfer_share", 0.0)));
+			gov.month_revenue_iptu = safe_nonneg(
+				double(gov_entry.get("month_revenue_iptu", 0.0)));
+			gov.month_revenue_fees = safe_nonneg(
+				double(gov_entry.get("month_revenue_fees", 0.0)));
+			gov.month_revenue_transfer = safe_nonneg(
+				double(gov_entry.get("month_revenue_transfer", 0.0)));
+			gov.month_expense_maintenance = safe_nonneg(
+				double(gov_entry.get("month_expense_maintenance", 0.0)));
+			gov.month_expense_infrastructure = safe_nonneg(
+				double(gov_entry.get("month_expense_infrastructure", 0.0)));
+			gov.month_expense_social_housing = safe_nonneg(
+				double(gov_entry.get("month_expense_social_housing", 0.0)));
+		}
 	}
 }
 

@@ -29,6 +29,10 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
+const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
+const HOUSING_PATH := "res://data/definitions/economy/housing.json"
+const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
 var _days := 60
 var _save_at := 30
@@ -105,6 +109,19 @@ func _load_chains(sim) -> void:
 			sim.demo_set_sector_employment(sector)
 
 
+## §19 (W0): carrega o estado urbano DEPOIS do mundo (casamento por id de
+## cidade). Sem os arquivos, as cidades ficam sem dado urbano — o save/load
+## continua coberto, com os vetores vazios.
+func _load_urban(sim) -> void:
+	if not sim.has_method("demo_set_urban"):
+		return
+	sim.demo_set_urban(
+		_load_dict(URBAN_LAND_PATH),
+		_load_dict(HOUSING_CITY_PATH),
+		_load_dict(HOUSING_PATH),
+		_load_dict(MUNICIPAL_FINANCE_PATH))
+
+
 ## Cria o mundo real (cities/ports/buildings.json) sem IA, ou o cenário demo
 ## AGRIA/PORTUS (initialize_demo + geografia). Devolve o `EconomySim` pronto.
 func _make_world() -> Object:
@@ -117,6 +134,7 @@ func _make_world() -> Object:
 			{"id": "AGRIA", "center": AGRIA_CENTER},
 			{"id": "PORTUS", "center": PORTUS_CENTER},
 		])
+		_load_urban(sim)
 		return sim
 	var cities := _load_array(CITIES_PATH)
 	var ports := _load_array(PORTS_PATH)
@@ -126,6 +144,7 @@ func _make_world() -> Object:
 			cities.size(), buildings.size()])
 		return sim
 	sim.initialize_demo_world(cities, ports, buildings)
+	_load_urban(sim)
 	return sim
 
 

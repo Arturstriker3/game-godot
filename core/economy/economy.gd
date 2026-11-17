@@ -56,6 +56,11 @@ const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 ## F9: estrutura de emprego por setor (âncoras ILO + coeficientes agrícolas).
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## §19 (W0): solo urbano, moradia e prefeitura por cidade.
+const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
+const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
+const HOUSING_PATH := "res://data/definitions/economy/housing.json"
+const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 ## Nações do cenário (geradas de data/definitions/scenario/nations.csv).
 const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Bandeiras por código ISO-2 (moddável: adicione assets/flags/<código>.png).
@@ -107,6 +112,15 @@ func _ready() -> void:
 	var geo := GeographyService.new()
 	var cities := _load_cities()
 	sim.initialize_demo_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
+	# §19 (W0): solo, moradia e prefeitura por cidade. DEPOIS do mundo: os JSON
+	# casam pelo id da cidade. Binário anterior à §19 não tem o método (mantém o
+	# estado sem dado urbano, como antes).
+	if sim.has_method("demo_set_urban"):
+		sim.demo_set_urban(
+			_load_json_dict(URBAN_LAND_PATH),
+			_load_json_dict(HOUSING_CITY_PATH),
+			_load_json_dict(HOUSING_PATH),
+			_load_json_dict(MUNICIPAL_FINANCE_PATH))
 	_load_nations()
 	# Aplica a geografia real (aptidão de culturas + reservas minerais) desde o
 	# início — sem prospecção: todo depósito é conhecido.
