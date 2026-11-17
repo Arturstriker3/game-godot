@@ -1684,7 +1684,7 @@ void EconomySim::demo_fill_city_status(std::size_t city_index,
 	// qualidade, profundidade, eficiência, opex) é escrito uma vez; por dia só
 	// mudam reserva restante, extraído e esgotado. Antes o dicionário inteiro
 	// era reconstruído a cada dia — custo que crescia com as cidades mineiras
-	// do cenário real (o mundo sintético do bench não tem depósito nenhum).
+	// do cenário real (o cenário de validação não tem depósito nenhum).
 	if (slot.deposit_entry.size() < ws_.products) {
 		slot.deposit_entry.resize(static_cast<std::size_t>(ws_.products));
 		slot.deposit_present.assign(static_cast<std::size_t>(ws_.products), 0);
@@ -2540,7 +2540,7 @@ Dictionary EconomySim::get_demo_status() {
 	const DemoStatusKeys& k = demo_status_keys_;
 	Dictionary& root = cache.root;
 
-	// Subdivisao da fase status no benchmark (sem custo no jogo): as 4 marcas
+	// Subdivisao da fase status na medicao por fase (sem custo no jogo): as 4 marcas
 	// `OGS_SIM_PHASE_LAP(part)` abaixo gravam em `demo_status_sub_us_`.
 #if defined(OGS_PROFILING)
 	ogs::profile::Sink status_sink{demo_status_sub_us_, 4, &demo_profile_};

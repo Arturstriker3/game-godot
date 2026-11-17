@@ -315,7 +315,7 @@ void SimCore::demo_trade_food() {
 			// da grade. Antes era max(grid_w, grid_h), ou seja, o anel continuava
 			// varrendo células vazias muito além do mapa: com grade 157×79 e
 			// menos de K vendedores no mundo, cada comprador percorria ~5,2 M
-			// células (O(raio³) acumulado) — o bench ficava minutos parado.
+			// células (O(raio³) acumulado) — a rodada ficava minutos parada.
 			//
 			// Teto ECONÔMICO (regra do porto): sem porto só há caminhão, cujo
 			// frete já supera o preço do alimento bem antes de 2.000 km (~8

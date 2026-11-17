@@ -18,8 +18,8 @@ constexpr double kDemoLoadHoursPerBatch = 0.5;
 // Versão do schema do save do modo demo. Aumente ao mudar a estrutura do
 // dicionário; demo_from_dict recusa versões futuras (maiores) e migra as
 // anteriores.
-// v3: farinha/pão removidos da cadeia (enum DemoProduct deslocou -2 a partir do
-// ferro) e 21 produtos. demo_from_dict remapeia saves v1/v2 (com farinha/pão).
+// v3: farinha/pão removidos da cadeia (os índices de produto deslocaram -2 a
+// partir do ferro) e 21 produtos. demo_from_dict remapeia saves v1/v2.
 // v5: frota nacional (F4) — `fleets` e a reserva de veículos de cada carga em
 // `in_transit`. Save v4 sem a chave deriva a frota de população/PIB.
 // v6: moedas/câmbio e tarifas (F5) — `currencies`, `tariffs` e a cotação de
@@ -217,7 +217,6 @@ constexpr double kDemoExternalIncomeIndexCap = 1.0;
 // EUA/DEU basic ≤ 15% e maioria life; BRA basic ~41%; IND ~68%; NGA ~78%.
 constexpr double kIncomeAnchorWorldMean = 2.0;   // cestas básicas/pessoa/dia
 constexpr double kIncomeLuxuryMultiple = 7.0;    // luxo = 7× cesta básica
-constexpr double kDemoLaborShare = 0.55;
 constexpr double kDemoLaborShareLow = 0.50;
 constexpr double kDemoLaborShareHigh = 0.65;
 constexpr double kDemoServiceShare = 0.30;
@@ -258,10 +257,6 @@ constexpr int kDemoGroupChunkAssets = 12;
 constexpr int kDemoNationalizationDays = 180;
 constexpr double kDemoNationalizationConfidence = 0.35;
 constexpr double kDemoNationalizationCompensation = 0.5;
-constexpr double kDemoFreightPerTonKm = 0.10;
-// Frete marítimo (entre massas de terra), espelhando a taxa de navio do
-// mercado legado: 5x mais barato que o caminhão por tonelada-km.
-constexpr double kDemoFreightShipPerTonKm = 0.02;
 
 // ---------------------------------------------------------------------------
 // F4 — frota e combustível.
@@ -374,8 +369,6 @@ constexpr double kDemoPortHandlingHours = 8.0;
 constexpr double kDemoPortDemurragePerTonDay = 0.5;
 constexpr double kDemoPriceSmoothing = 0.20;
 
-// Produção segue as vendas do dia anterior, com pequena folga de estoque.
-constexpr double kDemoProductionBuffer = 1.10;
 // Estoque-alvo em dias de venda. A produção repõe metade da diferença por dia:
 // sem estoque-alvo, produzir sempre 10% acima das vendas faria o estoque
 // crescer para sempre (minas e fazendas com demanda externa fixa).
@@ -401,10 +394,6 @@ constexpr double kDemoServiceCashBufferDays = 8.0;
 constexpr double kDemoServiceFoodGuardDays = 1.0;
 // Serviços ajustam o emprego para cobrir a folha com a própria receita.
 constexpr double kDemoServiceAdjust = 0.10;
-// Limites usados pelo benchmark sintético (o cenário demo usa o equilíbrio
-// do mercado de trabalho residual).
-constexpr double kDemoServiceMinShare = 0.05;
-constexpr double kDemoServiceMaxShare = 0.30;
 // O salário de serviços busca o equilíbrio do mercado de trabalho residual,
 // com piso no custo de subsistência (uma cesta alimentar por pessoa). Sem
 // isso o salário fixo de 0,15/dia (3x o PIB per capita) só financiava ~10%

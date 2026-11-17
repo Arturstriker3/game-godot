@@ -115,15 +115,9 @@ namespace ogs {
 	// ------------------------------------------------------------------
 	// Cenário de validação: duas cidades, população agregada (POPs) e trigo
 	// consumido diretamente. Vive no mesmo núcleo para validar as regras antes
-	// de generalizar o modo europeu.
+	// de generalizar o modo europeu; a ordem dos produtos é a de
+	// data/definitions/economy/goods.json (não há enum de produtos).
 	// ------------------------------------------------------------------
-	enum class DemoProduct {
-		Wheat = 0, Iron = 1, Rice = 2, Maize = 3,
-		Bauxite = 4, Lead = 5, Gold = 6, Phosphate = 7, Tungsten = 8,
-		RareEarths = 9, Sulfur = 10, Diamond = 11, Coal = 12, Copper = 13,
-		Gas = 14, Oil = 15, Potato = 16, Soy = 17, Cotton = 18, Wood = 19,
-		Uranium = 20
-	};
 	// Mesma ordem de data/definitions/economy/goods.json. A contagem é variável
 	// (demo_set_goods): os 21 primários continuam nas posições 0..20 e os 92
 	// bens industriais entram em 21..112. kDemoMaxProducts é só o teto de

@@ -134,7 +134,7 @@ inline double labor_income_factor(double income_index) {
 
 // Espelho compilado de data/definitions/economy/sector_employment.json. A fonte
 // de verdade é o JSON (carregado por demo_set_sector_employment); este espelho
-// existe para testes/benchmark rodarem sem o arquivo.
+// existe para os testes rodarem sem o arquivo.
 constexpr int kDemoSectorAnchorCount = 5;
 struct DemoSectorAnchorDefault {
 	double income;

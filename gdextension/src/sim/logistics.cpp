@@ -89,8 +89,8 @@ int SimCore::demo_city_index_near(const std::string& nation,
 }
 void SimCore::demo_init_port_capacities() {
 	// Capacidade de nível 1 pela população de simulação da cidade-sede. Sem
-	// `port_of` válido (bench sintético), usa a cidade da nação/massa mais
-	// próxima do cais; sem nenhuma, o piso de referência.
+	// `port_of` válido (mundo sem dono declarado para o cais), usa a cidade da
+	// nação/massa mais próxima do cais; sem nenhuma, o piso de referência.
 	for (Port& port : ws_.ports) {
 		double population = 0.0;
 		const DemoCity* host = port.host_city.empty()
@@ -302,7 +302,7 @@ double SimCore::demo_fleet_capacity_scale(const std::string& nation,
 	}
 	const auto found = ws_.fleets.find(nation);
 	if (found == ws_.fleets.end()) {
-		// Mundo sem frota declarada (save antigo/benchmark): não bloqueia.
+		// Mundo sem frota declarada (save anterior à F4): não bloqueia.
 		return 1.0;
 	}
 	const DemoFleet& fleet = found->second;

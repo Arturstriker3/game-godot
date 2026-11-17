@@ -243,7 +243,7 @@ public:
 	 * Determinística: a mesma entrada gera a mesma fração por cidade. Chame
 	 * antes (ou depois) de criar o mundo — os valores são recalculados todo dia
 	 * em demo_update_sector_employment. Sem chamada, vale o espelho compilado
-	 * das cinco âncoras (testes/benchmark).
+	 * das cinco âncoras (testes).
 	 */
 	void demo_set_sector_employment(const Variant& data);
 
@@ -1172,11 +1172,11 @@ private:
 			revenue, city, firm_surplus);
 	}
 
-	// Medição por fase do tick (benchmark oficial; desligada no jogo). A
+	// Medição por fase do tick (bench canônico; desligada no jogo). A
 	// infraestrutura vive em sim/profiling.h (OGS_PROFILING, só no build debug).
 	bool demo_profile_ = false;
 	double demo_profile_us_[kDemoPhaseCount] = {};
-	// Subdivisão da fase `status` (benchmark): cidades, pedidos, nações, resto.
+	// Subdivisão da fase `status` (medida por fase): cidades, pedidos, nações, resto.
 	double demo_status_sub_us_[4] = {};
 
 	// Estado da simulação (cidades, construções, mercados, grupos, frota,
