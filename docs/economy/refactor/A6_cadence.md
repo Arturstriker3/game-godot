@@ -157,33 +157,37 @@ cesta de comida), coleta de aluguel, demanda de serviços.
 
 ### 3.1 Bench canônico (N=3, 60 d, release com perfil, host AMD 5700X3D)
 
-| métrica | antes (inventário N=1) | depois (mediana de 3) |
+| métrica | antes (inventário N=1) | depois (mediana de 3 rodadas) |
 | --- | --- | --- |
 | dia completo — média | 58,09 ms | **56,89 ms** |
-| dia completo — p50 | 56,43 | 55,45 |
-| dia completo — p95 | 71,69 | **65,58** |
-| dia completo — **pior dia** | **94,52** | **68,45** |
-| `fiscal_city_gov` p50 / pior | 0,003 / **20,68** | 0,72 / **1,28** |
+| dia completo — p50 | 56,43 | 56,23 |
+| dia completo — p95 | 71,69 | **67,56** |
+| dia completo — **pior dia** | **94,52** | **73,90** |
+| `fiscal_city_gov` p50 / pior | 0,003 / **20,68** | 0,72 / **1,36** |
 | `housing` p50 / pior | 0,070 / **13,33** | 0,44 / **0,75** |
-| `land_month` p50 / pior | 0,000 / **1,45** | 0,04 / **0,07** |
-| `services_decisions` p50 / pior | 0,41 / 2,35 | **0,18** / 1,25 |
+| `land_month` p50 / pior | 0,000 / **1,45** | 0,04 / **0,08** |
+| `services_decisions` p50 / pior | 0,41 / 2,35 | **0,19** / 1,25 |
 
-Rodadas do bench: 55,68 / 56,89 / 63,76 ms (a terceira sob contenção de outra
-sessão). A variação entre rodadas foi **14,2%**, então o critério de
-reprodutibilidade do A0 (≤3%) **não fecha neste host compartilhado** — o número
-que vale é a mediana e o pior dia, não a terceira rodada. Comparação de fase a
-fase com o inventário (mesmo host, mesma sessão): `status` 19,94 → 20,26,
-`arrival` 7,18 → 6,03, `trade` 5,72 → 5,80, `ai` 9,62 → 10,38 (ruído de host).
+Rodadas do bench (média / p50 / p95 / pior dia): 55,68/55,45/65,58/68,45 ·
+56,89/56,23/67,56/73,90 · 63,76/67,05/73,40/74,73. A terceira rodada saiu sob
+contenção de outra sessão (p50 67,05 contra 55,45/56,23 das duas primeiras), então
+a variação entre rodadas foi **14,2%** e o critério de reprodutibilidade do A0
+(≤3%) **não fecha neste host compartilhado**. Como na A7, o número que vale é a
+**mediana** e o pior dia mediano; a rodada 3 fica registrada no JSON
+(`criterion.ok = false`).
 
 **O que a A6 entregou em performance:** o **pico** do dia caiu de 94,5 para
-68,4 ms (−27,6%) e o p95 de 71,7 para 65,6 ms (−8,5%); o custo diário médio é
-praticamente o mesmo (o trabalho mensal passou de "tudo no dia 30" para
-"~28 cidades por dia"). A meta do plano (**dia ≤15 ms p95**) **não** é atingível
-por cadência: sobram ~47 ms de trabalho *diário por contrato* — `status` 20,3
-(A4: status sob demanda), IA 10,4 (retrato 7,6: fatiar o `AiView`), `arrival` 6,0
-e `trade` 5,8 (A7 já otimizou o comércio), retrato do prólogo 4,8 (rede de
-segurança dos invariantes). Isso é registro para as fases seguintes, não
-pendência da A6.
+73,9 ms (−21,8%) e o p95 de 71,7 para 67,6 ms (−5,8%); o custo diário médio cai
+pouco (o trabalho mensal passou de "tudo no dia 30" para "~28 cidades por dia").
+Duas fases ficaram **ligeiramente mais caras por dia** — `fiscal_city_gov`
+0,63 → 0,73 e `housing` 0,40 → 0,45 (−0,10 ms somados): é o preço de fazer o
+trabalho mensal de um lote por dia em vez de concentrá-lo num dia, e o ganho de
+pico é 10× essa diferença. A meta do plano (**dia ≤15 ms p95**) **não** é
+atingível por cadência: sobram ~47 ms de trabalho *diário por contrato* —
+`status` 20,3 (A4: status sob demanda), IA 10,4 (retrato 7,6: fatiar o
+`AiView`), `arrival` 6,0 e `trade` 5,8 (A7 já otimizou o comércio), retrato do
+prólogo 4,8 (rede de segurança dos invariantes). Isso é registro para as fases
+seguintes, não pendência da A6.
 
 ### 3.2 Invariantes
 
@@ -228,7 +232,26 @@ pendência da A6.
 A diferença é **esperada e aprovada** (a A6 muda o resultado de propósito): o
 calendário de fechamento mudou de "dia 30 global" para "dia da cidade", e o
 `services_open_close` passou a decidir semanalmente. `money_total` do mundo
-segue 2.177.839.209,15 e o demo 630.000,00; 0 falências nos dois.
+segue 2.177.839.209,15 e o demo 630.000,00; 0 falências nos dois. A mudança
+material mais visível é o número de **negócios de serviço**: no mundo de 60 d
+com IA ele cai de **54.611 para 42.107 (−23%)** — a abertura/fechamento deixa de
+ser avaliada todo dia (o `kServiceOpensPerDay` passa a ser um teto por *decisão*
+semanal, não por dia) e o mercado de serviços fica mais estável, o que é
+coerente com decisões semanais.
+
+**Riscos registrados (não bloqueiam):**
+
+- **Save v14 carregado no meio da janela mensal:** `month_marker` vem 0 e o
+  primeiro fechamento usa `elapsed = clamp(dia, 1, 30)` — se o save for de um dia
+  já avançado, esse fechamento cobra um mês cheio mesmo que o último tenha sido
+  um dia antes (não cria dinheiro; desloca uma vez IPTU/taxas/repasse/manutenção).
+  Mundo novo não tem esse caso: a janela curta é a prevista (0..29 dias).
+- **Moradia em save antigo:** o gate deixou de ser rolante (`day - marker >= 30`)
+  e passou a ser de calendário; um save com janela vencida espera até 30 dias
+  pela próxima, o que atrasa no máximo um ciclo o nível de aluguel (determinístico).
+- **`service_by_city`:** o uso COM do solo passou a usar esse índice (a mesma
+  premissa de `zone_usage`); se ele estiver defasado do vetor de negócios, o uso
+  diverge da varredura antiga. Sem índice, o código cai na varredura global.
 
 ### 3.5 Bateria
 
