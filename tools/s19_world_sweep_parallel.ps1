@@ -31,7 +31,9 @@ if (-not $godot -or -not (Test-Path $godot)) { throw "godot nao encontrado" }
 
 $logdir = Join-Path $env:TEMP "opengs_q015_sweep"
 New-Item -ItemType Directory -Force -Path $logdir | Out-Null
-$baseline = "res://docs/economy/perf/construction_world_sweep.json"
+# Q-016 (365 d, --urban=1, 5 processos) e o baseline corrente: a comparacao de
+# comida por nacao roda contra ele. construction_world_sweep.json fica historico.
+$baseline = "res://docs/economy/perf/q016_world_sweep.json"
 
 $variants = @(
   @{ name = "real"; extra = @("--fx=real") },
