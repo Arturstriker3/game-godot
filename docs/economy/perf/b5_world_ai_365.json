@@ -1,0 +1,15 @@
+{
+  "bankruptcies": 4,
+  "concessions": 0,
+  "days": 365,
+  "infra_power": 615,
+  "infra_road": 774,
+  "infra_total": 1821,
+  "infra_water": 432,
+  "min_food_nation": "AFG",
+  "min_food_satisfaction": 0.0,
+  "money_drift": -0.000666618347167969,
+  "money_end": 6523551982.89933,
+  "money_start": 6523551982.9,
+  "regions_with_infra": 697
+}
