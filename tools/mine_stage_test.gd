@@ -267,8 +267,8 @@ func _test_money_and_save() -> void:
 			money_initial, money_final])
 
 	var saved: Dictionary = sim.to_dict()
-	if int(saved.get("version", 0)) != 20:
-		_fail("(d) save v%d != v20 (B4 acrescentou a migração; as minas não mudaram)" % int(
+	if int(saved.get("version", 0)) != 21:
+		_fail("(d) save v%d != v21 (B4 acrescentou a migração; as minas não mudaram)" % int(
 			saved.get("version", 0)))
 	var clone = EconomySim.new()
 	clone.set_goods(_load_goods())
@@ -339,7 +339,7 @@ func _test_money_and_save() -> void:
 			or Array(strata16.get("income_share", [])).size() != 5:
 		_fail("(d) migração v16: a etapa v17 (B2) não rodou na cadeia")
 	if _failures.size() == failures_before:
-		print("[mine] (d) save v20 round-trip ok; v17 -> último estágio (piso, B2 intacta); v16 -> v17 -> v18 -> v20")
+		print("[mine] (d) save v21 round-trip ok; v17 -> último estágio (piso, B2 intacta); v16 -> v17 -> v18 -> v20 -> v21")
 
 
 # ---------------------------------------------------------------------------

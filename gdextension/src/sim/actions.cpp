@@ -787,4 +787,153 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 	return result;
 }
 
+// ---------------------------------------------------------------------------
+// B5 — obra de infraestrutura da região/estado (estrada/energia/água).
+// ---------------------------------------------------------------------------
+InfraResult action_infra_build(WorldState& ws, SimCore& core,
+		const std::string& city_id, int infra_type, bool instant_construction) {
+	InfraResult result;
+	result.infra_type = infra_type;
+	City* city = core.find_city(city_id);
+	if (city == nullptr) {
+		result.error = "cidade desconhecida";
+		return result;
+	}
+	if (!city->region.ready) {
+		result.error = "região sem dado";
+		return result;
+	}
+	if (infra_type < 0 || infra_type >= kInfraTypeCount) {
+		result.error = "tipo de infra inválido";
+		return result;
+	}
+	const int current = SimCore::infra_level(city->region, infra_type);
+	if (current < 0 || current >= kInfraMaxLevel) {
+		result.error = "nível máximo atingido";
+		return result;
+	}
+	// Custo e prazo: modelo declarado, por habitante da região (obra nacional).
+	const double region_pop = std::max(0.0, city->region.region_pop);
+	const double cost = kInfraCostPerCapitaPerLevel * region_pop;
+	if (cost <= 0.0) {
+		result.error = "região sem população";
+		return result;
+	}
+	result.cost = cost;
+	result.next_level = current + 1;
+	result.duration_days = kInfraBuildDays;
+	// Anti-duplicação: uma obra de infra do MESMO tipo por cidade em voo.
+	for (const ConstructionProject& in_flight : ws.construction_projects) {
+		if (in_flight.kind == CONSTRUCTION_REGION_INFRA
+				&& in_flight.city == city->id
+				&& in_flight.infra_type == infra_type) {
+			result.error = "obra em andamento";
+			return result;
+		}
+	}
+	// Paga pelo GOVERNO NACIONAL (a cota equalizada do tesouro nacional vive
+	// em city->government_budget): limite de comprometimento como as demais
+	// obras do Estado.
+	const double committed = committed_construction(ws, city->id, "state");
+	if (committed + cost > city->government_budget) {
+		result.error = "orçamento insuficiente";
+		return result;
+	}
+
+	const std::string target = "INFRA-" + city->id + "-" + std::to_string(infra_type);
+
+	if (instant_construction) {
+		// Hook de teste/laboratório: sobe o nível na hora, custo integral
+		// debitado e pago ao setor de construção (dinheiro conservado).
+		city->government_budget -= cost;
+		city->service_cash += cost;
+		city->construction_revenue_pending += cost;
+		SimCore::infra_level_up(city->region, infra_type);
+		result.started = true;
+		return result;
+	}
+
+	ConstructionProject project;
+	project.id = target;
+	project.building_id = target;
+	project.city = city->id;
+	project.owner = "state";
+	project.kind = CONSTRUCTION_REGION_INFRA;
+	project.infra_type = infra_type;
+	project.output_product = -1;
+	project.total_cost = cost;
+	project.reserved = cost;
+	city->government_budget -= cost;
+	core.add_construction_project(project);
+	result.started = true;
+	result.project_id = project.id;
+	return result;
+}
+
+// ---------------------------------------------------------------------------
+// B5 — concessão de mina/fazenda estatal a grupo (F9) com royalty.
+// ---------------------------------------------------------------------------
+ConcedeResult action_concede(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& group_id, double royalty_rate) {
+	ConcedeResult result;
+	City* city = core.find_city(city_id);
+	if (city == nullptr) {
+		result.error = "cidade desconhecida";
+		return result;
+	}
+	Building* building = find_building(ws, city->id, building_id);
+	if (building == nullptr) {
+		result.error = "ativo desconhecido";
+		return result;
+	}
+	if (building->owner != "state") {
+		result.error = "ativo não é estatal";
+		return result;
+	}
+	// Concessão vale para extração PRIMÁRIA (mina/fazenda, sem receita fabril).
+	if (building->recipe >= 0 || building->input_product >= 0) {
+		result.error = "ativo não é mina/fazenda";
+		return result;
+	}
+	Group* buyer = core.find_group(group_id);
+	if (buyer == nullptr) {
+		result.error = "concessionário desconhecido";
+		return result;
+	}
+	const bool foreign = buyer->origin_nation != city->nation;
+	if (foreign) {
+		const std::string sector = building->output_product >= 0
+			&& building->output_product < static_cast<int>(ws.product_sectors.size())
+			? ws.product_sectors[static_cast<std::size_t>(building->output_product)]
+			: std::string();
+		if (core.fdi_mode(city->nation, sector) == 3) {
+			result.error = "setor fechado ao capital estrangeiro";
+			return result;
+		}
+	}
+	const double price = building->capacity * building->capital_per_capacity;
+	if (buyer->cash + 1e-9 < price) {
+		result.error = "caixa insuficiente do concessionário";
+		return result;
+	}
+	const double rate = std::isfinite(royalty_rate) && royalty_rate > 0.0
+		? std::clamp(royalty_rate, 0.0, 1.0)
+		: kConcessionRoyaltyRate;
+	buyer->cash -= price;
+	buyer->capex_total += price;
+	city->government_budget += price;
+	building->owner = foreign
+		? "foreign:" + buyer->id + "@" + buyer->origin_nation
+		: "national:" + buyer->id;
+	building->local_share = 0.0;
+	building->partner_group.clear();
+	building->royalty = rate;
+	result.ok = true;
+	result.price = price;
+	result.royalty = rate;
+	result.owner = building->owner;
+	return result;
+}
+
 } // namespace ogs

@@ -29,7 +29,7 @@ const HOUSING_PATH := "res://data/definitions/economy/housing.json"
 const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_finance.json"
 
 const TOLERANCE := 0.5
-const SAVE_VERSION := 20
+const SAVE_VERSION := 21
 
 var _failures: Array = []
 
@@ -37,7 +37,7 @@ var _failures: Array = []
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[b4] OK: migração — conservação, direção, limite, idade, save v20.")
+		print("[b4] OK: migração — conservação, direção, limite, idade, save v21.")
 		quit(0)
 	else:
 		print("[b4] FALHAS (%d):" % _failures.size())

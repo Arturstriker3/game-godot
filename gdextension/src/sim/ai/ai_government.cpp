@@ -409,6 +409,81 @@ void plan_city(AiContext& ctx, int city_index) {
 		}
 		// Rejeitado: tenta o próximo candidato (ordem de margem).
 	}
+
+	// 3. Infraestrutura da região (B5). Determinística — prioridade pelo nível
+	// MAIS BAIXO (cobertura pior primeiro), empate na ordem estrada → energia →
+	// água; gatilho = déficit alimentar da REGIÃO (comida/segurança alimentar)
+	// OU êxodo já observado (migração acumulada > 0). Uma obra por cidade por
+	// cooldown; custo limitado a `available` (fração do orçamento nacional).
+	if (build_cooldown_ready(ctx, city_id)) {
+		const int infra_levels[kInfraTypeCount] = {
+			city.infra_road, city.infra_power, city.infra_water};
+		const bool trigger = city.region_food_deficit >= kMinShortageTons
+			|| city.migration_rural_in_total > 0.0;
+		if (trigger) {
+			int best_type = -1;
+			int best_level = kInfraMaxLevel + 1;
+			for (int t = 0; t < kInfraTypeCount; ++t) {
+				if (infra_levels[t] < kInfraMaxLevel
+						&& infra_levels[t] < best_level) {
+					best_level = infra_levels[t];
+					best_type = t;
+				}
+			}
+			if (best_type >= 0) {
+				const double cost = kInfraCostPerCapitaPerLevel
+					* std::max(0.0, city.region_pop);
+				if (cost > 0.0 && cost <= available) {
+					const AiActionResult infra_result =
+						ai_emit_infra(ctx, city_id, best_type);
+					if (infra_result.error.empty()) {
+						ctx.state.last_build_day[city_id] = ctx.day;
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Concessão de mina estatal ociosa (B5). Determinística:
+	//    - alvo: mina do ESTADO com stage_factor <= kConcessionFloorStageFactor
+	//      (esgotada/ociosa, produz ~o piso de 5% — mesma régua da D-086);
+	//    - comprador: grupo PRIVADO NACIONAL (origin == nação, não estatal);
+	//      NUNCA estrangeiro (a política de IDE nunca bloqueia a concessão);
+	//    - preço = valor contábil (action_concede valida o caixa do comprador —
+	//      nunca concede abaixo do valor contábil);
+	//    - uma concessão por cidade por cooldown (mesmo gate das obras).
+	if (build_cooldown_ready(ctx, city_id)) {
+		for (int bi = ai_b_begin(view, city_index);
+				bi < ai_b_end(view, city_index); ++bi) {
+			if (view.b_owner[static_cast<std::size_t>(bi)] != "state") {
+				continue;
+			}
+			if (view.b_stage_factor[static_cast<std::size_t>(bi)]
+					> kConcessionFloorStageFactor) {
+				continue;  // mina produtiva ou construção que não é mina
+			}
+			const std::string building_id =
+				view.b_id[static_cast<std::size_t>(bi)];
+			for (const AiGroupRow& candidate : view.groups) {
+				if (candidate.state_owned
+						|| candidate.origin_nation != city.nation) {
+					continue;  // só grupo privado NACIONAL
+				}
+				const AiActionResult concede_result = ai_emit_concede(
+					ctx, city_id, building_id, candidate.id, 0.0);
+				if (concede_result.error.empty()) {
+					ctx.state.last_build_day[city_id] = ctx.day;
+					return;
+				}
+				// Rejeitado por caixa: tenta o próximo grupo nacional; erro de
+				// outro tipo (ex.: não estatal) não adianta repetir nesta mina.
+				if (concede_result.error != "caixa insuficiente do concessionário") {
+					break;
+				}
+			}
+		}
+	}
 }
 
 } // namespace

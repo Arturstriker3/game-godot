@@ -373,6 +373,8 @@ void EconomySim::_bind_methods() {
 	// D-086: aprofundar/expandir mina (comando A3 `deepen_mine`).
 	ClassDB::bind_method(D_METHOD("deepen_mine", "city_id", "building_id"),
 	                     &EconomySim::deepen_mine);
+	ClassDB::bind_method(D_METHOD("infra_build", "city_id", "infra_type"),
+	                     &EconomySim::infra_build);
 	ClassDB::bind_method(D_METHOD("set_fdi_policy", "nation", "sector", "mode",
 	                     "min_local"),
 	                     &EconomySim::set_fdi_policy, DEFVAL(0.0));
@@ -387,6 +389,9 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::privatize);
 	ClassDB::bind_method(D_METHOD("nationalize", "city_id", "building_id"),
 	                     &EconomySim::nationalize);
+	ClassDB::bind_method(D_METHOD("concede", "city_id", "building_id",
+	                     "group_id", "royalty_rate"),
+	                     &EconomySim::concede, DEFVAL(0.0));
 	ClassDB::bind_method(D_METHOD("get_investment_status"),
 	                     &EconomySim::get_investment_status);
 	ClassDB::bind_method(D_METHOD("get_investment_signals"),
@@ -5091,6 +5096,48 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		migration["urban_share_ref"] = region.urban_share;
 		out["migration"] = migration;
 	}
+	// B5: infraestrutura do estado — níveis, manutenção do dia e os
+	// multiplicadores derivados (custo de acesso, produtividade, êxodo).
+	{
+		Dictionary infra;
+		infra["road"] = region.infra_road;
+		infra["power"] = region.infra_power;
+		infra["water"] = region.infra_water;
+		infra["maintenance"] = region.infra_maintenance;
+		infra["access_multiplier"] =
+			ogs::SimCore::infra_access_multiplier(region);
+		infra["productivity_multiplier"] =
+			ogs::SimCore::infra_productivity_multiplier(region);
+		infra["exodus_multiplier"] =
+			ogs::SimCore::infra_exodus_multiplier(region);
+		out["infra"] = infra;
+	}
+	// B5: concessões — dono (F9) e royalty por mina/fazenda (extração primária)
+	// da região (construções da cidade-polo). Dono = "state" | "national:<g>" |
+	// "foreign:<g>@<n>" | "private".
+	{
+		Array concessions;
+		const std::size_t cidx = static_cast<std::size_t>(
+			city - ws_.cities.data());
+		if (cidx < ws_.buildings_by_city.size()) {
+			for (const int bi : ws_.buildings_by_city[cidx]) {
+				const Building& b =
+					ws_.buildings[static_cast<std::size_t>(bi)];
+				if (b.recipe >= 0 || b.input_product >= 0) {
+					continue;  // só mina/fazenda (extração primária)
+				}
+				Dictionary c;
+				c["id"] = String(b.id.c_str());
+				c["resource"] = String(b.resource.c_str());
+				c["output_product"] = b.output_product;
+				c["owner"] = String(b.owner.c_str());
+				c["royalty"] = b.royalty;
+				c["royalty_paid"] = b.royalty_paid;
+				concessions.append(c);
+			}
+		}
+		out["concessions"] = concessions;
+	}
 	return out;
 }
 
@@ -5766,6 +5813,24 @@ Dictionary EconomySim::apply_deepen_mine(const String& city_id,
 	return result;
 }
 
+Dictionary EconomySim::apply_infra_build(const String& city_id, int infra_type) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::InfraResult outcome = ogs::action_infra_build(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()), infra_type,
+		instant_construction_);
+	Dictionary result;
+	result["started"] = outcome.started;
+	result["cost"] = outcome.cost;
+	result["infra_type"] = outcome.infra_type;
+	result["next_level"] = outcome.next_level;
+	result["duration_days"] = outcome.duration_days;
+	result["error"] = String(outcome.error.c_str());
+	if (!outcome.project_id.empty()) {
+		result["project_id"] = String(outcome.project_id.c_str());
+	}
+	return result;
+}
+
 Dictionary EconomySim::apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
@@ -6212,12 +6277,40 @@ Dictionary EconomySim::apply_privatize(const String& city_id,
 		: "national:" + buyer->id;
 	building->local_share = 0.0;
 	building->partner_group.clear();
+	// D1: o ativo privatizado é propriedade plena do comprador, não concessão —
+	// limpar o royalty evita renda residual (conceder -> estatizar -> privatizar
+	// deixava 5% e o ativo aparecia como concessão no status).
+	building->royalty = 0.0;
+	building->royalty_paid = 0.0;
 	result["ok"] = true;
 	result["price"] = price;
 	result["owner"] = String(building->owner.c_str());
 	return result;
 }
 
+// B5: conceder mina/fazenda do Estado a um grupo (nacional/estrangeiro) com um
+// royalty sobre a produção. Igual à privatização na transferência de dinheiro
+// (o comprador paga o valor contábil ao governo), mas o Estado mantém uma renda
+// de royalty (`building.royalty`). O dono F9 é o grupo concessionário — sem
+// duplicar sistema de donos.
+Dictionary EconomySim::apply_concede(const String& city_id,
+		const String& building_id, const String& group_id,
+		double royalty_rate) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::ConcedeResult outcome = ogs::action_concede(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()),
+		std::string(group_id.utf8().get_data()), royalty_rate);
+	Dictionary result;
+	result["ok"] = outcome.ok;
+	result["price"] = outcome.price;
+	result["royalty"] = outcome.royalty;
+	result["error"] = String(outcome.error.c_str());
+	if (!outcome.owner.empty()) {
+		result["owner"] = String(outcome.owner.c_str());
+	}
+	return result;
+}
 Dictionary EconomySim::apply_nationalize(const String& city_id,
 		const String& building_id) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -6257,6 +6350,10 @@ Dictionary EconomySim::apply_nationalize(const String& city_id,
 	building->owner = "state";
 	building->local_share = 0.0;
 	building->partner_group.clear();
+	// D1: estatizar extingue a concessão — o Estado não paga royalty a si mesmo
+	// nem o ativo pode seguir publicado como concessão.
+	building->royalty = 0.0;
+	building->royalty_paid = 0.0;
 	// Derruba a confiança do anfitrião por um período: o IDE novo fica
 	// bloqueado enquanto a confiança estiver abaixo de 0,5.
 	ws_.confidence[city->nation] = kNationalizationConfidence;
@@ -7225,6 +7322,9 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 		case ogs::CommandType::Nationalize:
 			return apply_nationalize(String(cmd.s[0].c_str()),
 				String(cmd.s[1].c_str()));
+		case ogs::CommandType::Concede:
+			return apply_concede(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()), String(cmd.s[2].c_str()), cmd.v[0]);
 		case ogs::CommandType::UrbanExpand:
 			return apply_urban_expand(String(cmd.s[0].c_str()), cmd.i[0], cmd.v[0]);
 		case ogs::CommandType::UrbanDensify:
@@ -7241,6 +7341,8 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 		case ogs::CommandType::DeepenMine:
 			return apply_deepen_mine(String(cmd.s[0].c_str()),
 				String(cmd.s[1].c_str()));
+		case ogs::CommandType::InfraBuild:
+			return apply_infra_build(String(cmd.s[0].c_str()), cmd.i[0]);
 		case ogs::CommandType::None:
 			break;
 	}
@@ -7540,6 +7642,17 @@ Dictionary EconomySim::nationalize(const String& city_id,
 	return dispatch_command(cmd);
 }
 
+Dictionary EconomySim::concede(const String& city_id,
+		const String& building_id, const String& group_id, double royalty_rate) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::Concede;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
+	cmd.s[2] = to_std(group_id);
+	cmd.v[0] = royalty_rate;
+	return dispatch_command(cmd);
+}
+
 Dictionary EconomySim::urban_expand(const String& city_id, int zone, double km2) {
 	ogs::Command cmd;
 	cmd.type = ogs::CommandType::UrbanExpand;
@@ -7571,6 +7684,14 @@ Dictionary EconomySim::deepen_mine(const String& city_id,
 	cmd.type = ogs::CommandType::DeepenMine;
 	cmd.s[0] = to_std(city_id);
 	cmd.s[1] = to_std(building_id);
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::infra_build(const String& city_id, int infra_type) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::InfraBuild;
+	cmd.s[0] = to_std(city_id);
+	cmd.i[0] = infra_type;
 	return dispatch_command(cmd);
 }
 

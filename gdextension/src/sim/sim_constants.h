@@ -93,7 +93,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // do save novo; nada é inventado para trás). A cadeia v16 → v20 é o mesmo
 // caminho aditivo: cada etapa olha só as chaves que faltam (strata em v17,
 // estágio de mina em v18, região em v19, migração em v20).
-constexpr int kSaveVersion = 20;
+constexpr int kSaveVersion = 21;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -202,6 +202,56 @@ constexpr double kMigrationStrataWeight[5] = {1.00, 0.80, 0.55, 0.35, 0.15};
 // de propósito — salário/emprego/moradia dominam; o termo só desempata cidades
 // com renda parecida e captura o "serviços" do plano §B4.
 constexpr double kMigrationServiceWeight = 0.10;
+
+// ---------------------------------------------------------------------------
+// B5 — INFRAESTRUTURA DA REGIÃO/ESTADO (estrada, energia/luz, água). GAMEPLAY
+// do estado aprovado pelo dono (2026-11-17, §B5 do plano). Três níveis por
+// região, cada um 0..kInfraMaxLevel. O DADO (acesso a eletricidade/água por
+// país, quando houver) é usado só como nível INICIAL na geografia; o que segue
+// é MODELO DECLARADO, calibrável no laboratório — nenhum número por país
+// inventado. Fontes/parâmetros em docs/economy/B5_state_levers.md (D-089).
+// ---------------------------------------------------------------------------
+// Nível máximo de cada infra (estrada, energia, água). Pelo menos 3.
+constexpr int kInfraMaxLevel = 3;
+// Número de tipos de infra (ordem estável p/ save/comando/status: 0 estrada,
+// 1 energia, 2 água).
+constexpr int kInfraTypeCount = 3;
+// Custo da obra para subir UM nível de um tipo (XGS), por habitante da região.
+// Obra física §15 (projeto) com prazo kInfraBuildDays, paga pelo GOVERNO
+// NACIONAL (não pela prefeitura) — modelo declarado.
+constexpr double kInfraCostPerCapitaPerLevel = 0.01;
+// Prazo da obra de infra (dias) — projeto físico §15, independente do tamanho.
+constexpr int kInfraBuildDays = 90;
+// Manutenção recorrente (XGS/dia) por nível ativo, por habitante da região.
+// Entra na despesa NACIONAL (debita o caixa do governo) e é paga ao setor de
+// construção/serviços — dinheiro conservado. Modelo declarado.
+constexpr double kInfraMaintenancePerCapitaPerLevelPerDay = 0.0000005;
+// Peso de cada tipo na produtividade do TRABALHO primário da região (soma 1).
+// Estrada escoa a produção, energia mecaniza, água sustenta gente e lavoura.
+constexpr double kInfraProductivityWeight[kInfraTypeCount] = {0.40, 0.35, 0.25};
+// Ganho MÁXIMO de produtividade (fração sobre a base) com todos os tipos no
+// máximo: prod_eff = 1 + kInfraProductivityGain * Σ(weight × level/max).
+constexpr double kInfraProductivityGain = 0.30;
+// Custo de acesso região ↔ polo: penalidade MÁXIMA (fração sobre o preço) com
+// estrada 0, caindo linearmente a 0 na estrada máxima. É frete/overhead pago ao
+// setor de transporte (conserva dinheiro), embutido na transação da região.
+constexpr double kInfraAccessPenaltyMax = 0.30;
+// Êxodo (B4): fator de expulsão MÁXIMO (multiplicador sobre o fluxo) com infra
+// 0, caindo a 1,0 no máximo. Pesos dos tipos na cobertura combinada (soma 1).
+constexpr double kInfraExodusBoostMax = 0.50;
+constexpr double kInfraExodusWeight[kInfraTypeCount] = {0.50, 0.30, 0.20};
+
+// ---------------------------------------------------------------------------
+// B5 — CONCESSÕES de mineração e terra (F9). Royalty/imposto padrão de uma
+// concessão: fração da receita da mina/fazenda concedida paga ao Estado.
+// MODELO DECLARADO (o concessionário fica com o resto do lucro; o Estado
+// mantém a renda do royalty mesmo sem operar a mina).
+// ---------------------------------------------------------------------------
+constexpr double kConcessionRoyaltyRate = 0.05;
+// IA do governo: fator de estágio ABAIXO do qual uma mina estatal é considerada
+// ociosa/esgotada e vira candidata a concessão (produz ~o piso de 5%). É a
+// mesma régua do piso da D-086; declarado para a heurística ficar determinística.
+constexpr double kConcessionFloorStageFactor = 0.10;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.

@@ -516,6 +516,13 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			region_migration["city_in_total"] = region.migration_city_in_total;
 			region_migration["city_out_total"] = region.migration_city_out_total;
 			region_entry["migration"] = region_migration;
+			// B5 (save v21): infraestrutura do estado — níveis (a manutenção do
+			// dia é derivada e não vai ao save).
+			Dictionary region_infra = make_object();
+			region_infra["road"] = region.infra_road;
+			region_infra["power"] = region.infra_power;
+			region_infra["water"] = region.infra_water;
+			region_entry["infra"] = region_infra;
 			entry["region"] = region_entry;
 		}
 		entry["government_goods_spend"] = city.government_goods_spend;
@@ -586,6 +593,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["stage"] = building.stage;
 		entry["stage_reserve_kt"] = building.stage_reserve_kt;
 		entry["stage_mined_kt"] = building.stage_mined_kt;
+		// B5 (save v21): royalty/imposto de concessão (fração da receita paga
+		// ao Estado). 0 fora de concessão.
+		entry["royalty"] = building.royalty;
 		buildings.append(entry);
 	}
 	data["buildings"] = buildings;
@@ -643,6 +653,9 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		entry["land_cost"] = project.land_cost;
 		// D-086 (save v18): obra de APROFUNDAMENTO de mina (-1 = obra normal).
 		entry["deepen_stage"] = project.deepen_stage;
+		// B5 (save v21): tipo de infra da região (0 estrada, 1 energia, 2 água)
+		// quando kind == CONSTRUCTION_REGION_INFRA; -1 = não se aplica.
+		entry["infra_type"] = project.infra_type;
 		Array materials = make_array();
 		Array material_qty = make_array();
 		Array material_delivered = make_array();
@@ -1875,6 +1888,17 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					double(region_migration.get("city_in_total", 0.0)));
 				region.migration_city_out_total = safe_nonneg(
 					double(region_migration.get("city_out_total", 0.0)));
+				// B5 (save v21): níveis de infra. v20 e anteriores não têm o
+				// bloco — nascem zerados (nível 0 = ausência explícita; nada é
+				// inventado para trás). O valor é limitado a 0..kInfraMaxLevel.
+				const Dictionary region_infra =
+					saved_region.get("infra", Dictionary());
+				region.infra_road = std::clamp(int(region_infra.get("road", 0)),
+					0, kInfraMaxLevel);
+				region.infra_power = std::clamp(int(region_infra.get("power", 0)),
+					0, kInfraMaxLevel);
+				region.infra_water = std::clamp(int(region_infra.get("water", 0)),
+					0, kInfraMaxLevel);
 			} else if (ws.world_mode) {
 				// v18 → v19: interior = população regional exibida - população de
 				// simulação (ambos já no save). Cenário sintético (world_mode
@@ -2057,6 +2081,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			building.stage_reserve_kt = 0.0;
 			building.stage_mined_kt = 0.0;
 		}
+		// B5 (save v21): royalty/imposto de concessão. Save v20 e anteriores
+		// não têm a chave: 0 (sem concessão — nada inventado para trás).
+		building.royalty = std::clamp(
+			double(entry.get("royalty", 0.0)), 0.0, 1.0);
 		ws.buildings.push_back(building);
 	}
 
@@ -2086,7 +2114,8 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		// Save v13 e anteriores não têm a chave: a derivação por `urban_action`
 		// mantém a obra urbana como infra (2) e o resto como prédio (0).
 		project.kind = std::clamp(
-			int(entry.get("kind", project.urban_action != 0 ? 2 : 0)), 0, 2);
+			int(entry.get("kind", project.urban_action != 0 ? 2 : 0)), 0,
+			static_cast<int>(CONSTRUCTION_REGION_INFRA));
 		// Moradia (§19 W3): densidade, padrão, dono e unidades da obra, mais a
 		// parcela de terra já paga à prefeitura na abertura.
 		project.housing_density = std::clamp(
@@ -2164,6 +2193,9 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 		project.created_day = int(entry.get("created_day", 0));
 		// D-086: obra de aprofundamento de mina. Save v17 e anteriores sem a chave: -1.
 		project.deepen_stage = std::max(-1, int(entry.get("deepen_stage", -1)));
+		// B5: tipo de infra da região. Save v20 e anteriores sem a chave: -1.
+		project.infra_type = std::max(-1,
+			std::min(int(entry.get("infra_type", -1)), kInfraTypeCount - 1));
 		const Array materials = entry.get("materials", Array());
 		const Array material_qty = entry.get("material_qty", Array());
 		const Array material_delivered = entry.get("material_delivered", Array());

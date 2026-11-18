@@ -170,6 +170,9 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 		// aberto), independente da escala de tamanho da obra nova.
 		project.duration_days = kMineDeepenBaseDays
 			+ kMineDeepenDaysPerStage * project.deepen_stage;
+	} else if (project.kind == CONSTRUCTION_REGION_INFRA) {
+		// B5: obra de infra da região — prazo declarado, independente do tamanho.
+		project.duration_days = std::max(1, kInfraBuildDays);
 	} else if (project.kind == CONSTRUCTION_HOUSING) {
 		// Moradia (§19 W3): prazo declarado, sem escala por tamanho (é a
 		// mesma obra de unidades do W3, agora na fila única).
@@ -284,6 +287,17 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 	if (p.kind == CONSTRUCTION_URBAN_INFRA
 			|| p.urban_action != urban_land::URBAN_NONE) {
 		urban_land::apply_completed_project(ws, p);
+		return;
+	}
+	// B5: obra de infra da região — sobe UM nível do tipo (estrada/energia/
+	// água) na região da cidade. Não materializa prédio.
+	if (p.kind == CONSTRUCTION_REGION_INFRA) {
+		for (City& city : ws.cities) {
+			if (city.id == p.city) {
+				SimCore::infra_level_up(city.region, p.infra_type);
+				break;
+			}
+		}
 		return;
 	}
 	if (p.expand_existing) {

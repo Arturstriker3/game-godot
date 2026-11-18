@@ -95,4 +95,35 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		const std::string& city_id, const std::string& building_id,
 		bool instant_construction);
 
+// B5 — OBRA DE INFRAESTRUTURA da região/estado: projeto físico §15 que sobe UM
+// nível (estrada/energia/água) da região da cidade. Pago pelo GOVERNO NACIONAL
+// (caixa do governo da cidade, que é a cota equalizada do tesouro nacional).
+// `infra_type`: 0 estrada, 1 energia, 2 água. Custo = kInfraCostPerCapitaPerLevel
+// × população da região; prazo kInfraBuildDays. Nível limitado a kInfraMaxLevel.
+struct InfraResult {
+	bool started = false;
+	double cost = 0.0;
+	int infra_type = -1;
+	int next_level = 0;
+	int duration_days = 0;
+	std::string project_id;
+	std::string error;
+};
+InfraResult action_infra_build(WorldState& ws, SimCore& core,
+		const std::string& city_id, int infra_type, bool instant_construction);
+
+// B5 — CONCESSÃO de mina/fazenda estatal a grupo (nacional/estrangeiro) com
+// royalty sobre a produção. Transferência de dinheiro conservada (comprador
+// paga o valor contábil ao governo). `royalty_rate` <= 0 usa kConcessionRoyaltyRate.
+struct ConcedeResult {
+	bool ok = false;
+	double price = 0.0;
+	double royalty = 0.0;
+	std::string owner;
+	std::string error;
+};
+ConcedeResult action_concede(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& group_id, double royalty_rate);
+
 } // namespace ogs

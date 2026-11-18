@@ -80,6 +80,15 @@ struct AiCityRow {
 	std::vector<double> suitability;
 	// `City::external_demand` por produto (teto de exportação, t/dia).
 	std::vector<double> external_demand;
+	// B5: infraestrutura da região (níveis 0..kInfraMaxLevel), população do
+	// interior, déficit alimentar da região (need − consumed, t-eq) e êxodo
+	// acumulado — o governo usa para decidir obra de infra.
+	int infra_road = 0;
+	int infra_power = 0;
+	int infra_water = 0;
+	double region_pop = 0.0;
+	double region_food_deficit = 0.0;
+	double migration_rural_in_total = 0.0;
 };
 
 // Linha do ranking de grupos (ordem de `get_group_ranking`).
