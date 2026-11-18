@@ -23,26 +23,31 @@ Para cidade × produto **com produtor local** (`sim/prices.cpp`,
 avail    = max(stock + supply, 0.001)
 ratio    = effective / avail                                  // falta relativa
 markup   = clamp(kPriceMarkupBase + kPriceMarkupGain × ln(max(ratio, 1))
-                 + kPriceMarkupOccupancyGain × ocupação,       // ocupação da firma
+                 + kPriceMarkupOccupancyGain × ocupação
+                   × min(1, max(ratio − 1, 0)),               // prêmio só com falta
                  kPriceMarkupBase, kPriceMarkupMax)            // 0,08 .. 2,2
-target   = max(cost_floor × (1 + markup), base)                // base é PISO, nunca teto
+cost_floor = max(insumos + trabalho/opex por capacidade, base) // base é PISO
+target   = cost_floor × (1 + markup)                           // sem teto
 next     = price + (target − price) × kPriceSmoothing          // 0,20
 step     = max(0,05 × base, kPriceMaxDailyMove × open)         // 6% do preço de abertura
 price    = clamp(next, open − step, open + step)
 price    = price_guard(price)                                  // finito e > 0
 ```
 
-- `cost_floor` = custo **unitário** da firma: insumos da receita (ou do insumo
-  único, `input_per_output × preço`) + mão de obra/opex por unidade de
-  capacidade. É o piso econômico (antes era `× 1,05`; a margem agora é o
-  markup abaixo).
-- `markup` é a margem da firma: sobe com a **falta relativa** (`effective` ÷
-  oferta disponível, em log) e com a **ocupação**, cai quando sobra estoque,
-  e satura em `kPriceMarkupMax` = 2,2 (custo × 3,2). Com falta nula a margem é
-  a normal, 8% (`kPriceMarkupBase`, custo × 1,08).
-- `base` (preço real inicial do `goods.json`) virou **âncora leve de piso**:
-  nenhum bem é vendido abaixo do preço-base, mas o preço pode subir acima dele
-  quanto o custo + markup mandar — não há teto.
+- `cost_floor` = custo **unitário** da firma (insumos da receita — ou do
+  insumo único, `input_per_output × preço` — + mão de obra/opex por unidade
+  de capacidade) **ancorado no preço-base**: `max(custo, base)`. Antes o piso
+  era `custo × 1,05`; agora a margem é o markup abaixo e a âncora do base
+  entra dentro do piso.
+- `markup` é a margem da firma: sobe com a **falta relativa** (`ratio`, em
+  log) e, **só quando há falta** (`ratio > 1`), com a **ocupação** — o prêmio
+  de ocupação é modulado por `min(1, ratio − 1)`, então em fartura a margem é
+  a normal e não 1,33×. Satura em `kPriceMarkupMax` = 2,2 (custo × 3,2). Com
+  falta nula a margem é 8% (`kPriceMarkupBase`, custo × 1,08).
+- `base` (preço real inicial do `goods.json`) vira **âncora leve de piso**
+  dentro do `cost_floor`: nenhum bem é vendido abaixo do preço-base nem abaixo
+  do custo + margem, e o preço sobe acima dele quanto o desequilíbrio mandar —
+  não há teto.
 - **Passo diário:** `max(5% do base, 6% do preço de abertura)`. O primeiro
   termo é o amortecimento antigo; o segundo é o que deixa um preço em choque
   (×10) **convergir em semanas** em vez de descer 5% do base por dia.
@@ -239,7 +244,9 @@ do portão: **4**). Drift do dinheiro no teste do portão: **+0,0024** absoluto
 (6.523.551.982,90 → …,90238), 0 violação de invariante.
 
 **Portão de comida — 31 nações pioram > 2,5 p.p. vs `b4_world_sweep.json`**
-(antes da D-091 o mesmo teste dava 0; com a D-091, 15; agora 31). A sonda
+(antes da D-091 o mesmo teste dava 0; com a D-091, 15; agora 31 — **30 com a
+isenção canônica do sweep** `--food-exempt=SOL,DJI,SAH,JOR,YEM`, que roda sem
+a flag nesta medição). A sonda
 `_tmp_gate_probe` reproduz o mesmo mundo (food_avg30 idêntico, 0,000 de
 diferença) e mede, por nação, a importação de comida, a exportação de
 energia/minerais e o **preço local** médio (razão ao base, ponderada por venda).
