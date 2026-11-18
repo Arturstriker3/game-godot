@@ -287,8 +287,8 @@ func _check_save_load(sim) -> void:
 	# urbano, moradia e prefeitura por cidade); v14 unifica as obras de
 	# moradia na fila §15 (kind CONSTRUCTION_HOUSING); v15 é a cadência A6;
 	# v16 (B1) adiciona as coortes etárias (`pop.age_bands`).
-	if int(snapshot.get("version", 0)) != 16:
-		_fail("save: versão do schema deveria ser 16 (é %s)" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 17:
+		_fail("save: versão do schema deveria ser 17 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")

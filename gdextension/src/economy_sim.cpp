@@ -197,6 +197,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_productivity_index);
 	ClassDB::bind_method(D_METHOD("set_income_gini", "city_id", "gini"),
 	                     &EconomySim::set_income_gini);
+	ClassDB::bind_method(D_METHOD("set_city_strata", "city_id", "shares"),
+	                     &EconomySim::set_city_strata);
 	ClassDB::bind_method(D_METHOD("set_labor_profile", "city_id", "profile"),
 	                     &EconomySim::set_labor_profile);
 	ClassDB::bind_method(D_METHOD("set_minimum_wage", "nation", "value"),
@@ -1616,6 +1618,7 @@ EconomySim::StatusKeys::StatusKeys() :
 		income_level("income_level"),
 		income_level_share("income_level_share"),
 		income_level_by_stratum("income_level_by_stratum"),
+		income_strata("income_strata"),
 		stratum_disposable("stratum_disposable"),
 		stratum_population("stratum_population"),
 		stratum_wage_income("stratum_wage_income"),
@@ -2400,6 +2403,74 @@ void EconomySim::fill_city_status(std::size_t city_index,
 			std::memcpy(slot.age_bands_written, bands,
 				sizeof(double) * static_cast<std::size_t>(kAgeBands));
 			slot.age_bands_filled = true;
+		}
+	}
+
+	// B2: cinco estratos de renda no bloco `pop`. Publica população, renda
+	// disponível, poupança, dívida, patrimônio, taxa de poupança, posse (3),
+	// nível de consumo, aluguel pago e a fatia da renda gasta em comida — os
+	// números que a validação de padrão real lê. Republicado quando muda.
+	{
+		double flat[kIncomeStrata * 14 + 6];
+		int fi = 0;
+		const auto put = [&flat, &fi](double value) {
+			flat[fi++] = value;
+		};
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.strata_income_share[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_people[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_net_income[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_savings[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_debt[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_wealth[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_saving_rate[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(double(city.pop.stratum_level[s]));
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_rent_paid[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) put(city.pop.stratum_rent_bill[s]);
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			put(city.pop.stratum_net_income[s] > 1e-9
+				? city.pop.stratum_food_spend[s] / city.pop.stratum_net_income[s]
+				: 0.0);
+		}
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			put(city.pop.stratum_tenure[s][0]);
+		}
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			put(city.pop.stratum_tenure[s][1]);
+		}
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			put(city.pop.stratum_tenure[s][2]);
+		}
+		put(sim_core_.strata_gini(city.pop));
+		for (int band = 0; band < 5; ++band) {
+			put(city.pop.lifecycle_saving[band]);
+		}
+		if (!slot.income_strata_filled
+				|| std::memcmp(flat, slot.income_strata_written.data(),
+					sizeof(double) * static_cast<std::size_t>(fi)) != 0) {
+			slot.income_strata_written.assign(flat, flat + fi);
+			Dictionary out;
+			const char* const names[14] = {"income_share", "population", "income", "savings",
+				"debt", "wealth", "saving_rate", "level", "rent_paid", "rent_bill",
+				"food_income_share", "tenure_own", "tenure_rent",
+				"tenure_informal"};
+			for (int field = 0; field < 14; ++field) {
+				Array row;
+				row.resize(kIncomeStrata);
+				for (int s = 0; s < kIncomeStrata; ++s) {
+					row[s] = flat[field * kIncomeStrata + s];
+				}
+				out[String(names[field])] = row;
+			}
+			out["gini"] = flat[kIncomeStrata * 14];
+			Array lifecycle;
+			lifecycle.resize(5);
+			for (int band = 0; band < 5; ++band) {
+				lifecycle[band] = flat[kIncomeStrata * 14 + 1 + band];
+			}
+			out["lifecycle_saving"] = lifecycle;
+			slot.income_strata = out;
+			pop[k.income_strata] = slot.income_strata;
+			slot.income_strata_filled = true;
 		}
 	}
 
@@ -4701,6 +4772,41 @@ void EconomySim::apply_set_productivity_index(const String& city_id, double inde
 	++status_static_version_;
 }
 
+void EconomySim::apply_set_city_strata(const String& city_id,
+		const PackedFloat64Array& shares) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	double values[kIncomeStrata];
+	double total = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		values[s] = s < shares.size() ? std::max(0.0, shares[s]) : 0.0;
+		total += values[s];
+	}
+	if (total > 1e-9) {
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			values[s] /= total;
+		}
+		sim_core_.seed_strata(*city, values);
+	} else {
+		// Sem dado: re-semeia com a proxy do Gini declarado.
+		sim_core_.seed_strata(*city, nullptr);
+	}
+	refresh_income_classes(*city);
+	++status_static_version_;
+}
+
+void EconomySim::set_city_strata(const String& city_id,
+		const PackedFloat64Array& shares) {
+	// API de SETUP (initialize_world/set_urban/apply_to_sim): antes do dia 1,
+	// como set_external_income_index e set_income_gini na inicialização. Não é
+	// ação de jogador — não passa pela fila A3 porque não existe, no jogo, um
+	// comando para reescrever a distribuição inicial.
+	apply_set_city_strata(city_id, shares);
+}
+
 void EconomySim::apply_set_income_gini(const String& city_id, double gini) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
 	City* city = find_city(std::string(city_id.utf8().get_data()));
@@ -6338,6 +6444,35 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 	out["price"] = price;
 	out["vacancy"] = vacancy;
 	out["informal_units"] = house.informal_units;
+	// B2: quintis (população, renda disponível, aluguel pago/faturado, posse
+	// alugada e nível de consumo). O probe urbano de 365 d calcula ônus e
+	// pago/faturado POR ESTRATO INQUILINO a partir daqui.
+	{
+		Array strata_population;
+		Array strata_income;
+		Array strata_rent_paid;
+		Array strata_rent_bill;
+		Array strata_tenure_rent;
+		Array strata_tenure_informal;
+		Array strata_level;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			strata_population.append(city.pop.stratum_people[s]);
+			strata_income.append(city.pop.stratum_net_income[s]);
+			strata_rent_paid.append(city.pop.stratum_rent_paid[s]);
+			strata_rent_bill.append(city.pop.stratum_rent_bill[s]);
+			strata_tenure_rent.append(city.pop.stratum_tenure[s][TENURE_RENT]);
+			strata_tenure_informal.append(
+				city.pop.stratum_tenure[s][TENURE_INFORMAL]);
+			strata_level.append(city.pop.stratum_level[s]);
+		}
+		out["strata_population"] = strata_population;
+		out["strata_income"] = strata_income;
+		out["strata_rent_paid"] = strata_rent_paid;
+		out["strata_rent_bill"] = strata_rent_bill;
+		out["strata_tenure_rent"] = strata_tenure_rent;
+		out["strata_tenure_informal"] = strata_tenure_informal;
+		out["strata_level"] = strata_level;
+	}
 	// §19 W3: sinal de aperto por cidade (W4/UI) e fluxo do dia/mês.
 	out["housing_stress"] = house.housing_stress;
 	out["rent_paid"] = house.rent_paid_today;

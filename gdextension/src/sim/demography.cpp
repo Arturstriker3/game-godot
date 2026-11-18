@@ -94,6 +94,8 @@ void SimCore::apply_demography(City& city) {
 		health / std::max(pop.health_weight_ref, 1e-9), 0.25, 4.0);
 	pop.education_need_factor = std::clamp(
 		education / std::max(pop.education_weight_ref, 1e-9), 0.25, 4.0);
+	// B2: os quintis acompanham a população (o mix de quintis é preservado).
+	rescale_strata_population(pop);
 }
 
 void SimCore::phase_demography() {

@@ -511,6 +511,35 @@ double SimCore::labor_day(City& city) {
 void SimCore::refresh_income_classes(City& city) const {
 	Pop& pop = city.pop;
 	const double population = std::max(0.0, city.simulation_population);
+	// B2: com os quintis semeados, a classe de consumo publicada (basic/life/
+	// luxury) É DERIVADA DOS ESTRATOS — população de cada estrato pelo nível
+	// que a sua renda alcançou. Nenhum Gini-alvo participa: o Gini que o
+	// status publica é medido das rendas (`strata_gini`), e a classe é só a
+	// leitura agregada que a UI/serviços herdaram da F7.
+	if (pop.strata_ready) {
+		double basic = 0.0;
+		double life = 0.0;
+		double luxury = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			const double people = std::max(0.0, pop.stratum_people[s]);
+			const int level = pop.stratum_level[s];
+			if (level >= kMaxNeedsLevels) {
+				luxury += people;
+			} else if (level >= 2) {
+				life += people;
+			} else {
+				basic += people;
+			}
+		}
+		pop.class_population[0] = basic;
+		pop.class_population[1] = life;
+		pop.class_population[2] = luxury;
+		pop.class_income_level[0] = 1;
+		pop.class_income_level[1] = 2;
+		pop.class_income_level[2] = kMaxNeedsLevels;
+		(void)population;
+		return;
+	}
 	const double gini = std::clamp(city.income_gini, 0.0, 1.0);
 	double basic_cost = 0.0;
 	if (population > 1e-9) {
@@ -739,5 +768,10 @@ void SimCore::apply_labor_profile(City& city) {
 	}
 	refresh_strata(pop);
 	refresh_income_classes(city);
+	// B2: semeia os quintis sem dado de nação (proxy do Gini declarado ou
+	// quintis iguais). `set_city_strata` (dado observado) re-semeia depois.
+	if (!pop.strata_ready) {
+		seed_strata(city, nullptr);
+	}
 }
 } // namespace ogs

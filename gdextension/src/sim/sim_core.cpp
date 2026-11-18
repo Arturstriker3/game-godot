@@ -187,7 +187,8 @@ double SimCore::money_total() const {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick.
 		total += city.pop.savings + city.firm_cash + city.service_cash
-		       + city.government_budget + city.capital_income_next;
+		       + city.government_budget + city.capital_income_next
+		       + city.rent_income_next;
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
@@ -317,6 +318,22 @@ void SimCore::phase_reset() {
 		city.pop.service_spend = 0.0;
 		city.pop.disposable = 0.0;
 		city.pop.external_income = 0.0;
+		city.pop.rent_income = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			// B2: fluxos do dia por quintil (poupança/patrimônio persistem).
+			city.pop.stratum_wage[s] = 0.0;
+			city.pop.stratum_capital[s] = 0.0;
+			city.pop.stratum_rent[s] = 0.0;
+			city.pop.stratum_transfer[s] = 0.0;
+			city.pop.stratum_net_income[s] = 0.0;
+			city.pop.stratum_service_spend[s] = 0.0;
+			city.pop.stratum_rent_paid[s] = 0.0;
+			city.pop.stratum_rent_bill[s] = 0.0;
+			city.pop.stratum_food_spend[s] = 0.0;
+			city.pop.stratum_need[s] = 0.0;
+			city.pop.stratum_consumed[s] = 0.0;
+			city.pop.stratum_level[s] = 0;
+		}
 		city.pop.food_spend = 0.0;
 		city.pop.consumed = 0.0;
 		city.pop.need = 0.0;
@@ -728,6 +745,12 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		check_nonneg("service", city.service_cash);
 		check_nonneg("government", city.government_budget);
 		check_nonneg("savings", city.pop.savings);
+		// B2: a soma dos quintis é o escalar da cidade; negativo em um estrato
+		// é corrupção de estado, não "dívida" (a dívida é campo próprio, zero
+		// até a Parte C).
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			check_nonneg("stratum_savings", city.pop.stratum_savings[s]);
+		}
 
 		// Preço na âncora: o câmbio não move mais o preço interno (só a
 		// competitividade das ofertas float e a exibição local), então a banda

@@ -344,11 +344,51 @@ void SimCore::phase_housing() {
 		// pagamento nunca passa da poupança acima da reserva de comida (se a
 		// comida consumiu o orçamento, o aluguel do dia fica em falta — comida
 		// primeiro). O que falta não vira dívida inventada.
-		const double paid = safe_nonneg(std::min(
+		const double due = safe_nonneg(std::min(
 			housing::daily_rent_obligation(ws_, city_index), spendable));
+		// B2: o aluguel é pago pelos INQUILINOS de cada quintil (posse do §19
+		// por estrato), limitado à poupança de cada um. O que a soma não cobre
+		// fica em falta — comida e reserva primeiro (nunca dívida inventada).
+		double paid = due;
+		if (due > 0.0 && pop.strata_ready) {
+			double weight[kIncomeStrata] = {};
+			double weight_total = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				weight[s] = std::max(0.0, pop.stratum_people[s])
+					* safe_unit(pop.stratum_tenure[s][TENURE_RENT]);
+				weight_total += weight[s];
+			}
+			if (weight_total <= 1e-9) {
+				for (int s = 0; s < kIncomeStrata; ++s) {
+					weight[s] = safe_nonneg(pop.stratum_savings[s]);
+					weight_total += weight[s];
+				}
+			}
+			double capacity[kIncomeStrata] = {};
+			double capacity_total = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				const double share = weight_total > 1e-9
+					? due * weight[s] / weight_total : 0.0;
+				capacity[s] = std::min(share,
+					safe_nonneg(pop.stratum_savings[s]));
+				capacity_total += capacity[s];
+			}
+			paid = std::min(due, capacity_total);
+			const double scale = capacity_total > 1e-9 && paid < capacity_total
+				? paid / capacity_total : 1.0;
+			pop.savings = 0.0;
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				const double amount = capacity[s] * scale;
+				pop.stratum_savings[s] = std::max(0.0,
+					pop.stratum_savings[s] - amount);
+				pop.stratum_rent_paid[s] += amount;
+				pop.savings += pop.stratum_savings[s];
+			}
+		} else if (paid > 0.0) {
+			pop.savings = std::max(0.0, pop.savings - paid);
+		}
 		house.rent_paid_today = paid;
 		if (paid > 0.0) {
-			pop.savings -= paid;
 			// Manutenção: os donos pagam a conservação do estoque ao setor de
 			// serviços (reparos). Fração declarada do aluguel — o valor de
 			// reposição do estoque é ordens de grandeza maior que a moeda em
@@ -376,7 +416,7 @@ void SimCore::phase_housing() {
 			const double to_households = net * share_house;
 			const double to_firms = net * share_firm;
 			const double to_government = net * share_gov;
-			city.capital_income_next += to_households;
+			city.rent_income_next += to_households;
 			city.firm_cash += to_firms;
 			gov.cash += to_government;
 			house.rent_households_month += to_households;
@@ -649,7 +689,9 @@ bool start_project(WorldState& ws, SimCore& core, std::size_t city_index,
 	// O dono paga o custo inteiro na abertura; o add credita a parcela de
 	// TERRA à prefeitura e reserva o resto (material + mão de obra).
 	if (owner == HOUSING_PROJECT_SELF) {
-		city.pop.savings = safe_nonneg(city.pop.savings) - total_cost;
+		// B2: a autoconstrução sai da poupança das famílias rateada pelos
+		// quintis (a soma dos estratos acompanha o escalar).
+		core.charge_households(city.pop, total_cost);
 	} else if (owner == HOUSING_PROJECT_GOVERNMENT) {
 		ws.city_gov[city_index].cash =
 			safe_nonneg(ws.city_gov[city_index].cash) - total_cost;

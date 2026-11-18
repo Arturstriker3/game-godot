@@ -916,8 +916,11 @@ void SimCore::trade_food() {
 
 			buyer.city->firm_cash -= firm_share;
 			buyer.city->government_budget -= gov_share;
-			buyer.city->pop.savings = std::max(
-				0.0, buyer.city->pop.savings - savings_share);
+			// B2: a parcela da importação paga pela poupança sai rateada pelos
+			// quintis (a soma dos estratos acompanha o escalar).
+			if (savings_share > 0.0) {
+				charge_households(buyer.city->pop, savings_share);
+			}
 			seller->firm_cash += cost;
 			buyer.city->service_cash += freight;
 			buyer.city->freight_revenue += freight;

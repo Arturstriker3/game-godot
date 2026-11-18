@@ -67,7 +67,7 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // não têm as chaves: as coortes são semeadas da estrutura nacional no load
 // (`seed_demography`); sem dado para a nação, o perfil paramétrico legado
 // continua valendo.
-constexpr int kSaveVersion = 16;
+constexpr int kSaveVersion = 17;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -288,6 +288,51 @@ constexpr double kServiceSpendShare = 0.45;
 constexpr double kTaxRate = 0.15;
 constexpr double kTransferShare = 1.0;
 constexpr double kCapitalDistribution = 1.0;
+// ---------------------------------------------------------------------------
+// B2 — ESTRATOS DE RENDA (QUINTIS) COM PATRIMÔNIO.
+//
+// Os valores abaixo são MODELO DECLARADO, não medição por país. A repartição
+// inicial vem de dado observado (quintis de renda World Bank SI.DST via
+// `strata_baseline.json`); estes parâmetros dizem como a estrutura evolui.
+// Fontes do PADRÃO (não dos números): World Bank Global Findex/OECD para a
+// poupança crescente com a renda; CEX/SCF (EUA) e OECD para o perfil de
+// poupança por idade (jovem e idoso poupam menos, meia-idade mais); UBS Global
+// Wealth Report 2024 para a concentração da riqueza acima da renda. A
+// calibração de cada número está em `docs/economy/B2_strata.md`.
+// ---------------------------------------------------------------------------
+// Taxa de poupança-alvo por quintil (fração da renda disponível acima da cesta
+// básica e do aluguel). Cresce com a renda: o pobre consome quase tudo.
+// (5 = Pop::kIncomeStrata; static_assert em strata.cpp.)
+constexpr double kStrataSavingRate[5] = {
+	0.02, 0.04, 0.07, 0.12, 0.20};
+// Ciclo de vida (B1): fator multiplicativo da taxa acima por faixa etária.
+// 0-14 não poupa (não tem renda própria); 15-24 entra no mercado; 25-64 é o
+// pico; 65+ passa a despoupar (renda fixa/transferência).
+constexpr double kStrataLifecycleSaving[5] = {
+	0.0, 0.40, 1.00, 1.15, 0.50};
+// A riqueza é mais concentrada que a renda: participação no capital/aluguel
+// proporcional a `income_share^expoente`. Expoente 1,6 na proxy calibrada do
+// UBS 2024 (topo ~65-80% da riqueza) — declarado, sem dado por país no repo.
+constexpr double kStrataWealthConcentration = 1.6;
+// Fração MODELO da renda familiar que vem de capital + aluguel no dia da
+// semeadura. Serve só para não contar duas vezes a mesma fatia: a renda
+// salarial é semeada com (1 - esta fração) do quintil observado e o capital
+// preenche o resto. Calibrada no sweep de 365 d (B2_strata.md §6).
+constexpr double kStrataCapitalIncomeShare = 0.12;
+// Fração MODELO da renda externa de subsistência repartida IGUAL por pessoa;
+// o resto acompanha a renda de mercado (os serviços/pesca/turismo que geram a
+// receita são de quem trabalha neles). 100% igual achatava o Gini dos países
+// desiguais em ~12 pontos (BRA/ZAF no dia 5); 100% pro-rata tirava o piso de
+// comida dos pobres. O meio-termo mantém o piso e a desigualdade observada.
+constexpr double kStrataExternalEqualShare = 0.40;
+// Mobilidade mensal entre quintis adjacentes: fração máxima da população do
+// estrato que muda de faixa por mês. Pequena de propósito (a mobilidade real é
+// de poucos pontos percentuais por década; aqui é um sinal, não o fenômeno).
+constexpr double kStrataMobilityRate = 0.003;
+// Gini da riqueza ~ Gini da renda + este degrau (UBS 2024: riqueza bem mais
+// concentrada; usado só na proxy de riqueza, não no consumo).
+constexpr double kStrataWealthGiniGap = 0.15;
+
 // F9 — investimento e propriedade.
 // Imposto corporativo sobre o lucro do ativo do grupo, pago ao orçamento do
 // anfitrião. Retenção: fração do lucro líquido que fica no caixa do grupo
