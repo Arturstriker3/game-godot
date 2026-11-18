@@ -1,4 +1,4 @@
-# Estágio de mina — aprofundar/expandir (D-083)
+# Estágio de mina — aprofundar/expandir (D-086)
 
 > **Estado:** mecânica implementada e testada; **quantidades não calibradas**
 > (decisão do dono, 2026-11-17). O aceite desta fase é de **mecânica e
@@ -177,19 +177,23 @@ em C++ lê o mesmo estágio pelo retrato do dia
 
 ## 4. Save
 
-**v17** (migração de v16) — **o formato não muda nesta revisão**:
+**v18** (migração de v17; a cadeia v16 → v17 → v18 roda no mesmo load):
 
 - `buildings[].stage`, `stage_reserve_kt`, `stage_mined_kt`;
 - `construction_projects[].deepen_stage` (−1 = obra normal).
 
-Save v16 e anteriores **não** têm as chaves: toda construção de extração entra
-no **último estágio** com o estágio esgotado (produção no piso) — exatamente o
-mundo que a decisão do dono descreve. Nenhum outro campo muda de significado.
+A B2 ocupa o **v17** (`pop.strata` + `rent_income_next`); as minas entram no
+**v18** porque a branch da B3 em andamento também reivindicava um schema novo e
+o merge foi feito com a B2 já na base (`f271a4a`). A migração é aditiva e olha
+só as chaves que faltam, então um save **v16** sobe pela B2 (semeadura dos
+quintis no fim do load) e em seguida cai no último estágio de mina; um save
+**v17** só faz a segunda etapa. Save v17 e anteriores **não** têm as chaves de
+estágio: toda construção de extração entra no **último estágio** com o estágio
+esgotado (produção no piso) — a regra histórica. A partir da Parte 2 deste doc, o
+mundo NOVO não nasce todo assim: a semeadura inicial escolhe o estágio pela
+produção real de 2025 (§7). Nenhum outro campo muda de significado.
 `building.depleted` continua no save por compatibilidade, mas é **ignorado**
 (force `false` ao carregar): a depleção deixou de existir.
-
-> **Nota de merge:** a B2 (`feat/b2-strata`) também usa o save v17. A
-> renumeração/rebase para v18 fica para o merge — não foi feita aqui.
 
 ## 5. Testes
 
@@ -209,7 +213,7 @@ mundo que a decisão do dono descreve. Nenhum outro campo muda de significado.
   `city_gov_test`, `construction_queue_test`, `urban_land_test`,
   `economy_save_load_v11_compat_test`.
 - Mundo real 365 d com IA (`economy_world_test --ai=1 --urban=1 --threads=1`):
-  falências **8** (limite 28, igual ao baseline D-083), drift **0,0002**, nenhuma
+  falências **8** (limite 28 da bateria de sanidade), drift **0,0002**, nenhuma
   violação de invariante e **sem colapso de preço de minério** (preço no dia 365
   = ferro **1,84×**, cobre **1,68×**, ouro **1,67×** e bauxita **1,55×** o base).
 - CLI × Godot com IA, 10 d, snapshots **byte-idênticos** (SHA-256

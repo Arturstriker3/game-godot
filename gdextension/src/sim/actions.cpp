@@ -265,7 +265,7 @@ BuildResult action_build(WorldState& ws, SimCore& core,
 			building.last_utilization = 0.25;
 		}
 		ws.buildings.push_back(building);
-		// D-083: mina nova abre o estágio 0 reivindicando uma fatia da reserva da
+		// D-086: mina nova abre o estágio 0 reivindicando uma fatia da reserva da
 		// jazida (produção cheia no primeiro estágio). Produto sem jazida
 		// declarada não tem estágio e mantém a extração ilimitada legada.
 		if (SimCore::is_mine_building(*city, ws.buildings.back())) {
@@ -559,7 +559,7 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 			building.last_utilization = 0.25;
 		}
 		ws.buildings.push_back(building);
-		// D-083: mina nova abre o estágio 0 (mesma regra do build do Estado).
+		// D-086: mina nova abre o estágio 0 (mesma regra do build do Estado).
 		if (SimCore::is_mine_building(*city, ws.buildings.back())) {
 			SimCore::set_mine_stage(*city, ws.buildings.back(), 0);
 		}
@@ -656,7 +656,7 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 }
 
 namespace {
-// D-083: caixa de quem paga o aprofundamento, pelo dono da MINA —
+// D-086: caixa de quem paga o aprofundamento, pelo dono da MINA —
 // Estado → orçamento da cidade; grupo F9 → caixa do grupo; "private" (legado)
 // → caixa da firma. `commit_key` é a chave do limite de comprometimento de obra
 // (`committed_construction`). nullptr = dono sem caixa localizável.
@@ -697,7 +697,7 @@ DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
 		result.error = "construção não é mina de estágio";
 		return result;
 	}
-	// D-083 (decisão do dono): a reserva NUNCA bloqueia o aprofundamento — ela é
+	// D-086 (decisão do dono): a reserva NUNCA bloqueia o aprofundamento — ela é
 	// só referência de profundidade. O gate de "mina encerrada" é apenas a
 	// falência (`bankrupt`) ou o prejuízo persistente (`loss_days`).
 	if (building->bankrupt || building->loss_days >= kLossDaysBeforeClose) {

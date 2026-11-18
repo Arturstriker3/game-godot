@@ -187,7 +187,8 @@ double SimCore::money_total() const {
 		// capital_income_next é um crédito pendente às famílias: entra no total
 		// para a conservação valer em qualquer ponto do tick.
 		total += city.pop.savings + city.firm_cash + city.service_cash
-		       + city.government_budget + city.capital_income_next;
+		       + city.government_budget + city.capital_income_next
+		       + city.rent_income_next;
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
@@ -263,7 +264,7 @@ void SimCore::prologue() {
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
 	// anterior, no fim da fase 7).
-	// D-083 (decisão do dono): o recurso NUNCA acaba — `depleted` nunca é marcado
+	// D-086 (decisão do dono): o recurso NUNCA acaba — `depleted` nunca é marcado
 	// em lugar nenhum do núcleo (a produção não zera e o aprofundamento não é
 	// bloqueado por reserva), então não há o ramo de "mina com jazida esgotada"
 	// aqui. `ws_.depleted_mines` permanece 0 e é mantido no estado/save/status
@@ -313,6 +314,22 @@ void SimCore::phase_reset() {
 		city.pop.service_spend = 0.0;
 		city.pop.disposable = 0.0;
 		city.pop.external_income = 0.0;
+		city.pop.rent_income = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			// B2: fluxos do dia por quintil (poupança/patrimônio persistem).
+			city.pop.stratum_wage[s] = 0.0;
+			city.pop.stratum_capital[s] = 0.0;
+			city.pop.stratum_rent[s] = 0.0;
+			city.pop.stratum_transfer[s] = 0.0;
+			city.pop.stratum_net_income[s] = 0.0;
+			city.pop.stratum_service_spend[s] = 0.0;
+			city.pop.stratum_rent_paid[s] = 0.0;
+			city.pop.stratum_rent_bill[s] = 0.0;
+			city.pop.stratum_food_spend[s] = 0.0;
+			city.pop.stratum_need[s] = 0.0;
+			city.pop.stratum_consumed[s] = 0.0;
+			city.pop.stratum_level[s] = 0;
+		}
 		city.pop.food_spend = 0.0;
 		city.pop.consumed = 0.0;
 		city.pop.need = 0.0;
@@ -405,7 +422,7 @@ void SimCore::phase_accounting() {
 		const std::vector<int>& local_buildings =
 			ws_.buildings_by_city[city_index];
 		std::array<double, kMaxProducts> capacity_by_output{};
-		// D-083: a fatia de receita segue a capacidade EFETIVA do dia — mina com
+		// D-086: a fatia de receita segue a capacidade EFETIVA do dia — mina com
 		// estágio esgotado produz 5% e não pode levar 100% da receita da cidade
 		// (isso maquiava o lucro da mina parada e afundava a mina ativa).
 		auto effective_capacity = [&city](const Building& building) {
@@ -574,7 +591,7 @@ void SimCore::phase_accounting() {
 			}
 			// Planta secundária ociosa não é insolvente: sem operação no dia,
 			// não acumula dias de prejuízo (o custo de stand-by já é pequeno).
-			// D-083: mina com o estágio esgotado é o mesmo caso — o poço parado
+			// D-086: mina com o estágio esgotado é o mesmo caso — o poço parado
 			// aguarda aprofundamento; ele não "faliu" e não pode desaparecer.
 			const bool secondary =
 				building.recipe >= 0 || building.input_product >= 0;
@@ -737,6 +754,12 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		check_nonneg("service", city.service_cash);
 		check_nonneg("government", city.government_budget);
 		check_nonneg("savings", city.pop.savings);
+		// B2: a soma dos quintis é o escalar da cidade; negativo em um estrato
+		// é corrupção de estado, não "dívida" (a dívida é campo próprio, zero
+		// até a Parte C).
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			check_nonneg("stratum_savings", city.pop.stratum_savings[s]);
+		}
 
 		// Preço na âncora: o câmbio não move mais o preço interno (só a
 		// competitividade das ofertas float e a exibição local), então a banda

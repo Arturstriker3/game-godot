@@ -40,6 +40,11 @@ const NATIONS_PATH := "res://data/definitions/scenario/nations.json"
 ## Gini de renda por região (estimado; ver o próprio arquivo para a fonte e a
 ## marca `estimated`). Aplicado ao núcleo como classe de consumo.
 const INCOME_DISTRIBUTION_PATH := "res://data/definitions/economy/income_distribution.json"
+## B2: Gini OBSERVADO por nação e quintis de renda (World Bank SI.POV.GINI e
+## SI.DST; 154/179 nações observadas, o resto regional estimado). É a fonte
+## primária da repartição inicial dos cinco estratos; sem a nação no arquivo,
+## o núcleo usa a proxy lognormal do Gini declarado.
+const INEQUALITY_PATH := "res://data/definitions/economy/inequality.json"
 
 ## Tag do jogo -> código ISO-3 do Natural Earth (adm0_a3). A identidade cobre
 ## quase todas; só NED (NLD), XKX (KOS) e SSD (SDS) divergem. As províncias do
@@ -75,6 +80,8 @@ static var _gini_by_region: Dictionary = {}
 static var _gini_default := 0.0
 static var _gini_meta: Dictionary = {}
 static var _gini_ready := false
+static var _inequality_by_nation: Dictionary = {}
+static var _inequality_ready := false
 
 ## Renda externa: piso do índice (fração da média mundial). Sem piso, países
 ## pobres ficariam com ~0,04 da média e a cidade sem terra não importaria nada —
@@ -430,7 +437,15 @@ static func _load_income_distribution() -> void:
 
 ## Gini de renda da nação pela região (estimado). `available = false` quando
 ## não há região no arquivo; o chamador (`apply_to_sim`) então NÃO declara Gini.
+## B2: quando `inequality.json` tem o Gini OBSERVADO da nação (World Bank), ele
+## vence a estimativa regional; a origem vai em `source`.
 func nation_gini(tag: String) -> Dictionary:
+	_load_inequality()
+	var observed: Dictionary = _inequality_by_nation.get(tag, {})
+	if observed.has("gini"):
+		return {"gini": clampf(float(observed["gini"]) / 100.0, 0.0, 1.0),
+			"region": "", "estimated": bool(observed.get("estimated", false)),
+			"available": true, "source": String(observed.get("source", ""))}
 	_load_income_distribution()
 	_load_registry()
 	var region := String((_nation_rows_cache.get(tag, {}) as Dictionary).get(
@@ -440,6 +455,51 @@ func nation_gini(tag: String) -> Dictionary:
 			"available": false}
 	return {"gini": float(_gini_by_region[region]), "region": region,
 		"estimated": true, "available": true}
+
+
+## B2: quintis de RENDA observados da nação (fração da renda total, soma 1) ou
+## Array vazio quando não há dado. Fonte: World Bank SI.DST (lowest_20 …
+## highest_20) em `inequality.json`.
+func nation_quintiles(tag: String) -> Array:
+	_load_inequality()
+	var observed: Dictionary = _inequality_by_nation.get(tag, {})
+	var deciles: Dictionary = observed.get("deciles", {})
+	var keys := ["lowest_20", "second_20", "third_20", "fourth_20", "highest_20"]
+	var shares: Array = []
+	var total := 0.0
+	for key: String in keys:
+		var entry: Variant = deciles.get(key, null)
+		if typeof(entry) != TYPE_DICTIONARY:
+			return []
+		var value := float((entry as Dictionary).get("value", 0.0))
+		if value <= 0.0:
+			return []
+		shares.append(value)
+		total += value
+	if total <= 0.0:
+		return []
+	for i in shares.size():
+		shares[i] = float(shares[i]) / total
+	return shares
+
+
+## Carrega `inequality.json` (Gini observado + quintis) uma vez.
+static func _load_inequality() -> void:
+	if _inequality_ready:
+		return
+	_inequality_ready = true
+	var file := FileAccess.open(INEQUALITY_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	var nations: Dictionary = (data as Dictionary).get("nations", {})
+	for tag: String in nations:
+		var row: Variant = nations[tag]
+		if typeof(row) == TYPE_DICTIONARY:
+			_inequality_by_nation[tag] = row
 
 
 ## Perfil do Gini por região (auditoria e testes). Todo valor é `estimated`.
@@ -771,7 +831,7 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 	return resolved
 
 
-## D-083 — MINAS/POÇOS INICIAIS. A decisão do dono (2026-11-17) é que as jazidas
+## D-086 — MINAS/POÇOS INICIAIS. A decisão do dono (2026-11-17) é que as jazidas
 ## já exploradas comecem com a construção EXISTENTE, porém no ÚLTIMO estágio de
 ## operação: a produção efetiva cai ao piso (5%) e só volta pagando o
 ## aprofundamento. Uma mina por (cidade, mineral com jazida atribuída pela regra
@@ -1472,6 +1532,11 @@ func apply_to_sim(sim: Object, cities: Array) -> Dictionary:
 		var gini := float(gini_entry.get("gini", 0.0))
 		if gini > 0.0 and sim.has_method("set_income_gini"):
 			sim.set_income_gini(city_id, gini)
+		# B2: quintis de renda OBSERVADOS da nação (World Bank SI.DST). Sem
+		# dado, não declara nada — o núcleo usa a proxy lognormal do Gini.
+		var quintiles := nation_quintiles(String(city.get("nation", "")))
+		if not quintiles.is_empty() and sim.has_method("set_city_strata"):
+			sim.set_city_strata(city_id, quintiles)
 		for crop in crops:
 			# Aptidão DA CIDADE (bacia de captação), não mais o máximo nacional:
 			# Marselha planta como o seu entorno, não como a Beauce. Cidade sem

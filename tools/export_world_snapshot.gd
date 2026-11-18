@@ -159,7 +159,7 @@ func _run() -> void:
 
 	# Com `--ai=1` o mundo nasce com a geografia real, como o harness de
 	# equivalência: a fazenda inicial é resolvida ANTES de criar o mundo e, em
-	# seguida, as minas históricas do D-083 (uma por cidade × mineral com
+	# seguida, as minas históricas do D-086 (uma por cidade × mineral com
 	# jazida), já no último estágio.
 	var geo: Object = null
 	if _ai:

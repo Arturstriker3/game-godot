@@ -16,6 +16,7 @@
 
 #include "housing.h"
 #include "sim_constants.h"
+#include "sim_core.h"
 #include "urban_land.h"
 
 #include <algorithm>
@@ -404,7 +405,8 @@ void monthly_cash_flow(WorldState& ws, SimCore& core, std::size_t count,
 				safe_nonneg(city.pop.savings));
 			const double firm_paid = std::min(due * (1.0 - household_part),
 				safe_nonneg(city.firm_cash));
-			city.pop.savings = safe_nonneg(city.pop.savings) - hh_paid;
+			// B2: o IPTU da família sai da poupança rateada pelos quintis.
+			core.charge_households(city.pop, hh_paid);
 			city.firm_cash = safe_nonneg(city.firm_cash) - firm_paid;
 			gov.cash += hh_paid + firm_paid;
 			gov.month_revenue_iptu = hh_paid + firm_paid;

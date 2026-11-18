@@ -121,11 +121,11 @@ struct AiView {
 	std::vector<double> b_utilization;
 	std::vector<double> b_costs;
 	std::vector<double> b_site_suitability;
-	// D-083 — estágio de mina por construção (ordem de `b_offset`): profundidade
+	// D-086 — estágio de mina por construção (ordem de `b_offset`): profundidade
 	// de operação e produção relativa do estágio (0,05..1,0). 0/1,0 nas demais.
 	std::vector<int> b_stage;
 	std::vector<double> b_stage_factor;
-	// D-083: custo do PRÓXIMO aprofundamento por construção (ordem de
+	// D-086: custo do PRÓXIMO aprofundamento por construção (ordem de
 	// `b_offset`), calculado pelo próprio núcleo (`SimCore::mine_deepen_cost`)
 	// para a IA não duplicar a fórmula; 0.0 nas construções que não são mina.
 	std::vector<double> b_deepen_cost;
@@ -134,7 +134,7 @@ struct AiView {
 	std::vector<int> d_product;
 	std::vector<double> d_remaining_kt;
 	std::vector<double> d_opex_factor;
-	// D-083: qualidade da jazida (0..1) — o custo do aprofundamento usa a mesma
+	// D-086: qualidade da jazida (0..1) — o custo do aprofundamento usa a mesma
 	// eficiência da extração (minério pobre = mais rocha por tonelada).
 	std::vector<double> d_quality;
 
@@ -206,14 +206,14 @@ int ai_d_end(const AiView& view, int city);
 int ai_c_begin(const AiView& view, int city);
 int ai_c_end(const AiView& view, int city);
 
-// == `IndustryTemplates.has_deposit` (D-083): existe jazida RASTREADA do
+// == `IndustryTemplates.has_deposit` (D-086): existe jazida RASTREADA do
 // produto na cidade (a reserva é referência de profundidade — NÃO se exige
 // `remaining_kt > 0`; o recurso nunca acaba).
 bool ai_has_deposit(const AiView& view, int city, int product);
 // Fator de profundidade da jazida (1.0 sem jazida) — o `opex_factor` que o
 // núcleo aplica ao opex de extração (== `variable_cost_mined`).
 double ai_deposit_opex_factor(const AiView& view, int city, int product);
-// D-083: qualidade da jazida (0..1; 0 sem jazida declarada). O custo do
+// D-086: qualidade da jazida (0..1; 0 sem jazida declarada). O custo do
 // aprofundamento usa a eficiência da extração (0,5 + 0,5 × qualidade).
 double ai_deposit_quality(const AiView& view, int city, int product);
 
@@ -221,14 +221,14 @@ double ai_deposit_quality(const AiView& view, int city, int product);
 double ai_pending_capacity(const AiView& view, int city, int product);
 // == `IndustryTemplates.has_pending_build`: obra NOVA (não expansão) em voo.
 bool ai_has_pending_build(const AiView& view, int city, int product);
-// D-083: posição (índice nas tabelas planas da cidade) da mina do produto, ou
+// D-086: posição (índice nas tabelas planas da cidade) da mina do produto, ou
 // -1. `state_only` restringe a mina do Estado; falso aceita qualquer dono que
 // não seja o Estado (firma/grupo). O produto precisa ter jazida declarada.
 // Entre as construções do produto com o dono pedido, devolve a de MENOR custo
 // de próximo estágio (empate = primeira) — a ordem das construções no mundo é
 // adversa de propósito (teste mine_stage).
 int ai_mine_index(const AiView& view, int city, int product, bool state_only);
-// D-083: capacidade ADICIONADA pelo aprofundamento da mina em `index` e o custo
+// D-086: capacidade ADICIONADA pelo aprofundamento da mina em `index` e o custo
 // da obra. O custo vem do retrato do dia (`AiView::b_deepen_cost`), calculado
 // pelo próprio núcleo (`SimCore::mine_deepen_cost`) — a IA NÃO duplica a
 // fórmula. `city` é mantido por assinatura (a view já é por cidade).

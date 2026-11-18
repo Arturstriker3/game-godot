@@ -175,16 +175,17 @@ func _city(id: String, nation: String, day: int) -> Dictionary:
 	}
 
 
-## Dia 0 = janeiro de 2026; meses de 30 dias para o teste ser determinístico.
+## Dia 0 = janeiro de 2027 (início do jogo, D-084); meses de 30 dias para o
+## teste ser determinístico.
 func _month_key(day: int) -> String:
 	var total := day / 30
-	return "%04d-%02d" % [2026 + total / 12, total % 12 + 1]
+	return "%04d-%02d" % [2027 + total / 12, total % 12 + 1]
 
 
 ## Último dia amostrado do mês `key` (limitado ao último dia da partida).
 func _last_day_of(key: String) -> int:
 	var parts := key.split("-")
-	var total := (int(parts[0]) - 2026) * 12 + int(parts[1]) - 1
+	var total := (int(parts[0]) - 2027) * 12 + int(parts[1]) - 1
 	return mini((total + 1) * 30 - 1, DAYS - 1)
 
 

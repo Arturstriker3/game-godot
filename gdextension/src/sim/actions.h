@@ -42,7 +42,7 @@ struct GroupInvestResult {
 	std::string error;
 };
 
-// D-083 — resultado de um APROFUNDAMENTO de mina (obra física §15 que abre o
+// D-086 — resultado de um APROFUNDAMENTO de mina (obra física §15 que abre o
 // estágio seguinte e repõe a produção).
 struct DeepenResult {
 	bool started = false;
@@ -87,7 +87,7 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 		int output_product, double capacity, const std::string& recipe_id,
 		const std::string& partner_group, bool instant_construction);
 
-// D-083 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
+// D-086 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
 // seguinte da mina, repõe a produção e sobe a capacidade, consumindo a reserva
 // restante da jazida. Pago pelo DONO da mina (Estado, grupo nacional/estrangeiro
 // ou firma privada). Sem reserva, sem estágio novo.

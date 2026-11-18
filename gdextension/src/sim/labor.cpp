@@ -22,7 +22,7 @@ void SimCore::phase_labor() {
 		}
 		return depth_opex_factor(owner_city.deposits[building.output_product]);
 	};
-	// D-083: TAXA DE OPERAÇÃO da construção. Planta secundária ociosa opera
+	// D-086: TAXA DE OPERAÇÃO da construção. Planta secundária ociosa opera
 	// pelo uso do dia anterior (piso de 5%); mina com estágio esgotado opera no
 	// piso do estágio (a equipe mínima do poço quase parado). Fazenda e
 	// indústria ativa seguem em 100%. Folha e opex acompanham a taxa — sem
@@ -55,7 +55,7 @@ void SimCore::phase_labor() {
 				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
 				// Planta secundária ociosa não paga o opex cheio: o custo acompanha
 				// a operação do dia anterior (piso de 5% de stand-by). Mina no
-				// último estágio idem (D-083).
+				// último estágio idem (D-086).
 				const double operating = operating_of(city, building);
 				opex_total += building.opex * opex_factor(city, building) * operating;
 			}
@@ -425,7 +425,7 @@ double SimCore::labor_day(City& city) {
 			}
 			building.workers = building.jobs * workers_fraction;
 			building.wage = contract_wage;
-			// D-083: mina no último estágio opera no piso — a folha acompanha a
+			// D-086: mina no último estágio opera no piso — a folha acompanha a
 			// taxa de operação (mesma regra do opex em phase_labor).
 			double operating = 1.0;
 			if (building.recipe >= 0 || building.input_product >= 0) {
@@ -531,6 +531,35 @@ double SimCore::labor_day(City& city) {
 void SimCore::refresh_income_classes(City& city) const {
 	Pop& pop = city.pop;
 	const double population = std::max(0.0, city.simulation_population);
+	// B2: com os quintis semeados, a classe de consumo publicada (basic/life/
+	// luxury) É DERIVADA DOS ESTRATOS — população de cada estrato pelo nível
+	// que a sua renda alcançou. Nenhum Gini-alvo participa: o Gini que o
+	// status publica é medido das rendas (`strata_gini`), e a classe é só a
+	// leitura agregada que a UI/serviços herdaram da F7.
+	if (pop.strata_ready) {
+		double basic = 0.0;
+		double life = 0.0;
+		double luxury = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			const double people = std::max(0.0, pop.stratum_people[s]);
+			const int level = pop.stratum_level[s];
+			if (level >= kMaxNeedsLevels) {
+				luxury += people;
+			} else if (level >= 2) {
+				life += people;
+			} else {
+				basic += people;
+			}
+		}
+		pop.class_population[0] = basic;
+		pop.class_population[1] = life;
+		pop.class_population[2] = luxury;
+		pop.class_income_level[0] = 1;
+		pop.class_income_level[1] = 2;
+		pop.class_income_level[2] = kMaxNeedsLevels;
+		(void)population;
+		return;
+	}
 	const double gini = std::clamp(city.income_gini, 0.0, 1.0);
 	double basic_cost = 0.0;
 	if (population > 1e-9) {
@@ -759,5 +788,10 @@ void SimCore::apply_labor_profile(City& city) {
 	}
 	refresh_strata(pop);
 	refresh_income_classes(city);
+	// B2: semeia os quintis sem dado de nação (proxy do Gini declarado ou
+	// quintis iguais). `set_city_strata` (dado observado) re-semeia depois.
+	if (!pop.strata_ready) {
+		seed_strata(city, nullptr);
+	}
 }
 } // namespace ogs

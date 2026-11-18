@@ -10,6 +10,15 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// falidos/esgotados, índices e preços de abertura.
 	core.prologue();
 
+	// 2a0. B2: mobilidade mensal entre quintis + patrimônio por estrato (A6).
+	// Roda ANTES do `phase_reset`: a renda que orienta o fluxo é a do dia
+	// anterior (o reset zera `stratum_net_income`; rodar depois deixava a
+	// mobilidade morta — achado do verificador).
+	{
+		OGS_SIM_ZONE(kPhaseDemography);
+		core.phase_strata();
+	}
+
 	// §19 (W1): preço da terra por ocupação/renda e decadência do sinal de
 	// demanda de zona (fechamento mensal; não move dinheiro).
 	{

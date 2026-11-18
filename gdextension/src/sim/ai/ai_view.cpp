@@ -111,13 +111,13 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 				view.b_site_suitability.push_back(
 					output >= 0 && output < ws.products
 						? bcity.suitability[output] : 0.0);
-				// D-083: estágio da mina (0/1,0 nas construções sem estágio).
+				// D-086: estágio da mina (0/1,0 nas construções sem estágio).
 				const bool mine = output >= 0 && output < ws.products
 					&& SimCore::is_mine_building(bcity, building);
 				view.b_stage.push_back(mine ? building.stage : 0);
 				view.b_stage_factor.push_back(mine
 					? SimCore::mine_stage_factor(bcity, building) : 1.0);
-				// D-083: custo do próximo aprofundamento vem do núcleo (a IA não
+				// D-086: custo do próximo aprofundamento vem do núcleo (a IA não
 				// duplica a fórmula); 0.0 fora de mina.
 				view.b_deepen_cost.push_back(mine
 					? core.mine_deepen_cost(bcity, building) : 0.0);
@@ -338,7 +338,7 @@ bool ai_has_deposit(const AiView& view, int city, int product) {
 	for (int index = begin; index < end; ++index) {
 		const std::size_t at = static_cast<std::size_t>(index);
 		if (view.d_product[at] == product) {
-			// D-083: basta a jazida ser RASTREADA — o recurso nunca acaba, então
+			// D-086: basta a jazida ser RASTREADA — o recurso nunca acaba, então
 			// não se exige `remaining_kt > 0`.
 			return true;
 		}
@@ -440,7 +440,7 @@ int ai_mine_index(const AiView& view, int city, int product, bool state_only) {
 	}
 	const int begin = ai_b_begin(view, city);
 	const int end = ai_b_end(view, city);
-	// D-083: entre as construções do produto com o dono pedido, devolve a de
+	// D-086: entre as construções do produto com o dono pedido, devolve a de
 	// MENOR custo de próximo estágio (empate = primeira, comparação estrita).
 	// A ordem das construções no mundo é adversa de propósito (teste mine_stage).
 	int best = -1;

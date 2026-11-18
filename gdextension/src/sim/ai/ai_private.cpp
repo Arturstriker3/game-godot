@@ -493,7 +493,7 @@ bool AiPrivateInvestor::try_template(AiContext& ctx, int city_index,
 	const std::string existing = find_producer(ctx, city_index, product);
 	AiActionResult result;
 	if (!existing.empty()) {
-		// D-083: mina existente é APROFUNDADA (obra que abre o estágio seguinte e
+		// D-086: mina existente é APROFUNDADA (obra que abre o estágio seguinte e
 		// repõe a produção), não expandida por investimento genérico — é o mesmo
 		// dinheiro e o mesmo §15, mas com o estágio no comando. O retorno é o do
 		// APROFUNDAMENTO (t/dia adicionadas × margem ÷ custo da obra), não o da

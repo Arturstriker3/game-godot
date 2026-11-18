@@ -139,7 +139,7 @@ void SimCore::phase_production() {
 				const bool primary = building.recipe < 0 && building.input_product < 0;
 				// Extração: aptidão territorial × eficiência pela qualidade do minério
 				// (1.0 quando não há jazida declarada) × produção relativa do
-				// ESTÁGIO da mina (D-083: decai com a reserva do estágio, piso 5%).
+				// ESTÁGIO da mina (D-086: decai com a reserva do estágio, piso 5%).
 				Deposit& deposit = city.deposits[building.output_product];
 				const double suitability = primary
 					? std::clamp(city.suitability[building.output_product], 0.0, 1.0)
@@ -238,7 +238,7 @@ void SimCore::phase_production() {
 						* input_market.price;
 					building.input_value = input_used * input_market.price;
 				} else if (deposit.tracked) {
-					// D-083 (decisão do dono): o recurso NUNCA acaba. A extração NÃO
+					// D-086 (decisão do dono): o recurso NUNCA acaba. A extração NÃO
 					// é limitada pelo saldo restante da jazida — a reserva é só
 					// REFERÊNCIA de profundidade (escala da curva de custo do
 					// aprofundamento). Continuamos debitando `remaining_kt`
@@ -247,7 +247,7 @@ void SimCore::phase_production() {
 					const double extracted_kt = output / kTonsPerKiloton;
 					deposit.remaining_kt = std::max(0.0, deposit.remaining_kt - extracted_kt);
 					deposit.extracted_kt += extracted_kt;
-					// D-083: a extração também consome o ESTÁGIO corrente. Quando
+					// D-086: a extração também consome o ESTÁGIO corrente. Quando
 					// ele fecha, a produção fica no piso até alguém pagar o
 					// aprofundamento (o estágio, não a jazida, controla o ritmo).
 					if (building.stage_reserve_kt > 1e-12) {
@@ -384,7 +384,7 @@ double SimCore::depth_opex_factor(const Deposit& deposit) {
 }
 
 // ---------------------------------------------------------------------------
-// D-083 — ESTÁGIO DE MINA. A mina tem profundidades de operação; cada estágio
+// D-086 — ESTÁGIO DE MINA. A mina tem profundidades de operação; cada estágio
 // trabalha uma fatia da reserva restante da jazida e a produção cai com ela.
 // As três primeiras funções são estáticas (leem só a cidade/construção) para
 // a fase de produção paralela usá-las sem estado.
@@ -446,7 +446,7 @@ int SimCore::mine_deepen_days(const Building& building) {
 void SimCore::set_mine_stage(City& city, Building& building, int stage) {
 	building.stage = std::max(0, stage);
 	const Deposit& deposit = city.deposits[building.output_product];
-	// D-083 (decisão do dono): o estágio reivindica uma fatia da reserva de
+	// D-086 (decisão do dono): o estágio reivindica uma fatia da reserva de
 	// REFERÊNCIA da jazida (não do saldo restante) — o recurso nunca acaba e a
 	// extração não encerra a mina.
 	const double reference = std::max(deposit.initial_kt, deposit.remaining_kt);

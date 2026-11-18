@@ -64,7 +64,7 @@ enum class CommandType : int {
 	UrbanSocialHousing,
 	SetServiceCapacity,
 	SetServiceBusinessState,
-	// D-083: aprofundar/expandir mina (obra física que abre o estágio seguinte).
+	// D-086: aprofundar/expandir mina (obra física que abre o estágio seguinte).
 	DeepenMine,
 };
 

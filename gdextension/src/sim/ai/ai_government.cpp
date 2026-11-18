@@ -47,12 +47,12 @@ constexpr double kMinStateCapacity = 2.0;
 constexpr double kMaxStateCapacity = 20.0;
 // Teto da capacidade de uma mina estatal (B4): o estado cobre uma base da
 // demanda externa e o capital privado o resto (× kExportCapacityFactor).
-// D-083: o teto fixo de 10 t/d fica SÓ para minerais de nicho (ouro, diamante,
+// D-086: o teto fixo de 10 t/d fica SÓ para minerais de nicho (ouro, diamante,
 // terras raras, tungstênio, urânio); os demais são dimensionados por demanda e
 // retorno, e a mina existente é aprofundada quando o retorno paga a obra.
 constexpr double kMaxStateMineCapacity = 10.0;
 constexpr double kExportCapacityFactor = 1.2;
-// D-083: payback aceito para a OBRA DE MINA (abrir ou aprofundar). 730 dias é o
+// D-086: payback aceito para a OBRA DE MINA (abrir ou aprofundar). 730 dias é o
 // mesmo horizonte estendido que o investidor privado usa para o enxofre (B4):
 // obra de mina é investimento longo; abaixo disso o retorno não paga o capital.
 constexpr double kMinePaybackDays = 730.0;
@@ -168,7 +168,7 @@ struct MineCandidate {
 	double margin = 0.0;
 };
 
-// D-083 — candidato de APROFUNDAMENTO: mina do Estado existente cujo estágio
+// D-086 — candidato de APROFUNDAMENTO: mina do Estado existente cujo estágio
 // atual produz menos que o próximo. `extra` = t/dia adicionadas (capacidade
 // nova a 100% menos a produção relativa de hoje), `cost` = obra e
 // `daily_profit` = retorno esperado por dia (margem × t extra).
@@ -257,7 +257,7 @@ void plan_city(AiContext& ctx, int city_index) {
 	}
 
 	// 2. Mineração estratégica (B4). Duas decisões por mineral, nesta ordem:
-	//    (a) APROFUNDAR a mina do Estado que já existe (D-083) — se o retorno
+	//    (a) APROFUNDAR a mina do Estado que já existe (D-086) — se o retorno
 	//        (margem × t/dia adicionadas) paga a obra dentro de kMinePaybackDays;
 	//    (b) ABRIR mina nova, quando não há produtor — capacidade dimensionada
 	//        pela demanda externa e pelo orçamento (o teto fixo de 10 t/d só
@@ -301,7 +301,7 @@ void plan_city(AiContext& ctx, int city_index) {
 				const double factor = view.b_stage_factor[at];
 				const double extra = cap * (kMineDeepenCapacityFactor - factor);
 				if (cap > 0.0 && extra > 0.0) {
-					// D-083: o custo do aprofundamento vem do retrato do dia
+					// D-086: o custo do aprofundamento vem do retrato do dia
 					// (`AiView::b_deepen_cost`, calculado pelo núcleo) — a IA não
 					// duplica a fórmula.
 					const double cost = ai_mine_deepen_cost(view, city_index,
@@ -376,7 +376,7 @@ void plan_city(AiContext& ctx, int city_index) {
 			continue;
 		}
 		// Capacidade dimensionada pela demanda externa (× 1,2): mina de demanda
-		// pequena não nasce grande. D-083: o teto fixo de 10 t/d vale só para
+		// pequena não nasce grande. D-086: o teto fixo de 10 t/d vale só para
 		// mineral de nicho; os demais seguem o mercado e o orçamento.
 		const double external_demand =
 			product >= 0

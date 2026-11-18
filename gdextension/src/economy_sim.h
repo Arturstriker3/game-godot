@@ -271,7 +271,7 @@ public:
 
 	/**
 	 * Declara a reserva mineral do território de uma cidade para um produto
-	 * (D-083: referência de profundidade, não um limite físico — o recurso nunca
+	 * (D-086: referência de profundidade, não um limite físico — o recurso nunca
 	 * acaba). As minas da cidade debitam `remaining_kt` como contabilidade, mas
 	 * a reserva zerada NÃO para a produção nem bloqueia obra.
 	 * Idempotente: se o produto já tem reserva, mantém o saldo restante (um
@@ -734,7 +734,7 @@ public:
 		const String& partner_group = "");
 
 	/**
-	 * D-083 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
+	 * D-086 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
 	 * seguinte da mina, repõe a produção (curva de declínio do estágio) e sobe
 	 * a capacidade, reivindicando uma fatia da reserva de REFERÊNCIA da jazida
 	 * (o recurso nunca acaba — a reserva não é um limite físico). O custo sai
@@ -814,7 +814,7 @@ private:
 
 	Dictionary apply_invest(const String& city_id, const String& building_id,
 		double amount);
-	// D-083: aprofundar/expandir mina (obra física §15 → estágio seguinte).
+	// D-086: aprofundar/expandir mina (obra física §15 → estágio seguinte).
 	Dictionary apply_deepen_mine(const String& city_id,
 		const String& building_id);
 	Dictionary apply_build(const String& city_id, const String& building_id,
@@ -833,6 +833,10 @@ private:
 	void apply_set_external_income_index(const String& city_id, double index);
 	void apply_set_productivity_index(const String& city_id, double index);
 	void apply_set_income_gini(const String& city_id, double gini);
+	// B2: quintis de renda observados da nação (5 frações, soma ~1) ou vazio
+	// para re-semear com a proxy do Gini declarado.
+	void apply_set_city_strata(const String& city_id,
+		const PackedFloat64Array& shares);
 	void apply_set_minimum_wage(const String& nation, double value);
 	void apply_set_wage_rigidity(double value);
 	void apply_set_tariff(const String& buyer_nation, const String& seller_nation,
@@ -930,6 +934,11 @@ private:
 		std::vector<double> age_bands;
 		double age_bands_written[5] = {};
 		bool age_bands_filled = false;
+		// B2: bloco `pop.income_strata` (5 quintis). Republicado quando o
+		// conteúdo muda (fluxos diários; patrimônio no fechamento do mês).
+		Dictionary income_strata;
+		std::vector<double> income_strata_written;
+		bool income_strata_filled = false;
 		// F7: vetores de educação/trabalho reutilizados (3 posições cada). São
 		// mutados em lugar e compartilhados com o Dictionary publicado; só são
 		// reinseridos quando o bloco é criado.
@@ -1007,7 +1016,7 @@ private:
 			double workers = -1.0, utilization = -1.0, revenue = -1.0;
 			double input_value = -1.0, costs = -1.0, profit = -1.0;
 			double loss_days = -1.0;
-			// D-083: estágio da mina (int) e produção relativa do estágio.
+			// D-086: estágio da mina (int) e produção relativa do estágio.
 			int stage = -1;
 			double stage_factor = -1.0, stage_reserve_kt = -1.0;
 			double stage_mined_kt = -1.0, next_deepen_cost = -1.0;
@@ -1038,7 +1047,7 @@ private:
 	// 858 cidades). O GDScript continua lendo por `String` — o hash é o mesmo e
 	// o Dictionary compara `String`/`StringName` pela sequência de caracteres.
 	struct StatusKeys {
-		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost;
+		StringName age_bands, amount, bankruptcies, buildings, calendar_day, capacity, capital_cost_per_capacity, capital_income, center, cities, city_count, construction_cash, construction_revenue, consumed, consumed_by_category, consumed_today, consumed_total, costs, day, deficit, demand, dependents, depleted, depleted_mines, deposits, depth_m, desired, desired_by_category, disposable, disposable_per_capita, education, education_share, efficiency, employed, employed_by_level, export_value, exported, external_demand, external_income, external_income_index, extracted_kt, firm_cash, food_spend, foreign_cash, freight_cost, freight_revenue, from_city, from_nation, gdp, gdp_per_capita, good, government_budget, home_nation, id, import_value, imported, in_transit, income, income_level, income_level_by_stratum, income_level_share, income_strata, stratum_disposable, stratum_population, stratum_wage_income, industrialization, initial_kt, input_product, input_value, invariant_violations, jobs, kind, labor, labor_force, labor_force_by_level, landmass, legs, living_standard, loss_days, market_totals, markets, minimum_wage, mode, money_total, name, nation, nations, need, opex, opex_factor, opex_revenue, output_product, output_scale, owner, pop, population, ports, price, price_local, produced_today, produced_total, productivity_index, product, production, products, profit, quality, recruit_reserve, remaining_kt, resource, retirees, revenue, satisfaction, savings, scope, service_cash, service_jobs, services, service_sectors, service_businesses, service_bankruptcies, service_exports, service_profit, service_revenue, service_spend, service_wage, service_workers, service_jobs_filled, sector_workers, sector_share, in_kind_food, shortage, simulation_population, site_suitability, sold, stock, stockpile, students, studying, suitability, supply, surplus, tag, taxes, to_city, to_nation, trade_orders, trade_orders_count, transfers, transit_hours, transport_cash, unemployed, unemployed_by_level, unemployment_by_level, utilization, vacancies_by_level, wage, wage_by_level, wage_income, wage_income_by_level, wage_rigidity, workers, working_age, x, y, host_city, capacity_t_per_day, delay_hours, level, queue, throughput, recipe, inputs, byproducts, qty, capital_per_capacity, last_utilization, strategic, yield, from, to, from_px, to_px, distance_km, load_tons, trips, speed_kmh, batch_capacity_tons, dispatched, cost, needs_level, needs_satisfaction, basic_satisfaction, life_satisfaction, luxury_satisfaction, needs_spend, durable_spend, durable_stock, government_goods_spend, trucks, ships, planes, fleet, fuel, spare_parts, health, fuel_used, missed_no_fleet, missed_no_fuel, source, target_trucks, target_ships, target_planes, currency, currencies, code, rate, regime, trade_balance, fallback, tariff, tariffs, seller, buyer, origin_price, origin_price_anchor, delivered_price, fx_rate, seller_currency, buyer_currency, seller_fx_rate, tariff_revenue, owner_kind, owner_group, owner_nation, local_share, groups, stage, stage_factor, stage_reserve_kt, stage_mined_kt, next_deepen_cost;
 		StringName light, product_count, m_price, m_stock, m_supply, m_surplus,
 			m_sold, m_shortage, m_desired, p_need, p_consumed, p_satisfaction,
 			p_labor_force, p_unemployed, i_city, i_resource, i_owner_group,
@@ -1449,6 +1458,14 @@ private:
 	 * divisão por classes e mantém os estratos de escolaridade.
 	 */
 	void set_income_gini(const String& city_id, double gini);
+	/**
+	 * B2 — declara os cinco quintis de RENDA observados da nação (frações da
+	 * renda total, soma ~1) e semeia os estratos da cidade. Vazio = re-semeia
+	 * com a proxy lognormal do Gini declarado. API de inicialização (antes do
+	 * dia 1), como set_urban.
+	 */
+	void set_city_strata(const String& city_id,
+		const PackedFloat64Array& shares);
 	/**
 	 * F7 calibração — recalcula as classes de consumo (população e teto) a
 	 * partir do Gini declarado e do custo da cesta básica do dia. Sem Gini,

@@ -159,7 +159,8 @@ bool SimCore::service_open(City& city, int sector, double capacity,
 		}
 	}
 	if (from_savings > 0.0) {
-		city.pop.savings -= from_savings;
+		// B2: capital do negócio sai da poupança rateada pelos quintis.
+		charge_households(city.pop, from_savings);
 		city.service_cash += from_savings;
 	}
 	ServiceBusiness business;
@@ -221,7 +222,8 @@ void SimCore::service_close(ServiceBusiness& business) {
 			std::max(0.0, business.capital));
 		const double paid_back = std::min(returned, std::max(0.0, city->service_cash));
 		city->service_cash -= paid_back;
-		city->pop.savings += paid_back;
+		// B2: o aporte devolvido volta para a poupança dos quintis.
+		credit_households(city->pop, paid_back);
 		city->service_business_count = std::max(0, city->service_business_count - 1);
 	}
 	business.capital_left = 0.0;

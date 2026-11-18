@@ -166,7 +166,7 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 	project.labor_cost_total =
 		(1.0 - material_share) * build_cost;
 	if (project.deepen_stage >= 0) {
-		// D-083: o aprofundamento tem prazo próprio (90 dias + 30 por estágio
+		// D-086: o aprofundamento tem prazo próprio (90 dias + 30 por estágio
 		// aberto), independente da escala de tamanho da obra nova.
 		project.duration_days = kMineDeepenBaseDays
 			+ kMineDeepenDaysPerStage * project.deepen_stage;
@@ -208,7 +208,7 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 }
 
 namespace {
-// §15/D-083 — saldo NÃO gasto do fundo reservado de uma obra que sai da fila.
+// §15/D-086 — saldo NÃO gasto do fundo reservado de uma obra que sai da fila.
 // O dono debitou o orçamento inteiro na abertura e a obra pagou material/mão de
 // obra conforme avançou; o que sobrar (preços de material abaixo do contrato,
 // obra que perdeu o alvo) volta ao dono. Sem isso o capital reservado evaporava
@@ -291,7 +291,7 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 			if (building.id == p.building_id && building.city == p.city) {
 				const double old_capacity = std::max(1e-9, building.capacity);
 				building.capacity += std::max(0.0, p.capacity);
-				// D-083: aprofundamento — abre o estágio novo na MESMA mina, usando
+				// D-086: aprofundamento — abre o estágio novo na MESMA mina, usando
 				// a reserva de REFERÊNCIA da jazida (não o saldo restante), e volta
 				// a produzir 100% enquanto ela durar. A folha/opex sobem na mesma
 				// proporção da capacidade (a mina reaberta volta a operar cheia).
@@ -348,7 +348,7 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 	// avaliada por prejuízo durante os primeiros kRampDays de operação — o
 	// capital da obra é investimento, não prejuízo operacional.
 	building.ramp_days = kRampDays;
-	// D-083: mina concluída abre o estágio 0 (fatia da reserva da jazida).
+	// D-086: mina concluída abre o estágio 0 (fatia da reserva da jazida).
 	for (City& city : ws.cities) {
 		if (city.id == building.city) {
 			if (SimCore::is_mine_building(city, building)) {

@@ -136,6 +136,16 @@ namespace ogs {
 	// F7: níveis de educação (básico, intermediário, superior). Não é dado de
 	// catálogo: são três faixas de escolaridade da população em idade ativa.
 	static constexpr int kEducationLevels = 3;
+	// B2: cinco estratos de renda (quintis) por cidade. SEPARADOS da educação:
+	// a escolaridade define o acesso a vaga; o quintil define a renda de
+	// capital/dispersão salarial, o consumo, a poupança e o patrimônio. Os
+	// nomes antigos `stratum_*[kEducationLevels]` continuam existindo como
+	// espelho educacional (contrato de status/UI); os campos novos abaixo são
+	// indexados por quintil.
+	static constexpr int kIncomeStrata = 5;
+	// B2: posse de moradia por estrato (própria, alugada, informal). Mesma
+	// ordem de housing.h (TENURE_*), para a ligação com o §19.
+	static constexpr int kStrataTenureCount = 3;
 	// F8: setores de serviço (services.json). O teto é fixo para o estado por
 	// cidade caber em arrays planos; os dados declaram 20 e o loader recusa
 	// arquivo com contagem diferente (a publicação/UI indexa por posição).
@@ -252,9 +262,9 @@ namespace ogs {
 		int ramp_days = 0;
 		int loss_days = 0;
 		bool bankrupt = false; // fechada por insolvência (prejuízo persistente)
-		// D-083 (decisão do dono): SEMPRE false — o recurso nunca acaba, então
+		// D-086 (decisão do dono): SEMPRE false — o recurso nunca acaba, então
 		// nenhuma mina encerra por depleção. Campo mantido por contrato de
-		// save/status (v17 ignora o valor salvo e força false ao carregar).
+		// save/status (v18 ignora o valor salvo e força false ao carregar).
 		bool depleted = false;
 		// Planta estratégica semeada no bootstrap industrial (decisão §12.3):
 		// não fecha por insolvência enquanto não há demanda final (F3); o
@@ -276,7 +286,7 @@ namespace ogs {
 		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
 		// e extração quase só básico; indústria segue a receita/setor.
 		double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
-		// D-083 — ESTÁGIO DE MINA (extração primária com jazida rastreada).
+		// D-086 — ESTÁGIO DE MINA (extração primária com jazida rastreada).
 		// `stage` é a profundidade de operação (0 = primeiro poço/galeria);
 		// `stage_reserve_kt` é o que o estágio corrente ainda pode extrair
 		// antes de cair ao piso e `stage_mined_kt` o que ele já extraiu. O
@@ -373,7 +383,7 @@ namespace ogs {
 		// (land_price da zona × área ocupada). Já saiu do caixa do dono na
 		// abertura; `reserved` é o resto (material + mão de obra).
 		double land_cost = 0.0;
-		// D-083: obra de APROFUNDAMENTO de mina. >= 0 = o estágio que a obra
+		// D-086: obra de APROFUNDAMENTO de mina. >= 0 = o estágio que a obra
 		// abre ao concluir (building_id é a mina alvo; a capacidade é somada e
 		// o estágio novo reivindica uma fatia da reserva restante da jazida).
 		// -1 = obra normal (prédio novo, expansão, moradia, infra).
@@ -396,6 +406,10 @@ namespace ogs {
 		// mundo). Não é salário doméstico: entra no orçamento das famílias e é
 		// paga pelo setor externo (foreign_cash), conservando o dinheiro total.
 		double external_income = 0.0;
+		// B2: aluguel RECEBIDO pelas famílias donas no dia (credita no próximo
+		// dia, como o lucro distribuído). Separado do capital para o status por
+		// estrato; os dois vão para os quintis donos.
+		double rent_income = 0.0;
 		double food_spend = 0.0;
 		double consumed = 0.0;
 		double need = 0.0;
@@ -515,6 +529,60 @@ namespace ogs {
 		// Fração da POP por nível de consumo alcançado (índice 0 = nenhum,
 		// 1 = basic, 2 = life, 3 = luxury). É o que o status/report publica.
 		double income_level_share[kIncomeLevels] = {};
+		// ------------------------------------------------------------------
+		// B2 — ESTRATOS DE RENDA (QUINTIS) COM PATRIMÔNIO.
+		//
+		// A POP é repartida em 5 quintis de renda (20% de pessoas cada) numa
+		// dimensão INDEPENDENTE da escolaridade. Cada estrato tem composição
+		// educacional própria (acesso a vaga), dispersão salarial própria
+		// (`wage_factor`), participação no capital (`capital_share`), poupança,
+		// dívida (0 até a Parte C), patrimônio e posse de moradia.
+		//
+		// A repartição INICIAL vem de dado real por nação (quintis de renda do
+		// World Bank SI.DST via `strata_baseline.json`); sem o dado, o núcleo
+		// deriva a proxy lognormal do Gini declarado. O Gini do dia 365 NÃO é
+		// imposto: ele emerge das rendas pagas (salário por escolaridade ×
+		// fator de dispersão, capital pelos donos, aluguel recebido).
+		// `strata_ready` distingue a cidade semeada do save legado/sintético.
+		// ------------------------------------------------------------------
+		bool strata_ready = false;
+		double strata_income_share[kIncomeStrata] = {};
+		double stratum_people[kIncomeStrata] = {};
+		double stratum_wage[kIncomeStrata] = {};
+		double stratum_capital[kIncomeStrata] = {};
+		double stratum_rent[kIncomeStrata] = {};
+		double stratum_transfer[kIncomeStrata] = {};
+		double stratum_net_income[kIncomeStrata] = {};
+		double stratum_savings[kIncomeStrata] = {};
+		double stratum_debt[kIncomeStrata] = {};
+		// Participações em grupos (avaliação, não dinheiro): semeada como
+		// resíduo da riqueza-alvo documentada; sem fluxo até a Parte C5.
+		double stratum_equity[kIncomeStrata] = {};
+		double stratum_wealth[kIncomeStrata] = {};
+		double stratum_saving_rate[kIncomeStrata] = {};
+		double stratum_service_spend[kIncomeStrata] = {};
+		double stratum_rent_paid[kIncomeStrata] = {};
+		double stratum_rent_bill[kIncomeStrata] = {};
+		double stratum_food_spend[kIncomeStrata] = {};
+		double stratum_need[kIncomeStrata] = {};
+		double stratum_consumed[kIncomeStrata] = {};
+		// Dispersão salarial DENTRO do nível de escolaridade (experiência,
+		// jornada, informalidade): normalizada para média 1 no dia da
+		// semeadura a partir dos quintis de renda observados.
+		double stratum_wage_factor[kIncomeStrata] = {};
+		// Participação na renda de capital/aluguel (riqueza mais concentrada
+		// que a renda; proxy documentada, ver `set_city_strata`).
+		double stratum_capital_share[kIncomeStrata] = {};
+		double stratum_education_mix[kIncomeStrata][kEducationLevels] = {};
+		double stratum_tenure[kIncomeStrata][kStrataTenureCount] = {};
+		// Teto de consumo alcançado pelo estrato hoje (0 = nenhum, 1 = basic,
+		// 2 = life, 3 = luxury).
+		int stratum_level[kIncomeStrata] = {};
+		// Fator de ciclo de vida da taxa de poupança por faixa etária da
+		// cidade (B1): crianças 0, jovens/idiosos < meia-idade. Publicado
+		// para a validação "meia-idade poupa mais".
+		double lifecycle_saving[5] = {};
+
 	};
 
 	// ------------------------------------------------------------------
@@ -604,7 +672,7 @@ namespace ogs {
 		unsigned long long name_seed = 0;
 	};
 
-	// Reserva mineral do território da cidade para um produto. D-083 (decisão do
+	// Reserva mineral do território da cidade para um produto. D-086 (decisão do
 	// dono): é só REFERÊNCIA de profundidade — escala a curva de custo do
 	// aprofundamento e a fatia que cada estágio reivindica; a extração NUNCA
 	// zera nem bloqueia obra. `remaining_kt` continua sendo debitado
@@ -828,6 +896,10 @@ namespace ogs {
 		// dia, em vez de ser zerado pelo reset de fluxos antes de ser contado.
 		double construction_revenue_pending = 0.0;
 		double capital_income_next = 0.0;
+		// B2: aluguel recebido pelas famílias donas no dia (fase de moradia),
+		// pago junto do capital no dia seguinte. Fica separado para o relatório
+		// por estrato; entra em `money_total` como o capital.
+		double rent_income_next = 0.0;
 		double gdp = 0.0;
 		// F3: compra institucional do Estado no dia (paper/computer).
 		double government_goods_spend = 0.0;

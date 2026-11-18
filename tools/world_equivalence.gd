@@ -166,7 +166,7 @@ func _run() -> void:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
-		# D-083: minas históricas (uma por cidade × mineral com jazida), no
+		# D-086: minas históricas (uma por cidade × mineral com jazida), no
 		# último estágio — o mesmo caminho do autoload do jogo.
 		if geo.has_method("resolve_initial_mines"):
 			buildings = geo.resolve_initial_mines(buildings, cities)

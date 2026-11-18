@@ -1,6 +1,6 @@
 extends SceneTree
 
-## D-083 — ESTÁGIO DE MINA: o recurso NUNCA acaba (decisão do dono, 2026-11-17).
+## D-086 — ESTÁGIO DE MINA: o recurso NUNCA acaba (decisão do dono, 2026-11-17).
 ##
 ## Mundo sintético e determinístico (catálogo REAL de bens). Cobre o aceite da
 ## nova regra:
@@ -231,7 +231,7 @@ func _test_ai_picks_cheaper() -> void:
 
 
 # ---------------------------------------------------------------------------
-# (d) Dinheiro conservado e save/load v17 (formato inalterado).
+# (d) Dinheiro conservado e save/load v18 (formato inalterado).
 # ---------------------------------------------------------------------------
 func _test_money_and_save() -> void:
 	var failures_before := _failures.size()
@@ -255,8 +255,8 @@ func _test_money_and_save() -> void:
 			money_initial, money_final])
 
 	var saved: Dictionary = sim.to_dict()
-	if int(saved.get("version", 0)) != 17:
-		_fail("(d) save v%d != v17 (formato não mudou nesta entrega)" % int(
+	if int(saved.get("version", 0)) != 18:
+		_fail("(d) save v%d != v18 (formato não mudou nesta entrega)" % int(
 			saved.get("version", 0)))
 	var clone = EconomySim.new()
 	clone.set_goods(_load_goods())
@@ -270,13 +270,45 @@ func _test_money_and_save() -> void:
 			- float(live_mine.get("next_deepen_cost", 0.0))) > 0.01:
 		_fail("(d) round-trip mudou o custo do próximo aprofundamento")
 
-	# Migração: um save v16 não tem `stage` em nenhuma construção.
-	var legacy: Dictionary = saved.duplicate(true)
-	legacy["version"] = 16
-	for entry in legacy.get("buildings", []):
+	# Migração v17 -> v18: o save da B2 tem `pop.strata` mas não tem `stage`.
+	var legacy17: Dictionary = saved.duplicate(true)
+	legacy17["version"] = 17
+	for entry in legacy17.get("buildings", []):
 		entry.erase("stage")
 		entry.erase("stage_reserve_kt")
 		entry.erase("stage_mined_kt")
+	for project in legacy17.get("construction_projects", []):
+		project.erase("deepen_stage")
+	var migrated17 = EconomySim.new()
+	migrated17.set_goods(_load_goods())
+	migrated17.from_dict(legacy17)
+	var mine17 := _find_building(migrated17.get_city_status("MINE-A"),
+		"MINE-A-IRON")
+	if int(mine17.get("stage", -1)) != INITIAL_STAGE:
+		_fail("(d) migração v17: estágio %d != %d" % [
+			int(mine17.get("stage", -1)), INITIAL_STAGE])
+	if absf(float(mine17.get("stage_factor", 0.0)) - STAGE_FLOOR) > 1e-9:
+		_fail("(d) migração v17: mina antiga não ficou no piso (fator %.3f)" % float(
+			mine17.get("stage_factor", 0.0)))
+	# A B2 sobrevive à passagem: o bloco `strata` gravado continua idêntico no
+	# resave (o load v17 não pode perder a B2 nem re-semear por cima).
+	var strata_in: Dictionary = Dictionary(Dictionary(
+		Array(saved.get("cities", []))[0]).get("pop", {})).get("strata", {})
+	var strata_out: Dictionary = Dictionary(Dictionary(
+		Array(migrated17.to_dict().get("cities", []))[0]).get("pop", {})).get(
+		"strata", {})
+	if not bool(strata_out.get("ready", false)) \
+			or Array(strata_out.get("income_share", [])) != Array(strata_in.get(
+				"income_share", [])):
+		_fail("(d) migração v17: bloco strata da B2 se perdeu")
+
+	# Cadeia v16 -> v17 -> v18: save v16 não tem `strata` NEM `stage`; o load
+	# roda as duas etapas (B2 semeia os quintis no fim, minas caem no último
+	# estágio).
+	var legacy: Dictionary = legacy17.duplicate(true)
+	legacy["version"] = 16
+	for city_entry in legacy.get("cities", []):
+		Dictionary(city_entry.get("pop", {})).erase("strata")
 	var migrated = EconomySim.new()
 	migrated.set_goods(_load_goods())
 	migrated.from_dict(legacy)
@@ -288,8 +320,14 @@ func _test_money_and_save() -> void:
 	if absf(float(legacy_mine.get("stage_factor", 0.0)) - STAGE_FLOOR) > 1e-9:
 		_fail("(d) migração v16: mina antiga não ficou no piso (fator %.3f)" % float(
 			legacy_mine.get("stage_factor", 0.0)))
+	var strata16: Dictionary = Dictionary(Dictionary(
+		Array(migrated.to_dict().get("cities", []))[0]).get("pop", {})).get(
+		"strata", {})
+	if not bool(strata16.get("ready", false)) \
+			or Array(strata16.get("income_share", [])).size() != 5:
+		_fail("(d) migração v16: a etapa v17 (B2) não rodou na cadeia")
 	if _failures.size() == failures_before:
-		print("[mine] (d) save v17 round-trip ok; migração v16 -> último estágio (piso)")
+		print("[mine] (d) save v18 round-trip ok; v17 -> último estágio (piso, B2 intacta); v16 -> v17 -> v18")
 
 
 # ---------------------------------------------------------------------------
@@ -350,7 +388,7 @@ func _cities() -> Array:
 
 func _buildings() -> Array:
 	# `stage` = -1: mina JÁ EXISTENTE no último estágio (contrato do
-	# GeographyService, D-083). A capacidade nominal é dimensionada fora do
+	# GeographyService, D-086). A capacidade nominal é dimensionada fora do
 	# núcleo; a produção efetiva fica no piso até o aprofundamento.
 	# MINE-B tem capacidade grande de propósito: 5% dela (50 t/dia) esgota a
 	# jazida de referência de 50 t no primeiro dia.
