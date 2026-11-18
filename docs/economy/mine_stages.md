@@ -633,8 +633,15 @@ Evidência: `tools/_tmp_diag365_fix2.json` (com) e
 | `A0_60_urban` (60 d, IA + urbano) | `c395f293.` | `bccab3eb.` | `700c8481.` / `357755a3.` |
 | `real_60_ai` (S0, 60 d, IA) | `3ea1f783.` | `e6026b4d.` | `2cfabec1.` / `96b9489c.` |
 
-A confirmação em duas rodadas e a atualização dos demais goldens são feitas na
-base depois do merge (a base já tem goldens da B3).
+**Na base (`balance/global-resources`, merge `4ac1d12`).** Os goldens foram
+regerados aqui, onde a B3 já estava: `A0_60_urban` `save 50373b42.` /
+`status 769fd73f.` (antes `ff6855a0.` / `3b8749b6.`) e `real_60_ai`
+`55d1f8ad.` / `53c6ffcd.` (antes `da665be8.` / `652f965d.`), duas rodadas
+idênticas em cada; `real_60_noai` e `demo_365_noai` saíram byte-idênticos aos
+da base. CLI × Godot 10 d (IA, `threads=1`, 849 cidades): **byte-idênticos**
+(`BED6288E.`). 365 d real + IA na base: **0 falências** (teto 28), drift
+≈ **−0,001** XGS e comida na dívida da B3 — **141 nações** abaixo de 0,975 na
+média de 30 d (pior **0,000**), sem isenção nova.
 
 **Preço de minério — questão de mercado para a calibração.** O teto de 3× da
 §7.4 não é efeito da semente. A pressão de preço (`prices.cpp`) é
