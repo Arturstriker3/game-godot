@@ -210,6 +210,25 @@ func _inject_vacancy(save: Dictionary, city_id: String, vacancy_people: float) -
 	urban[i]["units"] = new_units
 
 
+## Vaga de moradia do polo em PESSOAS (unidades vazias × pessoas por domicílio),
+## exatamente como a fase de migração calcula (`urban_vacancy_people`).
+func _vacancy_people(sim: Object, city_id: String, save: Dictionary) -> float:
+	var units := 0.0
+	for value in sim.get_urban_city(city_id).get("vacancy", []):
+		units += float(value)
+	if units <= 0.0:
+		return 0.0
+	var i := _city_index(save, city_id)
+	var housing: Array = save.get("housing", [])
+	if i < 0 or i >= housing.size():
+		return 0.0
+	var households := float(housing[i].get("households", 0.0))
+	var pop_anchor := float(housing[i].get("pop_anchor", 0.0))
+	var people_per_unit := (maxf(pop_anchor, 1.0) / households) \
+		if households > 0.0 else 1.0
+	return units * people_per_unit
+
+
 ## (a) conservação de dinheiro e de pessoas (invariante urbano + interior).
 func _check_conservation() -> void:
 	var sim := _make_world()
@@ -237,6 +256,21 @@ func _check_conservation() -> void:
 			urban + region, total])
 	else:
 		print("[b4] conservação: urbano+interior == população (%.0f)." % total)
+	# O status de migração publica o urbano/região VIVOS (Σ simulation_population
+	# e Σ region.region_pop), não a seed do dia 0 — confere a consistência.
+	var migration: Dictionary = sim.get_status().get("migration", {})
+	var urban_status := float(migration.get("urban_population", 0.0))
+	var region_status := float(migration.get("region_population", 0.0))
+	if absf(urban_status - urban) > 1.0 or absf(region_status - region) > 1.0:
+		_fail("conservação: get_status().migration urbano/região (%.0f/%.0f) não bate com Σ (%.0f/%.0f)" % [
+			urban_status, region_status, urban, region])
+	var urbanization := float(migration.get("urbanization", 0.0))
+	var expected_urbanization := urban / maxf(urban + region, 1.0)
+	if absf(urbanization - expected_urbanization) > 1e-9:
+		_fail("conservação: urbanization %.9f != urbano/(urbano+região) %.9f" % [
+			urbanization, expected_urbanization])
+	print("[b4] conservação: status migration urbano=%.0f região=%.0f urbanization=%.6f." % [
+		urban_status, region_status, urbanization])
 
 
 ## (b) determinismo de threads 1 × 16 (mesmo hash do save).
@@ -428,7 +462,13 @@ func _check_mechanics() -> void:
 			target, q1_drop, q1_control_drop])
 
 
-## (f) limite por moradia: destino com vaga PEQUENA não recebe além dela.
+## (f) limite por moradia: a migração preenche EXATAMENTE a vaga disponível no
+## destino (nem mais, nem menos). A vaga injetada decai antes do fechamento
+## mensal (depreciação do estoque + crescimento da demanda + o pico mensal de
+## demografia que roda no mesmo tick), então o que vincula é a vaga DISPONÍVEL no
+## momento — que a fase de migração consome por inteiro. Provamos lendo a vaga
+## do polo logo depois do fechamento (a fase não mexe no campo `vacancy`; ela só
+## move gente, então o campo continua valendo o que a migração viu).
 func _check_housing_limit() -> void:
 	var sim := _make_world()
 	for day in 30:
@@ -439,10 +479,14 @@ func _check_housing_limit() -> void:
 		_fail("limite: não achei 2 cidades da mesma nação com região")
 		return
 	var target := String(pair[0])
-	# Vaga PEQUENA (30 mil pessoas) — bem abaixo da taxa máxima mensal (0,5% da
-	# região, ~156 mil aqui), então o limite que vincula é a VAGA, não a taxa.
-	# (A depreciação diária do estoque consome ~4 mil pessoas em 30 dias; 30 mil
-	# sobrevive a ela e continua limitando o fluxo.)
+	var ti := _city_index(base, target)
+	var cadence_day := ti % 30
+	# Dias até o próximo fechamento mensal do alvo (estamos no dia 30).
+	var days_until := (cadence_day - 30 % 30 + 30) % 30
+	if days_until == 0:
+		days_until = 30
+	# Vaga bem abaixo da taxa máxima mensal (0,5% × região) — o teto que vincula
+	# é a VAGA, não a taxa.
 	var vacancy := 30000.0
 	_inject_vacancy(base, target, vacancy)
 	var sim2 = EconomySim.new()
@@ -450,19 +494,34 @@ func _check_housing_limit() -> void:
 	sim2.from_dict(base)
 	var rural_before := float(_region_block(sim2.to_dict(), target).get(
 		"migration", {}).get("rural_in_total", 0.0))
-	for day in 30:
+	var region_pop := float(_region_block(sim2.to_dict(), target).get(
+		"region_pop", 0.0))
+	var max_rate := region_pop * 0.005
+	for day in days_until:
 		sim2.tick_day()
 	var rural_after := float(_region_block(sim2.to_dict(), target).get(
 		"migration", {}).get("rural_in_total", 0.0))
 	var delta := rural_after - rural_before
+	var available := _vacancy_people(sim2, target, base)
 	if delta <= 0.0:
-		_fail("limite: %s não recebeu êxodo com vaga %d (Δ = %.0f)" % [
+		_fail("limite: %s não migrou com vaga %d (Δ = %.0f)" % [
 			target, int(vacancy), delta])
 	if delta > vacancy * 1.05 + 0.5:
-		_fail("limite: %s recebeu %.0f > vaga disponível %.0f" % [
-			target, delta, vacancy])
-	print("[b4] limite: %s recebeu %.0f ≤ vaga %.0f (taxa máxima do mês não vincula)." % [
-		target, delta, vacancy])
+		_fail("limite: %s recebeu %.0f > vaga injetada %.0f" % [target, delta, vacancy])
+	if delta > max_rate:
+		_fail("limite: %s recebeu %.0f > taxa máxima %.0f (a vaga não vincula)" % [
+			target, delta, max_rate])
+	# A vaga TEM de estar abaixo da taxa máxima; senão a taxa é o teto e o caso
+	# não prova o limite de moradia.
+	if available * 1.05 >= max_rate:
+		_fail("limite: vaga disponível %.0f não está abaixo da taxa máxima %.0f — o caso não é vinculante" % [
+			available, max_rate])
+	# O motor consome a vaga DISPONÍVEL por inteiro (delta ≈ vaga disponível).
+	if delta < available * 0.95 or delta > available * 1.05:
+		_fail("limite: %s recebeu %.0f ≠ vaga disponível %.0f (motor não respeita o teto)" % [
+			target, delta, available])
+	print("[b4] limite: %s recebeu %.0f == vaga disponível %.0f (taxa máx %.0f)." % [
+		target, delta, available, max_rate])
 
 
 func _run() -> void:

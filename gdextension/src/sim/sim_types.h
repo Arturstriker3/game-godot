@@ -904,8 +904,9 @@ struct Region {
 	double migration_city_in_total = 0.0;   // outras cidades → esta, acumulado
 	double migration_city_out_total = 0.0;  // esta → outras cidades, acumulado
 	double migration_month_rural_in = 0.0;  // êxodo do último fechamento
+	double migration_month_city_in = 0.0;   // entrada de outras cidades (janela própria)
 	double migration_month_city_out = 0.0;  // saída cidade→cidade do último fecho
-	double migration_month_net = 0.0;       // rural_in − city_out (do último fecho)
+	double migration_month_net = 0.0;       // rural_in + city_in − city_out (último fecho)
 	double migration_month_rate = 0.0;      // net ÷ população regional (fração/mês)
 };
 

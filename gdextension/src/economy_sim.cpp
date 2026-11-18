@@ -3624,7 +3624,11 @@ Dictionary EconomySim::get_status() {
 	root[k.construction_cash] = ws_.construction_cash;
 	root[k.bankruptcies] = ws_.bankruptcies;
 	root[k.depleted_mines] = ws_.depleted_mines;
-	// B4: totais de migração do mundo (acumulados) + urbanização corrente.
+	// B4: totais de migração do mundo (acumulados) + urbanização CORRENTE.
+	// O urbano vivo é `simulation_population` (Σ coortes, acompanha demografia e
+	// migração); a região viva é `region.region_pop` (Σ coortes do interior).
+	// `region.urban_population`/`region.population_region` são a SEED do dia 0 e
+	// não podem ser usados aqui.
 	{
 		double rural_in = 0.0;
 		double city_in = 0.0;
@@ -3636,7 +3640,7 @@ Dictionary EconomySim::get_status() {
 			rural_in += r.migration_rural_in_total;
 			city_in += r.migration_city_in_total;
 			city_out += r.migration_city_out_total;
-			urban += r.urban_population;
+			urban += city.simulation_population;
 			region_pop += r.region_pop;
 		}
 		Dictionary migration;
@@ -5057,19 +5061,21 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 	out["strata_income_share"] = strata_income_share;
 	out["strata_savings"] = strata_savings;
 	// B4: migração — acumuladores + fluxo do último fechamento mensal + a
-	// urbanização corrente (urbano ÷ população regional) contra a referência
-	// nacional (World Bank; -1 = sem dado).
+	// urbanização CORRENTE (urbano vivo ÷ população exibida) contra a referência
+	// nacional (World Bank; -1 = sem dado). O urbano vivo é `simulation_population`
+	// (Σ coortes), não `region.urban_population` (a SEED do dia 0).
 	{
 		Dictionary migration;
 		migration["rural_in_total"] = region.migration_rural_in_total;
 		migration["city_in_total"] = region.migration_city_in_total;
 		migration["city_out_total"] = region.migration_city_out_total;
 		migration["month_rural_in"] = region.migration_month_rural_in;
+		migration["month_city_in"] = region.migration_month_city_in;
 		migration["month_city_out"] = region.migration_month_city_out;
 		migration["month_net"] = region.migration_month_net;
 		migration["month_rate"] = region.migration_month_rate;
-		migration["urban_share"] = region.population_region > 0.0
-			? region.urban_population / region.population_region : 0.0;
+		migration["urban_share"] = city->population > 0.0
+			? city->simulation_population / city->population : 0.0;
 		migration["urban_share_ref"] = region.urban_share;
 		out["migration"] = migration;
 	}

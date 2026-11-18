@@ -313,6 +313,10 @@ double migrate_city_out(WorldState& ws, SimCore& core, std::size_t ci,
 		pool_add(dp, age_out, strata_out, savings_out);
 		src.region.migration_city_out_total += moved;
 		dst.region.migration_city_in_total += moved;
+		// Fluxo do mês do DESTINO: a entrada conta na janela do próprio destino
+		// (cada cidade mede no seu dia A6; o reset acontece lá, numa passada
+		// anterior à migração do dia, então nada é zerado por outra cidade).
+		dst.region.migration_month_city_in += moved;
 		moved_total += moved;
 		core.apply_demography(dst);
 		core.reconcile_city_population(dst);
@@ -337,6 +341,38 @@ void SimCore::phase_migration() {
 	for (std::size_t i = 0; i < n; ++i) {
 		utility[i] = city_utility(ws_, i);
 	}
+	// Passada 1 — RESET dos fluxos do mês para as cidades que fecham HOJE.
+	// Roda ANTES de qualquer migração: a entrada cidade→cidade de outra cidade
+	// no mesmo dia não pode ser zerada por um reset posterior.
+	for (std::size_t i = 0; i < n; ++i) {
+		if (!cadence_due(ws_.day, i, month_period)) {
+			continue;
+		}
+		Region& region = ws_.cities[i].region;
+		if (!region.ready) {
+			continue;  // sem dado de região = inerte
+		}
+		region.migration_month_rural_in = 0.0;
+		region.migration_month_city_in = 0.0;
+		region.migration_month_city_out = 0.0;
+		region.migration_month_net = 0.0;
+		region.migration_month_rate = 0.0;
+	}
+	// Passada 2 — MIGRAÇÃO: êxodo rural (interior → polo urbano) e cidade →
+	// cidade (mesma nação), na ordem fixa das cidades.
+	for (std::size_t i = 0; i < n; ++i) {
+		if (!cadence_due(ws_.day, i, month_period)) {
+			continue;
+		}
+		City& city = ws_.cities[i];
+		if (!city.region.ready) {
+			continue;
+		}
+		migrate_region_to_urban(ws_, *this, i);
+		migrate_city_out(ws_, *this, i, utility);
+	}
+	// Passada 3 — TAXA LÍQUIDA do mês (fração da população exibida), já com a
+	// entrada cidade→cidade completa (todas as fontes rodaram na passada 2).
 	for (std::size_t i = 0; i < n; ++i) {
 		if (!cadence_due(ws_.day, i, month_period)) {
 			continue;
@@ -344,22 +380,12 @@ void SimCore::phase_migration() {
 		City& city = ws_.cities[i];
 		Region& region = city.region;
 		if (!region.ready) {
-			continue;  // sem dado de região = inerte
+			continue;
 		}
-		// Reinicia os fluxos do mês (o fechamento deste mês sobrescreve).
-		region.migration_month_rural_in = 0.0;
-		region.migration_month_city_out = 0.0;
-		region.migration_month_net = 0.0;
-		region.migration_month_rate = 0.0;
-		// 1. Êxodo rural (interior → polo urbano da mesma cidade).
-		migrate_region_to_urban(ws_, *this, i);
-		// 2. Cidade → cidade (mesma nação).
-		migrate_city_out(ws_, *this, i, utility);
-		// Taxa líquida do mês (fração da população regional exibida).
 		const double total_pop = std::max(1.0,
 			city.simulation_population + std::max(0.0, region.region_pop));
 		region.migration_month_net = region.migration_month_rural_in
-			- region.migration_month_city_out;
+			+ region.migration_month_city_in - region.migration_month_city_out;
 		region.migration_month_rate = region.migration_month_net / total_pop;
 	}
 }
