@@ -53,6 +53,7 @@ add_library(opengs_sim STATIC
     src/sim/urban_land.cpp
     src/sim/city_gov.cpp
     src/sim/housing.cpp
+    src/sim/informality.cpp
     src/sim/scenario_fixture.cpp
     src/sim/commands.cpp
     src/sim/actions.cpp

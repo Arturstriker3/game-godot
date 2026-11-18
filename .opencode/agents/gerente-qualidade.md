@@ -1,7 +1,7 @@
 ---
 description: Gerente de Qualidade do OpenGS — dono de testes, equivalência, performance e auditoria; revisa as entregas dos outros gerentes e pode vetar commit de núcleo/perf.
 mode: all
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-flash
 steps: 250
 permissions:
   - action: edit

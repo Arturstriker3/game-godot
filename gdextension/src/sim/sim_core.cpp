@@ -921,6 +921,8 @@ void SimCore::seed_region_strata(City& city, const double* shares) {
 		region.cash += region.stratum_savings[s];
 	}
 	region.strata_ready = true;
+	// B7: semeia a informalidade (urbano + interior) e a referência de saúde.
+	seed_informality(city);
 }
 
 void SimCore::recompute_region_mix(City& city) {

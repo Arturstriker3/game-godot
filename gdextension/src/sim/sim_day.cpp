@@ -81,6 +81,14 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// F8: serviços.
 	core.phase_services();
 
+	// 5c2. B7: insatisfação (medição 0..1 por quintil/cidade/região). Roda
+	// depois dos serviços e da moradia (aluguel pago e comida já fechados); não
+	// move dinheiro nem pessoas.
+	{
+		OGS_SIM_ZONE(kPhaseSocial);
+		core.phase_social();
+	}
+
 	// 6. Comércio de alimento e dos demais bens.
 	core.phase_trade();
 

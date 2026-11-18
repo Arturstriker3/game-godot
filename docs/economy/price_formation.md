@@ -279,6 +279,12 @@ dia de falta derruba a média 30 d. O preço local da comida é o mais alto do
 conjunto (mediana **2,06×** contra 1,79× das nações robustas) — são
 importadores que pagam a paridade de importação + custo/piso.
 
+**Depois do merge com a B7 (2026-11-18, `9348c627`):** o mesmo sweep (`merge_real_365.json`) dá
+**34 nações (33 com a isenção canônica)** — entram LSO, ARM, KGZ, MMR, KEN, AFG, HND, EST e ECU e voltam
+MWI, NER, CAF, ERI e BIH; os valores por nação desta tabela se repetem (MLT 0,904, LUX 0,928, DEU 0,881,
+POL 0,842, SOM 0,657). Falências 4, drift 0,001343, 0 violações. A dívida #10 do M2 (Parte E) segue
+aberta.
+
 **Causa (termos de troca energia/mineral × comida):** a D-092 trocou o
 runaway de +0,05× do base/dia por um platô de **2,6–5,0×** no mineral e
 **1,10–1,14×** no alimento (mundo). O efeito no portão é de **dois lados**:

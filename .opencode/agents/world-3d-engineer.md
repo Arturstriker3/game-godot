@@ -1,7 +1,7 @@
 ---
 description: Cuida do mapa 3D, modelos, materiais, shaders e pipeline Blender do OpenGS Game.
 mode: all
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-flash
 steps: 100
 permissions:
   - action: edit
