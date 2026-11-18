@@ -170,7 +170,7 @@ func _test_v11_old_save_compat() -> void:
 	var full_save: Dictionary = sim.to_dict()
 
 	if int(full_save.get("version", 0)) != 21:
-		_fail("compat: esperava schema v20, veio %s" % str(full_save.get("version")))
+		_fail("compat: esperava schema v21, veio %s" % str(full_save.get("version")))
 		return
 
 	# Garante que os campos novos EXISTEM no save atual (senão o teste de

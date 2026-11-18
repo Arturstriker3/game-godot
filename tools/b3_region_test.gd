@@ -40,7 +40,7 @@ var _failures: Array = []
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[b3] OK: população, semeadura, round-trip e migração v17→v20.")
+		print("[b3] OK: população, semeadura, round-trip e migração v17→v21.")
 		quit(0)
 	else:
 		print("[b3] FALHAS (%d):" % _failures.size())
@@ -177,7 +177,7 @@ func _check_v17_migration() -> void:
 	migrated.from_dict(v17)
 	var after: Dictionary = migrated.to_dict()
 	if int(after.get("version", 0)) != 21:
-		_fail("migração: versão deveria ser 20 (é %s)" % str(after.get("version")))
+		_fail("migração: versão deveria ser 21 (é %s)" % str(after.get("version")))
 		return
 	var checked := 0
 	for city: Dictionary in after.get("cities", []):
@@ -195,7 +195,7 @@ func _check_v17_migration() -> void:
 	if checked == 0:
 		_fail("migração: nenhuma cidade com região")
 	else:
-		print("[b3] migração v17→v20: %d cidades carregadas sem crash." % checked)
+		print("[b3] migração v17→v21: %d cidades carregadas sem crash." % checked)
 
 
 func _run() -> void:

@@ -366,4 +366,4 @@ func _test_determinism_and_roundtrip() -> void:
 		_fail("save/load: estado urbano divergiu (PORTUS)")
 	if int(one.to_dict().get("version", 0)) != 21:
 		_fail("save version != 21")
-	print("[urban-w1] threads 1/8 identicos; save/load urbano identico (v20)")
+	print("[urban-w1] threads 1/8 identicos; save/load urbano identico (v21)")

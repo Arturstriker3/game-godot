@@ -37,7 +37,7 @@ var _failures: Array = []
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[b4] OK: migração — conservação, direção, limite, idade, save v20.")
+		print("[b4] OK: migração — conservação, direção, limite, idade, save v21.")
 		quit(0)
 	else:
 		print("[b4] FALHAS (%d):" % _failures.size())

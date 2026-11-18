@@ -129,3 +129,30 @@ cidade por cooldown. 365 d: **346 concessões** (o comando, o royalty e o status
 **Pendências:**
 - Nível inicial de infra por dado real de cobertura (eletricidade/água) — geografia futura.
 - Recalibrar a penalidade de acesso se o dado de cobertura inicial for carregado (hoje 0 → 30%).
+
+## 9. Correções da revisão de entrega (D1–D3)
+
+- **D1 — concessão residual em estatizar/privatizar (corrigido):** `apply_nationalize` e
+  `apply_privatize` não zeravam `building.royalty`/`royalty_paid`; a sequência
+  conceder → estatizar → privatizar deixava 5% de royalty e o ativo seguia publicado como
+  concessão. Agora ambos limpam o royalty e o estado de concessão (ativo estatal ou de
+  propriedade plena não paga royalty). Teste no `b5_state_levers_test.gd` (§3) cobre a ida e a
+  volta, com conservação de dinheiro.
+- **D2 — regressão do teto de royalty pelo caixa da firma:** `sim_core.cpp` limita o royalty
+  efetivo por `receita × taxa`, pelo lucro e pelo **caixa** da firma. O teste monta o cenário
+  determinístico que expõe o bug antigo: mina estatal concedida cuja receita vem da
+  transferência interna de insumo (planta de aço consome o minério do estoque — a receita
+  atribuída sobe sem entrar caixa) e caixa da firma = 0. Com o código antigo a invariante
+  diária acusa "dinheiro não conservado" (drift 16.999.587 no dia 1) e o teste falha; com o
+  teto, violações = 0 e o royalty pago fica no que o caixa permite.
+- **D3 — mensagens "v20" obsoletas:** os 7 testes cujas asserções já eram v21
+  (`b3_region`, `construction_queue`, `economy_save_load_v11_compat`, `mine_stage`, `services`,
+  `urban_land`, `urban_load`) passaram a dizer v21 onde a mensagem é a versão atual; o OK final
+  do `b4_migration` também. As referências a "v19→v20"/"v20→v21" como **etapa** de migração
+  ficam.
+- **Verificação:** bateria verde um por vez (b5, b4_migration, b3_region, mine_stage, services
+  pela cena, economy_integration, economy_ai, roundtrip, v11_compat, construction_queue,
+  urban_load, urban_land, city_gov, population_age, strata, history_service); golden
+  `A0_60_urban` **inalterado** (2 rodadas, 0 diferenças); CLI×Godot 10 d `--ai=1`
+  **byte-idêntico** (74.052.047 bytes, SHA-256 `F31BEAA4…`).
+

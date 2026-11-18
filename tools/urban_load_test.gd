@@ -244,6 +244,6 @@ func _run() -> void:
 	if not Dictionary(legacy.get_urban_city("BRA-SAO")).is_empty():
 		_fail("v12->v14: save antigo nao deveria ter estado urbano")
 	if int(legacy.to_dict().get("version", 0)) != 21:
-		_fail("v12->v20: save migrado nao saiu como v20")
-	print("[urban] migracao v12->v20: sem estado urbano, schema 20.")
+		_fail("v12->v21: save migrado nao saiu como v21")
+	print("[urban] migracao v12->v21: sem estado urbano, schema 21.")
 

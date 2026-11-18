@@ -6277,6 +6277,11 @@ Dictionary EconomySim::apply_privatize(const String& city_id,
 		: "national:" + buyer->id;
 	building->local_share = 0.0;
 	building->partner_group.clear();
+	// D1: o ativo privatizado é propriedade plena do comprador, não concessão —
+	// limpar o royalty evita renda residual (conceder -> estatizar -> privatizar
+	// deixava 5% e o ativo aparecia como concessão no status).
+	building->royalty = 0.0;
+	building->royalty_paid = 0.0;
 	result["ok"] = true;
 	result["price"] = price;
 	result["owner"] = String(building->owner.c_str());
@@ -6345,6 +6350,10 @@ Dictionary EconomySim::apply_nationalize(const String& city_id,
 	building->owner = "state";
 	building->local_share = 0.0;
 	building->partner_group.clear();
+	// D1: estatizar extingue a concessão — o Estado não paga royalty a si mesmo
+	// nem o ativo pode seguir publicado como concessão.
+	building->royalty = 0.0;
+	building->royalty_paid = 0.0;
 	// Derruba a confiança do anfitrião por um período: o IDE novo fica
 	// bloqueado enquanto a confiança estiver abaixo de 0,5.
 	ws_.confidence[city->nation] = kNationalizationConfidence;

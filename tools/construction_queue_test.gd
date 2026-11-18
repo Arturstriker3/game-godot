@@ -396,7 +396,7 @@ func _test_v13_migration() -> void:
 	# O schema novo sai em v18 (B2 + minas, D-086) e a obra antiga entrega as
 	# unidades.
 	if int(sim.to_dict().get("version", 0)) != 21:
-		_fail("migracao v13: save regravado não saiu como v20")
+		_fail("migracao v13: save regravado não saiu como v21")
 	var share_before := _owner_share_of(sim, 1)
 	if not _tick(sim, 7, "migracao-v13"):
 		return
