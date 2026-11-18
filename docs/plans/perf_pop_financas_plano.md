@@ -300,6 +300,14 @@ abertura da bolsa a estrangeiros.
 Hoje não existe: `sim_constants.h` registra que energia não tem preço próprio no núcleo. Já existem os
 combustíveis (`coal`, `gas`, `oil`, `fuel`, `uranium`, `wood`, `charcoal`, `ethanol`) e `batteries`.
 
+### E0 — Aceite herdado da D-091/D-092 (não é etapa nova)
+- **Aceite:** devolver ao portão de comida as nações importadoras de energia reprovadas na D-091/D-092
+  (`docs/economy/price_formation.md` §8, dívida #10 do `M2_marco.md` §8). O preço livre + equilíbrio por
+  custo/markup deixou o mineral em platô de 2,6–5,0× o base e a comida em 1,10–1,14× no mundo, mas 31
+  nações caem > 2,5 p.p. no portão: importadores de energia pagam insumo a 1,9–3,2× sem receita de
+  exportação e mercados finos (necessidade < 300 t/d) pagam comida local a ~2× o base. Alvo: com o preço
+  próprio de energia e a oferta de minerais calibrada, o portão volta a ≤ 2,5 p.p. por nação.
+
 ### E1 — Dados de potencial e parque instalado
 - **Solar e eólica:** mapa de potencial por província, agregado por cidade (interior). Fontes candidatas:
   WorldClim 2.1 `srad` e `wind` (mesmo pipeline do clima, mensal → sazonalidade) ou Global Solar Atlas /
