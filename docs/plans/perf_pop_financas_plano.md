@@ -216,12 +216,19 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
    mortalidade/insatisfação) → **Parte G (agricultura sazonal)** → Parte C (balanço, BC por moeda com
    emissão/regimes/padrão monetário, bancos, **bolsa por país (C5) com confiança/expectativas** puxando
    investimento e consumo) → E (energia) e F (transporte).
-2. **Macro político (próxima grande parte):** impostos e orçamento, subsídios e controle de preços,
+2. **Fase H — Saúde do código (antes das telas; pedido do dono, 2026-11-18):**
+   - **H1 Modularizar:** quebrar `economy_sim.cpp` (>6.600 linhas) — ponte GDExtension fina, regra de jogo
+     em módulos do núcleo (`sim/…`) por sistema; zero mudança de resultado (goldens byte-idênticos).
+   - **H2 Desempenho:** bench canônico com host ocioso, perfil por fase e otimização das fases caras até
+     perto da meta da Parte A (≤15 ms/dia), sem mudar resultado.
+   - **H3 Bateria de testes:** consolidar a suíte (sem teste defasado, runner único com timeout por teste,
+     cenas × scripts), cobertura das fases B–G/C, CI local de um comando.
+3. **Telas:** desenhadas uma a uma com o dono (o que cada tela precisa mostrar), depois da Fase H; só então segue o macro político.
+4. **Macro político (próxima grande parte):** impostos e orçamento, subsídios e controle de preços,
    balança de pagamentos e dívida externa refinadas, previdência, salário mínimo/leis.
-3. **Órgãos internacionais (com a diplomacia):** FMI (socorro com condições), agências de **rating de
+5. **Órgãos internacionais (com a diplomacia):** FMI (socorro com condições), agências de **rating de
    crédito** (risco soberano → juro dos títulos), ONU, troca de hegemonia da moeda global, sanções,
    blocos, geopolítica de bancos estrangeiros, remessas/migração internacional.
-4. **Telas:** desenhadas uma a uma com o dono (o que cada tela precisa mostrar), depois da base.
 - **Nomes:** bancos e empresas com **nomes genéricos/fictícios** (sem marcas reais, por direitos);
   bancos centrais como "Banco Central de <país/moeda>"; ocupações informais com nome genérico + termo
   local comum (camelô, mototáxi, boda-boda, tuk-tuk…).
