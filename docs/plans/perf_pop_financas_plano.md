@@ -156,7 +156,30 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
   pobres; (4) êxodo para a capital com efeito em favela/aluguel; (5) eventos por estado com dado real
   (seca/quebra de safra, esgotamento de mina, boom de commodity); (6) instabilidade por estado (com
   política) e ocupação de estados na guerra.
-- **Evitar:** prédio a prédio no estado, preço separado por estado, mercado imobiliário no campo.
+- **Evitar:** prédio a prédio no estado, preço separado por estado, mercado imobiliário prédio a prédio no campo (o patrimônio agregado da região entra na B6).
+
+
+### B6 — Patrimônio imobiliário da região (terra + moradia, extensão da cidade) — aprovado pelo dono, 2026-11-18
+- **Objetivo:** dar patrimônio real às pops do interior (6,1 bi) e ligar riqueza a terra/moradia; base para a Parte C (garantia, hipoteca, crédito rural).
+- **Modelo (agregado por região, cadência mensal):**
+  - **Terra produtiva:** hectares × valor que segue a renda das fazendas/minas da região, a infra da B5 (estrada/luz/água) e o preço das commodities (boom sobe, seca/quebra derruba).
+  - **Moradia:** estoque, preço e aluguel por região; **anel periurbano** ligado ao preço da cidade-polo, descontado por distância/estrada. Quando a moradia da cidade lota (limite da B4), o excedente vai para o anel (periferia/favela — absorve o item 4 da B5).
+  - **Propriedade por quintil (B2):** concentração de terra (latifúndio × pequeno produtor) entra no patrimônio e no Gini.
+- **Efeitos:** riqueza e desigualdade do interior; valorização por obra de infra (imposto sobre imóvel/terra como receita do Estado); migração B4 passa a pesar aluguel do anel × cidade; pronto para virar garantia na C1/C4.
+- **Evitar:** prédio a prédio no campo, construtoras no campo, compra e venda individual. (A regra antiga "sem mercado imobiliário no campo" passa a ser "sem mercado prédio a prédio no campo".)
+- **Ordem:** depois do marco M2, desenhada junto com C1 (balanço) para o patrimônio já nascer como ativo.
+- **Requisitos:** conservação de dinheiro, save novo com migração, testes (valorização por infra, transbordo para o anel, conservação), goldens, CLI×Godot, 365 d, bench.
+
+### B7 — Informalidade, serviços informais, mortalidade e insatisfação — aprovado pelo dono, 2026-11-18
+- **Trabalho informal:** fração informal da força de trabalho por quintil e por cidade/região (dado real com fonte — ex.: OIT, emprego informal por país; sem dado → parâmetro declarado). Informal não paga imposto de renda nem contribuição, ganha menos, é o primeiro a perder renda na crise e não tem proteção. Formalização sobe com renda, educação, infra e fiscalização.
+- **Serviços informais:** setor próprio onde esses trabalhadores atuam — comércio ambulante, transporte informal, construção/reforma informal, serviços pessoais e domésticos. Mais barato, sem imposto, produtividade menor, consumido principalmente pelos quintis de baixo (cidade, anel periurbano da B6 e região). Concorre com o serviço formal; cresce quando o formal está caro ou falta emprego formal. Agregado por cidade/região, sem firma individual.
+- **Mortalidade ligada a comida e saúde:** a mortalidade das coortes (B1) deixa de ser só tabela fixa — sobe com falta de comida (food_avg) e de serviço de saúde, com peso maior em 0–14 e 65+; fome prolongada também empurra migração (B4). Tabela real continua sendo a base em situação normal.
+- **Insatisfação por quintil e região:** índice medido a partir de desemprego (peso jovem 15–24), aluguel/ônus de moradia, fome, inflação, desigualdade de terra (B6) e informalidade. Só medição e status agora; vira entrada da parte política (protesto, instabilidade, eleição) quando ela existir.
+- **Requisitos:** conservação de dinheiro e de pessoas, save novo com migração, testes, goldens, CLI×Godot, 365 d, bench.
+
+### Futuro (depende de leis/política e diplomacia)
+- **Previdência e aposentadoria** (coorte 65+ da B1, contribuição dos formais da B7, déficit fiscal, reforma como lei) — junto com a parte política/leis.
+- **Remessas e migração internacional, inclusive ilegal** — junto com política/diplomacia e fronteiras.
 
 ---
 
@@ -342,6 +365,7 @@ Regra de calibração: **uma recalibração grande por vez** (A6, B3, E, C2 não
 
 - **M1:** Parte A completa (benchmark, CLI, IA em C++, cadência).
 - **M2:** Parte B (faixas etárias, estratos, interior, migração) — mundo com 8,2 bi.
+- **M2b:** B6 (patrimônio da região, junto com o desenho da C1) e B7 (informalidade, serviços informais, mortalidade, insatisfação).
 - **M3:** Parte F (transporte) e Parte E (energia).
 - **M4:** Parte C (bancos, crédito, hipoteca, bolsa).
 - Em cada marco: parar, rodar a bateria longa e atualizar o `GAME_STATE.md` antes de seguir.
