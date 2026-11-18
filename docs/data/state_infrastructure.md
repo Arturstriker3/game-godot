@@ -2,9 +2,10 @@
 
 > Tarefa **D-007** (dados). Insumo da fase **B5** (`docs/economy/B5_state_levers.md`,
 > decisão **D-089**): a Região da B3 tem três níveis de infraestrutura — **estrada**,
-> **energia/luz** e **água** — cada um `0..kInfraMaxLevel` (= 3). Na B5 todos nascem em
-> **0** porque não havia dado de cobertura carregado. Este arquivo registra o dado real
-> que existe hoje, **sem ligar nada ao núcleo**.
+> **energia/luz** e **água** — cada um `0..kInfraMaxLevel` (= 3). Na B5 todos nasciam em
+> **0** porque não havia dado de cobertura carregado. O dado foi **ligado ao núcleo**
+> depois da B5 (o jogo lê os níveis iniciais deste arquivo — ver §3.1); este documento
+> registra a coleta, a regra e as limitações.
 
 - Dataset: `data/definitions/scenario/state_infrastructure_2026.json`
 - Construtor: `tools/build_state_infrastructure.py`
@@ -98,11 +99,30 @@ Distribuição resultante (4.226 estados / população de `state_regions.json`):
 | 2 | 386 / 9,1% | 1.207 / 56,4% | 1.808 / 37,3% |
 | 3 | 3.012 / 74,2% | 2.179 / 26,7% | 274 / 22,1% |
 
-**Isto ainda não está ligado ao núcleo.** Carregar esses níveis muda o resultado (com
+**Ligado ao núcleo (depois da B5).** Carregar esses níveis muda o resultado (com
 estrada 3 a penalidade de acesso de 30% some; com energia/água 3 o êxodo cai ao piso).
-A B5 §8 já registra a pendência "recalibrar a penalidade de acesso se o dado de cobertura
-inicial for carregado" — a decisão de ligar, e com que constantes, é da simulação, não
-deste dado.
+
+### 3.1 Como o jogo lê este arquivo
+
+- `core/economy/initial_infra.gd` aplica a regra desta seção **de novo** (não confia no
+  campo pré-calculado `infra_levels`; os cortes são lidos de `conversion_rule`, fonte
+  única) e devolve `{state_id: {road, power, water}}` — o teste
+  `tools/b5_initial_infra_test.gd` compara os dois nos 4.226 estados.
+- `GeographyService.apply_initial_infra(sim)` entrega o mapa ao núcleo pelo setter
+  `set_region_infra` **depois de criar o mundo** e **antes do primeiro dia**. O autoload
+  (`Economy._ready`) e os harnesses (`export_world_snapshot.gd`, `world_equivalence.gd`,
+  `economy_refactor_equiv.gd`) chamam a MESMA função com o MESMO arquivo.
+- **Região com mais de um estado** usa o **menor** nível de cada tipo entre os estados
+  (pior caso — a mesma lógica rural que escolhe o indicador). Como o dado é nacional,
+  todos os estados de uma nação têm o mesmo nível hoje; a regra só importa quando houver
+  dado subnacional.
+- **Estado sem entrada** = nível 0 nas três dimensões (ausência explícita do dado, não
+  "cobertura zero"): é a mesma regra do validador (`no_data_level`).
+- O nível vira **estado inicial** e é persistido pelo save já existente (`region.infra`,
+  v21+): o formato do save **não muda** (continua v22) e nenhuma migração é necessária —
+  save antigo traz os níveis que foram semeados na época.
+- O A/B de calibração (infra 0 × infra real × infra real sem a penalidade de acesso) em
+  365 d com IA está em `docs/economy/B5_state_levers.md` §10.
 
 ## 4. Fontes
 
@@ -185,8 +205,9 @@ nações de `scenario/nations.json` + **5** territórios que só existem em
    usam água rural de 2016–2018; 27 nações usam LPI de 2014–2018 (23 em 2018, 3 em 2016,
    1 em 2014). O ano está em cada
    campo; nada foi extrapolado.
-4. **Uso no jogo**: não ligado. Ligar exige decisão de calibração (penalidade de acesso,
-   ganho de produtividade) e regeneração de goldens — é da simulação.
+4. **Uso no jogo**: **ligado** (ver §3.1). O nível inicial sai deste arquivo; a
+   calibração da penalidade de acesso e o efeito no mundo em 365 d estão em
+   `docs/economy/B5_state_levers.md` §10.
 5. O cache bruto da coleta (`tools/_tmp_state_infra_raw/`) **não** é versionado: é
    intermediário e reconstruível por `--fetch` (§7). Sem ele, o construtor falha
    listando o arquivo que falta.

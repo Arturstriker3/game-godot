@@ -240,7 +240,10 @@ public:
 	// Nível total (0..kInfraTypeCount*kInfraMaxLevel) dos três tipos.
 	static int infra_total_level(const Region& region);
 	// Multiplicador de custo de acesso região↔polo (>= 1; cai com a estrada).
-	static double infra_access_multiplier(const Region& region);
+	// `penalty_max` é a penalidade máxima (estrada 0): o padrão é a constante de
+	// balanceamento e o WorldState só a sobrescreve no A/B de laboratório.
+	static double infra_access_multiplier(const Region& region,
+		double penalty_max = kInfraAccessPenaltyMax);
 	// Multiplicador de produtividade do trabalho primário (>= 1; 1 na base).
 	static double infra_productivity_multiplier(const Region& region);
 	// Multiplicador de êxodo (>= 1; 1 com infra máxima, > 1 com infra baixa).

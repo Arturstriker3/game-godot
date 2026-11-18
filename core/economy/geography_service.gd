@@ -34,6 +34,8 @@ const COASTAL_RADIUS_CELLS := 20
 ## tabela que a IA usa para abrir/expandir mina. A semente não pode nascer com a
 ## régua da fazenda (7,5 empregos/t), que é ~2-4× a da mina e afunda a firma.
 const IndustryTemplatesScript := preload("res://core/economy/ai/industry_templates.gd")
+## B5 (D-089): níveis iniciais de infraestrutura por estado (dado World Bank).
+const InitialInfraScript := preload("res://core/economy/initial_infra.gd")
 const MAP_W := 5000.0
 const MAP_H := 2500.0
 
@@ -1570,6 +1572,30 @@ func territory_summary(city_id: String, center_px: Vector2) -> Dictionary:
 		"wheat": crop_suitability(city_id, center_px, "wheat"),
 		"deposits": deposits_for_city(city_id).size(),
 	}
+
+
+## B5 (D-089) — INFRAESTRUTURA INICIAL do estado (dado real).
+##
+## Aplica ao núcleo os níveis 0..3 de estrada/energia/água por estado, derivados
+## de `data/definitions/scenario/state_infrastructure_2026.json` pela regra
+## declarada em `core/economy/initial_infra.gd` (World Bank WDI/LPI; granularidade
+## NACIONAL no arquivo, ver `docs/data/state_infrastructure.md`).
+##
+## Chame DEPOIS de `initialize_world` (as regiões já existem) e ANTES do
+## primeiro dia. O autoload e os harnesses (snapshot do CLI, world_equivalence,
+## economy_refactor_equiv) chamam esta MESMA função com o MESMO arquivo — sem
+## isso o replay não roda o jogo. Binário anterior ao setter ou arquivo ausente
+## não mudam nada: as regiões ficam no nível 0 (ausência explícita, como na B5).
+##
+## @returns Quantidade de estados aplicados (0 = nada mudou).
+static func apply_initial_infra(sim: Object) -> int:
+	if sim == null or not sim.has_method("set_region_infra"):
+		return 0
+	var levels := InitialInfraScript.levels_by_state()
+	if levels.is_empty():
+		return 0
+	sim.set_region_infra(levels)
+	return levels.size()
 
 
 ## Aplica a aptidão de cada cultura e os depósitos minerais de cada cidade ao

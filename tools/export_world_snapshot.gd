@@ -197,6 +197,9 @@ func _run() -> void:
 		if geo.has_method("resolve_initial_mines"):
 			buildings = geo.resolve_initial_mines(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
+	# B5 (D-089): infra inicial do estado (dado real World Bank), como o autoload:
+	# o snapshot/CLI precisa carregar os mesmos níveis do jogo.
+	GeographyServiceScript.apply_initial_infra(sim)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:

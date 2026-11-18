@@ -406,6 +406,22 @@ public:
 	void set_health_access(const Variant& data);
 
 	/**
+	 * B5 (D-089): NÍVEL INICIAL de infraestrutura do estado (estrada/energia/
+	 * água, 0..kInfraMaxLevel) por id de estado de `state_regions.json`. O
+	 * GDScript aplica a regra %->nível do dado real
+	 * (`core/economy/initial_infra.gd`) e entrega
+	 * `{state_id: {road, power, water}}`. Chame DEPOIS de `initialize_world`
+	 * (as regiões precisam existir) e ANTES do primeiro dia; o save carrega os
+	 * níveis persistidos, então o setter é só do estado inicial.
+	 *
+	 * Região com mais de um estado usa o MENOR nível de cada tipo entre eles
+	 * (pior caso — a mesma lógica rural do dado). Estado sem entrada = 0
+	 * (ausência explícita, nunca cobertura zero). Cidade sem bloco `region`
+	 * ou sem `states` não é tocada. Arquivo ausente = `{}` = nada muda.
+	 */
+	void set_region_infra(const Variant& data);
+
+	/**
 	 * §19 (W0): carrega solo urbano, moradia e finanças municipais dos quatro
 	 * JSON (`urban_land`, `housing_city`, `housing`, `municipal_finance`, já
 	 * parseados pelo GDScript). Chame DEPOIS de criar o mundo: o casamento é
@@ -598,7 +614,9 @@ public:
 	/**
 	 * Ajusta parâmetros de balanceamento usados pelo laboratório.
 	 * Chaves aceitas: natural_unemployment, service_wage_adjust,
-	 * service_wage_max, inventory_cover_days, inventory_recovery.
+	 * service_wage_max, inventory_cover_days, inventory_recovery,
+	 * trade_neighbors, trade_external, income_basket_margin,
+	 * infra_access_penalty (B5, penalidade máxima de acesso com estrada 0).
 	 */
 	void set_balance(const Dictionary& values);
 

@@ -189,6 +189,9 @@ func _run() -> void:
 			buildings = geo.resolve_initial_mines(buildings, cities)
 
 	sim.initialize_world(cities, ports, buildings)
+	# B5 (D-089): infra inicial do estado (dado real World Bank), igual ao
+	# autoload. Sem isso o replay A0/S0 rodaria com infra 0.
+	GeographyServiceScript.apply_initial_infra(sim)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.
 	if _urban:
