@@ -1633,7 +1633,7 @@
         "name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"COD:private\")) % 100000",
         "note": "Maior banco privado doméstico por ativos no ranking de 2024. Nome fictício por política de marcas.",
         "owner": "national",
-        "source_key": "cod_rawbank_2024",
+        "source_key": "cod_private_2024",
         "status": "present",
         "year": 2024
       },
@@ -8911,7 +8911,7 @@
       "url": "https://portafolioinfo.cnbv.gob.mx",
       "year": 2024
     },
-    "cod_rawbank_2024": {
+    "cod_private_2024": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": "https://disclosures.ifc.org/project-detail/SII/49116/rawbank-sl",
       "year": 2024
