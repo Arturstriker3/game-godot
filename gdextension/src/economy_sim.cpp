@@ -273,6 +273,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_informality);
 	ClassDB::bind_method(D_METHOD("set_health_access", "data"),
 	                     &EconomySim::set_health_access);
+	ClassDB::bind_method(D_METHOD("set_region_infra", "data"),
+	                     &EconomySim::set_region_infra);
 	ClassDB::bind_method(D_METHOD("set_urban", "urban_land", "housing_city",
 	                     "housing", "municipal_finance"),
 	                     &EconomySim::set_urban);
@@ -4919,6 +4921,11 @@ void EconomySim::set_balance(const Dictionary& values) {
 	// (1.0 = sem folga) para testar a regra do nível sem depender da calibração.
 	ws_.income_basket_margin = std::clamp(
 		number("income_basket_margin", ws_.income_basket_margin), 1.0, 8.0);
+	// B5 (D-089): penalidade máxima de acesso da infra (estrada 0). Gancho de
+	// laboratório do A/B da infra — 0 isola o frete do efeito dos níveis e o
+	// padrão continua sendo kInfraAccessPenaltyMax.
+	ws_.infra_access_penalty = std::clamp(
+		number("infra_access_penalty", ws_.infra_access_penalty), 0.0, 1.0);
 }
 
 void EconomySim::apply_set_suitability(const String& city_id, const String& product,
@@ -5174,7 +5181,8 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 		infra["water"] = region.infra_water;
 		infra["maintenance"] = region.infra_maintenance;
 		infra["access_multiplier"] =
-			ogs::SimCore::infra_access_multiplier(region);
+			ogs::SimCore::infra_access_multiplier(region,
+				ws_.infra_access_penalty);
 		infra["productivity_multiplier"] =
 			ogs::SimCore::infra_productivity_multiplier(region);
 		infra["exodus_multiplier"] =
@@ -5662,6 +5670,65 @@ void EconomySim::set_health_access(const Variant& data) {
 	}
 	ws_.health_access = std::move(parsed);
 	++status_static_version_;
+}
+
+// ---------------------------------------------------------------------------
+// B5 (D-089) — NÍVEL INICIAL DE INFRAESTRUTURA DO ESTADO
+// (data/definitions/scenario/state_infrastructure_2026.json, World Bank).
+//
+// O GDScript aplica a regra %->nível (core/economy/initial_infra.gd) e entrega
+// `{state_id: {road, power, water}}`. Aqui só se resolve o estado -> região:
+// região com vários estados usa o MENOR nível de cada tipo (pior caso, a mesma
+// lógica rural do dado) e estado sem entrada vale 0 (ausência explícita). Os
+// níveis ficam no Region e são persistidos pelo save v21+ (o formato não muda).
+// ---------------------------------------------------------------------------
+
+void EconomySim::set_region_infra(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (data.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary by_state = data;
+	if (by_state.is_empty()) {
+		return;
+	}
+	int applied = 0;
+	for (City& city : ws_.cities) {
+		Region& region = city.region;
+		if (!region.ready || region.states.empty()) {
+			continue;
+		}
+		int road = kInfraMaxLevel;
+		int power = kInfraMaxLevel;
+		int water = kInfraMaxLevel;
+		for (const RegionState& state : region.states) {
+			int levels[kInfraTypeCount] = {0, 0, 0};
+			const Variant raw = by_state.get(String(state.id.c_str()), Variant());
+			if (raw.get_type() == Variant::DICTIONARY) {
+				const Dictionary entry = raw;
+				levels[0] = static_cast<int>(entry.get("road", 0));
+				levels[1] = static_cast<int>(entry.get("power", 0));
+				levels[2] = static_cast<int>(entry.get("water", 0));
+			}
+			for (int type = 0; type < kInfraTypeCount; ++type) {
+				const int level = std::clamp(levels[type], 0, kInfraMaxLevel);
+				int* target = nullptr;
+				switch (type) {
+					case 0: target = &road; break;
+					case 1: target = &power; break;
+					default: target = &water; break;
+				}
+				*target = std::min(*target, level);
+			}
+		}
+		region.infra_road = road;
+		region.infra_power = power;
+		region.infra_water = water;
+		++applied;
+	}
+	if (applied > 0) {
+		++status_static_version_;
+	}
 }
 
 // ---------------------------------------------------------------------------

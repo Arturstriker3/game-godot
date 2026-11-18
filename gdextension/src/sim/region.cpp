@@ -153,7 +153,8 @@ int SimCore::infra_total_level(const Region& region) {
 	return region.infra_road + region.infra_power + region.infra_water;
 }
 
-double SimCore::infra_access_multiplier(const Region& region) {
+double SimCore::infra_access_multiplier(const Region& region,
+		double penalty_max) {
 	// Custo de acesso: penalidade máxima com estrada 0, zero na máxima. O
 	// frete/overhead é pago ao setor de transporte (não cria dinheiro).
 	if (kInfraMaxLevel <= 0) {
@@ -161,7 +162,7 @@ double SimCore::infra_access_multiplier(const Region& region) {
 	}
 	const double cover = std::clamp(
 		double(region.infra_road) / double(kInfraMaxLevel), 0.0, 1.0);
-	return 1.0 + kInfraAccessPenaltyMax * (1.0 - cover);
+	return 1.0 + std::max(0.0, penalty_max) * (1.0 - cover);
 }
 
 double SimCore::infra_productivity_multiplier(const Region& region) {
@@ -261,7 +262,8 @@ void SimCore::phase_region() {
 		// de ACESSO (frete/overhead da estrada) encarece o que a região compra;
 		// o overhead vai ao setor de transporte (dinheiro conservado), o preço
 		// do mercado continua indo à firma. ---
-		const double access = infra_access_multiplier(region);
+		const double access = infra_access_multiplier(
+			region, ws_.infra_access_penalty);
 		region.food_need = region_pop * kNeedPerCapita;
 		region.food_spend = 0.0;
 		region.food_consumed = 0.0;

@@ -188,6 +188,10 @@ func _run() -> void:
 			ai = EconomicAIScript.new()
 			ai.setup(sim, geo)
 
+	# B5 (D-089): infra inicial do estado (dado real World Bank), como o autoload.
+	# No cenário sintético AGRIA/PORTUS não há bloco `region` — nada muda.
+	GeographyServiceScript.apply_initial_infra(sim)
+
 	# Dia 0 já publicado; aquece os dois slots do status (o custo de alocação
 	# não entra no primeiro tick) — indiferente para o hash, mas deixa o perfil
 	# comparável entre execuções.

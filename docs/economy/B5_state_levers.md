@@ -127,8 +127,13 @@ cidade por cooldown. 365 d: **346 concessões** (o comando, o royalty e o status
   variação **±1,9%**), `ms_dia` 44,3–46,0; `docs/economy/perf/b5_bench.json`.
 
 **Pendências:**
-- Nível inicial de infra por dado real de cobertura (eletricidade/água) — geografia futura.
-- Recalibrar a penalidade de acesso se o dado de cobertura inicial for carregado (hoje 0 → 30%).
+- ~~Nível inicial de infra por dado real de cobertura (eletricidade/água) — geografia
+  futura.~~ **Feito em 2026-11-18 (§10):** o nível inicial vem de
+  `data/definitions/scenario/state_infrastructure_2026.json` (World Bank WDI/LPI).
+- ~~Recalibrar a penalidade de acesso se o dado de cobertura inicial for carregado
+  (hoje 0 → 30%).~~ **Decidido no §10:** mantida em 0,30 — o A/B de 365 d mostra que
+  ela não governa o portão de comida (tirar o frete muda *quem* está abaixo, não
+  *quantos*). O portão continua como dívida da trilha de energia/preço (M2 #10).
 
 ## 9. Correções da revisão de entrega (D1–D3)
 
@@ -156,3 +161,98 @@ cidade por cooldown. 365 d: **346 concessões** (o comando, o royalty e o status
   `A0_60_urban` **inalterado** (2 rodadas, 0 diferenças); CLI×Godot 10 d `--ai=1`
   **byte-idêntico** (74.052.047 bytes, SHA-256 `F31BEAA4…`).
 
+## 10. Complemento — infraestrutura INICIAL com o dado real (2026-11-18)
+
+Branch `feat/b5-real-infra` (worktree `G:/projetos/opengs-wt-infra`, base
+`balance/global-resources` `e6655af6`, já com B1–B5 + B7 + preço livre, save v22).
+
+### O que mudou
+
+- `data/definitions/scenario/state_infrastructure_2026.json` (tarefa de dados
+  D-007) deixa de ser só dado: `core/economy/initial_infra.gd` reaplica a regra
+  %→nível declarada **no próprio arquivo** (cortes lidos de `conversion_rule`,
+  não duplicados), rural com fallback total na energia/água e LPI na estrada;
+  **sem observação = 0** (ausência explícita, não cobertura zero). A
+  granularidade do arquivo é nacional: nada é rateado nem estimado aqui.
+- `GeographyService.apply_initial_infra(sim)` → `set_region_infra` (núcleo) é
+  chamado **depois de `initialize_world` e antes do primeiro dia**, pelo autoload
+  (`Economy._ready`) e pelos harnesses (`export_world_snapshot.gd`,
+  `world_equivalence.gd`, `economy_refactor_equiv.gd`) com o MESMO arquivo.
+- **Região com mais de um estado** usa o **menor nível** de cada tipo entre eles
+  (pior caso — a mesma lógica rural que escolhe o indicador). Estado sem entrada
+  = 0. Como o dado é nacional, hoje todos os estados de uma nação têm o mesmo
+  nível; a regra só muda o resultado quando houver dado subnacional.
+- **Save continua v22**: `region.infra` já existia desde o v21; nenhum campo
+  novo, nenhuma migração. Save antigo carrega os níveis que foram semeados.
+- Gancho de laboratório: `set_balance({"infra_access_penalty": v})` permite a
+  variante (iii) do A/B sem tocar na constante `kInfraAccessPenaltyMax` (0,30).
+- Teste novo: `tools/b5_initial_infra_test.gd` — regra × campo `infra_levels` do
+  arquivo nos 4.226 estados, exemplos do doc (BRA/IND/NGA/DEU/CHN), `no_data` → 0,
+  fallback rural→total, ponte ao núcleo com região multi-estado e persistência
+  no save.
+
+### Ponto de partida (dia 0)
+
+Soma dos níveis no cenário (849 cidades, 827 regiões com infra):
+**5.091** níveis = **1.292 estrada + 1.973 luz + 1.826 água**.
+
+### A/B em 365 d com IA (HEAD `e6655af6`, debug, 849 cidades)
+
+`tools/b5_infra_ab_365.gd` roda `tools/b5_world_ai_365.gd` uma vez por variante,
+com o caminho do autoload (B7 incluso — informalidade/saúde) e IA ligada.
+Portão = média de 30 d de consumido/necessidade por nação < 0,975
+(`docs/economy/M2_marco.md`). Obras = Δ dos níveis de infra no ano (1 nível = 1
+obra). Evidência: `docs/economy/perf/b5_infra_ab_365.json`.
+
+| variante | infra inicial | nações fora do portão | mediana | média | falências | drift | obras da IA (estrada/luz/água) | concessões |
+|---|---|---|---|---|---|---|---|---|
+| (i) infra 0 (antes) | 0 | **147**/179 | 0,6836 | 0,6478 | 4 | +0,0013 | **1.974** (793/660/521) | 292 |
+| (ii) infra real | **5.091** | **149**/179 | 0,6836 | **0,6550** | 4 | +0,0018 | **1.272** (845/199/228) | 304 |
+| (iii) real, sem a penalidade de acesso | 5.091 | **148**/179 | 0,6836 | 0,6495 | 4 | +0,0016 | 1.279 (848/202/229) | 299 |
+
+**Causa da diferença (medida, não atribuída):**
+
+- **Obras da IA caem 35,6%** (1.974 → 1.272): com o dado real a luz já está no
+  máximo em 74% da população (e a água em 27%), então a IA deixa de abrir obra
+  onde o nível já é 3 — luz −70% (660 → 199), água −56% (521 → 228). A estrada
+  **sobe** 6,6% (793 → 845) porque passa a ser o tipo de nível mais baixo da
+  maioria (peso 0,40 na produtividade, 0,50 no êxodo): a IA prioriza a cobertura
+  pior, como desenhado.
+- **Comida: a mediana não muda** (0,68360 nas três variantes) e a média melhora
+  0,7 p.p. com o dado real (0,6478 → 0,6550). O **portão não fecha**: 149 nações
+  seguem abaixo de 0,975 (duas a mais que antes), com 4 entrando (ALB, AUS, BGR,
+  EST) e 2 saindo (BRB, ECU).
+- **A penalidade de acesso NÃO é a causa do portão.** Removê-la (iii) devolve
+  148 nações abaixo (uma a menos que ii), a mediana continua igual e a média
+  fica 0,2 p.p. acima da variante (i): mudam QUEM está abaixo (ARE 0,016 → 0,267
+  e SAH 0,000 → 0,128 melhoram; DJI 0,381 → 0,022, SAU 0,035 → 0,007 e MRT
+  0,011 → 0,000 pioram), não QUANTOS. São mercados finos/bistáveis (necessidade
+  pequena, trigo no teto, caixa colando em zero) — a mesma dívida do M2 #2/#10.
+  O nível absoluto do portão neste HEAD já carrega o efeito documentado do preço
+  livre (D-091/D-092, 31 nações > 2,5 p.p. no M2 #10), então a comparação válida
+  é interna (i × ii × iii), não contra o número do M2.
+- Falências (4, teto 28) e drift (≤ 0,0018 em ~6,5 bi = ruído de serialização)
+  não mudam; **nenhum invariante violado** nos três mundos.
+
+**Decisão:** o dado real entra como estado inicial — é o dado, e elimina **702**
+obras de infra que a IA abria sobre cobertura que já existia. A penalidade de
+acesso **fica em 0,30**: o A/B mostra que ela não governa o portão de comida, e
+recalibrá-la só mudaria o sinal de mercados finos. O portão continua aberto como
+dívida da trilha de energia/preço (M2 #10), não da B5.
+
+### Verificação
+
+- Bateria **10/10 verde**, um por vez: `b5_state_levers`, `b7_informality`,
+  `b4_migration`, `b3_region`, `mine_stage`, `services` (cena),
+  `economy_integration`, `economy_ai`, `economy_save_load_roundtrip`,
+  `price_formation`; mais o teste novo `b5_initial_infra_test` (4.226 estados).
+- **Goldens regerados em 2 rodadas (0 diferenças):** A0 `A0_60_urban`
+  save `8004f7e7…` → `71e60ec0…`, status `6243eb1c…` → `3cf931e6…`
+  (money 6.523.551.982,900011 → ,900002; 41.646 → 41.616 negócios de serviço);
+  S0 `real_60_ai` `288ab187…/18b33422…` → `6a9fba92…/cdb1cc5a…`,
+  `real_60_noai` `1912d9cd…/1109900e…` → `6bfa2e76…/05a65d9c…`
+  (43.024 negócios); `demo_365_noai` **inalterado**
+  (`fe278e79…/9742d3e8…`) — o cenário sintético AGRIA/PORTUS não tem regiões,
+  então nada mudou por lá.
+- **CLI × Godot 10 d** (`--ai=1`, sem urbano): **byte-idêntico**,
+  73.724.692 bytes, SHA-256 `4FC8E18C…`.
