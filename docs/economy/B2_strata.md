@@ -204,8 +204,13 @@ A cobrança por estrato (em vez do pool da cidade, como na B1) é a causa: o
 aluguel está ancorado na renda média e o quintil pobre não tem margem. Isso é
 **calibração em aberto** (§8), não um erro de conservação.
 
+**Determinismo:** threads **1 × 16** no mundo real (60 d, IA, urbano) fecham o
+mesmo `trajectory_hash` `4acc4940…` e o mesmo `money_total`
+(`docs/economy/perf/b2_threads1.json` / `b2_threads16.json`).
+
 **Bench canônico N=3:** não rodado nesta sessão (o host esteve ocupado com o
-sweep e o probe urbano em paralelo). Pendente para o fechamento.
+sweep e o probe urbano em paralelo). Pendente para o fechamento, assim como os
+goldens A0/S0 e a equivalência CLI×Godot.
 
 ## 8. Limites conhecidos
 
