@@ -102,8 +102,8 @@ void tick_day(WorldState& ws, SimCore& core) {
 	core.phase_fx();
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
-	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
-	// O log fica na fachada.
+	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
+	// e reverte. O log fica na fachada.
 	core.phase_invariants();
 }
 

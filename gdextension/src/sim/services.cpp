@@ -580,6 +580,9 @@ void SimCore::services_day(City& city, double* foreign_slots,
 			goods.demand += bought;
 			goods.sold += bought;
 			goods.desired += needed;
+			// D-091: o insumo de serviço é demandado pelo uso real (units) e
+			// financiado pelo service_cash — `needed` é a tentativa efetiva.
+			goods.effective += needed;
 			city.revenue_by_product[input.product] += paid;
 			input_cost += paid;
 		}

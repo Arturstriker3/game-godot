@@ -304,6 +304,9 @@ void SimCore::phase_income() {
 				continue;
 			}
 			market.desired += desired_tons;
+			// D-091: a comida é financiada (desired_tons já vem limitado pelo
+			// orçamento), então entra integral na pressão de preço.
+			market.effective += desired_tons;
 			pop.desired_by_category[slot] += desired_tons;
 			const double quantity = std::min(desired_tons, market.stock);
 			if (quantity <= 0.0) {
@@ -885,6 +888,9 @@ double SimCore::consume_category(City& city,
 					? std::max(0.0, budget) / signal_market->price : 0.0);
 			signal_market->desired += full_tons;
 			signal_market->latent += std::max(0.0, full_tons - backed_tons);
+			// D-091: só a parcela financiada (backed_tons) pressiona o preço;
+			// o desejo acima do orçamento do dia fica em `latent` (sinal da IA).
+			signal_market->effective += backed_tons;
 		}
 	}
 	double remaining = want_ge;
@@ -1004,6 +1010,8 @@ void SimCore::consume_government(City& city,
 			continue;
 		}
 		market.desired += desired_tons;
+		// D-091: compra institucional financiada pelo orçamento público.
+		market.effective += desired_tons;
 		const double quantity = std::min(desired_tons,
 			std::max(0.0, market.stock));
 		if (quantity <= 0.0) {

@@ -190,6 +190,15 @@ void SimCore::phase_production() {
 						const double needed = recipe.input_qty[slot] * batch;
 						Market& input_market = city.markets[input];
 						input_market.desired += needed;
+						// D-091: a usina só pressiona o preço do insumo quando tem
+						// venda real no produto (sold_prev > 0). A usina ociosa/faminta
+						// (bootstrap de plena capacidade, sold_prev <= 0) mantém o
+						// `desired` cheio para a IA, mas não contribui para
+						// `effective` — senão pede plena capacidade TODO dia e satura
+						// o preço (docs/economy/price_formation.md).
+						if (sold_prev > 0.0) {
+							input_market.effective += needed;
+						}
 						if (needed > 1e-12) {
 							scale = std::min(scale, input_market.stock / needed);
 						}
@@ -224,6 +233,11 @@ void SimCore::phase_production() {
 					const double needed_input = desired_output * building.input_per_output;
 					Market& input_market = city.markets[building.input_product];
 					input_market.desired += needed_input;
+					// D-091: mesma regra da receita — pressão de preço só com venda
+					// real (sold_prev > 0); a usina ociosa não infla o insumo.
+					if (sold_prev > 0.0) {
+						input_market.effective += needed_input;
+					}
 					input_used = std::min(needed_input, input_market.stock);
 					output = building.input_per_output > 0.0
 						? input_used / building.input_per_output : 0.0;
@@ -335,6 +349,9 @@ void SimCore::phase_raw() {
 				}
 				Market& market = city.markets[product];
 				market.desired += ceiling;
+				// D-091: a demanda externa é financiada (o resto do mundo paga o
+				// preço de mercado), então entra integral na pressão de preço.
+				market.effective += ceiling;
 				const double sold = std::min(market.stock, ceiling);
 				if (sold <= 0.0) {
 					continue;

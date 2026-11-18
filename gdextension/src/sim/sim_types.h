@@ -186,6 +186,13 @@ namespace ogs {
 		// `desired`/`shortage`), mas não pressiona o preço: preço é formado por
 		// demanda financiada, não por desejo sem poder de compra.
 		double latent = 0.0;
+		// D-091 — demanda EFETIVA (fluxo diário, interno, fora do bloco de 8
+		// campos publicados): o que os compradores REALMENTE tentam comprar dado
+		// caixa/insumos/uso, acumulado na fonte. `desired`/`latent` continuam
+		// sendo o sinal da IA (incluindo o bootstrap de plena capacidade da usina
+		// ociosa); `effective` é o que pressiona o preço. Documentado em
+		// docs/economy/price_formation.md.
+		double effective = 0.0;
 	};
 	static_assert(offsetof(Market, stock) == 0, "Market: stock primeiro");
 	static_assert(offsetof(Market, surplus) == 7 * sizeof(double),

@@ -404,16 +404,6 @@ constexpr double kMineDeepenExtractionCostCap = 4.0;
 // kConstructionMineDays; não é cronograma observado).
 constexpr int kMineDeepenBaseDays = 90;
 constexpr int kMineDeepenDaysPerStage = 30;
-// Minerais de NICHO: mantêm o teto fixo de capacidade da mina estatal/privada
-// (kMaxStateMineCapacity = 10 t/d nos chamadores). Os demais (carvão, ferro,
-// cobre, petróleo, gás, bauxita, chumbo, fosfato, enxofre) passam a ser
-// dimensionados por retorno/demanda — a decisão do dono para a nova mecânica.
-inline bool is_niche_mineral(const std::string& resource) {
-	return resource == "gold" || resource == "diamond"
-		|| resource == "rare_earths" || resource == "tungsten"
-		|| resource == "uranium";
-}
-
 constexpr double kNeedPerCapita = 0.0003;
 // F3: reserva de alimento (dias) que a POP mantém em poupança antes de gastar
 // em life/luxury. Sem ela, a compra de conforto drenava a poupança usada para
