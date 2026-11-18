@@ -75,7 +75,8 @@ inline bool parse_region(const Dictionary& d, Region& region) {
 		static_cast<double>(d.get("population_region", 0.0)));
 	const double urban = safe_nonneg(
 		static_cast<double>(d.get("urban_population", 0.0)));
-	// Urbano capado no total (18 cidades têm urban > population_region).
+	// Urbano capado no total (20 cidades têm urban > population_region: as 19
+	// abaixo do urbano da D-005 + SGP-SIN, cuja região é 0).
 	region.urban_population = std::min(urban, region.population_region);
 	// Invariante: interior = total - urbano (piso 0). O campo do JSON
 	// (`region_population`) é só referência; recalculamos para o invariante

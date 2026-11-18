@@ -1,16 +1,16 @@
 {
   "version": 1,
-  "note": "Área urbana construída e densidade por cidade. 117 das 834 cidades têm área OBSERVADA no Atlas of Urban Expansion 2016 (Tabela 1, 'Built-up Area Total' e 'Built-up Area Density' da época T3, hectares convertidos para km2; anos 2009-2015) — cada uma com a linha do Atlas, a URL da tabela e a página da cidade em refs. As outras 717 cidades têm área DERIVADA de população / density_proxy, com density_proxy fixo por faixa de renda da nação (PIB PPP per capita): essas entradas são explicitamente estimated=true e confidence='estimated', nunca medição. Nove nações não têm gdp_ppp_bn em nations.csv (CUB, ERI, PRK, SAH, SOL, SSD, TWN, VEN, YEM): suas 26 cidades usam a faixa intermediária lower_mid como fallback declarado. DENSIDADE: nas 117 cidades OBSERVADAS usa-se a densidade do próprio Atlas — coluna 'Built-up Area Density (persons/ha)' da Tabela 1 na época T3 (mesmo ano e mesmo perímetro da área construída), x100 = hab/km2, density_source='atlas_density' — e não a população de aglomeração 2026, cujo perímetro é maior e inflaria a densidade. Nas 717 cidades DERIVADAS a densidade é o próprio DENSITY_PROXY da faixa de renda (a área construída é população / proxy), density_source='derived_density_proxy', estimativa e não medição. O campo agglomeration_population (população real da aglomeração, citypopulation.de referência 2026-01-01, 380 cidades) fica como REFERÊNCIA de população. A área DERIVADA e o gabarito usam a população URBANA (campo urban_population), valor HERDADO de cities.csv (regra de tools/build_world_cities.py; não é recalculado aqui): agglomeration_population quando ela existe (urban_population_source='agglomeration'), senão a população de simulação (sim_population — cidade própria da fonte, urban_population_source='sim_population'); as 454 cidades sem aglomeração na fonte caem nesse segundo caso. A aglomeração da fonte pode ser TRANSFRONTEIRIÇA (ex.: a de Cingapura inclui Johor Bahru, na Malásia): nesse caso urban_population vem CORTADA na população da nação (urban_population_source='agglomeration_capped'), porque a população urbana do nó não pode exceder a população da nação. O campo population continua sendo sempre o valor de cities.csv — a população REGIONAL (população nacional real rateada entre as cidades da nação; a soma das cidades de cada nação é exatamente a população da nação em nations.csv) — e não entra na área nem no gabarito. Casamento cidade->aglomeração: nome normalizado (sem acentos, sem pontuação e sem o sufixo 'City' quando necessário) mais código ISO3 da nação, com alias NED/NLD, PSX/PSE, SOL/SOM (Somalilândia, nunca SLB), SAH/MAR, CYN/CYP e TMP/TLS; empate resolvido pelo menor rank. A tabela só lista aglomerações de 1 milhão de habitantes ou mais, o que explica as 454 cidades sem correspondência. expandable_reserve_km2 é sempre derivada (0,6 x built_up, x0,55 se costeira, x0,40 se ilha, teto de 3x a área construída) e, a partir desta versão, também multiplicada por (1 - relief_non_buildable_fraction) — a fração não edificável por declividade, estimada do raster de elevação WorldClim 2.1 10 arc-min (derivado de SRTM; ver method.relief). Limitação honesta: a resolução de 10 arc-min (~18,5 km/célula) só captura relevo regional, nunca encostas urbanas — confiança 'low'. Quando o raster não está disponível no ambiente de geração, relief_non_buildable_fraction = 0, relief_source='no_data' e a reserva usa apenas costa e landmass. zoning_split é proporção típica por faixa de renda (proxy inspirado no Atlas/OECD), não observação por cidade. height_class é regra de limiar populacional sobre a população URBANA (agglomeration_population quando existe, senão sim_population) — ver method.height_class e o campo height_class_population. coastal = a cidade aparece como port_of em ports.csv (aproximação documentada: cidade com porto é costeira). Nenhum valor observado foi estimado ou arredondado para caber em faixa. Cidades grandes que NÃO estão na amostra de 200 centros do Atlas (ex.: Bengaluru, Jakarta, Chongqing, Shenzhen, Chennai, Surat) entram como derivadas (com a população real da aglomeração quando ela existe): não há valor publicado do Atlas para elas nesta coleta, e nenhuma outra fonte de área construída estava acessível no ambiente de geração (o download do GHSL UCDB R2019A falhou).",
+  "note": "Área urbana construída e densidade por cidade. 117 das 849 cidades têm área OBSERVADA no Atlas of Urban Expansion 2016 (Tabela 1, 'Built-up Area Total' e 'Built-up Area Density' da época T3, hectares convertidos para km2; anos 2009-2015) — cada uma com a linha do Atlas, a URL da tabela e a página da cidade em refs. As outras 732 cidades têm área DERIVADA de população / density_proxy, com density_proxy fixo por faixa de renda da nação (PIB PPP per capita): essas entradas são explicitamente estimated=true e confidence='estimated', nunca medição. Nove nações não têm gdp_ppp_bn em nations.csv (CUB, ERI, PRK, SAH, SOL, SSD, TWN, VEN, YEM): suas 26 cidades usam a faixa intermediária lower_mid como fallback declarado. DENSIDADE: nas 117 cidades OBSERVADAS usa-se a densidade do próprio Atlas — coluna 'Built-up Area Density (persons/ha)' da Tabela 1 na época T3 (mesmo ano e mesmo perímetro da área construída), x100 = hab/km2, density_source='atlas_density' — e não a população de aglomeração 2026, cujo perímetro é maior e inflaria a densidade. Nas 717 cidades DERIVADAS a densidade é o próprio DENSITY_PROXY da faixa de renda (a área construída é população / proxy), density_source='derived_density_proxy', estimativa e não medição. O campo agglomeration_population (população real da aglomeração, citypopulation.de referência 2026-01-01, 393 cidades) fica como REFERÊNCIA de população. A área DERIVADA e o gabarito usam a população URBANA (campo urban_population), valor HERDADO de cities.csv (regra de tools/build_world_cities.py; não é recalculado aqui): agglomeration_population quando ela existe (urban_population_source='agglomeration'), senão a população de simulação (sim_population — cidade própria da fonte, urban_population_source='sim_population'); as 456 cidades sem aglomeração na fonte caem nesse segundo caso. A aglomeração da fonte pode ser TRANSFRONTEIRIÇA (ex.: a de Cingapura inclui Johor Bahru, na Malásia): nesse caso urban_population vem CORTADA na população da nação (urban_population_source='agglomeration_capped'), porque a população urbana do nó não pode exceder a população da nação. O campo population continua sendo sempre o valor de cities.csv — a população REGIONAL (população nacional real rateada entre as cidades da nação; a soma das cidades de cada nação é exatamente a população da nação em nations.csv) — e não entra na área nem no gabarito. Casamento cidade->aglomeração: nome normalizado (sem acentos, sem pontuação e sem o sufixo 'City' quando necessário) mais código ISO3 da nação, com alias NED/NLD, PSX/PSE, SOL/SOM (Somalilândia, nunca SLB), SAH/MAR, CYN/CYP e TMP/TLS; empate resolvido pelo menor rank. A tabela só lista aglomerações de 1 milhão de habitantes ou mais, o que explica as 456 cidades sem correspondência. expandable_reserve_km2 é sempre derivada (0,6 x built_up, x0,55 se costeira, x0,40 se ilha, teto de 3x a área construída) e, a partir desta versão, também multiplicada por (1 - relief_non_buildable_fraction) — a fração não edificável por declividade, estimada do raster de elevação WorldClim 2.1 10 arc-min (derivado de SRTM; ver method.relief). Limitação honesta: a resolução de 10 arc-min (~18,5 km/célula) só captura relevo regional, nunca encostas urbanas — confiança 'low'. Quando o raster não está disponível no ambiente de geração, relief_non_buildable_fraction = 0, relief_source='no_data' e a reserva usa apenas costa e landmass. zoning_split é proporção típica por faixa de renda (proxy inspirado no Atlas/OECD), não observação por cidade. height_class é regra de limiar populacional sobre a população URBANA (agglomeration_population quando existe, senão sim_population) — ver method.height_class e o campo height_class_population. coastal = a cidade aparece como port_of em ports.csv (aproximação documentada: cidade com porto é costeira). Nenhum valor observado foi estimado ou arredondado para caber em faixa. Cidades grandes que NÃO estão na amostra de 200 centros do Atlas (ex.: Bengaluru, Jakarta, Chongqing, Shenzhen, Chennai, Surat) entram como derivadas (com a população real da aglomeração quando ela existe): não há valor publicado do Atlas para elas nesta coleta, e nenhuma outra fonte de área construída estava acessível no ambiente de geração (o download do GHSL UCDB R2019A falhou). B3 extra capitals (2026-11-18): as 15 capitais de estado de extra_capitals_b3.json entraram depois desta geração, pela MESMA regra (13 com aglomeração casada na tabela, 2 sem linha - Thiruvananthapuram e Raipur - caem em sim_population), computadas por tools/build_urban_land.build_city neste worktree; nenhuma das 834 entradas anteriores foi reescrita (o ports.csv atual diverge do usado na geração original em 16 `coastal`, drift pré-existente).",
   "units": {
     "area": "km2",
     "density": "hab/km2"
   },
   "coverage": {
-    "cities_total": 834,
+    "cities_total": 849,
     "cities_with_observed_area": 117,
-    "cities_with_derived_area": 717,
-    "cities_with_agglomeration_population": 380,
-    "cities_with_urban_population_from_sim": 454,
+    "cities_with_derived_area": 732,
+    "cities_with_agglomeration_population": 393,
+    "cities_with_urban_population_from_sim": 456,
     "cities_with_relief_non_buildable": 151,
     "cities_relief_no_data": 0
   },
@@ -33394,6 +33394,626 @@
         },
         {
           "title": "citypopulation.de — Major Agglomerations of the World: Harare (Zimbabwe), rank 227, população 2700000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-ZHE": {
+      "name": "Zhengzhou",
+      "nation": "CHN",
+      "population": 38950493,
+      "agglomeration_population": 10500000,
+      "urban_population": 10500000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 1750.0,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 1050.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 10500000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Zhengzhou (China), rank 46, população 10500000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-SHI": {
+      "name": "Shijiazhuang",
+      "nation": "CHN",
+      "population": 24483167,
+      "agglomeration_population": 6600000,
+      "urban_population": 6600000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 1100.0,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 660.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 6600000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Shijiazhuang (China), rank 86, população 6600000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-CHA": {
+      "name": "Changsha",
+      "nation": "CHN",
+      "population": 43031020,
+      "agglomeration_population": 11600000,
+      "urban_population": 11600000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 1933.3,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 1160.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 11600000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Changsha (China), rank 42, população 11600000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-NANN": {
+      "name": "Nanning",
+      "nation": "CHN",
+      "population": 20773596,
+      "agglomeration_population": 5600000,
+      "urban_population": 5600000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 933.3,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 560.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 5600000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Nanning (China), rank 100, população 5600000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "IND-BHU": {
+      "name": "Bhubaneswar",
+      "nation": "IND",
+      "population": 15723832,
+      "agglomeration_population": 2175000,
+      "urban_population": 2175000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 197.7,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 11000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 118.6,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.63,
+        "commercial": 0.22,
+        "industrial": 0.15
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "mid",
+      "height_class_source": "population_threshold",
+      "height_class_population": 2175000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (lower_mid: 11000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Bhubaneswar (India), rank 282, população 2175000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-NANC": {
+      "name": "Nanchang",
+      "nation": "CHN",
+      "population": 19475246,
+      "agglomeration_population": 5250000,
+      "urban_population": 5250000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 875.0,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 525.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 5250000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Nanchang (China), rank 111, população 5250000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "IND-RAN": {
+      "name": "Ranchi",
+      "nation": "IND",
+      "population": 12073011,
+      "agglomeration_population": 1670000,
+      "urban_population": 1670000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 151.8,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 11000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 91.1,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.63,
+        "commercial": 0.22,
+        "industrial": 0.15
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "mid",
+      "height_class_source": "population_threshold",
+      "height_class_population": 1670000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (lower_mid: 11000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Ranchi (India), rank 376, população 1670000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-GUI": {
+      "name": "Guiyang",
+      "nation": "CHN",
+      "population": 19846203,
+      "agglomeration_population": 5350000,
+      "urban_population": 5350000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 891.7,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 535.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 5350000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Guiyang (China), rank 106, população 5350000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "IND-THI": {
+      "name": "Thiruvananthapuram",
+      "nation": "IND",
+      "population": 5698686,
+      "agglomeration_population": null,
+      "urban_population": 788271,
+      "urban_population_source": "sim_population",
+      "built_up_km2": 71.7,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 11000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 33.9,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.211,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.63,
+        "commercial": 0.22,
+        "industrial": 0.15
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "low",
+      "height_class_source": "population_threshold",
+      "height_class_population": 788271,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (lower_mid: 11000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        }
+      ]
+    },
+    "IND-GUW": {
+      "name": "Guwahati",
+      "nation": "IND",
+      "population": 9108979,
+      "agglomeration_population": 1260000,
+      "urban_population": 1260000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 114.5,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 11000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 63.2,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.08,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.63,
+        "commercial": 0.22,
+        "industrial": 0.15
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "mid",
+      "height_class_source": "population_threshold",
+      "height_class_population": 1260000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (lower_mid: 11000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Gauhati (India), rank 514, população 1260000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-TAI": {
+      "name": "Taiyuan",
+      "nation": "CHN",
+      "population": 23370296,
+      "agglomeration_population": 6300000,
+      "urban_population": 6300000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 1050.0,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 579.6,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.08,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 6300000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Taiyuan (China), rank 91, população 6300000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "IND-CHA": {
+      "name": "Chandigarh",
+      "nation": "IND",
+      "population": 20603642,
+      "agglomeration_population": 2850000,
+      "urban_population": 2850000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 259.1,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 11000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 118.1,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.24,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.63,
+        "commercial": 0.22,
+        "industrial": 0.15
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "mid",
+      "height_class_source": "population_threshold",
+      "height_class_population": 2850000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (lower_mid: 11000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Chandigarh (India), rank 210, população 2850000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "IND-RAI": {
+      "name": "Raipur",
+      "nation": "IND",
+      "population": 7426449,
+      "agglomeration_population": null,
+      "urban_population": 1027264,
+      "urban_population_source": "sim_population",
+      "built_up_km2": 93.4,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 11000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 56.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.63,
+        "commercial": 0.22,
+        "industrial": 0.15
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "mid",
+      "height_class_source": "population_threshold",
+      "height_class_population": 1027264,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (lower_mid: 11000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        }
+      ]
+    },
+    "CHN-HOH": {
+      "name": "Hohhot",
+      "nation": "CHN",
+      "population": 10757755,
+      "agglomeration_population": 2900000,
+      "urban_population": 2900000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 483.3,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 266.8,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.08,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "mid",
+      "height_class_source": "population_threshold",
+      "height_class_population": 2900000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Hohhot (China), rank 205, população 2900000 (referência 2026-01-01)",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/",
+          "year": 2026
+        }
+      ]
+    },
+    "CHN-CHAN": {
+      "name": "Changchun",
+      "nation": "CHN",
+      "population": 19660725,
+      "agglomeration_population": 5300000,
+      "urban_population": 5300000,
+      "urban_population_source": "agglomeration",
+      "built_up_km2": 883.3,
+      "built_up_source": "derived_density_proxy",
+      "built_up_year": null,
+      "density_hab_km2": 6000.0,
+      "density_source": "derived_density_proxy",
+      "expandable_reserve_km2": 530.0,
+      "reserve_method": "derived:coast+landmass+relief",
+      "relief_non_buildable_fraction": 0.0,
+      "relief_source": "worldclim_srtm",
+      "relief_confidence": "low",
+      "coastal": false,
+      "zoning_split": {
+        "residential": 0.55,
+        "commercial": 0.32,
+        "industrial": 0.13
+      },
+      "zoning_source": "income_group_proxy",
+      "height_class": "high",
+      "height_class_source": "population_threshold",
+      "height_class_population": 5300000,
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "Faixa de densidade urbana por nível de renda (high: 6000 hab/km2) — proxy do GHSL UCDB/Demographia, não é medição desta cidade",
+          "url": "https://ghsl.jrc.ec.europa.eu/ghs_stat_ucdb2015mt_r2019a.php",
+          "year": 2019
+        },
+        {
+          "title": "citypopulation.de — Major Agglomerations of the World: Changchun (China), rank 109, população 5300000 (referência 2026-01-01)",
           "url": "https://www.citypopulation.de/en/world/agglomerations/",
           "year": 2026
         }

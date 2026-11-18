@@ -1,0 +1,1176 @@
+{
+  "version": "b3-extra-capitals-1",
+  "generated": "2026-11-18",
+  "generated_by": "tools/build_extra_capitals_b3.py",
+  "what": "Capital administrativa real (cidade nova) para os 15 estados admin-1 acima de 20 milhoes que o B3 anexou a um vizinho por attach_rule=neighbor_largest_population. Cada capital passa a ser dona APENAS do seu estado; nenhum outro attach muda.",
+  "method": "Estado e populacao: data/definitions/population/state_regions.json (WorldPop 2026 apportionado por provincia; soma 8.203.501.062). Cidade propria e coordenadas: GeoNames cities15000 2026 (geonameid em provenance). Aglomeracao e populacao urbana: tools/agglomerations_2026.csv (Thomas Brinkhoff, citypopulation.de, ref. 2026-01-01) casada a mao quando o nome da tabela difere (Guwāhāti=Guwahati); sem linha na tabela vale a regra das 454 cidades sem aglomeracao (urban = cidade propria). `population` e o rateio da populacao nacional por peso urban_population, recalculado com o elenco novo (valor derivado, nao medido). `production` = 0.0 porque e a soma de buildings.json e a cidade nova nasce sem predio. x/y = lonlat_to_xy do mapa 5000x2500.",
+  "license": "GeoNames: CC BY 4.0. Thomas Brinkhoff / citypopulation.de: uso com atribuicao ao link.",
+  "sources": {
+    "state_population": "data/definitions/population/state_regions.json",
+    "city_proper": "https://download.geonames.org/export/dump/cities15000.zip",
+    "urban_agglomeration": "https://www.citypopulation.de/en/world/agglomerations/",
+    "agglomeration_table": "tools/agglomerations_2026.csv",
+    "nation_population": "data/definitions/scenario/nations.json"
+  },
+  "i18n": {
+    "pt_BR": {
+      "city.name.CHN-ZHE": "Zhengzhou",
+      "city.name.CHN-SHI": "Shijiazhuang",
+      "city.name.CHN-CHA": "Changsha",
+      "city.name.CHN-NANN": "Nanning",
+      "city.name.IND-BHU": "Bhubaneswar",
+      "city.name.CHN-NANC": "Nanchang",
+      "city.name.IND-RAN": "Ranchi",
+      "city.name.CHN-GUI": "Guiyang",
+      "city.name.IND-THI": "Thiruvananthapuram",
+      "city.name.IND-GUW": "Guwahati",
+      "city.name.CHN-TAI": "Taiyuan",
+      "city.name.IND-CHA": "Chandigarh",
+      "city.name.IND-RAI": "Raipur",
+      "city.name.CHN-HOH": "Hohhot",
+      "city.name.CHN-CHAN": "Changchun"
+    },
+    "en": {
+      "city.name.CHN-ZHE": "Zhengzhou",
+      "city.name.CHN-SHI": "Shijiazhuang",
+      "city.name.CHN-CHA": "Changsha",
+      "city.name.CHN-NANN": "Nanning",
+      "city.name.IND-BHU": "Bhubaneswar",
+      "city.name.CHN-NANC": "Nanchang",
+      "city.name.IND-RAN": "Ranchi",
+      "city.name.CHN-GUI": "Guiyang",
+      "city.name.IND-THI": "Thiruvananthapuram",
+      "city.name.IND-GUW": "Guwahati",
+      "city.name.CHN-TAI": "Taiyuan",
+      "city.name.IND-CHA": "Chandigarh",
+      "city.name.IND-RAI": "Raipur",
+      "city.name.CHN-HOH": "Hohhot",
+      "city.name.CHN-CHAN": "Changchun"
+    },
+    "es": {
+      "city.name.CHN-ZHE": "Zhengzhou",
+      "city.name.CHN-SHI": "Shijiazhuang",
+      "city.name.CHN-CHA": "Changsha",
+      "city.name.CHN-NANN": "Nanning",
+      "city.name.IND-BHU": "Bhubaneswar",
+      "city.name.CHN-NANC": "Nanchang",
+      "city.name.IND-RAN": "Ranchi",
+      "city.name.CHN-GUI": "Guiyang",
+      "city.name.IND-THI": "Thiruvananthapuram",
+      "city.name.IND-GUW": "Guwahati",
+      "city.name.CHN-TAI": "Taiyuan",
+      "city.name.IND-CHA": "Chandigarh",
+      "city.name.IND-RAI": "Raipur",
+      "city.name.CHN-HOH": "Hohhot",
+      "city.name.CHN-CHAN": "Changchun"
+    }
+  },
+  "i18n_note": "Nomes iguais ao ingles quando nao ha exonymo consagrado em pt/es (mesma pratica das cidades atuais: Pequim/Cantao so onde existe forma consagrada).",
+  "cities": [
+    {
+      "id": "CHN-ZHE",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Zhengzhou",
+      "population": 38950493.0,
+      "sim_population": 6650532.0,
+      "agglomeration_population": 10500000,
+      "urban_population": 10500000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4078.5,
+      "y": 767.3,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1812",
+        "state_name": "Henan",
+        "state_population_2026": 98807834,
+        "attached_before": {
+          "city_id": "CHN-XIAN",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Zhengzhou",
+        "geonameid": 1784658,
+        "lat": 34.75778,
+        "lon": 113.64861,
+        "city_proper": {
+          "value": 6650532,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 46,
+          "row_name": "Zhèngzhōu",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-SHI",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Shijiazhuang",
+      "population": 24483167.0,
+      "sim_population": 5758403.0,
+      "agglomeration_population": 6600000,
+      "urban_population": 6600000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4090.0,
+      "y": 721.6,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1811",
+        "state_name": "Hebei",
+        "state_population_2026": 73973601,
+        "attached_before": {
+          "city_id": "CHN-BEI",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Shijiazhuang",
+        "geonameid": 1795270,
+        "lat": 38.04139,
+        "lon": 114.47861,
+        "city_proper": {
+          "value": 5758403,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 86,
+          "row_name": "Shíjiāzhuāng",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-CHA",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Changsha",
+      "population": 43031020.0,
+      "sim_population": 3093980.0,
+      "agglomeration_population": 11600000,
+      "urban_population": 11600000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4069.0,
+      "y": 858.4,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1808",
+        "state_name": "Hunan",
+        "state_population_2026": 65364287,
+        "attached_before": {
+          "city_id": "CHN-GUA",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Changsha",
+        "geonameid": 1815577,
+        "lat": 28.19874,
+        "lon": 112.97087,
+        "city_proper": {
+          "value": 3093980,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 42,
+          "row_name": "Chángshā",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-NANN",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Nanning",
+      "population": 20773596.0,
+      "sim_population": 5977185.0,
+      "agglomeration_population": 5600000,
+      "urban_population": 5600000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4004.4,
+      "y": 933.1,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1152",
+        "state_name": "Guangxi",
+        "state_population_2026": 49792110,
+        "attached_before": {
+          "city_id": "CHN-GUA",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Nanning",
+        "geonameid": 1799869,
+        "lat": 22.81667,
+        "lon": 108.31667,
+        "city_proper": {
+          "value": 5977185,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 100,
+          "row_name": "Nánníng",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "IND-BHU",
+      "nation": "IND",
+      "home_nation": "IND",
+      "name": "Bhubaneswar",
+      "population": 15723832.0,
+      "sim_population": 885363.0,
+      "agglomeration_population": 2175000,
+      "urban_population": 2175000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 3692.1,
+      "y": 968.4,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "IND-2444",
+        "state_name": "Odisha",
+        "state_population_2026": 48251532,
+        "attached_before": {
+          "city_id": "IND-KOL",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Bhubaneswar",
+        "geonameid": 1275817,
+        "lat": 20.27241,
+        "lon": 85.83385,
+        "city_proper": {
+          "value": 885363,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 282,
+          "row_name": "Bhubaneswar",
+          "status": "Congl",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-NANC",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Nanchang",
+      "population": 19475246.0,
+      "sim_population": 2357839.0,
+      "agglomeration_population": 5250000,
+      "urban_population": 5250000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4109.1,
+      "y": 851.6,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1817",
+        "state_name": "Jiangxi",
+        "state_population_2026": 44779744,
+        "attached_before": {
+          "city_id": "CHN-GUA",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Nanchang",
+        "geonameid": 1800163,
+        "lat": 28.68396,
+        "lon": 115.85306,
+        "city_proper": {
+          "value": 2357839,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 111,
+          "row_name": "Nánchāng",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "IND-RAN",
+      "nation": "IND",
+      "home_nation": "IND",
+      "name": "Ranchi",
+      "population": 12073011.0,
+      "sim_population": 1120374.0,
+      "agglomeration_population": 1670000,
+      "urban_population": 1670000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 3684.9,
+      "y": 925.8,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "IND-3256",
+        "state_name": "Jharkhand",
+        "state_population_2026": 42050057,
+        "attached_before": {
+          "city_id": "IND-KOL",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Ranchi",
+        "geonameid": 1258526,
+        "lat": 23.34316,
+        "lon": 85.3094,
+        "city_proper": {
+          "value": 1120374,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 376,
+          "row_name": "Rānchi",
+          "status": "Aggl",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-GUI",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Guiyang",
+      "population": 19846203.0,
+      "sim_population": 4506134.0,
+      "agglomeration_population": 5350000,
+      "urban_population": 5350000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 3982.2,
+      "y": 880.8,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1153",
+        "state_name": "Guizhou",
+        "state_population_2026": 38625398,
+        "attached_before": {
+          "city_id": "CHN-CHE",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Guiyang",
+        "geonameid": 1809461,
+        "lat": 26.58333,
+        "lon": 106.71667,
+        "city_proper": {
+          "value": 4506134,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 106,
+          "row_name": "Guìyáng",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "IND-THI",
+      "nation": "IND",
+      "home_nation": "IND",
+      "name": "Thiruvananthapuram",
+      "population": 5698686.0,
+      "sim_population": 788271.0,
+      "agglomeration_population": null,
+      "urban_population": 788271,
+      "urban_population_source": "sim_population",
+      "production": 0.0,
+      "x": 3568.7,
+      "y": 1132.1,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "IND-2442",
+        "state_name": "Kerala",
+        "state_population_2026": 37552378,
+        "attached_before": {
+          "city_id": "IND-BAN",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Thiruvananthapuram",
+        "geonameid": 1254163,
+        "lat": 8.4855,
+        "lon": 76.94924,
+        "city_proper": {
+          "value": 788271,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": null,
+        "note": "Thiruvananthapuram nao esta na tabela de aglomeracoes >=1M de 2026 (a maior de Kerala la e Kozhikode, 1.070.000). Fica a regra das 454 cidades sem aglomeracao: urban = cidade propria (GeoNames). Referencia disponivel, nao usada: Census of India 2011, UA Thiruvananthapuram = 1.679.754 (ano/definicao diferentes)."
+      }
+    },
+    {
+      "id": "IND-GUW",
+      "nation": "IND",
+      "home_nation": "IND",
+      "name": "Guwahati",
+      "population": 9108979.0,
+      "sim_population": 962334.0,
+      "agglomeration_population": 1260000,
+      "urban_population": 1260000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 3774.2,
+      "y": 886.3,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "IND-2477",
+        "state_name": "Assam",
+        "state_population_2026": 37535208,
+        "attached_before": {
+          "city_id": "IND-KOL",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Dispur",
+        "geonameid": 1271476,
+        "lat": 26.1844,
+        "lon": 91.7458,
+        "city_proper": {
+          "value": 962334,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 514,
+          "row_name": "Guwāhāti",
+          "status": "Aggl",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-TAI",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Taiyuan",
+      "population": 23370296.0,
+      "sim_population": 5305061.0,
+      "agglomeration_population": 6300000,
+      "urban_population": 6300000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4063.3,
+      "y": 724.0,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1805",
+        "state_name": "Shanxi",
+        "state_population_2026": 34668260,
+        "attached_before": {
+          "city_id": "CHN-XIAN",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Taiyuan",
+        "geonameid": 1793511,
+        "lat": 37.86944,
+        "lon": 112.56028,
+        "city_proper": {
+          "value": 5305061,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 91,
+          "row_name": "Tàiyuán",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "IND-CHA",
+      "nation": "IND",
+      "home_nation": "IND",
+      "name": "Chandigarh",
+      "population": 20603642.0,
+      "sim_population": 970602.0,
+      "agglomeration_population": 2850000,
+      "urban_population": 2850000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 3566.5,
+      "y": 823.1,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "IND-2430",
+        "state_name": "Haryana",
+        "state_population_2026": 33801450,
+        "attached_before": {
+          "city_id": "IND-DEL",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Chandigarh",
+        "geonameid": 1274746,
+        "lat": 30.73629,
+        "lon": 76.7884,
+        "city_proper": {
+          "value": 970602,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 210,
+          "row_name": "Chandīgarh",
+          "status": "Congl",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "IND-RAI",
+      "nation": "IND",
+      "home_nation": "IND",
+      "name": "Raipur",
+      "population": 7426449.0,
+      "sim_population": 1027264.0,
+      "agglomeration_population": null,
+      "urban_population": 1027264,
+      "urban_population_source": "sim_population",
+      "production": 0.0,
+      "x": 3633.8,
+      "y": 955.1,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "IND-3260",
+        "state_name": "Chhattisgarh",
+        "state_population_2026": 31993104,
+        "attached_before": {
+          "city_id": "IND-MUM",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Raipur",
+        "geonameid": 1258980,
+        "lat": 21.23333,
+        "lon": 81.63333,
+        "city_proper": {
+          "value": 1027264,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": null,
+        "note": "A tabela 2026 traz a conurbacao como 'Bhilai (incl. Raipur)', 3.475.000 (rank 169, Congl), cujo polo nominal e Bhilai; o casamento por nome nao casa Raipur. Fica pela regra: urban = cidade propria (GeoNames 1.027.264). Se o dono quiser a conurbacao inteira, e trocar 3 campos desta cidade."
+      }
+    },
+    {
+      "id": "CHN-HOH",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Hohhot",
+      "population": 10757755.0,
+      "sim_population": 3446100.0,
+      "agglomeration_population": 2900000,
+      "urban_population": 2900000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4050.7,
+      "y": 683.2,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1838",
+        "state_name": "Inner Mongol",
+        "state_population_2026": 23897150,
+        "attached_before": {
+          "city_id": "CHN-XIAN",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Hohhot",
+        "geonameid": 2036892,
+        "lat": 40.81056,
+        "lon": 111.65222,
+        "city_proper": {
+          "value": 3446100,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 205,
+          "row_name": "Hūhéhàotè",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    },
+    {
+      "id": "CHN-CHAN",
+      "nation": "CHN",
+      "home_nation": "CHN",
+      "name": "Changchun",
+      "population": 19660725.0,
+      "sim_population": 5691024.0,
+      "agglomeration_population": 5300000,
+      "urban_population": 5300000,
+      "urban_population_source": "agglomeration",
+      "production": 0.0,
+      "x": 4240.6,
+      "y": 640.6,
+      "landmass": "asia",
+      "capital": false,
+      "provenance": {
+        "state_id": "CHN-1828",
+        "state_name": "Jilin",
+        "state_population_2026": 23873808,
+        "attached_before": {
+          "city_id": "CHN-SHE",
+          "attach_rule": "neighbor_largest_population"
+        },
+        "capital_of_state": "Changchun",
+        "geonameid": 2038180,
+        "lat": 43.88,
+        "lon": 125.32278,
+        "city_proper": {
+          "value": 5691024,
+          "source": "GeoNames cities15000 (2026, city proper)",
+          "url": "https://download.geonames.org/export/dump/cities15000.zip",
+          "retrieved": "2026-11-18"
+        },
+        "agglomeration": {
+          "table": "tools/agglomerations_2026.csv",
+          "row_rank": 109,
+          "row_name": "Chángchūn",
+          "status": "Adm-Urb",
+          "reference_date": "2026-01-01",
+          "url": "https://www.citypopulation.de/en/world/agglomerations/"
+        },
+        "note": ""
+      }
+    }
+  ],
+  "state_patch": {
+    "CHN-1812": {
+      "city_id": "CHN-ZHE",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-XIAN",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1811": {
+      "city_id": "CHN-SHI",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-BEI",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1808": {
+      "city_id": "CHN-CHA",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-GUA",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1152": {
+      "city_id": "CHN-NANN",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-GUA",
+      "attach_rule_after": "primary_city"
+    },
+    "IND-2444": {
+      "city_id": "IND-BHU",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "IND-KOL",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1817": {
+      "city_id": "CHN-NANC",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-GUA",
+      "attach_rule_after": "primary_city"
+    },
+    "IND-3256": {
+      "city_id": "IND-RAN",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "IND-KOL",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1153": {
+      "city_id": "CHN-GUI",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-CHE",
+      "attach_rule_after": "primary_city"
+    },
+    "IND-2442": {
+      "city_id": "IND-THI",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "IND-BAN",
+      "attach_rule_after": "primary_city"
+    },
+    "IND-2477": {
+      "city_id": "IND-GUW",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "IND-KOL",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1805": {
+      "city_id": "CHN-TAI",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-XIAN",
+      "attach_rule_after": "primary_city"
+    },
+    "IND-2430": {
+      "city_id": "IND-CHA",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "IND-DEL",
+      "attach_rule_after": "primary_city"
+    },
+    "IND-3260": {
+      "city_id": "IND-RAI",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "IND-MUM",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1838": {
+      "city_id": "CHN-HOH",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-XIAN",
+      "attach_rule_after": "primary_city"
+    },
+    "CHN-1828": {
+      "city_id": "CHN-CHAN",
+      "attach_rule_before": "neighbor_largest_population",
+      "attached_to_before": "CHN-SHE",
+      "attach_rule_after": "primary_city"
+    }
+  },
+  "neighbor_patch": {
+    "CHN-XIAN": {
+      "removed_states": [
+        "CHN-1812",
+        "CHN-1805",
+        "CHN-1838"
+      ],
+      "population_removed": 157373244,
+      "population_region_after": 46524882,
+      "region_population_after": 32824882,
+      "states_after": [
+        "CHN-1803",
+        "CHN-1804"
+      ],
+      "region_below_urban_after": false
+    },
+    "CHN-BEI": {
+      "removed_states": [
+        "CHN-1811"
+      ],
+      "population_removed": 73973601,
+      "population_region_after": 22083693,
+      "region_population_after": 283693,
+      "states_after": [
+        "CHN-1155"
+      ],
+      "region_below_urban_after": false
+    },
+    "CHN-GUA": {
+      "removed_states": [
+        "CHN-1808",
+        "CHN-1152",
+        "CHN-1817"
+      ],
+      "population_removed": 159936141,
+      "population_region_after": 78131502,
+      "region_population_after": 4531502,
+      "states_after": [
+        "CHN-1180",
+        "CHN-1775",
+        "HKG-5163",
+        "HKG-5165",
+        "HKG-5166",
+        "HKG-5167",
+        "HKG-5168",
+        "HKG-5169",
+        "HKG-5170"
+      ],
+      "region_below_urban_after": false
+    },
+    "IND-KOL": {
+      "removed_states": [
+        "IND-2444",
+        "IND-3256",
+        "IND-2477"
+      ],
+      "population_removed": 127836797,
+      "population_region_after": 113721849,
+      "region_population_after": 95621849,
+      "states_after": [
+        "IND-2489",
+        "IND-3257",
+        "IND-3259",
+        "IND-3299",
+        "IND-3301"
+      ],
+      "region_below_urban_after": false
+    },
+    "CHN-CHE": {
+      "removed_states": [
+        "CHN-1153"
+      ],
+      "population_removed": 38625398,
+      "population_region_after": 88866867,
+      "region_population_after": 70566867,
+      "states_after": [
+        "CHN-1151",
+        "CHN-1809"
+      ],
+      "region_below_urban_after": false
+    },
+    "IND-BAN": {
+      "removed_states": [
+        "IND-2442"
+      ],
+      "population_removed": 37552378,
+      "population_region_after": 71597883,
+      "region_population_after": 56297883,
+      "states_after": [
+        "IND-2446"
+      ],
+      "region_below_urban_after": false
+    },
+    "IND-DEL": {
+      "removed_states": [
+        "IND-2430"
+      ],
+      "population_removed": 33801450,
+      "population_region_after": 23275676,
+      "region_population_after": 0,
+      "states_after": [
+        "IND-2428"
+      ],
+      "region_below_urban_after": true
+    },
+    "IND-MUM": {
+      "removed_states": [
+        "IND-3260"
+      ],
+      "population_removed": 31993104,
+      "population_region_after": 18714162,
+      "region_population_after": 0,
+      "states_after": [
+        "IND-2445",
+        "IND-2447",
+        "IND-3265"
+      ],
+      "region_below_urban_after": true
+    },
+    "CHN-SHE": {
+      "removed_states": [
+        "CHN-1828"
+      ],
+      "population_removed": 23873808,
+      "population_region_after": 28349689,
+      "region_population_after": 19399689,
+      "states_after": [
+        "CHN-1813"
+      ],
+      "region_below_urban_after": false
+    }
+  },
+  "population_rateio_after": {
+    "rule": "build_world_cities.distribute_national_population: peso = urban_population, soma exata por nacao, resto pelas maiores fracoes (desempate por id)",
+    "changed": {
+      "CHN-BEI": {
+        "before": 95890338,
+        "after": 80868642
+      },
+      "CHN-CHE": {
+        "before": 80495100,
+        "after": 67885144
+      },
+      "CHN-CHO": {
+        "before": 58062039,
+        "after": 48966334
+      },
+      "CHN-DAL": {
+        "before": 24412448,
+        "after": 20588117
+      },
+      "CHN-DAX": {
+        "before": 2287292,
+        "after": 1928977
+      },
+      "CHN-DON": {
+        "before": 42424309,
+        "after": 35778331
+      },
+      "CHN-GAR": {
+        "before": 109570,
+        "after": 92405
+      },
+      "CHN-GUA": {
+        "before": 323739856,
+        "after": 273024405
+      },
+      "CHN-HAN": {
+        "before": 64659998,
+        "after": 54530690
+      },
+      "CHN-HAR": {
+        "before": 24632380,
+        "after": 20773596
+      },
+      "CHN-HEF": {
+        "before": 36288775,
+        "after": 30603958
+      },
+      "CHN-JIN": {
+        "before": 30570543,
+        "after": 25781517
+      },
+      "CHN-JIU": {
+        "before": 1884140,
+        "after": 1588980
+      },
+      "CHN-KAS": {
+        "before": 2228527,
+        "after": 1879417
+      },
+      "CHN-KUN": {
+        "before": 30570543,
+        "after": 25781517
+      },
+      "CHN-LHA": {
+        "before": 3817579,
+        "after": 3219536
+      },
+      "CHN-NAN": {
+        "before": 42886734,
+        "after": 36168315
+      },
+      "CHN-SHA": {
+        "before": 186062444,
+        "after": 156914842
+      },
+      "CHN-SHE": {
+        "before": 39367822,
+        "after": 33200658
+      },
+      "CHN-TIA": {
+        "before": 51903944,
+        "after": 43772935
+      },
+      "CHN-URU": {
+        "before": 22652993,
+        "after": 19104289
+      },
+      "CHN-WEI": {
+        "before": 14845408,
+        "after": 12519801
+      },
+      "CHN-WUH": {
+        "before": 56742448,
+        "after": 47853462
+      },
+      "CHN-WUW": {
+        "before": 4443923,
+        "after": 3747761
+      },
+      "CHN-XIA": {
+        "before": 69498502,
+        "after": 58611217
+      },
+      "CHN-XIAN": {
+        "before": 60261359,
+        "after": 50821119
+      },
+      "HKG-HON": {
+        "before": 32989795,
+        "after": 27821780
+      },
+      "IND-AHM": {
+        "before": 77477820,
+        "after": 73739352
+      },
+      "IND-BAN": {
+        "before": 116216730,
+        "after": 110609027
+      },
+      "IND-BHO": {
+        "before": 21458318,
+        "after": 20422909
+      },
+      "IND-CAM": {
+        "before": 43570,
+        "after": 41468
+      },
+      "IND-CHE": {
+        "before": 101025000,
+        "after": 96150331
+      },
+      "IND-COI": {
+        "before": 23926974,
+        "after": 22772447
+      },
+      "IND-DEL": {
+        "before": 280287407,
+        "after": 266762948
+      },
+      "IND-HYD": {
+        "before": 91909963,
+        "after": 87475113
+      },
+      "IND-IMP": {
+        "before": 2105543,
+        "after": 2003946
+      },
+      "IND-INDO": {
+        "before": 29433975,
+        "after": 28013724
+      },
+      "IND-JAI": {
+        "before": 35320771,
+        "after": 33616469
+      },
+      "IND-KAL": {
+        "before": 12781463,
+        "after": 12164730
+      },
+      "IND-KAN": {
+        "before": 28484492,
+        "after": 27110056
+      },
+      "IND-KOL": {
+        "before": 137485151,
+        "after": 130851202
+      },
+      "IND-LUC": {
+        "before": 32852115,
+        "after": 31266931
+      },
+      "IND-LUD": {
+        "before": 16521006,
+        "after": 15723832
+      },
+      "IND-MAD": {
+        "before": 15191729,
+        "after": 14458696
+      },
+      "IND-MUM": {
+        "before": 213443798,
+        "after": 203144684
+      },
+      "IND-NAG": {
+        "before": 27535009,
+        "after": 26206387
+      },
+      "IND-NAS": {
+        "before": 18989662,
+        "after": 18073371
+      },
+      "IND-PAT": {
+        "before": 22787594,
+        "after": 21688045
+      },
+      "IND-PUN": {
+        "before": 62665884,
+        "after": 59642123
+      },
+      "IND-RAS": {
+        "before": 13126626,
+        "after": 12493239
+      },
+      "IND-SUR": {
+        "before": 63805263,
+        "after": 60726525
+      },
+      "IND-VAD": {
+        "before": 18989662,
+        "after": 18073371
+      },
+      "MAC-MAC": {
+        "before": 2856191,
+        "after": 2408754
+      }
+    }
+  },
+  "checks": {
+    "states": 4226,
+    "cities": 849,
+    "sum_states": 8203501062,
+    "sum_regions": 8203501062,
+    "sum_urban": 2179717167,
+    "sum_region_population": 6097586756,
+    "cities_added": 15,
+    "states_reassigned": 15,
+    "cities_region_below_urban_before": 17,
+    "cities_region_below_urban_after": 19,
+    "cities_region_below_urban_new": [
+      "IND-DEL",
+      "IND-MUM"
+    ],
+    "urban_plus_rural_after": 8277303923,
+    "urban_plus_rural_note": "Nao fecha o total por causa do piso 0 de region_population nas 19 cidades com regiao < urbano (D-005). A soma que fecha por nacao e population_region."
+  }
+}

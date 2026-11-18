@@ -4,7 +4,7 @@ extends SceneTree
 ##
 ## Etapa 1 (commit 1) valida a contagem de população (invariante dura), a
 ## semeadura do bloco da região, o round-trip de save sem tick e a migração
-## v17 → v18. A etapa 2 (economia da região) estende este arquivo com
+## v17 → v19. A etapa 2 (economia da região) estende este arquivo com
 ## conservação de dinheiro, consumo cidade↔região e determinismo de threads.
 ##
 ## Uso: godot --headless --path . --script res://tools/b3_region_test.gd
@@ -29,7 +29,9 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 ## Soma global de urban + interior (== soma de population_region == nações).
 const EXPECTED_TOTAL := 8203501062.0
 ## Cidades com região 0 (urbano >= population_region; urbano capado).
-const EXPECTED_ZERO_REGION := 18
+## B3 + capitais extras: 18 -> 20 (entram IND-DEL e IND-MUM; ver
+## docs/plans/b3_extra_capitals.md).
+const EXPECTED_ZERO_REGION := 20
 const TOLERANCE := 0.5
 
 var _failures: Array = []
@@ -38,7 +40,7 @@ var _failures: Array = []
 func _init() -> void:
 	_run()
 	if _failures.is_empty():
-		print("[b3] OK: população, semeadura, round-trip e migração v17→v18.")
+		print("[b3] OK: população, semeadura, round-trip e migração v17→v19.")
 		quit(0)
 	else:
 		print("[b3] FALHAS (%d):" % _failures.size())
@@ -174,8 +176,8 @@ func _check_v17_migration() -> void:
 	_load_chains(migrated)
 	migrated.from_dict(v17)
 	var after: Dictionary = migrated.to_dict()
-	if int(after.get("version", 0)) != 18:
-		_fail("migração: versão deveria ser 18 (é %s)" % str(after.get("version")))
+	if int(after.get("version", 0)) != 19:
+		_fail("migração: versão deveria ser 19 (é %s)" % str(after.get("version")))
 		return
 	var checked := 0
 	for city: Dictionary in after.get("cities", []):
@@ -193,7 +195,7 @@ func _check_v17_migration() -> void:
 	if checked == 0:
 		_fail("migração: nenhuma cidade com região")
 	else:
-		print("[b3] migração v17→v18: %d cidades carregadas sem crash." % checked)
+		print("[b3] migração v17→v19: %d cidades carregadas sem crash." % checked)
 
 
 func _run() -> void:

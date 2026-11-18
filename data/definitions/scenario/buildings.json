@@ -5002,5 +5002,95 @@
     "id": "zwe_har_wheat",
     "name": "Harare — trigo",
     "output_tons_per_day": 462.8
+  },
+  {
+    "city_id": "CHN-ZHE",
+    "id": "chn_zhe_wheat",
+    "name": "Zhengzhou — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-SHI",
+    "id": "chn_shi_wheat",
+    "name": "Shijiazhuang — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-CHA",
+    "id": "chn_cha_wheat",
+    "name": "Changsha — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-NANN",
+    "id": "chn_nann_wheat",
+    "name": "Nanning — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "IND-BHU",
+    "id": "ind_bhu_wheat",
+    "name": "Bhubaneswar — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-NANC",
+    "id": "chn_nanc_wheat",
+    "name": "Nanchang — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "IND-RAN",
+    "id": "ind_ran_wheat",
+    "name": "Ranchi — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-GUI",
+    "id": "chn_gui_wheat",
+    "name": "Guiyang — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "IND-THI",
+    "id": "ind_thi_wheat",
+    "name": "Thiruvananthapuram — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "IND-GUW",
+    "id": "ind_guw_wheat",
+    "name": "Guwahati — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-TAI",
+    "id": "chn_tai_wheat",
+    "name": "Taiyuan — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "IND-CHA",
+    "id": "ind_cha_wheat",
+    "name": "Chandigarh — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "IND-RAI",
+    "id": "ind_rai_wheat",
+    "name": "Raipur — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-HOH",
+    "id": "chn_hoh_wheat",
+    "name": "Hohhot — trigo",
+    "output_tons_per_day": 0.0
+  },
+  {
+    "city_id": "CHN-CHAN",
+    "id": "chn_chan_wheat",
+    "name": "Changchun — trigo",
+    "output_tons_per_day": 0.0
   }
 ]
