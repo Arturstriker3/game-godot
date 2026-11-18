@@ -49,6 +49,7 @@ add_library(opengs_sim STATIC
     src/sim/demography.cpp
     src/sim/strata.cpp
     src/sim/region.cpp
+    src/sim/migration.cpp
     src/sim/urban_land.cpp
     src/sim/city_gov.cpp
     src/sim/housing.cpp

@@ -87,9 +87,13 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // estados, coortes etárias e quintis do interior, caixa). Save v18 e anteriores
 // migram: `region_pop = max(0, population - simulation_population)` (já no
 // save), coortes/estratos da nação e mix neutro (sem dado de urbanização).
-// A cadeia v16 → v19 é o mesmo caminho aditivo: cada etapa olha só as chaves
-// que faltam (strata em v17, estágio de mina em v18, região em v19).
-constexpr int kSaveVersion = 19;
+// v20 (B4, D-088): migração — acumuladores `region.migration` (êxodo rural →
+// urbano e cidade → cidade na mesma nação). Save v19 e anteriores não têm o
+// bloco: os acumuladores nascem zerados (a migração começa a contar do dia 0
+// do save novo; nada é inventado para trás). A cadeia v16 → v20 é o mesmo
+// caminho aditivo: cada etapa olha só as chaves que faltam (strata em v17,
+// estágio de mina em v18, região em v19, migração em v20).
+constexpr int kSaveVersion = 20;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -166,6 +170,38 @@ constexpr double kRegionSavingsPerCapita = 0.50;
 // (Usa kNeedPerCapita diretamente; esta nota documenta a decisão.)
 // Imposto do interior: mesma alíquota kTaxRate, pago à prefeitura da
 // cidade-polo (contraparte no caixa municipal).
+
+// ---------------------------------------------------------------------------
+// B4 — MIGRAÇÃO (êxodo rural → polo urbano e cidade → cidade na mesma nação).
+// O DADO é o mesmo da B3 (urbanização nacional de `urban_share_reference.json`
+// e população por estado de `state_regions.json`). O que segue é MODELO
+// DECLARADO, calibrável no laboratório — nenhum número por país inventado.
+// ---------------------------------------------------------------------------
+// Taxa MÁXIMA mensal de migração (fração da população de origem por mês). Teto
+// do fluxo; ordem de grandeza de urbanização rápida (~6%/ano se sempre no teto,
+// o triplo da média mundial real — é o limite, não o valor típico).
+constexpr double kMigrationMonthlyMax = 0.005;
+// Gap mínimo (relativo) para disparar o êxodo: a renda urbana esperada
+// (salário × chance de emprego − moradia) precisa superar a renda rural por
+// pessoa nesta margem. Evita churn por diferença de 1 ulp e migração quando o
+// diferencial é nulo (equilíbrio).
+constexpr double kMigrationGapThreshold = 0.10;
+// Escala de saturação do gap: o fluxo atinge o teto quando o diferencial
+// relativo chega a este valor ACIMA do limiar (gap relativo de 60% satura).
+constexpr double kMigrationGapScale = 0.50;
+// Perfil ETÁRIO do migrante (pesos relativos por faixa 0-14..65+): os jovens
+// (15-24 e 25-44) pesam mais e os 65+ quase não migram. Reparte o fluxo ENTRE
+// as faixas disponíveis da origem (o campo envelhece).
+constexpr double kMigrationAgeWeight[5] = {0.30, 0.80, 1.00, 0.45, 0.10};
+// Perfil de ESTRATO do êxodo (pesos relativos por quintil, do mais pobre ao
+// mais rico): saem primeiro os quintis mais baixos (o pobre é empurrado do
+// campo; o rico tem mais a perder).
+constexpr double kMigrationStrataWeight[5] = {1.00, 0.80, 0.55, 0.35, 0.15};
+// Peso dos SERVIÇOS na utilidade de cidade → cidade: a utilidade é a renda
+// líquida esperada + este peso × renda de serviços per capita (diária). Pequeno
+// de propósito — salário/emprego/moradia dominam; o termo só desempata cidades
+// com renda parecida e captura o "serviços" do plano §B4.
+constexpr double kMigrationServiceWeight = 0.10;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.

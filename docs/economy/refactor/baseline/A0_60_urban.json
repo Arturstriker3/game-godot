@@ -4,10 +4,10 @@
   "days": 60,
   "money_total": 6523551982.900023,
   "products": 113,
-  "save_sha256": "50373b42354c392b768656c22fdb9f48eff36db2247c98c8a162fcb9640e70b1",
+  "save_sha256": "8759c538c0995956a27a61534a5544df0dbbe896ff154870e308ebbaa93a04ca",
   "seed": 0,
-  "service_businesses": 41712,
-  "status_sha256": "769fd73ff5e137505b8d29aa8c86edbb9ad8ad8f44494cbc842c932854c5d9bc",
+  "service_businesses": 41727,
+  "status_sha256": "98828752897efd674049385c5b5035b180f2263e45003e9e0771a20782d65c3c",
   "threads": 0,
   "urban": true
 }

@@ -892,6 +892,22 @@ struct Region {
 	double food_consumed = 0.0; // consumido (t-eq de grão)
 	double satisfaction = 0.0;  // satisfação alimentar (0..1)
 	double taxes = 0.0;         // imposto pago à prefeitura
+	// ------------------------------------------------------------------
+	// B4 — migração (save v20): acumuladores persistentes + fluxos do último
+	// fechamento mensal (derivados). A migração move PESSOAS (coortes e quintis)
+	// e a POUPANÇA que as acompanha entre a região e o polo urbano (êxodo) e
+	// entre cidades da mesma nação — conservando pessoas e dinheiro. Os
+	// acumuladores contam desde o dia 0 do save; o fluxo do mês é sobrescrito no
+	// dia da cadência A6 da cidade (como wage_income/income).
+	// ------------------------------------------------------------------
+	double migration_rural_in_total = 0.0;  // interior → urbano (êxodo) acumulado
+	double migration_city_in_total = 0.0;   // outras cidades → esta, acumulado
+	double migration_city_out_total = 0.0;  // esta → outras cidades, acumulado
+	double migration_month_rural_in = 0.0;  // êxodo do último fechamento
+	double migration_month_city_in = 0.0;   // entrada de outras cidades (janela própria)
+	double migration_month_city_out = 0.0;  // saída cidade→cidade do último fecho
+	double migration_month_net = 0.0;       // rural_in + city_in − city_out (último fecho)
+	double migration_month_rate = 0.0;      // net ÷ população regional (fração/mês)
 };
 
 
@@ -1049,6 +1065,8 @@ struct Region {
 		// B3: economia da região (estados inteiros) — consumo diário, salário
 		// semanal e demografia mensal do interior.
 		kPhaseRegion,
+		// B4: migração (êxodo rural + cidade → cidade na mesma nação).
+		kPhaseMigration,
 		kPhaseCount
 	};
 

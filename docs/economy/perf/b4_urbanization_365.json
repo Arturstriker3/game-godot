@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "ai": true,
+    "days": 365,
+    "formula": "urbanization = urbano / (urbano + interior), populações vivas",
+    "threads": 1,
+    "urban": true,
+    "world_status_urbanization_end": 0.256209781614773
+  },
+  "nations": [
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 130995968.661462,
+      "region_start": 130421355.0,
+      "rural_in_total": 0.0,
+      "tag": "BRA",
+      "urban_end": 82752264.6256809,
+      "urban_start": 82391050.0,
+      "urbanization_end": 0.387148297569852,
+      "urbanization_start": 0.387153418053802
+    },
+    {
+      "city_in_total": 99.8957848559118,
+      "city_out_total": 99.8957848559118,
+      "region_end": 1046817793.06916,
+      "region_start": 1048947343.0,
+      "rural_in_total": 1183.65826651154,
+      "tag": "CHN",
+      "urban_end": 356911099.628349,
+      "urban_start": 357637657.0,
+      "urbanization_end": 0.254259281464587,
+      "urbanization_start": 0.254259541371478
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 1297686139.15834,
+      "region_start": 1285909404.0,
+      "rural_in_total": 0.0,
+      "tag": "IND",
+      "urban_end": 179568767.213434,
+      "urban_start": 177956121.0,
+      "urbanization_end": 0.121555708793999,
+      "urbanization_start": 0.121565893834408
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 193977019.00251,
+      "region_start": 189972782.0,
+      "rural_in_total": 0.0,
+      "tag": "NGA",
+      "urban_end": 48550053.6362799,
+      "urban_start": 47555000.0,
+      "urbanization_end": 0.200184058249812,
+      "urbanization_start": 0.200208159229138
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 130606938.889882,
+      "region_start": 127435651.0,
+      "rural_in_total": 0.0,
+      "tag": "ETH",
+      "urban_end": 8236389.07525688,
+      "urban_start": 8036400.0,
+      "urbanization_end": 0.0593214610739155,
+      "urbanization_start": 0.0593214610739155
+    },
+    {
+      "city_in_total": 0.99958911990057,
+      "city_out_total": 0.99958911990057,
+      "region_end": 210654046.821512,
+      "region_start": 210325552.0,
+      "rural_in_total": 0.0,
+      "tag": "USA",
+      "urban_end": 131665479.268376,
+      "urban_start": 131459305.0,
+      "urbanization_end": 0.384627429151683,
+      "urbanization_start": 0.384625890549621
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 226746160.444562,
+      "region_start": 225017857.0,
+      "rural_in_total": 0.0,
+      "tag": "IDN",
+      "urban_end": 61168658.8936361,
+      "urban_start": 60703379.0,
+      "urbanization_end": 0.212454013427438,
+      "urbanization_start": 0.212456658279331
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 200948614.865001,
+      "region_start": 196798800.0,
+      "rural_in_total": 0.0,
+      "tag": "PAK",
+      "urban_end": 59674704.8467713,
+      "urban_start": 58420754.0,
+      "urbanization_end": 0.228969168655999,
+      "urbanization_start": 0.228903910708973
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 146569012.147871,
+      "region_start": 144437745.0,
+      "rural_in_total": 0.0,
+      "tag": "BGD",
+      "urban_end": 31725360.572193,
+      "urban_start": 31249154.0,
+      "urbanization_end": 0.177938092426531,
+      "urbanization_start": 0.17786843627993
+    },
+    {
+      "city_in_total": 0.0,
+      "city_out_total": 0.0,
+      "region_end": 87808716.2837182,
+      "region_start": 86486121.0,
+      "rural_in_total": 0.0,
+      "tag": "EGY",
+      "urban_end": 32366204.0672455,
+      "urban_start": 31879874.0,
+      "urbanization_end": 0.269325779228494,
+      "urbanization_start": 0.269333046201318
+    }
+  ],
+  "world": {
+    "city_in_total": 37469.9664958336,
+    "city_out_total": 37469.9664958336,
+    "region_end": 6153618207.49035,
+    "region_start": 6097586756.0,
+    "rural_in_total": 21522.3972350105,
+    "urban_end": 2119706791.12268,
+    "urban_start": 2105914306.0,
+    "urbanization_end": 0.256209781614773,
+    "urbanization_start": 0.25670921355212
+  }
+}

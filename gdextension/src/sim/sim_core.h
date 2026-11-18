@@ -213,6 +213,14 @@ public:
 	// renda semanais e estratos/poupança mensais. Implementada em region.cpp.
 	void phase_region();
 
+	// ------------------------------------------------------------------
+	// B4 — MIGRAÇÃO (êxodo rural → polo urbano + cidade → cidade na mesma
+	// nação). Fase MENSAL (cadência A6, mesma agenda da B3): cada cidade roda no
+	// seu dia. Conserva pessoas (Σ urbano + Σ região invariante) e dinheiro
+	// (poupança acompanha o migrante). Implementada em migration.cpp.
+	// ------------------------------------------------------------------
+	void phase_migration();
+
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);
 	// F7 — custo diário da cesta completa de um nível de necessidade aos preços

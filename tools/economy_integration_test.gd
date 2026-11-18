@@ -290,10 +290,11 @@ func _check_save_load(sim) -> void:
 	# adiciona os quintis de renda (`pop.strata`) e `rent_income_next`; v18
 	# (D-086) adiciona o estágio de mina (`stage`, `stage_reserve_kt`,
 	# `stage_mined_kt` e `deepen_stage` nas obras); v19 (B3) a região da cidade
-	# (`city.region`). Mudança esperada: a versão do schema sobe — o conteúdo
-	# das regras antigas não muda.
-	if int(snapshot.get("version", 0)) != 19:
-		_fail("save: versão do schema deveria ser 19 (é %s)" % str(snapshot.get("version")))
+	# (`city.region`); v20 (B4) os acumuladores de migração (`region.migration`).
+	# Mudança esperada: a versão do schema sobe — o conteúdo das regras antigas
+	# não muda.
+	if int(snapshot.get("version", 0)) != 20:
+		_fail("save: versão do schema deveria ser 20 (é %s)" % str(snapshot.get("version")))
 	# F8 (v10): negócios de serviço e, por cidade, o bloco `services`.
 	if not snapshot.has("service_businesses"):
 		_fail("save: bloco 'service_businesses' da F8 ausente")

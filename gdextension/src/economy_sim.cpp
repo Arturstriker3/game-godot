@@ -1592,7 +1592,7 @@ Dictionary EconomySim::get_profile() const {
 		"trade_food_prep", "trade_food_calc", "trade_food_settle",
 		"trade_goods_cand", "trade_goods_offers", "trade_goods_settle",
 		"housing", "land_month", "fleet_day", "services_decisions", "ai", "ai_view",
-		"region",
+		"region", "migration",
 	};
 	Dictionary profile;
 	if (!profile_) {
@@ -1740,6 +1740,7 @@ EconomySim::StatusKeys::StatusKeys() :
 		loss_days("loss_days"),
 		market_totals("market_totals"),
 		markets("markets"),
+		migration("migration"),
 		minimum_wage("minimum_wage"),
 		mode("mode"),
 		money_total("money_total"),
@@ -3635,6 +3636,35 @@ Dictionary EconomySim::get_status() {
 	root[k.construction_cash] = ws_.construction_cash;
 	root[k.bankruptcies] = ws_.bankruptcies;
 	root[k.depleted_mines] = ws_.depleted_mines;
+	// B4: totais de migração do mundo (acumulados) + urbanização CORRENTE.
+	// O urbano vivo é `simulation_population` (Σ coortes, acompanha demografia e
+	// migração); a região viva é `region.region_pop` (Σ coortes do interior).
+	// `region.urban_population`/`region.population_region` são a SEED do dia 0 e
+	// não podem ser usados aqui.
+	{
+		double rural_in = 0.0;
+		double city_in = 0.0;
+		double city_out = 0.0;
+		double urban = 0.0;
+		double region_pop = 0.0;
+		for (const City& city : ws_.cities) {
+			const Region& r = city.region;
+			rural_in += r.migration_rural_in_total;
+			city_in += r.migration_city_in_total;
+			city_out += r.migration_city_out_total;
+			urban += city.simulation_population;
+			region_pop += r.region_pop;
+		}
+		Dictionary migration;
+		migration["rural_in_total"] = rural_in;
+		migration["city_in_total"] = city_in;
+		migration["city_out_total"] = city_out;
+		migration["urban_population"] = urban;
+		migration["region_population"] = region_pop;
+		migration["urbanization"] = (urban + region_pop) > 0.0
+			? urban / (urban + region_pop) : 0.0;
+		root[k.migration] = migration;
+	}
 	// F8: catálogo de serviços (uma vez) + contadores de negócios do dia.
 	if (ws_.services_loaded && !cache.service_sectors_filled) {
 		cache.service_sectors = get_service_sectors();
@@ -5042,6 +5072,25 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 	out["strata_people"] = strata_people;
 	out["strata_income_share"] = strata_income_share;
 	out["strata_savings"] = strata_savings;
+	// B4: migração — acumuladores + fluxo do último fechamento mensal + a
+	// urbanização CORRENTE (urbano vivo ÷ população exibida) contra a referência
+	// nacional (World Bank; -1 = sem dado). O urbano vivo é `simulation_population`
+	// (Σ coortes), não `region.urban_population` (a SEED do dia 0).
+	{
+		Dictionary migration;
+		migration["rural_in_total"] = region.migration_rural_in_total;
+		migration["city_in_total"] = region.migration_city_in_total;
+		migration["city_out_total"] = region.migration_city_out_total;
+		migration["month_rural_in"] = region.migration_month_rural_in;
+		migration["month_city_in"] = region.migration_month_city_in;
+		migration["month_city_out"] = region.migration_month_city_out;
+		migration["month_net"] = region.migration_month_net;
+		migration["month_rate"] = region.migration_month_rate;
+		migration["urban_share"] = city->population > 0.0
+			? city->simulation_population / city->population : 0.0;
+		migration["urban_share_ref"] = region.urban_share;
+		out["migration"] = migration;
+	}
 	return out;
 }
 
@@ -6751,6 +6800,12 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 		out["region_states"] = region_states;
 		out["region_employment"] = region.employment;
 		out["region_food"] = region.food_consumed;
+		// B4: acumuladores de migração e a urbanização corrente do bloco.
+		out["region_migration_rural_in"] = region.migration_rural_in_total;
+		out["region_migration_city_in"] = region.migration_city_in_total;
+		out["region_migration_city_out"] = region.migration_city_out_total;
+		out["region_urban_share"] = region.population_region > 0.0
+			? region.urban_population / region.population_region : 0.0;
 	}
 	// §19 W3: sinal de aperto por cidade (W4/UI) e fluxo do dia/mês.
 	out["housing_stress"] = house.housing_stress;
