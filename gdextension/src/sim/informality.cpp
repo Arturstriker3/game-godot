@@ -301,34 +301,40 @@ double SimCore::compute_informal_services(City& city) {
 	const double demand_money = pool * share;
 	const double capacity_money = output * price;
 	const double revenue = std::min(demand_money, capacity_money);
-	pop.informal_service_workers = workers;
-	pop.informal_service_output = output;
-	pop.informal_service_demand = price > 1e-9 ? demand_money / price : 0.0;
-	pop.informal_service_revenue = revenue;
-	pop.informal_service_price = price;
-	pop.informal_service_share = share;
 	// O dinheiro realizado vai para os trabalhadores informais (crédito nos
 	// quintis na proporção da renda informal) — NÃO entra em service_cash nem
 	// em firm_cash. O restante do pool segue o caminho formal. Conservação:
-	// service_cash desce e a poupança das famílias sobe na mesma quantia.
-	if (revenue > kB7Eps) {
+	// service_cash desce e a poupança das famílias sobe na MESMA quantia, por
+	// isso a receita realizada é limitada ao caixa do setor: creditar a receita
+	// cheia com o débito truncado em zero criaria dinheiro.
+	const double paid = std::min(revenue, std::max(0.0, city.service_cash));
+	pop.informal_service_workers = workers;
+	pop.informal_service_output = output;
+	pop.informal_service_demand = price > 1e-9 ? demand_money / price : 0.0;
+	pop.informal_service_revenue = paid;
+	pop.informal_service_price = price;
+	pop.informal_service_share = share;
+	if (paid > kB7Eps) {
 		double informal_income_total = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
 			informal_income_total += std::max(0.0, pop.informal_income[s]);
 		}
 		if (informal_income_total > kB7Eps) {
-			for (int s = 0; s < kIncomeStrata; ++s) {
-				pop.stratum_savings[s] += revenue
-					* std::max(0.0, pop.informal_income[s])
+			double credited = 0.0;
+			for (int s = 0; s < kIncomeStrata - 1; ++s) {
+				const double credit = paid * std::max(0.0, pop.informal_income[s])
 					/ informal_income_total;
+				pop.stratum_savings[s] += credit;
+				credited += credit;
 			}
-			pop.savings += revenue;
+			pop.stratum_savings[kIncomeStrata - 1] += paid - credited;
+			pop.savings += paid;
 		} else {
-			credit_households(pop, revenue);
+			credit_households(pop, paid);
 		}
-		city.service_cash = std::max(0.0, city.service_cash - revenue);
+		city.service_cash = std::max(0.0, city.service_cash - paid);
 	}
-	return revenue;
+	return paid;
 }
 
 void SimCore::compute_region_informal_services(City& city) {
@@ -362,11 +368,22 @@ void SimCore::compute_region_informal_services(City& city) {
 		* (0.5 + 0.5 * 0.4);
 	const double share = std::clamp(compete, 0.0, kInformalDemandMax);
 	// Pool = fração declarada da renda diária do interior (kServiceSpendShare),
-	// paga do caixa da região e creditada aos quintis do interior.
+	// paga da poupança dos quintis do interior e creditada a eles mesmos como
+	// renda informal (o caixa agregado da região não muda).
 	const double pool = std::max(0.0, region.income) * kServiceSpendShare;
 	const double demand_money = pool * share;
 	const double capacity_money = output * price;
-	const double revenue = std::min(demand_money, capacity_money);
+	// A compra é LIMITADA à capacidade de pagamento do interior: sem dinheiro
+	// em conta, o quintil não compra serviço informal. Sem esse teto a receita
+	// creditada (revenue) passava do débito efetivado (payable) e o serviço
+	// informal CRIAVA dinheiro — drift de centenas de unidades no fechamento
+	// mensal e, com IA, o tick revertido pelo invariante (dia travado).
+	double total_savings = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		total_savings += std::max(0.0, region.stratum_savings[s]);
+	}
+	const double revenue = std::min(std::min(demand_money, capacity_money),
+		total_savings);
 	region.informal_service_workers = workers;
 	region.informal_service_output = output;
 	region.informal_service_demand = price > 1e-9 ? demand_money / price : 0.0;
@@ -378,32 +395,34 @@ void SimCore::compute_region_informal_services(City& city) {
 		// serviço sai da poupança geral dos quintis (consumidores) e a renda vai
 		// para os trabalhadores informais (rateado pela renda informal). O caixa
 		// agregado (region.cash = Σ poupança) não muda.
-		double total_savings = 0.0;
-		for (int s = 0; s < kIncomeStrata; ++s) {
-			total_savings += std::max(0.0, region.stratum_savings[s]);
-		}
+		// O débito de cada quintil é proporcional à poupança dele, com o resíduo
+		// do arredondamento no último e limitado ao que ele tem. O crédito é
+		// rateado sobre EXATAMENTE o total debitado — nem um centavo a mais.
 		double informal_income_total = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
 			informal_income_total += std::max(0.0, region.informal_income[s]);
 		}
-		const double payable = std::min(revenue, total_savings);
+		double debited = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
-			const double debit = total_savings > kB7Eps
-				? payable * std::max(0.0, region.stratum_savings[s]) / total_savings
-				: 0.0;
-			region.stratum_savings[s] = std::max(0.0,
-				region.stratum_savings[s] - debit);
+			const double savings = std::max(0.0, region.stratum_savings[s]);
+			const double proportional = total_savings > kB7Eps
+				? revenue * savings / total_savings : 0.0;
+			const double debit = std::clamp(
+				s == kIncomeStrata - 1 ? revenue - debited : proportional,
+				0.0, savings);
+			region.stratum_savings[s] = savings - debit;
+			debited += debit;
 		}
 		double credited = 0.0;
-		for (int s = 0; s < kIncomeStrata; ++s) {
+		for (int s = 0; s < kIncomeStrata - 1; ++s) {
 			const double credit = informal_income_total > kB7Eps
-				? revenue * std::max(0.0, region.informal_income[s])
+				? debited * std::max(0.0, region.informal_income[s])
 					/ informal_income_total
-				: revenue / double(kIncomeStrata);
+				: debited / double(kIncomeStrata);
 			region.stratum_savings[s] += credit;
 			credited += credit;
 		}
-		region.stratum_savings[kIncomeStrata - 1] += revenue - credited;
+		region.stratum_savings[kIncomeStrata - 1] += debited - credited;
 		// O caixa agregado é a soma dos quintis (invariante B3).
 		region.cash = 0.0;
 		for (int s = 0; s < kIncomeStrata; ++s) {
@@ -533,11 +552,20 @@ double SimCore::region_mortality_month(Region& region, const City& city,
 // ---------------------------------------------------------------------------
 
 void SimCore::compute_dissatisfaction(City& city) {
-	const double weight_sum = kDissatisfactionUnemployment
+	// Normalização POR BLOCO: cada bloco (urbano e interior) divide pela soma
+	// dos pesos que ele APLICA de fato. Normalizar o interior pelo total (1,00)
+	// o capava em 0,50 (só comida+inflação+informalidade = 0,50) e o índice não
+	// alcançava 1,0 no cenário extremo. Terra (kDissatisfactionLand) segue como
+	// gancho B6 (peso 0) e não entra em nenhum dos dois blocos hoje.
+	const double urban_weight_sum = kDissatisfactionUnemployment
 		+ kDissatisfactionRent + kDissatisfactionFood
-		+ kDissatisfactionInflation + kDissatisfactionInformality
-		+ kDissatisfactionLand;
-	const double weight_div = weight_sum > kB7Eps ? weight_sum : 1.0;
+		+ kDissatisfactionInflation + kDissatisfactionInformality;
+	const double urban_weight_div = urban_weight_sum > kB7Eps
+		? urban_weight_sum : 1.0;
+	const double region_weight_sum = kDissatisfactionFood
+		+ kDissatisfactionInflation + kDissatisfactionInformality;
+	const double region_weight_div = region_weight_sum > kB7Eps
+		? region_weight_sum : 1.0;
 
 	// Urbano.
 	{
@@ -574,18 +602,18 @@ void SimCore::compute_dissatisfaction(City& city) {
 					+ kDissatisfactionRent * rent
 					+ kDissatisfactionFood * food
 					+ kDissatisfactionInflation * infl
-					+ kDissatisfactionInformality * inf) / weight_div,
+					+ kDissatisfactionInformality * inf) / urban_weight_div,
 				0.0, 1.0);
 			pop.dissatisfaction_by_stratum[s] = idx;
 			const double people = std::max(0.0, pop.stratum_people[s]);
 			agg += idx * people;
-			comp_unemployment += kDissatisfactionUnemployment * u / weight_div
+			comp_unemployment += kDissatisfactionUnemployment * u / urban_weight_div
 				* people;
-			comp_rent += kDissatisfactionRent * rent / weight_div * people;
-			comp_food += kDissatisfactionFood * food / weight_div * people;
-			comp_inflation += kDissatisfactionInflation * infl / weight_div
+			comp_rent += kDissatisfactionRent * rent / urban_weight_div * people;
+			comp_food += kDissatisfactionFood * food / urban_weight_div * people;
+			comp_inflation += kDissatisfactionInflation * infl / urban_weight_div
 				* people;
-			comp_informality += kDissatisfactionInformality * inf / weight_div
+			comp_informality += kDissatisfactionInformality * inf / urban_weight_div
 				* people;
 		}
 		pop.dissatisfaction = people_total > kB7Eps
@@ -625,15 +653,15 @@ void SimCore::compute_dissatisfaction(City& city) {
 			const double idx = std::clamp(
 				(kDissatisfactionFood * food
 					+ kDissatisfactionInflation * infl
-					+ kDissatisfactionInformality * inf) / weight_div,
+					+ kDissatisfactionInformality * inf) / region_weight_div,
 				0.0, 1.0);
 			region.dissatisfaction_by_stratum[s] = idx;
 			const double people = std::max(0.0, region.stratum_people[s]);
 			agg += idx * people;
-			comp_food += kDissatisfactionFood * food / weight_div * people;
-			comp_inflation += kDissatisfactionInflation * infl / weight_div
+			comp_food += kDissatisfactionFood * food / region_weight_div * people;
+			comp_inflation += kDissatisfactionInflation * infl / region_weight_div
 				* people;
-			comp_informality += kDissatisfactionInformality * inf / weight_div
+			comp_informality += kDissatisfactionInformality * inf / region_weight_div
 				* people;
 		}
 		region.dissatisfaction = people_total > kB7Eps

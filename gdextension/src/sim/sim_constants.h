@@ -1001,7 +1001,11 @@ constexpr double kInformalServiceEmploymentShare = 0.60;
 constexpr double kInformalServiceUnitsPerWorker = 1.0;
 constexpr double kInformalProductivityFactor = 0.55;
 constexpr double kInformalPriceDiscount = 0.60;
-constexpr double kInformalDemandBase = 0.55;
+// Base da demanda informal em PREÇO NORMAL (formal/informal = 1/0,60 ≈ 1,667,
+// desemprego ~5%, low_share 0,4): 0,20 × 1,667 × 1,05 × 0,7 ≈ 0,245 da cesta
+// doméstica de serviços. Com 0,55 a fatia passava de 2/3 no dia 1 e sufocava o
+// serviço formal (fechamento em massa) — concorrência real, não takeover.
+constexpr double kInformalDemandBase = 0.20;
 constexpr double kInformalDemandPriceElasticity = 1.0;
 constexpr double kInformalDemandUnemployment = 1.0;
 constexpr double kInformalDemandMax = 0.75;

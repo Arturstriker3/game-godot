@@ -140,19 +140,28 @@ compete     = kInformalDemandBase
             * (1 + kInformalDemandUnemployment * unemployment_rate)               // formal faltando → informal cresce
             * (0,5 + 0,5 * low_share)                                              // consumido pela base
 share       = clamp(compete, 0, kInformalDemandMax)        // kInformalDemandMax = 0,75
-informal_revenue = min(informal_demand_units * price, output * price, pool * share)
+informal_revenue = min(informal_demand_units * price, output * price, pool * share,
+                       capacidade_de_pagamento)
 ```
+
+`capacidade_de_pagamento` é o que FECHA a conservação: no urbano, o caixa do setor de
+serviços (`service_cash`); no interior, a soma das poupanças dos quintis. A receita
+creditada aos quintis é exatamente o débito efetivado (o resíduo do rateio fica no último
+quintil), então o serviço nunca cria dinheiro — sem o teto, a receita cheia era creditada
+com o débito truncado em zero (drift de centenas de unidades no fechamento mensal e, com
+IA, tick revertido pelo invariante: dia travado).
 - O dinheiro realizado vai para os trabalhadores informais (crédito nas poupanças dos quintis na
   proporção da renda informal) — **não** entra em `service_cash` nem em `firm_cash`. O resto do
   pool segue o caminho formal atual. Conservação total: `pool` continua igual.
 - Sem imposto (não há receita tributada no caminho informal), produtividade menor (constante) e
   preço menor (constante).
-- Interior: o pool é uma fração declarada de `region.cash` (mesma fração usada no consumo urbano,
-  `kServiceSpendShare`), paga do caixa da região e creditada aos quintis do interior.
+- Interior: o pool é uma fração declarada da renda diária do interior (mesma fração usada no
+  consumo urbano, `kServiceSpendShare`), paga da poupança dos quintis e creditada a eles
+  mesmos (redistribuição: o caixa agregado da região não muda).
 
 Constantes: `kInformalServiceEmploymentShare = 0,60`, `kInformalServiceUnitsPerWorker = 1,0`,
 `kInformalProductivityFactor = 0,55`, `kInformalPriceDiscount = 0,60`,
-`kInformalDemandBase = 0,55`, `kInformalDemandPriceElasticity = 1,0`,
+`kInformalDemandBase = 0,20`, `kInformalDemandPriceElasticity = 1,0`,
 `kInformalDemandUnemployment = 1,0`, `kInformalDemandMax = 0,75`.
 
 ## 5. Mortalidade ligada a comida e saúde
@@ -205,6 +214,11 @@ index[s] = ( kDissatisfactionUnemployment * u
 Pesos (design): desemprego 0,30, aluguel 0,20, comida 0,25, inflação 0,15, informalidade 0,10,
 terra 0,00 (B6 pendente) — Σ = 1,00. `kDissatisfactionYouthWeight = 0,50`.
 Agregado = média ponderada pela população dos quintis.
+Normalização POR BLOCO: o urbano divide pela soma dos pesos que aplica
+(desemprego+aluguel+comida+inflação+informalidade = 1,00) e o interior pela sua
+(comida+inflação+informalidade = 0,50) — normalizar o interior pelo total 1,00 o capava
+em 0,50 e impedia o índice de chegar a 1,0 no cenário extremo. Os componentes publicados
+dividem pelo MESMO peso do índice, então somam o índice.
 `food_inflation_month`: no fechamento mensal, `unit_cost/food_price_ref - 1` e atualiza
 `food_price_ref` (primeiro fechamento só grava a referência).
 
