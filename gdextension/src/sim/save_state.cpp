@@ -510,6 +510,12 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			region_strata["people"] = region_people;
 			region_strata["savings"] = region_savings;
 			region_entry["strata"] = region_strata;
+			// B4 (save v20): migração — acumuladores (o fluxo do mês é derivado).
+			Dictionary region_migration = make_object();
+			region_migration["rural_in_total"] = region.migration_rural_in_total;
+			region_migration["city_in_total"] = region.migration_city_in_total;
+			region_migration["city_out_total"] = region.migration_city_out_total;
+			region_entry["migration"] = region_migration;
 			entry["region"] = region_entry;
 		}
 		entry["government_goods_spend"] = city.government_goods_spend;
@@ -1858,6 +1864,17 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				read_region_strata("income_share", region.strata_income_share);
 				read_region_strata("people", region.stratum_people);
 				read_region_strata("savings", region.stratum_savings);
+				// B4 (save v20): acumuladores de migração. v19 e anteriores não
+				// têm o bloco — nascem zerados (a migração conta do dia 0 do
+				// save novo; nada é inventado para trás).
+				const Dictionary region_migration =
+					saved_region.get("migration", Dictionary());
+				region.migration_rural_in_total = safe_nonneg(
+					double(region_migration.get("rural_in_total", 0.0)));
+				region.migration_city_in_total = safe_nonneg(
+					double(region_migration.get("city_in_total", 0.0)));
+				region.migration_city_out_total = safe_nonneg(
+					double(region_migration.get("city_out_total", 0.0)));
 			} else if (ws.world_mode) {
 				// v18 → v19: interior = população regional exibida - população de
 				// simulação (ambos já no save). Cenário sintético (world_mode
