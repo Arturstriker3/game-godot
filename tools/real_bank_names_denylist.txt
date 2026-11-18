@@ -628,6 +628,12 @@ Zürcher Kantonalbank
 Сбербанк (Sberbank)
 
 [central]
+# O rótulo genérico "Banco Central de <país>" / "Central Bank of <país>" (e as
+# variantes "Banco Central da/del/de la/dos/das …") pode coincidir com o nome
+# próprio da autoridade monetária real. Ele é aceito por política e por isso
+# NÃO é exigido aqui: esta seção lista só o nome próprio (e a sigla) que não
+# pode reaparecer no dado. O validador rejeita entrada desta seção que seja
+# apenas o rótulo genérico.
 Banca Centrale Europea
 Banca d'Italia
 Banco Central do Brasil
@@ -638,12 +644,7 @@ Banco de Portugal
 Bangko Sentral ng Pilipinas
 Bank Ċentrali Ewropew
 Bank Indonesia
-Bank of Canada
 Bank of England
-Bank of Israel
-Bank of Japan
-Bank of Korea
-Bank of Thailand
 Banka Qendrore e Republikës së Kosovës
 Banque Centrale des États de l'Afrique de l'Ouest
 Banque centrale européenne
@@ -652,8 +653,6 @@ Banque des États de l'Afrique Centrale
 BCE
 BCEAO
 BEAC
-Central Bank of Nigeria
-Central Bank of Russia
 Centralna banka Crne Gore
 De Nederlandsche Bank
 Deutsche Bundesbank

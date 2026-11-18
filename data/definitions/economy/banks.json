@@ -479,7 +479,7 @@
         "name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"AZE:private\")) % 100000",
         "note": "Maior banco privado doméstico por ativos no ranking de 2024. Nome fictício por política de marcas.",
         "owner": "national",
-        "source_key": "kapital_bank",
+        "source_key": "aze_private_2024",
         "status": "present",
         "year": 2024
       },
@@ -1633,7 +1633,7 @@
         "name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"COD:private\")) % 100000",
         "note": "Maior banco privado doméstico por ativos no ranking de 2024. Nome fictício por política de marcas.",
         "owner": "national",
-        "source_key": "ifc_rawbank_2024",
+        "source_key": "cod_rawbank_2024",
         "status": "present",
         "year": 2024
       },
@@ -3309,7 +3309,7 @@
         "name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"HTI:private\")) % 100000",
         "note": "Maior banco privado doméstico por ativos no ranking de 2023. Nome fictício por política de marcas.",
         "owner": "national",
-        "source_key": "ifc_sogebank",
+        "source_key": "hti_private_2024",
         "status": "present",
         "year": 2023
       },
@@ -4567,11 +4567,12 @@
         "basis": null,
         "name": null,
         "name_basis": null,
-        "note": "Verificado: não há banco estatal no ranking consultado.",
+        "note": "Verificado: não há banco comercial estatal; o Estado atua por instituição de fomento e por gestora de ativos, que não são bancos comerciais.",
         "owner": "state",
         "proposed_name": "Mazur Finanse",
         "proposed_name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"LTU:public\")) % 100000",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "none",
         "year": null
       }
@@ -4661,11 +4662,12 @@
         "basis": null,
         "name": null,
         "name_basis": null,
-        "note": "Verificado: não há banco estatal no ranking consultado.",
+        "note": "Verificado: não há banco comercial estatal; o Estado atua por instituição de fomento, que não é banco licenciado.",
         "owner": "state",
         "proposed_name": "Wróblewski Finanse",
         "proposed_name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"LVA:public\")) % 100000",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "none",
         "year": null
       }
@@ -4755,11 +4757,12 @@
         "basis": null,
         "name": null,
         "name_basis": null,
-        "note": "Verificado: não há banco estatal no ranking consultado.",
+        "note": "Verificado: nenhum dos bancos licenciados é detido pelo Estado; o antigo banco estatal foi liquidado.",
         "owner": "state",
         "proposed_name": "Fond Nicolae PFA",
         "proposed_name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"MDA:public\")) % 100000",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "none",
         "year": null
       }
@@ -5392,6 +5395,7 @@
         "origin_name": null,
         "owner": "foreign",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "no_data"
       },
       "name": "Netherlands",
@@ -5409,11 +5413,12 @@
         "basis": null,
         "name": null,
         "name_basis": null,
-        "note": "Verificado: não há banco estatal no ranking consultado.",
+        "note": "Verificado: não há banco comercial estatal de capital central; instituições de fomento e bancos de direito público detidos por autoridades subnacionais (águas, províncias, municípios) não contam.",
         "owner": "state",
         "proposed_name": "Krediet Amsterdam",
         "proposed_name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"NED:public\")) % 100000",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "none",
         "year": null
       }
@@ -5578,6 +5583,7 @@
         "origin_name": null,
         "owner": "foreign",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "no_data"
       },
       "name": "Norway",
@@ -5689,7 +5695,7 @@
         "name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"NZL:public\")) % 100000",
         "note": "Existe instituição bancária estatal; era a maior de capital estatal por ativos no ranking de 2025. Nome fictício por política de marcas.",
         "owner": "state",
-        "source_key": "kiwibank_ar2025",
+        "source_key": "nzl_private_2025",
         "status": "present",
         "year": 2025
       }
@@ -5999,9 +6005,10 @@
         "basis": null,
         "name": null,
         "name_basis": null,
-        "note": "Não verificável: setor dominado por filiais estrangeiras ou titularidade doméstica não confirmada.",
+        "note": "Não verificável: os maiores bancos são estatais ou filiais estrangeiras; não há ranking público que isole o maior banco de capital privado doméstico.",
         "owner": "national",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "no_data",
         "year": null
       },
@@ -6316,6 +6323,7 @@
         "origin_name": null,
         "owner": "foreign",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "no_data"
       },
       "name": "Russia",
@@ -7121,11 +7129,12 @@
         "basis": null,
         "name": null,
         "name_basis": null,
-        "note": "Verificado: não há banco estatal no ranking consultado.",
+        "note": "Verificado: não há banco comercial estatal; o Estado atua por agência de crédito à exportação e por instituição de fomento regional, que não são bancos comerciais.",
         "owner": "state",
         "proposed_name": "Jakobsson & Danielsson",
         "proposed_name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"SWE:public\")) % 100000",
         "source_key": null,
+        "source_note": "verificação feita na coleta de 2023–2024 (registro de bancos licenciados e ranking de ativos); sem URL única arquivada",
         "status": "none",
         "year": null
       }
@@ -7805,7 +7814,7 @@
         "name_basis": "fictício: BusinessNameGenerator/finance; semente absi(hash(\"UKR:private\")) % 100000",
         "note": "Maior banco privado doméstico por ativos no ranking de 2023. Nome fictício por política de marcas.",
         "owner": "national",
-        "source_key": "scm_fuib",
+        "source_key": "ukr_private_2024",
         "status": "present",
         "year": 2023
       },
@@ -8383,6 +8392,7 @@
     "annual_reports_2023": {
       "title": "Relatórios anuais 2023 dos bancos citados (sites institucionais)",
       "url": null,
+      "url_note": "relatórios anuais 2023 dos bancos citados, publicados nos sites institucionais; sem URL única arquivada na coleta",
       "year": 2023
     },
     "apbef_benin_2023": {
@@ -8414,6 +8424,11 @@
       "title": "Lista de bancos do país (verbete enciclopédico)",
       "url": "https://en.wikipedia.org/wiki/List_of_banks_in_Azerbaijan",
       "year": 2025
+    },
+    "aze_private_2024": {
+      "title": "Fonte citada para o dado estrutural do setor bancário",
+      "url": "https://pasha-holding.az/en/ecosystem/kapital-bank/",
+      "year": 2024
     },
     "bange_rg_2024": {
       "title": "Relatório anual do banco citado (site institucional)",
@@ -8690,6 +8705,7 @@
     "bsp_ar2024": {
       "title": "Relatório anual do banco citado (site institucional)",
       "url": null,
+      "url_note": "relatório anual publicado no site institucional do banco citado; sem URL estável arquivada na coleta",
       "year": 2024
     },
     "bsp_assets2026": {
@@ -8750,6 +8766,7 @@
     "cb_yemen": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": null,
+      "url_note": "site institucional do banco central citado; sem URL estável arquivada na coleta",
       "year": 2024
     },
     "cba_banks": {
@@ -8835,6 +8852,7 @@
     "cbs_syria": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": null,
+      "url_note": "site institucional do banco central citado; sem URL estável arquivada na coleta",
       "year": 2024
     },
     "cbsi": {
@@ -8875,6 +8893,7 @@
     "cloessens_vanhoren": {
       "title": "Claessens & van Horen - The impact of the global financial crisis on banking globalization (IMF Economic Review)",
       "url": null,
+      "url_note": "referência bibliográfica (IMF Economic Review, 2015); sem URL estável arquivada na coleta",
       "year": 2015
     },
     "cmf_chile": {
@@ -8890,6 +8909,11 @@
     "cnbv_mex": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": "https://portafolioinfo.cnbv.gob.mx",
+      "year": 2024
+    },
+    "cod_rawbank_2024": {
+      "title": "Fonte citada para o dado estrutural do setor bancário",
+      "url": "https://disclosures.ifc.org/project-detail/SII/49116/rawbank-sl",
       "year": 2024
     },
     "ctbc_about": {
@@ -9072,6 +9096,7 @@
     "heartland_ar2024": {
       "title": "Relatório anual do banco citado (site institucional)",
       "url": null,
+      "url_note": "relatório anual publicado no site institucional do banco citado; sem URL estável arquivada na coleta",
       "year": 2024
     },
     "helgi_mwi": {
@@ -9083,6 +9108,11 @@
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": "https://en.hespress.com/123283-six-moroccan-banks-rank-among-north-africas-top-20-in-2025-confirming-sector-strength.html",
       "year": 2025
+    },
+    "hti_private_2024": {
+      "title": "Fonte citada para o dado estrutural do setor bancário",
+      "url": "https://disclosures.ifc.org/project-detail/SPI/26167/sogebank-project",
+      "year": 2023
     },
     "ibb_ar_2023": {
       "title": "Relatório anual do banco citado (site institucional)",
@@ -9107,16 +9137,6 @@
     "ifc_gibl": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": "https://disclosures.ifc.org/project-detail/SII/48183/gbime-nepal-sme",
-      "year": 2023
-    },
-    "ifc_rawbank_2024": {
-      "title": "Fonte citada para o dado estrutural do setor bancário",
-      "url": "https://disclosures.ifc.org/project-detail/SII/49116/rawbank-sl",
-      "year": 2024
-    },
-    "ifc_sogebank": {
-      "title": "Fonte citada para o dado estrutural do setor bancário",
-      "url": "https://disclosures.ifc.org/project-detail/SPI/26167/sogebank-project",
       "year": 2023
     },
     "im_rw_ar": {
@@ -9174,20 +9194,10 @@
       "url": "https://www.jp-bank.japanpost.jp/en/ir/stock/en_ir_stk_situation.html",
       "year": 2026
     },
-    "kapital_bank": {
-      "title": "Fonte citada para o dado estrutural do setor bancário",
-      "url": "https://pasha-holding.az/en/ecosystem/kapital-bank/",
-      "year": 2024
-    },
     "kb_mk_2023": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": "https://www.kb.mk/content/KB-PRESENTATION-31122023-ENG-f.pdf",
       "year": 2023
-    },
-    "kiwibank_ar2025": {
-      "title": "Relatório anual do banco citado (site institucional)",
-      "url": "https://www.kiwibank.co.nz/about-us/who-we-are/meet-the-family/",
-      "year": 2025
     },
     "kpmg_gcc_fy24": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
@@ -9232,6 +9242,7 @@
     "me_oceania_cloessens_vanhoren": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": null,
+      "url_note": "referência bibliográfica (IMF Economic Review, 2015); sem URL estável arquivada na coleta",
       "year": 2015
     },
     "mfw4a_car_2024": {
@@ -9318,6 +9329,11 @@
       "title": "Relatório anual do banco citado (site institucional)",
       "url": "https://www.nlb.si/nlb/nlb-portal/eng/investor-relations/financial-reports/2023/nlb-ar-2023-eng.pdf",
       "year": 2023
+    },
+    "nzl_private_2025": {
+      "title": "Relatório anual do banco citado (site institucional)",
+      "url": "https://www.kiwibank.co.nz/about-us/who-we-are/meet-the-family/",
+      "year": 2025
     },
     "obg_algeria": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
@@ -9454,11 +9470,6 @@
       "url": "https://www.sbs.gob.pe",
       "year": 2024
     },
-    "scm_fuib": {
-      "title": "Fonte citada para o dado estrutural do setor bancário",
-      "url": "https://scm.global/industries/banking-and-finance-pumb/",
-      "year": 2024
-    },
     "sfc_col": {
       "title": "Fonte citada para o dado estrutural do setor bancário",
       "url": "https://www.superfinanciera.gov.co",
@@ -9573,6 +9584,11 @@
       "title": "Lista de bancos do país (verbete enciclopédico)",
       "url": "https://en.wikipedia.org/wiki/List_of_banks_in_Taiwan",
       "year": 2025
+    },
+    "ukr_private_2024": {
+      "title": "Fonte citada para o dado estrutural do setor bancário",
+      "url": "https://scm.global/industries/banking-and-finance-pumb/",
+      "year": 2024
     },
     "us_state_burundi_2026": {
       "title": "Fonte citada para o dado estrutural do setor bancário",

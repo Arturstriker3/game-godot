@@ -18,7 +18,12 @@ Verifica, sem tocar no jogo:
     `docs/data/names_banks_informal.md` nem nos valores `banks.*` do i18n;
   * serviços informais: ids únicos, nomes nos três idiomas, termos locais com
     ISO3 existente no jogo e fonte declarada;
-  * toda `source_key` citada existe no bloco `sources` do próprio arquivo.
+  * toda `source_key` citada existe no bloco `sources` do próprio arquivo;
+  * proveniência: fonte sem `url` precisa de `url_note` (≥ 30 caracteres) e
+    ausência (`none`/`no_data`) precisa de `source_key` existente ou
+    `source_note` (≥ 30 caracteres);
+  * denylist: entrada que normaliza para vazio é erro, e a seção `[central]` não
+    pode conter o rótulo genérico "Banco Central de <país>" (aceito no dado).
 
 Sai com código 1 e lista de erros quando algo falha. Não inventa correção.
 """
@@ -90,6 +95,14 @@ ZONE_LABELS = {
 
 FICTICIO_PREFIX = "fictício:"
 DENYLIST_TEXT_LIMIT = 10
+# Rótulo genérico sancionado do banco central: "Banco Central de <país>" /
+# "Central Bank of <país>" e variantes ("da", "del", "de la", "dos", "das"),
+# seguidas de 1 a 4 palavras. Não é validado contra a lista de países: o prefixo
+# basta, porque a denylist não deve conter o rótulo genérico de nação nenhuma.
+GENERIC_CENTRAL_RE = re.compile(
+    r"^(?:banco central (?:de la|del|dos|das|de|da)|central bank of)"
+    r"\s+\w+(?:\s+\w+){0,3}$"
+)
 
 
 def read_json_strict(path: str, errors: list[str]) -> dict | None:
@@ -133,9 +146,10 @@ def load_denylist(errors: list[str]) -> list[str]:
     entries: list[str] = []
     sections: dict[str, int] = {}
     current = ""
+    rel = os.path.relpath(DENYLIST_TXT, ROOT)
     try:
         with open(DENYLIST_TXT, encoding="utf-8-sig") as fh:
-            for line in fh:
+            for number, line in enumerate(fh, 1):
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
@@ -145,11 +159,24 @@ def load_denylist(errors: list[str]) -> list[str]:
                     continue
                 norm = normalize(line)
                 if not norm:
+                    # Entrada que vira string vazia não protege nada: é erro, não
+                    # ruído ignorável (só pontuação, só acento, só símbolo).
+                    errors.append(
+                        f"{rel}:{number}: entrada sem letras/dígitos ({line!r}); remova-a"
+                    )
                     continue
+                if current == "central" and GENERIC_CENTRAL_RE.match(norm):
+                    # O rótulo genérico "Banco Central de <país>" / "Central Bank
+                    # of <país>" pode ser o próprio nome da autoridade monetária,
+                    # então é aceito e não pode ser exigido pela denylist.
+                    errors.append(
+                        f"{rel}:{number}: '[central]' com o rótulo genérico {line!r}; "
+                        "remova (o rótulo genérico é aceito por política)"
+                    )
                 entries.append(norm)
                 sections[current] = sections.get(current, 0) + 1
     except OSError as exc:
-        errors.append(f"{os.path.relpath(DENYLIST_TXT, ROOT)}: não foi possível abrir ({exc})")
+        errors.append(f"{rel}: não foi possível abrir ({exc})")
         return []
     for wanted in ("commercial", "central"):
         if not sections.get(wanted):
@@ -295,9 +322,12 @@ def validate_central_bank(where: str, block: dict, iso3: str, currency: str,
             errors.append(f"{where}.{lang}: '{got}' != esperado '{want}'")
         if isinstance(got, str) and "(" in got:
             errors.append(f"{where}.{lang}: parênteses com sigla em {got!r}")
-        # O rótulo genérico sancionado ("Banco Central de <país>" / união
-        # monetária) é permitido e já foi comparado acima; a denylist vale para
-        # qualquer outro texto que apareça no campo.
+        # Exempt deliberado: o rótulo genérico sancionado ("Banco Central de
+        # <país>" / união monetária) pode coincidir com o NOME PRÓPRIO da
+        # autoridade monetária real (ex.: "Central Bank of Nigeria" é o nome
+        # oficial e o rótulo genérico). Nesse caso o texto já foi igualado ao
+        # esperado acima e a denylist não pode ser exigida; qualquer outro texto
+        # no campo continua sendo varrido.
         if got != want:
             check_no_brand(f"{where}.{lang}", got, denylist, errors)
     if not block.get("note"):
@@ -387,6 +417,22 @@ def validate_banks(data: dict, nations: dict[str, dict[str, str]],
                 PRIVATE_KEYS if slot == "private" else FOREIGN_KEYS
             )
             check_keys(f"{where}.{slot}", block, required, errors)
+
+            if status in ("none", "no_data"):
+                # Ausência verificada precisa de proveniência: chave de fonte
+                # existente ou a lacuna declarada em `source_note`.
+                source_key = block.get("source_key")
+                source_note = block.get("source_note")
+                if not source_key:
+                    if not isinstance(source_note, str) or len(source_note.strip()) < 30:
+                        errors.append(
+                            f"{where}.{slot}: status {status} sem 'source_key' nem "
+                            "'source_note' (≥ 30 caracteres)"
+                        )
+                elif source_key not in sources:
+                    errors.append(
+                        f"{where}.{slot}: source_key '{source_key}' não existe em sources"
+                    )
 
             if slot in ("public", "private"):
                 name = block.get("name")
@@ -531,6 +577,15 @@ def validate_banks(data: dict, nations: dict[str, dict[str, str]],
         if not isinstance(source, dict):
             errors.append(f"banks.sources.{key}: não é objeto")
             continue
+        url = source.get("url")
+        url_note = source.get("url_note")
+        if not url:
+            # Fonte sem URL só é aceitável com a lacuna declarada por escrito.
+            if not isinstance(url_note, str) or len(url_note.strip()) < 30:
+                errors.append(
+                    f"banks.sources.{key}: sem 'url' e sem 'url_note' (≥ 30 caracteres) "
+                    "explicando a proveniência"
+                )
         check_no_brand(f"banks.sources.{key}.title", source.get("title"), denylist, errors)
         check_no_brand(f"banks.sources.{key}.note", source.get("note"), denylist, errors)
 

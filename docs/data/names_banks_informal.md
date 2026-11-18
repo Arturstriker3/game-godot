@@ -62,6 +62,12 @@ paralela:
   `Banco Central de <país>`) ou por união monetária (zona do euro, união
   monetária oeste-africana, união monetária da África Central, união monetária
   do Caribe Oriental).
+- O rótulo genérico é **aceito por política mesmo quando coincide com o nome
+  próprio** da autoridade monetária real (ex.: "Central Bank of Nigeria" é o
+  nome oficial do banco central e também o rótulo genérico em inglês). Por isso
+  a denylist **não exige** esses casos — exigir um texto que o próprio dado
+  sanciona seria contraditório — e só barra o nome próprio **distinto** do
+  rótulo (a autoridade monetária batizada com o próprio nome, e a sigla).
 
 Consequência prática: nenhum texto do jogo (HUD, ficha de nação, tabela de
 bancos) precisa de licença de marca, e trocar o gerador não quebra o contrato —
@@ -221,7 +227,10 @@ política de marcas: um título não é lugar para marca de banco.
 Por papel: `public` **127** present / 36 none / 16 no_data; `private` **140** /
 12 / 27; `foreign` **119** / 11 / 49. São **386 nomes fictícios** exibidos
 (127 + 140 + 119), todos com `name_basis`/`branch_name_basis`. As 36 nações sem
-banco estatal receberam `proposed_name` fictício (36/36 cobertas). Banco central
+banco estatal receberam `proposed_name` fictício (36/36 cobertas): **386 nomes
+exibidos + 36 propostas** (`proposed_name`) = **422 nomes fictícios** no
+arquivo — `coverage.fictional_names` conta só os 386 exibidos, e
+`coverage.proposed_public_names` conta as 36 propostas. Banco central
 nomeado em **135 das 136 moedas** — a exceção é o PAB, de Panamá (§4). Tipos:
 138 `national`, 40 `monetary_union` (20 euro, 8 oeste-africana, 6 África
 Central, 6 Caribe Oriental) e 1 `none`.
@@ -255,6 +264,24 @@ uma `note` explicando o uso, e 132 dos 275 são `common_usage` (§10).
   **fomento**, não banco comercial estatal; o v2 não separa os dois casos.
   Todos receberam `proposed_name` fictício.
 
+### 7.1 Lacunas de proveniência
+
+- **Fontes sem URL arquivada (`url_note`, 5)** — as que sustentam slot `present`
+  ou banco central são `annual_reports_2023` (relatórios anuais 2023 dos bancos
+  citados, nos sites institucionais), `bsp_ar2024` e `heartland_ar2024`
+  (relatório anual no site do banco citado), `cb_yemen` e `cbs_syria` (site do
+  banco central citado). Cada uma declara em `url_note` o que é e que não há URL
+  arquivada. As 4 entradas do diretório do BIS (que saiu do ar em 2026) já
+  traziam `url_note`, e as 2 referências bibliográficas de Claessens & van Horen
+  declaram a mesma lacuna: **11 entradas com `url_note`** no arquivo, nenhuma
+  fonte sem `url` e sem explicação.
+- **Ausências verificadas sem fonte única (`source_note`, 9)**, todas em
+  `none`/`no_data`: `public` **NED, LTU, LVA, MDA, SWE** (5), `private` **POL**
+  (1) e `foreign` **NED, NOR, RUS** (3). O `source_note` diz o que foi
+  conferido — registro de bancos licenciados e ranking de ativos, coleta de
+  2023–2024 — e que não há URL única arquivada. Sem ele, a ausência não teria
+  proveniência nenhuma (é o caso que o validador passou a exigir).
+
 ## 8. Verificação
 
 ```powershell
@@ -278,7 +305,15 @@ O validador checa, sem tocar no jogo:
   filial pode repetir entre países da mesma origem);
 - **marcas**: nenhum nome de `tools/real_bank_names_denylist.txt` nos campos de
   nome/nota, nos **títulos** de fonte (o `url` nunca é varrido), nos valores
-  `banks.*` do i18n **nem neste documento** — o doc é lido e varrido como texto;
+  `banks.*` do i18n **nem neste documento** — o doc é lido e varrido como texto.
+  A denylist cobre **scripts não latinos** (grego, cirílico, árabe, georgiano…):
+  a normalização tira acentos e pontuação, mas mantém as letras de qualquer
+  alfabeto, então um nome real não escapa por estar escrito em outro alfabeto.
+  A seção `[central]` **não** pode conter o rótulo genérico "Banco Central de
+  <país>"/"Central Bank of <país>" (§2: pode ser o nome próprio, e é aceito);
+- **proveniência**: fonte sem `url` exige `url_note` (≥ 30 caracteres), e
+  `none`/`no_data` exige `source_key` existente ou `source_note` (≥ 30
+  caracteres);
 - `coverage` do JSON **conferido contra a contagem real** (nações, status por
   papel, nomes fictícios, centrais nomeados, propostas);
 - B7: ids únicos, nomes nos três idiomas, ISO3 existente no jogo, fonte
