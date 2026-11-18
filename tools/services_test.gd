@@ -208,7 +208,7 @@ func _test_save() -> void:
 	_run(sim, 5)
 	var data: Dictionary = sim.to_dict()
 	_check(int(data.get("version", 0)) == 22,
-		"save deve ser v21 (B2 + minas + região + migração; era %d)" % int(
+		"save deve ser v22 (B7: informalidade/serviços informais; era %d)" % int(
 		data.get("version", 0)))
 	var loaded = _load_save(data)
 	if loaded == null:

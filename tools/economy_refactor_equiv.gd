@@ -31,6 +31,9 @@ const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 ## B1: estrutura etária por nação (definição estática), antes do mundo.
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
+## B7: informalidade (ILOSTAT) e cobertura de saúde (OMS/GHO) por nação.
+const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
+const HEALTH_ACCESS_PATH := "res://data/definitions/population/health_access.json"
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
@@ -136,6 +139,18 @@ func _run() -> void:
 		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
 		if not age_structure.is_empty():
 			sim.set_age_structure(age_structure)
+	# B7: informalidade (ILOSTAT) e cobertura de saúde (OMS/GHO) por nação, os
+	# MESMOS dados do autoload. Sem eles o harness roda o mundo sem informalidade
+	# e o serviço informal do interior nunca acontece — A0/S0 deixam de ser o jogo
+	# (e um drift de conservação pode passar despercebido).
+	if sim.has_method("set_informality"):
+		var informality := _load_dict(INFORMALITY_PATH)
+		if not informality.is_empty():
+			sim.set_informality(informality)
+	if sim.has_method("set_health_access"):
+		var health_access := _load_dict(HEALTH_ACCESS_PATH)
+		if not health_access.is_empty():
+			sim.set_health_access(health_access)
 	if sim.has_method("set_profiling"):
 		sim.set_profiling(_profile)
 	if sim.has_method("set_sim_threads"):

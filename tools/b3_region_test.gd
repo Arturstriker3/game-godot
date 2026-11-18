@@ -63,6 +63,22 @@ func _json(path: String) -> Variant:
 	return data
 
 
+## Avança `days` dias e transforma QUALQUER violação de invariante em FALHA do
+## teste. O núcleo reverte o tick violado (`restore_state`) e loga com
+## push_error; sem esta checagem o teste passava com "dinheiro não conservado"
+## no log e o drift ficava diluído no arredondamento de `money_total`.
+func _tick_checked(sim: Object, days: int, label: String) -> void:
+	var violations: Array = []
+	for day in days:
+		sim.tick_day()
+		for violation: Variant in sim.get_day_summary().get(
+				"invariant_violations", []):
+			violations.append("dia %d: %s" % [day + 1, String(violation)])
+	if not violations.is_empty():
+		_fail("%s: %d violação(ões) de invariante em %d dias — 1ª: %s" % [
+			label, violations.size(), days, String(violations[0])])
+
+
 func _load_chains(sim: Object) -> void:
 	sim.set_goods(_json(GOODS_PATH))
 	sim.set_recipes(_json(RECIPES_PATH))
@@ -220,8 +236,7 @@ func _run() -> void:
 func _check_region_growth() -> void:
 	var sim := _make_world()
 	var sums0 := _population_sums(sim)
-	for day in 35:
-		sim.tick_day()
+	_tick_checked(sim, 35, "região/crescimento")
 	var sums := _population_sums(sim)
 	if sums["region"] <= sums0["region"]:
 		_fail("crescimento: interior não cresceu (%f <= %f)" % [
@@ -266,8 +281,7 @@ func _check_region_conservation() -> void:
 	var sim := _make_world()
 	var money_start := float(sim.get_status().get("money_total", 0.0))
 	var days := 8
-	for day in days:
-		sim.tick_day()
+	_tick_checked(sim, days, "região/conservação")
 	var money_end := float(sim.get_status().get("money_total", 0.0))
 	var drift := absf(money_end - money_start) / maxf(absf(money_start), 1.0)
 	if drift > 1e-6:
@@ -327,12 +341,10 @@ func _check_region_inert() -> void:
 ## (i) determinismo de threads 1 × 16 (mesmo hash do save).
 func _check_determinism() -> void:
 	var sim1 := _make_world_threads(1)
-	for day in 10:
-		sim1.tick_day()
+	_tick_checked(sim1, 10, "região/determinismo (1 thread)")
 	var hash1 := _sha(JSON.stringify(sim1.to_dict()))
 	var sim16 := _make_world_threads(16)
-	for day in 10:
-		sim16.tick_day()
+	_tick_checked(sim16, 10, "região/determinismo (16 threads)")
 	var hash16 := _sha(JSON.stringify(sim16.to_dict()))
 	if hash1 != hash16:
 		_fail("região: hash do save difere entre threads 1 e 16 (%s vs %s)" % [

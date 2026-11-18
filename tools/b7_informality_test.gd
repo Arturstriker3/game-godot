@@ -4,8 +4,11 @@ extends SceneTree
 ##
 ## Valida (1) a conservação de dinheiro e pessoas com a informalidade ativa,
 ## (2) o informal sem imposto de renda/contribuição, (3) o serviço informal
-## absorvendo demanda, (4) a mortalidade subindo com a fome, (5) a insatisfação
-## reagindo dentro de [0,1], e (6) o round-trip do save v22 + migração v21.
+## absorvendo demanda — inclusive no INTERIOR com poupança insuficiente (a
+## receita creditada é o débito efetivado), (4) a mortalidade subindo com a
+## fome e concentrando o excesso em 0–14/65+, (5) a insatisfação reagindo
+## dentro de [0,1] (com a normalização por bloco no interior) e (6) o
+## round-trip do save v22 + migração v21.
 ##
 ## Uso: godot --headless --path . --script res://tools/b7_informality_test.gd
 
@@ -226,6 +229,68 @@ func _run() -> void:
 		_check(revenue >= 0.0 and revenue <= output * price + 1e-6,
 			"receita informal ≤ oferta×preço (%.2f ≤ %.2f)" % [revenue, output * price])
 
+	# --- (3b) Serviço informal do INTERIOR com poupança INSUFICIENTE: a receita
+	# creditada aos quintis é EXATAMENTE o débito efetivado (não cria dinheiro).
+	# Cenário: interior com informalidade total, renda diária muito acima do
+	# caixa e poupança pequena — a compra tem de caber no que o quintil paga.
+	if true:
+		var save_poor: Dictionary = sim.to_dict()
+		var cities_poor: Array = save_poor.get("cities", [])
+		var city_poor: Dictionary = cities_poor[ci]
+		var region_poor: Dictionary = city_poor.get("region", {})
+		if region_poor.is_empty():
+			_fail("cidade sem bloco region para o teste de poupança do interior")
+		else:
+			var region_before: Dictionary = sim.get_region_status(city_id)
+			var food_spend_prev := float(region_before.get("food_spend", 0.0))
+			_set_informal_all(city_poor, 1.0)
+			# Poupança pequena, com folga sobre a comida do dia (10× o gasto de
+			# ontem, piso 2.000); `cash` acompanha a soma dos quintis.
+			var savings_total := maxf(2000.0, food_spend_prev * 10.0)
+			var each := savings_total / 5.0
+			var strata_poor: Dictionary = region_poor.get("strata", {})
+			strata_poor["savings"] = [each, each, each, each, each]
+			region_poor["strata"] = strata_poor
+			region_poor["cash"] = savings_total
+			# Renda absurda → demanda informal muito acima da poupança.
+			region_poor["income"] = 1.0e9
+			region_poor["wage_income"] = 1.0e9
+			city_poor["region"] = region_poor
+			cities_poor[ci] = city_poor
+			save_poor["cities"] = cities_poor
+			# Dia seguinte sem fecho semanal/mensal desta cidade (offset 1).
+			save_poor["day"] = ci
+			var sim_poor := EconomySim.new()
+			_load_chains(sim_poor)
+			sim_poor.from_dict(save_poor)
+			var money_before := float(sim_poor.get_status().get("money_total", -1.0))
+			sim_poor.tick_day()
+			var poor_violations: Array = sim_poor.get_day_summary().get(
+				"invariant_violations", [])
+			var money_after := float(sim_poor.get_status().get("money_total", -1.0))
+			var poor_service: Dictionary = sim_poor.get_region_status(city_id).get(
+				"informal", {}).get("service", {})
+			var poor_revenue := float(poor_service.get("revenue", -1.0))
+			var poor_demand := float(poor_service.get("demand", 0.0))
+			var poor_price := float(poor_service.get("price", 0.0))
+			_check(poor_revenue >= 0.0,
+				"interior: receita do serviço informal >= 0 (%.2f)" % poor_revenue)
+			_check(poor_revenue <= savings_total + 1e-6,
+				"interior: receita %.2f não pode passar da poupança %.2f (criaria dinheiro)"
+				% [poor_revenue, savings_total])
+			_check(poor_revenue > 0.0,
+				"interior: cenário deve realizar serviço informal (receita > 0)")
+			_check(poor_demand * poor_price > savings_total,
+				"interior: cenário com demanda %.2f acima da poupança %.2f"
+				% [poor_demand * poor_price, savings_total])
+			_check(poor_violations.is_empty(),
+				"interior: invariantes limpos no tick do serviço informal (violações: %s)"
+				% str(poor_violations))
+			var poor_drift := absf(money_after - money_before)
+			_check(poor_drift <= maxf(1e-3, absf(money_before) * 1e-12),
+				"interior: dinheiro conservado com poupança insuficiente (drift %.6f)"
+				% poor_drift)
+
 	# --- (4) Mortalidade sobe com a fome (satisfaction_prev forçada baixa). ---
 	if true:
 		var save_famine: Dictionary = sim.to_dict()
@@ -257,6 +322,93 @@ func _run() -> void:
 		_check(int(mstatus.get("famine_months", 0)) >= 1,
 			"fome: famine_months deve subir")
 
+	# --- (4b) Perfil por FAIXA: o excesso de mortes concentra em 0–14 e 65+.
+	# Dois mundos idênticos (mesmo save): CONTROLE e FOME (satisfaction_prev=0).
+	# A diferença por faixa isola a mortalidade do excesso (nascimento e
+	# envelhecimento são idênticos nos dois) e o perfil de vulnerabilidade da B7
+	# pesa crianças e idosos — a taxa relativa de excesso é maior nesses grupos.
+	if true:
+		var base_bands: Dictionary = sim.to_dict()
+		# Fecha o mês de `ci` no próximo tick (ver seção (4)).
+		base_bands["day"] = ci + 29
+		var control := EconomySim.new()
+		_load_chains(control)
+		control.from_dict(base_bands)
+		var bands_before: Array = control.get_city_status(city_id).get(
+			"pop", {}).get("age_bands", [])
+		control.tick_day()
+		var bands_control: Array = control.get_city_status(city_id).get(
+			"pop", {}).get("age_bands", [])
+		var save_bands: Dictionary = base_bands.duplicate(true)
+		var cities_bands: Array = save_bands.get("cities", [])
+		var city_bands: Dictionary = cities_bands[ci]
+		var pop_bands: Dictionary = city_bands.get("pop", {})
+		var mort_bands: Dictionary = pop_bands.get("mortality", {})
+		mort_bands["satisfaction_prev"] = 0.0
+		pop_bands["mortality"] = mort_bands
+		city_bands["pop"] = pop_bands
+		cities_bands[ci] = city_bands
+		save_bands["cities"] = cities_bands
+		var famine_bands := EconomySim.new()
+		_load_chains(famine_bands)
+		famine_bands.from_dict(save_bands)
+		famine_bands.tick_day()
+		var bands_famine: Array = famine_bands.get_city_status(city_id).get(
+			"pop", {}).get("age_bands", [])
+		if bands_before.size() != 5 or bands_control.size() != 5 \
+				or bands_famine.size() != 5:
+			_fail("faixas: age_bands deve ter 5 faixas (antes=%d controle=%d fome=%d)"
+				% [bands_before.size(), bands_control.size(), bands_famine.size()])
+		else:
+			var excess: Array = []
+			var deaths_control: Array = []
+			var total_excess := 0.0
+			for band in 5:
+				var deaths_c := maxf(float(bands_before[band])
+					- float(bands_control[band]), 0.0)
+				var deaths_f := maxf(float(bands_before[band])
+					- float(bands_famine[band]), 0.0)
+				var extra := deaths_f - deaths_c
+				excess.append(extra)
+				deaths_control.append(deaths_c)
+				total_excess += maxf(extra, 0.0)
+			print("[b7] faixas: antes=%s excesso=%s mortes_controle=%s total=%.6f"
+				% [str(bands_before), str(excess), str(deaths_control), total_excess])
+			var young := float(excess[0])
+			var old := float(excess[4])
+			_check(young > 0.0 and old > 0.0,
+				"faixas: excesso de mortes deve aparecer em 0–14 e 65+ (%.4f / %.4f)"
+				% [young, old])
+			# Excesso por mil pessoas de cada faixa: mede a vulnerabilidade sem
+			# depender do tamanho da coorte (o envelhecimento, que contamina o
+			# total da faixa, é idêntico nos dois mundos e sai na diferença).
+			var population := 0.0
+			for band in 5:
+				population += maxf(float(bands_before[band]), 0.0)
+			var per_thousand: Array = []
+			for band in 5:
+				per_thousand.append(
+					maxf(float(excess[band]), 0.0) * 1000.0
+						/ float(bands_before[band])
+					if float(bands_before[band]) > 1e-9 else 0.0)
+			if total_excess > 1e-9:
+				var share := (young + old) / total_excess
+				var vulnerable_pop := 0.0
+				if population > 1e-9:
+					vulnerable_pop = (maxf(float(bands_before[0]), 0.0)
+						+ maxf(float(bands_before[4]), 0.0)) / population
+				_check(share >= 0.50 and share >= vulnerable_pop * 1.15,
+					"faixas: 0–14 + 65+ concentram o excesso (%.1f%% do excesso vs %.1f%% da população)"
+					% [share * 100.0, vulnerable_pop * 100.0])
+			_check(float(per_thousand[0]) > float(per_thousand[1])
+				and float(per_thousand[0]) > float(per_thousand[2]),
+				"faixas: 0–14 perde mais por mil que 15–24/25–44 (%.3f vs %.3f/%.3f)"
+				% [per_thousand[0], per_thousand[1], per_thousand[2]])
+			_check(float(per_thousand[4]) > float(per_thousand[1])
+				and float(per_thousand[4]) > float(per_thousand[2]),
+				"faixas: 65+ perde mais por mil que 15–24/25–44 (%.3f vs %.3f/%.3f)"
+				% [per_thousand[4], per_thousand[1], per_thousand[2]])
+
 	# --- (5) Insatisfação reage: aumentar a informalidade sobe a componente. ---
 	if true:
 		var save_low: Dictionary = sim.to_dict()
@@ -281,6 +433,44 @@ func _run() -> void:
 			% [low_idx, high_idx])
 		_check(low_idx >= 0.0 and low_idx <= 1.0 and high_idx >= 0.0 and high_idx <= 1.0,
 			"índices de insatisfação em [0,1]")
+
+	# --- (5b) Insatisfação da REGIÃO: normalização por pesos APLICÁVEIS. ----
+	# O interior só aplica comida+inflação+informalidade (peso 0,50): o índice
+	# deve dividir por 0,50, não pelo total 1,00 (o que capava o interior em
+	# 0,50). Com informalidade=1 e inflação=1, as componentes ficam
+	# 0,10/0,50=0,20 e 0,15/0,50=0,30 — e os componentes somam o índice.
+	if true:
+		var save_reg: Dictionary = sim.to_dict()
+		var c_reg: Dictionary = save_reg.get("cities", [])[ci]
+		_set_informal_all(c_reg, 1.0)
+		var reg: Dictionary = c_reg.get("region", {})
+		if reg.is_empty():
+			_fail("cidade sem bloco region para testar a insatisfação do interior")
+		else:
+			var mort: Dictionary = reg.get("mortality", {})
+			mort["food_inflation_month"] = 1.0
+			reg["mortality"] = mort
+			# Dia não-mensal para `ci` (tick → ci+1): formalização e inflação
+			# mensais não reescrevem o que forçamos aqui.
+			save_reg["day"] = ci
+			var sim_reg := EconomySim.new()
+			_load_chains(sim_reg)
+			sim_reg.from_dict(save_reg)
+			sim_reg.tick_day()
+			var rdiss: Dictionary = sim_reg.get_region_status(city_id).get(
+				"dissatisfaction", {})
+			var rcomp: Dictionary = rdiss.get("components", {})
+			var r_inf := float(rcomp.get("informality", -1.0))
+			var r_infl := float(rcomp.get("inflation", -1.0))
+			var r_food := float(rcomp.get("food", -1.0))
+			var r_idx := float(rdiss.get("index", -1.0))
+			_check(absf(r_inf - 0.20) < 0.02,
+				"região: componente informalidade ~0,20 (0,10/0,50) — medido %.3f" % r_inf)
+			_check(absf(r_infl - 0.30) < 0.02,
+				"região: componente inflação ~0,30 (0,15/0,50) — medido %.3f" % r_infl)
+			_check(absf(r_idx - (r_food + r_infl + r_inf)) < 1e-6,
+				"região: componentes somam o índice (%.4f vs %.4f)"
+				% [r_food + r_infl + r_inf, r_idx])
 
 	# --- (6) Round-trip v22 (blocos B7 preservados) e migração v21 → v22. ---
 	if true:
