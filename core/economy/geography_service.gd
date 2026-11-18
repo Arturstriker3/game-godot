@@ -30,6 +30,10 @@ const PROVINCE_GRID_CELL := 50.0
 ## costa — cobre pré-sal e Mar do Norte sem pontos no meio do oceano.
 const COASTAL_RESOURCES := ["oil", "gas"]
 const COASTAL_RADIUS_CELLS := 20
+## D-086b: custo de engenharia da mina (emprego/t, salário e opex/t) — a MESMA
+## tabela que a IA usa para abrir/expandir mina. A semente não pode nascer com a
+## régua da fazenda (7,5 empregos/t), que é ~2-4× a da mina e afunda a firma.
+const IndustryTemplatesScript := preload("res://core/economy/ai/industry_templates.gd")
 const MAP_W := 5000.0
 const MAP_H := 2500.0
 
@@ -901,7 +905,12 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 ## ele, Estado por padrão (`ownership_baseline.json` só declara setores estatais
 ## em texto livre para 12 nações). A capacidade histórica usa a mesma régua da
 ## mina estatal (demanda externa × 1,2, piso 2 t/d, teto 10 t/d).
-func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
+##
+## `use_seed = false` ignora SÓ a lista de produção real (diagnóstico A/B com o
+## mesmo mundo em que `extraction_2025.json` está ausente): todas as jazidas caem
+## na regra histórica do último estágio. O jogo usa o padrão (`true`).
+func resolve_initial_mines(buildings: Array, cities: Array,
+		use_seed: bool = true) -> Array:
 	_load_extraction_seed()
 	var out: Array = buildings.duplicate(true)
 	var used := {}
@@ -921,7 +930,8 @@ func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
 			used[key] = true
 			var reserve_kt := float(minerals[resource]["reserve_kt"])
 			var quality := float(minerals[resource].get("quality", 0.0))
-			var seed_entry: Dictionary = _extraction_seed.get(key, {})
+			var seed_entry: Dictionary = _extraction_seed.get(key, {}) \
+					if use_seed else {}
 			if not seed_entry.is_empty():
 				# Produção real atribuída: capacidade nominal dividida pela
 				# eficiência da jazida (0,5 + 0,5·qualidade, a MESMA curva do
@@ -929,6 +939,8 @@ func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
 				# EFETIVA do dia 0 seja a produção real do local.
 				var efficiency := 0.5 + 0.5 * clampf(quality, 0.0, 1.0)
 				var nominal := float(seed_entry["capacity_t_day"]) / efficiency
+				var spec: Dictionary = IndustryTemplatesScript.TEMPLATES.get(
+					String(resource), {})
 				out.append({
 					"city_id": city_id,
 					"id": "%s_%s_mine" % [city_id.to_lower().replace("-", "_"), resource],
@@ -938,6 +950,13 @@ func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
 					"output_tons_per_day": float(snappedf(nominal, 0.001)),
 					"owner": String(seed_entry.get("owner", "state")),
 					"stage": 0,
+					# D-086b: a firma semeada usa a régua de engenharia da MINA
+					# declarada na tabela da IA — não a da fazenda (7,5 empregos/t).
+					# Sem isto a mina nasce com ~2-4x a folha de uma mina igual que a
+					# própria IA abre, e a folha não cabe na venda da cidade.
+					"jobs_per_ton": float(spec.get("jobs_per_ton", 7.5)),
+					"wage": float(spec.get("wage", 2.0)),
+					"opex_per_ton": float(spec.get("opex_per_ton", 2.5)),
 				})
 				continue
 			var ceiling := maxf(reserve_kt * 1000.0 / (DEPLETION_YEARS * 365.0),
