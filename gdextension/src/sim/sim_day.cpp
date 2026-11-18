@@ -58,6 +58,15 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// 5. Renda das famílias, impostos, transferências e consumo alimentar.
 	core.phase_income();
 
+	// 5b0. B3: economia da região (estados inteiros) — consumo diário,
+	// emprego/salário semanais e estratos mensais (cadência A6). Roda depois
+	// da comida urbana (a região compra o que sobra da prateleira da cidade) e
+	// antes da moradia/serviços/comércio.
+	{
+		OGS_SIM_ZONE(kPhaseIncome);
+		core.phase_region();
+	}
+
 	// 5b. §19 W3: mercado de moradia (aluguel, construção, aperto).
 	core.phase_housing();
 

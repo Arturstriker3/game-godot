@@ -138,6 +138,16 @@ constexpr double kRegionIndustryAtUrban = 0.25;
 // Desconto rural: o salário médio do interior é uma fração do salário urbano
 // do mesmo nível de escolaridade (renda rural < urbana, padrão da Parte D).
 constexpr double kRegionRuralWageDiscount = 0.55;
+// Fração da população do interior empregada no setor PRIMÁRIO (agro/extração/
+// mineração/madeira) — o `employment_mix[0]` multiplica esta base. MODELO
+// declarado (ordem de grandeza de uma força de trabalho rural); não é dado
+// por país.
+constexpr double kRegionLaborShare = 0.35;
+// Poupança inicial do interior por habitante (bootstrap). Igual à urbana
+// (kSavingsPerCapita): o interior começa com caixa para comprar comida antes
+// do primeiro salário semanal (cadência A6). Entra em `money_total` desde o
+// dia 0 — é a mesma convenção da poupança urbana semeada em initialize_world.
+constexpr double kRegionSavingsPerCapita = 0.50;
 // Necessidade alimentar per capita do interior (t-eq de grão/dia). Igual à
 // urbana por construção (kNeedPerCapita): a diferença está no acesso/preço, não
 // na necessidade física.

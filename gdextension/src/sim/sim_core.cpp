@@ -865,11 +865,20 @@ void SimCore::seed_region_strata(City& city, const double* shares) {
 		region.strata_income_share[s] = income_share[s];
 		region.stratum_people[s] = std::max(0.0, region.region_pop)
 			/ double(kIncomeStrata);
-		region.stratum_savings[s] = 0.0;
+		// Poupança inicial (bootstrap): o interior começa com caixa para
+		// comprar comida antes do primeiro salário semanal (cadência A6),
+		// repartida pela renda — mesma convenção da poupança urbana.
+		region.stratum_savings[s] = std::max(0.0, region.region_pop)
+			* kRegionSavingsPerCapita * income_share[s];
 		region.stratum_net_income[s] = 0.0;
 		region.stratum_food_spend[s] = 0.0;
 		region.stratum_need[s] = 0.0;
 		region.stratum_consumed[s] = 0.0;
+	}
+	// O caixa do interior É a soma dos quintis (round-trip exato).
+	region.cash = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		region.cash += region.stratum_savings[s];
 	}
 	region.strata_ready = true;
 }

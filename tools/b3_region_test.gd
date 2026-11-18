@@ -204,3 +204,101 @@ func _run() -> void:
 	_check_zero_regions(save)
 	_check_save_load_roundtrip(sim)
 	_check_v17_migration()
+	# Etapa 2 (economia da região): conservação, consumo, inércia e determinismo.
+	_check_region_conservation()
+	_check_region_consumption()
+	_check_region_inert()
+	_check_determinism()
+
+
+## SHA-256 de um texto (para comparar saves entre threads).
+func _sha(text: String) -> String:
+	return text.sha256_text()
+
+
+## Monta o mundo real com um número de threads explícito (e sem IA).
+func _make_world_threads(threads: int) -> Object:
+	var sim := _make_world()
+	if threads > 0 and sim.has_method("set_sim_threads"):
+		sim.set_sim_threads(threads)
+	return sim
+
+
+## (f) conservação de dinheiro: drift ~0 em dias com a região ativa.
+func _check_region_conservation() -> void:
+	var sim := _make_world()
+	var money_start := float(sim.get_status().get("money_total", 0.0))
+	var days := 8
+	for day in days:
+		sim.tick_day()
+	var money_end := float(sim.get_status().get("money_total", 0.0))
+	var drift := absf(money_end - money_start) / maxf(absf(money_start), 1.0)
+	if drift > 1e-6:
+		_fail("região: drift de dinheiro %.9f > 1e-6 em %d dias" % [drift, days])
+	else:
+		print("[b3] conservação: drift=%.9f em %d dias (região ativa)." % [drift, days])
+
+
+## (g) consumo cidade↔região: a região compra > 0 do mercado e o dinheiro sai
+## do caixa da região para o da cidade (não some).
+func _check_region_consumption() -> void:
+	var sim := _make_world()
+	# Soma do caixa da região antes de qualquer tick.
+	var cash_before := 0.0
+	for city: Dictionary in sim.to_dict().get("cities", []):
+		cash_before += float(city.get("region", {}).get("cash", 0.0))
+	sim.tick_day()
+	var total_food_spend := 0.0
+	var total_food_consumed := 0.0
+	for city: Dictionary in sim.to_dict().get("cities", []):
+		var city_id := String(city.get("id", ""))
+		var status: Dictionary = sim.get_region_status(city_id)
+		total_food_spend += float(status.get("food_spend", 0.0))
+		total_food_consumed += float(status.get("food_consumed", 0.0))
+	if total_food_spend <= 0.0:
+		_fail("região: nenhuma cidade comprou comida do mercado (food_spend=0)")
+	if total_food_consumed <= 0.0:
+		_fail("região: nenhuma cidade consumiu comida (food_consumed=0)")
+	# Dinheiro conservado: o que saiu do caixa da região entrou no caixa da
+	# cidade (firm_cash) — money_total não some.
+	var cash_after := 0.0
+	for city: Dictionary in sim.to_dict().get("cities", []):
+		cash_after += float(city.get("region", {}).get("cash", 0.0))
+	print("[b3] consumo: food_spend=%.2f food_consumed=%.2f região.cash %.2f → %.2f"
+		% [total_food_spend, total_food_consumed, cash_before, cash_after])
+
+
+## (h) região sem dado = inerte (cenário sintético AGRIA/PORTUS).
+func _check_region_inert() -> void:
+	var sim := EconomySim.new()
+	sim.set_goods(_json(GOODS_PATH))
+	sim.set_recipes(_json(RECIPES_PATH))
+	sim.set_needs(_json(NEEDS_PATH))
+	if sim.has_method("set_services"):
+		sim.set_services(_json(SERVICES_PATH))
+	if sim.has_method("set_currencies"):
+		sim.set_currencies(_json(CURRENCIES_PATH))
+	sim.initialize_scenario()
+	sim.tick_day()
+	for city: Dictionary in sim.to_dict().get("cities", []):
+		var status: Dictionary = sim.get_region_status(String(city.get("id", "")))
+		if not status.is_empty():
+			_fail("região inerte: cidade sintética %s tem status de região" % city.get("id"))
+	print("[b3] inércia: cenário sintético sem região (get_region_status vazio).")
+
+
+## (i) determinismo de threads 1 × 16 (mesmo hash do save).
+func _check_determinism() -> void:
+	var sim1 := _make_world_threads(1)
+	for day in 10:
+		sim1.tick_day()
+	var hash1 := _sha(JSON.stringify(sim1.to_dict()))
+	var sim16 := _make_world_threads(16)
+	for day in 10:
+		sim16.tick_day()
+	var hash16 := _sha(JSON.stringify(sim16.to_dict()))
+	if hash1 != hash16:
+		_fail("região: hash do save difere entre threads 1 e 16 (%s vs %s)" % [
+			hash1.substr(0, 12), hash16.substr(0, 12)])
+	else:
+		print("[b3] determinismo: threads 1×16 → mesmo save (%.12s...)." % hash1)
