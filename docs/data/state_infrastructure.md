@@ -182,7 +182,8 @@ nações de `scenario/nations.json` + **5** territórios que só existem em
    Serve como proxy declarado; **não** é km/km² nem "% a 2 km de estrada". Se o Rural
    Access Index entrar, ele substitui o LPI na estrada com os mesmos cortes de percentual.
 3. **Idade do dado**: LBY e MRT usam eletricidade rural de **2012**; ARG, ERI, GNQ e VCT
-   usam água rural de 2016–2018; 24 nações usam LPI de 2014–2018. O ano está em cada
+   usam água rural de 2016–2018; 27 nações usam LPI de 2014–2018 (23 em 2018, 3 em 2016,
+   1 em 2014). O ano está em cada
    campo; nada foi extrapolado.
 4. **Uso no jogo**: não ligado. Ligar exige decisão de calibração (penalidade de acesso,
    ganho de produtividade) e regeneração de goldens — é da simulação.
