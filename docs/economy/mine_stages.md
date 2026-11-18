@@ -6,6 +6,9 @@
 > (90/30 d) e curva de custo (1,25/estágio) — continuam **declarados, não
 > calibrados** (decisão do dono, 2026-11-17). O aceite é de **mecânica,
 > invariantes e ordem de grandeza**, não de produção real dia a dia.
+> **Pendência medida (D-087, aberta):** o sweep de 365 d com a semente dá
+> **37 falências** de construção contra o limite de 28 (sem ela, 20) e o
+> minério fica no teto de 3× com e sem a semente — números e A/B em §7.4.
 > **Escopo do núcleo:** `gdextension/src/sim/{sim_constants.h,sim_types.h,
 > production.cpp,labor.cpp,construction.cpp,actions.cpp,commands.h,
 > save_state.cpp}`, fachada `gdextension/src/economy_sim.{h,cpp}`, IA
@@ -255,6 +258,11 @@ produção real de 2025 (§7). Nenhum outro campo muda de significado.
   pode descer (a reserva de referência é a escala; a profundidade só encarece).
 - A UI (ficha da mina) ainda não mostra o botão de aprofundar; o contrato de
   status já publica custo e estágio.
+- **Aberto (D-087):** com a semente, o sweep de 365 d dá **37 falências** de
+  construção (limite do dono 28; sem a semente, 20) e o minério fica no **teto
+  de 3×** do núcleo com e sem ela (§7.4). Os dois medem o mesmo ciclo — mina
+  semeada grande, IA aprofundando **51.946** vezes em 365 d e preço preso no
+  teto — e ficam para a próxima fatia de calibração; nada foi isentado.
 
 ## 7. Semente pela produção real (D-086b)
 
@@ -505,3 +513,57 @@ dia 0 (mão de obra), o que derruba a participação do país.
 > 2024 publicada (USGS/EI) e "atribuído" é a conversão declarada de §7.1. As
 > diferenças de participação no dia 30 são em grande parte demanda do modelo, e
 > não erro de semeadura — por isso a tabela traz as duas colunas.
+
+### 7.4 Efeito nos goldens, no CLI e no mundo de 365 d
+
+**Goldens A0/S0 (regerados em 18/11/2026, DLL debug deste worktree).** A
+diferença acumulada tem **duas** causas, e as duas já reprovavam os goldens
+antigos: o fix B2 (`ec73719`, que corrigiu a classe publicada e a proxy dos
+quintis **sem** regerar os goldens na época) e esta semente (`1288d4c`).
+
+| golden | save_sha256 | status_sha256 | antes (save / status) |
+| --- | --- | --- | --- |
+| `A0_60_urban` (60 d, IA + urbano) | `700c8481…` | `357755a3…` | `84d28700…` / `5f91d311…` |
+| `real_60_ai` (S0, 60 d, IA) | `2cfabec1…` | `96b9489c…` | `d64df2a1…` / `fc560221…` |
+| `real_60_noai` (S0, 60 d, sem IA) | `1739e53e…` | `f2c81576…` | `7070ff67…` / `bb88d8bb…` |
+| `demo_365_noai` (AGRIA/PORTUS) | `daf195c5…` | `489422ae…` | `a9dbd376…` / `ab317791…` |
+
+Determinismo: o A0 com duas rodadas idênticas e os três S0 com uma segunda
+rodada `--baseline` (0 diferenças nos quatro). O `demo_365_noai` muda **só**
+pelo fix B2: o harness demo monta AGRIA/PORTUS com `initialize_scenario` e não
+chama `resolve_initial_mines`, então a semente não o alcança.
+
+**CLI × Godot com IA (10 d, 834 cidades, 3.186 construções):** os snapshots
+finais são **byte-idênticos** (SHA-256 `B2983EEBD3B6…`, antes `F03B6549F032…` —
+muda porque as 447 minas agora nascem operando).
+
+**365 d real + IA (`--ai=1 --urban=1 --threads=1`):** drift de dinheiro
+**0,0003 XGS** e comida por nação **dentro** do portão de 30 d; **falências 37
+(limite 28) — REPROVADO**. O A/B com `extraction_2025.json` ausente (renomeado
+durante a corrida e restaurado) dá **20 falências**: o resto do branch responde
+pela subida 8 (D-086, antes do fix B2) → 20, e a semente por **+17**. Evidência:
+`docs/economy/perf/mine_seed_world_ai_365.json` (com) e
+`docs/economy/perf/mine_seed_world_ai_365_noseed.json` (sem). Não há isenção: o
+gate do dono não fecha com a semente como está.
+
+**Preço de minério no dia 365** (média ponderada pela quantidade vendida das
+834 cidades, contra o `base_price` do catálogo; ferramenta de diagnóstico
+temporária, não versionada):
+
+| mineral | com a semente | sem a semente |
+| --- | --- | --- |
+| petróleo | 3,000× | 3,000× |
+| gás | 3,000× | 3,000× |
+| carvão | 3,000× | 3,000× |
+| ferro | 3,000× | 3,000× |
+| cobre | 2,754× | 2,679× |
+| bauxita | 3,000× | 3,000× |
+
+Leitura: **não é colapso de preço, é o contrário** — os minerais estão no
+**teto de 3×** do núcleo **com e sem** a semente, então o teto **não** é efeito
+desta fase (a D-086 media 1,84× o ferro antes do fix B2; a mudança veio com o
+resto do branch, sem isenção nova). O que a semente muda é o **volume**: com
+ela o ferro vendido vai a **20.215 t/dia** contra 10.939 e a bauxita a **9.348**
+contra 5.637, com o preço já preso no teto. Aumentar a oferta não derruba o
+preço enquanto o teto estiver saturado: isso é a frente de preços, não a
+semente.
