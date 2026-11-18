@@ -63,6 +63,53 @@ inline Dictionary dict_value(const Dictionary& parent, const String& key) {
 	return value.get_type() == Variant::DICTIONARY ? Dictionary(value) : Dictionary();
 }
 
+// B3: lê o bloco `region` de um dict de cidade (state_regions.json já
+// resolvido pelo GDScript) e preenche o struct Region. Devolve false quando o
+// bloco está ausente/inválido — região inerte (ausência explícita).
+inline bool parse_region(const Dictionary& d, Region& region) {
+	if (!d.has("population_region") && !d.has("urban_population")) {
+		return false;
+	}
+	region.ready = true;
+	region.population_region = safe_nonneg(
+		static_cast<double>(d.get("population_region", 0.0)));
+	const double urban = safe_nonneg(
+		static_cast<double>(d.get("urban_population", 0.0)));
+	// Urbano capado no total (18 cidades têm urban > population_region).
+	region.urban_population = std::min(urban, region.population_region);
+	// Invariante: interior = total - urbano (piso 0). O campo do JSON
+	// (`region_population`) é só referência; recalculamos para o invariante
+	// valer mesmo com dado inconsistente.
+	region.region_pop = std::max(0.0,
+		region.population_region - region.urban_population);
+	const Variant us = d.get("urban_share", Variant());
+	if (us.get_type() == Variant::FLOAT || us.get_type() == Variant::INT) {
+		const double value = static_cast<double>(us);
+		// -1 (ou negativo) = sem dado (mix neutro); só valores >= 0 são fração.
+		region.urban_share = value >= 0.0 ? std::clamp(value, 0.0, 1.0) : -1.0;
+	} else {
+		region.urban_share = -1.0;
+	}
+	region.name = std::string(String(d.get("name", "")).utf8().get_data());
+	const Array states = d.get("states", Array());
+	for (int index = 0; index < states.size(); ++index) {
+		if (states[index].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary entry = states[index];
+		RegionState state;
+		state.id = std::string(String(entry.get("id", "")).utf8().get_data());
+		state.name = std::string(
+			String(entry.get("name", "")).utf8().get_data());
+		state.population = safe_nonneg(
+			static_cast<double>(entry.get("population", 0.0)));
+		state.area_km2 = safe_nonneg(
+			static_cast<double>(entry.get("area_km2", 0.0)));
+		region.states.push_back(std::move(state));
+	}
+	return true;
+}
+
 // §19: height_class do urban_land.json → gabarito do jogo. Valor ausente ou
 // desconhecido cai em baixa densidade (o save antigo não tem o campo).
 inline Density density_from_height_class(const String& height_class) {
@@ -199,6 +246,10 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_income_gini);
 	ClassDB::bind_method(D_METHOD("set_city_strata", "city_id", "shares"),
 	                     &EconomySim::set_city_strata);
+	ClassDB::bind_method(D_METHOD("set_city_region", "city_id", "data"),
+	                     &EconomySim::set_city_region);
+	ClassDB::bind_method(D_METHOD("get_region_status", "city_id"),
+	                     &EconomySim::get_region_status);
 	ClassDB::bind_method(D_METHOD("set_labor_profile", "city_id", "profile"),
 	                     &EconomySim::set_labor_profile);
 	ClassDB::bind_method(D_METHOD("set_minimum_wage", "nation", "value"),
@@ -820,8 +871,19 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		city.home_nation =
 			std::string(String(d.get("home_nation", d["nation"])).utf8().get_data());
 		city.landmass = std::string(String(d.get("landmass", "")).utf8().get_data());
-		city.population = safe_nonneg(static_cast<double>(d["population"]));
-		city.simulation_population = read_sim_population(d, city.population);
+		// B3: região da cidade (estados inteiros). Com dado (`region` no dict),
+		// `population` vira o total da região e `simulation_population` vira a
+		// aglomeração urbana (capada). Sem o bloco (cenário sintético), mantém o
+		// comportamento anterior (population = rateio; sim_population = urbano).
+		Region region;
+		const bool has_region = parse_region(d.get("region", Dictionary()), region);
+		if (has_region) {
+			city.population = region.population_region;
+			city.simulation_population = region.urban_population;
+		} else {
+			city.population = safe_nonneg(static_cast<double>(d["population"]));
+			city.simulation_population = read_sim_population(d, city.population);
+		}
 		city.center = {static_cast<double>(d["x"]), static_cast<double>(d["y"])};
 
 		// Caixas iniciais por habitante (constantes do modelo demo). A escala é
@@ -840,6 +902,12 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		// F7: perfil inicial de trabalho/educação a partir do índice de renda
 		// (1,0 por padrão; o GeographyService reaplica quando tem o PIB real).
 		apply_labor_profile(city);
+		// B3: o bloco da região (estados inteiros) foi parseado acima; semeia a
+		// demografia e os quintis do interior e reconcilia a população exibida.
+		city.region = std::move(region);
+		if (city.region.ready) {
+			sim_core_.seed_region(city);
+		}
 		// Aptidão padrão (inicializador do struct: suitability = {1.0, 1.0, 1.0,
 		// 0, ...} — trigo/ferro/arroz em 1.0). O GeographyService sobrescreve com
 		// o dado real em tempo de execução.
@@ -1884,7 +1952,7 @@ EconomySim::CityScalars EconomySim::city_scalars(std::size_t city_index,
 		}
 	}
 	const double basket_cost = kNeedPerCapita * cheapest_price;
-	s.living_standard = basket_cost > 0.0
+	s.living_standard = basket_cost > 0.0 && city.simulation_population > 0.0
 		? (city.pop.disposable / city.simulation_population) / basket_cost : 0.0;
 
 	// Indicadores derivados, no espírito do formato legado, para a camada
@@ -4794,6 +4862,11 @@ void EconomySim::apply_set_city_strata(const String& city_id,
 		// Sem dado: re-semeia com a proxy do Gini declarado.
 		sim_core_.seed_strata(*city, nullptr);
 	}
+	// B3: o interior espelha os quintis observados do país (20% de pessoas cada;
+	// a renda acompanha o alvo nacional). Sem dado urbano, 20% iguais.
+	if (city->region.ready) {
+		sim_core_.seed_region_strata(*city, total > 1e-9 ? values : nullptr);
+	}
 	refresh_income_classes(*city);
 	++status_static_version_;
 }
@@ -4805,6 +4878,81 @@ void EconomySim::set_city_strata(const String& city_id,
 	// ação de jogador — não passa pela fila A3 porque não existe, no jogo, um
 	// comando para reescrever a distribuição inicial.
 	apply_set_city_strata(city_id, shares);
+}
+
+void EconomySim::apply_set_city_region(const String& city_id,
+		const Dictionary& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	City* city = find_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr) {
+		return;
+	}
+	Region region;
+	if (!parse_region(data, region)) {
+		return;
+	}
+	city->region = std::move(region);
+	city->population = city->region.population_region;
+	city->simulation_population = city->region.urban_population;
+	// A aglomeração pode ter mudado: re-semeia o perfil urbano (demografia/
+	// estratos) e o bloco do interior. API de setup — vale antes do dia 1.
+	apply_labor_profile(*city);
+	sim_core_.seed_region(*city);
+	++status_static_version_;
+	status_invalidate();
+}
+
+void EconomySim::set_city_region(const String& city_id, const Dictionary& data) {
+	// API de SETUP, como set_city_strata: aplica direto (antes do dia 1).
+	apply_set_city_region(city_id, data);
+}
+
+Dictionary EconomySim::get_region_status(const String& city_id) const {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	Dictionary out;
+	const City* city = find_city(std::string(city_id.utf8().get_data()));
+	if (city == nullptr || !city->region.ready) {
+		return out;
+	}
+	const Region& region = city->region;
+	out["city"] = city_id;
+	out["name"] = String(region.name.c_str());
+	out["population"] = region.population_region;
+	out["urban_population"] = region.urban_population;
+	out["region_population"] = region.region_pop;
+	out["urban_share"] = region.urban_share;
+	out["employment"] = region.employment;
+	out["employment_mix"] = Array{region.employment_mix[0],
+		region.employment_mix[1], region.employment_mix[2]};
+	out["wage_income"] = region.wage_income;
+	out["income"] = region.income;
+	out["food_spend"] = region.food_spend;
+	out["food_need"] = region.food_need;
+	out["food_consumed"] = region.food_consumed;
+	out["satisfaction"] = region.satisfaction;
+	out["cash"] = region.cash;
+	Array states;
+	for (const RegionState& state : region.states) {
+		Dictionary entry;
+		entry["id"] = String(state.id.c_str());
+		entry["name"] = String(state.name.c_str());
+		entry["population"] = state.population;
+		entry["area_km2"] = state.area_km2;
+		states.append(entry);
+	}
+	out["states"] = states;
+	Array strata_people;
+	Array strata_income_share;
+	Array strata_savings;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		strata_people.append(region.stratum_people[s]);
+		strata_income_share.append(region.strata_income_share[s]);
+		strata_savings.append(region.stratum_savings[s]);
+	}
+	out["strata_people"] = strata_people;
+	out["strata_income_share"] = strata_income_share;
+	out["strata_savings"] = strata_savings;
+	return out;
 }
 
 void EconomySim::apply_set_income_gini(const String& city_id, double gini) {
@@ -6472,6 +6620,20 @@ Dictionary EconomySim::get_urban_city(const String& city_id) const {
 		out["strata_tenure_rent"] = strata_tenure_rent;
 		out["strata_tenure_informal"] = strata_tenure_informal;
 		out["strata_level"] = strata_level;
+	}
+	// B3: região da cidade (estados inteiros) — campos leves para o probe e a
+	// ficha. Cidade sem dado publica 0/vazio (ausência explícita).
+	{
+		const Region& region = city.region;
+		out["region_population"] = region.region_pop;
+		out["region_name"] = String(region.name.c_str());
+		Array region_states;
+		for (const RegionState& state : region.states) {
+			region_states.append(String(state.name.c_str()));
+		}
+		out["region_states"] = region_states;
+		out["region_employment"] = region.employment;
+		out["region_food"] = region.food_consumed;
 	}
 	// §19 W3: sinal de aperto por cidade (W4/UI) e fluxo do dia/mês.
 	out["housing_stress"] = house.housing_stress;

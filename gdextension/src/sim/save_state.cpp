@@ -461,6 +461,57 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		strata["lifecycle"] = strata_lifecycle;
 		pop["strata"] = strata;
 		entry["pop"] = pop;
+		// B3 (save v18): região da cidade (estados inteiros). Estado persistente
+		// (população, caixa, coortes e quintis do interior); os fluxos diários
+		// (emprego, renda, comida, satisfação) são derivados e recalculados.
+		{
+			const Region& region = city.region;
+			Dictionary region_entry = make_object();
+			region_entry["ready"] = region.ready;
+			region_entry["name"] = sim_str(region.name.c_str());
+			region_entry["population_region"] = region.population_region;
+			region_entry["urban_population"] = region.urban_population;
+			region_entry["region_pop"] = region.region_pop;
+			region_entry["urban_share"] = region.urban_share;
+			region_entry["cash"] = region.cash;
+			Array mix = make_array();
+			mix.append(region.employment_mix[0]);
+			mix.append(region.employment_mix[1]);
+			mix.append(region.employment_mix[2]);
+			region_entry["employment_mix"] = mix;
+			Array region_states = make_array();
+			for (const RegionState& state : region.states) {
+				Dictionary state_entry = make_object();
+				state_entry["id"] = sim_str(state.id.c_str());
+				state_entry["name"] = sim_str(state.name.c_str());
+				state_entry["population"] = state.population;
+				state_entry["area_km2"] = state.area_km2;
+				region_states.append(state_entry);
+			}
+			region_entry["states"] = region_states;
+			Array region_age_bands = make_array();
+			if (region.demography_ready) {
+				for (int band = 0; band < kAgeBands; ++band) {
+					region_age_bands.append(std::max(0.0, region.age_band[band]));
+				}
+			}
+			region_entry["age_bands"] = region_age_bands;
+			Dictionary region_strata = make_object();
+			region_strata["ready"] = region.strata_ready;
+			Array region_income_share = make_array();
+			Array region_people = make_array();
+			Array region_savings = make_array();
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				region_income_share.append(region.strata_income_share[s]);
+				region_people.append(region.stratum_people[s]);
+				region_savings.append(region.stratum_savings[s]);
+			}
+			region_strata["income_share"] = region_income_share;
+			region_strata["people"] = region_people;
+			region_strata["savings"] = region_savings;
+			region_entry["strata"] = region_strata;
+			entry["region"] = region_entry;
+		}
 		entry["government_goods_spend"] = city.government_goods_spend;
 		// §15 (save v12): emprego setorial (agro/indústria/serviços + informal).
 		// É estado DERIVADO, mas o prólogo usa `sector_workers[1]` como base da
@@ -1727,6 +1778,100 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					total += city.pop.stratum_savings[s];
 				}
 				city.pop.savings = total;
+			}
+		}
+		// B3 (save v18): região da cidade (estados inteiros). Save v17 e
+		// anteriores migram no mundo real: `region_pop = max(0, population -
+		// simulation_population)` (dado já no save), coortes/estratos da nação e
+		// mix neutro (sem dado de urbanização). Nada é inventado.
+		{
+			Region region;
+			const Dictionary saved_region = entry.get("region", Dictionary());
+			if (version >= 18 && !saved_region.is_empty()) {
+				region.ready = bool(saved_region.get("ready", true));
+				region.name = std::string(
+					String(saved_region.get("name", "")).utf8().get_data());
+				region.population_region = safe_nonneg(
+					double(saved_region.get("population_region", 0.0)));
+				region.urban_population = safe_nonneg(
+					double(saved_region.get("urban_population", 0.0)));
+				region.region_pop = safe_nonneg(
+					double(saved_region.get("region_pop", 0.0)));
+				const double urban_share = double(
+					saved_region.get("urban_share", -1.0));
+				region.urban_share = std::isfinite(urban_share)
+					&& urban_share >= 0.0 ? std::clamp(urban_share, 0.0, 1.0)
+					: -1.0;
+				region.cash = std::max(0.0,
+					double(saved_region.get("cash", 0.0)));
+				const Array mix = saved_region.get("employment_mix", Array());
+				for (int m = 0; m < 3 && m < mix.size(); ++m) {
+					region.employment_mix[m] = safe_nonneg(double(mix[m]));
+				}
+				const Array region_states = saved_region.get("states", Array());
+				for (int index = 0; index < region_states.size(); ++index) {
+					if (region_states[index].get_type() != Variant::DICTIONARY) {
+						continue;
+					}
+					const Dictionary state_entry = region_states[index];
+					RegionState state;
+					state.id = std::string(
+						String(state_entry.get("id", "")).utf8().get_data());
+					state.name = std::string(
+						String(state_entry.get("name", "")).utf8().get_data());
+					state.population = safe_nonneg(
+						double(state_entry.get("population", 0.0)));
+					state.area_km2 = safe_nonneg(
+						double(state_entry.get("area_km2", 0.0)));
+					region.states.push_back(std::move(state));
+				}
+				const Array region_age_bands =
+					saved_region.get("age_bands", Array());
+				if (region_age_bands.size() >= kAgeBands) {
+					double total = 0.0;
+					for (int band = 0; band < kAgeBands; ++band) {
+						region.age_band[band] =
+							std::max(0.0, double(region_age_bands[band]));
+						total += region.age_band[band];
+					}
+					if (total > 0.0) {
+						region.demography_ready = true;
+					}
+				}
+				const Dictionary region_strata =
+					saved_region.get("strata", Dictionary());
+				region.strata_ready = bool(region_strata.get("ready", true));
+				const auto read_region_strata = [&region_strata](
+						const char* key, double* out) {
+					const Array values = region_strata.get(key, Array());
+					for (int s = 0; s < kIncomeStrata; ++s) {
+						out[s] = s < values.size()
+							? std::max(0.0, double(values[s])) : 0.0;
+					}
+				};
+				read_region_strata("income_share", region.strata_income_share);
+				read_region_strata("people", region.stratum_people);
+				read_region_strata("savings", region.stratum_savings);
+			} else if (ws.world_mode) {
+				// v17 → v18: interior = população regional exibida - população de
+				// simulação (ambos já no save). Cenário sintético (world_mode
+				// false) continua sem região (ausência explícita).
+				region.ready = true;
+				region.population_region = safe_nonneg(city.population);
+				region.urban_population = safe_nonneg(city.simulation_population);
+				region.region_pop = std::max(0.0,
+					city.population - city.simulation_population);
+				region.urban_share = -1.0;
+			}
+			city.region = std::move(region);
+			if (city.region.ready) {
+				// Reconciliia sem re-semear os quintis já carregados do save
+				// (seed_region resetaria a poupança/people lidas acima).
+				core.recompute_region_mix(city);
+				core.apply_region_demography(city);
+				if (!city.region.strata_ready) {
+					core.seed_region_strata(city, nullptr);
+				}
 			}
 		}
 		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));

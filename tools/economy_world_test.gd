@@ -28,6 +28,8 @@ extends SceneTree
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
+## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
+const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -223,6 +225,8 @@ func _test_world() -> void:
 		_fail("cenario vazio (cidades=%d, construcoes=%d, bens=%d)" % [
 			cities.size(), buildings.size(), goods.size()])
 		return
+	# B3: região (estados inteiros) viaja no snapshot pelo bloco `region`.
+	RegionDataScript.attach(cities)
 
 	var sim = EconomySim.new()
 	# Q-015: workers do núcleo antes de criar o mundo. Binário anterior à Q-015

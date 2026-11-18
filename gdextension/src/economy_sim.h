@@ -822,6 +822,8 @@ private:
 	// para re-semear com a proxy do Gini declarado.
 	void apply_set_city_strata(const String& city_id,
 		const PackedFloat64Array& shares);
+	// B3: aplica o bloco de região (setup; ver set_city_region).
+	void apply_set_city_region(const String& city_id, const Dictionary& data);
 	void apply_set_minimum_wage(const String& nation, double value);
 	void apply_set_wage_rigidity(double value);
 	void apply_set_tariff(const String& buyer_nation, const String& seller_nation,
@@ -1447,6 +1449,21 @@ private:
 	 */
 	void set_city_strata(const String& city_id,
 		const PackedFloat64Array& shares);
+	/**
+	 * B3 — declara o bloco de REGIÃO de uma cidade (estados inteiros), já
+	 * resolvido pelo GDScript a partir de state_regions.json: `population_region`,
+	 * `urban_population`, `region_population`, `urban_share` (0..1 ou -1), `name`
+	 * e `states` ([{id, name, population, area_km2}]). Semeia demografia/quintis
+	 * do interior e reconcilia a população exibida. API de inicialização (antes
+	 * do dia 1), como set_city_strata.
+	 */
+	void set_city_region(const String& city_id, const Dictionary& data);
+	/**
+	 * B3 — ficha da região de uma cidade (nome, estados, população, urbanização,
+	 * emprego, renda, comida, satisfação). `{}` quando a cidade não existe ou não
+	 * tem dado de região.
+	 */
+	Dictionary get_region_status(const String& city_id) const;
 	/**
 	 * F7 calibração — recalcula as classes de consumo (população e teto) a
 	 * partir do Gini declarado e do custo da cesta básica do dia. Sem Gini,

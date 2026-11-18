@@ -67,7 +67,17 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // não têm as chaves: as coortes são semeadas da estrutura nacional no load
 // (`seed_demography`); sem dado para a nação, o perfil paramétrico legado
 // continua valendo.
-constexpr int kSaveVersion = 17;
+// v17 (B2): estratos de renda (quintis) — bloco `pop.strata` (pessoas,
+// quintis-alvo, dispersão, participação no capital, poupança, dívida,
+// patrimônio, taxa, aluguel pago, nível, mistura educacional, posse e ciclo de
+// vida) e `rent_income_next`. Save v16 e anteriores migram semeando os quintis
+// pela proxy do Gini declarado no fim do load.
+// v18 (B3): região da cidade (estados inteiros) — bloco `city.region` (nome,
+// população total/urbana/interior, urbanização nacional, mix de emprego,
+// estados, coortes etárias e quintis do interior, caixa). Save v17 e anteriores
+// migram: `region_pop = max(0, population - simulation_population)` (já no
+// save), coortes/estratos da nação e mix neutro (sem dado de urbanização).
+constexpr int kSaveVersion = 18;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -102,6 +112,42 @@ constexpr double kAgeHealthWeight[5] = {0.05, 0.10, 0.25, 0.80, 2.50};
 // (0,60), 25-44 residual (0,10), 45+ quase nada (0,02 e 0,00). Escala a
 // necessidade per capita do setor; não é matrícula observada.
 constexpr double kAgeEducationWeight[5] = {1.00, 0.60, 0.10, 0.02, 0.00};
+
+// ---------------------------------------------------------------------------
+// B3 — REGIÃO DA CIDADE (estados inteiros). O DADO é a urbanização nacional
+// (urban_share_reference.json, World Bank SP.URB.TOTL.IN.ZS, 10 nações) e a
+// população por estado (state_regions.json). O que segue é MODELO DECLARADO:
+// ---------------------------------------------------------------------------
+// Urbanização usada quando a nação não tem dado (`urban_share` = -1): mix
+// neutro explícito (metade rural/metade urbana) — ausência de dado declarada,
+// não número por país inventado.
+constexpr double kRegionUrbanShareNeutral = 0.50;
+// Mix de emprego do interior por urbanização (fração do emprego): primário
+// (agro/extração/mineração/madeira) cai com a urbanização, indústria leve e
+// serviços locais sobem. Interpolação LINEAR entre os dois extremos:
+//   mix[0] = lerp(kRegionAgriAtRural, kRegionAgriAtUrban, urban_share)
+//   mix[1] = lerp(kRegionIndustryAtRural, kRegionIndustryAtUrban, urban_share)
+//   mix[2] = 1 - mix[0] - mix[1]
+// Ordem de grandeza: o campo é majoritariamente primário mesmo em países
+// urbanizados (o interior é o que resta fora da aglomeração), mas a fração de
+// serviços/indústria leve cresce com a renda/urbanização. Não é dado por país.
+constexpr double kRegionAgriAtRural = 0.70;
+constexpr double kRegionAgriAtUrban = 0.35;
+constexpr double kRegionIndustryAtRural = 0.15;
+constexpr double kRegionIndustryAtUrban = 0.25;
+// Desconto rural: o salário médio do interior é uma fração do salário urbano
+// do mesmo nível de escolaridade (renda rural < urbana, padrão da Parte D).
+constexpr double kRegionRuralWageDiscount = 0.55;
+// Necessidade alimentar per capita do interior (t-eq de grão/dia). Igual à
+// urbana por construção (kNeedPerCapita): a diferença está no acesso/preço, não
+// na necessidade física.
+// (Usa kNeedPerCapita diretamente; esta nota documenta a decisão.)
+// Imposto do interior: mesma alíquota kTaxRate, pago à prefeitura da
+// cidade-polo (contraparte no caixa municipal).
+// Fração da renda do interior gasta em serviços locais (espelho do
+// kServiceSpendShare urbano; sem setor de serviço próprio, é um custo de
+// acesso que volta ao caixa da cidade-polo como receita de serviço).
+constexpr double kRegionServiceSpendShare = 0.45;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.

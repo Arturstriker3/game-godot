@@ -184,14 +184,14 @@ void SimCore::phase_demography() {
 		for (int track = 0; track < kEducationLevels - 1; ++track) {
 			pop.studying[track] *= ratio;
 		}
-		// População REAL exibida acompanha a de simulação (mesma razão).
-		if (new_total > 0.0 && pop.population > 0.0) {
-			city.population *= new_total / pop.population;
-		}
+		// População REAL exibida = urbano + interior (B3). O interior tem a
+		// própria demografia (region.cpp, cadência mensal); aqui o urbano
+		// mudou, então a população exibida é reconciliada pelo invariante.
 		for (int index = 0; index < kAgeBands; ++index) {
 			pop.age_band[index] = next[index];
 		}
 		apply_demography(city);
+		reconcile_city_population(city);
 	}
 }
 

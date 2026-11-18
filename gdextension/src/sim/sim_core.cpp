@@ -185,10 +185,11 @@ double SimCore::money_total() const {
 	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash;
 	for (const City& city : ws_.cities) {
 		// capital_income_next é um crédito pendente às famílias: entra no total
-		// para a conservação valer em qualquer ponto do tick.
+		// para a conservação valer em qualquer ponto do tick. O caixa da região
+		// (B3) é dinheiro do mundo, como o das famílias.
 		total += city.pop.savings + city.firm_cash + city.service_cash
 		       + city.government_budget + city.capital_income_next
-		       + city.rent_income_next;
+		       + city.rent_income_next + city.region.cash;
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
@@ -793,6 +794,119 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 	}
 
 	return violations;
+}
+
+// ---------------------------------------------------------------------------
+// B3 — REGIÃO (estados inteiros): semeadura do bloco do interior.
+// ---------------------------------------------------------------------------
+void SimCore::seed_region_demography(City& city) {
+	Region& region = city.region;
+	if (!region.ready || region.demography_ready) {
+		return;
+	}
+	const auto found = ws_.age_structures.find(city.nation);
+	if (found == ws_.age_structures.end() || !found->second.valid) {
+		return;
+	}
+	const AgeStructure& structure = found->second;
+	const double population = std::max(0.0, region.region_pop);
+	double total = 0.0;
+	for (int band = 0; band < kAgeBands; ++band) {
+		region.age_band[band] = population * structure.band[band];
+		total += region.age_band[band];
+	}
+	region.age_band[2] = std::max(0.0,
+		region.age_band[2] + (population - total));
+	region.demography_ready = true;
+}
+
+void SimCore::apply_region_demography(City& city) {
+	Region& region = city.region;
+	seed_region_demography(city);
+	if (!region.demography_ready) {
+		return;
+	}
+	double total = 0.0;
+	for (int band = 0; band < kAgeBands; ++band) {
+		region.age_band[band] = std::max(0.0, region.age_band[band]);
+		total += region.age_band[band];
+	}
+	region.region_pop = total;
+	reconcile_city_population(city);
+}
+
+void SimCore::seed_region_strata(City& city, const double* shares) {
+	Region& region = city.region;
+	if (!region.ready) {
+		return;
+	}
+	double income_share[kIncomeStrata];
+	if (shares != nullptr) {
+		double sum = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			income_share[s] = std::max(0.0, shares[s]);
+			sum += income_share[s];
+		}
+		if (sum <= 1e-9) {
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				income_share[s] = 1.0 / double(kIncomeStrata);
+			}
+		} else {
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				income_share[s] /= sum;
+			}
+		}
+	} else {
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			income_share[s] = 1.0 / double(kIncomeStrata);
+		}
+	}
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		region.strata_income_share[s] = income_share[s];
+		region.stratum_people[s] = std::max(0.0, region.region_pop)
+			/ double(kIncomeStrata);
+		region.stratum_savings[s] = 0.0;
+		region.stratum_net_income[s] = 0.0;
+		region.stratum_food_spend[s] = 0.0;
+		region.stratum_need[s] = 0.0;
+		region.stratum_consumed[s] = 0.0;
+	}
+	region.strata_ready = true;
+}
+
+void SimCore::recompute_region_mix(City& city) {
+	Region& region = city.region;
+	const double urban = region.urban_share >= 0.0
+		? std::clamp(region.urban_share, 0.0, 1.0)
+		: kRegionUrbanShareNeutral;
+	const double agri = kRegionAgriAtRural
+		+ (kRegionAgriAtUrban - kRegionAgriAtRural) * urban;
+	const double industry = kRegionIndustryAtRural
+		+ (kRegionIndustryAtUrban - kRegionIndustryAtRural) * urban;
+	region.employment_mix[0] = agri;
+	region.employment_mix[1] = industry;
+	region.employment_mix[2] = std::max(0.0, 1.0 - agri - industry);
+}
+
+void SimCore::seed_region(City& city) {
+	Region& region = city.region;
+	if (!region.ready) {
+		return;
+	}
+	recompute_region_mix(city);
+	apply_region_demography(city);
+	// Quintis do interior: usa os alvos do país quando a POP urbana já foi
+	// semeada com eles (set_city_strata), senão 20% iguais (ausência explícita).
+	if (city.pop.strata_ready) {
+		seed_region_strata(city, city.pop.strata_income_share);
+	} else {
+		seed_region_strata(city, nullptr);
+	}
+}
+
+void SimCore::reconcile_city_population(City& city) {
+	city.population = std::max(0.0, city.simulation_population)
+		+ (city.region.ready ? std::max(0.0, city.region.region_pop) : 0.0);
 }
 
 } // namespace ogs

@@ -169,6 +169,31 @@ public:
 	void charge_households(Pop& pop, double amount) const;
 	void credit_households(Pop& pop, double amount) const;
 
+	// ------------------------------------------------------------------
+	// B3 — REGIÃO (estados inteiros), bloco simplificado do interior.
+	// ------------------------------------------------------------------
+	// Semeia/reaplica a demografia do interior (5 coortes da estrutura
+	// etária nacional). Idempotente; sem dado para a nação NÃO faz nada.
+	void seed_region_demography(City& city);
+	// Deriva os totais do interior a partir das coortes (region_pop = soma).
+	void apply_region_demography(City& city);
+	// Semeia os 5 quintis do interior: 20% de pessoas cada; `shares` (5) são
+	// os quintis de renda observados (ou nullptr = 20% iguais — ausência
+	// explícita). Idempotente.
+	void seed_region_strata(City& city, const double* shares);
+	// Recalcula o mix de emprego do interior a partir de `urban_share`
+	// (fórmula declarada em sim_constants.h). Sem dado, mix neutro.
+	void recompute_region_mix(City& city);
+	// Semeia o bloco inteiro (demografia + estratos + mix) e reconcilia a
+	// população exibida com o invariante urbano + interior.
+	void seed_region(City& city);
+	// Reconcilia `city.population` com o invariante B3:
+	// urbano (simulation_population) + interior (region.region_pop).
+	void reconcile_city_population(City& city);
+	// Fase diária da região (cadência A6): consumo diário, emprego/salário/
+	// renda semanais e estratos/poupança mensais. Implementada em region.cpp.
+	void phase_region();
+
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);
 	// F7 — custo diário da cesta completa de um nível de necessidade aos preços

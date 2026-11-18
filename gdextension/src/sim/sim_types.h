@@ -798,6 +798,68 @@ namespace ogs {
 		double informal = 0.0;
 	};
 
+// ---------------------------------------------------------------------------
+// B3 — REGIÃO DA CIDADE (estados inteiros, admin-1 do Natural Earth).
+//
+// Um bloco por cidade: toda a população fora da aglomeração (o interior) vive
+// aqui. Bloco SIMPLIFICADO por decisão do dono: sem mercado de solo/moradia e
+// sem prefeitura própria — a simulação urbana completa existe só na cidade. O
+// interior reaproveita B1 (5 coortes etárias) e B2 (5 quintis de renda) numa
+// dimensão separada da POP urbana. O caixa (`cash`) é dinheiro do mundo e entra
+// em `money_total`. Ver docs/plans/b3_state_regions.md e a decisão D-085.
+// ---------------------------------------------------------------------------
+// Um estado admin-1 anexado à região da cidade (id estável do Natural Earth).
+struct RegionState {
+	std::string id;
+	std::string name;
+	double population = 0.0;
+	double area_km2 = 0.0;
+};
+
+struct Region {
+	// `ready` = tem dado de região (state_regions.json ou migração v17).
+	// Falso em cenário sintético (AGRIA/PORTUS) e em cidade sem entrada.
+	bool ready = false;
+	// Nome do estado principal (maior população); vazio sem dado.
+	std::string name;
+	// População total da região (urbano + interior), a aglomeração (urbana) e o
+	// interior. Invariante: population_region = urban_population + region_pop.
+	double population_region = 0.0;
+	double urban_population = 0.0;
+	double region_pop = 0.0;
+	// Urbanização nacional (World Bank SP.URB.TOTL.IN.ZS); -1 = sem dado
+	// (mix neutro declarado). Alimenta `employment_mix` (fórmula em
+	// sim_constants.h, kRegion*).
+	double urban_share = -1.0;
+	// Mix de emprego do interior: [0] agro/extração (primário), [1] indústria
+	// leve, [2] serviços locais — soma 1. Derivado de `urban_share` (modelo).
+	double employment_mix[3] = {};
+	std::vector<RegionState> states;
+	// B1: coortes etárias do interior (mesma ordem de Pop::age_band).
+	double age_band[5] = {};
+	bool demography_ready = false;
+	// B2: quintis do interior (20% de pessoas cada; renda por quintil).
+	bool strata_ready = false;
+	double strata_income_share[kIncomeStrata] = {};
+	double stratum_people[kIncomeStrata] = {};
+	double stratum_savings[kIncomeStrata] = {};
+	double stratum_net_income[kIncomeStrata] = {};
+	double stratum_food_spend[kIncomeStrata] = {};
+	double stratum_need[kIncomeStrata] = {};
+	double stratum_consumed[kIncomeStrata] = {};
+	// Caixa do interior (dinheiro do mundo) e fluxos do dia (derivados; não
+	// precisam ser persistidos — são recalculados a cada dia).
+	double cash = 0.0;
+	double wage_income = 0.0;   // salário do setor primário (semana)
+	double income = 0.0;        // renda disponível do dia
+	double employment = 0.0;    // empregados no setor primário
+	double food_spend = 0.0;    // gasto com comida no dia
+	double food_need = 0.0;     // necessidade (t-eq de grão)
+	double food_consumed = 0.0; // consumido (t-eq de grão)
+	double satisfaction = 0.0;  // satisfação alimentar (0..1)
+	double taxes = 0.0;         // imposto pago à prefeitura
+};
+
 
 	struct City {
 		std::string id;
@@ -906,6 +968,8 @@ namespace ogs {
 		// Reservas minerais por produto (extração com esgotamento).
 		Deposit deposits[kMaxProducts];
 		Pop pop;
+		// B3: região (estados inteiros) — bloco simplificado do interior.
+		Region region;
 		Market markets[kMaxProducts];
 		// F8: mercados de serviço por setor (ordem de services.json).
 		ServiceMarket service_markets[kMaxServiceSectors];
