@@ -334,6 +334,14 @@ depósito mapeado, não há mina.
   SAU (83,9), petróleo QAT (43,3). Eles mantêm a regra histórica (mina no
   último estágio, piso), então o jogo **subestima** esses produtores — é a
   alternativa honesta a inventar uma jazida.
+- **7 pares têm cota mas nenhuma cidade** e, no arquivo, aparecem com
+  `game_t_day > 0` e `cities: []` **fora** de `unallocated` (carvão BRA, GBR,
+  IRN, MEX, SRB; petróleo FRA, SUR) — todos abaixo de 0,5 t/dia, somando
+  ~1,36 t/dia (0,005% do mundo). Como a cota abaixo do mínimo não gera
+  construção, o efeito no jogo é nulo; é inconsistência de **contabilidade do
+  arquivo** (o gerador não os moveu para `unallocated`), registrada aqui em vez
+  de reescrever o JSON à mão sem o gerador versionado (§7.1, primeiro
+  parágrafo).
 
 No núcleo, a capacidade nominal da construção é
 `produção atribuída ÷ (0,5 + 0,5 × qualidade)`, porque a produção efetiva é
@@ -547,8 +555,9 @@ pela subida 8 (D-086, antes do fix B2) → 20, e a semente por **+17**. Evidênc
 gate do dono não fecha com a semente como está.
 
 **Preço de minério no dia 365** (média ponderada pela quantidade vendida das
-834 cidades, contra o `base_price` do catálogo; ferramenta de diagnóstico
-temporária, não versionada):
+834 cidades, contra o `base_price` do catálogo; medido com
+`tools/ore_price_365.gd`, que reproduz a tabela — no dia 1 ele dá 1,05× em
+todos e os volumes batem com a coluna "sim dia 0" de §7.3):
 
 | mineral | com a semente | sem a semente |
 | --- | --- | --- |
