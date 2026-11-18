@@ -41,7 +41,7 @@ func _run() -> void:
 
 	var city := _first_city_with(true)
 	if city.is_empty():
-		_failures.append("nenhuma cidade com porto no resumo")
+		_failures.append("nenhuma cidade com porto no cenário")
 		_finish()
 		return
 	var point := Vector2(760.0, 520.0)
@@ -136,23 +136,30 @@ func _tooltip_texts() -> Array[String]:
 	return out
 
 
-## Cidade do resumo com porto (ou sem, quando `want_port` = false).
+## Cidade com porto (ou sem, quando `want_port` = false). A4 (D-079): o resumo
+## diário é leve e não carrega `cities`; as cidades vêm das colunas por cidade.
 func _first_city_with(want_port: bool) -> Dictionary:
-	for city in _summary().get("cities", []):
-		var ports := WorldFacts.ports_for_city(String(city.get("id", "")))
+	var columns: Dictionary = _economy.call("city_columns")
+	var ids: PackedStringArray = columns.get("id", PackedStringArray())
+	var names: PackedStringArray = columns.get("name", PackedStringArray())
+	var nations: PackedStringArray = columns.get("nation", PackedStringArray())
+	for index in ids.size():
+		var ports := WorldFacts.ports_for_city(ids[index])
 		if want_port == ports.is_empty():
 			continue
-		return city
+		return {"id": ids[index], "name": names[index], "nation": nations[index]}
 	return {}
 
 
 func _city_with_deposits() -> Dictionary:
 	# O status diário é leve: as jazidas vêm sob demanda em get_city_status(id).
-	for city in _summary().get("cities", []):
-		var sim: Object = _economy.get("sim")
-		if sim == null or not sim.has_method("get_city_status"):
-			break
-		var heavy: Dictionary = sim.get_city_status(String(city.get("id", "")))
+	var sim: Object = _economy.get("sim")
+	if sim == null or not sim.has_method("get_city_status"):
+		return {}
+	var ids: PackedStringArray = (_economy.call("city_columns") as Dictionary).get(
+			"id", PackedStringArray())
+	for city_id in ids:
+		var heavy: Dictionary = sim.get_city_status(String(city_id))
 		if not (heavy.get("deposits", {}) as Dictionary).is_empty():
 			return heavy
 	return {}
@@ -174,10 +181,6 @@ func _expect(texts: Array[String], needle: String, what: String) -> void:
 	if needle.is_empty() or not texts.has(needle):
 		_failures.append("tooltip sem %s ('%s'): %s"
 				% [what, needle, " | ".join(texts)])
-
-
-func _summary() -> Dictionary:
-	return _hud.get("_summary")
 
 
 func _city_name(city: Dictionary) -> String:
