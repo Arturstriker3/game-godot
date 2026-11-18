@@ -554,3 +554,20 @@ soma 8.203.501.062, rateio 834 reproduzidas/53 alteradas, 19 cidades com região
 parecer do `verificador-flash` **APROVADO** (15/15 `sim_population`/lat/lon conferidos no dump
 GeoNames, 13/13 aglomerações na tabela de 2026, 9/9 vizinhos `after + removed == before`,
 doc == JSON campo a campo). Doc: `docs/plans/b3_extra_capitals.md`. - @gerente-dados
+
+
+---
+
+## @gerente-simulacao - 2026-11-18 (M2 fechado: bateria longa, sweep 365 d e bench)
+
+Marco **M2** do plano (`docs/plans/perf_pop_financas_plano.md` §Marcos: "parar, rodar a bateria longa e atualizar o `GAME_STATE.md`"), rodado no HEAD `f2a845a` (Parte A + B1–B5 + minas, save v21). Relatório completo: **`docs/economy/M2_marco.md`**. Nada de código de simulação mudou nesta rodada.
+
+- **Bateria longa: 73 testes** (65 scripts `SceneTree` + 8 cenas, um por vez, exit code capturado) → **66 verdes, 7 defasados** (A4 resumo leve: `city_tooltip`/`nation_city_list`; B2 consumo por quintil: `income_distribution`/`pop_needs`; IA GDScript legada: `bistability`/`deposit_ownership`; locale en: `wheat_card`). Detalhe e atribuição em §2 do relatório e `GAME_STATE.md` §15.
+- **Equivalência A0** (60 d, IA + urbano, 2 rodadas): **0 diferenças** e shas iguais ao golden (`save bdd355b3…`, `status ae6c500b…`, money 6.523.551.982,90, 41.802 negócios, 0 falências).
+- **CLI × Godot 10 d com IA**: arquivos **byte-idênticos** (`2D7D35C4…`, 70.854.209 B) e **0 diferenças** no comparador em tolerância 0; snapshot de 61.834.369 B (849 cidades, 3.222 construções).
+- **Sweep 365 d real+float** (`m2_world_sweep.json`): falências **4/4** (limite 28), drift **−0,0022/−0,0012** (limite 0,01), 41.506 negócios de serviço (12.536 falidos no real), peg determinístico (`218b4be0…`) e sonda float diferente (`13d1e6df…`). **Portão de comida falha em 12 nações no real / 16 no float** vs a B4: ARE −53,2, AGO −17,8, KGZ −13,1, BFA −11,6, GNQ −10,6, CAF −8,1, NER −7,8, COD −6,1, KEN −5,7, TZA −4,8, SOM −3,4, HTI −3,0 p.p.; 139/179 abaixo de 0,975 (mediana 0,7065, pior PSX 0,000). Hipótese com evidência: a B5 cobra +30% de acesso na comida da Região e toda região nasce com infra 0.
+- **Mundo em 365 d**: **1.813 obras de infra** da IA (754 estrada / 619 luz / 440 água em 693 regiões), **346 concessões**, comida mínima AFG 0,0000. **Urbanização 0,256709 → 0,256209** com **18.984** migrantes interior→polo contra **+56,0 M** de crescimento do interior — migração baixa quantificada.
+- **Bench canônico 3×60 d** (`m2_bench.json`, release reconstruída do HEAD, DLL debug devolvida com hash conferido): dia = tick **39,61 ms** (36,73/39,61/40,33), memória **142,4 MB**, **3,93× o A0**. O critério de 3% entre rodadas **não fechou** (9,08%) — host não ocioso (outra worktree com Godot headless e Chrome/Steam); vale a mediana, como em A5/A6/A7. Custo da Parte B no tick: `migration` 0,29 + `region` 0,14 + `demography` 0,016 ms.
+- **Única mudança de ferramenta:** `tools/b5_world_ai_365.gd` aceita `--out=` (evidência do M2 sem sobrescrever a da B5).
+
+**Pedido de verificação ao @gerente-qualidade:** conferir `docs/economy/M2_marco.md` campo a campo contra as evidências (`docs/economy/perf/m2_*.json`, logs da bateria e `m2_bench.json`) e dar parecer. - @gerente-simulacao

@@ -28,6 +28,10 @@ const MUNICIPAL_FINANCE_PATH := "res://data/definitions/economy/municipal_financ
 const OUT_PATH := "res://docs/economy/perf/b5_world_ai_365.json"
 const DAYS := 365
 
+## `--out=<caminho>` regrava a evidência em outro arquivo (o M2 gera a sua sem
+## sobrescrever a da B5). Sem a flag, o destino é o histórico da B5.
+var _out := OUT_PATH
+
 
 func _json(path: String) -> Variant:
 	var f := FileAccess.open(path, FileAccess.READ)
@@ -37,6 +41,11 @@ func _json(path: String) -> Variant:
 
 
 func _init() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--out="):
+			_out = arg.split("=", true, 1)[1]
+			if not _out.begins_with("res://") and not _out.begins_with("user://"):
+				_out = "res://" + _out
 	var cities: Array = _json(CITIES_PATH)
 	var ports: Array = _json(PORTS_PATH)
 	var buildings: Array = _json(BUILDINGS_PATH)
@@ -125,11 +134,12 @@ func _init() -> void:
 		"min_food_satisfaction": min_sat,
 		"min_food_nation": min_nation,
 	}
-	var f := FileAccess.open(OUT_PATH, FileAccess.WRITE)
+	var f := FileAccess.open(_out, FileAccess.WRITE)
 	f.store_string(JSON.stringify(out, "  "))
 	f.close()
 	print("[b5-365] falências=%d drift=%.6f comida_min=%s(%.4f) infra=%d(%d estrada/%d luz/%d água em %d regiões) concessões=%d"
 		% [out["bankruptcies"], out["money_drift"], min_nation, min_sat,
 		infra_road + infra_power + infra_water, infra_road, infra_power,
 		infra_water, regions_with_infra, concessions])
+	print("[b5-365] evidência em " + _out)
 	quit(0)
