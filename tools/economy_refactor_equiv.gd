@@ -27,6 +27,8 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## B1: estrutura etária por nação (definição estática), antes do mundo.
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
@@ -128,6 +130,10 @@ func _run() -> void:
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
 			sim.set_sector_employment(sector)
+	if sim.has_method("set_age_structure"):
+		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
+		if not age_structure.is_empty():
+			sim.set_age_structure(age_structure)
 	if sim.has_method("set_profiling"):
 		sim.set_profiling(_profile)
 	if sim.has_method("set_sim_threads"):

@@ -37,6 +37,8 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## B1: estrutura etária por nação (definição estática), antes do mundo.
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 ## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -142,6 +144,10 @@ func _run() -> void:
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
 			sim.set_sector_employment(sector)
+	if sim.has_method("set_age_structure"):
+		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
+		if not age_structure.is_empty():
+			sim.set_age_structure(age_structure)
 	if sim.has_method("set_sim_threads"):
 		sim.set_sim_threads(_threads)
 	if not _failures.is_empty():

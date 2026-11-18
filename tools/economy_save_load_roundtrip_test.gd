@@ -29,6 +29,7 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
 const HOUSING_PATH := "res://data/definitions/economy/housing.json"
@@ -107,6 +108,12 @@ func _load_chains(sim) -> void:
 		var sector := _load_dict(SECTOR_EMPLOYMENT_PATH)
 		if not sector.is_empty():
 			sim.set_sector_employment(sector)
+	# B1: estrutura etária por nação (definição estática), antes de criar o
+	# mundo — e antes do `from_dict`, que semeia as coortes na migração.
+	if sim.has_method("set_age_structure"):
+		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
+		if not age_structure.is_empty():
+			sim.set_age_structure(age_structure)
 
 
 ## §19 (W0): carrega o estado urbano DEPOIS do mundo (casamento por id de
