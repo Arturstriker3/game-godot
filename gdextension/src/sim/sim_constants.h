@@ -661,6 +661,45 @@ constexpr double kPortHandlingHours = 8.0;
 constexpr double kPortDemurragePerTonDay = 0.5;
 constexpr double kPriceSmoothing = 0.20;
 
+// ---------------------------------------------------------------------------
+// D-092 — EQUILÍBRIO DE PREÇO (ver docs/economy/price_formation.md).
+//
+// A D-091 tirou a banda [0,5×, 3×] e deixou o alvo em `base × escassez`. Com
+// escassez persistente o preço andava +5% do base TODO dia (ferro/carvão/
+// petróleo/gás/bauxita chegaram a 19,25× em 365 d). O equilíbrio passa a ser
+// custo + markup: o preço converge para o CUSTO UNITÁRIO da firma vezes
+// (1 + markup), e o markup sobe com a falta relativa (demanda efetiva ÷ oferta
+// disponível) e com a ocupação, caindo quando sobra estoque. O base do preço
+// real inicial é o PISO (âncora leve), nunca um teto.
+// ---------------------------------------------------------------------------
+constexpr double kPriceMarkupBase = 0.08;             // margem normal (custo × 1,08)
+constexpr double kPriceMarkupGain = 0.55;             // sensibilidade ao desequilíbrio (log)
+constexpr double kPriceMarkupOccupancyGain = 0.25;    // prêmio por ocupação alta
+constexpr double kPriceMarkupMax = 2.2;               // teto do MARKUP (não do preço)
+// Passo diário: 5% do base (amortecimento antigo) OU 6% do preço de abertura,
+// o que for maior. O segundo termo é o que permite CONVERGIR de um preço muito
+// alto (choque) em semanas, em vez de descer só 5% do base por dia.
+constexpr double kPriceMaxDailyMove = 0.06;
+
+// D-092 — elasticidade-preço da demanda por classe de necessidade
+// (básico → vida → luxo): básico pouco elástico, luxo muito elástico. A
+// quantidade comprada cai com `(preço/base)^-elasticidade`, com piso para não
+// zerar a cesta de quem tem renda.
+constexpr double kPriceElasticityBasic = 0.10;
+constexpr double kPriceElasticityLife = 0.55;
+constexpr double kPriceElasticityLuxury = 1.20;
+constexpr double kPriceElasticityQuantityFloor = 0.25;
+
+// D-092 — firmas: com margem NEGATIVA (preço do produto abaixo do custo de
+// insumos + trabalho/opex) a produção industrial cai — mas só quando o prejuízo
+// é PROFUNDO (> 25% do custo), com piso de 25%. O piso/corte alto é deliberado:
+// combustível/material de construção são insumos da frota e das obras; cortar
+// a produção com qualquer margem negativa quebrava a logística de comida
+// (medido no 365 d). O corte profundo por prejuízo persistente continua no
+// `output_scale` (kLossDaysBeforeCut), como antes.
+constexpr double kProductionMarginCutStart = 0.25;
+constexpr double kProductionMarginFloor = 0.25;
+
 // Estoque-alvo em dias de venda. A produção repõe metade da diferença por dia:
 // sem estoque-alvo, produzir sempre 10% acima das vendas faria o estoque
 // crescer para sempre (minas e fazendas com demanda externa fixa).

@@ -124,6 +124,11 @@ public:
 	void init_pop_needs(Pop& pop) const;
 	static double extraction_efficiency(const Deposit& deposit);
 	double base_price(int product) const;
+	// D-092: fração da necessidade que a demanda compra ao preço corrente
+	// (elasticidade-preço por classe). 1.0 até o base; cai como
+	// (preço/base)^-elasticidade acima dele, com piso declarado.
+	static double price_demand_scale(double price, double base,
+		double elasticity);
 	int food_product(int slot) const;
 	double food_calories(int product) const;
 	// Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
@@ -261,7 +266,8 @@ public:
 	// global) para a fase de renda rodar paralela e determinística.
 	double consume_category(City& city, const NeedsCategory& category,
 		double want_ge, double& budget, double& spend,
-		CityAccumScratch& scratch, std::size_t city_index);
+		CityAccumScratch& scratch, std::size_t city_index,
+		double elasticity);
 	// F3: compra institucional do governo (paper/computer) no dia.
 	void consume_government(City& city,
 		CityAccumScratch& scratch, std::size_t city_index);
