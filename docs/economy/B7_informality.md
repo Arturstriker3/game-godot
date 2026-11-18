@@ -109,6 +109,15 @@ quintil. Provas:
 `2C7FB702C73E4117D92A9B3B04E17CBA7A0497DEAC8FEFDCC86076BC64162555`, 0 diferenças pelo
 comparador, `inv_violations=0`, `money_total` 6.523.551.982,90.
 
+> **Depois do merge (D-093).** `tools/export_world_snapshot.gd` passou a chamar
+> `set_informality`/`set_health_access` como o autoload, então o snapshot do CLI
+> leva o dado ILOSTAT/OMS em vez da âncora. A equivalência continua exata e o
+> número muda por desenho: 10 d `--ai=1 --threads=1` **byte-idênticos**
+> (73.743.080 bytes, SHA-256
+> `8BA2C4D7736E6C9120C34948C726B81F08B5A24724A23DB6F149C0FC6DD8695F`, 0 diferenças
+> no comparador), e o A0 60 d continua `c8710110…`/`e9331483…` — o export não
+> participa do A0.
+
 **Round-trip do save:** 60 d direto × (30 d + load + 30 d) → mesmo save
 `9dc2b322…` e mesmo status `890e8430…` (0 diffs).
 
