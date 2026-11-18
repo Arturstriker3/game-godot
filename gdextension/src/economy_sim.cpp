@@ -6336,8 +6336,9 @@ Dictionary EconomySim::apply_concede(const String& city_id,
 		result["error"] = "caixa insuficiente do concessionário";
 		return result;
 	}
-	// Royalty declarado: o parâmetro passado (ou o padrão kConcessionRoyaltyRate).
-	const double rate = std::isfinite(royalty_rate)
+	// Royalty declarado: o parâmetro passado (ou o padrão kConcessionRoyaltyRate
+	// quando ausente/<= 0). Só usa o padrão para valor inválido.
+	const double rate = std::isfinite(royalty_rate) && royalty_rate > 0.0
 		? std::clamp(royalty_rate, 0.0, 1.0)
 		: ogs::kConcessionRoyaltyRate;
 	buyer->cash -= price;
