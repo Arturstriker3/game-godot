@@ -41,6 +41,10 @@ const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 ## B1: estrutura etária por nação (definição estática), antes do mundo.
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
+## B7: informalidade (ILOSTAT) e cobertura de saúde (OMS/GHO) por nação — os
+## MESMOS dados que o autoload carrega, senão A0/S0 não rodam o jogo de verdade.
+const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
+const HEALTH_ACCESS_PATH := "res://data/definitions/population/health_access.json"
 ## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -150,6 +154,15 @@ func _run() -> void:
 		var age_structure := _load_dict(AGE_STRUCTURE_PATH)
 		if not age_structure.is_empty():
 			sim.set_age_structure(age_structure)
+	# B7: informalidade e saúde por nação (ILOSTAT/OMS), como o autoload do jogo.
+	if sim.has_method("set_informality"):
+		var informality := _load_dict(INFORMALITY_PATH)
+		if not informality.is_empty():
+			sim.set_informality(informality)
+	if sim.has_method("set_health_access"):
+		var health_access := _load_dict(HEALTH_ACCESS_PATH)
+		if not health_access.is_empty():
+			sim.set_health_access(health_access)
 	if sim.has_method("set_sim_threads"):
 		sim.set_sim_threads(_threads)
 	if not _failures.is_empty():

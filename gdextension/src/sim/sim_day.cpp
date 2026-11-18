@@ -81,6 +81,14 @@ void tick_day(WorldState& ws, SimCore& core) {
 	// F8: serviços.
 	core.phase_services();
 
+	// 5c2. B7: insatisfação (medição 0..1 por quintil/cidade/região). Roda
+	// depois dos serviços e da moradia (aluguel pago e comida já fechados); não
+	// move dinheiro nem pessoas.
+	{
+		OGS_SIM_ZONE(kPhaseSocial);
+		core.phase_social();
+	}
+
 	// 6. Comércio de alimento e dos demais bens.
 	core.phase_trade();
 
@@ -102,8 +110,8 @@ void tick_day(WorldState& ws, SimCore& core) {
 	core.phase_fx();
 
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
-	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
-	// O log fica na fachada.
+	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
+	// e reverte. O log fica na fachada.
 	core.phase_invariants();
 }
 

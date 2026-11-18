@@ -133,6 +133,12 @@ struct WorldState {
 	// B1: estrutura etária por tag de nação (age_structure_2026.json ->
 	// set_age_structure). `std::map` para a ordem determinística do dump.
 	std::map<std::string, AgeStructure> age_structures;
+	// B7: definição estática por tag de nação (informality.json e
+	// health_access.json -> set_informality/set_health_access). NÃO entram no
+	// save (como `age_structures`): a fração inicial é semeada no dia 0 e a
+	// referência de saúde só é lida na semeadura/formalização.
+	std::map<std::string, double> informal_rates;
+	std::map<std::string, double> health_access;
 	double inventory_cover_days = 3.0;
 	double inventory_recovery = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K

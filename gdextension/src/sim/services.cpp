@@ -358,6 +358,14 @@ void SimCore::services_day(City& city, double* foreign_slots,
 	}
 	const double household_pool = std::max(0.0, pop.service_spend);
 
+	// B7: serviços informais agregados (sem firma) — desvia uma fatia do gasto
+	// doméstico em serviços ANTES da divisão entre os setores formais. O dinheiro
+	// realizado vai para os trabalhadores informais (crédito nos quintis), NÃO
+	// entra em service_cash; o pool formal é o restante (conservação total).
+	const double informal_revenue = compute_informal_services(city);
+	const double formal_household_pool = std::max(0.0,
+		household_pool - informal_revenue);
+
 	// 2. B2B: o opex pago pelas empresas é receita de serviços. Finanças,
 	// profissionais, TI, telecom, manutenção e limpeza entram por participação
 	// declarada; logística entra pela TONELAGEM movimentada ontem (sold_prev da
@@ -479,7 +487,7 @@ void SimCore::services_day(City& city, double* foreign_slots,
 		market.coverage = 0.0;
 		double money = 0.0;
 		if (weight_total > 0.0) {
-			money += household_pool * weight[sector] / weight_total;
+			money += formal_household_pool * weight[sector] / weight_total;
 		}
 		if (b2b_total > 0.0) {
 			money += b2b_pool * b2b_weight[sector] / b2b_total;
@@ -496,7 +504,7 @@ void SimCore::services_day(City& city, double* foreign_slots,
 		market.demand = total_demand;
 		for (int level = 0; level < kMaxNeedsLevels; ++level) {
 			market.pop_demand[level] = weight_total > 0.0 && market.price > 1e-12
-				? household_pool * class_pop[level]
+				? formal_household_pool * class_pop[level]
 					* ws_.service_sectors[static_cast<std::size_t>(sector)].pop_share[level]
 					/ weight_total / market.price
 				: 0.0;
@@ -580,6 +588,9 @@ void SimCore::services_day(City& city, double* foreign_slots,
 			goods.demand += bought;
 			goods.sold += bought;
 			goods.desired += needed;
+			// D-091: o insumo de serviço é demandado pelo uso real (units) e
+			// financiado pelo service_cash — `needed` é a tentativa efetiva.
+			goods.effective += needed;
 			city.revenue_by_product[input.product] += paid;
 			input_cost += paid;
 		}

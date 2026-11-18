@@ -933,6 +933,7 @@ void SimCore::trade_food() {
 			seller->markets[product].desired += amount_tons;
 			seller->markets[product].demand += amount_tons;
 			seller->markets[product].sold += amount_tons;
+			seller->markets[product].effective += amount_tons;
 			seller->revenue_by_product[product] += cost;
 			seller->exported[product] += amount_tons;
 			seller->export_value[product] += cost;
@@ -1475,6 +1476,7 @@ void SimCore::trade_goods() {
 				seller.markets[product].desired += amount;
 				seller.markets[product].demand += amount;
 				seller.markets[product].sold += amount;
+				seller.markets[product].effective += amount;
 				seller.revenue_by_product[product] += goods_value;
 				seller.exported[product] += amount;
 				seller.export_value[product] += goods_value;

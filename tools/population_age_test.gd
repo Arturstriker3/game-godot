@@ -10,6 +10,12 @@ extends SceneTree
 ## observado vem de `get_city_status(id).pop.age_bands` (o status diário é leve
 ## e NÃO publica as coortes).
 ##
+## B7: o fixture é ALIMENTO-SEGURO — abastece cada cidade com estoque de comida
+## para ~400 dias no dia 0. Sem isso, a mortalidade B7 (que agora depende de
+## `food`) converteria a fome estrutural pré-existente do mundo sem IA em ~12×
+## o excesso de mortes esperado e quebraria a demografia B1 (ver nota em
+## `FOOD_STOCK_DAYS` abaixo).
+##
 ##   godot --headless --path . --script res://tools/population_age_test.gd
 ##
 ## Custo: duas varreduras pesadas (dia 0 e dia 365, 834 cidades) e 365 ticks.
@@ -59,6 +65,15 @@ const NGA_YOUNG_MAX_DROP := 0.007
 ## Sem IA e sem tocar mercado o dinheiro é conservado (o núcleo reverte
 ## qualquer tick que viole o invariante); o mesmo teto do economy_world_test.
 const MONEY_DRIFT_TOLERANCE := 0.01
+## B7 — FIÁVEL ALIMENTO-SEGURO: a mortalidade agora depende da satisfação
+## alimentar (`food`). O mundo SEM IA tem fome estrutural pré-existente
+## (satisfação ~0,01–0,66 no dia 365) que, sob a B7, vira ~12× o excesso de
+## mortes esperado e quebra a demografia B1. Para isolar a B1, cada cidade
+## recebe UMA vez no dia 0 estoque de `wheat` (fator calórico 1,0) para ~400
+## dias de necessidade (`sim_population × kNeedPerCapita × 400`). A injeção
+## cria BENS, não dinheiro — `money_total` segue conservado.
+const FOOD_STOCK_DAYS := 400
+const NEED_PER_CAPITA_T_PER_DAY := 0.0003
 ## Um mundo quebrado pode falhar em centenas de cidades: as primeiras mensagens
 ## bastam para diagnosticar e o total continua sendo contado.
 const MAX_REPORTED_FAILURES := 40
@@ -285,6 +300,17 @@ func _test() -> void:
 			sim_population = float(entry.get("sim_population", real_population))
 		expected_population[city_id] = sim_population if sim_population > 0.0 \
 				else real_population
+
+	# --- B7: abastece o mundo de comida (fixture alimento-seguro, ver nota no
+	# topo). A injeção cria BENS, não dinheiro, então `money_total` segue
+	# conservado — o teste B1 mede só a demografia, sem a fome estrutural.
+	for city: Variant in cities:
+		var cid := String((city as Dictionary).get("id", ""))
+		var people := float(expected_population.get(cid, 0.0))
+		if people > 0.0:
+			sim.set_market_stock(cid, "wheat",
+				people * NEED_PER_CAPITA_T_PER_DAY * FOOD_STOCK_DAYS)
+	print("[age] fixture alimento-seguro: %d dias de wheat injetados por cidade (B7: mortalidade depende de food)." % FOOD_STOCK_DAYS)
 
 	var sample: Dictionary = {}
 	for tag: String in SAMPLE_TAGS:

@@ -124,6 +124,11 @@ public:
 	void init_pop_needs(Pop& pop) const;
 	static double extraction_efficiency(const Deposit& deposit);
 	double base_price(int product) const;
+	// D-092: fração da necessidade que a demanda compra ao preço corrente
+	// (elasticidade-preço por classe). 1.0 até o base; cai como
+	// (preço/base)^-elasticidade acima dele, com piso declarado.
+	static double price_demand_scale(double price, double base,
+		double elasticity);
 	int food_product(int slot) const;
 	double food_calories(int product) const;
 	// Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
@@ -174,6 +179,10 @@ public:
 	// dispersão, capital/aluguel pelos donos, transferência per capita). Soma
 	// exatamente os totais da cidade (conservação por construção).
 	void refresh_strata_income(City& city);
+	// B7: calcula a renda de mercado dos quintis (com penalidade informal) e o
+	// imposto total (só a parcela FORMAL do salário paga). Chamado no início da
+	// fase de renda, antes de transferências/disponível/gasto em serviços.
+	void refresh_strata_taxes(City& city);
 	// Mobilidade mensal determinística entre quintis adjacentes (A6).
 	void phase_strata();
 	// Patrimônio mensal: poupança + imóvel (posse × preço §19) + participações.
@@ -241,6 +250,43 @@ public:
 	// Sobe UM nível do tipo (saturado em kInfraMaxLevel). Devolve o novo nível.
 	static int infra_level_up(Region& region, int type);
 
+	// ------------------------------------------------------------------
+	// B7 — INFORMALIDADE, SERVIÇOS INFORMAIS, MORTALIDADE E INSATISFAÇÃO
+	// (sim/informality.cpp). O DADO é a taxa informal por nação e a cobertura
+	// de saúde (definições no WorldState); o resto é MODELO declarado.
+	// ------------------------------------------------------------------
+	// Fração informal INICIAL da nação (dado ou âncora de renda ILO).
+	double nation_informal_base(const City& city) const;
+	// Cobertura de saúde de referência da nação (dado ou kHealthAccessDefault).
+	double nation_health_access(const City& city) const;
+	// Semeia a informalidade (urbano + interior) e a referência de saúde a
+	// partir do dado nacional. Idempotente (guarda `informality_seeded`).
+	void seed_informality(City& city);
+	// Recalcula o agregado `informal_share` a partir dos quintis (peso por
+	// pessoa). Preserva a soma/determinismo.
+	void refresh_informal_aggregate(Pop& pop) const;
+	void refresh_informal_aggregate(Region& region) const;
+	// Formalização mensal (cadência A6) do trabalho informal, urbano e interior.
+	void formalize_informality(City& city);
+	// Serviços informais agregados (sem firma): desvia uma fatia do gasto
+	// doméstico em serviços para os trabalhadores informais (crédito nos
+	// quintis). Devolve a receita desviada (o chamador reduz o pool formal).
+	double compute_informal_services(City& city);
+	void compute_region_informal_services(City& city);
+	// Mortalidade mensal ligada a fome/saúde (urbano e interior). Preenche
+	// `death_band` (mortes efetivas por faixa, já moduladas), atualiza os
+	// contadores (deaths_expected/total, excess_deaths_*, famine_months) e
+	// devolve as mortes base da tabela. O urbano usa `satisfaction_prev`; a
+	// região usa a satisfação fresca do dia.
+	double mortality_month(Pop& pop, const City& city, double* death_band) const;
+	double region_mortality_month(Region& region, const City& city,
+		double* death_band) const;
+	// Insatisfação (medição 0..1) por quintil/cidade/região, calculada no fim
+	// do dia (fase `phase_social`).
+	void compute_dissatisfaction(City& city);
+	// Fase social no fim do dia: insatisfação (medição pura, sem dinheiro/pessoas).
+	void phase_social();
+
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);
 	// F7 — custo diário da cesta completa de um nível de necessidade aos preços
@@ -261,7 +307,8 @@ public:
 	// global) para a fase de renda rodar paralela e determinística.
 	double consume_category(City& city, const NeedsCategory& category,
 		double want_ge, double& budget, double& spend,
-		CityAccumScratch& scratch, std::size_t city_index);
+		CityAccumScratch& scratch, std::size_t city_index,
+		double elasticity);
 	// F3: compra institucional do governo (paper/computer) no dia.
 	void consume_government(City& city,
 		CityAccumScratch& scratch, std::size_t city_index);

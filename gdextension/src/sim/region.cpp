@@ -82,9 +82,10 @@ void region_charge(Region& region, double amount) {
 
 // Demografia do interior (MENSAL, cadência A6): nascimentos, mortes e
 // envelhecimento, reaproveitando B1 (age_structures da nação, kAgeDeathWeight e
-// as mesmas taxas de envelhecimento 1/15,1/10,1/20,1/20). Atualiza region_pop,
-// os quintis (20% cada) e devolve para o chamador reconciliar a cidade.
-void region_demography_month(WorldState& ws, City& city) {
+// as mesmas taxas de envelhecimento 1/15,1/10,1/20,1/20). B7: as mortes são
+// MODULADAS por fome/saúde. Atualiza region_pop, os quintis (20% cada) e
+// devolve para o chamador reconciliar a cidade.
+void region_demography_month(WorldState& ws, SimCore& core, City& city) {
 	Region& region = city.region;
 	if (!region.ready || !region.demography_ready) {
 		return;
@@ -103,22 +104,12 @@ void region_demography_month(WorldState& ws, City& city) {
 	if (total <= 0.0) {
 		return;
 	}
-	// Fluxo do MÊS: taxas brutas medidas (por mil/ano), divididas por 12.
+	// Fluxo do MÊS: nascimentos (tabela) e mortes MODULADAS por fome/saúde (B7).
+	// A satisfação do interior é a FRESCA (a demografia roda depois do consumo
+	// diário, no mesmo dia da cadência).
 	const double births = total * structure.births_per_1000 / 1000.0 / 12.0;
-	const double deaths = total * structure.deaths_per_1000 / 1000.0 / 12.0;
-	// Mortes por faixa: o CDR é o total; kAgeDeathWeight só diz como se reparte.
-	double shape[kAgeBands];
-	double shape_total = 0.0;
-	for (int index = 0; index < kAgeBands; ++index) {
-		shape[index] = band[index] * kAgeDeathWeight[index];
-		shape_total += shape[index];
-	}
 	double death_band[kAgeBands] = {};
-	for (int index = 0; index < kAgeBands; ++index) {
-		death_band[index] = shape_total > 0.0
-			? deaths * shape[index] / shape_total
-			: deaths / double(kAgeBands);
-	}
+	core.region_mortality_month(region, city, death_band);
 	// Envelhecimento: fração anual da faixa dividida por 12 (a última faixa não
 	// tem para onde sair).
 	double aging[kAgeBands] = {};
@@ -313,6 +304,9 @@ void SimCore::phase_region() {
 				continue;
 			}
 			market.desired += desired_tons;
+			// D-091: a comida da região é financiada (desired_tons limitado pelo
+			// orçamento), então entra integral na pressão de preço.
+			market.effective += desired_tons;
 			const double quantity = std::min(desired_tons, market.stock);
 			if (quantity <= 0.0) {
 				continue;
@@ -360,10 +354,28 @@ void SimCore::phase_region() {
 			city.service_cash += paid;
 		}
 
+		// --- Diário: serviços informais do interior (B7, agregado sem firma).
+		// Desvia uma fatia da renda diária do interior para os quintis informais
+		// (caixa conservado). ---
+		compute_region_informal_services(city);
+
 		// --- Mensal (A6): demografia do interior (nascimentos/mortes/
-		// envelhecimento, reaproveitando B1) e fecho dos quintis. ---
+		// envelhecimento, reaproveitando B1; mortes moduladas por fome/saúde na
+		// B7), formalização do trabalho informal e fecho dos quintis. ---
 		if (cadence_due(ws_.day, city_index, month_period)) {
-			region_demography_month(ws_, city);
+			// B7: inflação de comida do interior (custo = gasto/consumido);
+			// o primeiro fechamento só grava a referência.
+			const double unit_cost = region.food_consumed > kRegionEps
+				? region.food_spend / region.food_consumed : 0.0;
+			if (region.food_price_ref <= 0.0) {
+				region.food_price_ref = unit_cost;
+				region.food_inflation_month = 0.0;
+			} else if (region.food_price_ref > 0.0) {
+				region.food_inflation_month = unit_cost
+					/ region.food_price_ref - 1.0;
+				region.food_price_ref = unit_cost;
+			}
+			region_demography_month(ws_, *this, city);
 			reconcile_city_population(city);
 		}
 	}

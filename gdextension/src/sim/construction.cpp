@@ -477,6 +477,7 @@ void SimCore::tick_construction() {
 			market.demand += bought;
 			market.sold += bought;
 			market.desired += bought;
+			market.effective += bought;
 			city->firm_cash += paid;
 			city->revenue_by_product[product] += paid;
 			project.material_delivered[m] += bought;

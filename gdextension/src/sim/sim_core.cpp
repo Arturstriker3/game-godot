@@ -387,6 +387,7 @@ void SimCore::phase_reset() {
 			city.markets[product].supply = 0.0;
 			city.markets[product].desired = 0.0;
 			city.markets[product].latent = 0.0;
+			city.markets[product].effective = 0.0;
 			city.markets[product].sold_prev = city.markets[product].sold;
 			city.markets[product].sold = 0.0;
 			city.markets[product].shortage = 0.0;
@@ -717,7 +718,8 @@ void SimCore::phase_accounting() {
 
 void SimCore::phase_invariants() {
 	// 10. Invariantes: se o tick corrompeu o estado (dinheiro não conservado,
-	// caixa/estoque negativo ou preço fora da banda), registra e reverte.
+	// caixa/estoque negativo ou preço inválido — NaN/inf/≤0; sem banda), registra
+	// e reverte.
 	ws_.invariant_violations = check_invariants(money_before());
 	if (!ws_.invariant_violations.empty()) {
 		restore_state(ws_.snapshot_buffer);
@@ -796,20 +798,16 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 		}
 
 		// Preço na âncora: o câmbio não move mais o preço interno (só a
-		// competitividade das ofertas float e a exibição local), então a banda
-		// pode ser comparada sem folga.
+		// competitividade das ofertas float e a exibição local). D-091: SEM
+		// banda econômica fixa — o preço varia livremente. O único invariante
+		// numérico é ser finito e > 0 (NaN/inf/negativo = corrupção, revertida).
 		for (int product = 0; product < ws_.products; ++product) {
 			const Market& market = city.markets[product];
-			const double base = base_price(product);
-			const double floor_price = base * 0.5;
-			const double ceiling = base * 3.0;
-			if (!std::isfinite(market.price)
-					|| market.price < floor_price
-					|| market.price > ceiling) {
-				violations.push_back("preço fora da banda em " + city.id + " "
+			if (!std::isfinite(market.price) || market.price <= 0.0) {
+				violations.push_back("preço inválido (NaN/inf/≤0) em " + city.id + " "
 					+ product_name(product) + ": " + std::to_string(market.price)
-					+ " (base âncora " + std::to_string(base) + ", moeda "
-					+ currency_code(city.nation) + " taxa "
+					+ " (base âncora " + std::to_string(base_price(product))
+					+ ", moeda " + currency_code(city.nation) + " taxa "
 					+ std::to_string(fx_rate(city.nation)) + ")");
 			}
 			if (!std::isfinite(market.stock) || market.stock < -1e-6) {
@@ -923,6 +921,8 @@ void SimCore::seed_region_strata(City& city, const double* shares) {
 		region.cash += region.stratum_savings[s];
 	}
 	region.strata_ready = true;
+	// B7: semeia a informalidade (urbano + interior) e a referência de saúde.
+	seed_informality(city);
 }
 
 void SimCore::recompute_region_mix(City& city) {

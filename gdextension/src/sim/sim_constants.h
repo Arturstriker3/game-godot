@@ -93,7 +93,15 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // do save novo; nada é inventado para trás). A cadeia v16 → v20 é o mesmo
 // caminho aditivo: cada etapa olha só as chaves que faltam (strata em v17,
 // estágio de mina em v18, região em v19, migração em v20).
-constexpr int kSaveVersion = 21;
+// v21 (B5, D-089): infraestrutura do estado (`region.infra`) e royalty de
+// concessão (`building.royalty`). Save v20 e anteriores migram com níveis 0 e
+// royalty 0 (nada inventado para trás).
+// v22 (B7, D-093): informalidade, serviços informais, mortalidade e
+// insatisfação — blocos `pop.informal`/`pop.mortality`/`pop.dissatisfaction`
+// (urbano) e `region.informal`/`region.mortality`/`region.dissatisfaction`
+// (interior). Save v21 e anteriores migram semeando a informalidade do dado da
+// nação (ou âncora de renda), a referência de saúde e os contadores zerados.
+constexpr int kSaveVersion = 22;
 
 // ---------------------------------------------------------------------------
 // B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
@@ -404,16 +412,6 @@ constexpr double kMineDeepenExtractionCostCap = 4.0;
 // kConstructionMineDays; não é cronograma observado).
 constexpr int kMineDeepenBaseDays = 90;
 constexpr int kMineDeepenDaysPerStage = 30;
-// Minerais de NICHO: mantêm o teto fixo de capacidade da mina estatal/privada
-// (kMaxStateMineCapacity = 10 t/d nos chamadores). Os demais (carvão, ferro,
-// cobre, petróleo, gás, bauxita, chumbo, fosfato, enxofre) passam a ser
-// dimensionados por retorno/demanda — a decisão do dono para a nova mecânica.
-inline bool is_niche_mineral(const std::string& resource) {
-	return resource == "gold" || resource == "diamond"
-		|| resource == "rare_earths" || resource == "tungsten"
-		|| resource == "uranium";
-}
-
 constexpr double kNeedPerCapita = 0.0003;
 // F3: reserva de alimento (dias) que a POP mantém em poupança antes de gastar
 // em life/luxury. Sem ela, a compra de conforto drenava a poupança usada para
@@ -670,6 +668,45 @@ constexpr double kPortHandlingHours = 8.0;
 // Fila: custo de demurrage por tonelada e por dia de atraso fracionário.
 constexpr double kPortDemurragePerTonDay = 0.5;
 constexpr double kPriceSmoothing = 0.20;
+
+// ---------------------------------------------------------------------------
+// D-092 — EQUILÍBRIO DE PREÇO (ver docs/economy/price_formation.md).
+//
+// A D-091 tirou a banda [0,5×, 3×] e deixou o alvo em `base × escassez`. Com
+// escassez persistente o preço andava +5% do base TODO dia (ferro/carvão/
+// petróleo/gás/bauxita chegaram a 19,25× em 365 d). O equilíbrio passa a ser
+// custo + markup: o preço converge para o CUSTO UNITÁRIO da firma vezes
+// (1 + markup), e o markup sobe com a falta relativa (demanda efetiva ÷ oferta
+// disponível) e com a ocupação, caindo quando sobra estoque. O base do preço
+// real inicial é o PISO (âncora leve), nunca um teto.
+// ---------------------------------------------------------------------------
+constexpr double kPriceMarkupBase = 0.08;             // margem normal (custo × 1,08)
+constexpr double kPriceMarkupGain = 0.55;             // sensibilidade ao desequilíbrio (log)
+constexpr double kPriceMarkupOccupancyGain = 0.25;    // prêmio por ocupação alta
+constexpr double kPriceMarkupMax = 2.2;               // teto do MARKUP (não do preço)
+// Passo diário: 5% do base (amortecimento antigo) OU 6% do preço de abertura,
+// o que for maior. O segundo termo é o que permite CONVERGIR de um preço muito
+// alto (choque) em semanas, em vez de descer só 5% do base por dia.
+constexpr double kPriceMaxDailyMove = 0.06;
+
+// D-092 — elasticidade-preço da demanda por classe de necessidade
+// (básico → vida → luxo): básico pouco elástico, luxo muito elástico. A
+// quantidade comprada cai com `(preço/base)^-elasticidade`, com piso para não
+// zerar a cesta de quem tem renda.
+constexpr double kPriceElasticityBasic = 0.10;
+constexpr double kPriceElasticityLife = 0.55;
+constexpr double kPriceElasticityLuxury = 1.20;
+constexpr double kPriceElasticityQuantityFloor = 0.25;
+
+// D-092 — firmas: com margem NEGATIVA (preço do produto abaixo do custo de
+// insumos + trabalho/opex) a produção industrial cai — mas só quando o prejuízo
+// é PROFUNDO (> 25% do custo), com piso de 25%. O piso/corte alto é deliberado:
+// combustível/material de construção são insumos da frota e das obras; cortar
+// a produção com qualquer margem negativa quebrava a logística de comida
+// (medido no 365 d). O corte profundo por prejuízo persistente continua no
+// `output_scale` (kLossDaysBeforeCut), como antes.
+constexpr double kProductionMarginCutStart = 0.25;
+constexpr double kProductionMarginFloor = 0.25;
 
 // Estoque-alvo em dias de venda. A produção repõe metade da diferença por dia:
 // sem estoque-alvo, produzir sempre 10% acima das vendas faria o estoque
@@ -952,6 +989,78 @@ constexpr double kHousingSlumVacancyMax = 0.01;
 constexpr int kHousingSlumDays = 30;
 constexpr double kHousingSlumShare = 0.01;
 constexpr double kHousingSlumSatisfaction = 0.05;
+
+// ---------------------------------------------------------------------------
+// B7 — INFORMALIDADE, SERVIÇOS INFORMAIS, MORTALIDADE E INSATISFAÇÃO.
+//
+// O DADO é a taxa de emprego informal por nação (ILOSTAT/ILO,
+// data/definitions/economy/informality.json) e a cobertura de saúde de
+// referência (WHO UHC SCI, data/definitions/population/health_access.json).
+// Tudo abaixo é MODELO DECLARADO, calibrável no laboratório — nenhum número
+// por país inventado. Fontes/parâmetros em docs/economy/B7_informality.md
+// (D-093).
+// ---------------------------------------------------------------------------
+// Cobertura de saúde usada como referência neutra quando a nação não tem dado.
+constexpr double kHealthAccessDefault = 0.5;
+// Gradiente de informalidade por quintil (MODELO): a informalidade se concentra
+// na base da distribuição. O quintil só REPARTE a base nacional; a média
+// ponderada por população reproduz exatamente o dado.
+constexpr double kInformalQuintileGradient[5] = {1.55, 1.30, 1.00, 0.75, 0.45};
+// Informalidade rural maior que a urbana (fator sobre a base nacional).
+constexpr double kRegionInformalRuralFactor = 1.15;
+// Formalização mensal (cadência A6, mesmo dia do fechamento de estratos):
+// velocidade de convergência ao alvo (fração/mês) e os pesos dos drivers
+// (renda, escolaridade, infra B5, enforcement de política — futuro).
+constexpr double kInformalFormalizationRate = 0.02;
+constexpr double kFormalizationIncome = 0.35;
+constexpr double kFormalizationEducation = 0.25;
+constexpr double kFormalizationInfra = 0.20;
+constexpr double kFormalizationEnforcement = 0.0;
+// Renda do trabalho informal: fração da formal (mesmo quintil). A folha total
+// NÃO muda — o peso do quintil é renormalizado (conservação de dinheiro).
+constexpr double kInformalWagePenalty = 0.75;
+// Crise: quando a folha é paga com desconto de liquidez (pay_scale < 1), a
+// renda informal sofre o dobro (o que o informal deixa de receber fica no
+// caixa de quem pagou).
+constexpr double kInformalCrisisSensitivity = 2.0;
+// Serviços informais (agregado, sem firma individual): emprego como fração da
+// força informal, produtividade por trabalhador, desconto de preço e os
+// parâmetros de demanda (base, elasticidade de preço, desemprego, teto).
+constexpr double kInformalServiceEmploymentShare = 0.60;
+constexpr double kInformalServiceUnitsPerWorker = 1.0;
+constexpr double kInformalProductivityFactor = 0.55;
+constexpr double kInformalPriceDiscount = 0.60;
+// Base da demanda informal em PREÇO NORMAL (formal/informal = 1/0,60 ≈ 1,667,
+// desemprego ~5%, low_share 0,4): 0,20 × 1,667 × 1,05 × 0,7 ≈ 0,245 da cesta
+// doméstica de serviços. Com 0,55 a fatia passava de 2/3 no dia 1 e sufocava o
+// serviço formal (fechamento em massa) — concorrência real, não takeover.
+constexpr double kInformalDemandBase = 0.20;
+constexpr double kInformalDemandPriceElasticity = 1.0;
+constexpr double kInformalDemandUnemployment = 1.0;
+constexpr double kInformalDemandMax = 0.75;
+// Mortalidade ligada a comida e saúde. A tabela observada (CBR/CDR) é a BASE
+// (multiplicador 1 em situação normal); fome e falta de saúde adicionam o
+// excesso, com teto declarado. Crianças (0-14) e idosos (65+) pesam mais.
+constexpr double kFoodMortalityThreshold = 0.90;
+constexpr double kFamineMortalityWeight = 1.0;
+constexpr double kHealthMortalityWeight = 0.30;
+constexpr double kMortalityMaxExcess = 3.0;
+constexpr double kAgeMortalityVulnerability[5] = {1.6, 0.8, 0.7, 1.0, 1.9};
+// Fome prolongada empurra a migração B4: após estes meses consecutivos de fome,
+// o êxodo rural→urbano e a saída cidade→cidade recebem esta pressão extra
+// (proporção declarada), limitada pela vaga de moradia existente.
+constexpr int kFamineMigrationMonths = 3;
+constexpr double kFamineMigrationBoost = 0.50;
+// Insatisfação (só medição + status, 0..1): pesos dos componentes (soma 1).
+// Terra/patrimônio é gancho da B6 (peso 0 por enquanto).
+constexpr double kDissatisfactionUnemployment = 0.30;
+constexpr double kDissatisfactionRent = 0.20;
+constexpr double kDissatisfactionFood = 0.25;
+constexpr double kDissatisfactionInflation = 0.15;
+constexpr double kDissatisfactionInformality = 0.10;
+constexpr double kDissatisfactionLand = 0.00;
+// Jovens (15-24) pesam mais na insatisfação com desemprego.
+constexpr double kDissatisfactionYouthWeight = 0.50;
 
 
 } // namespace ogs

@@ -27,6 +27,126 @@ Dictionary make_object() { return Value::make_object(); }
 
 Array make_array() { return Value::make_array(); }
 
+// ---------------------------------------------------------------------------
+// B7 — serialização/leitura dos blocos informal/mortality/dissatisfaction. O
+// mesmo formato serve para Pop (urbano) e Region (interior): os campos têm os
+// mesmos nomes nos dois.
+// ---------------------------------------------------------------------------
+static Dictionary save_informal_block(double share, const double* labor_share,
+		const double* income, double wage_bill, double workers, double output,
+		double demand, double revenue, double price, double service_share) {
+	Dictionary d = make_object();
+	d["share"] = share;
+	Array labor = make_array();
+	Array inc = make_array();
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		labor.append(labor_share[s]);
+		inc.append(income[s]);
+	}
+	d["labor_share"] = labor;
+	d["income"] = inc;
+	d["wage_bill"] = wage_bill;
+	Dictionary svc = make_object();
+	svc["workers"] = workers;
+	svc["output"] = output;
+	svc["demand"] = demand;
+	svc["revenue"] = revenue;
+	svc["price"] = price;
+	svc["share"] = service_share;
+	d["service"] = svc;
+	return d;
+}
+
+static Dictionary save_mortality_block(double deaths_expected, double deaths_total,
+		double excess_total, double excess_famine_total, int famine_months,
+		double food_price_ref, double food_inflation_month, double health_access_ref,
+		double satisfaction_prev) {
+	Dictionary d = make_object();
+	d["deaths_expected"] = deaths_expected;
+	d["deaths_total"] = deaths_total;
+	d["excess_total"] = excess_total;
+	d["excess_famine_total"] = excess_famine_total;
+	d["famine_months"] = famine_months;
+	d["food_price_ref"] = food_price_ref;
+	d["food_inflation_month"] = food_inflation_month;
+	d["health_access_ref"] = health_access_ref;
+	d["satisfaction_prev"] = satisfaction_prev;
+	return d;
+}
+
+static Dictionary save_dissatisfaction_block(double index, const double* by_stratum,
+		double unemployment, double rent, double food, double inflation,
+		double informality) {
+	Dictionary d = make_object();
+	d["index"] = index;
+	Array bs = make_array();
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		bs.append(by_stratum[s]);
+	}
+	d["by_stratum"] = bs;
+	d["unemployment"] = unemployment;
+	d["rent"] = rent;
+	d["food"] = food;
+	d["inflation"] = inflation;
+	d["informality"] = informality;
+	return d;
+}
+
+static void load_informal_block(const Dictionary& d, double& share,
+		double* labor_share, double* income, double& wage_bill, double& workers,
+		double& output, double& demand, double& revenue, double& price,
+		double& service_share) {
+	share = std::clamp(double(d.get("share", 0.0)), 0.0, 1.0);
+	const Array labor = d.get("labor_share", Array());
+	const Array inc = d.get("income", Array());
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		labor_share[s] = s < labor.size()
+			? std::clamp(double(labor[s]), 0.0, 1.0) : 0.0;
+		income[s] = s < inc.size() ? std::max(0.0, double(inc[s])) : 0.0;
+	}
+	wage_bill = std::max(0.0, double(d.get("wage_bill", 0.0)));
+	const Dictionary svc = d.get("service", Dictionary());
+	workers = std::max(0.0, double(svc.get("workers", 0.0)));
+	output = std::max(0.0, double(svc.get("output", 0.0)));
+	demand = std::max(0.0, double(svc.get("demand", 0.0)));
+	revenue = std::max(0.0, double(svc.get("revenue", 0.0)));
+	price = std::max(0.0, double(svc.get("price", 0.0)));
+	service_share = std::clamp(double(svc.get("share", 0.0)), 0.0, 1.0);
+}
+
+static void load_mortality_block(const Dictionary& d, double& deaths_expected,
+		double& deaths_total, double& excess_total, double& excess_famine_total,
+		int& famine_months, double& food_price_ref, double& food_inflation_month,
+		double& health_access_ref, double& satisfaction_prev) {
+	deaths_expected = std::max(0.0, double(d.get("deaths_expected", 0.0)));
+	deaths_total = std::max(0.0, double(d.get("deaths_total", 0.0)));
+	excess_total = std::max(0.0, double(d.get("excess_total", 0.0)));
+	excess_famine_total = std::max(0.0,
+		double(d.get("excess_famine_total", 0.0)));
+	famine_months = std::max(0, int(d.get("famine_months", 0)));
+	food_price_ref = std::max(0.0, double(d.get("food_price_ref", 0.0)));
+	food_inflation_month = double(d.get("food_inflation_month", 0.0));
+	health_access_ref = std::clamp(
+		double(d.get("health_access_ref", kHealthAccessDefault)), 0.0, 1.0);
+	satisfaction_prev = std::clamp(
+		double(d.get("satisfaction_prev", 1.0)), 0.0, 1.0);
+}
+
+static void load_dissatisfaction_block(const Dictionary& d, double& index,
+		double* by_stratum, double& unemployment, double& rent, double& food,
+		double& inflation, double& informality) {
+	index = std::clamp(double(d.get("index", 0.0)), 0.0, 1.0);
+	const Array bs = d.get("by_stratum", Array());
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		by_stratum[s] = s < bs.size() ? std::clamp(double(bs[s]), 0.0, 1.0) : 0.0;
+	}
+	unemployment = std::clamp(double(d.get("unemployment", 0.0)), 0.0, 1.0);
+	rent = std::clamp(double(d.get("rent", 0.0)), 0.0, 1.0);
+	food = std::clamp(double(d.get("food", 0.0)), 0.0, 1.0);
+	inflation = std::clamp(double(d.get("inflation", 0.0)), 0.0, 1.0);
+	informality = std::clamp(double(d.get("informality", 0.0)), 0.0, 1.0);
+}
+
 // Constrói um String Godot a partir de UTF-8. O construtor `String(const char*)`
 // desta godot-cpp interpreta os bytes como Latin-1, então `String(x.c_str())`
 // corrompia os nomes não-ASCII a cada round-trip save/load (Córdoba -> CÃ³rdoba
@@ -460,6 +580,23 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		strata["tenure"] = strata_tenure;
 		strata["lifecycle"] = strata_lifecycle;
 		pop["strata"] = strata;
+		// B7 (save v22): informalidade, mortalidade e insatisfação (urbano).
+		pop["informal"] = save_informal_block(city.pop.informal_share,
+			city.pop.informal_labor_share, city.pop.informal_income,
+			city.pop.informal_wage_bill, city.pop.informal_service_workers,
+			city.pop.informal_service_output, city.pop.informal_service_demand,
+			city.pop.informal_service_revenue, city.pop.informal_service_price,
+			city.pop.informal_service_share);
+		pop["mortality"] = save_mortality_block(city.pop.deaths_expected,
+			city.pop.deaths_total, city.pop.excess_deaths_total,
+			city.pop.excess_deaths_famine_total, city.pop.famine_months,
+			city.pop.food_price_ref, city.pop.food_inflation_month,
+			city.pop.health_access_ref, city.pop.satisfaction_prev);
+		pop["dissatisfaction"] = save_dissatisfaction_block(
+			city.pop.dissatisfaction, city.pop.dissatisfaction_by_stratum,
+			city.pop.dissatisfaction_unemployment, city.pop.dissatisfaction_rent,
+			city.pop.dissatisfaction_food, city.pop.dissatisfaction_inflation,
+			city.pop.dissatisfaction_informality);
 		entry["pop"] = pop;
 		// B3 (save v19): região da cidade (estados inteiros). Estado persistente
 		// (população, caixa, coortes e quintis do interior); os fluxos diários
@@ -474,6 +611,14 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			region_entry["region_pop"] = region.region_pop;
 			region_entry["urban_share"] = region.urban_share;
 			region_entry["cash"] = region.cash;
+			// B7: a renda do dia (semanal) é usada pelo serviço informal diário
+			// (compute_region_informal_services); sem persistir, o load zerava a
+			// renda e a fatia informal divergia do caminho direto. São fluxos
+			// derivados, mas o serviço informal depende deles entre os fechos
+			// semanais — por isso viajam no save.
+			region_entry["wage_income"] = region.wage_income;
+			region_entry["income"] = region.income;
+			region_entry["taxes"] = region.taxes;
 			Array mix = make_array();
 			mix.append(region.employment_mix[0]);
 			mix.append(region.employment_mix[1]);
@@ -523,6 +668,23 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 			region_infra["power"] = region.infra_power;
 			region_infra["water"] = region.infra_water;
 			region_entry["infra"] = region_infra;
+			// B7 (save v22): informalidade, mortalidade e insatisfação (interior).
+			region_entry["informal"] = save_informal_block(region.informal_share,
+				region.informal_labor_share, region.informal_income,
+				region.informal_wage_bill, region.informal_service_workers,
+				region.informal_service_output, region.informal_service_demand,
+				region.informal_service_revenue, region.informal_service_price,
+				region.informal_service_share);
+			region_entry["mortality"] = save_mortality_block(region.deaths_expected,
+				region.deaths_total, region.excess_deaths_total,
+				region.excess_deaths_famine_total, region.famine_months,
+				region.food_price_ref, region.food_inflation_month,
+				region.health_access_ref, region.satisfaction_prev);
+			region_entry["dissatisfaction"] = save_dissatisfaction_block(
+				region.dissatisfaction, region.dissatisfaction_by_stratum,
+				region.dissatisfaction_unemployment, region.dissatisfaction_rent,
+				region.dissatisfaction_food, region.dissatisfaction_inflation,
+				region.dissatisfaction_informality);
 			entry["region"] = region_entry;
 		}
 		entry["government_goods_spend"] = city.government_goods_spend;
@@ -1805,6 +1967,28 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				city.pop.savings = total;
 			}
 		}
+		// B7 (save v22): informalidade, mortalidade e insatisfação (urbano).
+		// v21 e anteriores migram depois (segunda passada, com o dado da nação).
+		if (version >= 22) {
+			load_informal_block(pop.get("informal", Dictionary()),
+				city.pop.informal_share, city.pop.informal_labor_share,
+				city.pop.informal_income, city.pop.informal_wage_bill,
+				city.pop.informal_service_workers, city.pop.informal_service_output,
+				city.pop.informal_service_demand, city.pop.informal_service_revenue,
+				city.pop.informal_service_price, city.pop.informal_service_share);
+			load_mortality_block(pop.get("mortality", Dictionary()),
+				city.pop.deaths_expected, city.pop.deaths_total,
+				city.pop.excess_deaths_total, city.pop.excess_deaths_famine_total,
+				city.pop.famine_months, city.pop.food_price_ref,
+				city.pop.food_inflation_month, city.pop.health_access_ref,
+				city.pop.satisfaction_prev);
+			load_dissatisfaction_block(pop.get("dissatisfaction", Dictionary()),
+				city.pop.dissatisfaction, city.pop.dissatisfaction_by_stratum,
+				city.pop.dissatisfaction_unemployment, city.pop.dissatisfaction_rent,
+				city.pop.dissatisfaction_food, city.pop.dissatisfaction_inflation,
+				city.pop.dissatisfaction_informality);
+			city.pop.informality_seeded = true;
+		}
 		// B3 (save v19): região da cidade (estados inteiros). Save v18 e
 		// anteriores migram no mundo real: `region_pop = max(0, population -
 		// simulation_population)` (dado já no save), coortes/estratos da nação e
@@ -1829,6 +2013,13 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					: -1.0;
 				region.cash = std::max(0.0,
 					double(saved_region.get("cash", 0.0)));
+				// B7: renda do dia (semanal), usada pelo serviço informal diário.
+				region.wage_income = safe_nonneg(
+					double(saved_region.get("wage_income", 0.0)));
+				region.income = safe_nonneg(
+					double(saved_region.get("income", 0.0)));
+				region.taxes = safe_nonneg(
+					double(saved_region.get("taxes", 0.0)));
 				const Array mix = saved_region.get("employment_mix", Array());
 				for (int m = 0; m < 3 && m < mix.size(); ++m) {
 					region.employment_mix[m] = safe_nonneg(double(mix[m]));
@@ -1899,6 +2090,29 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 					0, kInfraMaxLevel);
 				region.infra_water = std::clamp(int(region_infra.get("water", 0)),
 					0, kInfraMaxLevel);
+				// B7 (save v22): informalidade, mortalidade e insatisfação do
+				// interior. v21 e anteriores migram na segunda passada.
+				if (version >= 22) {
+					load_informal_block(saved_region.get("informal", Dictionary()),
+						region.informal_share, region.informal_labor_share,
+						region.informal_income, region.informal_wage_bill,
+						region.informal_service_workers, region.informal_service_output,
+						region.informal_service_demand, region.informal_service_revenue,
+						region.informal_service_price, region.informal_service_share);
+					load_mortality_block(saved_region.get("mortality", Dictionary()),
+						region.deaths_expected, region.deaths_total,
+						region.excess_deaths_total, region.excess_deaths_famine_total,
+						region.famine_months, region.food_price_ref,
+						region.food_inflation_month, region.health_access_ref,
+						region.satisfaction_prev);
+					load_dissatisfaction_block(
+						saved_region.get("dissatisfaction", Dictionary()),
+						region.dissatisfaction, region.dissatisfaction_by_stratum,
+						region.dissatisfaction_unemployment, region.dissatisfaction_rent,
+						region.dissatisfaction_food, region.dissatisfaction_inflation,
+						region.dissatisfaction_informality);
+					region.informality_seeded = true;
+				}
 			} else if (ws.world_mode) {
 				// v18 → v19: interior = população regional exibida - população de
 				// simulação (ambos já no save). Cenário sintético (world_mode
@@ -2278,6 +2492,18 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 	core.rebuild_indexes();
 	if (!has_saved_ports && !ws.ports.empty()) {
 		core.init_port_capacities();
+	}
+	// B7 (save v22): migração v21 → v22. Save anterior não tem os blocos: a
+	// informalidade é semeada do dado da nação (ou âncora de renda), a
+	// referência de saúde do dado (ou kHealthAccessDefault) e os contadores
+	// (excesso, fome) nascem zerados. `satisfaction_prev` parte da satisfação
+	// carregada (a do último dia).
+	if (version < 22 && ws.world_mode) {
+		for (City& city : ws.cities) {
+			core.seed_informality(city);
+			city.pop.satisfaction_prev = city.pop.satisfaction;
+			city.region.satisfaction_prev = city.region.satisfaction;
+		}
 	}
 	// F4: frota (save v5). Save anterior não tem o bloco: deriva de
 	// população/PIB, documentado como `source: derived`.

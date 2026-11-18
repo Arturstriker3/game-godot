@@ -45,12 +45,10 @@ constexpr double kBudgetShare = 0.25;
 constexpr double kMinShortageTons = 1.0;
 constexpr double kMinStateCapacity = 2.0;
 constexpr double kMaxStateCapacity = 20.0;
-// Teto da capacidade de uma mina estatal (B4): o estado cobre uma base da
-// demanda externa e o capital privado o resto (× kExportCapacityFactor).
-// D-086: o teto fixo de 10 t/d fica SÓ para minerais de nicho (ouro, diamante,
-// terras raras, tungstênio, urânio); os demais são dimensionados por demanda e
-// retorno, e a mina existente é aprofundada quando o retorno paga a obra.
-constexpr double kMaxStateMineCapacity = 10.0;
+// Capacidade da mina estatal: o estado cobre uma base da demanda externa e o
+// capital privado o resto (× kExportCapacityFactor). D-091: SEM teto fixo de
+// 10 t/d para mineral de nicho — todos os minerais são dimensionados por
+// demanda e retorno, com a mesma mecânica de estágios/custo (D-086).
 constexpr double kExportCapacityFactor = 1.2;
 // D-086: payback aceito para a OBRA DE MINA (abrir ou aprofundar). 730 dias é o
 // mesmo horizonte estendido que o investidor privado usa para o enxofre (B4):
@@ -260,8 +258,8 @@ void plan_city(AiContext& ctx, int city_index) {
 	//    (a) APROFUNDAR a mina do Estado que já existe (D-086) — se o retorno
 	//        (margem × t/dia adicionadas) paga a obra dentro de kMinePaybackDays;
 	//    (b) ABRIR mina nova, quando não há produtor — capacidade dimensionada
-	//        pela demanda externa e pelo orçamento (o teto fixo de 10 t/d só
-	//        vale para mineral de nicho).
+	//        pela demanda externa e pelo orçamento (D-091: sem teto fixo de
+	//        nicho; todos os minerais seguem a mesma régua de estágios/custo).
 	// Sem jazida declarada a cidade não pode abrir mina nenhuma: pula o laço
 	// inteiro (== `has_any_deposit`).
 	std::vector<DeepenCandidate> deepens;
@@ -376,8 +374,8 @@ void plan_city(AiContext& ctx, int city_index) {
 			continue;
 		}
 		// Capacidade dimensionada pela demanda externa (× 1,2): mina de demanda
-		// pequena não nasce grande. D-086: o teto fixo de 10 t/d vale só para
-		// mineral de nicho; os demais seguem o mercado e o orçamento.
+		// pequena não nasce grande. D-091: SEM teto fixo de nicho — todos os
+		// minerais seguem o mercado e o orçamento.
 		const double external_demand =
 			product >= 0
 				&& product < static_cast<int>(city.external_demand.size())
@@ -385,9 +383,6 @@ void plan_city(AiContext& ctx, int city_index) {
 			: 0.0;
 		double capacity = std::max(kMinStateCapacity,
 			external_demand * kExportCapacityFactor);
-		if (is_niche_mineral(resource)) {
-			capacity = std::min(capacity, kMaxStateMineCapacity);
-		}
 		if (capacity * capital_cost >= available) {
 			capacity = available / capital_cost;
 		}

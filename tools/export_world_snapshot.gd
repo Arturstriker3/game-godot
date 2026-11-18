@@ -23,6 +23,9 @@ extends SceneTree
 ## - `seed_industry()` entra depois do mundo: o bootstrap industrial do
 ##   jogo roda no primeiro tick, então sem ele o snapshot não é o estado de
 ##   partida real (o executável C++ recusa o arquivo).
+## - B7: `set_informality`/`set_health_access` recebem os mesmos arquivos do
+##   autoload (ILOSTAT/OMS) antes de criar o mundo — o CLI que carrega o
+##   snapshot simula o dado real, não a âncora.
 ## - Serialização: `to_snapshot_file()`, que grava `{"definitions": ...,
 ##   "save": ...}` pelo serializador da BIBLIOTECA (`ogs::save::dump_json`,
 ##   nlohmann). NÃO se usa `JSON.stringify`: o JSON do Godot não é
@@ -46,6 +49,10 @@ const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 ## B1: estrutura etária por nação (definição estática; já vai ao snapshot).
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
+## B7: informalidade (ILOSTAT/ILO) e cobertura de saúde (OMS) por nação — os
+## mesmos arquivos que o autoload carrega antes de criar o mundo.
+const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
+const HEALTH_ACCESS_PATH := "res://data/definitions/population/health_access.json"
 ## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -116,6 +123,17 @@ func _load_dict(path: String) -> Dictionary:
 	return data
 
 
+## Como o autoload: arquivo ausente vira `{}` (o núcleo cai na âncora); JSON de
+## tipo errado também. Erro de leitura não é fatal aqui.
+func _load_dict_optional(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data if typeof(data) == TYPE_DICTIONARY else {}
+
+
 ## Cidades no formato que o GeographyService.apply_to_sim espera.
 func _cities_with_center(cities: Array) -> Array:
 	var result: Array = []
@@ -148,6 +166,12 @@ func _run() -> void:
 	var age_structure := _load_dict(AGE_STRUCTURE_PATH)
 	if sim.has_method("set_age_structure") and not age_structure.is_empty():
 		sim.set_age_structure(age_structure)
+	# B7: informalidade e cobertura de saúde por nação, como o autoload do jogo
+	# (dado ILOSTAT/OMS). Sem o arquivo vira `{}` e o núcleo usa a âncora.
+	if sim.has_method("set_informality"):
+		sim.set_informality(_load_dict_optional(INFORMALITY_PATH))
+	if sim.has_method("set_health_access"):
+		sim.set_health_access(_load_dict_optional(HEALTH_ACCESS_PATH))
 	if not _failures.is_empty():
 		return
 

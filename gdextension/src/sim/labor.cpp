@@ -486,6 +486,11 @@ double SimCore::labor_day(City& city) {
 	const double committed = buildings_full_payroll;
 	const double pay_scale = committed > firm_available
 		? firm_available / committed : 1.0;
+	// B7: a renda informal sofre o dobro na crise (desconto de liquidez). A
+	// folha efetiva já descontada pelas firmas é a fonte; o que o informal
+	// deixa de receber permanece no caixa de quem pagou (conservação).
+	pop.informal_crisis_factor = std::clamp(
+		1.0 - (1.0 - pay_scale) * kInformalCrisisSensitivity, 0.0, 1.0);
 	if (city_index < ws_.buildings_by_city.size()) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
 			Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
