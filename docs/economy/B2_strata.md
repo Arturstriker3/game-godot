@@ -180,12 +180,14 @@ consumo ou da renda**; o número publicado é medido dos quintis.
 `b1_world_sweep.json`, 2 processos, threads=1): falências **17** (real) e
 **20** (float) contra teto 28; drift **0,0000** nas duas; hash real
 `1515e7b44000…`, sonda float `489cd2ea3219…` (difere, como deve). **O portão de
-comida de 30 dias NÃO fechou:** 25 nações no real (e 24 no float) caem mais de
-2,5 p.p. contra a B1 fora das isenções. Pior: SGP −20,3, MNE −19,7, URY −15,5,
+comida de 30 dias NÃO fechou:** 25 nações no real e **25 no float** caem mais de
+2,5 p.p. contra a B1 fora das isenções (o "24 no float" do registro anterior era
+leitura arredondada no limite - correção em §10.1). Pior: SGP −20,3, MNE −19,7, URY −15,5,
 ISL −14,4, SAU −11,5, OMN −11,1, QAT −10,7, MNG −10,5, NZL −10,4; EGY (em
 diagnóstico) −12,5. O padrão é de **importadores**: o modelo B2 compra a cesta
 do orçamento agregado, mas o **capital de giro das firmas** (firm_cash) drena
-mais cedo nos importadores (SGP: 53k no dia 2 contra 509k na B1) e a reposição
+mais cedo nos importadores (SGP: 53k no dia 2 contra 509k na B1, no diagnóstico
+da sessão de implementação - stdout não versionado -; o mesmo mecanismo está em §10.1) e a reposição
 via poupança das famílias não repõe o caixa da firma na mesma velocidade; a
 partir daí o importador compra menos e a espiral de estoque se fecha. É uma
 lacuna de **financiamento do comércio** (Parte C), não da repartição por
@@ -206,11 +208,13 @@ aluguel está ancorado na renda média e o quintil pobre não tem margem. Isso �
 
 **Determinismo:** threads **1 × 16** no mundo real (60 d, IA, urbano) fecham o
 mesmo `trajectory_hash` `4acc4940…` e o mesmo `money_total`
-(`docs/economy/perf/b2_threads1.json` / `b2_threads16.json`).
+(`docs/economy/perf/b2_threads1.json` / `b2_threads16.json`). Reconfirmado no
+fechamento com o `world_equivalence.gd`: os dois threads dão
+`save 84d28700…` / `status 5f91d311…` (os shas do golden A0 regenerado) e
+2.177.839.209,15 (§9).
 
-**Bench canônico N=3:** não rodado nesta sessão (o host esteve ocupado com o
-sweep e o probe urbano em paralelo). Pendente para o fechamento, assim como os
-goldens A0/S0 e a equivalência CLI×Godot.
+**Bench canônico N=3:** ver §9.4 (medido no fechamento, host ocioso de outros
+Godot).
 
 ## 8. Limites conhecidos
 
@@ -226,6 +230,146 @@ goldens A0/S0 e a equivalência CLI×Godot.
 - Mobilidade move população e poupança proporcional, sem herança nem
   atributos de domicílio (B4).
 - **Comida dos importadores ricos** e **aluguel por estrato** são os dois
-  desvios abertos desta fase (números em §7). Ambos têm mecanismo identificado
-  e não foram mascarados por isenção.
+  desvios abertos desta fase (números em §7 e §10). Ambos têm mecanismo
+  identificado e não foram mascarados por isenção.
+
+## 9. Fechamento (goldens, CLI × Godot e determinismo)
+
+### 9.1 Goldens regenerados
+
+A B2 **muda o mundo de propósito**: a mesma renda da cidade passa a ser
+repartida, consumida, poupada e cobrada por cinco quintis em vez de uma massa
+única. No dia 60 isso troca o consumo das famílias, a entrada/saída de negócios
+de serviço e o próprio status (bloco `pop.income_strata` novo). O dinheiro total
+fica no mesmo valor (diferença de 1e-5 XGS em 2,18 bi = ordem da soma de
+`charge/credit_households` por estrato) e o invariante de dinheiro fecha **todo
+dia** nos quatro mundos - nenhuma violação.
+
+| golden | antes (B1) | depois (B2) | leitura |
+| --- | --- | --- | --- |
+| `A0_60_urban` (60 d, IA, urbano) | `4cc3e3c7…` / `c4ebe5ee…` | `84d28700…` / `5f91d311…` | 42.054 → **42.214** negócios de serviço, 0 falência, `money_total` 2.177.839.209,15 |
+| `real_60_ai` (S0) | `76a092b3…` / `b052f14b…` | `d64df2a1…` / `fc560221…` | mesmo mundo do A0 pelo harness S0 (42.282 negócios) |
+| `real_60_noai` (S0) | `1582000d…` / `77c42a77…` | `7070ff67…` / `bb88d8bb…` | sem IA: 45.394 → **45.144** negócios; mesma leitura |
+| `demo_365_noai` (AGRIA/PORTUS) | `3f80dd7e…` / `10b6f339…` | `a9dbd376…` / `ab317791…` | agregado intacto (630.000 XGS, 110 negócios, 0 falência); muda a distribuição por quintil e as chaves novas |
+
+Prova: `world_equivalence.ps1 -Baseline A0_60_urban.json -Rounds 2` → **0
+diferenças** (rodada 1 × 2 e rodada 1 × golden); os **dois S0** (`real_60_ai`,
+`real_60_noai`) e o **demo** (`demo_365_noai`) rodados de novo contra os goldens
+novos → **0 diferenças** cada. O demo não tem quintil
+observado (cenário fictício): entra com quintis iguais (ausência explícita) e
+por isso as famílias do AGRIA/PORTUS consomem e poupam repartidas, sem mudar o
+agregado do mundo.
+
+### 9.2 CLI × Godot com IA (60 d)
+
+Snapshot do dia 0 (`export_world_snapshot --ai=1`: 834 cidades, 864
+construções, 113 produtos, 59.165.845 B) rodado 60 dias nos dois caminhos, ambos
+na configuração **debug** (CLI e DLL do mesmo build, como o A0 exige):
+
+- replay do Godot `snapshot_replay.gd --ai=1 --threads=1`;
+- `opengs_sim_cli --ai=1 --threads=1`.
+
+Os dois arquivos são **byte-idênticos** (SHA-256
+`2f3a949f71677b9ed0a42f1023f12b8676ad8ce781da4b49cae3f0067de7c85`) e o
+comparador em **tolerância 0** dá **0 diferenças**; `money_total`
+2.177.839.209,15 e 0 violação de invariante.
+
+### 9.3 Determinismo 1 × 16 threads
+
+`world_equivalence.gd` (60 d, IA, urbano) com `--threads=1` e `--threads=16`:
+mesmo `save_sha256` `84d28700…` e mesmo `status_sha256` `5f91d311…` - e são
+exatamente os shas do golden A0 acima. O paralelismo da S16 continua bit-exato
+com os estratos.
+
+### 9.4 Bench canônico N=3 (medido, **pendente de re-medição**)
+
+`tools/bench_canonical.ps1 -Rounds 3 -Days 60` com o release de medição
+(`OGS_PROFILE_RELEASE=ON`, sha `b00f127d…`) copiado sobre o slot debug e
+restaurado no fim (debug de volta, sha `ae8d744d…` conferido): tick de parede =
+dia total **39,03 ms** de média por rodada (39,03 / 37,69 / 40,12; p50 diário
+por rodada 40,50 / 40,47 / 40,87 ms), memória 132,1 MB, fase `status` 0,009 ms.
+
+**O critério de variação ≤ 3% NÃO fechou: 6,24%.** A leitura é de **host
+ocupado**, não de regressão da B2: a máquina tinha LeagueClient, Chrome e Steam
+ativos e **todas** as fases medidas ficaram mais lentas (nenhuma caiu), de
++2,7% (`trade_food_calc`) a +78% (`poll_ms`) contra o bench da B1 (28,15 ms),
+inclusive as que a B2 não toca - `arrival` +33,8%, `trade` +18,6%,
+`prologue_snapshot` +30,1%. Nenhuma delas conhece estrato; a inflação uniforme
+é ambiente. **Pendência:** re-medir N=3 em host realmente ocioso antes
+de usar o número como referência de performance. Evidência:
+`docs/economy/perf/b2_main_bench.json`.
+
+## 10. Dívida de calibração (fase seguinte; não bloqueia a B2)
+
+Decisão do dono: nesta fase se constrói **lógica**; a calibração de produção e
+comida vem depois. Os portões desta entrega são **invariantes e mecânica** - e
+ambos fecham (§9). O que segue fica registrado com número e mecanismo para a
+fase de calibração, **sem isenção nova e sem knob escondido**.
+
+### 10.1 Comida dos importadores no sweep 365 d
+
+**Mecanismo (diagnóstico da sessão de implementação, stdout não versionado; a
+trajetória do mundo está em `b2_world_sweep.json`):** o capital de giro das
+firmas (`firm_cash`) drena mais cedo nos importadores - SGP chega ao dia 2 com
+53k de caixa contra 509k na B1; a reposição pela poupança das famílias não
+devolve o caixa da firma na mesma velocidade, o importador compra menos e a
+espiral de estoque se fecha. É a **lacuna de financiamento do comércio (Parte
+C)**, não da repartição por estrato: a cesta comprada do orçamento agregado
+restaurou os países pobres (antes COG −19,2 etc.); o que resta são os ricos sem
+terra.
+
+25 nações reprovam o portão de 2,5 p.p. (média de 30 d) no sweep **real**;
+nenhuma está na lista de isenção (`SOL,DJI,SAH,JOR,YEM`). JOR (−22,61 p.p.)
+está na isenção e não conta.
+
+| nação | Δ p.p. | B1 | B2 | | nação | Δ p.p. | B1 | B2 |
+| --- | ---: | ---: | ---: | --- | --- | ---: | ---: | ---: |
+| SGP | −20,26 | 1,0000 | 0,7974 | | ARG | −5,35 | 1,0000 | 0,9465 |
+| MNE | −19,73 | 1,0000 | 0,8027 | | GRC | −4,38 | 1,0000 | 0,9562 |
+| URY | −15,52 | 1,0000 | 0,8448 | | PSX | −3,82 | 0,2284 | 0,1902 |
+| ISL | −14,43 | 1,0000 | 0,8557 | | CYP | −3,66 | 1,0000 | 0,9634 |
+| EGY | −12,46 | 0,9179 | 0,7934 | | TWN | −3,18 | 1,0000 | 0,9682 |
+| SAU | −11,52 | 0,9892 | 0,8740 | | BTN | −3,04 | 1,0000 | 0,9696 |
+| OMN | −11,06 | 1,0000 | 0,8894 | | AUS | −3,03 | 1,0000 | 0,9697 |
+| QAT | −10,71 | 1,0000 | 0,8929 | | IRL | −2,77 | 1,0000 | 0,9723 |
+| MNG | −10,54 | 1,0000 | 0,8946 | | CHN | −2,56 | 1,0000 | 0,9744 |
+| NZL | −10,44 | 1,0000 | 0,8956 | | KWT | −2,52 | 1,0000 | 0,9748 |
+| TKM | −9,43 | 1,0000 | 0,9057 | | | | | |
+| KAZ | −8,63 | 1,0000 | 0,9137 | | | | | |
+| ARM | −8,50 | 1,0000 | 0,9150 | | | | | |
+| GEO | −8,06 | 1,0000 | 0,9194 | | | | | |
+| ALB | −6,42 | 1,0000 | 0,9358 | | | | | |
+
+Fonte: `b2_world_sweep.json` × `b1_world_sweep.json` (média de 30 d por nação).
+**Correção do registro anterior:** a sonda **float** também reprova **25**
+nações (SAU −14,17, EGY −13,99, SGP −11,42, ARE −9,91, KAZ −9,67, NOR −8,78,
+GEO −7,85, BHR −7,78, ARM −7,40, SWE −7,09 …), com TWN em −2,504 p.p. - o "24"
+do §7 era leitura arredondada no limite.
+
+### 10.2 Ônus e pago/faturado do aluguel por estrato (probe urbano 365 d)
+
+`tools/b2_urban_strata_report.py` sobre `b2_urban_365.json`: **30 reprovações**
+em 6 cidades. Duas causas, ambas de **âncora de aluguel**, não de conservação:
+
+1. o aluguel é ancorado na **renda média da cidade**; para o quintil pobre
+   (renda 1/3 da média) o ônus passa do teto - **AUS Q1 0,545** (faixa
+   0,15-0,40);
+2. o mesmo aluguel sobre a renda alta dá ônus **abaixo do piso** (Q3-Q5 em
+   0,005-0,161), e quando a poupança do quintil acaba antes do aluguel o
+   pago/faturado cai a **0** (BRA Q1/Q2, JPN Q1) ou fica parcial
+   (NGA Q2 0,196, USA Q2 0,560).
+
+| cidade | ônus Q1/Q2/Q3/Q4/Q5 | pago/faturado Q1/Q2 |
+| --- | --- | --- |
+| BRA-SAO | 0,000 / 0,000 / 0,074 / 0,046 / 0,010 | 0,000 / 0,000 |
+| JPN-TOK | 0,000 / 0,235 / 0,112 / 0,081 / 0,029 | 0,000 / 1,000 |
+| NGA-LAG | – / **0,044** / 0,035 / 0,022 / 0,005 | – / **0,196** |
+| IND-MUM | 0,105 / **0,268** / 0,141 / 0,106 / 0,027 | 1,000 / 0,907 |
+| USA-NEW | 0,000 / **0,187** / 0,126 / 0,081 / 0,023 | 0,000 / **0,560** |
+| AUS-WEI | **0,545** / 0,334 / 0,161 / 0,116 / 0,040 | 1,000 / 1,000 |
+
+(`–` = quintil sem inquilino no fim do ano; Q5 de AUS é 0,040. IND Q2 0,268 está
+dentro da faixa de ônus mas tem pago/faturado 0,907 < 1,0.) O conserto é
+calibração: âncora por estrato/qualidade da moradia e degrau de qualidade da
+unidade - não um número de conservação.
 
