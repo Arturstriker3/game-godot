@@ -1,0 +1,32 @@
+{
+ "meta": {
+  "generated_utc": "2026-11-17T23:46:00Z",
+  "days": 365,
+  "ai": 1,
+  "urban": true,
+  "threads": 1,
+  "baseline": "docs/economy/perf/partA_world_sweep.json",
+  "food_tolerance_pp": 2.5,
+  "exempt": ["SOL", "DJI", "SAH", "JOR", "YEM"],
+  "note": "Derivado dos relatorios por variante em user://world_sweep (b1_real_365.json / b1_float_365.json, reproduzidos byte-identicos pela build final: trajectory_hash 11b6bc9e… / 800796dd…). 'delta_pp' = worst_avg30 da B1 - baseline_avg30 do partA."
+ },
+ "real_failures": [
+  {"tag": "LBY", "food_avg30": 0.869459073525744, "baseline_avg30": 0.986642531556548, "delta_pp": -11.72, "exempt": false},
+  {"tag": "YEM", "food_avg30": 0.899745430196625, "baseline_avg30": 0.992202543425555, "delta_pp": -9.25, "exempt": true},
+  {"tag": "AFG", "food_avg30": 0.922938331462651, "baseline_avg30": 1.0, "delta_pp": -7.71, "exempt": false},
+  {"tag": "ARE", "food_avg30": 0.925741782125518, "baseline_avg30": 1.0, "delta_pp": -7.43, "exempt": false},
+  {"tag": "EGY", "food_avg30": 0.917947313749392, "baseline_avg30": 0.9855907825725, "delta_pp": -6.76, "exempt": false},
+  {"tag": "JOR", "food_avg30": 0.952220717696261, "baseline_avg30": 1.0, "delta_pp": -4.78, "exempt": true}
+ ],
+ "float_failures": [
+  {"tag": "JOR", "food_avg30": 0.769888797744601, "baseline_avg30": 1.0, "delta_pp": -23.01, "exempt": true},
+  {"tag": "EGY", "food_avg30": 0.763305504051699, "baseline_avg30": 0.9855907825725, "delta_pp": -22.23, "exempt": false},
+  {"tag": "SYR", "food_avg30": 0.969516006273416, "baseline_avg30": 1.0, "delta_pp": -3.05, "exempt": false},
+  {"tag": "YEM", "food_avg30": 0.962597136943597, "baseline_avg30": 0.992202543425555, "delta_pp": -2.96, "exempt": true}
+ ],
+ "ab_without_monthly_flow": {
+  "source": "medicao da sessao de implementacao (stdout do economy_world_test, 365 d, com as coortes semeadas e sem o fluxo mensal); stdout nao versionado",
+  "real_avg30": {"LBY": 0.973, "AFG": 1.0, "ARE": 1.0, "EGY": 0.994},
+  "conclusion": "sem o fluxo mensal as 4 nao passam do portao: a semeadura e os fatores do dia 0 estao limpos; a queda vem da perturbacao de populacao do fluxo, amplificada pela bistabilidade dos importadores sem agricultura."
+ }
+}
