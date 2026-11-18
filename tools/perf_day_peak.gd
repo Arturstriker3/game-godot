@@ -48,7 +48,7 @@ const AlertsScript: Script = preload("res://core/ui/alerts.gd")
 const MAX_ORDER_LOG := 240
 ## Fases do tick C++, na ordem em que o núcleo as reporta.
 const PHASES := [
-	"arrival", "reset", "labor", "production", "raw", "income", "services",
+	"arrival", "reset", "demography", "labor", "production", "raw", "income", "services",
 	"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
 	"status", "status_cities", "status_orders", "status_nations", "status_misc",
 	"trade_food", "trade_food_buyers", "trade_goods", "trade_goods_loop",

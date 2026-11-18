@@ -514,15 +514,19 @@ void SimCore::services_day(City& city, double* foreign_slots,
 		total_units_served += served;
 		// Cobertura privada de saúde/educação: oferta por habitante contra a
 		// necessidade de referência (gancho documentado, não serviço público).
+		// B1: a necessidade escala com as coortes (65+ pesa mais na saúde,
+		// crianças na educação); sem demografia o fator é 1,0 (legado).
 		if (ws_.service_sectors[static_cast<std::size_t>(sector)].health) {
 			const double need = std::max(1e-9,
-				city.simulation_population * kServiceHealthNeedPerCapita);
+				city.simulation_population * kServiceHealthNeedPerCapita
+					* city.pop.health_need_factor);
 			market.coverage = std::clamp(market.supply / need, 0.0, 1.0);
 			city.private_health_cover = market.coverage;
 		}
 		if (ws_.service_sectors[static_cast<std::size_t>(sector)].education) {
 			const double need = std::max(1e-9,
-				city.simulation_population * kServiceEducationNeedPerCapita);
+				city.simulation_population * kServiceEducationNeedPerCapita
+					* city.pop.education_need_factor);
 			market.coverage = std::clamp(market.supply / need, 0.0, 1.0);
 			city.private_education_cover = market.coverage;
 		}

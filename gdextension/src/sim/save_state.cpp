@@ -326,6 +326,19 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		}
 		needs_state["durable_stock"] = durable_stock;
 		pop["needs"] = needs_state;
+		// B1 (save v16): coortes etárias (5 faixas) e os pesos de referência de
+		// saúde/educação do dia da semeadura. Array vazio = cidade sem estrutura
+		// nacional (perfil paramétrico legado, sem coorte a persistir).
+		Array age_bands = make_array();
+		if (city.pop.demography_ready) {
+			for (int band = 0; band < kAgeBands; ++band) {
+				age_bands.append(std::max(0.0, city.pop.age_band[band]));
+			}
+		}
+		pop["age_bands"] = age_bands;
+		pop["health_weight_ref"] = std::max(0.0, city.pop.health_weight_ref);
+		pop["education_weight_ref"] =
+			std::max(0.0, city.pop.education_weight_ref);
 		// F7: mercado de trabalho e educação (save v9). Bloco aditivo: os campos
 		// de compatibilidade acima continuam iguais.
 		Dictionary labor = make_object();
@@ -1446,7 +1459,10 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 				labor_pop.wage_income_by_level, kEducationLevels);
 			read_levels("studying", labor_pop.studying,
 				kEducationLevels - 1);
-			labor_pop.students = labor_pop.studying[0] + labor_pop.studying[1];
+			// B1: `students` é a POP fora da força em formação — crianças
+			// (coorte 0-14) + quem estuda (ver apply_labor_profile/labor_day).
+			labor_pop.students = labor_pop.children + labor_pop.studying[0]
+				+ labor_pop.studying[1];
 			labor_pop.income_level = std::clamp(
 				int(saved_labor.get("income_level", 1)), 0, 3);
 			// F7 calibração: blocos aditivos. Save anterior ao calibração (v9
@@ -1491,6 +1507,81 @@ void from_value(WorldState& ws, SimCore& core, const Dictionary& data) {
 			}
 			labor_pop.dependents = std::max(0.0,
 				city.pop.population - labor_pop.labor_force);
+		}
+		// B1 (save v16): coortes etárias, DEPOIS do bloco de trabalho. O save v16
+		// restaura as bandas e reaplica o que é derivado delas (idade ativa,
+		// crianças, fatores de saúde/educação). O v15 e anteriores não têm as
+		// bandas: são semeadas da estrutura nacional e a escolaridade guardada é
+		// reescalada pela razão da idade ativa, para o perfil paramétrico antigo
+		// não ficar inconsistente com as coortes até o primeiro mês. Sem dado
+		// para a nação, a cidade fica no perfil paramétrico legado.
+		{
+			const Array saved_age_bands = pop.get("age_bands", Array());
+			double age_total = 0.0;
+			const bool has_age_bands = version >= 16
+				&& saved_age_bands.size() >= kAgeBands;
+			for (int band = 0; band < kAgeBands && has_age_bands; ++band) {
+				age_total += std::max(0.0, double(saved_age_bands[band]));
+			}
+			if (has_age_bands && age_total > 0.0) {
+				for (int band = 0; band < kAgeBands; ++band) {
+					city.pop.age_band[band] =
+						std::max(0.0, double(saved_age_bands[band]));
+				}
+				city.pop.health_weight_ref = std::max(0.0,
+					double(pop.get("health_weight_ref", 0.0)));
+				city.pop.education_weight_ref = std::max(0.0,
+					double(pop.get("education_weight_ref", 0.0)));
+				city.pop.demography_ready = true;
+				core.apply_demography(city);
+				// O bloco de trabalho acima montou `students` antes de as
+				// coortes existirem (`children` ainda 0). Recalcula aqui para o
+				// status logo após o load e um save sem tick fecharem exato.
+				city.pop.students = city.pop.children + city.pop.studying[0]
+					+ city.pop.studying[1];
+				city.pop.dependents = std::max(0.0,
+					city.pop.population - city.pop.labor_force);
+			} else {
+				const double old_working = std::max(0.0, city.pop.working_age);
+				core.seed_demography(city);
+				if (city.pop.demography_ready) {
+					const double new_working = city.pop.age_band[1]
+						+ city.pop.age_band[2] + city.pop.age_band[3];
+					const double ratio = old_working > 1e-6
+						? std::clamp(new_working / old_working, 0.5, 2.0) : 1.0;
+					for (int level = 0; level < kEducationLevels; ++level) {
+						city.pop.education[level] *= ratio;
+					}
+					for (int track = 0; track < kEducationLevels - 1; ++track) {
+						city.pop.studying[track] *= ratio;
+					}
+					core.apply_demography(city);
+					city.pop.labor_force = 0.0;
+					city.pop.employed = 0.0;
+					city.pop.unemployed = 0.0;
+					for (int level = 0; level < kEducationLevels; ++level) {
+						const double studying = level < kEducationLevels - 1
+							? city.pop.studying[level] : 0.0;
+						city.pop.labor_force_by_level[level] = std::max(0.0,
+							city.pop.education[level]
+								* city.pop.participation[level] - studying);
+						city.pop.employed_by_level[level] = std::min(
+							city.pop.employed_by_level[level],
+							city.pop.labor_force_by_level[level]);
+						city.pop.unemployed_by_level[level] = std::max(0.0,
+							city.pop.labor_force_by_level[level]
+								- city.pop.employed_by_level[level]);
+						city.pop.labor_force +=
+							city.pop.labor_force_by_level[level];
+						city.pop.employed += city.pop.employed_by_level[level];
+						city.pop.unemployed += city.pop.unemployed_by_level[level];
+					}
+					city.pop.students = city.pop.children
+						+ city.pop.studying[0] + city.pop.studying[1];
+					city.pop.dependents = std::max(0.0,
+						city.pop.population - city.pop.labor_force);
+				}
+			}
 		}
 		city.government_goods_spend = double(entry.get("government_goods_spend", 0.0));
 		// §15 (save v12): emprego setorial — base da capacidade de construção do

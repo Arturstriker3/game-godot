@@ -73,6 +73,8 @@ const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 ## F9: estrutura de emprego por setor (âncoras ILO + coeficientes agrícolas).
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## B1: estrutura etária por nação (definição estática; coortes ainda não).
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 ## §19 (W0): solo urbano, moradia e prefeitura por cidade.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -143,6 +145,10 @@ func _ready() -> void:
 	# compilado das mesmas âncoras.
 	if sim.has_method("set_sector_employment"):
 		sim.set_sector_employment(_load_json_dict(SECTOR_EMPLOYMENT_PATH))
+	# B1: estrutura etária por nação (definição estática). Antes do mundo, como
+	# as demais definições; binário anterior ao B1 não tem o método.
+	if sim.has_method("set_age_structure"):
+		sim.set_age_structure(_load_json_dict(AGE_STRUCTURE_PATH))
 	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
 	# aptidão × caloria da nação (antes de criar os prédios no núcleo). Sem dados,
 	# mantém trigo.

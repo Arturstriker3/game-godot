@@ -70,6 +70,10 @@ public:
 	void phase_arrival();
 	// 2. Zera os fluxos do dia.
 	void phase_reset();
+	// 2a. B1: demografia — cadência mensal (A6) por cidade. Move as coortes
+	// etárias um mês (nascimentos, mortes e envelhecimento) e reaplica o perfil
+	// que depende da idade. Laço SERIAL (determinístico).
+	void phase_demography();
 	// 2b. F4: manutenção/compra mensal da frota e zera a fila do dia. Roda
 	// antes do comércio para combustível/veículos comprados já valerem hoje.
 	void phase_fleet();
@@ -202,6 +206,14 @@ public:
 	void rebuild_tariff_lookup();
 	// F7: preenche população, escolaridade, participação e salários iniciais.
 	void apply_labor_profile(City& city);
+	// B1: semeia as coortes etárias da cidade a partir da estrutura nacional
+	// (age_structure_2026.json). Idempotente; sem dado para a nação não faz NADA
+	// (a cidade fica no perfil paramétrico legado — ausência explícita).
+	void seed_demography(City& city);
+	// B1: deriva população total, idade ativa, aposentados, crianças, reserva
+	// recrutável e os fatores de necessidade de saúde/educação das coortes.
+	// Chama seed_demography; sem dado, retorna sem tocar em nada.
+	void apply_demography(City& city);
 	// F9: semeia os grupos a partir dos ativos privados (idempotente).
 	void seed_groups();
 	// Id de receita -> índice no `recipe_lookup` (-1 se não existir).

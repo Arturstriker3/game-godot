@@ -11,7 +11,9 @@
 //     "services":   { "loaded", "government_share", "sectors" },
 //     "employment": { "loaded", "anchors", <campos agri_*/industry_*> },
 //     "balance":    { <parâmetros do set_balance> },
-//     "land_capacity": [ { "city", "product", "value" } ]
+//     "land_capacity": [ { "city", "product", "value" } ],
+//     "age_structure": [ { "nation", "bands", "frac_18_49",
+//                          "births_per_1000", "deaths_per_1000", "tfr" } ]
 //   }
 //
 // Regra de leitura: nenhuma chave é obrigatória. Chave ausente (ou de tipo
@@ -23,6 +25,7 @@
 #include "sim_core.h"
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -732,6 +735,73 @@ void land_capacity_from(WorldState& ws, const Value& array) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// 8. Estrutura etária por nação (age_structure_2026.json -> set_age_structure)
+//
+// DEFINIÇÃO estática (B1): o mapa é ordenado pela tag (`std::map`), então o
+// array sai em ordem determinística de chave. Mesmos limites de
+// `set_age_structure`: faixas [0,1] e soma em [0,98, 1,02], frac_18_49 [0,1],
+// cbr/cdr [0,80], tfr [0,10]. Entrada inválida é descartada, nunca lança.
+// ---------------------------------------------------------------------------
+
+Value age_structure_to(const WorldState& ws) {
+	Value out = empty_array();
+	for (const auto& pair : ws.age_structures) {
+		const AgeStructure& structure = pair.second;
+		Value entry;
+		entry["nation"] = Value(pair.first);
+		entry["bands"] = array_of(structure.band, 5);
+		entry["frac_18_49"] = Value(structure.frac_18_49);
+		entry["births_per_1000"] = Value(structure.births_per_1000);
+		entry["deaths_per_1000"] = Value(structure.deaths_per_1000);
+		entry["tfr"] = Value(structure.tfr);
+		out.append(entry);
+	}
+	return out;
+}
+
+void age_structure_from(WorldState& ws, const Value& array) {
+	std::map<std::string, AgeStructure> parsed;
+	for (int index = 0; index < array.size(); ++index) {
+		const Value& entry = array[index];
+		if (entry.get_type() != Value::DICTIONARY) {
+			continue;
+		}
+		const std::string nation = read_string(entry, "nation");
+		if (nation.empty()) {
+			continue;
+		}
+		const Value* bands = read_array(entry, "bands");
+		if (bands == nullptr || bands->size() < 5) {
+			continue;
+		}
+		AgeStructure structure;
+		for (int slot = 0; slot < 5; ++slot) {
+			structure.band[slot] = std::clamp(
+				read_scalar_double((*bands)[slot], 0.0), 0.0, 1.0);
+		}
+		const double total = structure.band[0] + structure.band[1]
+			+ structure.band[2] + structure.band[3] + structure.band[4];
+		if (total < 0.98 || total > 1.02) {
+			continue;
+		}
+		structure.frac_18_49 = std::clamp(
+			read_double(entry, "frac_18_49", 0.0), 0.0, 1.0);
+		structure.births_per_1000 = std::clamp(
+			read_double(entry, "births_per_1000", 0.0), 0.0, 80.0);
+		structure.deaths_per_1000 = std::clamp(
+			read_double(entry, "deaths_per_1000", 0.0), 0.0, 80.0);
+		structure.tfr = std::clamp(read_double(entry, "tfr", 0.0), 0.0, 10.0);
+		structure.valid = true;
+		parsed[nation] = structure;
+	}
+	// Mesmo contrato do setter: sem nenhuma entrada válida, o mapa atual fica.
+	if (parsed.empty()) {
+		return;
+	}
+	ws.age_structures = std::move(parsed);
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -748,6 +818,7 @@ Value definitions_to(const WorldState& ws) {
 	out["employment"] = employment_to(ws);
 	out["balance"] = balance_to(ws);
 	out["land_capacity"] = land_capacity_to(ws);
+	out["age_structure"] = age_structure_to(ws);
 	return out;
 }
 
@@ -776,6 +847,9 @@ void definitions_from(WorldState& ws, const Value& data) {
 	}
 	if (const Value* array = read_array(data, "land_capacity")) {
 		land_capacity_from(ws, *array);
+	}
+	if (const Value* array = read_array(data, "age_structure")) {
+		age_structure_from(ws, *array);
 	}
 }
 

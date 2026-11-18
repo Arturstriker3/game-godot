@@ -38,6 +38,8 @@ const NEEDS_PATH := "res://data/definitions/economy/needs.json"
 const SERVICES_PATH := "res://data/definitions/economy/services.json"
 const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
+## B1: estrutura etária por nação (definição estática; coortes ainda não).
+const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
 ## §19 (W0): mesmos caminhos que o autoload do jogo usa para a camada urbana.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -254,6 +256,10 @@ func _test_world() -> void:
 	_sector_data = _load_dict(SECTOR_EMPLOYMENT_PATH)
 	if sim.has_method("set_sector_employment") and not _sector_data.is_empty():
 		sim.set_sector_employment(_sector_data)
+	# B1: estrutura etária por nação (definição estática), antes do mundo.
+	var age_structure := _load_dict(AGE_STRUCTURE_PATH)
+	if sim.has_method("set_age_structure") and not age_structure.is_empty():
+		sim.set_age_structure(age_structure)
 	# Pipeline do jogo ao vivo (opcional): geografia real + IA econômica. Sem
 	# isso, o teste mede só o núcleo (comparativo de comida da F2). Com `--ai=1`
 	# a demanda final da F3 passa a ser vista pelo investidor. A fazenda inicial

@@ -46,6 +46,7 @@ add_library(opengs_sim STATIC
     src/sim/fx.cpp
     src/sim/investment.cpp
     src/sim/construction.cpp
+    src/sim/demography.cpp
     src/sim/urban_land.cpp
     src/sim/city_gov.cpp
     src/sim/housing.cpp

@@ -1,0 +1,45 @@
+{
+ "meta": {
+  "generated_utc": "2026-11-17T23:46:00Z",
+  "build": "debug em gdextension/bin (slot sha256 8f96caba15c1894435074e365344081768617778081b5a4ad4b99ddb642a0fa7)",
+  "base": "2264cf9 (balance/global-resources)",
+  "branch": "feat/b1-demography",
+  "worktree": "G:/projetos/opengs-wt-b1"
+ },
+ "determinism": {
+  "days": 60,
+  "ai": 1,
+  "urban": true,
+  "threads": [1, 16],
+  "trajectory_hash": "43187a04365bb17c18988289b35fc939dcd52e4443473249fc7df7f029f138fe",
+  "reports_equal": true,
+  "compared": ["meta", "nations", "labor", "sectors", "ownership"]
+ },
+ "cli_vs_godot": {
+  "days": 60,
+  "ai": 1,
+  "threads": 1,
+  "snapshot": "export_world_snapshot do dia 0 (834 cidades, 846 construcoes, 113 produtos)",
+  "tolerance": 0,
+  "differences": 0
+ },
+ "suites": {
+  "economy_integration_test": {"exit": 0, "schema": 16},
+  "economy_ai_test": {"exit": 0},
+  "population_demo_test": {"exit": 0},
+  "economy_save_load_roundtrip_test": {
+   "exit": 0,
+   "roundtrips": [
+    {"days": 60, "save_at": 20, "diffs": 0, "save_sha256": "73ec81ada713d335ffe5a68829892fa2dda6b48bf9475592647966261b0fb9f8", "status_sha256": "a9bd996cccc15398de2c62c2fb290b41bf254448b25cdf68814044a5a9e0c54c"},
+    {"days": 64, "save_at": 32, "diffs": 0, "save_sha256": "03b5e52761a8ec2de517900abd8b339ad85911bae0b9c3df8d7ab27666381ae8", "status_sha256": "f4696878e4b07948541f2fd48cc3e5ddc24e3099b9abd2e905068a208378e81a"}
+   ]
+  },
+  "population_age_test": {
+   "exit": 0,
+   "days": 365,
+   "money_drift": 0.0001,
+   "world_population_day0": 1319902551,
+   "world_population_day365": 1329015662
+  }
+ }
+}
