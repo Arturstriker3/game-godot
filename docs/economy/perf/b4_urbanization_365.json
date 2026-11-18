@@ -5,7 +5,7 @@
     "formula": "urbanization = urbano / (urbano + interior), populações vivas",
     "threads": 1,
     "urban": true,
-    "world_status_urbanization_end": 0.256209724014275
+    "world_status_urbanization_end": 0.256209781614773
   },
   "nations": [
     {
@@ -130,14 +130,14 @@
     }
   ],
   "world": {
-    "city_in_total": 37577.6709099338,
-    "city_out_total": 37577.6709099338,
-    "region_end": 6153618684.09211,
+    "city_in_total": 37469.9664958336,
+    "city_out_total": 37469.9664958336,
+    "region_end": 6153618207.49035,
     "region_start": 6097586756.0,
-    "rural_in_total": 21045.4873755834,
-    "urban_end": 2119706314.5937,
+    "rural_in_total": 21522.3972350105,
+    "urban_end": 2119706791.12268,
     "urban_start": 2105914306.0,
-    "urbanization_end": 0.256209724014275,
+    "urbanization_end": 0.256209781614773,
     "urbanization_start": 0.25670921355212
   }
 }

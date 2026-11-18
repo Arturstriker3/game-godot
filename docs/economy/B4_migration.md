@@ -82,43 +82,50 @@ dia é zerado por outra cidade).
 
 - **Conservação (60 d):** drift **0.000000000**; Σ urbano + Σ interior == Σ
   população (8.214.790.501 no dia 60).
-- **Migração em 365 d (mundo, IA + urbano):** `rural_in_total` **21.045**,
-  `city_in_total` **37.578**, `city_out_total` **37.578** (entrada == saída,
+- **Migração em 365 d (mundo, IA + urbano):** `rural_in_total` **21.522**,
+  `city_in_total` **37.470**, `city_out_total` **37.470** (entrada == saída,
   conservação de cidade→cidade); urbanização mundial **0,256709 → 0,256210**
   (`get_status().migration.urbanization` bate com o save: 0,256210). A fração é a
   da AGLOMERAÇÃO sobre o total — a região contém o resto do estado, então este
   número é o da B3 (~25%), não o ~57% nacional do World Bank. Por país (dia 0 →
-  dia 365): BRA 0,38715→0,38715, USA 0,38463→0,38463, EGY 0,26933→0,26933, CHN
-  0,25426→0,25426 (`rural_in` 1.184, `city_in` 99,9), PAK 0,22890→0,22897, IDN
-  0,21246→0,21245, NGA 0,20021→0,20018, BGD 0,17787→0,17794, IND
-  0,12157→0,12156, ETH 0,05932→0,05932. O fluxo é pequeno porque a vaga de
-  moradia em equilíbrio é ~0 (§5); o resto do movimento é demografia.
-  Evidência: `docs/economy/perf/b4_urbanization_365.json`
+  dia 365): BRA 0,387153→0,387148, USA 0,384626→0,384627, EGY
+  0,269333→0,269326, CHN 0,254260→0,254259 (`rural_in` 1.184), PAK
+  0,228904→0,228969, IDN 0,212457→0,212454, NGA 0,200208→0,200184, BGD
+  0,177868→0,177938, IND 0,121566→0,121556, ETH 0,059321→0,059321. O fluxo é
+  pequeno porque a vaga de moradia em equilíbrio é ~0 (§5); o resto do movimento
+  é demografia. Evidência: `docs/economy/perf/b4_urbanization_365.json`
   (`tools/b4_urbanization_365.gd`).
 - **Determinismo:** threads 1×16 → mesmo save (b4: `ccc86e24…`; b3 re-verificado
   `e6c3b232…`).
 - **CLI × Godot 10 d (IA, threads=1):** byte-idêntico (SHA-256
-  `B2D6D066EBE6566621194A8C1776DDFC94C500EB6C79D727C4FEC4AF9C1DF4B9`), 0 diffs.
-- **Goldens regenerados (antes → depois):**
-  A0 `ff6855a0./3b8749b6.` → `8ec61166./120c1925.`;
-  `real_60_ai` `da665be8./652f965d.` → `62d6156f./2d0837ae.`;
-  `real_60_noai` `bb35e9b7./165ec560.` → `39164a11./4a20ccd0.`;
-  `demo_365_noai` `9f19d27d./489422ae.` → `d189fe63./7fcbb4b2.`
-  Justificativa: save v20 (bloco `region.migration`) + status `migration`; a
-  migração move gente real (pouca, mas a trajetória muda).
-- **Sweep 365 d (real/float, baseline `b3_world_sweep.json`):** falências **11**
-  (real) / **12** (float) contra teto 28; drift **−0,0010** nas duas; hash real
-  `ad94f030…`, float `172e9e01…` (difere, como deve). Portão de comida (avg30):
-  **16** nações pioram no real e **23** no float (vs B3) — a bistabilidade de
-  comida dos importadores, NÃO a magnitude da migração (ver §5). Evidência
-  versionada: `docs/economy/perf/b4_world_sweep.json`.
-- **Bench canônico N=3:** dia total **22,61 ms**, fase `migration` **0,211 ms**
-  (**0,93%** do dia; `region` 0,128 ms), variação **1,41% ≤ 3%** (critério OK),
-  memória 141,9 MB. `docs/economy/perf/b4_migration_bench.json`.
+  `F5F02E383D17C4C5C97BB79C0D3DE79FD3C13CDB9F7C3FE4C3217C2EC46A89A8`), 0 diffs.
+- **Goldens (B4, pós-merge da D-086b, 2 rodadas cada):** A0
+  `8ec61166./30c669b3.` → `8759c538./9882875.`; `real_60_ai`
+  `62d6156f./f667650b.` → `2795407e./4d50dbf5.`; `real_60_noai` e
+  `demo_365_noai` ficaram byte-idênticos (`39164a11./d29710d4.` e
+  `d189fe63./14d2c387.`). Justificativa: a B4 muda o save (v20, bloco
+  `region.migration`) e o status (`migration`, inclusive a urbanização viva); a
+  D-086b muda a régua da mina semeada (`initialize_world`) e a folha/opex da
+  mina pelo uso (`labor.cpp`) — só o cenário com IA/minas muda.
+- **Sweep 365 d (real/float, baseline `b3_world_sweep.json`):** falências **4**
+  (real) / **4** (float) contra teto 28; drift **−0,0005** (real) / **−0,0013**
+  (float); hash real `99241d0a…`, float `d6e6f8d2…` (difere, como deve). Portão
+  de comida (avg30): **16** nações pioram no real e **21** no float (vs B3) — a
+  bistabilidade de comida dos importadores, NÃO a magnitude da migração (ver
+  §5). Evidência versionada: `docs/economy/perf/b4_world_sweep.json`.
+- **Bench canônico N=3 (pós-merge da D-086b):** dia total **34,17 ms**
+  (rodadas 32,65 / 34,17 / 36,90), fase `migration` **0,232 ms** (**0,68%** do
+  dia; `region` 0,167 ms), memória 142,3 MB. O critério de variação **FALHOU**
+  (**12,43% > 3%**) e o dia total subiu ~1,5× vs o golden pré-merge (22,61 ms).
+  Todas as fases subiram juntas (`arrival` 1,63×, `ai` 1,32×, `reset` 1,87×,
+  `prologue_snapshot` 1,62×; `labor` 1,00×), padrão compatível com o mundo mais
+  ativo da D-086b (minas semeadas operando) somado a deriva do host — não é a
+  fase de migração (`migration` 0,211 → 0,232 ms). Evidência:
+  `docs/economy/perf/b4_migration_bench.json`.
 
 ## 5. Desvios e dívida de calibração
 
-- **Portão de comida (16 real / 23 float pioram vs B3):** a migração move
+- **Portão de comida (16 real / 21 float pioram vs B3):** a migração move
   ~21 mil pessoas/ano (0,0003% do mundo), mas a comida dos importadores é
   **bistável** (mesmo mecanismo da B1/B2/B3: poupança → 0, preço do trigo ~3×,
   consumo cai). Uma trajetória minimamente diferente (qualquer pessoa a mais no
