@@ -46,6 +46,15 @@ const INCOME_DISTRIBUTION_PATH := "res://data/definitions/economy/income_distrib
 ## o núcleo usa a proxy lognormal do Gini declarado.
 const INEQUALITY_PATH := "res://data/definitions/economy/inequality.json"
 
+## D-086b — EXTRAÇÃO REAL (semente de 2025). Produção mineral/energética real
+## de 2024 por país (USGS Mineral Commodity Summaries 2025; Energy Institute
+## 2025 via OWID, CC BY 4.0) convertida em participação mundial e distribuída
+## entre as cidades donas das jazidas pela reserva recuperável (regra A1). Cada
+## entrada é um local REAL (cidade × mineral) com a capacidade diária que
+## reproduz a produção real atribuída. O arquivo é auditoria + semente; os
+## números de origem estão em `extraction_production_2024.json`.
+const EXTRACTION_SEED_PATH := "res://data/definitions/natural/extraction_2025.json"
+
 ## Tag do jogo -> código ISO-3 do Natural Earth (adm0_a3). A identidade cobre
 ## quase todas; só NED (NLD), XKX (KOS) e SSD (SDS) divergem. As províncias do
 ## Kosovo já existem na base natural (tag KOS) desde a r6 e entram em XKX.
@@ -82,6 +91,11 @@ static var _gini_meta: Dictionary = {}
 static var _gini_ready := false
 static var _inequality_by_nation: Dictionary = {}
 static var _inequality_ready := false
+## D-086b: semente de extração real. "CITY|resource" ->
+## {capacity_t_day, owner, production_kt_year, reserve_share}. Vazio = arquivo
+## ausente; o núcleo cai na regra histórica (último estágio, piso de 5%).
+static var _extraction_seed: Dictionary = {}
+static var _extraction_seed_ready := false
 
 ## Renda externa: piso do índice (fração da média mundial). Sem piso, países
 ## pobres ficariam com ~0,04 da média e a cidade sem terra não importaria nada —
@@ -433,6 +447,44 @@ static func _load_income_distribution() -> void:
 		"default_gini": _gini_default,
 		"regions": _gini_by_region.duplicate(true),
 	}
+
+
+## D-086b — carrega `extraction_2025.json` uma vez. Cada entrada é um local
+## REAL (cidade × mineral) com a capacidade diária que reproduz a produção
+## real 2024 atribuída ao país. Sem o arquivo, o mapa fica vazio e as minas
+## seguem a regra histórica (último estágio).
+static func _load_extraction_seed() -> void:
+	if _extraction_seed_ready:
+		return
+	_extraction_seed_ready = true
+	var file := FileAccess.open(EXTRACTION_SEED_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	var commodities: Dictionary = (data as Dictionary).get("commodities", {})
+	for resource: String in commodities:
+		var entry_commodity: Dictionary = commodities[resource]
+		var countries: Dictionary = entry_commodity.get("countries", {})
+		for tag: String in countries:
+			var country: Dictionary = countries[tag]
+			var owner := String(country.get("owner", "private"))
+			var production_kt_year := float(country.get("production_kt_year", 0.0))
+			for city_entry in (country.get("cities", []) as Array):
+				var city_row: Dictionary = city_entry
+				var city_id := String(city_row.get("city_id", ""))
+				var capacity := float(city_row.get("capacity_t_day", 0.0))
+				if city_id == "" or capacity <= 0.0:
+					continue
+				_extraction_seed[city_id + "|" + resource] = {
+					"capacity_t_day": capacity,
+					"owner": owner,
+					"production_kt_year": production_kt_year,
+					"reserve_share": float(city_row.get("reserve_share", 0.0)),
+					"nation": tag,
+				}
 
 
 ## Gini de renda da nação pela região (estimado). `available = false` quando
@@ -831,18 +883,26 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 	return resolved
 
 
-## D-086 — MINAS/POÇOS INICIAIS. A decisão do dono (2026-11-17) é que as jazidas
-## já exploradas comecem com a construção EXISTENTE, porém no ÚLTIMO estágio de
-## operação: a produção efetiva cai ao piso (5%) e só volta pagando o
-## aprofundamento. Uma mina por (cidade, mineral com jazida atribuída pela regra
-## A1) — a MESMA tabela de depósitos que o mapa de recursos desenha, então
-## nenhuma jazida é inventada. Dono: Estado por padrão (ownership_baseline.json
-## só declara setores estatais em texto livre para 12 nações; sem estrutura por
-## setor, não se inventa uma repartição). A capacidade NOMINAL usa a mesma régua
-## da mina estatal (demanda externa × 1,2, piso 2 t/d, teto 10 t/d); a produção
-## real fica no piso do estágio. `stage = -1` = "último estágio" (o número mora
-## no núcleo, não aqui). Sem calibração de quantidade nesta fase.
+## D-086 — MINAS/POÇOS INICIAIS. Duas regras de estágio inicial:
+##
+## 1. **Com produção real atribuível (D-086b):** toda (cidade, mineral) da lista
+##    de extração de 2025 nasce OPERANDO — estágio 0, com a capacidade diária
+##    que reproduz a produção real de 2024/2025 daquele local (ver
+##    `_load_extraction_seed`). A cidade que produz muito começa produzindo
+##    muito; a que não tem dado segue a regra histórica.
+## 2. **Sem dado (regra histórica da decisão do dono, 2026-11-17):** a jazida
+##    nasce com a construção EXISTENTE no ÚLTIMO estágio — produção no piso
+##    (5%) — e só volta pagando o aprofundamento (`stage = -1` = "último
+##    estágio"; o número mora no núcleo, não aqui).
+##
+## Uma mina por (cidade, mineral com jazida atribuída pela regra A1) — a MESMA
+## tabela de depósitos que o mapa de recursos desenha, então nenhuma jazida é
+## inventada. Dono: o declarado na semente (Estado/privado) quando há dado; sem
+## ele, Estado por padrão (`ownership_baseline.json` só declara setores estatais
+## em texto livre para 12 nações). A capacidade histórica usa a mesma régua da
+## mina estatal (demanda externa × 1,2, piso 2 t/d, teto 10 t/d).
 func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
+	_load_extraction_seed()
 	var out: Array = buildings.duplicate(true)
 	var used := {}
 	for building in out:
@@ -860,6 +920,26 @@ func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
 				continue
 			used[key] = true
 			var reserve_kt := float(minerals[resource]["reserve_kt"])
+			var quality := float(minerals[resource].get("quality", 0.0))
+			var seed_entry: Dictionary = _extraction_seed.get(key, {})
+			if not seed_entry.is_empty():
+				# Produção real atribuída: capacidade nominal dividida pela
+				# eficiência da jazida (0,5 + 0,5·qualidade, a MESMA curva do
+				# núcleo em `extraction_efficiency`) para que a produção
+				# EFETIVA do dia 0 seja a produção real do local.
+				var efficiency := 0.5 + 0.5 * clampf(quality, 0.0, 1.0)
+				var nominal := float(seed_entry["capacity_t_day"]) / efficiency
+				out.append({
+					"city_id": city_id,
+					"id": "%s_%s_mine" % [city_id.to_lower().replace("-", "_"), resource],
+					"name": "%s — %s (mina 2024)" % [
+						String(city.get("name", "")), resource],
+					"resource": resource,
+					"output_tons_per_day": float(snappedf(nominal, 0.001)),
+					"owner": String(seed_entry.get("owner", "state")),
+					"stage": 0,
+				})
+				continue
 			var ceiling := maxf(reserve_kt * 1000.0 / (DEPLETION_YEARS * 365.0),
 					MIN_EXTERNAL_DEMAND)
 			var capacity := clampf(ceiling * 1.2, 2.0, 10.0)

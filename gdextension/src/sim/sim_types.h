@@ -298,6 +298,11 @@ namespace ogs {
 		int stage = 0;
 		double stage_reserve_kt = 0.0;
 		double stage_mined_kt = 0.0;
+		// D-086b: a mina foi semeada OPERANDO pela produção real e ainda espera
+		// a declaração da jazida para abrir a reserva do estágio
+		// (`EconomySim::apply_set_deposit`). Não vai ao save: depois do dia 0 a
+		// reserva está no próprio `stage_reserve_kt`.
+		bool stage_pending = false;
 	};
 
 	// ------------------------------------------------------------------

@@ -1,0 +1,4535 @@
+{
+ "_meta": {
+  "confidence": "producao: published_aggregate (EI 2025/USGS MCS 2025); alvo do jogo: medido no baseline; alocacao interna: proxy por reserva (nao e producao por campo)",
+  "export_ceiling_factor": 1.2,
+  "export_ceiling_note": "a cidade exporta a producao com a mesma folga de 1,2 que a IA usa (kExportCapacityFactor); o preco local fica ~1,1-1,3x o preco-base e nao vai ao teto de 3x",
+  "generated_by": "tools/build_extraction_seed.py",
+  "inputs": {
+   "cities": "data/definitions/scenario/cities.json",
+   "deposits": "data/definitions/natural/deposits.json",
+   "production": "data/definitions/natural/extraction_production_2024.json",
+   "templates": "gdextension/src/sim/ai/ai_templates.cpp kPrimaries"
+  },
+  "method": "producao do pais = participacao real 2024 x alvo mundial do jogo; alvo = sold/dia do baseline 090dbd1; alocacao interna pela reserva recuperavel das cidades donas das jazidas (regra A1 de GeographyService.assign_deposits)",
+  "scale_basis": "sold/dia do mercado no dia 365 do baseline 090dbd1 (tools/diag_extraction_market.gd, IA+urbano); a producao real de 2024 entra como PARTICIPACAO por pais",
+  "version": 1,
+  "world_targets_t_day": {
+   "bauxite": 6506.7,
+   "coal": 258.5,
+   "copper": 3726.3,
+   "gas": 1196.3,
+   "iron": 18278.9,
+   "oil": 2616.5
+  }
+ },
+ "commodities": {
+  "bauxite": {
+   "conversion": "kt_real/ano / world_real x world_game_t_day",
+   "countries": {
+    "AUS": {
+     "cities": [
+      {
+       "capacity_t_day": 684.5264,
+       "city_id": "AUS-PER",
+       "reserve_share": 0.4734
+      },
+      {
+       "capacity_t_day": 357.7408,
+       "city_id": "AUS-WEI",
+       "reserve_share": 0.2474
+      },
+      {
+       "capacity_t_day": 203.6963,
+       "city_id": "AUS-ALI",
+       "reserve_share": 0.1409
+      },
+      {
+       "capacity_t_day": 95.8223,
+       "city_id": "AUS-BRO",
+       "reserve_share": 0.0663
+      },
+      {
+       "capacity_t_day": 28.4794,
+       "city_id": "AUS-KAL",
+       "reserve_share": 0.0197
+      },
+      {
+       "capacity_t_day": 25.2333,
+       "city_id": "AUS-TOW",
+       "reserve_share": 0.0175
+      },
+      {
+       "capacity_t_day": 18.3933,
+       "city_id": "AUS-GEE",
+       "reserve_share": 0.0127
+      },
+      {
+       "capacity_t_day": 17.3251,
+       "city_id": "AUS-DAR",
+       "reserve_share": 0.012
+      },
+      {
+       "capacity_t_day": 14.7163,
+       "city_id": "AUS-CAN",
+       "reserve_share": 0.0102
+      }
+     ],
+     "game_t_day": 1445.9333,
+     "owner": "private",
+     "production_kt_year": 100000.0,
+     "share_world": 0.222222
+    },
+    "BRA": {
+     "cities": [
+      {
+       "capacity_t_day": 142.0042,
+       "city_id": "BRA-BELE",
+       "reserve_share": 0.2976
+      },
+      {
+       "capacity_t_day": 120.2444,
+       "city_id": "BRA-CAM",
+       "reserve_share": 0.252
+      },
+      {
+       "capacity_t_day": 97.5893,
+       "city_id": "BRA-BEL",
+       "reserve_share": 0.2045
+      },
+      {
+       "capacity_t_day": 41.0014,
+       "city_id": "BRA-CAMPO",
+       "reserve_share": 0.0859
+      },
+      {
+       "capacity_t_day": 24.7525,
+       "city_id": "BRA-SAOL",
+       "reserve_share": 0.0519
+      },
+      {
+       "capacity_t_day": 14.8342,
+       "city_id": "BRA-BOA",
+       "reserve_share": 0.0311
+      },
+      {
+       "capacity_t_day": 7.9582,
+       "city_id": "BRA-TER",
+       "reserve_share": 0.0167
+      },
+      {
+       "capacity_t_day": 7.5159,
+       "city_id": "BRA-SIN",
+       "reserve_share": 0.0158
+      },
+      {
+       "capacity_t_day": 6.9178,
+       "city_id": "BRA-BRAS",
+       "reserve_share": 0.0145
+      },
+      {
+       "capacity_t_day": 3.9454,
+       "city_id": "BRA-CUR",
+       "reserve_share": 0.0083
+      },
+      {
+       "capacity_t_day": 2.7883,
+       "city_id": "BRA-POR",
+       "reserve_share": 0.0058
+      },
+      {
+       "capacity_t_day": 2.7735,
+       "city_id": "BRA-MAN",
+       "reserve_share": 0.0058
+      },
+      {
+       "capacity_t_day": 2.5268,
+       "city_id": "BRA-TEF",
+       "reserve_share": 0.0053
+      },
+      {
+       "capacity_t_day": 2.3061,
+       "city_id": "BRA-RIO",
+       "reserve_share": 0.0048
+      }
+     ],
+     "game_t_day": 477.158,
+     "owner": "private",
+     "production_kt_year": 33000.0,
+     "share_world": 0.073333
+    },
+    "CHN": {
+     "cities": [
+      {
+       "capacity_t_day": 1128.2184,
+       "city_id": "CHN-KUN",
+       "reserve_share": 0.839
+      },
+      {
+       "capacity_t_day": 51.0926,
+       "city_id": "CHN-XIAN",
+       "reserve_share": 0.038
+      },
+      {
+       "capacity_t_day": 33.0042,
+       "city_id": "CHN-CHO",
+       "reserve_share": 0.0245
+      },
+      {
+       "capacity_t_day": 24.846,
+       "city_id": "CHN-JIN",
+       "reserve_share": 0.0185
+      },
+      {
+       "capacity_t_day": 17.3186,
+       "city_id": "CHN-WUH",
+       "reserve_share": 0.0129
+      },
+      {
+       "capacity_t_day": 15.6998,
+       "city_id": "CHN-SHE",
+       "reserve_share": 0.0117
+      },
+      {
+       "capacity_t_day": 14.9931,
+       "city_id": "CHN-TIA",
+       "reserve_share": 0.0111
+      },
+      {
+       "capacity_t_day": 14.77,
+       "city_id": "MAC-MAC",
+       "reserve_share": 0.011
+      },
+      {
+       "capacity_t_day": 13.3988,
+       "city_id": "CHN-WEI",
+       "reserve_share": 0.01
+      },
+      {
+       "capacity_t_day": 11.5532,
+       "city_id": "CHN-WUW",
+       "reserve_share": 0.0086
+      },
+      {
+       "capacity_t_day": 8.1435,
+       "city_id": "CHN-HAR",
+       "reserve_share": 0.0061
+      },
+      {
+       "capacity_t_day": 6.4171,
+       "city_id": "CHN-DAL",
+       "reserve_share": 0.0048
+      },
+      {
+       "capacity_t_day": 3.484,
+       "city_id": "CHN-XIA",
+       "reserve_share": 0.0026
+      },
+      {
+       "capacity_t_day": 1.7787,
+       "city_id": "CHN-HAN",
+       "reserve_share": 0.0013
+      }
+     ],
+     "game_t_day": 1344.718,
+     "owner": "private",
+     "production_kt_year": 93000.0,
+     "share_world": 0.206667
+    },
+    "GIN": {
+     "cities": [
+      {
+       "capacity_t_day": 1102.6734,
+       "city_id": "GIN-NZE",
+       "reserve_share": 0.5866
+      },
+      {
+       "capacity_t_day": 777.0399,
+       "city_id": "GIN-CON",
+       "reserve_share": 0.4134
+      }
+     ],
+     "game_t_day": 1879.7133,
+     "owner": "private",
+     "production_kt_year": 130000.0,
+     "share_world": 0.288889
+    },
+    "GRC": {
+     "cities": [
+      {
+       "capacity_t_day": 17.3512,
+       "city_id": "GRC-ATH",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 17.3512,
+     "owner": "private",
+     "production_kt_year": 1200.0,
+     "share_world": 0.002667
+    },
+    "IDN": {
+     "cities": [
+      {
+       "capacity_t_day": 329.8721,
+       "city_id": "IDN-SAM",
+       "reserve_share": 0.7129
+      },
+      {
+       "capacity_t_day": 84.2901,
+       "city_id": "IDN-PEK",
+       "reserve_share": 0.1822
+      },
+      {
+       "capacity_t_day": 48.5364,
+       "city_id": "IDN-PON",
+       "reserve_share": 0.1049
+      }
+     ],
+     "game_t_day": 462.6987,
+     "owner": "private",
+     "production_kt_year": 32000.0,
+     "share_world": 0.071111
+    },
+    "IND": {
+     "cities": [
+      {
+       "capacity_t_day": 88.1462,
+       "city_id": "IND-BAN",
+       "reserve_share": 0.2438
+      },
+      {
+       "capacity_t_day": 75.0314,
+       "city_id": "IND-KOL",
+       "reserve_share": 0.2076
+      },
+      {
+       "capacity_t_day": 43.9878,
+       "city_id": "IND-PAT",
+       "reserve_share": 0.1217
+      },
+      {
+       "capacity_t_day": 42.233,
+       "city_id": "IND-RAS",
+       "reserve_share": 0.1168
+      },
+      {
+       "capacity_t_day": 31.0572,
+       "city_id": "IND-NAG",
+       "reserve_share": 0.0859
+      },
+      {
+       "capacity_t_day": 18.8071,
+       "city_id": "IND-KAN",
+       "reserve_share": 0.052
+      },
+      {
+       "capacity_t_day": 13.8225,
+       "city_id": "IND-PUN",
+       "reserve_share": 0.0382
+      },
+      {
+       "capacity_t_day": 11.0664,
+       "city_id": "IND-AHM",
+       "reserve_share": 0.0306
+      },
+      {
+       "capacity_t_day": 6.4257,
+       "city_id": "IND-NAS",
+       "reserve_share": 0.0178
+      },
+      {
+       "capacity_t_day": 6.0438,
+       "city_id": "IND-JAI",
+       "reserve_share": 0.0167
+      },
+      {
+       "capacity_t_day": 5.9919,
+       "city_id": "IND-MUM",
+       "reserve_share": 0.0166
+      },
+      {
+       "capacity_t_day": 5.6504,
+       "city_id": "IND-SUR",
+       "reserve_share": 0.0156
+      },
+      {
+       "capacity_t_day": 3.9748,
+       "city_id": "IND-HYD",
+       "reserve_share": 0.011
+      },
+      {
+       "capacity_t_day": 3.848,
+       "city_id": "IND-BHO",
+       "reserve_share": 0.0106
+      },
+      {
+       "capacity_t_day": 3.3611,
+       "city_id": "IND-KAL",
+       "reserve_share": 0.0093
+      },
+      {
+       "capacity_t_day": 2.0362,
+       "city_id": "IND-COI",
+       "reserve_share": 0.0056
+      }
+     ],
+     "game_t_day": 361.4833,
+     "owner": "private",
+     "production_kt_year": 25000.0,
+     "share_world": 0.055556
+    },
+    "JAM": {
+     "cities": [
+      {
+       "capacity_t_day": 88.2019,
+       "city_id": "JAM-MON",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 88.2019,
+     "owner": "private",
+     "production_kt_year": 6100.0,
+     "share_world": 0.013556
+    },
+    "KAZ": {
+     "cities": [
+      {
+       "capacity_t_day": 42.9769,
+       "city_id": "KAZ-AST",
+       "reserve_share": 0.6066
+      },
+      {
+       "capacity_t_day": 27.8739,
+       "city_id": "KAZ-AKT",
+       "reserve_share": 0.3934
+      }
+     ],
+     "game_t_day": 70.8507,
+     "owner": "private",
+     "production_kt_year": 4900.0,
+     "share_world": 0.010889
+    },
+    "RUS": {
+     "cities": [
+      {
+       "capacity_t_day": 18.469,
+       "city_id": "RUS-NOVOK",
+       "reserve_share": 0.1994
+      },
+      {
+       "capacity_t_day": 11.7167,
+       "city_id": "RUS-KRAS",
+       "reserve_share": 0.1286
+      },
+      {
+       "capacity_t_day": 11.4239,
+       "city_id": "RUS-CHE",
+       "reserve_share": 0.1254
+      },
+      {
+       "capacity_t_day": 10.1391,
+       "city_id": "RUS-NAR",
+       "reserve_share": 0.1113
+      },
+      {
+       "capacity_t_day": 9.2913,
+       "city_id": "RUS-TUR",
+       "reserve_share": 0.102
+      },
+      {
+       "capacity_t_day": 7.9207,
+       "city_id": "RUS-SAI",
+       "reserve_share": 0.087
+      },
+      {
+       "capacity_t_day": 7.0307,
+       "city_id": "RUS-MUR",
+       "reserve_share": 0.0772
+      },
+      {
+       "capacity_t_day": 5.3508,
+       "city_id": "RUS-ARK",
+       "reserve_share": 0.0587
+      },
+      {
+       "capacity_t_day": 4.829,
+       "city_id": "RUS-YEK",
+       "reserve_share": 0.053
+      },
+      {
+       "capacity_t_day": 2.5189,
+       "city_id": "RUS-UST",
+       "reserve_share": 0.0277
+      },
+      {
+       "capacity_t_day": 1.5242,
+       "city_id": "RUS-IRK",
+       "reserve_share": 0.0167
+      },
+      {
+       "capacity_t_day": 0.8795,
+       "city_id": "RUS-UFA",
+       "reserve_share": 0.0097
+      }
+     ],
+     "game_t_day": 91.0938,
+     "owner": "private",
+     "production_kt_year": 6300.0,
+     "share_world": 0.014
+    },
+    "TUR": {
+     "cities": [
+      {
+       "capacity_t_day": 17.9685,
+       "city_id": "TUR-IZM",
+       "reserve_share": 0.3883
+      },
+      {
+       "capacity_t_day": 14.362,
+       "city_id": "TUR-KON",
+       "reserve_share": 0.3104
+      },
+      {
+       "capacity_t_day": 11.4068,
+       "city_id": "TUR-KAY",
+       "reserve_share": 0.2465
+      },
+      {
+       "capacity_t_day": 2.5327,
+       "city_id": "TUR-ADA",
+       "reserve_share": 0.0547
+      }
+     ],
+     "game_t_day": 46.2699,
+     "owner": "private",
+     "production_kt_year": 3200.0,
+     "share_world": 0.007111
+    }
+   },
+   "coverage_of_world": 0.9882,
+   "world_game_t_day": 6506.7,
+   "world_listed_kt_year": 444700.0,
+   "world_real_kt_year": 450000.0
+  },
+  "coal": {
+   "conversion": "kt_real/ano / world_real x world_game_t_day",
+   "countries": {
+    "AUS": {
+     "cities": [
+      {
+       "capacity_t_day": 8.9364,
+       "city_id": "AUS-NEW",
+       "reserve_share": 0.5333
+      },
+      {
+       "capacity_t_day": 7.8194,
+       "city_id": "AUS-TOW",
+       "reserve_share": 0.4667
+      }
+     ],
+     "game_t_day": 16.7558,
+     "owner": "private",
+     "production_kt_year": 585449.91,
+     "share_world": 0.064819
+    },
+    "BRA": {
+     "cities": [],
+     "game_t_day": 0.1524,
+     "owner": "private",
+     "production_kt_year": 5323.423,
+     "share_world": 0.000589
+    },
+    "CHN": {
+     "cities": [
+      {
+       "capacity_t_day": 107.8395,
+       "city_id": "CHN-XIAN",
+       "reserve_share": 0.8039
+      },
+      {
+       "capacity_t_day": 17.3659,
+       "city_id": "CHN-JIN",
+       "reserve_share": 0.1301
+      },
+      {
+       "capacity_t_day": 4.6546,
+       "city_id": "CHN-KAS",
+       "reserve_share": 0.0349
+      },
+      {
+       "capacity_t_day": 3.144,
+       "city_id": "CHN-JIU",
+       "reserve_share": 0.0235
+      },
+      {
+       "capacity_t_day": 0.5077,
+       "city_id": "CHN-HEF",
+       "reserve_share": 0.0038
+      }
+     ],
+     "game_t_day": 133.5117,
+     "owner": "state",
+     "production_kt_year": 4664926.8,
+     "share_world": 0.516486
+    },
+    "COL": {
+     "cities": [
+      {
+       "capacity_t_day": 2.3672,
+       "city_id": "COL-BAR",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 2.3672,
+     "owner": "private",
+     "production_kt_year": 82709.231,
+     "share_world": 0.009157
+    },
+    "DEU": {
+     "cities": [
+      {
+       "capacity_t_day": 1.1814,
+       "city_id": "DEU-DUS",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 1.1814,
+     "owner": "private",
+     "production_kt_year": 41278.401,
+     "share_world": 0.00457
+    },
+    "GBR": {
+     "cities": [],
+     "game_t_day": 0.0044,
+     "owner": "private",
+     "production_kt_year": 153.926,
+     "share_world": 1.7e-05
+    },
+    "IDN": {
+     "cities": [
+      {
+       "capacity_t_day": 24.2857,
+       "city_id": "IDN-SAM",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 24.2857,
+     "owner": "private",
+     "production_kt_year": 848548.8,
+     "share_world": 0.093949
+    },
+    "IND": {
+     "cities": [
+      {
+       "capacity_t_day": 22.777,
+       "city_id": "IND-PAT",
+       "reserve_share": 0.886
+      },
+      {
+       "capacity_t_day": 2.9307,
+       "city_id": "IND-KOL",
+       "reserve_share": 0.114
+      }
+     ],
+     "game_t_day": 25.7077,
+     "owner": "state",
+     "production_kt_year": 898231.734,
+     "share_world": 0.099449
+    },
+    "IRN": {
+     "cities": [],
+     "game_t_day": 0.0789,
+     "owner": "private",
+     "production_kt_year": 2757.765,
+     "share_world": 0.000305
+    },
+    "KAZ": {
+     "cities": [
+      {
+       "capacity_t_day": 2.7453,
+       "city_id": "KAZ-AST",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 2.7453,
+     "owner": "private",
+     "production_kt_year": 95921.465,
+     "share_world": 0.01062
+    },
+    "MEX": {
+     "cities": [],
+     "game_t_day": 0.0214,
+     "owner": "private",
+     "production_kt_year": 749.309,
+     "share_world": 8.3e-05
+    },
+    "POL": {
+     "cities": [
+      {
+       "capacity_t_day": 2.0026,
+       "city_id": "POL-KRA",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 2.0026,
+     "owner": "private",
+     "production_kt_year": 69971.549,
+     "share_world": 0.007747
+    },
+    "RUS": {
+     "cities": [
+      {
+       "capacity_t_day": 10.7676,
+       "city_id": "RUS-NOVOK",
+       "reserve_share": 0.8251
+      },
+      {
+       "capacity_t_day": 2.2824,
+       "city_id": "RUS-DON",
+       "reserve_share": 0.1749
+      }
+     ],
+     "game_t_day": 13.05,
+     "owner": "private",
+     "production_kt_year": 455970.096,
+     "share_world": 0.050484
+    },
+    "SRB": {
+     "cities": [],
+     "game_t_day": 0.3249,
+     "owner": "private",
+     "production_kt_year": 11352.407,
+     "share_world": 0.001257
+    },
+    "USA": {
+     "cities": [
+      {
+       "capacity_t_day": 7.6088,
+       "city_id": "USA-COL",
+       "reserve_share": 0.3927
+      },
+      {
+       "capacity_t_day": 1.5692,
+       "city_id": "USA-CHI",
+       "reserve_share": 0.1034
+      },
+      {
+       "capacity_t_day": 1.5292,
+       "city_id": "USA-BIL",
+       "reserve_share": 0.1008
+      },
+      {
+       "capacity_t_day": 1.2478,
+       "city_id": "USA-SANJ",
+       "reserve_share": 0.0822
+      },
+      {
+       "capacity_t_day": 1.1726,
+       "city_id": "USA-DEN",
+       "reserve_share": 0.0773
+      },
+      {
+       "capacity_t_day": 0.7648,
+       "city_id": "USA-NAS",
+       "reserve_share": 0.0504
+      },
+      {
+       "capacity_t_day": 0.7463,
+       "city_id": "USA-SEA",
+       "reserve_share": 0.0492
+      },
+      {
+       "capacity_t_day": 0.5345,
+       "city_id": "USA-HOU",
+       "reserve_share": 0.0352
+      }
+     ],
+     "game_t_day": 15.1732,
+     "owner": "private",
+     "production_kt_year": 530155.8,
+     "share_world": 0.058697
+    }
+   },
+   "coverage_of_world": 1.0,
+   "world_game_t_day": 258.5,
+   "world_listed_kt_year": 9032046.869,
+   "world_real_kt_year": 9032046.872
+  },
+  "copper": {
+   "conversion": "kt_real/ano / world_real x world_game_t_day",
+   "countries": {
+    "AUS": {
+     "cities": [
+      {
+       "capacity_t_day": 61.6965,
+       "city_id": "AUS-KAL",
+       "reserve_share": 0.476
+      },
+      {
+       "capacity_t_day": 17.9267,
+       "city_id": "AUS-ADE",
+       "reserve_share": 0.1383
+      },
+      {
+       "capacity_t_day": 11.0053,
+       "city_id": "AUS-MOR",
+       "reserve_share": 0.0849
+      },
+      {
+       "capacity_t_day": 7.5552,
+       "city_id": "AUS-CAN",
+       "reserve_share": 0.0583
+      },
+      {
+       "capacity_t_day": 5.8006,
+       "city_id": "AUS-WEI",
+       "reserve_share": 0.0448
+      },
+      {
+       "capacity_t_day": 5.2501,
+       "city_id": "AUS-ALI",
+       "reserve_share": 0.0405
+      },
+      {
+       "capacity_t_day": 5.1904,
+       "city_id": "AUS-KAR",
+       "reserve_share": 0.04
+      },
+      {
+       "capacity_t_day": 3.5411,
+       "city_id": "AUS-MEL",
+       "reserve_share": 0.0273
+      },
+      {
+       "capacity_t_day": 2.9453,
+       "city_id": "AUS-PER",
+       "reserve_share": 0.0227
+      },
+      {
+       "capacity_t_day": 2.8848,
+       "city_id": "AUS-BRO",
+       "reserve_share": 0.0223
+      },
+      {
+       "capacity_t_day": 2.4108,
+       "city_id": "AUS-DAR",
+       "reserve_share": 0.0186
+      },
+      {
+       "capacity_t_day": 1.7808,
+       "city_id": "AUS-TOW",
+       "reserve_share": 0.0137
+      },
+      {
+       "capacity_t_day": 0.8451,
+       "city_id": "AUS-SUN",
+       "reserve_share": 0.0065
+      },
+      {
+       "capacity_t_day": 0.7777,
+       "city_id": "AUS-BRI",
+       "reserve_share": 0.006
+      }
+     ],
+     "game_t_day": 129.6104,
+     "owner": "private",
+     "production_kt_year": 800.0,
+     "share_world": 0.034783
+    },
+    "CAN": {
+     "cities": [
+      {
+       "capacity_t_day": 21.1751,
+       "city_id": "CAN-TIM",
+       "reserve_share": 0.2727
+      },
+      {
+       "capacity_t_day": 18.3668,
+       "city_id": "CAN-THO",
+       "reserve_share": 0.2519
+      },
+      {
+       "capacity_t_day": 5.1522,
+       "city_id": "CAN-WIN",
+       "reserve_share": 0.0707
+      },
+      {
+       "capacity_t_day": 5.0722,
+       "city_id": "CAN-WHI",
+       "reserve_share": 0.0696
+      },
+      {
+       "capacity_t_day": 4.3661,
+       "city_id": "CAN-PRI",
+       "reserve_share": 0.0599
+      },
+      {
+       "capacity_t_day": 3.8663,
+       "city_id": "CAN-VIC",
+       "reserve_share": 0.053
+      },
+      {
+       "capacity_t_day": 2.6805,
+       "city_id": "CAN-QUE",
+       "reserve_share": 0.0368
+      },
+      {
+       "capacity_t_day": 2.628,
+       "city_id": "CAN-KUU",
+       "reserve_share": 0.036
+      },
+      {
+       "capacity_t_day": 2.4129,
+       "city_id": "CAN-HAL",
+       "reserve_share": 0.0331
+      },
+      {
+       "capacity_t_day": 2.0771,
+       "city_id": "CAN-SAS",
+       "reserve_share": 0.0285
+      },
+      {
+       "capacity_t_day": 1.7019,
+       "city_id": "CAN-YEL",
+       "reserve_share": 0.0233
+      },
+      {
+       "capacity_t_day": 1.1851,
+       "city_id": "CAN-STJ",
+       "reserve_share": 0.0163
+      },
+      {
+       "capacity_t_day": 0.8717,
+       "city_id": "CAN-OTT",
+       "reserve_share": 0.012
+      },
+      {
+       "capacity_t_day": 0.7506,
+       "city_id": "CAN-IQA",
+       "reserve_share": 0.0103
+      },
+      {
+       "capacity_t_day": 0.5995,
+       "city_id": "CAN-HAP",
+       "reserve_share": 0.0082
+      }
+     ],
+     "game_t_day": 72.9059,
+     "owner": "private",
+     "production_kt_year": 450.0,
+     "share_world": 0.019565
+    },
+    "CHL": {
+     "cities": [
+      {
+       "capacity_t_day": 586.5306,
+       "city_id": "CHL-ANT",
+       "reserve_share": 0.6825
+      },
+      {
+       "capacity_t_day": 270.9452,
+       "city_id": "CHL-SAN",
+       "reserve_share": 0.3155
+      },
+      {
+       "capacity_t_day": 1.1933,
+       "city_id": "CHL-PUN",
+       "reserve_share": 0.0014
+      }
+     ],
+     "game_t_day": 858.6691,
+     "owner": "private",
+     "production_kt_year": 5300.0,
+     "share_world": 0.230435
+    },
+    "CHN": {
+     "cities": [
+      {
+       "capacity_t_day": 44.3069,
+       "city_id": "CHN-HEF",
+       "reserve_share": 0.1519
+      },
+      {
+       "capacity_t_day": 28.3267,
+       "city_id": "CHN-WUH",
+       "reserve_share": 0.0971
+      },
+      {
+       "capacity_t_day": 28.2876,
+       "city_id": "CHN-XIAN",
+       "reserve_share": 0.097
+      },
+      {
+       "capacity_t_day": 26.3106,
+       "city_id": "CHN-KUN",
+       "reserve_share": 0.0902
+      },
+      {
+       "capacity_t_day": 22.0326,
+       "city_id": "CHN-GUA",
+       "reserve_share": 0.0756
+      },
+      {
+       "capacity_t_day": 19.3473,
+       "city_id": "CHN-SHE",
+       "reserve_share": 0.0663
+      },
+      {
+       "capacity_t_day": 18.7466,
+       "city_id": "CHN-HAN",
+       "reserve_share": 0.0643
+      },
+      {
+       "capacity_t_day": 16.9211,
+       "city_id": "CHN-JIU",
+       "reserve_share": 0.058
+      },
+      {
+       "capacity_t_day": 15.9503,
+       "city_id": "CHN-BEI",
+       "reserve_share": 0.0547
+      },
+      {
+       "capacity_t_day": 13.9555,
+       "city_id": "CHN-DAX",
+       "reserve_share": 0.0479
+      },
+      {
+       "capacity_t_day": 11.4974,
+       "city_id": "CHN-CHE",
+       "reserve_share": 0.0394
+      },
+      {
+       "capacity_t_day": 10.9887,
+       "city_id": "CHN-WUW",
+       "reserve_share": 0.0377
+      },
+      {
+       "capacity_t_day": 9.078,
+       "city_id": "CHN-DON",
+       "reserve_share": 0.0311
+      },
+      {
+       "capacity_t_day": 7.0721,
+       "city_id": "CHN-HAR",
+       "reserve_share": 0.0243
+      },
+      {
+       "capacity_t_day": 5.5581,
+       "city_id": "CHN-NAN",
+       "reserve_share": 0.0191
+      },
+      {
+       "capacity_t_day": 3.4771,
+       "city_id": "CHN-XIA",
+       "reserve_share": 0.0119
+      },
+      {
+       "capacity_t_day": 3.3986,
+       "city_id": "CHN-CHO",
+       "reserve_share": 0.0117
+      },
+      {
+       "capacity_t_day": 3.2158,
+       "city_id": "CHN-URU",
+       "reserve_share": 0.011
+      },
+      {
+       "capacity_t_day": 3.1524,
+       "city_id": "CHN-DAL",
+       "reserve_share": 0.0108
+      }
+     ],
+     "game_t_day": 291.6235,
+     "owner": "private",
+     "production_kt_year": 1800.0,
+     "share_world": 0.078261
+    },
+    "COD": {
+     "cities": [
+      {
+       "capacity_t_day": 249.4058,
+       "city_id": "COD-KOL",
+       "reserve_share": 0.4665
+      },
+      {
+       "capacity_t_day": 205.2105,
+       "city_id": "COD-LIK",
+       "reserve_share": 0.3838
+      },
+      {
+       "capacity_t_day": 67.9625,
+       "city_id": "COD-LUB",
+       "reserve_share": 0.1271
+      },
+      {
+       "capacity_t_day": 12.0642,
+       "city_id": "COD-MBU",
+       "reserve_share": 0.0226
+      }
+     ],
+     "game_t_day": 534.643,
+     "owner": "private",
+     "production_kt_year": 3300.0,
+     "share_world": 0.143478
+    },
+    "IDN": {
+     "cities": [
+      {
+       "capacity_t_day": 75.3135,
+       "city_id": "IDN-WAM",
+       "reserve_share": 0.4226
+      },
+      {
+       "capacity_t_day": 70.0838,
+       "city_id": "IDN-MAK",
+       "reserve_share": 0.3933
+      },
+      {
+       "capacity_t_day": 24.2871,
+       "city_id": "IDN-AMB",
+       "reserve_share": 0.1363
+      },
+      {
+       "capacity_t_day": 8.5299,
+       "city_id": "IDN-MED",
+       "reserve_share": 0.0479
+      }
+     ],
+     "game_t_day": 178.2143,
+     "owner": "private",
+     "production_kt_year": 1100.0,
+     "share_world": 0.047826
+    },
+    "IND": {
+     "cities": [
+      {
+       "capacity_t_day": 4.8604,
+       "city_id": "IND-LUD",
+       "reserve_share": 0.1122
+      }
+     ],
+     "game_t_day": 4.8604,
+     "owner": "private",
+     "production_kt_year": 30.0,
+     "share_world": 0.001304
+    },
+    "KAZ": {
+     "cities": [
+      {
+       "capacity_t_day": 87.35,
+       "city_id": "KAZ-UST",
+       "reserve_share": 0.7286
+      },
+      {
+       "capacity_t_day": 24.8267,
+       "city_id": "KAZ-AST",
+       "reserve_share": 0.2071
+      },
+      {
+       "capacity_t_day": 6.9039,
+       "city_id": "KAZ-AKT",
+       "reserve_share": 0.0576
+      },
+      {
+       "capacity_t_day": 0.8091,
+       "city_id": "KAZ-ALM",
+       "reserve_share": 0.0067
+      }
+     ],
+     "game_t_day": 119.8897,
+     "owner": "private",
+     "production_kt_year": 740.0,
+     "share_world": 0.032174
+    },
+    "MEX": {
+     "cities": [
+      {
+       "capacity_t_day": 45.9273,
+       "city_id": "MEX-HER",
+       "reserve_share": 0.405
+      },
+      {
+       "capacity_t_day": 14.4377,
+       "city_id": "MEX-CHI",
+       "reserve_share": 0.1273
+      },
+      {
+       "capacity_t_day": 12.1694,
+       "city_id": "MEX-LEO",
+       "reserve_share": 0.1073
+      },
+      {
+       "capacity_t_day": 12.1029,
+       "city_id": "MEX-GUA",
+       "reserve_share": 0.1067
+      },
+      {
+       "capacity_t_day": 9.933,
+       "city_id": "MEX-MON",
+       "reserve_share": 0.0876
+      },
+      {
+       "capacity_t_day": 6.3552,
+       "city_id": "MEX-TOR",
+       "reserve_share": 0.056
+      },
+      {
+       "capacity_t_day": 4.1004,
+       "city_id": "MEX-MEXI",
+       "reserve_share": 0.0362
+      },
+      {
+       "capacity_t_day": 2.7904,
+       "city_id": "MEX-QUE",
+       "reserve_share": 0.0246
+      },
+      {
+       "capacity_t_day": 2.3019,
+       "city_id": "MEX-JUZ",
+       "reserve_share": 0.0203
+      },
+      {
+       "capacity_t_day": 2.1686,
+       "city_id": "MEX-TIJ",
+       "reserve_share": 0.0191
+      },
+      {
+       "capacity_t_day": 1.1224,
+       "city_id": "MEX-PUE",
+       "reserve_share": 0.0099
+      }
+     ],
+     "game_t_day": 113.4091,
+     "owner": "private",
+     "production_kt_year": 700.0,
+     "share_world": 0.030435
+    },
+    "PER": {
+     "cities": [
+      {
+       "capacity_t_day": 307.8946,
+       "city_id": "PER-LIM",
+       "reserve_share": 0.7309
+      },
+      {
+       "capacity_t_day": 57.5162,
+       "city_id": "PER-ARE",
+       "reserve_share": 0.1365
+      },
+      {
+       "capacity_t_day": 33.3134,
+       "city_id": "PER-PIU",
+       "reserve_share": 0.0791
+      },
+      {
+       "capacity_t_day": 22.5096,
+       "city_id": "PER-TRU",
+       "reserve_share": 0.0534
+      }
+     ],
+     "game_t_day": 421.2339,
+     "owner": "private",
+     "production_kt_year": 2600.0,
+     "share_world": 0.113043
+    },
+    "POL": {
+     "cities": [
+      {
+       "capacity_t_day": 66.4253,
+       "city_id": "POL-KRA",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 66.4253,
+     "owner": "private",
+     "production_kt_year": 410.0,
+     "share_world": 0.017826
+    },
+    "RUS": {
+     "cities": [
+      {
+       "capacity_t_day": 32.1154,
+       "city_id": "RUS-MUR",
+       "reserve_share": 0.2123
+      },
+      {
+       "capacity_t_day": 26.8938,
+       "city_id": "RUS-YEK",
+       "reserve_share": 0.1785
+      },
+      {
+       "capacity_t_day": 13.5505,
+       "city_id": "RUS-DUD",
+       "reserve_share": 0.0899
+      },
+      {
+       "capacity_t_day": 13.1911,
+       "city_id": "RUS-BIL",
+       "reserve_share": 0.0875
+      },
+      {
+       "capacity_t_day": 12.6684,
+       "city_id": "RUS-UFA",
+       "reserve_share": 0.0841
+      },
+      {
+       "capacity_t_day": 11.9788,
+       "city_id": "RUS-KRAS",
+       "reserve_share": 0.0795
+      },
+      {
+       "capacity_t_day": 8.9939,
+       "city_id": "RUS-MIR",
+       "reserve_share": 0.0597
+      },
+      {
+       "capacity_t_day": 6.1457,
+       "city_id": "RUS-BIR",
+       "reserve_share": 0.0408
+      },
+      {
+       "capacity_t_day": 4.9268,
+       "city_id": "RUS-PAL",
+       "reserve_share": 0.0327
+      },
+      {
+       "capacity_t_day": 4.7379,
+       "city_id": "RUS-MAG",
+       "reserve_share": 0.0314
+      },
+      {
+       "capacity_t_day": 3.1893,
+       "city_id": "RUS-CHI",
+       "reserve_share": 0.0212
+      },
+      {
+       "capacity_t_day": 2.5563,
+       "city_id": "RUS-VOR",
+       "reserve_share": 0.017
+      },
+      {
+       "capacity_t_day": 2.5293,
+       "city_id": "RUS-USTN",
+       "reserve_share": 0.0168
+      },
+      {
+       "capacity_t_day": 2.3458,
+       "city_id": "RUS-NOV",
+       "reserve_share": 0.0156
+      },
+      {
+       "capacity_t_day": 1.8512,
+       "city_id": "RUS-NER",
+       "reserve_share": 0.0123
+      },
+      {
+       "capacity_t_day": 1.4584,
+       "city_id": "RUS-TUR",
+       "reserve_share": 0.0097
+      },
+      {
+       "capacity_t_day": 1.0122,
+       "city_id": "RUS-YUZ",
+       "reserve_share": 0.0067
+      },
+      {
+       "capacity_t_day": 0.5275,
+       "city_id": "RUS-KRA",
+       "reserve_share": 0.0035
+      }
+     ],
+     "game_t_day": 150.6721,
+     "owner": "private",
+     "production_kt_year": 930.0,
+     "share_world": 0.040435
+    },
+    "USA": {
+     "cities": [
+      {
+       "capacity_t_day": 48.6399,
+       "city_id": "USA-PHO",
+       "reserve_share": 0.267
+      },
+      {
+       "capacity_t_day": 29.5503,
+       "city_id": "USA-REN",
+       "reserve_share": 0.1658
+      },
+      {
+       "capacity_t_day": 24.0215,
+       "city_id": "USA-BIL",
+       "reserve_share": 0.1348
+      },
+      {
+       "capacity_t_day": 10.1305,
+       "city_id": "USA-MIN",
+       "reserve_share": 0.0568
+      },
+      {
+       "capacity_t_day": 10.1051,
+       "city_id": "USA-CHA",
+       "reserve_share": 0.0567
+      },
+      {
+       "capacity_t_day": 8.7945,
+       "city_id": "USA-DEN",
+       "reserve_share": 0.0493
+      },
+      {
+       "capacity_t_day": 5.3509,
+       "city_id": "USA-SEA",
+       "reserve_share": 0.03
+      },
+      {
+       "capacity_t_day": 5.2383,
+       "city_id": "USA-NAS",
+       "reserve_share": 0.0294
+      },
+      {
+       "capacity_t_day": 5.1469,
+       "city_id": "USA-BOS",
+       "reserve_share": 0.0289
+      },
+      {
+       "capacity_t_day": 4.8938,
+       "city_id": "USA-WAS",
+       "reserve_share": 0.0275
+      },
+      {
+       "capacity_t_day": 4.2793,
+       "city_id": "USA-POR",
+       "reserve_share": 0.024
+      },
+      {
+       "capacity_t_day": 3.6514,
+       "city_id": "USA-ANC",
+       "reserve_share": 0.0205
+      },
+      {
+       "capacity_t_day": 3.4917,
+       "city_id": "USA-PHI",
+       "reserve_share": 0.0196
+      },
+      {
+       "capacity_t_day": 3.3131,
+       "city_id": "USA-SIT",
+       "reserve_share": 0.0186
+      },
+      {
+       "capacity_t_day": 2.3231,
+       "city_id": "USA-BET",
+       "reserve_share": 0.013
+      },
+      {
+       "capacity_t_day": 2.1055,
+       "city_id": "USA-NEW",
+       "reserve_share": 0.0118
+      },
+      {
+       "capacity_t_day": 1.8588,
+       "city_id": "PRI-PON",
+       "reserve_share": 0.0104
+      },
+      {
+       "capacity_t_day": 1.7678,
+       "city_id": "USA-DAL",
+       "reserve_share": 0.0099
+      },
+      {
+       "capacity_t_day": 1.3729,
+       "city_id": "USA-LOS",
+       "reserve_share": 0.0077
+      },
+      {
+       "capacity_t_day": 0.7864,
+       "city_id": "USA-CHI",
+       "reserve_share": 0.0044
+      },
+      {
+       "capacity_t_day": 0.7417,
+       "city_id": "USA-FOR",
+       "reserve_share": 0.0042
+      },
+      {
+       "capacity_t_day": 0.6508,
+       "city_id": "USA-SANJ",
+       "reserve_share": 0.0037
+      }
+     ],
+     "game_t_day": 178.2143,
+     "owner": "private",
+     "production_kt_year": 1100.0,
+     "share_world": 0.047826
+    },
+    "ZMB": {
+     "cities": [
+      {
+       "capacity_t_day": 71.1514,
+       "city_id": "ZMB-KIT",
+       "reserve_share": 0.6458
+      },
+      {
+       "capacity_t_day": 26.8915,
+       "city_id": "ZMB-NDO",
+       "reserve_share": 0.2441
+      },
+      {
+       "capacity_t_day": 12.126,
+       "city_id": "ZMB-LUS",
+       "reserve_share": 0.1101
+      }
+     ],
+     "game_t_day": 110.1689,
+     "owner": "private",
+     "production_kt_year": 680.0,
+     "share_world": 0.029565
+    }
+   },
+   "coverage_of_world": 0.867,
+   "world_game_t_day": 3726.3,
+   "world_listed_kt_year": 19940.0,
+   "world_real_kt_year": 23000.0
+  },
+  "gas": {
+   "conversion": "kt_real/ano / world_real x world_game_t_day",
+   "countries": {
+    "ARE": {
+     "cities": [
+      {
+       "capacity_t_day": 16.2452,
+       "city_id": "ARE-ABU",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 16.2452,
+     "owner": "state",
+     "production_kt_year": 39743.764,
+     "share_world": 0.01358
+    },
+    "AUS": {
+     "cities": [
+      {
+       "capacity_t_day": 31.3471,
+       "city_id": "AUS-KAR",
+       "reserve_share": 0.7143
+      },
+      {
+       "capacity_t_day": 12.5388,
+       "city_id": "AUS-BRO",
+       "reserve_share": 0.2857
+      }
+     ],
+     "game_t_day": 43.8859,
+     "owner": "private",
+     "production_kt_year": 107366.558,
+     "share_world": 0.036685
+    },
+    "BHR": {
+     "cities": [
+      {
+       "capacity_t_day": 4.7755,
+       "city_id": "BHR-MAN",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 4.7755,
+     "owner": "state",
+     "production_kt_year": 11683.199,
+     "share_world": 0.003992
+    },
+    "CAN": {
+     "cities": [
+      {
+       "capacity_t_day": 27.5869,
+       "city_id": "CAN-CAL",
+       "reserve_share": 0.4799
+      },
+      {
+       "capacity_t_day": 18.2345,
+       "city_id": "CAN-EDM",
+       "reserve_share": 0.3172
+      },
+      {
+       "capacity_t_day": 11.6597,
+       "city_id": "CAN-PRI",
+       "reserve_share": 0.2028
+      }
+     ],
+     "game_t_day": 57.481,
+     "owner": "private",
+     "production_kt_year": 140626.949,
+     "share_world": 0.048049
+    },
+    "DZA": {
+     "cities": [
+      {
+       "capacity_t_day": 17.7675,
+       "city_id": "DZA-ALG",
+       "reserve_share": 0.6154
+      },
+      {
+       "capacity_t_day": 11.1047,
+       "city_id": "DZA-CON",
+       "reserve_share": 0.3846
+      }
+     ],
+     "game_t_day": 28.8722,
+     "owner": "state",
+     "production_kt_year": 70635.642,
+     "share_world": 0.024135
+    },
+    "EGY": {
+     "cities": [
+      {
+       "capacity_t_day": 13.6935,
+       "city_id": "EGY-ALM",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 13.6935,
+     "owner": "private",
+     "production_kt_year": 33501.015,
+     "share_world": 0.011447
+    },
+    "IRN": {
+     "cities": [
+      {
+       "capacity_t_day": 75.5585,
+       "city_id": "IRN-SHI",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 75.5585,
+     "owner": "state",
+     "production_kt_year": 184853.376,
+     "share_world": 0.06316
+    },
+    "MOZ": {
+     "cities": [
+      {
+       "capacity_t_day": 4.0213,
+       "city_id": "MOZ-NAM",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 4.0213,
+     "owner": "private",
+     "production_kt_year": 9838.195,
+     "share_world": 0.003361
+    },
+    "NOR": {
+     "cities": [
+      {
+       "capacity_t_day": 22.3799,
+       "city_id": "NOR-BER",
+       "reserve_share": 0.625
+      },
+      {
+       "capacity_t_day": 13.4279,
+       "city_id": "NOR-TRO",
+       "reserve_share": 0.375
+      }
+     ],
+     "game_t_day": 35.8078,
+     "owner": "state",
+     "production_kt_year": 87603.674,
+     "share_world": 0.029932
+    },
+    "PER": {
+     "cities": [
+      {
+       "capacity_t_day": 4.5993,
+       "city_id": "PER-LIM",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 4.5993,
+     "owner": "private",
+     "production_kt_year": 11252.164,
+     "share_world": 0.003845
+    },
+    "QAT": {
+     "cities": [
+      {
+       "capacity_t_day": 31.8675,
+       "city_id": "QAT-MAD",
+       "reserve_share": 0.6154
+      },
+      {
+       "capacity_t_day": 19.9172,
+       "city_id": "QAT-DOH",
+       "reserve_share": 0.3846
+      }
+     ],
+     "game_t_day": 51.7847,
+     "owner": "state",
+     "production_kt_year": 126690.911,
+     "share_world": 0.043287
+    },
+    "RUS": {
+     "cities": [
+      {
+       "capacity_t_day": 146.798,
+       "city_id": "RUS-SUR",
+       "reserve_share": 0.8088
+      },
+      {
+       "capacity_t_day": 31.7401,
+       "city_id": "RUS-ARK",
+       "reserve_share": 0.1749
+      },
+      {
+       "capacity_t_day": 2.9682,
+       "city_id": "RUS-VOL",
+       "reserve_share": 0.0164
+      }
+     ],
+     "game_t_day": 181.5062,
+     "owner": "state",
+     "production_kt_year": 444054.028,
+     "share_world": 0.151723
+    },
+    "USA": {
+     "cities": [
+      {
+       "capacity_t_day": 122.8899,
+       "city_id": "USA-SANA",
+       "reserve_share": 0.4133
+      },
+      {
+       "capacity_t_day": 110.0132,
+       "city_id": "USA-PHI",
+       "reserve_share": 0.37
+      },
+      {
+       "capacity_t_day": 34.146,
+       "city_id": "USA-WAS",
+       "reserve_share": 0.1148
+      },
+      {
+       "capacity_t_day": 25.8574,
+       "city_id": "USA-NEW",
+       "reserve_share": 0.087
+      },
+      {
+       "capacity_t_day": 4.4433,
+       "city_id": "USA-DEN",
+       "reserve_share": 0.0149
+      }
+     ],
+     "game_t_day": 297.3497,
+     "owner": "private",
+     "production_kt_year": 727464.473,
+     "share_world": 0.248558
+    }
+   },
+   "coverage_of_world": 1.0,
+   "world_game_t_day": 1196.3,
+   "world_listed_kt_year": 2926741.807,
+   "world_real_kt_year": 2926741.806
+  },
+  "iron": {
+   "conversion": "kt_real/ano / world_real x world_game_t_day",
+   "countries": {
+    "AUS": {
+     "cities": [
+      {
+       "capacity_t_day": 2716.6413,
+       "city_id": "AUS-KAR",
+       "reserve_share": 0.3995
+      },
+      {
+       "capacity_t_day": 1475.5762,
+       "city_id": "AUS-GEE",
+       "reserve_share": 0.217
+      },
+      {
+       "capacity_t_day": 1392.0715,
+       "city_id": "AUS-ADE",
+       "reserve_share": 0.2047
+      },
+      {
+       "capacity_t_day": 348.572,
+       "city_id": "AUS-BRO",
+       "reserve_share": 0.0513
+      },
+      {
+       "capacity_t_day": 334.4485,
+       "city_id": "AUS-KAL",
+       "reserve_share": 0.0492
+      },
+      {
+       "capacity_t_day": 247.7043,
+       "city_id": "AUS-PER",
+       "reserve_share": 0.0364
+      },
+      {
+       "capacity_t_day": 131.9604,
+       "city_id": "AUS-DAR",
+       "reserve_share": 0.0194
+      },
+      {
+       "capacity_t_day": 79.9984,
+       "city_id": "AUS-SUN",
+       "reserve_share": 0.0118
+      },
+      {
+       "capacity_t_day": 37.2255,
+       "city_id": "AUS-ALI",
+       "reserve_share": 0.0055
+      },
+      {
+       "capacity_t_day": 35.5527,
+       "city_id": "AUS-CAN",
+       "reserve_share": 0.0052
+      }
+     ],
+     "game_t_day": 6799.7508,
+     "owner": "private",
+     "production_kt_year": 930000.0,
+     "share_world": 0.372
+    },
+    "BRA": {
+     "cities": [
+      {
+       "capacity_t_day": 1802.6595,
+       "city_id": "BRA-BEL",
+       "reserve_share": 0.5603
+      },
+      {
+       "capacity_t_day": 467.7747,
+       "city_id": "BRA-CUR",
+       "reserve_share": 0.1454
+      },
+      {
+       "capacity_t_day": 319.0674,
+       "city_id": "BRA-PAL",
+       "reserve_share": 0.0992
+      },
+      {
+       "capacity_t_day": 224.5484,
+       "city_id": "BRA-CAM",
+       "reserve_share": 0.0698
+      },
+      {
+       "capacity_t_day": 210.5411,
+       "city_id": "BRA-CAMPO",
+       "reserve_share": 0.0654
+      },
+      {
+       "capacity_t_day": 39.2959,
+       "city_id": "BRA-BRAS",
+       "reserve_share": 0.0122
+      },
+      {
+       "capacity_t_day": 38.1376,
+       "city_id": "BRA-SAL",
+       "reserve_share": 0.0119
+      },
+      {
+       "capacity_t_day": 30.4668,
+       "city_id": "BRA-MAC",
+       "reserve_share": 0.0095
+      },
+      {
+       "capacity_t_day": 24.8231,
+       "city_id": "BRA-TER",
+       "reserve_share": 0.0077
+      },
+      {
+       "capacity_t_day": 17.7181,
+       "city_id": "BRA-BELE",
+       "reserve_share": 0.0055
+      },
+      {
+       "capacity_t_day": 11.8493,
+       "city_id": "BRA-FOR",
+       "reserve_share": 0.0037
+      },
+      {
+       "capacity_t_day": 11.7658,
+       "city_id": "BRA-GOI",
+       "reserve_share": 0.0037
+      },
+      {
+       "capacity_t_day": 10.9653,
+       "city_id": "BRA-NAT",
+       "reserve_share": 0.0034
+      },
+      {
+       "capacity_t_day": 6.8474,
+       "city_id": "BRA-MAN",
+       "reserve_share": 0.0021
+      },
+      {
+       "capacity_t_day": 0.626,
+       "city_id": "BRA-TEF",
+       "reserve_share": 0.0002
+      }
+     ],
+     "game_t_day": 3217.0864,
+     "owner": "private",
+     "production_kt_year": 440000.0,
+     "share_world": 0.176
+    },
+    "CAN": {
+     "cities": [
+      {
+       "capacity_t_day": 109.8319,
+       "city_id": "CAN-KUU",
+       "reserve_share": 0.2764
+      },
+      {
+       "capacity_t_day": 102.664,
+       "city_id": "CAN-QUE",
+       "reserve_share": 0.26
+      },
+      {
+       "capacity_t_day": 94.3999,
+       "city_id": "CAN-HAP",
+       "reserve_share": 0.2391
+      },
+      {
+       "capacity_t_day": 68.3221,
+       "city_id": "CAN-TIM",
+       "reserve_share": 0.173
+      },
+      {
+       "capacity_t_day": 7.8704,
+       "city_id": "CAN-WIN",
+       "reserve_share": 0.0199
+      },
+      {
+       "capacity_t_day": 6.471,
+       "city_id": "CAN-THO",
+       "reserve_share": 0.0164
+      },
+      {
+       "capacity_t_day": 5.2649,
+       "city_id": "CAN-PRI",
+       "reserve_share": 0.0133
+      }
+     ],
+     "game_t_day": 394.8242,
+     "owner": "private",
+     "production_kt_year": 54000.0,
+     "share_world": 0.0216
+    },
+    "CHL": {
+     "cities": [
+      {
+       "capacity_t_day": 110.1851,
+       "city_id": "CHL-ANT",
+       "reserve_share": 0.8372
+      },
+      {
+       "capacity_t_day": 21.423,
+       "city_id": "CHL-PUE",
+       "reserve_share": 0.1628
+      }
+     ],
+     "game_t_day": 131.6081,
+     "owner": "private",
+     "production_kt_year": 18000.0,
+     "share_world": 0.0072
+    },
+    "CHN": {
+     "cities": [
+      {
+       "capacity_t_day": 368.4671,
+       "city_id": "CHN-WUH",
+       "reserve_share": 0.1866
+      },
+      {
+       "capacity_t_day": 247.0159,
+       "city_id": "CHN-HAN",
+       "reserve_share": 0.1251
+      },
+      {
+       "capacity_t_day": 209.1032,
+       "city_id": "CHN-GUA",
+       "reserve_share": 0.1059
+      },
+      {
+       "capacity_t_day": 204.9384,
+       "city_id": "CHN-KUN",
+       "reserve_share": 0.1038
+      },
+      {
+       "capacity_t_day": 142.666,
+       "city_id": "CHN-BEI",
+       "reserve_share": 0.0723
+      },
+      {
+       "capacity_t_day": 137.2899,
+       "city_id": "CHN-XIA",
+       "reserve_share": 0.0695
+      },
+      {
+       "capacity_t_day": 136.445,
+       "city_id": "CHN-JIN",
+       "reserve_share": 0.0691
+      },
+      {
+       "capacity_t_day": 105.6193,
+       "city_id": "CHN-SHE",
+       "reserve_share": 0.0535
+      },
+      {
+       "capacity_t_day": 77.6813,
+       "city_id": "CHN-WUW",
+       "reserve_share": 0.0393
+      },
+      {
+       "capacity_t_day": 57.2055,
+       "city_id": "CHN-DAX",
+       "reserve_share": 0.029
+      },
+      {
+       "capacity_t_day": 53.5913,
+       "city_id": "CHN-CHE",
+       "reserve_share": 0.0271
+      },
+      {
+       "capacity_t_day": 42.1732,
+       "city_id": "CHN-URU",
+       "reserve_share": 0.0214
+      },
+      {
+       "capacity_t_day": 35.0606,
+       "city_id": "CHN-HEF",
+       "reserve_share": 0.0178
+      },
+      {
+       "capacity_t_day": 29.0056,
+       "city_id": "CHN-CHO",
+       "reserve_share": 0.0147
+      },
+      {
+       "capacity_t_day": 27.9937,
+       "city_id": "CHN-XIAN",
+       "reserve_share": 0.0142
+      },
+      {
+       "capacity_t_day": 26.0321,
+       "city_id": "CHN-DON",
+       "reserve_share": 0.0132
+      },
+      {
+       "capacity_t_day": 21.9895,
+       "city_id": "CHN-NAN",
+       "reserve_share": 0.0111
+      },
+      {
+       "capacity_t_day": 20.3619,
+       "city_id": "CHN-JIU",
+       "reserve_share": 0.0103
+      },
+      {
+       "capacity_t_day": 14.1843,
+       "city_id": "CHN-WEI",
+       "reserve_share": 0.0072
+      },
+      {
+       "capacity_t_day": 10.7141,
+       "city_id": "CHN-DAL",
+       "reserve_share": 0.0054
+      },
+      {
+       "capacity_t_day": 6.5834,
+       "city_id": "CHN-HAR",
+       "reserve_share": 0.0033
+      }
+     ],
+     "game_t_day": 1974.1212,
+     "owner": "private",
+     "production_kt_year": 270000.0,
+     "share_world": 0.108
+    },
+    "IND": {
+     "cities": [
+      {
+       "capacity_t_day": 447.1021,
+       "city_id": "IND-PUN",
+       "reserve_share": 0.2265
+      },
+      {
+       "capacity_t_day": 417.219,
+       "city_id": "IND-KOL",
+       "reserve_share": 0.2113
+      },
+      {
+       "capacity_t_day": 232.9057,
+       "city_id": "IND-BAN",
+       "reserve_share": 0.118
+      },
+      {
+       "capacity_t_day": 184.8181,
+       "city_id": "IND-RAS",
+       "reserve_share": 0.0936
+      },
+      {
+       "capacity_t_day": 134.8043,
+       "city_id": "IND-NAG",
+       "reserve_share": 0.0683
+      },
+      {
+       "capacity_t_day": 120.9362,
+       "city_id": "IND-HYD",
+       "reserve_share": 0.0613
+      },
+      {
+       "capacity_t_day": 84.4729,
+       "city_id": "IND-VAD",
+       "reserve_share": 0.0428
+      },
+      {
+       "capacity_t_day": 75.3765,
+       "city_id": "IND-CHE",
+       "reserve_share": 0.0382
+      },
+      {
+       "capacity_t_day": 73.9866,
+       "city_id": "IND-KAL",
+       "reserve_share": 0.0375
+      },
+      {
+       "capacity_t_day": 67.6607,
+       "city_id": "IND-JAI",
+       "reserve_share": 0.0343
+      },
+      {
+       "capacity_t_day": 36.7244,
+       "city_id": "IND-COI",
+       "reserve_share": 0.0186
+      },
+      {
+       "capacity_t_day": 34.3932,
+       "city_id": "IND-BHO",
+       "reserve_share": 0.0174
+      },
+      {
+       "capacity_t_day": 24.5974,
+       "city_id": "IND-PAT",
+       "reserve_share": 0.0125
+      },
+      {
+       "capacity_t_day": 22.9931,
+       "city_id": "IND-MAD",
+       "reserve_share": 0.0116
+      },
+      {
+       "capacity_t_day": 16.1307,
+       "city_id": "IND-LUD",
+       "reserve_share": 0.0082
+      }
+     ],
+     "game_t_day": 1974.1212,
+     "owner": "private",
+     "production_kt_year": 270000.0,
+     "share_world": 0.108
+    },
+    "IRN": {
+     "cities": [
+      {
+       "capacity_t_day": 256.3863,
+       "city_id": "IRN-TEH",
+       "reserve_share": 0.3896
+      },
+      {
+       "capacity_t_day": 156.543,
+       "city_id": "IRN-SHI",
+       "reserve_share": 0.2379
+      },
+      {
+       "capacity_t_day": 134.5259,
+       "city_id": "IRN-MAS",
+       "reserve_share": 0.2044
+      },
+      {
+       "capacity_t_day": 54.0128,
+       "city_id": "IRN-IRA",
+       "reserve_share": 0.0821
+      },
+      {
+       "capacity_t_day": 27.0015,
+       "city_id": "IRN-QOM",
+       "reserve_share": 0.041
+      },
+      {
+       "capacity_t_day": 24.6193,
+       "city_id": "IRN-TAB",
+       "reserve_share": 0.0374
+      },
+      {
+       "capacity_t_day": 4.9515,
+       "city_id": "IRN-ISF",
+       "reserve_share": 0.0075
+      }
+     ],
+     "game_t_day": 658.0404,
+     "owner": "private",
+     "production_kt_year": 90000.0,
+     "share_world": 0.036
+    },
+    "KAZ": {
+     "cities": [
+      {
+       "capacity_t_day": 183.6416,
+       "city_id": "KAZ-AST",
+       "reserve_share": 0.8372
+      },
+      {
+       "capacity_t_day": 29.72,
+       "city_id": "KAZ-AKT",
+       "reserve_share": 0.1355
+      },
+      {
+       "capacity_t_day": 5.9852,
+       "city_id": "KAZ-SHY",
+       "reserve_share": 0.0273
+      }
+     ],
+     "game_t_day": 219.3468,
+     "owner": "private",
+     "production_kt_year": 30000.0,
+     "share_world": 0.012
+    },
+    "MEX": {
+     "cities": [
+      {
+       "capacity_t_day": 24.5527,
+       "city_id": "MEX-GUA",
+       "reserve_share": 0.4198
+      },
+      {
+       "capacity_t_day": 14.1483,
+       "city_id": "MEX-MON",
+       "reserve_share": 0.2419
+      },
+      {
+       "capacity_t_day": 5.7141,
+       "city_id": "MEX-TOR",
+       "reserve_share": 0.0977
+      },
+      {
+       "capacity_t_day": 4.0865,
+       "city_id": "MEX-HER",
+       "reserve_share": 0.0699
+      },
+      {
+       "capacity_t_day": 2.7265,
+       "city_id": "MEX-LEO",
+       "reserve_share": 0.0466
+      },
+      {
+       "capacity_t_day": 2.3894,
+       "city_id": "MEX-TIJ",
+       "reserve_share": 0.0408
+      },
+      {
+       "capacity_t_day": 2.0805,
+       "city_id": "MEX-CHI",
+       "reserve_share": 0.0356
+      },
+      {
+       "capacity_t_day": 1.1686,
+       "city_id": "MEX-PUE",
+       "reserve_share": 0.02
+      },
+      {
+       "capacity_t_day": 0.8207,
+       "city_id": "MEX-MEXI",
+       "reserve_share": 0.014
+      },
+      {
+       "capacity_t_day": 0.8053,
+       "city_id": "MEX-TUX",
+       "reserve_share": 0.0138
+      }
+     ],
+     "game_t_day": 58.4925,
+     "owner": "private",
+     "production_kt_year": 8000.0,
+     "share_world": 0.0032
+    },
+    "MRT": {
+     "cities": [
+      {
+       "capacity_t_day": 109.6734,
+       "city_id": "MRT-ZOU",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 109.6734,
+     "owner": "private",
+     "production_kt_year": 15000.0,
+     "share_world": 0.006
+    },
+    "PER": {
+     "cities": [
+      {
+       "capacity_t_day": 131.8634,
+       "city_id": "PER-ARE",
+       "reserve_share": 0.8588
+      },
+      {
+       "capacity_t_day": 9.8352,
+       "city_id": "PER-TRU",
+       "reserve_share": 0.0641
+      },
+      {
+       "capacity_t_day": 8.0404,
+       "city_id": "PER-LIM",
+       "reserve_share": 0.0524
+      },
+      {
+       "capacity_t_day": 3.8038,
+       "city_id": "PER-PIU",
+       "reserve_share": 0.0248
+      }
+     ],
+     "game_t_day": 153.5428,
+     "owner": "private",
+     "production_kt_year": 21000.0,
+     "share_world": 0.0084
+    },
+    "RUS": {
+     "cities": [
+      {
+       "capacity_t_day": 132.3517,
+       "city_id": "RUS-YEK",
+       "reserve_share": 0.1989
+      },
+      {
+       "capacity_t_day": 76.7219,
+       "city_id": "RUS-NOVOK",
+       "reserve_share": 0.1153
+      },
+      {
+       "capacity_t_day": 69.8374,
+       "city_id": "RUS-MUR",
+       "reserve_share": 0.105
+      },
+      {
+       "capacity_t_day": 61.3935,
+       "city_id": "RUS-UFA",
+       "reserve_share": 0.0923
+      },
+      {
+       "capacity_t_day": 58.9621,
+       "city_id": "RUS-VOR",
+       "reserve_share": 0.0886
+      },
+      {
+       "capacity_t_day": 38.6848,
+       "city_id": "RUS-NOV",
+       "reserve_share": 0.0581
+      },
+      {
+       "capacity_t_day": 35.754,
+       "city_id": "RUS-UST",
+       "reserve_share": 0.0537
+      },
+      {
+       "capacity_t_day": 35.5603,
+       "city_id": "RUS-DON",
+       "reserve_share": 0.0534
+      },
+      {
+       "capacity_t_day": 30.7916,
+       "city_id": "RUS-SAI",
+       "reserve_share": 0.0463
+      },
+      {
+       "capacity_t_day": 29.6372,
+       "city_id": "RUS-MAR",
+       "reserve_share": 0.0445
+      },
+      {
+       "capacity_t_day": 25.8632,
+       "city_id": "RUS-ARK",
+       "reserve_share": 0.0389
+      },
+      {
+       "capacity_t_day": 14.6626,
+       "city_id": "RUS-MOS",
+       "reserve_share": 0.022
+      },
+      {
+       "capacity_t_day": 10.7007,
+       "city_id": "RUS-SEV",
+       "reserve_share": 0.0161
+      },
+      {
+       "capacity_t_day": 10.5535,
+       "city_id": "RUS-CHE",
+       "reserve_share": 0.0159
+      },
+      {
+       "capacity_t_day": 10.4886,
+       "city_id": "RUS-VOL",
+       "reserve_share": 0.0158
+      },
+      {
+       "capacity_t_day": 6.5005,
+       "city_id": "RUS-DUD",
+       "reserve_share": 0.0098
+      },
+      {
+       "capacity_t_day": 5.7319,
+       "city_id": "RUS-CHI",
+       "reserve_share": 0.0086
+      },
+      {
+       "capacity_t_day": 5.5616,
+       "city_id": "RUS-IRK",
+       "reserve_share": 0.0084
+      },
+      {
+       "capacity_t_day": 1.9195,
+       "city_id": "RUS-TIK",
+       "reserve_share": 0.0029
+      },
+      {
+       "capacity_t_day": 1.9188,
+       "city_id": "RUS-KRAS",
+       "reserve_share": 0.0029
+      },
+      {
+       "capacity_t_day": 1.7565,
+       "city_id": "RUS-BIR",
+       "reserve_share": 0.0026
+      }
+     ],
+     "game_t_day": 665.352,
+     "owner": "private",
+     "production_kt_year": 91000.0,
+     "share_world": 0.0364
+    },
+    "SWE": {
+     "cities": [
+      {
+       "capacity_t_day": 125.2885,
+       "city_id": "SWE-STO",
+       "reserve_share": 0.612
+      },
+      {
+       "capacity_t_day": 50.5816,
+       "city_id": "SWE-UME",
+       "reserve_share": 0.2471
+      },
+      {
+       "capacity_t_day": 28.8535,
+       "city_id": "SWE-GOT",
+       "reserve_share": 0.1409
+      }
+     ],
+     "game_t_day": 204.7237,
+     "owner": "private",
+     "production_kt_year": 28000.0,
+     "share_world": 0.0112
+    },
+    "TUR": {
+     "cities": [
+      {
+       "capacity_t_day": 69.2742,
+       "city_id": "TUR-GAZ",
+       "reserve_share": 0.5264
+      },
+      {
+       "capacity_t_day": 21.1536,
+       "city_id": "TUR-IZM",
+       "reserve_share": 0.1607
+      },
+      {
+       "capacity_t_day": 19.4579,
+       "city_id": "TUR-DIY",
+       "reserve_share": 0.1478
+      },
+      {
+       "capacity_t_day": 13.4687,
+       "city_id": "TUR-BUR",
+       "reserve_share": 0.1023
+      },
+      {
+       "capacity_t_day": 8.2537,
+       "city_id": "TUR-ADA",
+       "reserve_share": 0.0627
+      }
+     ],
+     "game_t_day": 131.6081,
+     "owner": "private",
+     "production_kt_year": 18000.0,
+     "share_world": 0.0072
+    },
+    "UKR": {
+     "cities": [
+      {
+       "capacity_t_day": 208.918,
+       "city_id": "UKR-DNI",
+       "reserve_share": 0.6803
+      },
+      {
+       "capacity_t_day": 49.9616,
+       "city_id": "UKR-ZAP",
+       "reserve_share": 0.1627
+      },
+      {
+       "capacity_t_day": 48.2059,
+       "city_id": "UKR-KHA",
+       "reserve_share": 0.157
+      }
+     ],
+     "game_t_day": 307.0855,
+     "owner": "private",
+     "production_kt_year": 42000.0,
+     "share_world": 0.0168
+    },
+    "USA": {
+     "cities": [
+      {
+       "capacity_t_day": 118.4736,
+       "city_id": "USA-SIT",
+       "reserve_share": 0.3354
+      },
+      {
+       "capacity_t_day": 40.4875,
+       "city_id": "USA-NAS",
+       "reserve_share": 0.1154
+      },
+      {
+       "capacity_t_day": 26.8281,
+       "city_id": "USA-WAS",
+       "reserve_share": 0.0764
+      },
+      {
+       "capacity_t_day": 21.9361,
+       "city_id": "USA-MIN",
+       "reserve_share": 0.0625
+      },
+      {
+       "capacity_t_day": 19.5885,
+       "city_id": "USA-CHA",
+       "reserve_share": 0.0558
+      },
+      {
+       "capacity_t_day": 16.6283,
+       "city_id": "USA-PHO",
+       "reserve_share": 0.0474
+      },
+      {
+       "capacity_t_day": 15.5489,
+       "city_id": "USA-PHI",
+       "reserve_share": 0.0443
+      },
+      {
+       "capacity_t_day": 14.9387,
+       "city_id": "USA-NEW",
+       "reserve_share": 0.0426
+      },
+      {
+       "capacity_t_day": 9.7555,
+       "city_id": "USA-BOS",
+       "reserve_share": 0.0278
+      },
+      {
+       "capacity_t_day": 7.9763,
+       "city_id": "USA-CHI",
+       "reserve_share": 0.0227
+      },
+      {
+       "capacity_t_day": 7.4081,
+       "city_id": "USA-DEN",
+       "reserve_share": 0.0211
+      },
+      {
+       "capacity_t_day": 7.1717,
+       "city_id": "USA-COL",
+       "reserve_share": 0.0204
+      },
+      {
+       "capacity_t_day": 6.9803,
+       "city_id": "USA-ANC",
+       "reserve_share": 0.0199
+      },
+      {
+       "capacity_t_day": 6.7342,
+       "city_id": "USA-DAL",
+       "reserve_share": 0.0192
+      },
+      {
+       "capacity_t_day": 5.1155,
+       "city_id": "USA-BIL",
+       "reserve_share": 0.0146
+      },
+      {
+       "capacity_t_day": 4.6552,
+       "city_id": "USA-MIA",
+       "reserve_share": 0.0133
+      },
+      {
+       "capacity_t_day": 4.4628,
+       "city_id": "USA-REN",
+       "reserve_share": 0.0127
+      },
+      {
+       "capacity_t_day": 3.8258,
+       "city_id": "PRI-PON",
+       "reserve_share": 0.0109
+      },
+      {
+       "capacity_t_day": 2.1799,
+       "city_id": "USA-SANA",
+       "reserve_share": 0.0062
+      },
+      {
+       "capacity_t_day": 2.0948,
+       "city_id": "USA-POR",
+       "reserve_share": 0.006
+      },
+      {
+       "capacity_t_day": 2.0032,
+       "city_id": "USA-SANJ",
+       "reserve_share": 0.0057
+      },
+      {
+       "capacity_t_day": 1.9602,
+       "city_id": "USA-JAC",
+       "reserve_share": 0.0056
+      },
+      {
+       "capacity_t_day": 1.7625,
+       "city_id": "USA-UTQ",
+       "reserve_share": 0.005
+      },
+      {
+       "capacity_t_day": 1.7548,
+       "city_id": "USA-SEA",
+       "reserve_share": 0.005
+      },
+      {
+       "capacity_t_day": 0.6844,
+       "city_id": "USA-BET",
+       "reserve_share": 0.002
+      }
+     ],
+     "game_t_day": 350.9549,
+     "owner": "private",
+     "production_kt_year": 48000.0,
+     "share_world": 0.0192
+    },
+    "ZAF": {
+     "cities": [
+      {
+       "capacity_t_day": 264.1342,
+       "city_id": "ZAF-PRE",
+       "reserve_share": 0.5474
+      },
+      {
+       "capacity_t_day": 149.1126,
+       "city_id": "ZAF-UPI",
+       "reserve_share": 0.309
+      },
+      {
+       "capacity_t_day": 58.5993,
+       "city_id": "ZAF-JOH",
+       "reserve_share": 0.1214
+      },
+      {
+       "capacity_t_day": 7.3751,
+       "city_id": "ZAF-CAP",
+       "reserve_share": 0.0153
+      },
+      {
+       "capacity_t_day": 3.3418,
+       "city_id": "ZAF-DUR",
+       "reserve_share": 0.0069
+      }
+     ],
+     "game_t_day": 482.563,
+     "owner": "private",
+     "production_kt_year": 66000.0,
+     "share_world": 0.0264
+    }
+   },
+   "coverage_of_world": 0.9756,
+   "world_game_t_day": 18278.9,
+   "world_listed_kt_year": 2439000.0,
+   "world_real_kt_year": 2500000.0
+  },
+  "oil": {
+   "conversion": "kt_real/ano / world_real x world_game_t_day",
+   "countries": {
+    "AGO": {
+     "cities": [
+      {
+       "capacity_t_day": 33.0506,
+       "city_id": "AGO-LUA",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 33.0506,
+     "owner": "state",
+     "production_kt_year": 57588.541,
+     "share_world": 0.012632
+    },
+    "ARE": {
+     "cities": [
+      {
+       "capacity_t_day": 103.1788,
+       "city_id": "ARE-ABU",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 103.1788,
+     "owner": "state",
+     "production_kt_year": 179782.604,
+     "share_world": 0.039434
+    },
+    "ARG": {
+     "cities": [
+      {
+       "capacity_t_day": 33.706,
+       "city_id": "ARG-NEU",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 33.706,
+     "owner": "private",
+     "production_kt_year": 58730.595,
+     "share_world": 0.012882
+    },
+    "AUS": {
+     "cities": [
+      {
+       "capacity_t_day": 8.6764,
+       "city_id": "AUS-MEL",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 8.6764,
+     "owner": "private",
+     "production_kt_year": 15118.085,
+     "share_world": 0.003316
+    },
+    "BRA": {
+     "cities": [
+      {
+       "capacity_t_day": 75.6333,
+       "city_id": "BRA-RIO",
+       "reserve_share": 0.7253
+      },
+      {
+       "capacity_t_day": 12.6055,
+       "city_id": "BRA-SAOL",
+       "reserve_share": 0.1209
+      },
+      {
+       "capacity_t_day": 9.1677,
+       "city_id": "BRA-BELE",
+       "reserve_share": 0.0879
+      },
+      {
+       "capacity_t_day": 6.8758,
+       "city_id": "BRA-NAT",
+       "reserve_share": 0.0659
+      }
+     ],
+     "game_t_day": 104.2823,
+     "owner": "state",
+     "production_kt_year": 181705.255,
+     "share_world": 0.039856
+    },
+    "CAN": {
+     "cities": [
+      {
+       "capacity_t_day": 166.5586,
+       "city_id": "CAN-EDM",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 166.5586,
+     "owner": "private",
+     "production_kt_year": 290217.793,
+     "share_world": 0.063657
+    },
+    "CHN": {
+     "cities": [
+      {
+       "capacity_t_day": 76.3763,
+       "city_id": "CHN-HAR",
+       "reserve_share": 0.625
+      },
+      {
+       "capacity_t_day": 45.8258,
+       "city_id": "CHN-WEI",
+       "reserve_share": 0.375
+      }
+     ],
+     "game_t_day": 122.202,
+     "owner": "private",
+     "production_kt_year": 212929.326,
+     "share_world": 0.046704
+    },
+    "COL": {
+     "cities": [
+      {
+       "capacity_t_day": 15.6787,
+       "city_id": "COL-CAL",
+       "reserve_share": 0.6693
+      },
+      {
+       "capacity_t_day": 7.7461,
+       "city_id": "COL-BOG",
+       "reserve_share": 0.3307
+      }
+     ],
+     "game_t_day": 23.4248,
+     "owner": "state",
+     "production_kt_year": 40816.236,
+     "share_world": 0.008953
+    },
+    "DZA": {
+     "cities": [
+      {
+       "capacity_t_day": 36.4819,
+       "city_id": "DZA-CON",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 36.4819,
+     "owner": "state",
+     "production_kt_year": 63567.438,
+     "share_world": 0.013943
+    },
+    "FRA": {
+     "cities": [],
+     "game_t_day": 0.3416,
+     "owner": "private",
+     "production_kt_year": 595.268,
+     "share_world": 0.000131
+    },
+    "GBR": {
+     "cities": [
+      {
+       "capacity_t_day": 17.4429,
+       "city_id": "GBR-NCL",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 17.4429,
+     "owner": "private",
+     "production_kt_year": 30393.079,
+     "share_world": 0.006666
+    },
+    "GUY": {
+     "cities": [
+      {
+       "capacity_t_day": 17.6537,
+       "city_id": "GUY-GEO",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 17.6537,
+     "owner": "private",
+     "production_kt_year": 30760.529,
+     "share_world": 0.006747
+    },
+    "IND": {
+     "cities": [
+      {
+       "capacity_t_day": 18.6017,
+       "city_id": "IND-MUM",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 18.6017,
+     "owner": "private",
+     "production_kt_year": 32412.313,
+     "share_world": 0.007109
+    },
+    "IRN": {
+     "cities": [
+      {
+       "capacity_t_day": 135.9461,
+       "city_id": "IRN-AHV",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 135.9461,
+     "owner": "state",
+     "production_kt_year": 236877.488,
+     "share_world": 0.051957
+    },
+    "IRQ": {
+     "cities": [
+      {
+       "capacity_t_day": 90.6895,
+       "city_id": "IRQ-BAG",
+       "reserve_share": 0.75
+      },
+      {
+       "capacity_t_day": 30.2298,
+       "city_id": "IRQ-ERB",
+       "reserve_share": 0.25
+      }
+     ],
+     "game_t_day": 120.9194,
+     "owner": "state",
+     "production_kt_year": 210694.376,
+     "share_world": 0.046214
+    },
+    "KAZ": {
+     "cities": [
+      {
+       "capacity_t_day": 50.3673,
+       "city_id": "KAZ-ATY",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 50.3673,
+     "owner": "state",
+     "production_kt_year": 87761.796,
+     "share_world": 0.01925
+    },
+    "KWT": {
+     "cities": [
+      {
+       "capacity_t_day": 75.7455,
+       "city_id": "KWT-ALA",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 75.7455,
+     "owner": "state",
+     "production_kt_year": 131981.663,
+     "share_world": 0.028949
+    },
+    "LBY": {
+     "cities": [
+      {
+       "capacity_t_day": 31.9858,
+       "city_id": "LBY-ATT",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 31.9858,
+     "owner": "state",
+     "production_kt_year": 55733.207,
+     "share_world": 0.012225
+    },
+    "MEX": {
+     "cities": [
+      {
+       "capacity_t_day": 55.3178,
+       "city_id": "MEX-MER",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 55.3178,
+     "owner": "state",
+     "production_kt_year": 96387.768,
+     "share_world": 0.021142
+    },
+    "NGA": {
+     "cities": [
+      {
+       "capacity_t_day": 45.285,
+       "city_id": "NGA-POR",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 45.285,
+     "owner": "state",
+     "production_kt_year": 78906.178,
+     "share_world": 0.017307
+    },
+    "NOR": {
+     "cities": [
+      {
+       "capacity_t_day": 53.7978,
+       "city_id": "NOR-BER",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 53.7978,
+     "owner": "state",
+     "production_kt_year": 93739.235,
+     "share_world": 0.020561
+    },
+    "RUS": {
+     "cities": [
+      {
+       "capacity_t_day": 302.2673,
+       "city_id": "RUS-SUR",
+       "reserve_share": 1.0
+      }
+     ],
+     "game_t_day": 302.2673,
+     "owner": "state",
+     "production_kt_year": 526681.716,
+     "share_world": 0.115524
+    },
+    "SAU": {
+     "cities": [
+      {
+       "capacity_t_day": 240.4697,
+       "city_id": "SAU-DAM",
+       "reserve_share": 0.8212
+      },
+      {
+       "capacity_t_day": 52.3703,
+       "city_id": "SAU-RIY",
+       "reserve_share": 0.1788
+      }
+     ],
+     "game_t_day": 292.84,
+     "owner": "state",
+     "production_kt_year": 510255.174,
+     "share_world": 0.111921
+    },
+    "SUR": {
+     "cities": [],
+     "game_t_day": 0.4354,
+     "owner": "private",
+     "production_kt_year": 758.615,
+     "share_world": 0.000166
+    },
+    "USA": {
+     "cities": [
+      {
+       "capacity_t_day": 137.3661,
+       "city_id": "USA-SANA",
+       "reserve_share": 0.2773
+      },
+      {
+       "capacity_t_day": 124.2547,
+       "city_id": "USA-BIL",
+       "reserve_share": 0.2509
+      },
+      {
+       "capacity_t_day": 91.5774,
+       "city_id": "USA-UTQ",
+       "reserve_share": 0.1849
+      },
+      {
+       "capacity_t_day": 59.8722,
+       "city_id": "USA-NAS",
+       "reserve_share": 0.1209
+      },
+      {
+       "capacity_t_day": 55.9211,
+       "city_id": "USA-DEN",
+       "reserve_share": 0.1129
+      },
+      {
+       "capacity_t_day": 12.5091,
+       "city_id": "USA-PHO",
+       "reserve_share": 0.0253
+      },
+      {
+       "capacity_t_day": 6.8498,
+       "city_id": "USA-WAS",
+       "reserve_share": 0.0138
+      },
+      {
+       "capacity_t_day": 5.3655,
+       "city_id": "USA-REN",
+       "reserve_share": 0.0108
+      },
+      {
+       "capacity_t_day": 1.6,
+       "city_id": "USA-NEW",
+       "reserve_share": 0.0032
+      }
+     ],
+     "game_t_day": 495.316,
+     "owner": "private",
+     "production_kt_year": 863056.698,
+     "share_world": 0.189305
+    },
+    "VEN": {
+     "cities": [
+      {
+       "capacity_t_day": 18.9862,
+       "city_id": "VEN-CGU",
+       "reserve_share": 0.6533
+      },
+      {
+       "capacity_t_day": 10.0774,
+       "city_id": "VEN-MAR",
+       "reserve_share": 0.3467
+      }
+     ],
+     "game_t_day": 29.0636,
+     "owner": "state",
+     "production_kt_year": 50641.444,
+     "share_world": 0.011108
+    }
+   },
+   "coverage_of_world": 1.0,
+   "world_game_t_day": 2616.5,
+   "world_listed_kt_year": 4559085.66,
+   "world_real_kt_year": 4559085.662
+  }
+ },
+ "unallocated": [
+  {
+   "commodity": "oil",
+   "game_t_day": 0.435278,
+   "nation": "ALB",
+   "production_kt_year": 758.444,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.283693,
+   "nation": "AUT",
+   "production_kt_year": 494.317,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 16.743937,
+   "nation": "AZE",
+   "production_kt_year": 29175.251,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.235393,
+   "nation": "BGD",
+   "production_kt_year": 410.157,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.031124,
+   "nation": "BGR",
+   "production_kt_year": 54.231,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 5.636214,
+   "nation": "BHR",
+   "production_kt_year": 9820.746,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.859236,
+   "nation": "BLR",
+   "production_kt_year": 1497.164,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.023873,
+   "nation": "BLZ",
+   "production_kt_year": 41.598,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.286291,
+   "nation": "BOL",
+   "production_kt_year": 2241.281,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.03106,
+   "nation": "BRB",
+   "production_kt_year": 54.12,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 2.783321,
+   "nation": "BRN",
+   "production_kt_year": 4849.761,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.301395,
+   "nation": "CHL",
+   "production_kt_year": 525.162,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.130824,
+   "nation": "CIV",
+   "production_kt_year": 1970.389,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.93652,
+   "nation": "CMR",
+   "production_kt_year": 3374.263,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.5291,
+   "nation": "COD",
+   "production_kt_year": 921.924,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 7.870989,
+   "nation": "COG",
+   "production_kt_year": 13714.7,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.955727,
+   "nation": "CUB",
+   "production_kt_year": 1665.294,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.045446,
+   "nation": "CZE",
+   "production_kt_year": 79.186,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.901155,
+   "nation": "DEU",
+   "production_kt_year": 1570.206,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.696588,
+   "nation": "DNK",
+   "production_kt_year": 2956.197,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 14.662499,
+   "nation": "ECU",
+   "production_kt_year": 25548.476,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 16.3013,
+   "nation": "EGY",
+   "production_kt_year": 28403.983,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.000374,
+   "nation": "ESP",
+   "production_kt_year": 0.651,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 6.427932,
+   "nation": "GAB",
+   "production_kt_year": 11200.264,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.007465,
+   "nation": "GEO",
+   "production_kt_year": 13.008,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 5.900278,
+   "nation": "GHA",
+   "production_kt_year": 10280.861,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 2.485164,
+   "nation": "GNQ",
+   "production_kt_year": 4330.241,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.046969,
+   "nation": "GRC",
+   "production_kt_year": 81.841,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.183158,
+   "nation": "GTM",
+   "production_kt_year": 319.141,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.314208,
+   "nation": "HRV",
+   "production_kt_year": 547.487,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.808304,
+   "nation": "HUN",
+   "production_kt_year": 1408.419,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 17.157732,
+   "nation": "IDN",
+   "production_kt_year": 29896.262,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.56413,
+   "nation": "ISR",
+   "production_kt_year": 982.96,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 2.557395,
+   "nation": "ITA",
+   "production_kt_year": 4456.099,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.000631,
+   "nation": "JOR",
+   "production_kt_year": 1.099,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.203514,
+   "nation": "JPN",
+   "production_kt_year": 354.611,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.185084,
+   "nation": "KGZ",
+   "production_kt_year": 322.497,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.021791,
+   "nation": "LTU",
+   "production_kt_year": 37.969,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.000759,
+   "nation": "MAR",
+   "production_kt_year": 1.323,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.187061,
+   "nation": "MMR",
+   "production_kt_year": 325.942,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.457365,
+   "nation": "MNG",
+   "production_kt_year": 796.93,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 14.067831,
+   "nation": "MYS",
+   "production_kt_year": 24512.305,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.959669,
+   "nation": "NER",
+   "production_kt_year": 1672.163,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.828842,
+   "nation": "NLD",
+   "production_kt_year": 1444.205,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.300017,
+   "nation": "NZL",
+   "production_kt_year": 522.76,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 27.515269,
+   "nation": "OMN",
+   "production_kt_year": 47943.615,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 2.396679,
+   "nation": "PAK",
+   "production_kt_year": 4176.062,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 2.808181,
+   "nation": "PER",
+   "production_kt_year": 4893.077,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.016192,
+   "nation": "PHL",
+   "production_kt_year": 28.213,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.958175,
+   "nation": "PNG",
+   "production_kt_year": 1669.559,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.519033,
+   "nation": "POL",
+   "production_kt_year": 904.383,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 43.318142,
+   "nation": "QAT",
+   "production_kt_year": 75479.121,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.645693,
+   "nation": "ROU",
+   "production_kt_year": 2867.516,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.066777,
+   "nation": "SDN",
+   "production_kt_year": 1858.791,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.379677,
+   "nation": "SRB",
+   "production_kt_year": 661.564,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 2.452393,
+   "nation": "SSD",
+   "production_kt_year": 4273.14,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.000808,
+   "nation": "SVK",
+   "production_kt_year": 1.408,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.951481,
+   "nation": "SYR",
+   "production_kt_year": 1657.896,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 3.86935,
+   "nation": "TCD",
+   "production_kt_year": 6742.098,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 7.112492,
+   "nation": "THA",
+   "production_kt_year": 12393.068,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.009837,
+   "nation": "TJK",
+   "production_kt_year": 17.14,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 5.171678,
+   "nation": "TKM",
+   "production_kt_year": 9011.322,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.056435,
+   "nation": "TLS",
+   "production_kt_year": 98.335,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.739436,
+   "nation": "TTO",
+   "production_kt_year": 3030.858,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.849538,
+   "nation": "TUN",
+   "production_kt_year": 1480.266,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 3.226814,
+   "nation": "TUR",
+   "production_kt_year": 5622.519,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.019316,
+   "nation": "TWN",
+   "production_kt_year": 33.657,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.091542,
+   "nation": "UZB",
+   "production_kt_year": 1901.942,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 4.881373,
+   "nation": "VNM",
+   "production_kt_year": 8505.483,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 1.153179,
+   "nation": "YEM",
+   "production_kt_year": 2009.342,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "oil",
+   "game_t_day": 0.055656,
+   "nation": "ZAF",
+   "production_kt_year": 96.977,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.811123,
+   "nation": "AGO",
+   "production_kt_year": 4430.903,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.016237,
+   "nation": "ALB",
+   "production_kt_year": 39.724,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 12.712017,
+   "nation": "ARG",
+   "production_kt_year": 31099.884,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.16414,
+   "nation": "AUT",
+   "production_kt_year": 401.568,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 10.881168,
+   "nation": "AZE",
+   "production_kt_year": 26620.721,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.004653,
+   "nation": "BEL",
+   "production_kt_year": 11.383,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 5.684091,
+   "nation": "BGD",
+   "production_kt_year": 13906.1,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.002788,
+   "nation": "BGR",
+   "production_kt_year": 6.821,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.021418,
+   "nation": "BLR",
+   "production_kt_year": 52.399,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 2.921628,
+   "nation": "BOL",
+   "production_kt_year": 7147.748,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 6.581323,
+   "nation": "BRA",
+   "production_kt_year": 16101.172,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.001164,
+   "nation": "BRB",
+   "production_kt_year": 2.848,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 2.987032,
+   "nation": "BRN",
+   "production_kt_year": 7307.759,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.342109,
+   "nation": "CHL",
+   "production_kt_year": 836.968,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 71.577793,
+   "nation": "CHN",
+   "production_kt_year": 175114.703,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.808627,
+   "nation": "CIV",
+   "production_kt_year": 1978.303,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.788077,
+   "nation": "CMR",
+   "production_kt_year": 1928.026,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.553496,
+   "nation": "COG",
+   "production_kt_year": 1354.124,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 3.197345,
+   "nation": "COL",
+   "production_kt_year": 7822.288,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.286983,
+   "nation": "CUB",
+   "production_kt_year": 702.103,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.056067,
+   "nation": "CZE",
+   "production_kt_year": 137.168,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.054769,
+   "nation": "DEU",
+   "production_kt_year": 2580.488,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.483033,
+   "nation": "DNK",
+   "production_kt_year": 1181.737,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.083836,
+   "nation": "ECU",
+   "production_kt_year": 205.104,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.009578,
+   "nation": "ESP",
+   "production_kt_year": 23.432,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.004284,
+   "nation": "FRA",
+   "production_kt_year": 10.482,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.149059,
+   "nation": "GAB",
+   "production_kt_year": 364.673,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 8.852106,
+   "nation": "GBR",
+   "production_kt_year": 21656.633,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.002904,
+   "nation": "GEO",
+   "production_kt_year": 7.104,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.066689,
+   "nation": "GHA",
+   "production_kt_year": 2609.648,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 2.076815,
+   "nation": "GNQ",
+   "production_kt_year": 5080.917,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.000873,
+   "nation": "GRC",
+   "production_kt_year": 2.135,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.022392,
+   "nation": "GTM",
+   "production_kt_year": 54.782,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.198071,
+   "nation": "HRV",
+   "production_kt_year": 484.58,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.495908,
+   "nation": "HUN",
+   "production_kt_year": 1213.237,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 20.571907,
+   "nation": "IDN",
+   "production_kt_year": 50329.065,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 9.328318,
+   "nation": "IND",
+   "production_kt_year": 22821.683,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.33234,
+   "nation": "IRL",
+   "production_kt_year": 813.067,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 3.031232,
+   "nation": "IRQ",
+   "production_kt_year": 7415.894,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 7.447016,
+   "nation": "ISR",
+   "production_kt_year": 18219.087,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.806888,
+   "nation": "ITA",
+   "production_kt_year": 1974.047,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.057188,
+   "nation": "JOR",
+   "production_kt_year": 139.911,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.635258,
+   "nation": "JPN",
+   "production_kt_year": 1554.156,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 9.619798,
+   "nation": "KAZ",
+   "production_kt_year": 23534.786,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.009733,
+   "nation": "KGZ",
+   "production_kt_year": 23.811,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 4.469116,
+   "nation": "KWT",
+   "production_kt_year": 10933.669,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 3.561605,
+   "nation": "LBY",
+   "production_kt_year": 8713.448,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.013271,
+   "nation": "MAR",
+   "production_kt_year": 32.468,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 10.328996,
+   "nation": "MEX",
+   "production_kt_year": 25269.835,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 4.041141,
+   "nation": "MMR",
+   "production_kt_year": 9886.631,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 22.996746,
+   "nation": "MYS",
+   "production_kt_year": 56261.422,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.008354,
+   "nation": "NER",
+   "production_kt_year": 20.438,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 13.499443,
+   "nation": "NGA",
+   "production_kt_year": 33026.317,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 2.402196,
+   "nation": "NLD",
+   "production_kt_year": 5876.959,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.016463,
+   "nation": "NZL",
+   "production_kt_year": 2486.771,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 13.059939,
+   "nation": "OMN",
+   "production_kt_year": 31951.074,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 7.517935,
+   "nation": "PAK",
+   "production_kt_year": 18392.59,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.512077,
+   "nation": "PHL",
+   "production_kt_year": 1252.794,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 3.562009,
+   "nation": "PNG",
+   "production_kt_year": 8714.436,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.031108,
+   "nation": "POL",
+   "production_kt_year": 2522.601,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 2.58497,
+   "nation": "ROU",
+   "production_kt_year": 6324.117,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.028033,
+   "nation": "RWA",
+   "production_kt_year": 68.583,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 35.608352,
+   "nation": "SAU",
+   "production_kt_year": 87115.651,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.009299,
+   "nation": "SEN",
+   "production_kt_year": 22.749,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.095517,
+   "nation": "SRB",
+   "production_kt_year": 233.682,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.00221,
+   "nation": "SUR",
+   "production_kt_year": 5.407,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.011687,
+   "nation": "SVK",
+   "production_kt_year": 28.591,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.001068,
+   "nation": "SVN",
+   "production_kt_year": 2.612,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.01306,
+   "nation": "SYR",
+   "production_kt_year": 2478.445,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 8.222212,
+   "nation": "THA",
+   "production_kt_year": 20115.599,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.005634,
+   "nation": "TJK",
+   "production_kt_year": 13.783,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 21.169742,
+   "nation": "TKM",
+   "production_kt_year": 51791.665,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 7.034905,
+   "nation": "TTO",
+   "production_kt_year": 17210.858,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.370801,
+   "nation": "TUN",
+   "production_kt_year": 907.163,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.692185,
+   "nation": "TUR",
+   "production_kt_year": 1693.426,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.017939,
+   "nation": "TWN",
+   "production_kt_year": 43.887,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.622019,
+   "nation": "TZA",
+   "production_kt_year": 1521.767,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 5.214498,
+   "nation": "UKR",
+   "production_kt_year": 12757.243,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 11.324542,
+   "nation": "UZB",
+   "production_kt_year": 27705.435,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 9.143895,
+   "nation": "VEN",
+   "production_kt_year": 22370.492,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 1.765619,
+   "nation": "VNM",
+   "production_kt_year": 4319.577,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.003353,
+   "nation": "YEM",
+   "production_kt_year": 8.203,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "gas",
+   "game_t_day": 0.018107,
+   "nation": "ZAF",
+   "production_kt_year": 44.299,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.035091,
+   "nation": "AFG",
+   "production_kt_year": 1226.079,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.007136,
+   "nation": "ALB",
+   "production_kt_year": 249.338,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 7.7e-05,
+   "nation": "ARG",
+   "production_kt_year": 2.7,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 1e-06,
+   "nation": "ARM",
+   "production_kt_year": 0.036,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.027164,
+   "nation": "BGD",
+   "production_kt_year": 949.131,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.1542,
+   "nation": "BGR",
+   "production_kt_year": 5387.783,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.283501,
+   "nation": "BIH",
+   "production_kt_year": 9905.6,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.00493,
+   "nation": "BTN",
+   "production_kt_year": 172.243,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.082885,
+   "nation": "BWA",
+   "production_kt_year": 2896.012,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 1.639985,
+   "nation": "CAN",
+   "production_kt_year": 57301.452,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.000745,
+   "nation": "CHL",
+   "production_kt_year": 26.017,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.490901,
+   "nation": "CZE",
+   "production_kt_year": 17152.187,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.001231,
+   "nation": "ESP",
+   "production_kt_year": 43.012,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.03963,
+   "nation": "ETH",
+   "production_kt_year": 1384.672,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.004325,
+   "nation": "GEO",
+   "production_kt_year": 151.118,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.048847,
+   "nation": "GRC",
+   "production_kt_year": 1706.728,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.038143,
+   "nation": "HUN",
+   "production_kt_year": 1332.715,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.018813,
+   "nation": "JPN",
+   "production_kt_year": 657.328,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.102337,
+   "nation": "KGZ",
+   "production_kt_year": 3575.691,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.000491,
+   "nation": "KHM",
+   "production_kt_year": 17.145,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.015323,
+   "nation": "KOR",
+   "production_kt_year": 535.393,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.360321,
+   "nation": "LAO",
+   "production_kt_year": 12589.709,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.027125,
+   "nation": "MKD",
+   "production_kt_year": 947.753,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.054575,
+   "nation": "MMR",
+   "production_kt_year": 1906.87,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.023486,
+   "nation": "MNE",
+   "production_kt_year": 820.605,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 2.904386,
+   "nation": "MNG",
+   "production_kt_year": 101479.889,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.622915,
+   "nation": "MOZ",
+   "production_kt_year": 21764.776,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.001178,
+   "nation": "MWI",
+   "production_kt_year": 41.147,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.114457,
+   "nation": "MYS",
+   "production_kt_year": 3999.151,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.003297,
+   "nation": "NER",
+   "production_kt_year": 115.211,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.045739,
+   "nation": "NGA",
+   "production_kt_year": 1598.14,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.004821,
+   "nation": "NOR",
+   "production_kt_year": 168.464,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.000103,
+   "nation": "NPL",
+   "production_kt_year": 3.604,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.090701,
+   "nation": "NZL",
+   "production_kt_year": 3169.106,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.482999,
+   "nation": "PAK",
+   "production_kt_year": 16876.082,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.078757,
+   "nation": "PER",
+   "production_kt_year": 2751.783,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.472424,
+   "nation": "PHL",
+   "production_kt_year": 16506.601,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.846922,
+   "nation": "PRK",
+   "production_kt_year": 29591.653,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.115972,
+   "nation": "ROU",
+   "production_kt_year": 4052.092,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.036046,
+   "nation": "SVN",
+   "production_kt_year": 1259.438,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.013528,
+   "nation": "SWZ",
+   "production_kt_year": 472.674,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.189244,
+   "nation": "THA",
+   "production_kt_year": 6612.224,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.085177,
+   "nation": "TJK",
+   "production_kt_year": 2976.097,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.996731,
+   "nation": "TUR",
+   "production_kt_year": 34826.0,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.06852,
+   "nation": "TZA",
+   "production_kt_year": 2394.106,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.543828,
+   "nation": "UKR",
+   "production_kt_year": 19001.461,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.155857,
+   "nation": "UZB",
+   "production_kt_year": 5445.687,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.024387,
+   "nation": "VEN",
+   "production_kt_year": 852.085,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 1.470534,
+   "nation": "VNM",
+   "production_kt_year": 51380.798,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 8.012275,
+   "nation": "ZAF",
+   "production_kt_year": 279950.652,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.071388,
+   "nation": "ZMB",
+   "production_kt_year": 2494.313,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "coal",
+   "game_t_day": 0.223974,
+   "nation": "ZWE",
+   "production_kt_year": 7825.702,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "bauxite",
+   "game_t_day": 83.864133,
+   "nation": "SAU",
+   "production_kt_year": 5800.0,
+   "reason": "sem deposito/cidade dona no cenario"
+  },
+  {
+   "commodity": "bauxite",
+   "game_t_day": 60.7292,
+   "nation": "VNM",
+   "production_kt_year": 4200.0,
+   "reason": "sem deposito/cidade dona no cenario"
+  }
+ ]
+}

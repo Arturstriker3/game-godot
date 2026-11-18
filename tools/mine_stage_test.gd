@@ -18,6 +18,17 @@ extends SceneTree
 ## Uso: godot --headless --path . --script res://tools/mine_stage_test.gd
 
 const GOODS_PATH := "res://data/definitions/economy/goods.json"
+const GEOGRAPHY_PATH := "res://core/economy/geography_service.gd"
+const CITIES_PATH := "res://data/definitions/scenario/cities.json"
+const SEED_PATH := "res://data/definitions/natural/extraction_2025.json"
+## Produção real atribuída (t/dia) e dono das três entradas da semente
+## conferidas abaixo. Valores lidos de `extraction_2025.json` (fonte: USGS
+## MCS 2025 / Energy Institute 2025 via OWID), não estimativa do teste.
+const SEED_CASES := {
+	"CAN-EDM|oil": 166.5586,
+	"CHN-XIAN|coal": 107.8395,
+	"AUS-PER|bauxite": 684.5264,
+}
 ## Índice do ferro no catálogo (order 1 em goods.json).
 const IRON := 1
 ## Piso documentado do estágio esgotado (kMineStageFloor do núcleo).
@@ -45,6 +56,7 @@ func _init() -> void:
 	_test_cost_curve()
 	_test_ai_picks_cheaper()
 	_test_money_and_save()
+	_test_seeded_real()
 	_finish()
 
 
@@ -328,6 +340,187 @@ func _test_money_and_save() -> void:
 		_fail("(d) migração v16: a etapa v17 (B2) não rodou na cadeia")
 	if _failures.size() == failures_before:
 		print("[mine] (d) save v18 round-trip ok; v17 -> último estágio (piso, B2 intacta); v16 -> v17 -> v18")
+
+
+# ---------------------------------------------------------------------------
+# (e) Semente pela produção real (D-086b): mina com dado nasce OPERANDO com a
+# capacidade que reproduz a produção real atribuída; sem dado, último estágio.
+# ---------------------------------------------------------------------------
+func _test_seeded_real() -> void:
+	var failures_before := _failures.size()
+	var geo = load(GEOGRAPHY_PATH).new()
+	if not bool(geo.load_data()):
+		_fail("(e) GeographyService não carregou os dados")
+		return
+	var cities: Array = _load_json_array(CITIES_PATH)
+	var seed_info := _seed_info()
+	# Três locais REAIS com produção atribuída (dado versionado) + uma cidade
+	# cujo mineral não está na semente (nesse caso a regra histórica vale).
+	var selected: Array = []
+	var by_id := {}
+	for city in cities:
+		by_id[String(Dictionary(city).get("id", ""))] = city
+	for key: String in SEED_CASES:
+		var city_id := key.split("|")[0]
+		if not by_id.has(city_id):
+			_fail("(e) cidade %s da semente ausente do roster" % city_id)
+			return
+		selected.append(by_id[city_id])
+	var no_data_key := ""
+	for city in cities:
+		var city_id := String(Dictionary(city).get("id", ""))
+		var minerals: Dictionary = geo._aggregate_deposits(geo.deposits_for_city(city_id))
+		for resource in minerals:
+			var candidate := city_id + "|" + String(resource)
+			if not seed_info.has(candidate):
+				no_data_key = candidate
+				break
+		if no_data_key != "":
+			selected.append(Dictionary(city))
+			break
+	if no_data_key == "":
+		_fail("(e) nenhuma jazida sem semente encontrada (caso sem dado não testável)")
+		return
+
+	var resolved: Array = geo.resolve_initial_mines([], selected)
+	for key: String in SEED_CASES:
+		var entry := _find_entry(resolved, key)
+		if entry.is_empty():
+			_fail("(e) mina semeada ausente para %s" % key)
+			continue
+		if int(entry.get("stage", -1)) != 0:
+			_fail("(e) %s nasceu no estágio %d (esperava 0, operando)" % [
+				key, int(entry.get("stage", -1))])
+		var city_id := key.split("|")[0]
+		var resource := key.split("|")[1]
+		var quality := float(Dictionary(geo._aggregate_deposits(
+			geo.deposits_for_city(city_id)).get(resource, {})).get("quality", 0.0))
+		var efficiency := 0.5 + 0.5 * clampf(quality, 0.0, 1.0)
+		var expected := float(SEED_CASES[key]) / efficiency
+		var nominal := float(entry.get("output_tons_per_day", 0.0))
+		if absf(nominal - expected) > 0.002:
+			_fail("(e) %s capacidade %.4f != produção real ÷ eficiência %.4f" % [
+				key, nominal, expected])
+		var data: Dictionary = seed_info[key]
+		if String(entry.get("owner", "")) != String(data.get("owner", "state")):
+			_fail("(e) %s dono '%s' != semente '%s'" % [
+				key, String(entry.get("owner", "")), String(data.get("owner", ""))])
+	var no_data := _find_entry(resolved, no_data_key)
+	if no_data.is_empty():
+		_fail("(e) mina sem dado %s não foi criada" % no_data_key)
+	elif int(no_data.get("stage", 0)) != -1:
+		_fail("(e) mina sem dado %s nasceu no estágio %d (esperava -1 = último)" % [
+			no_data_key, int(no_data.get("stage", 0))])
+
+	# Núcleo: a mina de `stage >= 0` abre a reserva do estágio quando a jazida é
+	# declarada e produz 100%; a histórica (`stage = -1`) fica no piso.
+	var sim = _make_seeded_sim()
+	var seeded := _find_building(sim.get_city_status("SEED-A"), "SEED-A-IRON")
+	var historical := _find_building(sim.get_city_status("SEED-B"), "SEED-B-IRON")
+	if int(seeded.get("stage", -1)) != 0:
+		_fail("(e) núcleo: estágio inicial %d != 0" % int(seeded.get("stage", -1)))
+	if absf(float(seeded.get("stage_reserve_kt", 0.0)) - 1000.0) > 1e-6:
+		_fail("(e) núcleo: reserva do estágio %.3f != 50%% de 2000 kt" % float(
+			seeded.get("stage_reserve_kt", 0.0)))
+	if absf(float(seeded.get("stage_factor", 0.0)) - 1.0) > 1e-9:
+		_fail("(e) núcleo: fator da mina semeada %.4f != 1,0" % float(
+			seeded.get("stage_factor", 0.0)))
+	if absf(float(historical.get("stage_reserve_kt", -1.0))) > 1e-9:
+		_fail("(e) núcleo: mina histórica abriu reserva de estágio (%.3f)" % float(
+			historical.get("stage_reserve_kt", 0.0)))
+	if absf(float(historical.get("stage_factor", 0.0)) - STAGE_FLOOR) > 1e-9:
+		_fail("(e) núcleo: fator da mina histórica %.4f != piso %.2f" % [
+			float(historical.get("stage_factor", 0.0)), STAGE_FLOOR])
+	sim.tick_day()
+	var seeded_after := _find_building(sim.get_city_status("SEED-A"), "SEED-A-IRON")
+	var historical_after := _find_building(sim.get_city_status("SEED-B"), "SEED-B-IRON")
+	var seeded_output := float(seeded_after.get("capacity", 0.0)) \
+			* float(seeded_after.get("utilization", 0.0))
+	var historical_output := float(historical_after.get("capacity", 0.0)) \
+			* float(historical_after.get("utilization", 0.0))
+	if absf(seeded_output - 100.0) > 1.0:
+		_fail("(e) núcleo: dia 0 da mina semeada %.2f t/d != alvo 100" % seeded_output)
+	if historical_output > 6.0:
+		_fail("(e) núcleo: dia 0 da mina histórica %.2f t/d acima do piso" % (
+			historical_output))
+	if _failures.size() == failures_before:
+		print("[mine] (e) semente: 3 pares reais operando (= produção ÷ eficiência), sem dado no último estágio; dia 0 semeada %.1f t/d X histórica %.1f t/d" % [
+			seeded_output, historical_output])
+
+
+func _make_seeded_sim():
+	var sim = EconomySim.new()
+	sim.set_goods(_load_goods())
+	sim.initialize_world(
+		[
+			{"id": "SEED-A", "name": "Semeada", "nation": "AAA",
+				"home_nation": "AAA", "landmass": "north",
+				"population": 2_000_000.0, "x": 2500.0, "y": 600.0},
+			{"id": "SEED-B", "name": "Histórica", "nation": "AAA",
+				"home_nation": "AAA", "landmass": "north",
+				"population": 2_000_000.0, "x": 2500.0, "y": 640.0},
+		],
+		[],
+		[
+			{"city_id": "SEED-A", "id": "SEED-A-IRON", "name": "Semeada — ferro",
+				"resource": "iron", "output_tons_per_day": 100.0,
+				"owner": "private", "stage": 0},
+			{"city_id": "SEED-B", "id": "SEED-B-IRON", "name": "Histórica — ferro",
+				"resource": "iron", "output_tons_per_day": 100.0,
+				"owner": "state", "stage": -1},
+		])
+	for city_id in ["SEED-A", "SEED-B"]:
+		sim.set_suitability(city_id, "iron", 1.0)
+		sim.set_deposit(city_id, "iron", 2000.0, 1.0, 500.0)
+		sim.set_external_demand(city_id, "iron", 1000.0)
+	return sim
+
+
+func _seed_info() -> Dictionary:
+	var doc: Dictionary = _load_json_dict(SEED_PATH)
+	var out := {}
+	var commodities: Dictionary = doc.get("commodities", {})
+	for commodity in commodities:
+		var countries: Dictionary = Dictionary(commodities[commodity]).get(
+			"countries", {})
+		for tag in countries:
+			var country: Dictionary = countries[tag]
+			for row in (country.get("cities", []) as Array):
+				var entry: Dictionary = row
+				out[String(entry.get("city_id", "")) + "|" + String(commodity)] = {
+					"capacity_t_day": float(entry.get("capacity_t_day", 0.0)),
+					"owner": String(country.get("owner", "state")),
+				}
+	return out
+
+
+func _find_entry(entries: Array, key: String) -> Dictionary:
+	for entry in entries:
+		var row: Dictionary = entry
+		if String(row.get("city_id", "")) + "|" + String(
+				row.get("resource", "")) == key:
+			return row
+	return {}
+
+
+func _load_json_array(path: String) -> Array:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_error("mine_stage_test: não abriu " + path)
+		return []
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return parsed if typeof(parsed) == TYPE_ARRAY else []
+
+
+func _load_json_dict(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_error("mine_stage_test: não abriu " + path)
+		return {}
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 
 # ---------------------------------------------------------------------------

@@ -895,15 +895,18 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 			String(building.resource.c_str()));
 		building.output_product = output_product >= 0 ? output_product : 0;
 		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
-		// D-086: mina/poço inicial já EXISTENTE e no último estágio. O estado
-		// inicial da decisão do dono é o mundo com as jazidas "usadas" por uma
-		// construção histórica que produz quase nada (`stage_reserve_kt` = 0);
-		// reaproveitar a produção exige pagar o aprofundamento. `stage` = -1 no
-		// contrato do GeographyService significa "último estágio" (o número mora
-		// aqui, não no GDScript). Dono padrão: Estado.
+		// D-086: mina/poço inicial já EXISTENTE. `stage` = -1 no contrato do
+		// GeographyService significa "último estágio" (o número mora aqui, não
+		// no GDScript): a construção histórica produz no piso (5%).
+		// D-086b: `stage >= 0` é a mina semeada PELA PRODUÇÃO REAL de 2024/2025
+		// (lista de extração, `extraction_2025.json`) — ela nasce operando e a
+		// reserva do estágio é aberta quando a jazida é declarada
+		// (`apply_set_deposit`), porque a semente chega antes do `set_deposit`.
+		// Dono padrão: Estado.
 		{
 			const int stage_in = int(d.get("stage", 0));
 			building.stage = stage_in < 0 ? kMineInitialStage : stage_in;
+			building.stage_pending = d.has("stage") && stage_in >= 0;
 			building.stage_reserve_kt = 0.0;
 			building.stage_mined_kt = 0.0;
 		}
@@ -4770,6 +4773,23 @@ bool EconomySim::apply_set_deposit(const String& city_id, const String& product,
 	deposit.initial_kt = safe_nonneg(reserve_kt);
 	deposit.remaining_kt = deposit.initial_kt;
 	deposit.extracted_kt = 0.0;
+	// D-086b: a mina semeada pela produção real nasce OPERANDO. O contrato do
+	// GeographyService chega no `initialize_world`, antes de a jazida ser
+	// declarada aqui; a reserva do estágio (fatia de referência do núcleo) é
+	// aberta agora, na primeira declaração do depósito. Mina histórica
+	// (`stage_pending == false`) fica no piso até pagar o aprofundamento.
+	for (Building& building : ws_.buildings) {
+		// `stage_pending` primeiro: a maioria das construções não é semente e o
+		// teste barato evita o compare de string por construção/depósito.
+		if (!building.stage_pending || building.city != city->id
+				|| building.output_product != index
+				|| building.stage_reserve_kt > 1e-12) {
+			continue;
+		}
+		if (SimCore::is_mine_building(*city, building)) {
+			sim_core_.set_mine_stage(*city, building, building.stage);
+		}
+	}
 	++status_deposit_version_;
 	return true;
 }
