@@ -576,3 +576,78 @@ ela o ferro vendido vai a **20.215 t/dia** contra 10.939 e a bauxita a **9.348**
 contra 5.637, com o preço já preso no teto. Aumentar a oferta não derruba o
 preço enquanto o teto estiver saturado: isso é a frente de preços, não a
 semente.
+
+### 7.5 Correção da t18: régua da mina e folha pelo uso (D-086b)
+
+A §7.4 fechou o mundo com **37 falências** (limite 28) e atribuiu **+17** à
+semente. A t18 separou o sintoma em duas causas no mesmo lugar — a mina
+semeada — e corrigiu as duas.
+
+**Diagnóstico (365 d real + IA, mesmo mundo, A/B só da semente).**
+
+- **37 = 20 AUS + 17** no resto do mundo; sem a semente, **20** (1 AUS + 19).
+- Por causa: com a semente **23 salário/folha** + 13 demanda/ociosidade + 1
+  demanda sem receita; sem ela, 17 demanda/ociosidade + 3 salário/folha.
+- **15 minas semeadas** fecharam, todas na AUS e todas por **salário/folha**;
+  no fechamento, as que ainda operavam rodavam a **0,136–0,182** de utilização
+  (~0,15) e as paradas a ~0.
+
+Duas falhas compunham o quadro:
+
+1. **Régua errada.** A firma semeada herdava a régua da fazenda
+   (`7,5 empregos/t`, salário `2,0`, opex `2,5`) em vez da régua da mina da
+   tabela que a própria IA usa (`core/economy/ai/industry_templates.gd`):
+   ferro `3,35`/`1,0`, bauxita `2,0`/`1,0`, carvão `1,5`/`1,0`, gás `0,6`/`1,5`.
+   Em folha por t/dia isso é `7,5×2,0 = 15` contra `3,35`, `2,0`, `1,5` e `0,9`
+   — **4,5× no ferro, 7,5× na bauxita, 10× no carvão e 16,7× no gás**.
+2. **Folha sem a venda.** Folha e opex seguiam só o fator de **estágio**
+   (D-086): uma mina no estágio 0 pagava a equipe cheia mesmo operando a 15%
+   da capacidade. A produção já era limitada pela venda; o custo não.
+
+**Correção (arquivos e regra).**
+
+- `core/economy/geography_service.gd`: a mina semeada leva `jobs_per_ton`,
+  `wage` e `opex_per_ton` da tabela da mina; sem entrada na tabela, cai no
+  caminho antigo. Novo parâmetro `use_seed: bool = true` em
+  `resolve_initial_mines` para o A/B (diagnóstico só; o jogo usa o padrão).
+- `gdextension/src/economy_sim.cpp`: `initialize_world` usa os três campos
+  quando presentes; ausentes, `kJobsPerTon`/`kFarmWage`/`kOpexPerTon` como
+  antes (fazendas e minas históricas intactas).
+- `gdextension/src/sim/labor.cpp`: a taxa de operação da mina passa a
+  `min(fator de estágio, last_utilization)`, com o piso `kMineStageFloor` —
+  nos três pontos (folha, opex por cidade e `labor_day`).
+
+**Resultado (365 d real + IA, `--ai=1 --urban=1 --threads=1`).** **24
+falências** (5 na AUS) contra limite 28; **2 semeadas** (AUS-BRO bauxita a
+0,144 e AUS-WEI bauxita a 0,156, ambas por folha). Sem a semente, o mesmo mundo
+dá **17**, então a semente agora custa **+7** em vez de +17. As 2 semeadas que
+ainda fecham são o resíduo para a calibração; não são escondidas nem isentadas.
+Evidência: `tools/_tmp_diag365_fix2.json` (com) e
+`tools/_tmp_diag365_fix2_noseed.json` (sem) — artefatos locais da t18.
+
+**Goldens (regerados neste worktree).** A correção muda o mundo já no dia 1
+(a mina nasce com outra folha), então os dois goldens que contêm semente mudam:
+
+| golden | save_sha256 | status_sha256 | §7.4 (antes) |
+| --- | --- | --- | --- |
+| `A0_60_urban` (60 d, IA + urbano) | `c395f293.` | `bccab3eb.` | `700c8481.` / `357755a3.` |
+| `real_60_ai` (S0, 60 d, IA) | `3ea1f783.` | `e6026b4d.` | `2cfabec1.` / `96b9489c.` |
+
+A confirmação em duas rodadas e a atualização dos demais goldens são feitas na
+base depois do merge (a base já tem goldens da B3).
+
+**Preço de minério — questão de mercado para a calibração.** O teto de 3× da
+§7.4 não é efeito da semente. A pressão de preço (`prices.cpp`) é
+`(desired − latent) / max(stock + supply, 0,001)` e a produção
+(`production.cpp`) soma `desired` no alvo a plena capacidade da usina, antes de
+saber se há estoque/insumo. No A0 do dia 60, a soma de `m_desired` do **ferro**
+nas 834 cidades é **20.821.206,7 t/dia** contra ~17,8 mil t/dia de capacidade
+de mina: a escassez satura o clamp de 3× com **qualquer** oferta de mina, e por
+isso o ferro fica em 3,000× com e sem a semente. Corrigir isso é mudar a regra
+de demanda desejada/pressão (contar só o que a usina consegue comprar e
+processar, ou pressionar por vendas), não a semeadura — fica registrado para a
+fase de calibração.
+
+**Sobre a lista de 8 do `77a452f`.** Aquele diagnóstico listou 8 minas; não foi
+possível reproduzir a lista com a API antiga, então ela é dispensada. O A/B por
+`use_seed` agora mede 15 minas semeadas falidas, todas na AUS.

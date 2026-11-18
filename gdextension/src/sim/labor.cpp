@@ -27,13 +27,21 @@ void SimCore::phase_labor() {
 	// piso do estágio (a equipe mínima do poço quase parado). Fazenda e
 	// indústria ativa seguem em 100%. Folha e opex acompanham a taxa — sem
 	// isso a mina parada pagaria salário cheio e faliria por definição.
+	//
+	// D-086b (correção): a mina também é limitada pela VENDA, não só pelo
+	// estágio. A produção é `min(estágio, uso)` porque o alvo de produção segue
+	// as vendas do dia anterior; pagar a folha cheia de uma mina operando a 15%
+	// da capacidade (semente com capacidade real maior que a demanda local)
+	// quebrava a firma sem que houvesse defeito de preço. O piso do estágio
+	// continua garantindo a equipe mínima do poço parado.
 	auto operating_of = [this](const City& owner_city, const Building& building) {
 		if (building.recipe >= 0 || building.input_product >= 0) {
 			return std::clamp(building.last_utilization, 0.05, 1.0);
 		}
 		if (is_mine_building(owner_city, building)) {
-			return std::clamp(mine_stage_factor(owner_city, building),
-				kMineStageFloor, 1.0);
+			return std::clamp(std::min(
+				mine_stage_factor(owner_city, building),
+				building.last_utilization), kMineStageFloor, 1.0);
 		}
 		return 1.0;
 	};
@@ -427,12 +435,14 @@ double SimCore::labor_day(City& city) {
 			building.wage = contract_wage;
 			// D-086: mina no último estágio opera no piso — a folha acompanha a
 			// taxa de operação (mesma regra do opex em phase_labor).
+			// D-086b: e a venda limita a operação (`min(estágio, uso)`).
 			double operating = 1.0;
 			if (building.recipe >= 0 || building.input_product >= 0) {
 				operating = std::clamp(building.last_utilization, 0.05, 1.0);
 			} else if (is_mine_building(city, building)) {
-				operating = std::clamp(mine_stage_factor(city, building),
-					kMineStageFloor, 1.0);
+				operating = std::clamp(std::min(
+					mine_stage_factor(city, building),
+					building.last_utilization), kMineStageFloor, 1.0);
 			}
 			buildings_payroll += building.jobs * plant_payroll * operating;
 		}
@@ -483,8 +493,9 @@ double SimCore::labor_day(City& city) {
 			if (building.recipe >= 0 || building.input_product >= 0) {
 				operating = std::clamp(building.last_utilization, 0.05, 1.0);
 			} else if (is_mine_building(city, building)) {
-				operating = std::clamp(mine_stage_factor(city, building),
-					kMineStageFloor, 1.0);
+				operating = std::clamp(std::min(
+					mine_stage_factor(city, building),
+					building.last_utilization), kMineStageFloor, 1.0);
 			}
 			double plant_payroll = 0.0;
 			for (int level = 0; level < kEducationLevels; ++level) {
