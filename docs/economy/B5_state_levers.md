@@ -87,7 +87,14 @@ Heurística **determinística** (sem RNG), no fim de `plan_city` (depois de comi
   estrada → energia → água. Custo limitado a `kBudgetShare` (25%) do orçamento nacional;
   uma obra por cidade a cada `kBuildCooldownDays` (30 d).
 
-A IA de **concessão** do governo fica **pendente** nesta entrega (ver §8).
+## 6.1 IA de concessão (item 2)
+
+O governo **concede** mina estatal ociosa a grupo **privado nacional** (heurística
+determinística, constante `kConcessionFloorStageFactor` = 0,10): alvo = mina do Estado com
+`stage_factor <= 0,10` (esgotada, ~o piso da D-086); comprador = grupo `!state_owned` da mesma
+nação com caixa ≥ valor contábil; **nunca estrangeiro** (a política de IDE nunca bloqueia); o
+preço é o valor contábil (`capacity × capital_per_capacity` — nunca abaixo). Uma concessão por
+cidade por cooldown. 365 d: **346 concessões** (o comando, o royalty e o status já existiam).
 
 ## 7. Save v21
 
@@ -96,9 +103,28 @@ A IA de **concessão** do governo fica **pendente** nesta entrega (ver §8).
 - **Migração v20→v21**: os blocos ausentes nascem com **nível 0** e **royalty 0** — nada é
   inventado para trás; o save v20 carrega e vira v21 sem quebrar `status.mode`/chaves antigas.
 
-## 8. Pendências desta entrega
+## 8. Resultados e pendências
 
-- IA do governo **não usa** `concede`/`privatize`/`estatize` ainda (heurística declarada, ver §6,
-  item 2 do plano); o comando, o royalty e o status estão prontos e testados.
+**Medido (b96f28b):**
+- **365 d com IA**: falências **4** (≤ 28), drift **~0** (−0,002, ruído de serialização), infra
+  **1813** obras (754 estrada / 619 luz / 440 água em 693 regiões), **346 concessões** da IA.
+- **Comida**: mínimo por cidade = AFG **0,0** (`pop.satisfaction`, medida crua). É **pré-existente**:
+  a base `b9ebf43` já tinha AFG fora do portão (`docs/economy/perf/b4_world_sweep.json`:
+  `food_avg30` 0,575, importador sem agricultura — ver `GAME_STATE.md` §15). A penalidade de
+  acesso (30% com infra 0) incide sobre a comida da **região** (frete/overhead), não sobre o
+  `pop.satisfaction` urbano medido; o nível inicial de infra é 0 (ausência explícita, sem dado
+  de cobertura carregado — não se inventa dado por país).
+- **Goldens A0/S0 regerados** (2 rodadas idênticas):
+  | golden | save_sha256 antes → depois |
+  |---|---|
+  | `A0_60_urban.json` | `8759c538…` → `bdd355b3…` |
+  | `real_60_ai.json` | `2795407e…` → `9e5dab44…` |
+  | `real_60_noai.json` | `39164a11…` → `0ab8f317…` |
+  | `demo_365_noai.json` | `d189fe63…` → `98bbfde8…` (status `14d2c387…` inalterado) |
+  Mudaram **por desenho** (B5 muda resultado; o demo AGRIA/PORTUS só muda o save, não o status).
+- **CLI×Godot 10 d**: `save` **byte-idêntico** (33.522.730 bytes, `--ai=1`, sem urbano).
+- **Bench 3×60 d**: ver §8.1 (release de medição).
+
+**Pendências:**
 - Nível inicial de infra por dado real de cobertura (eletricidade/água) — geografia futura.
-- Goldens A0/S0 e bench 3×60 d **não regerados** (B5 muda resultado; a bateria que roda está verde).
+- Recalibrar a penalidade de acesso se o dado de cobertura inicial for carregado (hoje 0 → 30%).
