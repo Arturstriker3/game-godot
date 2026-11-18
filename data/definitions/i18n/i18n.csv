@@ -2127,3 +2127,25 @@ trade.tab.orders,Pedidos,Orders,Pedidos
 trade.tab.routes,Rotas,Routes,Rutas
 trade.title,Comércio e logística,Trade and logistics,Comercio y logística
 trade.today,Pedidos do dia,Today's orders,Pedidos del día
+banks.central,Banco central,Central bank,Banco central
+banks.public,Banco público,State-owned bank,Banco público
+banks.private,Banco privado nacional,Domestic private bank,Banco privado nacional
+banks.foreign,Banco estrangeiro,Foreign bank,Banco extranjero
+banks.origin,Origem: {country},Origin: {country},Origen: {country}
+informal.title,Serviços informais,Informal services,Servicios informales
+informal.share,{pct} da força de trabalho,{pct} of the workforce,{pct} de la fuerza laboral
+informal.empty,Sem dado de informalidade para esta cidade.,No informality data for this city.,Sin datos de informalidad para esta ciudad.
+informal.category.street_vending,Comércio ambulante,Street vending,Comercio ambulante
+informal.category.street_food,Comida de rua,Street food,Comida callejera
+informal.category.informal_transport,Transporte informal de passageiros,Informal passenger transport,Transporte informal de pasajeros
+informal.category.informal_freight,Transporte informal de carga,Informal goods haulage,Transporte informal de carga
+informal.category.informal_construction,Construção e reforma informal,Informal construction and repair,Construcción y reforma informal
+informal.category.domestic_work,Serviço doméstico,Domestic work,Trabajo doméstico
+informal.category.personal_services,Serviços pessoais de rua,Street personal services,Servicios personales en la calle
+informal.category.street_parking_guarding,Guarda de carros e estacionamento de rua,Street parking and car guarding,Cuidado de autos en la calle
+informal.category.waste_picking,Catação e reciclagem,Waste picking and recycling,Reciclaje y recolección de residuos
+informal.category.subsistence_farming,Agricultura de subsistência,Subsistence farming,Agricultura de subsistencia
+informal.category.informal_repair,Reparos e manutenção informal,Informal repair and maintenance,Reparaciones informales
+informal.category.home_production,Produção domiciliar e artesanato,Home-based production and handicrafts,Producción domiciliaria y artesanía
+informal.category.informal_retail_kiosk,Pequeno comércio e quiosque,Informal shops and kiosks,Comercio en quioscos y tiendas
+informal.category.day_labor,Jornal diário e trabalho casual,Casual day labour,Jornal diario y trabajo casual
