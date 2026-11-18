@@ -14,19 +14,44 @@ Fontes (cache bruto em tools/_tmp_state_infra_raw/, só leitura):
 CC BY-NC-SA e serve apenas de conferência — não entra no build.
 As séries IS.ROD.* (extensão de estrada) estão descontinuadas e são ignoradas.
 
-Uso: python tools/build_state_infrastructure.py
-Saída determinística (bytes idênticos entre execuções).
+Uso:
+  python tools/build_state_infrastructure.py                 # lê o cache local
+  python tools/build_state_infrastructure.py --fetch         # baixa o que faltar no cache
+  python tools/build_state_infrastructure.py --fetch --force-fetch  # rebaixa os 7
+  python tools/build_state_infrastructure.py --raw-dir DIR   # outro cache (leitura/escrita)
+
+O cache bruto (`--raw-dir`, padrão tools/_tmp_state_infra_raw) é intermediário e NÃO é
+versionado; com `--fetch` ele é reconstruído do World Bank WDI (CC BY 4.0). A API é
+chamada com per_page=20000; se ela responder `meta.pages > 1` o construtor FALHA com
+mensagem clara (não pagina: todas as séries usadas vêm em 1 página, 17.556 linhas no
+maior, já com a série histórica). A API devolve a série histórica completa (desde 1960);
+o build usa só 2010–2025. O download pede gzip (só transporte); o arquivo gravado é o
+JSON decodificado, sem reformatar.
+
+Saída determinística (bytes idênticos entre execuções, com ou sem cache novo).
 """
 
 from __future__ import annotations
 
+import argparse
+import gzip
 import json
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "tools" / "_tmp_state_infra_raw"
 OUT = ROOT / "data" / "definitions" / "scenario" / "state_infrastructure_2026.json"
+
+FETCH_URL = (
+    "https://api.worldbank.org/v2/country/all/indicator/{indicator}"
+    "?format=json&per_page=20000"
+)
+FETCH_TIMEOUT_S = 120
+FETCH_ATTEMPTS = 2
+USER_AGENT = "OpenGS-Game/1.0 (state_infrastructure builder)"
 
 EDITION = "2026"
 RETRIEVED = "2026-11-18"
@@ -121,7 +146,14 @@ WATER_SOURCES = {
 }
 GHO_CROSS_CHECK_ID = "who_unicef_jmp_wsh_water_basic"
 ROAD_SOURCE_ID = "worldbank_lp_lpi_infr_xq"
-ROAD_RAW = "wb_LP.LPI.INFR.XQ.json"
+ROAD_INDICATOR = "LP.LPI.INFR.XQ"
+ROAD_RAW = f"wb_{ROAD_INDICATOR}.json"
+
+# Os 7 indicadores baixados por --fetch (o GHO e as séries IS.ROD.* ficam de fora).
+WDI_INDICATORS = tuple(
+    sorted({*ELECTRICITY_INDICATORS.values(), *WATER_INDICATORS.values(), ROAD_INDICATOR})
+)
+RAW_FILES = tuple(f"wb_{indicator}.json" for indicator in WDI_INDICATORS)
 
 STATE_YEAR_FIELDS = (
     "electricity_year_total",
@@ -510,7 +542,108 @@ STATE_FIELDS = (
 )
 
 
-def main() -> int:
+def fetch_indicator(indicator: str, destination: Path, force: bool) -> bool:
+    """Baixa um indicador para `destination`. Devolve False quando usa o cache."""
+    if destination.exists() and not force:
+        print(f"[fetch] cache {destination}")
+        return False
+    url = FETCH_URL.format(indicator=indicator)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip",
+        },
+    )
+    last_error: Exception | None = None
+    text = ""
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=FETCH_TIMEOUT_S) as response:
+                payload = response.read()
+                if response.headers.get("Content-Encoding") == "gzip":
+                    payload = gzip.decompress(payload)
+                text = payload.decode("utf-8")
+            break
+        except (urllib.error.URLError, OSError, UnicodeDecodeError) as error:
+            last_error = error
+            print(f"[fetch] {indicator}: tentativa {attempt}/{FETCH_ATTEMPTS} falhou: {error}")
+    else:
+        raise SystemExit(
+            f"[fetch] {indicator}: falhou após {FETCH_ATTEMPTS} tentativas ({last_error})"
+        )
+
+    try:
+        payload = json.loads(text)
+    except ValueError as error:
+        raise SystemExit(f"[fetch] {indicator}: resposta não é JSON ({error})") from error
+    pages = 1
+    if isinstance(payload, list) and payload and isinstance(payload[0], dict):
+        pages = int(payload[0].get("pages") or 1)
+    if pages > 1:
+        raise SystemExit(
+            f"[fetch] {indicator}: API devolveu {pages} páginas com per_page=20000; "
+            "este construtor não pagina — aumente per_page em FETCH_URL"
+        )
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if not text.endswith("\n"):
+        text += "\n"
+    destination.write_text(text, encoding="utf-8", newline="\n")
+    print(f"[fetch] wrote {destination} ({len(text)} chars)")
+    return True
+
+
+def fetch_cache(raw_dir: Path, force: bool) -> None:
+    for indicator in WDI_INDICATORS:
+        fetch_indicator(indicator, raw_dir / f"wb_{indicator}.json", force)
+
+
+def missing_raw_files(raw_dir: Path) -> list[str]:
+    return [name for name in RAW_FILES if not (raw_dir / name).is_file()]
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Gera data/definitions/scenario/state_infrastructure_2026.json."
+    )
+    parser.add_argument(
+        "--raw-dir",
+        type=Path,
+        default=RAW,
+        help="cache bruto do World Bank (padrão: tools/_tmp_state_infra_raw)",
+    )
+    parser.add_argument(
+        "--fetch",
+        action="store_true",
+        help="baixa do World Bank WDI os indicadores que faltarem no --raw-dir",
+    )
+    parser.add_argument(
+        "--force-fetch",
+        action="store_true",
+        help="rebaixa todos os indicadores, mesmo os que já existem (implica --fetch)",
+    )
+    args = parser.parse_args(argv)
+    if not args.raw_dir.is_absolute():
+        args.raw_dir = (ROOT / args.raw_dir).resolve()
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    global RAW
+    args = parse_args(argv)
+    RAW = args.raw_dir
+    if args.fetch or args.force_fetch:
+        fetch_cache(RAW, force=args.force_fetch)
+    missing = missing_raw_files(RAW)
+    if missing:
+        raise SystemExit(
+            f"[build] cache incompleto em {RAW}: falta(m) {', '.join(missing)}; "
+            "rode com --fetch para baixar"
+        )
+    print(f"[build] raw dir: {RAW}")
+
     state_regions = load_json(ROOT / "data" / "definitions" / "population" / "state_regions.json")
     states_in = state_regions["states"]
     nations_list = load_json(ROOT / "data" / "definitions" / "scenario" / "nations.json")

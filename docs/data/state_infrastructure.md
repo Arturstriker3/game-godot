@@ -139,20 +139,28 @@ deste dado.
 
 ## 5. Cobertura
 
-- **Estados**: 4.226 no total; **4.169 com observação** e **57 `no_data`** (todos com
-  percentuais `null`, níveis 0 e `reason` registrado — o mesmo texto da nação).
-- **Nações**: 179 em `nations.json` → **175 com eletricidade, 174 com água, 163 com
-  estrada**; **9 sem nenhuma observação**.
-  - Sem nenhum dado: `SAH` (Saara Ocidental), `SOL` (Somalilândia), `TWN` (Taiwan),
-    `XKX` (Kosovo) — não estão nas séries; e os 5 territórios que só existem em
-    `state_regions.json` (`ATA` Antártida, `CLP` Clipperton, `CSI` Ilhas do Mar de
-    Coral, `IOA` Ilha Christmas, `KAS` Caxemira).
-  - Sem estrada: 16 nações — 12 pequenas/insulares sem rodada do LPI (com água/luz) e as
-    4 `SAH`, `SOL`, `TWN`, `XKX`.
-  - Sem água: `NIC` (Nicarágua) não tem observação na série usada.
-- **Fallback total em vez de rural**: 2 nações na energia (`GRD`, `PRK`) e 16 na água
-  (BHR, BHS, BRB, BRN, GRD, ITA, JPN, KNA, KOR, KWT, LBN, LBY, QAT, SGP, SVN, VEN) — em
-  geral Estados pequenos/urbanizados, onde a série rural não é publicada separada.
+Duas bases diferentes, sempre nomeadas: o bloco `nations` tem **184** entradas (as **179**
+nações de `scenario/nations.json` + **5** territórios que só existem em
+`state_regions.json`); o bloco `states` tem **4.226** ids.
+
+- **Estados** (base 4.226 de `state_regions.json`): **4.169 `observed_national`** e
+  **57 `no_data`** (todos com percentuais `null`, níveis 0 e `reason` registrado — o
+  mesmo texto da nação).
+- **Nações** (base 184 no bloco `nations`, das quais 179 são nações do jogo): **175 com
+  eletricidade, 174 com água, 163 com estrada**.
+  - Sem nenhuma observação (base 184): **9** — as 4 nações do jogo `SAH` (Saara
+    Ocidental), `SOL` (Somalilândia), `TWN` (Taiwan) e `XKX` (Kosovo), que não estão nas
+    séries, mais os 5 territórios que só existem em `state_regions.json` (`ATA`
+    Antártida, `CLP` Clipperton, `CSI` Ilhas do Mar de Coral, `IOA` Ilha Christmas, `KAS`
+    Caxemira).
+  - Sem estrada (base 179 nações do jogo): **16** = **12** pequenas/insulares com água/luz
+    e sem rodada do LPI + as **4** do jogo sem nada (`SAH`, `SOL`, `TWN`, `XKX`).
+  - Sem água, além das 9 sem nada (base 184): `NIC` (Nicarágua) não tem observação na
+    série usada.
+- **Fallback total em vez de rural** (base 184): **2** nações na energia (`GRD`, `PRK`) e
+  **16** na água (BHR, BHS, BRB, BRN, GRD, ITA, JPN, KNA, KOR, KWT, LBN, LBY, QAT, SGP,
+  SVN, VEN) — em geral Estados pequenos/urbanizados, onde a série rural não é publicada
+  separada.
 
 ### Exemplos (valores nacionais, propagados aos estados)
 
@@ -178,16 +186,34 @@ deste dado.
    campo; nada foi extrapolado.
 4. **Uso no jogo**: não ligado. Ligar exige decisão de calibração (penalidade de acesso,
    ganho de produtividade) e regeneração de goldens — é da simulação.
-5. O cache bruto da coleta (`tools/_tmp_state_infra_raw/`) **não** é versionado; o
-   construtor lê apenas esse cache (não há `--fetch`: ele não baixa nada, ver §7).
+5. O cache bruto da coleta (`tools/_tmp_state_infra_raw/`) **não** é versionado: é
+   intermediário e reconstruível por `--fetch` (§7). Sem ele, o construtor falha
+   listando o arquivo que falta.
 
 ## 7. Como regenerar
 
 ```powershell
 $py = "C:\Users\artur\AppData\Local\Python\bin\python3.exe"
+& $py tools/build_state_infrastructure.py --fetch   # baixa do World Bank o que faltar no cache
 & $py tools/build_state_infrastructure.py           # reconstrói do cache (determinístico)
+& $py tools/build_state_infrastructure.py --fetch --force-fetch   # rebaixa os 7
+& $py tools/build_state_infrastructure.py --raw-dir "$env:TEMP\ogs_infra_raw"  # outro cache
 & $py tools/validate_state_infrastructure.py        # exit 0 = OK
 ```
+
+- **Endpoint**: `https://api.worldbank.org/v2/country/all/indicator/{INDICATOR}?format=json&per_page=20000`,
+  um arquivo `wb_{INDICATOR}.json` por indicador; os **7** são `EG.ELC.ACCS.ZS/.UR.ZS/.RU.ZS`,
+  `SH.H2O.BASW.ZS/.UR.ZS/.RU.ZS` e `LP.LPI.INFR.XQ`. World Bank WDI, **CC BY 4.0**;
+  coleta em **2026-11-18**.
+- **Cache**: `--raw-dir` (padrão `tools/_tmp_state_infra_raw/`) é **intermediário e não
+  versionado**; `--fetch` baixa só o que falta, `--force-fetch` rebaixa os 7. Sem
+  `--fetch`, o construtor lê apenas o cache e falha listando o arquivo que falta.
+- A API devolve a série histórica completa (desde 1960); o build usa só a janela
+  **2010–2025** (ano mais recente com valor por série). Cada download tem timeout de
+  120 s e 1 retry; o transporte pede gzip. Se a API responder `meta.pages > 1`, o
+  construtor falha com mensagem clara em vez de paginar.
+- O GHO/WHO (`WSH_WATER_BASIC`, CC BY-NC-SA) **não** é baixado nem usado no build, e as
+  séries `IS.ROD.*` descontinuadas ficam de fora.
 
 Saída determinística: duas execuções produzem o mesmo SHA-256
 (`b139ea921652fdc691be835b00d635089c336988486bfecfaa2e58782c31b586`).
