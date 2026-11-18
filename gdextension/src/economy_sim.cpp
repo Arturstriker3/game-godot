@@ -925,11 +925,23 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 		// fazendas iniciais no dia 61.
 		const double aptitude = std::clamp(
 			safe_nonneg(static_cast<double>(d.get("aptitude", 1.0))), 0.0, 1.0);
+		// D-086b: a semente de produção real informa a régua de engenharia da
+		// MINA (a mesma tabela que a IA usa para abrir/expandir mina). Sem os
+		// campos, o caminho legado (fazenda: 7,5 empregos/t, 2,5 opex/t) fica
+		// intacto — fazendas e minas históricas não mudam. A mina semeada com a
+		// régua da fazenda pagava ~2-4x a folha de uma mina igual da IA e
+		// falia com a venda da cidade limitada pela demanda local.
+		const double jobs_per_ton = d.has("jobs_per_ton")
+			? safe_nonneg(static_cast<double>(d["jobs_per_ton"])) : kJobsPerTon;
+		const double opex_per_ton = d.has("opex_per_ton")
+			? safe_nonneg(static_cast<double>(d["opex_per_ton"])) : kOpexPerTon;
+		const double wage_in = d.has("wage")
+			? safe_nonneg(static_cast<double>(d["wage"])) : kFarmWage;
 		building.capacity = capacity;
 		building.input_per_output = 0.0;
-		building.jobs = capacity * aptitude * kJobsPerTon;
-		building.wage = kFarmWage;
-		building.opex = capacity * aptitude * kOpexPerTon;
+		building.jobs = capacity * aptitude * jobs_per_ton;
+		building.wage = wage_in;
+		building.opex = capacity * aptitude * opex_per_ton;
 		ws_.buildings.push_back(std::move(building));
 	}
 
