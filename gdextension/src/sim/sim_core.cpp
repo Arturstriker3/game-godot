@@ -482,15 +482,20 @@ void SimCore::phase_accounting() {
 			if (building.royalty <= 0.0 || building.owner == "state") {
 				continue;
 			}
-			const double royalty_paid = std::min(
+			// O royalty é limitado TAMBÉM pelo caixa da firma (a fonte de onde
+			// o lucro do concessionário sai): sem o teto, o clamp de
+			// `max(0, ...)` criava dinheiro quando a firma tinha menos caixa
+			// que o royalty (o governo recebia o cheio, a firma pagava menos).
+			const double royalty_paid = std::min({
 				building.revenue * building.royalty,
-				std::max(0.0, building.profit));
+				std::max(0.0, building.profit),
+				std::max(0.0, city.firm_cash)});
 			if (royalty_paid <= 0.0) {
 				continue;
 			}
 			building.profit -= royalty_paid;
 			building.royalty_paid = royalty_paid;
-			city.firm_cash = std::max(0.0, city.firm_cash - royalty_paid);
+			city.firm_cash -= royalty_paid;
 			city.government_budget += royalty_paid;
 		}
 
@@ -766,7 +771,8 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 	const double drift = std::abs(money_after - money_before);
 	const double tolerance = std::max(1e-3, std::abs(money_before) * 1e-12);
 	if (!std::isfinite(money_after) || drift > tolerance) {
-		violations.push_back("dinheiro não conservado: antes="
+		violations.push_back("dinheiro não conservado: dia="
+			+ std::to_string(ws_.day) + " antes="
 			+ std::to_string(money_before) + " depois="
 			+ std::to_string(money_after) + " drift=" + std::to_string(drift));
 	}

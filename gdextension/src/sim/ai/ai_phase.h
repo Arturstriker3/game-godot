@@ -115,6 +115,10 @@ AiActionResult ai_emit_deepen(AiContext& ctx, const std::string& city,
 // s0 cidade, i0 tipo (0 estrada, 1 energia, 2 água).
 AiActionResult ai_emit_infra(AiContext& ctx, const std::string& city,
 		int infra_type);
+// B5: concessão de mina/fazenda estatal a grupo (comando `concede`).
+// s0 cidade, s1 prédio, s2 grupo, v0 royalty (<= 0 usa o padrão).
+AiActionResult ai_emit_concede(AiContext& ctx, const std::string& city,
+		const std::string& building, const std::string& group, double royalty);
 AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& resource, int input,
 		int output, double capacity, double jobs, double wage, double opex,

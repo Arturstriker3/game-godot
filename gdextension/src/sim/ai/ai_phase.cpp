@@ -114,6 +114,35 @@ AiActionResult ai_emit_infra(AiContext& ctx, const std::string& city,
 	return out;
 }
 
+AiActionResult ai_emit_concede(AiContext& ctx, const std::string& city,
+		const std::string& building, const std::string& group, double royalty) {
+	Command cmd;
+	cmd.type = CommandType::Concede;
+	cmd.day = ctx.day;
+	cmd.s[0] = city;
+	cmd.s[1] = building;
+	cmd.s[2] = group;
+	cmd.v[0] = royalty;
+	const uint64_t seq = ctx.queue.push(cmd);
+
+	AiActionResult out;
+	Command taken;
+	if (!take_own(ctx.queue, seq, taken)) {
+		out.error = "comando perdido na fila";
+		return out;
+	}
+	const ConcedeResult result = action_concede(ctx.ws, ctx.core, city,
+		building, group, royalty);
+	taken.apply_day = ctx.day;
+	ctx.queue.log(taken);
+
+	out.created = result.ok;
+	out.cost = result.price;
+	out.error = result.error;
+	out.owner = result.owner;
+	return out;
+}
+
 AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& resource, int input,
 		int output, double capacity, double jobs, double wage, double opex,

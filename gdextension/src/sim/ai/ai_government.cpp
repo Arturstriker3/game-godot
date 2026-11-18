@@ -444,6 +444,46 @@ void plan_city(AiContext& ctx, int city_index) {
 			}
 		}
 	}
+
+	// 4. Concessão de mina estatal ociosa (B5). Determinística:
+	//    - alvo: mina do ESTADO com stage_factor <= kConcessionFloorStageFactor
+	//      (esgotada/ociosa, produz ~o piso de 5% — mesma régua da D-086);
+	//    - comprador: grupo PRIVADO NACIONAL (origin == nação, não estatal);
+	//      NUNCA estrangeiro (a política de IDE nunca bloqueia a concessão);
+	//    - preço = valor contábil (action_concede valida o caixa do comprador —
+	//      nunca concede abaixo do valor contábil);
+	//    - uma concessão por cidade por cooldown (mesmo gate das obras).
+	if (build_cooldown_ready(ctx, city_id)) {
+		for (int bi = ai_b_begin(view, city_index);
+				bi < ai_b_end(view, city_index); ++bi) {
+			if (view.b_owner[static_cast<std::size_t>(bi)] != "state") {
+				continue;
+			}
+			if (view.b_stage_factor[static_cast<std::size_t>(bi)]
+					> kConcessionFloorStageFactor) {
+				continue;  // mina produtiva ou construção que não é mina
+			}
+			const std::string building_id =
+				view.b_id[static_cast<std::size_t>(bi)];
+			for (const AiGroupRow& candidate : view.groups) {
+				if (candidate.state_owned
+						|| candidate.origin_nation != city.nation) {
+					continue;  // só grupo privado NACIONAL
+				}
+				const AiActionResult concede_result = ai_emit_concede(
+					ctx, city_id, building_id, candidate.id, 0.0);
+				if (concede_result.error.empty()) {
+					ctx.state.last_build_day[city_id] = ctx.day;
+					return;
+				}
+				// Rejeitado por caixa: tenta o próximo grupo nacional; erro de
+				// outro tipo (ex.: não estatal) não adianta repetir nesta mina.
+				if (concede_result.error != "caixa insuficiente do concessionário") {
+					break;
+				}
+			}
+		}
+	}
 }
 
 } // namespace

@@ -6292,71 +6292,20 @@ Dictionary EconomySim::apply_concede(const String& city_id,
 		const String& building_id, const String& group_id,
 		double royalty_rate) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::ConcedeResult outcome = ogs::action_concede(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()),
+		std::string(group_id.utf8().get_data()), royalty_rate);
 	Dictionary result;
-	result["ok"] = false;
-	result["error"] = "";
-	City* city = find_city(std::string(city_id.utf8().get_data()));
-	if (city == nullptr) {
-		result["error"] = "cidade desconhecida";
-		return result;
+	result["ok"] = outcome.ok;
+	result["price"] = outcome.price;
+	result["royalty"] = outcome.royalty;
+	result["error"] = String(outcome.error.c_str());
+	if (!outcome.owner.empty()) {
+		result["owner"] = String(outcome.owner.c_str());
 	}
-	Building* building = find_building(city->id,
-		std::string(building_id.utf8().get_data()));
-	if (building == nullptr) {
-		result["error"] = "ativo desconhecido";
-		return result;
-	}
-	if (building->owner != "state") {
-		result["error"] = "ativo não é estatal";
-		return result;
-	}
-	// Concessão vale para extração PRIMÁRIA (mina/fazenda, sem receita fabril).
-	if (building->recipe >= 0 || building->input_product >= 0) {
-		result["error"] = "ativo não é mina/fazenda";
-		return result;
-	}
-	Group* buyer = find_group(std::string(group_id.utf8().get_data()));
-	if (buyer == nullptr) {
-		result["error"] = "concessionário desconhecido";
-		return result;
-	}
-	const bool foreign = buyer->origin_nation != city->nation;
-	if (foreign) {
-		const std::string sector = building->output_product >= 0
-			&& building->output_product < static_cast<int>(ws_.product_sectors.size())
-			? ws_.product_sectors[static_cast<std::size_t>(building->output_product)]
-			: std::string();
-		if (fdi_mode(city->nation, sector) == 3) {
-			result["error"] = "setor fechado ao capital estrangeiro";
-			return result;
-		}
-	}
-	const double price = building->capacity * building->capital_per_capacity;
-	if (buyer->cash + 1e-9 < price) {
-		result["error"] = "caixa insuficiente do concessionário";
-		return result;
-	}
-	// Royalty declarado: o parâmetro passado (ou o padrão kConcessionRoyaltyRate
-	// quando ausente/<= 0). Só usa o padrão para valor inválido.
-	const double rate = std::isfinite(royalty_rate) && royalty_rate > 0.0
-		? std::clamp(royalty_rate, 0.0, 1.0)
-		: ogs::kConcessionRoyaltyRate;
-	buyer->cash -= price;
-	buyer->capex_total += price;
-	city->government_budget += price;
-	building->owner = foreign
-		? "foreign:" + buyer->id + "@" + buyer->origin_nation
-		: "national:" + buyer->id;
-	building->local_share = 0.0;
-	building->partner_group.clear();
-	building->royalty = rate;
-	result["ok"] = true;
-	result["price"] = price;
-	result["royalty"] = rate;
-	result["owner"] = String(building->owner.c_str());
 	return result;
 }
-
 Dictionary EconomySim::apply_nationalize(const String& city_id,
 		const String& building_id) {
 	const std::lock_guard<std::recursive_mutex> lock(mutex_);

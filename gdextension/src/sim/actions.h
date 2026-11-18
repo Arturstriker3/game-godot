@@ -112,4 +112,18 @@ struct InfraResult {
 InfraResult action_infra_build(WorldState& ws, SimCore& core,
 		const std::string& city_id, int infra_type, bool instant_construction);
 
+// B5 — CONCESSÃO de mina/fazenda estatal a grupo (nacional/estrangeiro) com
+// royalty sobre a produção. Transferência de dinheiro conservada (comprador
+// paga o valor contábil ao governo). `royalty_rate` <= 0 usa kConcessionRoyaltyRate.
+struct ConcedeResult {
+	bool ok = false;
+	double price = 0.0;
+	double royalty = 0.0;
+	std::string owner;
+	std::string error;
+};
+ConcedeResult action_concede(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& group_id, double royalty_rate);
+
 } // namespace ogs

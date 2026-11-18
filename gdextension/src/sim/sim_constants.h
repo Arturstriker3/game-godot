@@ -248,6 +248,10 @@ constexpr double kInfraExodusWeight[kInfraTypeCount] = {0.50, 0.30, 0.20};
 // mantém a renda do royalty mesmo sem operar a mina).
 // ---------------------------------------------------------------------------
 constexpr double kConcessionRoyaltyRate = 0.05;
+// IA do governo: fator de estágio ABAIXO do qual uma mina estatal é considerada
+// ociosa/esgotada e vira candidata a concessão (produz ~o piso de 5%). É a
+// mesma régua do piso da D-086; declarado para a heurística ficar determinística.
+constexpr double kConcessionFloorStageFactor = 0.10;
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.

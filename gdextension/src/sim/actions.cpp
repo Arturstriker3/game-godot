@@ -870,4 +870,70 @@ InfraResult action_infra_build(WorldState& ws, SimCore& core,
 	return result;
 }
 
+// ---------------------------------------------------------------------------
+// B5 — concessão de mina/fazenda estatal a grupo (F9) com royalty.
+// ---------------------------------------------------------------------------
+ConcedeResult action_concede(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		const std::string& group_id, double royalty_rate) {
+	ConcedeResult result;
+	City* city = core.find_city(city_id);
+	if (city == nullptr) {
+		result.error = "cidade desconhecida";
+		return result;
+	}
+	Building* building = find_building(ws, city->id, building_id);
+	if (building == nullptr) {
+		result.error = "ativo desconhecido";
+		return result;
+	}
+	if (building->owner != "state") {
+		result.error = "ativo não é estatal";
+		return result;
+	}
+	// Concessão vale para extração PRIMÁRIA (mina/fazenda, sem receita fabril).
+	if (building->recipe >= 0 || building->input_product >= 0) {
+		result.error = "ativo não é mina/fazenda";
+		return result;
+	}
+	Group* buyer = core.find_group(group_id);
+	if (buyer == nullptr) {
+		result.error = "concessionário desconhecido";
+		return result;
+	}
+	const bool foreign = buyer->origin_nation != city->nation;
+	if (foreign) {
+		const std::string sector = building->output_product >= 0
+			&& building->output_product < static_cast<int>(ws.product_sectors.size())
+			? ws.product_sectors[static_cast<std::size_t>(building->output_product)]
+			: std::string();
+		if (core.fdi_mode(city->nation, sector) == 3) {
+			result.error = "setor fechado ao capital estrangeiro";
+			return result;
+		}
+	}
+	const double price = building->capacity * building->capital_per_capacity;
+	if (buyer->cash + 1e-9 < price) {
+		result.error = "caixa insuficiente do concessionário";
+		return result;
+	}
+	const double rate = std::isfinite(royalty_rate) && royalty_rate > 0.0
+		? std::clamp(royalty_rate, 0.0, 1.0)
+		: kConcessionRoyaltyRate;
+	buyer->cash -= price;
+	buyer->capex_total += price;
+	city->government_budget += price;
+	building->owner = foreign
+		? "foreign:" + buyer->id + "@" + buyer->origin_nation
+		: "national:" + buyer->id;
+	building->local_share = 0.0;
+	building->partner_group.clear();
+	building->royalty = rate;
+	result.ok = true;
+	result.price = price;
+	result.royalty = rate;
+	result.owner = building->owner;
+	return result;
+}
+
 } // namespace ogs
