@@ -1,7 +1,7 @@
 ---
 description: Gerente de simulação do OpenGS — dono do núcleo econômico C++/GDScript; planeja, quebra em partes pequenas, delega a executor Flash, manda um Flash verificar, consolida e só então commita.
 mode: all
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-flash
 steps: 250
 permissions:
   - action: edit
