@@ -4865,6 +4865,14 @@ void EconomySim::apply_set_income_gini(const String& city_id, double gini) {
 	// [0, 1]: 0 desliga (legado por escolaridade); dados corrompidos não viram
 	// sigma negativo. A faixa real estimada por região fica em 0,33–0,47.
 	city->income_gini = std::clamp(gini, 0.0, 1.0);
+	// B2 (correção): o Gini chega DEPOIS do `initialize_world` (o GDScript
+	// declara a renda no `apply_to_sim`), mas os quintis já foram semeados pela
+	// proxy com Gini zero — repartição igual, que zerava life/luxury na classe
+	// publicada. Re-semeia a proxy com o Gini declarado; a repartição de DADO
+	// observado (set_city_strata) não é tocada.
+	if (city->pop.strata_ready && !city->pop.strata_from_data) {
+		sim_core_.seed_strata(*city, nullptr);
+	}
 	// Recalcula as classes na hora: o status lido antes do primeiro tick já
 	// publica a repartição ancorada (se o mundo ainda não tem preços, cai no
 	// espelho dos estratos, sem inventar Gini).

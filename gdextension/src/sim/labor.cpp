@@ -531,35 +531,17 @@ double SimCore::labor_day(City& city) {
 void SimCore::refresh_income_classes(City& city) const {
 	Pop& pop = city.pop;
 	const double population = std::max(0.0, city.simulation_population);
-	// B2: com os quintis semeados, a classe de consumo publicada (basic/life/
-	// luxury) É DERIVADA DOS ESTRATOS — população de cada estrato pelo nível
-	// que a sua renda alcançou. Nenhum Gini-alvo participa: o Gini que o
-	// status publica é medido das rendas (`strata_gini`), e a classe é só a
-	// leitura agregada que a UI/serviços herdaram da F7.
-	if (pop.strata_ready) {
-		double basic = 0.0;
-		double life = 0.0;
-		double luxury = 0.0;
-		for (int s = 0; s < kIncomeStrata; ++s) {
-			const double people = std::max(0.0, pop.stratum_people[s]);
-			const int level = pop.stratum_level[s];
-			if (level >= kMaxNeedsLevels) {
-				luxury += people;
-			} else if (level >= 2) {
-				life += people;
-			} else {
-				basic += people;
-			}
-		}
-		pop.class_population[0] = basic;
-		pop.class_population[1] = life;
-		pop.class_population[2] = luxury;
-		pop.class_income_level[0] = 1;
-		pop.class_income_level[1] = 2;
-		pop.class_income_level[2] = kMaxNeedsLevels;
-		(void)population;
-		return;
-	}
+	// B2/F7 (correção): a classe de consumo PUBLICADA (basic/life/luxury) é o
+	// contrato legado que serviços (split da demanda das famílias) e a IA de
+	// investimento consomem. Ela NÃO pode ser derivada do `stratum_level` do
+	// dia: o nível é o teto que o quintil conseguiu pagar HOJE (flutua com o
+	// caixa do dia e pode zerar num mundo de renda realizada baixa), e a
+	// primeira versão da B2 publicava 100% basic (serviços liam a classe
+	// zerada pelo `phase_reset`). A leitura segue a âncora do F7 — índice de
+	// renda real da cidade (`external_income_index`, dado de PIB PPP) e Gini
+	// declarado —, enquanto o CONSUMO, a poupança e o patrimônio continuam
+	// por QUINTIL (B2). O Gini que o status publica como medido
+	// (`strata_gini`) continua sendo o dos estratos.
 	const double gini = std::clamp(city.income_gini, 0.0, 1.0);
 	double basic_cost = 0.0;
 	if (population > 1e-9) {

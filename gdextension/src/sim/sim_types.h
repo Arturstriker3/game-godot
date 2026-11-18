@@ -578,6 +578,11 @@ namespace ogs {
 		// Teto de consumo alcançado pelo estrato hoje (0 = nenhum, 1 = basic,
 		// 2 = life, 3 = luxury).
 		int stratum_level[kIncomeStrata] = {};
+		// B2 (correção): a repartição vigente veio de DADO observado
+		// (`set_city_strata`) e não da proxy lognormal do Gini. Só a proxy é
+		// re-semeada quando o Gini é declarado depois do `initialize_world`.
+		// Não entra no save: é derivado (o load mantém a repartição gravada).
+		bool strata_from_data = false;
 		// Fator de ciclo de vida da taxa de poupança por faixa etária da
 		// cidade (B1): crianças 0, jovens/idiosos < meia-idade. Publicado
 		// para a validação "meia-idade poupa mais".

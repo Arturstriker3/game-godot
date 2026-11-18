@@ -83,6 +83,9 @@ void normalize(double* values, int count) {
 // definition); o dado entra na repartição da RENDA, não no tamanho do grupo.
 void SimCore::seed_strata(City& city, const double* shares) {
 	Pop& pop = city.pop;
+	// B2 (correção): registra a ORIGEM da repartição. `set_income_gini` só
+	// re-semeia a proxy; quintis observados nunca são sobrescritos por ela.
+	pop.strata_from_data = shares != nullptr;
 	double income_share[kIncomeStrata];
 	if (shares != nullptr) {
 		for (int s = 0; s < kIncomeStrata; ++s) {
@@ -113,16 +116,17 @@ void SimCore::seed_strata(City& city, const double* shares) {
 		} else {
 			double sigma = std::sqrt(2.0) * normal_quantile(0.5 * (1.0 + gini));
 			sigma = std::clamp(sigma, 0.15, 1.50);
-			// Média 1 em unidades relativas: mu = -sigma²/2.
-			const double mu = -0.5 * sigma * sigma;
+			// Média 1 em unidades relativas (μ = −σ²/2 não entra na fração de
+			// cada quintil: as duas pontas se cancelam na normalização).
 			double previous = 0.0;
 			for (int s = 0; s < kIncomeStrata; ++s) {
 				const double upper = double(s + 1) / double(kIncomeStrata);
-				const double z_prev = (std::log(
-					std::max(1e-9, normal_quantile(previous))) - mu) / sigma;
-				const double z_next = (std::log(
-					std::max(1e-9, normal_quantile(upper))) - mu) / sigma;
-				// E[X · 1{q<X<Q}] = exp(mu+Ïƒ²/2)·(Î¦(z−σ) fecha o intervalo).
+				// E[X · 1{q_prev<X<Q_next}] / E[X] = Φ(z_next − σ) − Φ(z_prev − σ),
+				// com z = Φ⁻¹(q) porque x_q = exp(μ + σ·z). A versão anterior
+				// tomava log(Φ⁻¹(q)) — Φ⁻¹ é negativo para q < 0,5 — e devolvia
+				// quintis 0,0 nas duas metades pobres (Q5 = 73% com Gini 0,41).
+				const double z_prev = normal_quantile(previous);
+				const double z_next = normal_quantile(upper);
 				income_share[s] = std::max(0.0,
 					normal_cdf(z_next - sigma) - normal_cdf(z_prev - sigma));
 				previous = upper;

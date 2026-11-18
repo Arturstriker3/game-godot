@@ -328,7 +328,11 @@ void SimCore::phase_reset() {
 			city.pop.stratum_food_spend[s] = 0.0;
 			city.pop.stratum_need[s] = 0.0;
 			city.pop.stratum_consumed[s] = 0.0;
-			city.pop.stratum_level[s] = 0;
+			// B2 (correção): `stratum_level` NÃO é fluxo do dia — é o teto de
+			// consumo que a fase de consumo recalcula e que o save persiste
+			// (`strata_level`). Zerá-lo aqui deixava `refresh_income_classes`
+			// publicando 100% basic enquanto o dia não chegava ao consumo
+			// (serviços liam a classe zerada). Mantém o valor do dia anterior.
 		}
 		city.pop.food_spend = 0.0;
 		city.pop.consumed = 0.0;
