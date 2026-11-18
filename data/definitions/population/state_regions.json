@@ -1655,20 +1655,34 @@
    "urban_population": 8600000
   },
   "CHN-BEI": {
-   "population_region": 96057294,
-   "region_population": 74257294,
+   "population_region": 22083693,
+   "region_population": 283693,
    "states": [
-    "CHN-1155",
-    "CHN-1811"
+    "CHN-1155"
    ],
    "urban_population": 21800000
   },
+  "CHN-CHA": {
+   "population_region": 65364287,
+   "region_population": 53764287,
+   "states": [
+    "CHN-1808"
+   ],
+   "urban_population": 11600000
+  },
+  "CHN-CHAN": {
+   "population_region": 23873808,
+   "region_population": 18573808,
+   "states": [
+    "CHN-1828"
+   ],
+   "urban_population": 5300000
+  },
   "CHN-CHE": {
-   "population_region": 127492265,
-   "region_population": 109192265,
+   "population_region": 88866867,
+   "region_population": 70566867,
    "states": [
     "CHN-1151",
-    "CHN-1153",
     "CHN-1809"
    ],
    "urban_population": 18300000
@@ -1714,14 +1728,11 @@
    "urban_population": 24910
   },
   "CHN-GUA": {
-   "population_region": 238067643,
-   "region_population": 164467643,
+   "population_region": 78131502,
+   "region_population": 4531502,
    "states": [
-    "CHN-1152",
     "CHN-1180",
     "CHN-1775",
-    "CHN-1808",
-    "CHN-1817",
     "HKG-5163",
     "HKG-5165",
     "HKG-5166",
@@ -1731,6 +1742,14 @@
     "HKG-5170"
    ],
    "urban_population": 73600000
+  },
+  "CHN-GUI": {
+   "population_region": 38625398,
+   "region_population": 33275398,
+   "states": [
+    "CHN-1153"
+   ],
+   "urban_population": 5350000
   },
   "CHN-HAN": {
    "population_region": 63600946,
@@ -1755,6 +1774,14 @@
     "CHN-1179"
    ],
    "urban_population": 8250000
+  },
+  "CHN-HOH": {
+   "population_region": 23897150,
+   "region_population": 20997150,
+   "states": [
+    "CHN-1838"
+   ],
+   "urban_population": 2900000
   },
   "CHN-JIN": {
    "population_region": 62679732,
@@ -1804,6 +1831,22 @@
    ],
    "urban_population": 9750000
   },
+  "CHN-NANC": {
+   "population_region": 44779744,
+   "region_population": 39529744,
+   "states": [
+    "CHN-1817"
+   ],
+   "urban_population": 5250000
+  },
+  "CHN-NANN": {
+   "population_region": 49792110,
+   "region_population": 44192110,
+   "states": [
+    "CHN-1152"
+   ],
+   "urban_population": 5600000
+  },
   "CHN-SHA": {
    "population_region": 24332830,
    "region_population": 0,
@@ -1813,13 +1856,28 @@
    "urban_population": 42300000
   },
   "CHN-SHE": {
-   "population_region": 52223497,
-   "region_population": 43273497,
+   "population_region": 28349689,
+   "region_population": 19399689,
    "states": [
-    "CHN-1813",
-    "CHN-1828"
+    "CHN-1813"
    ],
    "urban_population": 8950000
+  },
+  "CHN-SHI": {
+   "population_region": 73973601,
+   "region_population": 67373601,
+   "states": [
+    "CHN-1811"
+   ],
+   "urban_population": 6600000
+  },
+  "CHN-TAI": {
+   "population_region": 34668260,
+   "region_population": 28368260,
+   "states": [
+    "CHN-1805"
+   ],
+   "urban_population": 6300000
   },
   "CHN-TIA": {
    "population_region": 13825041,
@@ -1870,16 +1928,21 @@
    "urban_population": 15800000
   },
   "CHN-XIAN": {
-   "population_region": 203898126,
-   "region_population": 190198126,
+   "population_region": 46524882,
+   "region_population": 32824882,
    "states": [
     "CHN-1803",
-    "CHN-1804",
-    "CHN-1805",
-    "CHN-1812",
-    "CHN-1838"
+    "CHN-1804"
    ],
    "urban_population": 13700000
+  },
+  "CHN-ZHE": {
+   "population_region": 98807834,
+   "region_population": 88307834,
+   "states": [
+    "CHN-1812"
+   ],
+   "urban_population": 10500000
   },
   "CIV-ABI": {
    "population_region": 20725393,
@@ -4103,10 +4166,9 @@
    "urban_population": 10200000
   },
   "IND-BAN": {
-   "population_region": 109150261,
-   "region_population": 93850261,
+   "population_region": 71597883,
+   "region_population": 56297883,
    "states": [
-    "IND-2442",
     "IND-2446"
    ],
    "urban_population": 15300000
@@ -4119,6 +4181,14 @@
    ],
    "urban_population": 2825000
   },
+  "IND-BHU": {
+   "population_region": 48251532,
+   "region_population": 46076532,
+   "states": [
+    "IND-2444"
+   ],
+   "urban_population": 2175000
+  },
   "IND-CAM": {
    "population_region": 420770,
    "region_population": 415034,
@@ -4126,6 +4196,14 @@
     "IND-2474"
    ],
    "urban_population": 5736
+  },
+  "IND-CHA": {
+   "population_region": 33801450,
+   "region_population": 30951450,
+   "states": [
+    "IND-2430"
+   ],
+   "urban_population": 2850000
   },
   "IND-CHE": {
    "population_region": 11777001,
@@ -4145,13 +4223,20 @@
    "urban_population": 3150000
   },
   "IND-DEL": {
-   "population_region": 57077126,
-   "region_population": 20177126,
+   "population_region": 23275676,
+   "region_population": 0,
    "states": [
-    "IND-2428",
-    "IND-2430"
+    "IND-2428"
    ],
    "urban_population": 36900000
+  },
+  "IND-GUW": {
+   "population_region": 37535208,
+   "region_population": 36275208,
+   "states": [
+    "IND-2477"
+   ],
+   "urban_population": 1260000
   },
   "IND-HYD": {
    "population_region": 44173573,
@@ -4204,13 +4289,10 @@
    "urban_population": 3750000
   },
   "IND-KOL": {
-   "population_region": 241558646,
-   "region_population": 223458646,
+   "population_region": 113721849,
+   "region_population": 95621849,
    "states": [
-    "IND-2444",
-    "IND-2477",
     "IND-2489",
-    "IND-3256",
     "IND-3257",
     "IND-3259",
     "IND-3299",
@@ -4248,12 +4330,11 @@
    "urban_population": 2000000
   },
   "IND-MUM": {
-   "population_region": 50707266,
-   "region_population": 22607266,
+   "population_region": 18714162,
+   "region_population": 0,
    "states": [
     "IND-2445",
     "IND-2447",
-    "IND-3260",
     "IND-3265"
    ],
    "urban_population": 28100000
@@ -4290,6 +4371,22 @@
    ],
    "urban_population": 8250000
   },
+  "IND-RAI": {
+   "population_region": 31993104,
+   "region_population": 30965840,
+   "states": [
+    "IND-3260"
+   ],
+   "urban_population": 1027264
+  },
+  "IND-RAN": {
+   "population_region": 42050057,
+   "region_population": 40380057,
+   "states": [
+    "IND-3256"
+   ],
+   "urban_population": 1670000
+  },
   "IND-RAS": {
    "population_region": 51359018,
    "region_population": 49630890,
@@ -4305,6 +4402,14 @@
     "IND-3264"
    ],
    "urban_population": 8400000
+  },
+  "IND-THI": {
+   "population_region": 37552378,
+   "region_population": 36764107,
+   "states": [
+    "IND-2442"
+   ],
+   "urban_population": 788271
   },
   "IND-VAD": {
    "population_region": 12921893,
@@ -10162,6 +10267,15 @@
  },
  "license": "CC BY 4.0 (WorldPop, University of Southampton)",
  "method": "regiao da cidade = estados admin-1 INTEIROS do Natural Earth (ne_10m_admin_1_states_provinces); provincia -> admin-1 pai reconstruido com as tres provas do pipeline tools/build_atlas_layers.py (id <= 4596 = id da fonte; bloco de ocupacao RUS com nome de admin-1 ucraniano; filha = '<pai> N' com pai unico de mesmo nome/nacao, cerca monotonica de ids e, quando ambiguo, ponto-no-poligono do admin-1), validado pela monotonidade das filhas (ordem de alocacao do pipeline); populacao por provincia = WorldPop 2026 1 km somada no raster world_province.png (id=R+G*256) x fator da nacao, apportionada em inteiros por maior resto dentro da nacao para somar nations.json; estado sem cidade no roster anexado ao vizinho de fronteira comum no raster que ja pertence a uma cidade, anel a anel (BFS multi-fonte), vencendo a CIDADE de maior populacao quando ha mais de um vizinho no mesmo anel; sem vizinho com cidade = estado com cidade mais proximo pelo centroide; estado com 2+ cidades vai inteiro para a de maior populacao e as demais ficam com as provincias do estado das quais sao as mais proximas (Voronoi); adjacencia por pixels vizinhos de estados diferentes no raster de provincias restrito a terra navegavel (world_sdf x nav_mask), com os 4 estados de mesma nacao mais proximos para as 48 admin-1 sem pixel; region_population = population_region - urban_population (piso 0)",
+ "patch": {
+  "cities_added": 15,
+  "date": "2026-11-18",
+  "generated_by": "tools/build_extra_capitals_b3.py",
+  "id": "b3-extra-capitals-1",
+  "note": "15 estados >20M ganharam a capital propria. As 15 cidades novas ainda NAO estao em cities.json: enquanto a mesclagem nao acontecer (code/data), os estados novos ficam sem quem consuma a populacao e os vizinhos ja perderam a deles — os dois arquivos tem de entrar juntos.",
+  "source": "data/definitions/scenario/extra_capitals_b3.json",
+  "states_reassigned": 15
+ },
  "retrieved": "2026-11-17",
  "sha256": "61c487e765ef904caf3239d66d635465f5871d3ee6684ffe604d82e25bff0aa8",
  "source": "WorldPop Global2 R2025A v1 - global_pop_2026_CN_1km_R2025A_v1.tif (1 km, ano 2026, mosaico global 'constrained'; CC BY 4.0 - WorldPop, University of Southampton; DOI 10.5258/SOTON/WP00845)",
@@ -19486,8 +19600,8 @@
   },
   "CHN-1152": {
    "area_km2": 235157.1,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-GUA",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-NANN",
    "name": "Guangxi",
    "nation": "CHN",
    "population_2026": 49792110,
@@ -19520,8 +19634,8 @@
   },
   "CHN-1153": {
    "area_km2": 177910.2,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-CHE",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-GUI",
    "name": "Guizhou",
    "nation": "CHN",
    "population_2026": 38625398,
@@ -20007,8 +20121,8 @@
   },
   "CHN-1805": {
    "area_km2": 156946.8,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-XIAN",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-TAI",
    "name": "Shanxi",
    "nation": "CHN",
    "population_2026": 34668260,
@@ -20062,8 +20176,8 @@
   },
   "CHN-1808": {
    "area_km2": 211920.6,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-GUA",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-CHA",
    "name": "Hunan",
    "nation": "CHN",
    "population_2026": 65364287,
@@ -20200,8 +20314,8 @@
   },
   "CHN-1811": {
    "area_km2": 188337.5,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-BEI",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-SHI",
    "name": "Hebei",
    "nation": "CHN",
    "population_2026": 73973601,
@@ -20229,8 +20343,8 @@
   },
   "CHN-1812": {
    "area_km2": 166169.3,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-XIAN",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-ZHE",
    "name": "Henan",
    "nation": "CHN",
    "population_2026": 98807834,
@@ -20318,8 +20432,8 @@
   },
   "CHN-1817": {
    "area_km2": 168683.9,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-GUA",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-NANC",
    "name": "Jiangxi",
    "nation": "CHN",
    "population_2026": 44779744,
@@ -20396,8 +20510,8 @@
   },
   "CHN-1828": {
    "area_km2": 190786.6,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-SHE",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-CHAN",
    "name": "Jilin",
    "nation": "CHN",
    "population_2026": 23873808,
@@ -20425,8 +20539,8 @@
   },
   "CHN-1838": {
    "area_km2": 1134599.9,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "CHN-XIAN",
+   "attach_rule": "primary_city",
+   "city_id": "CHN-HOH",
    "name": "Inner Mongol",
    "nation": "CHN",
    "population_2026": 23897150,
@@ -33062,8 +33176,8 @@
   },
   "IND-2430": {
    "area_km2": 46189.4,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "IND-DEL",
+   "attach_rule": "primary_city",
+   "city_id": "IND-CHA",
    "name": "Haryana",
    "nation": "IND",
    "population_2026": 33801450,
@@ -33117,8 +33231,8 @@
   },
   "IND-2442": {
    "area_km2": 38036.1,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "IND-BAN",
+   "attach_rule": "primary_city",
+   "city_id": "IND-THI",
    "name": "Kerala",
    "nation": "IND",
    "population_2026": 37552378,
@@ -33131,8 +33245,8 @@
   },
   "IND-2444": {
    "area_km2": 154477.2,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "IND-KOL",
+   "attach_rule": "primary_city",
+   "city_id": "IND-BHU",
    "name": "Odisha",
    "nation": "IND",
    "population_2026": 48251532,
@@ -33249,8 +33363,8 @@
   },
   "IND-2477": {
    "area_km2": 78593.3,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "IND-KOL",
+   "attach_rule": "primary_city",
+   "city_id": "IND-GUW",
    "name": "Assam",
    "nation": "IND",
    "population_2026": 37535208,
@@ -33411,8 +33525,8 @@
   },
   "IND-3256": {
    "area_km2": 79770.8,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "IND-KOL",
+   "attach_rule": "primary_city",
+   "city_id": "IND-RAN",
    "name": "Jharkhand",
    "nation": "IND",
    "population_2026": 42050057,
@@ -33478,8 +33592,8 @@
   },
   "IND-3260": {
    "area_km2": 137122.8,
-   "attach_rule": "neighbor_largest_population",
-   "city_id": "IND-MUM",
+   "attach_rule": "primary_city",
+   "city_id": "IND-RAI",
    "name": "Chhattisgarh",
    "nation": "IND",
    "population_2026": 31993104,
