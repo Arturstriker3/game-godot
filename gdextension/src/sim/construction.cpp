@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 namespace {
 // Segurança numérica: nada de NaN/Inf no estado nem nos outputs.
@@ -164,7 +165,12 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 	}
 	project.labor_cost_total =
 		(1.0 - material_share) * build_cost;
-	if (project.kind == CONSTRUCTION_HOUSING) {
+	if (project.deepen_stage >= 0) {
+		// D-086: o aprofundamento tem prazo próprio (90 dias + 30 por estágio
+		// aberto), independente da escala de tamanho da obra nova.
+		project.duration_days = kMineDeepenBaseDays
+			+ kMineDeepenDaysPerStage * project.deepen_stage;
+	} else if (project.kind == CONSTRUCTION_HOUSING) {
 		// Moradia (§19 W3): prazo declarado, sem escala por tamanho (é a
 		// mesma obra de unidades do W3, agora na fila única).
 		project.duration_days = std::max(1, kHousingBuildDays);
@@ -202,9 +208,71 @@ void SimCore::add_construction_project(ConstructionProject& project) {
 }
 
 namespace {
+// §15/D-086 — saldo NÃO gasto do fundo reservado de uma obra que sai da fila.
+// O dono debitou o orçamento inteiro na abertura e a obra pagou material/mão de
+// obra conforme avançou; o que sobrar (preços de material abaixo do contrato,
+// obra que perdeu o alvo) volta ao dono. Sem isso o capital reservado evaporava
+// com a remoção do projeto (dinheiro não conservado).
+void refund_project_reserved(WorldState& ws, const ConstructionProject& p) {
+	const double amount = std::max(0.0, p.reserved);
+	if (amount <= 0.0) {
+		return;
+	}
+	City* owner_city = nullptr;
+	for (City& city : ws.cities) {
+		if (city.id == p.city) {
+			owner_city = &city;
+			break;
+		}
+	}
+	if (p.owner == "state") {
+		if (owner_city != nullptr) {
+			owner_city->government_budget += amount;
+		} else {
+			ws.construction_cash += amount;
+		}
+		return;
+	}
+	if (p.owner == "private") {
+		if (owner_city != nullptr) {
+			owner_city->firm_cash += amount;
+		} else {
+			ws.construction_cash += amount;
+		}
+		return;
+	}
+	// Grupo F9: `national:<g>` / `foreign:<g>@<nação>`.
+	std::string group_id = p.owner;
+	const std::string national = "national:";
+	const std::string foreign = "foreign:";
+	if (group_id.rfind(national, 0) == 0) {
+		group_id = group_id.substr(national.size());
+	} else if (group_id.rfind(foreign, 0) == 0) {
+		group_id = group_id.substr(foreign.size());
+		const std::size_t at = group_id.find('@');
+		if (at != std::string::npos) {
+			group_id = group_id.substr(0, at);
+		}
+	} else {
+		group_id.clear();
+	}
+	for (Group& group : ws.groups) {
+		if (!group_id.empty() && group.id == group_id) {
+			group.cash += amount;
+			return;
+		}
+	}
+	// Dono não localizado: o saldo fica no setor de construção (dinheiro do
+	// mundo), nunca desaparece.
+	ws.construction_cash += amount;
+}
+
 // Materializa o prédio de uma obra concluída (ou soma capacidade numa expansão).
 // O dinheiro já foi pago ao longo da obra; aqui só entra a operação.
 void complete_project(WorldState& ws, const ConstructionProject& p) {
+	// O saldo não gasto do fundo volta ao dono (conservação entre o débito na
+	// abertura e a remoção do projeto).
+	refund_project_reserved(ws, p);
 	// HOUSING (§19 W3 / fatia A2): a obra entrega UNIDADES de moradia ao
 	// estoque da cidade e à posse do dono — não materializa prédio.
 	if (p.kind == CONSTRUCTION_HOUSING) {
@@ -221,7 +289,25 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 	if (p.expand_existing) {
 		for (Building& building : ws.buildings) {
 			if (building.id == p.building_id && building.city == p.city) {
+				const double old_capacity = std::max(1e-9, building.capacity);
 				building.capacity += std::max(0.0, p.capacity);
+				// D-086: aprofundamento — abre o estágio novo na MESMA mina, usando
+				// a reserva de REFERÊNCIA da jazida (não o saldo restante), e volta
+				// a produzir 100% enquanto ela durar. A folha/opex sobem na mesma
+				// proporção da capacidade (a mina reaberta volta a operar cheia).
+				if (p.deepen_stage >= 0) {
+					for (City& city : ws.cities) {
+						if (city.id != p.city) {
+							continue;
+						}
+						SimCore::set_mine_stage(city, building, p.deepen_stage);
+						const double scale = building.capacity / old_capacity;
+						building.jobs *= scale;
+						building.opex *= scale;
+						building.loss_days = 0;
+						break;
+					}
+				}
 				return;
 			}
 		}
@@ -262,6 +348,15 @@ void complete_project(WorldState& ws, const ConstructionProject& p) {
 	// avaliada por prejuízo durante os primeiros kRampDays de operação — o
 	// capital da obra é investimento, não prejuízo operacional.
 	building.ramp_days = kRampDays;
+	// D-086: mina concluída abre o estágio 0 (fatia da reserva da jazida).
+	for (City& city : ws.cities) {
+		if (city.id == building.city) {
+			if (SimCore::is_mine_building(city, building)) {
+				SimCore::set_mine_stage(city, building, 0);
+			}
+			break;
+		}
+	}
 	ws.buildings.push_back(building);
 }
 } // namespace
@@ -294,7 +389,9 @@ void SimCore::tick_construction() {
 
 		City* city = find_city(project.city);
 		if (city == nullptr) {
-			// Cidade sumiu (não deveria): descarta a obra sem pagar.
+			// Cidade sumiu (não deveria): descarta a obra devolvendo o fundo ao
+			// setor de construção (dinheiro conservado).
+			ws_.construction_cash += std::max(0.0, project.reserved);
 			completed.push_back(index);
 			continue;
 		}

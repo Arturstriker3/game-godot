@@ -8,8 +8,8 @@
     "tenure": "fração (0..1) por estrato"
   },
   "coverage": {
-    "cities_total": 834,
-    "cities_with_price_rent": 808,
+    "cities_total": 849,
+    "cities_with_price_rent": 823,
     "cities_price_no_data": 26
   },
   "sources": {
@@ -10601,7 +10601,7 @@
     "CHN-BEI": {
       "name": "Beijing",
       "nation": "CHN",
-      "population": 95890338,
+      "population": 80868642,
       "urban_population": 21800000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -10669,7 +10669,7 @@
     "CHN-CHE": {
       "name": "Chengdu",
       "nation": "CHN",
-      "population": 80495100,
+      "population": 67885144,
       "urban_population": 18300000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -10737,7 +10737,7 @@
     "CHN-CHO": {
       "name": "Chongqing",
       "nation": "CHN",
-      "population": 58062039,
+      "population": 48966334,
       "urban_population": 13200000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -10805,7 +10805,7 @@
     "CHN-DAL": {
       "name": "Dalian",
       "nation": "CHN",
-      "population": 24412448,
+      "population": 20588117,
       "urban_population": 5550000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -10873,7 +10873,7 @@
     "CHN-DAX": {
       "name": "Daxing’anling",
       "nation": "CHN",
-      "population": 2287292,
+      "population": 1928977,
       "urban_population": 520000,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -10941,7 +10941,7 @@
     "CHN-DON": {
       "name": "Dongguan",
       "nation": "CHN",
-      "population": 42424309,
+      "population": 35778331,
       "urban_population": 9644871,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -11009,7 +11009,7 @@
     "CHN-GAR": {
       "name": "Gar",
       "nation": "CHN",
-      "population": 109570,
+      "population": 92405,
       "urban_population": 24910,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -11077,7 +11077,7 @@
     "CHN-GUA": {
       "name": "Guangzhou",
       "nation": "CHN",
-      "population": 323739856,
+      "population": 273024405,
       "urban_population": 73600000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11145,7 +11145,7 @@
     "CHN-HAN": {
       "name": "Hangzhou",
       "nation": "CHN",
-      "population": 64659998,
+      "population": 54530690,
       "urban_population": 14700000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11213,7 +11213,7 @@
     "CHN-HAR": {
       "name": "Harbin",
       "nation": "CHN",
-      "population": 24632380,
+      "population": 20773596,
       "urban_population": 5600000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11281,7 +11281,7 @@
     "CHN-HEF": {
       "name": "Hefei",
       "nation": "CHN",
-      "population": 36288775,
+      "population": 30603958,
       "urban_population": 8250000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11349,7 +11349,7 @@
     "CHN-JIN": {
       "name": "Jinan",
       "nation": "CHN",
-      "population": 30570543,
+      "population": 25781517,
       "urban_population": 6950000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11417,7 +11417,7 @@
     "CHN-JIU": {
       "name": "Jiuquan",
       "nation": "CHN",
-      "population": 1884140,
+      "population": 1588980,
       "urban_population": 428346,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -11485,7 +11485,7 @@
     "CHN-KAS": {
       "name": "Kashgar",
       "nation": "CHN",
-      "population": 2228527,
+      "population": 1879417,
       "urban_population": 506640,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -11553,7 +11553,7 @@
     "CHN-KUN": {
       "name": "Kunming",
       "nation": "CHN",
-      "population": 30570543,
+      "population": 25781517,
       "urban_population": 6950000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11621,7 +11621,7 @@
     "CHN-LHA": {
       "name": "Lhasa",
       "nation": "CHN",
-      "population": 3817579,
+      "population": 3219536,
       "urban_population": 867900,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -11689,7 +11689,7 @@
     "CHN-NAN": {
       "name": "Nanjing",
       "nation": "CHN",
-      "population": 42886734,
+      "population": 36168315,
       "urban_population": 9750000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11757,7 +11757,7 @@
     "CHN-SHA": {
       "name": "Shanghai",
       "nation": "CHN",
-      "population": 186062444,
+      "population": 156914842,
       "urban_population": 42300000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11825,7 +11825,7 @@
     "CHN-SHE": {
       "name": "Shenyang",
       "nation": "CHN",
-      "population": 39367822,
+      "population": 33200658,
       "urban_population": 8950000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11893,7 +11893,7 @@
     "CHN-TIA": {
       "name": "Tianjin",
       "nation": "CHN",
-      "population": 51903944,
+      "population": 43772935,
       "urban_population": 11800000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -11961,7 +11961,7 @@
     "CHN-URU": {
       "name": "Ürümqi",
       "nation": "CHN",
-      "population": 22652993,
+      "population": 19104289,
       "urban_population": 5150000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -12029,7 +12029,7 @@
     "CHN-WEI": {
       "name": "Weifang",
       "nation": "CHN",
-      "population": 14845408,
+      "population": 12519801,
       "urban_population": 3375000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -12097,7 +12097,7 @@
     "CHN-WUH": {
       "name": "Wuhan",
       "nation": "CHN",
-      "population": 56742448,
+      "population": 47853462,
       "urban_population": 12900000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -12165,7 +12165,7 @@
     "CHN-WUW": {
       "name": "Wuwei",
       "nation": "CHN",
-      "population": 4443923,
+      "population": 3747761,
       "urban_population": 1010295,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -12233,7 +12233,7 @@
     "CHN-XIA": {
       "name": "Xiamen",
       "nation": "CHN",
-      "population": 69498502,
+      "population": 58611217,
       "urban_population": 15800000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -12301,7 +12301,7 @@
     "CHN-XIAN": {
       "name": "Xi’an",
       "nation": "CHN",
-      "population": 60261359,
+      "population": 50821119,
       "urban_population": 13700000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -22073,7 +22073,7 @@
     "HKG-HON": {
       "name": "Hong Kong",
       "nation": "CHN",
-      "population": 32989795,
+      "population": 27821780,
       "urban_population": 7500000,
       "urban_population_source": "agglomeration",
       "household_size": 3.38,
@@ -23977,7 +23977,7 @@
     "IND-AHM": {
       "name": "Ahmedabad",
       "nation": "IND",
-      "population": 77477820,
+      "population": 73739352,
       "urban_population": 10200000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24045,7 +24045,7 @@
     "IND-BAN": {
       "name": "Bengaluru",
       "nation": "IND",
-      "population": 116216730,
+      "population": 110609027,
       "urban_population": 15300000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24113,7 +24113,7 @@
     "IND-BHO": {
       "name": "Bhopal",
       "nation": "IND",
-      "population": 21458318,
+      "population": 20422909,
       "urban_population": 2825000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24181,7 +24181,7 @@
     "IND-CAM": {
       "name": "Campbell Bay",
       "nation": "IND",
-      "population": 43570,
+      "population": 41468,
       "urban_population": 5736,
       "urban_population_source": "sim_population",
       "household_size": 4.38,
@@ -24249,7 +24249,7 @@
     "IND-CHE": {
       "name": "Chennai",
       "nation": "IND",
-      "population": 101025000,
+      "population": 96150331,
       "urban_population": 13300000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24317,7 +24317,7 @@
     "IND-COI": {
       "name": "Coimbatore",
       "nation": "IND",
-      "population": 23926974,
+      "population": 22772447,
       "urban_population": 3150000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24385,7 +24385,7 @@
     "IND-DEL": {
       "name": "New Delhi",
       "nation": "IND",
-      "population": 280287407,
+      "population": 266762948,
       "urban_population": 36900000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24453,7 +24453,7 @@
     "IND-HYD": {
       "name": "Hyderabad",
       "nation": "IND",
-      "population": 91909963,
+      "population": 87475113,
       "urban_population": 12100000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24521,7 +24521,7 @@
     "IND-IMP": {
       "name": "Imphal",
       "nation": "IND",
-      "population": 2105543,
+      "population": 2003946,
       "urban_population": 277196,
       "urban_population_source": "sim_population",
       "household_size": 4.38,
@@ -24589,7 +24589,7 @@
     "IND-INDO": {
       "name": "Indore",
       "nation": "IND",
-      "population": 29433975,
+      "population": 28013724,
       "urban_population": 3875000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24657,7 +24657,7 @@
     "IND-JAI": {
       "name": "Jaipur",
       "nation": "IND",
-      "population": 35320771,
+      "population": 33616469,
       "urban_population": 4650000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24725,7 +24725,7 @@
     "IND-KAL": {
       "name": "Kallakurichi",
       "nation": "IND",
-      "population": 12781463,
+      "population": 12164730,
       "urban_population": 1682687,
       "urban_population_source": "sim_population",
       "household_size": 4.38,
@@ -24793,7 +24793,7 @@
     "IND-KAN": {
       "name": "Kanpur",
       "nation": "IND",
-      "population": 28484492,
+      "population": 27110056,
       "urban_population": 3750000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24861,7 +24861,7 @@
     "IND-KOL": {
       "name": "Kolkata",
       "nation": "IND",
-      "population": 137485151,
+      "population": 130851202,
       "urban_population": 18100000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24929,7 +24929,7 @@
     "IND-LUC": {
       "name": "Lucknow",
       "nation": "IND",
-      "population": 32852115,
+      "population": 31266931,
       "urban_population": 4325000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -24997,7 +24997,7 @@
     "IND-LUD": {
       "name": "Ludhiana",
       "nation": "IND",
-      "population": 16521006,
+      "population": 15723832,
       "urban_population": 2175000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25065,7 +25065,7 @@
     "IND-MAD": {
       "name": "Madurai",
       "nation": "IND",
-      "population": 15191729,
+      "population": 14458696,
       "urban_population": 2000000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25133,7 +25133,7 @@
     "IND-MUM": {
       "name": "Mumbai",
       "nation": "IND",
-      "population": 213443798,
+      "population": 203144684,
       "urban_population": 28100000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25201,7 +25201,7 @@
     "IND-NAG": {
       "name": "Nagpur",
       "nation": "IND",
-      "population": 27535009,
+      "population": 26206387,
       "urban_population": 3625000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25269,7 +25269,7 @@
     "IND-NAS": {
       "name": "Nashik",
       "nation": "IND",
-      "population": 18989662,
+      "population": 18073371,
       "urban_population": 2500000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25337,7 +25337,7 @@
     "IND-PAT": {
       "name": "Patna",
       "nation": "IND",
-      "population": 22787594,
+      "population": 21688045,
       "urban_population": 3000000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25405,7 +25405,7 @@
     "IND-PUN": {
       "name": "Pune",
       "nation": "IND",
-      "population": 62665884,
+      "population": 59642123,
       "urban_population": 8250000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25473,7 +25473,7 @@
     "IND-RAS": {
       "name": "Rasapūdipalem",
       "nation": "IND",
-      "population": 13126626,
+      "population": 12493239,
       "urban_population": 1728128,
       "urban_population_source": "sim_population",
       "household_size": 4.38,
@@ -25541,7 +25541,7 @@
     "IND-SUR": {
       "name": "Surat",
       "nation": "IND",
-      "population": 63805263,
+      "population": 60726525,
       "urban_population": 8400000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -25609,7 +25609,7 @@
     "IND-VAD": {
       "name": "Vadodara",
       "nation": "IND",
-      "population": 18989662,
+      "population": 18073371,
       "urban_population": 2500000,
       "urban_population_source": "agglomeration",
       "household_size": 4.38,
@@ -31593,7 +31593,7 @@
     "MAC-MAC": {
       "name": "Macau",
       "nation": "CHN",
-      "population": 2856191,
+      "population": 2408754,
       "urban_population": 649335,
       "urban_population_source": "sim_population",
       "household_size": 3.38,
@@ -56634,6 +56634,1026 @@
         },
         {
           "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — Zimbabwe",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-ZHE": {
+      "name": "Zhengzhou",
+      "nation": "CHN",
+      "population": 38950493,
+      "urban_population": 10500000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 3106509,
+      "housing_stock_by_tier": {
+        "popular": 735000,
+        "medium": 2331124,
+        "high": 40385
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-SHI": {
+      "name": "Shijiazhuang",
+      "nation": "CHN",
+      "population": 24483167,
+      "urban_population": 6600000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 1952663,
+      "housing_stock_by_tier": {
+        "popular": 462000,
+        "medium": 1465278,
+        "high": 25385
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-CHA": {
+      "name": "Changsha",
+      "nation": "CHN",
+      "population": 43031020,
+      "urban_population": 11600000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 3431953,
+      "housing_stock_by_tier": {
+        "popular": 812000,
+        "medium": 2575338,
+        "high": 44615
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-NANN": {
+      "name": "Nanning",
+      "nation": "CHN",
+      "population": 20773596,
+      "urban_population": 5600000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 1656805,
+      "housing_stock_by_tier": {
+        "popular": 392000,
+        "medium": 1243267,
+        "high": 21538
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "IND-BHU": {
+      "name": "Bhubaneswar",
+      "nation": "IND",
+      "population": 15723832,
+      "urban_population": 2175000,
+      "urban_population_source": "agglomeration",
+      "household_size": 4.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 496575,
+      "housing_stock_by_tier": {
+        "popular": 35158,
+        "medium": 461119,
+        "high": 298
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.1344,
+          "rent": 0.1014,
+          "informal": 0.7641
+        },
+        "medium": {
+          "own": 0.7313,
+          "rent": 0.2687,
+          "informal": 0.0
+        },
+        "high": {
+          "own": 0.87,
+          "rent": 0.13,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.72,
+      "informal_share": 0.0541,
+      "rent_per_m2_usd": 19.58,
+      "price_per_m2_usd": 4699.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 16.0,
+      "rent_to_income_ratio": 0.32,
+      "gdp_ppp_per_capita_usd": 11747.9,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda média-baixa (5.000-12.000) (16 m²/pessoa) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.0708/0.9286/0.0006) — India",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-NANC": {
+      "name": "Nanchang",
+      "nation": "CHN",
+      "population": 19475246,
+      "urban_population": 5250000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 1553254,
+      "housing_stock_by_tier": {
+        "popular": 367500,
+        "medium": 1165562,
+        "high": 20192
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "IND-RAN": {
+      "name": "Ranchi",
+      "nation": "IND",
+      "population": 12073011,
+      "urban_population": 1670000,
+      "urban_population_source": "agglomeration",
+      "household_size": 4.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 381279,
+      "housing_stock_by_tier": {
+        "popular": 26995,
+        "medium": 354055,
+        "high": 229
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.1344,
+          "rent": 0.1014,
+          "informal": 0.7641
+        },
+        "medium": {
+          "own": 0.7313,
+          "rent": 0.2687,
+          "informal": 0.0
+        },
+        "high": {
+          "own": 0.87,
+          "rent": 0.13,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.72,
+      "informal_share": 0.0541,
+      "rent_per_m2_usd": 19.58,
+      "price_per_m2_usd": 4699.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 16.0,
+      "rent_to_income_ratio": 0.32,
+      "gdp_ppp_per_capita_usd": 11747.9,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda média-baixa (5.000-12.000) (16 m²/pessoa) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.0708/0.9286/0.0006) — India",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-GUI": {
+      "name": "Guiyang",
+      "nation": "CHN",
+      "population": 19846203,
+      "urban_population": 5350000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 1582840,
+      "housing_stock_by_tier": {
+        "popular": 374500,
+        "medium": 1187763,
+        "high": 20577
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "IND-THI": {
+      "name": "Thiruvananthapuram",
+      "nation": "IND",
+      "population": 5698686,
+      "urban_population": 788271,
+      "urban_population_source": "sim_population",
+      "household_size": 4.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 179971,
+      "housing_stock_by_tier": {
+        "popular": 12742,
+        "medium": 167121,
+        "high": 108
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.1344,
+          "rent": 0.1014,
+          "informal": 0.7641
+        },
+        "medium": {
+          "own": 0.7313,
+          "rent": 0.2687,
+          "informal": 0.0
+        },
+        "high": {
+          "own": 0.87,
+          "rent": 0.13,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.72,
+      "informal_share": 0.0541,
+      "rent_per_m2_usd": 19.58,
+      "price_per_m2_usd": 4699.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 16.0,
+      "rent_to_income_ratio": 0.32,
+      "gdp_ppp_per_capita_usd": 11747.9,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda média-baixa (5.000-12.000) (16 m²/pessoa) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.0708/0.9286/0.0006) — India",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "IND-GUW": {
+      "name": "Guwahati",
+      "nation": "IND",
+      "population": 9108979,
+      "urban_population": 1260000,
+      "urban_population_source": "agglomeration",
+      "household_size": 4.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 287671,
+      "housing_stock_by_tier": {
+        "popular": 20367,
+        "medium": 267131,
+        "high": 173
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.1344,
+          "rent": 0.1014,
+          "informal": 0.7641
+        },
+        "medium": {
+          "own": 0.7313,
+          "rent": 0.2687,
+          "informal": 0.0
+        },
+        "high": {
+          "own": 0.87,
+          "rent": 0.13,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.72,
+      "informal_share": 0.0541,
+      "rent_per_m2_usd": 19.58,
+      "price_per_m2_usd": 4699.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 16.0,
+      "rent_to_income_ratio": 0.32,
+      "gdp_ppp_per_capita_usd": 11747.9,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda média-baixa (5.000-12.000) (16 m²/pessoa) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.0708/0.9286/0.0006) — India",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-TAI": {
+      "name": "Taiyuan",
+      "nation": "CHN",
+      "population": 23370296,
+      "urban_population": 6300000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 1863905,
+      "housing_stock_by_tier": {
+        "popular": 441000,
+        "medium": 1398674,
+        "high": 24231
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "IND-CHA": {
+      "name": "Chandigarh",
+      "nation": "IND",
+      "population": 20603642,
+      "urban_population": 2850000,
+      "urban_population_source": "agglomeration",
+      "household_size": 4.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 650685,
+      "housing_stock_by_tier": {
+        "popular": 46068,
+        "medium": 604227,
+        "high": 390
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.1344,
+          "rent": 0.1014,
+          "informal": 0.7641
+        },
+        "medium": {
+          "own": 0.7313,
+          "rent": 0.2687,
+          "informal": 0.0
+        },
+        "high": {
+          "own": 0.87,
+          "rent": 0.13,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.72,
+      "informal_share": 0.0541,
+      "rent_per_m2_usd": 19.58,
+      "price_per_m2_usd": 4699.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 16.0,
+      "rent_to_income_ratio": 0.32,
+      "gdp_ppp_per_capita_usd": 11747.9,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda média-baixa (5.000-12.000) (16 m²/pessoa) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.0708/0.9286/0.0006) — India",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "IND-RAI": {
+      "name": "Raipur",
+      "nation": "IND",
+      "population": 7426449,
+      "urban_population": 1027264,
+      "urban_population_source": "sim_population",
+      "household_size": 4.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 234535,
+      "housing_stock_by_tier": {
+        "popular": 16605,
+        "medium": 217789,
+        "high": 141
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.1344,
+          "rent": 0.1014,
+          "informal": 0.7641
+        },
+        "medium": {
+          "own": 0.7313,
+          "rent": 0.2687,
+          "informal": 0.0
+        },
+        "high": {
+          "own": 0.87,
+          "rent": 0.13,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.72,
+      "informal_share": 0.0541,
+      "rent_per_m2_usd": 19.58,
+      "price_per_m2_usd": 4699.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 16.0,
+      "rent_to_income_ratio": 0.32,
+      "gdp_ppp_per_capita_usd": 11747.9,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda média-baixa (5.000-12.000) (16 m²/pessoa) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.0708/0.9286/0.0006) — India",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.32 (proxy de renda) — India",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-HOH": {
+      "name": "Hohhot",
+      "nation": "CHN",
+      "population": 10757755,
+      "urban_population": 2900000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 857988,
+      "housing_stock_by_tier": {
+        "popular": 203000,
+        "medium": 643834,
+        "high": 11154
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
+          "year": 2024
+        }
+      ],
+      "method": "Proxy de renda documentado para aluguel/preço (rent burden OECD AHD HC1.2 x PIB PPP per capita / área HC2.1; preço = aluguel x 20 anos); estoque = população URBANA/domicílio dividido pela split do Gini; posse = taxa nacional de casa própria com gradiente de renda + informal (favela)."
+    },
+    "CHN-CHAN": {
+      "name": "Changchun",
+      "nation": "CHN",
+      "population": 19660725,
+      "urban_population": 5300000,
+      "urban_population_source": "agglomeration",
+      "household_size": 3.38,
+      "household_size_source": "un_desa",
+      "housing_stock_total": 1568047,
+      "housing_stock_by_tier": {
+        "popular": 371000,
+        "medium": 1176662,
+        "high": 20385
+      },
+      "stock_split_source": "derived:lognormal_from_gini",
+      "tenure_by_tier": {
+        "popular": {
+          "own": 0.0,
+          "rent": 0.0,
+          "informal": 1.0
+        },
+        "medium": {
+          "own": 0.6411,
+          "rent": 0.3234,
+          "informal": 0.0354
+        },
+        "high": {
+          "own": 0.77,
+          "rent": 0.23,
+          "informal": 0.0
+        }
+      },
+      "tenure_source": "derived:homeownership+slum",
+      "homeownership_rate": 0.62,
+      "informal_share": 0.2632,
+      "rent_per_m2_usd": 16.08,
+      "price_per_m2_usd": 3859.2,
+      "price_to_rent_ratio": 20.0,
+      "floor_m2_per_person": 38.0,
+      "rent_to_income_ratio": 0.25,
+      "gdp_ppp_per_capita_usd": 29333.3,
+      "price_source": "proxy_income",
+      "estimated": true,
+      "confidence": "estimated",
+      "refs": [
+        {
+          "title": "OECD AHD HC2.1 Living space — floor space per person: faixa de referência renda alta (>25.000) (38 m²/pessoa) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC2-1-Living-space.pdf",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HM1.3 Housing tenures — casa própria e gradiente por renda (HM1.3.A3) — People's Republic of China",
+          "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HM1-3-Housing-tenures.xlsx",
+          "year": 2024
+        },
+        {
+          "title": "housing.json — estoque por padrão derivado do Gini de inequality.json (split 0.2366/0.7504/0.0130) — People's Republic of China",
+          "url": "https://data.worldbank.org/indicator/SI.POV.GINI",
+          "year": 2025
+        },
+        {
+          "title": "OECD AHD HC1.2 Housing costs over income — mediana do ônus de aluguel 0.25 (proxy de renda) — People's Republic of China",
           "url": "https://webfs.oecd.org/els-com/Affordable_Housing_Database/HC1-2-Housing-costs-over-income.xlsx",
           "year": 2024
         }

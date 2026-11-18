@@ -52,6 +52,10 @@ const TickScheduler := preload("res://core/economy/tick_scheduler.gd")
 ## Sem a flag o jogo se comporta exatamente como antes.
 const TurboConfigScript := preload("res://core/economy/turbo_config.gd")
 
+## B3: dado de região (estados inteiros) — anexa o bloco `region` a cada dict
+## de cidade antes de initialize_world (state_regions.json + urban_share).
+const RegionDataScript := preload("res://core/economy/region_data.gd")
+
 ## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
 ## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
 ## calendário do jogo começa em 2027 e a projeção da base é dívida de calibração.
@@ -156,7 +160,11 @@ func _ready() -> void:
 	# mantém trigo.
 	var geo := GeographyService.new()
 	var cities := _load_cities()
-	sim.initialize_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
+	# B3: anexa o bloco `region` (estados inteiros) a cada cidade antes de criar
+	# o mundo — o núcleo e o snapshot/CLI levam o dado junto.
+	RegionDataScript.attach(cities)
+	sim.initialize_world(cities, _load_ports(),
+			geo.resolve_initial_mines(geo.resolve_initial_farms(_load_buildings(), cities), cities))
 	# §19 (W0): solo, moradia e prefeitura por cidade. DEPOIS do mundo: os JSON
 	# casam pelo id da cidade. Binário anterior à §19 não tem o método (mantém o
 	# estado sem dado urbano, como antes).

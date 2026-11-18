@@ -44,6 +44,35 @@ Sem os quintis observados, o núcleo usa a proxy lognormal do Gini declarado
 (mesma família da F7, sigma do Gini) e, sem Gini, quintis iguais — ausência
 explícita.
 
+> **Correção (2026-11-18, no merge da B2 sobre a base com B1/A6 + minas):**
+> três defeitos do núcleo, achados com o `services_test` vermelho na base
+> (`demanda deve separar basic/life/luxury: [113,5, 0, 0]`):
+>
+> 1. **Classe publicada.** A primeira versão derivava `class_population`
+>    (basic/life/luxury) do `stratum_level` do dia. O `phase_reset` zerava esse
+>    campo (é estado persistido, não fluxo do dia) e, mesmo com ele válido, o
+>    nível do dia num mundo de renda realizada baixa é volátil (dia 1 tudo
+>    luxury, dia 12 tudo basic). A classe publicada volta a ser a leitura do
+>    **F7** — lognormal ancorada no `external_income_index` (PIB PPP, dado) e no
+>    Gini declarado —, que é o contrato que serviços (split da demanda das
+>    famílias) e a IA de investimento consomem. O `stratum_level` continua
+>    governando **o consumo real** de cada quintil; a B2 não perdeu nada do
+>    modelo, só a leitura agregada que ela tinha assumido por engano.
+> 2. **Proxy dos quintis.** A integral da lognormal usava `ln(Φ⁻¹(q))`: como
+>    `Φ⁻¹(q)` é negativo para `q < 0,5`, o clamp em `1e-9` jogava Q1 e Q2 para
+>    zero e concentrava **73%** da renda no Q5 com Gini 0,41. Agora usa
+>    `Φ(z − σ)` com `z = Φ⁻¹(q)` — para Gini 0,41 os quintis saem
+>    `[0,054, 0,100, 0,150, 0,226, 0,469]`.
+> 3. **Gini depois da inicialização.** O GDScript declara a renda no
+>    `apply_to_sim`, DEPOIS do `initialize_world`, então a proxy era semeada com
+>    Gini zero (quintis iguais). `set_income_gini` agora re-semeia a proxy com o
+>    Gini declarado; a repartição vinda de dado observado (`set_city_strata`)
+>    nunca é sobrescrita (`Pop::strata_from_data`).
+>
+> Consequência: cidades sem quintis observados passam a ter a repartição
+> lognormal do próprio Gini (antes: iguais). Os goldens A0/S0 foram regerados no
+> fecho da entrega.
+
 ## 3. Estado e save v17
 
 `Pop` ganhou, indexado por quintil: `stratum_people`, `stratum_wage`,

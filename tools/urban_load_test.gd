@@ -117,8 +117,8 @@ func _run() -> void:
 		return
 	var land_data: Dictionary = _load_dict(URBAN_LAND_PATH).get("cities", {})
 	var housing_data: Dictionary = _load_dict(HOUSING_CITY_PATH).get("cities", {})
-	if land_data.size() != 834 or housing_data.size() != 834:
-		_fail("cobertura: urban_land=%d housing_city=%d (esperado 834)" % [
+	if land_data.size() != 849 or housing_data.size() != 849:
+		_fail("cobertura: urban_land=%d housing_city=%d (esperado 849)" % [
 			land_data.size(), housing_data.size()])
 
 	var total_units := 0.0
@@ -209,8 +209,8 @@ func _run() -> void:
 	for city_id in SAMPLE_CITIES:
 		before[city_id] = JSON.stringify(sim.get_urban_city(city_id), "", true, true)
 	var snapshot: Dictionary = sim.to_dict()
-	if int(snapshot.get("version", 0)) != 17:
-		_fail("save version %s != 17" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 19:
+		_fail("save version %s != 19" % str(snapshot.get("version")))
 	var restored = EconomySim.new()
 	restored.set_goods(_load_array(GOODS_PATH))
 	restored.set_recipes(_load_array(RECIPES_PATH))
@@ -243,7 +243,7 @@ func _run() -> void:
 	legacy.from_dict(v12)
 	if not Dictionary(legacy.get_urban_city("BRA-SAO")).is_empty():
 		_fail("v12->v14: save antigo nao deveria ter estado urbano")
-	if int(legacy.to_dict().get("version", 0)) != 17:
-		_fail("v12->v16: save migrado nao saiu como v16")
-	print("[urban] migracao v12->v16: sem estado urbano, schema 16.")
+	if int(legacy.to_dict().get("version", 0)) != 19:
+		_fail("v12->v19: save migrado nao saiu como v19")
+	print("[urban] migracao v12->v19: sem estado urbano, schema 19.")
 

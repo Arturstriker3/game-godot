@@ -185,10 +185,11 @@ double SimCore::money_total() const {
 	double total = ws_.transport_cash + ws_.foreign_cash + ws_.construction_cash;
 	for (const City& city : ws_.cities) {
 		// capital_income_next é um crédito pendente às famílias: entra no total
-		// para a conservação valer em qualquer ponto do tick.
+		// para a conservação valer em qualquer ponto do tick. O caixa da região
+		// (B3) é dinheiro do mundo, como o das famílias.
 		total += city.pop.savings + city.firm_cash + city.service_cash
 		       + city.government_budget + city.capital_income_next
-		       + city.rent_income_next;
+		       + city.rent_income_next + city.region.cash;
 	}
 	// F9: o caixa dos grupos é dinheiro do mundo (capital retido/dividendos a
 	// pagar). Sem ele, mover lucro da firma para o grupo pareceria destruição.
@@ -264,18 +265,14 @@ void SimCore::prologue() {
 	// Encerra as construções falidas no início do tick: assim o PIB do dia já
 	// não as inclui e o status fica consistente (a falência foi marcada no tick
 	// anterior, no fim da fase 7).
+	// D-086 (decisão do dono): o recurso NUNCA acaba — `depleted` nunca é marcado
+	// em lugar nenhum do núcleo (a produção não zera e o aprofundamento não é
+	// bloqueado por reserva), então não há o ramo de "mina com jazida esgotada"
+	// aqui. `ws_.depleted_mines` permanece 0 e é mantido no estado/save/status
+	// por contrato.
 	for (auto it = ws_.buildings.begin(); it != ws_.buildings.end();) {
 		if (it->bankrupt) {
 			++ws_.bankruptcies;
-			it = ws_.buildings.erase(it);
-			continue;
-		}
-		// Mina com jazida esgotada encerra a operação no dia seguinte: o fim da
-		// reserva é o fim econômico planejado, não uma insolvência. Contá-la
-		// como falência inflava o número (99 minas de ouro/diamante de jazidas
-		// de poucos dias em 730 d) e escondia as falências de verdade (§19).
-		if (it->depleted) {
-			++ws_.depleted_mines;
 			it = ws_.buildings.erase(it);
 			continue;
 		}
@@ -332,7 +329,11 @@ void SimCore::phase_reset() {
 			city.pop.stratum_food_spend[s] = 0.0;
 			city.pop.stratum_need[s] = 0.0;
 			city.pop.stratum_consumed[s] = 0.0;
-			city.pop.stratum_level[s] = 0;
+			// B2 (correção): `stratum_level` NÃO é fluxo do dia — é o teto de
+			// consumo que a fase de consumo recalcula e que o save persiste
+			// (`strata_level`). Zerá-lo aqui deixava `refresh_income_classes`
+			// publicando 100% basic enquanto o dia não chegava ao consumo
+			// (serviços liam a classe zerada). Mantém o valor do dia anterior.
 		}
 		city.pop.food_spend = 0.0;
 		city.pop.consumed = 0.0;
@@ -426,16 +427,23 @@ void SimCore::phase_accounting() {
 		const std::vector<int>& local_buildings =
 			ws_.buildings_by_city[city_index];
 		std::array<double, kMaxProducts> capacity_by_output{};
+		// D-086: a fatia de receita segue a capacidade EFETIVA do dia — mina com
+		// estágio esgotado produz 5% e não pode levar 100% da receita da cidade
+		// (isso maquiava o lucro da mina parada e afundava a mina ativa).
+		auto effective_capacity = [&city](const Building& building) {
+			return building.capacity * building.output_scale
+				* mine_stage_factor(city, building);
+		};
 		for (const int bi : local_buildings) {
 			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			capacity_by_output[building.output_product] +=
-				building.capacity * building.output_scale;
+				effective_capacity(building);
 		}
 		for (const int bi : local_buildings) {
 			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
-			const double effective = building.capacity * building.output_scale;
+			const double effective = effective_capacity(building);
 			const double share = capacity_by_output[building.output_product] > 0.0
 				? effective / capacity_by_output[building.output_product] : 0.0;
 			building.revenue = city.revenue_by_product[building.output_product] * share;
@@ -588,8 +596,14 @@ void SimCore::phase_accounting() {
 			}
 			// Planta secundária ociosa não é insolvente: sem operação no dia,
 			// não acumula dias de prejuízo (o custo de stand-by já é pequeno).
-			const bool operating = building.recipe < 0 && building.input_product < 0
-				? true : building.utilization > 1e-9;
+			// D-086: mina com o estágio esgotado é o mesmo caso — o poço parado
+			// aguarda aprofundamento; ele não "faliu" e não pode desaparecer.
+			const bool secondary =
+				building.recipe >= 0 || building.input_product >= 0;
+			const bool mine_idle = !secondary && is_mine_building(city, building)
+				&& mine_stage_factor(city, building) <= kMineStageFloor + 1e-12;
+			const bool operating = mine_idle ? false
+				: secondary ? building.utilization > 1e-9 : true;
 			if (building.profit < 0.0 && operating) {
 				++building.loss_days;
 			} else {
@@ -793,6 +807,132 @@ std::vector<std::string> SimCore::check_invariants(double money_before) const {
 	}
 
 	return violations;
+}
+
+// ---------------------------------------------------------------------------
+// B3 — REGIÃO (estados inteiros): semeadura do bloco do interior.
+// ---------------------------------------------------------------------------
+void SimCore::seed_region_demography(City& city) {
+	Region& region = city.region;
+	if (!region.ready || region.demography_ready) {
+		return;
+	}
+	const auto found = ws_.age_structures.find(city.nation);
+	if (found == ws_.age_structures.end() || !found->second.valid) {
+		return;
+	}
+	const AgeStructure& structure = found->second;
+	const double population = std::max(0.0, region.region_pop);
+	double total = 0.0;
+	for (int band = 0; band < kAgeBands; ++band) {
+		region.age_band[band] = population * structure.band[band];
+		total += region.age_band[band];
+	}
+	region.age_band[2] = std::max(0.0,
+		region.age_band[2] + (population - total));
+	region.demography_ready = true;
+}
+
+void SimCore::apply_region_demography(City& city) {
+	Region& region = city.region;
+	seed_region_demography(city);
+	if (!region.demography_ready) {
+		return;
+	}
+	double total = 0.0;
+	for (int band = 0; band < kAgeBands; ++band) {
+		region.age_band[band] = std::max(0.0, region.age_band[band]);
+		total += region.age_band[band];
+	}
+	region.region_pop = total;
+	reconcile_city_population(city);
+}
+
+void SimCore::seed_region_strata(City& city, const double* shares) {
+	Region& region = city.region;
+	if (!region.ready) {
+		return;
+	}
+	double income_share[kIncomeStrata];
+	if (shares != nullptr) {
+		double sum = 0.0;
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			income_share[s] = std::max(0.0, shares[s]);
+			sum += income_share[s];
+		}
+		if (sum <= 1e-9) {
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				income_share[s] = 1.0 / double(kIncomeStrata);
+			}
+		} else {
+			for (int s = 0; s < kIncomeStrata; ++s) {
+				income_share[s] /= sum;
+			}
+		}
+	} else {
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			income_share[s] = 1.0 / double(kIncomeStrata);
+		}
+	}
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		region.strata_income_share[s] = income_share[s];
+		region.stratum_people[s] = std::max(0.0, region.region_pop)
+			/ double(kIncomeStrata);
+		// Poupança inicial (bootstrap): o interior começa com caixa para
+		// comprar comida antes do primeiro salário semanal (cadência A6),
+		// repartida pela renda — mesma convenção da poupança urbana.
+		region.stratum_savings[s] = std::max(0.0, region.region_pop)
+			* kRegionSavingsPerCapita * income_share[s];
+		region.stratum_net_income[s] = 0.0;
+		region.stratum_food_spend[s] = 0.0;
+		region.stratum_need[s] = 0.0;
+		region.stratum_consumed[s] = 0.0;
+	}
+	// O caixa do interior É a soma dos quintis (round-trip exato).
+	region.cash = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		region.cash += region.stratum_savings[s];
+	}
+	region.strata_ready = true;
+}
+
+void SimCore::recompute_region_mix(City& city) {
+	Region& region = city.region;
+	const double urban = region.urban_share >= 0.0
+		? std::clamp(region.urban_share, 0.0, 1.0)
+		: kRegionUrbanShareNeutral;
+	const double agri = kRegionAgriAtRural
+		+ (kRegionAgriAtUrban - kRegionAgriAtRural) * urban;
+	const double industry = kRegionIndustryAtRural
+		+ (kRegionIndustryAtUrban - kRegionIndustryAtRural) * urban;
+	region.employment_mix[0] = agri;
+	region.employment_mix[1] = industry;
+	region.employment_mix[2] = std::max(0.0, 1.0 - agri - industry);
+}
+
+void SimCore::seed_region(City& city) {
+	Region& region = city.region;
+	if (!region.ready) {
+		return;
+	}
+	recompute_region_mix(city);
+	apply_region_demography(city);
+	// Quintis do interior: usa os alvos do país quando a POP urbana já foi
+	// semeada com eles (set_city_strata), senão 20% iguais (ausência explícita).
+	if (city.pop.strata_ready) {
+		seed_region_strata(city, city.pop.strata_income_share);
+	} else {
+		seed_region_strata(city, nullptr);
+	}
+}
+
+void SimCore::reconcile_city_population(City& city) {
+	// A população URBANA (unidade de simulação) acompanha a POP (soma das
+	// coortes, já atualizada pela demografia B1); o total exibido é urbano +
+	// interior (invariante B3). Sem esta passada o total não cresce com a B1.
+	city.simulation_population = std::max(0.0, city.pop.population);
+	city.population = city.simulation_population
+		+ (city.region.ready ? std::max(0.0, city.region.region_pop) : 0.0);
 }
 
 } // namespace ogs

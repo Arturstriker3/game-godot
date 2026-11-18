@@ -128,6 +128,25 @@ public:
 	double food_calories(int product) const;
 	// Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
 	static double depth_opex_factor(const Deposit& deposit);
+	// D-086 — produção relativa do ESTÁGIO de uma mina (0,05..1,0). 1,0 para
+	// construção que não é mina (fazenda, indústria, produto sem jazida).
+	// A curva é linear na reserva que o estágio ainda pode extrair:
+	// `clamp(stage_remaining / stage_reserve, piso, 1)`.
+	static double mine_stage_factor(const City& city, const Building& building);
+	// true quando a construção é uma mina/poço de estágio: extração primária de
+	// produto com jazida rastreada na cidade.
+	static bool is_mine_building(const City& city, const Building& building);
+	// Capacidade adicionada pelo próximo aprofundamento (t/dia).
+	static double mine_deepen_capacity(const Building& building);
+	// Custo (XGS) e prazo (dias) do aprofundamento que abriria
+	// `building.stage + 1`. A profundidade e a qualidade da jazida entram no
+	// custo; o estágio novo faz o custo crescer (mais fundo = mais caro).
+	double mine_deepen_cost(const City& city, const Building& building) const;
+	static int mine_deepen_days(const Building& building);
+	// Abre o estágio `stage` numa mina: ele reivindica uma fatia da reserva
+	// RESTANTE da jazida e começa cheio (produção 100% enquanto ela durar).
+	static void set_mine_stage(City& city, Building& building, int stage);
+
 	// F7 calibração: TFP efetiva da cidade (fator explícito ou derivado do
 	// PIB PPP per capita real).
 	double effective_productivity(const City& city) const;
@@ -168,6 +187,31 @@ public:
 	// soma dos estratos acompanha `pop.savings` por construção.
 	void charge_households(Pop& pop, double amount) const;
 	void credit_households(Pop& pop, double amount) const;
+
+	// ------------------------------------------------------------------
+	// B3 — REGIÃO (estados inteiros), bloco simplificado do interior.
+	// ------------------------------------------------------------------
+	// Semeia/reaplica a demografia do interior (5 coortes da estrutura
+	// etária nacional). Idempotente; sem dado para a nação NÃO faz nada.
+	void seed_region_demography(City& city);
+	// Deriva os totais do interior a partir das coortes (region_pop = soma).
+	void apply_region_demography(City& city);
+	// Semeia os 5 quintis do interior: 20% de pessoas cada; `shares` (5) são
+	// os quintis de renda observados (ou nullptr = 20% iguais — ausência
+	// explícita). Idempotente.
+	void seed_region_strata(City& city, const double* shares);
+	// Recalcula o mix de emprego do interior a partir de `urban_share`
+	// (fórmula declarada em sim_constants.h). Sem dado, mix neutro.
+	void recompute_region_mix(City& city);
+	// Semeia o bloco inteiro (demografia + estratos + mix) e reconcilia a
+	// população exibida com o invariante urbano + interior.
+	void seed_region(City& city);
+	// Reconcilia `city.population` com o invariante B3:
+	// urbano (simulation_population) + interior (region.region_pop).
+	void reconcile_city_population(City& city);
+	// Fase diária da região (cadência A6): consumo diário, emprego/salário/
+	// renda semanais e estratos/poupança mensais. Implementada em region.cpp.
+	void phase_region();
 
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);

@@ -107,6 +107,10 @@ struct AiContext {
 //             s5 parceiro, i0 saída, v0 capacidade.
 AiActionResult ai_emit_invest(AiContext& ctx, const std::string& city,
 		const std::string& building, double amount);
+// D-086: aprofundar/expandir mina existente (comando `deepen_mine`).
+// s0 cidade, s1 prédio.
+AiActionResult ai_emit_deepen(AiContext& ctx, const std::string& city,
+		const std::string& building);
 AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& resource, int input,
 		int output, double capacity, double jobs, double wage, double opex,

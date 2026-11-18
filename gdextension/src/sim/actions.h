@@ -42,6 +42,18 @@ struct GroupInvestResult {
 	std::string error;
 };
 
+// D-086 — resultado de um APROFUNDAMENTO de mina (obra física §15 que abre o
+// estágio seguinte e repõe a produção).
+struct DeepenResult {
+	bool started = false;
+	double cost = 0.0;
+	double capacity_added = 0.0;
+	int stage = 0;
+	int duration_days = 0;
+	std::string project_id;
+	std::string error;
+};
+
 // Construção de uma cidade pelo id (-1 se não existe). Antes era um método da
 // fachada; a fachada continua expondo `EconomySim::find_building` delegando.
 Building* find_building(WorldState& ws, const std::string& city_id,
@@ -74,5 +86,13 @@ GroupInvestResult action_group_invest(WorldState& ws, SimCore& core,
 		const std::string& building_id, const std::string& resource,
 		int output_product, double capacity, const std::string& recipe_id,
 		const std::string& partner_group, bool instant_construction);
+
+// D-086 — APROFUNDAR/EXPANDIR mina: obra física §15 que abre o estágio
+// seguinte da mina, repõe a produção e sobe a capacidade, consumindo a reserva
+// restante da jazida. Pago pelo DONO da mina (Estado, grupo nacional/estrangeiro
+// ou firma privada). Sem reserva, sem estágio novo.
+DeepenResult action_deepen_mine(WorldState& ws, SimCore& core,
+		const std::string& city_id, const std::string& building_id,
+		bool instant_construction);
 
 } // namespace ogs

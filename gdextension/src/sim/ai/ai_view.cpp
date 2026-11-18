@@ -8,6 +8,7 @@
 #include "ai_view.h"
 
 #include "../sim_core.h"
+#include "../sim_constants.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -88,6 +89,9 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.b_utilization.clear();
 	view.b_costs.clear();
 	view.b_site_suitability.clear();
+	view.b_stage.clear();
+	view.b_stage_factor.clear();
+	view.b_deepen_cost.clear();
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		const City& bcity = ws.cities[city_index];
 		if (city_index < ws.buildings_by_city.size()) {
@@ -107,6 +111,16 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 				view.b_site_suitability.push_back(
 					output >= 0 && output < ws.products
 						? bcity.suitability[output] : 0.0);
+				// D-086: estágio da mina (0/1,0 nas construções sem estágio).
+				const bool mine = output >= 0 && output < ws.products
+					&& SimCore::is_mine_building(bcity, building);
+				view.b_stage.push_back(mine ? building.stage : 0);
+				view.b_stage_factor.push_back(mine
+					? SimCore::mine_stage_factor(bcity, building) : 1.0);
+				// D-086: custo do próximo aprofundamento vem do núcleo (a IA não
+				// duplica a fórmula); 0.0 fora de mina.
+				view.b_deepen_cost.push_back(mine
+					? core.mine_deepen_cost(bcity, building) : 0.0);
 			}
 		}
 		view.b_offset[city_index + 1] =
@@ -119,6 +133,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.d_product.clear();
 	view.d_remaining_kt.clear();
 	view.d_opex_factor.clear();
+	view.d_quality.clear();
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		const City& dcity = ws.cities[city_index];
 		for (std::size_t product = 0; product < products; ++product) {
@@ -129,6 +144,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 			view.d_product.push_back(static_cast<int>(product));
 			view.d_remaining_kt.push_back(deposit.remaining_kt);
 			view.d_opex_factor.push_back(SimCore::depth_opex_factor(deposit));
+			view.d_quality.push_back(deposit.quality);
 		}
 		view.d_offset[city_index + 1] =
 			static_cast<int>(view.d_product.size());
@@ -322,7 +338,9 @@ bool ai_has_deposit(const AiView& view, int city, int product) {
 	for (int index = begin; index < end; ++index) {
 		const std::size_t at = static_cast<std::size_t>(index);
 		if (view.d_product[at] == product) {
-			return view.d_remaining_kt[at] > 0.0;
+			// D-086: basta a jazida ser RASTREADA — o recurso nunca acaba, então
+			// não se exige `remaining_kt > 0`.
+			return true;
 		}
 	}
 	return false;
@@ -339,6 +357,18 @@ double ai_deposit_opex_factor(const AiView& view, int city, int product) {
 	}
 	// Sem jazida declarada o fator é 1.0 (comportamento legado).
 	return 1.0;
+}
+
+double ai_deposit_quality(const AiView& view, int city, int product) {
+	const int begin = ai_d_begin(view, city);
+	const int end = ai_d_end(view, city);
+	for (int index = begin; index < end; ++index) {
+		const std::size_t at = static_cast<std::size_t>(index);
+		if (view.d_product[at] == product) {
+			return view.d_quality[at];
+		}
+	}
+	return 0.0;  // sem jazida declarada: ausência explícita
 }
 
 double ai_pending_capacity(const AiView& view, int city, int product) {
@@ -400,6 +430,53 @@ bool ai_local_has(const AiView& view, int city, int product) {
 		}
 	}
 	return false;
+}
+
+int ai_mine_index(const AiView& view, int city, int product, bool state_only) {
+	// Só faz sentido para produto com jazida declarada na cidade (senão não há
+	// estágio — é extração ilimitada legada).
+	if (!ai_has_deposit(view, city, product)) {
+		return -1;
+	}
+	const int begin = ai_b_begin(view, city);
+	const int end = ai_b_end(view, city);
+	// D-086: entre as construções do produto com o dono pedido, devolve a de
+	// MENOR custo de próximo estágio (empate = primeira, comparação estrita).
+	// A ordem das construções no mundo é adversa de propósito (teste mine_stage).
+	int best = -1;
+	double best_cost = 0.0;
+	for (int index = begin; index < end; ++index) {
+		const std::size_t at = static_cast<std::size_t>(index);
+		if (view.b_output[at] != product) {
+			continue;
+		}
+		const bool is_state = view.b_owner[at] == "state";
+		if (state_only != is_state) {
+			continue;
+		}
+		const double cost = ai_mine_deepen_cost(view, city, index);
+		if (best < 0 || cost < best_cost) {
+			best = index;
+			best_cost = cost;
+		}
+	}
+	return best;
+}
+
+double ai_mine_deepen_capacity(const AiView& view, int index) {
+	if (index < 0 || index >= static_cast<int>(view.b_capacity.size())) {
+		return 0.0;
+	}
+	return std::max(0.0, view.b_capacity[static_cast<std::size_t>(index)])
+		* (kMineDeepenCapacityFactor - 1.0);
+}
+
+double ai_mine_deepen_cost(const AiView& view, int city, int index) {
+	(void)city;  // a view já é por cidade (o custo vem do retrato do dia)
+	if (index < 0 || index >= static_cast<int>(view.b_deepen_cost.size())) {
+		return 0.0;
+	}
+	return view.b_deepen_cost[static_cast<std::size_t>(index)];
 }
 
 double ai_observed_cost(const AiView& view, int city, int product) {

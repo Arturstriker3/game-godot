@@ -32,6 +32,8 @@ extends SceneTree
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
+## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
+const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -156,14 +158,20 @@ func _run() -> void:
 		_fail("cenario vazio (cidades=%d, construcoes=%d)" % [
 			cities.size(), buildings.size()])
 		return
+	# B3: região (estados inteiros) viaja no snapshot pelo bloco `region`.
+	RegionDataScript.attach(cities)
 
 	# Com `--ai=1` o mundo nasce com a geografia real, como o harness de
-	# equivalência: a fazenda inicial é resolvida ANTES de criar o mundo.
+	# equivalência: a fazenda inicial é resolvida ANTES de criar o mundo e, em
+	# seguida, as minas históricas do D-086 (uma por cidade × mineral com
+	# jazida), já no último estágio.
 	var geo: Object = null
 	if _ai:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
+		if geo.has_method("resolve_initial_mines"):
+			buildings = geo.resolve_initial_mines(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz.

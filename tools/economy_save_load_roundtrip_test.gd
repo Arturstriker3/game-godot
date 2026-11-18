@@ -16,6 +16,8 @@ extends SceneTree
 ##     [--days=60] [--save-at=30] [--mode=world|demo]
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
+## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
+const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const AGRIA_CENTER := Vector2(2532.6, 571.4)
 const PORTUS_CENTER := Vector2(2560.4, 543.8)
@@ -150,6 +152,8 @@ func _make_world() -> Object:
 		_fail("cenario vazio (cidades=%d, construcoes=%d)" % [
 			cities.size(), buildings.size()])
 		return sim
+	# B3: região (estados inteiros) viaja no save pelo bloco `region`.
+	RegionDataScript.attach(cities)
 	sim.initialize_world(cities, ports, buildings)
 	_load_urban(sim)
 	return sim

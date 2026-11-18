@@ -28,6 +28,8 @@ extends SceneTree
 
 const GeographyServiceScript := preload("res://core/economy/geography_service.gd")
 const GroupNamerScript := preload("res://core/economy/group_namer.gd")
+## B3: dado de região (estados inteiros) — anexa `region` a cada cidade.
+const RegionDataScript := preload("res://core/economy/region_data.gd")
 
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
 const PORTS_PATH := "res://data/definitions/scenario/ports.json"
@@ -223,6 +225,8 @@ func _test_world() -> void:
 		_fail("cenario vazio (cidades=%d, construcoes=%d, bens=%d)" % [
 			cities.size(), buildings.size(), goods.size()])
 		return
+	# B3: região (estados inteiros) viaja no snapshot pelo bloco `region`.
+	RegionDataScript.attach(cities)
 
 	var sim = EconomySim.new()
 	# Q-015: workers do núcleo antes de criar o mundo. Binário anterior à Q-015
@@ -269,6 +273,10 @@ func _test_world() -> void:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
+		# D-086: uma mina/poço JÁ EXISTENTE por (cidade, mineral com jazida), no
+		# último estágio (produção no piso). Mesmo caminho do autoload.
+		if geo.has_method("resolve_initial_mines"):
+			buildings = geo.resolve_initial_mines(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz
 	# (casamento por id da cidade). Fora deste bloco o runner mantém o mundo
@@ -398,7 +406,7 @@ func _test_world() -> void:
 			# de falências de construções (28 no caso da F9), como o sweep.
 			var meta: Dictionary = (baseline_data as Dictionary).get("meta", {})
 			var baseline_bk: int = 0
-			if typeof(meta.get("bankruptcy_limit", 0)) == TYPE_INT:
+			if meta.has("bankruptcy_limit"):
 				baseline_bk = int(meta["bankruptcy_limit"]) - BANKRUPTCY_TOLERANCE
 			elif typeof(meta.get("bankruptcies", 0)) == TYPE_INT:
 				baseline_bk = int(meta["bankruptcies"])
