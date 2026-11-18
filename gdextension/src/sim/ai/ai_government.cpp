@@ -409,6 +409,41 @@ void plan_city(AiContext& ctx, int city_index) {
 		}
 		// Rejeitado: tenta o próximo candidato (ordem de margem).
 	}
+
+	// 3. Infraestrutura da região (B5). Determinística — prioridade pelo nível
+	// MAIS BAIXO (cobertura pior primeiro), empate na ordem estrada → energia →
+	// água; gatilho = déficit alimentar da REGIÃO (comida/segurança alimentar)
+	// OU êxodo já observado (migração acumulada > 0). Uma obra por cidade por
+	// cooldown; custo limitado a `available` (fração do orçamento nacional).
+	if (build_cooldown_ready(ctx, city_id)) {
+		const int infra_levels[kInfraTypeCount] = {
+			city.infra_road, city.infra_power, city.infra_water};
+		const bool trigger = city.region_food_deficit >= kMinShortageTons
+			|| city.migration_rural_in_total > 0.0;
+		if (trigger) {
+			int best_type = -1;
+			int best_level = kInfraMaxLevel + 1;
+			for (int t = 0; t < kInfraTypeCount; ++t) {
+				if (infra_levels[t] < kInfraMaxLevel
+						&& infra_levels[t] < best_level) {
+					best_level = infra_levels[t];
+					best_type = t;
+				}
+			}
+			if (best_type >= 0) {
+				const double cost = kInfraCostPerCapitaPerLevel
+					* std::max(0.0, city.region_pop);
+				if (cost > 0.0 && cost <= available) {
+					const AiActionResult infra_result =
+						ai_emit_infra(ctx, city_id, best_type);
+					if (infra_result.error.empty()) {
+						ctx.state.last_build_day[city_id] = ctx.day;
+						return;
+					}
+				}
+			}
+		}
+	}
 }
 
 } // namespace

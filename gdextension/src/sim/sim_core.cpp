@@ -415,6 +415,7 @@ void SimCore::phase_reset() {
 		building.profit = 0.0;
 		building.paid_wages = 0.0;
 		building.paid_opex = 0.0;
+		building.royalty_paid = 0.0;
 	}
 
 	OGS_SIM_PHASE_LAP(kPhaseReset);
@@ -469,6 +470,28 @@ void SimCore::phase_accounting() {
 				city.firm_cash += subsidy;
 				building.profit += subsidy;
 			}
+		}
+
+		// B5: royalty de concessão — fração da RECEITA da mina/fazenda concedida
+		// paga ao Estado (governo nacional). Reduz o lucro do grupo
+		// concessionário: o caixa da firma paga o royalty ao governo (dinheiro
+		// conservado). Cap no lucro (não se paga royalty de prejuízo).
+		for (const int bi : local_buildings) {
+			Building& building =
+				ws_.buildings[static_cast<std::size_t>(bi)];
+			if (building.royalty <= 0.0 || building.owner == "state") {
+				continue;
+			}
+			const double royalty_paid = std::min(
+				building.revenue * building.royalty,
+				std::max(0.0, building.profit));
+			if (royalty_paid <= 0.0) {
+				continue;
+			}
+			building.profit -= royalty_paid;
+			building.royalty_paid = royalty_paid;
+			city.firm_cash = std::max(0.0, city.firm_cash - royalty_paid);
+			city.government_budget += royalty_paid;
 		}
 
 		// A receita de serviços inclui consumo das famílias, opex empresarial,

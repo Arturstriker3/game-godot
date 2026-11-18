@@ -221,6 +221,26 @@ public:
 	// ------------------------------------------------------------------
 	void phase_migration();
 
+	// ------------------------------------------------------------------
+	// B5 — INFRAESTRUTURA DA REGIÃO (estrada, energia, água). Multiplicadores
+	// derivados da cobertura (0..kInfraMaxLevel), implementados em region.cpp.
+	// Nenhum cria dinheiro: o custo de acesso é frete (vai ao transporte), a
+	// produtividade só escala o salário já pago pelo caixa da firma e o êxodo
+	// só escala o fluxo de PESSOAS (conservado).
+	// ------------------------------------------------------------------
+	// Nível total (0..kInfraTypeCount*kInfraMaxLevel) dos três tipos.
+	static int infra_total_level(const Region& region);
+	// Multiplicador de custo de acesso região↔polo (>= 1; cai com a estrada).
+	static double infra_access_multiplier(const Region& region);
+	// Multiplicador de produtividade do trabalho primário (>= 1; 1 na base).
+	static double infra_productivity_multiplier(const Region& region);
+	// Multiplicador de êxodo (>= 1; 1 com infra máxima, > 1 com infra baixa).
+	static double infra_exodus_multiplier(const Region& region);
+	// Nível atual de um tipo de infra (0..kInfraMaxLevel); -1 se tipo inválido.
+	static int infra_level(const Region& region, int type);
+	// Sobe UM nível do tipo (saturado em kInfraMaxLevel). Devolve o novo nível.
+	static int infra_level_up(Region& region, int type);
+
 	// F7: fecha o dia do mercado de trabalho de uma cidade.
 	double labor_day(City& city);
 	// F7 — custo diário da cesta completa de um nível de necessidade aos preços

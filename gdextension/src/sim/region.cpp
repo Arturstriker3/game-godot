@@ -153,6 +153,76 @@ void region_demography_month(WorldState& ws, City& city) {
 
 } // namespace
 
+// ---------------------------------------------------------------------------
+// B5 — infraestrutura da região (estrada, energia, água): multiplicadores
+// derivados. Cobertura de cada tipo = nível/máximo (0..1); o nível é salvo
+// (save v21) e os multiplicadores são recalculados a cada uso (não persistidos).
+// ---------------------------------------------------------------------------
+int SimCore::infra_total_level(const Region& region) {
+	return region.infra_road + region.infra_power + region.infra_water;
+}
+
+double SimCore::infra_access_multiplier(const Region& region) {
+	// Custo de acesso: penalidade máxima com estrada 0, zero na máxima. O
+	// frete/overhead é pago ao setor de transporte (não cria dinheiro).
+	if (kInfraMaxLevel <= 0) {
+		return 1.0;
+	}
+	const double cover = std::clamp(
+		double(region.infra_road) / double(kInfraMaxLevel), 0.0, 1.0);
+	return 1.0 + kInfraAccessPenaltyMax * (1.0 - cover);
+}
+
+double SimCore::infra_productivity_multiplier(const Region& region) {
+	if (kInfraMaxLevel <= 0) {
+		return 1.0;
+	}
+	const int level[kInfraTypeCount] = {
+		region.infra_road, region.infra_power, region.infra_water};
+	double covered = 0.0;
+	for (int t = 0; t < kInfraTypeCount; ++t) {
+		covered += kInfraProductivityWeight[t]
+			* (double(level[t]) / double(kInfraMaxLevel));
+	}
+	return 1.0 + kInfraProductivityGain * std::clamp(covered, 0.0, 1.0);
+}
+
+double SimCore::infra_exodus_multiplier(const Region& region) {
+	if (kInfraMaxLevel <= 0) {
+		return 1.0;
+	}
+	const int level[kInfraTypeCount] = {
+		region.infra_road, region.infra_power, region.infra_water};
+	double covered = 0.0;
+	for (int t = 0; t < kInfraTypeCount; ++t) {
+		covered += kInfraExodusWeight[t]
+			* (double(level[t]) / double(kInfraMaxLevel));
+	}
+	// Sem infra, expulsa mais (1 + boost); com cobertura total, expulsa na base.
+	return 1.0 + kInfraExodusBoostMax * (1.0 - std::clamp(covered, 0.0, 1.0));
+}
+
+int SimCore::infra_level(const Region& region, int type) {
+	switch (type) {
+		case 0: return region.infra_road;
+		case 1: return region.infra_power;
+		case 2: return region.infra_water;
+		default: return -1;
+	}
+}
+
+int SimCore::infra_level_up(Region& region, int type) {
+	int* target = nullptr;
+	switch (type) {
+		case 0: target = &region.infra_road; break;
+		case 1: target = &region.infra_power; break;
+		case 2: target = &region.infra_water; break;
+		default: return -1;
+	}
+	*target = std::min(kInfraMaxLevel, *target + 1);
+	return *target;
+}
+
 void SimCore::phase_region() {
 	// Laço SERIAL (determinístico): a ordem das cidades é fixa. O interior de
 	// uma cidade não toca o de outra (só lê o mercado da própria cidade), mas a
@@ -176,8 +246,12 @@ void SimCore::phase_region() {
 			// Salário bruto da SEMANA: o primário (fazendas/minas/madeira) é o
 			// empregador; desconto rural declarado. Limitado ao caixa da firma
 			// (contraparte: débito no caixa do pagador, conservação).
+			// B5: a produtividade do trabalho primário escala com a infra da
+			// região (estrada/luz/água, pesos declarados) — salário maior com
+			// infra melhor, pago do MESMO caixa da firma (dinheiro conservado).
 			const double gross = region.employment * kFarmWage
-				* kRegionRuralWageDiscount * double(week_period);
+				* kRegionRuralWageDiscount * double(week_period)
+				* infra_productivity_multiplier(region);
 			const double paid = std::min(gross, std::max(0.0, city.firm_cash));
 			const double tax = paid * kTaxRate;
 			const double net = std::max(0.0, paid - tax);
@@ -192,7 +266,11 @@ void SimCore::phase_region() {
 			region.income = net / days;
 		}
 
-		// --- Diário: consumo de comida no mercado da cidade-polo (sem frete). ---
+		// --- Diário: consumo de comida no mercado da cidade-polo. B5: o custo
+		// de ACESSO (frete/overhead da estrada) encarece o que a região compra;
+		// o overhead vai ao setor de transporte (dinheiro conservado), o preço
+		// do mercado continua indo à firma. ---
+		const double access = infra_access_multiplier(region);
 		region.food_need = region_pop * kNeedPerCapita;
 		region.food_spend = 0.0;
 		region.food_consumed = 0.0;
@@ -214,7 +292,12 @@ void SimCore::phase_region() {
 				continue;
 			}
 			Market& market = city.markets[product];
-			const double price = market.price;
+			// B5: o preço efetivo para a região inclui o overhead de acesso
+			// (frete da estrada). A firma recebe o preço do mercado; a diferença
+			// (frete) vai ao setor de transporte — dinheiro conservado.
+			const double base_price = market.price;
+			const double price = base_price <= 0.0
+				? 0.0 : base_price * access;
 			if (price <= 0.0) {
 				continue;
 			}
@@ -235,14 +318,17 @@ void SimCore::phase_region() {
 				continue;
 			}
 			const double paid_food = quantity * price;
+			const double firm_share = quantity * base_price;
+			const double freight = std::max(0.0, paid_food - firm_share);
 			market.stock -= quantity;
 			market.demand += quantity;
 			market.sold += quantity;
 			budget -= paid_food;
 			region.food_spend += paid_food;
 			region.food_consumed += quantity * factor;
-			city.revenue_by_product[product] += paid_food;
-			city.firm_cash += paid_food;
+			city.revenue_by_product[product] += firm_share;
+			city.firm_cash += firm_share;
+			ws_.transport_cash += freight;
 			ws_.consumed_total[product] += quantity;
 			ws_.consumed_today[product] += quantity;
 			remaining_need -= quantity * factor;
@@ -259,6 +345,19 @@ void SimCore::phase_region() {
 				region.food_spend / double(kIncomeStrata);
 			region.stratum_consumed[s] =
 				region.food_consumed / double(kIncomeStrata);
+		}
+
+		// --- Diário: manutenção da infra da região (B5). Despesa NACIONAL
+		// (debita o caixa do governo, a prefeitura não paga) paga ao setor de
+		// serviços/construção — dinheiro conservado. ---
+		region.infra_maintenance = kInfraMaintenancePerCapitaPerLevelPerDay
+			* double(infra_total_level(region)) * region_pop;
+		if (region.infra_maintenance > kRegionEps) {
+			const double paid = std::min(region.infra_maintenance,
+				std::max(0.0, city.government_budget));
+			city.government_budget = std::max(0.0,
+				city.government_budget - paid);
+			city.service_cash += paid;
 		}
 
 		// --- Mensal (A6): demografia do interior (nascimentos/mortes/

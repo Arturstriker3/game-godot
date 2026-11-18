@@ -275,6 +275,13 @@ namespace ogs {
 		// lucro na fração `local_share`. Fora de JV, local_share = 0.
 		double local_share = 0.0;
 		std::string partner_group;
+		// B5 (save v21): royalty/imposto de concessão - fração da receita da
+		// mina/fazenda CONCEDIDA paga ao Estado (governo nacional). 0 fora de
+		// concessão. `owner` continua o grupo concessionário (F9, sem duplicar
+		// donos); o royalty é o efeito de renda da concessão. Modelo declarado.
+		double royalty = 0.0;
+		// Royalty efetivamente pago no dia (derivado, nao persistido).
+		double royalty_paid = 0.0;
 		double revenue = 0.0;
 		double input_value = 0.0;
 		double costs = 0.0;
@@ -321,6 +328,9 @@ namespace ogs {
 		CONSTRUCTION_BUILDING = 0,
 		CONSTRUCTION_HOUSING = 1,
 		CONSTRUCTION_URBAN_INFRA = 2,
+		// B5: obra de infraestrutura da REGIÃO/estado (estrada/energia/água).
+		// Não cria prédio: ao concluir sobe o nível no Region da cidade.
+		CONSTRUCTION_REGION_INFRA = 3,
 	};
 
 	struct ConstructionProject {
@@ -393,6 +403,9 @@ namespace ogs {
 		// o estágio novo reivindica uma fatia da reserva restante da jazida).
 		// -1 = obra normal (prédio novo, expansão, moradia, infra).
 		int deepen_stage = -1;
+		// B5: tipo de infra da região (0 estrada, 1 energia, 2 água) quando
+		// kind == CONSTRUCTION_REGION_INFRA. -1 = não se aplica.
+		int infra_type = -1;
 	};
 
 	struct Pop {
@@ -908,6 +921,18 @@ struct Region {
 	double migration_month_city_out = 0.0;  // saída cidade→cidade do último fecho
 	double migration_month_net = 0.0;       // rural_in + city_in − city_out (último fecho)
 	double migration_month_rate = 0.0;      // net ÷ população regional (fração/mês)
+	// ------------------------------------------------------------------
+	// B5 (save v21) - INFRAESTRUTURA do estado: níveis 0..kInfraMaxLevel de
+	// estrada, energia (luz) e água. Persistidos. Efeitos: custo de acesso
+	// (estrada), produtividade do trabalho primário (os três com pesos) e
+	// êxodo (B4). Os multiplicadores são DERIVADOS (recalculados a cada
+	// uso, não persistidos). Nível inicial sem dado = 0 (ausência explícita).
+	// ------------------------------------------------------------------
+	int infra_road = 0;
+	int infra_power = 0;
+	int infra_water = 0;
+	// Manutenção do dia (derivada, recalculada todo dia; não persistida).
+	double infra_maintenance = 0.0;
 };
 
 

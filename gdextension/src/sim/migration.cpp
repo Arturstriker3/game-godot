@@ -211,6 +211,9 @@ double migrate_region_to_urban(WorldState& ws, SimCore& core, std::size_t ci) {
 	const double drive = std::clamp(
 		(gap - kMigrationGapThreshold) / kMigrationGapScale, 0.0, 1.0);
 	double migrants = region_pop * kMigrationMonthlyMax * drive;
+	// B5: região sem infraestrutura expulsa mais gente (fator sobre o fluxo,
+	// sinal correto: infra baixa → fator > 1; pessoas continuam conservadas).
+	migrants *= core.infra_exodus_multiplier(region);
 	migrants = std::min(migrants, urban_vacancy_people(ws, ci));
 	if (migrants <= kMigEps) {
 		return 0.0;

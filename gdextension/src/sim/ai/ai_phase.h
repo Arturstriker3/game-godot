@@ -111,6 +111,10 @@ AiActionResult ai_emit_invest(AiContext& ctx, const std::string& city,
 // s0 cidade, s1 prédio.
 AiActionResult ai_emit_deepen(AiContext& ctx, const std::string& city,
 		const std::string& building);
+// B5: obra de infraestrutura da região (comando `infra_build`).
+// s0 cidade, i0 tipo (0 estrada, 1 energia, 2 água).
+AiActionResult ai_emit_infra(AiContext& ctx, const std::string& city,
+		int infra_type);
 AiActionResult ai_emit_build(AiContext& ctx, const std::string& city,
 		const std::string& building, const std::string& resource, int input,
 		int output, double capacity, double jobs, double wage, double opex,

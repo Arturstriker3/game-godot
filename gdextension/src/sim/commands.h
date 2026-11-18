@@ -66,6 +66,10 @@ enum class CommandType : int {
 	SetServiceBusinessState,
 	// D-086: aprofundar/expandir mina (obra física que abre o estágio seguinte).
 	DeepenMine,
+	// B5: obra de infraestrutura da região/estado (estrada/energia/água).
+	InfraBuild,
+	// B5: conceder mina/fazenda a grupo (nacional/estrangeiro) com royalty.
+	Concede,
 };
 
 // Nome estavel do tipo (log/replay em JSON). `nullptr` para tipo invalido.

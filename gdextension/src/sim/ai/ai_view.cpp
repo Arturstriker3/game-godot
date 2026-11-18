@@ -53,6 +53,16 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 		row.landmass = city.landmass;
 		row.firm_cash = city.firm_cash;
 		row.government_budget = city.government_budget;
+		// B5: infra da região + população do interior + déficit alimentar da
+		// região + êxodo acumulado (o governo decide obra de infra com isso).
+		row.infra_road = city.region.infra_road;
+		row.infra_power = city.region.infra_power;
+		row.infra_water = city.region.infra_water;
+		row.region_pop = std::max(0.0, city.region.region_pop);
+		row.region_food_deficit = std::max(0.0,
+			city.region.food_need - city.region.food_consumed);
+		row.migration_rural_in_total =
+			std::max(0.0, city.region.migration_rural_in_total);
 		row.suitability.assign(products, 0.0);
 		row.external_demand.assign(products, 0.0);
 		for (std::size_t product = 0; product < products; ++product) {

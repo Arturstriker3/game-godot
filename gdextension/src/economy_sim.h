@@ -745,6 +745,15 @@ public:
 	Dictionary deepen_mine(const String& city_id, const String& building_id);
 
 	/**
+	 * B5: obra de infraestrutura da região/estado (estrada/energia/água).
+	 * `infra_type`: 0 estrada, 1 energia (luz), 2 água. Sobe UM nível (até
+	 * kInfraMaxLevel) via projeto físico §15, pago pelo GOVERNO NACIONAL.
+	 * Devolve {started, cost, infra_type, next_level, duration_days, project_id,
+	 * error}. Comando da fila A3 (`infra_build`).
+	 */
+	Dictionary infra_build(const String& city_id, int infra_type);
+
+	/**
 	 * F9: abertura ao capital estrangeiro por (nação, setor).
 	 * `mode`: `open` (padrão), `restricted`, `joint_venture`, `closed`.
 	 * `min_local`: fração mínima do parceiro local em joint venture (0..1).
@@ -777,6 +786,16 @@ public:
 	 * da nação cai por `kNationalizationDays` dias — o que encarece o IDE.
 	 */
 	Dictionary nationalize(const String& city_id, const String& building_id);
+
+	/**
+	 * B5: concede uma mina/fazenda estatal a um grupo (nacional/estrangeiro)
+	 * com um royalty sobre a produção (`building.royalty`). Transferência de
+	 * dinheiro conservada (o concessionário paga o valor contábil ao governo).
+	 * `royalty_rate` (0..1; <= 0 usa o padrão kConcessionRoyaltyRate). Devolve
+	 * {ok, price, royalty, owner, error}. Comando da fila A3 (`concede`).
+	 */
+	Dictionary concede(const String& city_id, const String& building_id,
+		const String& group_id, double royalty_rate);
 
 	/**
 	 * Status de investimento (sob demanda, fora do tick): ranking de grupos,
@@ -817,6 +836,8 @@ private:
 	// D-086: aprofundar/expandir mina (obra física §15 → estágio seguinte).
 	Dictionary apply_deepen_mine(const String& city_id,
 		const String& building_id);
+	// B5: obra de infraestrutura da região (estrada/energia/água).
+	Dictionary apply_infra_build(const String& city_id, int infra_type);
 	Dictionary apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
@@ -866,6 +887,9 @@ private:
 	Dictionary apply_privatize(const String& city_id, const String& building_id,
 		const String& buyer_group);
 	Dictionary apply_nationalize(const String& city_id, const String& building_id);
+	// B5: concessão de mina/fazenda com royalty.
+	Dictionary apply_concede(const String& city_id, const String& building_id,
+		const String& group_id, double royalty_rate);
 	Dictionary apply_urban_expand(const String& city_id, int zone, double km2);
 	Dictionary apply_urban_densify(const String& city_id, int zone);
 	Dictionary apply_urban_social_housing(const String& city_id, double units);
