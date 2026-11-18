@@ -8,7 +8,10 @@
 >   HEAD `f2a845a` (merge da B5: Parte A + B1–B5 + minas, **save v21**).
 > - **Host:** não ocioso durante a bateria, o sweep e o bench — outra worktree
 >   (`opengs-wt-b7`) rodava Godot headless (`tools/_tmp_split_diag.gd`, PIDs
->   21576/28956) e havia Chrome/Steam ativos. Onde o critério de repetibilidade
+>   21576/28956, observados durante a bateria/sweep) e havia Chrome/Steam ativos.
+>   O próprio bench avisou "outro processo Godot headless ativo (PID 16192, 19112)"
+>   — esses dois são os servidores `godot-editor-mcp` (sem janela), que o script
+>   confunde com Godot por nome de processo. Onde o critério de repetibilidade
 >   depende disso, o número que vale é a **mediana** (mesma regra de A5/A6/A7/B2).
 > - **Editor:** nenhum editor com janela foi aberto ou encerrado; os dois
 >   `godot-editor-mcp` (sem janela) seguiram rodando. A DLL debug do slot foi
@@ -160,8 +163,8 @@ havia regerado na B5; esta rodada confirma que nada se moveu desde então).
 | arquivos | **byte-idênticos**, 70.854.209 B, SHA-256 `2D7D35C49CEFCD234556DF3470D9BCB289F61288ACEFBFBD71611C651F64512B` |
 | comparador (`world_equivalence_compare.py`, tolerância 0) | **0 diferenças** |
 | violações de invariante | 0 |
-| `money_total` | 6.523.551.982,90 XGS |
-| tempo | Godot 42 s de parede (1.721 ms de tick nos 10 d); CLI 22 s (13.059,4 ms total, 1.305,9 ms/dia **incluindo** a carga de 61,8 MB) |
+| `money_total` | 6.523.551.982,90 XGS (soma de `cash` por cidade — o snapshot não grava o total como campo) |
+| tempo | medido na sessão, não versionado: Godot 42 s de parede (1.721 ms de tick nos 10 d); CLI stderr `[cli] dias=10 threads=0 day=10 cidades=849 ms_total=13059.4 ms_dia=1305.9 money_total=6523551982.90` (o `ms_dia` **inclui** a carga de 61,8 MB) |
 
 ## 5. Sweep 365 d — real + sonda float
 
@@ -198,7 +201,7 @@ havia regerado na B5; esta rodada confirma que nada se moveu desde então).
 | SOM | 0,763 | 0,729 | −3,4 |
 | HTI | 0,401 | 0,371 | −3,0 |
 
-Na sonda float somam-se BEN, DEU, GMB, HND, LSO e MMR (16 no total). `DJI` cai 36,1 p.p.
+Na sonda float entram BEN, DEU, GMB, HND, LSO e MMR e **saem KGZ e NER** — 12 − 2 + 6 = **16**. `DJI` cai 36,1 p.p.
 mas é isenta declarada (junto de SOL/SAH/JOR/YEM); nenhuma isenção nova foi criada.
 
 **Piores 20 do real (`food_avg30`):** PSX 0,000 · BHR 0,000 · KWT 0,000 · QAT 0,000 ·
@@ -206,8 +209,8 @@ SAH 0,000 · EGY 0,002 · SAU 0,013 · MNG 0,030 · MRT 0,040 · JOR 0,044 · DJ
 SGP 0,065 · YEM 0,075 · ARE 0,121 · LBY 0,163 · SOL 0,163 · TKM 0,164 · SDN 0,169 ·
 LKA 0,170 · CRI 0,171.
 
-**Melhoras > 3 p.p. vs B4:** GMB +55,3 · BGD +20,2 · THA +16,5 · LBY +16,3 · CHE +7,8 ·
-LSO +5,0 · BDI +4,5 · AUT +4,2 (10 nações).
+**Melhoras > 3 p.p. vs B4 (10 nações):** GMB +55,3 · BGD +20,2 · THA +16,5 · LBY +16,3 ·
+CHE +7,8 · LSO +5,0 · BDI +4,5 · AUT +4,2 · BEN +4,1 · MRT +4,0.
 
 ## 6. Mundo em 365 d — obras, concessões, migração e urbanização
 
@@ -263,7 +266,7 @@ na IA e no retrato do prólogo.
 | 4 | **Minério no teto de 3×** | ferro `m_desired` **20.821.206,7 t/dia** vs ~17,8 mil t/dia de capacidade; petróleo/gás/carvão/ferro/bauxita em 3,000× no dia 365 | A pressão de preço usa `(desired − latent)/estoque` e a produção soma `desired` a plena capacidade **antes** de saber se há insumo/venda — a escassez satura o clamp com qualquer oferta de mina (não é efeito da semeadura D-087). | Mudar a regra de demanda desejada/pressão (contar só o que a usina consegue comprar/processar) |
 | 5 | **Migração baixa** | **18.983,7** interior→polo em 365 d (interior +56,0 M no ano); urbanização **−0,05 p.p.**; cidade→cidade 37.479,5 in/out | `kMigrationGapThreshold`/`kMigrationMonthlyMax` (0,5%/mês) + vaga de moradia: o fluxo realizado é ~0,0003% do estoque do interior. | Recalibrar o gatilho/vaga **depois** de resolver a comida do interior (#1/#3) — senão o êxodo só muda a fome de lugar |
 | 6 | **AUS — bauxita semeada** | AUS-BRO bauxita 0,144 e AUS-WEI 0,156 de utilização; falidas por **folha** (o resto das 15 foi corrigido na D-086b) | As duas maiores minas de bauxita operam a ~15% da capacidade por venda e pagam equipe cheia; o teto de 3× impede o preço de subir. | Depende de #4 (preço) ou de régua de folha por utilização sustentada |
-| 7 | **Aluguel Q1** | AUS Q1 **0,545** (teto 0,40); Q1/Q2 sem caixa em BRA/JPN/NGA/USA | Demanda do Q1 sem renda compatível com o preço do solo (B2 §10); a B6 (patrimônio da região) muda o colateral. | Desenho B6/C1 (aluguel do anel periurbano) |
+| 7 | **Aluguel Q1** | AUS Q1 **0,545** (teto 0,40); Q1/Q2 sem caixa em BRA/JPN/USA e NGA Q2 pago 0,196 (quase zero) | Demanda do Q1 sem renda compatível com o preço do solo (B2 §10); a B6 (patrimônio da região) muda o colateral. | Desenho B6/C1 (aluguel do anel periurbano) |
 | 8 | **Bench pós-D-086b** | **39,61 ms** de dia/tick (3,93× o A0), 142,4 MB | Primeiro bench canônico depois da D-087; o critério de 3% não fecha em host compartilhado. Não há A/B por `use_seed` depois da D-087. | Re-medir em janela ociosa; A/B `use_seed` só se o custo da semente for questionado |
 | 9 | **7 testes defasados** | §2.1 | A4 (resumo leve), B2 (consumo por quintil), A5 (IA C++) e locale (i18n) | Migrar os testes para `ui_snapshot`/`get_city_status`, quintis e IA C++ na próxima passada de manutenção |
 
@@ -276,3 +279,7 @@ na IA e no retrato do prólogo.
 - **O que o M2 NÃO fecha:** B6 (patrimônio imobiliário da região) e B7 (informalidade,
   serviços informais, mortalidade, insatisfação) — são o **M2b**, já registrados no plano
   (`docs/plans/perf_pop_financas_plano.md` §B6/§B7) e aprovados pelo dono em 2026-11-18.
+- **Verificação independente:** o `gerente-qualidade` conferiu este relatório contra as
+  evidências sobre o commit `91999a2` → **APROVADO COM RESSALVAS**; as correções pedidas
+  (as 10 melhoras > 3 p.p. enumeradas, sonda float 12 − 2 + 6, evidência de tempo e de
+  `money_total` do CLI, PIDs do host e NGA Q2 0,196) entram no commit seguinte.
