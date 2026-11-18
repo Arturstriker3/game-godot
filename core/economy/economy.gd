@@ -81,6 +81,11 @@ const CURRENCIES_PATH := "res://data/definitions/economy/currencies.json"
 const SECTOR_EMPLOYMENT_PATH := "res://data/definitions/economy/sector_employment.json"
 ## B1: estrutura etária por nação (definição estática; coortes ainda não).
 const AGE_STRUCTURE_PATH := "res://data/definitions/population/age_structure_2026.json"
+## B7: taxa de emprego informal por nação (ILOSTAT/ILO) e cobertura de saúde
+## de referência (WHO UHC SCI). O loader tolera arquivo ausente (cai na âncora
+## de renda / kHealthAccessDefault quando a nação não tem entrada).
+const INFORMALITY_PATH := "res://data/definitions/economy/informality.json"
+const HEALTH_ACCESS_PATH := "res://data/definitions/population/health_access.json"
 ## §19 (W0): solo urbano, moradia e prefeitura por cidade.
 const URBAN_LAND_PATH := "res://data/definitions/economy/urban_land.json"
 const HOUSING_CITY_PATH := "res://data/definitions/economy/housing_city.json"
@@ -155,6 +160,12 @@ func _ready() -> void:
 	# as demais definições; binário anterior ao B1 não tem o método.
 	if sim.has_method("set_age_structure"):
 		sim.set_age_structure(_load_json_dict(AGE_STRUCTURE_PATH))
+	# B7: informalidade e cobertura de saúde por nação (definições estáticas).
+	# Antes do mundo; ausência de arquivo vira {} e o núcleo cai na âncora.
+	if sim.has_method("set_informality"):
+		sim.set_informality(_load_json_dict_optional(INFORMALITY_PATH))
+	if sim.has_method("set_health_access"):
+		sim.set_health_access(_load_json_dict_optional(HEALTH_ACCESS_PATH))
 	# Resolve a fazenda inicial de cada cidade para o alimento básico de maior
 	# aptidão × caloria da nação (antes de criar os prédios no núcleo). Sem dados,
 	# mantém trigo.
@@ -299,6 +310,18 @@ func _load_json_dict(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		push_error("Economy: não abriu %s" % path)
+		return {}
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return data if typeof(data) == TYPE_DICTIONARY else {}
+
+
+## Lê um dicionário JSON OPCIONAL (ausência vira {} sem erro). Usado para os
+## dados B7 (informality.json / health_access.json), que o núcleo tolera ausentes
+## caindo na âncora de renda / kHealthAccessDefault.
+func _load_json_dict_optional(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
 		return {}
 	var data: Variant = JSON.parse_string(file.get_as_text())
 	file.close()

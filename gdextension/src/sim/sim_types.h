@@ -606,6 +606,51 @@ namespace ogs {
 		// para a validação "meia-idade poupa mais".
 		double lifecycle_saving[5] = {};
 
+		// ------------------------------------------------------------------
+		// B7 — INFORMALIDADE, MORTALIDADE E INSATISFAÇÃO (save v22).
+		// ------------------------------------------------------------------
+		// Trabalho informal: fração informal do emprego (agregado) e por
+		// quintil; renda informal e folha do dia (informativas). A fração é
+		// semeada do dado nacional e formaliza mensalmente (cadência A6).
+		double informal_share = 0.0;
+		double informal_labor_share[kIncomeStrata] = {};
+		double informal_income[kIncomeStrata] = {};
+		double informal_wage_bill = 0.0;
+		// Serviços informais (agregado, SEM firma individual).
+		double informal_service_workers = 0.0;
+		double informal_service_output = 0.0;
+		double informal_service_demand = 0.0;
+		double informal_service_revenue = 0.0;
+		double informal_service_price = 0.0;
+		double informal_service_share = 0.0;
+		// Mortalidade: base da tabela (esperada) e efetiva do último
+		// fechamento; excesso acumulado desde o dia 0 (fome + saúde e só a
+		// parcela de comida); meses consecutivos de fome (migração B4);
+		// custo da cesta no último fechamento e a variação desde então.
+		double deaths_expected = 0.0;
+		double deaths_total = 0.0;
+		double excess_deaths_total = 0.0;
+		double excess_deaths_famine_total = 0.0;
+		int famine_months = 0;
+		double food_price_ref = 0.0;
+		double food_inflation_month = 0.0;
+		double health_access_ref = 0.0;
+		// Insatisfação (medição 0..1) e componentes publicados.
+		double dissatisfaction = 0.0;
+		double dissatisfaction_by_stratum[kIncomeStrata] = {};
+		double dissatisfaction_unemployment = 0.0;
+		double dissatisfaction_rent = 0.0;
+		double dissatisfaction_food = 0.0;
+		double dissatisfaction_inflation = 0.0;
+		double dissatisfaction_informality = 0.0;
+		// Derivados (NÃO persistidos): satisfação do dia anterior (insumo da
+		// mortalidade mensal, que roda antes da renda recomputar a de hoje) e
+		// o fator de crise da renda informal (pay_scale do dia). Semeado o
+		// informal a partir do dado nacional (evita re-semear em re-seed).
+		double satisfaction_prev = 1.0;
+		double informal_crisis_factor = 1.0;
+		bool informality_seeded = false;
+
 	};
 
 	// ------------------------------------------------------------------
@@ -933,6 +978,41 @@ struct Region {
 	int infra_water = 0;
 	// Manutenção do dia (derivada, recalculada todo dia; não persistida).
 	double infra_maintenance = 0.0;
+	// ------------------------------------------------------------------
+	// B7 — INFORMALIDADE, MORTALIDADE E INSATISFAÇÃO (save v22). Mesmos
+	// campos do bloco urbano (Pop), com os fluxos do interior.
+	// ------------------------------------------------------------------
+	double informal_share = 0.0;
+	double informal_labor_share[kIncomeStrata] = {};
+	double informal_income[kIncomeStrata] = {};
+	double informal_wage_bill = 0.0;
+	double informal_service_workers = 0.0;
+	double informal_service_output = 0.0;
+	double informal_service_demand = 0.0;
+	double informal_service_revenue = 0.0;
+	double informal_service_price = 0.0;
+	double informal_service_share = 0.0;
+	double deaths_expected = 0.0;
+	double deaths_total = 0.0;
+	double excess_deaths_total = 0.0;
+	double excess_deaths_famine_total = 0.0;
+	int famine_months = 0;
+	double food_price_ref = 0.0;
+	double food_inflation_month = 0.0;
+	double health_access_ref = 0.0;
+	double dissatisfaction = 0.0;
+	double dissatisfaction_by_stratum[kIncomeStrata] = {};
+	double dissatisfaction_unemployment = 0.0;
+	double dissatisfaction_rent = 0.0;
+	double dissatisfaction_food = 0.0;
+	double dissatisfaction_inflation = 0.0;
+	double dissatisfaction_informality = 0.0;
+	// Derivados (NÃO persistidos): satisfação do dia anterior e a marca de
+	// informalidade semeada (evita re-semear em re-seed). A região usa a
+	// satisfação FRESCA (region_demography_month roda depois do consumo).
+	double satisfaction_prev = 1.0;
+	double informal_crisis_factor = 1.0;
+	bool informality_seeded = false;
 };
 
 
@@ -1092,6 +1172,8 @@ struct Region {
 		kPhaseRegion,
 		// B4: migração (êxodo rural + cidade → cidade na mesma nação).
 		kPhaseMigration,
+		// B7: insatisfação (medição pura, sem dinheiro/pessoas) no fim do dia.
+		kPhaseSocial,
 		kPhaseCount
 	};
 

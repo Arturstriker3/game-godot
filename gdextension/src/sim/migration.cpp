@@ -214,6 +214,10 @@ double migrate_region_to_urban(WorldState& ws, SimCore& core, std::size_t ci) {
 	// B5: região sem infraestrutura expulsa mais gente (fator sobre o fluxo,
 	// sinal correto: infra baixa → fator > 1; pessoas continuam conservadas).
 	migrants *= core.infra_exodus_multiplier(region);
+	// B7: fome prolongada no interior empurra o êxodo (pressão extra declarada).
+	if (region.famine_months >= kFamineMigrationMonths) {
+		migrants *= (1.0 + kFamineMigrationBoost);
+	}
 	migrants = std::min(migrants, urban_vacancy_people(ws, ci));
 	if (migrants <= kMigEps) {
 		return 0.0;
@@ -282,6 +286,14 @@ double migrate_city_out(WorldState& ws, SimCore& core, std::size_t ci,
 		return 0.0;
 	}
 
+	// B7: fome prolongada na cidade empurra a saída (pressão extra declarada),
+	// limitada pela vaga de moradia do destino no laço abaixo.
+	double out_boosted = out_total;
+	if (spop.famine_months >= kFamineMigrationMonths) {
+		out_boosted *= (1.0 + kFamineMigrationBoost);
+	}
+	// Reaplica o teto por vaga em cada destino (o laço já faz `min(m, vaga)`).
+
 	// Perfil de estrato da cidade → cidade: proporcional à população (o
 	// diferencial atrai todas as faixas; só o êxodo rural enviesa o estrato).
 	static constexpr double kUniformStrata[kIncomeStrata] = {1.0, 1.0, 1.0, 1.0, 1.0};
@@ -301,7 +313,7 @@ double migrate_city_out(WorldState& ws, SimCore& core, std::size_t ci,
 		if (!dpop.demography_ready || !dpop.strata_ready) {
 			continue;
 		}
-		double m = out_total * (u_j - u_i) / weight_sum;
+		double m = out_boosted * (u_j - u_i) / weight_sum;
 		m = std::min(m, urban_vacancy_people(ws, j));
 		if (m <= kMigEps) {
 			continue;
