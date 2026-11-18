@@ -332,8 +332,8 @@ func _run() -> void:
 	for day in range(close_day, SAVE_DAY):
 		_tick(sim, "A dia %d" % (day + 1))
 	var snapshot: Dictionary = sim.to_dict()
-	if int(snapshot.get("version", 0)) != 19:
-		_fail("save version %s != 19" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 20:
+		_fail("save version %s != 20" % str(snapshot.get("version")))
 	if not snapshot.has("city_gov"):
 		_fail("save sem o bloco city_gov da prefeitura")
 	var restored = EconomySim.new()

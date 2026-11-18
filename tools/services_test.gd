@@ -207,8 +207,8 @@ func _test_save() -> void:
 	_set_income(sim)
 	_run(sim, 5)
 	var data: Dictionary = sim.to_dict()
-	_check(int(data.get("version", 0)) == 19,
-		"save deve ser v19 (B2 + minas + região, D-086/D-085; era %d)" % int(
+	_check(int(data.get("version", 0)) == 20,
+		"save deve ser v20 (B2 + minas + região + migração; era %d)" % int(
 		data.get("version", 0)))
 	var loaded = _load_save(data)
 	if loaded == null:

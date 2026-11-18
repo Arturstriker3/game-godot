@@ -209,8 +209,8 @@ func _run() -> void:
 	for city_id in SAMPLE_CITIES:
 		before[city_id] = JSON.stringify(sim.get_urban_city(city_id), "", true, true)
 	var snapshot: Dictionary = sim.to_dict()
-	if int(snapshot.get("version", 0)) != 19:
-		_fail("save version %s != 19" % str(snapshot.get("version")))
+	if int(snapshot.get("version", 0)) != 20:
+		_fail("save version %s != 20" % str(snapshot.get("version")))
 	var restored = EconomySim.new()
 	restored.set_goods(_load_array(GOODS_PATH))
 	restored.set_recipes(_load_array(RECIPES_PATH))
@@ -243,7 +243,7 @@ func _run() -> void:
 	legacy.from_dict(v12)
 	if not Dictionary(legacy.get_urban_city("BRA-SAO")).is_empty():
 		_fail("v12->v14: save antigo nao deveria ter estado urbano")
-	if int(legacy.to_dict().get("version", 0)) != 19:
-		_fail("v12->v19: save migrado nao saiu como v19")
-	print("[urban] migracao v12->v19: sem estado urbano, schema 19.")
+	if int(legacy.to_dict().get("version", 0)) != 20:
+		_fail("v12->v20: save migrado nao saiu como v20")
+	print("[urban] migracao v12->v20: sem estado urbano, schema 20.")
 
