@@ -153,10 +153,11 @@ Comando da fila A3 **`deepen_mine(city_id, building_id)`** (método
   retorno — `t/dia adicionadas × (preço − custo variável)`, payback da obra
   ≤ **730 dias** e custo dentro da fatia de orçamento. **Comida primeiro:**
   cidade que não cobre a cesta não desvia orçamento para obra de mina. Sem
-  mina, avalia **abrir** (mesmo payback). O teto fixo de **10 t/dia**
-  (`kMaxStateMineCapacity`) fica **só** para minerais de nicho — ouro, diamante,
-  terras raras, tungstênio, urânio (`is_niche_mineral`); os demais são
-  dimensionados por demanda externa e orçamento.
+  mina, avalia **abrir** (mesmo payback). **D-091:** o teto fixo de 10 t/dia
+  (`kMaxStateMineCapacity`/`is_niche_mineral`) foi **removido** — todos os
+  minerais, inclusive ouro, diamante, terras raras, tungstênio e urânio, são
+  dimensionados por demanda externa × 1,2 e limitados pelo orçamento, com os
+  mesmos estágios/custo da D-086.
 - **Escolha entre minas do mesmo mineral:** havendo mais de uma mina elegível
   na cidade, a IA compara o **custo do próximo estágio** (`AiView::b_deepen_cost`,
   calculado pelo próprio núcleo) e escolhe a **mais barata** — sem regra

@@ -376,6 +376,9 @@ double SimCore::fleet_buy_core(const std::string& nation, int product_index,
 	// O pedido inteiro entra como demanda desejada da sede, mesmo sem estoque:
 	// é o sinal que a IA lê para produzir/importar (estado vazio honesto).
 	hq_city.markets[product_index].desired += amount;
+	// D-091: o pedido da frota é a tentativa efetiva (financiado pelo orçamento
+	// do governo, limitado a `budget_share`); entra na pressão de preço.
+	hq_city.markets[product_index].effective += amount;
 	const double budget = std::max(0.0, hq_city.government_budget)
 		* std::clamp(budget_share, 0.0, 1.0);
 	struct Seller {

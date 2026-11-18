@@ -13,6 +13,22 @@
 #include <cmath>
 
 namespace ogs {
+
+namespace {
+// D-092: elasticidade-preço da demanda por classe de necessidade. A ordem dos
+// níveis em needs.json é básico → vida → luxo; qualquer nível além do segundo
+// é tratado como luxo (declarado, não inferido de id).
+double needs_level_elasticity(int level_index) {
+	if (level_index <= 0) {
+		return kPriceElasticityBasic;
+	}
+	if (level_index == 1) {
+		return kPriceElasticityLife;
+	}
+	return kPriceElasticityLuxury;
+}
+} // namespace
+
 void SimCore::init_pop_needs(Pop& pop) const {
 	if (pop.level_want.size() != kMaxNeedsLevels) {
 		pop.level_want.assign(kMaxNeedsLevels, 0.0);
@@ -299,16 +315,27 @@ void SimCore::phase_income() {
 				? remaining_need_total * (avail_ge[slot] / total_avail)
 				: (slot == 0 ? remaining_need_total : 0.0);
 			want_ge = std::min(want_ge, remaining_need_total);
-			double desired_tons = want_ge / factor;
+			// D-092: o desejo publicado (`desired`) mantém a regra da D-091
+			// (limitado pelo orçamento, sinal da IA); a quantidade COMPRADA ao
+			// preço corrente leva a elasticidade de básico.
+			const double need_tons = want_ge / factor;
+			double desired_tons = need_tons;
 			if (desired_tons * price > food_budget) {
 				desired_tons = std::max(0.0, food_budget) / price;
 			}
 			if (desired_tons <= 1e-12) {
 				continue;
 			}
+			const double demand_scale = price_demand_scale(
+				price, base_price(product), kPriceElasticityBasic);
+			const double buy_tons = desired_tons * demand_scale;
 			market.desired += desired_tons;
+			// D-091: a comida é financiada (desired_tons já vem limitado pelo
+			// orçamento), então entra integral na pressão de preço — menos a
+			// elasticidade de básico (D-092).
+			market.effective += std::max(0.0, buy_tons);
 			pop.desired_by_category[slot] += desired_tons;
-			const double quantity = std::min(desired_tons, market.stock);
+			const double quantity = std::min(buy_tons, market.stock);
 			if (quantity <= 0.0) {
 				continue;
 			}
@@ -580,7 +607,8 @@ void SimCore::phase_income() {
 						}
 						level_got += consume_category(
 							city, category, want_ge, needs_budget[s], spend_s[s],
-							scratch, city_index);
+							scratch, city_index,
+							needs_level_elasticity(level_index));
 					}
 				}
 				double spend_level = 0.0;
@@ -883,7 +911,8 @@ void SimCore::register_category_demand(City& city,
 }
 double SimCore::consume_category(City& city,
 		const NeedsCategory& category, double want_ge, double& budget,
-		double& spend, CityAccumScratch& scratch, std::size_t city_index) {
+		double& spend, CityAccumScratch& scratch, std::size_t city_index,
+		double elasticity) {
 	if (want_ge <= 0.0 || category.substitutes.empty()) {
 		return 0.0;
 	}
@@ -891,21 +920,42 @@ double SimCore::consume_category(City& city,
 	// substituto preferido, não pelo estoque. É o sinal de escassez que a IA
 	// lê; a compra abaixo é que respeita caixa e estoque. A parcela que o
 	// orçamento do dia não cobre entra em `latent` e não pressiona o preço.
+	// D-092: a quantidade COMPRADA ao preço corrente cai com a elasticidade da
+	// classe (básico pouco, luxo muito); o desejo físico continua integral em
+	// `desired` para o investimento ver a falta.
+	double demand_scale = 1.0;
 	{
 		Market* signal_market = nullptr;
 		double signal_factor = 0.0;
 		double signal_scale = 1.0;
 		if (category_top_market(city, category, signal_market,
 				signal_factor, signal_scale) && signal_scale > 0.0) {
+			double signal_base = 0.0;
+			for (std::size_t slot = 0; slot < category.substitutes.size(); ++slot) {
+				const int product = category.substitutes[slot];
+				if (product < 0 || product >= ws_.products) {
+					continue;
+				}
+				if (&city.markets[product] == signal_market) {
+					signal_base = base_price(product);
+					break;
+				}
+			}
+			demand_scale = price_demand_scale(
+				signal_market->price, signal_base, elasticity);
 			const double full_tons = want_ge / signal_factor * signal_scale;
-			const double backed_tons = std::min(full_tons,
+			const double elastic_tons = full_tons * demand_scale;
+			const double backed_tons = std::min(elastic_tons,
 				signal_market->price > 0.0
 					? std::max(0.0, budget) / signal_market->price : 0.0);
 			signal_market->desired += full_tons;
 			signal_market->latent += std::max(0.0, full_tons - backed_tons);
+			// D-091: só a parcela financiada (backed_tons) pressiona o preço;
+			// o desejo acima do orçamento do dia fica em `latent` (sinal da IA).
+			signal_market->effective += backed_tons;
 		}
 	}
-	double remaining = want_ge;
+	double remaining = want_ge * demand_scale;
 	double consumed_ge = 0.0;
 	for (std::size_t slot = 0;
 			slot < category.substitutes.size() && remaining > 1e-12; ++slot) {
@@ -1022,6 +1072,8 @@ void SimCore::consume_government(City& city,
 			continue;
 		}
 		market.desired += desired_tons;
+		// D-091: compra institucional financiada pelo orçamento público.
+		market.effective += desired_tons;
 		const double quantity = std::min(desired_tons,
 			std::max(0.0, market.stock));
 		if (quantity <= 0.0) {

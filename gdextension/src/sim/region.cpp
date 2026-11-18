@@ -304,6 +304,9 @@ void SimCore::phase_region() {
 				continue;
 			}
 			market.desired += desired_tons;
+			// D-091: a comida da região é financiada (desired_tons limitado pelo
+			// orçamento), então entra integral na pressão de preço.
+			market.effective += desired_tons;
 			const double quantity = std::min(desired_tons, market.stock);
 			if (quantity <= 0.0) {
 				continue;

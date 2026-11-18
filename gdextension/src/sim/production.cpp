@@ -137,6 +137,15 @@ void SimCore::phase_production() {
 				const double labor = building.jobs > 0.0
 					? building.workers / building.jobs : 1.0;
 				const bool primary = building.recipe < 0 && building.input_product < 0;
+				// D-092: custo unitário de trabalho/opex por unidade de
+				// capacidade (mesma proxy de energia/capital da fase de preço) e
+				// preço do produto, para a firma cortar produção quando a margem
+				// fica negativa.
+				const double unit_labor_opex = building.capacity > 0.0
+					? (building.workers * building.wage + building.opex)
+						/ building.capacity : 0.0;
+				const double output_price =
+					city.markets[building.output_product].price;
 				// Extração: aptidão territorial × eficiência pela qualidade do minério
 				// (1.0 quando não há jazida declarada) × produção relativa do
 				// ESTÁGIO da mina (D-086: decai com a reserva do estágio, piso 5%).
@@ -182,14 +191,54 @@ void SimCore::phase_production() {
 					}
 					const Recipe& recipe =
 						ws_.recipes[static_cast<std::size_t>(building.recipe)];
+					// D-092 — DEMANDA DA FIRMA POR MARGEM. Custo unitário
+					// corrente (insumos + trabalho/opex); com o preço do
+					// produto abaixo dele a produção cai proporcionalmente
+					// (piso de 25%), e com ela o pedido de insumo. É o canal
+					// que impede a demanda industrial de puxar ferro/carvão/
+					// petróleo/gás sem fim quando o produto já não paga.
+					double unit_input_cost = 0.0;
+					if (recipe.yield > 0.0) {
+						for (int slot = 0; slot < recipe.input_count; ++slot) {
+							const int input = recipe.inputs[slot];
+							if (input < 0 || input >= ws_.products) {
+								continue;
+							}
+							unit_input_cost += recipe.input_qty[slot] / recipe.yield
+								* city.markets[input].price;
+						}
+					}
+					const double unit_cost = unit_input_cost + unit_labor_opex;
+					const double margin = output_price - unit_cost;
+					double margin_scale = 1.0;
+					if (unit_cost > 0.0 && margin < 0.0) {
+						// Só corta com prejuízo PROFUNDO (> 25% do custo); em
+						// -100% chega ao piso. Prejuízo raso não derruba
+						// insumo essencial (combustível/material) de imediato.
+						const double severity = std::clamp(
+							(-margin / unit_cost - kProductionMarginCutStart)
+								/ (1.0 - kProductionMarginCutStart),
+							0.0, 1.0);
+						margin_scale = 1.0
+							- (1.0 - kProductionMarginFloor) * severity;
+					}
 					const double batch = recipe.yield > 0.0
-						? desired_output / recipe.yield : 0.0;
+						? desired_output * margin_scale / recipe.yield : 0.0;
 					double scale = 1.0;
 					for (int slot = 0; slot < recipe.input_count; ++slot) {
 						const int input = recipe.inputs[slot];
 						const double needed = recipe.input_qty[slot] * batch;
 						Market& input_market = city.markets[input];
 						input_market.desired += needed;
+						// D-091: a usina só pressiona o preço do insumo quando tem
+						// venda real no produto (sold_prev > 0). A usina ociosa/faminta
+						// (bootstrap de plena capacidade, sold_prev <= 0) mantém o
+						// `desired` cheio para a IA, mas não contribui para
+						// `effective` — senão pede plena capacidade TODO dia e satura
+						// o preço (docs/economy/price_formation.md).
+						if (sold_prev > 0.0) {
+							input_market.effective += needed;
+						}
 						if (needed > 1e-12) {
 							scale = std::min(scale, input_market.stock / needed);
 						}
@@ -221,9 +270,32 @@ void SimCore::phase_production() {
 							+ static_cast<std::size_t>(product)] += amount;
 					}
 				} else if (building.input_product >= 0) {
-					const double needed_input = desired_output * building.input_per_output;
+					const double input_price =
+						city.markets[building.input_product].price;
+					const double unit_cost = input_price
+						* building.input_per_output + unit_labor_opex;
+					const double margin = output_price - unit_cost;
+					double margin_scale = 1.0;
+					if (unit_cost > 0.0 && margin < 0.0) {
+						// Só corta com prejuízo PROFUNDO (> 25% do custo); em
+						// -100% chega ao piso. Prejuízo raso não derruba
+						// insumo essencial (combustível/material) de imediato.
+						const double severity = std::clamp(
+							(-margin / unit_cost - kProductionMarginCutStart)
+								/ (1.0 - kProductionMarginCutStart),
+							0.0, 1.0);
+						margin_scale = 1.0
+							- (1.0 - kProductionMarginFloor) * severity;
+					}
+					const double needed_input = desired_output * margin_scale
+						* building.input_per_output;
 					Market& input_market = city.markets[building.input_product];
 					input_market.desired += needed_input;
+					// D-091: mesma regra da receita — pressão de preço só com venda
+					// real (sold_prev > 0); a usina ociosa não infla o insumo.
+					if (sold_prev > 0.0) {
+						input_market.effective += needed_input;
+					}
 					input_used = std::min(needed_input, input_market.stock);
 					output = building.input_per_output > 0.0
 						? input_used / building.input_per_output : 0.0;
@@ -335,6 +407,9 @@ void SimCore::phase_raw() {
 				}
 				Market& market = city.markets[product];
 				market.desired += ceiling;
+				// D-091: a demanda externa é financiada (o resto do mundo paga o
+				// preço de mercado), então entra integral na pressão de preço.
+				market.effective += ceiling;
 				const double sold = std::min(market.stock, ceiling);
 				if (sold <= 0.0) {
 					continue;
