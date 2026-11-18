@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -90,6 +91,20 @@ struct CadenceState {
 	int monthly_period = 30;
 };
 
+// B1 — estrutura etária observada por nação (age_structure_2026.json). É uma
+// DEFINIÇÃO estática (não entra no save nem no tick): a demografia por coortes
+// vem depois. Os cinco `band` seguem a ordem do arquivo:
+//   0 = 0-14, 1 = 15-24, 2 = 25-44, 3 = 45-64, 4 = 65+.
+// Os valores são frações da população; `valid` falso = sem dado para a nação.
+struct AgeStructure {
+	double band[5] = {};
+	double frac_18_49 = 0.0;
+	double births_per_1000 = 0.0;
+	double deaths_per_1000 = 0.0;
+	double tfr = 0.0;
+	bool valid = false;
+};
+
 struct WorldState {
 	int day = 0;
 	CadenceState cadence;
@@ -115,6 +130,9 @@ struct WorldState {
 	// inteiro (832/834 cidades). Calibrada no economy_world_test.
 	double income_basket_margin = 2.30;
 	std::unordered_map<std::string, double> minimum_wages;
+	// B1: estrutura etária por tag de nação (age_structure_2026.json ->
+	// set_age_structure). `std::map` para a ordem determinística do dump.
+	std::map<std::string, AgeStructure> age_structures;
 	double inventory_cover_days = 3.0;
 	double inventory_recovery = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K

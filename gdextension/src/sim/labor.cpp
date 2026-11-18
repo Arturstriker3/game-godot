@@ -320,9 +320,10 @@ double SimCore::labor_day(City& city) {
 		}
 	}
 	// 3. FORÇA DE TRABALHO por nível (estudantes ficam fora; educação de
-	// origem permanece até a conclusão).
+	// origem permanece até a conclusão). B1: crianças (coorte 0-14) também
+	// estão fora da força.
 	pop.labor_force = 0.0;
-	pop.students = 0.0;
+	pop.students = pop.children;
 	for (int level = 0; level < kEducationLevels; ++level) {
 		const double studying = level < kEducationLevels - 1
 			? pop.studying[level] : 0.0;
@@ -667,16 +668,23 @@ void SimCore::update_wages(City& city, double building_margin) {
 }
 void SimCore::apply_labor_profile(City& city) {
 	Pop& pop = city.pop;
+	// B1: semeia/reaplica as coortes etárias ANTES de ler a população. Com dado
+	// nacional, idade ativa, aposentados, crianças e reserva recrutável vêm da
+	// demografia; sem dado, o perfil paramétrico abaixo segue valendo.
+	apply_demography(city);
 	const double population = std::max(0.0, city.simulation_population);
 	pop.population = population;
 	const double t = std::clamp(
 		std::clamp(city.external_income_index, 0.0, 8.0) / kLaborIncomeSaturation,
 		0.0, 1.0);
-	pop.working_age = population * (kLaborWorkingAgeLow
-		+ (kLaborWorkingAgeHigh - kLaborWorkingAgeLow) * t);
-	pop.retirees = population * (kLaborRetireeLow
-		+ (kLaborRetireeHigh - kLaborRetireeLow) * t);
-	pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
+	if (!pop.demography_ready) {
+		pop.children = 0.0;
+		pop.working_age = population * (kLaborWorkingAgeLow
+			+ (kLaborWorkingAgeHigh - kLaborWorkingAgeLow) * t);
+		pop.retirees = population * (kLaborRetireeLow
+			+ (kLaborRetireeHigh - kLaborRetireeLow) * t);
+		pop.recruit_reserve = pop.working_age * kLaborRecruitShare;
+	}
 	const double basic = kLaborBasicEduLow
 		+ (kLaborBasicEduHigh - kLaborBasicEduLow) * t;
 	double higher = kLaborHigherEduLow
@@ -698,7 +706,7 @@ void SimCore::apply_labor_profile(City& city) {
 	const double students = pop.working_age * student_share;
 	pop.studying[0] = students * 0.60;
 	pop.studying[1] = students * 0.40;
-	pop.students = pop.studying[0] + pop.studying[1];
+	pop.students = pop.children + pop.studying[0] + pop.studying[1];
 	const double factor = labor_income_factor(city.external_income_index);
 	const auto minimum = ws_.minimum_wages.find(city.nation);
 	const double floor = minimum != ws_.minimum_wages.end()

@@ -61,7 +61,47 @@ constexpr double kLoadHoursPerBatch = 0.5;
 // (`weekly_period` 7, `monthly_period` 30). Save v14 e anteriores carregam os
 // padrões — o escalonamento é derivado do dia e do índice da cidade, então não
 // há cursor a migrar.
-constexpr int kSaveVersion = 15;
+// v16 (B1): demografia por coortes — bloco `pop.age_bands` (5 faixas etárias,
+// vazio quando a cidade não tem estrutura nacional), `pop.health_weight_ref` e
+// `pop.education_weight_ref` (pesos do dia da semeadura). Save v15 e anteriores
+// não têm as chaves: as coortes são semeadas da estrutura nacional no load
+// (`seed_demography`); sem dado para a nação, o perfil paramétrico legado
+// continua valendo.
+constexpr int kSaveVersion = 16;
+
+// ---------------------------------------------------------------------------
+// B1 — DEMOGRAFIA POR COORTES (5 faixas). O DADO é a estrutura etária nacional
+// (age_structure_2026.json: frações por faixa, CBR/CDR por mil e TFR). O que
+// segue é MODELO declarado, calibrável no laboratório — não é dado observado:
+// ---------------------------------------------------------------------------
+// Número de coortes: 0-14, 15-24, 25-44, 45-64 e 65+ (mesma ordem do arquivo e
+// de `AgeStructure`/`Pop::age_band`).
+constexpr int kAgeBands = 5;
+// Fluxo ANUAL de saída de cada faixa para a seguinte, em fração da faixa de
+// origem: 1/15 (0-14 → 15-24), 1/10 (15-24), 1/20 (25-44) e 1/20 (45-64); o
+// fluxo mensal é este dividido por 12. Leitura mínima de uma população
+// estacionária com faixas de 15/10/20/20 anos: não há idade declarada dentro da
+// faixa, então o escoamento uniforme é a aproximação do modelo — não reproduz a
+// pirâmide real de nenhuma nação.
+constexpr double kAgeAgingAnnual[4] = {1.0/15.0, 1.0/10.0, 1.0/20.0, 1.0/20.0};
+// Perfil RELATIVO de mortalidade por faixa (peso, não taxa): o CDR medido da
+// nação dá o TOTAL de mortes e estes pesos dizem COMO ele se reparte entre as
+// coortes. Forma declarada: mortalidade infantil/materna nas duas primeiras
+// faixas (0,25 e 0,10), adulto jovem baixo (0,30), meia-idade subindo (0,85) e
+// 65+ concentrando a maior parte (3,40) — ordem de grandeza de uma tábua de
+// vida, não uma tábua calibrada.
+constexpr double kAgeDeathWeight[5] = {0.25, 0.10, 0.30, 0.85, 3.40};
+// Perfil RELATIVO da necessidade de SAÚDE por faixa: reparte a necessidade per
+// capita do setor entre as coortes. Crianças e jovens consomem pouco (0,05 e
+// 0,10), adultos em idade ativa um pouco mais (0,25), meia-idade sobe (0,80) e
+// 65+ concentra o gasto (2,50). O multiplicador é normalizado pela composição
+// do dia da semeadura (`health_weight_ref`), então a média do mundo não muda.
+constexpr double kAgeHealthWeight[5] = {0.05, 0.10, 0.25, 0.80, 2.50};
+// Perfil RELATIVO da demanda de EDUCAÇÃO por faixa: a escola é da infância e da
+// juventude. 0-14 pesa 1,00 (escolarização obrigatória), 15-24 ainda frequenta
+// (0,60), 25-44 residual (0,10), 45+ quase nada (0,02 e 0,00). Escala a
+// necessidade per capita do setor; não é matrícula observada.
+constexpr double kAgeEducationWeight[5] = {1.00, 0.60, 0.10, 0.02, 0.00};
 
 // §15 — construção como projeto físico. Obras são cronogramas de materiais +
 // mão de obra do setor de construção; o pagamento sai do dono conforme avança.

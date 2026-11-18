@@ -412,6 +412,24 @@ namespace ogs {
 		double retirees = 0.0;         // 65+ (fora da força por idade)
 		double students = 0.0;         // em formação (fora da força)
 		double recruit_reserve = 0.0;  // 18–49 (só número; exército futuro)
+		// ------------------------------------------------------------------
+		// B1 — demografia por coortes. `age_band` é a POP em pessoas nas cinco
+		// faixas (0-14, 15-24, 25-44, 45-64, 65+), semeada da estrutura etária
+		// nacional e movida um mês por vez pela fase de demografia.
+		// `demography_ready` falso = cidade sem dado nacional: idade ativa,
+		// aposentados e reserva recrutável continuam vindos do perfil
+		// paramétrico (comportamento legado). `children` é a coorte 0-14 e entra
+		// na POP fora da força (`students`). Os fatores de necessidade são o
+		// peso das coortes relativo à composição do dia da semeadura (1,0 no
+		// legado), aplicados sobre a necessidade per capita de saúde/educação.
+		// ------------------------------------------------------------------
+		double age_band[5] = {};
+		bool demography_ready = false;
+		double children = 0.0;
+		double health_need_factor = 1.0;
+		double education_need_factor = 1.0;
+		double health_weight_ref = 0.0;
+		double education_weight_ref = 0.0;
 		double education[kEducationLevels] = {};
 		double participation[kEducationLevels] = {};
 		double labor_force_by_level[kEducationLevels] = {};
@@ -832,7 +850,7 @@ namespace ogs {
 
 	// Fases medidas por set_profiling (ordem = ordem do tick).
 	enum Phase {
-		kPhaseArrival = 0, kPhaseReset, kPhaseLabor,
+		kPhaseArrival = 0, kPhaseReset, kPhaseDemography, kPhaseLabor,
 		kPhaseProduction, kPhaseRaw, kPhaseIncome,
 		kPhaseServices, kPhaseTrade,
 		kPhaseAccounting, kPhasePrices, kPhaseClamp,

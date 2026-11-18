@@ -213,6 +213,8 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_services);
 	ClassDB::bind_method(D_METHOD("set_sector_employment", "data"),
 	                     &EconomySim::set_sector_employment);
+	ClassDB::bind_method(D_METHOD("set_age_structure", "data"),
+	                     &EconomySim::set_age_structure);
 	ClassDB::bind_method(D_METHOD("set_urban", "urban_land", "housing_city",
 	                     "housing", "municipal_finance"),
 	                     &EconomySim::set_urban);
@@ -1475,7 +1477,8 @@ void EconomySim::set_sim_threads(int threads) {
 
 Dictionary EconomySim::get_profile() const {
 	static const char* kNames[kPhaseCount] = {
-		"arrival", "reset", "labor", "production", "raw", "income", "services",
+		"arrival", "reset", "demography", "labor", "production", "raw",
+		"income", "services",
 		"trade", "accounting", "prices", "clamp", "fiscal", "fx", "invariants",
 		"status",
 		"trade_food", "trade_food_buyers",
@@ -1552,6 +1555,7 @@ void EconomySim::tick_core() {
 }
 
 EconomySim::StatusKeys::StatusKeys() :
+		age_bands("age_bands"),
 		amount("amount"),
 		bankruptcies("bankruptcies"),
 		buildings("buildings"),
@@ -2373,6 +2377,30 @@ void EconomySim::fill_city_status(std::size_t city_index,
 	if (!slot.pop_published) {
 		dict[k.pop] = pop;
 		slot.pop_published = true;
+	}
+
+	// B1: coortes etárias (5 faixas). Publicadas como Array de doubles no bloco
+	// `pop`, reescritas só quando a composição muda (uma vez por mês).
+	{
+		double bands[kAgeBands];
+		for (int band = 0; band < kAgeBands; ++band) {
+			bands[band] = city.pop.demography_ready
+				? std::max(0.0, city.pop.age_band[band]) : 0.0;
+		}
+		if (!slot.age_bands_filled
+				|| std::memcmp(bands, slot.age_bands_written,
+					sizeof(double) * static_cast<std::size_t>(kAgeBands)) != 0) {
+			slot.age_bands.assign(bands, bands + kAgeBands);
+			Array published;
+			published.resize(kAgeBands);
+			for (int band = 0; band < kAgeBands; ++band) {
+				published[band] = slot.age_bands[static_cast<std::size_t>(band)];
+			}
+			pop[k.age_bands] = published;
+			std::memcpy(slot.age_bands_written, bands,
+				sizeof(double) * static_cast<std::size_t>(kAgeBands));
+			slot.age_bands_filled = true;
+		}
 	}
 
 	// `resize` com o mesmo tamanho já provoca copy-on-write no Array
@@ -4897,6 +4925,76 @@ void EconomySim::set_sector_employment(const Variant& data) {
 	ws_.sector_anchors = std::move(parsed);
 	ws_.sector_loaded = true;
 	status_invalidate();
+}
+
+// ---------------------------------------------------------------------------
+// B1 — ESTRUTURA ETÁRIA (data/definitions/population/age_structure_2026.json)
+//
+// DEFINIÇÃO estática, não estado do mundo: só o mapa por tag de nação entra no
+// WorldState. O arquivo traz cinco faixas como fração da população, a fração
+// 18-49, a TFR e as taxas brutas de natalidade/mortalidade por mil. Nação cujas
+// faixas não fecham em 1 (tolerância de 2%) é descartada inteira: dado
+// inconsistente não vira número de simulação. As cidades NÃO são tocadas aqui:
+// o mapa é a DEFINIÇÃO e a semeadura das coortes acontece em
+// `SimCore::seed_demography` (chamada por apply_labor_profile e pelo load do
+// save), que precisa das cidades já criadas.
+// ---------------------------------------------------------------------------
+
+void EconomySim::set_age_structure(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (data.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary root = data;
+	const Dictionary nations = root.get("nations", Dictionary());
+	const Array tags = nations.keys();
+	std::map<std::string, AgeStructure> parsed;
+	for (int index = 0; index < tags.size(); ++index) {
+		const String tag = String(tags[index]);
+		if (tag.is_empty()) {
+			continue;
+		}
+		const Variant entry = nations.get(tag, Variant());
+		if (entry.get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		const Dictionary nation = entry;
+		const Dictionary bands = nation.get("bands", Dictionary());
+		if (bands.is_empty()) {
+			continue;
+		}
+		AgeStructure structure;
+		structure.band[0] = std::clamp(
+			static_cast<double>(bands.get("age_0_14", 0.0)), 0.0, 1.0);
+		structure.band[1] = std::clamp(
+			static_cast<double>(bands.get("age_15_24", 0.0)), 0.0, 1.0);
+		structure.band[2] = std::clamp(
+			static_cast<double>(bands.get("age_25_44", 0.0)), 0.0, 1.0);
+		structure.band[3] = std::clamp(
+			static_cast<double>(bands.get("age_45_64", 0.0)), 0.0, 1.0);
+		structure.band[4] = std::clamp(
+			static_cast<double>(bands.get("age_65_plus", 0.0)), 0.0, 1.0);
+		const double total = structure.band[0] + structure.band[1]
+			+ structure.band[2] + structure.band[3] + structure.band[4];
+		if (total < 0.98 || total > 1.02) {
+			continue;
+		}
+		structure.frac_18_49 = std::clamp(
+			static_cast<double>(nation.get("frac_18_49", 0.0)), 0.0, 1.0);
+		structure.births_per_1000 = std::clamp(
+			static_cast<double>(nation.get("cbr_per_1000", 0.0)), 0.0, 80.0);
+		structure.deaths_per_1000 = std::clamp(
+			static_cast<double>(nation.get("cdr_per_1000", 0.0)), 0.0, 80.0);
+		structure.tfr = std::clamp(
+			static_cast<double>(nation.get("tfr_2026", 0.0)), 0.0, 10.0);
+		structure.valid = true;
+		parsed[std::string(tag.utf8().get_data())] = structure;
+	}
+	if (parsed.empty()) {
+		return;
+	}
+	ws_.age_structures = std::move(parsed);
+	++status_static_version_;
 }
 
 // ---------------------------------------------------------------------------
