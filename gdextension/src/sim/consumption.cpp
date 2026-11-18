@@ -61,8 +61,11 @@ void SimCore::phase_income() {
 		city.capital_income_next = 0.0;
 		pop.rent_income = city.rent_income_next;
 		city.rent_income_next = 0.0;
-		pop.taxes = (pop.wage_income + pop.capital_income
-			+ pop.rent_income) * kTaxRate;
+		// B7: o imposto incide só sobre a parcela FORMAL do salário. A soma por
+		// quintil (e o `pop.taxes`) é calculada em refresh_strata_taxes, que
+		// também preenche a renda de mercado dos quintis (com a penalidade
+		// informal). Roda aqui, antes de transferências/disponível/gasto.
+		refresh_strata_taxes(city);
 		// Orçamento público equilibrado: tudo o que é arrecadado volta como
 		// transferência. Sem isso, o governo acumula receita e drena demanda.
 		pop.transfers = pop.taxes * kTransferShare;
@@ -408,6 +411,21 @@ void SimCore::phase_income() {
 		pop.food_spend = food_spend;
 		pop.satisfaction = pop.need > 0.0
 			? std::clamp(consumed / pop.need, 0.0, 1.0) : 1.0;
+		// B7: a mortalidade mensal roda ANTES da renda (usa a satisfação de
+		// ontem); guarda o retrato do dia para o próximo fechamento.
+		pop.satisfaction_prev = pop.satisfaction;
+		// B7: inflação de comida do fechamento mensal (cadência A6): o primeiro
+		// fechamento só grava a referência; os seguintes publicam a variação.
+		if (cadence_due(ws_.day, city_index, ws_.cadence.monthly_period)) {
+			if (pop.food_price_ref <= 0.0) {
+				pop.food_price_ref = food_unit_cost;
+				pop.food_inflation_month = 0.0;
+			} else if (pop.food_price_ref > 0.0) {
+				pop.food_inflation_month = food_unit_cost
+					/ pop.food_price_ref - 1.0;
+				pop.food_price_ref = food_unit_cost;
+			}
+		}
 
 		// Subsídio de subsistência LOCAL não gasto volta ao governo: sem isso, a
 		// cidade sem estoque de alimento convertia o subsídio em poupança e ele

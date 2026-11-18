@@ -129,25 +129,13 @@ void SimCore::phase_demography() {
 		if (total <= 0.0) {
 			continue;
 		}
-		// Fluxo do MÊS: as taxas brutas medidas (por mil/ano) sobre a
-		// população, divididas por 12.
+		// Fluxo do MÊS: nascimentos (tabela) e mortes MODULADAS por fome/saúde
+		// (B7): a tabela CDR é a BASE (multiplicador 1 em situação normal) e o
+		// excesso concentra em crianças (0-14) e idosos (65+). A satisfação
+		// usada é a do dia anterior (`satisfaction_prev`).
 		const double births = total * structure.births_per_1000 / 1000.0 / 12.0;
-		const double deaths = total * structure.deaths_per_1000 / 1000.0 / 12.0;
-		// Mortes por faixa: o CDR é o total; os pesos relativos só dizem como
-		// ele se reparte. Peso total 0 (população zero em todas as faixas) não
-		// chega aqui (`total > 0`), mas a repartição igual fica como fallback.
-		double shape[kAgeBands];
-		double shape_total = 0.0;
-		for (int index = 0; index < kAgeBands; ++index) {
-			shape[index] = band[index] * kAgeDeathWeight[index];
-			shape_total += shape[index];
-		}
 		double death_band[kAgeBands] = {};
-		for (int index = 0; index < kAgeBands; ++index) {
-			death_band[index] = shape_total > 0.0
-				? deaths * shape[index] / shape_total
-				: deaths / double(kAgeBands);
-		}
+		mortality_month(pop, city, death_band);
 		// Envelhecimento: fração anual da faixa dividida por 12 (a última faixa
 		// não tem para onde sair).
 		double aging[kAgeBands] = {};

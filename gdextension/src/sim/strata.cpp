@@ -73,6 +73,56 @@ void normalize(double* values, int count) {
 	}
 }
 
+// B7 — renda de MERCADO dos quintis: salário (com penalidade informal),
+// capital e aluguel recebido pelos donos. A folha total NÃO muda: o peso do
+// quintil é multiplicado pelo fator informal e renormalizado. `informal_income`
+// guarda a renda informal do dia por quintil (informativa).
+void compute_strata_market(Pop& pop) {
+	// 1. Salário: peso por quintil (composição educacional × dispersão).
+	double wage_weight[kIncomeStrata] = {};
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		double w = 0.0;
+		for (int e = 0; e < kEducationLevels; ++e) {
+			w += pop.stratum_education_mix[s][e]
+				* safe_nonneg(pop.wage_by_level[e]);
+		}
+		w *= std::max(pop.stratum_wage_factor[s], 0.02);
+		wage_weight[s] = w * std::max(pop.stratum_people[s], 0.0);
+	}
+	double informal_factor[kIncomeStrata] = {};
+	double wage_total_weight = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		informal_factor[s] = (1.0 - pop.informal_labor_share[s])
+			+ pop.informal_labor_share[s] * kInformalWagePenalty
+				* pop.informal_crisis_factor;
+		wage_weight[s] *= informal_factor[s];
+		wage_total_weight += wage_weight[s];
+	}
+	const double wage_bill = std::max(0.0, pop.wage_income);
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		pop.stratum_wage[s] = wage_total_weight > kStrataEps
+			? wage_bill * wage_weight[s] / wage_total_weight : 0.0;
+		pop.informal_income[s] = informal_factor[s] > kStrataEps
+			? pop.stratum_wage[s] * pop.informal_labor_share[s]
+				* kInformalWagePenalty * pop.informal_crisis_factor
+				/ informal_factor[s] : 0.0;
+	}
+	// 2. Capital e aluguel recebido pelos DONOS (participação de riqueza).
+	const double capital_income = std::max(0.0, pop.capital_income);
+	const double rent_income = std::max(0.0, pop.rent_income);
+	double capital_weight_total = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		capital_weight_total += pop.stratum_capital_share[s];
+	}
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		const double share = capital_weight_total > kStrataEps
+			? pop.stratum_capital_share[s] / capital_weight_total
+			: 1.0 / double(kIncomeStrata);
+		pop.stratum_capital[s] = capital_income * share;
+		pop.stratum_rent[s] = rent_income * share;
+	}
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -274,6 +324,9 @@ void SimCore::seed_strata(City& city, const double* shares) {
 	}
 	pop.strata_ready = true;
 	refresh_saving_rates(city);
+	// B7: semeia a informalidade (urbano + interior) a partir do dado nacional
+	// (ou âncora de renda) e a referência de saúde. Idempotente (flag interna).
+	seed_informality(city);
 }
 
 void SimCore::rescale_strata_population(Pop& pop) const {
@@ -338,6 +391,27 @@ void SimCore::refresh_saving_rates(City& city) {
 	}
 }
 
+void SimCore::refresh_strata_taxes(City& city) {
+	Pop& pop = city.pop;
+	if (!pop.strata_ready) {
+		pop.taxes = (pop.wage_income + pop.capital_income
+			+ pop.rent_income) * kTaxRate;
+		return;
+	}
+	rescale_strata_population(pop);
+	refresh_saving_rates(city);
+	compute_strata_market(pop);
+	// B7: o imposto incide SÓ sobre a parcela FORMAL do salário (o informal não
+	// paga imposto de renda nem contribuição); capital e aluguel por inteiro.
+	double taxes_total = 0.0;
+	for (int s = 0; s < kIncomeStrata; ++s) {
+		taxes_total += (pop.stratum_wage[s]
+				* (1.0 - pop.informal_labor_share[s])
+			+ pop.stratum_capital[s] + pop.stratum_rent[s]) * kTaxRate;
+	}
+	pop.taxes = taxes_total;
+}
+
 void SimCore::refresh_strata_income(City& city) {
 	Pop& pop = city.pop;
 	if (!pop.strata_ready) {
@@ -345,40 +419,8 @@ void SimCore::refresh_strata_income(City& city) {
 	}
 	rescale_strata_population(pop);
 	refresh_saving_rates(city);
-	const double population = std::max(pop.population, kStrataEps);
-	// 1. Salário: a folha por escolaridade (já paga no dia) é repartida pela
-	// composição educacional e pela dispersão de cada quintil.
-	double wage_weight[kIncomeStrata] = {};
-	double wage_total_weight = 0.0;
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		double w = 0.0;
-		for (int e = 0; e < kEducationLevels; ++e) {
-			w += pop.stratum_education_mix[s][e]
-				* safe_nonneg(pop.wage_by_level[e]);
-		}
-		w *= std::max(pop.stratum_wage_factor[s], 0.02);
-		wage_weight[s] = w * std::max(pop.stratum_people[s], 0.0);
-		wage_total_weight += wage_weight[s];
-	}
-	const double wage_bill = std::max(0.0, pop.wage_income);
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		pop.stratum_wage[s] = wage_total_weight > kStrataEps
-			? wage_bill * wage_weight[s] / wage_total_weight : 0.0;
-	}
-	// 2. Capital e aluguel recebido: pelos DONOS (participação de riqueza).
-	const double capital_income = std::max(0.0, pop.capital_income);
-	const double rent_income = std::max(0.0, pop.rent_income);
-	double capital_weight_total = 0.0;
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		capital_weight_total += pop.stratum_capital_share[s];
-	}
-	for (int s = 0; s < kIncomeStrata; ++s) {
-		const double share = capital_weight_total > kStrataEps
-			? pop.stratum_capital_share[s] / capital_weight_total
-			: 1.0 / double(kIncomeStrata);
-		pop.stratum_capital[s] = capital_income * share;
-		pop.stratum_rent[s] = rent_income * share;
-	}
+	// 1-2. Salário (com penalidade informal), capital e aluguel pelos donos.
+	compute_strata_market(pop);
 	// 3. Transferências (devolução do imposto) e renda externa de subsistência.
 	// A transferência é pro-rata ao imposto pago (orçamento equilibrado). A
 	// renda externa mistura um piso igual (comida) com a renda de mercado (ver
@@ -412,23 +454,28 @@ void SimCore::refresh_strata_income(City& city) {
 			? market_weight[s] / market_total : equal;
 		pop.stratum_transfer[s] = transfers * transfer_share;
 	}
-	// Imposto, renda disponível e gasto em serviços: o imposto incide sobre a
-	// renda de MERCADO do estrato (salário + capital + aluguel), como no
-	// agregado; o serviço sai da renda DOMÉSTICA (a externa é piso de
-	// subsistência). A soma dos estratos é o total da cidade.
+	// Imposto, renda disponível e gasto em serviços. B7: imposto só sobre a
+	// parcela FORMAL do salário; a soma dos estratos é o total da cidade
+	// (`pop.taxes` já foi calculado por refresh_strata_taxes; aqui só se usa o
+	// mesmo imposto por estrato para a renda líquida e o gasto em serviços).
 	double service_weight[kIncomeStrata] = {};
 	double service_weight_total = 0.0;
+	double taxes_total = 0.0;
 	for (int s = 0; s < kIncomeStrata; ++s) {
 		const double taxable = pop.stratum_wage[s] + pop.stratum_capital[s]
 			+ pop.stratum_rent[s];
+		const double tax_s = (pop.stratum_wage[s]
+				* (1.0 - pop.informal_labor_share[s])
+			+ pop.stratum_capital[s] + pop.stratum_rent[s]) * kTaxRate;
+		taxes_total += tax_s;
 		const double stratum_external = external * external_share[s];
 		pop.stratum_net_income[s] = std::max(0.0,
-			taxable + stratum_external + pop.stratum_transfer[s]
-			- taxable * kTaxRate);
+			taxable + stratum_external + pop.stratum_transfer[s] - tax_s);
 		service_weight[s] = std::max(0.0,
-			taxable + pop.stratum_transfer[s] - taxable * kTaxRate);
+			taxable + pop.stratum_transfer[s] - tax_s);
 		service_weight_total += service_weight[s];
 	}
+	pop.taxes = taxes_total;
 	const double service_spend = std::max(0.0, pop.service_spend);
 	for (int s = 0; s < kIncomeStrata; ++s) {
 		pop.stratum_service_spend[s] = service_weight_total > kStrataEps
@@ -607,6 +654,9 @@ void SimCore::phase_strata() {
 		}
 		if (cadence_due(ws_.day, city_index, month_period)) {
 			update_strata_wealth(city);
+			// B7: formalização mensal do trabalho informal (urbano + interior,
+			// cadência A6 — mesmo dia do fechamento de estratos).
+			formalize_informality(city);
 		}
 	}
 }

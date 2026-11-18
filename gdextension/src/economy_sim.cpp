@@ -269,6 +269,10 @@ void EconomySim::_bind_methods() {
 	                     &EconomySim::set_sector_employment);
 	ClassDB::bind_method(D_METHOD("set_age_structure", "data"),
 	                     &EconomySim::set_age_structure);
+	ClassDB::bind_method(D_METHOD("set_informality", "data"),
+	                     &EconomySim::set_informality);
+	ClassDB::bind_method(D_METHOD("set_health_access", "data"),
+	                     &EconomySim::set_health_access);
 	ClassDB::bind_method(D_METHOD("set_urban", "urban_land", "housing_city",
 	                     "housing", "municipal_finance"),
 	                     &EconomySim::set_urban);
@@ -2497,6 +2501,58 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		slot.pop_published = true;
 	}
 
+	// B7: informalidade, mortalidade e insatisfação (blocos pesados, sob
+	// demanda em get_city_status). Construídos a cada chamada — o caminho é
+	// raro (uma cidade por consulta), então não há cache/mirror.
+	{
+		Dictionary informal;
+		informal["share"] = city.pop.informal_share;
+		Array by_quintile;
+		by_quintile.resize(kIncomeStrata);
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			by_quintile[s] = city.pop.informal_labor_share[s];
+		}
+		informal["by_quintile"] = by_quintile;
+		informal["wage_bill"] = city.pop.informal_wage_bill;
+		Dictionary service;
+		service["workers"] = city.pop.informal_service_workers;
+		service["output"] = city.pop.informal_service_output;
+		service["demand"] = city.pop.informal_service_demand;
+		service["revenue"] = city.pop.informal_service_revenue;
+		service["price"] = city.pop.informal_service_price;
+		service["share"] = city.pop.informal_service_share;
+		informal["service"] = service;
+		dict["informal"] = informal;
+
+		Dictionary mortality;
+		mortality["deaths"] = city.pop.deaths_total;
+		mortality["expected_deaths"] = city.pop.deaths_expected;
+		mortality["excess_total"] = city.pop.excess_deaths_total;
+		mortality["excess_famine_total"] = city.pop.excess_deaths_famine_total;
+		mortality["famine_months"] = city.pop.famine_months;
+		mortality["health_access"] = sim_core_.nation_health_access(city);
+		mortality["health_access_ref"] = city.pop.health_access_ref;
+		dict["mortality"] = mortality;
+
+		Dictionary dissatisfaction;
+		dissatisfaction["index"] = city.pop.dissatisfaction;
+		Array dq;
+		dq.resize(kIncomeStrata);
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			dq[s] = city.pop.dissatisfaction_by_stratum[s];
+		}
+		dissatisfaction["by_quintile"] = dq;
+		Dictionary components;
+		components["unemployment"] = city.pop.dissatisfaction_unemployment;
+		components["rent"] = city.pop.dissatisfaction_rent;
+		components["food"] = city.pop.dissatisfaction_food;
+		components["inflation"] = city.pop.dissatisfaction_inflation;
+		components["informality"] = city.pop.dissatisfaction_informality;
+		components["land"] = 0.0;
+		dissatisfaction["components"] = components;
+		dict["dissatisfaction"] = dissatisfaction;
+	}
+
 	// B1: coortes etárias (5 faixas). Publicadas como Array de doubles no bloco
 	// `pop`, reescritas só quando a composição muda (uma vez por mês).
 	{
@@ -3877,6 +3933,9 @@ Dictionary EconomySim::get_day_summary() {
 	double consumed = 0.0;
 	double deficit = 0.0;
 	double in_transit = 0.0;
+	double informal_share_sum = 0.0;
+	double dissatisfaction_sum = 0.0;
+	double excess_deaths = 0.0;
 	for (std::size_t city_index = 0; city_index < ws_.cities.size(); ++city_index) {
 		const City& city = ws_.cities[city_index];
 		double city_production = 0.0;
@@ -3894,6 +3953,11 @@ Dictionary EconomySim::get_day_summary() {
 		consumed += city.pop.consumed;
 		deficit += std::max(0.0, city.pop.need - city.pop.consumed);
 		in_transit += transit[city_index];
+		// B7: agregados leves (média ponderada por população).
+		informal_share_sum += city.pop.informal_share * city.population;
+		dissatisfaction_sum += city.pop.dissatisfaction * city.population;
+		excess_deaths += city.pop.excess_deaths_total
+			+ city.region.excess_deaths_total;
 	}
 	root[k.population] = population;
 	root[k.production] = production;
@@ -3902,6 +3966,11 @@ Dictionary EconomySim::get_day_summary() {
 	root[k.consumed] = consumed;
 	root[k.deficit] = deficit;
 	root[k.in_transit] = in_transit;
+	root["informal_share"] = population > 0.0
+		? informal_share_sum / population : 0.0;
+	root["dissatisfaction"] = population > 0.0
+		? dissatisfaction_sum / population : 0.0;
+	root["excess_deaths_total"] = excess_deaths;
 	root[k.trade_orders_count] = static_cast<int64_t>(ws_.last_orders.size());
 	return root;
 }
@@ -5112,6 +5181,55 @@ Dictionary EconomySim::get_region_status(const String& city_id) const {
 			ogs::SimCore::infra_exodus_multiplier(region);
 		out["infra"] = infra;
 	}
+	// B7: informalidade, mortalidade e insatisfação do interior.
+	{
+		Dictionary informal;
+		informal["share"] = region.informal_share;
+		Array by_quintile;
+		by_quintile.resize(kIncomeStrata);
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			by_quintile[s] = region.informal_labor_share[s];
+		}
+		informal["by_quintile"] = by_quintile;
+		informal["wage_bill"] = region.informal_wage_bill;
+		Dictionary service;
+		service["workers"] = region.informal_service_workers;
+		service["output"] = region.informal_service_output;
+		service["demand"] = region.informal_service_demand;
+		service["revenue"] = region.informal_service_revenue;
+		service["price"] = region.informal_service_price;
+		service["share"] = region.informal_service_share;
+		informal["service"] = service;
+		out["informal"] = informal;
+
+		Dictionary mortality;
+		mortality["deaths"] = region.deaths_total;
+		mortality["expected_deaths"] = region.deaths_expected;
+		mortality["excess_total"] = region.excess_deaths_total;
+		mortality["excess_famine_total"] = region.excess_deaths_famine_total;
+		mortality["famine_months"] = region.famine_months;
+		mortality["health_access"] = sim_core_.nation_health_access(*city);
+		mortality["health_access_ref"] = region.health_access_ref;
+		out["mortality"] = mortality;
+
+		Dictionary dissatisfaction;
+		dissatisfaction["index"] = region.dissatisfaction;
+		Array dq;
+		dq.resize(kIncomeStrata);
+		for (int s = 0; s < kIncomeStrata; ++s) {
+			dq[s] = region.dissatisfaction_by_stratum[s];
+		}
+		dissatisfaction["by_quintile"] = dq;
+		Dictionary components;
+		components["unemployment"] = region.dissatisfaction_unemployment;
+		components["rent"] = region.dissatisfaction_rent;
+		components["food"] = region.dissatisfaction_food;
+		components["inflation"] = region.dissatisfaction_inflation;
+		components["informality"] = region.dissatisfaction_informality;
+		components["land"] = 0.0;
+		dissatisfaction["components"] = components;
+		out["dissatisfaction"] = dissatisfaction;
+	}
 	// B5: concessões — dono (F9) e royalty por mina/fazenda (extração primária)
 	// da região (construções da cidade-polo). Dono = "state" | "national:<g>" |
 	// "foreign:<g>@<n>" | "private".
@@ -5442,6 +5560,107 @@ void EconomySim::set_age_structure(const Variant& data) {
 		return;
 	}
 	ws_.age_structures = std::move(parsed);
+	++status_static_version_;
+}
+
+// ---------------------------------------------------------------------------
+// B7 — INFORMALIDADE E ACESSO À SAÚDE (data/definitions/economy/informality.json
+// e data/definitions/population/health_access.json).
+//
+// DEFINIÇÃO estática no WorldState (como `age_structures`), NÃO entra no save:
+// a fração informal inicial é semeada no dia 0 (`SimCore::seed_informality`) e
+// a referência de saúde é lida na semeadura e na mortalidade mensal. O loader
+// tolera arquivo ausente (o GDScript entrega {}) e cai na âncora de renda /
+// kHealthAccessDefault quando a nação não tem entrada.
+// ---------------------------------------------------------------------------
+
+void EconomySim::set_informality(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (data.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary root = data;
+	// O arquivo usa `rates` (tag -> fração 0..1); `nations` é aceito por
+	// compatibilidade (mesmo layout de age_structure).
+	Dictionary nations = root.get("rates", Dictionary());
+	if (nations.is_empty()) {
+		nations = root.get("nations", Dictionary());
+	}
+	const Array tags = nations.keys();
+	std::map<std::string, double> parsed;
+	for (int index = 0; index < tags.size(); ++index) {
+		const String tag = String(tags[index]);
+		if (tag.is_empty()) {
+			continue;
+		}
+		const Variant entry = nations.get(tag, Variant());
+		double value = -1.0;
+		if (entry.get_type() == Variant::DICTIONARY) {
+			const Dictionary d = entry;
+			value = static_cast<double>(d.get("value", -1.0));
+			if (value < 0.0) {
+				value = static_cast<double>(d.get("informal", -1.0));
+			}
+			if (value < 0.0) {
+				value = static_cast<double>(d.get("rate", -1.0));
+			}
+		} else if (entry.get_type() == Variant::FLOAT
+				|| entry.get_type() == Variant::INT) {
+			value = static_cast<double>(entry);
+		}
+		if (!std::isfinite(value) || value < 0.0 || value > 1.0) {
+			continue;
+		}
+		parsed[std::string(tag.utf8().get_data())] = value;
+	}
+	if (parsed.empty()) {
+		return;
+	}
+	ws_.informal_rates = std::move(parsed);
+	++status_static_version_;
+}
+
+void EconomySim::set_health_access(const Variant& data) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (data.get_type() != Variant::DICTIONARY) {
+		return;
+	}
+	const Dictionary root = data;
+	Dictionary nations = root.get("rates", Dictionary());
+	if (nations.is_empty()) {
+		nations = root.get("nations", Dictionary());
+	}
+	const Array tags = nations.keys();
+	std::map<std::string, double> parsed;
+	for (int index = 0; index < tags.size(); ++index) {
+		const String tag = String(tags[index]);
+		if (tag.is_empty()) {
+			continue;
+		}
+		const Variant entry = nations.get(tag, Variant());
+		double value = -1.0;
+		if (entry.get_type() == Variant::DICTIONARY) {
+			const Dictionary d = entry;
+			value = static_cast<double>(d.get("value", -1.0));
+			if (value < 0.0) {
+				value = static_cast<double>(d.get("coverage", -1.0));
+			}
+			if (value < 0.0) {
+				value = static_cast<double>(d.get("index", -1.0));
+			}
+		} else if (entry.get_type() == Variant::FLOAT
+				|| entry.get_type() == Variant::INT) {
+			value = static_cast<double>(entry);
+		}
+		if (!std::isfinite(value) || value < 0.0 || value > 1.0) {
+			continue;
+		}
+		parsed[std::string(tag.utf8().get_data())] = value;
+	}
+	if (parsed.empty()) {
+		return;
+	}
+	ws_.health_access = std::move(parsed);
 	++status_static_version_;
 }
 

@@ -394,6 +394,18 @@ public:
 	void set_age_structure(const Variant& data);
 
 	/**
+	 * B7: carrega a taxa de emprego informal por nação (informality.json) e a
+	 * cobertura de saúde de referência (health_access.json). DEFINIÇÃO estática
+	 * no WorldState (como `age_structures`): a fração inicial é semeada no dia 0
+	 * (`SimCore::seed_informality`) e a referência de saúde é lida na semeadura
+	 * e na mortalidade mensal. Aceita só DICTIONARY com {"nations": {tag: v}},
+	 * onde `v` é um número (fração 0..1) ou {"value": número}. Nação sem entrada
+	 * cai na âncora de renda (informalidade) ou em kHealthAccessDefault.
+	 */
+	void set_informality(const Variant& data);
+	void set_health_access(const Variant& data);
+
+	/**
 	 * §19 (W0): carrega solo urbano, moradia e finanças municipais dos quatro
 	 * JSON (`urban_land`, `housing_city`, `housing`, `municipal_finance`, já
 	 * parseados pelo GDScript). Chame DEPOIS de criar o mundo: o casamento é
