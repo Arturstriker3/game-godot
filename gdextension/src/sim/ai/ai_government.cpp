@@ -47,8 +47,15 @@ constexpr double kMinStateCapacity = 2.0;
 constexpr double kMaxStateCapacity = 20.0;
 // Teto da capacidade de uma mina estatal (B4): o estado cobre uma base da
 // demanda externa e o capital privado o resto (× kExportCapacityFactor).
+// D-083: o teto fixo de 10 t/d fica SÓ para minerais de nicho (ouro, diamante,
+// terras raras, tungstênio, urânio); os demais são dimensionados por demanda e
+// retorno, e a mina existente é aprofundada quando o retorno paga a obra.
 constexpr double kMaxStateMineCapacity = 10.0;
 constexpr double kExportCapacityFactor = 1.2;
+// D-083: payback aceito para a OBRA DE MINA (abrir ou aprofundar). 730 dias é o
+// mesmo horizonte estendido que o investidor privado usa para o enxofre (B4):
+// obra de mina é investimento longo; abaixo disso o retorno não paga o capital.
+constexpr double kMinePaybackDays = 730.0;
 // Só alimentava o log de diagnóstico do bloco 4 (não portado).
 constexpr double kHighUnemployment = 0.65;
 // Anti-loop de construção (B5): cooldown por cidade, teto por tipo e piso de
@@ -161,6 +168,28 @@ struct MineCandidate {
 	double margin = 0.0;
 };
 
+// D-083 — candidato de APROFUNDAMENTO: mina do Estado existente cujo estágio
+// atual produz menos que o próximo. `extra` = t/dia adicionadas (capacidade
+// nova a 100% menos a produção relativa de hoje), `cost` = obra e
+// `daily_profit` = retorno esperado por dia (margem × t extra).
+struct DeepenCandidate {
+	int index = -1;
+	std::string building_id;
+	double margin = 0.0;
+	double extra = 0.0;
+	double cost = 0.0;
+	double daily_profit = 0.0;
+};
+
+// Cooldown por cidade (== o primeiro gate de `_build_gate`): uma ação de
+// mineração por cidade a cada kBuildCooldownDays.
+bool build_cooldown_ready(const AiContext& ctx, const std::string& city_id) {
+	const auto found = ctx.state.last_build_day.find(city_id);
+	const int last_build = found == ctx.state.last_build_day.end()
+		? -kBuildCooldownDays : found->second;
+	return ctx.day - last_build >= kBuildCooldownDays;
+}
+
 // Plano de UMA cidade (== `_run_city`), mesma ordem e mesmas constantes.
 void plan_city(AiContext& ctx, int city_index) {
 	const AiView& view = ctx.view;
@@ -227,10 +256,15 @@ void plan_city(AiContext& ctx, int city_index) {
 		}
 	}
 
-	// 2. Mineração estratégica (B4): mina estatal para cada mineral com jazida
-	// (aptidão > 0) e margem positiva ao preço de exportação, quando ainda não
-	// há produtor. Sem jazida declarada a cidade não pode abrir mina nenhuma:
-	// pula o laço inteiro (== `has_any_deposit`).
+	// 2. Mineração estratégica (B4). Duas decisões por mineral, nesta ordem:
+	//    (a) APROFUNDAR a mina do Estado que já existe (D-083) — se o retorno
+	//        (margem × t/dia adicionadas) paga a obra dentro de kMinePaybackDays;
+	//    (b) ABRIR mina nova, quando não há produtor — capacidade dimensionada
+	//        pela demanda externa e pelo orçamento (o teto fixo de 10 t/d só
+	//        vale para mineral de nicho).
+	// Sem jazida declarada a cidade não pode abrir mina nenhuma: pula o laço
+	// inteiro (== `has_any_deposit`).
+	std::vector<DeepenCandidate> deepens;
 	std::vector<MineCandidate> candidates;
 	if (ai_d_begin(view, city_index) < ai_d_end(view, city_index)) {
 		for (const int index : ctx.templates.minerals) {
@@ -246,13 +280,6 @@ void plan_city(AiContext& ctx, int city_index) {
 			if (!ai_has_deposit(view, city_index, product)) {
 				continue;
 			}
-			if (ai_buildings_of_type(view, city_index, product, bindex) > 0) {
-				continue;
-			}
-			// §15/D-060: obra de mina em andamento conta como produtor futuro.
-			if (ai_has_pending_build(view, city_index, product)) {
-				continue;
-			}
 			const double margin =
 				ai_market(view, city_index, product, kAiPrice)
 				- ai_variable_cost_mined(view, ctx.templates, city_index, tmpl);
@@ -260,11 +287,82 @@ void plan_city(AiContext& ctx, int city_index) {
 					|| ai_market(view, city_index, product, kAiSurplus) > 0.0) {
 				continue;
 			}
+			// (a) Mina do Estado existente: aprofundar quando o estágio atual
+			// produz menos que o próximo e o retorno paga a obra. **Comida
+			// primeiro:** cidade que não cobre a cesta não desvia orçamento para
+			// obra de mina (a mesma prioridade da frota/moradia).
+			const int mine_at = ai_mine_index(view, city_index, product, true);
+			if (mine_at >= 0) {
+				if (food_deficit >= kMinShortageTons) {
+					continue;
+				}
+				const std::size_t at = static_cast<std::size_t>(mine_at);
+				const double cap = view.b_capacity[at];
+				const double factor = view.b_stage_factor[at];
+				const double extra = cap * (kMineDeepenCapacityFactor - factor);
+				if (cap > 0.0 && extra > 0.0) {
+					const double quality = std::clamp(
+						ai_deposit_quality(view, city_index, product), 0.0, 1.0);
+					const double efficiency = 0.5 + 0.5 * quality;
+					const double stage = static_cast<double>(view.b_stage[at] + 1);
+					const double cost = cap
+						* (kMineDeepenCapacityFactor - 1.0) * capital_cost
+						* ai_deposit_opex_factor(view, city_index, product)
+						/ std::max(1e-9, efficiency)
+						* (1.0 + kMineDeepenStageCostGrowth * stage);
+					const double daily_profit = margin * extra;
+					if (daily_profit > 0.0
+							&& cost / daily_profit <= kMinePaybackDays
+							&& cost <= available) {
+						DeepenCandidate candidate;
+						candidate.index = index;
+						candidate.building_id = view.b_id[at];
+						candidate.margin = margin;
+						candidate.extra = extra;
+						candidate.cost = cost;
+						candidate.daily_profit = daily_profit;
+						deepens.push_back(candidate);
+					}
+				}
+				continue;  // já há mina estatal deste mineral na cidade
+			}
+			// §15/D-060: obra de mina em andamento conta como produtor futuro.
+			if (ai_has_pending_build(view, city_index, product)) {
+				continue;
+			}
+			// Qualquer produtor (Estado, grupo ou firma) já atende a cidade: o
+			// governo não abre uma segunda mina do mesmo mineral (regra B4
+			// preservada — o `deepen` acima é o caminho da mina existente).
+			if (ai_buildings_of_type(view, city_index, product, bindex) > 0) {
+				continue;
+			}
+			// Abrir mina nova exige o retorno do capital (mesmo payback da obra).
+			if (margin * 1.0 < capital_cost / kMinePaybackDays) {
+				continue;
+			}
 			MineCandidate candidate;
 			candidate.index = index;
 			candidate.margin = margin;
 			candidates.push_back(candidate);
 		}
+	}
+	// Aprofundamento primeiro (a mina existe e está parada): ranking por retorno
+	// DIÁRIO esperado, decrescente; empate = ordem dos minerais (determinístico).
+	std::sort(deepens.begin(), deepens.end(),
+		[](const DeepenCandidate& a, const DeepenCandidate& b) {
+			return a.daily_profit > b.daily_profit;
+		});
+	for (const DeepenCandidate& candidate : deepens) {
+		if (!build_cooldown_ready(ctx, city_id)) {
+			break;
+		}
+		const AiActionResult result = ai_emit_deepen(ctx, city_id,
+			candidate.building_id);
+		if (result.error.empty()) {
+			ctx.state.last_build_day[city_id] = ctx.day;
+			return;
+		}
+		// Rejeitado (ex.: obra já em voo): tenta o próximo candidato.
 	}
 	// Ranking por margem decrescente: `std::sort` com o MESMO comparador do
 	// `sort_custom` (não-estável, como o do Godot; o desempate é irrelevante
@@ -281,15 +379,19 @@ void plan_city(AiContext& ctx, int city_index) {
 		if (!build_gate(ctx, city_id, city_index, product, bindex)) {
 			continue;
 		}
-		// Capacidade dimensionada pela demanda externa (× 1,2, teto de mina
-		// estatal): mina de demanda pequena não nasce com 10 t/d.
+		// Capacidade dimensionada pela demanda externa (× 1,2): mina de demanda
+		// pequena não nasce grande. D-083: o teto fixo de 10 t/d vale só para
+		// mineral de nicho; os demais seguem o mercado e o orçamento.
 		const double external_demand =
 			product >= 0
 				&& product < static_cast<int>(city.external_demand.size())
 			? city.external_demand[static_cast<std::size_t>(product)]
 			: 0.0;
-		double capacity = std::min(kMaxStateMineCapacity,
-			std::max(kMinStateCapacity, external_demand * kExportCapacityFactor));
+		double capacity = std::max(kMinStateCapacity,
+			external_demand * kExportCapacityFactor);
+		if (is_niche_mineral(resource)) {
+			capacity = std::min(capacity, kMaxStateMineCapacity);
+		}
 		if (capacity * capital_cost >= available) {
 			capacity = available / capital_cost;
 		}

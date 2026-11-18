@@ -128,6 +128,25 @@ public:
 	double food_calories(int product) const;
 	// Multiplicador do opex pela profundidade da jazida (1.0 sem reserva).
 	static double depth_opex_factor(const Deposit& deposit);
+	// D-083 — produção relativa do ESTÁGIO de uma mina (0,05..1,0). 1,0 para
+	// construção que não é mina (fazenda, indústria, produto sem jazida).
+	// A curva é linear na reserva que o estágio ainda pode extrair:
+	// `clamp(stage_remaining / stage_reserve, piso, 1)`.
+	static double mine_stage_factor(const City& city, const Building& building);
+	// true quando a construção é uma mina/poço de estágio: extração primária de
+	// produto com jazida rastreada na cidade.
+	static bool is_mine_building(const City& city, const Building& building);
+	// Capacidade adicionada pelo próximo aprofundamento (t/dia).
+	static double mine_deepen_capacity(const Building& building);
+	// Custo (XGS) e prazo (dias) do aprofundamento que abriria
+	// `building.stage + 1`. A profundidade e a qualidade da jazida entram no
+	// custo; o estágio novo faz o custo crescer (mais fundo = mais caro).
+	double mine_deepen_cost(const City& city, const Building& building) const;
+	static int mine_deepen_days(const Building& building);
+	// Abre o estágio `stage` numa mina: ele reivindica uma fatia da reserva
+	// RESTANTE da jazida e começa cheio (produção 100% enquanto ela durar).
+	static void set_mine_stage(City& city, Building& building, int stage);
+
 	// F7 calibração: TFP efetiva da cidade (fator explícito ou derivado do
 	// PIB PPP per capita real).
 	double effective_productivity(const City& city) const;

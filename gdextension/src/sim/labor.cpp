@@ -22,11 +22,26 @@ void SimCore::phase_labor() {
 		}
 		return depth_opex_factor(owner_city.deposits[building.output_product]);
 	};
+	// D-083: TAXA DE OPERAÇÃO da construção. Planta secundária ociosa opera
+	// pelo uso do dia anterior (piso de 5%); mina com estágio esgotado opera no
+	// piso do estágio (a equipe mínima do poço quase parado). Fazenda e
+	// indústria ativa seguem em 100%. Folha e opex acompanham a taxa — sem
+	// isso a mina parada pagaria salário cheio e faliria por definição.
+	auto operating_of = [this](const City& owner_city, const Building& building) {
+		if (building.recipe >= 0 || building.input_product >= 0) {
+			return std::clamp(building.last_utilization, 0.05, 1.0);
+		}
+		if (is_mine_building(owner_city, building)) {
+			return std::clamp(mine_stage_factor(owner_city, building),
+				kMineStageFloor, 1.0);
+		}
+		return 1.0;
+	};
 	// S16: o trabalho é independente por cidade (escreve só na própria cidade e
 	// nas suas construções; lê só dados globais imutáveis no dia) — paralelizável
 	// com resultado bit-idêntico ao serial. A redução não é necessária (não há
 	// acumulador global nesta fase).
-	auto process_city = [this, &opex_factor](std::size_t begin, std::size_t end) {
+	auto process_city = [this, &opex_factor, &operating_of](std::size_t begin, std::size_t end) {
 		for (std::size_t city_index = begin; city_index < end; ++city_index) {
 			City& city = ws_.cities[city_index];
 			const std::vector<int>& local_buildings =
@@ -38,11 +53,10 @@ void SimCore::phase_labor() {
 			double opex_total = 0.0;
 			for (const int bi : local_buildings) {
 				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
-				const bool secondary = building.recipe >= 0 || building.input_product >= 0;
 				// Planta secundária ociosa não paga o opex cheio: o custo acompanha
-				// a operação do dia anterior (piso de 5% de stand-by).
-				const double operating = secondary
-					? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+				// a operação do dia anterior (piso de 5% de stand-by). Mina no
+				// último estágio idem (D-083).
+				const double operating = operating_of(city, building);
 				opex_total += building.opex * opex_factor(city, building) * operating;
 			}
 			labor_day(city);
@@ -54,9 +68,7 @@ void SimCore::phase_labor() {
 				? (opex_total > 0.0 ? opex_available / opex_total : 1.0) : 1.0;
 			for (const int bi : local_buildings) {
 				Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
-				const bool secondary = building.recipe >= 0 || building.input_product >= 0;
-				const double operating = secondary
-					? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+				const double operating = operating_of(city, building);
 				building.paid_opex = building.opex * opex_factor(city, building)
 					* operating * opex_scale;
 			}
@@ -413,10 +425,15 @@ double SimCore::labor_day(City& city) {
 			}
 			building.workers = building.jobs * workers_fraction;
 			building.wage = contract_wage;
-			const bool secondary =
-				building.recipe >= 0 || building.input_product >= 0;
-			const double operating = secondary
-				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			// D-083: mina no último estágio opera no piso — a folha acompanha a
+			// taxa de operação (mesma regra do opex em phase_labor).
+			double operating = 1.0;
+			if (building.recipe >= 0 || building.input_product >= 0) {
+				operating = std::clamp(building.last_utilization, 0.05, 1.0);
+			} else if (is_mine_building(city, building)) {
+				operating = std::clamp(mine_stage_factor(city, building),
+					kMineStageFloor, 1.0);
+			}
 			buildings_payroll += building.jobs * plant_payroll * operating;
 		}
 	}
@@ -462,10 +479,13 @@ double SimCore::labor_day(City& city) {
 	if (city_index < ws_.buildings_by_city.size()) {
 		for (const int bi : ws_.buildings_by_city[city_index]) {
 			Building& building = ws_.buildings[static_cast<std::size_t>(bi)];
-			const bool secondary =
-				building.recipe >= 0 || building.input_product >= 0;
-			const double operating = secondary
-				? std::clamp(building.last_utilization, 0.05, 1.0) : 1.0;
+			double operating = 1.0;
+			if (building.recipe >= 0 || building.input_product >= 0) {
+				operating = std::clamp(building.last_utilization, 0.05, 1.0);
+			} else if (is_mine_building(city, building)) {
+				operating = std::clamp(mine_stage_factor(city, building),
+					kMineStageFloor, 1.0);
+			}
 			double plant_payroll = 0.0;
 			for (int level = 0; level < kEducationLevels; ++level) {
 				plant_payroll += building.education_mix[level] * fill[level]

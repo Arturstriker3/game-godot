@@ -273,6 +273,17 @@ namespace ogs {
 		// F7: mistura de escolaridade das vagas da construção (soma 1). Fazenda
 		// e extração quase só básico; indústria segue a receita/setor.
 		double education_mix[kEducationLevels] = {0.90, 0.09, 0.01};
+		// D-083 — ESTÁGIO DE MINA (extração primária com jazida rastreada).
+		// `stage` é a profundidade de operação (0 = primeiro poço/galeria);
+		// `stage_reserve_kt` é o que o estágio corrente ainda pode extrair
+		// antes de cair ao piso e `stage_mined_kt` o que ele já extraiu. O
+		// estágio NÃO é uma reserva paralela: cada tonelada também debita
+		// `Deposit::remaining_kt` (a jazida é a única fonte física).
+		// `stage_reserve_kt <= 0` = estágio esgotado (produção no piso).
+		// Fazenda/indústria mantêm 0/0/0 e produção relativa 1,0.
+		int stage = 0;
+		double stage_reserve_kt = 0.0;
+		double stage_mined_kt = 0.0;
 	};
 
 	// ------------------------------------------------------------------
@@ -358,6 +369,11 @@ namespace ogs {
 		// (land_price da zona × área ocupada). Já saiu do caixa do dono na
 		// abertura; `reserved` é o resto (material + mão de obra).
 		double land_cost = 0.0;
+		// D-083: obra de APROFUNDAMENTO de mina. >= 0 = o estágio que a obra
+		// abre ao concluir (building_id é a mina alvo; a capacidade é somada e
+		// o estágio novo reivindica uma fatia da reserva restante da jazida).
+		// -1 = obra normal (prédio novo, expansão, moradia, infra).
+		int deepen_stage = -1;
 	};
 
 	struct Pop {

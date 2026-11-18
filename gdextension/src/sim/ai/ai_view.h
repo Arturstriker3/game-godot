@@ -121,12 +121,18 @@ struct AiView {
 	std::vector<double> b_utilization;
 	std::vector<double> b_costs;
 	std::vector<double> b_site_suitability;
-
+	// D-083 — estágio de mina por construção (ordem de `b_offset`): profundidade
+	// de operação e produção relativa do estágio (0,05..1,0). 0/1,0 nas demais.
+	std::vector<int> b_stage;
+	std::vector<double> b_stage_factor;
 	// Jazidas RASTREADAS por cidade (ordem de produto), offsets cities + 1.
 	std::vector<int> d_offset;
 	std::vector<int> d_product;
 	std::vector<double> d_remaining_kt;
 	std::vector<double> d_opex_factor;
+	// D-083: qualidade da jazida (0..1) — o custo do aprofundamento usa a mesma
+	// eficiência da extração (minério pobre = mais rocha por tonelada).
+	std::vector<double> d_quality;
 
 	// Obras em andamento por cidade (ordem de criação do vetor do núcleo),
 	// offsets cities + 1. `c_expand` = 1 quando a obra soma capacidade a um
@@ -202,12 +208,24 @@ bool ai_has_deposit(const AiView& view, int city, int product);
 // Fator de profundidade da jazida (1.0 sem jazida) — o `opex_factor` que o
 // núcleo aplica ao opex de extração (== `variable_cost_mined`).
 double ai_deposit_opex_factor(const AiView& view, int city, int product);
+// D-083: qualidade da jazida (0..1; 0 sem jazida declarada). O custo do
+// aprofundamento usa a eficiência da extração (0,5 + 0,5 × qualidade).
+double ai_deposit_quality(const AiView& view, int city, int product);
 
 // == `IndustryTemplates.pending_capacity`: capacidade em obra (nova + expansão).
 double ai_pending_capacity(const AiView& view, int city, int product);
 // == `IndustryTemplates.has_pending_build`: obra NOVA (não expansão) em voo.
 bool ai_has_pending_build(const AiView& view, int city, int product);
-// == `IndustryTemplates.existing_capacity`: capacidade nominal instalada.
+// D-083: posição (índice nas tabelas planas da cidade) da mina do produto, ou
+// -1. `state_only` restringe a mina do Estado; falso aceita qualquer dono que
+// não seja o Estado (firma/grupo). O produto precisa ter jazida declarada.
+int ai_mine_index(const AiView& view, int city, int product, bool state_only);
+// D-083: capacidade ADICIONADA pelo aprofundamento da mina em `index` e o custo
+// da obra, com a MESMA fórmula do núcleo (`SimCore::mine_deepen_*`). A IA
+// privada decide aprofundar por retorno com estes números, não pelo tamanho da
+// planta hipotética do template.
+double ai_mine_deepen_capacity(const AiView& view, int index);
+double ai_mine_deepen_cost(const AiView& view, int city, int index);// == `IndustryTemplates.existing_capacity`: capacidade nominal instalada.
 double ai_existing_capacity(const AiView& view, int city, int product);
 // == `IndustryTemplates.producer_id`: id da PRIMEIRA construção da cidade com
 // aquele output e owner != "state" ("" quando não há).

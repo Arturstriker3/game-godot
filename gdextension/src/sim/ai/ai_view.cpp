@@ -8,6 +8,7 @@
 #include "ai_view.h"
 
 #include "../sim_core.h"
+#include "../sim_constants.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -88,6 +89,8 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.b_utilization.clear();
 	view.b_costs.clear();
 	view.b_site_suitability.clear();
+	view.b_stage.clear();
+	view.b_stage_factor.clear();
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		const City& bcity = ws.cities[city_index];
 		if (city_index < ws.buildings_by_city.size()) {
@@ -107,6 +110,12 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 				view.b_site_suitability.push_back(
 					output >= 0 && output < ws.products
 						? bcity.suitability[output] : 0.0);
+				// D-083: estágio da mina (0/1,0 nas construções sem estágio).
+				const bool mine = output >= 0 && output < ws.products
+					&& SimCore::is_mine_building(bcity, building);
+				view.b_stage.push_back(mine ? building.stage : 0);
+				view.b_stage_factor.push_back(mine
+					? SimCore::mine_stage_factor(bcity, building) : 1.0);
 			}
 		}
 		view.b_offset[city_index + 1] =
@@ -119,6 +128,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 	view.d_product.clear();
 	view.d_remaining_kt.clear();
 	view.d_opex_factor.clear();
+	view.d_quality.clear();
 	for (std::size_t city_index = 0; city_index < cities; ++city_index) {
 		const City& dcity = ws.cities[city_index];
 		for (std::size_t product = 0; product < products; ++product) {
@@ -129,6 +139,7 @@ void snapshot_ai_view(const WorldState& ws, const SimCore& core, AiView& view) {
 			view.d_product.push_back(static_cast<int>(product));
 			view.d_remaining_kt.push_back(deposit.remaining_kt);
 			view.d_opex_factor.push_back(SimCore::depth_opex_factor(deposit));
+			view.d_quality.push_back(deposit.quality);
 		}
 		view.d_offset[city_index + 1] =
 			static_cast<int>(view.d_product.size());
@@ -341,6 +352,18 @@ double ai_deposit_opex_factor(const AiView& view, int city, int product) {
 	return 1.0;
 }
 
+double ai_deposit_quality(const AiView& view, int city, int product) {
+	const int begin = ai_d_begin(view, city);
+	const int end = ai_d_end(view, city);
+	for (int index = begin; index < end; ++index) {
+		const std::size_t at = static_cast<std::size_t>(index);
+		if (view.d_product[at] == product) {
+			return view.d_quality[at];
+		}
+	}
+	return 0.0;  // sem jazida declarada: ausência explícita
+}
+
 double ai_pending_capacity(const AiView& view, int city, int product) {
 	const int begin = ai_c_begin(view, city);
 	const int end = ai_c_end(view, city);
@@ -400,6 +423,50 @@ bool ai_local_has(const AiView& view, int city, int product) {
 		}
 	}
 	return false;
+}
+
+int ai_mine_index(const AiView& view, int city, int product, bool state_only) {
+	// Só faz sentido para produto com jazida declarada na cidade (senão não há
+	// estágio — é extração ilimitada legada).
+	if (!ai_has_deposit(view, city, product)) {
+		return -1;
+	}
+	const int begin = ai_b_begin(view, city);
+	const int end = ai_b_end(view, city);
+	for (int index = begin; index < end; ++index) {
+		const std::size_t at = static_cast<std::size_t>(index);
+		if (view.b_output[at] != product) {
+			continue;
+		}
+		const bool is_state = view.b_owner[at] == "state";
+		if (state_only == is_state) {
+			return index;
+		}
+	}
+	return -1;
+}
+
+double ai_mine_deepen_capacity(const AiView& view, int index) {
+	if (index < 0 || index >= static_cast<int>(view.b_capacity.size())) {
+		return 0.0;
+	}
+	return std::max(0.0, view.b_capacity[static_cast<std::size_t>(index)])
+		* (kMineDeepenCapacityFactor - 1.0);
+}
+
+double ai_mine_deepen_cost(const AiView& view, int city, int index) {
+	if (index < 0 || index >= static_cast<int>(view.b_capacity.size())) {
+		return 0.0;
+	}
+	const std::size_t at = static_cast<std::size_t>(index);
+	const int product = view.b_output[at];
+	const double efficiency = 0.5 + 0.5 * std::clamp(
+		ai_deposit_quality(view, city, product), 0.0, 1.0);
+	return ai_mine_deepen_capacity(view, index) * kCapitalPerCapacity
+		* ai_deposit_opex_factor(view, city, product)
+		/ std::max(1e-9, efficiency)
+		* (1.0 + kMineDeepenStageCostGrowth
+			* static_cast<double>(view.b_stage[at] + 1));
 }
 
 double ai_observed_cost(const AiView& view, int city, int product) {

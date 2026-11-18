@@ -154,7 +154,8 @@ func _ready() -> void:
 	# mantém trigo.
 	var geo := GeographyService.new()
 	var cities := _load_cities()
-	sim.initialize_world(cities, _load_ports(), geo.resolve_initial_farms(_load_buildings(), cities))
+	sim.initialize_world(cities, _load_ports(),
+			geo.resolve_initial_mines(geo.resolve_initial_farms(_load_buildings(), cities), cities))
 	# §19 (W0): solo, moradia e prefeitura por cidade. DEPOIS do mundo: os JSON
 	# casam pelo id da cidade. Binário anterior à §19 não tem o método (mantém o
 	# estado sem dado urbano, como antes).

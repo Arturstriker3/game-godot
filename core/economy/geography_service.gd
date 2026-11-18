@@ -771,6 +771,51 @@ func resolve_initial_farms(buildings: Array, cities: Array) -> Array:
 	return resolved
 
 
+## D-083 — MINAS/POÇOS INICIAIS. A decisão do dono (2026-11-17) é que as jazidas
+## já exploradas comecem com a construção EXISTENTE, porém no ÚLTIMO estágio de
+## operação: a produção efetiva cai ao piso (5%) e só volta pagando o
+## aprofundamento. Uma mina por (cidade, mineral com jazida atribuída pela regra
+## A1) — a MESMA tabela de depósitos que o mapa de recursos desenha, então
+## nenhuma jazida é inventada. Dono: Estado por padrão (ownership_baseline.json
+## só declara setores estatais em texto livre para 12 nações; sem estrutura por
+## setor, não se inventa uma repartição). A capacidade NOMINAL usa a mesma régua
+## da mina estatal (demanda externa × 1,2, piso 2 t/d, teto 10 t/d); a produção
+## real fica no piso do estágio. `stage = -1` = "último estágio" (o número mora
+## no núcleo, não aqui). Sem calibração de quantidade nesta fase.
+func resolve_initial_mines(buildings: Array, cities: Array) -> Array:
+	var out: Array = buildings.duplicate(true)
+	var used := {}
+	for building in out:
+		var key: String = String(building.get("city_id", "")) + "|" \
+				+ String(building.get("resource", ""))
+		used[key] = true
+	for city in cities:
+		var city_id := String(city.get("id", ""))
+		if city_id == "":
+			continue
+		var minerals := _aggregate_deposits(deposits_for_city(city_id))
+		for resource in minerals:
+			var key: String = city_id + "|" + String(resource)
+			if used.has(key):
+				continue
+			used[key] = true
+			var reserve_kt := float(minerals[resource]["reserve_kt"])
+			var ceiling := maxf(reserve_kt * 1000.0 / (DEPLETION_YEARS * 365.0),
+					MIN_EXTERNAL_DEMAND)
+			var capacity := clampf(ceiling * 1.2, 2.0, 10.0)
+			out.append({
+				"city_id": city_id,
+				"id": "%s_%s_mine" % [city_id.to_lower().replace("-", "_"), resource],
+				"name": "%s — %s (mina)" % [String(city.get("name", "")), resource],
+				"resource": resource,
+				"output_tons_per_day": float(snappedf(capacity, 0.001)),
+				"owner": "state",
+				"stage": -1,
+			})
+	return out
+
+
+
 ## Cultura da fazenda inicial: trigo quando viável NA BACIA DA CIDADE (aptidão
 ## ≥ 0,30); senão o básico de maior aptidão × caloria também na cidade; sem
 ## aptidão local, cai para a melhor cultura nacional; sem dado nenhum, trigo.

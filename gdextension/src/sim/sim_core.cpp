@@ -409,16 +409,23 @@ void SimCore::phase_accounting() {
 		const std::vector<int>& local_buildings =
 			ws_.buildings_by_city[city_index];
 		std::array<double, kMaxProducts> capacity_by_output{};
+		// D-083: a fatia de receita segue a capacidade EFETIVA do dia — mina com
+		// estágio esgotado produz 5% e não pode levar 100% da receita da cidade
+		// (isso maquiava o lucro da mina parada e afundava a mina ativa).
+		auto effective_capacity = [&city](const Building& building) {
+			return building.capacity * building.output_scale
+				* mine_stage_factor(city, building);
+		};
 		for (const int bi : local_buildings) {
 			const Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
 			capacity_by_output[building.output_product] +=
-				building.capacity * building.output_scale;
+				effective_capacity(building);
 		}
 		for (const int bi : local_buildings) {
 			Building& building =
 				ws_.buildings[static_cast<std::size_t>(bi)];
-			const double effective = building.capacity * building.output_scale;
+			const double effective = effective_capacity(building);
 			const double share = capacity_by_output[building.output_product] > 0.0
 				? effective / capacity_by_output[building.output_product] : 0.0;
 			building.revenue = city.revenue_by_product[building.output_product] * share;
@@ -571,8 +578,14 @@ void SimCore::phase_accounting() {
 			}
 			// Planta secundária ociosa não é insolvente: sem operação no dia,
 			// não acumula dias de prejuízo (o custo de stand-by já é pequeno).
-			const bool operating = building.recipe < 0 && building.input_product < 0
-				? true : building.utilization > 1e-9;
+			// D-083: mina com o estágio esgotado é o mesmo caso — o poço parado
+			// aguarda aprofundamento; ele não "faliu" e não pode desaparecer.
+			const bool secondary =
+				building.recipe >= 0 || building.input_product >= 0;
+			const bool mine_idle = !secondary && is_mine_building(city, building)
+				&& mine_stage_factor(city, building) <= kMineStageFloor + 1e-12;
+			const bool operating = mine_idle ? false
+				: secondary ? building.utilization > 1e-9 : true;
 			if (building.profit < 0.0 && operating) {
 				++building.loss_days;
 			} else {

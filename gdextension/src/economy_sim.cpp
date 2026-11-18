@@ -316,6 +316,9 @@ void EconomySim::_bind_methods() {
 	                     "building_id", "resource", "output_product", "capacity",
 	                     "recipe_id", "partner_group"),
 	                     &EconomySim::group_invest, DEFVAL(""));
+	// D-083: aprofundar/expandir mina (comando A3 `deepen_mine`).
+	ClassDB::bind_method(D_METHOD("deepen_mine", "city_id", "building_id"),
+	                     &EconomySim::deepen_mine);
 	ClassDB::bind_method(D_METHOD("set_fdi_policy", "nation", "sector", "mode",
 	                     "min_local"),
 	                     &EconomySim::set_fdi_policy, DEFVAL(0.0));
@@ -890,7 +893,21 @@ void EconomySim::initialize_world(const Array& cities, const Array& ports,
 			String(building.resource.c_str()));
 		building.output_product = output_product >= 0 ? output_product : 0;
 		building.kind = 0;  // tipo (0=fazenda); o produto fica em output_product
-		building.owner = "private";
+		// D-083: mina/poço inicial já EXISTENTE e no último estágio. O estado
+		// inicial da decisão do dono é o mundo com as jazidas "usadas" por uma
+		// construção histórica que produz quase nada (`stage_reserve_kt` = 0);
+		// reaproveitar a produção exige pagar o aprofundamento. `stage` = -1 no
+		// contrato do GeographyService significa "último estágio" (o número mora
+		// aqui, não no GDScript). Dono padrão: Estado.
+		{
+			const int stage_in = int(d.get("stage", 0));
+			building.stage = stage_in < 0 ? kMineInitialStage : stage_in;
+			building.stage_reserve_kt = 0.0;
+			building.stage_mined_kt = 0.0;
+		}
+		const std::string owner_in = std::string(
+			String(d.get("owner", "private")).utf8().get_data());
+		building.owner = owner_in == "state" ? "state" : "private";
 		building.input_product = -1;
 		const double capacity =
 			safe_nonneg(static_cast<double>(d["output_tons_per_day"]));
@@ -1791,6 +1808,12 @@ EconomySim::StatusKeys::StatusKeys() :
 		owner_nation("owner_nation"),
 		local_share("local_share"),
 		groups("groups"),
+		// D-083: estágio de mina.
+		stage("stage"),
+		stage_factor("stage_factor"),
+		stage_reserve_kt("stage_reserve_kt"),
+		stage_mined_kt("stage_mined_kt"),
+		next_deepen_cost("next_deepen_cost"),
 		light("light"),
 		product_count("product_count"),
 		m_price("m_price"),
@@ -2702,6 +2725,27 @@ void EconomySim::fill_city_status(std::size_t city_index,
 		sync_double(k.profit, cached.profit, building.profit);
 		sync_double(k.site_suitability, cached.site,
 			city.suitability[building.output_product]);
+		// D-083 — estágio de mina: profundidade de operação, produção relativa do
+		// estágio (0,05..1,0) e custo do PRÓXIMO aprofundamento. Fazenda/indústria
+		// publicam estágio 0 / fator 1,0 (não têm estágio) — ausência explícita.
+		{
+			const bool mine = SimCore::is_mine_building(city, building);
+			const int stage = mine ? building.stage : 0;
+			if (cached.stage != stage) {
+				entry[k.stage] = stage;
+				cached.stage = stage;
+			}
+			sync_double(k.stage_factor, cached.stage_factor,
+				SimCore::mine_stage_factor(city, building));
+			sync_double(k.stage_reserve_kt, cached.stage_reserve_kt,
+				mine ? building.stage_reserve_kt : 0.0);
+			sync_double(k.stage_mined_kt, cached.stage_mined_kt,
+				mine ? building.stage_mined_kt : 0.0);
+			const bool can_deepen = mine && !building.bankrupt && !building.depleted
+				&& city.deposits[building.output_product].remaining_kt > 0.0;
+			sync_double(k.next_deepen_cost, cached.next_deepen_cost,
+				can_deepen ? sim_core_.mine_deepen_cost(city, building) : 0.0);
+		}
 	}
 	if (!slot.buildings_published) {
 		dict[k.buildings] = slot.buildings;
@@ -5346,6 +5390,25 @@ Dictionary EconomySim::apply_invest(const String& city_id, const String& buildin
 	return result;
 }
 
+Dictionary EconomySim::apply_deepen_mine(const String& city_id,
+		const String& building_id) {
+	const std::lock_guard<std::recursive_mutex> lock(mutex_);
+	const ogs::DeepenResult outcome = ogs::action_deepen_mine(ws_, sim_core_,
+		std::string(city_id.utf8().get_data()),
+		std::string(building_id.utf8().get_data()), instant_construction_);
+	Dictionary result;
+	result["started"] = outcome.started;
+	result["cost"] = outcome.cost;
+	result["capacity_added"] = outcome.capacity_added;
+	result["stage"] = outcome.stage;
+	result["duration_days"] = outcome.duration_days;
+	result["error"] = String(outcome.error.c_str());
+	if (!outcome.project_id.empty()) {
+		result["project_id"] = String(outcome.project_id.c_str());
+	}
+	return result;
+}
+
 Dictionary EconomySim::apply_build(const String& city_id, const String& building_id,
 		const String& resource, int input_product, int output_product,
 		double capacity, double jobs, double wage, double opex,
@@ -6769,6 +6832,9 @@ Dictionary EconomySim::apply_one_locked(const ogs::Command& cmd) {
 		case ogs::CommandType::SetServiceBusinessState:
 			apply_set_service_business_state(cmd.i[0], cmd.i[1], cmd.v[0]);
 			return result;
+		case ogs::CommandType::DeepenMine:
+			return apply_deepen_mine(String(cmd.s[0].c_str()),
+				String(cmd.s[1].c_str()));
 		case ogs::CommandType::None:
 			break;
 	}
@@ -7090,6 +7156,15 @@ Dictionary EconomySim::urban_social_housing(const String& city_id, double units)
 	cmd.type = ogs::CommandType::UrbanSocialHousing;
 	cmd.s[0] = to_std(city_id);
 	cmd.v[0] = units;
+	return dispatch_command(cmd);
+}
+
+Dictionary EconomySim::deepen_mine(const String& city_id,
+		const String& building_id) {
+	ogs::Command cmd;
+	cmd.type = ogs::CommandType::DeepenMine;
+	cmd.s[0] = to_std(city_id);
+	cmd.s[1] = to_std(building_id);
 	return dispatch_command(cmd);
 }
 

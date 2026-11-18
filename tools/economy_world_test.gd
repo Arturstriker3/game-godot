@@ -269,6 +269,10 @@ func _test_world() -> void:
 		geo = GeographyServiceScript.new()
 		geo.load_data()
 		buildings = geo.resolve_initial_farms(buildings, cities)
+		# D-083: uma mina/poço JÁ EXISTENTE por (cidade, mineral com jazida), no
+		# último estágio (produção no piso). Mesmo caminho do autoload.
+		if geo.has_method("resolve_initial_mines"):
+			buildings = geo.resolve_initial_mines(buildings, cities)
 	sim.initialize_world(cities, ports, buildings)
 	# §19 (W0): solo, moradia e prefeitura por cidade, como o autoload faz
 	# (casamento por id da cidade). Fora deste bloco o runner mantém o mundo
