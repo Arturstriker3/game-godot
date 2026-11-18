@@ -4,6 +4,7 @@
 // o SimCore (sim_core.*) recebe e muta a cada tick; a fachada EconomySim
 // (economy_sim.*) guarda UM `WorldState ws_` e converte Godot <-> sim.
 
+#include "sim_constants.h"
 #include "sim_types.h"
 #include "urban_types.h"
 
@@ -139,6 +140,11 @@ struct WorldState {
 	// referência de saúde só é lida na semeadura/formalização.
 	std::map<std::string, double> informal_rates;
 	std::map<std::string, double> health_access;
+	// B5 (D-089) - gancho de LABORATÓRIO (set_balance): penalidade MÁXIMA de
+	// acesso (estrada 0) usada por `SimCore::infra_access_multiplier`. Padrão =
+	// kInfraAccessPenaltyMax; só o A/B da infra a zera para isolar o frete.
+	// Não é persistido (knob de calibração, como income_basket_margin).
+	double infra_access_penalty = kInfraAccessPenaltyMax;
 	double inventory_cover_days = 3.0;
 	double inventory_recovery = 0.5;
 	// Índice espacial do comércio de alimento: por comprador, só os K
