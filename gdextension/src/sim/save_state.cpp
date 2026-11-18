@@ -461,7 +461,7 @@ Value to_value(const WorldState& ws, const SimCore& core) {
 		strata["lifecycle"] = strata_lifecycle;
 		pop["strata"] = strata;
 		entry["pop"] = pop;
-		// B3 (save v18): região da cidade (estados inteiros). Estado persistente
+		// B3 (save v19): região da cidade (estados inteiros). Estado persistente
 		// (população, caixa, coortes e quintis do interior); os fluxos diários
 		// (emprego, renda, comida, satisfação) são derivados e recalculados.
 		{
