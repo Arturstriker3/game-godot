@@ -183,6 +183,38 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 
 ---
 
+## PARTE G — Agricultura sazonal (base econômica; pedido do dono, 2026-11-18)
+- **Safra por época:** cada primário de comida (grãos, arroz, soja, cana, frutas, carne/leite com ciclo
+  próprio) tem calendário de plantio e colheita por hemisfério/clima (dado real com fonte, ex. calendários
+  de cultivo da FAO); a produção chega concentrada na colheita, não diária.
+- **Rendimento por hectare** (dado real por país/cultura) × área plantada da região (B3/B6); clima/seca
+  como variação (eventos por estado ficam para depois).
+- **Armazenagem e estoque:** colheita enche o estoque, consumo esvazia ao longo do ano; perda por
+  armazenagem ruim (infra B5); preço sobe na entressafra e cai na colheita.
+- **Cadeia alimentar:** comprar comida básica (primário) → processar (moinho, frigorífico, laticínio,
+  indústria de alimentos) → produto que rende mais/dura mais; importador decide comprar primário e
+  processar ou comprar processado.
+- **Insumos:** fertilizante (liga com gás/energia — Parte E), sementes, diesel/maquinário.
+- **Efeito esperado:** resolve de forma realista a dívida de comida do interior (B3) e dá dinâmica de
+  estoque, entressafra e especulação.
+- **Requisitos:** conservação, save novo, testes (safra chega na época, estoque atravessa a entressafra,
+  preço sazonal), goldens, CLI×Godot, 365 d (comida por país), bench.
+
+## Ordem combinada com o dono (2026-11-18)
+1. **Terminar a base econômica:** B6 (patrimônio da região) e B7 (informalidade/serviços informais/
+   mortalidade/insatisfação) → **Parte G (agricultura sazonal)** → Parte C (balanço, BC por moeda com
+   emissão/regimes/padrão monetário, bancos, **bolsa por país (C5) com confiança/expectativas** puxando
+   investimento e consumo) → E (energia) e F (transporte).
+2. **Macro político (próxima grande parte):** impostos e orçamento, subsídios e controle de preços,
+   balança de pagamentos e dívida externa refinadas, previdência, salário mínimo/leis.
+3. **Órgãos internacionais (com a diplomacia):** FMI (socorro com condições), agências de **rating de
+   crédito** (risco soberano → juro dos títulos), ONU, troca de hegemonia da moeda global, sanções,
+   blocos, geopolítica de bancos estrangeiros, remessas/migração internacional.
+4. **Telas:** desenhadas uma a uma com o dono (o que cada tela precisa mostrar), depois da base.
+- **Nomes:** bancos e empresas com **nomes genéricos/fictícios** (sem marcas reais, por direitos);
+  bancos centrais como "Banco Central de <país/moeda>"; ocupações informais com nome genérico + termo
+  local comum (camelô, mototáxi, boda-boda, tuk-tuk…).
+
 ## PARTE C — Sistema financeiro
 
 ### C1 — Contabilidade por balanço (novo invariante)
@@ -198,6 +230,27 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 - 1 banco agregado por nação: depósitos, empréstimos, reservas, capital. Juro = básico + risco.
 - Crédito a empresas e ao governo; **títulos públicos** substituem o crédito externo infinito.
 - O setor de serviço `finance` (já existe em `services.json`) vira a face de emprego/receita do banco.
+- **Regimes e padrão monetário (pedido do dono, 2026-11-18):**
+  - Regime cambial escolhível por moeda: **flutuante, fixo (peg), banda/administrado**; troca de regime é
+    decisão de política com custo (reservas, confiança).
+  - **BC independente × controlado pelo governo** (onde controlado, o jogador/IA mexe no juro e na emissão
+    direto; independente segue regra própria, ex. meta de inflação).
+  - **Padrão monetário internacional** como estado do mundo: fiduciário (início), **Bretton Woods**
+    (moedas presas à moeda-âncora, âncora presa ao ouro) ou **padrão ouro** (emissão limitada às reservas).
+  - **Reservas** de cada BC: ouro + moeda(s) de reserva; a **moeda de reserva/comércio global** começa no
+    dólar (tende a ser a da maior economia) — mudança de hegemonia (outro país assumir) fica como **evento
+    futuro** (ONU/diplomacia).
+- **Emissão de moeda (pedido do dono, 2026-11-18):**
+  1. **Base monetária (M0)** criada pelo BC ao comprar títulos públicos, emprestar aos bancos ou financiar
+     o Tesouro direto (monetização do déficit) — registrada como passivo do BC (invariante da C1).
+  2. **M1/M2 emergem do crédito**: empréstimo bancário vira depósito; multiplicador sai do comportamento
+     dos bancos (não fórmula fixa). Alavancas: juro básico e compulsório.
+  3. **Inflação e câmbio** ligados à moeda × produção: emissão demais → inflação e desvalorização (dá
+     sentido ao câmbio flutuante; hoje todas as moedas estão em peg).
+  4. **Senhoriagem com limite**: imprimir alivia o governo no curto prazo e cobra em inflação; caso
+     extremo, hiperinflação.
+  5. **Zona de moeda única** (euro, CFA, dolarizados): o país não emite sozinho; sair da zona devolve a
+     emissão com choque de câmbio e de confiança (liga com blocos futuros).
 - Aceite: importadores sem caixa (DJI/SOL/MRT/UZB) financiam comida por crédito, com limite;
   `foreign_cash` sem crédito infinito.
 
@@ -219,6 +272,19 @@ Custo estimado de estado: 834 cidades × 2 segmentos × 5 faixas × 5 estratos =
 
 ### C6 — Crise e contágio
 - Corrida e falência bancária, resgate, exigência de capital, controle de capitais.
+- **Recuperação/resolução de bancos (pedido do dono, 2026-11-18)** — hierarquia BC (por moeda) →
+  bancos público, privado e estrangeiro (por nação, C4):
+  - **Liquidez:** BC como emprestador de última instância (banco solvente sem caixa, com garantia e juro
+    punitivo).
+  - **Seguro de depósito** (tipo FGC): fundo pago pelos bancos; protege depositantes até um teto.
+  - **Solvência:** resgate pelo Tesouro (bail-out, vira dívida pública), bail-in (credores/acionistas
+    perdem), fusão forçada com banco saudável, estatização, ou liquidação.
+  - **Banco público:** capitalizado pelo Tesouro (custo fiscal; pode ser usado para crédito dirigido e
+    acumular perda). **Banco estrangeiro:** matriz pode socorrer ou abandonar — canal de contágio
+    externo.
+  - Em zona de moeda única o BC é comum: socorro depende do bloco, não só do país.
+  - Aceite: falência de banco gera perda para alguém (depositante acima do teto, credor, acionista ou
+    Tesouro) — nunca dinheiro que some; invariante da C1 fecha em toda crise.
 
 **Alavancas rurais (Parte B):** estrada e eletrificação rural, subsídio/preço mínimo agrícola, reforma
 agrária, crédito rural (banco público, C4), aposentadoria rural, cobertura de escola e saúde.
