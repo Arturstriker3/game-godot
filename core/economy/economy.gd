@@ -52,8 +52,10 @@ const TickScheduler := preload("res://core/economy/tick_scheduler.gd")
 ## Sem a flag o jogo se comporta exatamente como antes.
 const TurboConfigScript := preload("res://core/economy/turbo_config.gd")
 
-## 1º de janeiro de 2026, 00:00 UTC.
-const START_UNIX := 1767225600
+## 1º de janeiro de 2027, 00:00 UTC (D-084). 1798761600 = 2027-01-01T00:00:00Z.
+## A base de dados (WPP/WorldPop 2026, extração 2025) NÃO é reprojetada: o
+## calendário do jogo começa em 2027 e a projeção da base é dívida de calibração.
+const START_UNIX := 1798761600
 
 ## Cidades do cenário (geradas de data/definitions/scenario/cities.csv).
 const CITIES_PATH := "res://data/definitions/scenario/cities.json"
@@ -509,7 +511,7 @@ func day_progress() -> float:
 	return _day_fraction
 
 
-## Data do jogo, contando os dias simulados a partir de 1º de janeiro de 2026.
+## Data do jogo, contando os dias simulados a partir de 1º de janeiro de 2027.
 func game_date() -> Dictionary:
 	var days := int(last_summary.get("day", 0))
 	return Time.get_datetime_dict_from_unix_time(START_UNIX + days * 86400)
